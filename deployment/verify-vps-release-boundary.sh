@@ -1,0 +1,271 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+COMPOSE_FILE="${COMPOSE_FILE:-${ROOT_DIR}/compose.prod.yml}"
+ENV_FILE="${ENV_FILE:-${ROOT_DIR}/deployment/production.env}"
+REPORT_DIR="${REPORT_DIR:-${ROOT_DIR}/release-evidence/$(date -u +"%Y%m%dT%H%M%SZ")}"
+CHECK_CONNECTIVITY="${CHECK_CONNECTIVITY:-false}"
+
+log() {
+  printf '[INFO] %s\n' "$*"
+}
+
+err() {
+  printf '[ERROR] %s\n' "$*" >&2
+}
+
+require_command() {
+  if ! command -v "$1" >/dev/null 2>&1; then
+    err "required command is not available: $1"
+    exit 1
+  fi
+}
+
+if [[ ! -f "${ENV_FILE}" ]]; then
+  if [[ "${ALLOW_EXAMPLE_ENV:-false}" == "true" && -f "${ROOT_DIR}/deployment/production.env.example" ]]; then
+    ENV_FILE="${ROOT_DIR}/deployment/production.env.example"
+    log "using deployment/production.env.example because ALLOW_EXAMPLE_ENV=true"
+  else
+    err "missing ${ENV_FILE}; set ENV_FILE or create deployment/production.env"
+    exit 1
+  fi
+fi
+
+require_command docker
+require_command python3
+
+if ! docker compose version >/dev/null 2>&1; then
+  err "Docker Compose v2 is required"
+  exit 1
+fi
+
+mkdir -p "${REPORT_DIR}"
+compose=(docker compose --env-file "${ENV_FILE}" -f "${COMPOSE_FILE}")
+
+log "writing sanitized Compose JSON evidence to ${REPORT_DIR}"
+raw_compose_json="$(mktemp)"
+trap 'rm -f "${raw_compose_json}"' EXIT
+"${compose[@]}" config --format json > "${raw_compose_json}"
+python3 - "${raw_compose_json}" "${REPORT_DIR}/compose-config.json" <<'PY'
+import json
+import re
+import sys
+
+source_path, evidence_path = sys.argv[1:3]
+with open(source_path, "r", encoding="utf-8") as fh:
+    data = json.load(fh)
+
+sensitive_key = re.compile(
+    r"(?:PASSWORD|SECRET|TOKEN|PRIVATE_KEY|API_KEY|PUBLISHABLE_KEY|CREDENTIAL|CERTIFICATE)",
+    re.IGNORECASE,
+)
+
+
+def redact(value):
+    if isinstance(value, dict):
+        for key, child in value.items():
+            if sensitive_key.search(str(key)):
+                value[key] = "<redacted>"
+            else:
+                redact(child)
+    elif isinstance(value, list):
+        for child in value:
+            redact(child)
+
+
+redact(data)
+with open(evidence_path, "w", encoding="utf-8") as fh:
+    json.dump(data, fh, indent=2, sort_keys=True)
+    fh.write("\n")
+PY
+
+resolve_network_name() {
+  local logical_name="$1"
+  python3 - "${REPORT_DIR}/compose-config.json" "${logical_name}" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1], "r", encoding="utf-8") as fh:
+    data = json.load(fh)
+
+logical_name = sys.argv[2]
+network = (data.get("networks") or {}).get(logical_name)
+resolved_name = network.get("name") if isinstance(network, dict) else None
+if not isinstance(resolved_name, str) or not resolved_name:
+    raise SystemExit(f"missing resolved network name: {logical_name}")
+
+print(resolved_name)
+PY
+}
+
+db_network_name="$(resolve_network_name db)"
+cache_network_name="$(resolve_network_name cache)"
+app_network_name="$(resolve_network_name app)"
+edge_network_name="$(resolve_network_name edge)"
+
+python3 - "${REPORT_DIR}/compose-config.json" <<'PY'
+import json
+import sys
+
+config_path = sys.argv[1]
+with open(config_path, "r", encoding="utf-8") as fh:
+    data = json.load(fh)
+
+errors = []
+services = data.get("services", {})
+networks = data.get("networks", {})
+
+expected_service_networks = {
+    "db": {"db"},
+    "redis": {"cache"},
+    "migrate": {"db"},
+    "api": {"db", "cache", "app"},
+    "storefront": {"app", "cache"},
+    "admin": {"app"},
+    "web": {"app", "edge"},
+}
+
+for service_name, expected_networks in expected_service_networks.items():
+    service = services.get(service_name)
+    if not service:
+        errors.append(f"missing service: {service_name}")
+        continue
+
+    if service.get("ports"):
+        errors.append(f"{service_name} must not publish host ports")
+    if service.get("container_name"):
+        errors.append(f"{service_name} must not set container_name")
+    if service.get("network_mode") == "host":
+        errors.append(f"{service_name} must not use host network mode")
+
+    actual_networks = service.get("networks") or {}
+    if isinstance(actual_networks, dict):
+        actual_networks = set(actual_networks.keys())
+    else:
+        actual_networks = set(actual_networks)
+    if actual_networks != expected_networks:
+        errors.append(
+            f"{service_name} networks mismatch: expected {sorted(expected_networks)}, got {sorted(actual_networks)}"
+        )
+
+for network_name in ("db", "cache"):
+    network = networks.get(network_name) or {}
+    if not network.get("name"):
+        errors.append(f"{network_name} network must have a resolved name")
+    if network.get("internal") is not True:
+        errors.append(f"{network_name} network must be internal")
+
+edge = networks.get("edge") or {}
+if not edge.get("name"):
+    errors.append("edge network must have a resolved name")
+if edge.get("external") is not True:
+    errors.append("edge network must be external")
+if edge.get("name") != "tanzanite-edge":
+    errors.append("edge network must be named tanzanite-edge")
+
+edge_members = [
+    name
+    for name, service in services.items()
+    if "edge" in ((service.get("networks") or {}).keys() if isinstance(service.get("networks") or {}, dict) else service.get("networks") or [])
+]
+if edge_members != ["web"]:
+    errors.append(f"only web may join edge network, got {edge_members}")
+
+if errors:
+    for error in errors:
+        print(f"FAIL: {error}", file=sys.stderr)
+    sys.exit(1)
+
+print("OK: production Compose network boundary is statically valid")
+print("OK: no business service publishes host ports in Compose config")
+print("OK: db/cache are internal and only web joins the external edge network")
+print(
+    "OK: resolved Docker networks: "
+    f"db={networks['db']['name']} "
+    f"cache={networks['cache']['name']} "
+    f"app={networks['app']['name']} "
+    f"edge={networks['edge']['name']}"
+)
+PY
+
+if [[ "${CHECK_CONNECTIVITY}" != "true" ]]; then
+  log "static boundary checks complete; set CHECK_CONNECTIVITY=true on the VPS after deployment for runtime checks"
+  exit 0
+fi
+
+log "collecting runtime Compose and Docker network evidence"
+"${compose[@]}" ps --format json > "${REPORT_DIR}/compose-ps.json"
+
+for network in "${db_network_name}" "${cache_network_name}" "${app_network_name}" "${edge_network_name}"; do
+  docker network inspect "${network}" > "${REPORT_DIR}/network-${network}.json"
+done
+
+python3 - "${REPORT_DIR}/compose-ps.json" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1], "r", encoding="utf-8") as fh:
+    raw = fh.read().strip()
+
+records = []
+if raw:
+    try:
+        parsed = json.loads(raw)
+        records = parsed if isinstance(parsed, list) else [parsed]
+    except json.JSONDecodeError:
+        records = [json.loads(line) for line in raw.splitlines() if line.strip()]
+
+published = []
+for record in records:
+    for publisher in record.get("Publishers") or record.get("publishers") or []:
+        published_port = publisher.get("PublishedPort") or publisher.get("published_port")
+        if published_port:
+            published.append((record.get("Service") or record.get("Name"), published_port))
+
+if published:
+    for service, port in published:
+        print(f"FAIL: {service} publishes host port {port}", file=sys.stderr)
+    sys.exit(1)
+
+print("OK: running Compose services do not publish host ports")
+PY
+
+connectivity_log="${REPORT_DIR}/connectivity.txt"
+: > "${connectivity_log}"
+
+run_diagnostic() {
+  local label="$1"
+  local network="$2"
+  local host="$3"
+  local port="$4"
+  local expect_success="$5"
+
+  {
+    printf '\n[%s]\n' "${label}"
+    printf 'network=%s target=%s:%s expect_success=%s\n' "${network}" "${host}" "${port}" "${expect_success}"
+  } >> "${connectivity_log}"
+
+  set +e
+  docker run --rm --network "${network}" alpine:3.20 sh -lc "nc -z -w 2 ${host} ${port}" >> "${connectivity_log}" 2>&1
+  local status=$?
+  set -e
+
+  if [[ "${expect_success}" == "true" && "${status}" -ne 0 ]]; then
+    err "${label} failed; see ${connectivity_log}"
+    exit 1
+  fi
+  if [[ "${expect_success}" != "true" && "${status}" -eq 0 ]]; then
+    err "${label} unexpectedly succeeded; see ${connectivity_log}"
+    exit 1
+  fi
+
+  printf 'status=%s\n' "${status}" >> "${connectivity_log}"
+  log "${label}: observed expected ${expect_success}"
+}
+
+run_diagnostic "api network reaches PostgreSQL" "${db_network_name}" "db" 5432 true
+run_diagnostic "api network reaches Redis" "${cache_network_name}" "redis" 6379 true
+run_diagnostic "app network cannot reach PostgreSQL from storefront side" "${app_network_name}" "db" 5432 false
+
+log "runtime connectivity checks complete; evidence written to ${REPORT_DIR}"

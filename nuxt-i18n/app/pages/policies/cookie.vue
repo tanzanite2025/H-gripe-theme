@@ -4,7 +4,7 @@
 
     <div class="policies-content">
       <p class="text-sm tz-text-secondary mb-6">
-        This page explains how Tanzanite uses cookies and similar technologies to improve your browsing experience.
+        This page explains how we use cookies and similar technologies to improve your browsing experience.
       </p>
 
       <div class="mt-4 space-y-8 tz-text-secondary">

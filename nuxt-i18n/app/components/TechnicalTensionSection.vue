@@ -11,7 +11,7 @@
             src="/public/technical/tension/tanzanite-wheel-spoke-tension.webp"
             alt="Wheel Spoke Tension Distribution"
             :zoomOnClick="true"
-            caption="Tanzanite Workshop: Tension Distribution Reference"
+            caption="Workshop: Tension Distribution Reference"
             class="rounded-xl max-w-lg w-full"
          />
          <NuxtLink

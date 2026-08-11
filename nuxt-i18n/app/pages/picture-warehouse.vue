@@ -43,9 +43,15 @@
                   class="group flex flex-col overflow-hidden rounded-xl bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_3px_9px_rgba(0,0,0,0.9)] backdrop-blur-md hover:shadow-[0_4px_12px_rgba(0,0,0,0.9)] transition-all"
                   @click="openLightbox('user', index)"
                 >
-                  <div
-                    class="aspect-square w-full bg-slate-800/90 group-hover:bg-slate-700/90 transition-colors"
-                  ></div>
+                  <div class="aspect-square w-full overflow-hidden bg-slate-800/90 group-hover:bg-slate-700/90 transition-colors">
+                    <img
+                      v-if="photoCover(photo)"
+                      :src="photoCover(photo)"
+                      :alt="photo.title"
+                      class="size-full object-cover transition duration-200 group-hover:scale-[1.03]"
+                      loading="lazy"
+                    />
+                  </div>
                   <div class="px-2.5 py-2 flex flex-col gap-0.5">
                     <p class="tz-caption font-medium tz-text-primary truncate">
                       {{ photo.title }}
@@ -112,9 +118,15 @@
                   class="group flex flex-col overflow-hidden rounded-xl bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_3px_9px_rgba(0,0,0,0.9)] backdrop-blur-md hover:shadow-[0_4px_12px_rgba(0,0,0,0.9)] transition-all"
                   @click="openLightbox('brand', index)"
                 >
-                  <div
-                    class="aspect-square w-full bg-slate-900/90 group-hover:bg-slate-800/90 transition-colors"
-                  ></div>
+                  <div class="aspect-square w-full overflow-hidden bg-slate-900/90 group-hover:bg-slate-800/90 transition-colors">
+                    <img
+                      v-if="photoCover(photo)"
+                      :src="photoCover(photo)"
+                      :alt="photo.title"
+                      class="size-full object-cover transition duration-200 group-hover:scale-[1.03]"
+                      loading="lazy"
+                    />
+                  </div>
                   <div class="px-2.5 py-2 flex flex-col gap-0.5">
                     <p class="tz-caption font-medium tz-text-primary truncate">
                       {{ photo.title }}
@@ -449,61 +461,18 @@
               >
                 <div class="mb-2 font-semibold tz-text-primary">Like This? Get The Same Build.</div>
                 <div class="space-y-2">
-                  <div>
-                    <p class="mb-0.5 font-semibold tz-text-primary">Rim</p>
-                    <p v-if="activePhoto?.productRefs?.rim" class="tz-text-secondary truncate">
-                      <a
-                        :href="activePhoto?.productRefs?.rim"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        class="underline underline-offset-2 hover:text-sky-300"
-                      >
-                        {{ activePhoto?.productRefs?.rim }}
-                      </a>
-                    </p>
-                  </div>
-
-                  <div>
-                    <p class="mb-0.5 font-semibold tz-text-primary">Wheel(s)</p>
-                    <p v-if="activePhoto?.productRefs?.wheel" class="tz-text-secondary truncate">
-                      <a
-                        :href="activePhoto?.productRefs?.wheel"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        class="underline underline-offset-2 hover:text-sky-300"
-                      >
-                        {{ activePhoto?.productRefs?.wheel }}
-                      </a>
-                    </p>
-                  </div>
-
-                  <div>
-                    <p class="mb-0.5 font-semibold tz-text-primary">Hub</p>
-                    <p v-if="activePhoto?.productRefs?.hub" class="tz-text-secondary truncate">
-                      <a
-                        :href="activePhoto?.productRefs?.hub"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        class="underline underline-offset-2 hover:text-sky-300"
-                      >
-                        {{ activePhoto?.productRefs?.hub }}
-                      </a>
-                    </p>
-                  </div>
-
-                  <div>
-                    <p class="mb-0.5 font-semibold tz-text-primary">Tire</p>
-                    <p v-if="activePhoto?.productRefs?.tire" class="tz-text-secondary truncate">
-                      <a
-                        :href="activePhoto?.productRefs?.tire"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        class="underline underline-offset-2 hover:text-sky-300"
-                      >
-                        {{ activePhoto?.productRefs?.tire }}
-                      </a>
-                    </p>
-                  </div>
+                  <NuxtLink
+                    v-for="product in activePhotoProductLinks"
+                    :key="product.product_id"
+                    :to="productLinkPath(product)"
+                    class="block rounded-lg bg-white/5 px-3 py-2 text-slate-200 transition-colors hover:bg-white/10 hover:text-sky-300"
+                  >
+                    <span class="block truncate font-semibold">{{ product.name || product.slug }}</span>
+                    <span class="mt-0.5 block truncate font-mono text-[10px] text-slate-500">{{ product.slug }}</span>
+                  </NuxtLink>
+                  <p v-if="!activePhotoProductLinks.length" class="tz-text-muted">
+                    No related products configured.
+                  </p>
                 </div>
               </div>
             </div>
@@ -520,6 +489,11 @@ import { definePageMeta, useHead, useRoute } from '#imports'
 
 import { useAuth } from '~/composables/useAuth'
 import {
+  useBrandGalleryPhotos,
+  type BrandGalleryPhoto,
+  type PictureWarehouseProductLink,
+} from '~/composables/useBrandGalleryPhotos'
+import {
   isPageSubNavigationTabId,
   pictureWarehouseTabs,
   type PictureWarehouseTabId,
@@ -534,18 +508,28 @@ useHead({
 })
 
 const auth = useAuth()
+const localePath = useLocalePath()
+const {
+  brandPhotos,
+  brandLoading,
+  brandError,
+  fetchBrandPhotos,
+  loadBrandGalleryDetails,
+} = useBrandGalleryPhotos()
 
 type PhotoKind = 'user' | 'brand'
 
-interface PicturePhoto {
+interface RiderPhoto {
   id: string
-  kind: PhotoKind
+  kind: 'user'
   title: string
   region: string
   nickname?: string
   galleryImages?: string[]
-  productRefs?: ProductRefs
+  productLinks?: PictureWarehouseProductLink[]
 }
+
+type PicturePhoto = RiderPhoto | BrandGalleryPhoto
 
 interface PhotoComment {
   id: number
@@ -556,22 +540,7 @@ interface PhotoComment {
   location?: string
 }
 
-interface ProductRefs {
-  rim?: string
-  wheel?: string
-  hub?: string
-  tire?: string
-}
-
-const userPhotos = ref<PicturePhoto[]>([
-  {
-    id: 'sample-user-1',
-    kind: 'user',
-    title: 'Sample rider photo (dev only)',
-    region: 'Sample region',
-    nickname: 'Sample rider',
-  },
-])
+const userPhotos = ref<RiderPhoto[]>([])
 const userLoading = ref(true)
 const userError = ref<string | null>(null)
 
@@ -678,17 +647,6 @@ const submitUpload = async () => {
   }
 }
 
-const brandPhotos = ref<PicturePhoto[]>([
-  {
-    id: 'sample-brand-1',
-    kind: 'brand',
-    title: 'Sample brand photo (dev only)',
-    region: 'Studio',
-  },
-])
-const brandLoading = ref(true)
-const brandError = ref<string | null>(null)
-
 const showAllUserPhotos = ref(false)
 const showAllBrandPhotos = ref(false)
 
@@ -705,6 +663,12 @@ const visibleBrandPhotos = computed<PicturePhoto[]>(() => {
 const hasMoreUserPhotos = computed(() => userPhotos.value.length > 6)
 const hasMoreBrandPhotos = computed(() => brandPhotos.value.length > 6)
 
+const photoCover = (photo: PicturePhoto): string => photo.galleryImages?.[0] || ''
+const productLinkPath = (product: PictureWarehouseProductLink): string => {
+  const slug = String(product.slug || '').trim()
+  return slug ? localePath(`/shop/${slug}`) : localePath('/shop')
+}
+
 const toggleUserPhotos = () => {
   if (!hasMoreUserPhotos.value) return
   showAllUserPhotos.value = !showAllUserPhotos.value
@@ -715,38 +679,27 @@ const toggleBrandPhotos = () => {
   showAllBrandPhotos.value = !showAllBrandPhotos.value
 }
 
-const mapPayloadToPhotos = (payload: any[], kind: PhotoKind): PicturePhoto[] => {
+const mapPayloadToUserPhotos = (payload: any[]): RiderPhoto[] => {
   return payload
-    .map((item: any): PicturePhoto | null => {
+    .map((item: any): RiderPhoto | null => {
       if (!item) return null
       const id = item.id ?? item.ID ?? null
       if (!id) return null
 
-      let productRefs: ProductRefs | undefined
-      const rawRefs = item.product_refs
-      if (rawRefs && typeof rawRefs === 'object') {
-        productRefs = {}
-        if (typeof rawRefs.rim === 'string' && rawRefs.rim) productRefs.rim = rawRefs.rim
-        if (typeof rawRefs.wheel === 'string' && rawRefs.wheel) productRefs.wheel = rawRefs.wheel
-        if (typeof rawRefs.hub === 'string' && rawRefs.hub) productRefs.hub = rawRefs.hub
-        if (typeof rawRefs.tire === 'string' && rawRefs.tire) productRefs.tire = rawRefs.tire
-
-        if (!productRefs.rim && !productRefs.wheel && !productRefs.hub && !productRefs.tire) {
-          productRefs = undefined
-        }
-      }
+      const galleryImages = Array.isArray(item.gallery_images)
+        ? item.gallery_images.filter((image: unknown): image is string => Boolean(image))
+        : []
 
       return {
         id: String(id),
-        kind,
-        title: String(item.title ?? item.post_title ?? (kind === 'user' ? 'Rider photo' : 'Brand photo')),
-        region: String(item.region ?? (kind === 'user' ? 'Unknown' : 'Studio')),
+        kind: 'user',
+        title: String(item.title ?? item.post_title ?? 'Rider photo'),
+        region: String(item.region ?? 'Unknown'),
         nickname: typeof item.nickname === 'string' ? item.nickname : undefined,
-        galleryImages: Array.isArray(item.gallery_images) ? item.gallery_images : [],
-        productRefs,
+        galleryImages,
       }
     })
-    .filter((p: PicturePhoto | null): p is PicturePhoto => p !== null)
+    .filter((p): p is RiderPhoto => p !== null)
 }
 
 const fetchUserPhotos = async () => {
@@ -755,33 +708,14 @@ const fetchUserPhotos = async () => {
     userError.value = null
 
     const payload = await auth.request<any[]>('/showcase/gallery?type=user&status=approved')
-    const mapped = Array.isArray(payload) ? mapPayloadToPhotos(payload, 'user') : []
+    const mapped = Array.isArray(payload) ? mapPayloadToUserPhotos(payload) : []
 
-    if (mapped.length) {
-      userPhotos.value = mapped
-    }
+    userPhotos.value = mapped
   } catch (error) {
     userError.value = 'load_failed'
+    userPhotos.value = []
   } finally {
     userLoading.value = false
-  }
-}
-
-const fetchBrandPhotos = async () => {
-  try {
-    brandLoading.value = true
-    brandError.value = null
-
-    const payload = await auth.request<any[]>('/showcase/gallery?type=brand&status=approved')
-    const mapped = Array.isArray(payload) ? mapPayloadToPhotos(payload, 'brand') : []
-
-    if (mapped.length) {
-      brandPhotos.value = mapped
-    }
-  } catch (error) {
-    brandError.value = 'load_failed'
-  } finally {
-    brandLoading.value = false
   }
 }
 
@@ -826,6 +760,10 @@ const activePhoto = computed<PicturePhoto | null>(() => {
   return list[activeIndex.value] ?? null
 })
 
+const activePhotoProductLinks = computed<PictureWarehouseProductLink[]>(() =>
+  (activePhoto.value?.productLinks || []).filter((product) => Boolean(product.slug || product.name))
+)
+
 const currentImageUrl = computed(() => {
   const photo = activePhoto.value
   if (!photo) return ''
@@ -836,11 +774,20 @@ const currentImageUrl = computed(() => {
   return '' // Should handle empty case or show a placeholder if needed
 })
 
+const loadActiveBrandGalleryDetails = () => {
+  if (activeKind.value !== 'brand' || activeIndex.value === null) return
+  void loadBrandGalleryDetails(activeIndex.value)
+}
+
 const openLightbox = (kind: PhotoKind, index: number) => {
   activeKind.value = kind
   activeIndex.value = index
   currentGalleryIndex.value = 0
-  void loadCommentsForActivePhoto()
+  if (kind === 'user') {
+    void loadCommentsForActivePhoto()
+  } else {
+    loadActiveBrandGalleryDetails()
+  }
 }
 
 const closeLightbox = () => {
@@ -861,7 +808,11 @@ const goNext = () => {
   const nextIndex = (activeIndex.value + 1) % list.length
   activeIndex.value = nextIndex
   currentGalleryIndex.value = 0
-  void loadCommentsForActivePhoto()
+  if (activeKind.value === 'user') {
+    void loadCommentsForActivePhoto()
+  } else {
+    loadActiveBrandGalleryDetails()
+  }
 }
 
 const goPrev = () => {
@@ -870,7 +821,11 @@ const goPrev = () => {
   const prevIndex = (activeIndex.value - 1 + list.length) % list.length
   activeIndex.value = prevIndex
   currentGalleryIndex.value = 0
-  void loadCommentsForActivePhoto()
+  if (activeKind.value === 'user') {
+    void loadCommentsForActivePhoto()
+  } else {
+    loadActiveBrandGalleryDetails()
+  }
 }
 
 const fetchCommentsForPhoto = async (photoId: string) => {
@@ -923,6 +878,12 @@ const loadCommentsForActivePhoto = async () => {
     commentsLoading.value = false
     return
   }
+  if (current.kind !== 'user') {
+    comments.value = []
+    commentsError.value = null
+    commentsLoading.value = false
+    return
+  }
 
   await fetchCommentsForPhoto(current.id)
 }
@@ -934,6 +895,10 @@ const submitComment = async () => {
   const current = activePhoto.value
   if (!current) {
     commentError.value = 'No photo selected.'
+    return
+  }
+  if (current.kind !== 'user') {
+    commentError.value = 'Comments are only available for rider photos.'
     return
   }
 

@@ -236,7 +236,7 @@ INSERT INTO spoke_build_presets (
 VALUES
     (
         'tz_ar45_dt350_fr',
-        'Tanzanite AR 45 Disc + DT Swiss 350',
+        'AR 45 Disc + DT Swiss 350',
         'Popular all-rounder build. Reliable ratchet hub with aero rim.',
         '["350","240","dt swiss","45mm","ar45","disc","road"]',
         (SELECT id FROM spoke_rim_brands WHERE code = 'dt_swiss'),
@@ -252,7 +252,7 @@ VALUES
     ),
     (
         'tz_ar50_dt240_fr',
-        'Tanzanite AR 50 Disc + DT Swiss 240 EXP',
+        'AR 50 Disc + DT Swiss 240 EXP',
         'Lightweight racing build. Top-tier hub performance.',
         '["240","dt swiss","50mm","ar50","exp","racing"]',
         (SELECT id FROM spoke_rim_brands WHERE code = 'dt_swiss'),

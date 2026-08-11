@@ -1,4 +1,4 @@
-version: '3.8'
+name: h-gripe-backend-dev
 
 services:
   # Go 后端应用
@@ -6,7 +6,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: tanzanite-backend
+    container_name: h-gripe-backend
     ports:
       - "9200:8080"
     environment:
@@ -26,6 +26,8 @@ services:
       # JWT 配置
       - JWT_SECRET=${JWT_SECRET:-your_jwt_secret_change_in_production}
       - JWT_EXPIRATION=24h
+      # Payment credential encryption key; override this in production.
+      - PAYMENT_CONFIG_MASTER_KEY=${PAYMENT_CONFIG_MASTER_KEY:-dev-payment-config-master-key-change-before-production}
       # 服务器配置
       - SERVER_PORT=:8080
       - SERVER_MODE=release
@@ -46,7 +48,7 @@ services:
       redis:
         condition: service_healthy
     networks:
-      - tanzanite-network
+      - h-gripe-network
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]
@@ -58,7 +60,7 @@ services:
   # PostgreSQL 数据库
   postgres:
     image: postgres:15-alpine
-    container_name: tanzanite-postgres
+    container_name: h-gripe-postgres
     environment:
       - POSTGRES_USER=tanzanite
       - POSTGRES_PASSWORD=${DB_PASSWORD:-tanzanite_password}
@@ -70,7 +72,7 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
     networks:
-      - tanzanite-network
+      - h-gripe-network
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U tanzanite -d tanzanite"]
@@ -81,14 +83,14 @@ services:
   # Redis 缓存
   redis:
     image: redis:7-alpine
-    container_name: tanzanite-redis
+    container_name: h-gripe-redis
     command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
     ports:
       - "9500:6379"
     volumes:
       - redis-data:/data
     networks:
-      - tanzanite-network
+      - h-gripe-network
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
@@ -99,7 +101,7 @@ services:
   # Nginx 反向代理 (可选 - 生产环境)
   nginx:
     image: nginx:alpine
-    container_name: tanzanite-nginx
+    container_name: h-gripe-nginx
     ports:
       - "80:80"
       - "443:443"
@@ -111,7 +113,7 @@ services:
     depends_on:
       - app
     networks:
-      - tanzanite-network
+      - h-gripe-network
     restart: unless-stopped
     profiles:
       - production
@@ -119,13 +121,13 @@ services:
   # Adminer 数据库管理工具 (开发环境)
   adminer:
     image: adminer:latest
-    container_name: tanzanite-adminer
+    container_name: h-gripe-adminer
     ports:
       - "9600:8080"
     environment:
       - ADMINER_DEFAULT_SERVER=postgres
     networks:
-      - tanzanite-network
+      - h-gripe-network
     restart: unless-stopped
     profiles:
       - dev
@@ -133,7 +135,7 @@ services:
   # Redis Commander (开发环境)
   redis-commander:
     image: rediscommander/redis-commander:latest
-    container_name: tanzanite-redis-commander
+    container_name: h-gripe-redis-commander
     ports:
       - "9700:8081"
     environment:
@@ -141,7 +143,7 @@ services:
     depends_on:
       - redis
     networks:
-      - tanzanite-network
+      - h-gripe-network
     restart: unless-stopped
     profiles:
       - dev
@@ -153,7 +155,7 @@ volumes:
     driver: local
 
 networks:
-  tanzanite-network:
+  h-gripe-network:
     driver: bridge
     ipam:
       config:

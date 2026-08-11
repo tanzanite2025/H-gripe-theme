@@ -7,13 +7,13 @@
         Certified <span class="text-teal-400">Quality & Safety</span>
       </h2>
       <p class="tz-text-secondary max-w-3xl mx-auto text-base md:text-lg leading-relaxed font-light">
-        TANZANITE products are UCI approved and exceed ISO 4210 international standards, ensuring ultimate safety for every ride.
+        Our products are UCI approved and exceed ISO 4210 international standards, ensuring ultimate safety for every ride.
       </p>
     </section>
 
     <!-- UCI Accreditation (Highlight) -->
     <section class="max-w-none w-full">
-      <div class="relative bg-gradient-to-br from-[#1a1f2e] to-[#0f1219] rounded-3xl overflow-hidden border border-slate-700/50 shadow-2xl">
+      <div class="relative bg-[var(--tz-card-surface)] rounded-3xl overflow-hidden border border-slate-700/50 shadow-2xl">
         <div class="grid grid-cols-1 md:grid-cols-2">
             <!-- Content -->
             <div class="p-4 md:p-12 flex flex-col justify-center">
@@ -23,7 +23,7 @@
                 </div>
                 <h3 class="text-2xl md:text-3xl font-bold text-white mb-4">UCI Approved Wheels</h3>
                 <p class="tz-text-secondary mb-6 leading-relaxed text-sm md:text-base">
-                    TANZANITE wheels have passed the stringent impact tests required by the Union Cycliste Internationale (UCI). They are fully approved for use in all UCI-sanctioned road, track, and cyclo-cross races.
+                    Our wheels have passed the stringent impact tests required by the Union Cycliste Internationale (UCI). They are fully approved for use in all UCI-sanctioned road, track, and cyclo-cross races.
                 </p>
                  <ul class="space-y-3 mb-8">
                     <li v-for="item in uciModels" :key="item" class="flex items-center gap-3">
@@ -37,7 +37,7 @@
                  </a>
             </div>
             <!-- Visual -->
-            <div class="relative min-h-[300px] md:min-h-full bg-slate-800 flex items-center justify-center p-8 overflow-hidden group">
+            <div class="relative min-h-[300px] md:min-h-full bg-[var(--tz-card-surface)] border-t border-slate-800/50 flex items-center justify-center p-8 overflow-hidden group md:border-l md:border-t-0">
                <!-- Decorative elements -->
                <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-teal-500/10 via-transparent to-transparent opacity-50"></div>
                
@@ -47,7 +47,7 @@
                     <div class="w-48 h-16 mx-auto mb-6 bg-white/5 backdrop-blur rounded-lg border border-white/10 flex items-center justify-center">
                         <span class="text-2xl font-black tracking-widest tz-text-muted">UCI</span>
                     </div>
-                   <div class="w-48 h-48 mx-auto rounded-full border-4 border-slate-700/50 bg-slate-900 shadow-2xl relative group-hover:scale-105 transition-transform duration-700 flex items-center justify-center">
+                    <div class="w-48 h-48 mx-auto rounded-full border-4 border-white/10 bg-black/20 shadow-2xl relative group-hover:scale-105 transition-transform duration-700 flex items-center justify-center">
                         <div class="tz-text-muted tz-micro-label uppercase tracking-widest">
                            UCI Approved<br>Sticker
                         </div>
@@ -83,12 +83,12 @@
 
     <!-- Internal Standards -->
     <section class="max-w-none w-full">
-        <div class="bg-slate-900/80 backdrop-blur rounded-2xl border border-slate-800 p-4 md:p-8 text-center relative overflow-hidden">
+        <div class="bg-[var(--tz-card-surface)] backdrop-blur rounded-2xl border border-slate-800 p-4 md:p-8 text-center relative overflow-hidden">
              <!-- Background Glow -->
              <div class="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-lg bg-teal-500/5 blur-[80px] pointer-events-none"></div>
              
              <div class="relative z-10">
-                 <h3 class="text-xl font-bold text-white mb-4">TANZANITE In-House Standard</h3>
+                 <h3 class="text-xl font-bold text-white mb-4">In-House Standard</h3>
                  <p class="tz-text-secondary text-sm leading-relaxed mb-6">
                      We don't just meet standards; we set them. Our internal testing protocols are rigorous, subjecting simulated road conditions to forces <span class="text-teal-400 font-bold">120% - 150%</span> higher than ISO 4210 requirements.
                  </p>
@@ -119,10 +119,10 @@
 
 <script setup lang="ts">
 const uciModels = [
-    'TANZANITE PRO 50 Disc',
-    'TANZANITE ULTRA 45 Rim',
-    'TANZANITE GRAVEL X',
-    'TANZANITE TRACK AERO'
+    'PRO 50 Disc',
+    'ULTRA 45 Rim',
+    'GRAVEL X',
+    'TRACK AERO'
 ]
 
 const certificates = [

@@ -14,6 +14,7 @@ import (
 	"tanzanite/internal/pkg/antibot"
 	"tanzanite/internal/pkg/antifraud"
 	"tanzanite/internal/pkg/apierror"
+	"tanzanite/internal/pkg/cardtesting"
 	pgateway "tanzanite/internal/pkg/payment"
 	"tanzanite/internal/pkg/response"
 	"tanzanite/internal/pkg/visitorcookie"
@@ -33,6 +34,7 @@ type Handler struct {
 	storefrontContext *service.StorefrontContextService
 	antiBot           *antibot.Service
 	antiFraud         *antifraud.Service
+	cardBINLimiter    *cardtesting.Service
 	gatewayFactory    func(*pgateway.Config) (pgateway.PaymentGateway, error)
 	publicBaseURL     string
 }
@@ -80,6 +82,13 @@ func (h *Handler) ConfigurePublicBaseURL(baseURL string) {
 	h.publicBaseURL = normalizePaymentBaseURL(baseURL)
 }
 
+func (h *Handler) ConfigureCardBINLimiter(limiter *cardtesting.Service) {
+	if h == nil {
+		return
+	}
+	h.cardBINLimiter = limiter
+}
+
 func (h *Handler) authorizeOrderPaymentRead(c *gin.Context, orderID uint) bool {
 	if roleValue, exists := c.Get("role"); exists {
 		if role, ok := roleValue.(string); ok && auth.NormalizeRole(role).HasPermission(auth.PermOrderView) {
@@ -114,6 +123,7 @@ func (h *Handler) CreateStripePaymentIntent(c *gin.Context) {
 	var req struct {
 		OrderNumber  string `json:"order_number" binding:"required"`
 		CaptchaToken string `json:"captcha_token"`
+		CardBIN      string `json:"card_bin"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		apierror.RespondValidationError(c, err.Error())
@@ -144,6 +154,25 @@ func (h *Handler) CreateStripePaymentIntent(c *gin.Context) {
 	riskIdentity := h.stripePaymentRiskIdentity(c, userIDValue.(uint))
 	if !h.authorizeStripePaymentRisk(c, riskIdentity, req.CaptchaToken, orderRecord) {
 		return
+	}
+
+	cardBIN, err := pgateway.NormalizeCardBIN(req.CardBIN)
+	if err != nil {
+		apierror.RespondValidationError(c, err.Error())
+		return
+	}
+	if h.cardBINLimiter != nil && cardBIN != "" {
+		decision, err := h.cardBINLimiter.Check(c.Request.Context(), cardBIN)
+		if err != nil {
+			apierror.RespondError(c, http.StatusServiceUnavailable, "payment_bin_risk_unavailable", "Payment card risk service is temporarily unavailable")
+			return
+		}
+		if decision.Blocked {
+			apierror.RespondErrorWithDetails(c, http.StatusTooManyRequests, "payment_bin_temporarily_blocked", "Payment could not be started", gin.H{
+				"retry_after_seconds": int64(decision.RetryAfter / time.Second),
+			})
+			return
+		}
 	}
 
 	config, err := h.loadGatewayConfig(pgateway.GatewayStripe)
@@ -190,6 +219,7 @@ func (h *Handler) CreateStripePaymentIntent(c *gin.Context) {
 		Description:    fmt.Sprintf("Order %s", orderRecord.OrderNumber),
 		IdempotencyKey: fmt.Sprintf("order-%d-stripe-payment-intent", orderRecord.ID),
 		ThreeDSecure:   threeDSDecision.Mode,
+		CardBIN:        cardBIN,
 		Customer: &pgateway.Customer{
 			Name:  orderRecord.ShippingAddress.FirstName + " " + orderRecord.ShippingAddress.LastName,
 			Email: orderRecord.ShippingAddress.Email,
@@ -207,6 +237,12 @@ func (h *Handler) CreateStripePaymentIntent(c *gin.Context) {
 	if h.antiFraud != nil {
 		if err := h.antiFraud.BindPaymentIntent(c.Request.Context(), paymentResponse.TransactionID, riskIdentity); err != nil {
 			apierror.RespondInternalError(c, err)
+			return
+		}
+	}
+	if h.cardBINLimiter != nil {
+		if err := h.cardBINLimiter.BindPaymentIntent(c.Request.Context(), paymentResponse.TransactionID, cardBIN); err != nil {
+			apierror.RespondError(c, http.StatusServiceUnavailable, "payment_bin_risk_unavailable", "Payment card risk service is temporarily unavailable")
 			return
 		}
 	}

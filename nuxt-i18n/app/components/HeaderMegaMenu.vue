@@ -64,15 +64,10 @@
                   :key="child.id"
                   class="header-mega-card__child"
                   :to="localizedTo(child.to)"
+                  :aria-label="childAccessibleLabel(child)"
                   @click.stop="scheduleNavigateClose"
                 >
                   <span class="header-mega-card__child-label">{{ childLabel(child) }}</span>
-                  <span
-                    v-if="childDescription(child)"
-                    class="header-mega-card__child-description"
-                  >
-                    {{ childDescription(child) }}
-                  </span>
                   <span class="header-mega-card__child-arrow" aria-hidden="true">
                     <Icon name="lucide:arrow-up-right" />
                   </span>
@@ -214,6 +209,12 @@ const childDescription = (child: PageSubNavigationChild) => {
   if (child.descriptionKey) return t(child.descriptionKey, child.description || '') as string
   return child.description || ''
 }
+
+const childAccessibleLabel = (child: PageSubNavigationChild) => {
+  const label = childLabel(child)
+  const description = childDescription(child)
+  return description ? `${label}: ${description}` : label
+}
 </script>
 
 <style scoped>
@@ -317,8 +318,8 @@ const childDescription = (child: PageSubNavigationChild) => {
 }
 
 .header-mega__grid {
-  column-count: 4;
-  column-gap: 14px;
+  column-count: 3;
+  column-gap: 16px;
 }
 
 .header-mega__grid--products {
@@ -370,6 +371,29 @@ const childDescription = (child: PageSubNavigationChild) => {
   padding: 0 var(--mega-card-padding) var(--mega-card-padding);
 }
 
+.header-mega__product-category-navigation :deep(.product-category-navigation-cards__all-link) {
+  border-color: rgba(181, 255, 109, 0.62);
+  background: rgba(181, 255, 109, 0.14);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.header-mega__product-category-navigation :deep(.product-category-navigation-cards__item) {
+  border-color: rgba(181, 255, 109, 0);
+  background: rgba(255, 255, 255, 0.055);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 12px 28px -24px rgba(0, 0, 0, 1);
+}
+
+.header-mega__product-category-navigation :deep(.product-category-navigation-cards__media) {
+  border-bottom-color: rgba(181, 255, 109, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.header-mega__product-category-navigation :deep(.product-category-navigation-cards__footer) {
+  background: rgba(11, 13, 17, 0.94);
+}
+
 .header-mega-card--card-shop .header-mega-card__main {
   flex: 0 0 auto;
   min-height: 0;
@@ -392,16 +416,20 @@ const childDescription = (child: PageSubNavigationChild) => {
   width: 100%;
   min-height: 132px;
   margin: 0 0 14px;
-  overflow: visible;
+  overflow: hidden;
   vertical-align: top;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
+  border: 1px solid rgba(181, 255, 109, 0);
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(18, 21, 25, 0.98), rgba(10, 12, 16, 0.98));
   color: inherit;
-  box-shadow: none;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 18px 44px -34px rgba(0, 0, 0, 1);
   transition:
-    color 0.22s ease,
-    background 0.22s ease;
+    border-color 0.18s ease,
+    background 0.18s ease,
+    box-shadow 0.18s ease,
+    color 0.22s ease;
 }
 
 .header-mega-card::before {
@@ -409,7 +437,11 @@ const childDescription = (child: PageSubNavigationChild) => {
 }
 
 .header-mega-card:hover {
-  background: transparent;
+  border-color: rgba(181, 255, 109, 0.2);
+  background: linear-gradient(180deg, rgba(22, 25, 30, 0.98), rgba(12, 14, 18, 0.98));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 20px 48px -32px rgba(0, 0, 0, 1);
 }
 
 .header-mega-card__main {
@@ -507,27 +539,29 @@ const childDescription = (child: PageSubNavigationChild) => {
 .header-mega-card__children {
   position: relative;
   z-index: 2;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 7px;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 8px;
   margin-top: 0;
   padding: 0 var(--mega-card-padding) var(--mega-card-padding);
 }
 
 .header-mega-card__child {
-  display: grid;
-  grid-template-columns: max-content minmax(0, 1fr) 18px;
-  min-height: 46px;
+  display: inline-flex;
+  max-width: 100%;
+  min-height: 38px;
   align-items: center;
-  column-gap: 10px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: #000000;
-  padding: 0.62rem 0.9rem;
+  justify-content: center;
+  gap: 7px;
+  border-radius: 999px;
+  border: 1px solid rgba(181, 255, 109, 0.18);
+  background: rgba(255, 255, 255, 0.055);
+  padding: 0.56rem 0.92rem 0.56rem 1rem;
   color: rgba(241, 245, 249, 0.86);
-  font-size: 16px;
-  font-weight: 750;
-  line-height: 1.3;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.1;
   text-decoration: none;
   transition:
     border-color 0.18s ease,
@@ -538,28 +572,28 @@ const childDescription = (child: PageSubNavigationChild) => {
 
 .header-mega-card__child:hover {
   border-color: var(--mega-accent);
-  background: #000000;
+  background: var(--mega-accent-soft);
   color: #ffffff;
   transform: translateY(-1px);
 }
 
+.header-mega-card__child:focus-visible {
+  outline: 2px solid rgba(181, 255, 109, 0.54);
+  outline-offset: 2px;
+}
+
 .header-mega-card__child-label {
   min-width: 0;
+  max-width: 100%;
   color: rgba(248, 250, 252, 0.92);
-  font-size: 16px;
+  font-size: 14px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .header-mega-card__child-description {
-  min-width: 0;
-  color: rgba(203, 213, 225, 0.58);
-  font-size: 16px;
-  font-weight: 650;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  display: none;
 }
 
 .header-mega-card__child:hover .header-mega-card__child-description {
@@ -568,6 +602,7 @@ const childDescription = (child: PageSubNavigationChild) => {
 
 .header-mega-card__child-arrow {
   display: inline-flex;
+  flex: 0 0 auto;
   align-items: center;
   justify-content: center;
   color: rgba(226, 232, 240, 0.58);
@@ -740,6 +775,7 @@ const childDescription = (child: PageSubNavigationChild) => {
 
   .header-mega__product-category-navigation {
     padding: 0 var(--mega-card-padding) var(--mega-card-padding);
+    overflow: visible;
   }
 
   .header-mega-card {
@@ -749,7 +785,7 @@ const childDescription = (child: PageSubNavigationChild) => {
     width: auto;
     margin: 0;
     break-inside: auto;
-    border-radius: 18px;
+    border-radius: 16px;
   }
 
   .header-mega-card__main {
@@ -767,28 +803,23 @@ const childDescription = (child: PageSubNavigationChild) => {
   }
 
   .header-mega-card__children {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
     margin-top: auto;
     padding-top: 0;
+    gap: 7px;
   }
 
   .header-mega-card__child {
-    display: inline-flex;
-    min-height: 30px;
+    min-height: 36px;
     justify-content: center;
-    border-radius: 999px;
-    font-size: var(--tz-type-micro-label);
-    line-height: 1;
+    padding: 0.55rem 0.82rem;
+    border-color: rgba(181, 255, 109, 0.16);
+    background: rgba(255, 255, 255, 0.055);
+    font-size: 13px;
+    line-height: 1.1;
   }
 
   .header-mega-card__child-label {
-    font-size: var(--tz-type-micro-label);
-  }
-
-  .header-mega-card__child-description {
-    display: none;
+    font-size: 13px;
   }
 
   .header-mega-card__child-arrow {

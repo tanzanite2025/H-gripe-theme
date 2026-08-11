@@ -151,7 +151,7 @@
       },
       "detail": {
         "metaTitle": "Blog",
-        "metaDescription": "Read the latest article from Tanzanite."
+        "metaDescription": "Read the latest article."
       }
     },
     "actions": {
@@ -247,7 +247,7 @@
       "title": "浏览记录"
     },
     "welcome": {
-      "logoAlt": "Tanzanite 客服聊天",
+      "logoAlt": "our 客服聊天",
       "title": "你好！",
       "description": "你可以与我们的团队聊天、查询订单，或在 FAQ 中查找答案。",
       "onlineTeam": "在线客服团队",
@@ -599,14 +599,14 @@
     },
     "index": {
       "title": "Company",
-      "intro": "Learn more about Tanzanite, our story, and how to reach us. Choose a section below to explore.",
+      "intro": "Learn more about our story, factory, and how to reach us. Choose a section below to explore.",
       "cards": {
         "about": {
-          "description": "Learn about our mission, values, and the team behind Tanzanite.",
-          "cta": "About Tanzanite"
+          "description": "Learn about our mission, values, and team.",
+          "cta": "About us"
         },
         "ourStory": {
-          "description": "Background of Tanzanite and the vision behind our products.",
+          "description": "Background on our product vision and the work behind it.",
           "cta": "Read our story"
         },
         "globalPartners": {
@@ -622,7 +622,7 @@
           "cta": "View certificates"
         },
         "contact": {
-          "description": "Get in touch with the Tanzanite team for enquiries and support.",
+          "description": "Get in touch with our team for enquiries and support.",
           "cta": "Contact us"
         }
       }
@@ -764,7 +764,7 @@
       "message": "描述您的反馈",
       "attachments": "上传图片",
       "membersOnly": "仅限会员",
-      "consent": "我同意共享这些信息，以便 Tanzanite 团队跟进。"
+      "consent": "I agree to share this information so our team can follow up."
     },
     "placeholders": {
       "fullName": "例如：张三",
@@ -863,7 +863,7 @@
       "resources": "RESOURCES"
     },
     "brand": {
-      "line1": "Tanzanite is a brand of Top Sports Co., Limited.",
+      "line1": "A brand of Top Sports Co., Limited.",
       "line2": "Flat 1602, 16/F, Lucky Centre,",
       "line3": "No.165-171 Wan Chai Road, Wan Chai",
       "line4": "Hong Kong.",
@@ -1359,7 +1359,7 @@
     "policyHeading": "电子商务网站隐私政策",
     "effectiveDate": "生效日期：[2025/11/11]",
     "section1Title": "1. 简介",
-    "section1Body": "欢迎访问 [www.tanzanite.site]。我们非常重视您的隐私，并致力于保护您的个人信息。本隐私政策说明了当您访问我们的网站 [www.tanzanite.site] 并使用我们的服务时，我们如何收集、使用、披露和保护您的数据。",
+    "section1Body": "欢迎访问 {site}。我们非常重视您的隐私，并致力于保护您的个人信息。本隐私政策说明了当您访问我们的网站 {site} 并使用我们的服务时，我们如何收集、使用、披露和保护您的数据。",
     "section2Title": "2. 我们收集的信息",
     "section2Intro": "我们可能会收集以下类型的个人信息：",
     "identityLabel": "身份数据",
@@ -1501,7 +1501,7 @@
       "loading": "正在加载商品...",
       "empty": {
         "title": "暂时没有可用商品。",
-        "description": "商品通过 Tanzanite 插件发布后，会自动显示在这里。",
+        "description": "Products will appear here automatically once they are published.",
         "categoryTitle": "{category} 分类下暂时没有商品。",
         "categoryDescription": "可以切换其它分类，或清除分类筛选查看全部商品。"
       }
@@ -1511,7 +1511,7 @@
       "view": "查看"
     },
     "feedback": {
-      "title": "分享你对 Tanzanite 商店的反馈"
+      "title": "Share your feedback about the store"
     }
   },
   "sidebar": {

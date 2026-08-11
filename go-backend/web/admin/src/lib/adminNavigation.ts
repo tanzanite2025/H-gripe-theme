@@ -191,6 +191,8 @@ export const adminNavigationItems: AdminNavigationItem[] = [
       { id: 'settings-social', path: '/settings/social', routeName: 'SettingsSocial', label: '社交媒体' },
       { id: 'settings-currency', path: '/settings/currency', routeName: 'SettingsCurrency', label: '价格币种' },
       { id: 'settings-markets', path: '/settings/markets', routeName: 'SettingsMarkets', label: '市场与本地化语种' },
+      { id: 'settings-website-profile', path: '/settings/website-profile', routeName: 'SettingsWebsiteProfile', label: '我与这个网站' },
+      { id: 'settings-paypal-invoice-seller-profile', path: '/settings/paypal-invoice-seller-profile', routeName: 'SettingsPayPalInvoiceSellerProfile', label: 'PayPal 发票卖方资料' },
       { id: 'settings-api', path: '/settings/api', routeName: 'SettingsApi', label: 'API 管理' },
       { id: 'settings-commercial-crawler', path: '/settings/commercial-crawler', routeName: 'SettingsCommercialCrawler', label: '商业爬虫防护' },
     ],

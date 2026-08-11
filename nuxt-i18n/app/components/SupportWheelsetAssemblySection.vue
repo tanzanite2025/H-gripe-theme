@@ -6,7 +6,7 @@
         Wheelset Assembly Instructions
       </h2>
       <p class="tz-text-secondary text-sm leading-relaxed mb-6 max-w-3xl mx-auto">
-         This guide outlines the standard procedure for assembling Tanzanite wheelsets, ensuring durability, safety, and optimal performance.
+         This guide outlines the standard procedure for assembling our wheelsets, ensuring durability, safety, and optimal performance.
       </p>
     </div>
     

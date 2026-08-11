@@ -21,7 +21,7 @@
     "message": "描述您的反馈",
     "attachments": "上传图片",
     "membersOnly": "仅限会员",
-    "consent": "我同意共享这些信息，以便 Tanzanite 团队跟进。"
+    "consent": "I agree to share this information so our team can follow up."
   },
   "placeholders": {
     "fullName": "例如：张三",

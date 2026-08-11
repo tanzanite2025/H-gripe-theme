@@ -17,4 +17,4 @@ C:\Users\P16V\Desktop\Wordpress\tanzanite-theme\nuxt-i18n\public\testreport\whee
 Disclaimer
 We pick only one sample for every test report and the results will likely vary as the rim diameters change. Please note that the differences between models in test results are specially designed by our engineers for the intended uses.
 
-All the test results of this section are based on the lab criteria of TANZANITE and are implemented at our well-established testing facilities. TANZANITE is only responsible for the test results themselves which are not set for any comparison to other brands or such regards.
+All the test results of this section are based on our lab criteria and are implemented at our well-established testing facilities. Our team is only responsible for the test results themselves which are not set for any comparison to other brands or such regards.

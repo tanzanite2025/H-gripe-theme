@@ -192,10 +192,10 @@ export interface WheelBuildPreset {
 export const PRESET_BUILDS: WheelBuildPreset[] = [
     {
         id: 'tz_ar45_dt350_fr',
-        name: 'Tanzanite AR 45 Disc + DT Swiss 350',
+        name: 'AR 45 Disc + DT Swiss 350',
         description: 'Popular all-rounder build. Reliable ratchet hub with aero rim.',
         keywords: ['350', '240', 'dt swiss', '45mm', 'ar45', 'disc', 'road'],
-        rimBrandId: 'dt_swiss', // Demo: using DT rim as proxy for "Tanzanite" in this demo phase
+        rimBrandId: 'dt_swiss', // Demo: using DT rim as a proxy in this demo phase
         rimModelId: 'rr411_db', // Demo: using RR411 as proxy
         hubBrandId: 'dt_swiss',
         hubModelId: '350_road_db_cl',
@@ -206,7 +206,7 @@ export const PRESET_BUILDS: WheelBuildPreset[] = [
     },
     {
         id: 'tz_ar50_dt240_fr',
-        name: 'Tanzanite AR 50 Disc + DT Swiss 240 EXP',
+        name: 'AR 50 Disc + DT Swiss 240 EXP',
         description: 'Lightweight racing build. Top-tier hub performance.',
         keywords: ['240', 'dt swiss', '50mm', 'ar50', 'exp', 'racing'],
         rimBrandId: 'dt_swiss',

@@ -151,7 +151,7 @@
       },
       "detail": {
         "metaTitle": "Blog",
-        "metaDescription": "Read the latest article from Tanzanite."
+        "metaDescription": "Read the latest article."
       }
     },
     "actions": {
@@ -221,7 +221,7 @@
       "title": "Browsing history"
     },
     "welcome": {
-      "logoAlt": "Tanzanite chat",
+      "logoAlt": "customer support chat",
       "title": "Hi there!",
       "description": "Chat with our team, track your orders, or find answers in our FAQ.",
       "onlineTeam": "Online support team",
@@ -599,14 +599,14 @@
     },
     "index": {
       "title": "Company",
-      "intro": "Learn more about Tanzanite, our story, and how to reach us. Choose a section below to explore.",
+      "intro": "Learn more about our story, factory, and how to reach us. Choose a section below to explore.",
       "cards": {
         "about": {
-          "description": "Learn about our mission, values, and the team behind Tanzanite.",
-          "cta": "About Tanzanite"
+          "description": "Learn about our mission, values, and team.",
+          "cta": "About us"
         },
         "ourStory": {
-          "description": "Background of Tanzanite and the vision behind our products.",
+          "description": "Background on our product vision and the work behind it.",
           "cta": "Read our story"
         },
         "globalPartners": {
@@ -622,7 +622,7 @@
           "cta": "View certificates"
         },
         "contact": {
-          "description": "Get in touch with the Tanzanite team for enquiries and support.",
+          "description": "Get in touch with our team for enquiries and support.",
           "cta": "Contact us"
         }
       }
@@ -764,7 +764,7 @@
       "message": "Describe your feedback",
       "attachments": "Attach photos",
       "membersOnly": "Members only",
-      "consent": "I agree to share this information so the Tanzanite team can follow up."
+      "consent": "I agree to share this information so our team can follow up."
     },
     "placeholders": {
       "fullName": "e.g. Alex Chen",
@@ -863,7 +863,7 @@
       "pictureWarehouse": "Picture warehouse"
     },
     "brand": {
-      "line1": "Tanzanite is a brand of Top Sports Co., Limited.",
+      "line1": "A brand of Top Sports Co., Limited.",
       "line2": "Flat 1602, 16/F, Lucky Centre,",
       "line3": "No.165-171 Wan Chai Road, Wan Chai",
       "line4": "Hong Kong.",
@@ -1359,7 +1359,7 @@
     "policyHeading": "ई‑कॉमर्स वेबसाइट के लिए गोपनीयता नीति",
     "effectiveDate": "प्रभावी तिथि: [2025/11/11]",
     "section1Title": "1. परिचय",
-    "section1Body": "[www.tanzanite.site] पर आपका स्वागत है। हम आपकी गोपनीयता को महत्व देते हैं और आपके व्यक्तिगत डेटा की सुरक्षा के लिए प्रतिबद्ध हैं। यह गोपनीयता नीति बताती है कि जब आप हमारी वेबसाइट [www.tanzanite.site] पर आते हैं और हमारी सेवाओं का उपयोग करते हैं, तब हम आपका डेटा कैसे एकत्रित, उपयोग, प्रकट और सुरक्षित करते हैं।",
+    "section1Body": "{site} पर आपका स्वागत है। हम आपकी गोपनीयता को महत्व देते हैं और आपके व्यक्तिगत डेटा की सुरक्षा के लिए प्रतिबद्ध हैं। यह गोपनीयता नीति बताती है कि जब आप हमारी वेबसाइट {site} पर आते हैं और हमारी सेवाओं का उपयोग करते हैं, तब हम आपका डेटा कैसे एकत्रित, उपयोग, प्रकट और सुरक्षित करते हैं।",
     "section2Title": "2. हम कौन‑सी जानकारी एकत्रित करते हैं",
     "section2Intro": "हम निम्न प्रकार के व्यक्तिगत डेटा एकत्रित कर सकते हैं:",
     "identityLabel": "पहचान संबंधी डेटा",
@@ -1501,7 +1501,7 @@
       "loading": "उत्पाद लोड हो रहे हैं...",
       "empty": {
         "title": "अभी कोई उत्पाद उपलब्ध नहीं है।",
-        "description": "Tanzanite प्लगइन से उत्पाद प्रकाशित होने पर वे यहाँ अपने आप दिखाई देंगे।",
+        "description": "Products will appear here automatically once they are published.",
         "categoryTitle": "No products are available in {category} yet.",
         "categoryDescription": "Try another category or clear the category filter to view all products."
       }
@@ -1511,7 +1511,7 @@
       "view": "देखें"
     },
     "feedback": {
-      "title": "Tanzanite दुकान के बारे में अपनी प्रतिक्रिया साझा करें"
+      "title": "Share your feedback about the store"
     }
   },
   "sidebar": {

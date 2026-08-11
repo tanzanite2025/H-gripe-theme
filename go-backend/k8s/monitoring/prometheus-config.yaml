@@ -81,7 +81,7 @@ data:
           action: replace
           target_label: kubernetes_pod_name
 
-      # Tanzanite API
+      # Storefront API
       - job_name: 'tanzanite-api'
         kubernetes_sd_configs:
         - role: pod
@@ -136,7 +136,7 @@ data:
         labels:
           severity: critical
         annotations:
-          summary: "Tanzanite API is down"
+          summary: "Storefront API is down"
           description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} is down for more than 1 minute."
 
       # 高错误率告警

@@ -27,6 +27,7 @@ type PaymentRequest struct {
 	CancelURL      string            `json:"cancel_url"`
 	NotifyURL      string            `json:"notify_url,omitempty"`
 	ThreeDSecure   string            `json:"three_ds_secure,omitempty"`
+	CardBIN        string            `json:"card_bin,omitempty"`
 	IdempotencyKey string            `json:"-"`
 	Metadata       map[string]string `json:"metadata"`
 }

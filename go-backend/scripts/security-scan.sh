@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #############################################
-# Tanzanite security scan
+# Storefront security scan
 #
 # The release image must be supplied explicitly:
 #   REQUIRE_IMAGE_SCAN=true IMAGE_REF=ghcr.io/example/tanzanite-theme-api:sha-... ./scripts/security-scan.sh
@@ -60,7 +60,7 @@ mkdir -p "${REPORT_DIR}"
 
 echo ""
 echo "=========================================="
-echo "  Tanzanite 安全扫描"
+echo "  Storefront 安全扫描"
 echo "=========================================="
 echo ""
 
@@ -185,7 +185,7 @@ else
 fi
 
 cat > "${REPORT_DIR}/security-report.md" <<EOF
-# Tanzanite Security Scan
+# Storefront Security Scan
 
 Generated: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
 

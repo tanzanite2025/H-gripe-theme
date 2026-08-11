@@ -34,14 +34,24 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import SidePanel from './components/SidePanel.vue'
 import AccountSidebarPanel from '~/components/account/AccountSidebarPanel.vue'
 import SiteHeader from '~/components/SiteHeader.vue'
 import { useChatWidget } from '~/composables/useChatWidget'
+import { useShopCategories } from '~/composables/useShopCategories'
 
 // 全局聊天状态
 const { currentConversation, closeChat } = useChatWidget()
+const { loadCategories: prefetchShopCategories } = useShopCategories()
 
 const siteHeaderRef = ref<InstanceType<typeof SiteHeader> | null>(null)
+
+if (import.meta.server) {
+  await prefetchShopCategories().catch(() => [])
+}
+
+onMounted(() => {
+  void prefetchShopCategories().catch(() => {})
+})
 </script>

@@ -1,4 +1,4 @@
--- Initial Database Schema for Tanzanite Go Backend
+-- Initial Database Schema for Storefront Go Backend
 -- Applied by golang-migrate during server startup.
 
 -- Users Table

@@ -1,4 +1,4 @@
-name: tanzanite-theme
+name: ${COMPOSE_PROJECT_NAME:-h-gripe-theme}
 
 x-logging: &default-logging
   driver: json-file
@@ -18,6 +18,7 @@ x-api-environment: &api-environment
   DB_NAME: ${DB_NAME:?DB_NAME is required}
   DB_AUTO_MIGRATE: "false"
   DB_LOG_LEVEL: silent
+  PAYMENT_CONFIG_MASTER_KEY: ${PAYMENT_CONFIG_MASTER_KEY:?PAYMENT_CONFIG_MASTER_KEY is required}
   REDIS_HOST: redis
   REDIS_PORT: "6379"
   REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
@@ -66,7 +67,7 @@ x-api-environment: &api-environment
   SMTP_USERNAME: ${SMTP_USERNAME:?SMTP_USERNAME is required}
   SMTP_PASSWORD: ${SMTP_PASSWORD:?SMTP_PASSWORD is required}
   SMTP_FROM: ${SMTP_FROM:?SMTP_FROM is required}
-  SMTP_FROM_NAME: ${SMTP_FROM_NAME:-Tanzanite}
+  SMTP_FROM_NAME: ${SMTP_FROM_NAME:-Store Support}
   TURNSTILE_REQUIRED: ${TURNSTILE_REQUIRED:-true}
   TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:?TURNSTILE_SECRET_KEY is required}
   VERIFICATION_IP_WINDOW_SECONDS: ${VERIFICATION_IP_WINDOW_SECONDS:-60}
@@ -207,11 +208,12 @@ services:
       PORT: "3000"
       NUXT_PUBLIC_API_BASE: /api/v1
       NUXT_API_INTERNAL_ORIGIN: http://api:9000
+      NUXT_PUBLIC_SITE_URL: ${NUXT_PUBLIC_SITE_URL:-https://tanzanite.site}
       NUXT_PUBLIC_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       NUXT_PUBLIC_REQUEST_SIGNING_KEY: ${REQUEST_SIGNING_KEY:?REQUEST_SIGNING_KEY is required}
       NUXT_PUBLIC_TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY:?TURNSTILE_SITE_KEY is required}
       NUXT_HTML_CACHE_DRIVER: ${NUXT_HTML_CACHE_DRIVER:-redis}
-      NUXT_HTML_CACHE_PREFIX: ${NUXT_HTML_CACHE_PREFIX:-tanzanite:storefront:html-cache}
+      NUXT_HTML_CACHE_PREFIX: ${NUXT_HTML_CACHE_PREFIX:-h-gripe:storefront:html-cache}
       NUXT_HTML_CACHE_REDIS_HOST: redis
       NUXT_HTML_CACHE_REDIS_PORT: "6379"
       NUXT_HTML_CACHE_REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
@@ -315,8 +317,8 @@ networks:
 
 volumes:
   postgres_data:
-    name: tanzanite-theme-postgres-data
+    name: ${POSTGRES_DATA_VOLUME_NAME:-h-gripe-theme-postgres-data}
   redis_data:
-    name: tanzanite-theme-redis-data
+    name: ${REDIS_DATA_VOLUME_NAME:-h-gripe-theme-redis-data}
   uploads:
-    name: tanzanite-theme-uploads
+    name: ${UPLOADS_VOLUME_NAME:-h-gripe-theme-uploads}

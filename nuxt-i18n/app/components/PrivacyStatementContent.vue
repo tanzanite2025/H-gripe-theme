@@ -11,12 +11,7 @@
       {{ $t('privacy.section1Title', '1. Introduction') }}
     </p>
     <p>
-      {{
-        $t(
-          'privacy.section1Body',
-          'Welcome to [www.tanzanite.site]. We value your privacy and are committed to protecting your personal information. This Privacy Policy explains how we collect, use, disclose, and safeguard your data when you visit our website [www.tanzanite.site] and use our services.'
-        )
-      }}
+      {{ introductionText }}
     </p>
 
     <p class="font-semibold text-white mt-4">
@@ -282,5 +277,16 @@
 </template>
 
 <script setup lang="ts">
-// purely presentational content component
+import { computed } from 'vue'
+import { useI18n, useRequestURL } from '#imports'
+
+const { t } = useI18n()
+const requestUrl = useRequestURL()
+const siteLabel = computed(() => requestUrl.hostname || requestUrl.host || 'this website')
+
+const introductionText = computed(() => {
+  const value = t('privacy.section1Body', { site: siteLabel.value })
+  if (value && value !== 'privacy.section1Body') return value
+  return `Welcome to ${siteLabel.value}. We value your privacy and are committed to protecting your personal information. This Privacy Policy explains how we collect, use, disclose, and safeguard your data when you visit ${siteLabel.value} and use our services.`
+})
 </script>

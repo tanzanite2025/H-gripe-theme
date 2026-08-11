@@ -1,10 +1,10 @@
-# Tanzanite Theme Hostinger VPS Docker Runbook
+# Storefront Theme Hostinger VPS Docker Runbook
 
-This runbook applies only to the `tanzanite-theme` storefront, admin, and Go API. The ERP application remains a separate Compose project with separate images, databases, volumes, and production secrets.
+This runbook applies only to the `h-gripe-theme` storefront, admin, and Go API. The ERP application remains a separate Compose project with separate images, databases, volumes, and production secrets.
 
 ## Production Boundary
 
-The Hostinger VPS has one shared public gateway project named `tanzanite-edge`. Tanzanite Theme joins that gateway network as a separate Compose project named `tanzanite-theme`.
+The Hostinger VPS has one shared public gateway project named `tanzanite-edge`. The storefront joins that gateway network as a separate Compose project named `h-gripe-theme`.
 
 Current Hostinger VPS target:
 
@@ -23,7 +23,7 @@ Cloudflare
       -> tanzanite.site     -> theme-web:8080
       -> admin.tanzanite.site -> theme-web:8080
 
-tanzanite-theme project
+h-gripe-theme project
   -> web -> storefront
          -> admin
          -> api -> PostgreSQL
@@ -31,7 +31,7 @@ tanzanite-theme project
                 -> uploads volume
 ```
 
-The shared gateway is infrastructure. It is not the ERP application and it is not the Tanzanite Theme application.
+The shared gateway is infrastructure. It is not the ERP application and it is not the storefront application.
 
 Browser API requests stay same-origin through `web`. Nuxt server-side requests to `/api/**` use Nitro's internal proxy and go directly to `api:9000`, so SSR does not loop through Cloudflare or the public gateway.
 
@@ -44,6 +44,8 @@ Browser API requests stay same-origin through `web`. Nuxt server-side requests t
 | `deployment/docker/web.Dockerfile` | Internal Nginx entry image |
 | `deployment/nginx/theme-web.conf` | Same-origin API, storefront, admin, and upload routing |
 | `deployment/edge/tanzanite-theme.caddy` | Route fragment for the shared Caddy gateway |
+| `docs/ops/learn-gripe-cutover.md` | Prepared migration procedure for the replacement storefront domain |
+| `deployment/verify-vps-release-boundary.sh` | Static and runtime Compose/network release evidence |
 | `.github/workflows/publish-images.yml` | GHCR image publishing |
 | `deploy.sh` | Recommended SSH deployment path |
 
@@ -53,9 +55,9 @@ The root `docker-compose.yml` remains a local development convenience and must n
 
 The production project must keep these boundaries:
 
-1. Project name: `tanzanite-theme`.
+1. Project name: `h-gripe-theme`.
 2. Images: `ghcr.io/tanzanite2025/tanzanite-theme-*`.
-3. Volumes: `tanzanite-theme-postgres-data`, `tanzanite-theme-redis-data`, and `tanzanite-theme-uploads`.
+3. Volumes: `h-gripe-theme-postgres-data`, `h-gripe-theme-redis-data`, and `h-gripe-theme-uploads`.
 4. Data networks: project-owned internal `db` and `cache` networks.
 5. Application network: project-owned `app` network for service-to-service traffic and required outbound integrations.
 6. Shared network: external `tanzanite-edge`, joined only by `web`.
@@ -63,6 +65,13 @@ The production project must keep these boundaries:
 8. No `container_name` and no host `ports` in the business stack.
 9. No ERP environment variables, volumes, image tags, or database credentials.
 10. `TRUSTED_PROXIES` contains only private Docker CIDRs. The shared Caddy gateway remains responsible for strict Cloudflare proxy trust.
+
+The Compose file now defaults to the `h-gripe-theme` project and volume names. Existing
+VPS resources named `tanzanite-theme-*` are not renamed automatically. During a
+volume migration, set `COMPOSE_PROJECT_NAME`, `POSTGRES_DATA_VOLUME_NAME`,
+`REDIS_DATA_VOLUME_NAME`, and `UPLOADS_VOLUME_NAME` in the untracked production env
+to the old names until the backups and data copy have been verified. Do not start
+the new boundary against empty volumes before that migration is complete.
 
 Database and cache reachability is intentional:
 
@@ -106,7 +115,7 @@ The script fetches `origin/master`, resolves the full commit SHA, waits for all 
 In Hostinger Docker Manager create:
 
 ```text
-Project name: tanzanite-theme
+Project name: h-gripe-theme
 Compose source: compose.prod.yml
 Environment: deployment/production.env values, including IMAGE_TAG=master
 ```
@@ -128,6 +137,29 @@ Expected services:
 
 All six services must become Healthy. Only the shared `tanzanite-edge` gateway may publish host ports.
 
+## Release Boundary Evidence
+
+Run the repository-provided verifier from the same checkout and with the same
+`deployment/production.env` used for the release. It uses the resolved network
+names from `docker compose config --format json`; it does not infer names from
+the repository directory.
+
+Before deployment, record the static Compose boundary:
+
+```bash
+./deployment/verify-vps-release-boundary.sh
+```
+
+After the services are healthy, record runtime network and port evidence:
+
+```bash
+CHECK_CONNECTIVITY=true ./deployment/verify-vps-release-boundary.sh
+```
+
+Each run writes a timestamped directory under `release-evidence/`. The
+Compose JSON is sanitized before it is retained. Copy the report directory to
+the release evidence store and keep it with the exact image tag or digest.
+
 ## Add Shared Gateway Routes
 
 Merge `deployment/edge/tanzanite-theme.caddy` into the existing `tanzanite-edge` Caddyfile without changing the ERP route.
@@ -139,11 +171,11 @@ tanzanite.site, www.tanzanite.site -> theme-web:8080
 admin.tanzanite.site               -> theme-web:8080
 ```
 
-Updating the shared gateway is a separate infrastructure operation. Do not copy the Tanzanite application Compose into the ERP project and do not replace the gateway project.
+Updating the shared gateway is a separate infrastructure operation. Do not copy the storefront Compose into the ERP project and do not replace the gateway project.
 
 ## Cloudflare Cutover
 
-The existing root A and AAAA records still point to the old PHP host. Perform the cutover only after all Tanzanite containers are Healthy and the gateway route exists.
+The existing root A and AAAA records still point to the old PHP host. Perform the cutover only after all storefront containers are Healthy and the gateway route exists.
 
 1. Leave `erp.tanzanite.site` unchanged.
 2. Update the existing root A record to the Hostinger VPS IPv4.
@@ -214,12 +246,12 @@ Normal release:
 
 1. Push the tested commit to `master`.
 2. Wait for the publish-images workflow to finish.
-3. For MCP deployment, call `VPS_getVirtualMachinesV1`, confirm VM `1834903`, call `VPS_getProjectListV1`, confirm the existing `tanzanite-theme` project, then call `VPS_updateProjectV1` for that project. For SSH deployment, run `./deploy.sh` on the VPS for an immutable SHA release.
+3. For MCP deployment, call `VPS_getVirtualMachinesV1`, confirm VM `1834903`, call `VPS_getProjectListV1`, confirm the existing `h-gripe-theme` project, then call `VPS_updateProjectV1` for that project. For SSH deployment, run `./deploy.sh` on the VPS for an immutable SHA release.
 4. Verify all containers and smoke tests.
 
 For a Hostinger Docker Manager release, keep `IMAGE_TAG=master` and run Project Update.
 
-Do not use `VPS_createNewProjectV1` for routine releases. It is only for initial project creation or deliberate project replacement. A normal release must update the existing `tanzanite-theme` Compose project so PostgreSQL, Redis, uploads, networks, and environment stay attached to the same production boundary.
+Do not use `VPS_createNewProjectV1` for routine releases. It is only for initial project creation or deliberate project replacement. A normal release must update the existing `h-gripe-theme` Compose project so PostgreSQL, Redis, uploads, networks, and environment stay attached to the same production boundary.
 
 If a local helper command is unavailable, for example Windows blocks the bundled `rg.exe`, use an equivalent read-only PowerShell command such as `Get-ChildItem ... | Select-String ...`. Treat local tooling failures as local diagnostics, not as proof that the production deployment target is wrong.
 
@@ -235,7 +267,7 @@ Database migrations need their own rollback plan. Image rollback cannot reverse 
 Before accepting production data, establish:
 
 - Daily PostgreSQL logical backups.
-- Daily backup of `tanzanite-theme-uploads`.
+- Daily backup of `h-gripe-theme-uploads`.
 - Off-VPS copy of both backup sets.
 - Monthly restore exercise.
 

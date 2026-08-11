@@ -9,6 +9,7 @@ import (
 	"tanzanite/internal/pkg/antibot"
 	"tanzanite/internal/pkg/antifraud"
 	"tanzanite/internal/pkg/cache"
+	"tanzanite/internal/pkg/cardtesting"
 	"tanzanite/internal/pkg/config"
 	"tanzanite/internal/pkg/email"
 	"tanzanite/internal/pkg/orderabuse"
@@ -22,13 +23,14 @@ import (
 )
 
 type Dependencies struct {
-	Repositories Repositories
-	Services     Services
-	Storage      storage.StorageService
-	AntiBot      *antibot.Service
-	AntiFraud    *antifraud.Service
-	OrderAbuse   *orderabuse.Service
-	RedisClient  *redis.Client
+	Repositories   Repositories
+	Services       Services
+	Storage        storage.StorageService
+	AntiBot        *antibot.Service
+	AntiFraud      *antifraud.Service
+	CardBINLimiter *cardtesting.Service
+	OrderAbuse     *orderabuse.Service
+	RedisClient    *redis.Client
 }
 
 type Repositories struct {
@@ -75,56 +77,58 @@ type Repositories struct {
 }
 
 type Services struct {
-	Auth                       *service.AuthService
-	Post                       *service.PostService
-	Product                    *service.ProductService
-	ProductInformationTemplate *service.ProductInformationTemplateService
-	Cart                       *service.CartService
-	Setting                    *service.SettingService
-	AdminSettings              *service.AdminSettingsService
-	SEO                        *service.SEOService
-	SEOResources               *service.SEOResourceService
-	Analytics                  *service.AnalyticsService
-	AdminPublicChat            *service.AdminPublicChatAgentService
-	FAQ                        *service.FAQService
-	Gallery                    *service.GalleryService
-	Media                      *service.MediaService
-	Registration               *service.RegistrationService
-	Checkout                   *service.CheckoutService
-	Order                      *service.OrderService
-	Payment                    *service.PaymentService
-	Marketing                  *service.MarketingService
-	LoyaltyProgram             *service.LoyaltyProgramService
-	Review                     *service.ReviewService
-	Ticket                     *service.TicketService
-	CustomerServiceContext     *service.CustomerServiceContextService
-	CustomerServiceEvents      *service.CustomerServiceEventHub
-	Subscription               *service.SubscriptionService
-	Sitemap                    *service.SitemapService
-	Showcase                   *service.ShowcaseService
-	Wishlist                   *service.WishlistService
-	Feedback                   *service.FeedbackService
-	SuggestionFeedback         *service.SuggestionFeedbackService
-	User                       *service.UserService
-	Dashboard                  *service.DashboardService
-	Audit                      *service.AuditService
-	Shipping                   *service.ShippingService
-	Spoke                      *service.SpokeService
-	QuickBuy                   *service.QuickBuyService
-	VisitorProfile             *service.VisitorProfileService
-	BehaviorEvents             *service.BehaviorEventService
-	Recommendations            *service.RecommendationService
-	VisitorRisk                *service.VisitorRiskService
-	PaymentRiskMonitoring      *service.PaymentRiskMonitoringService
-	PaymentProtection          *service.PaymentProtectionService
-	PaymentRefundReview        *service.PaymentRefundRecommendationService
-	PaymentThreeDS             *service.PaymentThreeDSPolicyService
-	Outbox                     *service.OutboxService
-	CurrencyPolicy             *service.CurrencyPolicyService
-	ExchangeRate               *service.ExchangeRateService
-	StorefrontMarket           *service.StorefrontMarketService
-	StorefrontContext          *service.StorefrontContextService
-	GoogleMerchant             *service.GoogleMerchantService
+	Auth                              *service.AuthService
+	Post                              *service.PostService
+	Product                           *service.ProductService
+	ProductInformationTemplate        *service.ProductInformationTemplateService
+	Cart                              *service.CartService
+	Setting                           *service.SettingService
+	WebsiteProfile                    *service.WebsiteProfileService
+	PayPalDisputeInvoiceSellerProfile *service.PayPalDisputeInvoiceSellerProfileService
+	AdminSettings                     *service.AdminSettingsService
+	SEO                               *service.SEOService
+	SEOResources                      *service.SEOResourceService
+	Analytics                         *service.AnalyticsService
+	AdminPublicChat                   *service.AdminPublicChatAgentService
+	FAQ                               *service.FAQService
+	Gallery                           *service.GalleryService
+	Media                             *service.MediaService
+	Registration                      *service.RegistrationService
+	Checkout                          *service.CheckoutService
+	Order                             *service.OrderService
+	Payment                           *service.PaymentService
+	Marketing                         *service.MarketingService
+	LoyaltyProgram                    *service.LoyaltyProgramService
+	Review                            *service.ReviewService
+	Ticket                            *service.TicketService
+	CustomerServiceContext            *service.CustomerServiceContextService
+	CustomerServiceEvents             *service.CustomerServiceEventHub
+	Subscription                      *service.SubscriptionService
+	Sitemap                           *service.SitemapService
+	Showcase                          *service.ShowcaseService
+	Wishlist                          *service.WishlistService
+	Feedback                          *service.FeedbackService
+	SuggestionFeedback                *service.SuggestionFeedbackService
+	User                              *service.UserService
+	Dashboard                         *service.DashboardService
+	Audit                             *service.AuditService
+	Shipping                          *service.ShippingService
+	Spoke                             *service.SpokeService
+	QuickBuy                          *service.QuickBuyService
+	VisitorProfile                    *service.VisitorProfileService
+	BehaviorEvents                    *service.BehaviorEventService
+	Recommendations                   *service.RecommendationService
+	VisitorRisk                       *service.VisitorRiskService
+	PaymentRiskMonitoring             *service.PaymentRiskMonitoringService
+	PaymentProtection                 *service.PaymentProtectionService
+	PaymentRefundReview               *service.PaymentRefundRecommendationService
+	PaymentThreeDS                    *service.PaymentThreeDSPolicyService
+	Outbox                            *service.OutboxService
+	CurrencyPolicy                    *service.CurrencyPolicyService
+	ExchangeRate                      *service.ExchangeRateService
+	StorefrontMarket                  *service.StorefrontMarketService
+	StorefrontContext                 *service.StorefrontContextService
+	GoogleMerchant                    *service.GoogleMerchantService
 }
 
 func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Config) (*Dependencies, error) {
@@ -194,6 +198,7 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 	shippingService := service.NewShippingService(repos.Shipping, repos.Product)
 	antiBotService := antibot.New(redisCache.Client(), cfg.AntiAbuse)
 	antiFraudService := antifraud.New(redisCache.Client(), cfg.PaymentRisk)
+	cardBINLimiter := cardtesting.New(redisCache.Client(), cfg.PaymentBINRateLimit)
 	orderAbuseService := orderabuse.New(redisCache.Client(), cfg.OrderAbuse)
 
 	storefrontHTMLCacheInvalidator := service.NewStorefrontHTMLCacheInvalidatorFromEnv()
@@ -233,35 +238,37 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 	}
 
 	services := Services{
-		Auth:                       service.NewAuthService(repos.User, cfg.JWT, cfg.OAuth),
-		Post:                       postService,
-		Product:                    productService,
-		ProductInformationTemplate: service.NewProductInformationTemplateService(repos.ProductInformationTemplate),
-		Cart:                       service.NewCartService(repos.Cart, repos.Product),
-		Setting:                    settingService,
-		SEO:                        seoService,
-		SEOResources:               seoResourceService,
-		Analytics:                  analyticsService,
-		CurrencyPolicy:             currencyPolicyService,
-		ExchangeRate:               exchangeRateService,
-		StorefrontMarket:           storefrontMarketService,
-		StorefrontContext:          service.NewStorefrontContextServiceWithMarkets(currencyPolicyService, storefrontMarketService),
-		GoogleMerchant:             googleMerchantService,
-		FAQ:                        service.NewFAQService(repos.FAQ, storageSvc),
-		Gallery:                    service.NewGalleryService(repos.Gallery),
-		Media:                      mediaService,
-		Registration:               service.NewRegistrationService(repos.Registration, repos.Product, repos.Order),
-		Checkout:                   service.NewCheckoutService(repos.Product, repos.Coupon, repos.Payment, repos.Loyalty, shippingService),
-		Marketing:                  service.NewMarketingService(txManager, repos.Coupon, repos.Loyalty, settingService),
-		LoyaltyProgram:             loyaltyProgramService,
-		Review:                     service.NewReviewService(repos.Review),
-		Ticket:                     service.NewTicketService(repos.Ticket, repos.User, repos.FAQ),
-		CustomerServiceEvents:      service.NewCustomerServiceEventHub(),
-		Subscription:               service.NewSubscriptionService(repos.Subscription),
-		Sitemap:                    service.NewSitemapService(repos.Post, cfg.Server.BaseURL),
-		Showcase:                   service.NewShowcaseService(repos.Showcase, storageSvc),
-		Wishlist:                   service.NewWishlistService(repos.Wishlist, repos.Product),
-		Feedback:                   service.NewFeedbackService(repos.Feedback),
+		Auth:                              service.NewAuthService(repos.User, cfg.JWT, cfg.OAuth),
+		Post:                              postService,
+		Product:                           productService,
+		ProductInformationTemplate:        service.NewProductInformationTemplateService(repos.ProductInformationTemplate),
+		Cart:                              service.NewCartService(repos.Cart, repos.Product),
+		Setting:                           settingService,
+		WebsiteProfile:                    service.NewWebsiteProfileService(settingService),
+		PayPalDisputeInvoiceSellerProfile: service.NewPayPalDisputeInvoiceSellerProfileService(settingService),
+		SEO:                               seoService,
+		SEOResources:                      seoResourceService,
+		Analytics:                         analyticsService,
+		CurrencyPolicy:                    currencyPolicyService,
+		ExchangeRate:                      exchangeRateService,
+		StorefrontMarket:                  storefrontMarketService,
+		StorefrontContext:                 service.NewStorefrontContextServiceWithMarkets(currencyPolicyService, storefrontMarketService),
+		GoogleMerchant:                    googleMerchantService,
+		FAQ:                               service.NewFAQService(repos.FAQ, storageSvc),
+		Gallery:                           service.NewGalleryService(repos.Gallery, repos.Media),
+		Media:                             mediaService,
+		Registration:                      service.NewRegistrationService(repos.Registration, repos.Product, repos.Order),
+		Checkout:                          service.NewCheckoutService(repos.Product, repos.Coupon, repos.Payment, repos.Loyalty, shippingService),
+		Marketing:                         service.NewMarketingService(txManager, repos.Coupon, repos.Loyalty, settingService),
+		LoyaltyProgram:                    loyaltyProgramService,
+		Review:                            service.NewReviewService(repos.Review),
+		Ticket:                            service.NewTicketService(repos.Ticket, repos.User, repos.FAQ),
+		CustomerServiceEvents:             service.NewCustomerServiceEventHub(),
+		Subscription:                      service.NewSubscriptionService(repos.Subscription),
+		Sitemap:                           service.NewSitemapService(repos.Post, cfg.Server.BaseURL),
+		Showcase:                          service.NewShowcaseService(repos.Showcase, storageSvc),
+		Wishlist:                          service.NewWishlistService(repos.Wishlist, repos.Product),
+		Feedback:                          service.NewFeedbackService(repos.Feedback),
 		SuggestionFeedback: service.NewSuggestionFeedbackService(
 			repos.SuggestionFeedback,
 		),
@@ -334,6 +341,11 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 	services.Payment = service.NewPaymentService(txManager, repos.Payment)
 	services.Payment.ConfigureRisk(repos.Order, antiFraudService)
 	services.Payment.ConfigureEvidenceSources(repos.Order, repos.Shipping, repos.Ticket)
+	services.Payment.ConfigurePayPalDisputeEvidenceDocumentStorage(storageSvc)
+	services.Payment.ConfigurePayPalDisputeInvoiceSellerProfileProvider(services.PayPalDisputeInvoiceSellerProfile)
+	services.Payment.ConfigurePayPalDisputeInvoiceOptions(service.PayPalDisputeInvoiceOptions{
+		AutoAttachPDF: envBoolDefault("PAYPAL_DISPUTE_AUTO_ATTACH_INVOICE_PDF", true),
+	})
 	services.PaymentThreeDS = service.NewPaymentThreeDSPolicyService(
 		repos.Order,
 		services.VisitorRisk,
@@ -362,12 +374,28 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 	services.Outbox.RegisterHandler(outbox.EventTypeMerchantOfferRevalidate, merchantOutboxHandler.Handle)
 
 	return &Dependencies{
-		Repositories: repos,
-		Services:     services,
-		Storage:      storageSvc,
-		AntiBot:      antiBotService,
-		AntiFraud:    antiFraudService,
-		OrderAbuse:   orderAbuseService,
-		RedisClient:  redisCache.Client(),
+		Repositories:   repos,
+		Services:       services,
+		Storage:        storageSvc,
+		AntiBot:        antiBotService,
+		AntiFraud:      antiFraudService,
+		CardBINLimiter: cardBINLimiter,
+		OrderAbuse:     orderAbuseService,
+		RedisClient:    redisCache.Client(),
 	}, nil
+}
+
+func envBoolDefault(key string, fallback bool) bool {
+	value, configured := os.LookupEnv(key)
+	if !configured || strings.TrimSpace(value) == "" {
+		return fallback
+	}
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "1", "true", "yes", "y", "on", "enabled":
+		return true
+	case "0", "false", "no", "n", "off", "disabled":
+		return false
+	default:
+		return fallback
+	}
 }

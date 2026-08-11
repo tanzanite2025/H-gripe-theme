@@ -1,6 +1,6 @@
 /**
  * 购物车计算系统 - 主入口
- * 集成 Tanzanite Setting 配置
+ * 集成 site settings 配置
  * 
  * 功能：
  * - 从后端获取运费模板

@@ -44,7 +44,28 @@ Environment variables are the fallback runtime source. Encrypted admin settings 
 ### Shared Runtime
 
 - `SERVER_BASE_URL`: trusted backend public base URL used to build provider webhook/notify URLs.
-- `PAYMENT_CONFIG_MASTER_KEY`: enables encrypted admin payment settings.
+- `PAYMENT_CONFIG_MASTER_KEY`: a deployment-owned random secret that enables encrypted admin payment settings. It is not issued by Stripe, PayPal, Alipay, or WeChat Pay.
+
+Generate it once before starting the API:
+
+```bash
+openssl rand -hex 32
+```
+
+On PowerShell, use:
+
+```powershell
+$bytes = New-Object byte[] 32
+[Security.Cryptography.RandomNumberGenerator]::Fill($bytes)
+[Convert]::ToHexString($bytes).ToLower()
+```
+
+Put the result in the backend environment as
+`PAYMENT_CONFIG_MASTER_KEY=<generated-value>`. In the production Docker deployment,
+the value belongs in `deployment/production.env`; the local `start-dev.ps1`
+development flow supplies a development-only fallback. Restart the Go API after
+changing it. Keep the value stable: losing or rotating it makes previously
+encrypted admin payment credentials unreadable.
 
 In production, `SERVER_BASE_URL` must be the externally reachable HTTPS backend origin. Do not rely on request `Host` headers for provider notify URLs behind a proxy or CDN.
 
@@ -90,6 +111,20 @@ The admin callback reachability probe sends a minimal unsigned `POST` to the sel
 
 When `PAYMENT_CONFIG_MASTER_KEY` is configured, operators can save provider secrets from the admin payment settings panel. Secrets are write-only and are not returned to the browser.
 
+The admin connection flow is intentionally a single-merchant credential flow:
+
+1. Log in to the provider's official developer dashboard and create or select the merchant application.
+2. Copy the provider credentials into the admin payment settings page.
+3. Copy the runtime readiness callback URL back into the provider webhook settings.
+4. Run the callback probe and complete a sandbox payment before enabling production.
+
+The current product is not a multi-merchant platform. It does not implement Stripe Connect OAuth,
+PayPal partner referral/onboarding, or another provider account-login/token exchange. An official
+dashboard link is provided in the admin UI to help the operator obtain the credentials; it is not
+an OAuth account binding. Adding provider OAuth/Connect onboarding is a later phase and requires
+tenant ownership, redirect/callback handling, token rotation, disconnect/reconnect behavior, and
+provider partner/platform approval where applicable.
+
 | Provider | Required Admin Fields |
 | --- | --- |
 | Stripe | `api_key`, `publishable_key`, `webhook_secret` |
@@ -110,6 +145,14 @@ creation, provider query/capture confirmation, webhook/notify verification,
 runtime readiness display, and manual provider refund execution. Only a missing
 domain-managed config falls back to environment variables; unreadable or
 provider-mismatched encrypted config is treated as a configuration error.
+
+PayPal currently uses the hosted checkout flow in this product. The backend creates and captures
+PayPal orders and verifies PayPal webhooks, but it does not receive the buyer's complete card
+number or CVV. Therefore the BIN-level card-testing limiter intentionally does not apply to
+PayPal. This is a PCI/security boundary, not a payment-account configuration defect. PayPal
+still requires compensating controls such as IP, session, account, order, payer identity, and
+provider-failure velocity limits. A future PayPal card-fields/advanced-card-payment integration
+would be a separate provider and compliance project, not a change to the current BIN limiter.
 
 Manual provider refund execution passes a strict refund reference set into the
 gateway adapter: merchant order number, provider transaction id, original

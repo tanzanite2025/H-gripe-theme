@@ -8,6 +8,7 @@ const trimTrailingSlash = (value: string) => value.replace(/\/$/, '')
 const publicApiBase = trimTrailingSlash(
   env.NUXT_PUBLIC_API_BASE || env.GO_API_BASE || env.API_BASE || ''
 )
+const publicSiteUrl = trimTrailingSlash(env.NUXT_SITE_URL || env.NUXT_PUBLIC_SITE_URL || '')
 const internalApiOrigin = trimTrailingSlash(env.API_INTERNAL_ORIGIN || 'http://localhost:9200')
 const imageProvider = env.NUXT_IMAGE_PROVIDER || 'none'
 const htmlCacheDefault = env.NODE_ENV === 'production' ? 'true' : 'false'
@@ -117,7 +118,7 @@ export default defineNuxtConfig({
   },
 
   site: {
-    url: env.NUXT_SITE_URL || '',
+    url: publicSiteUrl,
   },
 
   sitemap: {
@@ -153,7 +154,7 @@ export default defineNuxtConfig({
     bundle: {
       optimizeTranslationDirective: false
     },
-    baseUrl: env.NUXT_SITE_URL || '',
+    baseUrl: publicSiteUrl,
   },
 
   css: [
@@ -232,7 +233,7 @@ export default defineNuxtConfig({
       apiBase: publicApiBase,
       blogApiMode: env.NUXT_PUBLIC_BLOG_API_MODE || env.BLOG_API_MODE || 'auto',
       siteTitle: env.NUXT_SITE_TITLE || '',
-      siteUrl: env.NUXT_SITE_URL || '',
+      siteUrl: publicSiteUrl,
       googleClientId: env.NUXT_PUBLIC_GOOGLE_CLIENT_ID || env.GOOGLE_CLIENT_ID || '',
       requestSigningKey: env.NUXT_PUBLIC_REQUEST_SIGNING_KEY || '',
       turnstileSiteKey: env.NUXT_PUBLIC_TURNSTILE_SITE_KEY || '',

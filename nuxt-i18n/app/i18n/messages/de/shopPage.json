@@ -4,7 +4,7 @@
     "loading": "Produkte werden geladen...",
     "empty": {
       "title": "Es sind noch keine Produkte verfügbar.",
-      "description": "Sobald Produkte über das Tanzanite-Plugin veröffentlicht werden, erscheinen sie hier automatisch.",
+      "description": "Products will appear here automatically once they are published.",
       "categoryTitle": "No products are available in {category} yet.",
       "categoryDescription": "Try another category or clear the category filter to view all products."
     }
@@ -14,6 +14,6 @@
     "view": "Ansehen"
   },
   "feedback": {
-    "title": "Teilen Sie Ihr Feedback zum Tanzanite-Shop"
+    "title": "Share your feedback about the store"
   }
 }

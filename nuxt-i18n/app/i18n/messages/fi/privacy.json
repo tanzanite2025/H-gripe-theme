@@ -4,7 +4,7 @@
   "policyHeading": "Tietosuojakäytäntö verkkokauppasivustolle",
   "effectiveDate": "Voimaantulopäivä: [2025/11/11]",
   "section1Title": "1. Johdanto",
-  "section1Body": "Tervetuloa sivustolle [www.tanzanite.site]. Arvostamme yksityisyyttäsi ja olemme sitoutuneet suojaamaan henkilötietojasi. Tässä tietosuojakäytännössä selitetään, miten keräämme, käytämme, luovutamme ja suojaamme tietojasi, kun vierailet sivustollamme [www.tanzanite.site] ja käytät palveluitamme.",
+  "section1Body": "Tervetuloa sivustolle {site}. Arvostamme yksityisyyttäsi ja olemme sitoutuneet suojaamaan henkilötietojasi. Tässä tietosuojakäytännössä selitetään, miten keräämme, käytämme, luovutamme ja suojaamme tietojasi, kun vierailet sivustollamme {site} ja käytät palveluitamme.",
   "section2Title": "2. Mitä tietoja keräämme",
   "section2Intro": "Voimme kerätä seuraavanlaisia henkilötietoja:",
   "identityLabel": "Tunnistetiedot",

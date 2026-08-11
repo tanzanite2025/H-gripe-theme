@@ -4,7 +4,7 @@
     "loading": "Memuatkan produk...",
     "empty": {
       "title": "Belum ada produk tersedia.",
-      "description": "Apabila produk diterbitkan melalui plugin Tanzanite, produk akan muncul di sini secara automatik.",
+      "description": "Products will appear here automatically once they are published.",
       "categoryTitle": "No products are available in {category} yet.",
       "categoryDescription": "Try another category or clear the category filter to view all products."
     }
@@ -14,6 +14,6 @@
     "view": "Lihat"
   },
   "feedback": {
-    "title": "Kongsi maklum balas anda tentang kedai Tanzanite"
+    "title": "Share your feedback about the store"
   }
 }

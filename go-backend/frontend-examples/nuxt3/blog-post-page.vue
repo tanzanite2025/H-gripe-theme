@@ -158,11 +158,11 @@ useHead({
         dateModified: post.value?.updated_at,
         author: {
           '@type': 'Person',
-          name: 'Tanzanite'
+          name: 'Editorial team'
         },
         publisher: {
           '@type': 'Organization',
-          name: 'Tanzanite',
+          name: 'Storefront',
           logo: {
             '@type': 'ImageObject',
             url: `${config.public.siteUrl}/logo.png`

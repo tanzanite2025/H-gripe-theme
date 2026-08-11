@@ -1,7 +1,7 @@
 {
   "dashboard": {
-    "title": "Tanzanite - Complete Monitoring Dashboard",
-    "tags": ["tanzanite", "production", "overview"],
+    "title": "Storefront - Complete Monitoring Dashboard",
+    "tags": ["storefront", "production", "overview"],
     "timezone": "browser",
     "schemaVersion": 38,
     "version": 1,

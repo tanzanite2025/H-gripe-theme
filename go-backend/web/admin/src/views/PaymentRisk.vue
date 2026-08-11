@@ -3,15 +3,20 @@
     <AdminPageHeader
       class="shrink-0"
       title="支付风控"
-      description="Stripe 拒付监控、Radar 复核与人工支付复核队列"
+      description="Stripe / PayPal 拒付监控、证据预览与人工支付复核队列"
     >
       <template #actions>
+        <Button variant="outline" size="sm" class="rounded-full font-black uppercase tracking-wider" @click="paypalInvoicePreviewOpen = true">
+          <FileText class="size-3.5" />
+          发票样式
+        </Button>
         <Button variant="outline" size="sm" class="rounded-full font-black uppercase tracking-wider" :disabled="currentLoading" @click="refreshCurrent">
           <RefreshCw :class="['size-3.5', { 'animate-spin': currentLoading }]" />
           刷新
         </Button>
       </template>
     </AdminPageHeader>
+    <PayPalInvoicePreviewDialog v-model:open="paypalInvoicePreviewOpen" />
 
     <AdminStatsGrid class="shrink-0" :items="statItems" />
     <PaymentRiskSummaryPanel
@@ -245,17 +250,19 @@
 
       <TabsContent value="disputes" class="min-h-0 flex flex-col gap-3 overflow-hidden">
         <AdminFilterPanel class="shrink-0">
-          <form class="grid grid-cols-1 gap-3 md:grid-cols-[220px_1fr_auto]" @submit.prevent="applyDisputeFilters">
+          <form class="grid grid-cols-1 gap-3 md:grid-cols-[180px_220px_1fr_auto]" @submit.prevent="applyDisputeFilters">
+            <label class="block space-y-1">
+              <span class="block text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">PROVIDER / 渠道</span>
+              <select v-model="disputeProvider" class="h-9 w-full rounded-md border border-dashed border-border bg-background px-3 text-sm">
+                <option value="stripe">Stripe</option>
+                <option value="paypal">PayPal</option>
+              </select>
+            </label>
             <label class="block space-y-1">
               <span class="block text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">STATUS / 状态</span>
               <select v-model="disputeFilters.status" class="h-9 w-full rounded-md border border-dashed border-border bg-background px-3 text-sm">
                 <option value="">全部</option>
-                <option value="needs_response">needs_response</option>
-                <option value="warning_needs_response">warning_needs_response</option>
-                <option value="under_review">under_review</option>
-                <option value="won">won</option>
-                <option value="lost">lost</option>
-                <option value="closed">closed</option>
+                <option v-for="status in disputeStatusOptions" :key="status" :value="status">{{ status }}</option>
               </select>
             </label>
             <div class="hidden md:block" />
@@ -277,34 +284,34 @@
               <TableHeader>
                 <TableRow>
                   <TableHead>ID</TableHead>
-                  <TableHead>Stripe Dispute</TableHead>
+                  <TableHead>{{ disputeProviderLabel }} Dispute</TableHead>
                   <TableHead>状态</TableHead>
                   <TableHead>金额</TableHead>
                   <TableHead>原因</TableHead>
                   <TableHead>订单</TableHead>
-                  <TableHead>证据截止</TableHead>
+                  <TableHead>{{ disputeProvider === 'paypal' ? '证据提交' : '证据截止' }}</TableHead>
                   <TableHead>更新时间</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 <TableRow
                   v-for="dispute in disputes"
-                  :key="dispute.id"
+                  :key="`${disputeProvider}-${dispute.id}`"
                   class="cursor-pointer"
                   :class="selectedDispute?.id === dispute.id ? 'bg-primary/5' : ''"
                   @click="selectDispute(dispute)"
                 >
                   <TableCell class="font-mono text-xs">#{{ dispute.id }}</TableCell>
-                  <TableCell class="max-w-[220px] truncate font-mono text-xs">{{ dispute.stripe_dispute_id }}</TableCell>
+                  <TableCell class="max-w-[220px] truncate font-mono text-xs">{{ disputeReference(dispute) }}</TableCell>
                   <TableCell><StatusPill :status="dispute.status" /></TableCell>
                   <TableCell class="font-mono text-xs">{{ formatMoney(dispute.amount, dispute.currency) }}</TableCell>
                   <TableCell class="text-xs">{{ dispute.reason || '-' }}</TableCell>
                   <TableCell class="font-mono text-xs">{{ dispute.order_id ? `#${dispute.order_id}` : '-' }}</TableCell>
-                  <TableCell class="text-xs" :class="isEvidenceSoon(dispute.evidence_due_at) ? 'font-semibold text-rose-600' : 'text-muted-foreground'">{{ formatDate(dispute.evidence_due_at) }}</TableCell>
+                  <TableCell class="text-xs" :class="isEvidenceSoon(dispute.evidence_due_at) ? 'font-semibold text-rose-600' : 'text-muted-foreground'">{{ formatDate(disputeProvider === 'paypal' ? dispute.evidence_submitted_at : dispute.evidence_due_at) }}</TableCell>
                   <TableCell class="text-xs text-muted-foreground">{{ formatDate(dispute.updated_at) }}</TableCell>
                 </TableRow>
                 <TableRow v-if="!disputeLoading && disputes.length === 0">
-                  <TableCell colspan="8" class="h-24 text-center text-sm text-muted-foreground">暂无 Stripe 拒付记录</TableCell>
+                  <TableCell colspan="8" class="h-24 text-center text-sm text-muted-foreground">暂无 {{ disputeProviderLabel }} 拒付记录</TableCell>
                 </TableRow>
               </TableBody>
             </Table>
@@ -317,18 +324,24 @@
             <div class="mb-4 flex items-start justify-between gap-3">
               <div>
                 <h2 class="text-sm font-black uppercase italic tracking-tight">拒付证据工作台</h2>
-                <p class="mt-1 text-xs text-muted-foreground">先预览证据，再人工确认提交到 Stripe。</p>
+                <p class="mt-1 text-xs text-muted-foreground">{{ disputeWorkbenchSubtitle }}</p>
               </div>
-              <Button v-if="selectedDispute" variant="outline" size="sm" class="rounded-full text-xs font-black" :disabled="evidenceLoading" @click="fetchDisputeEvidence">
-                <RefreshCw :class="['size-3.5', { 'animate-spin': evidenceLoading }]" />
-              </Button>
+              <div v-if="selectedDispute" class="flex items-center gap-2">
+                <Button v-if="disputeProvider === 'paypal'" variant="outline" size="sm" class="rounded-full text-xs font-black" @click="openPayPalInvoicePDF">
+                  <FileText class="size-3.5" />
+                  PDF
+                </Button>
+                <Button variant="outline" size="sm" class="rounded-full text-xs font-black" :disabled="evidenceLoading" @click="fetchDisputeEvidence">
+                  <RefreshCw :class="['size-3.5', { 'animate-spin': evidenceLoading }]" />
+                </Button>
+              </div>
             </div>
 
             <div v-if="selectedDispute" class="space-y-4">
               <dl class="grid grid-cols-2 gap-2 text-xs">
                 <div class="rounded-xl bg-muted/40 p-3">
                   <dt class="font-black uppercase text-muted-foreground">Dispute</dt>
-                  <dd class="mt-1 break-all font-mono">{{ selectedDispute.stripe_dispute_id }}</dd>
+                  <dd class="mt-1 break-all font-mono">{{ disputeReference(selectedDispute) }}</dd>
                 </div>
                 <div class="rounded-xl bg-muted/40 p-3">
                   <dt class="font-black uppercase text-muted-foreground">Status</dt>
@@ -356,7 +369,7 @@
                 </div>
 
                 <section class="rounded-2xl border border-dashed border-border/80 p-3">
-                  <h3 class="mb-2 text-xs font-black uppercase tracking-widest text-muted-foreground">Stripe Evidence Preview</h3>
+                  <h3 class="mb-2 text-xs font-black uppercase tracking-widest text-muted-foreground">{{ disputeEvidencePreviewTitle }}</h3>
                   <dl class="space-y-2 text-xs">
                     <div v-for="field in evidenceFields" :key="field.key" class="grid gap-1">
                       <dt class="font-black uppercase text-muted-foreground">{{ field.label }}</dt>
@@ -380,7 +393,7 @@
 
                 <section class="rounded-2xl border border-dashed border-border/80 p-3">
                   <h3 class="mb-2 text-xs font-black uppercase tracking-widest text-muted-foreground">Customer Communication</h3>
-                  <label class="mb-2 flex items-center gap-2 text-xs font-bold text-muted-foreground">
+                  <label v-if="disputeProvider === 'stripe'" class="mb-2 flex items-center gap-2 text-xs font-bold text-muted-foreground">
                     <input v-model="evidenceForm.include_customer_communication" type="checkbox" class="size-4 accent-primary" />
                     将沟通摘要放入 Uncategorized Text
                   </label>
@@ -396,7 +409,7 @@
                   <p v-else class="text-xs text-muted-foreground">没有找到可关联的客服沟通。</p>
                 </section>
 
-                <section class="space-y-3 rounded-2xl border border-dashed border-border/80 p-3">
+                <section v-if="disputeProvider === 'stripe'" class="space-y-3 rounded-2xl border border-dashed border-border/80 p-3">
                   <h3 class="text-xs font-black uppercase tracking-widest text-muted-foreground">Stripe File IDs</h3>
                   <Input v-model="evidenceForm.shipping_documentation_file_id" placeholder="Shipping documentation File ID (file_...)" />
                   <Input v-model="evidenceForm.customer_communication_file_id" placeholder="Customer communication File ID (file_...)" />
@@ -410,6 +423,14 @@
                   <Button class="w-full rounded-full font-black uppercase tracking-wider" :disabled="!disputeEvidence.can_submit || !evidenceForm.confirm || evidenceSubmitting" @click="submitDisputeEvidence">
                     <Send class="size-4" />
                     提交证据到 Stripe
+                  </Button>
+                </section>
+
+                <section v-else class="space-y-3 rounded-2xl border border-dashed border-border/80 p-3">
+                  <h3 class="text-xs font-black uppercase tracking-widest text-muted-foreground">PayPal Invoice PDF</h3>
+                  <Button class="w-full rounded-full font-black uppercase tracking-wider" @click="openPayPalInvoicePDF">
+                    <FileText class="size-4" />
+                    打开 PDF 预览
                   </Button>
                 </section>
               </div>
@@ -431,11 +452,12 @@
 <script setup lang="ts">
 import { computed, defineComponent, h, onMounted, reactive, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
-import { AlertTriangle, CheckCircle2, CreditCard, RefreshCw, Search, Send, ShieldAlert } from '@lucide/vue'
+import { AlertTriangle, CheckCircle2, CreditCard, FileText, RefreshCw, Search, Send, ShieldAlert } from '@lucide/vue'
 import AdminFilterPanel from '@/components/admin/AdminFilterPanel.vue'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import AdminStatsGrid from '@/components/admin/AdminStatsGrid.vue'
 import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
+import PayPalInvoicePreviewDialog from '@/components/admin/payment/PayPalInvoicePreviewDialog.vue'
 import PaymentRefundRecommendationDetailPanel from '@/components/admin/payment/PaymentRefundRecommendationDetailPanel.vue'
 import PaymentRiskControlPanel from '@/components/admin/payment/PaymentRiskControlPanel.vue'
 import PaymentRiskSummaryPanel from '@/components/admin/payment/PaymentRiskSummaryPanel.vue'
@@ -452,9 +474,10 @@ const StatusPill = defineComponent({
   props: { status: { type: String, default: '' } },
   setup(props) {
     const tone = computed(() => {
-      if (['approved', 'accepted', 'won', 'succeeded'].includes(props.status)) return 'border-emerald-500/25 bg-emerald-500/10 text-emerald-700'
-      if (['rejected', 'dismissed', 'lost', 'needs_response', 'warning_needs_response'].includes(props.status)) return 'border-rose-500/25 bg-rose-500/10 text-rose-700'
-      if (['pending', 'under_review', 'processing'].includes(props.status)) return 'border-amber-500/25 bg-amber-500/10 text-amber-700'
+      const status = String(props.status || '').toLowerCase()
+      if (['approved', 'accepted', 'won', 'succeeded', 'resolved'].includes(status)) return 'border-emerald-500/25 bg-emerald-500/10 text-emerald-700'
+      if (['rejected', 'dismissed', 'lost', 'needs_response', 'warning_needs_response', 'waiting_for_seller_response', 'open'].includes(status)) return 'border-rose-500/25 bg-rose-500/10 text-rose-700'
+      if (['pending', 'under_review', 'processing', 'waiting_for_buyer_response'].includes(status)) return 'border-amber-500/25 bg-amber-500/10 text-amber-700'
       return 'border-border bg-muted text-muted-foreground'
     })
     return () => h('span', { class: ['inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-black uppercase tracking-wider', tone.value] }, props.status || '-')
@@ -515,6 +538,7 @@ const refundDraftSaving = ref(false)
 const refundExecutionSaving = ref(false)
 const evidenceSubmitting = ref(false)
 const summaryLoading = ref(false)
+const paypalInvoicePreviewOpen = ref(false)
 const reviews = ref([])
 const refundRecommendations = ref([])
 const disputes = ref([])
@@ -523,6 +547,7 @@ const selectedReview = ref(null)
 const selectedRefundRecommendation = ref(null)
 const selectedDispute = ref(null)
 const disputeEvidence = ref(null)
+const disputeProvider = ref('stripe')
 const reviewFilters = reactive({ status: 'pending' })
 const refundRecommendationFilters = reactive({ status: 'pending', provider: '' })
 const disputeFilters = reactive({ status: '' })
@@ -550,7 +575,24 @@ const currentLoading = computed(() => {
 })
 const pendingReviews = computed(() => reviews.value.filter((item) => item.status === 'pending').length)
 const pendingRefundRecommendations = computed(() => refundRecommendations.value.filter((item) => item.status === 'pending').length)
-const urgentDisputes = computed(() => disputes.value.filter((item) => ['needs_response', 'warning_needs_response'].includes(item.status)).length)
+const urgentDisputes = computed(() => {
+  const urgentStatuses = disputeProvider.value === 'paypal'
+    ? ['WAITING_FOR_SELLER_RESPONSE', 'OPEN']
+    : ['needs_response', 'warning_needs_response']
+  return disputes.value.filter((item) => urgentStatuses.includes(item.status)).length
+})
+const disputeProviderLabel = computed(() => disputeProvider.value === 'paypal' ? 'PayPal' : 'Stripe')
+const disputeWorkbenchSubtitle = computed(() => (
+  disputeProvider.value === 'paypal'
+    ? '预览 PayPal 证据包和商业发票 PDF。'
+    : '先预览证据，再人工确认提交到 Stripe。'
+))
+const disputeEvidencePreviewTitle = computed(() => disputeProvider.value === 'paypal' ? 'PayPal Evidence Preview' : 'Stripe Evidence Preview')
+const disputeStatusOptions = computed(() => (
+  disputeProvider.value === 'paypal'
+    ? ['WAITING_FOR_SELLER_RESPONSE', 'OPEN', 'UNDER_REVIEW', 'WAITING_FOR_BUYER_RESPONSE', 'RESOLVED']
+    : ['needs_response', 'warning_needs_response', 'under_review', 'won', 'lost', 'closed']
+))
 const statItems = computed(() => [
   { key: 'reviews', label: '复核记录', value: reviewPagination.total || reviews.value.length, icon: CreditCard, tone: 'gray' },
   { key: 'pending', label: '待复核', value: pendingReviews.value, icon: AlertTriangle, tone: pendingReviews.value ? 'amber' : 'green' },
@@ -560,6 +602,22 @@ const statItems = computed(() => [
 ])
 const evidenceFields = computed(() => {
   const evidence = disputeEvidence.value?.evidence || {}
+  if (disputeProvider.value === 'paypal') {
+    return [
+      { key: 'customer_name', label: 'Customer Name', value: evidence.customer_name },
+      { key: 'customer_email_address', label: 'Customer Email', value: evidence.customer_email_address },
+      { key: 'shipping_address', label: 'Shipping Address', value: evidence.shipping_address },
+      { key: 'product_description', label: 'Product Description', value: evidence.product_description },
+      { key: 'shipping_carrier', label: 'Shipping Carrier', value: evidence.shipping_carrier },
+      { key: 'shipping_date', label: 'Shipping Date', value: evidence.shipping_date },
+      { key: 'shipping_tracking_number', label: 'Tracking Number', value: evidence.shipping_tracking_number },
+      { key: 'delivered_at', label: 'Delivered At', value: evidence.delivered_at },
+      { key: 'invoice_summary', label: 'Invoice Summary', value: evidence.invoice_summary },
+      { key: 'proof_of_delivery_summary', label: 'Proof Of Delivery', value: evidence.proof_of_delivery_summary },
+      { key: 'communication_summary', label: 'Communication Summary', value: evidence.communication_summary },
+      { key: 'notes', label: 'Notes', value: evidence.notes },
+    ]
+  }
   return [
     { key: 'customer_name', label: 'Customer Name', value: evidence.customer_name },
     { key: 'customer_email_address', label: 'Customer Email', value: evidence.customer_email_address },
@@ -598,6 +656,12 @@ const isEvidenceSoon = (dateString) => {
   if (!dateString) return false
   const due = new Date(dateString).getTime()
   return Number.isFinite(due) && due - Date.now() < 3 * 24 * 60 * 60 * 1000
+}
+const disputeReference = (dispute) => {
+  if (!dispute) return '-'
+  return disputeProvider.value === 'paypal'
+    ? dispute.paypal_dispute_id || '-'
+    : dispute.stripe_dispute_id || '-'
 }
 
 const applyPaged = (target, pagination, payload) => {
@@ -648,7 +712,8 @@ const fetchRefundRecommendations = async () => {
 const fetchDisputes = async () => {
   disputeLoading.value = true
   try {
-    const payload = await paymentRiskApi.listDisputes({
+    const apiCall = disputeProvider.value === 'paypal' ? paymentRiskApi.listPayPalDisputes : paymentRiskApi.listDisputes
+    const payload = await apiCall({
       page: disputePagination.page,
       page_size: disputePagination.page_size,
       status: disputeFilters.status || undefined,
@@ -745,10 +810,17 @@ const fetchDisputeEvidence = async () => {
   if (!selectedDispute.value) return
   evidenceLoading.value = true
   try {
-    disputeEvidence.value = await paymentRiskApi.getDisputeEvidence(selectedDispute.value.id)
+    disputeEvidence.value = disputeProvider.value === 'paypal'
+      ? await paymentRiskApi.getPayPalDisputeEvidence(selectedDispute.value.id)
+      : await paymentRiskApi.getDisputeEvidence(selectedDispute.value.id)
   } finally {
     evidenceLoading.value = false
   }
+}
+
+const openPayPalInvoicePDF = () => {
+  if (!selectedDispute.value) return
+  window.open(paymentRiskApi.paypalDisputeInvoicePDFUrl(selectedDispute.value.id), '_blank', 'noopener,noreferrer')
 }
 
 const submitReviewDecision = async () => {
@@ -830,7 +902,7 @@ const createManualReview = async () => {
 }
 
 const submitDisputeEvidence = async () => {
-  if (!selectedDispute.value) return
+  if (!selectedDispute.value || disputeProvider.value !== 'stripe') return
   evidenceSubmitting.value = true
   try {
     await paymentRiskApi.submitDisputeEvidence(selectedDispute.value.id, {
@@ -860,4 +932,12 @@ onMounted(() => {
 })
 
 watch(activeTab, refreshCurrent)
+watch(disputeProvider, () => {
+  disputeFilters.status = ''
+  disputePagination.page = 1
+  selectedDispute.value = null
+  disputeEvidence.value = null
+  resetEvidenceForm()
+  fetchDisputes()
+})
 </script>

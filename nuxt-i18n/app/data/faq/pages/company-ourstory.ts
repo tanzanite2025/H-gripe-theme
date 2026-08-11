@@ -3,7 +3,7 @@ import type { PageFaqData } from '../types'
 export const companyOurStoryFaq: PageFaqData = {
     id: 'company-ourstory',
     title: 'Our Story & Brand FAQ',
-    subtitle: 'Learn more about Tanzanite and our mission',
+    subtitle: 'Learn more about our mission',
     categories: [
         {
             id: 'brand',
@@ -11,17 +11,17 @@ export const companyOurStoryFaq: PageFaqData = {
             items: [
                 {
                     id: 'origin',
-                    question: 'Where is Tanzanite based?',
-                    answer: 'Tanzanite is a brand of Top Sports Co., Limited, with our Global Headquarters in Hong Kong and our state-of-the-art Manufacturing & R&D Base in Xiamen, China.',
+                    question: 'Where is your company based?',
+                    answer: 'We are a brand of Top Sports Co., Limited, with our Global Headquarters in Hong Kong and our state-of-the-art Manufacturing & R&D Base in Xiamen, China.',
                 },
                 {
                     id: 'mission',
-                    question: 'What is Tanzanite’s core mission?',
+                    question: 'What is the core mission?',
                     answer: 'Our mission is to democratize high-performance cycling components by leveraging advanced manufacturing and direct-to-consumer efficiency, delivering premium carbon wheels without the traditional markup.',
                 },
                 {
                     id: 'sustainability',
-                    question: 'How does Tanzanite approach sustainability?',
+                    question: 'How does the company approach sustainability?',
                     answer: 'We are committed to sustainable manufacturing practices, minimizing waste in our carbon layup process, and designing durable products that stand the test of time, reducing the need for frequent replacements.',
                 },
             ],

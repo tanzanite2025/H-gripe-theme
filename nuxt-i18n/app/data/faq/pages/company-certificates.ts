@@ -11,7 +11,7 @@ export const companyCertificatesFaq: PageFaqData = {
             items: [
                 {
                     id: 'uci-approval',
-                    question: 'Are all TANZANITE wheels UCI approved?',
+                    question: 'Are all our wheels UCI approved?',
                     answer: 'Yes, our core road and track wheelsets are UCI approved and listed on the official Union Cycliste Internationale website. This means they are certified for use in all professional and amateur racing events worldwide.',
                 },
                 {

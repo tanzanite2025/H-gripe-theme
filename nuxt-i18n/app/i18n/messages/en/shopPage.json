@@ -4,7 +4,7 @@
     "loading": "Loading products...",
     "empty": {
       "title": "No products are available yet.",
-      "description": "Once products are published via the Tanzanite plugin, they will appear here automatically.",
+      "description": "Products will appear here automatically once they are published.",
       "categoryTitle": "No products are available in {category} yet.",
       "categoryDescription": "Try another category or clear the category filter to view all products."
     }
@@ -14,6 +14,6 @@
     "view": "View"
   },
   "feedback": {
-    "title": "Share your feedback"
+    "title": "Share your feedback about the store"
   }
 }

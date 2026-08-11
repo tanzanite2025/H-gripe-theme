@@ -3,7 +3,7 @@
     <h3 class="support-section__title text-center">Rim Test Report</h3>
 
     <p class="support-section__body mt-4 text-center">
-      This section summarises how TANZANITE carbon rims are validated in our in-house lab,
+      This section summarises how our carbon rims are validated in our in-house lab,
       including strength, impact, radial load, spoke-hole tension, cutting-piece inspection,
       and X-ray flatness checks.
     </p>
@@ -261,7 +261,7 @@
         <img
           class="support-video-thumbnail__image"
           src="/testreport/rimtestreport/tanzanite-rim-testreport.webp"
-          alt="Play spoke-hole strength test video for Tanzanite carbon rims"
+          alt="Play spoke-hole strength test video for our carbon rims"
           loading="lazy"
         />
         <div class="support-video-thumbnail__overlay">
@@ -284,8 +284,8 @@
         the intended uses.
       </p>
       <p>
-        All the test results of this section are based on the lab criteria of TANZANITE and are implemented at our
-        well-established testing facilities. TANZANITE is only responsible for the test results themselves which are
+        All the test results of this section are based on our lab criteria and are implemented at our
+        well-established testing facilities. Our team is only responsible for the test results themselves which are
         not set for any comparison to other brands or such regards.
       </p>
     </div>
@@ -304,37 +304,37 @@ const { openSpokeHoleVideo } = defineProps<{
 const cards = [
   {
     src: '/testreport/rimtestreport/tanzanite-rim-testreport.webp',
-    alt: 'Overview of Tanzanite rim laboratory test setup',
-    caption: "Overall view of the rim test setup used in TANZANITE's lab."
+    alt: 'Overview of our rim laboratory test setup',
+    caption: "Overall view of the rim test setup used in our lab."
   },
   {
     src: '/testreport/rimtestreport/tanzanite-carbonrim-strength-test1.webp',
-    alt: 'Tanzanite carbon rim strength test under static load',
+    alt: 'carbon rim strength test under static load',
     caption: "Strength Test – evaluating rim performance under static and dynamic loads."
   },
   {
     src: '/testreport/rimtestreport/tanzanite-carbonrim-strength-test1 (2).webp',
-    alt: 'Additional view of Tanzanite carbon rim strength testing',
+    alt: 'Additional view of carbon rim strength testing',
     caption: "Strength Test – additional view of clamping and load application."
   },
   {
     src: '/testreport/rimtestreport/tanzanite-carbonrim-radialload-test.webp',
-    alt: 'Tanzanite carbon rim radial load test showing vertical loading',
+    alt: 'carbon rim radial load test showing vertical loading',
     caption: "Radial Load Test – checking deformation and load capacity under vertical forces."
   },
   {
     src: '/testreport/rimtestreport/tanzanite-hole-tension-test.webp',
-    alt: 'Spoke hole tension test setup for a Tanzanite carbon rim',
+    alt: 'Spoke hole tension test setup for a carbon rim',
     caption: "Hole Tension Test – measuring how spoke holes withstand spoke tension and repeated loading."
   },
   {
     src: '/testreport/rimtestreport/tanznaite-rim-cutting-pieces-Test.webp',
-    alt: 'Cross-section cutting piece of a Tanzanite carbon rim',
+    alt: 'Cross-section cutting piece of a carbon rim',
     caption: "Rim Cutting Pieces Test – inspecting internal layup, wall thickness, and burrs."
   },
   {
     src: '/testreport/rimtestreport/tanzanite-xray-flatness-Inspection-test.webp',
-    alt: 'X-ray flatness inspection of a Tanzanite carbon rim',
+    alt: 'X-ray flatness inspection of a carbon rim',
     caption: "X-ray Flatness Inspection – non-destructive check for internal uniformity and flatness."
   }
 ]

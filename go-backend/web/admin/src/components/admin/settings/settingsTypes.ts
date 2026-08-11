@@ -122,6 +122,7 @@ export interface PaymentGatewayRuntimeStatus {
   documentation_url?: string
   documentation_label?: string
   admin_config_configured?: boolean
+  admin_config_readable?: boolean
 }
 
 export interface PaymentGatewayRuntime {
@@ -134,6 +135,7 @@ export interface PaymentGatewayOption {
   value: string
   label: string
   description: string
+  officialDashboardURL?: string
 }
 
 export interface PaymentCallbackCheckResult {

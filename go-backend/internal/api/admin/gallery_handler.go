@@ -1,8 +1,10 @@
 package admin
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
+
 	"tanzanite/internal/domain/gallery"
 	"tanzanite/internal/service"
 
@@ -16,6 +18,23 @@ type GalleryHandler struct {
 func NewGalleryHandler(galleryService *service.GalleryService) *GalleryHandler {
 	return &GalleryHandler{
 		galleryService: galleryService,
+	}
+}
+
+func respondGalleryServiceError(c *gin.Context, err error) {
+	switch {
+	case errors.Is(err, service.ErrGalleryMediaAssetRequired),
+		errors.Is(err, service.ErrGalleryMediaAssetInvalid),
+		errors.Is(err, service.ErrGalleryImageTitleRequired):
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	case errors.Is(err, service.ErrGalleryMediaAssetNotFound):
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+	case errors.Is(err, service.ErrGalleryNotFound),
+		errors.Is(err, service.ErrGalleryMediaAssetUnavailable),
+		service.IsRecordNotFound(err):
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+	default:
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "gallery operation failed"})
 	}
 }
 
@@ -39,9 +58,8 @@ func (h *GalleryHandler) ListGalleries(c *gin.Context) {
 	}
 
 	totalPages := (int(total) + pageSize - 1) / pageSize
-
 	c.JSON(http.StatusOK, gin.H{
-		"galleries": galleries,
+		"galleries": adminGalleriesFromDomain(galleries),
 		"pagination": gin.H{
 			"page":        page,
 			"page_size":   pageSize,
@@ -67,7 +85,7 @@ func (h *GalleryHandler) GetGallery(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"gallery": galleryItem,
+		"gallery": adminGalleryFromDomain(galleryItem),
 	})
 }
 
@@ -78,6 +96,14 @@ func (h *GalleryHandler) CreateGallery(c *gin.Context) {
 		Title       string `json:"title" binding:"required"`
 		Description string `json:"description"`
 		Slug        string `json:"slug" binding:"required"`
+		ProductIDs  []uint `json:"product_ids"`
+		Images      []struct {
+			MediaAssetID uint   `json:"media_asset_id"`
+			Title        string `json:"title"`
+			Description  string `json:"description"`
+			Tags         string `json:"tags"`
+			Order        int    `json:"order"`
+		} `json:"images"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -85,20 +111,30 @@ func (h *GalleryHandler) CreateGallery(c *gin.Context) {
 		return
 	}
 
-	newGallery := &gallery.Gallery{
-		Name:        req.Title,
+	createdInput := service.GalleryAdminCreateInput{
+		Title:       req.Title,
 		Description: req.Description,
 		Slug:        req.Slug,
+		ProductIDs:  req.ProductIDs,
 	}
-
-	if err := h.galleryService.CreateGallery(newGallery); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create gallery"})
+	for _, image := range req.Images {
+		createdInput.Images = append(createdInput.Images, service.GalleryImageAdminCreateInput{
+			MediaAssetID: image.MediaAssetID,
+			Title:        image.Title,
+			Description:  image.Description,
+			Tags:         image.Tags,
+			Order:        image.Order,
+		})
+	}
+	createdGallery, err := h.galleryService.CreateAdminGallery(createdInput)
+	if err != nil {
+		respondGalleryServiceError(c, err)
 		return
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
 		"message": "Gallery created successfully",
-		"gallery": newGallery,
+		"gallery": adminGalleryFromDomain(createdGallery),
 	})
 }
 
@@ -112,9 +148,10 @@ func (h *GalleryHandler) UpdateGallery(c *gin.Context) {
 	}
 
 	var req struct {
-		Title       string `json:"title"`
-		Description string `json:"description"`
-		Slug        string `json:"slug"`
+		Title       *string `json:"title"`
+		Description *string `json:"description"`
+		Slug        *string `json:"slug"`
+		ProductIDs  *[]uint `json:"product_ids"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -126,19 +163,20 @@ func (h *GalleryHandler) UpdateGallery(c *gin.Context) {
 		Title:       req.Title,
 		Description: req.Description,
 		Slug:        req.Slug,
+		ProductIDs:  req.ProductIDs,
 	})
 	if err != nil {
 		if service.IsRecordNotFound(err) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Gallery not found"})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update gallery"})
+		respondGalleryServiceError(c, err)
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Gallery updated successfully",
-		"gallery": updatedGallery,
+		"gallery": adminGalleryFromDomain(updatedGallery),
 	})
 }
 
@@ -152,6 +190,10 @@ func (h *GalleryHandler) DeleteGallery(c *gin.Context) {
 	}
 
 	if err := h.galleryService.DeleteGallery(uint(id)); err != nil {
+		if service.IsRecordNotFound(err) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Gallery not found"})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete gallery"})
 		return
 	}
@@ -172,6 +214,10 @@ func (h *GalleryHandler) ListImages(c *gin.Context) {
 
 	images, err := h.galleryService.GetImagesByGalleryID(uint(id))
 	if err != nil {
+		if service.IsRecordNotFound(err) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Gallery not found"})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch images"})
 		return
 	}
@@ -191,12 +237,11 @@ func (h *GalleryHandler) CreateImage(c *gin.Context) {
 	}
 
 	var req struct {
-		Title       string `json:"title" binding:"required"`
-		Description string `json:"description"`
-		URL         string `json:"url" binding:"required"`
-		Thumbnail   string `json:"thumbnail"`
-		Tags        string `json:"tags"`
-		Order       int    `json:"order"`
+		Title        string `json:"title" binding:"required"`
+		Description  string `json:"description"`
+		MediaAssetID *uint  `json:"media_asset_id" binding:"required"`
+		Tags         string `json:"tags"`
+		Order        int    `json:"order"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -205,17 +250,16 @@ func (h *GalleryHandler) CreateImage(c *gin.Context) {
 	}
 
 	newImage := &gallery.GalleryImage{
-		GalleryID:   uint(galleryID),
-		Title:       req.Title,
-		Description: req.Description,
-		URL:         req.URL,
-		Thumbnail:   req.Thumbnail,
-		Tags:        req.Tags,
-		Order:       req.Order,
+		GalleryID:    uint(galleryID),
+		Title:        req.Title,
+		Description:  req.Description,
+		MediaAssetID: req.MediaAssetID,
+		Tags:         req.Tags,
+		Order:        req.Order,
 	}
 
 	if err := h.galleryService.CreateGalleryImage(newImage); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create image"})
+		respondGalleryServiceError(c, err)
 		return
 	}
 
@@ -228,6 +272,12 @@ func (h *GalleryHandler) CreateImage(c *gin.Context) {
 // UpdateImage 更新图片
 // PUT /api/admin/galleries/:id/images/:imageId
 func (h *GalleryHandler) UpdateImage(c *gin.Context) {
+	galleryID, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid gallery ID"})
+		return
+	}
+
 	imageID, err := strconv.ParseUint(c.Param("imageId"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid image ID"})
@@ -235,12 +285,11 @@ func (h *GalleryHandler) UpdateImage(c *gin.Context) {
 	}
 
 	var req struct {
-		Title       string `json:"title"`
-		Description string `json:"description"`
-		URL         string `json:"url"`
-		Thumbnail   string `json:"thumbnail"`
-		Tags        string `json:"tags"`
-		Order       int    `json:"order"`
+		Title        *string `json:"title"`
+		Description  *string `json:"description"`
+		MediaAssetID *uint   `json:"media_asset_id"`
+		Tags         *string `json:"tags"`
+		Order        *int    `json:"order"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -248,20 +297,19 @@ func (h *GalleryHandler) UpdateImage(c *gin.Context) {
 		return
 	}
 
-	updatedImage, err := h.galleryService.UpdateAdminGalleryImage(uint(imageID), service.GalleryImageAdminUpdateInput{
-		Title:       req.Title,
-		Description: req.Description,
-		URL:         req.URL,
-		Thumbnail:   req.Thumbnail,
-		Tags:        req.Tags,
-		Order:       req.Order,
+	updatedImage, err := h.galleryService.UpdateAdminGalleryImageForGallery(uint(galleryID), uint(imageID), service.GalleryImageAdminUpdateInput{
+		Title:        req.Title,
+		Description:  req.Description,
+		MediaAssetID: req.MediaAssetID,
+		Tags:         req.Tags,
+		Order:        req.Order,
 	})
 	if err != nil {
 		if service.IsRecordNotFound(err) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Image not found"})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update image"})
+		respondGalleryServiceError(c, err)
 		return
 	}
 
@@ -274,13 +322,23 @@ func (h *GalleryHandler) UpdateImage(c *gin.Context) {
 // DeleteImage 删除图片
 // DELETE /api/admin/galleries/:id/images/:imageId
 func (h *GalleryHandler) DeleteImage(c *gin.Context) {
+	galleryID, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid gallery ID"})
+		return
+	}
+
 	imageID, err := strconv.ParseUint(c.Param("imageId"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid image ID"})
 		return
 	}
 
-	if err := h.galleryService.DeleteGalleryImage(uint(imageID)); err != nil {
+	if err := h.galleryService.DeleteGalleryImageForGallery(uint(galleryID), uint(imageID)); err != nil {
+		if service.IsRecordNotFound(err) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Image not found"})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete image"})
 		return
 	}
@@ -293,6 +351,12 @@ func (h *GalleryHandler) DeleteImage(c *gin.Context) {
 // BatchDeleteImages 批量删除图片
 // POST /api/admin/galleries/:id/images/batch-delete
 func (h *GalleryHandler) BatchDeleteImages(c *gin.Context) {
+	galleryID, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid gallery ID"})
+		return
+	}
+
 	var req struct {
 		ImageIDs []uint `json:"image_ids" binding:"required,min=1"`
 	}
@@ -302,13 +366,18 @@ func (h *GalleryHandler) BatchDeleteImages(c *gin.Context) {
 		return
 	}
 
-	if err := h.galleryService.BatchDeleteImages(req.ImageIDs); err != nil {
+	deleted, err := h.galleryService.BatchDeleteGalleryImages(uint(galleryID), req.ImageIDs)
+	if err != nil {
+		if service.IsRecordNotFound(err) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "One or more images were not found in this gallery"})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to batch delete images"})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Batch delete completed",
-		"deleted": len(req.ImageIDs),
+		"deleted": deleted,
 	})
 }

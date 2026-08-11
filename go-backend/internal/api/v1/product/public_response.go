@@ -139,22 +139,10 @@ type PublicDisplayPrice struct {
 // category navigation and filters. It does not expose the editable admin
 // fields or audit trail of product types.
 type PublicProductTypeIndex struct {
-	ID              uint                    `json:"id"`
-	Name            string                  `json:"name"`
-	Slug            string                  `json:"slug"`
-	ImageURL        string                  `json:"image_url,omitempty"`
-	SpecDefinitions []PublicProductTypeSpec `json:"spec_definitions,omitempty"`
-}
-
-type PublicProductTypeSpec struct {
-	ID           uint   `json:"id"`
-	Name         string `json:"name"`
-	Slug         string `json:"slug"`
-	FieldType    string `json:"field_type"`
-	Presentation string `json:"presentation"`
-	IsFilterable bool   `json:"is_filterable"`
-	SortOrder    int    `json:"sort_order"`
-	Options      string `json:"options,omitempty"`
+	ID       uint   `json:"id"`
+	Name     string `json:"name"`
+	Slug     string `json:"slug"`
+	ImageURL string `json:"image_url,omitempty"`
 }
 
 type PublicProductAttribute struct {
@@ -423,26 +411,10 @@ func PublicProductTypesFromDomainWithLocale(items []productdomain.ProductType, l
 	result := make([]PublicProductTypeIndex, 0, len(items))
 	for _, item := range items {
 		publicType := PublicProductTypeIndex{
-			ID:              item.ID,
-			Name:            item.NameForLocale(locale),
-			Slug:            item.Slug,
-			ImageURL:        strings.TrimSpace(item.ImageURL),
-			SpecDefinitions: make([]PublicProductTypeSpec, 0, len(item.SpecDefinitions)),
-		}
-		for _, definition := range item.SpecDefinitions {
-			if !definition.IsVisible {
-				continue
-			}
-			publicType.SpecDefinitions = append(publicType.SpecDefinitions, PublicProductTypeSpec{
-				ID:           definition.ID,
-				Name:         definition.Name,
-				Slug:         definition.Slug,
-				FieldType:    definition.FieldType,
-				Presentation: definition.Presentation,
-				IsFilterable: definition.IsFilterable,
-				SortOrder:    definition.SortOrder,
-				Options:      definition.Options,
-			})
+			ID:       item.ID,
+			Name:     item.NameForLocale(locale),
+			Slug:     item.Slug,
+			ImageURL: strings.TrimSpace(item.ImageURL),
 		}
 		result = append(result, publicType)
 	}

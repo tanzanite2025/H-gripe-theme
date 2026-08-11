@@ -66,7 +66,7 @@
 
     <!-- Why Choose Us -->
     <section class="max-w-none w-full">
-      <h3 class="text-xl font-bold text-white text-center mb-6">Why Partner with Tanzanite?</h3>
+      <h3 class="text-xl font-bold text-white text-center mb-6">Why Partner with our?</h3>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
          <!-- Advantage 1 -->
          <div class="bg-[var(--tz-card-surface)] p-5 rounded-2xl border border-slate-800/50 text-center">

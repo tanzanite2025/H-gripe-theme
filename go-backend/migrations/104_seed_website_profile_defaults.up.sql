@@ -1,0 +1,55 @@
+-- Persist the content already used by /company/website so the admin form and
+-- storefront share the same initial values.
+
+INSERT INTO settings (key, value, type, locale, "group", is_public, description, created_at, updated_at)
+VALUES
+    ('eyebrow', 'THE PERSON BEHIND THIS WEBSITE', 'string', 'en', 'website_profile', true, 'Website profile: eyebrow', NOW(), NOW()),
+    ('title', 'Me & This Website', 'string', 'en', 'website_profile', true, 'Website profile: title', NOW(), NOW()),
+    ('lead', 'I manage the content, structure, and ongoing maintenance of this website while remaining part of our factory and the work it represents. This domain carries my working perspective; it does not separate me from the factory.', 'string', 'en', 'website_profile', true, 'Website profile: lead', NOW(), NOW()),
+    ('scope', 'Managed by me, grounded in the work of our factory', 'string', 'en', 'website_profile', true, 'Website profile: scope', NOW(), NOW()),
+    ('avatar_label', 'Website manager avatar placeholder', 'string', 'en', 'website_profile', true, 'Website profile: avatar_label', NOW(), NOW()),
+    ('avatar_mark', 'ME', 'string', 'en', 'website_profile', true, 'Website profile: avatar_mark', NOW(), NOW()),
+    ('profile_label', 'Website manager', 'string', 'en', 'website_profile', true, 'Website profile: profile_label', NOW(), NOW()),
+    ('profile_role', 'Content and direction', 'string', 'en', 'website_profile', true, 'Website profile: profile_role', NOW(), NOW()),
+    ('profile_context', 'Part of our factory', 'string', 'en', 'website_profile', true, 'Website profile: profile_context', NOW(), NOW()),
+    ('statement_eyebrow', 'WHY THIS PAGE EXISTS', 'string', 'en', 'website_profile', true, 'Website profile: statement_eyebrow', NOW(), NOW()),
+    ('statement_title', 'Let the person behind the site be visible', 'string', 'en', 'website_profile', true, 'Website profile: statement_title', NOW(), NOW()),
+    ('statement_paragraph_1', 'This domain belongs to me, but it does not describe a personal identity outside the factory. It gives me a more direct way to explain how I see our factory, our products, and the direction we are building toward.', 'string', 'en', 'website_profile', true, 'Website profile: statement_paragraph_1', NOW(), NOW()),
+    ('statement_paragraph_2', 'This is where I can record the decisions behind the website, the work in progress, and the things I believe should be represented accurately. It is not a support desk or a separate company. It is one management and expression point within our factory work.', 'string', 'en', 'website_profile', true, 'Website profile: statement_paragraph_2', NOW(), NOW()),
+    ('factory_image_alt', 'Carbon fiber hand layup work inside our factory', 'string', 'en', 'website_profile', true, 'Website profile: factory_image_alt', NOW(), NOW()),
+    ('factory_image_caption', 'The site I manage is grounded in our real manufacturing work.', 'string', 'en', 'website_profile', true, 'Website profile: factory_image_caption', NOW(), NOW()),
+    ('factory_eyebrow', 'THE WORK WE SHARE', 'string', 'en', 'website_profile', true, 'Website profile: factory_eyebrow', NOW(), NOW()),
+    ('factory_title', 'See our factory', 'string', 'en', 'website_profile', true, 'Website profile: factory_title', NOW(), NOW()),
+    ('factory_body', 'The site should always lead back to real products, manufacturing, engineering, and quality control. This is my perspective, but it points to the factory we are building together.', 'string', 'en', 'website_profile', true, 'Website profile: factory_body', NOW(), NOW()),
+    ('factory_cta', 'View the factory and process', 'string', 'en', 'website_profile', true, 'Website profile: factory_cta', NOW(), NOW()),
+    ('eyebrow', '网站管理者 / 工厂成员', 'string', 'zh_cn', 'website_profile', true, 'Website profile: eyebrow', NOW(), NOW()),
+    ('title', '我与这个网站', 'string', 'zh_cn', 'website_profile', true, 'Website profile: title', NOW(), NOW()),
+    ('lead', '我负责这个网站的内容、结构和持续维护，也属于我们工厂正在做的事情。这个域名承载的是我的工作视角，而不是把我从工厂之外单独分离出来。', 'string', 'zh_cn', 'website_profile', true, 'Website profile: lead', NOW(), NOW()),
+    ('scope', '这个网站由我负责管理，也代表我们工厂的一部分工作', 'string', 'zh_cn', 'website_profile', true, 'Website profile: scope', NOW(), NOW()),
+    ('avatar_label', '网站管理者头像位置', 'string', 'zh_cn', 'website_profile', true, 'Website profile: avatar_label', NOW(), NOW()),
+    ('avatar_mark', '我', 'string', 'zh_cn', 'website_profile', true, 'Website profile: avatar_mark', NOW(), NOW()),
+    ('profile_label', '网站管理者', 'string', 'zh_cn', 'website_profile', true, 'Website profile: profile_label', NOW(), NOW()),
+    ('profile_role', '网站内容与方向', 'string', 'zh_cn', 'website_profile', true, 'Website profile: profile_role', NOW(), NOW()),
+    ('profile_context', '我们工厂的一员', 'string', 'zh_cn', 'website_profile', true, 'Website profile: profile_context', NOW(), NOW()),
+    ('statement_eyebrow', '为什么有这一页', 'string', 'zh_cn', 'website_profile', true, 'Website profile: statement_eyebrow', NOW(), NOW()),
+    ('statement_title', '让网站背后的人被看见', 'string', 'zh_cn', 'website_profile', true, 'Website profile: statement_title', NOW(), NOW()),
+    ('statement_paragraph_1', '这个域名属于我，但它表达的并不是一个脱离工厂的个人身份。相反，我希望用更接近个人的方式，说明我如何理解我们的工厂、产品和长期方向。', 'string', 'zh_cn', 'website_profile', true, 'Website profile: statement_paragraph_1', NOW(), NOW()),
+    ('statement_paragraph_2', '这里会记录网站背后的判断、正在推进的事情，以及我认为应该被准确表达的内容。它不是客服窗口，也不是单独成立的另一家公司，而是我们工厂工作中的一个管理和表达入口。', 'string', 'zh_cn', 'website_profile', true, 'Website profile: statement_paragraph_2', NOW(), NOW()),
+    ('factory_image_alt', '我们工厂的碳纤维手工铺层工序', 'string', 'zh_cn', 'website_profile', true, 'Website profile: factory_image_alt', NOW(), NOW()),
+    ('factory_image_caption', '我负责表达的网站，来自我们真实的制造工作。', 'string', 'zh_cn', 'website_profile', true, 'Website profile: factory_image_caption', NOW(), NOW()),
+    ('factory_eyebrow', '我们共同的工作', 'string', 'zh_cn', 'website_profile', true, 'Website profile: factory_eyebrow', NOW(), NOW()),
+    ('factory_title', '查看我们的工厂', 'string', 'zh_cn', 'website_profile', true, 'Website profile: factory_title', NOW(), NOW()),
+    ('factory_body', '网站上的内容最终要回到真实的产品、制造、研发和质量控制。这里是我的视角，但它所指向的仍然是我们正在一起建设的工厂。', 'string', 'zh_cn', 'website_profile', true, 'Website profile: factory_body', NOW(), NOW()),
+    ('factory_cta', '查看工厂与制造流程', 'string', 'zh_cn', 'website_profile', true, 'Website profile: factory_cta', NOW(), NOW()),
+    ('avatar_url', '', 'string', 'global', 'website_profile', true, 'Website profile: avatar_url', NOW(), NOW()),
+    ('factory_image_url', '/company/ourstory/factory/tanzanite-factory-premoldlayupworkshop6.webp', 'string', 'global', 'website_profile', true, 'Website profile: factory_image_url', NOW(), NOW()),
+    ('factory_link', '/company/about#factory', 'string', 'global', 'website_profile', true, 'Website profile: factory_link', NOW(), NOW())
+ON CONFLICT (key, locale) DO UPDATE
+SET
+    value = EXCLUDED.value,
+    type = EXCLUDED.type,
+    "group" = EXCLUDED."group",
+    is_public = EXCLUDED.is_public,
+    description = EXCLUDED.description,
+    updated_at = NOW()
+WHERE COALESCE(BTRIM(settings.value), '') = '';

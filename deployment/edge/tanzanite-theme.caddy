@@ -7,12 +7,12 @@
 	}
 }
 
-tanzanite.site, www.tanzanite.site {
+tanzanite.site, www.tanzanite.site, learn.gripe, www.learn.gripe {
 	encode zstd gzip
 	reverse_proxy theme-web:8080
 }
 
-admin.tanzanite.site {
+admin.tanzanite.site, admin.learn.gripe {
 	encode zstd gzip
 	reverse_proxy theme-web:8080
 }

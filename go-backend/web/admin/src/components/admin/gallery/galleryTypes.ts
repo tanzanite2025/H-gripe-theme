@@ -5,6 +5,7 @@ export type GalleryConfirmationType = '' | 'delete-gallery' | 'delete-image' | '
 
 export interface GalleryImage {
   id: GalleryId
+  media_asset_id?: GalleryId | null
   url?: string | null
   thumbnail?: string | null
   title?: string | null
@@ -12,6 +13,13 @@ export interface GalleryImage {
   tags?: string | null
   order?: number | string | null
   sort_order?: number | string | null
+}
+
+export interface GalleryProductLink {
+  product_id: GalleryId
+  name?: string | null
+  slug?: string | null
+  locale?: string | null
 }
 
 export interface GalleryRecord {
@@ -22,6 +30,7 @@ export interface GalleryRecord {
   description?: string | null
   cover_image?: string | null
   images?: GalleryImage[] | null
+  product_links?: GalleryProductLink[] | null
   image_count?: number | string | null
   images_count?: number | string | null
   created_at?: string | null
@@ -38,10 +47,13 @@ export interface GalleryForm {
   title: string
   slug: string
   description: string
+  product_links: GalleryProductLink[]
+  images: GalleryImageForm[]
 }
 
 export interface GalleryImageForm {
   id: GalleryId | null
+  media_asset_id: GalleryId | null
   url: string
   thumbnail: string
   title: string
@@ -54,11 +66,12 @@ export interface GalleryPayload {
   title: string
   slug: string
   description: string
+  product_ids: number[]
+  images?: GalleryImagePayload[]
 }
 
 export interface GalleryImagePayload {
-  url: string
-  thumbnail: string
+  media_asset_id: number | null
   title: string
   description: string
   tags: string

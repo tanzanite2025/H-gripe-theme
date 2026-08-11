@@ -4,7 +4,7 @@ Last updated: 2026-07-25
 
 This note is the current source of truth for the Inner Tube entry on `/guides/tireguides` and its relationship with the storefront shop/search flow.
 
-The old WordPress / Tanzanite Setting / WP REST `tube_specs` plan is no longer the active architecture. Tanzanite storefront search now follows the Nuxt + Go backend product-type path.
+The old WordPress / site settings / WP REST `tube_specs` plan is no longer the active architecture. our storefront search now follows the Nuxt + Go backend product-type path.
 
 ## Current goal
 
@@ -61,7 +61,7 @@ If `inner-tube` is not present in `GET /api/v1/products/types`, the flow safely 
 - The CTA preselects the `Inner tube` chip and passes the stable `inner-tube` slug through the shared search state.
 - `/shop` consumes the slug through the same category mechanism as manual category selection.
 - The product request uses the single backend query parameter `product_type=<slug>`.
-- No old WordPress `tube_specs` table, WP REST endpoint, or Tanzanite Setting plugin page is part of the current path.
+- No old WordPress `tube_specs` table, WP REST endpoint, or site settings plugin page is part of the current path.
 
 ## Still not fully closed
 

@@ -15,8 +15,8 @@ export const supportWarrantyFaq: PageFaqData = {
       items: [
         {
           id: 'war-1',
-          question: 'What is the warranty period for Tanzanite wheels?',
-          answer: `We offer two coverage options for all Tanzanite series Wheels/Rims:
+          question: 'What is the warranty period for our wheels?',
+          answer: `We offer two coverage options for all our series Wheels/Rims:
             <ul>
               <li><strong>Standard Warranty</strong>: 5 Years from the date of purchase (included by default).</li>
               <li><strong>Lifetime Warranty</strong>: Available as an upgrade for USD $100 per rim.</li>
@@ -84,7 +84,7 @@ export const supportWarrantyFaq: PageFaqData = {
           question: 'Who covers shipping costs?',
           answer: `Shipping responsibility depends on when the claim is made:
             <ul>
-              <li><strong>Within 30 days</strong> of receipt: Tanzanite covers shipping costs.</li>
+              <li><strong>Within 30 days</strong> of receipt: our covers shipping costs.</li>
               <li><strong>After 30 days</strong>: The customer is responsible for shipping costs.</li>
             </ul>`,
           tags: ['shipping', 'costs'],

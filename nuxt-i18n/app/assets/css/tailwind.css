@@ -43,6 +43,9 @@
     --tz-mobile-viewport-height: var(--tz-mobile-small-viewport-height);
     --tz-mobile-safe-viewport-height: calc(var(--tz-mobile-viewport-height) - var(--tz-safe-area-top) - var(--tz-safe-area-bottom));
     --tz-mobile-modal-safe-padding-bottom: max(0.75rem, calc(0.75rem + var(--tz-safe-area-bottom)));
+    --tz-mobile-cookie-banner-height: 0px;
+    --tz-bottom-dock-height: 4.5rem;
+    --tz-bottom-dock-content-clearance: calc(var(--tz-bottom-dock-height) + 1.25rem);
 
     /*
       Semantic text colors for the dark storefront.
@@ -442,6 +445,11 @@
 }
 
 @media (max-width: 767px) {
+  :root {
+    --tz-bottom-dock-height: calc(4rem + var(--tz-safe-area-bottom));
+    --tz-bottom-dock-content-clearance: calc(var(--tz-bottom-dock-height) + var(--tz-mobile-cookie-banner-height, 0px) + 1rem);
+  }
+
   .page-content-shell {
     width: calc(100% - 4px);
   }

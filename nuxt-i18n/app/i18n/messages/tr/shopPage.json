@@ -4,7 +4,7 @@
     "loading": "Ürünler yükleniyor...",
     "empty": {
       "title": "Henüz kullanılabilir ürün yok.",
-      "description": "Ürünler Tanzanite eklentisiyle yayınlandığında burada otomatik olarak görünecek.",
+      "description": "Products will appear here automatically once they are published.",
       "categoryTitle": "No products are available in {category} yet.",
       "categoryDescription": "Try another category or clear the category filter to view all products."
     }
@@ -14,6 +14,6 @@
     "view": "Görüntüle"
   },
   "feedback": {
-    "title": "Tanzanite mağazası hakkındaki geri bildiriminizi paylaşın"
+    "title": "Share your feedback about the store"
   }
 }

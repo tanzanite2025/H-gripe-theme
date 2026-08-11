@@ -5,6 +5,7 @@
     <Transition name="cookie-slide">
       <div 
         v-if="showBanner && !showModal" 
+        ref="bannerRef"
         class="cookie-banner fixed left-0 right-0 z-[9999] bg-[rgba(0,0,0,0.78)] border-t border-white/10 shadow-[0_-10px_30px_rgba(0,0,0,0.45)]"
       >
         <div class="cookie-banner-inner max-w-5xl mx-auto px-4 py-4 flex flex-wrap items-center justify-center gap-4 sm:justify-between">
@@ -163,7 +164,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from '#imports'
 import {
   COOKIE_CONSENT_KEY,
@@ -175,6 +176,30 @@ const { t } = useI18n()
 
 const showBanner = ref(false)
 const showModal = ref(false)
+const bannerRef = ref<HTMLElement | null>(null)
+let bannerResizeObserver: ResizeObserver | null = null
+
+const clearMobileCookieBannerHeight = () => {
+  if (typeof document !== 'undefined') {
+    document.documentElement.style.removeProperty('--tz-mobile-cookie-banner-height')
+  }
+}
+
+const updateMobileCookieBannerHeight = () => {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return
+
+  const isMobileViewport = typeof window.matchMedia === 'function'
+    ? window.matchMedia('(max-width: 767px)').matches
+    : window.innerWidth <= 767
+
+  if (!isMobileViewport || !showBanner.value || showModal.value || !bannerRef.value) {
+    clearMobileCookieBannerHeight()
+    return
+  }
+
+  const height = Math.ceil(bannerRef.value.getBoundingClientRect().height)
+  document.documentElement.style.setProperty('--tz-mobile-cookie-banner-height', `${height}px`)
+}
 
 const preferences = ref({
   performance: false,
@@ -249,6 +274,40 @@ onMounted(() => {
       advertising: existing.advertising
     }
   }
+
+  if (typeof window !== 'undefined') {
+    window.addEventListener('resize', updateMobileCookieBannerHeight)
+    if ('ResizeObserver' in window) {
+      bannerResizeObserver = new ResizeObserver(() => updateMobileCookieBannerHeight())
+      if (bannerRef.value) {
+        bannerResizeObserver.observe(bannerRef.value)
+      }
+    }
+    nextTick(updateMobileCookieBannerHeight)
+  }
+})
+
+watch(bannerRef, (banner, previousBanner) => {
+  if (bannerResizeObserver && previousBanner) {
+    bannerResizeObserver.unobserve(previousBanner)
+  }
+  if (bannerResizeObserver && banner) {
+    bannerResizeObserver.observe(banner)
+  }
+  nextTick(updateMobileCookieBannerHeight)
+})
+
+watch([showBanner, showModal], () => {
+  nextTick(updateMobileCookieBannerHeight)
+})
+
+onBeforeUnmount(() => {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('resize', updateMobileCookieBannerHeight)
+  }
+  bannerResizeObserver?.disconnect()
+  bannerResizeObserver = null
+  clearMobileCookieBannerHeight()
 })
 
 // 暴露方法供外部调用（如用户想重新设置偏好）
@@ -260,7 +319,7 @@ defineExpose({
 
 <style>
 .cookie-banner {
-  bottom: calc(4rem + var(--tz-safe-area-bottom, 0px));
+  bottom: var(--tz-bottom-dock-height, 4.5rem);
 }
 
 .cookie-fade-enter-active,
@@ -298,9 +357,4 @@ defineExpose({
   }
 }
 
-@media (min-width: 768px) {
-  .cookie-banner {
-    bottom: calc(4.5rem + var(--tz-safe-area-bottom, 0px));
-  }
-}
 </style>

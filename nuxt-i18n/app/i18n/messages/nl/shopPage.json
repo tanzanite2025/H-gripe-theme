@@ -4,7 +4,7 @@
     "loading": "Producten laden...",
     "empty": {
       "title": "Er zijn nog geen producten beschikbaar.",
-      "description": "Zodra producten via de Tanzanite-plugin worden gepubliceerd, verschijnen ze hier automatisch.",
+      "description": "Products will appear here automatically once they are published.",
       "categoryTitle": "No products are available in {category} yet.",
       "categoryDescription": "Try another category or clear the category filter to view all products."
     }
@@ -14,6 +14,6 @@
     "view": "Bekijken"
   },
   "feedback": {
-    "title": "Deel je feedback over de Tanzanite-winkel"
+    "title": "Share your feedback about the store"
   }
 }

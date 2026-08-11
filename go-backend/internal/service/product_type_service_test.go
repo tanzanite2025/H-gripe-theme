@@ -100,6 +100,30 @@ func TestProductServicePersistsAndReplacesProductTypeTranslations(t *testing.T) 
 	assert.Equal(t, "Jeu de roues", updated.NameForLocale("fr"))
 }
 
+func TestProductServiceListsPublicProductTypesWithoutSpecifications(t *testing.T) {
+	_, productService := newTestProductService(t)
+
+	created, err := productService.CreateProductType(ProductTypeInput{
+		Name:      "Wheelset",
+		Slug:      "wheelset_public_index",
+		IsEnabled: true,
+		Translations: []ProductTypeTranslationInput{
+			{Locale: "zh-CN", Name: "轮组"},
+		},
+		SpecDefinitions: []ProductSpecDefinitionInput{
+			{Name: "Material", Slug: "material", FieldType: "text", IsVisible: true},
+		},
+	})
+	require.NoError(t, err)
+	require.NotEmpty(t, created.SpecDefinitions)
+
+	publicTypes, err := productService.ListPublicProductTypes(false)
+	require.NoError(t, err)
+	require.Len(t, publicTypes, 1)
+	assert.Empty(t, publicTypes[0].SpecDefinitions)
+	assert.Equal(t, "轮组", publicTypes[0].NameForLocale("zh_cn"))
+}
+
 func TestProductServiceUpdatesProductTypeAndReplacesSpecs(t *testing.T) {
 	_, productService := newTestProductService(t)
 	created, err := productService.CreateProductType(ProductTypeInput{

@@ -121,8 +121,8 @@ const paymentIcons: PaymentIcon[] = [
 
 <style scoped>
 .app-footer {
-  /* 增大底部 padding，预留空间给底部浮动 Dock (Desktop: 8rem, Mobile: 6rem) */
-  padding: 1rem 1.5rem 6.5rem;
+  /* Keep the final footer row clear of the fixed bottom dock. */
+  padding: 1rem 1.5rem var(--tz-bottom-dock-content-clearance, 6.5rem);
   color: #f5f6fa;
 }
 
@@ -345,8 +345,7 @@ const paymentIcons: PaymentIcon[] = [
 
 @media (max-width: 768px) {
   .app-footer {
-    /* 移动端 Dock 通常更高，底部多留一些空间 */
-    padding: 1rem 1.25rem 4.5rem;
+    padding: 1rem 1.25rem var(--tz-bottom-dock-content-clearance, 5rem);
   }
 
   .app-footer-background-surface {

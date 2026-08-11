@@ -2,6 +2,10 @@ import { reactive, ref } from 'vue'
 import { toast } from 'vue-sonner'
 import shippingApi from '@/api/shipping'
 import {
+  parseAddressRegionCodes,
+  serializeAddressRegionCodes,
+} from '@/lib/addressRegions'
+import {
   clearErrors,
   defaultShippingTemplateForm,
   defaultShippingZoneForm,
@@ -180,9 +184,9 @@ export const useShippingTemplateManager = (options: Record<string, any> = {}) =>
     resetReactive(zoneForm, {
       ...defaultShippingZoneForm(),
       ...zone,
-      countries: zone.countries || '[]',
-      states: zone.states || '[]',
-      postal_codes: zone.postal_codes || '[]',
+      countries: serializeAddressRegionCodes(parseAddressRegionCodes(zone.countries)),
+      states: '[]',
+      postal_codes: '[]',
       enabled: zone.enabled !== false,
     })
     clearErrors(zoneErrors)
@@ -192,7 +196,7 @@ export const useShippingTemplateManager = (options: Record<string, any> = {}) =>
   const validateZone = () => {
     clearErrors(zoneErrors)
     if (!zoneForm.name?.trim()) zoneErrors.name = '请输入区域名称'
-    if (!zoneForm.countries?.trim() || zoneForm.countries.trim() === '[]') zoneErrors.countries = '请输入至少一个国家/地区代码'
+    if (!parseAddressRegionCodes(zoneForm.countries).length) zoneErrors.countries = '请选择至少一个国家/地区'
     return Object.keys(zoneErrors).length === 0
   }
 
@@ -203,9 +207,9 @@ export const useShippingTemplateManager = (options: Record<string, any> = {}) =>
     try {
       const payload = {
         name: zoneForm.name.trim(),
-        countries: zoneForm.countries.trim(),
-        states: zoneForm.states?.trim() || '[]',
-        postal_codes: zoneForm.postal_codes?.trim() || '[]',
+        countries: serializeAddressRegionCodes(parseAddressRegionCodes(zoneForm.countries)),
+        states: '[]',
+        postal_codes: '[]',
         enabled: Boolean(zoneForm.enabled),
       }
 

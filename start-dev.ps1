@@ -269,7 +269,7 @@ function Wait-DevHttpReady(
 }
 
 function Stop-Dev {
-  Write-Section 'Stopping Tanzanite local DEV'
+  Write-Section 'Stopping local DEV'
 
   foreach ($port in $AppPorts) {
     Stop-ListenersOnPort $port
@@ -290,7 +290,7 @@ function Stop-Dev {
 }
 
 if ($PortsOnly) {
-  Write-Section 'Tanzanite local DEV ports'
+  Write-Section 'Local DEV ports'
   Show-Ports
   exit 0
 }
@@ -300,7 +300,7 @@ if ($StopOnly) {
   exit 0
 }
 
-Write-Section 'Starting Tanzanite local DEV'
+Write-Section 'Starting local DEV'
 Write-Host 'Port plan:' -ForegroundColor Cyan
 Write-Host "  Storefront Nuxt : http://localhost:$($Ports.Storefront)" -ForegroundColor White
 Write-Host "  Go API          : http://localhost:$($Ports.Api)" -ForegroundColor White
@@ -356,6 +356,7 @@ $backendCommand = @"
 `$env:DB_NAME='tanzanite'
 `$env:REDIS_HOST='localhost'
 `$env:REDIS_PORT='$($Ports.Redis)'
+`$env:PAYMENT_CONFIG_MASTER_KEY='dev-payment-config-master-key-change-before-production'
 `$env:CORS_ORIGINS='http://localhost:$($Ports.Storefront),http://127.0.0.1:$($Ports.Storefront),http://localhost:$($Ports.Admin),http://127.0.0.1:$($Ports.Admin),http://localhost:$($Ports.Api),http://127.0.0.1:$($Ports.Api)'
 `$env:STOREFRONT_HTML_CACHE_PURGE_URL='http://localhost:$($Ports.Storefront)/_internal/html-cache/purge'
 `$env:STOREFRONT_HTML_CACHE_PURGE_TOKEN='dev-html-cache-purge-token'

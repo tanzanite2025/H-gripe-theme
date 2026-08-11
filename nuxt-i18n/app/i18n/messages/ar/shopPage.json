@@ -4,7 +4,7 @@
     "loading": "جارٍ تحميل المنتجات...",
     "empty": {
       "title": "لا توجد منتجات متاحة بعد.",
-      "description": "عند نشر المنتجات عبر إضافة Tanzanite، ستظهر هنا تلقائيًا.",
+      "description": "Products will appear here automatically once they are published.",
       "categoryTitle": "No products are available in {category} yet.",
       "categoryDescription": "Try another category or clear the category filter to view all products."
     }
@@ -14,6 +14,6 @@
     "view": "عرض"
   },
   "feedback": {
-    "title": "شارك ملاحظاتك حول متجر Tanzanite"
+    "title": "Share your feedback about the store"
   }
 }

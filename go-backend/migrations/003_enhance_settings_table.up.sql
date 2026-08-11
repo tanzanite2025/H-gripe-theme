@@ -32,11 +32,11 @@ CREATE INDEX IF NOT EXISTS idx_settings_is_public ON settings(is_public);
 -- 站点设置
 INSERT INTO settings (key, value, type, locale, "group", is_public, description, created_at, updated_at)
 VALUES 
-    ('site_name', 'Tanzanite', 'string', 'en', 'site', true, 'Site name', NOW(), NOW()),
+    ('site_name', 'Store', 'string', 'en', 'site', true, 'Site name', NOW(), NOW()),
     ('site_description', 'Premium E-commerce Platform', 'string', 'en', 'site', true, 'Site description', NOW(), NOW()),
     ('site_logo', '/images/logo.png', 'string', 'en', 'site', true, 'Site logo URL', NOW(), NOW()),
-    ('contact_email', 'contact@tanzanite.site', 'string', 'en', 'site', true, 'Contact email', NOW(), NOW()),
-    ('contact_phone', '+1-234-567-8900', 'string', 'en', 'site', true, 'Contact phone', NOW(), NOW())
+    ('contact_email', '', 'string', 'en', 'site', true, 'Contact email', NOW(), NOW()),
+    ('contact_phone', '', 'string', 'en', 'site', true, 'Contact phone', NOW(), NOW())
 ON CONFLICT (key, locale) DO NOTHING;
 
 -- 快速购买设置
@@ -51,8 +51,8 @@ ON CONFLICT (key, locale) DO NOTHING;
 -- SEO 设置
 INSERT INTO settings (key, value, type, locale, "group", is_public, description, created_at, updated_at)
 VALUES
-    ('home_meta_title', 'Tanzanite - Premium E-commerce', 'string', 'en', 'seo', true, 'Default home meta title', NOW(), NOW()),
-    ('home_meta_description', 'Shop premium products at Tanzanite', 'string', 'en', 'seo', true, 'Default home meta description', NOW(), NOW())
+    ('home_meta_title', 'Premium Cycling Components', 'string', 'en', 'seo', true, 'Default home meta title', NOW(), NOW()),
+    ('home_meta_description', 'Shop premium cycling components', 'string', 'en', 'seo', true, 'Default home meta description', NOW(), NOW())
 ON CONFLICT (key, locale) DO NOTHING;
 
 -- Analytics 设置
@@ -80,8 +80,8 @@ VALUES
     ('smtp_port', '587', 'number', 'en', 'email', false, 'SMTP server port', NOW(), NOW()),
     ('smtp_username', '', 'string', 'en', 'email', false, 'SMTP username', NOW(), NOW()),
     ('smtp_password', '', 'string', 'en', 'email', false, 'SMTP password (encrypted)', NOW(), NOW()),
-    ('from_email', 'noreply@tanzanite.site', 'string', 'en', 'email', false, 'From email address', NOW(), NOW()),
-    ('from_name', 'Tanzanite', 'string', 'en', 'email', false, 'From name', NOW(), NOW())
+    ('from_email', 'noreply@example.com', 'string', 'en', 'email', false, 'From email address', NOW(), NOW()),
+    ('from_name', 'Store Support', 'string', 'en', 'email', false, 'From name', NOW(), NOW())
 ON CONFLICT (key, locale) DO NOTHING;
 
 -- 验证查询

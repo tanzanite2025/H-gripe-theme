@@ -43,8 +43,8 @@ data:
   api-dashboard.json: |
     {
       "dashboard": {
-        "title": "Tanzanite API Metrics",
-        "tags": ["tanzanite", "api"],
+        "title": "Storefront API Metrics",
+        "tags": ["storefront", "api"],
         "timezone": "browser",
         "panels": [
           {

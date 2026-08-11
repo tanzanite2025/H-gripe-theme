@@ -93,7 +93,7 @@ func (s *emailService) SendHTMLEmail(to []string, subject, templateName string, 
 func (s *emailService) SendOrderConfirmation(to string, orderData interface{}) error {
 	return s.SendHTMLEmail(
 		[]string{to},
-		"订单确认 - Tanzanite",
+		"订单确认",
 		"order_confirmation.html",
 		orderData,
 	)
@@ -103,7 +103,7 @@ func (s *emailService) SendOrderConfirmation(to string, orderData interface{}) e
 func (s *emailService) SendShippingNotification(to string, shippingData interface{}) error {
 	return s.SendHTMLEmail(
 		[]string{to},
-		"您的订单已发货 - Tanzanite",
+		"您的订单已发货",
 		"shipping_notification.html",
 		shippingData,
 	)
@@ -113,7 +113,7 @@ func (s *emailService) SendShippingNotification(to string, shippingData interfac
 func (s *emailService) SendPasswordReset(to string, resetData interface{}) error {
 	return s.SendHTMLEmail(
 		[]string{to},
-		"重置密码 - Tanzanite",
+		"重置密码",
 		"password_reset.html",
 		resetData,
 	)
@@ -123,7 +123,7 @@ func (s *emailService) SendPasswordReset(to string, resetData interface{}) error
 func (s *emailService) SendWelcomeEmail(to string, userData interface{}) error {
 	return s.SendHTMLEmail(
 		[]string{to},
-		"欢迎加入 Tanzanite",
+		"欢迎加入",
 		"welcome.html",
 		userData,
 	)
@@ -178,8 +178,8 @@ func LoadConfigFromEnv() *SMTPConfig {
 		Port:     getEnvInt("SMTP_PORT", 587),
 		Username: getEnv("SMTP_USERNAME", ""),
 		Password: getEnv("SMTP_PASSWORD", ""),
-		From:     getEnv("SMTP_FROM", "noreply@tanzanite.com"),
-		FromName: getEnv("SMTP_FROM_NAME", "Tanzanite"),
+		From:     getEnv("SMTP_FROM", "noreply@example.com"),
+		FromName: getEnv("SMTP_FROM_NAME", "Store Support"),
 	}
 }
 

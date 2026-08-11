@@ -2,7 +2,7 @@
 
 Last updated: 2026-07-28
 
-This document defines how Tanzanite should retain visitor profile data, behavior events, and risk telemetry without letting low-value traffic fill the database. It is intentionally written as a long-term implementation guide so the work can pause and resume without re-deciding the same boundaries.
+This document defines how H-GRIPE should retain visitor profile data, behavior events, and risk telemetry without letting low-value traffic fill the database. It is intentionally written as a long-term implementation guide so the work can pause and resume without re-deciding the same boundaries.
 
 ## Goal
 

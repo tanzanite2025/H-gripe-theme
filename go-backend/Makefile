@@ -19,7 +19,7 @@ BIN_DIR=bin
 COVERAGE_DIR=coverage
 
 help: ## 显示帮助信息
-	@echo "Tanzanite API - Makefile命令"
+	@echo "Storefront API - Makefile命令"
 	@echo ""
 	@awk 'BEGIN {FS = ":.*##"; printf "\033[36m\033[0m\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
 

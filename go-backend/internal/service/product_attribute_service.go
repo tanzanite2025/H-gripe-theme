@@ -100,6 +100,10 @@ func (s *ProductService) ListProductTypes(includeDisabled bool) ([]product.Produ
 	return s.productRepo.FindAllProductTypes(includeDisabled)
 }
 
+func (s *ProductService) ListPublicProductTypes(includeDisabled bool) ([]product.ProductType, error) {
+	return s.productRepo.FindPublicProductTypes(includeDisabled)
+}
+
 func (s *ProductService) GetProductType(id uint) (*product.ProductType, error) {
 	productType, err := s.productRepo.FindProductTypeByID(id)
 	if err != nil {

@@ -1,6 +1,6 @@
 # Backend Security Follow-Ups
 
-Last updated: 2026-07-26
+Last updated: 2026-08-11
 
 This file tracks security work that is not fully closed by code-only mitigations. The items below are mandatory before treating the related public flows as fully hardened.
 
@@ -20,9 +20,9 @@ These mitigations reduce immediate exposure. They do not fully close public flow
 
 | Area | Current shape | Required target | Acceptance criteria |
 | --- | --- | --- | --- |
-| Public shipment tracking | Implemented: `GET /api/v1/shipping/track/:tracking_number` now requires authentication and checks tracking shipment -> order -> current user, with admin/order-view bypass. | Keep the raw tracking number out of unauthenticated access. Preserve generic not-found behavior for non-owned shipments. | Raw tracking number alone cannot read shipment history. Tests cover raw unauthenticated access, wrong owner, valid owner, and admin access. |
-| Newsletter subscription flows | Implemented: new subscriptions remain `pending`; confirmation, unsubscribe, resubscribe, and status actions use signed, expiring, single-use email challenges. Email-only requests do not mutate state. | Configure SMTP and `STOREFRONT_BASE_URL` in each deployed environment. Add an end-to-end test that proves the email link reaches the intended frontend/API flow. | A subscription is not active before confirmation. Tokens expire and replay safely. Responses remain enumeration-safe. |
-| Warranty order verification and claims | Implemented: order-number/email verification requests are generic; warranty claim creation requires a matching signed, expiring, single-use email challenge. | Configure SMTP and `STOREFRONT_BASE_URL`, then add an end-to-end test from request email through storefront token verification and claim submission. | No claim is created without the matching challenge. Wrong order/email, expired, and replayed tokens are rejected. |
+| Public shipment tracking | Implemented and route-tested: `GET /api/v1/shipping/track/:tracking_number` requires authentication and checks tracking shipment -> order -> current user, with admin/order-view bypass. | Keep the raw tracking number out of unauthenticated access. Preserve generic not-found behavior for non-owned shipments. | Raw tracking number alone cannot read shipment history. Tests cover raw unauthenticated access, wrong owner, valid owner, and admin access. |
+| Newsletter subscription flows | Implemented and route-tested: new subscriptions remain `pending`; confirmation, unsubscribe, resubscribe, and status actions use signed, expiring, single-use email challenges. Email-only requests do not mutate state. | Configure SMTP and `STOREFRONT_BASE_URL` in each deployed environment. | A subscription is not active before confirmation. Tokens expire and replay safely. Responses remain enumeration-safe. |
+| Warranty order verification and claims | Implemented and route-tested: order-number/email verification requests are generic; the storefront token verification route unlocks claim submission; claim creation requires a matching signed, expiring, single-use email challenge. | Configure SMTP and `STOREFRONT_BASE_URL` in each deployed environment. Keep the challenge and second-factor flow enabled. | The route test covers request email, storefront token verification, multipart claim submission, and token replay rejection. No claim is created without the matching challenge. |
 
 ## Abuse-control boundary
 
@@ -37,13 +37,16 @@ The current controls are suitable for a VPS deployment, but they are layered abu
 
 These items remain mandatory product-security follow-ups even though the current code has mitigations:
 
-1. Public tracking lookup must use authenticated ownership, a short-lived signed token, or an order-number plus email verification challenge. A raw tracking number must not be treated as durable authorization.
-2. Newsletter subscribe, unsubscribe, resubscribe, and status flows must remain behind double opt-in or signed, expiring email tokens. CAPTCHA and rate limits alone are not proof of mailbox ownership.
-3. Warranty order-number plus email verification must remain behind email confirmation or a second proof factor. CAPTCHA and matching fields alone are not a complete claim-authorization factor.
+1. Newsletter production release requires verified `SMTP_*` and `STOREFRONT_BASE_URL` configuration in each deployed environment; subscribe, unsubscribe, resubscribe, and status flows must remain behind double opt-in or signed, expiring email tokens.
+2. Warranty production release requires verified `SMTP_*` and `STOREFRONT_BASE_URL` configuration in each deployed environment; order-number plus email verification must remain behind email confirmation or a second proof factor. CAPTCHA and matching fields alone are not a complete claim-authorization factor.
 
 ## Mandatory release/security scans
 
 These checks are mandatory before a production image is released. The existing local security script may be used as a starting point, but release readiness requires the exact built image and repository history to be scanned.
+
+The release workflow in `.github/workflows/publish-images.yml` already enforces the container-image control: it builds each `linux/amd64` release image, scans the exact local tag with pinned Trivy `0.58.2` and Grype `0.116.0` containers, uploads both reports, and blocks the push when either scanner reports a high or critical finding. The workflow implementation does not replace release evidence; reports for the exact release tag or digest must still be retained.
+
+Historical secret scanning is also enforced in `.github/workflows/go-backend-ci.yml` and `.github/workflows/publish-images.yml`: both check out full history, run the pinned gitleaks `v8.24.2` container with `.gitleaks.toml` and `--log-opts="--all --tags"`, upload the SARIF report, and fail the job when scanning fails or returns findings. The current allowlist is limited to documented examples and test-only WeChat key material; any real secret still requires revocation or rotation.
 
 | Area | Required target | Acceptance criteria |
 | --- | --- | --- |
@@ -52,12 +55,19 @@ These checks are mandatory before a production image is released. The existing l
 
 ## VPS release evidence
 
+Use `deployment/verify-vps-release-boundary.sh` from the production checkout to
+create the boundary evidence. Run it once before deployment for the static
+Compose check, then run it with `CHECK_CONNECTIVITY=true` after all services are
+healthy for runtime network and host-port checks. The verifier reads resolved
+network names from `docker compose config --format json` and writes a
+timestamped, sanitized report directory under `release-evidence/`.
+
 For each release, retain:
 
 - the exact image tag or digest deployed;
 - Trivy and Grype reports for that exact image;
 - the gitleaks report and scanned history boundary;
-- the Compose config output showing no business-service host ports;
+- the sanitized Compose JSON showing no business-service host ports and the resolved network names;
 - a connectivity check proving PostgreSQL is reachable from `api`/`migrate` only and not from `web`, `storefront`, `admin`, or the public host interface;
 - Prometheus alert rules and the notification receiver used for payment and verification alerts.
 

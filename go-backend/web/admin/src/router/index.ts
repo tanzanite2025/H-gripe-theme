@@ -390,6 +390,8 @@ const routes: RouteRecordRaw[] = [
           social: 'SettingsSocial',
           currency: 'SettingsCurrency',
           markets: 'SettingsMarkets',
+          'website-profile': 'SettingsWebsiteProfile',
+          'paypal-invoice-seller-profile': 'SettingsPayPalInvoiceSellerProfile',
           api: 'SettingsApi',
           commercial_crawler: 'SettingsCommercialCrawler',
         }),
@@ -424,6 +426,18 @@ const routes: RouteRecordRaw[] = [
         name: 'SettingsMarkets',
         component: () => import('@/views/Settings.vue'),
         meta: { title: '市场与本地化语种', permission: 'settings:view' }
+      },
+      {
+        path: 'settings/website-profile',
+        name: 'SettingsWebsiteProfile',
+        component: () => import('@/views/SettingsWebsiteProfile.vue'),
+        meta: { title: '我与这个网站', permission: 'settings:view' }
+      },
+      {
+        path: 'settings/paypal-invoice-seller-profile',
+        name: 'SettingsPayPalInvoiceSellerProfile',
+        component: () => import('@/views/SettingsPayPalInvoiceSellerProfile.vue'),
+        meta: { title: 'PayPal 发票卖方资料', permission: 'settings:view' }
       },
       {
         path: 'settings/api',

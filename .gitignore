@@ -41,3 +41,6 @@ coverage/
 
 # Hostinger runtime environment
 deployment/production.env
+
+# Release boundary evidence is retained outside Git
+release-evidence/

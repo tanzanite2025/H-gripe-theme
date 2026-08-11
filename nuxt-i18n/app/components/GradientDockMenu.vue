@@ -43,18 +43,17 @@
       </button>
 
       <!-- 4. Cart -->
-      <button 
+      <button
         class="dock-cart-button"
         type="button"
         :class="{ 'dock-cart-button--active': itemsCount > 0 }"
-        @click="openCartDrawer" 
+        @click="openCartDrawer"
         :aria-label="cartActionAriaLabel"
       >
-        <span class="dock-cart-icon-wrap" aria-hidden="true">
-          <Icon name="lucide:shopping-cart" class="dock-cart-icon" />
+        <span class="dock-cart-content">
+          <span class="dock-cart-total">{{ priceDisplay }}</span>
+          <span class="dock-cart-count">{{ itemsCount }}</span>
         </span>
-        <span class="dock-cart-total">{{ priceDisplay }}</span>
-        <span class="dock-cart-count" :class="{ 'dock-cart-count--empty': itemsCount <= 0 }">{{ itemsCount }}</span>
       </button>
 
     </div>
@@ -223,6 +222,7 @@ watchEffect(() => {
 
 <style scoped>
 .dock-bar {
+  min-height: var(--tz-bottom-dock-height, 4.5rem);
   background: rgba(17, 17, 22, 0.78);
   background: color-mix(in srgb, var(--tz-card-surface) 78%, transparent);
   border-top: 1px solid rgba(255, 255, 255, 0.08);
@@ -239,20 +239,23 @@ watchEffect(() => {
 }
 
 .dock-cart-button {
-  position: relative;
   display: flex;
   flex: 1.18 1 0;
   min-width: 6.8rem;
-  height: 2.75rem;
+  height: 2.5rem;
   align-items: center;
   justify-content: center;
-  gap: 0.55rem;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  padding-inline: 0.6rem;
+  border: 1px solid rgba(255, 255, 255, 0.82);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.045);
-  color: var(--tz-text-secondary);
+  background: #ffffff;
+  color: #050505;
   font-weight: 900;
   line-height: 1;
+  white-space: nowrap;
+  box-shadow:
+    0 10px 24px rgba(0, 0, 0, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.82);
   transition:
     color 180ms ease,
     border-color 180ms ease,
@@ -260,65 +263,54 @@ watchEffect(() => {
     transform 180ms ease;
 }
 
+.dock-cart-content {
+  display: inline-flex;
+  min-width: 0;
+  max-width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+}
+
 .dock-cart-button:hover {
-  color: #fff;
+  background: #f8fafc;
+  color: #050505;
   transform: translateY(-0.125rem);
 }
 
 .dock-cart-button--active {
-  border-color: rgba(181, 255, 109, 0.64);
-  background: rgba(181, 255, 109, 0.12);
-  color: #b5ff6d;
+  border-color: #ffffff;
+  background: #ffffff;
+  color: #050505;
 }
 
 .dock-cart-button--active:hover {
-  background: rgba(181, 255, 109, 0.17);
-  color: #d7ffad;
-}
-
-.dock-cart-icon-wrap {
-  position: relative;
-  display: inline-flex;
-  width: 1.75rem;
-  height: 1.75rem;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
-}
-
-.dock-cart-icon {
-  width: 1.75rem;
-  height: 1.75rem;
+  background: #f8fafc;
+  color: #050505;
 }
 
 .dock-cart-count {
-  position: absolute;
-  top: -0.38rem;
-  right: 0.34rem;
   display: inline-flex;
-  min-width: 1.18rem;
-  height: 1.18rem;
+  width: 1.35rem;
+  min-width: 1.35rem;
+  height: 1.35rem;
+  flex: 0 0 auto;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(11, 16, 32, 0.85);
+  border: 0;
   border-radius: 999px;
-  background: #fff;
-  color: #0b1020;
-  font-size: 0.66rem;
+  background: var(--tz-brand-primary, #b5ff6d);
+  color: #050505;
+  font-size: 0.7rem;
   font-weight: 900;
-  padding: 0 0.2rem;
-}
-
-.dock-cart-count--empty {
-  background: rgba(255, 255, 255, 0.86);
-  color: rgba(11, 16, 32, 0.72);
+  padding: 0;
 }
 
 .dock-cart-total {
   min-width: 0;
-  max-width: 5.6rem;
+  max-width: 6rem;
   overflow: hidden;
-  font-size: 0.9rem;
+  font-size: 1.12rem;
   letter-spacing: 0;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -326,24 +318,13 @@ watchEffect(() => {
 
 @media (min-width: 768px) {
   .dock-cart-button {
-    height: 3rem;
+    height: 2.75rem;
     min-width: 7.4rem;
-    gap: 0.55rem;
-  }
-
-  .dock-cart-icon-wrap {
-    width: 2.25rem;
-    height: 2.25rem;
-  }
-
-  .dock-cart-icon {
-    width: 2.25rem;
-    height: 2.25rem;
   }
 
   .dock-cart-total {
-    max-width: 6rem;
-    font-size: 0.96rem;
+    max-width: 6.5rem;
+    font-size: 1.22rem;
   }
 }
 
@@ -355,13 +336,17 @@ watchEffect(() => {
 
   .dock-cart-button {
     min-width: 6.35rem;
-    height: 2.75rem;
-    gap: 0.4rem;
+    height: 2.5rem;
+    padding-inline: 0.45rem;
+  }
+
+  .dock-cart-content {
+    gap: 0.3rem;
   }
 
   .dock-cart-total {
-    max-width: 4.7rem;
-    font-size: 0.86rem;
+    max-width: 4.4rem;
+    font-size: 1rem;
   }
 }
 </style>

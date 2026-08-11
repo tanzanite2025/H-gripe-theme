@@ -13,6 +13,7 @@ var domainManagedSettingGroups = map[string]struct{}{
 	"redeem":              {},
 	"currency":            {},
 	"payment_secret":      {},
+	setting.PayPalDisputeInvoiceSellerProfileGroup: {},
 	seodomain.Group:       {},
 	analyticsdomain.Group: {},
 }
@@ -28,6 +29,7 @@ func IsDomainManagedSettingKey(key string) bool {
 		strings.HasPrefix(normalized, "tz_redeem_") ||
 		strings.HasPrefix(normalized, "currency_") ||
 		strings.HasPrefix(normalized, "payment_gateway_") ||
+		strings.HasPrefix(normalized, "paypal_dispute_invoice_seller_") ||
 		normalized == seodomain.HomeKeys.MetaTitle ||
 		normalized == seodomain.HomeKeys.MetaDescription ||
 		normalized == "google_analytics" ||

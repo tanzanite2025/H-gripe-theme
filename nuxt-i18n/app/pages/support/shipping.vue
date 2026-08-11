@@ -2,14 +2,14 @@
   <div>
     <h2 class="support-page__title">Shipping instructions</h2>
     <p class="support-page__intro">
-      This page provides an overview of Tanzanite shipping, including handling time, delivery
+      This page provides an overview of our shipping, including handling time, delivery
       options, and what to expect for international orders.
     </p>
 
     <section class="support-section">
       <h3 class="support-section__title">Overview</h3>
       <p class="support-section__body">
-        Here we will collect the main shipping guidelines for Tanzanite wheelsets and
+        Here we will collect the main shipping guidelines for our wheelsets and
         components. In the future this page will include detailed examples for different
         regions, typical delivery times, and links to more specific guides.
       </p>

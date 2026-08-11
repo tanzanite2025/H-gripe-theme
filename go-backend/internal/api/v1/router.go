@@ -85,7 +85,7 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 		VisitorProfileService: services.VisitorProfile,
 		VisitorSecret:         cfg.JWT.Secret,
 	})
-	settingsHandler := settings.NewHandler(settingService)
+	settingsHandler := settings.NewHandler(settingService, services.WebsiteProfile)
 	seoHomeHandler := seohomeapi.NewHandler(services.SEO)
 	analyticsHandler := analyticsapi.NewHandler(services.Analytics)
 	storefrontContextHandler := storefront.NewContextHandler(services.StorefrontContext)
@@ -116,6 +116,7 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 		services.StorefrontContext,
 	)
 	paymentHandler.ConfigurePublicBaseURL(cfg.Server.BaseURL)
+	paymentHandler.ConfigureCardBINLimiter(deps.CardBINLimiter)
 	shippingHandler := shipping.NewHandler(services.Shipping, orderService)
 	galleryHandler := gallery.NewGalleryHandler(galleryService)
 	registrationHandler := registration.NewHandler(registrationService, storageSvc, deps.AntiBot)
@@ -411,6 +412,7 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 			// 公开设置
 			settingsGroup.GET("/site", settingsHandler.GetSiteSettings)
 			settingsGroup.GET("/social", settingsHandler.GetSocialSettings)
+			settingsGroup.GET("/website-profile", settingsHandler.GetWebsiteProfile)
 			settingsGroup.GET("/public", settingsHandler.GetAllPublicSettings)
 			settingsGroup.GET("/groups", settingsHandler.GetGroups)
 			settingsGroup.GET("/group/:group", settingsHandler.GetSettingsByGroup)
@@ -499,10 +501,11 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 		{
 			// 公开端点
 			galleryGroup.GET("", galleryHandler.GetGalleries)
-			galleryGroup.GET("/:id", galleryHandler.GetGalleryByID)
-			galleryGroup.GET("/:id/images", galleryHandler.GetGalleryImages)
+			galleryGroup.GET("/slug/:slug", galleryHandler.GetGalleryBySlug)
 			galleryGroup.GET("/images/search", galleryHandler.SearchImages)
 			galleryGroup.GET("/images/tags", galleryHandler.GetImagesByTags)
+			galleryGroup.GET("/:id/images", galleryHandler.GetGalleryImages)
+			galleryGroup.GET("/:id", galleryHandler.GetGalleryByID)
 		}
 
 		// 产品注册路由
