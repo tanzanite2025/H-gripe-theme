@@ -1,13 +1,13 @@
-package admin
+﻿package admin
 
 import (
 	"errors"
 	"math"
 
-	"tanzanite/internal/domain/currency"
-	"tanzanite/internal/pkg/apierror"
-	"tanzanite/internal/pkg/response"
-	"tanzanite/internal/service"
+	"commerce-platform/internal/domain/currency"
+	"commerce-platform/internal/pkg/apierror"
+	"commerce-platform/internal/pkg/response"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

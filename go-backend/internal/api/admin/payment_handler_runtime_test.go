@@ -1,4 +1,4 @@
-package admin
+﻿package admin
 
 import (
 	"encoding/json"
@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	pgateway "tanzanite/internal/pkg/payment"
+	pgateway "commerce-platform/internal/pkg/payment"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"

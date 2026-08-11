@@ -1,8 +1,8 @@
-package service
+﻿package service
 
 import (
 	"errors"
-	"tanzanite/internal/domain/coupon"
+	"commerce-platform/internal/domain/coupon"
 )
 
 type GiftCardDetail struct {

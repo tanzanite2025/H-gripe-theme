@@ -1,4 +1,4 @@
-name: Go Backend CI
+﻿name: Go Backend CI
 
 on:
   push:
@@ -43,9 +43,9 @@ jobs:
       postgres:
         image: postgres:15
         env:
-          POSTGRES_USER: tanzanite
-          POSTGRES_PASSWORD: tanzanite_test
-          POSTGRES_DB: tanzanite_test
+          POSTGRES_USER: commerce_platform
+          POSTGRES_PASSWORD: commerce_platform_test
+          POSTGRES_DB: commerce_platform_test
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -83,9 +83,9 @@ jobs:
         env:
           DB_HOST: localhost
           DB_PORT: 5432
-          DB_USERNAME: tanzanite
-          DB_PASSWORD: tanzanite_test
-          DB_NAME: tanzanite_test
+          DB_USERNAME: commerce_platform
+          DB_PASSWORD: commerce_platform_test
+          DB_NAME: commerce_platform_test
           REDIS_HOST: localhost
           REDIS_PORT: 6379
           JWT_SECRET: test-secret-key-for-ci
@@ -124,7 +124,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: tanzanite-api-binary
+          name: commerce-platform-api-binary
           path: go-backend/server
           retention-days: 7
 

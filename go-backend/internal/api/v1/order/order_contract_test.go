@@ -1,11 +1,11 @@
-package order
+﻿package order
 
 import (
 	"encoding/json"
 	"testing"
 	"time"
 
-	orderdomain "tanzanite/internal/domain/order"
+	orderdomain "commerce-platform/internal/domain/order"
 )
 
 func TestPublicOrderResponseOmitsInternalDatabaseIDs(t *testing.T) {

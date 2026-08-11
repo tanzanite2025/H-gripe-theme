@@ -1,6 +1,6 @@
-package repository
+﻿package repository
 
-import "tanzanite/internal/domain/loyalty"
+import "commerce-platform/internal/domain/loyalty"
 
 // CreateUserLoyalty 创建用户会员信息
 func (r *LoyaltyRepository) CreateUserLoyalty(u *loyalty.UserLoyalty) error {

@@ -1,13 +1,13 @@
-package admin
+﻿package admin
 
 import (
-	seoapi "tanzanite/internal/api/admin/seo"
-	"tanzanite/internal/api/middleware"
-	"tanzanite/internal/api/v1/showcase"
-	"tanzanite/internal/app"
-	"tanzanite/internal/domain/auth"
-	"tanzanite/internal/pkg/config"
-	"tanzanite/internal/pkg/securecookie"
+	seoapi "commerce-platform/internal/api/admin/seo"
+	"commerce-platform/internal/api/middleware"
+	"commerce-platform/internal/api/v1/showcase"
+	"commerce-platform/internal/app"
+	"commerce-platform/internal/domain/auth"
+	"commerce-platform/internal/pkg/config"
+	"commerce-platform/internal/pkg/securecookie"
 
 	"github.com/gin-gonic/gin"
 )

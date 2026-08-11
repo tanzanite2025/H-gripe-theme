@@ -1,14 +1,14 @@
-package scheduler
+﻿package scheduler
 
 import (
 	"context"
 	"sync"
 	"time"
 
-	paymentdomain "tanzanite/internal/domain/payment"
-	"tanzanite/internal/pkg/config"
-	"tanzanite/internal/pkg/logger"
-	"tanzanite/internal/service"
+	paymentdomain "commerce-platform/internal/domain/payment"
+	"commerce-platform/internal/pkg/config"
+	"commerce-platform/internal/pkg/logger"
+	"commerce-platform/internal/service"
 
 	"go.uber.org/zap"
 )

@@ -1,4 +1,4 @@
-package service
+﻿package service
 
 import (
 	"strings"
@@ -6,9 +6,9 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"tanzanite/internal/domain/product"
-	"tanzanite/internal/domain/recommendation"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/product"
+	"commerce-platform/internal/domain/recommendation"
+	"commerce-platform/internal/repository"
 
 	"github.com/stretchr/testify/require"
 	"gorm.io/datatypes"

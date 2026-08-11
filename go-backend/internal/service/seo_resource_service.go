@@ -1,13 +1,13 @@
-package service
+﻿package service
 
 import (
 	"errors"
 	"net/url"
 	"strings"
 
-	"tanzanite/internal/domain/post"
-	"tanzanite/internal/domain/product"
-	seodomain "tanzanite/internal/domain/seo"
+	"commerce-platform/internal/domain/post"
+	"commerce-platform/internal/domain/product"
+	seodomain "commerce-platform/internal/domain/seo"
 )
 
 var ErrInvalidSEOCanonicalURL = errors.New("invalid SEO canonical URL")

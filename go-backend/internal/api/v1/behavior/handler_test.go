@@ -1,4 +1,4 @@
-package behavior
+﻿package behavior
 
 import (
 	"bytes"
@@ -8,11 +8,11 @@ import (
 	"testing"
 	"time"
 
-	"tanzanite/internal/domain/recommendation"
-	attributionpkg "tanzanite/internal/pkg/attribution"
-	"tanzanite/internal/pkg/securecookie"
-	"tanzanite/internal/repository"
-	"tanzanite/internal/service"
+	"commerce-platform/internal/domain/recommendation"
+	attributionpkg "commerce-platform/internal/pkg/attribution"
+	"commerce-platform/internal/pkg/securecookie"
+	"commerce-platform/internal/repository"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 	"github.com/glebarez/sqlite"

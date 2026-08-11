@@ -1,10 +1,10 @@
-package repository
+﻿package repository
 
 import (
 	"strings"
 	"time"
 
-	"tanzanite/internal/domain/currency"
+	"commerce-platform/internal/domain/currency"
 
 	"gorm.io/gorm"
 )

@@ -1,11 +1,11 @@
-package middleware
+﻿package middleware
 
 import (
 	"strings"
 	"time"
 
-	"tanzanite/internal/pkg/visitorcookie"
-	"tanzanite/internal/service"
+	"commerce-platform/internal/pkg/visitorcookie"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )
@@ -50,7 +50,7 @@ func visitorRiskCountryCode(c *gin.Context) string {
 }
 
 func visitorRiskAnonymousID(c *gin.Context) string {
-	for _, header := range []string{"X-Tanzanite-Anonymous-ID", "X-Anonymous-ID"} {
+	for _, header := range []string{"X-Commerce-Platform-Anonymous-ID", "X-Anonymous-ID"} {
 		if value := strings.TrimSpace(c.GetHeader(header)); value != "" {
 			return value
 		}

@@ -1,4 +1,4 @@
-package middleware
+﻿package middleware
 
 import (
 	"crypto/subtle"
@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"strings"
 
-	"tanzanite/internal/pkg/securecookie"
+	"commerce-platform/internal/pkg/securecookie"
 
 	"github.com/gin-gonic/gin"
 )

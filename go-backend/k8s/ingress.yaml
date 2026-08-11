@@ -1,7 +1,7 @@
-apiVersion: networking.k8s.io/v1
+﻿apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: tanzanite-api-ingress
+  name: commerce-platform-api-ingress
   namespace: default
   annotations:
     # Nginx Ingress配置
@@ -33,16 +33,16 @@ spec:
   ingressClassName: nginx
   tls:
   - hosts:
-    - api.tanzanite.example.com
-    secretName: tanzanite-api-tls
+    - api.commerce_platform.example.com
+    secretName: commerce-platform-api-tls
   rules:
-  - host: api.tanzanite.example.com
+  - host: api.commerce_platform.example.com
     http:
       paths:
       - path: /
         pathType: Prefix
         backend:
           service:
-            name: tanzanite-api
+            name: commerce-platform-api
             port:
               number: 80

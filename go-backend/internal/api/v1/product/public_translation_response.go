@@ -1,6 +1,6 @@
-package product
+﻿package product
 
-import productdomain "tanzanite/internal/domain/product"
+import productdomain "commerce-platform/internal/domain/product"
 
 func publicProductTranslationRoutesFromDomain(items []productdomain.ProductTranslationRoute) []PublicProductTranslationRoute {
 	if len(items) == 0 {

@@ -1,11 +1,11 @@
-package payment
+﻿package payment
 
 import (
 	"fmt"
 	"regexp"
 	"strings"
 
-	"tanzanite/internal/domain/currency"
+	"commerce-platform/internal/domain/currency"
 )
 
 // validateConfig 验证支付网关配置

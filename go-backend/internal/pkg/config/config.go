@@ -1,11 +1,11 @@
-package config
+﻿package config
 
 import (
 	"fmt"
 	"net/http"
 	"os"
 	"strings"
-	"tanzanite/internal/pkg/locales"
+	"commerce-platform/internal/pkg/locales"
 	"time"
 
 	"github.com/spf13/viper"
@@ -309,9 +309,9 @@ func setDefaults() {
 	viper.SetDefault("database.driver", "postgres")
 	viper.SetDefault("database.host", "localhost")
 	viper.SetDefault("database.port", 9400)
-	viper.SetDefault("database.username", "tanzanite")
-	viper.SetDefault("database.password", "tanzanite_password")
-	viper.SetDefault("database.database", "tanzanite")
+	viper.SetDefault("database.username", "commerce_platform")
+	viper.SetDefault("database.password", "commerce_platform_password")
+	viper.SetDefault("database.database", "commerce_platform")
 	viper.SetDefault("database.max_idle_conns", 10)
 	viper.SetDefault("database.max_open_conns", 100)
 	viper.SetDefault("database.conn_max_lifetime", 3600)

@@ -1,4 +1,4 @@
-import { ref, computed, watch } from 'vue'
+﻿import { ref, computed, watch } from 'vue'
 import type { CartItem } from '~~/types/cart'
 import { useAuth } from '~/composables/useAuth'
 import { useCartCalculation } from '~/composables/useCartCalculation'
@@ -114,7 +114,7 @@ export const useCart = () => {
       return { success: false, error: 'Not in client' }
     }
 
-    const saved = localStorage.getItem('learn_gripe_cart')
+    const saved = localStorage.getItem('commerce_platform_cart')
     if (!saved) {
       return { success: true, itemsCount: 0 }
     }
@@ -122,7 +122,7 @@ export const useCart = () => {
     try {
       const items = JSON.parse(saved)
       if (!items || items.length === 0) {
-        localStorage.removeItem('learn_gripe_cart')
+        localStorage.removeItem('commerce_platform_cart')
         return { success: true, itemsCount: 0 }
       }
 
@@ -140,7 +140,7 @@ export const useCart = () => {
             body: JSON.stringify(payload),
           })
 
-          localStorage.removeItem('learn_gripe_cart')
+          localStorage.removeItem('commerce_platform_cart')
           await loadCartFromBackend()
 
           return {
@@ -207,7 +207,7 @@ export const useCart = () => {
     eventListenersAdded = true
     loadCartFromBackend()
 
-    const saved = localStorage.getItem('learn_gripe_cart')
+    const saved = localStorage.getItem('commerce_platform_cart')
     if (saved && !auth.isAuthenticated.value) {
       syncGuestCart()
     }

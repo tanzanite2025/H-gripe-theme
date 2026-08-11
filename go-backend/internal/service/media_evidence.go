@@ -1,4 +1,4 @@
-package service
+﻿package service
 
 import (
 	"archive/zip"
@@ -17,8 +17,8 @@ import (
 	"strings"
 	"time"
 
-	"tanzanite/internal/domain/media"
-	"tanzanite/internal/pkg/storage"
+	"commerce-platform/internal/domain/media"
+	"commerce-platform/internal/pkg/storage"
 )
 
 var (

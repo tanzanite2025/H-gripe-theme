@@ -1,11 +1,11 @@
-package admin
+﻿package admin
 
 import (
 	"strings"
 	"time"
 
-	paymentdomain "tanzanite/internal/domain/payment"
-	"tanzanite/internal/service"
+	paymentdomain "commerce-platform/internal/domain/payment"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

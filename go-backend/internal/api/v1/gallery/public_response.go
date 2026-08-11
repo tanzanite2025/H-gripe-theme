@@ -1,6 +1,6 @@
-package gallery
+﻿package gallery
 
-import gallerydomain "tanzanite/internal/domain/gallery"
+import gallerydomain "commerce-platform/internal/domain/gallery"
 
 type publicGalleryProductLink struct {
 	ProductID uint   `json:"product_id"`

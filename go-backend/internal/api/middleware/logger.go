@@ -1,11 +1,11 @@
-package middleware
+﻿package middleware
 
 import (
 	"net/url"
 	"strings"
 	"time"
 
-	"tanzanite/internal/pkg/logger"
+	"commerce-platform/internal/pkg/logger"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"

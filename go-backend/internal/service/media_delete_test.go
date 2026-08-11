@@ -1,4 +1,4 @@
-package service
+﻿package service
 
 import (
 	"context"
@@ -7,10 +7,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"tanzanite/internal/domain/media"
-	"tanzanite/internal/domain/product"
-	"tanzanite/internal/pkg/storage"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/media"
+	"commerce-platform/internal/domain/product"
+	"commerce-platform/internal/pkg/storage"
+	"commerce-platform/internal/repository"
 
 	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/require"

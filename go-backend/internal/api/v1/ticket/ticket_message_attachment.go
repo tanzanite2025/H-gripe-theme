@@ -1,12 +1,12 @@
-package ticket
+﻿package ticket
 
 import (
 	"errors"
 	"net/http"
 	"strings"
 
-	"tanzanite/internal/pkg/ugc"
-	"tanzanite/internal/service"
+	"commerce-platform/internal/pkg/ugc"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

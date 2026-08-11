@@ -1,9 +1,9 @@
-package repository
+﻿package repository
 
 import (
 	"strconv"
 	"strings"
-	"tanzanite/internal/domain/ticket"
+	"commerce-platform/internal/domain/ticket"
 	"time"
 
 	"gorm.io/gorm"

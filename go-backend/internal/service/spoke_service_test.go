@@ -1,10 +1,10 @@
-package service
+﻿package service
 
 import (
 	"testing"
 
-	spokedomain "tanzanite/internal/domain/spoke"
-	"tanzanite/internal/repository"
+	spokedomain "commerce-platform/internal/domain/spoke"
+	"commerce-platform/internal/repository"
 
 	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/assert"

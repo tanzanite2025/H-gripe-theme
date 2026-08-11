@@ -1,9 +1,9 @@
-package service
+﻿package service
 
 import (
 	"errors"
-	"tanzanite/internal/domain/post"
-	"tanzanite/internal/pkg/safehtml"
+	"commerce-platform/internal/domain/post"
+	"commerce-platform/internal/pkg/safehtml"
 	"time"
 )
 

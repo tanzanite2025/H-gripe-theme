@@ -1,4 +1,4 @@
-package service
+﻿package service
 
 import (
 	"context"
@@ -6,15 +6,15 @@ import (
 	"testing"
 	"time"
 
-	"tanzanite/internal/domain/coupon"
-	"tanzanite/internal/domain/loyalty"
-	"tanzanite/internal/domain/order"
-	paymentdomain "tanzanite/internal/domain/payment"
-	"tanzanite/internal/domain/product"
-	"tanzanite/internal/domain/setting"
-	shippingdomain "tanzanite/internal/domain/shipping"
-	"tanzanite/internal/pkg/ordernumber"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/coupon"
+	"commerce-platform/internal/domain/loyalty"
+	"commerce-platform/internal/domain/order"
+	paymentdomain "commerce-platform/internal/domain/payment"
+	"commerce-platform/internal/domain/product"
+	"commerce-platform/internal/domain/setting"
+	shippingdomain "commerce-platform/internal/domain/shipping"
+	"commerce-platform/internal/pkg/ordernumber"
+	"commerce-platform/internal/repository"
 
 	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/assert"

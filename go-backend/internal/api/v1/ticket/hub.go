@@ -1,4 +1,4 @@
-package ticket
+﻿package ticket
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	appLogger "tanzanite/internal/pkg/logger"
+	appLogger "commerce-platform/internal/pkg/logger"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"

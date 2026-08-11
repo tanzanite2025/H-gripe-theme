@@ -1,8 +1,8 @@
-package payment
+﻿package payment
 
 import (
-	pgateway "tanzanite/internal/pkg/payment"
-	"tanzanite/internal/repository"
+	pgateway "commerce-platform/internal/pkg/payment"
+	"commerce-platform/internal/repository"
 )
 
 func (h *Handler) loadGatewayConfig(gatewayType pgateway.GatewayType) (*pgateway.Config, error) {

@@ -1,11 +1,11 @@
-package invoice
+﻿package invoice
 
 import (
 	"bytes"
 	"testing"
 	"time"
 
-	"tanzanite/internal/domain/order"
+	"commerce-platform/internal/domain/order"
 
 	"github.com/go-pdf/fpdf"
 	"github.com/stretchr/testify/require"
@@ -54,7 +54,7 @@ func TestBuildFromOrderCreatesCommercialInvoiceSnapshot(t *testing.T) {
 	}
 
 	document, err := BuildFromOrder(orderRecord, SellerProfile{
-		Name:    "Tanzanite Factory",
+		Name:    "Commerce Platform Factory",
 		Address: "100 Factory Road\nAustin, TX 78701\nUS",
 	}, "PAYPAL-TXN-1", time.Time{})
 	require.NoError(t, err)
@@ -71,7 +71,7 @@ func TestRenderCommercialInvoicePDFProducesReadablePDF(t *testing.T) {
 		DocumentDate:   time.Date(2026, 8, 11, 0, 0, 0, 0, time.UTC),
 		Currency:       "USD",
 		Seller: SellerProfile{
-			Name:    "Tanzanite Factory",
+			Name:    "Commerce Platform Factory",
 			Address: "100 Factory Road\nAustin, TX 78701\nUS",
 		},
 		BillTo: Address{Name: "Jane Buyer", Line1: "1 Main Street", City: "Austin", State: "TX", PostalCode: "78701", Country: "US"},

@@ -1,10 +1,10 @@
-package ticket
+﻿package ticket
 
 import (
 	"errors"
 	"testing"
 
-	"tanzanite/internal/pkg/ugc"
+	"commerce-platform/internal/pkg/ugc"
 
 	"github.com/gin-gonic/gin"
 )

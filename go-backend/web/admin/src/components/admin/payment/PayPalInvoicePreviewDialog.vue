@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <Dialog v-model:open="dialogOpen">
     <DialogContent size="full" class="max-w-[1400px]">
       <DialogHeader>
@@ -147,7 +147,7 @@ const form = reactive({
   payment_method: 'PayPal',
   payment_status: 'paid',
   seller: {
-    name: 'H-GRIPE',
+    name: 'Commerce Platform',
     address: '100 Factory Road\nAustin, TX 78701\nUS',
     email: 'support@example.test',
     phone: '+1 555 0100',

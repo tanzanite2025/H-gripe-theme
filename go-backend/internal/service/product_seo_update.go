@@ -1,6 +1,6 @@
-package service
+﻿package service
 
-import "tanzanite/internal/domain/product"
+import "commerce-platform/internal/domain/product"
 
 // ProductSEOUpdateInput is the only product write contract exposed to the SEO
 // control plane. Catalog create/update inputs deliberately do not contain SEO

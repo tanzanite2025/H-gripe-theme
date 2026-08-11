@@ -1,11 +1,11 @@
-package ticket
+﻿package ticket
 
 import (
 	"encoding/json"
 	"net/http"
 	"strconv"
 	"strings"
-	"tanzanite/internal/domain/ticket"
+	"commerce-platform/internal/domain/ticket"
 
 	"github.com/gin-gonic/gin"
 )

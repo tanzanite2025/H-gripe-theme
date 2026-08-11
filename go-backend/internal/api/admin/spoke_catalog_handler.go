@@ -1,11 +1,11 @@
-package admin
+﻿package admin
 
 import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"tanzanite/internal/domain/spoke"
-	"tanzanite/internal/service"
+	"commerce-platform/internal/domain/spoke"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

@@ -1,9 +1,9 @@
-package admin
+﻿package admin
 
 import (
 	"sort"
 
-	"tanzanite/internal/domain/currency"
+	"commerce-platform/internal/domain/currency"
 
 	"github.com/gin-gonic/gin"
 )

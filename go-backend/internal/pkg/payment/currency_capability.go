@@ -1,9 +1,9 @@
-package payment
+﻿package payment
 
 import (
 	"fmt"
 
-	"tanzanite/internal/domain/currency"
+	"commerce-platform/internal/domain/currency"
 )
 
 var paypalSupportedCurrencies = []string{

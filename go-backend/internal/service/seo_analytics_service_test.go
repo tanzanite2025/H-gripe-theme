@@ -1,14 +1,14 @@
-package service
+﻿package service
 
 import (
 	"errors"
 	"strings"
 	"testing"
 
-	analyticsdomain "tanzanite/internal/domain/analytics"
-	seodomain "tanzanite/internal/domain/seo"
-	settingdomain "tanzanite/internal/domain/setting"
-	"tanzanite/internal/repository"
+	analyticsdomain "commerce-platform/internal/domain/analytics"
+	seodomain "commerce-platform/internal/domain/seo"
+	settingdomain "commerce-platform/internal/domain/setting"
+	"commerce-platform/internal/repository"
 
 	"github.com/stretchr/testify/require"
 )

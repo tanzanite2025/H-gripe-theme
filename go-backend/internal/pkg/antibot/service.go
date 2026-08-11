@@ -1,4 +1,4 @@
-package antibot
+﻿package antibot
 
 import (
 	"context"
@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"tanzanite/internal/pkg/config"
-	"tanzanite/internal/pkg/metrics"
+	"commerce-platform/internal/pkg/config"
+	"commerce-platform/internal/pkg/metrics"
 
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
@@ -140,11 +140,11 @@ func (s *Service) acquireDeliveryBudget(ctx context.Context, channel, destinatio
 	ipKey := digestKey(ip)
 	now := time.Now().Unix()
 	keys := []string{
-		"tanzanite:verification:ip:" + channel + ":" + ipKey,
-		"tanzanite:verification:destination:" + channel + ":" + destinationKey,
-		"tanzanite:verification:daily:" + channel + ":" + time.Now().UTC().Format("20060102") + ":" + destinationKey,
-		"tanzanite:verification:global:" + channel,
-		"tanzanite:verification:circuit:" + channel,
+		"commerce_platform:verification:ip:" + channel + ":" + ipKey,
+		"commerce_platform:verification:destination:" + channel + ":" + destinationKey,
+		"commerce_platform:verification:daily:" + channel + ":" + time.Now().UTC().Format("20060102") + ":" + destinationKey,
+		"commerce_platform:verification:global:" + channel,
+		"commerce_platform:verification:circuit:" + channel,
 	}
 
 	result, err := s.redis.Eval(ctx, deliveryBudgetScript, keys, []interface{}{

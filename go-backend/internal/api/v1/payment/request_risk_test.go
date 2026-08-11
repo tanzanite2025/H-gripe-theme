@@ -1,4 +1,4 @@
-package payment
+﻿package payment
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"tanzanite/internal/api/middleware"
+	"commerce-platform/internal/api/middleware"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"

@@ -1,10 +1,10 @@
-package service
+﻿package service
 
 import (
 	"errors"
 	"fmt"
 
-	"tanzanite/internal/domain/analytics"
+	"commerce-platform/internal/domain/analytics"
 )
 
 var ErrInvalidAnalyticsSettings = errors.New("invalid analytics settings")

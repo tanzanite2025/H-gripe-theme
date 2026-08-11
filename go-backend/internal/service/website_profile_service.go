@@ -1,9 +1,9 @@
-package service
+﻿package service
 
 import (
 	"fmt"
 	"strings"
-	"tanzanite/internal/domain/setting"
+	"commerce-platform/internal/domain/setting"
 )
 
 const websiteProfileDefaultFactoryImageURL = "/company/ourstory/factory/factory-premoldlayupworkshop6.webp"

@@ -1,12 +1,12 @@
-package service
+﻿package service
 
 import (
 	"testing"
 
-	"tanzanite/internal/domain/faq"
-	"tanzanite/internal/domain/ticket"
-	"tanzanite/internal/domain/user"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/faq"
+	"commerce-platform/internal/domain/ticket"
+	"commerce-platform/internal/domain/user"
+	"commerce-platform/internal/repository"
 
 	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/require"
@@ -35,7 +35,7 @@ func TestAutoReplyWelcomeUsesConversationStaffIdentityAndCooldown(t *testing.T) 
 	require.NoError(t, db.Create(&conversation).Error)
 	require.NoError(t, db.Create(&ticket.AutoReplyRule{
 		Type:            "welcome",
-		ReplyMessage:    "Welcome to H-GRIPE.",
+		ReplyMessage:    "Welcome to Commerce Platform.",
 		Locale:          "en",
 		MessageType:     "text",
 		IsActive:        true,

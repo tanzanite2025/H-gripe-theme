@@ -1,4 +1,4 @@
-package main
+﻿package main
 
 import (
 	"context"
@@ -11,18 +11,18 @@ import (
 	"syscall"
 	"time"
 
-	"tanzanite/internal/api/admin"
-	"tanzanite/internal/api/middleware"
-	v1 "tanzanite/internal/api/v1"
-	"tanzanite/internal/api/v1/health"
-	"tanzanite/internal/app"
-	"tanzanite/internal/pkg/cache"
-	"tanzanite/internal/pkg/config"
-	"tanzanite/internal/pkg/database"
-	"tanzanite/internal/pkg/logger"
-	"tanzanite/internal/pkg/scheduler"
-	"tanzanite/internal/pkg/storage"
-	"tanzanite/internal/pkg/worker"
+	"commerce-platform/internal/api/admin"
+	"commerce-platform/internal/api/middleware"
+	v1 "commerce-platform/internal/api/v1"
+	"commerce-platform/internal/api/v1/health"
+	"commerce-platform/internal/app"
+	"commerce-platform/internal/pkg/cache"
+	"commerce-platform/internal/pkg/config"
+	"commerce-platform/internal/pkg/database"
+	"commerce-platform/internal/pkg/logger"
+	"commerce-platform/internal/pkg/scheduler"
+	"commerce-platform/internal/pkg/storage"
+	"commerce-platform/internal/pkg/worker"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -269,7 +269,7 @@ func setupRouter(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Config, 
 
 	router.GET("/", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
-			"service": "tanzanite-api",
+			"service": "commerce-platform-api",
 			"version": Version,
 		})
 	})

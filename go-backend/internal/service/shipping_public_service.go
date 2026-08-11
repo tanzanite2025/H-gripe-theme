@@ -1,6 +1,6 @@
-package service
+﻿package service
 
-import "tanzanite/internal/domain/shipping"
+import "commerce-platform/internal/domain/shipping"
 
 func (s *ShippingService) ListPublicTemplates() ([]shipping.ShippingTemplate, error) {
 	templates, err := s.ListTemplates()

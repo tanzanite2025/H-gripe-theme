@@ -1,4 +1,4 @@
-#!/bin/bash
+﻿#!/bin/bash
 
 # Storefront Go Backend Startup Script
 
@@ -26,8 +26,8 @@ go mod download
 
 # Build the application
 echo "🔨 Building application..."
-go build -o tanzanite-api ./cmd/server
+go build -o commerce-platform-api ./cmd/server
 
 # Run the application
 echo "✅ Starting server..."
-./tanzanite-api
+./commerce-platform-api

@@ -1,4 +1,4 @@
-package service
+﻿package service
 
 import (
 	"encoding/json"
@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
-	"tanzanite/internal/domain/recommendation"
-	attributionpkg "tanzanite/internal/pkg/attribution"
-	"tanzanite/internal/pkg/config"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/recommendation"
+	attributionpkg "commerce-platform/internal/pkg/attribution"
+	"commerce-platform/internal/pkg/config"
+	"commerce-platform/internal/repository"
 
 	"gorm.io/datatypes"
 )

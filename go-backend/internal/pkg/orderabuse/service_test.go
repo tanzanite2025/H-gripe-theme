@@ -1,4 +1,4 @@
-package orderabuse
+﻿package orderabuse
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"tanzanite/internal/pkg/config"
+	"commerce-platform/internal/pkg/config"
 )
 
 func TestEvaluateBlocksIdentityAfterConfiguredLimit(t *testing.T) {
@@ -74,7 +74,7 @@ func TestEvaluateHashesSensitiveIdentityValues(t *testing.T) {
 
 	joined := strings.Join(store.keys, "|")
 	for _, raw := range []string{
-		"tanzanite:order-abuse:create:user:42",
+		"commerce_platform:order-abuse:create:user:42",
 		"session-secret",
 		"203.0.113.10",
 	} {

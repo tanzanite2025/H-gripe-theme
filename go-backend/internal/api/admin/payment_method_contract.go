@@ -1,9 +1,9 @@
-package admin
+﻿package admin
 
 import (
 	"errors"
 	"strings"
-	paymentdomain "tanzanite/internal/domain/payment"
+	paymentdomain "commerce-platform/internal/domain/payment"
 	"time"
 )
 

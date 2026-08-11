@@ -1,12 +1,12 @@
-package payment
+﻿package payment
 
 import (
 	"testing"
 
-	settingdomain "tanzanite/internal/domain/setting"
-	pgateway "tanzanite/internal/pkg/payment"
-	"tanzanite/internal/repository"
-	"tanzanite/internal/service"
+	settingdomain "commerce-platform/internal/domain/setting"
+	pgateway "commerce-platform/internal/pkg/payment"
+	"commerce-platform/internal/repository"
+	"commerce-platform/internal/service"
 
 	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/require"

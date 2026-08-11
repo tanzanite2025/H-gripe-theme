@@ -1,10 +1,10 @@
-package service
+﻿package service
 
 import (
 	"fmt"
 	"strconv"
 	"strings"
-	"tanzanite/internal/domain/setting"
+	"commerce-platform/internal/domain/setting"
 )
 
 // GetSiteSettings 获取站点设置

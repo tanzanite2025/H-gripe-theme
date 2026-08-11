@@ -1,9 +1,9 @@
-package repository
+﻿package repository
 
 import (
 	"errors"
 	"fmt"
-	"tanzanite/internal/domain/loyalty"
+	"commerce-platform/internal/domain/loyalty"
 	"time"
 
 	"gorm.io/gorm"

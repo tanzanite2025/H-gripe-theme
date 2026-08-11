@@ -1,7 +1,7 @@
-package service
+﻿package service
 
 import (
-	seodomain "tanzanite/internal/domain/seo"
+	seodomain "commerce-platform/internal/domain/seo"
 )
 
 func (s *SEOService) GetHome(locale string) (*seodomain.Settings, error) {

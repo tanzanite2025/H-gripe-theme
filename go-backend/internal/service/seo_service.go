@@ -1,10 +1,10 @@
-package service
+﻿package service
 
 import (
 	"errors"
 	"fmt"
 
-	"tanzanite/internal/domain/seo"
+	"commerce-platform/internal/domain/seo"
 )
 
 var ErrInvalidSEOSettings = errors.New("invalid SEO settings")

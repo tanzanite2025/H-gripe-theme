@@ -1,18 +1,18 @@
 <template>
   <div class="space-y-8">
     <!-- Intro Warning Card -->
-    <div class="relative overflow-hidden rounded-2xl bg-rose-500/10 border-l-4 border-rose-500 p-5 md:p-6 shadow-[0_4px_16px_rgba(0,0,0,0.5)]">
+    <div class="relative overflow-hidden rounded-2xl bg-amber-500/10 border-l-4 border-amber-400 p-5 md:p-6 shadow-[0_4px_16px_rgba(0,0,0,0.5)]">
        <div class="flex gap-4">
-         <div class="shrink-0 text-rose-500 mt-1">
+         <div class="shrink-0 text-amber-400 mt-1">
            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
          </div>
          <div>
-           <h3 class="text-lg font-bold text-rose-500 mb-2">Important Safety Notice</h3>
-           <p class="text-sm text-rose-200/80 leading-relaxed mb-3">
+           <h3 class="text-lg font-bold text-amber-300 mb-2">Important Safety Notice</h3>
+           <p class="text-sm text-amber-100/80 leading-relaxed mb-3">
             Improper installation, use, or maintenance may cause serious damage to the wheels and pose a danger to the rider.
              To ensure a reliable riding experience, please read and follow the instructions below.
           </p>
-          <p class="text-xs text-rose-200/60 leading-relaxed italic">
+           <p class="text-xs text-amber-100/60 leading-relaxed italic">
              Even if you have years of cycling or wheelset assembly experience, these instructions still apply to these carbon fiber products.
           </p>
          </div>
@@ -29,12 +29,12 @@
          </div>
 
          <div class="space-y-4">
-            <div class="bg-sky-500/5 rounded-lg p-3 text-sm tz-text-secondary shadow-[0_4px_16px_rgba(0,0,0,0.5)]">
+            <div class="rounded-lg p-3 text-sm tz-text-secondary">
                <strong class="block text-sky-400 text-xs uppercase tracking-wider mb-1">Professional Installation</strong>
                <p>Have the wheelset installed by a qualified mechanic. Incompatibility with brakes or drivetrain can damage wheels or frame.</p>
             </div>
 
-            <div class="bg-sky-500/5 rounded-lg p-3 text-sm tz-text-secondary shadow-[0_4px_16px_rgba(0,0,0,0.5)]">
+            <div class="rounded-lg p-3 text-sm tz-text-secondary">
                <strong class="block text-sky-400 text-xs uppercase tracking-wider mb-1">Tire Installation</strong>
                <p class="mb-2">Use provided plastic tire levers only. Metal levers will permanently damage the rim.</p>
                <button type="button" class="tz-micro-label font-bold uppercase tracking-wider text-sky-400 border border-sky-500/30 px-2 py-1 rounded hover:bg-sky-500/10 transition-colors" @click="goToTubelessInstallation">
@@ -43,11 +43,11 @@
             </div>
 
             <div class="grid grid-cols-2 gap-3">
-               <div class="bg-sky-500/5 rounded-lg p-3 text-sm tz-text-secondary shadow-[0_4px_16px_rgba(0,0,0,0.5)]">
+               <div class="rounded-lg p-3 text-sm tz-text-secondary">
                   <strong class="block text-sky-400 text-xs uppercase tracking-wider mb-1">Torque Specs</strong>
                   <p class="text-xs">Follow manufacturer recommended torque for all bolts and axles.</p>
                </div>
-                <div class="bg-sky-500/5 rounded-lg p-3 text-sm tz-text-secondary shadow-[0_4px_16px_rgba(0,0,0,0.5)]">
+                <div class="rounded-lg p-3 text-sm tz-text-secondary">
                   <strong class="block text-sky-400 text-xs uppercase tracking-wider mb-1">Brake Pads</strong>
                   <p class="text-xs">Use carbon-specific pads ONLY to prevent rim damage.</p>
                </div>
@@ -62,12 +62,12 @@
          </div>
 
          <div class="space-y-4">
-             <div class="bg-emerald-500/5 rounded-lg p-3 text-sm tz-text-secondary shadow-[0_4px_16px_rgba(0,0,0,0.5)]">
+             <div class="rounded-lg p-3 text-sm tz-text-secondary">
                <strong class="block text-emerald-400 text-xs uppercase tracking-wider mb-1">Weight Limits</strong>
                <p>Strictly follow max rider weight/load limits. Overloading causes rim cracking and injury risk.</p>
             </div>
 
-            <div class="bg-emerald-500/5 rounded-lg p-3 text-sm tz-text-secondary shadow-[0_4px_16px_rgba(0,0,0,0.5)]">
+            <div class="rounded-lg p-3 text-sm tz-text-secondary">
                <strong class="block text-emerald-400 text-xs uppercase tracking-wider mb-1">Road Conditions</strong>
                <p class="mb-2">Avoid severe potholes and gravel. Impact damage may not be immediately visible.</p>
                <div class="flex items-start gap-2 text-xs text-emerald-500/80 mt-2 bg-emerald-500/10 p-2 rounded">
@@ -76,7 +76,7 @@
                </div>
             </div>
 
-            <div class="bg-emerald-500/5 rounded-lg p-3 text-sm tz-text-secondary shadow-[0_4px_16px_rgba(0,0,0,0.5)]">
+            <div class="rounded-lg p-3 text-sm tz-text-secondary">
                <strong class="block text-emerald-400 text-xs uppercase tracking-wider mb-1">Braking Technique</strong>
                <p>Avoid continuous drag braking on long descents. Use intermittent braking to prevent carbon overheating.</p>
             </div>
@@ -90,7 +90,7 @@
          </div>
 
          <div class="space-y-4">
-            <div class="bg-amber-500/5 rounded-lg p-3 text-sm tz-text-secondary shadow-[0_4px_16px_rgba(0,0,0,0.5)]">
+            <div class="rounded-lg p-3 text-sm tz-text-secondary">
                <strong class="block text-amber-400 text-xs uppercase tracking-wider mb-1">Pre-ride Inspection</strong>
                <ul class="space-y-2 mt-2 list-none pl-0">
                   <li class="flex gap-2"><span class="text-amber-500">●</span> Check rims for cracks, bulges, or delamination.</li>
@@ -98,7 +98,7 @@
                </ul>
             </div>
 
-            <div class="bg-amber-500/5 rounded-lg p-3 text-sm tz-text-secondary shadow-[0_4px_16px_rgba(0,0,0,0.5)]">
+            <div class="rounded-lg p-3 text-sm tz-text-secondary">
                <div class="flex justify-between items-start">
                    <div>
                        <strong class="block text-amber-400 text-xs uppercase tracking-wider mb-1">Spoke Tension</strong>
@@ -110,7 +110,7 @@
                </div>
             </div>
 
-            <div class="bg-amber-500/5 rounded-lg p-3 text-sm tz-text-secondary shadow-[0_4px_16px_rgba(0,0,0,0.5)]">
+            <div class="rounded-lg p-3 text-sm tz-text-secondary">
                <strong class="block text-amber-400 text-xs uppercase tracking-wider mb-1">Cleaning</strong>
                <p>Use neutral detergent and soft cloth only. NO strong acids, alkalis, or high-pressure water.</p>
             </div>
@@ -128,7 +128,7 @@
 
          <div class="space-y-4">
              <!-- Prohibited -->
-            <div class="bg-indigo-500/5 rounded-lg p-3 text-sm tz-text-secondary shadow-[0_4px_16px_rgba(0,0,0,0.5)]">
+            <div class="rounded-lg p-3 text-sm tz-text-secondary">
                <strong class="block text-indigo-400 tz-micro-label uppercase tracking-wider mb-2">Strictly Prohibited</strong>
                <ul class="space-y-2 list-none pl-0">
                   <li class="flex gap-2 items-center"><span class="text-rose-500 font-bold text-lg leading-none">×</span> <span>No non-original parts modification.</span></li>
@@ -138,7 +138,7 @@
             </div>
 
              <!-- Emergency -->
-             <div class="bg-indigo-500/5 rounded-lg p-3 text-sm tz-text-secondary border-none shadow-[0_4px_16px_rgba(0,0,0,0.5)]">
+             <div class="rounded-lg p-3 text-sm tz-text-secondary border-none">
                <strong class="block text-indigo-400 text-xs uppercase tracking-wider mb-1">Emergency Protocol</strong>
                <p class="mb-2">If cracks/abnormal noises occur: <strong>STOP RIDING IMMEDIATELY</strong>.</p>
              <p class="tz-caption tz-text-muted">After any crash, perform thorough inspection even if no visible damage.</p>

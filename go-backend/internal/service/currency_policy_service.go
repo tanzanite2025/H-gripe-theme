@@ -1,13 +1,13 @@
-package service
+﻿package service
 
 import (
 	"errors"
 	"fmt"
 	"strings"
 
-	"tanzanite/internal/domain/currency"
-	"tanzanite/internal/domain/setting"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/currency"
+	"commerce-platform/internal/domain/setting"
+	"commerce-platform/internal/repository"
 )
 
 const currencyPolicyLocale = "en"

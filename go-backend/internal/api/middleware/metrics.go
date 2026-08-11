@@ -1,10 +1,10 @@
-package middleware
+﻿package middleware
 
 import (
 	"strconv"
 	"time"
 
-	"tanzanite/internal/pkg/metrics"
+	"commerce-platform/internal/pkg/metrics"
 
 	"github.com/gin-gonic/gin"
 )

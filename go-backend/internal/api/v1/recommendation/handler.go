@@ -1,14 +1,14 @@
-package recommendation
+﻿package recommendation
 
 import (
 	"net/http"
 	"strings"
 	"time"
 
-	"tanzanite/internal/api/middleware"
-	"tanzanite/internal/pkg/apierror"
-	"tanzanite/internal/pkg/response"
-	"tanzanite/internal/service"
+	"commerce-platform/internal/api/middleware"
+	"commerce-platform/internal/pkg/apierror"
+	"commerce-platform/internal/pkg/response"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

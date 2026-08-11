@@ -1,4 +1,4 @@
-package service
+﻿package service
 
 import (
 	"context"
@@ -8,11 +8,11 @@ import (
 	"strings"
 	"time"
 
-	orderdomain "tanzanite/internal/domain/order"
-	paymentdomain "tanzanite/internal/domain/payment"
-	shippingdomain "tanzanite/internal/domain/shipping"
-	ticketdomain "tanzanite/internal/domain/ticket"
-	"tanzanite/internal/repository"
+	orderdomain "commerce-platform/internal/domain/order"
+	paymentdomain "commerce-platform/internal/domain/payment"
+	shippingdomain "commerce-platform/internal/domain/shipping"
+	ticketdomain "commerce-platform/internal/domain/ticket"
+	"commerce-platform/internal/repository"
 
 	"github.com/stripe/stripe-go/v76"
 	"github.com/stripe/stripe-go/v76/dispute"
@@ -195,8 +195,8 @@ func (s *PaymentService) SubmitStripeDisputeEvidence(ctx context.Context, input 
 	params.Context = ctx
 	params.Submit = stripe.Bool(input.Submit)
 	params.Metadata = map[string]string{
-		"tanzanite_dispute_id": fmt.Sprint(pkg.Dispute.ID),
-		"tanzanite_order_id":   stripeDisputeEvidenceOrderID(pkg.Order),
+		"commerce_platform_dispute_id": fmt.Sprint(pkg.Dispute.ID),
+		"commerce_platform_order_id":   stripeDisputeEvidenceOrderID(pkg.Order),
 	}
 
 	audit := stripeDisputeEvidenceSubmissionAudit{

@@ -1,4 +1,4 @@
-package middleware
+﻿package middleware
 
 import (
 	"context"
@@ -7,11 +7,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"tanzanite/internal/domain/auth"
-	"tanzanite/internal/domain/user"
-	"tanzanite/internal/pkg/config"
-	"tanzanite/internal/pkg/securecookie"
-	"tanzanite/internal/service"
+	"commerce-platform/internal/domain/auth"
+	"commerce-platform/internal/domain/user"
+	"commerce-platform/internal/pkg/config"
+	"commerce-platform/internal/pkg/securecookie"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"

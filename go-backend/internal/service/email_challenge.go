@@ -1,13 +1,13 @@
-package service
+﻿package service
 
 import (
 	"errors"
 	"strings"
 	"time"
 
-	"tanzanite/internal/domain/verification"
-	"tanzanite/internal/pkg/emailtoken"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/verification"
+	"commerce-platform/internal/pkg/emailtoken"
+	"commerce-platform/internal/repository"
 )
 
 var (

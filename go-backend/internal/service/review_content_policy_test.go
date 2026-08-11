@@ -1,10 +1,10 @@
-package service
+﻿package service
 
 import (
 	"errors"
 	"testing"
 
-	"tanzanite/internal/domain/review"
+	"commerce-platform/internal/domain/review"
 )
 
 func TestNormalizeReviewSubmissionStoresPlainText(t *testing.T) {

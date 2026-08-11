@@ -1,14 +1,14 @@
-package admin
+﻿package admin
 
 import (
 	"errors"
 	"strconv"
 	"strings"
 
-	productapi "tanzanite/internal/api/v1/product"
-	"tanzanite/internal/pkg/apierror"
-	"tanzanite/internal/pkg/response"
-	"tanzanite/internal/service"
+	productapi "commerce-platform/internal/api/v1/product"
+	"commerce-platform/internal/pkg/apierror"
+	"commerce-platform/internal/pkg/response"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

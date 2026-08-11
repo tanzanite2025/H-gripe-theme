@@ -1,13 +1,13 @@
-package service
+﻿package service
 
 import (
 	"errors"
 	"fmt"
 	"strings"
 
-	"tanzanite/internal/domain/product"
-	"tanzanite/internal/pkg/locales"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/product"
+	"commerce-platform/internal/pkg/locales"
+	"commerce-platform/internal/repository"
 )
 
 var (

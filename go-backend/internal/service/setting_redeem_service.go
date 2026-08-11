@@ -1,11 +1,11 @@
-package service
+﻿package service
 
 import (
 	"errors"
 	"fmt"
 	"strconv"
 	"strings"
-	"tanzanite/internal/domain/setting"
+	"commerce-platform/internal/domain/setting"
 )
 
 // GetRedeemSettings 获取积分兑换配置

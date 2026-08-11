@@ -1,7 +1,7 @@
-package middleware
+﻿package middleware
 
 import (
-	"tanzanite/internal/pkg/requestctx"
+	"commerce-platform/internal/pkg/requestctx"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"

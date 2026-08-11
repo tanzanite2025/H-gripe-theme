@@ -1,10 +1,10 @@
-package service
+﻿package service
 
 import (
 	"strings"
 
-	"tanzanite/internal/domain/currency"
-	"tanzanite/internal/pkg/locales"
+	"commerce-platform/internal/domain/currency"
+	"commerce-platform/internal/pkg/locales"
 )
 
 const storefrontFallbackLocale = "en"

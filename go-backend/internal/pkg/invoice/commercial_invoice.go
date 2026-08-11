@@ -1,4 +1,4 @@
-package invoice
+﻿package invoice
 
 import (
 	"bytes"
@@ -9,7 +9,7 @@ import (
 	"time"
 	"unicode"
 
-	orderdomain "tanzanite/internal/domain/order"
+	orderdomain "commerce-platform/internal/domain/order"
 
 	"github.com/go-pdf/fpdf"
 )

@@ -1,9 +1,9 @@
-package ticket
+﻿package ticket
 
 import (
 	"net/http"
 	"strconv"
-	"tanzanite/internal/domain/ticket"
+	"commerce-platform/internal/domain/ticket"
 
 	"github.com/gin-gonic/gin"
 )

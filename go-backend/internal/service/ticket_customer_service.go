@@ -1,11 +1,11 @@
-package service
+﻿package service
 
 import (
 	"errors"
 	"strings"
-	"tanzanite/internal/domain/ticket"
-	"tanzanite/internal/domain/user"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/ticket"
+	"commerce-platform/internal/domain/user"
+	"commerce-platform/internal/repository"
 	"time"
 
 	"github.com/google/uuid"

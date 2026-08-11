@@ -1,12 +1,12 @@
-package service
+﻿package service
 
 import (
 	"errors"
 	"fmt"
 	"strings"
-	"tanzanite/internal/domain/order"
-	"tanzanite/internal/domain/payment"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/order"
+	"commerce-platform/internal/domain/payment"
+	"commerce-platform/internal/repository"
 	"time"
 )
 

@@ -1,4 +1,4 @@
-package ugc
+﻿package ugc
 
 import (
 	"errors"
@@ -8,7 +8,7 @@ import (
 
 func TestNormalizeUploadImageAttachmentReferencesAcceptsUploadReferences(t *testing.T) {
 	input := []string{
-		" https://tanzanite.site/uploads/2026/08/02/photo.JPG?cache=1 ",
+		" https://commerce_platform.site/uploads/2026/08/02/photo.JPG?cache=1 ",
 		"/uploads/2026/08/02/photo.JPG",
 		"2026/08/02/other.webp",
 	}

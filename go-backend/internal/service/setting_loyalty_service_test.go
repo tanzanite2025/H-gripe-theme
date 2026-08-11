@@ -1,7 +1,7 @@
-package service
+﻿package service
 
 import (
-	settingdomain "tanzanite/internal/domain/setting"
+	settingdomain "commerce-platform/internal/domain/setting"
 	"testing"
 
 	"github.com/stretchr/testify/assert"

@@ -1,4 +1,4 @@
-module tanzanite
+﻿module commerce-platform
 
 go 1.25.1
 

@@ -1,4 +1,4 @@
-package service
+﻿package service
 
 import (
 	"bytes"
@@ -8,10 +8,10 @@ import (
 	"net/http"
 	"testing"
 
-	"tanzanite/internal/domain/merchant"
-	"tanzanite/internal/domain/outbox"
-	"tanzanite/internal/pkg/config"
-	"tanzanite/internal/pkg/secretbox"
+	"commerce-platform/internal/domain/merchant"
+	"commerce-platform/internal/domain/outbox"
+	"commerce-platform/internal/pkg/config"
+	"commerce-platform/internal/pkg/secretbox"
 
 	"github.com/stretchr/testify/require"
 )
@@ -24,7 +24,7 @@ func TestGoogleMerchantReconcileSkipsDraftOffersWithoutRemoteCalls(t *testing.T)
 		ProductID:         productRecord.ID,
 		VariantID:         variantRecord.ID,
 		OfferID:           "tz-draft",
-		Brand:             "H-GRIPE",
+		Brand:             "Commerce Platform",
 		Condition:         "new",
 		IdentifierExists:  &identifierExists,
 		TargetCountry:     "US",
@@ -53,7 +53,7 @@ func TestGoogleMerchantOutboxHandlerWithdrawsOnlyRemoteSubmissions(t *testing.T)
 		ProductID:         productRecord.ID,
 		VariantID:         variantRecord.ID,
 		OfferID:           "tz-not-submitted",
-		Brand:             "H-GRIPE",
+		Brand:             "Commerce Platform",
 		Condition:         "new",
 		IdentifierExists:  &identifierExists,
 		TargetCountry:     "US",
@@ -89,7 +89,7 @@ func TestGoogleMerchantOutboxHandlerDoesNotPromoteDraftOfferDuringRevalidation(t
 		ProductID:         productRecord.ID,
 		VariantID:         variantRecord.ID,
 		OfferID:           "tz-draft-revalidate",
-		Brand:             "H-GRIPE",
+		Brand:             "Commerce Platform",
 		Condition:         "new",
 		IdentifierExists:  &identifierExists,
 		TargetCountry:     "US",
@@ -181,7 +181,7 @@ func configureGoogleMerchantConnectionForRemoteTest(t *testing.T, service *Googl
 	service.googleConfig = config.GoogleMerchantConfig{
 		ClientID:           "client-id",
 		ClientSecret:       "client-secret",
-		RedirectURL:        "https://admin.tanzanite.site/google-merchant/callback",
+		RedirectURL:        "https://admin.commerce_platform.site/google-merchant/callback",
 		TokenEncryptionKey: "google-merchant-test-master-key-32",
 	}
 	encrypted, err := secretbox.EncryptString("refresh-token", service.googleConfig.TokenEncryptionKey)
@@ -190,7 +190,7 @@ func configureGoogleMerchantConnectionForRemoteTest(t *testing.T, service *Googl
 		Provider:              merchant.GoogleMerchantProvider,
 		MerchantAccountID:     "123",
 		DataSourceID:          "456",
-		StorefrontBaseURL:     "https://tanzanite.site",
+		StorefrontBaseURL:     "https://commerce_platform.site",
 		RefreshTokenEncrypted: encrypted,
 		Status:                "connected",
 	}))

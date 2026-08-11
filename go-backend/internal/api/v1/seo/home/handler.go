@@ -1,9 +1,9 @@
-package home
+﻿package home
 
 import (
 	"net/http"
 
-	"tanzanite/internal/service"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

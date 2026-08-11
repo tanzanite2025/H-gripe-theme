@@ -1,10 +1,10 @@
-package marketing
+﻿package marketing
 
 import (
 	"fmt"
 	"math"
 	"net/http"
-	"tanzanite/internal/service"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

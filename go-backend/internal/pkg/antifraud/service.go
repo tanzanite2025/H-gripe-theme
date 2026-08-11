@@ -1,4 +1,4 @@
-package antifraud
+﻿package antifraud
 
 import (
 	"context"
@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"tanzanite/internal/pkg/config"
-	"tanzanite/internal/pkg/metrics"
+	"commerce-platform/internal/pkg/config"
+	"commerce-platform/internal/pkg/metrics"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -342,11 +342,11 @@ func failureKey(key string) string {
 	if key == "" {
 		key = "anonymous"
 	}
-	return "tanzanite:payment-risk:failures:" + key
+	return "commerce_platform:payment-risk:failures:" + key
 }
 
 func paymentIntentBindingKey(paymentIntentID string) string {
-	return "tanzanite:payment-risk:payment-intent:" + digestKey(paymentIntentID)
+	return "commerce_platform:payment-risk:payment-intent:" + digestKey(paymentIntentID)
 
 }
 

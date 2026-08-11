@@ -1,7 +1,7 @@
-package payment
+﻿package payment
 
 import (
-	paymentdomain "tanzanite/internal/domain/payment"
+	paymentdomain "commerce-platform/internal/domain/payment"
 	"time"
 )
 

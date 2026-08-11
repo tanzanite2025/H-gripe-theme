@@ -1,13 +1,13 @@
-package service
+﻿package service
 
 import (
 	"path"
 	"strings"
 	"testing"
 
-	domainsubscription "tanzanite/internal/domain/subscription"
-	"tanzanite/internal/domain/verification"
-	"tanzanite/internal/repository"
+	domainsubscription "commerce-platform/internal/domain/subscription"
+	"commerce-platform/internal/domain/verification"
+	"commerce-platform/internal/repository"
 
 	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/assert"

@@ -1,4 +1,4 @@
-package service
+﻿package service
 
 import (
 	"context"
@@ -7,9 +7,9 @@ import (
 	"math"
 	"strings"
 
-	"tanzanite/internal/domain/payment"
-	"tanzanite/internal/pkg/antifraud"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/payment"
+	"commerce-platform/internal/pkg/antifraud"
+	"commerce-platform/internal/repository"
 )
 
 type PaymentService struct {

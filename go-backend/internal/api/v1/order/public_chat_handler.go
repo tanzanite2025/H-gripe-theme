@@ -1,11 +1,11 @@
-package order
+﻿package order
 
 import (
 	"encoding/json"
 	"strings"
-	orderdomain "tanzanite/internal/domain/order"
-	"tanzanite/internal/pkg/apierror"
-	"tanzanite/internal/pkg/pagination"
+	orderdomain "commerce-platform/internal/domain/order"
+	"commerce-platform/internal/pkg/apierror"
+	"commerce-platform/internal/pkg/pagination"
 	"time"
 
 	"github.com/gin-gonic/gin"

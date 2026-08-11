@@ -1,8 +1,8 @@
-package middleware
+﻿package middleware
 
 import (
 	"net/http"
-	"tanzanite/internal/pkg/logger"
+	"commerce-platform/internal/pkg/logger"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"

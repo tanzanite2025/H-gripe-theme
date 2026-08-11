@@ -1,4 +1,4 @@
-package main
+﻿package main
 
 import (
 	"encoding/json"
@@ -7,9 +7,9 @@ import (
 	"os"
 	"time"
 
-	"tanzanite/internal/domain/subscription"
-	"tanzanite/internal/pkg/config"
-	"tanzanite/internal/pkg/database"
+	"commerce-platform/internal/domain/subscription"
+	"commerce-platform/internal/pkg/config"
+	"commerce-platform/internal/pkg/database"
 )
 
 type SubscriptionImport struct {

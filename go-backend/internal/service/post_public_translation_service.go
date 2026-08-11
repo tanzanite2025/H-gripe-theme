@@ -1,7 +1,7 @@
-package service
+﻿package service
 
 import (
-	"tanzanite/internal/domain/post"
+	"commerce-platform/internal/domain/post"
 )
 
 // GetPublicBySlugWithRoutes resolves one published localized article and the

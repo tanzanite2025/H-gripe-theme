@@ -1,12 +1,12 @@
-package product
+﻿package product
 
 import (
 	"encoding/json"
 	"strings"
 	"testing"
 
-	"tanzanite/internal/domain/currency"
-	productdomain "tanzanite/internal/domain/product"
+	"commerce-platform/internal/domain/currency"
+	productdomain "commerce-platform/internal/domain/product"
 )
 
 func TestPublicProductFromDomainExposesPurchasableSkuFactsWithoutExactInventory(t *testing.T) {

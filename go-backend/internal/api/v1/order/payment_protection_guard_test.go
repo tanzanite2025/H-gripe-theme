@@ -1,4 +1,4 @@
-package order
+﻿package order
 
 import (
 	"bytes"
@@ -7,11 +7,11 @@ import (
 	"testing"
 	"time"
 
-	"tanzanite/internal/domain/audit"
-	paymentdomain "tanzanite/internal/domain/payment"
-	"tanzanite/internal/pkg/config"
-	"tanzanite/internal/repository"
-	"tanzanite/internal/service"
+	"commerce-platform/internal/domain/audit"
+	paymentdomain "commerce-platform/internal/domain/payment"
+	"commerce-platform/internal/pkg/config"
+	"commerce-platform/internal/repository"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 	"github.com/glebarez/sqlite"

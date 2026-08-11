@@ -1,9 +1,9 @@
-package admin
+﻿package admin
 
 import (
 	"time"
 
-	gallerydomain "tanzanite/internal/domain/gallery"
+	gallerydomain "commerce-platform/internal/domain/gallery"
 )
 
 type adminGalleryProductLinkResponse struct {

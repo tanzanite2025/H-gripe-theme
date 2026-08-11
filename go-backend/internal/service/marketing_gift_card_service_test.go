@@ -1,15 +1,15 @@
-package service
+﻿package service
 
 import (
 	"errors"
 	"testing"
 
-	"tanzanite/internal/domain/coupon"
-	"tanzanite/internal/domain/loyalty"
-	"tanzanite/internal/domain/order"
-	"tanzanite/internal/domain/payment"
-	"tanzanite/internal/domain/product"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/coupon"
+	"commerce-platform/internal/domain/loyalty"
+	"commerce-platform/internal/domain/order"
+	"commerce-platform/internal/domain/payment"
+	"commerce-platform/internal/domain/product"
+	"commerce-platform/internal/repository"
 
 	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/assert"

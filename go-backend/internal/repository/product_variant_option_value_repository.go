@@ -1,8 +1,8 @@
-package repository
+﻿package repository
 
 import (
 	"fmt"
-	"tanzanite/internal/domain/product"
+	"commerce-platform/internal/domain/product"
 
 	"gorm.io/gorm"
 )

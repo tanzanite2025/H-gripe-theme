@@ -1,11 +1,11 @@
-package service
+﻿package service
 
 import (
 	"errors"
 	"time"
 
-	"tanzanite/internal/domain/auth"
-	"tanzanite/internal/domain/user"
+	"commerce-platform/internal/domain/auth"
+	"commerce-platform/internal/domain/user"
 
 	"github.com/golang-jwt/jwt/v5"
 )

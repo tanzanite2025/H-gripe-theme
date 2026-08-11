@@ -1,4 +1,4 @@
-package payment
+﻿package payment
 
 import (
 	"encoding/json"
@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	paymentdomain "tanzanite/internal/domain/payment"
-	pgateway "tanzanite/internal/pkg/payment"
-	"tanzanite/internal/service"
+	paymentdomain "commerce-platform/internal/domain/payment"
+	pgateway "commerce-platform/internal/pkg/payment"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

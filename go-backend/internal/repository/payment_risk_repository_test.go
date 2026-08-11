@@ -1,12 +1,12 @@
-package repository
+﻿package repository
 
 import (
 	"encoding/json"
 	"testing"
 	"time"
 
-	"tanzanite/internal/domain/outbox"
-	paymentdomain "tanzanite/internal/domain/payment"
+	"commerce-platform/internal/domain/outbox"
+	paymentdomain "commerce-platform/internal/domain/payment"
 
 	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/require"

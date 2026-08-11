@@ -1,22 +1,22 @@
-package app
+﻿package app
 
 import (
 	"fmt"
 	"os"
 	"strings"
 
-	"tanzanite/internal/domain/outbox"
-	"tanzanite/internal/pkg/antibot"
-	"tanzanite/internal/pkg/antifraud"
-	"tanzanite/internal/pkg/cache"
-	"tanzanite/internal/pkg/cardtesting"
-	"tanzanite/internal/pkg/config"
-	"tanzanite/internal/pkg/email"
-	"tanzanite/internal/pkg/orderabuse"
-	"tanzanite/internal/pkg/ordernumber"
-	"tanzanite/internal/pkg/storage"
-	"tanzanite/internal/repository"
-	"tanzanite/internal/service"
+	"commerce-platform/internal/domain/outbox"
+	"commerce-platform/internal/pkg/antibot"
+	"commerce-platform/internal/pkg/antifraud"
+	"commerce-platform/internal/pkg/cache"
+	"commerce-platform/internal/pkg/cardtesting"
+	"commerce-platform/internal/pkg/config"
+	"commerce-platform/internal/pkg/email"
+	"commerce-platform/internal/pkg/orderabuse"
+	"commerce-platform/internal/pkg/ordernumber"
+	"commerce-platform/internal/pkg/storage"
+	"commerce-platform/internal/repository"
+	"commerce-platform/internal/service"
 
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"

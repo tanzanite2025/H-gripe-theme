@@ -1,7 +1,7 @@
-package shipping
+﻿package shipping
 
 import (
-	"tanzanite/internal/domain/currency"
+	"commerce-platform/internal/domain/currency"
 	"time"
 
 	"gorm.io/datatypes"

@@ -1,4 +1,4 @@
-#!/bin/bash
+﻿#!/bin/bash
 
 #############################################
 # PostgreSQL Database Backup Script
@@ -11,13 +11,13 @@ set -euo pipefail
 BACKUP_DIR="${BACKUP_DIR:-/backups/postgres}"
 RETENTION_DAYS="${RETENTION_DAYS:-30}"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-BACKUP_FILE="tanzanite_backup_${TIMESTAMP}.sql.gz"
+BACKUP_FILE="commerce_platform_backup_${TIMESTAMP}.sql.gz"
 
 # 数据库连接信息（从环境变量或Kubernetes Secret获取）
 DB_HOST="${DB_HOST:-postgres.production}"
 DB_PORT="${DB_PORT:-5432}"
-DB_NAME="${DB_NAME:-tanzanite}"
-DB_USERNAME="${DB_USERNAME:-tanzanite}"
+DB_NAME="${DB_NAME:-commerce_platform}"
+DB_USERNAME="${DB_USERNAME:-commerce_platform}"
 DB_PASSWORD="${DB_PASSWORD}"
 
 # 日志函数
@@ -70,18 +70,18 @@ fi
 
 # 清理旧备份
 log "Cleaning up old backups (retention: ${RETENTION_DAYS} days)..."
-find "${BACKUP_DIR}" -name "tanzanite_backup_*.sql.gz" -type f -mtime +${RETENTION_DAYS} -delete
+find "${BACKUP_DIR}" -name "commerce_platform_backup_*.sql.gz" -type f -mtime +${RETENTION_DAYS} -delete
 log "Old backups cleaned up"
 
 # 列出当前备份
 log "Current backups:"
-ls -lh "${BACKUP_DIR}"/tanzanite_backup_*.sql.gz 2>/dev/null || log "No backups found"
+ls -lh "${BACKUP_DIR}"/commerce_platform_backup_*.sql.gz 2>/dev/null || log "No backups found"
 
 # 可选：上传到云存储（S3）
 if [ "${UPLOAD_TO_S3:-false}" = "true" ]; then
     log "Uploading backup to S3..."
     if command -v aws &> /dev/null; then
-        aws s3 cp "${BACKUP_DIR}/${BACKUP_FILE}" "s3://${S3_BUCKET:-tanzanite-backups}/postgres/" \
+        aws s3 cp "${BACKUP_DIR}/${BACKUP_FILE}" "s3://${S3_BUCKET:-commerce_platform-backups}/postgres/" \
             --storage-class STANDARD_IA
         log "Backup uploaded to S3"
     else

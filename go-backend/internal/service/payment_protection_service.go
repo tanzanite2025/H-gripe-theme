@@ -1,4 +1,4 @@
-package service
+﻿package service
 
 import (
 	"errors"
@@ -6,10 +6,10 @@ import (
 	"strings"
 	"time"
 
-	paymentdomain "tanzanite/internal/domain/payment"
-	"tanzanite/internal/pkg/config"
-	pgateway "tanzanite/internal/pkg/payment"
-	"tanzanite/internal/repository"
+	paymentdomain "commerce-platform/internal/domain/payment"
+	"commerce-platform/internal/pkg/config"
+	pgateway "commerce-platform/internal/pkg/payment"
+	"commerce-platform/internal/repository"
 )
 
 var (

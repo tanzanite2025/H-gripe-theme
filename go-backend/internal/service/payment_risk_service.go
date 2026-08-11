@@ -1,4 +1,4 @@
-package service
+﻿package service
 
 import (
 	"errors"
@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"tanzanite/internal/domain/currency"
-	paymentdomain "tanzanite/internal/domain/payment"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/currency"
+	paymentdomain "commerce-platform/internal/domain/payment"
+	"commerce-platform/internal/repository"
 )
 
 var (

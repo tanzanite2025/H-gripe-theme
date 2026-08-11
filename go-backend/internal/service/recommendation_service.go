@@ -1,4 +1,4 @@
-package service
+﻿package service
 
 import (
 	"errors"
@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"tanzanite/internal/domain/product"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/product"
+	"commerce-platform/internal/repository"
 
 	"github.com/google/uuid"
 )

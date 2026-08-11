@@ -1,13 +1,13 @@
-apiVersion: autoscaling/v2
+﻿apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: tanzanite-api-hpa
+  name: commerce-platform-api-hpa
   namespace: default
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: tanzanite-api
+    name: commerce-platform-api
   minReplicas: 3
   maxReplicas: 10
   metrics:

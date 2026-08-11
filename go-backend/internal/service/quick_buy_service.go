@@ -1,4 +1,4 @@
-package service
+﻿package service
 
 import (
 	"encoding/json"
@@ -9,11 +9,11 @@ import (
 	"strings"
 	"time"
 
-	currencydomain "tanzanite/internal/domain/currency"
-	productdomain "tanzanite/internal/domain/product"
-	"tanzanite/internal/domain/quickbuy"
-	"tanzanite/internal/pkg/locales"
-	"tanzanite/internal/repository"
+	currencydomain "commerce-platform/internal/domain/currency"
+	productdomain "commerce-platform/internal/domain/product"
+	"commerce-platform/internal/domain/quickbuy"
+	"commerce-platform/internal/pkg/locales"
+	"commerce-platform/internal/repository"
 
 	"github.com/google/uuid"
 	"gorm.io/datatypes"

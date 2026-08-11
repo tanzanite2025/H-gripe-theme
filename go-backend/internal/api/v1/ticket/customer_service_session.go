@@ -1,14 +1,14 @@
-package ticket
+﻿package ticket
 
 import (
 	"errors"
 	"net/http"
 	"strconv"
 	"strings"
-	"tanzanite/internal/api/middleware"
-	"tanzanite/internal/domain/ticket"
-	"tanzanite/internal/pkg/visitorcookie"
-	"tanzanite/internal/service"
+	"commerce-platform/internal/api/middleware"
+	"commerce-platform/internal/domain/ticket"
+	"commerce-platform/internal/pkg/visitorcookie"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

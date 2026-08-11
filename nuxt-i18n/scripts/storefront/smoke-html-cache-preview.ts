@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process'
+﻿import { spawn } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -23,7 +23,7 @@ const port = Number.parseInt(process.env.HTML_CACHE_SMOKE_PORT || '4020', 10)
 const token = process.env.NUXT_HTML_CACHE_PURGE_TOKEN || 'codex-html-cache-smoke-token'
 const targetPath = process.env.HTML_CACHE_SMOKE_PATH || '/support/shipping'
 const driver = String(process.env.HTML_CACHE_SMOKE_DRIVER || process.env.NUXT_HTML_CACHE_DRIVER || 'memory').toLowerCase()
-const redisPrefix = process.env.HTML_CACHE_SMOKE_REDIS_PREFIX || process.env.NUXT_HTML_CACHE_PREFIX || 'h-gripe:storefront:html-cache:smoke'
+const redisPrefix = process.env.HTML_CACHE_SMOKE_REDIS_PREFIX || process.env.NUXT_HTML_CACHE_PREFIX || 'commerce-platform:storefront:html-cache:smoke'
 const origin = `http://127.0.0.1:${port}`
 
 const timeout = (ms: number): Promise<void> => new Promise((resolveTimeout) => setTimeout(resolveTimeout, ms))

@@ -1,8 +1,8 @@
-package review
+﻿package review
 
 import (
-	"tanzanite/internal/domain/product"
-	"tanzanite/internal/domain/user"
+	"commerce-platform/internal/domain/product"
+	"commerce-platform/internal/domain/user"
 	"time"
 
 	"gorm.io/gorm"

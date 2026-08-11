@@ -1,11 +1,11 @@
-package admin
+﻿package admin
 
 import (
 	"errors"
 	"net/http"
-	"tanzanite/internal/domain/auth"
-	"tanzanite/internal/pkg/securecookie"
-	"tanzanite/internal/service"
+	"commerce-platform/internal/domain/auth"
+	"commerce-platform/internal/pkg/securecookie"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

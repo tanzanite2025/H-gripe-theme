@@ -1,4 +1,4 @@
-package orderabuse
+﻿package orderabuse
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"tanzanite/internal/pkg/config"
+	"commerce-platform/internal/pkg/config"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -133,7 +133,7 @@ func (s *Service) subjects(identity Identity) []subject {
 }
 
 func orderCreateKey(dimension, value string) string {
-	return "tanzanite:order-abuse:create:" + strings.TrimSpace(dimension) + ":" + digest(value)
+	return "commerce_platform:order-abuse:create:" + strings.TrimSpace(dimension) + ":" + digest(value)
 }
 
 func digest(value string) string {

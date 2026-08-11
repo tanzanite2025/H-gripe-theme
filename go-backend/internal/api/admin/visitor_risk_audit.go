@@ -1,11 +1,11 @@
-package admin
+﻿package admin
 
 import (
 	"strings"
 	"time"
 	"unicode/utf8"
 
-	"tanzanite/internal/service"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

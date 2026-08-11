@@ -1,9 +1,9 @@
-package service
+﻿package service
 
 import (
 	"errors"
-	"tanzanite/internal/domain/ticket"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/ticket"
+	"commerce-platform/internal/repository"
 )
 
 const customerServiceTicketCategory = "customer_service"

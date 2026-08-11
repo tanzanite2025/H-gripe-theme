@@ -1,11 +1,11 @@
-package admin
+﻿package admin
 
 import (
 	"strconv"
-	shippingdomain "tanzanite/internal/domain/shipping"
-	"tanzanite/internal/pkg/apierror"
-	"tanzanite/internal/pkg/response"
-	"tanzanite/internal/service"
+	shippingdomain "commerce-platform/internal/domain/shipping"
+	"commerce-platform/internal/pkg/apierror"
+	"commerce-platform/internal/pkg/response"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

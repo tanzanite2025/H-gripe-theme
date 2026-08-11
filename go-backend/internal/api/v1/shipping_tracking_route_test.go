@@ -1,4 +1,4 @@
-package v1
+﻿package v1
 
 import (
 	"context"
@@ -7,14 +7,14 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"tanzanite/internal/app"
-	orderdomain "tanzanite/internal/domain/order"
-	shippingdomain "tanzanite/internal/domain/shipping"
-	userdomain "tanzanite/internal/domain/user"
-	"tanzanite/internal/pkg/config"
-	"tanzanite/internal/pkg/securecookie"
-	"tanzanite/internal/repository"
-	"tanzanite/internal/service"
+	"commerce-platform/internal/app"
+	orderdomain "commerce-platform/internal/domain/order"
+	shippingdomain "commerce-platform/internal/domain/shipping"
+	userdomain "commerce-platform/internal/domain/user"
+	"commerce-platform/internal/pkg/config"
+	"commerce-platform/internal/pkg/securecookie"
+	"commerce-platform/internal/repository"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 	"github.com/glebarez/sqlite"

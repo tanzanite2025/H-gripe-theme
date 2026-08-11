@@ -1,4 +1,4 @@
-package service
+﻿package service
 
 import (
 	"context"
@@ -8,8 +8,8 @@ import (
 	"os"
 	"time"
 
-	"tanzanite/internal/domain/outbox"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/outbox"
+	"commerce-platform/internal/repository"
 )
 
 const (

@@ -1,8 +1,8 @@
-package service
+﻿package service
 
 import (
 	"errors"
-	"tanzanite/internal/domain/faq"
+	"commerce-platform/internal/domain/faq"
 	"testing"
 )
 

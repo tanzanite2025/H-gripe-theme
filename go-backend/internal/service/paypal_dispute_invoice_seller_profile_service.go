@@ -1,13 +1,13 @@
-package service
+﻿package service
 
 import (
 	"errors"
 	"fmt"
 	"strings"
 
-	settingdomain "tanzanite/internal/domain/setting"
-	"tanzanite/internal/pkg/invoice"
-	"tanzanite/internal/repository"
+	settingdomain "commerce-platform/internal/domain/setting"
+	"commerce-platform/internal/pkg/invoice"
+	"commerce-platform/internal/repository"
 )
 
 var ErrPayPalDisputeInvoiceSellerProfileIncomplete = errors.New("PayPal commercial invoice seller name and address are required")

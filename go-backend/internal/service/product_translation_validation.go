@@ -1,10 +1,10 @@
-package service
+﻿package service
 
 import (
 	"errors"
 	"fmt"
 
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/repository"
 )
 
 func (s *ProductService) validateProductTranslationParent(parentID *uint, productID uint, locale string) error {

@@ -1,8 +1,8 @@
-package repository
+﻿package repository
 
 import (
 	"errors"
-	"tanzanite/internal/domain/review"
+	"commerce-platform/internal/domain/review"
 
 	"gorm.io/gorm"
 )

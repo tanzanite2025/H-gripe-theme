@@ -1,9 +1,9 @@
-package service
+﻿package service
 
 import (
 	"fmt"
 	"strings"
-	"tanzanite/internal/pkg/locales"
+	"commerce-platform/internal/pkg/locales"
 )
 
 func normalizeLocale(locale string) string {

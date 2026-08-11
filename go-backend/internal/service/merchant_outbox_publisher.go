@@ -1,12 +1,12 @@
-package service
+﻿package service
 
 import (
 	"encoding/json"
 	"fmt"
 	"time"
 
-	"tanzanite/internal/domain/outbox"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/outbox"
+	"commerce-platform/internal/repository"
 
 	"gorm.io/datatypes"
 )

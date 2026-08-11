@@ -1,4 +1,4 @@
-package cardtesting
+﻿package cardtesting
 
 import (
 	"context"
@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"tanzanite/internal/pkg/config"
-	paymentpkg "tanzanite/internal/pkg/payment"
+	"commerce-platform/internal/pkg/config"
+	paymentpkg "commerce-platform/internal/pkg/payment"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -287,11 +287,11 @@ func (s *Service) RecordPaymentIntentSuccess(ctx context.Context, paymentIntentI
 }
 
 func failureKey(bin string) string {
-	return "tanzanite:payment-risk:bin:" + binLength(bin) + ":" + digest(bin) + ":failures"
+	return "commerce_platform:payment-risk:bin:" + binLength(bin) + ":" + digest(bin) + ":failures"
 }
 
 func blockKey(bin string) string {
-	return "tanzanite:payment-risk:bin:" + binLength(bin) + ":" + digest(bin) + ":blocked"
+	return "commerce_platform:payment-risk:bin:" + binLength(bin) + ":" + digest(bin) + ":blocked"
 }
 
 func blockKeyFromFailureKey(key string) string {
@@ -299,7 +299,7 @@ func blockKeyFromFailureKey(key string) string {
 }
 
 func paymentIntentBindingKey(paymentIntentID string) string {
-	return "tanzanite:payment-risk:bin-payment-intent:" + digest(paymentIntentID)
+	return "commerce_platform:payment-risk:bin-payment-intent:" + digest(paymentIntentID)
 }
 
 func digest(value string) string {

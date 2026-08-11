@@ -1,9 +1,9 @@
-package repository
+﻿package repository
 
 import (
 	"fmt"
 	"strings"
-	"tanzanite/internal/domain/media"
+	"commerce-platform/internal/domain/media"
 )
 
 func (r *MediaRepository) productTypeImageReferences(query mediaAssetReferenceQuery) ([]media.AssetReference, error) {

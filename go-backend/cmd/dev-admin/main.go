@@ -1,4 +1,4 @@
-package main
+﻿package main
 
 import (
 	"errors"
@@ -8,10 +8,10 @@ import (
 	"strconv"
 	"strings"
 
-	"tanzanite/internal/domain/auth"
-	"tanzanite/internal/domain/user"
-	"tanzanite/internal/pkg/config"
-	"tanzanite/internal/pkg/database"
+	"commerce-platform/internal/domain/auth"
+	"commerce-platform/internal/domain/user"
+	"commerce-platform/internal/pkg/config"
+	"commerce-platform/internal/pkg/database"
 
 	"gorm.io/gorm"
 )
@@ -174,9 +174,9 @@ func readDatabaseConfig() config.DatabaseConfig {
 		Driver:          envDefaultAny([]string{"DB_DRIVER", "DATABASE_DRIVER"}, "postgres"),
 		Host:            envDefaultAny([]string{"DB_HOST", "DATABASE_HOST"}, "localhost"),
 		Port:            envIntDefaultAny([]string{"DB_PORT", "DATABASE_PORT"}, 9400),
-		Username:        envDefaultAny([]string{"DB_USERNAME", "DATABASE_USERNAME"}, "tanzanite"),
-		Password:        envDefaultAny([]string{"DB_PASSWORD", "DATABASE_PASSWORD"}, "tanzanite_password"),
-		Database:        envDefaultAny([]string{"DB_NAME", "DATABASE_NAME"}, "tanzanite"),
+		Username:        envDefaultAny([]string{"DB_USERNAME", "DATABASE_USERNAME"}, "commerce_platform"),
+		Password:        envDefaultAny([]string{"DB_PASSWORD", "DATABASE_PASSWORD"}, "commerce_platform_password"),
+		Database:        envDefaultAny([]string{"DB_NAME", "DATABASE_NAME"}, "commerce_platform"),
 		MaxIdleConns:    2,
 		MaxOpenConns:    5,
 		ConnMaxLifetime: 3600,

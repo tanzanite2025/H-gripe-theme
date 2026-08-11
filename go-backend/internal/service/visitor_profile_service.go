@@ -1,4 +1,4 @@
-package service
+﻿package service
 
 import (
 	"crypto/sha256"
@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"tanzanite/internal/domain/visitor"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/visitor"
+	"commerce-platform/internal/repository"
 )
 
 type VisitorProfileService struct {

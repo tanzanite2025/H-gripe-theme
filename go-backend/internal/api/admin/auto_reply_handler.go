@@ -1,14 +1,14 @@
-package admin
+﻿package admin
 
 import (
 	"errors"
 	"strconv"
 	"strings"
-	"tanzanite/internal/domain/ticket"
-	"tanzanite/internal/pkg/apierror"
-	"tanzanite/internal/pkg/locales"
-	"tanzanite/internal/pkg/response"
-	"tanzanite/internal/service"
+	"commerce-platform/internal/domain/ticket"
+	"commerce-platform/internal/pkg/apierror"
+	"commerce-platform/internal/pkg/locales"
+	"commerce-platform/internal/pkg/response"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

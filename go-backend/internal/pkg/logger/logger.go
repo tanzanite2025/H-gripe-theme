@@ -1,7 +1,7 @@
-package logger
+﻿package logger
 
 import (
-	"tanzanite/internal/pkg/config"
+	"commerce-platform/internal/pkg/config"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"

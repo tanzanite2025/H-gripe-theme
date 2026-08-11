@@ -1,12 +1,12 @@
-package service
+﻿package service
 
 import (
 	"context"
 	"testing"
 	"time"
 
-	"tanzanite/internal/domain/order"
-	"tanzanite/internal/domain/product"
+	"commerce-platform/internal/domain/order"
+	"commerce-platform/internal/domain/product"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

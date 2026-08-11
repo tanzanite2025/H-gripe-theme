@@ -1,4 +1,4 @@
-package cache
+﻿package cache
 
 import (
 	"context"
@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"tanzanite/internal/pkg/config"
-	appLogger "tanzanite/internal/pkg/logger"
+	"commerce-platform/internal/pkg/config"
+	appLogger "commerce-platform/internal/pkg/logger"
 
 	"github.com/redis/go-redis/v9"
 )

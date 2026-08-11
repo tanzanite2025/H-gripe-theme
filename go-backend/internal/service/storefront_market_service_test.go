@@ -1,12 +1,12 @@
-package service
+﻿package service
 
 import (
 	"errors"
 	"testing"
 
-	marketdomain "tanzanite/internal/domain/market"
-	settingdomain "tanzanite/internal/domain/setting"
-	"tanzanite/internal/repository"
+	marketdomain "commerce-platform/internal/domain/market"
+	settingdomain "commerce-platform/internal/domain/setting"
+	"commerce-platform/internal/repository"
 
 	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/require"

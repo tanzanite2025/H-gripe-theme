@@ -1,14 +1,14 @@
-package service
+﻿package service
 
 import (
 	"errors"
 	"fmt"
 	"math"
 
-	"tanzanite/internal/domain/currency"
-	"tanzanite/internal/domain/loyalty"
-	"tanzanite/internal/domain/order"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/currency"
+	"commerce-platform/internal/domain/loyalty"
+	"commerce-platform/internal/domain/order"
+	"commerce-platform/internal/repository"
 )
 
 func (s *OrderService) completeOrderWithLoyaltyReward(id uint) error {

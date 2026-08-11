@@ -1,12 +1,12 @@
-package service
+﻿package service
 
 import (
 	"context"
 	"fmt"
 	"strings"
-	"tanzanite/internal/domain/order"
-	shippingdomain "tanzanite/internal/domain/shipping"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/order"
+	shippingdomain "commerce-platform/internal/domain/shipping"
+	"commerce-platform/internal/repository"
 	"time"
 )
 

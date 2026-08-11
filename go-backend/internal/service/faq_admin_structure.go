@@ -1,9 +1,9 @@
-package service
+﻿package service
 
 import (
 	"fmt"
 	"strings"
-	"tanzanite/internal/domain/faq"
+	"commerce-platform/internal/domain/faq"
 )
 
 func (s *FAQService) ListAdminStructure(locale string) ([]FAQPageAdminView, error) {

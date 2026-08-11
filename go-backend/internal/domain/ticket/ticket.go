@@ -1,7 +1,7 @@
-package ticket
+﻿package ticket
 
 import (
-	"tanzanite/internal/domain/user"
+	"commerce-platform/internal/domain/user"
 	"time"
 
 	"gorm.io/gorm"

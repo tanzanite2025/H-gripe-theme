@@ -1,11 +1,11 @@
-package showcase
+﻿package showcase
 
 import (
 	"net/http"
 	"strconv"
 	"strings"
-	"tanzanite/internal/pkg/upload"
-	"tanzanite/internal/service"
+	"commerce-platform/internal/pkg/upload"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

@@ -1,6 +1,6 @@
-package content
+﻿package content
 
-import "tanzanite/internal/service"
+import "commerce-platform/internal/service"
 
 type Handler struct {
 	postService *service.PostService

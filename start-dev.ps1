@@ -1,4 +1,4 @@
-param(
+﻿param(
   [switch]$StopOnly,
   [switch]$PortsOnly
 )
@@ -171,9 +171,9 @@ function Invoke-DevAdminBootstrap {
     SERVER_MODE         = 'debug'
     DB_HOST             = 'localhost'
     DB_PORT             = [string]$Ports.Postgres
-    DB_USERNAME         = 'tanzanite'
-    DB_PASSWORD         = 'tanzanite_password'
-    DB_NAME             = 'tanzanite'
+    DB_USERNAME         = 'commerce_platform'
+    DB_PASSWORD         = 'commerce_platform_password'
+    DB_NAME             = 'commerce_platform'
     DB_LOG_LEVEL        = 'silent'
     DEV_ADMIN_BOOTSTRAP = 'true'
     DEV_ADMIN_EMAIL     = $devAdminEmail
@@ -351,9 +351,9 @@ $backendCommand = @"
 `$env:SERVER_BASE_URL='http://localhost:$($Ports.Api)'
 `$env:DB_HOST='localhost'
 `$env:DB_PORT='$($Ports.Postgres)'
-`$env:DB_USERNAME='tanzanite'
-`$env:DB_PASSWORD='tanzanite_password'
-`$env:DB_NAME='tanzanite'
+`$env:DB_USERNAME='commerce_platform'
+`$env:DB_PASSWORD='commerce_platform_password'
+`$env:DB_NAME='commerce_platform'
 `$env:REDIS_HOST='localhost'
 `$env:REDIS_PORT='$($Ports.Redis)'
 `$env:PAYMENT_CONFIG_MASTER_KEY='dev-payment-config-master-key-change-before-production'

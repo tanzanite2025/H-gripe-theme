@@ -1,4 +1,4 @@
-package product
+﻿package product
 
 import (
 	"net/http"
@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	productdomain "tanzanite/internal/domain/product"
-	"tanzanite/internal/repository"
-	"tanzanite/internal/service"
+	productdomain "commerce-platform/internal/domain/product"
+	"commerce-platform/internal/repository"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 	"github.com/glebarez/sqlite"

@@ -1,13 +1,13 @@
-package ticket
+﻿package ticket
 
 import (
 	"log"
 	"net/http"
 	"strconv"
 	"strings"
-	"tanzanite/internal/pkg/locales"
-	"tanzanite/internal/pkg/upload"
-	"tanzanite/internal/service"
+	"commerce-platform/internal/pkg/locales"
+	"commerce-platform/internal/pkg/upload"
+	"commerce-platform/internal/service"
 	"time"
 
 	"github.com/gin-gonic/gin"

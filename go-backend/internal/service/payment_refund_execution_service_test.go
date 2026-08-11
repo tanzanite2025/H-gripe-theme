@@ -1,4 +1,4 @@
-package service
+﻿package service
 
 import (
 	"context"
@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	paymentdomain "tanzanite/internal/domain/payment"
-	pgateway "tanzanite/internal/pkg/payment"
-	"tanzanite/internal/repository"
+	paymentdomain "commerce-platform/internal/domain/payment"
+	pgateway "commerce-platform/internal/pkg/payment"
+	"commerce-platform/internal/repository"
 
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"

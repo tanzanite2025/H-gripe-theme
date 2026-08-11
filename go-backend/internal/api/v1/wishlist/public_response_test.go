@@ -1,4 +1,4 @@
-package wishlist
+﻿package wishlist
 
 import (
 	"encoding/json"
@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	productdomain "tanzanite/internal/domain/product"
-	wishlistdomain "tanzanite/internal/domain/wishlist"
+	productdomain "commerce-platform/internal/domain/product"
+	wishlistdomain "commerce-platform/internal/domain/wishlist"
 )
 
 func TestPublicWishlistResponseOmitsCommercialFields(t *testing.T) {

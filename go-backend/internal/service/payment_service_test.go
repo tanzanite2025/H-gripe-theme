@@ -1,4 +1,4 @@
-package service
+﻿package service
 
 import (
 	"bytes"
@@ -10,17 +10,17 @@ import (
 	"time"
 	"unicode/utf8"
 
-	attributiondomain "tanzanite/internal/domain/attribution"
-	"tanzanite/internal/domain/coupon"
-	"tanzanite/internal/domain/order"
-	outboxdomain "tanzanite/internal/domain/outbox"
-	paymentdomain "tanzanite/internal/domain/payment"
-	productdomain "tanzanite/internal/domain/product"
-	shippingdomain "tanzanite/internal/domain/shipping"
-	ticketdomain "tanzanite/internal/domain/ticket"
-	userdomain "tanzanite/internal/domain/user"
-	"tanzanite/internal/pkg/invoice"
-	"tanzanite/internal/repository"
+	attributiondomain "commerce-platform/internal/domain/attribution"
+	"commerce-platform/internal/domain/coupon"
+	"commerce-platform/internal/domain/order"
+	outboxdomain "commerce-platform/internal/domain/outbox"
+	paymentdomain "commerce-platform/internal/domain/payment"
+	productdomain "commerce-platform/internal/domain/product"
+	shippingdomain "commerce-platform/internal/domain/shipping"
+	ticketdomain "commerce-platform/internal/domain/ticket"
+	userdomain "commerce-platform/internal/domain/user"
+	"commerce-platform/internal/pkg/invoice"
+	"commerce-platform/internal/repository"
 
 	"github.com/glebarez/sqlite"
 	paypalapi "github.com/plutov/paypal/v4"
@@ -1067,7 +1067,7 @@ func TestBuildPayPalDisputeCommercialInvoicePDFReturnsPDF(t *testing.T) {
 	disputeRecord := seedPayPalDispute(t, db, "PP-D-INVOICE-PREVIEW-1", orderRecord.ID, "WAITING_FOR_SELLER_RESPONSE", "REQUIRED_ACTION")
 	paymentService.ConfigurePayPalDisputeInvoiceOptions(PayPalDisputeInvoiceOptions{
 		Seller: invoice.SellerProfile{
-			Name:    "Tanzanite Factory",
+			Name:    "Commerce Platform Factory",
 			Address: "100 Factory Road\nAustin, TX 78701\nUS",
 			Email:   "support@example.test",
 		},
@@ -1132,7 +1132,7 @@ func TestSubmitPayPalDisputeEvidenceDoesNotAttachCommercialInvoicePDFWhenDisable
 	paymentService.ConfigurePayPalDisputeEvidenceDocumentStorage(fakeStorage)
 	paymentService.ConfigurePayPalDisputeInvoiceOptions(PayPalDisputeInvoiceOptions{
 		Seller: invoice.SellerProfile{
-			Name:    "Tanzanite Factory",
+			Name:    "Commerce Platform Factory",
 			Address: "100 Factory Road\nAustin, TX 78701\nUS",
 		},
 		AutoAttachPDF: false,
@@ -1169,7 +1169,7 @@ func TestSubmitPayPalDisputeEvidenceAttachesCommercialInvoicePDF(t *testing.T) {
 	paymentService.ConfigurePayPalDisputeEvidenceDocumentStorage(fakeStorage)
 	paymentService.ConfigurePayPalDisputeInvoiceOptions(PayPalDisputeInvoiceOptions{
 		Seller: invoice.SellerProfile{
-			Name:    "Tanzanite Factory",
+			Name:    "Commerce Platform Factory",
 			Address: "100 Factory Road\nAustin, TX 78701\nUS",
 			Email:   "support@example.test",
 		},

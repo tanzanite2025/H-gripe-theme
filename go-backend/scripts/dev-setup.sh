@@ -1,4 +1,4 @@
-#!/bin/bash
+﻿#!/bin/bash
 
 #############################################
 # 本地开发环境快速启动脚本
@@ -120,9 +120,9 @@ APP_DEBUG=true
 # 数据库配置
 DB_HOST=localhost
 DB_PORT=9400
-DB_NAME=tanzanite_dev
-DB_USERNAME=tanzanite
-DB_PASSWORD=tanzanite_dev_password
+DB_NAME=commerce_platform_dev
+DB_USERNAME=commerce_platform
+DB_PASSWORD=commerce_platform_dev_password
 DB_SSLMODE=disable
 
 # Redis配置
@@ -323,9 +323,9 @@ echo "   ${GREEN}make help${NC}"
 echo ""
 info "数据库连接信息："
 echo "  Host: localhost:9400"
-echo "  Database: tanzanite_dev"
-echo "  User: tanzanite"
-echo "  Password: tanzanite_dev_password"
+echo "  Database: commerce_platform_dev"
+echo "  User: commerce_platform"
+echo "  Password: commerce_platform_dev_password"
 echo ""
 info "Redis连接信息："
 echo "  Host: localhost:9500"

@@ -1,7 +1,7 @@
-package order
+﻿package order
 
 import (
-	orderdomain "tanzanite/internal/domain/order"
+	orderdomain "commerce-platform/internal/domain/order"
 	"time"
 )
 

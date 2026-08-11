@@ -1,12 +1,12 @@
-package admin
+﻿package admin
 
 import (
 	"fmt"
 	"net/http"
 	"strings"
-	"tanzanite/internal/pkg/pagination"
-	"tanzanite/internal/pkg/response"
-	"tanzanite/internal/service"
+	"commerce-platform/internal/pkg/pagination"
+	"commerce-platform/internal/pkg/response"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

@@ -1,4 +1,4 @@
-package admin
+﻿package admin
 
 import (
 	"bytes"
@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
-	"tanzanite/internal/domain/visitor"
-	"tanzanite/internal/pkg/config"
-	"tanzanite/internal/repository"
-	"tanzanite/internal/service"
+	"commerce-platform/internal/domain/visitor"
+	"commerce-platform/internal/pkg/config"
+	"commerce-platform/internal/repository"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 	"github.com/glebarez/sqlite"

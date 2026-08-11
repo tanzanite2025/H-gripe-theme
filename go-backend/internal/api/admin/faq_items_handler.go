@@ -1,10 +1,10 @@
-package admin
+﻿package admin
 
 import (
 	"net/http"
 	"strconv"
-	"tanzanite/internal/domain/faq"
-	"tanzanite/internal/service"
+	"commerce-platform/internal/domain/faq"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

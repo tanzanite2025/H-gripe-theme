@@ -1,4 +1,4 @@
-package admin
+﻿package admin
 
 import (
 	"bytes"
@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"time"
 
-	"tanzanite/internal/pkg/apierror"
-	pgateway "tanzanite/internal/pkg/payment"
-	"tanzanite/internal/pkg/response"
+	"commerce-platform/internal/pkg/apierror"
+	pgateway "commerce-platform/internal/pkg/payment"
+	"commerce-platform/internal/pkg/response"
 
 	"github.com/gin-gonic/gin"
 )

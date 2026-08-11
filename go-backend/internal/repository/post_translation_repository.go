@@ -1,9 +1,9 @@
-package repository
+﻿package repository
 
 import (
 	"strings"
 
-	"tanzanite/internal/domain/post"
+	"commerce-platform/internal/domain/post"
 )
 
 type postTranslationRouteRecord struct {

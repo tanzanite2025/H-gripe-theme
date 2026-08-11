@@ -1,4 +1,4 @@
-package service
+﻿package service
 
 import (
 	"crypto/sha256"
@@ -9,8 +9,8 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-	"tanzanite/internal/domain/auth"
-	"tanzanite/internal/domain/ticket"
+	"commerce-platform/internal/domain/auth"
+	"commerce-platform/internal/domain/ticket"
 	"time"
 )
 

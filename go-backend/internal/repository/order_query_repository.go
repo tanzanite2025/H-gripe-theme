@@ -1,6 +1,6 @@
-package repository
+﻿package repository
 
-import "tanzanite/internal/domain/order"
+import "commerce-platform/internal/domain/order"
 
 // FindByUserID 查找用户的订单列表
 func (r *OrderRepository) FindByUserID(userID uint, page, pageSize int) ([]order.Order, int64, error) {

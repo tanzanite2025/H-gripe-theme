@@ -1,12 +1,12 @@
-package ticket
+﻿package ticket
 
 import (
 	"net/http"
 	"strings"
 	"time"
 
-	ticketdomain "tanzanite/internal/domain/ticket"
-	"tanzanite/internal/service"
+	ticketdomain "commerce-platform/internal/domain/ticket"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

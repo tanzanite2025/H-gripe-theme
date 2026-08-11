@@ -1,11 +1,11 @@
-package service
+﻿package service
 
 import (
 	"testing"
 
-	gallerydomain "tanzanite/internal/domain/gallery"
-	mediadomain "tanzanite/internal/domain/media"
-	"tanzanite/internal/repository"
+	gallerydomain "commerce-platform/internal/domain/gallery"
+	mediadomain "commerce-platform/internal/domain/media"
+	"commerce-platform/internal/repository"
 
 	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/assert"

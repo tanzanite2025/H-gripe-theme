@@ -1,10 +1,10 @@
-package order
+﻿package order
 
 import (
 	"errors"
 	"time"
 
-	"tanzanite/internal/domain/currency"
+	"commerce-platform/internal/domain/currency"
 
 	"gorm.io/gorm"
 )

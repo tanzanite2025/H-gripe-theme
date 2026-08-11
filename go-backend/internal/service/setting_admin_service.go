@@ -1,8 +1,8 @@
-package service
+﻿package service
 
 import (
 	"encoding/json"
-	"tanzanite/internal/domain/setting"
+	"commerce-platform/internal/domain/setting"
 )
 
 func (s *SettingService) Set(key, value, settingType, group, locale string) error {

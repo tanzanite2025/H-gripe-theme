@@ -1,4 +1,4 @@
-package payment
+﻿package payment
 
 import (
 	"encoding/json"
@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	paymentdomain "tanzanite/internal/domain/payment"
-	"tanzanite/internal/pkg/apierror"
-	pgateway "tanzanite/internal/pkg/payment" // alias for gateway
-	"tanzanite/internal/pkg/response"
-	"tanzanite/internal/service"
+	paymentdomain "commerce-platform/internal/domain/payment"
+	"commerce-platform/internal/pkg/apierror"
+	pgateway "commerce-platform/internal/pkg/payment" // alias for gateway
+	"commerce-platform/internal/pkg/response"
+	"commerce-platform/internal/service"
 	"time"
 
 	"github.com/gin-gonic/gin"

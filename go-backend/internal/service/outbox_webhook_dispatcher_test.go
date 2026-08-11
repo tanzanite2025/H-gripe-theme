@@ -1,4 +1,4 @@
-package service
+﻿package service
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"tanzanite/internal/domain/outbox"
+	"commerce-platform/internal/domain/outbox"
 
 	"github.com/stretchr/testify/require"
 	"gorm.io/datatypes"

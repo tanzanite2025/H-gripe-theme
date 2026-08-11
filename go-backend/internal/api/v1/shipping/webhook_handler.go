@@ -1,4 +1,4 @@
-package shipping
+﻿package shipping
 
 import (
 	"bytes"
@@ -9,9 +9,9 @@ import (
 	"io"
 	"strconv"
 	"strings"
-	"tanzanite/internal/pkg/apierror"
-	"tanzanite/internal/pkg/response"
-	"tanzanite/internal/service"
+	"commerce-platform/internal/pkg/apierror"
+	"commerce-platform/internal/pkg/response"
+	"commerce-platform/internal/service"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -173,7 +173,7 @@ func verifyTrackingWebhook(c *gin.Context, secret string, payload []byte) bool {
 		return false
 	}
 
-	plainSecret := strings.TrimSpace(c.GetHeader("X-Tanzanite-Webhook-Secret"))
+	plainSecret := strings.TrimSpace(c.GetHeader("X-Commerce-Platform-Webhook-Secret"))
 	if plainSecret != "" && hmac.Equal([]byte(plainSecret), []byte(secret)) {
 		return true
 	}
@@ -190,7 +190,7 @@ func verifyTrackingWebhook(c *gin.Context, secret string, payload []byte) bool {
 		}
 	}
 
-	signature := strings.TrimSpace(c.GetHeader("X-Tanzanite-Signature"))
+	signature := strings.TrimSpace(c.GetHeader("X-Commerce-Platform-Signature"))
 	if signature == "" {
 		signature = strings.TrimSpace(c.GetHeader("X-17Track-Signature"))
 	}

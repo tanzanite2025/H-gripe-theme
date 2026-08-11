@@ -1,6 +1,6 @@
-package service
+﻿package service
 
-import "tanzanite/internal/domain/media"
+import "commerce-platform/internal/domain/media"
 
 func (s *MediaService) GetAssetReferences(id uint) (media.AssetReferenceReport, error) {
 	asset, err := s.GetAsset(id)

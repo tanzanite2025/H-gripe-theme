@@ -1,8 +1,8 @@
-package wishlist
+﻿package wishlist
 
 import (
-	productdomain "tanzanite/internal/domain/product"
-	wishlistdomain "tanzanite/internal/domain/wishlist"
+	productdomain "commerce-platform/internal/domain/product"
+	wishlistdomain "commerce-platform/internal/domain/wishlist"
 )
 
 // PublicWishlistItem is the customer-facing contract for saved products.

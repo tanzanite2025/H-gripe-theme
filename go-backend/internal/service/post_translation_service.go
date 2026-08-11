@@ -1,8 +1,8 @@
-package service
+﻿package service
 
 import (
-	"tanzanite/internal/domain/post"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/post"
+	"commerce-platform/internal/repository"
 )
 
 func (s *PostService) GetTranslations(postID uint) ([]post.Post, error) {

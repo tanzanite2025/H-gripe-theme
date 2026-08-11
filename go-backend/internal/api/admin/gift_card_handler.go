@@ -1,10 +1,10 @@
-package admin
+﻿package admin
 
 import (
 	"strconv"
-	"tanzanite/internal/pkg/apierror"
-	"tanzanite/internal/pkg/pagination"
-	"tanzanite/internal/pkg/response"
+	"commerce-platform/internal/pkg/apierror"
+	"commerce-platform/internal/pkg/pagination"
+	"commerce-platform/internal/pkg/response"
 
 	"github.com/gin-gonic/gin"
 )

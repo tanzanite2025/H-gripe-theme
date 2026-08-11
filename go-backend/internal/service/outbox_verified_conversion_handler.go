@@ -1,10 +1,10 @@
-package service
+﻿package service
 
 import (
 	"context"
 	"errors"
 
-	"tanzanite/internal/domain/outbox"
+	"commerce-platform/internal/domain/outbox"
 )
 
 var ErrVerifiedConversionOutboxWebhookNotConfigured = errors.New("verified conversion outbox webhook is not configured")

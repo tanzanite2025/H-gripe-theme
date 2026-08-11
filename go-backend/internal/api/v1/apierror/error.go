@@ -1,11 +1,11 @@
-package apierror
+﻿package apierror
 
 import (
 	"errors"
 	"fmt"
 	"net/http"
-	appLogger "tanzanite/internal/pkg/logger"
-	"tanzanite/internal/pkg/requestctx"
+	appLogger "commerce-platform/internal/pkg/logger"
+	"commerce-platform/internal/pkg/requestctx"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"

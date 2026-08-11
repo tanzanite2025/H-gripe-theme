@@ -1,15 +1,15 @@
-package service
+﻿package service
 
 import (
 	"errors"
 	"fmt"
 	"math"
-	"tanzanite/internal/domain/coupon"
-	"tanzanite/internal/domain/currency"
-	"tanzanite/internal/domain/loyalty"
-	"tanzanite/internal/domain/order"
-	productdomain "tanzanite/internal/domain/product"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/coupon"
+	"commerce-platform/internal/domain/currency"
+	"commerce-platform/internal/domain/loyalty"
+	"commerce-platform/internal/domain/order"
+	productdomain "commerce-platform/internal/domain/product"
+	"commerce-platform/internal/repository"
 	"time"
 )
 

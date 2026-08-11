@@ -1,10 +1,10 @@
-package repository
+﻿package repository
 
 import (
 	"errors"
 	"time"
 
-	"tanzanite/internal/domain/verification"
+	"commerce-platform/internal/domain/verification"
 
 	"gorm.io/gorm"
 )

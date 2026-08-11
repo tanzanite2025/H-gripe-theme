@@ -1,4 +1,4 @@
-apiVersion: apps/v1
+﻿apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: redis-exporter
@@ -29,9 +29,9 @@ spec:
               key: redis-password
               optional: true
         - name: REDIS_EXPORTER_CHECK_KEYS
-          value: "tanzanite:*"
+          value: "commerce_platform:*"
         - name: REDIS_EXPORTER_CHECK_SINGLE_KEYS
-          value: "tanzanite:sessions:count,tanzanite:cache:hit_rate"
+          value: "commerce_platform:sessions:count,commerce_platform:cache:hit_rate"
         resources:
           requests:
             cpu: 100m

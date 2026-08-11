@@ -1,9 +1,9 @@
-package service
+﻿package service
 
 import (
 	"strings"
 
-	"tanzanite/internal/domain/setting"
+	"commerce-platform/internal/domain/setting"
 )
 
 func loadPublicManagedSettingValues(settings *SettingService, group, locale string) (map[string]string, error) {

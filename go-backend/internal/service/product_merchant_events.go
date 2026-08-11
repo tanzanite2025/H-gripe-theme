@@ -1,9 +1,9 @@
-package service
+﻿package service
 
 import (
 	"fmt"
 
-	"tanzanite/internal/domain/product"
+	"commerce-platform/internal/domain/product"
 )
 
 func (s *ProductService) enqueueMerchantProductUpsert(item *product.Product, reason string) error {

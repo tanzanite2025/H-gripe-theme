@@ -1,4 +1,4 @@
-package service
+﻿package service
 
 import (
 	"bytes"
@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	domainspoke "tanzanite/internal/domain/spoke"
+	domainspoke "commerce-platform/internal/domain/spoke"
 
 	"github.com/xuri/excelize/v2"
 )

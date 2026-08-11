@@ -1,13 +1,13 @@
-package service
+﻿package service
 
 import (
 	"errors"
 	"fmt"
 	"time"
 
-	"tanzanite/internal/domain/currency"
-	"tanzanite/internal/domain/loyalty"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/currency"
+	"commerce-platform/internal/domain/loyalty"
+	"commerce-platform/internal/repository"
 )
 
 var (

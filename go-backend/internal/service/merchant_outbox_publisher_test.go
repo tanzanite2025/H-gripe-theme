@@ -1,12 +1,12 @@
-package service
+﻿package service
 
 import (
 	"encoding/json"
 	"strings"
 	"testing"
 
-	outboxdomain "tanzanite/internal/domain/outbox"
-	"tanzanite/internal/repository"
+	outboxdomain "commerce-platform/internal/domain/outbox"
+	"commerce-platform/internal/repository"
 
 	"github.com/stretchr/testify/require"
 )

@@ -1,11 +1,11 @@
-package payment
+﻿package payment
 
 import (
 	"fmt"
 	"math"
 	"strconv"
 
-	"tanzanite/internal/domain/currency"
+	"commerce-platform/internal/domain/currency"
 )
 
 func MajorToMinorAmount(amount float64, code string) (int64, error) {

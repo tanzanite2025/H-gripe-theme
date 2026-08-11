@@ -1,11 +1,11 @@
-package service
+﻿package service
 
 import (
 	"errors"
 	"fmt"
-	"tanzanite/internal/domain/auth"
-	"tanzanite/internal/domain/user"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/auth"
+	"commerce-platform/internal/domain/user"
+	"commerce-platform/internal/repository"
 )
 
 var (

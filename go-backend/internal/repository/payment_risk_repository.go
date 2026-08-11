@@ -1,4 +1,4 @@
-package repository
+﻿package repository
 
 import (
 	"encoding/json"
@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"tanzanite/internal/domain/outbox"
-	paymentdomain "tanzanite/internal/domain/payment"
+	"commerce-platform/internal/domain/outbox"
+	paymentdomain "commerce-platform/internal/domain/payment"
 
 	"gorm.io/datatypes"
 	"gorm.io/gorm"

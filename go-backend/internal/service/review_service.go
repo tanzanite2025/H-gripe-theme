@@ -1,9 +1,9 @@
-package service
+﻿package service
 
 import (
 	"errors"
-	"tanzanite/internal/domain/review"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/review"
+	"commerce-platform/internal/repository"
 )
 
 type ReviewService struct {

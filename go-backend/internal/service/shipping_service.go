@@ -1,4 +1,4 @@
-package service
+﻿package service
 
 import (
 	"context"
@@ -9,11 +9,11 @@ import (
 	"sort"
 	"strings"
 	"sync"
-	"tanzanite/internal/domain/currency"
-	"tanzanite/internal/domain/product"
-	"tanzanite/internal/domain/shipping"
-	"tanzanite/internal/pkg/tracking"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/currency"
+	"commerce-platform/internal/domain/product"
+	"commerce-platform/internal/domain/shipping"
+	"commerce-platform/internal/pkg/tracking"
+	"commerce-platform/internal/repository"
 	"time"
 )
 

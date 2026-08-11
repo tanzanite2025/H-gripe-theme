@@ -1,13 +1,13 @@
-package service
+﻿package service
 
 import (
 	"strings"
 	"testing"
 	"time"
 
-	"tanzanite/internal/domain/recommendation"
-	"tanzanite/internal/pkg/config"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/recommendation"
+	"commerce-platform/internal/pkg/config"
+	"commerce-platform/internal/repository"
 
 	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/require"

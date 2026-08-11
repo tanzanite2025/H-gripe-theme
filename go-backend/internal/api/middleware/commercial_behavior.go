@@ -1,4 +1,4 @@
-package middleware
+﻿package middleware
 
 import (
 	"net"
@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"tanzanite/internal/pkg/metrics"
+	"commerce-platform/internal/pkg/metrics"
 
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"

@@ -1,6 +1,6 @@
-package repository
+﻿package repository
 
-import "tanzanite/internal/domain/media"
+import "commerce-platform/internal/domain/media"
 
 type mediaAssetReferenceScanner func(mediaAssetReferenceQuery) ([]media.AssetReference, error)
 

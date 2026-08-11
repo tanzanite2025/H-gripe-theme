@@ -1,11 +1,11 @@
-package repository
+﻿package repository
 
 import (
 	"encoding/json"
 	"time"
 
-	"tanzanite/internal/domain/audit"
-	paymentdomain "tanzanite/internal/domain/payment"
+	"commerce-platform/internal/domain/audit"
+	paymentdomain "commerce-platform/internal/domain/payment"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"

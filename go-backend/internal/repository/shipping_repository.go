@@ -1,10 +1,10 @@
-package repository
+﻿package repository
 
 import (
 	"encoding/json"
 	"fmt"
 	"strings"
-	"tanzanite/internal/domain/shipping"
+	"commerce-platform/internal/domain/shipping"
 	"time"
 
 	"gorm.io/gorm"

@@ -1,4 +1,4 @@
-package database
+﻿package database
 
 import (
 	"bytes"
@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	appLogger "tanzanite/internal/pkg/logger"
+	appLogger "commerce-platform/internal/pkg/logger"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"

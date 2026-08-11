@@ -1,4 +1,4 @@
-package admin
+﻿package admin
 
 import (
 	"errors"
@@ -6,15 +6,15 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	paymentdomain "tanzanite/internal/domain/payment"
-	"tanzanite/internal/domain/setting"
-	"tanzanite/internal/pkg/apierror"
-	"tanzanite/internal/pkg/invoice"
-	"tanzanite/internal/pkg/pagination"
-	pgateway "tanzanite/internal/pkg/payment"
-	"tanzanite/internal/pkg/response"
-	"tanzanite/internal/repository"
-	"tanzanite/internal/service"
+	paymentdomain "commerce-platform/internal/domain/payment"
+	"commerce-platform/internal/domain/setting"
+	"commerce-platform/internal/pkg/apierror"
+	"commerce-platform/internal/pkg/invoice"
+	"commerce-platform/internal/pkg/pagination"
+	pgateway "commerce-platform/internal/pkg/payment"
+	"commerce-platform/internal/pkg/response"
+	"commerce-platform/internal/repository"
+	"commerce-platform/internal/service"
 	"time"
 
 	"github.com/gin-gonic/gin"

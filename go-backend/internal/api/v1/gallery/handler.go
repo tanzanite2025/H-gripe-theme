@@ -1,11 +1,11 @@
-package gallery
+﻿package gallery
 
 import (
 	"net/http"
 	"strconv"
 	"strings"
 
-	"tanzanite/internal/service"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

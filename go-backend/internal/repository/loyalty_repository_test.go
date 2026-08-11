@@ -1,4 +1,4 @@
-package repository
+﻿package repository
 
 import (
 	"reflect"
@@ -9,7 +9,7 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	"tanzanite/internal/domain/loyalty"
+	"commerce-platform/internal/domain/loyalty"
 )
 
 func newMockLoyaltyRepository(t *testing.T) (*LoyaltyRepository, sqlmock.Sqlmock, func()) {

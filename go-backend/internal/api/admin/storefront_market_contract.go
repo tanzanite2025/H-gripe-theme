@@ -1,6 +1,6 @@
-package admin
+﻿package admin
 
-import "tanzanite/internal/service"
+import "commerce-platform/internal/service"
 
 type storefrontMarketRequest struct {
 	Code                string   `json:"code" binding:"required"`

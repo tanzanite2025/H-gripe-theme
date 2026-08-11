@@ -1,4 +1,4 @@
-package service
+﻿package service
 
 import (
 	"bytes"
@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"tanzanite/internal/domain/merchant"
-	"tanzanite/internal/domain/product"
+	"commerce-platform/internal/domain/merchant"
+	"commerce-platform/internal/domain/product"
 )
 
 type googleMerchantRoundTripper func(*http.Request) (*http.Response, error)
@@ -24,7 +24,7 @@ func TestBuildGoogleMerchantProductInputUsesOneSKUAndStorefrontFields(t *testing
 	salePrice := 1199.99
 	offer := &merchant.GoogleMerchantOffer{
 		OfferID:               "tz-wheel-700",
-		Brand:                 "H-GRIPE",
+		Brand:                 "Commerce Platform",
 		Condition:             "new",
 		GoogleProductCategory: "Sporting Goods",
 		GTIN:                  "0123456789012",
@@ -39,7 +39,7 @@ func TestBuildGoogleMerchantProductInputUsesOneSKUAndStorefrontFields(t *testing
 			Description: "A fast wheelset.",
 			Media: []product.ProductMedia{{
 				MediaType: "image",
-				URL:       "https://cdn.tanzanite.site/wheelset.jpg",
+				URL:       "https://cdn.commerce_platform.site/wheelset.jpg",
 				IsVisible: true,
 			}},
 		},
@@ -53,7 +53,7 @@ func TestBuildGoogleMerchantProductInputUsesOneSKUAndStorefrontFields(t *testing
 		},
 	}
 
-	input, err := (&GoogleMerchantService{}).buildGoogleMerchantProductInput(offer, "https://tanzanite.site")
+	input, err := (&GoogleMerchantService{}).buildGoogleMerchantProductInput(offer, "https://commerce_platform.site")
 	if err != nil {
 		t.Fatalf("buildGoogleMerchantProductInput() error = %v", err)
 	}
@@ -65,7 +65,7 @@ func TestBuildGoogleMerchantProductInputUsesOneSKUAndStorefrontFields(t *testing
 	if attributes.Title != "Carbon Wheelset" || attributes.Description != "A fast wheelset." {
 		t.Fatalf("unexpected title/description mapping: %#v", attributes)
 	}
-	if attributes.Link != "https://tanzanite.site/shop/carbon-wheelset?variant=700" || attributes.ImageLink != "https://cdn.tanzanite.site/wheelset.jpg" {
+	if attributes.Link != "https://commerce_platform.site/shop/carbon-wheelset?variant=700" || attributes.ImageLink != "https://cdn.commerce_platform.site/wheelset.jpg" {
 		t.Fatalf("unexpected URL mapping: %#v", attributes)
 	}
 	if attributes.Availability != "IN_STOCK" || attributes.Condition != "NEW" {
@@ -86,7 +86,7 @@ func TestBuildGoogleMerchantProductInputMapsOutOfStockSKU(t *testing.T) {
 	identifierExists := false
 	offer := &merchant.GoogleMerchantOffer{
 		OfferID:               "tz-empty",
-		Brand:                 "H-GRIPE",
+		Brand:                 "Commerce Platform",
 		Condition:             "new",
 		GoogleProductCategory: "Sporting Goods",
 		IdentifierExists:      &identifierExists,
@@ -99,7 +99,7 @@ func TestBuildGoogleMerchantProductInputMapsOutOfStockSKU(t *testing.T) {
 			Description: "Temporarily unavailable.",
 			Media: []product.ProductMedia{{
 				MediaType: "image",
-				URL:       "https://cdn.tanzanite.site/empty-wheelset.jpg",
+				URL:       "https://cdn.commerce_platform.site/empty-wheelset.jpg",
 				IsVisible: true,
 			}},
 		},
@@ -110,7 +110,7 @@ func TestBuildGoogleMerchantProductInputMapsOutOfStockSKU(t *testing.T) {
 		},
 	}
 
-	input, err := (&GoogleMerchantService{}).buildGoogleMerchantProductInput(offer, "https://tanzanite.site")
+	input, err := (&GoogleMerchantService{}).buildGoogleMerchantProductInput(offer, "https://commerce_platform.site")
 	if err != nil {
 		t.Fatalf("buildGoogleMerchantProductInput() error = %v", err)
 	}
@@ -123,7 +123,7 @@ func TestBuildGoogleMerchantProductInputResolvesRelativeImageAndLocaleURL(t *tes
 	identifierExists := false
 	offer := &merchant.GoogleMerchantOffer{
 		OfferID:               "tz-fr",
-		Brand:                 "H-GRIPE",
+		Brand:                 "Commerce Platform",
 		Condition:             "new",
 		GoogleProductCategory: "Sporting Goods",
 		IdentifierExists:      &identifierExists,
@@ -149,20 +149,20 @@ func TestBuildGoogleMerchantProductInputResolvesRelativeImageAndLocaleURL(t *tes
 		},
 	}
 
-	input, err := (&GoogleMerchantService{}).buildGoogleMerchantProductInput(offer, "https://tanzanite.site")
+	input, err := (&GoogleMerchantService{}).buildGoogleMerchantProductInput(offer, "https://commerce_platform.site")
 	if err != nil {
 		t.Fatalf("buildGoogleMerchantProductInput() error = %v", err)
 	}
-	if input.ProductAttributes.Link != "https://tanzanite.site/fr/shop/roue-carbone?variant=701" {
+	if input.ProductAttributes.Link != "https://commerce_platform.site/fr/shop/roue-carbone?variant=701" {
 		t.Fatalf("link = %q", input.ProductAttributes.Link)
 	}
-	if input.ProductAttributes.ImageLink != "https://tanzanite.site/uploads/roue.jpg?width=1200" {
+	if input.ProductAttributes.ImageLink != "https://commerce_platform.site/uploads/roue.jpg?width=1200" {
 		t.Fatalf("image link = %q", input.ProductAttributes.ImageLink)
 	}
 }
 
 func TestGoogleMerchantProductURLRejectsLocalOrInvalidBase(t *testing.T) {
-	tests := []string{"", "not-a-url", "ftp://tanzanite.site", "https://localhost", "https://tanzanite.site?preview=true"}
+	tests := []string{"", "not-a-url", "ftp://commerce_platform.site", "https://localhost", "https://commerce_platform.site?preview=true"}
 	for _, input := range tests {
 		if _, err := googleMerchantProductURL(input, &product.Product{Slug: "wheelset"}, nil); err == nil {
 			t.Fatalf("googleMerchantProductURL(%q) error = nil, want validation error", input)

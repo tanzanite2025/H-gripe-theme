@@ -1,10 +1,10 @@
-package registration
+﻿package registration
 
 import (
 	"strings"
-	domainregistration "tanzanite/internal/domain/registration"
-	"tanzanite/internal/pkg/apierror"
-	"tanzanite/internal/pkg/response"
+	domainregistration "commerce-platform/internal/domain/registration"
+	"commerce-platform/internal/pkg/apierror"
+	"commerce-platform/internal/pkg/response"
 	"time"
 
 	"github.com/gin-gonic/gin"

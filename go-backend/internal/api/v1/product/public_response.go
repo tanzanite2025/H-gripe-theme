@@ -1,9 +1,9 @@
-package product
+﻿package product
 
 import (
 	"strings"
-	"tanzanite/internal/domain/currency"
-	productdomain "tanzanite/internal/domain/product"
+	"commerce-platform/internal/domain/currency"
+	productdomain "commerce-platform/internal/domain/product"
 )
 
 // Availability is the coarse-grained stock state exposed to storefront clients.

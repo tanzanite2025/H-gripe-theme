@@ -1,6 +1,6 @@
-package repository
+﻿package repository
 
-import "tanzanite/internal/domain/loyalty"
+import "commerce-platform/internal/domain/loyalty"
 
 // CreateMemberLevel 创建会员等级
 func (r *LoyaltyRepository) CreateMemberLevel(l *loyalty.MemberLevel) error {

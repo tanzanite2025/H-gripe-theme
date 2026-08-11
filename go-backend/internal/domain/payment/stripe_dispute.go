@@ -1,10 +1,10 @@
-package payment
+﻿package payment
 
 import (
 	"errors"
 	"time"
 
-	"tanzanite/internal/domain/currency"
+	"commerce-platform/internal/domain/currency"
 
 	"gorm.io/gorm"
 )

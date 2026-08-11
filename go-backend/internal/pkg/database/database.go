@@ -1,12 +1,12 @@
-package database
+﻿package database
 
 import (
 	"context"
 	"fmt"
 	"time"
 
-	"tanzanite/internal/pkg/config"
-	appLogger "tanzanite/internal/pkg/logger"
+	"commerce-platform/internal/pkg/config"
+	appLogger "commerce-platform/internal/pkg/logger"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"

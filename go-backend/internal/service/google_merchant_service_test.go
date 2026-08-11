@@ -1,4 +1,4 @@
-package service
+﻿package service
 
 import (
 	"errors"
@@ -6,10 +6,10 @@ import (
 	"testing"
 	"time"
 
-	"tanzanite/internal/domain/merchant"
-	"tanzanite/internal/domain/product"
-	"tanzanite/internal/pkg/config"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/merchant"
+	"commerce-platform/internal/domain/product"
+	"commerce-platform/internal/pkg/config"
+	"commerce-platform/internal/repository"
 
 	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
@@ -24,7 +24,7 @@ func TestGoogleMerchantUpdateOfferBlocksSyncedRemoteIdentityChange(t *testing.T)
 		ProductID:             productRecord.ID,
 		VariantID:             variantRecord.ID,
 		OfferID:               "tz-wheel-updated",
-		Brand:                 "H-GRIPE",
+		Brand:                 "Commerce Platform",
 		Condition:             "new",
 		GoogleProductCategory: "Sporting Goods",
 		IdentifierExists:      boolPtrForGoogleMerchantTest(false),
@@ -48,7 +48,7 @@ func TestGoogleMerchantUpdateOfferMarksSyncedPayloadChangeReady(t *testing.T) {
 		VariantID:             variantRecord.ID,
 		OfferID:               "tz-wheel",
 		Title:                 "Updated Google Title",
-		Brand:                 "H-GRIPE",
+		Brand:                 "Commerce Platform",
 		Condition:             "new",
 		GoogleProductCategory: "Sporting Goods",
 		IdentifierExists:      boolPtrForGoogleMerchantTest(false),
@@ -83,7 +83,7 @@ func TestGoogleMerchantUpdateOfferQueuesReadyOfferRevalidationOnPayloadChange(t 
 		VariantID:             variantRecord.ID,
 		OfferID:               "tz-wheel",
 		Title:                 "Updated Google Title",
-		Brand:                 "H-GRIPE",
+		Brand:                 "Commerce Platform",
 		Condition:             "new",
 		GoogleProductCategory: "Sporting Goods",
 		IdentifierExists:      boolPtrForGoogleMerchantTest(false),
@@ -147,7 +147,7 @@ func TestGoogleMerchantUpdateOfferSkipsDraftRevalidation(t *testing.T) {
 		ProductID:             productRecord.ID,
 		VariantID:             variantRecord.ID,
 		OfferID:               "tz-wheel",
-		Brand:                 "H-GRIPE",
+		Brand:                 "Commerce Platform",
 		Condition:             "new",
 		GoogleProductCategory: "Sporting Goods",
 		IdentifierExists:      &identifierExists,
@@ -168,7 +168,7 @@ func TestGoogleMerchantUpdateOfferSkipsDraftRevalidation(t *testing.T) {
 		VariantID:             variantRecord.ID,
 		OfferID:               "tz-wheel",
 		Title:                 "Draft Google Title",
-		Brand:                 "H-GRIPE",
+		Brand:                 "Commerce Platform",
 		Condition:             "new",
 		GoogleProductCategory: "Sporting Goods",
 		IdentifierExists:      boolPtrForGoogleMerchantTest(false),
@@ -255,7 +255,7 @@ func newTestGoogleMerchantService(t *testing.T) (*gorm.DB, *GoogleMerchantServic
 		repository.NewGoogleMerchantRepository(db),
 		repository.NewProductRepository(db),
 		configlessGoogleMerchantForTest(),
-		"https://tanzanite.site",
+		"https://commerce_platform.site",
 	)
 	return db, service, productRecord, variantRecord
 }
@@ -286,7 +286,7 @@ func googleMerchantOfferInputForTest(productID, variantID uint, status string) G
 		ProductID:             productID,
 		VariantID:             variantID,
 		OfferID:               "tz-wheel",
-		Brand:                 "H-GRIPE",
+		Brand:                 "Commerce Platform",
 		Condition:             "new",
 		GoogleProductCategory: "Sporting Goods",
 		IdentifierExists:      &identifierExists,

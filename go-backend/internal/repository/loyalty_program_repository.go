@@ -1,8 +1,8 @@
-package repository
+﻿package repository
 
 import (
 	"errors"
-	"tanzanite/internal/domain/loyalty"
+	"commerce-platform/internal/domain/loyalty"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"

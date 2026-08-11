@@ -1,8 +1,8 @@
-package service
+﻿package service
 
 import (
 	"fmt"
-	"tanzanite/internal/domain/post"
+	"commerce-platform/internal/domain/post"
 )
 
 func postIDCacheKey(id uint) string {

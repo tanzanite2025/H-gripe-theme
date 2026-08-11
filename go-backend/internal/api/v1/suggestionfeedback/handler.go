@@ -1,4 +1,4 @@
-package suggestionfeedback
+﻿package suggestionfeedback
 
 import (
 	"crypto/sha1"
@@ -6,10 +6,10 @@ import (
 	"errors"
 	"net/http"
 	"strings"
-	domainsuggestion "tanzanite/internal/domain/suggestionfeedback"
-	"tanzanite/internal/pkg/storage"
-	"tanzanite/internal/pkg/upload"
-	"tanzanite/internal/service"
+	domainsuggestion "commerce-platform/internal/domain/suggestionfeedback"
+	"commerce-platform/internal/pkg/storage"
+	"commerce-platform/internal/pkg/upload"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

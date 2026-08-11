@@ -1,11 +1,11 @@
-package seo
+﻿package seo
 
 import (
 	"encoding/json"
 	"strings"
 	"time"
 
-	"tanzanite/internal/domain/audit"
+	"commerce-platform/internal/domain/audit"
 
 	"github.com/gin-gonic/gin"
 )

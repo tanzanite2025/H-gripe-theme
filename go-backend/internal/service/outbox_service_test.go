@@ -1,4 +1,4 @@
-package service
+﻿package service
 
 import (
 	"context"
@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	outboxdomain "tanzanite/internal/domain/outbox"
-	"tanzanite/internal/repository"
+	outboxdomain "commerce-platform/internal/domain/outbox"
+	"commerce-platform/internal/repository"
 
 	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/assert"

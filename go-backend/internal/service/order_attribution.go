@@ -1,9 +1,9 @@
-package service
+﻿package service
 
 import (
-	attributiondomain "tanzanite/internal/domain/attribution"
-	attributionpkg "tanzanite/internal/pkg/attribution"
-	"tanzanite/internal/repository"
+	attributiondomain "commerce-platform/internal/domain/attribution"
+	attributionpkg "commerce-platform/internal/pkg/attribution"
+	"commerce-platform/internal/repository"
 	"time"
 )
 

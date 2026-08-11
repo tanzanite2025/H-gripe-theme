@@ -1,13 +1,13 @@
-package payment
+﻿package payment
 
 import (
 	"net/http"
 	"net/url"
 	"strings"
 
-	orderdomain "tanzanite/internal/domain/order"
-	"tanzanite/internal/pkg/apierror"
-	pgateway "tanzanite/internal/pkg/payment"
+	orderdomain "commerce-platform/internal/domain/order"
+	"commerce-platform/internal/pkg/apierror"
+	pgateway "commerce-platform/internal/pkg/payment"
 
 	"github.com/gin-gonic/gin"
 )

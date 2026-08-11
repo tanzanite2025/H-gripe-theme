@@ -1,11 +1,11 @@
-package service
+﻿package service
 
 import (
 	"strings"
 
-	analyticsdomain "tanzanite/internal/domain/analytics"
-	seodomain "tanzanite/internal/domain/seo"
-	"tanzanite/internal/domain/setting"
+	analyticsdomain "commerce-platform/internal/domain/analytics"
+	seodomain "commerce-platform/internal/domain/seo"
+	"commerce-platform/internal/domain/setting"
 )
 
 var domainManagedSettingGroups = map[string]struct{}{

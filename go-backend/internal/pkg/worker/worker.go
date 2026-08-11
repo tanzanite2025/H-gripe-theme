@@ -1,10 +1,10 @@
-package worker
+﻿package worker
 
 import (
 	"context"
-	"tanzanite/internal/pkg/config"
+	"commerce-platform/internal/pkg/config"
 
-	"tanzanite/internal/pkg/logger"
+	"commerce-platform/internal/pkg/logger"
 
 	"github.com/hibiken/asynq"
 	"go.uber.org/zap"

@@ -1,7 +1,7 @@
-package middleware
+﻿package middleware
 
 import (
-	"tanzanite/internal/pkg/i18n"
+	"commerce-platform/internal/pkg/i18n"
 
 	"github.com/gin-gonic/gin"
 )

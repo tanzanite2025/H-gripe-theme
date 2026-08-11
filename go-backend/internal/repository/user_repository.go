@@ -1,8 +1,8 @@
-package repository
+﻿package repository
 
 import (
 	"strings"
-	"tanzanite/internal/domain/user"
+	"commerce-platform/internal/domain/user"
 	"time"
 
 	"gorm.io/gorm"

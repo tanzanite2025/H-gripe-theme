@@ -1,4 +1,4 @@
-#!/bin/bash
+﻿#!/bin/bash
 
 #############################################
 # 数据库迁移管理脚本
@@ -9,7 +9,7 @@ set -euo pipefail
 
 # 配置
 MIGRATIONS_DIR="${MIGRATIONS_DIR:-./migrations}"
-DB_URL="${DATABASE_URL:-postgresql://tanzanite:tanzanite_dev_password@localhost:9400/tanzanite_dev?sslmode=disable}"
+DB_URL="${DATABASE_URL:-postgresql://commerce_platform:commerce_platform_dev_password@localhost:9400/commerce_platform_dev?sslmode=disable}"
 
 # 颜色输出
 GREEN='\033[0;32m'

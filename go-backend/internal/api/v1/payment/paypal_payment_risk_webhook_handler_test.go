@@ -1,4 +1,4 @@
-package payment
+﻿package payment
 
 import (
 	"context"
@@ -8,12 +8,12 @@ import (
 	"testing"
 	"time"
 
-	orderdomain "tanzanite/internal/domain/order"
-	paymentdomain "tanzanite/internal/domain/payment"
-	shippingdomain "tanzanite/internal/domain/shipping"
-	pgateway "tanzanite/internal/pkg/payment"
-	"tanzanite/internal/repository"
-	"tanzanite/internal/service"
+	orderdomain "commerce-platform/internal/domain/order"
+	paymentdomain "commerce-platform/internal/domain/payment"
+	shippingdomain "commerce-platform/internal/domain/shipping"
+	pgateway "commerce-platform/internal/pkg/payment"
+	"commerce-platform/internal/repository"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 	"github.com/glebarez/sqlite"

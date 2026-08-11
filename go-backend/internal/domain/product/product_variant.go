@@ -1,9 +1,9 @@
-package product
+﻿package product
 
 import (
 	"time"
 
-	"tanzanite/internal/domain/currency"
+	"commerce-platform/internal/domain/currency"
 
 	"gorm.io/datatypes"
 	"gorm.io/gorm"

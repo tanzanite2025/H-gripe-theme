@@ -1,12 +1,12 @@
-package currency
+﻿package currency
 
 import (
 	"errors"
 	"net/http"
 	"strings"
 
-	domaincurrency "tanzanite/internal/domain/currency"
-	"tanzanite/internal/service"
+	domaincurrency "commerce-platform/internal/domain/currency"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )
