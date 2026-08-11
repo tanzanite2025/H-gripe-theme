@@ -1,12 +1,12 @@
-﻿package service
+package service
 
 import (
+	"commerce-platform/internal/domain/product"
 	"encoding/json"
 	"fmt"
 	"regexp"
 	"sort"
 	"strings"
-	"commerce-platform/internal/domain/product"
 
 	"gorm.io/gorm"
 )

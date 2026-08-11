@@ -1,9 +1,9 @@
-﻿package settings
+package settings
 
 import (
-	"net/http"
 	"commerce-platform/internal/api/middleware"
 	"commerce-platform/internal/service"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 )

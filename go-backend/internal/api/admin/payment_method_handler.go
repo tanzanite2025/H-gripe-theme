@@ -4,9 +4,9 @@ import (
 	"errors"
 	"strconv"
 
-	paymentdomain "tanzanite/internal/domain/payment"
-	"tanzanite/internal/pkg/apierror"
-	"tanzanite/internal/pkg/response"
+	paymentdomain "commerce-platform/internal/domain/payment"
+	"commerce-platform/internal/pkg/apierror"
+	"commerce-platform/internal/pkg/response"
 
 	"github.com/gin-gonic/gin"
 )

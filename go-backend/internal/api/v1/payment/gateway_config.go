@@ -1,11 +1,11 @@
-﻿package payment
+package payment
 
 import (
 	pgateway "commerce-platform/internal/pkg/payment"
 	"commerce-platform/internal/repository"
 )
 
-func (h *Handler) loadGatewayConfig(gatewayType pgateway.GatewayType) (*pgateway.Config, error) {
+func (h *Handler) loadPaymentGatewayConfiguration(gatewayType pgateway.GatewayType) (*pgateway.Config, error) {
 	if h != nil && h.settingsService != nil {
 		st, err := h.settingsService.GetDomainManagedSetting(pgateway.SecureGatewaySettingKey(gatewayType), "global")
 		if err == nil {

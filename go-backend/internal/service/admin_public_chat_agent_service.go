@@ -1,12 +1,12 @@
-﻿package service
+package service
 
 import (
-	"errors"
-	"fmt"
-	"strings"
 	"commerce-platform/internal/domain/auth"
 	"commerce-platform/internal/domain/user"
 	"commerce-platform/internal/repository"
+	"errors"
+	"fmt"
+	"strings"
 
 	"gorm.io/gorm"
 )

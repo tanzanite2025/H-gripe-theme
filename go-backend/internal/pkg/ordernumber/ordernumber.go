@@ -1,4 +1,4 @@
-﻿package ordernumber
+package ordernumber
 
 import (
 	"crypto/hmac"

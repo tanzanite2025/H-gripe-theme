@@ -24,8 +24,8 @@
           side="left"
           class="gap-0 p-0 border-dashed"
         >
-          <SheetTitle class="sr-only">后台导航</SheetTitle>
-          <SheetDescription class="sr-only">选择要进入的后台管理模块</SheetDescription>
+          <SheetTitle class="sr-only">{{ t('layout.navigation') }}</SheetTitle>
+          <SheetDescription class="sr-only">{{ t('layout.selectModule') }}</SheetDescription>
           <AdminSidebar
             :items="visibleNavigationItems"
             :active-path="route.path"
@@ -48,7 +48,7 @@
               variant="ghost"
               size="icon"
               class="lg:hidden rounded-full"
-              aria-label="打开导航"
+              :aria-label="t('layout.openNavigation')"
               @click="mobileSidebarOpen = true"
             >
               <Menu class="size-4" />
@@ -60,7 +60,7 @@
                   variant="ghost"
                   size="icon"
                   class="hidden rounded-full lg:inline-flex"
-                  :aria-label="isCollapse ? '展开导航' : '收起导航'"
+                  :aria-label="isCollapse ? t('layout.expandNavigation') : t('layout.collapseNavigation')"
                   @click="isCollapse = !isCollapse"
                 >
                   <PanelLeftOpen v-if="isCollapse" class="size-4" />
@@ -68,7 +68,7 @@
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="bottom">
-                {{ isCollapse ? '展开导航' : '收起导航' }}
+                {{ isCollapse ? t('layout.expandNavigation') : t('layout.collapseNavigation') }}
               </TooltipContent>
             </Tooltip>
 
@@ -77,6 +77,7 @@
               <strong class="block truncate text-sm font-black tracking-tighter italic uppercase">{{ routeTitle }}</strong>
             </div>
           </div>
+          <AdminLanguageSwitcher class="ml-auto" />
         </header>
 
         <main class="min-h-0 flex-1 overflow-auto bg-muted/35 p-3 sm:p-4 lg:p-6">
@@ -91,15 +92,15 @@
   <AlertDialog v-model:open="logoutDialogOpen">
     <AlertDialogContent>
       <AlertDialogHeader>
-        <AlertDialogTitle>退出登录？</AlertDialogTitle>
+        <AlertDialogTitle>{{ t('layout.logoutTitle') }}</AlertDialogTitle>
         <AlertDialogDescription>
-          当前管理会话将结束，需要重新登录后才能继续操作。
+          {{ t('layout.logoutDescription') }}
         </AlertDialogDescription>
       </AlertDialogHeader>
       <AlertDialogFooter>
-        <AlertDialogCancel>取消</AlertDialogCancel>
+        <AlertDialogCancel>{{ t('common.cancel') }}</AlertDialogCancel>
         <AlertDialogAction :disabled="logoutLoading" @click="confirmLogout">
-          {{ logoutLoading ? '正在退出' : '退出' }}
+          {{ logoutLoading ? t('common.loggingOut') : t('common.logout') }}
         </AlertDialogAction>
       </AlertDialogFooter>
     </AlertDialogContent>
@@ -115,6 +116,7 @@ import {
   PanelLeftOpen,
 } from '@lucide/vue'
 import AdminSidebar from '@/components/admin/AdminSidebar.vue'
+import AdminLanguageSwitcher from '@/components/admin/AdminLanguageSwitcher.vue'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -131,10 +133,12 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { useAdminBranding } from '@/composables/useAdminBranding'
 import { useAuthStore } from '@/stores/auth'
 import { adminNavigationItems, findActiveNavigationEntry, filterNavigationItems } from '@/lib/adminNavigation'
+import { translateAdminNavigation, useAdminI18n } from '@/i18n'
 
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
+const { t } = useAdminI18n()
 
 const isCollapse = ref(false)
 const mobileSidebarOpen = ref(false)
@@ -143,14 +147,15 @@ const logoutLoading = ref(false)
 const user = computed(() => authStore.user)
 const { brandInitial, brandName, panelLabel, loadAdminBranding, setAdminDocumentTitle } = useAdminBranding()
 
-const visibleNavigationItems = computed(() => filterNavigationItems(adminNavigationItems, (permission) => authStore.hasPermission(permission)))
+const translatedNavigationItems = computed(() => translateAdminNavigation(adminNavigationItems, t))
+const visibleNavigationItems = computed(() => filterNavigationItems(translatedNavigationItems.value, (permission) => authStore.hasPermission(permission)))
 const activeNavigationEntry = computed(() => findActiveNavigationEntry(visibleNavigationItems.value, route.path))
 const routeTitle = computed(() => {
   const parentLabel = activeNavigationEntry.value?.parent?.label
   const itemLabel = activeNavigationEntry.value?.item?.label
 
   if (parentLabel && itemLabel && parentLabel !== itemLabel) return `${parentLabel} / ${itemLabel}`
-  return itemLabel || parentLabel || route.meta.title || '仪表板'
+  return itemLabel || parentLabel || route.meta.title || t('layout.dashboardFallback')
 })
 const userInitials = computed(() => {
   const identity = user.value?.username || user.value?.email || 'Admin'
@@ -160,13 +165,13 @@ const userInitials = computed(() => {
 })
 const roleLabel = computed(() => {
   const labels: Record<string, string> = {
-    admin: '管理员',
-    manager: '经理',
-    editor: '编辑',
-    support: '客服',
-    viewer: '查看者'
+    admin: t('roles.admin'),
+    manager: t('roles.manager'),
+    editor: t('roles.editor'),
+    support: t('roles.support'),
+    viewer: t('roles.viewer')
   }
-  return labels[user.value?.role || ''] || '后台用户'
+  return labels[user.value?.role || ''] || t('roles.backofficeUser')
 })
 
 const requestLogout = (): void => {

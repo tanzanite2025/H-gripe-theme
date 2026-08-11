@@ -1,9 +1,9 @@
-﻿package service
+package service
 
 import (
+	"commerce-platform/internal/pkg/locales"
 	"fmt"
 	"strings"
-	"commerce-platform/internal/pkg/locales"
 )
 
 // resolveAutoReplyLocale returns the canonical locale used by automatic

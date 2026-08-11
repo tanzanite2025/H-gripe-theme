@@ -1,17 +1,17 @@
-﻿package registration
+package registration
 
 import (
-	"errors"
-	"mime/multipart"
-	"net/http"
-	"strconv"
-	"strings"
 	domainregistration "commerce-platform/internal/domain/registration"
 	"commerce-platform/internal/pkg/antibot"
 	"commerce-platform/internal/pkg/apierror"
 	"commerce-platform/internal/pkg/response"
 	"commerce-platform/internal/pkg/upload"
 	"commerce-platform/internal/service"
+	"errors"
+	"mime/multipart"
+	"net/http"
+	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )

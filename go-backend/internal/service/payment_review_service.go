@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	paymentdomain "tanzanite/internal/domain/payment"
-	"tanzanite/internal/repository"
+	paymentdomain "commerce-platform/internal/domain/payment"
+	"commerce-platform/internal/repository"
 )
 
 var ErrPaymentReviewNotFound = errors.New("payment review not found")

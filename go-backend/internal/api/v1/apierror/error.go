@@ -1,11 +1,11 @@
-﻿package apierror
+package apierror
 
 import (
+	appLogger "commerce-platform/internal/pkg/logger"
+	"commerce-platform/internal/pkg/requestctx"
 	"errors"
 	"fmt"
 	"net/http"
-	appLogger "commerce-platform/internal/pkg/logger"
-	"commerce-platform/internal/pkg/requestctx"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"

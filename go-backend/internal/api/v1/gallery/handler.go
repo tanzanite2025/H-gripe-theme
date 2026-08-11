@@ -1,4 +1,4 @@
-﻿package gallery
+package gallery
 
 import (
 	"net/http"

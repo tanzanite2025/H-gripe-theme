@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"tanzanite/internal/domain/payment"
+	"commerce-platform/internal/domain/payment"
 )
 
 // PaymentMethod 相关方法

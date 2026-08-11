@@ -2,7 +2,7 @@
 
 最后审阅日期：2026-08-09
 
-本文定义 H-GRIPE 客服自动回复的多语言规则、FAQ 引用、翻译 API
+本文定义 Commerce Platform 客服自动回复的多语言规则、FAQ 引用、翻译 API
 和迁移边界。本文是 `AUTO_REPLY_SYSTEM_DESIGN.md` 的多语言补充决策。
 
 当两份文档在“自动回复是否允许全局语言兜底”上存在差异时，以本文为准：
@@ -382,7 +382,7 @@ Repository 不再自行决定：
 一条现有 `*` 规则只有一份文本：
 
 ```text
-Welcome to H-GRIPE.
+Welcome to Commerce Platform.
 ```
 
 系统不能假设它已经包含：

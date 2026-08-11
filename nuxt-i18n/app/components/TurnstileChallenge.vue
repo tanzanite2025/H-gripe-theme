@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div ref="container" class="sr-only" aria-hidden="true"></div>
 </template>
 

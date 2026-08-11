@@ -2,7 +2,7 @@
   <header class="uds-header-box px-4 py-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
     <div class="uds-glow-bg" />
     <div class="relative z-10 min-w-0">
-      <span class="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 block">MODULE CONTROL / 模块控制</span>
+      <span class="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 block">{{ t('layout.moduleControl') }}</span>
       <h1 class="truncate text-lg font-black tracking-tighter italic uppercase text-foreground">{{ title }}</h1>
       <p v-if="description" class="mt-0.5 text-[9px] font-black uppercase tracking-widest text-muted-foreground/70">{{ description }}</p>
     </div>
@@ -13,6 +13,10 @@
 </template>
 
 <script setup lang="ts">
+import { useAdminI18n } from '@/i18n'
+
+const { t } = useAdminI18n()
+
 withDefaults(defineProps<{
   title: string
   description?: string

@@ -5,10 +5,10 @@ import (
 	"strconv"
 	"strings"
 
-	"tanzanite/internal/pkg/apierror"
-	"tanzanite/internal/pkg/pagination"
-	"tanzanite/internal/pkg/response"
-	"tanzanite/internal/service"
+	"commerce-platform/internal/pkg/apierror"
+	"commerce-platform/internal/pkg/pagination"
+	"commerce-platform/internal/pkg/response"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

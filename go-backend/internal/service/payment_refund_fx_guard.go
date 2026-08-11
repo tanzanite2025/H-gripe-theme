@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	currencydomain "tanzanite/internal/domain/currency"
-	orderdomain "tanzanite/internal/domain/order"
-	paymentdomain "tanzanite/internal/domain/payment"
+	currencydomain "commerce-platform/internal/domain/currency"
+	orderdomain "commerce-platform/internal/domain/order"
+	paymentdomain "commerce-platform/internal/domain/payment"
 )
 
 var ErrHistoricalRefundFXSnapshotMissing = errors.New("historical refund FX snapshot is missing")

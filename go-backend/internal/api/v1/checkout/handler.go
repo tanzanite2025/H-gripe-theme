@@ -1,4 +1,4 @@
-﻿package checkout
+package checkout
 
 import (
 	"commerce-platform/internal/domain/order"

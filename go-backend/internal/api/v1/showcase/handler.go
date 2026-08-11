@@ -1,11 +1,11 @@
-﻿package showcase
+package showcase
 
 import (
+	"commerce-platform/internal/pkg/upload"
+	"commerce-platform/internal/service"
 	"net/http"
 	"strconv"
 	"strings"
-	"commerce-platform/internal/pkg/upload"
-	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

@@ -1,4 +1,4 @@
-﻿package repository
+package repository
 
 import (
 	"commerce-platform/internal/domain/setting"
@@ -12,6 +12,10 @@ type SettingRepository struct {
 
 func NewSettingRepository(db *gorm.DB) *SettingRepository {
 	return &SettingRepository{db: db}
+}
+
+func (r *SettingRepository) WithTx(tx *gorm.DB) *SettingRepository {
+	return &SettingRepository{db: tx}
 }
 
 // Get 获取设置

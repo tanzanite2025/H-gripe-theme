@@ -1,4 +1,4 @@
-﻿package service
+package service
 
 import (
 	"bytes"
@@ -181,7 +181,7 @@ func configureGoogleMerchantConnectionForRemoteTest(t *testing.T, service *Googl
 	service.googleConfig = config.GoogleMerchantConfig{
 		ClientID:           "client-id",
 		ClientSecret:       "client-secret",
-		RedirectURL:        "https://admin.commerce_platform.site/google-merchant/callback",
+		RedirectURL:        "https://admin.example.com/google-merchant/callback",
 		TokenEncryptionKey: "google-merchant-test-master-key-32",
 	}
 	encrypted, err := secretbox.EncryptString("refresh-token", service.googleConfig.TokenEncryptionKey)
@@ -190,7 +190,7 @@ func configureGoogleMerchantConnectionForRemoteTest(t *testing.T, service *Googl
 		Provider:              merchant.GoogleMerchantProvider,
 		MerchantAccountID:     "123",
 		DataSourceID:          "456",
-		StorefrontBaseURL:     "https://commerce_platform.site",
+		StorefrontBaseURL:     "https://example.com",
 		RefreshTokenEncrypted: encrypted,
 		Status:                "connected",
 	}))

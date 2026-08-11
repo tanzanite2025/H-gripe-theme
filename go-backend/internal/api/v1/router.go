@@ -1,4 +1,4 @@
-﻿package v1
+package v1
 
 import (
 	"commerce-platform/internal/api/middleware"
@@ -117,6 +117,7 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 	)
 	paymentHandler.ConfigurePublicBaseURL(cfg.Server.BaseURL)
 	paymentHandler.ConfigureCardBINLimiter(deps.CardBINLimiter)
+	paymentHandler.ConfigurePaymentGatewayCircuitBreaker(deps.PaymentGatewayCircuitBreaker)
 	shippingHandler := shipping.NewHandler(services.Shipping, orderService)
 	galleryHandler := gallery.NewGalleryHandler(galleryService)
 	registrationHandler := registration.NewHandler(registrationService, storageSvc, deps.AntiBot)
@@ -455,6 +456,7 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 			paymentGroup.GET("/methods/:id", paymentHandler.GetPaymentMethod)
 			paymentGroup.GET("/tax-rates", paymentHandler.ListTaxRates)
 			paymentGroup.GET("/tax-rates/:id", paymentHandler.GetTaxRate)
+			paymentGroup.GET("/stripe/express-checkout/config", paymentHandler.GetStripeExpressCheckoutConfiguration)
 			paymentGroup.POST("/calculate-tax", middleware.RateLimit(5), paymentHandler.CalculateTax)
 
 			// 需要认证的端点

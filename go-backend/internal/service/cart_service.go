@@ -1,11 +1,11 @@
-﻿package service
+package service
 
 import (
-	"errors"
-	"strings"
 	"commerce-platform/internal/domain/currency"
 	"commerce-platform/internal/domain/product"
 	"commerce-platform/internal/repository"
+	"errors"
+	"strings"
 )
 
 var ErrCartNotFound = errors.New("cart not found")

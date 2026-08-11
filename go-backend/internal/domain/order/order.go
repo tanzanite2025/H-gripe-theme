@@ -1,4 +1,4 @@
-﻿package order
+package order
 
 import (
 	"errors"
@@ -6,6 +6,7 @@ import (
 
 	"commerce-platform/internal/domain/currency"
 
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
 
@@ -36,9 +37,10 @@ type Order struct {
 	Currency       string  `gorm:"not null;index" json:"currency"`
 
 	// 优惠信息
-	CouponCode  string  `json:"coupon_code"`
-	PointsUsed  int     `gorm:"default:0" json:"points_used"`
-	PointsValue float64 `gorm:"default:0" json:"points_value"`
+	CouponCode     string         `json:"coupon_code"`
+	PointsUsed     int            `gorm:"default:0" json:"points_used"`
+	PointsValue    float64        `gorm:"default:0" json:"points_value"`
+	FXSnapshotData datatypes.JSON `gorm:"column:fx_snapshot;type:jsonb;not null;default:'{}'" json:"-"`
 
 	// 地址信息
 	ShippingAddress Address `gorm:"embedded;embeddedPrefix:shipping_" json:"shipping_address"`

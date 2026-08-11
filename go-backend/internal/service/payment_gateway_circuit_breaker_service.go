@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"tanzanite/internal/pkg/config"
-	pgateway "tanzanite/internal/pkg/payment"
+	"commerce-platform/internal/pkg/config"
+	pgateway "commerce-platform/internal/pkg/payment"
 
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
@@ -401,15 +401,15 @@ func normalizePaymentGatewayHealthProvider(provider string) string {
 }
 
 func paymentGatewayHealthEventsKey(provider string) string {
-	return "tanzanite:payment-gateway-health:" + provider + ":events"
+	return "commerce-platform:payment-gateway-health:" + provider + ":events"
 }
 
 func paymentGatewayHealthFailuresKey(provider string) string {
-	return "tanzanite:payment-gateway-health:" + provider + ":failures"
+	return "commerce-platform:payment-gateway-health:" + provider + ":failures"
 }
 
 func paymentGatewayCircuitKey(provider string) string {
-	return "tanzanite:payment-gateway-health:" + provider + ":circuit-open"
+	return "commerce-platform:payment-gateway-health:" + provider + ":circuit-open"
 }
 
 func boolToRedisFlag(value bool) string {

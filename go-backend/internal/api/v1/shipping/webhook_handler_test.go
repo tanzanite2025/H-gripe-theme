@@ -1,4 +1,4 @@
-﻿package shipping
+package shipping
 
 import (
 	"crypto/hmac"

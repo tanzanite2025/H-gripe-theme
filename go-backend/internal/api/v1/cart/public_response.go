@@ -1,4 +1,4 @@
-﻿package cart
+package cart
 
 import (
 	productdomain "commerce-platform/internal/domain/product"

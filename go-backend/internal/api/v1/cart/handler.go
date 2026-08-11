@@ -1,14 +1,14 @@
-﻿package cart
+package cart
 
 import (
-	"errors"
-	"strconv"
-	"strings"
 	"commerce-platform/internal/api/middleware"
 	"commerce-platform/internal/pkg/apierror"
 	"commerce-platform/internal/pkg/response"
 	"commerce-platform/internal/pkg/visitorcookie"
 	"commerce-platform/internal/service"
+	"errors"
+	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"

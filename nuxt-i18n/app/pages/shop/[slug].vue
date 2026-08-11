@@ -249,6 +249,32 @@
             {{ canBuyNow ? t('checkout.product.buyNow', 'Buy now') : productBuyNowUnavailableLabel }}
           </button>
         </div>
+        <div
+          v-if="shouldPrepareStripeExpressCheckout"
+          class="product-express-checkout"
+        >
+          <StripeExpressCheckoutElement
+            ref="stripeExpressCheckoutElementRef"
+            :publishable-key="stripeExpressCheckoutPublishableKey"
+            :amount="stripeExpressCheckoutAmount"
+            :currency="cartCurrency"
+            :line-items="stripeExpressCheckoutLineItems"
+            :allowed-shipping-countries="stripeExpressCheckoutAllowedShippingCountries"
+            :disabled="isStripeExpressCheckoutProcessing"
+            @ready="handleStripeExpressCheckoutAvailability"
+            @available-payment-methods-change="handleStripeExpressCheckoutAvailability"
+            @confirm="handleStripeExpressCheckoutConfirm"
+            @shipping-address-change="handleStripeExpressCheckoutShippingAddressChange"
+            @shipping-rate-change="handleStripeExpressCheckoutShippingRateChange"
+            @error="handleStripeExpressCheckoutError"
+          />
+          <p
+            v-if="stripeExpressCheckoutError"
+            class="product-express-checkout__error"
+          >
+            {{ stripeExpressCheckoutError }}
+          </p>
+        </div>
       </div>
     </div>
 
@@ -295,6 +321,11 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import type {
+  StripeExpressCheckoutElementConfirmEvent,
+  StripeExpressCheckoutElementShippingAddressChangeEvent,
+  StripeExpressCheckoutElementShippingRateChangeEvent,
+} from '@stripe/stripe-js'
 import {
   createError,
   useAsyncData,
@@ -305,11 +336,19 @@ import {
   useRoute,
   useRuntimeConfig,
 } from '#imports'
+import { COUNTRIES } from '~/data/countries'
 import { useCart } from '~/composables/useCart'
+import { useAuth } from '~/composables/useAuth'
 import { useBehaviorEvents } from '~/composables/useBehaviorEvents'
 import { normalizeShopProduct, useShopProducts } from '~/composables/useShopProducts'
 import { useSiteSettings } from '~/composables/usePublicSettings'
+import {
+  convertMajorAmountToStripeMinorAmount,
+  type StripeExpressCheckoutAvailablePaymentMethods,
+} from '~/composables/useStripeExpressCheckout'
+import { useStripeExpressCheckoutOrder } from '~/composables/useStripeExpressCheckoutOrder'
 import ProductRecommendations from '~/components/shop/ProductRecommendations.vue'
+import StripeExpressCheckoutElement from '~/components/StripeExpressCheckoutElement.vue'
 import type { CheckoutPaymentOption } from '~/types/payment'
 import {
   isPaymentOptionAvailable,
@@ -492,7 +531,15 @@ const selectedVariantId = ref<number | null>(null)
 const selectedProductPaymentMethod = ref<StorefrontPaymentMethod>('card')
 const maxProductQuantity = 99
 const selectedQuantity = ref(1)
-const { addToCart, openCart, openCheckout } = useCart()
+const {
+  addToCart,
+  openCart,
+  openCheckout,
+  cartItems,
+  cartCurrency,
+  clearCart,
+} = useCart()
+const auth = useAuth()
 const { toCartItem } = useShopProducts()
 const { displayCurrency, countryCode } = useStorefrontContext()
 const { addToHistory } = useBrowsingHistory()
@@ -503,6 +550,10 @@ const {
   paymentMethodsError,
   loadPaymentMethods,
 } = usePaymentMethods()
+const {
+  loadStripeExpressCheckoutPublishableKey,
+  createStripeExpressCheckoutOrderAndPaymentSession,
+} = useStripeExpressCheckoutOrder()
 
 let activeTrackedProductID = 0
 let productVisibleSince = 0
@@ -1287,6 +1338,94 @@ const canBuyNow = computed(() => Boolean(
     && isProductPaymentAvailable(selectedProductPaymentOption.value),
 ))
 
+const stripeExpressCheckoutPublishableKey = ref('')
+const stripeExpressCheckoutError = ref('')
+const isStripeExpressCheckoutProcessing = ref(false)
+const isStripeExpressCheckoutWalletAvailable = ref(true)
+const stripeExpressCheckoutElementRef = ref<{
+  submitExpressCheckoutPayment: () => Promise<void>
+  confirmExpressCheckoutPayment: (clientSecret: string, returnUrl: string) => Promise<{ status: string; paymentIntentId?: string }>
+  resetExpressCheckoutPaymentState: () => void
+} | null>(null)
+
+const selectedExpressCheckoutCartItem = computed(() => {
+  if (!product.value || !shopProduct.value || !canAddToCart.value) return null
+
+  const variant = selectedVariant.value
+  return {
+    ...toCartItem(shopProduct.value, {
+      variantId: variant?.id || null,
+      price: Number(effectivePrice.value),
+      salePrice: variant?.sale_price ?? product.value.sale_price ?? null,
+      sku: variant?.sku || product.value.sku || '',
+      currency: currentCurrency.value,
+      title: selectedCartTitle.value,
+      thumbnail: primaryMediaThumbnail.value || undefined,
+      weightGrams: selectedVariantWeight.value,
+    }),
+    quantity: selectedQuantity.value,
+  }
+})
+
+const stripeExpressCheckoutCartItems = computed(() => {
+  const items = cartItems.value.map(item => ({ ...item }))
+  const selectedItem = selectedExpressCheckoutCartItem.value
+  if (!selectedItem) return items
+
+  const existingItem = items.find(item => (
+    Number(item.product_id || item.id) === Number(selectedItem.product_id)
+    && Number(item.variant_id || 0) === Number(selectedItem.variant_id || 0)
+  ))
+  if (existingItem) {
+    existingItem.quantity += selectedItem.quantity
+    return items
+  }
+
+  items.push({
+    ...selectedItem,
+    id: Number(selectedItem.variant_id || selectedItem.product_id || 0),
+  })
+  return items
+})
+
+const stripeExpressCheckoutAmount = computed(() =>
+  stripeExpressCheckoutCartItems.value.reduce(
+    (total, item) => total + Number(item.price || 0) * Math.max(1, Number(item.quantity || 1)),
+    0,
+  ),
+)
+const stripeExpressCheckoutLineItems = computed(() =>
+  stripeExpressCheckoutCartItems.value.map(item => ({
+    name: item.title,
+    amount: convertMajorAmountToStripeMinorAmount(
+      Number(item.price || 0) * Math.max(1, Number(item.quantity || 1)),
+      cartCurrency.value,
+    ),
+  })),
+)
+const stripeExpressCheckoutAllowedShippingCountries = computed(() =>
+  COUNTRIES.map(country => country.code),
+)
+const stripeCardPaymentAvailable = computed(() =>
+  paymentMethodOptions.value.some((option) => {
+    const provider = String(option.provider || '').trim().toLowerCase()
+    const code = String(option.code || option.id || '').trim().toLowerCase()
+    return (provider === 'stripe' || ['card', 'credit_card', 'credit-card', 'stripe'].includes(code))
+      && option.enabled !== false
+      && option.available === true
+  }),
+)
+const shouldPrepareStripeExpressCheckout = computed(() =>
+  Boolean(
+    auth.isAuthenticated.value
+      && stripeCardPaymentAvailable.value
+      && stripeExpressCheckoutPublishableKey.value
+      && stripeExpressCheckoutAmount.value > 0
+      && canAddToCart.value
+      && isStripeExpressCheckoutWalletAvailable.value,
+  ),
+)
+
 const productBuyNowUnavailableLabel = computed(() => {
   if (!canAddToCart.value) return t('products.detail.outOfStock', 'Out of stock')
   if (paymentMethodsLoading.value) return t('common.loading', 'Loading...')
@@ -1400,6 +1539,7 @@ watch(productPaymentOptions, (options) => {
 onMounted(() => {
   document.addEventListener('visibilitychange', handleProductVisibilityChange)
   loadProductPaymentMethods()
+  void prepareStripeExpressCheckout()
 })
 
 watch(countryCode, (value, previousValue) => {
@@ -1426,6 +1566,101 @@ const addSelectedProductToCart = () => {
     thumbnail: primaryMediaThumbnail.value || undefined,
     weightGrams: selectedVariantWeight.value,
   }), selectedQuantity.value)
+}
+
+const prepareStripeExpressCheckout = async () => {
+  const session = await auth.ensureSession()
+  if (!session || !canAddToCart.value) return
+
+  try {
+    const marketCountry = countryCode.value && countryCode.value !== 'ZZ'
+      ? countryCode.value
+      : undefined
+    await loadPaymentMethods(marketCountry)
+    if (!stripeCardPaymentAvailable.value) return
+    stripeExpressCheckoutPublishableKey.value = await loadStripeExpressCheckoutPublishableKey()
+  } catch (error) {
+    stripeExpressCheckoutPublishableKey.value = ''
+    stripeExpressCheckoutError.value = error instanceof Error ? error.message : 'Express Checkout is unavailable'
+  }
+}
+
+const handleStripeExpressCheckoutAvailability = (
+  availablePaymentMethods: StripeExpressCheckoutAvailablePaymentMethods,
+) => {
+  isStripeExpressCheckoutWalletAvailable.value = availablePaymentMethods.applePay || availablePaymentMethods.googlePay
+}
+
+const handleStripeExpressCheckoutShippingAddressChange = (
+  shippingEvent: StripeExpressCheckoutElementShippingAddressChangeEvent,
+) => {
+  shippingEvent.resolve({
+    lineItems: stripeExpressCheckoutLineItems.value,
+  })
+}
+
+const handleStripeExpressCheckoutShippingRateChange = (
+  shippingEvent: StripeExpressCheckoutElementShippingRateChangeEvent,
+) => {
+  shippingEvent.resolve({
+    lineItems: stripeExpressCheckoutLineItems.value,
+  })
+}
+
+const handleStripeExpressCheckoutConfirm = async (
+  confirmationEvent: StripeExpressCheckoutElementConfirmEvent,
+) => {
+  if (isStripeExpressCheckoutProcessing.value) {
+    confirmationEvent.paymentFailed({ reason: 'fail', message: 'Another payment is already being processed' })
+    return
+  }
+
+  const expressCheckoutElement = stripeExpressCheckoutElementRef.value
+  if (!expressCheckoutElement) {
+    confirmationEvent.paymentFailed({ reason: 'fail', message: 'Express Checkout is not ready' })
+    return
+  }
+
+  isStripeExpressCheckoutProcessing.value = true
+  stripeExpressCheckoutError.value = ''
+  try {
+    await expressCheckoutElement.submitExpressCheckoutPayment()
+
+    const addResult = addSelectedProductToCart()
+    if (!addResult?.success) {
+      throw new Error('The selected product could not be added to the order')
+    }
+    await addResult.syncPromise
+
+    const session = await createStripeExpressCheckoutOrderAndPaymentSession(
+      confirmationEvent,
+      cartItems.value,
+    )
+    const returnUrl = new URL(window.location.href)
+    returnUrl.searchParams.set('order_number', session.orderNumber)
+    const result = await expressCheckoutElement.confirmExpressCheckoutPayment(
+      session.clientSecret,
+      returnUrl.toString(),
+    )
+    if (['succeeded', 'processing', 'requires_capture'].includes(result.status)) {
+      clearCart()
+      return
+    }
+    throw new Error(t('checkout.modal.messages.paymentPending', 'Payment is not complete yet. Please check your order status later.'))
+  } catch (error) {
+    expressCheckoutElement.resetExpressCheckoutPaymentState()
+    const message = error instanceof Error
+      ? error.message
+      : t('checkout.modal.messages.orderFailed', 'Order submission failed, please try again')
+    stripeExpressCheckoutError.value = message
+    confirmationEvent.paymentFailed({ reason: 'fail', message })
+  } finally {
+    isStripeExpressCheckoutProcessing.value = false
+  }
+}
+
+const handleStripeExpressCheckoutError = (message: string) => {
+  stripeExpressCheckoutError.value = message
 }
 
 const addSelectedToCart = () => {
@@ -2392,6 +2627,24 @@ useHead(() => {
 .product-add-button:active:not(:disabled),
 .product-buy-now-button:active:not(:disabled) {
   transform: translateY(1px);
+}
+
+.product-express-checkout {
+  display: grid;
+  gap: 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  padding-top: 0.85rem;
+}
+
+.product-express-checkout__error {
+  margin: 0;
+  border: 1px solid rgba(251, 113, 133, 0.22);
+  border-radius: 0.55rem;
+  background: rgba(251, 113, 133, 0.08);
+  color: #fecdd3;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  padding: 0.55rem 0.7rem;
 }
 
 .product-payment-status {

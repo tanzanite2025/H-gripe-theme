@@ -1,9 +1,9 @@
-﻿package repository
+package repository
 
 import (
+	"commerce-platform/internal/domain/ticket"
 	"strconv"
 	"strings"
-	"commerce-platform/internal/domain/ticket"
 	"time"
 
 	"gorm.io/gorm"

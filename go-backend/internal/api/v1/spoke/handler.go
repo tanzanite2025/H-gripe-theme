@@ -1,10 +1,10 @@
-﻿package spoke
+package spoke
 
 import (
+	"commerce-platform/internal/service"
 	"errors"
 	"net/http"
 	"strconv"
-	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

@@ -1,4 +1,4 @@
-﻿import { defineNitroPlugin, useStorage } from 'nitropack/runtime'
+import { defineNitroPlugin, useStorage } from 'nitropack/runtime'
 import redisDriver, { type RedisOptions as StorageRedisOptions } from 'unstorage/drivers/redis'
 
 interface ReadyRedisClient {

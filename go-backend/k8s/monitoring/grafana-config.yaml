@@ -1,4 +1,4 @@
-﻿apiVersion: v1
+apiVersion: v1
 kind: ConfigMap
 metadata:
   name: grafana-datasources
@@ -222,10 +222,10 @@ spec:
   ingressClassName: nginx
   tls:
   - hosts:
-    - grafana.commerce_platform.example.com
+    - grafana.example.com
     secretName: grafana-tls
   rules:
-  - host: grafana.commerce_platform.example.com
+  - host: grafana.example.com
     http:
       paths:
       - path: /

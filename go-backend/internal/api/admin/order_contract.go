@@ -1,9 +1,9 @@
-﻿package admin
+package admin
 
 import (
+	"commerce-platform/internal/service"
 	"errors"
 	"net/http"
-	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

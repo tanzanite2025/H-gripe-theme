@@ -1,10 +1,10 @@
-﻿package repository
+package repository
 
 import (
+	"commerce-platform/internal/domain/shipping"
 	"encoding/json"
 	"fmt"
 	"strings"
-	"commerce-platform/internal/domain/shipping"
 	"time"
 
 	"gorm.io/gorm"

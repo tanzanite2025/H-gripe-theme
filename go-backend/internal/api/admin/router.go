@@ -1,4 +1,4 @@
-﻿package admin
+package admin
 
 import (
 	seoapi "commerce-platform/internal/api/admin/seo"

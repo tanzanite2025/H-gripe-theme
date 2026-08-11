@@ -1,9 +1,9 @@
-﻿package service
+package service
 
 import (
+	"commerce-platform/internal/domain/setting"
 	"fmt"
 	"strings"
-	"commerce-platform/internal/domain/setting"
 )
 
 const websiteProfileDefaultFactoryImageURL = "/company/ourstory/factory/factory-premoldlayupworkshop6.webp"

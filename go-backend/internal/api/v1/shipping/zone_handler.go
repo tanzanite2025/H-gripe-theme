@@ -1,9 +1,9 @@
-﻿package shipping
+package shipping
 
 import (
-	"strconv"
 	"commerce-platform/internal/pkg/apierror"
 	"commerce-platform/internal/pkg/response"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )

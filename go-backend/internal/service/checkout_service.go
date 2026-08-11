@@ -1,15 +1,16 @@
-﻿package service
+package service
 
 import (
-	"errors"
-	"fmt"
-	"math"
 	"commerce-platform/internal/domain/coupon"
 	"commerce-platform/internal/domain/currency"
 	"commerce-platform/internal/domain/loyalty"
 	"commerce-platform/internal/domain/order"
 	productdomain "commerce-platform/internal/domain/product"
 	"commerce-platform/internal/repository"
+	"errors"
+	"fmt"
+	"math"
+	"strings"
 	"time"
 )
 
@@ -20,6 +21,8 @@ type CheckoutService struct {
 	loyaltyRepo     *repository.LoyaltyRepository
 	shippingService *ShippingService
 	loyaltyProgram  *LoyaltyProgramService
+	currencyPolicy  *CurrencyPolicyService
+	exchangeRates   *repository.ExchangeRateRepository
 }
 
 type CheckoutQuoteInput struct {
@@ -33,21 +36,22 @@ type CheckoutQuoteInput struct {
 }
 
 type CheckoutQuote struct {
-	Items           []order.OrderItem `json:"items"`
-	SubtotalAmount  float64           `json:"subtotal_amount"`
-	ShippingFee     float64           `json:"shipping_fee"`
-	ShippingQuote   *ShippingQuote    `json:"shipping_quote,omitempty"`
-	TaxAmount       float64           `json:"tax_amount"`
-	MemberDiscount  float64           `json:"member_discount"`
-	PointsDiscount  float64           `json:"points_discount"`
-	CouponDiscount  float64           `json:"coupon_discount"`
-	DiscountAmount  float64           `json:"discount_amount"`
-	TotalAmount     float64           `json:"total_amount"`
-	CouponCode      string            `json:"coupon_code"`
-	PointsToUse     int               `json:"points_to_use"`
-	ProgramConfigID *uint             `json:"loyalty_program_config_id,omitempty"`
-	Coupon          *coupon.Coupon    `json:"coupon,omitempty"`
-	Currency        string            `json:"currency"`
+	Items           []order.OrderItem        `json:"items"`
+	SubtotalAmount  float64                  `json:"subtotal_amount"`
+	ShippingFee     float64                  `json:"shipping_fee"`
+	ShippingQuote   *ShippingQuote           `json:"shipping_quote,omitempty"`
+	TaxAmount       float64                  `json:"tax_amount"`
+	MemberDiscount  float64                  `json:"member_discount"`
+	PointsDiscount  float64                  `json:"points_discount"`
+	CouponDiscount  float64                  `json:"coupon_discount"`
+	DiscountAmount  float64                  `json:"discount_amount"`
+	TotalAmount     float64                  `json:"total_amount"`
+	CouponCode      string                   `json:"coupon_code"`
+	PointsToUse     int                      `json:"points_to_use"`
+	ProgramConfigID *uint                    `json:"loyalty_program_config_id,omitempty"`
+	Coupon          *coupon.Coupon           `json:"coupon,omitempty"`
+	Currency        string                   `json:"currency"`
+	FXSnapshot      currency.OrderFXSnapshot `json:"-"`
 }
 
 type checkoutRepositories struct {
@@ -56,6 +60,8 @@ type checkoutRepositories struct {
 	paymentRepo     *repository.PaymentRepository
 	loyaltyRepo     *repository.LoyaltyRepository
 	shippingService *ShippingService
+	currencyPolicy  *CurrencyPolicyService
+	exchangeRates   *repository.ExchangeRateRepository
 }
 
 func NewCheckoutService(
@@ -81,6 +87,18 @@ func (s *CheckoutService) ConfigureLoyaltyProgram(program *LoyaltyProgramService
 	s.loyaltyProgram = program
 }
 
+func (s *CheckoutService) ConfigureCurrencyPolicy(policy *CurrencyPolicyService) {
+	if s != nil {
+		s.currencyPolicy = policy
+	}
+}
+
+func (s *CheckoutService) ConfigureExchangeRateRepository(repo *repository.ExchangeRateRepository) {
+	if s != nil {
+		s.exchangeRates = repo
+	}
+}
+
 func (s *CheckoutService) Quote(input CheckoutQuoteInput) (*CheckoutQuote, error) {
 	return s.quote(input, checkoutRepositories{
 		productRepo:     s.productRepo,
@@ -88,10 +106,15 @@ func (s *CheckoutService) Quote(input CheckoutQuoteInput) (*CheckoutQuote, error
 		paymentRepo:     s.paymentRepo,
 		loyaltyRepo:     s.loyaltyRepo,
 		shippingService: s.shippingService,
+		currencyPolicy:  s.currencyPolicy,
+		exchangeRates:   s.exchangeRates,
 	})
 }
 
 func (s *CheckoutService) QuoteWithRepositories(input CheckoutQuoteInput, repos repository.TxRepositories) (*CheckoutQuote, error) {
+	if repos.Setting == nil {
+		return nil, errors.New("transactional checkout currency policy repository is not configured")
+	}
 	shippingService := s.shippingService
 	if repos.Shipping != nil {
 		shippingService = NewShippingService(repos.Shipping, repos.Product)
@@ -102,6 +125,8 @@ func (s *CheckoutService) QuoteWithRepositories(input CheckoutQuoteInput, repos 
 		paymentRepo:     repos.Payment,
 		loyaltyRepo:     repos.Loyalty,
 		shippingService: shippingService,
+		currencyPolicy:  NewCurrencyPolicyService(repos.Setting),
+		exchangeRates:   repos.ExchangeRate,
 	})
 }
 
@@ -221,6 +246,11 @@ func (s *CheckoutService) quote(input CheckoutQuoteInput, repos checkoutReposito
 		totalAmount = 0
 	}
 
+	fxSnapshot, err := s.resolveOrderFXSnapshot(quoteCurrency, repos.currencyPolicy, repos.exchangeRates)
+	if err != nil {
+		return nil, err
+	}
+
 	return &CheckoutQuote{
 		Items:           items,
 		SubtotalAmount:  subtotal,
@@ -237,7 +267,87 @@ func (s *CheckoutService) quote(input CheckoutQuoteInput, repos checkoutReposito
 		ProgramConfigID: programConfigID,
 		Coupon:          targetCoupon,
 		Currency:        quoteCurrency,
+		FXSnapshot:      fxSnapshot,
 	}, nil
+}
+
+func (s *CheckoutService) resolveOrderFXSnapshot(
+	orderCurrency string,
+	currencyPolicy *CurrencyPolicyService,
+	exchangeRates *repository.ExchangeRateRepository,
+) (currency.OrderFXSnapshot, error) {
+	orderCurrency = currency.NormalizeCode(orderCurrency)
+	if !currency.IsCatalogCode(orderCurrency) {
+		return currency.OrderFXSnapshot{}, fmt.Errorf("unsupported order currency %s", orderCurrency)
+	}
+
+	baseCurrency := currency.DefaultPrimaryCurrency
+	policyConfigured := currencyPolicy != nil
+	if policyConfigured {
+		primary, err := currencyPolicy.PrimaryCurrency()
+		if err != nil {
+			return currency.OrderFXSnapshot{}, fmt.Errorf("resolve primary currency for order FX snapshot: %w", err)
+		}
+		baseCurrency = currency.NormalizeCode(primary)
+	}
+
+	capturedAt := time.Now().UTC()
+	if baseCurrency == orderCurrency {
+		return currency.OrderFXSnapshot{
+			Version:         currency.OrderFXSnapshotVersion,
+			BaseCurrency:    baseCurrency,
+			OrderCurrency:   orderCurrency,
+			BaseToOrderRate: 1,
+			Source:          "same_currency",
+			CapturedAt:      capturedAt,
+		}, nil
+	}
+
+	if exchangeRates != nil {
+		if record, err := exchangeRates.Find(baseCurrency, orderCurrency); err == nil && record.Rate > 0 {
+			return currency.OrderFXSnapshot{
+				Version:         currency.OrderFXSnapshotVersion,
+				BaseCurrency:    baseCurrency,
+				OrderCurrency:   orderCurrency,
+				BaseToOrderRate: record.Rate,
+				Source:          nonEmptyFXSource(record.Source, "cached_exchange_rate"),
+				CapturedAt:      capturedAt,
+				RateFetchedAt:   snapshotTimePtr(record.FetchedAt),
+			}, nil
+		}
+		if record, err := exchangeRates.Find(orderCurrency, baseCurrency); err == nil && record.Rate > 0 {
+			return currency.OrderFXSnapshot{
+				Version:         currency.OrderFXSnapshotVersion,
+				BaseCurrency:    baseCurrency,
+				OrderCurrency:   orderCurrency,
+				BaseToOrderRate: 1 / record.Rate,
+				Source:          nonEmptyFXSource(record.Source, "cached_exchange_rate_reverse"),
+				CapturedAt:      capturedAt,
+				RateFetchedAt:   snapshotTimePtr(record.FetchedAt),
+			}, nil
+		}
+	}
+
+	if !policyConfigured {
+		return currency.OrderFXSnapshot{}, fmt.Errorf("historical FX snapshot is unavailable for %s to %s order", baseCurrency, orderCurrency)
+	}
+	return currency.OrderFXSnapshot{}, fmt.Errorf(
+		"historical FX snapshot is unavailable for %s to %s order",
+		baseCurrency,
+		orderCurrency,
+	)
+}
+
+func nonEmptyFXSource(value, fallback string) string {
+	if value = strings.TrimSpace(value); value != "" {
+		return value
+	}
+	return fallback
+}
+
+func snapshotTimePtr(value time.Time) *time.Time {
+	value = value.UTC()
+	return &value
 }
 
 func (s *CheckoutService) calculateMemberDiscount(loyaltyRepo *repository.LoyaltyRepository, userID uint, subtotal float64) float64 {

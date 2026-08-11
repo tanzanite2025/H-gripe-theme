@@ -1,10 +1,10 @@
-﻿package service
+package service
 
 import (
+	"commerce-platform/internal/domain/setting"
 	"fmt"
 	"strconv"
 	"strings"
-	"commerce-platform/internal/domain/setting"
 )
 
 // GetSiteSettings 获取站点设置

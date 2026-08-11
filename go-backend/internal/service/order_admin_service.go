@@ -1,12 +1,12 @@
-﻿package service
+package service
 
 import (
-	"context"
-	"fmt"
-	"strings"
 	"commerce-platform/internal/domain/order"
 	shippingdomain "commerce-platform/internal/domain/shipping"
 	"commerce-platform/internal/repository"
+	"context"
+	"fmt"
+	"strings"
 	"time"
 )
 

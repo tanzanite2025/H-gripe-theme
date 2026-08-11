@@ -1,8 +1,8 @@
-﻿package repository
+package repository
 
 import (
-	"errors"
 	"commerce-platform/internal/domain/coupon"
+	"errors"
 	"time"
 
 	"gorm.io/gorm"

@@ -1,10 +1,10 @@
-﻿package repository
+package repository
 
 import (
+	"commerce-platform/internal/domain/product"
 	"context"
 	"fmt"
 	"strings"
-	"commerce-platform/internal/domain/product"
 
 	"gorm.io/gorm"
 )

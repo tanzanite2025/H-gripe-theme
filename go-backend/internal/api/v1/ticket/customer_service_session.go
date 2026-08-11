@@ -1,14 +1,14 @@
-﻿package ticket
+package ticket
 
 import (
-	"errors"
-	"net/http"
-	"strconv"
-	"strings"
 	"commerce-platform/internal/api/middleware"
 	"commerce-platform/internal/domain/ticket"
 	"commerce-platform/internal/pkg/visitorcookie"
 	"commerce-platform/internal/service"
+	"errors"
+	"net/http"
+	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )

@@ -1,12 +1,12 @@
-﻿package admin
+package admin
 
 import (
+	"commerce-platform/internal/domain/currency"
+	"commerce-platform/internal/service"
 	"encoding/json"
 	"errors"
 	"net/http"
 	"strconv"
-	"commerce-platform/internal/domain/currency"
-	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

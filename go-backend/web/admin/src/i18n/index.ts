@@ -6,7 +6,7 @@ export type AdminLocale = 'zh-CN' | 'en-US'
 type TranslationValue = string | Record<string, unknown>
 type TranslationParams = Record<string, string | number>
 
-const STORAGE_KEY = 'tanzanite.admin.locale'
+const STORAGE_KEY = 'commerce_platform.admin.locale'
 const messages: Record<AdminLocale, Record<string, TranslationValue>> = {
   'zh-CN': zhCN,
   'en-US': enUS,

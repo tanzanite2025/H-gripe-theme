@@ -1,11 +1,11 @@
-﻿package service
+package service
 
 import (
-	"errors"
-	"strings"
 	"commerce-platform/internal/domain/feedback"
 	"commerce-platform/internal/pkg/ugc"
 	"commerce-platform/internal/repository"
+	"errors"
+	"strings"
 )
 
 var (

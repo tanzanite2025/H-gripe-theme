@@ -1,4 +1,4 @@
-﻿package payment
+package payment
 
 import (
 	"context"
@@ -24,19 +24,20 @@ import (
 )
 
 type Handler struct {
-	paymentService    *service.PaymentService
-	orderService      *service.OrderService
-	settingsService   *service.AdminSettingsService
-	threeDSPolicy     *service.PaymentThreeDSPolicyService
-	riskMonitoring    *service.PaymentRiskMonitoringService
-	protection        *service.PaymentProtectionService
-	refundReview      *service.PaymentRefundRecommendationService
-	storefrontContext *service.StorefrontContextService
-	antiBot           *antibot.Service
-	antiFraud         *antifraud.Service
-	cardBINLimiter    *cardtesting.Service
-	gatewayFactory    func(*pgateway.Config) (pgateway.PaymentGateway, error)
-	publicBaseURL     string
+	paymentService        *service.PaymentService
+	orderService          *service.OrderService
+	settingsService       *service.AdminSettingsService
+	threeDSPolicy         *service.PaymentThreeDSPolicyService
+	riskMonitoring        *service.PaymentRiskMonitoringService
+	protection            *service.PaymentProtectionService
+	refundReview          *service.PaymentRefundRecommendationService
+	storefrontContext     *service.StorefrontContextService
+	antiBot               *antibot.Service
+	antiFraud             *antifraud.Service
+	cardBINLimiter        *cardtesting.Service
+	gatewayCircuitBreaker *service.PaymentGatewayCircuitBreakerService
+	gatewayFactory        func(*pgateway.Config) (pgateway.PaymentGateway, error)
+	publicBaseURL         string
 }
 
 func NewHandler(
@@ -68,7 +69,7 @@ func NewHandler(
 	return handler
 }
 
-func (h *Handler) newPaymentGateway(config *pgateway.Config) (pgateway.PaymentGateway, error) {
+func (h *Handler) createPaymentGatewayFromConfiguration(config *pgateway.Config) (pgateway.PaymentGateway, error) {
 	if h != nil && h.gatewayFactory != nil {
 		return h.gatewayFactory(config)
 	}
@@ -87,6 +88,36 @@ func (h *Handler) ConfigureCardBINLimiter(limiter *cardtesting.Service) {
 		return
 	}
 	h.cardBINLimiter = limiter
+}
+
+// GetStripeExpressCheckoutConfiguration returns only the publishable Stripe
+// key required to render Apple Pay and Google Pay buttons. Secret gateway
+// credentials never leave the backend.
+func (h *Handler) GetStripeExpressCheckoutConfiguration(c *gin.Context) {
+	config, err := h.loadPaymentGatewayConfiguration(pgateway.GatewayStripe)
+	if err != nil {
+		apierror.RespondError(c, http.StatusServiceUnavailable, "stripe_gateway_config_unavailable", "Stripe configuration is temporarily unavailable")
+		return
+	}
+	if config.PublishableKey == "" {
+		config.PublishableKey = pgateway.LoadConfigFromEnv(pgateway.GatewayStripe).PublishableKey
+	}
+	if config.PublishableKey == "" {
+		apierror.RespondError(c, http.StatusServiceUnavailable, "stripe_publishable_key_missing", "Stripe publishable key is not configured")
+		return
+	}
+	if available, reason := h.checkPaymentGatewayConfigurationAvailability(pgateway.GatewayStripe); !available {
+		apierror.RespondError(c, http.StatusServiceUnavailable, reason, "Stripe Express Checkout is temporarily unavailable")
+		return
+	}
+	if available, reason := h.gatewayCircuitBreakerAvailability(c, pgateway.GatewayStripe); !available {
+		apierror.RespondError(c, http.StatusServiceUnavailable, reason, "Stripe Express Checkout is temporarily unavailable")
+		return
+	}
+
+	response.Success(c, gin.H{
+		"publishable_key": config.PublishableKey,
+	})
 }
 
 func (h *Handler) authorizeOrderPaymentRead(c *gin.Context, orderID uint) bool {
@@ -175,7 +206,7 @@ func (h *Handler) CreateStripePaymentIntent(c *gin.Context) {
 		}
 	}
 
-	config, err := h.loadGatewayConfig(pgateway.GatewayStripe)
+	config, err := h.loadPaymentGatewayConfiguration(pgateway.GatewayStripe)
 	if err != nil {
 		apierror.RespondInternalError(c, err)
 		return
@@ -199,9 +230,18 @@ func (h *Handler) CreateStripePaymentIntent(c *gin.Context) {
 	if !ensureGatewayCurrency(c, pgateway.GatewayStripe, orderCurrency) {
 		return
 	}
-	gateway, err := h.newPaymentGateway(config)
+	if !h.allowPaymentGatewayAttemptOrRespondWithFallbackRecommendation(c, pgateway.GatewayStripe) {
+		return
+	}
+	gateway, err := h.createPaymentGatewayFromConfiguration(config)
 	if err != nil {
-		apierror.RespondInternalError(c, err)
+		h.respondToPaymentGatewayOperationFailure(
+			c,
+			pgateway.GatewayStripe,
+			http.StatusInternalServerError,
+			"stripe_gateway_initialization_failed",
+			err,
+		)
 		return
 	}
 	threeDSDecision := h.decideStripeThreeDS(c, orderRecord, userIDValue.(uint), config.ThreeDSecure)
@@ -228,12 +268,19 @@ func (h *Handler) CreateStripePaymentIntent(c *gin.Context) {
 		Metadata: metadata,
 	})
 	if err != nil {
-		apierror.RespondError(c, 502, "stripe_payment_intent_failed", err.Error())
+		h.respondToPaymentGatewayOperationFailure(
+			c,
+			pgateway.GatewayStripe,
+			http.StatusBadGateway,
+			"stripe_payment_intent_failed",
+			err,
+		)
 		if h.antiFraud != nil {
 			_ = h.antiFraud.RecordAttemptFailure(c.Request.Context(), riskIdentity)
 		}
 		return
 	}
+	h.recordSuccessfulPaymentGatewayAPIResponse(c.Request.Context(), pgateway.GatewayStripe)
 	if h.antiFraud != nil {
 		if err := h.antiFraud.BindPaymentIntent(c.Request.Context(), paymentResponse.TransactionID, riskIdentity); err != nil {
 			apierror.RespondInternalError(c, err)
@@ -405,7 +452,7 @@ func stripeRequestSessionID(c *gin.Context) string {
 }
 
 func stripeRequestAnonymousID(c *gin.Context) string {
-	for _, header := range []string{"X-Commerce-Platform-Anonymous-ID", "X-Anonymous-ID", "X-Visitor-ID"} {
+	for _, header := range []string{"X-Platform-Anonymous-ID", "X-Anonymous-ID", "X-Visitor-ID"} {
 		if value := strings.TrimSpace(c.GetHeader(header)); value != "" {
 			return value
 		}

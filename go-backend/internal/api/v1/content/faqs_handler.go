@@ -1,11 +1,11 @@
-﻿package content
+package content
 
 import (
+	"commerce-platform/internal/api/middleware"
+	"commerce-platform/internal/service"
 	"errors"
 	"net/http"
 	"strconv"
-	"commerce-platform/internal/api/middleware"
-	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

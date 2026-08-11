@@ -1,13 +1,13 @@
-﻿package service
+package service
 
 import (
+	domainspoke "commerce-platform/internal/domain/spoke"
+	"commerce-platform/internal/repository"
 	"errors"
 	"fmt"
 	"math"
 	"regexp"
 	"strings"
-	domainspoke "commerce-platform/internal/domain/spoke"
-	"commerce-platform/internal/repository"
 )
 
 var (

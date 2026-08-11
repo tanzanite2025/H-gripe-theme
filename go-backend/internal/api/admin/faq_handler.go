@@ -1,9 +1,9 @@
-﻿package admin
+package admin
 
 import (
+	"commerce-platform/internal/service"
 	"errors"
 	"strings"
-	"commerce-platform/internal/service"
 )
 
 type FAQHandler struct {

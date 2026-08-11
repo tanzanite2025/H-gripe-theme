@@ -1,13 +1,13 @@
-﻿package service
+package service
 
 import (
+	"commerce-platform/internal/domain/showcase"
+	"commerce-platform/internal/pkg/storage"
+	"commerce-platform/internal/repository"
 	"context"
 	"encoding/json"
 	"fmt"
 	"mime/multipart"
-	"commerce-platform/internal/domain/showcase"
-	"commerce-platform/internal/pkg/storage"
-	"commerce-platform/internal/repository"
 	"time"
 )
 

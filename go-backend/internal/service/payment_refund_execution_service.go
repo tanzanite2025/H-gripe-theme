@@ -1,4 +1,4 @@
-﻿package service
+package service
 
 import (
 	"context"
@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	currencydomain "commerce-platform/internal/domain/currency"
 	orderdomain "commerce-platform/internal/domain/order"
 	paymentdomain "commerce-platform/internal/domain/payment"
 	pgateway "commerce-platform/internal/pkg/payment"
@@ -140,6 +141,24 @@ func (s *PaymentService) beginPendingRefundExecution(input ExecutePendingRefundI
 		}
 		if requestedProvider := strings.ToLower(strings.TrimSpace(input.Provider)); requestedProvider != "" && requestedProvider != provider {
 			return fmt.Errorf("refund provider %s does not match transaction provider %s", requestedProvider, provider)
+		}
+		fxSnapshot, snapshotNeedsPersistence, err := ensureRefundFXSnapshot(refund, orderRecord, transaction.Currency)
+		if err != nil {
+			return err
+		}
+		reservedAmount, err := repos.Payment.SumRefundAmountByTransactionID(transaction.ID, "pending", "completed")
+		if err != nil {
+			return err
+		}
+		reservedBeforeCurrent := reservedAmount - refund.Amount
+		if err := validateHistoricalRefundFXCap(fxSnapshot, transaction, refund.Amount, reservedBeforeCurrent); err != nil {
+			return err
+		}
+		if snapshotNeedsPersistence {
+			refund.FXSnapshotData = currencydomain.OrderFXSnapshotJSON(fxSnapshot)
+			if err := repos.Payment.UpdateRefund(refund); err != nil {
+				return err
+			}
 		}
 
 		execution, err := repos.RefundExecution.FindByRefundIDForUpdate(refund.ID)

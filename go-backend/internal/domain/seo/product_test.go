@@ -1,4 +1,4 @@
-﻿package seo
+package seo
 
 import (
 	"testing"

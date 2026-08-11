@@ -1,10 +1,10 @@
-﻿package shipping
+package shipping
 
 import (
-	"errors"
 	"commerce-platform/internal/domain/auth"
 	"commerce-platform/internal/pkg/apierror"
 	"commerce-platform/internal/service"
+	"errors"
 
 	"github.com/gin-gonic/gin"
 )

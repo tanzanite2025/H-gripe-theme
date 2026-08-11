@@ -1,4 +1,4 @@
-﻿package service
+package service
 
 import (
 	"errors"
@@ -255,7 +255,7 @@ func newTestGoogleMerchantService(t *testing.T) (*gorm.DB, *GoogleMerchantServic
 		repository.NewGoogleMerchantRepository(db),
 		repository.NewProductRepository(db),
 		configlessGoogleMerchantForTest(),
-		"https://commerce_platform.site",
+		"https://example.com",
 	)
 	return db, service, productRecord, variantRecord
 }

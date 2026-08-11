@@ -1,9 +1,9 @@
-﻿package faq
+package faq
 
 import (
+	"commerce-platform/internal/service"
 	"net/http"
 	"strconv"
-	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

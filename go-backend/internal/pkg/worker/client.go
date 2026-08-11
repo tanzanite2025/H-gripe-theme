@@ -1,4 +1,4 @@
-﻿package worker
+package worker
 
 import (
 	"commerce-platform/internal/pkg/config"

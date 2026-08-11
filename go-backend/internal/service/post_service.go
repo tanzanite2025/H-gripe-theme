@@ -1,11 +1,11 @@
-﻿package service
+package service
 
 import (
-	"errors"
 	"commerce-platform/internal/domain/post"
 	"commerce-platform/internal/pkg/cache"
 	"commerce-platform/internal/pkg/safehtml"
 	"commerce-platform/internal/repository"
+	"errors"
 	"time"
 )
 

@@ -1,9 +1,9 @@
-﻿package registration
+package registration
 
 import (
+	domainregistration "commerce-platform/internal/domain/registration"
 	"encoding/json"
 	"strings"
-	domainregistration "commerce-platform/internal/domain/registration"
 	"testing"
 	"time"
 )

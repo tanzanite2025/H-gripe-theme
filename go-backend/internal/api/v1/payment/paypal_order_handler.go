@@ -1,4 +1,4 @@
-﻿package payment
+package payment
 
 import (
 	"encoding/json"
@@ -51,7 +51,7 @@ func (h *Handler) CreatePayPalOrder(c *gin.Context) {
 		return
 	}
 
-	config, err := h.loadGatewayConfig(pgateway.GatewayPayPal)
+	config, err := h.loadPaymentGatewayConfiguration(pgateway.GatewayPayPal)
 	if err != nil {
 		apierror.RespondInternalError(c, err)
 		return
@@ -69,9 +69,18 @@ func (h *Handler) CreatePayPalOrder(c *gin.Context) {
 	if !ensureGatewayCurrency(c, pgateway.GatewayPayPal, orderCurrency) {
 		return
 	}
-	gateway, err := h.newPaymentGateway(config)
+	if !h.allowPaymentGatewayAttemptOrRespondWithFallbackRecommendation(c, pgateway.GatewayPayPal) {
+		return
+	}
+	gateway, err := h.createPaymentGatewayFromConfiguration(config)
 	if err != nil {
-		apierror.RespondInternalError(c, err)
+		h.respondToPaymentGatewayOperationFailure(
+			c,
+			pgateway.GatewayPayPal,
+			http.StatusInternalServerError,
+			"paypal_gateway_initialization_failed",
+			err,
+		)
 		return
 	}
 
@@ -93,9 +102,16 @@ func (h *Handler) CreatePayPalOrder(c *gin.Context) {
 		},
 	})
 	if err != nil {
-		apierror.RespondError(c, http.StatusBadGateway, "paypal_order_create_failed", err.Error())
+		h.respondToPaymentGatewayOperationFailure(
+			c,
+			pgateway.GatewayPayPal,
+			http.StatusBadGateway,
+			"paypal_order_create_failed",
+			err,
+		)
 		return
 	}
+	h.recordSuccessfulPaymentGatewayAPIResponse(c.Request.Context(), pgateway.GatewayPayPal)
 
 	gatewayResponse, _ := json.Marshal(paymentResponse)
 	if err := h.paymentService.RecordGatewayPaymentAttempt(service.GatewayPaymentAttemptInput{
@@ -138,7 +154,7 @@ func (h *Handler) CapturePayPalOrder(c *gin.Context) {
 		return
 	}
 
-	config, err := h.loadGatewayConfig(pgateway.GatewayPayPal)
+	config, err := h.loadPaymentGatewayConfiguration(pgateway.GatewayPayPal)
 	if err != nil {
 		apierror.RespondInternalError(c, err)
 		return
@@ -148,16 +164,29 @@ func (h *Handler) CapturePayPalOrder(c *gin.Context) {
 		return
 	}
 
-	gateway, err := h.newPaymentGateway(config)
+	gateway, err := h.createPaymentGatewayFromConfiguration(config)
 	if err != nil {
-		apierror.RespondInternalError(c, err)
+		h.respondToPaymentGatewayOperationFailure(
+			c,
+			pgateway.GatewayPayPal,
+			http.StatusInternalServerError,
+			"paypal_gateway_initialization_failed",
+			err,
+		)
 		return
 	}
 	paymentResponse, err := gateway.CapturePayment(c.Request.Context(), paypalOrderID)
 	if err != nil {
-		apierror.RespondError(c, http.StatusBadGateway, "paypal_capture_failed", err.Error())
+		h.respondToPaymentGatewayOperationFailure(
+			c,
+			pgateway.GatewayPayPal,
+			http.StatusBadGateway,
+			"paypal_capture_failed",
+			err,
+		)
 		return
 	}
+	h.recordSuccessfulPaymentGatewayAPIResponse(c.Request.Context(), pgateway.GatewayPayPal)
 	if !paypalResponseMatchesOrder(paymentResponse, orderRecord.OrderNumber) {
 		apierror.RespondError(c, http.StatusBadRequest, "paypal_order_mismatch", "PayPal order does not match this order")
 		return

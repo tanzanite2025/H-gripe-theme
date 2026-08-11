@@ -1,4 +1,4 @@
-﻿package repository
+package repository
 
 import (
 	"strings"
@@ -15,6 +15,10 @@ type ExchangeRateRepository struct {
 
 func NewExchangeRateRepository(db *gorm.DB) *ExchangeRateRepository {
 	return &ExchangeRateRepository{db: db}
+}
+
+func (r *ExchangeRateRepository) WithTx(tx *gorm.DB) *ExchangeRateRepository {
+	return &ExchangeRateRepository{db: tx}
 }
 
 func (r *ExchangeRateRepository) Find(baseCurrency, quoteCurrency string) (*currency.ExchangeRate, error) {

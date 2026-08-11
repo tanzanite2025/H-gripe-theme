@@ -1,9 +1,9 @@
-﻿package repository
+package repository
 
 import (
+	"commerce-platform/internal/domain/media"
 	"fmt"
 	"strings"
-	"commerce-platform/internal/domain/media"
 )
 
 func newMediaAssetReferenceQuery(asset *media.MediaAsset) mediaAssetReferenceQuery {

@@ -1,11 +1,11 @@
-﻿package admin
+package admin
 
 import (
-	"strconv"
-	"strings"
 	"commerce-platform/internal/pkg/apierror"
 	"commerce-platform/internal/pkg/response"
 	"commerce-platform/internal/service"
+	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )

@@ -1,12 +1,12 @@
-﻿package subscription
+package subscription
 
 import (
+	domainsubscription "commerce-platform/internal/domain/subscription"
 	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
-	domainsubscription "commerce-platform/internal/domain/subscription"
 	"testing"
 
 	"github.com/gin-gonic/gin"

@@ -1,9 +1,9 @@
-﻿package service
+package service
 
 import (
-	"errors"
 	"commerce-platform/internal/domain/review"
 	"commerce-platform/internal/repository"
+	"errors"
 )
 
 type ReviewService struct {

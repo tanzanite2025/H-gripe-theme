@@ -1,16 +1,17 @@
-﻿package service
+package service
 
 import (
-	"context"
-	"fmt"
-	"strings"
 	"commerce-platform/internal/domain/coupon"
+	"commerce-platform/internal/domain/currency"
 	"commerce-platform/internal/domain/order"
 	attributionpkg "commerce-platform/internal/pkg/attribution"
 	"commerce-platform/internal/pkg/logger"
 	paymentpkg "commerce-platform/internal/pkg/payment"
 	"commerce-platform/internal/pkg/requestctx"
 	"commerce-platform/internal/repository"
+	"context"
+	"fmt"
+	"strings"
 	"time"
 
 	"go.uber.org/zap"
@@ -136,6 +137,7 @@ func (s *OrderService) CreateOrderWithAttribution(
 			CouponCode:       quote.CouponCode,
 			PointsUsed:       quote.PointsToUse,
 			PointsValue:      quote.PointsDiscount,
+			FXSnapshotData:   currency.OrderFXSnapshotJSON(quote.FXSnapshot),
 			Items:            quote.Items,
 			ShippingAddress:  shippingAddress,
 			BillingAddress:   billingAddress,

@@ -169,6 +169,13 @@ payment_bin_rate_limit:
   failure_threshold: 5
   block_duration_seconds: 1800
 
+payment_gateway_circuit_breaker:
+  enabled: true
+  window_seconds: 60
+  failure_rate_threshold: 0.15
+  minimum_sample_count: 20
+  open_duration_seconds: 30
+
 payment_risk_monitoring:
   enabled: true
   alert_enabled: false

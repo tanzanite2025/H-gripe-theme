@@ -1,11 +1,11 @@
-﻿package service
+package service
 
 import (
+	"commerce-platform/internal/domain/setting"
 	"errors"
 	"fmt"
 	"strconv"
 	"strings"
-	"commerce-platform/internal/domain/setting"
 )
 
 // GetRedeemSettings 获取积分兑换配置

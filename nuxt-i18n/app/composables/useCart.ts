@@ -1,4 +1,4 @@
-﻿import { ref, computed, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import type { CartItem } from '~~/types/cart'
 import { useAuth } from '~/composables/useAuth'
 import { useCartCalculation } from '~/composables/useCartCalculation'
@@ -260,13 +260,14 @@ export const useCart = () => {
       ...product,
       weight: product.weight ?? (product.weight_grams ? product.weight_grams / 1000 : undefined),
     }
+    let syncPromise: Promise<void>
 
     if (existingItem) {
       existingItem.quantity += quantityToAdd
-      syncAction('update', productId, existingItem.quantity, variantId)
+      syncPromise = syncAction('update', productId, existingItem.quantity, variantId)
     } else {
       cartItems.value.push({ ...normalizedProduct, id: itemId, product_id: productId, variant_id: variantId, quantity: quantityToAdd })
-      syncAction('add', productId, quantityToAdd, variantId)
+      syncPromise = syncAction('add', productId, quantityToAdd, variantId)
     }
 
     trackBehaviorEvent({
@@ -280,7 +281,7 @@ export const useCart = () => {
       },
     })
 
-    return { success: true, message: 'Added to cart' }
+    return { success: true, message: 'Added to cart', syncPromise }
   }
 
   const updateQuantity = (id: number, quantity: number) => {

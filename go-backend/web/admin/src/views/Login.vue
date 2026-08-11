@@ -4,6 +4,7 @@
     <div aria-hidden="true" class="admin-login-blueprint absolute right-[7vw] top-[12vh] hidden size-[22rem] lg:block" />
 
     <main class="relative z-10 flex min-h-screen min-h-dvh items-center justify-center px-4 py-8 sm:px-6">
+      <AdminLanguageSwitcher class="absolute right-4 top-4 sm:right-6 sm:top-6" />
       <Card class="w-full max-w-[430px] rounded-xl border-border/70 bg-card/95 py-5 shadow-2xl backdrop-blur-sm">
         <CardHeader class="space-y-3 px-5 text-center sm:px-7">
           <div v-if="brandName || brandInitial || panelLabel" class="flex items-center justify-between gap-3 text-left">
@@ -15,16 +16,16 @@
             </div>
             <span v-if="panelLabel" class="ml-auto shrink-0 text-[9px] font-black uppercase tracking-widest text-muted-foreground/70">{{ panelLabel }}</span>
           </div>
-          <span class="block text-[9px] font-black uppercase tracking-[0.16em] text-muted-foreground/60">CONTROL ACCESS / 账户认证</span>
+          <span class="block text-[9px] font-black uppercase tracking-[0.16em] text-muted-foreground/60">{{ t('auth.controlAccess') }}</span>
           <CardTitle v-if="loginTitle" class="text-lg font-black italic uppercase text-foreground">{{ loginTitle }}</CardTitle>
-          <CardDescription class="text-[10px] font-medium leading-5 text-muted-foreground">请输入管理员账号和密码进入控制面板</CardDescription>
+          <CardDescription class="text-[10px] font-medium leading-5 text-muted-foreground">{{ t('auth.description') }}</CardDescription>
         </CardHeader>
 
         <CardContent class="px-5 sm:px-7">
           <form class="space-y-5" @submit="onSubmit">
             <FormField v-slot="{ componentField }" name="email">
               <FormItem>
-                <FormLabel>邮箱</FormLabel>
+                <FormLabel>{{ t('auth.email') }}</FormLabel>
                 <FormControl>
                   <div class="relative">
                     <Mail class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground/60" />
@@ -45,7 +46,7 @@
 
             <FormField v-slot="{ componentField }" name="password">
               <FormItem>
-                <FormLabel>密码</FormLabel>
+                <FormLabel>{{ t('auth.password') }}</FormLabel>
                 <FormControl>
                   <div class="relative">
                     <LockKeyhole class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground/60" />
@@ -53,7 +54,7 @@
                       v-bind="componentField"
                       :type="showPassword ? 'text' : 'password'"
                       autocomplete="current-password"
-                      placeholder="请输入密码"
+                      :placeholder="t('auth.passwordPlaceholder')"
                       class="h-10 px-9"
                     />
                     <Button
@@ -61,7 +62,7 @@
                       variant="ghost"
                       size="icon-sm"
                       class="absolute right-1 top-1/2 -translate-y-1/2 rounded-full"
-                      :aria-label="showPassword ? '隐藏密码' : '显示密码'"
+                      :aria-label="showPassword ? t('auth.hidePassword') : t('auth.showPassword')"
                       @click="showPassword = !showPassword"
                     >
                       <EyeOff v-if="showPassword" class="size-4" />
@@ -78,14 +79,14 @@
             <Button type="submit" size="lg" class="h-11 w-full rounded-full font-black text-xs uppercase tracking-widest" :disabled="loading">
               <LoaderCircle v-if="loading" class="size-4 animate-spin" />
               <LogIn v-else class="size-4" />
-              {{ loading ? '正在登录' : '登录' }}
+              {{ loading ? t('auth.loggingIn') : t('auth.login') }}
             </Button>
           </form>
 
           <div v-if="googleAvailable" class="mt-5 space-y-3">
             <div class="flex items-center gap-3 text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground/60">
               <span class="h-px flex-1 bg-border/70" />
-              <span>或</span>
+              <span>{{ t('auth.or') }}</span>
               <span class="h-px flex-1 bg-border/70" />
             </div>
             <Button
@@ -102,7 +103,7 @@
                 <path fill="#4CAF50" d="M24 44c5.114 0 9.725-1.961 13.261-5.174l-6.132-5.198C29.16 34.488 26.715 35.5 24 35.5c-5.139 0-9.479-3.335-11.029-8.014l-6.57 5.055C8.122 38.897 15.348 44 24 44z"/>
                 <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303c-.685 2.316-2.172 4.285-4.134 5.628l.003-.001 6.132 5.198C39.846 35.896 44 30.5 44 24c0-1.341-.138-2.651-.389-3.917z"/>
               </svg>
-              {{ googleLoading ? '正在连接' : '使用 Google 登录' }}
+              {{ googleLoading ? t('auth.connecting') : t('auth.googleLogin') }}
             </Button>
             <p v-if="googleError" class="text-center text-xs text-destructive">{{ googleError }}</p>
           </div>
@@ -127,9 +128,11 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import AdminLanguageSwitcher from '@/components/admin/AdminLanguageSwitcher.vue'
 import { useAdminBranding } from '@/composables/useAdminBranding'
 import { useAdminGoogleAuth } from '@/composables/useAdminGoogleAuth'
 import { useAuthStore } from '@/stores/auth'
+import { useAdminI18n } from '@/i18n'
 
 interface ApiErrorPayload {
   error?: string
@@ -143,6 +146,7 @@ interface GoogleCredentialResponse {
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
+const { t } = useAdminI18n()
 
 const loading = ref(false)
 const showPassword = ref(false)
@@ -173,10 +177,10 @@ const apiErrorData = (error: unknown): ApiErrorPayload | undefined => (
   (error as AxiosError<ApiErrorPayload>).response?.data
 )
 
-const loginErrorMessage = (error: unknown): string => apiErrorData(error)?.error || '登录失败'
+const loginErrorMessage = (error: unknown): string => apiErrorData(error)?.error || t('auth.loginFailed')
 const googleLoginErrorMessage = (error: unknown): string => {
   const data = apiErrorData(error)
-  return data?.message || data?.error || 'Google 登录失败'
+  return data?.message || data?.error || t('auth.googleLoginFailed')
 }
 
 onMounted(async () => {
@@ -194,8 +198,8 @@ watchEffect(() => {
 
 const formSchema = toTypedSchema(
   z.object({
-    email: z.string().min(1, '请输入邮箱').email('请输入正确的邮箱格式'),
-    password: z.string().min(6, '密码长度至少 6 位')
+    email: z.string().min(1, t('auth.emailRequired')).email(t('auth.invalidEmail')),
+    password: z.string().min(6, t('auth.passwordMinLength'))
   })
 )
 
@@ -213,7 +217,7 @@ const onSubmit = handleSubmit(async (values) => {
   loading.value = true
   try {
     await authStore.login(values.email, values.password)
-    toast.success('登录成功')
+    toast.success(t('auth.loginSuccess'))
     await router.push(resolveRedirectTarget())
   } catch (error) {
     toast.error(loginErrorMessage(error), { id: 'admin-login-error' })
@@ -224,14 +228,14 @@ const onSubmit = handleSubmit(async (values) => {
 
 const onGoogleCredential = async (response: unknown): Promise<void> => {
   if (!isGoogleCredentialResponse(response) || !response.credential) {
-    googleError.value = 'Google 登录未返回有效凭据'
+    googleError.value = t('auth.googleCredentialMissing')
     googleLoading.value = false
     return
   }
 
   try {
     await authStore.loginWithGoogle(response.credential)
-    toast.success('登录成功')
+    toast.success(t('auth.loginSuccess'))
     await router.push(resolveRedirectTarget())
   } catch (error) {
     googleError.value = googleLoginErrorMessage(error)
@@ -247,7 +251,7 @@ const onGoogleSubmit = async (): Promise<void> => {
   googleError.value = ''
   const initialized = await googleAuth.initialize(onGoogleCredential)
   if (!initialized) {
-    googleError.value = googleAuth.error.value || 'Google 登录初始化失败'
+    googleError.value = googleAuth.error.value || t('auth.googleInitFailed')
     googleLoading.value = false
     return
   }

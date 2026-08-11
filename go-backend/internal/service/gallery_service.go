@@ -1,11 +1,11 @@
-﻿package service
+package service
 
 import (
-	"errors"
-	"strings"
 	"commerce-platform/internal/domain/gallery"
 	"commerce-platform/internal/domain/media"
 	"commerce-platform/internal/repository"
+	"errors"
+	"strings"
 )
 
 var (

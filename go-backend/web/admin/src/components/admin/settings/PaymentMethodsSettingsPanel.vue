@@ -1,25 +1,25 @@
 <template>
-  <section class="grid max-w-5xl gap-5 lg:grid-cols-[190px_minmax(0,1fr)]">
-    <div>
-      <h2 class="text-sm font-black tracking-tighter italic uppercase text-foreground">支付方式</h2>
+  <section class="max-w-none space-y-3">
+    <div class="max-w-3xl">
+      <h2 class="text-sm font-black tracking-tighter italic uppercase text-foreground">{{ t('settings.paymentMethods') }}</h2>
       <p class="mt-1 text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">
-        网关绑定后即可参与前台支付
+        {{ t('settings.paymentMethodsDescription') }}
       </p>
     </div>
 
     <div class="min-w-0 space-y-3">
       <div class="flex flex-wrap items-center justify-between gap-2">
         <div class="text-xs text-muted-foreground">
-          这里只维护前台支付按钮、手续费和启停状态；启用 PayPal，前台就展示 PayPal。
+          {{ t('payment.paymentMethodsHelp') }}
         </div>
         <div class="flex items-center gap-2">
           <Button type="button" variant="outline" size="sm" :disabled="loading" @click="fetchPaymentMethods">
             <RefreshCw :class="['size-3.5', { 'animate-spin': loading }]" />
-            刷新
+            {{ t('common.refresh') }}
           </Button>
           <Button v-if="canEdit" type="button" size="sm" @click="openCreateDialog">
             <Plus class="size-3.5" />
-            添加支付方式
+            {{ t('payment.addPaymentMethod') }}
           </Button>
         </div>
       </div>
@@ -27,35 +27,35 @@
       <div class="flex gap-2 border-l-2 border-primary/40 px-3 py-2 text-xs text-muted-foreground">
         <Info class="mt-0.5 size-4 shrink-0 text-primary" />
         <p>
-          商品价格和订单币种由商品/规格价格决定；汇率 API 只影响前台展示换算。绑定 Stripe、PayPal、微信等收款方式后，可收交易币种以该网关及其商户账户能力为准，客户侧付款币种由网关负责换汇和扣款。
+          {{ t('payment.paymentMethodCurrencyHelp') }}
         </p>
       </div>
 
       <div class="overflow-hidden rounded-lg border">
         <div v-if="loading" class="flex h-32 items-center justify-center text-xs text-muted-foreground">
           <LoaderCircle class="mr-2 size-4 animate-spin" />
-          正在加载支付方式
+          {{ t('payment.loadingPaymentMethods') }}
         </div>
 
         <Table v-else>
           <TableHeader>
             <TableRow>
-              <TableHead class="w-[90px]">状态</TableHead>
-              <TableHead>支付方式</TableHead>
-              <TableHead class="hidden w-[90px] text-right md:table-cell">排序</TableHead>
-              <TableHead v-if="canEdit" class="w-[120px] text-right">操作</TableHead>
+              <TableHead class="w-[90px]">{{ t('payment.status') }}</TableHead>
+              <TableHead>{{ t('settings.paymentMethods') }}</TableHead>
+              <TableHead class="hidden w-[90px] text-right md:table-cell">{{ t('payment.sortOrder') }}</TableHead>
+              <TableHead v-if="canEdit" class="w-[120px] text-right">{{ t('payment.actions') }}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             <TableRow v-if="paymentMethods.length === 0">
               <TableCell :colspan="canEdit ? 4 : 3" class="h-28 text-center text-xs text-muted-foreground">
-                暂无支付方式
+                {{ t('payment.noPaymentMethods') }}
               </TableCell>
             </TableRow>
             <TableRow v-for="method in paymentMethods" :key="method.id">
               <TableCell>
                 <Badge :variant="method.enabled ? 'default' : 'secondary'">
-                  {{ method.enabled ? '启用' : '停用' }}
+                  {{ method.enabled ? t('common.enabled') : t('common.disabled') }}
                 </Badge>
               </TableCell>
               <TableCell>
@@ -69,14 +69,14 @@
               </TableCell>
               <TableCell v-if="canEdit" class="text-right">
                 <div class="flex justify-end gap-1">
-                  <Button type="button" variant="ghost" size="icon" aria-label="编辑支付方式" @click="openEditDialog(method)">
+                  <Button type="button" variant="ghost" size="icon" :aria-label="t('payment.editPaymentMethod')" @click="openEditDialog(method)">
                     <Pencil class="size-3.5" />
                   </Button>
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon"
-                    aria-label="删除支付方式"
+                    :aria-label="t('payment.deletePaymentMethod')"
                     :disabled="deletingID === method.id"
                     @click="deletePaymentMethod(method)"
                   >
@@ -95,71 +95,71 @@
       <DialogContent size="lg" class="max-h-[92dvh] overflow-y-auto" @open-auto-focus.prevent>
         <form class="space-y-5" @submit.prevent="savePaymentMethod">
           <DialogHeader>
-            <DialogTitle>{{ dialogMode === 'create' ? '添加支付方式' : '编辑支付方式' }}</DialogTitle>
-            <DialogDescription>维护前台支付按钮、手续费和展示状态。启用后 Nuxt 前台会展示该支付方式；客户侧付款币种由网关处理。</DialogDescription>
+          <DialogTitle>{{ dialogMode === 'create' ? t('payment.addPaymentMethod') : t('payment.editPaymentMethod') }}</DialogTitle>
+          <DialogDescription>{{ t('payment.paymentMethodDialogDescription') }}</DialogDescription>
           </DialogHeader>
 
           <div class="grid gap-4 md:grid-cols-2">
-            <AdminFormField label="名称" required>
+            <AdminFormField :label="t('payment.name')" required>
               <Input v-model.trim="form.name" />
             </AdminFormField>
 
-            <AdminFormField label="代码" required>
+            <AdminFormField :label="t('payment.code')" required>
               <Input v-model.trim="form.code" class="font-mono lowercase" />
             </AdminFormField>
 
-            <AdminFormField label="手续费类型">
+            <AdminFormField :label="t('payment.feeType')">
               <Select v-model="form.fee_type">
                 <SelectTrigger class="w-full"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="fixed">固定金额</SelectItem>
-                  <SelectItem value="percentage">百分比</SelectItem>
+                  <SelectItem value="fixed">{{ t('payment.fixedAmount') }}</SelectItem>
+                  <SelectItem value="percentage">{{ t('payment.percentage') }}</SelectItem>
                 </SelectContent>
               </Select>
             </AdminFormField>
 
-            <AdminFormField label="手续费值">
+            <AdminFormField :label="t('payment.feeValue')">
               <Input v-model.number="form.fee_value" type="number" min="0" step="0.01" />
             </AdminFormField>
 
-            <AdminFormField label="最小金额">
+            <AdminFormField :label="t('payment.minimumAmount')">
               <Input v-model.number="form.min_amount" type="number" min="0" step="0.01" />
             </AdminFormField>
 
-            <AdminFormField label="最大金额">
+            <AdminFormField :label="t('payment.maximumAmount')">
               <Input v-model.number="form.max_amount" type="number" min="0" step="0.01" />
             </AdminFormField>
 
-            <AdminFormField label="排序">
+            <AdminFormField :label="t('payment.sortOrder')">
               <Input v-model.number="form.sort_order" type="number" step="1" />
             </AdminFormField>
 
             <div class="flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5">
               <div>
-                <span class="text-xs font-medium">启用</span>
-                <p class="mt-0.5 text-xs text-muted-foreground">停用后前台不会展示该支付方式。</p>
+                <span class="text-xs font-medium">{{ t('common.enabled') }}</span>
+                <p class="mt-0.5 text-xs text-muted-foreground">{{ t('payment.disabledMethodHelp') }}</p>
               </div>
-              <Switch v-model="form.enabled" aria-label="支付方式启用状态" />
+              <Switch v-model="form.enabled" :aria-label="t('payment.paymentMethodEnabled')" />
             </div>
 
-            <AdminFormField label="图标" class="md:col-span-2">
+            <AdminFormField :label="t('payment.icon')" class="md:col-span-2">
               <Input v-model.trim="form.icon" />
             </AdminFormField>
 
-            <AdminFormField label="描述" class="md:col-span-2">
+            <AdminFormField :label="t('payment.description')" class="md:col-span-2">
               <Textarea v-model="form.description" class="min-h-20" />
             </AdminFormField>
 
-            <AdminFormField label="高级设置 JSON" class="md:col-span-2">
+            <AdminFormField :label="t('payment.advancedSettings')" class="md:col-span-2">
               <Textarea v-model="form.settings" class="min-h-20 font-mono" />
             </AdminFormField>
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" @click="dialogOpen = false">取消</Button>
+            <Button type="button" variant="outline" @click="dialogOpen = false">{{ t('common.cancel') }}</Button>
             <Button type="submit" :disabled="submitting">
               <LoaderCircle v-if="submitting" class="size-4 animate-spin" />
-              {{ submitting ? '保存中' : '保存支付方式' }}
+              {{ submitting ? t('common.saving') : t('payment.savePaymentMethod') }}
             </Button>
           </DialogFooter>
         </form>
@@ -189,6 +189,7 @@ import { Switch } from '@/components/ui/switch'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Textarea } from '@/components/ui/textarea'
 import axios from '@/utils/axios'
+import { useAdminI18n } from '@/i18n'
 import type { PaymentMethodForm, PaymentMethodRecord } from './settingsTypes'
 
 withDefaults(defineProps<{
@@ -196,6 +197,7 @@ withDefaults(defineProps<{
 }>(), {
   canEdit: false,
 })
+const { t } = useAdminI18n()
 
 const emptyForm = (): PaymentMethodForm => ({
   id: null,
@@ -286,7 +288,7 @@ const savePaymentMethod = async () => {
   const payload = buildPayload()
   if (!payload) return
   if (!payload.name || !payload.code) {
-    toast.error('请填写支付方式名称和代码')
+    toast.error(t('payment.paymentMethodRequired'))
     return
   }
 
@@ -294,10 +296,10 @@ const savePaymentMethod = async () => {
   try {
     if (dialogMode.value === 'edit' && form.id) {
       await axios.put(`/api/admin/settings/payment-methods/${form.id}`, payload)
-      toast.success('已更新支付方式')
+      toast.success(t('payment.paymentMethodUpdated'))
     } else {
       await axios.post('/api/admin/settings/payment-methods', payload)
-      toast.success('已添加支付方式')
+      toast.success(t('payment.paymentMethodAdded'))
     }
     dialogOpen.value = false
     await fetchPaymentMethods()
@@ -309,12 +311,12 @@ const savePaymentMethod = async () => {
 }
 
 const deletePaymentMethod = async (method: PaymentMethodRecord): Promise<void> => {
-  if (!window.confirm(`删除支付方式「${method.name}」？`)) return
+  if (!window.confirm(t('payment.confirmDeletePaymentMethod', { name: method.name }))) return
 
   deletingID.value = method.id
   try {
     await axios.delete(`/api/admin/settings/payment-methods/${method.id}`)
-    toast.success('已删除支付方式')
+    toast.success(t('payment.paymentMethodDeleted'))
     await fetchPaymentMethods()
   } catch (error) {
     console.error('Failed to delete payment method:', error)

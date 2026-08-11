@@ -3,6 +3,7 @@ package payment
 import (
 	"time"
 
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
 
@@ -16,6 +17,7 @@ type Refund struct {
 	RequestedAmount        float64          `gorm:"not null;default:0" json:"requested_amount"`
 	DiscountClawbackAmount float64          `gorm:"not null;default:0" json:"discount_clawback_amount"`
 	CalculationSnapshot    string           `gorm:"type:text" json:"calculation_snapshot"`
+	FXSnapshotData         datatypes.JSON   `gorm:"column:fx_snapshot;type:jsonb;not null;default:'{}'" json:"-"`
 	LineItems              []RefundLineItem `gorm:"foreignKey:RefundID" json:"line_items,omitempty"`
 	Reason                 string           `gorm:"type:text" json:"reason"`
 	Status                 string           `gorm:"index" json:"status"` // pending, completed, failed

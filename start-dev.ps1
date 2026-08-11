@@ -1,4 +1,4 @@
-﻿param(
+param(
   [switch]$StopOnly,
   [switch]$PortsOnly
 )

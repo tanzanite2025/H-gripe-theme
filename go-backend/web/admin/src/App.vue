@@ -3,7 +3,7 @@
     v-if="isBusy"
     class="fixed inset-x-0 top-0 z-[100] h-0.5 overflow-hidden bg-primary/10"
     aria-live="polite"
-    aria-label="正在加载"
+    :aria-label="t('common.loading')"
   >
     <div class="h-full w-1/3 animate-[admin-loading-bar_1.1s_ease-in-out_infinite] bg-gradient-to-r from-primary via-sky-400 to-primary" />
   </div>
@@ -17,12 +17,14 @@ import { toast } from 'vue-sonner'
 import { Toaster } from '@/components/ui/sonner'
 import { useAuthStore } from '@/stores/auth'
 import router from '@/router'
+import { useAdminI18n } from '@/i18n'
 
 interface AdminApiLoadingDetail {
   loading?: boolean
 }
 
 const authStore = useAuthStore()
+const { t } = useAdminI18n()
 const routeLoading = ref(false)
 const apiLoading = ref(false)
 const isBusy = computed(() => routeLoading.value || apiLoading.value)
@@ -54,7 +56,10 @@ onMounted(async () => {
   const result = await authStore.initAuth()
 
   if (result.authenticated && result.permissionsUpdated) {
-    toast.info('权限已更新，请注意菜单变化', { id: 'permissions-updated' })
+    toast.info(
+      t('app.permissionsUpdated'),
+      { id: 'permissions-updated' }
+    )
   }
 
   if (result.warning) {

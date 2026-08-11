@@ -1,4 +1,4 @@
-﻿package payment
+package payment
 
 import (
 	"encoding/json"
@@ -52,7 +52,7 @@ func (h *Handler) CreateAlipayOrder(c *gin.Context) {
 		return
 	}
 
-	config, err := h.loadGatewayConfig(pgateway.GatewayAlipay)
+	config, err := h.loadPaymentGatewayConfiguration(pgateway.GatewayAlipay)
 	if err != nil {
 		apierror.RespondInternalError(c, err)
 		return
@@ -70,9 +70,18 @@ func (h *Handler) CreateAlipayOrder(c *gin.Context) {
 	if !ensureGatewayCurrency(c, pgateway.GatewayAlipay, orderCurrency) {
 		return
 	}
-	gateway, err := h.newPaymentGateway(config)
+	if !h.allowPaymentGatewayAttemptOrRespondWithFallbackRecommendation(c, pgateway.GatewayAlipay) {
+		return
+	}
+	gateway, err := h.createPaymentGatewayFromConfiguration(config)
 	if err != nil {
-		apierror.RespondInternalError(c, err)
+		h.respondToPaymentGatewayOperationFailure(
+			c,
+			pgateway.GatewayAlipay,
+			http.StatusInternalServerError,
+			"alipay_gateway_initialization_failed",
+			err,
+		)
 		return
 	}
 
@@ -93,9 +102,16 @@ func (h *Handler) CreateAlipayOrder(c *gin.Context) {
 		},
 	})
 	if err != nil {
-		apierror.RespondError(c, http.StatusBadGateway, "alipay_order_create_failed", err.Error())
+		h.respondToPaymentGatewayOperationFailure(
+			c,
+			pgateway.GatewayAlipay,
+			http.StatusBadGateway,
+			"alipay_order_create_failed",
+			err,
+		)
 		return
 	}
+	h.recordSuccessfulPaymentGatewayAPIResponse(c.Request.Context(), pgateway.GatewayAlipay)
 
 	gatewayResponse, _ := json.Marshal(paymentResponse)
 	if err := h.paymentService.RecordGatewayPaymentAttempt(service.GatewayPaymentAttemptInput{
@@ -149,7 +165,7 @@ func (h *Handler) ConfirmAlipayOrder(c *gin.Context) {
 		return
 	}
 
-	config, err := h.loadGatewayConfig(pgateway.GatewayAlipay)
+	config, err := h.loadPaymentGatewayConfiguration(pgateway.GatewayAlipay)
 	if err != nil {
 		apierror.RespondInternalError(c, err)
 		return
@@ -159,16 +175,29 @@ func (h *Handler) ConfirmAlipayOrder(c *gin.Context) {
 		return
 	}
 
-	gateway, err := h.newPaymentGateway(config)
+	gateway, err := h.createPaymentGatewayFromConfiguration(config)
 	if err != nil {
-		apierror.RespondInternalError(c, err)
+		h.respondToPaymentGatewayOperationFailure(
+			c,
+			pgateway.GatewayAlipay,
+			http.StatusInternalServerError,
+			"alipay_gateway_initialization_failed",
+			err,
+		)
 		return
 	}
 	paymentResponse, err := gateway.GetPayment(c.Request.Context(), orderRecord.OrderNumber)
 	if err != nil {
-		apierror.RespondError(c, http.StatusBadGateway, "alipay_order_query_failed", err.Error())
+		h.respondToPaymentGatewayOperationFailure(
+			c,
+			pgateway.GatewayAlipay,
+			http.StatusBadGateway,
+			"alipay_order_query_failed",
+			err,
+		)
 		return
 	}
+	h.recordSuccessfulPaymentGatewayAPIResponse(c.Request.Context(), pgateway.GatewayAlipay)
 	if !providerPaymentResponseMatchesOrder(paymentResponse, orderRecord.OrderNumber) {
 		apierror.RespondError(c, http.StatusBadRequest, "alipay_order_mismatch", "Alipay trade does not match this order")
 		return

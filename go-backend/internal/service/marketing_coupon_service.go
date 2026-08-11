@@ -1,10 +1,10 @@
-﻿package service
+package service
 
 import (
-	"errors"
-	"fmt"
 	"commerce-platform/internal/domain/coupon"
 	"commerce-platform/internal/repository"
+	"errors"
+	"fmt"
 	"time"
 )
 

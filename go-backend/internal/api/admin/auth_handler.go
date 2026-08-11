@@ -1,11 +1,11 @@
-﻿package admin
+package admin
 
 import (
-	"errors"
-	"net/http"
 	"commerce-platform/internal/domain/auth"
 	"commerce-platform/internal/pkg/securecookie"
 	"commerce-platform/internal/service"
+	"errors"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 )

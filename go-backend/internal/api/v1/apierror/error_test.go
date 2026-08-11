@@ -1,4 +1,4 @@
-﻿package apierror
+package apierror
 
 import (
 	"bytes"

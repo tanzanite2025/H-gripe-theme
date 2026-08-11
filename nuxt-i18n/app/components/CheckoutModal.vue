@@ -175,6 +175,40 @@
                 <p v-if="checkoutError" class="rounded-lg border border-rose-300/20 bg-rose-300/10 px-3 py-2 text-xs text-rose-100">
                   {{ checkoutError }}
                 </p>
+
+                <section
+                  v-if="gatewayFallbackOptions.length"
+                  class="rounded-xl border border-amber-300/20 bg-amber-300/[0.07] p-3"
+                  aria-live="polite"
+                >
+                  <p class="text-xs font-medium text-amber-100">
+                    {{ t('checkout.payment.gatewayFallback.title', 'This payment provider is having trouble') }}
+                  </p>
+                  <p class="mt-1 text-xs text-amber-100/70">
+                    {{ t('checkout.payment.gatewayFallback.description', 'The previous attempt may still be processing. Choose another available method only if you did not complete it.') }}
+                  </p>
+                  <div class="mt-3 flex flex-wrap gap-2">
+                    <button
+                      v-for="option in gatewayFallbackOptions"
+                      :key="`fallback-${option.id}`"
+                      type="button"
+                      class="inline-flex items-center gap-2 rounded-lg border border-amber-200/25 bg-black/20 px-3 py-2 text-xs font-medium text-amber-50 transition hover:bg-amber-200/10"
+                      @click="selectGatewayFallbackPaymentOption(option)"
+                    >
+                      <span class="checkout-payment-logos" aria-hidden="true">
+                        <img
+                          v-for="logo in paymentLogos(option)"
+                          :key="logo.src"
+                          :src="logo.src"
+                          :alt="logo.alt"
+                          :class="logo.className"
+                          loading="lazy"
+                        />
+                      </span>
+                      {{ paymentTitle(option) }}
+                    </button>
+                  </div>
+                </section>
               </main>
 
               <aside class="h-fit space-y-4 border-t border-white/10 pt-5 md:sticky md:top-0 md:border-t-0 md:border-l md:pl-5 md:pt-0">
@@ -252,7 +286,8 @@ import { usePayPalPayment } from '~/composables/usePayPalPayment'
 import { useWeChatPayment, type WeChatPaymentSession } from '~/composables/useWeChatPayment'
 import { useShippingValidation } from '~/composables/useShippingValidation'
 import type { StripeConfirmationResult, StripePaymentSession } from '~/composables/useStripePayment'
-import type { CheckoutPaymentOption } from '~/types/payment'
+import { ApiRequestError } from '~/composables/useApiRequest'
+import type { CheckoutPaymentOption, PaymentGatewayFallbackMethod } from '~/types/payment'
 import {
   isPaymentOptionAvailable,
   normalizeStorefrontPaymentMethod,
@@ -308,6 +343,7 @@ const { baseCurrency } = useStorefrontContext()
 
 const selectedMethod = ref('card')
 const checkoutError = ref('')
+const gatewayFallbackOptions = ref<CheckoutPaymentOption[]>([])
 const isSubmitting = ref(false)
 const showAuthModal = ref(false)
 const stripePaymentSession = ref<StripePaymentSession | null>(null)
@@ -340,7 +376,9 @@ const visiblePaymentOptions = computed(() =>
 )
 
 const selectedOption = computed(() =>
-  visiblePaymentOptions.value.find(option => option.id === selectedMethod.value) || null,
+  gatewayFallbackOptions.value.find(option => option.id === selectedMethod.value)
+    || visiblePaymentOptions.value.find(option => option.id === selectedMethod.value)
+    || null,
 )
 const selectedPaymentAvailable = computed(() =>
   Boolean(selectedOption.value && selectedOption.value.enabled !== false && selectedOption.value.available === true),
@@ -454,6 +492,13 @@ const countryLabel = (country: { code: string; name: string }) =>
 
 const selectPaymentOption = (option: CheckoutPaymentOption) => {
   if (!isPaymentOptionAvailable(option)) return
+  selectedMethod.value = option.id
+  stripePaymentSession.value = null
+  checkoutError.value = ''
+  gatewayFallbackOptions.value = []
+}
+
+const selectGatewayFallbackPaymentOption = (option: CheckoutPaymentOption) => {
   selectedMethod.value = option.id
   stripePaymentSession.value = null
   checkoutError.value = ''
@@ -592,6 +637,62 @@ const startProviderPayment = async (orderNumber: string) => {
   stripePaymentSession.value = { clientSecret, publishableKey }
 }
 
+const paymentGatewayFallbackMethodKey = (method: PaymentGatewayFallbackMethod) =>
+  String(method.code || method.provider || '').trim().toLowerCase()
+
+const buildGatewayFallbackPaymentOptions = (methods: PaymentGatewayFallbackMethod[]) => {
+  const options: CheckoutPaymentOption[] = []
+  const seen = new Set<string>()
+
+  for (const method of methods) {
+    const methodKey = paymentGatewayFallbackMethodKey(method)
+    if (!methodKey || seen.has(methodKey)) continue
+    seen.add(methodKey)
+
+    const existingOption = visiblePaymentOptions.value.find((option) => {
+      const code = String(option.code || '').trim().toLowerCase()
+      const provider = String(option.provider || '').trim().toLowerCase()
+      return code === methodKey || provider === methodKey
+    })
+    if (existingOption) {
+      options.push({
+        ...existingOption,
+        available: true,
+        unavailableReason: undefined,
+        unavailable_reason: undefined,
+      })
+      continue
+    }
+
+    options.push({
+      id: String(method.code || method.provider || '').trim(),
+      code: method.code,
+      provider: method.provider,
+      title: method.name || method.code || method.provider || '',
+      subtitle: method.provider || '',
+      description: '',
+      enabled: true,
+      available: true,
+    })
+  }
+  return options
+}
+
+const applyPaymentGatewayFallbackRecommendation = (error: unknown) => {
+  if (!(error instanceof ApiRequestError) || error.code !== 'payment_gateway_degraded') {
+    return false
+  }
+
+  const details = error.details && typeof error.details === 'object'
+    ? error.details as { fallback_payment_methods?: PaymentGatewayFallbackMethod[] }
+    : null
+  const fallbackMethods = Array.isArray(details?.fallback_payment_methods)
+    ? details.fallback_payment_methods
+    : []
+  gatewayFallbackOptions.value = buildGatewayFallbackPaymentOptions(fallbackMethods)
+  return true
+}
+
 const submitOrder = async () => {
   if (isSubmitting.value) return
   checkoutError.value = ''
@@ -616,7 +717,16 @@ const submitOrder = async () => {
     const order = await createLocalOrder()
     await startProviderPayment(order.order_number)
   } catch (error) {
-    checkoutError.value = error instanceof Error ? error.message : t('checkout.modal.messages.orderFailed', 'Order submission failed')
+    if (applyPaymentGatewayFallbackRecommendation(error)) {
+      checkoutError.value = t(
+        'checkout.payment.gatewayFallback.error',
+        'The selected payment provider is temporarily unavailable. Please choose another available payment method.',
+      )
+    } else {
+      checkoutError.value = error instanceof Error
+        ? error.message
+        : t('checkout.modal.messages.orderFailed', 'Order submission failed')
+    }
   } finally {
     isSubmitting.value = false
   }
@@ -624,6 +734,7 @@ const submitOrder = async () => {
 
 const handleStripeConfirmed = (result: StripeConfirmationResult) => {
   stripePaymentSession.value = null
+  gatewayFallbackOptions.value = []
   if (['succeeded', 'processing', 'requires_capture'].includes(result.status)) {
     clearCart()
     closeCheckout()
@@ -650,12 +761,14 @@ watch(isCheckoutOpen, (open) => {
       selectedMethod.value = preferredMethod
       stripePaymentSession.value = null
       checkoutError.value = ''
+      gatewayFallbackOptions.value = []
     }
     void ensureCheckoutData()
     void auth.ensureSession()
   } else {
     stripePaymentSession.value = null
     checkoutError.value = ''
+    gatewayFallbackOptions.value = []
   }
 }, { immediate: true })
 
@@ -666,6 +779,7 @@ watch(preferredCheckoutPaymentMethod, (method) => {
   selectedMethod.value = preferredMethod
   stripePaymentSession.value = null
   checkoutError.value = ''
+  gatewayFallbackOptions.value = []
 })
 
 watch(() => form.value.country, () => {

@@ -6,9 +6,9 @@ This document owns the Google Merchant channel implementation only.
 
 ## Purpose
 
-Integrate H-GRIPE products with Google Merchant Center (GMC) Free Listings in
+Integrate Commerce Platform products with Google Merchant Center (GMC) Free Listings in
 controlled stages. Product data will be published from the Go backend to
-Google, while product clicks continue to land on the H-GRIPE storefront.
+Google, while product clicks continue to land on the Commerce Platform storefront.
 
 This document is the implementation checklist and architectural decision record
 for the integration. Do not start a later phase until the previous phase meets
@@ -30,7 +30,7 @@ Use the Google Merchant API as the production synchronization channel.
 
 ## Current Implementation Boundary
 
-The channel workspace is now separated from the core H-GRIPE catalog:
+The channel workspace is now separated from the core Commerce Platform catalog:
 
 - Google-specific fields are stored in `google_merchant_offers`, not in the
   product or variant editor.
@@ -119,14 +119,14 @@ The system still lacks a full external synchronization history:
 
 ## Proposed Data Ownership
 
-H-GRIPE remains the source of truth for all catalog, price, inventory,
+Commerce Platform remains the source of truth for all catalog, price, inventory,
 shipping, and storefront URL data.
 
 Google Merchant Center is the distribution and diagnostics system. Google must
-never become the primary source for H-GRIPE product descriptions, pricing, or
+never become the primary source for Commerce Platform product descriptions, pricing, or
 stock.
 
-One H-GRIPE product or variant must map deterministically to one external
+One Commerce Platform product or variant must map deterministically to one external
 offer ID. The offer ID must be stable and non-sequential from a public business
 perspective; changing a title or price must not create a new Google offer.
 
@@ -164,7 +164,7 @@ Required job types:
 - Delete or withdraw offer.
 - Refresh offer status and issues.
 - Retry transient failure.
-- Reconcile H-GRIPE offers against Google on a scheduled basis.
+- Reconcile Commerce Platform offers against Google on a scheduled basis.
 
 ### Administrator Surface
 
@@ -363,7 +363,7 @@ Tasks:
 
 Exit criteria:
 
-- MCP access cannot disclose credentials or change H-GRIPE catalog data.
+- MCP access cannot disclose credentials or change Commerce Platform catalog data.
 - Operators can use it to explain why a product is not approved or visible.
 
 ## Critical Consistency Rules

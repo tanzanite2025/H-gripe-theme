@@ -1,4 +1,4 @@
-﻿#!/bin/bash
+#!/bin/bash
 
 #############################################
 # PostgreSQL Database Restore Script

@@ -1,4 +1,4 @@
-﻿module commerce-platform
+module commerce-platform
 
 go 1.25.1
 

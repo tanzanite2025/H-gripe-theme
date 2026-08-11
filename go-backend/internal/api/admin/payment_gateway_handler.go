@@ -5,11 +5,11 @@ import (
 	"io"
 	"strings"
 
-	"tanzanite/internal/domain/setting"
-	"tanzanite/internal/pkg/apierror"
-	pgateway "tanzanite/internal/pkg/payment"
-	"tanzanite/internal/pkg/response"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/setting"
+	"commerce-platform/internal/pkg/apierror"
+	pgateway "commerce-platform/internal/pkg/payment"
+	"commerce-platform/internal/pkg/response"
+	"commerce-platform/internal/repository"
 
 	"github.com/gin-gonic/gin"
 )

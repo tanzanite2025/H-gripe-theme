@@ -1,8 +1,8 @@
-﻿package service
+package service
 
 import (
-	"errors"
 	"commerce-platform/internal/repository"
+	"errors"
 )
 
 var (

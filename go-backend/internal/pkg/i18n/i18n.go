@@ -1,9 +1,9 @@
-﻿package i18n
+package i18n
 
 import (
-	"strings"
 	"commerce-platform/internal/pkg/config"
 	"commerce-platform/internal/pkg/locales"
+	"strings"
 )
 
 var supportedLocales map[string]bool

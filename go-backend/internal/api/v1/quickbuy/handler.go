@@ -1,4 +1,4 @@
-﻿package quickbuy
+package quickbuy
 
 import (
 	"errors"

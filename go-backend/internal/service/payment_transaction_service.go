@@ -1,16 +1,16 @@
-﻿package service
+package service
 
 import (
-	"encoding/json"
-	"errors"
-	"fmt"
-	"math"
-	"strings"
 	"commerce-platform/internal/domain/currency"
 	"commerce-platform/internal/domain/order"
 	"commerce-platform/internal/domain/outbox"
 	"commerce-platform/internal/domain/payment"
 	"commerce-platform/internal/repository"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"math"
+	"strings"
 	"time"
 
 	"gorm.io/datatypes"

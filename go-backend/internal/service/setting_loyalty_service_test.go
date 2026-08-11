@@ -1,4 +1,4 @@
-﻿package service
+package service
 
 import (
 	settingdomain "commerce-platform/internal/domain/setting"

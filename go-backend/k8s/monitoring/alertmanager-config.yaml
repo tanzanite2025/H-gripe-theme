@@ -1,4 +1,4 @@
-﻿apiVersion: v1
+apiVersion: v1
 kind: ConfigMap
 metadata:
   name: alertmanager-config
@@ -89,10 +89,10 @@ data:
         send_resolved: true
         
       email_configs:
-      - to: 'ops-team@commerce_platform.com'
-        from: 'alertmanager@commerce_platform.com'
+      - to: 'ops-team@example.com'
+        from: 'alertmanager@example.com'
         smarthost: 'smtp.gmail.com:587'
-        auth_username: 'alertmanager@commerce_platform.com'
+        auth_username: 'alertmanager@example.com'
         auth_password: '{{ .ExternalSecret.smtp_password }}'
         headers:
           Subject: '🚨 CRITICAL Alert: {{ .GroupLabels.alertname }}'
@@ -241,10 +241,10 @@ spec:
   ingressClassName: nginx
   tls:
   - hosts:
-    - alertmanager.commerce_platform.example.com
+    - alertmanager.example.com
     secretName: alertmanager-tls
   rules:
-  - host: alertmanager.commerce_platform.example.com
+  - host: alertmanager.example.com
     http:
       paths:
       - path: /

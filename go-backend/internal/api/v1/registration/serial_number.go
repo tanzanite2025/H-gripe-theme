@@ -1,10 +1,10 @@
-﻿package registration
+package registration
 
 import (
-	"strings"
 	domainregistration "commerce-platform/internal/domain/registration"
 	"commerce-platform/internal/pkg/apierror"
 	"commerce-platform/internal/pkg/response"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"

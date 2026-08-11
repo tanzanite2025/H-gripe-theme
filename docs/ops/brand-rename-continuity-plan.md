@@ -1,11 +1,11 @@
 # Brand Rename Continuity Plan
 
-This note defines how to finish removing legacy `TANZANITE` naming while keeping the current production stack online.
+This note defines how to finish removing legacy product naming while keeping the current production stack online.
 
 ## Phase 1 Rule
 
 - `learn.gripe` is the canonical public domain.
-- Active deployment files must not contain `tanzanite.site`, `admin.tanzanite.site`, `www.tanzanite.site`, or `tanzanite-edge`.
+- Active deployment files must not contain `legacy.example`, `admin.legacy.example`, `www.legacy.example`, or `commerce-platform-edge`.
 - Do not replace the production project, database, Redis, or uploads volume just to remove old names.
 - Keep the live gateway, Caddy, and Nginx paths running during the rename.
 
@@ -26,13 +26,13 @@ This note defines how to finish removing legacy `TANZANITE` naming while keeping
 ## Phase Gates
 
 1. Phase 1 passes when the deployment verifier reports no legacy public hostname references and `learn.gripe` serves normally.
-2. Phase 2 can then retire the remaining artifact names and archived references that still carry `TANZANITE`.
+2. Phase 2 can then retire the remaining artifact names and archived references that still carry prior product names.
 3. Backend operations start only after Phase 1 and Phase 2 are both stable.
 
 ## What Must Wait
 
 - Old-domain redirects and aliases should stay until the new domain is stable.
-- Historical rollback notes can still mention `tanzanite` if they explain migration history.
+- Historical rollback notes can retain explicit legacy identifiers only when they explain migration history.
 - Backend admin tooling for cloud/provider control should be a later phase, not part of the rename cutover.
 
 ## Safe Order
@@ -49,7 +49,7 @@ This note defines how to finish removing legacy `TANZANITE` naming while keeping
 - Production serves `learn.gripe` without breaking the current stack.
 - `/api/v1/settings/site` returns the current public brand and contains no
   storefront URL under the legacy domain.
-- No active deployment file still depends on `tanzanite.site` or `tanzanite-edge`.
+- No active deployment file still depends on `legacy.example` or `commerce-platform-edge`.
 - Rollback remains possible during the observation window.
 - The rename does not replace the database, Redis, uploads, or application
   data; persisted public settings are updated by an idempotent migration.
