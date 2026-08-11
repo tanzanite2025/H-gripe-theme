@@ -126,15 +126,15 @@ const heroTitle = computed(() => {
 
 const cards = computed(() => [
   {
-    src: '/company/ourstory/ourstory/tanzanite-ourstory.webp',
+    src: '/company/ourstory/ourstory/ourstory.webp',
     altKey: 'home.hero.cards.0.alt'
   },
   {
-    src: '/company/ourstory/factory/tanzanite-factory-premoldlayupworkshop6.webp',
+    src: '/company/ourstory/factory/factory-premoldlayupworkshop6.webp',
     altKey: 'home.hero.cards.1.alt'
   },
   {
-    src: '/company/ourstory/factory/tanzanite-factory-inspectionpacking18.webp',
+    src: '/company/ourstory/factory/factory-inspectionpacking18.webp',
     altKey: 'home.hero.cards.2.alt'
   }
 ])
