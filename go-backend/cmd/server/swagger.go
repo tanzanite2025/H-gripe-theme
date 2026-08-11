@@ -6,7 +6,7 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-// @title Tanzanite E-commerce API
+// @title Storefront E-commerce API
 // @version 1.0
 // @description 完整的电商平台API，包含用户管理、产品管理、订单处理、支付集成等功能
 // @termsOfService https://tanzanite.com/terms
@@ -82,6 +82,6 @@ var SwaggerInfo = struct {
 	Host:        "api.tanzanite.com",
 	BasePath:    "/api/v1",
 	Schemes:     []string{"https", "http"},
-	Title:       "Tanzanite E-commerce API",
+	Title:       "Storefront E-commerce API",
 	Description: "完整的电商平台API文档",
 }

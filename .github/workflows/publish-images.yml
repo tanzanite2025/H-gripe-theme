@@ -1,4 +1,4 @@
-name: Publish Tanzanite Production Images
+name: Publish Production Images
 
 on:
   push:
@@ -11,7 +11,7 @@ permissions:
   packages: write
 
 concurrency:
-  group: tanzanite-production-images-${{ github.ref }}
+  group: production-images-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:

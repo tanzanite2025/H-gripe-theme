@@ -379,7 +379,7 @@ func disputeCommunicationSummary(items []StripeDisputeCommunicationEvidence) str
 
 func disputeMessageSender(message ticketdomain.TicketMessage) string {
 	if message.IsStaff {
-		return "Tanzanite support"
+		return "Store support"
 	}
 	if message.User != nil {
 		name := strings.TrimSpace(strings.TrimSpace(message.User.FirstName) + " " + strings.TrimSpace(message.User.LastName))

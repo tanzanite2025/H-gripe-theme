@@ -12,7 +12,7 @@
          <div class="relative group cursor-pointer rounded-xl overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.5)] border border-slate-700/50 max-w-3xl w-full" @click="showHolePatternVideo = true">
             <video 
               class="w-full h-auto object-cover opacity-90 group-hover:opacity-100 transition-opacity duration-300"
-              src="/company/ourstory/holepatterns/TANZANITE-automated-wheel-rimhole-drilling–customizable-Patterns_medium.webm?v=2" 
+              src="/company/ourstory/holepatterns/TANZANITE-automated-wheel-rimhole-drilling–customizable-Patterns_medium.webm?v=2"
               muted 
               loop 
               playsinline

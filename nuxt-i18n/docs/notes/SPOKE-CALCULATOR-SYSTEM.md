@@ -54,7 +54,7 @@ Status: Active reference, not an open backlog by itself. Re-audit this note when
 // Example Preset
 {
   id: 'tz_ar45_dt350',
-  name: 'Tanzanite AR 45 + DT Swiss 350', // 搜索显示名
+  name: 'AR 45 + DT Swiss 350', // 搜索显示名
   keywords: ['350', 'dt swiss'],         // 搜索关键词
   // ... 具体的几何引用 ID
 }

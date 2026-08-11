@@ -8,7 +8,7 @@ Last audited: 2026-07-29
 > documents differ. In particular, `*` and empty/unknown locales are legacy
 > audit data only and must never match a localized request.
 
-This document defines the durable design for Tanzanite customer-service
+This document defines the durable design for H-GRIPE customer-service
 automatic replies. It is the implementation boundary for the admin panel,
 Go backend, Nuxt storefront, database migrations, and future recommendation
 orchestration.

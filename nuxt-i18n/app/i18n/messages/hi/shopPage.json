@@ -4,7 +4,7 @@
     "loading": "उत्पाद लोड हो रहे हैं...",
     "empty": {
       "title": "अभी कोई उत्पाद उपलब्ध नहीं है।",
-      "description": "Tanzanite प्लगइन से उत्पाद प्रकाशित होने पर वे यहाँ अपने आप दिखाई देंगे।",
+      "description": "Products will appear here automatically once they are published.",
       "categoryTitle": "No products are available in {category} yet.",
       "categoryDescription": "Try another category or clear the category filter to view all products."
     }
@@ -14,6 +14,6 @@
     "view": "देखें"
   },
   "feedback": {
-    "title": "Tanzanite दुकान के बारे में अपनी प्रतिक्रिया साझा करें"
+    "title": "Share your feedback about the store"
   }
 }

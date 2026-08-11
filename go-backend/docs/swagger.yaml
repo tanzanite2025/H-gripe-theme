@@ -1,6 +1,6 @@
 openapi: 3.0.3
 info:
-  title: Tanzanite E-commerce API
+  title: Storefront E-commerce API
   description: |
     完整的电商后端 API 系统，从 WordPress 迁移到 Go。
     

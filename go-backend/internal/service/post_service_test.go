@@ -154,7 +154,7 @@ func TestPostServiceUpdatePostSEOUsesDedicatedBoundary(t *testing.T) {
 	}
 	require.NoError(t, db.Create(&existingPost).Error)
 
-	title := "SEO Boundary | Tanzanite"
+	title := "SEO Boundary | H-GRIPE"
 	description := "A description maintained by the SEO control plane."
 	canonical := "https://store.example.test/blog/seo-boundary"
 	updatedPost, err := postService.UpdatePostSEO(existingPost.ID, PostSEOUpdateInput{

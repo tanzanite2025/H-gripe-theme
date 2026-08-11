@@ -20,9 +20,20 @@ func NewGalleryHandler(galleryService *service.GalleryService) *GalleryHandler {
 	}
 }
 
-func (h *GalleryHandler) GetGalleries(c *gin.Context) {
+func parsePagination(c *gin.Context, defaultPageSize int) (int, int) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "10"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", strconv.Itoa(defaultPageSize)))
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = defaultPageSize
+	}
+	return page, pageSize
+}
+
+func (h *GalleryHandler) GetGalleries(c *gin.Context) {
+	page, pageSize := parsePagination(c, 10)
 
 	galleries, total, err := h.galleryService.GetPublicGalleries(page, pageSize)
 	if err != nil {
@@ -33,7 +44,7 @@ func (h *GalleryHandler) GetGalleries(c *gin.Context) {
 	totalPages := (int(total) + pageSize - 1) / pageSize
 
 	c.JSON(http.StatusOK, gin.H{
-		"data":        galleries,
+		"data":        publicGalleriesFromDomain(galleries),
 		"total":       total,
 		"page":        page,
 		"page_size":   pageSize,
@@ -54,7 +65,17 @@ func (h *GalleryHandler) GetGalleryByID(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": gallery})
+	c.JSON(http.StatusOK, gin.H{"data": publicGalleryFromDomain(gallery)})
+}
+
+func (h *GalleryHandler) GetGalleryBySlug(c *gin.Context) {
+	galleryItem, err := h.galleryService.GetPublicGalleryBySlug(c.Param("slug"))
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Gallery not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": publicGalleryFromDomain(galleryItem)})
 }
 
 func (h *GalleryHandler) GetGalleryImages(c *gin.Context) {
@@ -83,8 +104,7 @@ func (h *GalleryHandler) SearchImages(c *gin.Context) {
 		return
 	}
 
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+	page, pageSize := parsePagination(c, 20)
 
 	images, total, err := h.galleryService.SearchPublicImages(keyword, page, pageSize)
 	if err != nil {
@@ -122,8 +142,7 @@ func (h *GalleryHandler) GetImagesByTags(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Tags parameter is required"})
 		return
 	}
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+	page, pageSize := parsePagination(c, 20)
 
 	images, total, err := h.galleryService.GetPublicImagesByTags(tags, page, pageSize)
 	if err != nil {

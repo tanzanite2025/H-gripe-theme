@@ -50,10 +50,26 @@ func (h *Handler) handlePayPalWebhook(c *gin.Context, payload []byte) {
 		apierror.RespondInternalError(c, riskErr)
 		return
 	} else if riskHandled {
-		response.SuccessWithMessage(c, "PayPal dispute risk event recorded", gin.H{
+		details := gin.H{
 			"event_id":   event.ID,
 			"event_type": event.EventType,
-		})
+		}
+		if value, exists := c.Get("paypal_dispute_id"); exists {
+			details["dispute_id"] = value
+		}
+		if value, exists := c.Get("paypal_dispute_external_id"); exists {
+			details["paypal_dispute_id"] = value
+		}
+		if value, exists := c.Get("paypal_dispute_evidence_submitted"); exists {
+			details["evidence_submitted"] = value
+		}
+		if value, exists := c.Get("paypal_dispute_evidence_tracking_number"); exists {
+			details["tracking_number"] = value
+		}
+		if value, exists := c.Get("paypal_dispute_evidence_error"); exists {
+			details["evidence_error"] = value
+		}
+		response.SuccessWithMessage(c, "PayPal dispute risk event recorded", details)
 		return
 	}
 

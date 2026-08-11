@@ -13,13 +13,17 @@ import (
 )
 
 type PaymentService struct {
-	txManager                      *repository.TxManager
-	paymentRepo                    *repository.PaymentRepository
-	orderRepo                      *repository.OrderRepository
-	shippingRepo                   *repository.ShippingRepository
-	ticketRepo                     *repository.TicketRepository
-	risk                           *antifraud.Service
-	stripeDisputeEvidenceSubmitter stripeDisputeEvidenceSubmitter
+	txManager                                 *repository.TxManager
+	paymentRepo                               *repository.PaymentRepository
+	orderRepo                                 *repository.OrderRepository
+	shippingRepo                              *repository.ShippingRepository
+	ticketRepo                                *repository.TicketRepository
+	risk                                      *antifraud.Service
+	stripeDisputeEvidenceSubmitter            stripeDisputeEvidenceSubmitter
+	paypalDisputeEvidenceSubmitter            PayPalDisputeEvidenceSubmitter
+	paypalDisputeDocumentStorage              PayPalDisputeEvidenceDocumentStorage
+	paypalDisputeInvoiceOptions               PayPalDisputeInvoiceOptions
+	paypalDisputeInvoiceSellerProfileProvider PayPalDisputeInvoiceSellerProfileProvider
 }
 
 func (s *PaymentService) ConfigureRisk(orderRepo *repository.OrderRepository, risk *antifraud.Service) {
@@ -33,6 +37,34 @@ func (s *PaymentService) ConfigureEvidenceSources(orderRepo *repository.OrderRep
 	}
 	s.shippingRepo = shippingRepo
 	s.ticketRepo = ticketRepo
+}
+
+func (s *PaymentService) ConfigurePayPalDisputeEvidenceSubmitter(submitter PayPalDisputeEvidenceSubmitter) {
+	if s == nil {
+		return
+	}
+	s.paypalDisputeEvidenceSubmitter = submitter
+}
+
+func (s *PaymentService) ConfigurePayPalDisputeEvidenceDocumentStorage(storage PayPalDisputeEvidenceDocumentStorage) {
+	if s == nil {
+		return
+	}
+	s.paypalDisputeDocumentStorage = storage
+}
+
+func (s *PaymentService) ConfigurePayPalDisputeInvoiceOptions(options PayPalDisputeInvoiceOptions) {
+	if s == nil {
+		return
+	}
+	s.paypalDisputeInvoiceOptions = options
+}
+
+func (s *PaymentService) ConfigurePayPalDisputeInvoiceSellerProfileProvider(provider PayPalDisputeInvoiceSellerProfileProvider) {
+	if s == nil {
+		return
+	}
+	s.paypalDisputeInvoiceSellerProfileProvider = provider
 }
 
 type GatewayPaymentAttemptInput struct {

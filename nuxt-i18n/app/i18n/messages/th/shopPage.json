@@ -4,7 +4,7 @@
     "loading": "กำลังโหลดสินค้า...",
     "empty": {
       "title": "ยังไม่มีสินค้าพร้อมใช้งาน",
-      "description": "เมื่อสินค้าถูกเผยแพร่ผ่านปลั๊กอิน Tanzanite สินค้าจะแสดงที่นี่โดยอัตโนมัติ",
+      "description": "Products will appear here automatically once they are published.",
       "categoryTitle": "No products are available in {category} yet.",
       "categoryDescription": "Try another category or clear the category filter to view all products."
     }
@@ -14,6 +14,6 @@
     "view": "ดู"
   },
   "feedback": {
-    "title": "แชร์ความคิดเห็นของคุณเกี่ยวกับร้าน Tanzanite"
+    "title": "Share your feedback about the store"
   }
 }

@@ -10,7 +10,7 @@
       <section>
         <h2 class="text-lg font-semibold text-white mb-3">1. Agreement to Terms</h2>
         <p class="text-sm leading-relaxed">
-          By accessing or using the Tanzanite website, you agree to be bound by these Terms of Service and all applicable laws and regulations. If you do not agree, please do not use this site.
+          By accessing or using this website, you agree to be bound by these Terms of Service and all applicable laws and regulations. If you do not agree, please do not use this site.
         </p>
       </section>
 
@@ -64,14 +64,14 @@
       <section>
         <h2 class="text-lg font-semibold text-white mb-3">8. Limitation of Liability</h2>
         <p class="text-sm leading-relaxed">
-          Tanzanite is not liable for indirect or consequential damages arising from site or product use. Total liability is limited to the amount paid for the product in question.
+          The site operator is not liable for indirect or consequential damages arising from site or product use. Total liability is limited to the amount paid for the product in question.
         </p>
       </section>
 
       <section>
         <h2 class="text-lg font-semibold text-white mb-3">9. Intellectual Property</h2>
         <p class="text-sm leading-relaxed">
-          All site content is owned by Tanzanite or its suppliers and protected by copyright and trademark laws.
+          All site content is owned by our or its suppliers and protected by copyright and trademark laws.
         </p>
       </section>
 

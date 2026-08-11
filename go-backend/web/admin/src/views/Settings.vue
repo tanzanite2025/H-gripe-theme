@@ -168,7 +168,7 @@ const siteSettings = reactive({
 })
 const emailSettings = reactive({ smtp_host: '', smtp_port: 587, smtp_username: '', smtp_password: '', from_email: '', from_name: '' })
 const socialSettings = reactive({ facebook: '', twitter: '', instagram: '', linkedin: '', youtube: '', wechat: '' })
-const paymentSettings = reactive({ gateway: '', test_mode: true })
+const paymentSettings = reactive({ gateway: 'stripe', test_mode: true })
 const apiSettings = reactive({
   exchange_rate_enabled: false,
   exchange_rate_provider: EXCHANGE_RATE_PROVIDER,
@@ -388,6 +388,9 @@ const fetchSettings = async (group, force = false) => {
     ;[...prefixed, ...canonical].forEach((setting) => applyFetchedSetting(setting, group, definition))
     loadedGroups.add(group)
     if (group === 'site') normalizeSiteBrandSettings()
+    if (group === 'payment' && !String(paymentSettings.gateway || '').trim()) {
+      paymentSettings.gateway = 'stripe'
+    }
     if (group === 'api') {
       applyAPIRefreshDefaults()
     }

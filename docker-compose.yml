@@ -1,5 +1,7 @@
+name: h-gripe-theme-dev
+
 networks:
-  tanzanite-network:
+  h-gripe-network:
     driver: bridge
 
 volumes:
@@ -9,7 +11,7 @@ volumes:
 services:
   postgres:
     image: postgres:15-alpine
-    container_name: tanzanite-postgres
+    container_name: h-gripe-postgres
     environment:
       POSTGRES_USER: tanzanite
       POSTGRES_PASSWORD: tanzanite_password
@@ -20,7 +22,7 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
     networks:
-      - tanzanite-network
+      - h-gripe-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U tanzanite"]
       interval: 10s
@@ -30,13 +32,13 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: tanzanite-redis
+    container_name: h-gripe-redis
     ports:
       - "9500:6379"
     volumes:
       - redis-data:/data
     networks:
-      - tanzanite-network
+      - h-gripe-network
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -49,7 +51,7 @@ services:
     build:
       context: ./go-backend
       dockerfile: Dockerfile
-    container_name: tanzanite-api
+    container_name: h-gripe-api
     ports:
       - "9200:9000"
     environment:
@@ -63,6 +65,7 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - JWT_SECRET=dev-secret-key-change-in-production
+      - PAYMENT_CONFIG_MASTER_KEY=${PAYMENT_CONFIG_MASTER_KEY:-dev-payment-config-master-key-change-before-production}
       - LOG_LEVEL=debug
       - STOREFRONT_HTML_CACHE_PURGE_URL=http://frontend:3000/_internal/html-cache/purge
       - STOREFRONT_HTML_CACHE_PURGE_TOKEN=dev-html-cache-purge-token
@@ -73,7 +76,7 @@ services:
       redis:
         condition: service_healthy
     networks:
-      - tanzanite-network
+      - h-gripe-network
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9000/health"]
       interval: 30s
@@ -87,14 +90,14 @@ services:
       context: ./nuxt-i18n
       args:
         API_INTERNAL_ORIGIN: http://backend:9000
-    container_name: tanzanite-frontend
+    container_name: h-gripe-frontend
     ports:
       - "9100:3000"
     environment:
       - API_BASE_URL=http://backend:9000
       - NUXT_PUBLIC_API_BASE=http://localhost:9200
       - NUXT_HTML_CACHE_DRIVER=redis
-      - NUXT_HTML_CACHE_PREFIX=tanzanite:storefront:html-cache:dev
+      - NUXT_HTML_CACHE_PREFIX=h-gripe:storefront:html-cache:dev
       - NUXT_HTML_CACHE_REDIS_HOST=redis
       - NUXT_HTML_CACHE_REDIS_PORT=6379
       - NUXT_HTML_CACHE_REDIS_DB=1
@@ -107,19 +110,19 @@ services:
       redis:
         condition: service_healthy
     networks:
-      - tanzanite-network
+      - h-gripe-network
     restart: unless-stopped
 
   # 可选: Adminer (数据库管理工具)
   adminer:
     image: adminer:latest
-    container_name: tanzanite-adminer
+    container_name: h-gripe-adminer
     ports:
       - "9600:8080"
     environment:
       - ADMINER_DEFAULT_SERVER=postgres
     networks:
-      - tanzanite-network
+      - h-gripe-network
     restart: unless-stopped
     profiles:
       - tools
@@ -127,13 +130,13 @@ services:
   # 可选: Redis Commander (Redis管理工具)
   redis-commander:
     image: rediscommander/redis-commander:latest
-    container_name: tanzanite-redis-commander
+    container_name: h-gripe-redis-commander
     ports:
       - "9700:8081"
     environment:
       - REDIS_HOSTS=local:redis:6379
     networks:
-      - tanzanite-network
+      - h-gripe-network
     restart: unless-stopped
     profiles:
       - tools

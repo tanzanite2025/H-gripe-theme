@@ -4,7 +4,7 @@
 
 WITH seed_faqs(page_id, category, question, answer, answer_image_url, answer_image_alt, answer_image_width, answer_image_height, sort_order) AS (
   VALUES
-    ('company-certificates', 'general', 'Are all TANZANITE wheels UCI approved?', 'Yes, our core road and track wheelsets are UCI approved and listed on the official Union Cycliste Internationale website. This means they are certified for use in all professional and amateur racing events worldwide.', '', '', 0, 0, 110),
+    ('company-certificates', 'general', 'Are all of your wheels UCI approved?', 'Yes, our core road and track wheelsets are UCI approved and listed on the official Union Cycliste Internationale website. This means they are certified for use in all professional and amateur racing events worldwide.', '', '', 0, 0, 110),
     ('company-certificates', 'general', 'What is ISO 4210 certification?', 'ISO 4210 is the international safety standard for bicycles and components. Meeting this standard ensures that our wheels have passed rigorous impact, fatigue, and environmental tests to guarantee rider safety.', '', '', 0, 0, 120),
     ('company-certificates', 'general', 'How does your internal testing differ from standard requirements?', 'We believe standard compliance is just the starting point. Our internal laboratory tests subjects rims to impact energies and fatigue cycles that are 120% to 150% higher than ISO requirements to ensure durability under extreme conditions.', '', '', 0, 0, 130),
     ('company-certificates', 'general', 'Can I request specific test reports?', 'Yes, we can provide detailed test reports for specific production batches upon request for our ODM/OEM partners. Please contact our support team for more information.', '', '', 0, 0, 140),
@@ -51,9 +51,9 @@ WITH seed_faqs(page_id, category, question, answer, answer_image_url, answer_ima
     ('company-oem-odm', 'general', 'What is the typical lead time for production?', 'For standard OEM orders, lead time is typically 25-35 days. For ODM projects involving new mold creation, the timeline is usually: 15 days for design confirmation, 25 days for mold opening, and 10 days for prototyping/testing.', '', '', 0, 0, 130),
     ('company-oem-odm', 'general', 'Is my design confidential?', 'Absolutely. We sign strict Non-Disclosure Agreements (NDAs) with all our ODM partners. Your private molds and layup schedules are exclusive to your brand and will never be shared with or sold to other clients.', '', '', 0, 0, 140),
     ('company-oem-odm', 'general', 'Do OEM/ODM wheels come with a warranty?', 'Yes, we stand behind our manufacturing quality. We offer a standard 2-year warranty on all OEM/ODM rims against manufacturing defects, with options to extend coverage based on specific partnership agreements.', '', '', 0, 0, 150),
-    ('company-ourstory', 'brand', 'Where is Tanzanite based?', 'Tanzanite is a brand of Top Sports Co., Limited, with our Global Headquarters in Hong Kong and our state-of-the-art Manufacturing & R&D Base in Xiamen, China.', '', '', 0, 0, 110),
-    ('company-ourstory', 'brand', 'What is Tanzanite’s core mission?', 'Our mission is to democratize high-performance cycling components by leveraging advanced manufacturing and direct-to-consumer efficiency, delivering premium carbon wheels without the traditional markup.', '', '', 0, 0, 120),
-    ('company-ourstory', 'brand', 'How does Tanzanite approach sustainability?', 'We are committed to sustainable manufacturing practices, minimizing waste in our carbon layup process, and designing durable products that stand the test of time, reducing the need for frequent replacements.', '', '', 0, 0, 130),
+    ('company-ourstory', 'brand', 'Where is your team based?', 'Our Global Headquarters are in Hong Kong, and our Manufacturing & R&D Base is in Xiamen, China.', '', '', 0, 0, 110),
+    ('company-ourstory', 'brand', 'What is your core mission?', 'Our mission is to democratize high-performance cycling components by leveraging advanced manufacturing and direct-to-consumer efficiency, delivering premium carbon wheels without the traditional markup.', '', '', 0, 0, 120),
+    ('company-ourstory', 'brand', 'How do you approach sustainability?', 'We are committed to sustainable manufacturing practices, minimizing waste in our carbon layup process, and designing durable products that stand the test of time, reducing the need for frequent replacements.', '', '', 0, 0, 130),
     ('company-ourstory', 'products', 'What drives your product design?', 'We believe in data-driven design backed by rigorous testing. Every rim profile and layup schedule is optimized for the specific demands of its discipline, whether it’s aerodynamics for road or impact resistance for MTB.', '', '', 0, 0, 210),
     ('guides-tireguides', 'sizing', 'How do I read tire size and match an inner tube?', 'Check the size printed on your tire sidewall (e.g., 700x28C or 29x2.2, plus the ETRTO number). Choose an inner tube whose width range covers your tire size and with the correct diameter.', '', '', 0, 0, 110),
     ('guides-tireguides', 'sizing', 'Which valve type and length should I pick?', 'First, match the valve type to your rim hole (Presta/SV for road/MTB, Schrader/AV for wider holes).
@@ -257,7 +257,7 @@ WITH seed_faqs(page_id, category, question, answer, answer_image_url, answer_ima
             <ul>
               <li>The code is entered correctly (no typos)</li>
               <li>You''re using the correct format</li>
-              <li>The product is a genuine Tanzanite product</li>
+              <li>The product is a genuine product from this store</li>
             </ul>
             If the issue persists, please contact our support team with your order details.', '', '', 0, 0, 210),
     ('support-warranty-check', 'troubleshooting', 'My warranty shows as expired but I just bought it. What should I do?', 'If your warranty appears expired incorrectly:
@@ -274,7 +274,7 @@ WITH seed_faqs(page_id, category, question, answer, answer_image_url, answer_ima
               <li>Transfer may be possible with proper documentation</li>
             </ul>
             Please contact our support team for warranty transfer requests.', '', '', 0, 0, 230),
-    ('support-warranty', 'policy', 'What is the warranty period for Tanzanite wheels?', 'We offer two coverage options for all Tanzanite series Wheels/Rims:
+    ('support-warranty', 'policy', 'What is the warranty period for your wheels?', 'We offer two coverage options for all eligible Wheels/Rims:
             <ul>
               <li><strong>Standard Warranty</strong>: 5 Years from the date of purchase (included by default).</li>
               <li><strong>Lifetime Warranty</strong>: Available as an upgrade for USD $100 per rim.</li>
@@ -288,7 +288,7 @@ WITH seed_faqs(page_id, category, question, answer, answer_image_url, answer_ima
     ('support-warranty', 'claims', 'How do I submit a warranty claim?', 'You can submit a claim directly on this page under the <strong>"Submit Warranty"</strong> tab. Please have your order number, photos, and a description of the issue ready.', '', '', 0, 0, 310),
     ('support-warranty', 'claims', 'Who covers shipping costs?', 'Shipping responsibility depends on when the claim is made:
             <ul>
-              <li><strong>Within 30 days</strong> of receipt: Tanzanite covers shipping costs.</li>
+              <li><strong>Within 30 days</strong> of receipt: we cover shipping costs.</li>
               <li><strong>After 30 days</strong>: The customer is responsible for shipping costs.</li>
             </ul>', '', '', 0, 0, 320),
     ('support-warranty', 'claims', 'Do I need to return the damaged product?', 'In most cases, <strong>no</strong>. We typically require clear photos and videos of the damage. If we do need the item returned for inspection, we will issue a return authorization.', '', '', 0, 0, 330)

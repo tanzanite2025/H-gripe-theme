@@ -93,7 +93,7 @@ func DefaultExport() ExportResponse {
 		Presets: []WheelBuildPreset{
 			{
 				ID:           "tz_ar45_dt350_fr",
-				Name:         "Tanzanite AR 45 Disc + DT Swiss 350",
+				Name:         "AR 45 Disc + DT Swiss 350",
 				Description:  "Popular all-rounder build. Reliable ratchet hub with aero rim.",
 				Keywords:     []string{"350", "240", "dt swiss", "45mm", "ar45", "disc", "road"},
 				RimBrandID:   "dt_swiss",
@@ -107,7 +107,7 @@ func DefaultExport() ExportResponse {
 			},
 			{
 				ID:           "tz_ar50_dt240_fr",
-				Name:         "Tanzanite AR 50 Disc + DT Swiss 240 EXP",
+				Name:         "AR 50 Disc + DT Swiss 240 EXP",
 				Description:  "Lightweight racing build. Top-tier hub performance.",
 				Keywords:     []string{"240", "dt swiss", "50mm", "ar50", "exp", "racing"},
 				RimBrandID:   "dt_swiss",

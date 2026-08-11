@@ -66,7 +66,7 @@
     >
       <h2 class="company-section__title">Quality control</h2>
       <p class="company-section__body">
-        Summarize how quality control works at Tanzanite: incoming material checks,
+        Summarize how quality control works at our: incoming material checks,
         in-process measurements, and final wheel verification before shipping.
       </p>
       <p class="company-section__body">

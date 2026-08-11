@@ -176,6 +176,12 @@ func (h *Handler) handleStripePaymentIntentFailed(c *gin.Context, event stripe.E
 	if h.antiFraud != nil {
 		_ = h.antiFraud.RecordPaymentIntentFailure(c.Request.Context(), intent.ID)
 	}
+	if h.cardBINLimiter != nil {
+		if _, err := h.cardBINLimiter.RecordPaymentIntentFailure(c.Request.Context(), intent.ID); err != nil {
+			apierror.RespondError(c, http.StatusServiceUnavailable, "payment_bin_risk_unavailable", "Payment card risk service is temporarily unavailable")
+			return
+		}
+	}
 
 	setStripeWebhookSuccess(c, "Stripe payment failure recorded", gin.H{
 		"event_id":          event.ID,
@@ -236,6 +242,12 @@ func (h *Handler) handleStripePaymentIntentSucceeded(c *gin.Context, event strip
 	}
 	if h.antiFraud != nil {
 		_ = h.antiFraud.RecordPaymentIntentSuccess(c.Request.Context(), intent.ID)
+	}
+	if h.cardBINLimiter != nil {
+		if err := h.cardBINLimiter.RecordPaymentIntentSuccess(c.Request.Context(), intent.ID); err != nil {
+			apierror.RespondError(c, http.StatusServiceUnavailable, "payment_bin_risk_unavailable", "Payment card risk service is temporarily unavailable")
+			return
+		}
 	}
 
 	setStripeWebhookSuccess(c, "Stripe webhook processed successfully", gin.H{

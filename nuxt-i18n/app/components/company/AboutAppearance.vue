@@ -13,14 +13,14 @@
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-16">
        <GuideImage
           src="/company/aboutus/appearance/tanzanite-carbon-rim-finish1.webp"
-          alt="Tanzanite carbon rim surface finish detail 1"
+          alt="carbon rim surface finish detail 1"
           :zoomOnClick="true"
           caption="Matte Finish Detail"
           class="rounded-xl overflow-hidden shadow-2xl border border-slate-800"
         />
         <GuideImage
           src="/company/aboutus/appearance/tanzanite-carbonrims-finish2.webp"
-          alt="Tanzanite carbon rim surface finish detail 2"
+          alt="carbon rim surface finish detail 2"
           :zoomOnClick="true"
           caption="Glossy Finish Detail"
           class="rounded-xl overflow-hidden shadow-2xl border border-slate-800"

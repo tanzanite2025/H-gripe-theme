@@ -4,7 +4,7 @@
 
 set -e
 
-echo "🔧 Setting up Tanzanite Go Backend development environment..."
+echo "🔧 Setting up Storefront Go Backend development environment..."
 
 # Check Go installation
 if ! command -v go &> /dev/null; then

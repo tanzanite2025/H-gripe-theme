@@ -24,7 +24,7 @@ func TestBuildGoogleMerchantProductInputUsesOneSKUAndStorefrontFields(t *testing
 	salePrice := 1199.99
 	offer := &merchant.GoogleMerchantOffer{
 		OfferID:               "tz-wheel-700",
-		Brand:                 "Tanzanite",
+		Brand:                 "H-GRIPE",
 		Condition:             "new",
 		GoogleProductCategory: "Sporting Goods",
 		GTIN:                  "0123456789012",
@@ -86,7 +86,7 @@ func TestBuildGoogleMerchantProductInputMapsOutOfStockSKU(t *testing.T) {
 	identifierExists := false
 	offer := &merchant.GoogleMerchantOffer{
 		OfferID:               "tz-empty",
-		Brand:                 "Tanzanite",
+		Brand:                 "H-GRIPE",
 		Condition:             "new",
 		GoogleProductCategory: "Sporting Goods",
 		IdentifierExists:      &identifierExists,
@@ -123,7 +123,7 @@ func TestBuildGoogleMerchantProductInputResolvesRelativeImageAndLocaleURL(t *tes
 	identifierExists := false
 	offer := &merchant.GoogleMerchantOffer{
 		OfferID:               "tz-fr",
-		Brand:                 "Tanzanite",
+		Brand:                 "H-GRIPE",
 		Condition:             "new",
 		GoogleProductCategory: "Sporting Goods",
 		IdentifierExists:      &identifierExists,

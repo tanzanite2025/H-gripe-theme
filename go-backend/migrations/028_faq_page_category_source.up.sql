@@ -68,7 +68,7 @@ WITH seed_pages(page_id, route_path, domain, title, subtitle, sort_order) AS (
         ('company-certificates', '/company/certificates', 'company', 'Certificates & Testing FAQ', 'Common questions about our quality standards and certifications', 420),
         ('company-contact', '/company/contact', 'company', 'Contact & Support FAQ', 'Common questions about reaching our team', 430),
         ('company-global-partners', '/company/global-partners', 'company', 'Global Partnerships FAQ', 'Common questions about becoming a global partner', 440),
-        ('company-ourstory', '/company/ourstory', 'company', 'Our Story & Brand FAQ', 'Learn more about Tanzanite and our mission', 450)
+        ('company-ourstory', '/company/ourstory', 'company', 'Our Story & Brand FAQ', 'Learn more about our story and mission', 450)
 ),
 locales(locale) AS (
     VALUES ('en'), ('zh')

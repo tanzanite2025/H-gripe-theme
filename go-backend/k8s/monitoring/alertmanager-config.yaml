@@ -63,7 +63,7 @@ data:
     - name: 'default'
       slack_configs:
       - channel: '#alerts'
-        title: 'Tanzanite Alert'
+        title: 'Storefront Alert'
         text: |
           {{ range .Alerts }}
           *Alert:* {{ .Labels.alertname }}

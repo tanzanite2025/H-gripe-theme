@@ -127,20 +127,24 @@ func (r *MediaRepository) galleryReferences(query mediaAssetReferenceQuery) ([]m
 	}
 
 	type imageRow struct {
-		ID        uint
-		GalleryID uint
-		URL       string
-		Thumbnail string
+		ID           uint
+		GalleryID    uint
+		MediaAssetID *uint
+		URL          string
+		Thumbnail    string
 	}
 	var imageRows []imageRow
 	if err := r.db.Table("gallery_images").
-		Select("id, gallery_id, url, thumbnail").
-		Where("deleted_at IS NULL AND (url IN ? OR thumbnail IN ?)", query.URLs, query.URLs).
+		Select("id, gallery_id, media_asset_id, url, thumbnail").
+		Where("deleted_at IS NULL AND (media_asset_id = ? OR url IN ? OR thumbnail IN ?)", query.AssetID, query.URLs, query.URLs).
 		Find(&imageRows).Error; err != nil {
 		return nil, err
 	}
 	for _, item := range imageRows {
-		fields := make([]string, 0, 2)
+		fields := make([]string, 0, 3)
+		if item.MediaAssetID != nil && *item.MediaAssetID == query.AssetID {
+			fields = append(fields, "media_asset_id")
+		}
 		if containsMediaReferenceURL(query.URLs, item.URL) {
 			fields = append(fields, "url")
 		}

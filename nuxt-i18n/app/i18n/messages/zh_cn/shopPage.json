@@ -4,7 +4,7 @@
     "loading": "正在加载商品...",
     "empty": {
       "title": "暂时没有可用商品。",
-      "description": "商品通过 Tanzanite 插件发布后，会自动显示在这里。",
+      "description": "Products will appear here automatically once they are published.",
       "categoryTitle": "{category} 分类下暂时没有商品。",
       "categoryDescription": "可以切换其它分类，或清除分类筛选查看全部商品。"
     }
@@ -14,6 +14,6 @@
     "view": "查看"
   },
   "feedback": {
-    "title": "分享你对 Tanzanite 商店的反馈"
+    "title": "Share your feedback about the store"
   }
 }

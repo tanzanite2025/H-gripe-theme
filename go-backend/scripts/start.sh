@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# Tanzanite Go Backend Startup Script
+# Storefront Go Backend Startup Script
 
 set -e
 
-echo "🚀 Starting Tanzanite Go Backend..."
+echo "🚀 Starting Storefront Go Backend..."
 
 # Check if config file exists
 if [ ! -f "config/config.yaml" ]; then

@@ -9,12 +9,19 @@ import (
 )
 
 type Handler struct {
-	settingService *service.SettingService
+	settingService        *service.SettingService
+	websiteProfileService *service.WebsiteProfileService
 }
 
-func NewHandler(settingService *service.SettingService) *Handler {
+func NewHandler(settingService *service.SettingService, websiteProfileServices ...*service.WebsiteProfileService) *Handler {
+	var websiteProfileService *service.WebsiteProfileService
+	if len(websiteProfileServices) > 0 {
+		websiteProfileService = websiteProfileServices[0]
+	}
+
 	return &Handler{
-		settingService: settingService,
+		settingService:        settingService,
+		websiteProfileService: websiteProfileService,
 	}
 }
 
@@ -102,6 +109,22 @@ func (h *Handler) GetSocialSettings(c *gin.Context) {
 	locale := c.DefaultQuery("locale", middleware.GetLocale(c))
 
 	settings, err := h.settingService.GetSocialSettings(locale)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, settings)
+}
+
+func (h *Handler) GetWebsiteProfile(c *gin.Context) {
+	if h.websiteProfileService == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "website profile service unavailable"})
+		return
+	}
+
+	locale := c.DefaultQuery("locale", middleware.GetLocale(c))
+	settings, err := h.websiteProfileService.Get(locale)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

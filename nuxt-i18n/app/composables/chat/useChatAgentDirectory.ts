@@ -80,8 +80,8 @@ export const saveChatAgentsCache = (data: ChatAgentCacheData) => {
 
 export const getDevFallbackAgentDirectory = (): ChatAgentCacheData => ({
   agents: [
-    { id: 'CS001', name: 'Sales', email: 'sales@tanzanite.site', avatar: '', whatsapp: '+8613800138001', user_id: null, online_status: 'offline', groups: [{ id: 1, code: 'sales', name: 'Sales' }] },
-    { id: 'CS002', name: 'Tech Support', email: 'tech@tanzanite.site', avatar: '', whatsapp: '+8613800138002', user_id: null, online_status: 'offline', groups: [{ id: 2, code: 'technical_support', name: 'Technical Support' }] },
+    { id: 'CS001', name: 'Sales', email: '', avatar: '', whatsapp: '+8613800138001', user_id: null, online_status: 'offline', groups: [{ id: 1, code: 'sales', name: 'Sales' }] },
+    { id: 'CS002', name: 'Tech Support', email: '', avatar: '', whatsapp: '+8613800138002', user_id: null, online_status: 'offline', groups: [{ id: 2, code: 'technical_support', name: 'Technical Support' }] },
     { id: 'CS003', name: 'After Sales', email: '', avatar: '', whatsapp: '+8613800138003', user_id: null, online_status: 'offline', groups: [{ id: 3, code: 'after_sales', name: 'After Sales' }] },
   ],
   groups: [
@@ -90,7 +90,7 @@ export const getDevFallbackAgentDirectory = (): ChatAgentCacheData => ({
     { id: 3, code: 'after_sales', name: 'After Sales', status: 'active', sort_order: 30 }
   ],
   emailSettings: {
-    preSalesEmail: 'sales@tanzanite.site',
+    preSalesEmail: '',
     afterSalesEmail: ''
   }
 })

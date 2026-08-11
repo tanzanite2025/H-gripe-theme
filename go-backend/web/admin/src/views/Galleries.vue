@@ -32,9 +32,22 @@
       :mode="dialogMode"
       :form="galleryForm"
       :errors="galleryErrors"
+      :image-errors="galleryImageErrors"
       :submitting="submitting"
       @submit="submitGalleryForm"
       @clear-error="clearGalleryError"
+      @open-product-picker="productPickerVisible = true"
+      @remove-product="removeGalleryProduct"
+      @add-image="addGalleryImage"
+      @pick-image="openGalleryImagePicker"
+      @clear-image-error="clearGalleryImageError"
+      @remove-image="removeGalleryImage"
+    />
+    <GalleryProductPickerDialog
+      v-model:open="productPickerVisible"
+      :selected-product-ids="selectedGalleryProductIds"
+      @select="addGalleryProduct"
+      @remove="removeGalleryProduct"
     />
 
     <GalleryImagesDialog
@@ -65,6 +78,12 @@
       :submitting="imageSubmitting"
       @submit="submitImageForm"
       @clear-error="clearImageError"
+      @pick-media="openStandaloneMediaPicker"
+    />
+    <MediaAssetPickerDialog
+      v-model:open="mediaPickerVisible"
+      :selected-urls="selectedMediaUrls"
+      @select="selectGalleryImageAsset"
     />
 
     <GalleryPreviewDialog
@@ -92,7 +111,9 @@ import GalleryEditorDialog from '@/components/admin/gallery/GalleryEditorDialog.
 import GalleryImageEditorDialog from '@/components/admin/gallery/GalleryImageEditorDialog.vue'
 import GalleryImagesDialog from '@/components/admin/gallery/GalleryImagesDialog.vue'
 import GalleryPreviewDialog from '@/components/admin/gallery/GalleryPreviewDialog.vue'
+import GalleryProductPickerDialog from '@/components/admin/gallery/GalleryProductPickerDialog.vue'
 import GalleryTablePanel from '@/components/admin/gallery/GalleryTablePanel.vue'
+import MediaAssetPickerDialog from '@/components/admin/media/MediaAssetPickerDialog.vue'
 import type {
   GalleryConfirmation,
   GalleryDetailResponse,
@@ -108,9 +129,12 @@ import type {
   GalleryPagination,
   GalleryPayload,
   GalleryPreviewImage,
+  GalleryProductLink,
   GalleryRecord,
   GallerySelectionState
 } from '@/components/admin/gallery/galleryTypes'
+import type { MediaAsset } from '@/api/media'
+import type { ProductRecord } from '@/components/admin/product/productEditorTypes'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/stores/auth'
@@ -123,6 +147,8 @@ const dialogVisible = ref(false)
 const dialogMode = ref<GalleryDialogMode>('create')
 const submitting = ref(false)
 const galleryErrors = reactive<GalleryFormErrors>({})
+const galleryImageErrors = ref<GalleryFormErrors[]>([])
+const productPickerVisible = ref(false)
 
 const imagesDialogVisible = ref(false)
 const imagesLoading = ref(false)
@@ -134,12 +160,22 @@ const imageDialogVisible = ref(false)
 const imageDialogMode = ref<GalleryDialogMode>('create')
 const imageSubmitting = ref(false)
 const imageErrors = reactive<GalleryFormErrors>({})
+const mediaPickerVisible = ref(false)
+const mediaPickerTarget = ref<{ kind: 'gallery', index: number } | { kind: 'standalone' }>({ kind: 'standalone' })
 const previewDialogVisible = ref(false)
 const previewImage = reactive<GalleryPreviewImage>({ url: '', title: '' })
+const removedGalleryImageIds = ref<number[]>([])
 
 const pagination = reactive<GalleryPagination>({ page: 1, pageSize: 20, total: 0 })
-const galleryForm = reactive<GalleryForm>({ id: null, title: '', slug: '', description: '' })
-const imageForm = reactive<GalleryImageForm>({ id: null, url: '', thumbnail: '', title: '', description: '', tags: '', order: 0 })
+const galleryForm = reactive<GalleryForm>({
+  id: null,
+  title: '',
+  slug: '',
+  description: '',
+  product_links: [],
+  images: []
+})
+const imageForm = reactive<GalleryImageForm>({ id: null, media_asset_id: null, url: '', thumbnail: '', title: '', description: '', tags: '', order: 0 })
 const confirmation = reactive<GalleryConfirmation>({
   open: false,
   type: '',
@@ -153,6 +189,14 @@ const imageSelectionState = computed<GallerySelectionState>(() => {
   if (images.value.length === 0 || selectedImages.value.length === 0) return false
   return selectedImages.value.length === images.value.length ? true : 'indeterminate'
 })
+const selectedGalleryProductIds = computed<GalleryId[]>(() => galleryForm.product_links.map((link) => link.product_id))
+const selectedMediaUrls = computed<string[]>(() => {
+  if (mediaPickerTarget.value.kind === 'gallery') {
+    const image = galleryForm.images[mediaPickerTarget.value.index]
+    return image?.url ? [image.url] : []
+  }
+  return imageForm.url ? [imageForm.url] : []
+})
 
 const hasPermission = (permission: string): boolean => authStore.hasPermission(permission)
 const galleryTitle = (gallery?: GalleryRecord | null): string => gallery?.name || gallery?.title || '-'
@@ -163,26 +207,67 @@ const formatDate = (dateString?: string | null): string => dateString ? new Date
 const clearErrors = (errors: GalleryFormErrors): void => Object.keys(errors).forEach((key) => delete errors[key])
 const clearGalleryError = (field: string): void => { delete galleryErrors[field] }
 const clearImageError = (field: string): void => { delete imageErrors[field] }
+const clearGalleryImageError = (index: number, field: string): void => {
+  if (galleryImageErrors.value[index]) delete galleryImageErrors.value[index][field]
+}
+const toPositiveNumber = (value: GalleryId | null | undefined): number | null => {
+  const id = Number(value)
+  return Number.isFinite(id) && id > 0 ? id : null
+}
+function createEmptyGalleryImageForm(order = 0): GalleryImageForm {
+  return {
+    id: null,
+    media_asset_id: null,
+    url: '',
+    thumbnail: '',
+    title: '',
+    description: '',
+    tags: '',
+    order
+  }
+}
 const resetGalleryForm = (): void => {
-  Object.assign(galleryForm, { id: null, title: '', slug: '', description: '' })
+  Object.assign(galleryForm, {
+    id: null,
+    title: '',
+    slug: '',
+    description: '',
+    product_links: [],
+    images: [createEmptyGalleryImageForm()]
+  })
+  galleryImageErrors.value = [{}]
+  removedGalleryImageIds.value = []
   clearErrors(galleryErrors)
 }
 const resetImageForm = (): void => {
-  Object.assign(imageForm, { id: null, url: '', thumbnail: '', title: '', description: '', tags: '', order: 0 })
+  Object.assign(imageForm, { id: null, media_asset_id: null, url: '', thumbnail: '', title: '', description: '', tags: '', order: 0 })
   clearErrors(imageErrors)
 }
+const buildGalleryImagePayload = (form: GalleryImageForm): GalleryImagePayload => ({
+  media_asset_id: toPositiveNumber(form.media_asset_id),
+  title: form.title.trim(),
+  description: form.description.trim(),
+  tags: form.tags.trim(),
+  order: Math.max(0, Number(form.order || 0))
+})
 const buildGalleryPayload = (): GalleryPayload => ({
   title: galleryForm.title.trim(),
   slug: galleryForm.slug.trim(),
-  description: galleryForm.description.trim()
+  description: galleryForm.description.trim(),
+  product_ids: Array.from(
+    new Set(
+      galleryForm.product_links
+        .map((link) => link.product_id)
+        .map((id) => toPositiveNumber(id))
+        .filter((id): id is number => id !== null)
+    )
+  ),
+  ...(dialogMode.value === 'create'
+    ? { images: galleryForm.images.map((image) => buildGalleryImagePayload(image)) }
+    : {})
 })
 const buildImagePayload = (): GalleryImagePayload => ({
-  url: imageForm.url.trim(),
-  thumbnail: imageForm.thumbnail.trim(),
-  title: imageForm.title.trim(),
-  description: imageForm.description.trim(),
-  tags: imageForm.tags.trim(),
-  order: Math.max(0, Number(imageForm.order || 0))
+  ...buildGalleryImagePayload(imageForm)
 })
 const validateGallery = (payload: GalleryPayload): boolean => {
   clearErrors(galleryErrors)
@@ -196,13 +281,121 @@ const validateGallery = (payload: GalleryPayload): boolean => {
 }
 const validateImage = (payload: GalleryImagePayload): boolean => {
   clearErrors(imageErrors)
-  if (!payload.url) imageErrors.url = '请输入图片 URL'
+  if (!payload.media_asset_id) imageErrors.media_asset_id = '请从媒体仓库选择图片'
   if (!payload.title) imageErrors.title = '请输入图片标题'
   if (Object.keys(imageErrors).length) {
     toast.error('请检查图片表单中的必填项')
     return false
   }
   return true
+}
+const validateGalleryImages = (): boolean => {
+  galleryImageErrors.value = galleryForm.images.map(() => ({}))
+  if (dialogMode.value === 'create' && galleryForm.images.length === 0) {
+    toast.error('请至少添加一张图库图片')
+    return false
+  }
+
+  let valid = true
+  galleryForm.images.forEach((image, index) => {
+    const errors: GalleryFormErrors = {}
+    const needsMediaAsset = dialogMode.value === 'create' || image.id === null
+    if (needsMediaAsset && !toPositiveNumber(image.media_asset_id)) {
+      errors.media_asset_id = '请从媒体仓库选择图片'
+    }
+    if (!image.title.trim()) {
+      errors.title = '请输入图片标题'
+    }
+    if (Object.keys(errors).length) {
+      galleryImageErrors.value[index] = errors
+      valid = false
+    }
+  })
+
+  if (!valid) toast.error('请检查图库图片配置')
+  return valid
+}
+
+const normalizeProductLinks = (links?: GalleryProductLink[] | null): GalleryProductLink[] => {
+  if (!Array.isArray(links)) return []
+  return links
+    .map((link) => ({
+      product_id: link.product_id,
+      name: link.name || '',
+      slug: link.slug || '',
+      locale: link.locale || ''
+    }))
+    .filter((link) => link.product_id !== null && link.product_id !== undefined)
+}
+
+const addGalleryProduct = (product: ProductRecord): void => {
+  const productId = toPositiveNumber(product.id)
+  if (!productId) return
+  if (galleryForm.product_links.some((link) => String(link.product_id) === String(productId))) return
+  galleryForm.product_links = [
+    ...galleryForm.product_links,
+    {
+      product_id: productId,
+      name: product.name || '',
+      slug: product.slug || '',
+      locale: product.locale || ''
+    }
+  ]
+}
+
+const removeGalleryProduct = (productId: GalleryId): void => {
+  galleryForm.product_links = galleryForm.product_links.filter((link) => String(link.product_id) !== String(productId))
+}
+
+const addGalleryImage = (): void => {
+  galleryForm.images = [...galleryForm.images, createEmptyGalleryImageForm(galleryForm.images.length)]
+  galleryImageErrors.value = [...galleryImageErrors.value, {}]
+}
+
+const removeGalleryImage = (index: number): void => {
+  const image = galleryForm.images[index]
+  const imageId = toPositiveNumber(image?.id)
+  if (dialogMode.value === 'edit' && imageId) {
+    removedGalleryImageIds.value = [...removedGalleryImageIds.value, imageId]
+  }
+  galleryForm.images = galleryForm.images.filter((_, imageIndex) => imageIndex !== index)
+  galleryImageErrors.value = galleryImageErrors.value.filter((_, imageIndex) => imageIndex !== index)
+}
+
+const openGalleryImagePicker = (index: number): void => {
+  mediaPickerTarget.value = { kind: 'gallery', index }
+  mediaPickerVisible.value = true
+}
+
+const openStandaloneMediaPicker = (): void => {
+  mediaPickerTarget.value = { kind: 'standalone' }
+  mediaPickerVisible.value = true
+}
+
+const selectGalleryImageAsset = (selection: { url: string, asset: MediaAsset }): void => {
+  const asset = selection.asset
+  const mediaAssetId = toPositiveNumber(asset.id)
+  if (!mediaAssetId) return
+  if (mediaPickerTarget.value.kind === 'gallery') {
+    const target = galleryForm.images[mediaPickerTarget.value.index]
+    if (!target) return
+    Object.assign(target, {
+      media_asset_id: mediaAssetId,
+      url: selection.url,
+      thumbnail: selection.url,
+      title: target.title || asset.alt || asset.original_filename || asset.filename || ''
+    })
+    clearGalleryImageError(mediaPickerTarget.value.index, 'media_asset_id')
+  } else {
+    Object.assign(imageForm, {
+      media_asset_id: mediaAssetId,
+      url: selection.url,
+      thumbnail: selection.url,
+      title: imageForm.title || asset.alt || asset.original_filename || asset.filename || ''
+    })
+    delete imageErrors.media_asset_id
+  }
+  mediaPickerVisible.value = false
 }
 
 const isGalleryRecord = (target: GalleryConfirmation['target']): target is GalleryRecord => (
@@ -246,21 +439,52 @@ const showEditDialog = async (gallery: GalleryRecord): Promise<void> => {
   try {
     const response = await axios.get<GalleryDetailResponse>(`/api/admin/galleries/${gallery.id}`)
     const detail = response.data.gallery || gallery
+    const detailImages = Array.isArray(detail.images) ? detail.images : []
     Object.assign(galleryForm, {
       id: detail.id,
       title: galleryTitle(detail),
       slug: detail.slug || '',
-      description: detail.description || ''
+      description: detail.description || '',
+      product_links: normalizeProductLinks(detail.product_links),
+      images: detailImages.map((image, index) => ({
+        id: toPositiveNumber(image.id),
+        media_asset_id: toPositiveNumber(image.media_asset_id),
+        url: image.url || '',
+        thumbnail: image.thumbnail || image.url || '',
+        title: image.title || '',
+        description: image.description || '',
+        tags: image.tags || '',
+        order: Number(image.order ?? image.sort_order ?? index)
+      }))
     })
     clearErrors(galleryErrors)
+    galleryImageErrors.value = galleryForm.images.map(() => ({}))
+    removedGalleryImageIds.value = []
     dialogVisible.value = true
   } catch (error) {
     console.error('Failed to fetch gallery detail:', error)
   }
 }
+const syncGalleryImages = async (galleryId: GalleryId): Promise<void> => {
+  const requests = [
+    ...galleryForm.images.map((image) => {
+      const payload = buildGalleryImagePayload(image)
+      const imageId = toPositiveNumber(image.id)
+      return imageId
+        ? axios.put(`/api/admin/galleries/${galleryId}/images/${imageId}`, payload)
+        : axios.post(`/api/admin/galleries/${galleryId}/images`, payload)
+    }),
+    ...removedGalleryImageIds.value.map((imageId) =>
+      axios.delete(`/api/admin/galleries/${galleryId}/images/${imageId}`)
+    )
+  ]
+
+  await Promise.all(requests)
+}
 const submitGalleryForm = async (): Promise<void> => {
   const payload = buildGalleryPayload()
   if (!validateGallery(payload)) return
+  if (!validateGalleryImages()) return
   submitting.value = true
   try {
     if (dialogMode.value === 'create') {
@@ -268,6 +492,7 @@ const submitGalleryForm = async (): Promise<void> => {
       toast.success('图库创建成功')
     } else if (galleryForm.id !== null) {
       await axios.put(`/api/admin/galleries/${galleryForm.id}`, payload)
+      await syncGalleryImages(galleryForm.id)
       toast.success('图库更新成功')
     }
     dialogVisible.value = false
@@ -307,6 +532,7 @@ const showEditImageDialog = (image: GalleryImage): void => {
   imageDialogMode.value = 'edit'
   Object.assign(imageForm, {
     id: image.id,
+    media_asset_id: image.media_asset_id || null,
     url: image.url || '',
     thumbnail: image.thumbnail || '',
     title: image.title || '',

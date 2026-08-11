@@ -17,7 +17,7 @@ func TestSettingServicePublicAccessFiltersPrivateSettings(t *testing.T) {
 	_, settingService := newTestSettingService(t)
 
 	require.NoError(t, settingService.BatchSet([]settingdomain.Setting{
-		{Key: "site_name", Value: "Tanzanite", Type: "string", Locale: "en", Group: "site", IsPublic: true},
+		{Key: "site_name", Value: "H-GRIPE", Type: "string", Locale: "en", Group: "site", IsPublic: true},
 		{Key: "smtp_password", Value: "secret", Type: "string", Locale: "en", Group: "email", IsPublic: false},
 	}))
 

@@ -42,7 +42,6 @@ linters:
     misspell:
       locale: US
       ignore-rules:
-        - tanzanite
         - cancelled
     nakedret:
       max-func-lines: 30

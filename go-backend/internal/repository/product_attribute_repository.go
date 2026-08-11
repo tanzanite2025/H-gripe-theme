@@ -111,6 +111,21 @@ func (r *ProductRepository) FindAllProductTypes(includeDisabled bool) ([]product
 	return productTypes, err
 }
 
+func (r *ProductRepository) FindPublicProductTypes(includeDisabled bool) ([]product.ProductType, error) {
+	var productTypes []product.ProductType
+	query := r.db.
+		Select("id", "name", "slug", "image_url", "sort_order", "is_enabled").
+		Preload("Translations", func(db *gorm.DB) *gorm.DB {
+			return db.Order("locale ASC, id ASC")
+		})
+	if !includeDisabled {
+		query = query.Where("is_enabled = ?", true)
+	}
+
+	err := query.Order("sort_order ASC, id ASC").Find(&productTypes).Error
+	return productTypes, err
+}
+
 func (r *ProductRepository) FindProductTypeByID(id uint) (*product.ProductType, error) {
 	var productType product.ProductType
 	err := r.db.Preload("SpecDefinitions", func(db *gorm.DB) *gorm.DB {

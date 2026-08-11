@@ -75,6 +75,7 @@ require_non_negative_int_env() {
 for required_env_key in \
   REDIS_PASSWORD \
   JWT_SECRET \
+  PAYMENT_CONFIG_MASTER_KEY \
   STOREFRONT_BASE_URL \
   TURNSTILE_REQUIRED \
   TURNSTILE_SECRET_KEY \
@@ -109,7 +110,7 @@ for required_env_key in \
   require_env_key "${required_env_key}"
 done
 
-for required_secret in JWT_SECRET TURNSTILE_SECRET_KEY REQUEST_SIGNING_KEY NUXT_HTML_CACHE_PURGE_TOKEN; do
+for required_secret in JWT_SECRET PAYMENT_CONFIG_MASTER_KEY TURNSTILE_SECRET_KEY REQUEST_SIGNING_KEY NUXT_HTML_CACHE_PURGE_TOKEN; do
   secret_value="$(env_value "${required_secret}")"
   if (( ${#secret_value} < 32 )); then
     echo "ERR: ${required_secret} must be at least 32 characters." >&2

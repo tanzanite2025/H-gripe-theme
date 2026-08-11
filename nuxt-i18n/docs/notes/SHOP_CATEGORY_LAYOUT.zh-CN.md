@@ -2,7 +2,7 @@
 
 Last updated: 2026-07-24
 
-本文档是 `/shop` 页面分类导航的当前事实源。旧版 WordPress / Tanzanite Setting 插件方案已不再作为当前实现依据；如果需要追溯历史，请看 `nuxt-i18n/docs/archive/`。
+本文档是 `/shop` 页面分类导航的当前事实源。旧版 WordPress / site settings 插件方案已不再作为当前实现依据；如果需要追溯历史，请看 `nuxt-i18n/docs/archive/`。
 
 ## 1. 当前目标
 

@@ -67,7 +67,7 @@ export const supportWarrantyCheckFaq: PageFaqData = {
             <ul>
               <li>The code is entered correctly (no typos)</li>
               <li>You're using the correct format</li>
-              <li>The product is a genuine Tanzanite product</li>
+              <li>The product is a genuine product from our store</li>
             </ul>
             If the issue persists, please contact our support team with your order details.`,
           tags: ['not found', 'error', 'troubleshoot'],

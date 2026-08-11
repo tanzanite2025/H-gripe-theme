@@ -43,7 +43,13 @@ func (h *Handler) authorizeOrderTrackingRead(c *gin.Context, orderID uint) bool 
 		return false
 	}
 
-	if _, err := h.orderService.GetOrder(orderID, userIDValue.(uint)); err != nil {
+	userID, ok := userIDValue.(uint)
+	if !ok {
+		apierror.RespondUnauthorized(c)
+		return false
+	}
+
+	if _, err := h.orderService.GetOrder(orderID, userID); err != nil {
 		apierror.RespondForbidden(c)
 		return false
 	}

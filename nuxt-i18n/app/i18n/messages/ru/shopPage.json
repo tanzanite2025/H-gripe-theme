@@ -4,7 +4,7 @@
     "loading": "Загрузка товаров...",
     "empty": {
       "title": "Товары пока недоступны.",
-      "description": "Когда товары будут опубликованы через плагин Tanzanite, они автоматически появятся здесь.",
+      "description": "Products will appear here automatically once they are published.",
       "categoryTitle": "No products are available in {category} yet.",
       "categoryDescription": "Try another category or clear the category filter to view all products."
     }
@@ -14,6 +14,6 @@
     "view": "Посмотреть"
   },
   "feedback": {
-    "title": "Поделитесь отзывом о магазине Tanzanite"
+    "title": "Share your feedback about the store"
   }
 }

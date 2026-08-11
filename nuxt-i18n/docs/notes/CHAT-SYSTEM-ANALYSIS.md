@@ -2,7 +2,7 @@
 
 Last audited: 2026-07-25
 
-This document is the current source for Tanzanite's Public Chat boundary. Update it whenever chat routes, ownership rules, message payloads, or frontend/admin component responsibilities change.
+This document is the current source for our Public Chat boundary. Update it whenever chat routes, ownership rules, message payloads, or frontend/admin component responsibilities change.
 
 Related implementation design:
 

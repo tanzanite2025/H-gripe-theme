@@ -131,7 +131,7 @@ func (s *SubscriptionService) IssueSubscriptionConfirmation(email string) (strin
 
 	return token, s.sendSubscriptionChallenge(
 		email,
-		"Confirm your Tanzanite newsletter subscription",
+		"Confirm your newsletter subscription",
 		"confirm",
 		token,
 	)
@@ -195,7 +195,7 @@ func (s *SubscriptionService) UnsubscribeByEmail(email string) error {
 	return s.requestSubscriptionAction(
 		email,
 		subscriptionUnsubscribePurpose,
-		"Unsubscribe from Tanzanite newsletter",
+		"Unsubscribe from newsletter",
 		"unsubscribe",
 	)
 }
@@ -216,7 +216,7 @@ func (s *SubscriptionService) Resubscribe(email string) error {
 	return s.requestSubscriptionAction(
 		email,
 		subscriptionResubscribePurpose,
-		"Resume your Tanzanite newsletter subscription",
+		"Resume your newsletter subscription",
 		"resubscribe",
 	)
 }
@@ -243,7 +243,7 @@ func (s *SubscriptionService) RequestStatus(email string) error {
 	return s.requestSubscriptionAction(
 		email,
 		subscriptionStatusPurpose,
-		"View your Tanzanite newsletter subscription status",
+		"View your newsletter subscription status",
 		"status",
 	)
 }
@@ -348,7 +348,7 @@ func (s *SubscriptionService) sendSubscriptionChallenge(email, subject, action, 
 	}
 	link := fmt.Sprintf("%s/api/v1/subscriptions/%s/%s", s.baseURL, pathAction, url.PathEscape(token))
 	body := fmt.Sprintf(
-		"Please use the following link to complete your Tanzanite newsletter request:\n\n%s\n\nThis link expires in 24 hours and can only be used once.",
+		"Please use the following link to complete your newsletter request:\n\n%s\n\nThis link expires in 24 hours and can only be used once.",
 		link,
 	)
 	return s.emailSender.SendEmail([]string{email}, subject, body)

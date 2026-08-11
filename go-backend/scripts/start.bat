@@ -1,7 +1,7 @@
 @echo off
-REM Tanzanite Go Backend Startup Script for Windows
+REM Storefront Go Backend Startup Script for Windows
 
-echo Starting Tanzanite Go Backend...
+echo Starting Storefront Go Backend...
 
 REM Check if config file exists
 if not exist "config\config.yaml" (

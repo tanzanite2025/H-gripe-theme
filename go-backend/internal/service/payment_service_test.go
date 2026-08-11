@@ -1,8 +1,11 @@
 package service
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"testing"
 	"time"
 	"unicode/utf8"
@@ -16,9 +19,11 @@ import (
 	shippingdomain "tanzanite/internal/domain/shipping"
 	ticketdomain "tanzanite/internal/domain/ticket"
 	userdomain "tanzanite/internal/domain/user"
+	"tanzanite/internal/pkg/invoice"
 	"tanzanite/internal/repository"
 
 	"github.com/glebarez/sqlite"
+	paypalapi "github.com/plutov/paypal/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stripe/stripe-go/v76"
@@ -867,6 +872,7 @@ func newTestPaymentService(t *testing.T) (*gorm.DB, *PaymentService) {
 		&paymentdomain.TaxRate{},
 		&paymentdomain.StripeWebhookEvent{},
 		&paymentdomain.StripeDispute{},
+		&paymentdomain.PayPalDispute{},
 		&paymentdomain.PaymentReview{},
 		&shippingdomain.TrackingProviderConfig{},
 		&shippingdomain.TrackingShipment{},
@@ -1008,6 +1014,240 @@ func (f *fakeStripeDisputeEvidenceSubmitter) Update(id string, params *stripe.Di
 	return &stripe.Dispute{Status: f.status}, nil
 }
 
+func TestRecordPayPalDisputeLinksTransactionAndOrder(t *testing.T) {
+	db, paymentService := newTestPaymentService(t)
+	orderRecord := seedDisputeEvidenceOrder(t, db, "ORD-PAYPAL-DP-1", 42)
+	transaction := seedCompletedTransaction(t, db, orderRecord.ID, "PAYPAL-CAPTURE-1", orderRecord.TotalAmount, "USD")
+	transaction.PaymentMethod = "paypal"
+	require.NoError(t, db.Save(&transaction).Error)
+
+	dispute, err := paymentService.RecordPayPalDispute(PayPalDisputeInput{
+		PayPalDisputeID:   "PP-D-1",
+		ProviderPaymentID: "PAYPAL-CAPTURE-1",
+		Reason:            "MERCHANDISE_OR_SERVICE_NOT_RECEIVED",
+		Status:            "WAITING_FOR_SELLER_RESPONSE",
+		DisputeState:      "REQUIRED_ACTION",
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, dispute.OrderID)
+	require.NotNil(t, dispute.TransactionID)
+	assert.Equal(t, orderRecord.ID, *dispute.OrderID)
+	assert.Equal(t, transaction.ID, *dispute.TransactionID)
+	assert.Equal(t, orderRecord.TotalAmount, dispute.Amount)
+	assert.Equal(t, "USD", dispute.Currency)
+}
+
+func TestBuildPayPalDisputeEvidencePackageCollectsTrackingInvoiceAndCommunication(t *testing.T) {
+	db, paymentService := newTestPaymentService(t)
+	customer := seedPaymentUser(t, db, 44, "paypal-evidence@example.test")
+	orderRecord := seedDisputeEvidenceOrder(t, db, "ORD-PAYPAL-EVIDENCE-1", customer.ID)
+	disputeRecord := seedPayPalDispute(t, db, "PP-D-EVIDENCE-1", orderRecord.ID, "WAITING_FOR_SELLER_RESPONSE", "REQUIRED_ACTION")
+	seedTrackingEvidence(t, db, orderRecord.ID, "DHL777")
+	seedCustomerCommunication(t, db, orderRecord.ID, customer.ID, orderRecord.OrderNumber)
+
+	pkg, err := paymentService.BuildPayPalDisputeEvidencePackage(disputeRecord.ID)
+
+	require.NoError(t, err)
+	require.NotNil(t, pkg.Order)
+	assert.True(t, pkg.CanSubmit)
+	assert.Equal(t, "DHL777", pkg.Evidence.ShippingTrackingNumber)
+	assert.Equal(t, "DHL", pkg.Evidence.ShippingCarrier)
+	assert.Contains(t, pkg.Evidence.InvoiceSummary, orderRecord.OrderNumber)
+	assert.Contains(t, pkg.Evidence.ProofOfDeliverySummary, "Delivered and signed by recipient")
+	assert.Contains(t, pkg.Evidence.Notes, "Invoice summary:")
+	assert.Contains(t, pkg.Evidence.Notes, "Proof of delivery / signature event")
+	assert.Contains(t, pkg.Evidence.Notes, "Customer communication summary")
+}
+
+func TestBuildPayPalDisputeCommercialInvoicePDFReturnsPDF(t *testing.T) {
+	db, paymentService := newTestPaymentService(t)
+	customer := seedPaymentUser(t, db, 48, "paypal-invoice-preview@example.test")
+	orderRecord := seedDisputeEvidenceOrder(t, db, "ORD-PAYPAL-INVOICE-PREVIEW-1", customer.ID)
+	disputeRecord := seedPayPalDispute(t, db, "PP-D-INVOICE-PREVIEW-1", orderRecord.ID, "WAITING_FOR_SELLER_RESPONSE", "REQUIRED_ACTION")
+	paymentService.ConfigurePayPalDisputeInvoiceOptions(PayPalDisputeInvoiceOptions{
+		Seller: invoice.SellerProfile{
+			Name:    "Tanzanite Factory",
+			Address: "100 Factory Road\nAustin, TX 78701\nUS",
+			Email:   "support@example.test",
+		},
+	})
+
+	pdf, err := paymentService.BuildPayPalDisputeCommercialInvoicePDF(disputeRecord.ID)
+
+	require.NoError(t, err)
+	require.NotNil(t, pdf)
+	assert.Equal(t, disputeRecord.ID, pdf.DisputeID)
+	assert.Equal(t, "PP-D-INVOICE-PREVIEW-1", pdf.PayPalDisputeID)
+	assert.Contains(t, pdf.Filename, "CI-ORD-PAYPAL-INVOICE-PREVIEW-1")
+	require.True(t, bytes.HasPrefix(pdf.Bytes, []byte("%PDF-")))
+}
+
+func TestSubmitPayPalDisputeEvidenceCallsPayPalAndRecordsSubmission(t *testing.T) {
+	db, paymentService := newTestPaymentService(t)
+	customer := seedPaymentUser(t, db, 45, "paypal-submit@example.test")
+	orderRecord := seedDisputeEvidenceOrder(t, db, "ORD-PAYPAL-EVIDENCE-2", customer.ID)
+	disputeRecord := seedPayPalDispute(t, db, "PP-D-SUBMIT-1", orderRecord.ID, "WAITING_FOR_SELLER_RESPONSE", "REQUIRED_ACTION")
+	seedTrackingEvidence(t, db, orderRecord.ID, "DHL888")
+	fakeSubmitter := &fakePayPalDisputeEvidenceSubmitter{}
+	paymentService.paypalDisputeEvidenceSubmitter = fakeSubmitter
+
+	result, err := paymentService.SubmitPayPalDisputeEvidence(nil, SubmitPayPalDisputeEvidenceInput{
+		DisputeID:           disputeRecord.ID,
+		ClientID:            "paypal-client",
+		SecretKey:           "paypal-secret",
+		Environment:         "sandbox",
+		AdditionalStatement: "Order shipped and delivered to the confirmed shipping address.",
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, result.SubmittedAt)
+	assert.Equal(t, "PP-D-SUBMIT-1", fakeSubmitter.disputeID)
+	require.NotNil(t, fakeSubmitter.params)
+	require.NotNil(t, fakeSubmitter.params.Evidences)
+	assert.Equal(t, paypalapi.EvidenceTypeProofOfFulfillment, fakeSubmitter.params.Evidences.EvidenceType)
+	require.NotNil(t, fakeSubmitter.params.Evidences.EvidenceInfo)
+	require.Len(t, fakeSubmitter.params.Evidences.EvidenceInfo.TrackingInfo, 1)
+	assert.Equal(t, "DHL888", fakeSubmitter.params.Evidences.EvidenceInfo.TrackingInfo[0].TrackingNumber)
+	assert.Equal(t, "DHL", fakeSubmitter.params.Evidences.EvidenceInfo.TrackingInfo[0].CarrierName)
+	assert.Contains(t, fakeSubmitter.params.Evidences.Notes, "confirmed shipping address")
+	assert.Contains(t, fakeSubmitter.params.Evidences.Notes, "Invoice summary")
+
+	var saved paymentdomain.PayPalDispute
+	require.NoError(t, db.First(&saved, disputeRecord.ID).Error)
+	assert.NotNil(t, saved.EvidenceSubmittedAt)
+	assert.Empty(t, saved.EvidenceSubmissionError)
+	assert.Contains(t, saved.EvidenceSubmissionPayload, "DHL888")
+}
+
+func TestSubmitPayPalDisputeEvidenceDoesNotAttachCommercialInvoicePDFWhenDisabled(t *testing.T) {
+	db, paymentService := newTestPaymentService(t)
+	customer := seedPaymentUser(t, db, 49, "paypal-invoice-disabled@example.test")
+	orderRecord := seedDisputeEvidenceOrder(t, db, "ORD-PAYPAL-INVOICE-DISABLED-1", customer.ID)
+	disputeRecord := seedPayPalDispute(t, db, "PP-D-INVOICE-DISABLED-1", orderRecord.ID, "WAITING_FOR_SELLER_RESPONSE", "REQUIRED_ACTION")
+	seedTrackingEvidence(t, db, orderRecord.ID, "DHL890")
+	fakeSubmitter := &fakePayPalDisputeEvidenceSubmitter{}
+	fakeStorage := &fakePayPalDisputeDocumentStorage{url: "https://cdn.example.test/evidence/commercial-invoice.pdf"}
+	paymentService.ConfigurePayPalDisputeEvidenceSubmitter(fakeSubmitter)
+	paymentService.ConfigurePayPalDisputeEvidenceDocumentStorage(fakeStorage)
+	paymentService.ConfigurePayPalDisputeInvoiceOptions(PayPalDisputeInvoiceOptions{
+		Seller: invoice.SellerProfile{
+			Name:    "Tanzanite Factory",
+			Address: "100 Factory Road\nAustin, TX 78701\nUS",
+		},
+		AutoAttachPDF: false,
+	})
+
+	result, err := paymentService.SubmitPayPalDisputeEvidence(context.Background(), SubmitPayPalDisputeEvidenceInput{
+		DisputeID:   disputeRecord.ID,
+		ClientID:    "paypal-client",
+		SecretKey:   "paypal-secret",
+		Environment: "sandbox",
+	})
+
+	require.NoError(t, err)
+	require.Empty(t, result.Documents)
+	require.NotNil(t, fakeSubmitter.params)
+	require.NotNil(t, fakeSubmitter.params.Evidences)
+	require.Empty(t, fakeSubmitter.params.Evidences.Documents)
+	require.Empty(t, fakeStorage.data)
+
+	var saved paymentdomain.PayPalDispute
+	require.NoError(t, db.First(&saved, disputeRecord.ID).Error)
+	assert.Contains(t, saved.EvidenceSubmissionPayload, "auto-attachment is not enabled")
+}
+
+func TestSubmitPayPalDisputeEvidenceAttachesCommercialInvoicePDF(t *testing.T) {
+	db, paymentService := newTestPaymentService(t)
+	customer := seedPaymentUser(t, db, 47, "paypal-invoice@example.test")
+	orderRecord := seedDisputeEvidenceOrder(t, db, "ORD-PAYPAL-INVOICE-1", customer.ID)
+	disputeRecord := seedPayPalDispute(t, db, "PP-D-INVOICE-1", orderRecord.ID, "WAITING_FOR_SELLER_RESPONSE", "REQUIRED_ACTION")
+	seedTrackingEvidence(t, db, orderRecord.ID, "DHL889")
+	fakeSubmitter := &fakePayPalDisputeEvidenceSubmitter{}
+	fakeStorage := &fakePayPalDisputeDocumentStorage{url: "https://cdn.example.test/evidence/commercial-invoice.pdf"}
+	paymentService.ConfigurePayPalDisputeEvidenceSubmitter(fakeSubmitter)
+	paymentService.ConfigurePayPalDisputeEvidenceDocumentStorage(fakeStorage)
+	paymentService.ConfigurePayPalDisputeInvoiceOptions(PayPalDisputeInvoiceOptions{
+		Seller: invoice.SellerProfile{
+			Name:    "Tanzanite Factory",
+			Address: "100 Factory Road\nAustin, TX 78701\nUS",
+			Email:   "support@example.test",
+		},
+		AutoAttachPDF: true,
+	})
+
+	result, err := paymentService.SubmitPayPalDisputeEvidence(context.Background(), SubmitPayPalDisputeEvidenceInput{
+		DisputeID:   disputeRecord.ID,
+		ClientID:    "paypal-client",
+		SecretKey:   "paypal-secret",
+		Environment: "sandbox",
+	})
+
+	require.NoError(t, err)
+	require.Len(t, result.Documents, 1)
+	assert.Equal(t, "commercial_invoice", result.Documents[0].Type)
+	require.NotNil(t, fakeSubmitter.params)
+	require.NotNil(t, fakeSubmitter.params.Evidences)
+	require.Len(t, fakeSubmitter.params.Evidences.Documents, 1)
+	assert.Equal(t, "https://cdn.example.test/evidence/commercial-invoice.pdf", fakeSubmitter.params.Evidences.Documents[0].URL)
+	assert.Contains(t, fakeSubmitter.params.Evidences.Documents[0].Name, "CI-ORD-PAYPAL-INVOICE-1")
+	require.True(t, bytes.HasPrefix(fakeStorage.data, []byte("%PDF-")))
+
+	var saved paymentdomain.PayPalDispute
+	require.NoError(t, db.First(&saved, disputeRecord.ID).Error)
+	assert.Contains(t, saved.EvidenceSubmissionPayload, "commercial_invoice")
+	assert.Contains(t, saved.EvidenceSubmissionPayload, "https://cdn.example.test/evidence/commercial-invoice.pdf")
+}
+
+func TestSubmitPayPalDisputeEvidenceRequiresTracking(t *testing.T) {
+	db, paymentService := newTestPaymentService(t)
+	customer := seedPaymentUser(t, db, 46, "paypal-no-track@example.test")
+	orderRecord := seedDisputeEvidenceOrder(t, db, "ORD-PAYPAL-EVIDENCE-3", customer.ID)
+	orderRecord.TrackingNumber = ""
+	orderRecord.ProviderCarrierCode = ""
+	orderRecord.ProviderCarrierName = ""
+	require.NoError(t, db.Save(&orderRecord).Error)
+	disputeRecord := seedPayPalDispute(t, db, "PP-D-NO-TRACK-1", orderRecord.ID, "WAITING_FOR_SELLER_RESPONSE", "REQUIRED_ACTION")
+
+	_, err := paymentService.SubmitPayPalDisputeEvidence(nil, SubmitPayPalDisputeEvidenceInput{
+		DisputeID: disputeRecord.ID,
+		ClientID:  "paypal-client",
+		SecretKey: "paypal-secret",
+	})
+
+	require.ErrorIs(t, err, ErrPayPalDisputeEvidenceTrackingNeeded)
+	var saved paymentdomain.PayPalDispute
+	require.NoError(t, db.First(&saved, disputeRecord.ID).Error)
+	assert.Contains(t, saved.EvidenceSubmissionError, ErrPayPalDisputeEvidenceTrackingNeeded.Error())
+}
+
+type fakePayPalDisputeEvidenceSubmitter struct {
+	disputeID string
+	params    *paypalapi.DisputeProvideEvidenceParams
+}
+
+func (f *fakePayPalDisputeEvidenceSubmitter) ProvideEvidence(_ context.Context, disputeID string, params *paypalapi.DisputeProvideEvidenceParams) error {
+	f.disputeID = disputeID
+	f.params = params
+	return nil
+}
+
+type fakePayPalDisputeDocumentStorage struct {
+	url      string
+	filename string
+	data     []byte
+}
+
+func (f *fakePayPalDisputeDocumentStorage) UploadFromReader(_ context.Context, reader io.Reader, filename string) (string, error) {
+	f.filename = filename
+	data, err := io.ReadAll(reader)
+	if err != nil {
+		return "", err
+	}
+	f.data = data
+	return f.url, nil
+}
+
 func seedPaymentUser(t *testing.T, db *gorm.DB, id uint, email string) userdomain.User {
 	t.Helper()
 
@@ -1096,6 +1336,24 @@ func seedStripeDispute(t *testing.T, db *gorm.DB, stripeID string, orderID uint,
 		Reason:          "fraudulent",
 		Status:          status,
 		EvidenceDueAt:   &dueAt,
+	}
+	require.NoError(t, db.Create(&record).Error)
+	return record
+}
+
+func seedPayPalDispute(t *testing.T, db *gorm.DB, paypalID string, orderID uint, status string, disputeState string) paymentdomain.PayPalDispute {
+	t.Helper()
+
+	record := paymentdomain.PayPalDispute{
+		PayPalDisputeID:       paypalID,
+		OrderID:               &orderID,
+		ProviderPaymentID:     "capture_" + paypalID,
+		Amount:                1235,
+		Currency:              "USD",
+		Reason:                "MERCHANDISE_OR_SERVICE_NOT_RECEIVED",
+		Status:                status,
+		DisputeState:          disputeState,
+		DisputeLifeCycleStage: "CHARGEBACK",
 	}
 	require.NoError(t, db.Create(&record).Error)
 	return record

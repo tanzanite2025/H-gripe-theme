@@ -139,14 +139,14 @@
 
     <TabsContent value="payment">
       <div class="space-y-6">
-        <SettingsSection title="支付网关" description="后端 runtime 就绪检查，不回显生产密钥。">
+        <SettingsSection title="支付账号接入" description="先绑定商户凭据，再检查生产就绪状态。">
           <div class="space-y-4">
             <div class="flex items-start gap-3 rounded-xl border border-amber-500/20 bg-amber-500/10 p-3 text-amber-900 dark:text-amber-100">
               <AlertTriangle class="mt-0.5 size-4 flex-none" />
               <div class="space-y-1">
-                <p class="text-sm font-black">支付密钥不在普通 settings 明文管理</p>
+                <p class="text-sm font-black">支付账号不是“生产就绪”状态自动绑定</p>
                 <p class="text-xs leading-relaxed text-amber-800/80 dark:text-amber-100/75">
-                  生产密钥通过下方加密写入口保存；接口只回配置状态，不回显明文。
+                  先在官方开发者后台登录或创建应用，复制商户凭据到下方接入表单；系统会加密保存，接口只返回配置状态，不回显明文。
                 </p>
               </div>
             </div>

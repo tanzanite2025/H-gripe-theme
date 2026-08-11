@@ -101,7 +101,7 @@ func (h *Handler) GetFilterableAttributes(c *gin.Context) {
 }
 
 func (h *Handler) ListProductTypes(c *gin.Context) {
-	productTypes, err := h.productService.ListProductTypes(false)
+	productTypes, err := h.productService.ListPublicProductTypes(false)
 	if err != nil {
 		apierror.RespondInternalError(c, err)
 		return

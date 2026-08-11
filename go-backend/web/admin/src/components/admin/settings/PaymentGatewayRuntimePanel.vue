@@ -1,5 +1,90 @@
 <template>
   <div class="space-y-4">
+    <div class="rounded-2xl border border-admin-selected-border/60 bg-admin-selected-soft/40 p-4">
+      <div class="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Gateway Connection</p>
+          <h3 class="mt-1 text-sm font-black tracking-tight text-foreground">先接入支付账号，再看生产就绪</h3>
+          <p class="mt-1 max-w-3xl text-xs leading-relaxed text-muted-foreground">
+            当前系统是单商户模式：在官方开发者后台登录并创建应用，复制 Client ID、Secret、API Key 和 Webhook 信息到下方加密表单。这里不会自动读取你的官方账号，也不是多商户 OAuth 绑定。
+          </p>
+        </div>
+        <span class="rounded-full border border-admin-selected-border/60 bg-background/80 px-2.5 py-1 text-[11px] font-black text-admin-selected">
+          当前渠道：{{ paymentGatewayLabel(selectedGateway) }}
+        </span>
+      </div>
+
+      <div class="mt-4 grid gap-3 md:grid-cols-3">
+        <div class="rounded-xl border bg-background/70 p-3">
+          <p class="text-[11px] font-black uppercase tracking-widest text-muted-foreground/60">1 · 官方后台</p>
+          <p class="mt-1 text-xs leading-relaxed text-muted-foreground">登录对应服务商后台，创建或选择收款应用。</p>
+        </div>
+        <div class="rounded-xl border bg-background/70 p-3">
+          <p class="text-[11px] font-black uppercase tracking-widest text-muted-foreground/60">2 · 商户凭据</p>
+          <p class="mt-1 text-xs leading-relaxed text-muted-foreground">将当前渠道要求的凭据填写到加密接入表单。</p>
+        </div>
+        <div class="rounded-xl border bg-background/70 p-3">
+          <p class="text-[11px] font-black uppercase tracking-widest text-muted-foreground/60">3 · Webhook</p>
+          <p class="mt-1 text-xs leading-relaxed text-muted-foreground">把下方 Callback URL 填回官方后台，再运行探测。</p>
+        </div>
+      </div>
+
+      <div class="mt-4 flex flex-wrap items-center gap-2">
+        <a
+          v-if="selectedGatewayOption?.officialDashboardURL"
+          :href="selectedGatewayOption.officialDashboardURL"
+          target="_blank"
+          rel="noreferrer"
+          class="inline-flex items-center gap-2 rounded-md border bg-background px-3 py-2 text-xs font-black text-foreground transition-colors hover:border-admin-selected-border hover:bg-admin-selected-soft"
+        >
+          <ExternalLink class="size-3.5" />
+          打开 {{ paymentGatewayLabel(selectedGateway) }} 官方开发者后台
+        </a>
+        <Button type="button" size="sm" variant="outline" @click="scrollToCredentials">
+          <KeyRound class="size-3.5" />
+          填写当前渠道凭据
+        </Button>
+      </div>
+
+      <div class="mt-4 border-t border-admin-selected-border/40 pt-4">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <p class="text-[11px] font-black uppercase tracking-widest text-muted-foreground/60">Bound Gateways</p>
+            <p class="mt-1 text-xs text-muted-foreground">这里显示通过后台加密凭据绑定的支付渠道。</p>
+          </div>
+          <span class="rounded-full border bg-background/80 px-2.5 py-1 text-[11px] font-black text-foreground">
+            {{ adminBoundGateways.length }} / {{ paymentGatewayOptions.length }} 已绑定
+          </span>
+        </div>
+
+        <div v-if="adminBoundGateways.length" class="mt-3 flex flex-wrap gap-2">
+          <button
+            v-for="gateway in adminBoundGateways"
+            :key="gateway.provider"
+            type="button"
+            class="inline-flex items-center gap-2 rounded-lg border bg-background/80 px-3 py-2 text-left transition-colors hover:border-admin-selected-border hover:bg-background"
+            :class="selectedGateway === gateway.provider ? 'border-admin-selected-border bg-background shadow-[var(--admin-control-selected-surface-shadow)]' : ''"
+            @click="emit('update:selectedGateway', gateway.provider)"
+          >
+            <span class="text-xs font-black text-foreground">{{ paymentGatewayLabel(gateway.provider) }}</span>
+            <span class="text-[11px] font-bold" :class="bindingStatusClass(gateway)">
+              {{ bindingStatusLabel(gateway) }}
+            </span>
+          </button>
+        </div>
+        <p v-else class="mt-3 rounded-lg border border-dashed px-3 py-2 text-xs text-muted-foreground">
+          还没有通过后台表单绑定支付渠道；环境变量接入会显示在运行状态中，但不会计入这里。
+        </p>
+      </div>
+
+      <p
+        v-if="selectedGateway === 'paypal'"
+        class="mt-3 rounded-xl border border-sky-500/20 bg-sky-500/10 px-3 py-2 text-xs leading-relaxed text-sky-900 dark:text-sky-100"
+      >
+        PayPal 当前是 hosted checkout，后端不接触完整卡号，所以 BIN 级限流只覆盖 Stripe 等能安全获得 BIN 的支付链路；PayPal 仍应依靠 IP、Session、账号、订单和支付失败频率控制。
+      </p>
+    </div>
+
     <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
       <div class="rounded-2xl border bg-muted/30 p-4">
         <div class="flex flex-wrap items-start justify-between gap-3">
@@ -216,13 +301,15 @@
         </div>
       </div>
 
-      <PaymentGatewaySecureConfigPanel
-        :selected-gateway="selectedGateway"
-        :status="selectedRuntimeStatus"
-        :secret-store-configured="runtime?.secret_store_configured === true"
-        :can-edit="canEdit"
-        @saved="emit('refresh')"
-      />
+      <div id="payment-gateway-credentials" class="scroll-mt-6">
+        <PaymentGatewaySecureConfigPanel
+          :selected-gateway="selectedGateway"
+          :status="selectedRuntimeStatus"
+          :secret-store-configured="runtime?.secret_store_configured === true"
+          :can-edit="canEdit"
+          @saved="emit('refresh')"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -236,6 +323,8 @@ import {
   AlertTriangle,
   CheckCircle2,
   Copy,
+  ExternalLink,
+  KeyRound,
   RefreshCw,
   ShieldCheck,
   XCircle,
@@ -274,17 +363,63 @@ const checkingCallback = ref(false)
 const callbackCheckResult = ref<PaymentCallbackCheckResult | null>(null)
 
 const paymentGatewayOptions: PaymentGatewayOption[] = [
-  { value: 'stripe', label: 'Stripe', description: 'Cards, wallets and international card checkout.' },
-  { value: 'paypal', label: 'PayPal', description: 'PayPal account checkout and express payments.' },
-  { value: 'alipay', label: '支付宝', description: '适合人民币和跨境支付宝收款场景。' },
-  { value: 'wechat', label: '微信支付', description: '适合微信生态内的扫码和小程序支付。' },
+  {
+    value: 'stripe',
+    label: 'Stripe',
+    description: 'Cards, wallets and international card checkout.',
+    officialDashboardURL: 'https://dashboard.stripe.com/apikeys',
+  },
+  {
+    value: 'paypal',
+    label: 'PayPal',
+    description: 'PayPal account checkout and express payments.',
+    officialDashboardURL: 'https://developer.paypal.com/dashboard/applications',
+  },
+  {
+    value: 'alipay',
+    label: '支付宝',
+    description: '适合人民币和跨境支付宝收款场景。',
+    officialDashboardURL: 'https://open.alipay.com/',
+  },
+  {
+    value: 'wechat',
+    label: '微信支付',
+    description: '适合微信生态内的扫码和小程序支付。',
+    officialDashboardURL: 'https://pay.weixin.qq.com/',
+  },
 ]
 
 const paymentGatewayOption = (value: string): PaymentGatewayOption | undefined => paymentGatewayOptions.find((gateway) => gateway.value === value)
 const paymentGatewayLabel = (value: string): string => paymentGatewayOption(value)?.label || '未选择支付网关'
 const paymentGatewayDescription = (value: string): string => paymentGatewayOption(value)?.description || '请选择一个支付服务商后查看 runtime 检查。'
+const selectedGatewayOption = computed(() => paymentGatewayOption(props.selectedGateway))
 const gatewayRuntimeStatus = (value: string): PaymentGatewayRuntimeStatus | undefined => (props.runtime?.gateways || []).find((gateway) => gateway.provider === value)
 const selectedRuntimeStatus = computed(() => gatewayRuntimeStatus(props.selectedGateway))
+const adminBoundGateways = computed(() => (
+  (props.runtime?.gateways || []).filter((gateway) => gateway.admin_config_configured === true)
+))
+
+const scrollToCredentials = (): void => {
+  if (typeof document === 'undefined') return
+  document.getElementById('payment-gateway-credentials')?.scrollIntoView({
+    behavior: 'smooth',
+    block: 'start',
+  })
+}
+
+const bindingStatusLabel = (status?: PaymentGatewayRuntimeStatus | null): string => {
+  if (!status) return '未知'
+  if (status.admin_config_readable === false) return '配置不可读'
+  if (status.production_ready) return '生产就绪'
+  return '待补配置'
+}
+
+const bindingStatusClass = (status?: PaymentGatewayRuntimeStatus | null): string => {
+  if (!status) return 'text-muted-foreground'
+  if (status.admin_config_readable === false) return 'text-rose-600 dark:text-rose-300'
+  if (status.production_ready) return 'text-emerald-600 dark:text-emerald-300'
+  return 'text-amber-600 dark:text-amber-300'
+}
 
 const runtimeStatusLabel = (status?: PaymentGatewayRuntimeStatus | null, loading = false): string => {
   if (loading) return '检查中'

@@ -106,7 +106,7 @@ func (s *RegistrationService) RequestWarrantyOrderVerification(orderNumber, emai
 		"Use this link to verify your warranty request:\n\n%s\n\nThe verification token expires in 24 hours and can only be used once when submitting the claim.",
 		link,
 	)
-	return s.emailSender.SendEmail([]string{email}, "Verify your Tanzanite warranty request", body)
+	return s.emailSender.SendEmail([]string{email}, "Verify your warranty request", body)
 }
 
 func (s *RegistrationService) ValidateWarrantyOrderToken(token string) error {

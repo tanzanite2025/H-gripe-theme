@@ -3,6 +3,7 @@ package payment
 import (
 	"fmt"
 	"regexp"
+	"strings"
 
 	"tanzanite/internal/domain/currency"
 )
@@ -59,6 +60,12 @@ func ValidatePaymentRequest(req *PaymentRequest) error {
 		return fmt.Errorf("customer information is required")
 	}
 
+	normalizedBIN, err := NormalizeCardBIN(req.CardBIN)
+	if err != nil {
+		return err
+	}
+	req.CardBIN = normalizedBIN
+
 	if req.Customer.Email == "" {
 		return fmt.Errorf("customer email is required")
 	}
@@ -70,6 +77,24 @@ func ValidatePaymentRequest(req *PaymentRequest) error {
 	}
 
 	return nil
+}
+
+// NormalizeCardBIN accepts only a 6- or 8-digit issuer BIN. It never accepts
+// a full card number, expiration date, security code, or any other PAN data.
+func NormalizeCardBIN(value string) (string, error) {
+	value = strings.NewReplacer(" ", "", "-", "").Replace(strings.TrimSpace(value))
+	if value == "" {
+		return "", nil
+	}
+	if len(value) != 6 && len(value) != 8 {
+		return "", fmt.Errorf("card BIN must contain exactly 6 or 8 digits")
+	}
+	for _, char := range value {
+		if char < '0' || char > '9' {
+			return "", fmt.Errorf("card BIN must contain exactly 6 or 8 digits")
+		}
+	}
+	return value, nil
 }
 
 // ValidateRefundAmount 验证退款金额

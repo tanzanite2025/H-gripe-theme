@@ -151,7 +151,7 @@
       },
       "detail": {
         "metaTitle": "Blog",
-        "metaDescription": "Read the latest article from Tanzanite."
+        "metaDescription": "Read the latest article."
       }
     },
     "actions": {
@@ -221,7 +221,7 @@
       "title": "Browsing history"
     },
     "welcome": {
-      "logoAlt": "Tanzanite chat",
+      "logoAlt": "customer support chat",
       "title": "Hi there!",
       "description": "Chat with our team, track your orders, or find answers in our FAQ.",
       "onlineTeam": "Online support team",
@@ -599,14 +599,14 @@
     },
     "index": {
       "title": "Company",
-      "intro": "Learn more about Tanzanite, our story, and how to reach us. Choose a section below to explore.",
+      "intro": "Learn more about our story, factory, and how to reach us. Choose a section below to explore.",
       "cards": {
         "about": {
-          "description": "Learn about our mission, values, and the team behind Tanzanite.",
-          "cta": "About Tanzanite"
+          "description": "Learn about our mission, values, and team.",
+          "cta": "About us"
         },
         "ourStory": {
-          "description": "Background of Tanzanite and the vision behind our products.",
+          "description": "Background on our product vision and the work behind it.",
           "cta": "Read our story"
         },
         "globalPartners": {
@@ -622,7 +622,7 @@
           "cta": "View certificates"
         },
         "contact": {
-          "description": "Get in touch with the Tanzanite team for enquiries and support.",
+          "description": "Get in touch with our team for enquiries and support.",
           "cta": "Contact us"
         }
       }
@@ -764,7 +764,7 @@
       "message": "Describe your feedback",
       "attachments": "Attach photos",
       "membersOnly": "Members only",
-      "consent": "I agree to share this information so the Tanzanite team can follow up."
+      "consent": "I agree to share this information so our team can follow up."
     },
     "placeholders": {
       "fullName": "e.g. Alex Chen",
@@ -863,7 +863,7 @@
       "pictureWarehouse": "Picture warehouse"
     },
     "brand": {
-      "line1": "Tanzanite is a brand of Top Sports Co., Limited.",
+      "line1": "A brand of Top Sports Co., Limited.",
       "line2": "Flat 1602, 16/F, Lucky Centre,",
       "line3": "No.165-171 Wan Chai Road, Wan Chai",
       "line4": "Hong Kong.",
@@ -1359,7 +1359,7 @@
     "policyHeading": "Política de privacidade para site de comércio eletrônico",
     "effectiveDate": "Data de vigência: [2025/11/11]",
     "section1Title": "1. Introdução",
-    "section1Body": "Bem-vindo a [www.tanzanite.site]. Valorizamos a sua privacidade e estamos comprometidos em proteger as suas informações pessoais. Esta Política de Privacidade explica como coletamos, usamos, divulgamos e protegemos os seus dados quando você visita o nosso site [www.tanzanite.site] e utiliza os nossos serviços.",
+    "section1Body": "Bem-vindo a {site}. Valorizamos a sua privacidade e estamos comprometidos em proteger as suas informações pessoais. Esta Política de Privacidade explica como coletamos, usamos, divulgamos e protegemos os seus dados quando você visita o nosso site {site} e utiliza os nossos serviços.",
     "section2Title": "2. Informações que coletamos",
     "section2Intro": "Podemos coletar os seguintes tipos de informações pessoais:",
     "identityLabel": "Dados de identidade",
@@ -1501,7 +1501,7 @@
       "loading": "Carregando produtos...",
       "empty": {
         "title": "Ainda não há produtos disponíveis.",
-        "description": "Quando os produtos forem publicados pelo plugin Tanzanite, eles aparecerão aqui automaticamente.",
+        "description": "Products will appear here automatically once they are published.",
         "categoryTitle": "No products are available in {category} yet.",
         "categoryDescription": "Try another category or clear the category filter to view all products."
       }
@@ -1511,7 +1511,7 @@
       "view": "Ver"
     },
     "feedback": {
-      "title": "Compartilhe seu feedback sobre a loja Tanzanite"
+      "title": "Share your feedback about the store"
     }
   },
   "sidebar": {

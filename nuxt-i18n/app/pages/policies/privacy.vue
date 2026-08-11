@@ -4,7 +4,7 @@
 
     <div class="policies-content">
       <p class="text-sm tz-text-secondary mb-6">
-        This page describes how Tanzanite collects, uses, and protects your personal data when you browse our site or use our services.
+        This page describes how we collect, use, and protect your personal data when you browse our site or use our services.
       </p>
       <div>
         <PrivacyStatementContent />

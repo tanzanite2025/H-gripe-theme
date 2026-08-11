@@ -3,7 +3,7 @@
     <div class="flex flex-wrap items-end justify-between gap-3">
       <div>
         <h2 class="text-sm font-black tracking-tighter italic uppercase">配送区域</h2>
-        <p class="mt-1 text-xs text-muted-foreground">按国家/地区、州省和邮编范围组织区域，供运费模板匹配使用。</p>
+        <p class="mt-1 text-xs text-muted-foreground">按国家/地区组织区域，供运费模板匹配使用。</p>
       </div>
       <Button v-if="canCreate" size="sm" @click="emit('create')">
         <Plus class="size-3.5" />
@@ -12,19 +12,17 @@
     </div>
 
     <AdminTablePanel :loading="loading">
-      <Table class="min-w-[980px]">
+      <Table class="min-w-[640px]">
         <TableHeader>
           <TableRow>
             <TableHead>区域名称</TableHead>
             <TableHead>国家/地区</TableHead>
-            <TableHead>州/省</TableHead>
-            <TableHead>邮编</TableHead>
             <TableHead class="w-24">状态</TableHead>
             <TableHead class="w-32 text-right">操作</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          <TableEmpty v-if="zones.length === 0" :colspan="6">
+          <TableEmpty v-if="zones.length === 0" :colspan="4">
             <div class="flex flex-col items-center text-muted-foreground">
               <MapPin class="mb-2 size-7 opacity-55" />
               <span class="text-xs">暂无配送区域</span>
@@ -32,9 +30,7 @@
           </TableEmpty>
           <TableRow v-for="zone in zones" :key="zone.id">
             <TableCell class="font-bold text-xs">{{ zone.name || '-' }}</TableCell>
-            <TableCell class="max-w-72 truncate text-[10px] text-muted-foreground/70">{{ compactListLabel(zone.countries) }}</TableCell>
-            <TableCell class="max-w-56 truncate text-[10px] text-muted-foreground/70">{{ compactListLabel(zone.states) }}</TableCell>
-            <TableCell class="max-w-56 truncate text-[10px] text-muted-foreground/70">{{ compactListLabel(zone.postal_codes) }}</TableCell>
+            <TableCell class="max-w-96 truncate text-[10px] text-muted-foreground/70">{{ addressRegionSummary(zone.countries) }}</TableCell>
             <TableCell>
               <AdminStatusBadge :tone="zone.enabled ? 'green' : 'gray'">
                 {{ zone.enabled ? '启用' : '停用' }}
@@ -77,7 +73,7 @@ import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { TabsContent } from '@/components/ui/tabs'
-import { compactListLabel } from '@/lib/shippingPresentation'
+import { addressRegionSummary } from '@/lib/addressRegions'
 import type { ShippingZone } from './shippingTypes'
 
 withDefaults(defineProps<{

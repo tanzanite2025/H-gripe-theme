@@ -29,6 +29,7 @@ type Config struct {
 	OrderAbuse            OrderAbuseConfig            `mapstructure:"order_abuse"`
 	OrderNumber           OrderNumberConfig           `mapstructure:"order_number"`
 	PaymentRisk           PaymentRiskConfig           `mapstructure:"payment_risk"`
+	PaymentBINRateLimit   PaymentBINRateLimitConfig   `mapstructure:"payment_bin_rate_limit"`
 	PaymentRiskMonitoring PaymentRiskMonitoringConfig `mapstructure:"payment_risk_monitoring"`
 	PaymentProtection     PaymentProtectionConfig     `mapstructure:"payment_protection"`
 	PaymentThreeDS        PaymentThreeDSConfig        `mapstructure:"payment_3ds"`
@@ -189,6 +190,13 @@ type PaymentRiskConfig struct {
 	FailureThreshold     int `mapstructure:"failure_threshold"`
 	DelaySeconds         int `mapstructure:"delay_seconds"`
 	HighRiskScore        int `mapstructure:"high_risk_score"`
+}
+
+type PaymentBINRateLimitConfig struct {
+	Enabled              bool `mapstructure:"enabled"`
+	WindowSeconds        int  `mapstructure:"window_seconds"`
+	FailureThreshold     int  `mapstructure:"failure_threshold"`
+	BlockDurationSeconds int  `mapstructure:"block_duration_seconds"`
 }
 
 type PaymentRiskMonitoringConfig struct {
@@ -411,6 +419,11 @@ func setDefaults() {
 	viper.SetDefault("payment_risk.delay_seconds", 2)
 	viper.SetDefault("payment_risk.high_risk_score", 60)
 
+	viper.SetDefault("payment_bin_rate_limit.enabled", true)
+	viper.SetDefault("payment_bin_rate_limit.window_seconds", 60)
+	viper.SetDefault("payment_bin_rate_limit.failure_threshold", 5)
+	viper.SetDefault("payment_bin_rate_limit.block_duration_seconds", 1800)
+
 	viper.SetDefault("payment_risk_monitoring.enabled", true)
 	viper.SetDefault("payment_risk_monitoring.alert_enabled", false)
 	viper.SetDefault("payment_risk_monitoring.window_days", 30)
@@ -539,6 +552,11 @@ func bindEnvironment() {
 	_ = viper.BindEnv("payment_risk.failure_threshold", "PAYMENT_RISK_FAILURE_THRESHOLD")
 	_ = viper.BindEnv("payment_risk.delay_seconds", "PAYMENT_RISK_DELAY_SECONDS")
 	_ = viper.BindEnv("payment_risk.high_risk_score", "PAYMENT_RISK_HIGH_RISK_SCORE")
+
+	_ = viper.BindEnv("payment_bin_rate_limit.enabled", "PAYMENT_BIN_RATE_LIMIT_ENABLED")
+	_ = viper.BindEnv("payment_bin_rate_limit.window_seconds", "PAYMENT_BIN_RATE_LIMIT_WINDOW_SECONDS")
+	_ = viper.BindEnv("payment_bin_rate_limit.failure_threshold", "PAYMENT_BIN_RATE_LIMIT_FAILURE_THRESHOLD")
+	_ = viper.BindEnv("payment_bin_rate_limit.block_duration_seconds", "PAYMENT_BIN_RATE_LIMIT_BLOCK_DURATION_SECONDS")
 
 	_ = viper.BindEnv("payment_risk_monitoring.enabled", "PAYMENT_RISK_MONITORING_ENABLED")
 	_ = viper.BindEnv("payment_risk_monitoring.alert_enabled", "PAYMENT_RISK_MONITORING_ALERT_ENABLED")
@@ -699,6 +717,13 @@ func validateConfig(cfg *Config) error {
 			cfg.PaymentRisk.DelaySeconds < 0 ||
 			cfg.PaymentRisk.HighRiskScore <= 0 {
 			return fmt.Errorf("payment risk configuration is invalid")
+		}
+	}
+	if cfg.PaymentBINRateLimit.Enabled {
+		if cfg.PaymentBINRateLimit.WindowSeconds <= 0 ||
+			cfg.PaymentBINRateLimit.FailureThreshold <= 0 ||
+			cfg.PaymentBINRateLimit.BlockDurationSeconds <= 0 {
+			return fmt.Errorf("payment BIN rate limit configuration is invalid")
 		}
 	}
 	if cfg.PaymentRiskMonitoring.Enabled {

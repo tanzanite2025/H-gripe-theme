@@ -4,7 +4,7 @@
   "policyHeading": "Kebijakan privasi untuk situs e‑commerce",
   "effectiveDate": "Tanggal berlaku: [2025/11/11]",
   "section1Title": "1. Pendahuluan",
-  "section1Body": "Selamat datang di [www.tanzanite.site]. Kami menghargai privasi Anda dan berkomitmen untuk melindungi informasi pribadi Anda. Kebijakan privasi ini menjelaskan bagaimana kami mengumpulkan, menggunakan, mengungkapkan, dan melindungi data Anda ketika Anda mengunjungi situs kami [www.tanzanite.site] dan menggunakan layanan kami.",
+  "section1Body": "Selamat datang di {site}. Kami menghargai privasi Anda dan berkomitmen untuk melindungi informasi pribadi Anda. Kebijakan privasi ini menjelaskan bagaimana kami mengumpulkan, menggunakan, mengungkapkan, dan melindungi data Anda ketika Anda mengunjungi situs kami {site} dan menggunakan layanan kami.",
   "section2Title": "2. Informasi yang kami kumpulkan",
   "section2Intro": "Kami dapat mengumpulkan jenis informasi pribadi berikut:",
   "identityLabel": "Data identitas",

@@ -4,7 +4,7 @@
   "policyHeading": "Datenschutzerklärung für E-Commerce-Webseite",
   "effectiveDate": "Gültig ab: [2025/11/11]",
   "section1Title": "1. Einleitung",
-  "section1Body": "Willkommen auf [www.tanzanite.site]. Wir respektieren Ihre Privatsphäre und verpflichten uns, Ihre personenbezogenen Daten zu schützen. Diese Datenschutzerklärung erläutert, wie wir Ihre Daten erfassen, verwenden, offenlegen und schützen, wenn Sie unsere Website [www.tanzanite.site] besuchen und unsere Dienste nutzen.",
+  "section1Body": "Willkommen auf {site}. Wir respektieren Ihre Privatsphäre und verpflichten uns, Ihre personenbezogenen Daten zu schützen. Diese Datenschutzerklärung erläutert, wie wir Ihre Daten erfassen, verwenden, offenlegen und schützen, wenn Sie unsere Website {site} besuchen und unsere Dienste nutzen.",
   "section2Title": "2. Welche Informationen wir erfassen",
   "section2Intro": "Wir können folgende Arten personenbezogener Daten erfassen:",
   "identityLabel": "Identitätsdaten",

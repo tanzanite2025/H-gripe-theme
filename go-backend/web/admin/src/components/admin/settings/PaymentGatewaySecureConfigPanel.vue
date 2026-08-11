@@ -6,10 +6,10 @@
           <LockKeyhole class="size-3.5 text-orange-500" />
         </div>
         <div>
-          <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Encrypted Secret Store</p>
-          <h3 class="mt-1 text-sm font-black tracking-tight text-foreground">安全凭据写入</h3>
+          <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Gateway Connection</p>
+          <h3 class="mt-1 text-sm font-black tracking-tight text-foreground">填写商户 API 凭据</h3>
           <p class="mt-1 text-xs leading-relaxed text-muted-foreground">
-            只写入，不回显。留空字段会保留现有加密值。
+            这是单商户接入方式，不是 OAuth 登录绑定。只写入，不回显；留空字段会保留现有加密值。
           </p>
         </div>
       </div>
@@ -29,14 +29,73 @@
       当前账号没有 settings:edit 权限，无法写入支付凭据。
     </div>
 
-    <div v-else-if="!secretStoreConfigured" class="mt-4 rounded-xl border border-rose-500/20 bg-rose-500/10 p-3">
-      <p class="text-sm font-black text-rose-700 dark:text-rose-100">需要先配置服务端 master key</p>
-      <p class="mt-1 text-xs leading-relaxed text-rose-700/80 dark:text-rose-100/75">
-        在后端环境变量设置 <span class="font-mono font-black">PAYMENT_CONFIG_MASTER_KEY</span> 后，后台才允许保存生产支付密钥。
-      </p>
-    </div>
-
     <form v-else class="mt-4 space-y-4" @submit.prevent="saveConfig">
+      <div v-if="!secretStoreConfigured" class="rounded-xl border border-rose-500/20 bg-rose-500/10 p-3">
+        <p class="text-sm font-black text-rose-700 dark:text-rose-100">可以填写，但暂不能保存</p>
+        <p class="mt-1 text-xs leading-relaxed text-rose-700/80 dark:text-rose-100/75">
+          <span class="font-mono font-black">PAYMENT_CONFIG_MASTER_KEY</span>
+          不是 Stripe 或 PayPal 提供的凭据，而是本系统用于加密支付凭据的根密钥。它必须放在后端环境变量中，不能放进数据库或前端。
+          当前输入框仍可填写，但内容不会发送或保存。
+        </p>
+        <div class="mt-3 flex flex-wrap gap-2">
+          <Button type="button" size="sm" variant="outline" @click="generateMasterKey">
+            <KeyRound class="size-3.5" />
+            生成 MASTER KEY
+          </Button>
+        </div>
+
+        <div v-if="generatedMasterKey" class="mt-3 rounded-xl border border-rose-500/20 bg-background/70 p-3">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <p class="text-xs font-black text-foreground">生成的 32 字节密钥</p>
+            <p class="text-[11px] text-muted-foreground">只在当前浏览器显示，不会自动发送到服务器</p>
+          </div>
+          <div class="mt-2 flex min-w-0 items-center gap-2">
+            <Input
+              :model-value="generatedMasterKey"
+              :type="masterKeyVisible ? 'text' : 'password'"
+              readonly
+              class="min-w-0 flex-1 font-mono text-[11px]"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              class="size-9 flex-none"
+              :aria-label="masterKeyVisible ? '隐藏 MASTER KEY' : '显示 MASTER KEY'"
+              @click="masterKeyVisible = !masterKeyVisible"
+            >
+              <EyeOff v-if="masterKeyVisible" class="size-3.5" />
+              <Eye v-else class="size-3.5" />
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              class="size-9 flex-none"
+              aria-label="复制 MASTER KEY"
+              @click="copyGeneratedMasterKey"
+            >
+              <Copy class="size-3.5" />
+            </Button>
+          </div>
+          <p class="mt-2 text-[11px] leading-relaxed text-muted-foreground">
+            把这一行放进后端的 `.env` 或部署环境变量：
+          </p>
+          <code class="mt-1 block break-all rounded-lg border bg-muted/50 p-2 font-mono text-[11px] text-foreground">
+            PAYMENT_CONFIG_MASTER_KEY={{ generatedMasterKey }}
+          </code>
+          <p class="mt-2 text-[11px] leading-relaxed text-muted-foreground">
+            Docker 生产部署放到 `deployment/production.env`；本地直接运行 Go API 时，在启动 API 的终端设置该变量。设置后必须重启 Go API，页面顶部才会变成 MASTER KEY READY。
+          </p>
+        </div>
+      </div>
+
+      <div
+        v-if="selectedGateway === 'paypal'"
+        class="rounded-xl border border-sky-500/20 bg-sky-500/10 p-3 text-xs leading-relaxed text-sky-900 dark:text-sky-100"
+      >
+        PayPal 当前使用 hosted checkout：后端只创建/捕获 PayPal 订单，不接触买家的完整卡号，因此这里不填写卡号，也不会启用 PayPal BIN 限流。
+      </div>
       <div class="grid gap-4 md:grid-cols-2">
         <AdminFormField label="运行环境">
           <select
@@ -123,10 +182,10 @@
             <Trash2 v-else class="size-3.5" />
             清空加密配置
           </Button>
-          <Button type="submit" :disabled="saving">
+          <Button type="submit" :disabled="saving || !secretStoreConfigured">
             <LoaderCircle v-if="saving" class="size-3.5 animate-spin" />
             <Save v-else class="size-3.5" />
-            {{ saving ? '保存中' : '保存加密配置' }}
+            {{ saving ? '保存中' : secretStoreConfigured ? '保存加密配置' : '等待 MASTER KEY' }}
           </Button>
         </div>
       </div>
@@ -137,7 +196,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
-import { LoaderCircle, LockKeyhole, Save, Trash2 } from '@lucide/vue'
+import { Copy, Eye, EyeOff, KeyRound, LoaderCircle, LockKeyhole, Save, Trash2 } from '@lucide/vue'
 import AdminFormField from '@/components/admin/AdminFormField.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -201,6 +260,8 @@ const saving = ref(false)
 const clearing = ref(false)
 const productionConfirmation = ref('')
 const deleteConfirmation = ref('')
+const generatedMasterKey = ref('')
+const masterKeyVisible = ref(false)
 
 const providerFields = computed(() => fieldDefinitions[props.selectedGateway] || [])
 const expectedDeleteConfirmation = computed(() => `DELETE ${String(props.selectedGateway || '').toUpperCase()}`)
@@ -212,6 +273,34 @@ const configuredFieldText = computed(() => {
   const fields = props.status?.configured_fields || []
   return fields.length ? fields.join(', ') : '暂无'
 })
+
+const generateMasterKey = (): void => {
+  if (!globalThis.crypto?.getRandomValues) {
+    toast.error('当前浏览器不支持安全随机数生成，请使用 OpenSSL 或密码管理器生成密钥')
+    return
+  }
+
+  const bytes = new Uint8Array(32)
+  globalThis.crypto.getRandomValues(bytes)
+  generatedMasterKey.value = Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')
+  masterKeyVisible.value = true
+  toast.success('MASTER KEY 已生成，请复制到后端环境变量')
+}
+
+const copyGeneratedMasterKey = async (): Promise<void> => {
+  if (!generatedMasterKey.value || !navigator.clipboard) {
+    toast.error('当前浏览器不支持自动复制，请手动复制密钥')
+    return
+  }
+
+  try {
+    await navigator.clipboard.writeText(`PAYMENT_CONFIG_MASTER_KEY=${generatedMasterKey.value}`)
+    toast.success('MASTER KEY 环境变量行已复制')
+  } catch (error) {
+    console.error('Failed to copy payment config master key:', error)
+    toast.error('复制失败，请手动复制')
+  }
+}
 
 const resetCredentialInputs = (): void => {
   const next: Record<string, string> = {}
@@ -232,6 +321,10 @@ const credentialPayload = (): Record<string, string> => {
 
 const saveConfig = async () => {
   if (!props.selectedGateway) return
+  if (!props.secretStoreConfigured) {
+    toast.error('请先配置 PAYMENT_CONFIG_MASTER_KEY 并重启后端')
+    return
+  }
   if (form.environment === 'production' && productionConfirmation.value !== 'PRODUCTION') {
     toast.error('保存生产支付配置前请输入 PRODUCTION')
     return

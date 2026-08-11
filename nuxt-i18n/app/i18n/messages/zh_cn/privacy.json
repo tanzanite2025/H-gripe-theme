@@ -4,7 +4,7 @@
   "policyHeading": "电子商务网站隐私政策",
   "effectiveDate": "生效日期：[2025/11/11]",
   "section1Title": "1. 简介",
-  "section1Body": "欢迎访问 [www.tanzanite.site]。我们非常重视您的隐私，并致力于保护您的个人信息。本隐私政策说明了当您访问我们的网站 [www.tanzanite.site] 并使用我们的服务时，我们如何收集、使用、披露和保护您的数据。",
+  "section1Body": "欢迎访问 {site}。我们非常重视您的隐私，并致力于保护您的个人信息。本隐私政策说明了当您访问我们的网站 {site} 并使用我们的服务时，我们如何收集、使用、披露和保护您的数据。",
   "section2Title": "2. 我们收集的信息",
   "section2Intro": "我们可能会收集以下类型的个人信息：",
   "identityLabel": "身份数据",

@@ -4,7 +4,7 @@
     "loading": "Indlæser produkter...",
     "empty": {
       "title": "Der er endnu ingen produkter tilgængelige.",
-      "description": "Når produkter udgives via Tanzanite-pluginet, vises de automatisk her.",
+      "description": "Products will appear here automatically once they are published.",
       "categoryTitle": "No products are available in {category} yet.",
       "categoryDescription": "Try another category or clear the category filter to view all products."
     }
@@ -14,6 +14,6 @@
     "view": "Vis"
   },
   "feedback": {
-    "title": "Del din feedback om Tanzanite-butikken"
+    "title": "Share your feedback about the store"
   }
 }

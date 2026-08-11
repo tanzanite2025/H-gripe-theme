@@ -35,7 +35,7 @@ func TestAutoReplyWelcomeUsesConversationStaffIdentityAndCooldown(t *testing.T) 
 	require.NoError(t, db.Create(&conversation).Error)
 	require.NoError(t, db.Create(&ticket.AutoReplyRule{
 		Type:            "welcome",
-		ReplyMessage:    "Welcome to Tanzanite.",
+		ReplyMessage:    "Welcome to H-GRIPE.",
 		Locale:          "en",
 		MessageType:     "text",
 		IsActive:        true,

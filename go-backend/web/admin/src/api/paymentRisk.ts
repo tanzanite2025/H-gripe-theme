@@ -69,6 +69,32 @@ export const paymentRiskApi = {
     return unwrapPayload(await axios.post(`/api/admin/payment/disputes/${id}/evidence/submit`, payload))
   },
 
+  async listPayPalDisputes(params: Record<string, any> = {}) {
+    return unwrapPaged(await axios.get('/api/admin/payment/paypal-disputes', { params }))
+  },
+
+  async getPayPalDisputeEvidence(id: number | string) {
+    return unwrapPayload(await axios.get(`/api/admin/payment/paypal-disputes/${id}/evidence`))
+  },
+
+  paypalDisputeInvoicePDFUrl(id: number | string) {
+    return `/api/admin/payment/paypal-disputes/${id}/evidence/invoice.pdf`
+  },
+
+  async previewPayPalInvoicePDF(payload: Record<string, any>) {
+    return axios.post('/api/admin/payment/paypal-invoice-preview.pdf', payload, {
+      responseType: 'blob',
+    })
+  },
+
+  async getPayPalInvoiceSellerProfile() {
+    return unwrapPayload(await axios.get('/api/admin/settings/paypal-invoice-seller-profile'))
+  },
+
+  async updatePayPalInvoiceSellerProfile(payload: Record<string, any>) {
+    return unwrapPayload(await axios.put('/api/admin/settings/paypal-invoice-seller-profile', payload))
+  },
+
   async listReviews(params: Record<string, any> = {}) {
     return unwrapPaged(await axios.get('/api/admin/payment/reviews', { params }))
   },

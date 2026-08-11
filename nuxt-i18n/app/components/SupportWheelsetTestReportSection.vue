@@ -3,7 +3,7 @@
     <h3 class="support-section__title text-center">Wheelset Test Report</h3>
 
     <p class="support-section__body mt-4 text-center">
-      This section summarises how TANZANITE wheelsets are validated in our in-house lab,
+      This section summarises how our wheelsets are validated in our in-house lab,
       covering lateral load, torsional stiffness, environmental durability, dynamic balance,
       fatigue, and braking performance tests.
     </p>
@@ -284,7 +284,7 @@
         <img
           class="support-video-thumbnail__image"
           src="/testreport/wheelsettestreport/tanzanite-wheelssettestroport-video-firstpicture.webp"
-          alt="Play wheelset test report video for Tanzanite wheelsets"
+          alt="Play wheelset test report video for our wheelsets"
           loading="lazy"
         />
         <div class="support-video-thumbnail__overlay">
@@ -306,8 +306,8 @@
         intended uses.
       </p>
       <p>
-        All the test results of this section are based on the lab criteria of TANZANITE and are implemented at our
-        well-established testing facilities. TANZANITE is only responsible for the test results themselves which are
+        All the test results of this section are based on our lab criteria and are implemented at our
+        well-established testing facilities. Our team is only responsible for the test results themselves which are
         not set for any comparison to other brands or such regards.
       </p>
     </div>
