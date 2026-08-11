@@ -1,4 +1,4 @@
-﻿package review
+package review
 
 import (
 	"commerce-platform/internal/domain/product"

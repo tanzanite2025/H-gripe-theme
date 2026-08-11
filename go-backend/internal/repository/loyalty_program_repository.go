@@ -1,8 +1,8 @@
-﻿package repository
+package repository
 
 import (
-	"errors"
 	"commerce-platform/internal/domain/loyalty"
+	"errors"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"

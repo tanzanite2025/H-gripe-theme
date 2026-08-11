@@ -1,9 +1,9 @@
-﻿package repository
+package repository
 
 import (
+	"commerce-platform/internal/domain/media"
 	"fmt"
 	"strings"
-	"commerce-platform/internal/domain/media"
 )
 
 func (r *MediaRepository) registrationReferences(query mediaAssetReferenceQuery) ([]media.AssetReference, error) {

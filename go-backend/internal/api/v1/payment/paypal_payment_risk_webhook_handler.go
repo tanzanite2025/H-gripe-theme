@@ -1,4 +1,4 @@
-﻿package payment
+package payment
 
 import (
 	"encoding/json"
@@ -96,7 +96,7 @@ func (h *Handler) autoSubmitPayPalDisputeEvidence(c *gin.Context, dispute *payme
 	if h == nil || h.paymentService == nil || dispute == nil {
 		return nil, nil
 	}
-	config, err := h.loadGatewayConfig(pgateway.GatewayPayPal)
+	config, err := h.loadPaymentGatewayConfiguration(pgateway.GatewayPayPal)
 	if err != nil {
 		return nil, err
 	}

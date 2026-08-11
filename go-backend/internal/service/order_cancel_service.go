@@ -1,10 +1,10 @@
-﻿package service
+package service
 
 import (
-	"errors"
-	"fmt"
 	"commerce-platform/internal/domain/order"
 	"commerce-platform/internal/repository"
+	"errors"
+	"fmt"
 )
 
 func (s *OrderService) CancelOrder(id uint, userID uint) error {

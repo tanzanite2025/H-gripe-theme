@@ -15,6 +15,8 @@ type TxManager struct {
 	refundReviewRepo *PaymentRefundRecommendationRepository
 	refundExecRepo   *PaymentRefundExecutionRepository
 	shippingRepo     *ShippingRepository
+	settingRepo      *SettingRepository
+	exchangeRateRepo *ExchangeRateRepository
 	outboxRepo       *OutboxRepository
 }
 
@@ -30,6 +32,8 @@ type TxRepositories struct {
 	RefundReview     *PaymentRefundRecommendationRepository
 	RefundExecution  *PaymentRefundExecutionRepository
 	Shipping         *ShippingRepository
+	Setting          *SettingRepository
+	ExchangeRate     *ExchangeRateRepository
 	Outbox           *OutboxRepository
 }
 
@@ -80,6 +84,14 @@ func (m *TxManager) ConfigureOrderAttributionRepository(repo *OrderAttributionRe
 	m.attributionRepo = repo
 }
 
+func (m *TxManager) ConfigureSettingRepository(repo *SettingRepository) {
+	m.settingRepo = repo
+}
+
+func (m *TxManager) ConfigureExchangeRateRepository(repo *ExchangeRateRepository) {
+	m.exchangeRateRepo = repo
+}
+
 func (m *TxManager) WithinTx(fn func(TxRepositories) error) error {
 	return m.db.Transaction(func(tx *gorm.DB) error {
 		var shippingRepo *ShippingRepository
@@ -110,6 +122,14 @@ func (m *TxManager) WithinTx(fn func(TxRepositories) error) error {
 		if m.refundExecRepo != nil {
 			refundExecRepo = m.refundExecRepo.WithTx(tx)
 		}
+		var settingRepo *SettingRepository
+		if m.settingRepo != nil {
+			settingRepo = m.settingRepo.WithTx(tx)
+		}
+		var exchangeRateRepo *ExchangeRateRepository
+		if m.exchangeRateRepo != nil {
+			exchangeRateRepo = m.exchangeRateRepo.WithTx(tx)
+		}
 		return fn(TxRepositories{
 			Order:            m.orderRepo.WithTx(tx),
 			OrderAttribution: attributionRepo,
@@ -122,6 +142,8 @@ func (m *TxManager) WithinTx(fn func(TxRepositories) error) error {
 			RefundReview:     refundReviewRepo,
 			RefundExecution:  refundExecRepo,
 			Shipping:         shippingRepo,
+			Setting:          settingRepo,
+			ExchangeRate:     exchangeRateRepo,
 			Outbox:           outboxRepo,
 		})
 	})

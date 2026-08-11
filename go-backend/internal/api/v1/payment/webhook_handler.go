@@ -1,16 +1,16 @@
-﻿package payment
+package payment
 
 import (
-	"encoding/json"
-	"errors"
-	"fmt"
-	"io"
-	"net/http"
 	paymentdomain "commerce-platform/internal/domain/payment"
 	"commerce-platform/internal/pkg/apierror"
 	pgateway "commerce-platform/internal/pkg/payment" // alias for gateway
 	"commerce-platform/internal/pkg/response"
 	"commerce-platform/internal/service"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -62,7 +62,7 @@ func (h *Handler) handleStripeWebhook(c *gin.Context, payload []byte) {
 		return
 	}
 
-	config, err := h.loadGatewayConfig(pgateway.GatewayStripe)
+	config, err := h.loadPaymentGatewayConfiguration(pgateway.GatewayStripe)
 	if err != nil {
 		apierror.RespondInternalError(c, err)
 		return

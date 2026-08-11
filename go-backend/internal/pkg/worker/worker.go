@@ -1,8 +1,8 @@
-﻿package worker
+package worker
 
 import (
-	"context"
 	"commerce-platform/internal/pkg/config"
+	"context"
 
 	"commerce-platform/internal/pkg/logger"
 

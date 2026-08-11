@@ -1,4 +1,4 @@
-﻿package payment
+package payment
 
 import (
 	"testing"
@@ -14,7 +14,7 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-func TestLoadGatewayConfigUsesDomainManagedEncryptedConfig(t *testing.T) {
+func TestLoadPaymentGatewayConfigurationUsesDomainManagedEncryptedConfig(t *testing.T) {
 	masterKey := "runtime-payment-config-test-master-key"
 	t.Setenv(pgateway.PaymentConfigMasterKeyEnv, masterKey)
 	t.Setenv("PAYPAL_CLIENT_ID", "env-paypal-client")
@@ -43,7 +43,7 @@ func TestLoadGatewayConfigUsesDomainManagedEncryptedConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	handler := NewHandler(nil, nil, adminSettings, nil, nil, nil, nil, nil, nil)
-	config, err := handler.loadGatewayConfig(pgateway.GatewayPayPal)
+	config, err := handler.loadPaymentGatewayConfiguration(pgateway.GatewayPayPal)
 
 	require.NoError(t, err)
 	require.Equal(t, "admin-paypal-client", config.APIKey)

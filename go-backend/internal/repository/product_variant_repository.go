@@ -1,8 +1,8 @@
-﻿package repository
+package repository
 
 import (
-	"fmt"
 	"commerce-platform/internal/domain/product"
+	"fmt"
 
 	"gorm.io/gorm"
 )

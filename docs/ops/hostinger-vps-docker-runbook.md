@@ -1,10 +1,10 @@
 # Storefront Theme Hostinger VPS Docker Runbook
 
-This runbook applies only to the `h-gripe-theme` storefront, admin, and Go API. The ERP application remains a separate Compose project with separate images, databases, volumes, and production secrets.
+This runbook applies only to the `commerce-platform` storefront, admin, and Go API. The ERP application remains a separate Compose project with separate images, databases, volumes, and production secrets.
 
 ## Production Boundary
 
-The Hostinger VPS has one shared public gateway project named `shared-edge`. The storefront joins that gateway network as a separate Compose project named `h-gripe-theme`.
+The Hostinger VPS has one shared public gateway project named `shared-edge`. The storefront joins that gateway network as a separate Compose project named `commerce-platform`.
 
 Current Hostinger VPS target:
 
@@ -19,11 +19,11 @@ Do not guess the machine target during deployment. If the MCP tools do not alrea
 Cloudflare
   -> Hostinger firewall: 80/443
   -> shared-edge (shared Caddy)
-      -> erp.tanzanite.site -> erp-web:8080
+      -> erp.legacy.example -> erp-web:8080
       -> learn.gripe       -> theme-web:8080
       -> admin.learn.gripe -> theme-web:8080
 
-h-gripe-theme project
+commerce-platform project
   -> web -> storefront
          -> admin
          -> api -> PostgreSQL
@@ -41,7 +41,7 @@ edge network through the `web` service only.
 1. Keep the shared gateway running.
 2. Keep `learn.gripe`, `www.learn.gripe`, and `admin.learn.gripe` routed to `theme-web`.
 3. Keep the ERP route separate.
-4. Do not recreate the old `tanzanite-edge` project or reintroduce old public hostnames into the active boundary.
+4. Do not recreate the old `commerce-platform-edge` project or reintroduce old public hostnames into the active boundary.
 
 Browser API requests stay same-origin through `web`. Nuxt server-side requests to `/api/**` use Nitro's internal proxy and go directly to `api:9000`, so SSR does not loop through Cloudflare or the public gateway.
 
@@ -65,9 +65,9 @@ The root `docker-compose.yml` remains a local development convenience and must n
 
 The production project must keep these boundaries:
 
-1. Project name: `h-gripe-theme`.
-2. Images: `ghcr.io/tanzanite2025/tanzanite-theme-*`.
-3. Volumes: `h-gripe-theme-postgres-data`, `h-gripe-theme-redis-data`, and `h-gripe-theme-uploads`.
+1. Project name: `commerce-platform`.
+2. Images: `${IMAGE_REGISTRY}/${IMAGE_NAMESPACE}/commerce-platform-*`.
+3. Volumes: `commerce-platform-postgres-data`, `commerce-platform-redis-data`, and `commerce-platform-uploads`.
 4. Data networks: project-owned internal `db` and `cache` networks.
 5. Application network: project-owned `app` network for service-to-service traffic and required outbound integrations.
 6. Shared network: external `shared-edge`, joined only by `web`.
@@ -76,8 +76,8 @@ The production project must keep these boundaries:
 9. No ERP environment variables, volumes, image tags, or database credentials.
 10. `TRUSTED_PROXIES` contains only private Docker CIDRs. The shared Caddy gateway remains responsible for strict Cloudflare proxy trust.
 
-The Compose file now defaults to the `h-gripe-theme` project and volume names. Existing
-VPS resources named `tanzanite-theme-*` are not renamed automatically. During a
+The Compose file now defaults to the `commerce-platform` project and volume names. Existing
+VPS resources named `commerce-platform-*` are not renamed automatically. During a
 volume migration, set `COMPOSE_PROJECT_NAME`, `POSTGRES_DATA_VOLUME_NAME`,
 `REDIS_DATA_VOLUME_NAME`, and `UPLOADS_VOLUME_NAME` in the untracked production env
 to the old names until the backups and data copy have been verified. Do not start
@@ -94,10 +94,10 @@ Database and cache reachability is intentional:
 
 Every commit pushed to `master` produces one complete deployable release. GitHub Actions validates the backend and both frontends, then publishes:
 
-- `ghcr.io/tanzanite2025/tanzanite-theme-api`
-- `ghcr.io/tanzanite2025/tanzanite-theme-storefront`
-- `ghcr.io/tanzanite2025/tanzanite-theme-admin`
-- `ghcr.io/tanzanite2025/tanzanite-theme-web`
+- `${IMAGE_REGISTRY}/${IMAGE_NAMESPACE}/commerce-platform-api`
+- `${IMAGE_REGISTRY}/${IMAGE_NAMESPACE}/commerce-platform-storefront`
+- `${IMAGE_REGISTRY}/${IMAGE_NAMESPACE}/commerce-platform-admin`
+- `${IMAGE_REGISTRY}/${IMAGE_NAMESPACE}/commerce-platform-web`
 
 Production images are published with both a mutable `master` tag and an immutable full tag `sha-<40-character-commit>`.
 
@@ -125,7 +125,7 @@ The script fetches `origin/master`, resolves the full commit SHA, waits for all 
 In Hostinger Docker Manager create:
 
 ```text
-Project name: h-gripe-theme
+Project name: commerce-platform
 Compose source: compose.prod.yml
 Environment: deployment/production.env values, including IMAGE_TAG=master
 ```
@@ -246,12 +246,12 @@ Normal release:
 
 1. Push the tested commit to `master`.
 2. Wait for the publish-images workflow to finish.
-3. For MCP deployment, call `VPS_getVirtualMachinesV1`, confirm VM `1834903`, call `VPS_getProjectListV1`, confirm the existing `h-gripe-theme` project, then call `VPS_updateProjectV1` for that project. For SSH deployment, run `./deploy.sh` on the VPS for an immutable SHA release.
+3. For MCP deployment, call `VPS_getVirtualMachinesV1`, confirm VM `1834903`, call `VPS_getProjectListV1`, confirm the existing `commerce-platform` project, then call `VPS_updateProjectV1` for that project. For SSH deployment, run `./deploy.sh` on the VPS for an immutable SHA release.
 4. Verify all containers and smoke tests.
 
 For a Hostinger Docker Manager release, keep `IMAGE_TAG=master` and run Project Update.
 
-Do not use `VPS_createNewProjectV1` for routine releases. It is only for initial project creation or deliberate project replacement. A normal release must update the existing `h-gripe-theme` Compose project so PostgreSQL, Redis, uploads, networks, and environment stay attached to the same production boundary.
+Do not use `VPS_createNewProjectV1` for routine releases. It is only for initial project creation or deliberate project replacement. A normal release must update the existing `commerce-platform` Compose project so PostgreSQL, Redis, uploads, networks, and environment stay attached to the same production boundary.
 
 If a local helper command is unavailable, for example Windows blocks the bundled `rg.exe`, use an equivalent read-only PowerShell command such as `Get-ChildItem ... | Select-String ...`. Treat local tooling failures as local diagnostics, not as proof that the production deployment target is wrong.
 
@@ -267,7 +267,7 @@ Database migrations need their own rollback plan. Image rollback cannot reverse 
 Before accepting production data, establish:
 
 - Daily PostgreSQL logical backups.
-- Daily backup of `h-gripe-theme-uploads`.
+- Daily backup of `commerce-platform-uploads`.
 - Off-VPS copy of both backup sets.
 - Monthly restore exercise.
 

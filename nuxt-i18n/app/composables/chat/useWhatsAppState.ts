@@ -1,4 +1,4 @@
-﻿import { ref, watch, nextTick, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, watch, nextTick, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useI18n } from '#imports'
 import { useAuth } from '~/composables/useAuth'
 import { useCart } from '~/composables/useCart'

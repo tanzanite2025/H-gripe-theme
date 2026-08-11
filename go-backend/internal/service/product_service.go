@@ -1,12 +1,12 @@
-﻿package service
+package service
 
 import (
-	"errors"
-	"fmt"
 	"commerce-platform/internal/domain/product"
 	"commerce-platform/internal/pkg/cache"
 	"commerce-platform/internal/pkg/safehtml"
 	"commerce-platform/internal/repository"
+	"errors"
+	"fmt"
 	"time"
 
 	"gorm.io/gorm"

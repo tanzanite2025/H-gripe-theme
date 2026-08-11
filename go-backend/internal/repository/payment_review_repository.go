@@ -1,6 +1,6 @@
 package repository
 
-import "tanzanite/internal/domain/payment"
+import "commerce-platform/internal/domain/payment"
 
 func (r *PaymentRepository) CreatePaymentReview(review *payment.PaymentReview) error {
 	return r.db.Create(review).Error

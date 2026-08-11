@@ -1,9 +1,9 @@
-﻿package ticket
+package ticket
 
 import (
+	"commerce-platform/internal/domain/ticket"
 	"net/http"
 	"strconv"
-	"commerce-platform/internal/domain/ticket"
 
 	"github.com/gin-gonic/gin"
 )

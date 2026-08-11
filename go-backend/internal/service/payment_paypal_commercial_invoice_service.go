@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"tanzanite/internal/pkg/invoice"
+	"commerce-platform/internal/pkg/invoice"
 )
 
 type PayPalDisputeInvoiceOptions struct {

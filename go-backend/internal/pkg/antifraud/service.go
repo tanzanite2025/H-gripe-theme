@@ -1,4 +1,4 @@
-﻿package antifraud
+package antifraud
 
 import (
 	"context"

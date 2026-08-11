@@ -1,8 +1,8 @@
-﻿package middleware
+package middleware
 
 import (
-	"net/http"
 	"commerce-platform/internal/domain/auth"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 )

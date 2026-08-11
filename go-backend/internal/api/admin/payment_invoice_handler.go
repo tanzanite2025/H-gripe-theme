@@ -7,11 +7,11 @@ import (
 	"strings"
 	"time"
 
-	"tanzanite/internal/domain/setting"
-	"tanzanite/internal/pkg/apierror"
-	"tanzanite/internal/pkg/invoice"
-	"tanzanite/internal/pkg/response"
-	"tanzanite/internal/service"
+	"commerce-platform/internal/domain/setting"
+	"commerce-platform/internal/pkg/apierror"
+	"commerce-platform/internal/pkg/invoice"
+	"commerce-platform/internal/pkg/response"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

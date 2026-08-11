@@ -6,10 +6,10 @@
           <LockKeyhole class="size-3.5 text-orange-500" />
         </div>
         <div>
-          <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Gateway Connection</p>
-          <h3 class="mt-1 text-sm font-black tracking-tight text-foreground">填写商户 API 凭据</h3>
+        <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">{{ t('payment.gatewayConnection') }}</p>
+          <h3 class="mt-1 text-sm font-black tracking-tight text-foreground">{{ t('payment.enterCredentials') }}</h3>
           <p class="mt-1 text-xs leading-relaxed text-muted-foreground">
-            这是单商户接入方式，不是 OAuth 登录绑定。只写入，不回显；留空字段会保留现有加密值。
+            {{ t('payment.credentialDescription') }}
           </p>
         </div>
       </div>
@@ -17,37 +17,35 @@
         class="rounded-full border px-2.5 py-1 text-[11px] font-black"
         :class="secretStoreConfigured ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-200' : 'border-rose-500/20 bg-rose-500/10 text-rose-700 dark:text-rose-200'"
       >
-        {{ secretStoreConfigured ? 'MASTER KEY READY' : '缺 MASTER KEY' }}
+        {{ secretStoreConfigured ? t('payment.masterKeyReady') : t('payment.missingMasterKey') }}
       </span>
     </div>
 
     <div v-if="!selectedGateway" class="mt-4 rounded-xl border border-dashed p-5 text-sm text-muted-foreground">
-      先选择一个支付服务商。
+      {{ t('payment.selectGatewayFirst') }}
     </div>
 
     <div v-else-if="!canEdit" class="mt-4 rounded-xl border border-dashed p-5 text-sm text-muted-foreground">
-      当前账号没有 settings:edit 权限，无法写入支付凭据。
+      {{ t('payment.noEditPermission') }}
     </div>
 
     <form v-else class="mt-4 space-y-4" @submit.prevent="saveConfig">
       <div v-if="!secretStoreConfigured" class="rounded-xl border border-rose-500/20 bg-rose-500/10 p-3">
-        <p class="text-sm font-black text-rose-700 dark:text-rose-100">可以填写，但暂不能保存</p>
+        <p class="text-sm font-black text-rose-700 dark:text-rose-100">{{ t('payment.canFillCannotSave') }}</p>
         <p class="mt-1 text-xs leading-relaxed text-rose-700/80 dark:text-rose-100/75">
-          <span class="font-mono font-black">PAYMENT_CONFIG_MASTER_KEY</span>
-          不是 Stripe 或 PayPal 提供的凭据，而是本系统用于加密支付凭据的根密钥。它必须放在后端环境变量中，不能放进数据库或前端。
-          当前输入框仍可填写，但内容不会发送或保存。
+          {{ t('payment.masterKeyDescription') }}
         </p>
         <div class="mt-3 flex flex-wrap gap-2">
           <Button type="button" size="sm" variant="outline" @click="generateMasterKey">
             <KeyRound class="size-3.5" />
-            生成 MASTER KEY
+            {{ t('payment.generateMasterKey') }}
           </Button>
         </div>
 
         <div v-if="generatedMasterKey" class="mt-3 rounded-xl border border-rose-500/20 bg-background/70 p-3">
           <div class="flex flex-wrap items-center justify-between gap-2">
-            <p class="text-xs font-black text-foreground">生成的 32 字节密钥</p>
-            <p class="text-[11px] text-muted-foreground">只在当前浏览器显示，不会自动发送到服务器</p>
+            <p class="text-xs font-black text-foreground">{{ t('payment.generatedKey') }}</p>
+            <p class="text-[11px] text-muted-foreground">{{ t('payment.keyBrowserOnly') }}</p>
           </div>
           <div class="mt-2 flex min-w-0 items-center gap-2">
             <Input
@@ -72,20 +70,20 @@
               variant="outline"
               size="icon"
               class="size-9 flex-none"
-              aria-label="复制 MASTER KEY"
+              :aria-label="t('payment.copyMasterKey')"
               @click="copyGeneratedMasterKey"
             >
               <Copy class="size-3.5" />
             </Button>
           </div>
           <p class="mt-2 text-[11px] leading-relaxed text-muted-foreground">
-            把这一行放进后端的 `.env` 或部署环境变量：
+            {{ t('payment.envLine') }}
           </p>
           <code class="mt-1 block break-all rounded-lg border bg-muted/50 p-2 font-mono text-[11px] text-foreground">
             PAYMENT_CONFIG_MASTER_KEY={{ generatedMasterKey }}
           </code>
           <p class="mt-2 text-[11px] leading-relaxed text-muted-foreground">
-            Docker 生产部署放到 `deployment/production.env`；本地直接运行 Go API 时，在启动 API 的终端设置该变量。设置后必须重启 Go API，页面顶部才会变成 MASTER KEY READY。
+            {{ t('payment.restartBackend') }}
           </p>
         </div>
       </div>
@@ -94,23 +92,27 @@
         v-if="selectedGateway === 'paypal'"
         class="rounded-xl border border-sky-500/20 bg-sky-500/10 p-3 text-xs leading-relaxed text-sky-900 dark:text-sky-100"
       >
-        PayPal 当前使用 hosted checkout：后端只创建/捕获 PayPal 订单，不接触买家的完整卡号，因此这里不填写卡号，也不会启用 PayPal BIN 限流。
+          {{ t('payment.paypalHostedCheckout') }}
       </div>
       <div class="grid gap-4 md:grid-cols-2">
-        <AdminFormField label="运行环境">
-          <select
-            v-model="form.environment"
-            class="h-10 w-full rounded-md border border-input bg-background px-3 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <option value="sandbox">Sandbox / Test</option>
-            <option value="production">Production / Live</option>
-          </select>
+        <AdminFormField
+          :label="t('payment.integrationMode')"
+          :description="t('payment.integrationModeDescription')"
+        >
+          <div class="flex h-10 items-center justify-between rounded-md border border-input bg-muted/40 px-3 text-sm">
+            <span class="font-black text-foreground">
+              {{ form.environment === 'sandbox' ? t('payment.sandbox') : t('payment.production') }}
+            </span>
+            <span class="text-xs text-muted-foreground">
+              {{ form.environment === 'sandbox' ? t('payment.testCredentials') : t('payment.liveCredentials') }}
+            </span>
+          </div>
         </AdminFormField>
 
         <div class="rounded-xl border bg-background/70 p-3">
-          <p class="text-[11px] font-black uppercase tracking-widest text-muted-foreground/60">当前来源</p>
+          <p class="text-[11px] font-black uppercase tracking-widest text-muted-foreground/60">{{ t('payment.credentialSource') }}</p>
           <p class="mt-1 text-sm font-black text-foreground">
-            {{ status?.runtime_source || 'environment' }}
+            {{ credentialSourceLabel(status?.runtime_source) }}
           </p>
         </div>
 
@@ -141,8 +143,8 @@
 
       <div v-if="form.environment === 'production'" class="rounded-xl border border-amber-500/20 bg-amber-500/10 p-3">
         <AdminFormField
-          label="生产环境确认"
-          description="保存 production 配置前必须输入确认词；后端也会强制校验。"
+          :label="t('payment.productionConfirmation')"
+          :description="t('payment.productionConfirmationDescription')"
         >
           <Input
             v-model.trim="productionConfirmation"
@@ -155,8 +157,8 @@
 
       <div v-if="status?.admin_config_configured" class="rounded-xl border bg-background/70 p-3">
         <AdminFormField
-          label="清空配置确认"
-          :description="`清空当前渠道加密配置前输入 ${expectedDeleteConfirmation}`"
+          :label="t('payment.clearConfigConfirmation')"
+          :description="`${t('payment.clearConfigConfirmation')} ${expectedDeleteConfirmation}`"
         >
           <Input
             v-model.trim="deleteConfirmation"
@@ -169,7 +171,7 @@
 
       <div class="flex flex-wrap items-center justify-between gap-3">
         <p class="text-xs text-muted-foreground">
-          已配置字段：{{ configuredFieldText }}
+          {{ t('payment.configuredFields', { fields: configuredFieldText }) }}
         </p>
         <div class="flex flex-wrap gap-2">
           <Button
@@ -180,12 +182,12 @@
           >
             <LoaderCircle v-if="clearing" class="size-3.5 animate-spin" />
             <Trash2 v-else class="size-3.5" />
-            清空加密配置
+            {{ t('payment.clearEncryptedConfig') }}
           </Button>
           <Button type="submit" :disabled="saving || !secretStoreConfigured">
             <LoaderCircle v-if="saving" class="size-3.5 animate-spin" />
             <Save v-else class="size-3.5" />
-            {{ saving ? '保存中' : secretStoreConfigured ? '保存加密配置' : '等待 MASTER KEY' }}
+            {{ saving ? t('common.saving') : secretStoreConfigured ? t('payment.saveEncryptedConfig') : t('payment.waitForMasterKey') }}
           </Button>
         </div>
       </div>
@@ -202,6 +204,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import axios from '@/utils/axios'
+import { useAdminI18n } from '@/i18n'
 import type { PaymentGatewayCredentialField, PaymentGatewayRuntimeStatus } from './settingsTypes'
 
 const props = withDefaults(defineProps<{
@@ -219,6 +222,7 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{
   (event: 'saved'): void
 }>()
+const { t } = useAdminI18n()
 
 const fieldDefinitions: Record<string, PaymentGatewayCredentialField[]> = {
   stripe: [
@@ -271,12 +275,12 @@ const canClearConfig = computed(() => (
 ))
 const configuredFieldText = computed(() => {
   const fields = props.status?.configured_fields || []
-  return fields.length ? fields.join(', ') : '暂无'
+  return fields.length ? fields.join(', ') : t('common.none')
 })
 
 const generateMasterKey = (): void => {
   if (!globalThis.crypto?.getRandomValues) {
-    toast.error('当前浏览器不支持安全随机数生成，请使用 OpenSSL 或密码管理器生成密钥')
+    toast.error(t('payment.secureRandomUnsupported'))
     return
   }
 
@@ -284,21 +288,21 @@ const generateMasterKey = (): void => {
   globalThis.crypto.getRandomValues(bytes)
   generatedMasterKey.value = Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')
   masterKeyVisible.value = true
-  toast.success('MASTER KEY 已生成，请复制到后端环境变量')
+  toast.success(t('payment.masterKeyGenerated'))
 }
 
 const copyGeneratedMasterKey = async (): Promise<void> => {
   if (!generatedMasterKey.value || !navigator.clipboard) {
-    toast.error('当前浏览器不支持自动复制，请手动复制密钥')
+    toast.error(t('payment.copyMasterKeyUnsupported'))
     return
   }
 
   try {
     await navigator.clipboard.writeText(`PAYMENT_CONFIG_MASTER_KEY=${generatedMasterKey.value}`)
-    toast.success('MASTER KEY 环境变量行已复制')
+    toast.success(t('payment.masterKeyCopied'))
   } catch (error) {
     console.error('Failed to copy payment config master key:', error)
-    toast.error('复制失败，请手动复制')
+    toast.error(t('payment.copyFailed'))
   }
 }
 
@@ -322,16 +326,25 @@ const credentialPayload = (): Record<string, string> => {
 const saveConfig = async () => {
   if (!props.selectedGateway) return
   if (!props.secretStoreConfigured) {
-    toast.error('请先配置 PAYMENT_CONFIG_MASTER_KEY 并重启后端')
+    toast.error(t('payment.masterKeyRequired'))
     return
   }
   if (form.environment === 'production' && productionConfirmation.value !== 'PRODUCTION') {
-    toast.error('保存生产支付配置前请输入 PRODUCTION')
+    toast.error(t('payment.saveProductionConfirmation'))
     return
   }
   const credentials = credentialPayload()
   if (!Object.keys(credentials).length && !props.status?.admin_config_configured) {
-    toast.error('至少填写一个支付凭据字段')
+    toast.error(t('payment.atLeastOneCredential'))
+    return
+  }
+  if (
+    props.status?.admin_config_configured &&
+    props.status.environment &&
+    props.status.environment !== form.environment &&
+    !Object.keys(credentials).length
+  ) {
+    toast.error(t('payment.switchCredentialMode'))
     return
   }
 
@@ -342,7 +355,7 @@ const saveConfig = async () => {
       credentials,
       confirmation: form.environment === 'production' ? productionConfirmation.value : '',
     })
-    toast.success('已保存加密支付配置')
+    toast.success(t('payment.encryptedConfigSaved'))
     productionConfirmation.value = ''
     resetCredentialInputs()
     emit('saved')
@@ -356,7 +369,7 @@ const saveConfig = async () => {
 const clearConfig = async () => {
   if (!props.selectedGateway) return
   if (!canClearConfig.value) {
-    toast.error(`清空前请输入 ${expectedDeleteConfirmation.value}`)
+    toast.error(t('payment.clearConfirmationRequired', { confirmation: expectedDeleteConfirmation.value }))
     return
   }
   clearing.value = true
@@ -364,7 +377,7 @@ const clearConfig = async () => {
     await axios.delete(`/api/admin/settings/payment-gateways/${props.selectedGateway}`, {
       data: { confirmation: deleteConfirmation.value },
     })
-    toast.success('已清空加密支付配置')
+    toast.success(t('payment.encryptedConfigCleared'))
     deleteConfirmation.value = ''
     resetCredentialInputs()
     emit('saved')
@@ -376,7 +389,7 @@ const clearConfig = async () => {
 }
 
 watch(() => props.selectedGateway, () => {
-  form.environment = props.status?.environment || 'sandbox'
+  form.environment = props.status?.environment || 'production'
   productionConfirmation.value = ''
   deleteConfirmation.value = ''
   resetCredentialInputs()
@@ -385,4 +398,10 @@ watch(() => props.selectedGateway, () => {
 watch(() => props.status?.environment, (environment) => {
   if (environment) form.environment = environment
 })
+
+const credentialSourceLabel = (source?: string): string => {
+  if (source === 'admin-encrypted') return t('payment.adminEncrypted')
+  if (source === 'environment') return t('payment.serverEnvironment')
+  return source || t('payment.credentialNotConfigured')
+}
 </script>

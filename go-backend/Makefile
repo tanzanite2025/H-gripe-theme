@@ -1,4 +1,4 @@
-﻿.PHONY: help build run test clean docker-build docker-run lint fmt migrate dev
+.PHONY: help build run test clean docker-build docker-run lint fmt migrate dev
 
 # 变量定义
 APP_NAME=commerce-platform-api

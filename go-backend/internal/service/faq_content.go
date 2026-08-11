@@ -1,10 +1,10 @@
-﻿package service
+package service
 
 import (
-	"fmt"
-	"strings"
 	"commerce-platform/internal/domain/faq"
 	"commerce-platform/internal/pkg/faqcontent"
+	"fmt"
+	"strings"
 	"unicode"
 )
 

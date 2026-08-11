@@ -1,4 +1,4 @@
-﻿package payment
+package payment
 
 import (
 	"encoding/json"
@@ -34,7 +34,7 @@ type verifiedProviderPayment struct {
 }
 
 func (h *Handler) handlePayPalWebhook(c *gin.Context, payload []byte) {
-	config, err := h.loadGatewayConfig(pgateway.GatewayPayPal)
+	config, err := h.loadPaymentGatewayConfiguration(pgateway.GatewayPayPal)
 	if err != nil {
 		apierror.RespondInternalError(c, err)
 		return
@@ -98,7 +98,7 @@ func (h *Handler) handlePayPalWebhook(c *gin.Context, payload []byte) {
 }
 
 func (h *Handler) handleAlipayWebhook(c *gin.Context, payload []byte) {
-	config, err := h.loadGatewayConfig(pgateway.GatewayAlipay)
+	config, err := h.loadPaymentGatewayConfiguration(pgateway.GatewayAlipay)
 	if err != nil {
 		respondAlipayWebhookFailure(c, http.StatusInternalServerError)
 		return
@@ -144,7 +144,7 @@ func (h *Handler) handleAlipayWebhook(c *gin.Context, payload []byte) {
 }
 
 func (h *Handler) handleWechatWebhook(c *gin.Context, payload []byte) {
-	config, err := h.loadGatewayConfig(pgateway.GatewayWechat)
+	config, err := h.loadPaymentGatewayConfiguration(pgateway.GatewayWechat)
 	if err != nil {
 		respondWechatWebhookFailure(c, http.StatusInternalServerError, "wechat config error")
 		return

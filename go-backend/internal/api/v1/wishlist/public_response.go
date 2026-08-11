@@ -1,4 +1,4 @@
-﻿package wishlist
+package wishlist
 
 import (
 	productdomain "commerce-platform/internal/domain/product"

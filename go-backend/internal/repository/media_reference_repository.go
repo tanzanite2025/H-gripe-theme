@@ -1,4 +1,4 @@
-﻿package repository
+package repository
 
 import "commerce-platform/internal/domain/media"
 

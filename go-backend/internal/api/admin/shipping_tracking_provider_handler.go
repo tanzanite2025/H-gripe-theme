@@ -1,10 +1,10 @@
-﻿package admin
+package admin
 
 import (
-	"errors"
 	shippingdomain "commerce-platform/internal/domain/shipping"
 	"commerce-platform/internal/pkg/apierror"
 	"commerce-platform/internal/pkg/response"
+	"errors"
 
 	"github.com/gin-gonic/gin"
 )

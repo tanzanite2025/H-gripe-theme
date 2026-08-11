@@ -1,4 +1,4 @@
-﻿package service
+package service
 
 import (
 	"strings"
@@ -9,10 +9,10 @@ import (
 )
 
 var domainManagedSettingGroups = map[string]struct{}{
-	"loyalty":             {},
-	"redeem":              {},
-	"currency":            {},
-	"payment_secret":      {},
+	"loyalty":        {},
+	"redeem":         {},
+	"currency":       {},
+	"payment_secret": {},
 	setting.PayPalDisputeInvoiceSellerProfileGroup: {},
 	seodomain.Group:       {},
 	analyticsdomain.Group: {},

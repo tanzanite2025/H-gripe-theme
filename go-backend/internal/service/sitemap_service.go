@@ -1,12 +1,12 @@
-﻿package service
+package service
 
 import (
-	"encoding/xml"
-	"fmt"
-	"strings"
 	"commerce-platform/internal/domain/post"
 	seodomain "commerce-platform/internal/domain/seo"
 	"commerce-platform/internal/repository"
+	"encoding/xml"
+	"fmt"
+	"strings"
 	"time"
 )
 

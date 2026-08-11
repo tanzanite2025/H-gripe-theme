@@ -1,12 +1,12 @@
-﻿package admin
+package admin
 
 import (
-	"fmt"
-	"net/http"
-	"strings"
 	"commerce-platform/internal/pkg/pagination"
 	"commerce-platform/internal/pkg/response"
 	"commerce-platform/internal/service"
+	"fmt"
+	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )

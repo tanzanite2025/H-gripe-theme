@@ -174,6 +174,33 @@
             {{ t('cartDrawer.summary.finalShippingNote') }}
           </p>
 
+          <div
+            v-if="shouldPrepareStripeExpressCheckout"
+            class="mb-3"
+          >
+            <StripeExpressCheckoutElement
+              ref="stripeExpressCheckoutElementRef"
+              :publishable-key="stripeExpressCheckoutPublishableKey"
+              :amount="stripeExpressCheckoutAmount"
+              :currency="cartCurrency"
+              :line-items="stripeExpressCheckoutLineItems"
+              :allowed-shipping-countries="stripeExpressCheckoutAllowedShippingCountries"
+              :disabled="isStripeExpressCheckoutProcessing"
+              @ready="handleStripeExpressCheckoutAvailability"
+              @available-payment-methods-change="handleStripeExpressCheckoutAvailability"
+              @confirm="handleStripeExpressCheckoutConfirm"
+              @shipping-address-change="handleStripeExpressCheckoutShippingAddressChange"
+              @shipping-rate-change="handleStripeExpressCheckoutShippingRateChange"
+              @error="handleStripeExpressCheckoutError"
+            />
+            <p
+              v-if="stripeExpressCheckoutError"
+              class="mt-2 rounded-lg border border-rose-300/20 bg-rose-300/10 px-3 py-2 text-xs text-rose-100"
+            >
+              {{ stripeExpressCheckoutError }}
+            </p>
+          </div>
+
           <div class="grid gap-3 sm:grid-cols-2">
             <button
               type="button"
@@ -199,11 +226,25 @@
 </template>
 
 <script setup lang="ts">
-import { watch, onBeforeUnmount } from 'vue'
+import { computed, ref, watch, onBeforeUnmount, onMounted } from 'vue'
+import type {
+  StripeExpressCheckoutElementConfirmEvent,
+  StripeExpressCheckoutElementShippingAddressChangeEvent,
+  StripeExpressCheckoutElementShippingRateChangeEvent,
+} from '@stripe/stripe-js'
 import { setSidebarHandlesHidden } from '~/utils/sidebarHandles'
 import { useWishlist } from '~/composables/useWishlist'
 import { useCart } from '~/composables/useCart'
+import { useAuth } from '~/composables/useAuth'
+import { usePaymentMethods } from '~/composables/usePaymentMethods'
+import { useStripeExpressCheckoutOrder } from '~/composables/useStripeExpressCheckoutOrder'
+import {
+  convertMajorAmountToStripeMinorAmount,
+  type StripeExpressCheckoutAvailablePaymentMethods,
+} from '~/composables/useStripeExpressCheckout'
+import { COUNTRIES } from '~/data/countries'
 import BrowsingHistoryDark from '~/components/BrowsingHistoryDark.vue'
+import StripeExpressCheckoutElement from '~/components/StripeExpressCheckoutElement.vue'
 
 const {
   cartItems,
@@ -211,6 +252,8 @@ const {
   cartVariant,
   cartCount,
   subtotal,
+  cartCurrency,
+  clearCart,
   closeCart,
   openCheckout,
   updateQuantity,
@@ -222,12 +265,208 @@ const {
 
 const { addToWishlist } = useWishlist()
 const { t } = useI18n()
+const auth = useAuth()
+const { countryCode } = useStorefrontContext()
+const {
+  paymentMethodOptions,
+  loadPaymentMethods,
+} = usePaymentMethods()
+const {
+  loadStripeExpressCheckoutPublishableKey,
+  createStripeExpressCheckoutOrderAndPaymentSession,
+  buildExpressCheckoutShippingQuoteAddress,
+} = useStripeExpressCheckoutOrder()
 
 const SIDEBAR_TOKEN_CART = 'cart-drawer'
+const stripeExpressCheckoutPublishableKey = ref('')
+const stripeExpressCheckoutError = ref('')
+const isStripeExpressCheckoutProcessing = ref(false)
+const isStripeExpressCheckoutWalletAvailable = ref(true)
+const stripeExpressCheckoutElementRef = ref<{
+  submitExpressCheckoutPayment: () => Promise<void>
+  confirmExpressCheckoutPayment: (clientSecret: string, returnUrl: string) => Promise<{ status: string; paymentIntentId?: string }>
+  resetExpressCheckoutPaymentState: () => void
+} | null>(null)
+
+const stripeExpressCheckoutAmount = computed(() => Number(subtotal.value || 0))
+const stripeExpressCheckoutLineItems = computed(() =>
+  cartItems.value.map(item => ({
+    name: item.title,
+    amount: convertMajorAmountToStripeMinorAmount(
+      Number(item.price || 0) * Math.max(1, Number(item.quantity || 1)),
+      cartCurrency.value,
+    ),
+  })),
+)
+const stripeExpressCheckoutAllowedShippingCountries = computed(() =>
+  COUNTRIES.map(country => country.code),
+)
+const stripeCardPaymentAvailable = computed(() =>
+  paymentMethodOptions.value.some((option) => {
+    const provider = String(option.provider || '').trim().toLowerCase()
+    const code = String(option.code || option.id || '').trim().toLowerCase()
+    return (provider === 'stripe' || ['card', 'credit_card', 'credit-card', 'stripe'].includes(code))
+      && option.enabled !== false
+      && option.available === true
+  }),
+)
+const shouldPrepareStripeExpressCheckout = computed(() =>
+  Boolean(
+    isCartOpen.value
+      && cartItems.value.length
+      && auth.isAuthenticated.value
+      && stripeCardPaymentAvailable.value
+      && stripeExpressCheckoutPublishableKey.value
+      && stripeExpressCheckoutAmount.value > 0
+      && isStripeExpressCheckoutWalletAvailable.value,
+  ),
+)
 
 watch(isCartOpen, (open) => {
   setSidebarHandlesHidden(SIDEBAR_TOKEN_CART, open)
-}, { immediate: true })
+  if (open) {
+    void prepareStripeExpressCheckout()
+  } else {
+    stripeExpressCheckoutError.value = ''
+    isStripeExpressCheckoutProcessing.value = false
+    isStripeExpressCheckoutWalletAvailable.value = true
+  }
+})
+
+const prepareStripeExpressCheckout = async () => {
+  if (!isCartOpen.value || !cartItems.value.length) return
+
+  const session = await auth.ensureSession()
+  if (!session) return
+
+  await loadPaymentMethods(countryCode.value !== 'ZZ' ? countryCode.value : undefined)
+  if (!stripeCardPaymentAvailable.value) return
+
+  try {
+    stripeExpressCheckoutPublishableKey.value = await loadStripeExpressCheckoutPublishableKey()
+  } catch (error) {
+    stripeExpressCheckoutPublishableKey.value = ''
+    stripeExpressCheckoutError.value = error instanceof Error ? error.message : 'Express Checkout is unavailable'
+  }
+}
+
+const handleStripeExpressCheckoutAvailability = (
+  availablePaymentMethods: StripeExpressCheckoutAvailablePaymentMethods,
+) => {
+  isStripeExpressCheckoutWalletAvailable.value = availablePaymentMethods.applePay || availablePaymentMethods.googlePay
+}
+
+const unwrapCheckoutQuote = (payload: any) => {
+  let current = payload
+  for (let depth = 0; depth < 3; depth += 1) {
+    if (!current || typeof current !== 'object') return null
+    if (!('data' in current)) return current
+    current = current.data
+  }
+  return null
+}
+
+const handleStripeExpressCheckoutShippingAddressChange = async (
+  shippingEvent: StripeExpressCheckoutElementShippingAddressChangeEvent,
+) => {
+  try {
+    const session = await auth.ensureSession()
+    if (!session) {
+      shippingEvent.reject()
+      return
+    }
+
+    const shippingAddress = buildExpressCheckoutShippingQuoteAddress(
+      shippingEvent,
+      String(session.email || ''),
+      String(session.profile?.phone || ''),
+    )
+    const quoteResponse = await auth.request('/checkout/quote', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({
+        shipping_address: shippingAddress,
+        display_currency: cartCurrency.value,
+      }),
+    })
+    const quote = unwrapCheckoutQuote(quoteResponse)
+    const shippingAmount = convertMajorAmountToStripeMinorAmount(
+      Number(quote?.shipping_fee || 0),
+      cartCurrency.value,
+    )
+    const taxAmount = convertMajorAmountToStripeMinorAmount(
+      Number(quote?.tax_amount || 0),
+      cartCurrency.value,
+    )
+    const lineItems = [
+      ...stripeExpressCheckoutLineItems.value,
+      ...(shippingAmount > 0 ? [{ name: t('checkout.stepper.summary.shipping', 'Shipping'), amount: shippingAmount }] : []),
+      ...(taxAmount > 0 ? [{ name: t('checkout.stepper.summary.tax', 'Tax'), amount: taxAmount }] : []),
+    ]
+    shippingEvent.resolve({ lineItems })
+  } catch (error) {
+    stripeExpressCheckoutError.value = error instanceof Error ? error.message : 'Shipping could not be calculated'
+    shippingEvent.reject()
+  }
+}
+
+const handleStripeExpressCheckoutShippingRateChange = (
+  shippingEvent: StripeExpressCheckoutElementShippingRateChangeEvent,
+) => {
+  shippingEvent.resolve({
+    lineItems: stripeExpressCheckoutLineItems.value,
+  })
+}
+
+const handleStripeExpressCheckoutConfirm = async (
+  confirmationEvent: StripeExpressCheckoutElementConfirmEvent,
+) => {
+  if (isStripeExpressCheckoutProcessing.value) {
+    confirmationEvent.paymentFailed({ reason: 'fail', message: 'Another payment is already being processed' })
+    return
+  }
+
+  const expressCheckoutElement = stripeExpressCheckoutElementRef.value
+  if (!expressCheckoutElement) {
+    confirmationEvent.paymentFailed({ reason: 'fail', message: 'Express Checkout is not ready' })
+    return
+  }
+
+  isStripeExpressCheckoutProcessing.value = true
+  stripeExpressCheckoutError.value = ''
+  try {
+    await expressCheckoutElement.submitExpressCheckoutPayment()
+    const session = await createStripeExpressCheckoutOrderAndPaymentSession(
+      confirmationEvent,
+      cartItems.value,
+    )
+    const returnUrl = new URL(window.location.href)
+    returnUrl.searchParams.set('order_number', session.orderNumber)
+    const result = await expressCheckoutElement.confirmExpressCheckoutPayment(
+      session.clientSecret,
+      returnUrl.toString(),
+    )
+    if (['succeeded', 'processing', 'requires_capture'].includes(result.status)) {
+      clearCart()
+      closeCart()
+      return
+    }
+    throw new Error(t('checkout.modal.messages.paymentPending', 'Payment is not complete yet. Please check your order status later.'))
+  } catch (error) {
+    expressCheckoutElement.resetExpressCheckoutPaymentState()
+    const message = error instanceof Error
+      ? error.message
+      : t('checkout.modal.messages.orderFailed', 'Order submission failed, please try again')
+    stripeExpressCheckoutError.value = message
+    confirmationEvent.paymentFailed({ reason: 'fail', message })
+  } finally {
+    isStripeExpressCheckoutProcessing.value = false
+  }
+}
+
+const handleStripeExpressCheckoutError = (message: string) => {
+  stripeExpressCheckoutError.value = message
+}
 
 onBeforeUnmount(() => {
   setSidebarHandlesHidden(SIDEBAR_TOKEN_CART, false)
@@ -248,6 +487,10 @@ const onQuantityInput = (id: number, event: Event) => {
   const parsed = parseInt(raw, 10) || 1
   updateQuantity(id, parsed)
 }
+
+onMounted(() => {
+  void prepareStripeExpressCheckout()
+})
 </script>
 
 <style scoped>

@@ -2,6 +2,10 @@
 
 This document records the long-term integration boundaries for Stripe, PayPal, Alipay, and WeChat Pay. It is written for implementation, deployment, and handover. Keep customer-facing copy brand-neutral.
 
+The production stack can be healthy before provider integrations are fully
+live. See `../../docs/ops/production-readiness-status.md` for the current
+release boundary and the external configuration items that remain open.
+
 ## Architecture Boundary
 
 Payment providers are explicit customer-selected checkout methods. The system must not silently move a customer from one provider to another after risk evaluation or provider failure.
@@ -158,6 +162,13 @@ Manual provider refund execution passes a strict refund reference set into the
 gateway adapter: merchant order number, provider transaction id, original
 transaction currency, and original transaction amount. There is no legacy
 fallback path because production orders have not been created yet.
+
+Refunds are executed in the original transaction currency. The refund path now
+captures an immutable order-time FX snapshot in `orders.fx_snapshot` and carries
+it onto `refunds.fx_snapshot` so the historical base-currency cap stays fixed.
+This still needs end-to-end acceptance before it should be described as fully
+live, and it must not be sourced from mutable `products.display_prices` or
+`product_variants.display_prices` JSON.
 
 Provider-specific refund references are strict:
 

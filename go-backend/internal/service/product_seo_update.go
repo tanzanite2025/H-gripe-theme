@@ -1,4 +1,4 @@
-﻿package service
+package service
 
 import "commerce-platform/internal/domain/product"
 

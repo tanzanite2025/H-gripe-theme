@@ -1,10 +1,10 @@
-﻿package ticket
+package ticket
 
 import (
+	"commerce-platform/internal/domain/user"
 	"net/http"
 	"strconv"
 	"strings"
-	"commerce-platform/internal/domain/user"
 
 	"github.com/gin-gonic/gin"
 )

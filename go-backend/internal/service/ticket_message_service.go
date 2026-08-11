@@ -1,8 +1,8 @@
-﻿package service
+package service
 
 import (
-	"errors"
 	"commerce-platform/internal/domain/ticket"
+	"errors"
 )
 
 func (s *TicketService) AddMessage(m *ticket.TicketMessage, userID uint, isStaff bool) error {

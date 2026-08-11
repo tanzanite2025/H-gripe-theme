@@ -1,6 +1,6 @@
 package repository
 
-import "tanzanite/internal/domain/payment"
+import "commerce-platform/internal/domain/payment"
 
 // TaxRate 相关方法
 

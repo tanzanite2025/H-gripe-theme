@@ -1,9 +1,9 @@
-﻿package product
+package product
 
 import (
-	"strings"
 	"commerce-platform/internal/domain/currency"
 	productdomain "commerce-platform/internal/domain/product"
+	"strings"
 )
 
 // Availability is the coarse-grained stock state exposed to storefront clients.

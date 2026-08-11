@@ -1,13 +1,13 @@
-﻿package service
+package service
 
 import (
+	orderdomain "commerce-platform/internal/domain/order"
+	"commerce-platform/internal/domain/registration"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
 	"strings"
-	orderdomain "commerce-platform/internal/domain/order"
-	"commerce-platform/internal/domain/registration"
 	"time"
 )
 

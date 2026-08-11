@@ -1,4 +1,4 @@
-﻿package storefront
+package storefront
 
 import (
 	"net/http"

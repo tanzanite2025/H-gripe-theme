@@ -1,14 +1,14 @@
-﻿package auth
+package auth
 
 import (
 	"bytes"
+	"commerce-platform/internal/domain/user"
+	"commerce-platform/internal/pkg/config"
+	"commerce-platform/internal/service"
 	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"commerce-platform/internal/domain/user"
-	"commerce-platform/internal/pkg/config"
-	"commerce-platform/internal/service"
 	"testing"
 
 	"github.com/gin-gonic/gin"

@@ -1,8 +1,8 @@
-﻿package middleware
+package middleware
 
 import (
-	"net/http"
 	"commerce-platform/internal/pkg/logger"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"

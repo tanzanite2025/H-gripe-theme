@@ -48,7 +48,7 @@ flowchart LR
         Behavior --> RecommendPanel
     end
 
-    subgraph ThemeAPI["tanzanite-theme Go API"]
+    subgraph ThemeAPI["commerce-platform Go API"]
         RecommendHandler["POST /api/v1/recommendations"]
         BehaviorHandler["POST /api/v1/behavior-events/batch"]
         ProductService["ProductService"]

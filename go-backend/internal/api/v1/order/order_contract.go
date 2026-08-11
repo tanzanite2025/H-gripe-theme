@@ -1,4 +1,4 @@
-﻿package order
+package order
 
 import (
 	orderdomain "commerce-platform/internal/domain/order"

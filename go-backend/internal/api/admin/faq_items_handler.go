@@ -1,10 +1,10 @@
-﻿package admin
+package admin
 
 import (
-	"net/http"
-	"strconv"
 	"commerce-platform/internal/domain/faq"
 	"commerce-platform/internal/service"
+	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )

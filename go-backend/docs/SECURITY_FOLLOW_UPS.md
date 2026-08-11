@@ -1,5 +1,17 @@
 # Backend Security Follow-Ups
 
+## Production deployment versus full integration
+
+The VPS runtime has been deployed and its service health, migration status,
+public routes, and Docker network boundary were verified. This is not a claim
+that every external integration is live. The current unresolved production
+items are tracked in
+[`docs/ops/production-readiness-status.md`](../../docs/ops/production-readiness-status.md).
+In particular, real payment-provider credentials, SMTP, Turnstile enforcement,
+Google Merchant OAuth, provider callback/payment/refund acceptance tests, and
+the remaining PayPal document adapters are still required before the related
+flows can be called fully live.
+
 Last updated: 2026-08-11
 
 This file tracks security work that is not fully closed by code-only mitigations. The items below are mandatory before treating the related public flows as fully hardened.
@@ -12,6 +24,9 @@ This file tracks security work that is not fully closed by code-only mitigations
 - SMS/email verification delivery uses Turnstile, Redis-backed IP and destination windows, daily destination quotas, a global sliding-window budget, and a short circuit breaker.
 - The current product wiring covers email challenge delivery for newsletter and warranty flows. No SMS provider or SMS OTP endpoint is enabled; any future SMS route must use the same `Guard` path with `channel=sms` before provider dispatch.
 - Checkout/card-like payment attempts use Redis failure windows, risk scoring, and a two-failure delay policy. Prometheus metrics and alert rules cover payment failures, risk delays, verification volume, and global-budget exhaustion.
+- BIN-level card testing limits are not yet implemented. The current controls
+  do not inspect raw card PAN/BIN data, and PayPal hosted checkout is
+  intentionally outside any BIN-level boundary.
 - Production Compose separates PostgreSQL into an internal `db` network and Redis into an internal `cache` network. PostgreSQL is reachable only by the backend `api` and one-shot `migrate` containers; no business container publishes a host port.
 
 These mitigations reduce immediate exposure. They do not fully close public flows that intentionally rely on possession of an identifier or email address as proof.
@@ -39,6 +54,8 @@ These items remain mandatory product-security follow-ups even though the current
 
 1. Newsletter production release requires verified `SMTP_*` and `STOREFRONT_BASE_URL` configuration in each deployed environment; subscribe, unsubscribe, resubscribe, and status flows must remain behind double opt-in or signed, expiring email tokens.
 2. Warranty production release requires verified `SMTP_*` and `STOREFRONT_BASE_URL` configuration in each deployed environment; order-number plus email verification must remain behind email confirmation or a second proof factor. CAPTCHA and matching fields alone are not a complete claim-authorization factor.
+3. Production payment enablement requires real provider credentials, exact HTTPS callback configuration, and a provider-approved payment/webhook/refund acceptance run. `PAYMENT_CONFIG_MASTER_KEY` only enables encrypted credential storage; it does not bind a provider account.
+4. The historical FX refund guard is implemented in code with `orders.fx_snapshot` and `refunds.fx_snapshot`, but it is still a release follow-up until a non-USD order/refund execution run proves the stored snapshot and cap. Do not use mutable catalog display prices as the refund source of truth.
 
 ## Mandatory release/security scans
 

@@ -1,8 +1,8 @@
-﻿package repository
+package repository
 
 import (
-	"strings"
 	"commerce-platform/internal/domain/gallery"
+	"strings"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"

@@ -1,4 +1,4 @@
-﻿# Kubernetes CronJob for automated database backups
+# Kubernetes CronJob for automated database backups
 apiVersion: batch/v1
 kind: CronJob
 metadata:

@@ -1,12 +1,13 @@
-﻿package service
+package service
 
 import (
-	"errors"
-	"fmt"
-	"strings"
+	currencydomain "commerce-platform/internal/domain/currency"
 	"commerce-platform/internal/domain/order"
 	"commerce-platform/internal/domain/payment"
 	"commerce-platform/internal/repository"
+	"errors"
+	"fmt"
+	"strings"
 	"time"
 )
 
@@ -124,6 +125,10 @@ func createAdminRefundInTx(repos repository.TxRepositories, refund *payment.Refu
 	if err != nil {
 		return err
 	}
+	fxSnapshot, _, err := ensureRefundFXSnapshot(refund, o, transaction.Currency)
+	if err != nil {
+		return err
+	}
 	reservedAmount, err := repos.Payment.SumRefundAmountByTransactionID(transaction.ID, "pending", "completed")
 	if err != nil {
 		return err
@@ -131,11 +136,15 @@ func createAdminRefundInTx(repos repository.TxRepositories, refund *payment.Refu
 	if adjustment.NetAmount-(transaction.Amount-reservedAmount) > 0.01 {
 		return fmt.Errorf("refund amount %.2f exceeds refundable amount %.2f", adjustment.NetAmount, transaction.Amount-reservedAmount)
 	}
+	if err := validateHistoricalRefundFXCap(fxSnapshot, transaction, adjustment.NetAmount, reservedAmount); err != nil {
+		return err
+	}
 
 	refund.RequestedAmount = adjustment.RequestedAmount
 	refund.Amount = adjustment.NetAmount
 	refund.DiscountClawbackAmount = adjustment.DiscountClawbackAmount
 	refund.CalculationSnapshot = adjustment.CalculationSnapshot
+	refund.FXSnapshotData = currencydomain.OrderFXSnapshotJSON(fxSnapshot)
 	refund.Status = "pending"
 	refund.RefundID = nil
 	refund.GatewayResponse = ""
@@ -325,12 +334,13 @@ func (s *PaymentService) RecordVerifiedGatewayRefund(input VerifiedGatewayRefund
 			return errors.New("order is not paid")
 		}
 
-		completedAmount, err := repos.Payment.SumRefundAmountByTransactionID(transaction.ID, "completed")
+		fxSnapshot, _, err := ensureRefundFXSnapshot(&payment.Refund{}, o, transaction.Currency)
 		if err != nil {
 			return err
 		}
-		if input.Amount-(transaction.Amount-completedAmount) > 0.01 {
-			return fmt.Errorf("refund amount %.2f exceeds refundable amount %.2f", input.Amount, transaction.Amount-completedAmount)
+		reservedAmount, err := repos.Payment.SumRefundAmountByTransactionID(transaction.ID, "pending", "completed")
+		if err != nil {
+			return err
 		}
 
 		now := time.Now()
@@ -339,12 +349,23 @@ func (s *PaymentService) RecordVerifiedGatewayRefund(input VerifiedGatewayRefund
 		if err != nil && !repository.IsRecordNotFound(err) {
 			return err
 		}
+		reservedBeforeCurrent := reservedAmount
+		if pendingRefund != nil {
+			reservedBeforeCurrent -= pendingRefund.Amount
+		}
+		if input.Amount-(transaction.Amount-reservedBeforeCurrent) > 0.01 {
+			return fmt.Errorf("refund amount %.2f exceeds refundable amount %.2f", input.Amount, transaction.Amount-reservedBeforeCurrent)
+		}
+		if err := validateHistoricalRefundFXCap(fxSnapshot, transaction, input.Amount, reservedBeforeCurrent); err != nil {
+			return err
+		}
 		if pendingRefund != nil && err == nil {
 			wasCompleted := pendingRefund.Status == "completed"
 			pendingRefund.Status = "completed"
 			pendingRefund.RefundID = &refundID
 			pendingRefund.GatewayResponse = input.GatewayResponse
 			pendingRefund.CompletedAt = &now
+			pendingRefund.FXSnapshotData = currencydomain.OrderFXSnapshotJSON(fxSnapshot)
 			if err := repos.Payment.UpdateRefund(pendingRefund); err != nil {
 				return err
 			}
@@ -362,6 +383,7 @@ func (s *PaymentService) RecordVerifiedGatewayRefund(input VerifiedGatewayRefund
 				RequestedAmount: input.Amount,
 				Status:          "completed",
 				GatewayResponse: input.GatewayResponse,
+				FXSnapshotData:  currencydomain.OrderFXSnapshotJSON(fxSnapshot),
 				CompletedAt:     &now,
 			}
 			if err := repos.Payment.CreateRefund(refund); err != nil {
@@ -369,7 +391,11 @@ func (s *PaymentService) RecordVerifiedGatewayRefund(input VerifiedGatewayRefund
 			}
 		}
 
-		if completedAmount+input.Amount >= transaction.Amount-0.01 {
+		completedAmount, err := repos.Payment.SumRefundAmountByTransactionID(transaction.ID, "completed")
+		if err != nil {
+			return err
+		}
+		if completedAmount >= transaction.Amount-0.01 {
 			transaction.Status = "refunded"
 			if err := repos.Payment.UpdateTransaction(transaction); err != nil {
 				return err

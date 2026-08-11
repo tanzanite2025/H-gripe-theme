@@ -1,6 +1,8 @@
-﻿package service
+package service
 
 import (
+	"commerce-platform/internal/domain/auth"
+	"commerce-platform/internal/domain/ticket"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -9,8 +11,6 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-	"commerce-platform/internal/domain/auth"
-	"commerce-platform/internal/domain/ticket"
 	"time"
 )
 

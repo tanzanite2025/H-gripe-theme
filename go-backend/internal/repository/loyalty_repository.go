@@ -1,9 +1,9 @@
-﻿package repository
+package repository
 
 import (
+	"commerce-platform/internal/domain/loyalty"
 	"errors"
 	"fmt"
-	"commerce-platform/internal/domain/loyalty"
 	"time"
 
 	"gorm.io/gorm"

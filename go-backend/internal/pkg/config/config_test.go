@@ -1,4 +1,4 @@
-﻿package config
+package config
 
 import (
 	"net/http"
@@ -191,8 +191,8 @@ func TestValidateConfigRejectsReleaseWithoutTrustedProxies(t *testing.T) {
 }
 
 func TestSplitEnvListTrimsAndDropsEmptyValues(t *testing.T) {
-	got := splitEnvList("https://commerce_platform.site, https://admin.commerce_platform.site, ,")
-	want := []string{"https://commerce_platform.site", "https://admin.commerce_platform.site"}
+	got := splitEnvList("https://example.com, https://admin.example.com, ,")
+	want := []string{"https://example.com", "https://admin.example.com"}
 
 	if len(got) != len(want) {
 		t.Fatalf("splitEnvList length = %d, want %d", len(got), len(want))
@@ -205,7 +205,7 @@ func TestSplitEnvListTrimsAndDropsEmptyValues(t *testing.T) {
 }
 
 func TestLoadProductionConfigUsesEnvironmentOverrides(t *testing.T) {
-	t.Setenv("SERVER_BASE_URL", "https://commerce_platform.site")
+	t.Setenv("SERVER_BASE_URL", "https://example.com")
 	t.Setenv("DB_HOST", "db")
 	t.Setenv("DB_PORT", "5432")
 	t.Setenv("DB_USERNAME", "commerce_platform_prod")
@@ -217,7 +217,7 @@ func TestLoadProductionConfigUsesEnvironmentOverrides(t *testing.T) {
 	t.Setenv("REDIS_PASSWORD", "test-redis-password")
 	t.Setenv("JWT_SECRET", "test-production-secret-at-least-32-chars")
 	t.Setenv("GOOGLE_CLIENT_ID", "test-google-client")
-	t.Setenv("CORS_ORIGINS", "https://commerce_platform.site,https://admin.commerce_platform.site")
+	t.Setenv("CORS_ORIGINS", "https://example.com,https://admin.example.com")
 	t.Setenv("TRUSTED_PROXIES", "10.0.0.0/8, 172.16.0.0/12")
 
 	cfg, err := Load("../../../config/config.production.yaml")
@@ -231,7 +231,7 @@ func TestLoadProductionConfigUsesEnvironmentOverrides(t *testing.T) {
 	if cfg.Database.AutoMigrate {
 		t.Fatal("production config must keep GORM AutoMigrate disabled")
 	}
-	if len(cfg.CORS.AllowedOrigins) != 2 || cfg.CORS.AllowedOrigins[1] != "https://admin.commerce_platform.site" {
+	if len(cfg.CORS.AllowedOrigins) != 2 || cfg.CORS.AllowedOrigins[1] != "https://admin.example.com" {
 		t.Fatalf("CORS_ORIGINS override not applied: %v", cfg.CORS.AllowedOrigins)
 	}
 	if len(cfg.Server.TrustedProxies) != 2 || cfg.Server.TrustedProxies[1] != "172.16.0.0/12" {

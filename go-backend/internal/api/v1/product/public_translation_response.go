@@ -1,4 +1,4 @@
-﻿package product
+package product
 
 import productdomain "commerce-platform/internal/domain/product"
 

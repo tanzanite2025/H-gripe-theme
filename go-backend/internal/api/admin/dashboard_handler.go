@@ -1,8 +1,8 @@
-﻿package admin
+package admin
 
 import (
-	"net/http"
 	"commerce-platform/internal/service"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 )

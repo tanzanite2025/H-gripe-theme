@@ -1,9 +1,6 @@
-﻿package database
+package database
 
 import (
-	"context"
-	"database/sql"
-	"fmt"
 	attributiondomain "commerce-platform/internal/domain/attribution"
 	"commerce-platform/internal/domain/audit"
 	"commerce-platform/internal/domain/coupon"
@@ -36,6 +33,9 @@ import (
 	"commerce-platform/internal/domain/wishlist"
 	"commerce-platform/internal/pkg/config"
 	"commerce-platform/internal/pkg/logger"
+	"context"
+	"database/sql"
+	"fmt"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"

@@ -1,11 +1,11 @@
-﻿package service
+package service
 
 import (
-	"errors"
-	"strings"
 	"commerce-platform/internal/domain/ticket"
 	"commerce-platform/internal/domain/user"
 	"commerce-platform/internal/repository"
+	"errors"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"

@@ -1,4 +1,4 @@
-﻿package cardtesting
+package cardtesting
 
 import (
 	"context"

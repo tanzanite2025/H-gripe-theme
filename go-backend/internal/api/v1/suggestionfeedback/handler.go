@@ -1,15 +1,15 @@
-﻿package suggestionfeedback
+package suggestionfeedback
 
 import (
+	domainsuggestion "commerce-platform/internal/domain/suggestionfeedback"
+	"commerce-platform/internal/pkg/storage"
+	"commerce-platform/internal/pkg/upload"
+	"commerce-platform/internal/service"
 	"crypto/sha1"
 	"encoding/hex"
 	"errors"
 	"net/http"
 	"strings"
-	domainsuggestion "commerce-platform/internal/domain/suggestionfeedback"
-	"commerce-platform/internal/pkg/storage"
-	"commerce-platform/internal/pkg/upload"
-	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

@@ -1,13 +1,13 @@
-﻿package service
+package service
 
 import (
-	"errors"
-	"fmt"
-	"strings"
 	"commerce-platform/internal/domain/currency"
 	"commerce-platform/internal/domain/product"
 	"commerce-platform/internal/pkg/safehtml"
 	"commerce-platform/internal/repository"
+	"errors"
+	"fmt"
+	"strings"
 )
 
 type ProductMediaInput struct {

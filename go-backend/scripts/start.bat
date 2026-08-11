@@ -1,4 +1,4 @@
-﻿@echo off
+@echo off
 REM Storefront Go Backend Startup Script for Windows
 
 echo Starting Storefront Go Backend...

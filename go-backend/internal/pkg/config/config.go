@@ -1,41 +1,42 @@
-﻿package config
+package config
 
 import (
+	"commerce-platform/internal/pkg/locales"
 	"fmt"
 	"net/http"
 	"os"
 	"strings"
-	"commerce-platform/internal/pkg/locales"
 	"time"
 
 	"github.com/spf13/viper"
 )
 
 type Config struct {
-	Server                ServerConfig                `mapstructure:"server"`
-	Database              DatabaseConfig              `mapstructure:"database"`
-	Redis                 RedisConfig                 `mapstructure:"redis"`
-	JWT                   JWTConfig                   `mapstructure:"jwt"`
-	OAuth                 OAuthConfig                 `mapstructure:"oauth"`
-	GoogleMerchant        GoogleMerchantConfig        `mapstructure:"google_merchant"`
-	I18n                  I18nConfig                  `mapstructure:"i18n"`
-	CORS                  CORSConfig                  `mapstructure:"cors"`
-	Cookie                CookieConfig                `mapstructure:"cookie"`
-	Cache                 CacheConfig                 `mapstructure:"cache"`
-	Log                   LogConfig                   `mapstructure:"log"`
-	Worker                WorkerConfig                `mapstructure:"worker"`
-	BehaviorEvents        BehaviorEventsConfig        `mapstructure:"behavior_events"`
-	AntiAbuse             AntiAbuseConfig             `mapstructure:"anti_abuse"`
-	OrderAbuse            OrderAbuseConfig            `mapstructure:"order_abuse"`
-	OrderNumber           OrderNumberConfig           `mapstructure:"order_number"`
-	PaymentRisk           PaymentRiskConfig           `mapstructure:"payment_risk"`
-	PaymentBINRateLimit   PaymentBINRateLimitConfig   `mapstructure:"payment_bin_rate_limit"`
-	PaymentRiskMonitoring PaymentRiskMonitoringConfig `mapstructure:"payment_risk_monitoring"`
-	PaymentProtection     PaymentProtectionConfig     `mapstructure:"payment_protection"`
-	PaymentThreeDS        PaymentThreeDSConfig        `mapstructure:"payment_3ds"`
-	VisitorRisk           VisitorRiskConfig           `mapstructure:"visitor_risk"`
-	RequestSigning        RequestSigningConfig        `mapstructure:"request_signing"`
-	MediaUpload           MediaUploadConfig           `mapstructure:"media_upload"`
+	Server                       ServerConfig                       `mapstructure:"server"`
+	Database                     DatabaseConfig                     `mapstructure:"database"`
+	Redis                        RedisConfig                        `mapstructure:"redis"`
+	JWT                          JWTConfig                          `mapstructure:"jwt"`
+	OAuth                        OAuthConfig                        `mapstructure:"oauth"`
+	GoogleMerchant               GoogleMerchantConfig               `mapstructure:"google_merchant"`
+	I18n                         I18nConfig                         `mapstructure:"i18n"`
+	CORS                         CORSConfig                         `mapstructure:"cors"`
+	Cookie                       CookieConfig                       `mapstructure:"cookie"`
+	Cache                        CacheConfig                        `mapstructure:"cache"`
+	Log                          LogConfig                          `mapstructure:"log"`
+	Worker                       WorkerConfig                       `mapstructure:"worker"`
+	BehaviorEvents               BehaviorEventsConfig               `mapstructure:"behavior_events"`
+	AntiAbuse                    AntiAbuseConfig                    `mapstructure:"anti_abuse"`
+	OrderAbuse                   OrderAbuseConfig                   `mapstructure:"order_abuse"`
+	OrderNumber                  OrderNumberConfig                  `mapstructure:"order_number"`
+	PaymentRisk                  PaymentRiskConfig                  `mapstructure:"payment_risk"`
+	PaymentBINRateLimit          PaymentBINRateLimitConfig          `mapstructure:"payment_bin_rate_limit"`
+	PaymentGatewayCircuitBreaker PaymentGatewayCircuitBreakerConfig `mapstructure:"payment_gateway_circuit_breaker"`
+	PaymentRiskMonitoring        PaymentRiskMonitoringConfig        `mapstructure:"payment_risk_monitoring"`
+	PaymentProtection            PaymentProtectionConfig            `mapstructure:"payment_protection"`
+	PaymentThreeDS               PaymentThreeDSConfig               `mapstructure:"payment_3ds"`
+	VisitorRisk                  VisitorRiskConfig                  `mapstructure:"visitor_risk"`
+	RequestSigning               RequestSigningConfig               `mapstructure:"request_signing"`
+	MediaUpload                  MediaUploadConfig                  `mapstructure:"media_upload"`
 }
 
 type ServerConfig struct {
@@ -197,6 +198,14 @@ type PaymentBINRateLimitConfig struct {
 	WindowSeconds        int  `mapstructure:"window_seconds"`
 	FailureThreshold     int  `mapstructure:"failure_threshold"`
 	BlockDurationSeconds int  `mapstructure:"block_duration_seconds"`
+}
+
+type PaymentGatewayCircuitBreakerConfig struct {
+	Enabled              bool    `mapstructure:"enabled"`
+	WindowSeconds        int     `mapstructure:"window_seconds"`
+	FailureRateThreshold float64 `mapstructure:"failure_rate_threshold"`
+	MinimumSampleCount   int     `mapstructure:"minimum_sample_count"`
+	OpenDurationSeconds  int     `mapstructure:"open_duration_seconds"`
 }
 
 type PaymentRiskMonitoringConfig struct {
@@ -424,6 +433,12 @@ func setDefaults() {
 	viper.SetDefault("payment_bin_rate_limit.failure_threshold", 5)
 	viper.SetDefault("payment_bin_rate_limit.block_duration_seconds", 1800)
 
+	viper.SetDefault("payment_gateway_circuit_breaker.enabled", true)
+	viper.SetDefault("payment_gateway_circuit_breaker.window_seconds", 60)
+	viper.SetDefault("payment_gateway_circuit_breaker.failure_rate_threshold", 0.15)
+	viper.SetDefault("payment_gateway_circuit_breaker.minimum_sample_count", 20)
+	viper.SetDefault("payment_gateway_circuit_breaker.open_duration_seconds", 30)
+
 	viper.SetDefault("payment_risk_monitoring.enabled", true)
 	viper.SetDefault("payment_risk_monitoring.alert_enabled", false)
 	viper.SetDefault("payment_risk_monitoring.window_days", 30)
@@ -557,6 +572,12 @@ func bindEnvironment() {
 	_ = viper.BindEnv("payment_bin_rate_limit.window_seconds", "PAYMENT_BIN_RATE_LIMIT_WINDOW_SECONDS")
 	_ = viper.BindEnv("payment_bin_rate_limit.failure_threshold", "PAYMENT_BIN_RATE_LIMIT_FAILURE_THRESHOLD")
 	_ = viper.BindEnv("payment_bin_rate_limit.block_duration_seconds", "PAYMENT_BIN_RATE_LIMIT_BLOCK_DURATION_SECONDS")
+
+	_ = viper.BindEnv("payment_gateway_circuit_breaker.enabled", "PAYMENT_GATEWAY_CIRCUIT_BREAKER_ENABLED")
+	_ = viper.BindEnv("payment_gateway_circuit_breaker.window_seconds", "PAYMENT_GATEWAY_CIRCUIT_BREAKER_WINDOW_SECONDS")
+	_ = viper.BindEnv("payment_gateway_circuit_breaker.failure_rate_threshold", "PAYMENT_GATEWAY_CIRCUIT_BREAKER_FAILURE_RATE_THRESHOLD")
+	_ = viper.BindEnv("payment_gateway_circuit_breaker.minimum_sample_count", "PAYMENT_GATEWAY_CIRCUIT_BREAKER_MINIMUM_SAMPLE_COUNT")
+	_ = viper.BindEnv("payment_gateway_circuit_breaker.open_duration_seconds", "PAYMENT_GATEWAY_CIRCUIT_BREAKER_OPEN_DURATION_SECONDS")
 
 	_ = viper.BindEnv("payment_risk_monitoring.enabled", "PAYMENT_RISK_MONITORING_ENABLED")
 	_ = viper.BindEnv("payment_risk_monitoring.alert_enabled", "PAYMENT_RISK_MONITORING_ALERT_ENABLED")
@@ -724,6 +745,15 @@ func validateConfig(cfg *Config) error {
 			cfg.PaymentBINRateLimit.FailureThreshold <= 0 ||
 			cfg.PaymentBINRateLimit.BlockDurationSeconds <= 0 {
 			return fmt.Errorf("payment BIN rate limit configuration is invalid")
+		}
+	}
+	if cfg.PaymentGatewayCircuitBreaker.Enabled {
+		if cfg.PaymentGatewayCircuitBreaker.WindowSeconds <= 0 ||
+			cfg.PaymentGatewayCircuitBreaker.FailureRateThreshold <= 0 ||
+			cfg.PaymentGatewayCircuitBreaker.FailureRateThreshold > 1 ||
+			cfg.PaymentGatewayCircuitBreaker.MinimumSampleCount <= 0 ||
+			cfg.PaymentGatewayCircuitBreaker.OpenDurationSeconds <= 0 {
+			return fmt.Errorf("payment gateway circuit breaker configuration is invalid")
 		}
 	}
 	if cfg.PaymentRiskMonitoring.Enabled {

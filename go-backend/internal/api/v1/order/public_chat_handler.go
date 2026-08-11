@@ -1,11 +1,11 @@
-﻿package order
+package order
 
 import (
-	"encoding/json"
-	"strings"
 	orderdomain "commerce-platform/internal/domain/order"
 	"commerce-platform/internal/pkg/apierror"
 	"commerce-platform/internal/pkg/pagination"
+	"encoding/json"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"

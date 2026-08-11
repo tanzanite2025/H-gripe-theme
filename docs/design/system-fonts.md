@@ -7,20 +7,20 @@ Last updated: 2026-07-25
 The storefront and admin share the same system font family name:
 
 ```text
-TanzaniteSystem
+CommercePlatformSystem
 ```
 
 The current CN + Latin font file is:
 
 ```text
-TanzaniteSystem-CN-Latin.woff2
+CommercePlatformSystem-CN-Latin.woff2
 ```
 
 Because the storefront and admin are built from different Docker contexts, the font file must exist in both source trees:
 
 ```text
-nuxt-i18n/app/assets/fonts/system/TanzaniteSystem-CN-Latin.woff2
-go-backend/web/admin/src/assets/fonts/system/TanzaniteSystem-CN-Latin.woff2
+nuxt-i18n/app/assets/fonts/system/CommercePlatformSystem-CN-Latin.woff2
+go-backend/web/admin/src/assets/fonts/system/CommercePlatformSystem-CN-Latin.woff2
 ```
 
 Do not put source fonts in generated folders:
@@ -50,7 +50,7 @@ go-backend/web/admin/src/styles/admin.css
 
 ## Rules
 
-1. Keep one font-family token: `TanzaniteSystem`.
+1. Keep one font-family token: `CommercePlatformSystem`.
 2. Use `.woff2` only for production fonts.
 3. Do not load Google Fonts or npm font packages for the system UI.
 4. Add future language fonts as additional `@font-face` blocks with `unicode-range`, instead of changing page components.

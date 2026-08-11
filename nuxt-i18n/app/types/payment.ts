@@ -30,3 +30,9 @@ export interface CheckoutPaymentOption {
   unavailableReason?: string
   unavailable_reason?: string
 }
+
+export interface PaymentGatewayFallbackMethod {
+  code?: string
+  provider?: string
+  name?: string
+}

@@ -1,4 +1,4 @@
-﻿package app
+package app
 
 import (
 	"fmt"
@@ -23,14 +23,15 @@ import (
 )
 
 type Dependencies struct {
-	Repositories   Repositories
-	Services       Services
-	Storage        storage.StorageService
-	AntiBot        *antibot.Service
-	AntiFraud      *antifraud.Service
-	CardBINLimiter *cardtesting.Service
-	OrderAbuse     *orderabuse.Service
-	RedisClient    *redis.Client
+	Repositories                 Repositories
+	Services                     Services
+	Storage                      storage.StorageService
+	AntiBot                      *antibot.Service
+	AntiFraud                    *antifraud.Service
+	CardBINLimiter               *cardtesting.Service
+	PaymentGatewayCircuitBreaker *service.PaymentGatewayCircuitBreakerService
+	OrderAbuse                   *orderabuse.Service
+	RedisClient                  *redis.Client
 }
 
 type Repositories struct {
@@ -192,6 +193,8 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 	txManager.ConfigureLoyaltyProgramRepository(repos.LoyaltyProgram)
 	txManager.ConfigureOutboxRepository(repos.Outbox)
 	txManager.ConfigureOrderAttributionRepository(repos.OrderAttribution)
+	txManager.ConfigureSettingRepository(repos.Setting)
+	txManager.ConfigureExchangeRateRepository(repos.ExchangeRate)
 	txManager.ConfigurePaymentRefundRecommendationRepository(repos.PaymentRefundReview)
 	txManager.ConfigurePaymentRefundExecutionRepository(repos.PaymentRefundExec)
 
@@ -199,6 +202,10 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 	antiBotService := antibot.New(redisCache.Client(), cfg.AntiAbuse)
 	antiFraudService := antifraud.New(redisCache.Client(), cfg.PaymentRisk)
 	cardBINLimiter := cardtesting.New(redisCache.Client(), cfg.PaymentBINRateLimit)
+	paymentGatewayCircuitBreaker := service.NewPaymentGatewayCircuitBreakerService(
+		redisCache.Client(),
+		cfg.PaymentGatewayCircuitBreaker,
+	)
 	orderAbuseService := orderabuse.New(redisCache.Client(), cfg.OrderAbuse)
 
 	storefrontHTMLCacheInvalidator := service.NewStorefrontHTMLCacheInvalidatorFromEnv()
@@ -306,6 +313,8 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 	services.Marketing.ConfigureGiftCardRedemptions(repos.GiftCardRedemption)
 	services.Marketing.ConfigureCurrencyPolicy(currencyPolicyService)
 	services.Checkout.ConfigureLoyaltyProgram(loyaltyProgramService)
+	services.Checkout.ConfigureCurrencyPolicy(currencyPolicyService)
+	services.Checkout.ConfigureExchangeRateRepository(repos.ExchangeRate)
 	services.Product.ConfigureCurrencyPolicy(currencyPolicyService)
 	services.Product.ConfigureInformationTemplateRepository(repos.ProductInformationTemplate)
 	services.Product.ConfigureMerchantEventPublisher(merchantOutboxPublisher)
@@ -374,14 +383,15 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 	services.Outbox.RegisterHandler(outbox.EventTypeMerchantOfferRevalidate, merchantOutboxHandler.Handle)
 
 	return &Dependencies{
-		Repositories:   repos,
-		Services:       services,
-		Storage:        storageSvc,
-		AntiBot:        antiBotService,
-		AntiFraud:      antiFraudService,
-		CardBINLimiter: cardBINLimiter,
-		OrderAbuse:     orderAbuseService,
-		RedisClient:    redisCache.Client(),
+		Repositories:                 repos,
+		Services:                     services,
+		Storage:                      storageSvc,
+		AntiBot:                      antiBotService,
+		AntiFraud:                    antiFraudService,
+		CardBINLimiter:               cardBINLimiter,
+		PaymentGatewayCircuitBreaker: paymentGatewayCircuitBreaker,
+		OrderAbuse:                   orderAbuseService,
+		RedisClient:                  redisCache.Client(),
 	}, nil
 }
 

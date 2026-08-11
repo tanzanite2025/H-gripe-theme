@@ -101,16 +101,16 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - image: tanzanite-theme-api
+          - image: commerce-platform-api
             context: ./go-backend
             dockerfile: ./go-backend/Dockerfile
-          - image: tanzanite-theme-storefront
+          - image: commerce-platform-storefront
             context: ./nuxt-i18n
             dockerfile: ./nuxt-i18n/Dockerfile
-          - image: tanzanite-theme-admin
+          - image: commerce-platform-admin
             context: ./go-backend/web/admin
             dockerfile: ./go-backend/web/admin/Dockerfile
-          - image: tanzanite-theme-web
+          - image: commerce-platform-web
             context: ./deployment
             dockerfile: ./deployment/docker/web.Dockerfile
 

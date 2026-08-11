@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <Dialog v-model:open="dialogOpen">
     <DialogContent size="full" class="max-w-[1400px]">
       <DialogHeader>

@@ -3,7 +3,7 @@ package repository
 import (
 	"time"
 
-	"tanzanite/internal/domain/payment"
+	"commerce-platform/internal/domain/payment"
 
 	"gorm.io/gorm"
 )

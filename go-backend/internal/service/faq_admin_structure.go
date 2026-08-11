@@ -1,9 +1,9 @@
-﻿package service
+package service
 
 import (
+	"commerce-platform/internal/domain/faq"
 	"fmt"
 	"strings"
-	"commerce-platform/internal/domain/faq"
 )
 
 func (s *FAQService) ListAdminStructure(locale string) ([]FAQPageAdminView, error) {

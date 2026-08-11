@@ -1,8 +1,8 @@
-﻿package service
+package service
 
 import (
-	"encoding/json"
 	"commerce-platform/internal/domain/setting"
+	"encoding/json"
 )
 
 func (s *SettingService) Set(key, value, settingType, group, locale string) error {

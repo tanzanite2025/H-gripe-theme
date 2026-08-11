@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"tanzanite/internal/pkg/apierror"
-	pgateway "tanzanite/internal/pkg/payment"
-	"tanzanite/internal/service"
+	"commerce-platform/internal/pkg/apierror"
+	pgateway "commerce-platform/internal/pkg/payment"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

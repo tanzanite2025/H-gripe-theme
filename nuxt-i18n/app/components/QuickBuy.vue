@@ -18,7 +18,7 @@
           >
         <!-- 头部 -->
         <header class="flex items-center justify-between px-3.5 max-md:px-2 py-2.5 max-md:py-2 border-b border-white/10 rounded-t-2xl overflow-hidden max-md:gap-1.5">
-          <nav v-if="hasConfiguredFlow" class="flex-1 min-w-0 overflow-hidden max-md:flex-auto" :aria-label="t('quickBuy.stepsAriaLabel')">
+          <nav class="flex-1 min-w-0 overflow-hidden max-md:flex-auto" :aria-label="t('quickBuy.stepsAriaLabel')">
             <ol class="flex items-center justify-center gap-3 max-md:gap-1.5 list-none m-0 p-0 max-md:flex-nowrap">
               <li
                 v-for="n in totalSteps"
@@ -47,14 +47,7 @@
 
         <!-- 主体内容 -->
         <section class="px-3.5 py-3 flex flex-col gap-3 flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
-          <div
-            v-if="!hasConfiguredFlow"
-            class="rounded-xl border border-white/15 bg-white/[0.055] px-3 py-3 text-sm leading-relaxed text-white/75"
-          >
-            {{ t('quickBuy.noPublishedFlow', 'No published QUICK flow is available.') }}
-          </div>
-
-          <div v-else class="w-full min-w-0 overflow-hidden">
+          <div class="w-full min-w-0 overflow-hidden">
             <div v-if="currentCategoryName" class="flex items-center gap-2 mb-1.5 tz-text-secondary text-[13px]">
               <span class="tz-text-muted">{{ t('quickBuy.search.categoryLabel') }}</span>
               <span>{{ currentCategoryName }}</span>
@@ -69,7 +62,7 @@
             />
           </div>
           
-          <div v-if="hasConfiguredFlow" class="flex-1 min-h-0">
+          <div class="flex-1 min-h-0">
             <div v-if="loading" class="p-2.5 tz-text-secondary">{{ t('common.loading', 'Loading...') }}</div>
             <div v-else-if="error" class="p-2.5 tz-text-secondary">{{ error }}</div>
             <ul v-else-if="products.length" class="list-none grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-2.5 m-0 p-0">
@@ -101,7 +94,8 @@
         </section>
 
         <!-- 底部 -->
-        <footer v-if="hasConfiguredFlow" class="quickbuy-modal-footer relative flex flex-col items-center justify-center gap-1.5 max-md:gap-1 px-3.5 py-2.5 max-md:pt-4 border-t border-white/[0.08] rounded-b-2xl overflow-hidden">
+        <footer class="quickbuy-modal-footer relative flex flex-col items-center justify-center gap-1.5 max-md:gap-1 px-3.5 py-2.5 max-md:pt-4 border-t border-white/[0.08] rounded-b-2xl overflow-hidden">
+          <div class="tz-text-secondary text-[13px] text-center max-md:order-1 max-md:-mb-1">{{ footerText }}</div>
           <div class="inline-flex items-center gap-2 tz-text-primary font-semibold max-md:order-3 max-md:text-[13px] max-md:-mt-1">
             <span>{{ t('quickBuy.summary.items') }}: {{ totalQty }}</span>
             <span class="opacity-50">·</span>
@@ -141,6 +135,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useCart } from '~/composables/useCart'
+import { useShopProducts } from '~/composables/useShopProducts'
 import type { ShopProduct } from '~/composables/useShopProducts'
 import type {
   QuickBuyConfig,
@@ -166,6 +161,39 @@ const props = defineProps<{ config: QuickBuyConfig | null }>()
 const emit = defineEmits<{ close: [] }>()
 const { t } = useI18n()
 
+const defaultQuickBuySteps = computed<QuickBuyStep[]>(() => [
+  {
+    id: 1,
+    slug: 'product-search',
+    name: t('quickBuy.defaultSteps.productSearch', 'Search products'),
+    description: t('quickBuy.hints.step1', 'Search or filter products'),
+  },
+  {
+    id: 2,
+    slug: 'specifications',
+    name: t('quickBuy.defaultSteps.specifications', 'Choose specifications'),
+    description: t('quickBuy.hints.step2', 'Select product specifications and quantity to continue'),
+  },
+  {
+    id: 3,
+    slug: 'quantity',
+    name: t('quickBuy.defaultSteps.quantity', 'Confirm quantity'),
+    description: t('quickBuy.hints.step3', 'Confirm product information'),
+  },
+  {
+    id: 4,
+    slug: 'cart-review',
+    name: t('quickBuy.defaultSteps.cartReview', 'Review cart'),
+    description: t('quickBuy.hints.step4', 'Complete this step to submit or continue your process'),
+  },
+  {
+    id: 5,
+    slug: 'checkout',
+    name: t('quickBuy.defaultSteps.checkout', 'Checkout'),
+    description: t('quickBuy.hints.step5', 'Finish and review'),
+  },
+])
+
 const step = ref(1)
 const query = ref('')
 const products = ref<ShopProduct[]>([])
@@ -181,14 +209,20 @@ const {
   updateSelections: updateQuickBuySelections,
   error: quickBuySessionError,
 } = useQuickBuySession('dock')
+const { fetchShopProducts } = useShopProducts()
 
 const configuredSteps = computed<QuickBuyStep[]>(() => props.config?.steps ?? [])
 const hasConfiguredFlow = computed(() => configuredSteps.value.length > 0)
-const steps = computed(() => configuredSteps.value)
+const steps = computed(() => hasConfiguredFlow.value ? configuredSteps.value : defaultQuickBuySteps.value)
 const totalSteps = computed(() => steps.value.length)
-const currentStepConf = computed(() => steps.value[step.value - 1] || { id: 0, slug: '', name: '' })
+const currentStepConf = computed<QuickBuyStep>(() => steps.value[step.value - 1] || { id: 0, slug: '', name: '' })
 const currentCategoryName = computed(() => currentStepConf.value.name || '')
 const currentStepKey = computed(() => currentStepConf.value.stepKey || currentStepConf.value.slug || `step-${step.value}`)
+const footerText = computed(() =>
+  currentStepConf.value.helpText
+  || currentStepConf.value.description
+  || t('quickBuy.footer.default', 'Complete this step to continue')
+)
 
 const totalQty = computed(() => selections.value.reduce((sum, item) => sum + (Number(item.qty) || 0), 0))
 
@@ -218,21 +252,26 @@ const fetchProducts = async () => {
   error.value = ''
 
   try {
-    if (!hasConfiguredFlow.value) {
-      products.value = []
-      return
+    if (hasConfiguredFlow.value) {
+      const res = await fetchStepCandidates(currentStepKey.value, {
+        keyword: query.value,
+        page: 1,
+        pageSize: 12,
+      })
+      if (sequence !== fetchSequence) return
+      if (!res) {
+        throw new Error(quickBuySessionError.value || 'Unable to load QUICK candidates')
+      }
+      products.value = res.items
+    } else {
+      const res = await fetchShopProducts({
+        per_page: 12,
+        status: 'active',
+        ...(query.value ? { keyword: query.value } : {}),
+      })
+      if (sequence !== fetchSequence) return
+      products.value = res.items
     }
-
-    const res = await fetchStepCandidates(currentStepKey.value, {
-      keyword: query.value,
-      page: 1,
-      pageSize: 12,
-    })
-    if (sequence !== fetchSequence) return
-    if (!res) {
-      throw new Error(quickBuySessionError.value || 'Unable to load QUICK candidates')
-    }
-    products.value = res.items
   } catch (err) {
     if (sequence !== fetchSequence) return
     error.value = (err as Error).message || String(err)
@@ -268,6 +307,12 @@ watch([currentStepKey, hasConfiguredFlow], () => {
   error.value = ''
   fetchProducts()
 }, { immediate: true })
+
+watch(totalSteps, (nextTotalSteps) => {
+  if (step.value > nextTotalSteps) {
+    step.value = nextTotalSteps
+  }
+})
 
 const next = () => {
   if (step.value < totalSteps.value) {
@@ -331,15 +376,17 @@ const selectProduct = async (product: ShopProduct) => {
   const nextStepSelections = selectionMode === 'multiple'
     ? [...currentStepSelections.filter(item => item.id !== selection.id || item.variant_id !== selection.variant_id), selection]
     : [selection]
-  const session = await updateQuickBuySelections(nextStepSelections.map(item => ({
-    stepKey: item.stepKey,
-    productId: item.id,
-    variantId: item.variant_id || null,
-    quantity: item.qty,
-  })))
-  if (!session) {
-    error.value = quickBuySessionError.value || 'Unable to save QUICK selection'
-    return
+  if (hasConfiguredFlow.value) {
+    const session = await updateQuickBuySelections(nextStepSelections.map(item => ({
+      stepKey: item.stepKey,
+      productId: item.id,
+      variantId: item.variant_id || null,
+      quantity: item.qty,
+    })))
+    if (!session) {
+      error.value = quickBuySessionError.value || 'Unable to save QUICK selection'
+      return
+    }
   }
 
   if (selectionMode === 'multiple') {

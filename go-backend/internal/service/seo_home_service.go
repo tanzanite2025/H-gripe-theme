@@ -1,4 +1,4 @@
-﻿package service
+package service
 
 import (
 	seodomain "commerce-platform/internal/domain/seo"

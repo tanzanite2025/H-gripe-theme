@@ -1,4 +1,4 @@
-name: ${COMPOSE_PROJECT_NAME:-h-gripe-theme}
+name: ${COMPOSE_PROJECT_NAME:-commerce-platform}
 
 x-logging: &default-logging
   driver: json-file
@@ -140,7 +140,7 @@ services:
     logging: *default-logging
 
   migrate:
-    image: ghcr.io/tanzanite2025/tanzanite-theme-api:${IMAGE_TAG:-master}
+    image: ${IMAGE_REGISTRY:?IMAGE_REGISTRY is required}/${IMAGE_NAMESPACE:?IMAGE_NAMESPACE is required}/${IMAGE_PREFIX:-commerce-platform}-api:${IMAGE_TAG:-master}
     pull_policy: always
     restart: "no"
     command: ["migrate"]
@@ -161,7 +161,7 @@ services:
     logging: *default-logging
 
   api:
-    image: ghcr.io/tanzanite2025/tanzanite-theme-api:${IMAGE_TAG:-master}
+    image: ${IMAGE_REGISTRY:?IMAGE_REGISTRY is required}/${IMAGE_NAMESPACE:?IMAGE_NAMESPACE is required}/${IMAGE_PREFIX:-commerce-platform}-api:${IMAGE_TAG:-master}
     pull_policy: always
     restart: unless-stopped
     expose:
@@ -197,7 +197,7 @@ services:
     logging: *default-logging
 
   storefront:
-    image: ghcr.io/tanzanite2025/tanzanite-theme-storefront:${IMAGE_TAG:-master}
+    image: ${IMAGE_REGISTRY:?IMAGE_REGISTRY is required}/${IMAGE_NAMESPACE:?IMAGE_NAMESPACE is required}/${IMAGE_PREFIX:-commerce-platform}-storefront:${IMAGE_TAG:-master}
     pull_policy: always
     restart: unless-stopped
     expose:
@@ -213,7 +213,7 @@ services:
       NUXT_PUBLIC_REQUEST_SIGNING_KEY: ${REQUEST_SIGNING_KEY:?REQUEST_SIGNING_KEY is required}
       NUXT_PUBLIC_TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY:?TURNSTILE_SITE_KEY is required}
       NUXT_HTML_CACHE_DRIVER: ${NUXT_HTML_CACHE_DRIVER:-redis}
-      NUXT_HTML_CACHE_PREFIX: ${NUXT_HTML_CACHE_PREFIX:-h-gripe:storefront:html-cache:v2}
+      NUXT_HTML_CACHE_PREFIX: ${NUXT_HTML_CACHE_PREFIX:-commerce-platform:storefront:html-cache:v2}
       NUXT_HTML_CACHE_REDIS_HOST: redis
       NUXT_HTML_CACHE_REDIS_PORT: "6379"
       NUXT_HTML_CACHE_REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
@@ -246,7 +246,7 @@ services:
     logging: *default-logging
 
   admin:
-    image: ghcr.io/tanzanite2025/tanzanite-theme-admin:${IMAGE_TAG:-master}
+    image: ${IMAGE_REGISTRY:?IMAGE_REGISTRY is required}/${IMAGE_NAMESPACE:?IMAGE_NAMESPACE is required}/${IMAGE_PREFIX:-commerce-platform}-admin:${IMAGE_TAG:-master}
     pull_policy: always
     restart: unless-stopped
     expose:
@@ -270,7 +270,7 @@ services:
     logging: *default-logging
 
   web:
-    image: ghcr.io/tanzanite2025/tanzanite-theme-web:${IMAGE_TAG:-master}
+    image: ${IMAGE_REGISTRY:?IMAGE_REGISTRY is required}/${IMAGE_NAMESPACE:?IMAGE_NAMESPACE is required}/${IMAGE_PREFIX:-commerce-platform}-web:${IMAGE_TAG:-master}
     pull_policy: always
     restart: unless-stopped
     expose:
@@ -317,8 +317,8 @@ networks:
 
 volumes:
   postgres_data:
-    name: ${POSTGRES_DATA_VOLUME_NAME:-h-gripe-theme-postgres-data}
+    name: ${POSTGRES_DATA_VOLUME_NAME:-commerce-platform-postgres-data}
   redis_data:
-    name: ${REDIS_DATA_VOLUME_NAME:-h-gripe-theme-redis-data}
+    name: ${REDIS_DATA_VOLUME_NAME:-commerce-platform-redis-data}
   uploads:
-    name: ${UPLOADS_VOLUME_NAME:-h-gripe-theme-uploads}
+    name: ${UPLOADS_VOLUME_NAME:-commerce-platform-uploads}

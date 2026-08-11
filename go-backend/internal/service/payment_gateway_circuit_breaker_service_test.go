@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"tanzanite/internal/pkg/config"
+	"commerce-platform/internal/pkg/config"
 
 	"github.com/stretchr/testify/require"
 )

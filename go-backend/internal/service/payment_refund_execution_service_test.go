@@ -1,4 +1,4 @@
-﻿package service
+package service
 
 import (
 	"context"
@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	currencydomain "commerce-platform/internal/domain/currency"
+	orderdomain "commerce-platform/internal/domain/order"
 	paymentdomain "commerce-platform/internal/domain/payment"
 	pgateway "commerce-platform/internal/pkg/payment"
 	"commerce-platform/internal/repository"
@@ -84,6 +86,116 @@ func TestPaymentServiceExecutePendingRefundRecordsGatewayFailure(t *testing.T) {
 	require.Equal(t, "pending", storedRefund.Status)
 	require.Nil(t, storedRefund.RefundID)
 	require.Nil(t, storedRefund.CompletedAt)
+}
+
+func TestPaymentServiceExecutePendingRefundPersistsHistoricalFXSnapshot(t *testing.T) {
+	db := newPaymentRefundRecommendationTestDB(t)
+	service := newPaymentServiceWithRefundExecution(db)
+
+	fetchedAt := time.Date(2026, time.August, 6, 9, 0, 0, 0, time.UTC)
+	capturedAt := time.Date(2026, time.August, 6, 10, 0, 0, 0, time.UTC)
+	fxSnapshot := currencydomain.OrderFXSnapshot{
+		Version:         currencydomain.OrderFXSnapshotVersion,
+		BaseCurrency:    "USD",
+		OrderCurrency:   "EUR",
+		BaseToOrderRate: 0.9,
+		Source:          "historical_order_quote",
+		CapturedAt:      capturedAt,
+		RateFetchedAt:   &fetchedAt,
+	}
+
+	orderRecord := orderdomain.Order{
+		OrderNumber:     "ORD-RFX-1",
+		UserID:          11,
+		Status:          "paid",
+		PaymentStatus:   "paid",
+		TotalAmount:     90,
+		Currency:        "EUR",
+		FXSnapshotData:  currencydomain.OrderFXSnapshotJSON(fxSnapshot),
+		ShippingAddress: orderdomain.Address{Country: "DE"},
+		BillingAddress:  orderdomain.Address{Country: "DE"},
+	}
+	require.NoError(t, db.Create(&orderRecord).Error)
+	transaction := paymentdomain.Transaction{
+		OrderID:       orderRecord.ID,
+		TransactionID: "pi_rfx_1",
+		PaymentMethod: "stripe",
+		Amount:        90,
+		Currency:      "EUR",
+		Status:        "completed",
+	}
+	require.NoError(t, db.Create(&transaction).Error)
+	refund := createPendingRefundRecord(t, db, orderRecord.ID, transaction.ID, 30)
+	gateway := &recordingRefundGateway{
+		response: &pgateway.RefundResponse{
+			ID:        "re_rfx_1",
+			PaymentID: transaction.TransactionID,
+			Amount:    30,
+			Status:    "succeeded",
+			CreatedAt: time.Now().UTC(),
+		},
+	}
+
+	completedRefund, execution, err := service.ExecutePendingRefund(context.Background(), ExecutePendingRefundInput{
+		RefundID: refund.ID,
+		AdminID:  12,
+		Provider: "stripe",
+		Gateway:  gateway,
+	})
+	require.NoError(t, err)
+	require.Equal(t, paymentdomain.PaymentRefundExecutionStatusSucceeded, execution.Status)
+	require.Equal(t, "completed", completedRefund.Status)
+
+	storedRefund, err := repository.NewPaymentRepository(db).FindRefundByID(refund.ID)
+	require.NoError(t, err)
+	persistedSnapshot, err := currencydomain.ParseOrderFXSnapshot(storedRefund.FXSnapshotData)
+	require.NoError(t, err)
+	require.Equal(t, fxSnapshot.BaseCurrency, persistedSnapshot.BaseCurrency)
+	require.Equal(t, fxSnapshot.OrderCurrency, persistedSnapshot.OrderCurrency)
+	require.InDelta(t, fxSnapshot.BaseToOrderRate, persistedSnapshot.BaseToOrderRate, 0.0001)
+	require.Equal(t, fxSnapshot.Source, persistedSnapshot.Source)
+	require.NotNil(t, persistedSnapshot.RateFetchedAt)
+	require.True(t, fetchedAt.Equal(*persistedSnapshot.RateFetchedAt))
+}
+
+func TestPaymentServiceExecutePendingRefundRejectsMissingHistoricalFXSnapshot(t *testing.T) {
+	db := newPaymentRefundRecommendationTestDB(t)
+	service := newPaymentServiceWithRefundExecution(db)
+
+	orderRecord := orderdomain.Order{
+		OrderNumber:   "ORD-RFX-MISSING",
+		UserID:        11,
+		Status:        "paid",
+		PaymentStatus: "paid",
+		TotalAmount:   90,
+		Currency:      "EUR",
+	}
+	require.NoError(t, db.Create(&orderRecord).Error)
+	transaction := paymentdomain.Transaction{
+		OrderID:       orderRecord.ID,
+		TransactionID: "pi_rfx_missing",
+		PaymentMethod: "stripe",
+		Amount:        90,
+		Currency:      "EUR",
+		Status:        "completed",
+	}
+	require.NoError(t, db.Create(&transaction).Error)
+	refund := createPendingRefundRecord(t, db, orderRecord.ID, transaction.ID, 30)
+	gateway := &recordingRefundGateway{}
+
+	_, _, err := service.ExecutePendingRefund(context.Background(), ExecutePendingRefundInput{
+		RefundID: refund.ID,
+		AdminID:  12,
+		Provider: "stripe",
+		Gateway:  gateway,
+	})
+	require.ErrorIs(t, err, ErrHistoricalRefundFXSnapshotMissing)
+	require.Empty(t, gateway.paymentID)
+
+	storedRefund, err := repository.NewPaymentRepository(db).FindRefundByID(refund.ID)
+	require.NoError(t, err)
+	require.Equal(t, "pending", storedRefund.Status)
+	require.Equal(t, "{}", string(storedRefund.FXSnapshotData))
 }
 
 func newPaymentServiceWithRefundExecution(db *gorm.DB) *PaymentService {

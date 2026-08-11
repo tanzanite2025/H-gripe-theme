@@ -1,10 +1,10 @@
-﻿package service
+package service
 
 import (
+	"commerce-platform/internal/domain/setting"
 	"errors"
 	"fmt"
 	"strconv"
-	"commerce-platform/internal/domain/setting"
 )
 
 // GetLoyaltySettings 获取公开的积分获取规则。

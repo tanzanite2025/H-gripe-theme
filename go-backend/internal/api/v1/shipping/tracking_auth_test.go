@@ -1,4 +1,4 @@
-﻿package shipping
+package shipping
 
 import (
 	stdcontext "context"

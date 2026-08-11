@@ -1,4 +1,4 @@
-﻿package antibot
+package antibot
 
 import (
 	"context"

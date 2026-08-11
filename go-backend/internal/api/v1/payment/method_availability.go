@@ -1,4 +1,4 @@
-﻿package payment
+package payment
 
 import (
 	"strings"
@@ -45,8 +45,13 @@ func (h *Handler) paymentMethodToAvailabilityResponse(
 	}
 
 	if provider := strings.TrimSpace(item.Provider); provider != "" {
-		available, reason := h.gatewayAvailability(pgateway.GatewayType(provider))
+		available, reason := h.checkPaymentGatewayConfigurationAvailability(pgateway.GatewayType(provider))
 		if !available {
+			item.Available = false
+			item.UnavailableReason = reason
+			return item, nil
+		}
+		if available, reason := h.gatewayCircuitBreakerAvailability(c, pgateway.GatewayType(provider)); !available {
 			item.Available = false
 			item.UnavailableReason = reason
 			return item, nil
@@ -76,8 +81,8 @@ func (h *Handler) paymentMethodToAvailabilityResponse(
 	return item, nil
 }
 
-func (h *Handler) gatewayAvailability(provider pgateway.GatewayType) (bool, string) {
-	config, err := h.loadGatewayConfig(provider)
+func (h *Handler) checkPaymentGatewayConfigurationAvailability(provider pgateway.GatewayType) (bool, string) {
+	config, err := h.loadPaymentGatewayConfiguration(provider)
 	if err != nil {
 		return false, "gateway_config_invalid"
 	}

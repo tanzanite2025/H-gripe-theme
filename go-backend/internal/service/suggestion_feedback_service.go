@@ -1,10 +1,10 @@
-﻿package service
+package service
 
 import (
-	"errors"
-	"strings"
 	"commerce-platform/internal/domain/suggestionfeedback"
 	"commerce-platform/internal/repository"
+	"errors"
+	"strings"
 )
 
 const defaultSuggestionAttachmentLevel = "silver"

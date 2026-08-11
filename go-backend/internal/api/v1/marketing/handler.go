@@ -1,10 +1,10 @@
-﻿package marketing
+package marketing
 
 import (
+	"commerce-platform/internal/service"
 	"fmt"
 	"math"
 	"net/http"
-	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

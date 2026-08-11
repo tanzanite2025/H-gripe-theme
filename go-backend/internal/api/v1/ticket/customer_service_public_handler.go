@@ -1,13 +1,13 @@
-﻿package ticket
+package ticket
 
 import (
+	"commerce-platform/internal/pkg/locales"
+	"commerce-platform/internal/pkg/upload"
+	"commerce-platform/internal/service"
 	"log"
 	"net/http"
 	"strconv"
 	"strings"
-	"commerce-platform/internal/pkg/locales"
-	"commerce-platform/internal/pkg/upload"
-	"commerce-platform/internal/service"
 	"time"
 
 	"github.com/gin-gonic/gin"

@@ -1,6 +1,6 @@
 # learn.gripe Cutover Runbook
 
-This runbook prepares `learn.gripe` to replace `tanzanite.site` without
+This runbook prepares `learn.gripe` to replace `legacy.example` without
 changing the Hostinger VPS, Docker project, database, Redis, or uploads
 boundary.
 
@@ -16,7 +16,7 @@ Snapshot date: 2026-08-11.
 - The repository runbook identifies the expected production VPS as VM
   `1834903` with IPv4 `2.25.85.201`. Confirm this through Hostinger before
   changing DNS.
-- The current `tanzanite.site` zone is already delegated to Cloudflare.
+- The current `legacy.example` zone is already delegated to Cloudflare.
 
 The DNS snapshot is informational. Before changing nameservers, inspect the
 Hostinger DNS zone for mail, verification, and third-party service records and
@@ -30,7 +30,7 @@ The deployment assets now accept both domains during the transition:
   `theme-web`.
 - Internal Nginx accepts the same new hostnames.
 - Nuxt receives `NUXT_PUBLIC_SITE_URL` from the production environment.
-- The existing `tanzanite.site` routes remain in place for rollback and
+- The existing `legacy.example` routes remain in place for rollback and
   verification.
 
 Deploy these image and gateway changes before switching public DNS.
@@ -98,26 +98,26 @@ Before enabling customer traffic, also update:
    origin certificate is valid.
 6. Re-run the same smoke tests through the proxied hostname.
 7. Change the production env to the new canonical domain and update the
-   existing `h-gripe-theme` project. Do not create a second application
+   existing `commerce-platform` project. Do not create a second application
    project.
 
 ## Old Domain Redirect
 
-Keep `tanzanite.site` live until the new domain is stable. Then change the
+Keep `legacy.example` live until the new domain is stable. Then change the
 old storefront routes to permanent redirects:
 
 ```text
-tanzanite.site/*       -> https://learn.gripe/$1
-www.tanzanite.site/*   -> https://www.learn.gripe/$1
-admin.tanzanite.site/* -> https://admin.learn.gripe/$1
+legacy.example/*       -> https://learn.gripe/$1
+www.legacy.example/*   -> https://www.learn.gripe/$1
+admin.legacy.example/* -> https://admin.learn.gripe/$1
 ```
 
-Do not redirect `erp.tanzanite.site`; it belongs to the separate ERP
+Do not redirect `erp.legacy.example`; it belongs to the separate ERP
 application boundary.
 
 ## Rollback
 
 To roll back, keep the old Caddy routes and old production URLs, restore the
-old Cloudflare DNS records, and update the existing `h-gripe-theme` project.
+old Cloudflare DNS records, and update the existing `commerce-platform` project.
 Do not delete the new Cloudflare zone or the new DNS records during the
 observation window.

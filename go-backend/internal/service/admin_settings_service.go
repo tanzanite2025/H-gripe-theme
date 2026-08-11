@@ -1,8 +1,8 @@
-﻿package service
+package service
 
 import (
-	"errors"
 	"commerce-platform/internal/domain/setting"
+	"errors"
 )
 
 var ErrSettingManagedByDomainService = errors.New("this setting group must be changed through its domain service")

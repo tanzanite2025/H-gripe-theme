@@ -1,9 +1,9 @@
-﻿package service
+package service
 
 import (
-	"errors"
 	"commerce-platform/internal/domain/ticket"
 	"commerce-platform/internal/repository"
+	"errors"
 )
 
 const customerServiceTicketCategory = "customer_service"

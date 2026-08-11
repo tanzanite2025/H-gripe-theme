@@ -1,14 +1,14 @@
-﻿package service
+package service
 
 import (
+	"commerce-platform/internal/domain/currency"
+	"commerce-platform/internal/domain/product"
+	"commerce-platform/internal/repository"
 	"encoding/json"
 	"fmt"
 	"sort"
 	"strconv"
 	"strings"
-	"commerce-platform/internal/domain/currency"
-	"commerce-platform/internal/domain/product"
-	"commerce-platform/internal/repository"
 )
 
 type ProductVariantInput struct {

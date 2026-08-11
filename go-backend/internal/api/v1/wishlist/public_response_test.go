@@ -1,4 +1,4 @@
-﻿package wishlist
+package wishlist
 
 import (
 	"encoding/json"

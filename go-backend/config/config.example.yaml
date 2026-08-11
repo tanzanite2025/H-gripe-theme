@@ -1,4 +1,4 @@
-﻿# Storefront Go Backend Configuration
+# Storefront Go Backend Configuration
 
 server:
   port: ":9200"
@@ -160,6 +160,13 @@ payment_bin_rate_limit:
   window_seconds: 60
   failure_threshold: 5
   block_duration_seconds: 1800
+
+payment_gateway_circuit_breaker:
+  enabled: true
+  window_seconds: 60
+  failure_rate_threshold: 0.15
+  minimum_sample_count: 20
+  open_duration_seconds: 30
 
 payment_risk_monitoring:
   enabled: true

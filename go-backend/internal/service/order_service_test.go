@@ -1,4 +1,4 @@
-﻿package service
+package service
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"commerce-platform/internal/domain/coupon"
+	"commerce-platform/internal/domain/currency"
 	"commerce-platform/internal/domain/loyalty"
 	"commerce-platform/internal/domain/order"
 	paymentdomain "commerce-platform/internal/domain/payment"
@@ -591,6 +592,39 @@ func TestOrderServiceCreateOrderAcceptsSupportedPaymentCurrency(t *testing.T) {
 	assert.Equal(t, "CNY", createdOrder.Currency)
 }
 
+func TestOrderServiceCreateOrderPersistsHistoricalFXSnapshot(t *testing.T) {
+	db, orderService := newTestOrderService(t)
+	productRecord := seedProductWithCurrency(t, db, 50, 5, "CNY")
+
+	createdOrder, err := orderService.CreateOrder(
+		context.Background(),
+		42,
+		[]order.OrderItem{{ProductID: productRecord.ID, Quantity: 1}},
+		testAddress(),
+		testAddress(),
+		"wechat",
+		"standard",
+		"",
+		0,
+	)
+
+	require.NoError(t, err)
+	require.NotNil(t, createdOrder)
+
+	var savedOrder order.Order
+	require.NoError(t, db.First(&savedOrder, createdOrder.ID).Error)
+
+	snapshot, err := currency.ParseOrderFXSnapshot(savedOrder.FXSnapshotData)
+	require.NoError(t, err)
+	assert.Equal(t, "USD", snapshot.BaseCurrency)
+	assert.Equal(t, "CNY", snapshot.OrderCurrency)
+	assert.InDelta(t, 7.0, snapshot.BaseToOrderRate, 0.0001)
+	assert.Equal(t, "test-rate", snapshot.Source)
+	require.NotNil(t, snapshot.RateFetchedAt)
+	assert.Equal(t, time.Date(2026, 8, 6, 10, 0, 0, 0, time.UTC), *snapshot.RateFetchedAt)
+	assert.False(t, snapshot.CapturedAt.IsZero())
+}
+
 func TestOrderServiceRejectsPaymentManagedStatusUpdates(t *testing.T) {
 	db, orderService := newTestOrderService(t)
 	orderRecord := order.Order{
@@ -784,6 +818,7 @@ func newTestOrderService(t *testing.T) (*gorm.DB, *OrderService) {
 		&order.OrderItem{},
 		&coupon.Coupon{},
 		&coupon.CouponUsage{},
+		&currency.ExchangeRate{},
 		&loyalty.UserLoyalty{},
 		&loyalty.LoyaltyTransaction{},
 		&loyalty.ProgramConfig{},
@@ -815,6 +850,17 @@ func newTestOrderService(t *testing.T) (*gorm.DB, *OrderService) {
 	checkoutService := NewCheckoutService(productRepo, couponRepo, paymentRepo, loyaltyRepo, shippingService)
 	txManager := repository.NewTxManager(db, orderRepo, productRepo, couponRepo, loyaltyRepo, paymentRepo, shippingRepo)
 	currencyPolicyService := seedTestCurrencyPolicy(t, db)
+	exchangeRateRepo := repository.NewExchangeRateRepository(db)
+	txManager.ConfigureSettingRepository(repository.NewSettingRepository(db))
+	txManager.ConfigureExchangeRateRepository(exchangeRateRepo)
+	checkoutService.ConfigureCurrencyPolicy(currencyPolicyService)
+	checkoutService.ConfigureExchangeRateRepository(exchangeRateRepo)
+	eurRate := exchangeRateRecord("USD", "EUR", 0.9)
+	cnyRate := exchangeRateRecord("USD", "CNY", 7.0)
+	jpyRate := exchangeRateRecord("USD", "JPY", 150.0)
+	require.NoError(t, db.Create(&eurRate).Error)
+	require.NoError(t, db.Create(&cnyRate).Error)
+	require.NoError(t, db.Create(&jpyRate).Error)
 	programRepo := repository.NewLoyaltyProgramRepository(db)
 	txManager.ConfigureLoyaltyProgramRepository(programRepo)
 	programService := NewLoyaltyProgramService(programRepo)

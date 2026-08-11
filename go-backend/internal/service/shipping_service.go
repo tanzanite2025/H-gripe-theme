@@ -1,6 +1,11 @@
-﻿package service
+package service
 
 import (
+	"commerce-platform/internal/domain/currency"
+	"commerce-platform/internal/domain/product"
+	"commerce-platform/internal/domain/shipping"
+	"commerce-platform/internal/pkg/tracking"
+	"commerce-platform/internal/repository"
 	"context"
 	"encoding/json"
 	"errors"
@@ -9,11 +14,6 @@ import (
 	"sort"
 	"strings"
 	"sync"
-	"commerce-platform/internal/domain/currency"
-	"commerce-platform/internal/domain/product"
-	"commerce-platform/internal/domain/shipping"
-	"commerce-platform/internal/pkg/tracking"
-	"commerce-platform/internal/repository"
 	"time"
 )
 

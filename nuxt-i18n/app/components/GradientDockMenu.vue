@@ -291,9 +291,9 @@ watchEffect(() => {
 
 .dock-cart-count {
   display: inline-flex;
-  width: 1.65rem;
-  min-width: 1.65rem;
-  height: 1.65rem;
+  width: 1.5rem;
+  min-width: 1.5rem;
+  height: 1.5rem;
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
@@ -301,7 +301,7 @@ watchEffect(() => {
   border-radius: 999px;
   background: var(--tz-brand-primary, #b5ff6d);
   color: #050505;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 900;
   padding: 0;
 }
@@ -310,7 +310,7 @@ watchEffect(() => {
   min-width: 0;
   max-width: 6rem;
   overflow: hidden;
-  font-size: 1.12rem;
+  font-size: 1.2rem;
   letter-spacing: 0;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -324,7 +324,7 @@ watchEffect(() => {
 
   .dock-cart-total {
     max-width: 6.5rem;
-    font-size: 1.22rem;
+    font-size: 1.3rem;
   }
 }
 
@@ -346,7 +346,7 @@ watchEffect(() => {
 
   .dock-cart-total {
     max-width: 4.4rem;
-    font-size: 1rem;
+    font-size: 1.1rem;
   }
 }
 </style>

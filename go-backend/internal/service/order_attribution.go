@@ -1,4 +1,4 @@
-﻿package service
+package service
 
 import (
 	attributiondomain "commerce-platform/internal/domain/attribution"

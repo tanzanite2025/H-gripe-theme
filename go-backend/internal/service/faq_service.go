@@ -1,12 +1,12 @@
-﻿package service
+package service
 
 import (
-	"context"
-	"fmt"
-	"mime/multipart"
 	"commerce-platform/internal/domain/faq"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
+	"context"
+	"fmt"
+	"mime/multipart"
 )
 
 type FAQService struct {

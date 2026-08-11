@@ -1,4 +1,4 @@
-﻿package registration
+package registration
 
 import (
 	"commerce-platform/internal/domain/product"

@@ -1,11 +1,11 @@
-﻿package review
+package review
 
 import (
+	"commerce-platform/internal/domain/review"
+	"commerce-platform/internal/service"
 	"encoding/json"
 	"net/http"
 	"strconv"
-	"commerce-platform/internal/domain/review"
-	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

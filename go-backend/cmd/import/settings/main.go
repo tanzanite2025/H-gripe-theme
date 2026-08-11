@@ -1,15 +1,15 @@
-﻿package main
+package main
 
 import (
+	"commerce-platform/internal/domain/setting"
+	"commerce-platform/internal/pkg/config"
+	"commerce-platform/internal/pkg/database"
+	"commerce-platform/internal/repository"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
 	"os"
-	"commerce-platform/internal/domain/setting"
-	"commerce-platform/internal/pkg/config"
-	"commerce-platform/internal/pkg/database"
-	"commerce-platform/internal/repository"
 )
 
 // SettingImport 导入的设置结构

@@ -1,9 +1,9 @@
-﻿package payment
+package payment
 
 import (
+	paymentdomain "commerce-platform/internal/domain/payment"
 	"encoding/json"
 	"strings"
-	paymentdomain "commerce-platform/internal/domain/payment"
 	"testing"
 )
 

@@ -1,10 +1,6 @@
-﻿package admin
+package admin
 
 import (
-	"encoding/json"
-	"errors"
-	"strconv"
-	"strings"
 	"commerce-platform/internal/domain/auth"
 	"commerce-platform/internal/domain/ticket"
 	userdomain "commerce-platform/internal/domain/user"
@@ -12,6 +8,10 @@ import (
 	"commerce-platform/internal/pkg/pagination"
 	"commerce-platform/internal/pkg/response"
 	"commerce-platform/internal/service"
+	"encoding/json"
+	"errors"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"

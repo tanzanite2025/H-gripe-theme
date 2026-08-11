@@ -1,4 +1,4 @@
-﻿package service
+package service
 
 import (
 	"strings"
@@ -40,11 +40,11 @@ func TestNormalizeGoogleMerchantIDRejectsNonNumericValue(t *testing.T) {
 }
 
 func TestNormalizeGoogleMerchantStorefrontBaseURL(t *testing.T) {
-	got, err := normalizeGoogleMerchantStorefrontBaseURL("https://commerce_platform.site/")
+	got, err := normalizeGoogleMerchantStorefrontBaseURL("https://example.com/")
 	if err != nil {
 		t.Fatalf("normalizeGoogleMerchantStorefrontBaseURL() error = %v", err)
 	}
-	if got != "https://commerce_platform.site" {
+	if got != "https://example.com" {
 		t.Fatalf("normalizeGoogleMerchantStorefrontBaseURL() = %q", got)
 	}
 }

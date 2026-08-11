@@ -1,12 +1,12 @@
-﻿package admin
+package admin
 
 import (
-	"errors"
-	"strconv"
-	"strings"
 	shippingdomain "commerce-platform/internal/domain/shipping"
 	"commerce-platform/internal/pkg/apierror"
 	"commerce-platform/internal/pkg/response"
+	"errors"
+	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )

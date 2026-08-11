@@ -1,11 +1,11 @@
-﻿package service
+package service
 
 import (
+	"commerce-platform/internal/domain/media"
 	"context"
 	"errors"
 	"fmt"
 	"strings"
-	"commerce-platform/internal/domain/media"
 )
 
 var (

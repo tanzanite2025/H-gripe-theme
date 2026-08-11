@@ -1,8 +1,8 @@
-﻿package service
+package service
 
 import (
-	"fmt"
 	"commerce-platform/internal/domain/post"
+	"fmt"
 )
 
 func postIDCacheKey(id uint) string {

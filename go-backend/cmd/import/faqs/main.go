@@ -1,16 +1,16 @@
-﻿package main
+package main
 
 import (
-	"encoding/json"
-	"flag"
-	"fmt"
-	"log"
-	"os"
 	"commerce-platform/internal/domain/faq"
 	"commerce-platform/internal/pkg/config"
 	"commerce-platform/internal/pkg/database"
 	"commerce-platform/internal/repository"
 	"commerce-platform/internal/service"
+	"encoding/json"
+	"flag"
+	"fmt"
+	"log"
+	"os"
 	"time"
 )
 

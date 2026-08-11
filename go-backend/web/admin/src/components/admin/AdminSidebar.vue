@@ -9,7 +9,7 @@
         <RouterLink
           :to="{ name: 'Dashboard' }"
           class="admin-sidebar__brand"
-          aria-label="返回控制台"
+          :aria-label="t('layout.returnToConsole')"
           @click="emit('navigate')"
         >
           <span class="admin-sidebar__brand-mark">{{ brandMark }}</span>
@@ -22,13 +22,13 @@
 
       <div
         class="admin-sidebar__status"
-        :title="collapsed ? 'ROLE MATRIX AUTHORIZED' : undefined"
+        :title="collapsed ? t('layout.roleMatrixAuthorized') : undefined"
       >
         <span class="admin-sidebar__status-dot" />
-        <span v-if="!collapsed" class="admin-sidebar__status-label">ROLE MATRIX AUTHORIZED</span>
+        <span v-if="!collapsed" class="admin-sidebar__status-label">{{ t('layout.roleMatrixAuthorized') }}</span>
       </div>
 
-      <nav class="admin-sidebar__nav" aria-label="后台导航">
+      <nav class="admin-sidebar__nav" :aria-label="t('layout.navigation')">
         <div class="admin-sidebar__menu">
           <div
             v-for="item in items"
@@ -49,7 +49,7 @@
               }"
               :aria-expanded="isGroupOpen(item)"
               aria-haspopup="dialog"
-              :aria-label="collapsed ? `${navCode(item)} / ${item.label}` : undefined"
+              :aria-label="collapsed ? item.label : undefined"
               @blur="hideHoverTip"
               @click="toggleGroup(item)"
               @focus="showHoverTip(item, $event)"
@@ -58,11 +58,9 @@
             >
               <component :is="item.icon" class="admin-sidebar__icon" aria-hidden="true" />
               <span v-if="!collapsed" class="admin-sidebar__label">
-                <span class="admin-sidebar__label-code">{{ navCode(item) }}</span>
-                <span class="admin-sidebar__label-divider">/</span>
                 <span class="admin-sidebar__label-local">{{ item.label }}</span>
               </span>
-              <ChevronDown
+              <ChevronRight
                 class="admin-sidebar__chevron"
                 :class="{ 'admin-sidebar__chevron--open': isGroupOpen(item) }"
                 aria-hidden="true"
@@ -86,8 +84,6 @@
             >
               <component :is="item.icon" class="admin-sidebar__icon" aria-hidden="true" />
               <span v-if="!collapsed" class="admin-sidebar__label">
-                <span class="admin-sidebar__label-code">{{ navCode(item) }}</span>
-                <span class="admin-sidebar__label-divider">/</span>
                 <span class="admin-sidebar__label-local">{{ item.label }}</span>
               </span>
             </RouterLink>
@@ -102,13 +98,13 @@
         <span class="admin-sidebar__avatar">{{ userInitials || 'AD' }}</span>
         <span v-if="!collapsed" class="admin-sidebar__user-copy">
           <strong>{{ displayName }}</strong>
-          <small>{{ userEmail || roleLabel || 'backoffice user' }}</small>
+          <small>{{ userEmail || roleLabel || t('roles.backofficeUser') }}</small>
         </span>
         <button
           type="button"
           class="admin-sidebar__logout"
-          aria-label="退出登录"
-          title="退出登录"
+          :aria-label="t('common.logout')"
+          :title="t('common.logout')"
           @click="emit('request-logout')"
         >
           <LogOut class="admin-sidebar__logout-icon" />
@@ -129,27 +125,26 @@
         class="admin-sidebar-floating-panel"
         :style="floatingPanelStyle"
         role="dialog"
-        :aria-label="`${navCode(floatingGroup)} / ${floatingGroup.label}`"
+        :aria-label="floatingGroup.label"
         @click.stop
       >
         <header class="admin-sidebar-floating-panel__header">
           <div class="admin-sidebar-floating-panel__heading">
-            <span class="admin-sidebar-floating-panel__eyebrow">MODULE</span>
-            <strong>{{ navCode(floatingGroup) }}</strong>
-            <span>{{ floatingGroup.label }}</span>
+            <span class="admin-sidebar-floating-panel__eyebrow">{{ t('layout.module') }}</span>
+            <strong>{{ floatingGroup.label }}</strong>
           </div>
           <button
             type="button"
             class="admin-sidebar-floating-panel__close"
-            aria-label="关闭子菜单"
-            title="关闭子菜单"
+            :aria-label="t('layout.closeSubmenu')"
+            :title="t('layout.closeSubmenu')"
             @click="closeFloatingGroup"
           >
             <X class="admin-sidebar-floating-panel__close-icon" aria-hidden="true" />
           </button>
         </header>
 
-        <nav class="admin-sidebar-floating-panel__children" :aria-label="`${floatingGroup.label}子菜单`">
+        <nav class="admin-sidebar-floating-panel__children" :aria-label="`${floatingGroup.label} ${t('layout.submenu')}`">
           <RouterLink
             v-for="child in floatingGroup.children"
             :key="itemKey(child)"
@@ -182,9 +177,10 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { CSSProperties } from 'vue'
 import type { RouteLocationRaw } from 'vue-router'
-import { ChevronDown, ChevronRight, LogOut, X } from '@lucide/vue'
+import { ChevronRight, LogOut, X } from '@lucide/vue'
 import type { AdminNavigationItem } from '@/lib/adminNavigation'
 import type { AdminUser } from '@/stores/auth'
+import { useAdminI18n } from '@/i18n'
 
 const props = withDefaults(defineProps<{
   collapsed?: boolean
@@ -210,6 +206,7 @@ const emit = defineEmits<{
   (event: 'navigate'): void
   (event: 'request-logout'): void
 }>()
+const { t } = useAdminI18n()
 const sidebarElement = ref<HTMLElement | null>(null)
 const hoveredItem = ref<AdminNavigationItem | null>(null)
 const hoverTipStyle = ref<CSSProperties>({})
@@ -279,8 +276,6 @@ const itemTarget = (item: AdminNavigationItem, parent: AdminNavigationItem | nul
   }
 }
 
-const navCode = (item: AdminNavigationItem): string => item.code || item.routeName || item.label
-
 const hideHoverTip = (): void => {
   hoveredItem.value = null
 }
@@ -309,12 +304,12 @@ const hoverTipText = computed(() => {
   if (!item) return ''
 
   const child = activeChild(item)
-  const childLabel = child ? ` / ${child.label}` : hasChildren(item) ? ` / ${item.children.length} 项` : ''
-  return `${navCode(item)} / ${item.label}${childLabel}`
+  const childLabel = child ? ` / ${child.label}` : hasChildren(item) ? ` / ${t('common.itemCount', { count: item.children.length })}` : ''
+  return `${item.label}${childLabel}`
 })
 
-const brandTitle = computed(() => props.brandName?.trim() || 'SALES CONSOLE')
-const brandSubtitle = computed(() => props.panelLabel?.trim() || 'CONTROL PANEL')
+const brandTitle = computed(() => props.brandName?.trim() || t('layout.salesConsole'))
+const brandSubtitle = computed(() => props.panelLabel?.trim() || t('layout.panelFallback'))
 const brandMark = computed(() => {
   const configured = props.brandInitial?.trim()
   if (configured) return configured.slice(0, 3).toUpperCase()
@@ -326,7 +321,7 @@ const brandMark = computed(() => {
 })
 
 const displayName = computed(() => {
-  return props.user?.username || props.user?.email || 'Admin User'
+  return props.user?.username || props.user?.email || t('roles.adminUser')
 })
 
 const userEmail = computed(() => props.user?.email || '')
@@ -607,16 +602,10 @@ watch(
   white-space: nowrap;
 }
 
-.admin-sidebar__label-code,
 .admin-sidebar__label-local {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.admin-sidebar__label-divider {
-  flex-shrink: 0;
-  opacity: 0.78;
 }
 
 .admin-sidebar__chevron {

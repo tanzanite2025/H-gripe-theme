@@ -1,11 +1,11 @@
-﻿package auth
+package auth
 
 import (
-	"errors"
 	"commerce-platform/internal/pkg/apierror"
 	"commerce-platform/internal/pkg/response"
 	"commerce-platform/internal/pkg/securecookie"
 	"commerce-platform/internal/service"
+	"errors"
 
 	"github.com/gin-gonic/gin"
 )

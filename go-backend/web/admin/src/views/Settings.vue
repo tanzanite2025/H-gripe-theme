@@ -9,14 +9,14 @@
         >
           <LoaderCircle v-if="saving" class="size-4 animate-spin" />
           <Save v-else class="size-4" />
-          {{ saving ? '保存中' : '保存设置' }}
+          {{ saving ? t('common.saving') : t('settings.saveSettings') }}
         </Button>
       </template>
     </AdminPageHeader>
 
     <div class="relative min-h-96">
       <div v-if="loadingSettings" class="absolute inset-0 z-10 flex items-center justify-center bg-background/75">
-        <LoaderCircle class="size-5 animate-spin text-primary" aria-label="正在加载设置" />
+        <LoaderCircle class="size-5 animate-spin text-primary" :aria-label="t('settings.loadingSettings')" />
       </div>
 
       <SettingsTabsPanel
@@ -88,12 +88,14 @@ import PublicChatGroupDialog from '@/components/admin/settings/PublicChatGroupDi
 import SettingsTabsPanel from '@/components/admin/settings/SettingsTabsPanel.vue'
 import { Button } from '@/components/ui/button'
 import { useRouteTab } from '@/composables/useRouteTab'
+import { useAdminI18n } from '@/i18n'
 import mediaApi from '@/api/media'
 import { assetAccessURL } from '@/lib/mediaPresentation'
 import { useAuthStore } from '@/stores/auth'
 import axios from '@/utils/axios'
 
 const authStore = useAuthStore()
+const { t } = useAdminI18n()
 const DAILY_API_REFRESH_MINUTES = 1440
 const EXCHANGE_RATE_PROVIDER = 'ExchangeRate-API'
 const DEFAULT_PRICING_CURRENCY = 'USD'
@@ -129,17 +131,17 @@ interface SettingsGroupDefinition {
 
 const pageTitle = computed(() => (
   ['currency', 'payment'].includes(activeTab.value)
-    ? activeTab.value === 'currency' ? '系统设置' : '支付管理'
+    ? activeTab.value === 'currency' ? t('settings.systemTitle') : t('settings.paymentTitle')
     : activeTab.value === 'public_chat'
-      ? 'Public Chat'
-      : '系统设置'
+      ? t('settings.publicChatTitle')
+      : t('settings.systemTitle')
 ))
 const pageDescription = computed(() => {
-  if (activeTab.value === 'currency') return '管理主基准币种、次展示币种和汇率缓存联动'
-  if (activeTab.value === 'markets') return '管理国家、市场、语言与展示币种解析规则'
-  if (activeTab.value === 'payment') return '管理支付网关、支付方式与运行状态'
-  if (activeTab.value === 'public_chat') return '管理公开客服、客服组与前台聊天配置'
-  return '管理站点、邮件、社交、API、安全与客服配置'
+  if (activeTab.value === 'currency') return t('settings.currencyDescription')
+  if (activeTab.value === 'markets') return t('settings.marketsDescription')
+  if (activeTab.value === 'payment') return t('settings.paymentDescription')
+  if (activeTab.value === 'public_chat') return t('settings.publicChatDescription')
+  return t('settings.systemDescription')
 })
 const saving = ref(false)
 const loadingSettings = ref(false)
@@ -168,7 +170,7 @@ const siteSettings = reactive({
 })
 const emailSettings = reactive({ smtp_host: '', smtp_port: 587, smtp_username: '', smtp_password: '', from_email: '', from_name: '' })
 const socialSettings = reactive({ facebook: '', twitter: '', instagram: '', linkedin: '', youtube: '', wechat: '' })
-const paymentSettings = reactive({ gateway: 'stripe', test_mode: true })
+const paymentSettings = reactive({ gateway: 'stripe' })
 const apiSettings = reactive({
   exchange_rate_enabled: false,
   exchange_rate_provider: EXCHANGE_RATE_PROVIDER,
@@ -319,8 +321,7 @@ const groupDefinitions: Record<string, SettingsGroupDefinition> = {
   payment: {
     target: paymentSettings,
     fields: {
-      gateway: { type: 'string', public: false, description: 'Payment gateway' },
-      test_mode: { type: 'boolean', public: false, description: 'Payment test mode' }
+      gateway: { type: 'string', public: false, description: 'Payment gateway' }
     }
   },
   api: {

@@ -1,4 +1,4 @@
-﻿import { useRouter } from '#imports'
+import { useRouter } from '#imports'
 import {
   fetchAnalyticsSettings,
   type AnalyticsSettings,
