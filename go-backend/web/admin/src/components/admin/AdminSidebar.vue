@@ -792,7 +792,7 @@ watch(
   z-index: 90;
   top: 50%;
   display: flex;
-  width: clamp(18rem, 24vw, 23rem);
+  width: clamp(11rem, 12vw, 15rem);
   max-height: min(42rem, calc(100vh - 3rem));
   flex-direction: column;
   overflow: hidden;
@@ -808,13 +808,13 @@ watch(
 
 .admin-sidebar-floating-panel__header {
   display: flex;
-  min-height: 4.75rem;
+  min-height: 4.25rem;
   flex-shrink: 0;
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
   border-bottom: 1px dashed var(--border);
-  padding: 1rem 1rem 0.875rem 1.125rem;
+  padding: 0.875rem 0.875rem 0.75rem 1rem;
 }
 
 .admin-sidebar-floating-panel__heading {
@@ -827,7 +827,7 @@ watch(
 .admin-sidebar-floating-panel__heading strong {
   overflow: hidden;
   color: var(--foreground);
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 950;
   letter-spacing: 0.02em;
   text-overflow: ellipsis;
@@ -886,7 +886,7 @@ watch(
 .admin-sidebar-floating-panel__children {
   display: grid;
   min-height: 0;
-  gap: 0.25rem;
+  gap: 0.375rem;
   overflow-y: auto;
   padding: 0.75rem;
 }
@@ -894,22 +894,29 @@ watch(
 .admin-sidebar-floating-panel__child-link {
   display: flex;
   min-width: 0;
-  min-height: 2.625rem;
+  min-height: 2.25rem;
   align-items: center;
-  gap: 0.625rem;
-  border-radius: 0.75rem;
-  padding: 0.5rem 0.625rem 0.5rem 0.75rem;
+  gap: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--background);
+  padding: 0.375rem 0.625rem 0.375rem 0.75rem;
   color: var(--muted-foreground);
-  font-size: 0.75rem;
+  font-size: 0.6875rem;
   font-weight: 800;
-  line-height: 1.25;
+  line-height: 1.1;
   text-decoration: none;
-  transition: background-color 160ms ease, color 160ms ease, transform 160ms ease;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
 }
 
 .admin-sidebar-floating-panel__child-link:hover,
 .admin-sidebar-floating-panel__child-link:focus-visible {
   background: var(--muted);
+  border-color: var(--admin-control-selected-border);
   color: var(--foreground);
 }
 
@@ -923,14 +930,16 @@ watch(
 }
 
 .admin-sidebar-floating-panel__child-link--active {
-  background: var(--admin-control-selected-soft);
-  color: var(--foreground);
+  border-color: var(--admin-control-selected);
+  background: var(--admin-control-selected);
+  color: var(--admin-control-selected-foreground);
   font-weight: 950;
+  box-shadow: 0 8px 16px rgb(15 23 42 / 0.14);
 }
 
 .admin-sidebar-floating-panel__child-mark {
-  width: 0.4rem;
-  height: 0.4rem;
+  width: 0.35rem;
+  height: 0.35rem;
   flex-shrink: 0;
   border-radius: 999px;
   background: currentColor;
@@ -949,8 +958,8 @@ watch(
 }
 
 .admin-sidebar-floating-panel__child-arrow {
-  width: 0.9rem;
-  height: 0.9rem;
+  width: 0.8rem;
+  height: 0.8rem;
   flex-shrink: 0;
   opacity: 0.5;
 }
@@ -965,7 +974,8 @@ watch(
     right: 0;
     bottom: 0;
     left: 0 !important;
-    width: 100%;
+    width: 100vw;
+    max-width: 100vw;
     max-height: min(70vh, 36rem);
     border-radius: 1.25rem 1.25rem 0 0;
     transform: none;
