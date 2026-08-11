@@ -1,10 +1,10 @@
-# Binaries
+﻿# Binaries
 *.exe
 *.exe~
 *.dll
 *.so
 *.dylib
-tanzanite-api
+commerce-platform-api
 /server
 
 # Test binary

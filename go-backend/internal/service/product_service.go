@@ -1,12 +1,12 @@
-package service
+﻿package service
 
 import (
 	"errors"
 	"fmt"
-	"tanzanite/internal/domain/product"
-	"tanzanite/internal/pkg/cache"
-	"tanzanite/internal/pkg/safehtml"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/product"
+	"commerce-platform/internal/pkg/cache"
+	"commerce-platform/internal/pkg/safehtml"
+	"commerce-platform/internal/repository"
 	"time"
 
 	"gorm.io/gorm"

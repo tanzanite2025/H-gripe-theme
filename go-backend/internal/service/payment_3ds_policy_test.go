@@ -1,14 +1,14 @@
-package service
+﻿package service
 
 import (
 	"context"
 	"errors"
 	"testing"
 
-	paymentdomain "tanzanite/internal/domain/payment"
-	"tanzanite/internal/domain/visitor"
-	"tanzanite/internal/pkg/antifraud"
-	"tanzanite/internal/pkg/config"
+	paymentdomain "commerce-platform/internal/domain/payment"
+	"commerce-platform/internal/domain/visitor"
+	"commerce-platform/internal/pkg/antifraud"
+	"commerce-platform/internal/pkg/config"
 
 	"github.com/stretchr/testify/require"
 )

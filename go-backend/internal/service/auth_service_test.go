@@ -1,8 +1,8 @@
-package service
+﻿package service
 
 import (
-	"tanzanite/internal/domain/user"
-	"tanzanite/internal/pkg/config"
+	"commerce-platform/internal/domain/user"
+	"commerce-platform/internal/pkg/config"
 	"testing"
 
 	"github.com/stretchr/testify/assert"

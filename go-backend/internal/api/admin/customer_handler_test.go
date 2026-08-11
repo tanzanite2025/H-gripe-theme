@@ -1,4 +1,4 @@
-package admin
+﻿package admin
 
 import (
 	"encoding/json"
@@ -6,9 +6,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"tanzanite/internal/domain/user"
-	"tanzanite/internal/repository"
-	"tanzanite/internal/service"
+	"commerce-platform/internal/domain/user"
+	"commerce-platform/internal/repository"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 	"github.com/glebarez/sqlite"

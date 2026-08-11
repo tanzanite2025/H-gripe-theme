@@ -1,13 +1,13 @@
-package service
+﻿package service
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
 	"mime/multipart"
-	"tanzanite/internal/domain/showcase"
-	"tanzanite/internal/pkg/storage"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/showcase"
+	"commerce-platform/internal/pkg/storage"
+	"commerce-platform/internal/repository"
 	"time"
 )
 

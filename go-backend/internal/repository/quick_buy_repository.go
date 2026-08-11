@@ -1,9 +1,9 @@
-package repository
+﻿package repository
 
 import (
 	"time"
 
-	"tanzanite/internal/domain/quickbuy"
+	"commerce-platform/internal/domain/quickbuy"
 
 	"gorm.io/gorm"
 )

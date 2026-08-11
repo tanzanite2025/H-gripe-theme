@@ -1,4 +1,4 @@
-package service
+﻿package service
 
 import (
 	"math"
@@ -7,14 +7,14 @@ import (
 	"strings"
 	"time"
 
-	"tanzanite/internal/domain/loyalty"
-	"tanzanite/internal/domain/order"
-	"tanzanite/internal/domain/product"
-	"tanzanite/internal/domain/ticket"
-	"tanzanite/internal/domain/user"
-	"tanzanite/internal/domain/visitor"
-	"tanzanite/internal/domain/wishlist"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/loyalty"
+	"commerce-platform/internal/domain/order"
+	"commerce-platform/internal/domain/product"
+	"commerce-platform/internal/domain/ticket"
+	"commerce-platform/internal/domain/user"
+	"commerce-platform/internal/domain/visitor"
+	"commerce-platform/internal/domain/wishlist"
+	"commerce-platform/internal/repository"
 )
 
 type CustomerServiceContextService struct {

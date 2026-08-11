@@ -1,11 +1,11 @@
-package service
+﻿package service
 
 import (
 	"fmt"
 	"strconv"
 	"strings"
 
-	"tanzanite/internal/domain/auth"
+	"commerce-platform/internal/domain/auth"
 )
 
 func (s *TicketService) validateAutoReplyAgentID(value string) error {

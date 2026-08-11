@@ -1,13 +1,13 @@
-package behavior
+﻿package behavior
 
 import (
 	"net/http"
 	"time"
 
-	"tanzanite/internal/pkg/apierror"
-	attributionpkg "tanzanite/internal/pkg/attribution"
-	"tanzanite/internal/pkg/securecookie"
-	"tanzanite/internal/service"
+	"commerce-platform/internal/pkg/apierror"
+	attributionpkg "commerce-platform/internal/pkg/attribution"
+	"commerce-platform/internal/pkg/securecookie"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

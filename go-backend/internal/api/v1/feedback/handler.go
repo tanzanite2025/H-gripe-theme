@@ -1,11 +1,11 @@
-package feedback
+﻿package feedback
 
 import (
 	"errors"
 	"net/http"
 	"strconv"
-	domainfeedback "tanzanite/internal/domain/feedback"
-	"tanzanite/internal/service"
+	domainfeedback "commerce-platform/internal/domain/feedback"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

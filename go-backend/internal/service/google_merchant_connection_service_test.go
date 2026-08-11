@@ -1,10 +1,10 @@
-package service
+﻿package service
 
 import (
 	"strings"
 	"testing"
 
-	"tanzanite/internal/pkg/config"
+	"commerce-platform/internal/pkg/config"
 )
 
 func TestNormalizeGoogleMerchantID(t *testing.T) {
@@ -40,11 +40,11 @@ func TestNormalizeGoogleMerchantIDRejectsNonNumericValue(t *testing.T) {
 }
 
 func TestNormalizeGoogleMerchantStorefrontBaseURL(t *testing.T) {
-	got, err := normalizeGoogleMerchantStorefrontBaseURL("https://tanzanite.site/")
+	got, err := normalizeGoogleMerchantStorefrontBaseURL("https://commerce_platform.site/")
 	if err != nil {
 		t.Fatalf("normalizeGoogleMerchantStorefrontBaseURL() error = %v", err)
 	}
-	if got != "https://tanzanite.site" {
+	if got != "https://commerce_platform.site" {
 		t.Fatalf("normalizeGoogleMerchantStorefrontBaseURL() = %q", got)
 	}
 }

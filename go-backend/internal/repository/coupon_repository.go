@@ -1,8 +1,8 @@
-package repository
+﻿package repository
 
 import (
 	"errors"
-	"tanzanite/internal/domain/coupon"
+	"commerce-platform/internal/domain/coupon"
 	"time"
 
 	"gorm.io/gorm"

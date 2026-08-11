@@ -1,10 +1,10 @@
-package payment
+﻿package payment
 
 import (
 	"strings"
 
-	paymentdomain "tanzanite/internal/domain/payment"
-	pgateway "tanzanite/internal/pkg/payment"
+	paymentdomain "commerce-platform/internal/domain/payment"
+	pgateway "commerce-platform/internal/pkg/payment"
 
 	"github.com/gin-gonic/gin"
 )

@@ -1,6 +1,6 @@
-package service
+﻿package service
 
-import "tanzanite/internal/domain/post"
+import "commerce-platform/internal/domain/post"
 
 // PostSEOUpdateInput is the only article Meta write contract exposed to the
 // SEO control plane. Content create/update inputs deliberately omit these

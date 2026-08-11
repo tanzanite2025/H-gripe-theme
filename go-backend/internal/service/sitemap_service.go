@@ -1,12 +1,12 @@
-package service
+﻿package service
 
 import (
 	"encoding/xml"
 	"fmt"
 	"strings"
-	"tanzanite/internal/domain/post"
-	seodomain "tanzanite/internal/domain/seo"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/post"
+	seodomain "commerce-platform/internal/domain/seo"
+	"commerce-platform/internal/repository"
 	"time"
 )
 

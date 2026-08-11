@@ -1,8 +1,8 @@
-package middleware
+﻿package middleware
 
 import (
 	"net/http"
-	"tanzanite/internal/domain/auth"
+	"commerce-platform/internal/domain/auth"
 
 	"github.com/gin-gonic/gin"
 )

@@ -1,4 +1,4 @@
-export const COOKIE_CONSENT_KEY = 'learn_gripe_cookie_consent'
+﻿export const COOKIE_CONSENT_KEY = 'commerce_platform_cookie_consent'
 export const COOKIE_CONSENT_UPDATED_EVENT = 'cookie-consent-updated'
 
 export interface CookieConsentPreferences {

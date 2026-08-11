@@ -1,10 +1,10 @@
-package seo
+﻿package seo
 
 import (
 	"net/url"
 	"strings"
 
-	"tanzanite/internal/pkg/locales"
+	"commerce-platform/internal/pkg/locales"
 )
 
 // PageRoute is the read-only storefront route projection exposed to admin

@@ -1,4 +1,4 @@
-package service
+﻿package service
 
 import (
 	"context"
@@ -13,8 +13,8 @@ import (
 	"strings"
 	"time"
 
-	"tanzanite/internal/domain/auth"
-	"tanzanite/internal/domain/user"
+	"commerce-platform/internal/domain/auth"
+	"commerce-platform/internal/domain/user"
 )
 
 type googleTokenInfo struct {

@@ -1,4 +1,4 @@
-package middleware
+﻿package middleware
 
 import (
 	"bytes"
@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"tanzanite/internal/pkg/config"
-	"tanzanite/internal/pkg/requestsign"
+	"commerce-platform/internal/pkg/config"
+	"commerce-platform/internal/pkg/requestsign"
 
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
@@ -81,7 +81,7 @@ func RequestSignature(cfg config.RequestSigningConfig, redisClient *redis.Client
 			c.Abort()
 			return
 		}
-		replayKey := "tanzanite:request-signature:nonce:" + requestsign.BodyDigest([]byte(nonce))
+		replayKey := "commerce_platform:request-signature:nonce:" + requestsign.BodyDigest([]byte(nonce))
 		accepted, err := redisClient.SetNX(c.Request.Context(), replayKey, "1", time.Duration(cfg.MaxSkewSeconds+15)*time.Second).Result()
 		if err != nil {
 			c.JSON(http.StatusServiceUnavailable, gin.H{"error": "request signature service unavailable"})

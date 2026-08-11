@@ -1,11 +1,11 @@
-package review
+﻿package review
 
 import (
 	"encoding/json"
 	"net/http"
 	"strconv"
-	"tanzanite/internal/domain/review"
-	"tanzanite/internal/service"
+	"commerce-platform/internal/domain/review"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

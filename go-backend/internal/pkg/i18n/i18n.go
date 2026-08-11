@@ -1,9 +1,9 @@
-package i18n
+﻿package i18n
 
 import (
 	"strings"
-	"tanzanite/internal/pkg/config"
-	"tanzanite/internal/pkg/locales"
+	"commerce-platform/internal/pkg/config"
+	"commerce-platform/internal/pkg/locales"
 )
 
 var supportedLocales map[string]bool

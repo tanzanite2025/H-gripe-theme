@@ -1,15 +1,15 @@
-package service
+﻿package service
 
 import (
 	"strconv"
 	"testing"
 	"time"
 
-	"tanzanite/internal/domain/audit"
-	paymentdomain "tanzanite/internal/domain/payment"
-	"tanzanite/internal/pkg/config"
-	pgateway "tanzanite/internal/pkg/payment"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/audit"
+	paymentdomain "commerce-platform/internal/domain/payment"
+	"commerce-platform/internal/pkg/config"
+	pgateway "commerce-platform/internal/pkg/payment"
+	"commerce-platform/internal/repository"
 
 	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/require"

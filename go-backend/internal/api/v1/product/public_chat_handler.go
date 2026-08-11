@@ -1,13 +1,13 @@
-package product
+﻿package product
 
 import (
 	"strconv"
 	"strings"
 
-	"tanzanite/internal/api/middleware"
-	productdomain "tanzanite/internal/domain/product"
-	"tanzanite/internal/pkg/apierror"
-	"tanzanite/internal/service"
+	"commerce-platform/internal/api/middleware"
+	productdomain "commerce-platform/internal/domain/product"
+	"commerce-platform/internal/pkg/apierror"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

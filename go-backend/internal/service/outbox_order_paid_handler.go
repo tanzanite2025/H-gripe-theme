@@ -1,10 +1,10 @@
-package service
+﻿package service
 
 import (
 	"context"
 	"errors"
 
-	"tanzanite/internal/domain/outbox"
+	"commerce-platform/internal/domain/outbox"
 )
 
 var ErrOrderPaidOutboxWebhookNotConfigured = errors.New("order paid outbox webhook is not configured")

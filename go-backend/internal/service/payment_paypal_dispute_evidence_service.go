@@ -1,4 +1,4 @@
-package service
+﻿package service
 
 import (
 	"bytes"
@@ -13,12 +13,12 @@ import (
 	"strings"
 	"time"
 
-	orderdomain "tanzanite/internal/domain/order"
-	paymentdomain "tanzanite/internal/domain/payment"
-	shippingdomain "tanzanite/internal/domain/shipping"
-	"tanzanite/internal/pkg/invoice"
-	pgateway "tanzanite/internal/pkg/payment"
-	"tanzanite/internal/repository"
+	orderdomain "commerce-platform/internal/domain/order"
+	paymentdomain "commerce-platform/internal/domain/payment"
+	shippingdomain "commerce-platform/internal/domain/shipping"
+	"commerce-platform/internal/pkg/invoice"
+	pgateway "commerce-platform/internal/pkg/payment"
+	"commerce-platform/internal/repository"
 
 	paypalapi "github.com/plutov/paypal/v4"
 )

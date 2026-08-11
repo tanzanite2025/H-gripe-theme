@@ -1,10 +1,10 @@
-package service
+﻿package service
 
 import (
 	"errors"
 	"strings"
-	"tanzanite/internal/domain/audit"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/audit"
+	"commerce-platform/internal/repository"
 	"time"
 )
 

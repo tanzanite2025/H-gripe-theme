@@ -1,11 +1,11 @@
-package middleware
+﻿package middleware
 
 import (
 	"strconv"
 	"time"
 
-	appLogger "tanzanite/internal/pkg/logger"
-	"tanzanite/internal/pkg/visitorcookie"
+	appLogger "commerce-platform/internal/pkg/logger"
+	"commerce-platform/internal/pkg/visitorcookie"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"

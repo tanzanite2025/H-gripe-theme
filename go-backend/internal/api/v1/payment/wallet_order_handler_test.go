@@ -1,4 +1,4 @@
-package payment
+﻿package payment
 
 import (
 	"bytes"
@@ -6,9 +6,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	orderdomain "tanzanite/internal/domain/order"
-	paymentdomain "tanzanite/internal/domain/payment"
-	pgateway "tanzanite/internal/pkg/payment"
+	orderdomain "commerce-platform/internal/domain/order"
+	paymentdomain "commerce-platform/internal/domain/payment"
+	pgateway "commerce-platform/internal/pkg/payment"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"

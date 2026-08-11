@@ -1,7 +1,7 @@
-package worker
+﻿package worker
 
 import (
-	"tanzanite/internal/pkg/config"
+	"commerce-platform/internal/pkg/config"
 
 	"github.com/hibiken/asynq"
 )

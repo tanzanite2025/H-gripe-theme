@@ -1,7 +1,7 @@
-.PHONY: help build run test clean docker-build docker-run lint fmt migrate dev
+﻿.PHONY: help build run test clean docker-build docker-run lint fmt migrate dev
 
 # 变量定义
-APP_NAME=tanzanite-api
+APP_NAME=commerce-platform-api
 VERSION?=$(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 BUILD_TIME=$(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
 LDFLAGS=-ldflags "-w -s -X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME)"

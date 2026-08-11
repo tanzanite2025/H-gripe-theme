@@ -1,11 +1,11 @@
-package service
+﻿package service
 
 import (
 	"testing"
 	"time"
 
-	paymentdomain "tanzanite/internal/domain/payment"
-	"tanzanite/internal/pkg/config"
+	paymentdomain "commerce-platform/internal/domain/payment"
+	"commerce-platform/internal/pkg/config"
 
 	"github.com/stretchr/testify/require"
 )

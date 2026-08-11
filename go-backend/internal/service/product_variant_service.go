@@ -1,4 +1,4 @@
-package service
+﻿package service
 
 import (
 	"encoding/json"
@@ -6,9 +6,9 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"tanzanite/internal/domain/currency"
-	"tanzanite/internal/domain/product"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/currency"
+	"commerce-platform/internal/domain/product"
+	"commerce-platform/internal/repository"
 )
 
 type ProductVariantInput struct {

@@ -1,4 +1,4 @@
-package service
+﻿package service
 
 import (
 	"errors"
@@ -7,11 +7,11 @@ import (
 	"time"
 	"unicode"
 
-	"tanzanite/internal/domain/currency"
-	"tanzanite/internal/domain/merchant"
-	"tanzanite/internal/domain/product"
-	"tanzanite/internal/pkg/config"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/currency"
+	"commerce-platform/internal/domain/merchant"
+	"commerce-platform/internal/domain/product"
+	"commerce-platform/internal/pkg/config"
+	"commerce-platform/internal/repository"
 
 	"gorm.io/gorm"
 )

@@ -1,4 +1,4 @@
-package service
+﻿package service
 
 import (
 	"context"
@@ -14,9 +14,9 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"tanzanite/internal/domain/visitor"
-	"tanzanite/internal/pkg/config"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/visitor"
+	"commerce-platform/internal/pkg/config"
+	"commerce-platform/internal/repository"
 )
 
 type VisitorRiskService struct {

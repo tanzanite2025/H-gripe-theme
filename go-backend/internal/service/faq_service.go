@@ -1,12 +1,12 @@
-package service
+﻿package service
 
 import (
 	"context"
 	"fmt"
 	"mime/multipart"
-	"tanzanite/internal/domain/faq"
-	"tanzanite/internal/pkg/storage"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/faq"
+	"commerce-platform/internal/pkg/storage"
+	"commerce-platform/internal/repository"
 )
 
 type FAQService struct {

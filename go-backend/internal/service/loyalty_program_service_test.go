@@ -1,12 +1,12 @@
-package service
+﻿package service
 
 import (
 	"testing"
 
-	"tanzanite/internal/domain/currency"
-	"tanzanite/internal/domain/loyalty"
-	"tanzanite/internal/domain/setting"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/currency"
+	"commerce-platform/internal/domain/loyalty"
+	"commerce-platform/internal/domain/setting"
+	"commerce-platform/internal/repository"
 
 	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/require"

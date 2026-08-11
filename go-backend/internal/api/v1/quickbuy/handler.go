@@ -1,15 +1,15 @@
-package quickbuy
+﻿package quickbuy
 
 import (
 	"errors"
 	"strconv"
 	"strings"
 
-	"tanzanite/internal/api/middleware"
-	productapi "tanzanite/internal/api/v1/product"
-	"tanzanite/internal/pkg/apierror"
-	"tanzanite/internal/pkg/response"
-	"tanzanite/internal/service"
+	"commerce-platform/internal/api/middleware"
+	productapi "commerce-platform/internal/api/v1/product"
+	"commerce-platform/internal/pkg/apierror"
+	"commerce-platform/internal/pkg/response"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

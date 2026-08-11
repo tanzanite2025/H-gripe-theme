@@ -1,10 +1,10 @@
-package service
+﻿package service
 
 import (
 	"errors"
 	"fmt"
-	"tanzanite/internal/domain/order"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/order"
+	"commerce-platform/internal/repository"
 )
 
 func (s *OrderService) CancelOrder(id uint, userID uint) error {

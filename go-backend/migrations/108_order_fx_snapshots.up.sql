@@ -1,0 +1,2 @@
+ALTER TABLE orders
+  ADD COLUMN IF NOT EXISTS fx_snapshot JSONB NOT NULL DEFAULT '{}'::jsonb;

@@ -1,13 +1,13 @@
-package seo
+﻿package seo
 
 import (
 	"net/http"
 	"strconv"
 	"time"
 
-	productdomain "tanzanite/internal/domain/product"
-	seodomain "tanzanite/internal/domain/seo"
-	"tanzanite/internal/service"
+	productdomain "commerce-platform/internal/domain/product"
+	seodomain "commerce-platform/internal/domain/seo"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

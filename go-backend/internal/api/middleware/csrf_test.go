@@ -1,11 +1,11 @@
-package middleware
+﻿package middleware
 
 import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"tanzanite/internal/pkg/securecookie"
+	"commerce-platform/internal/pkg/securecookie"
 
 	"github.com/gin-gonic/gin"
 )

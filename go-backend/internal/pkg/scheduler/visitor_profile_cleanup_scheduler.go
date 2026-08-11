@@ -1,13 +1,13 @@
-package scheduler
+﻿package scheduler
 
 import (
 	"context"
 	"sync"
 	"time"
 
-	"tanzanite/internal/pkg/config"
-	"tanzanite/internal/pkg/logger"
-	"tanzanite/internal/service"
+	"commerce-platform/internal/pkg/config"
+	"commerce-platform/internal/pkg/logger"
+	"commerce-platform/internal/service"
 
 	"go.uber.org/zap"
 )

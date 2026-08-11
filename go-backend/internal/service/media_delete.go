@@ -1,11 +1,11 @@
-package service
+﻿package service
 
 import (
 	"context"
 	"errors"
 	"fmt"
 	"strings"
-	"tanzanite/internal/domain/media"
+	"commerce-platform/internal/domain/media"
 )
 
 var (

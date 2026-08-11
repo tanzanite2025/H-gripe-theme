@@ -1,4 +1,4 @@
-package service
+﻿package service
 
 import (
 	"archive/zip"
@@ -14,10 +14,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"tanzanite/internal/domain/media"
-	settingdomain "tanzanite/internal/domain/setting"
-	"tanzanite/internal/pkg/storage"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/media"
+	settingdomain "commerce-platform/internal/domain/setting"
+	"commerce-platform/internal/pkg/storage"
+	"commerce-platform/internal/repository"
 
 	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/require"

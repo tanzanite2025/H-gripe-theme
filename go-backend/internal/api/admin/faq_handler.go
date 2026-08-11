@@ -1,9 +1,9 @@
-package admin
+﻿package admin
 
 import (
 	"errors"
 	"strings"
-	"tanzanite/internal/service"
+	"commerce-platform/internal/service"
 )
 
 type FAQHandler struct {

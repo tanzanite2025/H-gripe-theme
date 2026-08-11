@@ -1,10 +1,10 @@
-package service
+﻿package service
 
 import (
 	"errors"
 
-	"tanzanite/internal/domain/user"
-	"tanzanite/internal/pkg/config"
+	"commerce-platform/internal/domain/user"
+	"commerce-platform/internal/pkg/config"
 )
 
 type UserRepository interface {

@@ -1,4 +1,4 @@
-package shipping
+﻿package shipping
 
 import (
 	"crypto/hmac"
@@ -39,7 +39,7 @@ func TestVerifyTrackingWebhookAcceptsInternalHMACSignature(t *testing.T) {
 
 	request, err := http.NewRequest(http.MethodPost, "/api/v1/shipping/webhook/mock", nil)
 	require.NoError(t, err)
-	request.Header.Set("X-Tanzanite-Signature", "sha256="+hex.EncodeToString(mac.Sum(nil)))
+	request.Header.Set("X-Commerce-Platform-Signature", "sha256="+hex.EncodeToString(mac.Sum(nil)))
 	context := &gin.Context{Request: request}
 
 	assert.True(t, verifyTrackingWebhook(context, secret, payload))

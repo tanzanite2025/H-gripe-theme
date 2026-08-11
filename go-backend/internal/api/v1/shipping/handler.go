@@ -1,10 +1,10 @@
-package shipping
+﻿package shipping
 
 import (
 	"errors"
-	"tanzanite/internal/domain/auth"
-	"tanzanite/internal/pkg/apierror"
-	"tanzanite/internal/service"
+	"commerce-platform/internal/domain/auth"
+	"commerce-platform/internal/pkg/apierror"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

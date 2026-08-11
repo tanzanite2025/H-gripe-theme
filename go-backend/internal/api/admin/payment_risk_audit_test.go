@@ -1,4 +1,4 @@
-package admin
+﻿package admin
 
 import (
 	"encoding/json"
@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
-	paymentdomain "tanzanite/internal/domain/payment"
-	"tanzanite/internal/pkg/config"
-	"tanzanite/internal/repository"
-	"tanzanite/internal/service"
+	paymentdomain "commerce-platform/internal/domain/payment"
+	"commerce-platform/internal/pkg/config"
+	"commerce-platform/internal/repository"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 	"github.com/glebarez/sqlite"

@@ -1,4 +1,4 @@
-package subscription
+﻿package subscription
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
-	domainsubscription "tanzanite/internal/domain/subscription"
+	domainsubscription "commerce-platform/internal/domain/subscription"
 	"testing"
 
 	"github.com/gin-gonic/gin"

@@ -1,10 +1,10 @@
-package wishlist
+﻿package wishlist
 
 import (
 	"errors"
 	"net/http"
 	"strconv"
-	"tanzanite/internal/service"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

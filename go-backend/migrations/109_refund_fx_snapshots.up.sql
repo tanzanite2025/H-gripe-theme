@@ -1,0 +1,2 @@
+ALTER TABLE refunds
+  ADD COLUMN IF NOT EXISTS fx_snapshot JSONB NOT NULL DEFAULT '{}'::jsonb;

@@ -1,13 +1,13 @@
-package subscription
+﻿package subscription
 
 import (
 	"errors"
 	"net/http"
 	"strings"
 
-	domainsubscription "tanzanite/internal/domain/subscription"
-	"tanzanite/internal/pkg/antibot"
-	"tanzanite/internal/service"
+	domainsubscription "commerce-platform/internal/domain/subscription"
+	"commerce-platform/internal/pkg/antibot"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

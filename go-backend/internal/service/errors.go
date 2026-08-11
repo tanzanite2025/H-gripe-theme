@@ -1,8 +1,8 @@
-package service
+﻿package service
 
 import (
 	"errors"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/repository"
 )
 
 var (

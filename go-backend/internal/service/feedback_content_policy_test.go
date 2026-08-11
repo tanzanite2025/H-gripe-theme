@@ -1,9 +1,9 @@
-package service
+﻿package service
 
 import (
 	"testing"
 
-	"tanzanite/internal/domain/feedback"
+	"commerce-platform/internal/domain/feedback"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

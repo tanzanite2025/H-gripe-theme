@@ -1,4 +1,4 @@
-# Kubernetes CronJob for automated database backups
+﻿# Kubernetes CronJob for automated database backups
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -42,7 +42,7 @@ spec:
             - name: DB_PORT
               value: "5432"
             - name: DB_NAME
-              value: "tanzanite"
+              value: "commerce_platform"
             - name: DB_USERNAME
               valueFrom:
                 secretKeyRef:
@@ -60,7 +60,7 @@ spec:
             - name: UPLOAD_TO_S3
               value: "true"
             - name: S3_BUCKET
-              value: "tanzanite-backups"
+              value: "commerce_platform-backups"
             - name: NOTIFY_SLACK
               value: "true"
             - name: SLACK_WEBHOOK_URL

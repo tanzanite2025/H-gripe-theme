@@ -1,7 +1,7 @@
-package cart
+﻿package cart
 
 import (
-	productdomain "tanzanite/internal/domain/product"
+	productdomain "commerce-platform/internal/domain/product"
 )
 
 type PublicCartSummary struct {

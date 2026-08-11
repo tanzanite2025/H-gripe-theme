@@ -1,11 +1,11 @@
-package cart
+﻿package cart
 
 import (
 	"encoding/json"
 	"strings"
 	"testing"
 
-	productdomain "tanzanite/internal/domain/product"
+	productdomain "commerce-platform/internal/domain/product"
 )
 
 func TestPublicCartSummaryUsesMinimalMediaContract(t *testing.T) {

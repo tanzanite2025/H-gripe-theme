@@ -1,4 +1,4 @@
-package service
+﻿package service
 
 import (
 	"errors"
@@ -6,8 +6,8 @@ import (
 	"math"
 	"regexp"
 	"strings"
-	domainspoke "tanzanite/internal/domain/spoke"
-	"tanzanite/internal/repository"
+	domainspoke "commerce-platform/internal/domain/spoke"
+	"commerce-platform/internal/repository"
 )
 
 var (

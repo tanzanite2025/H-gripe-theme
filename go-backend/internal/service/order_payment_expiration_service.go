@@ -1,9 +1,9 @@
-package service
+﻿package service
 
 import (
 	"time"
 
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/repository"
 )
 
 const (

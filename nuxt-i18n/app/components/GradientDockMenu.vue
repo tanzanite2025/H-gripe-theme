@@ -291,9 +291,9 @@ watchEffect(() => {
 
 .dock-cart-count {
   display: inline-flex;
-  width: 1.35rem;
-  min-width: 1.35rem;
-  height: 1.35rem;
+  width: 1.65rem;
+  min-width: 1.65rem;
+  height: 1.65rem;
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
@@ -301,7 +301,7 @@ watchEffect(() => {
   border-radius: 999px;
   background: var(--tz-brand-primary, #b5ff6d);
   color: #050505;
-  font-size: 0.7rem;
+  font-size: 0.8rem;
   font-weight: 900;
   padding: 0;
 }

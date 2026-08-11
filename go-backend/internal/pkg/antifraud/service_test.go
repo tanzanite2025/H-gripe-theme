@@ -1,11 +1,11 @@
-package antifraud
+﻿package antifraud
 
 import (
 	"strings"
 	"testing"
 	"time"
 
-	"tanzanite/internal/pkg/config"
+	"commerce-platform/internal/pkg/config"
 )
 
 func TestFailureKeysIncludeUserParentForSessionKey(t *testing.T) {
@@ -128,7 +128,7 @@ func TestPaymentIntentBindingKeyDoesNotExposeRawProviderID(t *testing.T) {
 	if strings.Contains(key, "pi_123_secret") {
 		t.Fatalf("paymentIntentBindingKey leaked raw payment intent id: %q", key)
 	}
-	if !strings.HasPrefix(key, "tanzanite:payment-risk:payment-intent:") {
+	if !strings.HasPrefix(key, "commerce_platform:payment-risk:payment-intent:") {
 		t.Fatalf("paymentIntentBindingKey = %q, want payment-intent namespace", key)
 	}
 }

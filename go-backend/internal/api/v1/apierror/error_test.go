@@ -1,4 +1,4 @@
-package apierror
+﻿package apierror
 
 import (
 	"bytes"
@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	appLogger "tanzanite/internal/pkg/logger"
+	appLogger "commerce-platform/internal/pkg/logger"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"

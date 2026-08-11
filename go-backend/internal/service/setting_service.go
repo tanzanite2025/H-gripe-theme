@@ -1,9 +1,9 @@
-package service
+﻿package service
 
 import (
-	"tanzanite/internal/domain/setting"
-	"tanzanite/internal/pkg/cache"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/setting"
+	"commerce-platform/internal/pkg/cache"
+	"commerce-platform/internal/repository"
 	"time"
 )
 

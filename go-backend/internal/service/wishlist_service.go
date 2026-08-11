@@ -1,9 +1,9 @@
-package service
+﻿package service
 
 import (
 	"errors"
-	"tanzanite/internal/domain/wishlist"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/wishlist"
+	"commerce-platform/internal/repository"
 )
 
 var (

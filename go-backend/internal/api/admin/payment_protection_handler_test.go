@@ -1,4 +1,4 @@
-package admin
+﻿package admin
 
 import (
 	"net/http"
@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"tanzanite/internal/pkg/config"
-	"tanzanite/internal/service"
+	"commerce-platform/internal/pkg/config"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"

@@ -1,4 +1,4 @@
-package service
+﻿package service
 
 import (
 	"encoding/json"
@@ -6,8 +6,8 @@ import (
 	"net/url"
 	"strings"
 
-	"tanzanite/internal/domain/review"
-	"tanzanite/internal/pkg/ugc"
+	"commerce-platform/internal/domain/review"
+	"commerce-platform/internal/pkg/ugc"
 )
 
 const (

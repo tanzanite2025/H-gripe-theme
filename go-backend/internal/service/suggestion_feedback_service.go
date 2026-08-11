@@ -1,10 +1,10 @@
-package service
+﻿package service
 
 import (
 	"errors"
 	"strings"
-	"tanzanite/internal/domain/suggestionfeedback"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/suggestionfeedback"
+	"commerce-platform/internal/repository"
 )
 
 const defaultSuggestionAttachmentLevel = "silver"

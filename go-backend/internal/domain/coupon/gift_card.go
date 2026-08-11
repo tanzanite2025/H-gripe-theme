@@ -1,11 +1,11 @@
-package coupon
+﻿package coupon
 
 import (
 	"errors"
 	"math"
 	"time"
 
-	"tanzanite/internal/domain/currency"
+	"commerce-platform/internal/domain/currency"
 
 	"gorm.io/gorm"
 )

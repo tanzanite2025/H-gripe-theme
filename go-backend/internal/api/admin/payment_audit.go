@@ -1,11 +1,11 @@
-package admin
+﻿package admin
 
 import (
 	"sort"
 	"strings"
 	"time"
 
-	pgateway "tanzanite/internal/pkg/payment"
+	pgateway "commerce-platform/internal/pkg/payment"
 
 	"github.com/gin-gonic/gin"
 )

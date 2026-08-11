@@ -1,4 +1,4 @@
-package service
+﻿package service
 
 import (
 	"context"
@@ -6,8 +6,8 @@ import (
 	"errors"
 	"fmt"
 
-	"tanzanite/internal/domain/merchant"
-	"tanzanite/internal/domain/outbox"
+	"commerce-platform/internal/domain/merchant"
+	"commerce-platform/internal/domain/outbox"
 )
 
 type GoogleMerchantOutboxHandler struct {

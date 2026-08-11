@@ -1,4 +1,4 @@
-apiVersion: v1
+﻿apiVersion: v1
 kind: ConfigMap
 metadata:
   name: alertmanager-config
@@ -89,10 +89,10 @@ data:
         send_resolved: true
         
       email_configs:
-      - to: 'ops-team@tanzanite.com'
-        from: 'alertmanager@tanzanite.com'
+      - to: 'ops-team@commerce_platform.com'
+        from: 'alertmanager@commerce_platform.com'
         smarthost: 'smtp.gmail.com:587'
-        auth_username: 'alertmanager@tanzanite.com'
+        auth_username: 'alertmanager@commerce_platform.com'
         auth_password: '{{ .ExternalSecret.smtp_password }}'
         headers:
           Subject: '🚨 CRITICAL Alert: {{ .GroupLabels.alertname }}'
@@ -241,10 +241,10 @@ spec:
   ingressClassName: nginx
   tls:
   - hosts:
-    - alertmanager.tanzanite.example.com
+    - alertmanager.commerce_platform.example.com
     secretName: alertmanager-tls
   rules:
-  - host: alertmanager.tanzanite.example.com
+  - host: alertmanager.commerce_platform.example.com
     http:
       paths:
       - path: /

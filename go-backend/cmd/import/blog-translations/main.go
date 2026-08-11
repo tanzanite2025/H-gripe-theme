@@ -1,4 +1,4 @@
-package main
+﻿package main
 
 import (
 	"encoding/json"
@@ -55,9 +55,9 @@ func main() {
 		jsonFile   = flag.String("file", "exports/blog-translations.json", "导出的 JSON 文件路径")
 		dbHost     = flag.String("db-host", "localhost", "数据库主机")
 		dbPort     = flag.Int("db-port", 5432, "数据库端口")
-		dbUser     = flag.String("db-user", "tanzanite", "数据库用户名")
+		dbUser     = flag.String("db-user", "commerce_platform", "数据库用户名")
 		dbPassword = flag.String("db-password", "", "数据库密码")
-		dbName     = flag.String("db-name", "tanzanite", "数据库名称")
+		dbName     = flag.String("db-name", "commerce_platform", "数据库名称")
 		dryRun     = flag.Bool("dry-run", false, "试运行模式（不实际写入数据库）")
 	)
 	flag.Parse()

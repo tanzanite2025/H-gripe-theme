@@ -1,4 +1,4 @@
-package v1
+﻿package v1
 
 import (
 	"context"
@@ -8,12 +8,12 @@ import (
 	"strings"
 	"testing"
 
-	"tanzanite/internal/app"
-	domainsubscription "tanzanite/internal/domain/subscription"
-	"tanzanite/internal/domain/verification"
-	"tanzanite/internal/pkg/config"
-	"tanzanite/internal/repository"
-	"tanzanite/internal/service"
+	"commerce-platform/internal/app"
+	domainsubscription "commerce-platform/internal/domain/subscription"
+	"commerce-platform/internal/domain/verification"
+	"commerce-platform/internal/pkg/config"
+	"commerce-platform/internal/repository"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 	"github.com/glebarez/sqlite"

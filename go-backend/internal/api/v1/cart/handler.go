@@ -1,14 +1,14 @@
-package cart
+﻿package cart
 
 import (
 	"errors"
 	"strconv"
 	"strings"
-	"tanzanite/internal/api/middleware"
-	"tanzanite/internal/pkg/apierror"
-	"tanzanite/internal/pkg/response"
-	"tanzanite/internal/pkg/visitorcookie"
-	"tanzanite/internal/service"
+	"commerce-platform/internal/api/middleware"
+	"commerce-platform/internal/pkg/apierror"
+	"commerce-platform/internal/pkg/response"
+	"commerce-platform/internal/pkg/visitorcookie"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"

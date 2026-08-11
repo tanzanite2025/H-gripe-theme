@@ -1,7 +1,7 @@
-package wishlist
+﻿package wishlist
 
 import (
-	"tanzanite/internal/domain/product"
+	"commerce-platform/internal/domain/product"
 	"time"
 
 	"gorm.io/gorm"

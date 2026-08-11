@@ -1,4 +1,4 @@
-import { useRouter } from '#imports'
+﻿import { useRouter } from '#imports'
 import {
   fetchAnalyticsSettings,
   type AnalyticsSettings,
@@ -10,8 +10,8 @@ import {
   type CookieConsentPreferences,
 } from '~/utils/cookieConsent'
 
-const GOOGLE_ANALYTICS_SCRIPT_ID = 'learn-gripe-google-analytics'
-const GOOGLE_TAG_MANAGER_SCRIPT_ID = 'learn-gripe-google-tag-manager'
+const GOOGLE_ANALYTICS_SCRIPT_ID = 'commerce-platform-google-analytics'
+const GOOGLE_TAG_MANAGER_SCRIPT_ID = 'commerce-platform-google-tag-manager'
 
 type Gtag = (...args: unknown[]) => void
 

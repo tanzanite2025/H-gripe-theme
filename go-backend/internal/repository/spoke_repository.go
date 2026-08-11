@@ -1,9 +1,9 @@
-package repository
+﻿package repository
 
 import (
 	"encoding/json"
 	"strings"
-	"tanzanite/internal/domain/spoke"
+	"commerce-platform/internal/domain/spoke"
 
 	"gorm.io/gorm"
 )

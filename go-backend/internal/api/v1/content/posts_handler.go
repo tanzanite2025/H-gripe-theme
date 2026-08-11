@@ -1,12 +1,12 @@
-package content
+﻿package content
 
 import (
 	"net/http"
 	"strconv"
 	"strings"
 
-	"tanzanite/internal/api/middleware"
-	"tanzanite/internal/pkg/locales"
+	"commerce-platform/internal/api/middleware"
+	"commerce-platform/internal/pkg/locales"
 
 	"github.com/gin-gonic/gin"
 )

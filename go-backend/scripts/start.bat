@@ -1,4 +1,4 @@
-@echo off
+﻿@echo off
 REM Storefront Go Backend Startup Script for Windows
 
 echo Starting Storefront Go Backend...
@@ -23,8 +23,8 @@ go mod download
 
 REM Build the application
 echo Building application...
-go build -o tanzanite-api.exe .\cmd\server
+go build -o commerce-platform-api.exe .\cmd\server
 
 REM Run the application
 echo Starting server...
-tanzanite-api.exe
+commerce-platform-api.exe

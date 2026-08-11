@@ -1,9 +1,9 @@
-package registration
+﻿package registration
 
 import (
 	"encoding/json"
 	"strings"
-	domainregistration "tanzanite/internal/domain/registration"
+	domainregistration "commerce-platform/internal/domain/registration"
 	"testing"
 	"time"
 )

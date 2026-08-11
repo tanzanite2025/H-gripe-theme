@@ -1,9 +1,9 @@
-package service
+﻿package service
 
 import (
 	"strings"
 
-	"tanzanite/internal/domain/product"
+	"commerce-platform/internal/domain/product"
 )
 
 // GetPublicBySlugWithRoutes resolves one public localized product and the

@@ -1,14 +1,14 @@
-package service
+﻿package service
 
 import (
 	"errors"
 	"fmt"
 	"strings"
 
-	"tanzanite/internal/domain/currency"
-	marketdomain "tanzanite/internal/domain/market"
-	"tanzanite/internal/pkg/locales"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/currency"
+	marketdomain "commerce-platform/internal/domain/market"
+	"commerce-platform/internal/pkg/locales"
+	"commerce-platform/internal/repository"
 )
 
 var ErrInvalidStorefrontMarket = errors.New("invalid storefront market")

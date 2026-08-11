@@ -1,13 +1,13 @@
-package registration
+﻿package registration
 
 import (
 	"errors"
 	"strconv"
-	domainregistration "tanzanite/internal/domain/registration"
-	"tanzanite/internal/pkg/apierror"
-	"tanzanite/internal/pkg/pagination"
-	"tanzanite/internal/pkg/response"
-	"tanzanite/internal/service"
+	domainregistration "commerce-platform/internal/domain/registration"
+	"commerce-platform/internal/pkg/apierror"
+	"commerce-platform/internal/pkg/pagination"
+	"commerce-platform/internal/pkg/response"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

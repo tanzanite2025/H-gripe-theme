@@ -1,4 +1,4 @@
-package cardtesting
+﻿package cardtesting
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"tanzanite/internal/pkg/config"
+	"commerce-platform/internal/pkg/config"
 )
 
 type fakeStore struct {

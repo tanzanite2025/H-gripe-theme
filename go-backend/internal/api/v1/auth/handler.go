@@ -1,11 +1,11 @@
-package auth
+﻿package auth
 
 import (
 	"errors"
-	"tanzanite/internal/pkg/apierror"
-	"tanzanite/internal/pkg/response"
-	"tanzanite/internal/pkg/securecookie"
-	"tanzanite/internal/service"
+	"commerce-platform/internal/pkg/apierror"
+	"commerce-platform/internal/pkg/response"
+	"commerce-platform/internal/pkg/securecookie"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

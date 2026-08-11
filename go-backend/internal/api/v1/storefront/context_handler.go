@@ -1,10 +1,10 @@
-package storefront
+﻿package storefront
 
 import (
 	"net/http"
 	"strings"
 
-	"tanzanite/internal/service"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

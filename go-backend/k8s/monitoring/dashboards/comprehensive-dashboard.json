@@ -1,4 +1,4 @@
-{
+﻿{
   "dashboard": {
     "title": "Storefront - Complete Monitoring Dashboard",
     "tags": ["storefront", "production", "overview"],
@@ -23,7 +23,7 @@
         "type": "graph",
         "targets": [
           {
-            "expr": "sum(rate(http_requests_total{job=\"tanzanite-api\"}[5m])) by (method)",
+            "expr": "sum(rate(http_requests_total{job=\"commerce-platform-api\"}[5m])) by (method)",
             "legendFormat": "{{method}}",
             "refId": "A"
           }
@@ -47,12 +47,12 @@
         "type": "graph",
         "targets": [
           {
-            "expr": "sum(rate(http_requests_total{job=\"tanzanite-api\",status=~\"4..\"}[5m]))",
+            "expr": "sum(rate(http_requests_total{job=\"commerce-platform-api\",status=~\"4..\"}[5m]))",
             "legendFormat": "4xx Client Errors",
             "refId": "A"
           },
           {
-            "expr": "sum(rate(http_requests_total{job=\"tanzanite-api\",status=~\"5..\"}[5m]))",
+            "expr": "sum(rate(http_requests_total{job=\"commerce-platform-api\",status=~\"5..\"}[5m]))",
             "legendFormat": "5xx Server Errors",
             "refId": "B"
           }
@@ -76,17 +76,17 @@
         "type": "graph",
         "targets": [
           {
-            "expr": "histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket{job=\"tanzanite-api\"}[5m])) by (le))",
+            "expr": "histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket{job=\"commerce-platform-api\"}[5m])) by (le))",
             "legendFormat": "P50",
             "refId": "A"
           },
           {
-            "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=\"tanzanite-api\"}[5m])) by (le))",
+            "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=\"commerce-platform-api\"}[5m])) by (le))",
             "legendFormat": "P95",
             "refId": "B"
           },
           {
-            "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{job=\"tanzanite-api\"}[5m])) by (le))",
+            "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{job=\"commerce-platform-api\"}[5m])) by (le))",
             "legendFormat": "P99",
             "refId": "C"
           }
@@ -110,7 +110,7 @@
         "type": "graph",
         "targets": [
           {
-            "expr": "sum(http_requests_in_flight{job=\"tanzanite-api\"})",
+            "expr": "sum(http_requests_in_flight{job=\"commerce-platform-api\"})",
             "legendFormat": "In Flight Requests",
             "refId": "A"
           }
@@ -134,17 +134,17 @@
         "type": "graph",
         "targets": [
           {
-            "expr": "db_connections_in_use{job=\"tanzanite-api\"}",
+            "expr": "db_connections_in_use{job=\"commerce-platform-api\"}",
             "legendFormat": "In Use",
             "refId": "A"
           },
           {
-            "expr": "db_connections_idle{job=\"tanzanite-api\"}",
+            "expr": "db_connections_idle{job=\"commerce-platform-api\"}",
             "legendFormat": "Idle",
             "refId": "B"
           },
           {
-            "expr": "db_connections_max{job=\"tanzanite-api\"}",
+            "expr": "db_connections_max{job=\"commerce-platform-api\"}",
             "legendFormat": "Max",
             "refId": "C"
           }
@@ -168,7 +168,7 @@
         "type": "graph",
         "targets": [
           {
-            "expr": "sum(rate(cache_hits_total{job=\"tanzanite-api\"}[5m])) / (sum(rate(cache_hits_total{job=\"tanzanite-api\"}[5m])) + sum(rate(cache_misses_total{job=\"tanzanite-api\"}[5m]))) * 100",
+            "expr": "sum(rate(cache_hits_total{job=\"commerce-platform-api\"}[5m])) / (sum(rate(cache_hits_total{job=\"commerce-platform-api\"}[5m])) + sum(rate(cache_misses_total{job=\"commerce-platform-api\"}[5m]))) * 100",
             "legendFormat": "Hit Rate %",
             "refId": "A"
           }
@@ -194,7 +194,7 @@
         "type": "graph",
         "targets": [
           {
-            "expr": "sum(rate(container_cpu_usage_seconds_total{pod=~\"tanzanite-api.*\"}[5m])) by (pod) * 100",
+            "expr": "sum(rate(container_cpu_usage_seconds_total{pod=~\"commerce-platform-api.*\"}[5m])) by (pod) * 100",
             "legendFormat": "{{pod}}",
             "refId": "A"
           }
@@ -218,7 +218,7 @@
         "type": "graph",
         "targets": [
           {
-            "expr": "sum(container_memory_working_set_bytes{pod=~\"tanzanite-api.*\"}) by (pod) / 1024 / 1024",
+            "expr": "sum(container_memory_working_set_bytes{pod=~\"commerce-platform-api.*\"}) by (pod) / 1024 / 1024",
             "legendFormat": "{{pod}}",
             "refId": "A"
           }
@@ -242,12 +242,12 @@
         "type": "graph",
         "targets": [
           {
-            "expr": "sum(rate(container_network_receive_bytes_total{pod=~\"tanzanite-api.*\"}[5m])) by (pod)",
+            "expr": "sum(rate(container_network_receive_bytes_total{pod=~\"commerce-platform-api.*\"}[5m])) by (pod)",
             "legendFormat": "{{pod}} RX",
             "refId": "A"
           },
           {
-            "expr": "sum(rate(container_network_transmit_bytes_total{pod=~\"tanzanite-api.*\"}[5m])) by (pod)",
+            "expr": "sum(rate(container_network_transmit_bytes_total{pod=~\"commerce-platform-api.*\"}[5m])) by (pod)",
             "legendFormat": "{{pod}} TX",
             "refId": "B"
           }
@@ -271,7 +271,7 @@
         "type": "graph",
         "targets": [
           {
-            "expr": "kube_pod_container_status_restarts_total{pod=~\"tanzanite-api.*\"}",
+            "expr": "kube_pod_container_status_restarts_total{pod=~\"commerce-platform-api.*\"}",
             "legendFormat": "{{pod}}",
             "refId": "A"
           }
@@ -295,7 +295,7 @@
         "type": "table",
         "targets": [
           {
-            "expr": "topk(10, sum(rate(http_requests_total{job=\"tanzanite-api\"}[5m])) by (path, method))",
+            "expr": "topk(10, sum(rate(http_requests_total{job=\"commerce-platform-api\"}[5m])) by (path, method))",
             "format": "table",
             "instant": true,
             "refId": "A"
@@ -332,7 +332,7 @@
         "type": "table",
         "targets": [
           {
-            "expr": "topk(10, histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=\"tanzanite-api\"}[5m])) by (le, path, method)))",
+            "expr": "topk(10, histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=\"commerce-platform-api\"}[5m])) by (le, path, method)))",
             "format": "table",
             "instant": true,
             "refId": "A"

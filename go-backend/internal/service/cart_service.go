@@ -1,11 +1,11 @@
-package service
+﻿package service
 
 import (
 	"errors"
 	"strings"
-	"tanzanite/internal/domain/currency"
-	"tanzanite/internal/domain/product"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/currency"
+	"commerce-platform/internal/domain/product"
+	"commerce-platform/internal/repository"
 )
 
 var ErrCartNotFound = errors.New("cart not found")

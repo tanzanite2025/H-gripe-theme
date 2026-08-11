@@ -1,10 +1,10 @@
-#!/usr/bin/env bash
+﻿#!/usr/bin/env bash
 
 #############################################
 # Storefront security scan
 #
 # The release image must be supplied explicitly:
-#   REQUIRE_IMAGE_SCAN=true IMAGE_REF=ghcr.io/example/tanzanite-theme-api:sha-... ./scripts/security-scan.sh
+#   REQUIRE_IMAGE_SCAN=true IMAGE_REF=ghcr.io/example/commerce-platform-api:sha-... ./scripts/security-scan.sh
 #
 # Critical/high image findings and confirmed historical secrets fail the scan.
 #############################################

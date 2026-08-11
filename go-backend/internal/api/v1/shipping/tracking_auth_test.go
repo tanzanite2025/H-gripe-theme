@@ -1,4 +1,4 @@
-package shipping
+﻿package shipping
 
 import (
 	stdcontext "context"
@@ -6,10 +6,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	orderdomain "tanzanite/internal/domain/order"
-	shippingdomain "tanzanite/internal/domain/shipping"
-	"tanzanite/internal/repository"
-	"tanzanite/internal/service"
+	orderdomain "commerce-platform/internal/domain/order"
+	shippingdomain "commerce-platform/internal/domain/shipping"
+	"commerce-platform/internal/repository"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 	"github.com/glebarez/sqlite"

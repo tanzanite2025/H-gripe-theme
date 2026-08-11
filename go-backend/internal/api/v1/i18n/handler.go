@@ -1,12 +1,12 @@
-package i18n
+﻿package i18n
 
 import (
 	"net/http"
 	"strconv"
 	"strings"
-	seodomain "tanzanite/internal/domain/seo"
-	"tanzanite/internal/pkg/locales"
-	"tanzanite/internal/service"
+	seodomain "commerce-platform/internal/domain/seo"
+	"commerce-platform/internal/pkg/locales"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

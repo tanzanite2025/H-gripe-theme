@@ -1,4 +1,4 @@
-package service
+﻿package service
 
 import (
 	"encoding/json"
@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
-	orderdomain "tanzanite/internal/domain/order"
-	"tanzanite/internal/domain/registration"
+	orderdomain "commerce-platform/internal/domain/order"
+	"commerce-platform/internal/domain/registration"
 	"time"
 )
 

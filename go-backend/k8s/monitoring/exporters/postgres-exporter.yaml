@@ -1,4 +1,4 @@
-apiVersion: apps/v1
+﻿apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: postgres-exporter
@@ -81,7 +81,7 @@ metadata:
 type: Opaque
 stringData:
   # 格式: postgresql://username:password@hostname:port/database?sslmode=disable
-  data-source-name: "postgresql://tanzanite:password@postgres.production:5432/tanzanite?sslmode=disable"
+  data-source-name: "postgresql://commerce_platform:password@postgres.production:5432/commerce_platform?sslmode=disable"
 
 ---
 apiVersion: v1

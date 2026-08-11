@@ -1,7 +1,7 @@
-package repository
+﻿package repository
 
 import (
-	"tanzanite/internal/domain/product"
+	"commerce-platform/internal/domain/product"
 
 	"gorm.io/gorm"
 )

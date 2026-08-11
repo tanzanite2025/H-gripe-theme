@@ -1,4 +1,4 @@
-package v1
+﻿package v1
 
 import (
 	"bytes"
@@ -10,13 +10,13 @@ import (
 	"strings"
 	"testing"
 
-	"tanzanite/internal/app"
-	domainorder "tanzanite/internal/domain/order"
-	"tanzanite/internal/domain/registration"
-	"tanzanite/internal/domain/verification"
-	"tanzanite/internal/pkg/config"
-	"tanzanite/internal/repository"
-	"tanzanite/internal/service"
+	"commerce-platform/internal/app"
+	domainorder "commerce-platform/internal/domain/order"
+	"commerce-platform/internal/domain/registration"
+	"commerce-platform/internal/domain/verification"
+	"commerce-platform/internal/pkg/config"
+	"commerce-platform/internal/repository"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 	"github.com/glebarez/sqlite"

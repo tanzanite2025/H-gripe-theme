@@ -1,7 +1,7 @@
-name: h-gripe-theme-dev
+﻿name: commerce-platform-dev
 
 networks:
-  h-gripe-network:
+  commerce-platform-network:
     driver: bridge
 
 volumes:
@@ -11,20 +11,20 @@ volumes:
 services:
   postgres:
     image: postgres:15-alpine
-    container_name: h-gripe-postgres
+    container_name: commerce-platform-postgres
     environment:
-      POSTGRES_USER: tanzanite
-      POSTGRES_PASSWORD: tanzanite_password
-      POSTGRES_DB: tanzanite
+      POSTGRES_USER: commerce_platform
+      POSTGRES_PASSWORD: commerce_platform_password
+      POSTGRES_DB: commerce_platform
       PGDATA: /var/lib/postgresql/data/pgdata
     ports:
       - "9400:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     networks:
-      - h-gripe-network
+      - commerce-platform-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U tanzanite"]
+      test: ["CMD-SHELL", "pg_isready -U commerce_platform"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -32,13 +32,13 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: h-gripe-redis
+    container_name: commerce-platform-redis
     ports:
       - "9500:6379"
     volumes:
       - redis-data:/data
     networks:
-      - h-gripe-network
+      - commerce-platform-network
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -51,7 +51,7 @@ services:
     build:
       context: ./go-backend
       dockerfile: Dockerfile
-    container_name: h-gripe-api
+    container_name: commerce-platform-api
     ports:
       - "9200:9000"
     environment:
@@ -59,9 +59,9 @@ services:
       - SERVER_PORT=:9000
       - DB_HOST=postgres
       - DB_PORT=5432
-      - DB_USERNAME=tanzanite
-      - DB_PASSWORD=tanzanite_password
-      - DB_NAME=tanzanite
+      - DB_USERNAME=commerce_platform
+      - DB_PASSWORD=commerce_platform_password
+      - DB_NAME=commerce_platform
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - JWT_SECRET=dev-secret-key-change-in-production
@@ -76,7 +76,7 @@ services:
       redis:
         condition: service_healthy
     networks:
-      - h-gripe-network
+      - commerce-platform-network
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9000/health"]
       interval: 30s
@@ -90,14 +90,14 @@ services:
       context: ./nuxt-i18n
       args:
         API_INTERNAL_ORIGIN: http://backend:9000
-    container_name: h-gripe-frontend
+    container_name: commerce-platform-frontend
     ports:
       - "9100:3000"
     environment:
       - API_BASE_URL=http://backend:9000
       - NUXT_PUBLIC_API_BASE=http://localhost:9200
       - NUXT_HTML_CACHE_DRIVER=redis
-      - NUXT_HTML_CACHE_PREFIX=h-gripe:storefront:html-cache:dev
+      - NUXT_HTML_CACHE_PREFIX=commerce-platform:storefront:html-cache:dev
       - NUXT_HTML_CACHE_REDIS_HOST=redis
       - NUXT_HTML_CACHE_REDIS_PORT=6379
       - NUXT_HTML_CACHE_REDIS_DB=1
@@ -110,19 +110,19 @@ services:
       redis:
         condition: service_healthy
     networks:
-      - h-gripe-network
+      - commerce-platform-network
     restart: unless-stopped
 
   # 可选: Adminer (数据库管理工具)
   adminer:
     image: adminer:latest
-    container_name: h-gripe-adminer
+    container_name: commerce-platform-adminer
     ports:
       - "9600:8080"
     environment:
       - ADMINER_DEFAULT_SERVER=postgres
     networks:
-      - h-gripe-network
+      - commerce-platform-network
     restart: unless-stopped
     profiles:
       - tools
@@ -130,13 +130,13 @@ services:
   # 可选: Redis Commander (Redis管理工具)
   redis-commander:
     image: rediscommander/redis-commander:latest
-    container_name: h-gripe-redis-commander
+    container_name: commerce-platform-redis-commander
     ports:
       - "9700:8081"
     environment:
       - REDIS_HOSTS=local:redis:6379
     networks:
-      - h-gripe-network
+      - commerce-platform-network
     restart: unless-stopped
     profiles:
       - tools

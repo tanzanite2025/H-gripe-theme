@@ -1,4 +1,4 @@
-package main
+﻿package main
 
 import (
 	"encoding/json"
@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"tanzanite/internal/domain/faq"
-	"tanzanite/internal/pkg/config"
-	"tanzanite/internal/pkg/database"
-	"tanzanite/internal/repository"
-	"tanzanite/internal/service"
+	"commerce-platform/internal/domain/faq"
+	"commerce-platform/internal/pkg/config"
+	"commerce-platform/internal/pkg/database"
+	"commerce-platform/internal/repository"
+	"commerce-platform/internal/service"
 	"time"
 )
 

@@ -1,4 +1,4 @@
-package admin
+﻿package admin
 
 import (
 	"encoding/json"
@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	shippingdomain "tanzanite/internal/domain/shipping"
-	"tanzanite/internal/repository"
-	"tanzanite/internal/service"
+	shippingdomain "commerce-platform/internal/domain/shipping"
+	"commerce-platform/internal/repository"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 	"github.com/glebarez/sqlite"

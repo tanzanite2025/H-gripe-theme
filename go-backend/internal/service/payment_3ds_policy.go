@@ -1,4 +1,4 @@
-package service
+﻿package service
 
 import (
 	"context"
@@ -7,11 +7,11 @@ import (
 	"strings"
 	"time"
 
-	paymentdomain "tanzanite/internal/domain/payment"
-	"tanzanite/internal/domain/visitor"
-	"tanzanite/internal/pkg/antifraud"
-	"tanzanite/internal/pkg/config"
-	pgateway "tanzanite/internal/pkg/payment"
+	paymentdomain "commerce-platform/internal/domain/payment"
+	"commerce-platform/internal/domain/visitor"
+	"commerce-platform/internal/pkg/antifraud"
+	"commerce-platform/internal/pkg/config"
+	pgateway "commerce-platform/internal/pkg/payment"
 )
 
 const (

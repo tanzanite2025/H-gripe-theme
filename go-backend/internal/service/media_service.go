@@ -1,11 +1,11 @@
-package service
+﻿package service
 
 import (
 	"errors"
 	"strings"
 
-	"tanzanite/internal/pkg/storage"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/pkg/storage"
+	"commerce-platform/internal/repository"
 )
 
 var (

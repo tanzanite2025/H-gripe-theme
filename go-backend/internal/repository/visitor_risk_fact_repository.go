@@ -1,11 +1,11 @@
-package repository
+﻿package repository
 
 import (
 	"encoding/json"
 	"strings"
 	"time"
 
-	"tanzanite/internal/domain/visitor"
+	"commerce-platform/internal/domain/visitor"
 
 	"gorm.io/datatypes"
 	"gorm.io/gorm"

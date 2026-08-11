@@ -1,4 +1,4 @@
-package service
+﻿package service
 
 import (
 	"net/url"
@@ -11,10 +11,10 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
-	orderdomain "tanzanite/internal/domain/order"
-	"tanzanite/internal/domain/registration"
-	"tanzanite/internal/domain/verification"
-	"tanzanite/internal/repository"
+	orderdomain "commerce-platform/internal/domain/order"
+	"commerce-platform/internal/domain/registration"
+	"commerce-platform/internal/domain/verification"
+	"commerce-platform/internal/repository"
 )
 
 func TestWarrantyServiceRecordValidationAndCreation(t *testing.T) {

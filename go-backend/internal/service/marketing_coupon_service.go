@@ -1,10 +1,10 @@
-package service
+﻿package service
 
 import (
 	"errors"
 	"fmt"
-	"tanzanite/internal/domain/coupon"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/coupon"
+	"commerce-platform/internal/repository"
 	"time"
 )
 

@@ -1,9 +1,9 @@
-package quickbuy
+﻿package quickbuy
 
 import (
 	"time"
 
-	"tanzanite/internal/domain/product"
+	"commerce-platform/internal/domain/product"
 
 	"gorm.io/datatypes"
 )

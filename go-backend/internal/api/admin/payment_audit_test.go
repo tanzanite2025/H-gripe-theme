@@ -1,4 +1,4 @@
-package admin
+﻿package admin
 
 import (
 	"encoding/json"
@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"tanzanite/internal/domain/audit"
+	"commerce-platform/internal/domain/audit"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"

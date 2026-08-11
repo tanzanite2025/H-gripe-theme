@@ -1,10 +1,10 @@
-package service
+﻿package service
 
 import (
 	"fmt"
 	"strings"
-	"tanzanite/internal/domain/faq"
-	"tanzanite/internal/pkg/faqcontent"
+	"commerce-platform/internal/domain/faq"
+	"commerce-platform/internal/pkg/faqcontent"
 	"unicode"
 )
 

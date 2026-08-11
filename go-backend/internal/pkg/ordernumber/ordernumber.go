@@ -1,4 +1,4 @@
-package ordernumber
+﻿package ordernumber
 
 import (
 	"crypto/hmac"
@@ -84,7 +84,7 @@ func NewGeneratorWithPreviousSecret(secret, previousSecret string, nodeID uint16
 
 func deriveKey(secret string) []byte {
 	keyMAC := hmac.New(sha256.New, []byte(secret))
-	_, _ = keyMAC.Write([]byte("tanzanite/order-number/v1"))
+	_, _ = keyMAC.Write([]byte("commerce-platform/order-number/v1"))
 	return keyMAC.Sum(nil)
 }
 

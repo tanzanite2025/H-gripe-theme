@@ -1,4 +1,4 @@
-package service
+﻿package service
 
 import (
 	"bytes"
@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"tanzanite/internal/domain/outbox"
+	"commerce-platform/internal/domain/outbox"
 )
 
 var ErrOutboxWebhookNotConfigured = errors.New("outbox webhook is not configured")

@@ -1,4 +1,4 @@
-package admin
+﻿package admin
 
 import (
 	"bytes"
@@ -8,11 +8,11 @@ import (
 	"testing"
 	"time"
 
-	orderdomain "tanzanite/internal/domain/order"
-	paymentdomain "tanzanite/internal/domain/payment"
-	"tanzanite/internal/pkg/invoice"
-	"tanzanite/internal/repository"
-	"tanzanite/internal/service"
+	orderdomain "commerce-platform/internal/domain/order"
+	paymentdomain "commerce-platform/internal/domain/payment"
+	"commerce-platform/internal/pkg/invoice"
+	"commerce-platform/internal/repository"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 	"github.com/glebarez/sqlite"
@@ -116,7 +116,7 @@ func newPayPalDisputeInvoicePreviewHandler(t *testing.T, configureSeller bool) (
 	if configureSeller {
 		paymentService.ConfigurePayPalDisputeInvoiceOptions(service.PayPalDisputeInvoiceOptions{
 			Seller: invoice.SellerProfile{
-				Name:    "Tanzanite Factory",
+				Name:    "Commerce Platform Factory",
 				Address: "100 Factory Road\nAustin, TX 78701\nUS",
 				Email:   "support@example.test",
 			},

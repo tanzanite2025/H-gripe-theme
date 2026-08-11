@@ -1,11 +1,11 @@
-package service
+﻿package service
 
 import (
 	"errors"
 	"strings"
 
-	"tanzanite/internal/domain/media"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/media"
+	"commerce-platform/internal/repository"
 
 	"gorm.io/gorm"
 )

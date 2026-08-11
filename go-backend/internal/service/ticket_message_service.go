@@ -1,8 +1,8 @@
-package service
+﻿package service
 
 import (
 	"errors"
-	"tanzanite/internal/domain/ticket"
+	"commerce-platform/internal/domain/ticket"
 )
 
 func (s *TicketService) AddMessage(m *ticket.TicketMessage, userID uint, isStaff bool) error {

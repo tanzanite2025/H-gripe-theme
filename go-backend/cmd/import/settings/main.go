@@ -1,4 +1,4 @@
-package main
+﻿package main
 
 import (
 	"encoding/json"
@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"tanzanite/internal/domain/setting"
-	"tanzanite/internal/pkg/config"
-	"tanzanite/internal/pkg/database"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/setting"
+	"commerce-platform/internal/pkg/config"
+	"commerce-platform/internal/pkg/database"
+	"commerce-platform/internal/repository"
 )
 
 // SettingImport 导入的设置结构

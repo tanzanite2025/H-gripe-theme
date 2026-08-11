@@ -1,9 +1,9 @@
-package service
+﻿package service
 
 import (
 	"testing"
 
-	"tanzanite/internal/domain/currency"
+	"commerce-platform/internal/domain/currency"
 
 	"github.com/stretchr/testify/require"
 )

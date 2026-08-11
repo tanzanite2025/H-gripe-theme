@@ -1,4 +1,4 @@
-package service
+﻿package service
 
 import (
 	"context"
@@ -16,9 +16,9 @@ import (
 	"strings"
 	"time"
 
-	"tanzanite/internal/domain/merchant"
-	"tanzanite/internal/pkg/config"
-	"tanzanite/internal/pkg/secretbox"
+	"commerce-platform/internal/domain/merchant"
+	"commerce-platform/internal/pkg/config"
+	"commerce-platform/internal/pkg/secretbox"
 
 	"gorm.io/gorm"
 )

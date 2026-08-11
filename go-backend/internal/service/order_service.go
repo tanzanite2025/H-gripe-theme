@@ -1,11 +1,11 @@
-package service
+﻿package service
 
 import (
 	"errors"
 
-	"tanzanite/internal/domain/order"
-	"tanzanite/internal/pkg/ordernumber"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/order"
+	"commerce-platform/internal/pkg/ordernumber"
+	"commerce-platform/internal/repository"
 )
 
 type OrderService struct {

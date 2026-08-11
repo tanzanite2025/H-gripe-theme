@@ -1,4 +1,4 @@
-package admin
+﻿package admin
 
 import (
 	"errors"
@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	ticketdomain "tanzanite/internal/domain/ticket"
-	"tanzanite/internal/pkg/apierror"
-	"tanzanite/internal/service"
+	ticketdomain "commerce-platform/internal/domain/ticket"
+	"commerce-platform/internal/pkg/apierror"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

@@ -1,8 +1,8 @@
-package service
+﻿package service
 
 import (
 	"errors"
-	"tanzanite/internal/domain/setting"
+	"commerce-platform/internal/domain/setting"
 )
 
 var ErrSettingManagedByDomainService = errors.New("this setting group must be changed through its domain service")

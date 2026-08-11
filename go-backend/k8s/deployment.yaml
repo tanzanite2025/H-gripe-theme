@@ -1,10 +1,10 @@
-apiVersion: apps/v1
+﻿apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: tanzanite-api
+  name: commerce-platform-api
   namespace: default
   labels:
-    app: tanzanite-api
+    app: commerce-platform-api
     version: v1
 spec:
   replicas: 3
@@ -15,16 +15,16 @@ spec:
       maxUnavailable: 0
   selector:
     matchLabels:
-      app: tanzanite-api
+      app: commerce-platform-api
   template:
     metadata:
       labels:
-        app: tanzanite-api
+        app: commerce-platform-api
         version: v1
     spec:
       containers:
       - name: api
-        image: tanzanite-api:latest
+        image: commerce-platform-api:latest
         imagePullPolicy: IfNotPresent
         ports:
         - name: http
@@ -40,47 +40,47 @@ spec:
         - name: JWT_SECRET
           valueFrom:
             secretKeyRef:
-              name: tanzanite-secrets
+              name: commerce_platform-secrets
               key: jwt-secret
         - name: DB_HOST
           valueFrom:
             configMapKeyRef:
-              name: tanzanite-config
+              name: commerce_platform-config
               key: db-host
         - name: DB_PORT
           valueFrom:
             configMapKeyRef:
-              name: tanzanite-config
+              name: commerce_platform-config
               key: db-port
         - name: DB_NAME
           valueFrom:
             configMapKeyRef:
-              name: tanzanite-config
+              name: commerce_platform-config
               key: db-name
         - name: DB_USERNAME
           valueFrom:
             secretKeyRef:
-              name: tanzanite-secrets
+              name: commerce_platform-secrets
               key: db-username
         - name: DB_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: tanzanite-secrets
+              name: commerce_platform-secrets
               key: db-password
         - name: REDIS_HOST
           valueFrom:
             configMapKeyRef:
-              name: tanzanite-config
+              name: commerce_platform-config
               key: redis-host
         - name: REDIS_PORT
           valueFrom:
             configMapKeyRef:
-              name: tanzanite-config
+              name: commerce_platform-config
               key: redis-port
         - name: REDIS_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: tanzanite-secrets
+              name: commerce_platform-secrets
               key: redis-password
         
         # 资源限制
@@ -148,17 +148,17 @@ spec:
                 - key: app
                   operator: In
                   values:
-                  - tanzanite-api
+                  - commerce-platform-api
               topologyKey: kubernetes.io/hostname
 
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: tanzanite-api
+  name: commerce-platform-api
   namespace: default
   labels:
-    app: tanzanite-api
+    app: commerce-platform-api
 spec:
   type: ClusterIP
   ports:
@@ -167,18 +167,18 @@ spec:
     protocol: TCP
     name: http
   selector:
-    app: tanzanite-api
+    app: commerce-platform-api
 
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: tanzanite-config
+  name: commerce_platform-config
   namespace: default
 data:
   db-host: "postgres-service"
   db-port: "5432"
-  db-name: "tanzanite"
+  db-name: "commerce_platform"
   redis-host: "redis-service"
   redis-port: "6379"
 
@@ -186,11 +186,11 @@ data:
 apiVersion: v1
 kind: Secret
 metadata:
-  name: tanzanite-secrets
+  name: commerce_platform-secrets
   namespace: default
 type: Opaque
 stringData:
   jwt-secret: "your-jwt-secret-here-change-in-production"
-  db-username: "tanzanite"
+  db-username: "commerce_platform"
   db-password: "your-db-password-here"
   redis-password: ""

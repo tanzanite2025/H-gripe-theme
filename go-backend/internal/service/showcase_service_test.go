@@ -1,10 +1,10 @@
-package service
+﻿package service
 
 import (
 	"testing"
 
-	"tanzanite/internal/domain/showcase"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/showcase"
+	"commerce-platform/internal/repository"
 
 	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/assert"

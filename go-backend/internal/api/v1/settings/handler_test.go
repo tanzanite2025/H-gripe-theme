@@ -1,11 +1,11 @@
-package settings
+﻿package settings
 
 import (
 	"testing"
 
-	seodomain "tanzanite/internal/domain/seo"
-	"tanzanite/internal/domain/setting"
-	"tanzanite/internal/service"
+	seodomain "commerce-platform/internal/domain/seo"
+	"commerce-platform/internal/domain/setting"
+	"commerce-platform/internal/service"
 )
 
 func TestFilterPublicSettingsManagedByDomain(t *testing.T) {

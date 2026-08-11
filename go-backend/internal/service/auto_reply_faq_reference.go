@@ -1,4 +1,4 @@
-package service
+﻿package service
 
 import (
 	"encoding/json"
@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"tanzanite/internal/domain/ticket"
+	"commerce-platform/internal/domain/ticket"
 )
 
 func (s *TicketService) validateAutoReplyFAQReference(rule ticket.AutoReplyRule) error {

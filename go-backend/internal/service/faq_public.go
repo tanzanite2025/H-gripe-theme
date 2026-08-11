@@ -1,9 +1,9 @@
-package service
+﻿package service
 
 import (
 	"fmt"
-	"tanzanite/internal/domain/faq"
-	"tanzanite/internal/pkg/faqcontent"
+	"commerce-platform/internal/domain/faq"
+	"commerce-platform/internal/pkg/faqcontent"
 )
 
 func (s *FAQService) GetPublicByID(id uint) (*faq.FAQ, error) {

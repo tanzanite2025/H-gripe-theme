@@ -1,4 +1,4 @@
-package admin_test
+﻿package admin_test
 
 import (
 	"archive/zip"
@@ -12,11 +12,11 @@ import (
 	"strings"
 	"testing"
 
-	adminapi "tanzanite/internal/api/admin"
-	spokeapi "tanzanite/internal/api/v1/spoke"
-	spokedomain "tanzanite/internal/domain/spoke"
-	"tanzanite/internal/repository"
-	"tanzanite/internal/service"
+	adminapi "commerce-platform/internal/api/admin"
+	spokeapi "commerce-platform/internal/api/v1/spoke"
+	spokedomain "commerce-platform/internal/domain/spoke"
+	"commerce-platform/internal/repository"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 	"github.com/glebarez/sqlite"

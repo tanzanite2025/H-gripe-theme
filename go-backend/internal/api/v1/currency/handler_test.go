@@ -1,4 +1,4 @@
-package currency
+﻿package currency
 
 import (
 	"net/http"
@@ -6,10 +6,10 @@ import (
 	"testing"
 	"time"
 
-	currencydomain "tanzanite/internal/domain/currency"
-	settingdomain "tanzanite/internal/domain/setting"
-	"tanzanite/internal/repository"
-	"tanzanite/internal/service"
+	currencydomain "commerce-platform/internal/domain/currency"
+	settingdomain "commerce-platform/internal/domain/setting"
+	"commerce-platform/internal/repository"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 	"github.com/glebarez/sqlite"

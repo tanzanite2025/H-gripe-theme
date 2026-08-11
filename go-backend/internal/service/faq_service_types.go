@@ -1,6 +1,6 @@
-package service
+﻿package service
 
-import "tanzanite/internal/domain/faq"
+import "commerce-platform/internal/domain/faq"
 
 type FAQAdminUpdateInput struct {
 	Question          string

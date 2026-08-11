@@ -1,11 +1,11 @@
-package service
+﻿package service
 
 import (
 	"errors"
 	"testing"
 
-	seodomain "tanzanite/internal/domain/seo"
-	settingdomain "tanzanite/internal/domain/setting"
+	seodomain "commerce-platform/internal/domain/seo"
+	settingdomain "commerce-platform/internal/domain/setting"
 
 	"github.com/stretchr/testify/require"
 )
@@ -95,7 +95,7 @@ func TestAdminSettingsFiltersDomainManagedSettingsFromGenericLists(t *testing.T)
 	adminSettings := NewAdminSettingsService(settingService)
 
 	require.NoError(t, settingService.BatchSet([]settingdomain.Setting{
-		{Key: "site_name", Value: "H-GRIPE", Locale: "en", Group: "site", IsPublic: true},
+		{Key: "site_name", Value: "Commerce Platform", Locale: "en", Group: "site", IsPublic: true},
 		{Key: "tz_loyalty_checkin_base_points", Value: "10", Locale: "en", Group: "loyalty", IsPublic: true},
 		{Key: "tz_redeem_exchange_rate", Value: "100", Locale: "en", Group: "redeem", IsPublic: true},
 		{Key: "payment_gateway_stripe", Value: "encrypted", Locale: "global", Group: "payment_secret", IsPublic: false},

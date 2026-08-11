@@ -1,8 +1,8 @@
-package service
+﻿package service
 
 import (
-	"tanzanite/internal/domain/faq"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/faq"
+	"commerce-platform/internal/repository"
 	"testing"
 
 	"github.com/glebarez/sqlite"

@@ -1,13 +1,13 @@
-package service
+﻿package service
 
 import (
 	"testing"
 	"time"
 
-	coupondomain "tanzanite/internal/domain/coupon"
-	orderdomain "tanzanite/internal/domain/order"
-	paymentdomain "tanzanite/internal/domain/payment"
-	"tanzanite/internal/repository"
+	coupondomain "commerce-platform/internal/domain/coupon"
+	orderdomain "commerce-platform/internal/domain/order"
+	paymentdomain "commerce-platform/internal/domain/payment"
+	"commerce-platform/internal/repository"
 
 	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/require"

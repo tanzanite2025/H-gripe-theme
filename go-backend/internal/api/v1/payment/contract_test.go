@@ -1,9 +1,9 @@
-package payment
+﻿package payment
 
 import (
 	"encoding/json"
 	"strings"
-	paymentdomain "tanzanite/internal/domain/payment"
+	paymentdomain "commerce-platform/internal/domain/payment"
 	"testing"
 )
 

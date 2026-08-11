@@ -1,4 +1,4 @@
-package cart
+﻿package cart
 
 import (
 	"bytes"
@@ -9,11 +9,11 @@ import (
 	"strings"
 	"testing"
 
-	"tanzanite/internal/api/middleware"
-	"tanzanite/internal/domain/product"
-	"tanzanite/internal/domain/visitor"
-	"tanzanite/internal/repository"
-	"tanzanite/internal/service"
+	"commerce-platform/internal/api/middleware"
+	"commerce-platform/internal/domain/product"
+	"commerce-platform/internal/domain/visitor"
+	"commerce-platform/internal/repository"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 	"github.com/glebarez/sqlite"

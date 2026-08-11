@@ -1,6 +1,6 @@
-package service
+﻿package service
 
-import "tanzanite/internal/domain/payment"
+import "commerce-platform/internal/domain/payment"
 
 func (s *PaymentService) ListPaymentMethods(enabledOnly bool) ([]payment.PaymentMethod, error) {
 	return s.paymentRepo.FindAllPaymentMethods(enabledOnly)

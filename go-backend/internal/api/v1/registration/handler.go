@@ -1,9 +1,9 @@
-package registration
+﻿package registration
 
 import (
-	"tanzanite/internal/pkg/antibot"
-	"tanzanite/internal/pkg/storage"
-	"tanzanite/internal/service"
+	"commerce-platform/internal/pkg/antibot"
+	"commerce-platform/internal/pkg/storage"
+	"commerce-platform/internal/service"
 )
 
 type Handler struct {

@@ -1,4 +1,4 @@
-package database
+﻿package database
 
 import (
 	"context"
@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"tanzanite/internal/pkg/config"
+	"commerce-platform/internal/pkg/config"
 
 	"github.com/lib/pq"
 	postgresdriver "gorm.io/driver/postgres"
@@ -107,7 +107,7 @@ func TestPrepareSchemaAgainstFreshPostgres(t *testing.T) {
 		t.Fatalf("open PostgreSQL admin connection: %v", err)
 	}
 
-	databaseName := fmt.Sprintf("tanzanite_migration_test_%d", time.Now().UnixNano())
+	databaseName := fmt.Sprintf("commerce_platform_migration_test_%d", time.Now().UnixNano())
 	if _, err := adminDB.ExecContext(ctx, "CREATE DATABASE "+pq.QuoteIdentifier(databaseName)); err != nil {
 		_ = adminDB.Close()
 		t.Fatalf("create migration test database: %v", err)

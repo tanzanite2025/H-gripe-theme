@@ -1,4 +1,4 @@
-package service
+﻿package service
 
 import (
 	"encoding/json"
@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"math"
 	"strings"
-	"tanzanite/internal/domain/currency"
-	"tanzanite/internal/domain/order"
-	"tanzanite/internal/domain/outbox"
-	"tanzanite/internal/domain/payment"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/currency"
+	"commerce-platform/internal/domain/order"
+	"commerce-platform/internal/domain/outbox"
+	"commerce-platform/internal/domain/payment"
+	"commerce-platform/internal/repository"
 	"time"
 
 	"gorm.io/datatypes"

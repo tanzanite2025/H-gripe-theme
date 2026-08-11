@@ -1,13 +1,13 @@
-package service
+﻿package service
 
 import (
 	"errors"
 	"fmt"
 	"strings"
-	"tanzanite/internal/domain/currency"
-	"tanzanite/internal/domain/product"
-	"tanzanite/internal/pkg/safehtml"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/currency"
+	"commerce-platform/internal/domain/product"
+	"commerce-platform/internal/pkg/safehtml"
+	"commerce-platform/internal/repository"
 )
 
 type ProductMediaInput struct {

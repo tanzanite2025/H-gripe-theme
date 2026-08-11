@@ -1,4 +1,4 @@
-package service
+﻿package service
 
 import (
 	"bytes"
@@ -105,7 +105,7 @@ func (n *StorefrontContentReleaseNotifier) Trigger(ctx context.Context, reason s
 	payload := map[string]string{
 		"event":  "storefront_content_published",
 		"reason": strings.TrimSpace(reason),
-		"source": "tanzanite-go-backend",
+		"source": "commerce_platform-go-backend",
 	}
 	body, err := json.Marshal(payload)
 	if err != nil {

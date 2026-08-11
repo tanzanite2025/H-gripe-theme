@@ -1,8 +1,8 @@
-package repository
+﻿package repository
 
 import (
-	"tanzanite/internal/domain/loyalty"
-	"tanzanite/internal/domain/suggestionfeedback"
+	"commerce-platform/internal/domain/loyalty"
+	"commerce-platform/internal/domain/suggestionfeedback"
 
 	"gorm.io/gorm"
 )

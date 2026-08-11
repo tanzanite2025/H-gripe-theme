@@ -1,11 +1,11 @@
-package user
+﻿package user
 
 import (
 	"strconv"
 	"strings"
 	"time"
 
-	"tanzanite/internal/domain/auth"
+	"commerce-platform/internal/domain/auth"
 
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"

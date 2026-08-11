@@ -1,9 +1,9 @@
-package seo
+﻿package seo
 
 import (
 	"testing"
 
-	productdomain "tanzanite/internal/domain/product"
+	productdomain "commerce-platform/internal/domain/product"
 
 	"github.com/stretchr/testify/require"
 )

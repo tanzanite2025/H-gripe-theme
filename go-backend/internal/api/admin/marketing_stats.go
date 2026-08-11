@@ -1,8 +1,8 @@
-package admin
+﻿package admin
 
 import (
-	"tanzanite/internal/pkg/apierror"
-	"tanzanite/internal/pkg/response"
+	"commerce-platform/internal/pkg/apierror"
+	"commerce-platform/internal/pkg/response"
 
 	"github.com/gin-gonic/gin"
 )

@@ -1,11 +1,11 @@
-package service
+﻿package service
 
 import (
 	"errors"
-	"tanzanite/internal/domain/post"
-	"tanzanite/internal/pkg/cache"
-	"tanzanite/internal/pkg/safehtml"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/post"
+	"commerce-platform/internal/pkg/cache"
+	"commerce-platform/internal/pkg/safehtml"
+	"commerce-platform/internal/repository"
 	"time"
 )
 

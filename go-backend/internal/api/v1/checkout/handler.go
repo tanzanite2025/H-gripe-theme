@@ -1,10 +1,10 @@
-package checkout
+﻿package checkout
 
 import (
-	"tanzanite/internal/domain/order"
-	"tanzanite/internal/pkg/apierror"
-	"tanzanite/internal/pkg/response"
-	"tanzanite/internal/service"
+	"commerce-platform/internal/domain/order"
+	"commerce-platform/internal/pkg/apierror"
+	"commerce-platform/internal/pkg/response"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

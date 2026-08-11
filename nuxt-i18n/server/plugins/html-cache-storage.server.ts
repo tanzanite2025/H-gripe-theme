@@ -1,4 +1,4 @@
-import { defineNitroPlugin, useStorage } from 'nitropack/runtime'
+﻿import { defineNitroPlugin, useStorage } from 'nitropack/runtime'
 import redisDriver, { type RedisOptions as StorageRedisOptions } from 'unstorage/drivers/redis'
 
 interface ReadyRedisClient {
@@ -13,7 +13,7 @@ const toInteger = (value: string | undefined, fallback: number) => {
 }
 
 const cleanRedisBase = (value: string | undefined) => {
-  return String(value || 'h-gripe:storefront:html-cache:v2').replace(/:+$/, '')
+  return String(value || 'commerce-platform:storefront:html-cache:v2').replace(/:+$/, '')
 }
 
 export default defineNitroPlugin(async () => {

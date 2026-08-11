@@ -1,10 +1,10 @@
-package service
+﻿package service
 
 import (
 	"time"
 
-	"tanzanite/internal/domain/order"
-	"tanzanite/internal/domain/payment"
+	"commerce-platform/internal/domain/order"
+	"commerce-platform/internal/domain/payment"
 )
 
 func paymentExpirationStillEligible(orderRecord *order.Order, transactions []payment.Transaction, cutoff time.Time) bool {

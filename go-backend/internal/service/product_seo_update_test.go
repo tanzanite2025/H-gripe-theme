@@ -1,4 +1,4 @@
-package service
+﻿package service
 
 import (
 	"testing"
@@ -50,7 +50,7 @@ func TestProductSEOUpdateUsesDedicatedBoundaryWithoutMerchantEvent(t *testing.T)
 
 	publisher := &recordingMerchantPublisher{}
 	productService.ConfigureMerchantEventPublisher(publisher)
-	title := "SEO Boundary Product | H-GRIPE"
+	title := "SEO Boundary Product | Commerce Platform"
 	description := "A description maintained by the SEO control plane."
 
 	updated, err := productService.UpdateProductSEO(created.ID, ProductSEOUpdateInput{

@@ -1,12 +1,12 @@
-package admin
+﻿package admin
 
 import (
 	"encoding/json"
 	"strings"
 	"testing"
 
-	"tanzanite/internal/domain/currency"
-	shippingdomain "tanzanite/internal/domain/shipping"
+	"commerce-platform/internal/domain/currency"
+	shippingdomain "commerce-platform/internal/domain/shipping"
 )
 
 func TestTrackingProviderResponseRedactsSecrets(t *testing.T) {

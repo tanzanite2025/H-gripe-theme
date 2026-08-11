@@ -1,11 +1,11 @@
-package service
+﻿package service
 
 import (
 	"errors"
 	"testing"
 
-	"tanzanite/internal/domain/post"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/post"
+	"commerce-platform/internal/repository"
 
 	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/assert"
@@ -154,7 +154,7 @@ func TestPostServiceUpdatePostSEOUsesDedicatedBoundary(t *testing.T) {
 	}
 	require.NoError(t, db.Create(&existingPost).Error)
 
-	title := "SEO Boundary | H-GRIPE"
+	title := "SEO Boundary | Commerce Platform"
 	description := "A description maintained by the SEO control plane."
 	canonical := "https://store.example.test/blog/seo-boundary"
 	updatedPost, err := postService.UpdatePostSEO(existingPost.ID, PostSEOUpdateInput{

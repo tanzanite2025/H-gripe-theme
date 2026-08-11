@@ -1,4 +1,4 @@
-package payment
+﻿package payment
 
 import (
 	"context"
@@ -8,17 +8,17 @@ import (
 	"strings"
 	"time"
 
-	"tanzanite/internal/domain/auth"
-	"tanzanite/internal/domain/currency"
-	orderdomain "tanzanite/internal/domain/order"
-	"tanzanite/internal/pkg/antibot"
-	"tanzanite/internal/pkg/antifraud"
-	"tanzanite/internal/pkg/apierror"
-	"tanzanite/internal/pkg/cardtesting"
-	pgateway "tanzanite/internal/pkg/payment"
-	"tanzanite/internal/pkg/response"
-	"tanzanite/internal/pkg/visitorcookie"
-	"tanzanite/internal/service"
+	"commerce-platform/internal/domain/auth"
+	"commerce-platform/internal/domain/currency"
+	orderdomain "commerce-platform/internal/domain/order"
+	"commerce-platform/internal/pkg/antibot"
+	"commerce-platform/internal/pkg/antifraud"
+	"commerce-platform/internal/pkg/apierror"
+	"commerce-platform/internal/pkg/cardtesting"
+	pgateway "commerce-platform/internal/pkg/payment"
+	"commerce-platform/internal/pkg/response"
+	"commerce-platform/internal/pkg/visitorcookie"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )
@@ -405,7 +405,7 @@ func stripeRequestSessionID(c *gin.Context) string {
 }
 
 func stripeRequestAnonymousID(c *gin.Context) string {
-	for _, header := range []string{"X-Tanzanite-Anonymous-ID", "X-Anonymous-ID", "X-Visitor-ID"} {
+	for _, header := range []string{"X-Commerce-Platform-Anonymous-ID", "X-Anonymous-ID", "X-Visitor-ID"} {
 		if value := strings.TrimSpace(c.GetHeader(header)); value != "" {
 			return value
 		}

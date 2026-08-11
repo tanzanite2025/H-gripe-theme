@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div ref="container" class="sr-only" aria-hidden="true"></div>
 </template>
 
@@ -50,7 +50,7 @@ const loadTurnstile = () => {
   if (loadPromise) return loadPromise
 
   loadPromise = new Promise<void>((resolve, reject) => {
-    const existing = document.querySelector('script[data-learn-gripe-turnstile]')
+    const existing = document.querySelector('script[data-commerce-platform-turnstile]')
     if (existing) {
       existing.addEventListener('load', () => resolve(), { once: true })
       existing.addEventListener('error', () => reject(new Error('Turnstile failed to load')), { once: true })

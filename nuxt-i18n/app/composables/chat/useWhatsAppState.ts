@@ -1,4 +1,4 @@
-import { ref, watch, nextTick, computed, onMounted, onBeforeUnmount } from 'vue'
+﻿import { ref, watch, nextTick, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useI18n } from '#imports'
 import { useAuth } from '~/composables/useAuth'
 import { useCart } from '~/composables/useCart'
@@ -147,16 +147,16 @@ export const useWhatsAppState = (emit: any) => {
   const showVisitorEmailCapture = computed(() => !user.value)
 
   if (import.meta.client) {
-    visitorEmail.value = localStorage.getItem('learn_gripe_chat_visitor_email') || ''
+    visitorEmail.value = localStorage.getItem('commerce_platform_chat_visitor_email') || ''
   }
 
   watch(visitorEmail, (value) => {
     if (!import.meta.client) return
     const normalized = value.trim().toLowerCase()
     if (normalized) {
-      localStorage.setItem('learn_gripe_chat_visitor_email', normalized)
+      localStorage.setItem('commerce_platform_chat_visitor_email', normalized)
     } else {
-      localStorage.removeItem('learn_gripe_chat_visitor_email')
+      localStorage.removeItem('commerce_platform_chat_visitor_email')
     }
   })
   

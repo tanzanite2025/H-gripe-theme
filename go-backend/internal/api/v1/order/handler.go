@@ -1,4 +1,4 @@
-package order
+﻿package order
 
 import (
 	"fmt"
@@ -7,15 +7,15 @@ import (
 	"strings"
 	"time"
 
-	"tanzanite/internal/domain/order"
-	"tanzanite/internal/pkg/antifraud"
-	"tanzanite/internal/pkg/apierror"
-	attributionpkg "tanzanite/internal/pkg/attribution"
-	"tanzanite/internal/pkg/metrics"
-	"tanzanite/internal/pkg/orderabuse"
-	"tanzanite/internal/pkg/pagination"
-	"tanzanite/internal/pkg/response"
-	"tanzanite/internal/service"
+	"commerce-platform/internal/domain/order"
+	"commerce-platform/internal/pkg/antifraud"
+	"commerce-platform/internal/pkg/apierror"
+	attributionpkg "commerce-platform/internal/pkg/attribution"
+	"commerce-platform/internal/pkg/metrics"
+	"commerce-platform/internal/pkg/orderabuse"
+	"commerce-platform/internal/pkg/pagination"
+	"commerce-platform/internal/pkg/response"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

@@ -1,10 +1,10 @@
-package admin
+﻿package admin
 
 import (
 	"errors"
-	shippingdomain "tanzanite/internal/domain/shipping"
-	"tanzanite/internal/pkg/apierror"
-	"tanzanite/internal/pkg/response"
+	shippingdomain "commerce-platform/internal/domain/shipping"
+	"commerce-platform/internal/pkg/apierror"
+	"commerce-platform/internal/pkg/response"
 
 	"github.com/gin-gonic/gin"
 )

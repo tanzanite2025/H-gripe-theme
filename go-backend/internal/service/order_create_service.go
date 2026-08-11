@@ -1,16 +1,16 @@
-package service
+﻿package service
 
 import (
 	"context"
 	"fmt"
 	"strings"
-	"tanzanite/internal/domain/coupon"
-	"tanzanite/internal/domain/order"
-	attributionpkg "tanzanite/internal/pkg/attribution"
-	"tanzanite/internal/pkg/logger"
-	paymentpkg "tanzanite/internal/pkg/payment"
-	"tanzanite/internal/pkg/requestctx"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/coupon"
+	"commerce-platform/internal/domain/order"
+	attributionpkg "commerce-platform/internal/pkg/attribution"
+	"commerce-platform/internal/pkg/logger"
+	paymentpkg "commerce-platform/internal/pkg/payment"
+	"commerce-platform/internal/pkg/requestctx"
+	"commerce-platform/internal/repository"
 	"time"
 
 	"go.uber.org/zap"

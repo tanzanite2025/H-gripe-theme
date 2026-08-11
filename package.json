@@ -1,5 +1,5 @@
-{
-  "name": "tanzanite-theme-dev",
+﻿{
+  "name": "commerce-platform-dev",
   "private": true,
   "scripts": {
     "dev": "powershell -ExecutionPolicy Bypass -File ./start-dev.ps1",

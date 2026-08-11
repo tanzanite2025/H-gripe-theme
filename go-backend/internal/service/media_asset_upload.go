@@ -1,4 +1,4 @@
-package service
+﻿package service
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	"path"
 	"strings"
 
-	"tanzanite/internal/domain/media"
+	"commerce-platform/internal/domain/media"
 )
 
 type MediaUploadInput struct {

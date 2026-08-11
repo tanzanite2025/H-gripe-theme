@@ -1,4 +1,4 @@
-package main
+﻿package main
 
 import (
 	"encoding/json"
@@ -9,9 +9,9 @@ import (
 	"os"
 	"time"
 
-	"tanzanite/internal/domain/gallery"
-	"tanzanite/internal/pkg/config"
-	"tanzanite/internal/pkg/database"
+	"commerce-platform/internal/domain/gallery"
+	"commerce-platform/internal/pkg/config"
+	"commerce-platform/internal/pkg/database"
 
 	"gorm.io/gorm"
 )

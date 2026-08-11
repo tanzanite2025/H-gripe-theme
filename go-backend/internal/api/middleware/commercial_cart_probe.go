@@ -1,4 +1,4 @@
-package middleware
+﻿package middleware
 
 import (
 	"bytes"
@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"tanzanite/internal/pkg/visitorcookie"
+	"commerce-platform/internal/pkg/visitorcookie"
 
 	"github.com/gin-gonic/gin"
 )

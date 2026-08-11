@@ -1,11 +1,11 @@
-package service
+﻿package service
 
 import (
 	"errors"
 	"testing"
 
-	"tanzanite/internal/domain/product"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/product"
+	"commerce-platform/internal/repository"
 
 	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/require"

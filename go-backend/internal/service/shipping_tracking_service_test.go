@@ -1,12 +1,12 @@
-package service
+﻿package service
 
 import (
 	"context"
 	"testing"
 	"time"
 
-	shippingdomain "tanzanite/internal/domain/shipping"
-	"tanzanite/internal/repository"
+	shippingdomain "commerce-platform/internal/domain/shipping"
+	"commerce-platform/internal/repository"
 
 	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/assert"

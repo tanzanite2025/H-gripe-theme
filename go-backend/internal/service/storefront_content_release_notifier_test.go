@@ -1,4 +1,4 @@
-package service
+﻿package service
 
 import (
 	"context"
@@ -41,7 +41,7 @@ func TestStorefrontContentReleaseNotifierTriggerSendsTokenAndPayload(t *testing.
 		require.NoError(t, json.NewDecoder(r.Body).Decode(&payload))
 		assert.Equal(t, "storefront_content_published", payload["event"])
 		assert.Equal(t, "admin faq update", payload["reason"])
-		assert.Equal(t, "tanzanite-go-backend", payload["source"])
+		assert.Equal(t, "commerce_platform-go-backend", payload["source"])
 
 		w.WriteHeader(http.StatusAccepted)
 	}))

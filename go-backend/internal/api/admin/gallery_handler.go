@@ -1,12 +1,12 @@
-package admin
+﻿package admin
 
 import (
 	"errors"
 	"net/http"
 	"strconv"
 
-	"tanzanite/internal/domain/gallery"
-	"tanzanite/internal/service"
+	"commerce-platform/internal/domain/gallery"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

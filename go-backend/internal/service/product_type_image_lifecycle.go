@@ -1,11 +1,11 @@
-package service
+﻿package service
 
 import (
 	"context"
 	"errors"
 	"time"
 
-	"tanzanite/internal/pkg/logger"
+	"commerce-platform/internal/pkg/logger"
 
 	"go.uber.org/zap"
 )

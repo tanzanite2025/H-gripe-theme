@@ -1,4 +1,4 @@
-package service
+﻿package service
 
 import (
 	"context"
@@ -8,10 +8,10 @@ import (
 	"strings"
 	"time"
 
-	orderdomain "tanzanite/internal/domain/order"
-	paymentdomain "tanzanite/internal/domain/payment"
-	pgateway "tanzanite/internal/pkg/payment"
-	"tanzanite/internal/repository"
+	orderdomain "commerce-platform/internal/domain/order"
+	paymentdomain "commerce-platform/internal/domain/payment"
+	pgateway "commerce-platform/internal/pkg/payment"
+	"commerce-platform/internal/repository"
 )
 
 var ErrPaymentRefundExecutionInProgress = errors.New("payment refund execution is already in progress")

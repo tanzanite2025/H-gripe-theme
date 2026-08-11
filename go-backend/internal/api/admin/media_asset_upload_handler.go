@@ -1,4 +1,4 @@
-package admin
+﻿package admin
 
 import (
 	"errors"
@@ -7,9 +7,9 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"tanzanite/internal/pkg/response"
-	"tanzanite/internal/pkg/upload"
-	"tanzanite/internal/service"
+	"commerce-platform/internal/pkg/response"
+	"commerce-platform/internal/pkg/upload"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

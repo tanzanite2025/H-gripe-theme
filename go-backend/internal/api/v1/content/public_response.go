@@ -1,10 +1,10 @@
-package content
+﻿package content
 
 import (
 	"time"
 
-	postdomain "tanzanite/internal/domain/post"
-	seodomain "tanzanite/internal/domain/seo"
+	postdomain "commerce-platform/internal/domain/post"
+	seodomain "commerce-platform/internal/domain/seo"
 )
 
 type PublicPost struct {

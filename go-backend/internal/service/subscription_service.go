@@ -1,4 +1,4 @@
-package service
+﻿package service
 
 import (
 	"crypto/rand"
@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"tanzanite/internal/domain/subscription"
-	"tanzanite/internal/repository"
+	"commerce-platform/internal/domain/subscription"
+	"commerce-platform/internal/repository"
 )
 
 type SubscriptionService struct {

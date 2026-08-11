@@ -1,4 +1,4 @@
-#!/bin/bash
+﻿#!/bin/bash
 
 #############################################
 # PostgreSQL Database Restore Script
@@ -13,8 +13,8 @@ BACKUP_DIR="${BACKUP_DIR:-/backups/postgres}"
 # 数据库连接信息
 DB_HOST="${DB_HOST:-postgres.production}"
 DB_PORT="${DB_PORT:-5432}"
-DB_NAME="${DB_NAME:-tanzanite}"
-DB_USERNAME="${DB_USERNAME:-tanzanite}"
+DB_NAME="${DB_NAME:-commerce_platform}"
+DB_USERNAME="${DB_USERNAME:-commerce_platform}"
 DB_PASSWORD="${DB_PASSWORD}"
 
 # 日志函数
@@ -38,7 +38,7 @@ Options:
     -h, --help       Show this help message
 
 Example:
-    $0 /backups/postgres/tanzanite_backup_20240101_120000.sql.gz
+    $0 /backups/postgres/commerce_platform_backup_20240101_120000.sql.gz
     $0 latest  # Restore from the most recent backup
 EOF
     exit 1
@@ -53,7 +53,7 @@ BACKUP_FILE="$1"
 
 # 如果指定 "latest"，使用最新的备份文件
 if [ "${BACKUP_FILE}" = "latest" ]; then
-    BACKUP_FILE=$(ls -t "${BACKUP_DIR}"/tanzanite_backup_*.sql.gz 2>/dev/null | head -1)
+    BACKUP_FILE=$(ls -t "${BACKUP_DIR}"/commerce_platform_backup_*.sql.gz 2>/dev/null | head -1)
     if [ -z "${BACKUP_FILE}" ]; then
         error "No backup files found in ${BACKUP_DIR}"
         exit 1

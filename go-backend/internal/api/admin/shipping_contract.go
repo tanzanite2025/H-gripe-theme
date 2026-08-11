@@ -1,9 +1,9 @@
-package admin
+﻿package admin
 
 import (
 	"strings"
-	"tanzanite/internal/domain/currency"
-	shippingdomain "tanzanite/internal/domain/shipping"
+	"commerce-platform/internal/domain/currency"
+	shippingdomain "commerce-platform/internal/domain/shipping"
 	"time"
 )
 

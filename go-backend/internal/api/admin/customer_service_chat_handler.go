@@ -1,17 +1,17 @@
-package admin
+﻿package admin
 
 import (
 	"encoding/json"
 	"errors"
 	"strconv"
 	"strings"
-	"tanzanite/internal/domain/auth"
-	"tanzanite/internal/domain/ticket"
-	userdomain "tanzanite/internal/domain/user"
-	"tanzanite/internal/pkg/apierror"
-	"tanzanite/internal/pkg/pagination"
-	"tanzanite/internal/pkg/response"
-	"tanzanite/internal/service"
+	"commerce-platform/internal/domain/auth"
+	"commerce-platform/internal/domain/ticket"
+	userdomain "commerce-platform/internal/domain/user"
+	"commerce-platform/internal/pkg/apierror"
+	"commerce-platform/internal/pkg/pagination"
+	"commerce-platform/internal/pkg/response"
+	"commerce-platform/internal/service"
 	"time"
 
 	"github.com/gin-gonic/gin"

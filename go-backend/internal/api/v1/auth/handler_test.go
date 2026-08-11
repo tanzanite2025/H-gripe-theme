@@ -1,4 +1,4 @@
-package auth
+﻿package auth
 
 import (
 	"bytes"
@@ -6,9 +6,9 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"tanzanite/internal/domain/user"
-	"tanzanite/internal/pkg/config"
-	"tanzanite/internal/service"
+	"commerce-platform/internal/domain/user"
+	"commerce-platform/internal/pkg/config"
+	"commerce-platform/internal/service"
 	"testing"
 
 	"github.com/gin-gonic/gin"

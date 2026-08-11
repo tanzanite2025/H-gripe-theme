@@ -1,9 +1,9 @@
-package admin
+﻿package admin
 
 import (
 	"net/http"
 	"strings"
-	"tanzanite/internal/pkg/upload"
+	"commerce-platform/internal/pkg/upload"
 
 	"github.com/gin-gonic/gin"
 )

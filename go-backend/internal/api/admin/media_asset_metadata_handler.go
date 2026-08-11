@@ -1,10 +1,10 @@
-package admin
+﻿package admin
 
 import (
 	"net/http"
 
-	"tanzanite/internal/pkg/response"
-	"tanzanite/internal/service"
+	"commerce-platform/internal/pkg/response"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )
