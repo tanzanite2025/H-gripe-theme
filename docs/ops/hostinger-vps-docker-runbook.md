@@ -4,7 +4,7 @@ This runbook applies only to the `h-gripe-theme` storefront, admin, and Go API. 
 
 ## Production Boundary
 
-The Hostinger VPS has one shared public gateway project named `tanzanite-edge`. The storefront joins that gateway network as a separate Compose project named `h-gripe-theme`.
+The Hostinger VPS has one shared public gateway project named `shared-edge`. The storefront joins that gateway network as a separate Compose project named `h-gripe-theme`.
 
 Current Hostinger VPS target:
 
@@ -18,10 +18,10 @@ Do not guess the machine target during deployment. If the MCP tools do not alrea
 ```text
 Cloudflare
   -> Hostinger firewall: 80/443
-  -> tanzanite-edge (shared Caddy)
+  -> shared-edge (shared Caddy)
       -> erp.tanzanite.site -> erp-web:8080
-      -> tanzanite.site     -> theme-web:8080
-      -> admin.tanzanite.site -> theme-web:8080
+      -> learn.gripe       -> theme-web:8080
+      -> admin.learn.gripe -> theme-web:8080
 
 h-gripe-theme project
   -> web -> storefront
@@ -33,6 +33,16 @@ h-gripe-theme project
 
 The shared gateway is infrastructure. It is not the ERP application and it is not the storefront application.
 
+## Current Gateway State
+
+The neutral gateway name is `shared-edge`. The storefront joins that shared
+edge network through the `web` service only.
+
+1. Keep the shared gateway running.
+2. Keep `learn.gripe`, `www.learn.gripe`, and `admin.learn.gripe` routed to `theme-web`.
+3. Keep the ERP route separate.
+4. Do not recreate the old `tanzanite-edge` project or reintroduce old public hostnames into the active boundary.
+
 Browser API requests stay same-origin through `web`. Nuxt server-side requests to `/api/**` use Nitro's internal proxy and go directly to `api:9000`, so SSR does not loop through Cloudflare or the public gateway.
 
 ## Production Files
@@ -43,7 +53,7 @@ Browser API requests stay same-origin through `web`. Nuxt server-side requests t
 | `deployment/production.env.example` | Production environment template |
 | `deployment/docker/web.Dockerfile` | Internal Nginx entry image |
 | `deployment/nginx/theme-web.conf` | Same-origin API, storefront, admin, and upload routing |
-| `deployment/edge/tanzanite-theme.caddy` | Route fragment for the shared Caddy gateway |
+| `deployment/edge/learn-gripe.caddy` | Route fragment for the shared Caddy gateway |
 | `docs/ops/learn-gripe-cutover.md` | Prepared migration procedure for the replacement storefront domain |
 | `deployment/verify-vps-release-boundary.sh` | Static and runtime Compose/network release evidence |
 | `.github/workflows/publish-images.yml` | GHCR image publishing |
@@ -60,7 +70,7 @@ The production project must keep these boundaries:
 3. Volumes: `h-gripe-theme-postgres-data`, `h-gripe-theme-redis-data`, and `h-gripe-theme-uploads`.
 4. Data networks: project-owned internal `db` and `cache` networks.
 5. Application network: project-owned `app` network for service-to-service traffic and required outbound integrations.
-6. Shared network: external `tanzanite-edge`, joined only by `web`.
+6. Shared network: external `shared-edge`, joined only by `web`.
 7. Edge alias: `theme-web`.
 8. No `container_name` and no host `ports` in the business stack.
 9. No ERP environment variables, volumes, image tags, or database credentials.
@@ -122,7 +132,7 @@ Environment: deployment/production.env values, including IMAGE_TAG=master
 
 Hostinger Docker Manager cannot derive the Git commit tag itself. When using the Manager or MCP Project Update, keep `IMAGE_TAG=master`; the publish workflow moves that tag after validation. Set `IMAGE_TAG=sha-<full-commit>` only for a deliberate pinned release or rollback.
 
-Before deployment, confirm the external Docker network `tanzanite-edge` exists.
+Before deployment, confirm the external Docker network `shared-edge` exists.
 
 Keep `TRUSTED_PROXIES` at the private Docker ranges from the example unless the Docker network design is intentionally changed. Do not add `0.0.0.0/0` or `::/0`.
 
@@ -135,7 +145,7 @@ Expected services:
 - `admin`
 - `web`
 
-All six services must become Healthy. Only the shared `tanzanite-edge` gateway may publish host ports.
+All six services must become Healthy. Only the `shared-edge` gateway may publish host ports.
 
 ## Release Boundary Evidence
 
@@ -162,32 +172,22 @@ the release evidence store and keep it with the exact image tag or digest.
 
 ## Add Shared Gateway Routes
 
-Merge `deployment/edge/tanzanite-theme.caddy` into the existing `tanzanite-edge` Caddyfile without changing the ERP route.
+Merge `deployment/edge/learn-gripe.caddy` into the existing `shared-edge` Caddyfile without changing the ERP route.
 
 Required routes:
 
 ```text
-tanzanite.site, www.tanzanite.site -> theme-web:8080
-admin.tanzanite.site               -> theme-web:8080
+learn.gripe, www.learn.gripe -> theme-web:8080
+admin.learn.gripe            -> theme-web:8080
 ```
 
 Updating the shared gateway is a separate infrastructure operation. Do not copy the storefront Compose into the ERP project and do not replace the gateway project.
 
-## Cloudflare Cutover
+## DNS State
 
-The existing root A and AAAA records still point to the old PHP host. Perform the cutover only after all storefront containers are Healthy and the gateway route exists.
+`learn.gripe` is the canonical public domain. Keep DNS, TLS, and proxy settings aligned with that hostname and its `www` and `admin` aliases.
 
-1. Leave `erp.tanzanite.site` unchanged.
-2. Update the existing root A record to the Hostinger VPS IPv4.
-3. Remove the two old root AAAA records. Add the VPS IPv6 only after direct IPv6 TLS validation.
-4. Keep `www.tanzanite.site` as a CNAME to the root domain.
-5. Add `admin.tanzanite.site` as a proxied record targeting the same VPS.
-6. Temporarily use DNS only while Caddy obtains the first certificate if required.
-7. Restore Proxied after direct HTTPS verification.
-8. Verify `Full (strict)`, Minimum TLS 1.2, Always Use HTTPS, and WebSockets.
-9. Bypass Cloudflare cache for `/api/*`, `/uploads/*`, payment webhooks, and WebSocket traffic.
-
-Cloudflare changes for the root site must not modify the ERP A record or ERP host-specific rules.
+Keep the ERP record set separate from the storefront boundary.
 
 ## Deliberately Disabled Integrations
 
@@ -203,7 +203,7 @@ Verify before enabling public traffic:
 GET /                          -> storefront 200
 GET /healthz                   -> theme-web 200
 GET /api/v1/settings/site      -> Go API response
-GET admin.tanzanite.site/      -> admin login page
+GET admin.learn.gripe/         -> admin login page
 GET /uploads/<known-file>      -> static file response
 WebSocket Upgrade              -> reaches customer-service authentication
 ```

@@ -177,9 +177,10 @@ const { canonicalUrl, alternateLinks, xDefaultLink } = useStorefrontSeoLinks({
 useHead(() => ({
   title: defaultMetaTitle.value,
   titleTemplate: (chunk?: string) => {
-    const title = siteTitle.value
-    if (chunk && title) return `${chunk} · ${title}`
-    return chunk || defaultMetaTitle.value
+    const title = siteTitle.value.trim()
+    const pageTitle = chunk?.trim()
+    if (pageTitle && title && pageTitle !== title) return `${pageTitle} · ${title}`
+    return pageTitle || title || defaultMetaTitle.value
   },
   link: [
     { rel: 'canonical', href: canonicalUrl.value },

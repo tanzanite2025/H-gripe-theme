@@ -40,6 +40,30 @@ if ! docker compose version >/dev/null 2>&1; then
   exit 1
 fi
 
+legacy_public_patterns='tanzanite\.site|www\.tanzanite\.site|admin\.tanzanite\.site|tanzanite-edge'
+legacy_public_files=(
+  "${ROOT_DIR}/compose.prod.yml"
+  "${ROOT_DIR}/deploy.sh"
+  "${ROOT_DIR}/deployment/production.env.example"
+  "${ROOT_DIR}/deployment/nginx/theme-web.conf"
+  "${ROOT_DIR}/deployment/edge/learn-gripe.caddy"
+  "${ROOT_DIR}/go-backend/config/config.production.yaml"
+  "${ROOT_DIR}/go-backend/config/config.example.yaml"
+  "${ROOT_DIR}/go-backend/.env.example"
+  "${ROOT_DIR}/go-backend/cmd/server/swagger.go"
+  "${ROOT_DIR}/go-backend/docs/swagger.yaml"
+  "${ROOT_DIR}/go-backend/frontend-examples/nuxt3/nuxt.config.example.ts"
+  "${ROOT_DIR}/go-backend/web/admin/src/views/GoogleMerchant.vue"
+)
+
+for file in "${legacy_public_files[@]}"; do
+  if grep -nE "${legacy_public_patterns}" "${file}" >/dev/null 2>&1; then
+    err "legacy public brand reference still present in ${file}"
+    grep -nE "${legacy_public_patterns}" "${file}" >&2 || true
+    exit 1
+  fi
+done
+
 mkdir -p "${REPORT_DIR}"
 compose=(docker compose --env-file "${ENV_FILE}" -f "${COMPOSE_FILE}")
 
@@ -161,8 +185,8 @@ if not edge.get("name"):
     errors.append("edge network must have a resolved name")
 if edge.get("external") is not True:
     errors.append("edge network must be external")
-if edge.get("name") != "tanzanite-edge":
-    errors.append("edge network must be named tanzanite-edge")
+if edge.get("name") != "shared-edge":
+    errors.append("edge network must be named shared-edge")
 
 edge_members = [
     name

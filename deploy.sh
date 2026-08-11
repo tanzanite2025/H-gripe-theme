@@ -5,7 +5,7 @@ TARGET_REMOTE="origin"
 TARGET_BRANCH="master"
 COMPOSE_FILE="compose.prod.yml"
 ENV_FILE="deployment/production.env"
-EDGE_NETWORK="tanzanite-edge"
+EDGE_NETWORK="shared-edge"
 PULL_ATTEMPTS="${PULL_ATTEMPTS:-60}"
 PULL_DELAY_SECONDS="${PULL_DELAY_SECONDS:-15}"
 
@@ -153,7 +153,7 @@ fi
 
 if ! docker network inspect "${EDGE_NETWORK}" >/dev/null 2>&1; then
   echo "ERR: shared edge network ${EDGE_NETWORK} does not exist." >&2
-  echo "Deploy the shared tanzanite-edge gateway before this project." >&2
+  echo "Deploy the shared-edge gateway before this project." >&2
   exit 1
 fi
 

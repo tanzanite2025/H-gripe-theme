@@ -13,7 +13,7 @@ const toInteger = (value: string | undefined, fallback: number) => {
 }
 
 const cleanRedisBase = (value: string | undefined) => {
-  return String(value || 'h-gripe:storefront:html-cache').replace(/:+$/, '')
+  return String(value || 'h-gripe:storefront:html-cache:v2').replace(/:+$/, '')
 }
 
 export default defineNitroPlugin(async () => {

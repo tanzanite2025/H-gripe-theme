@@ -70,7 +70,9 @@ i18n:
 
 cors:
   allowed_origins:
-    - "https://tanzanite.site"
+    - "https://learn.gripe"
+    - "https://www.learn.gripe"
+    - "https://admin.learn.gripe"
     - "http://localhost:9199"
     - "http://127.0.0.1:9199"
     - "http://localhost:9100"

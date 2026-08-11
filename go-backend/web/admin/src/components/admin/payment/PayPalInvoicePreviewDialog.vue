@@ -147,7 +147,7 @@ const form = reactive({
   payment_method: 'PayPal',
   payment_status: 'paid',
   seller: {
-    name: 'Tanzanite Factory',
+    name: 'H-GRIPE',
     address: '100 Factory Road\nAustin, TX 78701\nUS',
     email: 'support@example.test',
     phone: '+1 555 0100',

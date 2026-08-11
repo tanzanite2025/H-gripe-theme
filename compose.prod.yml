@@ -208,12 +208,12 @@ services:
       PORT: "3000"
       NUXT_PUBLIC_API_BASE: /api/v1
       NUXT_API_INTERNAL_ORIGIN: http://api:9000
-      NUXT_PUBLIC_SITE_URL: ${NUXT_PUBLIC_SITE_URL:-https://tanzanite.site}
+      NUXT_PUBLIC_SITE_URL: ${NUXT_PUBLIC_SITE_URL:-https://learn.gripe}
       NUXT_PUBLIC_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       NUXT_PUBLIC_REQUEST_SIGNING_KEY: ${REQUEST_SIGNING_KEY:?REQUEST_SIGNING_KEY is required}
       NUXT_PUBLIC_TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY:?TURNSTILE_SITE_KEY is required}
       NUXT_HTML_CACHE_DRIVER: ${NUXT_HTML_CACHE_DRIVER:-redis}
-      NUXT_HTML_CACHE_PREFIX: ${NUXT_HTML_CACHE_PREFIX:-h-gripe:storefront:html-cache}
+      NUXT_HTML_CACHE_PREFIX: ${NUXT_HTML_CACHE_PREFIX:-h-gripe:storefront:html-cache:v2}
       NUXT_HTML_CACHE_REDIS_HOST: redis
       NUXT_HTML_CACHE_REDIS_PORT: "6379"
       NUXT_HTML_CACHE_REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
@@ -313,7 +313,7 @@ networks:
   app: {}
   edge:
     external: true
-    name: tanzanite-edge
+    name: shared-edge
 
 volumes:
   postgres_data:
