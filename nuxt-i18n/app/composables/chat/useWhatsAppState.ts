@@ -147,16 +147,16 @@ export const useWhatsAppState = (emit: any) => {
   const showVisitorEmailCapture = computed(() => !user.value)
 
   if (import.meta.client) {
-    visitorEmail.value = localStorage.getItem('tanzanite_chat_visitor_email') || ''
+    visitorEmail.value = localStorage.getItem('learn_gripe_chat_visitor_email') || ''
   }
 
   watch(visitorEmail, (value) => {
     if (!import.meta.client) return
     const normalized = value.trim().toLowerCase()
     if (normalized) {
-      localStorage.setItem('tanzanite_chat_visitor_email', normalized)
+      localStorage.setItem('learn_gripe_chat_visitor_email', normalized)
     } else {
-      localStorage.removeItem('tanzanite_chat_visitor_email')
+      localStorage.removeItem('learn_gripe_chat_visitor_email')
     }
   })
   

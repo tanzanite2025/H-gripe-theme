@@ -1,6 +1,6 @@
 import type { Config } from 'tailwindcss'
 
-const tanzaniteGreen = {
+const learnGripeGreen = {
   50: '#F5FFE8',
   100: '#E9FFD1',
   200: '#D9FFB2',
@@ -38,10 +38,10 @@ export default {
         ],
       },
       colors: {
-        green: tanzaniteGreen,
-        emerald: tanzaniteGreen,
-        lime: tanzaniteGreen,
-        teal: tanzaniteGreen,
+        green: learnGripeGreen,
+        emerald: learnGripeGreen,
+        lime: learnGripeGreen,
+        teal: learnGripeGreen,
       },
       screens: {
         // More granular mobile breakpoints for precise layout tuning.

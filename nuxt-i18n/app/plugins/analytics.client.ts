@@ -10,8 +10,8 @@ import {
   type CookieConsentPreferences,
 } from '~/utils/cookieConsent'
 
-const GOOGLE_ANALYTICS_SCRIPT_ID = 'tanzanite-google-analytics'
-const GOOGLE_TAG_MANAGER_SCRIPT_ID = 'tanzanite-google-tag-manager'
+const GOOGLE_ANALYTICS_SCRIPT_ID = 'learn-gripe-google-analytics'
+const GOOGLE_TAG_MANAGER_SCRIPT_ID = 'learn-gripe-google-tag-manager'
 
 type Gtag = (...args: unknown[]) => void
 
