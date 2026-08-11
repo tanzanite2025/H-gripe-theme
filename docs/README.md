@@ -9,6 +9,8 @@ This directory is a project-level documentation hub. It is not the source of tru
 - Backend API notes: `../go-backend/API.md`
 - Backend quick start: `../go-backend/QUICK_START.md`
 - Backend deployment notes: `../go-backend/DEPLOYMENT.md`
+- Current production readiness status: `ops/production-readiness-status.md`
+- Brand rename continuity plan: `ops/brand-rename-continuity-plan.md`
 - Backend module notes: `../go-backend/docs/`
 - Backend security follow-ups: `../go-backend/docs/SECURITY_FOLLOW_UPS.md`
 - Admin console guide: `../go-backend/web/admin/README.md`

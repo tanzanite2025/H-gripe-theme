@@ -12,7 +12,7 @@ export default defineNuxtConfig({
     apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:9200',
       
       // 站点 URL（用于生成完整 URL）
-      siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'https://tanzanite.site',
+      siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'https://learn.gripe',
     }
   },
 

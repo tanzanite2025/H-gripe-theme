@@ -9,16 +9,16 @@ import (
 // @title Storefront E-commerce API
 // @version 1.0
 // @description 完整的电商平台API，包含用户管理、产品管理、订单处理、支付集成等功能
-// @termsOfService https://tanzanite.com/terms
+// @termsOfService https://learn.gripe/terms
 
 // @contact.name API Support
-// @contact.url https://tanzanite.com/support
-// @contact.email support@tanzanite.com
+// @contact.url https://learn.gripe/support
+// @contact.email support@learn.gripe
 
 // @license.name MIT
 // @license.url https://opensource.org/licenses/MIT
 
-// @host api.tanzanite.com
+// @host learn.gripe
 // @BasePath /api/v1
 
 // @securityDefinitions.apikey CookieAuth
@@ -79,7 +79,7 @@ var SwaggerInfo = struct {
 	Description string
 }{
 	Version:     "1.0",
-	Host:        "api.tanzanite.com",
+	Host:        "learn.gripe",
 	BasePath:    "/api/v1",
 	Schemes:     []string{"https", "http"},
 	Title:       "Storefront E-commerce API",

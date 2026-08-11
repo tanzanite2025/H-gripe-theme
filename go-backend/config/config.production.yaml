@@ -1,7 +1,7 @@
 server:
   port: ":9000"
   mode: release
-  base_url: "https://tanzanite.site"
+  base_url: "https://learn.gripe"
   read_timeout: 120
   write_timeout: 120
   # Keep this aligned with the private network(s) that can reach the API.
@@ -45,7 +45,7 @@ google_merchant:
   client_id: ""
   client_secret: ""
   redirect_url: ""
-  post_connect_url: "https://tanzanite.site/google-merchant"
+  post_connect_url: "https://learn.gripe/google-merchant"
   token_encryption_key: ""
   state_ttl_seconds: 600
 
@@ -75,9 +75,9 @@ i18n:
 
 cors:
   allowed_origins:
-    - "https://tanzanite.site"
-    - "https://www.tanzanite.site"
-    - "https://admin.tanzanite.site"
+    - "https://learn.gripe"
+    - "https://www.learn.gripe"
+    - "https://admin.learn.gripe"
   allowed_methods:
     - GET
     - POST

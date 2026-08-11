@@ -2,7 +2,7 @@ package service
 
 import "fmt"
 
-const settingCacheVersion = "v4"
+const settingCacheVersion = "v5"
 
 func settingValueCacheKey(key, locale string) string {
 	return fmt.Sprintf("setting:%s:%s:%s", settingCacheVersion, key, locale)

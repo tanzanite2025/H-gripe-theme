@@ -169,6 +169,7 @@ Production deployment assets exist, but they must be reviewed against the curren
 - Environment template: `deployment/production.env.example`
 - Image workflow: `.github/workflows/publish-images.yml`
 - VPS runbook: `docs/ops/hostinger-vps-docker-runbook.md`
+- Current readiness boundary: `docs/ops/production-readiness-status.md`
 
 Do not share images, volumes, environment variables, databases, Redis instances, or Compose project names with unrelated applications.
 
