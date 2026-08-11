@@ -272,7 +272,7 @@
                    class="w-24 h-24 rounded-lg object-cover shadow-lg"
                 />
                  <GuideImage
-                   src="/public/wheelsetbuyersguide/wheelcomponents/nipple/choosenipple/tanzanite-sapim-nipple-washer.webp"
+                   src="/public/wheelsetbuyersguide/wheelcomponents/nipple/choosenipple/sapim-nipple-washer.webp"
                     alt="Nipple Washer"
                    :zoomOnClick="true"
                    caption="Nipple + Washer"

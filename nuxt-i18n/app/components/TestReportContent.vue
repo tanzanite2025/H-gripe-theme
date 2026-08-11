@@ -94,7 +94,7 @@
           preload="metadata"
         >
           <source
-            src="/testreport/wheelsettestreport/tanzanite-wheelsettestroport.webm"
+            src="/testreport/wheelsettestreport/wheelsettestroport.webm"
             type="video/webm"
           />
         </video>

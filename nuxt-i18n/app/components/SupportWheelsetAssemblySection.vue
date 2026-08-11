@@ -72,13 +72,13 @@
                <div class="grid grid-cols-2 gap-3 mt-4">
                   <GuideImage
                     class="rounded-lg overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.5)] aspect-square object-cover"
-                    src="/testreport/wheelsetassembly/1/tanzanite-carbonrim- spoke-lacing.webp"
+                    src="/testreport/wheelsetassembly/1/carbonrim- spoke-lacing.webp"
                     alt="Spoke lacing process"
                     :zoomOnClick="true"
                   />
                   <GuideImage
                     class="rounded-lg overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.5)] aspect-square object-cover"
-                    src="/testreport/wheelsetassembly/1/tanzanite-carbonrim- spoke-lacing1.webp"
+                    src="/testreport/wheelsetassembly/1/carbonrim- spoke-lacing1.webp"
                     alt="Spoke lacing detail"
                     :zoomOnClick="true"
                   />

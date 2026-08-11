@@ -72,19 +72,19 @@
                <div class="grid grid-cols-2 lg:grid-cols-3 gap-3 mt-4">
                   <GuideImage
                     class="rounded-lg overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.5)] aspect-square object-cover"
-                    src="/public/tiresizecharts/installation/tanzanite-Bicycle-tubeless-tire-pads.webp"
+                    src="/public/tiresizecharts/installation/Bicycle-tubeless-tire-pads.webp"
                     alt="Taping the rim"
                     :zoomOnClick="true"
                   />
                   <GuideImage
                     class="rounded-lg overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.5)] aspect-square object-cover"
-                    src="/public/tiresizecharts/installation/tanzanite-howtoopenthe vacuumnozzle.webp"
+                    src="/public/tiresizecharts/installation/howtoopenthe vacuumnozzle.webp"
                     alt="Valve hole preparation"
                     :zoomOnClick="true"
                   />
                   <GuideImage
                     class="rounded-lg overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.5)] aspect-square object-cover"
-                    src="/public/tiresizecharts/installation/tanzanite-tubeless-tirepad-interface-overlaps.webp"
+                    src="/public/tiresizecharts/installation/tubeless-tirepad-interface-overlaps.webp"
                     alt="Tape overlap"
                     :zoomOnClick="true"
                   />

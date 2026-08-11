@@ -12,14 +12,14 @@
     <!-- Surface Visuals -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-16">
        <GuideImage
-          src="/company/aboutus/appearance/tanzanite-carbon-rim-finish1.webp"
+          src="/company/aboutus/appearance/carbon-rim-finish1.webp"
           alt="carbon rim surface finish detail 1"
           :zoomOnClick="true"
           caption="Matte Finish Detail"
           class="rounded-xl overflow-hidden shadow-2xl border border-slate-800"
         />
         <GuideImage
-          src="/company/aboutus/appearance/tanzanite-carbonrims-finish2.webp"
+          src="/company/aboutus/appearance/carbonrims-finish2.webp"
           alt="carbon rim surface finish detail 2"
           :zoomOnClick="true"
           caption="Glossy Finish Detail"
@@ -125,7 +125,7 @@
       <div class="premium-card p-2 group cursor-pointer" @click="showLaserVideo = true">
          <div class="relative rounded-lg overflow-hidden aspect-video bg-slate-900">
             <img
-              src="/company/aboutus/appearance/tanzanite-carbon-rim-laser-engraving-LOGO.webp"
+              src="/company/aboutus/appearance/carbon-rim-laser-engraving-LOGO.webp"
               alt="Laser engraving video"
               class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-300"
               loading="lazy"
@@ -176,7 +176,7 @@
           controls
           autoplay
         >
-          <source src="/company/aboutus/appearance/tanzanite-carbonrim-appearancelogo.mp4" type="video/mp4" />
+          <source src="/company/aboutus/appearance/carbonrim-appearancelogo.mp4" type="video/mp4" />
         </video>
       </div>
     </div>

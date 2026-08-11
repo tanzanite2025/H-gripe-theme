@@ -283,7 +283,7 @@
       >
         <img
           class="support-video-thumbnail__image"
-          src="/testreport/wheelsettestreport/tanzanite-wheelssettestroport-video-firstpicture.webp"
+          src="/testreport/wheelsettestreport/wheelssettestroport-video-firstpicture.webp"
           alt="Play wheelset test report video for our wheelsets"
           loading="lazy"
         />
