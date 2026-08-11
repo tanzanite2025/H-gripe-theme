@@ -16,7 +16,7 @@
               <div class="ourstory-image__scrim absolute inset-0 z-10"></div>
               <img
                 class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                src="/company/ourstory/ourstory/tanzanite-ourstory.webp"
+                src="/company/ourstory/ourstory/ourstory.webp"
                 alt="our engineers and riders discussing product development"
                 loading="lazy"
               />

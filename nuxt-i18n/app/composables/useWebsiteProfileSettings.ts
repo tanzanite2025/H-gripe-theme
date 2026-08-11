@@ -30,7 +30,7 @@ export interface WebsiteProfileSettings {
 
 type RawWebsiteProfileSettings = Record<string, unknown>
 
-const defaultFactoryImageUrl = '/company/ourstory/factory/tanzanite-factory-premoldlayupworkshop6.webp'
+const defaultFactoryImageUrl = '/company/ourstory/factory/factory-premoldlayupworkshop6.webp'
 
 const asString = (value: unknown, fallback = '') => {
   const result = typeof value === 'string' ? value : value === null || value === undefined ? '' : String(value)
