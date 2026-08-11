@@ -14,7 +14,7 @@
 
       <div class="w-full mb-8 max-w-4xl mx-auto">
         <GuideImage
-          src="/public/tiresizecharts/tiresize/tanzanite-schwalbe-tiresize.webp"
+          src="/public/tiresizecharts/tiresize/schwalbe-tiresize.webp"
           alt="Carbon and Schwalbe tire size chart overview"
           :zoomOnClick="true"
           class="rounded-xl overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.5)]"

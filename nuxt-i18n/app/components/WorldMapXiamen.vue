@@ -48,7 +48,7 @@
       <rect width="800" height="400" fill="#020617" />
       <!-- world map background image from public/ -->
       <image
-        href="/company/globalpartners/tanzanite-mapchart.webp"
+        href="/company/globalpartners/mapchart.webp"
         x="0"
         y="0"
         width="800"

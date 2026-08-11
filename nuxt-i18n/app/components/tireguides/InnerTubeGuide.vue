@@ -63,7 +63,7 @@
         <div class="w-full max-w-xl mx-auto lg:max-w-none">
            <GuideImage
             class="rounded-xl overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.5)]"
-            src="/public/tiresizecharts/innertube/tanzanite-schwalbe-innertube-valve.webp"
+            src="/public/tiresizecharts/innertube/schwalbe-innertube-valve.webp"
             :alt="$t('guidesTireguides.innerTube.images.valveOverviewAlt')"
             :zoomOnClick="true"
           />

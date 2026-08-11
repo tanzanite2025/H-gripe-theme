@@ -8,7 +8,7 @@
        </p>
        <div class="flex justify-center flex-col items-center gap-4">
          <GuideImage
-            src="/public/technical/tension/tanzanite-wheel-spoke-tension.webp"
+            src="/public/technical/tension/wheel-spoke-tension.webp"
             alt="Wheel Spoke Tension Distribution"
             :zoomOnClick="true"
             caption="Workshop: Tension Distribution Reference"

@@ -6,7 +6,7 @@ import (
 	"tanzanite/internal/domain/setting"
 )
 
-const websiteProfileDefaultFactoryImageURL = "/company/ourstory/factory/tanzanite-factory-premoldlayupworkshop6.webp"
+const websiteProfileDefaultFactoryImageURL = "/company/ourstory/factory/factory-premoldlayupworkshop6.webp"
 
 type WebsiteProfileService struct {
 	settings *SettingService
