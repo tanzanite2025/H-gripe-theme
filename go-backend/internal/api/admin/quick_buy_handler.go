@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"encoding/json"
 	"errors"
 	"strconv"
 	"strings"
@@ -172,13 +173,21 @@ func (h *QuickBuyHandler) PreviewVersionStepCandidates(c *gin.Context) {
 		return
 	}
 
-	input := quickBuyPreviewInputFromQuery(c)
+	input, err := quickBuyPreviewInputFromQuery(c)
+	if err != nil {
+		apierror.RespondBadRequest(c, err.Error())
+		return
+	}
 	if c.Request.ContentLength != 0 {
 		if err := c.ShouldBindJSON(&input); err != nil {
 			apierror.RespondBadRequest(c, err.Error())
 			return
 		}
-		input = mergeQuickBuyPreviewQuery(c, input)
+		input, err = mergeQuickBuyPreviewQuery(c, input)
+		if err != nil {
+			apierror.RespondBadRequest(c, err.Error())
+			return
+		}
 	}
 
 	result, err := h.quickBuyService.PreviewVersionStepCandidates(versionID, input)
@@ -221,7 +230,7 @@ func (h *QuickBuyHandler) PublishVersion(c *gin.Context) {
 	response.Success(c, gin.H{"data": flow})
 }
 
-func quickBuyPreviewInputFromQuery(c *gin.Context) service.QuickBuyCandidateInput {
+func quickBuyPreviewInputFromQuery(c *gin.Context) (service.QuickBuyCandidateInput, error) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("per_page", c.DefaultQuery("page_size", strconv.Itoa(quickBuyPreviewDefaultPageSize))))
 	if page < 1 {
@@ -233,18 +242,26 @@ func quickBuyPreviewInputFromQuery(c *gin.Context) service.QuickBuyCandidateInpu
 	if pageSize > quickBuyPreviewMaxPageSize {
 		pageSize = quickBuyPreviewMaxPageSize
 	}
-	return service.QuickBuyCandidateInput{
-		StepKey:  strings.TrimSpace(c.Query("step_key")),
-		Keyword:  strings.TrimSpace(c.Query("keyword")),
-		Locale:   strings.TrimSpace(c.Query("locale")),
-		Currency: strings.TrimSpace(c.Query("currency")),
-		Page:     page,
-		PageSize: pageSize,
+	specFilters, err := parseQuickBuySpecFilters(c.Query("spec_filters"))
+	if err != nil {
+		return service.QuickBuyCandidateInput{}, err
 	}
+	return service.QuickBuyCandidateInput{
+		StepKey:     strings.TrimSpace(c.Query("step_key")),
+		Keyword:     strings.TrimSpace(c.Query("keyword")),
+		Locale:      strings.TrimSpace(c.Query("locale")),
+		Currency:    strings.TrimSpace(c.Query("currency")),
+		SpecFilters: specFilters,
+		Page:        page,
+		PageSize:    pageSize,
+	}, nil
 }
 
-func mergeQuickBuyPreviewQuery(c *gin.Context, input service.QuickBuyCandidateInput) service.QuickBuyCandidateInput {
-	queryInput := quickBuyPreviewInputFromQuery(c)
+func mergeQuickBuyPreviewQuery(c *gin.Context, input service.QuickBuyCandidateInput) (service.QuickBuyCandidateInput, error) {
+	queryInput, err := quickBuyPreviewInputFromQuery(c)
+	if err != nil {
+		return service.QuickBuyCandidateInput{}, err
+	}
 	if input.StepKey == "" {
 		input.StepKey = queryInput.StepKey
 	}
@@ -263,7 +280,22 @@ func mergeQuickBuyPreviewQuery(c *gin.Context, input service.QuickBuyCandidateIn
 	if input.PageSize < 1 {
 		input.PageSize = queryInput.PageSize
 	}
-	return input
+	if len(input.SpecFilters) == 0 {
+		input.SpecFilters = queryInput.SpecFilters
+	}
+	return input, nil
+}
+
+func parseQuickBuySpecFilters(raw string) (map[string][]string, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return nil, nil
+	}
+	var filters map[string][]string
+	if err := json.Unmarshal([]byte(raw), &filters); err != nil {
+		return nil, errors.New("spec_filters must be a JSON object of string arrays")
+	}
+	return filters, nil
 }
 
 func respondQuickBuyError(c *gin.Context, err error) {

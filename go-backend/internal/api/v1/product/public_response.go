@@ -34,6 +34,7 @@ type PublicProduct struct {
 	DisplayPrices       []PublicDisplayPrice              `json:"display_prices,omitempty"`
 	MetaTitle           string                            `json:"meta_title"`
 	MetaDesc            string                            `json:"meta_description"`
+	Brand               *PublicProductBrand               `json:"brand,omitempty"`
 	AfterSalesTemplate  *PublicProductInformationTemplate `json:"after_sales_template,omitempty"`
 	PackagingTemplate   *PublicProductInformationTemplate `json:"packaging_template,omitempty"`
 	Availability        Availability                      `json:"availability"`
@@ -70,6 +71,14 @@ type PublicProductInformationTemplate struct {
 	Name    string `json:"name"`
 	Content string `json:"content"`
 	Locale  string `json:"locale"`
+}
+
+type PublicProductBrand struct {
+	ID         uint   `json:"id"`
+	Name       string `json:"name"`
+	Slug       string `json:"slug"`
+	LogoURL    string `json:"logo_url,omitempty"`
+	WebsiteURL string `json:"website_url,omitempty"`
 }
 
 type PublicProductType struct {
@@ -262,6 +271,7 @@ func PublicProductFromDomainWithLocaleAndRoutes(item productdomain.Product, disp
 		DisplayPrices:       displayPrices,
 		MetaTitle:           item.MetaTitle,
 		MetaDesc:            item.MetaDesc,
+		Brand:               publicProductBrandFromDomain(item.Brand),
 		AfterSalesTemplate:  publicProductInformationTemplateFromDomain(item.AfterSalesTemplate),
 		PackagingTemplate:   publicProductInformationTemplateFromDomain(item.PackagingTemplate),
 		Availability:        availabilityForProduct(item),
@@ -270,6 +280,19 @@ func PublicProductFromDomainWithLocaleAndRoutes(item productdomain.Product, disp
 		SpecValues:          specValues,
 		Variants:            variants,
 		VariantOptionValues: variantOptionValues,
+	}
+}
+
+func publicProductBrandFromDomain(item *productdomain.ProductBrand) *PublicProductBrand {
+	if item == nil || strings.TrimSpace(item.Name) == "" {
+		return nil
+	}
+	return &PublicProductBrand{
+		ID:         item.ID,
+		Name:       item.Name,
+		Slug:       item.Slug,
+		LogoURL:    strings.TrimSpace(item.LogoURL),
+		WebsiteURL: strings.TrimSpace(item.WebsiteURL),
 	}
 }
 

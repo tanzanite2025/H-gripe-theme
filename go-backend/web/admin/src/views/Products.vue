@@ -3,6 +3,12 @@
     <AdminPageHeader title="商品管理" description="管理商品资料、规格、SKU 变体和库存状态">
       <template #actions>
         <Button variant="outline" as-child>
+          <RouterLink to="/catalog/brands">
+            <Tag class="size-4" />
+            商品品牌
+          </RouterLink>
+        </Button>
+        <Button variant="outline" as-child>
           <RouterLink to="/catalog/templates">
             <Tags class="size-4" />
             产品模板
@@ -71,7 +77,9 @@
       :form="productForm"
       :errors="formErrors"
       :product-types="productTypes"
+      :brands="brands"
       :selected-product-type="selectedProductType"
+      :brand-select-value="brandSelectValue"
       :selected-spec-definitions="selectedSpecDefinitions"
       :variant-spec-definitions="variantSpecDefinitions"
       :default-variant-index="defaultVariantIndex"
@@ -92,6 +100,7 @@
       @submit="submitForm"
       @clear-error="clearFieldError"
       @product-type-select="handleProductTypeSelect"
+      @product-brand-select="setProductBrand"
       @product-shipping-template-select="setProductShippingTemplate"
       @product-information-template-select="setProductInformationTemplate"
       @set-spec-select-value="setSpecSelectValue"
@@ -126,6 +135,7 @@ import {
   CircleCheck,
   PackageOpen,
   Plus,
+  Tag,
   Tags,
   TriangleAlert,
 } from '@lucide/vue'
@@ -136,7 +146,7 @@ import ProductEditorDialog from '@/components/admin/product/ProductEditorDialog.
 import ProductFilterPanel from '@/components/admin/product/ProductFilterPanel.vue'
 import ProductTablePanel from '@/components/admin/product/ProductTablePanel.vue'
 import ProductTranslationGroupDialog from '@/components/admin/product/ProductTranslationGroupDialog.vue'
-import productApi, { productInformationTemplateApi } from '@/api/products'
+import productApi, { productBrandApi, productInformationTemplateApi } from '@/api/products'
 import shippingApi from '@/api/shipping'
 import { useProductCatalog } from '@/composables/product/useProductCatalog'
 import { useProductEditor } from '@/composables/product/useProductEditor'
@@ -170,6 +180,7 @@ interface ConfirmationState {
 }
 
 const shippingTemplates = ref<any[]>([])
+const brands = ref<any[]>([])
 const informationTemplates = ref<ProductInformationTemplateRecord[]>([])
 const translationDialogVisible = ref(false)
 const translationLoading = ref(false)
@@ -210,6 +221,7 @@ const {
   variantSpecDefinitions,
   defaultVariantIndex,
   productTypeSelectValue,
+  brandSelectValue,
   shippingTemplateSelectValue,
   afterSalesTemplateSelectValue,
   packagingTemplateSelectValue,
@@ -220,6 +232,7 @@ const {
   specSelectValue,
   setSpecSelectValue,
   setProductShippingTemplate,
+  setProductBrand,
   setProductInformationTemplate,
   clearFieldError,
   addMediaUrl,
@@ -243,6 +256,14 @@ const fetchShippingTemplates = async () => {
     shippingTemplates.value = await shippingApi.listTemplates()
   } catch (error) {
     console.error('Failed to fetch shipping templates:', error)
+  }
+}
+
+const fetchBrands = async () => {
+  try {
+    brands.value = await productBrandApi.list({ include_disabled: true })
+  } catch (error) {
+    console.error('Failed to fetch product brands:', error)
   }
 }
 
@@ -397,6 +418,7 @@ const executeConfirmedAction = async () => {
 onMounted(() => Promise.all([
   supportedLanguages.fetchLanguages(),
   fetchProductTypes(),
+  fetchBrands(),
   fetchShippingTemplates(),
   fetchInformationTemplates(),
   fetchStats(),

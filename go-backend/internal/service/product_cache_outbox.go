@@ -18,6 +18,7 @@ import (
 type ProductCacheEventPublisher interface {
 	EnqueueProductCacheInvalidateByIDs(productIDs []uint, reason string) error
 	EnqueueProductCacheInvalidateByProductTypeID(productTypeID uint, reason string) error
+	EnqueueProductCacheInvalidateByBrandID(brandID uint, reason string) error
 	EnqueueProductCacheInvalidateByInformationTemplateID(templateID uint, reason string) error
 }
 
@@ -31,6 +32,10 @@ type ProductCacheOutboxHandler struct {
 
 func NewProductCacheOutboxPublisher(repo *repository.OutboxRepository) *ProductCacheOutboxPublisher {
 	return &ProductCacheOutboxPublisher{repo: repo}
+}
+
+func (p *ProductCacheOutboxPublisher) WithRepository(repo *repository.OutboxRepository) *ProductCacheOutboxPublisher {
+	return NewProductCacheOutboxPublisher(repo)
 }
 
 func NewProductCacheOutboxHandler(invalidator ProductCacheInvalidationExecutor) *ProductCacheOutboxHandler {
@@ -59,6 +64,18 @@ func (p *ProductCacheOutboxPublisher) EnqueueProductCacheInvalidateByProductType
 		strconv.FormatUint(uint64(productTypeID), 10),
 		reason,
 		outbox.ProductCacheInvalidatePayload{ProductTypeID: productTypeID, Reason: reason},
+	)
+}
+
+func (p *ProductCacheOutboxPublisher) EnqueueProductCacheInvalidateByBrandID(brandID uint, reason string) error {
+	if brandID == 0 {
+		return nil
+	}
+	return p.enqueueProductCacheInvalidate(
+		outbox.AggregateTypeProductBrand,
+		strconv.FormatUint(uint64(brandID), 10),
+		reason,
+		outbox.ProductCacheInvalidatePayload{ProductBrandID: brandID, Reason: reason},
 	)
 }
 
@@ -120,6 +137,9 @@ func (h *ProductCacheOutboxHandler) Handle(ctx context.Context, event outbox.Eve
 		return err
 	case payload.ProductTypeID > 0:
 		_, err := h.invalidator.InvalidateProductCacheByProductTypeIDWithSource(payload.ProductTypeID, productCacheInvalidationSourceOutbox)
+		return err
+	case payload.ProductBrandID > 0:
+		_, err := h.invalidator.InvalidateProductCacheByBrandIDWithSource(payload.ProductBrandID, productCacheInvalidationSourceOutbox)
 		return err
 	case payload.ProductInformationTemplateID > 0:
 		_, err := h.invalidator.InvalidateProductCacheByInformationTemplateIDWithSource(payload.ProductInformationTemplateID, productCacheInvalidationSourceOutbox)

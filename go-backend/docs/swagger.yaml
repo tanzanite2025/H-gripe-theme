@@ -57,8 +57,6 @@ tags:
     description: 营销系统 (优惠券、积分、会员)
   - name: Reviews
     description: 评价系统
-  - name: Tickets
-    description: 客服工单系统
   - name: Gallery
     description: 图片库管理
   - name: Registration

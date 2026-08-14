@@ -16,7 +16,7 @@
           :aria-current="trans.locale === currentLocaleCode ? 'page' : undefined"
         >
           <span class="locale-flag">{{ getFlagEmoji(trans.locale) }}</span>
-          <span class="locale-name">{{ getLocaleName(trans.locale) }}</span>
+          <span class="locale-name" :lang="getLocaleLanguageTag(trans.locale)">{{ getLocaleName(trans.locale) }}</span>
           <span v-if="trans.locale === currentLocaleCode" class="current-badge">
             (Current)
           </span>
@@ -32,6 +32,7 @@ import { useBlogApi } from '~/composables/useBlogApi'
 import { useI18n } from '#imports'
 import {
   getStorefrontLocaleFlag,
+  getStorefrontLocaleLanguageTag,
   getStorefrontLocaleName,
   normalizeStorefrontLocaleCode,
 } from '~/utils/storefrontLocales'
@@ -116,6 +117,10 @@ onMounted(async () => {
 // 获取语言名称
 const getLocaleName = (localeCode: string): string => {
   return getStorefrontLocaleName(localeCode, localeCode)
+}
+
+const getLocaleLanguageTag = (localeCode: string): string => {
+  return getStorefrontLocaleLanguageTag(localeCode, localeCode.replace('_', '-'))
 }
 
 // 获取国旗 Emoji

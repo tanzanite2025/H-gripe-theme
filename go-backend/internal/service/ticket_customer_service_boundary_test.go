@@ -1,7 +1,6 @@
 package service
 
 import (
-	"errors"
 	"testing"
 
 	"commerce-platform/internal/domain/ticket"
@@ -15,120 +14,6 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
-
-func TestCustomerServiceTicketsStayOutOfRegularTicketQueries(t *testing.T) {
-	db, ticketService := newTestTicketBoundaryService(t)
-	customer := createTicketBoundaryUser(t, db, "customer@example.test", "customer", "user")
-	agent := createTicketBoundaryUser(t, db, "agent@example.test", "agent", "support")
-
-	regularTicket := ticket.Ticket{
-		TicketNumber: "TK-BOUNDARY-REGULAR",
-		UserID:       customer.ID,
-		Subject:      "Shipping question",
-		Category:     "shipping",
-		AssignedTo:   agent.ID,
-	}
-	require.NoError(t, ticketService.CreateTicket(&regularTicket))
-	require.NoError(t, db.Save(&regularTicket).Error)
-
-	customerChat := ticket.Ticket{
-		TicketNumber:   "TK-BOUNDARY-CUSTOMER-CHAT",
-		UserID:         customer.ID,
-		CustomerUserID: &customer.ID,
-		Subject:        "Logged-in customer chat",
-		Category:       customerServiceTicketCategory,
-		AssignedTo:     agent.ID,
-	}
-	require.NoError(t, ticketService.createTicket(&customerChat))
-
-	anonymousChat := ticket.Ticket{
-		TicketNumber:       "TK-BOUNDARY-ANON-CHAT",
-		UserID:             agent.ID,
-		VisitorSessionHash: "visitor-hash",
-		Subject:            "Anonymous customer chat",
-		Category:           customerServiceTicketCategory,
-		AssignedTo:         agent.ID,
-	}
-	require.NoError(t, ticketService.createTicket(&anonymousChat))
-
-	userTickets, total, err := ticketService.GetUserTickets(customer.ID, 1, 20)
-	require.NoError(t, err)
-	assert.EqualValues(t, 1, total)
-	require.Len(t, userTickets, 1)
-	assert.Equal(t, regularTicket.ID, userTickets[0].ID)
-
-	assignedTickets, total, err := ticketService.GetAssignedTickets(agent.ID, 1, 20)
-	require.NoError(t, err)
-	assert.EqualValues(t, 1, total)
-	require.Len(t, assignedTickets, 1)
-	assert.Equal(t, regularTicket.ID, assignedTickets[0].ID)
-
-	allTickets, total, err := ticketService.GetAllTickets(1, 20, "", "")
-	require.NoError(t, err)
-	assert.EqualValues(t, 1, total)
-	require.Len(t, allTickets, 1)
-	assert.Equal(t, regularTicket.ID, allTickets[0].ID)
-
-	stats, err := ticketService.GetAdminTicketStats()
-	require.NoError(t, err)
-	assert.EqualValues(t, 1, stats["total"])
-	assert.EqualValues(t, 1, stats["open"])
-}
-
-func TestRegularTicketServiceRejectsCustomerServiceConversationIDs(t *testing.T) {
-	db, ticketService := newTestTicketBoundaryService(t)
-	customer := createTicketBoundaryUser(t, db, "customer@example.test", "customer", "user")
-	agent := createTicketBoundaryUser(t, db, "agent@example.test", "agent", "support")
-
-	customerChat := ticket.Ticket{
-		TicketNumber:   "TK-BOUNDARY-REJECT-CHAT",
-		UserID:         customer.ID,
-		CustomerUserID: &customer.ID,
-		Subject:        "Customer chat",
-		Category:       customerServiceTicketCategory,
-		AssignedTo:     agent.ID,
-	}
-	require.NoError(t, ticketService.createTicket(&customerChat))
-
-	_, err := ticketService.GetTicket(customerChat.ID, customer.ID, false)
-	assert.True(t, errors.Is(err, ErrTicketRouteMismatch))
-
-	_, err = ticketService.GetMessages(customerChat.ID, customer.ID, false)
-	assert.True(t, errors.Is(err, ErrTicketRouteMismatch))
-
-	err = ticketService.AddMessage(&ticket.TicketMessage{TicketID: customerChat.ID, Content: "wrong path"}, customer.ID, false)
-	assert.True(t, errors.Is(err, ErrTicketRouteMismatch))
-
-	err = ticketService.AssignTicket(customerChat.ID, agent.ID)
-	assert.True(t, errors.Is(err, ErrTicketRouteMismatch))
-
-	err = ticketService.UpdateTicketStatus(customerChat.ID, "closed")
-	assert.True(t, errors.Is(err, ErrTicketRouteMismatch))
-}
-
-func TestUpdateTicketStatusForUserRejectsDifferentOwner(t *testing.T) {
-	db, ticketService := newTestTicketBoundaryService(t)
-	owner := createTicketBoundaryUser(t, db, "owner@example.test", "owner", "user")
-	otherUser := createTicketBoundaryUser(t, db, "other@example.test", "other", "user")
-
-	regularTicket := ticket.Ticket{
-		TicketNumber: "TK-OWNER-STATUS",
-		UserID:       owner.ID,
-		Subject:      "Order question",
-		Category:     "order",
-	}
-	require.NoError(t, ticketService.CreateTicket(&regularTicket))
-
-	err := ticketService.UpdateTicketStatusForUser(regularTicket.ID, otherUser.ID, false, "in_progress")
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "unauthorized")
-
-	var reloaded ticket.Ticket
-	require.NoError(t, db.First(&reloaded, regularTicket.ID).Error)
-	assert.Equal(t, "open", reloaded.Status)
-
-	require.NoError(t, ticketService.UpdateTicketStatusForUser(regularTicket.ID, owner.ID, false, "in_progress"))
-}
 
 func TestCustomerServiceDedicatedPathStillHandlesConversationMessages(t *testing.T) {
 	db, ticketService := newTestTicketBoundaryService(t)

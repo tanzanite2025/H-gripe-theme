@@ -1,21 +1,31 @@
 package admin
 
 import (
+	"commerce-platform/internal/pkg/response"
 	"commerce-platform/internal/service"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
 type OrderHandler struct {
 	orderService *service.OrderService
+	auditService adminAuditRecorder
 }
 
 func NewOrderHandler(orderService *service.OrderService) *OrderHandler {
 	return &OrderHandler{
 		orderService: orderService,
 	}
+}
+
+func (h *OrderHandler) ConfigureAuditService(recorder adminAuditRecorder) {
+	if h == nil {
+		return
+	}
+	h.auditService = recorder
 }
 
 // ListOrders 获取订单列表
@@ -80,6 +90,107 @@ func (h *OrderHandler) GetOrder(c *gin.Context) {
 		"order":             order,
 		"tracking_shipment": trackingShipment,
 	})
+}
+
+// ListDisputeOrders 获取订单域拒付订单列表
+// GET /api/admin/orders/disputes
+func (h *OrderHandler) ListDisputeOrders(c *gin.Context) {
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 20
+	}
+
+	items, total, err := h.orderService.ListOrderDisputeCases(service.OrderDisputeListInput{
+		Page:     page,
+		PageSize: pageSize,
+		Provider: c.Query("provider"),
+		Status:   c.Query("status"),
+		Search:   c.Query("search"),
+	})
+	if err != nil {
+		respondOrderServiceError(c, err, "Failed to fetch order disputes", http.StatusInternalServerError)
+		return
+	}
+	response.Paged(c, items, page, pageSize, total)
+}
+
+// GetOrderDisputeAnalysis 获取单个订单的拒付分析
+// GET /api/admin/orders/:id/dispute-analysis
+func (h *OrderHandler) GetOrderDisputeAnalysis(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid order ID"})
+		return
+	}
+	analysis, err := h.orderService.GetOrderDisputeAnalysis(uint(id))
+	if err != nil {
+		respondOrderServiceError(c, err, "Failed to fetch order dispute analysis", http.StatusInternalServerError)
+		return
+	}
+	response.Success(c, analysis)
+}
+
+// SendDisputeContactEmail 人工邮件联系拒付客户
+// POST /api/admin/orders/:id/dispute-contact-email
+func (h *OrderHandler) SendDisputeContactEmail(c *gin.Context) {
+	startedAt := adminAuditStartedAt()
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid order ID"})
+		return
+	}
+
+	var req orderDisputeContactEmailRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	result, err := h.orderService.SendOrderDisputeContactEmail(service.SendOrderDisputeContactEmailInput{
+		OrderID:   uint(id),
+		Provider:  req.Provider,
+		DisputeID: req.DisputeID,
+		Subject:   req.Subject,
+		Body:      req.Body,
+		Confirm:   req.Confirm,
+	})
+	if err != nil {
+		recordAdminAudit(h.auditService, c, adminAuditEvent{
+			StartedAt:    startedAt,
+			Action:       adminAuditActionSubmit,
+			Resource:     "order_dispute_contact_email",
+			ResourceID:   uint(id),
+			Status:       adminAuditStatusFailed,
+			ErrorMessage: err.Error(),
+			Changes: map[string]interface{}{
+				"provider":   req.Provider,
+				"dispute_id": req.DisputeID,
+			},
+		})
+		respondOrderServiceError(c, err, "Failed to send order dispute contact email", http.StatusInternalServerError)
+		return
+	}
+
+	recordAdminAudit(h.auditService, c, adminAuditEvent{
+		StartedAt:  startedAt,
+		Action:     adminAuditActionSubmit,
+		Resource:   "order_dispute_contact_email",
+		ResourceID: uint(id),
+		Status:     adminAuditStatusSuccess,
+		Changes: map[string]interface{}{
+			"provider":            result.Provider,
+			"dispute_id":          result.DisputeID,
+			"provider_dispute_id": result.ProviderDisputeID,
+			"to":                  result.To,
+			"subject":             result.Subject,
+			"sent_at":             result.SentAt.Format(time.RFC3339),
+		},
+	})
+	response.Success(c, result)
 }
 
 // UpdateOrderStatus 更新订单状态

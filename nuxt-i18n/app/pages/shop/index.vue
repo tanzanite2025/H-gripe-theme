@@ -608,7 +608,7 @@ const handleAddToWishlist = async (product: ShopProduct) => {
 .shop-pagination__count {
   min-width: 4.5rem;
   text-align: center;
-  font-family: 'StorefrontSystem';
+  font-family: var(--tz-font-system);
   font-size: var(--tz-type-caption);
   font-weight: 850;
   color: rgba(226, 232, 240, 0.82);

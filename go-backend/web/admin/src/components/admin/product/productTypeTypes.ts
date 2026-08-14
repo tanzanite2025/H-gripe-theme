@@ -48,6 +48,7 @@ export interface ProductTypeRecord {
   image_url?: string | null
   sort_order?: number | string | null
   is_enabled?: boolean
+  is_system_managed?: boolean
   updated_at?: string | null
   translations?: ProductTypeTranslation[]
   spec_definitions?: ProductTypeSpecDefinition[]
@@ -74,6 +75,7 @@ export interface ProductTypeSpecForm {
 
 export interface ProductTypeForm {
   id: number | string | null
+  is_system_managed: boolean
   name: string
   slug: string
   description: string

@@ -2,6 +2,7 @@
 import QuickBuyLocalizedHelpQuestionMarkDialog from '~/components/quick-buy/QuickBuyLocalizedHelpQuestionMarkDialog.vue'
 import ShopProductDisplayCard from '~/components/shop/ShopProductDisplayCard.vue'
 import type { ShopProduct } from '~/composables/useShopProducts'
+import type { QuickBuySpecFilter } from '~/utils/quickBuy/types'
 
 const props = withDefaults(defineProps<{
   title: string
@@ -11,6 +12,11 @@ const props = withDefaults(defineProps<{
   searchPlaceholder: string
   products: ShopProduct[]
   query: string
+  filters?: QuickBuySpecFilter[]
+  selectedFilters?: Record<string, string[]>
+  filtersLabel: string
+  clearFiltersLabel: string
+  noFilterValuesLabel: string
   errorMessage?: string
   loading?: boolean
   canGoToPreviousProductPage?: boolean
@@ -31,6 +37,11 @@ const props = withDefaults(defineProps<{
 }>(), {
   errorMessage: '',
   loading: false,
+  filters: () => [],
+  selectedFilters: () => ({}),
+  filtersLabel: 'Filters',
+  clearFiltersLabel: 'Clear',
+  noFilterValuesLabel: 'No values available',
   canGoToPreviousProductPage: false,
   canGoToNextProductPage: false,
   showProductPagination: false,
@@ -45,6 +56,8 @@ const emit = defineEmits<{
   nextProductPage: []
   selectProduct: [product: ShopProduct]
   openProductDetails: [product: ShopProduct]
+  toggleFilter: [slug: string, value: string]
+  clearFilters: []
   previousStep: []
   nextStep: []
 }>()
@@ -62,6 +75,14 @@ const handleSearchInput = (event: Event) => {
         <h2 class="my-0 min-w-0 text-lg font-semibold text-white">
           {{ title || fallbackTitle }}
         </h2>
+        <input
+          :value="query"
+          type="text"
+          :placeholder="searchPlaceholder"
+          class="quickbuy-search-input w-full px-3 py-2.5 rounded-lg text-white box-border max-w-full focus:outline-none transition-colors"
+          @keydown.enter.prevent="emit('submitSearch')"
+          @input="handleSearchInput"
+        />
         <QuickBuyLocalizedHelpQuestionMarkDialog
           :title="helpTitle"
           :content="helpContent"
@@ -69,14 +90,42 @@ const handleSearchInput = (event: Event) => {
           :close-label="closeLabel"
         />
       </div>
-      <input
-        :value="query"
-        type="text"
-        :placeholder="searchPlaceholder"
-        class="quickbuy-search-input mt-3 w-full px-3 py-2.5 rounded-lg text-white box-border max-w-full focus:outline-none transition-colors"
-        @keydown.enter.prevent="emit('submitSearch')"
-        @input="handleSearchInput"
-      />
+    </div>
+
+    <div v-if="filters.length" class="quickbuy-filter-bar">
+      <div class="quickbuy-filter-bar__header">
+        <span class="quickbuy-filter-bar__title">{{ filtersLabel }}</span>
+        <button
+          v-if="Object.keys(selectedFilters).length"
+          type="button"
+          class="quickbuy-filter-bar__clear"
+          @click="emit('clearFilters')"
+        >
+          {{ clearFiltersLabel }}
+        </button>
+      </div>
+      <div class="quickbuy-filter-bar__groups">
+        <div v-for="filter in filters" :key="filter.slug" class="quickbuy-filter-group">
+          <span class="quickbuy-filter-group__label">
+            {{ filter.name }}<span v-if="filter.unit"> ({{ filter.unit }})</span>
+          </span>
+          <div v-if="filter.values.length" class="quickbuy-filter-group__values">
+            <label
+              v-for="value in filter.values"
+              :key="`${filter.slug}-${value}`"
+              class="quickbuy-filter-option"
+            >
+              <input
+                type="checkbox"
+                :checked="selectedFilters[filter.slug]?.includes(value) || false"
+                @change="emit('toggleFilter', filter.slug, value)"
+              >
+              <span>{{ value }}</span>
+            </label>
+          </div>
+          <span v-else class="quickbuy-filter-group__empty">{{ noFilterValuesLabel }}</span>
+        </div>
+      </div>
     </div>
 
     <div class="quickbuy-candidate-area">
@@ -181,14 +230,13 @@ const handleSearchInput = (event: Event) => {
   box-sizing: border-box;
   flex-direction: column;
   padding: 0.75rem;
-  border: 0;
+  border: 1px solid rgba(255, 255, 255, 0.035);
   border-radius: 0.75rem;
-  background:
-    linear-gradient(180deg, var(--quickbuy-panel-surface, #111116), var(--quickbuy-panel-surface-soft, #0c0c0e));
+  background: #0b0d12;
   box-shadow:
-    0 16px 42px rgba(0, 0, 0, 0.42),
-    inset 0 1px 0 rgba(255, 255, 255, 0.026),
-    inset 0 0 0 1px var(--quickbuy-dark-edge, rgba(0, 0, 0, 0.68));
+    0 16px 42px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.045),
+    inset 0 -1px 0 var(--quickbuy-dark-edge, rgba(0, 0, 0, 0.5));
 }
 
 .quickbuy-selection-panel-header {
@@ -197,27 +245,50 @@ const handleSearchInput = (event: Event) => {
 
 .quickbuy-search-input {
   border: 0 !important;
-  background-color: #080809 !important;
+  background-color: var(--quickbuy-control-surface, #1b1c23) !important;
   background-image:
-    linear-gradient(180deg, var(--quickbuy-control-surface, #0a0a0c), #080809) !important;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.82);
+    linear-gradient(180deg, var(--quickbuy-control-surface-raised, #171920), var(--quickbuy-control-surface, #0d0f14)) !important;
+  box-shadow:
+    inset 0 1px 3px rgba(0, 0, 0, 0.34),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.035);
 }
 
 .quickbuy-search-input:focus {
   border: 0 !important;
-  background-color: #09090a !important;
-  background-image: none !important;
+  background-color: var(--quickbuy-control-surface, #1b1c23) !important;
+  background-image:
+    linear-gradient(180deg, var(--quickbuy-control-surface-raised, #171920), var(--quickbuy-control-surface, #0d0f14)) !important;
   box-shadow:
-    inset 0 1px 2px rgba(0, 0, 0, 0.74),
+    inset 0 1px 2px rgba(0, 0, 0, 0.3),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.045),
     0 0 0 3px var(--quickbuy-focus-ring, rgba(181, 255, 109, 0.12));
 }
 
 .quickbuy-panel-heading-row {
+  position: relative;
   display: flex;
   min-width: 0;
+  min-height: 2.75rem;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
+}
+
+.quickbuy-panel-heading-row > h2 {
+  flex: 0 1 5.75rem;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.quickbuy-panel-heading-row > .quickbuy-search-input {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(18rem, calc(100% - 8.5rem));
+  margin: 0;
+  transform: translate(-50%, -50%);
 }
 
 .quickbuy-candidate-area {
@@ -226,6 +297,83 @@ const handleSearchInput = (event: Event) => {
   flex-direction: column;
   min-height: 0;
   margin-top: 0.75rem;
+}
+
+.quickbuy-filter-bar {
+  flex: 0 0 auto;
+  margin-top: 0.75rem;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.045);
+  border-radius: 0.625rem;
+  background: var(--quickbuy-control-surface, #111219);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.quickbuy-filter-bar__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.quickbuy-filter-bar__title,
+.quickbuy-filter-group__label {
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.6875rem;
+  font-weight: 800;
+}
+
+.quickbuy-filter-bar__clear {
+  border: 0;
+  padding: 0;
+  color: rgba(181, 255, 109, 0.9);
+  background: transparent;
+  font-size: 0.6875rem;
+  font-weight: 700;
+}
+
+.quickbuy-filter-bar__groups {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.quickbuy-filter-group {
+  min-width: 0;
+}
+
+.quickbuy-filter-group__values {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.3rem;
+}
+
+.quickbuy-filter-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 1.7rem;
+  padding: 0.2rem 0.45rem;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 0.4rem;
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.025);
+  font-size: 0.6875rem;
+}
+
+.quickbuy-filter-option input {
+  width: 0.8rem;
+  height: 0.8rem;
+  accent-color: #b5ff6d;
+}
+
+.quickbuy-filter-group__empty {
+  display: inline-block;
+  margin-top: 0.3rem;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.6875rem;
 }
 
 .quickbuy-step-actions {
@@ -247,16 +395,16 @@ const handleSearchInput = (event: Event) => {
   border-radius: 999px;
   color: white;
   background:
-    linear-gradient(180deg, var(--quickbuy-control-surface-raised, #151519), #0f0f12);
+    linear-gradient(180deg, var(--quickbuy-control-surface-raised, #171920), var(--quickbuy-control-surface, #0d0f14));
   box-shadow:
     0 6px 18px rgba(0, 0, 0, 0.24),
-    inset 0 0 0 1px rgba(0, 0, 0, 0.7);
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04);
   transition: background-color 160ms ease, opacity 160ms ease, transform 160ms ease;
 }
 
 .quickbuy-step-action:hover:not(:disabled) {
   background:
-    linear-gradient(180deg, #1b1b20, #121216);
+    linear-gradient(180deg, #32343d, #24262e);
   transform: translateY(-1px);
 }
 
@@ -289,10 +437,10 @@ const handleSearchInput = (event: Event) => {
   border: 0;
   border-radius: 0.75rem;
   background:
-    linear-gradient(180deg, #080809, var(--quickbuy-control-surface, #0a0a0c));
+    linear-gradient(180deg, var(--quickbuy-control-surface-raised, #171920), var(--quickbuy-control-surface, #0d0f14));
   box-shadow:
-    inset 0 0 0 1px rgba(0, 0, 0, 0.72),
-    inset 0 -18px 36px rgba(0, 0, 0, 0.26);
+    inset 0 1px 0 rgba(255, 255, 255, 0.035),
+    inset 0 -18px 36px rgba(0, 0, 0, 0.2);
 }
 
 .quickbuy-product-grid-stage {
@@ -326,16 +474,16 @@ const handleSearchInput = (event: Event) => {
   border-radius: 999px;
   color: white;
   background:
-    linear-gradient(180deg, var(--quickbuy-control-surface-raised, #151519), #101013);
+    linear-gradient(180deg, var(--quickbuy-control-surface-raised, #171920), var(--quickbuy-control-surface, #0d0f14));
   box-shadow:
     0 6px 16px rgba(0, 0, 0, 0.25),
-    inset 0 0 0 1px rgba(0, 0, 0, 0.7);
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04);
   transition: background-color 160ms ease, opacity 160ms ease, transform 160ms ease;
 }
 
 .quickbuy-product-grid-arrow:hover:not(:disabled) {
   background:
-    linear-gradient(180deg, #1e1e24, #131318);
+    linear-gradient(180deg, #32343d, #24262e);
   transform: translateY(-1px);
 }
 
@@ -371,8 +519,10 @@ const handleSearchInput = (event: Event) => {
   border: 0;
   border-radius: 999px;
   color: rgba(255, 255, 255, 0.78);
-  background: var(--quickbuy-control-surface-raised, #151519);
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.68);
+  background: var(--quickbuy-control-surface-raised, #171920);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.035),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.36);
   font-size: 0.6875rem;
   font-weight: 700;
 }
@@ -380,6 +530,26 @@ const handleSearchInput = (event: Event) => {
 @media (max-width: 767px) {
   .quickbuy-selection-panel {
     min-height: 15rem;
+  }
+
+  .quickbuy-step-actions {
+    display: none;
+  }
+
+  .quickbuy-panel-heading-row {
+    min-height: 2.5rem;
+    gap: 0.375rem;
+  }
+
+  .quickbuy-panel-heading-row > h2 {
+    flex-basis: 4.75rem;
+    font-size: 0.95rem;
+  }
+
+  .quickbuy-panel-heading-row > .quickbuy-search-input {
+    width: min(14rem, calc(100% - 7rem));
+    padding: 0.55rem 0.625rem;
+    font-size: 0.75rem;
   }
 
   .quickbuy-product-grid-shell {

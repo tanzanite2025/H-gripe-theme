@@ -303,6 +303,10 @@ func (s *GoogleMerchantService) buildOffer(input GoogleMerchantOfferInput) (*mer
 	if feedLabel == "" {
 		feedLabel = targetCountry
 	}
+	brand := strings.TrimSpace(input.Brand)
+	if brand == "" && item.Brand != nil {
+		brand = strings.TrimSpace(item.Brand.Name)
+	}
 
 	return &merchant.GoogleMerchantOffer{
 		ProductID:             item.ID,
@@ -310,7 +314,7 @@ func (s *GoogleMerchantService) buildOffer(input GoogleMerchantOfferInput) (*mer
 		OfferID:               offerID,
 		Title:                 strings.TrimSpace(input.Title),
 		Description:           strings.TrimSpace(input.Description),
-		Brand:                 strings.TrimSpace(input.Brand),
+		Brand:                 brand,
 		Condition:             condition,
 		GoogleProductCategory: strings.TrimSpace(input.GoogleProductCategory),
 		GTIN:                  gtin,

@@ -79,7 +79,16 @@ export const trackingRegistrationStatusName = (status?: string | null): string =
 })[status || ''] || '未建立'
 
 export const formatDate = (dateString?: string | number | Date | null): string => dateString ? new Date(dateString).toLocaleString('zh-CN') : '-'
-export const formatMoney = (amount?: number | string | null): string => Number(amount || 0).toFixed(2)
+export const formatMoney = (amount?: number | string | null, currency?: string | null): string => {
+  const value = Number(amount || 0)
+  const normalizedCurrency = String(currency || '').trim().toUpperCase()
+  if (!normalizedCurrency) return value.toFixed(2)
+  try {
+    return new Intl.NumberFormat('zh-CN', { style: 'currency', currency: normalizedCurrency }).format(value)
+  } catch {
+    return `${normalizedCurrency} ${value.toFixed(2)}`
+  }
+}
 export const shippingName = (address?: ShippingAddressLike | null): string => [address?.first_name, address?.last_name].filter(Boolean).join(' ') || '-'
 export const shippingAddressLine = (address?: ShippingAddressLike | null): string => [address?.address_1, address?.address_2].filter(Boolean).join(' ') || '-'
 

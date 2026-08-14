@@ -41,6 +41,7 @@
       :form="typeForm"
       :errors="formErrors"
       :submitting="submitting"
+      :system-managed="typeForm.is_system_managed"
       :is-product-specific-select="isProductSpecificSelect"
       :language-options="languageOptions"
       @submit="submitForm"
@@ -117,6 +118,7 @@ let nextSpecKey = 1
 
 const typeForm = reactive<ProductTypeForm>({
   id: null,
+  is_system_managed: false,
   name: '',
   slug: '',
   description: '',
@@ -158,12 +160,6 @@ const isProductSpecificSelect = (spec: ProductTypeSpecForm): boolean => (
   Boolean(String(spec.optionsText || '').trim()) &&
   productSpecificSpecPattern.test(`${spec.name || ''} ${spec.slug || ''}`)
 )
-const usesProductScopedOptions = (spec: ProductTypeSpecForm): boolean => (
-  spec.field_type === 'select' &&
-  spec.is_variant_option &&
-  (spec.presentation === 'color' || spec.presentation === 'image')
-)
-
 const fieldTypes: ProductSpecFieldType[] = ['text', 'number', 'select', 'boolean']
 const normalizeFieldType = (fieldType?: string | null): ProductSpecFieldType => (
   fieldTypes.includes(fieldType as ProductSpecFieldType) ? fieldType as ProductSpecFieldType : 'text'
@@ -285,6 +281,7 @@ const showEditDialog = (type: ProductTypeRecord): void => {
   showSpecAdvanced.value = false
   Object.assign(typeForm, {
     id: type.id,
+    is_system_managed: Boolean(type.is_system_managed),
     name: type.name || '',
     slug: type.slug || '',
     description: type.description || '',
@@ -358,9 +355,6 @@ const validateForm = (): boolean => {
     if (!slugPattern.test(slug)) formErrors[`spec:${index}:slug`] = '请输入有效的字段标识'
     else if (seenSlugs.has(slug)) formErrors[`spec:${index}:slug`] = '字段标识不能重复'
     else seenSlugs.add(slug)
-    if (spec.field_type === 'select' && specOptions(spec).length === 0 && !usesProductScopedOptions(spec)) {
-      formErrors[`spec:${index}:options`] = '请至少填写一个选项'
-    }
   })
 
   if (Object.keys(formErrors).length > 0) {

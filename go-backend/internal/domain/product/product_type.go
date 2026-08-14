@@ -11,6 +11,7 @@ type ProductType struct {
 	ImageURL          string                   `gorm:"type:text;not null;default:''" json:"image_url,omitempty"`
 	SortOrder         int                      `gorm:"default:0;not null" json:"sort_order"`
 	IsEnabled         bool                     `gorm:"default:true;not null" json:"is_enabled"`
+	IsSystemManaged   bool                     `gorm:"default:false;not null;index" json:"is_system_managed"`
 	Translations      []ProductTypeTranslation `gorm:"foreignKey:ProductTypeID;constraint:OnDelete:CASCADE" json:"translations,omitempty"`
 	SpecDefinitions   []SpecDefinition         `gorm:"foreignKey:ProductTypeID" json:"spec_definitions,omitempty"`
 	CreatedAt         time.Time                `json:"created_at"`

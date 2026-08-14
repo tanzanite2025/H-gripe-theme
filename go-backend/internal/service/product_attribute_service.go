@@ -2,7 +2,9 @@ package service
 
 import (
 	"commerce-platform/internal/domain/product"
+	"commerce-platform/internal/repository"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"regexp"
 	"sort"
@@ -133,6 +135,34 @@ func (s *ProductService) UpdateProductTypeImage(id uint, mediaAssetID *uint, ima
 		return nil, fmt.Errorf("%w: image URL is required when an image asset is selected", ErrProductTypeInvalid)
 	}
 
+	if s.txManager != nil {
+		err := s.txManager.WithinTx(func(tx repository.TxRepositories) error {
+			if tx.Product == nil {
+				return errors.New("transactional product repository is not configured")
+			}
+			if err := tx.Product.UpdateProductTypeImage(id, mediaAssetID, imageURL); err != nil {
+				if err == gorm.ErrRecordNotFound {
+					return ErrProductTypeNotFound
+				}
+				return err
+			}
+			cacheEvents, _, err := s.transactionalProductPublishers(tx.Outbox)
+			if err != nil {
+				return err
+			}
+			return cacheEvents.EnqueueProductCacheInvalidateByProductTypeID(id, "admin product type image update")
+		})
+		if err != nil {
+			return nil, err
+		}
+		s.InvalidateProductCacheByProductTypeID(id)
+		s.invalidateStorefrontHTMLCache("admin product type image update")
+		if previousAssetID != nil && (mediaAssetID == nil || *mediaAssetID != *previousAssetID) {
+			s.cleanupProductTypeImageAsset(*previousAssetID, "product type image replacement or removal")
+		}
+		return s.productRepo.FindProductTypeByID(id)
+	}
+
 	if err := s.productRepo.UpdateProductTypeImage(id, mediaAssetID, imageURL); err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, ErrProductTypeNotFound
@@ -183,6 +213,15 @@ func (s *ProductService) UpdateProductType(id uint, input ProductTypeInput) (*pr
 	}
 	productType.ID = id
 
+	if existing.IsSystemManaged {
+		if productType.Slug != existing.Slug {
+			return nil, fmt.Errorf("%w: product type slug cannot be changed", ErrProductTypeSystemManaged)
+		}
+		if err := validateSystemManagedProductType(existing, productType); err != nil {
+			return nil, err
+		}
+	}
+
 	exists, err := s.productRepo.ProductTypeSlugExists(productType.Slug, id)
 	if err != nil {
 		return nil, err
@@ -214,6 +253,31 @@ func (s *ProductService) UpdateProductType(id uint, input ProductTypeInput) (*pr
 	}
 	sort.Slice(removedIDs, func(i, j int) bool { return removedIDs[i] < removedIDs[j] })
 
+	if s.txManager != nil {
+		err := s.txManager.WithinTx(func(tx repository.TxRepositories) error {
+			if tx.Product == nil {
+				return errors.New("transactional product repository is not configured")
+			}
+			if err := tx.Product.UpdateProductType(productType, removedIDs, input.UpdateTranslations); err != nil {
+				if err == gorm.ErrRecordNotFound {
+					return ErrProductTypeNotFound
+				}
+				return err
+			}
+			cacheEvents, _, err := s.transactionalProductPublishers(tx.Outbox)
+			if err != nil {
+				return err
+			}
+			return cacheEvents.EnqueueProductCacheInvalidateByProductTypeID(id, "admin product type update")
+		})
+		if err != nil {
+			return nil, err
+		}
+		s.InvalidateProductCacheByProductTypeID(id)
+		s.invalidateStorefrontHTMLCache("admin product type update")
+		return s.productRepo.FindProductTypeByID(id)
+	}
+
 	if err := s.productRepo.UpdateProductType(productType, removedIDs, input.UpdateTranslations); err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, ErrProductTypeNotFound
@@ -233,6 +297,37 @@ func (s *ProductService) DeleteProductType(id uint) error {
 	if err != nil {
 		return err
 	}
+	if existing.IsSystemManaged {
+		return fmt.Errorf("%w: product type cannot be deleted", ErrProductTypeSystemManaged)
+	}
+	if s.txManager != nil {
+		err := s.txManager.WithinTx(func(tx repository.TxRepositories) error {
+			if tx.Product == nil {
+				return errors.New("transactional product repository is not configured")
+			}
+			if err := tx.Product.DeleteProductType(id); err != nil {
+				if err == gorm.ErrRecordNotFound {
+					return ErrProductTypeNotFound
+				}
+				return err
+			}
+			cacheEvents, _, err := s.transactionalProductPublishers(tx.Outbox)
+			if err != nil {
+				return err
+			}
+			return cacheEvents.EnqueueProductCacheInvalidateByProductTypeID(id, "admin product type delete")
+		})
+		if err != nil {
+			return err
+		}
+		s.InvalidateProductCacheByProductTypeID(id)
+		s.invalidateStorefrontHTMLCache("admin product type delete")
+		if existing.ImageMediaAssetID != nil {
+			s.cleanupProductTypeImageAsset(*existing.ImageMediaAssetID, "product type deletion")
+		}
+		return nil
+	}
+
 	s.InvalidateProductCacheByProductTypeID(id)
 	if err := s.enqueueProductCacheInvalidationByProductTypeID(id, "admin product type delete"); err != nil {
 		return err
@@ -248,6 +343,57 @@ func (s *ProductService) DeleteProductType(id uint) error {
 		s.cleanupProductTypeImageAsset(*existing.ImageMediaAssetID, "product type deletion")
 	}
 	return nil
+}
+
+func validateSystemManagedProductType(existing, next *product.ProductType) error {
+	if existing == nil || next == nil {
+		return fmt.Errorf("%w: product type is missing", ErrProductTypeSystemManaged)
+	}
+
+	definitionsByID := make(map[uint]product.SpecDefinition, len(next.SpecDefinitions))
+	for _, definition := range next.SpecDefinitions {
+		if definition.ID == 0 {
+			return fmt.Errorf("%w: system product type fields cannot be added", ErrProductTypeSystemManaged)
+		}
+		definitionsByID[definition.ID] = definition
+	}
+	if len(definitionsByID) != len(existing.SpecDefinitions) {
+		return fmt.Errorf("%w: system product type fields cannot be added or removed", ErrProductTypeSystemManaged)
+	}
+
+	for _, previous := range existing.SpecDefinitions {
+		current, ok := definitionsByID[previous.ID]
+		if !ok {
+			return fmt.Errorf("%w: system product type fields cannot be added or removed", ErrProductTypeSystemManaged)
+		}
+		if previous.Slug != current.Slug ||
+			previous.FieldType != current.FieldType ||
+			previous.Presentation != current.Presentation ||
+			previous.IsFilterable != current.IsFilterable ||
+			previous.IsVariantOption != current.IsVariantOption ||
+			normalizedSpecOptionsForComparison(previous.Options) != normalizedSpecOptionsForComparison(current.Options) ||
+			previous.Validation != current.Validation {
+			return fmt.Errorf("%w: field %q structure is immutable", ErrProductTypeSystemManaged, previous.Slug)
+		}
+	}
+	return nil
+}
+
+func normalizedSpecOptionsForComparison(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return "[]"
+	}
+
+	var values []string
+	if err := json.Unmarshal([]byte(raw), &values); err != nil {
+		return raw
+	}
+	encoded, err := json.Marshal(values)
+	if err != nil {
+		return raw
+	}
+	return string(encoded)
 }
 
 func normalizeProductTypeInput(input ProductTypeInput) (*product.ProductType, error) {
@@ -382,16 +528,8 @@ func normalizeSpecDefinition(input ProductSpecDefinitionInput, index int) (produ
 			seen[value] = struct{}{}
 			cleaned = append(cleaned, value)
 		}
-		if len(cleaned) == 0 {
-			if input.IsVariantOption && presentation != "text" {
-				options = "[]"
-			} else {
-				return product.SpecDefinition{}, fmt.Errorf("%w: select specification %q requires options", ErrProductSpecInvalid, slug)
-			}
-		} else {
-			encoded, _ := json.Marshal(cleaned)
-			options = string(encoded)
-		}
+		encoded, _ := json.Marshal(cleaned)
+		options = string(encoded)
 	} else {
 		options = ""
 	}

@@ -1,7 +1,7 @@
 import type { Component } from 'vue'
 import type { DashboardTone, SalesChartPoint } from '@/lib/dashboardPresentation'
 
-export type DashboardActivity = 'orders' | 'users' | 'tickets'
+export type DashboardActivity = 'orders' | 'users'
 export type DashboardMetricToneClass = (tone?: string | null) => string
 export type DashboardNumberFormatter = (value?: number | string | null) => string
 export type DashboardLabelResolver = (value?: string | null) => string
@@ -40,13 +40,6 @@ export interface DashboardRecentUser {
   role?: string | null
 }
 
-export interface DashboardRecentTicket {
-  id: number | string
-  subject?: string
-  category?: string
-  status?: string | null
-}
-
 export interface DashboardStats {
   orders?: {
     total?: number
@@ -57,10 +50,6 @@ export interface DashboardStats {
   users?: {
     total?: number
     today?: number
-  }
-  tickets?: {
-    open?: number
-    total?: number
   }
 }
 

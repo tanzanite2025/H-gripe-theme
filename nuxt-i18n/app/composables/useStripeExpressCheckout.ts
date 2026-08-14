@@ -13,7 +13,8 @@ import {
   type StripeError,
 } from '@stripe/stripe-js'
 import { shallowRef, ref } from 'vue'
-import { storefrontFontFamily, storefrontFontStylesheetUrl } from '~/utils/storefrontFonts'
+import { useI18n } from '#imports'
+import { storefrontFontFamilyForLocale, storefrontFontStylesheetUrl } from '~/utils/storefrontFonts'
 
 export interface StripeExpressCheckoutLineItem {
   name: string
@@ -141,6 +142,7 @@ const toExpressCheckoutAvailablePaymentMethods = (
 })
 
 export function useStripeExpressCheckout() {
+  const { locale } = useI18n()
   const stripe = shallowRef<Stripe | null>(null)
   const elements = shallowRef<StripeElements | null>(null)
   const expressCheckoutElement = shallowRef<StripeExpressCheckoutElement | null>(null)
@@ -204,7 +206,7 @@ export function useStripeExpressCheckout() {
           colorText: '#f5f7f8',
           colorDanger: '#fb7185',
           borderRadius: '10px',
-          fontFamily: storefrontFontFamily,
+          fontFamily: storefrontFontFamilyForLocale(locale.value),
         },
       },
     })

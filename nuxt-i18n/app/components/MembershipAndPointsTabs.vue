@@ -256,13 +256,17 @@ import { useI18n, useLocalePath } from '#imports'
 import { useMembership } from '~/composables/useMembership'
 import BadgeAvatar from '~/components/BadgeAvatar.vue'
 import { usePageSubNavigationTab } from '~/composables/usePageSubNavigationTab'
-import { membershipAndPointsTabs, type MembershipTabId } from '~/utils/pageSubNavigation'
+import {
+  membershipAndPointsTabs,
+  type MembershipTabId,
+  type PageSubNavigationTab,
+} from '~/utils/pageSubNavigation'
 
 const props = defineProps<{ variant?: 'page' | 'modal' }>()
 
 const isModal = computed(() => props.variant === 'modal')
 
-const tabs = membershipAndPointsTabs
+const tabs: readonly PageSubNavigationTab[] = membershipAndPointsTabs
 const isMembershipTabId = (id: string): id is MembershipTabId => {
   return membershipAndPointsTabs.some(tab => tab.id === id)
 }

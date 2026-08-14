@@ -2,15 +2,15 @@
   <div class="flex h-full min-h-0 flex-col gap-3 overflow-hidden">
     <AdminPageHeader
       class="shrink-0"
-      title="支付风控"
-      description="Stripe / PayPal 拒付监控、证据预览与人工支付复核队列"
+      :title="currentTabPresentation.title"
+      :description="currentTabPresentation.description"
     >
       <template #actions>
-        <Button variant="outline" size="sm" class="rounded-full font-black uppercase tracking-wider" @click="paypalInvoicePreviewOpen = true">
+        <Button v-if="activeTab === 'disputes'" variant="outline" size="sm" class="rounded-full font-black uppercase tracking-wider" @click="paypalInvoicePreviewOpen = true">
           <FileText class="size-3.5" />
           发票样式
         </Button>
-        <Button variant="outline" size="sm" class="rounded-full font-black uppercase tracking-wider" :disabled="currentLoading" @click="refreshCurrent">
+        <Button v-if="activeTab !== 'controls'" variant="outline" size="sm" class="rounded-full font-black uppercase tracking-wider" :disabled="currentLoading" @click="refreshCurrent">
           <RefreshCw :class="['size-3.5', { 'animate-spin': currentLoading }]" />
           刷新
         </Button>
@@ -18,8 +18,9 @@
     </AdminPageHeader>
     <PayPalInvoicePreviewDialog v-model:open="paypalInvoicePreviewOpen" />
 
-    <AdminStatsGrid class="shrink-0" :items="statItems" />
+    <AdminStatsGrid v-if="activeTab !== 'controls'" class="shrink-0" :items="statItems" />
     <PaymentRiskSummaryPanel
+      v-if="activeTab !== 'controls'"
       class="shrink-0"
       :reports="riskSummary.reports"
       :enabled="riskSummary.enabled"
@@ -369,6 +370,74 @@
                 </div>
 
                 <section class="rounded-2xl border border-dashed border-border/80 p-3">
+                  <div class="flex items-start justify-between gap-3">
+                    <div>
+                      <h3 class="text-xs font-black uppercase tracking-widest text-muted-foreground">7 项拒付证据链</h3>
+                      <p class="mt-1 text-[11px] text-muted-foreground">只显示系统实际找到的证据；“尚未接入”不会被当成已具备。</p>
+                    </div>
+                    <span class="shrink-0 rounded-full bg-muted px-2.5 py-1 text-[11px] font-black">
+                      {{ disputeEvidence.evidence_checklist?.ready_count || 0 }}/{{ disputeEvidence.evidence_checklist?.total_count || 7 }} 已核验
+                    </span>
+                  </div>
+                  <div class="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-muted-foreground">
+                    <span>需人工：{{ disputeEvidence.evidence_checklist?.manual_required_count || 0 }}</span>
+                    <span>缺失：{{ disputeEvidence.evidence_checklist?.missing_count || 0 }}</span>
+                    <span>尚未接入：{{ disputeEvidence.evidence_checklist?.unavailable_count || 0 }}</span>
+                    <span v-if="disputeEvidence.evidence_checklist?.complete" class="font-black text-emerald-700">7 项完整</span>
+                    <span v-else class="font-black text-amber-700">证据链未完整</span>
+                  </div>
+
+                  <div class="mt-3 space-y-2">
+                    <div
+                      v-for="item in (disputeEvidence.evidence_checklist?.items || [])"
+                      :key="item.key"
+                      class="rounded-xl border p-3"
+                      :class="evidenceStatusClass(item.status)"
+                    >
+                      <div class="flex items-start justify-between gap-2">
+                        <div class="min-w-0">
+                          <div class="flex flex-wrap items-center gap-2">
+                            <span class="text-xs font-black">{{ item.title }}</span>
+                            <span v-if="item.required" class="text-[10px] font-black uppercase tracking-widest opacity-70">必需</span>
+                          </div>
+                          <div class="mt-1 text-[10px] font-mono opacity-70">{{ item.provider_field || '-' }}</div>
+                        </div>
+                        <span class="shrink-0 rounded-full px-2 py-1 text-[10px] font-black" :class="evidenceStatusPillClass(item.status)">
+                          {{ evidenceStatusLabel(item.status) }}
+                        </span>
+                      </div>
+                      <p class="mt-2 text-xs leading-5">{{ item.summary || '-' }}</p>
+                      <div class="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[10px] opacity-75">
+                        <span>来源：{{ item.source || '-' }}</span>
+                        <span>时间：{{ formatDate(item.observed_at) }}</span>
+                      </div>
+                      <p v-if="item.missing_reason" class="mt-2 text-[11px] font-semibold leading-5 opacity-80">
+                        缺失说明：{{ item.missing_reason }}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div
+                    v-if="disputeEvidence.submission_check"
+                    class="mt-3 rounded-xl border p-3 text-xs"
+                    :class="disputeEvidence.submission_check.ready ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-800' : 'border-rose-500/30 bg-rose-500/10 text-rose-800'"
+                  >
+                    <div class="font-black">
+                      {{ disputeEvidence.submission_check.ready ? '渠道硬性提交条件已满足' : '当前不能提交：存在渠道硬性阻断' }}
+                    </div>
+                    <p v-if="disputeEvidence.submission_check.ready" class="mt-1 leading-5">
+                      这不代表发卡行或支付渠道必然支持申诉结果；仍需确认下方人工补充项和证据文本。
+                    </p>
+                    <div v-else class="mt-1 space-y-1">
+                      <p v-for="blocker in disputeEvidence.submission_check.blockers || []" :key="blocker">• {{ blocker }}</p>
+                    </div>
+                    <p v-if="disputeEvidence.submission_check.warnings?.length" class="mt-2 leading-5 opacity-80">
+                      尚未完整的非阻断项：{{ disputeEvidence.submission_check.warnings.length }} 项
+                    </p>
+                  </div>
+                </section>
+
+                <section class="rounded-2xl border border-dashed border-border/80 p-3">
                   <h3 class="mb-2 text-xs font-black uppercase tracking-widest text-muted-foreground">{{ disputeEvidencePreviewTitle }}</h3>
                   <dl class="space-y-2 text-xs">
                     <div v-for="field in evidenceFields" :key="field.key" class="grid gap-1">
@@ -411,24 +480,47 @@
 
                 <section v-if="disputeProvider === 'stripe'" class="space-y-3 rounded-2xl border border-dashed border-border/80 p-3">
                   <h3 class="text-xs font-black uppercase tracking-widest text-muted-foreground">Stripe File IDs</h3>
-                  <Input v-model="evidenceForm.shipping_documentation_file_id" placeholder="Shipping documentation File ID (file_...)" />
-                  <Input v-model="evidenceForm.customer_communication_file_id" placeholder="Customer communication File ID (file_...)" />
-                  <Input v-model="evidenceForm.receipt_file_id" placeholder="Receipt File ID (file_...)" />
-                  <Input v-model="evidenceForm.uncategorized_file_id" placeholder="Uncategorized File ID (file_...)" />
+                  <p class="text-[11px] leading-5 text-muted-foreground">这些是 Stripe 外部文件引用，不是系统自动生成的凭证。上传后把 File ID 填入对应项。</p>
+                  <label class="grid gap-1">
+                    <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">履约 / POD</span>
+                    <Input v-model="evidenceForm.shipping_documentation_file_id" placeholder="Shipping documentation File ID (file_...)" />
+                  </label>
+                  <label class="grid gap-1">
+                    <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">客服沟通</span>
+                    <Input v-model="evidenceForm.customer_communication_file_id" placeholder="Customer communication File ID (file_...)" />
+                  </label>
+                  <label class="grid gap-1">
+                    <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">采购收据</span>
+                    <Input v-model="evidenceForm.receipt_file_id" placeholder="Receipt File ID (file_...)" />
+                  </label>
+                  <label class="grid gap-1">
+                    <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">其他说明文件</span>
+                    <Input v-model="evidenceForm.uncategorized_file_id" placeholder="Uncategorized File ID (file_...)" />
+                  </label>
                   <Textarea v-model="evidenceForm.additional_statement" rows="4" placeholder="人工补充说明，可选" />
                   <label class="flex items-start gap-2 text-xs font-bold text-muted-foreground">
                     <input v-model="evidenceForm.confirm" type="checkbox" class="mt-0.5 size-4 accent-primary" />
-                    我已检查证据文本、物流凭证和沟通记录，确认提交给 Stripe。
+                    我已检查 7 项证据链、缺失说明、证据文本和附件，确认提交给 Stripe。
                   </label>
-                  <Button class="w-full rounded-full font-black uppercase tracking-wider" :disabled="!disputeEvidence.can_submit || !evidenceForm.confirm || evidenceSubmitting" @click="submitDisputeEvidence">
+                  <Button class="w-full rounded-full font-black uppercase tracking-wider" :disabled="!disputeEvidence.submission_check?.ready || !evidenceForm.confirm || evidenceSubmitting" @click="submitDisputeEvidence">
                     <Send class="size-4" />
                     提交证据到 Stripe
                   </Button>
                 </section>
 
                 <section v-else class="space-y-3 rounded-2xl border border-dashed border-border/80 p-3">
-                  <h3 class="text-xs font-black uppercase tracking-widest text-muted-foreground">PayPal Invoice PDF</h3>
-                  <Button class="w-full rounded-full font-black uppercase tracking-wider" @click="openPayPalInvoicePDF">
+                  <h3 class="text-xs font-black uppercase tracking-widest text-muted-foreground">PayPal 手动提交</h3>
+                  <p class="text-[11px] leading-5 text-muted-foreground">系统会自动生成商业发票 PDF；提交前仍需核对物流妥投、沟通记录和 7 项证据链状态。</p>
+                  <Textarea v-model="evidenceForm.additional_statement" rows="4" placeholder="人工补充说明，可选" />
+                  <label class="flex items-start gap-2 text-xs font-bold text-muted-foreground">
+                    <input v-model="evidenceForm.confirm" type="checkbox" class="mt-0.5 size-4 accent-primary" />
+                    我已检查 7 项证据链和 PayPal 证据说明，确认提交。
+                  </label>
+                  <Button class="w-full rounded-full font-black uppercase tracking-wider" :disabled="!disputeEvidence.submission_check?.ready || !evidenceForm.confirm || evidenceSubmitting" @click="submitDisputeEvidence">
+                    <Send class="size-4" />
+                    手动提交证据到 PayPal
+                  </Button>
+                  <Button variant="outline" class="w-full rounded-full font-black uppercase tracking-wider" @click="openPayPalInvoicePDF">
                     <FileText class="size-4" />
                     打开 PDF 预览
                   </Button>
@@ -528,6 +620,25 @@ const activeTab = useRouteTab({
     controls: 'PaymentRiskControls',
   },
 })
+const tabPresentation: Record<string, { title: string; description: string }> = {
+  reviews: {
+    title: '人工复核',
+    description: '人工判断支付风险，仅记录处理结论，不直接改变支付渠道状态。',
+  },
+  refunds: {
+    title: '退款建议',
+    description: '处理风险事件生成的退款建议，并在确认后创建或执行退款。',
+  },
+  disputes: {
+    title: '拒付处理',
+    description: '管理 Stripe / PayPal 拒付、证据预览、提交期限和商业发票。',
+  },
+  controls: {
+    title: '人工保护',
+    description: '临时强制 3DS 或暂停新支付，所有保护规则都带有过期时间和审计记录。',
+  },
+}
+const currentTabPresentation = computed(() => tabPresentation[activeTab.value] || tabPresentation.reviews)
 const reviewLoading = ref(false)
 const refundRecommendationLoading = ref(false)
 const disputeLoading = ref(false)
@@ -571,15 +682,26 @@ const currentLoading = computed(() => {
   if (summaryLoading.value) return true
   if (activeTab.value === 'disputes') return disputeLoading.value
   if (activeTab.value === 'refunds') return refundRecommendationLoading.value
+  if (activeTab.value === 'controls') return false
   return reviewLoading.value
 })
 const pendingReviews = computed(() => reviews.value.filter((item) => item.status === 'pending').length)
+const approvedReviews = computed(() => reviews.value.filter((item) => item.status === 'approved').length)
+const rejectedReviews = computed(() => reviews.value.filter((item) => ['rejected', 'cancelled'].includes(item.status)).length)
 const pendingRefundRecommendations = computed(() => refundRecommendations.value.filter((item) => item.status === 'pending').length)
+const acceptedRefundRecommendations = computed(() => refundRecommendations.value.filter((item) => item.status === 'accepted').length)
+const refundRecommendationsDueSoon = computed(() => refundRecommendations.value.filter((item) => item.status === 'pending' && isEvidenceSoon(item.review_by)).length)
 const urgentDisputes = computed(() => {
   const urgentStatuses = disputeProvider.value === 'paypal'
     ? ['WAITING_FOR_SELLER_RESPONSE', 'OPEN']
     : ['needs_response', 'warning_needs_response']
   return disputes.value.filter((item) => urgentStatuses.includes(item.status)).length
+})
+const resolvedDisputes = computed(() => {
+  const resolvedStatuses = disputeProvider.value === 'paypal'
+    ? ['RESOLVED']
+    : ['won', 'lost', 'closed']
+  return disputes.value.filter((item) => resolvedStatuses.includes(item.status)).length
 })
 const disputeProviderLabel = computed(() => disputeProvider.value === 'paypal' ? 'PayPal' : 'Stripe')
 const disputeWorkbenchSubtitle = computed(() => (
@@ -593,13 +715,30 @@ const disputeStatusOptions = computed(() => (
     ? ['WAITING_FOR_SELLER_RESPONSE', 'OPEN', 'UNDER_REVIEW', 'WAITING_FOR_BUYER_RESPONSE', 'RESOLVED']
     : ['needs_response', 'warning_needs_response', 'under_review', 'won', 'lost', 'closed']
 ))
-const statItems = computed(() => [
-  { key: 'reviews', label: '复核记录', value: reviewPagination.total || reviews.value.length, icon: CreditCard, tone: 'gray' },
-  { key: 'pending', label: '待复核', value: pendingReviews.value, icon: AlertTriangle, tone: pendingReviews.value ? 'amber' : 'green' },
-  { key: 'refund_recommendations', label: '退款建议', value: pendingRefundRecommendations.value, icon: AlertTriangle, tone: pendingRefundRecommendations.value ? 'amber' : 'green' },
-  { key: 'disputes', label: '拒付记录', value: disputePagination.total || disputes.value.length, icon: ShieldAlert, tone: 'gray' },
-  { key: 'urgent', label: '需响应拒付', value: urgentDisputes.value, icon: AlertTriangle, tone: urgentDisputes.value ? 'coral' : 'green' },
-])
+const statItems = computed(() => {
+  if (activeTab.value === 'refunds') {
+    return [
+      { key: 'refunds', label: '退款建议', value: refundRecommendationPagination.total || refundRecommendations.value.length, icon: CreditCard, tone: 'gray' },
+      { key: 'pending_refunds', label: '待处理', value: pendingRefundRecommendations.value, icon: AlertTriangle, tone: pendingRefundRecommendations.value ? 'amber' : 'green' },
+      { key: 'accepted_refunds', label: '已采纳', value: acceptedRefundRecommendations.value, icon: CheckCircle2, tone: acceptedRefundRecommendations.value ? 'green' : 'gray' },
+      { key: 'due_soon', label: '即将到期', value: refundRecommendationsDueSoon.value, icon: AlertTriangle, tone: refundRecommendationsDueSoon.value ? 'coral' : 'green' },
+    ]
+  }
+  if (activeTab.value === 'disputes') {
+    return [
+      { key: 'disputes', label: `${disputeProviderLabel.value} 拒付`, value: disputePagination.total || disputes.value.length, icon: ShieldAlert, tone: 'gray' },
+      { key: 'urgent_disputes', label: '需立即响应', value: urgentDisputes.value, icon: AlertTriangle, tone: urgentDisputes.value ? 'coral' : 'green' },
+      { key: 'resolved_disputes', label: '已结束', value: resolvedDisputes.value, icon: CheckCircle2, tone: resolvedDisputes.value ? 'green' : 'gray' },
+      { key: 'provider', label: '当前渠道', value: disputeProviderLabel.value, icon: CreditCard, tone: 'gray' },
+    ]
+  }
+  return [
+    { key: 'reviews', label: '复核记录', value: reviewPagination.total || reviews.value.length, icon: CreditCard, tone: 'gray' },
+    { key: 'pending_reviews', label: '待复核', value: pendingReviews.value, icon: AlertTriangle, tone: pendingReviews.value ? 'amber' : 'green' },
+    { key: 'approved_reviews', label: '已通过', value: approvedReviews.value, icon: CheckCircle2, tone: approvedReviews.value ? 'green' : 'gray' },
+    { key: 'rejected_reviews', label: '已拒绝/取消', value: rejectedReviews.value, icon: AlertTriangle, tone: rejectedReviews.value ? 'coral' : 'gray' },
+  ]
+})
 const evidenceFields = computed(() => {
   const evidence = disputeEvidence.value?.evidence || {}
   if (disputeProvider.value === 'paypal') {
@@ -630,6 +769,24 @@ const evidenceFields = computed(() => {
     { key: 'uncategorized_text', label: 'Uncategorized Text', value: evidence.uncategorized_text },
   ]
 })
+const evidenceStatusLabel = (status) => ({
+  ready: '已核验',
+  missing: '缺失',
+  manual_required: '需人工补充',
+  unavailable: '尚未接入',
+}[status] || status || '未知')
+const evidenceStatusClass = (status) => ({
+  ready: 'border-emerald-500/25 bg-emerald-500/5 text-emerald-900',
+  missing: 'border-rose-500/25 bg-rose-500/5 text-rose-900',
+  manual_required: 'border-amber-500/25 bg-amber-500/5 text-amber-900',
+  unavailable: 'border-slate-500/25 bg-slate-500/5 text-slate-800',
+}[status] || 'border-border bg-muted/20 text-foreground')
+const evidenceStatusPillClass = (status) => ({
+  ready: 'bg-emerald-600/15 text-emerald-700',
+  missing: 'bg-rose-600/15 text-rose-700',
+  manual_required: 'bg-amber-600/15 text-amber-700',
+  unavailable: 'bg-slate-600/15 text-slate-700',
+}[status] || 'bg-muted text-muted-foreground')
 const executedRefundIds = ref(new Set())
 const selectedRefundExecutionCompleted = computed(() => {
   const refundID = selectedRefundRecommendation.value?.linked_refund_id
@@ -744,10 +901,12 @@ const fetchRiskSummary = async () => {
 const fetchActiveTabData = () => {
   if (activeTab.value === 'disputes') return fetchDisputes()
   if (activeTab.value === 'refunds') return fetchRefundRecommendations()
+  if (activeTab.value === 'controls') return Promise.resolve()
   return fetchReviews()
 }
 
 const refreshCurrent = async () => {
+  if (activeTab.value === 'controls') return
   await Promise.all([
     fetchRiskSummary(),
     fetchActiveTabData(),
@@ -902,20 +1061,28 @@ const createManualReview = async () => {
 }
 
 const submitDisputeEvidence = async () => {
-  if (!selectedDispute.value || disputeProvider.value !== 'stripe') return
+  if (!selectedDispute.value) return
   evidenceSubmitting.value = true
   try {
-    await paymentRiskApi.submitDisputeEvidence(selectedDispute.value.id, {
-      confirm: evidenceForm.confirm,
-      submit: true,
-      include_customer_communication: evidenceForm.include_customer_communication,
-      shipping_documentation_file_id: evidenceForm.shipping_documentation_file_id.trim(),
-      customer_communication_file_id: evidenceForm.customer_communication_file_id.trim(),
-      receipt_file_id: evidenceForm.receipt_file_id.trim(),
-      uncategorized_file_id: evidenceForm.uncategorized_file_id.trim(),
-      additional_statement: evidenceForm.additional_statement.trim(),
-    })
-    toast.success('Stripe 拒付证据已提交')
+    if (disputeProvider.value === 'paypal') {
+      await paymentRiskApi.submitPayPalDisputeEvidence(selectedDispute.value.id, {
+        confirm: evidenceForm.confirm,
+        additional_statement: evidenceForm.additional_statement.trim(),
+      })
+      toast.success('PayPal 拒付证据已提交')
+    } else {
+      await paymentRiskApi.submitDisputeEvidence(selectedDispute.value.id, {
+        confirm: evidenceForm.confirm,
+        submit: true,
+        include_customer_communication: evidenceForm.include_customer_communication,
+        shipping_documentation_file_id: evidenceForm.shipping_documentation_file_id.trim(),
+        customer_communication_file_id: evidenceForm.customer_communication_file_id.trim(),
+        receipt_file_id: evidenceForm.receipt_file_id.trim(),
+        uncategorized_file_id: evidenceForm.uncategorized_file_id.trim(),
+        additional_statement: evidenceForm.additional_statement.trim(),
+      })
+      toast.success('Stripe 拒付证据已提交')
+    }
     evidenceForm.confirm = false
     await fetchDisputes()
     await fetchDisputeEvidence()
@@ -924,12 +1091,7 @@ const submitDisputeEvidence = async () => {
   }
 }
 
-onMounted(() => {
-  fetchRiskSummary()
-  fetchReviews()
-  fetchRefundRecommendations()
-  fetchDisputes()
-})
+onMounted(refreshCurrent)
 
 watch(activeTab, refreshCurrent)
 watch(disputeProvider, () => {

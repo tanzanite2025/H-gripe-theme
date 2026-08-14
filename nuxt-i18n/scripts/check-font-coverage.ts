@@ -9,7 +9,33 @@ const appDir = path.join(projectDir, 'app')
 const localeDir = path.join(appDir, 'i18n', 'locales')
 const fontCssPath = path.join(appDir, 'assets', 'css', 'tailwind.css')
 const stripeFontCssPath = path.join(projectDir, 'public', 'fonts', 'storefront-system.css')
-const fontFamily = 'StorefrontSystem'
+const baseFontFamily = 'StorefrontSystem'
+const allowedFontFamilies = new Set([
+  baseFontFamily,
+  'StorefrontSystemArabic',
+  'StorefrontSystemDevanagari',
+  'StorefrontSystemLatinAccents',
+  'StorefrontSystemThai',
+])
+const localeFontStacks = new Map<string, string[]>([
+  ['ar', ['StorefrontSystemArabic', baseFontFamily]],
+  ['hi', ['StorefrontSystemDevanagari', baseFontFamily]],
+  ['th', ['StorefrontSystemThai', baseFontFamily]],
+  ['da', ['StorefrontSystemLatinAccents', baseFontFamily]],
+  ['de', ['StorefrontSystemLatinAccents', baseFontFamily]],
+  ['es', ['StorefrontSystemLatinAccents', baseFontFamily]],
+  ['fr', ['StorefrontSystemLatinAccents', baseFontFamily]],
+  ['pt', ['StorefrontSystemLatinAccents', baseFontFamily]],
+  ['sv', ['StorefrontSystemLatinAccents', baseFontFamily]],
+  ['tr', ['StorefrontSystemLatinAccents', baseFontFamily]],
+])
+const expectedFontFamilyByFilename = new Map<string, string>([
+  ['StorefrontSystem-CN-Latin.woff2', baseFontFamily],
+  ['StorefrontSystem-Arabic.woff2', 'StorefrontSystemArabic'],
+  ['StorefrontSystem-Devanagari.woff2', 'StorefrontSystemDevanagari'],
+  ['StorefrontSystem-Latin-Accents.woff2', 'StorefrontSystemLatinAccents'],
+  ['StorefrontSystem-Thai.woff2', 'StorefrontSystemThai'],
+])
 
 interface UnicodeRange {
   start: number
@@ -17,6 +43,7 @@ interface UnicodeRange {
 }
 
 interface StorefrontFontFace {
+  fontFamily: string
   fontPath: string
   fontWeight: string
   fontStyle: string
@@ -63,7 +90,7 @@ function parseUnicodeRanges(declaration: string): UnicodeRange[] | null {
     .map((value) => {
       const range = value.match(/^U\+([0-9A-F?]{1,6})(?:-([0-9A-F]{1,6}))?$/)
       if (!range) {
-        throw new Error(`Unsupported unicode-range value in ${fontFamily}: ${value}`)
+        throw new Error(`Unsupported unicode-range value in storefront fonts: ${value}`)
       }
 
       const start = Number.parseInt(range[1].replace(/\?/g, '0'), 16)
@@ -82,8 +109,9 @@ function findStorefrontFontFaces(cssPath: string): StorefrontFontFace[] {
 
   for (const match of css.matchAll(fontFacePattern)) {
     const declaration = match[1]
+    const fontFamily = readCssProperty(declaration, 'font-family').replace(/^['"]|['"]$/g, '')
 
-    if (!new RegExp(`font-family\\s*:\\s*['"]${fontFamily}['"]`, 'i').test(declaration)) {
+    if (!allowedFontFamilies.has(fontFamily)) {
       continue
     }
 
@@ -97,7 +125,15 @@ function findStorefrontFontFaces(cssPath: string): StorefrontFontFace[] {
         throw new Error(`Configured ${fontFamily} file does not exist: ${fontPath}`)
       }
 
+      const expectedFontFamily = expectedFontFamilyByFilename.get(path.basename(fontPath))
+      if (expectedFontFamily && expectedFontFamily !== fontFamily) {
+        throw new Error(
+          `${path.basename(fontPath)} must be declared as ${expectedFontFamily}, not ${fontFamily}.`,
+        )
+      }
+
       fontFaces.push({
+        fontFamily,
         fontPath,
         fontWeight: readCssProperty(declaration, 'font-weight'),
         fontStyle: readCssProperty(declaration, 'font-style'),
@@ -108,7 +144,7 @@ function findStorefrontFontFaces(cssPath: string): StorefrontFontFace[] {
   }
 
   if (fontFaces.length === 0) {
-    throw new Error(`No self-hosted @font-face declarations found for ${fontFamily}.`)
+    throw new Error('No self-hosted storefront @font-face declarations found.')
   }
 
   return fontFaces
@@ -118,7 +154,7 @@ function readCssProperty(declaration: string, property: string): string {
   const value = declaration.match(new RegExp(`${property}\\s*:\\s*([^;]+);?`, 'i'))?.[1]?.trim()
 
   if (!value) {
-    throw new Error(`Missing ${property} in ${fontFamily} @font-face declaration.`)
+    throw new Error(`Missing ${property} in storefront @font-face declaration.`)
   }
 
   return value
@@ -128,6 +164,7 @@ function compareFontFaces(first: StorefrontFontFace[], second: StorefrontFontFac
   return first.length === second.length && first.every((fontFace, index) => {
     const other = second[index]
     return (
+      fontFace.fontFamily === other.fontFamily &&
       fontFace.fontPath === other.fontPath &&
       fontFace.fontWeight === other.fontWeight &&
       fontFace.fontStyle === other.fontStyle &&
@@ -135,6 +172,11 @@ function compareFontFaces(first: StorefrontFontFace[], second: StorefrontFontFac
       JSON.stringify(fontFace.unicodeRanges) === JSON.stringify(other.unicodeRanges)
     )
   })
+}
+
+function fontStackForLocale(localeFile: string): string[] {
+  const localeCode = localeFile.replace(/\.json$/i, '').replace(/_/g, '-').toLowerCase().split('-')[0]
+  return localeFontStacks.get(localeCode) || [baseFontFamily]
 }
 
 function supportsCodePoint(fontFace: StorefrontFontFace, characterSet: Set<number>, codePoint: number): boolean {
@@ -156,7 +198,7 @@ const stripeFontFaces = findStorefrontFontFaces(stripeFontCssPath)
 
 if (!compareFontFaces(storefrontFontFaces, stripeFontFaces)) {
   throw new Error(
-    `Storefront and Stripe ${fontFamily} declarations differ. Keep ${fontCssPath} and ${stripeFontCssPath} aligned.`,
+    `Storefront and Stripe font declarations differ. Keep ${fontCssPath} and ${stripeFontCssPath} aligned.`,
   )
 }
 
@@ -198,7 +240,9 @@ for (const localeFile of fs.readdirSync(localeDir).filter(file => file.endsWith(
   const characters = new Set<number>()
   collectLocaleCharacters(locale, characters)
 
-  const missing = [...characters].filter(codePoint => !storefrontFontFaces.some(fontFace => (
+  const allowedFamilies = new Set(fontStackForLocale(localeFile))
+  const localeFontFaces = storefrontFontFaces.filter(fontFace => allowedFamilies.has(fontFace.fontFamily))
+  const missing = [...characters].filter(codePoint => !localeFontFaces.some(fontFace => (
     supportsCodePoint(fontFace, fontCharacterSets.get(fontFace.fontPath)!, codePoint)
   )))
 
@@ -208,7 +252,7 @@ for (const localeFile of fs.readdirSync(localeDir).filter(file => file.endsWith(
 }
 
 if (missingByLocale.length > 0) {
-  console.error(`${fontFamily} does not cover all enabled locale messages:`)
+  console.error('Storefront font stacks do not cover all enabled locale messages:')
 
   for (const { locale, missing } of missingByLocale) {
     console.error(`- ${locale}: ${missing.length} missing characters; ${formatCharacters(missing)}`)
@@ -217,4 +261,4 @@ if (missingByLocale.length > 0) {
   process.exit(1)
 }
 
-console.log(`${fontFamily} covers all locale messages with ${storefrontFontFaces.length} self-hosted font file(s).`)
+console.log(`Storefront locale font stacks cover all locale messages with ${storefrontFontFaces.length} self-hosted font file(s).`)

@@ -1,11 +1,11 @@
 <template>
 	<div ref="headerRootRef" class="fixed top-0 left-0 w-full z-[900] site-header-root">
 		<div
-			class="site-header-surface relative w-full rounded-none bg-[radial-gradient(circle_at_top_left,rgba(15,23,42,0.96),rgba(15,23,42,1))] backdrop-blur-md shadow-[0_10px_26px_-14px_rgba(0,0,0,0.95)] px-4 py-2 md:px-0 md:py-0"
+			class="site-header-surface relative w-full rounded-none px-4 py-2 md:px-0 md:py-0"
 		>
 			<!-- 桌面端：全宽单层横向导航 -->
 			<div class="hidden md:flex flex-col items-stretch">
-				<div class="site-header-mainbar desktop-header-grid w-full grid grid-cols-[220px_1fr_220px] xl:grid-cols-[280px_1fr_280px] items-center gap-4 px-4 lg:px-8 py-0 min-h-[64px]">
+				<div class="site-header-mainbar desktop-header-grid w-full grid grid-cols-[220px_1fr_220px] xl:grid-cols-[280px_1fr_280px] items-center gap-4 px-4 lg:px-8 py-0 min-h-[64px] bg-[linear-gradient(180deg,#1b1b21_0%,#111116_58%,#0c0c10_100%)] shadow-[0_10px_26px_-14px_rgba(0,0,0,0.95)]">
 
 					<!-- Logo -->
 					<div class="flex items-center justify-start">
@@ -116,7 +116,7 @@
 												<span class="w-[1.2em] inline-block" aria-hidden="true">
 													<img :src="flagSrc(locale)" alt="" class="w-[1.2em] h-[1.2em] block" />
 												</span>
-												<span>{{ locale.name }}</span>
+												<span :lang="locale.iso || locale.code.replace('_', '-')">{{ locale.name }}</span>
 											</button>
 										</div>
 									</div>
@@ -206,6 +206,7 @@
 
 			<!-- 移动端：新版极简双行布局 -->
 			<div class="md:hidden flex flex-col gap-3">
+				<div class="site-header-mobile-surface -mx-4 -mt-2 flex flex-col gap-3 bg-[linear-gradient(180deg,#1b1b21_0%,#111116_58%,#0c0c10_100%)] px-4 pt-2 pb-2">
 
 				<!-- 第一行：Logo (左) + 工具图标 (右) -->
 				<div class="flex items-center justify-between px-1">
@@ -271,6 +272,7 @@
 						/>
 					</button>
 				</nav>
+				</div>
 
 				<!-- 第三行：面包屑 -->
 				<nav
@@ -1485,7 +1487,7 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 }
 
 .site-header-brand--desktop .site-header-brand__image {
-	max-height: 2.55rem;
+	max-height: 3.4rem;
 }
 
 .site-header-brand--mobile {
@@ -1497,7 +1499,7 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 }
 
 .site-header-brand--mobile .site-header-brand__image {
-	max-height: 2.2rem;
+	max-height: 2.9rem;
 }
 
 @media (min-width: 390px) and (max-width: 767px) {
@@ -1511,13 +1513,6 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 		width: 100%;
 		max-width: none;
 		transform: none;
-	}
-
-	.site-header-surface {
-		border-radius: 0 !important;
-		border-bottom: 1px solid rgba(148, 163, 184, 0.08);
-		background: rgba(0, 0, 0, 0.96) !important;
-		box-shadow: none !important;
 	}
 
 	.site-header-mainbar {
@@ -2234,11 +2229,6 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 
 	.site-header-membership-trigger {
 		margin-left: 0;
-	}
-
-	.site-header-surface {
-		background: linear-gradient(180deg, #17191c 0%, #101216 52%, #0d111b 100%) !important;
-		border-bottom: 0;
 	}
 
 	.site-header-mobile-nav {

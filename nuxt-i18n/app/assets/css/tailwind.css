@@ -2,8 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Self-hosted storefront font. Every enabled locale must be covered by
-   StorefrontSystem font files; do not add system or generic fallbacks. */
+/* Self-hosted storefront font. Default and English content use this family only. */
 @font-face {
   font-family: 'StorefrontSystem';
   src: url('/fonts/StorefrontSystem-CN-Latin.woff2') format('woff2');
@@ -14,7 +13,7 @@
 
 /* Noto Sans Devanagari, self-hosted from the official OFL release. */
 @font-face {
-  font-family: 'StorefrontSystem';
+  font-family: 'StorefrontSystemDevanagari';
   src: url('/fonts/StorefrontSystem-Devanagari.woff2') format('woff2');
   font-weight: 100 900;
   font-style: normal;
@@ -22,9 +21,9 @@
   unicode-range: U+0900-097F, U+1CD0-1CF9, U+200C-200D, U+20A8, U+20B9, U+20F0, U+25CC, U+A830-A839, U+A8E0-A8FF, U+11B00-11B09;
 }
 
-/* Noto Sans, only for Latin glyphs absent from Maple UI. */
+/* Noto Sans, self-hosted only for Latin-accent locales whose glyphs are absent from Maple UI. */
 @font-face {
-  font-family: 'StorefrontSystem';
+  font-family: 'StorefrontSystemLatinAccents';
   src: url('/fonts/StorefrontSystem-Latin-Accents.woff2') format('woff2');
   font-weight: 100 900;
   font-style: normal;
@@ -34,7 +33,7 @@
 
 /* Noto Sans Arabic, self-hosted from the official OFL release. */
 @font-face {
-  font-family: 'StorefrontSystem';
+  font-family: 'StorefrontSystemArabic';
   src: url('/fonts/StorefrontSystem-Arabic.woff2') format('woff2');
   font-weight: 100 900;
   font-style: normal;
@@ -44,7 +43,7 @@
 
 /* Noto Sans Thai, self-hosted from the official OFL release. */
 @font-face {
-  font-family: 'StorefrontSystem';
+  font-family: 'StorefrontSystemThai';
   src: url('/fonts/StorefrontSystem-Thai.woff2') format('woff2');
   font-weight: 100 900;
   font-style: normal;
@@ -55,6 +54,10 @@
 @layer base {
   :root {
     --tz-font-system: 'StorefrontSystem';
+    --tz-font-latin-accents: 'StorefrontSystemLatinAccents', 'StorefrontSystem';
+    --tz-font-arabic: 'StorefrontSystemArabic', 'StorefrontSystem';
+    --tz-font-devanagari: 'StorefrontSystemDevanagari', 'StorefrontSystem';
+    --tz-font-thai: 'StorefrontSystemThai', 'StorefrontSystem';
     /*
       Frontend typography ladder.
       Keep user-facing page titles, section titles and embedded FAQ content
@@ -118,6 +121,50 @@
     @apply overflow-x-hidden overscroll-x-none bg-black;
     font-family: var(--tz-font-system);
     color: var(--tz-text-primary);
+  }
+
+  html:lang(da),
+  html:lang(de),
+  html:lang(es),
+  html:lang(fr),
+  html:lang(pt),
+  html:lang(sv),
+  html:lang(tr) {
+    --tz-font-system: var(--tz-font-latin-accents);
+  }
+
+  html:lang(ar) {
+    --tz-font-system: var(--tz-font-arabic);
+  }
+
+  html:lang(hi) {
+    --tz-font-system: var(--tz-font-devanagari);
+  }
+
+  html:lang(th) {
+    --tz-font-system: var(--tz-font-thai);
+  }
+
+  :lang(da),
+  :lang(de),
+  :lang(es),
+  :lang(fr),
+  :lang(pt),
+  :lang(sv),
+  :lang(tr) {
+    font-family: var(--tz-font-latin-accents);
+  }
+
+  :lang(ar) {
+    font-family: var(--tz-font-arabic);
+  }
+
+  :lang(hi) {
+    font-family: var(--tz-font-devanagari);
+  }
+
+  :lang(th) {
+    font-family: var(--tz-font-thai);
   }
 
   button,

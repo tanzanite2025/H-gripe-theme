@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"commerce-platform/internal/domain/order"
+	"commerce-platform/internal/pkg/email"
 	"commerce-platform/internal/pkg/ordernumber"
 	"commerce-platform/internal/repository"
 )
@@ -13,6 +14,8 @@ type OrderService struct {
 	orderRepo          *repository.OrderRepository
 	checkout           *CheckoutService
 	shipping           *ShippingService
+	payment            *PaymentService
+	emailSender        email.EmailService
 	numberGenerator    *ordernumber.Generator
 	productCache       ProductCacheInvalidator
 	productCacheEvents ProductCacheEventPublisher
@@ -60,6 +63,20 @@ func (s *OrderService) ConfigureProductCacheEventPublisher(publisher ProductCach
 		return
 	}
 	s.productCacheEvents = publisher
+}
+
+func (s *OrderService) ConfigurePaymentDisputeAnalysis(payment *PaymentService) {
+	if s == nil {
+		return
+	}
+	s.payment = payment
+}
+
+func (s *OrderService) ConfigureAdminEmailSender(sender email.EmailService) {
+	if s == nil {
+		return
+	}
+	s.emailSender = sender
 }
 
 type OrderTrackingUpdateInput struct {

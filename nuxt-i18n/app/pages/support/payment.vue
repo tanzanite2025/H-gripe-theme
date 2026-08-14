@@ -1,19 +1,35 @@
 <template>
-  <div class="support-page">
+  <div class="support-page pb-8">
     <h1 class="sr-only">Payment</h1>
-    <div class="support-intro-banner">
-      <p class="support-intro-banner__text">
-        All pages on this site use HTTPS with an SSL certificate issued by a trusted certificate
-        authority. All payment information is transmitted over encrypted channels to prevent it from
-        being intercepted or tampered with. Actual charges are processed by reputable payment providers.
-        We only receive the payment result and do not store your card number, CVV, or other sensitive data.
-      </p>
-      <div class="support-card__actions support-intro-banner__actions">
+
+    <section class="rounded-2xl bg-[#111116] px-5 py-6 shadow-[0_16px_42px_rgba(0,0,0,0.45)] md:px-8 md:py-8">
+      <div class="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+        <div class="max-w-3xl">
+          <p class="text-xs font-semibold uppercase tracking-[0.18em] text-[#B5FF6D]">
+            Secure payment
+          </p>
+          <h2 class="mt-2 text-xl font-semibold leading-tight text-slate-50 md:text-2xl">
+            Pay with a method you recognize, with protection at every step.
+          </h2>
+          <p class="mt-3 max-w-2xl text-sm leading-7 tz-text-secondary">
+            We support trusted payment providers and verify payment results on the server before an
+            order is treated as paid. Sensitive card details stay with the payment provider instead
+            of being stored by our store.
+          </p>
+        </div>
+
+        <div class="flex shrink-0 items-center gap-3 rounded-xl bg-[#0b0b0e] px-4 py-3 text-sm text-slate-200">
+          <span class="h-2.5 w-2.5 rounded-full bg-[#B5FF6D] shadow-[0_0_14px_rgba(181,255,109,0.75)]" />
+          <span>HTTPS encrypted checkout</span>
+        </div>
+      </div>
+
+      <div class="mt-6 flex flex-wrap gap-3">
         <NuxtLink
           to="/company/ourstory"
           target="_blank"
           rel="noopener"
-          class="premium-button"
+          class="inline-flex items-center justify-center rounded-full bg-[#1a1a20] px-4 py-2.5 text-sm font-semibold text-slate-200 shadow-[0_8px_20px_rgba(0,0,0,0.3)] transition-colors hover:bg-[#24242c] hover:text-white"
         >
           Our Story
         </NuxtLink>
@@ -21,7 +37,7 @@
           to="/support/shipping"
           target="_blank"
           rel="noopener"
-          class="premium-button"
+          class="inline-flex items-center justify-center rounded-full bg-[#1a1a20] px-4 py-2.5 text-sm font-semibold text-slate-200 shadow-[0_8px_20px_rgba(0,0,0,0.3)] transition-colors hover:bg-[#24242c] hover:text-white"
         >
           Shipping instructions
         </NuxtLink>
@@ -29,195 +45,206 @@
           to="/support/test-report"
           target="_blank"
           rel="noopener"
-          class="premium-button"
+          class="inline-flex items-center justify-center rounded-full bg-[#1a1a20] px-4 py-2.5 text-sm font-semibold text-slate-200 shadow-[0_8px_20px_rgba(0,0,0,0.3)] transition-colors hover:bg-[#24242c] hover:text-white"
         >
           Test report
         </NuxtLink>
-        <button type="button" class="premium-button">
-          <span class="support-card__button-icon">📧</span>
-          <span>Send email</span>
-        </button>
       </div>
-    </div>
-
-    <section class="support-section support-section--compact">
-      <h3 class="support-section__title">Product service fee</h3>
-      <article class="support-card">
-        <p class="support-card__body support-card__highlight">
-          Wheel building: $30 USD per wheelset.
-        </p>
-        <p class="support-card__body">
-          If you need to customize the wheel configuration, you can choose the configuration you like in
-          the store, or the complete set of wheel configurations we regularly sell (you can also choose DIY
-          spokes, etc.), or you can make a quick purchase directly from the button at the bottom of the
-          webpage.
-        </p>
-        <div class="support-card__actions">
-          <NuxtLink to="/shop" target="_blank" rel="noopener" class="premium-button">
-            Go Shopping
-          </NuxtLink>
-          <button type="button" class="premium-button support-card__button--primary" @click="openQuickFromPayment">
-            Quickbuy
-          </button>
-        </div>
-      </article>
     </section>
 
-    <QuickBuyModal v-if="quickOpen" :config="null" @close="quickOpen = false" />
+    <section class="mt-10">
+      <div class="mb-5">
+        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-[#B5FF6D]">
+          Supported methods
+        </p>
+        <h2 class="mt-2 text-lg font-semibold text-slate-50 md:text-xl">
+          Choose the payment option shown at checkout
+        </h2>
+        <p class="mt-2 max-w-3xl text-sm leading-7 tz-text-secondary">
+          Payment availability can depend on the order and region. The checkout page is the final
+          source for the methods currently enabled for your purchase.
+        </p>
+      </div>
 
-    <section class="support-section">
-      <h3 class="support-section__title">Supported payment methods</h3>
-      <div class="support-section__grid">
-        <article class="support-card">
-          <h4 class="support-card__title">
-            <span class="support-card__icon">
-              <img src="/icons/payment/default.svg" alt="Credit & debit cards" class="support-card__icon-image" />
-            </span>
-            <span>Credit &amp; debit cards</span>
-          </h4>
-          <p class="support-card__body">
-            We accept major cards such as Visa and MasterCard.
+      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <article class="flex h-full flex-col rounded-2xl bg-[#111116] p-5 shadow-[0_12px_30px_rgba(0,0,0,0.38)]">
+          <div class="flex min-h-10 items-center gap-3">
+            <div class="flex h-10 items-center gap-1 rounded-xl bg-[#17171d] px-2.5">
+              <img src="/icons/payment/visa.svg" alt="Visa" class="h-5 w-auto" />
+              <img src="/icons/payment/mastercard.svg" alt="Mastercard" class="h-5 w-auto" />
+              <img src="/icons/payment/amex.svg" alt="American Express" class="h-5 w-auto" />
+            </div>
+          </div>
+          <h3 class="mt-5 text-base font-semibold text-slate-50">Credit and debit cards</h3>
+          <p class="mt-2 text-sm leading-6 tz-text-secondary">
+            Visa, Mastercard, American Express, and other major cards are processed through Stripe.
           </p>
-          <div class="mt-4 pt-4 border-t border-slate-800/50 flex items-start gap-3">
-             <div class="flex-shrink-0 pt-1">
-                <img src="/icons/payment/stripe.svg?v=4" alt="Stripe" class="h-5 w-auto opacity-80" />
-             </div>
-             <p class="text-xs tz-text-secondary leading-relaxed">
-               Payments are securely processed by <strong>Stripe</strong>. Your payment data is encrypted and secure. We do not store your card details.
-             </p>
+          <div class="mt-auto pt-5">
+            <span class="inline-flex w-fit items-center rounded-full border border-white/10 bg-[#17171d] px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.08em] text-slate-400">
+              Stripe card checkout
+            </span>
           </div>
         </article>
-        <article class="support-card">
-          <h4 class="support-card__title">
-            <span class="support-card__icon">
-              <img src="/icons/payment/paypal.svg?v=4" alt="PayPal or wallet payments" class="support-card__icon-image" />
+
+        <article class="flex h-full flex-col rounded-2xl bg-[#111116] p-5 shadow-[0_12px_30px_rgba(0,0,0,0.38)]">
+          <div class="flex min-h-10 items-center">
+            <div class="flex h-10 items-center rounded-xl bg-[#17171d] px-3">
+              <img src="/icons/payment/paypal.svg?v=4" alt="PayPal" class="h-6 w-auto" />
+            </div>
+          </div>
+          <h3 class="mt-5 text-base font-semibold text-slate-50">PayPal</h3>
+          <p class="mt-2 text-sm leading-6 tz-text-secondary">
+            Continue to PayPal's hosted checkout, approve the payment there, and return to our site
+            after confirmation.
+          </p>
+          <div class="mt-auto pt-5">
+            <span class="inline-flex w-fit items-center rounded-full border border-white/10 bg-[#17171d] px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.08em] text-slate-400">
+              Hosted PayPal checkout
             </span>
-            <span>PayPal or wallet payments</span>
-          </h4>
-          <p class="support-card__body">
-            Where available, you can choose PayPal or a supported wallet at checkout for faster payment
-            and additional buyer protection. You will be redirected back to our site once the payment is
-            approved.
+          </div>
+        </article>
+
+        <article class="flex h-full flex-col rounded-2xl bg-[#111116] p-5 shadow-[0_12px_30px_rgba(0,0,0,0.38)]">
+          <div class="flex min-h-10 items-center">
+            <div class="flex h-10 items-center rounded-xl bg-[#17171d] px-3">
+              <img src="/icons/payment/alipay.svg?v=6" alt="Alipay" class="h-6 w-auto" />
+            </div>
+          </div>
+          <h3 class="mt-5 text-base font-semibold text-slate-50">Alipay</h3>
+          <p class="mt-2 text-sm leading-6 tz-text-secondary">
+            Continue to Alipay to complete payment. The provider notification is verified before the
+            order is marked as paid.
+          </p>
+          <div class="mt-auto pt-5">
+            <span class="inline-flex w-fit items-center rounded-full border border-white/10 bg-[#17171d] px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.08em] text-slate-400">
+              Verified provider notification
+            </span>
+          </div>
+        </article>
+
+        <article class="flex h-full flex-col rounded-2xl bg-[#111116] p-5 shadow-[0_12px_30px_rgba(0,0,0,0.38)]">
+          <div class="flex min-h-10 items-center">
+            <div class="flex h-10 items-center rounded-xl bg-[#17171d] px-3">
+              <img src="/icons/payment/wechatpay.svg?v=4" alt="WeChat Pay" class="h-6 w-auto" />
+            </div>
+          </div>
+          <h3 class="mt-5 text-base font-semibold text-slate-50">WeChat Pay</h3>
+          <p class="mt-2 text-sm leading-6 tz-text-secondary">
+            Scan the WeChat Pay QR code shown during checkout. Payment status is confirmed with the
+            provider before the order is completed.
+          </p>
+          <div class="mt-auto pt-5">
+            <span class="inline-flex w-fit items-center rounded-full border border-white/10 bg-[#17171d] px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.08em] text-slate-400">
+              Native QR payment
+            </span>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="mt-10">
+      <div class="mb-5">
+        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-[#B5FF6D]">
+          Security measures
+        </p>
+        <h2 class="mt-2 text-lg font-semibold text-slate-50 md:text-xl">
+          What we do to protect your payment
+        </h2>
+      </div>
+
+      <div class="grid gap-4 lg:grid-cols-2">
+        <article class="rounded-2xl bg-[#0b0b0e] p-5 shadow-[0_12px_30px_rgba(0,0,0,0.52)] md:p-6">
+          <h3 class="text-base font-semibold text-slate-50">Protection built into the payment flow</h3>
+          <div class="mt-5 grid gap-3">
+            <div class="rounded-xl bg-[#17171d] p-4">
+              <h4 class="text-sm font-semibold text-slate-100">Encrypted connection</h4>
+              <p class="mt-1.5 text-sm leading-6 tz-text-secondary">
+                Every page uses HTTPS/TLS so payment-related data is encrypted while it travels
+                between your browser and our services.
+              </p>
+            </div>
+            <div class="rounded-xl bg-[#17171d] p-4">
+              <h4 class="text-sm font-semibold text-slate-100">Trusted payment providers</h4>
+              <p class="mt-1.5 text-sm leading-6 tz-text-secondary">
+                Card and wallet payment details are entered into Stripe, PayPal, Alipay, or WeChat
+                Pay rather than being handled as raw card data by our storefront.
+              </p>
+            </div>
+            <div class="rounded-xl bg-[#17171d] p-4">
+              <h4 class="text-sm font-semibold text-slate-100">Server-side verification</h4>
+              <p class="mt-1.5 text-sm leading-6 tz-text-secondary">
+                Provider webhooks or verified status checks are matched to the order amount and
+                currency before payment is finalized.
+              </p>
+            </div>
+          </div>
+        </article>
+
+        <article class="rounded-2xl bg-[#0b0b0e] p-5 shadow-[0_12px_30px_rgba(0,0,0,0.52)] md:p-6">
+          <h3 class="text-base font-semibold text-slate-50">What we do not store</h3>
+          <p class="mt-3 text-sm leading-7 tz-text-secondary">
+            We do not store your full card number, CVV, or card PIN. We receive the payment result
+            and the provider reference needed to reconcile your order and provide support.
+          </p>
+
+          <div class="mt-6 rounded-xl bg-[#0b0b0e] p-4">
+            <p class="text-sm font-semibold text-slate-100">Extra verification may appear</p>
+            <p class="mt-1.5 text-sm leading-6 tz-text-secondary">
+              Your bank or card issuer may request 3D Secure verification in its app, by one-time
+              code, or through another identity check. That step is controlled by the issuer and
+              helps prevent unauthorized card use.
+            </p>
+          </div>
+
+          <div class="mt-6 rounded-xl bg-[#17171d] p-4">
+            <p class="text-sm font-semibold text-slate-100">We will never ask for your PIN</p>
+            <p class="mt-1.5 text-sm leading-6 tz-text-secondary">
+              Do not send your full card number, CVV, password, or card PIN through chat or email.
+              Contact support if a payment message looks suspicious.
+            </p>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="mt-10">
+      <div class="mb-5">
+        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-[#B5FF6D]">
+          Common concerns
+        </p>
+        <h2 class="mt-2 text-lg font-semibold text-slate-50 md:text-xl">
+          If something does not look right
+        </h2>
+      </div>
+
+      <div class="grid gap-4 md:grid-cols-2">
+        <article class="rounded-2xl bg-[#111116] p-5 shadow-[0_12px_30px_rgba(0,0,0,0.38)]">
+          <h3 class="text-base font-semibold text-slate-50">Payment declined</h3>
+          <p class="mt-2 text-sm leading-7 tz-text-secondary">
+            Check your billing details and available funds, then try again or choose another method
+            shown at checkout. Your bank or payment provider can usually explain a decline in more
+            detail.
           </p>
         </article>
-        <article class="support-card">
-          <h4 class="support-card__title">
-            <span class="support-card__icon">
-              <img src="/icons/payment/bank-transfer.svg?v=4" alt="Bank transfer" class="support-card__icon-image" />
-            </span>
-            <span>Bank transfer (on request)</span>
-          </h4>
-          <p class="support-card__body">
-            For larger or custom orders we can sometimes arrange payment via bank transfer. Please
-            contact support before placing the order so that we can provide the correct account details
-            and reserve your items.
-          </p>
-        </article>
-        <article class="support-card">
-          <h4 class="support-card__title">
-            <span class="support-card__icon-group">
-              <span class="support-card__icon">
-                <img src="/icons/payment/wechatpay.svg?v=4" alt="WeChat Pay" class="support-card__icon-image" />
-              </span>
-              <span class="support-card__icon">
-                <img src="/icons/payment/alipay.svg?v=6" alt="Alipay" class="support-card__icon-image" />
-              </span>
-            </span>
-            <span>WeChat / Alipay</span>
-          </h4>
-          <p class="support-card__body">
-            If you are a Chinese user, you can also use WeChat or Alipay to pay. You can pay on the
-            payment page, or ask customer service for the payment code.
+        <article class="rounded-2xl bg-[#111116] p-5 shadow-[0_12px_30px_rgba(0,0,0,0.38)]">
+          <h3 class="text-base font-semibold text-slate-50">Payment completed but the page did not update</h3>
+          <p class="mt-2 text-sm leading-7 tz-text-secondary">
+            Do not submit the payment repeatedly. Keep the provider reference or payment receipt
+            and contact support so we can verify the order status on the server.
           </p>
         </article>
       </div>
     </section>
 
-    <section class="support-section">
-      <h3 class="support-section__title">Currencies &amp; charges</h3>
-      <div class="support-section__grid support-section__grid--two">
-        <article class="support-card">
-          <h4 class="support-card__title">Display currency vs. billing currency</h4>
-          <p class="support-card__body">
-            Product prices on the site are usually shown in a reference currency (for example USD).
-            Your bank or payment provider may convert this amount into your local currency using their
-            own exchange rate and possible conversion fees.
-          </p>
-          <p class="support-card__body">
-            Depending on your bank or payment provider, additional currency conversion or processing charges may apply. These charges are set by your provider and are not collected by us.
-          </p>
-        </article>
-        <article class="support-card">
-          <h4 class="support-card__title">Taxes &amp; import duties</h4>
-          <p class="support-card__body">
-            Depending on your shipping country, local VAT or import duties may apply. These charges
-            are handled according to the shipping option shown at checkout. Please review the order
-            summary carefully before confirming payment.
-          </p>
-        </article>
-      </div>
-    </section>
-
-    <section class="support-section">
-      <h3 class="support-section__title">When is my payment captured?</h3>
-      <ul class="support-list">
-        <li class="support-list__item">
-          <strong>Card &amp; wallet payments</strong> — the authorization is created when you confirm the
-          order. The final capture normally happens when the order is accepted and prepared for
-          shipment.
-        </li>
-        <li class="support-list__item">
-          <strong>Bank transfer</strong> — we will start processing your order after the funds have been
-          received and matched to your order reference.
-        </li>
-        <li class="support-list__item">
-          If an order cannot be fulfilled, the payment authorization will be voided or refunded
-          according to your original payment method.
-        </li>
-      </ul>
-    </section>
-
-    <section class="support-section">
-      <h3 class="support-section__title">Troubleshooting common payment issues</h3>
-      <div class="support-section__grid support-section__grid--two">
-        <article class="support-card">
-          <h4 class="support-card__title">Payment was declined</h4>
-          <p class="support-card__body">
-            If your card or wallet is declined, please check that your billing details match your bank
-            records, ensure that sufficient funds are available, and try again. In many cases your bank
-            can provide more detail via their app or customer service.
-          </p>
-        </article>
-        <article class="support-card">
-          <h4 class="support-card__title">Charged but order not created</h4>
-          <p class="support-card__body">
-            On rare occasions a network issue can interrupt the redirect back to our site after
-            payment. If you see a charge but no order in your account, please contact support with
-            your payment reference so that we can investigate.
-          </p>
-        </article>
-        <article class="support-card">
-          <h4 class="support-card__title">Multiple charges</h4>
-          <p class="support-card__body">
-            If you attempted payment several times, your bank may show multiple pending
-            authorizations. Normally, any unused authorizations are released automatically after a
-            short period. If this does not happen, please contact your bank or our support team.
-          </p>
-        </article>
-      </div>
-    </section>
-
-    <section class="support-section">
-      <h3 class="support-section__title">Need help with a payment?</h3>
-      <p class="support-section__note">
-        If you are unsure whether a payment was successful, or if you notice any unusual activity on
-        your account, please stop using that payment method and contact us together with a recent
-        statement or payment reference. Our support team will never ask for your full card number or
-        card PIN.
+    <section class="mt-10 rounded-2xl bg-[#111116] p-5 text-center shadow-[0_12px_30px_rgba(0,0,0,0.38)] md:p-7">
+      <h2 class="text-lg font-semibold text-slate-50">Need help with a payment?</h2>
+      <p class="mx-auto mt-2 max-w-2xl text-sm leading-7 tz-text-secondary">
+        Contact us with your order number or provider reference. Please do not include your full
+        card number, CVV, password, or PIN.
       </p>
     </section>
 
-    <section class="support-section">
+    <section class="mt-10">
       <UserFeedbackThread
         threadKey="support-payment"
         title="Share your feedback about payment &amp; billing"
@@ -227,8 +254,6 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import QuickBuyModal from '@/components/QuickBuy.vue'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
 
 definePageMeta({
@@ -238,191 +263,4 @@ definePageMeta({
 useHead({
   title: 'Payment',
 })
-
-const quickOpen = ref(false)
-
-const openQuickFromPayment = () => {
-  quickOpen.value = true
-  if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('ui:popup-open', { detail: { id: 'payment-quick' } }))
-  }
-}
 </script>
-
-<style scoped>
-.support-page__title {
-  margin: 0 0 0.75rem;
-  font-size: var(--tz-type-page-title);
-  line-height: 1.18;
-  font-weight: 600;
-  color: var(--tz-text-primary);
-}
-
-.support-page__intro {
-  margin: 0 0 1.5rem;
-  font-size: 0.95rem;
-  color: var(--tz-text-secondary);
-}
-
-.support-intro-banner {
-  margin: 0 0 1.25rem;
-  padding: 1.5rem;
-  border-radius: 1rem;
-  background: var(--tz-card-surface);
-  border: none;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
-}
-
-.support-intro-banner__text {
-  margin: 0;
-  font-size: 0.9rem;
-  line-height: 1.6;
-  color: var(--tz-text-secondary);
-}
-
-.support-section {
-  margin-top: 2rem;
-}
-
-.support-section__title {
-  margin: 0 0 1rem;
-  font-size: var(--tz-type-section-title);
-  line-height: 1.35;
-  font-weight: 700;
-  color: var(--tz-text-primary);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  text-align: center;
-}
-
-.support-section__grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 1.5rem;
-}
-
-.support-section__grid--two {
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-}
-
-/* Premium Card Styling */
-.support-card {
-  border-radius: 1rem;
-  background: var(--tz-card-surface);
-  border: none;
-  padding: 1.5rem;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.support-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.8);
-}
-
-.support-card__title {
-  margin: 0 0 0.75rem;
-  font-size: var(--tz-type-card-title);
-  line-height: 1.35;
-  font-weight: 700;
-  color: #f1f5f9;
-  display: flex;
-  align-items: center;
-}
-
-.support-card__icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-start;
-  width: auto;
-  height: auto;
-  background: transparent;
-  border: none;
-  padding: 0;
-  margin-right: 0.75rem;
-}
-
-.support-card__icon-image {
-  width: 2rem;
-  height: 2rem;
-  object-fit: contain;
-}
-
-.support-card__icon-image + .support-card__icon-image {
-  margin-left: 0.25rem;
-}
-
-.support-card__icon-group {
-  display: inline-flex;
-  align-items: center;
-}
-
-.support-card__icon-group .support-card__icon {
-  margin-right: 0.25rem;
-}
-
-.support-card__body {
-  margin: 0 0 0.5rem 0;
-  font-size: 0.95rem;
-  line-height: 1.6;
-  color: var(--tz-text-secondary);
-}
-
-.support-card__highlight {
-  color: #B5FF6D; /* Teal for highlights instead of amber */
-  font-weight: 600;
-}
-
-.support-card__actions {
-  margin-top: 1.5rem;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-}
-
-
-
-.support-card__button-icon {
-  margin-right: 0.4rem;
-  font-size: 1rem;
-}
-
-.support-card__button--primary {
-  background: linear-gradient(135deg, #B5FF6D 0%, #3b82f6 100%);
-  color: #fff;
-  border: none;
-  box-shadow: 0 4px 12px rgba(181, 255, 109, 0.3);
-}
-
-.support-card__button--primary:hover {
-  box-shadow: 0 6px 16px rgba(181, 255, 109, 0.5);
-  transform: translateY(-1px);
-}
-
-.support-list {
-  margin: 0;
-  padding-left: 1.25rem;
-  font-size: 0.95rem;
-  color: var(--tz-text-secondary);
-}
-
-.support-list__item + .support-list__item {
-  margin-top: 0.5rem;
-}
-
-.support-section__note {
-  margin: 0;
-  font-size: 0.95rem;
-  line-height: 1.6;
-  color: var(--tz-text-secondary);
-  text-align: center;
-  max-width: 800px;
-  margin: 0 auto;
-}
-
-@media (min-width: 768px) {
-  .support-section {
-    margin-top: 3rem;
-  }
-}
-</style>

@@ -2,7 +2,6 @@ package service
 
 import (
 	"commerce-platform/internal/domain/order"
-	"commerce-platform/internal/domain/ticket"
 	"commerce-platform/internal/domain/user"
 	"commerce-platform/internal/repository"
 	"time"
@@ -11,20 +10,17 @@ import (
 type DashboardService struct {
 	orderRepo        *repository.OrderRepository
 	userRepo         *repository.UserRepository
-	ticketRepo       *repository.TicketRepository
 	subscriptionRepo *repository.SubscriptionRepository
 }
 
 func NewDashboardService(
 	orderRepo *repository.OrderRepository,
 	userRepo *repository.UserRepository,
-	ticketRepo *repository.TicketRepository,
 	subscriptionRepo *repository.SubscriptionRepository,
 ) *DashboardService {
 	return &DashboardService{
 		orderRepo:        orderRepo,
 		userRepo:         userRepo,
-		ticketRepo:       ticketRepo,
 		subscriptionRepo: subscriptionRepo,
 	}
 }
@@ -47,11 +43,6 @@ func (s *DashboardService) GetStats() map[string]interface{} {
 		todayUsers = 0
 	}
 
-	ticketStats, err := s.ticketRepo.GetStats()
-	if err != nil {
-		ticketStats = make(map[string]interface{})
-	}
-
 	subscriptionStats, err := s.subscriptionRepo.GetStats()
 	if err != nil {
 		subscriptionStats = make(map[string]interface{})
@@ -70,11 +61,6 @@ func (s *DashboardService) GetStats() map[string]interface{} {
 		"users": map[string]interface{}{
 			"total": totalUsers,
 			"today": todayUsers,
-		},
-		"tickets": map[string]interface{}{
-			"total":   ticketStats["total"],
-			"open":    ticketStats["open"],
-			"pending": ticketStats["pending"],
 		},
 		"subscriptions": map[string]interface{}{
 			"total":  subscriptionStats["total"],
@@ -100,10 +86,6 @@ func (s *DashboardService) GetRecentUsers(limit int) ([]*user.UserResponse, erro
 	}
 
 	return responses, nil
-}
-
-func (s *DashboardService) GetRecentTickets(limit int) ([]ticket.Ticket, error) {
-	return s.ticketRepo.FindRecent(limit)
 }
 
 func (s *DashboardService) GetSalesChart(days int) (map[string]interface{}, error) {

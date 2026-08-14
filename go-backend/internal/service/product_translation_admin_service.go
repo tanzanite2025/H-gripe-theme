@@ -111,6 +111,7 @@ func (s *ProductService) CopyAdminProductTranslation(id uint, targetLocale strin
 	parentID := rootID
 	target := &product.Product{
 		ProductTypeID:        source.ProductTypeID,
+		BrandID:              source.BrandID,
 		ShippingTemplateID:   source.ShippingTemplateID,
 		AfterSalesTemplateID: copyProductInformationTemplateID(source.AfterSalesTemplate, source.AfterSalesTemplateID, locale),
 		PackagingTemplateID:  copyProductInformationTemplateID(source.PackagingTemplate, source.PackagingTemplateID, locale),

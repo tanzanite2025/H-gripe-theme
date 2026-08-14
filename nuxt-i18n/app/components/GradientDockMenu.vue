@@ -1,6 +1,6 @@
 <template>
   <!-- Dock 菜单容器 (统一胶囊风格) -->
-  <div class="dock-bar fixed inset-x-0 bottom-0 w-full z-[101] pointer-events-auto transition-all duration-300">
+  <div class="dock-bar fixed inset-x-0 bottom-0 w-full z-[101] pointer-events-auto transition-all duration-300 bg-[linear-gradient(180deg,#0c0c10_0%,#111116_42%,#1a1a20_100%)]">
     <div class="dock-surface mx-auto w-full md:max-w-[500px] rounded-none px-1 py-2.5 md:px-4 md:py-3 flex items-center justify-between transition-all duration-300">
       
       <!-- 1. Menu (Sidebar) -->
@@ -310,19 +310,13 @@ watchEffect(() => {
 <style scoped>
 .dock-bar {
   min-height: var(--tz-bottom-dock-height, 4.5rem);
-  background: rgba(17, 17, 22, 0.78);
-  background: color-mix(in srgb, var(--tz-card-surface) 78%, transparent);
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  -webkit-backdrop-filter: blur(18px) saturate(120%);
-  backdrop-filter: blur(18px) saturate(120%);
-  box-shadow: 0 -12px 36px rgba(0, 0, 0, 0.18);
+  box-shadow:
+    0 -12px 32px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.035);
 }
 
 .dock-surface {
   max-width: min(100%, 500px);
-  background: transparent;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
 }
 
 .dock-quick-buy-button {
@@ -468,7 +462,6 @@ watchEffect(() => {
 
 @media (max-width: 767px) {
   .dock-surface {
-    background: transparent !important;
     padding-bottom: max(0.625rem, calc(0.625rem + var(--tz-safe-area-bottom, 0px)));
   }
 

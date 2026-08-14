@@ -14,6 +14,7 @@ const DefaultPriceCurrency = "USD"
 type Product struct {
 	ID                   uint                        `gorm:"primarykey" json:"id"`
 	ProductTypeID        *uint                       `gorm:"index" json:"product_type_id"`
+	BrandID              *uint                       `gorm:"index" json:"brand_id,omitempty"`
 	ShippingTemplateID   *uint                       `gorm:"index" json:"shipping_template_id"`
 	AfterSalesTemplateID *uint                       `gorm:"index" json:"after_sales_template_id"`
 	PackagingTemplateID  *uint                       `gorm:"index" json:"packaging_template_id"`
@@ -36,6 +37,7 @@ type Product struct {
 	MetaDesc             string                      `gorm:"type:text" json:"meta_description"`
 	Media                []ProductMedia              `gorm:"foreignKey:ProductID" json:"media,omitempty"`
 	ProductType          *ProductType                `gorm:"foreignKey:ProductTypeID" json:"product_type,omitempty"`
+	Brand                *ProductBrand               `gorm:"foreignKey:BrandID;constraint:OnDelete:RESTRICT" json:"brand,omitempty"`
 	AfterSalesTemplate   *ProductInformationTemplate `gorm:"foreignKey:AfterSalesTemplateID;constraint:OnDelete:SET NULL" json:"after_sales_template,omitempty"`
 	PackagingTemplate    *ProductInformationTemplate `gorm:"foreignKey:PackagingTemplateID;constraint:OnDelete:SET NULL" json:"packaging_template,omitempty"`
 	SpecValues           []ProductSpecValue          `gorm:"foreignKey:ProductID" json:"spec_values,omitempty"`

@@ -56,6 +56,29 @@ func TestProductDetailCacheInvalidatorDeletesDependentProductKeys(t *testing.T) 
 	assert.Contains(t, cache.deletedKeys, "product:slug:packing-rim:en")
 }
 
+func TestProductDetailCacheInvalidatorDeletesBrandProductKeys(t *testing.T) {
+	repo := &fakeProductCacheIdentityRepository{
+		productsByBrandID: map[uint][]product.Product{
+			4: {
+				{ID: 21, Slug: "dt-swiss-rim", Locale: "en"},
+				{ID: 22, Slug: "dt-swiss-wheelset", Locale: "zh-CN"},
+			},
+		},
+	}
+	cache := &recordingProductDetailCache{}
+	invalidator := NewProductDetailCacheInvalidator(repo, cache)
+
+	result, err := invalidator.InvalidateProductCacheByBrandIDWithSource(4, productCacheInvalidationSourceDirect)
+
+	require.NoError(t, err)
+	assert.Equal(t, ProductCacheInvalidationResult{Products: 2, Keys: 7}, result)
+	assert.Equal(t, []uint{4}, repo.requestedBrandIDs)
+	assert.Contains(t, cache.deletedKeys, "product:21")
+	assert.Contains(t, cache.deletedKeys, "product:slug:dt-swiss-rim:en")
+	assert.Contains(t, cache.deletedKeys, "product:22")
+	assert.Contains(t, cache.deletedKeys, "product:slug:dt-swiss-wheelset:zh-CN")
+}
+
 type recordingProductDetailCache struct {
 	deletedKeys []string
 }
@@ -68,6 +91,7 @@ func (c *recordingProductDetailCache) Delete(key string) error {
 type recordingProductCacheInvalidator struct {
 	productIDs     []uint
 	productTypeIDs []uint
+	brandIDs       []uint
 	templateIDs    []uint
 }
 
@@ -79,6 +103,10 @@ func (i *recordingProductCacheInvalidator) InvalidateProductCacheByProductTypeID
 	i.productTypeIDs = append(i.productTypeIDs, productTypeID)
 }
 
+func (i *recordingProductCacheInvalidator) InvalidateProductCacheByBrandID(brandID uint) {
+	i.brandIDs = append(i.brandIDs, brandID)
+}
+
 func (i *recordingProductCacheInvalidator) InvalidateProductCacheByInformationTemplateID(templateID uint) {
 	i.templateIDs = append(i.templateIDs, templateID)
 }
@@ -86,9 +114,11 @@ func (i *recordingProductCacheInvalidator) InvalidateProductCacheByInformationTe
 type fakeProductCacheIdentityRepository struct {
 	productsByID            map[uint]product.Product
 	productsByProductTypeID map[uint][]product.Product
+	productsByBrandID       map[uint][]product.Product
 	productsByTemplateID    map[uint][]product.Product
 	requestedIDs            []uint
 	requestedProductTypeIDs []uint
+	requestedBrandIDs       []uint
 	requestedTemplateIDs    []uint
 }
 
@@ -106,6 +136,11 @@ func (r *fakeProductCacheIdentityRepository) FindProductCacheIdentitiesByIDs(ids
 func (r *fakeProductCacheIdentityRepository) FindProductCacheIdentitiesByProductTypeID(productTypeID uint) ([]product.Product, error) {
 	r.requestedProductTypeIDs = append(r.requestedProductTypeIDs, productTypeID)
 	return append([]product.Product(nil), r.productsByProductTypeID[productTypeID]...), nil
+}
+
+func (r *fakeProductCacheIdentityRepository) FindProductCacheIdentitiesByBrandID(brandID uint) ([]product.Product, error) {
+	r.requestedBrandIDs = append(r.requestedBrandIDs, brandID)
+	return append([]product.Product(nil), r.productsByBrandID[brandID]...), nil
 }
 
 func (r *fakeProductCacheIdentityRepository) FindProductCacheIdentitiesByInformationTemplateID(templateID uint) ([]product.Product, error) {

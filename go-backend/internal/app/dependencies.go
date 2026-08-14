@@ -38,6 +38,7 @@ type Repositories struct {
 	User                       *repository.UserRepository
 	Post                       *repository.PostRepository
 	Product                    *repository.ProductRepository
+	ProductBrand               *repository.ProductBrandRepository
 	ProductInformationTemplate *repository.ProductInformationTemplateRepository
 	Cart                       *repository.CartRepository
 	Setting                    *repository.SettingRepository
@@ -64,6 +65,7 @@ type Repositories struct {
 	OpsConnector               *repository.OpsConnectorRepository
 	OpsVPSBinding              *repository.OpsVPSBindingRepository
 	OpsProjectBinding          *repository.OpsProjectBindingRepository
+	OpsDeploymentWorkflow      *repository.OpsDeploymentWorkflowRepository
 	GoogleMerchant             *repository.GoogleMerchantRepository
 	Registration               *repository.RegistrationRepository
 	Audit                      *repository.AuditRepository
@@ -83,8 +85,10 @@ type Repositories struct {
 
 type Services struct {
 	Auth                              *service.AuthService
+	AdminAccountMaintenance           *service.AdminAccountMaintenanceService
 	Post                              *service.PostService
 	Product                           *service.ProductService
+	ProductBrand                      *service.ProductBrandService
 	ProductInformationTemplate        *service.ProductInformationTemplateService
 	Cart                              *service.CartService
 	Setting                           *service.SettingService
@@ -141,6 +145,9 @@ type Services struct {
 	OpsProjectBinding                 *service.OpsProjectBindingService
 	OpsHostingerSync                  *service.OpsHostingerSyncService
 	OpsDeploymentPreflight            *service.OpsDeploymentPreflightService
+	OpsDeploymentHealthCheck          *service.OpsDeploymentHealthCheckService
+	OpsCloudflareCachePurge           *service.OpsCloudflareCachePurgeService
+	OpsDeploymentWorkflow             *service.OpsDeploymentWorkflowService
 	OpsOverview                       *service.OpsOverviewService
 	StorefrontContext                 *service.StorefrontContextService
 	GoogleMerchant                    *service.GoogleMerchantService
@@ -154,6 +161,7 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		User:                       repository.NewUserRepository(db),
 		Post:                       repository.NewPostRepository(db),
 		Product:                    repository.NewProductRepository(db),
+		ProductBrand:               repository.NewProductBrandRepository(db),
 		ProductInformationTemplate: repository.NewProductInformationTemplateRepository(db),
 		Cart:                       repository.NewCartRepository(db),
 		Setting:                    repository.NewSettingRepository(db),
@@ -180,6 +188,7 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		OpsConnector:               repository.NewOpsConnectorRepository(db),
 		OpsVPSBinding:              repository.NewOpsVPSBindingRepository(db),
 		OpsProjectBinding:          repository.NewOpsProjectBindingRepository(db),
+		OpsDeploymentWorkflow:      repository.NewOpsDeploymentWorkflowRepository(db),
 		GoogleMerchant:             repository.NewGoogleMerchantRepository(db),
 		Registration:               repository.NewRegistrationRepository(db),
 		Audit:                      repository.NewAuditRepository(db),
@@ -213,6 +222,7 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 	txManager.ConfigureGiftCardRedemptionRepository(repos.GiftCardRedemption)
 	txManager.ConfigureLoyaltyProgramRepository(repos.LoyaltyProgram)
 	txManager.ConfigureOutboxRepository(repos.Outbox)
+	txManager.ConfigureProductBrandRepository(repos.ProductBrand)
 	txManager.ConfigureOrderAttributionRepository(repos.OrderAttribution)
 	txManager.ConfigureSettingRepository(repos.Setting)
 	txManager.ConfigureExchangeRateRepository(repos.ExchangeRate)
@@ -237,6 +247,7 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 	seoService := service.NewSEOService(settingService)
 	postService := service.NewPostService(repos.Post, redisCache, cfg.Cache.PostTTL)
 	productService := service.NewProductServiceWithCacheOptions(repos.Product, redisCache, cfg.Cache.ProductTTL, cfg.Cache.ProductLockTTL)
+	productBrandService := service.NewProductBrandService(repos.ProductBrand)
 	productInformationTemplateService := service.NewProductInformationTemplateService(repos.ProductInformationTemplate)
 	merchantOutboxPublisher := service.NewMerchantOutboxPublisher(repos.Outbox)
 	productCacheOutboxPublisher := service.NewProductCacheOutboxPublisher(repos.Outbox)
@@ -260,6 +271,20 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		repos.OpsVPSBinding,
 		repos.OpsConnector,
 		repos.OpsDomainBinding,
+	)
+	opsDeploymentHealthCheckService := service.NewOpsDeploymentHealthCheckService(repos.OpsDomainBinding)
+	opsCloudflareCachePurgeService := service.NewOpsCloudflareCachePurgeService(repos.OpsDomainBinding, opsConnectorService)
+	opsDeploymentWorkflowService := service.NewOpsDeploymentWorkflowService(
+		repos.OpsDeploymentWorkflow,
+		repos.OpsProjectBinding,
+		opsDeploymentPreflightService,
+	)
+	opsDeploymentWorkflowService.ConfigureCachePurgeService(opsCloudflareCachePurgeService)
+	opsDeploymentWorkflowService.ConfigureProductionDependencies(
+		repos.OpsVPSBinding,
+		opsConnectorService,
+		opsHostingerSyncService,
+		opsDeploymentHealthCheckService,
 	)
 	storefrontBaseURL := strings.TrimRight(strings.TrimSpace(os.Getenv("STOREFRONT_BASE_URL")), "/")
 	if storefrontBaseURL == "" {
@@ -287,8 +312,10 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 
 	services := Services{
 		Auth:                              service.NewAuthService(repos.User, cfg.JWT, cfg.OAuth),
+		AdminAccountMaintenance:           service.NewAdminAccountMaintenanceService(db),
 		Post:                              postService,
 		Product:                           productService,
+		ProductBrand:                      productBrandService,
 		ProductInformationTemplate:        productInformationTemplateService,
 		Cart:                              service.NewCartService(repos.Cart, repos.Product),
 		Setting:                           settingService,
@@ -309,6 +336,9 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		OpsProjectBinding:                 service.NewOpsProjectBindingService(repos.OpsProjectBinding, repos.OpsVPSBinding, repos.OpsConnector),
 		OpsHostingerSync:                  opsHostingerSyncService,
 		OpsDeploymentPreflight:            opsDeploymentPreflightService,
+		OpsDeploymentHealthCheck:          opsDeploymentHealthCheckService,
+		OpsCloudflareCachePurge:           opsCloudflareCachePurgeService,
+		OpsDeploymentWorkflow:             opsDeploymentWorkflowService,
 		StorefrontContext:                 service.NewStorefrontContextServiceWithMarkets(currencyPolicyService, storefrontMarketService),
 		GoogleMerchant:                    googleMerchantService,
 		FAQ:                               service.NewFAQService(repos.FAQ, storageSvc),
@@ -332,7 +362,7 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 			repos.SuggestionFeedback,
 		),
 		User:      service.NewUserService(repos.User),
-		Dashboard: service.NewDashboardService(repos.Order, repos.User, repos.Ticket, repos.Subscription),
+		Dashboard: service.NewDashboardService(repos.Order, repos.User, repos.Subscription),
 		Audit:     service.NewAuditService(repos.Audit),
 		OpsOverview: service.NewOpsOverviewService(
 			repos.OpsDomainBinding,
@@ -381,8 +411,12 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 	services.Checkout.ConfigureExchangeRateRepository(repos.ExchangeRate)
 	services.Product.ConfigureCurrencyPolicy(currencyPolicyService)
 	services.Product.ConfigureInformationTemplateRepository(repos.ProductInformationTemplate)
+	services.Product.ConfigureProductBrandRepository(repos.ProductBrand)
 	services.Product.ConfigureMerchantEventPublisher(merchantOutboxPublisher)
 	services.Product.ConfigureProductCacheEventPublisher(productCacheOutboxPublisher)
+	services.ProductBrand.ConfigureProductDependencies(repos.Product, productCacheOutboxPublisher, merchantOutboxPublisher)
+	services.Product.ConfigureTxManager(txManager)
+	services.ProductBrand.ConfigureTxManager(txManager)
 	services.ProductInformationTemplate.ConfigureProductCacheInvalidator(services.Product)
 	services.ProductInformationTemplate.ConfigureProductCacheEventPublisher(productCacheOutboxPublisher)
 	services.GoogleMerchant.ConfigureMerchantEventPublisher(merchantOutboxPublisher)
@@ -392,6 +426,7 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 	services.Subscription.ConfigureEmailChallenges(repos.EmailChallenge, cfg.JWT.Secret, emailSvc)
 	services.Subscription.ConfigureEmailBaseURL(storefrontBaseURL)
 	services.Product.SetStorefrontHTMLCacheInvalidator(storefrontHTMLCacheInvalidator)
+	services.ProductBrand.SetStorefrontHTMLCacheInvalidator(storefrontHTMLCacheInvalidator)
 	services.Post.SetStorefrontHTMLCacheInvalidator(storefrontHTMLCacheInvalidator)
 	services.FAQ.SetStorefrontHTMLCacheInvalidator(storefrontHTMLCacheInvalidator)
 	services.FAQ.SetStorefrontContentReleaseNotifier(storefrontContentReleaseNotifier)
@@ -426,6 +461,8 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 	services.Payment.ConfigurePayPalDisputeInvoiceOptions(service.PayPalDisputeInvoiceOptions{
 		AutoAttachPDF: envBoolDefault("PAYPAL_DISPUTE_AUTO_ATTACH_INVOICE_PDF", true),
 	})
+	services.Order.ConfigurePaymentDisputeAnalysis(services.Payment)
+	services.Order.ConfigureAdminEmailSender(emailSvc)
 	services.PaymentThreeDS = service.NewPaymentThreeDSPolicyService(
 		repos.Order,
 		services.VisitorRisk,

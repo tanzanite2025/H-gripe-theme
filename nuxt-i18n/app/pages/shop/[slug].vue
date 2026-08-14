@@ -485,6 +485,14 @@ interface ProductLocalizedRoute {
   slug: string
 }
 
+interface ProductBrand {
+  id: number
+  name: string
+  slug: string
+  logo_url?: string
+  website_url?: string
+}
+
 interface ProductDisplayPrice {
   amount: number
   currency: string
@@ -498,6 +506,7 @@ interface GoProduct {
   id: number
   product_type_id?: number
   product_type?: ProductType
+  brand?: ProductBrand | null
   name: string
   slug: string
   short_description?: string
@@ -1757,7 +1766,7 @@ const productSeoDocument = computed(() => {
   return buildProductSeoDocument(
     {
       name: product.value.name,
-      brand: siteSettings.value.brandTitle,
+      brand: product.value.brand?.name || siteSettings.value.brandTitle,
       metaTitle: product.value.meta_title,
       metaDescription: product.value.meta_description,
       shortDescription: product.value.short_description,

@@ -118,19 +118,23 @@ const (
 
 	PermSystemManage Permission = "system:manage"
 
-	PermOpsDomainView    Permission = "ops:domain:view"
-	PermOpsDomainEdit    Permission = "ops:domain:edit"
-	PermOpsDomainSync    Permission = "ops:domain:sync"
-	PermOpsView          Permission = "ops:view"
-	PermOpsConnectorView Permission = "ops:connector:view"
-	PermOpsConnectorEdit Permission = "ops:connector:edit"
-	PermOpsVPSView       Permission = "ops:vps:view"
-	PermOpsVPSEdit       Permission = "ops:vps:edit"
-	PermOpsVPSSync       Permission = "ops:vps:sync"
-	PermOpsProjectView   Permission = "ops:project:view"
-	PermOpsProjectEdit   Permission = "ops:project:edit"
-	PermOpsProjectSync   Permission = "ops:project:sync"
-	PermOpsDeployView    Permission = "ops:deploy:view"
+	PermOpsDomainView      Permission = "ops:domain:view"
+	PermOpsDomainEdit      Permission = "ops:domain:edit"
+	PermOpsDomainSync      Permission = "ops:domain:sync"
+	PermOpsView            Permission = "ops:view"
+	PermOpsConnectorView   Permission = "ops:connector:view"
+	PermOpsConnectorEdit   Permission = "ops:connector:edit"
+	PermOpsVPSView         Permission = "ops:vps:view"
+	PermOpsVPSEdit         Permission = "ops:vps:edit"
+	PermOpsVPSSync         Permission = "ops:vps:sync"
+	PermOpsProjectView     Permission = "ops:project:view"
+	PermOpsProjectEdit     Permission = "ops:project:edit"
+	PermOpsProjectSync     Permission = "ops:project:sync"
+	PermOpsDeployView      Permission = "ops:deploy:view"
+	PermOpsDeployDryRun    Permission = "ops:deploy:dry_run"
+	PermOpsDeployExecute   Permission = "ops:deploy:execute"
+	PermOpsDeployRollback  Permission = "ops:deploy:rollback"
+	PermOpsWorkflowApprove Permission = "ops:workflow:approve"
 )
 
 // RolePermissions maps each role to the admin permissions it receives.
@@ -156,6 +160,7 @@ var RolePermissions = map[Role][]Permission{
 		PermOpsConnectorView, PermOpsConnectorEdit,
 		PermOpsVPSView, PermOpsVPSEdit, PermOpsVPSSync,
 		PermOpsProjectView, PermOpsProjectEdit, PermOpsProjectSync, PermOpsDeployView,
+		PermOpsDeployDryRun, PermOpsDeployExecute, PermOpsDeployRollback, PermOpsWorkflowApprove,
 	},
 	RoleManager: {
 		PermProductView, PermProductCreate, PermProductEdit, PermProductDelete,
@@ -177,6 +182,7 @@ var RolePermissions = map[Role][]Permission{
 		PermOpsConnectorView, PermOpsConnectorEdit,
 		PermOpsVPSView, PermOpsVPSEdit, PermOpsVPSSync,
 		PermOpsProjectView, PermOpsProjectEdit, PermOpsProjectSync, PermOpsDeployView,
+		PermOpsDeployDryRun, PermOpsDeployExecute, PermOpsDeployRollback, PermOpsWorkflowApprove,
 	},
 	RoleEditor: {
 		PermProductView, PermProductCreate, PermProductEdit,

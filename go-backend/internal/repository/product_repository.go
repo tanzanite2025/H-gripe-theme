@@ -136,7 +136,7 @@ func (r *ProductRepository) FindByID(id uint) (*product.Product, error) {
 
 func (r *ProductRepository) FindByIDContext(ctx context.Context, id uint) (*product.Product, error) {
 	var p product.Product
-	query := r.db.WithContext(ctx).Preload("Media", func(db *gorm.DB) *gorm.DB {
+	query := r.db.WithContext(ctx).Preload("Brand").Preload("Media", func(db *gorm.DB) *gorm.DB {
 		return orderProductMedia(db)
 	}).Preload("ProductType.SpecDefinitions", func(db *gorm.DB) *gorm.DB {
 		return orderSpecDefinitions(db)
@@ -163,7 +163,7 @@ func (r *ProductRepository) FindBySlug(slug, locale string) (*product.Product, e
 
 func (r *ProductRepository) FindBySlugContext(ctx context.Context, slug, locale string) (*product.Product, error) {
 	var p product.Product
-	query := r.db.WithContext(ctx).Preload("Media", func(db *gorm.DB) *gorm.DB {
+	query := r.db.WithContext(ctx).Preload("Brand").Preload("Media", func(db *gorm.DB) *gorm.DB {
 		return orderProductMedia(db)
 	}).Preload("ProductType.SpecDefinitions", func(db *gorm.DB) *gorm.DB {
 		return orderSpecDefinitions(db)
@@ -190,7 +190,7 @@ func (r *ProductRepository) FindBySlugContext(ctx context.Context, slug, locale 
 // FindBySKU 鏍规嵁SKU鏌ユ壘浜у搧
 func (r *ProductRepository) FindBySKU(sku string) (*product.Product, error) {
 	var p product.Product
-	query := r.db.Preload("Media", func(db *gorm.DB) *gorm.DB { return orderProductMedia(db) }).
+	query := r.db.Preload("Brand").Preload("Media", func(db *gorm.DB) *gorm.DB { return orderProductMedia(db) }).
 		Preload("Variants", func(db *gorm.DB) *gorm.DB { return orderProductVariants(db) })
 	query = r.preloadProductVariantOptionValues(query)
 	err := query.Preload("AfterSalesTemplate").Preload("PackagingTemplate").
@@ -206,7 +206,7 @@ func (r *ProductRepository) FindProductsByIDs(ids []uint) ([]product.Product, er
 	if len(ids) == 0 {
 		return products, nil
 	}
-	err := r.db.Preload("Variants", func(db *gorm.DB) *gorm.DB {
+	err := r.db.Preload("Brand").Preload("Variants", func(db *gorm.DB) *gorm.DB {
 		return orderProductVariants(db)
 	}).Where("id IN ?", ids).Find(&products).Error
 	return products, err
@@ -238,6 +238,66 @@ func (r *ProductRepository) FindProductCacheIdentitiesByInformationTemplateID(te
 	err := r.db.Select("id", "slug", "locale").
 		Where("after_sales_template_id = ? OR packaging_template_id = ?", templateID, templateID).
 		Find(&products).Error
+	return products, err
+}
+
+func (r *ProductRepository) FindProductCacheIdentitiesByBrandID(brandID uint) ([]product.Product, error) {
+	var products []product.Product
+	if brandID == 0 {
+		return products, nil
+	}
+	err := r.db.Select("id", "slug", "locale").
+		Where("brand_id = ?", brandID).
+		Find(&products).Error
+	return products, err
+}
+
+func (r *ProductRepository) FindProductCacheIdentitiesByBrandIDPage(brandID, afterID uint, limit int) ([]product.Product, error) {
+	var products []product.Product
+	if brandID == 0 {
+		return products, nil
+	}
+	if limit <= 0 || limit > 1000 {
+		limit = 500
+	}
+	query := r.db.Select("id", "slug", "locale").
+		Where("brand_id = ?", brandID).
+		Order("id ASC").
+		Limit(limit)
+	if afterID > 0 {
+		query = query.Where("id > ?", afterID)
+	}
+	err := query.Find(&products).Error
+	return products, err
+}
+
+func (r *ProductRepository) FindProductSyncIdentitiesByBrandID(brandID uint) ([]product.Product, error) {
+	var products []product.Product
+	if brandID == 0 {
+		return products, nil
+	}
+	err := r.db.Select("id", "status").
+		Where("brand_id = ?", brandID).
+		Find(&products).Error
+	return products, err
+}
+
+func (r *ProductRepository) FindProductSyncIdentitiesByBrandIDPage(brandID, afterID uint, limit int) ([]product.Product, error) {
+	var products []product.Product
+	if brandID == 0 {
+		return products, nil
+	}
+	if limit <= 0 || limit > 1000 {
+		limit = 500
+	}
+	query := r.db.Select("id", "status").
+		Where("brand_id = ?", brandID).
+		Order("id ASC").
+		Limit(limit)
+	if afterID > 0 {
+		query = query.Where("id > ?", afterID)
+	}
+	err := query.Find(&products).Error
 	return products, err
 }
 

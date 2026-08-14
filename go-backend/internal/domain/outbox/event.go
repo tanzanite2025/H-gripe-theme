@@ -26,6 +26,7 @@ const (
 	AggregateTypeProduct             = "product"
 	AggregateTypeProductCache        = "product_cache"
 	AggregateTypeProductType         = "product_type"
+	AggregateTypeProductBrand        = "product_brand"
 	AggregateTypeInformationTemplate = "product_information_template"
 	AggregateTypeMerchantOffer       = "merchant_offer"
 	DefaultEventMaxAttempt           = 10
@@ -118,6 +119,7 @@ type MerchantOfferRevalidatePayload struct {
 type ProductCacheInvalidatePayload struct {
 	ProductIDs                   []uint `json:"product_ids,omitempty"`
 	ProductTypeID                uint   `json:"product_type_id,omitempty"`
+	ProductBrandID               uint   `json:"product_brand_id,omitempty"`
 	ProductInformationTemplateID uint   `json:"product_information_template_id,omitempty"`
 	Reason                       string `json:"reason,omitempty"`
 }

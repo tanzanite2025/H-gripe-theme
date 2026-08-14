@@ -349,20 +349,6 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 			}
 		}
 
-		// 工单路由（需要认证）
-		ticketGroup := v1.Group("/tickets")
-		ticketGroup.Use(middleware.AuthMiddleware(authService))
-		{
-			ticketGroup.POST("", ticketHandler.CreateTicket)
-			ticketGroup.GET("", ticketHandler.ListTickets)
-			ticketGroup.GET("/stats", ticketHandler.GetTicketStats)
-			ticketGroup.GET("/:id", ticketHandler.GetTicket)
-			ticketGroup.PUT("/:id/status", ticketHandler.UpdateTicketStatus)
-			ticketGroup.POST("/:id/close", ticketHandler.CloseTicket)
-			ticketGroup.POST("/:id/messages", ticketHandler.AddMessage)
-			ticketGroup.GET("/:id/messages", ticketHandler.GetMessages)
-		}
-
 		customerServiceGroup := v1.Group("/customer-service")
 		{
 			customerServiceGroup.GET("/agents", ticketHandler.ListPublicCustomerServiceAgents)

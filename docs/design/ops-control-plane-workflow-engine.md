@@ -1,6 +1,6 @@
 # 运维控制台与工作流引擎设计
 
-状态：实施中（运维总览、域名中心、连接器中心、VPS/项目中心第一版已完成；Cloudflare 与 Hostinger 只读同步、Hostinger 观察态持久化和域名配置只读预览已完成）  
+状态：实施中（运维总览、域名中心、连接器中心、VPS/项目中心、Hostinger 只读同步、部署 Preflight、dry-run、受控 Hostinger 生产工作流和按域名 Cloudflare 缓存清理第一版已完成）
 文档类型：后台产品与系统架构设计  
 适用范围：当前 `tanzanite-theme` 项目的 Hostinger、Cloudflare、域名、VPS 和发布运维
 
@@ -64,15 +64,19 @@
 - Hostinger VPS / 项目只读同步已完成：VPS 读取并持久化远端状态、同步来源、主机名、IPv4、系统信息、计划和数据中心；项目读取并持久化 Docker 项目状态、同步来源、容器总数、运行数和健康数，写回 Observed State，并将同步动作写入运维审计。
 - VPS/项目编辑保存已和 Observed State 分离：后台表单只维护声明式台账和期望状态，不再手工覆盖 Hostinger 同步得到的远端主机信息、观察状态、检查时间、错误摘要和容器计数。
 - 域名中心配置只读预览和差异明细已完成：可根据域名 Desired State 生成 DNS 记录草稿、Caddy 路由草稿和 Nginx 路由草稿，并查看 Desired/Observed 的目标、代理、TLS 和 Zone 差异；当前不会写入 Cloudflare、Hostinger、Caddy、Nginx 或生产网关。
-- 独立权限：`ops:view`、`ops:domain:view`、`ops:domain:edit`、`ops:domain:sync`、`ops:connector:view`、`ops:connector:edit`、`ops:vps:view`、`ops:vps:edit`、`ops:vps:sync`、`ops:project:view`、`ops:project:edit`、`ops:project:sync`。
-- 独立迁移：`116_create_ops_domain_bindings`、`117_create_ops_connectors`、`118_create_ops_vps_bindings`、`119_create_ops_project_bindings`、`120_add_ops_domain_observed_state`、`122_bind_ops_domains_to_connectors`、`124_add_ops_hostinger_observed_state`、`125_add_ops_vps_observed_identity`。
+- 部署中心 dry-run 第一版已完成：可以从项目 Preflight 创建持久化工作流，重新验证、提交人工审批、执行只读步骤并固化步骤证据；该执行不会写入 Hostinger、Cloudflare、Docker、Compose、Caddy、Nginx 或生产网关。
+- Hostinger 生产工作流第一版已完成：生产工作流必须经过 Preflight、人工审批、项目锁和执行权限校验，按当前生产运行手册调用既有 Compose 项目更新，随后重新同步项目并执行 DNS、HTTP、HTTPS 健康检查；失败会进入 `rollback_required`，不会未经人工确认自动回滚。
+- 发布后健康检查通过后，工作流会按当前项目绑定的 Cloudflare 域名和 Zone 分组清理缓存；没有 Cloudflare 域名时显式跳过，缓存清理失败会保留工作流失败证据，不自动回滚源站。
+- 工作流已记录发布前回滚点、幂等键、远端操作 ID、健康检查快照和项目锁；锁过期后可恢复，不会因为后台进程中断永久占用项目。
+- 独立权限：`ops:view`、`ops:domain:view`、`ops:domain:edit`、`ops:domain:sync`、`ops:connector:view`、`ops:connector:edit`、`ops:vps:view`、`ops:vps:edit`、`ops:vps:sync`、`ops:project:view`、`ops:project:edit`、`ops:project:sync`、`ops:deploy:view`、`ops:deploy:dry_run`、`ops:deploy:execute`、`ops:deploy:rollback`、`ops:workflow:approve`。
+- 独立迁移：`116_create_ops_domain_bindings`、`117_create_ops_connectors`、`118_create_ops_vps_bindings`、`119_create_ops_project_bindings`、`120_add_ops_domain_observed_state`、`122_bind_ops_domains_to_connectors`、`124_add_ops_hostinger_observed_state`、`125_add_ops_vps_observed_identity`、`137_create_ops_deployment_workflows`、`139_extend_ops_deployment_workflows`。
 - 当前生产初始基线已登记：Hostinger VPS `1834903`、`srv1834903.hstgr.cloud`、`2.25.85.201`、`commerce-platform` 项目。
 
 当前明确未完成：
 
-- Hostinger 写入、Docker 项目更新和自动部署；当前只允许读取远端 VPS / Docker 项目状态并持久化 Observed State，不会启动、停止、重启、更新或部署外部资源。
+- Hostinger 的完整发布编排和自动部署；当前只支持既有 Compose 项目的受控更新，按 `IMAGE_TAG=master` 拉取已发布镜像，不支持从后台直接切换任意 SHA，也不支持后台直接执行 `deploy.sh`。
 - Cloudflare Zone、DNS 和代理的写入动作；当前域名中心只提供 DNS 与网关配置草稿预览。
-- 部署中心、dry-run、发布、健康检查和回滚工作流。
+- Cloudflare/Hostinger 的统一真实生产写入和完整回滚工作流；当前生产工作流会在发布后健康检查成功后，按项目绑定域名和 Cloudflare Zone 清理缓存，但 Hostinger 更新后的失败仍只记录回滚点并暂停，实际回滚仍需使用既有 SSH `deploy.sh` 路径或后续专用回滚执行器。
 - 定时漂移检测。
 
 `运维总览` 当前是声明式台账的聚合展示，不等于 Hostinger、Cloudflare 或 VPS 的实时状态查询。总览接口为 `GET /api/admin/ops/overview`；未同步、未知和待测试状态会保留为待处理项，不会被折算为健康。
@@ -252,10 +256,13 @@
 - `check_image`
 - `render_config`
 - `diff_config`
+- `record_rollback_point`
+- `update_project`
 - `apply_dns`
 - `apply_gateway`
 - `update_project`
 - `health_check`
+- `post_deploy_health_check`
 - `purge_cache`
 - `record_release`
 - `rollback_project`
@@ -407,11 +414,11 @@ web/admin/src/components/admin/ops/
 /api/admin/ops/vps
 /api/admin/ops/projects
 /api/admin/ops/workflows
+/api/admin/ops/workflows/:id
 /api/admin/ops/workflows/:id/validate
-/api/admin/ops/workflows/:id/dry-run
 /api/admin/ops/workflows/:id/approve
 /api/admin/ops/workflows/:id/execute
-/api/admin/ops/workflows/:id/rollback
+/api/admin/ops/workflows/:id/cancel
 /api/admin/ops/audit
 ```
 
@@ -433,7 +440,7 @@ web/admin/src/components/admin/ops/
 
 - [x] 增加运维总览聚合接口和后台页面，展示 VPS、项目、域名、连接器统计、生产拓扑、待处理项和运维审计记录。
 - [x] 为域名台账增加 Desired/Observed 字段和“未同步 / 已匹配 / 漂移 / 检查错误”展示。
-- [x] 接入 Hostinger 读取 VPS 和项目，支持后台单项手动同步、Observed State 持久化回写、刷新后展示和审计；当前仍未执行外部写入或自动部署。
+- [x] 接入 Hostinger 读取 VPS 和项目，支持后台单项手动同步、Observed State 持久化回写、刷新后展示和审计；该阶段本身仍不执行外部写入。
 - [x] 接入 Cloudflare 读取 Zone、DNS、代理、SSL/TLS 状态，并写回域名 Observed State。
 - [x] 展示当前部署版本、服务状态、最近检查、远端状态和 Hostinger 容器计数。
 - [x] 增加手动同步和状态来源。
@@ -449,16 +456,19 @@ web/admin/src/components/admin/ops/
 
 ### Phase 3：部署中心与 dry-run
 
-- 将现有 `deploy.sh`、发布镜像检查和 `verify-vps-release-boundary.sh` 封装为结构化步骤。
-- 提供版本选择、配置差异和部署前检查。
-- 保存工作流执行记录和发布证据。
+- [x] 提供版本选择、配置差异和部署前检查。
+- [x] 持久化部署工作流、步骤状态、人工审批和 dry-run 执行证据。
+- [x] 对 dry-run 步骤标记外部副作用边界，并明确不调用生产写入接口。
+- [ ] 将现有 `deploy.sh`、发布镜像检查和 `verify-vps-release-boundary.sh` 封装为可执行的外部步骤。
 
 ### Phase 4：生产执行、健康检查和回滚
 
-- 接入 Hostinger 项目更新。
-- 接入发布后健康检查和 Cloudflare 缓存清理。
-- 建立回滚点、失败暂停和人工批准回滚。
-- 完成至少一次恢复演练。
+- [x] 接入 Hostinger 既有 Docker Compose 项目更新；当前只支持 `IMAGE_TAG=master` 策略和后端受控执行。
+- [x] 接入发布后 DNS、HTTP、HTTPS 健康检查，失败进入 `rollback_required`。
+- [x] 建立发布前回滚点、项目锁、幂等键和失败暂停证据。
+- [x] 接入按项目绑定域名、Cloudflare Zone 和连接器分组的缓存清理；单次请求最多 30 个 host，没有 Cloudflare 域名时显式跳过。
+- [ ] 建立人工批准后的真实回滚执行器。
+- [ ] 完成至少一次恢复演练。
 
 ### Phase 5：漂移检测与自动化
 
@@ -488,4 +498,4 @@ web/admin/src/components/admin/ops/
 - 已完成的域名切换记录：`docs/archive/ops/learn-gripe-cutover-completed.md`
 - 已完成的品牌连续性记录：`docs/archive/ops/brand-rename-continuity-plan-completed.md`
 
-最后更新：2026-08-13。
+最后更新：2026-08-14。

@@ -331,6 +331,27 @@ func (h *PaymentHandler) adminStripeGatewayConfig() (*pgateway.Config, error) {
 	return config, nil
 }
 
+func (h *PaymentHandler) adminPayPalGatewayConfig() (*pgateway.Config, error) {
+	if h.settingsService != nil {
+		config, found, err := h.readSecureGatewayConfig(pgateway.GatewayPayPal)
+		if err != nil {
+			return nil, err
+		}
+		if found {
+			gatewayConfig := pgateway.GatewayConfigFromSecureConfig(config)
+			if strings.TrimSpace(gatewayConfig.APIKey) == "" || strings.TrimSpace(gatewayConfig.SecretKey) == "" {
+				return nil, errors.New("PayPal client id and secret are not configured")
+			}
+			return gatewayConfig, nil
+		}
+	}
+	config := pgateway.LoadConfigFromEnv(pgateway.GatewayPayPal)
+	if strings.TrimSpace(config.APIKey) == "" || strings.TrimSpace(config.SecretKey) == "" {
+		return nil, errors.New("PayPal client id and secret are not configured")
+	}
+	return config, nil
+}
+
 func secureGatewayFieldAllowed(provider pgateway.GatewayType, field string) bool {
 	if provider == pgateway.GatewayStripe && field == "three_ds_mode" {
 		return true

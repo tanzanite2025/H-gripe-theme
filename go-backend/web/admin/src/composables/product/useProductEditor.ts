@@ -31,6 +31,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
   const productForm = reactive<ProductFormRecord>({
     id: null,
     product_type_id: null,
+    brand_id: null,
     shipping_template_id: null,
     after_sales_template_id: null,
     packaging_template_id: null,
@@ -71,6 +72,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     return index >= 0 ? index : 0
   })
   const productTypeSelectValue = computed(() => productForm.product_type_id == null ? '__none__' : String(productForm.product_type_id))
+  const brandSelectValue = computed(() => productForm.brand_id == null ? '__none__' : String(productForm.brand_id))
   const shippingTemplateSelectValue = computed(() => productForm.shipping_template_id == null ? '__none__' : String(productForm.shipping_template_id))
   const afterSalesTemplateSelectValue = computed(() => productForm.after_sales_template_id == null ? '__none__' : String(productForm.after_sales_template_id))
   const packagingTemplateSelectValue = computed(() => productForm.packaging_template_id == null ? '__none__' : String(productForm.packaging_template_id))
@@ -111,6 +113,10 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
   const setProductShippingTemplate = (value: string) => {
     productForm.shipping_template_id = value === '__none__' ? null : Number(value)
     clearFieldError('shipping_template_id')
+  }
+  const setProductBrand = (value: string) => {
+    productForm.brand_id = value === '__none__' ? null : Number(value)
+    clearFieldError('brand_id')
   }
   const setProductInformationTemplate = (field: string, value: string) => {
     productForm[field] = value === '__none__' ? null : Number(value)
@@ -345,6 +351,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
   const buildProductPayload = () => ({
     id: productForm.id,
     product_type_id: productForm.product_type_id,
+    brand_id: productForm.brand_id,
     shipping_template_id: productForm.shipping_template_id,
     after_sales_template_id: productForm.after_sales_template_id,
     packaging_template_id: productForm.packaging_template_id,
@@ -412,6 +419,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     Object.assign(productForm, {
       id: null,
       product_type_id: null,
+      brand_id: null,
       shipping_template_id: null,
       after_sales_template_id: null,
       packaging_template_id: null,
@@ -463,6 +471,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     Object.assign(productForm, {
       id: detail.id,
       product_type_id: detail.product_type_id || detail.product_type?.id || null,
+      brand_id: detail.brand_id ?? detail.brand?.id ?? null,
       shipping_template_id: detail.shipping_template_id ?? null,
       after_sales_template_id: detail.after_sales_template_id ?? detail.after_sales_template?.id ?? null,
       packaging_template_id: detail.packaging_template_id ?? detail.packaging_template?.id ?? null,
@@ -518,6 +527,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     variantSpecDefinitions,
     defaultVariantIndex,
     productTypeSelectValue,
+    brandSelectValue,
     shippingTemplateSelectValue,
     afterSalesTemplateSelectValue,
     packagingTemplateSelectValue,
@@ -528,6 +538,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     specSelectValue,
     setSpecSelectValue,
     setProductShippingTemplate,
+    setProductBrand,
     setProductInformationTemplate,
     clearFieldError,
     addMediaUrl,

@@ -123,3 +123,9 @@ func (r *OpsProjectBindingRepository) UpdateObservedState(
 		"last_error":                       lastError,
 	}).Error
 }
+
+func (r *OpsProjectBindingRepository) RecordDeployment(id uint, deployedAt time.Time) error {
+	return r.db.Model(&ops.ProjectBinding{}).Where("id = ?", id).Updates(map[string]interface{}{
+		"last_deployment_at": deployedAt,
+	}).Error
+}

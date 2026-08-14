@@ -18,6 +18,7 @@ type TxManager struct {
 	settingRepo      *SettingRepository
 	exchangeRateRepo *ExchangeRateRepository
 	outboxRepo       *OutboxRepository
+	productBrandRepo *ProductBrandRepository
 }
 
 type TxRepositories struct {
@@ -35,6 +36,7 @@ type TxRepositories struct {
 	Setting          *SettingRepository
 	ExchangeRate     *ExchangeRateRepository
 	Outbox           *OutboxRepository
+	ProductBrand     *ProductBrandRepository
 }
 
 func NewTxManager(
@@ -70,6 +72,10 @@ func (m *TxManager) ConfigureLoyaltyProgramRepository(repo *LoyaltyProgramReposi
 
 func (m *TxManager) ConfigureOutboxRepository(repo *OutboxRepository) {
 	m.outboxRepo = repo
+}
+
+func (m *TxManager) ConfigureProductBrandRepository(repo *ProductBrandRepository) {
+	m.productBrandRepo = repo
 }
 
 func (m *TxManager) ConfigurePaymentRefundRecommendationRepository(repo *PaymentRefundRecommendationRepository) {
@@ -130,6 +136,10 @@ func (m *TxManager) WithinTx(fn func(TxRepositories) error) error {
 		if m.exchangeRateRepo != nil {
 			exchangeRateRepo = m.exchangeRateRepo.WithTx(tx)
 		}
+		var productBrandRepo *ProductBrandRepository
+		if m.productBrandRepo != nil {
+			productBrandRepo = m.productBrandRepo.WithTx(tx)
+		}
 		return fn(TxRepositories{
 			Order:            m.orderRepo.WithTx(tx),
 			OrderAttribution: attributionRepo,
@@ -145,6 +155,7 @@ func (m *TxManager) WithinTx(fn func(TxRepositories) error) error {
 			Setting:          settingRepo,
 			ExchangeRate:     exchangeRateRepo,
 			Outbox:           outboxRepo,
+			ProductBrand:     productBrandRepo,
 		})
 	})
 }

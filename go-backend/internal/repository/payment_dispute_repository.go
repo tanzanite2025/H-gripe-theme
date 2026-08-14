@@ -69,6 +69,14 @@ func (r *PaymentRepository) ListStripeDisputes(status string, page, pageSize int
 	return disputes, total, err
 }
 
+func (r *PaymentRepository) ListStripeDisputesByOrderID(orderID uint) ([]payment.StripeDispute, error) {
+	var disputes []payment.StripeDispute
+	err := r.db.Where("order_id = ?", orderID).
+		Order("evidence_due_at ASC NULLS LAST, created_at DESC").
+		Find(&disputes).Error
+	return disputes, err
+}
+
 func (r *PaymentRepository) UpdateStripeDisputeEvidenceSubmission(id uint, submittedAt *time.Time, payload, errorMessage, status string) error {
 	updates := map[string]interface{}{
 		"evidence_submission_payload": payload,
@@ -152,6 +160,14 @@ func (r *PaymentRepository) ListPayPalDisputes(status string, page, pageSize int
 	err := query.Order("created_at DESC").
 		Offset(offset).Limit(pageSize).Find(&disputes).Error
 	return disputes, total, err
+}
+
+func (r *PaymentRepository) ListPayPalDisputesByOrderID(orderID uint) ([]payment.PayPalDispute, error) {
+	var disputes []payment.PayPalDispute
+	err := r.db.Where("order_id = ?", orderID).
+		Order("created_at DESC").
+		Find(&disputes).Error
+	return disputes, err
 }
 
 func (r *PaymentRepository) UpdatePayPalDisputeEvidenceSubmission(id uint, submittedAt *time.Time, payload, errorMessage, status string) error {

@@ -13,6 +13,7 @@ import (
 
 type productCreateRequest struct {
 	ProductTypeID        *uint                              `json:"product_type_id"`
+	BrandID              *uint                              `json:"brand_id"`
 	ShippingTemplateID   *uint                              `json:"shipping_template_id"`
 	AfterSalesTemplateID *uint                              `json:"after_sales_template_id"`
 	PackagingTemplateID  *uint                              `json:"packaging_template_id"`
@@ -33,6 +34,7 @@ type productCreateRequest struct {
 
 type productUpdateRequest struct {
 	ProductTypeID        *uint                              `json:"product_type_id"`
+	BrandID              *uint                              `json:"brand_id"`
 	ShippingTemplateID   *uint                              `json:"shipping_template_id"`
 	AfterSalesTemplateID *uint                              `json:"after_sales_template_id"`
 	PackagingTemplateID  *uint                              `json:"packaging_template_id"`
@@ -108,6 +110,10 @@ func respondProductServiceError(c *gin.Context, err error, fallbackMessage strin
 		c.JSON(http.StatusConflict, gin.H{"error": "Translation already exists for this locale"})
 	case errors.Is(err, service.ErrProductTypeNotFound):
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Product type not found"})
+	case errors.Is(err, service.ErrProductBrandNotFound):
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Product brand not found"})
+	case errors.Is(err, service.ErrProductBrandInvalid):
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	case errors.Is(err, service.ErrProductLocaleImmutable):
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	case errors.Is(err, service.ErrProductSpecInvalid):

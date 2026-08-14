@@ -62,6 +62,29 @@ export interface OpsProjectPayload {
   notes: string
 }
 
+export interface OpsAdminAccount {
+  id: number
+  email: string
+  username: string
+  first_name?: string
+  last_name?: string
+  role: 'admin' | 'manager' | 'editor' | 'support'
+  locale: string
+  status: 'active' | 'inactive' | 'suspended'
+  created_at: string
+  updated_at: string
+}
+
+export interface OpsAdminAccountInput {
+  email: string
+  username?: string
+  password: string
+  role?: 'admin' | 'manager' | 'editor' | 'support'
+  first_name?: string
+  last_name?: string
+  locale?: string
+}
+
 export interface OpsDomainSyncResult {
   domain_id: number
   domain: string
@@ -230,6 +253,50 @@ export interface OpsDeploymentPreflightOverview {
   projects: OpsDeploymentPreflightSummary[]
 }
 
+export interface OpsDeploymentWorkflowStep {
+  id: number
+  workflow_run_id: number
+  sequence: number
+  key: string
+  label: string
+  status: 'pending' | 'running' | 'succeeded' | 'failed' | 'skipped'
+  retryable: boolean
+  external_effect: boolean
+  external_operation_id?: string
+  output_summary?: string
+  error_message?: string
+  started_at?: string
+  completed_at?: string
+}
+
+export interface OpsDeploymentWorkflow {
+  id: number
+  kind: string
+  mode: 'dry_run' | 'production'
+  project_id: number
+  project: string
+  environment: string
+  requested_ref: string
+  status: string
+  preflight_status: 'ready' | 'review' | 'blocked' | string
+  created_by_id: number
+  created_by: string
+  approved_by_id?: number
+  approved_by?: string
+  approved_at?: string
+  started_at?: string
+  completed_at?: string
+  previous_ref?: string
+  rollback_ref?: string
+  remote_operation_id?: string
+  health_status?: string
+  last_error?: string
+  preflight?: OpsDeploymentPreflight
+  steps: OpsDeploymentWorkflowStep[]
+  created_at: string
+  updated_at: string
+}
+
 export interface OpsOverview {
   environment: string
   generated_at: string
@@ -367,10 +434,54 @@ const readPreflightOverviewPayload = (response: unknown, endpoint: string) => {
   return payload
 }
 
+const readWorkflowPayload = (response: unknown, endpoint: string) => {
+  const payload = readObjectPayload(response, endpoint)
+  requireApiNumberField(payload, 'id', endpoint)
+  requireApiNumberField(payload, 'project_id', endpoint)
+  requireApiStringField(payload, 'mode', endpoint)
+  requireApiStringField(payload, 'status', endpoint)
+  requireApiArrayField(payload, 'steps', endpoint)
+  return payload as OpsDeploymentWorkflow
+}
+
+const readWorkflowListPayload = (response: unknown, endpoint: string) => {
+  const payload = readObjectPayload(response, endpoint)
+  requireApiArrayField(payload, 'workflows', endpoint)
+  return payload.workflows as OpsDeploymentWorkflow[]
+}
+
+const readAdminAccountsPayload = (response: unknown, endpoint: string): OpsAdminAccount[] => {
+  const payload = readObjectPayload(response, endpoint)
+  requireApiArrayField(payload, 'accounts', endpoint)
+  return payload.accounts as OpsAdminAccount[]
+}
+
+const readAdminAccountResult = (response: unknown, endpoint: string) => {
+  const payload = readObjectPayload(response, endpoint)
+  requireApiNumberField(payload, 'user_id', endpoint)
+  requireApiStringField(payload, 'email', endpoint)
+  requireApiStringField(payload, 'username', endpoint)
+  requireApiStringField(payload, 'role', endpoint)
+  requireApiStringField(payload, 'status', endpoint)
+  requireApiBooleanField(payload, 'created', endpoint)
+  return payload
+}
+
 export default {
   async getOverview(): Promise<OpsOverview> {
     const endpoint = '/api/admin/ops/overview'
     return readOverviewPayload(await axios.get(endpoint), endpoint) as OpsOverview
+  },
+  async listAdminAccounts(search = ''): Promise<OpsAdminAccount[]> {
+    const endpoint = '/api/admin/ops/admin-accounts'
+    const response = await axios.get(endpoint, {
+      params: search.trim() ? { search: search.trim() } : undefined,
+    })
+    return readAdminAccountsPayload(response, endpoint)
+  },
+  async ensureAdminAccount(payload: OpsAdminAccountInput) {
+    const endpoint = '/api/admin/ops/admin-accounts/ensure'
+    return readAdminAccountResult(await axios.post(endpoint, payload), endpoint)
   },
   async listDomains() {
     const endpoint = '/api/admin/ops/domains'
@@ -483,5 +594,52 @@ export default {
   async getDeploymentPreflightOverview(): Promise<OpsDeploymentPreflightOverview> {
     const endpoint = '/api/admin/ops/deployments/preflight-overview'
     return readPreflightOverviewPayload(await axios.get(endpoint), endpoint) as OpsDeploymentPreflightOverview
+  },
+  async listWorkflows(projectID = 0): Promise<OpsDeploymentWorkflow[]> {
+    const endpoint = '/api/admin/ops/workflows'
+    const response = await axios.get(endpoint, {
+      params: projectID > 0 ? { project_id: projectID } : undefined,
+    })
+    return readWorkflowListPayload(response, endpoint)
+  },
+  async getWorkflow(id: number): Promise<OpsDeploymentWorkflow> {
+    const endpoint = `/api/admin/ops/workflows/${id}`
+    return readWorkflowPayload(await axios.get(endpoint), endpoint)
+  },
+  async createDryRun(projectID: number, requestedRef = ''): Promise<OpsDeploymentWorkflow> {
+    const endpoint = '/api/admin/ops/workflows'
+    return readWorkflowPayload(await axios.post(endpoint, {
+      project_id: projectID,
+      requested_ref: requestedRef,
+      mode: 'dry_run',
+    }), endpoint)
+  },
+  async createProduction(projectID: number, requestedRef = 'master'): Promise<OpsDeploymentWorkflow> {
+    const endpoint = '/api/admin/ops/workflows'
+    return readWorkflowPayload(await axios.post(endpoint, {
+      project_id: projectID,
+      requested_ref: requestedRef || 'master',
+      mode: 'production',
+    }), endpoint)
+  },
+  async validateWorkflow(id: number): Promise<OpsDeploymentWorkflow> {
+    const endpoint = `/api/admin/ops/workflows/${id}/validate`
+    return readWorkflowPayload(await axios.post(endpoint), endpoint)
+  },
+  async approveWorkflow(id: number): Promise<OpsDeploymentWorkflow> {
+    const endpoint = `/api/admin/ops/workflows/${id}/approve`
+    return readWorkflowPayload(await axios.post(endpoint), endpoint)
+  },
+  async executeDryRun(id: number): Promise<OpsDeploymentWorkflow> {
+    const endpoint = `/api/admin/ops/workflows/${id}/execute`
+    return readWorkflowPayload(await axios.post(endpoint), endpoint)
+  },
+  async executeWorkflow(id: number): Promise<OpsDeploymentWorkflow> {
+    const endpoint = `/api/admin/ops/workflows/${id}/execute`
+    return readWorkflowPayload(await axios.post(endpoint), endpoint)
+  },
+  async cancelWorkflow(id: number): Promise<OpsDeploymentWorkflow> {
+    const endpoint = `/api/admin/ops/workflows/${id}/cancel`
+    return readWorkflowPayload(await axios.post(endpoint), endpoint)
   },
 }

@@ -197,3 +197,42 @@ func (h *PaymentHandler) GetPayPalDisputeEvidence(c *gin.Context) {
 	}
 	response.Success(c, evidencePackage)
 }
+
+func (h *PaymentHandler) SubmitPayPalDisputeEvidence(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		apierror.RespondBadRequest(c, "invalid PayPal dispute id")
+		return
+	}
+
+	var req struct {
+		Confirm             bool   `json:"confirm"`
+		AdditionalStatement string `json:"additional_statement"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		apierror.RespondBadRequest(c, err.Error())
+		return
+	}
+	if !req.Confirm {
+		apierror.RespondBadRequest(c, "confirmation is required before submitting PayPal dispute evidence")
+		return
+	}
+
+	config, err := h.adminPayPalGatewayConfig()
+	if err != nil {
+		apierror.RespondBadRequest(c, err.Error())
+		return
+	}
+	result, err := h.paymentService.SubmitPayPalDisputeEvidence(c.Request.Context(), service.SubmitPayPalDisputeEvidenceInput{
+		DisputeID:           uint(id),
+		ClientID:            config.APIKey,
+		SecretKey:           config.SecretKey,
+		Environment:         config.Environment,
+		AdditionalStatement: req.AdditionalStatement,
+	})
+	if err != nil {
+		apierror.RespondBadRequest(c, err.Error())
+		return
+	}
+	response.Success(c, result)
+}

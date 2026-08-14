@@ -18,7 +18,7 @@ import (
 
 func TestQuickBuyServiceCreatesPublishesAndReturnsCurrentFlow(t *testing.T) {
 	db, quickBuyService := newQuickBuyTestService(t)
-	productType := seedQuickBuyProductType(t, db, "Carbon Rim", "carbon_rim")
+	productType := seedQuickBuyProductType(t, db, "Rim", "rim")
 
 	created, err := quickBuyService.CreateFlow(QuickBuyFlowInput{
 		Slug:         "wheelset-build",
@@ -48,9 +48,9 @@ func TestQuickBuyServiceCreatesPublishesAndReturnsCurrentFlow(t *testing.T) {
 	require.NotNil(t, current)
 	require.Len(t, current.Steps, 1)
 	assert.Equal(t, "rim", current.Steps[0].StepKey)
-	assert.Equal(t, "carbon_rim", current.Steps[0].Slug)
+	assert.Equal(t, "rim", current.Steps[0].Slug)
 	require.Len(t, current.Steps[0].ProductTypes, 1)
-	assert.Equal(t, "carbon_rim", current.Steps[0].ProductTypes[0].Slug)
+	assert.Equal(t, "rim", current.Steps[0].ProductTypes[0].Slug)
 }
 
 func TestQuickBuyServiceProtectsDefaultQuickBuildSteps(t *testing.T) {
@@ -197,7 +197,7 @@ func TestQuickBuyServiceRejectsPublishWithoutRequiredProductType(t *testing.T) {
 
 func TestQuickBuyServiceValidationFlagsDisabledProductType(t *testing.T) {
 	db, quickBuyService := newQuickBuyTestService(t)
-	productType := seedQuickBuyProductType(t, db, "Carbon Rim", "carbon_rim")
+	productType := seedQuickBuyProductType(t, db, "Rim", "rim")
 	require.NoError(t, db.Model(&productdomain.ProductType{}).
 		Where("id = ?", productType.ID).
 		Update("is_enabled", false).Error)
@@ -231,7 +231,7 @@ func TestQuickBuyServiceValidationFlagsDisabledProductType(t *testing.T) {
 
 func TestQuickBuyServiceCreatesSessionAndStoresSelectionSnapshot(t *testing.T) {
 	db, quickBuyService := newQuickBuyTestService(t)
-	productType := seedQuickBuyProductType(t, db, "Carbon Rim", "carbon_rim")
+	productType := seedQuickBuyProductType(t, db, "Rim", "rim")
 	productRecord := seedQuickBuyProduct(t, db, productType.ID)
 	require.NoError(t, db.Create(&productdomain.ProductMedia{
 		ProductID:    productRecord.ID,
@@ -291,7 +291,7 @@ func TestQuickBuyServiceCreatesSessionAndStoresSelectionSnapshot(t *testing.T) {
 
 func TestQuickBuyServiceAllowsClearingAndReselectingStep(t *testing.T) {
 	db, quickBuyService := newQuickBuyTestService(t)
-	productType := seedQuickBuyProductType(t, db, "Carbon Rim", "carbon_rim")
+	productType := seedQuickBuyProductType(t, db, "Rim", "rim")
 	firstProduct := seedQuickBuyProductWithDetails(t, db, productType.ID, "QB-RIM-001", "First Rim", "first-rim", 100)
 	secondProduct := seedQuickBuyProductWithDetails(t, db, productType.ID, "QB-RIM-002", "Second Rim", "second-rim", 120)
 
@@ -350,7 +350,7 @@ func TestQuickBuyServiceAllowsClearingAndReselectingStep(t *testing.T) {
 
 func TestQuickBuyServiceListsSessionStepCandidatesByBoundProductType(t *testing.T) {
 	db, quickBuyService := newQuickBuyTestService(t)
-	rimType := seedQuickBuyProductType(t, db, "Carbon Rim", "carbon_rim")
+	rimType := seedQuickBuyProductType(t, db, "Rim", "rim")
 	handlebarType := seedQuickBuyProductType(t, db, "Handlebar", "handlebar")
 	rimProduct := seedQuickBuyProduct(t, db, rimType.ID)
 	_ = seedQuickBuyProductWithDetails(t, db, handlebarType.ID, "QB-HB-001", "Quick Buy Handlebar", "quick-buy-handlebar", 70)
@@ -392,13 +392,83 @@ func TestQuickBuyServiceListsSessionStepCandidatesByBoundProductType(t *testing.
 	assert.Equal(t, rimProduct.ID, result.Products[0].ID)
 	assert.Equal(t, int64(1), result.Total)
 	assert.Equal(t, "rim", result.Step.StepKey)
-	assert.Equal(t, "carbon_rim", result.Step.ProductTypes[0].Slug)
+	assert.Equal(t, "rim", result.Step.ProductTypes[0].Slug)
 	assert.False(t, result.HasMore)
+}
+
+func TestQuickBuyServiceUsesTemplateFilterableSpecificationsAndDynamicValues(t *testing.T) {
+	db, quickBuyService := newQuickBuyTestService(t)
+	rimType := seedQuickBuyProductType(t, db, "Rim", "rim")
+	specDefinition := productdomain.SpecDefinition{
+		ProductTypeID: rimType.ID,
+		Group:         "规格",
+		Name:          "Rim Depth",
+		Slug:          "rim_depth",
+		FieldType:     "number",
+		Unit:          "mm",
+		IsVisible:     true,
+		IsFilterable:  true,
+		SortOrder:     10,
+	}
+	require.NoError(t, db.Create(&specDefinition).Error)
+
+	first := seedQuickBuyProductWithDetails(t, db, rimType.ID, "QB-RIM-033", "Rim 33", "quick-buy-rim-33", 100)
+	second := seedQuickBuyProductWithDetails(t, db, rimType.ID, "QB-RIM-045", "Rim 45", "quick-buy-rim-45", 110)
+	require.NoError(t, db.Create(&productdomain.ProductSpecValue{
+		ProductID:        first.ID,
+		SpecDefinitionID: specDefinition.ID,
+		Value:            "33",
+	}).Error)
+	require.NoError(t, db.Create(&productdomain.ProductSpecValue{
+		ProductID:        second.ID,
+		SpecDefinitionID: specDefinition.ID,
+		Value:            "45",
+	}).Error)
+
+	created, err := quickBuyService.CreateFlow(QuickBuyFlowInput{
+		Slug:         "dynamic-filter-build",
+		Name:         "Dynamic Filter Build",
+		EntrySurface: "dock",
+		Version: QuickBuyVersionInput{
+			Steps: []QuickBuyStepInput{
+				{
+					StepKey:        "rim",
+					Name:           "Rims",
+					ProductTypeIDs: []uint{rimType.ID},
+				},
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	result, err := quickBuyService.PreviewVersionStepCandidates(created.Version.ID, QuickBuyCandidateInput{
+		StepKey:  "rim",
+		Locale:   "en",
+		PageSize: 12,
+	})
+	require.NoError(t, err)
+	require.Len(t, result.Products, 2)
+	require.Len(t, result.Step.Filters, 1)
+	assert.Equal(t, "rim_depth", result.Step.Filters[0].Slug)
+	assert.Equal(t, []string{"33", "45"}, result.Step.Filters[0].Values)
+
+	filtered, err := quickBuyService.PreviewVersionStepCandidates(created.Version.ID, QuickBuyCandidateInput{
+		StepKey: "rim",
+		Locale:  "en",
+		SpecFilters: map[string][]string{
+			"rim_depth": {"45"},
+		},
+		PageSize: 12,
+	})
+	require.NoError(t, err)
+	require.Len(t, filtered.Products, 1)
+	assert.Equal(t, second.ID, filtered.Products[0].ID)
+	assert.NotEqual(t, first.ID, filtered.Products[0].ID)
 }
 
 func TestQuickBuyServiceRejectsSessionSelectionFromWrongProductType(t *testing.T) {
 	db, quickBuyService := newQuickBuyTestService(t)
-	rimType := seedQuickBuyProductType(t, db, "Carbon Rim", "carbon_rim")
+	rimType := seedQuickBuyProductType(t, db, "Rim", "rim")
 	handlebarType := seedQuickBuyProductType(t, db, "Handlebar", "handlebar")
 	wrongProduct := seedQuickBuyProductWithDetails(t, db, handlebarType.ID, "QB-HB-002", "Wrong Handlebar", "wrong-handlebar", 80)
 
@@ -439,7 +509,7 @@ func TestQuickBuyServiceRejectsSessionSelectionFromWrongProductType(t *testing.T
 
 func TestQuickBuyServicePreviewsDraftVersionCandidates(t *testing.T) {
 	db, quickBuyService := newQuickBuyTestService(t)
-	productType := seedQuickBuyProductType(t, db, "Carbon Rim", "carbon_rim")
+	productType := seedQuickBuyProductType(t, db, "Rim", "rim")
 	productRecord := seedQuickBuyProduct(t, db, productType.ID)
 
 	created, err := quickBuyService.CreateFlow(QuickBuyFlowInput{
@@ -468,7 +538,7 @@ func TestQuickBuyServicePreviewsDraftVersionCandidates(t *testing.T) {
 
 func TestQuickBuyServiceDoesNotAllowExplicitInactiveVersion(t *testing.T) {
 	db, quickBuyService := newQuickBuyTestService(t)
-	productType := seedQuickBuyProductType(t, db, "Carbon Rim", "carbon_rim")
+	productType := seedQuickBuyProductType(t, db, "Rim", "rim")
 	startsAt := time.Now().UTC().Add(time.Hour)
 
 	created, err := quickBuyService.CreateFlow(QuickBuyFlowInput{

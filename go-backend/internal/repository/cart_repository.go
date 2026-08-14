@@ -17,7 +17,7 @@ func NewCartRepository(db *gorm.DB) *CartRepository {
 // FindByUserID 根据用户ID查找购物车
 func (r *CartRepository) FindByUserID(userID uint) (*product.Cart, error) {
 	var cart product.Cart
-	err := r.db.Preload("Items.Product.Media", func(db *gorm.DB) *gorm.DB {
+	err := r.db.Preload("Items.Product.Brand").Preload("Items.Product.Media", func(db *gorm.DB) *gorm.DB {
 		return db.Order("product_media.sort_order ASC, product_media.id ASC")
 	}).Preload("Items.Variant").Where("user_id = ?", userID).First(&cart).Error
 	if err != nil {
@@ -29,7 +29,7 @@ func (r *CartRepository) FindByUserID(userID uint) (*product.Cart, error) {
 // FindBySessionID 根据会话ID查找购物车
 func (r *CartRepository) FindBySessionID(sessionID string) (*product.Cart, error) {
 	var cart product.Cart
-	err := r.db.Preload("Items.Product.Media", func(db *gorm.DB) *gorm.DB {
+	err := r.db.Preload("Items.Product.Brand").Preload("Items.Product.Media", func(db *gorm.DB) *gorm.DB {
 		return db.Order("product_media.sort_order ASC, product_media.id ASC")
 	}).Preload("Items.Variant").Where("session_id = ?", sessionID).First(&cart).Error
 	if err != nil {

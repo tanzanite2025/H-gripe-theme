@@ -16,6 +16,7 @@ import (
 
 type ProductService struct {
 	productRepo                    *repository.ProductRepository
+	productBrandRepo               *repository.ProductBrandRepository
 	informationTemplateRepo        *repository.ProductInformationTemplateRepository
 	mediaService                   mediaAssetDeleter
 	currencyPolicy                 *CurrencyPolicyService
@@ -27,6 +28,7 @@ type ProductService struct {
 	productCacheEvents             ProductCacheEventPublisher
 	storefrontHTMLCacheInvalidator *StorefrontHTMLCacheInvalidator
 	merchantEvents                 MerchantProductEventPublisher
+	txManager                      *repository.TxManager
 }
 
 func NewProductService(productRepo *repository.ProductRepository, cache *cache.RedisCache, cacheTTL int) *ProductService {
@@ -65,6 +67,33 @@ func (s *ProductService) ConfigureInformationTemplateRepository(repo *repository
 	s.informationTemplateRepo = repo
 }
 
+func (s *ProductService) ConfigureProductBrandRepository(repo *repository.ProductBrandRepository) {
+	if s == nil {
+		return
+	}
+	s.productBrandRepo = repo
+}
+
+func (s *ProductService) validateProductBrand(id *uint, allowDisabled bool) error {
+	if id == nil || *id == 0 {
+		return nil
+	}
+	if s.productBrandRepo == nil {
+		return fmt.Errorf("%w: brand repository is not configured", ErrProductBrandInvalid)
+	}
+	brand, err := s.productBrandRepo.FindByID(*id)
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return ErrProductBrandNotFound
+	}
+	if err != nil {
+		return err
+	}
+	if !brand.IsEnabled && !allowDisabled {
+		return fmt.Errorf("%w: brand is disabled", ErrProductBrandInvalid)
+	}
+	return nil
+}
+
 func (s *ProductService) ConfigureMediaService(mediaService mediaAssetDeleter) {
 	if s == nil {
 		return
@@ -90,12 +119,20 @@ func (s *ProductService) ConfigureProductCacheEventPublisher(publisher ProductCa
 	s.productCacheEvents = publisher
 }
 
+func (s *ProductService) ConfigureTxManager(manager *repository.TxManager) {
+	if s == nil {
+		return
+	}
+	s.txManager = manager
+}
+
 var (
 	ErrProductNotFound               = errors.New("product not found")
 	ErrProductSKUExists              = errors.New("product sku already exists")
 	ErrProductTypeNotFound           = errors.New("product type not found")
 	ErrProductTypeInvalid            = errors.New("product type invalid")
 	ErrProductTypeSlugExists         = errors.New("product type slug already exists")
+	ErrProductTypeSystemManaged      = errors.New("system product type structure is managed by the platform")
 	ErrProductTypeTranslationInvalid = errors.New("product type translation invalid")
 	ErrProductLocaleImmutable        = errors.New("product locale cannot be changed after creation")
 	ErrProductSpecInvalid            = errors.New("product spec invalid")
@@ -109,6 +146,7 @@ type ProductSearchInput struct {
 	Status      string
 	Keyword     string
 	TypeSlug    string
+	BrandSlug   string
 	PriceMin    *float64
 	PriceMax    *float64
 	SpecFilters map[string][]string
@@ -457,6 +495,7 @@ func (s *ProductService) SearchPublic(input ProductSearchInput) ([]product.Produ
 		Status:      "active",
 		Keyword:     input.Keyword,
 		TypeSlug:    input.TypeSlug,
+		BrandSlug:   input.BrandSlug,
 		PriceMin:    input.PriceMin,
 		PriceMax:    input.PriceMax,
 		SpecFilters: input.SpecFilters,
@@ -468,6 +507,35 @@ func (s *ProductService) SearchPublic(input ProductSearchInput) ([]product.Produ
 }
 
 func (s *ProductService) Create(p *product.Product) error {
+	if s.txManager != nil {
+		var created *product.Product
+		err := s.txManager.WithinTx(func(tx repository.TxRepositories) error {
+			if tx.Product == nil {
+				return errors.New("transactional product repository is not configured")
+			}
+			if err := tx.Product.Create(p); err != nil {
+				return err
+			}
+			createdProduct, err := tx.Product.FindByID(p.ID)
+			if err != nil {
+				return err
+			}
+			created = createdProduct
+			_, merchantEvents, err := s.transactionalProductPublishers(tx.Outbox)
+			if err != nil {
+				return err
+			}
+			return enqueueMerchantProductChangeWithPublisher(merchantEvents, createdProduct, "product_created")
+		})
+		if err != nil {
+			return err
+		}
+		if created != nil {
+			*p = *created
+		}
+		s.invalidateStorefrontHTMLCache("product create")
+		return nil
+	}
 	if err := s.productRepo.Create(p); err != nil {
 		return err
 	}
@@ -482,6 +550,46 @@ func (s *ProductService) Update(p *product.Product) error {
 	previousProduct, err := s.findProduct(p.ID)
 	if err != nil {
 		return err
+	}
+
+	if s.txManager != nil {
+		var updated *product.Product
+		err := s.txManager.WithinTx(func(tx repository.TxRepositories) error {
+			if tx.Product == nil {
+				return errors.New("transactional product repository is not configured")
+			}
+			if err := tx.Product.Update(p); err != nil {
+				return err
+			}
+			updatedProduct, err := tx.Product.FindByID(p.ID)
+			if err != nil {
+				return err
+			}
+			updated = updatedProduct
+			cacheEvents, merchantEvents, err := s.transactionalProductPublishers(tx.Outbox)
+			if err != nil {
+				return err
+			}
+			if err := enqueueProductCacheInvalidationByIDsWithPublisher(cacheEvents, []uint{previousProduct.ID, updatedProduct.ID}, "product update"); err != nil {
+				return err
+			}
+			if merchantProductCoreChanged(previousProduct, updatedProduct) {
+				if err := enqueueMerchantProductChangeWithPublisher(merchantEvents, updatedProduct, "product_source_changed"); err != nil {
+					return requireMerchantEvent(err, updatedProduct, "product_source_changed")
+				}
+			}
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+		s.clearProductCache(previousProduct)
+		s.clearProductCache(updated)
+		s.invalidateStorefrontHTMLCache("product update")
+		if updated != nil {
+			*p = *updated
+		}
+		return nil
 	}
 
 	if err := s.productRepo.Update(p); err != nil {
@@ -502,6 +610,10 @@ func (s *ProductService) Update(p *product.Product) error {
 		}
 	}
 	return nil
+}
+
+func (s *ProductService) transactionalProductPublishers(outboxRepo *repository.OutboxRepository) (ProductCacheEventPublisher, MerchantProductEventPublisher, error) {
+	return newTransactionalProductPublishers(outboxRepo)
 }
 
 func (s *ProductService) findProduct(id uint) (*product.Product, error) {

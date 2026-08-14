@@ -7,27 +7,45 @@ import (
 )
 
 func (s *ProductService) enqueueMerchantProductUpsert(item *product.Product, reason string) error {
-	if s == nil || s.merchantEvents == nil || item == nil {
+	if s == nil {
 		return nil
 	}
-	return s.merchantEvents.EnqueueProductUpsert(item.ID, reason)
+	return enqueueMerchantProductUpsertWithPublisher(s.merchantEvents, item, reason)
+}
+
+func enqueueMerchantProductUpsertWithPublisher(publisher MerchantProductEventPublisher, item *product.Product, reason string) error {
+	if publisher == nil || item == nil {
+		return nil
+	}
+	return publisher.EnqueueProductUpsert(item.ID, reason)
 }
 
 func (s *ProductService) enqueueMerchantProductWithdraw(item *product.Product, reason string) error {
-	if s == nil || s.merchantEvents == nil || item == nil {
+	if s == nil {
 		return nil
 	}
-	return s.merchantEvents.EnqueueProductWithdraw(item.ID, reason)
+	return enqueueMerchantProductWithdrawWithPublisher(s.merchantEvents, item, reason)
+}
+
+func enqueueMerchantProductWithdrawWithPublisher(publisher MerchantProductEventPublisher, item *product.Product, reason string) error {
+	if publisher == nil || item == nil {
+		return nil
+	}
+	return publisher.EnqueueProductWithdraw(item.ID, reason)
 }
 
 func (s *ProductService) enqueueMerchantProductChange(item *product.Product, reason string) error {
+	return enqueueMerchantProductChangeWithPublisher(s.merchantEvents, item, reason)
+}
+
+func enqueueMerchantProductChangeWithPublisher(publisher MerchantProductEventPublisher, item *product.Product, reason string) error {
 	if item == nil {
 		return nil
 	}
 	if item.Status == "active" {
-		return s.enqueueMerchantProductUpsert(item, reason)
+		return enqueueMerchantProductUpsertWithPublisher(publisher, item, reason)
 	}
-	return s.enqueueMerchantProductWithdraw(item, reason)
+	return enqueueMerchantProductWithdrawWithPublisher(publisher, item, reason)
 }
 
 func merchantProductSourceChangeReason(input ProductUpdateInput) string {
@@ -44,6 +62,8 @@ func merchantProductSourceChangeReason(input ProductUpdateInput) string {
 		return "product_slug_changed"
 	case input.Description != nil || input.ShortDesc != nil:
 		return "product_description_changed"
+	case input.UpdateBrandID:
+		return "product_brand_changed"
 	case input.UpdateCurrency:
 		return "product_currency_changed"
 	default:
@@ -57,6 +77,7 @@ func merchantProductUpdateAffectsChannel(input ProductUpdateInput) bool {
 		input.Slug != nil ||
 		input.Description != nil ||
 		input.ShortDesc != nil ||
+		input.UpdateBrandID ||
 		input.UpdateCurrency ||
 		input.UpdateVariants ||
 		input.UpdateMedia ||
@@ -70,6 +91,7 @@ func merchantProductCoreChanged(previous, next *product.Product) bool {
 		return true
 	}
 	return previous.SKU != next.SKU ||
+		!uintPointerEqual(previous.BrandID, next.BrandID) ||
 		previous.Name != next.Name ||
 		previous.Slug != next.Slug ||
 		previous.Description != next.Description ||
@@ -82,6 +104,13 @@ func merchantProductCoreChanged(previous, next *product.Product) bool {
 }
 
 func floatPointerEqual(left, right *float64) bool {
+	if left == nil || right == nil {
+		return left == right
+	}
+	return *left == *right
+}
+
+func uintPointerEqual(left, right *uint) bool {
 	if left == nil || right == nil {
 		return left == right
 	}

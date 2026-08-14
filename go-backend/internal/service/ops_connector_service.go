@@ -1,6 +1,7 @@
 package service
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -23,7 +24,7 @@ const OpsConnectorMasterKeyEnv = "OPS_CONNECTOR_MASTER_KEY"
 
 const (
 	cloudflareAPIBaseURL = "https://api.cloudflare.com/client/v4"
-	hostingerAPIBaseURL = "https://developers.hostinger.com"
+	hostingerAPIBaseURL  = "https://developers.hostinger.com"
 )
 
 var (
@@ -33,6 +34,12 @@ var (
 type OpsConnectorService struct {
 	repo       *repository.OpsConnectorRepository
 	httpClient *http.Client
+}
+
+type OpsHostingerUpdateResult struct {
+	StatusCode  int    `json:"status_code"`
+	OperationID string `json:"operation_id,omitempty"`
+	Message     string `json:"message"`
 }
 
 type OpsConnectorInput struct {
@@ -407,6 +414,195 @@ func (s *OpsConnectorService) HostingerRead(ctx context.Context, id uint, path s
 	return response.StatusCode, nil
 }
 
+func (s *OpsConnectorService) HostingerUpdateProject(
+	ctx context.Context,
+	id uint,
+	virtualMachineID string,
+	projectName string,
+	idempotencyKey string,
+) (*OpsHostingerUpdateResult, error) {
+	if s == nil || s.repo == nil {
+		return nil, errors.New("operations connector service is not configured")
+	}
+	virtualMachineID = strings.TrimSpace(virtualMachineID)
+	projectName = strings.TrimSpace(projectName)
+	if virtualMachineID == "" || projectName == "" {
+		return nil, fmt.Errorf("%w: Hostinger virtual machine and project names are required", ErrInvalidOpsConnector)
+	}
+	if strings.Contains(virtualMachineID, "..") || strings.Contains(projectName, "..") {
+		return nil, fmt.Errorf("%w: Hostinger project path is not allowed", ErrInvalidOpsConnector)
+	}
+
+	record, err := s.repo.FindByID(id)
+	if err != nil {
+		return nil, err
+	}
+	if record.Provider != ops.ConnectorProviderHostinger {
+		return nil, fmt.Errorf("%w: connector is not a Hostinger connector", ErrInvalidOpsConnector)
+	}
+	if !record.Enabled {
+		return nil, errors.New("Hostinger connector is disabled")
+	}
+	credentials, err := s.readCredentials(*record)
+	if err != nil {
+		return nil, err
+	}
+	if len(credentials) == 0 {
+		return nil, errors.New("Hostinger connector credentials are not configured")
+	}
+
+	path := "/api/vps/v1/virtual-machines/" + url.PathEscape(virtualMachineID) +
+		"/docker/" + url.PathEscape(projectName) + "/update"
+	endpoint, err := url.Parse(hostingerAPIBaseURL + path)
+	if err != nil {
+		return nil, fmt.Errorf("build Hostinger update request: %w", err)
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint.String(), bytes.NewReader(nil))
+	if err != nil {
+		return nil, fmt.Errorf("build Hostinger update request: %w", err)
+	}
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("User-Agent", "tanzanite-ops-hostinger-update/1.0")
+	if key := strings.TrimSpace(idempotencyKey); key != "" {
+		req.Header.Set("Idempotency-Key", key)
+	}
+	applyConnectorAuth(req, record.AuthType, credentials)
+	if err := ensureConnectorEndpointSafe(ctx, req.URL, record.Environment); err != nil {
+		return nil, err
+	}
+
+	client := s.httpClient
+	if client == nil {
+		client = &http.Client{Timeout: 12 * time.Second}
+	}
+	clientCopy := *client
+	clientCopy.CheckRedirect = func(redirectRequest *http.Request, _ []*http.Request) error {
+		return ensureConnectorEndpointSafe(redirectRequest.Context(), redirectRequest.URL, record.Environment)
+	}
+	response, err := clientCopy.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("Hostinger update request failed: %w", err)
+	}
+	defer response.Body.Close()
+	body, err := io.ReadAll(io.LimitReader(response.Body, 1<<20))
+	if err != nil {
+		return nil, fmt.Errorf("read Hostinger update response: %w", err)
+	}
+	result := &OpsHostingerUpdateResult{
+		StatusCode: response.StatusCode,
+		Message:    "Hostinger Docker project update accepted",
+	}
+	if response.StatusCode < 200 || response.StatusCode >= 300 {
+		return nil, fmt.Errorf("Hostinger update API returned HTTP %d", response.StatusCode)
+	}
+	var envelope struct {
+		Data struct {
+			ID          string `json:"id"`
+			OperationID string `json:"operation_id"`
+			TaskID      string `json:"task_id"`
+		} `json:"data"`
+		ID          string `json:"id"`
+		OperationID string `json:"operation_id"`
+		TaskID      string `json:"task_id"`
+	}
+	if len(body) > 0 && json.Unmarshal(body, &envelope) == nil {
+		result.OperationID = firstNonEmptyWorkflowValue(
+			envelope.Data.OperationID,
+			envelope.Data.TaskID,
+			envelope.Data.ID,
+			envelope.OperationID,
+			envelope.TaskID,
+			envelope.ID,
+		)
+	}
+	return result, nil
+}
+
+func (s *OpsConnectorService) CloudflareWrite(
+	ctx context.Context,
+	id uint,
+	method string,
+	path string,
+	body []byte,
+	target interface{},
+) (int, error) {
+	if s == nil || s.repo == nil {
+		return 0, errors.New("operations connector service is not configured")
+	}
+	method = strings.ToUpper(strings.TrimSpace(method))
+	if method != http.MethodPost && method != http.MethodPut && method != http.MethodPatch && method != http.MethodDelete {
+		return 0, fmt.Errorf("%w: Cloudflare write method is not allowed", ErrInvalidOpsConnector)
+	}
+	if !isAllowedCloudflareWritePath(path) {
+		return 0, fmt.Errorf("%w: Cloudflare write path is not allowed", ErrInvalidOpsConnector)
+	}
+	record, err := s.repo.FindByID(id)
+	if err != nil {
+		return 0, err
+	}
+	if record.Provider != ops.ConnectorProviderCloudflare {
+		return 0, fmt.Errorf("%w: connector is not a Cloudflare connector", ErrInvalidOpsConnector)
+	}
+	if !record.Enabled {
+		return 0, errors.New("Cloudflare connector is disabled")
+	}
+	credentials, err := s.readCredentials(*record)
+	if err != nil {
+		return 0, err
+	}
+	if len(credentials) == 0 {
+		return 0, errors.New("Cloudflare connector credentials are not configured")
+	}
+	endpoint, err := url.Parse(cloudflareAPIBaseURL + path)
+	if err != nil {
+		return 0, fmt.Errorf("build Cloudflare write request: %w", err)
+	}
+	req, err := http.NewRequestWithContext(ctx, method, endpoint.String(), bytes.NewReader(body))
+	if err != nil {
+		return 0, fmt.Errorf("build Cloudflare write request: %w", err)
+	}
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("User-Agent", "tanzanite-ops-cloudflare-write/1.0")
+	applyConnectorAuth(req, record.AuthType, credentials)
+	if err := ensureConnectorEndpointSafe(ctx, req.URL, record.Environment); err != nil {
+		return 0, err
+	}
+	client := s.httpClient
+	if client == nil {
+		client = &http.Client{Timeout: 12 * time.Second}
+	}
+	clientCopy := *client
+	clientCopy.CheckRedirect = func(redirectRequest *http.Request, _ []*http.Request) error {
+		return ensureConnectorEndpointSafe(redirectRequest.Context(), redirectRequest.URL, record.Environment)
+	}
+	response, err := clientCopy.Do(req)
+	if err != nil {
+		return 0, fmt.Errorf("Cloudflare write request failed: %w", err)
+	}
+	defer response.Body.Close()
+	raw, err := io.ReadAll(io.LimitReader(response.Body, 2<<20))
+	if err != nil {
+		return response.StatusCode, fmt.Errorf("read Cloudflare write response: %w", err)
+	}
+	if response.StatusCode < 200 || response.StatusCode >= 300 {
+		return response.StatusCode, fmt.Errorf("Cloudflare API returned HTTP %d", response.StatusCode)
+	}
+	var envelope struct {
+		Success bool            `json:"success"`
+		Result  json.RawMessage `json:"result"`
+	}
+	if err := json.Unmarshal(raw, &envelope); err != nil || !envelope.Success {
+		return response.StatusCode, errors.New("Cloudflare API reported an unsuccessful response")
+	}
+	if target != nil && len(envelope.Result) > 0 && string(envelope.Result) != "null" {
+		if err := json.Unmarshal(envelope.Result, target); err != nil {
+			return response.StatusCode, fmt.Errorf("decode Cloudflare write response: %w", err)
+		}
+	}
+	return response.StatusCode, nil
+}
+
 func (s *OpsConnectorService) saveTestResult(result *ops.ConnectorTestResult, record *ops.Connector, success bool) (*ops.ConnectorTestResult, error) {
 	testStatus := ops.ConnectorTestFailed
 	connectorStatus := ops.ConnectorStatusError
@@ -727,6 +923,27 @@ func defaultConnectorEndpoint(provider string) string {
 		return "https://api.github.com/user"
 	default:
 		return ""
+	}
+}
+
+func isAllowedCloudflareWritePath(path string) bool {
+	path = strings.TrimSpace(path)
+	if path == "" || !strings.HasPrefix(path, "/zones/") || strings.Contains(path, "..") || strings.Contains(path, "?") {
+		return false
+	}
+	segments := strings.Split(strings.Trim(path, "/"), "/")
+	if len(segments) < 3 || segments[0] != "zones" || segments[1] == "" {
+		return false
+	}
+	switch segments[2] {
+	case "dns_records":
+		return len(segments) == 3 || len(segments) == 4
+	case "purge_cache":
+		return len(segments) == 3
+	case "settings":
+		return len(segments) == 4 && segments[3] != ""
+	default:
+		return false
 	}
 }
 

@@ -36,6 +36,23 @@ func TestProductCacheOutboxPublisherCreatesInvalidateEvent(t *testing.T) {
 	assert.Equal(t, "stock changed", payload.Reason)
 }
 
+func TestProductCacheOutboxPublisherCreatesBrandInvalidateEvent(t *testing.T) {
+	db := newProductCacheOutboxTestDB(t)
+	publisher := NewProductCacheOutboxPublisher(repository.NewOutboxRepository(db))
+
+	require.NoError(t, publisher.EnqueueProductCacheInvalidateByBrandID(4, "brand changed"))
+
+	var event outboxdomain.Event
+	require.NoError(t, db.Where("event_type = ?", outboxdomain.EventTypeProductCacheInvalidate).First(&event).Error)
+	assert.Equal(t, outboxdomain.AggregateTypeProductBrand, event.AggregateType)
+	assert.Equal(t, "4", event.AggregateID)
+
+	var payload outboxdomain.ProductCacheInvalidatePayload
+	require.NoError(t, json.Unmarshal(event.Payload, &payload))
+	assert.Equal(t, uint(4), payload.ProductBrandID)
+	assert.Equal(t, "brand changed", payload.Reason)
+}
+
 func TestProductCacheOutboxHandlerInvalidatesProductIDs(t *testing.T) {
 	executor := &recordingProductCacheInvalidationExecutor{}
 	handler := NewProductCacheOutboxHandler(executor)
@@ -52,6 +69,25 @@ func TestProductCacheOutboxHandlerInvalidatesProductIDs(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, []uint{7, 8}, executor.productIDs)
+	assert.Equal(t, []string{productCacheInvalidationSourceOutbox}, executor.sources)
+}
+
+func TestProductCacheOutboxHandlerInvalidatesBrand(t *testing.T) {
+	executor := &recordingProductCacheInvalidationExecutor{}
+	handler := NewProductCacheOutboxHandler(executor)
+	payload, err := json.Marshal(outboxdomain.ProductCacheInvalidatePayload{
+		ProductBrandID: 4,
+		Reason:         "brand changed",
+	})
+	require.NoError(t, err)
+
+	err = handler.Handle(context.Background(), outboxdomain.Event{
+		EventType: outboxdomain.EventTypeProductCacheInvalidate,
+		Payload:   payload,
+	})
+
+	require.NoError(t, err)
+	assert.Equal(t, []uint{4}, executor.productBrandIDs)
 	assert.Equal(t, []string{productCacheInvalidationSourceOutbox}, executor.sources)
 }
 
@@ -97,6 +133,7 @@ func TestProductCacheOutboxHandlerProcessesThroughOutboxService(t *testing.T) {
 type recordingProductCacheInvalidationExecutor struct {
 	productIDs                    []uint
 	productTypeIDs                []uint
+	productBrandIDs               []uint
 	productInformationTemplateIDs []uint
 	sources                       []string
 	err                           error
@@ -110,6 +147,12 @@ func (e *recordingProductCacheInvalidationExecutor) InvalidateProductCacheByIDsW
 
 func (e *recordingProductCacheInvalidationExecutor) InvalidateProductCacheByProductTypeIDWithSource(productTypeID uint, source string) (ProductCacheInvalidationResult, error) {
 	e.productTypeIDs = append(e.productTypeIDs, productTypeID)
+	e.sources = append(e.sources, source)
+	return ProductCacheInvalidationResult{Products: 1, Keys: 1}, e.err
+}
+
+func (e *recordingProductCacheInvalidationExecutor) InvalidateProductCacheByBrandIDWithSource(brandID uint, source string) (ProductCacheInvalidationResult, error) {
+	e.productBrandIDs = append(e.productBrandIDs, brandID)
 	e.sources = append(e.sources, source)
 	return ProductCacheInvalidationResult{Products: 1, Keys: 1}, e.err
 }

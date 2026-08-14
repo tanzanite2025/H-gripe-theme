@@ -19,6 +19,7 @@ func (h *Handler) ListPublicChatProducts(c *gin.Context) {
 	locale := middleware.GetLocale(c)
 	keyword := strings.TrimSpace(c.Query("keyword"))
 	typeSlug := strings.TrimSpace(c.Query("product_type"))
+	brandSlug := strings.TrimSpace(c.Query("brand"))
 	priceMin := parseOptionalFloatQuery(c, "price_min")
 	priceMax := parseOptionalFloatQuery(c, "price_max")
 	specFilters := parseSpecFilterQuery(c)
@@ -39,6 +40,7 @@ func (h *Handler) ListPublicChatProducts(c *gin.Context) {
 		Locale:      locale,
 		Keyword:     keyword,
 		TypeSlug:    typeSlug,
+		BrandSlug:   brandSlug,
 		PriceMin:    priceMin,
 		PriceMax:    priceMax,
 		SpecFilters: specFilters,
