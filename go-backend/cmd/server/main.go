@@ -35,6 +35,11 @@ var (
 )
 
 func main() {
+	command := parseCommand()
+	if command == "render-edge-config" {
+		applyEdgeConfigLoadDefaults()
+	}
+
 	cfg, err := config.Load(os.Getenv("CONFIG_FILE"))
 	if err != nil {
 		log.Fatalf("load config: %v", err)
@@ -46,14 +51,6 @@ func main() {
 	defer func() {
 		_ = logger.Log.Sync()
 	}()
-
-	command := "serve"
-	if len(os.Args) > 1 {
-		if len(os.Args) != 2 || (os.Args[1] != "migrate" && os.Args[1] != "render-edge-config") {
-			logger.Fatal("unsupported command", zap.Strings("arguments", os.Args[1:]))
-		}
-		command = os.Args[1]
-	}
 
 	gin.SetMode(cfg.Server.Mode)
 
@@ -280,6 +277,30 @@ func main() {
 	}
 
 	logger.Info("server stopped")
+}
+
+func parseCommand() string {
+	if len(os.Args) <= 1 {
+		return "serve"
+	}
+	if len(os.Args) == 2 && (os.Args[1] == "migrate" || os.Args[1] == "render-edge-config") {
+		return os.Args[1]
+	}
+	log.Fatalf("unsupported command: %v", os.Args[1:])
+	return ""
+}
+
+func applyEdgeConfigLoadDefaults() {
+	setDefaultEnv("REDIS_HOST", "127.0.0.1")
+	setDefaultEnv("REDIS_PORT", "6379")
+	setDefaultEnv("REDIS_PASSWORD", "edge-config-unused")
+}
+
+func setDefaultEnv(key, value string) {
+	if _, ok := os.LookupEnv(key); ok {
+		return
+	}
+	_ = os.Setenv(key, value)
 }
 
 func setupRouter(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Config, deps *app.Dependencies) *gin.Engine {
