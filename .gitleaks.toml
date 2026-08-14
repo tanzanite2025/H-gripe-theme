@@ -46,3 +46,14 @@ id = "generic-api-key"
     '''t\.Setenv\("WECHAT_API_V3_KEY",\s*"[0-9a-f]{32}"\)''',
     '''WechatAPIv3Key:\s*"[0-9a-f]{32}"''',
   ]
+
+  [[rules.allowlists]]
+  description = "False positive object storage key prefix comparison."
+  condition = "AND"
+  regexTarget = "line"
+  paths = [
+    '''(^|/)go-backend/internal/service/showcase_image_storage_service\.go$''',
+  ]
+  regexes = [
+    '''strings\.HasPrefix\(normalizedKey,\s*normalizedPrefix\+"/"\)''',
+  ]
