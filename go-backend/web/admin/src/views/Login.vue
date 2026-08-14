@@ -1,24 +1,38 @@
 <template>
-  <div class="admin-login-shell relative min-h-screen min-h-dvh overflow-hidden">
+  <div class="admin-login-shell relative min-h-screen min-h-dvh overflow-x-hidden overflow-y-auto">
     <div aria-hidden="true" class="admin-login-rail absolute inset-y-0 left-0 hidden w-[34vw] lg:block" />
     <div aria-hidden="true" class="admin-login-blueprint absolute right-[7vw] top-[12vh] hidden size-[22rem] lg:block" />
 
     <main class="relative z-10 flex min-h-screen min-h-dvh items-center justify-center px-4 py-8 sm:px-6">
       <AdminLanguageSwitcher class="absolute right-4 top-4 sm:right-6 sm:top-6" />
-      <Card class="w-full max-w-[430px] rounded-xl border-border/70 bg-card/95 py-5 shadow-2xl backdrop-blur-sm">
+      <Card class="min-h-[490px] w-full max-w-[430px] rounded-xl border-border/70 bg-card/95 py-5 shadow-2xl backdrop-blur-sm">
         <CardHeader class="space-y-3 px-5 text-center sm:px-7">
-          <div v-if="brandName || brandInitial || panelLabel" class="flex items-center justify-between gap-3 text-left">
-            <div v-if="brandName || brandInitial" class="flex min-w-0 items-center gap-2.5">
-              <span v-if="brandInitial" class="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-black text-primary-foreground shadow-xs">
-                {{ brandInitial }}
-              </span>
-              <strong v-if="brandName" class="truncate text-sm font-black italic uppercase">{{ brandName }}</strong>
+          <div class="flex min-h-8 items-center">
+            <div v-if="brandName || brandInitial || panelLabel" class="flex w-full items-center justify-between gap-3 text-left">
+              <div v-if="brandName || brandInitial" class="flex min-w-0 items-center gap-2.5">
+                <span v-if="brandInitial" class="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-black text-primary-foreground shadow-xs">
+                  {{ brandInitial }}
+                </span>
+                <strong v-if="brandName" class="truncate text-sm font-black italic uppercase">{{ brandName }}</strong>
+              </div>
+              <span v-if="panelLabel" class="ml-auto shrink-0 text-[9px] font-black uppercase tracking-widest text-muted-foreground/70">{{ panelLabel }}</span>
             </div>
-            <span v-if="panelLabel" class="ml-auto shrink-0 text-[9px] font-black uppercase tracking-widest text-muted-foreground/70">{{ panelLabel }}</span>
           </div>
           <span class="block text-[9px] font-black uppercase tracking-[0.16em] text-muted-foreground/60">{{ t('auth.controlAccess') }}</span>
-          <CardTitle v-if="loginTitle" class="text-lg font-black italic uppercase text-foreground">{{ loginTitle }}</CardTitle>
+          <div class="min-h-7">
+            <CardTitle v-if="loginTitle" class="text-lg font-black italic uppercase text-foreground">{{ loginTitle }}</CardTitle>
+          </div>
           <CardDescription class="text-[10px] font-medium leading-5 text-muted-foreground">{{ t('auth.description') }}</CardDescription>
+          <div class="min-h-[52px]" aria-live="assertive">
+            <div
+              v-if="loginError"
+              class="flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-left text-xs font-semibold leading-5 text-destructive"
+              role="alert"
+            >
+              <AlertCircle class="mt-0.5 size-4 shrink-0" />
+              <span>{{ loginError }}</span>
+            </div>
+          </div>
         </CardHeader>
 
         <CardContent class="px-5 sm:px-7">
@@ -123,7 +137,7 @@ import { toTypedSchema } from '@vee-validate/zod'
 import { useForm } from 'vee-validate'
 import { z } from 'zod'
 import { toast } from 'vue-sonner'
-import { Eye, EyeOff, LoaderCircle, LockKeyhole, LogIn, Mail } from '@lucide/vue'
+import { AlertCircle, Eye, EyeOff, LoaderCircle, LockKeyhole, LogIn, Mail } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
@@ -150,6 +164,7 @@ const { t } = useAdminI18n()
 
 const loading = ref(false)
 const showPassword = ref(false)
+const loginError = ref('')
 const googleAvailable = ref(false)
 const googleLoading = ref(false)
 const googleError = ref('')
@@ -177,7 +192,13 @@ const apiErrorData = (error: unknown): ApiErrorPayload | undefined => (
   (error as AxiosError<ApiErrorPayload>).response?.data
 )
 
-const loginErrorMessage = (error: unknown): string => apiErrorData(error)?.error || t('auth.loginFailed')
+const loginErrorMessage = (error: unknown): string => {
+  const response = (error as AxiosError<ApiErrorPayload>).response
+  if (!response) return t('auth.loginNetworkError')
+  if (response.status === 401) return t('auth.loginInvalidCredentials')
+  if (response.status === 403) return t('auth.loginForbidden')
+  return response.data?.message || response.data?.error || t('auth.loginFailed')
+}
 const googleLoginErrorMessage = (error: unknown): string => {
   const data = apiErrorData(error)
   return data?.message || data?.error || t('auth.googleLoginFailed')
@@ -215,12 +236,13 @@ const onSubmit = handleSubmit(async (values) => {
   if (loading.value) return
 
   loading.value = true
+  loginError.value = ''
   try {
     await authStore.login(values.email, values.password)
     toast.success(t('auth.loginSuccess'))
     await router.push(resolveRedirectTarget())
   } catch (error) {
-    toast.error(loginErrorMessage(error), { id: 'admin-login-error' })
+    loginError.value = loginErrorMessage(error)
   } finally {
     loading.value = false
   }
@@ -265,6 +287,7 @@ const onGoogleSubmit = async (): Promise<void> => {
 
 <style scoped>
 .admin-login-shell {
+  scrollbar-gutter: stable;
   background:
     linear-gradient(135deg, color-mix(in oklch, var(--primary) 8%, var(--background)) 0%, var(--background) 46%, color-mix(in oklch, var(--accent) 42%, var(--background)) 100%);
 }
