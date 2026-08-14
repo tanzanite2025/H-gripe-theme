@@ -1,6 +1,7 @@
 export interface ProductFormRecord {
   id: number | string | null
   product_type_id: number | string | null
+  brand_id: number | string | null
   shipping_template_id: number | string | null
   after_sales_template_id: number | string | null
   packaging_template_id: number | string | null

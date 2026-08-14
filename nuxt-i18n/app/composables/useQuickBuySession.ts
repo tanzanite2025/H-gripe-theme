@@ -11,12 +11,40 @@ import {
   normalizeQuickBuyFlow,
 } from '~/utils/quickBuy/normalize'
 import type {
+  QuickBuySpecFilter,
   QuickBuySession,
   QuickBuySessionItem,
   QuickBuySessionSelectionInput,
   QuickBuySessionValidationIssue,
   QuickBuySessionValidationResult,
 } from '~/utils/quickBuy/types'
+
+const normalizeQuickBuySpecFilter = (value: unknown): QuickBuySpecFilter | null => {
+  const record = asQuickBuyRecord(value)
+  if (!record) return null
+  const slug = asQuickBuyString(record.slug).trim()
+  const name = asQuickBuyString(record.name ?? record.slug).trim()
+  if (!slug || !name) return null
+  return {
+    id: asQuickBuyNumber(record.id),
+    name,
+    slug,
+    unit: asQuickBuyString(record.unit).trim() || undefined,
+    fieldType: asQuickBuyString(record.fieldType ?? record.field_type).trim() || 'text',
+    presentation: asQuickBuyString(record.presentation).trim() || 'text',
+    isVariantOption: Boolean(record.isVariantOption ?? record.is_variant_option),
+    multiple: record.multiple !== false,
+    values: asQuickBuyArray(record.values)
+      .map((item) => asQuickBuyString(item).trim())
+      .filter(Boolean),
+  }
+}
+
+const normalizeQuickBuySpecFilters = (value: unknown): QuickBuySpecFilter[] => (
+  asQuickBuyArray(value)
+    .map(normalizeQuickBuySpecFilter)
+    .filter((item): item is QuickBuySpecFilter => Boolean(item))
+)
 
 const normalizeQuickBuySessionValidationIssue = (value: unknown): QuickBuySessionValidationIssue | null => {
   const record = asQuickBuyRecord(value)
@@ -258,7 +286,7 @@ export function useQuickBuySession(surface = 'dock') {
 
   const fetchStepCandidates = async (
     stepKey: string,
-    params: { keyword?: string, page?: number, pageSize?: number } = {},
+    params: { keyword?: string, page?: number, pageSize?: number, specFilters?: Record<string, string[]> } = {},
   ): Promise<ShopProductsResult | null> => {
     const currentSession = await createSession()
     if (!currentSession?.sessionToken) return null
@@ -272,6 +300,14 @@ export function useQuickBuySession(surface = 'dock') {
     if (displayCurrency.value || currentSession.currency) {
       query.set('currency', displayCurrency.value || currentSession.currency)
     }
+    const specFilters = Object.fromEntries(
+      Object.entries(params.specFilters || {})
+        .map(([slug, values]) => [slug, (values || []).map(value => String(value || '').trim()).filter(Boolean)])
+        .filter(([, values]) => Array.isArray(values) && values.length > 0),
+    )
+    if (Object.keys(specFilters).length > 0) {
+      query.set('spec_filters', JSON.stringify(specFilters))
+    }
 
     const requestId = beginRequest()
     try {
@@ -284,6 +320,7 @@ export function useQuickBuySession(surface = 'dock') {
       const responseRecord = asQuickBuyRecord(response)
       const payloadRecord = asQuickBuyRecord(payload)
       const pagination = payloadRecord || responseRecord
+      const stepRecord = asQuickBuyRecord(responseRecord?.step ?? payloadRecord?.step)
       return {
         items: extractQuickBuyCandidateProducts(response).map((item) => normalizeShopProduct(item, baseCurrency.value)),
         raw: response,
@@ -291,6 +328,7 @@ export function useQuickBuySession(surface = 'dock') {
         pageSize: asQuickBuyNumber(pagination?.page_size, params.pageSize || 12),
         total: asQuickBuyNumber(pagination?.total),
         hasMore: asQuickBuyBoolean(pagination?.has_more),
+        quickBuyFilters: normalizeQuickBuySpecFilters(stepRecord?.filters),
       }
     } catch (err) {
       setRequestError(requestId, err, 'Unable to load QUICK candidates')

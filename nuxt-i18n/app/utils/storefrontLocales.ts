@@ -50,6 +50,11 @@ export function getStorefrontLocaleName(value: unknown, fallback = ''): string {
   return entry?.name || fallback || String(value || '')
 }
 
+export function getStorefrontLocaleLanguageTag(value: unknown, fallback = ''): string {
+  const entry = getStorefrontLocaleEntry(value)
+  return entry?.iso || entry?.language || entry?.code.replace(/_/g, '-') || fallback || String(value || '')
+}
+
 export function getStorefrontLocaleFlag(value: unknown): string {
   const entry = getStorefrontLocaleEntry(value)
   const regionCode = entry?.iso.split('-')[1]?.toUpperCase() || ''

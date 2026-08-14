@@ -20,7 +20,7 @@
       </div>
     </template>
 
-    <Table class="min-w-[1320px]">
+    <Table class="min-w-[1420px]">
       <TableHeader>
         <TableRow>
           <TableHead class="w-11">
@@ -34,6 +34,7 @@
           <TableHead class="w-56">SKU</TableHead>
           <TableHead class="w-20">图片</TableHead>
           <TableHead>商品名称</TableHead>
+          <TableHead class="w-32">品牌</TableHead>
           <TableHead class="w-32">价格</TableHead>
           <TableHead class="w-24">库存</TableHead>
           <TableHead class="w-24">状态</TableHead>
@@ -45,7 +46,7 @@
         </TableRow>
       </TableHeader>
       <TableBody>
-        <TableEmpty v-if="products.length === 0" :colspan="13">
+        <TableEmpty v-if="products.length === 0" :colspan="14">
           <div class="flex flex-col items-center text-muted-foreground">
             <PackageOpen class="mb-2 size-7 opacity-55" />
             <span class="text-xs">暂无商品</span>
@@ -86,6 +87,10 @@
             <ProductThumbnail :product="product" />
           </TableCell>
           <TableCell class="max-w-72 truncate font-bold text-xs">{{ product.name }}</TableCell>
+          <TableCell class="max-w-32 truncate text-xs">
+            <span v-if="product.brand?.name" class="font-semibold">{{ product.brand.name }}</span>
+            <span v-else class="text-muted-foreground/60">未设置</span>
+          </TableCell>
           <TableCell>
             <div class="flex items-baseline gap-1.5 tabular-nums">
               <span v-if="product.sale_price" class="font-mono text-xs font-bold text-destructive">{{ formatMoney(product.sale_price, product.currency) }}</span>

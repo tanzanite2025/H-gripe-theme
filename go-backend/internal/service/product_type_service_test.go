@@ -70,6 +70,32 @@ func TestProductServiceCreatesVisualVariantOptionWithoutFixedTemplateOptions(t *
 	assert.JSONEq(t, `[]`, created.SpecDefinitions[0].Options)
 }
 
+func TestProductServiceAllowsDynamicSelectSpecificationWithoutSharedOptions(t *testing.T) {
+	_, productService := newTestProductService(t)
+
+	created, err := productService.CreateProductType(ProductTypeInput{
+		Name:      "Rim",
+		Slug:      "rim_dynamic_values",
+		IsEnabled: true,
+		SpecDefinitions: []ProductSpecDefinitionInput{
+			{
+				Group:        "规格",
+				Name:         "Rim Depth",
+				Slug:         "rim_depth",
+				FieldType:    "select",
+				IsFilterable: true,
+				IsVisible:    true,
+				SortOrder:    10,
+			},
+		},
+	})
+
+	require.NoError(t, err)
+	require.Len(t, created.SpecDefinitions, 1)
+	assert.Equal(t, "select", created.SpecDefinitions[0].FieldType)
+	assert.JSONEq(t, `[]`, created.SpecDefinitions[0].Options)
+}
+
 func TestProductServicePersistsAndReplacesProductTypeTranslations(t *testing.T) {
 	_, productService := newTestProductService(t)
 

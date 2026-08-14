@@ -162,6 +162,7 @@ func (h *ProductHandler) CreateProduct(c *gin.Context) {
 
 	newProduct, err := h.productService.CreateAdminProduct(service.ProductCreateInput{
 		ProductTypeID:        req.ProductTypeID,
+		BrandID:              req.BrandID,
 		ShippingTemplateID:   req.ShippingTemplateID,
 		AfterSalesTemplateID: req.AfterSalesTemplateID,
 		PackagingTemplateID:  req.PackagingTemplateID,
@@ -217,6 +218,7 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 
 	_, updateParentID := raw["parent_id"]
 	_, updateProductTypeID := raw["product_type_id"]
+	_, updateBrandID := raw["brand_id"]
 	_, updateShippingTemplateID := raw["shipping_template_id"]
 	_, updateAfterSalesTemplateID := raw["after_sales_template_id"]
 	_, updatePackagingTemplateID := raw["packaging_template_id"]
@@ -238,6 +240,8 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 	updatedProduct, err := h.productService.UpdateAdminProduct(uint(id), service.ProductUpdateInput{
 		ProductTypeID:              req.ProductTypeID,
 		UpdateProductTypeID:        updateProductTypeID,
+		BrandID:                    req.BrandID,
+		UpdateBrandID:              updateBrandID,
 		ShippingTemplateID:         req.ShippingTemplateID,
 		UpdateShippingTemplateID:   updateShippingTemplateID,
 		AfterSalesTemplateID:       req.AfterSalesTemplateID,

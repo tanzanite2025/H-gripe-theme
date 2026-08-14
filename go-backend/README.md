@@ -25,6 +25,7 @@ The project is still under active development and has not launched in production
 ```text
 go-backend/
 |-- cmd/server/          # API entrypoint
+|-- cmd/adminctl/        # audited admin account recovery CLI
 |-- config/              # configuration examples
 |-- docs/                # backend module and testing notes
 |-- internal/
@@ -84,6 +85,7 @@ go test ./...
 - API notes: `API.md`
 - Quick start: `QUICK_START.md`
 - Deployment notes: `DEPLOYMENT.md`
+- Admin account recovery: `docs/ADMIN_ACCOUNT_RECOVERY.md`
 - API testing guide: `docs/API_TESTING_GUIDE.md`
 - Blog i18n maintainability notes: `docs/MAINTAINABILITY_GUIDE.md`
 - Blog i18n quick reference: `docs/I18N_QUICK_REFERENCE.md`

@@ -25,6 +25,11 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
     -o /app/server \
     ./cmd/server
 
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+    -ldflags="-w -s -X main.Version=${VERSION} -X main.BuildTime=${BUILD_TIME}" \
+    -o /app/adminctl \
+    ./cmd/adminctl
+
 # Runtime image is pinned to avoid an unreviewed latest tag.
 FROM alpine:3.22
 
@@ -40,6 +45,7 @@ WORKDIR /app
 
 # 从构建阶段复制二进制文件
 COPY --from=builder /app/server /app/server
+COPY --from=builder /app/adminctl /app/adminctl
 
 # Production configuration and SQL migrations are runtime inputs.
 COPY --from=builder /app/config /app/config

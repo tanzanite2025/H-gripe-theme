@@ -115,7 +115,7 @@ onMounted(async () => {
 }
 
 .wallet-return-order {
-  font-family: 'StorefrontSystem';
+  font-family: var(--tz-font-system);
   color: #fff !important;
 }
 

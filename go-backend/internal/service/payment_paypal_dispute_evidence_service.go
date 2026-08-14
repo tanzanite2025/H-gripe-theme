@@ -66,15 +66,18 @@ func (s livePayPalDisputeEvidenceSubmitter) ProvideEvidence(ctx context.Context,
 }
 
 type PayPalDisputeEvidencePackage struct {
-	Dispute        *paymentdomain.PayPalDispute         `json:"dispute"`
-	Order          *orderdomain.Order                   `json:"order,omitempty"`
-	Shipment       *shippingdomain.TrackingShipment     `json:"shipment,omitempty"`
-	TrackingEvents []shippingdomain.TrackingEvent       `json:"tracking_events"`
-	Communications []StripeDisputeCommunicationEvidence `json:"communications"`
-	Evidence       PayPalDisputeEvidenceDraft           `json:"evidence"`
-	Documents      []PayPalDisputeEvidenceDocument      `json:"documents"`
-	Warnings       []string                             `json:"warnings"`
-	CanSubmit      bool                                 `json:"can_submit"`
+	Dispute           *paymentdomain.PayPalDispute          `json:"dispute"`
+	Order             *orderdomain.Order                    `json:"order,omitempty"`
+	Shipment          *shippingdomain.TrackingShipment      `json:"shipment,omitempty"`
+	TrackingEvents    []shippingdomain.TrackingEvent        `json:"tracking_events"`
+	Communications    []StripeDisputeCommunicationEvidence  `json:"communications"`
+	Authentication    *DisputePaymentAuthenticationEvidence `json:"authentication,omitempty"`
+	Evidence          PayPalDisputeEvidenceDraft            `json:"evidence"`
+	EvidenceChecklist DisputeEvidenceChecklist              `json:"evidence_checklist"`
+	SubmissionCheck   DisputeEvidenceSubmissionCheck        `json:"submission_check"`
+	Documents         []PayPalDisputeEvidenceDocument       `json:"documents"`
+	Warnings          []string                              `json:"warnings"`
+	CanSubmit         bool                                  `json:"can_submit"`
 }
 
 type PayPalDisputeEvidenceDraft struct {
@@ -138,10 +141,15 @@ func (s *PaymentService) BuildPayPalDisputeEvidencePackage(disputeID uint) (*Pay
 		Warnings:       []string{},
 		CanSubmit:      paypalDisputeNeedsSellerEvidence(record) && record.EvidenceSubmittedAt == nil,
 	}
+	transaction, err := s.findDisputeEvidenceTransaction("paypal", record.TransactionID, record.ProviderPaymentID, disputeOrderID(record.OrderID))
+	if err != nil {
+		pkg.Warnings = append(pkg.Warnings, "Payment transaction authentication evidence is unavailable; it is not used as a PayPal submission field.")
+	}
+	pkg.Authentication = buildStripeAuthenticationEvidence(transaction, "")
 
 	if record.OrderID == nil || s.orderRepo == nil {
 		pkg.Warnings = append(pkg.Warnings, "PayPal dispute is not linked to a local order yet.")
-		pkg.Evidence = buildPayPalDisputeEvidenceDraft(pkg)
+		finalizePayPalDisputeEvidencePackage(pkg)
 		return pkg, nil
 	}
 
@@ -190,7 +198,7 @@ func (s *PaymentService) BuildPayPalDisputeEvidencePackage(disputeID uint) (*Pay
 	}
 	pkg.Warnings = append(pkg.Warnings, "Carrier official proof-of-delivery PDF attachment is not configured yet. PayPal will receive structured tracking, signature-event, invoice, and communication notes.")
 
-	pkg.Evidence = buildPayPalDisputeEvidenceDraft(pkg)
+	finalizePayPalDisputeEvidencePackage(pkg)
 	return pkg, nil
 }
 
@@ -203,6 +211,9 @@ func (s *PaymentService) SubmitPayPalDisputeEvidence(ctx context.Context, input 
 		return nil, err
 	}
 	if !pkg.CanSubmit {
+		return nil, ErrPayPalDisputeEvidenceNotSubmittable
+	}
+	if !pkg.SubmissionCheck.Ready && strings.TrimSpace(pkg.Evidence.ShippingTrackingNumber) != "" {
 		return nil, ErrPayPalDisputeEvidenceNotSubmittable
 	}
 
@@ -408,6 +419,22 @@ func buildPayPalDisputeEvidenceDraft(pkg *PayPalDisputeEvidencePackage) PayPalDi
 	}
 	draft.Notes = paypalDisputeEvidenceNotes(pkg, draft, "")
 	return draft
+}
+
+func finalizePayPalDisputeEvidencePackage(pkg *PayPalDisputeEvidencePackage) {
+	if pkg == nil {
+		return
+	}
+	pkg.Evidence = buildPayPalDisputeEvidenceDraft(pkg)
+	pkg.EvidenceChecklist = buildDisputeEvidenceChecklist(
+		"paypal",
+		pkg.Order,
+		pkg.Shipment,
+		pkg.TrackingEvents,
+		pkg.Communications,
+		pkg.Authentication,
+	)
+	pkg.SubmissionCheck = buildDisputeEvidenceSubmissionCheck(pkg.CanSubmit, pkg.EvidenceChecklist)
 }
 
 func paypalDisputeEvidenceNotes(pkg *PayPalDisputeEvidencePackage, draft PayPalDisputeEvidenceDraft, additionalStatement string) string {

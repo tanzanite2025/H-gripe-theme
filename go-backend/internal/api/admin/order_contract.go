@@ -27,6 +27,14 @@ type adminNoteRequest struct {
 	AdminNote string `json:"admin_note"`
 }
 
+type orderDisputeContactEmailRequest struct {
+	Provider  string `json:"provider" binding:"required"`
+	DisputeID uint   `json:"dispute_id" binding:"required"`
+	Subject   string `json:"subject" binding:"required"`
+	Body      string `json:"body" binding:"required"`
+	Confirm   bool   `json:"confirm"`
+}
+
 type orderBatchStatusRequest struct {
 	OrderIDs []uint `json:"order_ids" binding:"required,min=1"`
 	Status   string `json:"status" binding:"required,oneof=pending processing shipped completed cancelled"`
@@ -45,6 +53,17 @@ func respondOrderServiceError(c *gin.Context, err error, fallbackMessage string,
 	switch {
 	case errors.Is(err, service.ErrOrderNotFound):
 		c.JSON(http.StatusNotFound, gin.H{"error": "Order not found"})
+	case errors.Is(err, service.ErrOrderDisputePaymentNotConfigured):
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Order dispute analysis is not configured"})
+	case errors.Is(err, service.ErrOrderDisputeNotFound):
+		c.JSON(http.StatusNotFound, gin.H{"error": "Order dispute not found"})
+	case errors.Is(err, service.ErrOrderDisputeEmailConfirmRequired),
+		errors.Is(err, service.ErrOrderDisputeEmailRecipientMissing),
+		errors.Is(err, service.ErrOrderDisputeEmailSubjectRequired),
+		errors.Is(err, service.ErrOrderDisputeEmailBodyRequired):
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	case errors.Is(err, service.ErrOrderDisputeEmailNotConfigured):
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Order dispute contact email is not configured"})
 	case errors.Is(err, service.ErrSystemManagedOrderStatus):
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	case errors.Is(err, service.ErrOrderDeleteNotAllowed):

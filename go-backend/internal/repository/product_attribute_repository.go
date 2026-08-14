@@ -315,6 +315,7 @@ func specDefinitionUpdates(definition *product.SpecDefinition) map[string]interf
 		"name":              definition.Name,
 		"slug":              definition.Slug,
 		"field_type":        definition.FieldType,
+		"presentation":      definition.Presentation,
 		"unit":              definition.Unit,
 		"is_required":       definition.IsRequired,
 		"is_filterable":     definition.IsFilterable,

@@ -33,6 +33,10 @@ func NewMerchantOutboxPublisher(repo *repository.OutboxRepository) *MerchantOutb
 	return &MerchantOutboxPublisher{repo: repo}
 }
 
+func (p *MerchantOutboxPublisher) WithRepository(repo *repository.OutboxRepository) *MerchantOutboxPublisher {
+	return NewMerchantOutboxPublisher(repo)
+}
+
 func (p *MerchantOutboxPublisher) EnqueueProductUpsert(productID uint, reason string) error {
 	return p.enqueueProductEvent(outbox.EventTypeMerchantProductUpsert, productID, reason)
 }

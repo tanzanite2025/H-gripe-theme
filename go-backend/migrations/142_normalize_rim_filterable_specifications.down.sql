@@ -1,0 +1,2 @@
+-- Keep the normalized RIM filter contract on rollback; this migration only
+-- corrects system metadata and must not restore an obsolete filter policy.

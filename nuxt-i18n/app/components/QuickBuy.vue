@@ -8,37 +8,61 @@
         @click.self="handleClose"
       >
         <!-- 半透明背景遮罩 -->
-        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm"></div>
+        <div class="absolute inset-0 bg-[#030406]/76 backdrop-blur-sm"></div>
         <!-- 弹窗内容 -->
         <Transition name="slide-up" appear>
           <div
-            class="sidebar-panel quickbuy-modal-shell tz-mobile-dialog-surface relative w-[90vw] max-w-none h-[80vh] max-h-[80vh] bg-black backdrop-blur-xl rounded-2xl shadow-[0_18px_44px_rgba(0,0,0,0.72)] box-border flex flex-col overflow-hidden"
+            class="sidebar-panel quickbuy-modal-shell tz-mobile-dialog-surface relative w-[90vw] max-w-none h-[80vh] max-h-[80vh] bg-[#101116] backdrop-blur-xl rounded-2xl shadow-[0_18px_44px_rgba(0,0,0,0.72)] box-border flex flex-col overflow-hidden"
             role="dialog"
             aria-modal="true"
           >
         <!-- 头部 -->
-        <header class="flex items-center justify-between px-3.5 max-md:px-2 py-2.5 max-md:py-2 rounded-t-2xl overflow-hidden max-md:gap-1.5">
-          <nav class="flex-1 min-w-0 overflow-hidden max-md:flex-auto" :aria-label="t('quickBuy.stepsAriaLabel')">
-            <ol class="flex items-center justify-center gap-3 max-md:gap-1.5 list-none m-0 p-0 max-md:flex-nowrap">
-              <li
-                v-for="n in totalSteps"
-                :key="n"
-                class="inline-flex items-center gap-3 max-md:gap-1.5"
-              >
-                <span 
-                  class="w-7 h-7 max-md:w-[22px] max-md:h-[22px] rounded-full grid place-items-center font-bold transition-all duration-200"
-                  :class="[
-                    n === currentStepIndex ? 'bg-white text-black shadow-[0_0_0_3px_rgba(255,255,255,0.16)]' :
-                    n < currentStepIndex ? 'bg-[#3c4454] text-white' :
-                    'bg-[#2c2f35] text-white/90'
-                  ]"
-                >{{ n }}</span>
-                <span v-if="n < totalSteps" class="w-8 max-md:w-2.5 h-1 rounded-full bg-white/[0.18]" aria-hidden="true" />
-              </li>
-            </ol>
-          </nav>
+        <header class="quickbuy-modal-header grid items-center px-3.5 max-md:px-2 py-2.5 max-md:py-2 rounded-t-2xl max-md:gap-1.5">
+          <div class="quickbuy-step-header-rail">
+            <button
+              class="quickbuy-mobile-step-action"
+              type="button"
+              :disabled="currentStepIndex <= 1"
+              :aria-label="t('common.previous', 'Previous')"
+              :title="t('common.previous', 'Previous')"
+              @click="goToPreviousStep"
+            >
+              <Icon name="lucide:arrow-left" class="h-4 w-4" aria-hidden="true" />
+            </button>
+
+            <nav class="quickbuy-step-nav" :aria-label="t('quickBuy.stepsAriaLabel')">
+              <ol class="flex items-center justify-center gap-3 max-md:gap-1.5 list-none m-0 p-0 max-md:flex-nowrap">
+                <li
+                  v-for="n in totalSteps"
+                  :key="n"
+                  class="inline-flex items-center gap-3 max-md:gap-1.5"
+                >
+                  <span
+                    class="w-7 h-7 max-md:w-[22px] max-md:h-[22px] rounded-full grid place-items-center font-bold transition-all duration-200"
+                    :class="[
+                      n === currentStepIndex ? 'bg-white text-black shadow-[0_0_0_3px_rgba(255,255,255,0.16)]' :
+                      n < currentStepIndex ? 'bg-[#3c4454] text-white' :
+                      'bg-[#2c2f35] text-white/90'
+                    ]"
+                  >{{ n }}</span>
+                  <span v-if="n < totalSteps" class="w-8 max-md:w-2.5 h-1 rounded-full bg-white/[0.18]" aria-hidden="true" />
+                </li>
+              </ol>
+            </nav>
+
+            <button
+              class="quickbuy-mobile-step-action"
+              type="button"
+              :disabled="currentStepIndex >= totalSteps"
+              :aria-label="t('common.next', 'Next')"
+              :title="t('common.next', 'Next')"
+              @click="goToNextStep"
+            >
+              <Icon name="lucide:arrow-right" class="h-4 w-4" aria-hidden="true" />
+            </button>
+          </div>
           <button 
-            class="tz-global-close-btn flex-none ml-1.5 max-md:ml-0"
+            class="quickbuy-modal-close tz-global-close-btn relative z-10 flex-none"
             type="button" 
             :aria-label="t('common.close', 'Close')"
             @click="handleClose"
@@ -56,6 +80,11 @@
               :help-content="quickBuyFlowHelpContent"
               :search-placeholder="t('quickBuy.search.placeholder')"
               :products="candidateProducts"
+              :filters="candidateFilters"
+              :selected-filters="currentSpecFilters"
+              :filters-label="t('quickBuy.filters.label', 'Filters')"
+              :clear-filters-label="t('quickBuy.filters.clear', 'Clear')"
+              :no-filter-values-label="t('quickBuy.filters.empty', 'No values available')"
               :error-message="quickBuyError"
               :loading="loadingCandidates"
               :can-go-to-previous-product-page="canGoToPreviousQuickBuyCandidateProductPage"
@@ -79,6 +108,8 @@
               @next-product-page="goToNextQuickBuyCandidateProductPage"
               @select-product="toggleCandidateSelection"
               @open-product-details="openQuickBuyCandidateProductDetails"
+              @toggle-filter="toggleSpecFilter"
+              @clear-filters="clearSpecFilters"
               @previous-step="goToPreviousStep"
               @next-step="goToNextStep"
             />
@@ -98,6 +129,11 @@
               :decrease-label="t('common.decrease', 'Decrease')"
               :increase-label="t('common.increase', 'Increase')"
               :remove-label="t('common.remove', 'Remove')"
+              :view-details-label="t('products.detail.viewDetails', 'View details')"
+              :close-label="t('common.close', 'Close')"
+              :done-label="t('common.done', 'Done')"
+              :previous-product-label="t('common.previous', 'Previous')"
+              :next-product-label="t('common.next', 'Next')"
               @remove-product="removeSelectedProduct"
               @change-quantity="changeSelectedProductQuantity"
               @update-quantity="updateSelectedProductQuantity"
@@ -125,6 +161,7 @@ import { useShopProducts } from '~/composables/useShopProducts'
 import type { ShopProduct } from '~/composables/useShopProducts'
 import type {
   QuickBuyConfig,
+  QuickBuySpecFilter,
   QuickBuyStep,
 } from '~/utils/quickBuy/types'
 
@@ -155,6 +192,8 @@ const defaultQuickBuySteps = computed<QuickBuyStep[]>(() => [
 const currentStepIndex = ref(1)
 const query = ref('')
 const candidateProducts = ref<ShopProduct[]>([])
+const candidateFilters = ref<QuickBuySpecFilter[]>([])
+const stepFilterSelections = ref<Record<string, Record<string, string[]>>>({})
 const loadingCandidates = ref(false)
 const quickBuyError = ref('')
 const candidatePage = ref(1)
@@ -180,6 +219,7 @@ const steps = computed(() => hasConfiguredFlow.value ? configuredSteps.value : d
 const totalSteps = computed(() => steps.value.length)
 const currentStep = computed<QuickBuyStep>(() => steps.value[currentStepIndex.value - 1] || { id: 0, slug: '', name: '' })
 const currentStepKey = computed(() => currentStep.value.stepKey || currentStep.value.slug || `step-${currentStepIndex.value}`)
+const currentSpecFilters = computed(() => stepFilterSelections.value[currentStepKey.value] || {})
 const quickBuyFlowHelpContent = computed(() =>
   props.config?.flowHelpText?.trim()
   || session.value?.flow?.helpText?.trim()
@@ -228,6 +268,7 @@ const loadQuickBuyCandidateProductsByPage = async (page = 1) => {
   candidatePage.value = page
   hasMoreCandidates.value = false
   candidateProducts.value = []
+  candidateFilters.value = []
 
   try {
     const activeSession = await createSession()
@@ -243,6 +284,7 @@ const loadQuickBuyCandidateProductsByPage = async (page = 1) => {
         keyword: query.value.trim(),
         page,
         pageSize: QUICK_BUY_CANDIDATE_PAGE_SIZE,
+        specFilters: currentSpecFilters.value,
       })
       if (sequence !== fetchSequence) return
       if (!res) {
@@ -260,6 +302,7 @@ const loadQuickBuyCandidateProductsByPage = async (page = 1) => {
       result = normalizeCandidatePage(res)
     }
     candidateProducts.value = result.items
+    candidateFilters.value = result.filters
     candidatePage.value = result.page
     hasMoreCandidates.value = result.hasMore
   } catch (err) {
@@ -277,10 +320,12 @@ const normalizeCandidatePage = (result: {
   items: ShopProduct[]
   page?: number
   hasMore?: boolean
+  quickBuyFilters?: QuickBuySpecFilter[]
 }) => ({
   items: result.items,
   page: result.page || 1,
   hasMore: Boolean(result.hasMore),
+  filters: result.quickBuyFilters || [],
 })
 
 const scheduleSearch = () => {
@@ -328,6 +373,35 @@ const openQuickBuyCandidateProductDetails = (product: ShopProduct) => {
     title: product.title,
     thumbnail: product.thumbnail,
   })
+}
+
+const toggleSpecFilter = (slug: string, value: string) => {
+  const stepKey = currentStepKey.value
+  const current = { ...(stepFilterSelections.value[stepKey] || {}) }
+  const nextValues = new Set(current[slug] || [])
+  if (nextValues.has(value)) {
+    nextValues.delete(value)
+  } else {
+    nextValues.add(value)
+  }
+  if (nextValues.size > 0) {
+    current[slug] = Array.from(nextValues)
+  } else {
+    delete current[slug]
+  }
+  stepFilterSelections.value = {
+    ...stepFilterSelections.value,
+    [stepKey]: current,
+  }
+  loadQuickBuyCandidateProductsByPage(1)
+}
+
+const clearSpecFilters = () => {
+  const stepKey = currentStepKey.value
+  const next = { ...stepFilterSelections.value }
+  delete next[stepKey]
+  stepFilterSelections.value = next
+  loadQuickBuyCandidateProductsByPage(1)
 }
 
 watch([currentStepKey, hasConfiguredFlow], () => {
@@ -431,7 +505,8 @@ onBeforeUnmount(() => {
 .quickbuy-modal-body {
   display: flex;
   min-height: 0;
-  background: var(--quickbuy-shell-surface);
+  background:
+    linear-gradient(180deg, #1d1f26 0%, var(--quickbuy-shell-surface) 54%, var(--quickbuy-shell-surface-soft) 100%);
 }
 
 .quickbuy-workspace {
@@ -443,30 +518,71 @@ onBeforeUnmount(() => {
 }
 
 .quickbuy-modal-shell {
-  --quickbuy-shell-surface: #050505;
-  --quickbuy-panel-surface: var(--tz-card-surface, #111116);
-  --quickbuy-panel-surface-soft: #0c0c0e;
-  --quickbuy-panel-surface-raised: #17171b;
-  --quickbuy-control-surface: #0a0a0c;
-  --quickbuy-control-surface-raised: #151519;
-  --quickbuy-divider: rgba(255, 255, 255, 0.045);
-  --quickbuy-divider-strong: rgba(255, 255, 255, 0.065);
-  --quickbuy-dark-edge: rgba(0, 0, 0, 0.68);
+  --quickbuy-shell-surface: #17181f;
+  --quickbuy-shell-surface-soft: #111218;
+  --quickbuy-panel-surface: #1b1c23;
+  --quickbuy-panel-surface-soft: #16171d;
+  --quickbuy-panel-surface-raised: #22242c;
+  --quickbuy-control-surface: #111219;
+  --quickbuy-control-surface-raised: #1a1c24;
+  --quickbuy-divider: rgba(255, 255, 255, 0.085);
+  --quickbuy-divider-strong: rgba(255, 255, 255, 0.12);
+  --quickbuy-dark-edge: rgba(0, 0, 0, 0.42);
   --quickbuy-focus-ring: rgba(181, 255, 109, 0.12);
-  --quickbuy-shadow: 0 18px 54px rgba(0, 0, 0, 0.64);
+  --quickbuy-shadow: 0 18px 54px rgba(0, 0, 0, 0.5);
   border: 0 !important;
   background:
-    linear-gradient(180deg, #080808 0%, var(--quickbuy-shell-surface) 100%) !important;
+    linear-gradient(180deg, #24262e 0%, #1d1f26 34%, var(--quickbuy-shell-surface) 68%, var(--quickbuy-shell-surface-soft) 100%) !important;
   box-shadow:
-    0 30px 90px rgba(0, 0, 0, 0.82),
-    inset 0 1px 0 rgba(255, 255, 255, 0.025),
-    inset 0 0 0 1px rgba(0, 0, 0, 0.72) !important;
+    0 30px 90px rgba(0, 0, 0, 0.66),
+    inset 0 1px 0 rgba(255, 255, 255, 0.075),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.045) !important;
 }
 
 .quickbuy-modal-shell > header {
   background:
-    linear-gradient(180deg, #0b0b0c, #070707);
-  box-shadow: inset 0 -1px 0 var(--quickbuy-divider);
+    linear-gradient(180deg, #272a32 0%, #1f2128 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    inset 0 -1px 0 var(--quickbuy-divider);
+}
+
+.quickbuy-modal-header {
+  position: relative;
+  grid-template-columns: 2.5rem minmax(0, 1fr) 2.5rem;
+  overflow: visible;
+}
+
+.quickbuy-step-header-rail {
+  grid-column: 2;
+  z-index: 1;
+  display: flex;
+  width: max-content;
+  max-width: 100%;
+  align-items: center;
+  justify-content: center;
+  justify-self: center;
+}
+
+.quickbuy-modal-close {
+  grid-column: 3;
+  justify-self: end;
+}
+
+.quickbuy-step-nav {
+  position: static;
+  width: max-content;
+  max-width: none;
+  overflow: visible;
+}
+
+.quickbuy-step-nav ol {
+  width: max-content;
+  max-width: none;
+}
+
+.quickbuy-mobile-step-action {
+  display: none;
 }
 
 @media (max-width: 767px) {
@@ -511,6 +627,55 @@ onBeforeUnmount(() => {
 
   .quickbuy-modal-shell > header {
     border-radius: 0.75rem 0.75rem 0 0;
+  }
+
+  .quickbuy-modal-header {
+    grid-template-columns: 2rem minmax(0, 1fr) 2rem;
+  }
+
+  .quickbuy-step-header-rail {
+    display: grid;
+    width: max-content;
+    max-width: none;
+    grid-template-columns: 1.75rem max-content 1.75rem;
+    gap: 0.35rem;
+  }
+
+  .quickbuy-step-nav {
+    min-width: 0;
+    max-width: none;
+    overflow: visible;
+  }
+
+  .quickbuy-step-nav ol {
+    max-width: none;
+  }
+
+  .quickbuy-mobile-step-action {
+    display: inline-grid;
+    width: 1.75rem;
+    height: 1.75rem;
+    place-items: center;
+    border: 0;
+    border-radius: 999px;
+    color: rgba(255, 255, 255, 0.86);
+    background:
+      linear-gradient(180deg, var(--quickbuy-control-surface-raised, #1a1c24), var(--quickbuy-control-surface, #111219));
+    box-shadow:
+      0 5px 14px rgba(0, 0, 0, 0.2),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+    transition: background-color 160ms ease, opacity 160ms ease, transform 160ms ease;
+  }
+
+  .quickbuy-mobile-step-action:hover:not(:disabled) {
+    background:
+      linear-gradient(180deg, #32343d, #24262e);
+    transform: translateY(-1px);
+  }
+
+  .quickbuy-mobile-step-action:disabled {
+    cursor: not-allowed;
+    opacity: 0.3;
   }
 
   .quickbuy-modal-body {

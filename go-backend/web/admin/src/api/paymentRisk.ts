@@ -128,6 +128,11 @@ export const paymentRiskApi = {
     return readObjectPayload(await axios.get(path), path)
   },
 
+  async submitPayPalDisputeEvidence(id: number | string, payload: Record<string, any>) {
+    const path = `/api/admin/payment/paypal-disputes/${id}/evidence/submit`
+    return readObjectPayload(await axios.post(path, payload), path)
+  },
+
   paypalDisputeInvoicePDFUrl(id: number | string) {
     return `/api/admin/payment/paypal-disputes/${id}/evidence/invoice.pdf`
   },

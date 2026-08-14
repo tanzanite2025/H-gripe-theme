@@ -5,7 +5,21 @@
       <DialogDescription>{{ currentOrder?.order_number || '订单信息' }}</DialogDescription>
     </DialogHeader>
 
-    <div v-if="currentOrder" class="space-y-6">
+    <Tabs v-if="currentOrder" default-value="overview" class="space-y-4">
+      <TabsList class="h-auto flex-wrap justify-start rounded-xl">
+        <TabsTrigger value="overview">概览</TabsTrigger>
+        <TabsTrigger value="items">商品金额</TabsTrigger>
+        <TabsTrigger value="tracking">物流轨迹</TabsTrigger>
+        <TabsTrigger value="disputes">
+          拒付分析
+          <span v-if="disputeAnalysis?.summary?.total" class="ml-1 rounded-full bg-rose-500/10 px-1.5 py-0.5 text-[9px] text-rose-600">
+            {{ disputeAnalysis.summary.total }}
+          </span>
+        </TabsTrigger>
+        <TabsTrigger value="notes">备注</TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="overview" class="space-y-6">
       <OrderDetailSection title="订单信息">
         <dl class="grid overflow-hidden rounded-lg border sm:grid-cols-2">
           <DetailItem label="订单号">{{ currentOrder.order_number }}</DetailItem>
@@ -73,7 +87,9 @@
           <DetailItem label="国家">{{ currentOrder.shipping_address?.country || '-' }}</DetailItem>
         </dl>
       </OrderDetailSection>
+      </TabsContent>
 
+      <TabsContent value="items" class="space-y-6">
       <OrderDetailSection title="订单商品">
         <Table>
           <TableHeader>
@@ -110,7 +126,9 @@
           </div>
         </dl>
       </OrderDetailSection>
+      </TabsContent>
 
+      <TabsContent value="tracking" class="space-y-6">
       <OrderDetailSection title="物流轨迹">
         <Table>
           <TableHeader>
@@ -132,7 +150,97 @@
           </TableBody>
         </Table>
       </OrderDetailSection>
+      </TabsContent>
 
+      <TabsContent value="disputes" class="space-y-4">
+        <div v-if="disputeAnalysisLoading" class="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+          拒付分析加载中
+        </div>
+        <div v-else-if="!disputeAnalysis?.disputes?.length" class="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+          当前订单没有关联 Stripe / PayPal 拒付记录
+        </div>
+        <div v-else class="space-y-4">
+          <div class="grid gap-2 sm:grid-cols-4">
+            <div class="rounded-lg border bg-muted/30 p-3">
+              <div class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">TOTAL / 拒付</div>
+              <div class="mt-1 font-mono text-lg font-black">{{ disputeAnalysis.summary?.total || 0 }}</div>
+            </div>
+            <div class="rounded-lg border bg-muted/30 p-3">
+              <div class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">RESPONSE / 需响应</div>
+              <div class="mt-1 font-mono text-lg font-black text-rose-600">{{ disputeAnalysis.summary?.needs_response || 0 }}</div>
+            </div>
+            <div class="rounded-lg border bg-muted/30 p-3">
+              <div class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">MISTAKE / 疑似误操作</div>
+              <div class="mt-1 font-mono text-lg font-black text-amber-600">{{ disputeAnalysis.summary?.likely_mistake || 0 }}</div>
+            </div>
+            <div class="rounded-lg border bg-muted/30 p-3">
+              <div class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">BLOCKER / 证据阻断</div>
+              <div class="mt-1 font-mono text-lg font-black">{{ disputeAnalysis.summary?.evidence_blocked || 0 }}</div>
+            </div>
+          </div>
+
+          <div
+            v-for="dispute in disputeAnalysis.disputes"
+            :key="`${dispute.provider}-${dispute.dispute_id}`"
+            class="rounded-lg border border-dashed p-4"
+          >
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                  <AdminStatusBadge :tone="dispute.provider === 'paypal' ? 'blue' : 'gray'">{{ providerLabel(dispute.provider) }}</AdminStatusBadge>
+                  <AdminStatusBadge :tone="disputeStatusTone(dispute)">{{ dispute.status || '-' }}</AdminStatusBadge>
+                  <AdminStatusBadge :tone="assessmentTone(dispute.mistake_assessment?.level)">
+                    {{ dispute.mistake_assessment?.label || '待判断' }}
+                  </AdminStatusBadge>
+                </div>
+                <div class="mt-2 break-all font-mono text-xs font-bold">{{ dispute.provider_dispute_id || '-' }}</div>
+                <p class="mt-1 text-xs text-muted-foreground">{{ dispute.suggested_action || dispute.mistake_assessment?.reason || '-' }}</p>
+              </div>
+              <div class="flex shrink-0 gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  class="rounded-full"
+                  @click="emit('open-payment-workbench', dispute)"
+                >
+                  <CreditCard class="size-3.5" />
+                  证据工作台
+                </Button>
+                <Button
+                  size="sm"
+                  class="rounded-full"
+                  :disabled="!dispute.contact_draft?.can_send"
+                  @click="emit('contact-dispute', dispute)"
+                >
+                  <Mail class="size-3.5" />
+                  写邮件
+                </Button>
+              </div>
+            </div>
+
+            <dl class="mt-4 grid overflow-hidden rounded-lg border text-xs sm:grid-cols-3">
+              <DetailItem label="金额">{{ disputeMoney(dispute.amount, dispute.currency) }}</DetailItem>
+              <DetailItem label="原因">{{ dispute.reason || '-' }}</DetailItem>
+              <DetailItem label="截止/提交">{{ disputeDeadline(dispute) }}</DetailItem>
+              <DetailItem label="客户邮箱">{{ dispute.customer_email || '-' }}</DetailItem>
+              <DetailItem label="物流单号">{{ dispute.tracking_number || '-' }}</DetailItem>
+              <DetailItem label="证据完整度">
+                {{ dispute.evidence_summary?.ready_count || 0 }}/{{ dispute.evidence_summary?.total_count || 0 }}
+                <span v-if="dispute.evidence_summary?.blocker_count" class="text-rose-600">，阻断 {{ dispute.evidence_summary.blocker_count }}</span>
+              </DetailItem>
+            </dl>
+
+            <div v-if="dispute.submission_blockers?.length" class="mt-3 rounded-lg border border-rose-500/20 bg-rose-500/5 p-3">
+              <div class="text-[10px] font-black uppercase tracking-widest text-rose-700">BLOCKERS / 提交阻断</div>
+              <ul class="mt-2 space-y-1 text-xs text-rose-700">
+                <li v-for="blocker in dispute.submission_blockers" :key="blocker">{{ blocker }}</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </TabsContent>
+
+      <TabsContent value="notes" class="space-y-6">
       <OrderDetailSection title="备注">
         <div class="space-y-4">
           <div>
@@ -153,13 +261,14 @@
           </div>
         </div>
       </OrderDetailSection>
-    </div>
+      </TabsContent>
+    </Tabs>
   </DialogContent>
 </template>
 
 <script setup lang="ts">
 import { computed, defineComponent, h } from 'vue'
-import { RefreshCw } from '@lucide/vue'
+import { CreditCard, Mail, RefreshCw } from '@lucide/vue'
 import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
 import { Button } from '@/components/ui/button'
 import {
@@ -170,15 +279,19 @@ import {
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import type {
   OrderCarrierLabelResolver,
   OrderDateFormatter,
+  OrderDisputeAnalysis,
+  OrderDisputeCase,
   OrderMoneyFormatter,
   OrderRecord,
   OrderShippingAddressLineResolver,
   OrderShippingNameResolver,
   OrderStatusNameResolver,
+  OrderStatusTone,
   OrderStatusToneResolver,
   TrackingEvent,
   TrackingShipment
@@ -221,6 +334,8 @@ const props = withDefaults(defineProps<{
   currentOrder?: OrderRecord | null
   currentTrackingEvents?: TrackingEvent[]
   currentTrackingShipment?: TrackingShipment | null
+  disputeAnalysis?: OrderDisputeAnalysis | null
+  disputeAnalysisLoading?: boolean
   adminNote?: string
   syncingTracking?: boolean
   canEdit?: boolean
@@ -243,6 +358,8 @@ const props = withDefaults(defineProps<{
   currentOrder: null,
   currentTrackingEvents: () => [],
   currentTrackingShipment: null,
+  disputeAnalysis: null,
+  disputeAnalysisLoading: false,
   adminNote: '',
   syncingTracking: false,
   canEdit: false
@@ -252,10 +369,38 @@ const emit = defineEmits<{
   (event: 'update:adminNote', value: string): void
   (event: 'sync-tracking'): void
   (event: 'update-note'): void
+  (event: 'contact-dispute', dispute: OrderDisputeCase): void
+  (event: 'open-payment-workbench', dispute: OrderDisputeCase): void
 }>()
 
 const adminNoteModel = computed<string>({
   get: () => props.adminNote,
   set: (value: string) => emit('update:adminNote', value),
 })
+
+const providerLabel = (provider?: string | null): string => provider === 'paypal' ? 'PayPal' : 'Stripe'
+
+const disputeStatusTone = (dispute: OrderDisputeCase): OrderStatusTone => {
+  const status = String(dispute.status || '').toLowerCase()
+  if (dispute.needs_response) return 'coral'
+  if (['won', 'resolved', 'closed'].includes(status)) return 'green'
+  if (status.includes('review')) return 'blue'
+  if (status === 'lost') return 'amber'
+  return 'gray'
+}
+
+const assessmentTone = (level?: string | null): OrderStatusTone => {
+  if (level === 'likely_mistake') return 'amber'
+  if (level === 'resolved') return 'green'
+  if (level === 'evidence_gap' || level === 'no_email' || level === 'unlinked_order') return 'coral'
+  return 'gray'
+}
+
+const disputeMoney = (amount?: number | string | null, currency?: string | null): string => props.formatMoney(amount, currency)
+
+const disputeDeadline = (dispute: OrderDisputeCase): string => {
+  if (dispute.evidence_submitted_at) return `已提交 ${props.formatDate(dispute.evidence_submitted_at)}`
+  if (dispute.evidence_due_at) return props.formatDate(dispute.evidence_due_at)
+  return '-'
+}
 </script>

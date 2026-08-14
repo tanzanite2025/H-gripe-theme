@@ -62,6 +62,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '商品管理', permission: 'product:view' }
       },
       {
+        path: 'catalog/brands',
+        name: 'CatalogProductBrands',
+        component: () => import('@/views/ProductBrands.vue'),
+        meta: { title: '商品品牌', permission: 'product:view' }
+      },
+      {
         path: 'catalog/templates',
         name: 'CatalogProductTemplates',
         component: () => import('@/views/ProductTypes.vue'),
@@ -93,9 +99,20 @@ const routes: RouteRecordRaw[] = [
       },
       {
         path: 'orders',
-        name: 'Orders',
-        component: () => import('@/views/Orders.vue'),
+        redirect: { name: 'OrdersList' },
         meta: { title: '订单管理', permission: 'order:view' }
+      },
+      {
+        path: 'orders/list',
+        name: 'OrdersList',
+        component: () => import('@/views/Orders.vue'),
+        meta: { title: '订单列表', permission: 'order:view' }
+      },
+      {
+        path: 'orders/disputes',
+        name: 'OrdersDisputes',
+        component: () => import('@/views/Orders.vue'),
+        meta: { title: '拒付订单', permission: 'order:view' }
       },
       {
         path: 'payment/settings',
@@ -108,6 +125,12 @@ const routes: RouteRecordRaw[] = [
         name: 'PaymentCurrency',
         redirect: { name: 'SettingsCurrency' },
         meta: { title: '价格币种', permission: 'settings:view' }
+      },
+      {
+        path: 'payment/paypal-invoice',
+        name: 'PaymentPayPalInvoice',
+        component: () => import('@/views/PaymentPayPalInvoice.vue'),
+        meta: { title: 'PayPal 发票卖方资料', permission: 'settings:view' }
       },
       {
         path: 'payment/risk/reviews',
@@ -311,12 +334,6 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '风险事实', permission: 'ticket:view' }
       },
       {
-        path: 'tickets',
-        name: 'Tickets',
-        component: () => import('@/views/Tickets.vue'),
-        meta: { title: '工单管理', permission: 'ticket:view' }
-      },
-      {
         path: 'marketing',
         redirect: marketingRedirect,
         meta: { permission: 'marketing:view' }
@@ -381,6 +398,65 @@ const routes: RouteRecordRaw[] = [
         meta: { title: 'SEO / 产品', permission: 'seo:view' }
       },
       {
+        path: 'social',
+        redirect: { name: 'SocialOverview' },
+        meta: { permission: 'settings:view' }
+      },
+      {
+        path: 'social/overview',
+        name: 'SocialOverview',
+        component: () => import('@/views/SocialMedia.vue'),
+        meta: { title: '社交媒体 / 账号总览', permission: 'settings:view' }
+      },
+      {
+        path: 'social/profiles',
+        name: 'SocialProfiles',
+        component: () => import('@/views/SocialMedia.vue'),
+        meta: { title: '社交媒体 / 前台展示', permission: 'settings:view' }
+      },
+      {
+        path: 'social/youtube',
+        name: 'SocialYouTube',
+        component: () => import('@/views/SocialMedia.vue'),
+        meta: { title: '社交媒体 / YouTube', permission: 'settings:view' }
+      },
+      {
+        path: 'social/meta',
+        name: 'SocialMeta',
+        component: () => import('@/views/SocialMedia.vue'),
+        meta: { title: '社交媒体 / Facebook / Instagram', permission: 'settings:view' }
+      },
+      {
+        path: 'social/tiktok',
+        name: 'SocialTikTok',
+        component: () => import('@/views/SocialMedia.vue'),
+        meta: { title: '社交媒体 / TikTok', permission: 'settings:view' }
+      },
+      {
+        path: 'social/linkedin',
+        name: 'SocialLinkedIn',
+        component: () => import('@/views/SocialMedia.vue'),
+        meta: { title: '社交媒体 / LinkedIn', permission: 'settings:view' }
+      },
+      {
+        path: 'social/x',
+        name: 'SocialX',
+        component: () => import('@/views/SocialMedia.vue'),
+        meta: { title: '社交媒体 / X', permission: 'settings:view' }
+      },
+      {
+        path: 'social/wechat',
+        name: 'SocialWeChat',
+        component: () => import('@/views/SocialMedia.vue'),
+        meta: { title: '社交媒体 / 微信', permission: 'settings:view' }
+      },
+      {
+        path: 'social/publications',
+        name: 'SocialPublications',
+        component: () => import('@/views/SocialMedia.vue'),
+        meta: { title: '社交媒体 / 发布记录', permission: 'settings:view' }
+      },
+      {
         path: 'analytics',
         name: 'Analytics',
         component: () => import('@/views/Analytics.vue'),
@@ -396,6 +472,12 @@ const routes: RouteRecordRaw[] = [
         name: 'OpsOverview',
         component: () => import('@/views/OpsOverview.vue'),
         meta: { title: '运维总览', permission: 'ops:view' }
+      },
+      {
+        path: 'ops/admin-accounts',
+        name: 'OpsAdminAccounts',
+        component: () => import('@/views/OpsAdminAccounts.vue'),
+        meta: { title: '管理员账号', permission: 'ops:view' }
       },
       {
         path: 'ops/domains',
@@ -432,11 +514,10 @@ const routes: RouteRecordRaw[] = [
         redirect: domainRedirect('SettingsSite', {
           site: 'SettingsSite',
           email: 'SettingsEmail',
-          social: 'SettingsSocial',
+          social: 'SocialProfiles',
           currency: 'SettingsCurrency',
           markets: 'SettingsMarkets',
           'website-profile': 'SettingsWebsiteProfile',
-          'paypal-invoice-seller-profile': 'SettingsPayPalInvoiceSellerProfile',
           api: 'SettingsApi',
           commercial_crawler: 'SettingsCommercialCrawler',
         }),
@@ -457,7 +538,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'settings/social',
         name: 'SettingsSocial',
-        component: () => import('@/views/Settings.vue'),
+        redirect: { name: 'SocialProfiles' },
         meta: { title: '社交媒体', permission: 'settings:view' }
       },
       {
@@ -477,12 +558,6 @@ const routes: RouteRecordRaw[] = [
         name: 'SettingsWebsiteProfile',
         component: () => import('@/views/SettingsWebsiteProfile.vue'),
         meta: { title: '我与这个网站', permission: 'settings:view' }
-      },
-      {
-        path: 'settings/paypal-invoice-seller-profile',
-        name: 'SettingsPayPalInvoiceSellerProfile',
-        component: () => import('@/views/SettingsPayPalInvoiceSellerProfile.vue'),
-        meta: { title: 'PayPal 发票卖方资料', permission: 'settings:view' }
       },
       {
         path: 'settings/api',

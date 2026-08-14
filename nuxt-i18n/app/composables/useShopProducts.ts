@@ -26,8 +26,17 @@ export interface ShopProduct {
     sale: number
   }
   availability: ShopProductAvailability
+  brand?: ShopProductBrand | null
   productType?: ShopProductType | null
   variants: ShopProductVariant[]
+}
+
+export interface ShopProductBrand {
+  id?: number
+  name: string
+  slug: string
+  logoUrl?: string
+  websiteUrl?: string
 }
 
 export interface ShopProductDisplayPrice {
@@ -53,6 +62,7 @@ export interface ShopProductSpecDefinition {
   group?: string
   fieldType?: string
   unit?: string
+  isFilterable?: boolean
   isVariantOption?: boolean
   sortOrder?: number
 }
@@ -80,6 +90,7 @@ export interface ShopProductsResult {
   pageSize?: number
   total?: number
   hasMore?: boolean
+  quickBuyFilters?: import('~/utils/quickBuy/types').QuickBuySpecFilter[]
 }
 
 export type ShopProductQueryParams = Record<string, string | number | boolean | undefined>
@@ -200,6 +211,7 @@ const normalizeSpecDefinitions = (item: any): ShopProductSpecDefinition[] => {
         group: definition?.group ? String(definition.group) : undefined,
         fieldType: definition?.field_type ? String(definition.field_type) : undefined,
         unit: definition?.unit ? String(definition.unit) : undefined,
+        isFilterable: Boolean(definition?.is_filterable),
         isVariantOption: Boolean(definition?.is_variant_option),
         sortOrder: toFiniteNumber(definition?.sort_order),
       }
@@ -303,6 +315,15 @@ export const normalizeShopProduct = (item: any, fallbackCurrency = 'USD'): ShopP
       sale,
     },
     availability: normalizeAvailability(item?.availability),
+    brand: item?.brand?.name
+      ? {
+          id: toOptionalPositiveNumber(item.brand.id) || undefined,
+          name: String(item.brand.name),
+          slug: String(item.brand.slug || ''),
+          logoUrl: item.brand.logo_url ? String(item.brand.logo_url) : undefined,
+          websiteUrl: item.brand.website_url ? String(item.brand.website_url) : undefined,
+        }
+      : null,
     productType: normalizeProductType(item),
     variants,
   }

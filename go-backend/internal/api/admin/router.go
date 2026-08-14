@@ -33,16 +33,19 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 		Domain:   cfg.Cookie.Domain,
 	}
 	authHandler := NewAuthHandler(authService, cookieOptions)
+	adminAccountHandler := NewAdminAccountHandler(services.AdminAccountMaintenance)
 	dashboardHandler := NewDashboardHandler(dashboardService)
 	userHandler := NewUserHandler(userService)
 	customerHandler := NewCustomerHandler(userService)
 	productHandler := NewProductHandler(productService)
+	productBrandHandler := NewProductBrandHandler(services.ProductBrand)
 	productTypeImageHandler := NewProductTypeImageHandler(productService, services.Media)
 	productInformationTemplateHandler := NewProductInformationTemplateHandler(services.ProductInformationTemplate)
 	spokeCatalogHandler := NewSpokeCatalogHandler(services.Spoke)
 	quickBuyHandler := NewQuickBuyHandler(services.QuickBuy)
 	mediaHandler := NewMediaHandler(services.Media)
 	orderHandler := NewOrderHandler(orderService)
+	orderHandler.ConfigureAuditService(services.Audit)
 	paymentHandler := NewPaymentHandler(paymentService, services.AdminSettings, services.PayPalDisputeInvoiceSellerProfile)
 	paymentHandler.ConfigurePublicBaseURL(cfg.Server.BaseURL)
 	paymentHandler.ConfigureAuditService(services.Audit)
@@ -103,6 +106,8 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 	opsProjectBindingHandler.ConfigureAuditService(services.Audit)
 	opsProjectBindingHandler.ConfigureSyncService(services.OpsHostingerSync)
 	opsDeploymentPreflightHandler := NewOpsDeploymentPreflightHandler(services.OpsDeploymentPreflight)
+	opsDeploymentWorkflowHandler := NewOpsDeploymentWorkflowHandler(services.OpsDeploymentWorkflow)
+	opsDeploymentWorkflowHandler.ConfigureAuditService(services.Audit)
 	opsOverviewHandler := NewOpsOverviewHandler(services.OpsOverview)
 
 	// 管理后台 API 路由组
@@ -154,7 +159,6 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 				dashboardGroup.GET("/stats", dashboardHandler.GetStats)
 				dashboardGroup.GET("/recent-orders", dashboardHandler.GetRecentOrders)
 				dashboardGroup.GET("/recent-users", dashboardHandler.GetRecentUsers)
-				dashboardGroup.GET("/recent-tickets", dashboardHandler.GetRecentTickets)
 				dashboardGroup.GET("/sales-chart", dashboardHandler.GetSalesChart)
 			}
 
@@ -189,6 +193,16 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 				productTypesGroup.POST("/:id/image", middleware.RequirePermission(auth.PermProductEdit), productTypeImageHandler.UploadImage)
 				productTypesGroup.DELETE("/:id/image", middleware.RequirePermission(auth.PermProductEdit), productTypeImageHandler.DeleteImage)
 				productTypesGroup.DELETE("/:id", middleware.RequirePermission(auth.PermProductDelete), productHandler.DeleteProductType)
+			}
+
+			productBrandsGroup := authenticated.Group("/product-brands")
+			productBrandsGroup.Use(middleware.RequirePermission(auth.PermProductView))
+			{
+				productBrandsGroup.GET("", productBrandHandler.List)
+				productBrandsGroup.GET("/:id", productBrandHandler.Get)
+				productBrandsGroup.POST("", middleware.RequirePermission(auth.PermProductCreate), productBrandHandler.Create)
+				productBrandsGroup.PUT("/:id", middleware.RequirePermission(auth.PermProductEdit), productBrandHandler.Update)
+				productBrandsGroup.DELETE("/:id", middleware.RequirePermission(auth.PermProductDelete), productBrandHandler.Delete)
 			}
 
 			productsGroup := authenticated.Group("/products")
@@ -300,14 +314,17 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 			ordersGroup.Use(middleware.RequirePermission(auth.PermOrderView))
 			{
 				ordersGroup.GET("", orderHandler.ListOrders)
+				ordersGroup.GET("/disputes", orderHandler.ListDisputeOrders)
 				ordersGroup.GET("/stats", orderHandler.GetOrderStats)
 				ordersGroup.GET("/sales-chart", orderHandler.GetSalesChart)
 				ordersGroup.GET("/export", orderHandler.ExportOrders)
+				ordersGroup.GET("/:id/dispute-analysis", orderHandler.GetOrderDisputeAnalysis)
 				ordersGroup.GET("/:id", orderHandler.GetOrder)
 				ordersGroup.PATCH("/:id/status", middleware.RequirePermission(auth.PermOrderEdit), orderHandler.UpdateOrderStatus)
 				ordersGroup.PATCH("/:id/shipping-status", middleware.RequirePermission(auth.PermOrderEdit), orderHandler.UpdateShippingStatus)
 				ordersGroup.PATCH("/:id/tracking", middleware.RequirePermission(auth.PermOrderEdit), orderHandler.UpdateTrackingInfo)
 				ordersGroup.POST("/:id/tracking/sync", middleware.RequirePermission(auth.PermOrderEdit), orderHandler.SyncTrackingInfo)
+				ordersGroup.POST("/:id/dispute-contact-email", middleware.RequirePermission(auth.PermOrderEdit), orderHandler.SendDisputeContactEmail)
 				ordersGroup.PATCH("/:id/admin-note", middleware.RequirePermission(auth.PermOrderEdit), orderHandler.UpdateAdminNote)
 				ordersGroup.POST("/batch-status", middleware.RequirePermission(auth.PermOrderEdit), orderHandler.BatchUpdateStatus)
 				ordersGroup.DELETE("/:id", middleware.RequirePermission(auth.PermOrderDelete), orderHandler.DeleteOrder)
@@ -329,6 +346,7 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 				paymentGroup.GET("/paypal-disputes", paymentHandler.ListPayPalDisputes)
 				paymentGroup.GET("/paypal-disputes/:id", paymentHandler.GetPayPalDispute)
 				paymentGroup.GET("/paypal-disputes/:id/evidence", paymentHandler.GetPayPalDisputeEvidence)
+				paymentGroup.POST("/paypal-disputes/:id/evidence/submit", middleware.RequirePermission(auth.PermOrderEdit), paymentHandler.SubmitPayPalDisputeEvidence)
 				paymentGroup.GET("/paypal-disputes/:id/evidence/invoice.pdf", paymentHandler.PreviewPayPalDisputeCommercialInvoicePDF)
 				paymentGroup.POST("/paypal-invoice-preview.pdf", paymentHandler.PreviewPayPalCommercialInvoicePDF)
 				paymentGroup.GET("/reviews", paymentHandler.ListPaymentReviews)
@@ -449,24 +467,6 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 				subscriptionsGroup.PATCH("/:email/status", middleware.RequirePermission(auth.PermSubscriptionEdit), subscriptionHandler.UpdateSubscriptionStatus)
 				subscriptionsGroup.DELETE("/:email", middleware.RequirePermission(auth.PermSubscriptionDelete), subscriptionHandler.DeleteSubscription)
 				subscriptionsGroup.POST("/batch-delete", middleware.RequirePermission(auth.PermSubscriptionDelete), subscriptionHandler.BatchDelete)
-			}
-
-			// 工单管理（需要工单管理权限）
-			ticketsGroup := authenticated.Group("/tickets")
-			ticketsGroup.Use(middleware.RequirePermission(auth.PermTicketView))
-			{
-				ticketsGroup.GET("", ticketHandler.ListTickets)
-				ticketsGroup.GET("/stats", ticketHandler.GetTicketStats)
-				ticketsGroup.GET("/:id", ticketHandler.GetTicket)
-				ticketsGroup.PUT("/:id", middleware.RequirePermission(auth.PermTicketEdit), ticketHandler.UpdateTicket)
-				ticketsGroup.PATCH("/:id/status", middleware.RequirePermission(auth.PermTicketEdit), ticketHandler.UpdateTicketStatus)
-				ticketsGroup.PATCH("/:id/assign", middleware.RequirePermission(auth.PermTicketEdit), ticketHandler.AssignTicket)
-				ticketsGroup.DELETE("/:id", middleware.RequirePermission(auth.PermTicketDelete), ticketHandler.DeleteTicket)
-
-				// 工单消息
-				ticketsGroup.GET("/:id/messages", ticketHandler.GetMessages)
-				ticketsGroup.POST("/:id/messages", middleware.RequirePermission(auth.PermTicketEdit), ticketHandler.CreateMessage)
-				ticketsGroup.POST("/:id/messages/mark-read", ticketHandler.MarkMessagesAsRead)
 			}
 
 			// 在线客服对话（独立于普通工单列表；底层仍使用 customer_service 工单作为唯一事实源）
@@ -689,8 +689,17 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 			opsGroup.Use(middleware.RequirePermission(auth.PermOpsView))
 			{
 				opsGroup.GET("/overview", opsOverviewHandler.Get)
+				opsGroup.GET("/admin-accounts", adminAccountHandler.List)
+				opsGroup.POST("/admin-accounts/ensure", middleware.AdminOnly(), adminAccountHandler.Ensure)
 				opsGroup.GET("/deployments/preflight-overview", middleware.RequirePermission(auth.PermOpsDeployView), opsDeploymentPreflightHandler.GetOverview)
 				opsGroup.GET("/deployments/preflight", middleware.RequirePermission(auth.PermOpsDeployView), opsDeploymentPreflightHandler.GetProjectReportByQuery)
+				opsGroup.GET("/workflows", middleware.RequirePermission(auth.PermOpsDeployView), opsDeploymentWorkflowHandler.List)
+				opsGroup.GET("/workflows/:id", middleware.RequirePermission(auth.PermOpsDeployView), opsDeploymentWorkflowHandler.Get)
+				opsGroup.POST("/workflows", middleware.RequireAnyPermission(auth.PermOpsDeployDryRun, auth.PermOpsDeployExecute), opsDeploymentWorkflowHandler.Create)
+				opsGroup.POST("/workflows/:id/validate", middleware.RequireAnyPermission(auth.PermOpsDeployDryRun, auth.PermOpsDeployExecute), opsDeploymentWorkflowHandler.Validate)
+				opsGroup.POST("/workflows/:id/approve", middleware.RequirePermission(auth.PermOpsWorkflowApprove), opsDeploymentWorkflowHandler.Approve)
+				opsGroup.POST("/workflows/:id/execute", middleware.RequireAnyPermission(auth.PermOpsDeployDryRun, auth.PermOpsDeployExecute), opsDeploymentWorkflowHandler.Execute)
+				opsGroup.POST("/workflows/:id/cancel", middleware.RequirePermission(auth.PermOpsDeployDryRun), opsDeploymentWorkflowHandler.Cancel)
 
 				domainsGroup := opsGroup.Group("/domains")
 				domainsGroup.Use(middleware.RequirePermission(auth.PermOpsDomainView))

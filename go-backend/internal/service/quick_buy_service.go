@@ -152,6 +152,19 @@ type QuickBuyStepView struct {
 	Name         string                    `json:"name"`
 	SortOrder    int                       `json:"sort_order"`
 	ProductTypes []QuickBuyProductTypeView `json:"product_types"`
+	Filters      []QuickBuySpecFilterView  `json:"filters"`
+}
+
+type QuickBuySpecFilterView struct {
+	ID              uint     `json:"id"`
+	Name            string   `json:"name"`
+	Slug            string   `json:"slug"`
+	Unit            string   `json:"unit,omitempty"`
+	FieldType       string   `json:"field_type"`
+	Presentation    string   `json:"presentation"`
+	IsVariantOption bool     `json:"is_variant_option"`
+	Multiple        bool     `json:"multiple"`
+	Values          []string `json:"values"`
 }
 
 type QuickBuyProductTypeView struct {
@@ -246,12 +259,13 @@ type QuickBuySessionItemView struct {
 }
 
 type QuickBuyCandidateInput struct {
-	StepKey  string `json:"step_key"`
-	Keyword  string `json:"keyword"`
-	Locale   string `json:"locale"`
-	Currency string `json:"currency"`
-	Page     int    `json:"page"`
-	PageSize int    `json:"page_size"`
+	StepKey     string              `json:"step_key"`
+	Keyword     string              `json:"keyword"`
+	Locale      string              `json:"locale"`
+	Currency    string              `json:"currency"`
+	SpecFilters map[string][]string `json:"spec_filters"`
+	Page        int                 `json:"page"`
+	PageSize    int                 `json:"page_size"`
 }
 
 type QuickBuyCandidateResult struct {
@@ -835,6 +849,10 @@ func (s *QuickBuyService) listVersionStepCandidates(version quickbuy.Version, in
 	locale := locales.ResolveSupported(input.Locale)
 	currency := normalizeQuickBuyCurrency(input.Currency)
 	page, pageSize := normalizeQuickBuyCandidatePaging(input.Page, input.PageSize)
+	specFilters, err := normalizeQuickBuySpecFilters(*step, input.SpecFilters)
+	if err != nil {
+		return nil, err
+	}
 	result := &QuickBuyCandidateResult{
 		FlowID:        version.FlowID,
 		FlowVersionID: version.ID,
@@ -853,6 +871,7 @@ func (s *QuickBuyService) listVersionStepCandidates(version quickbuy.Version, in
 		Locale:         locale,
 		ProductTypeIDs: quickBuyStepProductTypeIDs(*step),
 		Keyword:        strings.TrimSpace(input.Keyword),
+		SpecFilters:    specFilters,
 		Offset:         (page - 1) * pageSize,
 		Limit:          pageSize,
 	})
@@ -862,6 +881,16 @@ func (s *QuickBuyService) listVersionStepCandidates(version quickbuy.Version, in
 	result.Products = products
 	result.Total = total
 	result.HasMore = int64(page*pageSize) < total
+	filterValues, err := s.productRepo.ListQuickBuyFilterValues(repository.ProductQuickBuyCandidateQuery{
+		Locale:         locale,
+		ProductTypeIDs: quickBuyStepProductTypeIDs(*step),
+		Keyword:        strings.TrimSpace(input.Keyword),
+		SpecFilters:    specFilters,
+	}, quickBuyFilterableSpecSlugs(*step))
+	if err != nil {
+		return nil, err
+	}
+	result.Step.Filters = quickBuyStepFilters(*step, filterValues)
 	return result, nil
 }
 
@@ -1660,7 +1689,115 @@ func quickBuyStepView(step quickbuy.Step, locale string) QuickBuyStepView {
 		Name:         step.Name,
 		SortOrder:    step.SortOrder,
 		ProductTypes: productTypes,
+		Filters:      quickBuyStepFilters(step, nil),
 	}
+}
+
+func quickBuyFilterableSpecDefinitions(step quickbuy.Step) []productdomain.SpecDefinition {
+	definitionsBySlug := make(map[string]productdomain.SpecDefinition)
+	for _, item := range step.ProductTypes {
+		if item.ProductType == nil {
+			continue
+		}
+		for _, definition := range item.ProductType.SpecDefinitions {
+			slug := strings.TrimSpace(definition.Slug)
+			if slug == "" || !definition.IsVisible || !definition.IsFilterable {
+				continue
+			}
+			if _, exists := definitionsBySlug[slug]; !exists {
+				definitionsBySlug[slug] = definition
+			}
+		}
+	}
+
+	definitions := make([]productdomain.SpecDefinition, 0, len(definitionsBySlug))
+	for _, definition := range definitionsBySlug {
+		definitions = append(definitions, definition)
+	}
+	sort.SliceStable(definitions, func(i, j int) bool {
+		if definitions[i].SortOrder == definitions[j].SortOrder {
+			return definitions[i].Slug < definitions[j].Slug
+		}
+		return definitions[i].SortOrder < definitions[j].SortOrder
+	})
+	return definitions
+}
+
+func quickBuyFilterableSpecSlugs(step quickbuy.Step) []string {
+	definitions := quickBuyFilterableSpecDefinitions(step)
+	slugs := make([]string, 0, len(definitions))
+	for _, definition := range definitions {
+		slugs = append(slugs, definition.Slug)
+	}
+	return slugs
+}
+
+func normalizeQuickBuySpecFilters(step quickbuy.Step, input map[string][]string) (map[string][]string, error) {
+	if len(input) == 0 {
+		return nil, nil
+	}
+
+	allowed := make(map[string]struct{})
+	for _, slug := range quickBuyFilterableSpecSlugs(step) {
+		allowed[slug] = struct{}{}
+	}
+
+	result := make(map[string][]string)
+	for rawSlug, rawValues := range input {
+		slug := strings.TrimSpace(rawSlug)
+		if slug == "" {
+			continue
+		}
+		if _, exists := allowed[slug]; !exists {
+			return nil, fmt.Errorf("%w: step %q does not expose filterable specification %q", ErrQuickBuyInvalid, step.StepKey, slug)
+		}
+		values := make([]string, 0, len(rawValues))
+		seen := make(map[string]struct{}, len(rawValues))
+		for _, rawValue := range rawValues {
+			value := strings.TrimSpace(rawValue)
+			if value == "" {
+				continue
+			}
+			if _, exists := seen[value]; exists {
+				continue
+			}
+			seen[value] = struct{}{}
+			values = append(values, value)
+			if len(values) >= 64 {
+				break
+			}
+		}
+		if len(values) > 0 {
+			result[slug] = values
+		}
+	}
+	if len(result) == 0 {
+		return nil, nil
+	}
+	return result, nil
+}
+
+func quickBuyStepFilters(step quickbuy.Step, valuesBySlug map[string][]string) []QuickBuySpecFilterView {
+	definitions := quickBuyFilterableSpecDefinitions(step)
+	result := make([]QuickBuySpecFilterView, 0, len(definitions))
+	for _, definition := range definitions {
+		values := []string{}
+		if valuesBySlug != nil && valuesBySlug[definition.Slug] != nil {
+			values = append(values, valuesBySlug[definition.Slug]...)
+		}
+		result = append(result, QuickBuySpecFilterView{
+			ID:              definition.ID,
+			Name:            definition.Name,
+			Slug:            definition.Slug,
+			Unit:            definition.Unit,
+			FieldType:       definition.FieldType,
+			Presentation:    definition.Presentation,
+			IsVariantOption: definition.IsVariantOption,
+			Multiple:        true,
+			Values:          values,
+		})
+	}
+	return result
 }
 
 func quickBuyProductTypeView(item productdomain.ProductType, locale string, primary bool) QuickBuyProductTypeView {

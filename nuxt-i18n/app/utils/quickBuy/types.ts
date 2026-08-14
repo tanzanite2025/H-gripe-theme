@@ -5,6 +5,19 @@ export interface QuickBuyStep {
   stepKey?: string
   sortOrder?: number
   productTypes?: QuickBuyProductType[]
+  filters?: QuickBuySpecFilter[]
+}
+
+export interface QuickBuySpecFilter {
+  id: number
+  name: string
+  slug: string
+  unit?: string
+  fieldType: string
+  presentation: string
+  isVariantOption?: boolean
+  multiple?: boolean
+  values: string[]
 }
 
 export interface QuickBuyProductType {

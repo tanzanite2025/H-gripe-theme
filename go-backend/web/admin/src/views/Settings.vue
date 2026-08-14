@@ -25,7 +25,6 @@
         v-model:show-payment-secrets="showPaymentSecrets"
         :site-settings="siteSettings"
         :email-settings="emailSettings"
-        :social-settings="socialSettings"
         :payment-settings="paymentSettings"
         :api-settings="apiSettings"
         :primary-pricing-currency="primaryPricingCurrency"
@@ -37,7 +36,6 @@
         :loading-payment-runtime="loadingPaymentRuntime"
         :syncing-exchange-rates="syncingExchangeRates"
         :saving-api-settings="saving && activeTab === 'api'"
-        :social-fields="socialFields"
         :loading-public-chat-agents="loadingPublicChatAgents"
         :loading-public-chat-groups="loadingPublicChatGroups"
         :loading-public-chat-agent-candidates="loadingPublicChatAgentCandidates"
@@ -104,11 +102,10 @@ const DEFAULT_PRICING_CURRENCY = 'USD'
 const EXCHANGE_RATE_ENDPOINT = 'https://v6.exchangerate-api.com/v6/{apiKey}/latest/{base}'
 const activeTab = useRouteTab({
   defaultValue: 'site',
-  values: ['site', 'email', 'social', 'currency', 'markets', 'payment', 'api', 'commercial_crawler', 'public_chat'],
+  values: ['site', 'email', 'currency', 'markets', 'payment', 'api', 'commercial_crawler', 'public_chat'],
   routes: {
     site: 'SettingsSite',
     email: 'SettingsEmail',
-    social: 'SettingsSocial',
     currency: ['SettingsCurrency', 'PaymentCurrency'],
     markets: 'SettingsMarkets',
     payment: 'PaymentSettings',
@@ -173,7 +170,6 @@ const siteSettings = reactive({
   admin_html_title: ''
 })
 const emailSettings = reactive({ smtp_host: '', smtp_port: 587, smtp_username: '', smtp_password: '', from_email: '', from_name: '' })
-const socialSettings = reactive({ facebook: '', twitter: '', instagram: '', linkedin: '', youtube: '', wechat: '' })
 const paymentSettings = reactive({ gateway: 'stripe' })
 const apiSettings = reactive({
   exchange_rate_enabled: false,
@@ -233,15 +229,6 @@ const publicChatGroupForm = reactive({
 const selectedPublicChatAgentCandidate = computed(() =>
   publicChatAgentCandidates.value.find((candidate) => String(candidate.user_id) === String(publicChatAgentForm.user_id))
 )
-
-const socialFields = [
-  { key: 'facebook', label: 'Facebook', placeholder: 'Facebook 页面 URL' },
-  { key: 'twitter', label: 'Twitter / X', placeholder: '账号 URL' },
-  { key: 'instagram', label: 'Instagram', placeholder: '账号 URL' },
-  { key: 'linkedin', label: 'LinkedIn', placeholder: '页面 URL' },
-  { key: 'youtube', label: 'YouTube', placeholder: '频道 URL' },
-  { key: 'wechat', label: '微信', placeholder: '二维码 URL' }
-]
 
 const normalizeCurrencyCode = (currency) => String(currency || '').trim().toUpperCase()
 const validCurrencyCodeOrDefault = (currency) => {
@@ -315,13 +302,6 @@ const groupDefinitions: Record<string, SettingsGroupDefinition> = {
       from_email: { type: 'string', public: false, description: 'Sender email' },
       from_name: { type: 'string', public: false, description: 'Sender name' }
     }
-  },
-  social: {
-    target: socialSettings,
-    fields: Object.fromEntries(socialFields.map((field) => [
-      field.key,
-      { type: 'string' as const, public: true, description: field.label }
-    ])) as Record<string, SettingFieldDefinition>
   },
   payment: {
     target: paymentSettings,

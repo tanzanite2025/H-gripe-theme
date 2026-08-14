@@ -5,6 +5,8 @@
       :current-order="currentOrder"
       :current-tracking-events="currentTrackingEvents"
       :current-tracking-shipment="currentTrackingShipment"
+      :dispute-analysis="disputeAnalysis"
+      :dispute-analysis-loading="disputeAnalysisLoading"
       :syncing-tracking="syncingTracking"
       :can-edit="canEdit"
       :order-status-name="orderStatusName"
@@ -25,6 +27,8 @@
       @update:admin-note="emit('update:adminNote', $event)"
       @sync-tracking="emit('sync-tracking')"
       @update-note="emit('update-note')"
+      @contact-dispute="emit('contact-dispute', $event)"
+      @open-payment-workbench="emit('open-payment-workbench', $event)"
     />
   </Dialog>
 </template>
@@ -35,6 +39,8 @@ import { Dialog } from '@/components/ui/dialog'
 import type {
   OrderCarrierLabelResolver,
   OrderDateFormatter,
+  OrderDisputeAnalysis,
+  OrderDisputeCase,
   OrderMoneyFormatter,
   OrderRecord,
   OrderShippingAddressLineResolver,
@@ -51,6 +57,8 @@ withDefaults(defineProps<{
   currentOrder?: OrderRecord | null
   currentTrackingEvents?: TrackingEvent[]
   currentTrackingShipment?: TrackingShipment | null
+  disputeAnalysis?: OrderDisputeAnalysis | null
+  disputeAnalysisLoading?: boolean
   syncingTracking?: boolean
   canEdit?: boolean
   orderStatusName: OrderStatusNameResolver
@@ -74,6 +82,8 @@ withDefaults(defineProps<{
   currentOrder: null,
   currentTrackingEvents: () => [],
   currentTrackingShipment: null,
+  disputeAnalysis: null,
+  disputeAnalysisLoading: false,
   syncingTracking: false,
   canEdit: false
 })
@@ -83,5 +93,7 @@ const emit = defineEmits<{
   (event: 'update:adminNote', value: string): void
   (event: 'sync-tracking'): void
   (event: 'update-note'): void
+  (event: 'contact-dispute', dispute: OrderDisputeCase): void
+  (event: 'open-payment-workbench', dispute: OrderDisputeCase): void
 }>()
 </script>

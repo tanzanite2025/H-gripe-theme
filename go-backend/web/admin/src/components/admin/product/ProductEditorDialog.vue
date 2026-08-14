@@ -34,6 +34,22 @@
               <AdminFormField label="商品名称" required :error="errors.name">
                 <Input v-model="form.name" placeholder="请输入商品名称" @input="emit('clear-error', 'name')" />
               </AdminFormField>
+              <AdminFormField label="商品品牌" description="品牌是商品一级数据，前台详情、Google SEO 和 Merchant 可直接读取。">
+                <Select :model-value="brandSelectValue" @update:model-value="emit('product-brand-select', $event)">
+                  <SelectTrigger class="w-full"><SelectValue placeholder="未设置品牌" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">未设置品牌</SelectItem>
+                    <SelectItem
+                      v-for="brand in brands"
+                      :key="brand.id"
+                      :value="String(brand.id)"
+                      :disabled="brand.is_enabled === false && String(form.brand_id) !== String(brand.id)"
+                    >
+                      {{ brand.name }}{{ brand.is_enabled === false ? '（停用）' : '' }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </AdminFormField>
               <AdminFormField label="Slug" required :error="errors.slug">
                 <Input v-model="form.slug" placeholder="例如 crystal-bracelet" @input="emit('clear-error', 'slug')" />
               </AdminFormField>
@@ -179,7 +195,7 @@
                   @input="emit('clear-error', `spec:${spec.slug}`)"
                 />
                 <Select
-                  v-else-if="spec.field_type === 'select'"
+                  v-else-if="spec.field_type === 'select' && parseSpecOptions(spec).length"
                   :model-value="specSelectValue(form.specs[spec.slug])"
                   @update:model-value="emit('set-spec-select-value', spec.slug, $event)"
                 >
@@ -191,6 +207,12 @@
                     </SelectItem>
                   </SelectContent>
                 </Select>
+                <Input
+                  v-else-if="spec.field_type === 'select'"
+                  v-model="form.specs[spec.slug]"
+                  :placeholder="`请输入${spec.name}（可动态录入）`"
+                  @input="emit('clear-error', `spec:${spec.slug}`)"
+                />
                 <div v-else-if="spec.field_type === 'boolean'" class="flex h-9 items-center gap-2">
                   <Switch v-model="form.specs[spec.slug]" :aria-label="spec.name" />
                   <span class="text-xs text-muted-foreground">{{ form.specs[spec.slug] ? '是' : '否' }}</span>
@@ -367,6 +389,13 @@ interface ProductTypeRecord {
   spec_definitions?: ProductSpecDefinition[]
 }
 
+interface ProductBrandRecord {
+  id: number
+  name: string
+  slug: string
+  is_enabled?: boolean
+}
+
 interface ShippingTemplateRecord {
   id: number
   name: string
@@ -394,11 +423,13 @@ defineProps({
   form: { type: Object as PropType<ProductFormRecord>, required: true },
   errors: { type: Object as PropType<Record<string, string>>, default: () => ({}) },
   productTypes: { type: Array as PropType<ProductTypeRecord[]>, default: () => [] },
+  brands: { type: Array as PropType<ProductBrandRecord[]>, default: () => [] },
   selectedProductType: { type: Object as PropType<ProductTypeRecord | null>, default: null },
   selectedSpecDefinitions: { type: Array as PropType<ProductSpecDefinition[]>, default: () => [] },
   variantSpecDefinitions: { type: Array as PropType<ProductSpecDefinition[]>, default: () => [] },
   defaultVariantIndex: { type: Number, default: 0 },
   productTypeSelectValue: { type: String, default: '__none__' },
+  brandSelectValue: { type: String, default: '__none__' },
   shippingTemplateSelectValue: { type: String, default: '__none__' },
   shippingTemplates: { type: Array as PropType<ShippingTemplateRecord[]>, default: () => [] },
   afterSalesTemplateSelectValue: { type: String, default: '__none__' },
@@ -419,6 +450,7 @@ const emit = defineEmits([
   'submit',
   'clear-error',
   'product-type-select',
+  'product-brand-select',
   'product-shipping-template-select',
   'product-information-template-select',
   'set-spec-select-value',

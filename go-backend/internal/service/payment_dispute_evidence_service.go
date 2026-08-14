@@ -40,14 +40,17 @@ func (s liveStripeDisputeEvidenceSubmitter) Update(id string, params *stripe.Dis
 }
 
 type StripeDisputeEvidencePackage struct {
-	Dispute        *paymentdomain.StripeDispute         `json:"dispute"`
-	Order          *orderdomain.Order                   `json:"order,omitempty"`
-	Shipment       *shippingdomain.TrackingShipment     `json:"shipment,omitempty"`
-	TrackingEvents []shippingdomain.TrackingEvent       `json:"tracking_events"`
-	Communications []StripeDisputeCommunicationEvidence `json:"communications"`
-	Evidence       StripeDisputeEvidenceDraft           `json:"evidence"`
-	Warnings       []string                             `json:"warnings"`
-	CanSubmit      bool                                 `json:"can_submit"`
+	Dispute           *paymentdomain.StripeDispute          `json:"dispute"`
+	Order             *orderdomain.Order                    `json:"order,omitempty"`
+	Shipment          *shippingdomain.TrackingShipment      `json:"shipment,omitempty"`
+	TrackingEvents    []shippingdomain.TrackingEvent        `json:"tracking_events"`
+	Communications    []StripeDisputeCommunicationEvidence  `json:"communications"`
+	Authentication    *DisputePaymentAuthenticationEvidence `json:"authentication,omitempty"`
+	Evidence          StripeDisputeEvidenceDraft            `json:"evidence"`
+	EvidenceChecklist DisputeEvidenceChecklist              `json:"evidence_checklist"`
+	SubmissionCheck   DisputeEvidenceSubmissionCheck        `json:"submission_check"`
+	Warnings          []string                              `json:"warnings"`
+	CanSubmit         bool                                  `json:"can_submit"`
 }
 
 type StripeDisputeCommunicationEvidence struct {
@@ -119,10 +122,15 @@ func (s *PaymentService) BuildStripeDisputeEvidencePackage(disputeID uint) (*Str
 		Warnings:       []string{},
 		CanSubmit:      disputeNeedsResponse(record.Status),
 	}
+	transaction, err := s.findDisputeEvidenceTransaction("stripe", record.TransactionID, record.PaymentIntentID, disputeOrderID(record.OrderID))
+	if err != nil {
+		pkg.Warnings = append(pkg.Warnings, "Stripe transaction authentication evidence is unavailable; verify the saved gateway response before submitting.")
+	}
+	pkg.Authentication = buildStripeAuthenticationEvidence(transaction, record.PaymentIntentID)
 
 	if record.OrderID == nil || s.orderRepo == nil {
 		pkg.Warnings = append(pkg.Warnings, "Stripe dispute is not linked to a local order yet.")
-		pkg.Evidence = buildStripeDisputeEvidenceDraft(pkg)
+		finalizeStripeDisputeEvidencePackage(pkg)
 		return pkg, nil
 	}
 
@@ -171,7 +179,7 @@ func (s *PaymentService) BuildStripeDisputeEvidencePackage(disputeID uint) (*Str
 	}
 	pkg.Warnings = append(pkg.Warnings, "Carrier official proof-of-delivery PDF is not configured yet. Upload the DHL/FedEx PDF to Stripe as dispute_evidence and paste its File ID before submitting.")
 
-	pkg.Evidence = buildStripeDisputeEvidenceDraft(pkg)
+	finalizeStripeDisputeEvidencePackage(pkg)
 	return pkg, nil
 }
 
@@ -186,7 +194,7 @@ func (s *PaymentService) SubmitStripeDisputeEvidence(ctx context.Context, input 
 	if err != nil {
 		return nil, err
 	}
-	if !pkg.CanSubmit {
+	if !pkg.SubmissionCheck.Ready {
 		return nil, ErrStripeDisputeEvidenceNotSubmittable
 	}
 
@@ -290,6 +298,22 @@ func buildStripeDisputeEvidenceDraft(pkg *StripeDisputeEvidencePackage) StripeDi
 	}
 	draft.UncategorizedText = disputeUncategorizedText(orderRecord, pkg.Dispute, pkg.TrackingEvents)
 	return draft
+}
+
+func finalizeStripeDisputeEvidencePackage(pkg *StripeDisputeEvidencePackage) {
+	if pkg == nil {
+		return
+	}
+	pkg.Evidence = buildStripeDisputeEvidenceDraft(pkg)
+	pkg.EvidenceChecklist = buildDisputeEvidenceChecklist(
+		"stripe",
+		pkg.Order,
+		pkg.Shipment,
+		pkg.TrackingEvents,
+		pkg.Communications,
+		pkg.Authentication,
+	)
+	pkg.SubmissionCheck = buildDisputeEvidenceSubmissionCheck(pkg.CanSubmit, pkg.EvidenceChecklist)
 }
 
 func disputeProductDescription(orderRecord *orderdomain.Order) string {
@@ -556,4 +580,11 @@ func stripeDisputeEvidenceOrderID(orderRecord *orderdomain.Order) string {
 		return ""
 	}
 	return fmt.Sprint(orderRecord.ID)
+}
+
+func disputeOrderID(orderID *uint) uint {
+	if orderID == nil {
+		return 0
+	}
+	return *orderID
 }

@@ -152,7 +152,7 @@
                 min="0"
               />
               <Select
-                v-else-if="spec.field_type === 'select'"
+                v-else-if="spec.field_type === 'select' && specOptions(spec).length"
                 :model-value="selectValue(variant.option_values[spec.slug])"
                 @update:model-value="setSelectValue(variant, spec.slug, $event)"
               >
@@ -166,6 +166,11 @@
                   </SelectItem>
                 </SelectContent>
               </Select>
+              <Input
+                v-else-if="spec.field_type === 'select'"
+                v-model="variant.option_values[spec.slug]"
+                :placeholder="`${spec.name}（可动态录入）`"
+              />
               <div v-else-if="spec.field_type === 'boolean'" class="flex h-8 items-center">
                 <Switch v-model="variant.option_values[spec.slug]" :aria-label="spec.name" />
               </div>

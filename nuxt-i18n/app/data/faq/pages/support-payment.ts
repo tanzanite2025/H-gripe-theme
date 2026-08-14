@@ -6,7 +6,7 @@ import type { PageFaqData } from '../types'
 export const supportPaymentFaq: PageFaqData = {
   pageId: 'support-payment',
   title: 'Payment FAQs',
-  subtitle: 'Common questions about payment methods, fees, and troubleshooting',
+  subtitle: 'Payment methods, payment security, and what to do when something goes wrong',
   categories: [
     {
       id: 'payment-methods',
@@ -16,36 +16,21 @@ export const supportPaymentFaq: PageFaqData = {
         {
           id: 'pm-1',
           question: 'What payment methods do you accept?',
-          answer: `We accept a variety of payment methods including:
+          answer: `The checkout currently supports:
             <ul>
-              <li><strong>Credit & Debit Cards</strong> - Visa, MasterCard, and other major cards</li>
-              <li><strong>PayPal</strong> - For faster checkout with buyer protection</li>
-              <li><strong>Stripe</strong> - Secure card processing</li>
-              <li><strong>WeChat Pay & Alipay</strong> - For customers in China</li>
-              <li><strong>Bank Transfer</strong> - For larger or custom orders (by request)</li>
-              <li><strong>WorldFirst</strong> - For selected international orders</li>
-            </ul>`,
-          tags: ['payment', 'methods', 'cards', 'paypal'],
+              <li><strong>Credit and debit cards</strong> - Visa, Mastercard, American Express, and other major cards through Stripe</li>
+              <li><strong>PayPal</strong> - Hosted PayPal checkout</li>
+              <li><strong>Alipay</strong> - Redirect payment through Alipay</li>
+              <li><strong>WeChat Pay</strong> - Native QR payment</li>
+            </ul>
+            The methods shown at checkout are the methods currently enabled for your order and region.`,
+          tags: ['payment', 'methods', 'cards', 'paypal', 'alipay', 'wechat pay'],
         },
         {
           id: 'pm-2',
-          question: 'Are there any payment processing fees?',
-          answer: `Yes, different payment methods have different processing fees:
-            <ul>
-              <li><strong>PayPal & Credit Cards</strong>: 3.5% of the order amount</li>
-              <li><strong>Stripe</strong>: 3.5% of the order amount</li>
-              <li><strong>WeChat Pay</strong>: 0.6% of the order amount</li>
-              <li><strong>Alipay</strong>: 1% of the order amount</li>
-              <li><strong>WorldFirst</strong>: 1% of the order amount</li>
-              <li><strong>Bank Transfer</strong>: $45 USD bank fee (your bank may charge additional fees)</li>
-            </ul>`,
-          tags: ['fees', 'processing', 'charges'],
-        },
-        {
-          id: 'pm-3',
-          question: 'Can I pay via bank transfer?',
-          answer: `Yes, for larger or custom orders we can arrange payment via bank transfer. Please contact our support team before placing the order so we can provide the correct account details and reserve your items. Note that bank transfers incur a $45 USD bank fee, and your bank may charge additional fees.`,
-          tags: ['bank', 'transfer', 'wire'],
+          question: 'Why do I not see every payment method?',
+          answer: `Payment availability can depend on the order, region, provider configuration, and temporary provider status. The checkout page is the final source for the payment methods available for your purchase.`,
+          tags: ['availability', 'region', 'checkout', 'methods'],
         },
       ],
     },
@@ -57,39 +42,39 @@ export const supportPaymentFaq: PageFaqData = {
         {
           id: 'sec-1',
           question: 'Is my payment information secure?',
-          answer: `Absolutely. All pages on our site use HTTPS with SSL certificates issued by trusted certificate authorities. Your payment information is transmitted over encrypted channels. We use reputable payment providers (PayPal, Stripe, Alipay, WeChat Pay) to process payments - we only receive the payment result and <strong>never store</strong> your card number, CVV, or other sensitive data.`,
-          tags: ['security', 'ssl', 'encryption', 'privacy'],
+          answer: `Yes. Our pages use HTTPS/TLS encryption, and payment details are handled by trusted providers including Stripe, PayPal, Alipay, and WeChat Pay. We verify provider webhooks or payment status before treating an order as paid, and we match the result to the order amount and currency.`,
+          tags: ['security', 'https', 'tls', 'encryption', 'privacy'],
         },
         {
           id: 'sec-2',
+          question: 'Do you store my card number or CVV?',
+          answer: `We do not store your full card number, CVV, or card PIN. We receive the payment result and the provider reference needed to reconcile your order and help with support.`,
+          tags: ['card number', 'cvv', 'pin', 'privacy', 'data'],
+        },
+        {
+          id: 'sec-3',
           question: 'What is 3D Secure verification?',
-          answer: `3D Secure is an additional security layer for online card payments. Depending on your card issuer and region, you may be asked to verify your identity through your bank's app or a one-time code sent to your phone. This helps protect against unauthorized use of your card.`,
-          tags: ['3d secure', 'verification', 'security'],
+          answer: `3D Secure is an additional security check from your bank or card issuer. Depending on your card and region, you may be asked to approve the payment in your bank app or enter a one-time code. This helps protect against unauthorized card use.`,
+          tags: ['3d secure', 'verification', 'security', 'bank'],
         },
       ],
     },
     {
-      id: 'billing',
-      name: 'Billing & Charges',
-      icon: '🧾',
+      id: 'payment-confirmation',
+      name: 'Payment Confirmation',
+      icon: '✓',
       items: [
         {
-          id: 'bill-1',
-          question: 'When will my card be charged?',
-          answer: `For card and wallet payments, an authorization is created when you confirm the order. The final capture normally happens when the order is accepted and prepared for shipment. For bank transfers, we start processing your order after the funds have been received and matched to your order reference.`,
-          tags: ['charge', 'capture', 'authorization'],
+          id: 'confirm-1',
+          question: 'How is my payment confirmed?',
+          answer: `Each provider has its own confirmation flow. Stripe uses its payment confirmation flow, PayPal uses approval and provider confirmation, and Alipay and WeChat Pay use provider-side status or notification checks. Our server verifies the provider result against the order before marking it as paid.`,
+          tags: ['confirmation', 'provider', 'webhook', 'status'],
         },
         {
-          id: 'bill-2',
-          question: 'Why is the charged amount different from the displayed price?',
-          answer: `Product prices are usually shown in a reference currency (e.g., USD). Your bank or payment provider may convert this amount into your local currency using their own exchange rate and may add conversion fees. Additionally, depending on your shipping country, local VAT or import duties may apply.`,
-          tags: ['currency', 'conversion', 'exchange rate'],
-        },
-        {
-          id: 'bill-3',
-          question: 'What about taxes and import duties?',
-          answer: `Depending on your shipping country, local VAT or import duties may apply. These charges are handled according to the shipping option shown at checkout. Please review the order summary carefully before confirming payment.`,
-          tags: ['tax', 'vat', 'duties', 'import'],
+          id: 'confirm-2',
+          question: 'What if I close the payment page too early?',
+          answer: `A browser redirect is not the only source of truth. If the provider has completed the payment, the server may still receive or verify the result. Do not submit the payment repeatedly; keep your receipt or provider reference and contact support if the order status needs checking.`,
+          tags: ['redirect', 'closed page', 'status', 'receipt'],
         },
       ],
     },
@@ -105,21 +90,21 @@ export const supportPaymentFaq: PageFaqData = {
             <ul>
               <li>Check that your billing details match your bank records</li>
               <li>Ensure sufficient funds are available</li>
-              <li>Try again or use a different payment method</li>
+              <li>Try again or use another method shown at checkout</li>
             </ul>
-            Your bank can often provide more detail via their app or customer service.`,
+            Your bank or payment provider can often provide more detail through its app or support team.`,
           tags: ['declined', 'rejected', 'failed'],
         },
         {
           id: 'ts-2',
           question: 'I was charged but my order was not created. What happened?',
-          answer: `On rare occasions, a network issue can interrupt the redirect back to our site after payment. If you see a charge but no order in your account, please contact our support team with your payment reference so we can investigate and resolve the issue.`,
-          tags: ['charged', 'no order', 'missing order'],
+          answer: `A network or redirect issue can interrupt the return to our site after payment. Do not pay again immediately. Contact support with your order details, payment receipt, or provider reference so we can verify the payment and order status.`,
+          tags: ['charged', 'no order', 'missing order', 'redirect'],
         },
         {
           id: 'ts-3',
           question: 'I see multiple pending charges on my card. Is this normal?',
-          answer: `If you attempted payment several times, your bank may show multiple pending authorizations. Normally, any unused authorizations are released automatically after a short period (usually 3-7 business days). If this does not happen, please contact your bank or our support team.`,
+          answer: `If you attempted payment several times, your bank may show multiple pending authorizations. Unused pending authorizations are normally released by the bank or payment provider. If an unfamiliar charge remains or you are concerned, contact your bank and our support team.`,
           tags: ['multiple charges', 'pending', 'authorization'],
         },
       ],

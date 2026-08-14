@@ -117,12 +117,15 @@ func (s *SEOResourceService) ProductDiagnostics(item product.Product) (seodomain
 	}
 
 	brand := ""
+	if item.Brand != nil {
+		brand = item.Brand.Name
+	}
 	if s.settings != nil {
 		siteSettings, err := s.settings.GetSiteSettings(item.Locale)
 		if err != nil {
 			return seodomain.ProductSEOReadiness{}, err
 		}
-		if siteSettings != nil {
+		if siteSettings != nil && brand == "" {
 			brand = siteSettings.BrandTitle
 		}
 	}

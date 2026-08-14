@@ -11,7 +11,7 @@
             label="Subscribe for new products & blog updates"
           />
           <div class="footer-subscription__social">
-            <SocialIcons :items="footerSocialItems" />
+            <SocialIcons />
           </div>
         </div>
 
@@ -67,34 +67,6 @@ import FooterMenus from '~/components/FooterMenus.vue'
 import SubscriptionOptIn from '~/components/SubscriptionOptIn.vue'
 
 const currentYear = computed(() => new Date().getFullYear())
-
-interface FooterSocialItem {
-  url: string
-  label: string
-  network?: string
-  size?: number
-}
-
-const footerSocialItems: FooterSocialItem[] = [
-  {
-    network: 'twitter',
-    url: 'https://twitter.com',
-    label: 'Twitter',
-    size: 24,
-  },
-  {
-    network: 'instagram',
-    url: 'https://instagram.com',
-    label: 'Instagram',
-    size: 24,
-  },
-  {
-    network: 'github',
-    url: 'https://github.com',
-    label: 'GitHub',
-    size: 24,
-  },
-]
 
 interface PaymentIcon {
   src: string

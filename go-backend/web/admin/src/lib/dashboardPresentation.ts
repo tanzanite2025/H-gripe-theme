@@ -67,20 +67,6 @@ export const orderStatusTone = (status?: string | null): DashboardTone => ({
   cancelled: 'coral'
 } as Record<string, DashboardTone>)[status || ''] || 'gray'
 
-export const getTicketStatusName = (status?: string | null): string => ({
-  open: '待处理',
-  pending: '处理中',
-  resolved: '已解决',
-  closed: '已关闭'
-})[status || ''] || status || '-'
-
-export const ticketStatusTone = (status?: string | null): DashboardTone => ({
-  open: 'coral',
-  pending: 'amber',
-  resolved: 'green',
-  closed: 'gray'
-} as Record<string, DashboardTone>)[status || ''] || 'gray'
-
 export const buildSalesChartOption = (data?: SalesChartPoint[] | null): EChartsOption | null => {
   if (!Array.isArray(data) || data.length === 0) return null
 

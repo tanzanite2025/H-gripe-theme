@@ -1,17 +1,25 @@
 <template>
   <div class="space-y-4">
-    <AdminPageHeader title="订单管理" description="查看订单履约、支付和物流状态">
+    <AdminPageHeader
+      :title="activeOrderTab === 'disputes' ? '拒付订单' : '订单管理'"
+      :description="activeOrderTab === 'disputes' ? '按订单分析 Stripe / PayPal 拒付，并在必要时联系客户' : '查看订单履约、支付和物流状态'"
+    >
       <template #actions>
-        <Button variant="outline" @click="exportOrders">
+        <Button v-if="activeOrderTab === 'list'" variant="outline" @click="exportOrders">
           <Download class="size-4" />
           导出订单
+        </Button>
+        <Button v-else variant="outline" :disabled="disputeLoading" @click="fetchOrderDisputes">
+          <RefreshCw :class="['size-4', disputeLoading ? 'animate-spin' : '']" />
+          刷新拒付
         </Button>
       </template>
     </AdminPageHeader>
 
-    <AdminStatsGrid :items="statItems" />
+    <AdminStatsGrid :items="activeStatItems" />
 
     <OrderFilterPanel
+      v-if="activeOrderTab === 'list'"
       :filters="filters"
       :order-status-options="orderStatusOptions"
       :payment-status-options="paymentStatusOptions"
@@ -21,6 +29,7 @@
     />
 
     <OrderTablePanel
+      v-if="activeOrderTab === 'list'"
       :loading="loading"
       :orders="orders"
       :selected-orders="selectedOrders"
@@ -47,12 +56,58 @@
       @update-page-size="updatePageSize"
     />
 
+    <template v-else>
+      <AdminFilterPanel>
+        <form class="grid grid-cols-1 gap-3 md:grid-cols-[180px_220px_1fr_auto]" @submit.prevent="applyDisputeFilters">
+          <label class="block space-y-1">
+            <span class="block text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">PROVIDER / 渠道</span>
+            <select v-model="disputeFilters.provider" class="h-9 w-full rounded-md border border-dashed border-border bg-background px-3 text-sm">
+              <option value="">全部渠道</option>
+              <option value="stripe">Stripe</option>
+              <option value="paypal">PayPal</option>
+            </select>
+          </label>
+          <label class="block space-y-1">
+            <span class="block text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">STATUS / 状态</span>
+            <Input v-model="disputeFilters.status" placeholder="例如 needs_response / OPEN" />
+          </label>
+          <label class="block space-y-1">
+            <span class="block text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">SEARCH / 搜索</span>
+            <Input v-model="disputeFilters.search" placeholder="拒付号、订单号、邮箱、物流单号" />
+          </label>
+          <div class="flex items-end gap-2">
+            <Button type="submit" class="h-9 rounded-full px-3 text-xs font-black uppercase tracking-wider" :disabled="disputeLoading">
+              查询
+            </Button>
+            <Button type="button" variant="outline" class="h-9 rounded-full px-3 text-xs font-black uppercase tracking-wider" @click="resetDisputeFilters">
+              重置
+            </Button>
+          </div>
+        </form>
+      </AdminFilterPanel>
+
+      <OrderDisputeTablePanel
+        :loading="disputeLoading"
+        :disputes="disputeOrders"
+        :pagination="disputePagination"
+        :format-money="formatMoney"
+        :format-date="formatDate"
+        @view-order="showDisputeOrderDetail"
+        @contact-customer="openDisputeContactEmail"
+        @open-payment-workbench="openPaymentWorkbench"
+        @update-page="updateDisputePage"
+        @update-page-size="updateDisputePageSize"
+      />
+    </template>
+
     <OrderDetailDialog
       v-model:open="detailDialogVisible"
       v-model:admin-note="adminNoteForm.admin_note"
       :current-order="currentOrder"
       :current-tracking-events="currentTrackingEvents"
       :current-tracking-shipment="currentTrackingShipment"
+      :dispute-analysis="currentDisputeAnalysis"
+      :dispute-analysis-loading="disputeAnalysisLoading"
       :syncing-tracking="syncingTracking"
       :can-edit="hasPermission('order:edit')"
       :order-status-name="getOrderStatusName"
@@ -72,6 +127,18 @@
       :order-carrier-service-label="orderCarrierServiceLabel"
       @sync-tracking="syncCurrentOrderTracking"
       @update-note="updateAdminNote"
+      @contact-dispute="openDisputeContactEmail"
+      @open-payment-workbench="openPaymentWorkbench"
+    />
+
+    <OrderDisputeContactEmailDialog
+      v-model:open="disputeEmailDialogVisible"
+      :form="disputeEmailForm"
+      :sending="disputeEmailSending"
+      :mailto-url="disputeEmailMailtoUrl"
+      @update:subject="disputeEmailForm.subject = $event"
+      @update:body="disputeEmailForm.body = $event"
+      @submit="submitDisputeContactEmail"
     />
 
     <OrderStatusDialog
@@ -101,23 +168,31 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
 import {
   Banknote,
   CalendarCheck2,
   Download,
+  RefreshCw,
+  ShieldAlert,
   ShoppingBag,
   TrendingUp
 } from '@lucide/vue'
 import AdminConfirmDialog from '@/components/admin/AdminConfirmDialog.vue'
+import AdminFilterPanel from '@/components/admin/AdminFilterPanel.vue'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import AdminStatsGrid from '@/components/admin/AdminStatsGrid.vue'
+import OrderDisputeContactEmailDialog from '@/components/admin/order/OrderDisputeContactEmailDialog.vue'
+import OrderDisputeTablePanel from '@/components/admin/order/OrderDisputeTablePanel.vue'
 import OrderDetailDialog from '@/components/admin/order/OrderDetailDialog.vue'
 import OrderFilterPanel from '@/components/admin/order/OrderFilterPanel.vue'
 import OrderStatusDialog from '@/components/admin/order/OrderStatusDialog.vue'
 import OrderTablePanel from '@/components/admin/order/OrderTablePanel.vue'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { ordersApi } from '@/api/orders'
 import { shippingApi } from '@/api/shipping'
 import {
   editableOrderStatusOptions,
@@ -145,6 +220,9 @@ import { useAuthStore } from '@/stores/auth'
 import axios from '@/utils/axios'
 import type {
   OrderConfirmation,
+  OrderDisputeAnalysis,
+  OrderDisputeCase,
+  OrderDisputeEmailForm,
   OrderFilters,
   OrderID,
   OrderPagination,
@@ -177,14 +255,23 @@ interface TrackingEventsResponse {
 }
 
 const authStore = useAuthStore()
+const route = useRoute()
+const router = useRouter()
 const loading = ref(false)
 const orders = ref<OrderRecord[]>([])
+const disputeOrders = ref<OrderDisputeCase[]>([])
 const selectedOrders = ref<OrderRecord[]>([])
 const detailDialogVisible = ref(false)
+const disputeEmailDialogVisible = ref(false)
 const statusDialogVisible = ref(false)
 const submitting = ref(false)
+const disputeLoading = ref(false)
+const disputeAnalysisLoading = ref(false)
+const disputeEmailSending = ref(false)
 const syncingTracking = ref(false)
 const currentOrder = ref<OrderRecord | null>(null)
+const disputeEmailOrderID = ref<OrderID | null>(null)
+const currentDisputeAnalysis = ref<OrderDisputeAnalysis | null>(null)
 const currentTrackingEvents = ref<TrackingEvent[]>([])
 const currentTrackingShipment = ref<TrackingShipment | null>(null)
 const stats = ref<OrderStats>({})
@@ -203,6 +290,20 @@ const filters = reactive<OrderFilters>({
 })
 
 const pagination = reactive<OrderPagination>({ page: 1, pageSize: 20, total: 0 })
+const disputePagination = reactive<OrderPagination>({ page: 1, pageSize: 20, total: 0 })
+const disputeFilters = reactive({
+  provider: '',
+  status: '',
+  search: ''
+})
+const disputeEmailForm = reactive<OrderDisputeEmailForm>({
+  provider: '',
+  dispute_id: null,
+  to: '',
+  subject: '',
+  body: ''
+})
+const disputeEmailMailtoUrl = ref('')
 const statusForm = reactive<OrderStatusForm>({
   id: null,
   order_number: '',
@@ -231,6 +332,19 @@ const statItems = computed<OrderStatItem[]>(() => [
   { key: 'revenue', label: '总销售额', value: `¥${formatMoney(stats.value.total_revenue)}`, icon: Banknote, tone: 'green' },
   { key: 'today-revenue', label: '今日销售额', value: `¥${formatMoney(stats.value.today_revenue)}`, icon: TrendingUp, tone: 'amber' }
 ])
+const activeOrderTab = computed<'list' | 'disputes'>(() => route.name === 'OrdersDisputes' ? 'disputes' : 'list')
+const activeStatItems = computed<OrderStatItem[]>(() => {
+  if (activeOrderTab.value === 'list') return statItems.value
+  const needsResponse = disputeOrders.value.filter((item) => item.needs_response).length
+  const likelyMistakes = disputeOrders.value.filter((item) => item.mistake_assessment?.level === 'likely_mistake').length
+  const evidenceBlocked = disputeOrders.value.filter((item) => Number(item.evidence_summary?.blocker_count || 0) > 0).length
+  return [
+    { key: 'disputes', label: '拒付订单', value: disputePagination.total || 0, icon: ShieldAlert, tone: 'gray' },
+    { key: 'needs-response', label: '需要响应', value: needsResponse, icon: ShieldAlert, tone: needsResponse ? 'coral' : 'green' },
+    { key: 'likely-mistakes', label: '疑似误操作', value: likelyMistakes, icon: CalendarCheck2, tone: likelyMistakes ? 'amber' : 'gray' },
+    { key: 'evidence-blocked', label: '证据阻断', value: evidenceBlocked, icon: ShoppingBag, tone: evidenceBlocked ? 'coral' : 'green' }
+  ]
+})
 const selectionState = computed(() => {
   if (orders.value.length === 0 || selectedOrders.value.length === 0) return false
   return selectedOrders.value.length === orders.value.length ? true : 'indeterminate'
@@ -356,6 +470,27 @@ const fetchOrders = async (): Promise<void> => {
   }
 }
 
+const fetchOrderDisputes = async (): Promise<void> => {
+  disputeLoading.value = true
+  try {
+    const payload = await ordersApi.listDisputes({
+      page: disputePagination.page,
+      page_size: disputePagination.pageSize,
+      provider: disputeFilters.provider || undefined,
+      status: disputeFilters.status.trim() || undefined,
+      search: disputeFilters.search.trim() || undefined
+    })
+    disputeOrders.value = payload.data
+    disputePagination.page = payload.pagination.page
+    disputePagination.pageSize = payload.pagination.page_size
+    disputePagination.total = payload.pagination.total
+  } catch (error) {
+    console.error('Failed to fetch order disputes:', error)
+  } finally {
+    disputeLoading.value = false
+  }
+}
+
 const fetchShippingLookups = async (): Promise<void> => {
   try {
     const [providerList, carrierList, serviceList, mappingList] = await Promise.all([
@@ -406,14 +541,40 @@ const resetFilters = (): void => {
 }
 const updatePage = (page: number): void => { pagination.page = page; void fetchOrders() }
 const updatePageSize = (pageSize: number): void => { pagination.pageSize = pageSize; pagination.page = 1; void fetchOrders() }
+const applyDisputeFilters = (): void => { disputePagination.page = 1; void fetchOrderDisputes() }
+const resetDisputeFilters = (): void => {
+  Object.assign(disputeFilters, { provider: '', status: '', search: '' })
+  disputePagination.page = 1
+  void fetchOrderDisputes()
+}
+const updateDisputePage = (page: number): void => { disputePagination.page = page; void fetchOrderDisputes() }
+const updateDisputePageSize = (pageSize: number): void => {
+  disputePagination.pageSize = pageSize
+  disputePagination.page = 1
+  void fetchOrderDisputes()
+}
+
+const fetchOrderDisputeAnalysis = async (orderID: OrderID): Promise<void> => {
+  disputeAnalysisLoading.value = true
+  currentDisputeAnalysis.value = null
+  try {
+    currentDisputeAnalysis.value = await ordersApi.getDisputeAnalysis(orderID)
+  } catch (error) {
+    console.error('Failed to fetch order dispute analysis:', error)
+  } finally {
+    disputeAnalysisLoading.value = false
+  }
+}
 
 const showOrderDetail = async (order: OrderRecord): Promise<void> => {
   try {
     currentTrackingShipment.value = null
+    currentDisputeAnalysis.value = null
     const [response] = await Promise.all([
       axios.get<OrderDetailResponse>(`/api/admin/orders/${order.id}`),
       fetchShippingLookups(),
-      fetchOrderTrackingEvents(order.id)
+      fetchOrderTrackingEvents(order.id),
+      fetchOrderDisputeAnalysis(order.id)
     ])
     currentOrder.value = response.data.order || null
     currentTrackingShipment.value = response.data.tracking_shipment || null
@@ -421,6 +582,61 @@ const showOrderDetail = async (order: OrderRecord): Promise<void> => {
     detailDialogVisible.value = true
   } catch (error) {
     console.error('Failed to fetch order detail:', error)
+  }
+}
+
+const showDisputeOrderDetail = (dispute: OrderDisputeCase): void => {
+  if (!dispute.order_id) return
+  void showOrderDetail({
+    id: dispute.order_id,
+    order_number: dispute.order_number || undefined
+  })
+}
+
+const openDisputeContactEmail = (dispute: OrderDisputeCase): void => {
+  if (!dispute.order_id || !dispute.contact_draft?.can_send) return
+  disputeEmailOrderID.value = dispute.order_id
+  Object.assign(disputeEmailForm, {
+    provider: dispute.provider,
+    dispute_id: dispute.dispute_id,
+    to: dispute.contact_draft.to || dispute.customer_email || '',
+    subject: dispute.contact_draft.subject || '',
+    body: dispute.contact_draft.body || ''
+  })
+  disputeEmailMailtoUrl.value = dispute.contact_draft.mailto_url || ''
+  disputeEmailDialogVisible.value = true
+}
+
+const openPaymentWorkbench = (dispute: OrderDisputeCase): void => {
+  void router.push({
+    name: 'PaymentRiskDisputes',
+    query: {
+      provider: dispute.provider,
+      dispute_id: String(dispute.dispute_id)
+    }
+  })
+}
+
+const submitDisputeContactEmail = async (): Promise<void> => {
+  const orderID = disputeEmailOrderID.value
+  if (!orderID || !disputeEmailForm.dispute_id) return
+
+  disputeEmailSending.value = true
+  try {
+    await ordersApi.sendDisputeContactEmail(orderID, disputeEmailForm)
+    toast.success('客户联系邮件已发送')
+    disputeEmailDialogVisible.value = false
+    if (currentOrder.value?.id === orderID) {
+      await fetchOrderDisputeAnalysis(orderID)
+    }
+    if (activeOrderTab.value === 'disputes') {
+      await fetchOrderDisputes()
+    }
+  } catch (error) {
+    console.error('Failed to send dispute contact email:', error)
+    toast.error(error?.response?.data?.error || '客户联系邮件发送失败')
+  } finally {
+    disputeEmailSending.value = false
   }
 }
 
@@ -596,8 +812,20 @@ const exportOrders = async (): Promise<void> => {
   }
 }
 
-onMounted(() => {
+const refreshActiveOrderTab = (): void => {
+  if (activeOrderTab.value === 'disputes') {
+    void fetchOrderDisputes()
+    return
+  }
   void refreshOrders()
+}
+
+onMounted(() => {
+  refreshActiveOrderTab()
   void fetchShippingLookups()
+})
+
+watch(activeOrderTab, () => {
+  refreshActiveOrderTab()
 })
 </script>

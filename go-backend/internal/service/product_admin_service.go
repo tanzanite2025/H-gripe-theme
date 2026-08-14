@@ -42,6 +42,7 @@ type ProductVariantOptionValueInput struct {
 
 type ProductCreateInput struct {
 	ProductTypeID        *uint
+	BrandID              *uint
 	ShippingTemplateID   *uint
 	AfterSalesTemplateID *uint
 	PackagingTemplateID  *uint
@@ -63,6 +64,8 @@ type ProductCreateInput struct {
 type ProductUpdateInput struct {
 	ProductTypeID              *uint
 	UpdateProductTypeID        bool
+	BrandID                    *uint
+	UpdateBrandID              bool
 	ShippingTemplateID         *uint
 	UpdateShippingTemplateID   bool
 	AfterSalesTemplateID       *uint
@@ -155,6 +158,9 @@ func (s *ProductService) CreateAdminProduct(input ProductCreateInput) (*product.
 	if err := s.validateProductTranslationParent(input.ParentID, 0, locale); err != nil {
 		return nil, err
 	}
+	if err := s.validateProductBrand(input.BrandID, false); err != nil {
+		return nil, err
+	}
 	if err := s.validateInformationTemplate(input.AfterSalesTemplateID, product.ProductInformationTemplateKindAfterSales, locale, false); err != nil {
 		return nil, err
 	}
@@ -164,6 +170,7 @@ func (s *ProductService) CreateAdminProduct(input ProductCreateInput) (*product.
 
 	newProduct := &product.Product{
 		ProductTypeID:        input.ProductTypeID,
+		BrandID:              input.BrandID,
 		ShippingTemplateID:   input.ShippingTemplateID,
 		AfterSalesTemplateID: input.AfterSalesTemplateID,
 		PackagingTemplateID:  input.PackagingTemplateID,
@@ -177,6 +184,36 @@ func (s *ProductService) CreateAdminProduct(input ProductCreateInput) (*product.
 		Locale:               locale,
 		ParentID:             input.ParentID,
 		Featured:             input.Featured,
+	}
+
+	if s.txManager != nil {
+		var createdProduct *product.Product
+		err := s.txManager.WithinTx(func(tx repository.TxRepositories) error {
+			if tx.Product == nil {
+				return errors.New("transactional product repository is not configured")
+			}
+			if err := tx.Product.CreateWithSpecValuesVariantsOptionValuesAndMedia(newProduct, specValues, variants, optionValues, mediaItems); err != nil {
+				return mapProductRepositoryMutationError(err)
+			}
+			var err error
+			createdProduct, err = tx.Product.FindByID(newProduct.ID)
+			if err != nil {
+				return err
+			}
+			_, merchantEvents, err := s.transactionalProductPublishers(tx.Outbox)
+			if err != nil {
+				return err
+			}
+			if err := enqueueMerchantProductChangeWithPublisher(merchantEvents, createdProduct, "product_created"); err != nil {
+				return requireMerchantEvent(err, createdProduct, "product_created")
+			}
+			return nil
+		})
+		if err != nil {
+			return nil, err
+		}
+		s.invalidateStorefrontHTMLCache("admin product create")
+		return createdProduct, nil
 	}
 
 	if err := s.productRepo.CreateWithSpecValuesVariantsOptionValuesAndMedia(newProduct, specValues, variants, optionValues, mediaItems); err != nil {
@@ -207,6 +244,13 @@ func (s *ProductService) UpdateAdminProduct(id uint, input ProductUpdateInput) (
 
 	if input.UpdateProductTypeID {
 		existingProduct.ProductTypeID = input.ProductTypeID
+	}
+	if input.UpdateBrandID {
+		allowDisabled := existingProduct.BrandID != nil && input.BrandID != nil && *existingProduct.BrandID == *input.BrandID
+		if err := s.validateProductBrand(input.BrandID, allowDisabled); err != nil {
+			return nil, err
+		}
+		existingProduct.BrandID = input.BrandID
 	}
 	if input.UpdateShippingTemplateID {
 		existingProduct.ShippingTemplateID = input.ShippingTemplateID
@@ -322,6 +366,44 @@ func (s *ProductService) UpdateAdminProduct(id uint, input ProductUpdateInput) (
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	if s.txManager != nil {
+		var updatedProduct *product.Product
+		err := s.txManager.WithinTx(func(tx repository.TxRepositories) error {
+			if tx.Product == nil {
+				return errors.New("transactional product repository is not configured")
+			}
+			if err := tx.Product.UpdateWithSpecValuesVariantsOptionValuesAndMedia(existingProduct, specValues, input.UpdateSpecValues, variants, input.UpdateVariants, optionValues, input.UpdateVariantOptionValues, mediaItems, input.UpdateMedia); err != nil {
+				return mapProductRepositoryMutationError(err)
+			}
+			var err error
+			updatedProduct, err = tx.Product.FindByID(existingProduct.ID)
+			if err != nil {
+				return err
+			}
+			cacheEvents, merchantEvents, err := s.transactionalProductPublishers(tx.Outbox)
+			if err != nil {
+				return err
+			}
+			if err := enqueueProductCacheInvalidationByIDsWithPublisher(cacheEvents, []uint{previousProduct.ID, updatedProduct.ID}, "admin product update"); err != nil {
+				return err
+			}
+			if merchantProductUpdateAffectsChannel(input) {
+				reason := merchantProductSourceChangeReason(input)
+				if err := enqueueMerchantProductChangeWithPublisher(merchantEvents, updatedProduct, reason); err != nil {
+					return requireMerchantEvent(err, updatedProduct, reason)
+				}
+			}
+			return nil
+		})
+		if err != nil {
+			return nil, err
+		}
+		s.clearProductCache(&previousProduct)
+		s.clearProductCache(updatedProduct)
+		s.invalidateStorefrontHTMLCache("admin product update")
+		return updatedProduct, nil
 	}
 
 	if err := s.productRepo.UpdateWithSpecValuesVariantsOptionValuesAndMedia(existingProduct, specValues, input.UpdateSpecValues, variants, input.UpdateVariants, optionValues, input.UpdateVariantOptionValues, mediaItems, input.UpdateMedia); err != nil {
@@ -609,6 +691,36 @@ func (s *ProductService) deleteProductByID(id uint, shouldInvalidateHTML bool) e
 		return err
 	}
 
+	if s.txManager != nil {
+		err := s.txManager.WithinTx(func(tx repository.TxRepositories) error {
+			if tx.Product == nil {
+				return errors.New("transactional product repository is not configured")
+			}
+			if err := tx.Product.Delete(id); err != nil {
+				return err
+			}
+			cacheEvents, merchantEvents, err := s.transactionalProductPublishers(tx.Outbox)
+			if err != nil {
+				return err
+			}
+			if err := enqueueProductCacheInvalidationByIDsWithPublisher(cacheEvents, []uint{existingProduct.ID}, "admin product delete"); err != nil {
+				return err
+			}
+			if err := enqueueMerchantProductWithdrawWithPublisher(merchantEvents, existingProduct, "product_deleted"); err != nil {
+				return requireMerchantEvent(err, existingProduct, "product_deleted")
+			}
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+		s.clearProductCache(existingProduct)
+		if shouldInvalidateHTML {
+			s.invalidateStorefrontHTMLCache("admin product delete")
+		}
+		return nil
+	}
+
 	if err := s.productRepo.Delete(id); err != nil {
 		return err
 	}
@@ -635,6 +747,40 @@ func (s *ProductService) updateProductStatusByID(id uint, status string, shouldI
 	existingProduct, err := s.findProduct(id)
 	if err != nil {
 		return err
+	}
+
+	if s.txManager != nil {
+		err := s.txManager.WithinTx(func(tx repository.TxRepositories) error {
+			if tx.Product == nil {
+				return errors.New("transactional product repository is not configured")
+			}
+			if err := tx.Product.UpdateStatus(id, status); err != nil {
+				return err
+			}
+			updatedProduct, err := tx.Product.FindByID(id)
+			if err != nil {
+				return err
+			}
+			cacheEvents, merchantEvents, err := s.transactionalProductPublishers(tx.Outbox)
+			if err != nil {
+				return err
+			}
+			if err := enqueueProductCacheInvalidationByIDsWithPublisher(cacheEvents, []uint{id}, "admin product status update"); err != nil {
+				return err
+			}
+			if err := enqueueMerchantProductChangeWithPublisher(merchantEvents, updatedProduct, "product_status_changed"); err != nil {
+				return requireMerchantEvent(err, updatedProduct, "product_status_changed")
+			}
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+		s.clearProductCache(existingProduct)
+		if shouldInvalidateHTML {
+			s.invalidateStorefrontHTMLCache("admin product status update")
+		}
+		return nil
 	}
 
 	if err := s.productRepo.UpdateStatus(id, status); err != nil {

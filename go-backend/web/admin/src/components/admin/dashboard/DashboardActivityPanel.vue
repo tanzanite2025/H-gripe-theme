@@ -10,7 +10,6 @@
         <TabsList variant="line" class="rounded-full bg-muted/40 p-1">
           <TabsTrigger value="orders" class="rounded-full text-xs font-bold px-3">订单</TabsTrigger>
           <TabsTrigger value="users" class="rounded-full text-xs font-bold px-3">用户</TabsTrigger>
-          <TabsTrigger value="tickets" class="rounded-full text-xs font-bold px-3">工单</TabsTrigger>
         </TabsList>
       </CardHeader>
 
@@ -59,27 +58,6 @@
           </div>
         </TabsContent>
 
-        <TabsContent value="tickets" class="mt-0">
-          <div class="flex min-h-9 items-center justify-between">
-            <strong class="text-xs font-black uppercase tracking-wider text-foreground/80">最近工单</strong>
-            <Button variant="link" size="sm" class="px-0 font-bold text-xs" @click="emit('navigate', '/tickets')">
-              查看全部
-              <ArrowRight class="size-3.5 ml-1" />
-            </Button>
-          </div>
-          <EmptyActivity v-if="recentTickets.length === 0" label="暂无工单" />
-          <div v-else class="grid grid-cols-1 gap-x-6 md:grid-cols-2">
-            <div v-for="ticket in recentTickets" :key="ticket.id" class="flex min-w-0 items-center justify-between gap-4 border-b border-dashed border-border/60 py-2.5">
-              <div class="min-w-0">
-                <strong class="block truncate text-xs font-bold">{{ ticket.subject }}</strong>
-                <span class="mt-0.5 block truncate text-[11px] font-mono text-muted-foreground">{{ ticket.category }}</span>
-              </div>
-              <AdminStatusBadge :tone="ticketStatusTone(ticket.status)">
-                {{ getTicketStatusName(ticket.status) }}
-              </AdminStatusBadge>
-            </div>
-          </div>
-        </TabsContent>
       </CardContent>
     </Tabs>
   </Card>
@@ -97,7 +75,6 @@ import type {
   DashboardLabelResolver,
   DashboardNumberFormatter,
   DashboardRecentOrder,
-  DashboardRecentTicket,
   DashboardRecentUser,
   DashboardToneResolver
 } from './dashboardTypes'
@@ -118,19 +95,15 @@ withDefaults(defineProps<{
   activeActivity?: DashboardActivity
   recentOrders?: DashboardRecentOrder[]
   recentUsers?: DashboardRecentUser[]
-  recentTickets?: DashboardRecentTicket[]
   formatNumber: DashboardNumberFormatter
   getOrderStatusName: DashboardLabelResolver
   orderStatusTone: DashboardToneResolver
   getRoleName: DashboardLabelResolver
   roleTone: DashboardToneResolver
-  getTicketStatusName: DashboardLabelResolver
-  ticketStatusTone: DashboardToneResolver
 }>(), {
   activeActivity: 'orders',
   recentOrders: () => [],
   recentUsers: () => [],
-  recentTickets: () => []
 })
 
 const emit = defineEmits<{
@@ -138,7 +111,7 @@ const emit = defineEmits<{
   (event: 'navigate', path: string): void
 }>()
 
-const activityValues: DashboardActivity[] = ['orders', 'users', 'tickets']
+const activityValues: DashboardActivity[] = ['orders', 'users']
 const isDashboardActivity = (value: unknown): value is DashboardActivity => (
   typeof value === 'string' && activityValues.includes(value as DashboardActivity)
 )

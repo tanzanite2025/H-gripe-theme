@@ -117,4 +117,32 @@ export const productInformationTemplateApi = {
   }
 }
 
+export const productBrandApi = {
+  async list(params: Record<string, any> = {}) {
+    const path = '/api/admin/product-brands'
+    const payload = unwrapApiPayload(await axios.get(path, { params }), path)
+    return requireApiArray(payload, path, 'data')
+  },
+
+  async get(id: number | string) {
+    const path = `/api/admin/product-brands/${id}`
+    return requireApiObject(unwrapApiPayload(await axios.get(path), path), path, 'data')
+  },
+
+  async create(payload: Record<string, any>) {
+    const path = '/api/admin/product-brands'
+    return requireApiObject(unwrapApiPayload(await axios.post(path, payload), path), path, 'data')
+  },
+
+  async update(id: number | string, payload: Record<string, any>) {
+    const path = `/api/admin/product-brands/${id}`
+    return requireApiObject(unwrapApiPayload(await axios.put(path, payload), path), path, 'data')
+  },
+
+  async remove(id: number | string) {
+    const path = `/api/admin/product-brands/${id}`
+    return requireApiAcknowledgement(await axios.delete(path), path)
+  }
+}
+
 export default productApi

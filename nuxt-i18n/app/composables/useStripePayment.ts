@@ -1,6 +1,7 @@
 import { loadStripe, type Stripe, type StripeElements, type StripePaymentElement } from '@stripe/stripe-js'
 import { shallowRef } from 'vue'
-import { storefrontFontFamily, storefrontFontStylesheetUrl } from '~/utils/storefrontFonts'
+import { useI18n } from '#imports'
+import { storefrontFontFamilyForLocale, storefrontFontStylesheetUrl } from '~/utils/storefrontFonts'
 
 export interface StripePaymentSession {
   clientSecret: string
@@ -13,6 +14,7 @@ export interface StripeConfirmationResult {
 }
 
 export function useStripePayment() {
+  const { locale } = useI18n()
   const stripe = shallowRef<Stripe | null>(null)
   const elements = shallowRef<StripeElements | null>(null)
   const paymentElement = shallowRef<StripePaymentElement | null>(null)
@@ -51,7 +53,7 @@ export function useStripePayment() {
           colorText: '#f5f7f8',
           colorDanger: '#fb7185',
           borderRadius: '10px',
-          fontFamily: storefrontFontFamily,
+          fontFamily: storefrontFontFamilyForLocale(locale.value),
         },
         rules: {
           '.Input': {

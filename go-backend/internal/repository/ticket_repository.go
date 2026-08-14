@@ -51,51 +51,6 @@ func (r *TicketRepository) FindTicketByID(id uint) (*ticket.Ticket, error) {
 	return &t, nil
 }
 
-// FindTicketsByUserID 查找用户的工单列表
-func (r *TicketRepository) FindTicketsByUserID(userID uint, page, pageSize int) ([]ticket.Ticket, int64, error) {
-	var tickets []ticket.Ticket
-	var total int64
-
-	query := r.db.Model(&ticket.Ticket{}).
-		Where("user_id = ? AND (category IS NULL OR category <> ?)", userID, "customer_service")
-
-	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, err
-	}
-
-	offset := (page - 1) * pageSize
-	err := query.Order("updated_at DESC").Offset(offset).Limit(pageSize).Find(&tickets).Error
-
-	return tickets, total, err
-}
-
-// FindAllTickets 查找所有工单（管理员）
-func (r *TicketRepository) FindAllTickets(page, pageSize int, status, priority string) ([]ticket.Ticket, int64, error) {
-	var tickets []ticket.Ticket
-	var total int64
-
-	query := r.db.Model(&ticket.Ticket{}).
-		Where("category IS NULL OR category <> ?", "customer_service")
-
-	if status != "" {
-		query = query.Where("status = ?", status)
-	}
-
-	if priority != "" {
-		query = query.Where("priority = ?", priority)
-	}
-
-	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, err
-	}
-
-	offset := (page - 1) * pageSize
-	err := query.Preload("User").Order("updated_at DESC").
-		Offset(offset).Limit(pageSize).Find(&tickets).Error
-
-	return tickets, total, err
-}
-
 func (r *TicketRepository) FindCustomerServiceConversations(page, pageSize int, filters CustomerServiceConversationFilters) ([]ticket.Ticket, int64, error) {
 	var tickets []ticket.Ticket
 	var total int64
@@ -252,25 +207,6 @@ func (r *TicketRepository) FindCustomerServiceConversationByOwner(userID *uint, 
 	return &t, nil
 }
 
-// FindTicketsByAssignedTo 查找分配给某客服的工单
-func (r *TicketRepository) FindTicketsByAssignedTo(assignedTo uint, page, pageSize int) ([]ticket.Ticket, int64, error) {
-	var tickets []ticket.Ticket
-	var total int64
-
-	query := r.db.Model(&ticket.Ticket{}).
-		Where("assigned_to = ? AND (category IS NULL OR category <> ?)", assignedTo, "customer_service")
-
-	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, err
-	}
-
-	offset := (page - 1) * pageSize
-	err := query.Preload("User").Order("updated_at DESC").
-		Offset(offset).Limit(pageSize).Find(&tickets).Error
-
-	return tickets, total, err
-}
-
 // UpdateTicket 更新工单
 func (r *TicketRepository) UpdateTicket(t *ticket.Ticket) error {
 	return r.db.Save(t).Error
@@ -293,48 +229,6 @@ func (r *TicketRepository) UpdateTicketStatus(id uint, status string) error {
 func (r *TicketRepository) AssignTicket(id, assignedTo uint) error {
 	return r.db.Model(&ticket.Ticket{}).Where("id = ?", id).
 		Update("assigned_to", assignedTo).Error
-}
-
-// DeleteTicket 删除工单
-func (r *TicketRepository) DeleteTicket(id uint) error {
-	// 先删除关联的消息
-	if err := r.db.Where("ticket_id = ?", id).Delete(&ticket.TicketMessage{}).Error; err != nil {
-		return err
-	}
-	return r.db.Delete(&ticket.Ticket{}, id).Error
-}
-
-// GetTicketStats 获取工单统计
-func (r *TicketRepository) GetTicketStats(userID uint) (map[string]int64, error) {
-	stats := make(map[string]int64)
-
-	query := r.db.Model(&ticket.Ticket{})
-	if userID > 0 {
-		query = query.Where("user_id = ?", userID)
-	}
-	query = query.Where("category IS NULL OR category <> ?", "customer_service")
-
-	// 统计各状态工单数量
-	statuses := []string{"open", "in_progress", "resolved", "closed"}
-	for _, status := range statuses {
-		var count int64
-		if err := query.Where("status = ?", status).Count(&count).Error; err != nil {
-			return nil, err
-		}
-		stats[status] = count
-	}
-
-	// 统计各优先级工单数量
-	priorities := []string{"low", "medium", "high", "urgent"}
-	for _, priority := range priorities {
-		var count int64
-		if err := query.Where("priority = ?", priority).Count(&count).Error; err != nil {
-			return nil, err
-		}
-		stats[priority] = count
-	}
-
-	return stats, nil
 }
 
 // TicketMessage 相关方法
@@ -406,91 +300,11 @@ func disputeCommunicationTerms(filter DisputeCommunicationFilter) []string {
 	return terms
 }
 
-// FindMessageByID 根据ID查找消息
-func (r *TicketRepository) FindMessageByID(id uint) (*ticket.TicketMessage, error) {
-	var m ticket.TicketMessage
-	err := r.db.Preload("User").First(&m, id).Error
-	if err != nil {
-		return nil, err
-	}
-	return &m, nil
-}
-
-// UpdateTicketMessage 更新消息
-func (r *TicketRepository) UpdateTicketMessage(m *ticket.TicketMessage) error {
-	return r.db.Save(m).Error
-}
-
-// DeleteTicketMessage 删除消息
-func (r *TicketRepository) DeleteTicketMessage(id uint) error {
-	return r.db.Delete(&ticket.TicketMessage{}, id).Error
-}
-
-// CountUnreadMessages 统计未读消息数
-func (r *TicketRepository) CountUnreadMessages(ticketID uint, isStaff bool) (int64, error) {
-	var count int64
-	err := r.db.Model(&ticket.TicketMessage{}).
-		Where("ticket_id = ? AND is_staff = ? AND is_read = ?", ticketID, !isStaff, false).
-		Count(&count).Error
-	return count, err
-}
-
 // MarkMessagesAsRead 标记消息为已读
 func (r *TicketRepository) MarkMessagesAsRead(ticketID uint, isStaff bool) error {
 	return r.db.Model(&ticket.TicketMessage{}).
 		Where("ticket_id = ? AND is_staff = ?", ticketID, !isStaff).
 		Update("is_read", true).Error
-}
-
-// GetStats 获取工单统计
-func (r *TicketRepository) GetStats() (map[string]interface{}, error) {
-	stats := make(map[string]interface{})
-
-	// 总工单数
-	var total int64
-	query := r.db.Model(&ticket.Ticket{}).
-		Where("category IS NULL OR category <> ?", "customer_service")
-	if err := query.Count(&total).Error; err != nil {
-		return nil, err
-	}
-	stats["total"] = total
-
-	// 按状态统计
-	var statusStats []struct {
-		Status string
-		Count  int64
-	}
-	if err := query.Session(&gorm.Session{}).Select("status, COUNT(*) as count").Group("status").Scan(&statusStats).Error; err != nil {
-		return nil, err
-	}
-
-	for _, stat := range statusStats {
-		stats[stat.Status] = stat.Count
-	}
-
-	// 按优先级统计
-	var priorityStats []struct {
-		Priority string
-		Count    int64
-	}
-	if err := query.Session(&gorm.Session{}).Select("priority, COUNT(*) as count").Group("priority").Scan(&priorityStats).Error; err != nil {
-		return nil, err
-	}
-
-	priorityMap := make(map[string]int64)
-	for _, stat := range priorityStats {
-		priorityMap[stat.Priority] = stat.Count
-	}
-	stats["by_priority"] = priorityMap
-
-	return stats, nil
-}
-
-// FindRecent 获取最近工单
-func (r *TicketRepository) FindRecent(limit int) ([]ticket.Ticket, error) {
-	var tickets []ticket.Ticket
-	err := r.db.Order("created_at DESC").Limit(limit).Find(&tickets).Error
-	return tickets, err
 }
 
 // GetActiveAutoReplyRules returns active rules for one canonical locale and

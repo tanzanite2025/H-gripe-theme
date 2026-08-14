@@ -136,16 +136,6 @@
       </SettingsSection>
     </TabsContent>
 
-    <TabsContent value="social">
-      <SettingsSection :title="t('settings.socialSettings')" :description="t('settings.socialSettingsDescription')">
-        <div class="grid gap-4 md:grid-cols-2">
-          <AdminFormField v-for="field in socialFields" :key="field.key" :label="field.label">
-            <Input v-model="socialSettings[field.key]" type="url" :placeholder="field.placeholder" />
-          </AdminFormField>
-        </div>
-      </SettingsSection>
-    </TabsContent>
-
     <TabsContent value="currency">
       <CurrencyPolicySettingsCard :can-edit="canEdit" @saved="emit('currency-policy-saved', $event)" />
     </TabsContent>
@@ -254,12 +244,6 @@ import type {
   PublicChatSummary,
 } from './settingsTypes'
 
-interface SocialField {
-  key: string
-  label: string
-  placeholder: string
-}
-
 interface APISettings {
   exchange_rate_enabled: boolean | string | number
   exchange_rate_provider: string
@@ -280,7 +264,6 @@ const props = defineProps({
   activeTab: { type: String, default: 'site' },
   siteSettings: { type: Object, required: true },
   emailSettings: { type: Object, required: true },
-  socialSettings: { type: Object, required: true },
   paymentSettings: { type: Object, required: true },
   apiSettings: { type: Object as PropType<APISettings>, required: true },
   primaryPricingCurrency: { type: String, default: '' },
@@ -292,7 +275,6 @@ const props = defineProps({
   loadingPaymentRuntime: { type: Boolean, default: false },
   syncingExchangeRates: { type: Boolean, default: false },
   savingApiSettings: { type: Boolean, default: false },
-  socialFields: { type: Array as PropType<SocialField[]>, default: () => [] },
   showSmtpPassword: { type: Boolean, default: false },
   showPaymentSecrets: { type: Boolean, default: false },
   loadingPublicChatAgents: { type: Boolean, default: false },

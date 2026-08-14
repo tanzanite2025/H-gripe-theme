@@ -80,6 +80,15 @@
           <AdminLanguageSwitcher class="ml-auto" />
         </header>
 
+        <div class="shrink-0 border-b border-dashed border-slate-200 bg-white/80 px-3 py-2 backdrop-blur sm:px-4 lg:px-6">
+          <div class="mx-auto w-full max-w-none sm:w-[95%]">
+            <AdminTabBar
+              :tabs="activeTabItems"
+              :active-path="route.path"
+            />
+          </div>
+        </div>
+
         <main class="min-h-0 flex-1 overflow-auto bg-muted/35 p-3 sm:p-4 lg:p-6">
           <div class="mx-auto h-full min-h-0 w-full max-w-none sm:w-[95%]">
             <router-view />
@@ -117,6 +126,7 @@ import {
 } from '@lucide/vue'
 import AdminSidebar from '@/components/admin/AdminSidebar.vue'
 import AdminLanguageSwitcher from '@/components/admin/AdminLanguageSwitcher.vue'
+import AdminTabBar from '@/components/admin/AdminTabBar.vue'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -150,6 +160,12 @@ const { brandInitial, brandName, panelLabel, loadAdminBranding, setAdminDocument
 const translatedNavigationItems = computed(() => translateAdminNavigation(adminNavigationItems, t))
 const visibleNavigationItems = computed(() => filterNavigationItems(translatedNavigationItems.value, (permission) => authStore.hasPermission(permission)))
 const activeNavigationEntry = computed(() => findActiveNavigationEntry(visibleNavigationItems.value, route.path))
+const activeTabItems = computed(() => {
+  const entry = activeNavigationEntry.value
+  const module = entry?.parent || entry?.item
+  if (!module) return []
+  return module.children?.length ? module.children : [module]
+})
 const routeTitle = computed(() => {
   const parentLabel = activeNavigationEntry.value?.parent?.label
   const itemLabel = activeNavigationEntry.value?.item?.label

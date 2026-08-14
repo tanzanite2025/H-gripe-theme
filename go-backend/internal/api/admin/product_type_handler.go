@@ -160,6 +160,8 @@ func respondProductTypeServiceError(c *gin.Context, err error) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Product type not found"})
 	case errors.Is(err, service.ErrProductTypeSlugExists):
 		c.JSON(http.StatusConflict, gin.H{"error": "Product type slug already exists"})
+	case errors.Is(err, service.ErrProductTypeSystemManaged):
+		c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
 	case errors.Is(err, service.ErrProductTypeInvalid), errors.Is(err, service.ErrProductSpecInvalid):
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	case errors.Is(err, service.ErrProductTypeTranslationInvalid), errors.Is(err, service.ErrUnsupportedLocale):

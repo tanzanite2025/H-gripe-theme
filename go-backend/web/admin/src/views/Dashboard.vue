@@ -26,14 +26,11 @@
       v-model:active-activity="activeActivity"
       :recent-orders="recentOrders"
       :recent-users="recentUsers"
-      :recent-tickets="recentTickets"
       :format-number="formatNumber"
       :get-order-status-name="getOrderStatusName"
       :order-status-tone="orderStatusTone"
       :get-role-name="getRoleName"
       :role-tone="roleTone"
-      :get-ticket-status-name="getTicketStatusName"
-      :ticket-status-tone="ticketStatusTone"
       @navigate="navigateTo"
     />
   </div>
@@ -46,7 +43,6 @@ import { toast } from 'vue-sonner'
 import {
   FileText,
   Headset,
-  MessagesSquare,
   PackagePlus,
   Settings,
   ShoppingCart,
@@ -63,7 +59,6 @@ import type {
   DashboardMetricCard,
   DashboardQuickAction,
   DashboardRecentOrder,
-  DashboardRecentTicket,
   DashboardRecentUser,
   DashboardSalesChartResponse,
   DashboardStats
@@ -74,11 +69,9 @@ import {
   formatNumber,
   getOrderStatusName,
   getRoleName,
-  getTicketStatusName,
   metricToneClass,
   orderStatusTone,
-  roleTone,
-  ticketStatusTone
+  roleTone
 } from '@/lib/dashboardPresentation'
 import { useAuthStore } from '@/stores/auth'
 import axios from '@/utils/axios'
@@ -91,7 +84,6 @@ const chartLoading = ref(false)
 const chartOption = ref<any>(null)
 const recentOrders = ref<DashboardRecentOrder[]>([])
 const recentUsers = ref<DashboardRecentUser[]>([])
-const recentTickets = ref<DashboardRecentTicket[]>([])
 const activeActivity = ref<DashboardActivity>('orders')
 
 const currentDate = currentDashboardDate()
@@ -127,16 +119,6 @@ const metricCards = computed<DashboardMetricCard[]>(() => [
     tone: 'amber',
     path: '/orders'
   },
-  {
-    key: 'tickets',
-    label: '待处理工单',
-    value: stats.value.tickets?.open || 0,
-    detailLabel: '工单总数',
-    detailValue: stats.value.tickets?.total || 0,
-    icon: MessagesSquare,
-    tone: 'coral',
-    path: '/tickets'
-  }
 ])
 
 const quickActions: DashboardQuickAction[] = [
@@ -144,7 +126,6 @@ const quickActions: DashboardQuickAction[] = [
   { label: '查看订单', path: '/orders', permission: 'order:view', icon: ShoppingCart, tone: 'green' },
   { label: '后台账号', path: '/access/admin-users', permission: 'user:view', icon: Users, tone: 'amber' },
   { label: '客服对话', path: '/support/conversations', permission: 'ticket:view', icon: Headset, tone: 'blue' },
-  { label: '工单管理', path: '/tickets', permission: 'ticket:view', icon: MessagesSquare, tone: 'coral' },
   { label: '博客内容', path: '/content/blog', permission: 'content:view', icon: FileText, tone: 'gray' },
   { label: '系统设置', path: '/settings', permission: 'settings:view', icon: Settings, tone: 'gray' }
 ]
@@ -211,24 +192,10 @@ const fetchRecentUsers = async (): Promise<void> => {
   }
 }
 
-const fetchRecentTickets = async (): Promise<void> => {
-  try {
-    const response = await axios.get<{ tickets?: DashboardRecentTicket[] }>('/api/admin/dashboard/recent-tickets')
-    if (!response.data || !Array.isArray(response.data.tickets)) {
-      throw new Error('[CRITICAL] Missing tickets array in response')
-    }
-    recentTickets.value = response.data.tickets
-  } catch (error) {
-    console.error('Failed to fetch recent tickets:', error)
-    notifyLoadFailure()
-  }
-}
-
 onMounted(() => {
   void fetchStats()
   void fetchSalesChart()
   void fetchRecentOrders()
   void fetchRecentUsers()
-  void fetchRecentTickets()
 })
 </script>

@@ -37,6 +37,18 @@ func (r *OpsDomainBindingRepository) FindByDomain(domain string) (*ops.DomainBin
 	return &record, nil
 }
 
+func (r *OpsDomainBindingRepository) ListByProjectID(projectID uint) ([]ops.DomainBinding, error) {
+	var records []ops.DomainBinding
+	query := r.db.Order("domain ASC")
+	if projectID > 0 {
+		query = query.Where("project_binding_id = ?", projectID)
+	}
+	if err := query.Find(&records).Error; err != nil {
+		return nil, err
+	}
+	return records, nil
+}
+
 func (r *OpsDomainBindingRepository) Create(record *ops.DomainBinding) error {
 	return r.db.Create(record).Error
 }

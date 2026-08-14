@@ -1,0 +1,2 @@
+-- Concrete template options are intentionally not restored on rollback.
+-- They are catalog data, not part of the system field contract.

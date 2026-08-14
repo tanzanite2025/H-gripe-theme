@@ -1,6 +1,7 @@
 package quickbuy
 
 import (
+	"encoding/json"
 	"errors"
 	"strconv"
 	"strings"
@@ -112,7 +113,11 @@ func (h *Handler) ListSessionStepCandidates(c *gin.Context) {
 		return
 	}
 
-	input := quickBuyCandidateInputFromQuery(c)
+	input, err := quickBuyCandidateInputFromQuery(c)
+	if err != nil {
+		apierror.RespondBadRequest(c, err.Error())
+		return
+	}
 	input.StepKey = c.Param("step_key")
 
 	result, err := h.quickBuyService.ListSessionStepCandidates(c.Param("token"), input)
@@ -155,7 +160,7 @@ func (h *Handler) enrichSessionInput(c *gin.Context, input *service.QuickBuySess
 	}
 }
 
-func quickBuyCandidateInputFromQuery(c *gin.Context) service.QuickBuyCandidateInput {
+func quickBuyCandidateInputFromQuery(c *gin.Context) (service.QuickBuyCandidateInput, error) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("per_page", c.DefaultQuery("page_size", strconv.Itoa(quickBuyCandidateDefaultPageSize))))
 	if page < 1 {
@@ -167,13 +172,30 @@ func quickBuyCandidateInputFromQuery(c *gin.Context) service.QuickBuyCandidateIn
 	if pageSize > quickBuyCandidateMaxPageSize {
 		pageSize = quickBuyCandidateMaxPageSize
 	}
-	return service.QuickBuyCandidateInput{
-		Keyword:  strings.TrimSpace(c.Query("keyword")),
-		Locale:   c.DefaultQuery("locale", middleware.GetLocale(c)),
-		Currency: c.DefaultQuery("currency", c.GetHeader("X-Display-Currency")),
-		Page:     page,
-		PageSize: pageSize,
+	specFilters, err := parseQuickBuySpecFilters(c.Query("spec_filters"))
+	if err != nil {
+		return service.QuickBuyCandidateInput{}, err
 	}
+	return service.QuickBuyCandidateInput{
+		Keyword:     strings.TrimSpace(c.Query("keyword")),
+		Locale:      c.DefaultQuery("locale", middleware.GetLocale(c)),
+		Currency:    c.DefaultQuery("currency", c.GetHeader("X-Display-Currency")),
+		SpecFilters: specFilters,
+		Page:        page,
+		PageSize:    pageSize,
+	}, nil
+}
+
+func parseQuickBuySpecFilters(raw string) (map[string][]string, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return nil, nil
+	}
+	var filters map[string][]string
+	if err := json.Unmarshal([]byte(raw), &filters); err != nil {
+		return nil, errors.New("spec_filters must be a JSON object of string arrays")
+	}
+	return filters, nil
 }
 
 func currentUserID(c *gin.Context) *uint {

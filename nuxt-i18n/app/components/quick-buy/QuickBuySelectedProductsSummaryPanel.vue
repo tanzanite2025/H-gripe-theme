@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import { computed, nextTick, ref, toRefs, watch } from 'vue'
 import type {
   QuickBuySelectedProduct,
   QuickBuySelectedProductStepSlot,
 } from '~/utils/quickBuy/selection'
+import QuickBuySelectedProductEditorDialog from '~/components/quick-buy/QuickBuySelectedProductEditorDialog.vue'
 
-defineProps<{
+const props = defineProps<{
   title: string
   slots: QuickBuySelectedProductStepSlot[]
   totalQty: number
@@ -19,7 +21,34 @@ defineProps<{
   decreaseLabel: string
   increaseLabel: string
   removeLabel: string
+  viewDetailsLabel: string
+  closeLabel: string
+  doneLabel: string
+  previousProductLabel: string
+  nextProductLabel: string
 }>()
+
+const {
+  title,
+  slots,
+  totalQty,
+  totalWeightG,
+  formattedTotalPrice,
+  hasSelectedProducts,
+  itemsLabel,
+  weightLabel,
+  priceLabel,
+  addToCartLabel,
+  directPaymentLabel,
+  decreaseLabel,
+  increaseLabel,
+  removeLabel,
+  viewDetailsLabel,
+  closeLabel,
+  doneLabel,
+  previousProductLabel,
+  nextProductLabel,
+} = toRefs(props)
 
 const emit = defineEmits<{
   removeProduct: [product: QuickBuySelectedProduct]
@@ -29,30 +58,70 @@ const emit = defineEmits<{
   directPayment: []
 }>()
 
-const selectedProductSpecificationSummary = (item: QuickBuySelectedProduct) => {
-  const summaryParts = [
-    item.sku,
-    `${item.weightGrams}g`,
-    `$${formatAmount(item.unitPrice)}`,
-  ].filter(Boolean)
+const selectedRailIndex = ref(0)
+const selectedRailItems = ref<HTMLElement[]>([])
 
-  return summaryParts.join(' · ')
+const canMoveSelectedRailBackward = computed(() => selectedRailIndex.value > 0)
+const canMoveSelectedRailForward = computed(() =>
+  selectedRailIndex.value < Math.max(0, slots.value.length - 1),
+)
+
+const scrollToSelectedRailItem = async () => {
+  await nextTick()
+  selectedRailItems.value[selectedRailIndex.value]?.scrollIntoView({
+    behavior: 'smooth',
+    block: 'nearest',
+    inline: 'center',
+  })
 }
 
-const formatAmount = (value: number) => {
-  try {
-    return new Intl.NumberFormat(undefined, {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(Number(value || 0))
-  } catch {
-    return String(value)
-  }
+const moveSelectedRail = (delta: number) => {
+  const lastIndex = Math.max(0, slots.value.length - 1)
+  const nextIndex = Math.min(lastIndex, Math.max(0, selectedRailIndex.value + delta))
+  if (nextIndex === selectedRailIndex.value) return
+  selectedRailIndex.value = nextIndex
+  scrollToSelectedRailItem()
 }
 
-const handleQuantityChange = (product: QuickBuySelectedProduct, event: Event) => {
-  const input = event.target as HTMLInputElement | null
-  emit('updateQuantity', product, input?.value || '1')
+watch(() => slots.value.length, (nextLength) => {
+  selectedRailIndex.value = Math.min(selectedRailIndex.value, Math.max(0, nextLength - 1))
+})
+
+const editingProduct = ref<QuickBuySelectedProduct | null>(null)
+
+const editingStepLabel = computed(() =>
+  slots.value.find(slot =>
+    slot.item?.stepKey === editingProduct.value?.stepKey
+    && slot.item?.productId === editingProduct.value?.productId
+    && slot.item?.variantId === editingProduct.value?.variantId,
+  )?.stepLabel || '',
+)
+
+const openSelectedProductEditor = (product: QuickBuySelectedProduct) => {
+  editingProduct.value = product
+}
+
+const closeSelectedProductEditor = () => {
+  editingProduct.value = null
+}
+
+const removeEditingProduct = (product: QuickBuySelectedProduct) => {
+  emit('removeProduct', product)
+  closeSelectedProductEditor()
+}
+
+const handleEditorChangeQuantity = (
+  product: QuickBuySelectedProduct,
+  delta: number,
+) => {
+  emit('changeQuantity', product, delta)
+}
+
+const handleEditorUpdateQuantity = (
+  product: QuickBuySelectedProduct,
+  value: string,
+) => {
+  emit('updateQuantity', product, value)
 }
 </script>
 
@@ -67,10 +136,23 @@ const handleQuantityChange = (product: QuickBuySelectedProduct, event: Event) =>
       <Icon name="lucide:shopping-bag" class="h-5 w-5 tz-text-secondary" aria-hidden="true" />
     </div>
 
-    <div class="quickbuy-selected-list">
+    <div class="quickbuy-selected-list-shell">
+      <button
+        class="quickbuy-selected-list-arrow quickbuy-selected-list-arrow--previous"
+        type="button"
+        :disabled="!canMoveSelectedRailBackward"
+        :aria-label="previousProductLabel"
+        :title="previousProductLabel"
+        @click="moveSelectedRail(-1)"
+      >
+        <Icon name="lucide:chevron-left" class="h-4 w-4" aria-hidden="true" />
+      </button>
+
+      <div class="quickbuy-selected-list">
       <div
         v-for="slot in slots"
         :key="slot.slotKey"
+        ref="selectedRailItems"
         class="quickbuy-selected-step-slot"
         :class="{ 'quickbuy-selected-step-slot--filled': slot.item }"
       >
@@ -90,53 +172,27 @@ const handleQuantityChange = (product: QuickBuySelectedProduct, event: Event) =>
             </span>
             <span class="quickbuy-selected-card-title">{{ slot.item.title }}</span>
             <span class="quickbuy-selected-card-meta">
-              {{ selectedProductSpecificationSummary(slot.item) }}
+              <span>{{ itemsLabel }}: {{ slot.item.quantity }}</span>
               <span v-if="slot.additionalItemCount" class="quickbuy-selected-card-extra-count">
                 +{{ slot.additionalItemCount }}
               </span>
             </span>
-            <span class="quickbuy-selected-card-controls">
-              <button
-                class="quickbuy-quantity-button"
-                type="button"
-                :disabled="slot.item.quantity <= 1"
-                :aria-label="`${decreaseLabel} ${slot.item.title}`"
-                :title="decreaseLabel"
-                @click="emit('changeQuantity', slot.item, -1)"
-              >
-                <Icon name="lucide:minus" class="h-3.5 w-3.5" aria-hidden="true" />
-              </button>
-              <input
-                class="quickbuy-quantity-input"
-                type="number"
-                min="1"
-                max="999"
-                step="1"
-                inputmode="numeric"
-                :value="slot.item.quantity"
-                :aria-label="`${itemsLabel} ${slot.item.title}`"
-                @change="handleQuantityChange(slot.item, $event)"
-              />
-              <button
-                class="quickbuy-quantity-button"
-                type="button"
-                :disabled="slot.item.quantity >= 999"
-                :aria-label="`${increaseLabel} ${slot.item.title}`"
-                :title="increaseLabel"
-                @click="emit('changeQuantity', slot.item, 1)"
-              >
-                <Icon name="lucide:plus" class="h-3.5 w-3.5" aria-hidden="true" />
-              </button>
-            </span>
+          </span>
+          <span
+            class="quickbuy-selected-card-quantity"
+            :aria-label="`${itemsLabel} ${slot.item.title}: ${slot.item.quantity}`"
+          >
+            {{ slot.item.quantity }}
           </span>
           <button
-            class="quickbuy-selected-card-remove"
+            class="quickbuy-selected-card-details"
             type="button"
-            :aria-label="`${removeLabel} ${slot.item.title}`"
-            :title="removeLabel"
-            @click="emit('removeProduct', slot.item)"
+            :aria-label="`${viewDetailsLabel}: ${slot.item.title}`"
+            :title="viewDetailsLabel"
+            @click="openSelectedProductEditor(slot.item)"
           >
-            <Icon name="lucide:x" class="h-3.5 w-3.5" aria-hidden="true" />
+            <Icon name="lucide:sliders-horizontal" class="h-3.5 w-3.5" aria-hidden="true" />
+            <span>{{ viewDetailsLabel }}</span>
           </button>
         </template>
         <template v-else>
@@ -150,6 +206,18 @@ const handleQuantityChange = (product: QuickBuySelectedProduct, event: Event) =>
           </span>
         </template>
       </div>
+      </div>
+
+      <button
+        class="quickbuy-selected-list-arrow quickbuy-selected-list-arrow--next"
+        type="button"
+        :disabled="!canMoveSelectedRailForward"
+        :aria-label="nextProductLabel"
+        :title="nextProductLabel"
+        @click="moveSelectedRail(1)"
+      >
+        <Icon name="lucide:chevron-right" class="h-4 w-4" aria-hidden="true" />
+      </button>
     </div>
 
     <div class="quickbuy-summary-stats">
@@ -214,6 +282,22 @@ const handleQuantityChange = (product: QuickBuySelectedProduct, event: Event) =>
         <span>{{ directPaymentLabel }}</span>
       </button>
     </div>
+
+    <QuickBuySelectedProductEditorDialog
+      :product="editingProduct"
+      :step-label="editingStepLabel"
+      :quantity-label="itemsLabel"
+      :view-details-label="viewDetailsLabel"
+      :close-label="closeLabel"
+      :done-label="doneLabel"
+      :decrease-label="decreaseLabel"
+      :increase-label="increaseLabel"
+      :remove-label="removeLabel"
+      @close="closeSelectedProductEditor"
+      @remove-product="removeEditingProduct"
+      @change-quantity="handleEditorChangeQuantity"
+      @update-quantity="handleEditorUpdateQuantity"
+    />
   </aside>
 </template>
 
@@ -225,14 +309,13 @@ const handleQuantityChange = (product: QuickBuySelectedProduct, event: Event) =>
   box-sizing: border-box;
   flex-direction: column;
   padding: 0.75rem;
-  border: 0;
+  border: 1px solid rgba(255, 255, 255, 0.035);
   border-radius: 0.75rem;
-  background:
-    linear-gradient(180deg, var(--quickbuy-panel-surface, #111116), var(--quickbuy-panel-surface-soft, #0c0c0e));
+  background: #0b0d12;
   box-shadow:
-    0 16px 42px rgba(0, 0, 0, 0.42),
-    inset 0 1px 0 rgba(255, 255, 255, 0.026),
-    inset 0 0 0 1px var(--quickbuy-dark-edge, rgba(0, 0, 0, 0.68));
+    0 16px 42px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.045),
+    inset 0 -1px 0 var(--quickbuy-dark-edge, rgba(0, 0, 0, 0.5));
 }
 
 .quickbuy-summary-panel-header {
@@ -243,6 +326,17 @@ const handleQuantityChange = (product: QuickBuySelectedProduct, event: Event) =>
   gap: 0.75rem;
   padding-bottom: 0.75rem;
   box-shadow: inset 0 -1px 0 var(--quickbuy-divider, rgba(255, 255, 255, 0.045));
+}
+
+.quickbuy-selected-list-shell {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.quickbuy-selected-list-arrow {
+  display: none;
 }
 
 .quickbuy-panel-heading-row {
@@ -261,8 +355,8 @@ const handleQuantityChange = (product: QuickBuySelectedProduct, event: Event) =>
   display: grid;
   grid-template-rows: repeat(5, minmax(0, 1fr));
   flex: 1;
+  min-width: 0;
   gap: 0.5rem;
-  min-height: 0;
   overflow: hidden;
   padding: 0.75rem 0.125rem;
 }
@@ -278,17 +372,19 @@ const handleQuantityChange = (product: QuickBuySelectedProduct, event: Event) =>
   border: 0;
   border-radius: 0.5rem;
   background:
-    linear-gradient(180deg, #0b0b0d, var(--quickbuy-control-surface, #0a0a0c));
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.68);
+    linear-gradient(180deg, var(--quickbuy-control-surface-raised, #171920), var(--quickbuy-control-surface, #0d0f14));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.035),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.34);
 }
 
 .quickbuy-selected-step-slot--filled {
   background:
-    linear-gradient(180deg, var(--quickbuy-panel-surface-raised, #17171b), #101014);
+    linear-gradient(180deg, var(--quickbuy-panel-surface-raised, #1c1e25), var(--quickbuy-panel-surface, #15171d));
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.03),
-    inset 0 0 0 1px rgba(0, 0, 0, 0.56),
-    0 8px 24px rgba(0, 0, 0, 0.26);
+    inset 0 1px 0 rgba(255, 255, 255, 0.045),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.36),
+    0 8px 24px rgba(0, 0, 0, 0.22);
 }
 
 .quickbuy-selected-step-slot-placeholder {
@@ -309,8 +405,10 @@ const handleQuantityChange = (product: QuickBuySelectedProduct, event: Event) =>
   border: 0;
   border-radius: 0.375rem;
   color: rgba(255, 255, 255, 0.42);
-  background: #080809;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.72);
+  background: var(--quickbuy-control-surface, #0d0f14);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.03),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.38);
   font-size: 0.6875rem;
   font-weight: 700;
 }
@@ -331,7 +429,7 @@ const handleQuantityChange = (product: QuickBuySelectedProduct, event: Event) =>
   place-items: center;
   object-fit: cover;
   border-radius: 0.45rem;
-  background: #070708;
+  background: var(--quickbuy-control-surface, #0d0f14);
 }
 
 .quickbuy-selected-card-image--empty {
@@ -374,6 +472,55 @@ const handleQuantityChange = (product: QuickBuySelectedProduct, event: Event) =>
   font-size: 0.625rem;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.quickbuy-selected-card-quantity {
+  display: inline-grid;
+  min-width: 2rem;
+  height: 2rem;
+  flex: 0 0 auto;
+  place-items: center;
+  padding: 0 0.4rem;
+  border-radius: 0.5rem;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.quickbuy-selected-card-details {
+  display: inline-flex;
+  min-width: 0;
+  min-height: 2rem;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  padding: 0.35rem 0.55rem;
+  border: 0;
+  border-radius: 0.45rem;
+  color: #fff;
+  background:
+    linear-gradient(180deg, var(--quickbuy-control-surface-raised, #171920), var(--quickbuy-control-surface, #0d0f14));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.035),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.34);
+  font-size: 0.68rem;
+  font-weight: 700;
+  transition: background-color 160ms ease, transform 160ms ease;
+}
+
+.quickbuy-selected-card-details > span {
+  max-width: 7rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.quickbuy-selected-card-details:hover {
+  background:
+    linear-gradient(180deg, #32343d, #24262e);
+  transform: translateY(-1px);
 }
 
 .quickbuy-selected-card-extra-count {
@@ -483,20 +630,20 @@ const handleQuantityChange = (product: QuickBuySelectedProduct, event: Event) =>
   border: 0;
   border-radius: 0.65rem;
   background:
-    linear-gradient(180deg, var(--quickbuy-panel-surface-raised, #17171b), #101014);
+    linear-gradient(180deg, var(--quickbuy-panel-surface-raised, #1c1e25), var(--quickbuy-panel-surface, #15171d));
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.032),
-    inset 0 0 0 1px rgba(0, 0, 0, 0.56),
-    0 8px 22px rgba(0, 0, 0, 0.22);
+    inset 0 1px 0 rgba(255, 255, 255, 0.045),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.36),
+    0 8px 22px rgba(0, 0, 0, 0.2);
 }
 
 .quickbuy-summary-stat--price {
   background:
-    linear-gradient(180deg, #232329, var(--quickbuy-panel-surface-raised, #17171b));
+    linear-gradient(180deg, #252831, var(--quickbuy-panel-surface-raised, #1c1e25));
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.052),
-    inset 0 0 0 1px rgba(0, 0, 0, 0.46),
-    0 12px 30px rgba(0, 0, 0, 0.3);
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.32),
+    0 12px 30px rgba(0, 0, 0, 0.24);
 }
 
 .quickbuy-summary-stat__icon {
@@ -506,7 +653,7 @@ const handleQuantityChange = (product: QuickBuySelectedProduct, event: Event) =>
   flex: 0 0 auto;
   place-items: center;
   border-radius: 999px;
-  background: #24242a;
+  background: #2b2e38;
   color: rgba(255, 255, 255, 0.86);
 }
 
@@ -569,19 +716,27 @@ const handleQuantityChange = (product: QuickBuySelectedProduct, event: Event) =>
   border-radius: 0.5rem;
   color: white;
   background:
-    linear-gradient(180deg, var(--quickbuy-control-surface-raised, #151519), #101013);
+    linear-gradient(180deg, var(--quickbuy-control-surface-raised, #171920), var(--quickbuy-control-surface, #0d0f14));
   box-shadow:
     0 6px 18px rgba(0, 0, 0, 0.24),
-    inset 0 0 0 1px rgba(0, 0, 0, 0.68);
+    inset 0 1px 0 rgba(255, 255, 255, 0.035),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.36);
   font-size: 0.75rem;
   font-weight: 700;
   text-align: center;
   transition: background-color 160ms ease, opacity 160ms ease;
 }
 
+.quickbuy-summary-action > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .quickbuy-summary-action:hover:not(:disabled) {
   background:
-    linear-gradient(180deg, #202026, #151519);
+    linear-gradient(180deg, #32343d, #24262e);
 }
 
 .quickbuy-summary-action:disabled {
@@ -606,27 +761,120 @@ const handleQuantityChange = (product: QuickBuySelectedProduct, event: Event) =>
     min-height: 15rem;
   }
 
-  .quickbuy-selected-list {
+  .quickbuy-selected-list-shell {
+    display: grid;
+    grid-template-columns: 1.75rem minmax(0, 1fr) 1.75rem;
+    align-items: center;
+    gap: 0.375rem;
     flex: 0 1 auto;
-    max-height: 19rem;
-    padding-top: 0.625rem;
-    padding-bottom: 0.625rem;
+    min-height: 0;
+  }
+
+  .quickbuy-selected-list-arrow {
+    display: inline-grid;
+    width: 1.75rem;
+    height: 2rem;
+    place-items: center;
+    border: 0;
+    border-radius: 999px;
+    color: rgba(255, 255, 255, 0.86);
+    background:
+      linear-gradient(180deg, var(--quickbuy-control-surface-raised, #25272f), var(--quickbuy-control-surface, #1b1c23));
+    box-shadow:
+      0 5px 14px rgba(0, 0, 0, 0.2),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+    transition: background-color 160ms ease, opacity 160ms ease, transform 160ms ease;
+  }
+
+  .quickbuy-selected-list-arrow:hover:not(:disabled) {
+    background:
+      linear-gradient(180deg, #32343d, #24262e);
+    transform: translateY(-1px);
+  }
+
+  .quickbuy-selected-list-arrow:disabled {
+    cursor: not-allowed;
+    opacity: 0.28;
+  }
+
+  .quickbuy-selected-list {
+    display: flex;
+    flex: 0 1 auto;
+    max-height: none;
+    gap: 0.5rem;
+    min-height: 7.25rem;
+    padding: 0.625rem 0;
+    overflow: hidden;
+    scroll-behavior: smooth;
+    scroll-snap-type: x mandatory;
+  }
+
+  .quickbuy-selected-step-slot {
+    width: 100%;
+    min-width: 100%;
+    flex: 0 0 100%;
+    scroll-snap-align: center;
   }
 
   .quickbuy-summary-actions {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.375rem;
+    padding-top: 0.625rem;
+    margin-top: 0.625rem;
   }
 
   .quickbuy-summary-stats {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.375rem;
+    padding-top: 0.625rem;
   }
 
   .quickbuy-summary-stat {
-    min-height: 3.75rem;
+    min-height: 3.25rem;
+    justify-content: center;
+    gap: 0.375rem;
+    padding: 0.45rem 0.375rem;
+    border-radius: 0.5rem;
+  }
+
+  .quickbuy-summary-stat__icon {
+    width: 1.35rem;
+    height: 1.35rem;
+  }
+
+  .quickbuy-summary-stat__icon :deep(svg) {
+    width: 0.85rem;
+    height: 0.85rem;
+  }
+
+  .quickbuy-summary-stat__content {
+    justify-items: start;
+  }
+
+  .quickbuy-summary-stat__label {
+    max-width: 100%;
+    font-size: 0.5625rem;
+    line-height: 1;
+  }
+
+  .quickbuy-summary-stat__value,
+  .quickbuy-summary-stat--price .quickbuy-summary-stat__value {
+    max-width: 100%;
+    font-size: 0.8125rem;
+    line-height: 1.1;
   }
 
   .quickbuy-summary-action {
-    min-height: 2.75rem;
+    min-height: 2.625rem;
+    gap: 0.3rem;
+    padding: 0.5rem 0.375rem;
+    font-size: 0.6875rem;
+  }
+
+  .quickbuy-summary-action :deep(svg) {
+    width: 0.95rem;
+    height: 0.95rem;
+    flex: 0 0 auto;
   }
 }
 </style>

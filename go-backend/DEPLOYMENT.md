@@ -31,12 +31,19 @@ Before deploying, set real values for:
 
 Do not commit real secrets.
 
+## Admin Account Recovery
+
+Production admin passwords are not recoverable because `users.password` stores bcrypt hashes only. Use the audited `adminctl` command to create or reset a backoffice account with a newly generated password.
+
+See `docs/ADMIN_ACCOUNT_RECOVERY.md` for the runbook.
+
 ## Build
 
 ```powershell
 cd go-backend
 go test ./...
 go build ./cmd/server
+go build ./cmd/adminctl
 ```
 
 ## Runtime Checks
