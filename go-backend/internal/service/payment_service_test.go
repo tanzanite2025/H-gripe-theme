@@ -508,6 +508,8 @@ func TestRecordVerifiedGatewayRefundCompletesPendingRefund(t *testing.T) {
 
 func TestRecordVerifiedGatewayRefundRestocksItemLevelRefundOnce(t *testing.T) {
 	db, paymentService := newTestPaymentService(t)
+	cacheInvalidator := &recordingProductCacheInvalidator{}
+	paymentService.ConfigureProductCacheInvalidator(cacheInvalidator)
 	variant := seedPaymentProductVariant(t, db, 5)
 	orderRecord := seedPaymentOrder(t, db, "ORD-REF-RESTOCK", 300, "processing", "paid")
 	transaction := seedCompletedTransaction(t, db, orderRecord.ID, "txn_ref_restock", 300, "USD")
@@ -545,8 +547,14 @@ func TestRecordVerifiedGatewayRefundRestocksItemLevelRefundOnce(t *testing.T) {
 	assert.NotNil(t, savedLineItem.RestockedAt)
 
 	require.NoError(t, paymentService.RecordVerifiedGatewayRefund(input))
+	assert.Equal(t, []uint{variant.ProductID}, cacheInvalidator.productIDs)
 	require.NoError(t, db.First(&savedVariant, variant.ID).Error)
 	assert.Equal(t, 6, savedVariant.Stock)
+	assert.Equal(t, []uint{variant.ProductID}, cacheInvalidator.productIDs)
+
+	var cacheEvent outboxdomain.Event
+	require.NoError(t, db.Where("event_type = ?", outboxdomain.EventTypeProductCacheInvalidate).First(&cacheEvent).Error)
+	assert.Contains(t, cacheEvent.EventKey, "refund_stock_restored")
 }
 
 func TestCreateAdminRefundIgnoresSoftDeletedLineItemRefundQuantity(t *testing.T) {

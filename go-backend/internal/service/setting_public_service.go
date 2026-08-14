@@ -34,6 +34,8 @@ func (s *SettingService) GetSiteSettings(locale string) (*setting.SiteSettings, 
 			siteSettings.SiteDescription = st.Value
 		case "site_logo":
 			siteSettings.SiteLogo = st.Value
+		case "site_favicon":
+			siteSettings.SiteFavicon = st.Value
 		case "contact_email":
 			siteSettings.ContactEmail = st.Value
 		case "contact_phone":

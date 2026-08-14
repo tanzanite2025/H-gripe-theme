@@ -1,4 +1,13 @@
 import axios from '@/utils/axios'
+import {
+  requireApiArrayField,
+  requireApiNumberField,
+  requireApiObject,
+  requireApiObjectField,
+  requireApiPagination,
+  requireApiSuccess,
+  unwrapApiPayload,
+} from '@/utils/apiResponse'
 
 export type MediaID = string | number
 
@@ -51,27 +60,30 @@ export interface MediaReferenceReport {
   total: number
 }
 
-const unwrapPayload = (response: any): any => response.data?.data ?? response.data ?? {}
-
 export const mediaApi = {
   async listAssets(params: MediaAssetListParams = {}): Promise<MediaAssetListResult> {
-    const response = await axios.get('/api/admin/media/assets', { params })
-    const raw = response.data ?? {}
-    const payload = raw.data ?? raw ?? {}
+    const path = '/api/admin/media/assets'
+    const response = await axios.get(path, { params })
+    const body = requireApiObject(response.data, path, 'response body')
+    const payload = unwrapApiPayload(response, path)
+    const payloadObject = requireApiObject(payload, path)
+
     return {
-      assets: payload.assets ?? payload.data ?? [],
-      pagination: raw.pagination ?? payload.pagination ?? responsePagination(payload),
+      assets: requireApiArrayField<MediaAsset>(payloadObject, 'assets', path),
+      pagination: requireApiPagination(body, payloadObject, path),
     }
   },
 
-  async getAsset(id: MediaID): Promise<MediaAsset | null> {
-    const payload = unwrapPayload(await axios.get(`/api/admin/media/assets/${id}`))
-    return payload.asset ?? null
+  async getAsset(id: MediaID): Promise<MediaAsset> {
+    const path = `/api/admin/media/assets/${id}`
+    const payload = requireApiObject(unwrapApiPayload(await axios.get(path), path), path)
+    return requireApiObjectField<MediaAsset>(payload, 'asset', path)
   },
 
   async uploadAsset(formData: FormData): Promise<MediaAsset> {
-    const payload = unwrapPayload(await axios.post('/api/admin/media/assets', formData))
-    return payload.asset ?? payload
+    const path = '/api/admin/media/assets'
+    const payload = requireApiObject(unwrapApiPayload(await axios.post(path, formData), path), path)
+    return requireApiObjectField<MediaAsset>(payload, 'asset', path)
   },
 
   async downloadCopyrightEvidence(id: MediaID) {
@@ -81,28 +93,24 @@ export const mediaApi = {
   },
 
   async getAssetReferences(id: MediaID): Promise<MediaReferenceReport> {
-    const payload = unwrapPayload(await axios.get(`/api/admin/media/assets/${id}/references`))
+    const path = `/api/admin/media/assets/${id}/references`
+    const payload = requireApiObject(unwrapApiPayload(await axios.get(path), path), path)
     return {
-      references: payload.references ?? [],
-      total: Number(payload.total ?? payload.references?.length ?? 0),
+      references: requireApiArrayField<MediaReference>(payload, 'references', path),
+      total: requireApiNumberField(payload, 'total', path),
     }
   },
 
-  async updateAsset(id: MediaID, asset: Record<string, unknown>): Promise<MediaAsset | null> {
-    const payload = unwrapPayload(await axios.patch(`/api/admin/media/assets/${id}`, asset))
-    return payload.asset ?? null
+  async updateAsset(id: MediaID, asset: Record<string, unknown>): Promise<MediaAsset> {
+    const path = `/api/admin/media/assets/${id}`
+    const payload = requireApiObject(unwrapApiPayload(await axios.patch(path, asset), path), path)
+    return requireApiObjectField<MediaAsset>(payload, 'asset', path)
   },
 
-  async deleteAsset(id: MediaID, payload: Record<string, unknown> = {}): Promise<any> {
-    return unwrapPayload(await axios.delete(`/api/admin/media/assets/${id}`, { data: payload }))
+  async deleteAsset(id: MediaID, payload: Record<string, unknown> = {}): Promise<void> {
+    const path = `/api/admin/media/assets/${id}`
+    requireApiSuccess(await axios.delete(path, { data: payload }), path)
   }
 }
-
-const responsePagination = (payload: Record<string, any>): MediaPagination => ({
-  page: Number(payload.page || 1),
-  page_size: Number(payload.page_size || 20),
-  total: Number(payload.total || 0),
-  total_pages: Number(payload.total_pages || 0),
-})
 
 export default mediaApi

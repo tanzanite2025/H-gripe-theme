@@ -21,7 +21,7 @@ type AnalyticsWindow = Window & {
 }
 
 const currentPage = () => ({
-  page_path: `${window.location.pathname}${window.location.search}${window.location.hash}`,
+      page_path: `${window.location.pathname}${window.location.search}`,
   page_location: window.location.href,
   page_title: document.title,
 })

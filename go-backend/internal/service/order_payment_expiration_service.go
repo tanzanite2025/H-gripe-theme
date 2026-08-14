@@ -66,6 +66,7 @@ func (s *OrderService) ExpireStalePendingPayments(now time.Time, ttl time.Durati
 func (s *OrderService) expirePaymentOrderIfStillEligible(orderID uint, cutoff, now time.Time) (int64, bool, error) {
 	var expiredTransactions int64
 	expired := false
+	var affectedProductIDs []uint
 
 	err := s.txManager.WithinTx(func(repos repository.TxRepositories) error {
 		orderRecord, err := repos.Order.FindByIDForUpdateWithItems(orderID)
@@ -87,12 +88,20 @@ func (s *OrderService) expirePaymentOrderIfStillEligible(orderID uint, cutoff, n
 		if err != nil {
 			return err
 		}
-		if err := rollbackOrderReservationsInTx(repos, orderRecord, "payment expired"); err != nil {
+		productIDs, err := rollbackOrderReservationsInTx(repos, orderRecord, "payment expired")
+		if err != nil {
+			return err
+		}
+		affectedProductIDs = append(affectedProductIDs, productIDs...)
+		if err := s.enqueueProductCacheInvalidationInTx(repos, productIDs, "order stock restored payment expired"); err != nil {
 			return err
 		}
 		expired = true
 		return nil
 	})
+	if err == nil && expired {
+		s.invalidateProductCacheAfterStockCommit(affectedProductIDs)
+	}
 
 	return expiredTransactions, expired, err
 }

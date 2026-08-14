@@ -1,0 +1,4 @@
+ALTER TABLE ops_vps_bindings
+    ADD COLUMN IF NOT EXISTS observed_hostname VARCHAR(255) NOT NULL DEFAULT '',
+    ADD COLUMN IF NOT EXISTS observed_ipv4 VARCHAR(64) NOT NULL DEFAULT '',
+    ADD COLUMN IF NOT EXISTS observed_operating_system VARCHAR(160) NOT NULL DEFAULT '';

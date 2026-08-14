@@ -2,6 +2,7 @@ package repository
 
 import (
 	"commerce-platform/internal/domain/product"
+	"context"
 
 	"gorm.io/gorm"
 )
@@ -130,8 +131,12 @@ func (r *ProductRepository) CreateWithSpecValuesVariantsOptionValuesAndMedia(
 
 // FindByID 鏍规嵁ID鏌ユ壘浜у搧
 func (r *ProductRepository) FindByID(id uint) (*product.Product, error) {
+	return r.FindByIDContext(context.Background(), id)
+}
+
+func (r *ProductRepository) FindByIDContext(ctx context.Context, id uint) (*product.Product, error) {
 	var p product.Product
-	query := r.db.Preload("Media", func(db *gorm.DB) *gorm.DB {
+	query := r.db.WithContext(ctx).Preload("Media", func(db *gorm.DB) *gorm.DB {
 		return orderProductMedia(db)
 	}).Preload("ProductType.SpecDefinitions", func(db *gorm.DB) *gorm.DB {
 		return orderSpecDefinitions(db)
@@ -153,8 +158,12 @@ func (r *ProductRepository) FindByID(id uint) (*product.Product, error) {
 // FindBySlug finds a product by slug. When locale is empty, it treats products
 // as a unified storefront catalog item instead of a translated content row.
 func (r *ProductRepository) FindBySlug(slug, locale string) (*product.Product, error) {
+	return r.FindBySlugContext(context.Background(), slug, locale)
+}
+
+func (r *ProductRepository) FindBySlugContext(ctx context.Context, slug, locale string) (*product.Product, error) {
 	var p product.Product
-	query := r.db.Preload("Media", func(db *gorm.DB) *gorm.DB {
+	query := r.db.WithContext(ctx).Preload("Media", func(db *gorm.DB) *gorm.DB {
 		return orderProductMedia(db)
 	}).Preload("ProductType.SpecDefinitions", func(db *gorm.DB) *gorm.DB {
 		return orderSpecDefinitions(db)
@@ -200,6 +209,35 @@ func (r *ProductRepository) FindProductsByIDs(ids []uint) ([]product.Product, er
 	err := r.db.Preload("Variants", func(db *gorm.DB) *gorm.DB {
 		return orderProductVariants(db)
 	}).Where("id IN ?", ids).Find(&products).Error
+	return products, err
+}
+
+func (r *ProductRepository) FindProductCacheIdentitiesByIDs(ids []uint) ([]product.Product, error) {
+	var products []product.Product
+	if len(ids) == 0 {
+		return products, nil
+	}
+	err := r.db.Select("id", "slug", "locale").Where("id IN ?", ids).Find(&products).Error
+	return products, err
+}
+
+func (r *ProductRepository) FindProductCacheIdentitiesByProductTypeID(productTypeID uint) ([]product.Product, error) {
+	var products []product.Product
+	if productTypeID == 0 {
+		return products, nil
+	}
+	err := r.db.Select("id", "slug", "locale").Where("product_type_id = ?", productTypeID).Find(&products).Error
+	return products, err
+}
+
+func (r *ProductRepository) FindProductCacheIdentitiesByInformationTemplateID(templateID uint) ([]product.Product, error) {
+	var products []product.Product
+	if templateID == 0 {
+		return products, nil
+	}
+	err := r.db.Select("id", "slug", "locale").
+		Where("after_sales_template_id = ? OR packaging_template_id = ?", templateID, templateID).
+		Find(&products).Error
 	return products, err
 }
 
@@ -281,7 +319,11 @@ func (r *ProductRepository) Delete(id uint) error {
 }
 
 func (r *ProductRepository) IncrementViewCount(id uint) error {
-	return r.db.Model(&product.Product{}).Where("id = ?", id).UpdateColumn("view_count", gorm.Expr("view_count + ?", 1)).Error
+	return r.IncrementViewCountContext(context.Background(), id)
+}
+
+func (r *ProductRepository) IncrementViewCountContext(ctx context.Context, id uint) error {
+	return r.db.WithContext(ctx).Model(&product.Product{}).Where("id = ?", id).UpdateColumn("view_count", gorm.Expr("view_count + ?", 1)).Error
 }
 
 // UpdateStatus 鏇存柊鍟嗗搧鐘舵€?

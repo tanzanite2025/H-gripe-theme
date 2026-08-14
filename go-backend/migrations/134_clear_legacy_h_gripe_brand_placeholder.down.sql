@@ -1,0 +1,1 @@
+-- Clearing a retired placeholder is intentionally not reversible.

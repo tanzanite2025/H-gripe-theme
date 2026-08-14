@@ -1,5 +1,5 @@
 <template>
-  <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-3 md:p-6">
+  <div class="support-rim-test-report rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-3 md:p-6">
     <h3 class="support-section__title text-center">Rim Test Report</h3>
 
     <p class="support-section__body mt-4 text-center">
@@ -26,7 +26,7 @@
       </p>
       <p class="support-section__body mt-2">
         <strong>Test Method:</strong>
-          <span class="inline-flex items-center gap-1.5 ml-2 px-2.5 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/50 text-xs font-medium tz-text-secondary align-middle">
+          <span class="support-rim-test-report__method-badge inline-flex items-center gap-1.5 ml-2 px-2.5 py-0.5 rounded-md text-xs font-medium tz-text-secondary align-middle">
           <svg class="w-3.5 h-3.5 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
           </svg>
@@ -67,7 +67,7 @@
       </p>
       <p class="support-section__body mt-2">
         <strong>Test Method:</strong>
-          <span class="inline-flex items-center gap-1.5 ml-2 px-2.5 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/50 text-xs font-medium tz-text-secondary align-middle">
+          <span class="support-rim-test-report__method-badge inline-flex items-center gap-1.5 ml-2 px-2.5 py-0.5 rounded-md text-xs font-medium tz-text-secondary align-middle">
           <svg class="w-3.5 h-3.5 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
           </svg>
@@ -104,7 +104,7 @@
       </p>
       <p class="support-section__body mt-2">
         <strong>Test Method:</strong>
-          <span class="inline-flex items-center gap-1.5 ml-2 px-2.5 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/50 text-xs font-medium tz-text-secondary align-middle">
+          <span class="support-rim-test-report__method-badge inline-flex items-center gap-1.5 ml-2 px-2.5 py-0.5 rounded-md text-xs font-medium tz-text-secondary align-middle">
           <svg class="w-3.5 h-3.5 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
           </svg>
@@ -145,7 +145,7 @@
       </p>
       <p class="support-section__body mt-2">
         <strong>Test Method:</strong>
-          <span class="inline-flex items-center gap-1.5 ml-2 px-2.5 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/50 text-xs font-medium tz-text-secondary align-middle">
+          <span class="support-rim-test-report__method-badge inline-flex items-center gap-1.5 ml-2 px-2.5 py-0.5 rounded-md text-xs font-medium tz-text-secondary align-middle">
           <svg class="w-3.5 h-3.5 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
           </svg>
@@ -272,10 +272,8 @@
     </div>
 
     <!-- Disclaimer block styled like Technical Tension amber card -->
-    <div
-      class="mt-6 rounded-lg border border-amber-300/80 bg-slate-900/80 px-4 py-3 text-sm leading-relaxed text-amber-100"
-    >
-      <h4 class="mb-1 font-semibold text-amber-300">
+    <div class="support-rim-test-report__disclaimer mt-6 rounded-lg px-4 py-3 text-sm leading-relaxed">
+      <h4 class="support-rim-test-report__disclaimer-label mb-3 font-semibold">
         Disclaimer
       </h4>
       <p class="mb-2">
@@ -343,6 +341,12 @@ const cards = [
 </script>
 
 <style scoped>
+.support-rim-test-report {
+  --rim-report-accent: var(--tz-brand-primary);
+  --rim-report-border: rgba(255, 255, 255, 0.08);
+  --rim-report-soft-surface: rgba(255, 255, 255, 0.035);
+}
+
 .support-section__title {
   margin: 0 0 0.5rem;
   font-size: var(--tz-type-section-title);
@@ -358,12 +362,55 @@ const cards = [
   color: var(--tz-text-secondary);
 }
 
+.support-rim-test-report .text-sky-300 {
+  color: var(--rim-report-accent) !important;
+}
+
+.support-rim-test-report .text-sky-400 {
+  color: var(--rim-report-accent) !important;
+}
+
 .rim-test-card {
   padding: 1.25rem;
   border-radius: 0.75rem;
-  background: rgba(2, 6, 23, 0.4); /* Darker, more subtle for inner nested card */
-  border: 1px solid rgba(255, 255, 255, 0.03); /* Very subtle border for definition */
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  background: var(--tz-card-surface);
+  border: 1px solid var(--rim-report-border);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.22);
+}
+
+.support-rim-test-report__method-badge {
+  border: 1px solid rgba(181, 255, 109, 0.18);
+  background: var(--rim-report-soft-surface);
+}
+
+.support-rim-test-report__disclaimer {
+  border: 1px solid rgba(181, 255, 109, 0.22);
+  background: rgba(181, 255, 109, 0.04);
+  color: var(--tz-text-secondary);
+}
+
+.support-rim-test-report__disclaimer-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border: 1px solid rgba(181, 255, 109, 0.34);
+  border-radius: 9999px;
+  padding: 0.22rem 0.7rem;
+  background: rgba(0, 0, 0, 0.22);
+  color: var(--rim-report-accent);
+  font-size: var(--tz-type-micro-label);
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.support-rim-test-report__disclaimer-label::before {
+  width: 0.38rem;
+  height: 0.38rem;
+  border-radius: 9999px;
+  background: var(--rim-report-accent);
+  box-shadow: 0 0 10px rgba(181, 255, 109, 0.7);
+  content: '';
 }
 
 .support-video-thumbnail {
@@ -391,8 +438,8 @@ const cards = [
   gap: 0.25rem;
   background: linear-gradient(
     to top,
-    rgba(15, 23, 42, 0.85),
-    rgba(15, 23, 42, 0.45)
+    rgba(0, 0, 0, 0.82),
+    rgba(0, 0, 0, 0.38)
   );
   color: var(--tz-text-primary);
 }

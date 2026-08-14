@@ -1,7 +1,7 @@
 server:
   port: ":9000"
   mode: release
-  base_url: "https://learn.gripe"
+  base_url: ""
   read_timeout: 120
   write_timeout: 120
   # Keep this aligned with the private network(s) that can reach the API.
@@ -45,7 +45,7 @@ google_merchant:
   client_id: ""
   client_secret: ""
   redirect_url: ""
-  post_connect_url: "https://learn.gripe/google-merchant"
+  post_connect_url: ""
   token_encryption_key: ""
   state_ttl_seconds: 600
 
@@ -74,10 +74,7 @@ i18n:
     - ms
 
 cors:
-  allowed_origins:
-    - "https://learn.gripe"
-    - "https://www.learn.gripe"
-    - "https://admin.learn.gripe"
+  allowed_origins: []
   allowed_methods:
     - GET
     - POST
@@ -97,6 +94,8 @@ cors:
     - X-Request-Timestamp
     - X-Request-Nonce
     - X-Request-Signature
+    - X-Quick-Buy-Session
+    - X-Anonymous-ID
   expose_headers:
     - Content-Length
     - X-Request-ID
@@ -112,6 +111,7 @@ cache:
   default_ttl: 3600
   post_ttl: 3600
   product_ttl: 1800
+  product_lock_ttl: 5
   settings_ttl: 7200
 
 worker:
@@ -208,6 +208,14 @@ request_signing:
   key: ""
   max_skew_seconds: 30
   required_paths: []
+
+quick_buy_rate_limit:
+  enabled: true
+  ip_requests_per_minute: 120
+  ip_burst: 40
+  session_requests_per_minute: 60
+  session_burst: 20
+  fail_open: true
 
 media_upload:
   account_storage_quota_bytes: 21474836480

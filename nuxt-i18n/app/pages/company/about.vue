@@ -88,42 +88,22 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
-import { useHead, definePageMeta, useRoute } from '#imports'
+import { useHead, definePageMeta } from '#imports'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
 import AboutFactory from '~/components/company/AboutFactory.vue'
 import AboutAppearance from '~/components/company/AboutAppearance.vue'
 import AboutHolePatterns from '~/components/company/AboutHolePatterns.vue'
 import SmartAccordion from '~/components/ui/SmartAccordion.vue'
 import AccordionItem from '~/components/ui/AccordionItem.vue'
-import {
-  companyAboutTabs,
-  isPageSubNavigationTabId,
-  type CompanyAboutTabId,
-} from '~/utils/pageSubNavigation'
+import { usePageSubNavigationTab } from '~/composables/usePageSubNavigationTab'
+import { companyAboutTabs } from '~/utils/pageSubNavigation'
 
 const tabs = companyAboutTabs
-
-const activeTab = ref<CompanyAboutTabId>('factory')
-const route = useRoute()
-
-const getTabFromHash = (hash: string): CompanyAboutTabId | null => {
-  const raw = String(hash || '').replace(/^#/, '')
-  return isPageSubNavigationTabId(tabs, raw) ? raw : null
-}
-
-const syncActiveTabFromHash = () => {
-  const next = getTabFromHash(route.hash)
-  if (next) activeTab.value = next
-}
-
-watch(
-  () => route.fullPath,
-  syncActiveTabFromHash,
-  { immediate: true, flush: 'post' }
-)
-
-onMounted(syncActiveTabFromHash)
+const { activeTab } = usePageSubNavigationTab({
+  tabs,
+  basePath: '/company/about',
+  defaultValue: 'factory',
+})
 
 definePageMeta({
   layout: 'products',

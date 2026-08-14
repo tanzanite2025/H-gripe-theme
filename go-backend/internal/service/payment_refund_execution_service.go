@@ -225,6 +225,7 @@ func (s *PaymentService) completePendingRefundExecution(
 ) (*paymentdomain.Refund, *paymentdomain.PaymentRefundExecution, error) {
 	var completedRefund *paymentdomain.Refund
 	var completedExecution *paymentdomain.PaymentRefundExecution
+	var affectedProductIDs []uint
 	now := time.Now().UTC()
 	err := s.txManager.WithinTx(func(repos repository.TxRepositories) error {
 		if repos.RefundExecution == nil {
@@ -268,7 +269,12 @@ func (s *PaymentService) completePendingRefundExecution(
 		if err := repos.Payment.UpdateRefund(refund); err != nil {
 			return err
 		}
-		if err := restoreRefundLineItemStock(repos, refund.LineItems, now); err != nil {
+		productIDs, err := restoreRefundLineItemStock(repos, refund.LineItems, now)
+		if err != nil {
+			return err
+		}
+		affectedProductIDs = append(affectedProductIDs, productIDs...)
+		if err := s.enqueueProductCacheInvalidationInTx(repos, productIDs, "refund stock restored"); err != nil {
 			return err
 		}
 
@@ -312,6 +318,7 @@ func (s *PaymentService) completePendingRefundExecution(
 	if err != nil {
 		return nil, nil, err
 	}
+	s.invalidateProductCacheAfterStockCommit(affectedProductIDs)
 	return completedRefund, completedExecution, nil
 }
 

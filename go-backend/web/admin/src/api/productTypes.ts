@@ -1,43 +1,58 @@
 import axios from '@/utils/axios'
+import {
+  requireApiAcknowledgement,
+  requireApiArray,
+  requireApiBooleanField,
+  requireApiNumberField,
+  requireApiObject,
+  requireApiStringField,
+  unwrapApiPayload,
+} from '@/utils/apiResponse'
 
-const unwrapPayload = (response: any) => response.data?.data ?? response.data ?? {}
-
-const unwrapList = (response: any, key: string) => {
-  const payload = unwrapPayload(response)
-
-  if (Array.isArray(payload)) return payload
-  if (Array.isArray(payload.data)) return payload.data
-  if (key && Array.isArray(payload[key])) return payload[key]
-
-  return []
+const readProductType = (response: unknown, endpoint: string): any => {
+  const productType = requireApiObject(unwrapApiPayload(response, endpoint), endpoint)
+  requireApiNumberField(productType, 'id', endpoint)
+  requireApiStringField(productType, 'name', endpoint)
+  requireApiStringField(productType, 'slug', endpoint)
+  requireApiBooleanField(productType, 'is_enabled', endpoint)
+  return productType
 }
 
 export const productTypeApi = {
   async list(params: Record<string, any> = {}) {
-    const response = await axios.get('/api/admin/product-types', { params })
-    return unwrapList(response, 'product_types')
+    const endpoint = '/api/admin/product-types'
+    return requireApiArray(
+      unwrapApiPayload(await axios.get(endpoint, { params }), endpoint),
+      endpoint,
+      'data',
+    )
   },
 
   async create(payload: Record<string, any>) {
-    return unwrapPayload(await axios.post('/api/admin/product-types', payload))
+    const endpoint = '/api/admin/product-types'
+    return readProductType(await axios.post(endpoint, payload), endpoint)
   },
 
   async update(id: number | string, payload: Record<string, any>) {
-    return unwrapPayload(await axios.put(`/api/admin/product-types/${id}`, payload))
+    const endpoint = `/api/admin/product-types/${id}`
+    return readProductType(await axios.put(endpoint, payload), endpoint)
   },
 
   async uploadImage(id: number | string, file: File) {
     const formData = new FormData()
     formData.append('file', file)
-    return unwrapPayload(await axios.post(`/api/admin/product-types/${id}/image`, formData))
+    const endpoint = `/api/admin/product-types/${id}/image`
+    return readProductType(await axios.post(endpoint, formData), endpoint)
   },
 
   async deleteImage(id: number | string) {
-    return unwrapPayload(await axios.delete(`/api/admin/product-types/${id}/image`))
+    const endpoint = `/api/admin/product-types/${id}/image`
+    return readProductType(await axios.delete(endpoint), endpoint)
   },
 
   async deleteProductType(id: number | string) {
-    return unwrapPayload(await axios.delete(`/api/admin/product-types/${id}`))
+    const endpoint = `/api/admin/product-types/${id}`
+    return requireApiAcknowledgement(await axios.delete(endpoint), endpoint)
   }
 }
 

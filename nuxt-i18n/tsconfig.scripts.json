@@ -15,7 +15,6 @@
     "scripts/**/*.d.ts",
     "scripts/i18n/**/*.ts",
     "scripts/storefront/**/*.ts",
-    "tailwind.config.ts",
-    "convert-font.ts"
+    "tailwind.config.ts"
   ]
 }

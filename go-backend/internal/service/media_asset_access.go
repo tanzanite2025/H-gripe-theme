@@ -30,6 +30,11 @@ type MediaAssetFile struct {
 	ModTime     time.Time
 }
 
+type PublicUploadAssetAccess struct {
+	Found   bool
+	Allowed bool
+}
+
 func (s *MediaService) OpenAssetFile(ctx context.Context, id uint) (*MediaAssetFile, error) {
 	asset, err := s.GetAsset(id)
 	if err != nil {
@@ -75,14 +80,28 @@ func (s *MediaService) OpenAssetFile(ctx context.Context, id uint) (*MediaAssetF
 }
 
 func (s *MediaService) CanServePublicUpload(key string) (bool, error) {
+	access, err := s.PublicUploadAssetAccess(key)
+	if err != nil {
+		return false, err
+	}
+	if !access.Found {
+		return true, nil
+	}
+	return access.Allowed, nil
+}
+
+func (s *MediaService) PublicUploadAssetAccess(key string) (PublicUploadAssetAccess, error) {
 	asset, err := s.repo.FindAssetByStorageKey(key)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return true, nil
+			return PublicUploadAssetAccess{}, nil
 		}
-		return false, err
+		return PublicUploadAssetAccess{}, err
 	}
-	return asset.Status == "active" && asset.Visibility == "public", nil
+	return PublicUploadAssetAccess{
+		Found:   true,
+		Allowed: asset.Status == "active" && asset.Visibility == "public",
+	}, nil
 }
 
 func (s *MediaService) CanonicalPublicImageUploadURL(reference string) (string, error) {

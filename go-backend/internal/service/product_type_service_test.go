@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"commerce-platform/internal/domain/product"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -152,6 +154,23 @@ func TestProductServiceUpdatesProductTypeAndReplacesSpecs(t *testing.T) {
 	require.Len(t, updated.SpecDefinitions, 1)
 	assert.Equal(t, "size", updated.SpecDefinitions[0].Slug)
 	assert.False(t, updated.SpecDefinitions[0].IsVisible)
+}
+
+func TestProductServiceProductTypeMutationInvalidatesDependentProductCache(t *testing.T) {
+	_, productService := newTestProductService(t)
+	cache := &recordingProductDetailCache{}
+	repo := &fakeProductCacheIdentityRepository{
+		productsByProductTypeID: map[uint][]product.Product{
+			42: {{ID: 7, Slug: "typed-product", Locale: "en"}},
+		},
+	}
+	productService.productCacheInvalidator = NewProductDetailCacheInvalidator(repo, cache)
+
+	productService.InvalidateProductCacheByProductTypeID(42)
+
+	assert.Equal(t, []uint{42}, repo.requestedProductTypeIDs)
+	assert.Contains(t, cache.deletedKeys, "product:7")
+	assert.Contains(t, cache.deletedKeys, "product:slug:typed-product:en")
 }
 
 func TestProductServiceUpdatesAndClearsProductTypeImage(t *testing.T) {

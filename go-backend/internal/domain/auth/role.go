@@ -117,6 +117,20 @@ const (
 	PermLogsView Permission = "logs:view"
 
 	PermSystemManage Permission = "system:manage"
+
+	PermOpsDomainView    Permission = "ops:domain:view"
+	PermOpsDomainEdit    Permission = "ops:domain:edit"
+	PermOpsDomainSync    Permission = "ops:domain:sync"
+	PermOpsView          Permission = "ops:view"
+	PermOpsConnectorView Permission = "ops:connector:view"
+	PermOpsConnectorEdit Permission = "ops:connector:edit"
+	PermOpsVPSView       Permission = "ops:vps:view"
+	PermOpsVPSEdit       Permission = "ops:vps:edit"
+	PermOpsVPSSync       Permission = "ops:vps:sync"
+	PermOpsProjectView   Permission = "ops:project:view"
+	PermOpsProjectEdit   Permission = "ops:project:edit"
+	PermOpsProjectSync   Permission = "ops:project:sync"
+	PermOpsDeployView    Permission = "ops:deploy:view"
 )
 
 // RolePermissions maps each role to the admin permissions it receives.
@@ -138,6 +152,10 @@ var RolePermissions = map[Role][]Permission{
 		PermSEOView, PermSEOEdit, PermAnalyticsView, PermAnalyticsEdit,
 		PermLogsView,
 		PermSystemManage,
+		PermOpsView, PermOpsDomainView, PermOpsDomainEdit, PermOpsDomainSync,
+		PermOpsConnectorView, PermOpsConnectorEdit,
+		PermOpsVPSView, PermOpsVPSEdit, PermOpsVPSSync,
+		PermOpsProjectView, PermOpsProjectEdit, PermOpsProjectSync, PermOpsDeployView,
 	},
 	RoleManager: {
 		PermProductView, PermProductCreate, PermProductEdit, PermProductDelete,
@@ -155,6 +173,10 @@ var RolePermissions = map[Role][]Permission{
 		PermSettingsView,
 		PermSEOView, PermAnalyticsView,
 		PermLogsView,
+		PermOpsView, PermOpsDomainView, PermOpsDomainEdit, PermOpsDomainSync,
+		PermOpsConnectorView, PermOpsConnectorEdit,
+		PermOpsVPSView, PermOpsVPSEdit, PermOpsVPSSync,
+		PermOpsProjectView, PermOpsProjectEdit, PermOpsProjectSync, PermOpsDeployView,
 	},
 	RoleEditor: {
 		PermProductView, PermProductCreate, PermProductEdit,

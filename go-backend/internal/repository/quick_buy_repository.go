@@ -30,6 +30,9 @@ func (r *QuickBuyRepository) ListFlows() ([]quickbuy.Flow, error) {
 func (r *QuickBuyRepository) FindFlowByID(id uint) (*quickbuy.Flow, error) {
 	var flow quickbuy.Flow
 	if err := r.db.
+		Preload("Translations", func(db *gorm.DB) *gorm.DB {
+			return db.Order("locale ASC, id ASC")
+		}).
 		Preload("Versions", func(db *gorm.DB) *gorm.DB {
 			return db.Order("version_number DESC, id DESC")
 		}).
@@ -49,7 +52,12 @@ func (r *QuickBuyRepository) FindFlowBySlug(slug string) (*quickbuy.Flow, error)
 
 func (r *QuickBuyRepository) CreateFlowWithVersion(flow *quickbuy.Flow, version *quickbuy.Version) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
+		translations := flow.Translations
+		flow.Translations = nil
 		if err := tx.Create(flow).Error; err != nil {
+			return err
+		}
+		if err := createQuickBuyFlowTranslations(tx, flow.ID, translations); err != nil {
 			return err
 		}
 		version.FlowID = flow.ID
@@ -58,23 +66,21 @@ func (r *QuickBuyRepository) CreateFlowWithVersion(flow *quickbuy.Flow, version 
 }
 
 func (r *QuickBuyRepository) UpdateFlow(flow *quickbuy.Flow) error {
-	result := r.db.Model(&quickbuy.Flow{}).
-		Where("id = ?", flow.ID).
-		Updates(map[string]interface{}{
-			"slug":          flow.Slug,
-			"name":          flow.Name,
-			"description":   flow.Description,
-			"entry_surface": flow.EntrySurface,
-			"is_enabled":    flow.IsEnabled,
-			"sort_order":    flow.SortOrder,
-		})
-	if result.Error != nil {
-		return result.Error
-	}
-	if result.RowsAffected == 0 {
-		return gorm.ErrRecordNotFound
-	}
-	return nil
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		return updateQuickBuyFlow(tx, flow)
+	})
+}
+
+func (r *QuickBuyRepository) SaveFlowConfiguration(flow *quickbuy.Flow, version *quickbuy.Version, replaceVersion bool) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		if err := updateQuickBuyFlow(tx, flow); err != nil {
+			return err
+		}
+		if replaceVersion {
+			return replaceQuickBuyVersion(tx, version)
+		}
+		return createQuickBuyVersion(tx, version)
+	})
 }
 
 func (r *QuickBuyRepository) FindVersionByID(id uint) (*quickbuy.Version, error) {
@@ -108,35 +114,7 @@ func (r *QuickBuyRepository) CreateVersion(version *quickbuy.Version) error {
 
 func (r *QuickBuyRepository) ReplaceVersion(version *quickbuy.Version) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
-		result := tx.Model(&quickbuy.Version{}).
-			Where("id = ?", version.ID).
-			Updates(map[string]interface{}{
-				"starts_at": version.StartsAt,
-				"ends_at":   version.EndsAt,
-			})
-		if result.Error != nil {
-			return result.Error
-		}
-		if result.RowsAffected == 0 {
-			return gorm.ErrRecordNotFound
-		}
-		if err := tx.Where("flow_version_id = ?", version.ID).Delete(&quickbuy.Rule{}).Error; err != nil {
-			return err
-		}
-		if err := tx.Where("step_id IN (?)",
-			tx.Model(&quickbuy.Step{}).Select("id").Where("flow_version_id = ?", version.ID),
-		).Delete(&quickbuy.StepFilter{}).Error; err != nil {
-			return err
-		}
-		if err := tx.Where("step_id IN (?)",
-			tx.Model(&quickbuy.Step{}).Select("id").Where("flow_version_id = ?", version.ID),
-		).Delete(&quickbuy.StepProductType{}).Error; err != nil {
-			return err
-		}
-		if err := tx.Where("flow_version_id = ?", version.ID).Delete(&quickbuy.Step{}).Error; err != nil {
-			return err
-		}
-		return createQuickBuyVersionChildren(tx, version)
+		return replaceQuickBuyVersion(tx, version)
 	})
 }
 
@@ -227,6 +205,9 @@ func (r *QuickBuyRepository) ReplaceSessionItems(sessionID uint, items []quickbu
 func preloadQuickBuyVersion(db *gorm.DB) *gorm.DB {
 	return db.
 		Preload("Flow").
+		Preload("Flow.Translations", func(db *gorm.DB) *gorm.DB {
+			return db.Order("locale ASC, id ASC")
+		}).
 		Preload("Steps", func(db *gorm.DB) *gorm.DB {
 			return db.Order("sort_order ASC, id ASC")
 		}).
@@ -245,6 +226,73 @@ func preloadQuickBuyVersion(db *gorm.DB) *gorm.DB {
 		Preload("Rules", func(db *gorm.DB) *gorm.DB {
 			return db.Order("sort_order ASC, id ASC")
 		})
+}
+
+func createQuickBuyFlowTranslations(tx *gorm.DB, flowID uint, translations []quickbuy.FlowTranslation) error {
+	for index := range translations {
+		translations[index].ID = 0
+		translations[index].FlowID = flowID
+	}
+	if len(translations) == 0 {
+		return nil
+	}
+	return tx.Create(&translations).Error
+}
+
+func updateQuickBuyFlow(tx *gorm.DB, flow *quickbuy.Flow) error {
+	result := tx.Model(&quickbuy.Flow{}).
+		Where("id = ?", flow.ID).
+		Updates(map[string]interface{}{
+			"slug":          flow.Slug,
+			"name":          flow.Name,
+			"description":   flow.Description,
+			"help_text":     flow.HelpText,
+			"entry_surface": flow.EntrySurface,
+			"is_enabled":    flow.IsEnabled,
+			"sort_order":    flow.SortOrder,
+		})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	if err := tx.Where("flow_id = ?", flow.ID).Delete(&quickbuy.FlowTranslation{}).Error; err != nil {
+		return err
+	}
+	return createQuickBuyFlowTranslations(tx, flow.ID, flow.Translations)
+}
+
+func replaceQuickBuyVersion(tx *gorm.DB, version *quickbuy.Version) error {
+	result := tx.Model(&quickbuy.Version{}).
+		Where("id = ?", version.ID).
+		Updates(map[string]interface{}{
+			"starts_at": version.StartsAt,
+			"ends_at":   version.EndsAt,
+		})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	if err := tx.Where("flow_version_id = ?", version.ID).Delete(&quickbuy.Rule{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("step_id IN (?)",
+		tx.Model(&quickbuy.Step{}).Select("id").Where("flow_version_id = ?", version.ID),
+	).Delete(&quickbuy.StepFilter{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("step_id IN (?)",
+		tx.Model(&quickbuy.Step{}).Select("id").Where("flow_version_id = ?", version.ID),
+	).Delete(&quickbuy.StepProductType{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("flow_version_id = ?", version.ID).Delete(&quickbuy.Step{}).Error; err != nil {
+		return err
+	}
+	return createQuickBuyVersionChildren(tx, version)
 }
 
 func preloadQuickBuySession(db *gorm.DB) *gorm.DB {

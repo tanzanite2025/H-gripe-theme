@@ -3,7 +3,7 @@
     <Transition name="customer-service-product-search-modal">
       <div
         v-if="modelValue"
-        class="fixed inset-0 z-[10030] flex items-end justify-center p-0 md:items-center md:p-6 tz-mobile-safe-modal-mask"
+        class="fixed inset-0 z-[10030] flex items-end justify-center p-0 md:items-center md:p-6 tz-mobile-safe-modal-mask tz-mobile-dialog-mask"
         role="presentation"
         @click.self="handleCloseCustomerServiceProductSearchModal"
       >
@@ -15,7 +15,7 @@
 
         <section
           ref="modalElement"
-          class="customer-service-product-search-modal-shell relative flex tz-mobile-safe-drawer-90-height w-full flex-col overflow-hidden border border-x-0 border-b-0 border-white/20 bg-black text-white shadow-[0_24px_80px_rgba(0,0,0,0.7)] md:h-auto md:max-h-[min(42rem,calc(100dvh-1.5rem))] md:w-[min(56rem,calc(100vw-1.5rem))] md:border"
+          class="customer-service-product-search-modal-shell tz-mobile-dialog-surface relative flex tz-mobile-safe-drawer-90-height w-full flex-col overflow-hidden border border-x-0 border-b-0 border-white/20 bg-black text-white shadow-[0_24px_80px_rgba(0,0,0,0.7)] md:h-auto md:max-h-[min(42rem,calc(100dvh-1.5rem))] md:w-[min(56rem,calc(100vw-1.5rem))] md:border"
           role="dialog"
           aria-modal="true"
           :aria-labelledby="modalTitleId"

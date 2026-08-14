@@ -117,6 +117,8 @@ func TestProductInformationTemplateServiceKeepsLocaleImmutable(t *testing.T) {
 
 func TestProductInformationTemplateServiceAcceptsSameLocaleAliasOnUpdate(t *testing.T) {
 	_, templateService := newTestProductInformationTemplateService(t)
+	cacheInvalidator := &recordingProductCacheInvalidator{}
+	templateService.ConfigureProductCacheInvalidator(cacheInvalidator)
 
 	template, err := templateService.Create(ProductInformationTemplateInput{
 		Kind:      product.ProductInformationTemplateKindPackaging,
@@ -139,6 +141,7 @@ func TestProductInformationTemplateServiceAcceptsSameLocaleAliasOnUpdate(t *test
 	require.NoError(t, err)
 	require.NotNil(t, updated)
 	require.Equal(t, "en", updated.Locale)
+	require.Equal(t, []uint{template.ID}, cacheInvalidator.templateIDs)
 }
 
 func TestProductInformationTemplateServicePersistsDisabledTemplates(t *testing.T) {
@@ -163,6 +166,26 @@ func TestProductInformationTemplateServicePersistsDisabledTemplates(t *testing.T
 	require.NoError(t, err)
 	require.Len(t, allTemplates, 1)
 	require.False(t, allTemplates[0].IsEnabled)
+}
+
+func TestProductInformationTemplateServiceInvalidatesProductCacheBeforeDelete(t *testing.T) {
+	_, templateService := newTestProductInformationTemplateService(t)
+	cacheInvalidator := &recordingProductCacheInvalidator{}
+	templateService.ConfigureProductCacheInvalidator(cacheInvalidator)
+
+	template, err := templateService.Create(ProductInformationTemplateInput{
+		Kind:      product.ProductInformationTemplateKindPackaging,
+		Name:      "Delete Packaging",
+		Slug:      "delete-packaging",
+		Content:   "<p>Delete content</p>",
+		Locale:    "en",
+		IsEnabled: true,
+	})
+	require.NoError(t, err)
+
+	require.NoError(t, templateService.Delete(template.ID))
+
+	require.Equal(t, []uint{template.ID}, cacheInvalidator.templateIDs)
 }
 
 func newTestProductInformationTemplateService(t *testing.T) (*gorm.DB, *ProductInformationTemplateService) {

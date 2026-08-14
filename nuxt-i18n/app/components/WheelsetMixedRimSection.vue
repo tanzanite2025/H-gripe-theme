@@ -1,118 +1,69 @@
 <template>
-  <div class="space-y-6">
-    <!-- Intro Card -->
-    <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 text-center">
-       <div class="flex flex-col items-center">
-         <p class="tz-text-secondary text-sm leading-relaxed max-w-2xl mx-auto">
+  <div class="wheelset-guide-subsection">
+    <p class="wheelset-guide-step__body">
             Example riding scenarios where "Mixed Rim Profiles" (different front/rear specs) provide a tactical advantage.
             This approach balances aerodynamics, handling, and durability.
-         </p>
-         
-         <div class="mt-4 flex flex-wrap justify-center gap-3">
-             <button
-               type="button"
-               class="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-slate-600 hover:bg-slate-700 tz-text-secondary text-xs font-bold uppercase tracking-wider transition-colors"
-               @click="openQuickBuy"
-             >
-               Quick Custom
-             </button>
-             <button
-               type="button"
-               class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold uppercase tracking-wider transition-colors shadow-lg"
-               @click="openWhatsAppChat"
-             >
-               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-               Consult Expert
-             </button>
-         </div>
-       </div>
+    </p>
+
+    <div class="wheelset-guide-actions">
+      <button
+        type="button"
+        class="wheelset-guide-button"
+        @click="openQuickBuy"
+      >
+        Open Quick Custom Wheelset Builder
+      </button>
+      <button
+        type="button"
+        class="wheelset-guide-button wheelset-guide-button--solid"
+        @click="openWhatsAppChat"
+      >
+        Consult a Wheelset Expert
+      </button>
     </div>
 
-    <!-- Scenarios Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-       <!-- 1. Diff Models -->
-       <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
-          <div class="flex items-center gap-3 mb-4 pb-3 border-b border-fuchsia-500/10">
-            <h3 class="text-sm font-bold tz-text-primary uppercase tracking-wide">Different Models</h3>
-          </div>
-          <p class="text-xs tz-text-secondary leading-relaxed">
+    <div class="wheelset-guide-panel-grid">
+      <div class="wheelset-guide-panel">
+        <strong>Different models</strong>
+        <p>
              Using completely different rim models (e.g., Lightweight Front + Heavy Duty Rear). Common in custom builds to balance specific performance needs.
-          </p>
-       </div>
+        </p>
+      </div>
 
-       <!-- 2. Diff Heights -->
-       <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
-          <div class="flex items-center gap-3 mb-4 pb-3 border-b border-fuchsia-500/10">
-            <h3 class="text-sm font-bold tz-text-primary uppercase tracking-wide">Different Heights</h3>
-          </div>
-           <p class="text-xs tz-text-secondary leading-relaxed">
+      <div class="wheelset-guide-panel">
+        <strong>Different heights</strong>
+        <p>
              E.g., 50mm Front (handling) + 60mm Rear (aero/stiffness). The most common "Mixed" setup to optimize crosswind stability and speed.
-          </p>
-       </div>
+        </p>
+      </div>
     </div>
 
-    <!-- Mobile-First Comparison Cards (Replacing Table) -->
-    <div class="space-y-4">
-       <div class="flex items-center gap-2 mb-2 px-2">
-          <div class="h-4 w-1 bg-fuchsia-500 rounded-full"></div>
-          <h3 class="text-sm font-bold tz-text-primary uppercase tracking-wider">Configuration Cheatsheet</h3>
-       </div>
+    <div>
+      <h4 class="wheelset-guide-kicker">Configuration Cheatsheet</h4>
 
-       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <!-- Card 1 -->
-          <div class="bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] rounded-xl p-4 border-l-4 border-fuchsia-500/50">
-             <div class="flex justify-between items-start mb-2">
-                <strong class="text-fuchsia-400 text-sm">Climbing</strong>
-                <span class="tz-micro-label bg-slate-800 tz-text-muted px-2 py-0.5 rounded">Lightweight</span>
-             </div>
-             <div class="grid grid-cols-2 gap-4 text-xs tz-text-secondary mb-2">
-                <div><span class="block tz-compact-label tz-text-muted">Front</span> 30-40mm</div>
-                <div><span class="block tz-compact-label tz-text-muted">Rear</span> 40-50mm</div>
-             </div>
-             <p class="text-xs tz-text-muted italic">Front for handling/weight, Rear for stiffness.</p>
-          </div>
-
-          <!-- Card 2 -->
-          <div class="bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] rounded-xl p-4 border-l-4 border-fuchsia-500/50">
-             <div class="flex justify-between items-start mb-2">
-                <strong class="text-fuchsia-400 text-sm">Aerodynamics</strong>
-                <span class="tz-micro-label bg-slate-800 tz-text-muted px-2 py-0.5 rounded">Speed</span>
-             </div>
-             <div class="grid grid-cols-2 gap-4 text-xs tz-text-secondary mb-2">
-                <div><span class="block tz-compact-label tz-text-muted">Front</span> 50-60mm</div>
-                <div><span class="block tz-compact-label tz-text-muted">Rear</span> 60-80mm</div>
-             </div>
-             <p class="text-xs tz-text-muted italic">Front balances crosswinds, Rear maxes speed.</p>
-          </div>
-
-           <!-- Card 3 -->
-           <div class="bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] rounded-xl p-4 border-l-4 border-fuchsia-500/50">
-             <div class="flex justify-between items-start mb-2">
-                <strong class="text-fuchsia-400 text-sm">Training / Durability</strong>
-                <span class="tz-micro-label bg-slate-800 tz-text-muted px-2 py-0.5 rounded">Stable</span>
-             </div>
-             <div class="grid grid-cols-2 gap-4 text-xs tz-text-secondary mb-2">
-                <div><span class="block tz-compact-label tz-text-muted">Front</span> Mid Alloy/Carbon</div>
-                <div><span class="block tz-compact-label tz-text-muted">Rear</span> High/Wide Profile</div>
-             </div>
-             <p class="text-xs tz-text-muted italic">Rear bears load, Front ensures comfort.</p>
-          </div>
-
-           <!-- Card 4 -->
-           <div class="bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] rounded-xl p-4 border-l-4 border-fuchsia-500/50">
-             <div class="flex justify-between items-start mb-2">
-                <strong class="text-fuchsia-400 text-sm">Mixed / Versatile</strong>
-                <span class="tz-micro-label bg-slate-800 tz-text-muted px-2 py-0.5 rounded">All-around</span>
-             </div>
-             <div class="grid grid-cols-2 gap-4 text-xs tz-text-secondary mb-2">
-                <div><span class="block tz-compact-label tz-text-muted">Front</span> 40-50mm</div>
-                <div><span class="block tz-compact-label tz-text-muted">Rear</span> 55-65mm</div>
-             </div>
-             <p class="text-xs tz-text-muted italic">A great balance for racing and training.</p>
-          </div>
-       </div>
+      <div class="wheelset-guide-panel-grid">
+        <div class="wheelset-guide-panel">
+          <strong>Climbing</strong>
+          <p><span>Front:</span> 30-40mm. <span>Rear:</span> 40-50mm.</p>
+          <p>Front for handling/weight, rear for stiffness.</p>
+        </div>
+        <div class="wheelset-guide-panel">
+          <strong>Aerodynamics</strong>
+          <p><span>Front:</span> 50-60mm. <span>Rear:</span> 60-80mm.</p>
+          <p>Front balances crosswinds, rear maximizes speed.</p>
+        </div>
+        <div class="wheelset-guide-panel">
+          <strong>Training / Durability</strong>
+          <p><span>Front:</span> mid alloy/carbon. <span>Rear:</span> high/wide profile.</p>
+          <p>Rear bears load, front preserves comfort.</p>
+        </div>
+        <div class="wheelset-guide-panel">
+          <strong>Mixed / Versatile</strong>
+          <p><span>Front:</span> 40-50mm. <span>Rear:</span> 55-65mm.</p>
+          <p>A balanced choice for racing and training.</p>
+        </div>
+      </div>
     </div>
-
   </div>
 </template>
 
@@ -161,5 +112,20 @@ const { openQuickBuy, openWhatsAppChat } = defineProps<{
 
 .wheelset-inline-button:active {
   transform: scale(0.98);
+}
+
+.wheelset-guide-kicker {
+  margin: 0 0 0.8rem;
+  color: var(--tz-text-muted);
+  font-size: var(--tz-type-micro-label);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  line-height: 1.25;
+  text-transform: uppercase;
+}
+
+.wheelset-guide-panel span {
+  color: var(--tz-text-muted);
+  font-weight: 650;
 }
 </style>

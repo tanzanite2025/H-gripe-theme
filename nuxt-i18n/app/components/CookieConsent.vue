@@ -43,10 +43,10 @@
     <Transition name="cookie-fade">
       <div 
         v-if="showModal" 
-        class="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50 p-4 tz-mobile-safe-modal-mask"
+        class="tz-standard-modal-mask fixed inset-0 z-[10000] flex items-center justify-center p-4 tz-mobile-safe-modal-mask"
         @click.self="showModal = false"
       >
-        <div class="cookie-modal-panel bg-[rgba(0,0,0,0.88)] border border-white/10 rounded-2xl shadow-2xl shadow-black/60 max-w-lg w-full max-h-[90vh] overflow-y-auto">
+        <div class="cookie-modal-panel tz-standard-modal-surface bg-[rgba(0,0,0,0.88)] max-w-lg w-full max-h-[90vh] overflow-y-auto">
           <!-- Header -->
           <div class="flex items-center justify-between p-6 pb-4">
             <h2 class="text-xl font-bold text-white">{{ t('cookieConsent.modal.title') }}</h2>

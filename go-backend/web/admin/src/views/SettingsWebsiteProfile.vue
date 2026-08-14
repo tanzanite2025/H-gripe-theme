@@ -239,7 +239,7 @@
                 </AdminFormField>
                 <AdminFormField
                   label="工厂入口链接（全局）"
-                  description="可以填写站内相对路径，例如 /company/about#factory；修改后所有语言共用。"
+                  description="可以填写站内相对路径，例如 /company/about/factory；修改后所有语言共用。"
                 >
                   <Input v-model="form.factory_link" :disabled="!canEdit" />
                 </AdminFormField>

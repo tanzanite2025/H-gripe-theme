@@ -39,7 +39,7 @@
             <p v-if="contactEmail" class="footer-menus__brand-paragraph">
               <a
                 :href="`mailto:${contactEmail}`"
-                class="footer-menus__link"
+                class="footer-menus__link footer-menus__contact-link"
               >
                 {{ contactEmail }}
               </a>
@@ -177,6 +177,7 @@ const isOpen = (id: string) => {
 }
 
 .footer-menus__column {
+  min-width: 0;
   text-align: left;
 }
 
@@ -215,6 +216,7 @@ const isOpen = (id: string) => {
 }
 
 .footer-menus__brand-text {
+  min-width: 0;
   font-size: 0.85rem;
   line-height: 1.7;
   color: var(--tz-text-secondary);
@@ -230,6 +232,7 @@ const isOpen = (id: string) => {
 
 .footer-menus__brand-paragraph {
   margin: 0 0 1rem;
+  min-width: 0;
 }
 
 .footer-menus__list {
@@ -249,6 +252,14 @@ const isOpen = (id: string) => {
   display: inline-block;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
+}
+
+.footer-menus__contact-link {
+  display: inline;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: normal;
 }
 
 .footer-menus__link:hover,

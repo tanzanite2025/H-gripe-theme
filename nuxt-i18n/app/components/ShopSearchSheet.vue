@@ -8,7 +8,7 @@
     >
       <div
         v-if="isOpen"
-        class="fixed inset-0 z-[14000] flex items-end justify-center p-0 tz-mobile-safe-modal-mask"
+        class="fixed inset-0 z-[14000] flex items-end justify-center p-0 tz-mobile-safe-modal-mask tz-mobile-dialog-mask"
         @click.self="close"
       >
         <Transition
@@ -25,7 +25,7 @@
             class="shop-search-sheet-shell w-full"
           >
             <section
-              class="shop-search-sheet-panel relative pointer-events-auto w-full max-w-none tz-mobile-safe-full-height md:h-[82vh] md:max-h-[900px] bg-black rounded-none flex flex-col overflow-hidden"
+              class="shop-search-sheet-panel tz-mobile-dialog-surface relative pointer-events-auto w-full max-w-none tz-mobile-safe-full-height md:h-[82vh] md:max-h-[900px] bg-black rounded-none flex flex-col overflow-hidden"
               :class="{ 'shop-search-sheet-panel--dragging': isDraggingPanel }"
               ref="panelRef"
               aria-modal="true"
@@ -194,8 +194,8 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .shop-search-sheet-panel {
-  height: var(--tz-mobile-safe-viewport-height, 100dvh);
-  max-height: var(--tz-mobile-safe-viewport-height, 100dvh);
+  height: calc(var(--tz-mobile-safe-viewport-height, 100dvh) - var(--tz-mobile-dialog-inset, 2px) * 2);
+  max-height: calc(var(--tz-mobile-safe-viewport-height, 100dvh) - var(--tz-mobile-dialog-inset, 2px) * 2);
   background: #000000;
   background-image: none;
   border: 1px solid rgba(181, 255, 109, 0.22);

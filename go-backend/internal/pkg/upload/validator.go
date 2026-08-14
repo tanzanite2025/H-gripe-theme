@@ -13,6 +13,8 @@ import (
 	"net/http"
 	"path/filepath"
 	"strings"
+
+	_ "golang.org/x/image/webp"
 )
 
 const (
@@ -79,6 +81,9 @@ var (
 		MaxSize:             3 << 20,
 		AllowedExtensions:   []string{".webp"},
 		AllowedContentTypes: []string{"image/webp"},
+		MaxWidth:            800,
+		MaxHeight:           800,
+		MaxPixels:           800 * 800,
 	}
 	ProductTypeImageRule = FileRule{
 		MaxSize:             3 << 20,
@@ -155,7 +160,7 @@ func ValidateWebPDimensions(file *multipart.FileHeader, expectedWidth, expectedH
 }
 
 func validateImageDimensions(file *multipart.FileHeader, rule FileRule, contentType string) error {
-	if rule.ExactWidth <= 0 && rule.ExactHeight <= 0 && rule.MaxWidth <= 0 && rule.MaxHeight <= 0 && rule.MaxPixels <= 0 {
+	if !strings.HasPrefix(strings.ToLower(strings.TrimSpace(contentType)), "image/") {
 		return nil
 	}
 
@@ -186,6 +191,9 @@ func validateImageDimensions(file *multipart.FileHeader, rule FileRule, contentT
 	if rule.MaxPixels > 0 && int64(width)*int64(height) > rule.MaxPixels {
 		return validationError(CodeInvalidDimensions, "invalid_dimensions: %s exceeds %d total pixels", file.Filename, rule.MaxPixels)
 	}
+	if err := validateImageContent(file, contentType, width, height); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -205,6 +213,48 @@ func imageDimensions(file *multipart.FileHeader, contentType string) (int, int, 
 		return 0, 0, err
 	}
 	return config.Width, config.Height, nil
+}
+
+func validateImageContent(file *multipart.FileHeader, contentType string, expectedWidth, expectedHeight int) error {
+	src, err := file.Open()
+	if err != nil {
+		return fmt.Errorf("open image for content validation: %w", err)
+	}
+	defer func() { _ = src.Close() }()
+
+	decoded, decodedType, err := image.Decode(src)
+	if err != nil {
+		return validationError(CodeInvalidType, "invalid_type: %s image content is invalid", file.Filename)
+	}
+	if !imageFormatMatchesContentType(decodedType, contentType) {
+		return validationError(CodeInvalidType, "invalid_type: %s image content does not match its declared type", file.Filename)
+	}
+	bounds := decoded.Bounds()
+	if bounds.Dx() != expectedWidth || bounds.Dy() != expectedHeight {
+		return validationError(
+			CodeInvalidDimensions,
+			"invalid_dimensions: %s image dimensions changed during decoding (received %dx%d)",
+			file.Filename,
+			bounds.Dx(),
+			bounds.Dy(),
+		)
+	}
+	return nil
+}
+
+func imageFormatMatchesContentType(format, contentType string) bool {
+	switch strings.ToLower(strings.TrimSpace(contentType)) {
+	case "image/gif":
+		return strings.EqualFold(format, "gif")
+	case "image/jpeg":
+		return strings.EqualFold(format, "jpeg")
+	case "image/png":
+		return strings.EqualFold(format, "png")
+	case "image/webp":
+		return strings.EqualFold(format, "webp")
+	default:
+		return false
+	}
 }
 
 func webPDimensions(file *multipart.FileHeader) (int, int, error) {

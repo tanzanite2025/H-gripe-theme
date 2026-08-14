@@ -162,11 +162,11 @@
       role="dialog"
       aria-modal="true"
     >
-      <div class="absolute inset-0 bg-slate-900/90 backdrop-blur-sm" @click="showLaserVideo = false" />
-      <div class="appearance-video-modal-content relative w-full max-w-4xl bg-black rounded-xl overflow-hidden shadow-2xl ring-1 ring-white/10">
+      <div class="tz-standard-modal-backdrop absolute inset-0" @click="showLaserVideo = false" />
+      <div class="appearance-video-modal-content tz-standard-modal-surface relative w-full max-w-4xl bg-black overflow-hidden ring-1 ring-white/10">
         <button
           type="button"
-          class="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
+          class="tz-global-close-btn absolute top-4 right-4 z-10"
           @click="showLaserVideo = false"
         >
           ×

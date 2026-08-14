@@ -103,16 +103,22 @@ func (r *MediaRepository) FindAssetByStorageKey(key string) (*media.MediaAsset, 
 		return nil, gorm.ErrRecordNotFound
 	}
 	legacyKey := strings.ReplaceAll(normalizedKey, "/", "\\")
-	likeSlash := "%/uploads/" + normalizedKey
-	likeBackslash := "%/uploads/" + legacyKey
+	likeSlash := "%/uploads/" + escapeLikePattern(normalizedKey)
+	likeBackslash := "%/uploads/" + escapeLikePattern(legacyKey)
 
 	var asset media.MediaAsset
 	if err := r.db.Unscoped().
-		Where("storage_key = ? OR storage_key = ? OR url LIKE ? OR url LIKE ?", normalizedKey, legacyKey, likeSlash, likeBackslash).
+		Where("storage_key = ? OR storage_key = ? OR url LIKE ? ESCAPE '\\' OR url LIKE ? ESCAPE '\\'", normalizedKey, legacyKey, likeSlash, likeBackslash).
 		First(&asset).Error; err != nil {
 		return nil, err
 	}
 	return &asset, nil
+}
+
+func escapeLikePattern(value string) string {
+	value = strings.ReplaceAll(value, `\`, `\\`)
+	value = strings.ReplaceAll(value, `%`, `\%`)
+	return strings.ReplaceAll(value, `_`, `\_`)
 }
 
 func (r *MediaRepository) UpdateAsset(asset *media.MediaAsset) error {

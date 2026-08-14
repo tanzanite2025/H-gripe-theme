@@ -17,6 +17,7 @@ export interface SiteSettingsResponse {
   brandTitle?: string
   siteDescription?: string
   siteLogo?: string
+  siteFavicon?: string
   contactEmail?: string
   contactPhone?: string
   socialLinks?: ApiSocialLink[]
@@ -66,12 +67,14 @@ const normalizeSiteSettings = (raw: RawSettings): SiteSettingsResponse => {
   const legacySiteTitle = asString(raw.siteTitle ?? raw.site_name)
   const siteTitle = brandTitle || legacySiteTitle
   const siteLogo = asString(raw.siteLogo ?? raw.site_logo).trim()
+  const siteFavicon = asString(raw.siteFavicon ?? raw.site_favicon).trim()
 
   return {
     siteTitle,
     brandTitle: brandTitle || siteTitle,
     siteDescription: asString(raw.siteDescription ?? raw.site_description),
     siteLogo: siteLogo === '/images/logo.png' ? '' : siteLogo,
+    siteFavicon,
     contactEmail: asString(raw.contactEmail ?? raw.contact_email),
     contactPhone: asString(raw.contactPhone ?? raw.contact_phone),
     socialLinks: normalizeRuntimeSocialLinks(raw.socialLinks ?? raw.social_links)

@@ -9,6 +9,8 @@ import {
   Megaphone,
   MessagesSquare,
   Package,
+  Rocket,
+  Server,
   ScrollText,
   Settings,
   ShieldCheck,
@@ -138,6 +140,7 @@ export const adminNavigationItems: AdminNavigationItem[] = [
     children: [
       { id: 'content-blog', path: '/content/blog', routeName: 'ContentBlog', label: '博客内容', permission: 'content:view' },
       { id: 'content-brand-gallery', path: '/content/brand-gallery', routeName: 'ContentBrandGallery', label: '品牌图库', permission: 'gallery:view' },
+      { id: 'content-showcase', path: '/content/showcase', routeName: 'ContentShowcase', label: '买家秀审批', permission: 'gallery:view' },
       { id: 'content-faqs', path: '/content/faqs', routeName: 'ContentFAQs', label: 'FAQ 内容', permission: 'faq:view' },
       { id: 'content-media-library', path: '/content/media-library', routeName: 'ContentMediaLibrary', label: '媒体库', permission: 'media:view' },
     ],
@@ -177,6 +180,21 @@ export const adminNavigationItems: AdminNavigationItem[] = [
       { id: 'marketing-loyalty-rules', path: '/marketing/loyalty/rules', routeName: 'MarketingLoyaltyRules', label: '积分规则', permission: 'marketing:view' },
       { id: 'marketing-levels', path: '/marketing/levels', routeName: 'MarketingLevels', label: '会员等级', permission: 'marketing:view' },
       { id: 'marketing-subscriptions', path: '/marketing/subscriptions', routeName: 'MarketingSubscriptions', label: '邮件订阅', permission: 'subscription:view' },
+    ],
+  },
+  {
+    id: 'ops',
+    code: 'OPS',
+    label: '运维中心',
+    icon: Server,
+    permission: 'ops:view',
+    children: [
+      { id: 'ops-overview', path: '/ops/overview', routeName: 'OpsOverview', label: '运维总览', permission: 'ops:view' },
+      { id: 'ops-domains', path: '/ops/domains', routeName: 'OpsDomains', label: '域名中心', permission: 'ops:domain:view' },
+      { id: 'ops-connectors', path: '/ops/connectors', routeName: 'OpsConnectors', label: '连接器中心', permission: 'ops:connector:view' },
+      { id: 'ops-vps', path: '/ops/vps', routeName: 'OpsVPS', label: 'VPS 中心', permission: 'ops:vps:view' },
+      { id: 'ops-projects', path: '/ops/projects', routeName: 'OpsProjects', label: '项目中心', permission: 'ops:project:view' },
+      { id: 'ops-deployments', path: '/ops/deployments', routeName: 'OpsDeployments', label: '部署中心', icon: Rocket, permission: 'ops:deploy:view' },
     ],
   },
   {

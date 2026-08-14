@@ -5,7 +5,10 @@ server:
   mode: "debug"  # debug, release, test
   base_url: "http://localhost:9200"  # 用于生成 Sitemap 和 URL
   read_timeout: 60
+  read_header_timeout: 10
   write_timeout: 60
+  idle_timeout: 120
+  max_header_bytes: 1048576
   trusted_proxies: []  # Required in release mode; use TRUSTED_PROXIES behind a proxy.
 
 database:
@@ -23,7 +26,7 @@ database:
 
 redis:
   host: "localhost"
-  port: 9500
+  port: 9510
   password: ""
   db: 0
   pool_size: 10
@@ -70,9 +73,6 @@ i18n:
 
 cors:
   allowed_origins:
-    - "https://learn.gripe"
-    - "https://www.learn.gripe"
-    - "https://admin.learn.gripe"
     - "http://localhost:9199"
     - "http://127.0.0.1:9199"
     - "http://localhost:9100"
@@ -96,6 +96,8 @@ cors:
     - "X-Display-Currency"
     - "X-Market-Country"
     - "X-Country-Code"
+    - "X-Quick-Buy-Session"
+    - "X-Anonymous-ID"
   expose_headers:
     - "Content-Length"
   allow_credentials: true
@@ -110,11 +112,36 @@ cache:
   default_ttl: 3600  # seconds
   post_ttl: 3600
   product_ttl: 1800
+  product_lock_ttl: 5
   settings_ttl: 7200
 
 media_upload:
   # Per authenticated uploader; 20 GiB in bytes.
   account_storage_quota_bytes: 21474836480
+
+quick_buy_rate_limit:
+  enabled: true
+  ip_requests_per_minute: 120
+  ip_burst: 40
+  session_requests_per_minute: 60
+  session_burst: 20
+  fail_open: true
+
+showcase_upload_protection:
+  enabled: true
+  window_seconds: 60
+  max_uploads_per_user: 3
+  max_uploads_per_ip: 6
+  max_uploads_per_ip_prefix: 18
+  daily_max_uploads_per_user: 12
+  daily_max_uploads_per_ip: 24
+  daily_max_bytes_per_user: 104857600
+  daily_max_bytes_per_ip: 209715200
+  max_pending_submissions_per_user: 10
+  failure_window_seconds: 900
+  max_failures_per_user: 5
+  max_failures_per_ip: 10
+  block_duration_seconds: 1800
 
 worker:
   enabled: false  # Enable only after registering Asynq task handlers
@@ -131,6 +158,10 @@ worker:
   payment_expiration_batch_limit: 100
   payment_risk_monitoring_enabled: false
   payment_risk_monitoring_interval_seconds: 3600
+  showcase_cleanup_enabled: true
+  showcase_cleanup_interval_seconds: 86400
+  showcase_pending_ttl_seconds: 2592000
+  showcase_cleanup_batch_limit: 100
 
 order_abuse:
   enabled: false

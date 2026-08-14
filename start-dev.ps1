@@ -13,7 +13,7 @@ $Ports = [ordered]@{
   Api        = 9200
   Admin      = 9300
   Postgres   = 9400
-  Redis      = 9500
+  Redis      = 9510
 }
 
 $AppPorts = @($Ports.Storefront, $Ports.Api, $Ports.Admin)

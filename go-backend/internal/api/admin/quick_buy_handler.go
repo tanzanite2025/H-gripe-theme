@@ -88,6 +88,27 @@ func (h *QuickBuyHandler) UpdateFlow(c *gin.Context) {
 	response.Success(c, gin.H{"data": flow})
 }
 
+func (h *QuickBuyHandler) SaveFlowConfiguration(c *gin.Context) {
+	id, err := parseUintParam(c, "id", "invalid quick buy flow id")
+	if err != nil {
+		return
+	}
+
+	var input service.QuickBuyFlowInput
+	if err := c.ShouldBindJSON(&input); err != nil {
+		apierror.RespondBadRequest(c, err.Error())
+		return
+	}
+
+	flow, err := h.quickBuyService.SaveFlowConfiguration(id, input)
+	if err != nil {
+		respondQuickBuyError(c, err)
+		return
+	}
+
+	response.Success(c, gin.H{"data": flow})
+}
+
 func (h *QuickBuyHandler) CreateDraftVersion(c *gin.Context) {
 	flowID, err := parseUintParam(c, "id", "invalid quick buy flow id")
 	if err != nil {
@@ -145,7 +166,7 @@ func (h *QuickBuyHandler) ValidateVersion(c *gin.Context) {
 	response.Success(c, gin.H{"data": result})
 }
 
-func (h *QuickBuyHandler) PreviewVersionCandidates(c *gin.Context) {
+func (h *QuickBuyHandler) PreviewVersionStepCandidates(c *gin.Context) {
 	versionID, err := parseUintParam(c, "version_id", "invalid quick buy version id")
 	if err != nil {
 		return

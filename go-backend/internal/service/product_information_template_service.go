@@ -29,11 +29,27 @@ var (
 )
 
 type ProductInformationTemplateService struct {
-	repo *repository.ProductInformationTemplateRepository
+	repo               *repository.ProductInformationTemplateRepository
+	productCache       ProductDependencyCacheInvalidator
+	productCacheEvents ProductCacheEventPublisher
 }
 
 func NewProductInformationTemplateService(repo *repository.ProductInformationTemplateRepository) *ProductInformationTemplateService {
 	return &ProductInformationTemplateService{repo: repo}
+}
+
+func (s *ProductInformationTemplateService) ConfigureProductCacheInvalidator(invalidator ProductDependencyCacheInvalidator) {
+	if s == nil {
+		return
+	}
+	s.productCache = invalidator
+}
+
+func (s *ProductInformationTemplateService) ConfigureProductCacheEventPublisher(publisher ProductCacheEventPublisher) {
+	if s == nil {
+		return
+	}
+	s.productCacheEvents = publisher
 }
 
 func (s *ProductInformationTemplateService) List(kind, locale string, includeDisabled bool) ([]product.ProductInformationTemplate, error) {
@@ -98,6 +114,10 @@ func (s *ProductInformationTemplateService) Update(id uint, input ProductInforma
 	if err := s.repo.Update(normalized); err != nil {
 		return nil, err
 	}
+	s.invalidateProductCacheByInformationTemplateID(id)
+	if err := s.enqueueProductCacheInvalidationByInformationTemplateID(id, "product information template update"); err != nil {
+		return nil, err
+	}
 	return s.Get(id)
 }
 
@@ -105,10 +125,28 @@ func (s *ProductInformationTemplateService) Delete(id uint) error {
 	if _, err := s.Get(id); err != nil {
 		return err
 	}
+	s.invalidateProductCacheByInformationTemplateID(id)
+	if err := s.enqueueProductCacheInvalidationByInformationTemplateID(id, "product information template delete"); err != nil {
+		return err
+	}
 	if err := s.repo.Delete(id); err != nil {
 		return err
 	}
 	return nil
+}
+
+func (s *ProductInformationTemplateService) invalidateProductCacheByInformationTemplateID(templateID uint) {
+	if s == nil || s.productCache == nil {
+		return
+	}
+	s.productCache.InvalidateProductCacheByInformationTemplateID(templateID)
+}
+
+func (s *ProductInformationTemplateService) enqueueProductCacheInvalidationByInformationTemplateID(templateID uint, reason string) error {
+	if s == nil || s.productCacheEvents == nil {
+		return nil
+	}
+	return s.productCacheEvents.EnqueueProductCacheInvalidateByInformationTemplateID(templateID, reason)
 }
 
 func normalizeProductInformationTemplateInput(input ProductInformationTemplateInput) (*product.ProductInformationTemplate, error) {

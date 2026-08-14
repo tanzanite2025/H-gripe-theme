@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
@@ -21,8 +20,9 @@ import (
 	"commerce-platform/internal/pkg/database"
 	"commerce-platform/internal/pkg/logger"
 	"commerce-platform/internal/pkg/scheduler"
-	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/pkg/worker"
+	"commerce-platform/internal/repository"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -49,7 +49,7 @@ func main() {
 
 	command := "serve"
 	if len(os.Args) > 1 {
-		if len(os.Args) != 2 || os.Args[1] != "migrate" {
+		if len(os.Args) != 2 || (os.Args[1] != "migrate" && os.Args[1] != "render-edge-config") {
 			logger.Fatal("unsupported command", zap.Strings("arguments", os.Args[1:]))
 		}
 		command = os.Args[1]
@@ -78,6 +78,30 @@ func main() {
 			logger.Fatal("database migration failed", zap.Error(migrationErr))
 		}
 		logger.Info("database migration completed")
+		return
+	}
+
+	if command == "render-edge-config" {
+		environment := strings.TrimSpace(os.Getenv("OPS_EDGE_CONFIG_ENVIRONMENT"))
+		outputDir := strings.TrimSpace(os.Getenv("OPS_EDGE_CONFIG_OUTPUT_DIR"))
+		if environment == "" || outputDir == "" {
+			logger.Fatal(
+				"edge config rendering requires OPS_EDGE_CONFIG_ENVIRONMENT and OPS_EDGE_CONFIG_OUTPUT_DIR",
+			)
+		}
+
+		edgeConfigService := service.NewOpsEdgeConfigService(
+			repository.NewOpsDomainBindingRepository(db),
+			repository.NewOpsProjectBindingRepository(db),
+		)
+		if _, err := edgeConfigService.RenderToDirectory(environment, outputDir); err != nil {
+			logger.Fatal("edge config rendering failed", zap.Error(err))
+		}
+		logger.Info(
+			"edge config rendering completed",
+			zap.String("environment", environment),
+			zap.String("output_dir", outputDir),
+		)
 		return
 	}
 
@@ -113,10 +137,13 @@ func main() {
 	router := setupRouter(db, redisCache, cfg, deps)
 
 	server := &http.Server{
-		Addr:         cfg.Server.Port,
-		Handler:      router,
-		ReadTimeout:  time.Duration(cfg.Server.ReadTimeout) * time.Second,
-		WriteTimeout: time.Duration(cfg.Server.WriteTimeout) * time.Second,
+		Addr:              cfg.Server.Port,
+		Handler:           router,
+		ReadTimeout:       time.Duration(cfg.Server.ReadTimeout) * time.Second,
+		ReadHeaderTimeout: time.Duration(cfg.Server.ReadHeaderTimeout) * time.Second,
+		WriteTimeout:      time.Duration(cfg.Server.WriteTimeout) * time.Second,
+		IdleTimeout:       time.Duration(cfg.Server.IdleTimeout) * time.Second,
+		MaxHeaderBytes:    cfg.Server.MaxHeaderBytes,
 	}
 
 	var workerServer *worker.Server
@@ -152,6 +179,14 @@ func main() {
 		behaviorEventCleanupScheduler.Start(context.Background())
 	} else {
 		logger.Info("behavior event cleanup scheduler disabled")
+	}
+
+	var showcaseCleanupScheduler *scheduler.ShowcaseCleanupScheduler
+	if cfg.Worker.ShowcaseCleanupEnabled {
+		showcaseCleanupScheduler = scheduler.NewShowcaseCleanupScheduler(deps.Services.Showcase, cfg.Worker)
+		showcaseCleanupScheduler.Start(context.Background())
+	} else {
+		logger.Info("showcase cleanup scheduler disabled")
 	}
 
 	var outboxDispatchScheduler *scheduler.OutboxDispatchScheduler
@@ -228,6 +263,9 @@ func main() {
 	if behaviorEventCleanupScheduler != nil {
 		behaviorEventCleanupScheduler.Stop()
 	}
+	if showcaseCleanupScheduler != nil {
+		showcaseCleanupScheduler.Stop()
+	}
 	if outboxDispatchScheduler != nil {
 		outboxDispatchScheduler.Stop()
 	}
@@ -281,62 +319,4 @@ func setupRouter(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Config, 
 	admin.RegisterAdminRoutes(router, deps, cfg)
 
 	return router
-}
-
-func registerLocalUploadsRoute(router *gin.Engine, deps *app.Dependencies) {
-	storageConfig := storage.LoadConfigFromEnv()
-	if storageConfig.Type != storage.StorageTypeLocal {
-		return
-	}
-
-	uploadRoot, err := filepath.Abs(storageConfig.LocalPath)
-	if err != nil {
-		logger.Warn("failed to resolve local upload directory", zap.Error(err))
-		return
-	}
-
-	if err := os.MkdirAll(uploadRoot, 0o750); err != nil {
-		logger.Warn("failed to create local upload directory", zap.String("path", uploadRoot), zap.Error(err))
-		return
-	}
-
-	fileServer := http.FileServer(http.Dir(uploadRoot))
-	router.GET("/uploads/*key", func(c *gin.Context) {
-		key, ok := sanitizePublicUploadKey(c.Param("key"))
-		if !ok {
-			c.Status(http.StatusNotFound)
-			return
-		}
-
-		if deps != nil && deps.Services.Media != nil {
-			allowed, err := deps.Services.Media.CanServePublicUpload(key)
-			if err != nil {
-				logger.Warn("failed to authorize public upload", zap.String("key", key), zap.Error(err))
-				c.Status(http.StatusInternalServerError)
-				return
-			}
-			if !allowed {
-				c.Status(http.StatusNotFound)
-				return
-			}
-		}
-
-		c.Request.URL.Path = "/" + key
-		fileServer.ServeHTTP(c.Writer, c.Request)
-	})
-}
-
-func sanitizePublicUploadKey(raw string) (string, bool) {
-	key := strings.Trim(strings.ReplaceAll(raw, "\\", "/"), "/")
-	if key == "" {
-		return "", false
-	}
-
-	for _, segment := range strings.Split(key, "/") {
-		if segment == "" || segment == "." || segment == ".." {
-			return "", false
-		}
-	}
-
-	return key, true
 }

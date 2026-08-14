@@ -80,7 +80,7 @@ func (h *Handler) GetSession(c *gin.Context) {
 	response.Success(c, session)
 }
 
-func (h *Handler) UpdateSelections(c *gin.Context) {
+func (h *Handler) UpdateSessionSelections(c *gin.Context) {
 	var input service.QuickBuySelectionUpdateInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		apierror.RespondBadRequest(c, err.Error())
@@ -106,7 +106,7 @@ func (h *Handler) ValidateSession(c *gin.Context) {
 	response.Success(c, session)
 }
 
-func (h *Handler) ListStepCandidates(c *gin.Context) {
+func (h *Handler) ListSessionStepCandidates(c *gin.Context) {
 	if h.quickBuyService == nil {
 		apierror.RespondNotFound(c, "Quick buy")
 		return

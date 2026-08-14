@@ -19,7 +19,23 @@ docker compose up -d postgres redis
 This starts:
 
 - PostgreSQL: `localhost:9400`
-- Redis: `localhost:9500`
+- Redis: `localhost:9510`
+
+## Initialize or Migrate the Database
+
+For a new or empty PostgreSQL database, run the backend migration entrypoint:
+
+```powershell
+go run ./cmd/server migrate
+```
+
+This applies the complete versioned SQL migration chain from `001` to the latest version. The migration files now contain the required historical baseline tables, so a raw `golang-migrate` invocation is also supported when needed:
+
+```powershell
+migrate -path ./migrations -database "$env:DATABASE_URL" up
+```
+
+Use the backend entrypoint for normal development and deployment workflows. Use the raw command for migration-only or rollback verification.
 
 ## Run Backend
 

@@ -64,7 +64,7 @@ export const defaultWebsiteProfileSettings = (locale: unknown): WebsiteProfileSe
       factoryTitle: '查看我们的工厂',
       factoryBody: '网站上的内容最终要回到真实的产品、制造、研发和质量控制。这里是我的视角，但它所指向的仍然是我们正在一起建设的工厂。',
       factoryCta: '查看工厂与制造流程',
-      factoryLink: '/company/about#factory',
+      factoryLink: '/company/about/factory',
     }
   }
 
@@ -93,7 +93,7 @@ export const defaultWebsiteProfileSettings = (locale: unknown): WebsiteProfileSe
     factoryTitle: 'See our factory',
     factoryBody: 'The site should always lead back to real products, manufacturing, engineering, and quality control. This is my perspective, but it points to the factory we are building together.',
     factoryCta: 'View the factory and process',
-    factoryLink: '/company/about#factory',
+    factoryLink: '/company/about/factory',
   }
 }
 

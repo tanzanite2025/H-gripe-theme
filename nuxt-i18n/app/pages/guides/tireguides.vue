@@ -88,8 +88,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
-import { useRoute, useRuntimeConfig } from '#imports'
+import { ref } from 'vue'
+import { useRuntimeConfig } from '#imports'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
 import GuideImage from '~/components/GuideImage.vue'
 import TireSizeSection from '~/components/TireSizeSection.vue'
@@ -101,11 +101,8 @@ import TirePressureGuide from '~/components/tireguides/TirePressureGuide.vue'
 import InnerTubeGuide from '~/components/tireguides/InnerTubeGuide.vue'
 import InstallationGuide from '~/components/tireguides/InstallationGuide.vue'
 import TireSizeGuide from '~/components/tireguides/TireSizeGuide.vue'
-import {
-  isPageSubNavigationTabId,
-  tireGuideTabs,
-  type TireGuideTabId,
-} from '~/utils/pageSubNavigation'
+import { usePageSubNavigationTab } from '~/composables/usePageSubNavigationTab'
+import { tireGuideTabs } from '~/utils/pageSubNavigation'
 
 definePageMeta({
   layout: 'products',
@@ -116,16 +113,12 @@ useHead({
 })
 
 const tabs = tireGuideTabs
-
-const activeTab = ref<TireGuideTabId>('tubeless')
-
-const route = useRoute()
+const { activeTab, setActiveTab } = usePageSubNavigationTab({
+  tabs,
+  basePath: '/guides/tireguides',
+  defaultValue: 'tubeless',
+})
 const config = useRuntimeConfig()
-
-const getTabFromHash = (hash: string): TireGuideTabId | null => {
-  const raw = String(hash || '').replace(/^#/, '')
-  return isPageSubNavigationTabId(tabs, raw) ? raw : null
-}
 
 // Tire products drawer
 const tireProductsDrawerVisible = ref(false)
@@ -188,25 +181,6 @@ const handleTireProductsDrawerClose = () => {
   tireProductsLoading.value = false
 }
 
-watch(
-  () => route.hash,
-  (hash) => {
-    const next = getTabFromHash(hash)
-    if (next) activeTab.value = next
-  },
-  { immediate: true }
-)
-
-const setActiveTab = (id: TireGuideTabId | string) => {
-  if (!isPageSubNavigationTabId(tabs, id)) return
-  const next = id
-  activeTab.value = next
-  if (typeof window !== 'undefined') {
-    const url = new URL(window.location.href)
-    url.hash = `#${next}`
-    window.history.replaceState(null, '', url.toString())
-  }
-}
 </script>
 
 <style scoped>

@@ -91,11 +91,11 @@
 								>
 									<div
 										v-if="isOpen"
-										class="fixed inset-0 z-[1200] flex items-center justify-center md:items-start md:pt-[calc(var(--site-header-offset,80px)+18px)] tz-mobile-safe-modal-mask"
+										class="fixed inset-0 z-[1200] flex items-center justify-center md:items-start md:pt-[calc(var(--site-header-offset,80px)+18px)] tz-mobile-safe-modal-mask tz-mobile-dialog-mask"
 									>
 										<div class="absolute inset-0 bg-black/80 backdrop-blur-sm md:hidden"></div>
 										<div
-											class="language-dropdown-surface relative w-full md:w-[88vw] md:max-w-[1500px] backdrop-blur-xl border border-white/15 rounded-2xl overflow-auto h-[90vh] max-h-[90vh] md:h-auto md:max-h-[70vh] py-3 md:py-3.5 shadow-[0_18px_56px_rgba(255,255,255,0.10),0_28px_80px_rgba(0,0,0,0.55)] grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-1.5 justify-items-center"
+											class="language-dropdown-surface tz-mobile-dialog-surface relative w-full md:w-[88vw] md:max-w-[1500px] backdrop-blur-xl border border-white/15 rounded-2xl overflow-auto h-[90vh] max-h-[90vh] md:h-auto md:max-h-[70vh] py-3 md:py-3.5 shadow-[0_18px_56px_rgba(255,255,255,0.10),0_28px_80px_rgba(0,0,0,0.55)] grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-1.5 justify-items-center"
 											role="listbox"
 											:id="dropdownId"
 											:aria-labelledby="buttonId"
@@ -135,7 +135,7 @@
 					</teleport>
 				</div>
 
-				<!-- 面包屑 (移至胶囊下方，极简风格 - 无背景) -->
+				<!-- 面包屑：点击当前层级箭头弹出该层级的同级路由 -->
 				<nav
 					v-if="breadcrumbs.length"
 					aria-label="Breadcrumb"
@@ -144,30 +144,30 @@
 					<ol class="flex items-center gap-1.5 text-sm tz-text-muted leading-tight transition-colors hover:text-slate-300">
 						<li
 							v-for="(crumb, index) in breadcrumbs"
-							:key="index"
+							:key="crumb.id"
 							class="relative flex items-center gap-1"
-							:data-breadcrumb-subnav="crumb.subNavigation ? '' : undefined"
+							:data-breadcrumb-subnav="crumb.subNavigation ? crumb.id : undefined"
 						>
 							<template v-if="crumb.subNavigation">
 								<button
 									type="button"
 									class="breadcrumb-subnav-trigger"
-									:class="{ 'breadcrumb-subnav-trigger--open': breadcrumbSubNavOpen }"
-									:aria-expanded="breadcrumbSubNavOpen"
+									:class="{ 'breadcrumb-subnav-trigger--open': activeBreadcrumbSubNavId === crumb.id }"
+									:aria-expanded="activeBreadcrumbSubNavId === crumb.id"
 									:aria-label="crumb.subNavigation.ariaLabel"
-									@click.stop="toggleBreadcrumbSubNav($event)"
+									@click.stop="toggleBreadcrumbSubNav(crumb.id, $event)"
 								>
 									<span>{{ crumb.label }}</span>
 									<Icon name="lucide:chevron-down" class="breadcrumb-subnav-trigger__icon" />
 									<span
-										v-if="index === breadcrumbs.length - 1 && crumb.subNavigation.tabs.length"
+										v-if="crumb.id === lastExpandableBreadcrumbId"
 										class="breadcrumb-subnav-pulse-dot"
 										aria-hidden="true"
 									></span>
 								</button>
 
 								<div
-									v-if="breadcrumbSubNavOpen"
+									v-if="activeBreadcrumbSubNavId === crumb.id"
 									class="breadcrumb-subnav-menu"
 									:style="breadcrumbSubNavMenuStyle"
 									role="menu"
@@ -226,10 +226,6 @@
 							>
 								<Icon name="lucide:search" class="site-header-search-trigger__icon" />
 							</button>
-							<div class="site-header-search-hint site-header-search-hint--mobile" role="tooltip">
-								<span class="site-header-search-hint__title">{{ searchHintTitle }}</span>
-								<span class="site-header-search-hint__body">{{ searchHintBody }}</span>
-							</div>
 						</div>
 
 						<!-- Language Switcher (Text + Icon) -->
@@ -276,7 +272,7 @@
 					</button>
 				</nav>
 
-				<!-- 第三行：面包屑 (恢复移动端显示) -->
+				<!-- 第三行：面包屑 -->
 				<nav
 					v-if="breadcrumbs.length"
 					aria-label="Breadcrumb"
@@ -285,30 +281,30 @@
 					<ol class="flex items-center gap-1.5 flex-wrap justify-center text-sm tz-text-muted leading-tight">
 						<li
 							v-for="(crumb, index) in breadcrumbs"
-							:key="index"
+							:key="crumb.id"
 							class="relative flex items-center gap-1"
-							:data-breadcrumb-subnav="crumb.subNavigation ? '' : undefined"
+							:data-breadcrumb-subnav="crumb.subNavigation ? crumb.id : undefined"
 						>
 							<template v-if="crumb.subNavigation">
 								<button
 									type="button"
 									class="breadcrumb-subnav-trigger breadcrumb-subnav-trigger--mobile"
-									:class="{ 'breadcrumb-subnav-trigger--open': breadcrumbSubNavOpen }"
-									:aria-expanded="breadcrumbSubNavOpen"
+									:class="{ 'breadcrumb-subnav-trigger--open': activeBreadcrumbSubNavId === crumb.id }"
+									:aria-expanded="activeBreadcrumbSubNavId === crumb.id"
 									:aria-label="crumb.subNavigation.ariaLabel"
-									@click.stop="toggleBreadcrumbSubNav($event)"
+									@click.stop="toggleBreadcrumbSubNav(crumb.id, $event)"
 								>
 									<span>{{ crumb.label }}</span>
 									<Icon name="lucide:chevron-down" class="breadcrumb-subnav-trigger__icon" />
 									<span
-										v-if="index === breadcrumbs.length - 1 && crumb.subNavigation.tabs.length"
+										v-if="crumb.id === lastExpandableBreadcrumbId"
 										class="breadcrumb-subnav-pulse-dot"
 										aria-hidden="true"
 									></span>
 								</button>
 
 								<div
-									v-if="breadcrumbSubNavOpen"
+									v-if="activeBreadcrumbSubNavId === crumb.id"
 									class="breadcrumb-subnav-menu breadcrumb-subnav-menu--mobile"
 									:style="breadcrumbSubNavMenuStyle"
 									role="menu"
@@ -357,7 +353,7 @@
 			>
 				<div
 					v-if="shareOpen"
-					class="fixed inset-0 z-[9999] flex items-center justify-center p-0 md:p-4 pointer-events-none tz-mobile-safe-modal-mask"
+					class="fixed inset-0 z-[9999] flex items-center justify-center p-0 md:p-4 pointer-events-none tz-mobile-safe-modal-mask tz-mobile-dialog-mask"
 				>
 					<!-- 不透明背景遮罩 -->
 					<div
@@ -367,7 +363,7 @@
 					<!-- 弹窗内容：自下而上的 slide-up 动画，与其它弹窗保持一致 -->
 					<Transition name="slide-up" appear>
 						<div
-							class="relative w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[85vh] flex pointer-events-auto leverandpoint-modal-shell"
+							class="relative w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[85vh] flex pointer-events-auto leverandpoint-modal-shell tz-mobile-dialog-surface"
 							aria-modal="true"
 							role="dialog"
 							aria-label="Membership"
@@ -394,15 +390,18 @@ import {
   findPrimaryMegaNavSectionByPath,
   normalizePrimaryMegaNavPath,
   primaryMegaNavSections,
-  primaryMegaNavPathMatches,
   type PrimaryMegaNavCard,
   type PrimaryMegaNavId,
   type PrimaryMegaNavSection,
 } from '~/utils/primaryMegaNav'
 import {
-  getPageSubNavigationForPath,
+  getPageSubNavigationTabFromPath,
+  pageSubNavigationChildPath,
+  pageSubNavigationEntries,
+  type PageSubNavigationEntry,
   type PageSubNavigationTab,
 } from '~/utils/pageSubNavigation'
+import localeManifest from '~/i18n/locales.manifest'
 
 // Header brand title is controlled only by the public site settings API.
 const { siteSettings } = useSiteSettings()
@@ -419,7 +418,7 @@ let headerResizeObserver: ResizeObserver | null = null
 
 const megaPanelId = 'header-primary-mega-menu'
 const activeMegaNavId = ref<PrimaryMegaNavId | null>(null)
-const breadcrumbSubNavOpen = ref(false)
+const activeBreadcrumbSubNavId = ref<string | null>(null)
 const breadcrumbSubNavMobileTop = ref('8.5rem')
 const breadcrumbSubNavMenuStyle = computed(() => ({
   '--breadcrumb-subnav-mobile-top': breadcrumbSubNavMobileTop.value,
@@ -438,7 +437,7 @@ const openMegaNav = (id: PrimaryMegaNavId) => {
   updateHeaderOffset()
   activeMegaNavId.value = id
   isOpen.value = false
-  breadcrumbSubNavOpen.value = false
+  activeBreadcrumbSubNavId.value = null
   nextTick(updateHeaderOffset)
 
   if (typeof window !== 'undefined') {
@@ -479,7 +478,7 @@ const shareOpen = ref(false)
 const toggleShare = () => {
   closeMegaNav()
   isOpen.value = false
-  breadcrumbSubNavOpen.value = false
+  activeBreadcrumbSubNavId.value = null
   shareOpen.value = !shareOpen.value
   if (shareOpen.value && typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('ui:popup-open', { detail: { id: 'header-share' } }))
@@ -490,7 +489,7 @@ const toggleShare = () => {
 const openSidebar = () => {
   closeMegaNav()
   isOpen.value = false
-  breadcrumbSubNavOpen.value = false
+  activeBreadcrumbSubNavId.value = null
   openShopSearch()
 }
 
@@ -511,10 +510,17 @@ const getLocaleCodes = () => {
     .filter(Boolean)
 }
 
-const normalizeNavPath = (path: string) => normalizePrimaryMegaNavPath(path, getLocaleCodes())
+const getAllLocaleCodes = () => {
+  return Array.from(new Set([
+    ...localeManifest.map(entry => entry.code),
+    ...getLocaleCodes(),
+  ]))
+}
+
+const normalizeNavPath = (path: string) => normalizePrimaryMegaNavPath(path, getAllLocaleCodes())
 
 const currentMegaNavId = computed<PrimaryMegaNavId | null>(() => {
-  const section = findPrimaryMegaNavSectionByPath(route.path || '/', primaryMegaNavSections, getLocaleCodes())
+  const section = findPrimaryMegaNavSectionByPath(route.path || '/', primaryMegaNavSections, getAllLocaleCodes())
 
   return section?.id || null
 })
@@ -525,6 +531,7 @@ const alternateLinksOverride = useState<{ code: string; path: string }[] | null>
 )
 
 interface BreadcrumbItem {
+  id: string
   label: string
   to?: string
   subNavigation?: BreadcrumbSubNavigation
@@ -543,11 +550,7 @@ interface BreadcrumbSubNavigation {
 }
 
 const routePathFromTo = (to: string) => {
-  return to.split('#')[0]?.split('?')[0] || '/'
-}
-
-const isSameOrNestedPath = (currentPath: string, targetPath: string) => {
-  return primaryMegaNavPathMatches(currentPath, targetPath, getLocaleCodes())
+  return to.split('?')[0] || '/'
 }
 
 const cardDisplayLabel = (card: PrimaryMegaNavCard) => {
@@ -557,236 +560,590 @@ const cardDisplayLabel = (card: PrimaryMegaNavCard) => {
 const localizedNavTarget = (to: string) => {
   if (/^https?:\/\//i.test(to)) return to
 
-  const hashIndex = to.indexOf('#')
-  const withoutHash = hashIndex >= 0 ? to.slice(0, hashIndex) : to
-  const hash = hashIndex >= 0 ? to.slice(hashIndex) : ''
+  const queryIndex = to.indexOf('?')
+  const path = queryIndex >= 0 ? to.slice(0, queryIndex) : to
+  const query = queryIndex >= 0 ? to.slice(queryIndex) : ''
 
-  const queryIndex = withoutHash.indexOf('?')
-  const path = queryIndex >= 0 ? withoutHash.slice(0, queryIndex) : withoutHash
-  const query = queryIndex >= 0 ? withoutHash.slice(queryIndex) : ''
-
-  return `${localePath(path || '/')}${query}${hash}`
+  return `${localePath(path || '/')}${query}`
 }
 
-const getSubNavigationLabel = (tab: PageSubNavigationTab) => {
-  if (tab.labelKey) return t(tab.labelKey, tab.fallback || tab.label || tab.id) as string
-  return tab.label || tab.fallback || tab.id
-}
+const createBreadcrumbSubNavigation = (
+  ariaLabel: string,
+  tabs: Array<{ id: string; label: string; to: string; active?: boolean }>
+): BreadcrumbSubNavigation | undefined => {
+  if (tabs.length < 2) return undefined
 
-const currentPageSubNavigation = computed(() => {
-  return getPageSubNavigationForPath(route.path || '/', getLocaleCodes())
-})
-
-const normalizedRouteHash = computed(() => {
-  const raw = String(route.hash || '').replace(/^#/, '')
-  if (!raw) return ''
-
-  try {
-    return decodeURIComponent(raw)
-  } catch {
-    return raw
+  return {
+    ariaLabel,
+    tabs: tabs.map(tab => ({
+      id: tab.id,
+      label: tab.label,
+      to: localizedNavTarget(tab.to),
+      active: Boolean(tab.active),
+    })),
   }
-})
+}
 
-const activePageSubNavigationTab = computed<PageSubNavigationTab | null>(() => {
-  const entry = currentPageSubNavigation.value
-  if (!entry || !normalizedRouteHash.value) return null
+type BreadcrumbRouteRecord = ReturnType<typeof router.getRoutes>[number]
+type BreadcrumbLabelDefinition = { labelKey?: string; fallback: string }
 
-  return entry.tabs.find((tab) => tab.id === normalizedRouteHash.value) || null
-})
+interface BreadcrumbRouteCandidate {
+  path: string
+  segments: string[]
+  depth: number
+  dynamicSegmentCount: number
+  order: number
+  routeRecord: BreadcrumbRouteRecord
+}
 
-const breadcrumbSubNavigationItems = computed<BreadcrumbSubNavigationItem[]>(() => {
-  const entry = currentPageSubNavigation.value
-  if (!entry) return []
+interface BreadcrumbRouteFamily {
+  id: string
+  label: string
+  to: string
+  rootPath: string
+  depth: number
+  order: number
+}
 
-  const activeId = activePageSubNavigationTab.value?.id || ''
+interface BreadcrumbRouteLevelGroup {
+  id: string
+  segment: string
+  path: string
+  target: string
+  depth: number
+  order: number
+}
 
-  return entry.tabs.map((tab: PageSubNavigationTab) => {
-    const target = typeof tab.to === 'string' && tab.to ? tab.to : `${entry.path}#${String(tab.id)}`
+const breadcrumbLabelDefinitions: Record<string, BreadcrumbLabelDefinition> = {
+  '/blog': { labelKey: 'breadcrumbs.blog', fallback: 'Blog' },
+  '/blog/news': { labelKey: 'blog.nav.news', fallback: 'News' },
+  '/blog/wheelsbuild': { labelKey: 'blog.nav.wheelsbuild', fallback: 'Wheelbuild' },
+  '/company': { labelKey: 'footer.menus.company', fallback: 'Company' },
+  '/guides': { labelKey: 'breadcrumbs.guides', fallback: 'Guides' },
+  '/membershipandpoints': { labelKey: 'company.nav.membershipPoints', fallback: 'Membership & Points' },
+  '/picture-warehouse': { labelKey: 'company.nav.pictureWarehouse', fallback: 'Picture Warehouse' },
+  '/policies': { labelKey: 'footer.menus.policies', fallback: 'Policies' },
+  '/policies/cookie': { fallback: 'Cookie Policy' },
+  '/policies/privacy': { fallback: 'Privacy Policy' },
+  '/policies/refund-return': { fallback: 'Refund & Return Policy' },
+  '/policies/terms': { fallback: 'Terms of Service' },
+  '/shop': { labelKey: 'products.nav.shop', fallback: 'Shop' },
+  '/spoke-calculator': { labelKey: 'support.nav.spokeCalculator', fallback: 'Spoke Calculator' },
+  '/support': { labelKey: 'footer.menus.support', fallback: 'Support' },
+}
 
-    return {
-      id: String(tab.id),
-      label: getSubNavigationLabel(tab),
-      to: localizedNavTarget(target),
-      active: tab.id === activeId,
+const excludedBreadcrumbRootSegments = new Set(['checkout', 'faq'])
+const excludedBreadcrumbExactPaths = new Set([
+  '/policies',
+  '/sitemap.xml',
+])
+const technicalBreadcrumbRootSegments = new Set([
+  '__nuxt_error',
+  '__sitemap__',
+  '__site-config__',
+  '_internal',
+  '_nuxt',
+])
+
+const localeCodeSet = () => new Set(getAllLocaleCodes().map(code => String(code).toLowerCase()))
+
+const isBreadcrumbLocaleSegment = (segment: string) => {
+  return localeCodeSet().has(segment.toLowerCase())
+}
+
+const normalizeBreadcrumbPath = (path: string) => {
+  const normalized = normalizeNavPath(path)
+  const segments = normalized.split('/').filter(Boolean)
+
+  while (segments[0] && isBreadcrumbLocaleSegment(segments[0])) {
+    segments.shift()
+  }
+
+  return segments.length ? `/${segments.join('/')}` : '/'
+}
+
+const getBreadcrumbPathSegments = (path: string) => {
+  return normalizeBreadcrumbPath(path).split('/').filter(Boolean)
+}
+
+const isDynamicBreadcrumbSegment = (segment: string) => {
+  return (
+    segment.startsWith(':') ||
+    segment.startsWith('*') ||
+    segment.includes('[') ||
+    /^:.+\(.+\)$/.test(segment)
+  )
+}
+
+const isLocaleBreadcrumbRoute = (path: string) => {
+  const firstSegment = path.split('/').filter(Boolean)[0] || ''
+  return firstSegment ? isBreadcrumbLocaleSegment(firstSegment) : false
+}
+
+const isBreadcrumbExcludedPath = (path: string) => {
+  const normalizedPath = normalizeBreadcrumbPath(path)
+  const segments = normalizedPath.split('/').filter(Boolean)
+  const rootSegment = segments[0] || ''
+
+  return (
+    !rootSegment ||
+    excludedBreadcrumbExactPaths.has(normalizedPath) ||
+    excludedBreadcrumbRootSegments.has(rootSegment) ||
+    technicalBreadcrumbRootSegments.has(rootSegment) ||
+    rootSegment.startsWith('_') ||
+    rootSegment.endsWith('.xml')
+  )
+}
+
+const sameBreadcrumbSegments = (left: string[], right: string[]) => {
+  return left.length === right.length && left.every((segment, index) => segment === right[index])
+}
+
+const fallbackBreadcrumbRouteFamilyLabel = (segment: string) => {
+  let decodedSegment = segment
+  try {
+    decodedSegment = decodeURIComponent(segment)
+  } catch {}
+
+  return decodedSegment
+    .replace(/[_-]+/g, ' ')
+    .split(' ')
+    .filter(Boolean)
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ')
+}
+
+const resolveBreadcrumbLabelDefinition = (definition: BreadcrumbLabelDefinition) => {
+  return definition.labelKey
+    ? t(definition.labelKey, definition.fallback) as string
+    : definition.fallback
+}
+
+const getBreadcrumbMetaLabel = (meta: Record<string, unknown> | undefined) => {
+  if (!meta) return ''
+
+  const rawLabel =
+    meta.breadcrumb ||
+    meta.breadcrumbLabel ||
+    meta.navLabel ||
+    meta.label ||
+    meta.title
+
+  if (typeof rawLabel === 'string') return rawLabel.trim()
+  if (rawLabel && typeof rawLabel === 'object') {
+    const localized = (rawLabel as Record<string, unknown>)[String(locale.value || '')]
+    const fallback = (rawLabel as Record<string, unknown>).default
+    if (typeof localized === 'string') return localized.trim()
+    if (typeof fallback === 'string') return fallback.trim()
+  }
+
+  return ''
+}
+
+const getBreadcrumbRouteCandidates = (includeDynamic = false): BreadcrumbRouteCandidate[] => {
+  const candidates: BreadcrumbRouteCandidate[] = []
+  const seen = new Set<string>()
+
+  router.getRoutes().forEach((routeRecord, order) => {
+    const rawPath = routeRecord.path || '/'
+    const path = normalizeBreadcrumbPath(rawPath)
+    const segments = path.split('/').filter(Boolean)
+    const dynamic = segments.some(segment => isDynamicBreadcrumbSegment(segment))
+
+    if (
+      isLocaleBreadcrumbRoute(rawPath) ||
+      !routeRecord.name ||
+      routeRecord.redirect ||
+      isBreadcrumbExcludedPath(path) ||
+      (!includeDynamic && dynamic)
+    ) {
+      return
     }
+
+    const key = `${path}:${dynamic ? 'dynamic' : 'static'}`
+    if (seen.has(key)) return
+    seen.add(key)
+
+    candidates.push({
+      path,
+      segments,
+      depth: segments.length,
+      dynamicSegmentCount: segments.filter(segment => isDynamicBreadcrumbSegment(segment)).length,
+      order,
+      routeRecord,
+    })
   })
-})
 
-const findCurrentMegaCard = (): { section: PrimaryMegaNavSection; card: PrimaryMegaNavCard } | null => {
-  const currentPath = normalizeNavPath(route.path || '/')
-  const currentSection = currentMegaNavId.value
-    ? primaryMegaNavSections.find(section => section.id === currentMegaNavId.value)
-    : null
+  return candidates
+}
 
-  if (!currentSection) return null
+const staticBreadcrumbRouteCandidates = () => getBreadcrumbRouteCandidates(false)
 
-  for (const card of currentSection.cards) {
-    const targetPath = normalizeNavPath(routePathFromTo(card.to))
-    if (isSameOrNestedPath(currentPath, targetPath)) {
-      return { section: currentSection, card }
+const getPrimaryMegaNavCardPath = (card: PrimaryMegaNavCard) => {
+  return normalizeBreadcrumbPath(routePathFromTo(card.to))
+}
+
+const primaryMegaNavCardsInDisplayOrder = () => {
+  return primaryMegaNavSections.flatMap(section => section.cards)
+}
+
+const primaryRootSortOrder = () => {
+  const order = new Map<string, number>()
+  let index = 0
+
+  for (const card of primaryMegaNavCardsInDisplayOrder()) {
+    const rootSegment = getBreadcrumbPathSegments(card.to)[0] || ''
+    if (rootSegment && !order.has(rootSegment)) order.set(rootSegment, index++)
+  }
+
+  for (const section of primaryMegaNavSections) {
+    for (const prefix of section.routePrefixes) {
+      const rootSegment = getBreadcrumbPathSegments(prefix)[0] || ''
+      if (rootSegment && !order.has(rootSegment)) order.set(rootSegment, index++)
     }
+  }
+
+  return order
+}
+
+const getPrimaryCardOrderForPath = (path: string) => {
+  const normalizedPath = normalizeBreadcrumbPath(path)
+  const index = primaryMegaNavCardsInDisplayOrder()
+    .findIndex(card => getPrimaryMegaNavCardPath(card) === normalizedPath)
+
+  return index >= 0 ? index : Number.MAX_SAFE_INTEGER
+}
+
+const getPrimaryMegaNavCardForPath = (path: string) => {
+  const normalizedPath = normalizeBreadcrumbPath(path)
+
+  return primaryMegaNavCardsInDisplayOrder()
+    .find(card => getPrimaryMegaNavCardPath(card) === normalizedPath) || null
+}
+
+const routePatternMatchesBreadcrumbPath = (patternPath: string, targetPath: string) => {
+  const patternSegments = getBreadcrumbPathSegments(patternPath)
+  const targetSegments = getBreadcrumbPathSegments(targetPath)
+
+  if (patternSegments.length !== targetSegments.length) return false
+
+  return patternSegments.every((segment, index) => (
+    isDynamicBreadcrumbSegment(segment) || segment === targetSegments[index]
+  ))
+}
+
+const findBreadcrumbRouteCandidateForPath = (
+  path: string,
+  includeDynamic = true
+) => {
+  const normalizedPath = normalizeBreadcrumbPath(path)
+
+  return getBreadcrumbRouteCandidates(includeDynamic)
+    .filter(candidate => routePatternMatchesBreadcrumbPath(candidate.path, normalizedPath))
+    .sort((left, right) => {
+      if (left.path === normalizedPath && right.path !== normalizedPath) return -1
+      if (right.path === normalizedPath && left.path !== normalizedPath) return 1
+      if (left.dynamicSegmentCount !== right.dynamicSegmentCount) {
+        return left.dynamicSegmentCount - right.dynamicSegmentCount
+      }
+      if (left.depth !== right.depth) return right.depth - left.depth
+      return left.order - right.order
+    })[0] || null
+}
+
+const getStaticBreadcrumbRouteCandidateForPath = (path: string) => {
+  const normalizedPath = normalizeBreadcrumbPath(path)
+  return staticBreadcrumbRouteCandidates().find(candidate => candidate.path === normalizedPath) || null
+}
+
+const getBreadcrumbKnownLabel = (path: string) => {
+  const definition = breadcrumbLabelDefinitions[normalizeBreadcrumbPath(path)]
+  return definition ? resolveBreadcrumbLabelDefinition(definition) : ''
+}
+
+const getBreadcrumbRouteFamilyLabel = (segment: string) => {
+  return getBreadcrumbKnownLabel(`/${segment}`) || fallbackBreadcrumbRouteFamilyLabel(segment)
+}
+
+const getBreadcrumbRouteLabel = (path: string, segment: string) => {
+  const normalizedPath = normalizeBreadcrumbPath(path)
+  const matchingPageTab = getBreadcrumbPageSubNavigationTab(normalizedPath)
+  if (matchingPageTab) return pageSubNavigationTabLabel(matchingPageTab.tab)
+
+  const matchingCard = getPrimaryMegaNavCardForPath(normalizedPath)
+  if (matchingCard) return cardDisplayLabel(matchingCard)
+
+  const routeCandidate = findBreadcrumbRouteCandidateForPath(normalizedPath)
+  const routeMetaLabel = getBreadcrumbMetaLabel(routeCandidate?.routeRecord.meta as Record<string, unknown> | undefined)
+  if (routeMetaLabel) return routeMetaLabel
+
+  if (normalizeBreadcrumbPath(route.path || '/') === normalizedPath) {
+    const currentRouteMetaLabel = getBreadcrumbMetaLabel(route.meta as Record<string, unknown> | undefined)
+    if (currentRouteMetaLabel) return currentRouteMetaLabel
+  }
+
+  return getBreadcrumbKnownLabel(normalizedPath) || fallbackBreadcrumbRouteFamilyLabel(segment)
+}
+
+const sortBreadcrumbRouteCandidates = (
+  left: BreadcrumbRouteCandidate,
+  right: BreadcrumbRouteCandidate
+) => {
+  const leftCardOrder = getPrimaryCardOrderForPath(left.path)
+  const rightCardOrder = getPrimaryCardOrderForPath(right.path)
+
+  if (leftCardOrder !== rightCardOrder) return leftCardOrder - rightCardOrder
+  if (left.depth !== right.depth) return left.depth - right.depth
+  if (left.order !== right.order) return left.order - right.order
+  return left.path.localeCompare(right.path)
+}
+
+const getPreferredBreadcrumbLevelCandidate = (
+  groupPath: string,
+  candidates: BreadcrumbRouteCandidate[]
+) => {
+  const exactCandidate = candidates.find(candidate => candidate.path === groupPath)
+  if (exactCandidate && !excludedBreadcrumbExactPaths.has(groupPath)) return exactCandidate
+
+  const primaryCardCandidate = primaryMegaNavCardsInDisplayOrder()
+    .map(card => getPrimaryMegaNavCardPath(card))
+    .map(cardPath => candidates.find(candidate => candidate.path === cardPath))
+    .find((candidate): candidate is BreadcrumbRouteCandidate => Boolean(candidate))
+
+  if (primaryCardCandidate) return primaryCardCandidate
+
+  return [...candidates].sort(sortBreadcrumbRouteCandidates)[0] || null
+}
+
+const getBreadcrumbRouteLevelGroups = (
+  parentSegments: string[],
+  depth: number
+): BreadcrumbRouteLevelGroup[] => {
+  const groups = new Map<string, { segment: string; path: string; candidates: BreadcrumbRouteCandidate[] }>()
+
+  for (const candidate of staticBreadcrumbRouteCandidates()) {
+    if (
+      candidate.depth < depth ||
+      !sameBreadcrumbSegments(candidate.segments.slice(0, parentSegments.length), parentSegments)
+    ) {
+      continue
+    }
+
+    const segment = candidate.segments[depth - 1] || ''
+    if (!segment) continue
+
+    const path = `/${candidate.segments.slice(0, depth).join('/')}`
+    const group = groups.get(path) || { segment, path, candidates: [] }
+    group.candidates.push(candidate)
+    groups.set(path, group)
+  }
+
+  return Array.from(groups.values())
+    .map((group) => {
+      const preferred = getPreferredBreadcrumbLevelCandidate(group.path, group.candidates)
+      if (!preferred) return null
+
+      return {
+        id: group.path,
+        segment: group.segment,
+        path: group.path,
+        target: preferred.path,
+        depth,
+        order: preferred.order,
+      }
+    })
+    .filter((group): group is BreadcrumbRouteLevelGroup => Boolean(group))
+    .sort((left, right) => {
+      const leftCardOrder = getPrimaryCardOrderForPath(left.target)
+      const rightCardOrder = getPrimaryCardOrderForPath(right.target)
+
+      if (leftCardOrder !== rightCardOrder) return leftCardOrder - rightCardOrder
+      if (left.order !== right.order) return left.order - right.order
+      return left.path.localeCompare(right.path)
+    })
+}
+
+const getBreadcrumbRouteFamilies = (): BreadcrumbRouteFamily[] => {
+  const rootOrder = primaryRootSortOrder()
+
+  return getBreadcrumbRouteLevelGroups([], 1)
+    .map(group => ({
+      id: group.segment,
+      label: getBreadcrumbRouteFamilyLabel(group.segment),
+      to: group.target,
+      rootPath: group.path,
+      depth: group.depth,
+      order: rootOrder.get(group.segment) ?? Number.MAX_SAFE_INTEGER,
+    }))
+    .sort((left, right) => {
+      if (left.order !== right.order) return left.order - right.order
+      if (left.depth !== right.depth) return left.depth - right.depth
+      return left.label.localeCompare(right.label)
+    })
+}
+
+const isSameOrNestedBreadcrumbPath = (currentPath: string, targetPath: string) => {
+  const current = normalizeBreadcrumbPath(currentPath)
+  const target = normalizeBreadcrumbPath(targetPath)
+
+  return current === target || (current.startsWith(target) && current[target.length] === '/')
+}
+
+const getBreadcrumbFamilyTarget = (rootSegment: string) => {
+  return getBreadcrumbRouteFamilies().find(family => family.id === rootSegment)?.to || ''
+}
+
+const getBreadcrumbTarget = (path: string) => {
+  const normalizedPath = normalizeBreadcrumbPath(path)
+  const segments = getBreadcrumbPathSegments(normalizedPath)
+
+  if (getStaticBreadcrumbRouteCandidateForPath(normalizedPath)) {
+    return localizedNavTarget(normalizedPath)
+  }
+
+  if (segments.length === 1) {
+    const familyTarget = getBreadcrumbFamilyTarget(segments[0] || '')
+    return familyTarget ? localizedNavTarget(familyTarget) : undefined
+  }
+
+  return undefined
+}
+
+const getRouteFamilyBreadcrumbSubNavigation = (
+  currentRootPath: string
+): BreadcrumbSubNavigation | undefined => {
+  const normalizedRootPath = normalizeBreadcrumbPath(currentRootPath)
+  const families = getBreadcrumbRouteFamilies()
+
+  return createBreadcrumbSubNavigation(
+    'Site sections',
+    families.map(family => ({
+      id: family.id,
+      label: family.label,
+      to: family.to,
+      active: isSameOrNestedBreadcrumbPath(normalizedRootPath, family.rootPath),
+    }))
+  )
+}
+
+const pageSubNavigationTabLabel = (tab: PageSubNavigationTab) => {
+  if (tab.labelKey) return t(tab.labelKey, tab.fallback || tab.label || tab.id) as string
+  return tab.label || tab.fallback || fallbackBreadcrumbRouteFamilyLabel(tab.id)
+}
+
+const getBreadcrumbPageSubNavigationTab = (
+  targetPath: string
+): { entry: PageSubNavigationEntry; tab: PageSubNavigationTab } | null => {
+  const normalizedTargetPath = normalizeBreadcrumbPath(targetPath)
+
+  for (const entry of pageSubNavigationEntries) {
+    const tabId = getPageSubNavigationTabFromPath(entry.tabs, entry.path, normalizedTargetPath, {
+      localeCodes: getAllLocaleCodes(),
+      match: 'exact',
+    })
+    if (!tabId) continue
+
+    const tab = entry.tabs.find(item => item.id === tabId)
+    if (tab) return { entry, tab }
   }
 
   return null
 }
 
-const baseBreadcrumbs = computed<BreadcrumbItem[]>(() => {
-  const items: BreadcrumbItem[] = []
-  const homeTo = localePath('/')
+const getPageSubNavigationBreadcrumbSubNavigation = (
+  targetPath: string
+): BreadcrumbSubNavigation | undefined => {
+  const match = getBreadcrumbPageSubNavigationTab(targetPath)
+  if (!match) return undefined
 
-  // Home
-  items.push({ label: t('breadcrumbs.home', 'Home') as string, to: homeTo })
+  const currentPath = normalizeBreadcrumbPath(route.path || '/')
+  const tabs = match.entry.tabs.map(tab => {
+    const tabPath = tab.to || pageSubNavigationChildPath(match.entry.path, tab.id)
 
-  const currentPath = route.path || ''
+    return {
+      id: `${match.entry.path}:${tab.id}`,
+      label: pageSubNavigationTabLabel(tab),
+      to: tabPath,
+      active: normalizeBreadcrumbPath(tabPath) === currentPath,
+    }
+  })
 
-  if (currentPath === homeTo) {
-    return items
-  }
+  return createBreadcrumbSubNavigation(
+    `${getBreadcrumbRouteLabel(match.entry.path, match.entry.path.split('/').filter(Boolean).at(-1) || '')} tabs`,
+    tabs
+  )
+}
 
-  // Blog hub: Home / Blog
-  const blogHub = localePath('/blog')
-  if (currentPath === blogHub) {
-    items.push({ label: t('breadcrumbs.blog', 'Blog') as string })
-    return items
-  }
+const getBreadcrumbSiblingSubNavigation = (
+  targetPath: string
+): BreadcrumbSubNavigation | undefined => {
+  const normalizedTargetPath = normalizeBreadcrumbPath(targetPath)
+  const targetSegments = getBreadcrumbPathSegments(normalizedTargetPath)
+  const targetDepth = targetSegments.length
 
-  // Blog 子页面：Home / Blog / {具体页面}
-  if (currentPath.startsWith(blogHub + '/')) {
+  if (targetDepth === 0) return undefined
+  const pageSubNavigation = getPageSubNavigationBreadcrumbSubNavigation(normalizedTargetPath)
+  if (pageSubNavigation) return pageSubNavigation
+
+  if (targetDepth === 1) return getRouteFamilyBreadcrumbSubNavigation(normalizedTargetPath)
+
+  const parentSegments = targetSegments.slice(0, -1)
+  const siblingGroups = getBreadcrumbRouteLevelGroups(parentSegments, targetDepth)
+  if (!siblingGroups.some(group => group.path === normalizedTargetPath)) return undefined
+
+  const currentPath = normalizeBreadcrumbPath(route.path || '/')
+  const tabs = siblingGroups.map(group => ({
+    id: group.id,
+    label: getBreadcrumbRouteLabel(group.path, group.segment),
+    to: group.target,
+    active: isSameOrNestedBreadcrumbPath(currentPath, group.path),
+  }))
+
+  return createBreadcrumbSubNavigation(
+    `${getBreadcrumbRouteLabel(`/${parentSegments.join('/')}`, parentSegments[parentSegments.length - 1] || '')} pages`,
+    tabs
+  )
+}
+
+const breadcrumbs = computed<BreadcrumbItem[]>(() => {
+  const items: BreadcrumbItem[] = [{
+    id: 'home',
+    label: t('breadcrumbs.home', 'Home') as string,
+    to: localePath('/'),
+  }]
+
+  const currentPath = normalizeBreadcrumbPath(route.path || '/')
+  const segments = getBreadcrumbPathSegments(currentPath)
+  if (!segments.length) return items
+
+  segments.forEach((segment, index) => {
+    const path = `/${segments.slice(0, index + 1).join('/')}`
+    const subNavigation = getBreadcrumbSiblingSubNavigation(path)
+
     items.push({
-      label: t('breadcrumbs.blog', 'Blog') as string,
-      to: blogHub,
+      id: `route:${path}`,
+      label: index === 0
+        ? getBreadcrumbRouteFamilyLabel(segment)
+        : getBreadcrumbRouteLabel(path, segment),
+      to: getBreadcrumbTarget(path),
+      subNavigation,
     })
-
-    if (currentPath === localePath('/blog/news')) {
-      items.push({ label: t('blog.nav.news', 'News') as string })
-    } else if (currentPath === localePath('/blog/wheelsbuild')) {
-      items.push({ label: t('blog.nav.wheelsbuild', 'Wheelbuild') as string })
-    } else {
-      const segments = currentPath.split('/').filter(Boolean)
-      const last = segments[segments.length - 1] || ''
-      items.push({ label: last })
-    }
-
-    return items
-  }
-
-  // Guides category: Home / Guides / {具体页面}
-  const tireGuidesPath = localePath('/guides/tireguides')
-  const wheelsetGuidePath = localePath('/guides/wheelset-buyers')
-  const guidesPrefix = tireGuidesPath.replace(/\/tireguides\/?$/, '')
-  if (currentPath.startsWith(`${guidesPrefix}/`)) {
-    items.push({ label: t('breadcrumbs.guides', 'Guides') as string })
-
-    // 根据具体路径映射更友好的标题
-
-    if (currentPath === tireGuidesPath) {
-      items.push({ label: t('products.nav.tireSizeCharts', 'Tire Guides') as string })
-    } else if (currentPath === wheelsetGuidePath) {
-      items.push({ label: t('products.nav.wheelsetBuyersGuide', 'Wheelset Buyers Guide') as string })
-    } else {
-      // 其它 /guides/* 页面，使用最后一段路径作为标题占位
-      const segments = currentPath.split('/').filter(Boolean)
-      const last = segments[segments.length - 1] || ''
-      items.push({ label: last })
-    }
-
-    return items
-  }
-
-  // Privacy Policy 页面
-  const privacyPath = localePath('/privacy')
-  if (currentPath === privacyPath) {
-    items.push({ label: 'Privacy Policy' })
-    return items
-  }
-
-  // Cookie Policy 页面
-  const cookiePolicyPath = localePath('/cookie-policy')
-  if (currentPath === cookiePolicyPath) {
-    items.push({ label: 'Cookie Policy' })
-    return items
-  }
-
-  // Terms of Service 页面
-  const termsPath = localePath('/terms')
-  if (currentPath === termsPath) {
-    items.push({ label: 'Terms of Service' })
-    return items
-  }
-
-  // Policies 页面：Home / Policies (/ + 子页)
-  const policiesHub = localePath('/policies')
-  if (currentPath === policiesHub) {
-    items.push({ label: 'Policies' })
-    return items
-  }
-
-  if (currentPath.startsWith(policiesHub + '/')) {
-    items.push({ label: 'Policies', to: policiesHub })
-
-    const segments = currentPath.split('/').filter(Boolean)
-    const last = segments[segments.length - 1] || ''
-    const policiesLabels: Record<string, string> = {
-      privacy: 'Privacy Policy',
-      cookie: 'Cookie Policy',
-      'refund-return': 'Refund & Return',
-      terms: 'Terms of Service',
-    }
-
-    items.push({ label: policiesLabels[last] || last })
-    return items
-  }
-
-  // Header mega menu categories are the single source of truth for section breadcrumbs.
-  const megaMatch = findCurrentMegaCard()
-  if (megaMatch) {
-    items.push({ label: t(megaMatch.section.labelKey, megaMatch.section.labelFallback) as string })
-    items.push({ label: cardDisplayLabel(megaMatch.card) })
-    return items
-  }
+  })
 
   return items
 })
 
-const breadcrumbs = computed<BreadcrumbItem[]>(() => {
-  const items = baseBreadcrumbs.value.map((item) => ({ ...item }))
-  const entry = currentPageSubNavigation.value
-  const tabs = breadcrumbSubNavigationItems.value
-
-  if (!entry || !tabs.length || items.length < 2) return items
-
-  const lastIndex = items.length - 1
-  const pageCrumb = items[lastIndex] as BreadcrumbItem
-  const activeTab = activePageSubNavigationTab.value
-  const pageLabel = pageCrumb.label || (t('breadcrumbs.pageSections', 'Page sections') as string)
-  const subNavigation: BreadcrumbSubNavigation = {
-    ariaLabel: `${pageLabel} sections`,
-    tabs,
+const lastExpandableBreadcrumbId = computed(() => {
+  for (let index = breadcrumbs.value.length - 1; index >= 0; index--) {
+    const crumb = breadcrumbs.value[index]
+    if (crumb?.subNavigation?.tabs.length) return crumb.id
   }
 
-  if (activeTab) {
-    items[lastIndex] = {
-      ...pageCrumb,
-      to: pageCrumb.to || localizedNavTarget(entry.path),
-    }
-    items.push({
-      label: getSubNavigationLabel(activeTab),
-      subNavigation,
-    })
-    return items
-  }
-
-  items[lastIndex] = {
-    ...pageCrumb,
-    subNavigation,
-  }
-
-  return items
+  return ''
 })
 
 const closeBreadcrumbSubNav = () => {
-  breadcrumbSubNavOpen.value = false
+  activeBreadcrumbSubNavId.value = null
 }
 
 const scheduleBreadcrumbSubNavClose = () => {
@@ -802,13 +1159,13 @@ const updateBreadcrumbSubNavPosition = (target: EventTarget | null | undefined) 
   breadcrumbSubNavMobileTop.value = `${Math.round(nextTop)}px`
 }
 
-const toggleBreadcrumbSubNav = (event?: MouseEvent) => {
-  const nextOpen = !breadcrumbSubNavOpen.value
-  if (nextOpen) {
+const toggleBreadcrumbSubNav = (id: string, event?: MouseEvent) => {
+  const nextId = activeBreadcrumbSubNavId.value === id ? null : id
+  if (nextId) {
     updateBreadcrumbSubNavPosition(event?.currentTarget)
   }
-  breadcrumbSubNavOpen.value = nextOpen
-  if (breadcrumbSubNavOpen.value) {
+  activeBreadcrumbSubNavId.value = nextId
+  if (nextId) {
     closeMegaNav()
     isOpen.value = false
     if (typeof window !== 'undefined') {
@@ -882,7 +1239,7 @@ const toggleDropdown = () => {
   isOpen.value = !isOpen.value
   if (isOpen.value) {
     closeMegaNav()
-    breadcrumbSubNavOpen.value = false
+    closeBreadcrumbSubNav()
   }
   if (isOpen.value && typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('ui:popup-open', { detail: { id: 'language' } }))
@@ -895,7 +1252,7 @@ const onButtonKeydown = (e: KeyboardEvent) => {
     isOpen.value = !isOpen.value
     if (isOpen.value) {
       closeMegaNav()
-      breadcrumbSubNavOpen.value = false
+      closeBreadcrumbSubNav()
     }
     if (isOpen.value) {
       nextTick(() => optionRefs.value[0]?.focus())
@@ -1128,7 +1485,7 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 }
 
 .site-header-brand--desktop .site-header-brand__image {
-	max-height: 2.35rem;
+	max-height: 2.55rem;
 }
 
 .site-header-brand--mobile {
@@ -1136,16 +1493,16 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 }
 
 .site-header-brand--mobile .site-header-brand__text {
-	font-size: 1.5rem;
+	font-size: 1.625rem;
 }
 
 .site-header-brand--mobile .site-header-brand__image {
-	max-height: 2rem;
+	max-height: 2.2rem;
 }
 
 @media (min-width: 390px) and (max-width: 767px) {
 	.site-header-brand--mobile .site-header-brand__text {
-		font-size: 1.875rem;
+		font-size: 2rem;
 	}
 }
 
@@ -1309,7 +1666,7 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 .site-header-language-trigger {
 	gap: 0.34rem !important;
 	border: 0 !important;
-	background: rgba(181, 255, 109, 0.08) !important;
+	background: transparent !important;
 	background-image: none !important;
 	box-shadow: none !important;
 	color: rgba(255, 255, 255, 0.88);
@@ -1320,7 +1677,7 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 .site-header-language-trigger:focus-visible,
 .site-header-language-trigger[aria-expanded='true'] {
 	border: 0 !important;
-	background: rgba(181, 255, 109, 0.14) !important;
+	background: transparent !important;
 	background-image: none !important;
 	box-shadow: none !important;
 	color: #ffffff;
@@ -1370,7 +1727,7 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 	gap: 0 !important;
 	justify-content: center;
 	border: 0 !important;
-	background: rgba(181, 255, 109, 0.08) !important;
+	background: transparent !important;
 	background-image: none !important;
 	box-shadow: none !important;
 	color: #B5FF6D;
@@ -1382,7 +1739,7 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 .site-header-search-trigger:hover,
 .site-header-search-trigger:focus-visible {
 	border: 0 !important;
-	background: rgba(181, 255, 109, 0.14) !important;
+	background: transparent !important;
 	background-image: none !important;
 	box-shadow: none !important;
 	color: #ffffff;
@@ -1823,11 +2180,7 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 	outline-offset: 0.12rem;
 }
 
-.breadcrumb-subnav-link--active {
-	background: #ffffff;
-	color: #020617;
-}
-
+.breadcrumb-subnav-link--active,
 .breadcrumb-subnav-link--active:hover,
 .breadcrumb-subnav-link--active:focus-visible {
 	background: #ffffff;
@@ -1870,6 +2223,11 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 		margin-right: 0;
 	}
 
+	.site-header-search-hint--mobile {
+		display: none !important;
+		animation: none !important;
+	}
+
 	.site-header-language-wrapper {
 		margin: 0;
 	}
@@ -1887,6 +2245,7 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 		background: transparent !important;
 		box-shadow: none !important;
 	}
+
 }
 
 /* iPad / small tablets: prevent desktop language switcher from overflowing header pill */

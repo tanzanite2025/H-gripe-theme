@@ -1,14 +1,10 @@
 <template>
   <div class="space-y-4">
-    <AdminPageHeader title="QUICK 选配流程" description="维护 Dock QUICK 弹窗的流程版本、步骤顺序和每一步可选产品类型">
+    <AdminPageHeader title="QUICK 配置" description="配置统一弹层说明、步骤名称和允许选择的产品类型，入口与选择行为由系统固定">
       <template #actions>
         <Button variant="outline" :disabled="loading" @click="reload">
           <RefreshCw class="size-4" />
           刷新
-        </Button>
-        <Button variant="outline" :disabled="!canEdit" @click="startCreate">
-          <Plus class="size-4" />
-          新建
         </Button>
         <Button variant="outline" :disabled="validating || (!selectedFlow?.version?.id && (!canEdit || !canSave))" @click="validateCurrentVersion({ saveFirst: canEdit })">
           <ShieldCheck class="size-4" />
@@ -76,38 +72,26 @@
               <Badge :variant="statusBadgeVariant">{{ versionStatusLabel }}</Badge>
               <Button size="sm" variant="outline" :disabled="formDisabled" @click="addStep">
                 <Plus class="size-3.5" />
-                步骤
+                新增步骤
               </Button>
             </div>
           </div>
         </template>
 
         <div class="space-y-5 p-4">
-          <section class="grid gap-3 lg:grid-cols-4">
-            <label class="space-y-1.5">
-              <span class="field-label">Flow slug</span>
-              <Input v-model="flowForm.slug" class="font-mono" placeholder="wheelset-build" :disabled="formDisabled" />
-            </label>
-            <label class="space-y-1.5 lg:col-span-2">
-              <span class="field-label">名称</span>
-              <Input v-model="flowForm.name" placeholder="Wheelset Build" :disabled="formDisabled" />
-            </label>
-            <label class="space-y-1.5">
-              <span class="field-label">入口</span>
-              <Input v-model="flowForm.entry_surface" class="font-mono" placeholder="dock" :disabled="formDisabled" />
-            </label>
-            <label class="space-y-1.5">
-              <span class="field-label">排序</span>
-              <Input v-model="flowForm.sort_order" inputmode="numeric" :disabled="formDisabled" />
-            </label>
-            <div class="flex items-center justify-between gap-3 rounded-lg border border-dashed border-border/80 px-3 py-2">
-              <span class="text-xs font-black uppercase">启用</span>
-              <Switch v-model="flowForm.is_enabled" :disabled="formDisabled" />
+          <section class="grid gap-3 sm:grid-cols-3">
+            <div class="rounded-lg border border-dashed border-border/80 px-3 py-2">
+              <span class="field-label">功能</span>
+              <p class="mt-1 text-sm font-black">QUICK Build</p>
             </div>
-            <label class="space-y-1.5 lg:col-span-4">
-              <span class="field-label">说明</span>
-              <Textarea v-model="flowForm.description" rows="2" :disabled="formDisabled" />
-            </label>
+            <div class="rounded-lg border border-dashed border-border/80 px-3 py-2">
+              <span class="field-label">入口</span>
+              <p class="mt-1 font-mono text-sm font-black uppercase">DOCK</p>
+            </div>
+            <div class="rounded-lg border border-dashed border-border/80 px-3 py-2">
+              <span class="field-label">结构</span>
+              <p class="mt-1 text-sm font-black">基础 3 步，可追加</p>
+            </div>
           </section>
 
           <Alert v-if="!canEdit" class="rounded-lg">
@@ -144,12 +128,8 @@
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h3 class="text-sm font-black uppercase tracking-tight">步骤配置</h3>
-                <p class="text-[11px] font-bold text-muted-foreground">每一步引用商品中心的产品类型，不重新定义分类。</p>
+                <p class="text-[11px] font-bold text-muted-foreground">每一步只配置名称和产品类型，统一说明在下方单独维护。</p>
               </div>
-              <Button size="sm" variant="outline" :disabled="formDisabled" @click="addStep">
-                <Plus class="size-3.5" />
-                添加步骤
-              </Button>
             </div>
 
             <div v-if="stepForms.length" class="space-y-3">
@@ -158,60 +138,17 @@
                 :key="step.client_id"
                 class="rounded-lg border border-dashed border-border/80 bg-muted/20 p-3"
               >
-                <div class="grid gap-3 lg:grid-cols-[80px_1fr_1fr_150px_160px]">
-                  <label class="space-y-1.5">
-                    <span class="field-label">排序</span>
-                    <Input v-model="step.sort_order" inputmode="numeric" :disabled="formDisabled" />
-                  </label>
-                  <label class="space-y-1.5">
-                    <span class="field-label">Step key</span>
-                    <Input v-model="step.step_key" class="font-mono" placeholder="rim" :disabled="formDisabled" />
-                  </label>
-                  <label class="space-y-1.5">
-                    <span class="field-label">名称</span>
-                    <Input v-model="step.name" placeholder="Rims" :disabled="formDisabled" />
-                  </label>
-                  <label class="space-y-1.5">
-                    <span class="field-label">选择模式</span>
-                    <select v-model="step.selection_mode" :class="nativeSelectClass" :disabled="formDisabled">
-                      <option value="single">single</option>
-                      <option value="multiple">multiple</option>
-                      <option value="quantity">quantity</option>
-                      <option value="auto">auto</option>
-                    </select>
-                  </label>
-                  <div class="grid grid-cols-3 gap-2">
-                    <label class="space-y-1.5">
-                      <span class="field-label">Min</span>
-                      <Input v-model="step.min_select" inputmode="numeric" :disabled="formDisabled" />
-                    </label>
-                    <label class="space-y-1.5">
-                      <span class="field-label">Max</span>
-                      <Input v-model="step.max_select" inputmode="numeric" :disabled="formDisabled" />
-                    </label>
-                    <label class="space-y-1.5">
-                      <span class="field-label">Qty</span>
-                      <Input v-model="step.default_quantity" inputmode="numeric" :disabled="formDisabled" />
-                    </label>
+                <div class="flex items-center justify-between gap-3">
+                  <div>
+                    <p class="text-sm font-black">第 {{ index + 1 }} 步 · {{ step.name }}</p>
                   </div>
+                  <Badge v-if="index < 3" variant="secondary">基础步骤</Badge>
                 </div>
 
-                <div class="mt-3 grid gap-3 lg:grid-cols-[1fr_220px]">
-                  <label class="space-y-1.5">
-                    <span class="field-label">帮助文案</span>
-                    <Input v-model="step.help_text" :disabled="formDisabled" />
-                  </label>
-                  <div class="grid grid-cols-2 gap-2">
-                    <label class="flex items-center justify-between gap-2 rounded-lg border border-dashed border-border/80 px-3 py-2">
-                      <span class="text-[11px] font-black uppercase">必选</span>
-                      <Switch v-model="step.is_required" :disabled="formDisabled" />
-                    </label>
-                    <label class="flex items-center justify-between gap-2 rounded-lg border border-dashed border-border/80 px-3 py-2">
-                      <span class="text-[11px] font-black uppercase">可跳过</span>
-                      <Switch v-model="step.allow_skip" :disabled="formDisabled" />
-                    </label>
-                  </div>
-                </div>
+                <label class="mt-3 block space-y-1.5">
+                  <span class="field-label">步骤名称</span>
+                  <Input v-model="step.name" placeholder="请输入步骤名称" :disabled="formDisabled" />
+                </label>
 
                 <div class="mt-3">
                   <span class="field-label">可选产品类型</span>
@@ -238,23 +175,59 @@
                   <p class="font-mono text-[10px] font-bold text-muted-foreground">
                     {{ step.product_type_ids.length }} product types
                   </p>
-                  <div class="flex gap-1">
-                    <Button size="icon-xs" variant="ghost" :disabled="formDisabled || index === 0" aria-label="上移步骤" @click="moveStep(index, -1)">
-                      <ArrowUp class="size-3" />
-                    </Button>
-                    <Button size="icon-xs" variant="ghost" :disabled="formDisabled || index === stepForms.length - 1" aria-label="下移步骤" @click="moveStep(index, 1)">
-                      <ArrowDown class="size-3" />
-                    </Button>
-                    <Button size="icon-xs" variant="destructive" :disabled="formDisabled" aria-label="删除步骤" @click="removeStep(index)">
-                      <Trash2 class="size-3" />
-                    </Button>
-                  </div>
                 </div>
               </div>
             </div>
             <div v-else class="rounded-lg border border-dashed border-border/80 px-4 py-10 text-center text-sm font-bold text-muted-foreground">
               暂无步骤
             </div>
+          </section>
+
+          <section class="space-y-3 border-t border-dashed border-border/80 pt-4">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h3 class="text-sm font-black uppercase tracking-tight">QUICK 统一弹层说明</h3>
+                <p class="text-[11px] font-bold text-muted-foreground">前台左右两列的问号都打开这同一份说明，未填写的语言回退基础文案。</p>
+              </div>
+              <Badge variant="outline">{{ filledFlowHelpTranslationCount }}/{{ languageOptions.length }} languages</Badge>
+            </div>
+
+            <label class="block space-y-1.5">
+              <span class="field-label">基础说明</span>
+              <Textarea
+                v-model="flowHelpText"
+                class="min-h-16 resize-y"
+                placeholder="请输入 QUICK 弹层统一说明"
+                :disabled="formDisabled"
+              />
+            </label>
+
+            <details class="rounded-lg border border-dashed border-border/80 bg-background/50 px-3 py-2">
+              <summary class="cursor-pointer list-none text-xs font-black">
+                多语言说明
+                <span class="ml-1 font-mono text-[10px] text-muted-foreground">
+                  {{ filledFlowHelpTranslationCount }}/{{ languageOptions.length }}
+                </span>
+              </summary>
+              <div v-if="flowHelpTranslations.length" class="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                <section
+                  v-for="translation in flowHelpTranslations"
+                  :key="`flow-help-${translation.locale}`"
+                  class="min-w-0 rounded-lg border border-border/70 bg-background/70 p-2.5"
+                >
+                  <div class="mb-2 flex items-center justify-between gap-2">
+                    <span class="truncate text-xs font-black">{{ languageLabel(translation.locale) }}</span>
+                    <span class="font-mono text-[10px] text-muted-foreground">{{ translation.locale }}</span>
+                  </div>
+                  <Textarea
+                    v-model="translation.help_text"
+                    class="min-h-14 resize-y text-xs"
+                    :placeholder="`请输入${languageLabel(translation.locale)}QUICK 弹层说明`"
+                    :disabled="formDisabled"
+                  />
+                </section>
+              </div>
+            </details>
           </section>
 
           <section class="space-y-3 border-t border-dashed border-border/80 pt-4">
@@ -331,11 +304,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { toast } from 'vue-sonner'
 import {
-  ArrowDown,
-  ArrowUp,
   ChevronRight,
   CircleAlert,
   Info,
@@ -348,7 +319,6 @@ import {
   Save,
   Search,
   ShieldCheck,
-  Trash2,
   Zap,
 } from '@lucide/vue'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
@@ -358,42 +328,46 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import quickBuyApi, {
   type QuickBuyFlow,
   type QuickBuyFlowPayload,
   type QuickBuyFlowSummary,
+  type QuickBuyFlowTranslation,
   type QuickBuyPreviewProduct,
   type QuickBuyPreviewResult,
-  type QuickBuySelectionMode,
   type QuickBuyStep,
   type QuickBuyValidationResult,
   type QuickBuyVersionPayload,
 } from '@/api/quickBuy'
 import productTypeApi from '@/api/productTypes'
 import type { ProductTypeRecord } from '@/components/admin/product/productTypeTypes'
+import { useSupportedLanguages } from '@/composables/useSupportedLanguages'
+import { normalizeLocaleCode } from '@/lib/languages'
 import { useAuthStore } from '@/stores/auth'
+
+interface FlowTranslationForm {
+  id: number | string | null
+  locale: string
+  help_text: string
+}
 
 interface StepForm {
   client_id: number
   step_key: string
   name: string
-  description: string
-  help_text: string
-  sort_order: number | string
-  selection_mode: QuickBuySelectionMode
-  is_required: boolean
-  min_select: number | string
-  max_select: number | string
-  default_quantity: number | string
-  allow_skip: boolean
   product_type_ids: number[]
 }
+
+const defaultQuickBuyFlowSlug = 'quick-build'
+const defaultQuickBuyStepKeys = ['product-search', 'specifications', 'quantity'] as const
+const defaultQuickBuyStepNames = ['Step 1', 'Step 2', 'Step 3'] as const
 
 const flows = ref<QuickBuyFlowSummary[]>([])
 const selectedFlow = ref<QuickBuyFlow | null>(null)
 const productTypes = ref<ProductTypeRecord[]>([])
+const supportedLanguages = useSupportedLanguages()
+const languageOptions = supportedLanguages.languageOptions
 const activeFlowId = ref<number | null>(null)
 const loading = ref(false)
 const loadingFlow = ref(false)
@@ -402,21 +376,14 @@ const publishing = ref(false)
 const validating = ref(false)
 const validationResult = ref<QuickBuyValidationResult | null>(null)
 const stepForms = ref<StepForm[]>([])
+const flowHelpText = ref('')
+const flowHelpTranslations = ref<FlowTranslationForm[]>([])
 const previewing = ref(false)
 const previewStepKey = ref('')
 const previewKeyword = ref('')
 const previewResult = ref<QuickBuyPreviewResult | null>(null)
 const authStore = useAuthStore()
 let nextStepClientID = 1
-
-const flowForm = reactive({
-  slug: '',
-  name: '',
-  description: '',
-  entry_surface: 'dock',
-  is_enabled: true,
-  sort_order: 100 as number | string,
-})
 
 const nativeSelectClass = 'h-9 w-full rounded-lg border border-dashed border-border/80 bg-background px-3 text-xs font-bold outline-none transition focus:ring-2 focus:ring-ring/40 disabled:cursor-not-allowed disabled:opacity-50'
 
@@ -432,11 +399,11 @@ const statusBadgeVariant = computed(() => {
   if (status === 'draft') return 'secondary'
   return 'outline'
 })
-const canSave = computed(() => flowForm.slug.trim() !== '' && flowForm.name.trim() !== '')
+const canSave = computed(() => true)
 const canEdit = computed(() => authStore.hasPermission('product:edit'))
 const formDisabled = computed(() => !canEdit.value || loadingFlow.value || saving.value || publishing.value)
 const validationIssues = computed(() => validationResult.value?.issues || [])
-const previewableSteps = computed(() => stepForms.value.filter((step) => step.selection_mode !== 'auto' && normalizeKey(String(step.step_key || ''))))
+const previewableSteps = computed(() => stepForms.value.filter((step) => normalizeKey(String(step.step_key || ''))))
 const previewProducts = computed(() => previewResult.value?.products || [])
 const validationTitle = computed(() => {
   if (!validationResult.value) return ''
@@ -455,22 +422,16 @@ const statItems = computed(() => [
 ])
 
 const productTypeId = (productType: ProductTypeRecord) => Number(productType.id)
+const languageLabel = (locale: string) => supportedLanguages.localeName(locale)
+const filledFlowHelpTranslationCount = computed(() => flowHelpTranslations.value.filter((translation) => (
+  translation.help_text.trim()
+)).length)
 
 const normalizeKey = (value: string) => value
   .trim()
   .toLowerCase()
   .replace(/\s+/g, '-')
   .replace(/[^a-z0-9_-]/g, '')
-
-const toPositiveNumber = (value: number | string, fallback: number) => {
-  const numberValue = Number(value)
-  return Number.isFinite(numberValue) && numberValue > 0 ? numberValue : fallback
-}
-
-const toNonNegativeNumber = (value: number | string, fallback: number) => {
-  const numberValue = Number(value)
-  return Number.isFinite(numberValue) && numberValue >= 0 ? numberValue : fallback
-}
 
 const draftVersion = (flow: QuickBuyFlowSummary) => (flow.versions || []).find((version) => version.status === 'draft')
 const publishedVersion = (flow: QuickBuyFlowSummary) => (flow.versions || []).find((version) => version.status === 'published')
@@ -487,63 +448,83 @@ const syncPreviewStepKey = () => {
   }
 }
 
-const emptyStep = (index = stepForms.value.length): StepForm => ({
+const flowTranslationRowsFor = (source: QuickBuyFlowTranslation[] = []): FlowTranslationForm[] => {
+  const existing = new Map<string, QuickBuyFlowTranslation>()
+  source.forEach((translation) => {
+    const locale = normalizeLocaleCode(translation.locale)
+    if (locale) existing.set(locale, translation)
+  })
+
+  const rows = languageOptions.value.map((option) => {
+    const translation = existing.get(option.value)
+    return {
+      id: translation?.id ?? null,
+      locale: option.value,
+      help_text: String(translation?.help_text || ''),
+    }
+  })
+  const displayedLocales = new Set(rows.map((translation) => translation.locale))
+
+  for (const [locale, translation] of existing) {
+    if (displayedLocales.has(locale)) continue
+    rows.push({
+      id: translation.id ?? null,
+      locale,
+      help_text: String(translation.help_text || ''),
+    })
+  }
+
+  return rows
+}
+
+const emptyStep = (index = stepForms.value.length, overrides: Partial<StepForm> = {}): StepForm => ({
   client_id: nextStepClientID++,
   step_key: `step-${index + 1}`,
   name: `Step ${index + 1}`,
-  description: '',
-  help_text: '',
-  sort_order: (index + 1) * 10,
-  selection_mode: 'single',
-  is_required: true,
-  min_select: 0,
-  max_select: 1,
-  default_quantity: 1,
-  allow_skip: false,
   product_type_ids: [],
+  ...overrides,
 })
 
+const defaultStepForms = (): StepForm[] => [
+  emptyStep(0, {
+    step_key: 'product-search',
+    name: 'Step 1',
+  }),
+  emptyStep(1, {
+    step_key: 'specifications',
+    name: 'Step 2',
+  }),
+  emptyStep(2, {
+    step_key: 'quantity',
+    name: 'Step 3',
+  }),
+]
+
 const resetFlowForm = () => {
-  Object.assign(flowForm, {
-    slug: 'quick-build',
-    name: 'QUICK Build',
-    description: '',
-    entry_surface: 'dock',
-    is_enabled: true,
-    sort_order: 100,
-  })
-  stepForms.value = []
+  stepForms.value = defaultStepForms()
+  flowHelpText.value = ''
+  flowHelpTranslations.value = flowTranslationRowsFor()
   previewResult.value = null
   syncPreviewStepKey()
 }
 
 const hydrateFlowForm = (flow: QuickBuyFlow) => {
-  Object.assign(flowForm, {
-    slug: flow.slug || '',
-    name: flow.name || '',
-    description: flow.description || '',
-    entry_surface: flow.entry_surface || 'dock',
-    is_enabled: flow.is_enabled !== false,
-    sort_order: flow.sort_order || 100,
-  })
-  stepForms.value = (flow.steps || []).map((step, index) => stepToForm(step, index))
+  const steps = flow.steps || []
+  stepForms.value = steps.length
+    ? steps.map((step, index) => stepToForm(step, index))
+    : normalizeKey(flow.slug) === defaultQuickBuyFlowSlug
+      ? defaultStepForms()
+      : []
+  flowHelpText.value = flow.help_text || ''
+  flowHelpTranslations.value = flowTranslationRowsFor(flow.translations || [])
   previewResult.value = null
   syncPreviewStepKey()
 }
 
 const stepToForm = (step: QuickBuyStep, index: number): StepForm => ({
   client_id: nextStepClientID++,
-  step_key: step.step_key || step.slug || `step-${index + 1}`,
-  name: step.name || `Step ${index + 1}`,
-  description: step.description || '',
-  help_text: step.help_text || '',
-  sort_order: step.sort_order || (index + 1) * 10,
-  selection_mode: step.selection_mode || 'single',
-  is_required: step.is_required !== false,
-  min_select: step.min_select || 0,
-  max_select: step.max_select || 1,
-  default_quantity: step.default_quantity || 1,
-  allow_skip: Boolean(step.allow_skip),
+  step_key: normalizeKey(step.step_key || step.slug || defaultQuickBuyStepKeys[index] || `step-${index + 1}`),
+  name: step.name || defaultQuickBuyStepNames[index] || `Step ${index + 1}`,
   product_type_ids: (step.product_types || []).map((productType) => Number(productType.id)).filter(Boolean),
 })
 
@@ -551,28 +532,27 @@ const buildVersionPayload = (): QuickBuyVersionPayload => ({
   starts_at: null,
   ends_at: null,
   steps: stepForms.value.map((step, index) => ({
-    step_key: normalizeKey(step.step_key) || `step-${index + 1}`,
-    name: step.name.trim() || `Step ${index + 1}`,
-    description: step.description.trim(),
-    help_text: step.help_text.trim(),
-    sort_order: toPositiveNumber(step.sort_order, (index + 1) * 10),
-    selection_mode: step.selection_mode || 'single',
-    is_required: step.is_required,
-    min_select: toNonNegativeNumber(step.min_select, 0),
-    max_select: step.selection_mode === 'auto' ? 0 : toNonNegativeNumber(step.max_select, 1),
-    default_quantity: toPositiveNumber(step.default_quantity, 1),
-    allow_skip: step.allow_skip,
+    step_key: normalizeKey(step.step_key) || defaultQuickBuyStepKeys[index] || `step-${index + 1}`,
+    name: step.name.trim() || defaultQuickBuyStepNames[index] || `Step ${index + 1}`,
     product_type_ids: step.product_type_ids,
   })),
 })
 
 const buildFlowPayload = (): QuickBuyFlowPayload => ({
-  slug: normalizeKey(flowForm.slug),
-  name: flowForm.name.trim(),
-  description: flowForm.description.trim(),
-  entry_surface: normalizeKey(flowForm.entry_surface) || 'dock',
-  is_enabled: flowForm.is_enabled,
-  sort_order: toPositiveNumber(flowForm.sort_order, 100),
+  slug: defaultQuickBuyFlowSlug,
+  name: 'QUICK Build',
+  description: 'Default QUICK build flow',
+  help_text: flowHelpText.value.trim(),
+  translations: flowHelpTranslations.value
+    .map((translation) => ({
+      id: Number(translation.id || 0),
+      locale: normalizeLocaleCode(translation.locale),
+      help_text: translation.help_text.trim(),
+    }))
+    .filter((translation) => translation.locale && translation.help_text),
+  entry_surface: 'dock',
+  is_enabled: true,
+  sort_order: 100,
   version: buildVersionPayload(),
 })
 
@@ -581,14 +561,15 @@ const loadProductTypes = async () => {
 }
 
 const loadFlows = async () => {
-  flows.value = await quickBuyApi.listFlows()
+  flows.value = (await quickBuyApi.listFlows()).filter((flow) => normalizeKey(flow.slug) === defaultQuickBuyFlowSlug)
 }
 
 const reload = async () => {
   loading.value = true
   try {
+    await supportedLanguages.fetchLanguages()
     await Promise.all([loadProductTypes(), loadFlows()])
-    if (activeFlowId.value) {
+    if (activeFlowId.value && flows.value.some((flow) => flow.id === activeFlowId.value)) {
       await selectFlow(activeFlowId.value)
     } else if (flows.value[0]?.id) {
       await selectFlow(flows.value[0].id)
@@ -627,11 +608,6 @@ const saveDraft = async () => {
     toast.error('当前账号没有 product:edit 权限')
     return null
   }
-  if (!canSave.value) {
-    toast.error('请填写 flow slug 和名称')
-    return null
-  }
-
   saving.value = true
   try {
     const payload = buildFlowPayload()
@@ -640,12 +616,7 @@ const saveDraft = async () => {
       flow = await quickBuyApi.createFlow(payload)
       toast.success('QUICK flow 已创建')
     } else {
-      await quickBuyApi.updateFlow(selectedFlow.value.id, payload)
-      if (selectedFlow.value.version?.status === 'draft' && selectedFlow.value.version.id) {
-        flow = await quickBuyApi.updateDraftVersion(selectedFlow.value.version.id, payload.version)
-      } else {
-        flow = await quickBuyApi.createDraftVersion(selectedFlow.value.id, payload.version)
-      }
+      flow = await quickBuyApi.saveFlowConfiguration(selectedFlow.value.id, payload)
       toast.success('QUICK 草稿已保存')
     }
     selectedFlow.value = flow
@@ -768,28 +739,6 @@ const addStep = () => {
   previewResult.value = null
   stepForms.value.push(emptyStep())
   syncPreviewStepKey()
-}
-
-const removeStep = (index: number) => {
-  if (!canEdit.value) return
-  validationResult.value = null
-  previewResult.value = null
-  stepForms.value.splice(index, 1)
-  syncPreviewStepKey()
-}
-
-const moveStep = (index: number, direction: -1 | 1) => {
-  if (!canEdit.value) return
-  const target = index + direction
-  if (target < 0 || target >= stepForms.value.length) return
-  const [item] = stepForms.value.splice(index, 1)
-  if (!item) return
-  validationResult.value = null
-  previewResult.value = null
-  stepForms.value.splice(target, 0, item)
-  stepForms.value.forEach((step, stepIndex) => {
-    step.sort_order = (stepIndex + 1) * 10
-  })
 }
 
 const toggleStepProductType = (step: StepForm, productTypeID: number) => {

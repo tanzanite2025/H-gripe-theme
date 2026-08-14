@@ -1,14 +1,11 @@
 <template>
   <!-- Tire width -> rim internal width helper -->
   <div class="tire-rim-helper-card mt-5 rounded-2xl bg-[var(--tz-form-panel-surface)] p-4 text-center">
-    <h3 class="mb-2 text-sm font-semibold tz-text-primary">
-      Tire width to rim internal width helper
+    <h3 v-if="title" class="mb-2 text-sm font-semibold tz-text-primary">
+      {{ title }}
     </h3>
-    <p class="mb-3 text-xs tz-text-secondary">
-      Enter your tire width in millimetres to see an approximate compatible rim internal width
-      range based on common ETRTO-style guidelines. Use the rim type toggle to see how hookless vs
-      hooked shifts the suggested range. Always cross-check with brand charts and the specific
-      recommendations from your rim and tire manufacturers.
+    <p v-if="description" class="mb-3 text-xs tz-text-secondary">
+      {{ description }}
     </p>
     <div class="flex flex-col gap-3 sm:flex-row sm:items-end justify-center items-center">
       <div class="sm:w-40">
@@ -29,7 +26,7 @@
 
       <div class="sm:w-52">
           <span class="mb-1 block text-xs font-medium tz-text-secondary">
-          Rim type
+          Rim system
         </span>
         <div
           class="tire-rim-helper__toggle-group inline-flex rounded-full bg-[var(--tz-form-control-surface)] p-0.5"
@@ -60,7 +57,7 @@
         v-if="!tireRimSuggestion"
         class="text-xs tz-text-muted"
       >
-        Enter a tire width between about 18 and 80 mm to see a suggested rim internal width range.
+        Enter a tire width to see a suggested rim internal width range.
       </p>
 
       <div
@@ -96,16 +93,22 @@ import { useShopSearchSheet } from '~/composables/useShopSearchSheet'
 
 type RimType = 'hookless' | 'hooked'
 
-const tireWidthInput = ref<string>('')
-const rimType = ref<RimType>('hooked')
-
 const { open: openShopSearch } = useShopSearchSheet()
 
 const props = withDefaults(defineProps<{
   hideSearchButton?: boolean
+  initialRimType?: RimType
+  title?: string
+  description?: string
 }>(), {
-  hideSearchButton: false
+  hideSearchButton: false,
+  initialRimType: 'hooked',
+  title: 'Tire width to rim internal width helper',
+  description: 'Enter your tire width in millimetres and choose the rim system. Tube-type and tubeless-ready setups are not split into two width calculators here; tubular rims use a separate tubular tire/rim system. Always cross-check with the specific recommendations from your rim and tire manufacturers.',
 })
+
+const tireWidthInput = ref<string>('')
+const rimType = ref<RimType>(props.initialRimType)
 
 interface TireRimSuggestion {
   minRim: number

@@ -12,6 +12,7 @@ import (
 	marketdomain "commerce-platform/internal/domain/market"
 	"commerce-platform/internal/domain/media"
 	"commerce-platform/internal/domain/merchant"
+	"commerce-platform/internal/domain/ops"
 	orderdomain "commerce-platform/internal/domain/order"
 	outboxdomain "commerce-platform/internal/domain/outbox"
 	"commerce-platform/internal/domain/payment"
@@ -72,6 +73,10 @@ func AutoMigrate(db *gorm.DB, serverMode string) error {
 		&product.CartItem{},
 		&merchant.GoogleMerchantConnection{},
 		&merchant.GoogleMerchantOffer{},
+		&ops.DomainBinding{},
+		&ops.Connector{},
+		&ops.VPSBinding{},
+		&ops.ProjectBinding{},
 		&marketdomain.StorefrontMarket{},
 		&marketdomain.MarketCountry{},
 		&orderdomain.Order{},
@@ -204,12 +209,7 @@ func PrepareSchema(ctx context.Context, db *gorm.DB, cfg *config.DatabaseConfig,
 	}
 
 	if applicationTableCount == 0 {
-		logger.Info("empty database detected; creating current schema baseline")
-		if err := db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-			return AutoMigrate(tx, serverMode)
-		}); err != nil {
-			return fmt.Errorf("create schema baseline: %w", err)
-		}
+		logger.Info("empty database detected; applying SQL migration baseline")
 	} else {
 		logger.Info("existing database detected; skipping GORM schema baseline",
 			zap.Int("application_table_count", applicationTableCount),
@@ -228,7 +228,6 @@ func RunSQLMigrations(sqlDB *sql.DB, cfg *config.DatabaseConfig) error {
 		logger.Info("SQL Migrations only implemented for postgres currently, skipping", zap.String("driver", cfg.Driver))
 		return nil
 	}
-
 	driver, err := postgres.WithInstance(sqlDB, &postgres.Config{})
 	if err != nil {
 		return fmt.Errorf("could not create postgres driver: %w", err)

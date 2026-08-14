@@ -183,31 +183,14 @@ import SpokeSmartSearch from '~/components/SpokeSmartSearch.vue'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
 
 import GuideImage from '~/components/GuideImage.vue'
-import { ref, watch } from 'vue'
-import { useRoute } from '#imports'
-import {
-  isPageSubNavigationTabId,
-  spokeCalculatorTabs,
-  type SpokeCalculatorTabId,
-} from '~/utils/pageSubNavigation'
+import { usePageSubNavigationTab } from '~/composables/usePageSubNavigationTab'
+import { spokeCalculatorTabs } from '~/utils/pageSubNavigation'
 
-const activeTab = ref<SpokeCalculatorTabId>('calculator')
-const route = useRoute()
-
-const getTabFromHash = (hash: string | null | undefined): SpokeCalculatorTabId | null => {
-  if (!hash) return null
-  const raw = hash.startsWith('#') ? hash.slice(1) : hash
-  return isPageSubNavigationTabId(spokeCalculatorTabs, raw) ? raw : null
-}
-
-watch(
-  () => route.hash,
-  (hash) => {
-    const next = getTabFromHash(hash)
-    if (next) activeTab.value = next
-  },
-  { immediate: true }
-)
+const { activeTab } = usePageSubNavigationTab({
+  tabs: spokeCalculatorTabs,
+  basePath: '/spoke-calculator',
+  defaultValue: 'calculator',
+})
 
 definePageMeta({
   layout: 'products',

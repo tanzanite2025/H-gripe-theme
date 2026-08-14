@@ -9,11 +9,13 @@ import (
 )
 
 type OrderService struct {
-	txManager       *repository.TxManager
-	orderRepo       *repository.OrderRepository
-	checkout        *CheckoutService
-	shipping        *ShippingService
-	numberGenerator *ordernumber.Generator
+	txManager          *repository.TxManager
+	orderRepo          *repository.OrderRepository
+	checkout           *CheckoutService
+	shipping           *ShippingService
+	numberGenerator    *ordernumber.Generator
+	productCache       ProductCacheInvalidator
+	productCacheEvents ProductCacheEventPublisher
 }
 
 var (
@@ -44,6 +46,20 @@ func NewOrderService(
 		numberGenerator: numberGenerator,
 	}
 	return service
+}
+
+func (s *OrderService) ConfigureProductCacheInvalidator(invalidator ProductCacheInvalidator) {
+	if s == nil {
+		return
+	}
+	s.productCache = invalidator
+}
+
+func (s *OrderService) ConfigureProductCacheEventPublisher(publisher ProductCacheEventPublisher) {
+	if s == nil {
+		return
+	}
+	s.productCacheEvents = publisher
 }
 
 type OrderTrackingUpdateInput struct {

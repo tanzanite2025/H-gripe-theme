@@ -62,6 +62,7 @@ func (s *OrderService) CreateOrderWithAttribution(
 	}
 	logger.Info("CreateOrder started", zap.String("trace_id", traceID), zap.Uint("user_id", userID))
 
+	var affectedProductIDs []uint
 	quoteInput := CheckoutQuoteInput{
 		UserID:          userID,
 		Items:           items,
@@ -150,8 +151,13 @@ func (s *OrderService) CreateOrderWithAttribution(
 			}
 			variantItemsMap[*item.VariantID] += item.Quantity
 		}
-		if err := repos.Product.DecrementVariantStocks(variantItemsMap); err != nil {
+		productIDs, err := repos.Product.DecrementVariantStocks(variantItemsMap)
+		if err != nil {
 			return fmt.Errorf("[CRITICAL] Failed to deduct variant stock in bulk: %w", err)
+		}
+		affectedProductIDs = append(affectedProductIDs, productIDs...)
+		if err := s.enqueueProductCacheInvalidationInTx(repos, productIDs, "order stock deducted"); err != nil {
+			return fmt.Errorf("[CRITICAL] Failed to enqueue product cache invalidation: %w", err)
 		}
 
 		if err := repos.Order.Create(o); err != nil {
@@ -198,6 +204,8 @@ func (s *OrderService) CreateOrderWithAttribution(
 	if txErr != nil {
 		return nil, txErr
 	}
+
+	s.invalidateProductCacheAfterStockCommit(affectedProductIDs)
 
 	return createdOrder, nil
 }

@@ -4,7 +4,7 @@
       <div
         v-if="modelValue"
         ref="modalRef"
-        :class="props.embedded ? 'wa-drawer-mask' : 'fixed inset-0 z-[13000] flex items-center justify-center p-0 md:p-4 tz-mobile-safe-modal-mask'"
+        :class="props.embedded ? 'wa-drawer-mask' : 'fixed inset-0 z-[13000] flex items-center justify-center p-0 md:p-4 tz-mobile-safe-modal-mask tz-mobile-dialog-mask'"
         aria-modal="true"
         role="dialog"
         @keydown.esc.prevent="close"
@@ -30,7 +30,7 @@
           :class="[
             props.embedded 
               ? 'wa-drawer-shell auth-modal-shell--drawer'
-              : 'auth-modal__panel auth-modal-shell auth-modal-shell--standalone relative w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[80vh] md:max-h-[85vh] rounded-2xl backdrop-blur-xl border text-white flex flex-col pointer-events-auto overflow-hidden'
+              : 'auth-modal__panel auth-modal-shell tz-mobile-dialog-surface auth-modal-shell--standalone relative w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[80vh] md:max-h-[85vh] rounded-2xl backdrop-blur-xl border text-white flex flex-col pointer-events-auto overflow-hidden'
           ]"
         >
           <!-- Background Decoration matches other drawers if embedded, or keep original if standalone -->

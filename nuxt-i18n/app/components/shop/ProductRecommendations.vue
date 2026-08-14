@@ -6,6 +6,28 @@
   >
     <header class="product-recommendations__header">
       <h2>{{ sectionTitle }}</h2>
+      <div v-if="showCarouselControls" class="product-recommendations__controls">
+        <button
+          type="button"
+          class="product-recommendations__control"
+          :disabled="!canScrollBackward"
+          :aria-label="$t('recommendations.previous', 'Previous recommended products')"
+          :title="$t('recommendations.previous', 'Previous recommended products')"
+          @click="scrollRecommendations(-1)"
+        >
+          <Icon name="lucide:chevron-left" aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          class="product-recommendations__control"
+          :disabled="!canScrollForward"
+          :aria-label="$t('recommendations.next', 'Next recommended products')"
+          :title="$t('recommendations.next', 'Next recommended products')"
+          @click="scrollRecommendations(1)"
+        >
+          <Icon name="lucide:chevron-right" aria-hidden="true" />
+        </button>
+      </div>
     </header>
 
     <div
@@ -26,30 +48,43 @@
       </article>
     </div>
 
-    <div v-else-if="displayedProductCards.length > 0" class="product-recommendations__grid">
-      <NuxtLink
-        v-for="(product, index) in displayedProductCards"
-        :key="product.id"
-        :to="product.url"
-        class="product-recommendations__card"
-        @click="trackRecommendationClick(product, index)"
+    <div
+      v-else-if="displayedProductCards.length > 0"
+      ref="recommendationViewport"
+      class="product-recommendations__viewport"
+      @scroll="updateScrollControls"
+    >
+      <div
+        class="product-recommendations__grid"
+        :class="{
+          'product-recommendations__grid--filled': displayedProductCards.length >= minimumVisibleCards,
+          'product-recommendations__grid--carousel': showCarouselControls,
+        }"
       >
-        <span class="product-recommendations__image">
-          <img
-            v-if="product.thumbnail"
-            :src="product.thumbnail"
-            :alt="product.title"
-            loading="lazy"
-          />
-          <span v-else class="product-recommendations__image-placeholder" aria-hidden="true">
-            <Icon name="lucide:image" />
+        <NuxtLink
+          v-for="(product, index) in displayedProductCards"
+          :key="product.id"
+          :to="product.url"
+          class="product-recommendations__card"
+          @click="trackRecommendationClick(product, index)"
+        >
+          <span class="product-recommendations__image">
+            <img
+              v-if="product.thumbnail"
+              :src="product.thumbnail"
+              :alt="product.title"
+              loading="lazy"
+            />
+            <span v-else class="product-recommendations__image-placeholder" aria-hidden="true">
+              <Icon name="lucide:image" />
+            </span>
           </span>
-        </span>
-        <span class="product-recommendations__body">
-          <span class="product-recommendations__title">{{ product.title }}</span>
-          <span v-if="product.priceLabel" class="product-recommendations__price">{{ product.priceLabel }}</span>
-        </span>
-      </NuxtLink>
+          <span class="product-recommendations__body">
+            <span class="product-recommendations__title">{{ product.title }}</span>
+            <span v-if="product.priceLabel" class="product-recommendations__price">{{ product.priceLabel }}</span>
+          </span>
+        </NuxtLink>
+      </div>
     </div>
 
     <div v-else class="product-recommendations__empty" role="status">
@@ -60,7 +95,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import type { BehaviorEventMetadata } from '~/types/behavior'
 import type { RecommendationProductCard } from '~/types/recommendation'
@@ -102,6 +137,10 @@ const {
 
 const hasRequested = ref(false)
 const lastImpressionSignature = ref('')
+const recommendationViewport = ref<HTMLElement | null>(null)
+const canScrollBackward = ref(false)
+const canScrollForward = ref(false)
+const minimumVisibleCards = 5
 
 const toPositiveInteger = (value: unknown) => {
   const numberValue = Number(value)
@@ -136,6 +175,38 @@ const emptyText = computed(() => {
 })
 
 const skeletonCount = computed(() => Math.min(normalizedLimit.value, 6))
+const showCarouselControls = computed(() => displayedProductCards.value.length > minimumVisibleCards)
+
+const updateScrollControls = () => {
+  const viewport = recommendationViewport.value
+  if (!viewport) {
+    canScrollBackward.value = false
+    canScrollForward.value = false
+    return
+  }
+
+  const maxScrollLeft = Math.max(0, viewport.scrollWidth - viewport.clientWidth)
+  canScrollBackward.value = viewport.scrollLeft > 2
+  canScrollForward.value = viewport.scrollLeft < maxScrollLeft - 2
+}
+
+const resetScrollControls = async () => {
+  await nextTick()
+  if (recommendationViewport.value) {
+    recommendationViewport.value.scrollLeft = 0
+  }
+  updateScrollControls()
+}
+
+const scrollRecommendations = (direction: -1 | 1) => {
+  const viewport = recommendationViewport.value
+  if (!viewport) return
+
+  viewport.scrollBy({
+    left: direction * viewport.clientWidth,
+    behavior: 'smooth',
+  })
+}
 
 const requestKey = computed(() => JSON.stringify({
   surface: props.surface,
@@ -217,12 +288,26 @@ const trackRecommendationClick = (product: RecommendationProductCard, index: num
 }
 
 onMounted(() => {
+  window.addEventListener('resize', updateScrollControls)
+  void resetScrollControls()
   void loadRecommendations()
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', updateScrollControls)
 })
 
 watch(requestKey, () => {
   void loadRecommendations()
 })
+
+watch(
+  () => displayedProductCards.value.map((product) => String(product.id)).join(','),
+  () => {
+    void resetScrollControls()
+  },
+  { flush: 'post' }
+)
 
 watch(
   () => [
@@ -240,6 +325,8 @@ watch(
 
 <style scoped>
 .product-recommendations {
+  --recommendation-visible-columns: 2;
+  --recommendation-card-width: calc((100% - 0.7rem) / 2);
   display: grid;
   width: 100%;
   gap: 0.9rem;
@@ -261,10 +348,71 @@ watch(
   line-height: 1.15;
 }
 
+.product-recommendations__controls {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.product-recommendations__control {
+  display: inline-flex;
+  width: 2rem;
+  height: 2rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--tz-text-primary);
+  transition: border-color 0.2s ease, background-color 0.2s ease, opacity 0.2s ease;
+}
+
+.product-recommendations__control:hover:not(:disabled) {
+  border-color: rgba(181, 255, 109, 0.45);
+  background: rgba(181, 255, 109, 0.1);
+}
+
+.product-recommendations__control:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+
+.product-recommendations__control :deep(svg) {
+  width: 1rem;
+  height: 1rem;
+}
+
+.product-recommendations__viewport {
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  scroll-behavior: smooth;
+}
+
+.product-recommendations__viewport::-webkit-scrollbar {
+  display: none;
+}
+
 .product-recommendations__grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.7rem;
+}
+
+.product-recommendations__grid--filled {
+  grid-template-columns: repeat(var(--recommendation-visible-columns), minmax(0, 1fr));
+}
+
+.product-recommendations__grid--carousel {
+  display: flex;
+  align-items: stretch;
+  width: max-content;
+  min-width: 100%;
+}
+
+.product-recommendations__grid--carousel .product-recommendations__card {
+  flex: 0 0 var(--recommendation-card-width);
 }
 
 .product-recommendations__card {
@@ -407,12 +555,22 @@ watch(
 }
 
 @media (min-width: 640px) {
+  .product-recommendations {
+    --recommendation-visible-columns: 3;
+    --recommendation-card-width: calc((100% - 1.4rem) / 3);
+  }
+
   .product-recommendations__grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
 @media (min-width: 1024px) {
+  .product-recommendations {
+    --recommendation-visible-columns: 5;
+    --recommendation-card-width: calc((100% - 2.8rem) / 5);
+  }
+
   .product-recommendations__grid {
     grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
   }

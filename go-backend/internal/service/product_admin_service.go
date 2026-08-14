@@ -330,6 +330,9 @@ func (s *ProductService) UpdateAdminProduct(id uint, input ProductUpdateInput) (
 
 	s.clearProductCache(&previousProduct)
 	s.clearProductCache(existingProduct)
+	if err := s.enqueueProductCacheInvalidationByIDs([]uint{previousProduct.ID, existingProduct.ID}, "admin product update"); err != nil {
+		return nil, err
+	}
 	s.invalidateStorefrontHTMLCache("admin product update")
 
 	updatedProduct, err := s.findProduct(existingProduct.ID)
@@ -611,6 +614,9 @@ func (s *ProductService) deleteProductByID(id uint, shouldInvalidateHTML bool) e
 	}
 
 	s.clearProductCache(existingProduct)
+	if err := s.enqueueProductCacheInvalidationByIDs([]uint{existingProduct.ID}, "admin product delete"); err != nil {
+		return err
+	}
 	if shouldInvalidateHTML {
 		s.invalidateStorefrontHTMLCache("admin product delete")
 	}
@@ -636,6 +642,9 @@ func (s *ProductService) updateProductStatusByID(id uint, status string, shouldI
 	}
 
 	s.clearProductCache(existingProduct)
+	if err := s.enqueueProductCacheInvalidationByIDs([]uint{existingProduct.ID}, "admin product status update"); err != nil {
+		return err
+	}
 	if shouldInvalidateHTML {
 		s.invalidateStorefrontHTMLCache("admin product status update")
 	}

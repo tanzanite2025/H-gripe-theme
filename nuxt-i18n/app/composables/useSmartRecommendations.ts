@@ -14,8 +14,7 @@ import type {
 
 export type RecommendationSource =
   | 'recommendation-api'
-  | 'catalog-fallback'
-  | 'development-fallback'
+  | 'catalog-fill'
   | 'empty'
 
 export interface RecommendationLoadOptions {
@@ -26,20 +25,14 @@ export interface RecommendationLoadOptions {
   query?: string | null
   route?: string | null
   excludeProductIds?: Array<number | null | undefined>
-  catalogFallback?: boolean
 }
 
 const DEFAULT_RECOMMENDATION_SURFACE = 'shop_search_drawer'
 const DEFAULT_RECOMMENDATION_LIMIT = 6
 const MAX_RECOMMENDATION_LIMIT = 12
-
-const developmentProductFallbacks: RecommendationProductCard[] = [
-  { id: 'fallback-carbon-wheels', title: 'Carbon Wheels', url: '/shop?keyword=Carbon%20Wheels', priceLabel: 'Search' },
-  { id: 'fallback-carbon-rim', title: 'Carbon Rim', url: '/shop?keyword=Carbon%20Rim', priceLabel: 'Search' },
-  { id: 'fallback-spoke', title: 'Sapim Spokes', url: '/shop?keyword=Sapim%20Spoke', priceLabel: 'Search' },
-  { id: 'fallback-inner-tube', title: 'Inner Tube', url: '/shop?keyword=Inner%20Tube', priceLabel: 'Search' },
-  { id: 'fallback-hub', title: 'Hub Parts', url: '/shop?keyword=Hub', priceLabel: 'Search' },
-]
+const MIN_RECOMMENDATION_CARDS = 5
+const CATALOG_FILL_PAGE_SIZE = 24
+const MAX_CATALOG_FILL_PAGES = 8
 
 const toPositiveInteger = (value: unknown) => {
   const numberValue = Number(value)
@@ -49,7 +42,7 @@ const toPositiveInteger = (value: unknown) => {
 
 const normalizeRecommendationLimit = (value: unknown) => {
   const limit = toPositiveInteger(value) || DEFAULT_RECOMMENDATION_LIMIT
-  return Math.min(Math.max(limit, 1), MAX_RECOMMENDATION_LIMIT)
+  return Math.min(Math.max(limit, MIN_RECOMMENDATION_CARDS), MAX_RECOMMENDATION_LIMIT)
 }
 
 const normalizeRecommendationSurface = (value: unknown) => {
@@ -64,6 +57,20 @@ const normalizeExcludedProductIds = (values?: Array<number | null | undefined>) 
     if (productId) seen.add(productId)
   }
   return Array.from(seen)
+}
+
+const isProductDetailUrl = (value: unknown) => {
+  const url = String(value || '').trim().replace(/\/+$/, '')
+  return /(?:^|\/)shop\/[^/?#]+$/.test(url)
+}
+
+const isRecommendationProduct = (product: RecommendationProductCard | null | undefined) => {
+  return Boolean(
+    product
+    && toPositiveInteger(product.id)
+    && String(product.title || '').trim()
+    && isProductDetailUrl(product.url)
+  )
 }
 
 export const useSmartRecommendations = () => {
@@ -88,11 +95,10 @@ export const useSmartRecommendations = () => {
 
   const displayedProductCards = computed<RecommendationProductCard[]>(() => {
     const cards = recommendedProducts.value
-      .filter((product) => product && product.title && product.url)
+      .filter(isRecommendationProduct)
       .slice(0, recommendationDisplayLimit.value)
 
-    if (cards.length || !import.meta.dev) return cards
-    return developmentProductFallbacks.slice(0, recommendationDisplayLimit.value)
+    return cards
   })
 
   const displayedCategoryCards = computed<ShopCategory[]>(() => {
@@ -101,36 +107,67 @@ export const useSmartRecommendations = () => {
       .slice(0, 6)
   })
 
-  const applyCatalogFallback = async (
-    limit = DEFAULT_RECOMMENDATION_LIMIT,
-    excludeProductIds: number[] = [],
-    loadId = activeRecommendationLoadId
+  const fillRecommendationSlots = async (
+    existingCards: RecommendationProductCard[],
+    excludeProductIds: number[],
+    targetCount: number,
+    loadId: number,
   ) => {
-    const excluded = new Set(excludeProductIds)
-    const result = await fetchPublicShopProducts({
-      featured: false,
-      page_size: Math.min(MAX_RECOMMENDATION_LIMIT, limit + excluded.size),
-      status: 'active',
-    })
-    if (loadId !== activeRecommendationLoadId) return
+    if (existingCards.length >= targetCount) return existingCards
 
-    recommendedProducts.value = result.items
-      .filter((product) => !excluded.has(Number(product.id)))
-      .slice(0, limit)
-      .map((product) => ({
-        id: product.id,
-        title: product.title,
-        url: product.url || `/shop/${product.slug}`,
-        thumbnail: product.thumbnail,
-        priceLabel: product.priceLabel,
-        slot: 'catalog_fallback',
-        reason: 'public_catalog_fallback',
-      }))
-    recommendationSource.value = recommendedProducts.value.length
-      ? 'catalog-fallback'
-      : import.meta.dev
-        ? 'development-fallback'
-        : 'empty'
+    const seenProductIds = new Set<number>([
+      ...excludeProductIds,
+      ...existingCards
+        .map((product) => toPositiveInteger(product.id))
+        .filter((productId): productId is number => Boolean(productId)),
+    ])
+    const filledCards: RecommendationProductCard[] = []
+    let page = 1
+
+    while (
+      existingCards.length + filledCards.length < targetCount
+      && page <= MAX_CATALOG_FILL_PAGES
+    ) {
+      const result = await fetchPublicShopProducts({
+        page,
+        page_size: CATALOG_FILL_PAGE_SIZE,
+        status: 'active',
+      })
+      if (loadId !== activeRecommendationLoadId) return existingCards
+
+      for (const product of result.items) {
+        const productId = toPositiveInteger(product.id)
+        const title = String(product.title || '').trim()
+        const url = String(product.url || '').trim() || (product.slug ? `/shop/${product.slug}` : '')
+        if (!productId || seenProductIds.has(productId) || !title || !isProductDetailUrl(url)) {
+          continue
+        }
+
+        seenProductIds.add(productId)
+        filledCards.push({
+          id: productId,
+          title,
+          url,
+          thumbnail: product.thumbnail,
+          priceLabel: product.priceLabel,
+          slot: 'catalog_fill',
+          reason: 'fill_recommendation_slots',
+        })
+
+        if (existingCards.length + filledCards.length >= targetCount) break
+      }
+
+      if (
+        existingCards.length + filledCards.length >= targetCount
+        || !result.hasMore
+        || result.items.length === 0
+      ) {
+        break
+      }
+      page += 1
+    }
+
+    return [...existingCards, ...filledCards].slice(0, targetCount)
   }
 
   const loadBaselineRecommendations = async (options: RecommendationLoadOptions = {}) => {
@@ -152,6 +189,7 @@ export const useSmartRecommendations = () => {
     if (query) context.query = query.slice(0, 256)
 
     recommendationsLoading.value = true
+    recommendedProducts.value = []
     recommendationRequestId.value = ''
     recommendationAlgorithmVersion.value = ''
     recommendationSource.value = 'empty'
@@ -184,7 +222,11 @@ export const useSmartRecommendations = () => {
       if (loadId !== activeRecommendationLoadId) return
 
       recommendedProducts.value = items
-        .filter((item) => Number(item?.product_id) > 0 && item?.title && item?.url)
+        .filter((item) => (
+          Number(item?.product_id) > 0
+          && item?.title
+          && isProductDetailUrl(item?.url)
+        ))
         .map((item) => ({
           id: Number(item.product_id),
           title: String(item.title),
@@ -198,38 +240,48 @@ export const useSmartRecommendations = () => {
       recommendationAlgorithmVersion.value = String(payload?.algorithm_version || '')
 
       if (recommendedProducts.value.length) {
-        recommendationSource.value = 'recommendation-api'
-        return
+        if (recommendedProducts.value.length >= MIN_RECOMMENDATION_CARDS) {
+          recommendationSource.value = 'recommendation-api'
+          return
+        }
       }
 
-      // A successful empty response still gets a public catalog fallback while
-      // the recommendation candidate set is being configured.
-      if (options.catalogFallback === false) {
-        recommendationSource.value = 'empty'
-        return
-      }
-      await applyCatalogFallback(limit, excludeProductIds, loadId)
+      const algorithmCards = recommendedProducts.value
+      const filledCards = await fillRecommendationSlots(
+        algorithmCards,
+        excludeProductIds,
+        MIN_RECOMMENDATION_CARDS,
+        loadId,
+      )
+      if (loadId !== activeRecommendationLoadId) return
+
+      recommendedProducts.value = filledCards
+      recommendationSource.value = filledCards.length > algorithmCards.length
+        ? 'catalog-fill'
+        : algorithmCards.length
+          ? 'recommendation-api'
+          : 'empty'
     } catch (error) {
       if (loadId !== activeRecommendationLoadId) return
 
-      // Keep the search drawer useful if the new recommendation endpoint is
-      // unavailable during rollout.
       try {
-        if (options.catalogFallback === false) {
-          recommendedProducts.value = []
-          recommendationSource.value = 'empty'
-          return
-        }
-        await applyCatalogFallback(limit, excludeProductIds, loadId)
+        const filledCards = await fillRecommendationSlots(
+          [],
+          excludeProductIds,
+          MIN_RECOMMENDATION_CARDS,
+          loadId,
+        )
         if (loadId !== activeRecommendationLoadId) return
-        recommendationAlgorithmVersion.value = 'public-catalog-fallback'
+
+        recommendedProducts.value = filledCards
+        recommendationSource.value = filledCards.length ? 'catalog-fill' : 'empty'
       } catch (fallbackError) {
         if (loadId !== activeRecommendationLoadId) return
 
         // eslint-disable-next-line no-console
-        console.error('Failed to load baseline recommendations:', error, fallbackError)
+        console.error('Failed to load recommendations:', error, fallbackError)
         recommendedProducts.value = []
-        recommendationSource.value = import.meta.dev ? 'development-fallback' : 'empty'
+        recommendationSource.value = 'empty'
       }
     } finally {
       if (loadId === activeRecommendationLoadId) {

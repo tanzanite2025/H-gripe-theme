@@ -20,6 +20,37 @@ func (r *OrderRepository) FindByUserID(userID uint, page, pageSize int) ([]order
 	return orders, total, err
 }
 
+// FindByUserIDForShowcaseUpload returns only the order fields needed to
+// display upload eligibility. It deliberately avoids addresses and items.
+func (r *OrderRepository) FindByUserIDForShowcaseUpload(userID uint, limit int) ([]order.Order, error) {
+	var orders []order.Order
+	if limit <= 0 || limit > 100 {
+		limit = 100
+	}
+
+	err := r.db.Model(&order.Order{}).
+		Select("id, user_id, order_number, status, shipping_status, total_amount, currency, completed_at, created_at").
+		Where("user_id = ?", userID).
+		Order("created_at DESC").
+		Limit(limit).
+		Find(&orders).Error
+	return orders, err
+}
+
+// FindByIDAndUserIDForShowcaseUpload loads an order only when it belongs to
+// the current user, preventing cross-account order probing by ID.
+func (r *OrderRepository) FindByIDAndUserIDForShowcaseUpload(id, userID uint) (*order.Order, error) {
+	var item order.Order
+	err := r.db.Model(&order.Order{}).
+		Select("id, user_id, order_number, status, shipping_status, total_amount, currency, completed_at, created_at").
+		Where("id = ? AND user_id = ?", id, userID).
+		First(&item).Error
+	if err != nil {
+		return nil, err
+	}
+	return &item, nil
+}
+
 // FindAll 查找所有订单（管理员）
 func (r *OrderRepository) FindAll(page, pageSize int, status string) ([]order.Order, int64, error) {
 	var orders []order.Order

@@ -1,5 +1,6 @@
 import { loadStripe, type Stripe, type StripeElements, type StripePaymentElement } from '@stripe/stripe-js'
 import { shallowRef } from 'vue'
+import { storefrontFontFamily, storefrontFontStylesheetUrl } from '~/utils/storefrontFonts'
 
 export interface StripePaymentSession {
   clientSecret: string
@@ -37,6 +38,11 @@ export function useStripePayment() {
 
     const loadedElements = loadedStripe.elements({
       clientSecret: session.clientSecret,
+      fonts: [
+        {
+          cssSrc: storefrontFontStylesheetUrl(),
+        },
+      ],
       appearance: {
         theme: 'night',
         variables: {
@@ -45,7 +51,7 @@ export function useStripePayment() {
           colorText: '#f5f7f8',
           colorDanger: '#fb7185',
           borderRadius: '10px',
-          fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
+          fontFamily: storefrontFontFamily,
         },
         rules: {
           '.Input': {

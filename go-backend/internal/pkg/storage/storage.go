@@ -9,16 +9,24 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 // StorageService 存储服务接口
 type StorageService interface {
 	Upload(ctx context.Context, file *multipart.FileHeader) (string, error)
+	UploadWithPrefix(ctx context.Context, file *multipart.FileHeader, prefix string) (string, error)
 	UploadFromReader(ctx context.Context, reader io.Reader, filename string) (string, error)
+	UploadFromReaderWithPrefix(ctx context.Context, reader io.Reader, filename string, prefix string) (string, error)
 	Delete(ctx context.Context, url string) error
 	GetURL(filename string) string
+	ObjectKey(reference string) (string, error)
+	CopyObject(ctx context.Context, sourceKey string, destKey string) error
+}
+
+// PrivateObjectUploader marks uploads that must remain private until an
+// application-level moderation decision exposes them.
+type PrivateObjectUploader interface {
+	UploadWithPrefixPrivate(ctx context.Context, file *multipart.FileHeader, prefix string) (string, error)
 }
 
 type StoredObject struct {
@@ -94,6 +102,10 @@ func newLocalStorage(config *Config) (StorageService, error) {
 
 // Upload 上传文件
 func (s *localStorage) Upload(ctx context.Context, file *multipart.FileHeader) (string, error) {
+	return s.UploadWithPrefix(ctx, file, "")
+}
+
+func (s *localStorage) UploadWithPrefix(ctx context.Context, file *multipart.FileHeader, prefix string) (string, error) {
 	// 打开上传的文件
 	src, err := file.Open()
 	if err != nil {
@@ -102,7 +114,10 @@ func (s *localStorage) Upload(ctx context.Context, file *multipart.FileHeader) (
 	defer func() { _ = src.Close() }()
 
 	// 生成唯一文件名
-	filename := s.generateFilename(file.Filename)
+	filename, err := generateObjectKey(file.Filename, prefix)
+	if err != nil {
+		return "", err
+	}
 
 	// 确保目标目录存在
 	destPath, err := s.localPath(filename)
@@ -130,10 +145,22 @@ func (s *localStorage) Upload(ctx context.Context, file *multipart.FileHeader) (
 	return s.GetURL(filename), nil
 }
 
+func (s *localStorage) UploadWithPrefixPrivate(ctx context.Context, file *multipart.FileHeader, prefix string) (string, error) {
+	// Local objects are protected by the public upload authorization route.
+	return s.UploadWithPrefix(ctx, file, prefix)
+}
+
 // UploadFromReader 从 Reader 上传
 func (s *localStorage) UploadFromReader(ctx context.Context, reader io.Reader, filename string) (string, error) {
+	return s.UploadFromReaderWithPrefix(ctx, reader, filename, "")
+}
+
+func (s *localStorage) UploadFromReaderWithPrefix(ctx context.Context, reader io.Reader, filename string, prefix string) (string, error) {
 	// 生成唯一文件名
-	newFilename := s.generateFilename(filename)
+	newFilename, err := generateObjectKey(filename, prefix)
+	if err != nil {
+		return "", err
+	}
 
 	// 确保目标目录存在
 	destPath, err := s.localPath(newFilename)
@@ -165,8 +192,10 @@ func (s *localStorage) UploadFromReader(ctx context.Context, reader io.Reader, f
 func (s *localStorage) Delete(ctx context.Context, url string) error {
 	// 从 URL 提取文件路径
 	// 安全处理：确保文件在允许的目录内
-	urlPath := strings.TrimPrefix(url, s.config.BaseURL+"/uploads/")
-	urlPath = strings.TrimPrefix(urlPath, "/uploads/")
+	urlPath, err := s.ObjectKey(url)
+	if err != nil {
+		return err
+	}
 
 	absFilePath, err := s.localPath(urlPath)
 	if err != nil {
@@ -187,8 +216,19 @@ func (s *localStorage) Delete(ctx context.Context, url string) error {
 
 // GetURL 获取文件 URL
 func (s *localStorage) GetURL(filename string) string {
-	cleanName := strings.TrimPrefix(filepath.ToSlash(filename), "/")
+	cleanName, ok := NormalizeObjectKey(filename)
+	if !ok {
+		cleanName = strings.TrimPrefix(filepath.ToSlash(filename), "/")
+	}
 	return fmt.Sprintf("%s/uploads/%s", strings.TrimRight(s.config.BaseURL, "/"), cleanName)
+}
+
+func (s *localStorage) ObjectKey(reference string) (string, error) {
+	key, ok := ObjectKeyFromReference(reference, s.config.BaseURL)
+	if !ok {
+		return "", fmt.Errorf("invalid object key")
+	}
+	return key, nil
 }
 
 func (s *localStorage) Open(ctx context.Context, key string) (*StoredObject, error) {
@@ -222,6 +262,55 @@ func (s *localStorage) Open(ctx context.Context, key string) (*StoredObject, err
 		Size:       stat.Size(),
 		ModTime:    stat.ModTime(),
 	}, nil
+}
+
+func (s *localStorage) CopyObject(ctx context.Context, sourceKey string, destKey string) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
+
+	normalizedSourceKey, ok := NormalizeObjectKey(sourceKey)
+	if !ok {
+		return fmt.Errorf("invalid source object key")
+	}
+	normalizedDestKey, ok := NormalizeObjectKey(destKey)
+	if !ok {
+		return fmt.Errorf("invalid destination object key")
+	}
+
+	sourcePath, err := s.localPath(normalizedSourceKey)
+	if err != nil {
+		return err
+	}
+	destPath, err := s.localPath(normalizedDestKey)
+	if err != nil {
+		return err
+	}
+	destDir := filepath.Dir(destPath)
+	if err := ensureLocalDirectory(s.config.LocalPath, destDir); err != nil {
+		return fmt.Errorf("failed to create destination directory: %w", err)
+	}
+
+	// #nosec G304 -- both paths are constrained to the configured upload root by localPath.
+	source, err := os.Open(sourcePath)
+	if err != nil {
+		return fmt.Errorf("failed to open source file: %w", err)
+	}
+	defer func() { _ = source.Close() }()
+
+	// #nosec G304 -- destPath is constrained to the configured upload root by localPath.
+	dest, err := createLocalUploadFile(destPath)
+	if err != nil {
+		return fmt.Errorf("failed to create destination file: %w", err)
+	}
+	defer func() { _ = dest.Close() }()
+
+	if _, err := io.Copy(dest, source); err != nil {
+		return fmt.Errorf("failed to copy file: %w", err)
+	}
+	return nil
 }
 
 func (s *localStorage) localPath(name string) (string, error) {
@@ -311,28 +400,6 @@ func createLocalUploadFile(destPath string) (*os.File, error) {
 	return file, nil
 }
 
-// generateFilename 生成唯一文件名
-func (s *localStorage) generateFilename(originalFilename string) string {
-	// 清理原始文件名，移除危险字符
-	cleanName := filepath.Base(originalFilename)
-	cleanName = strings.ReplaceAll(cleanName, "..", "")
-	cleanName = strings.ReplaceAll(cleanName, "/", "")
-	cleanName = strings.ReplaceAll(cleanName, "\\", "")
-
-	// 获取文件扩展名
-	ext := strings.ToLower(filepath.Ext(cleanName))
-
-	// 生成 UUID
-	id := uuid.New().String()
-
-	// 生成日期路径 (YYYY/MM/DD)
-	now := time.Now()
-	datePath := now.Format("2006/01/02")
-
-	// 组合文件名: YYYY/MM/DD/uuid.ext
-	return filepath.ToSlash(filepath.Join(datePath, fmt.Sprintf("%s%s", id, ext)))
-}
-
 func newS3Storage(config *Config) (StorageService, error) {
 	return NewS3Storage(config)
 }
@@ -367,35 +434,3 @@ func getEnv(key, defaultValue string) string {
 	}
 	return value
 }
-
-// ValidateFile 验证上传文件
-func ValidateFile(file *multipart.FileHeader, maxSize int64, allowedTypes []string) error {
-	// 检查文件大小
-	if file.Size > maxSize {
-		return fmt.Errorf("file size exceeds maximum allowed size of %d bytes", maxSize)
-	}
-
-	// 检查文件类型
-	if len(allowedTypes) > 0 {
-		ext := strings.ToLower(filepath.Ext(file.Filename))
-		allowed := false
-		for _, allowedType := range allowedTypes {
-			if ext == allowedType {
-				allowed = true
-				break
-			}
-		}
-		if !allowed {
-			return fmt.Errorf("file type %s is not allowed", ext)
-		}
-	}
-
-	return nil
-}
-
-// Common file type constants
-var (
-	ImageTypes = []string{".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg"}
-	VideoTypes = []string{".mp4", ".avi", ".mov", ".wmv", ".flv"}
-	DocTypes   = []string{".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx"}
-)

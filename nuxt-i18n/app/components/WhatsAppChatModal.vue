@@ -4,7 +4,7 @@
     <Transition name="fade">
       <div
         v-if="conversation"
-        class="fixed inset-0 z-[10000] flex items-center justify-center md:items-end md:justify-end p-0 md:pr-6 md:pb-8 pointer-events-none tz-mobile-safe-modal-mask"
+        class="fixed inset-0 z-[10000] flex items-center justify-center md:items-end md:justify-end p-0 md:pr-6 md:pb-8 pointer-events-none tz-mobile-safe-modal-mask tz-mobile-dialog-mask"
       >
         <div class="absolute inset-0 bg-black/80 backdrop-blur-sm md:hidden pointer-events-auto"></div>
         <!-- 聊天窗口容器 - 右下角定位 -->
@@ -35,7 +35,7 @@
             v-else
             key="chat"
             ref="chatModalRef"
-            class="chat-modal-draggable-shell chat-modal-shell relative w-full md:w-[560px] max-w-full md:max-w-[calc(100vw-3rem)] tz-mobile-safe-full-height rounded-none md:rounded-2xl overflow-hidden flex flex-col bg-[#111111] shadow-[-12px_0_28px_rgba(0,0,0,0.45)] transition-colors duration-300 pointer-events-auto"
+            class="chat-modal-draggable-shell chat-modal-shell tz-mobile-dialog-surface relative w-full md:w-[560px] max-w-full md:max-w-[calc(100vw-3rem)] tz-mobile-safe-full-height rounded-none md:rounded-2xl overflow-hidden flex flex-col bg-[#111111] shadow-[-12px_0_28px_rgba(0,0,0,0.45)] transition-colors duration-300 pointer-events-auto"
             :class="{ 'chat-modal-shell--dragging': isDraggingChatModal }"
             :style="chatModalDragStyle"
           >
@@ -770,8 +770,8 @@ const handleAgentPickerSelect = (agent: any) => {
 @media (max-width: 767px) {
   .chat-modal-shell,
   .chat-history-shell {
-    height: var(--tz-mobile-safe-viewport-height, 100dvh);
-    max-height: var(--tz-mobile-safe-viewport-height, 100dvh);
+    height: calc(var(--tz-mobile-safe-viewport-height, 100dvh) - var(--tz-mobile-dialog-inset, 2px) * 2);
+    max-height: calc(var(--tz-mobile-safe-viewport-height, 100dvh) - var(--tz-mobile-dialog-inset, 2px) * 2);
   }
 
   .chat-toast {

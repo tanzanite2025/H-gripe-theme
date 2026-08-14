@@ -3,12 +3,12 @@
     <Transition name="fade">
       <div
         v-if="isCheckoutOpen"
-        class="fixed inset-0 z-[12000] flex items-center justify-center bg-black/80 p-0 backdrop-blur-sm md:p-5"
+        class="fixed inset-0 z-[12000] flex items-center justify-center bg-black/80 p-0 backdrop-blur-sm md:p-5 tz-mobile-dialog-mask"
         role="dialog"
         aria-modal="true"
         @click.self="closeCheckout"
       >
-        <section class="checkout-shell relative flex h-full w-full max-w-6xl flex-col overflow-hidden border border-white/10 bg-[#090a0b] text-white shadow-2xl md:h-[min(92vh,900px)] md:rounded-2xl">
+        <section class="checkout-shell tz-mobile-dialog-surface relative flex h-full w-full max-w-6xl flex-col overflow-hidden border border-white/10 bg-[#090a0b] text-white shadow-2xl md:h-[min(92vh,900px)] md:rounded-2xl">
           <header class="flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-3 md:px-6">
             <div>
               <p class="text-[10px] uppercase tracking-[0.24em] text-white/45">{{ t('checkout.modal.title', 'Checkout') }}</p>

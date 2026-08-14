@@ -32,6 +32,7 @@
         :commercial-crawler-protection="commercialCrawlerProtection"
         :loading-commercial-crawler-protection="loadingCommercialCrawlerProtection"
         :uploading-site-logo="uploadingSiteLogo"
+        :uploading-site-favicon="uploadingSiteFavicon"
         :payment-runtime="paymentRuntime"
         :loading-payment-runtime="loadingPaymentRuntime"
         :syncing-exchange-rates="syncingExchangeRates"
@@ -55,6 +56,7 @@
         @currency-policy-saved="handleCurrencyPolicySaved"
         @refresh-commercial-crawler-protection="fetchCommercialCrawlerProtection"
         @upload-site-logo="uploadSiteLogo"
+        @upload-site-favicon="uploadSiteFavicon"
       />
     </div>
 
@@ -146,6 +148,7 @@ const pageDescription = computed(() => {
 const saving = ref(false)
 const loadingSettings = ref(false)
 const uploadingSiteLogo = ref(false)
+const uploadingSiteFavicon = ref(false)
 const showSmtpPassword = ref(false)
 const showPaymentSecrets = ref(false)
 const loadedGroups = new Set()
@@ -156,6 +159,7 @@ const siteSettings = reactive({
   brand_title: '',
   site_description: '',
   site_logo: '',
+  site_favicon: '',
   contact_email: '',
   contact_phone: '',
   copyright_holder: '',
@@ -287,6 +291,7 @@ const groupDefinitions: Record<string, SettingsGroupDefinition> = {
       brand_title: { type: 'string', public: true, description: 'Public brand title' },
       site_description: { type: 'string', public: true, description: 'Site description' },
       site_logo: { type: 'string', public: true, description: 'Site logo URL' },
+      site_favicon: { type: 'string', public: true, description: 'Browser favicon URL' },
       contact_email: { type: 'string', public: true, description: 'Contact email' },
       contact_phone: { type: 'string', public: true, description: 'Contact phone' },
       copyright_holder: { type: 'string', public: false, description: 'Copyright holder for image evidence' },
@@ -641,6 +646,34 @@ const uploadSiteLogo = async (file) => {
     toast.error('Logo 上传失败，请检查文件类型和大小')
   } finally {
     uploadingSiteLogo.value = false
+  }
+}
+
+const uploadSiteFavicon = async (file) => {
+  if (!file) return
+  if (!file.type?.startsWith('image/')) {
+    toast.error('Favicon 只能上传图片文件')
+    return
+  }
+
+  uploadingSiteFavicon.value = true
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('media_type', 'image')
+    const asset = await mediaApi.uploadAsset(formData)
+    const faviconURL = String(assetAccessURL(asset) || asset?.url || '').trim()
+    if (!faviconURL) {
+      toast.error('上传成功但没有返回 Favicon 地址')
+      return
+    }
+    siteSettings.site_favicon = faviconURL
+    toast.success('Favicon 已上传，保存设置后前台生效')
+  } catch (error) {
+    console.error('Failed to upload site favicon:', error)
+    toast.error('Favicon 上传失败，请检查文件类型和大小')
+  } finally {
+    uploadingSiteFavicon.value = false
   }
 }
 

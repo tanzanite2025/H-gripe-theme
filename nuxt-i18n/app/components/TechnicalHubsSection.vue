@@ -299,6 +299,6 @@ const localePath = useLocalePath()
 const activeTab = ref<'technology' | 'choose-hubs'>('technology')
 
 const goToChooseFreehub = async () => {
-  await router.push(`${localePath('/guides/wheelset-buyers')}#choose-freehub`)
+  await router.push(localePath('/guides/wheelset-buyers/choose-freehub'))
 }
 </script>

@@ -1,7 +1,7 @@
 <template>
   <div
     ref="rootElement"
-    class="chat-modal-shell relative w-full md:w-[560px] max-w-full md:max-w-[calc(100vw-3rem)] tz-mobile-safe-full-height rounded-none md:rounded-2xl overflow-hidden flex flex-col bg-black shadow-[-12px_0_28px_rgba(0,0,0,0.45)] pointer-events-auto"
+    class="chat-modal-shell tz-mobile-dialog-surface relative w-full md:w-[560px] max-w-full md:max-w-[calc(100vw-3rem)] tz-mobile-safe-full-height rounded-none md:rounded-2xl overflow-hidden flex flex-col bg-black shadow-[-12px_0_28px_rgba(0,0,0,0.45)] pointer-events-auto"
   >
     <div
       class="chat-modal-drag-handle border-b border-white/[0.08] bg-white/[0.03] backdrop-blur-md"
@@ -152,6 +152,11 @@ const selectedAgentEmail = computed(() => {
 }
 
 @media (max-width: 767px) {
+  .chat-modal-shell {
+    height: calc(var(--tz-mobile-safe-viewport-height, 100dvh) - var(--tz-mobile-dialog-inset, 2px) * 2);
+    max-height: calc(var(--tz-mobile-safe-viewport-height, 100dvh) - var(--tz-mobile-dialog-inset, 2px) * 2);
+  }
+
   .chat-welcome-footer {
     padding-bottom: var(--tz-mobile-modal-safe-padding-bottom, 0.75rem);
   }

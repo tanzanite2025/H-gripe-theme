@@ -33,7 +33,24 @@ if [[ ! -f "${ENV_FILE}" ]]; then
 fi
 
 require_command docker
-require_command python3
+
+PYTHON_CMD=()
+for python_candidate in python3 python; do
+  if command -v "${python_candidate}" >/dev/null 2>&1 &&
+    "${python_candidate}" --version >/dev/null 2>&1; then
+    PYTHON_CMD=("${python_candidate}")
+    break
+  fi
+done
+if [[ "${#PYTHON_CMD[@]}" -eq 0 ]] &&
+  command -v py >/dev/null 2>&1 &&
+  py -3 --version >/dev/null 2>&1; then
+  PYTHON_CMD=(py -3)
+fi
+if [[ "${#PYTHON_CMD[@]}" -eq 0 ]]; then
+  err "a working Python 3 interpreter is required (python3, python, or py -3)"
+  exit 1
+fi
 
 if ! docker compose version >/dev/null 2>&1; then
   err "Docker Compose v2 is required"
@@ -46,7 +63,7 @@ legacy_public_files=(
   "${ROOT_DIR}/deploy.sh"
   "${ROOT_DIR}/deployment/production.env.example"
   "${ROOT_DIR}/deployment/nginx/theme-web.conf"
-  "${ROOT_DIR}/deployment/edge/learn-gripe.caddy"
+  "${ROOT_DIR}/deployment/edge/commerce-platform.caddy"
   "${ROOT_DIR}/go-backend/config/config.production.yaml"
   "${ROOT_DIR}/go-backend/config/config.example.yaml"
   "${ROOT_DIR}/go-backend/.env.example"
@@ -71,7 +88,7 @@ log "writing sanitized Compose JSON evidence to ${REPORT_DIR}"
 raw_compose_json="$(mktemp)"
 trap 'rm -f "${raw_compose_json}"' EXIT
 "${compose[@]}" config --format json > "${raw_compose_json}"
-python3 - "${raw_compose_json}" "${REPORT_DIR}/compose-config.json" <<'PY'
+"${PYTHON_CMD[@]}" - "${raw_compose_json}" "${REPORT_DIR}/compose-config.json" <<'PY'
 import json
 import re
 import sys
@@ -106,7 +123,7 @@ PY
 
 resolve_network_name() {
   local logical_name="$1"
-  python3 - "${REPORT_DIR}/compose-config.json" "${logical_name}" <<'PY'
+  "${PYTHON_CMD[@]}" - "${REPORT_DIR}/compose-config.json" "${logical_name}" <<'PY'
 import json
 import sys
 
@@ -128,7 +145,7 @@ cache_network_name="$(resolve_network_name cache)"
 app_network_name="$(resolve_network_name app)"
 edge_network_name="$(resolve_network_name edge)"
 
-python3 - "${REPORT_DIR}/compose-config.json" <<'PY'
+"${PYTHON_CMD[@]}" - "${REPORT_DIR}/compose-config.json" <<'PY'
 import json
 import sys
 
@@ -144,6 +161,7 @@ expected_service_networks = {
     "db": {"db"},
     "redis": {"cache"},
     "migrate": {"db"},
+    "edge-config": {"db"},
     "api": {"db", "cache", "app"},
     "storefront": {"app", "cache"},
     "admin": {"app"},
@@ -172,6 +190,28 @@ for service_name, expected_networks in expected_service_networks.items():
         errors.append(
             f"{service_name} networks mismatch: expected {sorted(expected_networks)}, got {sorted(actual_networks)}"
         )
+
+edge_config = services.get("edge-config") or {}
+edge_config_environment = edge_config.get("environment") or {}
+if isinstance(edge_config_environment, dict):
+    for forbidden_key in ("REDIS_HOST", "REDIS_PORT", "REDIS_PASSWORD"):
+        if forbidden_key in edge_config_environment:
+            errors.append(f"edge-config must not depend on Redis environment: {forbidden_key}")
+if set((edge_config.get("depends_on") or {}).keys()) != {"migrate"}:
+    errors.append("edge-config must depend only on the completed migrate service")
+
+web = services.get("web") or {}
+edge_config_dependency = (web.get("depends_on") or {}).get("edge-config") or {}
+if edge_config_dependency.get("condition") != "service_completed_successfully":
+    errors.append("web must wait for edge-config service_completed_successfully")
+
+generated_edge_mounts = [
+    volume
+    for volume in (web.get("volumes") or [])
+    if isinstance(volume, dict) and volume.get("target") == "/etc/nginx/generated-edge"
+]
+if not generated_edge_mounts or any(volume.get("read_only") is not True for volume in generated_edge_mounts):
+    errors.append("web must mount generated Nginx files read-only")
 
 for network_name in ("db", "cache"):
     network = networks.get(network_name) or {}
@@ -225,7 +265,7 @@ for network in "${db_network_name}" "${cache_network_name}" "${app_network_name}
   docker network inspect "${network}" > "${REPORT_DIR}/network-${network}.json"
 done
 
-python3 - "${REPORT_DIR}/compose-ps.json" <<'PY'
+"${PYTHON_CMD[@]}" - "${REPORT_DIR}/compose-ps.json" <<'PY'
 import json
 import sys
 

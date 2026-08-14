@@ -211,7 +211,7 @@ onUnmounted(stopPolling)
 }
 
 .wechat-pay-order {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: 'StorefrontSystem';
   color: #fff !important;
 }
 

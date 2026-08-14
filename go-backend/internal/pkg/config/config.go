@@ -36,16 +36,21 @@ type Config struct {
 	PaymentThreeDS               PaymentThreeDSConfig               `mapstructure:"payment_3ds"`
 	VisitorRisk                  VisitorRiskConfig                  `mapstructure:"visitor_risk"`
 	RequestSigning               RequestSigningConfig               `mapstructure:"request_signing"`
+	QuickBuyRateLimit            QuickBuyRateLimitConfig            `mapstructure:"quick_buy_rate_limit"`
 	MediaUpload                  MediaUploadConfig                  `mapstructure:"media_upload"`
+	ShowcaseUploadProtection     ShowcaseUploadProtectionConfig     `mapstructure:"showcase_upload_protection"`
 }
 
 type ServerConfig struct {
-	Port           string   `mapstructure:"port"`
-	Mode           string   `mapstructure:"mode"`
-	BaseURL        string   `mapstructure:"base_url"`
-	ReadTimeout    int      `mapstructure:"read_timeout"`
-	WriteTimeout   int      `mapstructure:"write_timeout"`
-	TrustedProxies []string `mapstructure:"trusted_proxies"`
+	Port              string   `mapstructure:"port"`
+	Mode              string   `mapstructure:"mode"`
+	BaseURL           string   `mapstructure:"base_url"`
+	ReadTimeout       int      `mapstructure:"read_timeout"`
+	ReadHeaderTimeout int      `mapstructure:"read_header_timeout"`
+	WriteTimeout      int      `mapstructure:"write_timeout"`
+	IdleTimeout       int      `mapstructure:"idle_timeout"`
+	MaxHeaderBytes    int      `mapstructure:"max_header_bytes"`
+	TrustedProxies    []string `mapstructure:"trusted_proxies"`
 }
 
 type DatabaseConfig struct {
@@ -110,10 +115,11 @@ type CookieConfig struct {
 }
 
 type CacheConfig struct {
-	DefaultTTL  int `mapstructure:"default_ttl"`
-	PostTTL     int `mapstructure:"post_ttl"`
-	ProductTTL  int `mapstructure:"product_ttl"`
-	SettingsTTL int `mapstructure:"settings_ttl"`
+	DefaultTTL     int `mapstructure:"default_ttl"`
+	PostTTL        int `mapstructure:"post_ttl"`
+	ProductTTL     int `mapstructure:"product_ttl"`
+	ProductLockTTL int `mapstructure:"product_lock_ttl"`
+	SettingsTTL    int `mapstructure:"settings_ttl"`
 }
 
 type LogConfig struct {
@@ -141,6 +147,10 @@ type WorkerConfig struct {
 	PaymentExpirationBatchLimit          int  `mapstructure:"payment_expiration_batch_limit"`
 	PaymentRiskMonitoringEnabled         bool `mapstructure:"payment_risk_monitoring_enabled"`
 	PaymentRiskMonitoringIntervalSeconds int  `mapstructure:"payment_risk_monitoring_interval_seconds"`
+	ShowcaseCleanupEnabled               bool `mapstructure:"showcase_cleanup_enabled"`
+	ShowcaseCleanupIntervalSeconds       int  `mapstructure:"showcase_cleanup_interval_seconds"`
+	ShowcasePendingTTLSeconds            int  `mapstructure:"showcase_pending_ttl_seconds"`
+	ShowcaseCleanupBatchLimit            int  `mapstructure:"showcase_cleanup_batch_limit"`
 }
 
 type BehaviorEventsConfig struct {
@@ -254,8 +264,34 @@ type RequestSigningConfig struct {
 	RequiredPaths  []string `mapstructure:"required_paths"`
 }
 
+type QuickBuyRateLimitConfig struct {
+	Enabled                  bool `mapstructure:"enabled"`
+	IPRequestsPerMinute      int  `mapstructure:"ip_requests_per_minute"`
+	IPBurst                  int  `mapstructure:"ip_burst"`
+	SessionRequestsPerMinute int  `mapstructure:"session_requests_per_minute"`
+	SessionBurst             int  `mapstructure:"session_burst"`
+	FailOpen                 bool `mapstructure:"fail_open"`
+}
+
 type MediaUploadConfig struct {
 	AccountStorageQuotaBytes int64 `mapstructure:"account_storage_quota_bytes"`
+}
+
+type ShowcaseUploadProtectionConfig struct {
+	Enabled                      bool  `mapstructure:"enabled"`
+	WindowSeconds                int   `mapstructure:"window_seconds"`
+	MaxUploadsPerUser            int   `mapstructure:"max_uploads_per_user"`
+	MaxUploadsPerIP              int   `mapstructure:"max_uploads_per_ip"`
+	MaxUploadsPerIPPrefix        int   `mapstructure:"max_uploads_per_ip_prefix"`
+	DailyMaxUploadsPerUser       int   `mapstructure:"daily_max_uploads_per_user"`
+	DailyMaxUploadsPerIP         int   `mapstructure:"daily_max_uploads_per_ip"`
+	DailyMaxBytesPerUser         int64 `mapstructure:"daily_max_bytes_per_user"`
+	DailyMaxBytesPerIP           int64 `mapstructure:"daily_max_bytes_per_ip"`
+	MaxPendingSubmissionsPerUser int   `mapstructure:"max_pending_submissions_per_user"`
+	FailureWindowSeconds         int   `mapstructure:"failure_window_seconds"`
+	MaxFailuresPerUser           int   `mapstructure:"max_failures_per_user"`
+	MaxFailuresPerIP             int   `mapstructure:"max_failures_per_ip"`
+	BlockDurationSeconds         int   `mapstructure:"block_duration_seconds"`
 }
 
 // Load 加载配置文件
@@ -312,7 +348,10 @@ func setDefaults() {
 	viper.SetDefault("server.mode", "debug")
 	viper.SetDefault("server.base_url", "http://localhost:9200")
 	viper.SetDefault("server.read_timeout", 60)
+	viper.SetDefault("server.read_header_timeout", 10)
 	viper.SetDefault("server.write_timeout", 60)
+	viper.SetDefault("server.idle_timeout", 120)
+	viper.SetDefault("server.max_header_bytes", 1<<20)
 	viper.SetDefault("server.trusted_proxies", []string{})
 
 	viper.SetDefault("database.driver", "postgres")
@@ -328,7 +367,7 @@ func setDefaults() {
 	viper.SetDefault("database.log_level", "silent")
 
 	viper.SetDefault("redis.host", "localhost")
-	viper.SetDefault("redis.port", 9500)
+	viper.SetDefault("redis.port", 9510)
 	viper.SetDefault("redis.password", "")
 	viper.SetDefault("redis.db", 0)
 	viper.SetDefault("redis.pool_size", 10)
@@ -362,6 +401,8 @@ func setDefaults() {
 		"X-Request-Timestamp",
 		"X-Request-Nonce",
 		"X-Request-Signature",
+		"X-Quick-Buy-Session",
+		"X-Anonymous-ID",
 	})
 	viper.SetDefault("cors.expose_headers", []string{"Content-Length"})
 	viper.SetDefault("cors.allow_credentials", true)
@@ -374,6 +415,7 @@ func setDefaults() {
 	viper.SetDefault("cache.default_ttl", 3600)
 	viper.SetDefault("cache.post_ttl", 3600)
 	viper.SetDefault("cache.product_ttl", 1800)
+	viper.SetDefault("cache.product_lock_ttl", 5)
 	viper.SetDefault("cache.settings_ttl", 7200)
 
 	viper.SetDefault("log.level", "info")
@@ -398,6 +440,10 @@ func setDefaults() {
 	viper.SetDefault("worker.payment_expiration_batch_limit", 100)
 	viper.SetDefault("worker.payment_risk_monitoring_enabled", false)
 	viper.SetDefault("worker.payment_risk_monitoring_interval_seconds", 3600)
+	viper.SetDefault("worker.showcase_cleanup_enabled", true)
+	viper.SetDefault("worker.showcase_cleanup_interval_seconds", 86400)
+	viper.SetDefault("worker.showcase_pending_ttl_seconds", 2592000)
+	viper.SetDefault("worker.showcase_cleanup_batch_limit", 100)
 
 	viper.SetDefault("behavior_events.low_intent_retention_days", 30)
 	viper.SetDefault("behavior_events.standard_intent_retention_days", 60)
@@ -475,7 +521,29 @@ func setDefaults() {
 	viper.SetDefault("request_signing.max_skew_seconds", 30)
 	viper.SetDefault("request_signing.required_paths", []string{})
 
+	viper.SetDefault("quick_buy_rate_limit.enabled", true)
+	viper.SetDefault("quick_buy_rate_limit.ip_requests_per_minute", 120)
+	viper.SetDefault("quick_buy_rate_limit.ip_burst", 40)
+	viper.SetDefault("quick_buy_rate_limit.session_requests_per_minute", 60)
+	viper.SetDefault("quick_buy_rate_limit.session_burst", 20)
+	viper.SetDefault("quick_buy_rate_limit.fail_open", true)
+
 	viper.SetDefault("media_upload.account_storage_quota_bytes", 20<<30)
+
+	viper.SetDefault("showcase_upload_protection.enabled", true)
+	viper.SetDefault("showcase_upload_protection.window_seconds", 60)
+	viper.SetDefault("showcase_upload_protection.max_uploads_per_user", 3)
+	viper.SetDefault("showcase_upload_protection.max_uploads_per_ip", 6)
+	viper.SetDefault("showcase_upload_protection.max_uploads_per_ip_prefix", 18)
+	viper.SetDefault("showcase_upload_protection.daily_max_uploads_per_user", 12)
+	viper.SetDefault("showcase_upload_protection.daily_max_uploads_per_ip", 24)
+	viper.SetDefault("showcase_upload_protection.daily_max_bytes_per_user", 100<<20)
+	viper.SetDefault("showcase_upload_protection.daily_max_bytes_per_ip", 200<<20)
+	viper.SetDefault("showcase_upload_protection.max_pending_submissions_per_user", 10)
+	viper.SetDefault("showcase_upload_protection.failure_window_seconds", 900)
+	viper.SetDefault("showcase_upload_protection.max_failures_per_user", 5)
+	viper.SetDefault("showcase_upload_protection.max_failures_per_ip", 10)
+	viper.SetDefault("showcase_upload_protection.block_duration_seconds", 1800)
 }
 
 func bindEnvironment() {
@@ -483,7 +551,10 @@ func bindEnvironment() {
 	_ = viper.BindEnv("server.mode", "SERVER_MODE")
 	_ = viper.BindEnv("server.base_url", "SERVER_BASE_URL")
 	_ = viper.BindEnv("server.read_timeout", "SERVER_READ_TIMEOUT")
+	_ = viper.BindEnv("server.read_header_timeout", "SERVER_READ_HEADER_TIMEOUT")
 	_ = viper.BindEnv("server.write_timeout", "SERVER_WRITE_TIMEOUT")
+	_ = viper.BindEnv("server.idle_timeout", "SERVER_IDLE_TIMEOUT")
+	_ = viper.BindEnv("server.max_header_bytes", "SERVER_MAX_HEADER_BYTES")
 
 	_ = viper.BindEnv("database.driver", "DB_DRIVER", "DATABASE_DRIVER")
 	_ = viper.BindEnv("database.host", "DB_HOST", "DATABASE_HOST")
@@ -516,6 +587,12 @@ func bindEnvironment() {
 	_ = viper.BindEnv("cookie.same_site", "COOKIE_SAME_SITE")
 	_ = viper.BindEnv("cookie.domain", "COOKIE_DOMAIN")
 
+	_ = viper.BindEnv("cache.default_ttl", "CACHE_DEFAULT_TTL")
+	_ = viper.BindEnv("cache.post_ttl", "CACHE_POST_TTL")
+	_ = viper.BindEnv("cache.product_ttl", "CACHE_PRODUCT_TTL")
+	_ = viper.BindEnv("cache.product_lock_ttl", "CACHE_PRODUCT_LOCK_TTL")
+	_ = viper.BindEnv("cache.settings_ttl", "CACHE_SETTINGS_TTL")
+
 	_ = viper.BindEnv("log.level", "LOG_LEVEL")
 	_ = viper.BindEnv("log.format", "LOG_FORMAT")
 	_ = viper.BindEnv("log.output", "LOG_OUTPUT")
@@ -538,6 +615,10 @@ func bindEnvironment() {
 	_ = viper.BindEnv("worker.payment_expiration_batch_limit", "WORKER_PAYMENT_EXPIRATION_BATCH_LIMIT", "PAYMENT_EXPIRATION_BATCH_LIMIT")
 	_ = viper.BindEnv("worker.payment_risk_monitoring_enabled", "WORKER_PAYMENT_RISK_MONITORING_ENABLED", "PAYMENT_RISK_MONITORING_WORKER_ENABLED")
 	_ = viper.BindEnv("worker.payment_risk_monitoring_interval_seconds", "WORKER_PAYMENT_RISK_MONITORING_INTERVAL_SECONDS", "PAYMENT_RISK_MONITORING_INTERVAL_SECONDS")
+	_ = viper.BindEnv("worker.showcase_cleanup_enabled", "WORKER_SHOWCASE_CLEANUP_ENABLED", "SHOWCASE_CLEANUP_ENABLED")
+	_ = viper.BindEnv("worker.showcase_cleanup_interval_seconds", "WORKER_SHOWCASE_CLEANUP_INTERVAL_SECONDS", "SHOWCASE_CLEANUP_INTERVAL_SECONDS")
+	_ = viper.BindEnv("worker.showcase_pending_ttl_seconds", "WORKER_SHOWCASE_PENDING_TTL_SECONDS", "SHOWCASE_PENDING_TTL_SECONDS")
+	_ = viper.BindEnv("worker.showcase_cleanup_batch_limit", "WORKER_SHOWCASE_CLEANUP_BATCH_LIMIT", "SHOWCASE_CLEANUP_BATCH_LIMIT")
 
 	_ = viper.BindEnv("behavior_events.low_intent_retention_days", "BEHAVIOR_EVENTS_LOW_INTENT_RETENTION_DAYS")
 	_ = viper.BindEnv("behavior_events.standard_intent_retention_days", "BEHAVIOR_EVENTS_STANDARD_INTENT_RETENTION_DAYS")
@@ -615,7 +696,29 @@ func bindEnvironment() {
 	_ = viper.BindEnv("request_signing.max_skew_seconds", "REQUEST_SIGNING_MAX_SKEW_SECONDS")
 	_ = viper.BindEnv("request_signing.required_paths", "REQUEST_SIGNING_REQUIRED_PATHS")
 
+	_ = viper.BindEnv("quick_buy_rate_limit.enabled", "QUICK_BUY_RATE_LIMIT_ENABLED")
+	_ = viper.BindEnv("quick_buy_rate_limit.ip_requests_per_minute", "QUICK_BUY_RATE_LIMIT_IP_REQUESTS_PER_MINUTE")
+	_ = viper.BindEnv("quick_buy_rate_limit.ip_burst", "QUICK_BUY_RATE_LIMIT_IP_BURST")
+	_ = viper.BindEnv("quick_buy_rate_limit.session_requests_per_minute", "QUICK_BUY_RATE_LIMIT_SESSION_REQUESTS_PER_MINUTE")
+	_ = viper.BindEnv("quick_buy_rate_limit.session_burst", "QUICK_BUY_RATE_LIMIT_SESSION_BURST")
+	_ = viper.BindEnv("quick_buy_rate_limit.fail_open", "QUICK_BUY_RATE_LIMIT_FAIL_OPEN")
+
 	_ = viper.BindEnv("media_upload.account_storage_quota_bytes", "MEDIA_UPLOAD_ACCOUNT_STORAGE_QUOTA_BYTES")
+
+	_ = viper.BindEnv("showcase_upload_protection.enabled", "SHOWCASE_UPLOAD_PROTECTION_ENABLED")
+	_ = viper.BindEnv("showcase_upload_protection.window_seconds", "SHOWCASE_UPLOAD_WINDOW_SECONDS")
+	_ = viper.BindEnv("showcase_upload_protection.max_uploads_per_user", "SHOWCASE_UPLOAD_MAX_UPLOADS_PER_USER")
+	_ = viper.BindEnv("showcase_upload_protection.max_uploads_per_ip", "SHOWCASE_UPLOAD_MAX_UPLOADS_PER_IP")
+	_ = viper.BindEnv("showcase_upload_protection.max_uploads_per_ip_prefix", "SHOWCASE_UPLOAD_MAX_UPLOADS_PER_IP_PREFIX")
+	_ = viper.BindEnv("showcase_upload_protection.daily_max_uploads_per_user", "SHOWCASE_UPLOAD_DAILY_MAX_UPLOADS_PER_USER")
+	_ = viper.BindEnv("showcase_upload_protection.daily_max_uploads_per_ip", "SHOWCASE_UPLOAD_DAILY_MAX_UPLOADS_PER_IP")
+	_ = viper.BindEnv("showcase_upload_protection.daily_max_bytes_per_user", "SHOWCASE_UPLOAD_DAILY_MAX_BYTES_PER_USER")
+	_ = viper.BindEnv("showcase_upload_protection.daily_max_bytes_per_ip", "SHOWCASE_UPLOAD_DAILY_MAX_BYTES_PER_IP")
+	_ = viper.BindEnv("showcase_upload_protection.max_pending_submissions_per_user", "SHOWCASE_UPLOAD_MAX_PENDING_SUBMISSIONS_PER_USER")
+	_ = viper.BindEnv("showcase_upload_protection.failure_window_seconds", "SHOWCASE_UPLOAD_FAILURE_WINDOW_SECONDS")
+	_ = viper.BindEnv("showcase_upload_protection.max_failures_per_user", "SHOWCASE_UPLOAD_MAX_FAILURES_PER_USER")
+	_ = viper.BindEnv("showcase_upload_protection.max_failures_per_ip", "SHOWCASE_UPLOAD_MAX_FAILURES_PER_IP")
+	_ = viper.BindEnv("showcase_upload_protection.block_duration_seconds", "SHOWCASE_UPLOAD_BLOCK_DURATION_SECONDS")
 }
 
 func splitEnvList(value string) []string {
@@ -693,6 +796,13 @@ func validateConfig(cfg *Config) error {
 
 	if strings.EqualFold(cfg.Server.Mode, "release") && len(cfg.JWT.Secret) < 32 {
 		return fmt.Errorf("JWT secret must be at least 32 characters in release mode")
+	}
+	if cfg.Server.ReadTimeout <= 0 ||
+		cfg.Server.ReadHeaderTimeout <= 0 ||
+		cfg.Server.WriteTimeout <= 0 ||
+		cfg.Server.IdleTimeout <= 0 ||
+		cfg.Server.MaxHeaderBytes <= 0 {
+		return fmt.Errorf("server timeout and header size limits must be positive")
 	}
 
 	if cfg.AntiAbuse.TurnstileRequired {
@@ -812,6 +922,13 @@ func validateConfig(cfg *Config) error {
 	if cfg.Worker.PaymentRiskMonitoringEnabled && cfg.Worker.PaymentRiskMonitoringIntervalSeconds <= 0 {
 		return fmt.Errorf("payment risk monitoring interval must be positive when monitoring is enabled")
 	}
+	if cfg.Worker.ShowcaseCleanupEnabled {
+		if cfg.Worker.ShowcaseCleanupIntervalSeconds <= 0 ||
+			cfg.Worker.ShowcasePendingTTLSeconds <= 0 ||
+			cfg.Worker.ShowcaseCleanupBatchLimit <= 0 {
+			return fmt.Errorf("showcase cleanup configuration is invalid")
+		}
+	}
 	if cfg.BehaviorEvents.LowIntentRetentionDays != 0 ||
 		cfg.BehaviorEvents.StandardIntentRetentionDays != 0 ||
 		cfg.BehaviorEvents.HighIntentRetentionDays != 0 ||
@@ -841,8 +958,36 @@ func validateConfig(cfg *Config) error {
 	if cfg.RequestSigning.Enabled && cfg.RequestSigning.MaxSkewSeconds <= 0 {
 		return fmt.Errorf("request signing max skew must be positive")
 	}
+	if cfg.QuickBuyRateLimit.Enabled {
+		if cfg.QuickBuyRateLimit.IPRequestsPerMinute <= 0 ||
+			cfg.QuickBuyRateLimit.IPBurst <= 0 ||
+			cfg.QuickBuyRateLimit.SessionRequestsPerMinute <= 0 ||
+			cfg.QuickBuyRateLimit.SessionBurst <= 0 {
+			return fmt.Errorf("quick buy rate limit configuration is invalid")
+		}
+	}
+	if cfg.Cache.ProductLockTTL <= 0 {
+		return fmt.Errorf("CACHE_PRODUCT_LOCK_TTL must be positive")
+	}
 	if cfg.MediaUpload.AccountStorageQuotaBytes <= 0 {
 		return fmt.Errorf("media upload account storage quota must be positive")
+	}
+	if cfg.ShowcaseUploadProtection.Enabled {
+		if cfg.ShowcaseUploadProtection.WindowSeconds <= 0 ||
+			cfg.ShowcaseUploadProtection.MaxUploadsPerUser <= 0 ||
+			cfg.ShowcaseUploadProtection.MaxUploadsPerIP <= 0 ||
+			cfg.ShowcaseUploadProtection.MaxUploadsPerIPPrefix <= 0 ||
+			cfg.ShowcaseUploadProtection.DailyMaxUploadsPerUser <= 0 ||
+			cfg.ShowcaseUploadProtection.DailyMaxUploadsPerIP <= 0 ||
+			cfg.ShowcaseUploadProtection.DailyMaxBytesPerUser <= 0 ||
+			cfg.ShowcaseUploadProtection.DailyMaxBytesPerIP <= 0 ||
+			cfg.ShowcaseUploadProtection.MaxPendingSubmissionsPerUser <= 0 ||
+			cfg.ShowcaseUploadProtection.FailureWindowSeconds <= 0 ||
+			cfg.ShowcaseUploadProtection.MaxFailuresPerUser <= 0 ||
+			cfg.ShowcaseUploadProtection.MaxFailuresPerIP <= 0 ||
+			cfg.ShowcaseUploadProtection.BlockDurationSeconds <= 0 {
+			return fmt.Errorf("showcase upload protection configuration is invalid")
+		}
 	}
 	googleMerchantOAuthFields := []string{
 		strings.TrimSpace(cfg.GoogleMerchant.ClientID),

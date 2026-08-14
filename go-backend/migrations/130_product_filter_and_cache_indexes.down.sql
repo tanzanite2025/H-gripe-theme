@@ -1,0 +1,3 @@
+DROP INDEX IF EXISTS idx_product_spec_definitions_filter_lookup;
+DROP INDEX IF EXISTS idx_product_spec_values_filter_lookup;
+DROP INDEX IF EXISTS idx_product_variants_option_values_gin;

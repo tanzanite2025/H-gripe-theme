@@ -6,7 +6,7 @@
     "dev": "vite --host 127.0.0.1 --port 9300 --strictPort",
     "build": "vite build",
     "preview": "vite preview",
-    "check:storefront-locale-ui": "node scripts/check-storefront-locale-ui.mjs",
+    "check:storefront-locale-ui": "node scripts/check-storefront-locale-ui.ts",
     "typecheck": "npm run check:storefront-locale-ui && vue-tsc --noEmit"
   },
   "dependencies": {

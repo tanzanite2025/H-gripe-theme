@@ -1,63 +1,90 @@
 import axios from '@/utils/axios'
+import {
+  requireApiAcknowledgement,
+  requireApiArrayField,
+  requireApiField,
+  requireApiObject,
+  requireApiObjectField,
+  requireApiPagination,
+  unwrapApiPayload,
+} from '@/utils/apiResponse'
 
-const unwrapPayload = (response: any) => response.data?.data ?? response.data ?? {}
+const readObjectPayload = (response: unknown, path: string) => (
+  requireApiObject(unwrapApiPayload(response, path), path)
+)
+
+const readField = <T = unknown>(response: unknown, path: string, field: string): T => {
+  const payload = readObjectPayload(response, path)
+  return requireApiField<T>(payload, field, path)
+}
 
 export const customerServiceApi = {
   async getRegionAnalytics(params: Record<string, any> = {}) {
-    const payload = unwrapPayload(await axios.get('/api/admin/customer-service/analytics/regions', { params }))
-    return payload.analytics ?? null
+    const path = '/api/admin/customer-service/analytics/regions'
+    return requireApiObject(readField(await axios.get(path, { params }), path, 'analytics'), path, 'field "analytics"')
   },
 
   async listConversations(params: Record<string, any> = {}) {
-    return unwrapPayload(await axios.get('/api/admin/customer-service/conversations', { params }))
+    const path = '/api/admin/customer-service/conversations'
+    const response = await axios.get(path, { params })
+    const body = requireApiObject(response.data, path, 'response body')
+    const payload = requireApiObject(unwrapApiPayload(response, path), path)
+    requireApiArrayField(payload, 'conversations', path)
+    requireApiPagination(body, payload, path)
+    return payload
   },
 
   async getConversationContext(conversationId: number | string) {
-    const payload = unwrapPayload(await axios.get(`/api/admin/customer-service/conversations/${conversationId}/context`))
-    return payload.context ?? null
+    const path = `/api/admin/customer-service/conversations/${conversationId}/context`
+    return requireApiObject(readField(await axios.get(path), path, 'context'), path, 'field "context"')
   },
 
   async listAgents() {
-    const payload = unwrapPayload(await axios.get('/api/admin/customer-service/agents'))
-    return payload.agents ?? []
+    const path = '/api/admin/customer-service/agents'
+    return requireApiArrayField(readObjectPayload(await axios.get(path), path), 'agents', path)
   },
 
   async listAgentDirectory() {
-    return unwrapPayload(await axios.get('/api/admin/customer-service/agents'))
+    const path = '/api/admin/customer-service/agents'
+    const payload = readObjectPayload(await axios.get(path), path)
+    requireApiArrayField(payload, 'agents', path)
+    requireApiArrayField(payload, 'groups', path)
+    return payload
   },
 
   async listGroups() {
-    const payload = unwrapPayload(await axios.get('/api/admin/customer-service/groups'))
-    return payload.groups ?? []
+    const path = '/api/admin/customer-service/groups'
+    return requireApiArrayField(readObjectPayload(await axios.get(path), path), 'groups', path)
   },
 
   async listAutoReplyRules() {
-    const payload = unwrapPayload(await axios.get('/api/admin/customer-service/auto-reply/rules'))
-    return payload.rules ?? []
+    const path = '/api/admin/customer-service/auto-reply/rules'
+    return requireApiArrayField(readObjectPayload(await axios.get(path), path), 'rules', path)
   },
 
   async listAutoReplyFAQGroups(params: Record<string, any> = {}) {
-    const payload = unwrapPayload(await axios.get('/api/admin/customer-service/auto-reply/faqs', { params }))
-    return payload.pages ?? []
+    const path = '/api/admin/customer-service/auto-reply/faqs'
+    return requireApiArrayField(readObjectPayload(await axios.get(path, { params }), path), 'pages', path)
   },
 
   async getAutoReplyRule(ruleId: number | string) {
-    const payload = unwrapPayload(await axios.get(`/api/admin/customer-service/auto-reply/rules/${ruleId}`))
-    return payload.rule ?? null
+    const path = `/api/admin/customer-service/auto-reply/rules/${ruleId}`
+    return requireApiObject(readField(await axios.get(path), path, 'rule'), path, 'field "rule"')
   },
 
   async createAutoReplyRule(rule: Record<string, any>) {
-    const payload = unwrapPayload(await axios.post('/api/admin/customer-service/auto-reply/rules', rule))
-    return payload.rule ?? null
+    const path = '/api/admin/customer-service/auto-reply/rules'
+    return requireApiObject(readField(await axios.post(path, rule), path, 'rule'), path, 'field "rule"')
   },
 
   async updateAutoReplyRule(ruleId: number | string, rule: Record<string, any>) {
-    const payload = unwrapPayload(await axios.put(`/api/admin/customer-service/auto-reply/rules/${ruleId}`, rule))
-    return payload.rule ?? null
+    const path = `/api/admin/customer-service/auto-reply/rules/${ruleId}`
+    return requireApiObject(readField(await axios.put(path, rule), path, 'rule'), path, 'field "rule"')
   },
 
   async deleteAutoReplyRule(ruleId: number | string) {
-    return unwrapPayload(await axios.delete(`/api/admin/customer-service/auto-reply/rules/${ruleId}`))
+    const path = `/api/admin/customer-service/auto-reply/rules/${ruleId}`
+    return requireApiAcknowledgement(await axios.delete(path), path)
   },
 
   buildEventsUrl(scope = 'inbox') {
@@ -68,28 +95,31 @@ export const customerServiceApi = {
   },
 
   async listMessages(conversationId: number | string) {
-    const payload = unwrapPayload(await axios.get(`/api/admin/customer-service/conversations/${conversationId}/messages`))
-    return payload.messages ?? []
+    const path = `/api/admin/customer-service/conversations/${conversationId}/messages`
+    return requireApiArrayField(readObjectPayload(await axios.get(path), path), 'messages', path)
   },
 
   async markMessagesRead(conversationId: number | string) {
-    return unwrapPayload(await axios.post(`/api/admin/customer-service/conversations/${conversationId}/messages/mark-read`))
+    const path = `/api/admin/customer-service/conversations/${conversationId}/messages/mark-read`
+    return requireApiAcknowledgement(await axios.post(path), path)
   },
 
   async sendTyping(conversationId: number | string, isTyping: boolean) {
-    return unwrapPayload(await axios.post(`/api/admin/customer-service/conversations/${conversationId}/typing`, {
-      is_typing: isTyping
-    }))
+    const path = `/api/admin/customer-service/conversations/${conversationId}/typing`
+    const payload = readObjectPayload(await axios.post(path, { is_typing: isTyping }), path)
+    requireApiField(payload, 'typing', path)
+    return payload
   },
 
   async sendMessage(conversationId: number | string, message: string, attachments: string[] = []) {
-    return unwrapPayload(await axios.post(`/api/admin/customer-service/conversations/${conversationId}/messages`, { message, attachments }))
+    const path = `/api/admin/customer-service/conversations/${conversationId}/messages`
+    const payload = readObjectPayload(await axios.post(path, { message, attachments }), path)
+    return requireApiObjectField(payload, 'message', path)
   },
 
   async transferConversation(conversationId: number | string, assignedTo: number) {
-    return unwrapPayload(await axios.patch(`/api/admin/customer-service/conversations/${conversationId}/transfer`, {
-      assigned_to: assignedTo
-    }))
+    const path = `/api/admin/customer-service/conversations/${conversationId}/transfer`
+    return requireApiAcknowledgement(await axios.patch(path, { assigned_to: assignedTo }), path)
   }
 }
 

@@ -30,6 +30,11 @@ const immutableAssetHeaders = {
   'cache-control': 'public, max-age=31536000, immutable',
 }
 
+const immutableFontHeaders = {
+  ...immutableAssetHeaders,
+  'access-control-allow-origin': '*',
+}
+
 const noStoreHeaders = {
   'cache-control': 'no-store, max-age=0',
 }
@@ -131,6 +136,10 @@ export const buildStorefrontRouteRules = ({
     routeRules[pattern] = {
       headers: immutableAssetHeaders,
     }
+  }
+
+  routeRules['/fonts/**'] = {
+    headers: immutableFontHeaders,
   }
 
   if (htmlCacheEnabled) {

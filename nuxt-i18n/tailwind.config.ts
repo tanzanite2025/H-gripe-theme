@@ -27,15 +27,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: [
-          'StorefrontSystem',
-          'ui-sans-serif',
-          'system-ui',
-          '-apple-system',
-          'BlinkMacSystemFont',
-          'Segoe UI',
-          'sans-serif',
-        ],
+        sans: ['StorefrontSystem'],
+        mono: ['StorefrontSystem'],
       },
       colors: {
         green: learnGripeGreen,

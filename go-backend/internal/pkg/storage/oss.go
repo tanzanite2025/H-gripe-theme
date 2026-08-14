@@ -5,12 +5,11 @@ import (
 	"fmt"
 	"io"
 	"mime/multipart"
-	"path/filepath"
+	"net/url"
 	"strings"
 	"time"
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
-	"github.com/google/uuid"
 )
 
 // ossStorageImpl 阿里云OSS存储完整实现
@@ -66,6 +65,18 @@ func NewOSSStorage(cfg *Config) (StorageService, error) {
 
 // Upload 上传文件到OSS
 func (s *ossStorageImpl) Upload(ctx context.Context, file *multipart.FileHeader) (string, error) {
+	return s.UploadWithPrefix(ctx, file, "")
+}
+
+func (s *ossStorageImpl) UploadWithPrefix(ctx context.Context, file *multipart.FileHeader, prefix string) (string, error) {
+	return s.uploadWithPrefix(ctx, file, prefix, false)
+}
+
+func (s *ossStorageImpl) UploadWithPrefixPrivate(ctx context.Context, file *multipart.FileHeader, prefix string) (string, error) {
+	return s.uploadWithPrefix(ctx, file, prefix, true)
+}
+
+func (s *ossStorageImpl) uploadWithPrefix(ctx context.Context, file *multipart.FileHeader, prefix string, private bool) (string, error) {
 	// 打开上传的文件
 	src, err := file.Open()
 	if err != nil {
@@ -74,7 +85,10 @@ func (s *ossStorageImpl) Upload(ctx context.Context, file *multipart.FileHeader)
 	defer func() { _ = src.Close() }()
 
 	// 生成唯一文件名
-	filename := s.generateFilename(file.Filename)
+	filename, err := generateObjectKey(file.Filename, prefix)
+	if err != nil {
+		return "", err
+	}
 
 	// 检测内容类型
 	contentType := detectContentType(file.Filename)
@@ -82,7 +96,9 @@ func (s *ossStorageImpl) Upload(ctx context.Context, file *multipart.FileHeader)
 	// 上传选项
 	options := []oss.Option{
 		oss.ContentType(contentType),
-		// oss.ObjectACL(oss.ACLPublicRead), // 如果需要公开访问
+	}
+	if private {
+		options = append(options, oss.ObjectACL(oss.ACLPrivate))
 	}
 
 	// 上传到OSS
@@ -96,8 +112,15 @@ func (s *ossStorageImpl) Upload(ctx context.Context, file *multipart.FileHeader)
 
 // UploadFromReader 从Reader上传到OSS
 func (s *ossStorageImpl) UploadFromReader(ctx context.Context, reader io.Reader, filename string) (string, error) {
+	return s.UploadFromReaderWithPrefix(ctx, reader, filename, "")
+}
+
+func (s *ossStorageImpl) UploadFromReaderWithPrefix(ctx context.Context, reader io.Reader, filename string, prefix string) (string, error) {
 	// 生成唯一文件名
-	newFilename := s.generateFilename(filename)
+	newFilename, err := generateObjectKey(filename, prefix)
+	if err != nil {
+		return "", err
+	}
 
 	// 检测内容类型
 	contentType := detectContentType(filename)
@@ -108,7 +131,7 @@ func (s *ossStorageImpl) UploadFromReader(ctx context.Context, reader io.Reader,
 	}
 
 	// 上传到OSS
-	err := s.bucket.PutObject(newFilename, reader, options...)
+	err = s.bucket.PutObject(newFilename, reader, options...)
 	if err != nil {
 		return "", fmt.Errorf("failed to upload to OSS: %w", err)
 	}
@@ -119,13 +142,13 @@ func (s *ossStorageImpl) UploadFromReader(ctx context.Context, reader io.Reader,
 // Delete 从OSS删除文件
 func (s *ossStorageImpl) Delete(ctx context.Context, url string) error {
 	// 从URL提取对象key
-	key := s.extractKeyFromURL(url)
-	if key == "" {
-		return fmt.Errorf("invalid URL: cannot extract key")
+	key, err := s.ObjectKey(url)
+	if err != nil {
+		return err
 	}
 
 	// 从OSS删除对象
-	err := s.bucket.DeleteObject(key)
+	err = s.bucket.DeleteObject(key)
 	if err != nil {
 		return fmt.Errorf("failed to delete from OSS: %w", err)
 	}
@@ -158,28 +181,15 @@ func (s *ossStorageImpl) GetPresignedURL(ctx context.Context, filename string, d
 	return signedURL, nil
 }
 
-// generateFilename 生成唯一文件名
-func (s *ossStorageImpl) generateFilename(originalFilename string) string {
-	// 清理原始文件名
-	cleanName := filepath.Base(originalFilename)
-	ext := strings.ToLower(filepath.Ext(cleanName))
-
-	// 生成UUID
-	id := uuid.New().String()
-
-	// 生成日期路径
-	now := time.Now()
-	datePath := now.Format("2006/01/02")
-
-	// 组合文件名
-	return filepath.ToSlash(filepath.Join(datePath, fmt.Sprintf("%s%s", id, ext)))
-}
-
 // extractKeyFromURL 从URL提取OSS key
 func (s *ossStorageImpl) extractKeyFromURL(url string) string {
 	// 处理自定义域名
 	if s.config.BaseURL != "" {
-		return strings.TrimPrefix(url, s.config.BaseURL+"/")
+		prefix := strings.TrimRight(s.config.BaseURL, "/") + "/"
+		if strings.HasPrefix(url, prefix) {
+			return strings.TrimPrefix(url, prefix)
+		}
+		return ""
 	}
 
 	// 处理标准OSS URL
@@ -192,6 +202,34 @@ func (s *ossStorageImpl) extractKeyFromURL(url string) string {
 	}
 
 	return ""
+}
+
+func (s *ossStorageImpl) ObjectKey(reference string) (string, error) {
+	if key, ok := ObjectKeyFromBaseURL(reference, s.config.BaseURL); ok {
+		return key, nil
+	}
+	if key := s.extractKeyFromURL(reference); key != "" {
+		if normalized, ok := NormalizeObjectKey(key); ok {
+			return normalized, nil
+		}
+	}
+
+	value := strings.TrimSpace(reference)
+	if parsed, err := url.Parse(value); err == nil && parsed.Scheme != "" && parsed.Host != "" {
+		endpoint := strings.TrimPrefix(s.config.Endpoint, "https://")
+		endpoint = strings.TrimPrefix(endpoint, "http://")
+		standardHost := fmt.Sprintf("%s.%s", s.config.Bucket, endpoint)
+		if strings.EqualFold(parsed.Host, standardHost) {
+			if normalized, ok := NormalizeObjectKey(strings.TrimPrefix(parsed.Path, "/")); ok {
+				return normalized, nil
+			}
+		}
+	}
+
+	if key, ok := ObjectKeyFromReference(reference, s.config.BaseURL); ok {
+		return key, nil
+	}
+	return "", fmt.Errorf("invalid object key")
 }
 
 // ListObjects 列出OSS中的对象
@@ -225,9 +263,16 @@ func (s *ossStorageImpl) ListObjects(ctx context.Context, prefix string, maxKeys
 
 // CopyObject 复制OSS对象
 func (s *ossStorageImpl) CopyObject(ctx context.Context, sourceKey, destKey string) error {
-	sourceObject := fmt.Sprintf("%s/%s", s.config.Bucket, sourceKey)
+	normalizedSourceKey, ok := NormalizeObjectKey(sourceKey)
+	if !ok {
+		return fmt.Errorf("invalid source object key")
+	}
+	normalizedDestKey, ok := NormalizeObjectKey(destKey)
+	if !ok {
+		return fmt.Errorf("invalid destination object key")
+	}
 
-	_, err := s.bucket.CopyObject(sourceObject, destKey)
+	_, err := s.bucket.CopyObject(normalizedSourceKey, normalizedDestKey)
 	if err != nil {
 		return fmt.Errorf("failed to copy object: %w", err)
 	}
@@ -238,7 +283,10 @@ func (s *ossStorageImpl) CopyObject(ctx context.Context, sourceKey, destKey stri
 // UploadMultipart 分片上传大文件到OSS
 func (s *ossStorageImpl) UploadMultipart(ctx context.Context, reader io.Reader, filename string, chunkSize int64) (string, error) {
 	// 生成唯一文件名
-	newFilename := s.generateFilename(filename)
+	newFilename, err := generateObjectKey(filename, "")
+	if err != nil {
+		return "", err
+	}
 
 	// 检测内容类型
 	contentType := detectContentType(filename)

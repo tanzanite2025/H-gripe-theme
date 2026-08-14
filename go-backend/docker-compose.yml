@@ -28,6 +28,8 @@ services:
       - JWT_EXPIRATION=24h
       # Payment credential encryption key; override this in production.
       - PAYMENT_CONFIG_MASTER_KEY=${PAYMENT_CONFIG_MASTER_KEY:-dev-payment-config-master-key-change-before-production}
+      # Operations connector credential encryption key; override this in production.
+      - OPS_CONNECTOR_MASTER_KEY=${OPS_CONNECTOR_MASTER_KEY:-dev-ops-connector-master-key-change-before-production}
       # 服务器配置
       - SERVER_PORT=:8080
       - SERVER_MODE=release
@@ -68,7 +70,7 @@ services:
       - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
       - PGDATA=/var/lib/postgresql/data/pgdata
     ports:
-      - "9400:5432"
+      - "${POSTGRES_HOST_PORT:-9400}:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     networks:
@@ -86,7 +88,7 @@ services:
     container_name: commerce-platform-redis
     command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
     ports:
-      - "9500:6379"
+      - "${REDIS_HOST_PORT:-9510}:6379"
     volumes:
       - redis-data:/data
     networks:
@@ -123,7 +125,7 @@ services:
     image: adminer:latest
     container_name: commerce-platform-adminer
     ports:
-      - "9600:8080"
+      - "${ADMINER_HOST_PORT:-9600}:8080"
     environment:
       - ADMINER_DEFAULT_SERVER=postgres
     networks:
@@ -137,7 +139,7 @@ services:
     image: rediscommander/redis-commander:latest
     container_name: commerce-platform-redis-commander
     ports:
-      - "9700:8081"
+      - "${REDIS_COMMANDER_HOST_PORT:-9700}:8081"
     environment:
       - REDIS_HOSTS=local:redis:6379
     depends_on:

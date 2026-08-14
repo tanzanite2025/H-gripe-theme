@@ -1475,9 +1475,19 @@
       "weight": "Weight",
       "price": "Price"
     },
+    "selection": {
+      "label": "Selected products",
+      "editHint": "Review and adjust your selections",
+      "empty": "No products selected yet."
+    },
     "actions": {
       "toCart": "To cart",
-      "payment": "Payment"
+      "payment": "Payment",
+      "addToCart": "Add to cart",
+      "directPayment": "Pay now"
+    },
+    "productRail": {
+      "empty": "No products are available for this step."
     }
   },
   "search": {

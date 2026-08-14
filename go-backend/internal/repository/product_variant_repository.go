@@ -137,9 +137,9 @@ func (r *ProductRepository) FindPurchasableVariant(productID uint, variantID *ui
 	return nil, nil, gorm.ErrRecordNotFound
 }
 
-func (r *ProductRepository) DecrementVariantStocks(items map[uint]int) error {
+func (r *ProductRepository) DecrementVariantStocks(items map[uint]int) ([]uint, error) {
 	if len(items) == 0 {
-		return nil
+		return nil, nil
 	}
 
 	for variantID, quantity := range items {
@@ -147,31 +147,31 @@ func (r *ProductRepository) DecrementVariantStocks(items map[uint]int) error {
 			Where("id = ? AND is_active = ? AND stock >= ?", variantID, true, quantity).
 			UpdateColumn("stock", gorm.Expr("stock - ?", quantity))
 		if res.Error != nil {
-			return res.Error
+			return nil, res.Error
 		}
 		if res.RowsAffected == 0 {
-			return fmt.Errorf("insufficient stock for variant %d or variant not found", variantID)
+			return nil, fmt.Errorf("insufficient stock for variant %d or variant not found", variantID)
 		}
 	}
 
 	return r.refreshProductStockForVariants(items)
 }
 
-func (r *ProductRepository) IncrementVariantStock(variantID uint, quantity int) error {
+func (r *ProductRepository) IncrementVariantStock(variantID uint, quantity int) ([]uint, error) {
 	res := r.db.Model(&product.ProductVariant{}).Where("id = ?", variantID).
 		UpdateColumn("stock", gorm.Expr("stock + ?", quantity))
 	if res.Error != nil {
-		return res.Error
+		return nil, res.Error
 	}
 	if res.RowsAffected == 0 {
-		return gorm.ErrRecordNotFound
+		return nil, gorm.ErrRecordNotFound
 	}
 	return r.refreshProductStockForVariants(map[uint]int{variantID: quantity})
 }
 
-func (r *ProductRepository) refreshProductStockForVariants(items map[uint]int) error {
+func (r *ProductRepository) refreshProductStockForVariants(items map[uint]int) ([]uint, error) {
 	if len(items) == 0 {
-		return nil
+		return nil, nil
 	}
 
 	var productIDs []uint
@@ -179,7 +179,7 @@ func (r *ProductRepository) refreshProductStockForVariants(items map[uint]int) e
 		Where("id IN ?", uintMapKeys(items)).
 		Distinct().
 		Pluck("product_id", &productIDs).Error; err != nil {
-		return err
+		return nil, err
 	}
 
 	for _, productID := range productIDs {
@@ -188,16 +188,16 @@ func (r *ProductRepository) refreshProductStockForVariants(items map[uint]int) e
 			Where("product_id = ? AND is_active = ? AND deleted_at IS NULL", productID, true).
 			Select("COALESCE(SUM(stock), 0)").
 			Scan(&totalStock).Error; err != nil {
-			return err
+			return nil, err
 		}
 		if err := r.db.Model(&product.Product{}).
 			Where("id = ?", productID).
 			Update("stock", totalStock).Error; err != nil {
-			return err
+			return nil, err
 		}
 	}
 
-	return nil
+	return productIDs, nil
 }
 
 func uintMapKeys(items map[uint]int) []uint {

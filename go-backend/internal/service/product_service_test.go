@@ -2,13 +2,19 @@ package service
 
 import (
 	"errors"
+	"net"
+	"strconv"
+	"sync"
 	"testing"
 
 	"commerce-platform/internal/domain/currency"
 	"commerce-platform/internal/domain/product"
 	"commerce-platform/internal/domain/setting"
+	"commerce-platform/internal/pkg/cache"
+	"commerce-platform/internal/pkg/config"
 	"commerce-platform/internal/repository"
 
+	"github.com/alicebob/miniredis/v2"
 	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -53,6 +59,142 @@ func TestProductServiceCreateAdminProductPersistsTemplateSpecs(t *testing.T) {
 	assert.Equal(t, "30.5", findSavedSpecValue(t, createdProduct, "outer_width_mm"))
 	assert.Equal(t, "RIM-001-24H-DISC", createdProduct.Variants[0].SKU)
 	assert.JSONEq(t, `{"brake_type":"disc"}`, createdProduct.Variants[0].OptionValues)
+}
+
+func TestProductServiceGetByIDCoalescesConcurrentCacheMisses(t *testing.T) {
+	db, productService := newTestProductService(t)
+	record := product.Product{
+		SKU:      "SINGLEFLIGHT-001",
+		Name:     "SingleFlight Product",
+		Slug:     "singleflight-product",
+		Currency: "USD",
+		Price:    100,
+		Status:   "active",
+		Locale:   "en",
+	}
+	require.NoError(t, db.Create(&record).Error)
+
+	var once sync.Once
+	ready := make(chan struct{})
+	release := make(chan struct{})
+	db.Callback().Query().Before("gorm:query").Register("test_block_product_load", func(tx *gorm.DB) {
+		if tx.Statement.Table != "products" {
+			return
+		}
+		once.Do(func() {
+			close(ready)
+			<-release
+		})
+	})
+
+	const callers = 16
+	results := make(chan *product.Product, callers)
+	errs := make(chan error, callers)
+	var wg sync.WaitGroup
+	wg.Add(callers)
+	for i := 0; i < callers; i++ {
+		go func() {
+			defer wg.Done()
+			result, err := productService.GetByID(record.ID)
+			results <- result
+			errs <- err
+		}()
+	}
+
+	<-ready
+	close(release)
+	wg.Wait()
+	close(results)
+	close(errs)
+
+	for err := range errs {
+		require.NoError(t, err)
+	}
+	for result := range results {
+		require.NotNil(t, result)
+		assert.Equal(t, record.ID, result.ID)
+	}
+
+	var viewCount int
+	require.NoError(t, db.Model(&product.Product{}).Where("id = ?", record.ID).Pluck("view_count", &viewCount).Error)
+	assert.Equal(t, 1, viewCount)
+}
+
+func TestProductServiceDistributedCacheMissesShareOneDatabaseLoad(t *testing.T) {
+	db, _ := newTestProductService(t)
+	record := product.Product{
+		SKU:      "DISTRIBUTED-SINGLEFLIGHT-001",
+		Name:     "Distributed SingleFlight Product",
+		Slug:     "distributed-singleflight-product",
+		Currency: "USD",
+		Price:    100,
+		Status:   "active",
+		Locale:   "en",
+	}
+	require.NoError(t, db.Create(&record).Error)
+
+	redisServer := miniredis.RunT(t)
+	host, portText, err := net.SplitHostPort(redisServer.Addr())
+	require.NoError(t, err)
+	port, err := strconv.Atoi(portText)
+	require.NoError(t, err)
+
+	redisCacheA, err := cache.Init(config.RedisConfig{Host: host, Port: port})
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_ = redisCacheA.Close()
+	})
+	redisCacheB, err := cache.Init(config.RedisConfig{Host: host, Port: port})
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_ = redisCacheB.Close()
+	})
+
+	productServiceA := NewProductServiceWithCacheOptions(repository.NewProductRepository(db), redisCacheA, 60, 2)
+	productServiceB := NewProductServiceWithCacheOptions(repository.NewProductRepository(db), redisCacheB, 60, 2)
+
+	var once sync.Once
+	ready := make(chan struct{})
+	release := make(chan struct{})
+	db.Callback().Query().Before("gorm:query").Register("test_block_distributed_product_load", func(tx *gorm.DB) {
+		if tx.Statement.Table != "products" {
+			return
+		}
+		once.Do(func() {
+			close(ready)
+			<-release
+		})
+	})
+
+	type result struct {
+		product *product.Product
+		err     error
+	}
+	results := make(chan result, 2)
+	var wg sync.WaitGroup
+	wg.Add(2)
+	for _, service := range []*ProductService{productServiceA, productServiceB} {
+		go func(service *ProductService) {
+			defer wg.Done()
+			loadedProduct, loadErr := service.GetByID(record.ID)
+			results <- result{product: loadedProduct, err: loadErr}
+		}(service)
+	}
+
+	<-ready
+	close(release)
+	wg.Wait()
+	close(results)
+
+	for loaded := range results {
+		require.NoError(t, loaded.err)
+		require.NotNil(t, loaded.product)
+		assert.Equal(t, record.ID, loaded.product.ID)
+	}
+
+	var viewCount int
+	require.NoError(t, db.Model(&product.Product{}).Where("id = ?", record.ID).Pluck("view_count", &viewCount).Error)
+	assert.Equal(t, 1, viewCount)
 }
 
 func TestProductServiceCreateAdminProductPersistsProductScopedVisualVariantOptions(t *testing.T) {

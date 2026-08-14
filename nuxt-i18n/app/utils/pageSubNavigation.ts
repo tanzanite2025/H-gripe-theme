@@ -3,6 +3,7 @@ import {
   normalizePrimaryMegaNavPath,
   primaryMegaNavPathMatches,
 } from '~/utils/primaryMegaNav'
+import localeManifest from '~/i18n/locales.manifest'
 
 export interface PageSubNavigationTab {
   id: string
@@ -17,7 +18,7 @@ export interface PageSubNavigationTab {
 export interface PageSubNavigationEntry {
   /**
    * Canonical page route that owns the tabs.
-   * Hashes are generated from tab ids unless a tab provides its own `to`.
+   * Child route paths are generated from tab ids unless a tab provides its own `to`.
    */
   path: string
   tabs: readonly PageSubNavigationTab[]
@@ -25,6 +26,13 @@ export interface PageSubNavigationEntry {
 
 export type PageSubNavigationChild = PageSubNavigationTab & {
   to: string
+}
+
+export type PageSubNavigationPathMatchMode = 'exact' | 'nested'
+
+export interface PageSubNavigationTabFromPathOptions {
+  localeCodes?: string[]
+  match?: PageSubNavigationPathMatchMode
 }
 
 export const tireGuideTabs = [
@@ -40,6 +48,7 @@ export const tireGuideTabs = [
 export type TireGuideTabId = (typeof tireGuideTabs)[number]['id']
 
 export const wheelsetBuyerTabs = [
+  { id: 'overview', label: 'Buying overview', description: 'Start here for the wheelset buying path and key checks.' },
   { id: 'safety-instructions', label: 'Safety instructions', description: 'Core safety checks before riding and servicing.' },
   { id: 'sample-assembly', label: 'Sample assembly', description: 'Assembly example with parts and setup references.' },
   { id: 'special-order', label: 'Special order', description: 'Custom order options and request details.' },
@@ -154,12 +163,42 @@ export const isPageSubNavigationTabId = <Tabs extends readonly PageSubNavigation
   id: string
 ): id is Tabs[number]['id'] => tabs.some((tab) => tab.id === id)
 
+const defaultPageSubNavigationLocaleCodes = localeManifest.map(locale => locale.code)
+
 const routePathFromTo = (to: string) => {
-  return to.split('#')[0]?.split('?')[0] || '/'
+  return to.split('?')[0] || '/'
+}
+
+export const pageSubNavigationChildPath = (basePath: string, tabId: string) => {
+  const normalizedBasePath = routePathFromTo(basePath).replace(/\/+$/, '') || '/'
+  return normalizedBasePath === '/' ? `/${tabId}` : `${normalizedBasePath}/${tabId}`
+}
+
+export const getPageSubNavigationTabFromPath = <Tabs extends readonly PageSubNavigationTab[]>(
+  tabs: Tabs,
+  basePath: string,
+  path: string | null | undefined,
+  options: PageSubNavigationTabFromPathOptions = {}
+): Tabs[number]['id'] | null => {
+  const localeCodes = options.localeCodes || defaultPageSubNavigationLocaleCodes
+  const match = options.match || 'nested'
+  const normalizedPath = normalizePrimaryMegaNavPath(routePathFromTo(String(path || '/')), localeCodes)
+
+  for (const tab of tabs) {
+    const tabPath = tab.to || pageSubNavigationChildPath(basePath, tab.id)
+    const normalizedTabPath = normalizePrimaryMegaNavPath(routePathFromTo(tabPath), localeCodes)
+    const matches = match === 'exact'
+      ? normalizedPath === normalizedTabPath
+      : primaryMegaNavPathMatches(normalizedPath, normalizedTabPath, localeCodes)
+
+    if (matches) return tab.id
+  }
+
+  return null
 }
 
 const childTargetForTab = (entry: PageSubNavigationEntry, tab: PageSubNavigationTab) => {
-  return tab.to || `${entry.path}#${tab.id}`
+  return tab.to || pageSubNavigationChildPath(entry.path, tab.id)
 }
 
 const belongsToSection = (
@@ -187,9 +226,17 @@ export const getPageSubNavigationForPath = (
 ) => {
   const normalizedPath = normalizePrimaryMegaNavPath(routePathFromTo(path), localeCodes)
 
-  return pageSubNavigationEntries.find((entry) =>
-    normalizePrimaryMegaNavPath(entry.path, localeCodes) === normalizedPath
-  ) || null
+  return pageSubNavigationEntries.find((entry) => {
+    const entryPath = normalizePrimaryMegaNavPath(entry.path, localeCodes)
+
+    return (
+      entryPath === normalizedPath ||
+      Boolean(getPageSubNavigationTabFromPath(entry.tabs, entry.path, normalizedPath, {
+        localeCodes,
+        match: 'nested',
+      }))
+    )
+  }) || null
 }
 
 export const pageSubNavigationBelongsToCard = (

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title>H-GRIPE</title>
+  <rect width="64" height="64" rx="14" fill="#0b0f14"/>
+  <path d="M16 45V19h7v10h18V19h7v26h-7V36H23v9h-7Z" fill="#B5FF6D"/>
+  <path d="M27 19h10l-5 8-5-8Z" fill="#fff"/>
+</svg>

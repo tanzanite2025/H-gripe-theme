@@ -10,7 +10,6 @@ This directory is a project-level documentation hub. It is not the source of tru
 - Backend quick start: `../go-backend/QUICK_START.md`
 - Backend deployment notes: `../go-backend/DEPLOYMENT.md`
 - Current production readiness status: `ops/production-readiness-status.md`
-- Brand rename continuity plan: `ops/brand-rename-continuity-plan.md`
 - Backend module notes: `../go-backend/docs/`
 - Backend security follow-ups: `../go-backend/docs/SECURITY_FOLLOW_UPS.md`
 - Admin console guide: `../go-backend/web/admin/README.md`
@@ -21,12 +20,14 @@ This directory is a project-level documentation hub. It is not the source of tru
 - Storefront payment UX rules: `design/storefront-payment-ux.md`
 - QUICK selection flow architecture: `design/quick-buy-configuration-architecture.md`
 - Storefront recommendation UX and algorithm contract: `design/storefront-recommendation-ux.md`
+- Ops control plane and workflow engine design: `design/ops-control-plane-workflow-engine.md`
 - SEO architecture: `seo/SEO_SYSTEM_ARCHITECTURE.md`
 - SEO documentation index: `seo/README.md`
 
 ## Archive
 
 - `archive/project/` contains old project status, completion, deployment-ready, payment, storage, monitoring, and fix reports.
+- `archive/ops/` contains completed domain cutover and brand-renaming operation records.
 - `archive/backend/` contains old backend security, quality, frontend-page, and completion reports.
 - `archive/audit/` contains old audit and optimization reports.
 - `archive/refactoring/` contains old handler refactoring completion reports.

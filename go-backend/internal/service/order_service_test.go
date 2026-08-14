@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"net"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -10,13 +12,17 @@ import (
 	"commerce-platform/internal/domain/currency"
 	"commerce-platform/internal/domain/loyalty"
 	"commerce-platform/internal/domain/order"
+	outboxdomain "commerce-platform/internal/domain/outbox"
 	paymentdomain "commerce-platform/internal/domain/payment"
 	"commerce-platform/internal/domain/product"
 	"commerce-platform/internal/domain/setting"
 	shippingdomain "commerce-platform/internal/domain/shipping"
+	"commerce-platform/internal/pkg/cache"
+	"commerce-platform/internal/pkg/config"
 	"commerce-platform/internal/pkg/ordernumber"
 	"commerce-platform/internal/repository"
 
+	"github.com/alicebob/miniredis/v2"
 	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -137,6 +143,8 @@ func TestOrderServiceCreateOrderUsesVariantPricingAndStock(t *testing.T) {
 	db, orderService := newTestOrderService(t)
 	userID := uint(42)
 	productRecord := seedProductShell(t, db, 999, 99)
+	cacheInvalidator := &recordingProductCacheInvalidator{}
+	orderService.ConfigureProductCacheInvalidator(cacheInvalidator)
 	salePrice := 80.0
 	variant := product.ProductVariant{
 		ProductID:    productRecord.ID,
@@ -186,6 +194,42 @@ func TestOrderServiceCreateOrderUsesVariantPricingAndStock(t *testing.T) {
 	var savedProduct product.Product
 	require.NoError(t, db.First(&savedProduct, productRecord.ID).Error)
 	assert.Equal(t, 1, savedProduct.Stock)
+	assert.Equal(t, []uint{productRecord.ID}, cacheInvalidator.productIDs)
+
+	var cacheEvent outboxdomain.Event
+	require.NoError(t, db.Where("event_type = ?", outboxdomain.EventTypeProductCacheInvalidate).First(&cacheEvent).Error)
+	assert.Equal(t, outboxdomain.EventStatusPending, cacheEvent.Status)
+	assert.Contains(t, cacheEvent.EventKey, "order_stock_deducted")
+}
+
+func TestOrderServiceCreateOrderInvalidatesWarmedProductDetailCache(t *testing.T) {
+	db, orderService := newTestOrderService(t)
+	userID := uint(42)
+	productRecord := seedProduct(t, db, 50, 5)
+	productService := newRedisBackedProductService(t, db)
+	orderService.ConfigureProductCacheInvalidator(productService)
+
+	warmed, err := productService.GetPublicByID(productRecord.ID)
+	require.NoError(t, err)
+	require.Equal(t, 5, warmed.Stock)
+
+	createdOrder, err := orderService.CreateOrder(
+		context.Background(),
+		userID,
+		[]order.OrderItem{{ProductID: productRecord.ID, Quantity: 2}},
+		testAddress(),
+		testAddress(),
+		"card",
+		"standard",
+		"",
+		0,
+	)
+	require.NoError(t, err)
+	require.NotNil(t, createdOrder)
+
+	reloaded, err := productService.GetPublicByID(productRecord.ID)
+	require.NoError(t, err)
+	assert.Equal(t, 3, reloaded.Stock)
 }
 
 func TestOrderServiceCreateOrderPersistsSelectedCarrierService(t *testing.T) {
@@ -250,6 +294,8 @@ func TestOrderServiceCreateOrderRollsBackWhenStockIsInsufficient(t *testing.T) {
 	db, orderService := newTestOrderService(t)
 	userID := uint(42)
 	productRecord := seedProduct(t, db, 50, 1)
+	cacheInvalidator := &recordingProductCacheInvalidator{}
+	orderService.ConfigureProductCacheInvalidator(cacheInvalidator)
 
 	createdOrder, err := orderService.CreateOrder(
 		context.Background(),
@@ -274,6 +320,7 @@ func TestOrderServiceCreateOrderRollsBackWhenStockIsInsufficient(t *testing.T) {
 	var savedProduct product.Product
 	require.NoError(t, db.First(&savedProduct, productRecord.ID).Error)
 	assert.Equal(t, 1, savedProduct.Stock)
+	assert.Empty(t, cacheInvalidator.productIDs)
 }
 
 func TestOrderServiceCreateOrderRejectsProductWithoutVariant(t *testing.T) {
@@ -307,6 +354,8 @@ func TestOrderServiceExpireStalePendingPaymentsReleasesReservations(t *testing.T
 	now := time.Now().UTC()
 	userID := uint(42)
 	productRecord := seedProduct(t, db, 50, 5)
+	cacheInvalidator := &recordingProductCacheInvalidator{}
+	orderService.ConfigureProductCacheInvalidator(cacheInvalidator)
 	seedUserLoyalty(t, db, userID, 1000)
 	seedCoupon(t, db, "EXPIRE10", "fixed", 10, 1)
 
@@ -376,6 +425,7 @@ func TestOrderServiceExpireStalePendingPaymentsReleasesReservations(t *testing.T
 	var usageCount int64
 	require.NoError(t, db.Model(&coupon.CouponUsage{}).Where("order_id = ?", createdOrder.ID).Count(&usageCount).Error)
 	assert.Equal(t, int64(0), usageCount)
+	assert.Equal(t, []uint{productRecord.ID, productRecord.ID}, cacheInvalidator.productIDs)
 }
 
 func TestOrderServiceExpireStalePendingPaymentsSkipsRecentPaymentActivity(t *testing.T) {
@@ -488,6 +538,29 @@ func TestOrderServiceCompletingOrderAwardsPurchasePointsOnce(t *testing.T) {
 		Where("user_id = ? AND type = ? AND source = ? AND source_id = ?", userID, "earn", "order", orderRecord.ID).
 		Count(&count).Error)
 	assert.EqualValues(t, 1, count)
+}
+
+func TestOrderServiceCompletingOrderDoesNotChangeShippingStatus(t *testing.T) {
+	db, orderService := newTestOrderService(t)
+	orderRecord := order.Order{
+		OrderNumber:    "ORD-COMPLETE-SHIPPING-INDEPENDENT",
+		UserID:         42,
+		Status:         "shipped",
+		ShippingStatus: "shipped",
+		PaymentStatus:  "paid",
+		SubtotalAmount: 100,
+		TotalAmount:    100,
+		Currency:       "USD",
+	}
+	require.NoError(t, db.Create(&orderRecord).Error)
+
+	require.NoError(t, orderService.UpdateOrderStatus(orderRecord.ID, "completed"))
+
+	var saved order.Order
+	require.NoError(t, db.First(&saved, orderRecord.ID).Error)
+	assert.Equal(t, "completed", saved.Status)
+	assert.Equal(t, "shipped", saved.ShippingStatus)
+	assert.NotNil(t, saved.CompletedAt)
 }
 
 func TestOrderServiceCompletionRejectsNonUSDPointsWithoutConversion(t *testing.T) {
@@ -816,6 +889,7 @@ func newTestOrderService(t *testing.T) (*gorm.DB, *OrderService) {
 		&product.ProductVariant{},
 		&order.Order{},
 		&order.OrderItem{},
+		&outboxdomain.Event{},
 		&coupon.Coupon{},
 		&coupon.CouponUsage{},
 		&currency.ExchangeRate{},
@@ -853,6 +927,7 @@ func newTestOrderService(t *testing.T) (*gorm.DB, *OrderService) {
 	exchangeRateRepo := repository.NewExchangeRateRepository(db)
 	txManager.ConfigureSettingRepository(repository.NewSettingRepository(db))
 	txManager.ConfigureExchangeRateRepository(exchangeRateRepo)
+	txManager.ConfigureOutboxRepository(repository.NewOutboxRepository(db))
 	checkoutService.ConfigureCurrencyPolicy(currencyPolicyService)
 	checkoutService.ConfigureExchangeRateRepository(exchangeRateRepo)
 	eurRate := exchangeRateRecord("USD", "EUR", 0.9)
@@ -887,6 +962,22 @@ func newTestOrderService(t *testing.T) (*gorm.DB, *OrderService) {
 	require.NoError(t, err)
 
 	return db, NewOrderService(txManager, orderRepo, checkoutService, shippingService, numberGenerator)
+}
+
+func newRedisBackedProductService(t *testing.T, db *gorm.DB) *ProductService {
+	t.Helper()
+
+	redisServer := miniredis.RunT(t)
+	host, portText, err := net.SplitHostPort(redisServer.Addr())
+	require.NoError(t, err)
+	port, err := strconv.Atoi(portText)
+	require.NoError(t, err)
+	redisCache, err := cache.Init(config.RedisConfig{Host: host, Port: port})
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_ = redisCache.Close()
+	})
+	return NewProductServiceWithCacheOptions(repository.NewProductRepository(db), redisCache, 60, 2)
 }
 
 func seedProduct(t *testing.T, db *gorm.DB, price float64, stock int) product.Product {

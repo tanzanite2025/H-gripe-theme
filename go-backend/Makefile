@@ -92,7 +92,7 @@ tidy: ## 整理依赖
 
 migrate-up: ## 运行数据库迁移（向上）
 	@echo "Running migrations up..."
-	$(GO) run ./cmd/server --migrate
+	$(GO) run ./cmd/server migrate
 
 migrate-down: ## 回滚数据库迁移
 	@echo "Rolling back migrations..."

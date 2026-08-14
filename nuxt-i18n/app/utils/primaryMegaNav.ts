@@ -21,7 +21,7 @@ export interface PrimaryMegaNavCard {
   title?: string
   /** short card description for the desktop mega menu */
   description: string
-  /** route path; hash/query are supported and localized by the component */
+  /** route path; query is supported and localized by the component */
   to: string
   /** Nuxt Icon name */
   icon: string
@@ -45,8 +45,7 @@ export interface PrimaryMegaNavSection {
 }
 
 export const normalizePrimaryMegaNavPath = (path: string, localeCodes: string[] = []) => {
-  const pathWithoutHash = (path || '/').split('#')[0] || '/'
-  const pathWithoutQuery = pathWithoutHash.split('?')[0] || '/'
+  const pathWithoutQuery = (path || '/').split('?')[0] || '/'
   const absolutePath = pathWithoutQuery.startsWith('/') ? pathWithoutQuery : `/${pathWithoutQuery}`
   const segments = absolutePath.split('/').filter(Boolean)
   const firstSegment = segments[0] || ''
