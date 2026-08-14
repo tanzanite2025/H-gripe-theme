@@ -9,7 +9,7 @@
         @click="openSidebarLeft"
         :aria-label="$t('dockMenu.openSidebar')"
       >
-        <Icon name="lucide:circle-user-round" class="w-7 h-7 md:w-9 md:h-9 transition-all" />
+        <Icon name="lucide:user-round-check" class="dock-account-icon w-7 h-7 md:w-9 md:h-9 transition-all" />
       </button>
 
       <!-- 2. Chat -->
@@ -22,7 +22,30 @@
         :aria-label="$t('dockMenu.chat')"
       >
         <span class="relative inline-flex h-7 w-7 md:h-9 md:w-9 items-center justify-center">
-          <Icon name="lucide:message-circle" class="w-full h-full transition-all" />
+          <svg
+            class="dock-chat-icon w-full h-full transition-all"
+            viewBox="0 0 48 48"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            aria-hidden="true"
+          >
+            <g transform="translate(24 24) scale(1.2) translate(-24 -24)">
+              <path
+                d="M31 12H15.5C12.46 12 10 14.46 10 17.5V30C10 33.04 12.46 35.5 15.5 35.5H20V42L28 35.5H37C40.04 35.5 42.5 33.04 42.5 30V21"
+                stroke="currentColor"
+                stroke-width="3.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M29.5 18.5L40 8M33 8H40V15"
+                stroke="currentColor"
+                stroke-width="3.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </g>
+          </svg>
           <!-- Unread Badge -->
           <span
             v-if="totalUnreadCount > 0"
@@ -33,13 +56,28 @@
 
       <!-- 3. Quick Buy -->
       <button 
-        class="flex-1 h-11 md:h-12 flex items-center justify-center tz-text-secondary hover:text-[#B5FF6D] transition-colors min-w-[40px]"
+        ref="quickBuyAnchorRef"
+        class="dock-quick-buy-button flex-1 h-11 md:h-12 flex items-center justify-center tz-text-secondary hover:text-[#B5FF6D] transition-colors min-w-[40px]"
+        :class="{ 'dock-quick-buy-button--active': quickOpen }"
         @click="openQuick()" 
         aria-haspopup="dialog" 
         :aria-expanded="quickOpen" 
         :aria-label="$t('dockMenu.quickBuy')"
       >
-        <Icon name="lucide:zap" class="w-7 h-7 md:w-9 md:h-9 transition-all" />
+        <span class="dock-quick-buy-frame">
+          <svg
+            class="dock-quick-buy-icon w-7 h-7 md:w-9 md:h-9 transition-all"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+            aria-hidden="true"
+          >
+            <title>Honeybadger</title>
+            <path
+              d="M11.999 0c-.346 0-.691.131-.955.395L.394 11.045a1.35 1.35 0 0 0 0 1.91l6.243 6.24.915-1.95L2.306 12l9.693-9.693 1.158 1.157 1.432-1.432L12.954.395A1.346 1.346 0 0 0 11.999 0Zm5.54 1.106a.331.331 0 0 0-.218.102l-1.777 1.778-1.432 1.432-8.393 8.392h4.726l-3.76 9.26c-.139.34.29.626.55.366l1.321-1.32v-.001l1.432-1.432h.001l8.56-8.561h-4.727l2.083-4.91v.001l.854-2.012 1.112-2.623c.108-.256-.108-.485-.333-.472Zm.25 4.125-.853 2.012 4.756 4.756L12 21.693l-1.056-1.055-1.432 1.432 1.533 1.534a1.35 1.35 0 0 0 1.91 0l10.65-10.65a1.35 1.35 0 0 0 0-1.91z"
+              fill="currentColor"
+            />
+          </svg>
+        </span>
       </button>
 
       <!-- 4. Cart -->
@@ -51,7 +89,10 @@
         :aria-label="cartActionAriaLabel"
       >
         <span class="dock-cart-content">
-          <span class="dock-cart-total">{{ priceDisplay }}</span>
+          <span class="dock-cart-currency notranslate" translate="no" aria-hidden="true">
+            <Icon :name="currencyIconName" class="h-full w-full" />
+          </span>
+          <span class="dock-cart-total notranslate" translate="no">{{ priceDisplay }}</span>
           <span class="dock-cart-count">{{ itemsCount }}</span>
         </span>
       </button>
@@ -59,20 +100,26 @@
     </div>
   </div>
   
-  <!-- Quick Buy Modal from Dock -->
-  <QuickBuyModal v-if="quickOpen" :config="quickBuyConfig" @close="quickOpen = false" />
+  <!-- Quick Buy entry popover from Dock -->
+  <QuickBuyEntryRouterPopover
+    v-if="quickOpen"
+    :config="quickBuyConfig"
+    :anchor="quickBuyAnchorRef"
+    @close="quickOpen = false"
+  />
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, watchEffect } from 'vue'
 import { useI18n } from '#imports'
-import QuickBuyModal from '@/components/QuickBuy.vue'
+import QuickBuyEntryRouterPopover from '@/components/quick-buy/QuickBuyEntryRouterPopover.vue'
 import { useChatWidget } from '~/composables/useChatWidget'
 import { useQuickBuyFlow } from '~/composables/useQuickBuyFlow'
 
 // floating submenu state
 const isOpen = ref(false)
 const quickOpen = ref(false)
+const quickBuyAnchorRef = ref<HTMLElement | null>(null)
 
 // 全局聊天窗口状态（在多个布局之间保持一致）
 const { currentConversation, isChatOpen, openChat, closeChat } = useChatWidget()
@@ -156,18 +203,58 @@ onMounted(() => {
 })
 
 // 集成购物车系统
-const { cartCount, total, openCart, formatPrice } = useCart()
+const { cartCount, total, cartCurrency, openCart } = useCart()
 
 const itemsCount = computed(() => cartCount.value)
 
 const priceDisplay = computed(() => {
-  return formatPrice(total.value)
+  try {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: cartCurrency.value || 'USD',
+    }).formatToParts(total.value)
+      .filter(part => part.type !== 'currency' && part.type !== 'literal')
+      .map(part => part.value)
+      .join('')
+      .trim()
+  } catch {
+    return Number(total.value || 0).toFixed(2)
+  }
+})
+
+const currencyIconName = computed(() => {
+  switch (cartCurrency.value) {
+    case 'EUR':
+      return 'lucide:badge-euro'
+    case 'GBP':
+      return 'lucide:badge-pound-sterling'
+    case 'JPY':
+    case 'CNY':
+      return 'lucide:badge-japanese-yen'
+    case 'INR':
+      return 'lucide:badge-indian-rupee'
+    case 'CHF':
+      return 'lucide:badge-swiss-franc'
+    case 'TRY':
+      return 'lucide:badge-turkish-lira'
+    case 'RUB':
+      return 'lucide:badge-russian-ruble'
+    case 'USD':
+    case 'AUD':
+    case 'CAD':
+    case 'HKD':
+    case 'NZD':
+    case 'SGD':
+      return 'lucide:badge-dollar-sign'
+    default:
+      return 'lucide:banknote'
+  }
 })
 
 const cartActionAriaLabel = computed(() => {
   const openCartLabel = String($t('dockMenu.openCart'))
   if (itemsCount.value <= 0) return openCartLabel
-  return `${openCartLabel}: ${itemsCount.value} ${String($t('cart.summary.items', 'Items'))}, ${priceDisplay.value}`
+  return `${openCartLabel}: ${itemsCount.value} ${String($t('cart.summary.items', 'Items'))}, ${priceDisplay.value} ${cartCurrency.value || 'USD'}`
 })
 
 const openCartDrawer = () => {
@@ -238,6 +325,38 @@ watchEffect(() => {
   backdrop-filter: none;
 }
 
+.dock-quick-buy-button {
+  --dock-quickbuy-active-edge: color-mix(in srgb, var(--tz-brand-primary, #b5ff6d) 74%, transparent);
+}
+
+.dock-quick-buy-frame {
+  display: grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  place-items: center;
+  border-radius: 999px;
+  transition:
+    background-color 180ms ease,
+    box-shadow 180ms ease,
+    color 180ms ease,
+    transform 180ms ease;
+}
+
+.dock-quick-buy-button--active {
+  color: var(--tz-brand-primary, #b5ff6d);
+}
+
+.dock-quick-buy-button--active .dock-quick-buy-frame {
+  background: rgba(181, 255, 109, 0.08);
+  box-shadow:
+    inset 0 0 0 1px var(--dock-quickbuy-active-edge),
+    0 0 0 4px rgba(181, 255, 109, 0.075);
+}
+
+.dock-quick-buy-button:hover .dock-quick-buy-frame {
+  transform: translateY(-0.0625rem);
+}
+
 .dock-cart-button {
   display: flex;
   flex: 1.18 1 0;
@@ -272,6 +391,15 @@ watchEffect(() => {
   gap: 0.35rem;
 }
 
+.dock-cart-currency {
+  display: inline-flex;
+  width: 1.25rem;
+  height: 1.25rem;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+}
+
 .dock-cart-button:hover {
   background: #f8fafc;
   color: #050505;
@@ -291,9 +419,9 @@ watchEffect(() => {
 
 .dock-cart-count {
   display: inline-flex;
-  width: 1.5rem;
-  min-width: 1.5rem;
-  height: 1.5rem;
+  width: 1.875rem;
+  min-width: 1.875rem;
+  height: 1.875rem;
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
@@ -301,7 +429,7 @@ watchEffect(() => {
   border-radius: 999px;
   background: var(--tz-brand-primary, #b5ff6d);
   color: #050505;
-  font-size: 0.75rem;
+  font-size: 1rem;
   font-weight: 900;
   padding: 0;
 }
@@ -317,6 +445,11 @@ watchEffect(() => {
 }
 
 @media (min-width: 768px) {
+  .dock-quick-buy-frame {
+    width: 3rem;
+    height: 3rem;
+  }
+
   .dock-cart-button {
     height: 2.75rem;
     min-width: 7.4rem;
@@ -325,6 +458,11 @@ watchEffect(() => {
   .dock-cart-total {
     max-width: 6.5rem;
     font-size: 1.3rem;
+  }
+
+  .dock-cart-currency {
+    width: 1.35rem;
+    height: 1.35rem;
   }
 }
 

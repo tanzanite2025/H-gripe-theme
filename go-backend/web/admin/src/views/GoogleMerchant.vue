@@ -41,7 +41,7 @@
           <Input v-model="connectionForm.data_source_id" placeholder="例如 987654321" />
         </AdminFormField>
         <AdminFormField label="Storefront Base URL">
-          <Input v-model="connectionForm.storefront_base_url" placeholder="https://learn.gripe" />
+          <Input v-model="connectionForm.storefront_base_url" placeholder="https://store.example.com" />
         </AdminFormField>
         <div class="flex items-end justify-end gap-2">
           <Button

@@ -112,6 +112,21 @@ func TestValidateConfigRejectsOrderAbuseWithoutIdentityLimit(t *testing.T) {
 	}
 }
 
+func TestValidateConfigRejectsInvalidQuickBuyRateLimitConfig(t *testing.T) {
+	cfg := validTestConfig()
+	cfg.QuickBuyRateLimit = QuickBuyRateLimitConfig{
+		Enabled:                  true,
+		IPRequestsPerMinute:      120,
+		IPBurst:                  0,
+		SessionRequestsPerMinute: 60,
+		SessionBurst:             20,
+	}
+
+	if err := validateConfig(cfg); err == nil {
+		t.Fatal("validateConfig should reject invalid Quick Buy rate limit config")
+	}
+}
+
 func TestValidateConfigRejectsShortPreviousOrderNumberSecretInRelease(t *testing.T) {
 	cfg := validTestConfig()
 	cfg.Server.Mode = "release"
@@ -180,6 +195,15 @@ func TestValidateConfigRejectsMissingMediaUploadQuota(t *testing.T) {
 	}
 }
 
+func TestValidateConfigRejectsInvalidProductLockTTL(t *testing.T) {
+	cfg := validTestConfig()
+	cfg.Cache.ProductLockTTL = 0
+
+	if err := validateConfig(cfg); err == nil {
+		t.Fatal("validateConfig should reject a non-positive product cache lock TTL")
+	}
+}
+
 func TestValidateConfigRejectsReleaseWithoutTrustedProxies(t *testing.T) {
 	cfg := validTestConfig()
 	cfg.Server.Mode = "release"
@@ -219,6 +243,8 @@ func TestLoadProductionConfigUsesEnvironmentOverrides(t *testing.T) {
 	t.Setenv("GOOGLE_CLIENT_ID", "test-google-client")
 	t.Setenv("CORS_ORIGINS", "https://example.com,https://admin.example.com")
 	t.Setenv("TRUSTED_PROXIES", "10.0.0.0/8, 172.16.0.0/12")
+	t.Setenv("QUICK_BUY_RATE_LIMIT_IP_REQUESTS_PER_MINUTE", "88")
+	t.Setenv("QUICK_BUY_RATE_LIMIT_SESSION_BURST", "9")
 
 	cfg, err := Load("../../../config/config.production.yaml")
 	if err != nil {
@@ -237,16 +263,30 @@ func TestLoadProductionConfigUsesEnvironmentOverrides(t *testing.T) {
 	if len(cfg.Server.TrustedProxies) != 2 || cfg.Server.TrustedProxies[1] != "172.16.0.0/12" {
 		t.Fatalf("TRUSTED_PROXIES override not applied: %v", cfg.Server.TrustedProxies)
 	}
+	if cfg.QuickBuyRateLimit.IPRequestsPerMinute != 88 || cfg.QuickBuyRateLimit.SessionBurst != 9 {
+		t.Fatalf("Quick Buy rate limit overrides not applied: %+v", cfg.QuickBuyRateLimit)
+	}
 }
 
 func validTestConfig() *Config {
 	return &Config{
-		Server: ServerConfig{Mode: "debug", BaseURL: "http://localhost:9200"},
+		Server: ServerConfig{
+			Mode:              "debug",
+			BaseURL:           "http://localhost:9200",
+			ReadTimeout:       60,
+			ReadHeaderTimeout: 10,
+			WriteTimeout:      60,
+			IdleTimeout:       120,
+			MaxHeaderBytes:    1 << 20,
+		},
 		Database: DatabaseConfig{
 			Host:     "localhost",
 			Database: "commerce_platform",
 		},
 		JWT: JWTConfig{Secret: "test-secret"},
+		Cache: CacheConfig{
+			ProductLockTTL: 5,
+		},
 		MediaUpload: MediaUploadConfig{
 			AccountStorageQuotaBytes: 20 << 30,
 		},

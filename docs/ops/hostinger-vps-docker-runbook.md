@@ -20,8 +20,8 @@ Cloudflare
   -> Hostinger firewall: 80/443
   -> shared-edge (shared Caddy)
       -> erp.legacy.example -> erp-web:8080
-      -> learn.gripe       -> theme-web:8080
-      -> admin.learn.gripe -> theme-web:8080
+      -> generated storefront domains -> theme-web:8080
+      -> generated admin domains      -> theme-web:8080
 
 commerce-platform project
   -> web -> storefront
@@ -39,7 +39,8 @@ The neutral gateway name is `shared-edge`. The storefront joins that shared
 edge network through the `web` service only.
 
 1. Keep the shared gateway running.
-2. Keep `learn.gripe`, `www.learn.gripe`, and `admin.learn.gripe` routed to `theme-web`.
+2. Keep the enabled production domains from `ops_domain_bindings` routed to
+   `theme-web`; do not maintain a second static hostname list in the gateway.
 3. Keep the ERP route separate.
 4. Do not recreate the old `commerce-platform-edge` project or reintroduce old public hostnames into the active boundary.
 
@@ -53,8 +54,8 @@ Browser API requests stay same-origin through `web`. Nuxt server-side requests t
 | `deployment/production.env.example` | Production environment template |
 | `deployment/docker/web.Dockerfile` | Internal Nginx entry image |
 | `deployment/nginx/theme-web.conf` | Same-origin API, storefront, admin, and upload routing |
-| `deployment/edge/learn-gripe.caddy` | Route fragment for the shared Caddy gateway |
-| `docs/ops/learn-gripe-cutover.md` | Prepared migration procedure for the replacement storefront domain |
+| `deployment/edge/commerce-platform.caddy` | Shared Caddy security fragment and generated-route import |
+| `docs/archive/ops/learn-gripe-cutover-completed.md` | Completed `learn.gripe` domain cutover record |
 | `deployment/verify-vps-release-boundary.sh` | Static and runtime Compose/network release evidence |
 | `.github/workflows/publish-images.yml` | GHCR image publishing |
 | `deploy.sh` | Recommended SSH deployment path |
@@ -85,7 +86,7 @@ the new boundary against empty volumes before that migration is complete.
 
 Database and cache reachability is intentional:
 
-- `db` is internal and contains only `db`, `api`, and the one-shot `migrate` service. `storefront`, `admin`, and `web` cannot resolve or connect to PostgreSQL through Docker networking.
+- `db` is internal and contains only `db`, `api`, and the one-shot `migrate` and `edge-config` services. `storefront`, `admin`, and `web` cannot resolve or connect to PostgreSQL through Docker networking.
 - `cache` is internal and contains `redis`, `api`, and `storefront` because the SSR HTML cache is Redis-backed. Redis has a password and is never published to the host.
 - `app` is not marked `internal` because the API and storefront need outbound SMTP, Turnstile, payment, and registry-related traffic. No service in the business stack publishes a host port.
 - `edge` is the only public gateway path. Only `web` joins it; the API, database, Redis, storefront, and admin are not directly reachable from Cloudflare or the VPS interface.
@@ -120,7 +121,7 @@ The recommended release path is a repository clone on the VPS:
 ./deploy.sh
 ```
 
-The script fetches `origin/master`, resolves the full commit SHA, waits for all four matching GHCR images, validates Compose, and recreates the project only after every image is available. Run it immediately after a push or after GitHub Actions completes.
+The script fetches `origin/master`, resolves the full commit SHA, waits for all four matching GHCR images, validates Compose, runs the database migration, renders the edge configuration from the migrated database, validates the generated artifacts, and only then updates the shared gateway. Run it immediately after a push or after GitHub Actions completes.
 
 In Hostinger Docker Manager create:
 
@@ -140,12 +141,16 @@ Expected services:
 
 - `db`
 - `redis`
+- `migrate` (one-shot)
+- `edge-config` (one-shot; must complete successfully)
 - `api`
 - `storefront`
 - `admin`
 - `web`
 
-All six services must become Healthy. Only the `shared-edge` gateway may publish host ports.
+The long-running application services must become Healthy. `migrate` and
+`edge-config` are one-shot services and must exit successfully. Only the
+`shared-edge` gateway may publish host ports.
 
 ## Release Boundary Evidence
 
@@ -172,20 +177,23 @@ the release evidence store and keep it with the exact image tag or digest.
 
 ## Add Shared Gateway Routes
 
-Merge `deployment/edge/learn-gripe.caddy` into the existing `shared-edge` Caddyfile without changing the ERP route.
+Merge `deployment/edge/commerce-platform.caddy` into the existing `shared-edge`
+Caddyfile without changing the ERP route. The fragment imports the generated
+route file at `/etc/caddy/generated/commerce-platform.caddy`.
 
-Required routes:
-
-```text
-learn.gripe, www.learn.gripe -> theme-web:8080
-admin.learn.gripe            -> theme-web:8080
-```
-
-Updating the shared gateway is a separate infrastructure operation. Do not copy the storefront Compose into the ERP project and do not replace the gateway project.
+`deploy.sh` writes the generated route to the configured
+`EDGE_GATEWAY_ROUTE_FILE` only after database migration, edge rendering,
+standalone Caddy validation, and generated Nginx/manifest checks pass. It then
+validates and reloads the shared gateway. If rendering fails, the existing
+gateway route is not touched; if gateway validation or reload fails, the
+previous route is restored.
 
 ## DNS State
 
-`learn.gripe` is the canonical public domain. Keep DNS, TLS, and proxy settings aligned with that hostname and its `www` and `admin` aliases.
+The canonical public domain and its aliases come from the enabled production
+rows in `ops_domain_bindings`. Keep DNS, TLS, Caddy, Nginx, CORS, and public URL
+environment values aligned with the generated manifest instead of copying a
+hostname into multiple files.
 
 Keep the ERP record set separate from the storefront boundary.
 
@@ -203,7 +211,7 @@ Verify before enabling public traffic:
 GET /                          -> storefront 200
 GET /healthz                   -> theme-web 200
 GET /api/v1/settings/site      -> Go API response
-GET admin.learn.gripe/         -> admin login page
+GET <generated-admin-domain>/  -> admin login page
 GET /uploads/<known-file>      -> static file response
 WebSocket Upgrade              -> reaches customer-service authentication
 ```
@@ -216,6 +224,10 @@ Also verify:
 - Checkout quote and order creation.
 - Disabled payment provider callbacks fail closed and do not change order state.
 - Upload persistence after recreating the API and Web containers.
+- If object storage is used, keep the bucket private and verify anonymous
+  access to `showcase/pending/<known-key>` returns `403` or `404`; the API
+  service account must be the only writer and must be able to copy approved
+  objects into `showcase/approved/`.
 - PostgreSQL and Redis are not reachable on the VPS public address.
 - From a temporary diagnostic container on `app`, confirm PostgreSQL connections fail because it is not on `db`; from `api`, confirm PostgreSQL and Redis connections succeed.
 - Confirm `/metrics` is not routed by the public Nginx/Caddy gateway. Scrape it only from a private monitoring container or private tunnel.

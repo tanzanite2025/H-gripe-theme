@@ -61,6 +61,23 @@ var (
 		},
 		[]string{"seed_id", "outcome"},
 	)
+	ProductCacheInvalidations = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: "commerce_platform",
+			Name:      "product_cache_invalidations_total",
+			Help:      "Product detail cache invalidation attempts by source and result.",
+		},
+		[]string{"source", "result"},
+	)
+	ProductCacheInvalidationKeys = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Namespace: "commerce_platform",
+			Name:      "product_cache_invalidation_keys",
+			Help:      "Number of Redis keys deleted per product detail cache invalidation.",
+			Buckets:   []float64{0, 1, 2, 5, 10, 25, 50, 100, 250, 500},
+		},
+		[]string{"source"},
+	)
 )
 
 func init() {
@@ -105,6 +122,16 @@ func init() {
 	register(CommercialIntelligenceActions, func(collector prometheus.Collector) {
 		if existing, ok := collector.(*prometheus.CounterVec); ok {
 			CommercialIntelligenceActions = existing
+		}
+	})
+	register(ProductCacheInvalidations, func(collector prometheus.Collector) {
+		if existing, ok := collector.(*prometheus.CounterVec); ok {
+			ProductCacheInvalidations = existing
+		}
+	})
+	register(ProductCacheInvalidationKeys, func(collector prometheus.Collector) {
+		if existing, ok := collector.(*prometheus.HistogramVec); ok {
+			ProductCacheInvalidationKeys = existing
 		}
 	})
 }

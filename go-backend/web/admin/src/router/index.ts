@@ -19,7 +19,6 @@ const stripLegacyTabQuery = (query: LocationQuery = {}): LocationQueryRaw => {
 const domainRedirect = (defaultRouteName: string, tabRoutes: Record<string, string>) => (to: RouteLocationNormalized): RouteLocationRaw => ({
   name: tabRoutes[String(firstQueryValue(to.query.tab) || '')] || defaultRouteName,
   query: stripLegacyTabQuery(to.query),
-  hash: to.hash,
 })
 
 const marketingRedirect = (to: RouteLocationNormalized): RouteLocationRaw => {
@@ -35,7 +34,6 @@ const marketingRedirect = (to: RouteLocationNormalized): RouteLocationRaw => {
   return {
     name: target,
     query: stripLegacyTabQuery(to.query),
-    hash: to.hash,
   }
 }
 
@@ -263,6 +261,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '品牌图库', permission: 'gallery:view' }
       },
       {
+        path: 'content/showcase',
+        name: 'ContentShowcase',
+        component: () => import('@/views/ShowcaseModeration.vue'),
+        meta: { title: '买家秀审批', permission: 'gallery:view' }
+      },
+      {
         path: 'content/media-library',
         name: 'ContentMediaLibrary',
         component: () => import('@/views/MediaLibrary.vue'),
@@ -381,6 +385,47 @@ const routes: RouteRecordRaw[] = [
         name: 'Analytics',
         component: () => import('@/views/Analytics.vue'),
         meta: { title: 'Analytics', permission: 'analytics:view' }
+      },
+      {
+        path: 'ops',
+        redirect: { name: 'OpsOverview' },
+        meta: { permission: 'ops:view' }
+      },
+      {
+        path: 'ops/overview',
+        name: 'OpsOverview',
+        component: () => import('@/views/OpsOverview.vue'),
+        meta: { title: '运维总览', permission: 'ops:view' }
+      },
+      {
+        path: 'ops/domains',
+        name: 'OpsDomains',
+        component: () => import('@/views/OpsDomains.vue'),
+        meta: { title: '域名中心', permission: 'ops:domain:view' }
+      },
+      {
+        path: 'ops/connectors',
+        name: 'OpsConnectors',
+        component: () => import('@/views/OpsConnectors.vue'),
+        meta: { title: '连接器中心', permission: 'ops:connector:view' }
+      },
+      {
+        path: 'ops/vps',
+        name: 'OpsVPS',
+        component: () => import('@/views/OpsVPS.vue'),
+        meta: { title: 'VPS 中心', permission: 'ops:vps:view' }
+      },
+      {
+        path: 'ops/projects',
+        name: 'OpsProjects',
+        component: () => import('@/views/OpsProjects.vue'),
+        meta: { title: '项目中心', permission: 'ops:project:view' }
+      },
+      {
+        path: 'ops/deployments',
+        name: 'OpsDeployments',
+        component: () => import('@/views/OpsDeployments.vue'),
+        meta: { title: '部署中心', permission: 'ops:deploy:view' }
       },
       {
         path: 'settings',

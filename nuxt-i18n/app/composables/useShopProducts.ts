@@ -76,6 +76,10 @@ export interface ShopProductVariant {
 export interface ShopProductsResult {
   items: ShopProduct[]
   raw: unknown
+  page?: number
+  pageSize?: number
+  total?: number
+  hasMore?: boolean
 }
 
 export type ShopProductQueryParams = Record<string, string | number | boolean | undefined>
@@ -311,6 +315,13 @@ const extractProductItems = (response: any): any[] => {
   return []
 }
 
+const extractPagination = (response: any, fallbackPageSize: number): Pick<ShopProductsResult, 'page' | 'pageSize' | 'total' | 'hasMore'> => ({
+  page: toFiniteNumber(response?.page, 1),
+  pageSize: toFiniteNumber(response?.page_size, fallbackPageSize),
+  total: toFiniteNumber(response?.total, 0),
+  hasMore: Boolean(response?.has_more),
+})
+
 export function useShopProducts() {
   const config = useRuntimeConfig()
   const { locale } = useI18n()
@@ -337,6 +348,7 @@ export function useShopProducts() {
     return {
       items,
       raw: response,
+      ...extractPagination(response, toFiniteNumber(params.per_page ?? params.page_size, 12)),
     }
   }
 
@@ -356,6 +368,7 @@ export function useShopProducts() {
     return {
       items,
       raw: response,
+      ...extractPagination(response, toFiniteNumber(params.page_size ?? params.per_page, 12)),
     }
   }
 

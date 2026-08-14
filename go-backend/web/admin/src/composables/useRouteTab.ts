@@ -47,7 +47,6 @@ export function useRouteTab<T extends string>({
       router.push({
         name: targetRouteName,
         query: route.query,
-        hash: route.hash,
       })
     }
   })

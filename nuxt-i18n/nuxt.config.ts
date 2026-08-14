@@ -14,6 +14,63 @@ const imageProvider = env.NUXT_IMAGE_PROVIDER || 'none'
 const htmlCacheDefault = env.NODE_ENV === 'production' ? 'true' : 'false'
 const htmlCacheEnabled = String(env.NUXT_HTML_CACHE_ENABLED ?? htmlCacheDefault).toLowerCase() !== 'false'
 
+const tabbedPageRoutes = [
+  {
+    basePath: '/guides/tireguides',
+    tabs: ['size', 'match', 'tubeless', 'installation', 'choose', 'rims', 'tube'],
+  },
+  {
+    basePath: '/guides/wheelset-buyers',
+    tabs: ['overview', 'safety-instructions', 'sample-assembly', 'special-order', 'appearance-logo', 'choose-freehub', 'wheel-components', 'optional'],
+  },
+  {
+    basePath: '/company/about',
+    tabs: ['factory', 'appearance', 'hole-patterns', 'facility', 'manufacture', 'qualitycontrol'],
+  },
+  {
+    basePath: '/support/warranty',
+    tabs: ['change-cancel', 'damaged-lost', 'returns', 'warranty', 'accidental-damage', 'protection', 'submit-warranty'],
+  },
+  {
+    basePath: '/support/test-report',
+    tabs: ['rim-test-report', 'wheelset-test-report', 'tension', 'wheelset-assembly'],
+  },
+  {
+    basePath: '/spoke-calculator',
+    tabs: ['calculator', 'parameter'],
+  },
+  {
+    basePath: '/membershipandpoints',
+    tabs: ['myinfo', 'levers', 'exchange'],
+  },
+  {
+    basePath: '/picture-warehouse',
+    tabs: ['riders', 'brand'],
+  },
+]
+
+const normalizePagePath = (path: string) => `/${path.replace(/^\/+/, '')}`.replace(/\/+$/, '') || '/'
+
+const addTabbedPageRoutes = (pages: any[]) => {
+  for (const entry of tabbedPageRoutes) {
+    const basePath = normalizePagePath(entry.basePath)
+    const basePage = pages.find(page => normalizePagePath(page.path || '') === basePath)
+    if (!basePage?.file) continue
+
+    const name = String(basePage.name || basePath.replace(/[^\w]+/g, '-').replace(/^-|-$/g, ''))
+    const tabPattern = entry.tabs.join('|')
+    const tabPath = `${basePath}/:tab(${tabPattern})`
+
+    if (pages.some(page => normalizePagePath(page.path || '') === tabPath)) continue
+
+    pages.push({
+      ...basePage,
+      name: `${name}-tab`,
+      path: tabPath,
+    })
+  }
+}
+
 const storefrontI18nLocales = locales.map((locale) => {
   const localeFile = locale.file || `${locale.code}.json`
 
@@ -132,6 +189,12 @@ export default defineNuxtConfig({
   },
 
   modules: ['@nuxtjs/i18n', '@nuxtjs/sitemap', '@nuxt/image', '@pinia/nuxt', '@nuxt/icon', '@nuxt/fonts'],
+
+  hooks: {
+    'pages:extend'(pages) {
+      addTabbedPageRoutes(pages)
+    },
+  },
 
   icon: {
     localApiEndpoint: '/_nuxt_icon',

@@ -6,7 +6,9 @@ import (
 
 	coupondomain "commerce-platform/internal/domain/coupon"
 	orderdomain "commerce-platform/internal/domain/order"
+	outboxdomain "commerce-platform/internal/domain/outbox"
 	paymentdomain "commerce-platform/internal/domain/payment"
+	productdomain "commerce-platform/internal/domain/product"
 	"commerce-platform/internal/repository"
 
 	"github.com/glebarez/sqlite"
@@ -212,10 +214,13 @@ func newPaymentRefundRecommendationTestDB(t *testing.T) *gorm.DB {
 		_ = sqlDB.Close()
 	})
 	require.NoError(t, db.AutoMigrate(
+		&productdomain.Product{},
+		&productdomain.ProductVariant{},
 		&orderdomain.Order{},
 		&orderdomain.OrderItem{},
 		&coupondomain.Coupon{},
 		&coupondomain.CouponUsage{},
+		&outboxdomain.Event{},
 		&paymentdomain.Transaction{},
 		&paymentdomain.Refund{},
 		&paymentdomain.RefundLineItem{},

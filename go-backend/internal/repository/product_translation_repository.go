@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -211,8 +212,12 @@ func (r *ProductRepository) CreateTranslatedCopy(source, target *product.Product
 // product's translation group. Product translations are direct children of a
 // root product; the service layer must enforce that relationship for writes.
 func (r *ProductRepository) FindPublicTranslationRoutes(productID uint) ([]product.ProductTranslationRoute, error) {
+	return r.FindPublicTranslationRoutesContext(context.Background(), productID)
+}
+
+func (r *ProductRepository) FindPublicTranslationRoutesContext(ctx context.Context, productID uint) ([]product.ProductTranslationRoute, error) {
 	var current productTranslationRouteRecord
-	if err := r.db.Model(&product.Product{}).
+	if err := r.db.WithContext(ctx).Model(&product.Product{}).
 		Select("id, parent_id").
 		Where("id = ?", productID).
 		First(&current).Error; err != nil {
@@ -225,7 +230,7 @@ func (r *ProductRepository) FindPublicTranslationRoutes(productID uint) ([]produ
 	}
 
 	var records []productTranslationRouteRecord
-	if err := r.db.Model(&product.Product{}).
+	if err := r.db.WithContext(ctx).Model(&product.Product{}).
 		Select("id, locale, slug").
 		Where("status = ?", "active").
 		Where("(id = ? OR parent_id = ?)", rootID, rootID).

@@ -124,6 +124,8 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 	subscriptionHandler := subscription.NewHandler(subscriptionService, deps.AntiBot)
 	i18nHandler := i18n.NewHandler(postService, sitemapService)
 	showcaseHandler := showcase.NewShowcaseHandler(showcaseService)
+	showcaseHandler.ConfigureUploadProtection(services.ShowcaseUploadProtection)
+	showcaseHandler.ConfigureUploadEligibility(services.ShowcaseUploadEligibility)
 	wishlistHandler := wishlist.NewHandler(wishlistService)
 	feedbackHandler := feedback.NewHandler(feedbackService)
 	suggestionFeedbackHandler := suggestionfeedback.NewHandler(suggestionFeedbackService, storageSvc)
@@ -222,13 +224,14 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 		}
 
 		quickBuyGroup := v1.Group("/quick-buy")
+		quickBuyGroup.Use(middleware.QuickBuyRateLimit(deps.RedisClient, cfg.QuickBuyRateLimit))
 		{
 			quickBuyGroup.GET("/flows/current", quickBuyHandler.GetCurrentFlow)
-			quickBuyGroup.POST("/sessions", middleware.OptionalAuthMiddleware(authService), middleware.RateLimit(10), quickBuyHandler.CreateSession)
-			quickBuyGroup.GET("/sessions/:token", middleware.OptionalAuthMiddleware(authService), middleware.RateLimit(20), quickBuyHandler.GetSession)
-			quickBuyGroup.GET("/sessions/:token/steps/:step_key/candidates", middleware.OptionalAuthMiddleware(authService), middleware.RateLimit(20), quickBuyHandler.ListStepCandidates)
-			quickBuyGroup.PATCH("/sessions/:token/selections", middleware.OptionalAuthMiddleware(authService), middleware.RateLimit(20), quickBuyHandler.UpdateSelections)
-			quickBuyGroup.POST("/sessions/:token/validate", middleware.OptionalAuthMiddleware(authService), middleware.RateLimit(20), quickBuyHandler.ValidateSession)
+			quickBuyGroup.POST("/sessions", middleware.OptionalAuthMiddleware(authService), quickBuyHandler.CreateSession)
+			quickBuyGroup.GET("/sessions/:token", middleware.OptionalAuthMiddleware(authService), quickBuyHandler.GetSession)
+			quickBuyGroup.GET("/sessions/:token/steps/:step_key/candidates", middleware.OptionalAuthMiddleware(authService), quickBuyHandler.ListSessionStepCandidates)
+			quickBuyGroup.PATCH("/sessions/:token/selections", middleware.OptionalAuthMiddleware(authService), quickBuyHandler.UpdateSessionSelections)
+			quickBuyGroup.POST("/sessions/:token/validate", middleware.OptionalAuthMiddleware(authService), quickBuyHandler.ValidateSession)
 		}
 
 		// 购物车路由（可选认证）
@@ -392,6 +395,8 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 		{
 			showcaseGroup.GET("/gallery", showcaseHandler.List)
 			showcaseGroup.GET("/comments", showcaseHandler.ListComments)
+			showcaseGroup.GET("/upload-orders", middleware.AuthMiddleware(authService), middleware.RateLimitByUser(10), showcaseHandler.ListUploadOrders)
+			showcaseGroup.GET("/:id/images/:image_index/file", showcaseHandler.ServePublicImageFile)
 			showcaseGroup.POST("/upload", middleware.AuthMiddleware(authService), middleware.RateLimitByUserPerMinute(3, 1), showcaseHandler.Upload)
 			showcaseGroup.POST("/comments", middleware.AuthMiddleware(authService), middleware.RateLimitByUser(2), showcaseHandler.AddComment)
 		}

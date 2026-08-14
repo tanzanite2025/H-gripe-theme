@@ -1,6 +1,7 @@
 package service
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -28,7 +29,6 @@ func TestQuickBuyServiceCreatesPublishesAndReturnsCurrentFlow(t *testing.T) {
 				{
 					StepKey:        "rim",
 					Name:           "Rims",
-					SelectionMode:  quickbuy.SelectionModeSingle,
 					ProductTypeIDs: []uint{productType.ID},
 				},
 			},
@@ -53,6 +53,129 @@ func TestQuickBuyServiceCreatesPublishesAndReturnsCurrentFlow(t *testing.T) {
 	assert.Equal(t, "carbon_rim", current.Steps[0].ProductTypes[0].Slug)
 }
 
+func TestQuickBuyServiceProtectsDefaultQuickBuildSteps(t *testing.T) {
+	_, quickBuyService := newQuickBuyTestService(t)
+
+	created, err := quickBuyService.CreateFlow(QuickBuyFlowInput{
+		Slug:         "quick-build",
+		Name:         "QUICK Build",
+		EntrySurface: "dock",
+		Version: QuickBuyVersionInput{
+			Steps: []QuickBuyStepInput{
+				{StepKey: "product-search", Name: "Rim"},
+				{StepKey: "specifications", Name: "Hub"},
+				{StepKey: "quantity", Name: "Spokes"},
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.Len(t, created.Steps, 3)
+	assert.Equal(t, "Rim", created.Steps[0].Name)
+
+	_, err = quickBuyService.UpdateDraftVersion(created.Version.ID, QuickBuyVersionInput{
+		Steps: []QuickBuyStepInput{
+			{StepKey: "product-search", Name: "Custom Step A"},
+			{StepKey: "specifications", Name: "Custom Step B"},
+		},
+	})
+	require.ErrorIs(t, err, ErrQuickBuyInvalid)
+	assert.Contains(t, err.Error(), "quantity")
+}
+
+func TestQuickBuyServicePublishesDefaultFlowWithoutConfiguredProductTypes(t *testing.T) {
+	_, quickBuyService := newQuickBuyTestService(t)
+
+	created, err := quickBuyService.CreateFlow(QuickBuyFlowInput{
+		Slug:         "quick-build",
+		Name:         "QUICK Build",
+		EntrySurface: "dock",
+		Version: QuickBuyVersionInput{
+			Steps: []QuickBuyStepInput{
+				{StepKey: "product-search", Name: "Wheelset custom configuration"},
+				{StepKey: "specifications", Name: "Specifications"},
+				{StepKey: "quantity", Name: "Quantity"},
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	published, err := quickBuyService.PublishVersion(created.Version.ID, nil)
+	require.NoError(t, err)
+	require.Equal(t, quickbuy.FlowVersionStatusPublished, published.Version.Status)
+}
+
+func TestQuickBuyServiceAllowsAdditionalQuickBuildSteps(t *testing.T) {
+	_, quickBuyService := newQuickBuyTestService(t)
+
+	created, err := quickBuyService.CreateFlow(QuickBuyFlowInput{
+		Slug:         "quick-build",
+		Name:         "QUICK Build With Extra Step",
+		EntrySurface: "dock",
+		Version: QuickBuyVersionInput{
+			Steps: []QuickBuyStepInput{
+				{StepKey: "product-search", Name: "Custom Step A"},
+				{StepKey: "specifications", Name: "Custom Step B"},
+				{StepKey: "quantity", Name: "Custom Step C"},
+				{StepKey: "fit-check", Name: "Fit check"},
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.Len(t, created.Steps, 4)
+	assert.Equal(t, "fit-check", created.Steps[3].StepKey)
+}
+
+func TestQuickBuyServiceLocalizesFlowHelpTextWithBaseFallback(t *testing.T) {
+	db, quickBuyService := newQuickBuyTestService(t)
+	productType := seedQuickBuyProductType(t, db, "Localized Rim", "localized_rim")
+
+	created, err := quickBuyService.CreateFlow(QuickBuyFlowInput{
+		Slug:     "localized-build",
+		Name:     "Localized Build",
+		HelpText: "Base QUICK flow help",
+		Translations: []QuickBuyFlowTranslationInput{
+			{Locale: "zh-CN", HelpText: "中文 QUICK 说明"},
+			{Locale: "fr", HelpText: "Aide QUICK française"},
+		},
+		EntrySurface: "dock",
+		Version: QuickBuyVersionInput{
+			Steps: []QuickBuyStepInput{
+				{
+					StepKey:        "rim",
+					Name:           "Rims",
+					ProductTypeIDs: []uint{productType.ID},
+				},
+			},
+		},
+	})
+	require.NoError(t, err)
+	_, err = quickBuyService.PublishVersion(created.Version.ID, nil)
+	require.NoError(t, err)
+
+	chinese, err := quickBuyService.CurrentFlow("dock", "zh-CN")
+	require.NoError(t, err)
+	require.Len(t, chinese.Steps, 1)
+	assert.Equal(t, "中文 QUICK 说明", chinese.HelpText)
+	assert.NotContains(t, string(mustMarshalQuickBuyTestValue(t, chinese)), `"translations"`)
+
+	french, err := quickBuyService.CurrentFlow("dock", "fr")
+	require.NoError(t, err)
+	require.Len(t, french.Steps, 1)
+	assert.Equal(t, "Aide QUICK française", french.HelpText)
+
+	german, err := quickBuyService.CurrentFlow("dock", "de")
+	require.NoError(t, err)
+	require.Len(t, german.Steps, 1)
+	assert.Equal(t, "Base QUICK flow help", german.HelpText)
+}
+
+func mustMarshalQuickBuyTestValue(t *testing.T, value interface{}) []byte {
+	t.Helper()
+	encoded, err := json.Marshal(value)
+	require.NoError(t, err)
+	return encoded
+}
+
 func TestQuickBuyServiceRejectsPublishWithoutRequiredProductType(t *testing.T) {
 	_, quickBuyService := newQuickBuyTestService(t)
 
@@ -62,7 +185,7 @@ func TestQuickBuyServiceRejectsPublishWithoutRequiredProductType(t *testing.T) {
 		EntrySurface: "dock",
 		Version: QuickBuyVersionInput{
 			Steps: []QuickBuyStepInput{
-				{StepKey: "rim", Name: "Rims", SelectionMode: quickbuy.SelectionModeSingle},
+				{StepKey: "rim", Name: "Rims"},
 			},
 		},
 	})
@@ -88,7 +211,6 @@ func TestQuickBuyServiceValidationFlagsDisabledProductType(t *testing.T) {
 				{
 					StepKey:        "rim",
 					Name:           "Rims",
-					SelectionMode:  quickbuy.SelectionModeSingle,
 					ProductTypeIDs: []uint{productType.ID},
 				},
 			},
@@ -111,6 +233,14 @@ func TestQuickBuyServiceCreatesSessionAndStoresSelectionSnapshot(t *testing.T) {
 	db, quickBuyService := newQuickBuyTestService(t)
 	productType := seedQuickBuyProductType(t, db, "Carbon Rim", "carbon_rim")
 	productRecord := seedQuickBuyProduct(t, db, productType.ID)
+	require.NoError(t, db.Create(&productdomain.ProductMedia{
+		ProductID:    productRecord.ID,
+		MediaType:    "image",
+		URL:          "/uploads/quick-buy-rim.webp",
+		ThumbnailURL: "/uploads/quick-buy-rim-thumb.webp",
+		IsPrimary:    true,
+		IsVisible:    true,
+	}).Error)
 
 	created, err := quickBuyService.CreateFlow(QuickBuyFlowInput{
 		Slug:         "session-build",
@@ -121,7 +251,6 @@ func TestQuickBuyServiceCreatesSessionAndStoresSelectionSnapshot(t *testing.T) {
 				{
 					StepKey:        "rim",
 					Name:           "Rims",
-					SelectionMode:  quickbuy.SelectionModeSingle,
 					ProductTypeIDs: []uint{productType.ID},
 				},
 			},
@@ -157,6 +286,66 @@ func TestQuickBuyServiceCreatesSessionAndStoresSelectionSnapshot(t *testing.T) {
 	assert.True(t, updated.Validation.Valid)
 	assert.NotEmpty(t, updated.Items[0].ProductSnapshot)
 	assert.NotEmpty(t, updated.Items[0].VariantSnapshot)
+	assert.Contains(t, string(updated.Items[0].ProductSnapshot), "/uploads/quick-buy-rim-thumb.webp")
+}
+
+func TestQuickBuyServiceAllowsClearingAndReselectingStep(t *testing.T) {
+	db, quickBuyService := newQuickBuyTestService(t)
+	productType := seedQuickBuyProductType(t, db, "Carbon Rim", "carbon_rim")
+	firstProduct := seedQuickBuyProductWithDetails(t, db, productType.ID, "QB-RIM-001", "First Rim", "first-rim", 100)
+	secondProduct := seedQuickBuyProductWithDetails(t, db, productType.ID, "QB-RIM-002", "Second Rim", "second-rim", 120)
+
+	created, err := quickBuyService.CreateFlow(QuickBuyFlowInput{
+		Slug:         "reselect-build",
+		Name:         "Reselect Build",
+		EntrySurface: "dock",
+		Version: QuickBuyVersionInput{
+			Steps: []QuickBuyStepInput{
+				{
+					StepKey:        "rim",
+					Name:           "Wheelset custom configuration",
+					ProductTypeIDs: []uint{productType.ID},
+				},
+			},
+		},
+	})
+	require.NoError(t, err)
+	_, err = quickBuyService.PublishVersion(created.Version.ID, nil)
+	require.NoError(t, err)
+
+	session, err := quickBuyService.CreateSession(QuickBuySessionInput{
+		Surface:       "dock",
+		Locale:        "en",
+		MarketCountry: "US",
+		Currency:      "USD",
+	})
+	require.NoError(t, err)
+
+	selected, err := quickBuyService.UpdateSessionSelections(session.SessionToken, QuickBuySelectionUpdateInput{
+		Selections: []QuickBuySelectionInput{
+			{StepKey: "rim", ProductID: firstProduct.ID, Quantity: 1},
+		},
+	})
+	require.NoError(t, err)
+	require.Len(t, selected.Items, 1)
+	assert.Equal(t, firstProduct.ID, selected.Items[0].ProductID)
+
+	cleared, err := quickBuyService.UpdateSessionSelections(session.SessionToken, QuickBuySelectionUpdateInput{
+		Selections: []QuickBuySelectionInput{
+			{StepKey: "rim", ProductID: 0, Quantity: 0},
+		},
+	})
+	require.NoError(t, err)
+	assert.Empty(t, cleared.Items)
+
+	reselected, err := quickBuyService.UpdateSessionSelections(session.SessionToken, QuickBuySelectionUpdateInput{
+		Selections: []QuickBuySelectionInput{
+			{StepKey: "rim", ProductID: secondProduct.ID, Quantity: 1},
+		},
+	})
+	require.NoError(t, err)
+	require.Len(t, reselected.Items, 1)
+	assert.Equal(t, secondProduct.ID, reselected.Items[0].ProductID)
 }
 
 func TestQuickBuyServiceListsSessionStepCandidatesByBoundProductType(t *testing.T) {
@@ -175,7 +364,6 @@ func TestQuickBuyServiceListsSessionStepCandidatesByBoundProductType(t *testing.
 				{
 					StepKey:        "rim",
 					Name:           "Rims",
-					SelectionMode:  quickbuy.SelectionModeSingle,
 					ProductTypeIDs: []uint{rimType.ID},
 				},
 			},
@@ -223,7 +411,6 @@ func TestQuickBuyServiceRejectsSessionSelectionFromWrongProductType(t *testing.T
 				{
 					StepKey:        "rim",
 					Name:           "Rims",
-					SelectionMode:  quickbuy.SelectionModeSingle,
 					ProductTypeIDs: []uint{rimType.ID},
 				},
 			},
@@ -264,7 +451,6 @@ func TestQuickBuyServicePreviewsDraftVersionCandidates(t *testing.T) {
 				{
 					StepKey:        "rim",
 					Name:           "Rims",
-					SelectionMode:  quickbuy.SelectionModeSingle,
 					ProductTypeIDs: []uint{productType.ID},
 				},
 			},
@@ -295,7 +481,6 @@ func TestQuickBuyServiceDoesNotAllowExplicitInactiveVersion(t *testing.T) {
 				{
 					StepKey:        "rim",
 					Name:           "Rims",
-					SelectionMode:  quickbuy.SelectionModeSingle,
 					ProductTypeIDs: []uint{productType.ID},
 				},
 			},
@@ -341,6 +526,7 @@ func newQuickBuyTestService(t *testing.T) (*gorm.DB, *QuickBuyService) {
 		&productdomain.ProductVariant{},
 		&productdomain.ProductVariantOptionValue{},
 		&quickbuy.Flow{},
+		&quickbuy.FlowTranslation{},
 		&quickbuy.Version{},
 		&quickbuy.Step{},
 		&quickbuy.StepProductType{},

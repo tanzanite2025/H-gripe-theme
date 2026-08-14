@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"mime/multipart"
+	"net/url"
 	"path/filepath"
 	"strings"
 	"time"
@@ -13,7 +14,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/google/uuid"
 )
 
 // s3StorageImpl AWS S3 存储完整实现
@@ -67,12 +67,7 @@ func NewS3Storage(cfg *Config) (StorageService, error) {
 	// 创建S3客户端
 	var s3Client *s3.Client
 	if cfg.Endpoint != "" {
-		// 自定义端点（例如MinIO）
-		// Note: SDK v2 uses EndpointResolverV2 interface instead of BaseEndpoint
-		s3Client = s3.NewFromConfig(awsConfig, func(o *s3.Options) {
-			// o.BaseEndpoint removed in SDK v2, endpoint handled in awsConfig
-			o.UsePathStyle = true // MinIO需要使用路径样式
-		})
+		s3Client = s3.NewFromConfig(awsConfig, configureS3ClientOptions(cfg))
 	} else {
 		s3Client = s3.NewFromConfig(awsConfig)
 	}
@@ -84,8 +79,25 @@ func NewS3Storage(cfg *Config) (StorageService, error) {
 	}, nil
 }
 
+func configureS3ClientOptions(cfg *Config) func(*s3.Options) {
+	return func(options *s3.Options) {
+		if cfg == nil || strings.TrimSpace(cfg.Endpoint) == "" {
+			return
+		}
+
+		// This SDK version uses the legacy EndpointResolver interface. Setting
+		// only UsePathStyle would still send requests to AWS's default endpoint.
+		options.EndpointResolver = s3.EndpointResolverFromURL(strings.TrimRight(strings.TrimSpace(cfg.Endpoint), "/"))
+		options.UsePathStyle = true
+	}
+}
+
 // Upload 上传文件到S3
 func (s *s3StorageImpl) Upload(ctx context.Context, file *multipart.FileHeader) (string, error) {
+	return s.UploadWithPrefix(ctx, file, "")
+}
+
+func (s *s3StorageImpl) UploadWithPrefix(ctx context.Context, file *multipart.FileHeader, prefix string) (string, error) {
 	// 打开上传的文件
 	src, err := file.Open()
 	if err != nil {
@@ -94,7 +106,10 @@ func (s *s3StorageImpl) Upload(ctx context.Context, file *multipart.FileHeader) 
 	defer func() { _ = src.Close() }()
 
 	// 生成唯一文件名
-	filename := s.generateFilename(file.Filename)
+	filename, err := generateObjectKey(file.Filename, prefix)
+	if err != nil {
+		return "", err
+	}
 
 	// 检测内容类型
 	contentType := detectContentType(file.Filename)
@@ -115,16 +130,29 @@ func (s *s3StorageImpl) Upload(ctx context.Context, file *multipart.FileHeader) 
 	return s.GetURL(filename), nil
 }
 
+func (s *s3StorageImpl) UploadWithPrefixPrivate(ctx context.Context, file *multipart.FileHeader, prefix string) (string, error) {
+	// Do not send an ACL here: S3 buckets using Bucket Owner Enforced reject
+	// ACL headers. Private-bucket policy is the durable access boundary.
+	return s.UploadWithPrefix(ctx, file, prefix)
+}
+
 // UploadFromReader 从Reader上传到S3
 func (s *s3StorageImpl) UploadFromReader(ctx context.Context, reader io.Reader, filename string) (string, error) {
+	return s.UploadFromReaderWithPrefix(ctx, reader, filename, "")
+}
+
+func (s *s3StorageImpl) UploadFromReaderWithPrefix(ctx context.Context, reader io.Reader, filename string, prefix string) (string, error) {
 	// 生成唯一文件名
-	newFilename := s.generateFilename(filename)
+	newFilename, err := generateObjectKey(filename, prefix)
+	if err != nil {
+		return "", err
+	}
 
 	// 检测内容类型
 	contentType := detectContentType(filename)
 
 	// 上传到S3
-	_, err := s.client.PutObject(ctx, &s3.PutObjectInput{
+	_, err = s.client.PutObject(ctx, &s3.PutObjectInput{
 		Bucket:      aws.String(s.config.Bucket),
 		Key:         aws.String(newFilename),
 		Body:        reader,
@@ -141,13 +169,13 @@ func (s *s3StorageImpl) UploadFromReader(ctx context.Context, reader io.Reader, 
 // Delete 从S3删除文件
 func (s *s3StorageImpl) Delete(ctx context.Context, url string) error {
 	// 从URL提取文件key
-	key := s.extractKeyFromURL(url)
-	if key == "" {
-		return fmt.Errorf("invalid URL: cannot extract key")
+	key, err := s.ObjectKey(url)
+	if err != nil {
+		return err
 	}
 
 	// 从S3删除对象
-	_, err := s.client.DeleteObject(ctx, &s3.DeleteObjectInput{
+	_, err = s.client.DeleteObject(ctx, &s3.DeleteObjectInput{
 		Bucket: aws.String(s.config.Bucket),
 		Key:    aws.String(key),
 	})
@@ -194,28 +222,15 @@ func (s *s3StorageImpl) GetPresignedURL(ctx context.Context, filename string, du
 	return req.URL, nil
 }
 
-// generateFilename 生成唯一文件名
-func (s *s3StorageImpl) generateFilename(originalFilename string) string {
-	// 清理原始文件名
-	cleanName := filepath.Base(originalFilename)
-	ext := strings.ToLower(filepath.Ext(cleanName))
-
-	// 生成UUID
-	id := uuid.New().String()
-
-	// 生成日期路径
-	now := time.Now()
-	datePath := now.Format("2006/01/02")
-
-	// 组合文件名
-	return filepath.ToSlash(filepath.Join(datePath, fmt.Sprintf("%s%s", id, ext)))
-}
-
 // extractKeyFromURL 从URL提取S3 key
 func (s *s3StorageImpl) extractKeyFromURL(url string) string {
 	// 处理自定义域名
 	if s.config.BaseURL != "" {
-		return strings.TrimPrefix(url, s.config.BaseURL+"/")
+		prefix := strings.TrimRight(s.config.BaseURL, "/") + "/"
+		if strings.HasPrefix(url, prefix) {
+			return strings.TrimPrefix(url, prefix)
+		}
+		return ""
 	}
 
 	// 处理标准S3 URL
@@ -227,10 +242,49 @@ func (s *s3StorageImpl) extractKeyFromURL(url string) string {
 	// 处理自定义端点
 	if s.config.Endpoint != "" {
 		endpointPrefix := fmt.Sprintf("%s/%s/", s.config.Endpoint, s.config.Bucket)
-		return strings.TrimPrefix(url, endpointPrefix)
+		if strings.HasPrefix(url, endpointPrefix) {
+			return strings.TrimPrefix(url, endpointPrefix)
+		}
 	}
 
 	return ""
+}
+
+func (s *s3StorageImpl) ObjectKey(reference string) (string, error) {
+	if key, ok := ObjectKeyFromBaseURL(reference, s.config.BaseURL); ok {
+		return key, nil
+	}
+	if key := s.extractKeyFromURL(reference); key != "" {
+		if normalized, ok := NormalizeObjectKey(key); ok {
+			return normalized, nil
+		}
+	}
+
+	value := strings.TrimSpace(reference)
+	if parsed, err := url.Parse(value); err == nil && parsed.Scheme != "" && parsed.Host != "" {
+		standardHost := fmt.Sprintf("%s.s3.%s.amazonaws.com", s.config.Bucket, s.config.Region)
+		if strings.EqualFold(parsed.Host, standardHost) {
+			if normalized, ok := NormalizeObjectKey(strings.TrimPrefix(parsed.Path, "/")); ok {
+				return normalized, nil
+			}
+		}
+		if s.config.Endpoint != "" {
+			endpoint, endpointErr := url.Parse(strings.TrimRight(s.config.Endpoint, "/"))
+			if endpointErr == nil && strings.EqualFold(parsed.Host, endpoint.Host) {
+				expectedPrefix := "/" + strings.Trim(s.config.Bucket, "/") + "/"
+				if strings.HasPrefix(parsed.Path, expectedPrefix) {
+					if normalized, ok := NormalizeObjectKey(strings.TrimPrefix(parsed.Path, expectedPrefix)); ok {
+						return normalized, nil
+					}
+				}
+			}
+		}
+	}
+
+	if key, ok := ObjectKeyFromReference(reference, s.config.BaseURL); ok {
+		return key, nil
+	}
+	return "", fmt.Errorf("invalid object key")
 }
 
 // detectContentType 检测文件内容类型
@@ -317,12 +371,20 @@ func (s *s3StorageImpl) ListObjects(ctx context.Context, prefix string, maxKeys 
 
 // CopyObject 复制S3对象
 func (s *s3StorageImpl) CopyObject(ctx context.Context, sourceKey, destKey string) error {
-	copySource := fmt.Sprintf("%s/%s", s.config.Bucket, sourceKey)
+	normalizedSourceKey, ok := NormalizeObjectKey(sourceKey)
+	if !ok {
+		return fmt.Errorf("invalid source object key")
+	}
+	normalizedDestKey, ok := NormalizeObjectKey(destKey)
+	if !ok {
+		return fmt.Errorf("invalid destination object key")
+	}
+	copySource := fmt.Sprintf("%s/%s", s.config.Bucket, normalizedSourceKey)
 
 	_, err := s.client.CopyObject(ctx, &s3.CopyObjectInput{
 		Bucket:     aws.String(s.config.Bucket),
 		CopySource: aws.String(copySource),
-		Key:        aws.String(destKey),
+		Key:        aws.String(normalizedDestKey),
 	})
 
 	if err != nil {

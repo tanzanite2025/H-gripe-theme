@@ -24,11 +24,27 @@ type PaymentService struct {
 	paypalDisputeDocumentStorage              PayPalDisputeEvidenceDocumentStorage
 	paypalDisputeInvoiceOptions               PayPalDisputeInvoiceOptions
 	paypalDisputeInvoiceSellerProfileProvider PayPalDisputeInvoiceSellerProfileProvider
+	productCache                              ProductCacheInvalidator
+	productCacheEvents                        ProductCacheEventPublisher
 }
 
 func (s *PaymentService) ConfigureRisk(orderRepo *repository.OrderRepository, risk *antifraud.Service) {
 	s.orderRepo = orderRepo
 	s.risk = risk
+}
+
+func (s *PaymentService) ConfigureProductCacheInvalidator(invalidator ProductCacheInvalidator) {
+	if s == nil {
+		return
+	}
+	s.productCache = invalidator
+}
+
+func (s *PaymentService) ConfigureProductCacheEventPublisher(publisher ProductCacheEventPublisher) {
+	if s == nil {
+		return
+	}
+	s.productCacheEvents = publisher
 }
 
 func (s *PaymentService) ConfigureEvidenceSources(orderRepo *repository.OrderRepository, shippingRepo *repository.ShippingRepository, ticketRepo *repository.TicketRepository) {

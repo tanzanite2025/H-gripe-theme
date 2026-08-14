@@ -70,7 +70,9 @@ import { useWebsiteProfileSettings } from '~/composables/useWebsiteProfileSettin
 const { locale } = useI18n()
 const localePath = useLocalePath()
 const { websiteProfileSettings: copy } = useWebsiteProfileSettings(locale)
-const factoryLink = computed(() => localePath(copy.value.factoryLink || '/company/about#factory'))
+const factoryLink = computed(() =>
+  localePath(copy.value.factoryLink || '/company/about/factory')
+)
 
 definePageMeta({
   layout: 'products',

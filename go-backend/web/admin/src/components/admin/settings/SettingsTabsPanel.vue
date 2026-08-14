@@ -25,11 +25,28 @@
             </div>
             <input ref="siteLogoInput" type="file" class="sr-only" accept="image/jpeg,image/png,image/webp,image/gif" :disabled="!canEdit || uploadingSiteLogo" @change="uploadSiteLogo" />
           </AdminFormField>
+          <AdminFormField :label="t('settings.siteFavicon')" description="用于浏览器 TAB、收藏夹和 PWA 图标；支持直接填写图片 URL 或上传图标。">
+            <div class="flex min-w-0 items-center gap-2">
+              <Input v-model="siteSettings.site_favicon" type="url" placeholder="Favicon URL" :disabled="uploadingSiteFavicon" />
+              <Button type="button" variant="outline" size="icon" :disabled="!canEdit || uploadingSiteFavicon" :title="t('settings.uploadFavicon')" @click="chooseSiteFavicon">
+                <LoaderCircle v-if="uploadingSiteFavicon" class="size-4 animate-spin" />
+                <ImagePlus v-else class="size-4" />
+              </Button>
+              <Button v-if="siteSettings.site_favicon" type="button" variant="ghost" size="icon" :disabled="!canEdit || uploadingSiteFavicon" :title="t('settings.clearFavicon')" @click="clearSiteFavicon">
+                <Trash2 class="size-4" />
+              </Button>
+            </div>
+            <input ref="siteFaviconInput" type="file" class="sr-only" accept="image/jpeg,image/png,image/webp" :disabled="!canEdit || uploadingSiteFavicon" @change="uploadSiteFavicon" />
+          </AdminFormField>
           <AdminFormField :label="t('settings.siteDescription')" class="md:col-span-2">
             <Textarea v-model="siteSettings.site_description" class="min-h-24" />
           </AdminFormField>
           <div v-if="siteSettings.site_logo" class="flex h-28 items-center justify-center overflow-hidden rounded-lg border bg-muted md:col-span-2">
             <img :src="siteSettings.site_logo" :alt="t('settings.siteLogoPreview')" class="max-h-full max-w-full object-contain" />
+          </div>
+          <div v-if="siteSettings.site_favicon" class="flex h-20 items-center gap-3 overflow-hidden rounded-lg border bg-muted px-4 md:col-span-2">
+            <img :src="siteSettings.site_favicon" :alt="t('settings.siteFaviconPreview')" class="size-12 object-contain" />
+            <span class="text-sm text-muted-foreground">{{ t('settings.siteFaviconPreview') }}</span>
           </div>
         </div>
       </SettingsSection>
@@ -270,6 +287,7 @@ const props = defineProps({
   commercialCrawlerProtection: { type: Object as PropType<CommercialCrawlerProtection | null>, default: null },
   loadingCommercialCrawlerProtection: { type: Boolean, default: false },
   uploadingSiteLogo: { type: Boolean, default: false },
+  uploadingSiteFavicon: { type: Boolean, default: false },
   paymentRuntime: { type: Object, default: null },
   loadingPaymentRuntime: { type: Boolean, default: false },
   syncingExchangeRates: { type: Boolean, default: false },
@@ -291,6 +309,7 @@ const emit = defineEmits([
   'update:showSmtpPassword',
   'update:showPaymentSecrets',
   'upload-site-logo',
+  'upload-site-favicon',
   'open-agent-dialog',
   'open-group-dialog',
   'edit-group',
@@ -303,6 +322,7 @@ const emit = defineEmits([
 ])
 
 const siteLogoInput = ref<HTMLInputElement | null>(null)
+const siteFaviconInput = ref<HTMLInputElement | null>(null)
 const { t } = useAdminI18n()
 
 const chooseSiteLogo = () => {
@@ -318,9 +338,27 @@ const uploadSiteLogo = (event: Event) => {
   emit('upload-site-logo', file)
 }
 
+const chooseSiteFavicon = () => {
+  if (!props.canEdit || props.uploadingSiteFavicon) return
+  siteFaviconInput.value?.click()
+}
+
+const uploadSiteFavicon = (event: Event) => {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file) return
+  emit('upload-site-favicon', file)
+}
+
 const clearSiteLogo = () => {
   if (props.uploadingSiteLogo) return
   props.siteSettings.site_logo = ''
+}
+
+const clearSiteFavicon = () => {
+  if (props.uploadingSiteFavicon) return
+  props.siteSettings.site_favicon = ''
 }
 
 const SettingsSection = defineComponent({

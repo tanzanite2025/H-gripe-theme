@@ -9,16 +9,16 @@ import (
 // @title Storefront E-commerce API
 // @version 1.0
 // @description 完整的电商平台API，包含用户管理、产品管理、订单处理、支付集成等功能
-// @termsOfService https://learn.gripe/terms
+// @termsOfService https://example.com/terms
 
 // @contact.name API Support
-// @contact.url https://learn.gripe/support
-// @contact.email support@learn.gripe
+// @contact.url https://example.com/support
+// @contact.email support@example.com
 
 // @license.name MIT
 // @license.url https://opensource.org/licenses/MIT
 
-// @host learn.gripe
+// @host example.com
 // @BasePath /api/v1
 
 // @securityDefinitions.apikey CookieAuth
@@ -79,7 +79,7 @@ var SwaggerInfo = struct {
 	Description string
 }{
 	Version:     "1.0",
-	Host:        "learn.gripe",
+		Host:        "example.com",
 	BasePath:    "/api/v1",
 	Schemes:     []string{"https", "http"},
 	Title:       "Storefront E-commerce API",

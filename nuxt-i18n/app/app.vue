@@ -20,6 +20,7 @@
     <LazyCartDrawer />
     <LazyCheckoutModal />
     <LazyShopSearchSheet />
+    <LazyGlobalProductDetailBottomSheet />
     
     <!-- 全局聊天弹窗 -->
     <LazyWhatsAppChatModal
@@ -34,18 +35,35 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import { useHead } from '#imports'
 import SidePanel from './components/SidePanel.vue'
 import AccountSidebarPanel from '~/components/account/AccountSidebarPanel.vue'
 import SiteHeader from '~/components/SiteHeader.vue'
 import { useChatWidget } from '~/composables/useChatWidget'
+import { useSiteSettings } from '~/composables/usePublicSettings'
 import { useShopCategories } from '~/composables/useShopCategories'
 
 // 全局聊天状态
 const { currentConversation, closeChat } = useChatWidget()
+const { siteSettings } = useSiteSettings()
 const { loadCategories: prefetchShopCategories } = useShopCategories()
 
 const siteHeaderRef = ref<InstanceType<typeof SiteHeader> | null>(null)
+const siteFavicon = computed(() => {
+  const configuredFavicon = (siteSettings.value.siteFavicon || '').toString().trim()
+  if (configuredFavicon) return configuredFavicon
+
+  const configuredLogo = (siteSettings.value.siteLogo || '').toString().trim()
+  return configuredLogo || '/favicon.svg'
+})
+
+useHead(() => ({
+  link: [
+    { rel: 'icon', href: siteFavicon.value },
+    { rel: 'shortcut icon', href: siteFavicon.value },
+  ],
+}))
 
 if (import.meta.server) {
   await prefetchShopCategories().catch(() => [])

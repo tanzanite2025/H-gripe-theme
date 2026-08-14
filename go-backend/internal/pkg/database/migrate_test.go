@@ -15,6 +15,8 @@ import (
 
 	"commerce-platform/internal/pkg/config"
 
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/lib/pq"
 	postgresdriver "gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -163,21 +165,29 @@ func TestPrepareSchemaAgainstFreshPostgres(t *testing.T) {
 
 	cfg := config.DatabaseConfig{Driver: "postgres"}
 	if err := PrepareSchema(ctx, gormDB, &cfg, "release"); err != nil {
-		t.Fatalf("prepare fresh PostgreSQL schema: %v", err)
+		t.Fatalf("prepare empty PostgreSQL schema from SQL migrations: %v", err)
+	}
+	migrationDriver, err := postgres.WithInstance(testDB, &postgres.Config{})
+	if err != nil {
+		t.Fatalf("create PostgreSQL migration driver: %v", err)
+	}
+	migrator, err := migrate.NewWithDatabaseInstance("file://migrations", "postgres", migrationDriver)
+	if err != nil {
+		t.Fatalf("create migration runner: %v", err)
+	}
+	if err := migrator.Steps(-21); err != nil {
+		t.Fatalf("roll back migrations 111-131: %v", err)
+	}
+	assertMigrationState(ctx, t, testDB, 110, false)
+	if err := migrator.Up(); err != nil && err != migrate.ErrNoChange {
+		t.Fatalf("reapply migrations 111-131: %v", err)
 	}
 	if err := PrepareSchema(ctx, gormDB, &cfg, "release"); err != nil {
 		t.Fatalf("prepare existing PostgreSQL schema: %v", err)
 	}
 
-	var version int
-	var dirty bool
-	if err := testDB.QueryRowContext(ctx, "SELECT version, dirty FROM schema_migrations LIMIT 1").Scan(&version, &dirty); err != nil {
-		t.Fatalf("read migration version: %v", err)
-	}
 	expectedVersion := latestUpMigrationVersion(t, filepath.Join(backendRoot, "migrations"))
-	if version != expectedVersion || dirty {
-		t.Fatalf("unexpected migration state: version=%d dirty=%t", version, dirty)
-	}
+	assertMigrationState(ctx, t, testDB, expectedVersion, false)
 
 	// The catalog seed is deliberately idempotent so a manual recovery rerun cannot
 	// duplicate products or variants.
@@ -299,6 +309,20 @@ func TestPrepareSchemaAgainstFreshPostgres(t *testing.T) {
 	}
 
 	assertProductTemplateSourceReset(ctx, t, testDB)
+}
+
+func assertMigrationState(ctx context.Context, t *testing.T, db *sql.DB, expectedVersion int, expectedDirty bool) {
+	t.Helper()
+
+	var version int
+	var dirty bool
+	if err := db.QueryRowContext(ctx, "SELECT version, dirty FROM schema_migrations LIMIT 1").Scan(&version, &dirty); err != nil {
+		t.Fatalf("read migration version: %v", err)
+	}
+	if version != expectedVersion || dirty != expectedDirty {
+		t.Fatalf("unexpected migration state: version=%d dirty=%t, want version=%d dirty=%t",
+			version, dirty, expectedVersion, expectedDirty)
+	}
 }
 
 func latestUpMigrationVersion(t *testing.T, migrationDir string) int {

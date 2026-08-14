@@ -104,17 +104,13 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
-import { useRoute } from '#imports'
+import { ref } from 'vue'
 import SupportRimTestReportSection from '~/components/SupportRimTestReportSection.vue'
 import SupportWheelsetTestReportSection from '~/components/SupportWheelsetTestReportSection.vue'
 import SupportWheelsetAssemblySection from '~/components/SupportWheelsetAssemblySection.vue'
 import TechnicalTensionSection from '~/components/TechnicalTensionSection.vue'
-import {
-  isPageSubNavigationTabId,
-  testReportTabs,
-  type TestReportTabId,
-} from '~/utils/pageSubNavigation'
+import { usePageSubNavigationTab } from '~/composables/usePageSubNavigationTab'
+import { testReportTabs } from '~/utils/pageSubNavigation'
 
 const props = defineProps<{
   syncWithUrl?: boolean
@@ -122,7 +118,12 @@ const props = defineProps<{
 
 const tabs = testReportTabs
 
-const activeTab = ref<TestReportTabId>('rim-test-report')
+const { activeTab, setActiveTab } = usePageSubNavigationTab({
+  tabs,
+  basePath: '/support/test-report',
+  defaultValue: 'rim-test-report',
+  syncWithUrl: () => Boolean(props.syncWithUrl),
+})
 const showSpokeHoleVideo = ref(false)
 const showWheelsetVideo = ref(false)
 
@@ -134,41 +135,6 @@ const openWheelsetVideo = () => {
   showWheelsetVideo.value = true
 }
 
-const setActiveTab = (id: TestReportTabId | string) => {
-  if (!isPageSubNavigationTabId(tabs, id)) return
-  const next = id
-  activeTab.value = next
-  if (props.syncWithUrl && typeof window !== 'undefined') {
-    const url = new URL(window.location.href)
-    url.hash = `#${next}`
-    window.history.replaceState(null, '', url.toString())
-  }
-}
-
-const route = useRoute()
-
-const syncTabWithHash = (hash: string | null | undefined) => {
-  if (!hash) return
-  const clean = hash.startsWith('#') ? hash.slice(1) : hash
-  if (isPageSubNavigationTabId(tabs, clean)) {
-    activeTab.value = clean
-  }
-}
-
-onMounted(() => {
-  if (props.syncWithUrl) {
-    syncTabWithHash(route.hash)
-  }
-})
-
-watch(
-  () => route.hash,
-  (newHash) => {
-    if (props.syncWithUrl) {
-      syncTabWithHash(newHash)
-    }
-  }
-)
 </script>
 
 <style scoped>

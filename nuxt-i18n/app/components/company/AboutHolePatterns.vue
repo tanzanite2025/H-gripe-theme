@@ -102,11 +102,11 @@
       </div>
 
     <!-- Video Modal -->
-    <div v-if="showHolePatternVideo" class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 tz-mobile-safe-modal-mask" @click="showHolePatternVideo = false">
-       <button class="hole-pattern-video-close absolute text-white hover:text-rose-500 transition-colors" @click="showHolePatternVideo = false">
-          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+    <div v-if="showHolePatternVideo" class="tz-standard-modal-mask fixed inset-0 z-[9999] flex items-center justify-center p-4 tz-mobile-safe-modal-mask" @click="showHolePatternVideo = false">
+       <button type="button" class="tz-global-close-btn absolute top-4 right-4 z-10" aria-label="Close video" @click="showHolePatternVideo = false">
+          ×
        </button>
-       <div class="hole-pattern-video-content relative w-full max-w-5xl aspect-video bg-black rounded-lg overflow-hidden shadow-2xl" @click.stop>
+       <div class="hole-pattern-video-content tz-standard-modal-surface relative w-full max-w-5xl aspect-video bg-black overflow-hidden" @click.stop>
           <video 
             class="w-full h-full object-contain"
             src="/company/ourstory/holepatterns/automated-wheel-rimhole-drilling–customizable-Patterns_medium.webm?v=2"

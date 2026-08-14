@@ -1,22 +1,21 @@
 <template>
-  <div class="mt-5 rounded-2xl bg-slate-900/70 p-4 shadow-[3px_3px_10px_rgba(0,0,0,0.9)]">
+  <div class="freehub-groupset-helper mt-5 rounded-2xl bg-slate-900/70 p-4 shadow-[3px_3px_10px_rgba(0,0,0,0.9)]">
     <h3 class="mb-2 text-sm font-semibold text-slate-100">
-      Freehub body quick finder
+      {{ title }}
     </h3>
     <p class="mb-3 text-xs tz-text-secondary">
-      Select your drivetrain brand and groupset to see which freehub body type is typically required. Always cross-check
-      with the official compatibility charts from the drivetrain and hub manufacturers.
+      {{ description }}
     </p>
 
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
-      <div class="sm:w-40">
-        <label class="block text-xs font-medium tz-text-secondary" for="freehub-brand">
+    <div class="freehub-groupset-helper__fields">
+      <div class="freehub-groupset-helper__field">
+        <label class="block text-xs font-medium tz-text-secondary" :for="brandSelectId">
           Drivetrain brand
         </label>
         <select
-          id="freehub-brand"
+          :id="brandSelectId"
           v-model="selectedBrand"
-          class="mt-1 w-full rounded-md border border-slate-600/80 bg-slate-950/80 px-2 py-1.5 text-xs text-slate-100 shadow-[2px_2px_6px_rgba(0,0,0,0.85)] outline-none focus:border-sky-400 focus:ring-0"
+          class="freehub-groupset-helper__select mt-1 w-full rounded-md border border-slate-600/80 bg-slate-950/80 px-2 py-1.5 text-xs text-slate-100 shadow-[2px_2px_6px_rgba(0,0,0,0.85)] outline-none focus:border-sky-400 focus:ring-0"
         >
           <option disabled value="">
             Select brand
@@ -31,15 +30,15 @@
         </select>
       </div>
 
-      <div class="sm:w-56">
-        <label class="block text-xs font-medium tz-text-secondary" for="freehub-groupset">
+      <div class="freehub-groupset-helper__field">
+        <label class="block text-xs font-medium tz-text-secondary" :for="groupsetSelectId">
           Groupset
         </label>
         <select
-          id="freehub-groupset"
+          :id="groupsetSelectId"
           v-model="selectedGroupsetId"
           :disabled="!selectedBrand"
-          class="mt-1 w-full rounded-md border border-slate-600/80 bg-slate-950/80 px-2 py-1.5 text-xs text-slate-100 shadow-[2px_2px_6px_rgba(0,0,0,0.85)] outline-none focus:border-sky-400 focus:ring-0 disabled:cursor-not-allowed disabled:border-slate-700 disabled:text-slate-500"
+          class="freehub-groupset-helper__select mt-1 w-full rounded-md border border-slate-600/80 bg-slate-950/80 px-2 py-1.5 text-xs text-slate-100 shadow-[2px_2px_6px_rgba(0,0,0,0.85)] outline-none focus:border-sky-400 focus:ring-0 disabled:cursor-not-allowed disabled:border-slate-700 disabled:text-slate-500"
         >
           <option disabled value="">
             {{ selectedBrand ? 'Select groupset' : 'Choose brand first' }}
@@ -53,7 +52,9 @@
           </option>
         </select>
       </div>
+    </div>
 
+    <div class="freehub-groupset-helper__status">
       <p
         v-if="!activeOption"
         class="text-xs tz-text-muted"
@@ -81,7 +82,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, useId } from 'vue'
+
+withDefaults(defineProps<{
+  title?: string
+  description?: string
+}>(), {
+  title: 'Freehub body quick finder',
+  description: 'Select your drivetrain brand and groupset to see which freehub body type is typically required. Always cross-check with the official compatibility charts from the drivetrain and hub manufacturers.',
+})
 
 interface FreehubOption {
   id: string
@@ -191,6 +200,9 @@ const FREEHUB_OPTIONS: FreehubOption[] = [
 
 const selectedBrand = ref<string>('')
 const selectedGroupsetId = ref<string>('')
+const helperId = useId()
+const brandSelectId = computed(() => `${helperId}-freehub-brand`)
+const groupsetSelectId = computed(() => `${helperId}-freehub-groupset`)
 
 const brands = computed(() => {
   const unique = new Set<string>()
@@ -210,4 +222,36 @@ const activeOption = computed(() => {
   return FREEHUB_OPTIONS.find((option) => option.id === selectedGroupsetId.value) ?? null
 })
 </script>
+
+<style scoped>
+.freehub-groupset-helper__fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.freehub-groupset-helper__field,
+.freehub-groupset-helper__select {
+  min-width: 0;
+}
+
+.freehub-groupset-helper__status {
+  margin-top: 0.75rem;
+}
+
+.freehub-groupset-helper select {
+  color-scheme: dark;
+}
+
+.freehub-groupset-helper select option {
+  background-color: #151515;
+  color: #f8fafc;
+}
+
+.freehub-groupset-helper select option:disabled {
+  color: #a1a1aa;
+}
+
+</style>
 

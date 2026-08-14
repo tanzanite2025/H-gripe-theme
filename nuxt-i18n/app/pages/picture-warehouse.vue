@@ -17,12 +17,12 @@
             <div
               v-for="n in 3"
               :key="n"
-              class="flex flex-col overflow-hidden rounded-xl bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_3px_9px_rgba(0,0,0,0.9)] backdrop-blur-md"
+              class="flex flex-col overflow-hidden rounded-xl border border-white/10 bg-[var(--tz-card-surface)] shadow-[0_3px_9px_rgba(0,0,0,0.72)]"
             >
-              <div class="aspect-square w-full bg-slate-800/80 animate-pulse"></div>
+              <div class="aspect-square w-full bg-white/[0.045] animate-pulse"></div>
               <div class="px-2.5 py-2 flex flex-col gap-1">
-                <div class="h-2.5 w-3/4 rounded bg-slate-700/80 animate-pulse"></div>
-                <div class="h-2 w-1/2 rounded bg-slate-800/80 animate-pulse"></div>
+                <div class="h-2.5 w-3/4 rounded bg-white/[0.10] animate-pulse"></div>
+                <div class="h-2 w-1/2 rounded bg-white/[0.06] animate-pulse"></div>
               </div>
             </div>
           </div>
@@ -40,10 +40,10 @@
                   v-for="(photo, index) in visibleUserPhotos"
                   :key="photo.id"
                   type="button"
-                  class="group flex flex-col overflow-hidden rounded-xl bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_3px_9px_rgba(0,0,0,0.9)] backdrop-blur-md hover:shadow-[0_4px_12px_rgba(0,0,0,0.9)] transition-all"
+                  class="group flex flex-col overflow-hidden rounded-xl border border-white/10 bg-[var(--tz-card-surface)] shadow-[0_3px_9px_rgba(0,0,0,0.72)] transition-colors hover:border-white/20 hover:bg-white/[0.04]"
                   @click="openLightbox('user', index)"
                 >
-                  <div class="aspect-square w-full overflow-hidden bg-slate-800/90 group-hover:bg-slate-700/90 transition-colors">
+                  <div class="aspect-square w-full overflow-hidden bg-white/[0.045] group-hover:bg-white/[0.075] transition-colors">
                     <img
                       v-if="photoCover(photo)"
                       :src="photoCover(photo)"
@@ -155,7 +155,7 @@
 
     <!-- 上传表单（Phase 3：调用 /tanz-photo/v1/upload） - 移至底部通栏 -->
     <section class="mt-10 border-t border-white/10 pt-8">
-      <div class="mx-auto max-w-3xl rounded-2xl px-4 py-4 sm:px-6 sm:py-5 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] backdrop-blur-xl shadow-[0_3px_9px_rgba(0,0,0,0.9)]">
+      <div class="picture-upload-card mx-auto max-w-3xl rounded-2xl px-4 py-4 sm:px-6 sm:py-5">
         <div class="mb-4 text-center">
           <h4 class="text-sm font-semibold tz-text-primary">
             Share your build (login required)
@@ -166,6 +166,36 @@
         </div>
         
         <form class="space-y-3" @submit.prevent="submitUpload">
+          <div class="flex flex-col gap-1">
+            <label class="tz-caption tz-text-secondary">
+              Order <span class="text-red-400">*</span>
+            </label>
+            <select
+              v-model="uploadOrderID"
+              class="picture-upload-control h-8 rounded-lg px-2.5 text-xs"
+              :disabled="uploadOrdersLoading || uploading || !uploadOrders.length"
+              required
+            >
+              <option value="" disabled>
+                {{ uploadOrdersLoading ? 'Loading orders...' : 'Select a completed order' }}
+              </option>
+              <option
+                v-for="order in uploadOrders"
+                :key="order.id"
+                :value="String(order.id)"
+                :disabled="!order.eligible"
+              >
+                {{ order.order_number }} · {{ order.status }}
+              </option>
+            </select>
+            <p v-if="uploadOrdersError" class="tz-caption text-red-400">
+              {{ uploadOrdersError }}
+            </p>
+            <p v-else-if="!uploadOrdersLoading && !hasEligibleUploadOrder" class="tz-caption tz-text-muted">
+              A completed order is required before you can upload photos.
+            </p>
+          </div>
+
           <div class="grid gap-3 sm:grid-cols-2">
             <div class="flex flex-col gap-1">
               <label class="tz-caption tz-text-secondary">
@@ -174,7 +204,7 @@
               <input
                 v-model="uploadRegion"
                 type="text"
-                class="h-8 rounded-lg px-2.5 text-xs text-slate-100 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] border-none shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(0,0,0,0.7)] focus:outline-none focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.9)]"
+                class="picture-upload-control h-8 rounded-lg px-2.5 text-xs"
                 placeholder="e.g. Germany"
                 required
               />
@@ -184,31 +214,20 @@
               <input
                 v-model="uploadLocation"
                 type="text"
-                class="h-8 rounded-lg px-2.5 text-xs text-slate-100 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] border-none shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(0,0,0,0.7)] focus:outline-none focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.9)]"
+                class="picture-upload-control h-8 rounded-lg px-2.5 text-xs"
                 placeholder="e.g. Berlin"
               />
             </div>
           </div>
 
-          <div class="grid gap-3 sm:grid-cols-2">
-            <div class="flex flex-col gap-1">
-              <label class="tz-caption tz-text-secondary">Nickname</label>
-              <input
-                v-model="uploadNickname"
-                type="text"
-                class="h-8 rounded-lg px-2.5 text-xs text-slate-100 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] border-none shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(0,0,0,0.7)] focus:outline-none focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.9)]"
-                placeholder="Your name or handle"
-              />
-            </div>
-            <div class="flex flex-col gap-1">
-              <label class="tz-caption tz-text-secondary">Bike / wheelset</label>
-              <input
-                v-model="uploadBikeModel"
-                type="text"
-                class="h-8 rounded-lg px-2.5 text-xs text-slate-100 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] border-none shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(0,0,0,0.7)] focus:outline-none focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.9)]"
-                placeholder="Model info"
-              />
-            </div>
+          <div class="flex flex-col gap-1">
+            <label class="tz-caption tz-text-secondary">Nickname</label>
+            <input
+              v-model="uploadNickname"
+              type="text"
+              class="picture-upload-control h-8 rounded-lg px-2.5 text-xs"
+              placeholder="Your name or handle"
+            />
           </div>
 
           <div class="flex flex-col gap-1">
@@ -216,20 +235,70 @@
             <textarea
               v-model="uploadNotes"
               rows="2"
-              class="rounded-lg px-2.5 py-1.5 text-xs text-slate-100 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] border-none shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(0,0,0,0.7)] focus:outline-none focus:[box-shadow:0_0_0_1px_rgba(56,189,248,0.9)]"
+              class="picture-upload-control rounded-lg px-2.5 py-1.5 text-xs"
               placeholder="Tell us about your build..."
             ></textarea>
           </div>
 
           <div class="flex flex-col gap-1">
             <label class="tz-caption tz-text-secondary">Photos (WEBP, Max 10)</label>
-            <input
-              type="file"
-              accept="image/webp"
-              multiple
-              @change="onUploadFileChange"
-              class="block w-full tz-caption tz-text-secondary file:mr-2 file:rounded file:border-0 file:bg-white/10 file:px-3 file:py-1.5 file:text-xs file:text-slate-100 hover:file:bg-white/20 transition-colors"
-            />
+            <div class="picture-upload-picker">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <button
+                  type="button"
+                  class="picture-upload-file-trigger inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-50"
+                  :disabled="uploading || uploadFiles.length >= 10 || !selectedUploadOrderEligible"
+                  @click="openUploadFilePicker"
+                >
+                  <Icon name="lucide:image-plus" class="h-3.5 w-3.5" />
+                  <span>{{ uploadFiles.length >= 10 ? 'Maximum reached' : 'Choose files' }}</span>
+                </button>
+                <span class="tz-caption tz-text-muted">
+                  {{ uploadFiles.length ? `${uploadFiles.length}/10 selected` : 'No photos selected' }}
+                </span>
+              </div>
+
+              <input
+                ref="uploadFileInput"
+                type="file"
+                accept=".webp,image/webp"
+                multiple
+                :disabled="uploading || !selectedUploadOrderEligible"
+                @change="onUploadFileChange"
+                class="hidden"
+              />
+
+              <div
+                v-if="uploadPreviews.length"
+                class="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4 md:grid-cols-5"
+              >
+                <div
+                  v-for="(preview, index) in uploadPreviews"
+                  :key="preview.key"
+                  class="picture-upload-preview group"
+                >
+                  <div class="relative aspect-square overflow-hidden rounded-lg bg-black/20">
+                    <img
+                      :src="preview.url"
+                      :alt="preview.file.name"
+                      class="size-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      class="picture-upload-preview-remove"
+                      :aria-label="`Remove ${preview.file.name}`"
+                      title="Remove photo"
+                      @click="removeUploadFile(index)"
+                    >
+                      <Icon name="lucide:x" class="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                  <p class="mt-1 truncate text-[10px] tz-text-muted" :title="preview.file.name">
+                    {{ preview.file.name }}
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div class="flex items-center justify-between gap-2 pt-2 border-t border-white/10 mt-2">
@@ -243,8 +312,8 @@
             </div>
             <button
               type="submit"
-              class="inline-flex items-center justify-center h-9 rounded-full bg-gradient-to-r from-[#B5FF6D] to-[#6b73ff] px-5 text-xs font-semibold text-slate-900 disabled:cursor-not-allowed disabled:opacity-50 hover:brightness-110 transition-all shadow-[0_4px_12px_-4px_rgba(0,0,0,0.95)]"
-              :disabled="uploading"
+              class="picture-upload-submit inline-flex items-center justify-center h-9 rounded-full px-5 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-50"
+              :disabled="uploading || !selectedUploadOrderEligible"
             >
               <span v-if="uploading">Uploading…</span>
               <span v-else>Submit for review</span>
@@ -264,11 +333,11 @@
       >
         <div
           v-if="isLightboxOpen"
-          class="fixed inset-0 z-[1400] flex items-center justify-center bg-black/75 px-3 tz-mobile-safe-modal-mask"
+          class="tz-standard-modal-mask tz-standard-modal-mask--compact fixed inset-0 z-[1400] flex items-center justify-center px-3 tz-mobile-safe-modal-mask"
           @click.self="closeLightbox"
         >
           <div
-            class="picture-lightbox-panel relative w-full max-w-[960px] max-h-[90vh] bg-slate-950 rounded-2xl flex flex-col overflow-hidden md:overflow-y-auto"
+            class="picture-lightbox-panel tz-standard-modal-surface relative w-full max-w-[960px] max-h-[90vh] bg-slate-950 flex flex-col overflow-hidden md:overflow-y-auto"
           >
             <!-- 顶部标题 + 关闭按钮 -->
             <header
@@ -279,7 +348,7 @@
               </h3>
               <button
                 type="button"
-                class="ml-4 inline-flex h-7 w-7 items-center justify-center rounded-full bg-white/10 text-white text-sm hover:bg-white/20"
+                class="tz-global-close-btn ml-4"
                 @click="closeLightbox"
                 aria-label="Close"
               >
@@ -484,8 +553,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
-import { definePageMeta, useHead, useRoute } from '#imports'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { definePageMeta, useHead, useLocalePath } from '#imports'
 
 import { useAuth } from '~/composables/useAuth'
 import {
@@ -494,10 +563,9 @@ import {
   type PictureWarehouseProductLink,
 } from '~/composables/useBrandGalleryPhotos'
 import {
-  isPageSubNavigationTabId,
   pictureWarehouseTabs,
-  type PictureWarehouseTabId,
 } from '~/utils/pageSubNavigation'
+import { usePageSubNavigationTab } from '~/composables/usePageSubNavigationTab'
 
 definePageMeta({
   layout: 'products',
@@ -547,9 +615,37 @@ const userError = ref<string | null>(null)
 const uploadRegion = ref('')
 const uploadLocation = ref('')
 const uploadNickname = ref('')
-const uploadBikeModel = ref('')
 const uploadNotes = ref('')
+interface UploadOrderOption {
+  id: number
+  order_number: string
+  status: string
+  shipping_status: string
+  completed_at?: string
+  total_amount: number
+  currency: string
+  eligible: boolean
+}
+
+const uploadOrders = ref<UploadOrderOption[]>([])
+const uploadOrdersLoading = ref(false)
+const uploadOrdersError = ref<string | null>(null)
+const uploadOrderID = ref('')
+const selectedUploadOrderEligible = computed(() =>
+  uploadOrders.value.some(
+    (order) => String(order.id) === uploadOrderID.value && order.eligible,
+  ),
+)
+const hasEligibleUploadOrder = computed(() => uploadOrders.value.some((order) => order.eligible))
+interface UploadPreview {
+  key: string
+  file: File
+  url: string
+}
+
 const uploadFiles = ref<File[]>([])
+const uploadPreviews = ref<UploadPreview[]>([])
+const uploadFileInput = ref<HTMLInputElement | null>(null)
 const uploading = ref(false)
 const uploadError = ref<string | null>(null)
 const uploadSuccess = ref<string | null>(null)
@@ -565,18 +661,88 @@ const commentError = ref<string | null>(null)
 const shareCopying = ref(false)
 const shareMessage = ref<string | null>(null)
 
+const uploadFileKey = (file: File): string =>
+  `${file.name}:${file.size}:${file.lastModified}`
+
+const openUploadFilePicker = () => {
+  if (!selectedUploadOrderEligible.value) return
+  uploadFileInput.value?.click()
+}
+
 const onUploadFileChange = (event: Event) => {
-  const target = event.target as HTMLInputElement | null
-  if (!target || !target.files || target.files.length === 0) {
-    uploadFiles.value = []
+  if (!selectedUploadOrderEligible.value) {
+    const target = event.target as HTMLInputElement | null
+    if (target) target.value = ''
     return
   }
-  uploadFiles.value = Array.from(target.files)
+
+  const target = event.target as HTMLInputElement | null
+  if (!target || !target.files || target.files.length === 0) {
+    target && (target.value = '')
+    return
+  }
+
+  uploadError.value = null
+  uploadSuccess.value = null
+
+  const selectedFiles = Array.from(target.files)
+  const invalidFiles = selectedFiles.filter(
+    (file) => file.type !== 'image/webp' && !file.name.toLowerCase().endsWith('.webp'),
+  )
+  const existingKeys = new Set(uploadFiles.value.map(uploadFileKey))
+  const validFiles = selectedFiles.filter(
+    (file) => file.type === 'image/webp' || file.name.toLowerCase().endsWith('.webp'),
+  )
+  const newFiles = validFiles.filter((file) => !existingKeys.has(uploadFileKey(file)))
+  const availableSlots = Math.max(0, 10 - uploadFiles.value.length)
+  const filesToAdd = newFiles.slice(0, availableSlots)
+
+  if (invalidFiles.length) {
+    uploadError.value = 'Only WEBP images are allowed.'
+  } else if (newFiles.length > availableSlots) {
+    uploadError.value = 'Maximum 10 files allowed.'
+  }
+
+  if (filesToAdd.length) {
+    uploadFiles.value.push(...filesToAdd)
+    uploadPreviews.value.push(
+      ...filesToAdd.map((file) => ({
+        key: uploadFileKey(file),
+        file,
+        url: URL.createObjectURL(file),
+      })),
+    )
+  }
+
+  // Reset the native input so selecting the same file again still emits change.
+  target.value = ''
 }
+
+const removeUploadFile = (index: number) => {
+  const preview = uploadPreviews.value[index]
+  if (!preview) return
+
+  URL.revokeObjectURL(preview.url)
+  uploadPreviews.value.splice(index, 1)
+  uploadFiles.value.splice(index, 1)
+}
+
+const clearUploadFiles = () => {
+  uploadPreviews.value.forEach((preview) => URL.revokeObjectURL(preview.url))
+  uploadPreviews.value = []
+  uploadFiles.value = []
+}
+
+onBeforeUnmount(clearUploadFiles)
 
 const submitUpload = async () => {
   uploadError.value = null
   uploadSuccess.value = null
+
+  if (!selectedUploadOrderEligible.value) {
+    uploadError.value = 'Please select a completed order before uploading.'
+    return
+  }
 
   if (!uploadRegion.value.trim()) {
     uploadError.value = 'Please enter a region.'
@@ -603,12 +769,11 @@ const submitUpload = async () => {
       formData.append('file[]', file)
     })
     
+    formData.append('order_id', uploadOrderID.value)
     formData.append('region', uploadRegion.value.trim())
 
     if (uploadLocation.value.trim()) formData.append('location', uploadLocation.value.trim())
     if (uploadNickname.value.trim()) formData.append('nickname', uploadNickname.value.trim())
-    if (uploadBikeModel.value.trim())
-      formData.append('bike_model', uploadBikeModel.value.trim())
     if (uploadNotes.value.trim()) formData.append('notes', uploadNotes.value.trim())
 
     try {
@@ -620,7 +785,11 @@ const submitUpload = async () => {
       }, 'Upload failed. Please try again later.')
     } catch (err: any) {
       const msg = err?.message || 'Upload failed. Please try again later.'
-      if (msg.includes('401') || msg.includes('403') || msg.toLowerCase().includes('login')) {
+      if (err?.code === 'showcase_upload_order_not_eligible' || msg.includes('showcase_upload_order_not_eligible')) {
+        uploadError.value = 'Only a completed order from your account can be used.'
+      } else if (err?.code === 'showcase_upload_order_required' || msg.includes('showcase_upload_order_required')) {
+        uploadError.value = 'Please select a completed order before uploading.'
+      } else if (err?.status === 401 || msg.includes('401') || msg.toLowerCase().includes('login')) {
         uploadError.value = 'Please log in before uploading.'
       } else if (msg.includes('429')) {
         uploadError.value = 'Too many uploads. Please try again later.'
@@ -637,8 +806,8 @@ const submitUpload = async () => {
     }
 
     uploadSuccess.value = 'Photos submitted for review.'
-    uploadFiles.value = []
-    uploadBikeModel.value = ''
+    clearUploadFiles()
+    if (uploadFileInput.value) uploadFileInput.value.value = ''
     uploadNotes.value = ''
   } catch {
     uploadError.value = 'Upload failed. Please try again later.'
@@ -719,33 +888,59 @@ const fetchUserPhotos = async () => {
   }
 }
 
+const fetchUploadOrders = async () => {
+  uploadOrdersLoading.value = true
+  uploadOrdersError.value = null
+  uploadOrders.value = []
+  uploadOrderID.value = ''
+
+  try {
+    const payload = await auth.request<UploadOrderOption[]>(
+      '/showcase/upload-orders',
+      {},
+      'Unable to load your orders.',
+    )
+    uploadOrders.value = Array.isArray(payload) ? payload : []
+  } catch (error: any) {
+    uploadOrdersError.value =
+      error?.status === 401 || String(error?.message || '').toLowerCase().includes('login')
+        ? 'Please log in before uploading.'
+        : 'Unable to load your orders.'
+  } finally {
+    uploadOrdersLoading.value = false
+  }
+}
+
+watch(
+  () => auth.isAuthenticated.value,
+  (authenticated, wasAuthenticated) => {
+    if (authenticated && !wasAuthenticated) {
+      void fetchUploadOrders()
+      return
+    }
+    if (!authenticated) {
+      uploadOrders.value = []
+      uploadOrderID.value = ''
+      clearUploadFiles()
+    }
+  },
+)
+
 onMounted(() => {
   fetchUserPhotos()
   fetchBrandPhotos()
+  fetchUploadOrders()
 })
 
 const activeKind = ref<PhotoKind | null>(null)
 const activeIndex = ref<number | null>(null)
 const currentGalleryIndex = ref(0)
 
-const activeTab = ref<PictureWarehouseTabId>('riders')
-
-const route = useRoute()
-
-const getTabFromHash = (hash: string | null | undefined): PictureWarehouseTabId | null => {
-  if (!hash) return null
-  const raw = hash.startsWith('#') ? hash.slice(1) : hash
-  return isPageSubNavigationTabId(pictureWarehouseTabs, raw) ? raw : null
-}
-
-watch(
-  () => route.hash,
-  (hash) => {
-    const next = getTabFromHash(hash)
-    if (next) activeTab.value = next
-  },
-  { immediate: true }
-)
+const { activeTab } = usePageSubNavigationTab({
+  tabs: pictureWarehouseTabs,
+  basePath: '/picture-warehouse',
+  defaultValue: 'riders',
+})
 
 const isLightboxOpen = computed(() => activeKind.value !== null && activeIndex.value !== null)
 
@@ -1021,6 +1216,110 @@ const copyShareLink = async () => {
   margin: 0 0 0.75rem;
   font-size: 0.95rem;
   color: var(--tz-text-secondary);
+}
+
+.picture-upload-card {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--tz-card-surface);
+  box-shadow: 0 3px 9px rgba(0, 0, 0, 0.72);
+}
+
+.picture-upload-control {
+  box-sizing: border-box;
+  border: 1px solid var(--tz-form-control-border);
+  color: var(--tz-text-primary);
+  background: var(--tz-form-control-surface);
+  box-shadow: none;
+}
+
+.picture-upload-control::placeholder {
+  color: var(--tz-text-muted);
+}
+
+.picture-upload-control:focus {
+  outline: none;
+  border-color: var(--tz-form-control-focus-border);
+  box-shadow: 0 0 0 1px var(--tz-form-control-focus-ring);
+}
+
+.picture-upload-file {
+  color: var(--tz-text-secondary);
+}
+
+.picture-upload-file::file-selector-button {
+  margin-right: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 0.375rem;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 0.375rem 0.75rem;
+  color: var(--tz-text-primary);
+  font-size: 0.75rem;
+  transition: background-color 160ms ease, border-color 160ms ease;
+}
+
+.picture-upload-file::file-selector-button:hover {
+  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.picture-upload-picker {
+  border: 1px solid var(--tz-form-control-border);
+  border-radius: 0.75rem;
+  background: var(--tz-form-control-surface);
+  padding: 0.625rem;
+}
+
+.picture-upload-file-trigger {
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--tz-text-primary);
+  transition: background-color 160ms ease, border-color 160ms ease;
+}
+
+.picture-upload-file-trigger:hover:not(:disabled) {
+  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.picture-upload-preview {
+  min-width: 0;
+}
+
+.picture-upload-preview-remove {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.35rem;
+  display: inline-flex;
+  height: 1.5rem;
+  width: 1.5rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 9999px;
+  background: rgba(0, 0, 0, 0.68);
+  color: white;
+  opacity: 0;
+  transition: opacity 160ms ease, background-color 160ms ease;
+}
+
+.picture-upload-preview:hover .picture-upload-preview-remove,
+.picture-upload-preview-remove:focus-visible {
+  opacity: 1;
+}
+
+.picture-upload-preview-remove:hover {
+  background: rgba(220, 38, 38, 0.9);
+}
+
+.picture-upload-submit {
+  color: #090909;
+  background: var(--tz-brand-primary);
+  box-shadow: 0 4px 12px -4px rgba(0, 0, 0, 0.9);
+  transition: background-color 160ms ease, opacity 160ms ease;
+}
+
+.picture-upload-submit:hover:not(:disabled) {
+  background: var(--tz-brand-primary-hover);
 }
 
 @media (max-width: 767px) {

@@ -3,6 +3,7 @@ package repository
 import (
 	"commerce-platform/internal/domain/product"
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -200,9 +201,6 @@ func (r *ProductRepository) ListRecommendationCandidates(input ProductRecommenda
 func (r *ProductRepository) ListQuickBuyCandidates(input ProductQuickBuyCandidateQuery) ([]product.Product, int64, error) {
 	products := []product.Product{}
 	var total int64
-	if len(input.ProductTypeIDs) == 0 {
-		return products, 0, nil
-	}
 
 	query := r.db.Model(&product.Product{}).
 		Preload("Media", orderProductMedia).
@@ -216,7 +214,6 @@ func (r *ProductRepository) ListQuickBuyCandidates(input ProductQuickBuyCandidat
 		Preload("AfterSalesTemplate").
 		Preload("PackagingTemplate").
 		Where("products.status = ?", "active").
-		Where("products.product_type_id IN ?", input.ProductTypeIDs).
 		Where(activeVariantExistsSQL("pv_quick_buy_candidate")).
 		Where(`EXISTS (
 			SELECT 1
@@ -227,6 +224,9 @@ func (r *ProductRepository) ListQuickBuyCandidates(input ProductQuickBuyCandidat
 			  AND pv_quick_buy_candidate_stock.stock > 0
 		)`)
 
+	if len(input.ProductTypeIDs) > 0 {
+		query = query.Where("products.product_type_id IN ?", input.ProductTypeIDs)
+	}
 	if input.Locale != "" {
 		query = query.Where("products.locale = ?", input.Locale)
 	}
@@ -319,11 +319,20 @@ func (r *ProductRepository) SearchPublic(input ProductSearchQuery) ([]product.Pr
 		defAlias := fmt.Sprintf("psd_%d", filterIndex)
 		variantAlias := fmt.Sprintf("pvv_%d", filterIndex)
 		var variantConditions []string
-		var args []interface{}
-		args = append(args, slug, values)
+		var variantArgs []interface{}
 		for _, value := range values {
+			if r.db.Dialector.Name() == "postgres" {
+				filter, err := json.Marshal(map[string]string{slug: value})
+				if err != nil {
+					return nil, 0, fmt.Errorf("marshal variant option filter: %w", err)
+				}
+				variantConditions = append(variantConditions, fmt.Sprintf("(%s.option_values)::jsonb @> ?::jsonb", variantAlias))
+				variantArgs = append(variantArgs, string(filter))
+				continue
+			}
+
 			variantConditions = append(variantConditions, fmt.Sprintf("%s.option_values LIKE ?", variantAlias))
-			args = append(args, fmt.Sprintf("%%\"%s\":\"%s\"%%", slug, value))
+			variantArgs = append(variantArgs, fmt.Sprintf("%%\"%s\":\"%s\"%%", slug, value))
 		}
 
 		query = query.Where(fmt.Sprintf(`(
@@ -343,7 +352,7 @@ func (r *ProductRepository) SearchPublic(input ProductSearchQuery) ([]product.Pr
 				  AND %s.is_active = TRUE
 				  AND (%s)
 			)
-		)`, valueAlias, defAlias, defAlias, valueAlias, valueAlias, defAlias, valueAlias, variantAlias, variantAlias, variantAlias, variantAlias, strings.Join(variantConditions, " OR ")), args...)
+		)`, valueAlias, defAlias, defAlias, valueAlias, valueAlias, defAlias, valueAlias, variantAlias, variantAlias, variantAlias, variantAlias, strings.Join(variantConditions, " OR ")), append([]interface{}{slug, values}, variantArgs...)...)
 		filterIndex++
 	}
 

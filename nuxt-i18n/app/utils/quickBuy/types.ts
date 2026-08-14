@@ -3,15 +3,7 @@ export interface QuickBuyStep {
   slug: string
   name: string
   stepKey?: string
-  description?: string
-  helpText?: string
   sortOrder?: number
-  selectionMode?: 'single' | 'multiple' | 'quantity' | 'auto' | string
-  isRequired?: boolean
-  minSelect?: number
-  maxSelect?: number
-  defaultQuantity?: number
-  allowSkip?: boolean
   productTypes?: QuickBuyProductType[]
 }
 
@@ -25,6 +17,7 @@ export interface QuickBuyProductType {
 
 export interface QuickBuyConfig {
   steps?: QuickBuyStep[]
+  flowHelpText?: string
 }
 
 export interface QuickBuyFlowVersion {
@@ -41,10 +34,18 @@ export interface QuickBuyFlow {
   slug: string
   name: string
   description?: string
+  helpText?: string
+  translations?: QuickBuyFlowTranslation[]
   entrySurface?: string
   isEnabled?: boolean
   version?: QuickBuyFlowVersion
   steps: QuickBuyStep[]
+}
+
+export interface QuickBuyFlowTranslation {
+  id?: number
+  locale: string
+  helpText?: string
 }
 
 export interface QuickBuySessionSelectionInput {

@@ -85,23 +85,34 @@
       </p>
     </div>
 
-    <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
+    <div class="space-y-4">
       <div class="rounded-2xl border bg-muted/30 p-4">
         <div class="flex flex-wrap items-start justify-between gap-3">
           <div>
-          <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">{{ t('payment.gatewayRuntime') }}</p>
-          <h3 class="mt-1 text-sm font-black tracking-tight text-foreground">{{ t('payment.runtimeReady') }}</h3>
+            <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">{{ t('payment.gatewayRuntime') }}</p>
+            <h3 class="mt-1 text-sm font-black tracking-tight text-foreground">{{ t('payment.runtimeReady') }}</h3>
           </div>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            :disabled="loading"
-            @click="emit('refresh')"
-          >
-            <RefreshCw :class="['size-3.5', loading ? 'animate-spin' : '']" />
-            {{ t('common.refresh') }}
-          </Button>
+          <div class="flex flex-wrap items-center justify-end gap-3">
+            <div class="text-right">
+              <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">{{ t('payment.selectedGatewayLabel') }}</p>
+              <p class="mt-1 text-sm font-black text-foreground">{{ paymentGatewayLabel(selectedGateway) }}</p>
+            </div>
+            <div class="hidden h-8 w-px bg-border sm:block" aria-hidden="true" />
+            <div class="text-right">
+              <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">{{ t('payment.credentialSource') }}</p>
+              <p class="mt-1 text-xs font-bold text-foreground">{{ credentialSourceLabel(runtime?.runtime_source) }}</p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              :disabled="loading"
+              @click="emit('refresh')"
+            >
+              <RefreshCw :class="['size-3.5', loading ? 'animate-spin' : '']" />
+              {{ t('common.refresh') }}
+            </Button>
+          </div>
         </div>
 
         <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -131,23 +142,6 @@
               {{ runtimeStatusLabel(gatewayRuntimeStatus(gateway.value), loading) }}
             </span>
           </button>
-        </div>
-      </div>
-
-      <div class="rounded-2xl border bg-muted/30 p-4">
-        <p class="text-xs font-black uppercase tracking-widest text-muted-foreground/60">{{ t('payment.selectedGatewayLabel') }}</p>
-        <div class="mt-3 space-y-3">
-          <div>
-            <div class="text-sm font-black text-foreground">{{ paymentGatewayLabel(selectedGateway) }}</div>
-            <p class="mt-1 text-xs leading-relaxed text-muted-foreground">
-              {{ paymentGatewayDescription(selectedGateway) }}
-            </p>
-          </div>
-
-          <div class="flex items-center justify-between text-xs">
-              <span class="text-muted-foreground">{{ t('payment.credentialSource') }}</span>
-            <span class="font-bold text-foreground">{{ credentialSourceLabel(runtime?.runtime_source) }}</span>
-          </div>
         </div>
       </div>
     </div>

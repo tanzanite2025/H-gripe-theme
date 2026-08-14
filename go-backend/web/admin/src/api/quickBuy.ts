@@ -1,21 +1,15 @@
 import axios from '@/utils/axios'
-
-const unwrapPayload = (response: any) => {
-  const payload = response.data?.data ?? response.data ?? {}
-  return payload?.data ?? payload
-}
-
-const unwrapList = (response: any) => {
-  const payload = unwrapPayload(response)
-  if (Array.isArray(payload)) return payload
-  if (Array.isArray(payload.data)) return payload.data
-  if (Array.isArray(payload.flows)) return payload.flows
-  return []
-}
+import {
+  requireApiArrayField,
+  requireApiBooleanField,
+  requireApiNumberField,
+  requireApiObject,
+  requireApiObjectField,
+  requireApiStringField,
+  unwrapApiPayload,
+} from '@/utils/apiResponse'
 
 export type QuickBuyVersionStatus = 'draft' | 'published' | 'archived' | string
-export type QuickBuySelectionMode = 'single' | 'multiple' | 'quantity' | 'auto' | string
-
 export interface QuickBuyProductTypeRef {
   id: number
   slug: string
@@ -24,20 +18,18 @@ export interface QuickBuyProductTypeRef {
   primary?: boolean
 }
 
+export interface QuickBuyFlowTranslation {
+  id?: number | string | null
+  locale: string
+  help_text?: string | null
+}
+
 export interface QuickBuyStep {
   id?: number
   step_key: string
   slug?: string
   name: string
-  description?: string
-  help_text?: string
   sort_order: number
-  selection_mode: QuickBuySelectionMode
-  is_required: boolean
-  min_select: number
-  max_select: number
-  default_quantity: number
-  allow_skip: boolean
   product_types: QuickBuyProductTypeRef[]
 }
 
@@ -55,6 +47,7 @@ export interface QuickBuyFlowSummary {
   slug: string
   name: string
   description?: string
+  help_text?: string
   entry_surface: string
   is_enabled: boolean
   sort_order: number
@@ -66,12 +59,15 @@ export interface QuickBuyFlowSummary {
 export interface QuickBuyFlow extends QuickBuyFlowSummary {
   version: QuickBuyVersion
   steps: QuickBuyStep[]
+  translations?: QuickBuyFlowTranslation[]
 }
 
 export interface QuickBuyFlowPayload {
   slug: string
   name: string
   description?: string
+  help_text?: string
+  translations?: QuickBuyFlowTranslation[]
   entry_surface: string
   is_enabled: boolean
   sort_order: number
@@ -87,15 +83,6 @@ export interface QuickBuyVersionPayload {
 export interface QuickBuyStepPayload {
   step_key: string
   name: string
-  description?: string
-  help_text?: string
-  sort_order: number
-  selection_mode: QuickBuySelectionMode
-  is_required: boolean
-  min_select: number
-  max_select: number
-  default_quantity: number
-  allow_skip: boolean
   product_type_ids: number[]
 }
 
@@ -152,41 +139,104 @@ export interface QuickBuyPreviewResult {
   has_more: boolean
 }
 
+const readDataEnvelope = (response: unknown, endpoint: string) => (
+  requireApiObject(unwrapApiPayload(response, endpoint), endpoint, 'response payload')
+)
+
+const readFlowSummary = (response: unknown, endpoint: string): any => {
+  const flow = requireApiObjectField(readDataEnvelope(response, endpoint), 'data', endpoint)
+  requireApiNumberField(flow, 'id', endpoint)
+  requireApiStringField(flow, 'slug', endpoint)
+  requireApiStringField(flow, 'name', endpoint)
+  requireApiStringField(flow, 'entry_surface', endpoint)
+  requireApiBooleanField(flow, 'is_enabled', endpoint)
+  requireApiNumberField(flow, 'sort_order', endpoint)
+  if (flow.versions !== undefined) {
+    if (!Array.isArray(flow.versions)) {
+      requireApiArrayField(flow, 'versions', endpoint)
+    }
+  }
+  return flow
+}
+
+const readFlow = (response: unknown, endpoint: string): any => {
+  const flow = readFlowSummary(response, endpoint)
+  requireApiObjectField(flow, 'version', endpoint)
+  requireApiArrayField(flow, 'steps', endpoint)
+  if (flow.translations !== undefined) {
+    requireApiArrayField(flow, 'translations', endpoint)
+  }
+  return flow
+}
+
+const readValidationResult = (response: unknown, endpoint: string): any => {
+  const result = requireApiObjectField(readDataEnvelope(response, endpoint), 'data', endpoint)
+  requireApiBooleanField(result, 'valid', endpoint)
+  requireApiArrayField(result, 'issues', endpoint)
+  return result
+}
+
+const readPreviewResult = (response: unknown, endpoint: string): any => {
+  const result = requireApiObjectField(readDataEnvelope(response, endpoint), 'data', endpoint)
+  requireApiObjectField(result, 'step', endpoint)
+  requireApiArrayField(result, 'products', endpoint)
+  requireApiNumberField(result, 'page', endpoint)
+  requireApiNumberField(result, 'page_size', endpoint)
+  requireApiNumberField(result, 'total', endpoint)
+  requireApiBooleanField(result, 'has_more', endpoint)
+  return result
+}
+
 export const quickBuyApi = {
   async listFlows(): Promise<QuickBuyFlowSummary[]> {
-    return unwrapList(await axios.get('/api/admin/quick-buy/flows'))
+    const endpoint = '/api/admin/quick-buy/flows'
+    const payload = readDataEnvelope(await axios.get(endpoint), endpoint)
+    return requireApiArrayField<QuickBuyFlowSummary>(payload, 'data', endpoint)
   },
 
   async getFlow(id: number | string, params: Record<string, any> = {}): Promise<QuickBuyFlow> {
-    return unwrapPayload(await axios.get(`/api/admin/quick-buy/flows/${id}`, { params }))
+    const endpoint = `/api/admin/quick-buy/flows/${id}`
+    return readFlow(await axios.get(endpoint, { params }), endpoint)
   },
 
   async createFlow(payload: QuickBuyFlowPayload): Promise<QuickBuyFlow> {
-    return unwrapPayload(await axios.post('/api/admin/quick-buy/flows', payload))
+    const endpoint = '/api/admin/quick-buy/flows'
+    return readFlow(await axios.post(endpoint, payload), endpoint)
   },
 
   async updateFlow(id: number | string, payload: QuickBuyFlowPayload): Promise<QuickBuyFlowSummary> {
-    return unwrapPayload(await axios.put(`/api/admin/quick-buy/flows/${id}`, payload))
+    const endpoint = `/api/admin/quick-buy/flows/${id}`
+    return readFlowSummary(await axios.put(endpoint, payload), endpoint)
+  },
+
+  async saveFlowConfiguration(id: number | string, payload: QuickBuyFlowPayload): Promise<QuickBuyFlow> {
+    const endpoint = `/api/admin/quick-buy/flows/${id}/configuration`
+    return readFlow(await axios.put(endpoint, payload), endpoint)
   },
 
   async createDraftVersion(flowId: number | string, payload: QuickBuyVersionPayload): Promise<QuickBuyFlow> {
-    return unwrapPayload(await axios.post(`/api/admin/quick-buy/flows/${flowId}/draft`, payload))
+    const endpoint = `/api/admin/quick-buy/flows/${flowId}/draft`
+    return readFlow(await axios.post(endpoint, payload), endpoint)
   },
 
   async updateDraftVersion(versionId: number | string, payload: QuickBuyVersionPayload): Promise<QuickBuyFlow> {
-    return unwrapPayload(await axios.put(`/api/admin/quick-buy/flow-versions/${versionId}`, payload))
+    const endpoint = `/api/admin/quick-buy/flow-versions/${versionId}`
+    return readFlow(await axios.put(endpoint, payload), endpoint)
   },
 
   async validateVersion(versionId: number | string): Promise<QuickBuyValidationResult> {
-    return unwrapPayload(await axios.post(`/api/admin/quick-buy/flow-versions/${versionId}/validate`))
+    const endpoint = `/api/admin/quick-buy/flow-versions/${versionId}/validate`
+    return readValidationResult(await axios.post(endpoint), endpoint)
   },
 
   async previewVersion(versionId: number | string, payload: { step_key: string, keyword?: string, locale?: string, currency?: string, page?: number, page_size?: number }): Promise<QuickBuyPreviewResult> {
-    return unwrapPayload(await axios.post(`/api/admin/quick-buy/flow-versions/${versionId}/preview`, payload))
+    const endpoint = `/api/admin/quick-buy/flow-versions/${versionId}/preview`
+    return readPreviewResult(await axios.post(endpoint, payload), endpoint)
   },
 
   async publishVersion(versionId: number | string): Promise<QuickBuyFlow> {
-    return unwrapPayload(await axios.post(`/api/admin/quick-buy/flow-versions/${versionId}/publish`))
+    const endpoint = `/api/admin/quick-buy/flow-versions/${versionId}/publish`
+    return readFlow(await axios.post(endpoint), endpoint)
   },
 }
 

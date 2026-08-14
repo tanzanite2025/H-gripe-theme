@@ -1475,9 +1475,19 @@
       "weight": "重量",
       "price": "价格"
     },
+    "selection": {
+      "label": "已选择产品",
+      "editHint": "可在这里检查并调整已选产品",
+      "empty": "暂未选择产品"
+    },
     "actions": {
       "toCart": "去购物车",
-      "payment": "付款"
+      "payment": "付款",
+      "addToCart": "加入购物车",
+      "directPayment": "立即付款"
+    },
+    "productRail": {
+      "empty": "当前步骤暂无可选产品"
     }
   },
   "search": {

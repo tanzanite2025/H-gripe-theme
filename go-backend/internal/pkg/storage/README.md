@@ -26,6 +26,8 @@ STORAGE_BUCKET=my-bucket
 STORAGE_REGION=us-west-2
 STORAGE_ACCESS_KEY_ID=...
 STORAGE_SECRET_ACCESS_KEY=...
+# Optional S3-compatible endpoint, for example https://minio.internal:9000
+STORAGE_ENDPOINT=
 STORAGE_BASE_URL=https://cdn.example.com
 ```
 
@@ -48,6 +50,29 @@ Do not commit real credentials.
 - Keep generated object keys opaque and collision-resistant.
 - Prefer private buckets plus signed URLs unless a file is intentionally public.
 - Treat local storage as development infrastructure, not durable production storage.
+
+## Showcase Object Policy
+
+Picture Warehouse submissions use two prefixes:
+
+- `showcase/pending/` contains files waiting for moderation and must never be
+  publicly readable.
+- `showcase/approved/` contains files copied after approval and may be served
+  publicly through the configured public URL.
+
+For S3, OSS, and compatible object storage, keep the bucket private and grant
+the API service account only the object operations it needs. Do not grant
+anonymous `GetObject` access to `showcase/pending/*`, and do not rely on an
+ACL comment in application code as a substitute for bucket policy. The
+application API still checks the database moderation status before serving
+local public uploads, but a public bucket or public CDN origin can bypass that
+check.
+
+Before production rollout, verify directly against the storage provider that:
+
+1. Anonymous reads of a pending object return `403` or `404`.
+2. The API service account can upload, copy, and delete objects.
+3. Approved objects are exposed only through the intended public origin.
 
 ## Tests
 

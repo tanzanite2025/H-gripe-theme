@@ -20,20 +20,35 @@ const (
 )
 
 type Flow struct {
-	ID           uint      `gorm:"primarykey" json:"id"`
-	Slug         string    `gorm:"size:120;uniqueIndex;not null" json:"slug"`
-	Name         string    `gorm:"size:160;not null" json:"name"`
-	Description  string    `gorm:"type:text;not null;default:''" json:"description"`
-	EntrySurface string    `gorm:"size:80;not null;default:'dock';index" json:"entry_surface"`
-	IsEnabled    bool      `gorm:"not null;default:true;index" json:"is_enabled"`
-	SortOrder    int       `gorm:"not null;default:100" json:"sort_order"`
-	Versions     []Version `gorm:"foreignKey:FlowID" json:"versions,omitempty"`
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
+	ID           uint              `gorm:"primarykey" json:"id"`
+	Slug         string            `gorm:"size:120;uniqueIndex;not null" json:"slug"`
+	Name         string            `gorm:"size:160;not null" json:"name"`
+	Description  string            `gorm:"type:text;not null;default:''" json:"description"`
+	HelpText     string            `gorm:"type:text;not null;default:''" json:"help_text"`
+	EntrySurface string            `gorm:"size:80;not null;default:'dock';index" json:"entry_surface"`
+	IsEnabled    bool              `gorm:"not null;default:true;index" json:"is_enabled"`
+	SortOrder    int               `gorm:"not null;default:100" json:"sort_order"`
+	Translations []FlowTranslation `gorm:"foreignKey:FlowID;constraint:OnDelete:CASCADE" json:"translations,omitempty"`
+	Versions     []Version         `gorm:"foreignKey:FlowID" json:"versions,omitempty"`
+	CreatedAt    time.Time         `json:"created_at"`
+	UpdatedAt    time.Time         `json:"updated_at"`
 }
 
 func (Flow) TableName() string {
 	return "quick_buy_flows"
+}
+
+type FlowTranslation struct {
+	ID        uint      `gorm:"primarykey" json:"id"`
+	FlowID    uint      `gorm:"not null;uniqueIndex:idx_quick_buy_flow_translations_flow_locale" json:"flow_id"`
+	Locale    string    `gorm:"size:32;not null;uniqueIndex:idx_quick_buy_flow_translations_flow_locale;index" json:"locale"`
+	HelpText  string    `gorm:"type:text;not null;default:''" json:"help_text"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+func (FlowTranslation) TableName() string {
+	return "quick_buy_flow_translations"
 }
 
 type Version struct {
@@ -61,8 +76,6 @@ type Step struct {
 	FlowVersionID   uint              `gorm:"not null;index" json:"flow_version_id"`
 	StepKey         string            `gorm:"size:120;not null" json:"step_key"`
 	Name            string            `gorm:"size:160;not null" json:"name"`
-	Description     string            `gorm:"type:text;not null;default:''" json:"description"`
-	HelpText        string            `gorm:"type:text;not null;default:''" json:"help_text"`
 	SortOrder       int               `gorm:"not null;default:100" json:"sort_order"`
 	SelectionMode   string            `gorm:"size:24;not null;default:'single'" json:"selection_mode"`
 	IsRequired      bool              `gorm:"not null;default:true" json:"is_required"`

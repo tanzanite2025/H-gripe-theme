@@ -15,7 +15,7 @@ type ProductVariant struct {
 	ShippingTemplateID *uint          `gorm:"index" json:"shipping_template_id"`
 	SKU                string         `gorm:"type:varchar(120);uniqueIndex;not null" json:"sku"`
 	Title              string         `gorm:"type:varchar(160)" json:"title"`
-	OptionValues       string         `gorm:"type:text;not null;uniqueIndex:idx_product_variant_options" json:"option_values"`
+	OptionValues       string         `gorm:"type:jsonb;not null;default:'{}';uniqueIndex:idx_product_variant_options" json:"option_values"`
 	Currency           string         `gorm:"size:3;not null;default:'USD';index" json:"currency"`
 	Price              float64        `gorm:"not null" json:"price"`
 	SalePrice          *float64       `json:"sale_price"`

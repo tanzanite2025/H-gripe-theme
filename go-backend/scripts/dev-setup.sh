@@ -127,7 +127,7 @@ DB_SSLMODE=disable
 
 # Redis配置
 REDIS_HOST=localhost
-REDIS_PORT=9500
+REDIS_PORT=9510
 REDIS_PASSWORD=
 REDIS_DB=0
 
@@ -328,7 +328,7 @@ echo "  User: commerce_platform"
 echo "  Password: commerce_platform_dev_password"
 echo ""
 info "Redis连接信息："
-echo "  Host: localhost:9500"
+echo "  Host: localhost:9510"
 echo "  Database: 0"
 echo ""
 echo "=========================================="

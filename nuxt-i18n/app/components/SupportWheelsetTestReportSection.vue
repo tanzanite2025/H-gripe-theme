@@ -1,5 +1,5 @@
 <template>
-  <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-3 md:p-6">
+  <div class="support-wheelset-test-report rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-3 md:p-6">
     <h3 class="support-section__title text-center">Wheelset Test Report</h3>
 
     <p class="support-section__body mt-4 text-center">
@@ -9,13 +9,11 @@
     </p>
 
     <div class="mt-3 flex justify-center">
-      <div
-        class="inline-flex items-center rounded-full border border-sky-500/70 bg-sky-500/5 px-3 py-1 text-xs sm:text-sm text-sky-300"
-      >
+      <div class="support-wheelset-test-report__assembly-note inline-flex items-center rounded-full px-3 py-1 text-xs sm:text-sm">
         <span>To learn more about wheelset shipping and assembly tests,</span>
         <button
           type="button"
-          class="ml-1 underline decoration-sky-400/80 underline-offset-2 hover:text-sky-200 hover:decoration-sky-200 transition-colors duration-150"
+          class="support-wheelset-test-report__assembly-note-action ml-1 underline underline-offset-2 transition-colors duration-150"
           @click="goToWheelsetAssembly"
         >
           see Wheelset Assembly.
@@ -34,7 +32,7 @@
       </p>
       <p class="support-section__body mt-2">
         <strong>Test Method:</strong>
-<span class="inline-flex items-center gap-1.5 ml-2 px-2.5 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/50 text-xs font-medium tz-text-secondary align-middle">
+<span class="support-wheelset-test-report__method-badge inline-flex items-center gap-1.5 ml-2 px-2.5 py-0.5 rounded-md text-xs font-medium tz-text-secondary align-middle">
           <svg class="w-3.5 h-3.5 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
           </svg>
@@ -75,7 +73,7 @@
       </p>
       <p class="support-section__body mt-2">
         <strong>Test Method:</strong>
-<span class="inline-flex items-center gap-1.5 ml-2 px-2.5 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/50 text-xs font-medium tz-text-secondary align-middle">
+<span class="support-wheelset-test-report__method-badge inline-flex items-center gap-1.5 ml-2 px-2.5 py-0.5 rounded-md text-xs font-medium tz-text-secondary align-middle">
           <svg class="w-3.5 h-3.5 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
           </svg>
@@ -118,7 +116,7 @@
       </p>
       <p class="support-section__body mt-2">
         <strong>Test Method:</strong>
-<span class="inline-flex items-center gap-1.5 ml-2 px-2.5 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/50 text-xs font-medium tz-text-secondary align-middle">
+<span class="support-wheelset-test-report__method-badge inline-flex items-center gap-1.5 ml-2 px-2.5 py-0.5 rounded-md text-xs font-medium tz-text-secondary align-middle">
           <svg class="w-3.5 h-3.5 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
           </svg>
@@ -165,7 +163,7 @@
       </p>
       <p class="support-section__body mt-2">
         <strong>Test Method:</strong>
-<span class="inline-flex items-center gap-1.5 ml-2 px-2.5 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/50 text-xs font-medium tz-text-secondary align-middle">
+<span class="support-wheelset-test-report__method-badge inline-flex items-center gap-1.5 ml-2 px-2.5 py-0.5 rounded-md text-xs font-medium tz-text-secondary align-middle">
           <svg class="w-3.5 h-3.5 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
           </svg>
@@ -201,7 +199,7 @@
       </p>
       <p class="support-section__body mt-2">
         <strong>Test Method:</strong>
-<span class="inline-flex items-center gap-1.5 ml-2 px-2.5 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/50 text-xs font-medium tz-text-secondary align-middle">
+<span class="support-wheelset-test-report__method-badge inline-flex items-center gap-1.5 ml-2 px-2.5 py-0.5 rounded-md text-xs font-medium tz-text-secondary align-middle">
           <svg class="w-3.5 h-3.5 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
           </svg>
@@ -243,7 +241,7 @@
       </p>
       <p class="support-section__body mt-2">
         <strong>Test Method:</strong>
-<span class="inline-flex items-center gap-1.5 ml-2 px-2.5 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/50 text-xs font-medium tz-text-secondary align-middle">
+<span class="support-wheelset-test-report__method-badge inline-flex items-center gap-1.5 ml-2 px-2.5 py-0.5 rounded-md text-xs font-medium tz-text-secondary align-middle">
           <svg class="w-3.5 h-3.5 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
           </svg>
@@ -294,10 +292,8 @@
       </div>
     </div>
 
-    <div
-      class="mt-6 rounded-lg border border-amber-300/80 bg-slate-900/80 px-4 py-3 text-sm leading-relaxed text-amber-100"
-    >
-      <h4 class="mb-1 font-semibold text-amber-300">
+    <div class="support-wheelset-test-report__disclaimer mt-6 rounded-lg px-4 py-3 text-sm leading-relaxed">
+      <h4 class="support-wheelset-test-report__disclaimer-label mb-3 font-semibold">
         Disclaimer
       </h4>
       <p class="mb-2">
@@ -322,6 +318,12 @@ const { openWheelsetVideo, goToWheelsetAssembly } = defineProps<{
 </script>
 
 <style scoped>
+.support-wheelset-test-report {
+  --wheelset-report-accent: var(--tz-brand-primary);
+  --wheelset-report-border: rgba(255, 255, 255, 0.08);
+  --wheelset-report-soft-surface: rgba(255, 255, 255, 0.035);
+}
+
 .support-section__title {
   margin: 0 0 0.5rem;
   font-size: var(--tz-type-section-title);
@@ -337,12 +339,70 @@ const { openWheelsetVideo, goToWheelsetAssembly } = defineProps<{
   color: var(--tz-text-secondary);
 }
 
+.support-wheelset-test-report .text-sky-300 {
+  color: var(--wheelset-report-accent) !important;
+}
+
+.support-wheelset-test-report .text-sky-400 {
+  color: var(--wheelset-report-accent) !important;
+}
+
+.support-wheelset-test-report__assembly-note {
+  border: 1px solid rgba(181, 255, 109, 0.28);
+  background: rgba(181, 255, 109, 0.04);
+  color: var(--tz-text-secondary);
+}
+
+.support-wheelset-test-report__assembly-note-action {
+  color: var(--wheelset-report-accent);
+  text-underline-offset: 0.2em;
+}
+
+.support-wheelset-test-report__assembly-note-action:hover {
+  color: var(--tz-brand-primary-hover);
+}
+
 .rim-test-card {
   padding: 1.25rem;
   border-radius: 0.75rem;
-  background: rgba(2, 6, 23, 0.4);
-  border: 1px solid rgba(255, 255, 255, 0.03);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  background: var(--tz-card-surface);
+  border: 1px solid var(--wheelset-report-border);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.22);
+}
+
+.support-wheelset-test-report__method-badge {
+  border: 1px solid rgba(181, 255, 109, 0.18);
+  background: var(--wheelset-report-soft-surface);
+}
+
+.support-wheelset-test-report__disclaimer {
+  border: 1px solid rgba(181, 255, 109, 0.22);
+  background: rgba(181, 255, 109, 0.04);
+  color: var(--tz-text-secondary);
+}
+
+.support-wheelset-test-report__disclaimer-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border: 1px solid rgba(181, 255, 109, 0.34);
+  border-radius: 9999px;
+  padding: 0.22rem 0.7rem;
+  background: rgba(0, 0, 0, 0.22);
+  color: var(--wheelset-report-accent);
+  font-size: var(--tz-type-micro-label);
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.support-wheelset-test-report__disclaimer-label::before {
+  width: 0.38rem;
+  height: 0.38rem;
+  border-radius: 9999px;
+  background: var(--wheelset-report-accent);
+  box-shadow: 0 0 10px rgba(181, 255, 109, 0.7);
+  content: '';
 }
 
 .support-video-thumbnail {
@@ -370,8 +430,8 @@ const { openWheelsetVideo, goToWheelsetAssembly } = defineProps<{
   gap: 0.25rem;
   background: linear-gradient(
     to top,
-    rgba(15, 23, 42, 0.85),
-    rgba(15, 23, 42, 0.45)
+    rgba(0, 0, 0, 0.82),
+    rgba(0, 0, 0, 0.38)
   );
   color: var(--tz-text-primary);
 }

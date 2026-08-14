@@ -1,10 +1,18 @@
 import axios from '@/utils/axios'
-
-const unwrapPayload = (response: any): any => response.data ?? {}
+import {
+  requireApiArrayField,
+  requireApiNumberField,
+  requireApiObject,
+  unwrapApiPayload,
+} from '@/utils/apiResponse'
 
 export const i18nApi = {
   async listLanguages() {
-    return unwrapPayload(await axios.get('/api/v1/i18n/languages'))
+    const endpoint = '/api/v1/i18n/languages'
+    const payload = requireApiObject(unwrapApiPayload(await axios.get(endpoint), endpoint), endpoint)
+    requireApiArrayField(payload, 'languages', endpoint)
+    requireApiNumberField(payload, 'total', endpoint)
+    return payload
   },
 }
 

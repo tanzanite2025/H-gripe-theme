@@ -42,8 +42,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
-import { useRoute } from '#imports'
+import { computed } from 'vue'
 import WarrantyChangeCancelTab from '~/components/warranty/ChangeCancelTab.vue'
 import WarrantyDamagedLostTab from '~/components/warranty/DamagedLostTab.vue'
 import WarrantyReturnsTab from '~/components/warranty/ReturnsTab.vue'
@@ -51,11 +50,8 @@ import WarrantyWarrantyPolicyTab from '~/components/warranty/WarrantyPolicyTab.v
 import WarrantyAccidentalDamageTab from '~/components/warranty/AccidentalDamageTab.vue'
 import WarrantyProtectionTab from '~/components/warranty/ProtectionTab.vue'
 import WarrantySubmitClaimTab from '~/components/warranty/SubmitClaimTab.vue'
-import {
-  isPageSubNavigationTabId,
-  warrantyTabs,
-  type WarrantyTabId,
-} from '~/utils/pageSubNavigation'
+import { usePageSubNavigationTab } from '~/composables/usePageSubNavigationTab'
+import { warrantyTabs } from '~/utils/pageSubNavigation'
 import { useSiteSettings } from '~/composables/usePublicSettings'
 
 definePageMeta({
@@ -69,38 +65,12 @@ useHead({
 const tabs = warrantyTabs
 const { siteSettings } = useSiteSettings()
 
-const activeTab = ref<WarrantyTabId>('warranty')
-const route = useRoute()
-const supportEmail = computed(() => siteSettings.value.contactEmail?.trim() || '')
-
-const setActiveTab = (id: WarrantyTabId | string) => {
-  if (!isPageSubNavigationTabId(tabs, id)) return
-  activeTab.value = id
-  if (typeof window !== 'undefined') {
-    const url = new URL(window.location.href)
-    url.hash = `#${id}`
-    window.history.replaceState(null, '', url.toString())
-  }
-}
-
-const syncTabWithHash = (hash: string | null | undefined) => {
-  if (!hash) return
-  const clean = hash.startsWith('#') ? hash.slice(1) : hash
-  if (isPageSubNavigationTabId(tabs, clean)) {
-    activeTab.value = clean
-  }
-}
-
-onMounted(() => {
-  syncTabWithHash(route.hash)
+const { activeTab, setActiveTab } = usePageSubNavigationTab({
+  tabs,
+  basePath: '/support/warranty',
+  defaultValue: 'warranty',
 })
-
-watch(
-  () => route.hash,
-  (newHash) => {
-    syncTabWithHash(newHash)
-  }
-)
+const supportEmail = computed(() => siteSettings.value.contactEmail?.trim() || '')
 </script>
 
 <style scoped>

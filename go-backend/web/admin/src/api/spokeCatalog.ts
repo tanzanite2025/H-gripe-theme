@@ -1,4 +1,10 @@
 import axios from '@/utils/axios'
+import {
+  readApiBody,
+  requireApiArrayField,
+  requireApiObject,
+  requireApiObjectField,
+} from '@/utils/apiResponse'
 
 export interface SpokeIntOption {
   value: number
@@ -77,34 +83,59 @@ export interface SpokeCatalog {
   presets: SpokeBuildPreset[]
 }
 
-const unwrapPayload = (response: any) => response.data?.data ?? response.data ?? {}
+const requireApiBlob = (value: unknown, endpoint: string): Blob => {
+  if (!(value instanceof Blob) || value.size === 0) {
+    throw new Error(`[CRITICAL] Invalid API response for ${endpoint}: response body must be a non-empty Blob`)
+  }
+  return value
+}
+
+const readCatalog = (response: unknown, endpoint: string): SpokeCatalog => {
+  const catalog = requireApiObject(readApiBody(response, endpoint), endpoint, 'response body')
+  const options = requireApiObjectField<SpokeCatalogOptions>(catalog, 'options', endpoint)
+
+  requireApiArrayField(options, 'spokeCounts', endpoint)
+  requireApiArrayField(options, 'crossings', endpoint)
+  requireApiArrayField(options, 'nippleTypes', endpoint)
+  requireApiArrayField(options, 'wheelPositions', endpoint)
+  requireApiArrayField<SpokeBrand<SpokeRimModel>>(catalog, 'rims', endpoint)
+  requireApiArrayField<SpokeBrand<SpokeHubModel>>(catalog, 'hubs', endpoint)
+  requireApiArrayField<SpokeBuildPreset>(catalog, 'presets', endpoint)
+
+  return catalog as SpokeCatalog
+}
 
 export const spokeCatalogApi = {
   async get(): Promise<SpokeCatalog> {
-    return unwrapPayload(await axios.get('/api/admin/spoke-catalog'))
+    const endpoint = '/api/admin/spoke-catalog'
+    return readCatalog(await axios.get(endpoint), endpoint)
   },
 
   async save(payload: SpokeCatalog): Promise<SpokeCatalog> {
-    return unwrapPayload(await axios.put('/api/admin/spoke-catalog', payload))
+    const endpoint = '/api/admin/spoke-catalog'
+    return readCatalog(await axios.put(endpoint, payload), endpoint)
   },
 
   async importFile(file: File): Promise<SpokeCatalog> {
     const formData = new FormData()
     formData.append('file', file)
-    return unwrapPayload(await axios.post('/api/admin/spoke-catalog/import', formData))
+    const endpoint = '/api/admin/spoke-catalog/import'
+    return readCatalog(await axios.post(endpoint, formData), endpoint)
   },
 
   async downloadPresetTemplate(): Promise<Blob> {
-    const response = await axios.get('/api/admin/spoke-catalog/preset-template', {
+    const endpoint = '/api/admin/spoke-catalog/preset-template'
+    const response = await axios.get(endpoint, {
       responseType: 'blob',
     })
-    return response.data
+    return requireApiBlob(readApiBody(response, endpoint), endpoint)
   },
 
   async importPresetTemplate(file: File): Promise<SpokeCatalog> {
     const formData = new FormData()
     formData.append('file', file)
-    return unwrapPayload(await axios.post('/api/admin/spoke-catalog/preset-template/import', formData))
+    const endpoint = '/api/admin/spoke-catalog/preset-template/import'
+    return readCatalog(await axios.post(endpoint, formData), endpoint)
   }
 }
 

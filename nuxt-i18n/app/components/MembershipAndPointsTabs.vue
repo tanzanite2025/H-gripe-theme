@@ -251,45 +251,32 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue'
-import { useI18n, useLocalePath, useRoute } from '#imports'
+import { ref, onMounted, computed } from 'vue'
+import { useI18n, useLocalePath } from '#imports'
 import { useMembership } from '~/composables/useMembership'
 import BadgeAvatar from '~/components/BadgeAvatar.vue'
-import {
-  isPageSubNavigationTabId,
-  membershipAndPointsTabs,
-  type MembershipTabId,
-  type PageSubNavigationTab,
-} from '~/utils/pageSubNavigation'
+import { usePageSubNavigationTab } from '~/composables/usePageSubNavigationTab'
+import { membershipAndPointsTabs, type MembershipTabId } from '~/utils/pageSubNavigation'
 
 const props = defineProps<{ variant?: 'page' | 'modal' }>()
 
 const isModal = computed(() => props.variant === 'modal')
 
-const tabs = membershipAndPointsTabs as readonly PageSubNavigationTab[]
+const tabs = membershipAndPointsTabs
 const isMembershipTabId = (id: string): id is MembershipTabId => {
   return membershipAndPointsTabs.some(tab => tab.id === id)
 }
 
-const activeTab = ref<MembershipTabId>('myinfo')
-const route = useRoute()
+const { activeTab, setActiveTab: setPageActiveTab } = usePageSubNavigationTab({
+  tabs,
+  basePath: '/membershipandpoints',
+  defaultValue: 'myinfo',
+  syncWithUrl: () => !isModal.value,
+})
 
 const setActiveTab = (id: MembershipTabId | string) => {
   if (!isMembershipTabId(id)) return
-  activeTab.value = id
-  if (!isModal.value && typeof window !== 'undefined') {
-    const url = new URL(window.location.href)
-    url.hash = `#${id}`
-    window.history.replaceState(null, '', url.toString())
-  }
-}
-
-const syncTabWithHash = (hash: string | null | undefined) => {
-  if (isModal.value || !hash) return
-  const clean = hash.startsWith('#') ? hash.slice(1) : hash
-  if (isMembershipTabId(clean)) {
-    activeTab.value = clean
-  }
+  setPageActiveTab(id)
 }
 
 const localePath = useLocalePath()
@@ -480,16 +467,8 @@ const handleAuthSuccess = async () => {
 }
 
 onMounted(() => {
-  syncTabWithHash(route.hash)
   initMembership()
 })
-
-watch(
-  () => route.hash,
-  (hash) => {
-    syncTabWithHash(hash)
-  }
-)
 </script>
 
 <style scoped>

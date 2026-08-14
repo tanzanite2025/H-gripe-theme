@@ -62,7 +62,6 @@
               </span>
               <ChevronRight
                 class="admin-sidebar__chevron"
-                :class="{ 'admin-sidebar__chevron--open': isGroupOpen(item) }"
                 aria-hidden="true"
               />
             </button>
@@ -615,11 +614,6 @@ watch(
   color: currentColor;
   opacity: 0.58;
   transition: transform 160ms ease, opacity 160ms ease;
-}
-
-.admin-sidebar__chevron--open {
-  transform: rotate(180deg);
-  opacity: 0.9;
 }
 
 .admin-sidebar__footer {

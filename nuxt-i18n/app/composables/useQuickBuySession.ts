@@ -1,8 +1,16 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { normalizeShopProduct, type ShopProductsResult } from '~/composables/useShopProducts'
+import {
+  asQuickBuyArray,
+  asQuickBuyBoolean,
+  asQuickBuyNumber,
+  asQuickBuyRecord,
+  asQuickBuyString,
+  extractQuickBuyPayload,
+  normalizeQuickBuyFlow,
+} from '~/utils/quickBuy/normalize'
 import type {
-  QuickBuyFlow,
   QuickBuySession,
   QuickBuySessionItem,
   QuickBuySessionSelectionInput,
@@ -10,134 +18,156 @@ import type {
   QuickBuySessionValidationResult,
 } from '~/utils/quickBuy/types'
 
-type RawRecord = Record<string, unknown>
-
-const asObject = (value: unknown): RawRecord | null => {
-  return value && typeof value === 'object' && !Array.isArray(value) ? value as RawRecord : null
-}
-
-const asArray = (value: unknown): unknown[] => {
-  return Array.isArray(value) ? value : []
-}
-
-const asString = (value: unknown) => {
-  if (typeof value === 'string') return value
-  if (value === null || value === undefined) return ''
-  return String(value)
-}
-
-const asNumber = (value: unknown, fallback = 0) => {
-  const numberValue = Number(value)
-  return Number.isFinite(numberValue) ? numberValue : fallback
-}
-
-const extractPayload = (response: unknown): unknown => {
-  let current = response
-  for (let depth = 0; depth < 3; depth += 1) {
-    const record = asObject(current)
-    if (!record || !('data' in record)) return current
-    current = record.data
-  }
-  return current
-}
-
-const normalizeValidationIssue = (value: unknown): QuickBuySessionValidationIssue | null => {
-  const record = asObject(value)
+const normalizeQuickBuySessionValidationIssue = (value: unknown): QuickBuySessionValidationIssue | null => {
+  const record = asQuickBuyRecord(value)
   if (!record) return null
-  const code = asString(record.code).trim()
-  const message = asString(record.message).trim()
+  const code = asQuickBuyString(record.code).trim()
+  const message = asQuickBuyString(record.message).trim()
   if (!code || !message) return null
 
   return {
-    severity: asString(record.severity).trim() || 'error',
+    severity: asQuickBuyString(record.severity).trim() || 'error',
     code,
     message,
-    stepKey: asString(record.stepKey ?? record.step_key).trim() || undefined,
-    productId: asNumber(record.productId ?? record.product_id) || undefined,
-    variantId: asNumber(record.variantId ?? record.variant_id) || null,
+    stepKey: asQuickBuyString(record.stepKey ?? record.step_key).trim() || undefined,
+    productId: asQuickBuyNumber(record.productId ?? record.product_id) || undefined,
+    variantId: asQuickBuyNumber(record.variantId ?? record.variant_id) || null,
   }
 }
 
-const normalizeValidation = (value: unknown): QuickBuySessionValidationResult | undefined => {
-  const record = asObject(value)
+const normalizeQuickBuySessionValidation = (value: unknown): QuickBuySessionValidationResult | undefined => {
+  const record = asQuickBuyRecord(value)
   if (!record) return undefined
   return {
     valid: Boolean(record.valid),
-    issues: asArray(record.issues)
-      .map(normalizeValidationIssue)
+    issues: asQuickBuyArray(record.issues)
+      .map(normalizeQuickBuySessionValidationIssue)
       .filter((item): item is QuickBuySessionValidationIssue => Boolean(item)),
   }
 }
 
-const normalizeSessionItem = (value: unknown): QuickBuySessionItem | null => {
-  const record = asObject(value)
+const normalizeQuickBuySessionItem = (value: unknown): QuickBuySessionItem | null => {
+  const record = asQuickBuyRecord(value)
   if (!record) return null
-  const id = asNumber(record.id)
-  const stepKey = asString(record.stepKey ?? record.step_key).trim()
-  const productId = asNumber(record.productId ?? record.product_id)
+  const id = asQuickBuyNumber(record.id)
+  const stepKey = asQuickBuyString(record.stepKey ?? record.step_key).trim()
+  const productId = asQuickBuyNumber(record.productId ?? record.product_id)
   if (!id || !stepKey || !productId) return null
 
   return {
     id,
     stepKey,
     productId,
-    variantId: asNumber(record.variantId ?? record.variant_id) || null,
-    quantity: asNumber(record.quantity, 1),
-    unitPriceSnapshot: asNumber(record.unitPriceSnapshot ?? record.unit_price_snapshot),
-    currencySnapshot: asString(record.currencySnapshot ?? record.currency_snapshot).trim(),
-    weightSnapshotG: asNumber(record.weightSnapshotG ?? record.weight_snapshot_g),
-    productSnapshot: asObject(record.productSnapshot ?? record.product_snapshot) || undefined,
-    variantSnapshot: asObject(record.variantSnapshot ?? record.variant_snapshot) || undefined,
-    sortOrder: asNumber(record.sortOrder ?? record.sort_order),
+    variantId: asQuickBuyNumber(record.variantId ?? record.variant_id) || null,
+    quantity: asQuickBuyNumber(record.quantity, 1),
+    unitPriceSnapshot: asQuickBuyNumber(record.unitPriceSnapshot ?? record.unit_price_snapshot),
+    currencySnapshot: asQuickBuyString(record.currencySnapshot ?? record.currency_snapshot).trim(),
+    weightSnapshotG: asQuickBuyNumber(record.weightSnapshotG ?? record.weight_snapshot_g),
+    productSnapshot: asQuickBuyRecord(record.productSnapshot ?? record.product_snapshot) || undefined,
+    variantSnapshot: asQuickBuyRecord(record.variantSnapshot ?? record.variant_snapshot) || undefined,
+    sortOrder: asQuickBuyNumber(record.sortOrder ?? record.sort_order),
   }
 }
 
-const normalizeSession = (value: unknown): QuickBuySession | null => {
-  const record = asObject(value)
+const normalizeQuickBuySession = (value: unknown): QuickBuySession | null => {
+  const record = asQuickBuyRecord(value)
   if (!record) return null
-  const sessionToken = asString(record.sessionToken ?? record.session_token).trim()
+  const sessionToken = asQuickBuyString(record.sessionToken ?? record.session_token).trim()
   if (!sessionToken) return null
-  const flowRecord = asObject(record.flow)
-
   return {
     sessionToken,
-    flowId: asNumber(record.flowId ?? record.flow_id),
-    flowVersionId: asNumber(record.flowVersionId ?? record.flow_version_id),
-    locale: asString(record.locale).trim(),
-    marketCountry: asString(record.marketCountry ?? record.market_country).trim(),
-    currency: asString(record.currency).trim(),
-    status: asString(record.status).trim(),
-    validationStatus: asString(record.validationStatus ?? record.validation_status).trim(),
-    subtotalSnapshot: asNumber(record.subtotalSnapshot ?? record.subtotal_snapshot),
-    weightSnapshotG: asNumber(record.weightSnapshotG ?? record.weight_snapshot_g),
-    expiresAt: asString(record.expiresAt ?? record.expires_at).trim() || undefined,
-    flow: flowRecord ? flowRecord as unknown as QuickBuyFlow : undefined,
-    items: asArray(record.items)
-      .map(normalizeSessionItem)
+    flowId: asQuickBuyNumber(record.flowId ?? record.flow_id),
+    flowVersionId: asQuickBuyNumber(record.flowVersionId ?? record.flow_version_id),
+    locale: asQuickBuyString(record.locale).trim(),
+    marketCountry: asQuickBuyString(record.marketCountry ?? record.market_country).trim(),
+    currency: asQuickBuyString(record.currency).trim(),
+    status: asQuickBuyString(record.status).trim(),
+    validationStatus: asQuickBuyString(record.validationStatus ?? record.validation_status).trim(),
+    subtotalSnapshot: asQuickBuyNumber(record.subtotalSnapshot ?? record.subtotal_snapshot),
+    weightSnapshotG: asQuickBuyNumber(record.weightSnapshotG ?? record.weight_snapshot_g),
+    expiresAt: asQuickBuyString(record.expiresAt ?? record.expires_at).trim() || undefined,
+    flow: normalizeQuickBuyFlow(record.flow) || undefined,
+    items: asQuickBuyArray(record.items)
+      .map(normalizeQuickBuySessionItem)
       .filter((item): item is QuickBuySessionItem => Boolean(item)),
-    validation: normalizeValidation(record.validation),
+    validation: normalizeQuickBuySessionValidation(record.validation),
   }
 }
 
-const selectionPayload = (selection: QuickBuySessionSelectionInput) => ({
+const serializeQuickBuySelection = (selection: QuickBuySessionSelectionInput) => ({
   step_key: selection.stepKey,
   product_id: selection.productId,
   variant_id: selection.variantId || null,
   quantity: selection.quantity,
 })
 
+const QUICK_BUY_ANONYMOUS_ID_KEY = 'tz_quick_buy_anonymous_id'
+
+const readQuickBuyAnonymousId = (): string => {
+  if (!import.meta.client) return ''
+  try {
+    const stored = window.localStorage.getItem(QUICK_BUY_ANONYMOUS_ID_KEY)
+    if (stored) return stored
+    const next = globalThis.crypto?.randomUUID?.() || `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 12)}`
+    const anonymousId = `quick_${next}`
+    window.localStorage.setItem(QUICK_BUY_ANONYMOUS_ID_KEY, anonymousId)
+    return anonymousId
+  } catch {
+    return ''
+  }
+}
+
 export function useQuickBuySession(surface = 'dock') {
   const { request } = useApiRequest()
   const { locale } = useI18n()
   const { countryCode, displayCurrency, baseCurrency } = useStorefrontContext()
   const session = ref<QuickBuySession | null>(null)
-  const pending = ref(false)
+  const pendingRequestCount = ref(0)
+  const pending = computed(() => pendingRequestCount.value > 0)
   const error = ref<string | null>(null)
   let createPromise: Promise<QuickBuySession | null> | null = null
+  let requestSequence = 0
+  let mutationQueue = Promise.resolve()
+  let lastSelectionMutationKey = ''
+  let lastSelectionMutationPromise: Promise<QuickBuySession | null> | null = null
 
   const sessionToken = computed(() => session.value?.sessionToken || '')
+  const beginRequest = () => {
+    pendingRequestCount.value += 1
+    const requestId = ++requestSequence
+    error.value = null
+    return requestId
+  }
+  const endRequest = () => {
+    pendingRequestCount.value = Math.max(0, pendingRequestCount.value - 1)
+  }
+  const setRequestError = (requestId: number, err: unknown, fallback: string) => {
+    if (requestId !== requestSequence) return
+    error.value = err instanceof Error ? err.message : String(err)
+    if (!error.value) error.value = fallback
+  }
+  const commitSession = (
+    nextSession: QuickBuySession | null,
+    expectedSessionToken = '',
+  ) => {
+    if (!nextSession) return null
+    if (expectedSessionToken && nextSession.sessionToken !== expectedSessionToken) return null
+    session.value = nextSession
+    return nextSession
+  }
+  const enqueueMutation = <T>(operation: (requestId: number) => Promise<T>) => {
+    const requestId = beginRequest()
+    const queuedOperation = mutationQueue.then(
+      () => operation(requestId),
+      () => operation(requestId),
+    )
+    mutationQueue = queuedOperation.then(() => undefined, () => undefined)
+    return queuedOperation.finally(endRequest)
+  }
   const storefrontHeaders = () => {
     const headers: Record<string, string> = { Accept: 'application/json' }
+    const anonymousId = readQuickBuyAnonymousId()
+    if (anonymousId) headers['X-Anonymous-ID'] = anonymousId
     if (locale.value) headers['Accept-Language'] = String(locale.value)
     if (displayCurrency.value) headers['X-Display-Currency'] = displayCurrency.value
     if (countryCode.value && countryCode.value !== 'ZZ') headers['X-Market-Country'] = countryCode.value
@@ -148,11 +178,10 @@ export function useQuickBuySession(surface = 'dock') {
     if (session.value) return session.value
     if (createPromise) return createPromise
 
-    pending.value = true
-    error.value = null
+    const requestId = beginRequest()
     createPromise = request<unknown>('/quick-buy/sessions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      headers: { ...storefrontHeaders(), 'Content-Type': 'application/json' },
       body: JSON.stringify({
         surface,
         locale: locale.value,
@@ -161,47 +190,70 @@ export function useQuickBuySession(surface = 'dock') {
       }),
     }, 'Unable to create QUICK session')
       .then((response) => {
-        const nextSession = normalizeSession(extractPayload(response))
-        session.value = nextSession
-        return nextSession
+        const nextSession = normalizeQuickBuySession(extractQuickBuyPayload(response))
+        return commitSession(nextSession)
       })
       .catch((err) => {
-        error.value = err instanceof Error ? err.message : String(err)
+        setRequestError(requestId, err, 'Unable to create QUICK session')
         return null
       })
       .finally(() => {
-        pending.value = false
+        endRequest()
         createPromise = null
       })
 
     return createPromise
   }
 
-  const updateSelections = async (selections: QuickBuySessionSelectionInput[]) => {
-    const currentSession = await createSession()
-    if (!currentSession?.sessionToken) return null
-
-    pending.value = true
-    error.value = null
-    try {
-      const response = await request<unknown>(
-        `/quick-buy/sessions/${encodeURIComponent(currentSession.sessionToken)}/selections`,
-        {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-          body: JSON.stringify({ selections: selections.map(selectionPayload) }),
-        },
-        'Unable to update QUICK session',
-      )
-      const nextSession = normalizeSession(extractPayload(response))
-      session.value = nextSession
-      return nextSession
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : String(err)
-      return null
-    } finally {
-      pending.value = false
+  const updateSessionSelections = async (selections: QuickBuySessionSelectionInput[]) => {
+    const serializedSelections = selections.map(serializeQuickBuySelection)
+    const selectionMutationKey = JSON.stringify(
+      serializedSelections
+        .slice()
+        .sort((left, right) =>
+          `${left.step_key}:${left.product_id}:${left.variant_id || 0}:${left.quantity}`
+            .localeCompare(`${right.step_key}:${right.product_id}:${right.variant_id || 0}:${right.quantity}`),
+        ),
+    )
+    if (lastSelectionMutationPromise && lastSelectionMutationKey === selectionMutationKey) {
+      return lastSelectionMutationPromise
     }
+
+    const mutationPromise = enqueueMutation(async (requestId) => {
+      const currentSession = await createSession()
+      if (!currentSession?.sessionToken) return null
+
+      try {
+        const response = await request<unknown>(
+          `/quick-buy/sessions/${encodeURIComponent(currentSession.sessionToken)}/selections`,
+          {
+            method: 'PATCH',
+            headers: { ...storefrontHeaders(), 'Content-Type': 'application/json' },
+            body: JSON.stringify({ selections: serializedSelections }),
+          },
+          'Unable to update QUICK session',
+        )
+        const nextSession = normalizeQuickBuySession(extractQuickBuyPayload(response))
+        return commitSession(nextSession, currentSession.sessionToken)
+      } catch (err) {
+        setRequestError(requestId, err, 'Unable to update QUICK session')
+        return null
+      }
+    })
+    lastSelectionMutationKey = selectionMutationKey
+    lastSelectionMutationPromise = mutationPromise
+    void mutationPromise.then(() => {
+      if (lastSelectionMutationPromise === mutationPromise) {
+        lastSelectionMutationKey = ''
+        lastSelectionMutationPromise = null
+      }
+    }, () => {
+      if (lastSelectionMutationPromise === mutationPromise) {
+        lastSelectionMutationKey = ''
+        lastSelectionMutationPromise = null
+      }
+    })
+    return mutationPromise
   }
 
   const fetchStepCandidates = async (
@@ -221,47 +273,51 @@ export function useQuickBuySession(surface = 'dock') {
       query.set('currency', displayCurrency.value || currentSession.currency)
     }
 
-    pending.value = true
-    error.value = null
+    const requestId = beginRequest()
     try {
       const response = await request<unknown>(
         `/quick-buy/sessions/${encodeURIComponent(currentSession.sessionToken)}/steps/${encodeURIComponent(stepKey)}/candidates?${query.toString()}`,
         { method: 'GET', headers: storefrontHeaders() },
         'Unable to load QUICK candidates',
       )
+      const payload = extractQuickBuyPayload(response)
+      const responseRecord = asQuickBuyRecord(response)
+      const payloadRecord = asQuickBuyRecord(payload)
+      const pagination = payloadRecord || responseRecord
       return {
-        items: extractCandidateProducts(response).map((item) => normalizeShopProduct(item, baseCurrency.value)),
+        items: extractQuickBuyCandidateProducts(response).map((item) => normalizeShopProduct(item, baseCurrency.value)),
         raw: response,
+        page: asQuickBuyNumber(pagination?.page, params.page || 1),
+        pageSize: asQuickBuyNumber(pagination?.page_size, params.pageSize || 12),
+        total: asQuickBuyNumber(pagination?.total),
+        hasMore: asQuickBuyBoolean(pagination?.has_more),
       }
     } catch (err) {
-      error.value = err instanceof Error ? err.message : String(err)
+      setRequestError(requestId, err, 'Unable to load QUICK candidates')
       return null
     } finally {
-      pending.value = false
+      endRequest()
     }
   }
 
   const validateSession = async () => {
-    const currentSession = await createSession()
-    if (!currentSession?.sessionToken) return null
+    return enqueueMutation(async (requestId) => {
+      const currentSession = await createSession()
+      if (!currentSession?.sessionToken) return null
 
-    pending.value = true
-    error.value = null
-    try {
-      const response = await request<unknown>(
-        `/quick-buy/sessions/${encodeURIComponent(currentSession.sessionToken)}/validate`,
-        { method: 'POST', headers: { Accept: 'application/json' } },
-        'Unable to validate QUICK session',
-      )
-      const nextSession = normalizeSession(extractPayload(response))
-      session.value = nextSession
-      return nextSession
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : String(err)
-      return null
-    } finally {
-      pending.value = false
-    }
+      try {
+        const response = await request<unknown>(
+          `/quick-buy/sessions/${encodeURIComponent(currentSession.sessionToken)}/validate`,
+          { method: 'POST', headers: storefrontHeaders() },
+          'Unable to validate QUICK session',
+        )
+        const nextSession = normalizeQuickBuySession(extractQuickBuyPayload(response))
+        return commitSession(nextSession, currentSession.sessionToken)
+      } catch (err) {
+        setRequestError(requestId, err, 'Unable to validate QUICK session')
+        return null
+      }
+    })
   }
 
   return {
@@ -271,15 +327,15 @@ export function useQuickBuySession(surface = 'dock') {
     error,
     createSession,
     fetchStepCandidates,
-    updateSelections,
+    updateSessionSelections,
     validateSession,
   }
 }
 
-const extractCandidateProducts = (response: unknown): unknown[] => {
-  const payload = extractPayload(response)
+const extractQuickBuyCandidateProducts = (response: unknown): unknown[] => {
+  const payload = extractQuickBuyPayload(response)
   if (Array.isArray(payload)) return payload
-  const record = asObject(payload)
+  const record = asQuickBuyRecord(payload)
   if (!record) return []
   if (Array.isArray(record.products)) return record.products
   if (Array.isArray(record.items)) return record.items

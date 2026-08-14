@@ -13,6 +13,7 @@ import {
   type StripeError,
 } from '@stripe/stripe-js'
 import { shallowRef, ref } from 'vue'
+import { storefrontFontFamily, storefrontFontStylesheetUrl } from '~/utils/storefrontFonts'
 
 export interface StripeExpressCheckoutLineItem {
   name: string
@@ -190,6 +191,11 @@ export function useStripeExpressCheckout() {
       mode: 'payment',
       amount: convertMajorAmountToStripeMinorAmount(session.amount, session.currency),
       currency: normalizeCurrencyCode(session.currency).toLowerCase(),
+      fonts: [
+        {
+          cssSrc: storefrontFontStylesheetUrl(),
+        },
+      ],
       appearance: {
         theme: 'night',
         variables: {
@@ -198,7 +204,7 @@ export function useStripeExpressCheckout() {
           colorText: '#f5f7f8',
           colorDanger: '#fb7185',
           borderRadius: '10px',
-          fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
+          fontFamily: storefrontFontFamily,
         },
       },
     })

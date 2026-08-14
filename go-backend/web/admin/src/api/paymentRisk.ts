@@ -1,80 +1,131 @@
 import axios from '@/utils/axios'
+import {
+  requireApiArray,
+  requireApiArrayField,
+  requireApiBooleanField,
+  requireApiField,
+  requireApiNumberField,
+  requireApiObject,
+  requireApiObjectField,
+  requireApiPagination,
+  unwrapApiPayload,
+} from '@/utils/apiResponse'
 
-const unwrapPayload = (response: any) => response.data?.data ?? response.data ?? {}
+const readObjectPayload = (response: unknown, path: string) => (
+  requireApiObject(unwrapApiPayload(response, path), path)
+)
 
-const unwrapPaged = (response: any) => {
-  const payload = response.data || {}
+const readPaged = <T = any>(response: unknown, path: string) => {
+  const responseBody = requireApiObject((response as { data?: unknown }).data, path, 'response body')
+  const payload = unwrapApiPayload(response, path)
+  const data = requireApiArray<T>(payload, path, 'data')
   return {
-    data: payload.data || [],
-    pagination: payload.pagination || { page: 1, page_size: 20, total: 0, total_pages: 0 },
+    data,
+    pagination: requireApiPagination(responseBody, payload, path),
   }
 }
 
 export const paymentRiskApi = {
   async getSummary(provider = '') {
-    return unwrapPayload(await axios.get('/api/admin/payment/risk/summary', {
+    const path = '/api/admin/payment/risk/summary'
+    const payload = readObjectPayload(await axios.get(path, {
       params: provider ? { provider } : undefined,
-    }))
+    }), path)
+    requireApiBooleanField(payload, 'enabled', path)
+    requireApiObjectField(payload, 'reports', path)
+    return payload
   },
 
   async recomputeSummary(provider = '') {
-    return unwrapPayload(await axios.post('/api/admin/payment/risk/recompute', {
+    const path = '/api/admin/payment/risk/recompute'
+    const payload = readObjectPayload(await axios.post(path, {
       provider: provider || undefined,
-    }))
+    }), path)
+    requireApiBooleanField(payload, 'enabled', path)
+    requireApiObjectField(payload, 'reports', path)
+    return payload
   },
 
   async listProtectionControls(includeExpired = true) {
-    return unwrapPayload(await axios.get('/api/admin/payment/risk/controls', {
+    const path = '/api/admin/payment/risk/controls'
+    const payload = readObjectPayload(await axios.get(path, {
       params: { include_expired: includeExpired ? 'true' : 'false' },
-    }))
+    }), path)
+    requireApiBooleanField(payload, 'enabled', path)
+    requireApiArrayField(payload, 'controls', path)
+    requireApiObjectField(payload, 'policy', path)
+    return payload
   },
 
   async createProtectionControl(payload: Record<string, any>) {
-    return unwrapPayload(await axios.post('/api/admin/payment/risk/controls', payload))
+    const path = '/api/admin/payment/risk/controls'
+    return readObjectPayload(await axios.post(path, payload), path)
   },
 
   async revokeProtectionControl(id: number | string) {
-    return unwrapPayload(await axios.post(`/api/admin/payment/risk/controls/${id}/revoke`, { confirm: true }))
+    const path = `/api/admin/payment/risk/controls/${id}/revoke`
+    return readObjectPayload(await axios.post(path, { confirm: true }), path)
   },
 
   async listRefundRecommendations(params: Record<string, any> = {}) {
-    return unwrapPaged(await axios.get('/api/admin/payment/risk/refund-recommendations', { params }))
+    const path = '/api/admin/payment/risk/refund-recommendations'
+    return readPaged(await axios.get(path, { params }), path)
   },
 
   async updateRefundRecommendation(id: number | string, payload: Record<string, any>) {
-    return unwrapPayload(await axios.patch(`/api/admin/payment/risk/refund-recommendations/${id}`, payload))
+    const path = `/api/admin/payment/risk/refund-recommendations/${id}`
+    return readObjectPayload(await axios.patch(path, payload), path)
   },
 
   async createPendingRefundFromRecommendation(id: number | string, payload: Record<string, any>) {
-    return unwrapPayload(await axios.post(`/api/admin/payment/risk/refund-recommendations/${id}/pending-refund`, payload))
+    const path = `/api/admin/payment/risk/refund-recommendations/${id}/pending-refund`
+    const result = readObjectPayload(await axios.post(path, payload), path)
+    requireApiObjectField(result, 'recommendation', path)
+    requireApiObjectField(result, 'refund', path)
+    return result
   },
 
   async listProtectionControlAudit(id: number | string, params: Record<string, any> = {}) {
-    return unwrapPayload(await axios.get(`/api/admin/payment/risk/controls/${id}/audit`, { params }))
+    const path = `/api/admin/payment/risk/controls/${id}/audit`
+    const payload = readObjectPayload(await axios.get(path, { params }), path)
+    requireApiArrayField(payload, 'logs', path)
+    requireApiObjectField(payload, 'pagination', path)
+    const pagination = requireApiObjectField(payload, 'pagination', path)
+    requireApiNumberField(pagination, 'page', path)
+    requireApiNumberField(pagination, 'page_size', path)
+    requireApiNumberField(pagination, 'total', path)
+    requireApiNumberField(pagination, 'total_pages', path)
+    return payload
   },
 
   async listDisputes(params: Record<string, any> = {}) {
-    return unwrapPaged(await axios.get('/api/admin/payment/disputes', { params }))
+    const path = '/api/admin/payment/disputes'
+    return readPaged(await axios.get(path, { params }), path)
   },
 
   async getDispute(id: number | string) {
-    return unwrapPayload(await axios.get(`/api/admin/payment/disputes/${id}`))
+    const path = `/api/admin/payment/disputes/${id}`
+    return readObjectPayload(await axios.get(path), path)
   },
 
   async getDisputeEvidence(id: number | string) {
-    return unwrapPayload(await axios.get(`/api/admin/payment/disputes/${id}/evidence`))
+    const path = `/api/admin/payment/disputes/${id}/evidence`
+    return readObjectPayload(await axios.get(path), path)
   },
 
   async submitDisputeEvidence(id: number | string, payload: Record<string, any>) {
-    return unwrapPayload(await axios.post(`/api/admin/payment/disputes/${id}/evidence/submit`, payload))
+    const path = `/api/admin/payment/disputes/${id}/evidence/submit`
+    return readObjectPayload(await axios.post(path, payload), path)
   },
 
   async listPayPalDisputes(params: Record<string, any> = {}) {
-    return unwrapPaged(await axios.get('/api/admin/payment/paypal-disputes', { params }))
+    const path = '/api/admin/payment/paypal-disputes'
+    return readPaged(await axios.get(path, { params }), path)
   },
 
   async getPayPalDisputeEvidence(id: number | string) {
-    return unwrapPayload(await axios.get(`/api/admin/payment/paypal-disputes/${id}/evidence`))
+    const path = `/api/admin/payment/paypal-disputes/${id}/evidence`
+    return readObjectPayload(await axios.get(path), path)
   },
 
   paypalDisputeInvoicePDFUrl(id: number | string) {
@@ -88,27 +139,33 @@ export const paymentRiskApi = {
   },
 
   async getPayPalInvoiceSellerProfile() {
-    return unwrapPayload(await axios.get('/api/admin/settings/paypal-invoice-seller-profile'))
+    const path = '/api/admin/settings/paypal-invoice-seller-profile'
+    return readObjectPayload(await axios.get(path), path)
   },
 
   async updatePayPalInvoiceSellerProfile(payload: Record<string, any>) {
-    return unwrapPayload(await axios.put('/api/admin/settings/paypal-invoice-seller-profile', payload))
+    const path = '/api/admin/settings/paypal-invoice-seller-profile'
+    return readObjectPayload(await axios.put(path, payload), path)
   },
 
   async listReviews(params: Record<string, any> = {}) {
-    return unwrapPaged(await axios.get('/api/admin/payment/reviews', { params }))
+    const path = '/api/admin/payment/reviews'
+    return readPaged(await axios.get(path, { params }), path)
   },
 
   async getReview(id: number | string) {
-    return unwrapPayload(await axios.get(`/api/admin/payment/reviews/${id}`))
+    const path = `/api/admin/payment/reviews/${id}`
+    return readObjectPayload(await axios.get(path), path)
   },
 
   async createReview(payload: Record<string, any>) {
-    return unwrapPayload(await axios.post('/api/admin/payment/reviews', payload))
+    const path = '/api/admin/payment/reviews'
+    return readObjectPayload(await axios.post(path, payload), path)
   },
 
   async updateReview(id: number | string, payload: Record<string, any>) {
-    return unwrapPayload(await axios.patch(`/api/admin/payment/reviews/${id}`, payload))
+    const path = `/api/admin/payment/reviews/${id}`
+    return readObjectPayload(await axios.patch(path, payload), path)
   },
 }
 

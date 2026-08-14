@@ -1,4 +1,15 @@
 import axios from '@/utils/axios'
+import {
+  requireApiAcknowledgement,
+  requireApiArray,
+  requireApiArrayField,
+  requireApiNumberField,
+  requireApiObject,
+  requireApiObjectField,
+  requireApiPagination,
+  requireApiStringField,
+  unwrapApiPayload,
+} from '@/utils/apiResponse'
 
 export type APIID = string | number
 type APIParams = Record<string, any>
@@ -51,89 +62,124 @@ export interface WarrantyClaim {
   [key: string]: unknown
 }
 
-const defaultPagination = (): Pagination => ({
-  page: 1,
-  page_size: 20,
-  total: 0,
-  total_pages: 0,
-})
+const readObjectPayload = (response: unknown, endpoint: string): any => (
+  requireApiObject(unwrapApiPayload(response, endpoint), endpoint)
+)
 
-const unwrapPayload = (response: any): any => response.data?.data ?? response.data ?? {}
+const readPagedPayload = <T = any>(response: unknown, endpoint: string): PagedPayload<T> => {
+  const responseBody = requireApiObject(
+    (response as { data?: unknown })?.data,
+    endpoint,
+    'response body',
+  )
+  const payload = requireApiArray<T>(
+    unwrapApiPayload(response, endpoint),
+    endpoint,
+    'data',
+  )
+  return {
+    data: payload,
+    pagination: requireApiPagination(responseBody, payload, endpoint),
+  }
+}
 
-const unwrapPaged = <T = any>(response: any): PagedPayload<T> => ({
-  data: Array.isArray(response.data?.data) ? response.data.data : [],
-  pagination: response.data?.pagination ?? defaultPagination(),
-})
+const readNamedArray = <T = any>(response: unknown, field: string, endpoint: string): T[] => {
+  const payload = readObjectPayload(response, endpoint)
+  return requireApiArrayField<T>(payload, field, endpoint)
+}
 
-const unwrapList = <T = any>(response: any, key?: string): T[] => {
-  const payload = unwrapPayload(response)
-  if (Array.isArray(payload)) return payload
-  if (Array.isArray(payload.data)) return payload.data
-  if (key && Array.isArray(payload[key])) return payload[key]
-  return []
+const readRegistration = (response: unknown, endpoint: string): any => {
+  const registration = readObjectPayload(response, endpoint)
+  requireApiNumberField(registration, 'id', endpoint)
+  requireApiStringField(registration, 'status', endpoint)
+  return registration
+}
+
+const readClaim = (response: unknown, endpoint: string): any => {
+  const claim = readObjectPayload(response, endpoint)
+  requireApiNumberField(claim, 'id', endpoint)
+  requireApiStringField(claim, 'status', endpoint)
+  if (claim.service_records !== undefined) {
+    requireApiArrayField(claim, 'service_records', endpoint)
+  }
+  return claim
+}
+
+const readServiceRecord = (response: unknown, endpoint: string): any => {
+  const record = readObjectPayload(response, endpoint)
+  requireApiNumberField(record, 'id', endpoint)
+  requireApiNumberField(record, 'claim_id', endpoint)
+  requireApiStringField(record, 'status', endpoint)
+  requireApiStringField(record, 'summary', endpoint)
+  return record
 }
 
 export const registrationApi = {
   async getStats(): Promise<WarrantyStats> {
-    const response = await axios.get('/api/admin/registrations/stats')
-    return unwrapPayload(response)
+    const endpoint = '/api/admin/registrations/stats'
+    const stats = readObjectPayload(await axios.get(endpoint), endpoint)
+    if (stats.total_count !== undefined) requireApiNumberField(stats, 'total_count', endpoint)
+    if (stats.active_count !== undefined) requireApiNumberField(stats, 'active_count', endpoint)
+    if (stats.expired_count !== undefined) requireApiNumberField(stats, 'expired_count', endpoint)
+    return stats
   },
 
   async listRegistrations(params: APIParams = {}): Promise<PagedPayload<WarrantyRegistration>> {
-    const response = await axios.get('/api/admin/registrations', { params })
-    return unwrapPaged<WarrantyRegistration>(response)
+    const endpoint = '/api/admin/registrations'
+    return readPagedPayload<WarrantyRegistration>(await axios.get(endpoint, { params }), endpoint)
   },
 
   async updateRegistrationStatus(id: APIID, status: string): Promise<any> {
-    const response = await axios.put(`/api/admin/registrations/${id}/status`, { status })
-    return unwrapPayload(response)
+    const endpoint = `/api/admin/registrations/${id}/status`
+    return requireApiAcknowledgement(await axios.put(endpoint, { status }), endpoint)
   },
 
   async listExpiringWarranties(limit = 30): Promise<WarrantyRegistration[]> {
-    const response = await axios.get('/api/admin/registrations/expiring', { params: { limit } })
-    return unwrapList<WarrantyRegistration>(response, 'data')
+    const endpoint = '/api/admin/registrations/expiring'
+    const payload = readObjectPayload(await axios.get(endpoint, { params: { limit } }), endpoint)
+    return requireApiArrayField<WarrantyRegistration>(payload, 'data', endpoint)
   },
 
   async listWarrantyClaims(params: APIParams = {}): Promise<PagedPayload<WarrantyClaim>> {
-    const response = await axios.get('/api/admin/registrations/warranty-claims', { params })
-    return unwrapPaged<WarrantyClaim>(response)
+    const endpoint = '/api/admin/registrations/warranty-claims'
+    return readPagedPayload<WarrantyClaim>(await axios.get(endpoint, { params }), endpoint)
   },
 
   async getWarrantyClaim(id: APIID): Promise<WarrantyClaim> {
-    const response = await axios.get(`/api/admin/registrations/warranty-claims/${id}`)
-    return unwrapPayload(response)
+    const endpoint = `/api/admin/registrations/warranty-claims/${id}`
+    return readClaim(await axios.get(endpoint), endpoint)
   },
 
   async updateWarrantyClaimStatus(id: APIID, status: string): Promise<any> {
-    const response = await axios.put(`/api/admin/registrations/warranty-claims/${id}/status`, { status })
-    return unwrapPayload(response)
+    const endpoint = `/api/admin/registrations/warranty-claims/${id}/status`
+    return requireApiAcknowledgement(await axios.put(endpoint, { status }), endpoint)
   },
 
   async updateWarrantyClaimResolution(id: APIID, resolution: string): Promise<any> {
-    const response = await axios.put(`/api/admin/registrations/warranty-claims/${id}/resolution`, { resolution })
-    return unwrapPayload(response)
+    const endpoint = `/api/admin/registrations/warranty-claims/${id}/resolution`
+    return requireApiAcknowledgement(await axios.put(endpoint, { resolution }), endpoint)
   },
 
   async listWarrantyClaimOrderItems(id: APIID): Promise<WarrantyOrderItem[]> {
-    const response = await axios.get(`/api/admin/registrations/warranty-claims/${id}/order-items`)
-    return unwrapList<WarrantyOrderItem>(response, 'items')
+    const endpoint = `/api/admin/registrations/warranty-claims/${id}/order-items`
+    return readNamedArray<WarrantyOrderItem>(await axios.get(endpoint), 'items', endpoint)
   },
 
   async bindWarrantyClaimOrderItem(id: APIID, orderItemId: APIID | null | undefined): Promise<any> {
-    const response = await axios.put(`/api/admin/registrations/warranty-claims/${id}/order-item`, {
+    const endpoint = `/api/admin/registrations/warranty-claims/${id}/order-item`
+    return requireApiAcknowledgement(await axios.put(endpoint, {
       order_item_id: orderItemId || null,
-    })
-    return unwrapPayload(response)
+    }), endpoint)
   },
 
   async listWarrantyServiceRecords(id: APIID): Promise<WarrantyServiceRecord[]> {
-    const response = await axios.get(`/api/admin/registrations/warranty-claims/${id}/service-records`)
-    return unwrapList<WarrantyServiceRecord>(response, 'records')
+    const endpoint = `/api/admin/registrations/warranty-claims/${id}/service-records`
+    return readNamedArray<WarrantyServiceRecord>(await axios.get(endpoint), 'records', endpoint)
   },
 
   async createWarrantyServiceRecord(id: APIID, payload: APIPayload): Promise<WarrantyServiceRecord> {
-    const response = await axios.post(`/api/admin/registrations/warranty-claims/${id}/service-records`, payload)
-    return unwrapPayload(response)
+    const endpoint = `/api/admin/registrations/warranty-claims/${id}/service-records`
+    return readServiceRecord(await axios.post(endpoint, payload), endpoint)
   },
 }
 

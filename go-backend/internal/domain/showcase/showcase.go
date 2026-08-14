@@ -21,10 +21,11 @@ const (
 
 // Showcase 买家秀/骑行墙记录
 type Showcase struct {
-	ID     uint   `gorm:"primaryKey;autoIncrement" json:"id"`
-	UserID uint   `gorm:"index;not null" json:"user_id"`
-	Kind   string `gorm:"type:varchar(20);default:'user'" json:"kind"`
-	Title  string `gorm:"type:varchar(255)" json:"title"`
+	ID      uint   `gorm:"primaryKey;autoIncrement" json:"id"`
+	UserID  uint   `gorm:"index;not null" json:"user_id"`
+	Kind    string `gorm:"type:varchar(20);default:'user'" json:"kind"`
+	Title   string `gorm:"type:varchar(255)" json:"title"`
+	OrderID *uint  `gorm:"index" json:"-"`
 
 	// UGC 属性
 	Region    string `gorm:"type:varchar(100)" json:"region"`

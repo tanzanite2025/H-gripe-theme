@@ -43,7 +43,7 @@ VALUES
     ('factory_cta', '查看工厂与制造流程', 'string', 'zh_cn', 'website_profile', true, 'Website profile: factory_cta', NOW(), NOW()),
     ('avatar_url', '', 'string', 'global', 'website_profile', true, 'Website profile: avatar_url', NOW(), NOW()),
     ('factory_image_url', '/company/ourstory/factory/tanzanite-factory-premoldlayupworkshop6.webp', 'string', 'global', 'website_profile', true, 'Website profile: factory_image_url', NOW(), NOW()),
-    ('factory_link', '/company/about#factory', 'string', 'global', 'website_profile', true, 'Website profile: factory_link', NOW(), NOW())
+    ('factory_link', '/company/about/factory', 'string', 'global', 'website_profile', true, 'Website profile: factory_link', NOW(), NOW())
 ON CONFLICT (key, locale) DO UPDATE
 SET
     value = EXCLUDED.value,

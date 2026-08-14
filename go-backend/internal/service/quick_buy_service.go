@@ -31,7 +31,18 @@ var (
 const (
 	quickBuyCandidateDefaultPageSize = 12
 	quickBuyCandidateMaxPageSize     = 24
+	quickBuyDefaultFlowSlug          = "quick-build"
+	quickBuyDefaultFlowName          = "QUICK Build"
+	quickBuyDefaultFlowDescription   = "Default QUICK build flow"
+	quickBuyDefaultFlowEntrySurface  = "dock"
+	quickBuyDefaultFlowSortOrder     = 100
 )
+
+var quickBuyDefaultStepKeys = [...]string{
+	"product-search",
+	"specifications",
+	"quantity",
+}
 
 type QuickBuyService struct {
 	repo        *repository.QuickBuyRepository
@@ -39,13 +50,21 @@ type QuickBuyService struct {
 }
 
 type QuickBuyFlowInput struct {
-	Slug         string               `json:"slug"`
-	Name         string               `json:"name"`
-	Description  string               `json:"description"`
-	EntrySurface string               `json:"entry_surface"`
-	IsEnabled    *bool                `json:"is_enabled"`
-	SortOrder    int                  `json:"sort_order"`
-	Version      QuickBuyVersionInput `json:"version"`
+	Slug         string                         `json:"slug"`
+	Name         string                         `json:"name"`
+	Description  string                         `json:"description"`
+	HelpText     string                         `json:"help_text"`
+	Translations []QuickBuyFlowTranslationInput `json:"translations"`
+	EntrySurface string                         `json:"entry_surface"`
+	IsEnabled    *bool                          `json:"is_enabled"`
+	SortOrder    int                            `json:"sort_order"`
+	Version      QuickBuyVersionInput           `json:"version"`
+}
+
+type QuickBuyFlowTranslationInput struct {
+	ID       uint   `json:"id"`
+	Locale   string `json:"locale"`
+	HelpText string `json:"help_text"`
 }
 
 type QuickBuyVersionInput struct {
@@ -55,18 +74,9 @@ type QuickBuyVersionInput struct {
 }
 
 type QuickBuyStepInput struct {
-	StepKey         string `json:"step_key"`
-	Name            string `json:"name"`
-	Description     string `json:"description"`
-	HelpText        string `json:"help_text"`
-	SortOrder       int    `json:"sort_order"`
-	SelectionMode   string `json:"selection_mode"`
-	IsRequired      *bool  `json:"is_required"`
-	MinSelect       int    `json:"min_select"`
-	MaxSelect       int    `json:"max_select"`
-	DefaultQuantity int    `json:"default_quantity"`
-	AllowSkip       bool   `json:"allow_skip"`
-	ProductTypeIDs  []uint `json:"product_type_ids"`
+	StepKey        string `json:"step_key"`
+	Name           string `json:"name"`
+	ProductTypeIDs []uint `json:"product_type_ids"`
 }
 
 type QuickBuyFlowSummary struct {
@@ -74,6 +84,7 @@ type QuickBuyFlowSummary struct {
 	Slug         string                   `json:"slug"`
 	Name         string                   `json:"name"`
 	Description  string                   `json:"description"`
+	HelpText     string                   `json:"help_text"`
 	EntrySurface string                   `json:"entry_surface"`
 	IsEnabled    bool                     `json:"is_enabled"`
 	SortOrder    int                      `json:"sort_order"`
@@ -93,14 +104,36 @@ type QuickBuyVersionSummary struct {
 }
 
 type QuickBuyFlowView struct {
+	ID           uint                          `json:"id"`
+	Slug         string                        `json:"slug"`
+	Name         string                        `json:"name"`
+	Description  string                        `json:"description"`
+	HelpText     string                        `json:"help_text"`
+	Translations []QuickBuyFlowTranslationView `json:"translations,omitempty"`
+	EntrySurface string                        `json:"entry_surface"`
+	IsEnabled    bool                          `json:"is_enabled"`
+	Version      QuickBuyVersionView           `json:"version"`
+	Steps        []QuickBuyStepView            `json:"steps"`
+}
+
+// QuickBuyPublicFlowView is the runtime projection exposed to the storefront.
+// It contains only the resolved locale content needed to render QUICK.
+type QuickBuyPublicFlowView struct {
 	ID           uint                `json:"id"`
 	Slug         string              `json:"slug"`
 	Name         string              `json:"name"`
 	Description  string              `json:"description"`
+	HelpText     string              `json:"help_text"`
 	EntrySurface string              `json:"entry_surface"`
 	IsEnabled    bool                `json:"is_enabled"`
 	Version      QuickBuyVersionView `json:"version"`
 	Steps        []QuickBuyStepView  `json:"steps"`
+}
+
+type QuickBuyFlowTranslationView struct {
+	ID       uint   `json:"id"`
+	Locale   string `json:"locale"`
+	HelpText string `json:"help_text"`
 }
 
 type QuickBuyVersionView struct {
@@ -113,20 +146,12 @@ type QuickBuyVersionView struct {
 }
 
 type QuickBuyStepView struct {
-	ID              uint                      `json:"id"`
-	StepKey         string                    `json:"step_key"`
-	Slug            string                    `json:"slug"`
-	Name            string                    `json:"name"`
-	Description     string                    `json:"description"`
-	HelpText        string                    `json:"help_text"`
-	SortOrder       int                       `json:"sort_order"`
-	SelectionMode   string                    `json:"selection_mode"`
-	IsRequired      bool                      `json:"is_required"`
-	MinSelect       int                       `json:"min_select"`
-	MaxSelect       int                       `json:"max_select"`
-	DefaultQuantity int                       `json:"default_quantity"`
-	AllowSkip       bool                      `json:"allow_skip"`
-	ProductTypes    []QuickBuyProductTypeView `json:"product_types"`
+	ID           uint                      `json:"id"`
+	StepKey      string                    `json:"step_key"`
+	Slug         string                    `json:"slug"`
+	Name         string                    `json:"name"`
+	SortOrder    int                       `json:"sort_order"`
+	ProductTypes []QuickBuyProductTypeView `json:"product_types"`
 }
 
 type QuickBuyProductTypeView struct {
@@ -194,14 +219,12 @@ type QuickBuySessionView struct {
 	Locale           string                           `json:"locale"`
 	MarketCountry    string                           `json:"market_country"`
 	Currency         string                           `json:"currency"`
-	AnonymousID      string                           `json:"anonymous_id,omitempty"`
-	UserID           *uint                            `json:"user_id,omitempty"`
 	Status           string                           `json:"status"`
 	ValidationStatus string                           `json:"validation_status"`
 	SubtotalSnapshot float64                          `json:"subtotal_snapshot"`
 	WeightSnapshotG  int                              `json:"weight_snapshot_g"`
 	ExpiresAt        *time.Time                       `json:"expires_at,omitempty"`
-	Flow             *QuickBuyFlowView                `json:"flow,omitempty"`
+	Flow             *QuickBuyPublicFlowView          `json:"flow,omitempty"`
 	Items            []QuickBuySessionItemView        `json:"items"`
 	Validation       *QuickBuySessionValidationResult `json:"validation,omitempty"`
 	CreatedAt        time.Time                        `json:"created_at"`
@@ -275,11 +298,14 @@ func (s *QuickBuyService) GetFlow(id uint, locale string) (*QuickBuyFlowView, er
 		return nil, err
 	}
 	if len(flow.Versions) == 0 {
+		requestLocale := locales.ResolveSupported(locale)
 		return &QuickBuyFlowView{
 			ID:           flow.ID,
 			Slug:         flow.Slug,
 			Name:         flow.Name,
 			Description:  flow.Description,
+			HelpText:     quickBuyFlowHelpText(*flow, requestLocale),
+			Translations: quickBuyFlowTranslationViews(flow.Translations),
 			EntrySurface: flow.EntrySurface,
 			IsEnabled:    flow.IsEnabled,
 		}, nil
@@ -291,7 +317,7 @@ func (s *QuickBuyService) GetFlow(id uint, locale string) (*QuickBuyFlowView, er
 	return quickBuyFlowView(*version, locale), nil
 }
 
-func (s *QuickBuyService) CurrentFlow(surface, locale string) (*QuickBuyFlowView, error) {
+func (s *QuickBuyService) CurrentFlow(surface, locale string) (*QuickBuyPublicFlowView, error) {
 	if s == nil || s.repo == nil {
 		return nil, errors.New("quick buy service is not configured")
 	}
@@ -302,7 +328,7 @@ func (s *QuickBuyService) CurrentFlow(surface, locale string) (*QuickBuyFlowView
 	if version == nil {
 		return nil, nil
 	}
-	return quickBuyFlowView(*version, locale), nil
+	return quickBuyPublicFlowView(*version, locale), nil
 }
 
 func (s *QuickBuyService) CreateSession(input QuickBuySessionInput) (*QuickBuySessionView, error) {
@@ -498,6 +524,17 @@ func (s *QuickBuyService) UpdateFlow(id uint, input QuickBuyFlowInput) (*QuickBu
 	if err != nil {
 		return nil, err
 	}
+	existingFlow, err := s.repo.FindFlowByID(id)
+	if err != nil {
+		if repository.IsRecordNotFound(err) {
+			return nil, ErrQuickBuyNotFound
+		}
+		return nil, err
+	}
+	if isDefaultQuickBuyFlowSlug(existingFlow.Slug) && !isDefaultQuickBuyFlowSlug(flow.Slug) {
+		return nil, fmt.Errorf("%w: the default quick-build flow slug cannot be changed", ErrQuickBuyInvalid)
+	}
+	normalizeDefaultQuickBuyFlow(flow)
 	flow.ID = id
 	if existing, err := s.repo.FindFlowBySlug(flow.Slug); err == nil && existing != nil && existing.ID != id {
 		return nil, fmt.Errorf("%w: flow slug already exists", ErrQuickBuyInvalid)
@@ -522,14 +559,18 @@ func (s *QuickBuyService) CreateDraftVersion(flowID uint, input QuickBuyVersionI
 	if s == nil || s.repo == nil {
 		return nil, errors.New("quick buy service is not configured")
 	}
-	if _, err := s.repo.FindFlowByID(flowID); err != nil {
+	flow, err := s.repo.FindFlowByID(flowID)
+	if err != nil {
 		if repository.IsRecordNotFound(err) {
 			return nil, ErrQuickBuyNotFound
 		}
 		return nil, err
 	}
-	version, err := s.normalizeVersionInput(input)
+	version, err := s.normalizeVersionInputForFlow(flow.Slug, input)
 	if err != nil {
+		return nil, err
+	}
+	if err := validateQuickBuyDefaultSteps(flow.Slug, version.Steps); err != nil {
 		return nil, err
 	}
 	latest, err := s.repo.FindLatestVersionNumber(flowID)
@@ -563,15 +604,99 @@ func (s *QuickBuyService) UpdateDraftVersion(versionID uint, input QuickBuyVersi
 	if existing.Status != quickbuy.FlowVersionStatusDraft {
 		return nil, ErrQuickBuyNotMutable
 	}
-	version, err := s.normalizeVersionInput(input)
+	flowSlug := ""
+	if existing.Flow != nil {
+		flowSlug = existing.Flow.Slug
+	}
+	version, err := s.normalizeVersionInputForFlow(flowSlug, input)
 	if err != nil {
 		return nil, err
+	}
+	if existing.Flow != nil {
+		if err := validateQuickBuyDefaultSteps(existing.Flow.Slug, version.Steps); err != nil {
+			return nil, err
+		}
 	}
 	version.ID = existing.ID
 	version.FlowID = existing.FlowID
 	version.VersionNumber = existing.VersionNumber
 	version.Status = existing.Status
 	if err := s.repo.ReplaceVersion(version); err != nil {
+		return nil, err
+	}
+	loaded, err := s.repo.FindVersionByID(version.ID)
+	if err != nil {
+		return nil, err
+	}
+	return quickBuyFlowView(*loaded, ""), nil
+}
+
+func (s *QuickBuyService) SaveFlowConfiguration(flowID uint, input QuickBuyFlowInput) (*QuickBuyFlowView, error) {
+	if s == nil || s.repo == nil {
+		return nil, errors.New("quick buy service is not configured")
+	}
+	flow, err := normalizeFlowInput(input)
+	if err != nil {
+		return nil, err
+	}
+	existingFlow, err := s.repo.FindFlowByID(flowID)
+	if err != nil {
+		if repository.IsRecordNotFound(err) {
+			return nil, ErrQuickBuyNotFound
+		}
+		return nil, err
+	}
+	if isDefaultQuickBuyFlowSlug(existingFlow.Slug) && !isDefaultQuickBuyFlowSlug(flow.Slug) {
+		return nil, fmt.Errorf("%w: the default quick-build flow slug cannot be changed", ErrQuickBuyInvalid)
+	}
+	normalizeDefaultQuickBuyFlow(flow)
+	flow.ID = flowID
+	if existing, err := s.repo.FindFlowBySlug(flow.Slug); err == nil && existing != nil && existing.ID != flowID {
+		return nil, fmt.Errorf("%w: flow slug already exists", ErrQuickBuyInvalid)
+	} else if err != nil && !repository.IsRecordNotFound(err) {
+		return nil, err
+	}
+
+	version, err := s.normalizeVersionInputForFlow(flow.Slug, input.Version)
+	if err != nil {
+		return nil, err
+	}
+	if err := validateQuickBuyDefaultSteps(flow.Slug, version.Steps); err != nil {
+		return nil, err
+	}
+	versionID := uint(0)
+	for _, candidate := range existingFlow.Versions {
+		if candidate.Status == quickbuy.FlowVersionStatusDraft {
+			versionID = candidate.ID
+			break
+		}
+	}
+	if versionID > 0 {
+		existingVersion, err := s.repo.FindVersionByID(versionID)
+		if err != nil {
+			if repository.IsRecordNotFound(err) {
+				return nil, ErrQuickBuyNotFound
+			}
+			return nil, err
+		}
+		if existingVersion.Status != quickbuy.FlowVersionStatusDraft {
+			return nil, ErrQuickBuyNotMutable
+		}
+		version.ID = existingVersion.ID
+		version.FlowID = existingVersion.FlowID
+		version.VersionNumber = existingVersion.VersionNumber
+		version.Status = existingVersion.Status
+	} else {
+		latest, err := s.repo.FindLatestVersionNumber(flowID)
+		if err != nil {
+			return nil, err
+		}
+		version.FlowID = flowID
+		version.VersionNumber = latest + 1
+		version.Status = quickbuy.FlowVersionStatusDraft
+	}
+
+	if err := s.repo.SaveFlowConfiguration(flow, version, versionID > 0); err != nil {
 		return nil, err
 	}
 	loaded, err := s.repo.FindVersionByID(version.ID)
@@ -724,14 +849,9 @@ func (s *QuickBuyService) listVersionStepCandidates(version quickbuy.Version, in
 		return result, nil
 	}
 
-	productTypeIDs := quickBuyStepProductTypeIDs(*step)
-	if len(productTypeIDs) == 0 {
-		return result, nil
-	}
-
 	products, total, err := s.productRepo.ListQuickBuyCandidates(repository.ProductQuickBuyCandidateQuery{
 		Locale:         locale,
-		ProductTypeIDs: productTypeIDs,
+		ProductTypeIDs: quickBuyStepProductTypeIDs(*step),
 		Keyword:        strings.TrimSpace(input.Keyword),
 		Offset:         (page - 1) * pageSize,
 		Limit:          pageSize,
@@ -863,8 +983,12 @@ func (s *QuickBuyService) normalizeFlowAndVersion(input QuickBuyFlowInput) (*qui
 	if err != nil {
 		return nil, nil, err
 	}
-	version, err := s.normalizeVersionInput(input.Version)
+	normalizeDefaultQuickBuyFlow(flow)
+	version, err := s.normalizeVersionInputForFlow(flow.Slug, input.Version)
 	if err != nil {
+		return nil, nil, err
+	}
+	if err := validateQuickBuyDefaultSteps(flow.Slug, version.Steps); err != nil {
 		return nil, nil, err
 	}
 	version.VersionNumber = 1
@@ -889,15 +1013,54 @@ func normalizeFlowInput(input QuickBuyFlowInput) (*quickbuy.Flow, error) {
 	if sortOrder <= 0 {
 		sortOrder = 100
 	}
+	translations, err := normalizeQuickBuyFlowTranslations(input.Translations)
+	if err != nil {
+		return nil, err
+	}
 	flow := &quickbuy.Flow{
 		Slug:         slug,
 		Name:         name,
 		Description:  strings.TrimSpace(input.Description),
+		HelpText:     strings.TrimSpace(input.HelpText),
+		Translations: translations,
 		EntrySurface: normalizeQuickBuySurface(input.EntrySurface),
 		IsEnabled:    enabled,
 		SortOrder:    sortOrder,
 	}
 	return flow, nil
+}
+
+func normalizeQuickBuyFlowTranslations(input []QuickBuyFlowTranslationInput) ([]quickbuy.FlowTranslation, error) {
+	if len(input) == 0 {
+		return nil, nil
+	}
+
+	result := make([]quickbuy.FlowTranslation, 0, len(input))
+	seenLocales := make(map[string]struct{}, len(input))
+	for index, item := range input {
+		localeValue := strings.TrimSpace(item.Locale)
+		if localeValue == "" {
+			continue
+		}
+		locale, err := requireSupportedLocale(localeValue)
+		if err != nil {
+			return nil, fmt.Errorf("%w: flow translation %d has invalid locale", ErrQuickBuyInvalid, index+1)
+		}
+		helpText := strings.TrimSpace(item.HelpText)
+		if helpText == "" {
+			continue
+		}
+		if _, exists := seenLocales[locale]; exists {
+			return nil, fmt.Errorf("%w: flow has duplicate translation locale %q", ErrQuickBuyInvalid, locale)
+		}
+		seenLocales[locale] = struct{}{}
+		result = append(result, quickbuy.FlowTranslation{
+			ID:       item.ID,
+			Locale:   locale,
+			HelpText: helpText,
+		})
+	}
+	return result, nil
 }
 
 func (s *QuickBuyService) normalizeVersionInput(input QuickBuyVersionInput) (*quickbuy.Version, error) {
@@ -916,6 +1079,19 @@ func (s *QuickBuyService) normalizeVersionInput(input QuickBuyVersionInput) (*qu
 	}, nil
 }
 
+func (s *QuickBuyService) normalizeVersionInputForFlow(flowSlug string, input QuickBuyVersionInput) (*quickbuy.Version, error) {
+	version, err := s.normalizeVersionInput(input)
+	if err != nil {
+		return nil, err
+	}
+	if isDefaultQuickBuyFlowSlug(flowSlug) {
+		if err := normalizeDefaultQuickBuySteps(version.Steps); err != nil {
+			return nil, err
+		}
+	}
+	return version, nil
+}
+
 func (s *QuickBuyService) normalizeStepInputs(input []QuickBuyStepInput) ([]quickbuy.Step, error) {
 	steps := make([]quickbuy.Step, 0, len(input))
 	seen := make(map[string]struct{}, len(input))
@@ -932,30 +1108,6 @@ func (s *QuickBuyService) normalizeStepInputs(input []QuickBuyStepInput) ([]quic
 		if name == "" {
 			return nil, fmt.Errorf("%w: step %q name is required", ErrQuickBuyInvalid, stepKey)
 		}
-		selectionMode := normalizeQuickBuySelectionMode(item.SelectionMode)
-		required := true
-		if item.IsRequired != nil {
-			required = *item.IsRequired
-		}
-		sortOrder := item.SortOrder
-		if sortOrder <= 0 {
-			sortOrder = (index + 1) * 10
-		}
-		minSelect := item.MinSelect
-		if minSelect < 0 {
-			minSelect = 0
-		}
-		maxSelect := item.MaxSelect
-		if maxSelect < 0 {
-			maxSelect = 0
-		}
-		if maxSelect == 0 && selectionMode != quickbuy.SelectionModeAuto {
-			maxSelect = 1
-		}
-		defaultQuantity := item.DefaultQuantity
-		if defaultQuantity <= 0 {
-			defaultQuantity = 1
-		}
 		productTypes, err := s.normalizeStepProductTypes(item.ProductTypeIDs)
 		if err != nil {
 			return nil, fmt.Errorf("%w: step %q product types: %v", ErrQuickBuyInvalid, stepKey, err)
@@ -963,15 +1115,13 @@ func (s *QuickBuyService) normalizeStepInputs(input []QuickBuyStepInput) ([]quic
 		steps = append(steps, quickbuy.Step{
 			StepKey:         stepKey,
 			Name:            name,
-			Description:     strings.TrimSpace(item.Description),
-			HelpText:        strings.TrimSpace(item.HelpText),
-			SortOrder:       sortOrder,
-			SelectionMode:   selectionMode,
-			IsRequired:      required,
-			MinSelect:       minSelect,
-			MaxSelect:       maxSelect,
-			DefaultQuantity: defaultQuantity,
-			AllowSkip:       item.AllowSkip,
+			SortOrder:       (index + 1) * 10,
+			SelectionMode:   quickbuy.SelectionModeSingle,
+			IsRequired:      true,
+			MinSelect:       0,
+			MaxSelect:       1,
+			DefaultQuantity: 1,
+			AllowSkip:       false,
 			ProductTypes:    productTypes,
 		})
 	}
@@ -1058,7 +1208,7 @@ func validateQuickBuyVersion(version quickbuy.Version) QuickBuyValidationResult 
 		if step.SelectionMode == quickbuy.SelectionModeSingle && step.MaxSelect > 1 {
 			result.addIssue("error", "single_step_max_select", fmt.Sprintf("single-select step %q cannot allow more than one selection", step.StepKey), step.StepKey, "", 0)
 		}
-		if step.IsRequired && len(step.ProductTypes) == 0 && step.SelectionMode != quickbuy.SelectionModeAuto {
+		if step.IsRequired && len(step.ProductTypes) == 0 && step.SelectionMode != quickbuy.SelectionModeAuto && !isDefaultQuickBuyFlow(version) {
 			result.addIssue("error", "required_step_product_types", fmt.Sprintf("required step %q needs at least one product type", step.StepKey), step.StepKey, "", 0)
 		}
 		if step.IsRequired && step.AllowSkip {
@@ -1085,6 +1235,20 @@ func validateQuickBuyVersion(version quickbuy.Version) QuickBuyValidationResult 
 			}
 			if !item.ProductType.IsEnabled {
 				result.addIssue("error", "disabled_product_type", fmt.Sprintf("step %q references disabled product type %q", step.StepKey, item.ProductType.Slug), step.StepKey, "", item.ProductTypeID)
+			}
+		}
+	}
+	if version.Flow != nil && isDefaultQuickBuyFlowSlug(version.Flow.Slug) {
+		for _, requiredStepKey := range quickBuyDefaultStepKeys {
+			if _, exists := stepKeys[requiredStepKey]; !exists {
+				result.addIssue(
+					"error",
+					"default_step_required",
+					fmt.Sprintf("default quick-build step %q cannot be removed", requiredStepKey),
+					requiredStepKey,
+					"",
+					0,
+				)
 			}
 		}
 	}
@@ -1189,6 +1353,9 @@ func validateQuickBuySelectionBounds(version quickbuy.Version, items []quickbuy.
 }
 
 func validateQuickBuyProductAllowedForStep(step quickbuy.Step, item productdomain.Product) error {
+	if len(step.ProductTypes) == 0 {
+		return nil
+	}
 	if item.ProductTypeID == nil {
 		return fmt.Errorf("%w: product %d has no product type for step %q", ErrQuickBuyInvalid, item.ID, step.StepKey)
 	}
@@ -1265,9 +1432,9 @@ func quickBuySessionView(session quickbuy.Session, validation *QuickBuySessionVa
 		})
 	}
 
-	var flow *QuickBuyFlowView
+	var flow *QuickBuyPublicFlowView
 	if session.Version != nil && session.Version.Flow != nil {
-		flow = quickBuyFlowView(*session.Version, session.Locale)
+		flow = quickBuyPublicFlowView(*session.Version, session.Locale)
 	}
 	return &QuickBuySessionView{
 		SessionToken:     session.SessionToken,
@@ -1276,8 +1443,6 @@ func quickBuySessionView(session quickbuy.Session, validation *QuickBuySessionVa
 		Locale:           session.Locale,
 		MarketCountry:    session.MarketCountry,
 		Currency:         session.Currency,
-		AnonymousID:      session.AnonymousID,
-		UserID:           session.UserID,
 		Status:           session.Status,
 		ValidationStatus: session.ValidationStatus,
 		SubtotalSnapshot: session.SubtotalSnapshot,
@@ -1292,17 +1457,40 @@ func quickBuySessionView(session quickbuy.Session, validation *QuickBuySessionVa
 }
 
 func quickBuyProductSnapshot(item productdomain.Product) datatypes.JSON {
+	thumbnail := quickBuyProductThumbnail(item)
 	return quickBuyJSON(map[string]interface{}{
 		"id":              item.ID,
 		"product_type_id": item.ProductTypeID,
 		"sku":             item.SKU,
 		"name":            item.Name,
 		"slug":            item.Slug,
+		"thumbnail":       thumbnail,
+		"featured_image":  thumbnail,
 		"currency":        item.Currency,
 		"price":           item.Price,
 		"sale_price":      item.SalePrice,
 		"status":          item.Status,
 	})
+}
+
+func quickBuyProductThumbnail(item productdomain.Product) string {
+	for _, media := range item.Media {
+		if media.MediaType == "image" && media.IsVisible && media.IsPrimary {
+			if strings.TrimSpace(media.ThumbnailURL) != "" {
+				return strings.TrimSpace(media.ThumbnailURL)
+			}
+			return strings.TrimSpace(media.URL)
+		}
+	}
+	for _, media := range item.Media {
+		if media.MediaType == "image" && media.IsVisible {
+			if strings.TrimSpace(media.ThumbnailURL) != "" {
+				return strings.TrimSpace(media.ThumbnailURL)
+			}
+			return strings.TrimSpace(media.URL)
+		}
+	}
+	return ""
 }
 
 func quickBuyVariantSnapshot(item productdomain.ProductVariant) datatypes.JSON {
@@ -1347,6 +1535,7 @@ func quickBuyFlowSummary(flow quickbuy.Flow) QuickBuyFlowSummary {
 		Slug:         flow.Slug,
 		Name:         flow.Name,
 		Description:  flow.Description,
+		HelpText:     flow.HelpText,
 		EntrySurface: flow.EntrySurface,
 		IsEnabled:    flow.IsEnabled,
 		SortOrder:    flow.SortOrder,
@@ -1361,15 +1550,14 @@ func quickBuyFlowView(version quickbuy.Version, locale string) *QuickBuyFlowView
 		return nil
 	}
 	requestLocale := locales.ResolveSupported(locale)
-	steps := make([]QuickBuyStepView, 0, len(version.Steps))
-	for _, step := range version.Steps {
-		steps = append(steps, quickBuyStepView(step, requestLocale))
-	}
+	steps := quickBuyStepViews(version.Steps, requestLocale)
 	return &QuickBuyFlowView{
 		ID:           version.Flow.ID,
 		Slug:         version.Flow.Slug,
 		Name:         version.Flow.Name,
 		Description:  version.Flow.Description,
+		HelpText:     quickBuyFlowHelpText(*version.Flow, requestLocale),
+		Translations: quickBuyFlowTranslationViews(version.Flow.Translations),
 		EntrySurface: version.Flow.EntrySurface,
 		IsEnabled:    version.Flow.IsEnabled,
 		Version: QuickBuyVersionView{
@@ -1382,6 +1570,75 @@ func quickBuyFlowView(version quickbuy.Version, locale string) *QuickBuyFlowView
 		},
 		Steps: steps,
 	}
+}
+
+func quickBuyPublicFlowView(version quickbuy.Version, locale string) *QuickBuyPublicFlowView {
+	if version.Flow == nil {
+		return nil
+	}
+	requestLocale := locales.ResolveSupported(locale)
+	return &QuickBuyPublicFlowView{
+		ID:           version.Flow.ID,
+		Slug:         version.Flow.Slug,
+		Name:         version.Flow.Name,
+		Description:  version.Flow.Description,
+		HelpText:     quickBuyFlowHelpText(*version.Flow, requestLocale),
+		EntrySurface: version.Flow.EntrySurface,
+		IsEnabled:    version.Flow.IsEnabled,
+		Version: QuickBuyVersionView{
+			ID:            version.ID,
+			VersionNumber: version.VersionNumber,
+			Status:        version.Status,
+			PublishedAt:   version.PublishedAt,
+			StartsAt:      version.StartsAt,
+			EndsAt:        version.EndsAt,
+		},
+		Steps: quickBuyStepViews(version.Steps, requestLocale),
+	}
+}
+
+func quickBuyStepViews(steps []quickbuy.Step, locale string) []QuickBuyStepView {
+	result := make([]QuickBuyStepView, 0, len(steps))
+	for _, step := range steps {
+		result = append(result, quickBuyStepView(step, locale))
+	}
+	return result
+}
+
+func quickBuyFlowHelpText(flow quickbuy.Flow, locale string) string {
+	helpText := strings.TrimSpace(flow.HelpText)
+	if translation := quickBuyFlowTranslationForLocale(flow.Translations, locale); translation != nil && strings.TrimSpace(translation.HelpText) != "" {
+		helpText = strings.TrimSpace(translation.HelpText)
+	}
+	return helpText
+}
+
+func quickBuyFlowTranslationForLocale(translations []quickbuy.FlowTranslation, locale string) *quickbuy.FlowTranslation {
+	requestedLocale := locales.ResolveSupported(locale)
+	if requestedLocale == "" {
+		return nil
+	}
+	for index := range translations {
+		if translations[index].Locale == requestedLocale {
+			return &translations[index]
+		}
+	}
+	return nil
+}
+
+func quickBuyFlowTranslationViews(translations []quickbuy.FlowTranslation) []QuickBuyFlowTranslationView {
+	if len(translations) == 0 {
+		return []QuickBuyFlowTranslationView{}
+	}
+	result := make([]QuickBuyFlowTranslationView, 0, len(translations))
+	for _, translation := range translations {
+		result = append(result, QuickBuyFlowTranslationView{
+			ID:       translation.ID,
+			Locale:   translation.Locale,
+			HelpText: translation.HelpText,
+		})
+	}
+	return result
 }
 
 func quickBuyStepView(step quickbuy.Step, locale string) QuickBuyStepView {
@@ -1397,20 +1654,12 @@ func quickBuyStepView(step quickbuy.Step, locale string) QuickBuyStepView {
 		productTypes = append(productTypes, quickBuyProductTypeView(*item.ProductType, locale, item.IsPrimary))
 	}
 	return QuickBuyStepView{
-		ID:              step.ID,
-		StepKey:         step.StepKey,
-		Slug:            stepSlug,
-		Name:            step.Name,
-		Description:     step.Description,
-		HelpText:        step.HelpText,
-		SortOrder:       step.SortOrder,
-		SelectionMode:   step.SelectionMode,
-		IsRequired:      step.IsRequired,
-		MinSelect:       step.MinSelect,
-		MaxSelect:       step.MaxSelect,
-		DefaultQuantity: step.DefaultQuantity,
-		AllowSkip:       step.AllowSkip,
-		ProductTypes:    productTypes,
+		ID:           step.ID,
+		StepKey:      step.StepKey,
+		Slug:         stepSlug,
+		Name:         step.Name,
+		SortOrder:    step.SortOrder,
+		ProductTypes: productTypes,
 	}
 }
 
@@ -1431,6 +1680,88 @@ func normalizeQuickBuyKey(value string) string {
 		return ""
 	}
 	return value
+}
+
+func isDefaultQuickBuyFlowSlug(slug string) bool {
+	return normalizeQuickBuyKey(slug) == quickBuyDefaultFlowSlug
+}
+
+func isDefaultQuickBuyFlow(version quickbuy.Version) bool {
+	return version.Flow != nil && isDefaultQuickBuyFlowSlug(version.Flow.Slug)
+}
+
+func normalizeDefaultQuickBuyFlow(flow *quickbuy.Flow) {
+	if flow == nil || !isDefaultQuickBuyFlowSlug(flow.Slug) {
+		return
+	}
+	flow.Slug = quickBuyDefaultFlowSlug
+	flow.Name = quickBuyDefaultFlowName
+	flow.Description = quickBuyDefaultFlowDescription
+	flow.EntrySurface = quickBuyDefaultFlowEntrySurface
+	flow.IsEnabled = true
+	flow.SortOrder = quickBuyDefaultFlowSortOrder
+}
+
+func normalizeDefaultQuickBuySteps(steps []quickbuy.Step) error {
+	stepByKey := make(map[string]quickbuy.Step, len(steps))
+	for _, step := range steps {
+		stepByKey[normalizeQuickBuyKey(step.StepKey)] = step
+	}
+
+	ordered := make([]quickbuy.Step, 0, len(steps))
+	for _, stepKey := range quickBuyDefaultStepKeys {
+		step, exists := stepByKey[stepKey]
+		if !exists {
+			return fmt.Errorf("%w: default quick-build step %q cannot be removed", ErrQuickBuyInvalid, stepKey)
+		}
+		ordered = append(ordered, step)
+		delete(stepByKey, stepKey)
+	}
+
+	extraSteps := make([]quickbuy.Step, 0, len(stepByKey))
+	for _, step := range stepByKey {
+		extraSteps = append(extraSteps, step)
+	}
+	sort.SliceStable(extraSteps, func(i, j int) bool {
+		if extraSteps[i].SortOrder == extraSteps[j].SortOrder {
+			return extraSteps[i].StepKey < extraSteps[j].StepKey
+		}
+		return extraSteps[i].SortOrder < extraSteps[j].SortOrder
+	})
+	ordered = append(ordered, extraSteps...)
+
+	for index := range ordered {
+		step := &ordered[index]
+		step.SortOrder = (index + 1) * 10
+		step.SelectionMode = quickbuy.SelectionModeSingle
+		step.IsRequired = true
+		step.MinSelect = 0
+		step.MaxSelect = 1
+		step.DefaultQuantity = 1
+		step.AllowSkip = false
+		if index < len(quickBuyDefaultStepKeys) {
+			step.StepKey = quickBuyDefaultStepKeys[index]
+		}
+	}
+
+	copy(steps, ordered)
+	return nil
+}
+
+func validateQuickBuyDefaultSteps(flowSlug string, steps []quickbuy.Step) error {
+	if !isDefaultQuickBuyFlowSlug(flowSlug) {
+		return nil
+	}
+	stepKeys := make(map[string]struct{}, len(steps))
+	for _, step := range steps {
+		stepKeys[normalizeQuickBuyKey(step.StepKey)] = struct{}{}
+	}
+	for _, requiredStepKey := range quickBuyDefaultStepKeys {
+		if _, exists := stepKeys[requiredStepKey]; !exists {
+			return fmt.Errorf("%w: default quick-build step %q cannot be removed", ErrQuickBuyInvalid, requiredStepKey)
+		}
+	}
+	return nil
 }
 
 func normalizeQuickBuySurface(value string) string {

@@ -1,245 +1,265 @@
 import axios from '@/utils/axios'
+import {
+  requireApiAcknowledgement,
+  requireApiArrayField,
+  requireApiNumberField,
+  requireApiObject,
+  requireApiObjectField,
+  unwrapApiPayload,
+} from '@/utils/apiResponse'
 
 type APIID = string | number
 type APIParams = Record<string, any>
 type APIPayload = Record<string, any>
 
-const unwrapPayload = (response: any): any => response.data?.data ?? response.data ?? {}
+const readPayload = (response: unknown, endpoint: string) => (
+  unwrapApiPayload(response, endpoint)
+)
 
-const unwrapList = (response: any, key?: string): any[] => {
-  const payload = unwrapPayload(response)
+const readObjectPayload = (response: unknown, endpoint: string) => (
+  requireApiObject(readPayload(response, endpoint), endpoint)
+)
 
-  if (Array.isArray(payload)) return payload
-  if (Array.isArray(payload.data)) return payload.data
-  if (key && Array.isArray(payload[key])) return payload[key]
+const readDataArray = (response: unknown, endpoint: string) => (
+  requireApiArrayField(readObjectPayload(response, endpoint), 'data', endpoint)
+)
 
-  return []
+const readEntity = (response: unknown, endpoint: string) => {
+  const entity = readObjectPayload(response, endpoint)
+  requireApiNumberField(entity, 'id', endpoint)
+  return entity
+}
+
+const readNamedObject = (response: unknown, endpoint: string, field: string) => {
+  const payload = readObjectPayload(response, endpoint)
+  requireApiObjectField(payload, field, endpoint)
+  return payload
 }
 
 export const shippingApi = {
   async quote(payload: APIPayload) {
-    const response = await axios.post('/api/admin/shipping/quote', payload)
-    return unwrapPayload(response)
+    const endpoint = '/api/admin/shipping/quote'
+    return readObjectPayload(await axios.post(endpoint, payload), endpoint)
   },
 
   async listTemplates() {
-    const response = await axios.get('/api/admin/shipping/templates')
-    return unwrapList(response, 'templates')
+    const endpoint = '/api/admin/shipping/templates'
+    return readDataArray(await axios.get(endpoint), endpoint)
   },
 
   async getTemplate(id: APIID) {
-    const response = await axios.get(`/api/admin/shipping/templates/${id}`)
-    return unwrapPayload(response)
+    const endpoint = `/api/admin/shipping/templates/${id}`
+    return readEntity(await axios.get(endpoint), endpoint)
   },
 
   async createTemplate(payload: APIPayload) {
-    const response = await axios.post('/api/admin/shipping/templates', payload)
-    return unwrapPayload(response)
+    const endpoint = '/api/admin/shipping/templates'
+    return readEntity(await axios.post(endpoint, payload), endpoint)
   },
 
   async updateTemplate(id: APIID, payload: APIPayload) {
-    const response = await axios.put(`/api/admin/shipping/templates/${id}`, payload)
-    return unwrapPayload(response)
+    const endpoint = `/api/admin/shipping/templates/${id}`
+    return readEntity(await axios.put(endpoint, payload), endpoint)
   },
 
   async deleteTemplate(id: APIID) {
-    const response = await axios.delete(`/api/admin/shipping/templates/${id}`)
-    return unwrapPayload(response)
+    const endpoint = `/api/admin/shipping/templates/${id}`
+    return requireApiAcknowledgement(await axios.delete(endpoint), endpoint)
   },
 
   async listZones() {
-    const response = await axios.get('/api/admin/shipping/zones')
-    return unwrapList(response, 'zones')
+    const endpoint = '/api/admin/shipping/zones'
+    return readDataArray(await axios.get(endpoint), endpoint)
   },
 
   async getZone(id: APIID) {
-    const response = await axios.get(`/api/admin/shipping/zones/${id}`)
-    return unwrapPayload(response)
+    const endpoint = `/api/admin/shipping/zones/${id}`
+    return readEntity(await axios.get(endpoint), endpoint)
   },
 
   async createZone(payload: APIPayload) {
-    const response = await axios.post('/api/admin/shipping/zones', payload)
-    return unwrapPayload(response)
+    const endpoint = '/api/admin/shipping/zones'
+    return readEntity(await axios.post(endpoint, payload), endpoint)
   },
 
   async updateZone(id: APIID, payload: APIPayload) {
-    const response = await axios.put(`/api/admin/shipping/zones/${id}`, payload)
-    return unwrapPayload(response)
+    const endpoint = `/api/admin/shipping/zones/${id}`
+    return readEntity(await axios.put(endpoint, payload), endpoint)
   },
 
   async deleteZone(id: APIID) {
-    const response = await axios.delete(`/api/admin/shipping/zones/${id}`)
-    return unwrapPayload(response)
+    const endpoint = `/api/admin/shipping/zones/${id}`
+    return requireApiAcknowledgement(await axios.delete(endpoint), endpoint)
   },
 
   async listCarriers(params: APIParams = {}) {
-    const response = await axios.get('/api/admin/shipping/carriers', { params })
-    return unwrapList(response, 'carriers')
+    const endpoint = '/api/admin/shipping/carriers'
+    return readDataArray(await axios.get(endpoint, { params }), endpoint)
   },
 
   async getCarrier(id: APIID) {
-    const response = await axios.get(`/api/admin/shipping/carriers/${id}`)
-    return unwrapPayload(response)
+    const endpoint = `/api/admin/shipping/carriers/${id}`
+    return readEntity(await axios.get(endpoint), endpoint)
   },
 
   async createCarrier(payload: APIPayload) {
-    const response = await axios.post('/api/admin/shipping/carriers', payload)
-    return unwrapPayload(response)
+    const endpoint = '/api/admin/shipping/carriers'
+    return readEntity(await axios.post(endpoint, payload), endpoint)
   },
 
   async updateCarrier(id: APIID, payload: APIPayload) {
-    const response = await axios.put(`/api/admin/shipping/carriers/${id}`, payload)
-    return unwrapPayload(response)
+    const endpoint = `/api/admin/shipping/carriers/${id}`
+    return readEntity(await axios.put(endpoint, payload), endpoint)
   },
 
   async deleteCarrier(id: APIID) {
-    const response = await axios.delete(`/api/admin/shipping/carriers/${id}`)
-    return unwrapPayload(response)
+    const endpoint = `/api/admin/shipping/carriers/${id}`
+    return requireApiAcknowledgement(await axios.delete(endpoint), endpoint)
   },
 
   async listTrackingProviders(params: APIParams = {}) {
-    const response = await axios.get('/api/admin/shipping/tracking-providers', { params })
-    return unwrapList(response, 'tracking_providers')
+    const endpoint = '/api/admin/shipping/tracking-providers'
+    return readDataArray(await axios.get(endpoint, { params }), endpoint)
   },
 
   async getTrackingProvider(id: APIID) {
-    const response = await axios.get(`/api/admin/shipping/tracking-providers/${id}`)
-    return unwrapPayload(response)
+    const endpoint = `/api/admin/shipping/tracking-providers/${id}`
+    return readEntity(await axios.get(endpoint), endpoint)
   },
 
   async createTrackingProvider(payload: APIPayload) {
-    const response = await axios.post('/api/admin/shipping/tracking-providers', payload)
-    return unwrapPayload(response)
+    const endpoint = '/api/admin/shipping/tracking-providers'
+    return readEntity(await axios.post(endpoint, payload), endpoint)
   },
 
   async updateTrackingProvider(id: APIID, payload: APIPayload) {
-    const response = await axios.put(`/api/admin/shipping/tracking-providers/${id}`, payload)
-    return unwrapPayload(response)
+    const endpoint = `/api/admin/shipping/tracking-providers/${id}`
+    return readEntity(await axios.put(endpoint, payload), endpoint)
   },
 
   async deleteTrackingProvider(id: APIID) {
-    const response = await axios.delete(`/api/admin/shipping/tracking-providers/${id}`)
-    return unwrapPayload(response)
+    const endpoint = `/api/admin/shipping/tracking-providers/${id}`
+    return requireApiAcknowledgement(await axios.delete(endpoint), endpoint)
   },
 
   async listTrackingCarrierMappings(params: APIParams = {}) {
-    const response = await axios.get('/api/admin/shipping/tracking-carrier-mappings', { params })
-    return unwrapList(response, 'tracking_carrier_mappings')
+    const endpoint = '/api/admin/shipping/tracking-carrier-mappings'
+    return readDataArray(await axios.get(endpoint, { params }), endpoint)
   },
 
   async getTrackingCarrierMapping(id: APIID) {
-    const response = await axios.get(`/api/admin/shipping/tracking-carrier-mappings/${id}`)
-    return unwrapPayload(response)
+    const endpoint = `/api/admin/shipping/tracking-carrier-mappings/${id}`
+    return readEntity(await axios.get(endpoint), endpoint)
   },
 
   async createTrackingCarrierMapping(payload: APIPayload) {
-    const response = await axios.post('/api/admin/shipping/tracking-carrier-mappings', payload)
-    return unwrapPayload(response)
+    const endpoint = '/api/admin/shipping/tracking-carrier-mappings'
+    return readEntity(await axios.post(endpoint, payload), endpoint)
   },
 
   async updateTrackingCarrierMapping(id: APIID, payload: APIPayload) {
-    const response = await axios.put(`/api/admin/shipping/tracking-carrier-mappings/${id}`, payload)
-    return unwrapPayload(response)
+    const endpoint = `/api/admin/shipping/tracking-carrier-mappings/${id}`
+    return readEntity(await axios.put(endpoint, payload), endpoint)
   },
 
   async deleteTrackingCarrierMapping(id: APIID) {
-    const response = await axios.delete(`/api/admin/shipping/tracking-carrier-mappings/${id}`)
-    return unwrapPayload(response)
+    const endpoint = `/api/admin/shipping/tracking-carrier-mappings/${id}`
+    return requireApiAcknowledgement(await axios.delete(endpoint), endpoint)
   },
 
   async listTrackingShipments(params: APIParams = {}) {
-    const response = await axios.get('/api/admin/shipping/tracking-shipments', { params })
-    return unwrapList(response, 'tracking_shipments')
+    const endpoint = '/api/admin/shipping/tracking-shipments'
+    return readDataArray(await axios.get(endpoint, { params }), endpoint)
   },
 
   async listTrackingEvents(orderId: APIID) {
-    const response = await axios.get(`/api/admin/shipping/tracking-shipments/${orderId}/events`)
-    return unwrapList(response, 'tracking_events')
+    const endpoint = `/api/admin/shipping/tracking-shipments/${orderId}/events`
+    return readDataArray(await axios.get(endpoint), endpoint)
   },
 
   async getTrackingPollingState() {
-    const response = await axios.get('/api/admin/shipping/tracking-polling')
-    return unwrapPayload(response)
+    const endpoint = '/api/admin/shipping/tracking-polling'
+    return readObjectPayload(await axios.get(endpoint), endpoint)
   },
 
   async getTrackingWebhookState() {
-    const response = await axios.get('/api/admin/shipping/tracking-webhook')
-    return unwrapPayload(response)
+    const endpoint = '/api/admin/shipping/tracking-webhook'
+    return readObjectPayload(await axios.get(endpoint), endpoint)
   },
 
   async syncDueTrackingShipments(params: APIParams = {}) {
-    const response = await axios.post('/api/admin/shipping/tracking-shipments/sync-due', null, { params })
-    return unwrapPayload(response)
+    const endpoint = '/api/admin/shipping/tracking-shipments/sync-due'
+    return readObjectPayload(await axios.post(endpoint, null, { params }), endpoint)
   },
 
   async registerTrackingShipment(orderId: APIID) {
-    const response = await axios.post(`/api/admin/shipping/tracking-shipments/${orderId}/register`)
-    return unwrapPayload(response)
+    const endpoint = `/api/admin/shipping/tracking-shipments/${orderId}/register`
+    return readNamedObject(await axios.post(endpoint), endpoint, 'shipment')
   },
 
   async syncTrackingShipment(orderId: APIID) {
-    const response = await axios.post(`/api/admin/shipping/tracking-shipments/${orderId}/sync`)
-    return unwrapPayload(response)
+    const endpoint = `/api/admin/shipping/tracking-shipments/${orderId}/sync`
+    return readNamedObject(await axios.post(endpoint), endpoint, 'tracking')
   },
 
   async listCarrierServices(params: APIParams = {}) {
-    const response = await axios.get('/api/admin/shipping/carrier-services', { params })
-    return unwrapList(response, 'carrier_services')
+    const endpoint = '/api/admin/shipping/carrier-services'
+    return readDataArray(await axios.get(endpoint, { params }), endpoint)
   },
 
   async getCarrierService(id: APIID) {
-    const response = await axios.get(`/api/admin/shipping/carrier-services/${id}`)
-    return unwrapPayload(response)
+    const endpoint = `/api/admin/shipping/carrier-services/${id}`
+    return readEntity(await axios.get(endpoint), endpoint)
   },
 
   async createCarrierService(payload: APIPayload) {
-    const response = await axios.post('/api/admin/shipping/carrier-services', payload)
-    return unwrapPayload(response)
+    const endpoint = '/api/admin/shipping/carrier-services'
+    return readEntity(await axios.post(endpoint, payload), endpoint)
   },
 
   async updateCarrierService(id: APIID, payload: APIPayload) {
-    const response = await axios.put(`/api/admin/shipping/carrier-services/${id}`, payload)
-    return unwrapPayload(response)
+    const endpoint = `/api/admin/shipping/carrier-services/${id}`
+    return readEntity(await axios.put(endpoint, payload), endpoint)
   },
 
   async deleteCarrierService(id: APIID) {
-    const response = await axios.delete(`/api/admin/shipping/carrier-services/${id}`)
-    return unwrapPayload(response)
+    const endpoint = `/api/admin/shipping/carrier-services/${id}`
+    return requireApiAcknowledgement(await axios.delete(endpoint), endpoint)
   },
 
   async listPackagingRules() {
-    const response = await axios.get('/api/admin/shipping/packaging-rules')
-    return unwrapList(response, 'packaging_rules')
+    const endpoint = '/api/admin/shipping/packaging-rules'
+    return readDataArray(await axios.get(endpoint), endpoint)
   },
 
   async getPackagingRule(id: APIID) {
-    const response = await axios.get(`/api/admin/shipping/packaging-rules/${id}`)
-    return unwrapPayload(response)
+    const endpoint = `/api/admin/shipping/packaging-rules/${id}`
+    return readEntity(await axios.get(endpoint), endpoint)
   },
 
   async createPackagingRule(payload: APIPayload) {
-    const response = await axios.post('/api/admin/shipping/packaging-rules', payload)
-    return unwrapPayload(response)
+    const endpoint = '/api/admin/shipping/packaging-rules'
+    return readEntity(await axios.post(endpoint, payload), endpoint)
   },
 
   async updatePackagingRule(id: APIID, payload: APIPayload) {
-    const response = await axios.put(`/api/admin/shipping/packaging-rules/${id}`, payload)
-    return unwrapPayload(response)
+    const endpoint = `/api/admin/shipping/packaging-rules/${id}`
+    return readEntity(await axios.put(endpoint, payload), endpoint)
   },
 
   async deletePackagingRule(id: APIID) {
-    const response = await axios.delete(`/api/admin/shipping/packaging-rules/${id}`)
-    return unwrapPayload(response)
+    const endpoint = `/api/admin/shipping/packaging-rules/${id}`
+    return requireApiAcknowledgement(await axios.delete(endpoint), endpoint)
   },
 
   async createPackagingRuleApply(payload: APIPayload) {
-    const response = await axios.post('/api/admin/shipping/packaging-rules/apply', payload)
-    return unwrapPayload(response)
+    const endpoint = '/api/admin/shipping/packaging-rules/apply'
+    return readEntity(await axios.post(endpoint, payload), endpoint)
   },
 
   async deletePackagingRuleApply(applyId: APIID) {
-    const response = await axios.delete(`/api/admin/shipping/packaging-rules/apply/${applyId}`)
-    return unwrapPayload(response)
+    const endpoint = `/api/admin/shipping/packaging-rules/apply/${applyId}`
+    return requireApiAcknowledgement(await axios.delete(endpoint), endpoint)
   },
 }
 

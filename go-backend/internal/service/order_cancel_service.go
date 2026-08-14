@@ -44,23 +44,40 @@ func (s *OrderService) CancelOrderByNumber(orderNumber string, userID uint) erro
 }
 
 func (s *OrderService) cancelOrderWithRollback(o *order.Order) error {
-	return s.txManager.WithinTx(func(repos repository.TxRepositories) error {
+	var affectedProductIDs []uint
+	err := s.txManager.WithinTx(func(repos repository.TxRepositories) error {
 		if err := repos.Order.UpdateStatus(o.ID, "cancelled"); err != nil {
 			return err
 		}
 
-		return rollbackOrderReservationsInTx(repos, o, "cancelled")
+		productIDs, err := rollbackOrderReservationsInTx(repos, o, "cancelled")
+		if err != nil {
+			return err
+		}
+		affectedProductIDs = append(affectedProductIDs, productIDs...)
+		if err := s.enqueueProductCacheInvalidationInTx(repos, productIDs, "order stock restored cancelled"); err != nil {
+			return err
+		}
+		return nil
 	})
+	if err != nil {
+		return err
+	}
+	s.invalidateProductCacheAfterStockCommit(affectedProductIDs)
+	return nil
 }
 
-func rollbackOrderReservationsInTx(repos repository.TxRepositories, o *order.Order, reason string) error {
+func rollbackOrderReservationsInTx(repos repository.TxRepositories, o *order.Order, reason string) ([]uint, error) {
+	var affectedProductIDs []uint
 	for _, item := range o.Items {
 		if item.VariantID == nil {
-			return fmt.Errorf("[CRITICAL] Missing variant for order item %d", item.ID)
+			return nil, fmt.Errorf("[CRITICAL] Missing variant for order item %d", item.ID)
 		}
-		if err := repos.Product.IncrementVariantStock(*item.VariantID, item.Quantity); err != nil {
-			return fmt.Errorf("[CRITICAL] Failed to restore stock for variant %d: %w", *item.VariantID, err)
+		productIDs, err := repos.Product.IncrementVariantStock(*item.VariantID, item.Quantity)
+		if err != nil {
+			return nil, fmt.Errorf("[CRITICAL] Failed to restore stock for variant %d: %w", *item.VariantID, err)
 		}
+		affectedProductIDs = append(affectedProductIDs, productIDs...)
 	}
 
 	if o.PointsUsed > 0 {
@@ -73,25 +90,25 @@ func rollbackOrderReservationsInTx(repos repository.TxRepositories, o *order.Ord
 			fmt.Sprintf("Order #%s %s points refund", o.OrderNumber, reason),
 		)
 		if err != nil {
-			return fmt.Errorf("[CRITICAL] Failed to refund points: %w", err)
+			return nil, fmt.Errorf("[CRITICAL] Failed to refund points: %w", err)
 		}
 	}
 
 	if o.CouponCode != "" {
 		cp, err := repos.Coupon.FindCouponByCode(o.CouponCode)
 		if err != nil {
-			return fmt.Errorf("[CRITICAL] Failed to find coupon during refund: %w", err)
+			return nil, fmt.Errorf("[CRITICAL] Failed to find coupon during refund: %w", err)
 		}
 		if cp != nil {
 			if err := repos.Coupon.DecrementUsedCount(cp.ID); err != nil {
-				return fmt.Errorf("[CRITICAL] Failed to restore coupon usage limit: %w", err)
+				return nil, fmt.Errorf("[CRITICAL] Failed to restore coupon usage limit: %w", err)
 			}
 
 			if err := repos.Coupon.DeleteCouponUsageByOrderID(o.ID); err != nil {
-				return fmt.Errorf("[CRITICAL] Failed to delete coupon usage log: %w", err)
+				return nil, fmt.Errorf("[CRITICAL] Failed to delete coupon usage log: %w", err)
 			}
 		}
 	}
 
-	return nil
+	return affectedProductIDs, nil
 }

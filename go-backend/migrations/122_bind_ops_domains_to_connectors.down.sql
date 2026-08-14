@@ -1,0 +1,7 @@
+ALTER TABLE ops_domain_bindings
+    DROP CONSTRAINT IF EXISTS fk_ops_domain_binding_connector;
+
+DROP INDEX IF EXISTS idx_ops_domain_binding_connector;
+
+ALTER TABLE ops_domain_bindings
+    DROP COLUMN IF EXISTS connector_id;

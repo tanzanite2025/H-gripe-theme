@@ -75,57 +75,14 @@
           </div>
 
           <div v-else class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            <div
+            <ShopProductDisplayCard
               v-for="product in products"
               :key="product.id"
-              class="group rounded-xl bg-black/40 hover:bg-black/60 transition-colors overflow-hidden flex flex-col shadow-[8px_8px_22px_rgba(0,0,0,0.92)]"
-            >
-              <div class="aspect-square bg-white/5">
-                <img
-                  v-if="product.thumbnail"
-                  :src="product.thumbnail"
-                  :alt="product.title"
-                  class="w-full h-full object-cover"
-                  loading="lazy"
-                />
-                <div v-else class="w-full h-full flex items-center justify-center tz-text-muted text-2xl">
-                  📦
-                </div>
-              </div>
-              <div class="px-3 pt-2 pb-3 flex-1 flex flex-col">
-                <h3 class="text-xs font-semibold text-white line-clamp-2 mb-1">
-                  {{ product.title }}
-                </h3>
-                <p v-if="product.priceLabel" class="text-xs text-[#B5FF6D] mb-2">
-                  {{ product.priceLabel }}
-                </p>
-                <div class="mt-auto flex gap-1.5 items-center">
-                  <button
-                    type="button"
-                    @click="handleAddToWishlist(product)"
-                    class="w-8 h-8 flex items-center justify-center rounded-full border border-white/25 tz-text-secondary hover:bg-white/15 transition-colors"
-                    :title="$t('shopPage.actions.addToWishlist', 'Add to wishlist')"
-                    :aria-label="$t('shopPage.actions.addToWishlist', 'Add to wishlist')"
-                  >
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="1.7"
-                        d="M12.1 19.3 12 19.4l-.1-.1C7.14 15.24 4 12.39 4 9.2 4 7 5.7 5.3 7.9 5.3c1.4 0 2.8.7 3.6 1.9 0.8-1.2 2.2-1.9 3.6-1.9 2.2 0 3.9 1.7 3.9 3.9 0 3.19-3.14 6.04-7.9 10.1z"
-                      />
-                    </svg>
-                  </button>
-
-                  <NuxtLink
-                    :to="product.url"
-                    class="flex-1 px-2 py-1.5 bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/40 rounded tz-caption text-white text-center transition-all"
-                  >
-                    {{ $t('shopPage.actions.view', 'View') }}
-                  </NuxtLink>
-                </div>
-              </div>
-            </div>
+              :product="product"
+              show-wishlist-action
+              show-view-action
+              @wishlist="handleAddToWishlist"
+            />
           </div>
 
           <div v-if="showPagination" class="shop-pagination">
@@ -181,6 +138,7 @@ import { useRoute, useRouter, useAsyncData } from '#imports'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
 import ShopProductQuickSearchForm from '~/components/shop/ShopProductQuickSearchForm.vue'
 import ShopCategoryVerticalMenu from '~/components/shop/ShopCategoryVerticalMenu.vue'
+import ShopProductDisplayCard from '~/components/shop/ShopProductDisplayCard.vue'
 import ProductRecommendations from '~/components/shop/ProductRecommendations.vue'
 import { useWishlist } from '~/composables/useWishlist'
 import { useShopCategories } from '~/composables/useShopCategories'
@@ -650,7 +608,7 @@ const handleAddToWishlist = async (product: ShopProduct) => {
 .shop-pagination__count {
   min-width: 4.5rem;
   text-align: center;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: 'StorefrontSystem';
   font-size: var(--tz-type-caption);
   font-weight: 850;
   color: rgba(226, 232, 240, 0.82);

@@ -12,6 +12,7 @@ import (
 	pgateway "commerce-platform/internal/pkg/payment"
 	"commerce-platform/internal/repository"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
 )
@@ -60,6 +61,49 @@ func TestPaymentServiceExecutePendingRefundCompletesLocalRefund(t *testing.T) {
 	updatedTransaction, err := repository.NewPaymentRepository(db).FindTransactionByID(transaction.ID)
 	require.NoError(t, err)
 	require.Equal(t, "completed", updatedTransaction.Status)
+}
+
+func TestPaymentServiceExecutePendingRefundInvalidatesRestockedProductCache(t *testing.T) {
+	db := newPaymentRefundRecommendationTestDB(t)
+	service := newPaymentServiceWithRefundExecution(db)
+	cacheInvalidator := &recordingProductCacheInvalidator{}
+	service.ConfigureProductCacheInvalidator(cacheInvalidator)
+	variant := seedPaymentProductVariant(t, db, 4)
+	orderRecord, transaction := createRefundRecommendationPaidOrder(t, db, 120)
+	orderItem := seedPaymentOrderItemWithVariant(t, db, orderRecord.ID, variant.ProductID, variant.ID, 1, 120, 120, 0, 0, 120)
+	refund := createPendingRefundRecord(t, db, orderRecord.ID, transaction.ID, 120)
+	require.NoError(t, db.Create(&paymentdomain.RefundLineItem{
+		RefundID:        refund.ID,
+		OrderID:         orderRecord.ID,
+		OrderItemID:     orderItem.ID,
+		ProductID:       variant.ProductID,
+		VariantID:       &variant.ID,
+		ProductName:     "Carbon component",
+		SKU:             variant.SKU,
+		Quantity:        1,
+		UnitPrice:       120,
+		LineTotalAmount: 120,
+		Restock:         true,
+	}).Error)
+	gateway := &recordingRefundGateway{
+		response: &pgateway.RefundResponse{
+			ID:        "re_gateway_restock",
+			PaymentID: transaction.TransactionID,
+			Amount:    120,
+			Status:    "succeeded",
+			CreatedAt: time.Now().UTC(),
+		},
+	}
+
+	_, _, err := service.ExecutePendingRefund(context.Background(), ExecutePendingRefundInput{
+		RefundID: refund.ID,
+		AdminID:  12,
+		Provider: "stripe",
+		Gateway:  gateway,
+	})
+
+	require.NoError(t, err)
+	assert.Equal(t, []uint{variant.ProductID}, cacheInvalidator.productIDs)
 }
 
 func TestPaymentServiceExecutePendingRefundRecordsGatewayFailure(t *testing.T) {
@@ -209,6 +253,7 @@ func newPaymentServiceWithRefundExecution(db *gorm.DB) *PaymentService {
 		paymentRepo,
 	)
 	txManager.ConfigurePaymentRefundExecutionRepository(repository.NewPaymentRefundExecutionRepository(db))
+	txManager.ConfigureOutboxRepository(repository.NewOutboxRepository(db))
 	return NewPaymentService(txManager, paymentRepo)
 }
 

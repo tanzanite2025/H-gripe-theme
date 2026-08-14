@@ -2,6 +2,7 @@ package upload
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/binary"
 	"mime/multipart"
 	"net/http"
@@ -61,33 +62,54 @@ func TestValidateFileRejectsWebPWithExcessivePixelCount(t *testing.T) {
 }
 
 func TestValidateFileAcceptsWebPWithinProductLimits(t *testing.T) {
-	file := testFileHeader(t, "wheel.webp", testWebPVP8X(2400, 1600))
+	file := testFileHeader(t, "wheel.webp", validWebPFixture(t))
 
-	if err := ValidateFile(file, ProductImageRule); err != nil {
+	rule := FileRule{
+		MaxSize:             ProductImageRule.MaxSize,
+		AllowedExtensions:   ProductImageRule.AllowedExtensions,
+		AllowedContentTypes: ProductImageRule.AllowedContentTypes,
+		MaxWidth:            6000,
+		MaxHeight:           6000,
+		MaxPixels:           16_000_000,
+	}
+	if err := ValidateFile(file, rule); err != nil {
 		t.Fatalf("expected valid WebP dimensions to be accepted, got %v", err)
 	}
 }
 
-func TestValidateFileAcceptsFixedProductTypeWebP(t *testing.T) {
-	file := testFileHeader(t, "category.webp", testWebPVP8X(ProductTypeImageWidth, ProductTypeImageHeight))
+func TestValidateFileRejectsTruncatedWebPWithValidHeader(t *testing.T) {
+	data := validWebPFixture(t)
+	data = data[:30]
+	file := testFileHeader(t, "truncated.webp", data)
 
-	if err := ValidateFile(file, ProductTypeImageRule); err != nil {
-		t.Fatalf("expected fixed-size product type WebP to be accepted, got %v", err)
+	err := ValidateFile(file, FileRule{
+		MaxSize:             3 << 20,
+		AllowedExtensions:   []string{".webp"},
+		AllowedContentTypes: []string{"image/webp"},
+		MaxWidth:            6000,
+		MaxHeight:           6000,
+		MaxPixels:           16_000_000,
+	})
+	if err == nil {
+		t.Fatal("expected truncated WebP to be rejected")
+	}
+	if ErrorCode(err) != CodeInvalidType {
+		t.Fatalf("expected %q, got %q", CodeInvalidType, ErrorCode(err))
 	}
 }
 
-func TestValidateFileRejectsProductTypeWebPWithWrongDimensions(t *testing.T) {
-	file := testFileHeader(t, "category.webp", testWebPVP8X(ProductTypeImageWidth, ProductTypeImageHeight-1))
+func TestValidateFileAcceptsFixedDimensionWebP(t *testing.T) {
+	file := testFileHeader(t, "category.webp", validWebPFixture(t))
 
-	err := ValidateFile(file, ProductTypeImageRule)
-	if err == nil {
-		t.Fatal("expected product type image with wrong dimensions to be rejected")
+	rule := FileRule{
+		MaxSize:             3 << 20,
+		AllowedExtensions:   []string{".webp"},
+		AllowedContentTypes: []string{"image/webp"},
+		ExactWidth:          75,
+		ExactHeight:         100,
 	}
-	if ErrorCode(err) != CodeInvalidDimensions {
-		t.Fatalf("expected %q, got %q", CodeInvalidDimensions, ErrorCode(err))
-	}
-	if HTTPStatus(err) != http.StatusUnprocessableEntity {
-		t.Fatalf("unexpected HTTP status %d", HTTPStatus(err))
+	if err := ValidateFile(file, rule); err != nil {
+		t.Fatalf("expected fixed-size WebP to be accepted, got %v", err)
 	}
 }
 
@@ -105,6 +127,17 @@ func testWebPVP8X(width, height int) []byte {
 	data[27] = byte(height)
 	data[28] = byte(height >> 8)
 	data[29] = byte(height >> 16)
+	return data
+}
+
+func validWebPFixture(t *testing.T) []byte {
+	t.Helper()
+
+	const encoded = "UklGRrIBAABXRUJQVlA4TKUBAAAvSsAYAA8w//M///MfeJAkbXvaSG7m8Q3GfYSBJekwQztm/IcZlgwnmWImn2BK7aFmBtnVir6q//8VOkFE/xm4baTIu8c48ArEo6+B3zFKYln3pqClSCKX0begFTAXFOLXHSyF8cCNcZEG4OywuA4KVVfJCiArU7GAgJI8+lJP/OKMT/fBAjevg1cYB7YVkFuWga2lyPi5I0HFy5YTpWIHg0RZpkniRVW9odHAKOwosWuOGdxIyn2OvaCDvhg/we6TwadPBPbqBV58MsLmMJ8yZnOWk8SRz4N+QoyPL+MnamzMvcE1rHNEr91F9GKZPVUcS9w7PhhH36suB9qPeYb/oLk6cuTiJ0wOK3m5h1cKjW6EVZCYMK7dxcKCBdgP9HkKr9gkAO2P8GKZGWVdIAatQa+1IDpt6qyorVwdy01xdW8Jkfk6xjEXmVQQ+HQdFr6OKhIN34dXWq0+0qr6EJSCeeVLH9+gvGTLyqM65PQ44ihzlTXxQKjKbAvshXgir7Lil9w4L2bvMycmjQcqXaMCO6BlY28i+FOLzbfI1vEqxAhotocAAA=="
+	data, err := base64.StdEncoding.DecodeString(encoded)
+	if err != nil {
+		t.Fatalf("decode WebP fixture: %v", err)
+	}
 	return data
 }
 

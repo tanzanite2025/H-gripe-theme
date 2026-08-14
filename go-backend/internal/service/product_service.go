@@ -5,10 +5,12 @@ import (
 	"commerce-platform/internal/pkg/cache"
 	"commerce-platform/internal/pkg/safehtml"
 	"commerce-platform/internal/repository"
+	"context"
 	"errors"
 	"fmt"
 	"time"
 
+	"golang.org/x/sync/singleflight"
 	"gorm.io/gorm"
 )
 
@@ -19,15 +21,33 @@ type ProductService struct {
 	currencyPolicy                 *CurrencyPolicyService
 	cache                          *cache.RedisCache
 	cacheTTL                       time.Duration
+	cacheLockTTL                   time.Duration
+	cacheGroup                     singleflight.Group
+	productCacheInvalidator        *ProductDetailCacheInvalidator
+	productCacheEvents             ProductCacheEventPublisher
 	storefrontHTMLCacheInvalidator *StorefrontHTMLCacheInvalidator
 	merchantEvents                 MerchantProductEventPublisher
 }
 
 func NewProductService(productRepo *repository.ProductRepository, cache *cache.RedisCache, cacheTTL int) *ProductService {
+	return NewProductServiceWithCacheOptions(productRepo, cache, cacheTTL, 0)
+}
+
+func NewProductServiceWithCacheOptions(productRepo *repository.ProductRepository, cache *cache.RedisCache, cacheTTL, cacheLockTTL int) *ProductService {
+	lockTTL := time.Duration(cacheLockTTL) * time.Second
+	if lockTTL <= 0 {
+		lockTTL = 5 * time.Second
+	}
+	var productCacheInvalidator *ProductDetailCacheInvalidator
+	if cache != nil {
+		productCacheInvalidator = NewProductDetailCacheInvalidator(productRepo, cache)
+	}
 	return &ProductService{
-		productRepo: productRepo,
-		cache:       cache,
-		cacheTTL:    time.Duration(cacheTTL) * time.Second,
+		productRepo:             productRepo,
+		cache:                   cache,
+		cacheTTL:                time.Duration(cacheTTL) * time.Second,
+		cacheLockTTL:            lockTTL,
+		productCacheInvalidator: productCacheInvalidator,
 	}
 }
 
@@ -61,6 +81,13 @@ func (s *ProductService) ConfigureMerchantEventPublisher(publisher MerchantProdu
 		return
 	}
 	s.merchantEvents = publisher
+}
+
+func (s *ProductService) ConfigureProductCacheEventPublisher(publisher ProductCacheEventPublisher) {
+	if s == nil {
+		return
+	}
+	s.productCacheEvents = publisher
 }
 
 var (
@@ -98,62 +125,232 @@ type ProductRecommendationCandidateInput struct {
 }
 
 func (s *ProductService) GetByID(id uint) (*product.Product, error) {
-	cacheKey := productIDCacheKey(id)
+	return s.GetByIDContext(context.Background(), id)
+}
 
-	var cachedProduct product.Product
-	if s.cache != nil && s.cache.Get(cacheKey, &cachedProduct) == nil {
-		return sanitizeProductHTML(&cachedProduct), nil
+func (s *ProductService) GetByIDContext(ctx context.Context, id uint) (*product.Product, error) {
+	if ctx == nil {
+		ctx = context.Background()
 	}
-
-	result, err := s.productRepo.FindByID(id)
-	if err != nil {
-		return nil, err
-	}
-	result = sanitizeProductHTML(result)
-
-	_ = s.productRepo.IncrementViewCount(id)
-
-	if s.cache != nil {
-		_ = s.cache.Set(cacheKey, result, s.cacheTTL)
-	}
-
-	return result, nil
+	return s.loadProduct(ctx, productIDCacheKey(id), func(ctx context.Context) (*product.Product, error) {
+		result, err := s.productRepo.FindByIDContext(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+		_ = s.productRepo.IncrementViewCountContext(ctx, id)
+		return result, nil
+	})
 }
 
 func (s *ProductService) GetBySlug(slug, locale string) (*product.Product, error) {
-	cacheKey := productSlugCacheKey(slug, locale)
+	return s.GetBySlugContext(context.Background(), slug, locale)
+}
 
-	var cachedProduct product.Product
-	if s.cache != nil && s.cache.Get(cacheKey, &cachedProduct) == nil {
-		return sanitizeProductHTML(&cachedProduct), nil
+func (s *ProductService) GetBySlugContext(ctx context.Context, slug, locale string) (*product.Product, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	return s.loadProduct(ctx, productSlugCacheKey(slug, locale), func(ctx context.Context) (*product.Product, error) {
+		result, err := s.productRepo.FindBySlugContext(ctx, slug, locale)
+		if err != nil {
+			return nil, err
+		}
+		_ = s.productRepo.IncrementViewCountContext(ctx, result.ID)
+		return result, nil
+	})
+}
+
+func (s *ProductService) loadProduct(ctx context.Context, cacheKey string, loader func(context.Context) (*product.Product, error)) (*product.Product, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if s.cache == nil || s.cacheTTL <= 0 {
+		resultChan := s.cacheGroup.DoChan(cacheKey, func() (interface{}, error) {
+			result, err := loader(ctx)
+			if err != nil {
+				return nil, err
+			}
+			return sanitizeProductHTML(result), nil
+		})
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case result := <-resultChan:
+			if result.Err != nil {
+				return nil, result.Err
+			}
+			return result.Val.(*product.Product), nil
+		}
 	}
 
-	result, err := s.productRepo.FindBySlug(slug, locale)
+	if result, ok := s.getCachedProduct(ctx, cacheKey); ok {
+		return result, nil
+	}
+
+	leaderContext := context.WithoutCancel(ctx)
+	resultChan := s.cacheGroup.DoChan(cacheKey, func() (interface{}, error) {
+		return s.loadProductWithDistributedLock(leaderContext, cacheKey, loader)
+	})
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case result := <-resultChan:
+		if result.Err != nil {
+			return nil, result.Err
+		}
+		return result.Val.(*product.Product), nil
+	}
+}
+
+func (s *ProductService) loadProductWithDistributedLock(ctx context.Context, cacheKey string, loader func(context.Context) (*product.Product, error)) (*product.Product, error) {
+	if result, ok := s.getCachedProduct(ctx, cacheKey); ok {
+		return result, nil
+	}
+
+	lockKey := productCacheLockKey(cacheKey)
+	deadline := time.Now().Add(s.cacheLockTTL)
+	for {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		lock, acquired, err := s.cache.AcquireLock(ctx, lockKey, s.cacheLockTTL)
+		if err != nil {
+			if ctxErr := ctx.Err(); ctxErr != nil {
+				return nil, ctxErr
+			}
+			return s.loadAndCacheProduct(ctx, cacheKey, loader)
+		}
+		if acquired {
+			defer func() {
+				_ = lock.Release(context.Background())
+			}()
+			if result, ok := s.getCachedProduct(ctx, cacheKey); ok {
+				return result, nil
+			}
+			return s.loadAndCacheProductWithLease(ctx, cacheKey, loader, lock)
+		}
+
+		if result, ok := s.waitForCachedProduct(ctx, cacheKey, deadline); ok {
+			return result, nil
+		}
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		if time.Now().After(deadline) {
+			deadline = time.Now().Add(s.cacheLockTTL)
+		}
+	}
+}
+
+func (s *ProductService) loadAndCacheProduct(ctx context.Context, cacheKey string, loader func(context.Context) (*product.Product, error)) (*product.Product, error) {
+	result, err := loader(ctx)
 	if err != nil {
 		return nil, err
 	}
 	result = sanitizeProductHTML(result)
-
-	_ = s.productRepo.IncrementViewCount(result.ID)
-
-	if s.cache != nil {
-		_ = s.cache.Set(cacheKey, result, s.cacheTTL)
-	}
-
+	_ = s.cache.SetContext(ctx, cacheKey, result, s.cacheTTL)
 	return result, nil
 }
 
+func (s *ProductService) loadAndCacheProductWithLease(ctx context.Context, cacheKey string, loader func(context.Context) (*product.Product, error), lock *cache.RedisLock) (*product.Product, error) {
+	loadCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	refreshErr := make(chan error, 1)
+	refreshDone := make(chan struct{})
+	go func() {
+		defer close(refreshDone)
+		interval := s.cacheLockTTL / 3
+		if interval < 50*time.Millisecond {
+			interval = 50 * time.Millisecond
+		}
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-loadCtx.Done():
+				return
+			case <-ticker.C:
+				if err := lock.Refresh(loadCtx, s.cacheLockTTL); err != nil {
+					select {
+					case refreshErr <- err:
+					default:
+					}
+					cancel()
+					return
+				}
+			}
+		}
+	}()
+
+	result, err := loader(loadCtx)
+	if err == nil {
+		result = sanitizeProductHTML(result)
+		if cacheErr := s.cache.SetContext(loadCtx, cacheKey, result, s.cacheTTL); cacheErr != nil {
+			// A cache write failure should not turn a successful database read into
+			// an application failure; the next request will retry under the lock.
+			_ = cacheErr
+		}
+	}
+	cancel()
+	<-refreshDone
+	if err != nil {
+		return nil, err
+	}
+	select {
+	case err := <-refreshErr:
+		return nil, err
+	default:
+		return result, nil
+	}
+}
+
+func (s *ProductService) getCachedProduct(ctx context.Context, cacheKey string) (*product.Product, bool) {
+	var cachedProduct product.Product
+	if s.cache != nil && s.cache.GetContext(ctx, cacheKey, &cachedProduct) == nil {
+		return sanitizeProductHTML(&cachedProduct), true
+	}
+	return nil, false
+}
+
+func (s *ProductService) waitForCachedProduct(ctx context.Context, cacheKey string, deadline time.Time) (*product.Product, bool) {
+	timer := time.NewTimer(25 * time.Millisecond)
+	defer timer.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return nil, false
+		case <-timer.C:
+			if result, ok := s.getCachedProduct(ctx, cacheKey); ok {
+				return result, true
+			}
+			if time.Now().After(deadline) {
+				return nil, false
+			}
+			timer.Reset(25 * time.Millisecond)
+		}
+	}
+}
+
 func (s *ProductService) GetPublicByID(id uint) (*product.Product, error) {
-	result, err := s.productRepo.FindByID(id)
+	return s.GetPublicByIDContext(context.Background(), id)
+}
+
+func (s *ProductService) GetPublicByIDContext(ctx context.Context, id uint) (*product.Product, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	result, err := s.loadProduct(ctx, productIDCacheKey(id), func(ctx context.Context) (*product.Product, error) {
+		return s.productRepo.FindByIDContext(ctx, id)
+	})
 	if err != nil {
 		return nil, err
 	}
 	if result.Status != "active" {
 		return nil, ErrProductNotFound
 	}
-	result = sanitizeProductHTML(result)
-	_ = s.productRepo.IncrementViewCount(id)
-	return result, nil
+	_ = s.productRepo.IncrementViewCountContext(ctx, id)
+	return sanitizeProductHTML(result), nil
 }
 
 func (s *ProductService) GetRecommendationContextProduct(id uint) (*product.Product, error) {
@@ -293,6 +490,9 @@ func (s *ProductService) Update(p *product.Product) error {
 
 	s.clearProductCache(previousProduct)
 	s.clearProductCache(p)
+	if err := s.enqueueProductCacheInvalidationByIDs([]uint{previousProduct.ID, p.ID}, "product update"); err != nil {
+		return err
+	}
 	s.invalidateStorefrontHTMLCache("product update")
 
 	if merchantProductCoreChanged(previousProduct, p) {

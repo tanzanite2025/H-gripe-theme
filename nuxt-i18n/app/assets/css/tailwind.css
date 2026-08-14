@@ -2,18 +2,59 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 系统统一字体 - 中英基础字体，后续多语言字体按 unicode-range 继续扩展 */
+/* Self-hosted storefront font. Every enabled locale must be covered by
+   StorefrontSystem font files; do not add system or generic fallbacks. */
 @font-face {
   font-family: 'StorefrontSystem';
-  src: url('../fonts/system/StorefrontSystem-CN-Latin.woff2') format('woff2');
+  src: url('/fonts/StorefrontSystem-CN-Latin.woff2') format('woff2');
   font-weight: 100 900;
   font-style: normal;
-  font-display: swap;
+  font-display: block;
+}
+
+/* Noto Sans Devanagari, self-hosted from the official OFL release. */
+@font-face {
+  font-family: 'StorefrontSystem';
+  src: url('/fonts/StorefrontSystem-Devanagari.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: block;
+  unicode-range: U+0900-097F, U+1CD0-1CF9, U+200C-200D, U+20A8, U+20B9, U+20F0, U+25CC, U+A830-A839, U+A8E0-A8FF, U+11B00-11B09;
+}
+
+/* Noto Sans, only for Latin glyphs absent from Maple UI. */
+@font-face {
+  font-family: 'StorefrontSystem';
+  src: url('/fonts/StorefrontSystem-Latin-Accents.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: block;
+  unicode-range: U+00C0-00C1, U+00C4-00C5, U+00C9, U+00D6, U+00DC, U+0130;
+}
+
+/* Noto Sans Arabic, self-hosted from the official OFL release. */
+@font-face {
+  font-family: 'StorefrontSystem';
+  src: url('/fonts/StorefrontSystem-Arabic.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: block;
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC4, U+10EFC-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1;
+}
+
+/* Noto Sans Thai, self-hosted from the official OFL release. */
+@font-face {
+  font-family: 'StorefrontSystem';
+  src: url('/fonts/StorefrontSystem-Thai.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: block;
+  unicode-range: U+02D7, U+0303, U+0331, U+0E01-0E5B, U+200C-200D, U+25CC;
 }
 
 @layer base {
   :root {
-    --tz-font-system: 'StorefrontSystem', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --tz-font-system: 'StorefrontSystem';
     /*
       Frontend typography ladder.
       Keep user-facing page titles, section titles and embedded FAQ content
@@ -43,6 +84,7 @@
     --tz-mobile-viewport-height: var(--tz-mobile-small-viewport-height);
     --tz-mobile-safe-viewport-height: calc(var(--tz-mobile-viewport-height) - var(--tz-safe-area-top) - var(--tz-safe-area-bottom));
     --tz-mobile-modal-safe-padding-bottom: max(0.75rem, calc(0.75rem + var(--tz-safe-area-bottom)));
+    --tz-mobile-dialog-inset: 2px;
     --tz-mobile-cookie-banner-height: 0px;
     --tz-bottom-dock-height: 4.5rem;
     --tz-bottom-dock-content-clearance: calc(var(--tz-bottom-dock-height) + 1.25rem);
@@ -172,6 +214,19 @@
   .tz-global-close-btn :where(svg) {
     width: 0.875rem !important;
     height: 0.875rem !important;
+  }
+
+  .tz-standard-modal-mask,
+  .tz-standard-modal-backdrop {
+    background: rgba(0, 0, 0, 0.78);
+    -webkit-backdrop-filter: blur(5px);
+    backdrop-filter: blur(5px);
+  }
+
+  .tz-standard-modal-surface {
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    border-radius: 1rem !important;
+    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.72) !important;
   }
 
   .page-content-shell {
@@ -405,10 +460,38 @@
 
   @media (max-width: 767px) {
     .tz-mobile-safe-modal-mask {
+      box-sizing: border-box;
       padding-top: var(--tz-safe-area-top);
       padding-right: var(--tz-safe-area-right);
       padding-bottom: var(--tz-safe-area-bottom);
       padding-left: var(--tz-safe-area-left);
+    }
+
+    .tz-mobile-dialog-mask {
+      box-sizing: border-box;
+      padding-top: calc(var(--tz-safe-area-top) + var(--tz-mobile-dialog-inset)) !important;
+      padding-right: calc(var(--tz-safe-area-right) + var(--tz-mobile-dialog-inset)) !important;
+      padding-bottom: calc(var(--tz-safe-area-bottom) + var(--tz-mobile-dialog-inset)) !important;
+      padding-left: calc(var(--tz-safe-area-left) + var(--tz-mobile-dialog-inset)) !important;
+    }
+
+    .tz-standard-modal-mask {
+      padding-top: max(1rem, var(--tz-safe-area-top)) !important;
+      padding-right: max(1rem, var(--tz-safe-area-right)) !important;
+      padding-bottom: max(1rem, var(--tz-safe-area-bottom)) !important;
+      padding-left: max(1rem, var(--tz-safe-area-left)) !important;
+    }
+
+    .tz-standard-modal-mask--compact {
+      padding-top: max(0.75rem, var(--tz-safe-area-top)) !important;
+      padding-right: max(0.75rem, var(--tz-safe-area-right)) !important;
+      padding-bottom: max(0.75rem, var(--tz-safe-area-bottom)) !important;
+      padding-left: max(0.75rem, var(--tz-safe-area-left)) !important;
+    }
+
+    .tz-mobile-dialog-surface {
+      box-sizing: border-box;
+      border-radius: 0.75rem !important;
     }
 
     .tz-mobile-safe-full-height {

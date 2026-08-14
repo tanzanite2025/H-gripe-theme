@@ -30,6 +30,9 @@ func (s *ProductService) UpdateProductSEO(id uint, input ProductSEOUpdateInput) 
 	}
 
 	s.clearProductCache(existingProduct)
+	if err := s.enqueueProductCacheInvalidationByIDs([]uint{existingProduct.ID}, "product SEO update"); err != nil {
+		return nil, err
+	}
 	s.invalidateStorefrontHTMLCache("product SEO update")
 	return s.findProduct(id)
 }

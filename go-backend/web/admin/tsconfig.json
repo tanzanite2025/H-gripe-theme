@@ -16,5 +16,5 @@
   "vueCompilerOptions": {
     "strictTemplates": false
   },
-  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.js", "vite.config.ts"]
+  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.js", "scripts/**/*.ts", "vite.config.ts"]
 }

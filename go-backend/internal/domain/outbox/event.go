@@ -20,9 +20,13 @@ const (
 	EventTypeMerchantProductUpsert   = "merchant.product_upsert"
 	EventTypeMerchantProductWithdraw = "merchant.product_withdraw"
 	EventTypeMerchantOfferRevalidate = "merchant.offer_revalidate"
+	EventTypeProductCacheInvalidate  = "product.cache_invalidate"
 	AggregateTypeOrder               = "order"
 	AggregateTypePaymentRiskProvider = "payment_risk_provider"
 	AggregateTypeProduct             = "product"
+	AggregateTypeProductCache        = "product_cache"
+	AggregateTypeProductType         = "product_type"
+	AggregateTypeInformationTemplate = "product_information_template"
 	AggregateTypeMerchantOffer       = "merchant_offer"
 	DefaultEventMaxAttempt           = 10
 )
@@ -109,4 +113,11 @@ type MerchantProductSyncPayload struct {
 type MerchantOfferRevalidatePayload struct {
 	OfferID uint   `json:"offer_id"`
 	Reason  string `json:"reason,omitempty"`
+}
+
+type ProductCacheInvalidatePayload struct {
+	ProductIDs                   []uint `json:"product_ids,omitempty"`
+	ProductTypeID                uint   `json:"product_type_id,omitempty"`
+	ProductInformationTemplateID uint   `json:"product_information_template_id,omitempty"`
+	Reason                       string `json:"reason,omitempty"`
 }

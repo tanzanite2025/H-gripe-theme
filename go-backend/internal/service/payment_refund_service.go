@@ -259,7 +259,8 @@ func absRefundMoney(value float64) float64 {
 	return value
 }
 
-func restoreRefundLineItemStock(repos repository.TxRepositories, lineItems []payment.RefundLineItem, restockedAt time.Time) error {
+func restoreRefundLineItemStock(repos repository.TxRepositories, lineItems []payment.RefundLineItem, restockedAt time.Time) ([]uint, error) {
+	var affectedProductIDs []uint
 	for _, item := range lineItems {
 		if !item.Restock || item.Quantity <= 0 || item.VariantID == nil {
 			continue
@@ -267,16 +268,18 @@ func restoreRefundLineItemStock(repos repository.TxRepositories, lineItems []pay
 
 		claimed, err := repos.Payment.MarkRefundLineItemRestocked(item.ID, restockedAt)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		if !claimed {
 			continue
 		}
-		if err := repos.Product.IncrementVariantStock(*item.VariantID, item.Quantity); err != nil {
-			return fmt.Errorf("[CRITICAL] Failed to restore stock for refunded variant %d: %w", *item.VariantID, err)
+		productIDs, err := repos.Product.IncrementVariantStock(*item.VariantID, item.Quantity)
+		if err != nil {
+			return nil, fmt.Errorf("[CRITICAL] Failed to restore stock for refunded variant %d: %w", *item.VariantID, err)
 		}
+		affectedProductIDs = append(affectedProductIDs, productIDs...)
 	}
-	return nil
+	return affectedProductIDs, nil
 }
 
 func (s *PaymentService) RecordVerifiedGatewayRefund(input VerifiedGatewayRefundInput) error {
@@ -293,10 +296,19 @@ func (s *PaymentService) RecordVerifiedGatewayRefund(input VerifiedGatewayRefund
 		return errors.New("amount must be greater than zero")
 	}
 
-	return s.txManager.WithinTx(func(repos repository.TxRepositories) error {
+	var affectedProductIDs []uint
+	err := s.txManager.WithinTx(func(repos repository.TxRepositories) error {
 		if existing, err := repos.Payment.FindRefundByRefundID(input.RefundID); err == nil {
 			if existing.Status == "completed" {
-				return restoreRefundLineItemStock(repos, existing.LineItems, time.Now())
+				productIDs, err := restoreRefundLineItemStock(repos, existing.LineItems, time.Now())
+				if err != nil {
+					return err
+				}
+				affectedProductIDs = append(affectedProductIDs, productIDs...)
+				if err := s.enqueueProductCacheInvalidationInTx(repos, productIDs, "refund stock restored"); err != nil {
+					return err
+				}
+				return nil
 			}
 			return errors.New("refund id is already used")
 		} else if !repository.IsRecordNotFound(err) {
@@ -370,7 +382,12 @@ func (s *PaymentService) RecordVerifiedGatewayRefund(input VerifiedGatewayRefund
 				return err
 			}
 			if !wasCompleted {
-				if err := restoreRefundLineItemStock(repos, pendingRefund.LineItems, now); err != nil {
+				productIDs, err := restoreRefundLineItemStock(repos, pendingRefund.LineItems, now)
+				if err != nil {
+					return err
+				}
+				affectedProductIDs = append(affectedProductIDs, productIDs...)
+				if err := s.enqueueProductCacheInvalidationInTx(repos, productIDs, "refund stock restored"); err != nil {
 					return err
 				}
 			}
@@ -415,4 +432,9 @@ func (s *PaymentService) RecordVerifiedGatewayRefund(input VerifiedGatewayRefund
 
 		return nil
 	})
+	if err != nil {
+		return err
+	}
+	s.invalidateProductCacheAfterStockCommit(affectedProductIDs)
+	return nil
 }
