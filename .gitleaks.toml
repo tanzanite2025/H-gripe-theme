@@ -57,3 +57,17 @@ id = "generic-api-key"
   regexes = [
     '''strings\.HasPrefix\(normalizedKey,\s*normalizedPrefix\+"/"\)''',
   ]
+
+[[rules]]
+id = "linkedin-client-id"
+
+  [[rules.allowlists]]
+  description = "False positive route identifier for the social media admin tab."
+  condition = "AND"
+  regexTarget = "line"
+  paths = [
+    '''(^|/)go-backend/web/admin/src/views/SocialMedia\.vue$''',
+  ]
+  regexes = [
+    '''linkedin:\s*['"]SocialLinkedIn['"]''',
+  ]
