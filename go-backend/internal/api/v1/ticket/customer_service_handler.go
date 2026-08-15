@@ -47,6 +47,29 @@ func (h *Handler) ListPublicCustomerServiceAgents(c *gin.Context) {
 			"primary_group": publicCustomerServicePrimaryAgentGroup(agent.Groups),
 		})
 	}
+	if len(items) == 0 {
+		fallbackAgents, err := h.ticketService.ListCustomerServiceAgents(limit)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "[CRITICAL] " + err.Error()})
+			return
+		}
+		for _, agent := range fallbackAgents {
+			items = append(items, gin.H{
+				"id":            agent.ID,
+				"user_id":       agent.ID,
+				"agent_id":      "user-" + strconv.FormatUint(uint64(agent.ID), 10),
+				"name":          "Customer Service",
+				"email":         "",
+				"avatar":        "",
+				"whatsapp":      "",
+				"online_status": "offline",
+				"status":        "offline",
+				"group_ids":     []uint{},
+				"groups":        []gin.H{},
+				"primary_group": nil,
+			})
+		}
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,

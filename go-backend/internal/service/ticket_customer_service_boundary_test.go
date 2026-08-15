@@ -48,6 +48,31 @@ func TestCustomerServiceDedicatedPathStillHandlesConversationMessages(t *testing
 	assert.True(t, messages[1].IsStaff)
 }
 
+func TestCustomerServiceConversationFallsBackToActiveSupportUserWithoutProfile(t *testing.T) {
+	db, ticketService := newTestTicketBoundaryService(t)
+	fallbackAgent := createTicketBoundaryUser(t, db, "fallback@example.test", "fallback", "support")
+	owner := CustomerServiceOwner{VisitorSessionHash: "visitor-without-profile"}
+
+	conversation, err := ticketService.GetOrCreatePublicCustomerServiceConversation(owner, 0)
+	require.NoError(t, err)
+	require.NotNil(t, conversation)
+	assert.Equal(t, fallbackAgent.ID, conversation.UserID)
+	assert.Equal(t, uint(0), conversation.AssignedTo)
+
+	_, message, err := ticketService.AddPublicCustomerServiceMessage(
+		ticketConversationID(conversation),
+		owner,
+		"hello without a configured profile",
+		0,
+		"text",
+		"",
+		"",
+	)
+	require.NoError(t, err)
+	require.NotNil(t, message)
+	assert.Equal(t, fallbackAgent.ID, message.UserID)
+}
+
 func TestCustomerServiceConversationListFiltersUseBackendSource(t *testing.T) {
 	db, ticketService := newTestTicketBoundaryService(t)
 	customer := createTicketBoundaryUser(t, db, "member@example.test", "member", "user")

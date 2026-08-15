@@ -1,4 +1,4 @@
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 
 interface BrowsingHistoryItem {
   id: number
@@ -78,6 +78,7 @@ export const useBrowsingHistory = () => {
     if (!isAuthenticated.value) return
 
     try {
+      const localHistory = [...history.value]
       const response = await auth.request<BrowsingHistoryResponse | { data?: BrowsingHistoryResponse }>(
         `${BACKEND_PATH}?limit=${MAX_ITEMS}`,
         {
@@ -88,6 +89,50 @@ export const useBrowsingHistory = () => {
       const data = unwrapResponseData<BrowsingHistoryResponse>(response)
 
       if (!data?.history || !Array.isArray(data.history)) return
+
+      const localByProductID = new Map(localHistory.map((item) => [item.id, item]))
+      const remoteProductIDs = new Set<number>()
+      const remoteHistory = data.history
+        .filter((item) => Number.isInteger(item.product_id) && item.product_id > 0)
+        .map((item) => {
+          const productID = Number(item.product_id)
+          remoteProductIDs.add(productID)
+          const localItem = localByProductID.get(productID)
+          const viewedAt = item.last_viewed_at || item.updated_at || item.created_at
+
+          if (localItem) {
+            return {
+              ...localItem,
+              viewedAt: viewedAt || localItem.viewedAt,
+            }
+          }
+
+          return {
+            id: productID,
+            title: `Product #${productID}`,
+            thumbnail: '',
+            price: '',
+            url: `/products/${productID}`,
+            viewedAt: viewedAt || new Date().toISOString(),
+          }
+        })
+
+      // Keep local-only records until their queued writes reach the backend.
+      // This prevents a login-time refresh from silently discarding offline
+      // views that were collected before the auth cookie became available.
+      const localPending = localHistory.filter((item) => !remoteProductIDs.has(item.id))
+      localPending.forEach((item) => syncQueue.add(item.id))
+
+      history.value = [...remoteHistory, ...localPending]
+        .sort((left, right) => {
+          return new Date(right.viewedAt || 0).getTime() - new Date(left.viewedAt || 0).getTime()
+        })
+        .slice(0, MAX_ITEMS)
+      saveHistory()
+
+      if (localPending.length > 0) {
+        scheduleSync()
+      }
     } catch (error) {
       console.error('[BrowsingHistory] Failed to load backend history:', error)
     }
@@ -97,7 +142,10 @@ export const useBrowsingHistory = () => {
     if (!isAuthenticated.value) return
 
     syncQueue.add(productID)
+    scheduleSync()
+  }
 
+  const scheduleSync = () => {
     if (syncTimeout) {
       clearTimeout(syncTimeout)
     }
@@ -105,6 +153,7 @@ export const useBrowsingHistory = () => {
     syncTimeout = setTimeout(async () => {
       const idsToSync = Array.from(syncQueue)
       syncQueue.clear()
+      syncTimeout = null
 
       for (const id of idsToSync) {
         try {
@@ -121,8 +170,13 @@ export const useBrowsingHistory = () => {
             'Failed to sync browsing history'
           )
         } catch (error) {
+          syncQueue.add(id)
           console.error(`[BrowsingHistory] Failed to sync product ${id}:`, error)
         }
+      }
+
+      if (syncQueue.size > 0 && isAuthenticated.value) {
+        scheduleSync()
       }
     }, 500)
   }
@@ -196,10 +250,16 @@ export const useBrowsingHistory = () => {
 
   if (import.meta.client && !initialized.value) {
     loadHistory()
-    if (isAuthenticated.value) {
-      loadFromBackend()
-    }
   }
+
+  watch(
+    isAuthenticated,
+    (authenticated) => {
+      if (!import.meta.client || !authenticated) return
+      void loadFromBackend()
+    },
+    { immediate: true },
+  )
 
   return {
     history,
