@@ -379,13 +379,22 @@ func (s *TicketService) customerServicePersistedUserID(userID *uint, agentID uin
 	if err != nil {
 		return 0, err
 	}
-	if len(agents) == 0 {
-		return 0, errors.New("no customer service agents configured")
+	if len(agents) > 0 && agents[0].UserID != nil && *agents[0].UserID > 0 {
+		return *agents[0].UserID, nil
 	}
-	if agents[0].UserID == nil {
-		return 0, errors.New("customer service agent is not linked to a Go user")
+
+	// A public visitor message must still be persisted when the optional
+	// customer-service profile layer has not been configured yet. The tickets
+	// schema requires a real user_id, so fall back to the first active support
+	// account while leaving the conversation unassigned.
+	fallbackAgents, err := s.ListCustomerServiceAgents(1)
+	if err != nil {
+		return 0, err
 	}
-	return *agents[0].UserID, nil
+	if len(fallbackAgents) == 0 {
+		return 0, errors.New("no active customer service user configured")
+	}
+	return fallbackAgents[0].ID, nil
 }
 
 func normalizeCustomerServiceOwner(owner CustomerServiceOwner) CustomerServiceOwner {
