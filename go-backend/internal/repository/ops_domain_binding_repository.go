@@ -21,6 +21,16 @@ func (r *OpsDomainBindingRepository) List() ([]ops.DomainBinding, error) {
 	return records, err
 }
 
+func (r *OpsDomainBindingRepository) ListByEnvironment(environment string) ([]ops.DomainBinding, error) {
+	var records []ops.DomainBinding
+	query := r.db
+	if environment != "" {
+		query = query.Where("environment = ?", environment)
+	}
+	err := query.Order("enabled DESC").Order("environment ASC").Order("role ASC").Order("domain ASC").Find(&records).Error
+	return records, err
+}
+
 func (r *OpsDomainBindingRepository) FindByID(id uint) (*ops.DomainBinding, error) {
 	var record ops.DomainBinding
 	if err := r.db.First(&record, id).Error; err != nil {

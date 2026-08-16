@@ -1,37 +1,17 @@
 package service
 
 import (
+	"context"
 	"sync"
 	"time"
 
-	"github.com/google/uuid"
+	"commerce-platform/internal/pkg/metrics"
 )
 
 const (
-	CustomerServiceEventMessageCreated = "conversation.message.created"
-	CustomerServiceEventMessagesRead   = "conversation.messages.read"
-	CustomerServiceEventAssigned       = "conversation.assigned"
-	CustomerServiceEventStatusChanged  = "conversation.status.changed"
-	CustomerServiceEventContextUpdated = "conversation.context.updated"
-	CustomerServiceEventTyping         = "conversation.typing"
-	CustomerServiceEventHeartbeat      = "heartbeat"
+	customerServiceRecentEventRetention = time.Hour
+	customerServiceRecentEventLimit     = 10000
 )
-
-type CustomerServiceRealtimeActor struct {
-	Kind      string `json:"kind"`
-	UserID    *uint  `json:"user_id,omitempty"`
-	Anonymous bool   `json:"anonymous,omitempty"`
-}
-
-type CustomerServiceRealtimeEvent struct {
-	Type           string                       `json:"type"`
-	EventID        string                       `json:"event_id"`
-	TicketID       uint                         `json:"ticket_id,omitempty"`
-	ConversationID string                       `json:"conversation_id,omitempty"`
-	OccurredAt     time.Time                    `json:"occurred_at"`
-	Actor          CustomerServiceRealtimeActor `json:"actor"`
-	Payload        interface{}                  `json:"payload,omitempty"`
-}
 
 type CustomerServiceEventSubscription struct {
 	id     uint64
@@ -39,11 +19,18 @@ type CustomerServiceEventSubscription struct {
 	cancel func()
 }
 
+type customerServiceRecentEvent struct {
+	seenAt   time.Time
+	streamID string
+}
+
 type CustomerServiceEventHub struct {
 	mu                      sync.RWMutex
 	nextID                  uint64
 	inboxSubscribers        map[uint64]chan CustomerServiceRealtimeEvent
 	conversationSubscribers map[uint]map[uint64]chan CustomerServiceRealtimeEvent
+	recentEventIDs          map[string]customerServiceRecentEvent
+	replayProvider          CustomerServiceEventReplayer
 	bufferSize              int
 }
 
@@ -51,30 +38,9 @@ func NewCustomerServiceEventHub() *CustomerServiceEventHub {
 	return &CustomerServiceEventHub{
 		inboxSubscribers:        make(map[uint64]chan CustomerServiceRealtimeEvent),
 		conversationSubscribers: make(map[uint]map[uint64]chan CustomerServiceRealtimeEvent),
+		recentEventIDs:          make(map[string]customerServiceRecentEvent),
 		bufferSize:              32,
 	}
-}
-
-func NewCustomerServiceRealtimeEvent(eventType string, ticketID uint, conversationID string, actor CustomerServiceRealtimeActor, payload interface{}) CustomerServiceRealtimeEvent {
-	return CustomerServiceRealtimeEvent{
-		Type:           eventType,
-		EventID:        uuid.NewString(),
-		TicketID:       ticketID,
-		ConversationID: conversationID,
-		OccurredAt:     time.Now().UTC(),
-		Actor:          actor,
-		Payload:        payload,
-	}
-}
-
-func NewCustomerServiceHeartbeatEvent() CustomerServiceRealtimeEvent {
-	return NewCustomerServiceRealtimeEvent(
-		CustomerServiceEventHeartbeat,
-		0,
-		"",
-		CustomerServiceRealtimeActor{Kind: "system"},
-		map[string]interface{}{"server_time": time.Now().UTC()},
-	)
 }
 
 func (h *CustomerServiceEventHub) SubscribeInbox() *CustomerServiceEventSubscription {
@@ -142,17 +108,93 @@ func (h *CustomerServiceEventHub) Publish(event CustomerServiceRealtimeEvent) {
 		return
 	}
 
-	h.mu.RLock()
+	h.mu.Lock()
+	if !h.rememberEventLocked(event) {
+		h.mu.Unlock()
+		return
+	}
 	inboxSubscribers := cloneCustomerServiceSubscribers(h.inboxSubscribers)
 	conversationSubscribers := cloneCustomerServiceSubscribers(h.conversationSubscribers[event.TicketID])
-	h.mu.RUnlock()
+	h.mu.Unlock()
 
 	for _, subscriber := range inboxSubscribers {
-		nonBlockingCustomerServiceEventSend(subscriber, event)
+		recordCustomerServiceHubDelivery("inbox", nonBlockingCustomerServiceEventSend(subscriber, event))
 	}
 	for _, subscriber := range conversationSubscribers {
-		nonBlockingCustomerServiceEventSend(subscriber, event)
+		recordCustomerServiceHubDelivery("conversation", nonBlockingCustomerServiceEventSend(subscriber, event))
 	}
+}
+
+func (h *CustomerServiceEventHub) ConfigureReplayProvider(provider CustomerServiceEventReplayer) {
+	if h == nil {
+		return
+	}
+
+	h.mu.Lock()
+	h.replayProvider = provider
+	h.mu.Unlock()
+}
+
+func (h *CustomerServiceEventHub) ReplayAfter(ctx context.Context, afterID string, limit int) ([]CustomerServiceRealtimeEvent, error) {
+	if h == nil {
+		return nil, nil
+	}
+
+	h.mu.RLock()
+	provider := h.replayProvider
+	h.mu.RUnlock()
+	if provider == nil {
+		return nil, nil
+	}
+	return provider.ReplayAfter(ctx, afterID, limit)
+}
+
+func (h *CustomerServiceEventHub) rememberEventLocked(event CustomerServiceRealtimeEvent) bool {
+	if event.EventID == "" {
+		return true
+	}
+
+	now := time.Now().UTC()
+	if previous, exists := h.recentEventIDs[event.EventID]; exists && now.Sub(previous.seenAt) < customerServiceRecentEventRetention {
+		// Keep the normal immediate-local + Outbox recovery dedupe, but emit a
+		// later Stream-backed copy once to advance connected client cursors.
+		if previous.streamID == "" && event.StreamID != "" {
+			h.recentEventIDs[event.EventID] = customerServiceRecentEvent{
+				seenAt:   now,
+				streamID: event.StreamID,
+			}
+			return true
+		}
+		return false
+	}
+
+	if len(h.recentEventIDs) >= customerServiceRecentEventLimit {
+		cutoff := now.Add(-customerServiceRecentEventRetention)
+		for id, recent := range h.recentEventIDs {
+			if recent.seenAt.Before(cutoff) {
+				delete(h.recentEventIDs, id)
+			}
+		}
+		for len(h.recentEventIDs) >= customerServiceRecentEventLimit {
+			var oldestID string
+			var oldestAt time.Time
+			for id, recent := range h.recentEventIDs {
+				if oldestID == "" || recent.seenAt.Before(oldestAt) {
+					oldestID = id
+					oldestAt = recent.seenAt
+				}
+			}
+			if oldestID == "" {
+				break
+			}
+			delete(h.recentEventIDs, oldestID)
+		}
+	}
+	h.recentEventIDs[event.EventID] = customerServiceRecentEvent{
+		seenAt:   now,
+		streamID: event.StreamID,
+	}
+	return true
 }
 
 func (s *CustomerServiceEventSubscription) Events() <-chan CustomerServiceRealtimeEvent {
@@ -185,12 +227,21 @@ func cloneCustomerServiceSubscribers(source map[uint64]chan CustomerServiceRealt
 	return subscribers
 }
 
-func nonBlockingCustomerServiceEventSend(subscriber chan CustomerServiceRealtimeEvent, event CustomerServiceRealtimeEvent) {
+func nonBlockingCustomerServiceEventSend(subscriber chan CustomerServiceRealtimeEvent, event CustomerServiceRealtimeEvent) bool {
 	select {
 	case subscriber <- event:
+		return true
 	default:
 		// Realtime is an acceleration layer. Dropping an overloaded subscriber is
-		// safer than blocking the HTTP write path; clients keep HTTP polling/fetch
-		// as the durable fallback.
+		// safer than blocking the HTTP write path; clients reconcile through HTTP.
+		return false
 	}
+}
+
+func recordCustomerServiceHubDelivery(scope string, delivered bool) {
+	result := "dropped"
+	if delivered {
+		result = "delivered"
+	}
+	metrics.CustomerServiceRealtimeHubDeliveries.WithLabelValues(scope, result).Inc()
 }

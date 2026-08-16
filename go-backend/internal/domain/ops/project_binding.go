@@ -66,8 +66,9 @@ func (ProjectBinding) TableName() string {
 
 type ProjectBindingView struct {
 	ProjectBinding
-	VPSName     string `json:"vps_name"`
-	VPSProvider string `json:"vps_provider"`
-	VPSHostname string `json:"vps_hostname"`
-	VPSIPv4     string `json:"vps_ipv4"`
+	VPSName        string `json:"vps_name"`
+	VPSProvider    string `json:"vps_provider"`
+	VPSHostname    string `json:"vps_hostname"`
+	VPSIPv4        string `json:"vps_ipv4"`
+	VPSConnectorID *uint  `json:"vps_connector_id,omitempty"`
 }

@@ -11,7 +11,7 @@ import (
 )
 
 func TestPublicWishlistResponseOmitsCommercialFields(t *testing.T) {
-	productTypeID := uint(2)
+	productSpecificationTemplateID := uint(2)
 	shippingTemplateID := uint(3)
 	mediaAssetID := uint(4)
 
@@ -21,16 +21,16 @@ func TestPublicWishlistResponseOmitsCommercialFields(t *testing.T) {
 		ProductID: 13,
 		CreatedAt: time.Date(2026, 7, 30, 0, 0, 0, 0, time.UTC),
 		Product: &productdomain.Product{
-			ID:                 13,
-			ProductTypeID:      &productTypeID,
-			ShippingTemplateID: &shippingTemplateID,
-			SKU:                "INTERNAL-WISHLIST-SKU",
-			Name:               "Saved Product",
-			Slug:               "saved-product",
-			Stock:              48,
-			Status:             "active",
-			Locale:             "en",
-			ViewCount:          302,
+			ID:                             13,
+			ProductSpecificationTemplateID: &productSpecificationTemplateID,
+			ShippingTemplateID:             &shippingTemplateID,
+			SKU:                            "INTERNAL-WISHLIST-SKU",
+			Name:                           "Saved Product",
+			Slug:                           "saved-product",
+			Stock:                          48,
+			Status:                         "active",
+			Locale:                         "en",
+			ViewCount:                      302,
 			Media: []productdomain.ProductMedia{
 				{
 					ID:           15,
@@ -70,7 +70,7 @@ func TestPublicWishlistResponseOmitsCommercialFields(t *testing.T) {
 		`"status"`,
 		`"locale"`,
 		`"view_count"`,
-		`"product_type_id"`,
+		`"product_specification_template_id"`,
 		`"shipping_template_id"`,
 		`"media_asset_id"`,
 		`"weight_grams"`,

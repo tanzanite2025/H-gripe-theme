@@ -14,8 +14,11 @@ import (
 )
 
 type Handler struct {
-	productService    *service.ProductService
-	storefrontContext *service.StorefrontContextService
+	productService         *service.ProductService
+	productCategoryService *service.ProductCategoryService
+	storefrontContext      *service.StorefrontContextService
+	reviewService          *service.ReviewService
+	shippingService        *service.ShippingService
 }
 
 const (
@@ -29,11 +32,32 @@ func NewHandler(productService *service.ProductService) *Handler {
 	}
 }
 
+func (h *Handler) ConfigureProductCategoryService(categoryService *service.ProductCategoryService) {
+	if h == nil {
+		return
+	}
+	h.productCategoryService = categoryService
+}
+
 func (h *Handler) ConfigureStorefrontContext(contextService *service.StorefrontContextService) {
 	if h == nil {
 		return
 	}
 	h.storefrontContext = contextService
+}
+
+func (h *Handler) ConfigureReviewService(reviewService *service.ReviewService) {
+	if h == nil {
+		return
+	}
+	h.reviewService = reviewService
+}
+
+func (h *Handler) ConfigureShippingService(shippingService *service.ShippingService) {
+	if h == nil {
+		return
+	}
+	h.shippingService = shippingService
 }
 
 func (h *Handler) ListProducts(c *gin.Context) {
@@ -61,13 +85,47 @@ func (h *Handler) ListProducts(c *gin.Context) {
 	}
 
 	publicProducts, hasMore := trimPublicProductPage(products, params.PageSize)
+	publicProductResponses := PublicProductsFromDomainWithLocaleAndDisplayCurrency(publicProducts, publicContext.DisplayCurrency, locale)
+	h.attachReviewSummaries(publicProductResponses)
 	c.JSON(200, gin.H{
 		"code":      0,
-		"data":      PublicProductsFromDomainWithLocaleAndDisplayCurrency(publicProducts, publicContext.DisplayCurrency, locale),
+		"data":      publicProductResponses,
 		"context":   publicContext.Response,
 		"page_size": params.PageSize,
 		"has_more":  hasMore,
 	})
+}
+
+func (h *Handler) attachReviewSummaries(items []PublicProduct) {
+	if h == nil || h.reviewService == nil || len(items) == 0 {
+		return
+	}
+
+	productIDs := make([]uint, 0, len(items))
+	seen := make(map[uint]struct{}, len(items))
+	for _, item := range items {
+		if item.ID == 0 {
+			continue
+		}
+		if _, exists := seen[item.ID]; exists {
+			continue
+		}
+		seen[item.ID] = struct{}{}
+		productIDs = append(productIDs, item.ID)
+	}
+	if len(productIDs) == 0 {
+		return
+	}
+
+	summaries, err := h.reviewService.GetReviewSummaries(productIDs)
+	if err != nil {
+		return
+	}
+	for index := range items {
+		if summary, ok := summaries[items[index].ID]; ok {
+			items[index].ReviewSummary = PublicProductReviewSummaryFromDomain(&summary)
+		}
+	}
 }
 
 func (h *Handler) GetProduct(c *gin.Context) {
@@ -81,11 +139,80 @@ func (h *Handler) GetProduct(c *gin.Context) {
 		return
 	}
 
+	publicProduct := PublicProductFromDomainWithLocaleAndRoutes(*product, publicContext.DisplayCurrency, publicContext.Locale, translationRoutes)
+	if h.reviewService != nil {
+		if summary, summaryErr := h.reviewService.GetReviewSummary(product.ID); summaryErr == nil {
+			publicProduct.ReviewSummary = PublicProductReviewSummaryFromDomain(summary)
+		}
+	}
+	publicProduct.ShippingDetails = h.resolvePublicShippingDetails(*product, publicContext)
+
 	c.JSON(200, gin.H{
 		"code":    0,
-		"data":    PublicProductFromDomainWithLocaleAndRoutes(*product, publicContext.DisplayCurrency, publicContext.Locale, translationRoutes),
+		"data":    publicProduct,
 		"context": publicContext.Response,
 	})
+}
+
+func (h *Handler) resolvePublicShippingDetails(item productdomain.Product, publicContext publicProductContext) *PublicProductShippingDetails {
+	if h == nil || h.shippingService == nil || publicContext.Response == nil {
+		return nil
+	}
+
+	country := strings.ToUpper(strings.TrimSpace(publicContext.Response.Country.Code))
+	if country == "" || country == "ZZ" {
+		return nil
+	}
+
+	variant := item.DefaultVariant()
+	if variant == nil || variant.Weight <= 0 {
+		return nil
+	}
+
+	currency := strings.TrimSpace(publicContext.Response.Currency.Base)
+	if currency == "" {
+		currency = item.DisplayPriceCurrency()
+	}
+
+	quote, err := h.shippingService.QuoteCart(service.ShippingQuoteInput{
+		Country:         country,
+		Currency:        currency,
+		DisplayCurrency: publicContext.DisplayCurrency,
+		Items: []service.ShippingQuoteItemInput{
+			{
+				ProductID: item.ID,
+				VariantID: &variant.ID,
+				Quantity:  1,
+			},
+		},
+	})
+	if err != nil || quote == nil || quote.SelectedOption == nil {
+		return nil
+	}
+
+	option := quote.SelectedOption
+	if option.EtaMinDays <= 0 && option.EtaMaxDays <= 0 {
+		return nil
+	}
+
+	amount := option.ShippingFee
+	amountCurrency := option.Currency
+	if option.DisplayPrice != nil {
+		amount = option.DisplayPrice.Amount
+		amountCurrency = option.DisplayPrice.Currency
+	}
+	if strings.TrimSpace(amountCurrency) == "" {
+		amountCurrency = currency
+	}
+
+	return &PublicProductShippingDetails{
+		Country:      country,
+		Amount:       amount,
+		Currency:     strings.ToUpper(strings.TrimSpace(amountCurrency)),
+		FreeShipping: option.FreeShipping,
+		EtaMinDays:   option.EtaMinDays,
+		EtaMaxDays:   option.EtaMaxDays,
+	}
 }
 
 func (h *Handler) GetFilterableAttributes(c *gin.Context) {
@@ -100,14 +227,37 @@ func (h *Handler) GetFilterableAttributes(c *gin.Context) {
 	})
 }
 
-func (h *Handler) ListProductTypes(c *gin.Context) {
-	productTypes, err := h.productService.ListPublicProductTypes(false)
+func (h *Handler) ListProductSpecificationTemplates(c *gin.Context) {
+	productSpecificationTemplates, err := h.productService.ListPublicProductSpecificationTemplates(false)
 	if err != nil {
 		apierror.RespondInternalError(c, err)
 		return
 	}
 
-	response.Success(c, PublicProductTypesFromDomainWithLocale(productTypes, middleware.GetLocale(c)))
+	response.Success(c, PublicProductSpecificationTemplatesFromDomainWithLocale(productSpecificationTemplates, middleware.GetLocale(c)))
+}
+
+func (h *Handler) ListCategories(c *gin.Context) {
+	if h == nil || h.productCategoryService == nil {
+		c.JSON(500, gin.H{
+			"code":    apierror.ErrCodeInternal,
+			"message": "product category service is unavailable",
+		})
+		return
+	}
+
+	locale := middleware.GetLocale(c)
+	categories, err := h.productCategoryService.ListPublic(locale)
+	if err != nil {
+		apierror.RespondInternalError(c, err)
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"code":   0,
+		"data":   categories,
+		"locale": locale,
+	})
 }
 
 func trimPublicProductPage(products []productdomain.Product, pageSize int) ([]productdomain.Product, bool) {

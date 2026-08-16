@@ -1,6 +1,48 @@
 <template>
-  <section class="grid min-h-0 flex-1 grid-cols-1 gap-3 overflow-hidden xl:grid-cols-[minmax(0,1fr)_380px]">
-    <AdminTablePanel :loading="loading" scroll-body>
+  <div class="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
+    <section class="shrink-0 border border-dashed border-border/80 bg-card p-4">
+      <div class="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p class="text-[10px] font-black uppercase tracking-[0.18em] text-muted-foreground">Manual Protection Meaning</p>
+          <h2 class="mt-1 text-base font-black tracking-tight">人工保护会改变哪一步</h2>
+          <p class="mt-1 max-w-4xl text-xs leading-5 text-muted-foreground">
+            这是临时覆盖层，不是 3DS 参数配置页。它只匹配新订单/新支付启动，并且必须有过期时间；自适应风险只能把认证强度提高，不能把人工保护降级。
+          </p>
+        </div>
+        <span class="border border-sky-500/25 bg-sky-500/10 px-2 py-1 text-[10px] font-black text-sky-700">
+          当前 Stripe 基础模式：{{ stripeModeLabel }}
+        </span>
+      </div>
+      <div class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+        <div class="border border-border/70 p-3">
+          <p class="text-xs font-black">强制 3DS</p>
+          <p class="mt-1 text-[11px] leading-5 text-muted-foreground">
+            匹配范围内的 Stripe 支付至少提升到 <span class="font-mono font-semibold text-foreground">any</span>；它可能是无感验证，也可能进入银行 challenge，不等于一定出现弹窗。
+          </p>
+        </div>
+        <div class="border border-border/70 p-3">
+          <p class="text-xs font-black">暂停新支付</p>
+          <p class="mt-1 text-[11px] leading-5 text-muted-foreground">
+            在创建 PaymentIntent 前直接拒绝匹配请求；不会自动退款，也不会切换备用渠道，已经创建的支付不受影响。
+          </p>
+        </div>
+        <div class="border border-border/70 p-3">
+          <p class="text-xs font-black">实际决策顺序</p>
+          <p class="mt-1 text-[11px] leading-5 text-muted-foreground">
+            订单可支付检查 → 人工暂停 → 单笔风险预检 → BIN 限流 → 网关熔断 → 自适应 3DS → 创建 PaymentIntent。
+          </p>
+        </div>
+      </div>
+      <p class="mt-3 border-t border-dashed border-border/70 pt-3 text-[11px] leading-5 text-muted-foreground">
+        当前自适应 3DS：{{ riskConfiguration?.three_ds?.adaptive_enabled ? '已开启' : '未开启' }}；
+        Step-up ≥ {{ riskConfiguration?.three_ds?.step_up_risk_score ?? '-' }} 分；
+        Challenge ≥ {{ riskConfiguration?.three_ds?.challenge_risk_score ?? '-' }} 分；
+        30 天组合风险异常时，{{ riskConfiguration?.monitoring?.auto_step_up_enabled ? '会继续升级高风险支付' : '不会自动升级' }}。
+      </p>
+    </section>
+
+    <section class="grid min-h-0 flex-1 grid-cols-1 gap-3 overflow-hidden max-xl:overflow-auto xl:grid-cols-[minmax(0,1fr)_minmax(460px,520px)] 2xl:grid-cols-[minmax(0,1fr)_520px]">
+      <AdminTablePanel class="h-full min-h-0" :loading="loading" scroll-body>
       <template #header>
         <div class="flex items-start justify-between gap-3">
           <div>
@@ -44,7 +86,7 @@
       </Table>
     </AdminTablePanel>
 
-    <aside class="min-h-0 overflow-auto rounded-[24px] border border-dashed border-border/80 bg-card p-4">
+    <aside class="h-full min-h-[460px] min-w-0 overflow-y-auto overscroll-contain rounded-[24px] border border-dashed border-border/80 bg-card p-5">
       <div class="mb-4">
         <h2 class="text-sm font-black uppercase italic tracking-tight">新增保护控制</h2>
         <p class="mt-1 text-xs text-muted-foreground">只影响匹配范围内的新订单与新支付启动，不会退款、切换通道或影响已创建支付。</p>
@@ -54,7 +96,7 @@
         <label class="block space-y-1">
           <span class="block text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">动作</span>
           <select v-model="form.action" class="h-9 w-full rounded-md border border-dashed border-border bg-background px-3 text-sm">
-            <option value="force_3ds">强制 3DS</option>
+            <option value="force_3ds">强制 3DS（至少 any）</option>
             <option value="pause_payment">暂停新支付</option>
           </select>
           <span class="block text-[11px] text-muted-foreground">{{ actionDescription(form.action) }}</span>
@@ -151,7 +193,8 @@
         </div>
       </section>
     </aside>
-  </section>
+    </section>
+  </div>
 
   <PaymentProtectionConfirmDialog
     :open="confirmDialog.open"
@@ -183,6 +226,7 @@ import type {
   PaymentProtectionControlPayload,
   PaymentProtectionPolicy,
   PaymentProtectionScopeType,
+  PaymentRiskConfiguration,
 } from './paymentRiskTypes'
 
 const StatusPill = defineComponent({
@@ -200,6 +244,13 @@ const StatusPill = defineComponent({
 const loading = ref(false)
 const saving = ref(false)
 const enabled = ref(false)
+const riskConfiguration = ref<PaymentRiskConfiguration | null>(null)
+const stripeMode = ref('automatic')
+const stripeModeLabel = computed(() => ({
+  automatic: 'automatic（由 Stripe / 系统判断）',
+  any: 'any（要求 3DS，可能无感或挑战）',
+  challenge: 'challenge（进入银行挑战路径）',
+}[stripeMode.value] || stripeMode.value))
 const protectionPolicy = ref<PaymentProtectionPolicy>({
   max_control_duration_hours: 168,
   max_pause_payment_duration_hours: 24,
@@ -244,9 +295,9 @@ const providerScopeOptions = [
 
 const formatDate = (value: unknown): string => value ? new Date(value as string | number | Date).toLocaleString('zh-CN') : '-'
 const statusLabel = (status?: string): string => ({ active: '生效中', expired: '已过期', revoked: '已撤销' }[status || ''] || '未知')
-const actionLabel = (action?: string): string => ({ force_3ds: '强制 3DS', pause_payment: '暂停新支付' }[action || ''] || action || '-')
+const actionLabel = (action?: string): string => ({ force_3ds: '强制 3DS（至少 any）', pause_payment: '暂停新支付' }[action || ''] || action || '-')
 const actionDescription = (action?: string): string => ({
-  force_3ds: '匹配范围内的新 Stripe 支付将要求更强的银行认证。',
+  force_3ds: '匹配范围内的新 Stripe 支付至少提升到 any；可能无感完成，也可能进入银行 challenge。',
   pause_payment: '匹配范围内的新订单创建与新支付启动会被拒绝，已创建或已完成的支付不受影响。',
 }[action || ''] || '')
 const actionSubmitLabel = computed(() => form.action === 'pause_payment' ? '启用暂停新支付' : '启用强制 3DS')
@@ -296,6 +347,15 @@ const refresh = async (): Promise<void> => {
     enabled.value = payload.enabled !== false
     protectionPolicy.value = { ...protectionPolicy.value, ...(payload.policy || {}) }
     controls.value = payload.controls || []
+    try {
+      const summary = await paymentRiskApi.getSummary()
+      riskConfiguration.value = summary.configuration || null
+      stripeMode.value = summary.gateway_runtime?.gateways?.find((gateway) => gateway.provider === 'stripe')?.three_ds_mode || 'automatic'
+    } catch (error) {
+      console.error('Failed to fetch payment risk policy summary:', error)
+      riskConfiguration.value = null
+      stripeMode.value = 'automatic'
+    }
     if (selectedControl.value) {
       selectedControl.value = controls.value.find((control) => control.id === selectedControl.value.id) || null
     }

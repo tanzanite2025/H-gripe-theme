@@ -23,7 +23,7 @@
             <button 
               type="button"
               class="px-4 py-2 text-sm font-medium text-white/75 bg-white/5 border border-white/10 rounded-full hover:bg-white/10 hover:text-white transition-colors"
-              @click="showModal = true"
+              @click="openCookieModal"
             >
               {{ t('cookieConsent.banner.customize') }}
             </button>
@@ -44,7 +44,7 @@
       <div 
         v-if="showModal" 
         class="tz-standard-modal-mask fixed inset-0 z-[10000] flex items-center justify-center p-4 tz-mobile-safe-modal-mask"
-        @click.self="showModal = false"
+        @click.self="closeCookieModal"
       >
         <div class="cookie-modal-panel tz-standard-modal-surface bg-[rgba(0,0,0,0.88)] max-w-lg w-full max-h-[90vh] overflow-y-auto">
           <!-- Header -->
@@ -53,7 +53,7 @@
             <button 
               type="button"
               class="tz-global-close-btn"
-              @click="showModal = false"
+              @click="closeCookieModal"
               :aria-label="t('cookieConsent.modal.closeAriaLabel')"
             >
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -172,12 +172,28 @@ import {
   readCookieConsent,
   type CookieConsentPreferences,
 } from '~/utils/cookieConsent'
+import { useOverlayBackStack } from '~/composables/useOverlayBackStack'
 const { t } = useI18n()
+const overlayBackStack = useOverlayBackStack()
 
 const showBanner = ref(false)
 const showModal = ref(false)
 const bannerRef = ref<HTMLElement | null>(null)
 let bannerResizeObserver: ResizeObserver | null = null
+
+const closeCookieModalState = () => {
+  showModal.value = false
+}
+
+const openCookieModal = () => {
+  showModal.value = true
+  overlayBackStack.open('cookie-consent', closeCookieModalState)
+}
+
+const closeCookieModal = () => {
+  void overlayBackStack.close('cookie-consent')
+  closeCookieModalState()
+}
 
 const clearMobileCookieBannerHeight = () => {
   if (typeof document !== 'undefined') {
@@ -215,7 +231,7 @@ const hideBanner = () => {
 // 隐藏全部（横条和弹窗）
 const hideAll = () => {
   showBanner.value = false
-  showModal.value = false
+  closeCookieModal()
 }
 
 // 检查是否已有保存的偏好
@@ -228,7 +244,7 @@ const saveConsent = (prefs: Omit<CookieConsentPreferences, 'essential' | 'timest
   }
   localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(consent))
   showBanner.value = false
-  showModal.value = false
+  closeCookieModal()
   
   // 触发自定义事件，供其他组件监听
   window.dispatchEvent(new CustomEvent(COOKIE_CONSENT_UPDATED_EVENT, { detail: consent }))

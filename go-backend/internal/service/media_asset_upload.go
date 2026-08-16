@@ -16,6 +16,8 @@ type MediaUploadInput struct {
 	Alt        string
 	Caption    string
 	UploaderID uint
+	Width      int
+	Height     int
 }
 
 func (s *MediaService) UploadAsset(ctx context.Context, input MediaUploadInput) (*media.MediaAsset, error) {
@@ -61,6 +63,8 @@ func (s *MediaService) UploadAsset(ctx context.Context, input MediaUploadInput) 
 		MimeType:           input.File.Header.Get("Content-Type"),
 		MediaType:          mediaType,
 		Size:               input.File.Size,
+		Width:              input.Width,
+		Height:             input.Height,
 		ContentSHA256:      contentSHA256,
 		CopyrightClaimJSON: copyrightClaim,
 		Alt:                strings.TrimSpace(input.Alt),

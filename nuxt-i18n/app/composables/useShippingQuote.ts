@@ -29,7 +29,7 @@ export interface ShippingDisplayPrice {
 export interface ShippingQuoteItemResult {
   product_id: number
   variant_id?: number | null
-  product_type_id?: number | null
+  product_specification_template_id?: number | null
   template_id: number
   template_name: string
   packaging_rule_id?: number | null

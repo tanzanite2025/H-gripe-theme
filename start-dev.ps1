@@ -346,6 +346,16 @@ if (-not $redisReady) {
 Write-Ok "Redis ready: localhost:$($Ports.Redis)"
 
 Write-Section 'Starting Go API'
+$corsOrigins = @(
+  "http://localhost:$($Ports.Storefront)",
+  "http://127.0.0.1:$($Ports.Storefront)",
+  "http://localhost:3080",
+  "http://127.0.0.1:3080",
+  "http://localhost:$($Ports.Admin)",
+  "http://127.0.0.1:$($Ports.Admin)",
+  "http://localhost:$($Ports.Api)",
+  "http://127.0.0.1:$($Ports.Api)"
+) -join ','
 $backendCommand = @"
 `$env:SERVER_PORT=':$($Ports.Api)'
 `$env:SERVER_BASE_URL='http://localhost:$($Ports.Api)'
@@ -357,7 +367,7 @@ $backendCommand = @"
 `$env:REDIS_HOST='localhost'
 `$env:REDIS_PORT='$($Ports.Redis)'
 `$env:PAYMENT_CONFIG_MASTER_KEY='dev-payment-config-master-key-change-before-production'
-`$env:CORS_ORIGINS='http://localhost:$($Ports.Storefront),http://127.0.0.1:$($Ports.Storefront),http://localhost:$($Ports.Admin),http://127.0.0.1:$($Ports.Admin),http://localhost:$($Ports.Api),http://127.0.0.1:$($Ports.Api)'
+`$env:CORS_ORIGINS='$corsOrigins'
 `$env:STOREFRONT_HTML_CACHE_PURGE_URL='http://localhost:$($Ports.Storefront)/_internal/html-cache/purge'
 `$env:STOREFRONT_HTML_CACHE_PURGE_TOKEN='dev-html-cache-purge-token'
 go run ./cmd/server

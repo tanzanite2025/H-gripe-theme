@@ -28,7 +28,8 @@ const (
 )
 
 var (
-	ErrInvalidOpsConnector = errors.New("invalid operations connector")
+	ErrInvalidOpsConnector            = errors.New("invalid operations connector")
+	ErrInvalidOpsConnectorEnvironment = errors.New("invalid operations connector environment")
 )
 
 type OpsConnectorService struct {
@@ -64,10 +65,18 @@ func NewOpsConnectorService(repo *repository.OpsConnectorRepository) *OpsConnect
 }
 
 func (s *OpsConnectorService) List() ([]ops.ConnectorView, error) {
+	return s.ListForEnvironment("")
+}
+
+func (s *OpsConnectorService) ListForEnvironment(environment string) ([]ops.ConnectorView, error) {
 	if s == nil || s.repo == nil {
 		return nil, errors.New("operations connector service is not configured")
 	}
-	records, err := s.repo.List()
+	environment, err := normalizeOpsConnectorEnvironment(environment)
+	if err != nil {
+		return nil, err
+	}
+	records, err := s.repo.ListByEnvironment(environment)
 	if err != nil {
 		return nil, err
 	}
@@ -180,7 +189,7 @@ func (s *OpsConnectorService) Test(ctx context.Context, id uint) (*ops.Connector
 		return s.saveTestResult(result, record, false)
 	}
 
-	credentials, err := s.readCredentials(*record)
+	credentials, err := s.readCredentialsForRequest(ctx, *record)
 	if err != nil {
 		result.Message = err.Error()
 		return s.saveTestResult(result, record, false)
@@ -266,7 +275,7 @@ func (s *OpsConnectorService) CloudflareRead(ctx context.Context, id uint, path 
 		return 0, errors.New("Cloudflare connector is disabled")
 	}
 
-	credentials, err := s.readCredentials(*record)
+	credentials, err := s.readCredentialsForRequest(ctx, *record)
 	if err != nil {
 		return 0, err
 	}
@@ -353,7 +362,7 @@ func (s *OpsConnectorService) HostingerRead(ctx context.Context, id uint, path s
 		return 0, errors.New("Hostinger connector is disabled")
 	}
 
-	credentials, err := s.readCredentials(*record)
+	credentials, err := s.readCredentialsForRequest(ctx, *record)
 	if err != nil {
 		return 0, err
 	}
@@ -443,7 +452,7 @@ func (s *OpsConnectorService) HostingerUpdateProject(
 	if !record.Enabled {
 		return nil, errors.New("Hostinger connector is disabled")
 	}
-	credentials, err := s.readCredentials(*record)
+	credentials, err := s.readCredentialsForRequest(ctx, *record)
 	if err != nil {
 		return nil, err
 	}
@@ -546,7 +555,7 @@ func (s *OpsConnectorService) CloudflareWrite(
 	if !record.Enabled {
 		return 0, errors.New("Cloudflare connector is disabled")
 	}
-	credentials, err := s.readCredentials(*record)
+	credentials, err := s.readCredentialsForRequest(ctx, *record)
 	if err != nil {
 		return 0, err
 	}
@@ -797,6 +806,44 @@ func (s *OpsConnectorService) readCredentials(record ops.Connector) (map[string]
 	return credentials, nil
 }
 
+func (s *OpsConnectorService) readCredentialsForRequest(ctx context.Context, record ops.Connector) (map[string]string, error) {
+	credentials, err := s.readCredentials(record)
+	if err != nil {
+		return nil, err
+	}
+	refreshToken := strings.TrimSpace(credentials["refresh_token"])
+	expiresAt := strings.TrimSpace(credentials["expires_at"])
+	if refreshToken == "" || expiresAt == "" {
+		return credentials, nil
+	}
+
+	expiry, err := time.Parse(time.RFC3339, expiresAt)
+	if err != nil || time.Now().UTC().Before(expiry.Add(-60*time.Second)) {
+		return credentials, nil
+	}
+
+	refreshed, err := refreshConnectorOAuthToken(ctx, record.Provider, credentials)
+	if err != nil {
+		return credentials, err
+	}
+	masterKey := strings.TrimSpace(os.Getenv(OpsConnectorMasterKeyEnv))
+	if masterKey == "" {
+		return nil, fmt.Errorf("%s is required to store refreshed connector credentials", OpsConnectorMasterKeyEnv)
+	}
+	plaintext, err := json.Marshal(refreshed)
+	if err != nil {
+		return nil, fmt.Errorf("encode refreshed connector credentials: %w", err)
+	}
+	encrypted, err := secretbox.EncryptString(string(plaintext), masterKey)
+	if err != nil {
+		return nil, fmt.Errorf("encrypt refreshed connector credentials: %w", err)
+	}
+	if err := s.repo.UpdateCredentialsOnly(record.ID, encrypted, encodeCredentialFields(refreshed)); err != nil {
+		return nil, fmt.Errorf("store refreshed connector credentials: %w", err)
+	}
+	return refreshed, nil
+}
+
 func connectorView(record ops.Connector) ops.ConnectorView {
 	return ops.ConnectorView{
 		ID:                   record.ID,
@@ -826,6 +873,22 @@ func normalizeConnectorEnum(value string, allowed map[string]struct{}) string {
 		return ""
 	}
 	return normalized
+}
+
+func normalizeOpsConnectorEnvironment(environment string) (string, error) {
+	environment = strings.ToLower(strings.TrimSpace(environment))
+	if environment == "" {
+		return "", nil
+	}
+	switch environment {
+	case ops.ConnectorEnvironmentProduction,
+		ops.ConnectorEnvironmentStaging,
+		ops.ConnectorEnvironmentTest,
+		ops.ConnectorEnvironmentLocal:
+		return environment, nil
+	default:
+		return "", fmt.Errorf("%w: %s", ErrInvalidOpsConnectorEnvironment, environment)
+	}
 }
 
 func encodeCredentialFields(credentials map[string]string) string {
@@ -918,7 +981,7 @@ func isUnsafeConnectorIP(ip net.IP) bool {
 func defaultConnectorEndpoint(provider string) string {
 	switch provider {
 	case ops.ConnectorProviderCloudflare:
-		return "https://api.cloudflare.com/client/v4/user/tokens/verify"
+		return "https://api.cloudflare.com/client/v4/zones?per_page=1"
 	case ops.ConnectorProviderGitHub, ops.ConnectorProviderGHCR:
 		return "https://api.github.com/user"
 	default:

@@ -16,13 +16,6 @@
 
     <AdminStatsGrid v-if="showStats" class="shrink-0" :items="statItems" />
 
-    <CustomerServiceRegionAnalytics
-      v-if="showRegionAnalytics"
-      class="shrink-0"
-      :analytics="regionAnalytics"
-      :loading="regionAnalyticsLoading"
-    />
-
     <CustomerServiceInboxWorkspace
       v-model:transfer-to="transferTo"
       v-model:reply-message="replyMessage"
@@ -55,7 +48,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
 import {
   Clock3,
@@ -67,7 +60,6 @@ import {
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import AdminStatsGrid from '@/components/admin/AdminStatsGrid.vue'
 import CustomerServiceInboxWorkspace from '@/components/admin/customer-service/CustomerServiceInboxWorkspace.vue'
-import CustomerServiceRegionAnalytics from '@/components/admin/customer-service/CustomerServiceRegionAnalytics.vue'
 import { Button } from '@/components/ui/button'
 import customerServiceApi from '@/api/customerService'
 import { useCustomerServiceInbox } from '@/composables/customerService/useCustomerServiceInbox'
@@ -80,13 +72,11 @@ import type { CustomerConversation } from './customerServiceTypes'
 withDefaults(defineProps<{
   showHeader?: boolean
   showStats?: boolean
-  showRegionAnalytics?: boolean
   title?: string
   description?: string
 }>(), {
   showHeader: false,
   showStats: false,
-  showRegionAnalytics: false,
   title: '客服对话',
   description: '处理网页 Public Chat 会话；客户侧只创建和读取自己的对话，客服侧在这里回复',
 })
@@ -101,11 +91,9 @@ const {
   loading,
   messagesLoading,
   contextLoading,
-  regionAnalyticsLoading,
   conversations,
   messages,
   customerContext,
-  regionAnalytics,
   selectedConversation,
   replyMessage,
   transferTo,
@@ -115,7 +103,6 @@ const {
   filters,
   totalPages,
   filteredConversations,
-  fetchRegionAnalytics,
   fetchConversations,
   fetchContext,
   fetchMessages,
@@ -125,20 +112,6 @@ const {
   applyFilters,
   resetFilters,
 } = useCustomerServiceInbox()
-
-const {
-  customerTypingByConversation,
-  selectedCustomerTyping,
-  clearTypingTimers,
-  handleCustomerTypingEvent,
-  handleReplyTypingInput,
-  notifyAgentTyping,
-  resetAgentTypingState,
-} = useCustomerServiceTyping({
-  selectedConversation,
-  replyMessage,
-  canSendTyping: () => hasPermission('ticket:edit'),
-})
 
 const statItems = computed(() => {
   const total = conversations.value.length
@@ -156,12 +129,53 @@ const statItems = computed(() => {
 
 const {
   connectCustomerServiceRealtime,
-  closeCustomerServiceRealtime
+  closeCustomerServiceRealtime,
+  sendCustomerServiceRealtimeControl,
 } = useCustomerServiceRealtime({
-  buildEventUrl: () => customerServiceApi.buildEventsUrl('inbox'),
+  buildWebSocketUrl: (lastEventId: string) => {
+    const conversationId = selectedConversation.value?.id
+    if (!conversationId) return ''
+    return customerServiceApi.buildWebSocketUrl('conversation', conversationId, lastEventId)
+  },
+  connectionKey: () => `conversation:${selectedConversation.value?.id || ''}`,
+  onConnected: async () => {
+    const conversationID = selectedConversation.value?.id
+    if (!conversationID) return
+    await Promise.all([
+      fetchMessages(conversationID),
+      fetchContext(conversationID),
+    ])
+  },
+})
+
+const {
+  customerTypingByConversation,
+  selectedCustomerTyping,
+  clearTypingTimers,
+  handleCustomerTypingEvent,
+  handleReplyTypingInput,
+  notifyAgentTyping,
+  resetAgentTypingState,
+} = useCustomerServiceTyping({
+  selectedConversation,
+  replyMessage,
+  canSendTyping: () => hasPermission('ticket:edit'),
+  sendTyping: (isTyping: boolean) => sendCustomerServiceRealtimeControl({
+    type: 'typing',
+    is_typing: isTyping,
+  }),
+})
+
+const {
+  connectCustomerServiceRealtime: connectInboxRealtime,
+  closeCustomerServiceRealtime: closeInboxRealtime,
+} = useCustomerServiceRealtime({
+  buildWebSocketUrl: (lastEventId: string) => customerServiceApi.buildWebSocketUrl('inbox', undefined, lastEventId),
+  connectionKey: () => 'inbox',
   onTyping: handleCustomerTypingEvent,
+  onConnected: refreshInbox,
   onRefresh: async (event) => {
-    await Promise.all([fetchConversations(), fetchRegionAnalytics()])
+    await fetchConversations()
 
     if (!selectedConversation.value || Number(event.ticket_id) !== Number(selectedConversation.value.id)) {
       return
@@ -180,6 +194,16 @@ const selectConversation = async (conversation: CustomerConversation): Promise<v
   resetAgentTypingState()
   await selectInboxConversation(conversation)
 }
+
+watch(
+  () => selectedConversation.value?.id,
+  (conversationId) => {
+    closeCustomerServiceRealtime()
+    if (conversationId) {
+      connectCustomerServiceRealtime()
+    }
+  },
+)
 
 const sendReply = async () => {
   if (!selectedConversation.value || !replyMessage.value.trim()) return
@@ -221,12 +245,16 @@ const transferConversation = async () => {
 
 onMounted(async () => {
   await refreshInbox()
-  connectCustomerServiceRealtime()
+  connectInboxRealtime()
+  if (selectedConversation.value?.id) {
+    connectCustomerServiceRealtime()
+  }
 })
 
 onBeforeUnmount(() => {
   notifyAgentTyping(false)
   closeCustomerServiceRealtime()
+  closeInboxRealtime()
   clearTypingTimers()
 })
 </script>

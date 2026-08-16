@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ProductRatingCompact from '~/components/shop/ProductRatingCompact.vue'
 import type { ShopProduct } from '~/composables/useShopProducts'
 
 type ShopProductDisplayCardDensity = 'catalog' | 'quick-buy'
@@ -9,6 +10,7 @@ const props = withDefaults(defineProps<{
   selectable?: boolean
   selected?: boolean
   showDetailsAction?: boolean
+  showRating?: boolean
   showWishlistAction?: boolean
   showViewAction?: boolean
 }>(), {
@@ -16,6 +18,7 @@ const props = withDefaults(defineProps<{
   selectable: false,
   selected: false,
   showDetailsAction: false,
+  showRating: true,
   showWishlistAction: false,
   showViewAction: true,
 })
@@ -89,6 +92,13 @@ const handleWishlistClick = () => {
         <h3 class="shop-product-display-card__title">
           {{ product.title }}
         </h3>
+        <ProductRatingCompact
+          v-if="showRating"
+          class="shop-product-display-card__rating"
+          :summary="product.reviewSummary"
+          :size="density === 'quick-buy' ? 'xs' : 'sm'"
+          :show-count="density !== 'quick-buy'"
+        />
         <p v-if="product.priceLabel" class="shop-product-display-card__price">
           {{ product.priceLabel }}
         </p>
@@ -256,6 +266,7 @@ const handleWishlistClick = () => {
 }
 
 .shop-product-display-card__content {
+  --product-rating-text: rgba(226, 232, 240, 0.72);
   display: flex;
   min-width: 0;
   flex: 1 1 auto;
@@ -273,6 +284,10 @@ const handleWishlistClick = () => {
   line-height: 1.35;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+}
+
+.shop-product-display-card__rating {
+  margin: 0.05rem 0 0.4rem;
 }
 
 .shop-product-display-card__price {

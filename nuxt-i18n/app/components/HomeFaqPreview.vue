@@ -155,8 +155,9 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { useAsyncData, useLocalePath } from '#imports'
-import { fetchAllFaqData, resolvePageFaqDataList } from '~/data/faq'
+import { useLocalePath } from '#imports'
+import { useFaqAccordionState } from '~/composables/useFaqAccordionState'
+import { useFaqCatalog } from '~/composables/useFaqCatalog'
 
 interface Props {
   maxItemsPerCategory?: number
@@ -185,13 +186,8 @@ const wide = computed(() => props.wide)
 const localePath = useLocalePath()
 
 // 获取所有 FAQ 数据
-const { locale, t } = useI18n()
-const { data: asyncAllPages } = await useAsyncData(
-  () => `home-faq-preview-${locale.value}`,
-  () => fetchAllFaqData(),
-  { watch: [locale] }
-)
-const allPages = computed(() => resolvePageFaqDataList(asyncAllPages.value || []))
+const { t } = useI18n()
+const { allPages } = await useFaqCatalog()
 const previewPages = computed(() => {
   const pageById = new Map(allPages.value.map(page => [page.pageId, page]))
   const curatedPages = props.preferredPageIds
@@ -208,7 +204,11 @@ const previewPages = computed(() => {
 const activePageId = ref<string>('all')
 
 // 展开的条目
-const expandedItems = ref<Set<string>>(new Set())
+const {
+  expandedItems,
+  toggleItem,
+  resetExpandedItems,
+} = useFaqAccordionState()
 
 // 初始化默认分类
 watch(allPages, (pages) => {
@@ -220,13 +220,8 @@ watch(allPages, (pages) => {
 }, { immediate: true })
 
 watch(activePageId, () => {
-  expandedItems.value = new Set<string>()
+  resetExpandedItems()
 })
-
-// 切换展开状态
-const toggleItem = (itemId: string) => {
-  expandedItems.value = expandedItems.value.has(itemId) ? new Set<string>() : new Set([itemId])
-}
 
 // 扁平化并限制条目数量
 interface FlatItem {

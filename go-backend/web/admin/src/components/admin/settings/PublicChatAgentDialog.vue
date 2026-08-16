@@ -71,8 +71,15 @@
             <Input v-model="form.whatsapp" :disabled="saving" placeholder="+1 000 000 0000" />
           </AdminFormField>
 
-          <AdminFormField label="头像 URL" class="md:col-span-2">
-            <Input v-model="form.avatar" :disabled="saving" type="url" placeholder="https://..." />
+          <AdminFormField label="客服头像" class="md:col-span-2">
+            <PublicChatAgentAvatarField
+              :user-id="form.user_id"
+              :avatar="form.avatar"
+              :profile-ready="Boolean(selectedCandidate?.has_profile)"
+              :disabled="saving"
+              @uploaded="emit('avatar-uploaded', $event)"
+              @removed="emit('avatar-removed')"
+            />
           </AdminFormField>
 
           <AdminFormField label="客服分组" class="md:col-span-2" description="一个客服可以同时属于多个组。">
@@ -108,6 +115,7 @@
 <script setup lang="ts">
 import { Info, LoaderCircle } from '@lucide/vue'
 import AdminFormField from '@/components/admin/AdminFormField.vue'
+import PublicChatAgentAvatarField from '@/components/admin/settings/PublicChatAgentAvatarField.vue'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -163,6 +171,8 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{
   (event: 'update:open', value: boolean): void
   (event: 'save'): void
+  (event: 'avatar-uploaded', avatar: string): void
+  (event: 'avatar-removed'): void
 }>()
 
 const candidateLabel = (candidate: PublicChatCandidate): string => {

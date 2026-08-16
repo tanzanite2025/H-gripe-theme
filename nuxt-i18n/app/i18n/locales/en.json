@@ -173,7 +173,8 @@
       "items": "Items",
       "price": "Price",
       "openCart": "View cart summary"
-    }
+    },
+    "added": "Added to cart"
   },
   "cartDrawer": {
     "ariaLabel": "Shopping cart",
@@ -318,7 +319,8 @@
       "actions": {
         "viewCart": "View cart",
         "livechat": "Livechat",
-        "email": "Email"
+        "email": "Email",
+        "checkout": "Checkout"
       },
       "messages": {
         "invalidQuote": "Invalid checkout quote response",
@@ -418,7 +420,13 @@
         "points": {
           "b2b": "Recommended for B2B cross-border payments."
         }
-      }
+      },
+      "gatewayFallback": {
+        "title": "This payment provider is having trouble",
+        "description": "The previous attempt may still be processing. Choose another available method only if you did not complete it.",
+        "error": "The selected payment provider is temporarily unavailable. Please choose another available payment method."
+      },
+      "temporarilyUnavailable": "Temporarily unavailable"
     },
     "stepper": {
       "common": {
@@ -471,7 +479,8 @@
           "unavailable": "Unavailable",
           "calculating": "Calculating...",
           "free": "Free"
-        }
+        },
+        "zip": "Postal code"
       },
       "review": {
         "backToShipping": "Back to shipping",
@@ -501,7 +510,8 @@
         "pointsDiscount": "Points discount",
         "couponDiscount": "Coupon discount",
         "giftCardDiscount": "Gift card discount",
-        "total": "Total"
+        "total": "Total",
+        "title": "Order summary"
       }
     },
     "fields": {
@@ -574,6 +584,15 @@
         "checking": "Checking..."
       },
       "qrAlt": "WeChat Pay QR code"
+    },
+    "steps": {
+      "payment": "Choose payment method"
+    },
+    "common": {
+      "processing": "Processing..."
+    },
+    "product": {
+      "buyNow": "Buy now"
     }
   },
   "common": {
@@ -584,7 +603,14 @@
     "loading": "Loading...",
     "backToHome": "Back to Home",
     "viewAll": "View all",
-    "explore": "Explore"
+    "explore": "Explore",
+    "retry": "Retry",
+    "yes": "Yes",
+    "no": "No",
+    "decrease": "Decrease",
+    "increase": "Increase",
+    "remove": "Remove",
+    "done": "Done"
   },
   "company": {
     "nav": {
@@ -1427,6 +1453,23 @@
       "shipping": "Shipping information has not been added yet."
     }
   },
+  "productReviews": {
+    "eyebrow": "Customer feedback",
+    "title": "Ratings and reviews",
+    "summaryLabel": "{rating} out of 5 from {count} reviews",
+    "reviewCount": "{count} reviews",
+    "loading": "Loading reviews...",
+    "loadError": "Reviews could not be loaded.",
+    "retry": "Try again",
+    "empty": "No approved reviews yet.",
+    "ratingLabel": "{rating} out of 5 stars",
+    "imageAlt": "Customer review image",
+    "verifiedPurchase": "Verified purchase",
+    "helpfulCount": "{count} found this helpful",
+    "storeReply": "Store reply",
+    "loadingMore": "Loading more...",
+    "loadMore": "Load more reviews"
+  },
   "products": {
     "searchResults": "Search Results",
     "searchFor": "Search for",
@@ -1449,6 +1492,20 @@
       "calculator": "Calculator",
       "points": "Points",
       "picture": "Picture"
+    },
+    "detail": {
+      "viewDetails": "Product details",
+      "media": "Product media",
+      "viewVideo": "View product video",
+      "viewImage": "View product image",
+      "option": "Option",
+      "inStock": "In stock",
+      "outOfStock": "Out of stock",
+      "specifications": "Specifications",
+      "quantity": "Quantity",
+      "decreaseQuantity": "Decrease quantity",
+      "increaseQuantity": "Increase quantity",
+      "notFound": "Product not found"
     }
   },
   "profile": {
@@ -1475,20 +1532,60 @@
       "weight": "Weight",
       "price": "Price"
     },
-    "selection": {
-      "label": "Selected products",
-      "editHint": "Review and adjust your selections",
-      "empty": "No products selected yet."
-    },
     "actions": {
       "toCart": "To cart",
       "payment": "Payment",
       "addToCart": "Add to cart",
       "directPayment": "Pay now"
     },
+    "entry": {
+      "directSelect": {
+        "title": "I know my specs",
+        "description": "Choose configured items now.",
+        "action": "Start"
+      },
+      "readyMatch": {
+        "title": "Match ready wheelsets",
+        "description": "Coming next."
+      },
+      "wheelsetSelectionAssistant": {
+        "title": "Find my bike specs",
+        "description": "Answer guided fit questions.",
+        "action": "Start",
+        "modalDescription": "Choose what you know now. We only ask for missing fit details."
+      },
+      "eyebrow": "QUICKBUY",
+      "title": "Choose how to start"
+    },
+    "help": {
+      "title": "QUICK instructions"
+    },
+    "filters": {
+      "label": "Filters",
+      "clear": "Clear",
+      "empty": "No values available"
+    },
     "productRail": {
+      "label": "Available products",
       "empty": "No products are available for this step."
+    },
+    "selection": {
+      "label": "Selected products",
+      "editHint": "Review and adjust your selections"
+    },
+    "defaultSteps": {
+      "step1": "Step 1",
+      "step2": "Step 2",
+      "step3": "Step 3"
     }
+  },
+  "recommendations": {
+    "previous": "Previous recommended products",
+    "next": "Next recommended products",
+    "title": "Recommended products",
+    "empty": "No recommendations yet",
+    "shopTitle": "Recommended products",
+    "productDetailTitle": "You may also like"
   },
   "search": {
     "placeholder": "Search...",

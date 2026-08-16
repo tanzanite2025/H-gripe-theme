@@ -372,6 +372,7 @@ import UserChatBody from '~/components/whatsapp/UserChatBody.vue'
 const props = defineProps<{
   conversation?: {
     showAgentList?: boolean
+    pendingSelectionRequest?: import('~/types/wheelsetSelectionAssistant').WheelsetSelectionRequestDraft | null
   }
 }>()
 
@@ -591,7 +592,9 @@ const {
   handleShareProductFromHistory,
   shareOrderToChat,
   handleImageUpload
-} = useWhatsAppState(emit)
+} = useWhatsAppState(emit, {
+  initialSelectionRequest: props.conversation?.pendingSelectionRequest || null,
+})
 
 const getAgentInitials = (agent: any) => {
   const name = String(agent?.name || agent?.display_name || agent?.email || '').trim()

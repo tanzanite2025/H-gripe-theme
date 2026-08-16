@@ -6,6 +6,7 @@ import (
 	"commerce-platform/internal/repository"
 	"context"
 	"fmt"
+	"math"
 	"strings"
 	"time"
 )
@@ -216,6 +217,39 @@ func (s *OrderService) UpdateAdminNote(id uint, adminNote string) error {
 
 	o.AdminNote = adminNote
 	return s.orderRepo.Update(o)
+}
+
+func (s *OrderService) UpdateOrderItemCustoms(orderID, orderItemID uint, declaredValue *float64, confirmed bool) error {
+	if orderID == 0 || orderItemID == 0 {
+		return ErrOrderItemNotFound
+	}
+	if declaredValue != nil && (math.IsNaN(*declaredValue) || math.IsInf(*declaredValue, 0) || *declaredValue < 0) {
+		return ErrDeclaredValueInvalid
+	}
+	if confirmed && declaredValue == nil {
+		return ErrDeclaredValueConfirmationRequired
+	}
+
+	o, err := s.findOrder(orderID)
+	if err != nil {
+		return err
+	}
+
+	found := false
+	for _, item := range o.Items {
+		if item.ID == orderItemID {
+			found = true
+			break
+		}
+	}
+	if !found {
+		return ErrOrderItemNotFound
+	}
+
+	if declaredValue == nil {
+		confirmed = false
+	}
+	return s.orderRepo.UpdateOrderItemCustoms(orderID, orderItemID, declaredValue, confirmed)
 }
 
 func (s *OrderService) DeleteAdminOrder(id uint) error {

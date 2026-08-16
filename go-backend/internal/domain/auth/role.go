@@ -65,6 +65,9 @@ const (
 	PermContentEdit   Permission = "content:edit"
 	PermContentDelete Permission = "content:delete"
 
+	PermReviewView     Permission = "review:view"
+	PermReviewModerate Permission = "review:moderate"
+
 	PermFAQView   Permission = "faq:view"
 	PermFAQCreate Permission = "faq:create"
 	PermFAQEdit   Permission = "faq:edit"
@@ -144,6 +147,7 @@ var RolePermissions = map[Role][]Permission{
 		PermOrderView, PermOrderEdit, PermOrderRefund, PermOrderDelete,
 		PermUserView, PermUserCreate, PermUserEdit, PermUserDelete,
 		PermContentView, PermContentCreate, PermContentEdit, PermContentDelete,
+		PermReviewView, PermReviewModerate,
 		PermFAQView, PermFAQCreate, PermFAQEdit, PermFAQDelete,
 		PermGalleryView, PermGalleryCreate, PermGalleryEdit, PermGalleryDelete,
 		PermMediaView, PermMediaCreate, PermMediaEdit, PermMediaDelete,
@@ -167,6 +171,7 @@ var RolePermissions = map[Role][]Permission{
 		PermOrderView, PermOrderEdit, PermOrderRefund,
 		PermUserView, PermUserCreate, PermUserEdit,
 		PermContentView, PermContentCreate, PermContentEdit, PermContentDelete,
+		PermReviewView, PermReviewModerate,
 		PermFAQView, PermFAQCreate, PermFAQEdit, PermFAQDelete,
 		PermGalleryView, PermGalleryCreate, PermGalleryEdit, PermGalleryDelete,
 		PermMediaView, PermMediaCreate, PermMediaEdit, PermMediaDelete,
@@ -188,6 +193,7 @@ var RolePermissions = map[Role][]Permission{
 		PermProductView, PermProductCreate, PermProductEdit,
 		PermShippingView,
 		PermContentView, PermContentCreate, PermContentEdit,
+		PermReviewView, PermReviewModerate,
 		PermFAQView, PermFAQCreate, PermFAQEdit,
 		PermGalleryView, PermGalleryCreate, PermGalleryEdit,
 		PermMediaView, PermMediaCreate, PermMediaEdit,
@@ -197,6 +203,7 @@ var RolePermissions = map[Role][]Permission{
 		PermOrderView,
 		PermUserView,
 		PermTicketView, PermTicketCreate, PermTicketEdit, PermTicketClose,
+		PermReviewView,
 		PermMediaView,
 		PermSubscriptionView,
 		PermShippingView, PermShippingTracking,
@@ -206,6 +213,7 @@ var RolePermissions = map[Role][]Permission{
 		PermOrderView,
 		PermUserView,
 		PermContentView,
+		PermReviewView,
 		PermFAQView,
 		PermGalleryView,
 		PermMediaView,

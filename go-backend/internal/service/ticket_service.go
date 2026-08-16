@@ -8,9 +8,20 @@ import (
 const customerServiceTicketCategory = "customer_service"
 
 type TicketService struct {
-	ticketRepo *repository.TicketRepository
-	userRepo   *repository.UserRepository
-	faqRepo    *repository.FAQRepository
+	ticketRepo                    *repository.TicketRepository
+	userRepo                      *repository.UserRepository
+	faqRepo                       *repository.FAQRepository
+	customerServiceRealtimeOutbox *repository.OutboxRepository
+}
+
+// ConfigureCustomerServiceRealtimeOutbox makes public/staff message writes
+// transactionally emit a durable realtime event. Application dependencies and
+// service tests that exercise customer-service messages must configure it.
+func (s *TicketService) ConfigureCustomerServiceRealtimeOutbox(repo *repository.OutboxRepository) {
+	if s == nil {
+		return
+	}
+	s.customerServiceRealtimeOutbox = repo
 }
 
 func NewTicketService(ticketRepo *repository.TicketRepository, userRepo *repository.UserRepository, faqRepos ...*repository.FAQRepository) *TicketService {

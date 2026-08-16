@@ -1,6 +1,12 @@
 package repository
 
-import "commerce-platform/internal/domain/payment"
+import (
+	"commerce-platform/internal/domain/payment"
+	"errors"
+	"strings"
+
+	"gorm.io/gorm"
+)
 
 // TaxRate 相关方法
 
@@ -14,10 +20,37 @@ func (r *PaymentRepository) FindTaxRateByID(id uint) (*payment.TaxRate, error) {
 	return &tr, nil
 }
 
-// FindTaxRateByLocation 根据地区查找税率
-func (r *PaymentRepository) FindTaxRateByLocation(country, state string) (*payment.TaxRate, error) {
+// FindTaxRateByLocation 根据地区查找税率。
+// postalCode 是可选的；提供时优先匹配精确邮编，找不到再回退到该地区的默认税率。
+func (r *PaymentRepository) FindTaxRateByLocation(country, state string, postalCodes ...string) (*payment.TaxRate, error) {
 	var tr payment.TaxRate
-	err := r.db.Where("country = ? AND state = ? AND enabled = ?", country, state, true).
+
+	country = strings.ToUpper(strings.TrimSpace(country))
+	state = strings.ToUpper(strings.TrimSpace(state))
+	postalCode := ""
+	if len(postalCodes) > 0 {
+		postalCode = strings.ToUpper(strings.TrimSpace(postalCodes[0]))
+	}
+
+	locationQuery := func() *gorm.DB {
+		return r.db.Where("country = ? AND state = ? AND enabled = ?", country, state, true)
+	}
+	if postalCode != "" {
+		err := locationQuery().
+			Where("postal_code = ?", postalCode).
+			Order("priority DESC, id ASC").
+			First(&tr).Error
+		if err == nil {
+			return &tr, nil
+		}
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, err
+		}
+	}
+
+	err := locationQuery().
+		Where("COALESCE(postal_code, '') = ''").
+		Order("priority DESC, id ASC").
 		First(&tr).Error
 	if err != nil {
 		return nil, err

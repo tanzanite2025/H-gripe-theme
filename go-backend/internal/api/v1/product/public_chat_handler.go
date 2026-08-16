@@ -18,7 +18,8 @@ import (
 func (h *Handler) ListPublicChatProducts(c *gin.Context) {
 	locale := middleware.GetLocale(c)
 	keyword := strings.TrimSpace(c.Query("keyword"))
-	typeSlug := strings.TrimSpace(c.Query("product_type"))
+	productSpecificationTemplateSlug := strings.TrimSpace(c.Query("product_specification_template"))
+	categorySlug := strings.TrimSpace(c.Query("product_category"))
 	brandSlug := strings.TrimSpace(c.Query("brand"))
 	priceMin := parseOptionalFloatQuery(c, "price_min")
 	priceMax := parseOptionalFloatQuery(c, "price_max")
@@ -37,15 +38,16 @@ func (h *Handler) ListPublicChatProducts(c *gin.Context) {
 	}
 
 	products, _, err := h.productService.SearchPublic(service.ProductSearchInput{
-		Locale:      locale,
-		Keyword:     keyword,
-		TypeSlug:    typeSlug,
-		BrandSlug:   brandSlug,
-		PriceMin:    priceMin,
-		PriceMax:    priceMax,
-		SpecFilters: specFilters,
-		Page:        page,
-		PageSize:    pageSize + 1,
+		Locale:       locale,
+		Keyword:      keyword,
+		ProductSpecificationTemplateSlug:     productSpecificationTemplateSlug,
+		CategorySlug: categorySlug,
+		BrandSlug:    brandSlug,
+		PriceMin:     priceMin,
+		PriceMax:     priceMax,
+		SpecFilters:  specFilters,
+		Page:         page,
+		PageSize:     pageSize + 1,
 	})
 	if err != nil {
 		apierror.RespondInternalError(c, err)
@@ -53,9 +55,11 @@ func (h *Handler) ListPublicChatProducts(c *gin.Context) {
 	}
 
 	publicProducts, hasMore := trimPublicProductPage(products, pageSize)
+	publicProductResponses := PublicProductsFromDomainWithLocale(publicProducts, locale)
+	h.attachReviewSummaries(publicProductResponses)
 	c.JSON(200, gin.H{
 		"code":      0,
-		"data":      PublicProductsFromDomainWithLocale(publicProducts, locale),
+		"data":      publicProductResponses,
 		"page_size": pageSize,
 		"has_more":  hasMore,
 	})

@@ -3,6 +3,7 @@ package admin
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"commerce-platform/internal/domain/auth"
 	"commerce-platform/internal/pkg/apierror"
@@ -33,6 +34,15 @@ func NewAdminAccountHandler(maintenanceService *service.AdminAccountMaintenanceS
 func (h *AdminAccountHandler) List(c *gin.Context) {
 	if h == nil || h.maintenanceService == nil {
 		apierror.RespondInternalError(c, errors.New("admin account maintenance service is not configured"))
+		return
+	}
+	_, actorRole, ok := currentAdminActor(c)
+	if !ok {
+		apierror.RespondUnauthorized(c)
+		return
+	}
+	if auth.NormalizeRole(actorRole) != auth.RoleAdmin {
+		apierror.RespondForbidden(c)
 		return
 	}
 
@@ -75,9 +85,12 @@ func (h *AdminAccountHandler) Ensure(c *gin.Context) {
 		FirstName:   req.FirstName,
 		LastName:    req.LastName,
 		Locale:      req.Locale,
-		Operator:    fmt.Sprintf("admin:%d", actorID),
-		AuditMethod: "HTTP",
+		OperatorID:  actorID,
+		Operator:    adminAccountOperatorName(c, actorID),
+		AuditMethod: c.Request.Method,
 		AuditPath:   c.Request.URL.Path,
+		AuditIP:     c.ClientIP(),
+		AuditAgent:  c.Request.UserAgent(),
 	})
 	if err != nil {
 		respondAdminAccountMaintenanceError(c, err)
@@ -91,17 +104,31 @@ func (h *AdminAccountHandler) Ensure(c *gin.Context) {
 	response.SuccessWithMessage(c, message, result)
 }
 
+func adminAccountOperatorName(c *gin.Context, actorID uint) string {
+	if c != nil {
+		if username := strings.TrimSpace(c.GetString("username")); username != "" {
+			return username
+		}
+		if email := strings.TrimSpace(c.GetString("email")); email != "" {
+			return email
+		}
+	}
+	return fmt.Sprintf("admin:%d", actorID)
+}
+
 func respondAdminAccountMaintenanceError(c *gin.Context, err error) {
 	switch {
 	case errors.Is(err, service.ErrAdminAccountEmailRequired),
 		errors.Is(err, service.ErrAdminAccountEmailInvalid),
 		errors.Is(err, service.ErrAdminAccountUsernameInvalid),
 		errors.Is(err, service.ErrAdminAccountPasswordRequired),
-		errors.Is(err, service.ErrAdminAccountWeakPassword):
+		errors.Is(err, service.ErrAdminAccountWeakPassword),
+		errors.Is(err, service.ErrUnsupportedLocale):
 		apierror.RespondBadRequest(c, err.Error())
 	case errors.Is(err, service.ErrUsernameExists):
 		apierror.RespondConflict(c, "Username already exists")
-	case errors.Is(err, service.ErrAdminAccountRoleForbidden):
+	case errors.Is(err, service.ErrAdminAccountRoleForbidden),
+		errors.Is(err, service.ErrAdminAccountSelfRoleChange):
 		apierror.RespondForbidden(c)
 	default:
 		apierror.RespondInternalError(c, err)

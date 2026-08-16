@@ -78,6 +78,13 @@ func (r *OpsDeploymentWorkflowRepository) UpdateStep(id uint, updates map[string
 	return r.db.Model(&ops.DeploymentWorkflowStep{}).Where("id = ?", id).Updates(updates).Error
 }
 
+func (r *OpsDeploymentWorkflowRepository) CreateStep(step *ops.DeploymentWorkflowStep) error {
+	if step == nil {
+		return errors.New("deployment workflow step is required")
+	}
+	return r.db.Create(step).Error
+}
+
 func (r *OpsDeploymentWorkflowRepository) AcquireProjectLock(projectID, workflowID uint, ttl time.Duration) error {
 	if projectID == 0 || workflowID == 0 {
 		return errors.New("project and workflow ids are required for deployment lock")

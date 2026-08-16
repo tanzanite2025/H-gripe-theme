@@ -34,13 +34,13 @@ type ShippingCalculationInput struct {
 }
 
 type ShippingQuoteItemInput struct {
-	ProductID          uint    `json:"product_id"`
-	VariantID          *uint   `json:"variant_id,omitempty"`
-	ProductTypeID      *uint   `json:"product_type_id,omitempty"`
-	ShippingTemplateID *uint   `json:"shipping_template_id,omitempty"`
-	Quantity           int     `json:"quantity"`
-	UnitPrice          float64 `json:"unit_price"`
-	WeightGrams        int     `json:"weight_grams"`
+	ProductID                      uint    `json:"product_id"`
+	VariantID                      *uint   `json:"variant_id,omitempty"`
+	ProductSpecificationTemplateID *uint   `json:"product_specification_template_id,omitempty"`
+	ShippingTemplateID             *uint   `json:"shipping_template_id,omitempty"`
+	Quantity                       int     `json:"quantity"`
+	UnitPrice                      float64 `json:"unit_price"`
+	WeightGrams                    int     `json:"weight_grams"`
 }
 
 type ShippingQuoteInput struct {
@@ -52,21 +52,21 @@ type ShippingQuoteInput struct {
 }
 
 type ShippingQuoteItem struct {
-	ProductID            uint    `json:"product_id"`
-	VariantID            *uint   `json:"variant_id,omitempty"`
-	ProductTypeID        *uint   `json:"product_type_id,omitempty"`
-	TemplateID           uint    `json:"template_id"`
-	TemplateName         string  `json:"template_name"`
-	PackagingRuleID      *uint   `json:"packaging_rule_id,omitempty"`
-	PackagingRuleName    string  `json:"packaging_rule_name,omitempty"`
-	Quantity             int     `json:"quantity"`
-	UnitPrice            float64 `json:"unit_price"`
-	Amount               float64 `json:"amount"`
-	WeightGrams          int     `json:"weight_grams"`
-	PackagingWeightGrams int     `json:"packaging_weight_grams"`
-	ChargeWeightGrams    int     `json:"charge_weight_grams"`
-	ShippingFee          float64 `json:"shipping_fee"`
-	FreeShipping         bool    `json:"free_shipping"`
+	ProductID                      uint    `json:"product_id"`
+	VariantID                      *uint   `json:"variant_id,omitempty"`
+	ProductSpecificationTemplateID *uint   `json:"product_specification_template_id,omitempty"`
+	TemplateID                     uint    `json:"template_id"`
+	TemplateName                   string  `json:"template_name"`
+	PackagingRuleID                *uint   `json:"packaging_rule_id,omitempty"`
+	PackagingRuleName              string  `json:"packaging_rule_name,omitempty"`
+	Quantity                       int     `json:"quantity"`
+	UnitPrice                      float64 `json:"unit_price"`
+	Amount                         float64 `json:"amount"`
+	WeightGrams                    int     `json:"weight_grams"`
+	PackagingWeightGrams           int     `json:"packaging_weight_grams"`
+	ChargeWeightGrams              int     `json:"charge_weight_grams"`
+	ShippingFee                    float64 `json:"shipping_fee"`
+	FreeShipping                   bool    `json:"free_shipping"`
 }
 
 type ShippingQuote struct {
@@ -484,13 +484,13 @@ func (s *ShippingService) QuoteCart(input ShippingQuoteInput) (*ShippingQuote, e
 		unitPrice := variant.EffectivePrice()
 		amount += unitPrice * float64(item.Quantity)
 		items = append(items, ShippingQuoteItemInput{
-			ProductID:          product.ID,
-			VariantID:          &resolvedVariantID,
-			ProductTypeID:      product.ProductTypeID,
-			ShippingTemplateID: uintPtr(templateID),
-			Quantity:           item.Quantity,
-			UnitPrice:          unitPrice,
-			WeightGrams:        variant.Weight,
+			ProductID:                      product.ID,
+			VariantID:                      &resolvedVariantID,
+			ProductSpecificationTemplateID: product.ProductSpecificationTemplateID,
+			ShippingTemplateID:             uintPtr(templateID),
+			Quantity:                       item.Quantity,
+			UnitPrice:                      unitPrice,
+			WeightGrams:                    variant.Weight,
 		})
 	}
 
@@ -588,19 +588,19 @@ func (s *ShippingService) QuoteResolvedItems(input ShippingQuoteInput) (*Shippin
 		}
 
 		quoteItems[index] = ShippingQuoteItem{
-			ProductID:            item.ProductID,
-			VariantID:            item.VariantID,
-			ProductTypeID:        item.ProductTypeID,
-			TemplateID:           item.Template.ID,
-			TemplateName:         item.Template.Name,
-			PackagingRuleID:      packagingRuleID,
-			PackagingRuleName:    packagingRuleName,
-			Quantity:             item.Quantity,
-			UnitPrice:            item.UnitPrice,
-			Amount:               roundMoney(item.Amount),
-			WeightGrams:          item.WeightGrams,
-			PackagingWeightGrams: item.PackagingWeightGrams,
-			ChargeWeightGrams:    item.ChargeWeightGrams,
+			ProductID:                      item.ProductID,
+			VariantID:                      item.VariantID,
+			ProductSpecificationTemplateID: item.ProductSpecificationTemplateID,
+			TemplateID:                     item.Template.ID,
+			TemplateName:                   item.Template.Name,
+			PackagingRuleID:                packagingRuleID,
+			PackagingRuleName:              packagingRuleName,
+			Quantity:                       item.Quantity,
+			UnitPrice:                      item.UnitPrice,
+			Amount:                         roundMoney(item.Amount),
+			WeightGrams:                    item.WeightGrams,
+			PackagingWeightGrams:           item.PackagingWeightGrams,
+			ChargeWeightGrams:              item.ChargeWeightGrams,
 		}
 	}
 

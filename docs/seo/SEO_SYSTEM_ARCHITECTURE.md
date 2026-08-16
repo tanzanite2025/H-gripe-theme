@@ -84,7 +84,7 @@ Owns:
 - base price, sale price, currency;
 - stock and publication status;
 - variants, variant SKU, option values, variant price, and variant stock;
-- product type and technical specifications;
+- product specification template and technical specifications;
 - product-to-translation relationships.
 
 Does not own:

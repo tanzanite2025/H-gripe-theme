@@ -62,8 +62,8 @@ func (s *PaymentService) GetPublicTaxRate(id uint) (*payment.TaxRate, error) {
 	return rate, nil
 }
 
-func (s *PaymentService) CalculateTax(amount float64, country, state string) (float64, float64, error) {
-	taxRate, err := s.paymentRepo.FindTaxRateByLocation(country, state)
+func (s *PaymentService) CalculateTax(amount float64, country, state string, postalCodes ...string) (float64, float64, error) {
+	taxRate, err := s.paymentRepo.FindTaxRateByLocation(country, state, postalCodes...)
 	if err != nil {
 		return 0, 0, nil
 	}

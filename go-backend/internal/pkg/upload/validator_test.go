@@ -113,6 +113,18 @@ func TestValidateFileAcceptsFixedDimensionWebP(t *testing.T) {
 	}
 }
 
+func TestReadImageDimensionsReturnsWebPDimensions(t *testing.T) {
+	file := testFileHeader(t, "category.webp", validWebPFixture(t))
+
+	width, height, err := ReadImageDimensions(file)
+	if err != nil {
+		t.Fatalf("expected image dimensions to be readable, got %v", err)
+	}
+	if width != 75 || height != 100 {
+		t.Fatalf("expected 75x100 dimensions, got %dx%d", width, height)
+	}
+}
+
 func testWebPVP8X(width, height int) []byte {
 	data := make([]byte, 30)
 	copy(data[0:4], []byte("RIFF"))

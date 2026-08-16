@@ -9,3 +9,26 @@ export const contactLocation = {
   openAppleMapsUrl: 'https://maps.apple.com/?q=%E5%8E%A6%E9%97%A8%E5%B8%82%E5%90%8C%E5%AE%89%E5%8C%BA%E5%B7%A5%E4%B8%9A%E9%9B%86%E4%B8%AD%E5%8C%BA%E5%90%8C%E9%9B%86%E5%8D%97%E8%B7%AF639%E5%8F%B76%E5%8F%B7%E6%A5%BC%E7%BA%A4%E9%95%80%E5%A4%8D%E6%9D%90%E7%A7%91%E6%8A%80',
   previewImageSrc: '',
 } as const
+
+const allowedMapEmbedHosts = new Set([
+  'www.google.com',
+  'maps.google.com',
+])
+
+const allowedMapLinkHosts = new Set([
+  ...allowedMapEmbedHosts,
+  'maps.apple.com',
+])
+
+const isAllowedHttpsUrl = (value: string, allowedHosts: ReadonlySet<string>) => {
+  try {
+    const url = new URL(value)
+    return url.protocol === 'https:' && allowedHosts.has(url.hostname)
+  } catch {
+    return false
+  }
+}
+
+export const isAllowedMapEmbedUrl = (value: string) => isAllowedHttpsUrl(value, allowedMapEmbedHosts)
+
+export const isAllowedMapLinkUrl = (value: string) => isAllowedHttpsUrl(value, allowedMapLinkHosts)

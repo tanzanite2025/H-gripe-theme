@@ -1,0 +1,17 @@
+{
+  "eyebrow": "Kundefeedback",
+  "title": "Bedømmelser og anmeldelser",
+  "summaryLabel": "{rating} ud af 5 fra {count} anmeldelser",
+  "reviewCount": "{count} anmeldelser",
+  "loading": "Indlæser anmeldelser...",
+  "loadError": "Anmeldelser kunne ikke indlæses.",
+  "retry": "Prøv igen",
+  "empty": "Der er endnu ingen godkendte anmeldelser.",
+  "ratingLabel": "{rating} ud af 5 stjerner",
+  "imageAlt": "Billede fra kundeanmeldelse",
+  "verifiedPurchase": "Bekræftet køb",
+  "helpfulCount": "{count} fandt dette nyttigt",
+  "storeReply": "Butikkens svar",
+  "loadingMore": "Indlæser flere...",
+  "loadMore": "Indlæs flere anmeldelser"
+}

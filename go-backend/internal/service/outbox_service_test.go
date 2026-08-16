@@ -112,6 +112,47 @@ func TestOutboxServiceDeadLettersUnhandledEventAtMaxAttempts(t *testing.T) {
 	assert.Contains(t, saved.LastError, "no handler registered")
 }
 
+func TestOutboxRepositoryCountsOnlyCustomerServiceRealtimeStatuses(t *testing.T) {
+	db, service := newTestOutboxService(t)
+	now := time.Now().UTC()
+	repo := repository.NewOutboxRepository(db)
+	require.NoError(t, db.Create(&outboxdomain.Event{
+		EventKey:      "customer-service-pending",
+		EventType:     outboxdomain.EventTypeCustomerServiceRealtime,
+		AggregateType: outboxdomain.AggregateTypeCustomerServiceConversation,
+		AggregateID:   "1",
+		Payload:       datatypes.JSON([]byte(`{}`)),
+		Status:        outboxdomain.EventStatusPending,
+		AvailableAt:   now,
+	}).Error)
+	require.NoError(t, db.Create(&outboxdomain.Event{
+		EventKey:      "customer-service-dead-letter",
+		EventType:     outboxdomain.EventTypeCustomerServiceRealtime,
+		AggregateType: outboxdomain.AggregateTypeCustomerServiceConversation,
+		AggregateID:   "2",
+		Payload:       datatypes.JSON([]byte(`{}`)),
+		Status:        outboxdomain.EventStatusDeadLetter,
+		AvailableAt:   now,
+	}).Error)
+	require.NoError(t, db.Create(&outboxdomain.Event{
+		EventKey:      "order-pending",
+		EventType:     outboxdomain.EventTypeOrderPaid,
+		AggregateType: outboxdomain.AggregateTypeOrder,
+		AggregateID:   "3",
+		Payload:       datatypes.JSON([]byte(`{}`)),
+		Status:        outboxdomain.EventStatusPending,
+		AvailableAt:   now,
+	}).Error)
+
+	counts, err := repo.CountEventsByStatus(outboxdomain.EventTypeCustomerServiceRealtime)
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), counts[outboxdomain.EventStatusPending])
+	assert.Equal(t, int64(1), counts[outboxdomain.EventStatusDeadLetter])
+	assert.Zero(t, counts[outboxdomain.EventStatusProcessed])
+
+	require.NoError(t, service.RefreshCustomerServiceRealtimeMetrics())
+}
+
 func newTestOutboxService(t *testing.T) (*gorm.DB, *OutboxService) {
 	t.Helper()
 

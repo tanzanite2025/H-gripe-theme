@@ -8,7 +8,7 @@ QUICK 不是普通的“快速购买按钮”，长期应定位为一个可配�
 
 核心边界：
 
-- 商品、产品类型、规格字段、SKU、价格和库存仍归商品目录所有。
+- 商品、商品规格模板、规格字段、SKU、价格和库存仍归商品目录所有。
 - QUICK 流程只引用商品目录事实，不重新定义一套商品分类。
 - 选配兼容、步骤顺序、可选范围和成品装配规则属于 QUICK 域。
 - 前台只展示流程和收集选择，不在 Nuxt 中判断关键兼容性、价格事实或库存事实。
@@ -41,18 +41,18 @@ GradientDockMenu
 | `go-backend/internal/domain/quickbuy/` | flow、version、step、session 领域模型 | 后续可补兼容规则和 assembly group |
 | `go-backend/internal/service/quick_buy_service.go` | 读取 flow、解析全局 locale、生成候选和保存 session | 还缺 add-to-cart assembly group |
 | `go-backend/internal/api/v1/quickbuy/handler.go` | 公开 QUICK flow/session/candidates API | 还缺 add-to-cart assembly group |
-| `go-backend/internal/repository/product_query_repository.go` | 商品公开查询与 QUICK 候选查询 | QUICK candidates 已按 step 绑定的 product type IDs、active variant 和库存过滤 |
-| `go-backend/web/admin/src/views/ProductTypes.vue` | 产品模板/产品类型管理 | 可作为 QUICK 步骤可选类目的事实来源 |
+| `go-backend/internal/repository/product_query_repository.go` | 商品公开查询与 QUICK 候选查询 | QUICK candidates 已按 step 绑定的 product specification template IDs、active variant 和库存过滤 |
+| `go-backend/web/admin/src/views/ProductSpecificationTemplates.vue` | 商品规格模板/商品规格模板管理 | 可作为 QUICK 步骤可选类目的事实来源 |
 
 当前弹窗不再根据旧默认步骤或 settings 自行推断商品。它只读取 published QUICK flow 的步骤，再创建或复用 QUICK session，通过 `GET /api/v1/quick-buy/sessions/:token/steps/:step_key/candidates` 获取该步骤候选商品；没有 published flow 时不展示任何内置步骤，Admin 新建 flow 也不会预生成业务步骤。
 
 实现进展：
 
-- 后端已新增 `quick_buy_flows / quick_buy_flow_versions / quick_buy_steps / quick_buy_step_product_types / quick_buy_step_filters / quick_buy_compatibility_rules / quick_buy_sessions / quick_buy_session_items`。
+- 后端已新增 `quick_buy_flows / quick_buy_flow_versions / quick_buy_steps / quick_buy_step_product_specification_templates / quick_buy_step_filters / quick_buy_compatibility_rules / quick_buy_sessions / quick_buy_session_items`。
 - 已新增公开读取接口 `GET /api/v1/quick-buy/flows/current`，以及后台管理接口 `/api/admin/quick-buy/*`。
 - 已移除 `settings.quick-buy` 作为 QUICK 的第二套配置来源；入口是否展示由 published flow 是否存在且启用决定。
-- 后台已新增 `QUICK 选配流程` 板块，第一阶段可维护 flow 草稿、步骤顺序和每一步绑定的产品类型。
-- 后端已提供 `POST /api/admin/quick-buy/flow-versions/:version_id/validate`，发布前会以结构化校验结果检查步骤、选择边界、产品类型引用和已停用产品类型。
+- 后台已新增 `QUICK 选配流程` 板块，第一阶段可维护 flow 草稿、步骤顺序和每一步绑定的商品规格模板。
+- 后端已提供 `POST /api/admin/quick-buy/flow-versions/:version_id/validate`，发布前会以结构化校验结果检查步骤、选择边界、商品规格模板引用和已停用商品规格模板。
 - 后端已提供后台候选预览 `POST /api/admin/quick-buy/flow-versions/:version_id/preview`，用于发布前查看某个 step 的真实候选商品。
 - 后端已提供 public session 和候选接口：`POST /api/v1/quick-buy/sessions`、`GET /api/v1/quick-buy/sessions/:token`、`GET /api/v1/quick-buy/sessions/:token/steps/:step_key/candidates`、`PATCH /api/v1/quick-buy/sessions/:token/selections`、`POST /api/v1/quick-buy/sessions/:token/validate`。
 - 前台 QUICK 弹窗按 flow 的步骤创建/复用 QUICK session 并读取后端候选；用户选择商品后更新 session。没有 published flow 时不会退回旧的本地商品搜索。
@@ -63,8 +63,8 @@ GradientDockMenu
 
 商品目录回答“有哪些商品可以卖，以及商品有什么规格”：
 
-- `product_types`
-- `product_type_translations`
+- `product_specification_templates`
+- `product_specification_template_translations`
 - `product_spec_definitions`
 - `products`
 - `product_variants`
@@ -72,7 +72,7 @@ GradientDockMenu
 - `product_variant_option_values`
 - media、价格、状态、基础库存字段
 
-QUICK 不应复制这些事实。QUICK 只保存对 `product_type_id`、`spec_definition_id`、`product_id`、`variant_id` 的引用，以及流程层面的规则。
+QUICK 不应复制这些事实。QUICK 只保存对 `product_specification_template_id`、`spec_definition_id`、`product_id`、`variant_id` 的引用，以及流程层面的规则。
 
 ### QUICK 流程事实源
 
@@ -81,7 +81,7 @@ QUICK 回答“用户按什么路径完成一次装配”：
 - 有哪些流程，比如 `wheelset-build`、`upgrade-kit`、`maintenance-kit`
 - 每个流程有哪些版本
 - 每个版本有哪些步骤
-- 每一步可选哪些产品类型
+- 每一步可选哪些商品规格模板
 - 每一步允许单选、多选、数量选择还是自动推荐
 - 不同步骤之间有哪些兼容规则
 - 完成后如何生成购物车组、套装或询价单
@@ -104,19 +104,19 @@ QUICK 回答“用户按什么路径完成一次装配”：
 flowchart LR
     subgraph Admin["Admin"]
         FlowEditor["QUICK 流程配置"]
-        ProductTypeAdmin["产品模板/产品类型"]
+        ProductSpecificationTemplateAdmin["商品规格模板/商品规格模板"]
         ProductAdmin["商品/SKU 管理"]
     end
 
     subgraph API["Go API"]
         QuickAdminAPI["/api/admin/quick-buy/*"]
         QuickPublicAPI["/api/v1/quick-buy/*"]
-        ProductAPI["/api/v1/products/types"]
+        ProductAPI["/api/v1/products/specification-templates"]
         CartAPI["/api/v1/cart"]
     end
 
     subgraph DB["PostgreSQL"]
-        ProductFacts["product_types/products/variants/specs"]
+        ProductFacts["product_specification_templates/products/variants/specs"]
         FlowFacts["quick_buy_flows<br/>quick_buy_flow_versions<br/>quick_buy_steps<br/>quick_buy_step_rules"]
         SessionFacts["quick_buy_sessions<br/>quick_buy_session_items"]
         CartFacts["carts/cart_items/orders"]
@@ -128,7 +128,7 @@ flowchart LR
         SessionStore["配置会话状态"]
     end
 
-    ProductTypeAdmin --> ProductFacts
+    ProductSpecificationTemplateAdmin --> ProductFacts
     ProductAdmin --> ProductFacts
     FlowEditor --> QuickAdminAPI --> FlowFacts
     QuickAdminAPI --> ProductFacts
@@ -147,9 +147,9 @@ flowchart LR
 
 ```text
 管理员编辑 QUICK 流程草稿
-  -> 选择步骤和可选产品类型
+  -> 选择步骤和可选商品规格模板
   -> 选择每一步筛选条件和兼容规则
-  -> 后端校验引用的产品类型、规格字段、商品状态
+  -> 后端校验引用的商品规格模板、规格字段、商品状态
   -> 保存 draft version
   -> 后台预览候选商品和兼容结果
   -> 发布为 published version
@@ -168,7 +168,7 @@ flowchart LR
   -> 进入某一步
   -> 创建或复用绑定 flow_version_id 的 QUICK session
   -> 请求 /quick-buy/sessions/:token/steps/:step_key/candidates
-  -> Go 根据 step.product_type_ids、step.filters、库存和全局 storefront context 裁决候选商品
+  -> Go 根据 step.product_specification_template_ids、step.filters、库存和全局 storefront context 裁决候选商品
   -> 用户选择 product/variant/quantity
   -> Nuxt 提交选择到 QUICK session
   -> Go 后端保存选择快照并运行兼容校验
@@ -281,19 +281,19 @@ updated_at
 
 不要用数字步骤当长期业务 key。排序可以变，key 要稳定。
 
-### `quick_buy_step_product_types`
+### `quick_buy_step_product_specification_templates`
 
-步骤允许的产品类型。
+步骤允许的商品规格模板。
 
 ```text
 id
 step_id
-product_type_id
+product_specification_template_id
 is_primary
 sort_order
 ```
 
-它只引用 `product_types.id`。产品类型名称、图片、翻译继续来自商品目录。
+它只引用 `product_specification_templates.id`。商品规格模板名称、图片、翻译继续来自商品目录。
 
 ### `quick_buy_step_filters`
 
@@ -309,7 +309,7 @@ value_json
 sort_order
 ```
 
-第一阶段可以只支持 `product_type_id` 和简单 `spec in`，但表结构不要把未来的规格、价格、市场条件堵死。
+第一阶段可以只支持 `product_specification_template_id` 和简单 `spec in`，但表结构不要把未来的规格、价格、市场条件堵死。
 
 ### `quick_buy_compatibility_rules`
 
@@ -423,8 +423,8 @@ POST /api/admin/quick-buy/flow-versions/:version_id/preview
 
 后台保存时必须校验：
 
-- 引用的 product type 是否存在且启用。
-- 引用的 spec definition 是否属于对应 product type。
+- 引用的 product specification template 是否存在且启用。
+- 引用的 spec definition 是否属于对应 product specification template。
 - 步骤 key 是否重复。
 - 必选步骤是否至少有一个可售候选。
 - 兼容规则引用的步骤和规格是否存在。
@@ -441,7 +441,7 @@ POST /api/admin/quick-buy/flow-versions/:version_id/preview
 - `api/quickBuy.ts`：后台 HTTP 协议。
 - `QuickBuyFlowEditorDialog.vue`：流程基础信息、版本状态。
 - `QuickBuyStepListEditor.vue`：步骤排序、启用、必选、选择模式。
-- `QuickBuyStepProductTypePicker.vue`：从产品类型事实源中选择可选类目。
+- `QuickBuyStepProductSpecificationTemplatePicker.vue`：从商品规格模板事实源中选择可选类目。
 - `QuickBuyStepFilterEditor.vue`：规格/价格筛选。
 - `QuickBuyCompatibilityRulesPanel.vue`：跨步骤兼容规则。
 - `QuickBuyPreviewPanel.vue`：按当前草稿预览前台候选和校验结果。
@@ -521,7 +521,7 @@ QUICK 不重复保存默认语言或市场/语言范围。当前 published versi
 
 规则：
 
-- 产品类型名称、图片、规格定义翻译来自商品目录。
+- 商品规格模板名称、图片、规格定义翻译来自商品目录。
 - QUICK step 的标题、提示、错误文案可以有自己的翻译。
 - 价格和货币以 storefront market context 和商品/variant 价格服务为准。
 - session 记录当时的 `locale`、`market_country` 和 `currency`。
@@ -534,13 +534,13 @@ QUICK 不重复保存默认语言或市场/语言范围。当前 published versi
 
 - published flow by surface/time window
 - step candidate query by flow_version/step/filters/storefront context
-- product type list
+- product specification template list
 - compatibility rule compiled form
 
 失效规则：
 
 - 发布 flow version 后清理 QUICK flow cache。
-- 产品类型启停、规格字段变化后清理相关 candidate cache。
+- 商品规格模板启停、规格字段变化后清理相关 candidate cache。
 - 商品上下架、variant 库存和价格变化后清理 candidate cache 或使用短 TTL。
 - session 不应依赖长缓存，保存后立即读写数据库或短 TTL session cache。
 
@@ -620,27 +620,27 @@ compatibility_snapshot
 
 - 固定本文档边界。
 - 确认 QUICK 是业务流程域，不是 settings JSON。
-- 确认产品类型是步骤可选分类的事实源。
+- 确认商品规格模板是步骤可选分类的事实源。
 - 确认首批流程是 wheelset/component/maintenance 中哪一个。
 
-### Phase 1：可配置步骤与产品类型筛选
+### Phase 1：可配置步骤与商品规格模板筛选
 
 - 新增 QUICK 后台流程和步骤配置。
-- 步骤绑定 `product_type_id`。
+- 步骤绑定 `product_specification_template_id`。
 - 公开接口返回 published flow。
 - Nuxt 进入 step 后通过 QUICK candidates 接口获取后端裁决的候选商品。
 - 保留当前简单选择和加入购物车能力。
 
 这一阶段解决“后台可定义每一步选什么类目”，但不宣称已经完成成品装配。
 
-当前已超出最初 Phase 1：新 flow 的候选商品已经切到 QUICK 专用 candidates 接口，Nuxt 不再直接按 `product_type` 请求客服商品搜索，也不再保留旧 settings fallback。
+当前已超出最初 Phase 1：新 flow 的候选商品已经切到 QUICK 专用 candidates 接口，Nuxt 不再直接按 `product_specification_template` 请求客服商品搜索，也不再保留旧 settings fallback。
 
 ### Phase 2：配置会话和兼容校验
 
 - 新增 quick buy session。已完成基础 session、selection item 和快照保存。
-- 用户选择保存到后端。已完成按 step 提交选择，并校验商品/variant 可售、产品类型是否属于该步骤。
-- 候选商品由后端根据 session 的 flow version 和 step product types 生成。已完成 `GET /sessions/:token/steps/:step_key/candidates` 和后台 preview。
-- 后端执行基础兼容规则。当前已执行必选步骤、选择数量、库存和产品类型边界；跨步骤兼容矩阵仍待实现。
+- 用户选择保存到后端。已完成按 step 提交选择，并校验商品/variant 可售、商品规格模板是否属于该步骤。
+- 候选商品由后端根据 session 的 flow version 和 step product specification templates 生成。已完成 `GET /sessions/:token/steps/:step_key/candidates` 和后台 preview。
+- 后端执行基础兼容规则。当前已执行必选步骤、选择数量、库存和商品规格模板边界；跨步骤兼容矩阵仍待实现。
 - 弹窗展示冲突、警告和汇总。
 - 支持恢复未完成配置。
 
@@ -662,7 +662,7 @@ compatibility_snapshot
 
 - 不要只在 `settings.quick-buy.steps` 里塞 JSON 作为长期方案。
 - 不要把 step slug 同时当业务步骤、商品类型和 i18n key。
-- 不要复制产品分类，应该引用 `product_types`。
+- 不要复制产品分类，应该引用 `product_specification_templates`。
 - 不要在 Nuxt 中写死 Rims/Hubs/Spokes 的长期规则。
 - 不要用商品标题或描述推断技术兼容。
 - 不要让发布中的流程被原地修改，必须版本化。
@@ -675,7 +675,7 @@ compatibility_snapshot
 2. 第一版固定几步，是否仍是 5 步。
 3. 每一步是否允许多选和数量选择。
 4. “成品”在购物车里展示为一个组，还是一个套装父项加组件明细。
-5. 首批兼容规则由谁维护，规则颗粒度到 product type、spec 还是 variant。
+5. 首批兼容规则由谁维护，规则颗粒度到 product specification template、spec 还是 variant。
 6. 是否允许缺货/预售商品进入候选。
 7. 是否需要客服后台读取未完成 QUICK session。
 8. 是否需要把 QUICK 配置结果生成询价单而不直接加购物车。
@@ -689,7 +689,7 @@ compatibility_snapshot
 - QUICK 后台入口或数据表结构。
 - QUICK 公开 API 或 session API。
 - `QuickBuy.vue` 拆分或数据流改变。
-- 产品类型、规格定义和 QUICK 步骤之间的绑定方式。
+- 商品规格模板、规格定义和 QUICK 步骤之间的绑定方式。
 - 购物车/订单中的装配组保存方式。
 - ERP 库存、交期或装配单接入。
 - 行为事件和漏斗统计口径。

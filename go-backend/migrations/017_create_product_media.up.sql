@@ -87,8 +87,8 @@ FROM products p
 WHERE p.sku = 'G35-370G-1PC'
   AND p.slug = 'g35-carbon-rim'
   AND p.locale = 'en'
-  AND p.product_type_id = (
-      SELECT id FROM product_types WHERE slug = 'carbon_rim'
+  AND p.product_specification_template_id = (
+      SELECT id FROM product_specification_templates WHERE slug = 'carbon_rim'
   )
   AND p.deleted_at IS NULL
   AND NOT EXISTS (

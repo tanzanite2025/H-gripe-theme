@@ -104,8 +104,8 @@ func TestMediaDeleteAssetBlocksReferencedProductMedia(t *testing.T) {
 	require.EqualValues(t, 1, assetCount)
 }
 
-func TestMediaDeleteAssetBlocksReferencedProductTypeImage(t *testing.T) {
-	db := newMediaDeleteTestDB(t, &media.MediaAsset{}, &product.ProductType{})
+func TestMediaDeleteAssetBlocksReferencedProductSpecificationTemplateImage(t *testing.T) {
+	db := newMediaDeleteTestDB(t, &media.MediaAsset{}, &product.ProductSpecificationTemplate{})
 	uploadRoot := t.TempDir()
 	service := newMediaDeleteTestService(t, db, uploadRoot)
 
@@ -117,7 +117,7 @@ func TestMediaDeleteAssetBlocksReferencedProductTypeImage(t *testing.T) {
 	require.NoError(t, err)
 
 	assetID := asset.ID
-	require.NoError(t, db.Create(&product.ProductType{
+	require.NoError(t, db.Create(&product.ProductSpecificationTemplate{
 		Name:              "Category image reference",
 		Slug:              "category-image-reference",
 		ImageMediaAssetID: &assetID,
@@ -128,7 +128,7 @@ func TestMediaDeleteAssetBlocksReferencedProductTypeImage(t *testing.T) {
 	report, err := service.GetAssetReferences(asset.ID)
 	require.NoError(t, err)
 	require.Equal(t, 1, report.Total)
-	require.Equal(t, "product_type", report.References[0].ResourceType)
+	require.Equal(t, "product_specification_template", report.References[0].ResourceType)
 	require.Contains(t, report.References[0].Field, "image_media_asset_id")
 	require.Contains(t, report.References[0].Field, "image_url")
 

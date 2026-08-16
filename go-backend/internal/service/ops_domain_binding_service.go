@@ -10,7 +10,10 @@ import (
 	"commerce-platform/internal/repository"
 )
 
-var ErrInvalidOpsDomainBinding = errors.New("invalid operations domain binding")
+var (
+	ErrInvalidOpsDomainBinding     = errors.New("invalid operations domain binding")
+	ErrInvalidOpsDomainEnvironment = errors.New("invalid operations domain environment")
+)
 
 type OpsDomainBindingService struct {
 	repo          *repository.OpsDomainBindingRepository
@@ -50,10 +53,18 @@ func NewOpsDomainBindingService(
 }
 
 func (s *OpsDomainBindingService) List() ([]ops.DomainBinding, error) {
+	return s.ListForEnvironment("")
+}
+
+func (s *OpsDomainBindingService) ListForEnvironment(environment string) ([]ops.DomainBinding, error) {
 	if s == nil || s.repo == nil {
 		return nil, errors.New("operations domain binding service is not configured")
 	}
-	return s.repo.List()
+	environment, err := normalizeOpsDomainEnvironment(environment)
+	if err != nil {
+		return nil, err
+	}
+	return s.repo.ListByEnvironment(environment)
 }
 
 func (s *OpsDomainBindingService) Get(id uint) (*ops.DomainBinding, error) {
@@ -364,4 +375,20 @@ func normalizeEnum(value string, allowed map[string]struct{}) string {
 		return ""
 	}
 	return normalized
+}
+
+func normalizeOpsDomainEnvironment(environment string) (string, error) {
+	environment = strings.ToLower(strings.TrimSpace(environment))
+	if environment == "" {
+		return "", nil
+	}
+	switch environment {
+	case ops.DomainEnvironmentProduction,
+		ops.DomainEnvironmentStaging,
+		ops.DomainEnvironmentTest,
+		ops.DomainEnvironmentLocal:
+		return environment, nil
+	default:
+		return "", fmt.Errorf("%w: %s", ErrInvalidOpsDomainEnvironment, environment)
+	}
 }

@@ -139,6 +139,54 @@ func TestOpsDeploymentPreflightHandlerOverviewPreservesReviewCount(t *testing.T)
 	require.Equal(t, "review", body.Data.Projects[0].StatusLevel)
 }
 
+func TestOpsDeploymentPreflightHandlerOverviewFiltersByEnvironment(t *testing.T) {
+	handler, projectID := newOpsDeploymentPreflightTestHandler(t)
+	require.NotZero(t, projectID)
+
+	recorder := httptest.NewRecorder()
+	context, _ := gin.CreateTestContext(recorder)
+	context.Request = httptest.NewRequest(http.MethodGet, "/api/admin/ops/deployments/preflight-overview?environment=staging", nil)
+
+	handler.GetOverview(context)
+
+	require.Equal(t, http.StatusOK, recorder.Code)
+	var body struct {
+		Code int `json:"code"`
+		Data struct {
+			Environment  string `json:"environment"`
+			ProjectCount int    `json:"project_count"`
+			Projects     []struct {
+				ProjectID   uint   `json:"project_id"`
+				Environment string `json:"environment"`
+			} `json:"projects"`
+		} `json:"data"`
+	}
+	require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &body))
+	require.Equal(t, 0, body.Code)
+	require.Equal(t, ops.ProjectEnvironmentStaging, body.Data.Environment)
+	require.Equal(t, 1, body.Data.ProjectCount)
+	require.Len(t, body.Data.Projects, 1)
+	require.Equal(t, projectID, body.Data.Projects[0].ProjectID)
+	require.Equal(t, ops.ProjectEnvironmentStaging, body.Data.Projects[0].Environment)
+}
+
+func TestOpsDeploymentPreflightHandlerOverviewRejectsInvalidEnvironment(t *testing.T) {
+	handler, _ := newOpsDeploymentPreflightTestHandler(t)
+
+	recorder := httptest.NewRecorder()
+	context, _ := gin.CreateTestContext(recorder)
+	context.Request = httptest.NewRequest(http.MethodGet, "/api/admin/ops/deployments/preflight-overview?environment=qa", nil)
+
+	handler.GetOverview(context)
+
+	require.Equal(t, http.StatusBadRequest, recorder.Code)
+	var body struct {
+		Code string `json:"code"`
+	}
+	require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &body))
+	require.Equal(t, "bad_request", body.Code)
+}
+
 func newOpsDeploymentPreflightTestHandler(t *testing.T) (*OpsDeploymentPreflightHandler, uint) {
 	t.Helper()
 	gin.SetMode(gin.TestMode)

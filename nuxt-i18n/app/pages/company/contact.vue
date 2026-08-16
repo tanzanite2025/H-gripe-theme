@@ -3,16 +3,17 @@
     <h1 class="sr-only">{{ t('company.nav.contact') }}</h1>
 
     <div class="w-full max-w-none space-y-8">
-      
-      <!-- Hero / Introduction -->
-      <div class="text-center mb-8 md:mb-10">
-        <h2 class="text-xl md:text-2xl font-bold text-white mb-2">
+      <!-- Location introduction -->
+      <div class="text-center">
+        <h2 class="text-xl font-bold text-white md:text-2xl">
           Global <span class="text-teal-400">Connectivity</span>
         </h2>
-        <p class="tz-text-secondary max-w-2xl mx-auto leading-relaxed text-sm">
+        <p class="mx-auto max-w-2xl text-sm leading-relaxed tz-text-secondary">
           From our manufacturing base in Xiamen to our global headquarters in Hong Kong, we are positioned to serve partners worldwide with efficiency and precision.
         </p>
       </div>
+
+      <ContactServiceEntry />
 
       <!-- Address Grid -->
       <div class="grid w-full grid-cols-1 gap-6 md:grid-cols-2 md:gap-8">
@@ -97,21 +98,14 @@
 
     </div>
 
-    <!-- Feedback Section -->
-    <div class="w-full max-w-none px-0">
-      <UserFeedbackThread
-        threadKey="company-contact"
-        title="Share your feedback about our Service"
-      />
-    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { definePageMeta, useHead, useI18n } from '#imports'
 import ContactLocationMap from '~/components/ContactLocationMap.vue'
+import ContactServiceEntry from '~/components/company/ContactServiceEntry.vue'
 import { contactLocation } from '~/utils/contactLocation'
-import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
 import { createSeoJsonLdScript } from '~/utils/seo/jsonLd'
 
 const { t } = useI18n()

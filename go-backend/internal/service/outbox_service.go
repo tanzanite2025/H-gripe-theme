@@ -9,7 +9,11 @@ import (
 	"time"
 
 	"commerce-platform/internal/domain/outbox"
+	appLogger "commerce-platform/internal/pkg/logger"
+	"commerce-platform/internal/pkg/metrics"
 	"commerce-platform/internal/repository"
+
+	"go.uber.org/zap"
 )
 
 const (
@@ -109,6 +113,7 @@ func (s *OutboxService) ProcessPending(ctx context.Context, now time.Time, limit
 			} else {
 				result.Failed++
 			}
+			s.recordCustomerServiceRealtimeOutboxOutcome(event, "unhandled")
 			continue
 		}
 
@@ -121,6 +126,7 @@ func (s *OutboxService) ProcessPending(ctx context.Context, now time.Time, limit
 			} else {
 				result.Failed++
 			}
+			s.recordCustomerServiceRealtimeOutboxOutcome(event, "failed")
 			continue
 		}
 
@@ -128,9 +134,48 @@ func (s *OutboxService) ProcessPending(ctx context.Context, now time.Time, limit
 			return result, err
 		}
 		result.Processed++
+		s.recordCustomerServiceRealtimeOutboxOutcome(event, "processed")
 	}
 
+	s.refreshCustomerServiceRealtimeOutboxMetrics()
 	return result, nil
+}
+
+func (s *OutboxService) recordCustomerServiceRealtimeOutboxOutcome(event outbox.Event, result string) {
+	if event.EventType != outbox.EventTypeCustomerServiceRealtime {
+		return
+	}
+	metrics.CustomerServiceRealtimeOutboxDeliveries.WithLabelValues(result).Inc()
+}
+
+// RefreshCustomerServiceRealtimeMetrics exposes only aggregate durable state
+// for the customer-service event type. The scheduler calls this after every
+// dispatch pass; it is also useful at startup before the first event arrives.
+func (s *OutboxService) RefreshCustomerServiceRealtimeMetrics() error {
+	if s == nil || s.repo == nil {
+		return nil
+	}
+	counts, err := s.repo.CountEventsByStatus(outbox.EventTypeCustomerServiceRealtime)
+	if err != nil {
+		return err
+	}
+	for _, status := range []string{
+		outbox.EventStatusPending,
+		outbox.EventStatusProcessing,
+		outbox.EventStatusFailed,
+		outbox.EventStatusDeadLetter,
+	} {
+		metrics.CustomerServiceRealtimeOutboxEvents.WithLabelValues(status).Set(float64(counts[status]))
+	}
+	return nil
+}
+
+func (s *OutboxService) refreshCustomerServiceRealtimeOutboxMetrics() {
+	if err := s.RefreshCustomerServiceRealtimeMetrics(); err != nil {
+		// Processing must not become unavailable merely because a monitoring
+		// aggregate query failed. The next scheduler pass retries the aggregate.
+		appLogger.Warn("customer-service realtime outbox metric refresh failed", zap.Error(err))
+	}
 }
 
 func (s *OutboxService) markDispatchFailure(event outbox.Event, dispatchErr error, now time.Time) error {

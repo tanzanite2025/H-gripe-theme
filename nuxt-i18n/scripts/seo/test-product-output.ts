@@ -15,6 +15,18 @@ const seo = buildProductSeoDocument(
       currency: 'usd',
       availability: 'in_stock',
     },
+    aggregateRating: {
+      ratingValue: 4.6,
+      reviewCount: 12,
+    },
+    shippingDetails: {
+      country: 'us',
+      amount: 0,
+      currency: 'usd',
+      freeShipping: true,
+      etaMinDays: 3,
+      etaMaxDays: 7,
+    },
   },
   {
     siteOrigin: 'https://example.com',
@@ -36,6 +48,28 @@ assert.equal(seo.schema.sku, 'SKU-001')
 assert.equal(seo.schema.offers?.price, 123.45)
 assert.equal(seo.schema.offers?.priceCurrency, 'USD')
 assert.equal(seo.schema.offers?.availability, 'https://schema.org/InStock')
+assert.deepEqual(seo.schema.aggregateRating, {
+  '@type': 'AggregateRating',
+  ratingValue: 4.6,
+  reviewCount: 12,
+  ratingCount: 12,
+  bestRating: 5,
+  worstRating: 1,
+})
+assert.deepEqual(seo.schema.offers?.shippingDetails, {
+  '@type': 'OfferShippingDetails',
+  shippingRate: { '@type': 'MonetaryAmount', value: 0, currency: 'USD' },
+  shippingDestination: { '@type': 'DefinedRegion', addressCountry: 'US' },
+  deliveryTime: {
+    '@type': 'ShippingDeliveryTime',
+    transitTime: {
+      '@type': 'QuantitativeValue',
+      minValue: 3,
+      maxValue: 7,
+      unitCode: 'DAY',
+    },
+  },
+})
 
 const groupSeo = buildProductSeoDocument(
   {
@@ -80,6 +114,7 @@ assert.deepEqual(groupSeo.schema.image, ['https://example.com/media/variant.jpg'
 assert.deepEqual(groupSeo.schema.hasVariant[0]?.image, ['https://example.com/media/variant.jpg'])
 assert.equal(groupSeo.schema.hasVariant[0]?.offers?.url, 'https://example.com/shop/variant-product?variant=1')
 assert.equal(groupSeo.schema.hasVariant[1]?.offers?.availability, 'https://schema.org/OutOfStock')
+assert.equal(groupSeo.schema.hasVariant[0]?.offers?.shippingDetails, undefined)
 
 const incompleteVariantGroupSeo = buildProductSeoDocument(
   {
@@ -139,6 +174,20 @@ if (noOfferSeo.schema?.['@type'] !== 'Product') {
   throw new Error('Expected Product schema without an incomplete Offer.')
 }
 assert.equal(noOfferSeo.schema.offers, undefined)
+
+const noReviewSchema = buildProductSeoDocument(
+  {
+    name: 'No Review Product',
+    imageUrls: ['/media/no-review.jpg'],
+    aggregateRating: { ratingValue: 0, reviewCount: 0 },
+  },
+  {
+    siteOrigin: 'https://example.com',
+    localizedPath: '/shop/no-review-product',
+  },
+)
+assert.equal(noReviewSchema.schema?.['@type'], 'Product')
+assert.equal(noReviewSchema.schema?.aggregateRating, undefined)
 
 const dangerousValue = '</script><script>alert(1)</script>'
 const script = createSeoJsonLdScript({ name: dangerousValue })

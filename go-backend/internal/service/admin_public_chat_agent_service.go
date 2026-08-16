@@ -98,7 +98,6 @@ type AdminPublicChatAgentUpsertInput struct {
 	AgentID      string `json:"agent_id"`
 	Name         string `json:"name"`
 	Email        string `json:"email"`
-	Avatar       string `json:"avatar"`
 	WhatsApp     string `json:"whatsapp"`
 	Status       string `json:"status"`
 	OnlineStatus string `json:"online_status"`
@@ -320,7 +319,6 @@ func (s *AdminPublicChatAgentService) UpsertPublicChatAgentProfile(input AdminPu
 	profile.UserID = &agentUser.ID
 	profile.Name = name
 	profile.Email = email
-	profile.Avatar = strings.TrimSpace(input.Avatar)
 	profile.WhatsApp = whatsApp
 	profile.Status = status
 	profile.OnlineStatus = onlineStatus

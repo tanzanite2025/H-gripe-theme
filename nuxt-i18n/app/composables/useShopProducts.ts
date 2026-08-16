@@ -4,6 +4,17 @@ import type { CartItem } from '~~/types/cart'
 
 export type ShopProductAvailability = 'in_stock' | 'out_of_stock'
 
+export interface ShopProductReviewSummary {
+  productId: number
+  totalReviews: number
+  averageRating: number
+  rating5Count: number
+  rating4Count: number
+  rating3Count: number
+  rating2Count: number
+  rating1Count: number
+}
+
 export interface ShopProduct {
   id: number
   productId: number
@@ -27,7 +38,8 @@ export interface ShopProduct {
   }
   availability: ShopProductAvailability
   brand?: ShopProductBrand | null
-  productType?: ShopProductType | null
+  productSpecificationTemplate?: ShopProductSpecificationTemplate | null
+  reviewSummary?: ShopProductReviewSummary | null
   variants: ShopProductVariant[]
 }
 
@@ -48,7 +60,7 @@ export interface ShopProductDisplayPrice {
   fallback_reason?: string
 }
 
-export interface ShopProductType {
+export interface ShopProductSpecificationTemplate {
   id?: number
   name: string
   slug: string
@@ -146,6 +158,21 @@ const normalizeAvailability = (value: unknown): ShopProductAvailability => {
   return value === 'out_of_stock' ? 'out_of_stock' : 'in_stock'
 }
 
+const normalizeReviewSummary = (value: any, fallbackProductId: number): ShopProductReviewSummary | null => {
+  if (!value || typeof value !== 'object') return null
+
+  return {
+    productId: toFiniteNumber(value.product_id, fallbackProductId),
+    totalReviews: Math.max(0, Math.floor(toFiniteNumber(value.total_reviews))),
+    averageRating: Math.min(5, Math.max(0, toFiniteNumber(value.average_rating))),
+    rating5Count: Math.max(0, Math.floor(toFiniteNumber(value.rating_5_count))),
+    rating4Count: Math.max(0, Math.floor(toFiniteNumber(value.rating_4_count))),
+    rating3Count: Math.max(0, Math.floor(toFiniteNumber(value.rating_3_count))),
+    rating2Count: Math.max(0, Math.floor(toFiniteNumber(value.rating_2_count))),
+    rating1Count: Math.max(0, Math.floor(toFiniteNumber(value.rating_1_count))),
+  }
+}
+
 const normalizeDisplayPrice = (value: any, fallbackAmount: number, fallbackCurrency: string): ShopProductDisplayPrice => {
   const amount = toFiniteNumber(value?.amount, fallbackAmount)
   const currency = normalizeCurrencyCode(value?.currency) || fallbackCurrency
@@ -193,8 +220,8 @@ const parseOptionValues = (value: unknown): Record<string, string> => {
 }
 
 const normalizeSpecDefinitions = (item: any): ShopProductSpecDefinition[] => {
-  const definitions: any[] = Array.isArray(item?.product_type?.spec_definitions)
-    ? item.product_type.spec_definitions
+  const definitions: any[] = Array.isArray(item?.product_specification_template?.spec_definitions)
+    ? item.product_specification_template.spec_definitions
     : []
 
   return definitions
@@ -219,11 +246,11 @@ const normalizeSpecDefinitions = (item: any): ShopProductSpecDefinition[] => {
     .filter((definition): definition is ShopProductSpecDefinition => Boolean(definition))
 }
 
-const normalizeProductType = (item: any): ShopProductType | null => {
-  if (!item?.product_type) return null
-  const id = toOptionalPositiveNumber(item.product_type.id)
-  const slug = String(item.product_type.slug || '').trim()
-  const name = String(item.product_type.name || slug || '').trim()
+const normalizeProductSpecificationTemplate = (item: any): ShopProductSpecificationTemplate | null => {
+  if (!item?.product_specification_template) return null
+  const id = toOptionalPositiveNumber(item.product_specification_template.id)
+  const slug = String(item.product_specification_template.slug || '').trim()
+  const name = String(item.product_specification_template.name || slug || '').trim()
   if (!slug || !name) return null
 
   return {
@@ -324,7 +351,8 @@ export const normalizeShopProduct = (item: any, fallbackCurrency = 'USD'): ShopP
           websiteUrl: item.brand.website_url ? String(item.brand.website_url) : undefined,
         }
       : null,
-    productType: normalizeProductType(item),
+    productSpecificationTemplate: normalizeProductSpecificationTemplate(item),
+    reviewSummary: normalizeReviewSummary(item?.review_summary, id),
     variants,
   }
 }

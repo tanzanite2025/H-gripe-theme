@@ -24,6 +24,7 @@ type Config struct {
 	Cache                        CacheConfig                        `mapstructure:"cache"`
 	Log                          LogConfig                          `mapstructure:"log"`
 	Worker                       WorkerConfig                       `mapstructure:"worker"`
+	CustomerServiceRealtime      CustomerServiceRealtimeConfig      `mapstructure:"customer_service_realtime"`
 	BehaviorEvents               BehaviorEventsConfig               `mapstructure:"behavior_events"`
 	AntiAbuse                    AntiAbuseConfig                    `mapstructure:"anti_abuse"`
 	OrderAbuse                   OrderAbuseConfig                   `mapstructure:"order_abuse"`
@@ -151,6 +152,18 @@ type WorkerConfig struct {
 	ShowcaseCleanupIntervalSeconds       int  `mapstructure:"showcase_cleanup_interval_seconds"`
 	ShowcasePendingTTLSeconds            int  `mapstructure:"showcase_pending_ttl_seconds"`
 	ShowcaseCleanupBatchLimit            int  `mapstructure:"showcase_cleanup_batch_limit"`
+}
+
+// CustomerServiceRealtimeConfig controls the optional Redis Stream relay for
+// durable customer-service message events. HTTP remains authoritative when it
+// is disabled or the bounded replay window has expired.
+type CustomerServiceRealtimeConfig struct {
+	Enabled               bool   `mapstructure:"enabled"`
+	Stream                string `mapstructure:"stream"`
+	StreamMaxLen          int    `mapstructure:"stream_max_len"`
+	ReplayLimit           int    `mapstructure:"replay_limit"`
+	ConsumerBlockSeconds  int    `mapstructure:"consumer_block_seconds"`
+	DedupRetentionSeconds int    `mapstructure:"dedup_retention_seconds"`
 }
 
 type BehaviorEventsConfig struct {
@@ -445,6 +458,13 @@ func setDefaults() {
 	viper.SetDefault("worker.showcase_pending_ttl_seconds", 2592000)
 	viper.SetDefault("worker.showcase_cleanup_batch_limit", 100)
 
+	viper.SetDefault("customer_service_realtime.enabled", false)
+	viper.SetDefault("customer_service_realtime.stream", "customer_service:{realtime}:v1")
+	viper.SetDefault("customer_service_realtime.stream_max_len", 10000)
+	viper.SetDefault("customer_service_realtime.replay_limit", 200)
+	viper.SetDefault("customer_service_realtime.consumer_block_seconds", 5)
+	viper.SetDefault("customer_service_realtime.dedup_retention_seconds", 86400)
+
 	viper.SetDefault("behavior_events.low_intent_retention_days", 30)
 	viper.SetDefault("behavior_events.standard_intent_retention_days", 60)
 	viper.SetDefault("behavior_events.high_intent_retention_days", 180)
@@ -619,6 +639,13 @@ func bindEnvironment() {
 	_ = viper.BindEnv("worker.showcase_cleanup_interval_seconds", "WORKER_SHOWCASE_CLEANUP_INTERVAL_SECONDS", "SHOWCASE_CLEANUP_INTERVAL_SECONDS")
 	_ = viper.BindEnv("worker.showcase_pending_ttl_seconds", "WORKER_SHOWCASE_PENDING_TTL_SECONDS", "SHOWCASE_PENDING_TTL_SECONDS")
 	_ = viper.BindEnv("worker.showcase_cleanup_batch_limit", "WORKER_SHOWCASE_CLEANUP_BATCH_LIMIT", "SHOWCASE_CLEANUP_BATCH_LIMIT")
+
+	_ = viper.BindEnv("customer_service_realtime.enabled", "CUSTOMER_SERVICE_REALTIME_ENABLED")
+	_ = viper.BindEnv("customer_service_realtime.stream", "CUSTOMER_SERVICE_REALTIME_STREAM")
+	_ = viper.BindEnv("customer_service_realtime.stream_max_len", "CUSTOMER_SERVICE_REALTIME_STREAM_MAX_LEN")
+	_ = viper.BindEnv("customer_service_realtime.replay_limit", "CUSTOMER_SERVICE_REALTIME_REPLAY_LIMIT")
+	_ = viper.BindEnv("customer_service_realtime.consumer_block_seconds", "CUSTOMER_SERVICE_REALTIME_CONSUMER_BLOCK_SECONDS")
+	_ = viper.BindEnv("customer_service_realtime.dedup_retention_seconds", "CUSTOMER_SERVICE_REALTIME_DEDUP_RETENTION_SECONDS")
 
 	_ = viper.BindEnv("behavior_events.low_intent_retention_days", "BEHAVIOR_EVENTS_LOW_INTENT_RETENTION_DAYS")
 	_ = viper.BindEnv("behavior_events.standard_intent_retention_days", "BEHAVIOR_EVENTS_STANDARD_INTENT_RETENTION_DAYS")
@@ -912,6 +939,19 @@ func validateConfig(cfg *Config) error {
 			return fmt.Errorf("outbox dispatch configuration is invalid")
 		}
 	}
+	if cfg.CustomerServiceRealtime.Enabled {
+		if !cfg.Worker.OutboxDispatchEnabled {
+			return fmt.Errorf("customer-service realtime requires outbox dispatch to be enabled")
+		}
+		if strings.TrimSpace(cfg.CustomerServiceRealtime.Stream) == "" ||
+			!hasRedisHashTag(cfg.CustomerServiceRealtime.Stream) ||
+			cfg.CustomerServiceRealtime.StreamMaxLen <= 0 ||
+			cfg.CustomerServiceRealtime.ReplayLimit <= 0 ||
+			cfg.CustomerServiceRealtime.ConsumerBlockSeconds <= 0 ||
+			cfg.CustomerServiceRealtime.DedupRetentionSeconds <= 0 {
+			return fmt.Errorf("customer-service realtime configuration is invalid")
+		}
+	}
 	if cfg.Worker.PaymentExpirationEnabled {
 		if cfg.Worker.PaymentExpirationIntervalSeconds <= 0 ||
 			cfg.Worker.PaymentPendingTTLSeconds <= 0 ||
@@ -1035,6 +1075,15 @@ func validateConfig(cfg *Config) error {
 	}
 
 	return nil
+}
+
+func hasRedisHashTag(value string) bool {
+	start := strings.IndexByte(value, '{')
+	if start < 0 {
+		return false
+	}
+	endOffset := strings.IndexByte(value[start+1:], '}')
+	return endOffset > 0
 }
 
 func isValidCookieSecureMode(value string) bool {

@@ -64,6 +64,10 @@ func (h *SettingsHandler) UpdateSetting(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
+		if errors.Is(err, service.ErrSettingInvalid) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update setting"})
 		return
 	}
@@ -81,6 +85,10 @@ func (h *SettingsHandler) BatchUpdateSettings(c *gin.Context) {
 	count, err := h.settingsService.BatchUpdateSettings(req)
 	if err != nil {
 		if errors.Is(err, service.ErrSettingManagedByDomainService) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		if errors.Is(err, service.ErrSettingInvalid) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}

@@ -36,16 +36,17 @@ func (h *Handler) GetTaxRate(c *gin.Context) {
 
 func (h *Handler) CalculateTax(c *gin.Context) {
 	var req struct {
-		Amount  float64 `json:"amount" binding:"required,gt=0"`
-		Country string  `json:"country" binding:"required"`
-		State   string  `json:"state"`
+		Amount     float64 `json:"amount" binding:"required,gt=0"`
+		Country    string  `json:"country" binding:"required"`
+		State      string  `json:"state"`
+		PostalCode string  `json:"postal_code"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
-	taxRate, tax, err := h.paymentService.CalculateTax(req.Amount, req.Country, req.State)
+	taxRate, tax, err := h.paymentService.CalculateTax(req.Amount, req.Country, req.State, req.PostalCode)
 	if err != nil {
 		response.Success(c, gin.H{
 			"amount":   req.Amount,

@@ -1,7 +1,7 @@
--- Product type and specification templates.
+-- Product specification templates.
 -- Backend is the source of truth for product-specific fields used by admin forms and storefront rendering.
 
-CREATE TABLE IF NOT EXISTS product_types (
+CREATE TABLE IF NOT EXISTS product_specification_templates (
     id BIGSERIAL PRIMARY KEY,
     name VARCHAR(120) NOT NULL,
     slug VARCHAR(120) UNIQUE NOT NULL,
@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS product_types (
 
 CREATE TABLE IF NOT EXISTS product_spec_definitions (
     id BIGSERIAL PRIMARY KEY,
-    product_type_id BIGINT NOT NULL REFERENCES product_types(id) ON DELETE CASCADE,
+    product_specification_template_id BIGINT NOT NULL REFERENCES product_specification_templates(id) ON DELETE CASCADE,
     "group" VARCHAR(80) NOT NULL DEFAULT 'specs',
     name VARCHAR(120) NOT NULL,
     slug VARCHAR(120) NOT NULL,
@@ -28,25 +28,25 @@ CREATE TABLE IF NOT EXISTS product_spec_definitions (
     validation TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT idx_product_type_spec_slug UNIQUE (product_type_id, slug)
+    CONSTRAINT idx_product_specification_template_spec_slug UNIQUE (product_specification_template_id, slug)
 );
 
-ALTER TABLE products ADD COLUMN IF NOT EXISTS product_type_id BIGINT;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS product_specification_template_id BIGINT;
 
 DO $$
 BEGIN
     IF NOT EXISTS (
         SELECT 1
         FROM pg_constraint
-        WHERE conname = 'fk_products_product_type'
+        WHERE conname = 'fk_products_product_specification_template'
     ) THEN
         ALTER TABLE products
-            ADD CONSTRAINT fk_products_product_type
-            FOREIGN KEY (product_type_id) REFERENCES product_types(id);
+            ADD CONSTRAINT fk_products_product_specification_template
+            FOREIGN KEY (product_specification_template_id) REFERENCES product_specification_templates(id);
     END IF;
 END $$;
 
-CREATE INDEX IF NOT EXISTS idx_products_product_type_id ON products(product_type_id);
+CREATE INDEX IF NOT EXISTS idx_products_product_specification_template_id ON products(product_specification_template_id);
 
 CREATE TABLE IF NOT EXISTS product_spec_values (
     id BIGSERIAL PRIMARY KEY,

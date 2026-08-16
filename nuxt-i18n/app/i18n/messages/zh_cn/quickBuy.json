@@ -17,6 +17,48 @@
   },
   "actions": {
     "toCart": "去购物车",
-    "payment": "付款"
+    "payment": "付款",
+    "addToCart": "Add to cart",
+    "directPayment": "Pay now"
+  },
+  "entry": {
+    "directSelect": {
+      "title": "I know my specs",
+      "description": "Choose configured items now.",
+      "action": "Start"
+    },
+    "readyMatch": {
+      "title": "Match ready wheelsets",
+      "description": "Coming next."
+    },
+    "wheelsetSelectionAssistant": {
+      "title": "查找我的车辆规格",
+      "description": "通过选项确认适配规格。",
+      "action": "开始",
+      "modalDescription": "先选择你已经知道的内容，我们只询问缺失的适配信息。"
+    },
+    "eyebrow": "QUICKBUY",
+    "title": "Choose how to start"
+  },
+  "help": {
+    "title": "QUICK instructions"
+  },
+  "filters": {
+    "label": "Filters",
+    "clear": "Clear",
+    "empty": "No values available"
+  },
+  "productRail": {
+    "label": "Available products",
+    "empty": "No products are available for this step."
+  },
+  "selection": {
+    "label": "Selected products",
+    "editHint": "Review and adjust your selections"
+  },
+  "defaultSteps": {
+    "step1": "Step 1",
+    "step2": "Step 2",
+    "step3": "Step 3"
   }
 }

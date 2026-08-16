@@ -26,6 +26,21 @@ func (r *OpsConnectorRepository) List() ([]ops.Connector, error) {
 	return records, err
 }
 
+func (r *OpsConnectorRepository) ListByEnvironment(environment string) ([]ops.Connector, error) {
+	var records []ops.Connector
+	query := r.db
+	if environment != "" {
+		query = query.Where("environment = ?", environment)
+	}
+	err := query.
+		Order("enabled DESC").
+		Order("provider ASC").
+		Order("environment ASC").
+		Order("name ASC").
+		Find(&records).Error
+	return records, err
+}
+
 func (r *OpsConnectorRepository) FindByID(id uint) (*ops.Connector, error) {
 	var record ops.Connector
 	if err := r.db.First(&record, id).Error; err != nil {
@@ -37,6 +52,18 @@ func (r *OpsConnectorRepository) FindByID(id uint) (*ops.Connector, error) {
 func (r *OpsConnectorRepository) FindByName(name string) (*ops.Connector, error) {
 	var record ops.Connector
 	if err := r.db.Where("name = ?", name).First(&record).Error; err != nil {
+		return nil, err
+	}
+	return &record, nil
+}
+
+func (r *OpsConnectorRepository) FindByProviderEnvironment(provider, environment string) (*ops.Connector, error) {
+	var record ops.Connector
+	if err := r.db.
+		Where("provider = ? AND environment = ? AND deleted_at IS NULL", provider, environment).
+		Order("enabled DESC").
+		Order("id ASC").
+		First(&record).Error; err != nil {
 		return nil, err
 	}
 	return &record, nil
@@ -80,5 +107,37 @@ func (r *OpsConnectorRepository) UpdateTestState(id uint, status string, testedA
 		"last_tested_at":   testedAt,
 		"status":           connectorStatus,
 		"last_error":       lastError,
+	}).Error
+}
+
+func (r *OpsConnectorRepository) UpdateOAuthCredentials(
+	id uint,
+	authType string,
+	endpoint string,
+	credentialsEncrypted string,
+	credentialFields string,
+	scopes string,
+	status string,
+) error {
+	return r.db.Model(&ops.Connector{}).Where("id = ?", id).Updates(map[string]interface{}{
+		"auth_type":             authType,
+		"endpoint":              endpoint,
+		"credentials_encrypted": credentialsEncrypted,
+		"credential_fields":     credentialFields,
+		"scopes":                scopes,
+		"status":                status,
+		"enabled":               true,
+		"last_error":            "",
+	}).Error
+}
+
+func (r *OpsConnectorRepository) UpdateCredentialsOnly(
+	id uint,
+	credentialsEncrypted string,
+	credentialFields string,
+) error {
+	return r.db.Model(&ops.Connector{}).Where("id = ?", id).Updates(map[string]interface{}{
+		"credentials_encrypted": credentialsEncrypted,
+		"credential_fields":     credentialFields,
 	}).Error
 }

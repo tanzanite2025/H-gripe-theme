@@ -128,6 +128,7 @@ const {
   displayCategories,
   expandedItems,
   toggleItem,
+  resetExpandedItems,
   hasMoreItems
 } = await usePageFaq(props)
 
@@ -138,7 +139,7 @@ watch(
   (categories) => {
     if (!categories.some((category) => category.id === activeCategoryId.value)) {
       activeCategoryId.value = categories[0]?.id || ''
-      expandedItems.value = new Set<string>()
+      resetExpandedItems()
     }
   },
   { immediate: true }
@@ -152,7 +153,7 @@ const selectCategory = (categoryId: string) => {
   if (activeCategoryId.value === categoryId) return
 
   activeCategoryId.value = categoryId
-  expandedItems.value = new Set<string>()
+  resetExpandedItems()
 }
 
 const formatCategoryIndex = (index: number) => String(index + 1).padStart(2, '0')

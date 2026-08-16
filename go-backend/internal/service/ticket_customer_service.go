@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 var (
@@ -31,6 +32,13 @@ type CustomerServiceConversationListInput struct {
 	Search     string
 }
 
+// CustomerServiceRealtimeMutation is the committed realtime invalidation for
+// one customer-service command. Handlers publish it locally for normal
+// latency; the matching Outbox row is the cross-instance recovery path.
+type CustomerServiceRealtimeMutation struct {
+	Event CustomerServiceRealtimeEvent
+}
+
 func (s *TicketService) GetCustomerServiceConversations(page, pageSize int) ([]ticket.Ticket, int64, error) {
 	return s.ListCustomerServiceConversationsForAgent(page, pageSize, 0, true, CustomerServiceConversationListInput{})
 }
@@ -41,12 +49,13 @@ func (s *TicketService) GetCustomerServiceConversationsForAgent(page, pageSize i
 
 func (s *TicketService) ListCustomerServiceConversationsForAgent(page, pageSize int, agentUserID uint, canViewAll bool, input CustomerServiceConversationListInput) ([]ticket.Ticket, int64, error) {
 	filters := repository.CustomerServiceConversationFilters{
-		AssignedTo: input.AssignedTo,
-		GroupID:    input.GroupID,
-		Status:     input.Status,
-		UnreadOnly: input.UnreadOnly,
-		Identity:   input.Identity,
-		Search:     input.Search,
+		AssignedTo:      input.AssignedTo,
+		GroupID:         input.GroupID,
+		RecipientUserID: agentUserID,
+		Status:          input.Status,
+		UnreadOnly:      input.UnreadOnly,
+		Identity:        input.Identity,
+		Search:          input.Search,
 	}
 
 	if !canViewAll {
@@ -95,36 +104,176 @@ func (s *TicketService) AddCustomerServiceAgentMessage(m *ticket.TicketMessage, 
 	if strings.TrimSpace(m.MessageType) == "" {
 		m.MessageType = "text"
 	}
-	if err := s.ticketRepo.CreateTicketMessage(m); err != nil {
-		return err
-	}
-	if t.Status == "closed" {
-		return s.updateTicketStatus(t.ID, "in_progress")
-	}
-	if t.Status == "open" || t.Status == "" {
-		return s.updateTicketStatus(t.ID, "in_progress")
-	}
-	return nil
+	actorUserID := agentUserID
+	return s.persistCustomerServiceMessage(
+		t,
+		m,
+		CustomerServiceRealtimeActor{Kind: "agent", UserID: &actorUserID},
+		func(repo *repository.TicketRepository) error {
+			if t.Status == "closed" || t.Status == "open" || t.Status == "" {
+				return repo.UpdateTicketStatus(t.ID, "in_progress")
+			}
+			return repo.TouchTicket(t.ID, time.Now().UTC())
+		},
+	)
 }
 
 func (s *TicketService) MarkCustomerServiceMessagesReadForAgent(ticketID uint, agentUserID uint, canViewAll bool) error {
-	if _, err := s.getAgentAccessibleCustomerServiceConversation(ticketID, agentUserID, canViewAll); err != nil {
-		return err
+	_, err := s.MarkCustomerServiceMessagesReadForAgentWithRealtimeEvent(ticketID, agentUserID, canViewAll)
+	return err
+}
+
+func (s *TicketService) MarkCustomerServiceMessagesReadForAgentWithRealtimeEvent(ticketID uint, agentUserID uint, canViewAll bool) (*CustomerServiceRealtimeMutation, error) {
+	if agentUserID == 0 {
+		return nil, ErrCustomerServiceAgentAccessDenied
 	}
-	return s.MarkMessagesAsRead(ticketID, true)
+	var mutation *CustomerServiceRealtimeMutation
+	err := s.ticketRepo.WithinTx(func(ticketRepo *repository.TicketRepository, tx *gorm.DB) error {
+		conversation, err := ticketRepo.FindTicketByIDForUpdate(ticketID)
+		if err != nil {
+			return err
+		}
+		if err := validateAgentCustomerServiceConversation(conversation, agentUserID, canViewAll); err != nil {
+			return err
+		}
+
+		readAt := time.Now().UTC()
+		state, changed, err := ticketRepo.AdvanceCustomerServiceInboxRead(ticketID, agentUserID, readAt)
+		if err != nil {
+			return err
+		}
+		if !changed {
+			return nil
+		}
+		if s.customerServiceRealtimeOutbox == nil {
+			return errors.New("customer-service realtime outbox is unavailable")
+		}
+
+		event := CustomerServiceRealtimeEvent{
+			Type:           CustomerServiceEventMessagesRead,
+			EventID:        CustomerServiceMessagesReadEventID(ticketID, agentUserID, state.AssignmentVersion, state.LastReadMessageID),
+			Audience:       CustomerServiceRealtimeAudienceBackoffice,
+			TicketID:       ticketID,
+			ConversationID: ticketConversationID(conversation),
+			OccurredAt:     readAt,
+			Actor:          CustomerServiceRealtimeActor{Kind: "agent", UserID: &agentUserID},
+			Payload: map[string]interface{}{
+				"reader_kind":          "agent",
+				"read_by_user_id":      agentUserID,
+				"assignment_version":   state.AssignmentVersion,
+				"last_read_message_id": state.LastReadMessageID,
+				"read_at":              state.LastReadAt,
+			},
+		}
+		if err := enqueueCustomerServiceRealtimeOutboxEvent(s.customerServiceRealtimeOutbox.WithTx(tx), conversation, event); err != nil {
+			return err
+		}
+		mutation = &CustomerServiceRealtimeMutation{Event: event}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return mutation, nil
 }
 
 func (s *TicketService) TransferCustomerServiceConversationForAgent(ticketID uint, fromAgentUserID uint, canViewAll bool, toAgentUserID uint) error {
-	if toAgentUserID == 0 {
-		return ErrCustomerServiceAgentAccessDenied
+	_, err := s.TransferCustomerServiceConversationForAgentWithRealtimeEvent(ticketID, fromAgentUserID, canViewAll, toAgentUserID)
+	return err
+}
+
+func (s *TicketService) TransferCustomerServiceConversationForAgentWithRealtimeEvent(ticketID uint, fromAgentUserID uint, canViewAll bool, toAgentUserID uint) (*CustomerServiceRealtimeMutation, error) {
+	if fromAgentUserID == 0 || toAgentUserID == 0 {
+		return nil, ErrCustomerServiceAgentAccessDenied
 	}
-	if _, err := s.getAgentAccessibleCustomerServiceConversation(ticketID, fromAgentUserID, canViewAll); err != nil {
-		return err
+	var mutation *CustomerServiceRealtimeMutation
+	err := s.ticketRepo.WithinTx(func(ticketRepo *repository.TicketRepository, tx *gorm.DB) error {
+		conversation, err := ticketRepo.FindTicketByIDForUpdate(ticketID)
+		if err != nil {
+			return err
+		}
+		if err := validateAgentCustomerServiceConversation(conversation, fromAgentUserID, canViewAll); err != nil {
+			return err
+		}
+
+		if conversation.AssignedTo == toAgentUserID {
+			if conversation.Status == "in_progress" {
+				return nil
+			}
+			if s.customerServiceRealtimeOutbox == nil {
+				return errors.New("customer-service realtime outbox is unavailable")
+			}
+
+			statusVersion, changed, err := ticketRepo.UpdateTicketStatusForUpdate(conversation, "in_progress")
+			if err != nil {
+				return err
+			}
+			if !changed {
+				return nil
+			}
+
+			changedAt := time.Now().UTC()
+			event := CustomerServiceRealtimeEvent{
+				Type:           CustomerServiceEventStatusChanged,
+				EventID:        CustomerServiceConversationStatusChangedEventID(ticketID, statusVersion),
+				Audience:       CustomerServiceRealtimeAudienceBackoffice,
+				TicketID:       ticketID,
+				ConversationID: ticketConversationID(conversation),
+				OccurredAt:     changedAt,
+				Actor:          CustomerServiceRealtimeActor{Kind: "agent", UserID: &fromAgentUserID},
+				Payload: map[string]interface{}{
+					"previous_status": conversation.Status,
+					"status":          "in_progress",
+					"status_version":  statusVersion,
+					"reason":          "same_owner_transfer",
+				},
+			}
+			if err := enqueueCustomerServiceRealtimeOutboxEvent(s.customerServiceRealtimeOutbox.WithTx(tx), conversation, event); err != nil {
+				return err
+			}
+			mutation = &CustomerServiceRealtimeMutation{Event: event}
+			return nil
+		}
+		if s.customerServiceRealtimeOutbox == nil {
+			return errors.New("customer-service realtime outbox is unavailable")
+		}
+		if err := ticketRepo.AssignTicket(ticketID, toAgentUserID); err != nil {
+			return err
+		}
+		if err := ticketRepo.UpdateTicketStatus(ticketID, "in_progress"); err != nil {
+			return err
+		}
+		assignedAt := time.Now().UTC()
+		state, err := ticketRepo.ResetCustomerServiceInboxAssignmentState(ticketID, toAgentUserID, assignedAt)
+		if err != nil {
+			return err
+		}
+
+		event := CustomerServiceRealtimeEvent{
+			Type:           CustomerServiceEventAssigned,
+			EventID:        CustomerServiceConversationAssignedEventID(ticketID, toAgentUserID, state.AssignmentVersion),
+			Audience:       CustomerServiceRealtimeAudienceBackoffice,
+			TicketID:       ticketID,
+			ConversationID: ticketConversationID(conversation),
+			OccurredAt:     assignedAt,
+			Actor:          CustomerServiceRealtimeActor{Kind: "agent", UserID: &fromAgentUserID},
+			Payload: map[string]interface{}{
+				"assigned_to":         toAgentUserID,
+				"assigned_by_user_id": fromAgentUserID,
+				"assignment_version":  state.AssignmentVersion,
+				"status":              "in_progress",
+			},
+		}
+		if err := enqueueCustomerServiceRealtimeOutboxEvent(s.customerServiceRealtimeOutbox.WithTx(tx), conversation, event); err != nil {
+			return err
+		}
+		mutation = &CustomerServiceRealtimeMutation{Event: event}
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
-	if err := s.assignTicket(ticketID, toAgentUserID); err != nil {
-		return err
-	}
-	return s.updateTicketStatus(ticketID, "in_progress")
+	return mutation, nil
 }
 
 func (s *TicketService) getAgentAccessibleCustomerServiceConversation(ticketID uint, agentUserID uint, canViewAll bool) (*ticket.Ticket, error) {
@@ -136,16 +285,26 @@ func (s *TicketService) getAgentAccessibleCustomerServiceConversation(ticketID u
 	if err != nil {
 		return nil, err
 	}
+	if err := validateAgentCustomerServiceConversation(t, agentUserID, canViewAll); err != nil {
+		return nil, err
+	}
+	return t, nil
+}
+
+func validateAgentCustomerServiceConversation(t *ticket.Ticket, agentUserID uint, canViewAll bool) error {
+	if t == nil {
+		return ErrCustomerServiceAgentAccessDenied
+	}
 	if t.Category != customerServiceTicketCategory {
-		return nil, ErrCustomerServiceAgentAccessDenied
+		return ErrCustomerServiceAgentAccessDenied
 	}
 	if canViewAll {
-		return t, nil
+		return nil
 	}
 	if agentUserID > 0 && t.AssignedTo == agentUserID {
-		return t, nil
+		return nil
 	}
-	return nil, ErrCustomerServiceAgentAccessDenied
+	return ErrCustomerServiceAgentAccessDenied
 }
 
 func (s *TicketService) HasPublicCustomerServiceConversation(owner CustomerServiceOwner) (bool, string, uint, error) {
@@ -223,11 +382,64 @@ func (s *TicketService) AddPublicCustomerServiceMessage(conversationID string, o
 		IsRead:      false,
 		IsInternal:  false,
 	}
-	if err := s.ticketRepo.CreateTicketMessage(msg); err != nil {
+	actor := CustomerServiceRealtimeActor{
+		Kind:      "customer",
+		UserID:    owner.UserID,
+		Anonymous: owner.UserID == nil,
+	}
+	if err := s.persistCustomerServiceMessage(t, msg, actor, nil); err != nil {
 		return nil, nil, err
 	}
 
 	return t, msg, nil
+}
+
+func (s *TicketService) persistCustomerServiceMessage(
+	conversation *ticket.Ticket,
+	message *ticket.TicketMessage,
+	actor CustomerServiceRealtimeActor,
+	afterCreate func(*repository.TicketRepository) error,
+) error {
+	if s == nil || s.ticketRepo == nil {
+		return errors.New("customer-service ticket repository is unavailable")
+	}
+	if conversation == nil || conversation.ID == 0 || message == nil {
+		return errors.New("customer-service message and conversation are required")
+	}
+
+	if s.customerServiceRealtimeOutbox == nil {
+		return errors.New("customer-service realtime outbox is unavailable")
+	}
+
+	return s.ticketRepo.WithinTx(func(ticketRepo *repository.TicketRepository, tx *gorm.DB) error {
+		if err := ticketRepo.CreateTicketMessage(message); err != nil {
+			return err
+		}
+		if actor.Kind == "customer" && conversation.AssignedTo > 0 {
+			if err := ticketRepo.RecordCustomerServiceInboxCustomerMessage(
+				conversation.ID,
+				conversation.AssignedTo,
+				message.ID,
+			); err != nil {
+				return err
+			}
+		}
+
+		if afterCreate != nil {
+			if err := afterCreate(ticketRepo); err != nil {
+				return err
+			}
+		} else if err := ticketRepo.TouchTicket(conversation.ID, time.Now().UTC()); err != nil {
+			return err
+		}
+
+		return enqueueCustomerServiceMessageCreatedOutboxEvent(
+			s.customerServiceRealtimeOutbox.WithTx(tx),
+			conversation,
+			message,
+			actor,
+		)
+	})
 }
 
 func (s *TicketService) GetPublicCustomerServiceMessages(conversationID string, owner CustomerServiceOwner, limit, offset int) ([]ticket.TicketMessage, error) {
@@ -331,6 +543,7 @@ func (s *TicketService) findCustomerServiceConversationByOwner(owner CustomerSer
 
 func (s *TicketService) updateCustomerServiceConversationOwner(t *ticket.Ticket, owner CustomerServiceOwner, agentID uint) error {
 	changed := false
+	assignmentChanged := false
 	if t.ConversationID == nil || strings.TrimSpace(*t.ConversationID) == "" {
 		conversationID := uuid.NewString()
 		t.ConversationID = &conversationID
@@ -348,6 +561,7 @@ func (s *TicketService) updateCustomerServiceConversationOwner(t *ticket.Ticket,
 	if agentID > 0 && t.AssignedTo != agentID {
 		t.AssignedTo = agentID
 		changed = true
+		assignmentChanged = true
 	}
 	if t.Status == "" || t.Status == "closed" || t.Status == "resolved" {
 		t.Status = "open"
@@ -363,6 +577,14 @@ func (s *TicketService) updateCustomerServiceConversationOwner(t *ticket.Ticket,
 	}
 	if !changed {
 		return nil
+	}
+	if assignmentChanged {
+		return s.ticketRepo.WithinTx(func(ticketRepo *repository.TicketRepository, _ *gorm.DB) error {
+			if err := ticketRepo.UpdateTicket(t); err != nil {
+				return err
+			}
+			return ticketRepo.ResetCustomerServiceInboxAssignment(t.ID, agentID, time.Now().UTC())
+		})
 	}
 	return s.ticketRepo.UpdateTicket(t)
 }
@@ -442,7 +664,7 @@ func customerServiceConversationTag(conversationID string) string {
 func normalizeCustomerServiceMessageType(value string) string {
 	value = strings.ToLower(strings.TrimSpace(value))
 	switch value {
-	case "product", "order", "image", "link", "faq", "config_confirm":
+	case "product", "order", "image", "link", "faq", "config_confirm", "wheelset_selection_request":
 		return value
 	default:
 		return "text"

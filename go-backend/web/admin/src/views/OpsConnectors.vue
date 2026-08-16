@@ -2,12 +2,56 @@
   <div class="space-y-4">
     <AdminPageHeader
       title="运维中心 / 连接器中心"
-      description="登记 Cloudflare、Hostinger 和代码发布平台连接；这里只做连接测试，不直接执行发布或 DNS 写入。"
+      description="网页登录授权并自动绑定 Cloudflare、Hostinger 资源；发现和同步只读，不直接执行发布或 DNS 写入。"
     >
       <template #actions>
-        <Button variant="outline" :disabled="loading" @click="loadConnectors">
+        <select
+          v-model="environmentFilter"
+          class="h-9 rounded-md border bg-background px-3 text-sm"
+          aria-label="筛选连接器环境"
+          :disabled="loading || Boolean(oauthProvider)"
+          @change="changeEnvironment"
+        >
+          <option v-for="option in opsConnectorEnvironmentOptions" :key="option.value" :value="option.value">
+            {{ option.label }}
+          </option>
+          <option value="">全部环境</option>
+        </select>
+        <Button variant="outline" :disabled="loading || Boolean(oauthProvider)" @click="loadConnectors">
           <RefreshCw :class="['size-4', loading ? 'animate-spin' : '']" />
           刷新
+        </Button>
+        <Button
+          v-if="canEdit"
+          variant="outline"
+          :disabled="Boolean(oauthProvider) || !environmentFilter"
+          title="选择具体环境后，网页登录并自动绑定 Cloudflare 账号与已有域名"
+          @click="startOAuth('cloudflare')"
+        >
+          <LoaderCircle v-if="oauthProvider === 'cloudflare'" class="size-4 animate-spin" />
+          <Cloud v-else class="size-4" />
+          连接 Cloudflare
+        </Button>
+        <Button
+          v-if="canEdit"
+          variant="outline"
+          :disabled="Boolean(oauthProvider) || !environmentFilter"
+          title="选择具体环境后，网页登录并自动绑定 Hostinger 服务器与 Docker 项目"
+          @click="startOAuth('hostinger')"
+        >
+          <LoaderCircle v-if="oauthProvider === 'hostinger'" class="size-4 animate-spin" />
+          <Server v-else class="size-4" />
+          连接 Hostinger
+        </Button>
+        <Button
+          v-if="canEdit"
+          :disabled="Boolean(oauthProvider) || !environmentFilter"
+          title="选择具体环境后，依次网页登录 Hostinger 和 Cloudflare，并自动绑定服务器、项目与域名"
+          @click="connectAll"
+        >
+          <LoaderCircle v-if="oauthProvider === 'all'" class="size-4 animate-spin" />
+          <Link2 v-else class="size-4" />
+          一键连接全部
         </Button>
         <Button v-if="canEdit" @click="openCreate">
           <Plus class="size-4" />
@@ -111,6 +155,16 @@
                   <PlugZap v-else class="size-4" />
                 </Button>
                 <Button
+                  v-if="canEdit && oauthProviderFor(connector)"
+                  size="icon"
+                  variant="ghost"
+                  :title="`重新授权 ${connector.name}`"
+                  :disabled="Boolean(oauthProvider)"
+                  @click="reauthorizeConnector(connector)"
+                >
+                  <KeyRound class="size-4" />
+                </Button>
+                <Button
                   v-if="canEdit"
                   size="icon"
                   variant="ghost"
@@ -129,240 +183,86 @@
       </Table>
     </AdminTablePanel>
 
-    <Dialog v-model:open="dialogOpen">
-      <DialogContent size="lg">
-        <DialogHeader>
-          <DialogTitle>{{ form.id ? '编辑连接器' : '新增连接器' }}</DialogTitle>
-          <DialogDescription>
-            凭据只写入后端加密存储。编辑时凭据字段留空会保留原值，页面不会回显旧 Token。
-          </DialogDescription>
-        </DialogHeader>
-
-        <form class="space-y-4" @submit.prevent="saveConnector">
-          <div class="grid gap-4 md:grid-cols-2">
-            <AdminFormField label="连接名称" required>
-              <Input v-model="form.name" placeholder="Cloudflare Production" :disabled="saving" />
-            </AdminFormField>
-            <AdminFormField label="提供商" required>
-              <select v-model="form.provider" class="h-10 w-full rounded-md border bg-background px-3 text-sm" :disabled="saving">
-                <option v-for="option in providerOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
-              </select>
-            </AdminFormField>
-            <AdminFormField label="环境">
-              <select v-model="form.environment" class="h-10 w-full rounded-md border bg-background px-3 text-sm" :disabled="saving">
-                <option v-for="option in environmentOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
-              </select>
-            </AdminFormField>
-            <AdminFormField label="认证方式">
-              <select v-model="form.auth_type" class="h-10 w-full rounded-md border bg-background px-3 text-sm" :disabled="saving">
-                <option v-for="option in authTypeOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
-              </select>
-            </AdminFormField>
-            <AdminFormField label="测试接口" description="Cloudflare 留空会使用 Token 验证接口；Hostinger 建议填写官方只读接口。">
-              <Input v-model="form.endpoint" type="url" placeholder="https://api.example.com/health" :disabled="saving" />
-            </AdminFormField>
-            <AdminFormField v-if="form.auth_type === 'environment'" label="环境变量名" required>
-              <Input v-model="form.credential_ref" placeholder="HOSTINGER_API_TOKEN" :disabled="saving" />
-            </AdminFormField>
-            <AdminFormField v-else label="凭据引用">
-              <Input v-model="form.credential_ref" placeholder="可选：外部密钥系统引用" :disabled="saving" />
-            </AdminFormField>
-            <AdminFormField label="权限范围" description="用逗号或空格记录允许的范围，不会自动扩大外部权限。">
-              <Input v-model="form.scopes" placeholder="zones:read, dns:read" :disabled="saving" />
-            </AdminFormField>
-            <template v-if="form.auth_type !== 'none' && form.auth_type !== 'manual' && form.auth_type !== 'environment'">
-              <AdminFormField
-                v-for="field in credentialFields"
-                :key="field.key"
-                :label="field.label"
-                :description="form.id ? '留空保留已保存凭据；填写后将覆盖这一字段。' : '提交后只显示字段名，不显示原值。'"
-              >
-                <Input
-                  v-model="form.credentials[field.key]"
-                  :type="field.secret ? 'password' : 'text'"
-                  autocomplete="new-password"
-                  :placeholder="field.placeholder"
-                  :disabled="saving"
-                />
-              </AdminFormField>
-            </template>
-            <AdminFormField label="状态">
-              <select v-model="form.status" class="h-10 w-full rounded-md border bg-background px-3 text-sm" :disabled="saving">
-                <option v-for="option in statusOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
-              </select>
-            </AdminFormField>
-            <AdminFormField label="备注" class="md:col-span-2">
-              <Textarea v-model="form.notes" class="min-h-24" placeholder="记录连接用途、权限边界和轮换说明。" :disabled="saving" />
-            </AdminFormField>
-          </div>
-
-          <DialogFooter>
-            <Button type="button" variant="outline" :disabled="saving" @click="dialogOpen = false">取消</Button>
-            <Button type="submit" :disabled="saving || !canEdit">
-              <LoaderCircle v-if="saving" class="size-4 animate-spin" />
-              <Save v-else class="size-4" />
-              {{ saving ? '保存中' : '保存连接' }}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <OpsConnectorBindingFormDialog
+      :open="dialogOpen"
+      :form="form"
+      :saving="saving"
+      :can-edit="canEdit"
+      @update:open="dialogOpen = $event"
+      @save="saveConnector"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
-import { LoaderCircle, Pencil, PlugZap, Plus, Power, RefreshCw, Save } from '@lucide/vue'
-import AdminFormField from '@/components/admin/AdminFormField.vue'
+import { Cloud, KeyRound, Link2, LoaderCircle, Pencil, PlugZap, Plus, Power, RefreshCw, Server } from '@lucide/vue'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import AdminStatusBadge, { type AdminStatusTone } from '@/components/admin/AdminStatusBadge.vue'
 import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
-import { Button } from '@/components/ui/button'
+import OpsConnectorBindingFormDialog from '@/components/admin/ops/OpsConnectorBindingFormDialog.vue'
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
+  assignOpsConnectorForm,
+  emptyOpsConnectorForm,
+  opsConnectorAuthTypeOptions,
+  opsConnectorEnvironmentOptions,
+  opsConnectorProviderOptions,
+  opsConnectorStatusOptions,
+  type OpsConnectorForm,
+} from '@/components/admin/ops/opsConnectorBindingForm'
+import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Textarea } from '@/components/ui/textarea'
-import opsApi, { type OpsConnectorPayload } from '@/api/ops'
+import opsApi, {
+  type OpsConnector,
+  type OpsConnectorPayload,
+  type OpsConnectorTestResult,
+  type OpsEnvironment,
+} from '@/api/ops'
+import { readOpsEnvironmentQuery, withOpsEnvironmentQuery } from '@/lib/opsEnvironment'
 import { useAuthStore } from '@/stores/auth'
 
-interface OpsConnector {
-  id: number
-  name: string
-  provider: string
-  environment: string
-  endpoint: string
-  auth_type: string
-  credential_ref: string
-  credential_configured: boolean
-  credential_fields: string[]
-  scopes: string
-  status: string
-  enabled: boolean
-  last_test_status: string
-  last_tested_at?: string
-  last_error: string
-  notes: string
-}
-
-interface CredentialField {
-  key: string
-  label: string
-  placeholder: string
-  secret: boolean
-}
-
-interface OpsConnectorForm {
-  id: number
-  name: string
-  provider: string
-  environment: string
-  endpoint: string
-  auth_type: string
-  credential_ref: string
-  credentials: Record<string, string>
-  scopes: string
-  status: string
-  enabled: boolean
-  notes: string
-}
-
+const route = useRoute()
+const router = useRouter()
 const authStore = useAuthStore()
 const canEdit = computed(() => authStore.hasPermission('ops:connector:edit'))
 const connectors = ref<OpsConnector[]>([])
 const loading = ref(false)
 const saving = ref(false)
 const testingID = ref(0)
+const oauthProvider = ref('')
 const dialogOpen = ref(false)
+const environmentFilter = ref<OpsEnvironment | ''>(readOpsEnvironmentQuery(route.query.environment))
 
-const providerOptions = [
-  { value: 'cloudflare', label: 'Cloudflare' },
-  { value: 'hostinger', label: 'Hostinger' },
-  { value: 'github', label: 'GitHub' },
-  { value: 'ghcr', label: 'GitHub / GHCR' },
-  { value: 'other', label: '其他' },
-]
-const environmentOptions = [
-  { value: 'production', label: '生产' },
-  { value: 'staging', label: '预发布' },
-  { value: 'test', label: '测试' },
-  { value: 'local', label: '本地' },
-]
-const authTypeOptions = [
-  { value: 'api_token', label: 'API Token' },
-  { value: 'api_key', label: 'API Key' },
-  { value: 'bearer', label: 'Bearer Token' },
-  { value: 'basic', label: 'Basic Auth' },
-  { value: 'environment', label: '后端环境变量' },
-  { value: 'manual', label: '手动登记' },
-  { value: 'none', label: '无需认证' },
-]
-const statusOptions = [
-  { value: 'active', label: '正常' },
-  { value: 'pending', label: '待测试' },
-  { value: 'disabled', label: '已停用' },
-  { value: 'error', label: '测试失败' },
-]
-
-const emptyForm = (): OpsConnectorForm => ({
-  id: 0,
-  name: '',
-  provider: 'cloudflare',
-  environment: 'production',
-  endpoint: '',
-  auth_type: 'api_token',
-  credential_ref: '',
-  credentials: { token: '', api_key: '', username: '', password: '' },
-  scopes: '',
-  status: 'pending',
-  enabled: true,
-  notes: '',
-})
-const form = reactive<OpsConnectorForm>(emptyForm())
+const form = reactive<OpsConnectorForm>(emptyOpsConnectorForm())
 
 const enabledCount = computed(() => connectors.value.filter((connector) => connector.enabled).length)
 const credentialCount = computed(() => connectors.value.filter((connector) => connector.credential_configured).length)
 const attentionCount = computed(() => connectors.value.filter((connector) => ['pending', 'error'].includes(connector.status)).length)
 
-const credentialFields = computed<CredentialField[]>(() => {
-  if (form.auth_type === 'basic') {
-    return [
-      { key: 'username', label: '用户名', placeholder: '只读账号用户名', secret: false },
-      { key: 'password', label: '密码', placeholder: '只读账号密码', secret: true },
-    ]
-  }
-  if (form.auth_type === 'api_key') {
-    return [{ key: 'api_key', label: 'API Key', placeholder: '粘贴 API Key', secret: true }]
-  }
-  return [{ key: 'token', label: 'Token', placeholder: '粘贴 Token，不会回显', secret: true }]
-})
-
 const assignForm = (connector?: Partial<OpsConnector>): void => {
-  Object.assign(form, emptyForm(), connector || {})
-  form.credentials = { token: '', api_key: '', username: '', password: '' }
+  assignOpsConnectorForm(form, connector)
+  if (!connector && environmentFilter.value) {
+    form.environment = environmentFilter.value
+  }
 }
-
-watch(() => form.auth_type, (authType) => {
-  if (authType === 'environment') form.credentials = { token: '', api_key: '', username: '', password: '' }
-})
 
 const loadConnectors = async (): Promise<void> => {
   loading.value = true
   try {
-    const data = await opsApi.listConnectors()
+    const data = await opsApi.listConnectors(environmentFilter.value || undefined)
     connectors.value = Array.isArray(data?.connectors) ? data.connectors : []
   } catch (error: any) {
     toast.error(error?.response?.data?.message || error?.response?.data?.error || '连接器列表加载失败')
   } finally {
     loading.value = false
   }
+}
+
+const changeEnvironment = (): void => {
+  void router.replace({ query: withOpsEnvironmentQuery(route.query, environmentFilter.value) })
+  void loadConnectors()
 }
 
 const openCreate = (): void => {
@@ -434,7 +334,7 @@ const testConnector = async (connector: OpsConnector): Promise<void> => {
   try {
     const result = await opsApi.testConnector(connector.id)
     toast[result.success ? 'success' : 'error'](result.message || (result.success ? '连接测试成功' : '连接测试失败'))
-    await loadConnectors()
+    applyTestResult(connector, result)
   } catch (error: any) {
     toast.error(error?.response?.data?.message || error?.response?.data?.error || '连接测试失败')
   } finally {
@@ -442,13 +342,124 @@ const testConnector = async (connector: OpsConnector): Promise<void> => {
   }
 }
 
+const applyTestResult = (connector: OpsConnector, result: OpsConnectorTestResult): void => {
+  const index = connectors.value.findIndex((item) => item.id === connector.id)
+  if (index < 0) return
+  connectors.value[index] = {
+    ...connector,
+    credential_configured: result.credential_configured,
+    last_test_status: result.success ? 'success' : 'failed',
+    last_tested_at: result.checked_at,
+    last_error: result.success ? '' : result.message,
+    status: result.success ? 'active' : connector.enabled ? 'error' : 'disabled',
+  }
+}
+
+const oauthProviderFor = (connector: OpsConnector): 'cloudflare' | 'hostinger' | '' => (
+  connector.provider === 'cloudflare' || connector.provider === 'hostinger'
+    ? connector.provider
+    : ''
+)
+
+const reauthorizeConnector = async (connector: OpsConnector): Promise<void> => {
+  const provider = oauthProviderFor(connector)
+  if (!provider) return
+  await startOAuth(
+    provider,
+    connector.id,
+    isOpsEnvironment(connector.environment) ? connector.environment : 'production',
+  )
+}
+
+const isOpsEnvironment = (value: string | null): value is OpsEnvironment => (
+  value === 'production' || value === 'staging' || value === 'test' || value === 'local'
+)
+
+const oauthReturnPath = (environment: OpsEnvironment, nextProvider?: 'cloudflare'): string => {
+  const query = new URLSearchParams({ ops_oauth_environment: environment })
+  if (nextProvider) query.set('ops_oauth_next', nextProvider)
+  return `/ops/connectors?${query.toString()}`
+}
+
+const startOAuth = async (
+  provider: 'cloudflare' | 'hostinger',
+  connectorID?: number,
+  environment: OpsEnvironment | '' = environmentFilter.value,
+): Promise<void> => {
+  const resolvedEnvironment = environment || 'production'
+  oauthProvider.value = provider
+  try {
+    const result = await opsApi.startConnectorOAuth(
+      provider,
+      connectorID,
+      oauthReturnPath(resolvedEnvironment),
+      resolvedEnvironment,
+    )
+    window.location.assign(result.authorization_url)
+  } catch (error: any) {
+    toast.error(error?.response?.data?.message || error?.response?.data?.error || '网页登录授权启动失败')
+    oauthProvider.value = ''
+  }
+}
+
+const connectAll = async (): Promise<void> => {
+  const environment = environmentFilter.value || 'production'
+  oauthProvider.value = 'all'
+  try {
+    const result = await opsApi.startConnectorOAuth(
+      'hostinger',
+      undefined,
+      oauthReturnPath(environment, 'cloudflare'),
+      environment,
+    )
+    window.location.assign(result.authorization_url)
+  } catch (error: any) {
+    toast.error(error?.response?.data?.message || error?.response?.data?.error || '一键网页登录授权启动失败')
+    oauthProvider.value = ''
+  }
+}
+
+const handleOAuthReturn = async (): Promise<void> => {
+  const query = new URLSearchParams(window.location.search)
+  const status = query.get('ops_oauth_status')
+  if (!status) return
+  const message = query.get('ops_oauth_message') || (status === 'connected' ? '网页登录授权成功' : '网页登录授权失败')
+  const nextProvider = query.get('ops_oauth_next')
+  const oauthEnvironment = query.get('ops_oauth_environment')
+  if (isOpsEnvironment(oauthEnvironment)) {
+    environmentFilter.value = oauthEnvironment
+  }
+  const connected = status === 'connected' || status === 'connected_with_warnings'
+  if (connected) {
+    const provider = query.get('ops_oauth_provider') === 'hostinger' ? 'Hostinger' : 'Cloudflare'
+    const vps = query.get('ops_oauth_bound_vps') || '0'
+    const projects = query.get('ops_oauth_bound_projects') || '0'
+    const domains = query.get('ops_oauth_bound_domains') || '0'
+    const warnings = query.get('ops_oauth_binding_warnings') || '0'
+    const summary = `${provider} 已连接，自动绑定 ${vps} 台服务器、${projects} 个项目、${domains} 个域名；${warnings} 项绑定或同步需要复核`
+    if (status === 'connected_with_warnings') {
+      toast.warning(message || summary)
+    } else {
+      toast.success(summary)
+    }
+  } else {
+    toast.error(message)
+  }
+  const cleanURL = `${window.location.pathname}${window.location.hash}`
+  window.history.replaceState({}, document.title, cleanURL)
+  if (connected && nextProvider === 'cloudflare') {
+    toast.info('Hostinger 已连接，继续授权 Cloudflare')
+    await startOAuth('cloudflare', undefined, isOpsEnvironment(oauthEnvironment) ? oauthEnvironment : environmentFilter.value)
+  }
+}
+
 const optionLabel = (options: Array<{ value: string; label: string }>, value: string): string => (
   options.find((option) => option.value === value)?.label || value || '-'
 )
-const providerLabel = (value: string): string => optionLabel(providerOptions, value)
-const environmentLabel = (value: string): string => optionLabel(environmentOptions, value)
-const authTypeLabel = (value: string): string => optionLabel(authTypeOptions, value)
-const statusLabel = (value: string): string => optionLabel(statusOptions, value)
+const providerLabel = (value: string): string => optionLabel(opsConnectorProviderOptions, value)
+const environmentLabel = (value: string): string => optionLabel(opsConnectorEnvironmentOptions, value)
+const authTypeLabel = (value: string): string => optionLabel(opsConnectorAuthTypeOptions, value)
+const statusLabel = (value: string): string => optionLabel(opsConnectorStatusOptions, value)
 const testLabel = (value: string): string => value === 'success' ? '成功' : value === 'failed' ? '失败' : '未测试'
 const defaultEndpointLabel = (provider: string): string => provider === 'cloudflare' ? 'Cloudflare Token 验证接口' : '未设置测试接口'
 const formatDate = (value: string): string => new Date(value).toLocaleString()
@@ -460,5 +471,15 @@ const statusTone = (value: string): AdminStatusTone => {
 }
 const testTone = (value: string): AdminStatusTone => value === 'success' ? 'green' : value === 'failed' ? 'coral' : 'gray'
 
-onMounted(loadConnectors)
+watch(() => route.query.environment, (value) => {
+  const nextEnvironment = readOpsEnvironmentQuery(value)
+  if (nextEnvironment === environmentFilter.value) return
+  environmentFilter.value = nextEnvironment
+  void loadConnectors()
+})
+
+onMounted(async () => {
+  await handleOAuthReturn()
+  await loadConnectors()
+})
 </script>

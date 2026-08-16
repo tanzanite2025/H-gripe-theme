@@ -5,6 +5,8 @@ export interface MediaAssetLike {
   filename?: string | null
   access_url?: string | null
   url?: string | null
+  width?: number | string | null
+  height?: number | string | null
 }
 
 export const assetTitle = (asset?: MediaAssetLike | null): string => (
@@ -27,4 +29,14 @@ export const formatMediaSize = (bytes?: number | string | null): string => {
   if (value >= 1024 * 1024) return `${(value / 1024 / 1024).toFixed(1)} MB`
   if (value >= 1024) return `${Math.round(value / 1024)} KB`
   return `${value} B`
+}
+
+export const formatMediaDimensions = (
+  width?: number | string | null,
+  height?: number | string | null,
+): string => {
+  const normalizedWidth = Number(width || 0)
+  const normalizedHeight = Number(height || 0)
+  if (normalizedWidth <= 0 || normalizedHeight <= 0) return '尺寸未知'
+  return `${normalizedWidth.toLocaleString('zh-CN')} × ${normalizedHeight.toLocaleString('zh-CN')} px`
 }

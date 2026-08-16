@@ -14,9 +14,9 @@ SET is_filterable = CASE definition.slug
         ELSE definition.is_filterable
     END,
     updated_at = NOW()
-FROM product_types product_type
-WHERE definition.product_type_id = product_type.id
-  AND product_type.slug = 'rim'
+FROM product_specification_templates product_specification_template
+WHERE definition.product_specification_template_id = product_specification_template.id
+  AND product_specification_template.slug = 'rim'
   AND definition.slug IN (
       'material',
       'brake_type',

@@ -52,7 +52,7 @@ func publicCustomerServiceMessageResponse(item ticket.TicketMessage, conversatio
 func normalizeTicketMessageType(value string) string {
 	value = strings.ToLower(strings.TrimSpace(value))
 	switch value {
-	case "product", "order", "image", "link", "faq", "config_confirm":
+	case "product", "order", "image", "link", "faq", "config_confirm", "wheelset_selection_request":
 		return value
 	default:
 		return "text"

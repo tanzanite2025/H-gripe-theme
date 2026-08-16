@@ -44,6 +44,12 @@ export interface OrderItem {
   price?: number | string | null
   quantity?: number | string | null
   total?: number | string | null
+  hs_code?: string | null
+  cn_code?: string | null
+  country_of_origin?: string | null
+  customs_description?: string | null
+  declared_value?: number | string | null
+  declared_value_confirmed?: boolean | null
 }
 
 export interface OrderRecord {
@@ -68,6 +74,7 @@ export interface OrderRecord {
   tax_amount?: number | string | null
   discount_amount?: number | string | null
   total_amount?: number | string | null
+  currency?: string | null
   customer_note?: string | null
   admin_note?: string | null
 }

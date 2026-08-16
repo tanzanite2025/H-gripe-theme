@@ -1,0 +1,17 @@
+{
+  "eyebrow": "Müşteri geri bildirimi",
+  "title": "Puanlar ve yorumlar",
+  "summaryLabel": "{count} yoruma göre 5 üzerinden {rating}",
+  "reviewCount": "{count} yorum",
+  "loading": "Yorumlar yükleniyor...",
+  "loadError": "Yorumlar yüklenemedi.",
+  "retry": "Tekrar dene",
+  "empty": "Henüz onaylanmış yorum yok.",
+  "ratingLabel": "5 üzerinden {rating} yıldız",
+  "imageAlt": "Müşteri yorumu görseli",
+  "verifiedPurchase": "Doğrulanmış satın alma",
+  "helpfulCount": "{count} kişi faydalı buldu",
+  "storeReply": "Mağaza yanıtı",
+  "loadingMore": "Daha fazla yükleniyor...",
+  "loadMore": "Daha fazla yorum yükle"
+}

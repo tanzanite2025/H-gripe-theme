@@ -50,6 +50,7 @@
                 :src="assetAccessURL(asset)"
                 :alt="asset.alt || asset.original_filename || asset.filename || ''"
                 class="size-full object-cover transition duration-200 group-hover:scale-[1.03]"
+                @load="handleImageLoad($event, asset)"
               />
               <span v-else class="flex size-full items-center justify-center text-muted-foreground">
                 <Images class="size-6 opacity-50" />
@@ -58,7 +59,10 @@
             <span class="block min-w-0 space-y-1 px-3 py-2">
               <span class="block truncate text-xs font-black">{{ assetTitle(asset) }}</span>
               <span class="flex items-center justify-between gap-2 text-[10px] font-bold text-muted-foreground">
+                <span>{{ assetDimensionLabel(asset) }}</span>
                 <span>{{ formatMediaSize(asset.size) }}</span>
+              </span>
+              <span class="flex justify-end text-[10px] font-bold text-muted-foreground">
                 <span :class="isSelected(asset.url) ? 'text-[var(--admin-selected)]' : ''">
                   {{ isSelected(asset.url) ? '已加入' : '选择' }}
                 </span>
@@ -83,7 +87,7 @@
 </template>
 
 <script setup lang="ts">
-import { toRef } from 'vue'
+import { reactive, toRef } from 'vue'
 import { ImageOff, Images, RefreshCw, Search } from '@lucide/vue'
 import AdminPagination from '@/components/admin/AdminPagination.vue'
 import { Button } from '@/components/ui/button'
@@ -91,7 +95,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useMediaAssetPicker } from '@/composables/media/useMediaAssetPicker'
-import { assetAccessURL, assetTitle, formatMediaSize } from '@/lib/mediaPresentation'
+import { assetAccessURL, assetTitle, formatMediaDimensions, formatMediaSize } from '@/lib/mediaPresentation'
 import type { MediaAsset } from '@/api/media'
 
 interface MediaAssetSelection {
@@ -123,6 +127,30 @@ const {
   updatePage,
   updatePageSize,
 } = useMediaAssetPicker(toRef(props, 'open'))
+
+const loadedDimensions = reactive<Record<string, { width: number; height: number }>>({})
+
+const assetDimensionLabel = (asset: MediaAsset): string => {
+  const storedWidth = Number(asset.width || 0)
+  const storedHeight = Number(asset.height || 0)
+  if (storedWidth > 0 && storedHeight > 0) {
+    return formatMediaDimensions(storedWidth, storedHeight)
+  }
+
+  const loaded = loadedDimensions[String(asset.id)]
+  return loaded
+    ? formatMediaDimensions(loaded.width, loaded.height)
+    : '读取尺寸中'
+}
+
+const handleImageLoad = (event: Event, asset: MediaAsset): void => {
+  const image = event.currentTarget as HTMLImageElement | null
+  if (!image || image.naturalWidth <= 0 || image.naturalHeight <= 0) return
+  loadedDimensions[String(asset.id)] = {
+    width: image.naturalWidth,
+    height: image.naturalHeight,
+  }
+}
 
 const selectAsset = (asset: MediaAsset): void => {
   if (!asset?.url) return

@@ -3,6 +3,7 @@ import { computed } from 'vue'
 
 const emit = defineEmits<{
   directSelect: []
+  wheelsetSelectionAssistant: []
 }>()
 
 const { t } = useI18n()
@@ -31,15 +32,15 @@ const entryModes = computed(() => [
     action: '?',
   },
   {
-    key: 'spec-finder',
-    enabled: false,
+    key: 'wheelset-selection-assistant',
+    enabled: true,
     icon: 'lucide:circle-help',
-    title: t('quickBuy.entry.specFinder.title', 'Find my bike specs'),
+    title: t('quickBuy.entry.wheelsetSelectionAssistant.title', 'Find my bike specs'),
     description: t(
-      'quickBuy.entry.specFinder.description',
-      'Coming next.',
+      'quickBuy.entry.wheelsetSelectionAssistant.description',
+      'Answer guided fit questions.',
     ),
-    action: '?',
+    action: t('quickBuy.entry.wheelsetSelectionAssistant.action', 'Start'),
   },
 ])
 
@@ -47,6 +48,9 @@ const handleEntryModeClick = (key: string, enabled: boolean) => {
   if (!enabled) return
   if (key === 'direct-select') {
     emit('directSelect')
+  }
+  if (key === 'wheelset-selection-assistant') {
+    emit('wheelsetSelectionAssistant')
   }
 }
 </script>

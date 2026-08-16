@@ -1,0 +1,172 @@
+package admin
+
+import (
+	"commerce-platform/internal/service"
+	"errors"
+	"net/http"
+	"strconv"
+
+	"github.com/gin-gonic/gin"
+)
+
+type productSpecificationTemplateRequest struct {
+	Name            string                                            `json:"name" binding:"required"`
+	Slug            string                                            `json:"slug" binding:"required"`
+	Description     string                                            `json:"description"`
+	SortOrder       int                                               `json:"sort_order"`
+	IsEnabled       *bool                                             `json:"is_enabled" binding:"required"`
+	Translations    *[]productSpecificationTemplateTranslationRequest `json:"translations"`
+	SpecDefinitions []productSpecDefinitionRequest                    `json:"spec_definitions"`
+}
+
+type productSpecificationTemplateTranslationRequest struct {
+	ID          uint   `json:"id"`
+	Locale      string `json:"locale" binding:"required"`
+	Name        string `json:"name" binding:"required"`
+	Description string `json:"description"`
+}
+
+type productSpecDefinitionRequest struct {
+	ID              uint   `json:"id"`
+	Group           string `json:"group"`
+	Name            string `json:"name" binding:"required"`
+	Slug            string `json:"slug" binding:"required"`
+	FieldType       string `json:"field_type" binding:"required,oneof=text number select boolean"`
+	Presentation    string `json:"presentation"`
+	Unit            string `json:"unit"`
+	IsRequired      bool   `json:"is_required"`
+	IsFilterable    bool   `json:"is_filterable"`
+	IsVisible       bool   `json:"is_visible"`
+	IsVariantOption bool   `json:"is_variant_option"`
+	SortOrder       int    `json:"sort_order"`
+	Options         string `json:"options"`
+	Validation      string `json:"validation"`
+}
+
+func (h *ProductHandler) GetProductSpecificationTemplate(c *gin.Context) {
+	id, ok := parseProductSpecificationTemplateID(c)
+	if !ok {
+		return
+	}
+	productSpecificationTemplate, err := h.productService.GetProductSpecificationTemplate(id)
+	if err != nil {
+		respondProductSpecificationTemplateServiceError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"data": productSpecificationTemplate})
+}
+
+func (h *ProductHandler) CreateProductSpecificationTemplate(c *gin.Context) {
+	var request productSpecificationTemplateRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	productSpecificationTemplate, err := h.productService.CreateProductSpecificationTemplate(productSpecificationTemplateInputFromRequest(request))
+	if err != nil {
+		respondProductSpecificationTemplateServiceError(c, err)
+		return
+	}
+	c.JSON(http.StatusCreated, gin.H{"data": productSpecificationTemplate})
+}
+
+func (h *ProductHandler) UpdateProductSpecificationTemplate(c *gin.Context) {
+	id, ok := parseProductSpecificationTemplateID(c)
+	if !ok {
+		return
+	}
+	var request productSpecificationTemplateRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	productSpecificationTemplate, err := h.productService.UpdateProductSpecificationTemplate(id, productSpecificationTemplateInputFromRequest(request))
+	if err != nil {
+		respondProductSpecificationTemplateServiceError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"data": productSpecificationTemplate})
+}
+
+func (h *ProductHandler) DeleteProductSpecificationTemplate(c *gin.Context) {
+	id, ok := parseProductSpecificationTemplateID(c)
+	if !ok {
+		return
+	}
+	if err := h.productService.DeleteProductSpecificationTemplate(id); err != nil {
+		respondProductSpecificationTemplateServiceError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "product specification template deleted"})
+}
+
+func parseProductSpecificationTemplateID(c *gin.Context) (uint, bool) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil || id == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid product specification template id"})
+		return 0, false
+	}
+	return uint(id), true
+}
+
+func productSpecificationTemplateInputFromRequest(request productSpecificationTemplateRequest) service.ProductSpecificationTemplateInput {
+	definitions := make([]service.ProductSpecDefinitionInput, 0, len(request.SpecDefinitions))
+	for _, definition := range request.SpecDefinitions {
+		definitions = append(definitions, service.ProductSpecDefinitionInput{
+			ID:              definition.ID,
+			Group:           definition.Group,
+			Name:            definition.Name,
+			Slug:            definition.Slug,
+			FieldType:       definition.FieldType,
+			Presentation:    definition.Presentation,
+			Unit:            definition.Unit,
+			IsRequired:      definition.IsRequired,
+			IsFilterable:    definition.IsFilterable,
+			IsVisible:       definition.IsVisible,
+			IsVariantOption: definition.IsVariantOption,
+			SortOrder:       definition.SortOrder,
+			Options:         definition.Options,
+			Validation:      definition.Validation,
+		})
+	}
+	input := service.ProductSpecificationTemplateInput{
+		Name:            request.Name,
+		Slug:            request.Slug,
+		Description:     request.Description,
+		SortOrder:       request.SortOrder,
+		IsEnabled:       request.IsEnabled != nil && *request.IsEnabled,
+		SpecDefinitions: definitions,
+	}
+	if request.Translations != nil {
+		input.UpdateTranslations = true
+		input.Translations = make([]service.ProductSpecificationTemplateTranslationInput, 0, len(*request.Translations))
+		for _, translation := range *request.Translations {
+			input.Translations = append(input.Translations, service.ProductSpecificationTemplateTranslationInput{
+				ID:          translation.ID,
+				Locale:      translation.Locale,
+				Name:        translation.Name,
+				Description: translation.Description,
+			})
+		}
+	}
+	return input
+}
+
+func respondProductSpecificationTemplateServiceError(c *gin.Context, err error) {
+	switch {
+	case errors.Is(err, service.ErrProductSpecificationTemplateNotFound):
+		c.JSON(http.StatusNotFound, gin.H{"error": "Product specification template not found"})
+	case errors.Is(err, service.ErrProductSpecificationTemplateSlugExists):
+		c.JSON(http.StatusConflict, gin.H{"error": "Product specification template slug already exists"})
+	case errors.Is(err, service.ErrProductSpecificationTemplateSystemManaged):
+		c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+	case errors.Is(err, service.ErrProductSpecificationTemplateInvalid), errors.Is(err, service.ErrProductSpecInvalid):
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	case errors.Is(err, service.ErrProductSpecificationTemplateTranslationInvalid), errors.Is(err, service.ErrUnsupportedLocale):
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	default:
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to manage product specification template"})
+	}
+}

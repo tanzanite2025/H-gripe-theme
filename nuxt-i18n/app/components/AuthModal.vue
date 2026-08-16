@@ -217,10 +217,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch, onMounted } from 'vue'
+import { computed, onBeforeUnmount, ref, watch, onMounted } from 'vue'
 import { useI18n } from '#imports'
 import { useAuth } from '~/composables/useAuth'
 import { useGoogleAuth } from '~/composables/useGoogleAuth'
+import { createOverlayInstanceId, useOverlayBackStack } from '~/composables/useOverlayBackStack'
 import { z } from 'zod'
 import { useFocusTrap } from '@vueuse/integrations/useFocusTrap'
 
@@ -245,6 +246,9 @@ const emit = defineEmits<{
 }>()
 
 const auth = useAuth()
+const overlayBackStack = useOverlayBackStack()
+const overlayId = createOverlayInstanceId('auth-modal')
+let ownsOverlayHistory = false
 
 const containerPlacementClass = computed(() => {
   if (props.embedded) {
@@ -280,14 +284,30 @@ watch(() => props.defaultMode, (val) => {
 
 const modalRef = ref<HTMLElement | null>(null)
 const { activate, deactivate } = useFocusTrap(modalRef)
+const closeState = () => {
+  ownsOverlayHistory = false
+  modelValue.value = false
+}
 
 watch(() => modelValue.value, async (isOpen) => {
   if (isOpen) {
+    ownsOverlayHistory = true
+    overlayBackStack.open(overlayId, closeState, { mode: 'push' })
     // delay activation to wait for the DOM element to mount
     setTimeout(() => activate(), 50)
   } else {
+    if (ownsOverlayHistory) {
+      ownsOverlayHistory = false
+      void overlayBackStack.close(overlayId)
+    }
     deactivate()
     resetForms()
+  }
+})
+
+onBeforeUnmount(() => {
+  if (overlayBackStack.isActive(overlayId)) {
+    void overlayBackStack.close(overlayId, 'navigate')
   }
 })
 
@@ -298,7 +318,8 @@ const resetForms = () => {
 }
 
 const close = () => {
-  modelValue.value = false
+  void overlayBackStack.close(overlayId)
+  closeState()
 }
 
 const setMode = (next: 'login' | 'register') => {

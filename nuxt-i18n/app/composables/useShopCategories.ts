@@ -8,7 +8,7 @@ export interface ShopCategory {
   name: string
   image?: string
   count?: number
-  isProductType?: boolean
+  isProductSpecificationTemplate?: boolean
 }
 
 export type ShopCategorySource = 'api' | 'empty' | 'error'
@@ -31,7 +31,7 @@ const createEmptyCategoryState = (): ShopCategoryState => ({
   source: 'empty',
 })
 
-const extractProductTypes = (payload: unknown): ShopCategory[] => {
+const extractProductSpecificationTemplates = (payload: unknown): ShopCategory[] => {
   let current = payload
 
   for (let depth = 0; depth < 3; depth += 1) {
@@ -51,7 +51,7 @@ const extractProductTypes = (payload: unknown): ShopCategory[] => {
           slug,
           name,
           ...(image ? { image } : {}),
-          isProductType: true,
+          isProductSpecificationTemplate: true,
         }]
       })
     }
@@ -97,8 +97,8 @@ export const useShopCategories = () => {
 
   const requestCategories = async (requestLocale: string): Promise<ShopCategory[]> => {
     const headers = requestLocale ? { 'Accept-Language': requestLocale } : undefined
-    const response = await $fetch<unknown>(`${requestBaseURL.value}/products/types`, { headers })
-    return extractProductTypes(response)
+    const response = await $fetch<unknown>(`${requestBaseURL.value}/products/specification-templates`, { headers })
+    return extractProductSpecificationTemplates(response)
   }
 
   const waitForExistingLoad = (state: ShopCategoryState): Promise<ShopCategory[]> => (
@@ -126,9 +126,9 @@ export const useShopCategories = () => {
     state.error = null
 
     try {
-      const productTypes = await requestCategories(requestLocale)
-      if (productTypes.length) {
-        state.categories = productTypes
+      const productSpecificationTemplates = await requestCategories(requestLocale)
+      if (productSpecificationTemplates.length) {
+        state.categories = productSpecificationTemplates
         state.loaded = true
         state.source = 'api'
         return state.categories

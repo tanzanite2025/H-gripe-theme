@@ -15,6 +15,12 @@
       :saving="savingApiSettings"
     />
 
+    <CustomsLookupApiSettingsCard
+      :api-settings="apiSettings"
+      :can-edit="canEdit"
+      :saving="savingApiSettings"
+    />
+
     <section class="rounded-2xl border bg-muted/30 p-4 xl:col-span-2">
       <div class="grid gap-4 md:grid-cols-3">
         <div class="flex items-start gap-3">
@@ -45,6 +51,7 @@
 
 <script setup lang="ts">
 import { KeyRound, RefreshCw, ShieldCheck } from '@lucide/vue'
+import CustomsLookupApiSettingsCard from '@/components/admin/settings/CustomsLookupApiSettingsCard.vue'
 import ExchangeRateApiSettingsCard from '@/components/admin/settings/ExchangeRateApiSettingsCard.vue'
 import TimeApiSettingsCard from '@/components/admin/settings/TimeApiSettingsCard.vue'
 
@@ -62,6 +69,14 @@ interface APISettings {
   time_api_default_timezone: string
   time_api_refresh_minutes: number
   time_api_key_ref: string
+  customs_lookup_us_hts_enabled: boolean | string | number
+  customs_lookup_us_hts_endpoint: string
+  customs_lookup_us_hts_api_key: string
+  customs_lookup_us_hts_api_key_header: string
+  customs_lookup_uk_trade_tariff_enabled: boolean | string | number
+  customs_lookup_uk_trade_tariff_endpoint: string
+  customs_lookup_uk_trade_tariff_api_key: string
+  customs_lookup_uk_trade_tariff_api_key_header: string
 }
 
 withDefaults(defineProps<{

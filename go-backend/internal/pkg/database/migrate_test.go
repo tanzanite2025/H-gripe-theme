@@ -175,12 +175,12 @@ func TestPrepareSchemaAgainstFreshPostgres(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create migration runner: %v", err)
 	}
-	if err := migrator.Steps(-21); err != nil {
-		t.Fatalf("roll back migrations 111-131: %v", err)
+	if err := migrator.Migrate(110); err != nil {
+		t.Fatalf("roll back migrations to version 110: %v", err)
 	}
 	assertMigrationState(ctx, t, testDB, 110, false)
 	if err := migrator.Up(); err != nil && err != migrate.ErrNoChange {
-		t.Fatalf("reapply migrations 111-131: %v", err)
+		t.Fatalf("reapply migrations after version 110: %v", err)
 	}
 	if err := PrepareSchema(ctx, gormDB, &cfg, "release"); err != nil {
 		t.Fatalf("prepare existing PostgreSQL schema: %v", err)
@@ -232,12 +232,12 @@ func TestPrepareSchemaAgainstFreshPostgres(t *testing.T) {
 		constraintName string
 	}{
 		{
-			tableName:      "product_types",
-			constraintName: "fk_product_types_image_media_asset",
+			tableName:      "product_specification_templates",
+			constraintName: "fk_product_specification_templates_image_media_asset",
 		},
 		{
-			tableName:      "product_types",
-			constraintName: "ck_product_types_image_reference_pair",
+			tableName:      "product_specification_templates",
+			constraintName: "ck_product_specification_templates_image_reference_pair",
 		},
 	}
 	for _, constraint := range requiredConstraints {
@@ -367,19 +367,19 @@ func assertProductTemplateSourceReset(ctx context.Context, t *testing.T, db *sql
 		}
 	}
 
-	var productTypeCount int
-	if err := db.QueryRowContext(ctx, "SELECT COUNT(*) FROM product_types").Scan(&productTypeCount); err != nil {
-		t.Fatalf("count product types: %v", err)
+	var productSpecificationTemplateCount int
+	if err := db.QueryRowContext(ctx, "SELECT COUNT(*) FROM product_specification_templates").Scan(&productSpecificationTemplateCount); err != nil {
+		t.Fatalf("count product specification templates: %v", err)
 	}
-	if productTypeCount != 4 {
-		t.Fatalf("expected four product templates, got %d", productTypeCount)
+	if productSpecificationTemplateCount != 6 {
+		t.Fatalf("expected six product templates, got %d", productSpecificationTemplateCount)
 	}
 
 	var specCount int
 	if err := db.QueryRowContext(ctx, "SELECT COUNT(*) FROM product_spec_definitions").Scan(&specCount); err != nil {
 		t.Fatalf("count product spec definitions: %v", err)
 	}
-	if specCount != 33 {
-		t.Fatalf("expected thirty-three product spec definitions, got %d", specCount)
+	if specCount != 46 {
+		t.Fatalf("expected forty-six product spec definitions, got %d", specCount)
 	}
 }

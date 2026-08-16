@@ -67,6 +67,8 @@
       :loading-candidates="loadingPublicChatAgentCandidates"
       :saving="publicChatAgentSaving"
       @save="savePublicChatAgent"
+      @avatar-uploaded="handlePublicChatAgentAvatarUploaded"
+      @avatar-removed="handlePublicChatAgentAvatarRemoved"
     />
 
     <PublicChatGroupDialog
@@ -100,6 +102,8 @@ const DAILY_API_REFRESH_MINUTES = 1440
 const EXCHANGE_RATE_PROVIDER = 'ExchangeRate-API'
 const DEFAULT_PRICING_CURRENCY = 'USD'
 const EXCHANGE_RATE_ENDPOINT = 'https://v6.exchangerate-api.com/v6/{apiKey}/latest/{base}'
+const CUSTOMS_LOOKUP_US_HTS_ENDPOINT = 'https://hts.usitc.gov/reststop/search'
+const CUSTOMS_LOOKUP_UK_TRADE_TARIFF_ENDPOINT = 'https://www.trade-tariff.service.gov.uk/api/v2/commodities'
 const activeTab = useRouteTab({
   defaultValue: 'site',
   values: ['site', 'email', 'currency', 'markets', 'payment', 'api', 'commercial_crawler', 'public_chat'],
@@ -184,7 +188,15 @@ const apiSettings = reactive({
   time_api_query_template: 'timezone={timezone}',
   time_api_default_timezone: 'Asia/Shanghai',
   time_api_refresh_minutes: DAILY_API_REFRESH_MINUTES,
-  time_api_key_ref: ''
+  time_api_key_ref: '',
+  customs_lookup_us_hts_enabled: true,
+  customs_lookup_us_hts_endpoint: CUSTOMS_LOOKUP_US_HTS_ENDPOINT,
+  customs_lookup_us_hts_api_key: '',
+  customs_lookup_us_hts_api_key_header: 'X-API-Key',
+  customs_lookup_uk_trade_tariff_enabled: true,
+  customs_lookup_uk_trade_tariff_endpoint: CUSTOMS_LOOKUP_UK_TRADE_TARIFF_ENDPOINT,
+  customs_lookup_uk_trade_tariff_api_key: '',
+  customs_lookup_uk_trade_tariff_api_key_header: 'X-API-Key'
 })
 const paymentRuntime = ref(null)
 const loadingPaymentRuntime = ref(false)
@@ -324,7 +336,15 @@ const groupDefinitions: Record<string, SettingsGroupDefinition> = {
       time_api_query_template: { type: 'string', public: false, description: 'Time API query template' },
       time_api_default_timezone: { type: 'string', public: false, description: 'Time API default timezone' },
       time_api_refresh_minutes: { type: 'number', public: false, description: 'Time API refresh interval in minutes' },
-      time_api_key_ref: { type: 'string', public: false, description: 'Time API key reference' }
+      time_api_key_ref: { type: 'string', public: false, description: 'Time API key reference' },
+      customs_lookup_us_hts_enabled: { type: 'boolean', public: false, description: 'US HTS customs lookup enabled' },
+      customs_lookup_us_hts_endpoint: { type: 'string', public: false, description: 'US HTS customs lookup endpoint' },
+      customs_lookup_us_hts_api_key: { type: 'string', public: false, description: 'US HTS customs lookup API key' },
+      customs_lookup_us_hts_api_key_header: { type: 'string', public: false, description: 'US HTS customs lookup API key header' },
+      customs_lookup_uk_trade_tariff_enabled: { type: 'boolean', public: false, description: 'UK Trade Tariff customs lookup enabled' },
+      customs_lookup_uk_trade_tariff_endpoint: { type: 'string', public: false, description: 'UK Trade Tariff customs lookup endpoint' },
+      customs_lookup_uk_trade_tariff_api_key: { type: 'string', public: false, description: 'UK Trade Tariff customs lookup API key' },
+      customs_lookup_uk_trade_tariff_api_key_header: { type: 'string', public: false, description: 'UK Trade Tariff customs lookup API key header' }
     }
   }
 }
@@ -516,7 +536,6 @@ const savePublicChatAgent = async () => {
       agent_id: publicChatAgentForm.agent_id.trim(),
       name: publicChatAgentForm.name.trim(),
       email: publicEmail,
-      avatar: publicChatAgentForm.avatar.trim(),
       whatsapp: publicWhatsApp,
       status: publicChatAgentForm.status,
       online_status: publicChatAgentForm.online_status,
@@ -524,15 +543,26 @@ const savePublicChatAgent = async () => {
         ? publicChatAgentForm.group_ids.map((id) => Number(id)).filter(Boolean)
         : []
     })
-    toast.success(response.data?.created ? '已添加 Public Chat 客服 Profile' : '已更新 Public Chat 客服 Profile')
-    publicChatAgentDialogOpen.value = false
-    await fetchPublicChatAgents()
+    const savedAvatar = String(response.data?.agent?.avatar || publicChatAgentForm.avatar || '').trim()
+    publicChatAgentForm.avatar = savedAvatar
+    toast.success(response.data?.created ? 'Profile 已保存，现在可以上传头像' : 'Public Chat 客服 Profile 已保存')
+    await Promise.all([fetchPublicChatAgents(), fetchPublicChatAgentCandidates()])
   } catch (error) {
     console.error('Failed to save Public Chat agent profile:', error)
      toast.error(error?.response?.data?.error || 'Public Chat 客服 Profile 保存失败')
   } finally {
     publicChatAgentSaving.value = false
   }
+}
+
+const handlePublicChatAgentAvatarUploaded = async (avatar) => {
+  publicChatAgentForm.avatar = String(avatar || '').trim()
+  await Promise.all([fetchPublicChatAgents(), fetchPublicChatAgentCandidates()])
+}
+
+const handlePublicChatAgentAvatarRemoved = async () => {
+  publicChatAgentForm.avatar = ''
+  await Promise.all([fetchPublicChatAgents(), fetchPublicChatAgentCandidates()])
 }
 
 const resetPublicChatGroupForm = () => {

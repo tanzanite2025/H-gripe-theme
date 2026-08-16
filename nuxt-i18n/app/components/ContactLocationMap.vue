@@ -20,26 +20,28 @@
 
         <div class="flex w-full max-w-[220px] flex-col gap-2">
           <a
-            :href="contactLocation.openGoogleDirectionsUrl || contactLocation.openGoogleMapsUrl"
+            :href="googleDirectionsUrl || googleMapsUrl"
+            v-if="googleDirectionsUrl || googleMapsUrl"
             target="_blank"
-            rel="noopener"
+            rel="noopener noreferrer"
             class="flex min-h-10 w-full items-center justify-center rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-950 transition-colors hover:bg-white/90"
           >
             {{ t('contactLocation.getDirections') }}
           </a>
           <a
-            :href="contactLocation.openGoogleMapsUrl"
+            v-if="googleMapsUrl"
+            :href="googleMapsUrl"
             target="_blank"
-            rel="noopener"
+            rel="noopener noreferrer"
             class="flex min-h-10 w-full items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white/85 transition-colors hover:bg-white/10 hover:text-white"
           >
             {{ t('contactLocation.openGoogle') }}
           </a>
           <a
-            v-if="contactLocation.openAppleMapsUrl"
-            :href="contactLocation.openAppleMapsUrl"
+            v-if="appleMapsUrl"
+            :href="appleMapsUrl"
             target="_blank"
-            rel="noopener"
+            rel="noopener noreferrer"
             class="flex min-h-10 w-full items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white/85 transition-colors hover:bg-white/10 hover:text-white"
           >
             {{ t('contactLocation.openApple') }}
@@ -76,13 +78,13 @@
 
         <ClientOnly>
           <iframe
-            v-if="showInteractive"
-            :src="contactLocation.googleEmbedUrl"
+            v-if="showInteractive && googleEmbedUrl"
+            :src="googleEmbedUrl"
             class="w-full border-0"
             :class="mapHeightClass"
             allowfullscreen
             loading="lazy"
-            referrerpolicy="no-referrer-when-downgrade"
+            referrerpolicy="strict-origin-when-cross-origin"
             :title="t('contactLocation.iframeTitle')"
           ></iframe>
         </ClientOnly>
@@ -94,7 +96,11 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from '#imports'
-import { contactLocation } from '~/utils/contactLocation'
+import {
+  contactLocation,
+  isAllowedMapEmbedUrl,
+  isAllowedMapLinkUrl,
+} from '~/utils/contactLocation'
 
 const props = withDefaults(defineProps<{ variant?: 'default' | 'compact'; titleTag?: 'h2' | 'h3'; layout?: 'stack' | 'split' }>(), {
   variant: 'default',
@@ -107,6 +113,22 @@ const { t } = useI18n()
 const showInteractive = ref(false)
 const previewImageFailed = ref(false)
 
+const googleEmbedUrl = computed(() => (
+  isAllowedMapEmbedUrl(contactLocation.googleEmbedUrl) ? contactLocation.googleEmbedUrl : ''
+))
+
+const googleMapsUrl = computed(() => (
+  isAllowedMapLinkUrl(contactLocation.openGoogleMapsUrl) ? contactLocation.openGoogleMapsUrl : ''
+))
+
+const googleDirectionsUrl = computed(() => (
+  isAllowedMapLinkUrl(contactLocation.openGoogleDirectionsUrl) ? contactLocation.openGoogleDirectionsUrl : ''
+))
+
+const appleMapsUrl = computed(() => (
+  isAllowedMapLinkUrl(contactLocation.openAppleMapsUrl) ? contactLocation.openAppleMapsUrl : ''
+))
+
 const mapHeightClass = computed(() => {
   return props.variant === 'compact'
     ? 'h-[220px] sm:h-[260px]'
@@ -115,19 +137,19 @@ const mapHeightClass = computed(() => {
 
 const containerClass = computed(() => {
   if (props.layout === 'split') {
-    return 'grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,240px)_minmax(0,720px)] lg:items-center lg:justify-center lg:gap-8'
+    return 'grid grid-cols-1 gap-5 lg:grid-cols-[minmax(15rem,3fr)_minmax(0,7fr)] lg:items-center lg:gap-8'
   }
   return 'flex flex-col gap-4'
 })
 
 const handleOpenInteractive = () => {
-  if (contactLocation.googleEmbedUrl) {
+  if (googleEmbedUrl.value) {
     showInteractive.value = true
     return
   }
 
-  if (typeof window !== 'undefined') {
-    window.open(String(contactLocation.openGoogleMapsUrl), '_blank', 'noopener')
+  if (typeof window !== 'undefined' && googleMapsUrl.value) {
+    window.open(googleMapsUrl.value, '_blank', 'noopener,noreferrer')
   }
 }
 </script>

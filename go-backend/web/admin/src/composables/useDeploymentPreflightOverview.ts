@@ -52,13 +52,9 @@ export const useDeploymentPreflightOverview = ({
   const overviewRiskCategories = computed(() => overviewCategories.value
     .filter((group) => group.blocking_count > 0 || group.warning_count > 0)
     .slice(0, 4))
-  const overviewEnvironments = computed(() => {
-    const values = new Set(overviewProjects.value.map((summary) => summary.environment).filter(Boolean))
-    return Array.from(values).sort((a, b) => environmentLabel(a).localeCompare(environmentLabel(b), 'zh-CN'))
-  })
   const filteredOverviewProjects = computed(() => {
     const filtered = overviewProjects.value.filter((summary) => {
-      if (environmentFilter.value !== 'all' && summary.environment !== environmentFilter.value) {
+      if (environmentFilter.value && summary.environment !== environmentFilter.value) {
         return false
       }
       if (statusFilter.value === 'blocked') return summary.blocking_count > 0
@@ -164,7 +160,6 @@ export const useDeploymentPreflightOverview = ({
     overviewProjects,
     overviewCategories,
     overviewRiskCategories,
-    overviewEnvironments,
     filteredOverviewProjects,
     projectOptions,
     overviewStats,

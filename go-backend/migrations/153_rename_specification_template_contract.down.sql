@@ -1,0 +1,2 @@
+-- The specification-template contract rename is intentionally irreversible.
+-- Reset the development database to return to a pre-rename schema.

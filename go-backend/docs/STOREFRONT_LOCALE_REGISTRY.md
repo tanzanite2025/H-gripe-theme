@@ -70,7 +70,7 @@ These content types must use controlled storefront locale selection in Admin and
 - FAQ pages, categories, and FAQ items
 - Customer service auto replies and FAQ references
 - Content/posts shown on the storefront
-- Product type translations
+- Product specification template translations
 - Product information templates, including After-sales and Packaging
 - Any future storefront CMS/editor content
 
@@ -83,7 +83,7 @@ For records whose identity includes locale, editing an existing record must not 
 Nuxt has two different localization surfaces:
 
 - Static UI copy is compiled into `nuxt-i18n/app/i18n/locales/*.json` from `nuxt-i18n/app/i18n/messages/<locale>/*.json`.
-- Backend-owned content such as FAQ data, product type labels, post translations, and product information templates must request and render backend content with canonical storefront locale codes.
+- Backend-owned content such as FAQ data, product specification template labels, post translations, and product information templates must request and render backend content with canonical storefront locale codes.
 
 Do not create component-local language maps such as flag maps, language-name maps, or compatibility alias arrays. Use `~/utils/storefrontLocales` for:
 

@@ -28,24 +28,24 @@ type ProductVariantInput struct {
 	SortOrder          int
 }
 
-func (s *ProductService) buildSpecValues(productTypeID *uint, values map[string]string) ([]product.ProductSpecValue, error) {
-	if productTypeID == nil {
+func (s *ProductService) buildSpecValues(productSpecificationTemplateID *uint, values map[string]string) ([]product.ProductSpecValue, error) {
+	if productSpecificationTemplateID == nil {
 		if len(values) > 0 {
-			return nil, fmt.Errorf("%w: product_type_id is required when specs are provided", ErrProductSpecInvalid)
+			return nil, fmt.Errorf("%w: product_specification_template_id is required when specs are provided", ErrProductSpecInvalid)
 		}
 		return nil, nil
 	}
 
-	productType, err := s.productRepo.FindProductTypeByID(*productTypeID)
+	productSpecificationTemplate, err := s.productRepo.FindProductSpecificationTemplateByID(*productSpecificationTemplateID)
 	if err != nil {
 		if repository.IsRecordNotFound(err) {
-			return nil, ErrProductTypeNotFound
+			return nil, ErrProductSpecificationTemplateNotFound
 		}
 		return nil, err
 	}
 
-	definitionsBySlug := make(map[string]product.SpecDefinition, len(productType.SpecDefinitions))
-	for _, definition := range productType.SpecDefinitions {
+	definitionsBySlug := make(map[string]product.SpecDefinition, len(productSpecificationTemplate.SpecDefinitions))
+	for _, definition := range productSpecificationTemplate.SpecDefinitions {
 		definitionsBySlug[definition.Slug] = definition
 	}
 
@@ -69,7 +69,7 @@ func (s *ProductService) buildSpecValues(productTypeID *uint, values map[string]
 	}
 
 	specValues := make([]product.ProductSpecValue, 0, len(normalizedValues))
-	for _, definition := range productType.SpecDefinitions {
+	for _, definition := range productSpecificationTemplate.SpecDefinitions {
 		if definition.IsVariantOption {
 			continue
 		}
@@ -90,12 +90,12 @@ func (s *ProductService) buildSpecValues(productTypeID *uint, values map[string]
 	return specValues, nil
 }
 
-func (s *ProductService) buildVariants(productTypeID *uint, inputs []ProductVariantInput, productCurrency string, optionDisplayValues []product.ProductVariantOptionValue) ([]product.ProductVariant, error) {
+func (s *ProductService) buildVariants(productSpecificationTemplateID *uint, inputs []ProductVariantInput, productCurrency string, optionDisplayValues []product.ProductVariantOptionValue) ([]product.ProductVariant, error) {
 	if len(inputs) == 0 {
 		return nil, fmt.Errorf("%w: at least one variant is required", ErrProductVariantInvalid)
 	}
 
-	variantDefinitions, err := s.loadVariantDefinitions(productTypeID)
+	variantDefinitions, err := s.loadVariantDefinitions(productSpecificationTemplateID)
 	if err != nil {
 		return nil, err
 	}
@@ -238,21 +238,21 @@ func defaultVariantSKU(variants []product.ProductVariant) string {
 	return variants[0].SKU
 }
 
-func (s *ProductService) loadVariantDefinitions(productTypeID *uint) (map[string]product.SpecDefinition, error) {
-	if productTypeID == nil {
+func (s *ProductService) loadVariantDefinitions(productSpecificationTemplateID *uint) (map[string]product.SpecDefinition, error) {
+	if productSpecificationTemplateID == nil {
 		return nil, nil
 	}
 
-	productType, err := s.productRepo.FindProductTypeByID(*productTypeID)
+	productSpecificationTemplate, err := s.productRepo.FindProductSpecificationTemplateByID(*productSpecificationTemplateID)
 	if err != nil {
 		if repository.IsRecordNotFound(err) {
-			return nil, ErrProductTypeNotFound
+			return nil, ErrProductSpecificationTemplateNotFound
 		}
 		return nil, err
 	}
 
 	definitions := make(map[string]product.SpecDefinition)
-	for _, definition := range productType.SpecDefinitions {
+	for _, definition := range productSpecificationTemplate.SpecDefinitions {
 		if definition.IsVariantOption {
 			definitions[definition.Slug] = definition
 		}
@@ -262,7 +262,7 @@ func (s *ProductService) loadVariantDefinitions(productTypeID *uint) (map[string
 
 func (s *ProductService) normalizeVariantOptions(definitions map[string]product.SpecDefinition, rawValues map[string]string, configuredOptionValues map[string]map[string]struct{}) (map[string]string, string, error) {
 	if len(rawValues) > 0 && len(definitions) == 0 {
-		return nil, "", fmt.Errorf("%w: product_type_id is required when variant options are provided", ErrProductVariantInvalid)
+		return nil, "", fmt.Errorf("%w: product_specification_template_id is required when variant options are provided", ErrProductVariantInvalid)
 	}
 
 	normalizedValues := make(map[string]string, len(rawValues))

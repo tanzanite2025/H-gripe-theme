@@ -5,28 +5,28 @@
         density="page"
         show-filter-button
         @submit="handleSearch"
-        @filter-click="openFilters"
+        @filter-click="openCategorySidebar"
       />
     </section>
 
     <teleport to="body">
-      <transition name="shop-category-sheet">
+      <transition name="shop-category-sidebar">
         <div
-          v-if="categoryFilterOpen"
-          class="shop-category-sheet"
+          v-if="categorySidebarOpen"
+          class="shop-category-sidebar"
           role="dialog"
           aria-modal="true"
           :aria-label="$t('filter.categories', 'Categories')"
-          @click.self="closeCategoryFilter"
+          @click.self="closeCategorySidebar"
         >
-          <section class="shop-category-sheet__panel">
-            <header class="shop-category-sheet__header">
+          <section class="shop-category-sidebar__panel">
+            <header class="shop-category-sidebar__header">
               <span>{{ $t('filter.categories', 'Categories') }}</span>
               <button
                 type="button"
-                class="shop-category-sheet__close"
+                class="shop-category-sidebar__close"
                 aria-label="Close categories"
-                @click="closeCategoryFilter"
+                @click="closeCategorySidebar"
               >
                 <Icon name="lucide:x" />
               </button>
@@ -133,7 +133,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch, computed } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch, computed } from 'vue'
 import { useRoute, useRouter, useAsyncData } from '#imports'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
 import ShopProductQuickSearchForm from '~/components/shop/ShopProductQuickSearchForm.vue'
@@ -141,10 +141,11 @@ import ShopCategoryVerticalMenu from '~/components/shop/ShopCategoryVerticalMenu
 import ShopProductDisplayCard from '~/components/shop/ShopProductDisplayCard.vue'
 import ProductRecommendations from '~/components/shop/ProductRecommendations.vue'
 import { useWishlist } from '~/composables/useWishlist'
-import { useShopCategories } from '~/composables/useShopCategories'
-import type { ShopCategory } from '~/composables/useShopCategories'
+import { useProductCategories } from '~/composables/useProductCategories'
+import type { ProductCategory } from '~/composables/useProductCategories'
 import { useShopSearchSheet } from '~/composables/useShopSearchSheet'
 import { useShopProducts } from '~/composables/useShopProducts'
+import { useOverlayBackStack } from '~/composables/useOverlayBackStack'
 import type { ShopProduct } from '~/composables/useShopProducts'
 
 definePageMeta({
@@ -157,15 +158,22 @@ const { t } = useI18n()
 const { fetchShopProducts } = useShopProducts()
 
 const SHOP_PRODUCTS_PAGE_SIZE = 24
-const categoryFilterOpen = ref(false)
+const categorySidebarOpen = ref(false)
 const currentProductPage = ref(1)
+const overlayBackStack = useOverlayBackStack()
 
 // 商品心愿单
 const { addToWishlist } = useWishlist()
 
 // 商品分类
-const { categories, loading: categoriesLoading, error: categoriesError, loadCategories } = useShopCategories()
-const selectedCategory = ref<ShopCategory | null>(null)
+const {
+  tree: categories,
+  categories: flatCategories,
+  loading: categoriesLoading,
+  error: categoriesError,
+  loadCategories,
+} = useProductCategories()
+const selectedCategory = ref<ProductCategory | null>(null)
 
 interface ProductSearchFiltersPayload {
   priceRange: [number, number]
@@ -186,43 +194,39 @@ const createDefaultSearchFilters = (): ProductSearchFiltersPayload => ({
   attributes: {},
 })
 
-const { pendingSearch, presetCategorySlug } = useShopSearchSheet()
+const { pendingSearch } = useShopSearchSheet()
 
-const routeProductTypeSlug = computed(() => {
-  const value = route.query.product_type
+const routeProductCategorySlug = computed(() => {
+  const value = route.query.product_category
   const raw = Array.isArray(value) ? value[0] : value
   return String(raw || '').trim()
 })
 
 const syncSelectedCategoryFromRoute = () => {
-  const slug = routeProductTypeSlug.value
+  const slug = routeProductCategorySlug.value
   if (!slug) {
-    if (selectedCategory.value?.isProductType) {
-      selectedCategory.value = null
-    }
+    selectedCategory.value = null
     return
   }
 
-  const match = categories.value.find(category => category.slug === slug)
+  const match = flatCategories.value.find(category => category.slug === slug)
   if (match) {
     selectedCategory.value = match
     return
   }
 
-  if (selectedCategory.value?.isProductType) {
-    selectedCategory.value = null
-  }
+  selectedCategory.value = null
 }
 
-const replaceProductTypeRoute = async (category: ShopCategory | null) => {
-  const nextSlug = category?.isProductType ? category.slug : ''
-  if (routeProductTypeSlug.value === nextSlug) return false
+const replaceProductCategoryRoute = async (category: ProductCategory | null) => {
+  const nextSlug = category?.slug || ''
+  if (routeProductCategorySlug.value === nextSlug) return false
 
   const nextQuery: Record<string, any> = { ...route.query }
   if (nextSlug) {
-    nextQuery.product_type = nextSlug
+    nextQuery.product_category = nextSlug
   } else {
-    delete nextQuery.product_type
+    delete nextQuery.product_category
   }
 
   await router.replace({
@@ -237,18 +241,21 @@ if (import.meta.server) {
   syncSelectedCategoryFromRoute()
 }
 
-const openFilters = () => {
-  categoryFilterOpen.value = true
-  if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('ui:popup-open', { detail: { id: 'shop-category-filter' } }))
-  }
+const openCategorySidebar = () => {
+  categorySidebarOpen.value = true
+  overlayBackStack.open('shop-category-sidebar', () => {
+    categorySidebarOpen.value = false
+  })
 }
 
-const closeCategoryFilter = () => {
-  categoryFilterOpen.value = false
+const closeCategorySidebar = () => {
+  void overlayBackStack.close('shop-category-sidebar')
+  categorySidebarOpen.value = false
 }
 
-const categorySlugToKeyword = (slug: string) => slug.replace(/[-_]+/g, ' ').trim()
+const handleExternalCategorySidebarOpen = () => {
+  openCategorySidebar()
+}
 
 const joinUniqueSearchParts = (parts: Array<string | null | undefined>) => {
   const seen = new Set<string>()
@@ -270,12 +277,6 @@ const joinUniqueSearchParts = (parts: Array<string | null | undefined>) => {
 
 const buildProductKeyword = (payload?: ProductSearchPayload) => joinUniqueSearchParts([
   payload?.query,
-  selectedCategory.value && !selectedCategory.value.isProductType
-    ? selectedCategory.value.name || selectedCategory.value.slug
-    : null,
-  payload?.chipCategorySlug && !categories.value.some(category => category.slug === payload.chipCategorySlug)
-    ? categorySlugToKeyword(payload.chipCategorySlug)
-    : null,
 ])
 
 const buildProductQueryParams = (payload?: ProductSearchPayload) => {
@@ -285,8 +286,8 @@ const buildProductQueryParams = (payload?: ProductSearchPayload) => {
     status: 'active',
   }
 
-  if (selectedCategory.value?.slug && selectedCategory.value.isProductType) {
-    params.product_type = selectedCategory.value.slug
+  if (selectedCategory.value?.slug) {
+    params.product_category = selectedCategory.value.slug
   }
 
   if (payload) {
@@ -337,10 +338,9 @@ const products = computed<ShopProduct[]>(() => {
 })
 
 const visibleProductIds = computed(() => products.value.map(product => product.id).filter(id => Number.isInteger(id) && id > 0))
-const shopRecommendationCategoryId = computed(() => {
-  const categoryId = Number(selectedCategory.value?.id)
-  return Number.isInteger(categoryId) && categoryId > 0 ? categoryId : null
-})
+// Recommendation API category IDs still refer to legacy product specification templates.
+// Keep the new product-category filter isolated from that contract.
+const shopRecommendationCategoryId = computed(() => null)
 const shopRecommendationQuery = computed(() => buildProductKeyword(currentSearch.value || undefined))
 
 const productPagination = computed(() => {
@@ -379,13 +379,6 @@ const loadProducts = async (payload?: ProductSearchPayload) => {
 }
 
 const handleSearch = (payload: ProductSearchPayload) => {
-  if (payload.chipCategorySlug && Array.isArray(categories.value) && categories.value.length) {
-    const match = categories.value.find(cat => cat.slug === payload.chipCategorySlug)
-    if (match) {
-      selectedCategory.value = match
-    }
-  }
-
   const next: ProductSearchPayload = {
     ...payload,
   }
@@ -395,7 +388,7 @@ const handleSearch = (payload: ProductSearchPayload) => {
   loadProducts(next)
 }
 
-const onCategorySelect = async (category: ShopCategory | null) => {
+const onCategorySelect = async (category: ProductCategory | null) => {
   selectedCategory.value = category
 
   const base: ProductSearchPayload =
@@ -410,7 +403,7 @@ const onCategorySelect = async (category: ShopCategory | null) => {
 
   currentProductPage.value = 1
   currentSearch.value = next
-  const routeChanged = await replaceProductTypeRoute(category)
+  const routeChanged = await replaceProductCategoryRoute(category)
   if (!routeChanged) {
     loadProducts(next)
   }
@@ -424,30 +417,21 @@ const goToProductPage = (page: number) => {
   loadProducts(currentSearch.value || undefined)
 }
 
-const onMobileCategorySelect = async (category: ShopCategory | null) => {
+const onMobileCategorySelect = async (category: ProductCategory | null) => {
   await onCategorySelect(category)
-  closeCategoryFilter()
-}
-
-const applyPresetCategoryFromSlug = () => {
-  const slug = presetCategorySlug.value
-  if (!slug || !Array.isArray(categories.value) || !categories.value.length) return
-
-  const match = categories.value.find((cat) => cat.slug === slug)
-  if (match) {
-    selectedCategory.value = match
-  }
-
-  // 只用于入口预设，消费一次后清空，避免影响后续手动选择
-  presetCategorySlug.value = null
+  closeCategorySidebar()
 }
 
 onMounted(async () => {
+  if (typeof window !== 'undefined') {
+    window.addEventListener(
+      'ui:product-category-sidebar-open',
+      handleExternalCategorySidebarOpen,
+    )
+  }
+
   await loadCategories()
   syncSelectedCategoryFromRoute()
-
-  // 页面首次挂载时，如果是从 Inner tube 等入口过来，先根据 slug 预设分类
-  applyPresetCategoryFromSlug()
 
   const initialPending = pendingSearch.value
   if (initialPending) {
@@ -459,6 +443,15 @@ onMounted(async () => {
   loadProducts()
 })
 
+onBeforeUnmount(() => {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener(
+      'ui:product-category-sidebar-open',
+      handleExternalCategorySidebarOpen,
+    )
+  }
+})
+
 watch(pendingSearch, async (payload) => {
   if (!payload) return
   pendingSearch.value = null
@@ -468,7 +461,6 @@ watch(pendingSearch, async (payload) => {
     await loadCategories()
   }
   syncSelectedCategoryFromRoute()
-  applyPresetCategoryFromSlug()
 
   handleSearch(payload as unknown as ProductSearchPayload)
 })
@@ -536,8 +528,39 @@ const handleAddToWishlist = async (product: ShopProduct) => {
 }
 
 @media (min-width: 769px) {
+  .shop-catalog-layout {
+    width: 100%;
+    margin-inline: 0;
+    padding-inline: 0;
+  }
+
   .shop-catalog-main {
     grid-column: 2;
+  }
+
+  .shop-category-rail {
+    align-items: flex-start;
+    box-sizing: border-box;
+    padding: 1.5rem 1rem;
+    border-radius: 0.75rem;
+    background-color: var(--tz-card-surface);
+    box-shadow: 8px 8px 22px rgba(0, 0, 0, 0.92);
+  }
+
+  .shop-category-rail :deep(.shop-category-menu) {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .shop-category-rail :deep(.shop-category-menu__state) {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    padding: 0 0.75rem;
+    text-align: center;
   }
 }
 
@@ -614,86 +637,109 @@ const handleAddToWishlist = async (product: ShopProduct) => {
   color: rgba(226, 232, 240, 0.82);
 }
 
-.shop-category-sheet {
-  position: fixed;
-  inset: 0;
-  z-index: 1700;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  background: transparent;
-  padding: 0 max(0.75rem, env(safe-area-inset-right)) max(0.75rem, env(safe-area-inset-bottom)) max(0.75rem, env(safe-area-inset-left));
+.shop-category-sidebar {
+  display: none;
 }
 
-.shop-category-sheet__panel {
-  width: min(100%, 30rem);
-  max-height: min(78dvh, 680px);
-  overflow-y: auto;
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  border-radius: 22px 22px 16px 16px;
-  background:
-    radial-gradient(circle at top left, rgba(181, 255, 109, 0.12), transparent 42%),
-    linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(2, 6, 23, 0.98));
-  padding: 14px;
-  box-shadow: 0 30px 70px -28px rgba(0, 0, 0, 1);
-}
+@media (max-width: 768px) {
+  .shop-category-sidebar {
+    position: fixed;
+    inset: 0;
+    z-index: 1700;
+    display: flex;
+    background: rgba(0, 0, 0, 0.64);
+  }
 
-.shop-category-sheet__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 14px;
-  color: #ffffff;
-  font-size: 14px;
-  font-weight: 850;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
+  .shop-category-sidebar__panel {
+    display: flex;
+    width: min(86vw, 22rem);
+    min-width: 17rem;
+    height: 100%;
+    flex-direction: column;
+    overflow: hidden;
+    border-right: 1px solid rgba(181, 255, 109, 0.24);
+    background:
+      linear-gradient(180deg, rgba(19, 22, 28, 0.99), rgba(5, 7, 10, 0.99));
+    box-shadow: 24px 0 60px -28px rgba(0, 0, 0, 1);
+  }
 
-.shop-category-sheet__close {
-  display: inline-flex;
-  width: 34px;
-  height: 34px;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.08);
-  color: #ffffff;
-}
+  .shop-category-sidebar__header {
+    display: flex;
+    min-height: 3.5rem;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 850;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
 
-.shop-category-sheet__close :deep(svg) {
-  width: 18px;
-  height: 18px;
-}
+  .shop-category-sidebar__close {
+    display: inline-flex;
+    width: 34px;
+    height: 34px;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+  }
 
-.shop-category-sheet__panel :deep(.shop-category-menu) {
-  width: 100%;
-}
+  .shop-category-sidebar__close:hover,
+  .shop-category-sidebar__close:focus-visible {
+    border-color: rgba(181, 255, 109, 0.64);
+    background: rgba(181, 255, 109, 0.12);
+  }
 
-.shop-category-sheet__panel :deep(.shop-category-menu__list) {
-  gap: 0.9rem;
-}
+  .shop-category-sidebar__close:focus-visible {
+    outline: 2px solid rgba(181, 255, 109, 0.72);
+    outline-offset: 2px;
+  }
 
-.shop-category-sheet-enter-active,
-.shop-category-sheet-leave-active {
-  transition: opacity 0.2s ease;
-}
+  .shop-category-sidebar__close :deep(svg) {
+    width: 18px;
+    height: 18px;
+  }
 
-.shop-category-sheet-enter-active .shop-category-sheet__panel,
-.shop-category-sheet-leave-active .shop-category-sheet__panel {
-  transition: transform 0.22s ease;
-}
+  .shop-category-sidebar__panel :deep(.shop-category-menu) {
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    padding: 0.75rem 0.75rem calc(1rem + env(safe-area-inset-bottom));
+    scrollbar-width: thin;
+    scrollbar-color: rgba(181, 255, 109, 0.46) transparent;
+  }
 
-.shop-category-sheet-enter-from,
-.shop-category-sheet-leave-to {
-  opacity: 0;
-}
+  .shop-category-sidebar__panel :deep(.shop-category-menu__list) {
+    gap: 0.45rem;
+  }
 
-.shop-category-sheet-enter-from .shop-category-sheet__panel,
-.shop-category-sheet-leave-to .shop-category-sheet__panel {
-  transform: translateY(18px);
+  .shop-category-sidebar-enter-active,
+  .shop-category-sidebar-leave-active {
+    transition: opacity 0.2s ease;
+  }
+
+  .shop-category-sidebar-enter-active .shop-category-sidebar__panel,
+  .shop-category-sidebar-leave-active .shop-category-sidebar__panel {
+    transition: transform 0.22s ease;
+  }
+
+  .shop-category-sidebar-enter-from,
+  .shop-category-sidebar-leave-to {
+    opacity: 0;
+  }
+
+  .shop-category-sidebar-enter-from .shop-category-sidebar__panel,
+  .shop-category-sidebar-leave-to .shop-category-sidebar__panel {
+    transform: translateX(-100%);
+  }
 }
 
 @media (max-width: 400px) {

@@ -131,14 +131,14 @@ const handleSearchInput = (event: Event) => {
     <div class="quickbuy-candidate-area">
       <div class="quickbuy-product-grid-shell">
         <button
-          class="quickbuy-product-grid-arrow quickbuy-product-grid-arrow--previous"
+          class="tz-directional-arrow tz-directional-arrow--compact quickbuy-product-grid-arrow quickbuy-product-grid-arrow--previous"
           type="button"
           :disabled="!canGoToPreviousProductPage || loading"
           :aria-label="previousLabel"
           :title="previousLabel"
           @click="emit('previousProductPage')"
         >
-          <Icon name="lucide:chevron-left" class="h-4 w-4" aria-hidden="true" />
+          <Icon name="lucide:chevron-left" aria-hidden="true" />
         </button>
 
         <div class="quickbuy-product-grid-stage">
@@ -180,14 +180,14 @@ const handleSearchInput = (event: Event) => {
         </div>
 
         <button
-          class="quickbuy-product-grid-arrow quickbuy-product-grid-arrow--next"
+          class="tz-directional-arrow tz-directional-arrow--compact quickbuy-product-grid-arrow quickbuy-product-grid-arrow--next"
           type="button"
           :disabled="!canGoToNextProductPage || loading"
           :aria-label="nextLabel"
           :title="nextLabel"
           @click="emit('nextProductPage')"
         >
-          <Icon name="lucide:chevron-right" class="h-4 w-4" aria-hidden="true" />
+          <Icon name="lucide:chevron-right" aria-hidden="true" />
         </button>
       </div>
       <div v-if="showProductPagination" class="quickbuy-product-pagination">
@@ -199,24 +199,24 @@ const handleSearchInput = (event: Event) => {
 
     <div class="quickbuy-step-actions">
       <button
-        class="quickbuy-step-action quickbuy-step-action--secondary"
+        class="tz-directional-arrow tz-directional-arrow--large"
         type="button"
         :disabled="currentStepIndex <= 1"
         :title="previousLabel"
         :aria-label="previousLabel"
         @click="emit('previousStep')"
       >
-        <Icon name="lucide:arrow-left" class="h-5 w-5" aria-hidden="true" />
+        <Icon name="lucide:chevron-left" aria-hidden="true" />
       </button>
       <button
         v-if="currentStepIndex < totalSteps"
-        class="quickbuy-step-action quickbuy-step-action--primary"
+        class="tz-directional-arrow tz-directional-arrow--large"
         type="button"
         :title="nextLabel"
         :aria-label="nextLabel"
         @click="emit('nextStep')"
       >
-        <Icon name="lucide:arrow-right" class="h-5 w-5" aria-hidden="true" />
+        <Icon name="lucide:chevron-right" aria-hidden="true" />
       </button>
     </div>
   </div>
@@ -386,45 +386,6 @@ const handleSearchInput = (event: Event) => {
   box-shadow: inset 0 1px 0 var(--quickbuy-divider, rgba(255, 255, 255, 0.045));
 }
 
-.quickbuy-step-action {
-  display: inline-grid;
-  width: 2.75rem;
-  height: 2.75rem;
-  place-items: center;
-  border: 0;
-  border-radius: 999px;
-  color: white;
-  background:
-    linear-gradient(180deg, var(--quickbuy-control-surface-raised, #171920), var(--quickbuy-control-surface, #0d0f14));
-  box-shadow:
-    0 6px 18px rgba(0, 0, 0, 0.24),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.04);
-  transition: background-color 160ms ease, opacity 160ms ease, transform 160ms ease;
-}
-
-.quickbuy-step-action:hover:not(:disabled) {
-  background:
-    linear-gradient(180deg, #32343d, #24262e);
-  transform: translateY(-1px);
-}
-
-.quickbuy-step-action:disabled {
-  cursor: not-allowed;
-  opacity: 0.35;
-}
-
-.quickbuy-step-action--primary {
-  color: black;
-  background: white;
-  box-shadow:
-    0 8px 20px rgba(0, 0, 0, 0.32),
-    inset 0 0 0 1px rgba(0, 0, 0, 0.08);
-}
-
-.quickbuy-step-action--primary:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.88);
-}
-
 .quickbuy-product-grid-shell {
   display: grid;
   grid-template-columns: 2rem minmax(0, 1fr) 2rem;
@@ -462,34 +423,6 @@ const handleSearchInput = (event: Event) => {
 
 .quickbuy-product-grid-stage > .quickbuy-product-grid:empty {
   display: block;
-}
-
-.quickbuy-product-grid-arrow {
-  width: 2rem;
-  height: 2rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 0;
-  border-radius: 999px;
-  color: white;
-  background:
-    linear-gradient(180deg, var(--quickbuy-control-surface-raised, #171920), var(--quickbuy-control-surface, #0d0f14));
-  box-shadow:
-    0 6px 16px rgba(0, 0, 0, 0.25),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.04);
-  transition: background-color 160ms ease, opacity 160ms ease, transform 160ms ease;
-}
-
-.quickbuy-product-grid-arrow:hover:not(:disabled) {
-  background:
-    linear-gradient(180deg, #32343d, #24262e);
-  transform: translateY(-1px);
-}
-
-.quickbuy-product-grid-arrow:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
 }
 
 .quickbuy-product-grid-empty {
@@ -560,8 +493,8 @@ const handleSearchInput = (event: Event) => {
   }
 
   .quickbuy-product-grid-arrow {
-    width: 1.75rem;
-    height: 1.75rem;
+    --tz-directional-arrow-size: 1.75rem;
+    --tz-directional-arrow-icon-size: 0.875rem;
   }
 
   .quickbuy-product-grid {

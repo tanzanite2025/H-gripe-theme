@@ -15,12 +15,14 @@ import (
 	"commerce-platform/internal/pkg/antifraud"
 	"commerce-platform/internal/pkg/apierror"
 	"commerce-platform/internal/pkg/cardtesting"
+	"commerce-platform/internal/pkg/logger"
 	pgateway "commerce-platform/internal/pkg/payment"
 	"commerce-platform/internal/pkg/response"
 	"commerce-platform/internal/pkg/visitorcookie"
 	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 type Handler struct {
@@ -304,6 +306,30 @@ func (h *Handler) CreateStripePaymentIntent(c *gin.Context) {
 	}); err != nil {
 		apierror.RespondInternalError(c, err)
 		return
+	}
+	if h.riskMonitoring != nil && h.riskMonitoring.Enabled() {
+		orderID := orderRecord.ID
+		if err := h.riskMonitoring.RecordCheckoutDecision(service.PaymentRiskCheckoutDecisionInput{
+			Provider:           string(pgateway.GatewayStripe),
+			OrderID:            &orderID,
+			ProviderPaymentID:  paymentResponse.TransactionID,
+			Mode:               threeDSDecision.Mode,
+			Strategy:           threeDSDecision.Strategy,
+			ExemptionCandidate: threeDSDecision.ExemptionCandidate,
+			RiskLevel:          threeDSDecision.RiskLevel,
+			RiskScore:          threeDSDecision.RiskScore,
+			PortfolioRiskLevel: threeDSDecision.PortfolioRiskLevel,
+			Reasons:            threeDSDecision.Reasons,
+			Amount:             paymentResponse.Amount,
+			Currency:           paymentResponse.Currency,
+			OccurredAt:         time.Now().UTC(),
+		}); err != nil {
+			logger.Warn("record Stripe checkout risk decision failed",
+				zap.String("payment_intent_id", paymentResponse.TransactionID),
+				zap.Uint("order_id", orderRecord.ID),
+				zap.Error(err),
+			)
+		}
 	}
 
 	response.Success(c, paymentResponse)

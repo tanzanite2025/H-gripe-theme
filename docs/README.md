@@ -19,6 +19,7 @@ This directory is a project-level documentation hub. It is not the source of tru
 - Storefront i18n current status: `../nuxt-i18n/docs/notes/I18N-CURRENT-STATUS.md`
 - Storefront payment UX rules: `design/storefront-payment-ux.md`
 - QUICK selection flow architecture: `design/quick-buy-configuration-architecture.md`
+- Wheelset fit questionnaire specification: `design/wheelset-fit-questionnaire-specification.md`
 - Storefront recommendation UX and algorithm contract: `design/storefront-recommendation-ux.md`
 - Ops control plane and workflow engine design: `design/ops-control-plane-workflow-engine.md`
 - SEO architecture: `seo/SEO_SYSTEM_ARCHITECTURE.md`

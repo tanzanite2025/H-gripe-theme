@@ -38,11 +38,14 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 	userHandler := NewUserHandler(userService)
 	customerHandler := NewCustomerHandler(userService)
 	productHandler := NewProductHandler(productService)
+	productCategoryHandler := NewProductCategoryHandler(services.ProductCategory)
 	productBrandHandler := NewProductBrandHandler(services.ProductBrand)
-	productTypeImageHandler := NewProductTypeImageHandler(productService, services.Media)
+	productSpecificationTemplateImageHandler := NewProductSpecificationTemplateImageHandler(productService, services.Media)
 	productInformationTemplateHandler := NewProductInformationTemplateHandler(services.ProductInformationTemplate)
+	customsClassificationHandler := NewCustomsClassificationHandler(services.CustomsClassification)
 	spokeCatalogHandler := NewSpokeCatalogHandler(services.Spoke)
 	quickBuyHandler := NewQuickBuyHandler(services.QuickBuy)
+	selectionAssistantHandler := NewSelectionAssistantHandler(services.SelectionAssistant)
 	mediaHandler := NewMediaHandler(services.Media)
 	orderHandler := NewOrderHandler(orderService)
 	orderHandler.ConfigureAuditService(services.Audit)
@@ -52,6 +55,13 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 	paymentRefundExecutionHandler := NewPaymentRefundExecutionHandler(paymentService, services.AdminSettings)
 	paymentRefundExecutionHandler.ConfigureAuditService(services.Audit)
 	paymentRiskMonitoringHandler := NewPaymentRiskMonitoringHandler(services.PaymentRiskMonitoring)
+	paymentRiskMonitoringHandler.ConfigureRiskConfiguration(
+		cfg,
+		services.PaymentThreeDS,
+		services.PaymentProtection,
+		deps.PaymentGatewayCircuitBreaker,
+	)
+	paymentRiskMonitoringHandler.ConfigureGatewayRuntimeReader(paymentHandler.RuntimeReadiness)
 	paymentRiskMonitoringHandler.ConfigureAuditService(services.Audit)
 	paymentProtectionHandler := NewPaymentProtectionHandler(services.PaymentProtection)
 	paymentProtectionHandler.ConfigureAuditService(services.Audit)
@@ -61,7 +71,8 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 	faqHandler := NewFAQHandler(services.FAQ)
 	galleryHandler := NewGalleryHandler(services.Gallery)
 	subscriptionHandler := NewSubscriptionHandler(services.Subscription)
-	ticketHandler := NewTicketHandler(services.Ticket, services.CustomerServiceContext, services.CustomerServiceEvents, services.Media)
+	ticketHandler := NewTicketHandler(services.Ticket, services.CustomerServiceContext, services.CustomerServiceAnalytics, services.CustomerServiceEvents, services.Media)
+	ticketHandler.ConfigureAllowedOrigins(cfg.CORS.AllowedOrigins)
 	autoReplyHandler := NewAutoReplyHandler(services.Ticket, services.FAQ)
 	visitorProfileHandler := NewVisitorProfileHandler(services.VisitorProfile)
 	visitorRiskHandler := NewVisitorRiskHandler(services.VisitorRisk)
@@ -72,6 +83,7 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 	seoHomeHandler := seoapi.NewHomeHandler(services.SEO)
 	seoArticlesHandler := seoapi.NewArticlesHandler(services.SEOResources)
 	seoProductsHandler := seoapi.NewProductsHandler(services.SEOResources)
+	seoRoutesHandler := seoapi.NewRoutesHandler(services.StorefrontRouteCatalog)
 	seoHomeHandler.ConfigureAuditService(services.Audit)
 	seoArticlesHandler.ConfigureAuditService(services.Audit)
 	seoProductsHandler.ConfigureAuditService(services.Audit)
@@ -85,6 +97,7 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 	storefrontMarketHandler.ConfigureAuditService(services.Audit)
 	googleMerchantHandler := NewGoogleMerchantHandler(services.GoogleMerchant, cfg.GoogleMerchant.PostConnectURL)
 	publicChatAgentHandler := NewPublicChatAgentHandler(services.AdminPublicChat)
+	customerServiceAvatarHandler := NewCustomerServiceAvatarHandler(services.CustomerServiceAvatar)
 	auditHandler := NewAuditHandler(services.Audit)
 	showcaseHandler := NewShowcaseHandler(showcaseService)
 	showcaseHandler.ConfigureAuditService(services.Audit)
@@ -99,6 +112,7 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 	opsDomainBindingHandler.ConfigureAuditService(services.Audit)
 	opsConnectorHandler := NewOpsConnectorHandler(services.OpsConnector)
 	opsConnectorHandler.ConfigureAuditService(services.Audit)
+	opsConnectorHandler.ConfigureOAuthService(services.OpsConnectorOAuth)
 	opsVPSBindingHandler := NewOpsVPSBindingHandler(services.OpsVPSBinding)
 	opsVPSBindingHandler.ConfigureAuditService(services.Audit)
 	opsVPSBindingHandler.ConfigureSyncService(services.OpsHostingerSync)
@@ -109,6 +123,8 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 	opsDeploymentWorkflowHandler := NewOpsDeploymentWorkflowHandler(services.OpsDeploymentWorkflow)
 	opsDeploymentWorkflowHandler.ConfigureAuditService(services.Audit)
 	opsOverviewHandler := NewOpsOverviewHandler(services.OpsOverview)
+	reviewModerationHandler := NewReviewModerationHandler(services.ReviewModeration)
+	reviewModerationHandler.ConfigureAuditService(services.Audit)
 
 	// 管理后台 API 路由组
 	admin := r.Group("/api/admin")
@@ -125,6 +141,7 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 		}
 
 		admin.GET("/google-merchant/oauth/callback", googleMerchantHandler.CompleteOAuth)
+		admin.GET("/ops/connectors/oauth/callback", opsConnectorHandler.CompleteOAuth)
 
 		// 需要认证的路由
 		authenticated := admin.Group("")
@@ -183,16 +200,16 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 			}
 
 			// 商品管理（需要商品管理权限）
-			productTypesGroup := authenticated.Group("/product-types")
-			productTypesGroup.Use(middleware.RequirePermission(auth.PermProductView))
+			productSpecificationTemplatesGroup := authenticated.Group("/product-specification-templates")
+			productSpecificationTemplatesGroup.Use(middleware.RequirePermission(auth.PermProductView))
 			{
-				productTypesGroup.GET("", productHandler.ListProductTypes)
-				productTypesGroup.GET("/:id", productHandler.GetProductType)
-				productTypesGroup.POST("", middleware.RequirePermission(auth.PermProductCreate), productHandler.CreateProductType)
-				productTypesGroup.PUT("/:id", middleware.RequirePermission(auth.PermProductEdit), productHandler.UpdateProductType)
-				productTypesGroup.POST("/:id/image", middleware.RequirePermission(auth.PermProductEdit), productTypeImageHandler.UploadImage)
-				productTypesGroup.DELETE("/:id/image", middleware.RequirePermission(auth.PermProductEdit), productTypeImageHandler.DeleteImage)
-				productTypesGroup.DELETE("/:id", middleware.RequirePermission(auth.PermProductDelete), productHandler.DeleteProductType)
+				productSpecificationTemplatesGroup.GET("", productHandler.ListProductSpecificationTemplates)
+				productSpecificationTemplatesGroup.GET("/:id", productHandler.GetProductSpecificationTemplate)
+				productSpecificationTemplatesGroup.POST("", middleware.RequirePermission(auth.PermProductCreate), productHandler.CreateProductSpecificationTemplate)
+				productSpecificationTemplatesGroup.PUT("/:id", middleware.RequirePermission(auth.PermProductEdit), productHandler.UpdateProductSpecificationTemplate)
+				productSpecificationTemplatesGroup.POST("/:id/image", middleware.RequirePermission(auth.PermProductEdit), productSpecificationTemplateImageHandler.UploadImage)
+				productSpecificationTemplatesGroup.DELETE("/:id/image", middleware.RequirePermission(auth.PermProductEdit), productSpecificationTemplateImageHandler.DeleteImage)
+				productSpecificationTemplatesGroup.DELETE("/:id", middleware.RequirePermission(auth.PermProductDelete), productHandler.DeleteProductSpecificationTemplate)
 			}
 
 			productBrandsGroup := authenticated.Group("/product-brands")
@@ -205,11 +222,24 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 				productBrandsGroup.DELETE("/:id", middleware.RequirePermission(auth.PermProductDelete), productBrandHandler.Delete)
 			}
 
+			productCategoriesGroup := authenticated.Group("/product-categories")
+			productCategoriesGroup.Use(middleware.RequirePermission(auth.PermProductView))
+			{
+				productCategoriesGroup.GET("", productCategoryHandler.List)
+				productCategoriesGroup.GET("/:id", productCategoryHandler.Get)
+				productCategoriesGroup.GET("/:id/translations", productCategoryHandler.ListTranslations)
+				productCategoriesGroup.POST("", middleware.RequirePermission(auth.PermProductCreate), productCategoryHandler.Create)
+				productCategoriesGroup.PUT("/:id", middleware.RequirePermission(auth.PermProductEdit), productCategoryHandler.Update)
+				productCategoriesGroup.PUT("/:id/translations", middleware.RequirePermission(auth.PermProductEdit), productCategoryHandler.UpdateTranslations)
+				productCategoriesGroup.DELETE("/:id", middleware.RequirePermission(auth.PermProductDelete), productCategoryHandler.Delete)
+			}
+
 			productsGroup := authenticated.Group("/products")
 			productsGroup.Use(middleware.RequirePermission(auth.PermProductView))
 			{
 				productsGroup.GET("", productHandler.ListProducts)
 				productsGroup.GET("/stats", productHandler.GetProductStats)
+				productsGroup.GET("/customs-summary", productHandler.GetCustomsSummary)
 				productsGroup.GET("/:id", productHandler.GetProduct)
 				productsGroup.GET("/:id/translations", productHandler.GetProductTranslations)
 				productsGroup.POST("", middleware.RequirePermission(auth.PermProductCreate), productHandler.CreateProduct)
@@ -229,6 +259,17 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 				productInformationTemplatesGroup.POST("", middleware.RequirePermission(auth.PermProductCreate), productInformationTemplateHandler.Create)
 				productInformationTemplatesGroup.PUT("/:id", middleware.RequirePermission(auth.PermProductEdit), productInformationTemplateHandler.Update)
 				productInformationTemplatesGroup.DELETE("/:id", middleware.RequirePermission(auth.PermProductDelete), productInformationTemplateHandler.Delete)
+			}
+
+			customsClassificationsGroup := authenticated.Group("/customs-classifications")
+			customsClassificationsGroup.Use(middleware.RequirePermission(auth.PermProductView))
+			{
+				customsClassificationsGroup.GET("", customsClassificationHandler.List)
+				customsClassificationsGroup.GET("/lookup", customsClassificationHandler.Lookup)
+				customsClassificationsGroup.GET("/:id", customsClassificationHandler.Get)
+				customsClassificationsGroup.POST("", middleware.RequirePermission(auth.PermProductCreate), customsClassificationHandler.Create)
+				customsClassificationsGroup.PUT("/:id", middleware.RequirePermission(auth.PermProductEdit), customsClassificationHandler.Update)
+				customsClassificationsGroup.DELETE("/:id", middleware.RequirePermission(auth.PermProductDelete), customsClassificationHandler.Delete)
 			}
 
 			spokeCatalogGroup := authenticated.Group("/spoke-catalog")
@@ -254,6 +295,17 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 				quickBuyGroup.POST("/flow-versions/:version_id/validate", quickBuyHandler.ValidateVersion)
 				quickBuyGroup.POST("/flow-versions/:version_id/preview", quickBuyHandler.PreviewVersionStepCandidates)
 				quickBuyGroup.POST("/flow-versions/:version_id/publish", middleware.RequirePermission(auth.PermProductEdit), quickBuyHandler.PublishVersion)
+			}
+
+			selectionAssistantGroup := authenticated.Group("/selection-assistant")
+			selectionAssistantGroup.Use(middleware.RequirePermission(auth.PermProductView))
+			{
+				selectionAssistantGroup.GET("/flows", selectionAssistantHandler.ListFlows)
+				selectionAssistantGroup.GET("/flows/:id", selectionAssistantHandler.GetFlow)
+				selectionAssistantGroup.POST("/flows", middleware.RequirePermission(auth.PermProductEdit), selectionAssistantHandler.CreateFlow)
+				selectionAssistantGroup.PUT("/flows/:id/configuration", middleware.RequirePermission(auth.PermProductEdit), selectionAssistantHandler.SaveFlowConfiguration)
+				selectionAssistantGroup.POST("/flow-versions/:version_id/validate", selectionAssistantHandler.ValidateVersion)
+				selectionAssistantGroup.POST("/flow-versions/:version_id/publish", middleware.RequirePermission(auth.PermProductEdit), selectionAssistantHandler.PublishVersion)
 			}
 
 			googleMerchantGroup := authenticated.Group("/google-merchant")
@@ -319,6 +371,7 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 				ordersGroup.GET("/sales-chart", orderHandler.GetSalesChart)
 				ordersGroup.GET("/export", orderHandler.ExportOrders)
 				ordersGroup.GET("/:id/dispute-analysis", orderHandler.GetOrderDisputeAnalysis)
+				ordersGroup.GET("/:id/customs-export", orderHandler.ExportOrderCustoms)
 				ordersGroup.GET("/:id", orderHandler.GetOrder)
 				ordersGroup.PATCH("/:id/status", middleware.RequirePermission(auth.PermOrderEdit), orderHandler.UpdateOrderStatus)
 				ordersGroup.PATCH("/:id/shipping-status", middleware.RequirePermission(auth.PermOrderEdit), orderHandler.UpdateShippingStatus)
@@ -326,6 +379,7 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 				ordersGroup.POST("/:id/tracking/sync", middleware.RequirePermission(auth.PermOrderEdit), orderHandler.SyncTrackingInfo)
 				ordersGroup.POST("/:id/dispute-contact-email", middleware.RequirePermission(auth.PermOrderEdit), orderHandler.SendDisputeContactEmail)
 				ordersGroup.PATCH("/:id/admin-note", middleware.RequirePermission(auth.PermOrderEdit), orderHandler.UpdateAdminNote)
+				ordersGroup.PATCH("/:id/items/:item_id/customs", middleware.RequirePermission(auth.PermOrderEdit), orderHandler.UpdateOrderItemCustoms)
 				ordersGroup.POST("/batch-status", middleware.RequirePermission(auth.PermOrderEdit), orderHandler.BatchUpdateStatus)
 				ordersGroup.DELETE("/:id", middleware.RequirePermission(auth.PermOrderDelete), orderHandler.DeleteOrder)
 			}
@@ -382,6 +436,15 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 					postsGroup.POST("/batch-status", middleware.RequirePermission(auth.PermContentEdit), contentHandler.BatchUpdateStatus)
 					postsGroup.POST("/batch-delete", middleware.RequirePermission(auth.PermContentDelete), contentHandler.BatchDelete)
 				}
+			}
+
+			// 商品评价审核（独立 review 域）
+			reviewsGroup := authenticated.Group("/reviews")
+			reviewsGroup.Use(middleware.RequirePermission(auth.PermReviewView))
+			{
+				reviewsGroup.GET("", reviewModerationHandler.List)
+				reviewsGroup.GET("/:id", reviewModerationHandler.Get)
+				reviewsGroup.PATCH("/:id/status", middleware.RequirePermission(auth.PermReviewModerate), reviewModerationHandler.UpdateStatus)
 			}
 
 			// FAQ 管理（需要 FAQ 管理权限）
@@ -481,9 +544,9 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 				customerServiceGroup.POST("/auto-reply/rules", middleware.RequirePermission(auth.PermTicketEdit), autoReplyHandler.CreateRule)
 				customerServiceGroup.PUT("/auto-reply/rules/:id", middleware.RequirePermission(auth.PermTicketEdit), autoReplyHandler.UpdateRule)
 				customerServiceGroup.DELETE("/auto-reply/rules/:id", middleware.RequirePermission(auth.PermTicketDelete), autoReplyHandler.DeleteRule)
-				customerServiceGroup.GET("/analytics/regions", ticketHandler.GetCustomerServiceRegionAnalytics)
+				customerServiceGroup.GET("/analytics", ticketHandler.GetCustomerServiceAnalytics)
 				customerServiceGroup.GET("/conversations", ticketHandler.ListCustomerServiceConversations)
-				customerServiceGroup.GET("/events", ticketHandler.StreamCustomerServiceEvents)
+				customerServiceGroup.GET("/ws", ticketHandler.StreamCustomerServiceWebSocket)
 				customerServiceGroup.GET("/visitor-profiles", visitorProfileHandler.ListVisitorProfiles)
 				customerServiceGroup.GET("/visitor-profiles/stats", visitorProfileHandler.GetVisitorProfileStats)
 				customerServiceGroup.POST("/visitor-profiles/cleanup", middleware.AdminOnly(), visitorProfileHandler.CleanupExpiredVisitorProfiles)
@@ -495,7 +558,6 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 				customerServiceGroup.GET("/conversations/:id/context", ticketHandler.GetCustomerServiceConversationContext)
 				customerServiceGroup.GET("/conversations/:id/messages", ticketHandler.GetCustomerServiceConversationMessages)
 				customerServiceGroup.POST("/conversations/:id/messages", middleware.RequirePermission(auth.PermTicketEdit), ticketHandler.CreateCustomerServiceConversationMessage)
-				customerServiceGroup.POST("/conversations/:id/typing", middleware.RequirePermission(auth.PermTicketEdit), ticketHandler.SendCustomerServiceConversationTyping)
 				customerServiceGroup.POST("/conversations/:id/messages/mark-read", ticketHandler.MarkCustomerServiceConversationMessagesRead)
 				customerServiceGroup.PATCH("/conversations/:id/transfer", middleware.RequirePermission(auth.PermTicketEdit), ticketHandler.TransferCustomerServiceConversation)
 			}
@@ -566,6 +628,13 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 				seoGroup.PUT("/articles/:id", middleware.RequirePermission(auth.PermSEOEdit), seoArticlesHandler.Update)
 				seoGroup.GET("/products", seoProductsHandler.Get)
 				seoGroup.PUT("/products/:id", middleware.RequirePermission(auth.PermSEOEdit), seoProductsHandler.Update)
+				seoGroup.GET("/routes/stats", seoRoutesHandler.Stats)
+				seoGroup.GET("/routes", seoRoutesHandler.List)
+				seoGroup.GET("/routes/:id", seoRoutesHandler.Get)
+				seoGroup.GET("/routes/:id/history", seoRoutesHandler.History)
+				seoGroup.POST("/routes/sync", middleware.RequirePermission(auth.PermSEOEdit), seoRoutesHandler.Sync)
+				seoGroup.POST("/routes/check", middleware.RequirePermission(auth.PermSEOEdit), seoRoutesHandler.Check)
+				seoGroup.POST("/routes/:id/check", middleware.RequirePermission(auth.PermSEOEdit), seoRoutesHandler.CheckOne)
 			}
 
 			analyticsGroup := authenticated.Group("/analytics")
@@ -585,6 +654,18 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 				settingsGroup.GET("/public-chat-agents", publicChatAgentHandler.ListPublicChatAgents)
 				settingsGroup.GET("/public-chat-agent-candidates", publicChatAgentHandler.ListPublicChatAgentCandidates)
 				settingsGroup.POST("/public-chat-agents", middleware.RequirePermission(auth.PermSettingsEdit), publicChatAgentHandler.UpsertPublicChatAgent)
+				settingsGroup.POST(
+					"/public-chat-agents/:userID/avatar",
+					middleware.RequirePermission(auth.PermSettingsEdit),
+					middleware.RateLimitByUserPerMinute(3, 2),
+					customerServiceAvatarHandler.UploadAvatar,
+				)
+				settingsGroup.DELETE(
+					"/public-chat-agents/:userID/avatar",
+					middleware.RequirePermission(auth.PermSettingsEdit),
+					middleware.RateLimitByUserPerMinute(3, 2),
+					customerServiceAvatarHandler.DeleteAvatar,
+				)
 				settingsGroup.GET("/public-chat-groups", publicChatAgentHandler.ListPublicChatGroups)
 				settingsGroup.POST("/public-chat-groups", middleware.RequirePermission(auth.PermSettingsEdit), publicChatAgentHandler.UpsertPublicChatGroup)
 				settingsGroup.PUT("/public-chat-groups/:id", middleware.RequirePermission(auth.PermSettingsEdit), publicChatAgentHandler.UpdatePublicChatGroup)
@@ -689,7 +770,7 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 			opsGroup.Use(middleware.RequirePermission(auth.PermOpsView))
 			{
 				opsGroup.GET("/overview", opsOverviewHandler.Get)
-				opsGroup.GET("/admin-accounts", adminAccountHandler.List)
+				opsGroup.GET("/admin-accounts", middleware.AdminOnly(), adminAccountHandler.List)
 				opsGroup.POST("/admin-accounts/ensure", middleware.AdminOnly(), adminAccountHandler.Ensure)
 				opsGroup.GET("/deployments/preflight-overview", middleware.RequirePermission(auth.PermOpsDeployView), opsDeploymentPreflightHandler.GetOverview)
 				opsGroup.GET("/deployments/preflight", middleware.RequirePermission(auth.PermOpsDeployView), opsDeploymentPreflightHandler.GetProjectReportByQuery)
@@ -699,7 +780,9 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 				opsGroup.POST("/workflows/:id/validate", middleware.RequireAnyPermission(auth.PermOpsDeployDryRun, auth.PermOpsDeployExecute), opsDeploymentWorkflowHandler.Validate)
 				opsGroup.POST("/workflows/:id/approve", middleware.RequirePermission(auth.PermOpsWorkflowApprove), opsDeploymentWorkflowHandler.Approve)
 				opsGroup.POST("/workflows/:id/execute", middleware.RequireAnyPermission(auth.PermOpsDeployDryRun, auth.PermOpsDeployExecute), opsDeploymentWorkflowHandler.Execute)
-				opsGroup.POST("/workflows/:id/cancel", middleware.RequirePermission(auth.PermOpsDeployDryRun), opsDeploymentWorkflowHandler.Cancel)
+				opsGroup.POST("/workflows/:id/retry", middleware.RequireAnyPermission(auth.PermOpsDeployDryRun, auth.PermOpsDeployExecute), opsDeploymentWorkflowHandler.RetryFailedStep)
+				opsGroup.POST("/workflows/:id/rollback", middleware.RequirePermission(auth.PermOpsDeployRollback), opsDeploymentWorkflowHandler.Rollback)
+				opsGroup.POST("/workflows/:id/cancel", middleware.RequireAnyPermission(auth.PermOpsDeployDryRun, auth.PermOpsDeployExecute), opsDeploymentWorkflowHandler.Cancel)
 
 				domainsGroup := opsGroup.Group("/domains")
 				domainsGroup.Use(middleware.RequirePermission(auth.PermOpsDomainView))
@@ -723,6 +806,7 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 					connectorsGroup.PUT("/:id", middleware.RequirePermission(auth.PermOpsConnectorEdit), opsConnectorHandler.Update)
 					connectorsGroup.PATCH("/:id/enabled", middleware.RequirePermission(auth.PermOpsConnectorEdit), opsConnectorHandler.UpdateStatus)
 					connectorsGroup.POST("/:id/test", middleware.RequirePermission(auth.PermOpsConnectorEdit), opsConnectorHandler.Test)
+					connectorsGroup.POST("/oauth/start", middleware.RequirePermission(auth.PermOpsConnectorEdit), opsConnectorHandler.StartOAuth)
 				}
 
 				vpsGroup := opsGroup.Group("/vps")

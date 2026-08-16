@@ -11,6 +11,7 @@ import (
 )
 
 var ErrInvalidOpsVPSBinding = errors.New("invalid operations VPS binding")
+var ErrInvalidOpsVPSEnvironment = errors.New("invalid operations VPS environment")
 
 type OpsVPSBindingInput struct {
 	Name               string `json:"name"`
@@ -31,20 +32,34 @@ type OpsVPSBindingInput struct {
 type OpsVPSBindingService struct {
 	repo          *repository.OpsVPSBindingRepository
 	connectorRepo *repository.OpsConnectorRepository
+	projectRepo   *repository.OpsProjectBindingRepository
 }
 
 func NewOpsVPSBindingService(
 	repo *repository.OpsVPSBindingRepository,
 	connectorRepo *repository.OpsConnectorRepository,
+	projectRepo *repository.OpsProjectBindingRepository,
 ) *OpsVPSBindingService {
-	return &OpsVPSBindingService{repo: repo, connectorRepo: connectorRepo}
+	return &OpsVPSBindingService{
+		repo:          repo,
+		connectorRepo: connectorRepo,
+		projectRepo:   projectRepo,
+	}
 }
 
 func (s *OpsVPSBindingService) List() ([]ops.VPSBinding, error) {
+	return s.ListForEnvironment("")
+}
+
+func (s *OpsVPSBindingService) ListForEnvironment(environment string) ([]ops.VPSBinding, error) {
 	if s == nil || s.repo == nil {
 		return nil, errors.New("operations VPS service is not configured")
 	}
-	return s.repo.List()
+	environment, err := normalizeOpsVPSEnvironment(environment)
+	if err != nil {
+		return nil, err
+	}
+	return s.repo.ListByEnvironment(environment)
 }
 
 func (s *OpsVPSBindingService) Get(id uint) (*ops.VPSBinding, error) {
@@ -92,6 +107,9 @@ func (s *OpsVPSBindingService) Update(id uint, input OpsVPSBindingInput) (*ops.V
 		return nil, err
 	}
 	record.ID = id
+	if err := s.validateProjectDependencies(existing, record); err != nil {
+		return nil, err
+	}
 	if err := s.validateConnector(record.ConnectorID, record.Provider, record.Environment); err != nil {
 		return nil, err
 	}
@@ -107,6 +125,26 @@ func (s *OpsVPSBindingService) Update(id uint, input OpsVPSBindingInput) (*ops.V
 		return nil, err
 	}
 	return s.repo.FindByID(id)
+}
+
+func (s *OpsVPSBindingService) validateProjectDependencies(existing *ops.VPSBinding, next ops.VPSBinding) error {
+	if existing == nil || (existing.Provider == next.Provider && existing.Environment == next.Environment) {
+		return nil
+	}
+	if s.projectRepo == nil {
+		return errors.New("operations project binding repository is not configured")
+	}
+	hasProjects, err := s.projectRepo.HasByVPSBindingID(existing.ID)
+	if err != nil {
+		return err
+	}
+	if !hasProjects {
+		return nil
+	}
+	return fmt.Errorf(
+		"%w: cannot change VPS provider or environment while projects are bound; update project bindings first",
+		ErrInvalidOpsVPSBinding,
+	)
 }
 
 func (s *OpsVPSBindingService) SetEnabled(id uint, enabled bool) (*ops.VPSBinding, error) {
@@ -252,4 +290,20 @@ func normalizeOpsHostname(raw string) (string, error) {
 		return "", fmt.Errorf("%w: hostname is invalid", ErrInvalidOpsVPSBinding)
 	}
 	return strings.TrimSuffix(value, "."), nil
+}
+
+func normalizeOpsVPSEnvironment(environment string) (string, error) {
+	environment = strings.ToLower(strings.TrimSpace(environment))
+	if environment == "" {
+		return "", nil
+	}
+	switch environment {
+	case ops.VPSEnvironmentProduction,
+		ops.VPSEnvironmentStaging,
+		ops.VPSEnvironmentTest,
+		ops.VPSEnvironmentLocal:
+		return environment, nil
+	default:
+		return "", fmt.Errorf("%w: %s", ErrInvalidOpsVPSEnvironment, environment)
+	}
 }

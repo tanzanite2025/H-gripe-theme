@@ -1,4 +1,5 @@
 import { useLocalePath, useRoute, useRouter, useState } from '#imports'
+import { useOverlayBackStack } from '~/composables/useOverlayBackStack'
 
 export type ShopSearchFiltersPayload = Record<string, any> & {
   priceRange?: [number, number]
@@ -26,9 +27,15 @@ export const useShopSearchSheet = () => {
   const localePath = useLocalePath()
   const router = useRouter()
   const route = useRoute()
+  const overlayBackStack = useOverlayBackStack()
 
-  const close = () => {
+  const closeState = () => {
     isOpen.value = false
+  }
+
+  const close = async () => {
+    await overlayBackStack.close('shop-search')
+    closeState()
   }
 
   const open = (options?: ShopSearchOpenOptions) => {
@@ -45,23 +52,21 @@ export const useShopSearchSheet = () => {
     }
 
     isOpen.value = true
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('ui:popup-open', { detail: { id: 'shop-search' } }))
-    }
+    overlayBackStack.open('shop-search', closeState)
   }
 
   const submit = async (payload: ShopSearchPayload) => {
     pendingSearch.value = payload
-    close()
+    await close()
 
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('ui:shop-search-submit', { detail: payload }))
     }
     const shopPath = localePath('/shop')
     const chipCategorySlug = String(payload?.chipCategorySlug || '').trim()
-    const query = chipCategorySlug ? { product_type: chipCategorySlug } : undefined
+    const query = chipCategorySlug ? { product_specification_template: chipCategorySlug } : undefined
 
-    if (route.path !== shopPath || String(route.query.product_type || '') !== chipCategorySlug) {
+    if (route.path !== shopPath || String(route.query.product_specification_template || '') !== chipCategorySlug) {
       await router.push(query ? { path: shopPath, query } : shopPath)
     }
   }

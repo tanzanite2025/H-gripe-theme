@@ -31,7 +31,7 @@ func TestProductDetailCacheInvalidatorDeletesIDAndSlugKeys(t *testing.T) {
 
 func TestProductDetailCacheInvalidatorDeletesDependentProductKeys(t *testing.T) {
 	repo := &fakeProductCacheIdentityRepository{
-		productsByProductTypeID: map[uint][]product.Product{
+		productsByProductSpecificationTemplateID: map[uint][]product.Product{
 			3: {
 				{ID: 11, Slug: "wheelset", Locale: "en"},
 			},
@@ -45,10 +45,10 @@ func TestProductDetailCacheInvalidatorDeletesDependentProductKeys(t *testing.T) 
 	cache := &recordingProductDetailCache{}
 	invalidator := NewProductDetailCacheInvalidator(repo, cache)
 
-	invalidator.InvalidateProductCacheByProductTypeID(3)
+	invalidator.InvalidateProductCacheByProductSpecificationTemplateID(3)
 	invalidator.InvalidateProductCacheByInformationTemplateID(5)
 
-	assert.Equal(t, []uint{3}, repo.requestedProductTypeIDs)
+	assert.Equal(t, []uint{3}, repo.requestedProductSpecificationTemplateIDs)
 	assert.Equal(t, []uint{5}, repo.requestedTemplateIDs)
 	assert.Contains(t, cache.deletedKeys, "product:11")
 	assert.Contains(t, cache.deletedKeys, "product:slug:wheelset:en")
@@ -89,18 +89,18 @@ func (c *recordingProductDetailCache) Delete(key string) error {
 }
 
 type recordingProductCacheInvalidator struct {
-	productIDs     []uint
-	productTypeIDs []uint
-	brandIDs       []uint
-	templateIDs    []uint
+	productIDs                      []uint
+	productSpecificationTemplateIDs []uint
+	brandIDs                        []uint
+	templateIDs                     []uint
 }
 
 func (i *recordingProductCacheInvalidator) InvalidateProductCacheByIDs(ids []uint) {
 	i.productIDs = append(i.productIDs, ids...)
 }
 
-func (i *recordingProductCacheInvalidator) InvalidateProductCacheByProductTypeID(productTypeID uint) {
-	i.productTypeIDs = append(i.productTypeIDs, productTypeID)
+func (i *recordingProductCacheInvalidator) InvalidateProductCacheByProductSpecificationTemplateID(productSpecificationTemplateID uint) {
+	i.productSpecificationTemplateIDs = append(i.productSpecificationTemplateIDs, productSpecificationTemplateID)
 }
 
 func (i *recordingProductCacheInvalidator) InvalidateProductCacheByBrandID(brandID uint) {
@@ -112,14 +112,14 @@ func (i *recordingProductCacheInvalidator) InvalidateProductCacheByInformationTe
 }
 
 type fakeProductCacheIdentityRepository struct {
-	productsByID            map[uint]product.Product
-	productsByProductTypeID map[uint][]product.Product
-	productsByBrandID       map[uint][]product.Product
-	productsByTemplateID    map[uint][]product.Product
-	requestedIDs            []uint
-	requestedProductTypeIDs []uint
-	requestedBrandIDs       []uint
-	requestedTemplateIDs    []uint
+	productsByID                             map[uint]product.Product
+	productsByProductSpecificationTemplateID map[uint][]product.Product
+	productsByBrandID                        map[uint][]product.Product
+	productsByTemplateID                     map[uint][]product.Product
+	requestedIDs                             []uint
+	requestedProductSpecificationTemplateIDs []uint
+	requestedBrandIDs                        []uint
+	requestedTemplateIDs                     []uint
 }
 
 func (r *fakeProductCacheIdentityRepository) FindProductCacheIdentitiesByIDs(ids []uint) ([]product.Product, error) {
@@ -133,9 +133,9 @@ func (r *fakeProductCacheIdentityRepository) FindProductCacheIdentitiesByIDs(ids
 	return products, nil
 }
 
-func (r *fakeProductCacheIdentityRepository) FindProductCacheIdentitiesByProductTypeID(productTypeID uint) ([]product.Product, error) {
-	r.requestedProductTypeIDs = append(r.requestedProductTypeIDs, productTypeID)
-	return append([]product.Product(nil), r.productsByProductTypeID[productTypeID]...), nil
+func (r *fakeProductCacheIdentityRepository) FindProductCacheIdentitiesByProductSpecificationTemplateID(productSpecificationTemplateID uint) ([]product.Product, error) {
+	r.requestedProductSpecificationTemplateIDs = append(r.requestedProductSpecificationTemplateIDs, productSpecificationTemplateID)
+	return append([]product.Product(nil), r.productsByProductSpecificationTemplateID[productSpecificationTemplateID]...), nil
 }
 
 func (r *fakeProductCacheIdentityRepository) FindProductCacheIdentitiesByBrandID(brandID uint) ([]product.Product, error) {

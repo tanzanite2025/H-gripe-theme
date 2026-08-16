@@ -22,6 +22,8 @@ export interface MediaAsset {
   status?: string | null
   visibility?: string | null
   size?: number | string | null
+  width?: number | string | null
+  height?: number | string | null
   [key: string]: unknown
 }
 

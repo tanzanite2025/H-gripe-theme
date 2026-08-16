@@ -132,11 +132,13 @@ const closeAll = () => {
 
 
 const openQuick = () => {
+  if (quickOpen.value) {
+    quickOpen.value = false
+    return
+  }
+
   closeAll()
   quickOpen.value = true
-  if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('ui:popup-open', { detail: { id: 'dock-quick' } }))
-  }
 }
 
 // removed old share popup and outside-click listeners; modal closes by overlay click
@@ -156,9 +158,6 @@ const toggleChatFromDock = () => {
   } else {
     closeAll()
     openChat({ showAgentList: true })
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('ui:popup-open', { detail: { id: 'whatsapp-chat' } }))
-    }
   }
 }
 
@@ -259,35 +258,9 @@ const cartActionAriaLabel = computed(() => {
 
 const openCartDrawer = () => {
   openCart()
-  if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('ui:popup-open', { detail: { id: 'cart-drawer' } }))
-  }
 }
 
-onMounted(() => {
-  // global popup listener: close this component's popups when others open
-  const onGlobalPopup = (e: any) => {
-    try {
-      const id = e?.detail?.id as string | undefined
-      if (!id) return
-      if (id === 'dock-fab') {
-        quickOpen.value = false
-      } else if (id === 'dock-quick') {
-        isOpen.value = false
-      } else {
-        // opened by other components (e.g., language switcher) -> close all dock popups
-        closeAll()
-      }
-    } catch {}
-  }
-  window.addEventListener('ui:popup-open', onGlobalPopup)
-  ;(window as any)._dockOnGlobalPopup = onGlobalPopup
-})
 onBeforeUnmount(() => {
-  // remove global listener with stored reference
-  const ref = (window as any)._dockOnGlobalPopup
-  if (ref) window.removeEventListener('ui:popup-open', ref)
-
   if (unreadInterval) {
     clearInterval(unreadInterval)
   }

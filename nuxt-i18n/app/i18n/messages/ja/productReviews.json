@@ -1,0 +1,17 @@
+{
+  "eyebrow": "お客様の声",
+  "title": "評価とレビュー",
+  "summaryLabel": "{count}件のレビューで5点満点中{rating}点",
+  "reviewCount": "{count}件のレビュー",
+  "loading": "レビューを読み込んでいます...",
+  "loadError": "レビューを読み込めませんでした。",
+  "retry": "再試行",
+  "empty": "承認済みのレビューはまだありません。",
+  "ratingLabel": "5点満点中{rating}つ星",
+  "imageAlt": "お客様レビューの画像",
+  "verifiedPurchase": "購入確認済み",
+  "helpfulCount": "{count}人が役に立ったと回答",
+  "storeReply": "ショップからの返信",
+  "loadingMore": "さらに読み込んでいます...",
+  "loadMore": "レビューをさらに読み込む"
+}

@@ -130,6 +130,34 @@
             autocomplete="new-password"
             :placeholder="field.placeholder"
           />
+          <select
+            v-else-if="field.key === 'three_ds_mode'"
+            v-model="form.credentials[field.key]"
+            class="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+          >
+             <option value="automatic">自动判断（automatic）：可能不触发 3DS，由 Stripe / 风控决定</option>
+             <option value="any">要求 3DS（any）：可能无感完成，也可能进入银行挑战</option>
+             <option value="challenge">更强挑战（challenge）：请求银行进入挑战路径，最终交互仍由发卡行决定</option>
+           </select>
+          <div v-if="field.key === 'three_ds_mode'" class="mt-3 grid gap-2 sm:grid-cols-3">
+            <div
+              v-for="mode in threeDSModeCards"
+              :key="mode.value"
+              class="border p-3"
+              :class="normalizedThreeDSMode === mode.value ? 'border-primary/50 bg-primary/5' : 'border-border/70'"
+            >
+              <div class="flex items-start justify-between gap-2">
+                <p class="text-xs font-black">{{ mode.label }}</p>
+                <code class="font-mono text-[10px] text-muted-foreground">{{ mode.value }}</code>
+              </div>
+              <p class="mt-1 text-[11px] leading-5 text-muted-foreground">{{ mode.description }}</p>
+            </div>
+          </div>
+          <div v-if="field.key === 'three_ds_mode'" class="mt-2 border border-sky-500/20 bg-sky-500/5 p-3 text-[11px] leading-5 text-sky-900 dark:text-sky-100">
+            <p class="font-black">当前选择的实际含义：{{ selectedThreeDSModeMeta.label }}</p>
+            <p class="mt-1">{{ selectedThreeDSModeMeta.outcome }}</p>
+            <p class="mt-1">这是 PaymentIntent 的基础请求值；风控自适应升级、30 天组合风险和人工保护只能把认证强度提高到 any 或 challenge，不会把高风险支付降级。</p>
+          </div>
           <Input
             v-else
             v-model="form.credentials[field.key]"
@@ -229,7 +257,7 @@ const fieldDefinitions: Record<string, PaymentGatewayCredentialField[]> = {
     { key: 'api_key', label: 'API Key / Secret Key', placeholder: 'sk_live_...', description: 'Stripe 后端 Secret Key。' },
     { key: 'publishable_key', label: 'Publishable Key', placeholder: 'pk_live_...', description: '仅返回浏览器初始化 Stripe.js，不能填写 Secret Key。' },
     { key: 'webhook_secret', label: 'Webhook Secret', placeholder: 'whsec_...', description: 'Stripe webhook endpoint secret。' },
-    { key: 'three_ds_mode', label: '3DS Mode', placeholder: 'automatic / any / challenge', description: '默认 automatic；需要强制 3DS 时填写 any，高风险可填写 challenge。' },
+     { key: 'three_ds_mode', label: 'Stripe 基础 3DS 认证策略', placeholder: 'automatic', description: '这是每笔 PaymentIntent 的起点，不是最终结果。自适应风控和人工保护只能把认证强度提升到 any 或 challenge，不会降级。' },
   ],
   paypal: [
     { key: 'client_id', label: 'Client ID', placeholder: 'PayPal client id' },
@@ -277,6 +305,33 @@ const configuredFieldText = computed(() => {
   const fields = props.status?.configured_fields || []
   return fields.length ? fields.join(', ') : t('common.none')
 })
+const threeDSModeCards = [
+  {
+    value: 'automatic',
+    label: '自动判断',
+    description: 'Stripe 根据 SCA / 风险决定是否需要认证。',
+    outcome: '可能直接完成、无感认证，或被运行时风控升级。',
+  },
+  {
+    value: 'any',
+    label: '要求 3DS',
+    description: '请求在支持的情况下使用 3DS。',
+    outcome: '可以无感完成，也可能进入银行 challenge，不保证弹窗。',
+  },
+  {
+    value: 'challenge',
+    label: '更强挑战',
+    description: '请求发卡行进入更强的挑战路径。',
+    outcome: '更可能出现银行挑战，但最终仍由发卡行决定。',
+  },
+]
+const normalizedThreeDSMode = computed(() => {
+  const value = String(form.credentials.three_ds_mode || '').trim().toLowerCase()
+  return ['any', 'challenge'].includes(value) ? value : 'automatic'
+})
+const selectedThreeDSModeMeta = computed(() => (
+  threeDSModeCards.find((mode) => mode.value === normalizedThreeDSMode.value) || threeDSModeCards[0]
+))
 
 const generateMasterKey = (): void => {
   if (!globalThis.crypto?.getRandomValues) {

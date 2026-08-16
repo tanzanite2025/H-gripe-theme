@@ -20,6 +20,7 @@ const (
 	adminAuditActionRevoke    = "revoke"
 	adminAuditActionSubmit    = "submit"
 	adminAuditActionApprove   = "approve"
+	adminAuditActionRollback  = "rollback"
 
 	adminAuditStatusSuccess = "success"
 	adminAuditStatusFailed  = "failed"

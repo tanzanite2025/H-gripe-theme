@@ -109,7 +109,7 @@ func newTestCartService(t *testing.T) (*gorm.DB, *CartService) {
 	})
 
 	require.NoError(t, db.AutoMigrate(
-		&product.ProductType{},
+		&product.ProductSpecificationTemplate{},
 		&product.SpecDefinition{},
 		&product.Product{},
 		&product.ProductMedia{},

@@ -8,6 +8,8 @@
       :dispute-analysis="disputeAnalysis"
       :dispute-analysis-loading="disputeAnalysisLoading"
       :syncing-tracking="syncingTracking"
+      :saving-customs-item-id="savingCustomsItemId"
+      :exporting-customs="exportingCustoms"
       :can-edit="canEdit"
       :order-status-name="orderStatusName"
       :order-status-tone="orderStatusTone"
@@ -27,6 +29,8 @@
       @update:admin-note="emit('update:adminNote', $event)"
       @sync-tracking="emit('sync-tracking')"
       @update-note="emit('update-note')"
+      @update-customs="forwardCustomsUpdate"
+      @export-customs="emit('export-customs')"
       @contact-dispute="emit('contact-dispute', $event)"
       @open-payment-workbench="emit('open-payment-workbench', $event)"
     />
@@ -42,6 +46,7 @@ import type {
   OrderDisputeAnalysis,
   OrderDisputeCase,
   OrderMoneyFormatter,
+  OrderID,
   OrderRecord,
   OrderShippingAddressLineResolver,
   OrderShippingNameResolver,
@@ -60,6 +65,8 @@ withDefaults(defineProps<{
   disputeAnalysis?: OrderDisputeAnalysis | null
   disputeAnalysisLoading?: boolean
   syncingTracking?: boolean
+  savingCustomsItemId?: OrderID | null
+  exportingCustoms?: boolean
   canEdit?: boolean
   orderStatusName: OrderStatusNameResolver
   orderStatusTone: OrderStatusToneResolver
@@ -85,6 +92,8 @@ withDefaults(defineProps<{
   disputeAnalysis: null,
   disputeAnalysisLoading: false,
   syncingTracking: false,
+  savingCustomsItemId: null,
+  exportingCustoms: false,
   canEdit: false
 })
 
@@ -93,7 +102,17 @@ const emit = defineEmits<{
   (event: 'update:adminNote', value: string): void
   (event: 'sync-tracking'): void
   (event: 'update-note'): void
+  (event: 'update-customs', orderItemId: OrderID, declaredValue: number | null, declaredValueConfirmed: boolean): void
+  (event: 'export-customs'): void
   (event: 'contact-dispute', dispute: OrderDisputeCase): void
   (event: 'open-payment-workbench', dispute: OrderDisputeCase): void
 }>()
+
+const forwardCustomsUpdate = (
+  orderItemId: OrderID,
+  declaredValue: number | null,
+  declaredValueConfirmed: boolean,
+): void => {
+  emit('update-customs', orderItemId, declaredValue, declaredValueConfirmed)
+}
 </script>

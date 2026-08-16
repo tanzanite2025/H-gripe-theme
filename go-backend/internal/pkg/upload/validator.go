@@ -18,13 +18,13 @@ import (
 )
 
 const (
-	CodeEmptyFile          = "empty_file"
-	CodeFileTooLarge       = "file_too_large"
-	CodeInvalidType        = "invalid_type"
-	CodeInvalidDimensions  = "invalid_dimensions"
-	CodeTooManyFiles       = "too_many_files"
-	ProductTypeImageWidth  = 800
-	ProductTypeImageHeight = 800
+	CodeEmptyFile                           = "empty_file"
+	CodeFileTooLarge                        = "file_too_large"
+	CodeInvalidType                         = "invalid_type"
+	CodeInvalidDimensions                   = "invalid_dimensions"
+	CodeTooManyFiles                        = "too_many_files"
+	ProductSpecificationTemplateImageWidth  = 800
+	ProductSpecificationTemplateImageHeight = 800
 
 	imageHeaderInspectionBytes = 1 << 20
 	webPHeaderInspectionBytes  = 64
@@ -85,12 +85,12 @@ var (
 		MaxHeight:           800,
 		MaxPixels:           800 * 800,
 	}
-	ProductTypeImageRule = FileRule{
+	ProductSpecificationTemplateImageRule = FileRule{
 		MaxSize:             3 << 20,
 		AllowedExtensions:   []string{".webp"},
 		AllowedContentTypes: []string{"image/webp"},
-		ExactWidth:          ProductTypeImageWidth,
-		ExactHeight:         ProductTypeImageHeight,
+		ExactWidth:          ProductSpecificationTemplateImageWidth,
+		ExactHeight:         ProductSpecificationTemplateImageHeight,
 	}
 	WarrantyImageRule = FilesRule{
 		FileRule: FileRule{
@@ -116,6 +116,14 @@ var (
 		MaxWidth:            8000,
 		MaxHeight:           8000,
 		MaxPixels:           24_000_000,
+	}
+	CustomerServiceAvatarRule = FileRule{
+		MaxSize:             2 << 20,
+		AllowedExtensions:   []string{".jpg", ".jpeg", ".png", ".webp"},
+		AllowedContentTypes: []string{"image/jpeg", "image/png", "image/webp"},
+		MaxWidth:            2048,
+		MaxHeight:           2048,
+		MaxPixels:           4_194_304,
 	}
 	ProductVideoRule = FileRule{
 		MaxSize:             80 << 20,
@@ -157,6 +165,23 @@ func ValidateWebPDimensions(file *multipart.FileHeader, expectedWidth, expectedH
 		return validationError(CodeInvalidType, "invalid_type: FAQ image must be exactly %dx%d pixels (received %dx%d)", expectedWidth, expectedHeight, width, height)
 	}
 	return nil
+}
+
+// ReadImageDimensions returns the pixel dimensions for an uploaded image.
+func ReadImageDimensions(file *multipart.FileHeader) (int, int, error) {
+	if file == nil {
+		return 0, 0, validationError(CodeEmptyFile, "empty_file: uploaded file is empty")
+	}
+
+	contentType, err := detectContentType(file)
+	if err != nil {
+		return 0, 0, err
+	}
+	if !strings.HasPrefix(strings.ToLower(strings.TrimSpace(contentType)), "image/") {
+		return 0, 0, validationError(CodeInvalidType, "invalid_type: uploaded file is not an image")
+	}
+
+	return imageDimensions(file, contentType)
 }
 
 func validateImageDimensions(file *multipart.FileHeader, rule FileRule, contentType string) error {

@@ -1,12 +1,13 @@
 # Public Chat / customer-service architecture
 
-Last audited: 2026-07-25
+Last audited: 2026-08-16
 
 This document is the current source for our Public Chat boundary. Update it whenever chat routes, ownership rules, message payloads, or frontend/admin component responsibilities change.
 
 Related implementation design:
 
 - `CHAT-ATTACHMENT-HUB.md`: `+` button Attachment Hub for phone image, camera capture, order reference, and product reference flows.
+- `go-backend/docs/CUSTOMER_SERVICE_RELIABLE_REALTIME_ARCHITECTURE.md`: durable customer-service event, Outbox, WebSocket-only delivery, and cross-instance relay.
 
 ## Hard boundary
 
@@ -31,9 +32,9 @@ These routes are consumed by Nuxt customer UI:
 | Create/reuse customer conversation | `POST /api/v1/customer-service/conversations` |
 | Check existing customer conversation | `GET /api/v1/customer-service/has-conversation` |
 | Send customer message | `POST /api/v1/customer-service/messages` |
-| Publish customer typing state | `POST /api/v1/customer-service/typing` |
+| Publish customer typing state | WebSocket `{"type":"typing","is_typing":true}` control frame |
 | Read customer-owned messages | `GET /api/v1/customer-service/messages/:conversation_id` |
-| Subscribe to customer-owned realtime events | `GET /api/v1/customer-service/events` |
+| Subscribe to customer-owned realtime events | `GET /api/v1/customer-service/ws?conversation_id=...` |
 | Customer chat orders | `GET /api/v1/customer-service/orders` |
 | Customer chat product search | `GET /api/v1/customer-service/products` |
 
@@ -46,11 +47,11 @@ These routes are consumed by the admin UI:
 | Capability | Route |
 | --- | --- |
 | List staff-visible conversations | `GET /api/admin/customer-service/conversations` |
-| Subscribe to staff-visible realtime events | `GET /api/admin/customer-service/events` |
+| Subscribe to staff-visible realtime events | `GET /api/admin/customer-service/ws?scope=inbox|conversation` |
 | Read one conversation's customer context | `GET /api/admin/customer-service/conversations/:id/context` |
 | Read one conversation's messages | `GET /api/admin/customer-service/conversations/:id/messages` |
 | Send staff reply | `POST /api/admin/customer-service/conversations/:id/messages` |
-| Publish staff typing state | `POST /api/admin/customer-service/conversations/:id/typing` |
+| Publish staff typing state | WebSocket `{"type":"typing","is_typing":true}` control frame on a conversation socket |
 | Mark messages read | `POST /api/admin/customer-service/conversations/:id/messages/mark-read` |
 | Transfer conversation | `PATCH /api/admin/customer-service/conversations/:id/transfer` |
 | List visitor profiles | `GET /api/admin/customer-service/visitor-profiles` |
@@ -77,17 +78,17 @@ Conversation listing filters are applied in the Go API/repository layer, not by 
   - Must not import staff conversation-list or transfer components.
 - `app/composables/chat/useWhatsAppState.ts`
   - Customer-side chat modal orchestration only: selected public agent, active tab, drawer visibility, product search entry, order/product sharing, login/member subflows, and UI cache loading/saving.
-  - Must not own customer-service HTTP persistence or SSE internals directly.
+  - Must not own customer-service HTTP persistence or realtime transport internals directly.
 - `app/composables/chat/useCustomerServiceChatSync.ts`
-  - Customer-service HTTP/SSE sync boundary for the storefront.
-  - Owns `conversation_id` persistence from backend responses, customer message send, server message normalization, optimistic-message replacement/failure marking, persisted-history refresh, and EventSource lifecycle.
+  - Customer-service HTTP/WebSocket sync boundary for the storefront.
+  - Owns `conversation_id` persistence from backend responses, customer message send, server message normalization, optimistic-message replacement/failure marking, persisted-history refresh, and WebSocket lifecycle.
   - Welcome automatic replies are triggered by Go while creating/reusing the
     customer-service conversation. The storefront refreshes persisted history;
     it must not call the legacy welcome endpoint as the primary flow.
   - Keyword automatic replies are now triggered by Go after the customer
     message is persisted. The storefront only refreshes persisted history and
     must not issue a second matching request.
-  - Keeps HTTP `/customer-service/messages/:conversation_id` as the message source of truth; SSE remains a refresh/invalidation signal.
+  - Keeps HTTP `/customer-service/messages/:conversation_id` as the message source of truth; WebSocket remains a refresh/invalidation and transient-control signal.
 - `app/components/whatsapp/ChatWelcomePanel.vue`
   - Public agent/profile selection for customers.
 - `app/components/whatsapp/UserChatBody.vue`
@@ -101,19 +102,32 @@ Conversation listing filters are applied in the Go API/repository layer, not by 
 
 ### Admin frontend
 
-- `go-backend/web/admin/src/views/CustomerServiceChats.vue`
-  - Staff inbox for Public Chat conversations.
-  - Reads/writes only through `/api/admin/customer-service/*`.
-  - Displays the read-only customer context panel beside the staff conversation.
-  - The conversation list must expose display-safe customer context at a glance: visitor/member identity, coarse region, and member points-tier icon when the customer is a logged-in account.
+- `go-backend/web/admin/src/layouts/MainLayout.vue`
+  - Hosts the permission-gated, global bottom-right customer-service launcher
+    for every backoffice page. It is independent from the storefront customer
+    chat widget and remains present without navigating to a conversation page.
+- `go-backend/web/admin/src/components/admin/customer-service/CustomerServiceFloatingInbox.vue`
+  - Owns the closed-state inbox WebSocket, unread badge, and new customer
+    message toast. Opening the dialog transfers inbox subscription ownership to
+    the workbench so only one inbox socket is active for that browser tab.
+- `go-backend/web/admin/src/components/admin/customer-service/CustomerServiceInboxDialog.vue`
+  - Dialog shell for the staff workspace: conversation list, reply pane, and
+    read-only customer context appear together only after the launcher opens.
+- `go-backend/web/admin/src/components/admin/customer-service/CustomerServiceInboxWorkbench.vue`
+  - Reads/writes only through `/api/admin/customer-service/*`; the inbox socket
+    refreshes persisted data while a selected-conversation socket carries only
+    scoped staff typing controls.
+  - The conversation list must expose display-safe customer context at a glance:
+    visitor/member identity, coarse region, and member points-tier icon when the
+    customer is a logged-in account.
 - `go-backend/web/admin/src/views/VisitorProfiles.vue`
   - Read-only operations page for `visitor_profiles`.
   - Supports search and capture-state filters for account/anonymous identity, email, cart session, Public Chat visitor binding, country, locale, and last-seen window.
   - Must not edit visitor cookies, cart sessions, or guessed identity fields.
-- `go-backend/web/admin/src/router/index.js`
-  - Registers `/customer-service` and `/visitor-profiles`.
-- `go-backend/web/admin/src/layouts/MainLayout.vue`
-  - Adds the sidebar entry.
+- `go-backend/web/admin/src/router/index.ts`
+  - May retain a legacy customer-service route for deep-link compatibility, but
+    it must redirect/open the global launcher rather than become the normal
+    staff entry point.
 
 ### Go backend
 
@@ -170,7 +184,7 @@ For `order`, Nuxt builds `metadata` from the customer's order fact source:
 - The shared frontend builder is `app/composables/chat/useOrderChatPayload.ts`.
 - Orders Tab uses an explicit confirm button. Do not make the whole order card a hidden send action.
 
-Do not persist product/order/config chat payloads only in frontend local storage or transient API response data. Nuxt storefront, Admin staff UI, HTTP history reads, and SSE refreshes must all render from the same persisted `ticket_messages` row.
+Do not persist product/order/config chat payloads only in frontend local storage or transient API response data. Nuxt storefront, Admin staff UI, HTTP history reads, and WebSocket invalidation refreshes must all render from the same persisted `ticket_messages` row.
 
 `customer_service` records are intentionally not part of the ordinary ticket inbox/list/stat/detail/message path. This is important because anonymous Public Chat conversations still need a persisted `tickets.user_id` for the legacy schema, while the real customer identity is `customer_user_id` or `visitor_session_hash`. Treating those records as ordinary tickets would leak or misclassify customer conversations.
 
@@ -255,55 +269,82 @@ The current `visitor_profiles` source binds signed Public Chat visitor cookie, c
 
 ## Realtime status
 
-HTTP chat remains the durable source of truth. SSE is now the first realtime acceleration layer for customer-service events:
+HTTP chat remains the durable source of truth. WebSocket is the formal realtime
+transport for customer-service events:
 
 - backend event hub publishes only after HTTP persistence succeeds;
-- admin inbox subscribes to `/api/admin/customer-service/events?scope=inbox`;
-- customer storefront can subscribe to `/api/v1/customer-service/events?conversation_id={conversation_id}`;
+- admin inbox connects to `/api/admin/customer-service/ws?scope=inbox`;
+- customer storefront connects to `/api/v1/customer-service/ws?conversation_id={conversation_id}`;
 - support users receive only events for conversations they are authorized to see;
-- clients keep HTTP read/write and use SSE as the refresh/invalidation signal;
-- typing indicators use scoped HTTP `POST` endpoints to publish transient state, then SSE broadcasts `conversation.typing` to the opposite side.
+- clients keep HTTP message read/write and use WebSocket as the refresh/invalidation signal;
+- typing indicators use a scoped WebSocket `typing` control frame and are broadcast only to the opposite browser product.
 
-The older WebSocket route `GET /api/v1/customer-service/ws` is still only a guarded ping/pong foundation. It has no conversation scope, no admin namespace, and no persisted chat contract, so it must not be wired to frontend/admin chat as a message or typing source.
+There is no SSE route or `EventSource` fallback. WebSocket is the only browser
+realtime connection for customer service.
 
-## Realtime event contract target
+The reliable delivery evolution is documented separately in
+`go-backend/docs/CUSTOMER_SERVICE_RELIABLE_REALTIME_ARCHITECTURE.md`. Its core
+decision is: HTTP/ticket facts are authoritative, WebSocket is the formal
+browser transport, durable chat mutations use an Outbox path, and the socket
+must implement the same scoped authorization and reconciliation contract rather
+than replacing the data model.
+
+## Realtime event contract
 
 Realtime should be an acceleration layer over the durable HTTP/ticket source, not a second source of truth.
 
 ### Subscription routes
 
-- Customer storefront: `GET /api/v1/customer-service/events?conversation_id={conversation_id}`
+- Customer storefront: `GET /api/v1/customer-service/ws?conversation_id={conversation_id}&last_event_id={cursor}`
   - Requires the same owner proof as HTTP: authenticated `user_id` or signed Public Chat visitor cookie hash.
   - The requested `conversation_id` must belong to that customer owner.
-- Admin staff: `GET /api/admin/customer-service/events?scope=inbox|conversation&conversation_id={ticket_id}`
+- Admin staff: `GET /api/admin/customer-service/ws?scope=inbox|conversation&conversation_id={ticket_id}&last_event_id={cursor}`
   - Requires backoffice access and `ticket:view`.
   - Admin/manager can subscribe to inbox and any customer-service conversation.
   - Support users can subscribe only to conversations assigned to their backend user id.
+  - An inbox socket cannot publish typing; a typing control is accepted only on an authorized conversation socket.
 
 ### Event envelope
 
-Every pushed event should use one envelope so Nuxt and admin do not drift:
+Every pushed business event uses one shared body, wrapped in a WebSocket frame
+so Nuxt and admin do not drift:
 
 ```json
 {
-  "type": "conversation.message.created",
-  "event_id": "uuid",
-  "ticket_id": 123,
-  "conversation_id": "public-conversation-id",
-  "occurred_at": "2026-07-25T00:00:00Z",
-  "actor": {
-    "kind": "customer",
-    "user_id": 10,
-    "anonymous": false
-  },
-  "payload": {}
+  "type": "event",
+  "cursor": "1750000000000-0",
+  "event": {
+    "type": "conversation.message.created",
+    "event_id": "customer_service.message.created:481",
+    "audience": "both",
+    "ticket_id": 123,
+    "conversation_id": "public-conversation-id",
+    "occurred_at": "2026-08-16T10:00:00Z",
+    "actor": {
+      "kind": "customer",
+      "anonymous": true
+    },
+    "payload": {
+      "message_id": 481
+    }
+  }
 }
 ```
 
-Planned event types:
+`{"type":"cursor","cursor":"1750000000000-1"}` advances a reconnect
+cursor when the underlying durable event is filtered for this browser product.
+The client must not infer facts from that frame. The server sends
+`{"type":"ready"}` after a successful upgrade. Valid application controls
+are only `{"type":"ping"}` and `{"type":"typing","is_typing":true}`;
+the server derives conversation, actor, audience, and display name from the
+authorized socket rather than accepting them from the client.
+
+Current event types:
 
 - `conversation.message.created`
-  - Payload: the same normalized message object returned by HTTP message endpoints, including `message_type` and parsed `metadata` for structured cards such as `config_confirm`.
+  - Payload: `message_id` only. It is a display-safe invalidation; clients
+    refetch their authorized HTTP history rather than treating the socket as a
+    message source.
 - `conversation.messages.read`
   - Payload: `reader_kind`, `read_by_user_id`, and `read_at`.
 - `conversation.assigned`
@@ -315,35 +356,43 @@ Planned event types:
 - `conversation.typing`
   - Payload: `is_typing`, `display_name`, and `expires_at`.
   - This is transient UI state only. It is not stored in `ticket_messages` and must not trigger HTTP message refreshes.
-- `heartbeat`
-  - Payload: server timestamp.
-
 ### Implementation rules
 
 - Persist first, broadcast second. Durable message/status/assignment realtime events must only be emitted after the Go write succeeds.
 - Transient events such as `conversation.typing` are allowed to skip persistence, but must still be scoped by the same customer/admin authorization as HTTP message reads.
-- The event payload must be derived from the same response builders used by HTTP handlers.
+- Message-created events must use the canonical minimal invalidation payload;
+  rich HTTP response DTOs, message bodies, attachments, and metadata do not
+  travel through the realtime event contract.
 - Missing realtime must never block chat. Nuxt/admin clients keep HTTP send/read and use reconnect with polling fallback.
 - Do not broadcast raw visitor IP, raw user-agent, or hidden profile hashes. Only send display-safe ids and values already exposed by HTTP.
-- Do not let clients send arbitrary chat events before the server has a validation path. If WebSocket is expanded later, client-to-server messages must start with scoped `subscribe`/`pong` style control frames only and reuse the same authorization boundaries defined here.
+- Do not let clients send arbitrary chat events. The current WebSocket controls
+  are only scoped `ping` and `typing`; message, read, transfer, and status
+  commands remain HTTP with their existing authorization and idempotency paths.
 
 ### Implementation order
 
-1. Backend SSE event hub and admin inbox SSE route are active.
+1. Transactional Outbox events, Redis Stream relay, scoped WebSocket routes,
+   reconnect cursor/replay, and strict origin policy are active.
 2. Broadcasts are active for:
    - customer message send;
    - staff reply;
    - mark-read;
    - transfer assignment;
    - visitor email/customer context invalidation.
-3. Admin inbox frontend is wired to SSE and refetches HTTP facts on events.
-4. Nuxt customer chat is wired to SSE. It listens for customer-owned conversation events, then refetches `/api/v1/customer-service/messages/:conversation_id` and merges persisted messages into the local room cache.
-5. Structured message payload persistence is active for `message_type` + `metadata`; `config_confirm` cards render in both Nuxt customer chat and Admin staff chat after HTTP reload/SSE refresh.
-6. Scoped typing indicators are active:
-   - Nuxt publishes customer typing through `POST /api/v1/customer-service/typing`;
-   - Admin publishes staff typing through `POST /api/admin/customer-service/conversations/:id/typing`;
-   - both sides receive `conversation.typing` through the existing SSE event hub and clear the indicator by expiry.
-7. Keep WebSocket reserved for a future true bidirectional use case that cannot be handled cleanly by HTTP + SSE.
+3. The admin `MainLayout` hosts a global bottom-right customer-service launcher.
+   While the dialog is closed it owns the inbox socket and updates the unread
+   badge/toast; opening the dialog transfers inbox ownership to the workbench.
+   This is separate from the storefront chat widget and does not require a
+   staff user to navigate to a conversation page.
+4. Nuxt customer chat listens for its owned WebSocket events, then refetches
+   `/api/v1/customer-service/messages/:conversation_id` and merges persisted
+   history into the local room cache.
+5. Structured message payload persistence is active for `message_type` +
+   `metadata`; `config_confirm` cards render in both products after HTTP reload.
+6. Scoped typing indicators are active through WebSocket control frames; both
+   browser products clear `conversation.typing` by expiry.
+7. There is no compatibility transport: typing is sent only through the
+   scoped WebSocket control frame, while durable commands remain HTTP.
 
 ## Next implementation order
 
@@ -355,4 +404,6 @@ Planned event types:
    - no raw IP/User-Agent/hash exposure.
 3. Add today's coarse-region operations stats for Public Chat, then connect the aggregate region signal to product-interest facts already present in chat/cart/wishlist/product cards.
 4. Add GeoIP provider, consent, audit, or enrichment jobs only after the broad-region contract proves useful and the privacy/legal boundary is explicitly confirmed.
-5. If a future feature genuinely requires WebSocket, design a scoped admin + storefront protocol first; do not reuse the legacy `/ws` ping/pong route as-is.
+5. Keep WebSocket as the sole browser realtime contract. Any delivery issue
+   must be fixed in the scoped WebSocket, HTTP reconciliation, Outbox, or relay
+   path rather than adding a second browser transport.

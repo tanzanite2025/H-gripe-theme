@@ -1,10 +1,16 @@
 export interface ProductFormRecord {
   id: number | string | null
-  product_type_id: number | string | null
+  product_specification_template_id: number | string | null
+  product_category_id: number | string | null
   brand_id: number | string | null
   shipping_template_id: number | string | null
   after_sales_template_id: number | string | null
   packaging_template_id: number | string | null
+  customs_classification_profile_id: number | string | null
+  hs_code: string
+  cn_code: string
+  country_of_origin: string
+  customs_description: string
   name: string
   slug: string
   locale: string

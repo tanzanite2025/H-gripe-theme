@@ -24,7 +24,8 @@
       </div>
 
       <div class="grid grid-cols-2 gap-2 text-[10px] font-bold text-muted-foreground">
-        <span>{{ formatMediaSize(asset.size) }}</span>
+        <span>{{ formatMediaDimensions(asset.width, asset.height) }}</span>
+        <span class="text-right">{{ formatMediaSize(asset.size) }}</span>
         <span class="text-right">{{ formatMediaDate(typeof asset.created_at === 'string' || typeof asset.created_at === 'number' ? asset.created_at : null) }}</span>
       </div>
 
@@ -65,6 +66,7 @@ import {
   assetAccessURL,
   assetTitle,
   formatMediaDate,
+  formatMediaDimensions,
   formatMediaSize,
   mediaTypeLabel,
   statusLabel,

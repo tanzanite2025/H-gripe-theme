@@ -1,7 +1,6 @@
 package admin
 
 import (
-	"commerce-platform/internal/domain/auth"
 	"commerce-platform/internal/domain/ticket"
 	userdomain "commerce-platform/internal/domain/user"
 	"commerce-platform/internal/pkg/apierror"
@@ -12,7 +11,6 @@ import (
 	"errors"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -56,33 +54,6 @@ func (h *TicketHandler) ListCustomerServiceConversations(c *gin.Context) {
 		},
 		"filters": adminCustomerServiceConversationFilterResponse(filters),
 	})
-}
-
-func (h *TicketHandler) GetCustomerServiceRegionAnalytics(c *gin.Context) {
-	if h.customerServiceContext == nil {
-		apierror.RespondInternalError(c, errors.New("customer service context service is not configured"))
-		return
-	}
-
-	timezoneOffsetMinutes, err := strconv.Atoi(c.DefaultQuery("tz_offset_minutes", "0"))
-	if err != nil {
-		apierror.RespondBadRequest(c, "Invalid timezone offset")
-		return
-	}
-
-	agentUserID, canViewAll := adminCustomerServiceScope(c)
-	analytics, err := h.customerServiceContext.RegionAnalyticsForAgent(service.CustomerServiceRegionAnalyticsInput{
-		Date:                  strings.TrimSpace(c.Query("date")),
-		TimezoneOffsetMinutes: timezoneOffsetMinutes,
-		AgentUserID:           agentUserID,
-		CanViewAll:            canViewAll,
-	})
-	if err != nil {
-		respondAdminCustomerServiceError(c, err)
-		return
-	}
-
-	response.Success(c, gin.H{"analytics": analytics})
 }
 
 // ListCustomerServiceAgents returns assignable public chat staff profiles for the admin inbox.
@@ -226,57 +197,16 @@ func (h *TicketHandler) CreateCustomerServiceConversationMessage(c *gin.Context)
 	}
 
 	messagePayload := adminCustomerServiceMessageResponse(*msg)
-	conversation, _ := h.ticketService.GetCustomerServiceConversationForAgent(ticketID, agentUserID, canViewAll)
-	h.publishAdminCustomerServiceEvent(
-		service.CustomerServiceEventMessageCreated,
-		conversation,
-		ticketID,
-		adminCustomerServiceRealtimeActor(agentUserID),
-		messagePayload,
-	)
+	if conversation, err := h.ticketService.GetCustomerServiceConversationForAgent(ticketID, agentUserID, canViewAll); err == nil {
+		h.publishAdminCustomerServiceMessageCreated(
+			conversation,
+			msg.ID,
+			msg.CreatedAt,
+			adminCustomerServiceRealtimeActor(agentUserID),
+		)
+	}
 
 	response.Created(c, gin.H{"message": messagePayload})
-}
-
-func (h *TicketHandler) SendCustomerServiceConversationTyping(c *gin.Context) {
-	ticketID, ok := parseAdminCustomerServiceConversationID(c)
-	if !ok {
-		return
-	}
-
-	var req struct {
-		IsTyping *bool `json:"is_typing"`
-	}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		apierror.RespondBadRequest(c, err.Error())
-		return
-	}
-
-	agentUserID, canViewAll := adminCustomerServiceScope(c)
-	conversation, err := h.ticketService.GetCustomerServiceConversationForAgent(ticketID, agentUserID, canViewAll)
-	if err != nil {
-		respondAdminCustomerServiceError(c, err)
-		return
-	}
-
-	isTyping := true
-	if req.IsTyping != nil {
-		isTyping = *req.IsTyping
-	}
-
-	h.publishAdminCustomerServiceEvent(
-		service.CustomerServiceEventTyping,
-		conversation,
-		ticketID,
-		adminCustomerServiceRealtimeActor(agentUserID),
-		gin.H{
-			"is_typing":    isTyping,
-			"display_name": adminCustomerServiceAssigneeName(agentUserID),
-			"expires_at":   time.Now().UTC().Add(5 * time.Second),
-		},
-	)
-
-	response.Success(c, gin.H{"typing": isTyping})
 }
 
 // MarkCustomerServiceConversationMessagesRead marks customer messages as read in one conversation.
@@ -287,22 +217,15 @@ func (h *TicketHandler) MarkCustomerServiceConversationMessagesRead(c *gin.Conte
 	}
 
 	agentUserID, canViewAll := adminCustomerServiceScope(c)
-	if err := h.ticketService.MarkCustomerServiceMessagesReadForAgent(ticketID, agentUserID, canViewAll); err != nil {
+	mutation, err := h.ticketService.MarkCustomerServiceMessagesReadForAgentWithRealtimeEvent(ticketID, agentUserID, canViewAll)
+	if err != nil {
 		respondAdminCustomerServiceError(c, err)
 		return
 	}
 
-	conversation, _ := h.ticketService.GetCustomerServiceConversationForAgent(ticketID, agentUserID, canViewAll)
-	h.publishAdminCustomerServiceEvent(
-		service.CustomerServiceEventMessagesRead,
-		conversation,
-		ticketID,
-		adminCustomerServiceRealtimeActor(agentUserID),
-		gin.H{
-			"reader_kind":     "agent",
-			"read_by_user_id": agentUserID,
-		},
-	)
+	if mutation != nil && h.customerServiceEvents != nil {
+		h.customerServiceEvents.Publish(mutation.Event)
+	}
 
 	response.SuccessWithMessage(c, "Messages marked as read", nil)
 }
@@ -323,25 +246,15 @@ func (h *TicketHandler) TransferCustomerServiceConversation(c *gin.Context) {
 	}
 
 	agentUserID, canViewAll := adminCustomerServiceScope(c)
-	if err := h.ticketService.TransferCustomerServiceConversationForAgent(ticketID, agentUserID, canViewAll, req.AssignedTo); err != nil {
+	mutation, err := h.ticketService.TransferCustomerServiceConversationForAgentWithRealtimeEvent(ticketID, agentUserID, canViewAll, req.AssignedTo)
+	if err != nil {
 		respondAdminCustomerServiceError(c, err)
 		return
 	}
 
-	conversation, _ := h.ticketService.GetCustomerServiceConversationForAgent(ticketID, agentUserID, canViewAll)
-	h.publishAdminCustomerServiceEvent(
-		service.CustomerServiceEventAssigned,
-		conversation,
-		ticketID,
-		adminCustomerServiceRealtimeActor(agentUserID),
-		gin.H{
-			"assigned_to":         req.AssignedTo,
-			"assigned_to_name":    adminCustomerServiceAssigneeName(req.AssignedTo),
-			"assigned_by_user_id": agentUserID,
-			"status":              "in_progress",
-			"display_status":      adminCustomerServiceDisplayStatus("in_progress"),
-		},
-	)
+	if mutation != nil && h.customerServiceEvents != nil {
+		h.customerServiceEvents.Publish(mutation.Event)
+	}
 
 	response.SuccessWithMessage(c, "Conversation transferred successfully", nil)
 }
@@ -511,19 +424,6 @@ func adminCustomerServicePrimaryAgentGroup(groups []userdomain.AgentGroup) inter
 	return nil
 }
 
-func adminCustomerServiceScope(c *gin.Context) (uint, bool) {
-	value, _ := c.Get("user_id")
-	userID, _ := value.(uint)
-
-	roleValue, _ := c.Get("role")
-	role := auth.RoleUser
-	if rawRole, ok := roleValue.(string); ok {
-		role = auth.NormalizeRole(rawRole)
-	}
-
-	return userID, role == auth.RoleAdmin || role == auth.RoleManager
-}
-
 func respondAdminCustomerServiceError(c *gin.Context, err error) {
 	switch {
 	case errors.Is(err, service.ErrCustomerServiceAgentAccessDenied):
@@ -538,14 +438,11 @@ func respondAdminCustomerServiceError(c *gin.Context, err error) {
 func adminCustomerServiceConversationResponse(item ticket.Ticket, summary *service.CustomerServiceConversationSummary) gin.H {
 	lastMessage := ""
 	lastMessageTime := item.UpdatedAt
-	unreadCount := 0
+	unreadCount := max(item.CustomerServiceUnreadCount, 0)
 	for _, message := range item.Messages {
 		if message.Content != "" {
 			lastMessage = message.Content
 			lastMessageTime = message.CreatedAt
-		}
-		if !message.IsStaff && !message.IsRead {
-			unreadCount++
 		}
 	}
 
@@ -634,7 +531,7 @@ func adminCustomerServiceMessageResponse(item ticket.TicketMessage) gin.H {
 func normalizeAdminCustomerServiceMessageType(value string) string {
 	value = strings.ToLower(strings.TrimSpace(value))
 	switch value {
-	case "product", "order", "image", "link", "faq", "config_confirm":
+	case "product", "order", "image", "link", "faq", "config_confirm", "wheelset_selection_request":
 		return value
 	default:
 		return "text"

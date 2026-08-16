@@ -80,14 +80,19 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useI18n, useLocalePath } from '#imports'
-import { useShopCategories, type ShopCategory } from '~/composables/useShopCategories'
+import { useProductCategories } from '~/composables/useProductCategories'
 
 type ProductCategoryNavigationCardsDensity = 'compact' | 'comfortable'
 type ProductCategoryNavigationRouteLocation = string | {
   path: string
   query: Record<string, string>
 }
-type ProductCategoryNavigationCardCategory = ShopCategory & {
+type ProductCategoryNavigationCardCategory = {
+  id: number
+  slug: string
+  name: string
+  count?: number
+  isProductSpecificationTemplate?: boolean
   image?: string
   imageUrl?: string
   image_url?: string
@@ -118,7 +123,7 @@ const props = withDefaults(defineProps<{
 }>(), {
   productCategoryDisplayLimit: 0,
   productCategoryBasePath: '/shop',
-  productCategoryQueryParameterName: 'product_type',
+  productCategoryQueryParameterName: 'product_category',
   density: 'comfortable',
   columns: 0,
   showHeader: true,
@@ -136,11 +141,11 @@ const { t } = useI18n()
 const localePath = useLocalePath()
 const brokenProductCategoryImageIds = ref<number[]>([])
 const {
-  categories: loadedProductCategories,
+  tree: loadedProductCategories,
   loading: loadedProductCategoriesLoading,
   error: loadedProductCategoriesError,
   loadCategories: loadProductCategories,
-} = useShopCategories()
+} = useProductCategories()
 
 const hasExternallyProvidedProductCategories = computed(() => {
   return Array.isArray(props.productCategories)
@@ -207,7 +212,7 @@ const localizedProductCategoryBasePath = computed(() => {
 const allProductCategoriesRoute = computed(() => localizedProductCategoryBasePath.value)
 
 const buildProductCategoryNavigationRoute = (
-  productCategory: ShopCategory,
+  productCategory: ProductCategoryNavigationCardCategory,
 ): ProductCategoryNavigationRouteLocation => {
   const queryParameterName = props.productCategoryQueryParameterName
   if (!queryParameterName) return localizedProductCategoryBasePath.value
@@ -220,7 +225,7 @@ const buildProductCategoryNavigationRoute = (
   }
 }
 
-const formatProductCategoryProductCount = (productCategory: ShopCategory) => {
+const formatProductCategoryProductCount = (productCategory: ProductCategoryNavigationCardCategory) => {
   if (typeof productCategory.count !== 'number' || productCategory.count < 0) return ''
   return productCategory.count === 1 ? '1 product' : `${productCategory.count} products`
 }
@@ -259,6 +264,10 @@ const emitProductCategoryNavigation = (productCategory?: ProductCategoryNavigati
     emit('categoryNavigate', productCategory)
   }
   emit('navigate')
+}
+
+if (import.meta.server && !hasExternallyProvidedProductCategories.value) {
+  await loadProductCategories().catch(() => [])
 }
 
 onMounted(() => {

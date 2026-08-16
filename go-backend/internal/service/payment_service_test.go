@@ -637,6 +637,38 @@ func TestPaymentServicePublicTaxRatesOnlyReturnEnabledRates(t *testing.T) {
 	require.ErrorIs(t, err, ErrPaymentNotFound)
 }
 
+func TestPaymentServiceCalculateTaxPrefersPostalCodeAndFallsBackToDefault(t *testing.T) {
+	db, paymentService := newTestPaymentService(t)
+
+	defaultRate := paymentdomain.TaxRate{
+		Name:    "California default",
+		Country: "US",
+		State:   "CA",
+		Rate:    7.25,
+		Enabled: true,
+	}
+	postalRate := paymentdomain.TaxRate{
+		Name:       "Beverly Hills",
+		Country:    "US",
+		State:      "CA",
+		PostalCode: "90210",
+		Rate:       9.5,
+		Enabled:    true,
+	}
+	require.NoError(t, db.Create(&defaultRate).Error)
+	require.NoError(t, db.Create(&postalRate).Error)
+
+	rate, tax, err := paymentService.CalculateTax(100, "us", "ca", "90210")
+	require.NoError(t, err)
+	assert.InDelta(t, 9.5, rate, 0.001)
+	assert.InDelta(t, 9.5, tax, 0.001)
+
+	rate, tax, err = paymentService.CalculateTax(100, "US", "CA", "10001")
+	require.NoError(t, err)
+	assert.InDelta(t, 7.25, rate, 0.001)
+	assert.InDelta(t, 7.25, tax, 0.001)
+}
+
 func TestStripeWebhookEventClaimIsIdempotentAndFailedEventsRetry(t *testing.T) {
 	db, paymentService := newTestPaymentService(t)
 

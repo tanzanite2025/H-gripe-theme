@@ -3,8 +3,10 @@ import type {
   ProductSeoContext,
   ProductSeoDocument,
   ProductSeoInput,
+  ProductSeoAggregateRating,
   ProductSeoProductGroupSchema,
   ProductSeoSchema,
+  ProductSeoShippingDetails,
   ProductSeoStructuredData,
   ProductSeoVariantInput,
 } from './types'
@@ -39,6 +41,75 @@ const normalizeImages = (
   return [...new Set(images)]
 }
 
+const buildAggregateRating = (
+  input: ProductSeoInput['aggregateRating'],
+): ProductSeoAggregateRating | undefined => {
+  const ratingValue = Number(input?.ratingValue)
+  const reviewCount = Number(input?.reviewCount)
+  if (
+    !Number.isFinite(ratingValue)
+    || ratingValue < 1
+    || ratingValue > 5
+    || !Number.isInteger(reviewCount)
+    || reviewCount <= 0
+  ) {
+    return undefined
+  }
+
+  return {
+    '@type': 'AggregateRating',
+    ratingValue: Math.round(ratingValue * 100) / 100,
+    reviewCount,
+    ratingCount: reviewCount,
+    bestRating: 5,
+    worstRating: 1,
+  }
+}
+
+const buildShippingDetails = (
+  input: ProductSeoInput['shippingDetails'],
+): ProductSeoShippingDetails | undefined => {
+  const country = cleanText(input?.country).toUpperCase()
+  const currency = normalizeCurrency(input?.currency)
+  const amount = Number(input?.amount)
+  const etaMinDays = Number(input?.etaMinDays)
+  const etaMaxDays = Number(input?.etaMaxDays)
+  if (
+    !/^[A-Z]{2}$/.test(country)
+    || !currency
+    || !Number.isFinite(amount)
+    || amount < 0
+    || !Number.isInteger(etaMinDays)
+    || !Number.isInteger(etaMaxDays)
+    || etaMinDays < 1
+    || etaMaxDays < etaMinDays
+  ) {
+    return undefined
+  }
+
+  return {
+    '@type': 'OfferShippingDetails',
+    shippingRate: {
+      '@type': 'MonetaryAmount',
+      value: amount,
+      currency,
+    },
+    shippingDestination: {
+      '@type': 'DefinedRegion',
+      addressCountry: country,
+    },
+    deliveryTime: {
+      '@type': 'ShippingDeliveryTime',
+      transitTime: {
+        '@type': 'QuantitativeValue',
+        minValue: etaMinDays,
+        maxValue: etaMaxDays,
+        unitCode: 'DAY',
+      },
+    },
+  }
+}
+
 export const resolveProductMetaTitle = (
   metaTitle: string | null | undefined,
   productName: string | null | undefined,
@@ -68,6 +139,8 @@ export const buildProductJsonLd = (
   const price = Number(input.offer?.price)
   const currency = normalizeCurrency(input.offer?.currency)
   const availability = input.offer?.availability
+  const aggregateRating = buildAggregateRating(input.aggregateRating)
+  const shippingDetails = buildShippingDetails(input.shippingDetails)
 
   const schema: ProductSeoSchema = {
     '@context': 'https://schema.org',
@@ -98,7 +171,11 @@ export const buildProductJsonLd = (
         : 'https://schema.org/OutOfStock',
       url: canonicalUrl,
     }
+    if (shippingDetails) {
+      schema.offers.shippingDetails = shippingDetails
+    }
   }
+  if (aggregateRating) schema.aggregateRating = aggregateRating
 
   return schema
 }
@@ -108,6 +185,7 @@ const variantOfferInput = (variant: ProductSeoVariantInput) => ({
   currency: variant.currency,
   availability: variant.availability,
   sku: variant.sku,
+  shippingDetails: variant.shippingDetails,
 })
 
 export const buildProductGroupJsonLd = (
@@ -143,6 +221,8 @@ export const buildProductGroupJsonLd = (
     }
   }
   if (description) group.description = description
+  const aggregateRating = buildAggregateRating(input.aggregateRating)
+  if (aggregateRating) group.aggregateRating = aggregateRating
   const variesBy = (input.variesBy || []).map(cleanText).filter(Boolean)
   if (variesBy.length) group.variesBy = [...new Set(variesBy)]
 
@@ -157,6 +237,7 @@ export const buildProductGroupJsonLd = (
           sku: variant.sku,
           imageUrls: variant.imageUrls?.length ? variant.imageUrls : input.imageUrls,
           offer: variantOfferInput(variant),
+          shippingDetails: variant.shippingDetails,
           variants: null,
         },
         {

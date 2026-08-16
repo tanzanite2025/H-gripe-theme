@@ -3,13 +3,13 @@
 -- carrying separate hard-coded template presets in the frontend.
 
 DELETE FROM shipping_template_bindings
-WHERE scope IN ('product_type', 'product', 'variant');
+WHERE scope IN ('product_specification_template', 'product', 'variant');
 
 DELETE FROM shipping_packaging_rule_applies;
 
-TRUNCATE TABLE product_types RESTART IDENTITY CASCADE;
+TRUNCATE TABLE product_specification_templates RESTART IDENTITY CASCADE;
 
-INSERT INTO product_types (name, slug, description, sort_order, is_enabled)
+INSERT INTO product_specification_templates (name, slug, description, sort_order, is_enabled)
 VALUES
     ('Rim', 'rim', 'Rim template. Common rim fields are defined here; specific product/SKU values are maintained on the product/SKU.', 10, TRUE),
     ('Carbon Frame', 'carbon_frame', 'Carbon frame template. Sizes and product-specific values are maintained on the product/SKU.', 20, TRUE),
@@ -19,14 +19,14 @@ VALUES
     ('Spoke', 'spoke', 'Spoke template. Common spoke fields are defined here; specific product/SKU values are maintained on the product/SKU.', 60, TRUE);
 
 INSERT INTO product_spec_definitions (
-    product_type_id, "group", name, slug, field_type, unit,
+    product_specification_template_id, "group", name, slug, field_type, unit,
     is_required, is_filterable, is_visible, is_variant_option,
     sort_order, options, validation
 )
 SELECT pt.id, seed."group", seed.name, seed.slug, seed.field_type, seed.unit,
        seed.is_required, seed.is_filterable, seed.is_visible, seed.is_variant_option,
        seed.sort_order, seed.options, ''
-FROM product_types pt
+FROM product_specification_templates pt
 JOIN (
     VALUES
         ('rim', '规格', 'Material', 'material', 'select', '', FALSE, TRUE, TRUE, FALSE, 10, '[]'),

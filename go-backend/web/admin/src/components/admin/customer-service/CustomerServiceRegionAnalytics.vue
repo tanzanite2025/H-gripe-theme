@@ -4,14 +4,14 @@
       <div>
         <h2 class="flex items-center gap-2 text-sm font-black uppercase tracking-tight">
           <BarChart3 class="size-4 text-primary" />
-          今日聊天地区分布
+          客户地区分布
         </h2>
         <p class="mt-1 text-xs text-muted-foreground">
           只统计粗地区，用于运营盘点；不展示 IP 或精确定位
         </p>
       </div>
       <div class="flex items-center gap-2 text-[11px] font-bold text-muted-foreground">
-        <span>{{ analytics?.date || todayLocalDate() }}</span>
+        <span>{{ analytics?.date || '—' }}</span>
         <span>·</span>
         <span>共 {{ analytics?.total_conversations || 0 }} 个会话</span>
       </div>
@@ -21,7 +21,7 @@
       <LoaderCircle class="size-5 animate-spin" />
     </div>
     <div v-else-if="!regionRows.length" class="rounded-2xl border border-dashed p-4 text-xs text-muted-foreground">
-      今天暂无可统计的客服聊天地区数据。
+      当前统计日暂无可统计的客服聊天地区数据。
     </div>
     <div v-else class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
       <article
@@ -57,23 +57,15 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { BarChart3, LoaderCircle } from '@lucide/vue'
-import type { CustomerRegionAnalytics, RegionAnalyticsRow } from './customerServiceTypes'
+import type { CustomerServiceAnalytics, CustomerServiceAnalyticsRegion } from './customerServiceTypes'
 
 const props = withDefaults(defineProps<{
-  analytics?: CustomerRegionAnalytics | null
+  analytics?: CustomerServiceAnalytics | null
   loading?: boolean
 }>(), {
   analytics: null,
   loading: false,
 })
 
-const regionRows = computed<RegionAnalyticsRow[]>(() => props.analytics?.regions || [])
-
-const todayLocalDate = () => {
-  const now = new Date()
-  const year = now.getFullYear()
-  const month = String(now.getMonth() + 1).padStart(2, '0')
-  const day = String(now.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
+const regionRows = computed<CustomerServiceAnalyticsRegion[]>(() => props.analytics?.regions || [])
 </script>

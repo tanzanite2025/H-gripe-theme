@@ -21,7 +21,21 @@ function getBackendFaqLocale() {
 
 function getFaqApiBase() {
   const config = useRuntimeConfig()
-  return (config.public as { apiBase?: string }).apiBase || '/api/v1'
+  const publicApiBase = (config.public as { apiBase?: string }).apiBase || '/api/v1'
+
+  // In DEV, browser requests stay same-origin and use Nuxt's API proxy.
+  // This avoids localhost/127.0.0.1 CORS differences between browser sessions.
+  if (import.meta.dev && import.meta.client) {
+    return '/api/v1'
+  }
+
+  if (import.meta.dev && import.meta.server) {
+    const internalApiOrigin = (config as { apiInternalOrigin?: string }).apiInternalOrigin
+      ?.replace(/\/$/, '')
+    if (internalApiOrigin) return `${internalApiOrigin}/api/v1`
+  }
+
+  return publicApiBase
 }
 
 function getFetchStatusCode(error: unknown): number | undefined {

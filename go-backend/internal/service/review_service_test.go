@@ -72,6 +72,39 @@ func newTestReviewService(t *testing.T) (*gorm.DB, *ReviewService) {
 		_ = sqlDB.Close()
 	})
 
-	require.NoError(t, db.AutoMigrate(&user.User{}, &review.Review{}, &review.ReviewHelpful{}))
+	require.NoError(t, db.AutoMigrate(&user.User{}, &review.Review{}, &review.ReviewHelpful{}, &review.ReviewSummary{}))
 	return db, NewReviewService(repository.NewReviewRepository(db))
+}
+
+func TestReviewSummaryContainsApprovedReviewsOnly(t *testing.T) {
+	db, reviewService := newTestReviewService(t)
+
+	require.NoError(t, db.Create(&review.Review{
+		ProductID: 42,
+		UserID:    10,
+		Rating:    5,
+		Status:    "approved",
+	}).Error)
+	require.NoError(t, db.Create(&review.Review{
+		ProductID: 42,
+		UserID:    11,
+		Rating:    3,
+		Status:    "approved",
+	}).Error)
+	require.NoError(t, db.Create(&review.Review{
+		ProductID: 42,
+		UserID:    12,
+		Rating:    1,
+		Status:    "pending",
+	}).Error)
+
+	require.NoError(t, reviewService.reviewRepo.UpdateReviewSummary(42))
+	summary, err := reviewService.GetReviewSummary(42)
+	require.NoError(t, err)
+
+	assert.Equal(t, 2, summary.TotalReviews)
+	assert.InDelta(t, 4.0, summary.AverageRating, 0.001)
+	assert.Equal(t, 1, summary.Rating5Count)
+	assert.Equal(t, 1, summary.Rating3Count)
+	assert.Equal(t, 0, summary.Rating1Count)
 }

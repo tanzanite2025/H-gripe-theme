@@ -74,6 +74,19 @@ Before production rollout, verify directly against the storage provider that:
 2. The API service account can upload, copy, and delete objects.
 3. Approved objects are exposed only through the intended public origin.
 
+## Customer-Service Avatar Policy
+
+Public Chat agent avatars are intentionally not media-library assets. They
+live under `customer-service/avatars/` and are referenced only by the current
+customer-service agent profile. Each replacement gets a new opaque object key,
+so the storage adapters attach `Cache-Control: public, max-age=31536000,
+immutable` to avatar objects and local upload serving returns the same header.
+
+For S3, OSS, and CDN deployments, preserve this object metadata when copying
+or proxying the prefix. The storage bucket/CDN must permit public reads for the
+current avatar delivery path while the application remains responsible for
+deleting replaced objects through its outbox cleanup worker.
+
 ## Tests
 
 ```powershell

@@ -3,6 +3,7 @@ import type { CartItem } from '~~/types/cart'
 import { useAuth } from '~/composables/useAuth'
 import { useCartCalculation } from '~/composables/useCartCalculation'
 import { useBehaviorEvents } from '~/composables/useBehaviorEvents'
+import { useOverlayBackStack } from '~/composables/useOverlayBackStack'
 
 export interface ShippingAddress {
   name: string
@@ -91,6 +92,7 @@ export const useCart = () => {
   const calculation = useCartCalculation()
   const { track: trackBehaviorEvent } = useBehaviorEvents()
   const { baseCurrency } = useStorefrontContext()
+  const overlayBackStack = useOverlayBackStack()
 
   const loadCartFromBackend = async () => {
     isLoadingCart.value = true
@@ -213,7 +215,7 @@ export const useCart = () => {
     }
 
     window.addEventListener('open-cart-drawer', () => {
-      isCartOpen.value = true
+      openCart()
     })
   }
 
@@ -329,22 +331,76 @@ export const useCart = () => {
     syncAction('clear')
   }
 
-  const openCart = () => { cartVariant.value = 'default'; isCartOpen.value = true }
-  const closeCart = () => { isCartOpen.value = false }
-  const toggleCart = () => { isCartOpen.value = !isCartOpen.value }
+  const closeCartState = () => {
+    isCartOpen.value = false
+  }
+
+  const closeCheckoutState = () => {
+    isCheckoutOpen.value = false
+  }
+
+  const openCart = () => {
+    cartVariant.value = 'default'
+    isCartOpen.value = true
+    overlayBackStack.open('cart-drawer', closeCartState)
+  }
+
+  const closeCart = () => {
+    void overlayBackStack.close('cart-drawer')
+    closeCartState()
+  }
+
+  const toggleCart = () => {
+    if (isCartOpen.value) {
+      closeCart()
+    } else {
+      openCart()
+    }
+  }
   const openCheckout = (paymentMethod?: string) => {
     preferredCheckoutPaymentMethod.value = normalizeCheckoutPaymentMethod(paymentMethod)
+
+    const restoreCartOnClose = isCartOpen.value
+    if (restoreCartOnClose) {
+      overlayBackStack.setResume('cart-drawer', () => {
+        isCartOpen.value = true
+      })
+      overlayBackStack.open('checkout-modal', closeCheckoutState, {
+        mode: 'push',
+      })
+    } else {
+      overlayBackStack.open('checkout-modal', closeCheckoutState)
+    }
+
     isCartOpen.value = false
     isCheckoutOpen.value = true
   }
-  const closeCheckout = () => { isCheckoutOpen.value = false }
-  const backToCart = () => {
-    closeCheckout()
+
+  const closeCheckout = async () => {
+    const closePromise = overlayBackStack.close('checkout-modal')
+    closeCheckoutState()
+    await closePromise
+  }
+
+  const backToCart = async () => {
+    await closeCheckout()
     openCartFromCheckout()
   }
-  const openCartFromCheckout = () => { cartVariant.value = 'checkout-bottom'; isCartOpen.value = true }
-  const openCartFromLever = () => { cartVariant.value = 'lever-bottom'; isCartOpen.value = true }
-  const openCartFromChat = () => { cartVariant.value = 'chat-bottom'; isCartOpen.value = true }
+  const openCartFromCheckout = () => {
+    cartVariant.value = 'checkout-bottom'
+    isCartOpen.value = true
+    overlayBackStack.open('cart-drawer', closeCartState)
+  }
+  const openCartFromLever = () => {
+    cartVariant.value = 'lever-bottom'
+    isCartOpen.value = true
+    overlayBackStack.open('cart-drawer', closeCartState, { mode: 'push' })
+  }
+  const openCartFromChat = () => {
+    cartVariant.value = 'chat-bottom'
+    isCartOpen.value = true
+    overlayBackStack.open('cart-drawer', closeCartState, { mode: 'push' })
+  }
 
   const setShippingAddress = (address: ShippingAddress) => { shippingAddress.value = address }
 

@@ -6,29 +6,16 @@ import type {
   CustomerContext,
   CustomerConversation,
   CustomerConversationMessage,
-  CustomerRegionAnalytics,
   CustomerServiceFiltersState,
 } from '@/components/admin/customer-service/customerServiceTypes'
-
-const todayLocalDate = () => {
-  const now = new Date()
-  const year = now.getFullYear()
-  const month = String(now.getMonth() + 1).padStart(2, '0')
-  const day = String(now.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
-
-const adminTimezoneOffsetMinutes = () => -new Date().getTimezoneOffset()
 
 export const useCustomerServiceInbox = () => {
   const loading = ref(false)
   const messagesLoading = ref(false)
   const contextLoading = ref(false)
-  const regionAnalyticsLoading = ref(false)
   const conversations = ref<CustomerConversation[]>([])
   const messages = ref<CustomerConversationMessage[]>([])
   const customerContext = ref<CustomerContext | null>(null)
-  const regionAnalytics = ref<CustomerRegionAnalytics | null>(null)
   const selectedConversation = ref<CustomerConversation | null>(null)
   const replyMessage = ref('')
   const transferTo = ref('')
@@ -47,21 +34,6 @@ export const useCustomerServiceInbox = () => {
   const totalPages = computed(() => Math.max(1, Math.ceil((pagination.total || 0) / pagination.pageSize)))
 
   const filteredConversations = computed(() => conversations.value)
-
-  const fetchRegionAnalytics = async () => {
-    regionAnalyticsLoading.value = true
-    try {
-      regionAnalytics.value = await customerServiceApi.getRegionAnalytics({
-        date: todayLocalDate(),
-        tz_offset_minutes: adminTimezoneOffsetMinutes(),
-      })
-    } catch (error) {
-      console.error('Failed to fetch customer-service region analytics:', error)
-      regionAnalytics.value = null
-    } finally {
-      regionAnalyticsLoading.value = false
-    }
-  }
 
   const fetchConversations = async () => {
     loading.value = true
@@ -140,7 +112,7 @@ export const useCustomerServiceInbox = () => {
   }
 
   const refreshInbox = async () => {
-    await Promise.all([fetchConversations(), fetchAgents(), fetchRegionAnalytics()])
+    await Promise.all([fetchConversations(), fetchAgents()])
     if (selectedConversation.value) {
       await Promise.all([
         fetchMessages(selectedConversation.value.id),
@@ -185,11 +157,9 @@ export const useCustomerServiceInbox = () => {
     loading,
     messagesLoading,
     contextLoading,
-    regionAnalyticsLoading,
     conversations,
     messages,
     customerContext,
-    regionAnalytics,
     selectedConversation,
     replyMessage,
     transferTo,
@@ -199,7 +169,6 @@ export const useCustomerServiceInbox = () => {
     filters,
     totalPages,
     filteredConversations,
-    fetchRegionAnalytics,
     fetchConversations,
     fetchContext,
     fetchAgents,

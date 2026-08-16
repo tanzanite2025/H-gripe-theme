@@ -239,6 +239,47 @@ func TestOpsConnectorUpdatePreservesCredentialsAndSetEnabled(t *testing.T) {
 	}
 }
 
+func TestOpsConnectorListForEnvironment(t *testing.T) {
+	service, repo := newOpsConnectorTestService(t)
+	for _, connector := range []*ops.Connector{
+		{
+			Name:        "Cloudflare Production",
+			Provider:    ops.ConnectorProviderCloudflare,
+			Environment: ops.ConnectorEnvironmentProduction,
+			AuthType:    ops.ConnectorAuthManual,
+			Status:      ops.ConnectorStatusActive,
+			Enabled:     true,
+		},
+		{
+			Name:        "Cloudflare Staging",
+			Provider:    ops.ConnectorProviderCloudflare,
+			Environment: ops.ConnectorEnvironmentStaging,
+			AuthType:    ops.ConnectorAuthManual,
+			Status:      ops.ConnectorStatusActive,
+			Enabled:     true,
+		},
+	} {
+		if err := repo.Create(connector); err != nil {
+			t.Fatalf("create connector %s: %v", connector.Name, err)
+		}
+	}
+
+	connectors, err := service.ListForEnvironment(ops.ConnectorEnvironmentStaging)
+	if err != nil {
+		t.Fatalf("ListForEnvironment returned error: %v", err)
+	}
+	if len(connectors) != 1 {
+		t.Fatalf("ListForEnvironment connector count = %d, want 1", len(connectors))
+	}
+	if connectors[0].Name != "Cloudflare Staging" {
+		t.Fatalf("ListForEnvironment connector = %q, want Cloudflare Staging", connectors[0].Name)
+	}
+
+	if _, err := service.ListForEnvironment("qa"); !errors.Is(err, ErrInvalidOpsConnectorEnvironment) {
+		t.Fatalf("ListForEnvironment invalid environment error = %v, want ErrInvalidOpsConnectorEnvironment", err)
+	}
+}
+
 func TestOpsConnectorTestPersistsDisabledManualAndMissingCredentialResults(t *testing.T) {
 	t.Setenv(OpsConnectorMasterKeyEnv, "test-ops-connector-master-key")
 	service, repo := newOpsConnectorTestService(t)

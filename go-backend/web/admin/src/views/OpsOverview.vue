@@ -2,9 +2,20 @@
   <div class="space-y-4">
     <AdminPageHeader
       title="运维中心 / 运维总览"
-      description="集中查看生产 VPS、项目、域名和外部连接的声明式状态。"
+      description="集中查看目标环境的 VPS、项目、域名和外部连接的声明式状态。"
     >
       <template #actions>
+        <select
+          v-model="environmentFilter"
+          class="h-9 rounded-md border bg-background px-3 text-sm"
+          aria-label="筛选运维总览环境"
+          :disabled="loading"
+          @change="changeEnvironment"
+        >
+          <option v-for="option in opsEnvironmentOptions" :key="option.value" :value="option.value">
+            {{ option.label }}
+          </option>
+        </select>
         <Button variant="outline" :disabled="loading" @click="loadOverview">
           <RefreshCw :class="['size-4', loading ? 'animate-spin' : '']" />
           刷新
@@ -18,11 +29,11 @@
         <div>
           <p class="text-sm font-black">当前为声明式运维台账</p>
           <p class="mt-1 text-xs text-muted-foreground">
-            实时 Hostinger / Cloudflare 同步、部署、健康检查和回滚仍未启用；“未同步”不会被当作“健康”。
+            当前页面聚合声明式台账与已落库的观察状态；“未同步”不会被当作“健康”。
           </p>
         </div>
       </div>
-      <AdminStatusBadge tone="amber">生产 / {{ generatedLabel }}</AdminStatusBadge>
+      <AdminStatusBadge tone="amber">{{ environmentLabel(overview?.environment) }} / {{ generatedLabel }}</AdminStatusBadge>
     </section>
 
     <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -50,7 +61,7 @@
     <section class="grid gap-4 xl:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
       <Card size="sm">
         <CardHeader class="border-b border-dashed border-border/70">
-          <CardTitle>生产拓扑</CardTitle>
+          <CardTitle>{{ environmentLabel(overview?.environment) }}拓扑</CardTitle>
           <CardDescription>当前登记的 VPS、Compose 项目和公网域名关系</CardDescription>
         </CardHeader>
         <CardContent class="space-y-3 pt-1">
@@ -182,8 +193,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
 import {
   CircleCheck,
@@ -201,21 +212,41 @@ import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import AdminStatusBadge, { type AdminStatusTone } from '@/components/admin/AdminStatusBadge.vue'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import opsApi, { type OpsOverview } from '@/api/ops'
-
-type OverviewRecord = Record<string, any>
+import opsApi, {
+  type OpsDomain,
+  type OpsEnvironment,
+  type OpsOverview,
+  type OpsOverviewAuditLog,
+  type OpsProject,
+  type OpsVPS,
+} from '@/api/ops'
+import {
+  opsEnvironmentOptions,
+  readOpsEnvironmentQuery,
+  withOpsEnvironmentQuery,
+} from '@/lib/opsEnvironment'
 
 const router = useRouter()
+const route = useRoute()
 const loading = ref(false)
 const overview = ref<OpsOverview | null>(null)
+const environmentFilter = ref<OpsEnvironment>(
+  readOpsEnvironmentQuery(route.query.environment, 'production') || 'production',
+)
 
 const summary = computed(() => overview.value?.summary || {})
-const vpsList = computed<OverviewRecord[]>(() => overview.value?.topology?.vps || [])
-const projects = computed<OverviewRecord[]>(() => overview.value?.topology?.projects || [])
-const domainList = computed<OverviewRecord[]>(() => overview.value?.topology?.domains || [])
+const vpsList = computed<OpsVPS[]>(() => overview.value?.topology?.vps || [])
+const projects = computed<OpsProject[]>(() => overview.value?.topology?.projects || [])
+const domainList = computed<OpsDomain[]>(() => overview.value?.topology?.domains || [])
 const attention = computed(() => overview.value?.attention || [])
-const recentAudit = computed<OverviewRecord[]>(() => Array.isArray(overview.value?.recent_audit) ? overview.value?.recent_audit : [])
+const recentAudit = computed<OpsOverviewAuditLog[]>(() => Array.isArray(overview.value?.recent_audit) ? overview.value.recent_audit : [])
 const generatedLabel = computed(() => overview.value?.generated_at ? formatDate(overview.value.generated_at) : '尚未生成')
+const environmentLabel = (value?: string): string => ({
+  production: '生产',
+  staging: '预发布',
+  test: '测试',
+  local: '本地',
+}[value || ''] || value || '目标环境')
 
 const summaryCards = computed(() => [
   {
@@ -267,7 +298,7 @@ const summaryCards = computed(() => [
 const loadOverview = async (): Promise<void> => {
   loading.value = true
   try {
-    overview.value = await opsApi.getOverview()
+    overview.value = await opsApi.getOverview(environmentFilter.value)
   } catch (error: any) {
     toast.error(error?.response?.data?.message || error?.response?.data?.error || '运维总览加载失败')
   } finally {
@@ -275,11 +306,19 @@ const loadOverview = async (): Promise<void> => {
   }
 }
 
-const navigateTo = (path: string): void => {
-  void router.push(path)
+const changeEnvironment = (): void => {
+  void router.replace({ query: withOpsEnvironmentQuery(route.query, environmentFilter.value) })
+  void loadOverview()
 }
 
-const projectsForVPS = (vpsID: number): OverviewRecord[] => projects.value.filter((project) => project.vps_binding_id === vpsID)
+const navigateTo = (path: string): void => {
+  void router.push({
+    path,
+    query: { environment: environmentFilter.value },
+  })
+}
+
+const projectsForVPS = (vpsID: number): OpsProject[] => projects.value.filter((project) => project.vps_binding_id === vpsID)
 const formatDate = (value?: string): string => value ? new Date(value).toLocaleString('zh-CN') : '-'
 const optionLabel = (options: Array<{ value: string; label: string }>, value: string): string => (
   options.find((option) => option.value === value)?.label || value || '-'
@@ -340,6 +379,13 @@ const resourceLabel = (value?: string): string => ({
   ops_project_binding: '项目绑定',
 }[value || ''] || value || '运维资源')
 const actionLabel = (value?: string): string => ({ create: '创建', update: '更新', probe: '测试' }[value || ''] || value || '操作')
+
+watch(() => route.query.environment, (value) => {
+  const nextEnvironment = readOpsEnvironmentQuery(value, 'production') || 'production'
+  if (nextEnvironment === environmentFilter.value) return
+  environmentFilter.value = nextEnvironment
+  void loadOverview()
+})
 
 onMounted(loadOverview)
 </script>

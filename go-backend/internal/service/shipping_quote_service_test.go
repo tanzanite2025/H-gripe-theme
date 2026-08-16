@@ -494,7 +494,7 @@ func newTestShippingQuoteService(t *testing.T) (*gorm.DB, *ShippingService) {
 	})
 
 	require.NoError(t, db.AutoMigrate(
-		&productdomain.ProductType{},
+		&productdomain.ProductSpecificationTemplate{},
 		&productdomain.SpecDefinition{},
 		&productdomain.Product{},
 		&productdomain.ProductMedia{},

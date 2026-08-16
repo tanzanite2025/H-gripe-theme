@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"strings"
 	"testing"
 	"time"
@@ -828,6 +829,44 @@ func TestDeploymentPreflightOverviewPreservesStatusesAndMissingVPSEvidence(t *te
 	}
 	if len(summaries["missing-vps-project"].BlockReasons) == 0 {
 		t.Fatalf("missing VPS project has no block reasons: %#v", summaries["missing-vps-project"])
+	}
+}
+
+func TestDeploymentPreflightOverviewFiltersProjectsByEnvironment(t *testing.T) {
+	repos := newDeploymentPreflightTestRepositories(t)
+	now := time.Date(2026, 8, 15, 9, 0, 0, 0, time.UTC)
+
+	productionProject := newPreflightFixtureProject("production-project", 1001, now)
+	stagingProject := newPreflightFixtureProject("staging-project", 1002, now)
+	stagingProject.Environment = ops.ProjectEnvironmentStaging
+	stagingProject.ComposeSource = "compose.staging.yml"
+	stagingProject.GatewayNetwork = "staging-edge"
+	stagingProject.GatewayAlias = "staging-web"
+	if err := repos.projects.Create(productionProject); err != nil {
+		t.Fatalf("create production project: %v", err)
+	}
+	if err := repos.projects.Create(stagingProject); err != nil {
+		t.Fatalf("create staging project: %v", err)
+	}
+
+	service := NewOpsDeploymentPreflightService(repos.projects, repos.vps, repos.connectors, repos.domains)
+	overview, err := service.EvaluateOverviewForEnvironment(ops.ProjectEnvironmentStaging)
+	if err != nil {
+		t.Fatalf("EvaluateOverviewForEnvironment returned error: %v", err)
+	}
+	if overview.Environment != ops.ProjectEnvironmentStaging {
+		t.Fatalf("overview environment = %q, want staging", overview.Environment)
+	}
+	if overview.ProjectCount != 1 || len(overview.Projects) != 1 {
+		t.Fatalf("overview project count = %d/%d, want 1", overview.ProjectCount, len(overview.Projects))
+	}
+	if overview.Projects[0].Project != stagingProject.Name || overview.Projects[0].Environment != ops.ProjectEnvironmentStaging {
+		t.Fatalf("overview project = %#v, want staging project", overview.Projects[0])
+	}
+
+	_, err = service.EvaluateOverviewForEnvironment("qa")
+	if !errors.Is(err, ErrInvalidOpsProjectEnvironment) {
+		t.Fatalf("invalid environment error = %v, want ErrInvalidOpsProjectEnvironment", err)
 	}
 }
 

@@ -1,0 +1,17 @@
+{
+  "eyebrow": "Umpan balik pelanggan",
+  "title": "Rating dan ulasan",
+  "summaryLabel": "{rating} dari 5 berdasarkan {count} ulasan",
+  "reviewCount": "{count} ulasan",
+  "loading": "Memuat ulasan...",
+  "loadError": "Ulasan tidak dapat dimuat.",
+  "retry": "Coba lagi",
+  "empty": "Belum ada ulasan yang disetujui.",
+  "ratingLabel": "{rating} dari 5 bintang",
+  "imageAlt": "Gambar ulasan pelanggan",
+  "verifiedPurchase": "Pembelian terverifikasi",
+  "helpfulCount": "{count} orang merasa ini membantu",
+  "storeReply": "Balasan toko",
+  "loadingMore": "Memuat lebih banyak...",
+  "loadMore": "Muat lebih banyak ulasan"
+}

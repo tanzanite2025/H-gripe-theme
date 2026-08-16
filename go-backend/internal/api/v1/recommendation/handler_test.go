@@ -68,8 +68,8 @@ func newRecommendationTestRouter(t *testing.T) (*gin.Engine, *gorm.DB) {
 	})
 	require.NoError(t, err)
 	require.NoError(t, db.AutoMigrate(
-		&productdomain.ProductType{},
-		&productdomain.ProductTypeTranslation{},
+		&productdomain.ProductSpecificationTemplate{},
+		&productdomain.ProductSpecificationTemplateTranslation{},
 		&productdomain.SpecDefinition{},
 		&productdomain.ProductInformationTemplate{},
 		&productdomain.Product{},

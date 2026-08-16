@@ -6,7 +6,7 @@
         
         <!-- Left Column: Header & Context -->
         <div class="lg:col-span-3 lg:sticky lg:top-32 self-start space-y-3 sm:space-y-6">
-          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-300 text-xs font-medium uppercase tracking-wider">
+          <div class="inline-flex items-center gap-2 rounded-full border border-[#B5FF6D]/30 bg-[#B5FF6D]/10 px-3 py-1 text-xs font-medium uppercase tracking-wider text-[#B5FF6D]">
             <span>Our Collection</span>
           </div>
 
@@ -19,7 +19,7 @@
           </p>
 
           <div class="pt-2 sm:pt-4">
-             <NuxtLink :to="localePath('/shop')" class="premium-button inline-flex items-center px-6 py-3 text-sm font-medium">
+              <NuxtLink :to="localePath('/shop')" class="inline-flex items-center rounded-full border border-white/15 bg-white/5 px-6 py-3 text-sm font-medium text-white transition-[background-color,color,transform] duration-200 hover:-translate-y-px hover:bg-white hover:text-black">
                 {{ t('home.featuredProducts.viewAll') }}
                 <Icon name="lucide:arrow-right" class="ml-2 h-5 w-5" />
               </NuxtLink>
@@ -36,6 +36,7 @@
             :product-categories-loading="productCategoriesLoading"
             :product-categories-error="productCategoriesError"
             :product-category-display-limit="4"
+            product-category-query-parameter-name="product_category"
             :show-header="false"
           />
         </div>
@@ -49,16 +50,16 @@
 import { computed, onMounted } from 'vue'
 import { useI18n, useLocalePath } from '#imports'
 import ProductCategoryNavigationCards from '~/components/shop/ProductCategoryNavigationCards.vue'
-import { useShopCategories } from '~/composables/useShopCategories'
+import { useProductCategories } from '~/composables/useProductCategories'
 
 const { t } = useI18n()
 const localePath = useLocalePath()
 const {
-  categories: productCategoriesState,
+  tree: productCategoriesState,
   loading: productCategoriesLoading,
   error: productCategoriesError,
   loadCategories,
-} = useShopCategories()
+} = useProductCategories()
 
 if (import.meta.server) {
   await loadCategories().catch(() => [])

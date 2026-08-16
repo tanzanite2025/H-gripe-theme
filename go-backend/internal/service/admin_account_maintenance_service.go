@@ -24,6 +24,7 @@ var (
 	ErrAdminAccountPasswordRequired = errors.New("admin account password is required")
 	ErrAdminAccountWeakPassword     = errors.New("admin account password is too weak")
 	ErrAdminAccountRoleForbidden    = errors.New("admin account role must be a backoffice role")
+	ErrAdminAccountSelfRoleChange   = errors.New("cannot modify your own role through admin account maintenance")
 )
 
 type AdminAccountMaintenanceService struct {
@@ -38,9 +39,12 @@ type AdminAccountMaintenanceInput struct {
 	FirstName   string
 	LastName    string
 	Locale      string
+	OperatorID  uint
 	Operator    string
 	AuditMethod string
 	AuditPath   string
+	AuditIP     string
+	AuditAgent  string
 }
 
 type AdminAccountMaintenanceResult struct {
@@ -76,9 +80,12 @@ type normalizedAdminAccountMaintenanceInput struct {
 	LastName          string
 	Locale            string
 	LocaleSpecified   bool
+	OperatorID        uint
 	Operator          string
 	AuditMethod       string
 	AuditPath         string
+	AuditIP           string
+	AuditAgent        string
 }
 
 type adminAccountSnapshot struct {
@@ -111,6 +118,9 @@ func (s *AdminAccountMaintenanceService) EnsureBackofficeAccount(input AdminAcco
 		err := tx.Unscoped().Where("email = ?", normalized.Email).First(&existing).Error
 		switch {
 		case err == nil:
+			if normalized.OperatorID != 0 && existing.ID == normalized.OperatorID && normalized.RoleSpecified && normalized.Role != auth.NormalizeRole(existing.Role) {
+				return ErrAdminAccountSelfRoleChange
+			}
 			updateInput := normalized
 			if !updateInput.UsernameSpecified && strings.TrimSpace(existing.Username) != "" {
 				updateInput.Username = existing.Username
@@ -162,7 +172,7 @@ func (s *AdminAccountMaintenanceService) ListBackofficeAccounts(search string) (
 		return nil, ErrAdminAccountStoreUnavailable
 	}
 
-	query := s.db.Unscoped().Where("role IN ?", []string{
+	query := s.db.Where("role IN ?", []string{
 		auth.RoleAdmin.String(),
 		auth.RoleManager.String(),
 		auth.RoleEditor.String(),
@@ -274,9 +284,12 @@ func normalizeAdminAccountMaintenanceInput(input AdminAccountMaintenanceInput) (
 		LastName:          strings.TrimSpace(input.LastName),
 		Locale:            locale,
 		LocaleSpecified:   localeSpecified,
+		OperatorID:        input.OperatorID,
 		Operator:          operator,
 		AuditMethod:       auditMethod,
 		AuditPath:         auditPath,
+		AuditIP:           strings.TrimSpace(input.AuditIP),
+		AuditAgent:        strings.TrimSpace(input.AuditAgent),
 	}, nil
 }
 
@@ -400,13 +413,15 @@ func ensureAdminAccountUsernameAvailable(tx *gorm.DB, username string, currentUs
 
 func createAdminAccountMaintenanceAuditLog(tx *gorm.DB, account user.User, input normalizedAdminAccountMaintenanceInput, action, oldValue, newValue string) error {
 	entry := audit.AuditLog{
-		UserID:     account.ID,
+		UserID:     input.OperatorID,
 		Username:   input.Operator,
 		Action:     action,
 		Resource:   "user",
 		ResourceID: account.ID,
 		Method:     input.AuditMethod,
 		Path:       input.AuditPath,
+		IPAddress:  input.AuditIP,
+		UserAgent:  input.AuditAgent,
 		Changes:    `{"password":"rotated","status":"active"}`,
 		OldValue:   oldValue,
 		NewValue:   newValue,

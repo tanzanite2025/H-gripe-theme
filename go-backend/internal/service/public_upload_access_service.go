@@ -7,14 +7,24 @@ import (
 )
 
 type PublicUploadAccessService struct {
-	media    *MediaService
-	showcase *ShowcaseService
+	media                 *MediaService
+	showcase              *ShowcaseService
+	customerServiceAvatar *CustomerServiceAvatarService
 }
 
-func NewPublicUploadAccessService(mediaService *MediaService, showcaseService *ShowcaseService) *PublicUploadAccessService {
+func NewPublicUploadAccessService(
+	mediaService *MediaService,
+	showcaseService *ShowcaseService,
+	customerServiceAvatarService ...*CustomerServiceAvatarService,
+) *PublicUploadAccessService {
+	var avatarService *CustomerServiceAvatarService
+	if len(customerServiceAvatarService) > 0 {
+		avatarService = customerServiceAvatarService[0]
+	}
 	return &PublicUploadAccessService{
-		media:    mediaService,
-		showcase: showcaseService,
+		media:                 mediaService,
+		showcase:              showcaseService,
+		customerServiceAvatar: avatarService,
 	}
 }
 
@@ -41,6 +51,13 @@ func (s *PublicUploadAccessService) CanServePublicUpload(ctx context.Context, ke
 	}
 	if showcaseStorageKeyIsInShowcaseNamespace(normalizedKey) {
 		return false, nil
+	}
+
+	if IsCustomerServiceAvatarStorageKey(normalizedKey) {
+		if s == nil || s.customerServiceAvatar == nil {
+			return false, nil
+		}
+		return s.customerServiceAvatar.CanServePublicAvatar(ctx, normalizedKey)
 	}
 
 	if s != nil && s.media != nil {

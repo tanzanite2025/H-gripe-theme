@@ -3,5 +3,6 @@
     "items": "Items",
     "price": "Price",
     "openCart": "View cart summary"
-  }
+  },
+  "added": "Added to cart"
 }

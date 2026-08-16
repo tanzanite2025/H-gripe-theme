@@ -1,0 +1,1 @@
+-- This repairs a historical schema drift after an irreversible contract rename.

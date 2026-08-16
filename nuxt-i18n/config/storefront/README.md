@@ -44,7 +44,7 @@ Nuxt SSR 页面在高流量时会消耗 Node.js CPU。热门商品详情页、�
 
 - `../../../go-backend/internal/service/storefront_html_cache_invalidator.go`
   - Go 后端内部 invalidator。
-  - 商品、产品类型、文章、FAQ 等会影响公开 HTML 的写操作成功后，异步请求 Nuxt `/_internal/html-cache/purge`。
+  - 商品、商品规格模板、文章、FAQ 等会影响公开 HTML 的写操作成功后，异步请求 Nuxt `/_internal/html-cache/purge`。
   - purge 失败只记录日志，不阻断后台保存，因为数据库仍然是事实源，HTML cache 只是加速层。
 
 ## 目前已经完成
@@ -59,7 +59,7 @@ Nuxt SSR 页面在高流量时会消耗 Node.js CPU。热门商品详情页、�
 - 已在 Nginx 入口对公网 `/_internal/**` 返回 404，避免内部 purge 端点外露。
 - 已在 `deployment/production.env.example` 中补充 HTML cache 相关环境变量示例。
 - 已显式加入 `unstorage` 和 `ioredis` 依赖，避免依赖 Nitro 的传递依赖。
-- 已新增 Go 后端商品/产品类型写操作后的自动 HTML cache purge。
+- 已新增 Go 后端商品/商品规格模板写操作后的自动 HTML cache purge。
 - 已新增 Go 后端文章和 FAQ 写操作后的自动 HTML cache purge。
 - 已新增 Go 后端 HTML cache purge 合并窗口，短时间内多次写操作会合并为一次 purge。
 - 已验证 `npm run build` 通过。
@@ -169,7 +169,7 @@ STOREFRONT_HTML_CACHE_PURGE_DEBOUNCE_MS=500
 - 后台批量更新或删除文章。
 - 后台创建、更新、删除 FAQ。
 - 后台更新 FAQ 排序或批量删除 FAQ。
-- 后台创建、更新、删除产品类型和规格模板。
+- 后台创建、更新、删除商品规格模板和规格模板。
 
 失效方式：
 
@@ -185,7 +185,7 @@ STOREFRONT_HTML_CACHE_PURGE_DEBOUNCE_MS=500
 
 | 页面范围 | SSR HTML 中的数据源 | 当前失效责任 |
 | --- | --- | --- |
-| `/shop/**` | Go 商品详情、商品媒体、SKU 等公开数据 | 商品和产品类型写操作触发 HTML purge |
+| `/shop/**` | Go 商品详情、商品媒体、SKU 等公开数据 | 商品和商品规格模板写操作触发 HTML purge |
 | `/blog/**` | Go 文章列表和文章详情，失败时回退本地 mock | 文章写操作触发 HTML purge |
 | `/support/faqs` 和各页面 `PageFaq` | Go FAQ，失败时回退本地 FAQ 文件 | FAQ 写操作、排序操作触发 HTML purge |
 | `/guides/**` | 静态指南内容 + `PageFaq`；商品搜索抽屉是用户点击后才请求 API | FAQ 写操作触发 HTML purge；点击后搜索结果不进 HTML cache |
@@ -201,7 +201,7 @@ STOREFRONT_HTML_CACHE_PURGE_DEBOUNCE_MS=500
 
 如果后续商品量和内容量大到全量 purge 成本明显升高，再升级为：
 
-- 维护业务侧 cache tag，例如 `product:{id}`、`product-type:{id}`。
+- 维护业务侧 cache tag，例如 `product:{id}`、`product-specification-template:{id}`。
 - 写入时记录 route path 到 Redis set。
 - purge 时按 tag 删除相关 key。
 - 或增加 HTML cache version，让变更后的页面自然写入新 namespace，旧 namespace 由 Redis TTL 回收。

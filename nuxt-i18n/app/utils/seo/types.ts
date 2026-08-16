@@ -7,6 +7,20 @@ export interface ProductSeoOfferInput {
   sku?: string | null
 }
 
+export interface ProductSeoAggregateRatingInput {
+  ratingValue?: number | null
+  reviewCount?: number | null
+}
+
+export interface ProductSeoShippingDetailsInput {
+  country?: string | null
+  amount?: number | null
+  currency?: string | null
+  freeShipping?: boolean | null
+  etaMinDays?: number | null
+  etaMaxDays?: number | null
+}
+
 export interface ProductSeoVariantInput {
   id?: number | string | null
   name?: string | null
@@ -16,6 +30,7 @@ export interface ProductSeoVariantInput {
   availability?: ProductSeoAvailability | null
   localizedPath?: string | null
   imageUrls?: Array<string | null | undefined> | null
+  shippingDetails?: ProductSeoShippingDetailsInput | null
 }
 
 export interface ProductSeoInput {
@@ -28,6 +43,8 @@ export interface ProductSeoInput {
   sku?: string | null
   imageUrls?: Array<string | null | undefined> | null
   offer?: ProductSeoOfferInput | null
+  aggregateRating?: ProductSeoAggregateRatingInput | null
+  shippingDetails?: ProductSeoShippingDetailsInput | null
   productGroupId?: string | null
   variesBy?: string[] | null
   variants?: ProductSeoVariantInput[] | null
@@ -44,6 +61,38 @@ export interface ProductSeoOffer {
   priceCurrency: string
   availability: `https://schema.org/${'InStock' | 'OutOfStock'}`
   url: string
+  shippingDetails?: ProductSeoShippingDetails
+}
+
+export interface ProductSeoAggregateRating {
+  '@type': 'AggregateRating'
+  ratingValue: number
+  reviewCount: number
+  ratingCount: number
+  bestRating: number
+  worstRating: number
+}
+
+export interface ProductSeoShippingDetails {
+  '@type': 'OfferShippingDetails'
+  shippingRate: {
+    '@type': 'MonetaryAmount'
+    value: number
+    currency: string
+  }
+  shippingDestination: {
+    '@type': 'DefinedRegion'
+    addressCountry: string
+  }
+  deliveryTime: {
+    '@type': 'ShippingDeliveryTime'
+    transitTime: {
+      '@type': 'QuantitativeValue'
+      minValue: number
+      maxValue: number
+      unitCode: 'DAY'
+    }
+  }
 }
 
 export interface ProductSeoSchema {
@@ -59,6 +108,7 @@ export interface ProductSeoSchema {
   sku?: string
   url: string
   offers?: ProductSeoOffer
+  aggregateRating?: ProductSeoAggregateRating
 }
 
 export interface ProductSeoProductGroupSchema {
@@ -75,6 +125,7 @@ export interface ProductSeoProductGroupSchema {
   image: string[]
   variesBy?: string[]
   hasVariant: ProductSeoSchema[]
+  aggregateRating?: ProductSeoAggregateRating
 }
 
 export type ProductSeoStructuredData = ProductSeoSchema | ProductSeoProductGroupSchema

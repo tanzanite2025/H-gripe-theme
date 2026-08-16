@@ -17,8 +17,16 @@
       />
     </label>
 
-    <div class="shop-price-range" :aria-label="$t('filter.priceRange', 'Price Range')">
-      <span class="shop-price-range__label">{{ $t('filter.price', 'Price') }}</span>
+    <div
+      class="shop-price-range"
+      :aria-label="`${$t('filter.priceRange', 'Price Range')} (${baseCurrency})`"
+    >
+      <span class="shop-price-range__heading">
+        <span class="shop-price-range__label">{{ $t('filter.price', 'Price') }}</span>
+        <span class="shop-price-range__currency" :aria-label="`Currency: ${baseCurrency}`">
+          {{ baseCurrency }}
+        </span>
+      </span>
       <label class="shop-price-field">
         <span>{{ $t('filter.from', 'From') }}</span>
         <input
@@ -65,6 +73,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import { useStorefrontContext } from '~/composables/useStorefrontContext'
 
 type SearchDensity = 'page' | 'drawer'
 
@@ -95,6 +104,7 @@ const emit = defineEmits<{
   (e: 'filter-click'): void
 }>()
 
+const { baseCurrency } = useStorefrontContext()
 const freeTextQuery = ref('')
 const quickPriceMin = ref<number | null>(0)
 const quickPriceMax = ref<number | null>(5000)
@@ -192,12 +202,33 @@ watch(() => props.initialPriceRange, (range) => {
   padding: 4px 8px;
 }
 
+.shop-price-range__heading {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+}
+
 .shop-price-range__label {
   color: rgba(226, 232, 240, 0.72);
   font-size: var(--tz-type-micro-label);
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.shop-price-range__currency {
+  flex: 0 0 auto;
+  border: 1px solid rgba(181, 255, 109, 0.28);
+  border-radius: 999px;
+  padding: 2px 5px;
+  color: #b5ff6d;
+  background: rgba(181, 255, 109, 0.08);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 1.1;
   white-space: nowrap;
 }
 
@@ -317,6 +348,10 @@ watch(() => props.initialPriceRange, (range) => {
   }
 
   .shop-price-range__label {
+    grid-column: 1 / -1;
+  }
+
+  .shop-price-range__heading {
     grid-column: 1 / -1;
   }
 }

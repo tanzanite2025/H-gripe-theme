@@ -25,7 +25,7 @@ The previous `model.go` files under `go-backend/internal/domain` have been remov
 
 Large domains now use multiple files by responsibility:
 
-- `product`: product, media, variants, specs, product types, attributes, cart, response contracts.
+- `product`: product, media, variants, specs, product specification templates, attributes, cart, response contracts.
 - `shipping`: templates, carrier services, tracking, zones, packaging rules, template bindings.
 - `registration`: product registration, warranty claim, warranty service record.
 - `coupon`: coupons and gift cards are separate facts.

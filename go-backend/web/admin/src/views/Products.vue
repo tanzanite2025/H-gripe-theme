@@ -11,7 +11,13 @@
         <Button variant="outline" as-child>
           <RouterLink to="/catalog/templates">
             <Tags class="size-4" />
-            产品模板
+            商品规格模板
+          </RouterLink>
+        </Button>
+        <Button variant="outline" as-child>
+          <RouterLink to="/catalog/customs-classifications">
+            <Tags class="size-4" />
+            清关资料中心
           </RouterLink>
         </Button>
         <Button v-if="hasPermission('product:create')" @click="showCreateDialog">
@@ -76,20 +82,24 @@
       :submitting="submitting"
       :form="productForm"
       :errors="formErrors"
-      :product-types="productTypes"
+      :product-spec-templates="productSpecTemplates"
       :brands="brands"
-      :selected-product-type="selectedProductType"
+      :product-categories="productCategories"
+      :selected-product-spec-template="selectedProductSpecTemplate"
       :brand-select-value="brandSelectValue"
       :selected-spec-definitions="selectedSpecDefinitions"
       :variant-spec-definitions="variantSpecDefinitions"
       :default-variant-index="defaultVariantIndex"
-      :product-type-select-value="productTypeSelectValue"
+      :product-spec-template-select-value="productSpecTemplateSelectValue"
+      :product-category-select-value="productCategorySelectValue"
       :shipping-template-select-value="shippingTemplateSelectValue"
       :shipping-templates="shippingTemplates"
       :after-sales-template-select-value="afterSalesTemplateSelectValue"
       :packaging-template-select-value="packagingTemplateSelectValue"
       :after-sales-templates="afterSalesTemplates"
       :packaging-templates="packagingTemplates"
+      :customs-classifications="availableCustomsClassifications"
+      :customs-classification-select-value="customsClassificationSelectValue"
       :template-scoped-values-touched="templateScopedValuesTouched"
       :uploading-media="uploadingMedia"
       :parse-spec-options="parseSpecOptions"
@@ -99,10 +109,13 @@
       :language-options="languageOptions"
       @submit="submitForm"
       @clear-error="clearFieldError"
-      @product-type-select="handleProductTypeSelect"
+      @product-spec-template-select="handleProductSpecTemplateSelect"
+      @product-category-select="setProductCategory"
       @product-brand-select="setProductBrand"
       @product-shipping-template-select="setProductShippingTemplate"
       @product-information-template-select="setProductInformationTemplate"
+      @customs-classification-select="handleCustomsClassificationSelect"
+      @customs-classification-manual-edit="clearCustomsClassification"
       @set-spec-select-value="setSpecSelectValue"
       @add-variant="addVariant"
       @remove-variant="removeVariant"
@@ -147,6 +160,8 @@ import ProductFilterPanel from '@/components/admin/product/ProductFilterPanel.vu
 import ProductTablePanel from '@/components/admin/product/ProductTablePanel.vue'
 import ProductTranslationGroupDialog from '@/components/admin/product/ProductTranslationGroupDialog.vue'
 import productApi, { productBrandApi, productInformationTemplateApi } from '@/api/products'
+import { customsClassificationApi } from '@/api/customsClassifications'
+import productCategoryApi, { type ProductCategoryRecord } from '@/api/productCategories'
 import shippingApi from '@/api/shipping'
 import { useProductCatalog } from '@/composables/product/useProductCatalog'
 import { useProductEditor } from '@/composables/product/useProductEditor'
@@ -166,6 +181,17 @@ interface ProductInformationTemplateRecord {
   is_enabled?: boolean
 }
 
+interface CustomsClassificationRecord {
+  id: number
+  product_specification_template_id?: number | null
+  name: string
+  hs_code: string
+  cn_code?: string
+  country_of_origin?: string
+  customs_description?: string
+  status?: string
+}
+
 type AdminProductRecord = Record<string, any>
 
 interface ConfirmationState {
@@ -181,7 +207,9 @@ interface ConfirmationState {
 
 const shippingTemplates = ref<any[]>([])
 const brands = ref<any[]>([])
+const productCategories = ref<ProductCategoryRecord[]>([])
 const informationTemplates = ref<ProductInformationTemplateRecord[]>([])
+const customsClassifications = ref<CustomsClassificationRecord[]>([])
 const translationDialogVisible = ref(false)
 const translationLoading = ref(false)
 const copyingLocale = ref('')
@@ -209,18 +237,19 @@ const {
 } = useProductCatalog()
 
 const {
-  productTypes,
+  productSpecTemplates,
   dialogVisible,
   dialogMode,
   submitting,
   formErrors,
   productForm,
   uploadingMedia,
-  selectedProductType,
+  selectedProductSpecTemplate,
   selectedSpecDefinitions,
   variantSpecDefinitions,
   defaultVariantIndex,
-  productTypeSelectValue,
+  productSpecTemplateSelectValue,
+  productCategorySelectValue,
   brandSelectValue,
   shippingTemplateSelectValue,
   afterSalesTemplateSelectValue,
@@ -232,8 +261,11 @@ const {
   specSelectValue,
   setSpecSelectValue,
   setProductShippingTemplate,
+  setProductCategory,
   setProductBrand,
   setProductInformationTemplate,
+  applyCustomsClassification,
+  clearCustomsClassification,
   clearFieldError,
   addMediaUrl,
   handleMediaUpload,
@@ -244,8 +276,8 @@ const {
   removeVariant,
   setDefaultVariant,
   setVariantActive,
-  handleProductTypeSelect,
-  fetchProductTypes,
+  handleProductSpecTemplateSelect,
+  fetchProductSpecTemplates,
   showCreateDialog,
   showEditDialog,
   submitForm
@@ -267,6 +299,22 @@ const fetchBrands = async () => {
   }
 }
 
+const fetchProductCategories = async () => {
+  try {
+    const payload = await productCategoryApi.list({ include_disabled: true })
+    const flatten = (items: ProductCategoryRecord[], result: ProductCategoryRecord[] = []) => {
+      items.forEach((item) => {
+        result.push(item)
+        if (item.children?.length) flatten(item.children, result)
+      })
+      return result
+    }
+    productCategories.value = flatten(payload.tree)
+  } catch (error) {
+    console.error('Failed to fetch product categories:', error)
+  }
+}
+
 const afterSalesTemplates = computed(() => informationTemplates.value.filter((item) =>
   item.kind === 'after_sales' && (item.is_enabled !== false || item.id === productForm.after_sales_template_id)
 ))
@@ -274,12 +322,50 @@ const packagingTemplates = computed(() => informationTemplates.value.filter((ite
   item.kind === 'packaging' && (item.is_enabled !== false || item.id === productForm.packaging_template_id)
 ))
 
+const customsClassificationSelectValue = computed(() => (
+  productForm.customs_classification_profile_id
+    ? String(productForm.customs_classification_profile_id)
+    : '__none__'
+))
+
+const availableCustomsClassifications = computed(() => customsClassifications.value.filter((profile) => (
+  String(profile.id) === String(productForm.customs_classification_profile_id || '')
+  || (
+    profile.status === 'active'
+    && (
+      !profile.product_specification_template_id
+      || (productForm.product_specification_template_id != null && String(profile.product_specification_template_id) === String(productForm.product_specification_template_id))
+    )
+  )
+)))
+
 const fetchInformationTemplates = async () => {
   try {
     informationTemplates.value = await productInformationTemplateApi.list({ include_disabled: true })
   } catch (error) {
     console.error('Failed to fetch product information templates:', error)
   }
+}
+
+const fetchCustomsClassifications = async () => {
+  try {
+    customsClassifications.value = await customsClassificationApi.list({
+      include_paused: true,
+    })
+  } catch (error) {
+    console.error('Failed to fetch customs classifications:', error)
+  }
+}
+
+const handleCustomsClassificationSelect = (value: string) => {
+  if (value === '__none__') {
+    clearCustomsClassification()
+    return
+  }
+  const profile = customsClassifications.value.find((item) => String(item.id) === value)
+  if (!profile) return
+  applyCustomsClassification(profile)
+  toast.success('已套用清关资料模板')
 }
 
 const confirmation = reactive<ConfirmationState>({
@@ -417,10 +503,12 @@ const executeConfirmedAction = async () => {
 
 onMounted(() => Promise.all([
   supportedLanguages.fetchLanguages(),
-  fetchProductTypes(),
+  fetchProductSpecTemplates(),
   fetchBrands(),
+  fetchProductCategories(),
   fetchShippingTemplates(),
   fetchInformationTemplates(),
+  fetchCustomsClassifications(),
   fetchStats(),
   fetchProducts()
 ]))

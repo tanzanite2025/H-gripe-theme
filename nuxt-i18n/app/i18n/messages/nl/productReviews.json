@@ -1,0 +1,17 @@
+{
+  "eyebrow": "Klantfeedback",
+  "title": "Beoordelingen en reviews",
+  "summaryLabel": "{rating} van 5 uit {count} reviews",
+  "reviewCount": "{count} reviews",
+  "loading": "Reviews laden...",
+  "loadError": "Reviews konden niet worden geladen.",
+  "retry": "Opnieuw proberen",
+  "empty": "Er zijn nog geen goedgekeurde reviews.",
+  "ratingLabel": "{rating} van 5 sterren",
+  "imageAlt": "Afbeelding uit klantreview",
+  "verifiedPurchase": "Geverifieerde aankoop",
+  "helpfulCount": "{count} vonden dit nuttig",
+  "storeReply": "Reactie van de winkel",
+  "loadingMore": "Meer laden...",
+  "loadMore": "Meer reviews laden"
+}

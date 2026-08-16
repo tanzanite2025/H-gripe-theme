@@ -186,6 +186,88 @@ func TestValidateConfigRejectsInvalidOutboxDispatchConfig(t *testing.T) {
 	}
 }
 
+func TestValidateConfigRejectsInvalidCustomerServiceRealtimeConfig(t *testing.T) {
+	cfg := validTestConfig()
+	cfg.Worker = WorkerConfig{
+		OutboxDispatchEnabled:            true,
+		OutboxDispatchIntervalSeconds:    2,
+		OutboxDispatchBatchLimit:         100,
+		OutboxDispatchLockTimeoutSeconds: 300,
+	}
+	cfg.CustomerServiceRealtime = CustomerServiceRealtimeConfig{
+		Enabled:               true,
+		Stream:                "customer_service:{realtime}:v1",
+		StreamMaxLen:          10000,
+		ReplayLimit:           0,
+		ConsumerBlockSeconds:  5,
+		DedupRetentionSeconds: 86400,
+	}
+
+	if err := validateConfig(cfg); err == nil {
+		t.Fatal("validateConfig should reject invalid customer-service realtime configuration")
+	}
+}
+
+func TestValidateConfigRejectsCustomerServiceRealtimeStreamWithoutRedisHashTag(t *testing.T) {
+	cfg := validTestConfig()
+	cfg.Worker = WorkerConfig{
+		OutboxDispatchEnabled:            true,
+		OutboxDispatchIntervalSeconds:    2,
+		OutboxDispatchBatchLimit:         100,
+		OutboxDispatchLockTimeoutSeconds: 300,
+	}
+	cfg.CustomerServiceRealtime = CustomerServiceRealtimeConfig{
+		Enabled:               true,
+		Stream:                "customer_service:realtime:v1",
+		StreamMaxLen:          10000,
+		ReplayLimit:           200,
+		ConsumerBlockSeconds:  5,
+		DedupRetentionSeconds: 86400,
+	}
+
+	if err := validateConfig(cfg); err == nil {
+		t.Fatal("validateConfig should require a Redis Cluster hash tag for customer-service realtime")
+	}
+}
+
+func TestValidateConfigRejectsCustomerServiceRealtimeWithoutOutboxDispatcher(t *testing.T) {
+	cfg := validTestConfig()
+	cfg.CustomerServiceRealtime = CustomerServiceRealtimeConfig{
+		Enabled:               true,
+		Stream:                "customer_service:{realtime}:v1",
+		StreamMaxLen:          10000,
+		ReplayLimit:           200,
+		ConsumerBlockSeconds:  5,
+		DedupRetentionSeconds: 86400,
+	}
+
+	if err := validateConfig(cfg); err == nil {
+		t.Fatal("validateConfig should require the outbox dispatcher when customer-service realtime is enabled")
+	}
+}
+
+func TestValidateConfigAllowsCustomerServiceRealtimeWithOutboxDispatcher(t *testing.T) {
+	cfg := validTestConfig()
+	cfg.Worker = WorkerConfig{
+		OutboxDispatchEnabled:            true,
+		OutboxDispatchIntervalSeconds:    2,
+		OutboxDispatchBatchLimit:         100,
+		OutboxDispatchLockTimeoutSeconds: 300,
+	}
+	cfg.CustomerServiceRealtime = CustomerServiceRealtimeConfig{
+		Enabled:               true,
+		Stream:                "customer_service:{realtime}:v1",
+		StreamMaxLen:          10000,
+		ReplayLimit:           200,
+		ConsumerBlockSeconds:  5,
+		DedupRetentionSeconds: 86400,
+	}
+
+	if err := validateConfig(cfg); err != nil {
+		t.Fatalf("validateConfig should allow a complete customer-service realtime configuration: %v", err)
+	}
+}
+
 func TestValidateConfigRejectsMissingMediaUploadQuota(t *testing.T) {
 	cfg := validTestConfig()
 	cfg.MediaUpload.AccountStorageQuotaBytes = 0
@@ -265,6 +347,12 @@ func TestLoadProductionConfigUsesEnvironmentOverrides(t *testing.T) {
 	}
 	if cfg.QuickBuyRateLimit.IPRequestsPerMinute != 88 || cfg.QuickBuyRateLimit.SessionBurst != 9 {
 		t.Fatalf("Quick Buy rate limit overrides not applied: %+v", cfg.QuickBuyRateLimit)
+	}
+	if !cfg.CustomerServiceRealtime.Enabled || !cfg.Worker.OutboxDispatchEnabled {
+		t.Fatalf("production config must enable the durable customer-service relay and dispatcher: realtime=%+v worker=%+v", cfg.CustomerServiceRealtime, cfg.Worker)
+	}
+	if cfg.Worker.OutboxDispatchIntervalSeconds != 2 {
+		t.Fatalf("production outbox dispatcher interval = %d, want 2", cfg.Worker.OutboxDispatchIntervalSeconds)
 	}
 }
 

@@ -8,6 +8,8 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+
+	"gorm.io/gorm"
 )
 
 type ProductMediaInput struct {
@@ -41,60 +43,78 @@ type ProductVariantOptionValueInput struct {
 }
 
 type ProductCreateInput struct {
-	ProductTypeID        *uint
-	BrandID              *uint
-	ShippingTemplateID   *uint
-	AfterSalesTemplateID *uint
-	PackagingTemplateID  *uint
-	Name                 string
-	Slug                 string
-	Description          string
-	ShortDesc            string
-	Currency             string
-	Status               string
-	Locale               string
-	ParentID             *uint
-	Featured             bool
-	SpecValues           map[string]string
-	Variants             []ProductVariantInput
-	VariantOptionValues  []ProductVariantOptionValueInput
-	Media                []ProductMediaInput
+	ProductSpecificationTemplateID *uint
+	ProductCategoryID              *uint
+	BrandID                        *uint
+	ShippingTemplateID             *uint
+	AfterSalesTemplateID           *uint
+	PackagingTemplateID            *uint
+	CustomsClassificationProfileID *uint
+	HSCode                         string
+	CNCode                         string
+	CountryOfOrigin                string
+	CustomsDescription             string
+	Name                           string
+	Slug                           string
+	Description                    string
+	ShortDesc                      string
+	Currency                       string
+	Status                         string
+	Locale                         string
+	ParentID                       *uint
+	Featured                       bool
+	SpecValues                     map[string]string
+	Variants                       []ProductVariantInput
+	VariantOptionValues            []ProductVariantOptionValueInput
+	Media                          []ProductMediaInput
 }
 
 type ProductUpdateInput struct {
-	ProductTypeID              *uint
-	UpdateProductTypeID        bool
-	BrandID                    *uint
-	UpdateBrandID              bool
-	ShippingTemplateID         *uint
-	UpdateShippingTemplateID   bool
-	AfterSalesTemplateID       *uint
-	UpdateAfterSalesTemplateID bool
-	PackagingTemplateID        *uint
-	UpdatePackagingTemplateID  bool
-	Name                       *string
-	Slug                       *string
-	Description                *string
-	ShortDesc                  *string
-	Currency                   *string
-	UpdateCurrency             bool
-	Status                     *string
-	Locale                     *string
-	ParentID                   *uint
-	UpdateParentID             bool
-	Featured                   *bool
-	SpecValues                 map[string]string
-	UpdateSpecValues           bool
-	Variants                   []ProductVariantInput
-	UpdateVariants             bool
-	VariantOptionValues        []ProductVariantOptionValueInput
-	UpdateVariantOptionValues  bool
-	Media                      []ProductMediaInput
-	UpdateMedia                bool
+	ProductSpecificationTemplateID       *uint
+	UpdateProductSpecificationTemplateID bool
+	ProductCategoryID                    *uint
+	UpdateProductCategoryID              bool
+	BrandID                              *uint
+	UpdateBrandID                        bool
+	ShippingTemplateID                   *uint
+	UpdateShippingTemplateID             bool
+	AfterSalesTemplateID                 *uint
+	UpdateAfterSalesTemplateID           bool
+	PackagingTemplateID                  *uint
+	UpdatePackagingTemplateID            bool
+	CustomsClassificationProfileID       *uint
+	UpdateCustomsClassificationProfileID bool
+	HSCode                               *string
+	UpdateHSCode                         bool
+	CNCode                               *string
+	UpdateCNCode                         bool
+	CountryOfOrigin                      *string
+	UpdateCountryOfOrigin                bool
+	CustomsDescription                   *string
+	UpdateCustomsDescription             bool
+	Name                                 *string
+	Slug                                 *string
+	Description                          *string
+	ShortDesc                            *string
+	Currency                             *string
+	UpdateCurrency                       bool
+	Status                               *string
+	Locale                               *string
+	ParentID                             *uint
+	UpdateParentID                       bool
+	Featured                             *bool
+	SpecValues                           map[string]string
+	UpdateSpecValues                     bool
+	Variants                             []ProductVariantInput
+	UpdateVariants                       bool
+	VariantOptionValues                  []ProductVariantOptionValueInput
+	UpdateVariantOptionValues            bool
+	Media                                []ProductMediaInput
+	UpdateMedia                          bool
 }
 
-func (s *ProductService) ListAdmin(page, pageSize int, status, locale, search, featured string) ([]product.Product, int64, error) {
-	products, total, err := s.productRepo.FindAllWithFilters(page, pageSize, status, locale, search, featured)
+func (s *ProductService) ListAdmin(page, pageSize int, status, locale, search, featured, customsStatus, productSpecificationTemplateID string) ([]product.Product, int64, error) {
+	products, total, err := s.productRepo.FindAllWithFilters(page, pageSize, status, locale, search, featured, customsStatus, productSpecificationTemplateID)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -116,6 +136,10 @@ func (s *ProductService) GetStats() (map[string]interface{}, error) {
 	return s.productRepo.GetStats()
 }
 
+func (s *ProductService) GetCustomsSummary(locale string) (repository.ProductCustomsSummary, error) {
+	return s.productRepo.GetCustomsSummary(locale)
+}
+
 func (s *ProductService) CreateAdminProduct(input ProductCreateInput) (*product.Product, error) {
 	locale, err := requireSupportedLocale(input.Locale)
 	if err != nil {
@@ -130,7 +154,7 @@ func (s *ProductService) CreateAdminProduct(input ProductCreateInput) (*product.
 		return nil, err
 	}
 
-	specValues, err := s.buildSpecValues(input.ProductTypeID, input.SpecValues)
+	specValues, err := s.buildSpecValues(input.ProductSpecificationTemplateID, input.SpecValues)
 	if err != nil {
 		return nil, err
 	}
@@ -140,11 +164,11 @@ func (s *ProductService) CreateAdminProduct(input ProductCreateInput) (*product.
 		return nil, err
 	}
 
-	optionValues, err := s.buildVariantOptionValues(input.ProductTypeID, input.VariantOptionValues)
+	optionValues, err := s.buildVariantOptionValues(input.ProductSpecificationTemplateID, input.VariantOptionValues)
 	if err != nil {
 		return nil, err
 	}
-	variants, err := s.buildVariants(input.ProductTypeID, input.Variants, priceCurrency, optionValues)
+	variants, err := s.buildVariants(input.ProductSpecificationTemplateID, input.Variants, priceCurrency, optionValues)
 	if err != nil {
 		return nil, err
 	}
@@ -161,29 +185,49 @@ func (s *ProductService) CreateAdminProduct(input ProductCreateInput) (*product.
 	if err := s.validateProductBrand(input.BrandID, false); err != nil {
 		return nil, err
 	}
+	if err := s.validateProductCategory(input.ProductCategoryID, false); err != nil {
+		return nil, err
+	}
 	if err := s.validateInformationTemplate(input.AfterSalesTemplateID, product.ProductInformationTemplateKindAfterSales, locale, false); err != nil {
 		return nil, err
 	}
 	if err := s.validateInformationTemplate(input.PackagingTemplateID, product.ProductInformationTemplateKindPackaging, locale, false); err != nil {
 		return nil, err
 	}
+	customsInfo, err := s.resolveProductCustomsInfo(
+		input.CustomsClassificationProfileID,
+		input.ProductSpecificationTemplateID,
+		input.HSCode,
+		input.CNCode,
+		input.CountryOfOrigin,
+		input.CustomsDescription,
+	)
+	if err != nil {
+		return nil, err
+	}
 
 	newProduct := &product.Product{
-		ProductTypeID:        input.ProductTypeID,
-		BrandID:              input.BrandID,
-		ShippingTemplateID:   input.ShippingTemplateID,
-		AfterSalesTemplateID: input.AfterSalesTemplateID,
-		PackagingTemplateID:  input.PackagingTemplateID,
-		SKU:                  defaultVariantSKU(variants),
-		Name:                 input.Name,
-		Slug:                 input.Slug,
-		Description:          description,
-		ShortDesc:            shortDesc,
-		Currency:             priceCurrency,
-		Status:               input.Status,
-		Locale:               locale,
-		ParentID:             input.ParentID,
-		Featured:             input.Featured,
+		ProductSpecificationTemplateID: input.ProductSpecificationTemplateID,
+		ProductCategoryID:              input.ProductCategoryID,
+		BrandID:                        input.BrandID,
+		ShippingTemplateID:             input.ShippingTemplateID,
+		AfterSalesTemplateID:           input.AfterSalesTemplateID,
+		PackagingTemplateID:            input.PackagingTemplateID,
+		CustomsClassificationProfileID: input.CustomsClassificationProfileID,
+		HSCode:                         customsInfo.HSCode,
+		CNCode:                         customsInfo.CNCode,
+		CountryOfOrigin:                customsInfo.CountryOfOrigin,
+		CustomsDescription:             customsInfo.CustomsDescription,
+		SKU:                            defaultVariantSKU(variants),
+		Name:                           input.Name,
+		Slug:                           input.Slug,
+		Description:                    description,
+		ShortDesc:                      shortDesc,
+		Currency:                       priceCurrency,
+		Status:                         input.Status,
+		Locale:                         locale,
+		ParentID:                       input.ParentID,
+		Featured:                       input.Featured,
 	}
 
 	if s.txManager != nil {
@@ -242,8 +286,20 @@ func (s *ProductService) UpdateAdminProduct(id uint, input ProductUpdateInput) (
 	previousAfterSalesTemplateID := existingProduct.AfterSalesTemplateID
 	previousPackagingTemplateID := existingProduct.PackagingTemplateID
 
-	if input.UpdateProductTypeID {
-		existingProduct.ProductTypeID = input.ProductTypeID
+	if input.UpdateProductSpecificationTemplateID {
+		existingProduct.ProductSpecificationTemplateID = input.ProductSpecificationTemplateID
+		existingProduct.CustomsClassificationProfileID = nil
+		existingProduct.CustomsClassificationProfile = nil
+	}
+	if input.UpdateProductCategoryID {
+		allowDisabled := existingProduct.ProductCategoryID != nil &&
+			input.ProductCategoryID != nil &&
+			*existingProduct.ProductCategoryID == *input.ProductCategoryID
+		if err := s.validateProductCategory(input.ProductCategoryID, allowDisabled); err != nil {
+			return nil, err
+		}
+		existingProduct.ProductCategoryID = input.ProductCategoryID
+		existingProduct.ProductCategory = nil
 	}
 	if input.UpdateBrandID {
 		allowDisabled := existingProduct.BrandID != nil && input.BrandID != nil && *existingProduct.BrandID == *input.BrandID
@@ -260,6 +316,58 @@ func (s *ProductService) UpdateAdminProduct(id uint, input ProductUpdateInput) (
 	}
 	if input.UpdatePackagingTemplateID {
 		existingProduct.PackagingTemplateID = input.PackagingTemplateID
+	}
+	if input.UpdateCustomsClassificationProfileID {
+		customsInfo, err := s.resolveProductCustomsInfo(
+			input.CustomsClassificationProfileID,
+			existingProduct.ProductSpecificationTemplateID,
+			existingProduct.HSCode,
+			existingProduct.CNCode,
+			existingProduct.CountryOfOrigin,
+			existingProduct.CustomsDescription,
+		)
+		if err != nil {
+			return nil, err
+		}
+		existingProduct.CustomsClassificationProfileID = input.CustomsClassificationProfileID
+		existingProduct.HSCode = customsInfo.HSCode
+		existingProduct.CNCode = customsInfo.CNCode
+		existingProduct.CountryOfOrigin = customsInfo.CountryOfOrigin
+		existingProduct.CustomsDescription = customsInfo.CustomsDescription
+		// The existing product may have its previous profile preloaded. Keep the
+		// foreign key update explicit and prevent Save from persisting that stale
+		// belongs-to association.
+		existingProduct.CustomsClassificationProfile = nil
+	}
+	if input.UpdateHSCode || input.UpdateCNCode || input.UpdateCountryOfOrigin || input.UpdateCustomsDescription {
+		hsCode := existingProduct.HSCode
+		cnCode := existingProduct.CNCode
+		countryOfOrigin := existingProduct.CountryOfOrigin
+		customsDescription := existingProduct.CustomsDescription
+		if input.UpdateHSCode && input.HSCode != nil {
+			hsCode = *input.HSCode
+		}
+		if input.UpdateCNCode && input.CNCode != nil {
+			cnCode = *input.CNCode
+		}
+		if input.UpdateCountryOfOrigin && input.CountryOfOrigin != nil {
+			countryOfOrigin = *input.CountryOfOrigin
+		}
+		if input.UpdateCustomsDescription && input.CustomsDescription != nil {
+			customsDescription = *input.CustomsDescription
+		}
+		customsInfo, err := normalizeProductCustomsInfo(hsCode, cnCode, countryOfOrigin, customsDescription)
+		if err != nil {
+			return nil, err
+		}
+		existingProduct.HSCode = customsInfo.HSCode
+		existingProduct.CNCode = customsInfo.CNCode
+		existingProduct.CountryOfOrigin = customsInfo.CountryOfOrigin
+		existingProduct.CustomsDescription = customsInfo.CustomsDescription
+		if !input.UpdateCustomsClassificationProfileID {
+			existingProduct.CustomsClassificationProfileID = nil
+			existingProduct.CustomsClassificationProfile = nil
+		}
 	}
 	if input.Name != nil {
 		existingProduct.Name = *input.Name
@@ -333,7 +441,7 @@ func (s *ProductService) UpdateAdminProduct(id uint, input ProductUpdateInput) (
 	}
 	var specValues []product.ProductSpecValue
 	if input.UpdateSpecValues {
-		specValues, err = s.buildSpecValues(existingProduct.ProductTypeID, input.SpecValues)
+		specValues, err = s.buildSpecValues(existingProduct.ProductSpecificationTemplateID, input.SpecValues)
 		if err != nil {
 			return nil, err
 		}
@@ -342,7 +450,7 @@ func (s *ProductService) UpdateAdminProduct(id uint, input ProductUpdateInput) (
 	var optionValues []product.ProductVariantOptionValue
 	effectiveOptionValues := existingProduct.VariantOptionValues
 	if input.UpdateVariantOptionValues {
-		optionValues, err = s.buildVariantOptionValues(existingProduct.ProductTypeID, input.VariantOptionValues)
+		optionValues, err = s.buildVariantOptionValues(existingProduct.ProductSpecificationTemplateID, input.VariantOptionValues)
 		if err != nil {
 			return nil, err
 		}
@@ -351,7 +459,7 @@ func (s *ProductService) UpdateAdminProduct(id uint, input ProductUpdateInput) (
 
 	var variants []product.ProductVariant
 	if input.UpdateVariants {
-		variants, err = s.buildVariants(existingProduct.ProductTypeID, input.Variants, priceCurrency, effectiveOptionValues)
+		variants, err = s.buildVariants(existingProduct.ProductSpecificationTemplateID, input.Variants, priceCurrency, effectiveOptionValues)
 		if err != nil {
 			return nil, err
 		}
@@ -460,6 +568,86 @@ func (s *ProductService) normalizeAdminProductPriceCurrency(value string) (strin
 	return code, nil
 }
 
+type productCustomsInfo struct {
+	HSCode             string
+	CNCode             string
+	CountryOfOrigin    string
+	CustomsDescription string
+}
+
+func (s *ProductService) resolveProductCustomsInfo(profileID *uint, productSpecificationTemplateID *uint, hsCode, cnCode, countryOfOrigin, customsDescription string) (productCustomsInfo, error) {
+	if profileID == nil || *profileID == 0 {
+		return normalizeProductCustomsInfo(hsCode, cnCode, countryOfOrigin, customsDescription)
+	}
+	if s.customsClassificationRepo == nil {
+		return productCustomsInfo{}, fmt.Errorf("%w: customs classification repository is not configured", ErrProductCustomsProfileInvalid)
+	}
+	profile, err := s.customsClassificationRepo.FindByID(*profileID)
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return productCustomsInfo{}, ErrProductCustomsProfileNotFound
+	}
+	if err != nil {
+		return productCustomsInfo{}, err
+	}
+	if profile.Status != product.CustomsClassificationStatusActive {
+		return productCustomsInfo{}, fmt.Errorf("%w: profile is not active", ErrProductCustomsProfileInvalid)
+	}
+	if profile.ProductSpecificationTemplateID != nil && (productSpecificationTemplateID == nil || *profile.ProductSpecificationTemplateID != *productSpecificationTemplateID) {
+		return productCustomsInfo{}, fmt.Errorf("%w: profile does not match product specification template", ErrProductCustomsProfileInvalid)
+	}
+	return normalizeProductCustomsInfo(
+		profile.HSCode,
+		profile.CNCode,
+		profile.CountryOfOrigin,
+		profile.CustomsDescription,
+	)
+}
+
+func normalizeProductCustomsInfo(hsCode, cnCode, countryOfOrigin, customsDescription string) (productCustomsInfo, error) {
+	hsCode = strings.TrimSpace(hsCode)
+	cnCode = strings.TrimSpace(cnCode)
+	countryOfOrigin = strings.ToUpper(strings.TrimSpace(countryOfOrigin))
+	customsDescription = strings.TrimSpace(customsDescription)
+
+	if hsCode != "" && (len(hsCode) != 6 || !isDigitsOnly(hsCode)) {
+		return productCustomsInfo{}, fmt.Errorf("%w: HS Code must contain exactly 6 digits", ErrProductCustomsInfoInvalid)
+	}
+	if cnCode != "" && (len(cnCode) != 8 || !isDigitsOnly(cnCode)) {
+		return productCustomsInfo{}, fmt.Errorf("%w: CN Code must contain exactly 8 digits", ErrProductCustomsInfoInvalid)
+	}
+	if countryOfOrigin != "" && (len(countryOfOrigin) != 2 || !isUppercaseLettersOnly(countryOfOrigin)) {
+		return productCustomsInfo{}, fmt.Errorf("%w: country of origin must be a 2-letter ISO code", ErrProductCustomsInfoInvalid)
+	}
+	if len(customsDescription) > 255 {
+		return productCustomsInfo{}, fmt.Errorf("%w: customs description is too long", ErrProductCustomsInfoInvalid)
+	}
+
+	return productCustomsInfo{
+		HSCode:             hsCode,
+		CNCode:             cnCode,
+		CountryOfOrigin:    countryOfOrigin,
+		CustomsDescription: customsDescription,
+	}, nil
+}
+
+func isDigitsOnly(value string) bool {
+	for _, char := range value {
+		if char < '0' || char > '9' {
+			return false
+		}
+	}
+	return value != ""
+}
+
+func isUppercaseLettersOnly(value string) bool {
+	for _, char := range value {
+		if char < 'A' || char > 'Z' {
+			return false
+		}
+	}
+	return value != ""
+}
+
 func (s *ProductService) primaryPricingCurrency() string {
 	if s == nil || s.currencyPolicy == nil {
 		return product.DefaultPriceCurrency
@@ -562,24 +750,24 @@ func (s *ProductService) buildProductMedia(input []ProductMediaInput) ([]product
 	return items, nil
 }
 
-func (s *ProductService) buildVariantOptionValues(productTypeID *uint, input []ProductVariantOptionValueInput) ([]product.ProductVariantOptionValue, error) {
+func (s *ProductService) buildVariantOptionValues(productSpecificationTemplateID *uint, input []ProductVariantOptionValueInput) ([]product.ProductVariantOptionValue, error) {
 	if len(input) == 0 {
 		return nil, nil
 	}
-	if productTypeID == nil {
-		return nil, fmt.Errorf("%w: product_type_id is required when option display values are provided", ErrProductVariantInvalid)
+	if productSpecificationTemplateID == nil {
+		return nil, fmt.Errorf("%w: product_specification_template_id is required when option display values are provided", ErrProductVariantInvalid)
 	}
 
-	productType, err := s.productRepo.FindProductTypeByID(*productTypeID)
+	productSpecificationTemplate, err := s.productRepo.FindProductSpecificationTemplateByID(*productSpecificationTemplateID)
 	if err != nil {
 		if repository.IsRecordNotFound(err) {
-			return nil, ErrProductTypeNotFound
+			return nil, ErrProductSpecificationTemplateNotFound
 		}
 		return nil, err
 	}
 
 	definitions := make(map[uint]product.SpecDefinition)
-	for _, definition := range productType.SpecDefinitions {
+	for _, definition := range productSpecificationTemplate.SpecDefinitions {
 		if definition.IsVariantOption {
 			definitions[definition.ID] = definition
 		}

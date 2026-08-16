@@ -19,14 +19,14 @@
           </p>
 
           <!-- Decorative Visual (Abstract) -->
-          <div class="hidden lg:block mt-12 p-8 rounded-3xl bg-slate-900/50 border border-white/5 relative overflow-hidden">
-             <div class="absolute inset-0 bg-gradient-to-br from-teal-500/5 to-blue-600/5"></div>
+          <div class="hidden lg:block mt-12 p-8 rounded-3xl bg-black relative overflow-hidden">
+             <div class="absolute inset-0 bg-gradient-to-br from-[#B5FF6D]/5 to-transparent"></div>
              <div class="relative z-10 flex items-center gap-4 tz-text-secondary text-sm">
-                <svg class="w-5 h-5 text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                 <svg class="w-5 h-5 text-[#B5FF6D]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
                 <span>Engineered for efficiency</span>
              </div>
              <div class="relative z-10 flex items-center gap-4 tz-text-secondary text-sm mt-3">
-                <svg class="w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                 <svg class="w-5 h-5 text-[#B5FF6D]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                 <span>Validated Quality Control</span>
              </div>
           </div>
@@ -37,7 +37,7 @@
           <div
             v-for="item in items"
             :key="item.titleKey"
-            class="group relative rounded-2xl premium-card p-6 hover:bg-slate-800/60 transition-colors duration-300"
+            class="group relative rounded-2xl premium-card p-6 transition-transform duration-200 ease-out hover:-translate-y-1 hover:shadow-[0_12px_28px_rgba(0,0,0,0.62)]"
           >
 
 

@@ -5,7 +5,20 @@
       description="维护 Hostinger VPS 资源基线和观察状态；这里不创建、删除或部署 VPS。"
     >
       <template #actions>
-        <Button variant="outline" :disabled="loading" @click="loadVPS">
+        <select
+          v-model="environmentFilter"
+          class="h-9 rounded-md border bg-background px-3 text-sm"
+          aria-label="筛选 VPS 环境"
+          :disabled="loading"
+          @change="changeEnvironment"
+        >
+          <option value="production">生产</option>
+          <option value="staging">预发布</option>
+          <option value="test">测试</option>
+          <option value="local">本地</option>
+          <option value="">全部环境</option>
+        </select>
+        <Button variant="outline" :disabled="loading" @click="refreshVPSPage">
           <RefreshCw :class="['size-4', loading ? 'animate-spin' : '']" />
           刷新
         </Button>
@@ -130,145 +143,44 @@
       </Table>
     </AdminTablePanel>
 
-    <Dialog v-model:open="dialogOpen">
-      <DialogContent size="lg">
-        <DialogHeader>
-          <DialogTitle>{{ form.id ? '编辑 VPS 绑定' : '新增 VPS 绑定' }}</DialogTitle>
-          <DialogDescription>
-            这里记录 Hostinger 或其他提供商的资源基线。观察状态只有同步后才代表实际状态。
-          </DialogDescription>
-        </DialogHeader>
-
-        <form class="space-y-4" @submit.prevent="saveVPS">
-          <div class="grid gap-4 md:grid-cols-2">
-            <AdminFormField label="资源名称" required>
-              <Input v-model="form.name" placeholder="Hostinger Production VPS" :disabled="saving" />
-            </AdminFormField>
-            <AdminFormField label="提供商" required>
-              <select v-model="form.provider" class="h-10 w-full rounded-md border bg-background px-3 text-sm" :disabled="saving">
-                <option v-for="option in providerOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
-              </select>
-            </AdminFormField>
-            <AdminFormField label="环境" required>
-              <select v-model="form.environment" class="h-10 w-full rounded-md border bg-background px-3 text-sm" :disabled="saving">
-                <option v-for="option in environmentOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
-              </select>
-            </AdminFormField>
-            <AdminFormField label="连接器">
-              <select v-model="form.connector_id" class="h-10 w-full rounded-md border bg-background px-3 text-sm" :disabled="saving">
-                <option :value="null">未绑定连接器</option>
-                <option v-for="connector in connectors" :key="connector.id" :value="connector.id">{{ connector.name }}</option>
-              </select>
-            </AdminFormField>
-            <AdminFormField label="Hostinger VPS ID / 资源 ID">
-              <Input v-model="form.provider_resource_id" placeholder="1834903" :disabled="saving" />
-            </AdminFormField>
-            <AdminFormField label="主机名">
-              <Input v-model="form.hostname" placeholder="srv1834903.hstgr.cloud" :disabled="saving" />
-            </AdminFormField>
-            <AdminFormField label="IPv4">
-              <Input v-model="form.ipv4" placeholder="2.25.85.201" :disabled="saving" />
-            </AdminFormField>
-            <AdminFormField label="区域">
-              <Input v-model="form.region" placeholder="Hostinger region" :disabled="saving" />
-            </AdminFormField>
-            <AdminFormField label="操作系统">
-              <Input v-model="form.operating_system" placeholder="Ubuntu 24.04 LTS" :disabled="saving" />
-            </AdminFormField>
-            <AdminFormField label="期望状态">
-              <select v-model="form.status" class="h-10 w-full rounded-md border bg-background px-3 text-sm" :disabled="saving">
-                <option v-for="option in statusOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
-              </select>
-            </AdminFormField>
-            <AdminFormField label="备注" class="md:col-span-2">
-              <Textarea v-model="form.notes" class="min-h-24" placeholder="记录区域、维护窗口、资源边界或确认来源。" :disabled="saving" />
-            </AdminFormField>
-          </div>
-
-          <DialogFooter>
-            <Button type="button" variant="outline" :disabled="saving" @click="dialogOpen = false">取消</Button>
-            <Button type="submit" :disabled="saving || !canEdit">
-              <LoaderCircle v-if="saving" class="size-4 animate-spin" />
-              <Save v-else class="size-4" />
-              {{ saving ? '保存中' : '保存 VPS' }}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <OpsVPSBindingFormDialog
+      :open="dialogOpen"
+      :form="form"
+      :connectors="connectors"
+      :saving="saving"
+      :can-edit="canEdit"
+      @update:open="dialogOpen = $event"
+      @save="saveVPS"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
-import { LoaderCircle, Pencil, Plus, Power, RefreshCw, Save } from '@lucide/vue'
-import AdminFormField from '@/components/admin/AdminFormField.vue'
+import { LoaderCircle, Pencil, Plus, Power, RefreshCw } from '@lucide/vue'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import AdminStatusBadge, { type AdminStatusTone } from '@/components/admin/AdminStatusBadge.vue'
 import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
-import { Button } from '@/components/ui/button'
+import OpsVPSBindingFormDialog from '@/components/admin/ops/OpsVPSBindingFormDialog.vue'
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
+  assignOpsVPSForm,
+  emptyOpsVPSForm,
+  opsVPSEnvironmentOptions,
+  opsVPSObservedOptions,
+  opsVPSProviderOptions,
+  opsVPSStatusOptions,
+  type OpsVPSForm,
+} from '@/components/admin/ops/opsVPSBindingForm'
+import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Textarea } from '@/components/ui/textarea'
-import opsApi, { type OpsVPSPayload } from '@/api/ops'
+import opsApi, { type OpsConnector, type OpsEnvironment, type OpsVPS, type OpsVPSPayload } from '@/api/ops'
+import { readOpsEnvironmentQuery, withOpsEnvironmentQuery } from '@/lib/opsEnvironment'
 import { useAuthStore } from '@/stores/auth'
 
-interface OpsVPS {
-  id: number
-  name: string
-  provider: string
-  environment: string
-  connector_id?: number | null
-  provider_resource_id: string
-  hostname: string
-  ipv4: string
-  region: string
-  operating_system: string
-  status: string
-  observed_status: string
-  observed_state: string
-  observed_source: string
-  observed_hostname: string
-  observed_ipv4: string
-  observed_operating_system: string
-  observed_plan: string
-  observed_region: string
-  enabled: boolean
-  last_observed_at?: string
-  last_error: string
-  notes: string
-}
-
-interface OpsConnector {
-  id: number
-  name: string
-}
-
-interface OpsVPSForm {
-  id: number
-  name: string
-  provider: string
-  environment: string
-  connector_id: number | null
-  provider_resource_id: string
-  hostname: string
-  ipv4: string
-  region: string
-  operating_system: string
-  status: string
-  enabled: boolean
-  notes: string
-}
-
+const route = useRoute()
+const router = useRouter()
 const authStore = useAuthStore()
 const canEdit = computed(() => authStore.hasPermission('ops:vps:edit'))
 const canSync = computed(() => authStore.hasPermission('ops:vps:sync'))
@@ -278,63 +190,23 @@ const loading = ref(false)
 const saving = ref(false)
 const dialogOpen = ref(false)
 const syncingId = ref(0)
+const environmentFilter = ref<OpsEnvironment | ''>(readOpsEnvironmentQuery(route.query.environment))
 
-const providerOptions = [
-  { value: 'hostinger', label: 'Hostinger' },
-  { value: 'other', label: '其他' },
-]
-const environmentOptions = [
-  { value: 'production', label: '生产' },
-  { value: 'staging', label: '预发布' },
-  { value: 'test', label: '测试' },
-  { value: 'local', label: '本地' },
-]
-const statusOptions = [
-  { value: 'active', label: '正常' },
-  { value: 'pending', label: '待确认' },
-  { value: 'disabled', label: '已停用' },
-  { value: 'drifted', label: '配置漂移' },
-  { value: 'error', label: '错误' },
-]
-const observedOptions = [
-  { value: 'healthy', label: '健康' },
-  { value: 'degraded', label: '降级' },
-  { value: 'unknown', label: '未同步' },
-  { value: 'offline', label: '离线' },
-]
-
-const emptyForm = (): OpsVPSForm => ({
-  id: 0,
-  name: '',
-  provider: 'hostinger',
-  environment: 'production',
-  connector_id: null,
-  provider_resource_id: '',
-  hostname: '',
-  ipv4: '',
-  region: '',
-  operating_system: '',
-  status: 'pending',
-  enabled: true,
-  notes: '',
-})
-const form = reactive<OpsVPSForm>(emptyForm())
+const form = reactive<OpsVPSForm>(emptyOpsVPSForm())
 
 const enabledCount = computed(() => vpsList.value.filter((vps) => vps.enabled).length)
 const observedCount = computed(() => vpsList.value.filter((vps) => vps.observed_status !== 'unknown').length)
 const attentionCount = computed(() => vpsList.value.filter((vps) => ['pending', 'drifted', 'error'].includes(vps.status) || ['degraded', 'offline'].includes(vps.observed_status)).length)
 
 const assignForm = (vps?: Partial<OpsVPS>): void => {
-  Object.assign(form, emptyForm(), vps || {})
-  form.connector_id = vps?.connector_id ?? null
+  assignOpsVPSForm(form, vps)
 }
 
 const loadVPS = async (): Promise<void> => {
   loading.value = true
   try {
-    const [vpsData, connectorData] = await Promise.all([opsApi.listVPS(), opsApi.listConnectors()])
+    const vpsData = await opsApi.listVPS(environmentFilter.value || undefined)
     vpsList.value = Array.isArray(vpsData?.vps) ? vpsData.vps : []
-    connectors.value = Array.isArray(connectorData?.connectors) ? connectorData.connectors : []
   } catch (error: any) {
     toast.error(error?.response?.data?.message || error?.response?.data?.error || 'VPS 列表加载失败')
   } finally {
@@ -342,14 +214,42 @@ const loadVPS = async (): Promise<void> => {
   }
 }
 
+const loadConnectorOptions = async (): Promise<void> => {
+  if (!canEdit.value) {
+    connectors.value = []
+    return
+  }
+  try {
+    const connectorData = await opsApi.listConnectors()
+    connectors.value = Array.isArray(connectorData?.connectors) ? connectorData.connectors : []
+  } catch (error: any) {
+    connectors.value = []
+    toast.error(error?.response?.data?.message || error?.response?.data?.error || '连接器选项加载失败，VPS 列表仍可使用')
+  }
+}
+
+const changeEnvironment = (): void => {
+  void router.replace({ query: withOpsEnvironmentQuery(route.query, environmentFilter.value) })
+  void loadVPS()
+}
+
+const refreshVPSPage = async (): Promise<void> => {
+  await Promise.all([
+    loadVPS(),
+    loadConnectorOptions(),
+  ])
+}
+
 const openCreate = (): void => {
   assignForm()
   dialogOpen.value = true
+  if (!connectors.value.length) void loadConnectorOptions()
 }
 
 const openEdit = (vps: OpsVPS): void => {
   assignForm(vps)
   dialogOpen.value = true
+  if (!connectors.value.length) void loadConnectorOptions()
 }
 
 const saveVPS = async (): Promise<void> => {
@@ -412,7 +312,22 @@ const syncVPS = async (vps: OpsVPS): Promise<void> => {
           ? 'error'
           : 'warning'
     toast[tone](result.message || `${vps.name} 同步完成`)
-    await loadVPS()
+    const index = vpsList.value.findIndex((item) => item.id === vps.id)
+    if (index >= 0) {
+      vpsList.value[index] = {
+        ...vps,
+        observed_status: result.observed_status,
+        observed_state: result.remote_state || '',
+        observed_source: result.observed_source,
+        observed_hostname: result.hostname || '',
+        observed_ipv4: result.ipv4 || '',
+        observed_operating_system: result.operating_system || '',
+        observed_plan: result.observed_plan || '',
+        observed_region: result.observed_region || '',
+        last_observed_at: result.last_observed_at,
+        last_error: result.observed_error || '',
+      }
+    }
   } catch (error: any) {
     toast.error(error?.response?.data?.message || error?.response?.data?.error || `${vps.name} 同步失败`)
   } finally {
@@ -423,10 +338,10 @@ const syncVPS = async (vps: OpsVPS): Promise<void> => {
 const optionLabel = (options: Array<{ value: string; label: string }>, value: string): string => (
   options.find((option) => option.value === value)?.label || value || '-'
 )
-const providerLabel = (value: string): string => optionLabel(providerOptions, value)
-const environmentLabel = (value: string): string => optionLabel(environmentOptions, value)
-const statusLabel = (value: string): string => optionLabel(statusOptions, value)
-const observedLabel = (value: string): string => optionLabel(observedOptions, value)
+const providerLabel = (value: string): string => optionLabel(opsVPSProviderOptions, value)
+const environmentLabel = (value: string): string => optionLabel(opsVPSEnvironmentOptions, value)
+const statusLabel = (value: string): string => optionLabel(opsVPSStatusOptions, value)
+const observedLabel = (value: string): string => optionLabel(opsVPSObservedOptions, value)
 const formatDate = (value: string): string => new Date(value).toLocaleString()
 const statusTone = (value: string): AdminStatusTone => {
   if (value === 'active') return 'green'
@@ -441,5 +356,12 @@ const observedTone = (value: string): AdminStatusTone => {
   return 'gray'
 }
 
-onMounted(loadVPS)
+watch(() => route.query.environment, (value) => {
+  const nextEnvironment = readOpsEnvironmentQuery(value)
+  if (nextEnvironment === environmentFilter.value) return
+  environmentFilter.value = nextEnvironment
+  void loadVPS()
+})
+
+onMounted(refreshVPSPage)
 </script>

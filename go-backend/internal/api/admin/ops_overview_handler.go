@@ -2,6 +2,7 @@ package admin
 
 import (
 	"errors"
+	"strings"
 
 	"commerce-platform/internal/pkg/apierror"
 	"commerce-platform/internal/pkg/response"
@@ -23,8 +24,12 @@ func (h *OpsOverviewHandler) Get(c *gin.Context) {
 		apierror.RespondInternalError(c, errors.New("operations overview service is not configured"))
 		return
 	}
-	overview, err := h.overviewService.Get()
+	overview, err := h.overviewService.GetForEnvironment(strings.TrimSpace(c.Query("environment")))
 	if err != nil {
+		if errors.Is(err, service.ErrInvalidOpsOverviewEnvironment) {
+			apierror.RespondBadRequest(c, err.Error())
+			return
+		}
 		apierror.RespondInternalError(c, err)
 		return
 	}

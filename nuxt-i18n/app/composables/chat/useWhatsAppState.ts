@@ -3,6 +3,7 @@ import { useI18n } from '#imports'
 import { useAuth } from '~/composables/useAuth'
 import { useCart } from '~/composables/useCart'
 import { useMembership } from '~/composables/useMembership'
+import { createOverlayInstanceId, useOverlayBackStack } from '~/composables/useOverlayBackStack'
 import { normalizeShopProduct } from '~/composables/useShopProducts'
 import { loadChatAgentDirectory, normalizeChatAgentOnlineStatus } from '~/composables/chat/useChatAgentDirectory'
 import { useCustomerServiceChatSync } from '~/composables/chat/useCustomerServiceChatSync'
@@ -18,11 +19,18 @@ import {
   saveLastSelectedAgentId
 } from '~/composables/chat/useChatStorage'
 import type { ChatRoomState, ChatTab } from '~/composables/chat/useChatStorage'
+import type { WheelsetSelectionRequestDraft } from '~/types/wheelsetSelectionAssistant'
 
-export const useWhatsAppState = (emit: any) => {
+export const useWhatsAppState = (
+  emit: any,
+  options: { initialSelectionRequest?: WheelsetSelectionRequestDraft | null } = {},
+) => {
     const { t, locale } = useI18n()
   const { user, request: authRequest } = useAuth()
   const { addToCart, openCartFromChat } = useCart()
+  const overlayBackStack = useOverlayBackStack()
+  const productDrawerOverlayId = createOverlayInstanceId('chat-product-search')
+  const customerProductSearchOverlayId = createOverlayInstanceId('chat-customer-product-search')
   const {
     isLogged: isMemberLogged,
     levelName,
@@ -250,6 +258,20 @@ export const useWhatsAppState = (emit: any) => {
   const customerServiceProductSearchModalVisible = ref(false)
   const historyDrawerVisible = ref(false)
   const wishlistDrawerVisible = ref(false)
+
+  const closeProductDrawerState = () => {
+    productDrawerVisible.value = false
+    productDrawerError.value = null
+    productDrawerQuery.value = ''
+    searchQuery.value = ''
+    searchResults.value = []
+    isSearching.value = false
+  }
+
+  const openProductDrawer = () => {
+    productDrawerVisible.value = true
+    overlayBackStack.open(productDrawerOverlayId, closeProductDrawerState, { mode: 'push' })
+  }
   
   // 图片上传
   const isUploadingImage = ref(false)
@@ -296,6 +318,10 @@ export const useWhatsAppState = (emit: any) => {
     }
   }
 
+  const closeCustomerServiceProductSearchModalState = () => {
+    customerServiceProductSearchModalVisible.value = false
+  }
+
   const openOrderPicker = () => {
     if (!user.value) {
       pendingAttachmentAction.value = 'order'
@@ -307,10 +333,15 @@ export const useWhatsAppState = (emit: any) => {
 
   const openCustomerServiceProductSearchModal = () => {
     customerServiceProductSearchModalVisible.value = true
+    overlayBackStack.open(
+      customerProductSearchOverlayId,
+      closeCustomerServiceProductSearchModalState,
+      { mode: 'push' },
+    )
   }
 
   const closeCustomerServiceProductSearchModal = () => {
-    customerServiceProductSearchModalVisible.value = false
+    void overlayBackStack.close(customerProductSearchOverlayId)
   }
 
   const clearPendingProductReference = () => {
@@ -327,6 +358,7 @@ export const useWhatsAppState = (emit: any) => {
   const enterChat = () => {
     if (selectedAgent.value) {
       showWelcomeScreen.value = false
+      void sendPendingSelectionRequest()
     }
   }
   
@@ -513,7 +545,8 @@ export const useWhatsAppState = (emit: any) => {
     sendImageMessage,
     sendProductMessage,
     sendProductConfigConfirmMessage,
-    sendOrderMessage
+    sendOrderMessage,
+    sendWheelsetSelectionRequestMessage,
   } = useChatMessageComposer({
     conversationId,
     selectedAgent,
@@ -527,6 +560,18 @@ export const useWhatsAppState = (emit: any) => {
     replaceLocalMessageWithServerMessage,
     markLocalMessageFailed
   })
+
+  const pendingSelectionRequest = options.initialSelectionRequest || null
+  const pendingSelectionRequestSent = ref(false)
+
+  const sendPendingSelectionRequest = async () => {
+    if (!pendingSelectionRequest || pendingSelectionRequestSent.value || !selectedAgent.value) return
+    pendingSelectionRequestSent.value = true
+    const sent = await sendWheelsetSelectionRequestMessage(pendingSelectionRequest)
+    if (!sent) {
+      pendingSelectionRequestSent.value = false
+    }
+  }
 
   const customerTypingSignalGapMs = 2500
   let lastCustomerTypingSignalAt = 0
@@ -605,7 +650,7 @@ export const useWhatsAppState = (emit: any) => {
     if (!trimmedQuery) {
       productDrawerQuery.value = ''
       productDrawerError.value = null
-      productDrawerVisible.value = true
+      openProductDrawer()
       searchResults.value = []
       isSearching.value = false
       return
@@ -613,7 +658,7 @@ export const useWhatsAppState = (emit: any) => {
   
     productDrawerQuery.value = trimmedQuery
     productDrawerError.value = null
-    productDrawerVisible.value = true
+    openProductDrawer()
   
     isSearching.value = true
     try {
@@ -671,12 +716,7 @@ export const useWhatsAppState = (emit: any) => {
   }
   
   const handleProductDrawerClose = () => {
-    productDrawerVisible.value = false
-    productDrawerError.value = null
-    productDrawerQuery.value = ''
-    searchQuery.value = ''
-    searchResults.value = []
-    isSearching.value = false
+    void overlayBackStack.close(productDrawerOverlayId)
   }
   
   const handleHistoryDrawerClose = () => {
@@ -893,6 +933,7 @@ export const useWhatsAppState = (emit: any) => {
   onMounted(async () => {
     await initMembership()
     await fetchAgents()
+    await sendPendingSelectionRequest()
     initHistoryChatCheck()
     scrollToBottom()
   })

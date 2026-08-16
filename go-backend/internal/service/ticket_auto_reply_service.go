@@ -12,6 +12,10 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"commerce-platform/internal/repository"
+
+	"gorm.io/gorm"
 )
 
 var (
@@ -134,6 +138,9 @@ func (s *TicketService) deliverAutoReply(t *ticket.Ticket, rule ticket.AutoReply
 	if t == nil {
 		return "", false, nil, errors.New("customer-service conversation is required")
 	}
+	if s.customerServiceRealtimeOutbox == nil {
+		return "", false, nil, errors.New("customer-service realtime outbox is unavailable")
+	}
 	if err := s.validateAutoReplyFAQReference(rule); err != nil {
 		return "", false, nil, err
 	}
@@ -168,7 +175,23 @@ func (s *TicketService) deliverAutoReply(t *ticket.Ticket, rule ticket.AutoReply
 		IsRead:      false,
 		IsInternal:  false,
 	}
-	created, err := s.ticketRepo.CreateAutoReplyMessageIfNotRecent(msg, dedupeKey, replyMessage, since)
+	created, err := s.ticketRepo.CreateAutoReplyMessageIfNotRecentWithTx(
+		msg,
+		dedupeKey,
+		replyMessage,
+		since,
+		func(ticketRepo *repository.TicketRepository, tx *gorm.DB) error {
+			if err := ticketRepo.TouchTicket(t.ID, time.Now().UTC()); err != nil {
+				return err
+			}
+			return enqueueCustomerServiceMessageCreatedOutboxEvent(
+				s.customerServiceRealtimeOutbox.WithTx(tx),
+				t,
+				msg,
+				CustomerServiceRealtimeActor{Kind: "system"},
+			)
+		},
+	)
 	if err != nil {
 		return "", false, nil, err
 	}

@@ -26,7 +26,7 @@ func TestNormalizeRimFilterableSpecificationsContract(t *testing.T) {
 	sql := readRimFilterableSpecificationsMigration(t)
 
 	for _, fragment := range []string{
-		"product_type.slug = 'rim'",
+		"product_specification_template.slug = 'rim'",
 		"definition.slug IN",
 		"WHEN 'material' THEN TRUE",
 		"WHEN 'brake_type' THEN TRUE",

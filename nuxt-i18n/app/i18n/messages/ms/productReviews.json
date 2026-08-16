@@ -1,0 +1,17 @@
+{
+  "eyebrow": "Maklum balas pelanggan",
+  "title": "Penilaian dan ulasan",
+  "summaryLabel": "{rating} daripada 5 berdasarkan {count} ulasan",
+  "reviewCount": "{count} ulasan",
+  "loading": "Memuatkan ulasan...",
+  "loadError": "Ulasan tidak dapat dimuatkan.",
+  "retry": "Cuba lagi",
+  "empty": "Belum ada ulasan yang diluluskan.",
+  "ratingLabel": "{rating} daripada 5 bintang",
+  "imageAlt": "Imej ulasan pelanggan",
+  "verifiedPurchase": "Pembelian disahkan",
+  "helpfulCount": "{count} mendapati ini membantu",
+  "storeReply": "Balasan kedai",
+  "loadingMore": "Memuatkan lagi...",
+  "loadMore": "Muatkan lebih banyak ulasan"
+}

@@ -1,0 +1,17 @@
+{
+  "eyebrow": "Asiakaspalaute",
+  "title": "Arvostelut ja arviot",
+  "summaryLabel": "{rating}/5 perustuen {count} arvioon",
+  "reviewCount": "{count} arviota",
+  "loading": "Ladataan arvioita...",
+  "loadError": "Arvioita ei voitu ladata.",
+  "retry": "Yritä uudelleen",
+  "empty": "Hyväksyttyjä arvioita ei ole vielä.",
+  "ratingLabel": "{rating} tähteä viidestä",
+  "imageAlt": "Asiakasarvion kuva",
+  "verifiedPurchase": "Vahvistettu ostos",
+  "helpfulCount": "{count} piti tätä hyödyllisenä",
+  "storeReply": "Kaupan vastaus",
+  "loadingMore": "Ladataan lisää...",
+  "loadMore": "Lataa lisää arvioita"
+}

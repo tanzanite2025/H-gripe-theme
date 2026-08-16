@@ -14,20 +14,52 @@
           <RefreshCw :class="['size-3.5', { 'animate-spin': currentLoading }]" />
           刷新
         </Button>
+        <Button v-if="['overview', 'three_ds'].includes(activeTab) && canRecompute" variant="outline" size="sm" class="rounded-full font-black uppercase tracking-wider" :disabled="currentLoading" @click="recomputeRiskSummary">
+          <RefreshCw :class="['size-3.5', { 'animate-spin': summaryLoading }]" />
+          立即重算
+        </Button>
       </template>
     </AdminPageHeader>
     <PayPalInvoicePreviewDialog v-model:open="paypalInvoicePreviewOpen" />
 
-    <AdminStatsGrid v-if="activeTab !== 'controls'" class="shrink-0" :items="statItems" />
-    <PaymentRiskSummaryPanel
-      v-if="activeTab !== 'controls'"
-      class="shrink-0"
-      :reports="riskSummary.reports"
-      :enabled="riskSummary.enabled"
-      :loading="summaryLoading"
-    />
+    <AdminStatsGrid v-if="!['controls', 'overview', 'three_ds'].includes(activeTab)" class="shrink-0" :items="statItems" />
 
-    <Tabs :model-value="activeTab" class="min-h-0 flex-1 overflow-hidden">
+    <Tabs :model-value="activeTab" class="min-h-0 flex-1 overflow-hidden" @update:model-value="setActiveTab">
+      <TabsList class="h-auto shrink-0 flex-wrap justify-start rounded-none border border-dashed border-border/80 bg-card p-1">
+        <TabsTrigger
+          v-for="item in riskTabItems"
+          :key="item.value"
+          :value="item.value"
+          class="min-h-8 flex-none px-3"
+        >
+          {{ item.label }}
+        </TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="overview" class="min-h-0 overflow-auto">
+        <PaymentRiskPolicyPanel
+          :configuration="riskSummary.configuration"
+          :gateway-runtime="riskSummary.gatewayRuntime"
+          :gateway-health="riskSummary.gatewayHealth"
+        />
+        <PaymentRiskSummaryPanel
+          :reports="riskSummary.reports"
+          :policy="riskSummary.policy"
+          :enabled="riskSummary.enabled"
+          :loading="summaryLoading"
+        />
+      </TabsContent>
+
+      <TabsContent value="three_ds" class="min-h-0 overflow-auto">
+        <PaymentRiskThreeDSPanel
+          :configuration="riskSummary.configuration"
+          :gateway-runtime="riskSummary.gatewayRuntime"
+          :gateway-health="riskSummary.gatewayHealth"
+          :reports="riskSummary.reports"
+          :enabled="riskSummary.enabled"
+        />
+      </TabsContent>
+
       <TabsContent value="reviews" class="min-h-0 flex flex-col gap-3 overflow-hidden">
         <AdminFilterPanel class="shrink-0">
           <form class="grid grid-cols-1 gap-3 md:grid-cols-[220px_1fr_auto]" @submit.prevent="applyReviewFilters">
@@ -54,8 +86,8 @@
           </form>
         </AdminFilterPanel>
 
-        <section class="grid min-h-0 flex-1 grid-cols-1 gap-3 overflow-hidden xl:grid-cols-[minmax(0,1fr)_380px]">
-          <AdminTablePanel :loading="reviewLoading" scroll-body>
+         <section class="grid min-h-0 flex-1 grid-cols-1 gap-3 overflow-hidden max-xl:overflow-auto xl:grid-cols-[minmax(0,1fr)_minmax(460px,520px)] 2xl:grid-cols-[minmax(0,1fr)_520px]">
+           <AdminTablePanel class="h-full min-h-0" :loading="reviewLoading" scroll-body>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -94,7 +126,7 @@
             </template>
           </AdminTablePanel>
 
-          <aside class="min-h-0 overflow-auto rounded-[24px] border border-dashed border-border/80 bg-card p-4">
+           <aside class="h-full min-h-[420px] min-w-0 overflow-y-auto overscroll-contain rounded-[24px] border border-dashed border-border/80 bg-card p-5">
             <div class="mb-4">
               <h2 class="text-sm font-black uppercase italic tracking-tight">复核处理</h2>
               <p class="mt-1 text-xs text-muted-foreground">仅记录人工判断，不直接改变 Stripe 或订单支付状态。</p>
@@ -552,14 +584,17 @@ import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
 import PayPalInvoicePreviewDialog from '@/components/admin/payment/PayPalInvoicePreviewDialog.vue'
 import PaymentRefundRecommendationDetailPanel from '@/components/admin/payment/PaymentRefundRecommendationDetailPanel.vue'
 import PaymentRiskControlPanel from '@/components/admin/payment/PaymentRiskControlPanel.vue'
+import PaymentRiskPolicyPanel from '@/components/admin/payment/PaymentRiskPolicyPanel.vue'
 import PaymentRiskSummaryPanel from '@/components/admin/payment/PaymentRiskSummaryPanel.vue'
+import PaymentRiskThreeDSPanel from '@/components/admin/payment/PaymentRiskThreeDSPanel.vue'
 import { paymentRefundApi } from '@/api/paymentRefunds'
 import { paymentRiskApi } from '@/api/paymentRisk'
 import { useRouteTab } from '@/composables/useRouteTab'
+import { useAuthStore } from '@/stores/auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Tabs, TabsContent } from '@/components/ui/tabs'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 
 const StatusPill = defineComponent({
@@ -610,17 +645,41 @@ const PaginationBar = defineComponent({
   }
 })
 
-const activeTab = useRouteTab({
-  defaultValue: 'reviews',
-  values: ['reviews', 'refunds', 'disputes', 'controls'],
+const riskTabValues = ['overview', 'three_ds', 'reviews', 'refunds', 'disputes', 'controls'] as const
+type RiskTabValue = typeof riskTabValues[number]
+const isRiskTabValue = (value: string): value is RiskTabValue => (
+  (riskTabValues as readonly string[]).includes(value)
+)
+
+const activeTab = useRouteTab<RiskTabValue>({
+  defaultValue: 'overview',
+  values: [...riskTabValues],
   routes: {
+    overview: 'PaymentRiskOverview',
+    three_ds: 'PaymentRiskThreeDS',
     reviews: 'PaymentRiskReviews',
     refunds: 'PaymentRiskRefundRecommendations',
     disputes: 'PaymentRiskDisputes',
     controls: 'PaymentRiskControls',
   },
 })
-const tabPresentation: Record<string, { title: string; description: string }> = {
+const riskTabItems: Array<{ value: RiskTabValue; label: string }> = [
+  { value: 'overview', label: '风控总览' },
+  { value: 'three_ds', label: '3DS 策略' },
+  { value: 'reviews', label: '人工复核' },
+  { value: 'refunds', label: '退款建议' },
+  { value: 'disputes', label: '拒付处理' },
+  { value: 'controls', label: '人工保护' },
+]
+const tabPresentation: Record<RiskTabValue, { title: string; description: string }> = {
+  overview: {
+    title: '风控总览',
+    description: '查看 Stripe / PayPal 风险指标、计算口径、阈值和 3DS 决策统计。',
+  },
+  three_ds: {
+    title: '3DS 策略',
+    description: '解释 Stripe 基础模式、自适应升级、人工保护和 3DS 统计的真实含义。',
+  },
   reviews: {
     title: '人工复核',
     description: '人工判断支付风险，仅记录处理结论，不直接改变支付渠道状态。',
@@ -639,6 +698,14 @@ const tabPresentation: Record<string, { title: string; description: string }> = 
   },
 }
 const currentTabPresentation = computed(() => tabPresentation[activeTab.value] || tabPresentation.reviews)
+const authStore = useAuthStore()
+const canRecompute = authStore.hasPermission('order:edit')
+const setActiveTab = (value: string | number): void => {
+  const nextTab = String(value)
+  if (isRiskTabValue(nextTab)) {
+    activeTab.value = nextTab
+  }
+}
 const reviewLoading = ref(false)
 const refundRecommendationLoading = ref(false)
 const disputeLoading = ref(false)
@@ -653,7 +720,14 @@ const paypalInvoicePreviewOpen = ref(false)
 const reviews = ref([])
 const refundRecommendations = ref([])
 const disputes = ref([])
-const riskSummary = reactive({ enabled: false, reports: {} })
+const riskSummary = reactive({
+  enabled: false,
+  policy: null,
+  reports: {},
+  configuration: null,
+  gatewayRuntime: null,
+  gatewayHealth: {},
+})
 const selectedReview = ref(null)
 const selectedRefundRecommendation = ref(null)
 const selectedDispute = ref(null)
@@ -890,15 +964,34 @@ const fetchDisputes = async () => {
 const fetchRiskSummary = async () => {
   summaryLoading.value = true
   try {
-    const payload = await paymentRiskApi.getSummary()
-    riskSummary.enabled = Boolean(payload.enabled)
-    riskSummary.reports = payload.reports || {}
+    applyRiskSummary(await paymentRiskApi.getSummary())
+  } finally {
+    summaryLoading.value = false
+  }
+}
+
+const applyRiskSummary = (payload) => {
+  riskSummary.enabled = Boolean(payload.enabled)
+  riskSummary.policy = payload.policy || null
+  riskSummary.reports = payload.reports || {}
+  riskSummary.configuration = payload.configuration || null
+  riskSummary.gatewayRuntime = payload.gateway_runtime || null
+  riskSummary.gatewayHealth = payload.gateway_health || {}
+}
+
+const recomputeRiskSummary = async () => {
+  if (!canRecompute) return
+  summaryLoading.value = true
+  try {
+    applyRiskSummary(await paymentRiskApi.recomputeSummary())
+    toast.success('支付风控指标已重算')
   } finally {
     summaryLoading.value = false
   }
 }
 
 const fetchActiveTabData = () => {
+  if (['overview', 'three_ds'].includes(activeTab.value)) return fetchRiskSummary()
   if (activeTab.value === 'disputes') return fetchDisputes()
   if (activeTab.value === 'refunds') return fetchRefundRecommendations()
   if (activeTab.value === 'controls') return Promise.resolve()
@@ -907,10 +1000,7 @@ const fetchActiveTabData = () => {
 
 const refreshCurrent = async () => {
   if (activeTab.value === 'controls') return
-  await Promise.all([
-    fetchRiskSummary(),
-    fetchActiveTabData(),
-  ])
+  await fetchActiveTabData()
 }
 const applyReviewFilters = () => { reviewPagination.page = 1; fetchReviews() }
 const resetReviewFilters = () => { reviewFilters.status = 'pending'; reviewPagination.page = 1; fetchReviews() }

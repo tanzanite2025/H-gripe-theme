@@ -45,8 +45,9 @@ var quickBuyDefaultStepKeys = [...]string{
 }
 
 type QuickBuyService struct {
-	repo        *repository.QuickBuyRepository
-	productRepo *repository.ProductRepository
+	repo                *repository.QuickBuyRepository
+	productRepo         *repository.ProductRepository
+	productCategoryRepo *repository.ProductCategoryRepository
 }
 
 type QuickBuyFlowInput struct {
@@ -74,9 +75,10 @@ type QuickBuyVersionInput struct {
 }
 
 type QuickBuyStepInput struct {
-	StepKey        string `json:"step_key"`
-	Name           string `json:"name"`
-	ProductTypeIDs []uint `json:"product_type_ids"`
+	StepKey                         string `json:"step_key"`
+	Name                            string `json:"name"`
+	ProductCategoryIDs              []uint `json:"product_category_ids"`
+	ProductSpecificationTemplateIDs []uint `json:"product_specification_template_ids"`
 }
 
 type QuickBuyFlowSummary struct {
@@ -112,6 +114,7 @@ type QuickBuyFlowView struct {
 	Translations []QuickBuyFlowTranslationView `json:"translations,omitempty"`
 	EntrySurface string                        `json:"entry_surface"`
 	IsEnabled    bool                          `json:"is_enabled"`
+	SortOrder    int                           `json:"sort_order"`
 	Version      QuickBuyVersionView           `json:"version"`
 	Steps        []QuickBuyStepView            `json:"steps"`
 }
@@ -146,13 +149,14 @@ type QuickBuyVersionView struct {
 }
 
 type QuickBuyStepView struct {
-	ID           uint                      `json:"id"`
-	StepKey      string                    `json:"step_key"`
-	Slug         string                    `json:"slug"`
-	Name         string                    `json:"name"`
-	SortOrder    int                       `json:"sort_order"`
-	ProductTypes []QuickBuyProductTypeView `json:"product_types"`
-	Filters      []QuickBuySpecFilterView  `json:"filters"`
+	ID                            uint                                       `json:"id"`
+	StepKey                       string                                     `json:"step_key"`
+	Slug                          string                                     `json:"slug"`
+	Name                          string                                     `json:"name"`
+	SortOrder                     int                                        `json:"sort_order"`
+	ProductCategories             []QuickBuyProductCategoryView              `json:"product_categories"`
+	ProductSpecificationTemplates []QuickBuyProductSpecificationTemplateView `json:"product_specification_templates"`
+	Filters                       []QuickBuySpecFilterView                   `json:"filters"`
 }
 
 type QuickBuySpecFilterView struct {
@@ -167,10 +171,20 @@ type QuickBuySpecFilterView struct {
 	Values          []string `json:"values"`
 }
 
-type QuickBuyProductTypeView struct {
+type QuickBuyProductSpecificationTemplateView struct {
 	ID       uint   `json:"id"`
 	Slug     string `json:"slug"`
 	Name     string `json:"name"`
+	ImageURL string `json:"image_url,omitempty"`
+	Primary  bool   `json:"primary"`
+}
+
+type QuickBuyProductCategoryView struct {
+	ID       uint   `json:"id"`
+	ParentID *uint  `json:"parent_id,omitempty"`
+	Slug     string `json:"slug"`
+	Name     string `json:"name"`
+	Depth    int    `json:"depth"`
 	ImageURL string `json:"image_url,omitempty"`
 	Primary  bool   `json:"primary"`
 }
@@ -181,12 +195,13 @@ type QuickBuyValidationResult struct {
 }
 
 type QuickBuyValidationIssue struct {
-	Severity      string `json:"severity"`
-	Code          string `json:"code"`
-	Message       string `json:"message"`
-	StepKey       string `json:"step_key,omitempty"`
-	RuleKey       string `json:"rule_key,omitempty"`
-	ProductTypeID uint   `json:"product_type_id,omitempty"`
+	Severity                       string `json:"severity"`
+	Code                           string `json:"code"`
+	Message                        string `json:"message"`
+	StepKey                        string `json:"step_key,omitempty"`
+	RuleKey                        string `json:"rule_key,omitempty"`
+	ProductCategoryID              uint   `json:"product_category_id,omitempty"`
+	ProductSpecificationTemplateID uint   `json:"product_specification_template_id,omitempty"`
 }
 
 type QuickBuySessionInput struct {
@@ -281,8 +296,8 @@ type QuickBuyCandidateResult struct {
 	HasMore       bool                    `json:"has_more"`
 }
 
-func NewQuickBuyService(repo *repository.QuickBuyRepository, productRepo *repository.ProductRepository) *QuickBuyService {
-	return &QuickBuyService{repo: repo, productRepo: productRepo}
+func NewQuickBuyService(repo *repository.QuickBuyRepository, productRepo *repository.ProductRepository, productCategoryRepo *repository.ProductCategoryRepository) *QuickBuyService {
+	return &QuickBuyService{repo: repo, productRepo: productRepo, productCategoryRepo: productCategoryRepo}
 }
 
 func (s *QuickBuyService) ListFlows() ([]QuickBuyFlowSummary, error) {
@@ -322,6 +337,9 @@ func (s *QuickBuyService) GetFlow(id uint, locale string) (*QuickBuyFlowView, er
 			Translations: quickBuyFlowTranslationViews(flow.Translations),
 			EntrySurface: flow.EntrySurface,
 			IsEnabled:    flow.IsEnabled,
+			SortOrder:    flow.SortOrder,
+			Version:      QuickBuyVersionView{},
+			Steps:        []QuickBuyStepView{},
 		}, nil
 	}
 	version, err := s.repo.FindVersionByID(flow.Versions[0].ID)
@@ -849,6 +867,10 @@ func (s *QuickBuyService) listVersionStepCandidates(version quickbuy.Version, in
 	locale := locales.ResolveSupported(input.Locale)
 	currency := normalizeQuickBuyCurrency(input.Currency)
 	page, pageSize := normalizeQuickBuyCandidatePaging(input.Page, input.PageSize)
+	exposeProductSpecificationTemplates := !isDefaultQuickBuyFlow(version) && len(step.ProductSpecificationTemplates) > 0
+	if !exposeProductSpecificationTemplates {
+		input.SpecFilters = nil
+	}
 	specFilters, err := normalizeQuickBuySpecFilters(*step, input.SpecFilters)
 	if err != nil {
 		return nil, err
@@ -858,7 +880,7 @@ func (s *QuickBuyService) listVersionStepCandidates(version quickbuy.Version, in
 		FlowVersionID: version.ID,
 		Locale:        locale,
 		Currency:      currency,
-		Step:          quickBuyStepView(*step, locale),
+		Step:          quickBuyStepView(*step, locale, exposeProductSpecificationTemplates),
 		Products:      []productdomain.Product{},
 		Page:          page,
 		PageSize:      pageSize,
@@ -868,12 +890,13 @@ func (s *QuickBuyService) listVersionStepCandidates(version quickbuy.Version, in
 	}
 
 	products, total, err := s.productRepo.ListQuickBuyCandidates(repository.ProductQuickBuyCandidateQuery{
-		Locale:         locale,
-		ProductTypeIDs: quickBuyStepProductTypeIDs(*step),
-		Keyword:        strings.TrimSpace(input.Keyword),
-		SpecFilters:    specFilters,
-		Offset:         (page - 1) * pageSize,
-		Limit:          pageSize,
+		Locale:                          locale,
+		ProductSpecificationTemplateIDs: quickBuyStepProductSpecificationTemplateIDsForVersion(version, *step),
+		ProductCategoryIDs:              quickBuyStepProductCategoryIDs(*step),
+		Keyword:                         strings.TrimSpace(input.Keyword),
+		SpecFilters:                     specFilters,
+		Offset:                          (page - 1) * pageSize,
+		Limit:                           pageSize,
 	})
 	if err != nil {
 		return nil, err
@@ -881,16 +904,20 @@ func (s *QuickBuyService) listVersionStepCandidates(version quickbuy.Version, in
 	result.Products = products
 	result.Total = total
 	result.HasMore = int64(page*pageSize) < total
+	if !exposeProductSpecificationTemplates {
+		return result, nil
+	}
 	filterValues, err := s.productRepo.ListQuickBuyFilterValues(repository.ProductQuickBuyCandidateQuery{
-		Locale:         locale,
-		ProductTypeIDs: quickBuyStepProductTypeIDs(*step),
-		Keyword:        strings.TrimSpace(input.Keyword),
-		SpecFilters:    specFilters,
+		Locale:                          locale,
+		ProductSpecificationTemplateIDs: quickBuyStepProductSpecificationTemplateIDsForVersion(version, *step),
+		ProductCategoryIDs:              quickBuyStepProductCategoryIDs(*step),
+		Keyword:                         strings.TrimSpace(input.Keyword),
+		SpecFilters:                     specFilters,
 	}, quickBuyFilterableSpecSlugs(*step))
 	if err != nil {
 		return nil, err
 	}
-	result.Step.Filters = quickBuyStepFilters(*step, filterValues)
+	result.Step.Filters = quickBuyStepFiltersForScope(*step, filterValues, exposeProductSpecificationTemplates)
 	return result, nil
 }
 
@@ -929,7 +956,7 @@ func (s *QuickBuyService) sessionItemFromSelection(session quickbuy.Session, ver
 		}
 		return nil, false, err
 	}
-	if err := validateQuickBuyProductAllowedForStep(*step, *productItem); err != nil {
+	if err := s.validateQuickBuyProductAllowedForStep(*step, *productItem, !isDefaultQuickBuyFlow(version)); err != nil {
 		return nil, false, err
 	}
 	if variant.Stock < quantity {
@@ -981,8 +1008,8 @@ func (s *QuickBuyService) validateQuickBuySession(version quickbuy.Version, item
 			result.addIssue("product_unavailable", fmt.Sprintf("product %d is no longer available", item.ProductID), item.StepKey, item.ProductID, item.VariantID)
 			continue
 		}
-		if err := validateQuickBuyProductAllowedForStep(*step, *productItem); err != nil {
-			result.addIssue("product_type_not_allowed", err.Error(), item.StepKey, item.ProductID, item.VariantID)
+		if err := s.validateQuickBuyProductAllowedForStep(*step, *productItem, !isDefaultQuickBuyFlow(version)); err != nil {
+			result.addIssue("product_not_allowed", err.Error(), item.StepKey, item.ProductID, item.VariantID)
 		}
 		if variant.Stock < item.Quantity {
 			result.addIssue("stock_unavailable", fmt.Sprintf("product %d no longer has enough stock", item.ProductID), item.StepKey, item.ProductID, item.VariantID)
@@ -1137,21 +1164,26 @@ func (s *QuickBuyService) normalizeStepInputs(input []QuickBuyStepInput) ([]quic
 		if name == "" {
 			return nil, fmt.Errorf("%w: step %q name is required", ErrQuickBuyInvalid, stepKey)
 		}
-		productTypes, err := s.normalizeStepProductTypes(item.ProductTypeIDs)
+		productCategories, err := s.normalizeStepProductCategories(item.ProductCategoryIDs)
 		if err != nil {
-			return nil, fmt.Errorf("%w: step %q product types: %v", ErrQuickBuyInvalid, stepKey, err)
+			return nil, fmt.Errorf("%w: step %q product categories: %v", ErrQuickBuyInvalid, stepKey, err)
+		}
+		productSpecificationTemplates, err := s.normalizeStepProductSpecificationTemplates(item.ProductSpecificationTemplateIDs)
+		if err != nil {
+			return nil, fmt.Errorf("%w: step %q product specification templates: %v", ErrQuickBuyInvalid, stepKey, err)
 		}
 		steps = append(steps, quickbuy.Step{
-			StepKey:         stepKey,
-			Name:            name,
-			SortOrder:       (index + 1) * 10,
-			SelectionMode:   quickbuy.SelectionModeSingle,
-			IsRequired:      true,
-			MinSelect:       0,
-			MaxSelect:       1,
-			DefaultQuantity: 1,
-			AllowSkip:       false,
-			ProductTypes:    productTypes,
+			StepKey:                       stepKey,
+			Name:                          name,
+			SortOrder:                     (index + 1) * 10,
+			SelectionMode:                 quickbuy.SelectionModeSingle,
+			IsRequired:                    true,
+			MinSelect:                     0,
+			MaxSelect:                     1,
+			DefaultQuantity:               1,
+			AllowSkip:                     false,
+			ProductCategories:             productCategories,
+			ProductSpecificationTemplates: productSpecificationTemplates,
 		})
 	}
 	sort.SliceStable(steps, func(i, j int) bool {
@@ -1163,9 +1195,37 @@ func (s *QuickBuyService) normalizeStepInputs(input []QuickBuyStepInput) ([]quic
 	return steps, nil
 }
 
-func (s *QuickBuyService) normalizeStepProductTypes(ids []uint) ([]quickbuy.StepProductType, error) {
+func (s *QuickBuyService) normalizeStepProductCategories(ids []uint) ([]quickbuy.StepProductCategory, error) {
 	seen := make(map[uint]struct{}, len(ids))
-	result := make([]quickbuy.StepProductType, 0, len(ids))
+	result := make([]quickbuy.StepProductCategory, 0, len(ids))
+	for index, id := range ids {
+		if id == 0 {
+			continue
+		}
+		if _, exists := seen[id]; exists {
+			continue
+		}
+		seen[id] = struct{}{}
+		if s.productCategoryRepo != nil {
+			if _, err := s.productCategoryRepo.FindByID(id); err != nil {
+				if repository.IsRecordNotFound(err) {
+					return nil, fmt.Errorf("product category %d does not exist", id)
+				}
+				return nil, err
+			}
+		}
+		result = append(result, quickbuy.StepProductCategory{
+			ProductCategoryID: id,
+			IsPrimary:         len(result) == 0,
+			SortOrder:         (index + 1) * 10,
+		})
+	}
+	return result, nil
+}
+
+func (s *QuickBuyService) normalizeStepProductSpecificationTemplates(ids []uint) ([]quickbuy.StepProductSpecificationTemplate, error) {
+	seen := make(map[uint]struct{}, len(ids))
+	result := make([]quickbuy.StepProductSpecificationTemplate, 0, len(ids))
 	for index, id := range ids {
 		if id == 0 {
 			continue
@@ -1175,17 +1235,17 @@ func (s *QuickBuyService) normalizeStepProductTypes(ids []uint) ([]quickbuy.Step
 		}
 		seen[id] = struct{}{}
 		if s.productRepo != nil {
-			if _, err := s.productRepo.FindProductTypeByID(id); err != nil {
+			if _, err := s.productRepo.FindProductSpecificationTemplateByID(id); err != nil {
 				if repository.IsRecordNotFound(err) {
-					return nil, fmt.Errorf("product type %d does not exist", id)
+					return nil, fmt.Errorf("product specification template %d does not exist", id)
 				}
 				return nil, err
 			}
 		}
-		result = append(result, quickbuy.StepProductType{
-			ProductTypeID: id,
-			IsPrimary:     len(result) == 0,
-			SortOrder:     (index + 1) * 10,
+		result = append(result, quickbuy.StepProductSpecificationTemplate{
+			ProductSpecificationTemplateID: id,
+			IsPrimary:                      len(result) == 0,
+			SortOrder:                      (index + 1) * 10,
 		})
 	}
 	return result, nil
@@ -1237,8 +1297,8 @@ func validateQuickBuyVersion(version quickbuy.Version) QuickBuyValidationResult 
 		if step.SelectionMode == quickbuy.SelectionModeSingle && step.MaxSelect > 1 {
 			result.addIssue("error", "single_step_max_select", fmt.Sprintf("single-select step %q cannot allow more than one selection", step.StepKey), step.StepKey, "", 0)
 		}
-		if step.IsRequired && len(step.ProductTypes) == 0 && step.SelectionMode != quickbuy.SelectionModeAuto && !isDefaultQuickBuyFlow(version) {
-			result.addIssue("error", "required_step_product_types", fmt.Sprintf("required step %q needs at least one product type", step.StepKey), step.StepKey, "", 0)
+		if step.IsRequired && len(step.ProductCategories) == 0 && len(step.ProductSpecificationTemplates) == 0 && step.SelectionMode != quickbuy.SelectionModeAuto && !isDefaultQuickBuyFlow(version) {
+			result.addIssue("error", "required_step_product_categories", fmt.Sprintf("required step %q needs at least one product category", step.StepKey), step.StepKey, "", 0)
 		}
 		if step.IsRequired && step.AllowSkip {
 			result.addIssue("warning", "required_step_allows_skip", fmt.Sprintf("required step %q is also marked as skippable", step.StepKey), step.StepKey, "", 0)
@@ -1247,23 +1307,45 @@ func validateQuickBuyVersion(version quickbuy.Version) QuickBuyValidationResult 
 			result.addIssue("warning", "optional_step_min_select", fmt.Sprintf("optional step %q has min_select greater than zero", step.StepKey), step.StepKey, "", 0)
 		}
 
-		productTypes := make(map[uint]struct{}, len(step.ProductTypes))
-		for _, item := range step.ProductTypes {
-			if item.ProductTypeID == 0 {
-				result.addIssue("error", "invalid_product_type", fmt.Sprintf("step %q contains an empty product type reference", step.StepKey), step.StepKey, "", 0)
+		productCategories := make(map[uint]struct{}, len(step.ProductCategories))
+		for _, item := range step.ProductCategories {
+			if item.ProductCategoryID == 0 {
+				result.addProductCategoryIssue("error", "invalid_product_category", fmt.Sprintf("step %q contains an empty product category reference", step.StepKey), step.StepKey, item.ProductCategoryID)
 				continue
 			}
-			if _, exists := productTypes[item.ProductTypeID]; exists {
-				result.addIssue("error", "duplicate_product_type", fmt.Sprintf("step %q references product type %d more than once", step.StepKey, item.ProductTypeID), step.StepKey, "", item.ProductTypeID)
+			if _, exists := productCategories[item.ProductCategoryID]; exists {
+				result.addProductCategoryIssue("error", "duplicate_product_category", fmt.Sprintf("step %q references product category %d more than once", step.StepKey, item.ProductCategoryID), step.StepKey, item.ProductCategoryID)
 				continue
 			}
-			productTypes[item.ProductTypeID] = struct{}{}
-			if item.ProductType == nil {
-				result.addIssue("error", "missing_product_type", fmt.Sprintf("step %q references missing product type %d", step.StepKey, item.ProductTypeID), step.StepKey, "", item.ProductTypeID)
+			productCategories[item.ProductCategoryID] = struct{}{}
+			if item.ProductCategory == nil {
+				result.addProductCategoryIssue("error", "missing_product_category", fmt.Sprintf("step %q references missing product category %d", step.StepKey, item.ProductCategoryID), step.StepKey, item.ProductCategoryID)
 				continue
 			}
-			if !item.ProductType.IsEnabled {
-				result.addIssue("error", "disabled_product_type", fmt.Sprintf("step %q references disabled product type %q", step.StepKey, item.ProductType.Slug), step.StepKey, "", item.ProductTypeID)
+			if !item.ProductCategory.IsEnabled {
+				result.addProductCategoryIssue("error", "disabled_product_category", fmt.Sprintf("step %q references disabled product category %q", step.StepKey, item.ProductCategory.Slug), step.StepKey, item.ProductCategoryID)
+			}
+		}
+
+		if !isDefaultQuickBuyFlow(version) {
+			productSpecificationTemplates := make(map[uint]struct{}, len(step.ProductSpecificationTemplates))
+			for _, item := range step.ProductSpecificationTemplates {
+				if item.ProductSpecificationTemplateID == 0 {
+					result.addIssue("error", "invalid_product_specification_template", fmt.Sprintf("step %q contains an empty product specification template reference", step.StepKey), step.StepKey, "", 0)
+					continue
+				}
+				if _, exists := productSpecificationTemplates[item.ProductSpecificationTemplateID]; exists {
+					result.addIssue("error", "duplicate_product_specification_template", fmt.Sprintf("step %q references product specification template %d more than once", step.StepKey, item.ProductSpecificationTemplateID), step.StepKey, "", item.ProductSpecificationTemplateID)
+					continue
+				}
+				productSpecificationTemplates[item.ProductSpecificationTemplateID] = struct{}{}
+				if item.ProductSpecificationTemplate == nil {
+					result.addIssue("error", "missing_product_specification_template", fmt.Sprintf("step %q references missing product specification template %d", step.StepKey, item.ProductSpecificationTemplateID), step.StepKey, "", item.ProductSpecificationTemplateID)
+					continue
+				}
+				if !item.ProductSpecificationTemplate.IsEnabled {
+					result.addIssue("error", "disabled_product_specification_template", fmt.Sprintf("step %q references disabled product specification template %q", step.StepKey, item.ProductSpecificationTemplate.Slug), step.StepKey, "", item.ProductSpecificationTemplateID)
+				}
 			}
 		}
 	}
@@ -1313,17 +1395,30 @@ func validateQuickBuyVersion(version quickbuy.Version) QuickBuyValidationResult 
 	return result
 }
 
-func (result *QuickBuyValidationResult) addIssue(severity, code, message, stepKey, ruleKey string, productTypeID uint) {
+func (result *QuickBuyValidationResult) addIssue(severity, code, message, stepKey, ruleKey string, productSpecificationTemplateID uint) {
 	if severity == "error" {
 		result.Valid = false
 	}
 	result.Issues = append(result.Issues, QuickBuyValidationIssue{
-		Severity:      severity,
-		Code:          code,
-		Message:       message,
-		StepKey:       stepKey,
-		RuleKey:       ruleKey,
-		ProductTypeID: productTypeID,
+		Severity:                       severity,
+		Code:                           code,
+		Message:                        message,
+		StepKey:                        stepKey,
+		RuleKey:                        ruleKey,
+		ProductSpecificationTemplateID: productSpecificationTemplateID,
+	})
+}
+
+func (result *QuickBuyValidationResult) addProductCategoryIssue(severity, code, message, stepKey string, productCategoryID uint) {
+	if severity == "error" {
+		result.Valid = false
+	}
+	result.Issues = append(result.Issues, QuickBuyValidationIssue{
+		Severity:          severity,
+		Code:              code,
+		Message:           message,
+		StepKey:           stepKey,
+		ProductCategoryID: productCategoryID,
 	})
 }
 
@@ -1381,15 +1476,46 @@ func validateQuickBuySelectionBounds(version quickbuy.Version, items []quickbuy.
 	return nil
 }
 
-func validateQuickBuyProductAllowedForStep(step quickbuy.Step, item productdomain.Product) error {
-	if len(step.ProductTypes) == 0 {
+func (s *QuickBuyService) validateQuickBuyProductAllowedForStep(step quickbuy.Step, item productdomain.Product, enforceProductSpecificationTemplates bool) error {
+	if err := s.validateQuickBuyProductCategoryAllowedForStep(step, item); err != nil {
+		return err
+	}
+	if !enforceProductSpecificationTemplates {
 		return nil
 	}
-	if item.ProductTypeID == nil {
-		return fmt.Errorf("%w: product %d has no product type for step %q", ErrQuickBuyInvalid, item.ID, step.StepKey)
+	return validateQuickBuyProductSpecificationTemplateAllowedForStep(step, item)
+}
+
+func (s *QuickBuyService) validateQuickBuyProductCategoryAllowedForStep(step quickbuy.Step, item productdomain.Product) error {
+	categoryIDs := quickBuyStepProductCategoryIDs(step)
+	if len(categoryIDs) == 0 {
+		return nil
 	}
-	for _, productType := range step.ProductTypes {
-		if productType.ProductTypeID == *item.ProductTypeID {
+	if item.ProductCategoryID == nil {
+		return fmt.Errorf("%w: product %d has no product category for step %q", ErrQuickBuyInvalid, item.ID, step.StepKey)
+	}
+	if s.productRepo == nil {
+		return nil
+	}
+	allowed, err := s.productRepo.ProductCategoryInQuickBuyScope(item.ProductCategoryID, categoryIDs)
+	if err != nil {
+		return err
+	}
+	if allowed {
+		return nil
+	}
+	return fmt.Errorf("%w: product %d is not in an allowed product category for step %q", ErrQuickBuyInvalid, item.ID, step.StepKey)
+}
+
+func validateQuickBuyProductSpecificationTemplateAllowedForStep(step quickbuy.Step, item productdomain.Product) error {
+	if len(step.ProductSpecificationTemplates) == 0 {
+		return nil
+	}
+	if item.ProductSpecificationTemplateID == nil {
+		return fmt.Errorf("%w: product %d has no product specification template for step %q", ErrQuickBuyInvalid, item.ID, step.StepKey)
+	}
+	for _, productSpecificationTemplate := range step.ProductSpecificationTemplates {
+		if productSpecificationTemplate.ProductSpecificationTemplateID == *item.ProductSpecificationTemplateID {
 			return nil
 		}
 	}
@@ -1405,15 +1531,33 @@ func quickBuyStepByKey(version quickbuy.Version, stepKey string) *quickbuy.Step 
 	return nil
 }
 
-func quickBuyStepProductTypeIDs(step quickbuy.Step) []uint {
-	ids := make([]uint, 0, len(step.ProductTypes))
-	for _, item := range step.ProductTypes {
-		if item.ProductTypeID == 0 {
+func quickBuyStepProductCategoryIDs(step quickbuy.Step) []uint {
+	ids := make([]uint, 0, len(step.ProductCategories))
+	for _, item := range step.ProductCategories {
+		if item.ProductCategoryID == 0 {
 			continue
 		}
-		ids = append(ids, item.ProductTypeID)
+		ids = append(ids, item.ProductCategoryID)
 	}
 	return ids
+}
+
+func quickBuyStepProductSpecificationTemplateIDs(step quickbuy.Step) []uint {
+	ids := make([]uint, 0, len(step.ProductSpecificationTemplates))
+	for _, item := range step.ProductSpecificationTemplates {
+		if item.ProductSpecificationTemplateID == 0 {
+			continue
+		}
+		ids = append(ids, item.ProductSpecificationTemplateID)
+	}
+	return ids
+}
+
+func quickBuyStepProductSpecificationTemplateIDsForVersion(version quickbuy.Version, step quickbuy.Step) []uint {
+	if isDefaultQuickBuyFlow(version) {
+		return nil
+	}
+	return quickBuyStepProductSpecificationTemplateIDs(step)
 }
 
 func normalizeQuickBuyCandidatePaging(page, pageSize int) (int, int) {
@@ -1488,17 +1632,17 @@ func quickBuySessionView(session quickbuy.Session, validation *QuickBuySessionVa
 func quickBuyProductSnapshot(item productdomain.Product) datatypes.JSON {
 	thumbnail := quickBuyProductThumbnail(item)
 	return quickBuyJSON(map[string]interface{}{
-		"id":              item.ID,
-		"product_type_id": item.ProductTypeID,
-		"sku":             item.SKU,
-		"name":            item.Name,
-		"slug":            item.Slug,
-		"thumbnail":       thumbnail,
-		"featured_image":  thumbnail,
-		"currency":        item.Currency,
-		"price":           item.Price,
-		"sale_price":      item.SalePrice,
-		"status":          item.Status,
+		"id":                                item.ID,
+		"product_specification_template_id": item.ProductSpecificationTemplateID,
+		"sku":                               item.SKU,
+		"name":                              item.Name,
+		"slug":                              item.Slug,
+		"thumbnail":                         thumbnail,
+		"featured_image":                    thumbnail,
+		"currency":                          item.Currency,
+		"price":                             item.Price,
+		"sale_price":                        item.SalePrice,
+		"status":                            item.Status,
 	})
 }
 
@@ -1579,7 +1723,7 @@ func quickBuyFlowView(version quickbuy.Version, locale string) *QuickBuyFlowView
 		return nil
 	}
 	requestLocale := locales.ResolveSupported(locale)
-	steps := quickBuyStepViews(version.Steps, requestLocale)
+	steps := quickBuyStepViews(version.Steps, requestLocale, !isDefaultQuickBuyFlow(version))
 	return &QuickBuyFlowView{
 		ID:           version.Flow.ID,
 		Slug:         version.Flow.Slug,
@@ -1589,6 +1733,7 @@ func quickBuyFlowView(version quickbuy.Version, locale string) *QuickBuyFlowView
 		Translations: quickBuyFlowTranslationViews(version.Flow.Translations),
 		EntrySurface: version.Flow.EntrySurface,
 		IsEnabled:    version.Flow.IsEnabled,
+		SortOrder:    version.Flow.SortOrder,
 		Version: QuickBuyVersionView{
 			ID:            version.ID,
 			VersionNumber: version.VersionNumber,
@@ -1622,14 +1767,14 @@ func quickBuyPublicFlowView(version quickbuy.Version, locale string) *QuickBuyPu
 			StartsAt:      version.StartsAt,
 			EndsAt:        version.EndsAt,
 		},
-		Steps: quickBuyStepViews(version.Steps, requestLocale),
+		Steps: quickBuyStepViews(version.Steps, requestLocale, !isDefaultQuickBuyFlow(version)),
 	}
 }
 
-func quickBuyStepViews(steps []quickbuy.Step, locale string) []QuickBuyStepView {
+func quickBuyStepViews(steps []quickbuy.Step, locale string, exposeProductSpecificationTemplates bool) []QuickBuyStepView {
 	result := make([]QuickBuyStepView, 0, len(steps))
 	for _, step := range steps {
-		result = append(result, quickBuyStepView(step, locale))
+		result = append(result, quickBuyStepView(step, locale, exposeProductSpecificationTemplates))
 	}
 	return result
 }
@@ -1670,36 +1815,56 @@ func quickBuyFlowTranslationViews(translations []quickbuy.FlowTranslation) []Qui
 	return result
 }
 
-func quickBuyStepView(step quickbuy.Step, locale string) QuickBuyStepView {
-	productTypes := make([]QuickBuyProductTypeView, 0, len(step.ProductTypes))
+func quickBuyStepView(step quickbuy.Step, locale string, exposeProductSpecificationTemplates bool) QuickBuyStepView {
+	productCategories := make([]QuickBuyProductCategoryView, 0, len(step.ProductCategories))
+	productSpecificationTemplates := make([]QuickBuyProductSpecificationTemplateView, 0, len(step.ProductSpecificationTemplates))
 	stepSlug := step.StepKey
-	for index, item := range step.ProductTypes {
-		if item.ProductType == nil {
+	for index, item := range step.ProductCategories {
+		if item.ProductCategory == nil {
 			continue
 		}
-		if index == 0 {
-			stepSlug = item.ProductType.Slug
+		if stepSlug == step.StepKey && index == 0 && !isDefaultQuickBuyStepKey(step.StepKey) {
+			stepSlug = item.ProductCategory.Slug
 		}
-		productTypes = append(productTypes, quickBuyProductTypeView(*item.ProductType, locale, item.IsPrimary))
+		productCategories = append(productCategories, quickBuyProductCategoryView(*item.ProductCategory, locale, item.IsPrimary))
+	}
+	if exposeProductSpecificationTemplates {
+		for index, item := range step.ProductSpecificationTemplates {
+			if item.ProductSpecificationTemplate == nil {
+				continue
+			}
+			if index == 0 {
+				stepSlug = item.ProductSpecificationTemplate.Slug
+			}
+			productSpecificationTemplates = append(productSpecificationTemplates, quickBuyProductSpecificationTemplateView(*item.ProductSpecificationTemplate, locale, item.IsPrimary))
+		}
 	}
 	return QuickBuyStepView{
-		ID:           step.ID,
-		StepKey:      step.StepKey,
-		Slug:         stepSlug,
-		Name:         step.Name,
-		SortOrder:    step.SortOrder,
-		ProductTypes: productTypes,
-		Filters:      quickBuyStepFilters(step, nil),
+		ID:                            step.ID,
+		StepKey:                       step.StepKey,
+		Slug:                          stepSlug,
+		Name:                          step.Name,
+		SortOrder:                     step.SortOrder,
+		ProductCategories:             productCategories,
+		ProductSpecificationTemplates: productSpecificationTemplates,
+		Filters:                       quickBuyStepFiltersForScope(step, nil, exposeProductSpecificationTemplates),
 	}
+}
+
+func quickBuyStepFiltersForScope(step quickbuy.Step, valuesBySlug map[string][]string, exposeProductSpecificationTemplates bool) []QuickBuySpecFilterView {
+	if !exposeProductSpecificationTemplates {
+		return []QuickBuySpecFilterView{}
+	}
+	return quickBuyStepFilters(step, valuesBySlug)
 }
 
 func quickBuyFilterableSpecDefinitions(step quickbuy.Step) []productdomain.SpecDefinition {
 	definitionsBySlug := make(map[string]productdomain.SpecDefinition)
-	for _, item := range step.ProductTypes {
-		if item.ProductType == nil {
+	for _, item := range step.ProductSpecificationTemplates {
+		if item.ProductSpecificationTemplate == nil {
 			continue
 		}
-		for _, definition := range item.ProductType.SpecDefinitions {
+		for _, definition := range item.ProductSpecificationTemplate.SpecDefinitions {
 			slug := strings.TrimSpace(definition.Slug)
 			if slug == "" || !definition.IsVisible || !definition.IsFilterable {
 				continue
@@ -1800,11 +1965,33 @@ func quickBuyStepFilters(step quickbuy.Step, valuesBySlug map[string][]string) [
 	return result
 }
 
-func quickBuyProductTypeView(item productdomain.ProductType, locale string, primary bool) QuickBuyProductTypeView {
-	return QuickBuyProductTypeView{
+func quickBuyProductSpecificationTemplateView(item productdomain.ProductSpecificationTemplate, locale string, primary bool) QuickBuyProductSpecificationTemplateView {
+	return QuickBuyProductSpecificationTemplateView{
 		ID:       item.ID,
 		Slug:     item.Slug,
 		Name:     item.NameForLocale(locale),
+		ImageURL: item.ImageURL,
+		Primary:  primary,
+	}
+}
+
+func quickBuyProductCategoryView(item productdomain.ProductCategory, locale string, primary bool) QuickBuyProductCategoryView {
+	name := strings.TrimSpace(item.Name)
+	for _, translation := range item.Translations {
+		if locales.Normalize(translation.Locale) != locale {
+			continue
+		}
+		if translatedName := strings.TrimSpace(translation.Name); translatedName != "" {
+			name = translatedName
+		}
+		break
+	}
+	return QuickBuyProductCategoryView{
+		ID:       item.ID,
+		ParentID: item.ParentID,
+		Slug:     item.Slug,
+		Name:     name,
+		Depth:    item.Depth,
 		ImageURL: item.ImageURL,
 		Primary:  primary,
 	}
@@ -1821,6 +2008,16 @@ func normalizeQuickBuyKey(value string) string {
 
 func isDefaultQuickBuyFlowSlug(slug string) bool {
 	return normalizeQuickBuyKey(slug) == quickBuyDefaultFlowSlug
+}
+
+func isDefaultQuickBuyStepKey(stepKey string) bool {
+	normalized := normalizeQuickBuyKey(stepKey)
+	for _, defaultStepKey := range quickBuyDefaultStepKeys {
+		if normalized == defaultStepKey {
+			return true
+		}
+	}
+	return false
 }
 
 func isDefaultQuickBuyFlow(version quickbuy.Version) bool {
@@ -1876,6 +2073,7 @@ func normalizeDefaultQuickBuySteps(steps []quickbuy.Step) error {
 		step.MaxSelect = 1
 		step.DefaultQuantity = 1
 		step.AllowSkip = false
+		step.ProductSpecificationTemplates = nil
 		if index < len(quickBuyDefaultStepKeys) {
 			step.StepKey = quickBuyDefaultStepKeys[index]
 		}

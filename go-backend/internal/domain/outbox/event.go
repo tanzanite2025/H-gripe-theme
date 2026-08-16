@@ -1,6 +1,7 @@
 package outbox
 
 import (
+	"encoding/json"
 	"time"
 
 	"gorm.io/datatypes"
@@ -14,22 +15,26 @@ const (
 	EventStatusFailed     = "failed"
 	EventStatusDeadLetter = "dead_letter"
 
-	EventTypeOrderPaid               = "order.paid"
-	EventTypeVerifiedConversion      = "conversion.verified"
-	EventTypePaymentRiskLevelChanged = "payment.risk_level_changed"
-	EventTypeMerchantProductUpsert   = "merchant.product_upsert"
-	EventTypeMerchantProductWithdraw = "merchant.product_withdraw"
-	EventTypeMerchantOfferRevalidate = "merchant.offer_revalidate"
-	EventTypeProductCacheInvalidate  = "product.cache_invalidate"
-	AggregateTypeOrder               = "order"
-	AggregateTypePaymentRiskProvider = "payment_risk_provider"
-	AggregateTypeProduct             = "product"
-	AggregateTypeProductCache        = "product_cache"
-	AggregateTypeProductType         = "product_type"
-	AggregateTypeProductBrand        = "product_brand"
-	AggregateTypeInformationTemplate = "product_information_template"
-	AggregateTypeMerchantOffer       = "merchant_offer"
-	DefaultEventMaxAttempt           = 10
+	EventTypeOrderPaid                        = "order.paid"
+	EventTypeVerifiedConversion               = "conversion.verified"
+	EventTypePaymentRiskLevelChanged          = "payment.risk_level_changed"
+	EventTypeMerchantProductUpsert            = "merchant.product_upsert"
+	EventTypeMerchantProductWithdraw          = "merchant.product_withdraw"
+	EventTypeMerchantOfferRevalidate          = "merchant.offer_revalidate"
+	EventTypeProductCacheInvalidate           = "product.cache_invalidate"
+	EventTypeCustomerServiceRealtime          = "customer_service.realtime"
+	EventTypeCustomerServiceAvatarCleanup     = "customer_service.avatar_cleanup"
+	AggregateTypeOrder                        = "order"
+	AggregateTypePaymentRiskProvider          = "payment_risk_provider"
+	AggregateTypeProduct                      = "product"
+	AggregateTypeProductCache                 = "product_cache"
+	AggregateTypeProductSpecificationTemplate = "product_specification_template"
+	AggregateTypeProductBrand                 = "product_brand"
+	AggregateTypeInformationTemplate          = "product_information_template"
+	AggregateTypeMerchantOffer                = "merchant_offer"
+	AggregateTypeCustomerServiceConversation  = "customer_service_conversation"
+	AggregateTypeCustomerServiceAgentProfile  = "customer_service_agent_profile"
+	DefaultEventMaxAttempt                    = 10
 )
 
 type Event struct {
@@ -117,9 +122,35 @@ type MerchantOfferRevalidatePayload struct {
 }
 
 type ProductCacheInvalidatePayload struct {
-	ProductIDs                   []uint `json:"product_ids,omitempty"`
-	ProductTypeID                uint   `json:"product_type_id,omitempty"`
-	ProductBrandID               uint   `json:"product_brand_id,omitempty"`
-	ProductInformationTemplateID uint   `json:"product_information_template_id,omitempty"`
-	Reason                       string `json:"reason,omitempty"`
+	ProductIDs                     []uint `json:"product_ids,omitempty"`
+	ProductSpecificationTemplateID uint   `json:"product_specification_template_id,omitempty"`
+	ProductBrandID                 uint   `json:"product_brand_id,omitempty"`
+	ProductInformationTemplateID   uint   `json:"product_information_template_id,omitempty"`
+	Reason                         string `json:"reason,omitempty"`
+}
+
+// CustomerServiceRealtimePayload is the durable, display-safe envelope passed
+// from the customer-service write transaction to realtime delivery workers.
+// HTTP history remains the authoritative source after clients receive it.
+type CustomerServiceRealtimePayload struct {
+	Type           string                       `json:"type"`
+	EventID        string                       `json:"event_id"`
+	Audience       string                       `json:"audience,omitempty"`
+	TicketID       uint                         `json:"ticket_id"`
+	ConversationID string                       `json:"conversation_id,omitempty"`
+	OccurredAt     time.Time                    `json:"occurred_at"`
+	Actor          CustomerServiceRealtimeActor `json:"actor"`
+	Payload        json.RawMessage              `json:"payload,omitempty"`
+}
+
+type CustomerServiceRealtimeActor struct {
+	Kind      string `json:"kind"`
+	UserID    *uint  `json:"user_id,omitempty"`
+	Anonymous bool   `json:"anonymous,omitempty"`
+}
+
+// CustomerServiceAvatarCleanupPayload contains only a first-party URL. The
+// cleanup handler re-validates its dedicated storage namespace before delete.
+type CustomerServiceAvatarCleanupPayload struct {
+	URL string `json:"url"`
 }

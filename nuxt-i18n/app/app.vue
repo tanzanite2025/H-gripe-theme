@@ -20,7 +20,7 @@
     <LazyCartDrawer />
     <LazyCheckoutModal />
     <LazyShopSearchSheet />
-    <LazyGlobalProductDetailBottomSheet />
+    <LazyProductDetailGlobalProductDetailBottomSheet />
     
     <!-- 全局聊天弹窗 -->
     <LazyWhatsAppChatModal

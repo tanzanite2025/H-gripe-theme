@@ -131,12 +131,12 @@ func TestProductCacheOutboxHandlerProcessesThroughOutboxService(t *testing.T) {
 }
 
 type recordingProductCacheInvalidationExecutor struct {
-	productIDs                    []uint
-	productTypeIDs                []uint
-	productBrandIDs               []uint
-	productInformationTemplateIDs []uint
-	sources                       []string
-	err                           error
+	productIDs                      []uint
+	productSpecificationTemplateIDs []uint
+	productBrandIDs                 []uint
+	productInformationTemplateIDs   []uint
+	sources                         []string
+	err                             error
 }
 
 func (e *recordingProductCacheInvalidationExecutor) InvalidateProductCacheByIDsWithSource(ids []uint, source string) (ProductCacheInvalidationResult, error) {
@@ -145,8 +145,8 @@ func (e *recordingProductCacheInvalidationExecutor) InvalidateProductCacheByIDsW
 	return ProductCacheInvalidationResult{Products: len(ids), Keys: len(ids)}, e.err
 }
 
-func (e *recordingProductCacheInvalidationExecutor) InvalidateProductCacheByProductTypeIDWithSource(productTypeID uint, source string) (ProductCacheInvalidationResult, error) {
-	e.productTypeIDs = append(e.productTypeIDs, productTypeID)
+func (e *recordingProductCacheInvalidationExecutor) InvalidateProductCacheByProductSpecificationTemplateIDWithSource(productSpecificationTemplateID uint, source string) (ProductCacheInvalidationResult, error) {
+	e.productSpecificationTemplateIDs = append(e.productSpecificationTemplateIDs, productSpecificationTemplateID)
 	e.sources = append(e.sources, source)
 	return ProductCacheInvalidationResult{Products: 1, Keys: 1}, e.err
 }

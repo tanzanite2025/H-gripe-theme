@@ -263,7 +263,7 @@ WITH seed_faqs(page_id, category, question, answer, answer_image_url, answer_ima
     ('support-warranty-check', 'troubleshooting', 'My warranty shows as expired but I just bought it. What should I do?', 'If your warranty appears expired incorrectly:
             <ol>
               <li>Check your purchase date against the displayed ship date</li>
-              <li>Verify the warranty period for your product type</li>
+              <li>Verify the warranty period for your product specification template</li>
               <li>Contact support with your order confirmation and receipt</li>
             </ol>
             We''ll investigate and correct any discrepancies in our system.', '', '', 0, 0, 220),

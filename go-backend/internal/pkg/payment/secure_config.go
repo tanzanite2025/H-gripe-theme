@@ -31,6 +31,7 @@ type SecureGatewayConfigStatus struct {
 	Readable         bool        `json:"readable"`
 	RuntimeSource    string      `json:"runtime_source"`
 	ConfiguredFields []string    `json:"configured_fields"`
+	ThreeDSMode      string      `json:"three_ds_mode,omitempty"`
 	Error            string      `json:"error,omitempty"`
 }
 
@@ -214,6 +215,15 @@ func SecureGatewayCredentialFields(provider GatewayType) []string {
 		return []string{"mch_id", "app_id", "private_key_path", "merchant_serial", "api_v3_key", "platform_certificate", "platform_public_key", "platform_public_key_id"}
 	default:
 		return nil
+	}
+}
+
+func SecureGatewayRequiredCredentialFields(provider GatewayType) []string {
+	switch provider {
+	case GatewayStripe:
+		return []string{"api_key", "webhook_secret"}
+	default:
+		return SecureGatewayCredentialFields(provider)
 	}
 }
 

@@ -17,9 +17,7 @@ const props = withDefaults(defineProps<SwitchRootProps & {
 })
 
 const emits = defineEmits<SwitchRootEmits>()
-
 const delegatedProps = reactiveOmit(props, 'class', 'size')
-
 const forwarded = useForwardPropsEmits(delegatedProps, emits)
 </script>
 
@@ -30,15 +28,70 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
     :data-size="size"
     v-bind="forwarded"
     :class="cn(
-      'data-checked:bg-primary data-unchecked:bg-input focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:aria-invalid:border-destructive/50 dark:data-unchecked:bg-input/80 shrink-0 rounded-full border border-transparent focus-visible:ring-3 aria-invalid:ring-3 data-[size=default]:h-[18.4px] data-[size=default]:w-8 data-[size=sm]:h-3.5 data-[size=sm]:w-6 peer group/switch relative inline-flex items-center transition-all outline-none after:absolute after:-inset-x-3 after:-inset-y-2 data-disabled:cursor-not-allowed data-disabled:opacity-50',
+      'admin-switch peer group/switch relative inline-flex shrink-0 items-center rounded-full border outline-none transition-colors after:absolute after:-inset-x-3 after:-inset-y-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 data-[size=default]:h-[26px] data-[size=default]:w-[46px] data-[size=sm]:h-[22px] data-[size=sm]:w-[36px] data-[state=unchecked]:border-slate-400 data-[state=unchecked]:bg-slate-300 data-[state=checked]:border-emerald-700 data-[state=checked]:bg-emerald-500 data-[disabled]:cursor-not-allowed data-[disabled]:opacity-60 dark:data-[state=unchecked]:border-slate-600 dark:data-[state=unchecked]:bg-slate-700 dark:data-[state=checked]:border-emerald-400 dark:data-[state=checked]:bg-emerald-600',
       props.class,
     )"
   >
     <SwitchThumb
       data-slot="switch-thumb"
-      class="bg-background dark:data-unchecked:bg-foreground dark:data-checked:bg-primary-foreground rounded-full group-data-[size=default]/switch:size-4 group-data-[size=sm]/switch:size-3 group-data-[size=default]/switch:data-checked:translate-x-[calc(100%-2px)] group-data-[size=sm]/switch:data-checked:translate-x-[calc(100%-2px)] group-data-[size=default]/switch:data-unchecked:translate-x-0 group-data-[size=sm]/switch:data-unchecked:translate-x-0 pointer-events-none block ring-0 transition-transform"
+      class="admin-switch-thumb pointer-events-none block rounded-full bg-white shadow-[0_1px_3px_rgb(15_23_42_/_0.35)] ring-0 transition-transform dark:bg-slate-100"
     >
       <slot name="thumb" v-bind="slotProps" />
     </SwitchThumb>
   </SwitchRoot>
 </template>
+
+<style>
+.admin-switch[data-state='unchecked'] {
+  border-color: #94a3b8;
+  background: #cbd5e1;
+}
+
+.admin-switch[data-state='checked'] {
+  border-color: #047857;
+  background: #10b981;
+}
+
+.admin-switch[data-disabled] {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.admin-switch-thumb {
+  margin-left: 3px;
+  display: block;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgb(15 23 42 / 0.35);
+  pointer-events: none;
+  transition: transform 160ms ease;
+}
+
+.admin-switch[data-size='default'] .admin-switch-thumb {
+  width: 20px;
+  height: 20px;
+}
+
+.admin-switch[data-size='sm'] .admin-switch-thumb {
+  width: 16px;
+  height: 16px;
+}
+
+.admin-switch[data-size='default'][data-state='checked'] .admin-switch-thumb {
+  transform: translateX(20px);
+}
+
+.admin-switch[data-size='sm'][data-state='checked'] .admin-switch-thumb {
+  transform: translateX(14px);
+}
+
+.dark .admin-switch[data-state='unchecked'] {
+  border-color: #475569;
+  background: #334155;
+}
+
+.dark .admin-switch[data-state='checked'] {
+  border-color: #34d399;
+  background: #059669;
+}
+</style>

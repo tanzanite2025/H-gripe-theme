@@ -1,0 +1,17 @@
+{
+  "eyebrow": "ความคิดเห็นจากลูกค้า",
+  "title": "คะแนนและรีวิว",
+  "summaryLabel": "{rating} จาก 5 จากรีวิว {count} รายการ",
+  "reviewCount": "รีวิว {count} รายการ",
+  "loading": "กำลังโหลดรีวิว...",
+  "loadError": "ไม่สามารถโหลดรีวิวได้",
+  "retry": "ลองอีกครั้ง",
+  "empty": "ยังไม่มีรีวิวที่อนุมัติ",
+  "ratingLabel": "{rating} จาก 5 ดาว",
+  "imageAlt": "รูปภาพรีวิวจากลูกค้า",
+  "verifiedPurchase": "ยืนยันการซื้อแล้ว",
+  "helpfulCount": "{count} คนพบว่ามีประโยชน์",
+  "storeReply": "คำตอบจากร้านค้า",
+  "loadingMore": "กำลังโหลดเพิ่มเติม...",
+  "loadMore": "โหลดรีวิวเพิ่มเติม"
+}

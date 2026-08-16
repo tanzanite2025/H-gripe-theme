@@ -107,8 +107,6 @@ func (h *Handler) ListProductReviews(c *gin.Context) {
 
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
-	status := c.Query("status")
-
 	if page < 1 {
 		page = 1
 	}
@@ -116,7 +114,7 @@ func (h *Handler) ListProductReviews(c *gin.Context) {
 		pageSize = 20
 	}
 
-	reviews, total, err := h.reviewService.GetProductReviews(uint(productID), page, pageSize, status)
+	reviews, total, err := h.reviewService.GetProductReviews(uint(productID), page, pageSize)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

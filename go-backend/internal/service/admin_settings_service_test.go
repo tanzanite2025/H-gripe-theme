@@ -110,3 +110,63 @@ func TestAdminSettingsFiltersDomainManagedSettingsFromGenericLists(t *testing.T)
 	require.NoError(t, err)
 	require.Equal(t, []string{"site"}, groups)
 }
+
+func TestAdminSettingsMasksSecretsAndPreservesMaskedUpdates(t *testing.T) {
+	_, settingService := newTestSettingService(t)
+	adminSettings := NewAdminSettingsService(settingService)
+
+	require.NoError(t, settingService.BatchSet([]settingdomain.Setting{
+		{
+			Key:      "customs_lookup_us_hts_api_key",
+			Value:    "real-secret",
+			Type:     "string",
+			Group:    "api",
+			Locale:   "en",
+			IsPublic: false,
+		},
+	}))
+
+	settings, err := adminSettings.GetByGroup("api", "en")
+	require.NoError(t, err)
+	require.Len(t, settings, 1)
+	require.Equal(t, maskedSettingValue, settings[0].Value)
+
+	updated, err := adminSettings.UpdateSetting(settingdomain.UpdateSettingRequest{
+		Key:      "customs_lookup_us_hts_api_key",
+		Value:    maskedSettingValue,
+		Type:     "string",
+		Group:    "api",
+		Locale:   "en",
+		IsPublic: true,
+	})
+	require.NoError(t, err)
+	require.Equal(t, maskedSettingValue, updated.Value)
+
+	stored, err := settingService.Get("customs_lookup_us_hts_api_key", "en")
+	require.NoError(t, err)
+	require.Equal(t, "real-secret", stored.Value)
+	require.False(t, stored.IsPublic)
+}
+
+func TestAdminSettingsRejectsUnsafeCustomsEndpoints(t *testing.T) {
+	_, settingService := newTestSettingService(t)
+	adminSettings := NewAdminSettingsService(settingService)
+
+	_, err := adminSettings.UpdateSetting(settingdomain.UpdateSettingRequest{
+		Key:    "customs_lookup_us_hts_endpoint",
+		Value:  "http://127.0.0.1:8080/search",
+		Type:   "string",
+		Group:  "api",
+		Locale: "en",
+	})
+	require.ErrorIs(t, err, ErrSettingInvalid)
+
+	_, err = adminSettings.UpdateSetting(settingdomain.UpdateSettingRequest{
+		Key:    "customs_lookup_us_hts_endpoint",
+		Value:  "https://1.1.1.1/reststop/search",
+		Type:   "string",
+		Group:  "api",
+		Locale: "en",
+	})
+	require.NoError(t, err)
+}

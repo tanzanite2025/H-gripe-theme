@@ -5,7 +5,13 @@
         <div class="product-media-layout">
           <div class="product-media-stage">
             <figure v-if="previewMedia?.kind === 'image'" class="product-media-frame">
-              <NuxtImg :src="previewMedia.url" :alt="previewMedia.alt" loading="eager" format="webp" />
+              <NuxtImg
+                :src="previewMedia.url"
+                :alt="previewMedia.alt"
+                loading="eager"
+                fetchpriority="high"
+                format="webp"
+              />
             </figure>
             <figure v-else-if="previewMedia?.kind === 'video'" class="product-media-frame product-media-frame--video">
               <video
@@ -22,7 +28,7 @@
             <template v-if="productGalleryItems.length > 1">
               <button
                 type="button"
-                class="product-media-nav product-media-nav--previous"
+                class="tz-directional-arrow tz-directional-arrow--large product-media-nav product-media-nav--previous"
                 aria-label="Previous media"
                 @click="selectPreviousMedia"
               >
@@ -30,7 +36,7 @@
               </button>
               <button
                 type="button"
-                class="product-media-nav product-media-nav--next"
+                class="tz-directional-arrow tz-directional-arrow--large product-media-nav product-media-nav--next"
                 aria-label="Next media"
                 @click="selectNextMedia"
               >
@@ -87,7 +93,7 @@
         <p v-else-if="productSummaryDescription" class="product-description">{{ productSummaryDescription }}</p>
         <div class="product-meta" aria-live="polite" aria-atomic="true">
           <span v-if="formattedPrice" class="product-price">{{ formattedPrice }}</span>
-          <span v-if="product.product_type?.name" class="product-type-pill">{{ product.product_type.name }}</span>
+          <span v-if="product.product_specification_template?.name" class="product-specification-template-pill">{{ product.product_specification_template.name }}</span>
         </div>
         <div v-if="activeVariants.length" class="product-purchase-panel">
           <div v-if="variantOptionGroups.length" class="variant-option-groups">
@@ -305,12 +311,17 @@
       />
     </div>
 
+    <ProductReviewsSection
+      :product-id="product.id"
+      :initial-summary="shopProduct?.reviewSummary"
+    />
+
     <ProductRecommendations
       :key="`product-recommendations-${product.id}`"
       surface="product_detail_bottom"
       :title="t('recommendations.productDetailTitle', 'You may also like')"
       :product-id="product.id"
-      :category-id="product.product_type_id || product.product_type?.id || null"
+      :category-id="product.product_specification_template_id || product.product_specification_template?.id || null"
       :exclude-product-ids="[product.id]"
       :limit="6"
     />
@@ -340,7 +351,10 @@ import { COUNTRIES } from '~/data/countries'
 import { useCart } from '~/composables/useCart'
 import { useAuth } from '~/composables/useAuth'
 import { useBehaviorEvents } from '~/composables/useBehaviorEvents'
-import { normalizeShopProduct, useShopProducts } from '~/composables/useShopProducts'
+import {
+  normalizeShopProduct,
+  useShopProducts,
+} from '~/composables/useShopProducts'
 import { useSiteSettings } from '~/composables/usePublicSettings'
 import {
   convertMajorAmountToStripeMinorAmount,
@@ -348,6 +362,7 @@ import {
 } from '~/composables/useStripeExpressCheckout'
 import { useStripeExpressCheckoutOrder } from '~/composables/useStripeExpressCheckoutOrder'
 import ProductRecommendations from '~/components/shop/ProductRecommendations.vue'
+import ProductReviewsSection from '~/components/shop/ProductReviewsSection.vue'
 import StripeExpressCheckoutElement from '~/components/StripeExpressCheckoutElement.vue'
 import type { CheckoutPaymentOption } from '~/types/payment'
 import {
@@ -418,7 +433,7 @@ interface ProductGalleryItem {
   sourceIndex: number
 }
 
-interface ProductType {
+interface ProductSpecificationTemplate {
   id?: number
   name: string
   slug: string
@@ -502,10 +517,30 @@ interface ProductDisplayPrice {
   fallback_reason?: string
 }
 
+interface ProductReviewSummary {
+  product_id?: number
+  total_reviews?: number
+  average_rating?: number
+  rating_5_count?: number
+  rating_4_count?: number
+  rating_3_count?: number
+  rating_2_count?: number
+  rating_1_count?: number
+}
+
+interface ProductShippingDetails {
+  country?: string
+  amount?: number
+  currency?: string
+  free_shipping?: boolean
+  eta_min_days?: number
+  eta_max_days?: number
+}
+
 interface GoProduct {
   id: number
-  product_type_id?: number
-  product_type?: ProductType
+  product_specification_template_id?: number
+  product_specification_template?: ProductSpecificationTemplate
   brand?: ProductBrand | null
   name: string
   slug: string
@@ -528,6 +563,8 @@ interface GoProduct {
   spec_values?: ProductSpecValue[]
   variants?: ProductVariant[]
   variant_option_values?: ProductVariantOptionValue[]
+  review_summary?: ProductReviewSummary | null
+  shipping_details?: ProductShippingDetails | null
 }
 
 const route = useRoute()
@@ -1014,7 +1051,7 @@ const humanizeSpecSlug = (slug: string) => {
 const hiddenStorefrontSpecSlugs = new Set(['availability', 'sku'])
 
 const variantOptionDefinitions = computed(() => {
-  const definitions = product.value?.product_type?.spec_definitions || []
+  const definitions = product.value?.product_specification_template?.spec_definitions || []
   return definitions
     .filter((definition) => (
       definition.is_visible !== false
@@ -1030,7 +1067,7 @@ const variantOptionDefinitions = computed(() => {
 })
 
 const specDefinitionsBySlug = computed(() => {
-  const entries = (product.value?.product_type?.spec_definitions || [])
+  const entries = (product.value?.product_specification_template?.spec_definitions || [])
     .filter((definition) => definition.slug)
     .map((definition) => [definition.slug, definition] as const)
   return new Map(entries)
@@ -1480,7 +1517,7 @@ watch(product, (currentProduct) => {
       productId: productID,
       metadata: {
         surface: 'product_page',
-        product_type: currentProduct.product_type?.slug || '',
+        product_specification_template: currentProduct.product_specification_template?.slug || '',
       },
     })
   }
@@ -1746,9 +1783,10 @@ const productSeoDocument = computed(() => {
       amount: displayPrice?.amount ?? Number(variant.sale_price ?? variant.price ?? 0),
       currency: displayPrice?.currency
         || normalizeCurrencyCode(variant.currency || product.value?.currency)
-        || 'USD',
+      || 'USD',
     }
   }
+  const productShippingDetails = product.value.shipping_details
   const seoVariants = activeVariants.value.map((variant) => {
     const price = variantSeoPrice(variant)
     return {
@@ -1760,6 +1798,16 @@ const productSeoDocument = computed(() => {
       availability: variant.availability,
       localizedPath: variantSeoPath(variant.id),
       imageUrls: productImages.value.map((image) => image.url),
+      shippingDetails: activeVariants.value.length === 1 && productShippingDetails
+        ? {
+            country: productShippingDetails.country,
+            amount: productShippingDetails.amount,
+            currency: productShippingDetails.currency,
+            freeShipping: productShippingDetails.free_shipping,
+            etaMinDays: productShippingDetails.eta_min_days,
+            etaMaxDays: productShippingDetails.eta_max_days,
+          }
+        : null,
     }
   })
 
@@ -1782,6 +1830,22 @@ const productSeoDocument = computed(() => {
         availability: selectedAvailability.value,
         sku: selectedVariant.value?.sku || product.value.sku,
       },
+      aggregateRating: product.value.review_summary
+        ? {
+            ratingValue: product.value.review_summary.average_rating,
+            reviewCount: product.value.review_summary.total_reviews,
+          }
+        : null,
+      shippingDetails: product.value.shipping_details
+        ? {
+            country: product.value.shipping_details.country,
+            amount: product.value.shipping_details.amount,
+            currency: product.value.shipping_details.currency,
+            freeShipping: product.value.shipping_details.free_shipping,
+            etaMinDays: product.value.shipping_details.eta_min_days,
+            etaMaxDays: product.value.shipping_details.eta_max_days,
+          }
+        : null,
       productGroupId: `product-${product.value.id}`,
       variesBy: variantOptionDefinitions.value.map((definition) => (
         `https://schema.org/${String(definition.slug || '').trim()}`
@@ -1923,29 +1987,8 @@ useHead(() => {
 .product-media-nav {
   position: absolute;
   top: 50%;
-  display: inline-flex;
-  width: 2.5rem;
-  height: 2.5rem;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 50%;
-  background: rgba(17, 17, 17, 0.82);
-  color: #f8fafc;
-  cursor: pointer;
   transform: translateY(-50%);
-  transition: background 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
   z-index: 1;
-}
-
-.product-media-nav:hover {
-  border-color: rgba(255, 255, 255, 0.42);
-  background: rgba(17, 17, 17, 0.98);
-}
-
-.product-media-nav svg {
-  width: 1.1rem;
-  height: 1.1rem;
 }
 
 .product-media-nav--previous {
@@ -2157,7 +2200,7 @@ useHead(() => {
   font-size: 1.15rem;
 }
 
-.product-type-pill {
+.product-specification-template-pill {
   display: inline-flex;
   height: var(--product-control-pill-height);
   align-items: center;

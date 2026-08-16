@@ -43,6 +43,8 @@ func (h *ProductHandler) ListProducts(c *gin.Context) {
 	locale := c.Query("locale")
 	search := c.Query("search")
 	featured := c.Query("featured")
+	customsStatus := c.Query("customs_status")
+	productSpecificationTemplateID := c.Query("product_specification_template_id")
 
 	if page < 1 {
 		page = 1
@@ -51,7 +53,7 @@ func (h *ProductHandler) ListProducts(c *gin.Context) {
 		pageSize = 20
 	}
 
-	products, total, err := h.productService.ListAdmin(page, pageSize, status, locale, search, featured)
+	products, total, err := h.productService.ListAdmin(page, pageSize, status, locale, search, featured, customsStatus, productSpecificationTemplateID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch products"})
 		return
@@ -161,24 +163,30 @@ func (h *ProductHandler) CreateProduct(c *gin.Context) {
 	}
 
 	newProduct, err := h.productService.CreateAdminProduct(service.ProductCreateInput{
-		ProductTypeID:        req.ProductTypeID,
-		BrandID:              req.BrandID,
-		ShippingTemplateID:   req.ShippingTemplateID,
-		AfterSalesTemplateID: req.AfterSalesTemplateID,
-		PackagingTemplateID:  req.PackagingTemplateID,
-		Name:                 req.Name,
-		Slug:                 req.Slug,
-		Description:          req.Description,
-		ShortDesc:            req.ShortDesc,
-		Currency:             req.Currency,
-		Status:               req.Status,
-		Locale:               req.Locale,
-		ParentID:             req.ParentID,
-		Featured:             req.Featured,
-		SpecValues:           normalizeRequestSpecs(req.Specs),
-		Variants:             normalizeVariantRequests(req.Variants),
-		VariantOptionValues:  normalizeVariantOptionValueRequests(req.VariantOptionValues),
-		Media:                normalizeMediaRequests(req.Media),
+		ProductSpecificationTemplateID:                  req.ProductSpecificationTemplateID,
+		ProductCategoryID:              req.ProductCategoryID,
+		BrandID:                        req.BrandID,
+		ShippingTemplateID:             req.ShippingTemplateID,
+		AfterSalesTemplateID:           req.AfterSalesTemplateID,
+		PackagingTemplateID:            req.PackagingTemplateID,
+		CustomsClassificationProfileID: req.CustomsClassificationProfileID,
+		HSCode:                         req.HSCode,
+		CNCode:                         req.CNCode,
+		CountryOfOrigin:                req.CountryOfOrigin,
+		CustomsDescription:             req.CustomsDescription,
+		Name:                           req.Name,
+		Slug:                           req.Slug,
+		Description:                    req.Description,
+		ShortDesc:                      req.ShortDesc,
+		Currency:                       req.Currency,
+		Status:                         req.Status,
+		Locale:                         req.Locale,
+		ParentID:                       req.ParentID,
+		Featured:                       req.Featured,
+		SpecValues:                     normalizeRequestSpecs(req.Specs),
+		Variants:                       normalizeVariantRequests(req.Variants),
+		VariantOptionValues:            normalizeVariantOptionValueRequests(req.VariantOptionValues),
+		Media:                          normalizeMediaRequests(req.Media),
 	})
 	if err != nil {
 		respondProductServiceError(c, err, "Failed to create product")
@@ -217,56 +225,74 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 	}
 
 	_, updateParentID := raw["parent_id"]
-	_, updateProductTypeID := raw["product_type_id"]
+	_, updateProductSpecificationTemplateID := raw["product_specification_template_id"]
+	_, updateProductCategoryID := raw["product_category_id"]
 	_, updateBrandID := raw["brand_id"]
 	_, updateShippingTemplateID := raw["shipping_template_id"]
 	_, updateAfterSalesTemplateID := raw["after_sales_template_id"]
 	_, updatePackagingTemplateID := raw["packaging_template_id"]
+	_, updateCustomsClassificationProfileID := raw["customs_classification_profile_id"]
+	_, updateHSCode := raw["hs_code"]
+	_, updateCNCode := raw["cn_code"]
+	_, updateCountryOfOrigin := raw["country_of_origin"]
+	_, updateCustomsDescription := raw["customs_description"]
 	_, updateCurrency := raw["currency"]
 	_, updateSpecs := raw["specs"]
 	_, updateVariants := raw["variants"]
 	_, updateVariantOptionValues := raw["variant_option_values"]
 	_, updateMedia := raw["media"]
-	if updateProductTypeID && !updateSpecs {
+	if updateProductSpecificationTemplateID && !updateSpecs {
 		updateSpecs = true
 	}
-	if updateProductTypeID && !updateVariants {
+	if updateProductSpecificationTemplateID && !updateVariants {
 		updateVariants = true
 	}
-	if updateProductTypeID && !updateVariantOptionValues {
+	if updateProductSpecificationTemplateID && !updateVariantOptionValues {
 		updateVariantOptionValues = true
 	}
 
 	updatedProduct, err := h.productService.UpdateAdminProduct(uint(id), service.ProductUpdateInput{
-		ProductTypeID:              req.ProductTypeID,
-		UpdateProductTypeID:        updateProductTypeID,
-		BrandID:                    req.BrandID,
-		UpdateBrandID:              updateBrandID,
-		ShippingTemplateID:         req.ShippingTemplateID,
-		UpdateShippingTemplateID:   updateShippingTemplateID,
-		AfterSalesTemplateID:       req.AfterSalesTemplateID,
-		UpdateAfterSalesTemplateID: updateAfterSalesTemplateID,
-		PackagingTemplateID:        req.PackagingTemplateID,
-		UpdatePackagingTemplateID:  updatePackagingTemplateID,
-		Name:                       req.Name,
-		Slug:                       req.Slug,
-		Description:                req.Description,
-		ShortDesc:                  req.ShortDesc,
-		Currency:                   req.Currency,
-		UpdateCurrency:             updateCurrency,
-		Status:                     req.Status,
-		Locale:                     req.Locale,
-		ParentID:                   req.ParentID,
-		UpdateParentID:             updateParentID,
-		Featured:                   req.Featured,
-		SpecValues:                 normalizeRequestSpecs(req.Specs),
-		UpdateSpecValues:           updateSpecs,
-		Variants:                   normalizeVariantRequests(req.Variants),
-		UpdateVariants:             updateVariants,
-		VariantOptionValues:        normalizeVariantOptionValueRequests(req.VariantOptionValues),
-		UpdateVariantOptionValues:  updateVariantOptionValues,
-		Media:                      normalizeMediaRequests(req.Media),
-		UpdateMedia:                updateMedia,
+		ProductSpecificationTemplateID:                        req.ProductSpecificationTemplateID,
+		UpdateProductSpecificationTemplateID:                  updateProductSpecificationTemplateID,
+		ProductCategoryID:                    req.ProductCategoryID,
+		UpdateProductCategoryID:              updateProductCategoryID,
+		BrandID:                              req.BrandID,
+		UpdateBrandID:                        updateBrandID,
+		ShippingTemplateID:                   req.ShippingTemplateID,
+		UpdateShippingTemplateID:             updateShippingTemplateID,
+		AfterSalesTemplateID:                 req.AfterSalesTemplateID,
+		UpdateAfterSalesTemplateID:           updateAfterSalesTemplateID,
+		PackagingTemplateID:                  req.PackagingTemplateID,
+		UpdatePackagingTemplateID:            updatePackagingTemplateID,
+		CustomsClassificationProfileID:       req.CustomsClassificationProfileID,
+		UpdateCustomsClassificationProfileID: updateCustomsClassificationProfileID,
+		HSCode:                               req.HSCode,
+		UpdateHSCode:                         updateHSCode,
+		CNCode:                               req.CNCode,
+		UpdateCNCode:                         updateCNCode,
+		CountryOfOrigin:                      req.CountryOfOrigin,
+		UpdateCountryOfOrigin:                updateCountryOfOrigin,
+		CustomsDescription:                   req.CustomsDescription,
+		UpdateCustomsDescription:             updateCustomsDescription,
+		Name:                                 req.Name,
+		Slug:                                 req.Slug,
+		Description:                          req.Description,
+		ShortDesc:                            req.ShortDesc,
+		Currency:                             req.Currency,
+		UpdateCurrency:                       updateCurrency,
+		Status:                               req.Status,
+		Locale:                               req.Locale,
+		ParentID:                             req.ParentID,
+		UpdateParentID:                       updateParentID,
+		Featured:                             req.Featured,
+		SpecValues:                           normalizeRequestSpecs(req.Specs),
+		UpdateSpecValues:                     updateSpecs,
+		Variants:                             normalizeVariantRequests(req.Variants),
+		UpdateVariants:                       updateVariants,
+		VariantOptionValues:                  normalizeVariantOptionValueRequests(req.VariantOptionValues),
+		UpdateVariantOptionValues:            updateVariantOptionValues,
+		Media:                                normalizeMediaRequests(req.Media),
+		UpdateMedia:                          updateMedia,
 	})
 	if err != nil {
 		respondProductServiceError(c, err, "Failed to update product")
@@ -338,6 +364,17 @@ func (h *ProductHandler) GetProductStats(c *gin.Context) {
 	c.JSON(http.StatusOK, stats)
 }
 
+// GetCustomsSummary returns the customs completeness counters used by the customs workbench.
+// GET /api/admin/products/customs-summary
+func (h *ProductHandler) GetCustomsSummary(c *gin.Context) {
+	summary, err := h.productService.GetCustomsSummary(c.Query("locale"))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get customs summary"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"summary": summary})
+}
+
 // BatchUpdateStatus 批量更新商品状态
 // POST /api/admin/products/batch-status
 func (h *ProductHandler) BatchUpdateStatus(c *gin.Context) {
@@ -402,13 +439,13 @@ func (h *ProductHandler) GetFilterableAttributes(c *gin.Context) {
 	})
 }
 
-func (h *ProductHandler) ListProductTypes(c *gin.Context) {
+func (h *ProductHandler) ListProductSpecificationTemplates(c *gin.Context) {
 	includeDisabled := c.Query("include_disabled") == "true"
-	productTypes, err := h.productService.ListProductTypes(includeDisabled)
+	productSpecificationTemplates, err := h.productService.ListProductSpecificationTemplates(includeDisabled)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": productTypes})
+	c.JSON(http.StatusOK, gin.H{"data": productSpecificationTemplates})
 }

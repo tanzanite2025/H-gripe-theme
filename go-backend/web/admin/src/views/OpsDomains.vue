@@ -5,6 +5,18 @@
       description="统一维护主域名、别名、后台域、跳转域和验证域的绑定关系。"
     >
       <template #actions>
+        <select
+          v-model="environmentFilter"
+          class="h-9 rounded-md border bg-background px-3 text-sm"
+          aria-label="筛选域名环境"
+          :disabled="loading || syncingAll"
+          @change="changeEnvironment"
+        >
+          <option v-for="option in opsDomainEnvironmentOptions" :key="option.value" :value="option.value">
+            {{ option.label }}
+          </option>
+          <option value="">全部环境</option>
+        </select>
         <Button
           v-if="canSync"
           variant="outline"
@@ -15,7 +27,7 @@
           <RefreshCw v-else class="size-4" />
           同步 Cloudflare
         </Button>
-        <Button variant="outline" :disabled="loading" @click="loadDomains">
+        <Button variant="outline" :disabled="loading" @click="refreshDomainsPage">
           <RefreshCw :class="['size-4', loading ? 'animate-spin' : '']" />
           刷新
         </Button>
@@ -161,107 +173,18 @@
       </Table>
     </AdminTablePanel>
 
-    <Dialog v-model:open="dialogOpen">
-      <DialogContent size="lg">
-        <DialogHeader>
-          <DialogTitle>{{ form.id ? '编辑域名绑定' : '新增域名绑定' }}</DialogTitle>
-          <DialogDescription>
-            这里只维护后台的期望状态，不会直接修改 Cloudflare、Hostinger 或生产网关。
-          </DialogDescription>
-        </DialogHeader>
-
-        <form class="space-y-4" @submit.prevent="saveDomain">
-          <div class="grid gap-4 md:grid-cols-2">
-            <AdminFormField label="域名" required description="只填写 hostname，例如 admin.learn.gripe。">
-              <Input v-model="form.domain" placeholder="learn.gripe" :disabled="saving" />
-            </AdminFormField>
-            <AdminFormField label="角色" required>
-              <select v-model="form.role" class="h-10 w-full rounded-md border bg-background px-3 text-sm" :disabled="saving">
-                <option v-for="option in roleOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
-              </select>
-            </AdminFormField>
-            <AdminFormField label="环境" required>
-              <select v-model="form.environment" class="h-10 w-full rounded-md border bg-background px-3 text-sm" :disabled="saving">
-                <option v-for="option in environmentOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
-              </select>
-            </AdminFormField>
-            <AdminFormField
-              label="所属项目"
-              :required="deploymentRoleRequiresProject"
-              description="部署 preflight 只采信显式绑定到项目的公网域名。"
-            >
-              <select
-                v-model="form.project_binding_id"
-                class="h-10 w-full rounded-md border bg-background px-3 text-sm"
-                :disabled="saving || projectsLoading"
-              >
-                <option :value="null">{{ deploymentRoleRequiresProject ? '请选择项目' : '不绑定项目' }}</option>
-                <option v-for="project in matchingProjects" :key="project.id" :value="project.id">
-                  {{ project.name }}{{ project.enabled ? '' : '（已停用）' }}
-                </option>
-              </select>
-              <p v-if="projectsLoading" class="mt-1 text-[10px] text-muted-foreground">正在加载项目...</p>
-              <p v-else-if="deploymentRoleRequiresProject && matchingProjects.length === 0" class="mt-1 text-[10px] text-amber-600">
-                当前环境没有可绑定项目，请先在项目中心登记。
-              </p>
-            </AdminFormField>
-            <AdminFormField label="提供商" required>
-              <select v-model="form.provider" class="h-10 w-full rounded-md border bg-background px-3 text-sm" :disabled="saving">
-                <option v-for="option in providerOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
-              </select>
-            </AdminFormField>
-            <AdminFormField v-if="form.provider === 'cloudflare'" label="Cloudflare 只读连接器">
-              <select v-model="form.connector_id" class="h-10 w-full rounded-md border bg-background px-3 text-sm" :disabled="saving || connectorsLoading">
-                <option :value="null">暂不绑定</option>
-                <option v-for="connector in cloudflareConnectors" :key="connector.id" :value="connector.id">
-                  {{ connector.name }}{{ connector.enabled ? '' : '（已停用）' }}
-                </option>
-              </select>
-              <p v-if="connectorsLoading" class="mt-1 text-[10px] text-muted-foreground">正在加载连接器...</p>
-              <p v-else-if="cloudflareConnectors.length === 0" class="mt-1 text-[10px] text-amber-600">
-                请先在连接器中心登记 Cloudflare 只读 Token。
-              </p>
-            </AdminFormField>
-            <AdminFormField label="Cloudflare Zone / DNS Zone">
-              <Input v-model="form.zone" placeholder="learn.gripe" :disabled="saving" />
-            </AdminFormField>
-            <AdminFormField label="目标">
-              <Input v-model="form.target" placeholder="theme-web:8080 或 VPS IP" :disabled="saving" />
-            </AdminFormField>
-            <AdminFormField label="代理模式">
-              <select v-model="form.proxy_mode" class="h-10 w-full rounded-md border bg-background px-3 text-sm" :disabled="saving">
-                <option v-for="option in proxyOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
-              </select>
-            </AdminFormField>
-            <AdminFormField label="TLS 模式">
-              <select v-model="form.tls_mode" class="h-10 w-full rounded-md border bg-background px-3 text-sm" :disabled="saving">
-                <option v-for="option in tlsOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
-              </select>
-            </AdminFormField>
-            <AdminFormField v-if="form.role === 'redirect'" label="跳转目标" required>
-              <Input v-model="form.redirect_target" placeholder="https://learn.gripe" :disabled="saving" />
-            </AdminFormField>
-            <AdminFormField label="状态">
-              <select v-model="form.status" class="h-10 w-full rounded-md border bg-background px-3 text-sm" :disabled="saving">
-                <option v-for="option in statusOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
-              </select>
-            </AdminFormField>
-            <AdminFormField label="备注" class="md:col-span-2">
-              <Textarea v-model="form.notes" class="min-h-24" placeholder="记录绑定来源、切换窗口或维护说明。" :disabled="saving" />
-            </AdminFormField>
-          </div>
-
-          <DialogFooter>
-            <Button type="button" variant="outline" :disabled="saving" @click="dialogOpen = false">取消</Button>
-            <Button type="submit" :disabled="saving || !canEdit">
-              <LoaderCircle v-if="saving" class="size-4 animate-spin" />
-              <Save v-else class="size-4" />
-              {{ saving ? '保存中' : '保存域名' }}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <OpsDomainBindingFormDialog
+      :open="dialogOpen"
+      :form="form"
+      :projects="projects"
+      :connectors="connectors"
+      :projects-loading="projectsLoading"
+      :connectors-loading="connectorsLoading"
+      :saving="saving"
+      :can-edit="canEdit"
+      @update:open="dialogOpen = $event"
+      @save="saveDomain"
+    />
 
     <Dialog v-model:open="diffOpen">
       <DialogContent size="lg">
@@ -386,13 +309,28 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineComponent, h, onMounted, reactive, ref } from 'vue'
+import { computed, defineComponent, h, onMounted, reactive, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
-import { Copy, FileCode2, GitCompareArrows, LoaderCircle, Pencil, Plus, Power, RefreshCw, Save } from '@lucide/vue'
-import AdminFormField from '@/components/admin/AdminFormField.vue'
+import { Copy, FileCode2, GitCompareArrows, LoaderCircle, Pencil, Plus, Power, RefreshCw } from '@lucide/vue'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import AdminStatusBadge, { type AdminStatusTone } from '@/components/admin/AdminStatusBadge.vue'
 import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
+import OpsDomainBindingFormDialog from '@/components/admin/ops/OpsDomainBindingFormDialog.vue'
+import {
+  assignOpsDomainForm,
+  domainRoleRequiresProject,
+  emptyOpsDomainForm,
+  opsDomainDiffStatusOptions,
+  opsDomainEnvironmentOptions,
+  opsDomainObservedStatusOptions,
+  opsDomainProviderOptions,
+  opsDomainProxyOptions,
+  opsDomainRoleOptions,
+  opsDomainStatusOptions,
+  opsDomainTLSOptions,
+  type OpsDomainForm,
+} from '@/components/admin/ops/opsDomainBindingForm'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -402,76 +340,28 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Textarea } from '@/components/ui/textarea'
-import opsApi, { type OpsDomainDiff, type OpsDomainPreview, type OpsDomainSyncResult } from '@/api/ops'
+import opsApi, {
+  type OpsConnector,
+  type OpsDomain,
+  type OpsDomainDiff,
+  type OpsDomainPreview,
+  type OpsDomainSyncResult,
+  type OpsEnvironment,
+  type OpsProject,
+} from '@/api/ops'
+import { readOpsEnvironmentQuery, withOpsEnvironmentQuery } from '@/lib/opsEnvironment'
 import { useAuthStore } from '@/stores/auth'
 
-interface OpsDomain {
-  id: number
-  domain: string
-  connector_id?: number | null
-  project_binding_id?: number | null
-  role: string
-  environment: string
-  provider: string
-  zone: string
-  target: string
-  proxy_mode: string
-  tls_mode: string
-  redirect_target: string
-  status: string
-  observed_status: string
-  observed_target: string
-  observed_proxy_mode: string
-  observed_tls_mode: string
-  observed_source: string
-  last_observed_at?: string
-  observed_error?: string
-  enabled: boolean
-  notes: string
-}
-
-interface OpsDomainForm {
-  id: number
-  domain: string
-  connector_id: number | null
-  project_binding_id: number | null
-  role: string
-  environment: string
-  provider: string
-  zone: string
-  target: string
-  proxy_mode: string
-  tls_mode: string
-  redirect_target: string
-  status: string
-  enabled: boolean
-  notes: string
-}
-
-interface OpsConnectorOption {
-  id: number
-  name: string
-  provider: string
-  enabled: boolean
-}
-
-interface OpsProjectOption {
-  id: number
-  name: string
-  environment: string
-  enabled: boolean
-}
-
+const route = useRoute()
+const router = useRouter()
 const authStore = useAuthStore()
 const canEdit = computed(() => authStore.hasPermission('ops:domain:edit'))
 const canSync = computed(() => authStore.hasPermission('ops:domain:sync'))
 const domains = ref<OpsDomain[]>([])
-const connectors = ref<OpsConnectorOption[]>([])
-const projects = ref<OpsProjectOption[]>([])
+const connectors = ref<OpsConnector[]>([])
+const projects = ref<OpsProject[]>([])
 const loading = ref(false)
 const connectorsLoading = ref(false)
 const projectsLoading = ref(false)
@@ -486,6 +376,7 @@ const previewOpen = ref(false)
 const previewLoadingID = ref(0)
 const previewTab = ref('dns')
 const preview = ref<OpsDomainPreview | null>(null)
+const environmentFilter = ref<OpsEnvironment | ''>(readOpsEnvironmentQuery(route.query.environment))
 
 const PreviewCodeBlock = defineComponent({
   props: {
@@ -508,69 +399,9 @@ const PreviewCodeBlock = defineComponent({
   },
 })
 
-const roleOptions = [
-  { value: 'canonical', label: '主域名' },
-  { value: 'alias', label: '别名' },
-  { value: 'admin', label: '后台域' },
-  { value: 'redirect', label: '跳转域' },
-  { value: 'verification', label: '验证域' },
-  { value: 'internal', label: '内部域' },
-]
-const environmentOptions = [
-  { value: 'production', label: '生产' },
-  { value: 'staging', label: '预发布' },
-  { value: 'test', label: '测试' },
-  { value: 'local', label: '本地' },
-]
-const providerOptions = [
-  { value: 'cloudflare', label: 'Cloudflare' },
-  { value: 'hostinger', label: 'Hostinger' },
-  { value: 'other', label: '其他' },
-]
-const proxyOptions = [
-  { value: 'proxied', label: '已代理' },
-  { value: 'dns_only', label: 'DNS only' },
-  { value: 'unknown', label: '未知' },
-]
-const tlsOptions = [
-  { value: 'full_strict', label: 'Full (strict)' },
-  { value: 'full', label: 'Full' },
-  { value: 'flexible', label: 'Flexible' },
-  { value: 'off', label: '关闭' },
-  { value: 'unknown', label: '未知' },
-]
-const statusOptions = [
-  { value: 'active', label: '正常' },
-  { value: 'pending', label: '待确认' },
-  { value: 'disabled', label: '已停用' },
-  { value: 'drifted', label: '配置漂移' },
-  { value: 'error', label: '错误' },
-]
+const form = reactive<OpsDomainForm>(emptyOpsDomainForm())
 
-const emptyForm = (): OpsDomainForm => ({
-  id: 0,
-  domain: '',
-  connector_id: null,
-  project_binding_id: null,
-  role: 'alias',
-  environment: 'production',
-  provider: 'cloudflare',
-  zone: '',
-  target: '',
-  proxy_mode: 'unknown',
-  tls_mode: 'unknown',
-  redirect_target: '',
-  status: 'pending',
-  enabled: true,
-  notes: '',
-})
-
-const form = reactive<OpsDomainForm>(emptyForm())
-
-const cloudflareConnectors = computed(() => connectors.value.filter((connector) => connector.provider === 'cloudflare'))
 const cloudflareDomains = computed(() => domains.value.filter((domain) => domain.provider === 'cloudflare'))
-const matchingProjects = computed(() => projects.value.filter((project) => project.environment === form.environment))
-const deploymentRoleRequiresProject = computed(() => ['canonical', 'alias', 'admin', 'redirect'].includes(form.role))
 const enabledCount = computed(() => domains.value.filter((domain) => domain.enabled).length)
 const productionCount = computed(() => domains.value.filter((domain) => domain.environment === 'production').length)
 const attentionCount = computed(() => domains.value.filter((domain) => (
@@ -579,13 +410,16 @@ const attentionCount = computed(() => domains.value.filter((domain) => (
 )).length)
 
 const assignForm = (domain?: Partial<OpsDomain>): void => {
-  Object.assign(form, emptyForm(), domain || {})
+  assignOpsDomainForm(form, domain)
+  if (!domain && environmentFilter.value) {
+    form.environment = environmentFilter.value
+  }
 }
 
 const loadDomains = async (): Promise<void> => {
   loading.value = true
   try {
-    const data = await opsApi.listDomains()
+    const data = await opsApi.listDomains(environmentFilter.value || undefined)
     domains.value = Array.isArray(data?.domains) ? data.domains : []
   } catch (error: any) {
     toast.error(error?.response?.data?.message || error?.response?.data?.error || '域名列表加载失败')
@@ -595,6 +429,10 @@ const loadDomains = async (): Promise<void> => {
 }
 
 const loadConnectors = async (): Promise<void> => {
+  if (!canEdit.value) {
+    connectors.value = []
+    return
+  }
   connectorsLoading.value = true
   try {
     const data = await opsApi.listConnectors()
@@ -618,14 +456,31 @@ const loadProjects = async (): Promise<void> => {
   }
 }
 
+const changeEnvironment = (): void => {
+  void router.replace({ query: withOpsEnvironmentQuery(route.query, environmentFilter.value) })
+  void loadDomains()
+}
+
+const refreshDomainsPage = async (): Promise<void> => {
+  await Promise.all([
+    loadDomains(),
+    loadProjects(),
+    loadConnectors(),
+  ])
+}
+
 const openCreate = (): void => {
   assignForm()
   dialogOpen.value = true
+  if (!projects.value.length) void loadProjects()
+  if (!connectors.value.length) void loadConnectors()
 }
 
 const openEdit = (domain: OpsDomain): void => {
   assignForm(domain)
   dialogOpen.value = true
+  if (!projects.value.length) void loadProjects()
+  if (!connectors.value.length) void loadConnectors()
 }
 
 const openDiff = async (domain: OpsDomain): Promise<void> => {
@@ -667,7 +522,7 @@ const saveDomain = async (): Promise<void> => {
     toast.error('请输入域名')
     return
   }
-  if (deploymentRoleRequiresProject.value && !form.project_binding_id) {
+  if (domainRoleRequiresProject(form.role) && !form.project_binding_id) {
     toast.error('请选择所属项目')
     return
   }
@@ -705,6 +560,21 @@ const saveDomain = async (): Promise<void> => {
   }
 }
 
+const applyDomainSyncResult = (domain: OpsDomain, result: OpsDomainSyncResult): void => {
+  const index = domains.value.findIndex((item) => item.id === domain.id)
+  if (index < 0) return
+  domains.value[index] = {
+    ...domain,
+    observed_status: result.observed_status,
+    observed_target: result.observed_target,
+    observed_proxy_mode: result.observed_proxy_mode,
+    observed_tls_mode: result.observed_tls_mode,
+    observed_source: result.observed_source,
+    last_observed_at: result.last_observed_at,
+    observed_error: result.observed_error || '',
+  }
+}
+
 const syncMessage = (result: OpsDomainSyncResult): string => {
   if (result.observed_status === 'matched') return `${result.domain} 已匹配 Cloudflare 实际状态`
   if (result.observed_status === 'drifted') return `${result.domain} 检测到配置差异`
@@ -719,7 +589,7 @@ const syncDomain = async (domain: OpsDomain): Promise<void> => {
       ? 'success'
       : result.observed_status === 'drifted' ? 'warning' : 'error'
     toast[tone](syncMessage(result))
-    await loadDomains()
+    applyDomainSyncResult(domain, result)
   } catch (error: any) {
     toast.error(error?.response?.data?.message || error?.response?.data?.error || `${domain.domain} 同步失败`)
   } finally {
@@ -736,6 +606,7 @@ const syncAllCloudflare = async (): Promise<void> => {
     for (const domain of cloudflareDomains.value) {
       try {
         const result = await opsApi.syncDomain(domain.id)
+        applyDomainSyncResult(domain, result)
         if (result.observed_status === 'matched') matched += 1
         else if (result.observed_status === 'drifted') drifted += 1
         else failed += 1
@@ -770,27 +641,17 @@ const toggleDomain = async (domain: OpsDomain): Promise<void> => {
 const optionLabel = (options: Array<{ value: string; label: string }>, value: string): string => (
   options.find((option) => option.value === value)?.label || value || '-'
 )
-const roleLabel = (value: string): string => optionLabel(roleOptions, value)
-const environmentLabel = (value: string): string => optionLabel(environmentOptions, value)
+const roleLabel = (value: string): string => optionLabel(opsDomainRoleOptions, value)
+const environmentLabel = (value: string): string => optionLabel(opsDomainEnvironmentOptions, value)
 const projectLabel = (projectID?: number | null): string => (
   projects.value.find((project) => project.id === projectID)?.name || '未绑定'
 )
-const providerLabel = (value: string): string => optionLabel(providerOptions, value)
-const proxyLabel = (value: string): string => optionLabel(proxyOptions, value)
-const tlsLabel = (value: string): string => optionLabel(tlsOptions, value)
-const statusLabel = (value: string): string => optionLabel(statusOptions, value)
-const observedStatusLabel = (value: string): string => optionLabel([
-  { value: 'unknown', label: '未同步' },
-  { value: 'matched', label: '已匹配' },
-  { value: 'drifted', label: '漂移' },
-  { value: 'error', label: '检查错误' },
-], value)
-const diffStatusLabel = (value: string): string => optionLabel([
-  { value: 'unknown', label: '未确认' },
-  { value: 'matched', label: '已匹配' },
-  { value: 'drifted', label: '有差异' },
-  { value: 'error', label: '检查错误' },
-], value)
+const providerLabel = (value: string): string => optionLabel(opsDomainProviderOptions, value)
+const proxyLabel = (value: string): string => optionLabel(opsDomainProxyOptions, value)
+const tlsLabel = (value: string): string => optionLabel(opsDomainTLSOptions, value)
+const statusLabel = (value: string): string => optionLabel(opsDomainStatusOptions, value)
+const observedStatusLabel = (value: string): string => optionLabel(opsDomainObservedStatusOptions, value)
+const diffStatusLabel = (value: string): string => optionLabel(opsDomainDiffStatusOptions, value)
 const formatDate = (value?: string): string => value ? new Date(value).toLocaleString('zh-CN') : '未同步'
 
 const roleTone = (value: string): AdminStatusTone => value === 'canonical' ? 'blue' : value === 'admin' ? 'coral' : 'gray'
@@ -813,7 +674,12 @@ const diffTone = (value: string): AdminStatusTone => {
   return 'gray'
 }
 
-onMounted(() => {
-  void Promise.all([loadDomains(), loadConnectors(), loadProjects()])
+watch(() => route.query.environment, (value) => {
+  const nextEnvironment = readOpsEnvironmentQuery(value)
+  if (nextEnvironment === environmentFilter.value) return
+  environmentFilter.value = nextEnvironment
+  void loadDomains()
 })
+
+onMounted(refreshDomainsPage)
 </script>

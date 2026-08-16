@@ -18,6 +18,14 @@ func BuildProductRoute(locale, slug string) PageRoute {
 	return PageRoute{Path: buildLocalizedPath(locale, "/shop", slug)}
 }
 
+func BuildLegacyProductRoute(locale, slug string) PageRoute {
+	return PageRoute{Path: buildLocalizedPath(locale, "/products", slug)}
+}
+
+func BuildStaticRoute(locale, path string) PageRoute {
+	return PageRoute{Path: buildLocalizedStaticPath(locale, path)}
+}
+
 func BuildArticleRoute(locale, slug, tags string) PageRoute {
 	hasNews := false
 	hasWheelsbuild := false
@@ -52,10 +60,26 @@ func buildLocalizedPath(locale, basePath, slug string) string {
 		return ""
 	}
 
+	return buildLocalizedStaticPath(locale, basePath+"/"+url.PathEscape(cleanSlug))
+}
+
+func buildLocalizedStaticPath(locale, path string) string {
+	cleanPath := strings.TrimSpace(path)
+	if cleanPath == "" || !strings.HasPrefix(cleanPath, "/") {
+		return ""
+	}
+	cleanPath = "/" + strings.Trim(cleanPath, "/")
+	if cleanPath == "//" {
+		cleanPath = "/"
+	}
+
 	prefix := ""
 	if normalizedLocale := locales.Normalize(locale); normalizedLocale != "en" {
 		prefix = "/" + normalizedLocale
 	}
 
-	return prefix + basePath + "/" + url.PathEscape(cleanSlug)
+	if cleanPath == "/" {
+		return prefix + "/"
+	}
+	return prefix + cleanPath
 }

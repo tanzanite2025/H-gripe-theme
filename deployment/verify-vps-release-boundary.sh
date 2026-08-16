@@ -57,6 +57,11 @@ if ! docker compose version >/dev/null 2>&1; then
   exit 1
 fi
 
+if ! grep -Fq '"${compose[@]}" up --no-deps --force-recreate --abort-on-container-exit --exit-code-from migrate migrate' "${ROOT_DIR}/deploy.sh"; then
+  err "deploy.sh must force-recreate and run the migrate job before application services"
+  exit 1
+fi
+
 legacy_public_patterns='tanzanite\.site|www\.tanzanite\.site|admin\.tanzanite\.site|tanzanite-edge'
 legacy_public_files=(
   "${ROOT_DIR}/compose.prod.yml"
@@ -199,6 +204,22 @@ if isinstance(edge_config_environment, dict):
             errors.append(f"edge-config must not depend on Redis environment: {forbidden_key}")
 if set((edge_config.get("depends_on") or {}).keys()) != {"migrate"}:
     errors.append("edge-config must depend only on the completed migrate service")
+
+migrate = services.get("migrate") or {}
+if migrate.get("command") != ["migrate"]:
+    errors.append("migrate must run only the migrate command")
+if migrate.get("restart") != "no":
+    errors.append("migrate must be a one-shot service with restart=no")
+if migrate.get("pull_policy") != "always":
+    errors.append("migrate must always pull the release API image")
+migration_db_dependency = (migrate.get("depends_on") or {}).get("db") or {}
+if migration_db_dependency.get("condition") != "service_healthy":
+    errors.append("migrate must wait for db service_healthy")
+
+for service_name in ("edge-config", "api", "storefront", "admin", "web"):
+    dependency = ((services.get(service_name) or {}).get("depends_on") or {}).get("migrate") or {}
+    if dependency.get("condition") != "service_completed_successfully":
+        errors.append(f"{service_name} must wait for migrate service_completed_successfully")
 
 web = services.get("web") or {}
 edge_config_dependency = (web.get("depends_on") or {}).get("edge-config") or {}

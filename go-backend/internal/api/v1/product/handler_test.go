@@ -22,8 +22,8 @@ func TestGetProductAllowsNumericSlugWithoutIDLookup(t *testing.T) {
 		t.Fatalf("open test db: %v", err)
 	}
 	if err := db.AutoMigrate(
-		&productdomain.ProductType{},
-		&productdomain.ProductTypeTranslation{},
+		&productdomain.ProductSpecificationTemplate{},
+		&productdomain.ProductSpecificationTemplateTranslation{},
 		&productdomain.SpecDefinition{},
 		&productdomain.Product{},
 		&productdomain.ProductMedia{},
@@ -72,50 +72,106 @@ func TestGetProductAllowsNumericSlugWithoutIDLookup(t *testing.T) {
 	}
 }
 
-func TestListProductTypesDoesNotExposeSpecDefinitions(t *testing.T) {
+func TestListProductSpecificationTemplatesDoesNotExposeSpecDefinitions(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	if err != nil {
 		t.Fatalf("open test db: %v", err)
 	}
 	if err := db.AutoMigrate(
-		&productdomain.ProductType{},
-		&productdomain.ProductTypeTranslation{},
+		&productdomain.ProductSpecificationTemplate{},
+		&productdomain.ProductSpecificationTemplateTranslation{},
 		&productdomain.SpecDefinition{},
 	); err != nil {
 		t.Fatalf("migrate test db: %v", err)
 	}
 
-	productType := productdomain.ProductType{
+	productSpecificationTemplate := productdomain.ProductSpecificationTemplate{
 		Name:      "Wheelset",
 		Slug:      "wheelset",
 		IsEnabled: true,
-		Translations: []productdomain.ProductTypeTranslation{
+		Translations: []productdomain.ProductSpecificationTemplateTranslation{
 			{Locale: "zh_cn", Name: "轮组"},
 		},
 		SpecDefinitions: []productdomain.SpecDefinition{
 			{Name: "Material", Slug: "material", FieldType: "text", IsVisible: true},
 		},
 	}
-	if err := db.Create(&productType).Error; err != nil {
-		t.Fatalf("seed product type: %v", err)
+	if err := db.Create(&productSpecificationTemplate).Error; err != nil {
+		t.Fatalf("seed product specification template: %v", err)
 	}
 
 	router := gin.New()
 	handler := NewHandler(service.NewProductService(repository.NewProductRepository(db), nil, 0))
-	router.GET("/products/types", handler.ListProductTypes)
+	router.GET("/products/specification-templates", handler.ListProductSpecificationTemplates)
 
 	response := httptest.NewRecorder()
-	request := httptest.NewRequest(http.MethodGet, "/products/types", nil)
+	request := httptest.NewRequest(http.MethodGet, "/products/specification-templates", nil)
 	router.ServeHTTP(response, request)
 
 	if response.Code != http.StatusOK {
-		t.Fatalf("expected product types to return 200, got %d: %s", response.Code, response.Body.String())
+		t.Fatalf("expected product specification templates to return 200, got %d: %s", response.Code, response.Body.String())
 	}
 	if !strings.Contains(response.Body.String(), `"slug":"wheelset"`) {
-		t.Fatalf("expected response to include public product type, got %s", response.Body.String())
+		t.Fatalf("expected response to include public product specification template, got %s", response.Body.String())
 	}
 	if strings.Contains(response.Body.String(), "spec_definitions") {
-		t.Fatalf("public product type index exposes specs: %s", response.Body.String())
+		t.Fatalf("public product specification template index exposes specs: %s", response.Body.String())
+	}
+}
+
+func TestListCategoriesUsesRequestedLocaleAndFallsBackToDefaultName(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	if err != nil {
+		t.Fatalf("open test db: %v", err)
+	}
+	if err := db.AutoMigrate(
+		&productdomain.ProductCategory{},
+		&productdomain.ProductCategoryTranslation{},
+	); err != nil {
+		t.Fatalf("migrate test db: %v", err)
+	}
+
+	category := productdomain.ProductCategory{
+		Name:      "Wheel Parts",
+		Slug:      "wheel-parts",
+		Depth:     1,
+		IsEnabled: true,
+	}
+	if err := db.Create(&category).Error; err != nil {
+		t.Fatalf("seed category: %v", err)
+	}
+	if err := db.Create(&productdomain.ProductCategoryTranslation{
+		ProductCategoryID: category.ID,
+		Locale:            "zh_cn",
+		Name:              "轮组部件",
+	}).Error; err != nil {
+		t.Fatalf("seed category translation: %v", err)
+	}
+
+	router := gin.New()
+	router.Use(func(c *gin.Context) {
+		c.Set("locale", "zh_cn")
+		c.Next()
+	})
+	handler := NewHandler(service.NewProductService(repository.NewProductRepository(db), nil, 0))
+	handler.ConfigureProductCategoryService(
+		service.NewProductCategoryService(repository.NewProductCategoryRepository(db)),
+	)
+	router.GET("/products/categories", handler.ListCategories)
+
+	response := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/products/categories", nil)
+	router.ServeHTTP(response, request)
+
+	if response.Code != http.StatusOK {
+		t.Fatalf("expected categories to return 200, got %d: %s", response.Code, response.Body.String())
+	}
+	if !strings.Contains(response.Body.String(), `"name":"轮组部件"`) {
+		t.Fatalf("expected translated category name, got %s", response.Body.String())
+	}
+	if !strings.Contains(response.Body.String(), `"locale":"zh_cn"`) {
+		t.Fatalf("expected response locale, got %s", response.Body.String())
 	}
 }

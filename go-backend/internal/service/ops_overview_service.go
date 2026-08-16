@@ -11,6 +11,8 @@ import (
 	"commerce-platform/internal/repository"
 )
 
+var ErrInvalidOpsOverviewEnvironment = errors.New("invalid operations overview environment")
+
 type OpsOverviewService struct {
 	domainRepo    *repository.OpsDomainBindingRepository
 	connectorRepo *repository.OpsConnectorRepository
@@ -36,29 +38,38 @@ func NewOpsOverviewService(
 }
 
 func (s *OpsOverviewService) Get() (*ops.Overview, error) {
+	return s.GetForEnvironment(ops.DomainEnvironmentProduction)
+}
+
+func (s *OpsOverviewService) GetForEnvironment(environment string) (*ops.Overview, error) {
+	environment, err := normalizeOpsOverviewEnvironment(environment)
+	if err != nil {
+		return nil, err
+	}
+
 	if s == nil || s.domainRepo == nil || s.connectorRepo == nil || s.vpsRepo == nil || s.projectRepo == nil {
 		return nil, errors.New("operations overview service is not configured")
 	}
 
-	domains, err := s.domainRepo.List()
+	domains, err := s.domainRepo.ListByEnvironment(environment)
 	if err != nil {
 		return nil, fmt.Errorf("load operations domains: %w", err)
 	}
-	connectors, err := s.connectorRepo.List()
+	connectors, err := s.connectorRepo.ListByEnvironment(environment)
 	if err != nil {
 		return nil, fmt.Errorf("load operations connectors: %w", err)
 	}
-	vps, err := s.vpsRepo.List()
+	vps, err := s.vpsRepo.ListByEnvironment(environment)
 	if err != nil {
 		return nil, fmt.Errorf("load operations VPS bindings: %w", err)
 	}
-	projects, err := s.projectRepo.List()
+	projects, err := s.projectRepo.ListByEnvironment(environment)
 	if err != nil {
 		return nil, fmt.Errorf("load operations project bindings: %w", err)
 	}
 
 	overview := &ops.Overview{
-		Environment: "production",
+		Environment: environment,
 		GeneratedAt: time.Now().UTC(),
 		Summary: map[string]ops.OverviewSummary{
 			"domains":    summarizeDomains(domains),
@@ -83,6 +94,22 @@ func (s *OpsOverviewService) Get() (*ops.Overview, error) {
 	}
 
 	return overview, nil
+}
+
+func normalizeOpsOverviewEnvironment(environment string) (string, error) {
+	environment = strings.ToLower(strings.TrimSpace(environment))
+	if environment == "" {
+		return ops.DomainEnvironmentProduction, nil
+	}
+	switch environment {
+	case ops.DomainEnvironmentProduction,
+		ops.DomainEnvironmentStaging,
+		ops.DomainEnvironmentTest,
+		ops.DomainEnvironmentLocal:
+		return environment, nil
+	default:
+		return "", fmt.Errorf("%w: %s", ErrInvalidOpsOverviewEnvironment, environment)
+	}
 }
 
 func summarizeDomains(records []ops.DomainBinding) ops.OverviewSummary {

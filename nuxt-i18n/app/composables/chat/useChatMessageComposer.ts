@@ -2,8 +2,12 @@ import type { Ref, WritableComputedRef } from 'vue'
 import { buildOrderChatMetadata } from '~/composables/chat/useOrderChatPayload'
 import { buildProductChatMetadata } from '~/composables/chat/useProductChatPayload'
 import { buildProductConfigConfirmMetadata } from '~/composables/chat/useProductConfigConfirmPayload'
+import type {
+  WheelsetSelectionRequestDraft,
+  WheelsetSelectionRequestMessageType,
+} from '~/types/wheelsetSelectionAssistant'
 
-type ChatMessageType = 'text' | 'image' | 'product' | 'order' | 'faq' | 'config_confirm'
+type ChatMessageType = 'text' | 'image' | 'product' | 'order' | 'faq' | 'config_confirm' | WheelsetSelectionRequestMessageType
 
 interface ComposerOptions {
   conversationId: Ref<string>
@@ -180,11 +184,27 @@ export const useChatMessageComposer = (options: ComposerOptions) => {
     )
   }
 
+  const sendWheelsetSelectionRequestMessage = (
+    draft: WheelsetSelectionRequestDraft,
+    afterSuccess?: () => void | Promise<void>
+  ) => {
+    return sendDraft(
+      {
+        message: draft.message,
+        message_type: draft.message_type,
+        metadata: draft.metadata,
+      },
+      '发送轮组选型信息失败:',
+      afterSuccess
+    )
+  }
+
   return {
     sendTextMessage,
     sendImageMessage,
     sendProductMessage,
     sendProductConfigConfirmMessage,
     sendOrderMessage,
+    sendWheelsetSelectionRequestMessage,
   }
 }

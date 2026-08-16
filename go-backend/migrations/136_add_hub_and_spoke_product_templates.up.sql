@@ -1,20 +1,20 @@
 -- Add independently sellable hub and spoke product templates.
 -- Product-specific values remain on products/SKUs.
-INSERT INTO product_types (name, slug, description, sort_order, is_enabled)
+INSERT INTO product_specification_templates (name, slug, description, sort_order, is_enabled)
 VALUES
     ('Hub', 'hub', 'Hub template. Common hub fields are defined here; specific product/SKU values are maintained on the product/SKU.', 50, TRUE),
     ('Spoke', 'spoke', 'Spoke template. Common spoke fields are defined here; specific product/SKU values are maintained on the product/SKU.', 60, TRUE)
 ON CONFLICT (slug) DO NOTHING;
 
 INSERT INTO product_spec_definitions (
-    product_type_id, "group", name, slug, field_type, unit,
+    product_specification_template_id, "group", name, slug, field_type, unit,
     is_required, is_filterable, is_visible, is_variant_option,
     sort_order, options, validation
 )
 SELECT pt.id, seed."group", seed.name, seed.slug, seed.field_type, seed.unit,
        seed.is_required, seed.is_filterable, seed.is_visible, seed.is_variant_option,
        seed.sort_order, seed.options, ''
-FROM product_types pt
+FROM product_specification_templates pt
 JOIN (
     VALUES
         ('hub', '规格', 'Material', 'material', 'select', '', FALSE, TRUE, TRUE, FALSE, 10, '[]'),
@@ -36,6 +36,6 @@ JOIN (
 WHERE NOT EXISTS (
     SELECT 1
     FROM product_spec_definitions existing
-    WHERE existing.product_type_id = pt.id
+    WHERE existing.product_specification_template_id = pt.id
       AND existing.slug = seed.slug
 );

@@ -2,6 +2,7 @@ package admin
 
 import (
 	"errors"
+	"strings"
 
 	"commerce-platform/internal/pkg/apierror"
 	"commerce-platform/internal/pkg/response"
@@ -40,8 +41,12 @@ func (h *OpsProjectBindingHandler) List(c *gin.Context) {
 		apierror.RespondInternalError(c, errors.New("operations project service is not configured"))
 		return
 	}
-	records, err := h.projectService.List()
+	records, err := h.projectService.ListForEnvironment(strings.TrimSpace(c.Query("environment")))
 	if err != nil {
+		if errors.Is(err, service.ErrInvalidOpsProjectEnvironment) {
+			apierror.RespondBadRequest(c, err.Error())
+			return
+		}
 		apierror.RespondInternalError(c, err)
 		return
 	}

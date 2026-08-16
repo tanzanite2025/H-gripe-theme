@@ -35,7 +35,7 @@ interface ProductSpecDefinition {
   options?: string | null
 }
 
-interface ProductTypeSchema {
+interface ProductSpecificationTemplateSchema {
   id: number
   name: string
   slug: string
@@ -65,11 +65,11 @@ export const useProductAttributes = () => {
 
   const formatLabel = (value: string) => value.replace(/_/g, ' ')
 
-  const buildAttributesFromTypes = (productTypes: ProductTypeSchema[]): AttributeWithValues[] => {
+  const buildAttributesFromSpecificationTemplates = (productSpecificationTemplates: ProductSpecificationTemplateSchema[]): AttributeWithValues[] => {
     const bySlug = new Map<string, AttributeWithValues>()
 
-    productTypes.forEach((productType) => {
-      ;(productType.spec_definitions || [])
+    productSpecificationTemplates.forEach((productSpecificationTemplate) => {
+      ;(productSpecificationTemplate.spec_definitions || [])
         .filter((spec) => spec.is_filterable)
         .forEach((spec) => {
           const options =
@@ -92,7 +92,7 @@ export const useProductAttributes = () => {
             affects_stock: false,
             is_enabled: true,
             sort_order: spec.sort_order || 0,
-            meta: { source: 'product_type', product_type: productType.slug },
+            meta: { source: 'product_specification_template', product_specification_template: productSpecificationTemplate.slug },
             values: [],
           }
 
@@ -123,18 +123,18 @@ export const useProductAttributes = () => {
     error.value = null
 
     try {
-      const response = await $fetch<{ data: ProductTypeSchema[] }>(
-        `${apiBase.value}/products/types`,
+      const response = await $fetch<{ data: ProductSpecificationTemplateSchema[] }>(
+        `${apiBase.value}/products/specification-templates`,
         {
           headers: { accept: 'application/json' },
         },
       )
 
       const items = Array.isArray(response?.data) ? response.data : []
-      filterableAttributes.value = buildAttributesFromTypes(items)
+      filterableAttributes.value = buildAttributesFromSpecificationTemplates(items)
     } catch (e: any) {
       // eslint-disable-next-line no-console
-      console.error('Failed to load product type filters:', e)
+      console.error('Failed to load product specification template filters:', e)
       error.value = e?.data?.message || e?.message || 'Failed to load product attributes.'
       filterableAttributes.value = []
     } finally {

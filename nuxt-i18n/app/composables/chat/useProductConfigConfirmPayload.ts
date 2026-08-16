@@ -72,8 +72,8 @@ const parseOptionValues = (value: unknown): Record<string, string> => {
 }
 
 const specDefinitionMap = (product: ProductLike) => {
-  const definitions = product.productType?.specDefinitions
-    || product.product_type?.spec_definitions
+  const definitions = product.productSpecificationTemplate?.specDefinitions
+    || product.product_specification_template?.spec_definitions
     || []
 
   return (Array.isArray(definitions) ? definitions : []).reduce<Map<string, ShopProductSpecDefinition>>((acc, raw) => {
