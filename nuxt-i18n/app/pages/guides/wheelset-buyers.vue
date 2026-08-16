@@ -511,9 +511,6 @@ const ctaNotes = {
 
 const openWhatsAppChat = () => {
   openChat({ showAgentList: true })
-  if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('ui:popup-open', { detail: { id: 'whatsapp-chat' } }))
-  }
 }
 
 const openLocalizedRouteInNewTab = (target: string) => {
@@ -572,9 +569,6 @@ const goToHolePatterns = async () => {
 const openQuickBuy = (event?: MouseEvent) => {
   quickBuyAnchorRef.value = event?.currentTarget instanceof HTMLElement ? event.currentTarget : null
   quickOpen.value = true
-  if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('ui:popup-open', { detail: { id: 'wheelset-quick' } }))
-  }
 }
 
 const goToAboutAppearance = async () => {

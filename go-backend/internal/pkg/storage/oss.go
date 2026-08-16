@@ -69,14 +69,18 @@ func (s *ossStorageImpl) Upload(ctx context.Context, file *multipart.FileHeader)
 }
 
 func (s *ossStorageImpl) UploadWithPrefix(ctx context.Context, file *multipart.FileHeader, prefix string) (string, error) {
-	return s.uploadWithPrefix(ctx, file, prefix, false)
+	return s.uploadWithPrefix(ctx, file, prefix, false, "")
 }
 
 func (s *ossStorageImpl) UploadWithPrefixPrivate(ctx context.Context, file *multipart.FileHeader, prefix string) (string, error) {
-	return s.uploadWithPrefix(ctx, file, prefix, true)
+	return s.uploadWithPrefix(ctx, file, prefix, true, "")
 }
 
-func (s *ossStorageImpl) uploadWithPrefix(ctx context.Context, file *multipart.FileHeader, prefix string, private bool) (string, error) {
+func (s *ossStorageImpl) UploadWithPrefixAndCacheControl(ctx context.Context, file *multipart.FileHeader, prefix string, cacheControl string) (string, error) {
+	return s.uploadWithPrefix(ctx, file, prefix, false, cacheControl)
+}
+
+func (s *ossStorageImpl) uploadWithPrefix(ctx context.Context, file *multipart.FileHeader, prefix string, private bool, cacheControl string) (string, error) {
 	// 打开上传的文件
 	src, err := file.Open()
 	if err != nil {
@@ -99,6 +103,9 @@ func (s *ossStorageImpl) uploadWithPrefix(ctx context.Context, file *multipart.F
 	}
 	if private {
 		options = append(options, oss.ObjectACL(oss.ACLPrivate))
+	}
+	if cacheControl = strings.TrimSpace(cacheControl); cacheControl != "" {
+		options = append(options, oss.CacheControl(cacheControl))
 	}
 
 	// 上传到OSS

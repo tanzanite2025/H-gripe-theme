@@ -187,7 +187,7 @@ export interface CustomerContext {
   signals?: Record<string, CustomerSignal>
 }
 
-export interface RegionAnalyticsRow {
+export interface CustomerServiceAnalyticsRegion {
   region_label: string
   member_count?: number | string
   visitor_count?: number | string
@@ -195,10 +195,18 @@ export interface RegionAnalyticsRow {
   percent?: number | string
 }
 
-export interface CustomerRegionAnalytics {
+export interface CustomerServiceAnalytics {
   date?: string
   total_conversations?: number | string
-  regions?: RegionAnalyticsRow[]
+  known_region_count?: number | string
+  unknown_region_count?: number | string
+  member_customer_count?: number | string
+  converted_member_customer_count?: number | string
+  member_conversion_rate?: number | string
+  average_reply_interval_seconds?: number | string
+  reply_interval_count?: number | string
+  unanswered_customer_turns?: number | string
+  regions?: CustomerServiceAnalyticsRegion[]
 }
 
 export interface FAQItem {

@@ -173,7 +173,8 @@
       "items": "Items",
       "price": "Price",
       "openCart": "View cart summary"
-    }
+    },
+    "added": "Added to cart"
   },
   "cartDrawer": {
     "ariaLabel": "Ostoskori",
@@ -318,7 +319,8 @@
       "actions": {
         "viewCart": "View cart",
         "livechat": "Livechat",
-        "email": "Email"
+        "email": "Email",
+        "checkout": "Checkout"
       },
       "messages": {
         "invalidQuote": "Invalid checkout quote response",
@@ -418,7 +420,13 @@
           "recipient": "Required: recipient name + phone number",
           "scan": "Use the QR code with WeChat Pay on your phone."
         }
-      }
+      },
+      "gatewayFallback": {
+        "title": "This payment provider is having trouble",
+        "description": "The previous attempt may still be processing. Choose another available method only if you did not complete it.",
+        "error": "The selected payment provider is temporarily unavailable. Please choose another available payment method."
+      },
+      "temporarilyUnavailable": "Temporarily unavailable"
     },
     "stepper": {
       "common": {
@@ -471,7 +479,8 @@
           "unavailable": "Unavailable",
           "calculating": "Calculating...",
           "free": "Free"
-        }
+        },
+        "zip": "Postal code"
       },
       "review": {
         "backToShipping": "Back to shipping",
@@ -501,7 +510,8 @@
         "pointsDiscount": "Points discount",
         "couponDiscount": "Coupon discount",
         "giftCardDiscount": "Gift card discount",
-        "total": "Total"
+        "total": "Total",
+        "title": "Order summary"
       }
     },
     "fields": {
@@ -574,6 +584,15 @@
         "checking": "Checking..."
       },
       "qrAlt": "WeChat Pay QR code"
+    },
+    "steps": {
+      "payment": "Choose payment method"
+    },
+    "common": {
+      "processing": "Processing..."
+    },
+    "product": {
+      "buyNow": "Buy now"
     }
   },
   "common": {
@@ -584,7 +603,14 @@
     "backToHome": "Back to Home",
     "viewAll": "View all",
     "explore": "Explore",
-    "currentPage": "Current page"
+    "currentPage": "Current page",
+    "retry": "Retry",
+    "yes": "Yes",
+    "no": "No",
+    "decrease": "Decrease",
+    "increase": "Increase",
+    "remove": "Remove",
+    "done": "Done"
   },
   "company": {
     "nav": {
@@ -1427,6 +1453,23 @@
       "shipping": "Toimitustietoja ei ole vielä lisätty."
     }
   },
+  "productReviews": {
+    "eyebrow": "Asiakaspalaute",
+    "title": "Arvostelut ja arviot",
+    "summaryLabel": "{rating}/5 perustuen {count} arvioon",
+    "reviewCount": "{count} arviota",
+    "loading": "Ladataan arvioita...",
+    "loadError": "Arvioita ei voitu ladata.",
+    "retry": "Yritä uudelleen",
+    "empty": "Hyväksyttyjä arvioita ei ole vielä.",
+    "ratingLabel": "{rating} tähteä viidestä",
+    "imageAlt": "Asiakasarvion kuva",
+    "verifiedPurchase": "Vahvistettu ostos",
+    "helpfulCount": "{count} piti tätä hyödyllisenä",
+    "storeReply": "Kaupan vastaus",
+    "loadingMore": "Ladataan lisää...",
+    "loadMore": "Lataa lisää arvioita"
+  },
   "products": {
     "searchResults": "Hakutulokset",
     "searchFor": "Hae",
@@ -1449,6 +1492,20 @@
       "calculator": "Calculator",
       "points": "Points",
       "picture": "Picture"
+    },
+    "detail": {
+      "viewDetails": "Product details",
+      "media": "Product media",
+      "viewVideo": "View product video",
+      "viewImage": "View product image",
+      "option": "Option",
+      "inStock": "In stock",
+      "outOfStock": "Out of stock",
+      "specifications": "Specifications",
+      "quantity": "Quantity",
+      "decreaseQuantity": "Decrease quantity",
+      "increaseQuantity": "Increase quantity",
+      "notFound": "Product not found"
     }
   },
   "profile": {
@@ -1477,8 +1534,56 @@
     },
     "actions": {
       "toCart": "Koriin",
-      "payment": "Maksu"
+      "payment": "Maksu",
+      "addToCart": "Add to cart",
+      "directPayment": "Pay now"
+    },
+    "entry": {
+      "directSelect": {
+        "title": "I know my specs",
+        "description": "Choose configured items now.",
+        "action": "Start"
+      },
+      "readyMatch": {
+        "title": "Match ready wheelsets",
+        "description": "Coming next."
+      },
+      "specFinder": {
+        "title": "Find my bike specs",
+        "description": "Coming next."
+      },
+      "eyebrow": "QUICKBUY",
+      "title": "Choose how to start"
+    },
+    "help": {
+      "title": "QUICK instructions"
+    },
+    "filters": {
+      "label": "Filters",
+      "clear": "Clear",
+      "empty": "No values available"
+    },
+    "productRail": {
+      "label": "Available products",
+      "empty": "No products are available for this step."
+    },
+    "selection": {
+      "label": "Selected products",
+      "editHint": "Review and adjust your selections"
+    },
+    "defaultSteps": {
+      "step1": "Step 1",
+      "step2": "Step 2",
+      "step3": "Step 3"
     }
+  },
+  "recommendations": {
+    "previous": "Previous recommended products",
+    "next": "Next recommended products",
+    "title": "Recommended products",
+    "empty": "No recommendations yet",
+    "shopTitle": "Recommended products",
+    "productDetailTitle": "You may also like"
   },
   "search": {
     "placeholder": "Hae...",

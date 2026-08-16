@@ -1,7 +1,8 @@
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { useAsyncData } from '#imports'
 import { fetchFaqData } from '~/data/faq'
 import type { FaqCategory, PageFaqProps } from '~/data/faq/types'
+import { useFaqAccordionState } from '~/composables/useFaqAccordionState'
 
 export async function usePageFaq(props: PageFaqProps) {
   const { locale, t } = useI18n()
@@ -12,11 +13,11 @@ export async function usePageFaq(props: PageFaqProps) {
   )
   const faqData = computed(() => props.data || asyncFaqData.value || null)
   const displayTitle = computed(() => props.title || faqData.value?.title || t('faq.title'))
-  const expandedItems = ref<Set<string>>(new Set())
-
-  const toggleItem = (itemId: string) => {
-    expandedItems.value = expandedItems.value.has(itemId) ? new Set<string>() : new Set([itemId])
-  }
+  const {
+    expandedItems,
+    toggleItem,
+    resetExpandedItems,
+  } = useFaqAccordionState()
 
   const displayCategories = computed(() => {
     if (!faqData.value?.categories) return []
@@ -58,6 +59,7 @@ export async function usePageFaq(props: PageFaqProps) {
     displayCategories,
     expandedItems,
     toggleItem,
+    resetExpandedItems,
     hasMoreItems
   }
 }

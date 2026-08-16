@@ -2,6 +2,7 @@ package admin
 
 import (
 	"errors"
+	"strings"
 
 	"commerce-platform/internal/pkg/apierror"
 	"commerce-platform/internal/pkg/response"
@@ -45,8 +46,12 @@ func (h *OpsDomainBindingHandler) List(c *gin.Context) {
 		apierror.RespondInternalError(c, errors.New("operations domain service is not configured"))
 		return
 	}
-	domains, err := h.domainService.List()
+	domains, err := h.domainService.ListForEnvironment(strings.TrimSpace(c.Query("environment")))
 	if err != nil {
+		if errors.Is(err, service.ErrInvalidOpsDomainEnvironment) {
+			apierror.RespondBadRequest(c, err.Error())
+			return
+		}
 		apierror.RespondInternalError(c, err)
 		return
 	}

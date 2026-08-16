@@ -4,8 +4,8 @@
 UPDATE product_spec_definitions definition
 SET options = '[]',
     updated_at = NOW()
-FROM product_types product_type
-WHERE definition.product_type_id = product_type.id
-  AND product_type.slug IN ('rim', 'carbon_frame', 'wheelset', 'handlebar', 'hub', 'spoke')
+FROM product_specification_templates product_specification_template
+WHERE definition.product_specification_template_id = product_specification_template.id
+  AND product_specification_template.slug IN ('rim', 'carbon_frame', 'wheelset', 'handlebar', 'hub', 'spoke')
   AND definition.field_type = 'select'
   AND COALESCE(BTRIM(definition.options), '') <> '[]';

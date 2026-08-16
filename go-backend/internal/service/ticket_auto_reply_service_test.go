@@ -1,6 +1,8 @@
 package service
 
 import (
+	"commerce-platform/internal/domain/outbox"
+	"encoding/json"
 	"testing"
 
 	"commerce-platform/internal/domain/faq"
@@ -9,6 +11,7 @@ import (
 	"commerce-platform/internal/repository"
 
 	"github.com/glebarez/sqlite"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -42,7 +45,7 @@ func TestAutoReplyWelcomeUsesConversationStaffIdentityAndCooldown(t *testing.T) 
 		CooldownSeconds: 86400,
 	}).Error)
 
-	service := NewTicketService(repository.NewTicketRepository(db), repository.NewUserRepository(db))
+	service := newAutoReplyTestTicketService(db)
 	owner := CustomerServiceOwner{VisitorSessionHash: "auto-reply-visitor"}
 
 	_, alreadySent, first, err := service.GetWelcomeMessage(conversationID, owner, agent.ID, "en")
@@ -61,6 +64,59 @@ func TestAutoReplyWelcomeUsesConversationStaffIdentityAndCooldown(t *testing.T) 
 	var count int64
 	require.NoError(t, db.Model(&ticket.TicketMessage{}).Where("ticket_id = ?", conversation.ID).Count(&count).Error)
 	require.EqualValues(t, 1, count)
+
+	var event outbox.Event
+	require.NoError(t, db.Where("event_type = ?", outbox.EventTypeCustomerServiceRealtime).First(&event).Error)
+	assert.Equal(t, CustomerServiceMessageCreatedEventID(first.ID), event.EventKey)
+
+	var payload outbox.CustomerServiceRealtimePayload
+	require.NoError(t, json.Unmarshal(event.Payload, &payload))
+	assert.Equal(t, CustomerServiceEventMessageCreated, payload.Type)
+	assert.Equal(t, CustomerServiceMessageCreatedEventID(first.ID), payload.EventID)
+	assert.Equal(t, "system", payload.Actor.Kind)
+	assert.Equal(t, conversation.ID, payload.TicketID)
+}
+
+func TestAutoReplyRollsBackWhenRealtimeOutboxWriteFails(t *testing.T) {
+	db := newAutoReplyTestDB(t)
+	agent := createAutoReplyTestUser(t, db, "auto-outbox-failure-agent@example.test", "auto-outbox-failure-agent")
+	conversationID := "auto-reply-outbox-failure"
+	conversation := ticket.Ticket{
+		TicketNumber:       "TK-AUTO-REPLY-OUTBOX-FAILURE",
+		UserID:             agent.ID,
+		ConversationID:     &conversationID,
+		VisitorSessionHash: "auto-reply-outbox-failure-visitor",
+		Category:           customerServiceTicketCategory,
+		Status:             "open",
+		AssignedTo:         agent.ID,
+		Subject:            "Customer service chat",
+	}
+	require.NoError(t, db.Create(&conversation).Error)
+	require.NoError(t, db.Create(&ticket.AutoReplyRule{
+		Type:            "welcome",
+		ReplyMessage:    "This reply must roll back.",
+		Locale:          "en",
+		MessageType:     "text",
+		IsActive:        true,
+		CooldownSeconds: 86400,
+	}).Error)
+
+	service := newAutoReplyTestTicketService(db)
+	require.NoError(t, db.Migrator().DropTable(&outbox.Event{}))
+
+	_, alreadySent, message, err := service.GetWelcomeMessage(
+		conversationID,
+		CustomerServiceOwner{VisitorSessionHash: "auto-reply-outbox-failure-visitor"},
+		agent.ID,
+		"en",
+	)
+	require.Error(t, err)
+	require.False(t, alreadySent)
+	require.Nil(t, message)
+
+	var count int64
+	require.NoError(t, db.Model(&ticket.TicketMessage{}).Where("ticket_id = ?", conversation.ID).Count(&count).Error)
+	assert.Zero(t, count)
 }
 
 func TestAutoReplyRuleValidationRejectsUnsafeLink(t *testing.T) {
@@ -188,7 +244,7 @@ func TestAutoReplyCooldownUsesRuleIdentityAcrossLocales(t *testing.T) {
 		CooldownSeconds: 86400,
 	}).Error)
 
-	service := NewTicketService(repository.NewTicketRepository(db), repository.NewUserRepository(db))
+	service := newAutoReplyTestTicketService(db)
 	owner := CustomerServiceOwner{VisitorSessionHash: "auto-reply-locale-visitor"}
 
 	_, alreadySent, first, err := service.GetWelcomeMessage(conversationID, owner, agent.ID, "en-US")
@@ -243,7 +299,7 @@ func TestAutoReplyDoesNotUseWildcardOrOtherLocaleFallback(t *testing.T) {
 		CooldownSeconds: 86400,
 	}).Error)
 
-	service := NewTicketService(repository.NewTicketRepository(db), repository.NewUserRepository(db))
+	service := newAutoReplyTestTicketService(db)
 	owner := CustomerServiceOwner{VisitorSessionHash: "auto-reply-strict-locale-visitor"}
 
 	_, alreadySent, message, err := service.GetWelcomeMessage(conversationID, owner, agent.ID, "zh-CN")
@@ -287,11 +343,7 @@ func TestAutoReplyFAQReferenceRequiresPublishedSameLocale(t *testing.T) {
 	}
 	require.NoError(t, db.Create(&item).Error)
 
-	service := NewTicketService(
-		repository.NewTicketRepository(db),
-		repository.NewUserRepository(db),
-		repository.NewFAQRepository(db),
-	)
+	service := newAutoReplyTestTicketService(db, repository.NewFAQRepository(db))
 	input := AutoReplyRuleInput{
 		Type:           "keyword",
 		TriggerKeyword: "payment",
@@ -353,8 +405,15 @@ func newAutoReplyTestDB(t *testing.T) *gorm.DB {
 		&ticket.Ticket{},
 		&ticket.TicketMessage{},
 		&ticket.AutoReplyRule{},
+		&outbox.Event{},
 	))
 	return db
+}
+
+func newAutoReplyTestTicketService(db *gorm.DB, faqRepos ...*repository.FAQRepository) *TicketService {
+	service := NewTicketService(repository.NewTicketRepository(db), repository.NewUserRepository(db), faqRepos...)
+	service.ConfigureCustomerServiceRealtimeOutbox(repository.NewOutboxRepository(db))
+	return service
 }
 
 func createAutoReplyTestUser(t *testing.T, db *gorm.DB, email, username string) user.User {

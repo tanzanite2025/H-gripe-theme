@@ -18,5 +18,14 @@ export {
   resolvePageFaqDataList,
   type ResolvedPageFaqData
 } from './helpers'
+export {
+  filterGlobalAllFaqItems,
+  flattenGlobalAllFaqItems,
+  groupGlobalAllFaqItemsByPage,
+  groupGlobalAllFaqTopics,
+  type GlobalAllFaqFlatItem,
+  type GlobalAllFaqSearchTopic,
+  type GlobalAllFaqsDisplayGroup,
+} from './global'
 export { normalizeFaqRoutePath, resolveFaqRouteLookupPath, shouldAutoInsertFaqForRoute } from './routing'
 export * from './types'

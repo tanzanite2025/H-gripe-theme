@@ -6,8 +6,8 @@ import (
 	"strings"
 )
 
-func (r *MediaRepository) productTypeImageReferences(query mediaAssetReferenceQuery) ([]media.AssetReference, error) {
-	if !r.hasTable("product_types") {
+func (r *MediaRepository) productSpecificationTemplateImageReferences(query mediaAssetReferenceQuery) ([]media.AssetReference, error) {
+	if !r.hasTable("product_specification_templates") {
 		return []media.AssetReference{}, nil
 	}
 
@@ -18,7 +18,7 @@ func (r *MediaRepository) productTypeImageReferences(query mediaAssetReferenceQu
 		ImageURL          string
 	}
 	var rows []row
-	if err := r.db.Table("product_types").
+	if err := r.db.Table("product_specification_templates").
 		Select("id, name, image_media_asset_id, image_url").
 		Where("image_media_asset_id = ? OR image_url IN ?", query.AssetID, query.URLs).
 		Find(&rows).Error; err != nil {
@@ -36,7 +36,7 @@ func (r *MediaRepository) productTypeImageReferences(query mediaAssetReferenceQu
 		}
 		references = append(references, newMediaReference(
 			media.ReferenceCategoryCatalog,
-			"product_type",
+			"product_specification_template",
 			item.ID,
 			0,
 			namedMediaReferenceLabel("商品分类", item.ID, item.Name),

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"commerce-platform/internal/domain/outbox"
 	"commerce-platform/internal/pkg/antibot"
@@ -32,14 +33,18 @@ type Dependencies struct {
 	PaymentGatewayCircuitBreaker *service.PaymentGatewayCircuitBreakerService
 	OrderAbuse                   *orderabuse.Service
 	RedisClient                  *redis.Client
+	CustomerServiceRealtimeRelay *service.CustomerServiceRealtimeRelay
 }
 
 type Repositories struct {
 	User                       *repository.UserRepository
 	Post                       *repository.PostRepository
+	StorefrontRouteCatalog     *repository.StorefrontRouteCatalogRepository
 	Product                    *repository.ProductRepository
+	ProductCategory            *repository.ProductCategoryRepository
 	ProductBrand               *repository.ProductBrandRepository
 	ProductInformationTemplate *repository.ProductInformationTemplateRepository
+	CustomsClassification      *repository.CustomsClassificationRepository
 	Cart                       *repository.CartRepository
 	Setting                    *repository.SettingRepository
 	FAQ                        *repository.FAQRepository
@@ -63,6 +68,7 @@ type Repositories struct {
 	StorefrontMarket           *repository.StorefrontMarketRepository
 	OpsDomainBinding           *repository.OpsDomainBindingRepository
 	OpsConnector               *repository.OpsConnectorRepository
+	OpsConnectorOAuth          *repository.OpsConnectorOAuthRepository
 	OpsVPSBinding              *repository.OpsVPSBindingRepository
 	OpsProjectBinding          *repository.OpsProjectBindingRepository
 	OpsDeploymentWorkflow      *repository.OpsDeploymentWorkflowRepository
@@ -75,6 +81,8 @@ type Repositories struct {
 	SuggestionFeedback         *repository.SuggestionFeedbackRepository
 	Spoke                      *repository.SpokeRepository
 	QuickBuy                   *repository.QuickBuyRepository
+	SelectionAssistant         *repository.SelectionAssistantRepository
+	WheelsetFitQuestionnaire   *repository.WheelsetFitQuestionnaireRepository
 	Subscription               *repository.SubscriptionRepository
 	EmailChallenge             *repository.EmailChallengeRepository
 	VisitorProfile             *repository.VisitorProfileRepository
@@ -88,8 +96,10 @@ type Services struct {
 	AdminAccountMaintenance           *service.AdminAccountMaintenanceService
 	Post                              *service.PostService
 	Product                           *service.ProductService
+	ProductCategory                   *service.ProductCategoryService
 	ProductBrand                      *service.ProductBrandService
 	ProductInformationTemplate        *service.ProductInformationTemplateService
+	CustomsClassification             *service.CustomsClassificationService
 	Cart                              *service.CartService
 	Setting                           *service.SettingService
 	WebsiteProfile                    *service.WebsiteProfileService
@@ -99,6 +109,7 @@ type Services struct {
 	SEOResources                      *service.SEOResourceService
 	Analytics                         *service.AnalyticsService
 	AdminPublicChat                   *service.AdminPublicChatAgentService
+	CustomerServiceAvatar             *service.CustomerServiceAvatarService
 	FAQ                               *service.FAQService
 	Gallery                           *service.GalleryService
 	Media                             *service.MediaService
@@ -109,11 +120,14 @@ type Services struct {
 	Marketing                         *service.MarketingService
 	LoyaltyProgram                    *service.LoyaltyProgramService
 	Review                            *service.ReviewService
+	ReviewModeration                  *service.ReviewModerationService
 	Ticket                            *service.TicketService
 	CustomerServiceContext            *service.CustomerServiceContextService
+	CustomerServiceAnalytics          *service.CustomerServiceAnalyticsService
 	CustomerServiceEvents             *service.CustomerServiceEventHub
 	Subscription                      *service.SubscriptionService
 	Sitemap                           *service.SitemapService
+	StorefrontRouteCatalog            *service.StorefrontRouteCatalogService
 	Showcase                          *service.ShowcaseService
 	Wishlist                          *service.WishlistService
 	Feedback                          *service.FeedbackService
@@ -124,6 +138,8 @@ type Services struct {
 	Shipping                          *service.ShippingService
 	Spoke                             *service.SpokeService
 	QuickBuy                          *service.QuickBuyService
+	SelectionAssistant                *service.SelectionAssistantService
+	WheelsetFitQuestionnaire          *service.WheelsetFitQuestionnaireService
 	VisitorProfile                    *service.VisitorProfileService
 	BehaviorEvents                    *service.BehaviorEventService
 	Recommendations                   *service.RecommendationService
@@ -141,6 +157,7 @@ type Services struct {
 	OpsDomainPreview                  *service.OpsDomainPreviewService
 	OpsDomainSync                     *service.OpsDomainSyncService
 	OpsConnector                      *service.OpsConnectorService
+	OpsConnectorOAuth                 *service.OpsConnectorOAuthService
 	OpsVPSBinding                     *service.OpsVPSBindingService
 	OpsProjectBinding                 *service.OpsProjectBindingService
 	OpsHostingerSync                  *service.OpsHostingerSyncService
@@ -160,9 +177,12 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 	repos := Repositories{
 		User:                       repository.NewUserRepository(db),
 		Post:                       repository.NewPostRepository(db),
+		StorefrontRouteCatalog:     repository.NewStorefrontRouteCatalogRepository(db),
 		Product:                    repository.NewProductRepository(db),
+		ProductCategory:            repository.NewProductCategoryRepository(db),
 		ProductBrand:               repository.NewProductBrandRepository(db),
 		ProductInformationTemplate: repository.NewProductInformationTemplateRepository(db),
+		CustomsClassification:      repository.NewCustomsClassificationRepository(db),
 		Cart:                       repository.NewCartRepository(db),
 		Setting:                    repository.NewSettingRepository(db),
 		FAQ:                        repository.NewFAQRepository(db),
@@ -186,6 +206,7 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		StorefrontMarket:           repository.NewStorefrontMarketRepository(db),
 		OpsDomainBinding:           repository.NewOpsDomainBindingRepository(db),
 		OpsConnector:               repository.NewOpsConnectorRepository(db),
+		OpsConnectorOAuth:          repository.NewOpsConnectorOAuthRepository(db),
 		OpsVPSBinding:              repository.NewOpsVPSBindingRepository(db),
 		OpsProjectBinding:          repository.NewOpsProjectBindingRepository(db),
 		OpsDeploymentWorkflow:      repository.NewOpsDeploymentWorkflowRepository(db),
@@ -198,6 +219,8 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		SuggestionFeedback:         repository.NewSuggestionFeedbackRepository(db),
 		Spoke:                      repository.NewSpokeRepository(db),
 		QuickBuy:                   repository.NewQuickBuyRepository(db),
+		SelectionAssistant:         repository.NewSelectionAssistantRepository(db),
+		WheelsetFitQuestionnaire:   repository.NewWheelsetFitQuestionnaireRepository(db),
 		Subscription:               repository.NewSubscriptionRepository(db),
 		EmailChallenge:             repository.NewEmailChallengeRepository(db),
 		VisitorProfile:             repository.NewVisitorProfileRepository(db),
@@ -247,8 +270,10 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 	seoService := service.NewSEOService(settingService)
 	postService := service.NewPostService(repos.Post, redisCache, cfg.Cache.PostTTL)
 	productService := service.NewProductServiceWithCacheOptions(repos.Product, redisCache, cfg.Cache.ProductTTL, cfg.Cache.ProductLockTTL)
+	productCategoryService := service.NewProductCategoryService(repos.ProductCategory, repos.Media)
 	productBrandService := service.NewProductBrandService(repos.ProductBrand)
 	productInformationTemplateService := service.NewProductInformationTemplateService(repos.ProductInformationTemplate)
+	customsClassificationService := service.NewCustomsClassificationService(repos.CustomsClassification, settingService)
 	merchantOutboxPublisher := service.NewMerchantOutboxPublisher(repos.Outbox)
 	productCacheOutboxPublisher := service.NewProductCacheOutboxPublisher(repos.Outbox)
 	seoResourceService := service.NewSEOResourceService(postService, productService, settingService)
@@ -266,6 +291,18 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		repos.OpsProjectBinding,
 		opsConnectorService,
 	)
+	opsConnectorOAuthService := service.NewOpsConnectorOAuthService(
+		repos.OpsConnectorOAuth,
+		repos.OpsConnector,
+		opsConnectorService,
+		repos.OpsVPSBinding,
+		repos.OpsProjectBinding,
+		repos.OpsDomainBinding,
+		opsHostingerSyncService,
+		opsHostingerSyncService,
+		opsDomainSyncService,
+		cfg.Server.BaseURL,
+	)
 	opsDeploymentPreflightService := service.NewOpsDeploymentPreflightService(
 		repos.OpsProjectBinding,
 		repos.OpsVPSBinding,
@@ -280,6 +317,7 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		opsDeploymentPreflightService,
 	)
 	opsDeploymentWorkflowService.ConfigureCachePurgeService(opsCloudflareCachePurgeService)
+	opsDeploymentWorkflowService.ConfigureRollbackExecutor(service.NewOpsDeploymentSSHRollbackExecutorFromEnv())
 	opsDeploymentWorkflowService.ConfigureProductionDependencies(
 		repos.OpsVPSBinding,
 		opsConnectorService,
@@ -293,6 +331,12 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 	mediaService := service.NewMediaService(repos.Media, storageSvc, settingService, storefrontBaseURL, cfg.MediaUpload.AccountStorageQuotaBytes)
 	productService.ConfigureMediaService(mediaService)
 	seoResourceService.ConfigureCanonicalBaseURL(storefrontBaseURL)
+	storefrontRouteCatalogService := service.NewStorefrontRouteCatalogService(
+		repos.StorefrontRouteCatalog,
+		postService,
+		productService,
+		storefrontBaseURL,
+	)
 	googleMerchantService := service.NewGoogleMerchantService(
 		repos.GoogleMerchant,
 		repos.Product,
@@ -315,8 +359,10 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		AdminAccountMaintenance:           service.NewAdminAccountMaintenanceService(db),
 		Post:                              postService,
 		Product:                           productService,
+		ProductCategory:                   productCategoryService,
 		ProductBrand:                      productBrandService,
 		ProductInformationTemplate:        productInformationTemplateService,
+		CustomsClassification:             customsClassificationService,
 		Cart:                              service.NewCartService(repos.Cart, repos.Product),
 		Setting:                           settingService,
 		WebsiteProfile:                    service.NewWebsiteProfileService(settingService),
@@ -332,7 +378,8 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		OpsDomainPreview:                  opsDomainPreviewService,
 		OpsDomainSync:                     opsDomainSyncService,
 		OpsConnector:                      opsConnectorService,
-		OpsVPSBinding:                     service.NewOpsVPSBindingService(repos.OpsVPSBinding, repos.OpsConnector),
+		OpsConnectorOAuth:                 opsConnectorOAuthService,
+		OpsVPSBinding:                     service.NewOpsVPSBindingService(repos.OpsVPSBinding, repos.OpsConnector, repos.OpsProjectBinding),
 		OpsProjectBinding:                 service.NewOpsProjectBindingService(repos.OpsProjectBinding, repos.OpsVPSBinding, repos.OpsConnector),
 		OpsHostingerSync:                  opsHostingerSyncService,
 		OpsDeploymentPreflight:            opsDeploymentPreflightService,
@@ -349,10 +396,12 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		Marketing:                         service.NewMarketingService(txManager, repos.Coupon, repos.Loyalty, settingService),
 		LoyaltyProgram:                    loyaltyProgramService,
 		Review:                            service.NewReviewService(repos.Review),
+		ReviewModeration:                  service.NewReviewModerationService(repos.Review),
 		Ticket:                            service.NewTicketService(repos.Ticket, repos.User, repos.FAQ),
 		CustomerServiceEvents:             service.NewCustomerServiceEventHub(),
 		Subscription:                      service.NewSubscriptionService(repos.Subscription),
 		Sitemap:                           service.NewSitemapService(repos.Post, cfg.Server.BaseURL),
+		StorefrontRouteCatalog:            storefrontRouteCatalogService,
 		Showcase:                          service.NewShowcaseService(repos.Showcase, storageSvc),
 		ShowcaseUploadProtection:          showcaseUploadProtectionService,
 		ShowcaseUploadEligibility:         showcaseUploadEligibilityService,
@@ -371,9 +420,13 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 			repos.OpsProjectBinding,
 			service.NewAuditService(repos.Audit),
 		),
-		Shipping: shippingService,
-		Spoke:    service.NewSpokeService(repos.Spoke),
-		QuickBuy: service.NewQuickBuyService(repos.QuickBuy, repos.Product),
+		Shipping:           shippingService,
+		Spoke:              service.NewSpokeService(repos.Spoke),
+		QuickBuy:           service.NewQuickBuyService(repos.QuickBuy, repos.Product, repos.ProductCategory),
+		SelectionAssistant: service.NewSelectionAssistantService(repos.SelectionAssistant),
+		WheelsetFitQuestionnaire: service.NewWheelsetFitQuestionnaireService(
+			repos.WheelsetFitQuestionnaire,
+		),
 		VisitorProfile: service.NewVisitorProfileService(
 			repos.VisitorProfile,
 		),
@@ -398,7 +451,9 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		Outbox:              service.NewOutboxService(repos.Outbox),
 	}
 	services.Recommendations = service.NewRecommendationService(services.Product, repos.RecommendationEvent)
-	services.PublicUploadAccess = service.NewPublicUploadAccessService(services.Media, services.Showcase)
+	services.Ticket.ConfigureCustomerServiceRealtimeOutbox(repos.Outbox)
+	services.CustomerServiceAvatar = service.NewCustomerServiceAvatarService(repos.User, storageSvc, repos.Outbox)
+	services.PublicUploadAccess = service.NewPublicUploadAccessService(services.Media, services.Showcase, services.CustomerServiceAvatar)
 	services.Showcase.ConfigureUploadEligibility(services.ShowcaseUploadEligibility)
 	if cfg.ShowcaseUploadProtection.Enabled {
 		services.Showcase.ConfigurePendingSubmissionLimit(cfg.ShowcaseUploadProtection.MaxPendingSubmissionsPerUser)
@@ -412,6 +467,8 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 	services.Product.ConfigureCurrencyPolicy(currencyPolicyService)
 	services.Product.ConfigureInformationTemplateRepository(repos.ProductInformationTemplate)
 	services.Product.ConfigureProductBrandRepository(repos.ProductBrand)
+	services.Product.ConfigureCustomsClassificationRepository(repos.CustomsClassification)
+	services.Product.ConfigureProductCategoryRepository(repos.ProductCategory)
 	services.Product.ConfigureMerchantEventPublisher(merchantOutboxPublisher)
 	services.Product.ConfigureProductCacheEventPublisher(productCacheOutboxPublisher)
 	services.ProductBrand.ConfigureProductDependencies(repos.Product, productCacheOutboxPublisher, merchantOutboxPublisher)
@@ -441,6 +498,11 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		repos.Order,
 		repos.Loyalty,
 		services.VisitorProfile,
+	)
+	services.CustomerServiceAnalytics = service.NewCustomerServiceAnalyticsService(
+		services.Ticket,
+		services.CustomerServiceContext,
+		repos.Order,
 	)
 	services.Order = service.NewOrderService(
 		txManager,
@@ -472,6 +534,26 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 	services.PaymentThreeDS.ConfigureRiskMonitoring(services.PaymentRiskMonitoring)
 	services.PaymentThreeDS.ConfigurePaymentProtection(services.PaymentProtection)
 
+	var customerServiceRealtimeRelay *service.CustomerServiceRealtimeRelay
+	if cfg.CustomerServiceRealtime.Enabled {
+		var err error
+		customerServiceRealtimeRelay, err = service.NewCustomerServiceRealtimeRelay(
+			redisCache.Client(),
+			services.CustomerServiceEvents,
+			service.CustomerServiceRealtimeRelayConfig{
+				Stream:         cfg.CustomerServiceRealtime.Stream,
+				StreamMaxLen:   int64(cfg.CustomerServiceRealtime.StreamMaxLen),
+				ReplayLimit:    cfg.CustomerServiceRealtime.ReplayLimit,
+				ConsumerBlock:  time.Duration(cfg.CustomerServiceRealtime.ConsumerBlockSeconds) * time.Second,
+				DedupRetention: time.Duration(cfg.CustomerServiceRealtime.DedupRetentionSeconds) * time.Second,
+			},
+		)
+		if err != nil {
+			return nil, fmt.Errorf("initialize customer-service realtime relay: %w", err)
+		}
+		services.CustomerServiceEvents.ConfigureReplayProvider(customerServiceRealtimeRelay)
+	}
+
 	orderPaidWebhookHandler := service.NewOrderPaidOutboxWebhookHandlerFromEnv()
 	if orderPaidWebhookHandler.Configured() {
 		services.Outbox.RegisterHandler(outbox.EventTypeOrderPaid, orderPaidWebhookHandler.Handle)
@@ -491,6 +573,10 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 	services.Outbox.RegisterHandler(outbox.EventTypeMerchantOfferRevalidate, merchantOutboxHandler.Handle)
 	productCacheOutboxHandler := service.NewProductCacheOutboxHandler(services.Product)
 	services.Outbox.RegisterHandler(outbox.EventTypeProductCacheInvalidate, productCacheOutboxHandler.Handle)
+	customerServiceRealtimeOutboxHandler := service.NewCustomerServiceRealtimeOutboxHandler(services.CustomerServiceEvents, customerServiceRealtimeRelay)
+	services.Outbox.RegisterHandler(outbox.EventTypeCustomerServiceRealtime, customerServiceRealtimeOutboxHandler.Handle)
+	customerServiceAvatarCleanupHandler := service.NewCustomerServiceAvatarCleanupHandler(repos.User, storageSvc)
+	services.Outbox.RegisterHandler(outbox.EventTypeCustomerServiceAvatarCleanup, customerServiceAvatarCleanupHandler.Handle)
 
 	return &Dependencies{
 		Repositories:                 repos,
@@ -502,6 +588,7 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		PaymentGatewayCircuitBreaker: paymentGatewayCircuitBreaker,
 		OrderAbuse:                   orderAbuseService,
 		RedisClient:                  redisCache.Client(),
+		CustomerServiceRealtimeRelay: customerServiceRealtimeRelay,
 	}, nil
 }
 

@@ -1,0 +1,7 @@
+ALTER TABLE order_items
+    ADD COLUMN IF NOT EXISTS hs_code VARCHAR(12),
+    ADD COLUMN IF NOT EXISTS cn_code VARCHAR(12),
+    ADD COLUMN IF NOT EXISTS country_of_origin VARCHAR(2),
+    ADD COLUMN IF NOT EXISTS customs_description VARCHAR(255),
+    ADD COLUMN IF NOT EXISTS declared_value NUMERIC(12, 2),
+    ADD COLUMN IF NOT EXISTS declared_value_confirmed BOOLEAN NOT NULL DEFAULT FALSE;

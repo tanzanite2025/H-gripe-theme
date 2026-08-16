@@ -1,8 +1,6 @@
 package service
 
 import (
-	"math"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -109,33 +107,6 @@ type CustomerServiceConversationSummary struct {
 	RegionLabel   string                     `json:"region_label"`
 	RegionStatus  string                     `json:"region_status"`
 	MemberTier    *CustomerServiceMemberTier `json:"member_tier,omitempty"`
-}
-
-type CustomerServiceRegionAnalyticsInput struct {
-	Date                  string
-	TimezoneOffsetMinutes int
-	AgentUserID           uint
-	CanViewAll            bool
-}
-
-type CustomerServiceRegionAnalytics struct {
-	Date                  string                               `json:"date"`
-	TimezoneOffsetMinutes int                                  `json:"timezone_offset_minutes"`
-	WindowStart           time.Time                            `json:"window_start"`
-	WindowEnd             time.Time                            `json:"window_end"`
-	TotalConversations    int                                  `json:"total_conversations"`
-	KnownRegionCount      int                                  `json:"known_region_count"`
-	UnknownRegionCount    int                                  `json:"unknown_region_count"`
-	Regions               []CustomerServiceRegionAnalyticsItem `json:"regions"`
-}
-
-type CustomerServiceRegionAnalyticsItem struct {
-	RegionLabel  string  `json:"region_label"`
-	RegionStatus string  `json:"region_status"`
-	Count        int     `json:"count"`
-	MemberCount  int     `json:"member_count"`
-	VisitorCount int     `json:"visitor_count"`
-	Percent      float64 `json:"percent"`
 }
 
 type CustomerServiceContextAnonymous struct {
@@ -390,98 +361,6 @@ func (s *CustomerServiceContextService) ConversationListSummary(t ticket.Ticket)
 	}
 
 	return summary
-}
-
-func (s *CustomerServiceContextService) RegionAnalyticsForAgent(input CustomerServiceRegionAnalyticsInput) (*CustomerServiceRegionAnalytics, error) {
-	start, end, date := customerServiceAnalyticsWindow(input.Date, input.TimezoneOffsetMinutes)
-	result := &CustomerServiceRegionAnalytics{
-		Date:                  date,
-		TimezoneOffsetMinutes: input.TimezoneOffsetMinutes,
-		WindowStart:           start,
-		WindowEnd:             end,
-		Regions:               []CustomerServiceRegionAnalyticsItem{},
-	}
-	if s == nil || s.ticketService == nil {
-		return result, nil
-	}
-
-	conversations, err := s.ticketService.ListCustomerServiceConversationsInWindowForAgent(
-		start,
-		end,
-		input.AgentUserID,
-		input.CanViewAll,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	regionMap := map[string]*CustomerServiceRegionAnalyticsItem{}
-	for _, conversation := range conversations {
-		summary := s.ConversationListSummary(conversation)
-		label := strings.TrimSpace(summary.RegionLabel)
-		status := strings.TrimSpace(summary.RegionStatus)
-		if label == "" {
-			label = "未知区域"
-		}
-		if status == "" {
-			status = "unknown"
-		}
-
-		item := regionMap[label]
-		if item == nil {
-			item = &CustomerServiceRegionAnalyticsItem{
-				RegionLabel:  label,
-				RegionStatus: status,
-			}
-			regionMap[label] = item
-		}
-		item.Count++
-		if summary.Identity == "member" || summary.Type == "member" {
-			item.MemberCount++
-		} else {
-			item.VisitorCount++
-		}
-	}
-
-	result.TotalConversations = len(conversations)
-	for _, item := range regionMap {
-		if item.RegionStatus == "captured" {
-			result.KnownRegionCount += item.Count
-		} else {
-			result.UnknownRegionCount += item.Count
-		}
-		if result.TotalConversations > 0 {
-			item.Percent = math.Round((float64(item.Count)/float64(result.TotalConversations))*1000) / 10
-		}
-		result.Regions = append(result.Regions, *item)
-	}
-
-	sort.SliceStable(result.Regions, func(i, j int) bool {
-		if result.Regions[i].Count == result.Regions[j].Count {
-			return result.Regions[i].RegionLabel < result.Regions[j].RegionLabel
-		}
-		return result.Regions[i].Count > result.Regions[j].Count
-	})
-
-	return result, nil
-}
-
-func customerServiceAnalyticsWindow(date string, timezoneOffsetMinutes int) (time.Time, time.Time, string) {
-	location := time.FixedZone("admin-local", timezoneOffsetMinutes*60)
-	date = strings.TrimSpace(date)
-	if date == "" {
-		date = time.Now().In(location).Format("2006-01-02")
-	}
-
-	startLocal, err := time.ParseInLocation("2006-01-02", date, location)
-	if err != nil {
-		startLocal = time.Now().In(location)
-		startLocal = time.Date(startLocal.Year(), startLocal.Month(), startLocal.Day(), 0, 0, 0, 0, location)
-		date = startLocal.Format("2006-01-02")
-	}
-
-	endLocal := startLocal.AddDate(0, 0, 1)
-	return startLocal.UTC(), endLocal.UTC(), date
 }
 
 func (s *CustomerServiceContextService) memberTierSummary(userID uint) *CustomerServiceMemberTier {

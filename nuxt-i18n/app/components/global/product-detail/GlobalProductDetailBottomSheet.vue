@@ -84,21 +84,21 @@
                     <template v-if="productMediaItems.length > 1">
                       <button
                         type="button"
-                        class="global-product-detail-bottom-sheet-media-nav global-product-detail-bottom-sheet-media-nav--previous"
+                        class="tz-directional-arrow global-product-detail-bottom-sheet-media-nav global-product-detail-bottom-sheet-media-nav--previous"
                         :aria-label="t('common.previous', 'Previous')"
                         :title="t('common.previous', 'Previous')"
                         @click="selectPreviousGlobalProductDetailBottomSheetMedia"
                       >
-                        <Icon name="lucide:chevron-left" class="h-5 w-5" aria-hidden="true" />
+                        <Icon name="lucide:chevron-left" aria-hidden="true" />
                       </button>
                       <button
                         type="button"
-                        class="global-product-detail-bottom-sheet-media-nav global-product-detail-bottom-sheet-media-nav--next"
+                        class="tz-directional-arrow global-product-detail-bottom-sheet-media-nav global-product-detail-bottom-sheet-media-nav--next"
                         :aria-label="t('common.next', 'Next')"
                         :title="t('common.next', 'Next')"
                         @click="selectNextGlobalProductDetailBottomSheetMedia"
                       >
-                        <Icon name="lucide:chevron-right" class="h-5 w-5" aria-hidden="true" />
+                        <Icon name="lucide:chevron-right" aria-hidden="true" />
                       </button>
                     </template>
                   </div>
@@ -134,8 +134,8 @@
                   <div class="global-product-detail-bottom-sheet-product-heading">
                     <div>
                       <h3 class="global-product-detail-bottom-sheet-product-title">{{ product.title }}</h3>
-                      <p v-if="rawProduct?.product_type?.name || product.productType?.name" class="global-product-detail-bottom-sheet-product-type">
-                        {{ rawProduct?.product_type?.name || product.productType?.name }}
+                      <p v-if="rawProduct?.product_specification_template?.name || product.productSpecificationTemplate?.name" class="global-product-detail-bottom-sheet-product-specification-template">
+                        {{ rawProduct?.product_specification_template?.name || product.productSpecificationTemplate?.name }}
                       </p>
                     </div>
                     <strong class="global-product-detail-bottom-sheet-price">{{ formattedSelectedProductPrice }}</strong>
@@ -229,6 +229,12 @@
                     </div>
                   </section>
 
+                  <ProductReviewsSection
+                    :product-id="product.id"
+                    :initial-summary="product.reviewSummary"
+                    compact
+                  />
+
                   <div class="global-product-detail-bottom-sheet-purchase">
                     <div class="global-product-detail-bottom-sheet-quantity-control">
                       <span>{{ t('products.detail.quantity', 'Quantity') }}</span>
@@ -311,6 +317,7 @@ import {
   type ShopProductVariant,
 } from '~/composables/useShopProducts'
 import { useCart } from '~/composables/useCart'
+import ProductReviewsSection from '~/components/shop/ProductReviewsSection.vue'
 
 interface RawProductMedia {
   id?: number | string
@@ -337,6 +344,17 @@ interface RawProductSpecValue {
   }
 }
 
+interface RawProductReviewSummary {
+  product_id?: number
+  total_reviews?: number
+  average_rating?: number
+  rating_5_count?: number
+  rating_4_count?: number
+  rating_3_count?: number
+  rating_2_count?: number
+  rating_1_count?: number
+}
+
 interface RawProductDetail {
   id?: number
   name?: string
@@ -347,7 +365,7 @@ interface RawProductDetail {
   description?: string
   thumbnail?: string
   featured_image?: string
-  product_type?: {
+  product_specification_template?: {
     name?: string
     spec_definitions?: Array<{
       name?: string
@@ -362,6 +380,7 @@ interface RawProductDetail {
   spec_values?: RawProductSpecValue[]
   variants?: unknown[]
   variant_option_values?: unknown[]
+  review_summary?: RawProductReviewSummary | null
 }
 
 interface ProductMediaItem {
@@ -561,7 +580,7 @@ const variantOptionGroups = computed<VariantOptionGroup[]>(() => {
   if (!currentProduct || activeProductVariants.value.length < 2) return []
 
   const definitionMap = new Map(
-    (currentProduct.productType?.specDefinitions || [])
+    (currentProduct.productSpecificationTemplate?.specDefinitions || [])
       .map(definition => [definition.slug, definition]),
   )
   const optionSlugs = new Set<string>()
@@ -677,9 +696,6 @@ const addGlobalProductDetailToCart = () => {
   purchaseFeedbackMessage.value = t('cart.added', 'Added to cart')
   closeGlobalProductDetailBottomSheet()
   openCart()
-  if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('ui:popup-open', { detail: { id: 'cart-drawer' } }))
-  }
 }
 
 const buyGlobalProductDetailNow = () => {
@@ -689,9 +705,6 @@ const buyGlobalProductDetailNow = () => {
   addToCart(cartItem, selectedQuantity.value)
   closeGlobalProductDetailBottomSheet()
   openCheckout()
-  if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('ui:popup-open', { detail: { id: 'checkout-modal' } }))
-  }
 }
 
 const formatGlobalProductDetailBottomSheetSpecificationValue = (item: RawProductSpecValue) => {
@@ -905,14 +918,6 @@ watch(selectedVariantId, () => {
 .global-product-detail-bottom-sheet-media-nav {
   position: absolute;
   top: 50%;
-  display: inline-grid;
-  width: 2.25rem;
-  height: 2.25rem;
-  place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.26);
-  border-radius: 999px;
-  color: #fff;
-  background: rgba(0, 0, 0, 0.65);
   transform: translateY(-50%);
 }
 
@@ -991,7 +996,7 @@ watch(selectedVariantId, () => {
   white-space: normal;
 }
 
-.global-product-detail-bottom-sheet-product-type {
+.global-product-detail-bottom-sheet-product-specification-template {
   margin: 0.35rem 0 0;
   color: rgba(255, 255, 255, 0.55);
   font-size: 0.78rem;

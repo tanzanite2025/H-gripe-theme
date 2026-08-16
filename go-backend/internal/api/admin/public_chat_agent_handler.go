@@ -22,7 +22,6 @@ type publicChatAgentUpsertRequest struct {
 	AgentID      string `json:"agent_id"`
 	Name         string `json:"name"`
 	Email        string `json:"email"`
-	Avatar       string `json:"avatar"`
 	WhatsApp     string `json:"whatsapp"`
 	Status       string `json:"status"`
 	OnlineStatus string `json:"online_status"`
@@ -61,7 +60,6 @@ func (h *PublicChatAgentHandler) UpsertPublicChatAgent(c *gin.Context) {
 		AgentID:      req.AgentID,
 		Name:         req.Name,
 		Email:        req.Email,
-		Avatar:       req.Avatar,
 		WhatsApp:     req.WhatsApp,
 		Status:       req.Status,
 		OnlineStatus: req.OnlineStatus,

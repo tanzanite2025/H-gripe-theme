@@ -24,7 +24,7 @@ type ProductCacheInvalidationResult struct {
 
 type ProductCacheInvalidationExecutor interface {
 	InvalidateProductCacheByIDsWithSource(ids []uint, source string) (ProductCacheInvalidationResult, error)
-	InvalidateProductCacheByProductTypeIDWithSource(productTypeID uint, source string) (ProductCacheInvalidationResult, error)
+	InvalidateProductCacheByProductSpecificationTemplateIDWithSource(productSpecificationTemplateID uint, source string) (ProductCacheInvalidationResult, error)
 	InvalidateProductCacheByBrandIDWithSource(brandID uint, source string) (ProductCacheInvalidationResult, error)
 	InvalidateProductCacheByInformationTemplateIDWithSource(templateID uint, source string) (ProductCacheInvalidationResult, error)
 }
@@ -34,14 +34,14 @@ type ProductCacheInvalidator interface {
 }
 
 type ProductDependencyCacheInvalidator interface {
-	InvalidateProductCacheByProductTypeID(productTypeID uint)
+	InvalidateProductCacheByProductSpecificationTemplateID(productSpecificationTemplateID uint)
 	InvalidateProductCacheByBrandID(brandID uint)
 	InvalidateProductCacheByInformationTemplateID(templateID uint)
 }
 
 type productDetailCacheProductRepository interface {
 	FindProductCacheIdentitiesByIDs(ids []uint) ([]product.Product, error)
-	FindProductCacheIdentitiesByProductTypeID(productTypeID uint) ([]product.Product, error)
+	FindProductCacheIdentitiesByProductSpecificationTemplateID(productSpecificationTemplateID uint) ([]product.Product, error)
 	FindProductCacheIdentitiesByBrandID(brandID uint) ([]product.Product, error)
 	FindProductCacheIdentitiesByInformationTemplateID(templateID uint) ([]product.Product, error)
 }
@@ -102,11 +102,11 @@ func enqueueProductCacheInvalidationByIDsWithPublisher(publisher ProductCacheEve
 	return publisher.EnqueueProductCacheInvalidateByIDs(productIDs, reason)
 }
 
-func (s *ProductService) enqueueProductCacheInvalidationByProductTypeID(productTypeID uint, reason string) error {
+func (s *ProductService) enqueueProductCacheInvalidationByProductSpecificationTemplateID(productSpecificationTemplateID uint, reason string) error {
 	if s == nil || s.productCacheEvents == nil {
 		return nil
 	}
-	return s.productCacheEvents.EnqueueProductCacheInvalidateByProductTypeID(productTypeID, reason)
+	return s.productCacheEvents.EnqueueProductCacheInvalidateByProductSpecificationTemplateID(productSpecificationTemplateID, reason)
 }
 
 func (s *ProductService) enqueueProductCacheInvalidationByInformationTemplateID(templateID uint, reason string) error {
@@ -134,15 +134,15 @@ func (s *ProductService) InvalidateProductCacheByIDsWithSource(ids []uint, sourc
 	return s.productCacheInvalidator.InvalidateProductCacheByIDsWithSource(ids, source)
 }
 
-func (s *ProductService) InvalidateProductCacheByProductTypeID(productTypeID uint) {
-	_, _ = s.InvalidateProductCacheByProductTypeIDWithSource(productTypeID, productCacheInvalidationSourceDirect)
+func (s *ProductService) InvalidateProductCacheByProductSpecificationTemplateID(productSpecificationTemplateID uint) {
+	_, _ = s.InvalidateProductCacheByProductSpecificationTemplateIDWithSource(productSpecificationTemplateID, productCacheInvalidationSourceDirect)
 }
 
-func (s *ProductService) InvalidateProductCacheByProductTypeIDWithSource(productTypeID uint, source string) (ProductCacheInvalidationResult, error) {
+func (s *ProductService) InvalidateProductCacheByProductSpecificationTemplateIDWithSource(productSpecificationTemplateID uint, source string) (ProductCacheInvalidationResult, error) {
 	if s == nil || s.productCacheInvalidator == nil {
 		return ProductCacheInvalidationResult{}, nil
 	}
-	return s.productCacheInvalidator.InvalidateProductCacheByProductTypeIDWithSource(productTypeID, source)
+	return s.productCacheInvalidator.InvalidateProductCacheByProductSpecificationTemplateIDWithSource(productSpecificationTemplateID, source)
 }
 
 func (s *ProductService) InvalidateProductCacheByBrandID(brandID uint) {
@@ -167,8 +167,8 @@ func (s *ProductService) InvalidateProductCacheByInformationTemplateIDWithSource
 	return s.productCacheInvalidator.InvalidateProductCacheByInformationTemplateIDWithSource(templateID, source)
 }
 
-func (i *ProductDetailCacheInvalidator) InvalidateProductCacheByProductTypeID(productTypeID uint) {
-	_, _ = i.InvalidateProductCacheByProductTypeIDWithSource(productTypeID, productCacheInvalidationSourceDirect)
+func (i *ProductDetailCacheInvalidator) InvalidateProductCacheByProductSpecificationTemplateID(productSpecificationTemplateID uint) {
+	_, _ = i.InvalidateProductCacheByProductSpecificationTemplateIDWithSource(productSpecificationTemplateID, productCacheInvalidationSourceDirect)
 }
 
 func (i *ProductDetailCacheInvalidator) InvalidateProductCacheByInformationTemplateID(templateID uint) {
@@ -199,11 +199,11 @@ func (i *ProductDetailCacheInvalidator) InvalidateProductCacheByIDsWithSource(id
 	return i.InvalidateProductCachesWithSource(products, source)
 }
 
-func (i *ProductDetailCacheInvalidator) InvalidateProductCacheByProductTypeIDWithSource(productTypeID uint, source string) (ProductCacheInvalidationResult, error) {
-	if i == nil || i.cache == nil || i.productRepo == nil || productTypeID == 0 {
+func (i *ProductDetailCacheInvalidator) InvalidateProductCacheByProductSpecificationTemplateIDWithSource(productSpecificationTemplateID uint, source string) (ProductCacheInvalidationResult, error) {
+	if i == nil || i.cache == nil || i.productRepo == nil || productSpecificationTemplateID == 0 {
 		return ProductCacheInvalidationResult{}, nil
 	}
-	products, err := i.productRepo.FindProductCacheIdentitiesByProductTypeID(productTypeID)
+	products, err := i.productRepo.FindProductCacheIdentitiesByProductSpecificationTemplateID(productSpecificationTemplateID)
 	if err != nil {
 		recordProductCacheInvalidationMetric(source, 0, err)
 		return ProductCacheInvalidationResult{}, err

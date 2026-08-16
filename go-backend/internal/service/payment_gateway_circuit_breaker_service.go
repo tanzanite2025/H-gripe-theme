@@ -25,6 +25,14 @@ type PaymentGatewayCircuitBreakerDecision struct {
 	RetryAfter   time.Duration
 }
 
+type PaymentGatewayCircuitBreakerPolicyView struct {
+	Enabled              bool    `json:"enabled"`
+	WindowSeconds        int     `json:"window_seconds"`
+	FailureRateThreshold float64 `json:"failure_rate_threshold"`
+	MinimumSampleCount   int     `json:"minimum_sample_count"`
+	OpenDurationSeconds  int     `json:"open_duration_seconds"`
+}
+
 type paymentGatewayCircuitBreakerStore interface {
 	GetOpenCircuitRetryAfter(context.Context, string) (bool, time.Duration, error)
 	GetGatewayHealthWindowCounts(context.Context, string, time.Time, time.Duration) (int64, int64, error)
@@ -330,6 +338,19 @@ func (s *PaymentGatewayCircuitBreakerService) ReadGatewayHealthWindow(
 		s.config.FailureRateThreshold,
 		s.config.MinimumSampleCount,
 	), nil
+}
+
+func (s *PaymentGatewayCircuitBreakerService) PolicyView() PaymentGatewayCircuitBreakerPolicyView {
+	if s == nil {
+		return PaymentGatewayCircuitBreakerPolicyView{}
+	}
+	return PaymentGatewayCircuitBreakerPolicyView{
+		Enabled:              s.config.Enabled,
+		WindowSeconds:        s.config.WindowSeconds,
+		FailureRateThreshold: s.config.FailureRateThreshold,
+		MinimumSampleCount:   s.config.MinimumSampleCount,
+		OpenDurationSeconds:  s.config.OpenDurationSeconds,
+	}
 }
 
 func (s *PaymentGatewayCircuitBreakerService) currentTime() time.Time {

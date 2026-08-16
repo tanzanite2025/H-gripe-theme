@@ -16,15 +16,6 @@ interface CustomerServiceChatSyncOptions {
   scrollToBottom: () => void
 }
 
-const realtimeEventTypes = [
-  'conversation.message.created',
-  'conversation.messages.read',
-  'conversation.assigned',
-  'conversation.status.changed',
-  'conversation.context.updated',
-  'conversation.typing'
-]
-
 export const useCustomerServiceChatSync = ({
   publicApiBase,
   locale,
@@ -37,12 +28,18 @@ export const useCustomerServiceChatSync = ({
   saveMessagesToStorage,
   scrollToBottom
 }: CustomerServiceChatSyncOptions) => {
-  const realtimeSource = ref<EventSource | null>(null)
+  const realtimeSocket = ref<WebSocket | null>(null)
   const realtimeConversationId = ref('')
+  const realtimeCursorConversationId = ref('')
   const agentTyping = ref<{ active: boolean; displayName: string }>({ active: false, displayName: '' })
   let realtimeReconnectTimer: number | null = null
   let realtimeSyncTimer: number | null = null
   let remoteTypingTimer: number | null = null
+  let realtimeLastEventId = ''
+  let realtimeReconnectEnabled = false
+  let realtimeReconnectAttempt = 0
+  let browserRecoveryListenersAttached = false
+  const seenRealtimeEventIds = new Set<string>()
 
   const rememberConversationId = (payload: any) => {
     const id = payload?.conversation_id || payload?.conversationId || payload?.data?.conversation_id || payload?.data?.conversationId
@@ -241,7 +238,7 @@ export const useCustomerServiceChatSync = ({
             sender_type: user.value ? 'user' : 'visitor',
             sender_name: user.value?.display_name || '访客',
             sender_email: currentSenderEmail(),
-            agent_id: selectedAgent.value?.id || '',
+            agent_id: selectedAgent.value?.id != null ? String(selectedAgent.value.id) : '',
             locale: locale.value,
             message_type: messageData.message_type || 'text',
             metadata: messageData.metadata || null,
@@ -282,9 +279,28 @@ export const useCustomerServiceChatSync = ({
     return asset
   }
 
-  const customerServiceEventURL = (currentConversationId: string) => {
+  const customerServiceWebSocketURL = (currentConversationId: string, lastEventId = '') => {
     const query = new URLSearchParams({ conversation_id: currentConversationId })
-    return `${publicApiBase.value}/customer-service/events?${query.toString()}`
+    if (lastEventId) {
+      query.set('last_event_id', lastEventId)
+    }
+
+    const baseURL = new URL(publicApiBase.value || '/api/v1', window.location.origin)
+    baseURL.pathname = `${baseURL.pathname.replace(/\/$/, '')}/customer-service/ws`
+    baseURL.search = query.toString()
+    baseURL.hash = ''
+    baseURL.protocol = baseURL.protocol === 'https:' ? 'wss:' : 'ws:'
+    return baseURL.toString()
+  }
+
+  const rememberRealtimeEvent = (eventId: unknown) => {
+    if (typeof eventId !== 'string' || !eventId) return true
+    if (seenRealtimeEventIds.has(eventId)) return false
+    if (seenRealtimeEventIds.size >= 2048) {
+      seenRealtimeEventIds.clear()
+    }
+    seenRealtimeEventIds.add(eventId)
+    return true
   }
 
   const clearAgentTyping = () => {
@@ -295,26 +311,74 @@ export const useCustomerServiceChatSync = ({
     }
   }
 
-  const closeCustomerServiceRealtimeSource = () => {
-    if (realtimeSource.value) {
-      realtimeSource.value.close()
-      realtimeSource.value = null
+  const closeCustomerServiceRealtimeSocket = () => {
+    const socket = realtimeSocket.value
+    realtimeSocket.value = null
+    if (socket && socket.readyState < WebSocket.CLOSING) {
+      socket.close()
     }
   }
 
-  const closeCustomerServiceRealtime = () => {
-    closeCustomerServiceRealtimeSource()
-    realtimeConversationId.value = ''
-
+  const clearRealtimeReconnectTimer = () => {
     if (import.meta.client && realtimeReconnectTimer) {
       window.clearTimeout(realtimeReconnectTimer)
       realtimeReconnectTimer = null
     }
+  }
+
+  const recoverCustomerServiceRealtime = () => {
+    if (!realtimeReconnectEnabled || !conversationId.value) return
+    void loadMessagesFromAPI()
+    connectCustomerServiceRealtime()
+  }
+
+  const handleCustomerServiceRealtimeVisibilityChange = () => {
+    if (document.visibilityState === 'visible') {
+      recoverCustomerServiceRealtime()
+    }
+  }
+
+  const attachCustomerServiceRealtimeRecoveryListeners = () => {
+    if (!import.meta.client || browserRecoveryListenersAttached) return
+    window.addEventListener('online', recoverCustomerServiceRealtime)
+    document.addEventListener('visibilitychange', handleCustomerServiceRealtimeVisibilityChange)
+    browserRecoveryListenersAttached = true
+  }
+
+  const removeCustomerServiceRealtimeRecoveryListeners = () => {
+    if (!import.meta.client || !browserRecoveryListenersAttached) return
+    window.removeEventListener('online', recoverCustomerServiceRealtime)
+    document.removeEventListener('visibilitychange', handleCustomerServiceRealtimeVisibilityChange)
+    browserRecoveryListenersAttached = false
+  }
+
+  const scheduleCustomerServiceRealtimeReconnect = (expectedConversationId: string) => {
+    if (!import.meta.client || !realtimeReconnectEnabled || realtimeReconnectTimer) return
+    if (navigator.onLine === false) return
+
+    const exponentialDelay = Math.min(30_000, 1_000 * (2 ** realtimeReconnectAttempt))
+    const jitteredDelay = Math.round(exponentialDelay * (0.8 + Math.random() * 0.4))
+    realtimeReconnectAttempt = Math.min(realtimeReconnectAttempt + 1, 5)
+    realtimeReconnectTimer = window.setTimeout(() => {
+      realtimeReconnectTimer = null
+      if (realtimeReconnectEnabled && conversationId.value === expectedConversationId) {
+        connectCustomerServiceRealtime()
+      }
+    }, jitteredDelay)
+  }
+
+  const closeCustomerServiceRealtime = () => {
+    realtimeReconnectEnabled = false
+    closeCustomerServiceRealtimeSocket()
+    realtimeConversationId.value = ''
+
+    clearRealtimeReconnectTimer()
     if (import.meta.client && realtimeSyncTimer) {
       window.clearTimeout(realtimeSyncTimer)
       realtimeSyncTimer = null
     }
     clearAgentTyping()
+    removeCustomerServiceRealtimeRecoveryListeners()
   }
 
   const scheduleRealtimeMessageSync = () => {
@@ -329,10 +393,18 @@ export const useCustomerServiceChatSync = ({
     }, 300)
   }
 
-  const handleCustomerServiceRealtimeEvent = (event: MessageEvent) => {
+  const handleCustomerServiceRealtimeEvent = (rawFrame: unknown) => {
     try {
-      const payload = JSON.parse(event.data || '{}')
+      if (typeof rawFrame !== 'string') return
+      const frame = JSON.parse(rawFrame || '{}')
+      if (typeof frame?.cursor === 'string' && frame.cursor) {
+        realtimeLastEventId = frame.cursor
+      }
+      if (frame?.type !== 'event' || !frame.event || typeof frame.event !== 'object') return
+
+      const payload = frame.event
       if (payload?.conversation_id && payload.conversation_id !== conversationId.value) return
+      if (!rememberRealtimeEvent(payload?.event_id)) return
       if (payload?.type === 'conversation.typing') {
         handleCustomerServiceTypingEvent(payload)
         return
@@ -379,60 +451,62 @@ export const useCustomerServiceChatSync = ({
         : conversationId.value
       if (!currentConversationId) return
 
-      await authRequest(
-        '/customer-service/typing',
-        {
-          method: 'POST',
-          headers: {
-            accept: 'application/json',
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            conversation_id: currentConversationId,
-            is_typing: isTyping,
-            display_name: user.value?.display_name || user.value?.username || 'Visitor'
-          })
-        },
-        'Failed to send customer-service typing signal'
-      )
+      if (realtimeConversationId.value !== currentConversationId || !realtimeSocket.value) {
+        connectCustomerServiceRealtime()
+        return
+      }
+
+      if (realtimeSocket.value.readyState !== WebSocket.OPEN) return
+      realtimeSocket.value.send(JSON.stringify({ type: 'typing', is_typing: isTyping }))
     } catch (error) {
-      // Typing is transient UI state. Message send/read must keep working even if
-      // this best-effort signal is unavailable.
-      console.warn('客服 typing 状态上报失败:', error)
+      // Typing is transient UI state. Message send/read must keep working even
+      // when the WebSocket is reconnecting.
+      console.warn('Failed to send customer-service WebSocket typing signal:', error)
     }
   }
 
   const connectCustomerServiceRealtime = () => {
-    if (!import.meta.client || typeof window === 'undefined' || !('EventSource' in window)) return
+    if (!import.meta.client || typeof window === 'undefined' || !('WebSocket' in window)) return
     if (!conversationId.value) return
-    if (realtimeSource.value && realtimeConversationId.value === conversationId.value) return
+    const currentConversationId = conversationId.value
+    realtimeReconnectEnabled = true
+    attachCustomerServiceRealtimeRecoveryListeners()
+    if (realtimeCursorConversationId.value !== conversationId.value) {
+      realtimeCursorConversationId.value = conversationId.value
+      realtimeLastEventId = ''
+      seenRealtimeEventIds.clear()
+    }
 
-    closeCustomerServiceRealtimeSource()
-    realtimeConversationId.value = conversationId.value
+    const existingSocket = realtimeSocket.value
+    if (existingSocket && realtimeConversationId.value === currentConversationId && (
+      existingSocket.readyState === WebSocket.OPEN || existingSocket.readyState === WebSocket.CONNECTING
+    )) {
+      return
+    }
 
-    const source = new EventSource(customerServiceEventURL(conversationId.value), { withCredentials: true })
-    realtimeSource.value = source
+    clearRealtimeReconnectTimer()
+    closeCustomerServiceRealtimeSocket()
+    realtimeConversationId.value = currentConversationId
 
-    realtimeEventTypes.forEach((eventType) => {
-      source.addEventListener(eventType, handleCustomerServiceRealtimeEvent)
-    })
+    const socket = new WebSocket(customerServiceWebSocketURL(currentConversationId, realtimeLastEventId))
+    realtimeSocket.value = socket
 
-    source.onerror = () => {
-      const reconnectConversationId = realtimeConversationId.value
-      if (realtimeSource.value === source) {
-        realtimeSource.value = null
-      }
-      source.close()
+    socket.onopen = () => {
+      if (realtimeSocket.value !== socket || realtimeConversationId.value !== currentConversationId) return
+      realtimeReconnectAttempt = 0
+      void loadMessagesFromAPI()
+    }
 
-      if (!reconnectConversationId || reconnectConversationId !== conversationId.value) return
-      if (!realtimeReconnectTimer) {
-        realtimeReconnectTimer = window.setTimeout(() => {
-          realtimeReconnectTimer = null
-          if (conversationId.value === reconnectConversationId) {
-            connectCustomerServiceRealtime()
-          }
-        }, 5000)
-      }
+    socket.onmessage = (event: MessageEvent) => {
+      if (realtimeSocket.value !== socket) return
+      handleCustomerServiceRealtimeEvent(event.data)
+    }
+
+    socket.onclose = () => {
+      if (realtimeSocket.value !== socket) return
+      realtimeSocket.value = null
+      if (!realtimeReconnectEnabled || conversationId.value !== currentConversationId) return
+      scheduleCustomerServiceRealtimeReconnect(currentConversationId)
     }
   }
 

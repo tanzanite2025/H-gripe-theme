@@ -59,6 +59,7 @@
 
 <script setup lang="ts">
 import { ref, computed, provide, onMounted, onBeforeUnmount } from 'vue'
+import { useOverlayBackStack } from '~/composables/useOverlayBackStack'
 
 interface SidebarEventDetail {
   side?: string
@@ -66,28 +67,39 @@ interface SidebarEventDetail {
 
 // 左侧 Sidebar 打开状态
 const leftOpen = ref<boolean>(false)
+const overlayBackStack = useOverlayBackStack()
 
 // 左侧箭头：关闭时向右，打开时向左
 const leftArrow = computed(() => (leftOpen.value ? '◀' : '▶'))
 
 // 切换左侧面板
 const toggleLeft = () => {
-  leftOpen.value = !leftOpen.value
+  if (leftOpen.value) {
+    closeLeft()
+  } else {
+    openLeft()
+  }
+}
+
+const closeLeftState = () => {
+  leftOpen.value = false
 }
 
 // 关闭左侧
 const closeLeft = () => {
-  leftOpen.value = false
+  void overlayBackStack.close('account-sidebar')
+  closeLeftState()
 }
 
 // 点击蒙版关闭侧边栏
 const handleBackdropClick = () => {
-  leftOpen.value = false
+  closeLeft()
 }
 
 // 暴露方法供外部调用
 const openLeft = () => {
   leftOpen.value = true
+  overlayBackStack.open('account-sidebar', closeLeftState)
 }
 
 // 提供给子组件使用（仅左侧）

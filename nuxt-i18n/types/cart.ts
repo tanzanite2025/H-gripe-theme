@@ -14,7 +14,7 @@ export interface CartItem {
   image?: string
   weight?: number
   weight_grams?: number
-  product_type_id?: number | null
+  product_specification_template_id?: number | null
   category?: string
   categories?: unknown[]
   tags?: string[]

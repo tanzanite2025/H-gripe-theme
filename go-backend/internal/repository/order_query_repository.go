@@ -1,6 +1,33 @@
 package repository
 
-import "commerce-platform/internal/domain/order"
+import (
+	"commerce-platform/internal/domain/order"
+	"time"
+)
+
+// FindPaidUserIDsInWindow returns distinct customers with a paid order in the
+// requested time window. It is intentionally scoped to an explicit user list
+// so customer-service analytics cannot scan unrelated order history.
+func (r *OrderRepository) FindPaidUserIDsInWindow(userIDs []uint, start, end time.Time) (map[uint]struct{}, error) {
+	result := make(map[uint]struct{})
+	if r == nil || r.db == nil || len(userIDs) == 0 {
+		return result, nil
+	}
+
+	var paidUserIDs []uint
+	err := r.db.Model(&order.Order{}).
+		Where("user_id IN ? AND payment_status = ? AND created_at >= ? AND created_at < ?", userIDs, "paid", start, end).
+		Distinct("user_id").
+		Pluck("user_id", &paidUserIDs).Error
+	if err != nil {
+		return nil, err
+	}
+
+	for _, userID := range paidUserIDs {
+		result[userID] = struct{}{}
+	}
+	return result, nil
+}
 
 // FindByUserID 查找用户的订单列表
 func (r *OrderRepository) FindByUserID(userID uint, page, pageSize int) ([]order.Order, int64, error) {

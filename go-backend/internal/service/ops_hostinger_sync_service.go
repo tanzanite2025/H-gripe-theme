@@ -146,6 +146,9 @@ func (s *OpsHostingerSyncService) SyncVPS(ctx context.Context, id uint) (*ops.Ho
 	if connector.Provider != ops.ConnectorProviderHostinger {
 		return s.persistVPSFailure(result, "VPS 绑定的连接器不是 Hostinger")
 	}
+	if connector.Environment != "" && connector.Environment != vps.Environment {
+		return s.persistVPSFailure(result, "VPS 绑定的连接器环境与 VPS 环境不一致")
+	}
 
 	resourceID := strings.TrimSpace(vps.ProviderResourceID)
 	if resourceID == "" {
@@ -244,6 +247,12 @@ func (s *OpsHostingerSyncService) SyncProject(ctx context.Context, id uint) (*op
 	result.ObservedSource = "hostinger:" + connector.Name
 	if connector.Provider != ops.ConnectorProviderHostinger {
 		return s.persistProjectFailure(result, "项目绑定的连接器不是 Hostinger")
+	}
+	if connector.Environment != "" && connector.Environment != project.Environment {
+		return s.persistProjectFailure(result, "项目绑定的连接器环境与项目环境不一致")
+	}
+	if strings.TrimSpace(vps.Environment) != "" && vps.Environment != project.Environment {
+		return s.persistProjectFailure(result, "项目环境与绑定 VPS 环境不一致")
 	}
 	if strings.TrimSpace(vps.ProviderResourceID) == "" {
 		return s.persistProjectFailure(result, "项目绑定的 VPS 未登记 Hostinger 资源 ID")

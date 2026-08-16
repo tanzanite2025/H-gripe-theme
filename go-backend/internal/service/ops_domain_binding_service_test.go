@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"testing"
 
 	"commerce-platform/internal/domain/ops"
@@ -206,6 +207,49 @@ func TestOpsDomainBindingUpdatePreservesOmittedReferences(t *testing.T) {
 	}
 	if updated.ProjectBindingID == nil || *updated.ProjectBindingID != project.ID {
 		t.Fatalf("project_binding_id = %#v, want %d", updated.ProjectBindingID, project.ID)
+	}
+}
+
+func TestOpsDomainBindingListForEnvironment(t *testing.T) {
+	repos := newOpsDomainBindingTestRepositories(t)
+	service := NewOpsDomainBindingService(repos.domains, repos.projects, repos.connectors)
+
+	for _, domain := range []*ops.DomainBinding{
+		{
+			Domain:      "learn.example.com",
+			Role:        ops.DomainRoleInternal,
+			Environment: ops.DomainEnvironmentProduction,
+			Provider:    ops.DomainProviderCloudflare,
+			Status:      ops.DomainStatusActive,
+			Enabled:     true,
+		},
+		{
+			Domain:      "staging.learn.example.com",
+			Role:        ops.DomainRoleInternal,
+			Environment: ops.DomainEnvironmentStaging,
+			Provider:    ops.DomainProviderCloudflare,
+			Status:      ops.DomainStatusActive,
+			Enabled:     true,
+		},
+	} {
+		if err := repos.domains.Create(domain); err != nil {
+			t.Fatalf("create domain binding %s: %v", domain.Domain, err)
+		}
+	}
+
+	records, err := service.ListForEnvironment(ops.DomainEnvironmentStaging)
+	if err != nil {
+		t.Fatalf("ListForEnvironment returned error: %v", err)
+	}
+	if len(records) != 1 {
+		t.Fatalf("ListForEnvironment record count = %d, want 1", len(records))
+	}
+	if records[0].Domain != "staging.learn.example.com" {
+		t.Fatalf("ListForEnvironment domain = %q, want staging.learn.example.com", records[0].Domain)
+	}
+
+	if _, err := service.ListForEnvironment("qa"); !errors.Is(err, ErrInvalidOpsDomainEnvironment) {
+		t.Fatalf("ListForEnvironment invalid environment error = %v, want ErrInvalidOpsDomainEnvironment", err)
 	}
 }
 

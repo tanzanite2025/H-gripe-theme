@@ -17,6 +17,46 @@
   },
   "actions": {
     "toCart": "В корзину",
-    "payment": "Оплата"
+    "payment": "Оплата",
+    "addToCart": "Add to cart",
+    "directPayment": "Pay now"
+  },
+  "entry": {
+    "directSelect": {
+      "title": "I know my specs",
+      "description": "Choose configured items now.",
+      "action": "Start"
+    },
+    "readyMatch": {
+      "title": "Match ready wheelsets",
+      "description": "Coming next."
+    },
+    "specFinder": {
+      "title": "Find my bike specs",
+      "description": "Coming next."
+    },
+    "eyebrow": "QUICKBUY",
+    "title": "Choose how to start"
+  },
+  "help": {
+    "title": "QUICK instructions"
+  },
+  "filters": {
+    "label": "Filters",
+    "clear": "Clear",
+    "empty": "No values available"
+  },
+  "productRail": {
+    "label": "Available products",
+    "empty": "No products are available for this step."
+  },
+  "selection": {
+    "label": "Selected products",
+    "editHint": "Review and adjust your selections"
+  },
+  "defaultSteps": {
+    "step1": "Step 1",
+    "step2": "Step 2",
+    "step3": "Step 3"
   }
 }

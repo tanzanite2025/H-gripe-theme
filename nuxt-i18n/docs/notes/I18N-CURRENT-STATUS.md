@@ -52,7 +52,7 @@ Do not blindly translate:
 
 - product names, SKU option names, product dimensions, weights, prices, stock and technical specs
 - admin-entered product descriptions, FAQ bodies, policy bodies, or marketing content that should eventually come from backend-localized content
-- dynamic category names, collection names, product type names, or search behavior parameters
+- dynamic category names, collection names, product specification template names, or search behavior parameters
 - brand names, model names, standards, units, and technical abbreviations
 
 If a file mixes static UI and large content blocks, split the component first, then internationalize the stable child component.

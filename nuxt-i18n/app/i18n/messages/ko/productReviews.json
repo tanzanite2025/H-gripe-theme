@@ -1,0 +1,17 @@
+{
+  "eyebrow": "고객 피드백",
+  "title": "평점 및 리뷰",
+  "summaryLabel": "{count}개 리뷰 기준 5점 만점에 {rating}점",
+  "reviewCount": "{count}개 리뷰",
+  "loading": "리뷰를 불러오는 중...",
+  "loadError": "리뷰를 불러올 수 없습니다.",
+  "retry": "다시 시도",
+  "empty": "아직 승인된 리뷰가 없습니다.",
+  "ratingLabel": "5점 만점에 {rating}점",
+  "imageAlt": "고객 리뷰 이미지",
+  "verifiedPurchase": "구매 확인됨",
+  "helpfulCount": "{count}명이 도움이 되었다고 평가",
+  "storeReply": "스토어 답변",
+  "loadingMore": "더 불러오는 중...",
+  "loadMore": "리뷰 더 보기"
+}

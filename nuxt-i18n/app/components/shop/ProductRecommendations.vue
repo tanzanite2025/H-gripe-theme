@@ -9,7 +9,7 @@
       <div v-if="showCarouselControls" class="product-recommendations__controls">
         <button
           type="button"
-          class="product-recommendations__control"
+          class="tz-directional-arrow tz-directional-arrow--compact product-recommendations__control"
           :disabled="!canScrollBackward"
           :aria-label="$t('recommendations.previous', 'Previous recommended products')"
           :title="$t('recommendations.previous', 'Previous recommended products')"
@@ -19,7 +19,7 @@
         </button>
         <button
           type="button"
-          class="product-recommendations__control"
+          class="tz-directional-arrow tz-directional-arrow--compact product-recommendations__control"
           :disabled="!canScrollForward"
           :aria-label="$t('recommendations.next', 'Next recommended products')"
           :title="$t('recommendations.next', 'Next recommended products')"
@@ -353,34 +353,6 @@ watch(
   flex: 0 0 auto;
   align-items: center;
   gap: 0.4rem;
-}
-
-.product-recommendations__control {
-  display: inline-flex;
-  width: 2rem;
-  height: 2rem;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--tz-text-primary);
-  transition: border-color 0.2s ease, background-color 0.2s ease, opacity 0.2s ease;
-}
-
-.product-recommendations__control:hover:not(:disabled) {
-  border-color: rgba(181, 255, 109, 0.45);
-  background: rgba(181, 255, 109, 0.1);
-}
-
-.product-recommendations__control:disabled {
-  cursor: not-allowed;
-  opacity: 0.35;
-}
-
-.product-recommendations__control :deep(svg) {
-  width: 1rem;
-  height: 1rem;
 }
 
 .product-recommendations__viewport {

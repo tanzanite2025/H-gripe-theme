@@ -1,0 +1,17 @@
+{
+  "eyebrow": "آراء العملاء",
+  "title": "التقييمات والمراجعات",
+  "summaryLabel": "{rating} من 5 بناءً على {count} مراجعة",
+  "reviewCount": "{count} مراجعة",
+  "loading": "جارٍ تحميل المراجعات...",
+  "loadError": "تعذر تحميل المراجعات.",
+  "retry": "إعادة المحاولة",
+  "empty": "لا توجد مراجعات معتمدة بعد.",
+  "ratingLabel": "{rating} من 5 نجوم",
+  "imageAlt": "صورة مراجعة العميل",
+  "verifiedPurchase": "شراء موثق",
+  "helpfulCount": "وجدها {count} مفيدة",
+  "storeReply": "رد المتجر",
+  "loadingMore": "جارٍ تحميل المزيد...",
+  "loadMore": "تحميل المزيد من المراجعات"
+}

@@ -20,9 +20,18 @@ const (
 )
 
 func (h *PaymentHandler) GetGatewayRuntimeStatus(c *gin.Context) {
-	readiness := pgateway.BuildRuntimeReadiness(h.runtimeReadinessBaseURL(c))
-	pgateway.ApplySecureGatewayStatuses(&readiness, h.secureGatewayStatuses())
+	readiness := h.runtimeReadiness(h.runtimeReadinessBaseURL(c))
 	response.Success(c, readiness)
+}
+
+func (h *PaymentHandler) RuntimeReadiness() pgateway.RuntimeReadiness {
+	return h.runtimeReadiness(h.publicBaseURL)
+}
+
+func (h *PaymentHandler) runtimeReadiness(baseURL string) pgateway.RuntimeReadiness {
+	readiness := pgateway.BuildRuntimeReadiness(baseURL)
+	pgateway.ApplySecureGatewayStatuses(&readiness, h.secureGatewayStatuses())
+	return readiness
 }
 
 func (h *PaymentHandler) runtimeReadinessBaseURL(c *gin.Context) string {
@@ -288,6 +297,9 @@ func (h *PaymentHandler) secureGatewayStatus(provider pgateway.GatewayType) pgat
 	status.RuntimeSource = "admin-encrypted"
 	status.Environment = config.Environment
 	status.ConfiguredFields = pgateway.SecureGatewayConfiguredFields(config)
+	if provider == pgateway.GatewayStripe {
+		status.ThreeDSMode = pgateway.NormalizeThreeDSecureMode(config.Credentials["three_ds_mode"])
+	}
 	return status
 }
 

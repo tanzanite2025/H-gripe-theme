@@ -12,45 +12,57 @@ import (
 )
 
 type productCreateRequest struct {
-	ProductTypeID        *uint                              `json:"product_type_id"`
-	BrandID              *uint                              `json:"brand_id"`
-	ShippingTemplateID   *uint                              `json:"shipping_template_id"`
-	AfterSalesTemplateID *uint                              `json:"after_sales_template_id"`
-	PackagingTemplateID  *uint                              `json:"packaging_template_id"`
-	Name                 string                             `json:"name" binding:"required"`
-	Slug                 string                             `json:"slug" binding:"required"`
-	Description          string                             `json:"description"`
-	ShortDesc            string                             `json:"short_description"`
-	Currency             string                             `json:"currency"`
-	Status               string                             `json:"status" binding:"required,oneof=active inactive out_of_stock"`
-	Locale               string                             `json:"locale"`
-	ParentID             *uint                              `json:"parent_id"`
-	Featured             bool                               `json:"featured"`
-	Specs                map[string]interface{}             `json:"specs"`
-	Variants             []productVariantRequest            `json:"variants"`
-	VariantOptionValues  []productVariantOptionValueRequest `json:"variant_option_values"`
-	Media                []productMediaRequest              `json:"media"`
+	ProductSpecificationTemplateID *uint                              `json:"product_specification_template_id"`
+	ProductCategoryID              *uint                              `json:"product_category_id"`
+	BrandID                        *uint                              `json:"brand_id"`
+	ShippingTemplateID             *uint                              `json:"shipping_template_id"`
+	AfterSalesTemplateID           *uint                              `json:"after_sales_template_id"`
+	PackagingTemplateID            *uint                              `json:"packaging_template_id"`
+	CustomsClassificationProfileID *uint                              `json:"customs_classification_profile_id"`
+	HSCode                         string                             `json:"hs_code"`
+	CNCode                         string                             `json:"cn_code"`
+	CountryOfOrigin                string                             `json:"country_of_origin"`
+	CustomsDescription             string                             `json:"customs_description"`
+	Name                           string                             `json:"name" binding:"required"`
+	Slug                           string                             `json:"slug" binding:"required"`
+	Description                    string                             `json:"description"`
+	ShortDesc                      string                             `json:"short_description"`
+	Currency                       string                             `json:"currency"`
+	Status                         string                             `json:"status" binding:"required,oneof=active inactive out_of_stock"`
+	Locale                         string                             `json:"locale"`
+	ParentID                       *uint                              `json:"parent_id"`
+	Featured                       bool                               `json:"featured"`
+	Specs                          map[string]interface{}             `json:"specs"`
+	Variants                       []productVariantRequest            `json:"variants"`
+	VariantOptionValues            []productVariantOptionValueRequest `json:"variant_option_values"`
+	Media                          []productMediaRequest              `json:"media"`
 }
 
 type productUpdateRequest struct {
-	ProductTypeID        *uint                              `json:"product_type_id"`
-	BrandID              *uint                              `json:"brand_id"`
-	ShippingTemplateID   *uint                              `json:"shipping_template_id"`
-	AfterSalesTemplateID *uint                              `json:"after_sales_template_id"`
-	PackagingTemplateID  *uint                              `json:"packaging_template_id"`
-	Name                 *string                            `json:"name" binding:"omitempty,min=1"`
-	Slug                 *string                            `json:"slug" binding:"omitempty,min=1"`
-	Description          *string                            `json:"description"`
-	ShortDesc            *string                            `json:"short_description"`
-	Currency             *string                            `json:"currency"`
-	Status               *string                            `json:"status" binding:"omitempty,oneof=active inactive out_of_stock"`
-	Locale               *string                            `json:"locale"`
-	ParentID             *uint                              `json:"parent_id"`
-	Featured             *bool                              `json:"featured"`
-	Specs                map[string]interface{}             `json:"specs"`
-	Variants             []productVariantRequest            `json:"variants"`
-	VariantOptionValues  []productVariantOptionValueRequest `json:"variant_option_values"`
-	Media                []productMediaRequest              `json:"media"`
+	ProductSpecificationTemplateID *uint                              `json:"product_specification_template_id"`
+	ProductCategoryID              *uint                              `json:"product_category_id"`
+	BrandID                        *uint                              `json:"brand_id"`
+	ShippingTemplateID             *uint                              `json:"shipping_template_id"`
+	AfterSalesTemplateID           *uint                              `json:"after_sales_template_id"`
+	PackagingTemplateID            *uint                              `json:"packaging_template_id"`
+	CustomsClassificationProfileID *uint                              `json:"customs_classification_profile_id"`
+	HSCode                         *string                            `json:"hs_code"`
+	CNCode                         *string                            `json:"cn_code"`
+	CountryOfOrigin                *string                            `json:"country_of_origin"`
+	CustomsDescription             *string                            `json:"customs_description"`
+	Name                           *string                            `json:"name" binding:"omitempty,min=1"`
+	Slug                           *string                            `json:"slug" binding:"omitempty,min=1"`
+	Description                    *string                            `json:"description"`
+	ShortDesc                      *string                            `json:"short_description"`
+	Currency                       *string                            `json:"currency"`
+	Status                         *string                            `json:"status" binding:"omitempty,oneof=active inactive out_of_stock"`
+	Locale                         *string                            `json:"locale"`
+	ParentID                       *uint                              `json:"parent_id"`
+	Featured                       *bool                              `json:"featured"`
+	Specs                          map[string]interface{}             `json:"specs"`
+	Variants                       []productVariantRequest            `json:"variants"`
+	VariantOptionValues            []productVariantOptionValueRequest `json:"variant_option_values"`
+	Media                          []productMediaRequest              `json:"media"`
 }
 
 type productVariantRequest struct {
@@ -108,11 +120,15 @@ func respondProductServiceError(c *gin.Context, err error, fallbackMessage strin
 		c.JSON(http.StatusConflict, gin.H{"error": "SKU already exists"})
 	case errors.Is(err, service.ErrProductTranslationExists):
 		c.JSON(http.StatusConflict, gin.H{"error": "Translation already exists for this locale"})
-	case errors.Is(err, service.ErrProductTypeNotFound):
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Product type not found"})
+	case errors.Is(err, service.ErrProductSpecificationTemplateNotFound):
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Product specification template not found"})
 	case errors.Is(err, service.ErrProductBrandNotFound):
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Product brand not found"})
 	case errors.Is(err, service.ErrProductBrandInvalid):
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	case errors.Is(err, service.ErrProductCategoryNotFound):
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Product category not found"})
+	case errors.Is(err, service.ErrProductCategoryInvalid):
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	case errors.Is(err, service.ErrProductLocaleImmutable):
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -121,6 +137,11 @@ func respondProductServiceError(c *gin.Context, err error, fallbackMessage strin
 	case errors.Is(err, service.ErrProductVariantInvalid):
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	case errors.Is(err, service.ErrProductMediaInvalid):
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	case errors.Is(err, service.ErrProductCustomsInfoInvalid):
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	case errors.Is(err, service.ErrProductCustomsProfileNotFound),
+		errors.Is(err, service.ErrProductCustomsProfileInvalid):
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	case errors.Is(err, service.ErrProductTranslationInvalid):
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})

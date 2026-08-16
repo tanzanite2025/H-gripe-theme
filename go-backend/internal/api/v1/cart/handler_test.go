@@ -151,7 +151,7 @@ func TestGetCartSummaryOmitsExactInventory(t *testing.T) {
 	assert.NotContains(t, publicProduct, "stock")
 	assert.NotContains(t, publicVariant, "stock")
 	for _, field := range []string{
-		"product_type_id",
+		"product_specification_template_id",
 		"shipping_template_id",
 		"sku",
 		"weight_grams",
@@ -347,7 +347,7 @@ func newCartHandlerTestEnv(t *testing.T) (*gorm.DB, *Handler) {
 	})
 
 	require.NoError(t, db.AutoMigrate(
-		&product.ProductType{},
+		&product.ProductSpecificationTemplate{},
 		&product.SpecDefinition{},
 		&product.Product{},
 		&product.ProductMedia{},

@@ -72,24 +72,24 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_quick_buy_steps_version_key
 CREATE INDEX IF NOT EXISTS idx_quick_buy_steps_version_order
     ON quick_buy_steps(flow_version_id, sort_order, id);
 
-CREATE TABLE IF NOT EXISTS quick_buy_step_product_types (
+CREATE TABLE IF NOT EXISTS quick_buy_step_product_specification_templates (
     id BIGSERIAL PRIMARY KEY,
     step_id BIGINT NOT NULL REFERENCES quick_buy_steps(id) ON DELETE CASCADE,
-    product_type_id BIGINT NOT NULL REFERENCES product_types(id) ON DELETE RESTRICT,
+    product_specification_template_id BIGINT NOT NULL REFERENCES product_specification_templates(id) ON DELETE RESTRICT,
     is_primary BOOLEAN NOT NULL DEFAULT FALSE,
     sort_order INTEGER NOT NULL DEFAULT 100,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_quick_buy_step_product_types_unique
-    ON quick_buy_step_product_types(step_id, product_type_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_quick_buy_step_product_specification_templates_unique
+    ON quick_buy_step_product_specification_templates(step_id, product_specification_template_id);
 
-CREATE INDEX IF NOT EXISTS idx_quick_buy_step_product_types_order
-    ON quick_buy_step_product_types(step_id, sort_order, id);
+CREATE INDEX IF NOT EXISTS idx_quick_buy_step_product_specification_templates_order
+    ON quick_buy_step_product_specification_templates(step_id, sort_order, id);
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_quick_buy_step_product_types_one_primary
-    ON quick_buy_step_product_types(step_id)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_quick_buy_step_product_specification_templates_one_primary
+    ON quick_buy_step_product_specification_templates(step_id)
     WHERE is_primary = TRUE;
 
 CREATE TABLE IF NOT EXISTS quick_buy_step_filters (

@@ -11,15 +11,15 @@ import (
 
 func TestPublicProductFromDomainExposesPurchasableSkuFactsWithoutExactInventory(t *testing.T) {
 	item := productdomain.Product{
-		ID:                 11,
-		ProductTypeID:      pointerTo(uint(3)),
-		ShippingTemplateID: pointerTo(uint(7)),
-		SKU:                "PUBLIC-PRODUCT",
-		Name:               "Public Product",
-		Slug:               "public-product",
-		Stock:              47,
-		Status:             "active",
-		ViewCount:          146,
+		ID:                             11,
+		ProductSpecificationTemplateID: pointerTo(uint(3)),
+		ShippingTemplateID:             pointerTo(uint(7)),
+		SKU:                            "PUBLIC-PRODUCT",
+		Name:                           "Public Product",
+		Slug:                           "public-product",
+		Stock:                          47,
+		Status:                         "active",
+		ViewCount:                      146,
 		Variants: []productdomain.ProductVariant{
 			{
 				ID:                 12,
@@ -44,7 +44,7 @@ func TestPublicProductFromDomainExposesPurchasableSkuFactsWithoutExactInventory(
 		t.Fatalf("public product response exposes exact view count: %s", payload)
 	}
 	for _, field := range []string{
-		`"product_type_id"`,
+		`"product_specification_template_id"`,
 		`"shipping_template_id"`,
 		`"product_id"`,
 		`"status"`,
@@ -108,12 +108,12 @@ func TestPublicProductFromDomainStatusOverridesSkuAvailability(t *testing.T) {
 	}
 }
 
-func TestPublicProductTypeUsesRequestedTranslationWithEnglishFallback(t *testing.T) {
+func TestPublicProductSpecificationTemplateUsesRequestedTranslationWithEnglishFallback(t *testing.T) {
 	item := productdomain.Product{
-		ProductType: &productdomain.ProductType{
+		ProductSpecificationTemplate: &productdomain.ProductSpecificationTemplate{
 			Name:     "Wheelset",
 			ImageURL: "https://cdn.example.com/categories/wheelset.webp",
-			Translations: []productdomain.ProductTypeTranslation{
+			Translations: []productdomain.ProductSpecificationTemplateTranslation{
 				{Locale: "en", Name: "Wheelset"},
 				{Locale: "zh_cn", Name: "轮组"},
 			},
@@ -121,16 +121,16 @@ func TestPublicProductTypeUsesRequestedTranslationWithEnglishFallback(t *testing
 	}
 
 	translated := PublicProductFromDomainWithLocale(item, "", "zh_cn")
-	if translated.ProductType == nil || translated.ProductType.Name != "轮组" {
-		t.Fatalf("expected zh_cn product type translation, got %#v", translated.ProductType)
+	if translated.ProductSpecificationTemplate == nil || translated.ProductSpecificationTemplate.Name != "轮组" {
+		t.Fatalf("expected zh_cn product specification template translation, got %#v", translated.ProductSpecificationTemplate)
 	}
 
 	fallback := PublicProductFromDomainWithLocale(item, "", "fr")
-	if fallback.ProductType == nil || fallback.ProductType.Name != "Wheelset" {
-		t.Fatalf("expected English product type fallback, got %#v", fallback.ProductType)
+	if fallback.ProductSpecificationTemplate == nil || fallback.ProductSpecificationTemplate.Name != "Wheelset" {
+		t.Fatalf("expected English product specification template fallback, got %#v", fallback.ProductSpecificationTemplate)
 	}
-	if translated.ProductType.ImageURL != "https://cdn.example.com/categories/wheelset.webp" {
-		t.Fatalf("expected product type image URL to be exposed, got %#v", translated.ProductType)
+	if translated.ProductSpecificationTemplate.ImageURL != "https://cdn.example.com/categories/wheelset.webp" {
+		t.Fatalf("expected product specification template image URL to be exposed, got %#v", translated.ProductSpecificationTemplate)
 	}
 }
 
@@ -171,7 +171,7 @@ func TestPublicProductFromDomainExposesVariantOptionPresentationMetadata(t *test
 		Name:   "Visual Product",
 		Slug:   "visual-product",
 		Status: "active",
-		ProductType: &productdomain.ProductType{
+		ProductSpecificationTemplate: &productdomain.ProductSpecificationTemplate{
 			Name: "Finish Product",
 			Slug: "finish_product",
 			SpecDefinitions: []productdomain.SpecDefinition{
@@ -241,8 +241,8 @@ func TestPublicProductFromDomainExposesVariantOptionPresentationMetadata(t *test
 	if publicProduct.Media[0].VariantOptionValueID == nil || *publicProduct.Media[0].VariantOptionValueID != optionValueID {
 		t.Fatalf("expected media to expose variant option value reference, got %#v", publicProduct.Media[0])
 	}
-	if publicProduct.ProductType == nil || len(publicProduct.ProductType.SpecDefinitions) != 1 || publicProduct.ProductType.SpecDefinitions[0].Presentation != "color" {
-		t.Fatalf("expected public product type to expose color presentation, got %#v", publicProduct.ProductType)
+	if publicProduct.ProductSpecificationTemplate == nil || len(publicProduct.ProductSpecificationTemplate.SpecDefinitions) != 1 || publicProduct.ProductSpecificationTemplate.SpecDefinitions[0].Presentation != "color" {
+		t.Fatalf("expected public product specification template to expose color presentation, got %#v", publicProduct.ProductSpecificationTemplate)
 	}
 }
 

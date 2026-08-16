@@ -5,7 +5,20 @@
       description="维护 Hostinger Compose 项目、服务边界、当前版本和备份恢复记录；这里只做台账维护。"
     >
       <template #actions>
-        <Button variant="outline" :disabled="loading" @click="loadProjects">
+        <select
+          v-model="environmentFilter"
+          class="h-9 rounded-md border bg-background px-3 text-sm"
+          aria-label="筛选项目环境"
+          :disabled="loading"
+          @change="changeEnvironment"
+        >
+          <option value="production">生产</option>
+          <option value="staging">预发布</option>
+          <option value="test">测试</option>
+          <option value="local">本地</option>
+          <option value="">全部环境</option>
+        </select>
+        <Button variant="outline" :disabled="loading" @click="refreshProjectsPage">
           <RefreshCw :class="['size-4', loading ? 'animate-spin' : '']" />
           刷新
         </Button>
@@ -62,6 +75,9 @@
             <TableCell>
               <p class="text-xs font-bold">{{ project.vps_name || '未绑定 VPS' }}</p>
               <p class="mt-1 font-mono text-[10px] text-muted-foreground">{{ project.vps_hostname || project.vps_ipv4 || '-' }}</p>
+              <p class="mt-1 truncate text-[10px] text-muted-foreground" :title="projectConnectorLabel(project)">
+                连接器：{{ projectConnectorLabel(project) }}
+              </p>
             </TableCell>
             <TableCell>
               <p class="font-mono text-xs">{{ project.compose_project_name || '-' }}</p>
@@ -86,7 +102,7 @@
                 卷：{{ project.volumes || '-' }}
               </p>
               <p class="mt-1 max-w-56 truncate text-[10px] text-muted-foreground">
-                Quick Buy：{{ quickBuyRateLimitSummary(project) }}
+                Quick Buy：{{ projectQuickBuyRateLimitSummary(project) }}
               </p>
             </TableCell>
             <TableCell>
@@ -146,354 +162,85 @@
       </Table>
     </AdminTablePanel>
 
-    <Dialog v-model:open="dialogOpen">
-      <DialogContent size="lg">
-        <DialogHeader>
-          <DialogTitle>{{ form.id ? '编辑项目绑定' : '新增项目绑定' }}</DialogTitle>
-          <DialogDescription>
-            项目状态来自后台维护的声明式记录。填写实际检查结果前，请保留“未同步”，不要把文档基线当成实时健康状态。
-          </DialogDescription>
-        </DialogHeader>
-
-        <form class="space-y-4" @submit.prevent="saveProject">
-          <div class="grid gap-4 md:grid-cols-2">
-            <AdminFormField label="项目名称" required>
-              <Input v-model="form.name" placeholder="commerce-platform" :disabled="saving" />
-            </AdminFormField>
-            <AdminFormField label="绑定 VPS" required>
-              <select v-model.number="form.vps_binding_id" class="h-10 w-full rounded-md border bg-background px-3 text-sm" :disabled="saving">
-                <option :value="0">请选择 VPS</option>
-                <option v-for="vps in vpsList" :key="vps.id" :value="vps.id">{{ vps.name }} · {{ vps.hostname || vps.ipv4 || '未登记地址' }}</option>
-              </select>
-            </AdminFormField>
-            <AdminFormField label="环境" required>
-              <select v-model="form.environment" class="h-10 w-full rounded-md border bg-background px-3 text-sm" :disabled="saving">
-                <option v-for="option in environmentOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
-              </select>
-            </AdminFormField>
-            <AdminFormField label="Hostinger 项目 ID">
-              <Input v-model="form.provider_resource_id" placeholder="可在 Hostinger 确认后补录" :disabled="saving" />
-            </AdminFormField>
-            <AdminFormField label="Compose 来源">
-              <Input v-model="form.compose_source" placeholder="compose.prod.yml" :disabled="saving" />
-            </AdminFormField>
-            <AdminFormField label="Compose 项目名">
-              <Input v-model="form.compose_project_name" placeholder="commerce-platform" :disabled="saving" />
-            </AdminFormField>
-            <AdminFormField label="共享网关网络">
-              <Input v-model="form.gateway_network" placeholder="shared-edge" :disabled="saving" />
-            </AdminFormField>
-            <AdminFormField label="网关别名">
-              <Input v-model="form.gateway_alias" placeholder="theme-web" :disabled="saving" />
-            </AdminFormField>
-            <AdminFormField label="服务列表" description="用逗号分隔，例如 db, redis, api。">
-              <Input v-model="form.services" placeholder="db, redis, api, storefront, admin, web" :disabled="saving" />
-            </AdminFormField>
-            <AdminFormField label="网络边界" description="用逗号分隔。">
-              <Input v-model="form.networks" placeholder="db, cache, app, shared-edge" :disabled="saving" />
-            </AdminFormField>
-            <AdminFormField label="卷边界" description="用逗号分隔。">
-              <Input v-model="form.volumes" placeholder="postgres, redis, uploads" :disabled="saving" />
-            </AdminFormField>
-            <AdminFormField label="当前镜像标签">
-              <Input v-model="form.current_image_tag" placeholder="master 或 sha-..." :disabled="saving" />
-            </AdminFormField>
-            <AdminFormField label="当前 Commit SHA">
-              <Input v-model="form.current_commit_sha" placeholder="可选：完整 SHA" :disabled="saving" />
-            </AdminFormField>
-            <AdminFormField label="期望状态">
-              <select v-model="form.status" class="h-10 w-full rounded-md border bg-background px-3 text-sm" :disabled="saving">
-                <option v-for="option in statusOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
-              </select>
-            </AdminFormField>
-            <AdminFormField label="最后部署时间">
-              <Input v-model="form.last_deployment_at" type="datetime-local" :disabled="saving" />
-            </AdminFormField>
-            <div class="md:col-span-2 rounded-lg border border-border/80 p-3">
-              <div class="flex flex-wrap items-center justify-between gap-3">
-                <p class="text-xs font-black text-foreground">Quick Buy 限流</p>
-                <label class="inline-flex items-center gap-2 text-xs font-bold">
-                  <input v-model="form.quickBuyRateLimit.enabled" type="checkbox" class="size-4" :disabled="saving" />
-                  启用
-                </label>
-              </div>
-              <div class="mt-3 grid gap-3 md:grid-cols-4">
-                <AdminFormField label="IP 每分钟">
-                  <Input v-model.number="form.quickBuyRateLimit.ipRequestsPerMinute" type="number" min="1" step="1" :disabled="saving || !form.quickBuyRateLimit.enabled" />
-                </AdminFormField>
-                <AdminFormField label="IP Burst">
-                  <Input v-model.number="form.quickBuyRateLimit.ipBurst" type="number" min="1" step="1" :disabled="saving || !form.quickBuyRateLimit.enabled" />
-                </AdminFormField>
-                <AdminFormField label="Session 每分钟">
-                  <Input v-model.number="form.quickBuyRateLimit.sessionRequestsPerMinute" type="number" min="1" step="1" :disabled="saving || !form.quickBuyRateLimit.enabled" />
-                </AdminFormField>
-                <AdminFormField label="Session Burst">
-                  <Input v-model.number="form.quickBuyRateLimit.sessionBurst" type="number" min="1" step="1" :disabled="saving || !form.quickBuyRateLimit.enabled" />
-                </AdminFormField>
-                <AdminFormField label="Edge IP 每分钟">
-                  <Input v-model.number="form.quickBuyRateLimit.edgeIPRequestsPerMinute" type="number" min="1" step="1" :disabled="saving || !form.quickBuyRateLimit.enabled || !form.quickBuyRateLimit.caddyRateLimitEnabled" />
-                </AdminFormField>
-                <AdminFormField label="Edge IP Burst">
-                  <Input v-model.number="form.quickBuyRateLimit.edgeIPBurst" type="number" min="1" step="1" :disabled="saving || !form.quickBuyRateLimit.enabled || !form.quickBuyRateLimit.caddyRateLimitEnabled" />
-                </AdminFormField>
-                <div class="flex items-center md:col-span-2">
-                  <label class="inline-flex items-center gap-2 text-xs font-bold">
-                    <input v-model="form.quickBuyRateLimit.caddyRateLimitEnabled" type="checkbox" class="size-4" :disabled="saving || !form.quickBuyRateLimit.enabled" />
-                    Caddy 边缘桶
-                  </label>
-                </div>
-              </div>
-            </div>
-            <AdminFormField label="备份策略" class="md:col-span-2">
-              <Textarea v-model="form.backup_policy" class="min-h-20" placeholder="每日 PostgreSQL、uploads 备份，异地保存和恢复演练。" :disabled="saving" />
-            </AdminFormField>
-            <AdminFormField label="恢复说明" class="md:col-span-2">
-              <Textarea v-model="form.restore_notes" class="min-h-20" placeholder="记录最近一次恢复演练、备份位置和待处理事项。" :disabled="saving" />
-            </AdminFormField>
-            <AdminFormField label="备注" class="md:col-span-2">
-              <Textarea v-model="form.notes" class="min-h-24" placeholder="记录项目边界、发布来源和维护说明。" :disabled="saving" />
-            </AdminFormField>
-          </div>
-
-          <DialogFooter>
-            <Button type="button" variant="outline" :disabled="saving" @click="dialogOpen = false">取消</Button>
-            <Button type="submit" :disabled="saving || !canEdit">
-              <LoaderCircle v-if="saving" class="size-4 animate-spin" />
-              <Save v-else class="size-4" />
-              {{ saving ? '保存中' : '保存项目' }}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <OpsProjectBindingFormDialog
+      :open="dialogOpen"
+      :form="form"
+      :vps="vpsList"
+      :connectors="connectors"
+      :saving="saving"
+      :can-edit="canEdit"
+      @update:open="dialogOpen = $event"
+      @save="saveProject"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
-import { LoaderCircle, Pencil, Plus, Power, RefreshCw, Save } from '@lucide/vue'
-import AdminFormField from '@/components/admin/AdminFormField.vue'
+import { LoaderCircle, Pencil, Plus, Power, RefreshCw } from '@lucide/vue'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import AdminStatusBadge, { type AdminStatusTone } from '@/components/admin/AdminStatusBadge.vue'
 import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
-import { Button } from '@/components/ui/button'
+import OpsProjectBindingFormDialog from '@/components/admin/ops/OpsProjectBindingFormDialog.vue'
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
+  assignOpsProjectForm,
+  emptyOpsProjectForm,
+  opsProjectEnvironmentOptions,
+  opsProjectStatusOptions,
+  projectQuickBuyRateLimitSummary,
+  serializeQuickBuyRateLimitPolicy,
+  toOptionalISOTime,
+  type OpsProjectForm,
+} from '@/components/admin/ops/opsProjectBindingForm'
+import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Textarea } from '@/components/ui/textarea'
-import opsApi, { type OpsProjectPayload } from '@/api/ops'
+import opsApi, {
+  type OpsConnector,
+  type OpsEnvironment,
+  type OpsProject,
+  type OpsProjectPayload,
+  type OpsVPS,
+} from '@/api/ops'
+import { readOpsEnvironmentQuery, withOpsEnvironmentQuery } from '@/lib/opsEnvironment'
 import { useAuthStore } from '@/stores/auth'
 
-interface OpsVPS {
-  id: number
-  name: string
-  provider: string
-  hostname: string
-  ipv4: string
-}
-
-interface OpsProject {
-  id: number
-  name: string
-  vps_binding_id: number
-  provider_resource_id: string
-  environment: string
-  compose_source: string
-  compose_project_name: string
-  gateway_network: string
-  gateway_alias: string
-  services: string
-  networks: string
-  volumes: string
-  current_image_tag: string
-  current_commit_sha: string
-  status: string
-  health_status: string
-  observed_state: string
-  observed_source: string
-  observed_container_count: number
-  observed_running_container_count: number
-  observed_healthy_container_count: number
-  enabled: boolean
-  last_deployment_at?: string
-  last_checked_at?: string
-  last_error: string
-  backup_policy: string
-  restore_notes: string
-  quick_buy_rate_limit_policy: string
-  notes: string
-  vps_name: string
-  vps_provider: string
-  vps_hostname: string
-  vps_ipv4: string
-}
-
-interface QuickBuyRateLimitForm {
-  enabled: boolean
-  ipRequestsPerMinute: number
-  ipBurst: number
-  sessionRequestsPerMinute: number
-  sessionBurst: number
-  edgeIPRequestsPerMinute: number
-  edgeIPBurst: number
-  caddyRateLimitEnabled: boolean
-}
-
-interface OpsProjectForm {
-  id: number
-  name: string
-  vps_binding_id: number
-  provider_resource_id: string
-  environment: string
-  compose_source: string
-  compose_project_name: string
-  gateway_network: string
-  gateway_alias: string
-  services: string
-  networks: string
-  volumes: string
-  current_image_tag: string
-  current_commit_sha: string
-  status: string
-  enabled: boolean
-  last_deployment_at: string
-  backup_policy: string
-  restore_notes: string
-  quickBuyRateLimit: QuickBuyRateLimitForm
-  notes: string
-}
-
+const route = useRoute()
+const router = useRouter()
 const authStore = useAuthStore()
 const canEdit = computed(() => authStore.hasPermission('ops:project:edit'))
 const canSync = computed(() => authStore.hasPermission('ops:project:sync'))
 const projects = ref<OpsProject[]>([])
 const vpsList = ref<OpsVPS[]>([])
+const connectors = ref<OpsConnector[]>([])
 const loading = ref(false)
 const saving = ref(false)
 const dialogOpen = ref(false)
 const syncingId = ref(0)
+const environmentFilter = ref<OpsEnvironment | ''>(readOpsEnvironmentQuery(route.query.environment))
 
-const environmentOptions = [
-  { value: 'production', label: '生产' },
-  { value: 'staging', label: '预发布' },
-  { value: 'test', label: '测试' },
-  { value: 'local', label: '本地' },
-]
-const statusOptions = [
-  { value: 'active', label: '正常' },
-  { value: 'pending', label: '待确认' },
-  { value: 'disabled', label: '已停用' },
-  { value: 'drifted', label: '配置漂移' },
-  { value: 'error', label: '错误' },
-]
-
-const defaultQuickBuyRateLimit = (): QuickBuyRateLimitForm => ({
-  enabled: true,
-  ipRequestsPerMinute: 120,
-  ipBurst: 40,
-  sessionRequestsPerMinute: 60,
-  sessionBurst: 20,
-  edgeIPRequestsPerMinute: 240,
-  edgeIPBurst: 80,
-  caddyRateLimitEnabled: false,
-})
-
-const positiveInteger = (value: unknown, fallback: number): number => {
-  const parsed = Number(value)
-  if (!Number.isFinite(parsed) || parsed <= 0) return fallback
-  return Math.round(parsed)
-}
-
-const parseQuickBuyRateLimitPolicy = (raw?: string): QuickBuyRateLimitForm => {
-  const defaults = defaultQuickBuyRateLimit()
-  if (!raw?.trim()) return defaults
-  try {
-    const parsed = JSON.parse(raw) as Record<string, unknown>
-    if (!parsed || typeof parsed !== 'object') return defaults
-    return {
-      enabled: Boolean(parsed.enabled ?? defaults.enabled),
-      ipRequestsPerMinute: positiveInteger(parsed.ip_requests_per_minute, defaults.ipRequestsPerMinute),
-      ipBurst: positiveInteger(parsed.ip_burst, defaults.ipBurst),
-      sessionRequestsPerMinute: positiveInteger(parsed.session_requests_per_minute, defaults.sessionRequestsPerMinute),
-      sessionBurst: positiveInteger(parsed.session_burst, defaults.sessionBurst),
-      edgeIPRequestsPerMinute: positiveInteger(parsed.edge_ip_requests_per_minute, defaults.edgeIPRequestsPerMinute),
-      edgeIPBurst: positiveInteger(parsed.edge_ip_burst, defaults.edgeIPBurst),
-      caddyRateLimitEnabled: Boolean(parsed.caddy_rate_limit_enabled ?? defaults.caddyRateLimitEnabled),
-    }
-  } catch {
-    return defaults
-  }
-}
-
-const serializeQuickBuyRateLimitPolicy = (policy: QuickBuyRateLimitForm): string => {
-  const defaults = defaultQuickBuyRateLimit()
-  return JSON.stringify({
-    enabled: Boolean(policy.enabled),
-    ip_requests_per_minute: positiveInteger(policy.ipRequestsPerMinute, defaults.ipRequestsPerMinute),
-    ip_burst: positiveInteger(policy.ipBurst, defaults.ipBurst),
-    session_requests_per_minute: positiveInteger(policy.sessionRequestsPerMinute, defaults.sessionRequestsPerMinute),
-    session_burst: positiveInteger(policy.sessionBurst, defaults.sessionBurst),
-    edge_ip_requests_per_minute: positiveInteger(policy.edgeIPRequestsPerMinute, defaults.edgeIPRequestsPerMinute),
-    edge_ip_burst: positiveInteger(policy.edgeIPBurst, defaults.edgeIPBurst),
-    caddy_rate_limit_enabled: Boolean(policy.caddyRateLimitEnabled),
-  })
-}
-const healthOptions = [
-  { value: 'healthy', label: '健康' },
-  { value: 'degraded', label: '降级' },
-  { value: 'unknown', label: '未同步' },
-  { value: 'offline', label: '离线' },
-]
-
-const emptyForm = (): OpsProjectForm => ({
-  id: 0,
-  name: '',
-  vps_binding_id: 0,
-  provider_resource_id: '',
-  environment: 'production',
-  compose_source: '',
-  compose_project_name: '',
-  gateway_network: '',
-  gateway_alias: '',
-  services: '',
-  networks: '',
-  volumes: '',
-  current_image_tag: '',
-  current_commit_sha: '',
-  status: 'pending',
-  enabled: true,
-  last_deployment_at: '',
-  backup_policy: '',
-  restore_notes: '',
-  quickBuyRateLimit: defaultQuickBuyRateLimit(),
-  notes: '',
-})
-const form = reactive<OpsProjectForm>(emptyForm())
+const form = reactive<OpsProjectForm>(emptyOpsProjectForm())
 
 const enabledCount = computed(() => projects.value.filter((project) => project.enabled).length)
 const healthyCount = computed(() => projects.value.filter((project) => project.health_status === 'healthy').length)
-const attentionCount = computed(() => projects.value.filter((project) => ['pending', 'drifted', 'error'].includes(project.status) || ['degraded', 'offline'].includes(project.health_status)).length)
+const attentionCount = computed(() => projects.value.filter((project) => (
+  ['pending', 'drifted', 'error'].includes(project.status) ||
+  ['degraded', 'offline'].includes(project.health_status)
+)).length)
 
 const assignForm = (project?: Partial<OpsProject>): void => {
-  Object.assign(form, emptyForm(), project || {})
-  form.vps_binding_id = project?.vps_binding_id ?? 0
-  form.quickBuyRateLimit = parseQuickBuyRateLimitPolicy(project?.quick_buy_rate_limit_policy)
+  assignOpsProjectForm(form, project)
+  if (!project && environmentFilter.value) {
+    form.environment = environmentFilter.value
+  }
 }
 
-const loadProjects = async (): Promise<void> => {
+const loadProjectList = async (): Promise<void> => {
   loading.value = true
   try {
-    const [projectData, vpsData] = await Promise.all([opsApi.listProjects(), opsApi.listVPS()])
+    const projectData = await opsApi.listProjects(environmentFilter.value || undefined)
     projects.value = Array.isArray(projectData?.projects) ? projectData.projects : []
-    vpsList.value = Array.isArray(vpsData?.vps) ? vpsData.vps : []
   } catch (error: any) {
     toast.error(error?.response?.data?.message || error?.response?.data?.error || '项目列表加载失败')
   } finally {
@@ -501,14 +248,59 @@ const loadProjects = async (): Promise<void> => {
   }
 }
 
+const loadVPSOptions = async (): Promise<void> => {
+  if (!canEdit.value) {
+    vpsList.value = []
+    return
+  }
+  try {
+    const vpsData = await opsApi.listVPS()
+    vpsList.value = Array.isArray(vpsData?.vps) ? vpsData.vps : []
+  } catch (error: any) {
+    vpsList.value = []
+    toast.error(error?.response?.data?.message || error?.response?.data?.error || 'VPS 选项加载失败，项目列表仍可使用')
+  }
+}
+
+const loadConnectorOptions = async (): Promise<void> => {
+  if (!canEdit.value) {
+    connectors.value = []
+    return
+  }
+  try {
+    const connectorData = await opsApi.listConnectors()
+    connectors.value = Array.isArray(connectorData?.connectors) ? connectorData.connectors : []
+  } catch (error: any) {
+    connectors.value = []
+    toast.error(error?.response?.data?.message || error?.response?.data?.error || '连接器选项加载失败，项目列表仍可使用')
+  }
+}
+
+const changeEnvironment = (): void => {
+  void router.replace({ query: withOpsEnvironmentQuery(route.query, environmentFilter.value) })
+  void loadProjectList()
+}
+
+const refreshProjectsPage = async (): Promise<void> => {
+  await Promise.all([
+    loadProjectList(),
+    loadVPSOptions(),
+    loadConnectorOptions(),
+  ])
+}
+
 const openCreate = (): void => {
   assignForm()
   dialogOpen.value = true
+  if (!vpsList.value.length) void loadVPSOptions()
+  if (!connectors.value.length) void loadConnectorOptions()
 }
 
 const openEdit = (project: OpsProject): void => {
   assignForm(project)
   dialogOpen.value = true
+  if (!vpsList.value.length) void loadVPSOptions()
+  if (!connectors.value.length) void loadConnectorOptions()
 }
 
 const saveProject = async (): Promise<void> => {
@@ -525,6 +317,7 @@ const saveProject = async (): Promise<void> => {
     const payload: OpsProjectPayload = {
       name: form.name.trim(),
       vps_binding_id: form.vps_binding_id,
+      connector_id: form.connector_id || null,
       provider_resource_id: form.provider_resource_id.trim(),
       environment: form.environment,
       compose_source: form.compose_source.trim(),
@@ -538,7 +331,7 @@ const saveProject = async (): Promise<void> => {
       current_commit_sha: form.current_commit_sha.trim(),
       status: form.status,
       enabled: form.enabled,
-      last_deployment_at: form.last_deployment_at,
+      last_deployment_at: toOptionalISOTime(form.last_deployment_at),
       backup_policy: form.backup_policy.trim(),
       restore_notes: form.restore_notes.trim(),
       quick_buy_rate_limit_policy: serializeQuickBuyRateLimitPolicy(form.quickBuyRateLimit),
@@ -552,7 +345,7 @@ const saveProject = async (): Promise<void> => {
       toast.success('项目绑定已创建')
     }
     dialogOpen.value = false
-    await loadProjects()
+    await loadProjectList()
   } catch (error: any) {
     toast.error(error?.response?.data?.message || error?.response?.data?.error || '项目保存失败')
   } finally {
@@ -583,7 +376,20 @@ const syncProject = async (project: OpsProject): Promise<void> => {
           ? 'error'
           : 'warning'
     toast[tone](result.message || `${project.name} 同步完成`)
-    await loadProjects()
+    const index = projects.value.findIndex((item) => item.id === project.id)
+    if (index >= 0) {
+      projects.value[index] = {
+        ...project,
+        health_status: result.health_status,
+        observed_state: result.remote_state || '',
+        observed_source: result.observed_source,
+        observed_container_count: result.container_count,
+        observed_running_container_count: result.running_container_count,
+        observed_healthy_container_count: result.healthy_container_count,
+        last_checked_at: result.last_checked_at,
+        last_error: result.observed_error || '',
+      }
+    }
   } catch (error: any) {
     toast.error(error?.response?.data?.message || error?.response?.data?.error || `${project.name} 同步失败`)
   } finally {
@@ -591,21 +397,35 @@ const syncProject = async (project: OpsProject): Promise<void> => {
   }
 }
 
+const healthOptions = [
+  { value: 'healthy', label: '健康' },
+  { value: 'degraded', label: '降级' },
+  { value: 'unknown', label: '未同步' },
+  { value: 'offline', label: '离线' },
+]
 const optionLabel = (options: Array<{ value: string; label: string }>, value: string): string => (
   options.find((option) => option.value === value)?.label || value || '-'
 )
-const environmentLabel = (value: string): string => optionLabel(environmentOptions, value)
-const statusLabel = (value: string): string => optionLabel(statusOptions, value)
+const environmentLabel = (value: string): string => optionLabel(opsProjectEnvironmentOptions, value)
+const statusLabel = (value: string): string => optionLabel(opsProjectStatusOptions, value)
 const healthLabel = (value: string): string => optionLabel(healthOptions, value)
 const formatDate = (value: string): string => new Date(value).toLocaleString()
 const containerSummary = (project: OpsProject): string => {
   if (!project.last_checked_at) return '容器：未同步'
   return `容器：${project.observed_container_count || 0} / 运行 ${project.observed_running_container_count || 0} / 健康 ${project.observed_healthy_container_count || 0}`
 }
-const quickBuyRateLimitSummary = (project: OpsProject): string => {
-  const policy = parseQuickBuyRateLimitPolicy(project.quick_buy_rate_limit_policy)
-  if (!policy.enabled) return '关闭'
-  return `${policy.ipRequestsPerMinute}/min IP · ${policy.sessionRequestsPerMinute}/min Session`
+const projectConnectorLabel = (project: OpsProject): string => {
+  const connectorID = project.connector_id || project.vps_connector_id
+  const connector = connectorID
+    ? connectors.value.find((item) => item.id === connectorID)
+    : undefined
+  if (project.connector_id) {
+    return connector ? `${connector.name} · 项目指定` : '项目指定连接器'
+  }
+  if (project.vps_connector_id) {
+    return connector ? `${connector.name} · 沿用 VPS` : '沿用 VPS 连接器'
+  }
+  return 'VPS 未绑定连接器'
 }
 const healthTone = (value: string): AdminStatusTone => {
   if (value === 'healthy') return 'green'
@@ -614,5 +434,12 @@ const healthTone = (value: string): AdminStatusTone => {
   return 'gray'
 }
 
-onMounted(loadProjects)
+watch(() => route.query.environment, (value) => {
+  const nextEnvironment = readOpsEnvironmentQuery(value)
+  if (nextEnvironment === environmentFilter.value) return
+  environmentFilter.value = nextEnvironment
+  void loadProjectList()
+})
+
+onMounted(refreshProjectsPage)
 </script>

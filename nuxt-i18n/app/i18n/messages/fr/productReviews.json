@@ -1,0 +1,17 @@
+{
+  "eyebrow": "Avis clients",
+  "title": "Notes et avis",
+  "summaryLabel": "{rating} sur 5 pour {count} avis",
+  "reviewCount": "{count} avis",
+  "loading": "Chargement des avis...",
+  "loadError": "Les avis ne peuvent pas être chargés.",
+  "retry": "Réessayer",
+  "empty": "Aucun avis approuvé pour le moment.",
+  "ratingLabel": "{rating} étoiles sur 5",
+  "imageAlt": "Image de l'avis client",
+  "verifiedPurchase": "Achat vérifié",
+  "helpfulCount": "{count} personne(s) ont trouvé cela utile",
+  "storeReply": "Réponse de la boutique",
+  "loadingMore": "Chargement...",
+  "loadMore": "Charger plus d'avis"
+}

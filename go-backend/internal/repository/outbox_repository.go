@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"strings"
 	"time"
 
 	"commerce-platform/internal/domain/outbox"
@@ -45,6 +46,33 @@ func (r *OutboxRepository) FindEventByKey(eventKey string) (*outbox.Event, error
 		return nil, err
 	}
 	return &event, nil
+}
+
+// CountEventsByStatus returns operational counts for one event type. It is
+// intentionally aggregate-only so monitoring never needs to read Outbox
+// payloads, which can contain business data for unrelated consumers.
+func (r *OutboxRepository) CountEventsByStatus(eventType string) (map[string]int64, error) {
+	counts := make(map[string]int64)
+	if r == nil || r.db == nil || strings.TrimSpace(eventType) == "" {
+		return counts, nil
+	}
+
+	type statusCount struct {
+		Status string
+		Count  int64
+	}
+	var rows []statusCount
+	if err := r.db.Model(&outbox.Event{}).
+		Select("status, COUNT(*) AS count").
+		Where("event_type = ?", eventType).
+		Group("status").
+		Scan(&rows).Error; err != nil {
+		return nil, err
+	}
+	for _, row := range rows {
+		counts[row.Status] = row.Count
+	}
+	return counts, nil
 }
 
 func (r *OutboxRepository) ClaimReadyEvents(now time.Time, workerID string, limit int, lockTimeout time.Duration) ([]outbox.Event, error) {

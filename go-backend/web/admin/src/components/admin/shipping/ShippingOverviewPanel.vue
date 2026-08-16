@@ -12,7 +12,7 @@
         <ul class="mt-4 space-y-2 text-sm text-muted-foreground">
           <li class="flex gap-2"><CircleCheck class="mt-0.5 size-4 text-emerald-600" />运费模板和规则矩阵列表、新增、编辑、删除</li>
           <li class="flex gap-2"><CircleCheck class="mt-0.5 size-4 text-emerald-600" />配送区域列表、新增、编辑、删除</li>
-          <li class="flex gap-2"><CircleCheck class="mt-0.5 size-4 text-emerald-600" />默认、产品类型、产品和 SKU 模板绑定</li>
+      <li class="flex gap-2"><CircleCheck class="mt-0.5 size-4 text-emerald-600" />默认、商品规格模板、商品和 SKU 模板绑定</li>
           <li class="flex gap-2"><CircleCheck class="mt-0.5 size-4 text-emerald-600" />承运商列表、新增、编辑、删除</li>
           <li class="flex gap-2"><CircleCheck class="mt-0.5 size-4 text-emerald-600" />追踪 Provider 配置独立维护，不和承运商档案混用</li>
           <li class="flex gap-2"><CircleCheck class="mt-0.5 size-4 text-emerald-600" />包装规则列表、新增、编辑、删除</li>

@@ -360,11 +360,11 @@
             <div class="relative flex-1 flex items-center justify-center bg-slate-900 p-4 overflow-hidden">
               <button
                 type="button"
-                class="absolute left-2 sm:left-4 z-20 inline-flex h-10 w-10 items-center justify-center rounded-full bg-black/40 text-white text-2xl hover:bg-black/70 transition-colors"
+                class="tz-directional-arrow tz-directional-arrow--large absolute left-2 z-20 sm:left-4"
                 @click.stop="goPrev"
                 aria-label="Previous photo"
               >
-                ‹
+                <Icon name="lucide:chevron-left" aria-hidden="true" />
               </button>
 
               <div class="relative w-full h-full flex flex-col items-center justify-center">
@@ -401,11 +401,11 @@
 
               <button
                 type="button"
-                class="absolute right-2 sm:right-4 z-20 inline-flex h-10 w-10 items-center justify-center rounded-full bg-black/40 text-white text-2xl hover:bg-black/70 transition-colors"
+                class="tz-directional-arrow tz-directional-arrow--large absolute right-2 z-20 sm:right-4"
                 @click.stop="goNext"
                 aria-label="Next photo"
               >
-                ›
+                <Icon name="lucide:chevron-right" aria-hidden="true" />
               </button>
             </div>
             <div

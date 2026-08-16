@@ -181,6 +181,12 @@ func (s *CheckoutService) quote(input CheckoutQuoteInput, repos checkoutReposito
 		items[i].SKU = sku
 		items[i].Attributes = attributes
 		items[i].Total = items[i].Subtotal
+		items[i].HSCode = product.HSCode
+		items[i].CNCode = product.CNCode
+		items[i].CountryOfOrigin = product.CountryOfOrigin
+		items[i].CustomsDescription = product.CustomsDescription
+		items[i].DeclaredValue = nil
+		items[i].DeclaredValueConfirmed = false
 		subtotal += items[i].Subtotal
 
 		if variant.Weight <= 0 {
@@ -191,13 +197,13 @@ func (s *CheckoutService) quote(input CheckoutQuoteInput, repos checkoutReposito
 			return nil, err
 		}
 		shippingItems = append(shippingItems, ShippingQuoteItemInput{
-			ProductID:          product.ID,
-			VariantID:          variantID,
-			ProductTypeID:      product.ProductTypeID,
-			ShippingTemplateID: uintPtr(shippingTemplateID),
-			Quantity:           item.Quantity,
-			UnitPrice:          price,
-			WeightGrams:        variant.Weight,
+			ProductID:                      product.ID,
+			VariantID:                      variantID,
+			ProductSpecificationTemplateID: product.ProductSpecificationTemplateID,
+			ShippingTemplateID:             uintPtr(shippingTemplateID),
+			Quantity:                       item.Quantity,
+			UnitPrice:                      price,
+			WeightGrams:                    variant.Weight,
 		})
 	}
 	if quoteCurrency == "" {
@@ -218,7 +224,13 @@ func (s *CheckoutService) quote(input CheckoutQuoteInput, repos checkoutReposito
 		return nil, err
 	}
 	shippingFee := shippingQuote.ShippingFee
-	taxAmount := s.calculateTax(repos.paymentRepo, subtotal, input.ShippingAddress.Country, input.ShippingAddress.State)
+	taxAmount := s.calculateTax(
+		repos.paymentRepo,
+		subtotal,
+		input.ShippingAddress.Country,
+		input.ShippingAddress.State,
+		input.ShippingAddress.PostalCode,
+	)
 	memberDiscount := s.calculateMemberDiscount(repos.loyaltyRepo, input.UserID, subtotal)
 	pointsToUse, pointsDiscount, programConfigID, err := s.calculatePointsDiscount(
 		repos.loyaltyRepo,
@@ -434,8 +446,8 @@ func (s *CheckoutService) validateCoupon(couponRepo *repository.CouponRepository
 	return c, c.CalculateDiscount(amount), nil
 }
 
-func (s *CheckoutService) calculateTax(paymentRepo *repository.PaymentRepository, amount float64, country, state string) float64 {
-	taxRate, err := paymentRepo.FindTaxRateByLocation(country, state)
+func (s *CheckoutService) calculateTax(paymentRepo *repository.PaymentRepository, amount float64, country, state, postalCode string) float64 {
+	taxRate, err := paymentRepo.FindTaxRateByLocation(country, state, postalCode)
 	if err != nil {
 		return 0
 	}

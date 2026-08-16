@@ -15,8 +15,10 @@ import (
 var (
 	ErrOpsDeploymentWorkflowInvalidTransition = errors.New("invalid operations deployment workflow transition")
 	ErrOpsDeploymentWorkflowPreflightBlocked  = errors.New("operations deployment workflow is blocked by preflight")
+	ErrOpsDeploymentWorkflowStepNotRetryable  = errors.New("operations deployment workflow step is not retryable")
 	ErrOpsDeploymentWorkflowUnsupportedMode   = errors.New("operations deployment workflow mode is not supported")
 	ErrOpsDeploymentWorkflowUnsupportedRef    = errors.New("operations production deployment ref is not supported")
+	ErrOpsDeploymentWorkflowProductionEnv     = errors.New("operations production deployment is limited to production projects")
 )
 
 type OpsDeploymentWorkflowService struct {
@@ -25,9 +27,22 @@ type OpsDeploymentWorkflowService struct {
 	vpsRepo          *repository.OpsVPSBindingRepository
 	preflightService *OpsDeploymentPreflightService
 	connectorService *OpsConnectorService
-	hostingerSync    *OpsHostingerSyncService
-	healthCheck      *OpsDeploymentHealthCheckService
-	cachePurge       *OpsCloudflareCachePurgeService
+	hostingerSync    opsDeploymentProjectSyncer
+	healthCheck      opsDeploymentHealthChecker
+	cachePurge       opsDeploymentCachePurger
+	rollbackExecutor OpsDeploymentRollbackExecutor
+}
+
+type opsDeploymentProjectSyncer interface {
+	SyncProject(context.Context, uint) (*ops.HostingerProjectSyncResult, error)
+}
+
+type opsDeploymentHealthChecker interface {
+	CheckProject(context.Context, *ops.ProjectBindingView) (*ops.DeploymentHealthCheckReport, error)
+}
+
+type opsDeploymentCachePurger interface {
+	PurgeProject(context.Context, uint) (*OpsCloudflareCachePurgeResult, error)
 }
 
 type OpsDeploymentWorkflowCreateInput struct {
@@ -57,8 +72,8 @@ func NewOpsDeploymentWorkflowService(
 func (s *OpsDeploymentWorkflowService) ConfigureProductionDependencies(
 	vpsRepo *repository.OpsVPSBindingRepository,
 	connectorService *OpsConnectorService,
-	hostingerSync *OpsHostingerSyncService,
-	healthCheck *OpsDeploymentHealthCheckService,
+	hostingerSync opsDeploymentProjectSyncer,
+	healthCheck opsDeploymentHealthChecker,
 ) {
 	if s == nil {
 		return
@@ -69,11 +84,18 @@ func (s *OpsDeploymentWorkflowService) ConfigureProductionDependencies(
 	s.healthCheck = healthCheck
 }
 
-func (s *OpsDeploymentWorkflowService) ConfigureCachePurgeService(cachePurge *OpsCloudflareCachePurgeService) {
+func (s *OpsDeploymentWorkflowService) ConfigureCachePurgeService(cachePurge opsDeploymentCachePurger) {
 	if s == nil {
 		return
 	}
 	s.cachePurge = cachePurge
+}
+
+func (s *OpsDeploymentWorkflowService) ConfigureRollbackExecutor(executor OpsDeploymentRollbackExecutor) {
+	if s == nil {
+		return
+	}
+	s.rollbackExecutor = executor
 }
 
 func (s *OpsDeploymentWorkflowService) List(projectID uint) ([]ops.DeploymentWorkflowRun, error) {
@@ -107,6 +129,11 @@ func (s *OpsDeploymentWorkflowService) createWorkflow(input OpsDeploymentWorkflo
 	if err != nil {
 		return nil, err
 	}
+	if mode == ops.DeploymentWorkflowModeProduction {
+		if err := requireProductionDeploymentProject(project); err != nil {
+			return nil, err
+		}
+	}
 	report, err := s.preflightService.EvaluateProject(input.ProjectID)
 	if err != nil {
 		return nil, err
@@ -119,6 +146,9 @@ func (s *OpsDeploymentWorkflowService) createWorkflow(input OpsDeploymentWorkflo
 		} else {
 			requestedRef = firstNonEmptyWorkflowValue(project.CurrentCommitSHA, project.CurrentImageTag, "current")
 		}
+	}
+	if mode == ops.DeploymentWorkflowModeProduction && requestedRef != "master" {
+		return nil, fmt.Errorf("%w: Hostinger project update currently follows the project IMAGE_TAG=master policy", ErrOpsDeploymentWorkflowUnsupportedRef)
 	}
 	preflightSnapshot, err := json.Marshal(report)
 	if err != nil {
@@ -276,12 +306,322 @@ func (s *OpsDeploymentWorkflowService) execute(ctx context.Context, id uint) (*o
 		}
 		return nil, ErrOpsDeploymentWorkflowPreflightBlocked
 	}
+	return s.executePrepared(ctx, run, report, snapshot)
+}
+
+func (s *OpsDeploymentWorkflowService) RetryFailedStep(ctx context.Context, id uint) (*ops.DeploymentWorkflowRun, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	run, err := s.prepareWorkflowRetry(id)
+	if err != nil {
+		return nil, err
+	}
+	report, snapshot, err := workflowSnapshotForRetry(run)
+	if err != nil {
+		return nil, err
+	}
+	return s.executePrepared(ctx, run, report, snapshot)
+}
+
+func (s *OpsDeploymentWorkflowService) Rollback(ctx context.Context, id uint) (*ops.DeploymentWorkflowRun, error) {
+	if s == nil || s.workflowRepo == nil || s.projectRepo == nil {
+		return nil, errors.New("operations deployment workflow service is not configured")
+	}
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	run, err := s.workflowRepo.FindByID(id)
+	if err != nil {
+		return nil, err
+	}
+	if run.Mode != ops.DeploymentWorkflowModeProduction {
+		return nil, ErrOpsDeploymentWorkflowUnsupportedMode
+	}
+	if run.Status != ops.DeploymentWorkflowStatusRollbackRequired {
+		return nil, workflowTransitionError(run.Status, "rollback")
+	}
+	if s.rollbackExecutor == nil {
+		return nil, errors.New("operations SSH rollback executor is not configured")
+	}
+	rollbackRef := strings.ToLower(strings.TrimSpace(run.RollbackRef))
+	if len(rollbackRef) != 40 || !isHexString(rollbackRef) {
+		return nil, ErrOpsDeploymentRollbackInvalidRef
+	}
+	project, err := s.projectRepo.FindByID(run.ProjectID)
+	if err != nil {
+		return nil, err
+	}
+	if err := requireProductionDeploymentProject(project); err != nil {
+		return nil, err
+	}
+	if s.vpsRepo == nil {
+		return nil, errors.New("operations VPS binding repository is not configured")
+	}
+	vps, err := s.vpsRepo.FindByID(project.VPSBindingID)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.workflowRepo.AcquireProjectLock(project.ID, run.ID, 30*time.Minute); err != nil {
+		if errors.Is(err, repository.ErrOpsDeploymentWorkflowLockHeld) {
+			return nil, fmt.Errorf("%w: project %s", repository.ErrOpsDeploymentWorkflowLockHeld, project.Name)
+		}
+		return nil, err
+	}
+	defer s.workflowRepo.ReleaseWorkflowLocks(run.ID)
+
+	rollbackStep, err := s.ensureRollbackStep(run, rollbackRef)
+	if err != nil {
+		return nil, err
+	}
+	now := time.Now().UTC()
+	if err := s.workflowRepo.UpdateRun(run.ID, map[string]interface{}{
+		"status":       ops.DeploymentWorkflowStatusRunning,
+		"completed_at": nil,
+		"last_error":   "",
+		"started_at":   now,
+	}); err != nil {
+		return nil, err
+	}
+
+	var executionResult *OpsDeploymentRollbackExecutionResult
+	if rollbackStep.Status == ops.DeploymentWorkflowStepSucceeded {
+		executionResult = &OpsDeploymentRollbackExecutionResult{
+			OperationID:   rollbackStep.ExternalOperationID,
+			Target:        "previous SSH rollback execution",
+			OutputSummary: rollbackStep.OutputSummary,
+		}
+	} else {
+		if err := s.workflowRepo.UpdateStep(rollbackStep.ID, map[string]interface{}{
+			"status":         ops.DeploymentWorkflowStepRunning,
+			"started_at":     now,
+			"completed_at":   nil,
+			"error_message":  "",
+			"output_summary": "",
+		}); err != nil {
+			return nil, err
+		}
+		executionResult, err = s.rollbackExecutor.ExecuteRollback(ctx, OpsDeploymentRollbackExecutionInput{
+			WorkflowID:  run.ID,
+			ProjectID:   project.ID,
+			Environment: project.Environment,
+			RollbackRef: rollbackRef,
+			VPS:         vps,
+		})
+		if err != nil {
+			output := ""
+			if executionResult != nil {
+				output = executionResult.OutputSummary
+			}
+			_ = s.workflowRepo.UpdateStep(rollbackStep.ID, map[string]interface{}{
+				"status":         ops.DeploymentWorkflowStepFailed,
+				"error_message":  err.Error(),
+				"output_summary": output,
+				"completed_at":   time.Now().UTC(),
+			})
+			_ = s.workflowRepo.UpdateRun(run.ID, map[string]interface{}{
+				"status":       ops.DeploymentWorkflowStatusRollbackRequired,
+				"last_error":   err.Error(),
+				"completed_at": time.Now().UTC(),
+			})
+			return nil, err
+		}
+		if executionResult == nil {
+			return nil, s.failRollback(run.ID, rollbackStep.ID, errors.New("SSH rollback executor returned no result"))
+		}
+		if err := s.workflowRepo.UpdateStep(rollbackStep.ID, map[string]interface{}{
+			"status":                ops.DeploymentWorkflowStepSucceeded,
+			"external_operation_id": executionResult.OperationID,
+			"output_summary":        executionResult.OutputSummary,
+			"completed_at":          time.Now().UTC(),
+			"error_message":         "",
+		}); err != nil {
+			return nil, err
+		}
+		if err := s.workflowRepo.UpdateRun(run.ID, map[string]interface{}{
+			"remote_operation_id": executionResult.OperationID,
+		}); err != nil {
+			return nil, err
+		}
+	}
+
+	if err := contextError(ctx); err != nil {
+		return nil, s.failRollback(run.ID, rollbackStep.ID, err)
+	}
+	if s.hostingerSync == nil || s.healthCheck == nil {
+		return nil, s.failRollback(run.ID, rollbackStep.ID, errors.New("rollback verification dependencies are not configured"))
+	}
+	if _, err := s.hostingerSync.SyncProject(ctx, project.ID); err != nil {
+		return nil, s.failRollback(run.ID, rollbackStep.ID, fmt.Errorf("rollback remote project sync failed: %w", err))
+	}
+	latestProject, err := s.projectRepo.FindByID(project.ID)
+	if err != nil {
+		return nil, s.failRollback(run.ID, rollbackStep.ID, err)
+	}
+	health, err := s.healthCheck.CheckProject(ctx, latestProject)
+	if err != nil {
+		return nil, s.failRollback(run.ID, rollbackStep.ID, fmt.Errorf("rollback health check failed: %w", err))
+	}
+	encodedHealth, encodeErr := json.Marshal(health)
+	if encodeErr == nil {
+		_ = s.workflowRepo.UpdateRun(run.ID, map[string]interface{}{
+			"health_status":   health.Status,
+			"health_snapshot": string(encodedHealth),
+		})
+	}
+	postHealthStep := workflowStepByKey(run, ops.DeploymentWorkflowStepPostHealthCheck)
+	if health.Status != ops.DeploymentHealthHealthy {
+		message := fmt.Errorf("rollback health check is not healthy: %s", health.Summary)
+		if postHealthStep != nil {
+			_ = s.workflowRepo.UpdateStep(postHealthStep.ID, map[string]interface{}{
+				"status":        ops.DeploymentWorkflowStepFailed,
+				"error_message": message.Error(),
+				"output_summary": fmt.Sprintf(
+					"Initial deployment failed health checks; rollback verification is still unhealthy: %s",
+					health.Summary,
+				),
+				"completed_at": time.Now().UTC(),
+			})
+		}
+		return nil, s.failRollback(run.ID, rollbackStep.ID, message)
+	}
+	if postHealthStep != nil {
+		_ = s.workflowRepo.UpdateStep(postHealthStep.ID, map[string]interface{}{
+			"status":         ops.DeploymentWorkflowStepSucceeded,
+			"output_summary": fmt.Sprintf("Rollback health verification passed: %s", health.Summary),
+			"completed_at":   time.Now().UTC(),
+			"error_message":  "",
+		})
+	}
+
+	purgeStep := workflowStepByKey(run, ops.DeploymentWorkflowStepPurgeCache)
+	if s.cachePurge == nil {
+		return nil, s.failRollback(run.ID, rollbackStep.ID, errors.New("Cloudflare cache purge service is not configured"))
+	}
+	if purgeStep != nil && purgeStep.Status != ops.DeploymentWorkflowStepSucceeded {
+		_ = s.workflowRepo.UpdateStep(purgeStep.ID, map[string]interface{}{
+			"status":        ops.DeploymentWorkflowStepRunning,
+			"started_at":    time.Now().UTC(),
+			"completed_at":  nil,
+			"error_message": "",
+		})
+		purgeResult, purgeErr := s.cachePurge.PurgeProject(ctx, project.ID)
+		if purgeErr != nil {
+			_ = s.workflowRepo.UpdateStep(purgeStep.ID, map[string]interface{}{
+				"status":         ops.DeploymentWorkflowStepFailed,
+				"error_message":  purgeErr.Error(),
+				"output_summary": "",
+				"completed_at":   time.Now().UTC(),
+			})
+			return nil, s.failRollback(run.ID, rollbackStep.ID, fmt.Errorf("rollback cache purge failed: %w", purgeErr))
+		}
+		_ = s.workflowRepo.UpdateStep(purgeStep.ID, map[string]interface{}{
+			"status":                ops.DeploymentWorkflowStepSucceeded,
+			"output_summary":        purgeResult.Summary,
+			"external_operation_id": cachePurgeOperationID(purgeResult),
+			"completed_at":          time.Now().UTC(),
+			"error_message":         "",
+		})
+	}
+
+	recordReleaseStep := workflowStepByKey(run, ops.DeploymentWorkflowStepRecordRelease)
+	if recordReleaseStep != nil && recordReleaseStep.Status != ops.DeploymentWorkflowStepSucceeded {
+		if err := s.projectRepo.RecordDeployment(project.ID, time.Now().UTC()); err != nil {
+			return nil, s.failRollback(run.ID, rollbackStep.ID, fmt.Errorf("record rollback deployment evidence: %w", err))
+		}
+		_ = s.workflowRepo.UpdateStep(recordReleaseStep.ID, map[string]interface{}{
+			"status":         ops.DeploymentWorkflowStepSucceeded,
+			"output_summary": fmt.Sprintf("Rollback release evidence recorded for %s.", rollbackRef),
+			"completed_at":   time.Now().UTC(),
+			"error_message":  "",
+		})
+	}
+	if err := s.workflowRepo.UpdateRun(run.ID, map[string]interface{}{
+		"status":        ops.DeploymentWorkflowStatusRolledBack,
+		"health_status": ops.DeploymentHealthHealthy,
+		"completed_at":  time.Now().UTC(),
+		"last_error":    "",
+	}); err != nil {
+		return nil, err
+	}
+	return s.workflowRepo.FindByID(run.ID)
+}
+
+func (s *OpsDeploymentWorkflowService) ensureRollbackStep(
+	run *ops.DeploymentWorkflowRun,
+	rollbackRef string,
+) (*ops.DeploymentWorkflowStep, error) {
+	if run == nil {
+		return nil, errors.New("deployment workflow is missing")
+	}
+	if existing := workflowStepByKey(run, ops.DeploymentWorkflowStepExecuteRollback); existing != nil {
+		return existing, nil
+	}
+	input, _ := json.Marshal(map[string]interface{}{
+		"workflow_id":  run.ID,
+		"project_id":   run.ProjectID,
+		"rollback_ref": rollbackRef,
+		"operation":    "ssh_deploy_sh",
+	})
+	step := &ops.DeploymentWorkflowStep{
+		WorkflowRunID:  run.ID,
+		Sequence:       len(run.Steps) + 1,
+		Key:            ops.DeploymentWorkflowStepExecuteRollback,
+		Label:          "执行 SSH 回滚发布",
+		Status:         ops.DeploymentWorkflowStepPending,
+		Retryable:      false,
+		ExternalEffect: true,
+		InputSnapshot:  string(input),
+	}
+	if err := s.workflowRepo.CreateStep(step); err != nil {
+		return nil, err
+	}
+	run.Steps = append(run.Steps, *step)
+	return &run.Steps[len(run.Steps)-1], nil
+}
+
+func (s *OpsDeploymentWorkflowService) failRollback(runID, stepID uint, cause error) error {
+	if cause == nil {
+		cause = errors.New("rollback failed")
+	}
+	_ = s.workflowRepo.UpdateRun(runID, map[string]interface{}{
+		"status":       ops.DeploymentWorkflowStatusRollbackRequired,
+		"last_error":   cause.Error(),
+		"completed_at": time.Now().UTC(),
+	})
+	return cause
+}
+
+func workflowStepByKey(run *ops.DeploymentWorkflowRun, key string) *ops.DeploymentWorkflowStep {
+	if run == nil {
+		return nil
+	}
+	for index := range run.Steps {
+		if run.Steps[index].Key == key {
+			return &run.Steps[index]
+		}
+	}
+	return nil
+}
+
+func (s *OpsDeploymentWorkflowService) executePrepared(
+	ctx context.Context,
+	run *ops.DeploymentWorkflowRun,
+	report *ops.DeploymentPreflight,
+	snapshot []byte,
+) (*ops.DeploymentWorkflowRun, error) {
+	if run == nil || report == nil {
+		return nil, errors.New("deployment workflow execution snapshot is missing")
+	}
+	if run.Status != ops.DeploymentWorkflowStatusValidated {
+		return nil, workflowTransitionError(run.Status, "execute")
+	}
 	if run.Mode == ops.DeploymentWorkflowModeProduction {
 		return s.executeProduction(ctx, run, report, snapshot)
 	}
 
 	startedAt := time.Now().UTC()
-	if err := s.workflowRepo.UpdateRun(id, map[string]interface{}{
+	if err := s.workflowRepo.UpdateRun(run.ID, map[string]interface{}{
 		"status":             ops.DeploymentWorkflowStatusRunning,
 		"preflight_status":   report.StatusLevel,
 		"preflight_snapshot": string(snapshot),
@@ -293,8 +633,11 @@ func (s *OpsDeploymentWorkflowService) execute(ctx context.Context, id uint) (*o
 	}
 
 	for _, step := range run.Steps {
+		if step.Status == ops.DeploymentWorkflowStepSucceeded {
+			continue
+		}
 		if err := contextError(ctx); err != nil {
-			return s.failWorkflow(id, step.ID, err)
+			return s.failWorkflow(run.ID, step.ID, err)
 		}
 		stepStartedAt := time.Now().UTC()
 		if err := s.workflowRepo.UpdateStep(step.ID, map[string]interface{}{
@@ -302,7 +645,7 @@ func (s *OpsDeploymentWorkflowService) execute(ctx context.Context, id uint) (*o
 			"started_at":    stepStartedAt,
 			"error_message": "",
 		}); err != nil {
-			return s.failWorkflow(id, step.ID, err)
+			return s.failWorkflow(run.ID, step.ID, err)
 		}
 		summary := dryRunStepSummary(step.Key, report)
 		if err := s.workflowRepo.UpdateStep(step.ID, map[string]interface{}{
@@ -310,18 +653,18 @@ func (s *OpsDeploymentWorkflowService) execute(ctx context.Context, id uint) (*o
 			"output_summary": summary,
 			"completed_at":   time.Now().UTC(),
 		}); err != nil {
-			return s.failWorkflow(id, step.ID, err)
+			return s.failWorkflow(run.ID, step.ID, err)
 		}
 	}
 
-	if err := s.workflowRepo.UpdateRun(id, map[string]interface{}{
+	if err := s.workflowRepo.UpdateRun(run.ID, map[string]interface{}{
 		"status":       ops.DeploymentWorkflowStatusSucceeded,
 		"completed_at": time.Now().UTC(),
 		"last_error":   "",
 	}); err != nil {
 		return nil, err
 	}
-	return s.workflowRepo.FindByID(id)
+	return s.workflowRepo.FindByID(run.ID)
 }
 
 func (s *OpsDeploymentWorkflowService) executeProduction(
@@ -338,6 +681,9 @@ func (s *OpsDeploymentWorkflowService) executeProduction(
 	}
 	project, err := s.projectRepo.FindByID(run.ProjectID)
 	if err != nil {
+		return nil, err
+	}
+	if err := requireProductionDeploymentProject(project); err != nil {
 		return nil, err
 	}
 	vps, err := s.vpsRepo.FindByID(project.VPSBindingID)
@@ -358,23 +704,14 @@ func (s *OpsDeploymentWorkflowService) executeProduction(
 	}
 	defer s.workflowRepo.ReleaseWorkflowLocks(run.ID)
 
-	previousRef := firstNonEmptyWorkflowValue(project.CurrentImageTag, project.CurrentCommitSHA)
-	idempotencyKey := fmt.Sprintf("ops-deploy-%d-%d", run.ID, project.ID)
-	if err := s.workflowRepo.UpdateRun(run.ID, map[string]interface{}{
-		"status":             ops.DeploymentWorkflowStatusRunning,
-		"preflight_status":   report.StatusLevel,
-		"preflight_snapshot": string(snapshot),
-		"previous_ref":       previousRef,
-		"rollback_ref":       previousRef,
-		"idempotency_key":    idempotencyKey,
-		"started_at":         time.Now().UTC(),
-		"completed_at":       nil,
-		"last_error":         "",
-	}); err != nil {
+	if err := s.workflowRepo.UpdateRun(run.ID, productionWorkflowStartUpdates(run, project, report, snapshot)); err != nil {
 		return nil, err
 	}
 
 	for _, step := range run.Steps {
+		if step.Status == ops.DeploymentWorkflowStepSucceeded {
+			continue
+		}
 		if err := contextError(ctx); err != nil {
 			return s.failWorkflowWithStatus(run.ID, step.ID, ops.DeploymentWorkflowStatusPaused, err)
 		}
@@ -444,6 +781,132 @@ func (s *OpsDeploymentWorkflowService) Cancel(id uint) (*ops.DeploymentWorkflowR
 		return nil, err
 	}
 	return s.workflowRepo.FindByID(id)
+}
+
+func (s *OpsDeploymentWorkflowService) prepareWorkflowRetry(id uint) (*ops.DeploymentWorkflowRun, error) {
+	if s == nil || s.workflowRepo == nil {
+		return nil, errors.New("operations deployment workflow service is not configured")
+	}
+	run, err := s.workflowRepo.FindByID(id)
+	if err != nil {
+		return nil, err
+	}
+	if run.Mode != ops.DeploymentWorkflowModeDryRun && run.Mode != ops.DeploymentWorkflowModeProduction {
+		return nil, ErrOpsDeploymentWorkflowUnsupportedMode
+	}
+	if !workflowStatusAllowed(run.Status,
+		ops.DeploymentWorkflowStatusFailed,
+		ops.DeploymentWorkflowStatusPaused,
+		ops.DeploymentWorkflowStatusRollbackRequired,
+	) {
+		return nil, workflowTransitionError(run.Status, "retry")
+	}
+	retryIndex := -1
+	for index, step := range run.Steps {
+		if step.Status == ops.DeploymentWorkflowStepFailed || step.Status == ops.DeploymentWorkflowStepRunning {
+			retryIndex = index
+			break
+		}
+	}
+	if retryIndex < 0 {
+		return nil, workflowTransitionError(run.Status, "retry")
+	}
+	if !run.Steps[retryIndex].Retryable {
+		return nil, fmt.Errorf("%w: %s", ErrOpsDeploymentWorkflowStepNotRetryable, run.Steps[retryIndex].Label)
+	}
+	if _, _, err := workflowSnapshotForRetry(run); err != nil {
+		return nil, err
+	}
+	for index := retryIndex; index < len(run.Steps); index++ {
+		step := run.Steps[index]
+		if step.Status == ops.DeploymentWorkflowStepSucceeded {
+			continue
+		}
+		if err := s.workflowRepo.UpdateStep(step.ID, map[string]interface{}{
+			"status":                ops.DeploymentWorkflowStepPending,
+			"started_at":            nil,
+			"completed_at":          nil,
+			"error_message":         "",
+			"output_summary":        "",
+			"external_operation_id": "",
+		}); err != nil {
+			return nil, err
+		}
+	}
+	if err := s.workflowRepo.UpdateRun(id, map[string]interface{}{
+		"status":       ops.DeploymentWorkflowStatusValidated,
+		"completed_at": nil,
+		"last_error":   "",
+	}); err != nil {
+		return nil, err
+	}
+	return s.workflowRepo.FindByID(id)
+}
+
+func productionWorkflowStartUpdates(
+	run *ops.DeploymentWorkflowRun,
+	project *ops.ProjectBindingView,
+	report *ops.DeploymentPreflight,
+	snapshot []byte,
+) map[string]interface{} {
+	previousRef := firstNonEmptyWorkflowValue(run.RollbackRef, run.PreviousRef, productionRollbackRef(project))
+	idempotencyKey := firstNonEmptyWorkflowValue(run.IdempotencyKey, fmt.Sprintf("ops-deploy-%d-%d", run.ID, project.ID))
+	startedAt := time.Now().UTC()
+	run.Status = ops.DeploymentWorkflowStatusRunning
+	run.PreflightStatus = report.StatusLevel
+	run.PreflightSnapshot = string(snapshot)
+	run.PreviousRef = previousRef
+	run.RollbackRef = previousRef
+	run.IdempotencyKey = idempotencyKey
+	run.StartedAt = &startedAt
+	run.CompletedAt = nil
+	run.LastError = ""
+	return map[string]interface{}{
+		"status":             run.Status,
+		"preflight_status":   run.PreflightStatus,
+		"preflight_snapshot": run.PreflightSnapshot,
+		"previous_ref":       run.PreviousRef,
+		"rollback_ref":       run.RollbackRef,
+		"idempotency_key":    run.IdempotencyKey,
+		"started_at":         startedAt,
+		"completed_at":       nil,
+		"last_error":         "",
+	}
+}
+
+func productionRollbackRef(project *ops.ProjectBindingView) string {
+	if project == nil {
+		return ""
+	}
+	commit := strings.TrimSpace(project.CurrentCommitSHA)
+	if len(commit) == 40 && isHexString(commit) {
+		return commit
+	}
+	tag := strings.TrimSpace(project.CurrentImageTag)
+	if strings.HasPrefix(tag, "sha-") {
+		candidate := strings.TrimPrefix(tag, "sha-")
+		if len(candidate) == 40 && isHexString(candidate) {
+			return candidate
+		}
+	}
+	return firstNonEmptyWorkflowValue(tag, commit)
+}
+
+func workflowSnapshotForRetry(run *ops.DeploymentWorkflowRun) (*ops.DeploymentPreflight, []byte, error) {
+	if run == nil {
+		return nil, nil, errors.New("deployment workflow is missing")
+	}
+	if run.Preflight != nil && strings.TrimSpace(run.PreflightSnapshot) != "" {
+		return run.Preflight, []byte(run.PreflightSnapshot), nil
+	}
+	if strings.TrimSpace(run.PreflightSnapshot) == "" {
+		return nil, nil, errors.New("deployment workflow preflight snapshot is missing")
+	}
+	var report ops.DeploymentPreflight
+	if err := json.Unmarshal([]byte(run.PreflightSnapshot), &report); err != nil {
+		return nil, nil, fmt.Errorf("decode deployment preflight snapshot: %w", err)
+	}
+	return &report, []byte(run.PreflightSnapshot), nil
 }
 
 func (s *OpsDeploymentWorkflowService) failWorkflow(runID, stepID uint, cause error) (*ops.DeploymentWorkflowRun, error) {
@@ -713,4 +1176,11 @@ func firstNonEmptyWorkflowValue(values ...string) string {
 		}
 	}
 	return ""
+}
+
+func requireProductionDeploymentProject(project *ops.ProjectBindingView) error {
+	if project == nil || strings.TrimSpace(project.Environment) != ops.ProjectEnvironmentProduction {
+		return ErrOpsDeploymentWorkflowProductionEnv
+	}
+	return nil
 }

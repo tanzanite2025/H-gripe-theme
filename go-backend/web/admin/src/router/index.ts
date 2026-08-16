@@ -68,10 +68,16 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '商品品牌', permission: 'product:view' }
       },
       {
+        path: 'catalog/categories',
+        name: 'CatalogProductCategories',
+        component: () => import('@/views/ProductCategories.vue'),
+        meta: { title: '商品分类', permission: 'product:view' }
+      },
+      {
         path: 'catalog/templates',
         name: 'CatalogProductTemplates',
-        component: () => import('@/views/ProductTypes.vue'),
-        meta: { title: '产品模板', permission: 'product:view' }
+        component: () => import('@/views/ProductSpecificationTemplates.vue'),
+        meta: { title: '商品规格模板', permission: 'product:view' }
       },
       {
         path: 'catalog/information-templates',
@@ -80,8 +86,14 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '产品信息模板', permission: 'product:view' }
       },
       {
-        path: 'catalog/spoke-calculator',
-        name: 'CatalogSpokeCalculator',
+        path: 'catalog/customs-classifications',
+        name: 'CatalogCustomsClassifications',
+        component: () => import('@/views/CustomsClassifications.vue'),
+        meta: { title: '清关资料中心', permission: 'product:view' }
+      },
+      {
+        path: 'content/spoke-calculator',
+        name: 'ContentSpokeCalculator',
         component: () => import('@/views/SpokeCatalog.vue'),
         meta: { title: '辐条计算器数据', permission: 'product:view' }
       },
@@ -90,6 +102,16 @@ const routes: RouteRecordRaw[] = [
         name: 'CatalogQuickBuy',
         component: () => import('@/views/QuickBuyFlows.vue'),
         meta: { title: 'QUICK 选配流程', permission: 'product:view' }
+      },
+      {
+        path: 'catalog/wheelset-fit-questionnaire',
+        name: 'CatalogWheelsetFitQuestionnaire',
+        component: () => import('@/views/WheelsetFitQuestionnaire.vue'),
+        meta: { title: '轮组选型问卷', permission: 'product:view' }
+      },
+      {
+        path: 'catalog/selection-assistants',
+        redirect: { name: 'CatalogWheelsetFitQuestionnaire' }
       },
       {
         path: 'google-merchant',
@@ -131,6 +153,18 @@ const routes: RouteRecordRaw[] = [
         name: 'PaymentPayPalInvoice',
         component: () => import('@/views/PaymentPayPalInvoice.vue'),
         meta: { title: 'PayPal 发票卖方资料', permission: 'settings:view' }
+      },
+      {
+        path: 'payment/risk/overview',
+        name: 'PaymentRiskOverview',
+        component: () => import('@/views/PaymentRisk.vue'),
+        meta: { title: '风控总览', permission: 'order:view' }
+      },
+      {
+        path: 'payment/risk/3ds',
+        name: 'PaymentRiskThreeDS',
+        component: () => import('@/views/PaymentRisk.vue'),
+        meta: { title: '3DS 策略', permission: 'order:view' }
       },
       {
         path: 'payment/risk/reviews',
@@ -290,16 +324,37 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '买家秀审批', permission: 'gallery:view' }
       },
       {
+        path: 'content/reviews',
+        name: 'ContentReviews',
+        component: () => import('@/views/ReviewModeration.vue'),
+        meta: { title: '评价审核', permission: 'review:view' }
+      },
+      {
         path: 'content/media-library',
         name: 'ContentMediaLibrary',
         component: () => import('@/views/MediaLibrary.vue'),
         meta: { title: '媒体库', permission: 'media:view' }
       },
       {
+        path: 'content/website-profile',
+        name: 'ContentWebsiteProfile',
+        component: () => import('@/views/SettingsWebsiteProfile.vue'),
+        meta: { title: '我与这个网站', permission: 'settings:view' }
+      },
+      {
         path: 'support/conversations',
         name: 'SupportConversations',
-        component: () => import('@/views/CustomerServiceChats.vue'),
+        redirect: (to) => ({
+          name: 'Dashboard',
+          query: { ...to.query, inbox: 'customer-service' },
+        }),
         meta: { title: '客服对话', permission: 'ticket:view' }
+      },
+      {
+        path: 'support/analytics',
+        name: 'SupportAnalytics',
+        component: () => import('@/views/CustomerServiceAnalytics.vue'),
+        meta: { title: '客服分析', permission: 'ticket:view' }
       },
       {
         path: 'support/auto-replies',
@@ -398,6 +453,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: 'SEO / 产品', permission: 'seo:view' }
       },
       {
+        path: 'seo/routes',
+        name: 'SEORoutes',
+        component: () => import('@/views/seo/StorefrontRouteCatalog.vue'),
+        meta: { title: 'SEO / URL 台账', permission: 'seo:view' }
+      },
+      {
         path: 'social',
         redirect: { name: 'SocialOverview' },
         meta: { permission: 'settings:view' }
@@ -477,7 +538,7 @@ const routes: RouteRecordRaw[] = [
         path: 'ops/admin-accounts',
         name: 'OpsAdminAccounts',
         component: () => import('@/views/OpsAdminAccounts.vue'),
-        meta: { title: '管理员账号', permission: 'ops:view' }
+        meta: { title: '后台账号管理', permission: 'system:manage' }
       },
       {
         path: 'ops/domains',
@@ -517,7 +578,6 @@ const routes: RouteRecordRaw[] = [
           social: 'SocialProfiles',
           currency: 'SettingsCurrency',
           markets: 'SettingsMarkets',
-          'website-profile': 'SettingsWebsiteProfile',
           api: 'SettingsApi',
           commercial_crawler: 'SettingsCommercialCrawler',
         }),
@@ -552,12 +612,6 @@ const routes: RouteRecordRaw[] = [
         name: 'SettingsMarkets',
         component: () => import('@/views/Settings.vue'),
         meta: { title: '市场与本地化语种', permission: 'settings:view' }
-      },
-      {
-        path: 'settings/website-profile',
-        name: 'SettingsWebsiteProfile',
-        component: () => import('@/views/SettingsWebsiteProfile.vue'),
-        meta: { title: '我与这个网站', permission: 'settings:view' }
       },
       {
         path: 'settings/api',

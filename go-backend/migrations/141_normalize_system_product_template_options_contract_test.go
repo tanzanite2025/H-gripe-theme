@@ -27,7 +27,7 @@ func TestNormalizeSystemProductTemplateOptionsUpMigrationContract(t *testing.T) 
 
 	for _, fragment := range []string{
 		"SET options = '[]'",
-		"product_type.slug IN ('rim', 'carbon_frame', 'wheelset', 'handlebar', 'hub', 'spoke')",
+		"product_specification_template.slug IN ('rim', 'carbon_frame', 'wheelset', 'handlebar', 'hub', 'spoke')",
 		"definition.field_type = 'select'",
 	} {
 		if !strings.Contains(sql, fragment) {

@@ -29,7 +29,7 @@
 - 安全层：密钥加密存储、角色权限、操作审计、确认弹窗、dry-run。
 - 生成层：后台是源数据，系统生成 Compose、Caddy、Nginx 和 DNS 配置，不允许人工直接改生成结果作为长期状态。
 
-现有仓库记录中，`docs/ops/brand-rename-continuity-plan.md` 曾明确把 Cloudflare、Hostinger 和部署编排后台列为后续阶段；该阶段计划已完成并归档，但“后台控制台”本身并未实现。本文件承接这项后续建设。
+现有仓库记录中，`docs/ops/brand-rename-continuity-plan.md` 曾明确把 Cloudflare、Hostinger 和部署编排后台列为后续阶段；该阶段计划已完成并归档。本文件记录后台控制台第一版及其后续边界。
 
 ## 3. 当前基线
 
@@ -54,34 +54,43 @@
 
 - 后台一级域：`运维中心`。
 - `域名中心`：维护域名角色、环境、提供商、Zone、目标、代理、TLS、跳转、启停和审计。
-- `连接器中心`：维护 Cloudflare、Hostinger、GitHub/GHCR 等连接登记，支持凭据加密存储、字段脱敏、启停、只读连接测试和审计。
+- `连接器中心`：维护 Cloudflare、Hostinger、GitHub/GHCR 等连接登记，支持凭据加密存储、字段脱敏、启停、只读连接测试和审计；列表默认生产环境，可切换或查看全部环境。
 - 基础独立权限：`ops:view`、`ops:domain:view`、`ops:domain:edit`、`ops:domain:sync`、`ops:connector:view`、`ops:connector:edit`。
-- `VPS 中心`：维护 Hostinger VPS ID、主机名、IPv4、系统、期望状态和观察状态。
-- `项目中心`：维护 VPS 绑定、Compose 来源、服务、网络、卷、网关别名、镜像标签、Commit SHA、健康状态、部署记录和备份恢复说明。
-- `运维总览`：聚合生产环境的 VPS、项目、域名和连接器台账，展示拓扑、待处理项和运维审计记录。
-- 域名中心已增加 `Desired State / Observed State` 展示边界：期望状态继续由后台维护，观察状态默认是 `unknown`，可通过 Cloudflare 手动只读同步填充。
+- `VPS 中心`：维护 Hostinger VPS ID、主机名、IPv4、系统、期望状态和观察状态；列表默认生产环境，可切换或查看全部环境。
+- `项目中心`：维护 VPS 绑定、Hostinger 连接器、Compose 来源、服务、网络、卷、网关别名、镜像标签、Commit SHA、健康状态、部署记录和备份恢复说明；列表默认生产环境，可切换或查看全部环境。
+- `运维总览`：按环境聚合 VPS、项目、域名和连接器台账，默认生产环境，展示拓扑、待处理项和运维审计记录。
+- 运维总览的环境选择会写入路由上下文；从总览进入 VPS、项目、域名或连接器中心时会保留相同环境，避免概览与台账页面查询不同环境的数据。
+- `后台账号`入口保留在运维导航以便发布值守时访问，但它属于身份管理而非基础设施台账：账号目录和创建/重置操作均只允许 `admin` 角色，前端路由使用管理员专属的 `system:manage` 权限。审计日志的 `user_id` 和 `username` 表示操作者，`resource=user` 与 `resource_id` 表示被创建或重置的目标账号；无登录主体的 `adminctl` bootstrap 会保留空操作者 ID 和 `adminctl` 标识。
+- 部署中心沿用相同的环境路由上下文：项目台账和 Preflight 总览都会向后端传递具体环境，切换环境时清除跨环境的项目、报告和工作流选择；`all` 仅用于明确的全量视图，不能作为后端环境参数。预检总览接口会拒绝非法环境值，避免界面显示筛选结果而请求仍然读取全量项目。
+- 域名中心列表默认生产环境，支持按生产、预发布、测试、本地或全部环境筛选；非法环境值由后端拒绝，避免前端筛选退化为静默全量查询。
+- 域名中心表单、列表、Cloudflare 同步、差异明细和 DNS/Caddy/Nginx 预览职责独立；编辑时项目和 Cloudflare 连接器只展示同环境选项，环境或提供商切换会清除不兼容绑定。
+- 域名中心已增加 `Desired State / Observed State` 展示边界：期望状态继续由后台维护，观察状态默认是 `unknown`，可通过 Cloudflare 手动只读同步填充；单域同步直接局部回写观察字段，不覆盖期望台账或刷新整页。
+- 连接器中心已将表单、OAuth 编排和列表观察状态拆分：OAuth 可从当前环境或指定连接器重新授权，一键连接会在同一环境内依次授权 Hostinger 和 Cloudflare；回调发现和绑定只处理同环境 VPS、项目和域名，不会跨环境修改台账。连接测试完成后只局部回写当前连接器状态，不刷新整页。
 - Cloudflare 域名只读同步第一版已完成：域名可绑定 Cloudflare 只读连接器，读取 Zone、A/AAAA/CNAME、代理状态和 SSL/TLS 模式，写回 Observed State，并将同步动作写入运维审计。
 - Hostinger VPS / 项目只读同步已完成：VPS 读取并持久化远端状态、同步来源、主机名、IPv4、系统信息、计划和数据中心；项目读取并持久化 Docker 项目状态、同步来源、容器总数、运行数和健康数，写回 Observed State，并将同步动作写入运维审计。
 - VPS/项目编辑保存已和 Observed State 分离：后台表单只维护声明式台账和期望状态，不再手工覆盖 Hostinger 同步得到的远端主机信息、观察状态、检查时间、错误摘要和容器计数。
+- VPS 与连接器必须处于同一提供商和环境；已有项目绑定的 VPS 不允许直接变更提供商或环境，必须先迁移项目绑定，避免跨环境台账关系失真。
+- 项目可以显式绑定同环境的 Hostinger 连接器，也可以沿用绑定 VPS 的连接器；保存和 Hostinger 只读同步都会拒绝项目、VPS、连接器之间的跨环境组合，连接器名称和继承来源在项目列表中可见。
 - 域名中心配置只读预览和差异明细已完成：可根据域名 Desired State 生成 DNS 记录草稿、Caddy 路由草稿和 Nginx 路由草稿，并查看 Desired/Observed 的目标、代理、TLS 和 Zone 差异；当前不会写入 Cloudflare、Hostinger、Caddy、Nginx 或生产网关。
 - 部署中心 dry-run 第一版已完成：可以从项目 Preflight 创建持久化工作流，重新验证、提交人工审批、执行只读步骤并固化步骤证据；该执行不会写入 Hostinger、Cloudflare、Docker、Compose、Caddy、Nginx 或生产网关。
-- Hostinger 生产工作流第一版已完成：生产工作流必须经过 Preflight、人工审批、项目锁和执行权限校验，按当前生产运行手册调用既有 Compose 项目更新，随后重新同步项目并执行 DNS、HTTP、HTTPS 健康检查；失败会进入 `rollback_required`，不会未经人工确认自动回滚。
+- Hostinger 生产工作流第一版已完成：生产工作流只能绑定 `production` 环境项目，并且必须经过 Preflight、人工审批、项目锁和执行权限校验，按当前生产运行手册调用既有 Compose 项目更新，随后重新同步项目并执行 DNS、HTTP、HTTPS 健康检查；发布后健康检查失败会进入 `rollback_required`，不会未经人工确认自动回滚。
 - 发布后健康检查通过后，工作流会按当前项目绑定的 Cloudflare 域名和 Zone 分组清理缓存；没有 Cloudflare 域名时显式跳过，缓存清理失败会保留工作流失败证据，不自动回滚源站。
-- 工作流已记录发布前回滚点、幂等键、远端操作 ID、健康检查快照和项目锁；锁过期后可恢复，不会因为后台进程中断永久占用项目。
-- 独立权限：`ops:view`、`ops:domain:view`、`ops:domain:edit`、`ops:domain:sync`、`ops:connector:view`、`ops:connector:edit`、`ops:vps:view`、`ops:vps:edit`、`ops:vps:sync`、`ops:project:view`、`ops:project:edit`、`ops:project:sync`、`ops:deploy:view`、`ops:deploy:dry_run`、`ops:deploy:execute`、`ops:deploy:rollback`、`ops:workflow:approve`。
-- 独立迁移：`116_create_ops_domain_bindings`、`117_create_ops_connectors`、`118_create_ops_vps_bindings`、`119_create_ops_project_bindings`、`120_add_ops_domain_observed_state`、`122_bind_ops_domains_to_connectors`、`124_add_ops_hostinger_observed_state`、`125_add_ops_vps_observed_identity`、`137_create_ops_deployment_workflows`、`139_extend_ops_deployment_workflows`。
+- 工作流已记录发布前回滚点、幂等键、远端操作 ID、健康检查快照和项目锁；回滚点优先保存可作为 `deploy.sh` 的 `DEPLOY_REF` 使用的 40 位 Commit SHA；锁过期后可恢复，不会因为后台进程中断永久占用项目；失败、暂停或需回滚状态下，可从标记为可重试的失败步骤继续，已成功步骤不会重跑。
+- 真实回滚已接入受限 SSH 执行器：只允许生产工作流使用绑定 VPS 的主机、固定工作目录和 `DEPLOY_REF=<40位SHA> ./deploy.sh` 命令，强制使用 `known_hosts` 主机指纹校验并限制输出；回滚后会重新同步 Hostinger、执行 DNS/HTTP/HTTPS 健康检查和 Cloudflare 缓存清理，所有结果写回工作流步骤和审计。
+- 独立权限：`ops:view`、`ops:domain:view`、`ops:domain:edit`、`ops:domain:sync`、`ops:connector:view`、`ops:connector:edit`、`ops:vps:view`、`ops:vps:edit`、`ops:vps:sync`、`ops:project:view`、`ops:project:edit`、`ops:project:sync`、`ops:deploy:view`、`ops:deploy:dry_run`、`ops:deploy:execute`、`ops:deploy:rollback`、`ops:workflow:approve`。工作流取消按模式校验：dry-run 需要 `ops:deploy:dry_run`，production 需要 `ops:deploy:execute`；重试/继续沿用执行权限。
+- 独立迁移：`116_create_ops_domain_bindings`、`117_create_ops_connectors`、`118_create_ops_vps_bindings`、`119_create_ops_project_bindings`、`120_add_ops_domain_observed_state`、`122_bind_ops_domains_to_connectors`、`124_add_ops_hostinger_observed_state`、`125_add_ops_vps_observed_identity`、`137_create_ops_deployment_workflows`、`139_extend_ops_deployment_workflows`、`160_create_ops_connector_oauth_sessions`。
 - 当前生产初始基线已登记：Hostinger VPS `1834903`、`srv1834903.hstgr.cloud`、`2.25.85.201`、`commerce-platform` 项目。
 
 当前明确未完成：
 
-- Hostinger 的完整发布编排和自动部署；当前只支持既有 Compose 项目的受控更新，按 `IMAGE_TAG=master` 拉取已发布镜像，不支持从后台直接切换任意 SHA，也不支持后台直接执行 `deploy.sh`。
+- Hostinger 的完整发布编排和任意 SHA 生产发布；当前正常生产工作流仍限制为既有 Compose 项目的 `IMAGE_TAG=master` 受控更新，任意 SHA 只能通过已登记的受限 SSH 回滚路径执行。
 - Cloudflare Zone、DNS 和代理的写入动作；当前域名中心只提供 DNS 与网关配置草稿预览。
-- Cloudflare/Hostinger 的统一真实生产写入和完整回滚工作流；当前生产工作流会在发布后健康检查成功后，按项目绑定域名和 Cloudflare Zone 清理缓存，但 Hostinger 更新后的失败仍只记录回滚点并暂停，实际回滚仍需使用既有 SSH `deploy.sh` 路径或后续专用回滚执行器。
+- Cloudflare/Hostinger 的统一 DNS、网关真实写入，以及真实回滚后的恢复演练；生产项目回滚执行器已完成，但必须先配置 SSH 私钥、`known_hosts`、绑定 VPS 主机和工作目录。
 - 定时漂移检测。
 
-`运维总览` 当前是声明式台账的聚合展示，不等于 Hostinger、Cloudflare 或 VPS 的实时状态查询。总览接口为 `GET /api/admin/ops/overview`；未同步、未知和待测试状态会保留为待处理项，不会被折算为健康。
+`运维总览` 当前是声明式台账的聚合展示，不等于 Hostinger、Cloudflare 或 VPS 的实时状态查询。总览接口为 `GET /api/admin/ops/overview?environment=production`；`environment` 支持 `production`、`staging`、`test`、`local`，未传时默认生产环境。部署 Preflight 总览接口为 `GET /api/admin/ops/deployments/preflight-overview?environment=production`，遵循同一环境枚举；未传时才表示全量汇总。未同步、未知和待测试状态会保留为待处理项，不会被折算为健康。
 
-域名中心当前已经可以分别显示期望目标、实际目标、期望代理/TLS、实际代理/TLS，以及观察来源和最后观察时间。Cloudflare 域名支持单域同步和批量手动同步；尚未建立定时同步任务时，未同步记录仍保持 `unknown`。
+域名中心当前已经可以分别显示期望目标、实际目标、期望代理/TLS、实际代理/TLS，以及观察来源和最后观察时间。列表默认只查询生产域名，切换环境后重新查询对应台账；Cloudflare 域名支持单域同步和批量手动同步，单域同步完成后只更新当前行的观察字段。尚未建立定时同步任务时，未同步记录仍保持 `unknown`。
 
 ## 4. 产品边界
 
@@ -432,7 +441,7 @@ web/admin/src/components/admin/ops/
 - [x] 建立连接器、域名绑定模型。
 - [x] 接入连接器凭据加密和审计关联。
 - [x] 建立 VPS 绑定和项目绑定模型。
-- [x] 建立 VPS 中心和项目中心后台页面，支持声明式台账编辑、启停和审计。
+- [x] 建立 VPS 中心和项目中心后台页面，支持声明式台账编辑、启停和审计；VPS/项目列表默认生产环境并支持环境筛选，编辑时保留异步加载中的既有连接器绑定；项目可显式绑定同环境 Hostinger 连接器或沿用 VPS 连接器。
 - [x] 登记当前生产 VPS、`commerce-platform` 项目及 Compose、网关、服务、网络、卷和备份边界。
 - 明确生产环境初始数据，不自动猜测或覆盖当前资源。
 
@@ -456,18 +465,20 @@ web/admin/src/components/admin/ops/
 
 ### Phase 3：部署中心与 dry-run
 
-- [x] 提供版本选择、配置差异和部署前检查。
+- [x] 展示当前台账版本、配置差异和部署前检查；dry-run 支持填写 SHA/digest 作为发布引用证据，生产工作流当前仍使用 `master` 受控发布策略。
 - [x] 持久化部署工作流、步骤状态、人工审批和 dry-run 执行证据。
 - [x] 对 dry-run 步骤标记外部副作用边界，并明确不调用生产写入接口。
-- [ ] 将现有 `deploy.sh`、发布镜像检查和 `verify-vps-release-boundary.sh` 封装为可执行的外部步骤。
+- [x] 将回滚所需的 `deploy.sh` 固定命令、绑定 VPS 目标和远程操作证据封装为受限 SSH 执行器。
+- [ ] 将正常发布所需的 `deploy.sh`、发布镜像检查和 `verify-vps-release-boundary.sh` 封装为可执行的外部步骤。
 
 ### Phase 4：生产执行、健康检查和回滚
 
 - [x] 接入 Hostinger 既有 Docker Compose 项目更新；当前只支持 `IMAGE_TAG=master` 策略和后端受控执行。
 - [x] 接入发布后 DNS、HTTP、HTTPS 健康检查，失败进入 `rollback_required`。
 - [x] 建立发布前回滚点、项目锁、幂等键和失败暂停证据。
+- [x] 支持失败、暂停或需回滚工作流从可重试失败步骤继续，保留原回滚点和幂等键，已成功步骤不重跑。
 - [x] 接入按项目绑定域名、Cloudflare Zone 和连接器分组的缓存清理；单次请求最多 30 个 host，没有 Cloudflare 域名时显式跳过。
-- [ ] 建立人工批准后的真实回滚执行器。
+- [x] 建立人工批准后的真实回滚执行器：仅接受完整 Commit SHA，限制绑定 VPS、SSH 用户、私钥文件、`known_hosts` 和固定工作目录，完成后重新同步、健康检查和缓存清理。
 - [ ] 完成至少一次恢复演练。
 
 ### Phase 5：漂移检测与自动化
@@ -498,4 +509,4 @@ web/admin/src/components/admin/ops/
 - 已完成的域名切换记录：`docs/archive/ops/learn-gripe-cutover-completed.md`
 - 已完成的品牌连续性记录：`docs/archive/ops/brand-rename-continuity-plan-completed.md`
 
-最后更新：2026-08-14。
+最后更新：2026-08-16。

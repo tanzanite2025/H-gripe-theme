@@ -20,5 +20,19 @@
     "calculator": "Calculator",
     "points": "Points",
     "picture": "Picture"
+  },
+  "detail": {
+    "viewDetails": "Product details",
+    "media": "Product media",
+    "viewVideo": "View product video",
+    "viewImage": "View product image",
+    "option": "Option",
+    "inStock": "In stock",
+    "outOfStock": "Out of stock",
+    "specifications": "Specifications",
+    "quantity": "Quantity",
+    "decreaseQuantity": "Decrease quantity",
+    "increaseQuantity": "Increase quantity",
+    "notFound": "Product not found"
   }
 }

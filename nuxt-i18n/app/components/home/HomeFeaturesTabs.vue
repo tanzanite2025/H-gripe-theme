@@ -4,13 +4,15 @@
       
       <!-- Tab Navigation -->
       <div class="flex justify-center mb-4 sm:mb-8">
-        <div class="bg-slate-900/50 p-1 rounded-full border border-white/10 inline-flex">
+        <div class="tz-segmented-tabs" role="tablist">
           <button
             v-for="tab in tabs"
             :key="tab.id"
             @click="currentTabId = tab.id"
-            class="px-6 py-2 rounded-full text-sm font-medium transition-all duration-300"
-            :class="currentTabId === tab.id ? 'bg-slate-800 tz-text-primary shadow-lg' : 'tz-text-secondary hover:text-white'"
+            class="tz-segmented-tabs__button"
+            :class="{ 'is-active': currentTabId === tab.id }"
+            role="tab"
+            :aria-pressed="currentTabId === tab.id"
           >
             {{ $t(tab.labelKey) }}
           </button>
@@ -28,21 +30,19 @@
             <li
               v-for="(item, index) in currentTabItems"
               :key="index"
-              class="group cursor-pointer rounded-xl p-2 sm:p-3 transition-all duration-200 border border-transparent"
-              :class="activeIndex === index ? 'bg-slate-800/60 border-slate-700/50 shadow-sm' : 'hover:bg-slate-800/30'"
+              class="tz-selectable-list-item p-2 sm:p-3"
+              :class="{ 'is-active': activeIndex === index }"
               @click="activeIndex = index"
               @mouseenter="activeIndex = index"
             >
               <div class="flex items-center gap-3">
                 <!-- Active Indicator Dot -->
                 <div 
-                  class="w-2 h-2 rounded-full transition-colors duration-200"
-                  :class="activeIndex === index ? 'bg-teal-400 shadow-[0_0_8px_rgba(181,255,109,0.6)]' : 'bg-slate-600 group-hover:bg-slate-500'"
+                  class="tz-selectable-list-item__indicator"
                 ></div>
                 
                 <span 
-                  class="text-sm font-medium transition-colors duration-200"
-                  :class="activeIndex === index ? 'tz-text-primary' : 'tz-text-secondary group-hover:text-slate-200'"
+                  class="tz-selectable-list-item__label text-sm font-medium"
                 >
                   {{ $t(item.titleKey) }}
                 </span>

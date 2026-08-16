@@ -13,20 +13,20 @@ import (
 	"gorm.io/gorm"
 )
 
-var productTypeSlugPattern = regexp.MustCompile(`^[a-z0-9]+(?:[_-][a-z0-9]+)*$`)
+var productSpecificationTemplateSlugPattern = regexp.MustCompile(`^[a-z0-9]+(?:[_-][a-z0-9]+)*$`)
 
-type ProductTypeInput struct {
+type ProductSpecificationTemplateInput struct {
 	Name               string
 	Slug               string
 	Description        string
 	SortOrder          int
 	IsEnabled          bool
-	Translations       []ProductTypeTranslationInput
+	Translations       []ProductSpecificationTemplateTranslationInput
 	UpdateTranslations bool
 	SpecDefinitions    []ProductSpecDefinitionInput
 }
 
-type ProductTypeTranslationInput struct {
+type ProductSpecificationTemplateTranslationInput struct {
 	ID          uint
 	Locale      string
 	Name        string
@@ -98,27 +98,27 @@ func (s *ProductService) GetValuesByAttributeID(attrID uint) ([]product.Attribut
 	return s.productRepo.FindValuesByAttributeID(attrID)
 }
 
-func (s *ProductService) ListProductTypes(includeDisabled bool) ([]product.ProductType, error) {
-	return s.productRepo.FindAllProductTypes(includeDisabled)
+func (s *ProductService) ListProductSpecificationTemplates(includeDisabled bool) ([]product.ProductSpecificationTemplate, error) {
+	return s.productRepo.FindAllProductSpecificationTemplates(includeDisabled)
 }
 
-func (s *ProductService) ListPublicProductTypes(includeDisabled bool) ([]product.ProductType, error) {
-	return s.productRepo.FindPublicProductTypes(includeDisabled)
+func (s *ProductService) ListPublicProductSpecificationTemplates(includeDisabled bool) ([]product.ProductSpecificationTemplate, error) {
+	return s.productRepo.FindPublicProductSpecificationTemplates(includeDisabled)
 }
 
-func (s *ProductService) GetProductType(id uint) (*product.ProductType, error) {
-	productType, err := s.productRepo.FindProductTypeByID(id)
+func (s *ProductService) GetProductSpecificationTemplate(id uint) (*product.ProductSpecificationTemplate, error) {
+	productSpecificationTemplate, err := s.productRepo.FindProductSpecificationTemplateByID(id)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, ErrProductTypeNotFound
+			return nil, ErrProductSpecificationTemplateNotFound
 		}
 		return nil, err
 	}
-	return productType, nil
+	return productSpecificationTemplate, nil
 }
 
-func (s *ProductService) UpdateProductTypeImage(id uint, mediaAssetID *uint, imageURL string) (*product.ProductType, error) {
-	existing, err := s.GetProductType(id)
+func (s *ProductService) UpdateProductSpecificationTemplateImage(id uint, mediaAssetID *uint, imageURL string) (*product.ProductSpecificationTemplate, error) {
+	existing, err := s.GetProductSpecificationTemplate(id)
 	if err != nil {
 		return nil, err
 	}
@@ -129,10 +129,10 @@ func (s *ProductService) UpdateProductTypeImage(id uint, mediaAssetID *uint, ima
 		mediaAssetID = nil
 	}
 	if mediaAssetID == nil && imageURL != "" {
-		return nil, fmt.Errorf("%w: image asset is required when an image URL is provided", ErrProductTypeInvalid)
+		return nil, fmt.Errorf("%w: image asset is required when an image URL is provided", ErrProductSpecificationTemplateInvalid)
 	}
 	if mediaAssetID != nil && imageURL == "" {
-		return nil, fmt.Errorf("%w: image URL is required when an image asset is selected", ErrProductTypeInvalid)
+		return nil, fmt.Errorf("%w: image URL is required when an image asset is selected", ErrProductSpecificationTemplateInvalid)
 	}
 
 	if s.txManager != nil {
@@ -140,9 +140,9 @@ func (s *ProductService) UpdateProductTypeImage(id uint, mediaAssetID *uint, ima
 			if tx.Product == nil {
 				return errors.New("transactional product repository is not configured")
 			}
-			if err := tx.Product.UpdateProductTypeImage(id, mediaAssetID, imageURL); err != nil {
+			if err := tx.Product.UpdateProductSpecificationTemplateImage(id, mediaAssetID, imageURL); err != nil {
 				if err == gorm.ErrRecordNotFound {
-					return ErrProductTypeNotFound
+					return ErrProductSpecificationTemplateNotFound
 				}
 				return err
 			}
@@ -150,97 +150,97 @@ func (s *ProductService) UpdateProductTypeImage(id uint, mediaAssetID *uint, ima
 			if err != nil {
 				return err
 			}
-			return cacheEvents.EnqueueProductCacheInvalidateByProductTypeID(id, "admin product type image update")
+			return cacheEvents.EnqueueProductCacheInvalidateByProductSpecificationTemplateID(id, "admin product specification template image update")
 		})
 		if err != nil {
 			return nil, err
 		}
-		s.InvalidateProductCacheByProductTypeID(id)
-		s.invalidateStorefrontHTMLCache("admin product type image update")
+		s.InvalidateProductCacheByProductSpecificationTemplateID(id)
+		s.invalidateStorefrontHTMLCache("admin product specification template image update")
 		if previousAssetID != nil && (mediaAssetID == nil || *mediaAssetID != *previousAssetID) {
-			s.cleanupProductTypeImageAsset(*previousAssetID, "product type image replacement or removal")
+			s.cleanupProductSpecificationTemplateImageAsset(*previousAssetID, "product specification template image replacement or removal")
 		}
-		return s.productRepo.FindProductTypeByID(id)
+		return s.productRepo.FindProductSpecificationTemplateByID(id)
 	}
 
-	if err := s.productRepo.UpdateProductTypeImage(id, mediaAssetID, imageURL); err != nil {
+	if err := s.productRepo.UpdateProductSpecificationTemplateImage(id, mediaAssetID, imageURL); err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, ErrProductTypeNotFound
+			return nil, ErrProductSpecificationTemplateNotFound
 		}
 		return nil, err
 	}
-	s.InvalidateProductCacheByProductTypeID(id)
-	if err := s.enqueueProductCacheInvalidationByProductTypeID(id, "admin product type image update"); err != nil {
+	s.InvalidateProductCacheByProductSpecificationTemplateID(id)
+	if err := s.enqueueProductCacheInvalidationByProductSpecificationTemplateID(id, "admin product specification template image update"); err != nil {
 		return nil, err
 	}
-	s.invalidateStorefrontHTMLCache("admin product type image update")
+	s.invalidateStorefrontHTMLCache("admin product specification template image update")
 	if previousAssetID != nil && (mediaAssetID == nil || *mediaAssetID != *previousAssetID) {
-		s.cleanupProductTypeImageAsset(*previousAssetID, "product type image replacement or removal")
+		s.cleanupProductSpecificationTemplateImageAsset(*previousAssetID, "product specification template image replacement or removal")
 	}
-	return s.productRepo.FindProductTypeByID(id)
+	return s.productRepo.FindProductSpecificationTemplateByID(id)
 }
 
-func (s *ProductService) CreateProductType(input ProductTypeInput) (*product.ProductType, error) {
-	productType, err := normalizeProductTypeInput(input)
+func (s *ProductService) CreateProductSpecificationTemplate(input ProductSpecificationTemplateInput) (*product.ProductSpecificationTemplate, error) {
+	productSpecificationTemplate, err := normalizeProductSpecificationTemplateInput(input)
 	if err != nil {
 		return nil, err
 	}
 
-	exists, err := s.productRepo.ProductTypeSlugExists(productType.Slug, 0)
+	exists, err := s.productRepo.ProductSpecificationTemplateSlugExists(productSpecificationTemplate.Slug, 0)
 	if err != nil {
 		return nil, err
 	}
 	if exists {
-		return nil, ErrProductTypeSlugExists
+		return nil, ErrProductSpecificationTemplateSlugExists
 	}
 
-	if err := s.productRepo.CreateProductType(productType); err != nil {
+	if err := s.productRepo.CreateProductSpecificationTemplate(productSpecificationTemplate); err != nil {
 		return nil, err
 	}
-	s.invalidateStorefrontHTMLCache("admin product type create")
-	return s.productRepo.FindProductTypeByID(productType.ID)
+	s.invalidateStorefrontHTMLCache("admin product specification template create")
+	return s.productRepo.FindProductSpecificationTemplateByID(productSpecificationTemplate.ID)
 }
 
-func (s *ProductService) UpdateProductType(id uint, input ProductTypeInput) (*product.ProductType, error) {
-	existing, err := s.GetProductType(id)
+func (s *ProductService) UpdateProductSpecificationTemplate(id uint, input ProductSpecificationTemplateInput) (*product.ProductSpecificationTemplate, error) {
+	existing, err := s.GetProductSpecificationTemplate(id)
 	if err != nil {
 		return nil, err
 	}
 
-	productType, err := normalizeProductTypeInput(input)
+	productSpecificationTemplate, err := normalizeProductSpecificationTemplateInput(input)
 	if err != nil {
 		return nil, err
 	}
-	productType.ID = id
+	productSpecificationTemplate.ID = id
 
 	if existing.IsSystemManaged {
-		if productType.Slug != existing.Slug {
-			return nil, fmt.Errorf("%w: product type slug cannot be changed", ErrProductTypeSystemManaged)
+		if productSpecificationTemplate.Slug != existing.Slug {
+			return nil, fmt.Errorf("%w: product specification template slug cannot be changed", ErrProductSpecificationTemplateSystemManaged)
 		}
-		if err := validateSystemManagedProductType(existing, productType); err != nil {
+		if err := validateSystemManagedProductSpecificationTemplate(existing, productSpecificationTemplate); err != nil {
 			return nil, err
 		}
 	}
 
-	exists, err := s.productRepo.ProductTypeSlugExists(productType.Slug, id)
+	exists, err := s.productRepo.ProductSpecificationTemplateSlugExists(productSpecificationTemplate.Slug, id)
 	if err != nil {
 		return nil, err
 	}
 	if exists {
-		return nil, ErrProductTypeSlugExists
+		return nil, ErrProductSpecificationTemplateSlugExists
 	}
 
 	existingIDs := make(map[uint]struct{}, len(existing.SpecDefinitions))
 	for _, definition := range existing.SpecDefinitions {
 		existingIDs[definition.ID] = struct{}{}
 	}
-	retainedIDs := make(map[uint]struct{}, len(productType.SpecDefinitions))
-	for _, definition := range productType.SpecDefinitions {
+	retainedIDs := make(map[uint]struct{}, len(productSpecificationTemplate.SpecDefinitions))
+	for _, definition := range productSpecificationTemplate.SpecDefinitions {
 		if definition.ID == 0 {
 			continue
 		}
 		if _, ok := existingIDs[definition.ID]; !ok {
-			return nil, fmt.Errorf("%w: specification does not belong to product type", ErrProductSpecInvalid)
+			return nil, fmt.Errorf("%w: specification does not belong to product specification template", ErrProductSpecInvalid)
 		}
 		retainedIDs[definition.ID] = struct{}{}
 	}
@@ -258,9 +258,9 @@ func (s *ProductService) UpdateProductType(id uint, input ProductTypeInput) (*pr
 			if tx.Product == nil {
 				return errors.New("transactional product repository is not configured")
 			}
-			if err := tx.Product.UpdateProductType(productType, removedIDs, input.UpdateTranslations); err != nil {
+			if err := tx.Product.UpdateProductSpecificationTemplate(productSpecificationTemplate, removedIDs, input.UpdateTranslations); err != nil {
 				if err == gorm.ErrRecordNotFound {
-					return ErrProductTypeNotFound
+					return ErrProductSpecificationTemplateNotFound
 				}
 				return err
 			}
@@ -268,46 +268,46 @@ func (s *ProductService) UpdateProductType(id uint, input ProductTypeInput) (*pr
 			if err != nil {
 				return err
 			}
-			return cacheEvents.EnqueueProductCacheInvalidateByProductTypeID(id, "admin product type update")
+			return cacheEvents.EnqueueProductCacheInvalidateByProductSpecificationTemplateID(id, "admin product specification template update")
 		})
 		if err != nil {
 			return nil, err
 		}
-		s.InvalidateProductCacheByProductTypeID(id)
-		s.invalidateStorefrontHTMLCache("admin product type update")
-		return s.productRepo.FindProductTypeByID(id)
+		s.InvalidateProductCacheByProductSpecificationTemplateID(id)
+		s.invalidateStorefrontHTMLCache("admin product specification template update")
+		return s.productRepo.FindProductSpecificationTemplateByID(id)
 	}
 
-	if err := s.productRepo.UpdateProductType(productType, removedIDs, input.UpdateTranslations); err != nil {
+	if err := s.productRepo.UpdateProductSpecificationTemplate(productSpecificationTemplate, removedIDs, input.UpdateTranslations); err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, ErrProductTypeNotFound
+			return nil, ErrProductSpecificationTemplateNotFound
 		}
 		return nil, err
 	}
-	s.InvalidateProductCacheByProductTypeID(id)
-	if err := s.enqueueProductCacheInvalidationByProductTypeID(id, "admin product type update"); err != nil {
+	s.InvalidateProductCacheByProductSpecificationTemplateID(id)
+	if err := s.enqueueProductCacheInvalidationByProductSpecificationTemplateID(id, "admin product specification template update"); err != nil {
 		return nil, err
 	}
-	s.invalidateStorefrontHTMLCache("admin product type update")
-	return s.productRepo.FindProductTypeByID(id)
+	s.invalidateStorefrontHTMLCache("admin product specification template update")
+	return s.productRepo.FindProductSpecificationTemplateByID(id)
 }
 
-func (s *ProductService) DeleteProductType(id uint) error {
-	existing, err := s.GetProductType(id)
+func (s *ProductService) DeleteProductSpecificationTemplate(id uint) error {
+	existing, err := s.GetProductSpecificationTemplate(id)
 	if err != nil {
 		return err
 	}
 	if existing.IsSystemManaged {
-		return fmt.Errorf("%w: product type cannot be deleted", ErrProductTypeSystemManaged)
+		return fmt.Errorf("%w: product specification template cannot be deleted", ErrProductSpecificationTemplateSystemManaged)
 	}
 	if s.txManager != nil {
 		err := s.txManager.WithinTx(func(tx repository.TxRepositories) error {
 			if tx.Product == nil {
 				return errors.New("transactional product repository is not configured")
 			}
-			if err := tx.Product.DeleteProductType(id); err != nil {
+			if err := tx.Product.DeleteProductSpecificationTemplate(id); err != nil {
 				if err == gorm.ErrRecordNotFound {
-					return ErrProductTypeNotFound
+					return ErrProductSpecificationTemplateNotFound
 				}
 				return err
 			}
@@ -315,56 +315,56 @@ func (s *ProductService) DeleteProductType(id uint) error {
 			if err != nil {
 				return err
 			}
-			return cacheEvents.EnqueueProductCacheInvalidateByProductTypeID(id, "admin product type delete")
+			return cacheEvents.EnqueueProductCacheInvalidateByProductSpecificationTemplateID(id, "admin product specification template delete")
 		})
 		if err != nil {
 			return err
 		}
-		s.InvalidateProductCacheByProductTypeID(id)
-		s.invalidateStorefrontHTMLCache("admin product type delete")
+		s.InvalidateProductCacheByProductSpecificationTemplateID(id)
+		s.invalidateStorefrontHTMLCache("admin product specification template delete")
 		if existing.ImageMediaAssetID != nil {
-			s.cleanupProductTypeImageAsset(*existing.ImageMediaAssetID, "product type deletion")
+			s.cleanupProductSpecificationTemplateImageAsset(*existing.ImageMediaAssetID, "product specification template deletion")
 		}
 		return nil
 	}
 
-	s.InvalidateProductCacheByProductTypeID(id)
-	if err := s.enqueueProductCacheInvalidationByProductTypeID(id, "admin product type delete"); err != nil {
+	s.InvalidateProductCacheByProductSpecificationTemplateID(id)
+	if err := s.enqueueProductCacheInvalidationByProductSpecificationTemplateID(id, "admin product specification template delete"); err != nil {
 		return err
 	}
-	if err := s.productRepo.DeleteProductType(id); err != nil {
+	if err := s.productRepo.DeleteProductSpecificationTemplate(id); err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return ErrProductTypeNotFound
+			return ErrProductSpecificationTemplateNotFound
 		}
 		return err
 	}
-	s.invalidateStorefrontHTMLCache("admin product type delete")
+	s.invalidateStorefrontHTMLCache("admin product specification template delete")
 	if existing.ImageMediaAssetID != nil {
-		s.cleanupProductTypeImageAsset(*existing.ImageMediaAssetID, "product type deletion")
+		s.cleanupProductSpecificationTemplateImageAsset(*existing.ImageMediaAssetID, "product specification template deletion")
 	}
 	return nil
 }
 
-func validateSystemManagedProductType(existing, next *product.ProductType) error {
+func validateSystemManagedProductSpecificationTemplate(existing, next *product.ProductSpecificationTemplate) error {
 	if existing == nil || next == nil {
-		return fmt.Errorf("%w: product type is missing", ErrProductTypeSystemManaged)
+		return fmt.Errorf("%w: product specification template is missing", ErrProductSpecificationTemplateSystemManaged)
 	}
 
 	definitionsByID := make(map[uint]product.SpecDefinition, len(next.SpecDefinitions))
 	for _, definition := range next.SpecDefinitions {
 		if definition.ID == 0 {
-			return fmt.Errorf("%w: system product type fields cannot be added", ErrProductTypeSystemManaged)
+			return fmt.Errorf("%w: system product specification template fields cannot be added", ErrProductSpecificationTemplateSystemManaged)
 		}
 		definitionsByID[definition.ID] = definition
 	}
 	if len(definitionsByID) != len(existing.SpecDefinitions) {
-		return fmt.Errorf("%w: system product type fields cannot be added or removed", ErrProductTypeSystemManaged)
+		return fmt.Errorf("%w: system product specification template fields cannot be added or removed", ErrProductSpecificationTemplateSystemManaged)
 	}
 
 	for _, previous := range existing.SpecDefinitions {
 		current, ok := definitionsByID[previous.ID]
 		if !ok {
-			return fmt.Errorf("%w: system product type fields cannot be added or removed", ErrProductTypeSystemManaged)
+			return fmt.Errorf("%w: system product specification template fields cannot be added or removed", ErrProductSpecificationTemplateSystemManaged)
 		}
 		if previous.Slug != current.Slug ||
 			previous.FieldType != current.FieldType ||
@@ -373,7 +373,7 @@ func validateSystemManagedProductType(existing, next *product.ProductType) error
 			previous.IsVariantOption != current.IsVariantOption ||
 			normalizedSpecOptionsForComparison(previous.Options) != normalizedSpecOptionsForComparison(current.Options) ||
 			previous.Validation != current.Validation {
-			return fmt.Errorf("%w: field %q structure is immutable", ErrProductTypeSystemManaged, previous.Slug)
+			return fmt.Errorf("%w: field %q structure is immutable", ErrProductSpecificationTemplateSystemManaged, previous.Slug)
 		}
 	}
 	return nil
@@ -396,17 +396,17 @@ func normalizedSpecOptionsForComparison(raw string) string {
 	return string(encoded)
 }
 
-func normalizeProductTypeInput(input ProductTypeInput) (*product.ProductType, error) {
+func normalizeProductSpecificationTemplateInput(input ProductSpecificationTemplateInput) (*product.ProductSpecificationTemplate, error) {
 	name := strings.TrimSpace(input.Name)
 	slug := strings.ToLower(strings.TrimSpace(input.Slug))
 	if name == "" || slug == "" {
-		return nil, fmt.Errorf("%w: name and slug are required", ErrProductTypeInvalid)
+		return nil, fmt.Errorf("%w: name and slug are required", ErrProductSpecificationTemplateInvalid)
 	}
-	if len(name) > 120 || len(slug) > 120 || !productTypeSlugPattern.MatchString(slug) {
-		return nil, fmt.Errorf("%w: slug must use lowercase letters, numbers, dashes, or underscores", ErrProductTypeInvalid)
+	if len(name) > 120 || len(slug) > 120 || !productSpecificationTemplateSlugPattern.MatchString(slug) {
+		return nil, fmt.Errorf("%w: slug must use lowercase letters, numbers, dashes, or underscores", ErrProductSpecificationTemplateInvalid)
 	}
 
-	translations, err := normalizeProductTypeTranslations(input.Translations)
+	translations, err := normalizeProductSpecificationTemplateTranslations(input.Translations)
 	if err != nil {
 		return nil, err
 	}
@@ -432,7 +432,7 @@ func normalizeProductTypeInput(input ProductTypeInput) (*product.ProductType, er
 		definitions = append(definitions, definition)
 	}
 
-	return &product.ProductType{
+	return &product.ProductSpecificationTemplate{
 		Name:            name,
 		Slug:            slug,
 		Description:     strings.TrimSpace(input.Description),
@@ -443,32 +443,32 @@ func normalizeProductTypeInput(input ProductTypeInput) (*product.ProductType, er
 	}, nil
 }
 
-func normalizeProductTypeTranslations(input []ProductTypeTranslationInput) ([]product.ProductTypeTranslation, error) {
+func normalizeProductSpecificationTemplateTranslations(input []ProductSpecificationTemplateTranslationInput) ([]product.ProductSpecificationTemplateTranslation, error) {
 	if input == nil {
 		return nil, nil
 	}
 
-	result := make([]product.ProductTypeTranslation, 0, len(input))
+	result := make([]product.ProductSpecificationTemplateTranslation, 0, len(input))
 	seenLocales := make(map[string]struct{}, len(input))
 	for index, item := range input {
 		locale, err := requireSupportedLocale(item.Locale)
 		if err != nil {
-			return nil, fmt.Errorf("%w: translation %d has invalid locale", ErrProductTypeTranslationInvalid, index+1)
+			return nil, fmt.Errorf("%w: translation %d has invalid locale", ErrProductSpecificationTemplateTranslationInvalid, index+1)
 		}
 
 		name := strings.TrimSpace(item.Name)
 		if name == "" {
-			return nil, fmt.Errorf("%w: translation %d requires a name", ErrProductTypeTranslationInvalid, index+1)
+			return nil, fmt.Errorf("%w: translation %d requires a name", ErrProductSpecificationTemplateTranslationInvalid, index+1)
 		}
 		if len(name) > 120 {
-			return nil, fmt.Errorf("%w: translation %d name is too long", ErrProductTypeTranslationInvalid, index+1)
+			return nil, fmt.Errorf("%w: translation %d name is too long", ErrProductSpecificationTemplateTranslationInvalid, index+1)
 		}
 		if _, exists := seenLocales[locale]; exists {
-			return nil, fmt.Errorf("%w: duplicate locale %q", ErrProductTypeTranslationInvalid, locale)
+			return nil, fmt.Errorf("%w: duplicate locale %q", ErrProductSpecificationTemplateTranslationInvalid, locale)
 		}
 		seenLocales[locale] = struct{}{}
 
-		result = append(result, product.ProductTypeTranslation{
+		result = append(result, product.ProductSpecificationTemplateTranslation{
 			ID:          item.ID,
 			Locale:      locale,
 			Name:        name,
@@ -489,7 +489,7 @@ func normalizeSpecDefinition(input ProductSpecDefinitionInput, index int) (produ
 	if name == "" || slug == "" {
 		return product.SpecDefinition{}, fmt.Errorf("%w: specification %d requires name and slug", ErrProductSpecInvalid, index+1)
 	}
-	if len(name) > 120 || len(slug) > 120 || !productTypeSlugPattern.MatchString(slug) {
+	if len(name) > 120 || len(slug) > 120 || !productSpecificationTemplateSlugPattern.MatchString(slug) {
 		return product.SpecDefinition{}, fmt.Errorf("%w: invalid specification slug %q", ErrProductSpecInvalid, slug)
 	}
 	if fieldType != "text" && fieldType != "number" && fieldType != "select" && fieldType != "boolean" {

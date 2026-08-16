@@ -1,16 +1,16 @@
 <template>
-  <section class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-[repeat(auto-fit,minmax(170px,1fr))]" aria-label="页面统计">
+  <section class="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-[repeat(auto-fit,minmax(170px,1fr))]" aria-label="页面统计">
     <div
       v-for="item in items"
       :key="item.key || item.label"
-      class="group relative flex min-h-24 items-start justify-between gap-3 rounded-[24px] border border-dashed border-border/80 bg-card p-4 text-card-foreground shadow-xs overflow-hidden transition-all hover:border-primary/40"
+      class="group relative flex min-h-14 items-center justify-between gap-3 overflow-hidden rounded-lg border border-dashed border-border/80 bg-card px-3 py-2.5 text-card-foreground shadow-xs transition-all hover:border-primary/40"
     >
       <div class="uds-glow-bg opacity-30 group-hover:opacity-100 transition-opacity" />
-      <div class="relative z-10 min-w-0">
-        <span class="block text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">{{ item.label }}</span>
-        <strong class="mt-1.5 block truncate text-2xl font-black italic tracking-tighter tabular-nums text-foreground">{{ item.value }}</strong>
+      <div class="relative z-10 flex min-w-0 flex-1 items-baseline gap-2">
+        <span class="min-w-0 truncate text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">{{ item.label }}</span>
+        <strong class="shrink-0 truncate text-xl font-black italic tabular-nums text-foreground">{{ item.value }}</strong>
       </div>
-      <span v-if="item.icon" class="relative z-10 flex size-9 shrink-0 items-center justify-center rounded-full" :class="toneClass(item.tone)">
+      <span v-if="item.icon" class="relative z-10 flex size-8 shrink-0 items-center justify-center rounded-full" :class="toneClass(item.tone)">
         <component :is="item.icon" class="size-4" />
       </span>
     </div>

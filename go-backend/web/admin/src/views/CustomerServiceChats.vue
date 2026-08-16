@@ -1,5 +1,5 @@
 <template>
-  <CustomerServiceInboxWorkbench show-header show-stats show-region-analytics />
+  <CustomerServiceInboxWorkbench show-header show-stats />
 </template>
 
 <script setup lang="ts">

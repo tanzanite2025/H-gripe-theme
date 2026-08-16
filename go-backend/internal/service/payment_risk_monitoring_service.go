@@ -32,9 +32,38 @@ type PaymentRiskEventInput struct {
 	Metadata          map[string]string
 }
 
+type PaymentRiskCheckoutDecisionInput struct {
+	Provider           string
+	OrderID            *uint
+	ProviderPaymentID  string
+	Mode               string
+	Strategy           string
+	ExemptionCandidate bool
+	RiskLevel          string
+	RiskScore          int
+	PortfolioRiskLevel string
+	Reasons            []string
+	Amount             float64
+	Currency           string
+	OccurredAt         time.Time
+}
+
 type PaymentRiskReport struct {
 	Snapshot *paymentdomain.PaymentRiskSnapshot `json:"snapshot"`
 	Reasons  []string                           `json:"reasons"`
+}
+
+type PaymentRiskMonitoringPolicyView struct {
+	WindowDays                  int     `json:"window_days"`
+	MinimumSuccessfulPayments   int     `json:"minimum_successful_payments"`
+	WarningDisputeActivityRate  float64 `json:"warning_dispute_activity_rate"`
+	CriticalDisputeActivityRate float64 `json:"critical_dispute_activity_rate"`
+	WarningEarlyFraudRate       float64 `json:"warning_early_fraud_rate"`
+	CriticalEarlyFraudRate      float64 `json:"critical_early_fraud_rate"`
+	WarningRefundRate           float64 `json:"warning_refund_rate"`
+	CriticalRefundRate          float64 `json:"critical_refund_rate"`
+	AutoStepUpEnabled           bool    `json:"auto_step_up_enabled"`
+	AlertingEnabled             bool    `json:"alerting_enabled"`
 }
 
 type PaymentRiskMonitoringService struct {
@@ -72,6 +101,24 @@ func (s *PaymentRiskMonitoringService) ConfigureAlerting(enabled bool) {
 
 func (s *PaymentRiskMonitoringService) AlertingEnabled() bool {
 	return s != nil && s.alertingEnabled
+}
+
+func (s *PaymentRiskMonitoringService) PolicyView() PaymentRiskMonitoringPolicyView {
+	if s == nil {
+		return PaymentRiskMonitoringPolicyView{}
+	}
+	return PaymentRiskMonitoringPolicyView{
+		WindowDays:                  s.config.WindowDays,
+		MinimumSuccessfulPayments:   s.config.MinimumSuccessfulPayments,
+		WarningDisputeActivityRate:  s.config.WarningDisputeActivityRate,
+		CriticalDisputeActivityRate: s.config.CriticalDisputeActivityRate,
+		WarningEarlyFraudRate:       s.config.WarningEarlyFraudRate,
+		CriticalEarlyFraudRate:      s.config.CriticalEarlyFraudRate,
+		WarningRefundRate:           s.config.WarningRefundRate,
+		CriticalRefundRate:          s.config.CriticalRefundRate,
+		AutoStepUpEnabled:           s.config.AutoStepUpEnabled,
+		AlertingEnabled:             s.alertingEnabled,
+	}
 }
 
 func (s *PaymentRiskMonitoringService) RecordEvent(input PaymentRiskEventInput) error {
@@ -132,6 +179,57 @@ func (s *PaymentRiskMonitoringService) RecordEvent(input PaymentRiskEventInput) 
 	})
 }
 
+func (s *PaymentRiskMonitoringService) RecordCheckoutDecision(input PaymentRiskCheckoutDecisionInput) error {
+	if !s.Enabled() {
+		return nil
+	}
+	provider := strings.ToLower(strings.TrimSpace(input.Provider))
+	if provider == "" {
+		return errors.New("payment risk provider is required")
+	}
+	providerPaymentID := strings.TrimSpace(input.ProviderPaymentID)
+	if providerPaymentID == "" {
+		return errors.New("payment risk checkout provider payment id is required")
+	}
+	occurredAt := input.OccurredAt
+	if occurredAt.IsZero() {
+		occurredAt = time.Now().UTC()
+	}
+	reasonsJSON := encodePaymentRiskReasons(input.Reasons)
+	mode := strings.ToLower(strings.TrimSpace(input.Mode))
+	if mode == "" {
+		mode = "automatic"
+	}
+	strategy := strings.TrimSpace(input.Strategy)
+	if strategy == "" {
+		strategy = "configured"
+	}
+	riskLevel := strings.TrimSpace(input.RiskLevel)
+	if riskLevel == "" {
+		riskLevel = "normal"
+	}
+	portfolioRiskLevel := strings.TrimSpace(input.PortfolioRiskLevel)
+	if portfolioRiskLevel == "" {
+		portfolioRiskLevel = "normal"
+	}
+
+	return s.repo.UpsertPaymentRiskCheckoutDecision(&paymentdomain.PaymentRiskCheckoutDecision{
+		Provider:           provider,
+		OrderID:            input.OrderID,
+		ProviderPaymentID:  providerPaymentID,
+		Mode:               mode,
+		Strategy:           strategy,
+		ExemptionCandidate: input.ExemptionCandidate,
+		RiskLevel:          riskLevel,
+		RiskScore:          input.RiskScore,
+		PortfolioRiskLevel: portfolioRiskLevel,
+		ReasonsJSON:        reasonsJSON,
+		Amount:             input.Amount,
+		Currency:           strings.ToUpper(strings.TrimSpace(input.Currency)),
+		OccurredAt:         occurredAt.UTC(),
+	})
+}
+
 func (s *PaymentRiskMonitoringService) RecomputeProvider(ctx context.Context, provider string, now time.Time) (*PaymentRiskReport, error) {
 	if !s.Enabled() {
 		return nil, nil
@@ -162,6 +260,10 @@ func (s *PaymentRiskMonitoringService) RecomputeProvider(ctx context.Context, pr
 		EarlyFraudWarningCount:  counts.EarlyFraudWarningCount,
 		RefundCount:             counts.RefundCount,
 		RefundAmount:            counts.RefundAmount,
+		CheckoutAttemptCount:    counts.CheckoutAttemptCount,
+		ThreeDSUpgradeCount:     counts.ThreeDSUpgradeCount,
+		ThreeDSChallengeCount:   counts.ThreeDSChallengeCount,
+		ThreeDSExemptionCount:   counts.ThreeDSExemptionCount,
 	}, now)
 	if _, err := s.repo.CreatePaymentRiskSnapshotWithAlert(snapshot, s.alertingEnabled); err != nil {
 		return nil, fmt.Errorf("store payment risk snapshot: %w", err)

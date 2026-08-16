@@ -20,6 +20,10 @@ type PaymentRiskMetrics struct {
 	EarlyFraudWarningCount  int64
 	RefundCount             int64
 	RefundAmount            float64
+	CheckoutAttemptCount    int64
+	ThreeDSUpgradeCount     int64
+	ThreeDSChallengeCount   int64
+	ThreeDSExemptionCount   int64
 }
 
 type PaymentRiskCheckoutPolicy struct {
@@ -47,6 +51,10 @@ func (p paymentRiskPolicy) Evaluate(metrics PaymentRiskMetrics, computedAt time.
 		EarlyFraudWarningCount:  metrics.EarlyFraudWarningCount,
 		RefundCount:             metrics.RefundCount,
 		RefundAmount:            metrics.RefundAmount,
+		CheckoutAttemptCount:    metrics.CheckoutAttemptCount,
+		ThreeDSUpgradeCount:     metrics.ThreeDSUpgradeCount,
+		ThreeDSChallengeCount:   metrics.ThreeDSChallengeCount,
+		ThreeDSExemptionCount:   metrics.ThreeDSExemptionCount,
 		Level:                   paymentdomain.PaymentRiskLevelNormal,
 		RecommendedAction:       "continue_monitoring",
 		ComputedAt:              computedAt,
@@ -57,6 +65,9 @@ func (p paymentRiskPolicy) Evaluate(metrics PaymentRiskMetrics, computedAt time.
 		snapshot.DisputeActivityRate = float64(metrics.DisputeCount) / denominator
 		snapshot.EarlyFraudWarningRate = float64(metrics.EarlyFraudWarningCount) / denominator
 		snapshot.RefundRate = float64(metrics.RefundCount) / denominator
+	}
+	if metrics.CheckoutAttemptCount > 0 {
+		snapshot.ThreeDSUpgradeRate = float64(metrics.ThreeDSUpgradeCount) / float64(metrics.CheckoutAttemptCount)
 	}
 
 	// A small sample should remain visible but must not open the circuit based

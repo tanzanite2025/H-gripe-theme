@@ -29,7 +29,7 @@ func TestRimTemplateRenameUpMigrationContract(t *testing.T) {
 		"slug = 'carbon_rim'",
 		"slug = 'rim'",
 		"name = 'Rim'",
-		"product_type_translations",
+		"product_specification_template_translations",
 		"BTRIM(name) = 'Carbon Rim'",
 	} {
 		if !strings.Contains(sql, fragment) {
@@ -45,7 +45,7 @@ func TestRimTemplateRenameDownMigrationContract(t *testing.T) {
 		"slug = 'rim'",
 		"slug = 'carbon_rim'",
 		"name = 'Carbon Rim'",
-		"product_type_translations",
+		"product_specification_template_translations",
 		"BTRIM(name) = 'Rim'",
 	} {
 		if !strings.Contains(sql, fragment) {

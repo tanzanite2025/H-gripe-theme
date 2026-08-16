@@ -29,6 +29,13 @@ type PrivateObjectUploader interface {
 	UploadWithPrefixPrivate(ctx context.Context, file *multipart.FileHeader, prefix string) (string, error)
 }
 
+// CacheControlledObjectUploader is an optional capability for immutable,
+// first-party public objects. It keeps cache policy at the storage boundary
+// without making unrelated uploads inherit long-lived browser/CDN caching.
+type CacheControlledObjectUploader interface {
+	UploadWithPrefixAndCacheControl(ctx context.Context, file *multipart.FileHeader, prefix string, cacheControl string) (string, error)
+}
+
 type StoredObject struct {
 	ReadCloser io.ReadCloser
 	Name       string
@@ -143,6 +150,11 @@ func (s *localStorage) UploadWithPrefix(ctx context.Context, file *multipart.Fil
 
 	// 返回文件 URL
 	return s.GetURL(filename), nil
+}
+
+func (s *localStorage) UploadWithPrefixAndCacheControl(ctx context.Context, file *multipart.FileHeader, prefix string, _ string) (string, error) {
+	// Local upload responses set the policy in uploads_route.go.
+	return s.UploadWithPrefix(ctx, file, prefix)
 }
 
 func (s *localStorage) UploadWithPrefixPrivate(ctx context.Context, file *multipart.FileHeader, prefix string) (string, error) {

@@ -10,7 +10,10 @@ import (
 	"commerce-platform/internal/repository"
 )
 
-var ErrInvalidOpsProjectBinding = errors.New("invalid operations project binding")
+var (
+	ErrInvalidOpsProjectBinding     = errors.New("invalid operations project binding")
+	ErrInvalidOpsProjectEnvironment = errors.New("invalid operations project environment")
+)
 
 type OpsProjectBindingInput struct {
 	Name                    string `json:"name"`
@@ -56,10 +59,18 @@ func NewOpsProjectBindingService(
 }
 
 func (s *OpsProjectBindingService) List() ([]ops.ProjectBindingView, error) {
+	return s.ListForEnvironment("")
+}
+
+func (s *OpsProjectBindingService) ListForEnvironment(environment string) ([]ops.ProjectBindingView, error) {
 	if s == nil || s.repo == nil {
 		return nil, errors.New("operations project service is not configured")
 	}
-	return s.repo.List()
+	environment, err := normalizeOpsProjectEnvironment(environment)
+	if err != nil {
+		return nil, err
+	}
+	return s.repo.ListByEnvironment(environment)
 }
 
 func (s *OpsProjectBindingService) Get(id uint) (*ops.ProjectBindingView, error) {
@@ -87,7 +98,7 @@ func (s *OpsProjectBindingService) Create(input OpsProjectBindingInput) (*ops.Pr
 	if err := validateProjectVPSBinding(record.Environment, *vps); err != nil {
 		return nil, err
 	}
-	if err := s.validateProjectConnector(record.ConnectorID, record.Environment); err != nil {
+	if err := s.validateProjectConnector(record.ConnectorID, *vps, record.Environment); err != nil {
 		return nil, err
 	}
 	if existing, err := s.repo.FindByName(record.Name); err == nil && existing != nil {
@@ -127,7 +138,7 @@ func (s *OpsProjectBindingService) Update(id uint, input OpsProjectBindingInput)
 	if err := validateProjectVPSBinding(record.Environment, *vps); err != nil {
 		return nil, err
 	}
-	if err := s.validateProjectConnector(record.ConnectorID, record.Environment); err != nil {
+	if err := s.validateProjectConnector(record.ConnectorID, *vps, record.Environment); err != nil {
 		return nil, err
 	}
 	if other, err := s.repo.FindByName(record.Name); err == nil && other != nil && other.ID != id {
@@ -266,7 +277,14 @@ func validateProjectVPSBinding(environment string, vps ops.VPSBinding) error {
 	return nil
 }
 
-func (s *OpsProjectBindingService) validateProjectConnector(connectorID *uint, environment string) error {
+func (s *OpsProjectBindingService) validateProjectConnector(
+	connectorID *uint,
+	vps ops.VPSBinding,
+	environment string,
+) error {
+	if connectorID == nil || *connectorID == 0 {
+		connectorID = vps.ConnectorID
+	}
 	if connectorID == nil || *connectorID == 0 {
 		return nil
 	}
@@ -276,12 +294,12 @@ func (s *OpsProjectBindingService) validateProjectConnector(connectorID *uint, e
 	connector, err := s.connectorRepo.FindByID(*connectorID)
 	if err != nil {
 		if repository.IsRecordNotFound(err) {
-			return fmt.Errorf("%w: project connector does not exist", ErrInvalidOpsProjectBinding)
+			return fmt.Errorf("%w: effective project connector does not exist", ErrInvalidOpsProjectBinding)
 		}
 		return err
 	}
 	if connector.Provider != ops.ConnectorProviderHostinger {
-		return fmt.Errorf("%w: project connector must be Hostinger", ErrInvalidOpsProjectBinding)
+		return fmt.Errorf("%w: effective project connector must be Hostinger", ErrInvalidOpsProjectBinding)
 	}
 	if connector.Environment != "" && connector.Environment != environment {
 		return fmt.Errorf(
@@ -327,4 +345,20 @@ func parseOpsOptionalTime(raw string) (*time.Time, error) {
 		}
 	}
 	return nil, errors.New("invalid time")
+}
+
+func normalizeOpsProjectEnvironment(environment string) (string, error) {
+	environment = strings.ToLower(strings.TrimSpace(environment))
+	if environment == "" {
+		return "", nil
+	}
+	switch environment {
+	case ops.ProjectEnvironmentProduction,
+		ops.ProjectEnvironmentStaging,
+		ops.ProjectEnvironmentTest,
+		ops.ProjectEnvironmentLocal:
+		return environment, nil
+	default:
+		return "", fmt.Errorf("%w: %s", ErrInvalidOpsProjectEnvironment, environment)
+	}
 }

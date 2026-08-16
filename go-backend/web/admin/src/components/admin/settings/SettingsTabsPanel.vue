@@ -258,6 +258,14 @@ interface APISettings {
   time_api_default_timezone: string
   time_api_refresh_minutes: number
   time_api_key_ref: string
+  customs_lookup_us_hts_enabled: boolean | string | number
+  customs_lookup_us_hts_endpoint: string
+  customs_lookup_us_hts_api_key: string
+  customs_lookup_us_hts_api_key_header: string
+  customs_lookup_uk_trade_tariff_enabled: boolean | string | number
+  customs_lookup_uk_trade_tariff_endpoint: string
+  customs_lookup_uk_trade_tariff_api_key: string
+  customs_lookup_uk_trade_tariff_api_key_header: string
 }
 
 const props = defineProps({

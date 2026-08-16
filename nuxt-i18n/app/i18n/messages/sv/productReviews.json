@@ -1,0 +1,17 @@
+{
+  "eyebrow": "Kundfeedback",
+  "title": "Betyg och recensioner",
+  "summaryLabel": "{rating} av 5 från {count} recensioner",
+  "reviewCount": "{count} recensioner",
+  "loading": "Laddar recensioner...",
+  "loadError": "Recensionerna kunde inte laddas.",
+  "retry": "Försök igen",
+  "empty": "Det finns inga godkända recensioner ännu.",
+  "ratingLabel": "{rating} av 5 stjärnor",
+  "imageAlt": "Bild från kundrecension",
+  "verifiedPurchase": "Verifierat köp",
+  "helpfulCount": "{count} tyckte att detta var hjälpsamt",
+  "storeReply": "Butikens svar",
+  "loadingMore": "Laddar fler...",
+  "loadMore": "Ladda fler recensioner"
+}

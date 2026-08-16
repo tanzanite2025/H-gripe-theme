@@ -121,7 +121,7 @@ The recommended release path is a repository clone on the VPS:
 ./deploy.sh
 ```
 
-The script fetches `origin/master`, resolves the full commit SHA, waits for all four matching GHCR images, validates Compose, runs the database migration, renders the edge configuration from the migrated database, validates the generated artifacts, and only then updates the shared gateway. Run it immediately after a push or after GitHub Actions completes.
+The script fetches `origin/master`, resolves the full commit SHA, waits for all four matching GHCR images, validates Compose, force-recreates and runs the database migration job, force-recreates the edge configuration job from the migrated database, validates the generated artifacts, and only then updates the shared gateway. Run it immediately after a push or after GitHub Actions completes.
 
 In Hostinger Docker Manager create:
 
@@ -151,6 +151,37 @@ Expected services:
 The long-running application services must become Healthy. `migrate` and
 `edge-config` are one-shot services and must exit successfully. Only the
 `shared-edge` gateway may publish host ports.
+
+### Database Migration Release Gate
+
+Every production release executes the `migrate` service before any application
+container is allowed to start or update. It is the only release-mode schema
+writer; API containers run with `DB_AUTO_MIGRATE=false` and must never be used
+to apply a schema change opportunistically.
+
+The `migrate` job uses the same API image as the release and waits for
+PostgreSQL health. It is a direct `service_completed_successfully` dependency
+of `edge-config`, `api`, `storefront`, `admin`, and `web`. A failed migration
+therefore blocks the API, both frontends, the shared web entrypoint, and
+generated edge configuration from rolling forward.
+
+There are two supported release mechanisms, with one migration contract:
+
+1. `deploy.sh` force-recreates and waits for `migrate` on every release before
+   it starts application services. It also force-recreates `edge-config` after
+   the migration completes.
+2. Hostinger Docker Manager and MCP Project Update must update the complete
+   `commerce-platform` Compose project, never an individual service. The
+   project pulls the release API image and Compose runs the same one-shot
+   migration gate before creating any dependent service.
+
+An image publication builds all four production images for every `master`
+commit, including the API image used by `migrate`. This ensures a normal
+Hostinger Project Update receives a new release image and re-runs the job even
+for a storefront-, admin-, or documentation-only release. Do not manually
+start `api`, `storefront`, `admin`, or `web` to bypass a failed migration, and
+do not use `go run`, `DB_AUTO_MIGRATE=true`, or an ad hoc SQL session as a
+substitute for the release gate.
 
 ## Release Boundary Evidence
 
@@ -216,6 +247,37 @@ GET /uploads/<known-file>      -> static file response
 WebSocket Upgrade              -> reaches customer-service authentication
 ```
 
+### Customer-Service Realtime
+
+Customer-service browser delivery is WebSocket-only. The production environment
+must keep the durable relay paired with the SQL Outbox dispatcher on every API
+replica:
+
+```text
+CUSTOMER_SERVICE_REALTIME_ENABLED=true
+WORKER_OUTBOX_DISPATCH_ENABLED=true
+WORKER_OUTBOX_DISPATCH_INTERVAL_SECONDS=2
+```
+
+All API replicas must share the project Redis deployment and retain the Stream
+name `customer_service:{realtime}:v1` unless the hash-tagged name is changed as
+one coordinated deployment. `WORKER_ENABLED` controls unrelated Asynq workers;
+it does not enable the SQL Outbox scheduler.
+
+The bundled Nginx `/api/` routes already forward `Upgrade`, `Connection`,
+cookies, `Host`, and `X-Forwarded-Proto` to the API with a 120-second read
+timeout. Preserve those directives in generated or hand-maintained edge
+changes. The API emits WebSocket pings every 50 seconds, so any upstream idle
+timeout must remain above that heartbeat interval.
+
+Scrape `/metrics` privately and alert on non-zero
+`commerce_platform_customer_service_realtime_outbox_events{status="dead_letter"}`;
+also investigate sustained `failed`/`pending` counts, Relay read failures,
+WebSocket capacity rejections, and outbound queue overflows. Before each
+horizontal-scale release, perform the two-instance write/restart/reconnect/HTTP
+reconciliation drill documented in
+`go-backend/docs/CUSTOMER_SERVICE_RELIABLE_REALTIME_ARCHITECTURE.md`.
+
 Also verify:
 
 - Customer login, refresh, logout, and CSRF behavior.
@@ -269,8 +331,45 @@ If a local helper command is unavailable, for example Windows blocks the bundled
 
 Rollback:
 
-1. Run `DEPLOY_REF=<previous-full-commit> ./deploy.sh` using a previously published deployment commit.
-2. Re-run health, login, upload, and checkout smoke tests.
+The admin deployment workflow can execute the rollback after a production
+workflow enters `rollback_required`, but only after the backend has been
+configured with a dedicated SSH key and host verification file. The executor
+does not accept a host, user, workdir, or shell command from the browser.
+
+Required backend environment:
+
+```text
+OPS_DEPLOY_ROLLBACK_ENABLED=true
+OPS_DEPLOY_ROLLBACK_SSH_HOST=srv1834903.hstgr.cloud
+OPS_DEPLOY_ROLLBACK_SSH_PORT=22
+OPS_DEPLOY_ROLLBACK_SSH_USER=deploy
+OPS_DEPLOY_ROLLBACK_SSH_PRIVATE_KEY_PATH=/run/secrets/commerce-platform-deploy.key
+OPS_DEPLOY_ROLLBACK_SSH_KNOWN_HOSTS_PATH=/run/secrets/commerce-platform-known_hosts
+OPS_DEPLOY_ROLLBACK_SSH_WORKDIR=/srv/commerce-platform
+OPS_DEPLOY_ROLLBACK_SSH_TIMEOUT_SECONDS=900
+```
+
+The configured host must match the production VPS binding (`srv1834903.hstgr.cloud`
+or `2.25.85.201`). The private key and `known_hosts` file must be readable by
+the backend process, and `known_hosts` must contain the exact SSH host key.
+Keep both files outside Git and outside browser-visible settings.
+
+Admin rollback flow:
+
+1. Confirm the workflow is `rollback_required` and that its rollback point is a full 40-character Commit SHA.
+2. Confirm the project name, VPS binding, target host, and impact in the confirmation dialog.
+3. With `ops:deploy:rollback`, choose `执行回滚`. The backend runs the fixed command `cd -- <configured-workdir> && DEPLOY_REF=<full-sha> ./deploy.sh` over SSH.
+4. The workflow re-syncs the Hostinger project, runs DNS/HTTP/HTTPS health checks, purges bound Cloudflare hosts, and records the remote operation ID and bounded command output.
+5. If SSH, verification, or cache purge fails, the workflow remains `rollback_required` with the failed step and error evidence. A successful SSH command is not repeated when the next action only needs verification.
+
+Manual fallback:
+
+```bash
+DEPLOY_REF=<previous-full-commit> ./deploy.sh
+```
+
+Use a previously published deployment commit and then re-run health, login,
+upload, and checkout smoke tests.
 
 Database migrations need their own rollback plan. Image rollback cannot reverse an incompatible schema migration.
 

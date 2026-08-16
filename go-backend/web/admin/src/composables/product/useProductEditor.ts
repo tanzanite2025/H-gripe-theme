@@ -1,7 +1,7 @@
 import { computed, reactive, ref } from 'vue'
 import { toast } from 'vue-sonner'
 import productApi from '@/api/products'
-import productTypeApi from '@/api/productTypes'
+import productSpecificationTemplateApi from '@/api/productSpecificationTemplates'
 import { useProductMediaManager } from '@/composables/product/useProductMediaManager'
 import { buildProductMediaFormValues } from '@/lib/productMedia'
 import axios from '@/utils/axios'
@@ -20,7 +20,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     return /^[A-Z]{3}$/.test(code) ? code : defaultPrimaryCurrency
   }
 
-  const productTypes = ref<any[]>([])
+  const productSpecTemplates = ref<any[]>([])
   const primaryCurrency = ref(defaultPrimaryCurrency)
   const currencyPolicyLoaded = ref(false)
   const dialogVisible = ref(false)
@@ -30,11 +30,17 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
 
   const productForm = reactive<ProductFormRecord>({
     id: null,
-    product_type_id: null,
+    product_specification_template_id: null,
+    product_category_id: null,
     brand_id: null,
     shipping_template_id: null,
     after_sales_template_id: null,
     packaging_template_id: null,
+    customs_classification_profile_id: null,
+    hs_code: '',
+    cn_code: '',
+    country_of_origin: '',
+    customs_description: '',
     name: '',
     slug: '',
     description: '',
@@ -64,14 +70,15 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     normalizeFormMedia
   } = useProductMediaManager(productForm, { clearFieldError })
 
-  const selectedProductType = computed(() => productTypes.value.find((type) => type.id === productForm.product_type_id) || null)
-  const selectedSpecDefinitions = computed(() => (selectedProductType.value?.spec_definitions || []).filter((spec: any) => !spec.is_variant_option))
-  const variantSpecDefinitions = computed(() => (selectedProductType.value?.spec_definitions || []).filter((spec: any) => spec.is_variant_option))
+  const selectedProductSpecTemplate = computed(() => productSpecTemplates.value.find((template) => template.id === productForm.product_specification_template_id) || null)
+  const selectedSpecDefinitions = computed(() => (selectedProductSpecTemplate.value?.spec_definitions || []).filter((spec: any) => !spec.is_variant_option))
+  const variantSpecDefinitions = computed(() => (selectedProductSpecTemplate.value?.spec_definitions || []).filter((spec: any) => spec.is_variant_option))
   const defaultVariantIndex = computed(() => {
     const index = productForm.variants.findIndex((variant: any) => variant.is_default)
     return index >= 0 ? index : 0
   })
-  const productTypeSelectValue = computed(() => productForm.product_type_id == null ? '__none__' : String(productForm.product_type_id))
+  const productSpecTemplateSelectValue = computed(() => productForm.product_specification_template_id == null ? '__none__' : String(productForm.product_specification_template_id))
+  const productCategorySelectValue = computed(() => productForm.product_category_id == null ? '__none__' : String(productForm.product_category_id))
   const brandSelectValue = computed(() => productForm.brand_id == null ? '__none__' : String(productForm.brand_id))
   const shippingTemplateSelectValue = computed(() => productForm.shipping_template_id == null ? '__none__' : String(productForm.shipping_template_id))
   const afterSalesTemplateSelectValue = computed(() => productForm.after_sales_template_id == null ? '__none__' : String(productForm.after_sales_template_id))
@@ -118,9 +125,24 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     productForm.brand_id = value === '__none__' ? null : Number(value)
     clearFieldError('brand_id')
   }
+  const setProductCategory = (value: string) => {
+    productForm.product_category_id = value === '__none__' ? null : Number(value)
+    clearFieldError('product_category_id')
+  }
   const setProductInformationTemplate = (field: string, value: string) => {
     productForm[field] = value === '__none__' ? null : Number(value)
     clearFieldError(field)
+  }
+  const applyCustomsClassification = (profile: Record<string, any>) => {
+    productForm.customs_classification_profile_id = profile?.id ? Number(profile.id) : null
+    productForm.hs_code = String(profile?.hs_code || '')
+    productForm.cn_code = String(profile?.cn_code || '')
+    productForm.country_of_origin = String(profile?.country_of_origin || '').toUpperCase()
+    productForm.customs_description = String(profile?.customs_description || '')
+    ;['hs_code', 'cn_code', 'country_of_origin', 'customs_description'].forEach(clearFieldError)
+  }
+  const clearCustomsClassification = () => {
+    productForm.customs_classification_profile_id = null
   }
   const primaryPriceCurrency = () => validCurrencyCodeOrDefault(primaryCurrency.value)
 
@@ -350,11 +372,17 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
 
   const buildProductPayload = () => ({
     id: productForm.id,
-    product_type_id: productForm.product_type_id,
+    product_specification_template_id: productForm.product_specification_template_id,
+    product_category_id: productForm.product_category_id,
     brand_id: productForm.brand_id,
     shipping_template_id: productForm.shipping_template_id,
     after_sales_template_id: productForm.after_sales_template_id,
     packaging_template_id: productForm.packaging_template_id,
+    customs_classification_profile_id: productForm.customs_classification_profile_id || null,
+    hs_code: String(productForm.hs_code || '').trim(),
+    cn_code: String(productForm.cn_code || '').trim(),
+    country_of_origin: String(productForm.country_of_origin || '').trim().toUpperCase(),
+    customs_description: String(productForm.customs_description || '').trim(),
     name: productForm.name.trim(),
     slug: productForm.slug.trim(),
     description: productForm.description,
@@ -375,6 +403,10 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     if (!payload.slug) formErrors.slug = '请输入 URL slug'
     if (!payload.locale) formErrors.locale = '请选择语言'
     if (!/^[A-Z]{3}$/.test(payload.currency)) formErrors.currency = '请选择商品主基准币种'
+    if (payload.hs_code && !/^\d{6}$/.test(payload.hs_code)) formErrors.hs_code = 'HS Code 必须是 6 位数字'
+    if (payload.cn_code && !/^\d{8}$/.test(payload.cn_code)) formErrors.cn_code = 'CN Code 必须是 8 位数字'
+    if (payload.country_of_origin && !/^[A-Z]{2}$/.test(payload.country_of_origin)) formErrors.country_of_origin = '请输入 2 位国家代码，例如 CN'
+    if (payload.customs_description.length > 255) formErrors.customs_description = '英文报关品名不能超过 255 个字符'
     selectedSpecDefinitions.value.forEach((spec: any) => {
       const value = payload.specs[spec.slug]
       if (spec.is_required && (value === undefined || value === null || value === '')) {
@@ -396,12 +428,13 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     return true
   }
 
-  const handleProductTypeSelect = (value: string) => {
-    const nextProductTypeID = value === '__none__' ? null : Number(value)
-    if (productForm.product_type_id === nextProductTypeID) return
+  const handleProductSpecTemplateSelect = (value: string) => {
+    const nextProductSpecTemplateID = value === '__none__' ? null : Number(value)
+    if (productForm.product_specification_template_id === nextProductSpecTemplateID) return
 
     const hadTemplateValues = templateScopedValuesTouched.value
-    productForm.product_type_id = nextProductTypeID
+    productForm.product_specification_template_id = nextProductSpecTemplateID
+    productForm.customs_classification_profile_id = null
     const nextSpecs: Record<string, any> = {}
     selectedSpecDefinitions.value.forEach((spec: any) => {
       if (spec.field_type === 'boolean') nextSpecs[spec.slug] = false
@@ -411,18 +444,24 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     productForm.variant_option_values = []
     clearFormErrors()
     if (hadTemplateValues) {
-      toast.info('已切换产品模板，商品参数和 SKU 选项值已按新模板重置；SKU 价格、重量、库存和媒体已保留。')
+      toast.info('已切换商品规格模板，商品参数和 SKU 选项值已按新模板重置；SKU 价格、重量、库存和媒体已保留。')
     }
   }
 
   const resetForm = () => {
     Object.assign(productForm, {
       id: null,
-      product_type_id: null,
+      product_specification_template_id: null,
+      product_category_id: null,
       brand_id: null,
       shipping_template_id: null,
       after_sales_template_id: null,
       packaging_template_id: null,
+      customs_classification_profile_id: null,
+      hs_code: '',
+      cn_code: '',
+      country_of_origin: '',
+      customs_description: '',
       name: '',
       slug: '',
       description: '',
@@ -440,11 +479,11 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     clearFormErrors()
   }
 
-  const fetchProductTypes = async () => {
+  const fetchProductSpecTemplates = async () => {
     try {
-      productTypes.value = await productTypeApi.list()
+      productSpecTemplates.value = await productSpecificationTemplateApi.list()
     } catch (error) {
-      console.error('Failed to fetch product types:', error)
+      console.error('Failed to fetch product specification templates:', error)
     }
   }
 
@@ -460,21 +499,27 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     let detail = product
     try {
       await fetchPrimaryPricingCurrency()
-      if (productTypes.value.length === 0) await fetchProductTypes()
+      if (productSpecTemplates.value.length === 0) await fetchProductSpecTemplates()
       detail = await productApi.get(product.id)
-      if (detail.product_type && !productTypes.value.some((type) => type.id === detail.product_type.id)) {
-        productTypes.value.push(detail.product_type)
+      if (detail.product_specification_template && !productSpecTemplates.value.some((template) => template.id === detail.product_specification_template.id)) {
+        productSpecTemplates.value.push(detail.product_specification_template)
       }
     } catch (error) {
       toast.warning('获取商品详情失败，已使用列表数据编辑')
     }
     Object.assign(productForm, {
       id: detail.id,
-      product_type_id: detail.product_type_id || detail.product_type?.id || null,
+      product_specification_template_id: detail.product_specification_template_id || detail.product_specification_template?.id || null,
+      product_category_id: detail.product_category_id ?? detail.product_category?.id ?? null,
       brand_id: detail.brand_id ?? detail.brand?.id ?? null,
       shipping_template_id: detail.shipping_template_id ?? null,
       after_sales_template_id: detail.after_sales_template_id ?? detail.after_sales_template?.id ?? null,
       packaging_template_id: detail.packaging_template_id ?? detail.packaging_template?.id ?? null,
+      customs_classification_profile_id: detail.customs_classification_profile_id ?? detail.customs_classification_profile?.id ?? null,
+      hs_code: String(detail.hs_code || ''),
+      cn_code: String(detail.cn_code || ''),
+      country_of_origin: String(detail.country_of_origin || ''),
+      customs_description: String(detail.customs_description || ''),
       name: detail.name || '',
       slug: detail.slug || '',
       description: detail.description || '',
@@ -515,18 +560,19 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
   }
 
   return {
-    productTypes,
+    productSpecTemplates,
     dialogVisible,
     dialogMode,
     submitting,
     formErrors,
     productForm,
     uploadingMedia,
-    selectedProductType,
+    selectedProductSpecTemplate,
     selectedSpecDefinitions,
     variantSpecDefinitions,
     defaultVariantIndex,
-    productTypeSelectValue,
+    productSpecTemplateSelectValue,
+    productCategorySelectValue,
     brandSelectValue,
     shippingTemplateSelectValue,
     afterSalesTemplateSelectValue,
@@ -539,7 +585,10 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     setSpecSelectValue,
     setProductShippingTemplate,
     setProductBrand,
+    setProductCategory,
     setProductInformationTemplate,
+    applyCustomsClassification,
+    clearCustomsClassification,
     clearFieldError,
     addMediaUrl,
     mediaTypeLabel,
@@ -552,8 +601,8 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     removeVariant,
     setDefaultVariant,
     setVariantActive,
-    handleProductTypeSelect,
-    fetchProductTypes,
+    handleProductSpecTemplateSelect,
+    fetchProductSpecTemplates,
     showCreateDialog,
     showEditDialog,
     submitForm

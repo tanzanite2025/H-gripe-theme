@@ -167,20 +167,9 @@ const onKeydown = (event: KeyboardEvent) => {
   }
 }
 
-const onGlobalPopup = (event: Event) => {
-  try {
-    const custom = event as CustomEvent<{ id?: string }>
-    const id = custom?.detail?.id
-    if (id && id !== 'shop-search') {
-      close()
-    }
-  } catch {}
-}
-
 onMounted(() => {
   if (typeof window === 'undefined') return
   window.addEventListener('keydown', onKeydown)
-  window.addEventListener('ui:popup-open', onGlobalPopup as EventListener)
 })
 
 onBeforeUnmount(() => {
@@ -188,7 +177,6 @@ onBeforeUnmount(() => {
   resetPanelDrag()
   if (typeof window === 'undefined') return
   window.removeEventListener('keydown', onKeydown)
-  window.removeEventListener('ui:popup-open', onGlobalPopup as EventListener)
 })
 </script>
 

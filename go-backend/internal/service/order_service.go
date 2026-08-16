@@ -22,12 +22,15 @@ type OrderService struct {
 }
 
 var (
-	ErrOrderNotFound              = errors.New("order not found")
-	ErrOrderDeleteNotAllowed      = errors.New("only cancelled, payment expired, or refunded orders can be deleted")
-	ErrSystemManagedOrderStatus   = errors.New("order status is managed by payment workflow")
-	ErrTrackingNumberRequired     = errors.New("tracking number is required")
-	ErrOrderShippingNotConfigured = errors.New("order shipping service is not configured")
-	ErrOrderNumberNotConfigured   = errors.New("order number generator is not configured")
+	ErrOrderNotFound                     = errors.New("order not found")
+	ErrOrderDeleteNotAllowed             = errors.New("only cancelled, payment expired, or refunded orders can be deleted")
+	ErrSystemManagedOrderStatus          = errors.New("order status is managed by payment workflow")
+	ErrTrackingNumberRequired            = errors.New("tracking number is required")
+	ErrOrderShippingNotConfigured        = errors.New("order shipping service is not configured")
+	ErrOrderNumberNotConfigured          = errors.New("order number generator is not configured")
+	ErrOrderItemNotFound                 = errors.New("order item not found")
+	ErrDeclaredValueInvalid              = errors.New("declared value must be a finite non-negative number")
+	ErrDeclaredValueConfirmationRequired = errors.New("declared value is required when confirming")
 )
 
 func NewOrderService(

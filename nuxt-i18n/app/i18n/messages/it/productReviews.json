@@ -1,0 +1,17 @@
+{
+  "eyebrow": "Feedback dei clienti",
+  "title": "Valutazioni e recensioni",
+  "summaryLabel": "{rating} su 5 da {count} recensioni",
+  "reviewCount": "{count} recensioni",
+  "loading": "Caricamento delle recensioni...",
+  "loadError": "Impossibile caricare le recensioni.",
+  "retry": "Riprova",
+  "empty": "Non ci sono ancora recensioni approvate.",
+  "ratingLabel": "{rating} stelle su 5",
+  "imageAlt": "Immagine della recensione del cliente",
+  "verifiedPurchase": "Acquisto verificato",
+  "helpfulCount": "Utile per {count} persone",
+  "storeReply": "Risposta del negozio",
+  "loadingMore": "Caricamento di altre recensioni...",
+  "loadMore": "Carica altre recensioni"
+}

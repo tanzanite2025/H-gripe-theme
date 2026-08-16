@@ -17,6 +17,7 @@ type GatewayRuntimeStatus struct {
 	Provider              GatewayType `json:"provider"`
 	Label                 string      `json:"label"`
 	Environment           string      `json:"environment"`
+	ThreeDSMode           string      `json:"three_ds_mode,omitempty"`
 	CallbackURL           string      `json:"callback_url"`
 	Configured            bool        `json:"configured"`
 	WebhookConfigured     bool        `json:"webhook_configured"`
@@ -96,6 +97,7 @@ func buildGatewayRuntimeStatus(gatewayType GatewayType, baseURL string) GatewayR
 		status.Configured = envAnySet("STRIPE_API_KEY", "STRIPE_SECRET_KEY")
 		status.WebhookConfigured = envSet("STRIPE_WEBHOOK_SECRET")
 		status.ProductionReady = status.Configured && status.WebhookConfigured
+		status.ThreeDSMode = NormalizeThreeDSecureMode(config.ThreeDSecure)
 		status.DocumentationLabel = "Stripe webhook signatures"
 		status.DocumentationURL = "https://docs.stripe.com/webhooks/signature"
 	case GatewayPayPal:
@@ -233,7 +235,10 @@ func applySecureGatewayStatus(status *GatewayRuntimeStatus, secureStatus SecureG
 	if secureStatus.Environment != "" {
 		status.Environment = secureStatus.Environment
 	}
-	status.RequiredFields = SecureGatewayCredentialFields(status.Provider)
+	if status.Provider == GatewayStripe {
+		status.ThreeDSMode = NormalizeThreeDSecureMode(secureStatus.ThreeDSMode)
+	}
+	status.RequiredFields = SecureGatewayRequiredCredentialFields(status.Provider)
 	status.ConfiguredFields = secureStatus.ConfiguredFields
 	status.Missing = missingSecureCredentialFields(status.Provider, secureStatus.ConfiguredFields)
 	status.Warnings = nil
@@ -268,7 +273,7 @@ func missingSecureCredentialFields(provider GatewayType, configured []string) []
 		return missingWechatSecureCredentialFields(configured)
 	}
 	missing := []string{}
-	for _, field := range SecureGatewayCredentialFields(provider) {
+	for _, field := range SecureGatewayRequiredCredentialFields(provider) {
 		if !containsString(configured, field) {
 			missing = append(missing, field)
 		}

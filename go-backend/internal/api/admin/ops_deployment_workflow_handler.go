@@ -282,6 +282,84 @@ func (h *OpsDeploymentWorkflowHandler) ExecuteDryRun(c *gin.Context) {
 	h.Execute(c)
 }
 
+func (h *OpsDeploymentWorkflowHandler) RetryFailedStep(c *gin.Context) {
+	startedAt := adminAuditStartedAt()
+	id, err := parseUintParam(c, "id", "invalid deployment workflow id")
+	if err != nil {
+		return
+	}
+	if h == nil || h.service == nil {
+		apierror.RespondInternalError(c, errors.New("operations deployment workflow service is not configured"))
+		return
+	}
+	if workflow, getErr := h.service.Get(id); getErr == nil &&
+		workflow.Mode == ops.DeploymentWorkflowModeProduction &&
+		!workflowActorHasPermission(c, auth.PermOpsDeployExecute) {
+		apierror.RespondForbidden(c)
+		return
+	}
+	workflow, err := h.service.RetryFailedStep(c.Request.Context(), id)
+	if err != nil {
+		h.recordAudit(c, adminAuditEvent{
+			StartedAt:    startedAt,
+			Action:       adminAuditActionExecute,
+			Resource:     adminAuditResourceOpsDeploymentWorkflow,
+			ResourceID:   id,
+			Status:       adminAuditStatusFailed,
+			ErrorMessage: err.Error(),
+		})
+		respondOpsDeploymentWorkflowError(c, err)
+		return
+	}
+	h.recordAudit(c, adminAuditEvent{
+		StartedAt:  startedAt,
+		Action:     adminAuditActionExecute,
+		Resource:   adminAuditResourceOpsDeploymentWorkflow,
+		ResourceID: id,
+		Status:     adminAuditStatusSuccess,
+		NewValue:   workflowAuditValue(workflow),
+	})
+	response.Success(c, workflow)
+}
+
+func (h *OpsDeploymentWorkflowHandler) Rollback(c *gin.Context) {
+	startedAt := adminAuditStartedAt()
+	id, err := parseUintParam(c, "id", "invalid deployment workflow id")
+	if err != nil {
+		return
+	}
+	if h == nil || h.service == nil {
+		apierror.RespondInternalError(c, errors.New("operations deployment workflow service is not configured"))
+		return
+	}
+	if !workflowActorHasPermission(c, auth.PermOpsDeployRollback) {
+		apierror.RespondForbidden(c)
+		return
+	}
+	workflow, err := h.service.Rollback(c.Request.Context(), id)
+	if err != nil {
+		h.recordAudit(c, adminAuditEvent{
+			StartedAt:    startedAt,
+			Action:       adminAuditActionRollback,
+			Resource:     adminAuditResourceOpsDeploymentWorkflow,
+			ResourceID:   id,
+			Status:       adminAuditStatusFailed,
+			ErrorMessage: err.Error(),
+		})
+		respondOpsDeploymentWorkflowError(c, err)
+		return
+	}
+	h.recordAudit(c, adminAuditEvent{
+		StartedAt:  startedAt,
+		Action:     adminAuditActionRollback,
+		Resource:   adminAuditResourceOpsDeploymentWorkflow,
+		ResourceID: id,
+		Status:     adminAuditStatusSuccess,
+		NewValue:   workflowAuditValue(workflow),
+	})
+	response.Success(c, workflow)
+}
+
 func (h *OpsDeploymentWorkflowHandler) Cancel(c *gin.Context) {
 	startedAt := adminAuditStartedAt()
 	id, err := parseUintParam(c, "id", "invalid deployment workflow id")
@@ -292,7 +370,16 @@ func (h *OpsDeploymentWorkflowHandler) Cancel(c *gin.Context) {
 		apierror.RespondInternalError(c, errors.New("operations deployment workflow service is not configured"))
 		return
 	}
-	workflow, err := h.service.Cancel(id)
+	workflow, err := h.service.Get(id)
+	if err != nil {
+		respondOpsDeploymentWorkflowError(c, err)
+		return
+	}
+	if !workflowActorCanCancel(c, workflow.Mode) {
+		apierror.RespondForbidden(c)
+		return
+	}
+	workflow, err = h.service.Cancel(id)
 	if err != nil {
 		h.recordAudit(c, adminAuditEvent{
 			StartedAt:    startedAt,
@@ -329,8 +416,15 @@ func respondOpsDeploymentWorkflowError(c *gin.Context, err error) {
 		apierror.RespondNotFound(c, "Operations deployment workflow")
 	case errors.Is(err, service.ErrOpsDeploymentWorkflowInvalidTransition),
 		errors.Is(err, service.ErrOpsDeploymentWorkflowPreflightBlocked),
+		errors.Is(err, service.ErrOpsDeploymentWorkflowStepNotRetryable),
 		errors.Is(err, service.ErrOpsDeploymentWorkflowUnsupportedMode),
 		errors.Is(err, service.ErrOpsDeploymentWorkflowUnsupportedRef),
+		errors.Is(err, service.ErrOpsDeploymentWorkflowProductionEnv),
+		errors.Is(err, service.ErrOpsDeploymentRollbackDisabled),
+		errors.Is(err, service.ErrOpsDeploymentRollbackInvalidConfig),
+		errors.Is(err, service.ErrOpsDeploymentRollbackInvalidTarget),
+		errors.Is(err, service.ErrOpsDeploymentRollbackInvalidRef),
+		errors.Is(err, service.ErrOpsDeploymentRollbackUnsupportedEnv),
 		errors.Is(err, repository.ErrOpsDeploymentWorkflowLockHeld):
 		apierror.RespondConflict(c, err.Error())
 	default:
@@ -368,17 +462,35 @@ func workflowActorHasPermission(c *gin.Context, permission auth.Permission) bool
 	return roleValue != "" && auth.Role(roleValue).HasPermission(permission)
 }
 
+func workflowActorCanCancel(c *gin.Context, mode string) bool {
+	permission, ok := workflowCancelPermission(mode)
+	return ok && workflowActorHasPermission(c, permission)
+}
+
+func workflowCancelPermission(mode string) (auth.Permission, bool) {
+	switch mode {
+	case ops.DeploymentWorkflowModeDryRun:
+		return auth.PermOpsDeployDryRun, true
+	case ops.DeploymentWorkflowModeProduction:
+		return auth.PermOpsDeployExecute, true
+	default:
+		return "", false
+	}
+}
+
 func workflowAuditValue(workflow *ops.DeploymentWorkflowRun) map[string]interface{} {
 	if workflow == nil {
 		return nil
 	}
 	return map[string]interface{}{
-		"id":               workflow.ID,
-		"project_id":       workflow.ProjectID,
-		"project":          workflow.ProjectName,
-		"mode":             workflow.Mode,
-		"status":           workflow.Status,
-		"preflight_status": workflow.PreflightStatus,
-		"requested_ref":    workflow.RequestedRef,
+		"id":                  workflow.ID,
+		"project_id":          workflow.ProjectID,
+		"project":             workflow.ProjectName,
+		"mode":                workflow.Mode,
+		"status":              workflow.Status,
+		"preflight_status":    workflow.PreflightStatus,
+		"requested_ref":       workflow.RequestedRef,
+		"rollback_ref":        workflow.RollbackRef,
+		"remote_operation_id": workflow.RemoteOperationID,
 	}
 }

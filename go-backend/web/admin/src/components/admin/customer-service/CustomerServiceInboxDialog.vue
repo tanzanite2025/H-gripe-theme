@@ -1,17 +1,20 @@
 <template>
   <Dialog :open="open" @update:open="emit('update:open', $event)">
-    <DialogContent size="full" class="gap-0 p-0" @open-auto-focus.prevent>
+    <DialogContent
+      size="full"
+      class="h-[calc(100dvh-1rem)] max-h-[calc(100dvh-1rem)] grid-rows-[auto_minmax(0,1fr)] gap-0 rounded-2xl p-0 sm:h-[min(88dvh,60rem)] sm:max-h-[calc(100dvh-2rem)]"
+      @open-auto-focus.prevent
+    >
       <DialogHeader class="shrink-0 border-b px-5 py-4 pr-14">
         <DialogTitle>{{ title }}</DialogTitle>
-        <DialogDescription>{{ description }}</DialogDescription>
+        <DialogDescription class="sr-only">{{ description }}</DialogDescription>
       </DialogHeader>
 
-      <div class="h-[min(82dvh,58rem)] min-h-[34rem] overflow-hidden p-4">
+      <div class="min-h-0 overflow-hidden p-3 sm:p-4">
         <CustomerServiceInboxWorkbench
           v-if="open"
           :show-header="false"
           :show-stats="false"
-          :show-region-analytics="false"
         />
       </div>
     </DialogContent>

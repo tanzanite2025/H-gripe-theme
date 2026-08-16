@@ -18,7 +18,7 @@
 
 - Current backend version: `contextual-v1`.
 - Candidate products must be active, must have at least one active variant, and must have at least one active variant with stock above zero.
-- `product_detail_bottom` prioritizes products from the same product type and then boosts matching filterable or variant-option specifications.
+- `product_detail_bottom` prioritizes products from the same product specification template and then boosts matching filterable or variant-option specifications.
 - `shop_index_bottom` prioritizes the active category and active search query, then fills with available trending products.
 - The backend returns only real, active, purchasable products. If fewer than five recommendations are returned but the public catalog has more products, the shared loader may fill the remaining slots with other real catalog products. An empty catalog remains empty.
 - Recommendation responses expose `slot` and `reason` for analytics only. Do not show those fields as storefront copy unless a dedicated UX decision is made.

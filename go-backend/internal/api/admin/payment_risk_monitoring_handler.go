@@ -7,6 +7,8 @@ import (
 
 	paymentdomain "commerce-platform/internal/domain/payment"
 	"commerce-platform/internal/pkg/apierror"
+	"commerce-platform/internal/pkg/config"
+	pgateway "commerce-platform/internal/pkg/payment"
 	"commerce-platform/internal/pkg/response"
 	"commerce-platform/internal/service"
 
@@ -19,12 +21,39 @@ var paymentRiskMonitoringProviders = []string{
 }
 
 type PaymentRiskMonitoringHandler struct {
-	monitoring   *service.PaymentRiskMonitoringService
-	auditService paymentAuditRecorder
+	monitoring     *service.PaymentRiskMonitoringService
+	threeDS        *service.PaymentThreeDSPolicyService
+	protection     *service.PaymentProtectionService
+	circuitBreaker *service.PaymentGatewayCircuitBreakerService
+	config         *config.Config
+	runtimeReader  func() pgateway.RuntimeReadiness
+	auditService   paymentAuditRecorder
 }
 
 func NewPaymentRiskMonitoringHandler(monitoring *service.PaymentRiskMonitoringService) *PaymentRiskMonitoringHandler {
 	return &PaymentRiskMonitoringHandler{monitoring: monitoring}
+}
+
+func (h *PaymentRiskMonitoringHandler) ConfigureRiskConfiguration(
+	cfg *config.Config,
+	threeDS *service.PaymentThreeDSPolicyService,
+	protection *service.PaymentProtectionService,
+	circuitBreaker *service.PaymentGatewayCircuitBreakerService,
+) {
+	if h == nil {
+		return
+	}
+	h.config = cfg
+	h.threeDS = threeDS
+	h.protection = protection
+	h.circuitBreaker = circuitBreaker
+}
+
+func (h *PaymentRiskMonitoringHandler) ConfigureGatewayRuntimeReader(reader func() pgateway.RuntimeReadiness) {
+	if h == nil {
+		return
+	}
+	h.runtimeReader = reader
 }
 
 func (h *PaymentRiskMonitoringHandler) GetSummary(c *gin.Context) {
@@ -42,10 +71,7 @@ func (h *PaymentRiskMonitoringHandler) GetSummary(c *gin.Context) {
 		apierror.RespondInternalError(c, err)
 		return
 	}
-	response.Success(c, gin.H{
-		"enabled": h.monitoring.Enabled(),
-		"reports": reports,
-	})
+	response.Success(c, h.summaryPayload(c, reports))
 }
 
 func (h *PaymentRiskMonitoringHandler) RecomputeSummary(c *gin.Context) {
@@ -126,10 +152,41 @@ func (h *PaymentRiskMonitoringHandler) RecomputeSummary(c *gin.Context) {
 		Status:    paymentAuditStatusSuccess,
 		Changes:   paymentRiskRecomputeAuditDetails(providers, reports),
 	})
-	response.Success(c, gin.H{
+	response.Success(c, h.summaryPayload(c, reports))
+}
+
+func (h *PaymentRiskMonitoringHandler) summaryPayload(
+	c *gin.Context,
+	reports map[string]*service.PaymentRiskReport,
+) gin.H {
+	payload := gin.H{
 		"enabled": h.monitoring.Enabled(),
+		"policy":  h.monitoring.PolicyView(),
 		"reports": reports,
-	})
+		"configuration": service.BuildPaymentRiskConfigurationView(
+			h.config,
+			h.monitoring,
+			h.threeDS,
+			h.protection,
+			h.circuitBreaker,
+		),
+		"gateway_health": h.gatewayHealth(c),
+	}
+	if h.runtimeReader != nil {
+		payload["gateway_runtime"] = h.runtimeReader()
+	}
+	return payload
+}
+
+func (h *PaymentRiskMonitoringHandler) gatewayHealth(c *gin.Context) map[string]service.PaymentGatewayHealthView {
+	health := make(map[string]service.PaymentGatewayHealthView)
+	if h == nil || h.circuitBreaker == nil {
+		return health
+	}
+	for _, provider := range []string{"stripe", "paypal", "alipay", "wechat"} {
+		health[provider] = h.circuitBreaker.CurrentHealth(c.Request.Context(), provider)
+	}
+	return health
 }
 
 func (h *PaymentRiskMonitoringHandler) currentReports(providers []string) (map[string]*service.PaymentRiskReport, error) {

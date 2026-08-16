@@ -1,0 +1,268 @@
+{
+  "version": "2026-08-15",
+  "routes": [
+    {
+      "key": "home",
+      "path": "/",
+      "label": "Home",
+      "description": "Storefront home page",
+      "is_searchable": true,
+      "is_checkable": true,
+      "is_indexable": true
+    },
+    {
+      "key": "shop",
+      "path": "/shop",
+      "label": "Shop",
+      "description": "Product catalog",
+      "is_searchable": true,
+      "is_checkable": true,
+      "is_indexable": true
+    },
+    {
+      "key": "blog",
+      "path": "/blog",
+      "label": "Blog",
+      "description": "Blog landing page",
+      "is_searchable": true,
+      "is_checkable": true,
+      "is_indexable": true
+    },
+    {
+      "key": "blog-news",
+      "path": "/blog/news",
+      "label": "News",
+      "description": "News articles",
+      "is_searchable": true,
+      "is_checkable": true,
+      "is_indexable": true
+    },
+    {
+      "key": "blog-wheelsbuild",
+      "path": "/blog/wheelsbuild",
+      "label": "Wheel Build",
+      "description": "Wheel build articles",
+      "is_searchable": true,
+      "is_checkable": true,
+      "is_indexable": true
+    },
+    {
+      "key": "company-about",
+      "path": "/company/about",
+      "label": "About Us",
+      "description": "Company and product philosophy",
+      "is_searchable": true,
+      "is_checkable": true,
+      "is_indexable": true
+    },
+    {
+      "key": "company-certificates",
+      "path": "/company/certificates",
+      "label": "Certificates",
+      "description": "Company certificates",
+      "is_searchable": true,
+      "is_checkable": true,
+      "is_indexable": true
+    },
+    {
+      "key": "company-contact",
+      "path": "/company/contact",
+      "label": "Contact",
+      "description": "Contact information",
+      "is_searchable": true,
+      "is_checkable": true,
+      "is_indexable": true
+    },
+    {
+      "key": "company-global-partners",
+      "path": "/company/global-partners",
+      "label": "Global Partners",
+      "description": "Global partner network",
+      "is_searchable": true,
+      "is_checkable": true,
+      "is_indexable": true
+    },
+    {
+      "key": "company-oem-odm",
+      "path": "/company/oem-odm",
+      "label": "OEM / ODM",
+      "description": "OEM and ODM services",
+      "is_searchable": true,
+      "is_checkable": true,
+      "is_indexable": true
+    },
+    {
+      "key": "company-ourstory",
+      "path": "/company/ourstory",
+      "label": "Our Story",
+      "description": "Company history",
+      "is_searchable": true,
+      "is_checkable": true,
+      "is_indexable": true
+    },
+    {
+      "key": "company-website",
+      "path": "/company/website",
+      "label": "Website",
+      "description": "Website information",
+      "is_searchable": true,
+      "is_checkable": true,
+      "is_indexable": true
+    },
+    {
+      "key": "guides-tireguides",
+      "path": "/guides/tireguides",
+      "label": "Tire Guides",
+      "description": "Tire guides",
+      "is_searchable": true,
+      "is_checkable": true,
+      "is_indexable": true
+    },
+    {
+      "key": "guides-wheelset-buyers",
+      "path": "/guides/wheelset-buyers",
+      "label": "Wheelset Buyers Guide",
+      "description": "Wheelset buying guide",
+      "is_searchable": true,
+      "is_checkable": true,
+      "is_indexable": true
+    },
+    {
+      "key": "membershipandpoints",
+      "path": "/membershipandpoints",
+      "label": "Membership and Points",
+      "description": "Membership and points",
+      "is_searchable": true,
+      "is_checkable": true,
+      "is_indexable": true
+    },
+    {
+      "key": "picture-warehouse",
+      "path": "/picture-warehouse",
+      "label": "Picture Warehouse",
+      "description": "Product image reference gallery",
+      "is_searchable": true,
+      "is_checkable": true,
+      "is_indexable": true
+    },
+    {
+      "key": "policies-cookie",
+      "path": "/policies/cookie",
+      "label": "Cookie Policy",
+      "description": "Cookie policy",
+      "is_searchable": true,
+      "is_checkable": true,
+      "is_indexable": true
+    },
+    {
+      "key": "policies-privacy",
+      "path": "/policies/privacy",
+      "label": "Privacy Policy",
+      "description": "Privacy policy",
+      "is_searchable": true,
+      "is_checkable": true,
+      "is_indexable": true
+    },
+    {
+      "key": "policies-refund-return",
+      "path": "/policies/refund-return",
+      "label": "Refund and Return",
+      "description": "Refund and return policy",
+      "is_searchable": true,
+      "is_checkable": true,
+      "is_indexable": true
+    },
+    {
+      "key": "policies-terms",
+      "path": "/policies/terms",
+      "label": "Terms of Service",
+      "description": "Terms of service",
+      "is_searchable": true,
+      "is_checkable": true,
+      "is_indexable": true
+    },
+    {
+      "key": "spoke-calculator",
+      "path": "/spoke-calculator",
+      "label": "Spoke Calculator",
+      "description": "Spoke length calculator",
+      "is_searchable": true,
+      "is_checkable": true,
+      "is_indexable": true
+    },
+    {
+      "key": "support-faqs",
+      "path": "/support/faqs",
+      "label": "FAQs",
+      "description": "All frequently asked questions",
+      "is_searchable": true,
+      "is_checkable": true,
+      "is_indexable": true
+    },
+    {
+      "key": "support-payment",
+      "path": "/support/payment",
+      "label": "Payment Support",
+      "description": "Payment support",
+      "is_searchable": true,
+      "is_checkable": true,
+      "is_indexable": true
+    },
+    {
+      "key": "support-product-feedback",
+      "path": "/support/product-feedback",
+      "label": "Product Feedback",
+      "description": "Product feedback",
+      "is_searchable": true,
+      "is_checkable": true,
+      "is_indexable": true
+    },
+    {
+      "key": "support-shipping",
+      "path": "/support/shipping",
+      "label": "Shipping Support",
+      "description": "Shipping support",
+      "is_searchable": true,
+      "is_checkable": true,
+      "is_indexable": true
+    },
+    {
+      "key": "support-test-report",
+      "path": "/support/test-report",
+      "label": "Test Report",
+      "description": "Product test reports",
+      "is_searchable": true,
+      "is_checkable": true,
+      "is_indexable": true
+    },
+    {
+      "key": "support-warranty-check",
+      "path": "/support/warranty-check",
+      "label": "Warranty Check",
+      "description": "Warranty verification",
+      "is_searchable": true,
+      "is_checkable": true,
+      "is_indexable": true
+    },
+    {
+      "key": "support-warranty",
+      "path": "/support/warranty",
+      "label": "Warranty",
+      "description": "Warranty information",
+      "is_searchable": true,
+      "is_checkable": true,
+      "is_indexable": true
+    },
+    {
+      "key": "legacy-faq",
+      "path": "/faq",
+      "label": "FAQ (Legacy Alias)",
+      "description": "Legacy FAQ route redirected to the FAQ index",
+      "canonical_path": "/support/faqs",
+      "is_alias": true,
+      "is_searchable": false,
+      "is_checkable": true,
+      "is_indexable": false
+    }
+  ]
+}

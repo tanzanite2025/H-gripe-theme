@@ -2,7 +2,7 @@ import type {
   QuickBuyFlow,
   QuickBuyFlowVersion,
   QuickBuyFlowTranslation,
-  QuickBuyProductType,
+  QuickBuyProductSpecificationTemplate,
   QuickBuyStep,
 } from '~/utils/quickBuy/types'
 
@@ -44,7 +44,7 @@ export const extractQuickBuyPayload = (response: unknown): unknown => {
   return current
 }
 
-const normalizeQuickBuyProductType = (value: unknown): QuickBuyProductType | null => {
+const normalizeQuickBuyProductSpecificationTemplate = (value: unknown): QuickBuyProductSpecificationTemplate | null => {
   const record = asQuickBuyRecord(value)
   if (!record) return null
   const id = asQuickBuyNumber(record.id)
@@ -66,12 +66,12 @@ const normalizeQuickBuyStep = (value: unknown, index: number): QuickBuyStep | nu
   if (!record) return null
   const id = asQuickBuyNumber(record.id, index + 1)
   const stepKey = asQuickBuyString(record.stepKey ?? record.step_key ?? record.key).trim()
-  const productTypes = asQuickBuyArray(record.productTypes ?? record.product_types)
-    .map(normalizeQuickBuyProductType)
-    .filter((item): item is QuickBuyProductType => Boolean(item))
-  const primaryProductType = productTypes.find(item => item.primary) || productTypes[0] || null
-  const slug = asQuickBuyString(record.slug || primaryProductType?.slug || stepKey || `step-${index + 1}`).trim()
-  const name = asQuickBuyString(record.name || record.label || record.title || primaryProductType?.name || slug).trim()
+  const productSpecificationTemplates = asQuickBuyArray(record.productSpecificationTemplates ?? record.product_specification_templates)
+    .map(normalizeQuickBuyProductSpecificationTemplate)
+    .filter((item): item is QuickBuyProductSpecificationTemplate => Boolean(item))
+  const primaryProductSpecificationTemplate = productSpecificationTemplates.find(item => item.primary) || productSpecificationTemplates[0] || null
+  const slug = asQuickBuyString(record.slug || primaryProductSpecificationTemplate?.slug || stepKey || `step-${index + 1}`).trim()
+  const name = asQuickBuyString(record.name || record.label || record.title || primaryProductSpecificationTemplate?.name || slug).trim()
   if (!Number.isFinite(id) || !slug || !name) return null
 
   return {
@@ -80,7 +80,7 @@ const normalizeQuickBuyStep = (value: unknown, index: number): QuickBuyStep | nu
     name,
     stepKey: stepKey || slug,
     sortOrder: asQuickBuyNumber(record.sortOrder ?? record.sort_order, (index + 1) * 10),
-    productTypes,
+    productSpecificationTemplates,
   }
 }
 

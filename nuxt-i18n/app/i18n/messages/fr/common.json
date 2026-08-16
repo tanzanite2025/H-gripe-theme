@@ -6,5 +6,12 @@
   "backToHome": "Back to Home",
   "viewAll": "View all",
   "explore": "Explore",
-  "currentPage": "Current page"
+  "currentPage": "Current page",
+  "retry": "Retry",
+  "yes": "Yes",
+  "no": "No",
+  "decrease": "Decrease",
+  "increase": "Increase",
+  "remove": "Remove",
+  "done": "Done"
 }

@@ -21,6 +21,7 @@ import (
 	recommendationdomain "commerce-platform/internal/domain/recommendation"
 	"commerce-platform/internal/domain/registration"
 	"commerce-platform/internal/domain/review"
+	seodomain "commerce-platform/internal/domain/seo"
 	"commerce-platform/internal/domain/setting"
 	"commerce-platform/internal/domain/shipping"
 	"commerce-platform/internal/domain/showcase"
@@ -59,12 +60,15 @@ func AutoMigrate(db *gorm.DB, serverMode string) error {
 		&post.Category{},
 		&post.PostCategory{},
 		&product.ProductInformationTemplate{},
+		&product.CustomsClassificationProfile{},
 		&product.Product{},
 		&product.ProductMedia{},
 		&product.ProductAttribute{},
 		&product.AttributeValue{},
-		&product.ProductType{},
-		&product.ProductTypeTranslation{},
+		&product.ProductSpecificationTemplate{},
+		&product.ProductCategory{},
+		&product.ProductCategoryTranslation{},
+		&product.ProductSpecificationTemplateTranslation{},
 		&product.SpecDefinition{},
 		&product.ProductSpecValue{},
 		&product.ProductVariant{},
@@ -94,6 +98,7 @@ func AutoMigrate(db *gorm.DB, serverMode string) error {
 		&payment.PaymentRiskEvent{},
 		&payment.PaymentRiskSnapshot{},
 		&payment.PaymentRiskAlertState{},
+		&payment.PaymentRiskCheckoutDecision{},
 		&payment.PaymentProtectionControl{},
 		&payment.PaymentRefundRecommendation{},
 		&currency.ExchangeRate{},
@@ -129,9 +134,11 @@ func AutoMigrate(db *gorm.DB, serverMode string) error {
 		&registration.WarrantyClaim{},
 		&review.Review{},
 		&review.ReviewHelpful{},
+		&review.ReviewSummary{},
 		&setting.Setting{},
 		&ticket.Ticket{},
 		&ticket.TicketMessage{},
+		&ticket.CustomerServiceInboxState{},
 		&ticket.AutoReplyRule{},
 		&visitor.Profile{},
 		&visitor.RiskDailyFact{},
@@ -153,6 +160,8 @@ func AutoMigrate(db *gorm.DB, serverMode string) error {
 		&spoke.CatalogBuildPreset{},
 		&spoke.History{},
 		&recommendationdomain.Event{},
+		&seodomain.StorefrontRouteCatalogEntry{},
+		&seodomain.StorefrontRouteCheckResult{},
 	)
 	if err != nil {
 		return err

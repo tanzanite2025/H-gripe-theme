@@ -3,6 +3,7 @@ package admin
 import (
 	"errors"
 	"sort"
+	"strings"
 
 	"commerce-platform/internal/pkg/apierror"
 	"commerce-platform/internal/pkg/response"
@@ -14,6 +15,7 @@ import (
 
 type OpsConnectorHandler struct {
 	connectorService *service.OpsConnectorService
+	oauthService     *service.OpsConnectorOAuthService
 	auditService     adminAuditRecorder
 }
 
@@ -28,13 +30,24 @@ func (h *OpsConnectorHandler) ConfigureAuditService(recorder adminAuditRecorder)
 	h.auditService = recorder
 }
 
+func (h *OpsConnectorHandler) ConfigureOAuthService(oauthService *service.OpsConnectorOAuthService) {
+	if h == nil {
+		return
+	}
+	h.oauthService = oauthService
+}
+
 func (h *OpsConnectorHandler) List(c *gin.Context) {
 	if h == nil || h.connectorService == nil {
 		apierror.RespondInternalError(c, errors.New("operations connector service is not configured"))
 		return
 	}
-	connectors, err := h.connectorService.List()
+	connectors, err := h.connectorService.ListForEnvironment(strings.TrimSpace(c.Query("environment")))
 	if err != nil {
+		if errors.Is(err, service.ErrInvalidOpsConnectorEnvironment) {
+			apierror.RespondBadRequest(c, err.Error())
+			return
+		}
 		apierror.RespondInternalError(c, err)
 		return
 	}

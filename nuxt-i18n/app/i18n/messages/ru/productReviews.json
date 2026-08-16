@@ -1,0 +1,17 @@
+{
+  "eyebrow": "Отзывы клиентов",
+  "title": "Оценки и отзывы",
+  "summaryLabel": "{rating} из 5 на основе {count} отзывов",
+  "reviewCount": "{count} отзывов",
+  "loading": "Загрузка отзывов...",
+  "loadError": "Не удалось загрузить отзывы.",
+  "retry": "Повторить",
+  "empty": "Одобренных отзывов пока нет.",
+  "ratingLabel": "{rating} из 5 звёзд",
+  "imageAlt": "Изображение из отзыва клиента",
+  "verifiedPurchase": "Покупка подтверждена",
+  "helpfulCount": "Полезно для {count}",
+  "storeReply": "Ответ магазина",
+  "loadingMore": "Загрузка ещё...",
+  "loadMore": "Загрузить ещё отзывы"
+}

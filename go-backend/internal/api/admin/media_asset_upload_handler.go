@@ -50,6 +50,18 @@ func (h *MediaHandler) UploadAsset(c *gin.Context) {
 		return
 	}
 
+	width, height := 0, 0
+	if mediaType == "image" {
+		width, height, err = upload.ReadImageDimensions(file)
+		if err != nil {
+			c.JSON(http.StatusUnsupportedMediaType, gin.H{
+				"error": "unable to read image dimensions",
+				"code":  upload.CodeInvalidType,
+			})
+			return
+		}
+	}
+
 	alt := strings.TrimSpace(c.PostForm("alt"))
 	caption := strings.TrimSpace(c.PostForm("caption"))
 	if utf8.RuneCountInString(alt) > mediaMaxAltRunes {
@@ -67,6 +79,8 @@ func (h *MediaHandler) UploadAsset(c *gin.Context) {
 		Alt:        alt,
 		Caption:    caption,
 		UploaderID: currentUserID(c),
+		Width:      width,
+		Height:     height,
 	})
 	if err != nil {
 		respondMediaError(c, err)

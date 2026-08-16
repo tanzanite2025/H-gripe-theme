@@ -96,6 +96,7 @@
         </main>
       </section>
     </div>
+    <CustomerServiceFloatingInbox v-if="canViewCustomerService" />
   </TooltipProvider>
 
   <AlertDialog v-model:open="logoutDialogOpen">
@@ -127,6 +128,7 @@ import {
 import AdminSidebar from '@/components/admin/AdminSidebar.vue'
 import AdminLanguageSwitcher from '@/components/admin/AdminLanguageSwitcher.vue'
 import AdminTabBar from '@/components/admin/AdminTabBar.vue'
+import CustomerServiceFloatingInbox from '@/components/admin/customer-service/CustomerServiceFloatingInbox.vue'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -155,6 +157,7 @@ const mobileSidebarOpen = ref(false)
 const logoutDialogOpen = ref(false)
 const logoutLoading = ref(false)
 const user = computed(() => authStore.user)
+const canViewCustomerService = computed(() => authStore.hasPermission('ticket:view'))
 const { brandInitial, brandName, panelLabel, loadAdminBranding, setAdminDocumentTitle } = useAdminBranding()
 
 const translatedNavigationItems = computed(() => translateAdminNavigation(adminNavigationItems, t))

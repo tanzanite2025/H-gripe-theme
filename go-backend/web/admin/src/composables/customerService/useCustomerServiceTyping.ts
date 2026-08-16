@@ -1,10 +1,10 @@
 import { computed, ref } from 'vue'
-import customerServiceApi from '@/api/customerService'
 
 export const useCustomerServiceTyping = (options: Record<string, any> = {}) => {
   const selectedConversation = options.selectedConversation || ref(null)
   const replyMessage = options.replyMessage || ref('')
   const canSendTyping = options.canSendTyping || (() => true)
+  const sendTyping = options.sendTyping || (() => false)
   const customerTypingByConversation = ref<Record<string, any>>({})
   let agentTypingIdleTimer: number | null = null
   let lastAgentTypingSignalAt = 0
@@ -87,10 +87,9 @@ export const useCustomerServiceTyping = (options: Record<string, any> = {}) => {
       lastAgentTypingSignalAt = 0
     }
 
-    try {
-      await customerServiceApi.sendTyping(selectedConversation.value.id, isTyping)
-    } catch (error) {
-      console.warn('Failed to send agent typing signal:', error)
+    const sent = await sendTyping(isTyping)
+    if (!sent) {
+      console.warn('Customer-service conversation WebSocket is not connected for typing')
     }
   }
 

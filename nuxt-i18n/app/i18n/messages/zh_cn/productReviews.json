@@ -1,0 +1,17 @@
+{
+  "eyebrow": "客户反馈",
+  "title": "评分与评价",
+  "summaryLabel": "满分 5 分，{count} 条评价平均 {rating} 分",
+  "reviewCount": "{count} 条评价",
+  "loading": "正在加载评价...",
+  "loadError": "评价暂时无法加载。",
+  "retry": "重试",
+  "empty": "暂时还没有已通过审核的评价。",
+  "ratingLabel": "满分 5 分，{rating} 星",
+  "imageAlt": "客户评价图片",
+  "verifiedPurchase": "已验证购买",
+  "helpfulCount": "{count} 人觉得有帮助",
+  "storeReply": "商家回复",
+  "loadingMore": "正在加载更多...",
+  "loadMore": "加载更多评价"
+}

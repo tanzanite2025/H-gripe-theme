@@ -20,14 +20,14 @@
         <header class="quickbuy-modal-header grid items-center px-3.5 max-md:px-2 py-2.5 max-md:py-2 rounded-t-2xl max-md:gap-1.5">
           <div class="quickbuy-step-header-rail">
             <button
-              class="quickbuy-mobile-step-action"
+              class="tz-directional-arrow tz-directional-arrow--small quickbuy-mobile-step-action"
               type="button"
               :disabled="currentStepIndex <= 1"
               :aria-label="t('common.previous', 'Previous')"
               :title="t('common.previous', 'Previous')"
               @click="goToPreviousStep"
             >
-              <Icon name="lucide:arrow-left" class="h-4 w-4" aria-hidden="true" />
+              <Icon name="lucide:chevron-left" aria-hidden="true" />
             </button>
 
             <nav class="quickbuy-step-nav" :aria-label="t('quickBuy.stepsAriaLabel')">
@@ -51,14 +51,14 @@
             </nav>
 
             <button
-              class="quickbuy-mobile-step-action"
+              class="tz-directional-arrow tz-directional-arrow--small quickbuy-mobile-step-action"
               type="button"
               :disabled="currentStepIndex >= totalSteps"
               :aria-label="t('common.next', 'Next')"
               :title="t('common.next', 'Next')"
               @click="goToNextStep"
             >
-              <Icon name="lucide:arrow-right" class="h-4 w-4" aria-hidden="true" />
+              <Icon name="lucide:chevron-right" aria-hidden="true" />
             </button>
           </div>
           <button 
@@ -653,29 +653,6 @@ onBeforeUnmount(() => {
 
   .quickbuy-mobile-step-action {
     display: inline-grid;
-    width: 1.75rem;
-    height: 1.75rem;
-    place-items: center;
-    border: 0;
-    border-radius: 999px;
-    color: rgba(255, 255, 255, 0.86);
-    background:
-      linear-gradient(180deg, var(--quickbuy-control-surface-raised, #1a1c24), var(--quickbuy-control-surface, #111219));
-    box-shadow:
-      0 5px 14px rgba(0, 0, 0, 0.2),
-      inset 0 0 0 1px rgba(255, 255, 255, 0.04);
-    transition: background-color 160ms ease, opacity 160ms ease, transform 160ms ease;
-  }
-
-  .quickbuy-mobile-step-action:hover:not(:disabled) {
-    background:
-      linear-gradient(180deg, #32343d, #24262e);
-    transform: translateY(-1px);
-  }
-
-  .quickbuy-mobile-step-action:disabled {
-    cursor: not-allowed;
-    opacity: 0.3;
   }
 
   .quickbuy-modal-body {

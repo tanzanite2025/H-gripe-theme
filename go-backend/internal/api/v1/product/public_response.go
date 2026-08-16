@@ -3,6 +3,7 @@ package product
 import (
 	"commerce-platform/internal/domain/currency"
 	productdomain "commerce-platform/internal/domain/product"
+	reviewdomain "commerce-platform/internal/domain/review"
 	"strings"
 )
 
@@ -20,29 +21,51 @@ const (
 // shipping configuration, internal relationships, and audit timestamps are kept
 // out of this response.
 type PublicProduct struct {
-	ID                  uint                              `json:"id"`
-	Name                string                            `json:"name"`
-	Slug                string                            `json:"slug"`
-	LocalizedRoutes     []PublicProductTranslationRoute   `json:"localized_routes,omitempty"`
-	SKU                 string                            `json:"sku,omitempty"`
-	Description         string                            `json:"description"`
-	ShortDesc           string                            `json:"short_description"`
-	Currency            string                            `json:"currency"`
-	Price               float64                           `json:"price"`
-	SalePrice           *float64                          `json:"sale_price"`
-	DisplayPrice        *PublicDisplayPrice               `json:"display_price,omitempty"`
-	DisplayPrices       []PublicDisplayPrice              `json:"display_prices,omitempty"`
-	MetaTitle           string                            `json:"meta_title"`
-	MetaDesc            string                            `json:"meta_description"`
-	Brand               *PublicProductBrand               `json:"brand,omitempty"`
-	AfterSalesTemplate  *PublicProductInformationTemplate `json:"after_sales_template,omitempty"`
-	PackagingTemplate   *PublicProductInformationTemplate `json:"packaging_template,omitempty"`
-	Availability        Availability                      `json:"availability"`
-	Media               []PublicProductMedia              `json:"media,omitempty"`
-	ProductType         *PublicProductType                `json:"product_type,omitempty"`
-	SpecValues          []PublicProductSpecValue          `json:"spec_values,omitempty"`
-	Variants            []PublicProductVariant            `json:"variants,omitempty"`
-	VariantOptionValues []PublicVariantOptionValue        `json:"variant_option_values,omitempty"`
+	ID                           uint                                `json:"id"`
+	Name                         string                              `json:"name"`
+	Slug                         string                              `json:"slug"`
+	LocalizedRoutes              []PublicProductTranslationRoute     `json:"localized_routes,omitempty"`
+	SKU                          string                              `json:"sku,omitempty"`
+	Description                  string                              `json:"description"`
+	ShortDesc                    string                              `json:"short_description"`
+	Currency                     string                              `json:"currency"`
+	Price                        float64                             `json:"price"`
+	SalePrice                    *float64                            `json:"sale_price"`
+	DisplayPrice                 *PublicDisplayPrice                 `json:"display_price,omitempty"`
+	DisplayPrices                []PublicDisplayPrice                `json:"display_prices,omitempty"`
+	MetaTitle                    string                              `json:"meta_title"`
+	MetaDesc                     string                              `json:"meta_description"`
+	Brand                        *PublicProductBrand                 `json:"brand,omitempty"`
+	AfterSalesTemplate           *PublicProductInformationTemplate   `json:"after_sales_template,omitempty"`
+	PackagingTemplate            *PublicProductInformationTemplate   `json:"packaging_template,omitempty"`
+	Availability                 Availability                        `json:"availability"`
+	Media                        []PublicProductMedia                `json:"media,omitempty"`
+	ProductSpecificationTemplate *PublicProductSpecificationTemplate `json:"product_specification_template,omitempty"`
+	SpecValues                   []PublicProductSpecValue            `json:"spec_values,omitempty"`
+	Variants                     []PublicProductVariant              `json:"variants,omitempty"`
+	VariantOptionValues          []PublicVariantOptionValue          `json:"variant_option_values,omitempty"`
+	ReviewSummary                *PublicProductReviewSummary         `json:"review_summary,omitempty"`
+	ShippingDetails              *PublicProductShippingDetails       `json:"shipping_details,omitempty"`
+}
+
+type PublicProductReviewSummary struct {
+	ProductID     uint    `json:"product_id"`
+	TotalReviews  int     `json:"total_reviews"`
+	AverageRating float64 `json:"average_rating"`
+	Rating5Count  int     `json:"rating_5_count"`
+	Rating4Count  int     `json:"rating_4_count"`
+	Rating3Count  int     `json:"rating_3_count"`
+	Rating2Count  int     `json:"rating_2_count"`
+	Rating1Count  int     `json:"rating_1_count"`
+}
+
+type PublicProductShippingDetails struct {
+	Country      string  `json:"country"`
+	Amount       float64 `json:"amount"`
+	Currency     string  `json:"currency"`
+	FreeShipping bool    `json:"free_shipping"`
+	EtaMinDays   int     `json:"eta_min_days"`
+	EtaMaxDays   int     `json:"eta_max_days"`
 }
 
 type PublicProductMedia struct {
@@ -81,7 +104,7 @@ type PublicProductBrand struct {
 	WebsiteURL string `json:"website_url,omitempty"`
 }
 
-type PublicProductType struct {
+type PublicProductSpecificationTemplate struct {
 	Name            string                 `json:"name"`
 	Slug            string                 `json:"slug"`
 	ImageURL        string                 `json:"image_url,omitempty"`
@@ -144,10 +167,10 @@ type PublicDisplayPrice struct {
 	FallbackReason string  `json:"fallback_reason,omitempty"`
 }
 
-// PublicProductTypeIndex is the small catalog-taxonomy contract used by
+// PublicProductSpecificationTemplateIndex is the small catalog-taxonomy contract used by
 // category navigation and filters. It does not expose the editable admin
-// fields or audit trail of product types.
-type PublicProductTypeIndex struct {
+// fields or audit trail of product specification templates.
+type PublicProductSpecificationTemplateIndex struct {
 	ID       uint   `json:"id"`
 	Name     string `json:"name"`
 	Slug     string `json:"slug"`
@@ -177,6 +200,22 @@ type PublicProductAttributeValue struct {
 
 func PublicProductFromDomain(item productdomain.Product) PublicProduct {
 	return PublicProductFromDomainWithLocale(item, "", "")
+}
+
+func PublicProductReviewSummaryFromDomain(item *reviewdomain.ReviewSummary) *PublicProductReviewSummary {
+	if item == nil {
+		return nil
+	}
+	return &PublicProductReviewSummary{
+		ProductID:     item.ProductID,
+		TotalReviews:  item.TotalReviews,
+		AverageRating: item.AverageRating,
+		Rating5Count:  item.Rating5Count,
+		Rating4Count:  item.Rating4Count,
+		Rating3Count:  item.Rating3Count,
+		Rating2Count:  item.Rating2Count,
+		Rating1Count:  item.Rating1Count,
+	}
 }
 
 func PublicProductFromDomainWithDisplayCurrency(item productdomain.Product, displayCurrency string) PublicProduct {
@@ -220,8 +259,8 @@ func PublicProductFromDomainWithLocaleAndRoutes(item productdomain.Product, disp
 	}
 
 	definitionsByID := make(map[uint]productdomain.SpecDefinition)
-	if item.ProductType != nil {
-		for _, definition := range item.ProductType.SpecDefinitions {
+	if item.ProductSpecificationTemplate != nil {
+		for _, definition := range item.ProductSpecificationTemplate.SpecDefinitions {
 			definitionsByID[definition.ID] = definition
 		}
 	}
@@ -257,29 +296,29 @@ func PublicProductFromDomainWithLocaleAndRoutes(item productdomain.Product, disp
 	}
 
 	return PublicProduct{
-		ID:                  item.ID,
-		Name:                item.Name,
-		Slug:                item.Slug,
-		LocalizedRoutes:     publicProductTranslationRoutesFromDomain(translationRoutes),
-		SKU:                 item.DisplaySKU(),
-		Description:         item.Description,
-		ShortDesc:           item.ShortDesc,
-		Currency:            priceCurrency,
-		Price:               price,
-		SalePrice:           salePrice,
-		DisplayPrice:        displayPriceForCurrency(displayCurrency, displayPrices),
-		DisplayPrices:       displayPrices,
-		MetaTitle:           item.MetaTitle,
-		MetaDesc:            item.MetaDesc,
-		Brand:               publicProductBrandFromDomain(item.Brand),
-		AfterSalesTemplate:  publicProductInformationTemplateFromDomain(item.AfterSalesTemplate),
-		PackagingTemplate:   publicProductInformationTemplateFromDomain(item.PackagingTemplate),
-		Availability:        availabilityForProduct(item),
-		Media:               media,
-		ProductType:         publicProductTypeFromDomainWithLocale(item.ProductType, locale),
-		SpecValues:          specValues,
-		Variants:            variants,
-		VariantOptionValues: variantOptionValues,
+		ID:                           item.ID,
+		Name:                         item.Name,
+		Slug:                         item.Slug,
+		LocalizedRoutes:              publicProductTranslationRoutesFromDomain(translationRoutes),
+		SKU:                          item.DisplaySKU(),
+		Description:                  item.Description,
+		ShortDesc:                    item.ShortDesc,
+		Currency:                     priceCurrency,
+		Price:                        price,
+		SalePrice:                    salePrice,
+		DisplayPrice:                 displayPriceForCurrency(displayCurrency, displayPrices),
+		DisplayPrices:                displayPrices,
+		MetaTitle:                    item.MetaTitle,
+		MetaDesc:                     item.MetaDesc,
+		Brand:                        publicProductBrandFromDomain(item.Brand),
+		AfterSalesTemplate:           publicProductInformationTemplateFromDomain(item.AfterSalesTemplate),
+		PackagingTemplate:            publicProductInformationTemplateFromDomain(item.PackagingTemplate),
+		Availability:                 availabilityForProduct(item),
+		Media:                        media,
+		ProductSpecificationTemplate: publicProductSpecificationTemplateFromDomainWithLocale(item.ProductSpecificationTemplate, locale),
+		SpecValues:                   specValues,
+		Variants:                     variants,
+		VariantOptionValues:          variantOptionValues,
 	}
 }
 
@@ -386,16 +425,16 @@ func displayPriceForCurrency(displayCurrency string, displayPrices []PublicDispl
 	return nil
 }
 
-func publicProductTypeFromDomain(item *productdomain.ProductType) *PublicProductType {
-	return publicProductTypeFromDomainWithLocale(item, "")
+func publicProductSpecificationTemplateFromDomain(item *productdomain.ProductSpecificationTemplate) *PublicProductSpecificationTemplate {
+	return publicProductSpecificationTemplateFromDomainWithLocale(item, "")
 }
 
-func publicProductTypeFromDomainWithLocale(item *productdomain.ProductType, locale string) *PublicProductType {
+func publicProductSpecificationTemplateFromDomainWithLocale(item *productdomain.ProductSpecificationTemplate, locale string) *PublicProductSpecificationTemplate {
 	if item == nil {
 		return nil
 	}
 
-	result := &PublicProductType{
+	result := &PublicProductSpecificationTemplate{
 		Name:            item.NameForLocale(locale),
 		Slug:            item.Slug,
 		ImageURL:        strings.TrimSpace(item.ImageURL),
@@ -426,14 +465,14 @@ func publicSpecDefinitionFromDomain(item productdomain.SpecDefinition) PublicSpe
 	}
 }
 
-func PublicProductTypesFromDomain(items []productdomain.ProductType) []PublicProductTypeIndex {
-	return PublicProductTypesFromDomainWithLocale(items, "")
+func PublicProductSpecificationTemplatesFromDomain(items []productdomain.ProductSpecificationTemplate) []PublicProductSpecificationTemplateIndex {
+	return PublicProductSpecificationTemplatesFromDomainWithLocale(items, "")
 }
 
-func PublicProductTypesFromDomainWithLocale(items []productdomain.ProductType, locale string) []PublicProductTypeIndex {
-	result := make([]PublicProductTypeIndex, 0, len(items))
+func PublicProductSpecificationTemplatesFromDomainWithLocale(items []productdomain.ProductSpecificationTemplate, locale string) []PublicProductSpecificationTemplateIndex {
+	result := make([]PublicProductSpecificationTemplateIndex, 0, len(items))
 	for _, item := range items {
-		publicType := PublicProductTypeIndex{
+		publicType := PublicProductSpecificationTemplateIndex{
 			ID:       item.ID,
 			Name:     item.NameForLocale(locale),
 			Slug:     item.Slug,

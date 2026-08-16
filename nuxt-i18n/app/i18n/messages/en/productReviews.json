@@ -1,0 +1,17 @@
+{
+  "eyebrow": "Customer feedback",
+  "title": "Ratings and reviews",
+  "summaryLabel": "{rating} out of 5 from {count} reviews",
+  "reviewCount": "{count} reviews",
+  "loading": "Loading reviews...",
+  "loadError": "Reviews could not be loaded.",
+  "retry": "Try again",
+  "empty": "No approved reviews yet.",
+  "ratingLabel": "{rating} out of 5 stars",
+  "imageAlt": "Customer review image",
+  "verifiedPurchase": "Verified purchase",
+  "helpfulCount": "{count} found this helpful",
+  "storeReply": "Store reply",
+  "loadingMore": "Loading more...",
+  "loadMore": "Load more reviews"
+}

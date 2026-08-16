@@ -19,8 +19,8 @@ const readField = <T = unknown>(response: unknown, path: string, field: string):
 }
 
 export const customerServiceApi = {
-  async getRegionAnalytics(params: Record<string, any> = {}) {
-    const path = '/api/admin/customer-service/analytics/regions'
+  async getAnalytics(params: Record<string, any> = {}) {
+    const path = '/api/admin/customer-service/analytics'
     return requireApiObject(readField(await axios.get(path, { params }), path, 'analytics'), path, 'field "analytics"')
   },
 
@@ -87,11 +87,20 @@ export const customerServiceApi = {
     return requireApiAcknowledgement(await axios.delete(path), path)
   },
 
-  buildEventsUrl(scope = 'inbox') {
+  buildWebSocketUrl(scope = 'inbox', conversationId?: number | string, lastEventId = '') {
     const query = new URLSearchParams({ scope })
-    const baseURL = String(axios.defaults?.baseURL || '').replace(/\/$/, '')
-    const path = `/api/admin/customer-service/events?${query.toString()}`
-    return baseURL ? `${baseURL}${path}` : path
+    if (conversationId !== undefined && conversationId !== null && String(conversationId)) {
+      query.set('conversation_id', String(conversationId))
+    }
+    if (lastEventId) {
+      query.set('last_event_id', lastEventId)
+    }
+
+    const baseURL = String(axios.defaults?.baseURL || '').trim()
+    const origin = typeof window === 'undefined' ? 'http://localhost' : window.location.origin
+    const url = new URL(`/api/admin/customer-service/ws?${query.toString()}`, baseURL || origin)
+    url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:'
+    return url.toString()
   },
 
   async listMessages(conversationId: number | string) {
@@ -102,13 +111,6 @@ export const customerServiceApi = {
   async markMessagesRead(conversationId: number | string) {
     const path = `/api/admin/customer-service/conversations/${conversationId}/messages/mark-read`
     return requireApiAcknowledgement(await axios.post(path), path)
-  },
-
-  async sendTyping(conversationId: number | string, isTyping: boolean) {
-    const path = `/api/admin/customer-service/conversations/${conversationId}/typing`
-    const payload = readObjectPayload(await axios.post(path, { is_typing: isTyping }), path)
-    requireApiField(payload, 'typing', path)
-    return payload
   },
 
   async sendMessage(conversationId: number | string, message: string, attachments: string[] = []) {

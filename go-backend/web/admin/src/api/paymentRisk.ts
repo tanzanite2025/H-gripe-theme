@@ -33,6 +33,9 @@ export const paymentRiskApi = {
     }), path)
     requireApiBooleanField(payload, 'enabled', path)
     requireApiObjectField(payload, 'reports', path)
+    requireApiObjectField(payload, 'policy', path)
+    requireApiObjectField(payload, 'configuration', path)
+    requireApiObjectField(payload, 'gateway_health', path)
     return payload
   },
 
@@ -43,6 +46,9 @@ export const paymentRiskApi = {
     }), path)
     requireApiBooleanField(payload, 'enabled', path)
     requireApiObjectField(payload, 'reports', path)
+    requireApiObjectField(payload, 'policy', path)
+    requireApiObjectField(payload, 'configuration', path)
+    requireApiObjectField(payload, 'gateway_health', path)
     return payload
   },
 

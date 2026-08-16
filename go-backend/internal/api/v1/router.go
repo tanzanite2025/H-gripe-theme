@@ -21,6 +21,7 @@ import (
 	"commerce-platform/internal/api/v1/recommendation"
 	"commerce-platform/internal/api/v1/registration"
 	"commerce-platform/internal/api/v1/review"
+	selectionassistantapi "commerce-platform/internal/api/v1/selectionassistant"
 	seohomeapi "commerce-platform/internal/api/v1/seo/home"
 	"commerce-platform/internal/api/v1/settings"
 	"commerce-platform/internal/api/v1/shipping"
@@ -79,8 +80,12 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 	contentHandler := content.NewHandler(postService, faqService)
 	faqHandler := faq.NewHandler(faqService)
 	productHandler := product.NewHandler(productService)
+	productHandler.ConfigureProductCategoryService(services.ProductCategory)
 	productHandler.ConfigureStorefrontContext(services.StorefrontContext)
+	productHandler.ConfigureReviewService(reviewService)
+	productHandler.ConfigureShippingService(services.Shipping)
 	quickBuyHandler := quickbuyapi.NewHandler(services.QuickBuy)
+	selectionAssistantHandler := selectionassistantapi.NewHandler(services.SelectionAssistant)
 	cartHandler := cart.NewHandler(cartService, cart.Options{
 		VisitorProfileService: services.VisitorProfile,
 		VisitorSecret:         cfg.JWT.Secret,
@@ -218,7 +223,8 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 		productGroup.Use(commercialInventoryProbeGuard)
 		{
 			productGroup.GET("", productHandler.ListProducts)
-			productGroup.GET("/types", productHandler.ListProductTypes)
+			productGroup.GET("/specification-templates", productHandler.ListProductSpecificationTemplates)
+			productGroup.GET("/categories", productHandler.ListCategories)
 			productGroup.GET("/attributes/filterable", productHandler.GetFilterableAttributes)
 			productGroup.GET("/:id", productHandler.GetProduct)
 		}
@@ -232,6 +238,11 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 			quickBuyGroup.GET("/sessions/:token/steps/:step_key/candidates", middleware.OptionalAuthMiddleware(authService), quickBuyHandler.ListSessionStepCandidates)
 			quickBuyGroup.PATCH("/sessions/:token/selections", middleware.OptionalAuthMiddleware(authService), quickBuyHandler.UpdateSessionSelections)
 			quickBuyGroup.POST("/sessions/:token/validate", middleware.OptionalAuthMiddleware(authService), quickBuyHandler.ValidateSession)
+		}
+
+		selectionAssistantGroup := v1.Group("/selection-assistant")
+		{
+			selectionAssistantGroup.GET("/flows/:slug", selectionAssistantHandler.GetPublishedFlow)
 		}
 
 		// 购物车路由（可选认证）
@@ -358,12 +369,10 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 			customerServiceGroup.GET("/has-conversation", middleware.OptionalAuthMiddleware(authService), ticketHandler.HasPublicCustomerServiceConversation)
 			customerServiceGroup.POST("/attachments", middleware.OptionalAuthMiddleware(authService), middleware.RateLimitByUserPerMinute(6, 2), ticketHandler.UploadPublicCustomerServiceAttachment)
 			customerServiceGroup.POST("/messages", middleware.OptionalAuthMiddleware(authService), middleware.RateLimitByUser(5), ticketHandler.SendPublicCustomerServiceMessage)
-			customerServiceGroup.POST("/typing", middleware.OptionalAuthMiddleware(authService), middleware.RateLimitByUser(5), ticketHandler.SendPublicCustomerServiceTyping)
 			customerServiceGroup.GET("/messages/:conversation_id", middleware.OptionalAuthMiddleware(authService), ticketHandler.GetPublicCustomerServiceMessages)
 			customerServiceGroup.GET("/auto-reply/welcome", middleware.OptionalAuthMiddleware(authService), ticketHandler.GetWelcomeMessage)
 			customerServiceGroup.POST("/auto-reply/match", middleware.OptionalAuthMiddleware(authService), middleware.RateLimitByUser(5), ticketHandler.MatchKeywordMessage)
-			customerServiceGroup.GET("/events", middleware.OptionalAuthMiddleware(authService), ticketHandler.StreamPublicCustomerServiceEvents)
-			customerServiceGroup.GET("/ws", middleware.OptionalAuthMiddleware(authService), ticketHandler.ServeWS)
+			customerServiceGroup.GET("/ws", middleware.OptionalAuthMiddleware(authService), ticketHandler.StreamPublicCustomerServiceWebSocket)
 		}
 
 		// 用户浏览历史路由（需要认证）

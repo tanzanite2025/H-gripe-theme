@@ -10,7 +10,7 @@
       <form class="flex min-h-0 min-w-0 flex-1 flex-col" @submit.prevent="emit('submit')">
         <DialogHeader class="shrink-0 border-b px-5 py-4 pr-12">
           <DialogTitle>{{ mode === 'create' ? '添加商品' : '编辑商品' }}</DialogTitle>
-          <DialogDescription>先录入商品基础识别信息，再绑定产品模板；模板决定下方商品字段和 SKU 选项列。</DialogDescription>
+          <DialogDescription>先录入商品基础识别信息，再绑定商品规格模板；模板决定下方商品字段和 SKU 选项列。</DialogDescription>
         </DialogHeader>
 
         <div
@@ -29,7 +29,7 @@
             </li>
           </ol>
 
-          <AdminFormSection title="基础信息" description="这里不放规格字段；规格字段必须先通过产品模板统一定义，再在下方录入具体值。">
+          <AdminFormSection title="基础信息" description="这里不放规格字段；规格字段必须先通过商品规格模板统一定义，再在下方录入具体值。">
             <div class="grid gap-4 md:grid-cols-3">
               <AdminFormField label="商品名称" required :error="errors.name">
                 <Input v-model="form.name" placeholder="请输入商品名称" @input="emit('clear-error', 'name')" />
@@ -46,6 +46,23 @@
                       :disabled="brand.is_enabled === false && String(form.brand_id) !== String(brand.id)"
                     >
                       {{ brand.name }}{{ brand.is_enabled === false ? '（停用）' : '' }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </AdminFormField>
+              <AdminFormField label="商品分类" description="可选；商品可以不设置分类。">
+                <Select :model-value="productCategorySelectValue" @update:model-value="emit('product-category-select', $event)">
+                  <SelectTrigger class="w-full"><SelectValue placeholder="未设置分类" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">未设置分类</SelectItem>
+                    <SelectItem
+                      v-for="category in productCategories"
+                      :key="category.id"
+                      :value="String(category.id)"
+                      :disabled="category.is_enabled === false && String(form.product_category_id) !== String(category.id)"
+                      :style="{ paddingLeft: `${0.75 + Math.max(0, Number(category.depth || 1) - 1) * 1}rem` }"
+                    >
+                      {{ category.name }}{{ category.is_enabled === false ? '（停用）' : '' }}
                     </SelectItem>
                   </SelectContent>
                 </Select>
@@ -82,15 +99,80 @@
             </div>
           </AdminFormSection>
 
-          <AdminFormSection title="绑定产品模板" description="选择模板后，下方才会出现对应的商品参数字段和 SKU 选项列。">
+          <AdminFormSection title="税务与清关资料" description="维护商品的基础清关属性；申报价值不在产品上固定，后续按订单确认。">
+            <div class="mb-4 grid gap-3 rounded-lg border bg-muted/20 p-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+              <AdminFormField label="清关资料模板" description="选择后会填入 HS Code、CN Code、原产国代码和英文报关品名，仍可继续手动覆盖。">
+                <Select :model-value="customsClassificationSelectValue" @update:model-value="emit('customs-classification-select', $event)">
+                  <SelectTrigger class="w-full"><SelectValue placeholder="请选择清关资料模板" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">不套用模板</SelectItem>
+                    <SelectItem v-for="profile in customsClassifications" :key="profile.id" :value="String(profile.id)">
+                      {{ profile.name }} · {{ profile.hs_code }}{{ profile.cn_code ? ` / ${profile.cn_code}` : '' }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </AdminFormField>
+              <Button type="button" variant="outline" size="sm" as-child>
+                <RouterLink to="/catalog/customs-classifications">
+                  <Tags class="size-3.5" />
+                  清关资料中心
+                </RouterLink>
+              </Button>
+              <div class="flex flex-wrap gap-2 text-[11px] lg:col-span-2">
+                <span :class="form.hs_code ? 'bg-emerald-500/10 text-emerald-700' : 'bg-amber-500/10 text-amber-700'" class="rounded-full px-2 py-0.5 font-medium">HS</span>
+                <span :class="form.cn_code ? 'bg-emerald-500/10 text-emerald-700' : 'bg-amber-500/10 text-amber-700'" class="rounded-full px-2 py-0.5 font-medium">CN</span>
+                <span :class="form.country_of_origin ? 'bg-emerald-500/10 text-emerald-700' : 'bg-amber-500/10 text-amber-700'" class="rounded-full px-2 py-0.5 font-medium">原产国</span>
+                <span :class="form.customs_description ? 'bg-emerald-500/10 text-emerald-700' : 'bg-amber-500/10 text-amber-700'" class="rounded-full px-2 py-0.5 font-medium">英文品名</span>
+              </div>
+            </div>
+            <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <AdminFormField label="HS Code" description="6 位数字" :error="errors.hs_code">
+                <Input
+                  v-model="form.hs_code"
+                  inputmode="numeric"
+                  maxlength="6"
+                  placeholder="例如 871499"
+                  @input="emit('customs-classification-manual-edit'); emit('clear-error', 'hs_code')"
+                />
+              </AdminFormField>
+              <AdminFormField label="CN Code" description="欧盟 8 位编码，可选" :error="errors.cn_code">
+                <Input
+                  v-model="form.cn_code"
+                  inputmode="numeric"
+                  maxlength="8"
+                  placeholder="例如 87149990"
+                  @input="emit('customs-classification-manual-edit'); emit('clear-error', 'cn_code')"
+                />
+              </AdminFormField>
+              <AdminFormField label="原产国代码" description="2 位国家代码" :error="errors.country_of_origin">
+                <Input
+                  v-model="form.country_of_origin"
+                  class="font-mono uppercase"
+                  maxlength="2"
+                  placeholder="例如 CN"
+                  @input="emit('customs-classification-manual-edit'); emit('clear-error', 'country_of_origin')"
+                />
+              </AdminFormField>
+              <AdminFormField label="英文报关品名" :error="errors.customs_description">
+                <Input
+                  v-model="form.customs_description"
+                  maxlength="255"
+                  placeholder="例如 Bicycle frame"
+                  @input="emit('customs-classification-manual-edit'); emit('clear-error', 'customs_description')"
+                />
+              </AdminFormField>
+            </div>
+          </AdminFormSection>
+
+          <AdminFormSection title="绑定商品规格模板" description="选择模板后，下方才会出现对应的商品参数字段和 SKU 选项列。">
             <div class="grid gap-3 2xl:grid-cols-[minmax(20rem,0.68fr)_minmax(0,1.32fr)]">
               <div class="grid gap-3 rounded-xl border bg-muted/20 p-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end 2xl:block 2xl:space-y-3">
-                <AdminFormField label="产品模板">
-                  <Select :model-value="productTypeSelectValue" @update:model-value="emit('product-type-select', $event)">
-                    <SelectTrigger class="w-full"><SelectValue placeholder="请选择产品模板" /></SelectTrigger>
+                <AdminFormField label="商品规格模板">
+                  <Select :model-value="productSpecTemplateSelectValue" @update:model-value="emit('product-spec-template-select', $event)">
+                    <SelectTrigger class="w-full"><SelectValue placeholder="请选择商品规格模板" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="__none__">未选择模板</SelectItem>
-                      <SelectItem v-for="type in productTypes" :key="type.id" :value="String(type.id)">
+                      <SelectItem v-for="type in productSpecTemplates" :key="type.id" :value="String(type.id)">
                         {{ type.name }}
                       </SelectItem>
                     </SelectContent>
@@ -99,7 +181,7 @@
                 <Button type="button" variant="outline" size="sm" as-child>
                   <RouterLink to="/catalog/templates">
                     <Tags class="size-3.5" />
-                    维护产品模板
+                    维护商品规格模板
                   </RouterLink>
                 </Button>
                 <p class="text-xs leading-5 text-muted-foreground lg:col-span-2 2xl:col-span-1">
@@ -108,16 +190,16 @@
               </div>
 
               <div class="rounded-xl border border-dashed bg-muted/20 p-3">
-                <div v-if="selectedProductType" class="grid gap-3 xl:grid-cols-[minmax(14rem,0.72fr)_minmax(0,1.28fr)]">
+                <div v-if="selectedProductSpecTemplate" class="grid gap-3 xl:grid-cols-[minmax(14rem,0.72fr)_minmax(0,1.28fr)]">
                   <div class="min-w-0 space-y-2">
                     <div class="flex flex-wrap items-center gap-2">
-                      <span class="min-w-0 truncate text-sm font-bold">{{ selectedProductType.name }}</span>
+                      <span class="min-w-0 truncate text-sm font-bold">{{ selectedProductSpecTemplate.name }}</span>
                       <span class="rounded-full bg-background px-2 py-0.5 font-mono text-[10px] text-muted-foreground">
-                        {{ selectedProductType.slug }}
+                        {{ selectedProductSpecTemplate.slug }}
                       </span>
                     </div>
-                    <p v-if="selectedProductType.description" class="line-clamp-2 text-xs leading-5 text-muted-foreground">
-                      {{ selectedProductType.description }}
+                    <p v-if="selectedProductSpecTemplate.description" class="line-clamp-2 text-xs leading-5 text-muted-foreground">
+                      {{ selectedProductSpecTemplate.description }}
                     </p>
                     <div class="flex flex-wrap gap-2">
                       <span class="rounded-full bg-background px-2.5 py-1 text-[11px] font-black text-foreground">
@@ -168,7 +250,7 @@
                   </div>
                 </div>
                 <p v-else class="text-xs leading-5 text-muted-foreground">
-                  未选择模板时，下方不会出现商品参数字段，也不会给 SKU 生成选项列。建议先在“产品模板”页面创建车圈、车架等模板，再回到这里绑定。
+                  未选择模板时，下方不会出现商品参数字段，也不会给 SKU 生成选项列。建议先在“商品规格模板”页面创建车圈、车架等模板，再回到这里绑定。
                 </p>
               </div>
             </div>
@@ -176,7 +258,7 @@
 
           <AdminFormSection
             title="商品参数（来自模板）"
-            :description="selectedSpecDefinitions.length ? '这里填写当前商品自己的参数值；字段来源于已绑定产品模板，但具体值不写回模板。' : '当前模板没有商品级参数字段；可以直接继续维护 SKU。'"
+            :description="selectedSpecDefinitions.length ? '这里填写当前商品自己的参数值；字段来源于已绑定商品规格模板，但具体值不写回模板。' : '当前模板没有商品级参数字段；可以直接继续维护 SKU。'"
           >
             <div v-if="selectedSpecDefinitions.length" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6">
               <AdminFormField
@@ -226,11 +308,11 @@
               </AdminFormField>
             </div>
             <div v-else class="rounded-xl border border-dashed bg-muted/20 px-4 py-5 text-center text-xs text-muted-foreground">
-              {{ selectedProductType ? '这个模板没有商品级字段。' : '选择产品模板后，商品级字段会显示在这里。' }}
+              {{ selectedProductSpecTemplate ? '这个模板没有商品级字段。' : '选择商品规格模板后，商品级字段会显示在这里。' }}
             </div>
           </AdminFormSection>
 
-          <AdminFormSection title="SKU 变体矩阵" description="SKU 选项列来自产品模板；价格、重量和库存永远按每一行 SKU 独立维护，前台按用户选中的 SKU 显示对应重量。">
+          <AdminFormSection title="SKU 变体矩阵" description="SKU 选项列来自商品规格模板；价格、重量和库存永远按每一行 SKU 独立维护，前台按用户选中的 SKU 显示对应重量。">
             <div class="min-w-0 rounded-lg border">
               <ProductVariantEditor
                 :variants="form.variants"
@@ -381,7 +463,7 @@ interface ProductSpecDefinition {
   options?: string
 }
 
-interface ProductTypeRecord {
+interface ProductSpecTemplateRecord {
   id: number
   name: string
   slug: string
@@ -393,6 +475,13 @@ interface ProductBrandRecord {
   id: number
   name: string
   slug: string
+  is_enabled?: boolean
+}
+
+interface ProductCategoryRecord {
+  id: number
+  name: string
+  depth: number
   is_enabled?: boolean
 }
 
@@ -409,6 +498,16 @@ interface InformationTemplateRecord {
   is_enabled?: boolean
 }
 
+interface CustomsClassificationRecord {
+  id: number
+  name: string
+  hs_code: string
+  cn_code?: string
+  country_of_origin?: string
+  customs_description?: string
+  status?: string
+}
+
 interface LanguageOption {
   value: string
   label: string
@@ -422,13 +521,15 @@ defineProps({
   submitting: { type: Boolean, default: false },
   form: { type: Object as PropType<ProductFormRecord>, required: true },
   errors: { type: Object as PropType<Record<string, string>>, default: () => ({}) },
-  productTypes: { type: Array as PropType<ProductTypeRecord[]>, default: () => [] },
+  productSpecTemplates: { type: Array as PropType<ProductSpecTemplateRecord[]>, default: () => [] },
   brands: { type: Array as PropType<ProductBrandRecord[]>, default: () => [] },
-  selectedProductType: { type: Object as PropType<ProductTypeRecord | null>, default: null },
+  productCategories: { type: Array as PropType<ProductCategoryRecord[]>, default: () => [] },
+  selectedProductSpecTemplate: { type: Object as PropType<ProductSpecTemplateRecord | null>, default: null },
   selectedSpecDefinitions: { type: Array as PropType<ProductSpecDefinition[]>, default: () => [] },
   variantSpecDefinitions: { type: Array as PropType<ProductSpecDefinition[]>, default: () => [] },
   defaultVariantIndex: { type: Number, default: 0 },
-  productTypeSelectValue: { type: String, default: '__none__' },
+  productSpecTemplateSelectValue: { type: String, default: '__none__' },
+  productCategorySelectValue: { type: String, default: '__none__' },
   brandSelectValue: { type: String, default: '__none__' },
   shippingTemplateSelectValue: { type: String, default: '__none__' },
   shippingTemplates: { type: Array as PropType<ShippingTemplateRecord[]>, default: () => [] },
@@ -436,6 +537,8 @@ defineProps({
   packagingTemplateSelectValue: { type: String, default: '__none__' },
   afterSalesTemplates: { type: Array as PropType<InformationTemplateRecord[]>, default: () => [] },
   packagingTemplates: { type: Array as PropType<InformationTemplateRecord[]>, default: () => [] },
+  customsClassifications: { type: Array as PropType<CustomsClassificationRecord[]>, default: () => [] },
+  customsClassificationSelectValue: { type: String, default: '__none__' },
   templateScopedValuesTouched: { type: Boolean, default: false },
   uploadingMedia: { type: Boolean, default: false },
   parseSpecOptions: { type: Function as PropType<(spec: ProductSpecDefinition) => ProductFormValue[]>, required: true },
@@ -449,10 +552,13 @@ const emit = defineEmits([
   'update:open',
   'submit',
   'clear-error',
-  'product-type-select',
+  'product-spec-template-select',
+  'product-category-select',
   'product-brand-select',
   'product-shipping-template-select',
   'product-information-template-select',
+  'customs-classification-select',
+  'customs-classification-manual-edit',
   'set-spec-select-value',
   'add-variant',
   'remove-variant',

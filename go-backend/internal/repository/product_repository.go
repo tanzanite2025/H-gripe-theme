@@ -45,6 +45,13 @@ func (r *ProductRepository) preloadProductVariantOptionValues(db *gorm.DB) *gorm
 	return db
 }
 
+func (r *ProductRepository) preloadProductCategory(db *gorm.DB) *gorm.DB {
+	if r.db.Migrator().HasTable(&product.ProductCategory{}) {
+		return db.Preload("ProductCategory")
+	}
+	return db
+}
+
 // Create 鍒涘缓浜у搧
 func (r *ProductRepository) Create(p *product.Product) error {
 	return r.db.Create(p).Error
@@ -136,11 +143,11 @@ func (r *ProductRepository) FindByID(id uint) (*product.Product, error) {
 
 func (r *ProductRepository) FindByIDContext(ctx context.Context, id uint) (*product.Product, error) {
 	var p product.Product
-	query := r.db.WithContext(ctx).Preload("Brand").Preload("Media", func(db *gorm.DB) *gorm.DB {
+	query := r.preloadProductCategory(r.db.WithContext(ctx).Preload("Brand")).Preload("Media", func(db *gorm.DB) *gorm.DB {
 		return orderProductMedia(db)
-	}).Preload("ProductType.SpecDefinitions", func(db *gorm.DB) *gorm.DB {
+	}).Preload("ProductSpecificationTemplate.SpecDefinitions", func(db *gorm.DB) *gorm.DB {
 		return orderSpecDefinitions(db)
-	}).Preload("ProductType.Translations", func(db *gorm.DB) *gorm.DB {
+	}).Preload("ProductSpecificationTemplate.Translations", func(db *gorm.DB) *gorm.DB {
 		return db.Order("locale ASC, id ASC")
 	}).Preload("SpecValues.SpecDefinition", func(db *gorm.DB) *gorm.DB {
 		return orderSpecDefinitions(db)
@@ -148,7 +155,7 @@ func (r *ProductRepository) FindByIDContext(ctx context.Context, id uint) (*prod
 		return orderProductVariants(db)
 	})
 	query = r.preloadProductVariantOptionValues(query)
-	err := query.Preload("AfterSalesTemplate").Preload("PackagingTemplate").First(&p, id).Error
+	err := query.Preload("AfterSalesTemplate").Preload("PackagingTemplate").Preload("CustomsClassificationProfile").First(&p, id).Error
 	if err != nil {
 		return nil, err
 	}
@@ -163,18 +170,18 @@ func (r *ProductRepository) FindBySlug(slug, locale string) (*product.Product, e
 
 func (r *ProductRepository) FindBySlugContext(ctx context.Context, slug, locale string) (*product.Product, error) {
 	var p product.Product
-	query := r.db.WithContext(ctx).Preload("Brand").Preload("Media", func(db *gorm.DB) *gorm.DB {
+	query := r.preloadProductCategory(r.db.WithContext(ctx).Preload("Brand")).Preload("Media", func(db *gorm.DB) *gorm.DB {
 		return orderProductMedia(db)
-	}).Preload("ProductType.SpecDefinitions", func(db *gorm.DB) *gorm.DB {
+	}).Preload("ProductSpecificationTemplate.SpecDefinitions", func(db *gorm.DB) *gorm.DB {
 		return orderSpecDefinitions(db)
-	}).Preload("ProductType.Translations", func(db *gorm.DB) *gorm.DB {
+	}).Preload("ProductSpecificationTemplate.Translations", func(db *gorm.DB) *gorm.DB {
 		return db.Order("locale ASC, id ASC")
 	}).Preload("SpecValues.SpecDefinition", func(db *gorm.DB) *gorm.DB {
 		return orderSpecDefinitions(db)
 	}).Preload("Variants", func(db *gorm.DB) *gorm.DB {
 		return orderProductVariants(db)
 	})
-	query = r.preloadProductVariantOptionValues(query).Preload("AfterSalesTemplate").Preload("PackagingTemplate").Where("slug = ?", slug)
+	query = r.preloadProductVariantOptionValues(query).Preload("AfterSalesTemplate").Preload("PackagingTemplate").Preload("CustomsClassificationProfile").Where("slug = ?", slug)
 
 	if locale != "" {
 		query = query.Where("locale = ?", locale)
@@ -193,7 +200,7 @@ func (r *ProductRepository) FindBySKU(sku string) (*product.Product, error) {
 	query := r.db.Preload("Brand").Preload("Media", func(db *gorm.DB) *gorm.DB { return orderProductMedia(db) }).
 		Preload("Variants", func(db *gorm.DB) *gorm.DB { return orderProductVariants(db) })
 	query = r.preloadProductVariantOptionValues(query)
-	err := query.Preload("AfterSalesTemplate").Preload("PackagingTemplate").
+	err := query.Preload("AfterSalesTemplate").Preload("PackagingTemplate").Preload("CustomsClassificationProfile").
 		Where("sku = ?", sku).First(&p).Error
 	if err != nil {
 		return nil, err
@@ -221,12 +228,12 @@ func (r *ProductRepository) FindProductCacheIdentitiesByIDs(ids []uint) ([]produ
 	return products, err
 }
 
-func (r *ProductRepository) FindProductCacheIdentitiesByProductTypeID(productTypeID uint) ([]product.Product, error) {
+func (r *ProductRepository) FindProductCacheIdentitiesByProductSpecificationTemplateID(productSpecificationTemplateID uint) ([]product.Product, error) {
 	var products []product.Product
-	if productTypeID == 0 {
+	if productSpecificationTemplateID == 0 {
 		return products, nil
 	}
-	err := r.db.Select("id", "slug", "locale").Where("product_type_id = ?", productTypeID).Find(&products).Error
+	err := r.db.Select("id", "slug", "locale").Where("product_specification_template_id = ?", productSpecificationTemplateID).Find(&products).Error
 	return products, err
 }
 
@@ -335,6 +342,16 @@ func (r *ProductRepository) UpdateWithSpecValuesVariantsOptionValuesAndMedia(
 		}
 		if err := tx.Save(p).Error; err != nil {
 			return err
+		}
+		if p.ProductCategoryID == nil {
+			if err := tx.Model(&product.Product{}).Where("id = ?", p.ID).UpdateColumn("product_category_id", nil).Error; err != nil {
+				return err
+			}
+		}
+		if p.CustomsClassificationProfileID == nil {
+			if err := tx.Model(&product.Product{}).Where("id = ?", p.ID).UpdateColumn("customs_classification_profile_id", nil).Error; err != nil {
+				return err
+			}
 		}
 
 		if replaceSpecs {

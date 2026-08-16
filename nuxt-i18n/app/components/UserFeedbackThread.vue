@@ -154,17 +154,18 @@
     <WhatsAppChatModal
       v-if="showWhatsApp"
       :conversation="{ showAgentList: true }"
-      @close="showWhatsApp = false"
+      @close="closeWhatsApp"
     />
   </section>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from '#imports'
 import AuthModal from '~/components/AuthModal.vue'
 import WhatsAppChatModal from '~/components/WhatsAppChatModal.vue'
 import { useFeedback } from '~/composables/useFeedback'
+import { createOverlayInstanceId, useOverlayBackStack } from '~/composables/useOverlayBackStack'
 
 const props = defineProps<{
   threadKey: string
@@ -202,6 +203,8 @@ const submitMessage = ref('')
 const submitError = ref('')
 const showAuth = ref(false)
 const showWhatsApp = ref(false)
+const overlayBackStack = useOverlayBackStack()
+const feedbackChatOverlayId = createOverlayInstanceId('feedback-chat')
 
 const titleText = computed(
   () => props.title || $t('feedback.defaultTitle', 'Share your feedback')
@@ -277,8 +280,19 @@ const onAuthSuccess = async () => {
 
 const openWhatsApp = () => {
   showWhatsApp.value = true
-  if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('ui:popup-open', { detail: { id: 'whatsapp-chat' } }))
-  }
+  overlayBackStack.open(feedbackChatOverlayId, () => {
+    showWhatsApp.value = false
+  })
 }
+
+const closeWhatsApp = () => {
+  void overlayBackStack.close(feedbackChatOverlayId)
+  showWhatsApp.value = false
+}
+
+onBeforeUnmount(() => {
+  if (overlayBackStack.isActive(feedbackChatOverlayId)) {
+    void overlayBackStack.close(feedbackChatOverlayId, 'navigate')
+  }
+})
 </script>

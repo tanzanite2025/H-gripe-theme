@@ -27,6 +27,11 @@ type adminNoteRequest struct {
 	AdminNote string `json:"admin_note"`
 }
 
+type orderItemCustomsRequest struct {
+	DeclaredValue          *float64 `json:"declared_value"`
+	DeclaredValueConfirmed bool     `json:"declared_value_confirmed"`
+}
+
 type orderDisputeContactEmailRequest struct {
 	Provider  string `json:"provider" binding:"required"`
 	DisputeID uint   `json:"dispute_id" binding:"required"`
@@ -67,6 +72,11 @@ func respondOrderServiceError(c *gin.Context, err error, fallbackMessage string,
 	case errors.Is(err, service.ErrSystemManagedOrderStatus):
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	case errors.Is(err, service.ErrOrderDeleteNotAllowed):
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	case errors.Is(err, service.ErrOrderItemNotFound):
+		c.JSON(http.StatusNotFound, gin.H{"error": "Order item not found"})
+	case errors.Is(err, service.ErrDeclaredValueInvalid),
+		errors.Is(err, service.ErrDeclaredValueConfirmationRequired):
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	case errors.Is(err, service.ErrTrackingNumberRequired),
 		errors.Is(err, service.ErrTrackingProviderRequired),

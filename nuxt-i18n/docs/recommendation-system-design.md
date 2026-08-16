@@ -77,7 +77,7 @@ flowchart LR
 
     RecommendData --> RecommendHandler
     Behavior --> BehaviorHandler
-    Categories -->|"/api/v1/products/types"| ProductService
+    Categories -->|"/api/v1/products/specification-templates"| ProductService
     Orders -. "purchase fact not yet connected" .-> BehaviorService
     ERP -. "no adapter or sync yet" .-> RecommendationService
 ```
@@ -89,7 +89,7 @@ flowchart LR
 | `ProductSearchPanel` | 组织搜索输入、筛选、推荐点击和曝光事件 | 不计算推荐分数 |
 | `SmartRecommendationPanel` | 复用产品 / 类目卡片布局，按可视区域记录产品曝光 | 不生成候选、不判断库存 |
 | `useSmartRecommendations` | 调用推荐接口，处理超时和目录降级 | 不做画像聚合、不做兼容判断 |
-| `useShopCategories` | 读取 `/products/types`，提供类目导航 | 不返回个性化类目推荐 |
+| `useShopCategories` | 读取 `/products/specification-templates`，提供类目导航 | 不返回个性化类目推荐 |
 | `RecommendationService` | 从公开商品目录生成 `rules-v1` 基线结果 | 不读取行为事件、用户画像、ERP、毛利或运输成本 |
 | `BehaviorEventService` | 校验、幂等接收行为事实并追加写入 | 不在请求路径中聚合画像 |
 | `ProductService` / `ProductRepository` | 提供主题商品目录和目录 variant 可售过滤 | 不代表 ERP 的库存事实 |
@@ -114,13 +114,13 @@ active product
 当前搜索抽屉的类目路径是另一条链路：
 
 ```text
-/api/v1/products/types
+/api/v1/products/specification-templates
   -> ProductService
   -> ProductRepository
   -> 类目导航
 ```
 
-类目导航和个性化商品推荐目前有意保持两个数据域。后续如果要推荐类目，应新增明确的类目推荐契约，不应把 `/products/types` 的返回结果偷偷解释成算法结果。
+类目导航和个性化商品推荐目前有意保持两个数据域。后续如果要推荐类目，应新增明确的类目推荐契约，不应把 `/products/specification-templates` 的返回结果偷偷解释成算法结果。
 
 当前行为事件也只完成“事实采集”：
 
@@ -1020,7 +1020,7 @@ updated_at
 | 推荐卡片展示组件 | 已完成，独立组件 | 否 |
 | 推荐数据读取层 | 已完成，独立 composable | 否 |
 | 公开商品目录数据源 | 已有 `/products` 基础接口 | 否，适合基线推荐 |
-| 类目与产品类型 | 已有公开接口 | 否，需补充规格映射 |
+| 类目与商品规格模板 | 已有公开接口 | 否，需补充规格映射 |
 | 浏览历史 | 本地浏览历史仍是独立业务能力；推荐行为事件已开始记录 | 是，不能单独代替推荐特征聚合 |
 | 页面停留和操作深度 | 页面停留、计算器和加购意图已接入；Technical Specs 等深度事件仍需逐项接入 | 是，阻塞完整意图评分 |
 | 加购、收藏、开始结算、购买行为事件 | 加购、收藏和开始结算已接入；`purchase` 仍需以后端订单事实为准 | 是，阻塞购买意图排序 |

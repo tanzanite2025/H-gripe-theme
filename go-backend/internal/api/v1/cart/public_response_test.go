@@ -11,7 +11,7 @@ import (
 func TestPublicCartSummaryUsesMinimalMediaContract(t *testing.T) {
 	variantID := uint(9)
 	shippingTemplateID := uint(12)
-	productTypeID := uint(13)
+	productSpecificationTemplateID := uint(13)
 	mediaAssetID := uint(14)
 
 	summary := &productdomain.CartSummary{
@@ -27,12 +27,12 @@ func TestPublicCartSummaryUsesMinimalMediaContract(t *testing.T) {
 				Price:     79.5,
 				Currency:  "USD",
 				Product: &productdomain.Product{
-					ID:                 7,
-					ProductTypeID:      &productTypeID,
-					ShippingTemplateID: &shippingTemplateID,
-					SKU:                "INTERNAL-PRODUCT-SKU",
-					Name:               "Public Cart Product",
-					Slug:               "public-cart-product",
+					ID:                             7,
+					ProductSpecificationTemplateID: &productSpecificationTemplateID,
+					ShippingTemplateID:             &shippingTemplateID,
+					SKU:                            "INTERNAL-PRODUCT-SKU",
+					Name:                           "Public Cart Product",
+					Slug:                           "public-cart-product",
 					Media: []productdomain.ProductMedia{
 						{
 							ID:           31,
@@ -78,7 +78,7 @@ func TestPublicCartSummaryUsesMinimalMediaContract(t *testing.T) {
 	body := string(payload)
 
 	for _, field := range []string{
-		`"product_type_id"`,
+		`"product_specification_template_id"`,
 		`"shipping_template_id"`,
 		`"sku"`,
 		`"weight_grams"`,

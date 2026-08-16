@@ -36,6 +36,7 @@ const (
 	DeploymentWorkflowStepPostHealthCheck = "post_deploy_health_check"
 	DeploymentWorkflowStepPurgeCache      = "purge_cache"
 	DeploymentWorkflowStepRecordRelease   = "record_release"
+	DeploymentWorkflowStepExecuteRollback = "execute_rollback"
 )
 
 type DeploymentWorkflowRun struct {

@@ -174,7 +174,7 @@ CREATE TABLE IF NOT EXISTS shipping_template_bindings (
     id BIGSERIAL PRIMARY KEY,
     template_id BIGINT NOT NULL REFERENCES shipping_templates(id) ON DELETE CASCADE,
     scope VARCHAR(30) NOT NULL,
-    product_type_id BIGINT,
+    product_specification_template_id BIGINT,
     product_id BIGINT,
     variant_id BIGINT,
     priority INTEGER NOT NULL DEFAULT 0,
@@ -186,7 +186,7 @@ CREATE TABLE IF NOT EXISTS shipping_template_bindings (
 
 ALTER TABLE shipping_template_bindings ADD COLUMN IF NOT EXISTS template_id BIGINT;
 ALTER TABLE shipping_template_bindings ADD COLUMN IF NOT EXISTS scope VARCHAR(30);
-ALTER TABLE shipping_template_bindings ADD COLUMN IF NOT EXISTS product_type_id BIGINT;
+ALTER TABLE shipping_template_bindings ADD COLUMN IF NOT EXISTS product_specification_template_id BIGINT;
 ALTER TABLE shipping_template_bindings ADD COLUMN IF NOT EXISTS product_id BIGINT;
 ALTER TABLE shipping_template_bindings ADD COLUMN IF NOT EXISTS variant_id BIGINT;
 ALTER TABLE shipping_template_bindings ADD COLUMN IF NOT EXISTS priority INTEGER DEFAULT 0;
@@ -197,7 +197,7 @@ ALTER TABLE shipping_template_bindings ADD COLUMN IF NOT EXISTS deleted_at TIMES
 
 CREATE INDEX IF NOT EXISTS idx_shipping_template_bindings_template_id ON shipping_template_bindings (template_id);
 CREATE INDEX IF NOT EXISTS idx_shipping_template_bindings_scope ON shipping_template_bindings (scope);
-CREATE INDEX IF NOT EXISTS idx_shipping_template_bindings_product_type_id ON shipping_template_bindings (product_type_id);
+CREATE INDEX IF NOT EXISTS idx_shipping_template_bindings_product_specification_template_id ON shipping_template_bindings (product_specification_template_id);
 CREATE INDEX IF NOT EXISTS idx_shipping_template_bindings_product_id ON shipping_template_bindings (product_id);
 CREATE INDEX IF NOT EXISTS idx_shipping_template_bindings_variant_id ON shipping_template_bindings (variant_id);
 CREATE INDEX IF NOT EXISTS idx_shipping_template_bindings_enabled ON shipping_template_bindings (enabled);

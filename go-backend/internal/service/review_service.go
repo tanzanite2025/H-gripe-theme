@@ -31,7 +31,7 @@ func (s *ReviewService) CreateReview(r *review.Review) error {
 		return errors.New("you have already reviewed this product")
 	}
 
-	r.Status = "pending"
+	r.Status = review.StatusPending
 	if err := s.reviewRepo.CreateReview(r); err != nil {
 		return err
 	}
@@ -48,18 +48,15 @@ func (s *ReviewService) GetPublicReview(id uint) (*review.Review, error) {
 	if err != nil {
 		return nil, err
 	}
-	if r.Status != "approved" {
+	if r.Status != review.StatusApproved {
 		return nil, ErrReviewNotPublic
 	}
 	normalizeReviewForPublic(r)
 	return r, nil
 }
 
-func (s *ReviewService) GetProductReviews(productID uint, page, pageSize int, status string) ([]review.Review, int64, error) {
-	if status == "" {
-		status = "approved"
-	}
-	items, total, err := s.reviewRepo.FindReviewsByProductID(productID, page, pageSize, status)
+func (s *ReviewService) GetProductReviews(productID uint, page, pageSize int) ([]review.Review, int64, error) {
+	items, total, err := s.reviewRepo.FindReviewsByProductID(productID, page, pageSize, review.StatusApproved)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -144,4 +141,8 @@ func (s *ReviewService) GetReviewSummary(productID uint) (*review.ReviewSummary,
 		return s.reviewRepo.GetOrCreateReviewSummary(productID)
 	}
 	return summary, nil
+}
+
+func (s *ReviewService) GetReviewSummaries(productIDs []uint) (map[uint]review.ReviewSummary, error) {
+	return s.reviewRepo.FindReviewSummariesByProductIDs(productIDs)
 }

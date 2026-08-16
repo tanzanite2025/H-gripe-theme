@@ -10,6 +10,7 @@ import (
 	"commerce-platform/internal/app"
 	"commerce-platform/internal/pkg/logger"
 	"commerce-platform/internal/pkg/storage"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -53,6 +54,11 @@ func registerLocalUploadsRoute(router *gin.Engine, deps *app.Dependencies) {
 		if !allowed {
 			c.Status(http.StatusNotFound)
 			return
+		}
+		if service.IsCustomerServiceAvatarStorageKey(key) {
+			// Avatar URLs are immutable because every replacement receives a new
+			// object key, so browser and CDN caches can retain them safely.
+			c.Header("Cache-Control", "public, max-age=31536000, immutable")
 		}
 
 		c.Request.URL.Path = "/" + key

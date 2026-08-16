@@ -114,6 +114,82 @@
         </Table>
       </OrderDetailSection>
 
+      <OrderDetailSection title="清关资料">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <p class="text-xs text-muted-foreground">按订单商品逐行导出，申报价值以当前人工确认结果为准。</p>
+          <Button
+            variant="outline"
+            size="sm"
+            :disabled="exportingCustoms || !currentOrder.items?.length"
+            @click="emit('export-customs')"
+          >
+            <Download :class="['size-3.5', exportingCustoms ? 'animate-pulse' : '']" />
+            {{ exportingCustoms ? '生成中' : '下载清关资料' }}
+          </Button>
+        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>商品</TableHead>
+              <TableHead>HS Code</TableHead>
+              <TableHead>CN Code</TableHead>
+              <TableHead>原产国</TableHead>
+              <TableHead>英文报关品名</TableHead>
+              <TableHead class="text-right">最终申报价值</TableHead>
+              <TableHead>状态</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableEmpty v-if="!currentOrder.items?.length" :colspan="7">暂无清关资料</TableEmpty>
+            <TableRow v-for="item in currentOrder.items || []" :key="`customs-${item.id || item.sku}`">
+              <TableCell class="max-w-40 truncate font-medium" :title="item.product_name || undefined">{{ item.product_name || '-' }}</TableCell>
+              <TableCell class="font-mono text-xs">{{ item.hs_code || '-' }}</TableCell>
+              <TableCell class="font-mono text-xs">{{ item.cn_code || '-' }}</TableCell>
+              <TableCell class="font-mono text-xs">{{ item.country_of_origin || '-' }}</TableCell>
+              <TableCell class="max-w-52 truncate text-xs" :title="item.customs_description || undefined">{{ item.customs_description || '-' }}</TableCell>
+              <TableCell class="min-w-52">
+                <div v-if="canEdit" class="flex items-center gap-2">
+                  <Input
+                    v-model="declaredValueDrafts[customsKey(item)]"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    class="w-32"
+                    placeholder="未填写"
+                    :disabled="isSavingCustomsItem(item)"
+                  />
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    class="size-8 shrink-0"
+                    :disabled="!canSaveCustomsItem(item)"
+                    title="保存申报价值"
+                    :aria-label="`保存 ${item.product_name || '商品'} 的申报价值`"
+                    @click="saveCustomsItem(item)"
+                  >
+                    <Save :class="['size-3.5', isSavingCustomsItem(item) ? 'animate-pulse' : '']" />
+                  </Button>
+                </div>
+                <span v-else class="font-mono text-xs">{{ formatDeclaredValue(item.declared_value) }}</span>
+              </TableCell>
+              <TableCell>
+                <div class="flex items-center gap-2">
+                  <Checkbox
+                    :model-value="declaredValueConfirmed(item)"
+                    :disabled="!canEdit || isSavingCustomsItem(item)"
+                    :aria-label="`确认 ${item.product_name || '商品'} 的申报价值`"
+                    @update:model-value="setDeclaredValueConfirmed(item, $event)"
+                  />
+                  <AdminStatusBadge :tone="declaredValueConfirmed(item) ? 'green' : 'amber'">
+                    {{ declaredValueConfirmed(item) ? '已确认' : '待确认' }}
+                  </AdminStatusBadge>
+                </div>
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </OrderDetailSection>
+
       <OrderDetailSection title="金额明细">
         <dl class="ml-auto max-w-md space-y-2 text-sm">
           <AmountRow label="商品小计" :value="currentOrder.subtotal_amount" />
@@ -267,10 +343,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineComponent, h } from 'vue'
-import { CreditCard, Mail, RefreshCw } from '@lucide/vue'
+import { computed, defineComponent, h, reactive, watch } from 'vue'
+import { CreditCard, Download, Mail, RefreshCw, Save } from '@lucide/vue'
 import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   DialogContent,
   DialogDescription,
@@ -278,6 +355,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
@@ -286,6 +364,8 @@ import type {
   OrderDateFormatter,
   OrderDisputeAnalysis,
   OrderDisputeCase,
+  OrderID,
+  OrderItem,
   OrderMoneyFormatter,
   OrderRecord,
   OrderShippingAddressLineResolver,
@@ -338,6 +418,8 @@ const props = withDefaults(defineProps<{
   disputeAnalysisLoading?: boolean
   adminNote?: string
   syncingTracking?: boolean
+  savingCustomsItemId?: OrderID | null
+  exportingCustoms?: boolean
   canEdit?: boolean
   orderStatusName: OrderStatusNameResolver
   orderStatusTone: OrderStatusToneResolver
@@ -362,6 +444,8 @@ const props = withDefaults(defineProps<{
   disputeAnalysisLoading: false,
   adminNote: '',
   syncingTracking: false,
+  savingCustomsItemId: null,
+  exportingCustoms: false,
   canEdit: false
 })
 
@@ -369,6 +453,8 @@ const emit = defineEmits<{
   (event: 'update:adminNote', value: string): void
   (event: 'sync-tracking'): void
   (event: 'update-note'): void
+  (event: 'update-customs', orderItemId: OrderID, declaredValue: number | null, declaredValueConfirmed: boolean): void
+  (event: 'export-customs'): void
   (event: 'contact-dispute', dispute: OrderDisputeCase): void
   (event: 'open-payment-workbench', dispute: OrderDisputeCase): void
 }>()
@@ -377,6 +463,50 @@ const adminNoteModel = computed<string>({
   get: () => props.adminNote,
   set: (value: string) => emit('update:adminNote', value),
 })
+
+const declaredValueDrafts = reactive<Record<string, string>>({})
+const declaredValueConfirmedDrafts = reactive<Record<string, boolean>>({})
+
+const customsKey = (item: OrderItem): string => String(item.id ?? item.sku ?? item.product_name ?? '')
+
+const initializeCustomsDrafts = (order?: OrderRecord | null): void => {
+  Object.keys(declaredValueDrafts).forEach((key) => delete declaredValueDrafts[key])
+  Object.keys(declaredValueConfirmedDrafts).forEach((key) => delete declaredValueConfirmedDrafts[key])
+  for (const item of order?.items || []) {
+    const key = customsKey(item)
+    declaredValueDrafts[key] = item.declared_value == null ? '' : String(item.declared_value)
+    declaredValueConfirmedDrafts[key] = Boolean(item.declared_value_confirmed)
+  }
+}
+
+watch(() => props.currentOrder, initializeCustomsDrafts, { immediate: true })
+
+const isSavingCustomsItem = (item: OrderItem): boolean => (
+  props.savingCustomsItemId != null && String(props.savingCustomsItemId) === String(item.id)
+)
+
+const declaredValueConfirmed = (item: OrderItem): boolean => (
+  declaredValueConfirmedDrafts[customsKey(item)] ?? Boolean(item.declared_value_confirmed)
+)
+
+const setDeclaredValueConfirmed = (item: OrderItem, value: boolean | 'indeterminate'): void => {
+  declaredValueConfirmedDrafts[customsKey(item)] = value === true
+}
+
+const canSaveCustomsItem = (item: OrderItem): boolean => {
+  if (!item.id || isSavingCustomsItem(item)) return false
+  const raw = (declaredValueDrafts[customsKey(item)] || '').trim()
+  if (raw === '') return !declaredValueConfirmed(item)
+  const value = Number(raw)
+  return Number.isFinite(value) && value >= 0
+}
+
+const saveCustomsItem = (item: OrderItem): void => {
+  if (!canSaveCustomsItem(item)) return
+  const raw = (declaredValueDrafts[customsKey(item)] || '').trim()
+  const declaredValue = raw === '' ? null : Number(raw)
+  emit('update-customs', item.id as OrderID, declaredValue, declaredValueConfirmed(item))
+}
 
 const providerLabel = (provider?: string | null): string => provider === 'paypal' ? 'PayPal' : 'Stripe'
 
@@ -397,6 +527,12 @@ const assessmentTone = (level?: string | null): OrderStatusTone => {
 }
 
 const disputeMoney = (amount?: number | string | null, currency?: string | null): string => props.formatMoney(amount, currency)
+
+const formatDeclaredValue = (value?: number | string | null): string => {
+  if (value == null || value === '') return '未填写'
+  const amount = Number(value)
+  return Number.isFinite(amount) ? amount.toFixed(2) : '未填写'
+}
 
 const disputeDeadline = (dispute: OrderDisputeCase): string => {
   if (dispute.evidence_submitted_at) return `已提交 ${props.formatDate(dispute.evidence_submitted_at)}`

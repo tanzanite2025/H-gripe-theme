@@ -98,6 +98,14 @@ func (s *s3StorageImpl) Upload(ctx context.Context, file *multipart.FileHeader) 
 }
 
 func (s *s3StorageImpl) UploadWithPrefix(ctx context.Context, file *multipart.FileHeader, prefix string) (string, error) {
+	return s.uploadWithPrefix(ctx, file, prefix, "")
+}
+
+func (s *s3StorageImpl) UploadWithPrefixAndCacheControl(ctx context.Context, file *multipart.FileHeader, prefix string, cacheControl string) (string, error) {
+	return s.uploadWithPrefix(ctx, file, prefix, cacheControl)
+}
+
+func (s *s3StorageImpl) uploadWithPrefix(ctx context.Context, file *multipart.FileHeader, prefix string, cacheControl string) (string, error) {
 	// 打开上传的文件
 	src, err := file.Open()
 	if err != nil {
@@ -115,13 +123,17 @@ func (s *s3StorageImpl) UploadWithPrefix(ctx context.Context, file *multipart.Fi
 	contentType := detectContentType(file.Filename)
 
 	// 上传到S3
-	_, err = s.client.PutObject(ctx, &s3.PutObjectInput{
+	input := &s3.PutObjectInput{
 		Bucket:      aws.String(s.config.Bucket),
 		Key:         aws.String(filename),
 		Body:        src,
 		ContentType: aws.String(contentType),
 		// ACL: types.ObjectCannedACLPublicRead, // 如果需要公开访问
-	})
+	}
+	if cacheControl = strings.TrimSpace(cacheControl); cacheControl != "" {
+		input.CacheControl = aws.String(cacheControl)
+	}
+	_, err = s.client.PutObject(ctx, input)
 
 	if err != nil {
 		return "", fmt.Errorf("failed to upload to S3: %w", err)

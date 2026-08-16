@@ -103,6 +103,8 @@ func (s *PaymentRiskMonitoringScheduler) recomputeOnce(ctx context.Context) {
 				zap.Int64("disputes", report.Snapshot.DisputeCount),
 				zap.Int64("early_fraud_warnings", report.Snapshot.EarlyFraudWarningCount),
 				zap.Int64("refunds", report.Snapshot.RefundCount),
+				zap.Int64("checkout_attempts", report.Snapshot.CheckoutAttemptCount),
+				zap.Int64("three_ds_upgrades", report.Snapshot.ThreeDSUpgradeCount),
 			)
 		}
 	}

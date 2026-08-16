@@ -173,7 +173,8 @@
       "items": "Items",
       "price": "Price",
       "openCart": "View cart summary"
-    }
+    },
+    "added": "Added to cart"
   },
   "cartDrawer": {
     "ariaLabel": "购物车",
@@ -318,7 +319,8 @@
       "actions": {
         "viewCart": "查看购物车",
         "livechat": "在线客服",
-        "email": "邮件"
+        "email": "邮件",
+        "checkout": "Checkout"
       },
       "messages": {
         "invalidQuote": "无效的结账报价响应",
@@ -418,7 +420,13 @@
         "points": {
           "b2b": "推荐用于 B2B 跨境付款。"
         }
-      }
+      },
+      "gatewayFallback": {
+        "title": "This payment provider is having trouble",
+        "description": "The previous attempt may still be processing. Choose another available method only if you did not complete it.",
+        "error": "The selected payment provider is temporarily unavailable. Please choose another available payment method."
+      },
+      "temporarilyUnavailable": "Temporarily unavailable"
     },
     "stepper": {
       "common": {
@@ -471,7 +479,8 @@
           "unavailable": "不可用",
           "calculating": "正在计算...",
           "free": "免费"
-        }
+        },
+        "zip": "Postal code"
       },
       "review": {
         "backToShipping": "返回配送信息",
@@ -501,7 +510,8 @@
         "pointsDiscount": "积分抵扣",
         "couponDiscount": "优惠券抵扣",
         "giftCardDiscount": "礼品卡抵扣",
-        "total": "总计"
+        "total": "总计",
+        "title": "Order summary"
       }
     },
     "fields": {
@@ -574,6 +584,15 @@
         "checking": "正在检查..."
       },
       "qrAlt": "微信支付二维码"
+    },
+    "steps": {
+      "payment": "Choose payment method"
+    },
+    "common": {
+      "processing": "Processing..."
+    },
+    "product": {
+      "buyNow": "Buy now"
     }
   },
   "common": {
@@ -584,7 +603,14 @@
     "backToHome": "Back to Home",
     "viewAll": "查看全部",
     "explore": "探索",
-    "currentPage": "Current page"
+    "currentPage": "Current page",
+    "retry": "Retry",
+    "yes": "Yes",
+    "no": "No",
+    "decrease": "Decrease",
+    "increase": "Increase",
+    "remove": "Remove",
+    "done": "Done"
   },
   "company": {
     "nav": {
@@ -1427,6 +1453,23 @@
       "shipping": "暂未添加运输方式说明。"
     }
   },
+  "productReviews": {
+    "eyebrow": "客户反馈",
+    "title": "评分与评价",
+    "summaryLabel": "满分 5 分，{count} 条评价平均 {rating} 分",
+    "reviewCount": "{count} 条评价",
+    "loading": "正在加载评价...",
+    "loadError": "评价暂时无法加载。",
+    "retry": "重试",
+    "empty": "暂时还没有已通过审核的评价。",
+    "ratingLabel": "满分 5 分，{rating} 星",
+    "imageAlt": "客户评价图片",
+    "verifiedPurchase": "已验证购买",
+    "helpfulCount": "{count} 人觉得有帮助",
+    "storeReply": "商家回复",
+    "loadingMore": "正在加载更多...",
+    "loadMore": "加载更多评价"
+  },
   "products": {
     "searchResults": "搜索结果",
     "searchFor": "搜索",
@@ -1449,6 +1492,20 @@
       "calculator": "Calculator",
       "points": "Points",
       "picture": "Picture"
+    },
+    "detail": {
+      "viewDetails": "Product details",
+      "media": "Product media",
+      "viewVideo": "View product video",
+      "viewImage": "View product image",
+      "option": "Option",
+      "inStock": "In stock",
+      "outOfStock": "Out of stock",
+      "specifications": "Specifications",
+      "quantity": "Quantity",
+      "decreaseQuantity": "Decrease quantity",
+      "increaseQuantity": "Increase quantity",
+      "notFound": "Product not found"
     }
   },
   "profile": {
@@ -1475,20 +1532,60 @@
       "weight": "重量",
       "price": "价格"
     },
-    "selection": {
-      "label": "已选择产品",
-      "editHint": "可在这里检查并调整已选产品",
-      "empty": "暂未选择产品"
-    },
     "actions": {
       "toCart": "去购物车",
       "payment": "付款",
-      "addToCart": "加入购物车",
-      "directPayment": "立即付款"
+      "addToCart": "Add to cart",
+      "directPayment": "Pay now"
+    },
+    "entry": {
+      "directSelect": {
+        "title": "I know my specs",
+        "description": "Choose configured items now.",
+        "action": "Start"
+      },
+      "readyMatch": {
+        "title": "Match ready wheelsets",
+        "description": "Coming next."
+      },
+      "wheelsetSelectionAssistant": {
+        "title": "查找我的车辆规格",
+        "description": "通过选项确认适配规格。",
+        "action": "开始",
+        "modalDescription": "先选择你已经知道的内容，我们只询问缺失的适配信息。"
+      },
+      "eyebrow": "QUICKBUY",
+      "title": "Choose how to start"
+    },
+    "help": {
+      "title": "QUICK instructions"
+    },
+    "filters": {
+      "label": "Filters",
+      "clear": "Clear",
+      "empty": "No values available"
     },
     "productRail": {
-      "empty": "当前步骤暂无可选产品"
+      "label": "Available products",
+      "empty": "No products are available for this step."
+    },
+    "selection": {
+      "label": "Selected products",
+      "editHint": "Review and adjust your selections"
+    },
+    "defaultSteps": {
+      "step1": "Step 1",
+      "step2": "Step 2",
+      "step3": "Step 3"
     }
+  },
+  "recommendations": {
+    "previous": "Previous recommended products",
+    "next": "Next recommended products",
+    "title": "Recommended products",
+    "empty": "No recommendations yet",
+    "shopTitle": "Recommended products",
+    "productDetailTitle": "You may also like"
   },
   "search": {
     "placeholder": "搜索...",

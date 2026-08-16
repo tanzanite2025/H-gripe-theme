@@ -34,6 +34,10 @@ type PaymentRiskMetricCounts struct {
 	EarlyFraudWarningCount  int64
 	RefundCount             int64
 	RefundAmount            float64
+	CheckoutAttemptCount    int64
+	ThreeDSUpgradeCount     int64
+	ThreeDSChallengeCount   int64
+	ThreeDSExemptionCount   int64
 }
 
 type PaymentRiskSnapshotPersistResult struct {
@@ -54,9 +58,14 @@ type PaymentRiskLevelChangedPayload struct {
 	DisputeCount           int64                          `json:"dispute_count"`
 	EarlyFraudWarningCount int64                          `json:"early_fraud_warning_count"`
 	RefundCount            int64                          `json:"refund_count"`
+	CheckoutAttemptCount   int64                          `json:"checkout_attempt_count"`
+	ThreeDSUpgradeCount    int64                          `json:"three_ds_upgrade_count"`
+	ThreeDSChallengeCount  int64                          `json:"three_ds_challenge_count"`
+	ThreeDSExemptionCount  int64                          `json:"three_ds_exemption_count"`
 	DisputeActivityRate    float64                        `json:"dispute_activity_rate"`
 	EarlyFraudWarningRate  float64                        `json:"early_fraud_warning_rate"`
 	RefundRate             float64                        `json:"refund_rate"`
+	ThreeDSUpgradeRate     float64                        `json:"three_ds_upgrade_rate"`
 	Reasons                []string                       `json:"reasons"`
 	RecommendedAction      string                         `json:"recommended_action"`
 	ComputedAt             time.Time                      `json:"computed_at"`
@@ -93,6 +102,46 @@ func (r *PaymentRiskRepository) UpsertPaymentRiskEvent(event *paymentdomain.Paym
 		return err
 	}
 	return r.db.Create(event).Error
+}
+
+func (r *PaymentRiskRepository) UpsertPaymentRiskCheckoutDecision(decision *paymentdomain.PaymentRiskCheckoutDecision) error {
+	if decision == nil {
+		return gorm.ErrInvalidData
+	}
+	decision.Provider = strings.ToLower(strings.TrimSpace(decision.Provider))
+	decision.ProviderPaymentID = strings.TrimSpace(decision.ProviderPaymentID)
+	if decision.Provider == "" || decision.ProviderPaymentID == "" {
+		return gorm.ErrInvalidData
+	}
+
+	var existing paymentdomain.PaymentRiskCheckoutDecision
+	err := r.db.Where(
+		"provider = ? AND provider_payment_id = ?",
+		decision.Provider,
+		decision.ProviderPaymentID,
+	).First(&existing).Error
+	if err == nil {
+		decision.ID = existing.ID
+		return r.db.Model(&paymentdomain.PaymentRiskCheckoutDecision{}).
+			Where("id = ?", existing.ID).
+			Updates(map[string]interface{}{
+				"order_id":             decision.OrderID,
+				"mode":                 decision.Mode,
+				"strategy":             decision.Strategy,
+				"exemption_candidate":  decision.ExemptionCandidate,
+				"risk_level":           decision.RiskLevel,
+				"risk_score":           decision.RiskScore,
+				"portfolio_risk_level": decision.PortfolioRiskLevel,
+				"reasons_json":         decision.ReasonsJSON,
+				"amount":               decision.Amount,
+				"currency":             decision.Currency,
+				"occurred_at":          decision.OccurredAt,
+			}).Error
+	}
+	if !IsRecordNotFound(err) {
+		return err
+	}
+	return r.db.Create(decision).Error
 }
 
 // CreatePaymentRiskSnapshotWithAlert persists the evaluated snapshot, moves
@@ -233,6 +282,29 @@ func (r *PaymentRiskRepository) CountPaymentRiskMetrics(provider string, start, 
 	if err := refundQuery.Select("COALESCE(SUM(refunds.amount), 0)").Scan(&counts.RefundAmount).Error; err != nil {
 		return PaymentRiskMetricCounts{}, err
 	}
+
+	checkoutDecisionBase := func() *gorm.DB {
+		return r.db.Model(&paymentdomain.PaymentRiskCheckoutDecision{}).
+			Where("provider = ? AND occurred_at >= ? AND occurred_at < ?", provider, start, end)
+	}
+	if err := checkoutDecisionBase().Count(&counts.CheckoutAttemptCount).Error; err != nil {
+		return PaymentRiskMetricCounts{}, err
+	}
+	if err := checkoutDecisionBase().
+		Where("mode IN ?", []string{"any", "challenge"}).
+		Count(&counts.ThreeDSUpgradeCount).Error; err != nil {
+		return PaymentRiskMetricCounts{}, err
+	}
+	if err := checkoutDecisionBase().
+		Where("mode = ?", "challenge").
+		Count(&counts.ThreeDSChallengeCount).Error; err != nil {
+		return PaymentRiskMetricCounts{}, err
+	}
+	if err := checkoutDecisionBase().
+		Where("exemption_candidate = ?", true).
+		Count(&counts.ThreeDSExemptionCount).Error; err != nil {
+		return PaymentRiskMetricCounts{}, err
+	}
 	return counts, nil
 }
 
@@ -288,9 +360,14 @@ func newPaymentRiskLevelChangedOutboxEvent(
 		DisputeCount:           snapshot.DisputeCount,
 		EarlyFraudWarningCount: snapshot.EarlyFraudWarningCount,
 		RefundCount:            snapshot.RefundCount,
+		CheckoutAttemptCount:   snapshot.CheckoutAttemptCount,
+		ThreeDSUpgradeCount:    snapshot.ThreeDSUpgradeCount,
+		ThreeDSChallengeCount:  snapshot.ThreeDSChallengeCount,
+		ThreeDSExemptionCount:  snapshot.ThreeDSExemptionCount,
 		DisputeActivityRate:    snapshot.DisputeActivityRate,
 		EarlyFraudWarningRate:  snapshot.EarlyFraudWarningRate,
 		RefundRate:             snapshot.RefundRate,
+		ThreeDSUpgradeRate:     snapshot.ThreeDSUpgradeRate,
 		Reasons:                reasons,
 		RecommendedAction:      snapshot.RecommendedAction,
 		ComputedAt:             snapshot.ComputedAt.UTC(),

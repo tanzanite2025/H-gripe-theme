@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-4">
-    <AdminPageHeader title="QUICK 配置" description="配置统一弹层说明、步骤名称和允许选择的产品类型，入口与选择行为由系统固定">
+    <AdminPageHeader title="QUICK 配置" description="配置统一弹层说明、步骤名称和每步产品分类，入口与选择行为由系统固定">
       <template #actions>
         <Button variant="outline" :disabled="loading" @click="reload">
           <RefreshCw class="size-4" />
@@ -31,7 +31,6 @@
               <h2 class="text-sm font-black uppercase tracking-tight">流程列表</h2>
               <p class="text-[11px] font-bold text-muted-foreground">{{ flows.length }} flows</p>
             </div>
-            <Badge variant="outline">{{ productTypes.length }} product types</Badge>
           </div>
         </template>
 
@@ -114,7 +113,7 @@
               <div v-if="validationIssues.length" class="mt-1 space-y-1">
                 <p
                   v-for="issue in validationIssues"
-                  :key="`${issue.severity}-${issue.code}-${issue.step_key || issue.rule_key || issue.product_type_id || issue.message}`"
+                  :key="`${issue.severity}-${issue.code}-${issue.step_key || issue.rule_key || issue.product_category_id || issue.product_specification_template_id || issue.message}`"
                   class="text-xs font-bold"
                 >
                   [{{ issue.severity }}] {{ issue.message }}
@@ -128,7 +127,7 @@
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h3 class="text-sm font-black uppercase tracking-tight">步骤配置</h3>
-                <p class="text-[11px] font-bold text-muted-foreground">每一步只配置名称和产品类型，统一说明在下方单独维护。</p>
+                <p class="text-[11px] font-bold text-muted-foreground">每一步配置名称和产品分类，统一说明在下方单独维护。</p>
               </div>
             </div>
 
@@ -150,30 +149,27 @@
                   <Input v-model="step.name" placeholder="请输入步骤名称" :disabled="formDisabled" />
                 </label>
 
-                <div class="mt-3">
-                  <span class="field-label">可选产品类型</span>
-                  <div class="mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-                    <label
-                      v-for="productType in productTypes"
-                      :key="productType.id"
-                      class="flex min-w-0 items-center gap-2 rounded-lg border border-dashed border-border/70 bg-background/70 px-2.5 py-2 text-xs font-bold"
+                <label class="mt-3 block space-y-1.5">
+                  <span class="field-label">产品分类</span>
+                  <select
+                    v-model.number="step.product_category_id"
+                    :class="nativeSelectClass"
+                    :disabled="formDisabled || !productCategoryOptions.length"
+                  >
+                    <option :value="0">请选择产品分类</option>
+                    <option
+                      v-for="category in productCategoryOptions"
+                      :key="category.id"
+                      :value="category.id"
                     >
-                      <input
-                        type="checkbox"
-                        class="size-4 shrink-0 accent-primary"
-                        :disabled="formDisabled"
-                        :checked="step.product_type_ids.includes(productTypeId(productType))"
-                        @change="toggleStepProductType(step, productTypeId(productType))"
-                      >
-                      <span class="min-w-0 flex-1 truncate">{{ productType.name || productType.slug }}</span>
-                      <Badge v-if="productType.is_enabled === false" variant="outline">off</Badge>
-                    </label>
-                  </div>
-                </div>
+                      {{ productCategoryOptionLabel(category) }}
+                    </option>
+                  </select>
+                </label>
 
                 <div class="mt-3 flex items-center justify-between gap-2">
                   <p class="font-mono text-[10px] font-bold text-muted-foreground">
-                    {{ step.product_type_ids.length }} product types
+                    {{ normalizeKey(step.step_key) }}
                   </p>
                 </div>
               </div>
@@ -285,7 +281,7 @@
                     <p class="truncate text-xs font-black">{{ previewProductName(product) }}</p>
                     <p class="truncate font-mono text-[10px] font-bold text-muted-foreground">{{ product.sku || product.slug }}</p>
                     <div class="mt-1 flex flex-wrap items-center gap-1">
-                      <Badge variant="outline">{{ product.product_type?.name || product.product_type?.slug || 'type' }}</Badge>
+                      <Badge variant="outline">{{ previewProductScopeLabel }}</Badge>
                       <Badge :variant="product.availability === 'in_stock' ? 'secondary' : 'outline'">{{ product.availability || 'unknown' }}</Badge>
                       <span class="text-[11px] font-black">{{ previewProductPrice(product) }}</span>
                     </div>
@@ -336,12 +332,12 @@ import quickBuyApi, {
   type QuickBuyFlowTranslation,
   type QuickBuyPreviewProduct,
   type QuickBuyPreviewResult,
+  type QuickBuyProductCategoryRef,
   type QuickBuyStep,
   type QuickBuyValidationResult,
   type QuickBuyVersionPayload,
 } from '@/api/quickBuy'
-import productTypeApi from '@/api/productTypes'
-import type { ProductTypeRecord } from '@/components/admin/product/productTypeTypes'
+import productCategoryApi, { type ProductCategoryRecord } from '@/api/productCategories'
 import { useSupportedLanguages } from '@/composables/useSupportedLanguages'
 import { normalizeLocaleCode } from '@/lib/languages'
 import { useAuthStore } from '@/stores/auth'
@@ -356,7 +352,7 @@ interface StepForm {
   client_id: number
   step_key: string
   name: string
-  product_type_ids: number[]
+  product_category_id: number
 }
 
 const defaultQuickBuyFlowSlug = 'quick-build'
@@ -365,7 +361,6 @@ const defaultQuickBuyStepNames = ['Step 1', 'Step 2', 'Step 3'] as const
 
 const flows = ref<QuickBuyFlowSummary[]>([])
 const selectedFlow = ref<QuickBuyFlow | null>(null)
-const productTypes = ref<ProductTypeRecord[]>([])
 const supportedLanguages = useSupportedLanguages()
 const languageOptions = supportedLanguages.languageOptions
 const activeFlowId = ref<number | null>(null)
@@ -376,6 +371,7 @@ const publishing = ref(false)
 const validating = ref(false)
 const validationResult = ref<QuickBuyValidationResult | null>(null)
 const stepForms = ref<StepForm[]>([])
+const productCategories = ref<ProductCategoryRecord[]>([])
 const flowHelpText = ref('')
 const flowHelpTranslations = ref<FlowTranslationForm[]>([])
 const previewing = ref(false)
@@ -405,6 +401,10 @@ const formDisabled = computed(() => !canEdit.value || loadingFlow.value || savin
 const validationIssues = computed(() => validationResult.value?.issues || [])
 const previewableSteps = computed(() => stepForms.value.filter((step) => normalizeKey(String(step.step_key || ''))))
 const previewProducts = computed(() => previewResult.value?.products || [])
+const previewProductScopeLabel = computed(() => {
+  const category = previewResult.value?.step?.product_categories?.[0]
+  return category?.name || category?.slug || '产品分类'
+})
 const validationTitle = computed(() => {
   if (!validationResult.value) return ''
   const errorCount = validationIssues.value.filter((issue) => issue.severity === 'error').length
@@ -418,10 +418,11 @@ const statItems = computed(() => [
   { key: 'flows', label: 'Flows', value: flows.value.length, icon: Zap, tone: 'blue' },
   { key: 'enabled', label: 'Enabled', value: flows.value.filter((flow) => flow.is_enabled).length, icon: Layers3, tone: 'green' },
   { key: 'drafts', label: 'Draft versions', value: flows.value.filter((flow) => draftVersion(flow)).length, icon: ListChecks, tone: 'amber' },
-  { key: 'product-types', label: 'Product types', value: productTypes.value.length, icon: Layers3, tone: 'gray' },
+  { key: 'steps', label: 'Steps', value: stepForms.value.length, icon: ListChecks, tone: 'gray' },
 ])
 
-const productTypeId = (productType: ProductTypeRecord) => Number(productType.id)
+const productCategoryOptions = computed(() => productCategories.value)
+
 const languageLabel = (locale: string) => supportedLanguages.localeName(locale)
 const filledFlowHelpTranslationCount = computed(() => flowHelpTranslations.value.filter((translation) => (
   translation.help_text.trim()
@@ -432,6 +433,21 @@ const normalizeKey = (value: string) => value
   .toLowerCase()
   .replace(/\s+/g, '-')
   .replace(/[^a-z0-9_-]/g, '')
+
+const productCategoryOptionLabel = (category: ProductCategoryRecord) => {
+  const indent = '　'.repeat(Math.max(Number(category.depth || 1) - 1, 0))
+  const status = category.is_enabled === false ? '（已停用）' : ''
+  return `${indent}${category.name || category.slug}${status}`
+}
+
+const defaultProductCategoryID = () => {
+  const enabled = productCategoryOptions.value.find((category) => category.is_enabled !== false)
+  return Number(enabled?.id || 0)
+}
+
+const firstProductCategoryID = (categories: QuickBuyProductCategoryRef[] = []) => (
+  Number(categories.find((category) => Number(category.id || 0) > 0)?.id || 0)
+)
 
 const draftVersion = (flow: QuickBuyFlowSummary) => (flow.versions || []).find((version) => version.status === 'draft')
 const publishedVersion = (flow: QuickBuyFlowSummary) => (flow.versions || []).find((version) => version.status === 'published')
@@ -481,7 +497,7 @@ const emptyStep = (index = stepForms.value.length, overrides: Partial<StepForm> 
   client_id: nextStepClientID++,
   step_key: `step-${index + 1}`,
   name: `Step ${index + 1}`,
-  product_type_ids: [],
+  product_category_id: defaultProductCategoryID(),
   ...overrides,
 })
 
@@ -525,7 +541,7 @@ const stepToForm = (step: QuickBuyStep, index: number): StepForm => ({
   client_id: nextStepClientID++,
   step_key: normalizeKey(step.step_key || step.slug || defaultQuickBuyStepKeys[index] || `step-${index + 1}`),
   name: step.name || defaultQuickBuyStepNames[index] || `Step ${index + 1}`,
-  product_type_ids: (step.product_types || []).map((productType) => Number(productType.id)).filter(Boolean),
+  product_category_id: firstProductCategoryID(step.product_categories || []) || defaultProductCategoryID(),
 })
 
 const buildVersionPayload = (): QuickBuyVersionPayload => ({
@@ -534,7 +550,7 @@ const buildVersionPayload = (): QuickBuyVersionPayload => ({
   steps: stepForms.value.map((step, index) => ({
     step_key: normalizeKey(step.step_key) || defaultQuickBuyStepKeys[index] || `step-${index + 1}`,
     name: step.name.trim() || defaultQuickBuyStepNames[index] || `Step ${index + 1}`,
-    product_type_ids: step.product_type_ids,
+    product_category_ids: Number(step.product_category_id || 0) > 0 ? [Number(step.product_category_id)] : [],
   })),
 })
 
@@ -556,19 +572,21 @@ const buildFlowPayload = (): QuickBuyFlowPayload => ({
   version: buildVersionPayload(),
 })
 
-const loadProductTypes = async () => {
-  productTypes.value = await productTypeApi.list({ include_disabled: true })
-}
-
 const loadFlows = async () => {
   flows.value = (await quickBuyApi.listFlows()).filter((flow) => normalizeKey(flow.slug) === defaultQuickBuyFlowSlug)
+}
+
+const loadProductCategories = async () => {
+  const payload = await productCategoryApi.list({ include_disabled: true })
+  productCategories.value = payload.flat || []
 }
 
 const reload = async () => {
   loading.value = true
   try {
     await supportedLanguages.fetchLanguages()
-    await Promise.all([loadProductTypes(), loadFlows()])
+    await loadProductCategories()
+    await loadFlows()
     if (activeFlowId.value && flows.value.some((flow) => flow.id === activeFlowId.value)) {
       await selectFlow(activeFlowId.value)
     } else if (flows.value[0]?.id) {
@@ -739,19 +757,6 @@ const addStep = () => {
   previewResult.value = null
   stepForms.value.push(emptyStep())
   syncPreviewStepKey()
-}
-
-const toggleStepProductType = (step: StepForm, productTypeID: number) => {
-  if (!canEdit.value) return
-  if (!productTypeID) return
-  validationResult.value = null
-  previewResult.value = null
-  const index = step.product_type_ids.indexOf(productTypeID)
-  if (index >= 0) {
-    step.product_type_ids.splice(index, 1)
-  } else {
-    step.product_type_ids.push(productTypeID)
-  }
 }
 
 onMounted(() => {

@@ -12,41 +12,49 @@ import (
 const DefaultPriceCurrency = "USD"
 
 type Product struct {
-	ID                   uint                        `gorm:"primarykey" json:"id"`
-	ProductTypeID        *uint                       `gorm:"index" json:"product_type_id"`
-	BrandID              *uint                       `gorm:"index" json:"brand_id,omitempty"`
-	ShippingTemplateID   *uint                       `gorm:"index" json:"shipping_template_id"`
-	AfterSalesTemplateID *uint                       `gorm:"index" json:"after_sales_template_id"`
-	PackagingTemplateID  *uint                       `gorm:"index" json:"packaging_template_id"`
-	SKU                  string                      `gorm:"uniqueIndex;not null" json:"sku"`
-	Name                 string                      `gorm:"not null;index" json:"name"`
-	Slug                 string                      `gorm:"uniqueIndex:idx_product_slug_locale;not null" json:"slug"`
-	Description          string                      `gorm:"type:text" json:"description"`
-	ShortDesc            string                      `gorm:"type:text" json:"short_description"`
-	Currency             string                      `gorm:"size:3;not null;default:'USD';index" json:"currency"`
-	Price                float64                     `gorm:"not null" json:"price"`
-	SalePrice            *float64                    `json:"sale_price"`
-	DisplayPriceData     datatypes.JSON              `gorm:"column:display_prices;type:json;not null;default:'[]'" json:"display_prices,omitempty"`
-	Stock                int                         `gorm:"default:0" json:"stock"`
-	Status               string                      `gorm:"default:'active';index" json:"status"` // active, inactive, out_of_stock
-	Locale               string                      `gorm:"uniqueIndex:idx_product_slug_locale;default:'en';index" json:"locale"`
-	ParentID             *uint                       `gorm:"index" json:"parent_id"` // 翻译关联
-	Featured             bool                        `gorm:"default:false" json:"featured"`
-	ViewCount            int                         `gorm:"default:0" json:"view_count"`
-	MetaTitle            string                      `json:"meta_title"`
-	MetaDesc             string                      `gorm:"type:text" json:"meta_description"`
-	Media                []ProductMedia              `gorm:"foreignKey:ProductID" json:"media,omitempty"`
-	ProductType          *ProductType                `gorm:"foreignKey:ProductTypeID" json:"product_type,omitempty"`
-	Brand                *ProductBrand               `gorm:"foreignKey:BrandID;constraint:OnDelete:RESTRICT" json:"brand,omitempty"`
-	AfterSalesTemplate   *ProductInformationTemplate `gorm:"foreignKey:AfterSalesTemplateID;constraint:OnDelete:SET NULL" json:"after_sales_template,omitempty"`
-	PackagingTemplate    *ProductInformationTemplate `gorm:"foreignKey:PackagingTemplateID;constraint:OnDelete:SET NULL" json:"packaging_template,omitempty"`
-	SpecValues           []ProductSpecValue          `gorm:"foreignKey:ProductID" json:"spec_values,omitempty"`
-	Variants             []ProductVariant            `gorm:"foreignKey:ProductID" json:"variants,omitempty"`
-	VariantOptionValues  []ProductVariantOptionValue `gorm:"foreignKey:ProductID" json:"variant_option_values,omitempty"`
-	TranslationGroup     *ProductTranslationGroup    `gorm:"-" json:"translation_group,omitempty"`
-	CreatedAt            time.Time                   `json:"created_at"`
-	UpdatedAt            time.Time                   `json:"updated_at"`
-	DeletedAt            gorm.DeletedAt              `gorm:"index" json:"-"`
+	ID                             uint                          `gorm:"primarykey" json:"id"`
+	ProductSpecificationTemplateID *uint                         `gorm:"index" json:"product_specification_template_id"`
+	ProductCategoryID              *uint                         `gorm:"index" json:"product_category_id"`
+	BrandID                        *uint                         `gorm:"index" json:"brand_id,omitempty"`
+	ShippingTemplateID             *uint                         `gorm:"index" json:"shipping_template_id"`
+	AfterSalesTemplateID           *uint                         `gorm:"index" json:"after_sales_template_id"`
+	PackagingTemplateID            *uint                         `gorm:"index" json:"packaging_template_id"`
+	CustomsClassificationProfileID *uint                         `gorm:"index" json:"customs_classification_profile_id,omitempty"`
+	HSCode                         string                        `gorm:"column:hs_code;size:12" json:"hs_code"`
+	CNCode                         string                        `gorm:"column:cn_code;size:12" json:"cn_code"`
+	CountryOfOrigin                string                        `gorm:"column:country_of_origin;size:2" json:"country_of_origin"`
+	CustomsDescription             string                        `gorm:"column:customs_description;size:255" json:"customs_description"`
+	SKU                            string                        `gorm:"uniqueIndex;not null" json:"sku"`
+	Name                           string                        `gorm:"not null;index" json:"name"`
+	Slug                           string                        `gorm:"uniqueIndex:idx_product_slug_locale;not null" json:"slug"`
+	Description                    string                        `gorm:"type:text" json:"description"`
+	ShortDesc                      string                        `gorm:"type:text" json:"short_description"`
+	Currency                       string                        `gorm:"size:3;not null;default:'USD';index" json:"currency"`
+	Price                          float64                       `gorm:"not null" json:"price"`
+	SalePrice                      *float64                      `json:"sale_price"`
+	DisplayPriceData               datatypes.JSON                `gorm:"column:display_prices;type:json;not null;default:'[]'" json:"display_prices,omitempty"`
+	Stock                          int                           `gorm:"default:0" json:"stock"`
+	Status                         string                        `gorm:"default:'active';index" json:"status"` // active, inactive, out_of_stock
+	Locale                         string                        `gorm:"uniqueIndex:idx_product_slug_locale;default:'en';index" json:"locale"`
+	ParentID                       *uint                         `gorm:"index" json:"parent_id"` // 翻译关联
+	Featured                       bool                          `gorm:"default:false" json:"featured"`
+	ViewCount                      int                           `gorm:"default:0" json:"view_count"`
+	MetaTitle                      string                        `json:"meta_title"`
+	MetaDesc                       string                        `gorm:"type:text" json:"meta_description"`
+	Media                          []ProductMedia                `gorm:"foreignKey:ProductID" json:"media,omitempty"`
+	ProductSpecificationTemplate   *ProductSpecificationTemplate `gorm:"foreignKey:ProductSpecificationTemplateID" json:"product_specification_template,omitempty"`
+	ProductCategory                *ProductCategory              `gorm:"foreignKey:ProductCategoryID;constraint:OnDelete:SET NULL" json:"product_category,omitempty"`
+	Brand                          *ProductBrand                 `gorm:"foreignKey:BrandID;constraint:OnDelete:RESTRICT" json:"brand,omitempty"`
+	AfterSalesTemplate             *ProductInformationTemplate   `gorm:"foreignKey:AfterSalesTemplateID;constraint:OnDelete:SET NULL" json:"after_sales_template,omitempty"`
+	PackagingTemplate              *ProductInformationTemplate   `gorm:"foreignKey:PackagingTemplateID;constraint:OnDelete:SET NULL" json:"packaging_template,omitempty"`
+	CustomsClassificationProfile   *CustomsClassificationProfile `gorm:"foreignKey:CustomsClassificationProfileID;constraint:OnDelete:SET NULL" json:"customs_classification_profile,omitempty"`
+	SpecValues                     []ProductSpecValue            `gorm:"foreignKey:ProductID" json:"spec_values,omitempty"`
+	Variants                       []ProductVariant              `gorm:"foreignKey:ProductID" json:"variants,omitempty"`
+	VariantOptionValues            []ProductVariantOptionValue   `gorm:"foreignKey:ProductID" json:"variant_option_values,omitempty"`
+	TranslationGroup               *ProductTranslationGroup      `gorm:"-" json:"translation_group,omitempty"`
+	CreatedAt                      time.Time                     `json:"created_at"`
+	UpdatedAt                      time.Time                     `json:"updated_at"`
+	DeletedAt                      gorm.DeletedAt                `gorm:"index" json:"-"`
 }
 
 // TableName 指定表名

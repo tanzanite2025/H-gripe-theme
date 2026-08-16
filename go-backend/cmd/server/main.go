@@ -130,6 +130,11 @@ func main() {
 	if err != nil {
 		logger.Fatal("dependency initialization failed", zap.Error(err))
 	}
+	if deps.CustomerServiceRealtimeRelay != nil {
+		if err := deps.CustomerServiceRealtimeRelay.Start(context.Background()); err != nil {
+			logger.Fatal("customer-service realtime relay failed to start", zap.Error(err))
+		}
+	}
 
 	router := setupRouter(db, redisCache, cfg, deps)
 
@@ -274,6 +279,9 @@ func main() {
 	}
 	if visitorRiskFlushScheduler != nil {
 		visitorRiskFlushScheduler.Stop()
+	}
+	if deps.CustomerServiceRealtimeRelay != nil {
+		deps.CustomerServiceRealtimeRelay.Stop()
 	}
 
 	logger.Info("server stopped")

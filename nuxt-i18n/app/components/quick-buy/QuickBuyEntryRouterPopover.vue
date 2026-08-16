@@ -1,8 +1,13 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import QuickBuyModal from '~/components/QuickBuy.vue'
+import WheelsetSelectionAssistantModal from '~/components/WheelsetSelectionAssistantModal.vue'
+import WheelsetSelectionAssistantFlow from '~/components/wheelset-selection/WheelsetSelectionAssistantFlow.vue'
 import QuickBuyEntryModePanel from '~/components/quick-buy/QuickBuyEntryModePanel.vue'
+import { createOverlayInstanceId, useOverlayBackStack } from '~/composables/useOverlayBackStack'
+import { useChatWidget } from '~/composables/useChatWidget'
 import type { QuickBuyConfig } from '~/utils/quickBuy/types'
+import type { WheelsetSelectionRequestDraft } from '~/types/wheelsetSelectionAssistant'
 
 const props = withDefaults(defineProps<{
   config: QuickBuyConfig | null
@@ -12,8 +17,11 @@ const props = withDefaults(defineProps<{
 })
 
 const emit = defineEmits<{ close: [] }>()
+const overlayBackStack = useOverlayBackStack()
+const overlayId = createOverlayInstanceId('quick-buy')
+const { openChat } = useChatWidget()
 
-const activeMode = ref<'entry' | 'direct-select'>('entry')
+const activeMode = ref<'entry' | 'direct-select' | 'wheelset-selection-assistant'>('entry')
 const popoverRef = ref<HTMLElement | null>(null)
 const popoverStyle = ref<Record<string, string>>({
   left: '50%',
@@ -57,8 +65,44 @@ const openDirectSelect = () => {
   activeMode.value = 'direct-select'
 }
 
-const handleClose = () => {
+const openWheelsetSelectionAssistant = () => {
+  activeMode.value = 'wheelset-selection-assistant'
+}
+
+const returnToEntryMode = () => {
+  activeMode.value = 'entry'
+  void updatePopoverPosition()
+}
+
+const handleWheelsetSelectionAssistantModelUpdate = (value: boolean) => {
+  if (!value) {
+    returnToEntryMode()
+  }
+}
+
+const closeState = () => {
   emit('close')
+}
+
+const closeQuickBuyOverlay = async () => {
+  const closePromise = overlayBackStack.close(overlayId)
+  emit('close')
+  await closePromise
+}
+
+const openWheelsetSelectionSupportChat = async (draft?: WheelsetSelectionRequestDraft) => {
+  // Replace QuickBuy with chat in one overlay transaction so browser-back
+  // cannot race the handoff and discard the chat state.
+  openChat({
+    showAgentList: true,
+    source: 'wheelset-selection-assistant',
+    pendingSelectionRequest: draft || null,
+  })
+  await nextTick()
+}
+
+const handleClose = () => {
+  void closeQuickBuyOverlay()
 }
 
 const closeWhenClickingOutside = (event: PointerEvent) => {
@@ -67,16 +111,18 @@ const closeWhenClickingOutside = (event: PointerEvent) => {
   if (!(target instanceof Node)) return
   if (popoverRef.value?.contains(target)) return
   if (props.anchor?.contains(target)) return
-  emit('close')
+  handleClose()
 }
 
 const closeWhenEscapeIsPressed = (event: KeyboardEvent) => {
+  if (activeMode.value !== 'entry') return
   if (event.key === 'Escape') {
-    emit('close')
+    handleClose()
   }
 }
 
 onMounted(() => {
+  overlayBackStack.open(overlayId, closeState)
   updatePopoverPosition()
   window.addEventListener('resize', updatePopoverPosition)
   window.addEventListener('scroll', updatePopoverPosition, true)
@@ -85,6 +131,9 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  if (overlayBackStack.isActive(overlayId)) {
+    void overlayBackStack.close(overlayId)
+  }
   window.removeEventListener('resize', updatePopoverPosition)
   window.removeEventListener('scroll', updatePopoverPosition, true)
   document.removeEventListener('pointerdown', closeWhenClickingOutside, true)
@@ -99,6 +148,21 @@ onBeforeUnmount(() => {
     @close="handleClose"
   />
 
+  <WheelsetSelectionAssistantModal
+    v-else-if="activeMode === 'wheelset-selection-assistant'"
+    :model-value="true"
+    source="quick-buy/wheelset-selection-assistant"
+    description=""
+    :show-steps="false"
+    @update:model-value="handleWheelsetSelectionAssistantModelUpdate"
+    @close="returnToEntryMode"
+  >
+    <WheelsetSelectionAssistantFlow
+      source="quick-buy/wheelset-selection-assistant"
+      @contact-support="openWheelsetSelectionSupportChat"
+    />
+  </WheelsetSelectionAssistantModal>
+
   <teleport v-else to="body">
     <Transition name="quickbuy-entry-popover">
       <div
@@ -108,7 +172,10 @@ onBeforeUnmount(() => {
         role="dialog"
         aria-modal="false"
       >
-        <QuickBuyEntryModePanel @direct-select="openDirectSelect" />
+        <QuickBuyEntryModePanel
+          @direct-select="openDirectSelect"
+          @wheelset-selection-assistant="openWheelsetSelectionAssistant"
+        />
       </div>
     </Transition>
   </teleport>

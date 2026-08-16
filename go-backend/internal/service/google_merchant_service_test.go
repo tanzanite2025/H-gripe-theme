@@ -215,7 +215,7 @@ func newTestGoogleMerchantService(t *testing.T) (*gorm.DB, *GoogleMerchantServic
 	})
 
 	if err := db.AutoMigrate(
-		&product.ProductType{},
+		&product.ProductSpecificationTemplate{},
 		&product.SpecDefinition{},
 		&product.Product{},
 		&product.ProductMedia{},

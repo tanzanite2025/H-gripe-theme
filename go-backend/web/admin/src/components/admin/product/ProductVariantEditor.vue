@@ -10,7 +10,7 @@
 
     <div class="mb-3 rounded-lg border border-dashed bg-muted/20 px-3 py-2 text-xs leading-5 text-muted-foreground">
       <span v-if="specDefinitions.length">
-        SKU 选项列来自已绑定产品模板；每一行仍单独维护价格、重量、运费模板和库存，主基准币种继承商品。
+          SKU 选项列来自已绑定商品规格模板；每一行仍单独维护价格、重量、运费模板和库存，主基准币种继承商品。
       </span>
       <span v-else>
         当前没有模板 SKU 选项字段；先维护默认 SKU、价格、重量、运费模板和库存即可，主基准币种继承商品。

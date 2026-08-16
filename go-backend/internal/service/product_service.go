@@ -17,7 +17,9 @@ import (
 type ProductService struct {
 	productRepo                    *repository.ProductRepository
 	productBrandRepo               *repository.ProductBrandRepository
+	productCategoryRepo            *repository.ProductCategoryRepository
 	informationTemplateRepo        *repository.ProductInformationTemplateRepository
+	customsClassificationRepo      *repository.CustomsClassificationRepository
 	mediaService                   mediaAssetDeleter
 	currencyPolicy                 *CurrencyPolicyService
 	cache                          *cache.RedisCache
@@ -74,6 +76,20 @@ func (s *ProductService) ConfigureProductBrandRepository(repo *repository.Produc
 	s.productBrandRepo = repo
 }
 
+func (s *ProductService) ConfigureCustomsClassificationRepository(repo *repository.CustomsClassificationRepository) {
+	if s == nil {
+		return
+	}
+	s.customsClassificationRepo = repo
+}
+
+func (s *ProductService) ConfigureProductCategoryRepository(repo *repository.ProductCategoryRepository) {
+	if s == nil {
+		return
+	}
+	s.productCategoryRepo = repo
+}
+
 func (s *ProductService) validateProductBrand(id *uint, allowDisabled bool) error {
 	if id == nil || *id == 0 {
 		return nil
@@ -90,6 +106,26 @@ func (s *ProductService) validateProductBrand(id *uint, allowDisabled bool) erro
 	}
 	if !brand.IsEnabled && !allowDisabled {
 		return fmt.Errorf("%w: brand is disabled", ErrProductBrandInvalid)
+	}
+	return nil
+}
+
+func (s *ProductService) validateProductCategory(id *uint, allowDisabled bool) error {
+	if id == nil || *id == 0 {
+		return nil
+	}
+	if s.productCategoryRepo == nil {
+		return fmt.Errorf("%w: category repository is not configured", ErrProductCategoryInvalid)
+	}
+	category, err := s.productCategoryRepo.FindByID(*id)
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return ErrProductCategoryNotFound
+	}
+	if err != nil {
+		return err
+	}
+	if !category.IsEnabled && !allowDisabled {
+		return fmt.Errorf("%w: category is disabled", ErrProductCategoryInvalid)
 	}
 	return nil
 }
@@ -127,39 +163,43 @@ func (s *ProductService) ConfigureTxManager(manager *repository.TxManager) {
 }
 
 var (
-	ErrProductNotFound               = errors.New("product not found")
-	ErrProductSKUExists              = errors.New("product sku already exists")
-	ErrProductTypeNotFound           = errors.New("product type not found")
-	ErrProductTypeInvalid            = errors.New("product type invalid")
-	ErrProductTypeSlugExists         = errors.New("product type slug already exists")
-	ErrProductTypeSystemManaged      = errors.New("system product type structure is managed by the platform")
-	ErrProductTypeTranslationInvalid = errors.New("product type translation invalid")
-	ErrProductLocaleImmutable        = errors.New("product locale cannot be changed after creation")
-	ErrProductSpecInvalid            = errors.New("product spec invalid")
-	ErrProductVariantInvalid         = errors.New("product variant invalid")
-	ErrProductMediaInvalid           = errors.New("product media invalid")
-	ErrProductTranslationInvalid     = errors.New("product translation relationship invalid")
+	ErrProductNotFound                                = errors.New("product not found")
+	ErrProductSKUExists                               = errors.New("product sku already exists")
+	ErrProductSpecificationTemplateNotFound           = errors.New("product specification template not found")
+	ErrProductSpecificationTemplateInvalid            = errors.New("product specification template invalid")
+	ErrProductSpecificationTemplateSlugExists         = errors.New("product specification template slug already exists")
+	ErrProductSpecificationTemplateSystemManaged      = errors.New("system product specification template structure is managed by the platform")
+	ErrProductSpecificationTemplateTranslationInvalid = errors.New("product specification template translation invalid")
+	ErrProductLocaleImmutable                         = errors.New("product locale cannot be changed after creation")
+	ErrProductSpecInvalid                             = errors.New("product spec invalid")
+	ErrProductVariantInvalid                          = errors.New("product variant invalid")
+	ErrProductMediaInvalid                            = errors.New("product media invalid")
+	ErrProductCustomsInfoInvalid                      = errors.New("product customs information invalid")
+	ErrProductCustomsProfileNotFound                  = errors.New("product customs classification profile not found")
+	ErrProductCustomsProfileInvalid                   = errors.New("product customs classification profile invalid")
+	ErrProductTranslationInvalid                      = errors.New("product translation relationship invalid")
 )
 
 type ProductSearchInput struct {
-	Locale      string
-	Status      string
-	Keyword     string
-	TypeSlug    string
-	BrandSlug   string
-	PriceMin    *float64
-	PriceMax    *float64
-	SpecFilters map[string][]string
-	Page        int
-	PageSize    int
+	Locale       string
+	Status       string
+	Keyword      string
+	ProductSpecificationTemplateSlug     string
+	CategorySlug string
+	BrandSlug    string
+	PriceMin     *float64
+	PriceMax     *float64
+	SpecFilters  map[string][]string
+	Page         int
+	PageSize     int
 }
 
 type ProductRecommendationCandidateInput struct {
-	ProductTypeID     *uint
-	Keyword           string
-	ExcludeProductIDs []uint
-	Page              int
-	PageSize          int
+	ProductSpecificationTemplateID *uint
+	Keyword                        string
+	ExcludeProductIDs              []uint
+	Page                           int
+	PageSize                       int
 }
 
 func (s *ProductService) GetByID(id uint) (*product.Product, error) {
@@ -471,11 +511,11 @@ func (s *ProductService) ListRecommendationCandidates(input ProductRecommendatio
 
 	offset := (page - 1) * pageSize
 	products, total, err := s.productRepo.ListRecommendationCandidates(repository.ProductRecommendationQuery{
-		ProductTypeID:     input.ProductTypeID,
-		Keyword:           input.Keyword,
-		ExcludeProductIDs: input.ExcludeProductIDs,
-		Offset:            offset,
-		Limit:             pageSize,
+		ProductSpecificationTemplateID: input.ProductSpecificationTemplateID,
+		Keyword:                        input.Keyword,
+		ExcludeProductIDs:              input.ExcludeProductIDs,
+		Offset:                         offset,
+		Limit:                          pageSize,
 	})
 	return sanitizeProductSliceHTML(products), total, err
 }
@@ -491,16 +531,17 @@ func (s *ProductService) SearchPublic(input ProductSearchInput) ([]product.Produ
 	}
 	offset := (page - 1) * pageSize
 	query := repository.ProductSearchQuery{
-		Locale:      input.Locale,
-		Status:      "active",
-		Keyword:     input.Keyword,
-		TypeSlug:    input.TypeSlug,
-		BrandSlug:   input.BrandSlug,
-		PriceMin:    input.PriceMin,
-		PriceMax:    input.PriceMax,
-		SpecFilters: input.SpecFilters,
-		Offset:      offset,
-		Limit:       pageSize,
+		Locale:       input.Locale,
+		Status:       "active",
+		Keyword:      input.Keyword,
+		ProductSpecificationTemplateSlug:     input.ProductSpecificationTemplateSlug,
+		CategorySlug: input.CategorySlug,
+		BrandSlug:    input.BrandSlug,
+		PriceMin:     input.PriceMin,
+		PriceMax:     input.PriceMax,
+		SpecFilters:  input.SpecFilters,
+		Offset:       offset,
+		Limit:        pageSize,
 	}
 	products, total, err := s.productRepo.SearchPublic(query)
 	return sanitizeProductSliceHTML(products), total, err

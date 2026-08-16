@@ -1,4 +1,5 @@
 import { computed, ref } from 'vue'
+import { useOverlayBackStack } from '~/composables/useOverlayBackStack'
 
 export interface GlobalProductDetailBottomSheetProductReference {
   id?: number | null
@@ -9,11 +10,17 @@ export interface GlobalProductDetailBottomSheetProductReference {
 
 const isGlobalProductDetailBottomSheetOpen = ref(false)
 const globalProductDetailBottomSheetProductReference = ref<GlobalProductDetailBottomSheetProductReference | null>(null)
+const overlayBackStack = useOverlayBackStack()
 
 export const useGlobalProductDetailBottomSheet = () => {
   const globalProductDetailBottomSheetProductSlug = computed(() =>
     globalProductDetailBottomSheetProductReference.value?.slug || '',
   )
+
+  const closeGlobalProductDetailBottomSheetState = () => {
+    isGlobalProductDetailBottomSheetOpen.value = false
+    globalProductDetailBottomSheetProductReference.value = null
+  }
 
   const openGlobalProductDetailBottomSheet = (
     product: GlobalProductDetailBottomSheetProductReference | string,
@@ -31,10 +38,12 @@ export const useGlobalProductDetailBottomSheet = () => {
       thumbnail: reference.thumbnail || '',
     }
     isGlobalProductDetailBottomSheetOpen.value = true
+    overlayBackStack.open('product-detail-sheet', closeGlobalProductDetailBottomSheetState)
   }
 
   const closeGlobalProductDetailBottomSheet = () => {
-    isGlobalProductDetailBottomSheetOpen.value = false
+    void overlayBackStack.close('product-detail-sheet')
+    closeGlobalProductDetailBottomSheetState()
   }
 
   return {

@@ -17,6 +17,48 @@
   },
   "actions": {
     "toCart": "To cart",
-    "payment": "Payment"
+    "payment": "Payment",
+    "addToCart": "Add to cart",
+    "directPayment": "Pay now"
+  },
+  "entry": {
+    "directSelect": {
+      "title": "I know my specs",
+      "description": "Choose configured items now.",
+      "action": "Start"
+    },
+    "readyMatch": {
+      "title": "Match ready wheelsets",
+      "description": "Coming next."
+    },
+    "wheelsetSelectionAssistant": {
+      "title": "Find my bike specs",
+      "description": "Answer guided fit questions.",
+      "action": "Start",
+      "modalDescription": "Choose what you know now. We only ask for missing fit details."
+    },
+    "eyebrow": "QUICKBUY",
+    "title": "Choose how to start"
+  },
+  "help": {
+    "title": "QUICK instructions"
+  },
+  "filters": {
+    "label": "Filters",
+    "clear": "Clear",
+    "empty": "No values available"
+  },
+  "productRail": {
+    "label": "Available products",
+    "empty": "No products are available for this step."
+  },
+  "selection": {
+    "label": "Selected products",
+    "editHint": "Review and adjust your selections"
+  },
+  "defaultSteps": {
+    "step1": "Step 1",
+    "step2": "Step 2",
+    "step3": "Step 3"
   }
 }

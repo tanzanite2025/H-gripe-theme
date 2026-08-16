@@ -112,7 +112,7 @@ func (p *recordingProductCacheEventPublisher) EnqueueProductCacheInvalidateByIDs
 	return nil
 }
 
-func (p *recordingProductCacheEventPublisher) EnqueueProductCacheInvalidateByProductTypeID(uint, string) error {
+func (p *recordingProductCacheEventPublisher) EnqueueProductCacheInvalidateByProductSpecificationTemplateID(uint, string) error {
 	return nil
 }
 

@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -54,11 +53,11 @@ func (h *Handler) EnsurePublicCustomerServiceConversation(c *gin.Context) {
 		log.Printf("customer-service welcome auto reply failed: conversation=%s error=%v", conversationID, autoReplyErr)
 	} else if autoReplyMessage != nil {
 		autoReplyPayload := publicCustomerServiceMessageResponse(*autoReplyMessage, conversationID, "", "", nil)
-		h.publishPublicCustomerServiceEvent(
-			service.CustomerServiceEventMessageCreated,
+		h.publishPublicCustomerServiceMessageCreated(
 			t,
+			autoReplyMessage.ID,
+			autoReplyMessage.CreatedAt,
 			service.CustomerServiceRealtimeActor{Kind: "system"},
-			autoReplyPayload,
 		)
 		responseData["auto_reply"] = gin.H{
 			"message": autoReplyPayload,
@@ -156,17 +155,18 @@ func (h *Handler) SendPublicCustomerServiceMessage(c *gin.Context) {
 	conversationID = publicConversationID(t)
 	h.touchCustomerServiceVisitorProfile(c, owner, req.SenderEmail, "public_chat")
 	response := publicCustomerServiceMessageResponse(*msg, conversationID, senderName, "", nil)
-	h.publishPublicCustomerServiceEvent(
-		service.CustomerServiceEventMessageCreated,
+	h.publishPublicCustomerServiceMessageCreated(
 		t,
+		msg.ID,
+		msg.CreatedAt,
 		publicCustomerServiceRealtimeActor(owner),
-		response,
 	)
 	if emailCaptured {
-		h.publishPublicCustomerServiceEvent(
+		h.publishPublicCustomerServiceEventToAudience(
 			service.CustomerServiceEventContextUpdated,
 			t,
 			publicCustomerServiceRealtimeActor(owner),
+			service.CustomerServiceRealtimeAudienceBackoffice,
 			gin.H{"source": "public_chat_email"},
 		)
 	}
@@ -185,11 +185,11 @@ func (h *Handler) SendPublicCustomerServiceMessage(c *gin.Context) {
 		log.Printf("customer-service auto reply failed: conversation=%s error=%v", conversationID, autoReplyErr)
 	} else if autoReplyMessage != nil {
 		autoReplyPayload := publicCustomerServiceMessageResponse(*autoReplyMessage, conversationID, "", "", nil)
-		h.publishPublicCustomerServiceEvent(
-			service.CustomerServiceEventMessageCreated,
+		h.publishPublicCustomerServiceMessageCreated(
 			t,
+			autoReplyMessage.ID,
+			autoReplyMessage.CreatedAt,
 			service.CustomerServiceRealtimeActor{Kind: "system"},
-			autoReplyPayload,
 		)
 		response["auto_reply"] = gin.H{
 			"rule_id": ruleID,
@@ -286,63 +286,6 @@ func (h *Handler) UploadPublicCustomerServiceAttachment(c *gin.Context) {
 	})
 }
 
-func (h *Handler) SendPublicCustomerServiceTyping(c *gin.Context) {
-	var req struct {
-		ConversationID string `json:"conversation_id" binding:"required"`
-		IsTyping       *bool  `json:"is_typing"`
-		DisplayName    string `json:"display_name"`
-	}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "[CRITICAL] " + err.Error()})
-		return
-	}
-
-	conversationID := strings.TrimSpace(req.ConversationID)
-	if conversationID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "[CRITICAL] conversation_id is required"})
-		return
-	}
-
-	owner := h.existingPublicCustomerOwner(c)
-	t, err := h.ticketService.GetPublicCustomerServiceConversation(conversationID, owner)
-	if err != nil {
-		writePublicCustomerServiceError(c, err)
-		return
-	}
-
-	isTyping := true
-	if req.IsTyping != nil {
-		isTyping = *req.IsTyping
-	}
-	displayName := strings.TrimSpace(req.DisplayName)
-	if displayName == "" {
-		if owner.UserID != nil {
-			displayName = "Customer"
-		} else {
-			displayName = "Visitor"
-		}
-	}
-
-	h.publishPublicCustomerServiceEvent(
-		service.CustomerServiceEventTyping,
-		t,
-		publicCustomerServiceRealtimeActor(owner),
-		gin.H{
-			"is_typing":    isTyping,
-			"display_name": displayName,
-			"expires_at":   time.Now().UTC().Add(5 * time.Second),
-		},
-	)
-
-	c.JSON(http.StatusOK, gin.H{
-		"success":         true,
-		"conversation_id": publicConversationID(t),
-		"data": gin.H{
-			"is_typing": isTyping,
-		},
-	})
-}
-
 func (h *Handler) GetWelcomeMessage(c *gin.Context) {
 	conversationID := strings.TrimSpace(c.Query("conversation_id"))
 	agentID := parseCustomerServiceAgentID(c.Query("agent_id"))
@@ -364,12 +307,11 @@ func (h *Handler) GetWelcomeMessage(c *gin.Context) {
 	}
 	if msg != nil {
 		if conversation, err := h.ticketService.GetPublicCustomerServiceConversation(conversationID, owner); err == nil {
-			payload := publicCustomerServiceMessageResponse(*msg, conversationID, "", "", nil)
-			h.publishPublicCustomerServiceEvent(
-				service.CustomerServiceEventMessageCreated,
+			h.publishPublicCustomerServiceMessageCreated(
 				conversation,
+				msg.ID,
+				msg.CreatedAt,
 				service.CustomerServiceRealtimeActor{Kind: "system"},
-				payload,
 			)
 		}
 	}
@@ -415,12 +357,11 @@ func (h *Handler) MatchKeywordMessage(c *gin.Context) {
 	}
 	if msg != nil {
 		if conversation, err := h.ticketService.GetPublicCustomerServiceConversation(req.ConversationID, owner); err == nil {
-			payload := publicCustomerServiceMessageResponse(*msg, req.ConversationID, "", "", nil)
-			h.publishPublicCustomerServiceEvent(
-				service.CustomerServiceEventMessageCreated,
+			h.publishPublicCustomerServiceMessageCreated(
 				conversation,
+				msg.ID,
+				msg.CreatedAt,
 				service.CustomerServiceRealtimeActor{Kind: "system"},
-				payload,
 			)
 		}
 	}

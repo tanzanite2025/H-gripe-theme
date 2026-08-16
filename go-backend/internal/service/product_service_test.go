@@ -24,14 +24,14 @@ import (
 
 func TestProductServiceCreateAdminProductPersistsTemplateSpecs(t *testing.T) {
 	db, productService := newTestProductService(t)
-	productType := seedCarbonRimType(t, db)
+	productSpecificationTemplate := seedCarbonRimType(t, db)
 
 	createdProduct, err := productService.CreateAdminProduct(ProductCreateInput{
-		ProductTypeID: &productType.ID,
-		Name:          "Carbon Rim 45",
-		Slug:          "carbon-rim-45",
-		Status:        "active",
-		Locale:        "en",
+		ProductSpecificationTemplateID: &productSpecificationTemplate.ID,
+		Name:                           "Carbon Rim 45",
+		Slug:                           "carbon-rim-45",
+		Status:                         "active",
+		Locale:                         "en",
 		SpecValues: map[string]string{
 			"outer_width_mm": "30.5",
 			"tubeless_ready": "yes",
@@ -50,7 +50,7 @@ func TestProductServiceCreateAdminProductPersistsTemplateSpecs(t *testing.T) {
 
 	require.NoError(t, err)
 	require.NotNil(t, createdProduct)
-	assert.Equal(t, productType.ID, *createdProduct.ProductTypeID)
+	assert.Equal(t, productSpecificationTemplate.ID, *createdProduct.ProductSpecificationTemplateID)
 	require.Len(t, createdProduct.SpecValues, 2)
 	require.Len(t, createdProduct.Variants, 1)
 	assert.Equal(t, "RIM-001-24H-DISC", createdProduct.SKU)
@@ -59,6 +59,131 @@ func TestProductServiceCreateAdminProductPersistsTemplateSpecs(t *testing.T) {
 	assert.Equal(t, "30.5", findSavedSpecValue(t, createdProduct, "outer_width_mm"))
 	assert.Equal(t, "RIM-001-24H-DISC", createdProduct.Variants[0].SKU)
 	assert.JSONEq(t, `{"brake_type":"disc"}`, createdProduct.Variants[0].OptionValues)
+}
+
+func TestProductServiceAdminProductPersistsCustomsInformation(t *testing.T) {
+	db, productService := newTestProductService(t)
+
+	createdProduct, err := productService.CreateAdminProduct(ProductCreateInput{
+		Name:               "Customs Product",
+		Slug:               "customs-product",
+		Status:             "active",
+		Locale:             "en",
+		HSCode:             "871499",
+		CNCode:             "87149990",
+		CountryOfOrigin:    "cn",
+		CustomsDescription: "Bicycle frame",
+		Variants: []ProductVariantInput{
+			{
+				SKU:       "CUSTOMS-001",
+				Price:     100,
+				Stock:     2,
+				IsDefault: true,
+				IsActive:  boolPtr(true),
+			},
+		},
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, createdProduct)
+	assert.Equal(t, "871499", createdProduct.HSCode)
+	assert.Equal(t, "87149990", createdProduct.CNCode)
+	assert.Equal(t, "CN", createdProduct.CountryOfOrigin)
+	assert.Equal(t, "Bicycle frame", createdProduct.CustomsDescription)
+
+	hsCode := "871492"
+	cnCode := ""
+	countryOfOrigin := "de"
+	updatedProduct, err := productService.UpdateAdminProduct(createdProduct.ID, ProductUpdateInput{
+		HSCode:                &hsCode,
+		UpdateHSCode:          true,
+		CNCode:                &cnCode,
+		UpdateCNCode:          true,
+		CountryOfOrigin:       &countryOfOrigin,
+		UpdateCountryOfOrigin: true,
+	})
+
+	require.NoError(t, err)
+	assert.Equal(t, "871492", updatedProduct.HSCode)
+	assert.Empty(t, updatedProduct.CNCode)
+	assert.Equal(t, "DE", updatedProduct.CountryOfOrigin)
+
+	var stored product.Product
+	require.NoError(t, db.First(&stored, createdProduct.ID).Error)
+	assert.Equal(t, "871492", stored.HSCode)
+	assert.Empty(t, stored.CNCode)
+	assert.Equal(t, "DE", stored.CountryOfOrigin)
+}
+
+func TestProductServiceBindsCustomsProfileAndClearsOnManualOverride(t *testing.T) {
+	db, productService := newTestProductService(t)
+	require.NoError(t, db.AutoMigrate(&product.CustomsClassificationProfile{}))
+	productService.ConfigureCustomsClassificationRepository(repository.NewCustomsClassificationRepository(db))
+
+	profile := product.CustomsClassificationProfile{
+		Name:               "Carbon rim profile",
+		Slug:               "carbon-rim-profile",
+		HSCode:             "871499",
+		CNCode:             "87149990",
+		CountryOfOrigin:    "CN",
+		CustomsDescription: "Bicycle carbon rim",
+		Status:             product.CustomsClassificationStatusActive,
+	}
+	require.NoError(t, db.Create(&profile).Error)
+
+	createdProduct, err := productService.CreateAdminProduct(ProductCreateInput{
+		CustomsClassificationProfileID: &profile.ID,
+		HSCode:                         "000000",
+		Name:                           "Bound customs product",
+		Slug:                           "bound-customs-product",
+		Status:                         "active",
+		Locale:                         "en",
+		Variants: []ProductVariantInput{{
+			SKU:       "CUSTOMS-BOUND-001",
+			Price:     100,
+			Stock:     2,
+			IsDefault: true,
+			IsActive:  boolPtr(true),
+		}},
+	})
+	require.NoError(t, err)
+	require.NotNil(t, createdProduct.CustomsClassificationProfileID)
+	assert.Equal(t, profile.ID, *createdProduct.CustomsClassificationProfileID)
+	assert.Equal(t, profile.HSCode, createdProduct.HSCode)
+	assert.Equal(t, profile.CNCode, createdProduct.CNCode)
+
+	hsCode := "871492"
+	updatedProduct, err := productService.UpdateAdminProduct(createdProduct.ID, ProductUpdateInput{
+		HSCode:       &hsCode,
+		UpdateHSCode: true,
+	})
+	require.NoError(t, err)
+	assert.Nil(t, updatedProduct.CustomsClassificationProfileID)
+	assert.Equal(t, "871492", updatedProduct.HSCode)
+}
+
+func TestProductServiceRejectsInvalidCustomsInformation(t *testing.T) {
+	_, productService := newTestProductService(t)
+
+	_, err := productService.CreateAdminProduct(ProductCreateInput{
+		Name:            "Invalid Customs Product",
+		Slug:            "invalid-customs-product",
+		Status:          "active",
+		Locale:          "en",
+		HSCode:          "1234",
+		CountryOfOrigin: "CHN",
+		Variants: []ProductVariantInput{
+			{
+				SKU:       "CUSTOMS-INVALID-001",
+				Price:     100,
+				Stock:     2,
+				IsDefault: true,
+				IsActive:  boolPtr(true),
+			},
+		},
+	})
+
+	require.ErrorIs(t, err, ErrProductCustomsInfoInvalid)
 }
 
 func TestProductServiceGetByIDCoalescesConcurrentCacheMisses(t *testing.T) {
@@ -200,34 +325,34 @@ func TestProductServiceDistributedCacheMissesShareOneDatabaseLoad(t *testing.T) 
 func TestProductServiceCreateAdminProductPersistsProductScopedVisualVariantOptions(t *testing.T) {
 	db, productService := newTestProductService(t)
 
-	productType := product.ProductType{
+	productSpecificationTemplate := product.ProductSpecificationTemplate{
 		Name:      "Finish Product",
 		Slug:      "finish_product",
 		IsEnabled: true,
 	}
-	require.NoError(t, db.Create(&productType).Error)
+	require.NoError(t, db.Create(&productSpecificationTemplate).Error)
 
 	finishSpec := product.SpecDefinition{
-		ProductTypeID:   productType.ID,
-		Group:           "Appearance",
-		Name:            "Finish",
-		Slug:            "finish",
-		FieldType:       "select",
-		Presentation:    "color",
-		IsVisible:       true,
-		IsFilterable:    true,
-		IsVariantOption: true,
-		SortOrder:       10,
-		Options:         `["template_black"]`,
+		ProductSpecificationTemplateID: productSpecificationTemplate.ID,
+		Group:                          "Appearance",
+		Name:                           "Finish",
+		Slug:                           "finish",
+		FieldType:                      "select",
+		Presentation:                   "color",
+		IsVisible:                      true,
+		IsFilterable:                   true,
+		IsVariantOption:                true,
+		SortOrder:                      10,
+		Options:                        `["template_black"]`,
 	}
 	require.NoError(t, db.Create(&finishSpec).Error)
 
 	createdProduct, err := productService.CreateAdminProduct(ProductCreateInput{
-		ProductTypeID: &productType.ID,
-		Name:          "Ruby Finish Product",
-		Slug:          "ruby-finish-product",
-		Status:        "active",
-		Locale:        "en",
+		ProductSpecificationTemplateID: &productSpecificationTemplate.ID,
+		Name:                           "Ruby Finish Product",
+		Slug:                           "ruby-finish-product",
+		Status:                         "active",
+		Locale:                         "en",
 		VariantOptionValues: []ProductVariantOptionValueInput{
 			{
 				SpecDefinitionID: finishSpec.ID,
@@ -264,23 +389,23 @@ func TestProductServiceCreateAdminProductPersistsProductScopedVisualVariantOptio
 	require.NoError(t, err)
 	assert.EqualValues(t, 1, total)
 	require.Len(t, publicProducts, 1)
-	require.NotNil(t, publicProducts[0].ProductType)
-	require.Len(t, publicProducts[0].ProductType.SpecDefinitions, 1)
+	require.NotNil(t, publicProducts[0].ProductSpecificationTemplate)
+	require.Len(t, publicProducts[0].ProductSpecificationTemplate.SpecDefinitions, 1)
 	require.Len(t, publicProducts[0].VariantOptionValues, 1)
 	assert.Equal(t, "ruby_red", publicProducts[0].VariantOptionValues[0].ValueKey)
 }
 
 func TestProductServiceCreateAdminProductRejectsMediaBoundToOtherProductVariantOptionValue(t *testing.T) {
 	db, productService := newTestProductService(t)
-	productType := seedCarbonRimType(t, db)
-	brakeSpec := findSpecDefinitionBySlug(t, db, productType.ID, "brake_type")
+	productSpecificationTemplate := seedCarbonRimType(t, db)
+	brakeSpec := findSpecDefinitionBySlug(t, db, productSpecificationTemplate.ID, "brake_type")
 
 	sourceProduct, err := productService.CreateAdminProduct(ProductCreateInput{
-		ProductTypeID: &productType.ID,
-		Name:          "Source Rim",
-		Slug:          "source-rim",
-		Status:        "active",
-		Locale:        "en",
+		ProductSpecificationTemplateID: &productSpecificationTemplate.ID,
+		Name:                           "Source Rim",
+		Slug:                           "source-rim",
+		Status:                         "active",
+		Locale:                         "en",
 		SpecValues: map[string]string{
 			"outer_width_mm": "30",
 		},
@@ -309,11 +434,11 @@ func TestProductServiceCreateAdminProductRejectsMediaBoundToOtherProductVariantO
 	foreignOptionValueID := sourceProduct.VariantOptionValues[0].ID
 
 	createdProduct, err := productService.CreateAdminProduct(ProductCreateInput{
-		ProductTypeID: &productType.ID,
-		Name:          "Bad Media Binding Rim",
-		Slug:          "bad-media-binding-rim",
-		Status:        "active",
-		Locale:        "en",
+		ProductSpecificationTemplateID: &productSpecificationTemplate.ID,
+		Name:                           "Bad Media Binding Rim",
+		Slug:                           "bad-media-binding-rim",
+		Status:                         "active",
+		Locale:                         "en",
 		SpecValues: map[string]string{
 			"outer_width_mm": "30",
 		},
@@ -346,14 +471,14 @@ func TestProductServiceCreateAdminProductRejectsMediaBoundToOtherProductVariantO
 
 func TestProductServiceCreateAdminProductRejectsInvalidMediaLocale(t *testing.T) {
 	db, productService := newTestProductService(t)
-	productType := seedCarbonRimType(t, db)
+	productSpecificationTemplate := seedCarbonRimType(t, db)
 
 	createdProduct, err := productService.CreateAdminProduct(ProductCreateInput{
-		ProductTypeID: &productType.ID,
-		Name:          "Bad Media Locale Rim",
-		Slug:          "bad-media-locale-rim",
-		Status:        "active",
-		Locale:        "en",
+		ProductSpecificationTemplateID: &productSpecificationTemplate.ID,
+		Name:                           "Bad Media Locale Rim",
+		Slug:                           "bad-media-locale-rim",
+		Status:                         "active",
+		Locale:                         "en",
 		SpecValues: map[string]string{
 			"outer_width_mm": "30",
 		},
@@ -382,14 +507,14 @@ func TestProductServiceCreateAdminProductRejectsInvalidMediaLocale(t *testing.T)
 
 func TestProductServiceCreateAdminProductNormalizesMediaLocaleAlias(t *testing.T) {
 	db, productService := newTestProductService(t)
-	productType := seedCarbonRimType(t, db)
+	productSpecificationTemplate := seedCarbonRimType(t, db)
 
 	createdProduct, err := productService.CreateAdminProduct(ProductCreateInput{
-		ProductTypeID: &productType.ID,
-		Name:          "Media Locale Alias Rim",
-		Slug:          "media-locale-alias-rim",
-		Status:        "active",
-		Locale:        "en",
+		ProductSpecificationTemplateID: &productSpecificationTemplate.ID,
+		Name:                           "Media Locale Alias Rim",
+		Slug:                           "media-locale-alias-rim",
+		Status:                         "active",
+		Locale:                         "en",
 		SpecValues: map[string]string{
 			"outer_width_mm": "30",
 		},
@@ -518,14 +643,14 @@ func TestProductServiceCreateAdminProductPersistsDisplayPriceSnapshots(t *testin
 
 func TestProductServiceCreateAdminProductRejectsInvalidTemplateSpec(t *testing.T) {
 	db, productService := newTestProductService(t)
-	productType := seedCarbonRimType(t, db)
+	productSpecificationTemplate := seedCarbonRimType(t, db)
 
 	createdProduct, err := productService.CreateAdminProduct(ProductCreateInput{
-		ProductTypeID: &productType.ID,
-		Name:          "Invalid Carbon Rim",
-		Slug:          "invalid-carbon-rim",
-		Status:        "active",
-		Locale:        "en",
+		ProductSpecificationTemplateID: &productSpecificationTemplate.ID,
+		Name:                           "Invalid Carbon Rim",
+		Slug:                           "invalid-carbon-rim",
+		Status:                         "active",
+		Locale:                         "en",
 		SpecValues: map[string]string{
 			"outer_width_mm": "30",
 		},
@@ -552,8 +677,8 @@ func TestProductServiceCreateAdminProductRejectsInvalidTemplateSpec(t *testing.T
 
 func TestProductServiceUpdateAdminProductAllowsKeepingDisabledInformationTemplate(t *testing.T) {
 	db, productService := newTestProductService(t)
-	productType := seedCarbonRimType(t, db)
-	createdProduct := createProductWithSpecs(t, productService, productType.ID, "RIM-DISABLED-TEMPLATE", "disabled-template-rim", map[string]string{
+	productSpecificationTemplate := seedCarbonRimType(t, db)
+	createdProduct := createProductWithSpecs(t, productService, productSpecificationTemplate.ID, "RIM-DISABLED-TEMPLATE", "disabled-template-rim", map[string]string{
 		"outer_width_mm": "30",
 	}, map[string]string{"brake_type": "disc"})
 
@@ -590,8 +715,8 @@ func TestProductServiceUpdateAdminProductAllowsKeepingDisabledInformationTemplat
 
 func TestProductServiceUpdateAdminProductRejectsSwitchingToDisabledInformationTemplate(t *testing.T) {
 	db, productService := newTestProductService(t)
-	productType := seedCarbonRimType(t, db)
-	createdProduct := createProductWithSpecs(t, productService, productType.ID, "RIM-NEW-DISABLED-TEMPLATE", "new-disabled-template-rim", map[string]string{
+	productSpecificationTemplate := seedCarbonRimType(t, db)
+	createdProduct := createProductWithSpecs(t, productService, productSpecificationTemplate.ID, "RIM-NEW-DISABLED-TEMPLATE", "new-disabled-template-rim", map[string]string{
 		"outer_width_mm": "30",
 	}, map[string]string{"brake_type": "disc"})
 
@@ -622,8 +747,8 @@ func TestProductServiceUpdateAdminProductRejectsSwitchingToDisabledInformationTe
 
 func TestProductServiceUpdateAdminProductRejectsLocaleChange(t *testing.T) {
 	db, productService := newTestProductService(t)
-	productType := seedCarbonRimType(t, db)
-	createdProduct := createProductWithSpecs(t, productService, productType.ID, "RIM-LOCALE-LOCK", "locale-lock-rim", map[string]string{
+	productSpecificationTemplate := seedCarbonRimType(t, db)
+	createdProduct := createProductWithSpecs(t, productService, productSpecificationTemplate.ID, "RIM-LOCALE-LOCK", "locale-lock-rim", map[string]string{
 		"outer_width_mm": "30",
 	}, map[string]string{"brake_type": "disc"})
 
@@ -642,8 +767,8 @@ func TestProductServiceUpdateAdminProductRejectsLocaleChange(t *testing.T) {
 
 func TestProductServiceUpdateAdminProductAcceptsSameLocaleAlias(t *testing.T) {
 	db, productService := newTestProductService(t)
-	productType := seedCarbonRimType(t, db)
-	createdProduct := createProductWithSpecs(t, productService, productType.ID, "RIM-LOCALE-ALIAS", "locale-alias-rim", map[string]string{
+	productSpecificationTemplate := seedCarbonRimType(t, db)
+	createdProduct := createProductWithSpecs(t, productService, productSpecificationTemplate.ID, "RIM-LOCALE-ALIAS", "locale-alias-rim", map[string]string{
 		"outer_width_mm": "30",
 	}, map[string]string{"brake_type": "disc"})
 
@@ -659,8 +784,8 @@ func TestProductServiceUpdateAdminProductAcceptsSameLocaleAlias(t *testing.T) {
 
 func TestProductServiceUpdateAdminProductPreservesInactiveVariantWhenAnotherVariantIsActive(t *testing.T) {
 	db, productService := newTestProductService(t)
-	productType := seedCarbonRimType(t, db)
-	createdProduct := createProductWithSpecs(t, productService, productType.ID, "RIM-INACTIVE", "inactive-rim", map[string]string{
+	productSpecificationTemplate := seedCarbonRimType(t, db)
+	createdProduct := createProductWithSpecs(t, productService, productSpecificationTemplate.ID, "RIM-INACTIVE", "inactive-rim", map[string]string{
 		"outer_width_mm": "30",
 	}, map[string]string{"brake_type": "disc"})
 	require.Len(t, createdProduct.Variants, 1)
@@ -713,15 +838,15 @@ func TestProductServiceUpdateAdminProductPreservesInactiveVariantWhenAnotherVari
 
 func TestProductServiceCreateAdminProductRejectsAllInactiveVariants(t *testing.T) {
 	db, productService := newTestProductService(t)
-	productType := seedCarbonRimType(t, db)
+	productSpecificationTemplate := seedCarbonRimType(t, db)
 	inactive := false
 
 	createdProduct, err := productService.CreateAdminProduct(ProductCreateInput{
-		ProductTypeID: &productType.ID,
-		Name:          "Inactive SKU Rim",
-		Slug:          "inactive-sku-rim",
-		Status:        "active",
-		Locale:        "en",
+		ProductSpecificationTemplateID: &productSpecificationTemplate.ID,
+		Name:                           "Inactive SKU Rim",
+		Slug:                           "inactive-sku-rim",
+		Status:                         "active",
+		Locale:                         "en",
 		SpecValues: map[string]string{
 			"outer_width_mm": "30",
 		},
@@ -747,14 +872,14 @@ func TestProductServiceCreateAdminProductRejectsAllInactiveVariants(t *testing.T
 
 func TestProductServiceCreateAdminProductRequiresVariant(t *testing.T) {
 	db, productService := newTestProductService(t)
-	productType := seedCarbonRimType(t, db)
+	productSpecificationTemplate := seedCarbonRimType(t, db)
 
 	createdProduct, err := productService.CreateAdminProduct(ProductCreateInput{
-		ProductTypeID: &productType.ID,
-		Name:          "No Variant Rim",
-		Slug:          "no-variant-rim",
-		Status:        "active",
-		Locale:        "en",
+		ProductSpecificationTemplateID: &productSpecificationTemplate.ID,
+		Name:                           "No Variant Rim",
+		Slug:                           "no-variant-rim",
+		Status:                         "active",
+		Locale:                         "en",
 		SpecValues: map[string]string{
 			"outer_width_mm": "30",
 		},
@@ -770,12 +895,12 @@ func TestProductServiceCreateAdminProductRequiresVariant(t *testing.T) {
 
 func TestProductServiceSearchPublicFiltersByTemplateSpec(t *testing.T) {
 	db, productService := newTestProductService(t)
-	productType := seedCarbonRimType(t, db)
+	productSpecificationTemplate := seedCarbonRimType(t, db)
 
-	discRim := createProductWithSpecs(t, productService, productType.ID, "RIM-DISC", "disc-rim", map[string]string{
+	discRim := createProductWithSpecs(t, productService, productSpecificationTemplate.ID, "RIM-DISC", "disc-rim", map[string]string{
 		"outer_width_mm": "30",
 	}, map[string]string{"brake_type": "disc"})
-	createProductWithSpecs(t, productService, productType.ID, "RIM-RIM", "rim-brake-rim", map[string]string{
+	createProductWithSpecs(t, productService, productSpecificationTemplate.ID, "RIM-RIM", "rim-brake-rim", map[string]string{
 		"outer_width_mm": "25",
 	}, map[string]string{"brake_type": "rim"})
 
@@ -797,12 +922,12 @@ func TestProductServiceSearchPublicFiltersByTemplateSpec(t *testing.T) {
 
 func TestProductServicePublicAccessOnlyReturnsActiveProducts(t *testing.T) {
 	db, productService := newTestProductService(t)
-	productType := seedCarbonRimType(t, db)
+	productSpecificationTemplate := seedCarbonRimType(t, db)
 
-	activeProduct := createProductWithSpecs(t, productService, productType.ID, "RIM-PUBLIC-ACTIVE", "public-active", map[string]string{
+	activeProduct := createProductWithSpecs(t, productService, productSpecificationTemplate.ID, "RIM-PUBLIC-ACTIVE", "public-active", map[string]string{
 		"outer_width_mm": "30",
 	}, map[string]string{"brake_type": "disc"})
-	inactiveProduct := createProductWithSpecs(t, productService, productType.ID, "RIM-PUBLIC-INACTIVE", "public-inactive", map[string]string{
+	inactiveProduct := createProductWithSpecs(t, productService, productSpecificationTemplate.ID, "RIM-PUBLIC-INACTIVE", "public-inactive", map[string]string{
 		"outer_width_mm": "30",
 	}, map[string]string{"brake_type": "disc"})
 	require.NoError(t, db.Model(&product.Product{}).Where("id = ?", inactiveProduct.ID).Update("status", "inactive").Error)
@@ -830,9 +955,9 @@ func TestProductServicePublicAccessOnlyReturnsActiveProducts(t *testing.T) {
 
 func TestProductRepositoryPurchasableVariantRejectsInactiveProduct(t *testing.T) {
 	db, productService := newTestProductService(t)
-	productType := seedCarbonRimType(t, db)
+	productSpecificationTemplate := seedCarbonRimType(t, db)
 
-	inactiveProduct := createProductWithSpecs(t, productService, productType.ID, "RIM-NOT-BUYABLE", "not-buyable", map[string]string{
+	inactiveProduct := createProductWithSpecs(t, productService, productSpecificationTemplate.ID, "RIM-NOT-BUYABLE", "not-buyable", map[string]string{
 		"outer_width_mm": "30",
 	}, map[string]string{"brake_type": "disc"})
 	require.NoError(t, db.Model(&product.Product{}).Where("id = ?", inactiveProduct.ID).Update("status", "inactive").Error)
@@ -843,13 +968,13 @@ func TestProductRepositoryPurchasableVariantRejectsInactiveProduct(t *testing.T)
 
 func TestProductServicePublicCatalogRespectsProductLocale(t *testing.T) {
 	db, productService := newTestProductService(t)
-	productType := seedCarbonRimType(t, db)
+	productSpecificationTemplate := seedCarbonRimType(t, db)
 	createdProduct, err := productService.CreateAdminProduct(ProductCreateInput{
-		ProductTypeID: &productType.ID,
-		Name:          "Unified Rim",
-		Slug:          "global-rim",
-		Status:        "active",
-		Locale:        "zh_cn",
+		ProductSpecificationTemplateID: &productSpecificationTemplate.ID,
+		Name:                           "Unified Rim",
+		Slug:                           "global-rim",
+		Status:                         "active",
+		Locale:                         "zh_cn",
 		SpecValues: map[string]string{
 			"outer_width_mm": "30",
 		},
@@ -920,13 +1045,13 @@ func TestProductServicePublicCatalogRespectsProductLocale(t *testing.T) {
 
 func TestProductServicePublicProductReturnsOnlyActiveTranslationRoutes(t *testing.T) {
 	db, productService := newTestProductService(t)
-	productType := seedCarbonRimType(t, db)
+	productSpecificationTemplate := seedCarbonRimType(t, db)
 
-	root := createProductWithSpecs(t, productService, productType.ID, "RIM-TRANSLATION-EN", "translation-rim", map[string]string{
+	root := createProductWithSpecs(t, productService, productSpecificationTemplate.ID, "RIM-TRANSLATION-EN", "translation-rim", map[string]string{
 		"outer_width_mm": "30",
 	}, map[string]string{"brake_type": "disc"})
 	parentID := root.ID
-	translated := createProductWithSpecs(t, productService, productType.ID, "RIM-TRANSLATION-ZH", "translated-rim", map[string]string{
+	translated := createProductWithSpecs(t, productService, productSpecificationTemplate.ID, "RIM-TRANSLATION-ZH", "translated-rim", map[string]string{
 		"outer_width_mm": "30",
 	}, map[string]string{"brake_type": "disc"})
 	require.NoError(t, db.Model(&product.Product{}).Where("id = ?", translated.ID).Updates(map[string]interface{}{
@@ -934,7 +1059,7 @@ func TestProductServicePublicProductReturnsOnlyActiveTranslationRoutes(t *testin
 		"parent_id": parentID,
 	}).Error)
 
-	inactive := createProductWithSpecs(t, productService, productType.ID, "RIM-TRANSLATION-FR", "inactive-rim", map[string]string{
+	inactive := createProductWithSpecs(t, productService, productSpecificationTemplate.ID, "RIM-TRANSLATION-FR", "inactive-rim", map[string]string{
 		"outer_width_mm": "30",
 	}, map[string]string{"brake_type": "disc"})
 	require.NoError(t, db.Model(&product.Product{}).Where("id = ?", inactive.ID).Updates(map[string]interface{}{
@@ -955,20 +1080,20 @@ func TestProductServicePublicProductReturnsOnlyActiveTranslationRoutes(t *testin
 
 func TestProductServiceValidatesProductTranslationRelationships(t *testing.T) {
 	db, productService := newTestProductService(t)
-	productType := seedCarbonRimType(t, db)
+	productSpecificationTemplate := seedCarbonRimType(t, db)
 
-	root := createProductWithSpecs(t, productService, productType.ID, "RIM-RELATION-EN", "relation-rim", map[string]string{
+	root := createProductWithSpecs(t, productService, productSpecificationTemplate.ID, "RIM-RELATION-EN", "relation-rim", map[string]string{
 		"outer_width_mm": "30",
 	}, map[string]string{"brake_type": "disc"})
 
 	createTranslation := func(locale, sku, slug string, parentID *uint) (*product.Product, error) {
 		return productService.CreateAdminProduct(ProductCreateInput{
-			ProductTypeID: &productType.ID,
-			Name:          sku,
-			Slug:          slug,
-			Status:        "active",
-			Locale:        locale,
-			ParentID:      parentID,
+			ProductSpecificationTemplateID: &productSpecificationTemplate.ID,
+			Name:                           sku,
+			Slug:                           slug,
+			Status:                         "active",
+			Locale:                         locale,
+			ParentID:                       parentID,
 			SpecValues: map[string]string{
 				"outer_width_mm": "30",
 			},
@@ -1001,15 +1126,19 @@ func TestProductServiceValidatesProductTranslationRelationships(t *testing.T) {
 
 func TestProductServiceCopyAdminProductTranslationCreatesGroupedCopyWithUniqueSlugAndSKU(t *testing.T) {
 	db, productService := newTestProductService(t)
-	productType := seedCarbonRimType(t, db)
-	brakeSpec := findSpecDefinitionBySlug(t, db, productType.ID, "brake_type")
+	productSpecificationTemplate := seedCarbonRimType(t, db)
+	brakeSpec := findSpecDefinitionBySlug(t, db, productSpecificationTemplate.ID, "brake_type")
 
 	source, err := productService.CreateAdminProduct(ProductCreateInput{
-		ProductTypeID: &productType.ID,
-		Name:          "Translation Copy Rim",
-		Slug:          "translation-copy-rim",
-		Status:        "active",
-		Locale:        "en",
+		ProductSpecificationTemplateID: &productSpecificationTemplate.ID,
+		Name:                           "Translation Copy Rim",
+		Slug:                           "translation-copy-rim",
+		Status:                         "active",
+		Locale:                         "en",
+		HSCode:                         "871499",
+		CNCode:                         "87149990",
+		CountryOfOrigin:                "CN",
+		CustomsDescription:             "Bicycle rim",
 		SpecValues: map[string]string{
 			"outer_width_mm": "30",
 			"tubeless_ready": "yes",
@@ -1052,11 +1181,11 @@ func TestProductServiceCopyAdminProductTranslationCreatesGroupedCopyWithUniqueSl
 	}).Error)
 
 	_, err = productService.CreateAdminProduct(ProductCreateInput{
-		ProductTypeID: &productType.ID,
-		Name:          "French Occupant",
-		Slug:          "translation-copy-rim",
-		Status:        "active",
-		Locale:        "fr",
+		ProductSpecificationTemplateID: &productSpecificationTemplate.ID,
+		Name:                           "French Occupant",
+		Slug:                           "translation-copy-rim",
+		Status:                         "active",
+		Locale:                         "fr",
 		SpecValues: map[string]string{
 			"outer_width_mm": "30",
 		},
@@ -1087,6 +1216,10 @@ func TestProductServiceCopyAdminProductTranslationCreatesGroupedCopyWithUniqueSl
 	require.Len(t, translated.VariantOptionValues, 1)
 	require.Len(t, translated.Media, 1)
 	assert.Equal(t, "RIM-COPY-DISC-fr-2", translated.Variants[0].SKU)
+	assert.Equal(t, source.HSCode, translated.HSCode)
+	assert.Equal(t, source.CNCode, translated.CNCode)
+	assert.Equal(t, source.CountryOfOrigin, translated.CountryOfOrigin)
+	assert.Equal(t, source.CustomsDescription, translated.CustomsDescription)
 	assert.NotEqual(t, sourceVariantID, translated.Variants[0].ID)
 	assert.NotEqual(t, sourceOptionValueID, translated.VariantOptionValues[0].ID)
 	require.NotNil(t, translated.Media[0].VariantID)
@@ -1098,19 +1231,19 @@ func TestProductServiceCopyAdminProductTranslationCreatesGroupedCopyWithUniqueSl
 
 func TestProductServiceCopyAdminProductTranslationRejectsExistingGroupLocale(t *testing.T) {
 	db, productService := newTestProductService(t)
-	productType := seedCarbonRimType(t, db)
+	productSpecificationTemplate := seedCarbonRimType(t, db)
 
-	root := createProductWithSpecs(t, productService, productType.ID, "RIM-COPY-EXISTS-EN", "copy-exists-rim", map[string]string{
+	root := createProductWithSpecs(t, productService, productSpecificationTemplate.ID, "RIM-COPY-EXISTS-EN", "copy-exists-rim", map[string]string{
 		"outer_width_mm": "30",
 	}, map[string]string{"brake_type": "disc"})
 	parentID := root.ID
 	_, err := productService.CreateAdminProduct(ProductCreateInput{
-		ProductTypeID: &productType.ID,
-		Name:          "Existing French Rim",
-		Slug:          "copy-exists-rim-fr",
-		Status:        "active",
-		Locale:        "fr",
-		ParentID:      &parentID,
+		ProductSpecificationTemplateID: &productSpecificationTemplate.ID,
+		Name:                           "Existing French Rim",
+		Slug:                           "copy-exists-rim-fr",
+		Status:                         "active",
+		Locale:                         "fr",
+		ParentID:                       &parentID,
 		SpecValues: map[string]string{
 			"outer_width_mm": "30",
 		},
@@ -1152,8 +1285,8 @@ func newTestProductService(t *testing.T) (*gorm.DB, *ProductService) {
 	})
 
 	require.NoError(t, db.AutoMigrate(
-		&product.ProductType{},
-		&product.ProductTypeTranslation{},
+		&product.ProductSpecificationTemplate{},
+		&product.ProductSpecificationTemplateTranslation{},
 		&product.SpecDefinition{},
 		&product.ProductInformationTemplate{},
 		&product.Product{},
@@ -1169,68 +1302,68 @@ func newTestProductService(t *testing.T) (*gorm.DB, *ProductService) {
 	return db, productService
 }
 
-func seedCarbonRimType(t *testing.T, db *gorm.DB) product.ProductType {
+func seedCarbonRimType(t *testing.T, db *gorm.DB) product.ProductSpecificationTemplate {
 	t.Helper()
 
-	productType := product.ProductType{
+	productSpecificationTemplate := product.ProductSpecificationTemplate{
 		Name:      "Carbon Rim",
 		Slug:      "carbon_rim",
 		IsEnabled: true,
 	}
-	require.NoError(t, db.Create(&productType).Error)
+	require.NoError(t, db.Create(&productSpecificationTemplate).Error)
 
 	specDefinitions := []product.SpecDefinition{
 		{
-			ProductTypeID: productType.ID,
-			Group:         "Dimensions",
-			Name:          "Outer Width",
-			Slug:          "outer_width_mm",
-			FieldType:     "number",
-			Unit:          "mm",
-			IsRequired:    true,
-			IsFilterable:  true,
-			IsVisible:     true,
-			SortOrder:     10,
+			ProductSpecificationTemplateID: productSpecificationTemplate.ID,
+			Group:                          "Dimensions",
+			Name:                           "Outer Width",
+			Slug:                           "outer_width_mm",
+			FieldType:                      "number",
+			Unit:                           "mm",
+			IsRequired:                     true,
+			IsFilterable:                   true,
+			IsVisible:                      true,
+			SortOrder:                      10,
 		},
 		{
-			ProductTypeID:   productType.ID,
-			Group:           "Compatibility",
-			Name:            "Brake Type",
-			Slug:            "brake_type",
-			FieldType:       "select",
-			IsRequired:      true,
-			IsFilterable:    true,
-			IsVisible:       true,
-			IsVariantOption: true,
-			SortOrder:       20,
-			Options:         `["disc","rim"]`,
+			ProductSpecificationTemplateID: productSpecificationTemplate.ID,
+			Group:                          "Compatibility",
+			Name:                           "Brake Type",
+			Slug:                           "brake_type",
+			FieldType:                      "select",
+			IsRequired:                     true,
+			IsFilterable:                   true,
+			IsVisible:                      true,
+			IsVariantOption:                true,
+			SortOrder:                      20,
+			Options:                        `["disc","rim"]`,
 		},
 		{
-			ProductTypeID: productType.ID,
-			Group:         "Compatibility",
-			Name:          "Tubeless Ready",
-			Slug:          "tubeless_ready",
-			FieldType:     "boolean",
-			IsFilterable:  true,
-			IsVisible:     true,
-			SortOrder:     30,
+			ProductSpecificationTemplateID: productSpecificationTemplate.ID,
+			Group:                          "Compatibility",
+			Name:                           "Tubeless Ready",
+			Slug:                           "tubeless_ready",
+			FieldType:                      "boolean",
+			IsFilterable:                   true,
+			IsVisible:                      true,
+			SortOrder:                      30,
 		},
 	}
 	require.NoError(t, db.Create(&specDefinitions).Error)
 
-	return productType
+	return productSpecificationTemplate
 }
 
-func createProductWithSpecs(t *testing.T, productService *ProductService, productTypeID uint, sku, slug string, specs map[string]string, variantOptions map[string]string) *product.Product {
+func createProductWithSpecs(t *testing.T, productService *ProductService, productSpecificationTemplateID uint, sku, slug string, specs map[string]string, variantOptions map[string]string) *product.Product {
 	t.Helper()
 
 	createdProduct, err := productService.CreateAdminProduct(ProductCreateInput{
-		ProductTypeID: &productTypeID,
-		Name:          sku,
-		Slug:          slug,
-		Status:        "active",
-		Locale:        "en",
-		SpecValues:    specs,
+		ProductSpecificationTemplateID: &productSpecificationTemplateID,
+		Name:                           sku,
+		Slug:                           slug,
+		Status:                         "active",
+		Locale:                         "en",
+		SpecValues:                     specs,
 		Variants: []ProductVariantInput{
 			{
 				SKU:          sku + "-VAR",
@@ -1259,10 +1392,10 @@ func findSavedSpecValue(t *testing.T, productRecord *product.Product, slug strin
 	return ""
 }
 
-func findSpecDefinitionBySlug(t *testing.T, db *gorm.DB, productTypeID uint, slug string) product.SpecDefinition {
+func findSpecDefinitionBySlug(t *testing.T, db *gorm.DB, productSpecificationTemplateID uint, slug string) product.SpecDefinition {
 	t.Helper()
 
 	var definition product.SpecDefinition
-	require.NoError(t, db.Where("product_type_id = ? AND slug = ?", productTypeID, slug).First(&definition).Error)
+	require.NoError(t, db.Where("product_specification_template_id = ? AND slug = ?", productSpecificationTemplateID, slug).First(&definition).Error)
 	return definition
 }

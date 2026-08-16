@@ -1,5 +1,8 @@
 <template>
-	<div ref="headerRootRef" class="fixed top-0 left-0 w-full z-[900] site-header-root">
+	<div
+		ref="headerRootRef"
+		class="fixed top-0 left-0 w-full z-[900] site-header-root"
+	>
 		<div
 			class="site-header-surface relative w-full rounded-none px-4 py-2 md:px-0 md:py-0"
 		>
@@ -51,15 +54,20 @@
 						<!-- Search -->
 						<div class="site-header-action-cell site-header-action-cell--search">
 							<button
+								ref="desktopContentNavigationTriggerRef"
 								class="site-header-action-button site-header-search-trigger"
-								@click="openSidebar"
-								:aria-label="searchHintTitle"
+								@click="toggleContentNavigationTransition"
+								:aria-label="contentNavigationTriggerLabel"
 							>
 								<Icon name="lucide:search" class="site-header-search-trigger__icon" />
 							</button>
-							<div class="site-header-search-hint" role="tooltip">
-								<span class="site-header-search-hint__title">{{ searchHintTitle }}</span>
-								<span class="site-header-search-hint__body">{{ searchHintBody }}</span>
+							<div
+								v-if="!contentNavigationTransitionOpen"
+								class="site-header-search-hint"
+								role="tooltip"
+							>
+								<span class="site-header-search-hint__title">{{ contentNavigationTriggerLabel }}</span>
+								<span class="site-header-search-hint__body">{{ contentNavigationTriggerBody }}</span>
 							</div>
 						</div>
 
@@ -130,7 +138,7 @@
 						<HeaderMegaMenu
 							:section="activeMegaNavSection"
 							:panel-id="megaPanelId"
-							@navigate="closeMegaNav"
+							@navigate="handleMegaNavNavigate"
 						/>
 					</teleport>
 				</div>
@@ -139,13 +147,13 @@
 				<nav
 					v-if="breadcrumbs.length"
 					aria-label="Breadcrumb"
-					class="site-header-breadcrumb-row flex justify-center"
+					class="site-header-breadcrumb-row"
 				>
-					<ol class="flex items-center gap-1.5 text-sm tz-text-muted leading-tight transition-colors hover:text-slate-300">
+					<ol class="site-header-breadcrumb-list flex items-center gap-1.5 text-sm tz-text-muted leading-tight transition-colors hover:text-slate-300">
 						<li
 							v-for="(crumb, index) in breadcrumbs"
 							:key="crumb.id"
-							class="relative flex items-center gap-1"
+							class="site-header-breadcrumb-item relative flex items-center gap-1"
 							:data-breadcrumb-subnav="crumb.subNavigation ? crumb.id : undefined"
 						>
 							<template v-if="crumb.subNavigation">
@@ -174,20 +182,29 @@
 									:aria-label="crumb.subNavigation.ariaLabel"
 									@click.stop
 								>
-									<NuxtLink
+									<a
 										v-for="tab in crumb.subNavigation.tabs"
 										:key="tab.id"
 										class="breadcrumb-subnav-link"
 										:class="{ 'breadcrumb-subnav-link--active': tab.active }"
-										:to="tab.to"
+										:href="tab.to"
 										role="menuitem"
 										:aria-current="tab.active ? 'page' : undefined"
-										@click="scheduleBreadcrumbSubNavClose"
+										@click.prevent="navigateBreadcrumbSubNav(tab.to)"
 									>
 										{{ tab.label }}
-									</NuxtLink>
+									</a>
 								</div>
 							</template>
+							<NuxtLink
+								v-else-if="crumb.id === 'home'"
+								:to="crumb.to || localePath('/')"
+								class="tz-text-secondary hover:text-white transition-colors inline-flex items-center justify-center"
+								:aria-label="crumb.label"
+								:title="crumb.label"
+							>
+								<Icon name="lucide:house" class="h-4 w-4" aria-hidden="true" />
+							</NuxtLink>
 							<NuxtLink
 								v-else-if="crumb.to && index < breadcrumbs.length - 1"
 								:to="crumb.to"
@@ -198,14 +215,14 @@
 							<span v-else class="tz-text-secondary font-medium">
 								{{ crumb.label }}
 							</span>
-							<span v-if="index < breadcrumbs.length - 1" class="tz-text-disabled">/</span>
+							<span v-if="index < breadcrumbs.length - 1" class="site-header-breadcrumb-separator tz-text-disabled">/</span>
 						</li>
 					</ol>
 				</nav>
 			</div>
 
 			<!-- 移动端：新版极简双行布局 -->
-			<div class="md:hidden flex flex-col gap-3">
+			<div class="md:hidden flex flex-col gap-0">
 				<div class="site-header-mobile-surface -mx-4 -mt-2 flex flex-col gap-3 bg-[linear-gradient(180deg,#1b1b21_0%,#111116_58%,#0c0c10_100%)] px-4 pt-2 pb-2">
 
 				<!-- 第一行：Logo (左) + 工具图标 (右) -->
@@ -221,9 +238,10 @@
 						<!-- Search (Icon) -->
 						<div class="site-header-action-cell site-header-action-cell--search">
 							<button
+								ref="mobileContentNavigationTriggerRef"
 								class="site-header-action-button site-header-search-trigger site-header-search-trigger--mobile"
-								@click="openSidebar"
-								:aria-label="searchHintTitle"
+								@click="toggleContentNavigationTransition"
+								:aria-label="contentNavigationTriggerLabel"
 							>
 								<Icon name="lucide:search" class="site-header-search-trigger__icon" />
 							</button>
@@ -278,13 +296,13 @@
 				<nav
 					v-if="breadcrumbs.length"
 					aria-label="Breadcrumb"
-					class="px-2 pb-1 -mt-1"
+					class="site-header-breadcrumb-row site-header-breadcrumb-row--mobile"
 				>
-					<ol class="flex items-center gap-1.5 flex-wrap justify-center text-sm tz-text-muted leading-tight">
+					<ol class="site-header-breadcrumb-list flex items-center gap-1.5 text-sm tz-text-muted leading-tight">
 						<li
 							v-for="(crumb, index) in breadcrumbs"
 							:key="crumb.id"
-							class="relative flex items-center gap-1"
+							class="site-header-breadcrumb-item relative flex items-center gap-1"
 							:data-breadcrumb-subnav="crumb.subNavigation ? crumb.id : undefined"
 						>
 							<template v-if="crumb.subNavigation">
@@ -313,20 +331,29 @@
 									:aria-label="crumb.subNavigation.ariaLabel"
 									@click.stop
 								>
-									<NuxtLink
+									<a
 										v-for="tab in crumb.subNavigation.tabs"
 										:key="tab.id"
 										class="breadcrumb-subnav-link"
 										:class="{ 'breadcrumb-subnav-link--active': tab.active }"
-										:to="tab.to"
+										:href="tab.to"
 										role="menuitem"
 										:aria-current="tab.active ? 'page' : undefined"
-										@click="scheduleBreadcrumbSubNavClose"
+										@click.prevent="navigateBreadcrumbSubNav(tab.to)"
 									>
 										{{ tab.label }}
-									</NuxtLink>
+									</a>
 								</div>
 							</template>
+							<NuxtLink
+								v-else-if="crumb.id === 'home'"
+								:to="crumb.to || localePath('/')"
+								class="tz-text-secondary hover:text-white transition-colors inline-flex items-center justify-center"
+								:aria-label="crumb.label"
+								:title="crumb.label"
+							>
+								<Icon name="lucide:house" class="h-4 w-4" aria-hidden="true" />
+							</NuxtLink>
 							<NuxtLink
 								v-else-if="crumb.to && index < breadcrumbs.length - 1"
 								:to="crumb.to"
@@ -337,13 +364,25 @@
 							<span v-else class="tz-text-secondary font-medium truncate max-w-[120px]">
 								{{ crumb.label }}
 							</span>
-							<span v-if="index < breadcrumbs.length - 1" class="tz-text-disabled">/</span>
+							<span v-if="index < breadcrumbs.length - 1" class="site-header-breadcrumb-separator tz-text-disabled">/</span>
 						</li>
 					</ol>
 				</nav>
 
 			</div>
 		</div>
+
+		<GlobalContentNavigationTransitionOverlay
+			:open="contentNavigationTransitionOpen"
+			:desktop-anchor="desktopContentNavigationTriggerRef"
+			:mobile-anchor="mobileContentNavigationTriggerRef"
+			@select="handleContentNavigationOption"
+		/>
+		<GlobalAllFaqsSearchOverlay
+			v-if="globalFaqSearchMounted"
+			:open="globalFaqSearchOpen"
+			@close="closeGlobalFaqSearch"
+		/>
 
 		<!-- LeverAndPoint 弹窗 -->
 		<teleport to="body">
@@ -360,7 +399,7 @@
 					<!-- 不透明背景遮罩 -->
 					<div
 						class="absolute inset-0 bg-black/80 backdrop-blur-sm pointer-events-auto"
-						@click="shareOpen = false"
+						@click="closeShare"
 					></div>
 					<!-- 弹窗内容：自下而上的 slide-up 动画，与其它弹窗保持一致 -->
 					<Transition name="slide-up" appear>
@@ -370,7 +409,7 @@
 							role="dialog"
 							aria-label="Membership"
 						>
-							<LeverAndPoint @close="shareOpen = false" />
+							<LeverAndPoint @close="closeShare" />
 						</div>
 					</Transition>
 				</div>
@@ -385,8 +424,10 @@ import { useThrottleFn } from '@vueuse/core'
 import { useI18n, useLocalePath, useRoute, useRouter, useState } from '#imports'
 import { useSiteSettings } from '~/composables/usePublicSettings'
 import { useSiteTitle } from '~/composables/useSiteTitle'
-import { useShopSearchSheet } from '~/composables/useShopSearchSheet'
+import { useOverlayBackStack } from '~/composables/useOverlayBackStack'
 import HeaderMegaMenu from '~/components/HeaderMegaMenu.vue'
+import GlobalContentNavigationTransitionOverlay from '~/components/GlobalContentNavigationTransitionOverlay.vue'
+import GlobalAllFaqsSearchOverlay from '~/components/faq/GlobalAllFaqsSearchOverlay.vue'
 import LeverAndPoint from '~/components/LeverAndPoint.vue'
 import {
   findPrimaryMegaNavSectionByPath,
@@ -415,6 +456,8 @@ const brandHomeLabel = computed(() => titleText.value ? `${titleText.value} home
 
 const headerRootRef = ref<HTMLElement | null>(null)
 const mobilePrimaryNavRef = ref<HTMLElement | null>(null)
+const desktopContentNavigationTriggerRef = ref<HTMLElement | null>(null)
+const mobileContentNavigationTriggerRef = ref<HTMLElement | null>(null)
 const isMobileViewport = ref(false)
 let headerResizeObserver: ResizeObserver | null = null
 
@@ -422,12 +465,26 @@ const megaPanelId = 'header-primary-mega-menu'
 const activeMegaNavId = ref<PrimaryMegaNavId | null>(null)
 const activeBreadcrumbSubNavId = ref<string | null>(null)
 const breadcrumbSubNavMobileTop = ref('8.5rem')
+const contentNavigationTransitionOpen = ref(false)
+const globalFaqSearchMounted = ref(false)
+const globalFaqSearchOpen = ref(false)
+const overlayBackStack = useOverlayBackStack()
 const breadcrumbSubNavMenuStyle = computed(() => ({
   '--breadcrumb-subnav-mobile-top': breadcrumbSubNavMobileTop.value,
 }))
 
-const closeMegaNav = () => {
+const closeMegaNavState = () => {
   activeMegaNavId.value = null
+}
+
+const closeMegaNav = () => {
+  void overlayBackStack.close('header-mega-nav')
+  closeMegaNavState()
+}
+
+const handleMegaNavNavigate = () => {
+  // Clear the menu history state without navigating back before NuxtLink pushes its target.
+  void overlayBackStack.close('header-mega-nav', 'navigate')
 }
 
 const activeMegaNavSection = computed<PrimaryMegaNavSection | null>(() => {
@@ -439,12 +496,8 @@ const openMegaNav = (id: PrimaryMegaNavId) => {
   updateHeaderOffset()
   activeMegaNavId.value = id
   isOpen.value = false
-  activeBreadcrumbSubNavId.value = null
   nextTick(updateHeaderOffset)
-
-  if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('ui:popup-open', { detail: { id: 'header-mega-nav' } }))
-  }
+  overlayBackStack.open('header-mega-nav', closeMegaNavState)
 }
 
 const toggleMegaNav = (id: PrimaryMegaNavId) => {
@@ -477,25 +530,76 @@ const throttledUpdateHeaderOffset = useThrottleFn(updateHeaderOffset, 150)
 // Share button (Membership panel)
 const shareOpen = ref(false)
 
+const closeShareState = () => {
+  shareOpen.value = false
+}
+
+const closeShare = () => {
+  void overlayBackStack.close('header-share')
+  closeShareState()
+}
+
 const toggleShare = () => {
-  closeMegaNav()
-  isOpen.value = false
-  activeBreadcrumbSubNavId.value = null
-  shareOpen.value = !shareOpen.value
-  if (shareOpen.value && typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('ui:popup-open', { detail: { id: 'header-share' } }))
+	isOpen.value = false
+  if (shareOpen.value) {
+    closeShare()
+    return
   }
+
+  shareOpen.value = true
+  overlayBackStack.open('header-share', closeShareState)
 }
 
-// Open Sidebar (Search)
-const openSidebar = () => {
-  closeMegaNav()
-  isOpen.value = false
-  activeBreadcrumbSubNavId.value = null
-  openShopSearch()
+type ContentNavigationOptionId = 'products' | 'faq' | 'pages' | 'blog'
+
+const closeContentNavigationTransitionState = () => {
+	contentNavigationTransitionOpen.value = false
 }
 
-const { open: openShopSearch } = useShopSearchSheet()
+const closeContentNavigationTransition = (
+	reason: 'user' | 'navigate' | 'replace' = 'user',
+) => {
+	void overlayBackStack.close('global-content-navigation-transition', reason)
+	closeContentNavigationTransitionState()
+}
+
+const openContentNavigationTransition = () => {
+	isOpen.value = false
+	contentNavigationTransitionOpen.value = true
+	overlayBackStack.open(
+		'global-content-navigation-transition',
+		closeContentNavigationTransitionState,
+	)
+}
+
+const toggleContentNavigationTransition = () => {
+	if (contentNavigationTransitionOpen.value) {
+		closeContentNavigationTransition()
+		return
+	}
+
+	openContentNavigationTransition()
+}
+
+const closeGlobalFaqSearchState = () => {
+	globalFaqSearchOpen.value = false
+}
+
+const closeGlobalFaqSearch = (
+	reason: 'user' | 'navigate' | 'replace' = 'user',
+) => {
+	void overlayBackStack.close('global-all-faqs-search', reason)
+	closeGlobalFaqSearchState()
+}
+
+const openGlobalFaqSearch = () => {
+	globalFaqSearchMounted.value = true
+	globalFaqSearchOpen.value = true
+	overlayBackStack.open(
+		'global-all-faqs-search',
+		closeGlobalFaqSearchState,
+	)
+}
 
 // Language Switcher
 const { locale, locales, setLocale, t } = useI18n() as any
@@ -503,8 +607,39 @@ const localePath = useLocalePath()
 const router = useRouter()
 const route = useRoute()
 
-const searchHintTitle = computed(() => t('header.searchHint.title'))
-const searchHintBody = computed(() => t('header.searchHint.body'))
+const contentNavigationTriggerLabel = computed(() => (
+	t(
+		'header.globalNavigationTransition.trigger',
+		'Open content navigation',
+	)
+))
+const contentNavigationTriggerBody = computed(() => (
+	t(
+		'header.globalNavigationTransition.triggerBody',
+		'Choose Products, FAQ, Pages, or Blog.',
+	)
+))
+
+const handleContentNavigationOption = (option: ContentNavigationOptionId) => {
+	if (option === 'faq') {
+		closeContentNavigationTransition('navigate')
+		openGlobalFaqSearch()
+		return
+	}
+
+	if (option !== 'products') return
+
+	closeContentNavigationTransition('navigate')
+
+	if (isMobileViewport.value) {
+		if (typeof window !== 'undefined') {
+			window.dispatchEvent(new CustomEvent('ui:product-category-sidebar-open'))
+		}
+		return
+	}
+
+	void router.push(localePath('/shop'))
+}
 
 const getLocaleCodes = () => {
   return (unref(locales) || [])
@@ -1144,13 +1279,36 @@ const lastExpandableBreadcrumbId = computed(() => {
   return ''
 })
 
-const closeBreadcrumbSubNav = () => {
+const closeBreadcrumbSubNavState = () => {
   activeBreadcrumbSubNavId.value = null
 }
 
-const scheduleBreadcrumbSubNavClose = () => {
-  if (typeof window === 'undefined') return
-  window.setTimeout(closeBreadcrumbSubNav, 0)
+const closeBreadcrumbSubNav = async () => {
+  const closePromise = overlayBackStack.close('breadcrumb-subnav')
+  closeBreadcrumbSubNavState()
+  await closePromise
+}
+
+const closeBreadcrumbSubNavForNavigation = async () => {
+  const closePromise = overlayBackStack.close('breadcrumb-subnav', 'navigate')
+  closeBreadcrumbSubNavState()
+  await closePromise
+}
+
+const navigateBreadcrumbSubNav = async (to: string) => {
+  const targetPath = to || localePath('/')
+  const currentFullPath = router.currentRoute.value?.fullPath || route.fullPath || '/'
+
+  try {
+    await closeBreadcrumbSubNavForNavigation()
+    if (targetPath !== currentFullPath) {
+      await router.push(targetPath)
+    }
+  } catch {
+    if (typeof window !== 'undefined') {
+      window.location.assign(targetPath)
+    }
+  }
 }
 
 const updateBreadcrumbSubNavPosition = (target: EventTarget | null | undefined) => {
@@ -1163,16 +1321,18 @@ const updateBreadcrumbSubNavPosition = (target: EventTarget | null | undefined) 
 
 const toggleBreadcrumbSubNav = (id: string, event?: MouseEvent) => {
   const nextId = activeBreadcrumbSubNavId.value === id ? null : id
+  if (!nextId) {
+    closeBreadcrumbSubNav()
+    return
+  }
+
   if (nextId) {
     updateBreadcrumbSubNavPosition(event?.currentTarget)
   }
   activeBreadcrumbSubNavId.value = nextId
   if (nextId) {
-    closeMegaNav()
     isOpen.value = false
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('ui:popup-open', { detail: { id: 'breadcrumb-subnav' } }))
-    }
+    overlayBackStack.open('breadcrumb-subnav', closeBreadcrumbSubNavState)
   }
 }
 
@@ -1183,6 +1343,15 @@ const switchLocalePath = (targetLocale: string) => {
 }
 
 const isOpen = ref(false)
+const closeLanguageState = () => {
+  isOpen.value = false
+}
+
+const closeLanguage = async () => {
+  const closePromise = overlayBackStack.close('language')
+  closeLanguageState()
+  await closePromise
+}
 
 type LocaleOption = { code: string; name?: string; iso?: string }
 
@@ -1238,29 +1407,24 @@ const setOptionRefAt = (index: number) => {
 }
 
 const toggleDropdown = () => {
-  isOpen.value = !isOpen.value
   if (isOpen.value) {
-    closeMegaNav()
-    closeBreadcrumbSubNav()
+    closeLanguage()
+    return
   }
-  if (isOpen.value && typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('ui:popup-open', { detail: { id: 'language' } }))
-  }
+
+  isOpen.value = true
+  overlayBackStack.open('language', closeLanguageState)
 }
 
 const onButtonKeydown = (e: KeyboardEvent) => {
   if (e.key === 'Enter' || e.key === ' ') {
     e.preventDefault()
-    isOpen.value = !isOpen.value
-    if (isOpen.value) {
-      closeMegaNav()
-      closeBreadcrumbSubNav()
-    }
+    toggleDropdown()
     if (isOpen.value) {
       nextTick(() => optionRefs.value[0]?.focus())
     }
   } else if (e.key === 'Escape') {
-    isOpen.value = false
+    void closeLanguage()
     closeMegaNav()
     closeBreadcrumbSubNav()
   }
@@ -1279,7 +1443,7 @@ const onListKeydown = (e: KeyboardEvent) => {
     const prevIndex = idx >= 0 ? (idx - 1 + refs.length) % refs.length : refs.length - 1
     refs[prevIndex]?.focus()
   } else if (e.key === 'Escape') {
-    isOpen.value = false
+    void closeLanguage()
     closeMegaNav()
     closeBreadcrumbSubNav()
     document.getElementById(buttonId)?.focus()
@@ -1288,7 +1452,10 @@ const onListKeydown = (e: KeyboardEvent) => {
 
 const switchLanguage = async (code: string) => {
   try {
-    if (!code || !isLocaleCode(code) || code === locale.value) { isOpen.value = false; return }
+    if (!code || !isLocaleCode(code) || code === locale.value) {
+      await closeLanguage()
+      return
+    }
 
     const overrideTargetPath = alternateLinksOverride.value?.find((entry: { code: string; path: string }) => entry.code === code)?.path
     const currentFullPath = router.currentRoute.value?.fullPath || ''
@@ -1306,7 +1473,7 @@ const switchLanguage = async (code: string) => {
       }
     }
   } finally {
-    isOpen.value = false
+    await closeLanguage()
     closeMegaNav()
     closeBreadcrumbSubNav()
   }
@@ -1316,7 +1483,7 @@ const handleClickOutside = (event: MouseEvent) => {
   const target = event.target
   if (!(target instanceof Element)) return
   if (!target.closest('[data-lang-wrapper]') && !target.closest('#' + dropdownId)) {
-    isOpen.value = false
+    void closeLanguage()
   }
   if (!target.closest('[data-breadcrumb-subnav]')) {
     closeBreadcrumbSubNav()
@@ -1327,10 +1494,12 @@ const handleClickOutside = (event: MouseEvent) => {
 }
 
 const handleHeaderKeydown = (event: KeyboardEvent) => {
-  if (event.key !== 'Escape') return
-  isOpen.value = false
-  closeMegaNav()
-  closeBreadcrumbSubNav()
+	if (event.key !== 'Escape') return
+	void closeLanguage()
+	closeContentNavigationTransition()
+	closeGlobalFaqSearch()
+	closeMegaNav()
+	closeBreadcrumbSubNav()
 }
 
 watch(
@@ -1357,25 +1526,6 @@ onMounted(() => {
     }
   })
 
-  const onGlobalPopup = (event: Event) => {
-    try {
-      const custom = event as CustomEvent<{ id?: string }>
-      const id = custom?.detail?.id
-      if (id !== 'language') {
-        isOpen.value = false
-      }
-      if (id !== 'header-mega-nav') {
-        closeMegaNav()
-      }
-      if (id !== 'breadcrumb-subnav') {
-        closeBreadcrumbSubNav()
-      }
-    } catch {}
-  }
-  window.addEventListener('ui:popup-open', onGlobalPopup as EventListener)
-  onBeforeUnmount(() => {
-    window.removeEventListener('ui:popup-open', onGlobalPopup as EventListener)
-  })
 })
 
 onBeforeUnmount(() => {
@@ -1547,6 +1697,9 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 
 	.site-header-breadcrumb-row {
 		min-height: 28px;
+	}
+
+	.site-header-breadcrumb-list {
 		padding: 0.16rem 1rem 0.42rem;
 	}
 }
@@ -2043,6 +2196,48 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 	) !important;
 }
 
+.site-header-breadcrumb-row {
+	display: flex;
+	width: 100%;
+	min-width: 0;
+	align-items: center;
+	background: #000000;
+	border-top: 1px solid rgba(255, 255, 255, 0.08);
+	border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+	overflow: visible;
+	scrollbar-width: none;
+}
+
+.site-header-breadcrumb-row::-webkit-scrollbar {
+	display: none;
+}
+
+.site-header-breadcrumb-list {
+	display: flex;
+	width: max-content;
+	min-width: 100%;
+	flex: 0 0 auto;
+	flex-wrap: nowrap;
+	align-items: center;
+	justify-content: center;
+	padding: 0.32rem 0.75rem 0.38rem;
+	white-space: nowrap;
+}
+
+.site-header-breadcrumb-item {
+	flex: 0 0 auto;
+	min-width: 0;
+	white-space: nowrap;
+}
+
+.site-header-breadcrumb-separator {
+	display: inline-flex;
+	flex: 0 0 auto;
+	align-items: center;
+	justify-content: center;
+	min-width: 0.42rem;
+}
+
 .breadcrumb-subnav-trigger {
 	display: inline-flex;
 	max-width: min(46vw, 220px);
@@ -2081,7 +2276,10 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 .breadcrumb-subnav-trigger__icon {
 	width: 0.82rem;
 	height: 0.82rem;
-	flex: 0 0 auto;
+	min-width: 0.82rem;
+	min-height: 0.82rem;
+	display: block;
+	flex: 0 0 0.82rem;
 	color: #B5FF6D;
 	transition: transform 0.18s ease;
 }
@@ -2134,11 +2332,10 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 	transform: translateX(-50%);
 	gap: 0.25rem;
 	overflow: auto;
-	border: 1px solid rgba(148, 163, 184, 0.2);
+	border: 1px solid rgba(255, 255, 255, 0.18);
 	border-radius: 0.95rem;
-	background:
-		radial-gradient(circle at top left, rgba(181, 255, 109, 0.12), transparent 42%),
-		linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(2, 6, 23, 0.98));
+	background: var(--tz-card-surface, #111116);
+	background-image: none;
 	padding: 0.42rem;
 	box-shadow:
 		0 24px 54px -22px rgba(0, 0, 0, 1),
@@ -2184,6 +2381,19 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 
 .breadcrumb-subnav-trigger--mobile {
 	max-width: 36vw;
+}
+
+.site-header-breadcrumb-row--mobile {
+	width: calc(100% + 2rem);
+	margin-inline: -1rem;
+	overflow-x: auto;
+	overflow-y: visible;
+}
+
+.site-header-breadcrumb-row--mobile .site-header-breadcrumb-list {
+	min-width: max-content;
+	justify-content: flex-start;
+	padding-inline: max(0.75rem, env(safe-area-inset-left)) max(0.75rem, env(safe-area-inset-right));
 }
 
 .breadcrumb-subnav-menu--mobile {

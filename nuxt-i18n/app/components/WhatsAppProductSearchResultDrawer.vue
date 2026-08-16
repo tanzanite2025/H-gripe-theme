@@ -288,8 +288,8 @@ const selectedConfigVariant = computed<ShopProductVariant | null>(() => {
 })
 
 const specDefinitions = computed<ShopProductSpecDefinition[]>(() => {
-  return Array.isArray(selectedConfigProduct.value?.productType?.specDefinitions)
-    ? selectedConfigProduct.value.productType.specDefinitions
+  return Array.isArray(selectedConfigProduct.value?.productSpecificationTemplate?.specDefinitions)
+    ? selectedConfigProduct.value.productSpecificationTemplate.specDefinitions
     : []
 })
 

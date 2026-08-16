@@ -9,6 +9,12 @@ import (
 func TestBuildProductRoute(t *testing.T) {
 	require.Equal(t, "/shop/demo-wheel", BuildProductRoute("en", "demo-wheel").Path)
 	require.Equal(t, "/zh_cn/shop/demo-wheel", BuildProductRoute("zh-CN", "demo-wheel").Path)
+	require.Equal(t, "/products/demo-wheel", BuildLegacyProductRoute("en", "demo-wheel").Path)
+}
+
+func TestBuildStaticRoute(t *testing.T) {
+	require.Equal(t, "/", BuildStaticRoute("en", "/").Path)
+	require.Equal(t, "/de/company/about", BuildStaticRoute("de", "/company/about").Path)
 }
 
 func TestBuildArticleRouteUsesTheStorefrontCategory(t *testing.T) {

@@ -31,6 +31,16 @@ redis:
   db: 0
   pool_size: 20
 
+customer_service_realtime:
+  # The production customer-service path is WebSocket-only. Every API replica
+  # reads this shared Redis Stream, while the Outbox dispatcher publishes to it.
+  enabled: true
+  stream: "customer_service:{realtime}:v1"
+  stream_max_len: 10000
+  replay_limit: 200
+  consumer_block_seconds: 5
+  dedup_retention_seconds: 86400
+
 jwt:
   secret: ${JWT_SECRET}
   expire_hours: 24
@@ -119,8 +129,10 @@ worker:
   tracking_polling_enabled: false
   tracking_polling_interval_seconds: 300
   tracking_polling_batch_limit: 20
-  outbox_dispatch_enabled: false
-  outbox_dispatch_interval_seconds: 10
+  # This scheduler is independent from worker.enabled and is required by the
+  # durable customer-service Relay as well as the other Outbox consumers.
+  outbox_dispatch_enabled: true
+  outbox_dispatch_interval_seconds: 2
   outbox_dispatch_batch_limit: 100
   outbox_dispatch_lock_timeout_seconds: 300
   payment_expiration_enabled: true

@@ -233,7 +233,7 @@ if [[ ! "${release_sha}" =~ ^[0-9a-f]{40}$ ]]; then
 fi
 
 git reset --hard "${release_sha}"
-git clean -fd -e deployment/production.env
+git clean -fd -e deployment/production.env -e 'deployment/production.env.bak-*'
 
 export IMAGE_TAG="sha-${release_sha}"
 echo "Deploying ${IMAGE_TAG} from ${deploy_ref}."
@@ -289,10 +289,10 @@ wait_for_service_health db
 wait_for_service_health redis
 
 echo "Running database migrations..."
-"${compose[@]}" up --no-deps --abort-on-container-exit --exit-code-from migrate migrate
+"${compose[@]}" up --no-deps --force-recreate --abort-on-container-exit --exit-code-from migrate migrate
 
 echo "Rendering edge configuration from the migrated database..."
-"${compose[@]}" up --no-deps --abort-on-container-exit --exit-code-from edge-config edge-config
+"${compose[@]}" up --no-deps --force-recreate --abort-on-container-exit --exit-code-from edge-config edge-config
 
 validate_generated_edge_config() {
   local manifest_path="${edge_config_dir}/manifest.json"

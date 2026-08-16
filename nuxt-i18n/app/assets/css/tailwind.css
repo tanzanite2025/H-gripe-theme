@@ -215,6 +215,208 @@
   }
 
   /*
+   * Shared icon-only previous/next control for storefront media, carousels,
+   * and compact pagers. Layout-specific classes should only position it.
+   */
+  .tz-directional-arrow {
+    --tz-directional-arrow-size: 2.25rem;
+    --tz-directional-arrow-icon-size: 1rem;
+    display: inline-grid;
+    width: var(--tz-directional-arrow-size);
+    height: var(--tz-directional-arrow-size);
+    flex: 0 0 var(--tz-directional-arrow-size);
+    box-sizing: border-box;
+    place-items: center;
+    padding: 0;
+    border: 1px solid rgba(0, 0, 0, 0.14);
+    border-radius: 999px;
+    background: #ffffff;
+    color: #050505;
+    cursor: pointer;
+    line-height: 1;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
+    transition:
+      background-color 0.18s ease,
+      border-color 0.18s ease,
+      box-shadow 0.18s ease;
+  }
+
+  .tz-directional-arrow--large {
+    --tz-directional-arrow-size: 2.5rem;
+    --tz-directional-arrow-icon-size: 1.125rem;
+  }
+
+  .tz-directional-arrow--compact {
+    --tz-directional-arrow-size: 2rem;
+  }
+
+  .tz-directional-arrow--small {
+    --tz-directional-arrow-size: 1.75rem;
+    --tz-directional-arrow-icon-size: 0.875rem;
+  }
+
+  .tz-directional-arrow:hover:not(:disabled) {
+    border-color: rgba(0, 0, 0, 0.24);
+    background: #f2f2f2;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.34);
+  }
+
+  .tz-directional-arrow:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.9);
+    outline-offset: 2px;
+  }
+
+  .tz-directional-arrow:disabled {
+    cursor: not-allowed;
+    opacity: 0.36;
+  }
+
+  .tz-directional-arrow > :where(svg, .iconify) {
+    width: var(--tz-directional-arrow-icon-size);
+    height: var(--tz-directional-arrow-icon-size);
+  }
+
+  /*
+   * Shared image-carousel pagination. The active state uses a horizontal
+   * white track; inactive slides remain compact white dots.
+   */
+  .tz-carousel-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+
+  .tz-carousel-pagination__dot {
+    width: 0.375rem;
+    height: 0.375rem;
+    flex: 0 0 auto;
+    box-sizing: border-box;
+    padding: 0;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.42);
+    cursor: pointer;
+    transition:
+      width 0.2s ease,
+      background-color 0.2s ease,
+      opacity 0.2s ease;
+  }
+
+  .tz-carousel-pagination__dot:hover:not(.is-active) {
+    background: rgba(255, 255, 255, 0.72);
+  }
+
+  .tz-carousel-pagination__dot.is-active {
+    width: 1.75rem;
+    background: #ffffff;
+  }
+
+  .tz-carousel-pagination__dot:focus-visible {
+    outline: 2px solid #ffffff;
+    outline-offset: 3px;
+  }
+
+  /*
+   * Shared segmented-tab control for compact storefront section switches.
+   * Apply .is-active to the selected .tz-segmented-tabs__button.
+   */
+  .tz-segmented-tabs {
+    display: inline-flex;
+    padding: 0.375rem;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.7);
+  }
+
+  .tz-segmented-tabs__button {
+    border: 0;
+    border-radius: 999px;
+    padding: 0.5rem 1.5rem;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.25rem;
+    cursor: pointer;
+    transition:
+      background-color 0.2s ease,
+      color 0.2s ease;
+  }
+
+  .tz-segmented-tabs__button:hover:not(.is-active) {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+  }
+
+  .tz-segmented-tabs__button.is-active {
+    background: #ffffff;
+    color: #000000;
+  }
+
+  .tz-segmented-tabs__button:focus-visible {
+    outline: 2px solid #ffffff;
+    outline-offset: 3px;
+  }
+
+  /*
+   * Shared current-item state for carousel and content lists. Selection uses
+   * a white surface with the system green as its indicator, never blue.
+   */
+  .tz-selectable-list-item {
+    display: block;
+    border: 1px solid transparent;
+    border-radius: 0.75rem;
+    background: transparent;
+    cursor: pointer;
+    transition:
+      background-color 0.2s ease,
+      border-color 0.2s ease;
+  }
+
+  .tz-selectable-list-item:hover:not(.is-active) {
+    background: #ffffff;
+  }
+
+  .tz-selectable-list-item__indicator {
+    width: 0.5rem;
+    height: 0.5rem;
+    flex: 0 0 auto;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.38);
+    transition:
+      background-color 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+
+  .tz-selectable-list-item:hover:not(.is-active) .tz-selectable-list-item__indicator {
+    background: var(--tz-brand-primary);
+    box-shadow: 0 0 8px rgba(181, 255, 109, 0.55);
+  }
+
+  .tz-selectable-list-item.is-active .tz-selectable-list-item__indicator {
+    background: var(--tz-brand-primary);
+    box-shadow: 0 0 8px rgba(181, 255, 109, 0.55);
+  }
+
+  .tz-selectable-list-item__label {
+    color: var(--tz-text-secondary);
+    transition: color 0.2s ease;
+  }
+
+  .tz-selectable-list-item:hover:not(.is-active) .tz-selectable-list-item__label {
+    color: #000000;
+  }
+
+  .tz-selectable-list-item.is-active {
+    background: #ffffff;
+  }
+
+  .tz-selectable-list-item.is-active .tz-selectable-list-item__label {
+    color: #000000;
+  }
+
+  /*
    * Shared close control for storefront drawers, dialogs and overlays.
    * Keep the control neutral so green remains an accent rather than a
    * repeated modal background.

@@ -19,9 +19,27 @@ func (r *OpsProjectBindingRepository) List() ([]ops.ProjectBindingView, error) {
 	var records []ops.ProjectBindingView
 	err := r.db.
 		Table("ops_project_bindings AS project").
-		Select("project.*, vps.name AS vps_name, vps.provider AS vps_provider, vps.hostname AS vps_hostname, vps.ipv4 AS vps_ipv4").
+		Select("project.*, vps.name AS vps_name, vps.provider AS vps_provider, vps.hostname AS vps_hostname, vps.ipv4 AS vps_ipv4, vps.connector_id AS vps_connector_id").
 		Joins("LEFT JOIN ops_vps_bindings AS vps ON vps.id = project.vps_binding_id AND vps.deleted_at IS NULL").
 		Where("project.deleted_at IS NULL").
+		Order("project.enabled DESC").
+		Order("project.environment ASC").
+		Order("project.name ASC").
+		Scan(&records).Error
+	return records, err
+}
+
+func (r *OpsProjectBindingRepository) ListByEnvironment(environment string) ([]ops.ProjectBindingView, error) {
+	var records []ops.ProjectBindingView
+	query := r.db.
+		Table("ops_project_bindings AS project").
+		Select("project.*, vps.name AS vps_name, vps.provider AS vps_provider, vps.hostname AS vps_hostname, vps.ipv4 AS vps_ipv4, vps.connector_id AS vps_connector_id").
+		Joins("LEFT JOIN ops_vps_bindings AS vps ON vps.id = project.vps_binding_id AND vps.deleted_at IS NULL").
+		Where("project.deleted_at IS NULL")
+	if environment != "" {
+		query = query.Where("project.environment = ?", environment)
+	}
+	err := query.
 		Order("project.enabled DESC").
 		Order("project.environment ASC").
 		Order("project.name ASC").
@@ -33,7 +51,7 @@ func (r *OpsProjectBindingRepository) FindByID(id uint) (*ops.ProjectBindingView
 	var record ops.ProjectBindingView
 	err := r.db.
 		Table("ops_project_bindings AS project").
-		Select("project.*, vps.name AS vps_name, vps.provider AS vps_provider, vps.hostname AS vps_hostname, vps.ipv4 AS vps_ipv4").
+		Select("project.*, vps.name AS vps_name, vps.provider AS vps_provider, vps.hostname AS vps_hostname, vps.ipv4 AS vps_ipv4, vps.connector_id AS vps_connector_id").
 		Joins("LEFT JOIN ops_vps_bindings AS vps ON vps.id = project.vps_binding_id AND vps.deleted_at IS NULL").
 		Where("project.id = ? AND project.deleted_at IS NULL", id).
 		Scan(&record).Error
@@ -50,7 +68,7 @@ func (r *OpsProjectBindingRepository) FindByName(name string) (*ops.ProjectBindi
 	var record ops.ProjectBindingView
 	err := r.db.
 		Table("ops_project_bindings AS project").
-		Select("project.*, vps.name AS vps_name, vps.provider AS vps_provider, vps.hostname AS vps_hostname, vps.ipv4 AS vps_ipv4").
+		Select("project.*, vps.name AS vps_name, vps.provider AS vps_provider, vps.hostname AS vps_hostname, vps.ipv4 AS vps_ipv4, vps.connector_id AS vps_connector_id").
 		Joins("LEFT JOIN ops_vps_bindings AS vps ON vps.id = project.vps_binding_id AND vps.deleted_at IS NULL").
 		Where("project.name = ? AND project.deleted_at IS NULL", name).
 		Scan(&record).Error
@@ -61,6 +79,17 @@ func (r *OpsProjectBindingRepository) FindByName(name string) (*ops.ProjectBindi
 		return nil, gorm.ErrRecordNotFound
 	}
 	return &record, nil
+}
+
+func (r *OpsProjectBindingRepository) HasByVPSBindingID(vpsBindingID uint) (bool, error) {
+	if vpsBindingID == 0 {
+		return false, nil
+	}
+	var count int64
+	if err := r.db.Model(&ops.ProjectBinding{}).Where("vps_binding_id = ?", vpsBindingID).Count(&count).Error; err != nil {
+		return false, err
+	}
+	return count > 0, nil
 }
 
 func (r *OpsProjectBindingRepository) Create(record *ops.ProjectBinding) error {

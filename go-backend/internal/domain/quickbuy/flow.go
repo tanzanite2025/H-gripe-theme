@@ -72,40 +72,56 @@ func (Version) TableName() string {
 }
 
 type Step struct {
-	ID              uint              `gorm:"primarykey" json:"id"`
-	FlowVersionID   uint              `gorm:"not null;index" json:"flow_version_id"`
-	StepKey         string            `gorm:"size:120;not null" json:"step_key"`
-	Name            string            `gorm:"size:160;not null" json:"name"`
-	SortOrder       int               `gorm:"not null;default:100" json:"sort_order"`
-	SelectionMode   string            `gorm:"size:24;not null;default:'single'" json:"selection_mode"`
-	IsRequired      bool              `gorm:"not null;default:true" json:"is_required"`
-	MinSelect       int               `gorm:"not null;default:0" json:"min_select"`
-	MaxSelect       int               `gorm:"not null;default:1" json:"max_select"`
-	DefaultQuantity int               `gorm:"not null;default:1" json:"default_quantity"`
-	AllowSkip       bool              `gorm:"not null;default:false" json:"allow_skip"`
-	ProductTypes    []StepProductType `gorm:"foreignKey:StepID" json:"product_types,omitempty"`
-	Filters         []StepFilter      `gorm:"foreignKey:StepID" json:"filters,omitempty"`
-	CreatedAt       time.Time         `json:"created_at"`
-	UpdatedAt       time.Time         `json:"updated_at"`
+	ID                            uint                               `gorm:"primarykey" json:"id"`
+	FlowVersionID                 uint                               `gorm:"not null;index" json:"flow_version_id"`
+	StepKey                       string                             `gorm:"size:120;not null" json:"step_key"`
+	Name                          string                             `gorm:"size:160;not null" json:"name"`
+	SortOrder                     int                                `gorm:"not null;default:100" json:"sort_order"`
+	SelectionMode                 string                             `gorm:"size:24;not null;default:'single'" json:"selection_mode"`
+	IsRequired                    bool                               `gorm:"not null;default:true" json:"is_required"`
+	MinSelect                     int                                `gorm:"not null;default:0" json:"min_select"`
+	MaxSelect                     int                                `gorm:"not null;default:1" json:"max_select"`
+	DefaultQuantity               int                                `gorm:"not null;default:1" json:"default_quantity"`
+	AllowSkip                     bool                               `gorm:"not null;default:false" json:"allow_skip"`
+	ProductCategories             []StepProductCategory              `gorm:"foreignKey:StepID" json:"product_categories,omitempty"`
+	ProductSpecificationTemplates []StepProductSpecificationTemplate `gorm:"foreignKey:StepID" json:"product_specification_templates,omitempty"`
+	Filters                       []StepFilter                       `gorm:"foreignKey:StepID" json:"filters,omitempty"`
+	CreatedAt                     time.Time                          `json:"created_at"`
+	UpdatedAt                     time.Time                          `json:"updated_at"`
 }
 
 func (Step) TableName() string {
 	return "quick_buy_steps"
 }
 
-type StepProductType struct {
-	ID            uint                 `gorm:"primarykey" json:"id"`
-	StepID        uint                 `gorm:"not null;index" json:"step_id"`
-	ProductTypeID uint                 `gorm:"not null;index" json:"product_type_id"`
-	IsPrimary     bool                 `gorm:"not null;default:false" json:"is_primary"`
-	SortOrder     int                  `gorm:"not null;default:100" json:"sort_order"`
-	ProductType   *product.ProductType `gorm:"foreignKey:ProductTypeID" json:"product_type,omitempty"`
-	CreatedAt     time.Time            `json:"created_at"`
-	UpdatedAt     time.Time            `json:"updated_at"`
+type StepProductCategory struct {
+	ID                uint                     `gorm:"primarykey" json:"id"`
+	StepID            uint                     `gorm:"not null;index" json:"step_id"`
+	ProductCategoryID uint                     `gorm:"not null;index" json:"product_category_id"`
+	IsPrimary         bool                     `gorm:"not null;default:false" json:"is_primary"`
+	SortOrder         int                      `gorm:"not null;default:100" json:"sort_order"`
+	ProductCategory   *product.ProductCategory `gorm:"foreignKey:ProductCategoryID" json:"product_category,omitempty"`
+	CreatedAt         time.Time                `json:"created_at"`
+	UpdatedAt         time.Time                `json:"updated_at"`
 }
 
-func (StepProductType) TableName() string {
-	return "quick_buy_step_product_types"
+func (StepProductCategory) TableName() string {
+	return "quick_buy_step_product_categories"
+}
+
+type StepProductSpecificationTemplate struct {
+	ID                             uint                                  `gorm:"primarykey" json:"id"`
+	StepID                         uint                                  `gorm:"not null;index" json:"step_id"`
+	ProductSpecificationTemplateID uint                                  `gorm:"not null;index" json:"product_specification_template_id"`
+	IsPrimary                      bool                                  `gorm:"not null;default:false" json:"is_primary"`
+	SortOrder                      int                                   `gorm:"not null;default:100" json:"sort_order"`
+	ProductSpecificationTemplate   *product.ProductSpecificationTemplate `gorm:"foreignKey:ProductSpecificationTemplateID" json:"product_specification_template,omitempty"`
+	CreatedAt                      time.Time                             `json:"created_at"`
+	UpdatedAt                      time.Time                             `json:"updated_at"`
+}
+
+func (StepProductSpecificationTemplate) TableName() string {
+	return "quick_buy_step_product_specification_templates"
 }
 
 type StepFilter struct {

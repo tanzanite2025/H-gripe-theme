@@ -3,6 +3,7 @@ package admin
 import (
 	"errors"
 	"strconv"
+	"strings"
 
 	"commerce-platform/internal/pkg/apierror"
 	"commerce-platform/internal/pkg/response"
@@ -70,8 +71,12 @@ func (h *OpsDeploymentPreflightHandler) GetOverview(c *gin.Context) {
 		return
 	}
 
-	overview, err := h.service.EvaluateOverview()
+	overview, err := h.service.EvaluateOverviewForEnvironment(strings.TrimSpace(c.Query("environment")))
 	if err != nil {
+		if errors.Is(err, service.ErrInvalidOpsProjectEnvironment) {
+			apierror.RespondBadRequest(c, err.Error())
+			return
+		}
 		apierror.RespondInternalError(c, err)
 		return
 	}

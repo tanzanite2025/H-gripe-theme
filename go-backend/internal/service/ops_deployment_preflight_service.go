@@ -59,11 +59,19 @@ func (s *OpsDeploymentPreflightService) EvaluateProject(projectID uint) (*ops.De
 }
 
 func (s *OpsDeploymentPreflightService) EvaluateOverview() (*ops.DeploymentPreflightOverview, error) {
+	return s.EvaluateOverviewForEnvironment("")
+}
+
+func (s *OpsDeploymentPreflightService) EvaluateOverviewForEnvironment(environment string) (*ops.DeploymentPreflightOverview, error) {
 	if s == nil || s.projectRepo == nil || s.vpsRepo == nil || s.connectorRepo == nil || s.domainRepo == nil {
 		return nil, errors.New("operations deployment preflight service is not configured")
 	}
 
-	projects, err := s.projectRepo.List()
+	environment, err := normalizeOpsProjectEnvironment(environment)
+	if err != nil {
+		return nil, err
+	}
+	projects, err := s.projectRepo.ListByEnvironment(environment)
 	if err != nil {
 		return nil, fmt.Errorf("load operations projects for deployment preflight overview: %w", err)
 	}
@@ -73,7 +81,7 @@ func (s *OpsDeploymentPreflightService) EvaluateOverview() (*ops.DeploymentPrefl
 	}
 
 	overview := &ops.DeploymentPreflightOverview{
-		Environment:  "all",
+		Environment:  preflightOverviewEnvironmentLabel(environment),
 		GeneratedAt:  evidence.generatedAt,
 		ProjectCount: len(projects),
 		Projects:     make([]ops.DeploymentPreflightSummary, 0, len(projects)),
@@ -99,6 +107,13 @@ func (s *OpsDeploymentPreflightService) EvaluateOverview() (*ops.DeploymentPrefl
 	}
 	overview.Categories = sortedPreflightGroups(categoryTotals)
 	return overview, nil
+}
+
+func preflightOverviewEnvironmentLabel(environment string) string {
+	if environment == "" {
+		return "all"
+	}
+	return environment
 }
 
 func (s *OpsDeploymentPreflightService) loadPreflightEvidenceSnapshot(generatedAt time.Time) (*deploymentPreflightEvidenceSnapshot, error) {

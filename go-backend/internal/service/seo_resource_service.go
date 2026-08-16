@@ -101,7 +101,7 @@ func (s *SEOResourceService) ListProducts(page, pageSize int, status, locale, se
 	if s == nil || s.products == nil {
 		return nil, 0, ErrProductNotFound
 	}
-	return s.products.ListAdmin(page, pageSize, status, locale, search, "")
+	return s.products.ListAdmin(page, pageSize, status, locale, search, "", "", "")
 }
 
 func (s *SEOResourceService) GetProduct(id uint) (*product.Product, error) {

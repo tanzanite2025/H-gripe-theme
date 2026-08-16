@@ -4,7 +4,7 @@ export interface QuickBuyStep {
   name: string
   stepKey?: string
   sortOrder?: number
-  productTypes?: QuickBuyProductType[]
+  productSpecificationTemplates?: QuickBuyProductSpecificationTemplate[]
   filters?: QuickBuySpecFilter[]
 }
 
@@ -20,7 +20,7 @@ export interface QuickBuySpecFilter {
   values: string[]
 }
 
-export interface QuickBuyProductType {
+export interface QuickBuyProductSpecificationTemplate {
   id: number
   slug: string
   name: string

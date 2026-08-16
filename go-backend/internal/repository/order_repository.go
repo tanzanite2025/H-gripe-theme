@@ -93,6 +93,15 @@ func (r *OrderRepository) FindOrderItemByID(id uint) (*order.OrderItem, error) {
 	return &item, nil
 }
 
+func (r *OrderRepository) UpdateOrderItemCustoms(orderID, orderItemID uint, declaredValue *float64, confirmed bool) error {
+	return r.db.Model(&order.OrderItem{}).
+		Where("id = ? AND order_id = ?", orderItemID, orderID).
+		Updates(map[string]interface{}{
+			"declared_value":           declaredValue,
+			"declared_value_confirmed": confirmed,
+		}).Error
+}
+
 // Update 更新订单
 func (r *OrderRepository) Update(o *order.Order) error {
 	return r.db.Save(o).Error

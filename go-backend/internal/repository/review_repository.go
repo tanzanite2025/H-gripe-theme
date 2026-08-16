@@ -2,9 +2,11 @@ package repository
 
 import (
 	"commerce-platform/internal/domain/review"
-	"errors"
+	"strings"
+	"time"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type ReviewRepository struct {
@@ -50,6 +52,64 @@ func (r *ReviewRepository) FindReviewsByProductID(productID uint, page, pageSize
 	return reviews, total, err
 }
 
+type ReviewAdminListOptions struct {
+	Status    string
+	Search    string
+	ProductID *uint
+	Page      int
+	PageSize  int
+}
+
+func (r *ReviewRepository) FindReviewsForAdmin(options ReviewAdminListOptions) ([]review.Review, int64, error) {
+	var reviews []review.Review
+	var total int64
+
+	query := r.db.Model(&review.Review{}).
+		Joins("LEFT JOIN products ON products.id = reviews.product_id").
+		Joins("LEFT JOIN users ON users.id = reviews.user_id")
+
+	if status := strings.TrimSpace(options.Status); status != "" {
+		query = query.Where("reviews.status = ?", status)
+	}
+	if options.ProductID != nil {
+		query = query.Where("reviews.product_id = ?", *options.ProductID)
+	}
+	if search := strings.TrimSpace(options.Search); search != "" {
+		pattern := "%" + strings.ToLower(search) + "%"
+		query = query.Where(`
+			LOWER(reviews.title) LIKE ?
+			OR LOWER(reviews.content) LIKE ?
+			OR LOWER(products.name) LIKE ?
+			OR LOWER(products.sku) LIKE ?
+			OR LOWER(users.username) LIKE ?
+			OR LOWER(users.email) LIKE ?
+		`, pattern, pattern, pattern, pattern, pattern, pattern)
+	}
+
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	page := options.Page
+	if page < 1 {
+		page = 1
+	}
+	pageSize := options.PageSize
+	if pageSize < 1 {
+		pageSize = 20
+	}
+
+	err := query.
+		Preload("User").
+		Preload("Product").
+		Order("reviews.created_at DESC").
+		Offset((page - 1) * pageSize).
+		Limit(pageSize).
+		Find(&reviews).Error
+
+	return reviews, total, err
+}
+
 func (r *ReviewRepository) FindReviewsByUserID(userID uint, page, pageSize int) ([]review.Review, int64, error) {
 	var reviews []review.Review
 	var total int64
@@ -71,7 +131,7 @@ func (r *ReviewRepository) FindReviewsByUserID(userID uint, page, pageSize int) 
 
 func (r *ReviewRepository) FindFeaturedReviews(limit int) ([]review.Review, error) {
 	var reviews []review.Review
-	err := r.db.Where("featured = ? AND status = ?", true, "approved").
+	err := r.db.Where("featured = ? AND status = ?", true, review.StatusApproved).
 		Preload("User").
 		Preload("Product").
 		Order("created_at DESC").
@@ -130,72 +190,55 @@ func (r *ReviewRepository) UpdateReviewHelpfulCounts(reviewID uint) error {
 		return err
 	}
 
-	notHelpfulCount, err := r.CountReviewHelpful(reviewID, false)
-	if err != nil {
-		return err
-	}
-
 	return r.db.Model(&review.Review{}).Where("id = ?", reviewID).
 		Updates(map[string]interface{}{
-			"helpful_count":     helpfulCount,
-			"not_helpful_count": notHelpfulCount,
+			"helpful_count": helpfulCount,
 		}).Error
 }
 
 func (r *ReviewRepository) GetOrCreateReviewSummary(productID uint) (*review.ReviewSummary, error) {
-	var summary review.ReviewSummary
-	err := r.db.Where("product_id = ?", productID).First(&summary).Error
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		summary = review.ReviewSummary{ProductID: productID}
-		if err := r.db.Create(&summary).Error; err != nil {
-			return nil, err
-		}
-		return &summary, nil
-	}
-	if err != nil {
-		return nil, err
-	}
-	return &summary, nil
+	return r.getOrCreateReviewSummary(r.db, productID)
 }
 
 func (r *ReviewRepository) UpdateReviewSummary(productID uint) error {
+	return r.updateReviewSummary(r.db, productID)
+}
+
+func (r *ReviewRepository) updateReviewSummary(db *gorm.DB, productID uint) error {
 	var stats struct {
-		TotalCount    int64
-		AverageRating float64
-		Rating1Count  int64
-		Rating2Count  int64
-		Rating3Count  int64
-		Rating4Count  int64
-		Rating5Count  int64
+		TotalReviews  int64   `gorm:"column:total_reviews"`
+		AverageRating float64 `gorm:"column:average_rating"`
+		Rating1Count  int64   `gorm:"column:rating_1_count"`
+		Rating2Count  int64   `gorm:"column:rating_2_count"`
+		Rating3Count  int64   `gorm:"column:rating_3_count"`
+		Rating4Count  int64   `gorm:"column:rating_4_count"`
+		Rating5Count  int64   `gorm:"column:rating_5_count"`
 	}
 
-	approvedReviews := r.db.Model(&review.Review{}).Where("product_id = ? AND status = ?", productID, "approved")
-	approvedReviews.Count(&stats.TotalCount)
-	approvedReviews.Select("AVG(rating)").Scan(&stats.AverageRating)
-
-	for rating := 1; rating <= 5; rating++ {
-		var count int64
-		r.db.Model(&review.Review{}).
-			Where("product_id = ? AND status = ? AND rating = ?", productID, "approved", rating).
-			Count(&count)
-
-		switch rating {
-		case 1:
-			stats.Rating1Count = count
-		case 2:
-			stats.Rating2Count = count
-		case 3:
-			stats.Rating3Count = count
-		case 4:
-			stats.Rating4Count = count
-		case 5:
-			stats.Rating5Count = count
-		}
+	err := db.Model(&review.Review{}).
+		Select(`
+			COUNT(*) AS total_reviews,
+			COALESCE(AVG(rating), 0) AS average_rating,
+			SUM(CASE WHEN rating = 1 THEN 1 ELSE 0 END) AS rating_1_count,
+			SUM(CASE WHEN rating = 2 THEN 1 ELSE 0 END) AS rating_2_count,
+			SUM(CASE WHEN rating = 3 THEN 1 ELSE 0 END) AS rating_3_count,
+			SUM(CASE WHEN rating = 4 THEN 1 ELSE 0 END) AS rating_4_count,
+			SUM(CASE WHEN rating = 5 THEN 1 ELSE 0 END) AS rating_5_count
+		`).
+		Where("product_id = ? AND status = ?", productID, review.StatusApproved).
+		Scan(&stats).Error
+	if err != nil {
+		return err
 	}
 
-	return r.db.Model(&review.ReviewSummary{}).Where("product_id = ?", productID).
+	summary, err := r.getOrCreateReviewSummary(db, productID)
+	if err != nil {
+		return err
+	}
+
+	return db.Model(summary).
 		Updates(map[string]interface{}{
-			"total_count":    stats.TotalCount,
+			"total_reviews":  stats.TotalReviews,
 			"average_rating": stats.AverageRating,
 			"rating_1_count": stats.Rating1Count,
 			"rating_2_count": stats.Rating2Count,
@@ -205,10 +248,78 @@ func (r *ReviewRepository) UpdateReviewSummary(productID uint) error {
 		}).Error
 }
 
+func (r *ReviewRepository) getOrCreateReviewSummary(db *gorm.DB, productID uint) (*review.ReviewSummary, error) {
+	err := db.Clauses(clause.OnConflict{DoNothing: true}).
+		Create(&review.ReviewSummary{ProductID: productID}).Error
+	if err != nil {
+		return nil, err
+	}
+	var summary review.ReviewSummary
+	if err := db.Where("product_id = ?", productID).First(&summary).Error; err != nil {
+		return nil, err
+	}
+	return &summary, nil
+}
+
+func (r *ReviewRepository) UpdateReviewModeration(
+	id uint,
+	status string,
+	reason string,
+	adminID uint,
+) (*review.Review, error) {
+	var updated review.Review
+	err := r.db.Transaction(func(tx *gorm.DB) error {
+		var current review.Review
+		if err := tx.First(&current, id).Error; err != nil {
+			return err
+		}
+
+		now := time.Now().UTC()
+		updates := map[string]interface{}{
+			"status":            status,
+			"moderated_at":      &now,
+			"moderated_by":      adminID,
+			"moderation_reason": strings.TrimSpace(reason),
+		}
+		if status == review.StatusPending {
+			updates["moderated_at"] = nil
+			updates["moderated_by"] = nil
+		}
+
+		if err := tx.Model(&current).Updates(updates).Error; err != nil {
+			return err
+		}
+		if err := r.updateReviewSummary(tx, current.ProductID); err != nil {
+			return err
+		}
+		return tx.Preload("User").Preload("Product").First(&updated, id).Error
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &updated, nil
+}
+
 func (r *ReviewRepository) FindReviewSummaryByProductID(productID uint) (*review.ReviewSummary, error) {
 	var summary review.ReviewSummary
 	if err := r.db.Where("product_id = ?", productID).First(&summary).Error; err != nil {
 		return nil, err
 	}
 	return &summary, nil
+}
+
+func (r *ReviewRepository) FindReviewSummariesByProductIDs(productIDs []uint) (map[uint]review.ReviewSummary, error) {
+	result := make(map[uint]review.ReviewSummary, len(productIDs))
+	if len(productIDs) == 0 {
+		return result, nil
+	}
+
+	var summaries []review.ReviewSummary
+	if err := r.db.Where("product_id IN ?", productIDs).Find(&summaries).Error; err != nil {
+		return nil, err
+	}
+	for _, summary := range summaries {
+		result[summary.ProductID] = summary
+	}
+	return result, nil
 }

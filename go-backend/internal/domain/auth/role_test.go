@@ -63,3 +63,18 @@ func TestMerchantPermissionsAreSeparateFromProductPermissions(t *testing.T) {
 		t.Fatal("viewer and support roles should not enter merchant operations by default")
 	}
 }
+
+func TestReviewModerationPermissionsAreSeparated(t *testing.T) {
+	if !RoleAdmin.HasPermission(PermReviewView) || !RoleAdmin.HasPermission(PermReviewModerate) {
+		t.Fatal("admin should have review view and moderation permissions")
+	}
+	if !RoleManager.HasPermission(PermReviewView) || !RoleManager.HasPermission(PermReviewModerate) {
+		t.Fatal("manager should have review view and moderation permissions")
+	}
+	if !RoleEditor.HasPermission(PermReviewView) || !RoleEditor.HasPermission(PermReviewModerate) {
+		t.Fatal("editor should have review view and moderation permissions")
+	}
+	if !RoleViewer.HasPermission(PermReviewView) || RoleViewer.HasPermission(PermReviewModerate) {
+		t.Fatal("viewer should only have review view permission")
+	}
+}

@@ -57,7 +57,8 @@
                       :src="card.src"
                       :alt="t(card.altKey)"
                       class="h-full w-full object-cover"
-                      loading="eager"
+                      :loading="index === 0 ? 'eager' : 'lazy'"
+                      :fetchpriority="index === 0 ? 'high' : 'low'"
                       decoding="async"
                     />
                     <div
@@ -69,23 +70,19 @@
 
                 <button
                   type="button"
-                  class="absolute left-[12px] top-1/2 z-40 inline-flex h-[46px] w-[46px] -translate-y-1/2 items-center justify-center rounded-full bg-black/70 text-white backdrop-blur transition-colors hover:bg-black/80"
+                  class="tz-directional-arrow tz-directional-arrow--large absolute left-[12px] top-1/2 z-40 -translate-y-1/2"
                   :aria-label="t('common.previous')"
                   @click="prev"
                 >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                    <path d="M15 19L8 12L15 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                  </svg>
+                  <Icon name="lucide:chevron-left" aria-hidden="true" />
                 </button>
                 <button
                   type="button"
-                  class="absolute right-[12px] top-1/2 z-40 inline-flex h-[46px] w-[46px] -translate-y-1/2 items-center justify-center rounded-full bg-black/70 text-white backdrop-blur transition-colors hover:bg-black/80"
+                  class="tz-directional-arrow tz-directional-arrow--large absolute right-[12px] top-1/2 z-40 -translate-y-1/2"
                   :aria-label="t('common.next')"
                   @click="next"
                 >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                    <path d="M9 5L16 12L9 19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                  </svg>
+                  <Icon name="lucide:chevron-right" aria-hidden="true" />
                 </button>
               </div>
             </div>

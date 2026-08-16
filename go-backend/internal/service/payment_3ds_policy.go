@@ -75,6 +75,15 @@ type PaymentThreeDSDecision struct {
 	Reasons            []string
 }
 
+type PaymentThreeDSConfigurationView struct {
+	AdaptiveEnabled         bool    `json:"adaptive_enabled"`
+	LowRiskMaxAmount        float64 `json:"low_risk_max_amount"`
+	TrustedPaidOrders       int     `json:"trusted_paid_orders"`
+	VisitorRiskLookbackDays int     `json:"visitor_risk_lookback_days"`
+	StepUpRiskScore         int     `json:"step_up_risk_score"`
+	ChallengeRiskScore      int     `json:"challenge_risk_score"`
+}
+
 func NewPaymentThreeDSPolicyService(
 	orderHistory paymentThreeDSOrderHistory,
 	visitorRisk paymentThreeDSVisitorAssessor,
@@ -101,6 +110,21 @@ func (s *PaymentThreeDSPolicyService) ConfigurePaymentProtection(provider paymen
 		return
 	}
 	s.protection = provider
+}
+
+func (s *PaymentThreeDSPolicyService) PolicyView() PaymentThreeDSConfigurationView {
+	if s == nil {
+		return PaymentThreeDSConfigurationView{}
+	}
+	cfg := normalizePaymentThreeDSConfig(s.cfg)
+	return PaymentThreeDSConfigurationView{
+		AdaptiveEnabled:         cfg.AdaptiveEnabled,
+		LowRiskMaxAmount:        cfg.LowRiskMaxAmount,
+		TrustedPaidOrders:       cfg.TrustedPaidOrders,
+		VisitorRiskLookbackDays: cfg.VisitorRiskLookback,
+		StepUpRiskScore:         cfg.StepUpRiskScore,
+		ChallengeRiskScore:      cfg.ChallengeRiskScore,
+	}
 }
 
 func (s *PaymentThreeDSPolicyService) Decide(ctx context.Context, input PaymentThreeDSDecisionInput) PaymentThreeDSDecision {

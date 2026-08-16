@@ -48,6 +48,72 @@ func TestCustomerServiceEventHubCancelStopsDelivery(t *testing.T) {
 	assert.False(t, ok)
 }
 
+func TestCustomerServiceEventHubPublishesStreamCursorUpgradeOnce(t *testing.T) {
+	hub := NewCustomerServiceEventHub()
+	subscription := hub.SubscribeConversation(1)
+	t.Cleanup(subscription.Cancel)
+
+	event := NewCustomerServiceRealtimeEventWithID(
+		CustomerServiceMessageCreatedEventID(481),
+		CustomerServiceEventMessageCreated,
+		1,
+		"conversation-one",
+		CustomerServiceRealtimeActor{Kind: "customer", Anonymous: true},
+		nil,
+	)
+	hub.Publish(event)
+	assertCustomerServiceRealtimeEvent(t, subscription.Events(), event)
+
+	event.StreamID = "1750000000000-0"
+	hub.Publish(event)
+	upgraded := readCustomerServiceRealtimeHubEvent(t, subscription.Events())
+	assert.Equal(t, event.StreamID, upgraded.StreamID)
+
+	hub.Publish(event)
+	assertNoCustomerServiceRealtimeEvent(t, subscription.Events())
+}
+
+func TestCustomerServiceRealtimeEventAudienceSeparatesProducts(t *testing.T) {
+	publicOnly := NewCustomerServiceRealtimeEventWithIDAndAudience(
+		"public-event",
+		CustomerServiceEventTyping,
+		1,
+		"conversation-one",
+		CustomerServiceRealtimeActor{Kind: "agent"},
+		CustomerServiceRealtimeAudiencePublic,
+		nil,
+	)
+	backofficeOnly := NewCustomerServiceRealtimeEventWithIDAndAudience(
+		"backoffice-event",
+		CustomerServiceEventMessagesRead,
+		1,
+		"conversation-one",
+		CustomerServiceRealtimeActor{Kind: "agent"},
+		CustomerServiceRealtimeAudienceBackoffice,
+		nil,
+	)
+	legacyBoth := CustomerServiceRealtimeEvent{Audience: ""}
+
+	assert.True(t, publicOnly.DeliversTo(CustomerServiceRealtimeAudiencePublic))
+	assert.False(t, publicOnly.DeliversTo(CustomerServiceRealtimeAudienceBackoffice))
+	assert.False(t, backofficeOnly.DeliversTo(CustomerServiceRealtimeAudiencePublic))
+	assert.True(t, backofficeOnly.DeliversTo(CustomerServiceRealtimeAudienceBackoffice))
+	assert.True(t, legacyBoth.DeliversTo(CustomerServiceRealtimeAudiencePublic))
+	assert.True(t, legacyBoth.DeliversTo(CustomerServiceRealtimeAudienceBackoffice))
+}
+
+func readCustomerServiceRealtimeHubEvent(t *testing.T, events <-chan CustomerServiceRealtimeEvent) CustomerServiceRealtimeEvent {
+	t.Helper()
+
+	select {
+	case event := <-events:
+		return event
+	case <-time.After(time.Second):
+		t.Fatal("timed out waiting for customer-service realtime hub event")
+		return CustomerServiceRealtimeEvent{}
+	}
+}
+
 func assertCustomerServiceRealtimeEvent(t *testing.T, events <-chan CustomerServiceRealtimeEvent, expected CustomerServiceRealtimeEvent) {
 	t.Helper()
 

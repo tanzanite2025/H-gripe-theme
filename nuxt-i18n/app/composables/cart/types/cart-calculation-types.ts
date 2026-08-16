@@ -83,7 +83,7 @@ export interface CouponValidationResponse {
 export interface CartItem {
   product_id?: number
   variant_id?: number | null
-  product_type_id?: number | null
+  product_specification_template_id?: number | null
   price: number
   currency?: string
   quantity: number

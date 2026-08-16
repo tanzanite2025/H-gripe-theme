@@ -58,6 +58,9 @@ func (s *OutboxDispatchScheduler) Start(ctx context.Context) {
 			zap.Int("batch_limit", s.batchLimit),
 		)
 
+		if err := s.outboxService.RefreshCustomerServiceRealtimeMetrics(); err != nil {
+			logger.Warn("customer-service realtime outbox metric refresh failed", zap.Error(err))
+		}
 		s.dispatchOnce(runCtx)
 
 		ticker := time.NewTicker(s.interval)
@@ -94,6 +97,9 @@ func (s *OutboxDispatchScheduler) dispatchOnce(ctx context.Context) {
 	result, err := s.outboxService.ProcessPending(ctx, time.Now().UTC(), s.batchLimit)
 	if err != nil {
 		logger.Error("outbox dispatch failed", zap.Error(err))
+		if refreshErr := s.outboxService.RefreshCustomerServiceRealtimeMetrics(); refreshErr != nil {
+			logger.Warn("customer-service realtime outbox metric refresh failed", zap.Error(refreshErr))
+		}
 		return
 	}
 	if result.Claimed > 0 {

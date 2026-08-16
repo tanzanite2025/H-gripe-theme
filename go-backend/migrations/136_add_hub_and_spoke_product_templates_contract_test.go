@@ -43,7 +43,7 @@ func TestHubAndSpokeTemplateDownMigrationContract(t *testing.T) {
 	sql := readHubAndSpokeTemplateMigration(t, "136_add_hub_and_spoke_product_templates.down.sql")
 
 	for _, fragment := range []string{
-		"DELETE FROM product_types",
+		"DELETE FROM product_specification_templates",
 		"slug IN ('hub', 'spoke')",
 	} {
 		if !strings.Contains(sql, fragment) {

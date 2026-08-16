@@ -211,13 +211,19 @@ func preloadQuickBuyVersion(db *gorm.DB) *gorm.DB {
 		Preload("Steps", func(db *gorm.DB) *gorm.DB {
 			return db.Order("sort_order ASC, id ASC")
 		}).
-		Preload("Steps.ProductTypes", func(db *gorm.DB) *gorm.DB {
+		Preload("Steps.ProductCategories", func(db *gorm.DB) *gorm.DB {
 			return db.Order("sort_order ASC, id ASC")
 		}).
-		Preload("Steps.ProductTypes.ProductType.SpecDefinitions", func(db *gorm.DB) *gorm.DB {
+		Preload("Steps.ProductCategories.ProductCategory.Translations", func(db *gorm.DB) *gorm.DB {
+			return db.Order("locale ASC, id ASC")
+		}).
+		Preload("Steps.ProductSpecificationTemplates", func(db *gorm.DB) *gorm.DB {
 			return db.Order("sort_order ASC, id ASC")
 		}).
-		Preload("Steps.ProductTypes.ProductType.Translations", func(db *gorm.DB) *gorm.DB {
+		Preload("Steps.ProductSpecificationTemplates.ProductSpecificationTemplate.SpecDefinitions", func(db *gorm.DB) *gorm.DB {
+			return db.Order("sort_order ASC, id ASC")
+		}).
+		Preload("Steps.ProductSpecificationTemplates.ProductSpecificationTemplate.Translations", func(db *gorm.DB) *gorm.DB {
 			return db.Order("locale ASC, id ASC")
 		}).
 		Preload("Steps.Filters", func(db *gorm.DB) *gorm.DB {
@@ -286,7 +292,12 @@ func replaceQuickBuyVersion(tx *gorm.DB, version *quickbuy.Version) error {
 	}
 	if err := tx.Where("step_id IN (?)",
 		tx.Model(&quickbuy.Step{}).Select("id").Where("flow_version_id = ?", version.ID),
-	).Delete(&quickbuy.StepProductType{}).Error; err != nil {
+	).Delete(&quickbuy.StepProductCategory{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("step_id IN (?)",
+		tx.Model(&quickbuy.Step{}).Select("id").Where("flow_version_id = ?", version.ID),
+	).Delete(&quickbuy.StepProductSpecificationTemplate{}).Error; err != nil {
 		return err
 	}
 	if err := tx.Where("flow_version_id = ?", version.ID).Delete(&quickbuy.Step{}).Error; err != nil {
@@ -321,18 +332,28 @@ func createQuickBuyVersionChildren(tx *gorm.DB, version *quickbuy.Version) error
 	for stepIndex := range version.Steps {
 		step := &version.Steps[stepIndex]
 		step.FlowVersionID = version.ID
-		productTypes := step.ProductTypes
+		productCategories := step.ProductCategories
+		productSpecificationTemplates := step.ProductSpecificationTemplates
 		filters := step.Filters
-		step.ProductTypes = nil
+		step.ProductCategories = nil
+		step.ProductSpecificationTemplates = nil
 		step.Filters = nil
 		if err := tx.Create(step).Error; err != nil {
 			return err
 		}
-		for index := range productTypes {
-			productTypes[index].StepID = step.ID
+		for index := range productCategories {
+			productCategories[index].StepID = step.ID
 		}
-		if len(productTypes) > 0 {
-			if err := tx.Create(&productTypes).Error; err != nil {
+		if len(productCategories) > 0 {
+			if err := tx.Create(&productCategories).Error; err != nil {
+				return err
+			}
+		}
+		for index := range productSpecificationTemplates {
+			productSpecificationTemplates[index].StepID = step.ID
+		}
+		if len(productSpecificationTemplates) > 0 {
+			if err := tx.Create(&productSpecificationTemplates).Error; err != nil {
 				return err
 			}
 		}
@@ -344,7 +365,8 @@ func createQuickBuyVersionChildren(tx *gorm.DB, version *quickbuy.Version) error
 				return err
 			}
 		}
-		step.ProductTypes = productTypes
+		step.ProductCategories = productCategories
+		step.ProductSpecificationTemplates = productSpecificationTemplates
 		step.Filters = filters
 	}
 	for index := range version.Rules {

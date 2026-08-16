@@ -138,14 +138,14 @@ const handleEditorUpdateQuantity = (
 
     <div class="quickbuy-selected-list-shell">
       <button
-        class="quickbuy-selected-list-arrow quickbuy-selected-list-arrow--previous"
+        class="tz-directional-arrow tz-directional-arrow--small quickbuy-selected-list-arrow quickbuy-selected-list-arrow--previous"
         type="button"
         :disabled="!canMoveSelectedRailBackward"
         :aria-label="previousProductLabel"
         :title="previousProductLabel"
         @click="moveSelectedRail(-1)"
       >
-        <Icon name="lucide:chevron-left" class="h-4 w-4" aria-hidden="true" />
+        <Icon name="lucide:chevron-left" aria-hidden="true" />
       </button>
 
       <div class="quickbuy-selected-list">
@@ -209,14 +209,14 @@ const handleEditorUpdateQuantity = (
       </div>
 
       <button
-        class="quickbuy-selected-list-arrow quickbuy-selected-list-arrow--next"
+        class="tz-directional-arrow tz-directional-arrow--small quickbuy-selected-list-arrow quickbuy-selected-list-arrow--next"
         type="button"
         :disabled="!canMoveSelectedRailForward"
         :aria-label="nextProductLabel"
         :title="nextProductLabel"
         @click="moveSelectedRail(1)"
       >
-        <Icon name="lucide:chevron-right" class="h-4 w-4" aria-hidden="true" />
+        <Icon name="lucide:chevron-right" aria-hidden="true" />
       </button>
     </div>
 
@@ -772,29 +772,6 @@ const handleEditorUpdateQuantity = (
 
   .quickbuy-selected-list-arrow {
     display: inline-grid;
-    width: 1.75rem;
-    height: 2rem;
-    place-items: center;
-    border: 0;
-    border-radius: 999px;
-    color: rgba(255, 255, 255, 0.86);
-    background:
-      linear-gradient(180deg, var(--quickbuy-control-surface-raised, #25272f), var(--quickbuy-control-surface, #1b1c23));
-    box-shadow:
-      0 5px 14px rgba(0, 0, 0, 0.2),
-      inset 0 0 0 1px rgba(255, 255, 255, 0.04);
-    transition: background-color 160ms ease, opacity 160ms ease, transform 160ms ease;
-  }
-
-  .quickbuy-selected-list-arrow:hover:not(:disabled) {
-    background:
-      linear-gradient(180deg, #32343d, #24262e);
-    transform: translateY(-1px);
-  }
-
-  .quickbuy-selected-list-arrow:disabled {
-    cursor: not-allowed;
-    opacity: 0.28;
   }
 
   .quickbuy-selected-list {

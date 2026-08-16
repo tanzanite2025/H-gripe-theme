@@ -34,13 +34,24 @@ func TestOrderServiceCreateOrderPersistsPricingAndAdjustments(t *testing.T) {
 	db, orderService := newTestOrderService(t)
 	userID := uint(42)
 	productRecord := seedProduct(t, db, 50, 5)
+	productRecord.HSCode = "871499"
+	productRecord.CNCode = "87149990"
+	productRecord.CountryOfOrigin = "CN"
+	productRecord.CustomsDescription = "Bicycle parts"
+	require.NoError(t, db.Save(&productRecord).Error)
 	seedUserLoyalty(t, db, userID, 1000)
 	seedCoupon(t, db, "SAVE10", "fixed", 10, 1)
 
+	incorrectDeclaredValue := 999.0
 	createdOrder, err := orderService.CreateOrder(
 		context.Background(),
 		userID,
-		[]order.OrderItem{{ProductID: productRecord.ID, Quantity: 2}},
+		[]order.OrderItem{{
+			ProductID:              productRecord.ID,
+			Quantity:               2,
+			DeclaredValue:          &incorrectDeclaredValue,
+			DeclaredValueConfirmed: true,
+		}},
 		testAddress(),
 		testAddress(),
 		"card",
@@ -67,6 +78,23 @@ func TestOrderServiceCreateOrderPersistsPricingAndAdjustments(t *testing.T) {
 	assert.Equal(t, productRecord.SKU, savedOrder.Items[0].SKU)
 	assert.InDelta(t, 100, savedOrder.Items[0].Subtotal, 0.001)
 	assert.InDelta(t, 100, savedOrder.Items[0].Total, 0.001)
+	assert.Equal(t, "871499", savedOrder.Items[0].HSCode)
+	assert.Equal(t, "87149990", savedOrder.Items[0].CNCode)
+	assert.Equal(t, "CN", savedOrder.Items[0].CountryOfOrigin)
+	assert.Equal(t, "Bicycle parts", savedOrder.Items[0].CustomsDescription)
+	assert.Nil(t, savedOrder.Items[0].DeclaredValue)
+	assert.False(t, savedOrder.Items[0].DeclaredValueConfirmed)
+
+	require.NoError(t, db.Model(&product.Product{}).
+		Where("id = ?", productRecord.ID).
+		Updates(map[string]interface{}{
+			"hs_code":             "999999",
+			"customs_description": "Changed product data",
+		}).Error)
+	var unchangedOrder order.Order
+	require.NoError(t, db.Preload("Items").First(&unchangedOrder, createdOrder.ID).Error)
+	assert.Equal(t, "871499", unchangedOrder.Items[0].HSCode)
+	assert.Equal(t, "Bicycle parts", unchangedOrder.Items[0].CustomsDescription)
 
 	var savedProduct product.Product
 	require.NoError(t, db.First(&savedProduct, productRecord.ID).Error)
@@ -89,6 +117,47 @@ func TestOrderServiceCreateOrderPersistsPricingAndAdjustments(t *testing.T) {
 	var usage coupon.CouponUsage
 	require.NoError(t, db.Where("coupon_id = ? AND order_id = ?", savedCoupon.ID, createdOrder.ID).First(&usage).Error)
 	assert.InDelta(t, 10, usage.Discount, 0.001)
+}
+
+func TestOrderServiceUpdateOrderItemCustoms(t *testing.T) {
+	db, orderService := newTestOrderService(t)
+	productRecord := seedProduct(t, db, 50, 5)
+
+	createdOrder, err := orderService.CreateOrder(
+		context.Background(),
+		42,
+		[]order.OrderItem{{ProductID: productRecord.ID, Quantity: 1}},
+		testAddress(),
+		testAddress(),
+		"card",
+		"standard",
+		"",
+		0,
+	)
+	require.NoError(t, err)
+
+	var savedOrder order.Order
+	require.NoError(t, db.Preload("Items").First(&savedOrder, createdOrder.ID).Error)
+	require.Len(t, savedOrder.Items, 1)
+	orderItemID := savedOrder.Items[0].ID
+
+	declaredValue := 42.75
+	require.NoError(t, orderService.UpdateOrderItemCustoms(createdOrder.ID, orderItemID, &declaredValue, true))
+
+	require.NoError(t, db.Preload("Items").First(&savedOrder, createdOrder.ID).Error)
+	require.NotNil(t, savedOrder.Items[0].DeclaredValue)
+	assert.InDelta(t, declaredValue, *savedOrder.Items[0].DeclaredValue, 0.001)
+	assert.True(t, savedOrder.Items[0].DeclaredValueConfirmed)
+
+	require.NoError(t, orderService.UpdateOrderItemCustoms(createdOrder.ID, orderItemID, nil, false))
+	require.NoError(t, db.Preload("Items").First(&savedOrder, createdOrder.ID).Error)
+	assert.Nil(t, savedOrder.Items[0].DeclaredValue)
+	assert.False(t, savedOrder.Items[0].DeclaredValueConfirmed)
+
+	require.ErrorIs(t, orderService.UpdateOrderItemCustoms(createdOrder.ID, orderItemID, nil, true), ErrDeclaredValueConfirmationRequired)
+	negativeValue := -1.0
+	require.ErrorIs(t, orderService.UpdateOrderItemCustoms(createdOrder.ID, orderItemID, &negativeValue, false), ErrDeclaredValueInvalid)
+	require.ErrorIs(t, orderService.UpdateOrderItemCustoms(createdOrder.ID, orderItemID+1000, &declaredValue, true), ErrOrderItemNotFound)
 }
 
 func TestOrderServiceCreateOrderUsesVersionedLoyaltyExchangeRate(t *testing.T) {
@@ -881,7 +950,7 @@ func newTestOrderService(t *testing.T) (*gorm.DB, *OrderService) {
 	})
 
 	require.NoError(t, db.AutoMigrate(
-		&product.ProductType{},
+		&product.ProductSpecificationTemplate{},
 		&product.SpecDefinition{},
 		&product.Product{},
 		&product.ProductMedia{},

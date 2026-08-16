@@ -12,34 +12,55 @@ import (
 )
 
 type ProductSearchQuery struct {
-	Locale      string
-	Status      string
-	Keyword     string
-	TypeSlug    string
-	BrandSlug   string
-	PriceMin    *float64
-	PriceMax    *float64
-	SpecFilters map[string][]string
-	Offset      int
-	Limit       int
+	Locale                           string
+	Status                           string
+	Keyword                          string
+	ProductSpecificationTemplateSlug string
+	CategorySlug                     string
+	BrandSlug                        string
+	PriceMin                         *float64
+	PriceMax                         *float64
+	SpecFilters                      map[string][]string
+	Offset                           int
+	Limit                            int
 }
 
 type ProductQuickBuyCandidateQuery struct {
-	Locale         string
-	ProductTypeIDs []uint
-	Keyword        string
-	SpecFilters    map[string][]string
-	Offset         int
-	Limit          int
+	Locale                          string
+	ProductSpecificationTemplateIDs []uint
+	ProductCategoryIDs              []uint
+	Keyword                         string
+	SpecFilters                     map[string][]string
+	Offset                          int
+	Limit                           int
 }
 
 type ProductRecommendationQuery struct {
-	Locale            string
-	ProductTypeID     *uint
-	Keyword           string
-	ExcludeProductIDs []uint
-	Offset            int
-	Limit             int
+	Locale                         string
+	ProductSpecificationTemplateID *uint
+	Keyword                        string
+	ExcludeProductIDs              []uint
+	Offset                         int
+	Limit                          int
+}
+
+type ProductCategoryFilterableSpecification struct {
+	Slug      string   `json:"slug"`
+	Name      string   `json:"name"`
+	FieldType string   `json:"field_type"`
+	Unit      string   `json:"unit"`
+	Options   []string `json:"options"`
+	Values    []string `json:"values"`
+}
+
+type ProductCustomsSummary struct {
+	Total                     int64 `json:"total"`
+	Complete                  int64 `json:"complete"`
+	Incomplete                int64 `json:"incomplete"`
+	MissingHSCode             int64 `json:"missing_hs_code"`
+	MissingCNCode             int64 `json:"missing_cn_code"`
+	MissingCountryOfOrigin    int64 `json:"missing_country_of_origin"`
+	MissingCustomsDescription int64 `json:"missing_customs_description"`
 }
 
 func activeVariantExistsSQL(alias string) string {
@@ -64,22 +85,39 @@ func applyQuickBuyCandidateScope(query *gorm.DB, input ProductQuickBuyCandidateQ
 			  AND pv_quick_buy_candidate_stock.stock > 0
 		)`)
 
-	if len(input.ProductTypeIDs) > 0 {
-		query = query.Where("products.product_type_id IN ?", input.ProductTypeIDs)
+	if len(input.ProductSpecificationTemplateIDs) > 0 {
+		query = query.Where("products.product_specification_template_id IN ?", input.ProductSpecificationTemplateIDs)
+	}
+	if len(input.ProductCategoryIDs) > 0 {
+		query = query.Where(`products.product_category_id IN (
+			WITH RECURSIVE quick_buy_category_tree(id) AS (
+				SELECT id
+				FROM product_categories
+				WHERE id IN ? AND is_enabled = TRUE
+
+				UNION ALL
+
+				SELECT child.id
+				FROM product_categories child
+				JOIN quick_buy_category_tree parent ON child.parent_id = parent.id
+				WHERE child.is_enabled = TRUE
+			)
+			SELECT id FROM quick_buy_category_tree
+		)`, input.ProductCategoryIDs)
 	}
 	if input.Locale != "" {
 		query = query.Where("products.locale = ?", input.Locale)
 	}
 	if input.Keyword != "" {
 		pattern := "%" + strings.ToLower(input.Keyword) + "%"
-		query = query.Joins("LEFT JOIN product_types quick_buy_product_types ON quick_buy_product_types.id = products.product_type_id").
+		query = query.Joins("LEFT JOIN product_specification_templates quick_buy_product_specification_templates ON quick_buy_product_specification_templates.id = products.product_specification_template_id").
 			Where(`
 				LOWER(products.name) LIKE ?
 				OR LOWER(products.sku) LIKE ?
 				OR LOWER(products.short_desc) LIKE ?
 				OR LOWER(products.description) LIKE ?
-				OR LOWER(quick_buy_product_types.name) LIKE ?
-				OR LOWER(quick_buy_product_types.slug) LIKE ?
+				OR LOWER(quick_buy_product_specification_templates.name) LIKE ?
+				OR LOWER(quick_buy_product_specification_templates.slug) LIKE ?
 			`, pattern, pattern, pattern, pattern, pattern, pattern)
 	}
 	return query
@@ -164,11 +202,11 @@ func (r *ProductRepository) List(locale, status string, featured bool, offset, l
 	var products []product.Product
 	var total int64
 
-	query := r.db.Model(&product.Product{}).Preload("Brand").Preload("Media", func(db *gorm.DB) *gorm.DB {
+	query := r.db.Model(&product.Product{}).Preload("Brand").Preload("ProductSpecificationTemplate").Preload("Media", func(db *gorm.DB) *gorm.DB {
 		return orderProductMedia(db)
-	}).Preload("ProductType.SpecDefinitions", func(db *gorm.DB) *gorm.DB {
+	}).Preload("ProductSpecificationTemplate.SpecDefinitions", func(db *gorm.DB) *gorm.DB {
 		return orderSpecDefinitions(db)
-	}).Preload("ProductType.Translations", func(db *gorm.DB) *gorm.DB {
+	}).Preload("ProductSpecificationTemplate.Translations", func(db *gorm.DB) *gorm.DB {
 		return db.Order("locale ASC, id ASC")
 	}).Preload("Variants", func(db *gorm.DB) *gorm.DB {
 		return orderProductVariants(db)
@@ -207,10 +245,10 @@ func (r *ProductRepository) ListPublicAvailable(locale string, offset, limit int
 		Preload("Media", func(db *gorm.DB) *gorm.DB {
 			return orderProductMedia(db)
 		}).
-		Preload("ProductType.SpecDefinitions", func(db *gorm.DB) *gorm.DB {
+		Preload("ProductSpecificationTemplate.SpecDefinitions", func(db *gorm.DB) *gorm.DB {
 			return orderSpecDefinitions(db)
 		}).
-		Preload("ProductType.Translations", func(db *gorm.DB) *gorm.DB {
+		Preload("ProductSpecificationTemplate.Translations", func(db *gorm.DB) *gorm.DB {
 			return db.Order("locale ASC, id ASC")
 		}).
 		Preload("Variants", func(db *gorm.DB) *gorm.DB {
@@ -255,8 +293,8 @@ func (r *ProductRepository) ListRecommendationCandidates(input ProductRecommenda
 	query := r.db.Model(&product.Product{}).
 		Preload("Brand").
 		Preload("Media", orderProductMedia).
-		Preload("ProductType.SpecDefinitions", orderSpecDefinitions).
-		Preload("ProductType.Translations", func(db *gorm.DB) *gorm.DB {
+		Preload("ProductSpecificationTemplate.SpecDefinitions", orderSpecDefinitions).
+		Preload("ProductSpecificationTemplate.Translations", func(db *gorm.DB) *gorm.DB {
 			return db.Order("locale ASC, id ASC")
 		}).
 		Preload("SpecValues.SpecDefinition", orderSpecDefinitions).
@@ -278,22 +316,22 @@ func (r *ProductRepository) ListRecommendationCandidates(input ProductRecommenda
 	if input.Locale != "" {
 		query = query.Where("products.locale = ?", input.Locale)
 	}
-	if input.ProductTypeID != nil && *input.ProductTypeID > 0 {
-		query = query.Where("products.product_type_id = ?", *input.ProductTypeID)
+	if input.ProductSpecificationTemplateID != nil && *input.ProductSpecificationTemplateID > 0 {
+		query = query.Where("products.product_specification_template_id = ?", *input.ProductSpecificationTemplateID)
 	}
 	if len(input.ExcludeProductIDs) > 0 {
 		query = query.Where("products.id NOT IN ?", input.ExcludeProductIDs)
 	}
 	if input.Keyword != "" {
 		pattern := "%" + strings.ToLower(input.Keyword) + "%"
-		query = query.Joins("LEFT JOIN product_types recommendation_product_types ON recommendation_product_types.id = products.product_type_id").
+		query = query.Joins("LEFT JOIN product_specification_templates recommendation_product_specification_templates ON recommendation_product_specification_templates.id = products.product_specification_template_id").
 			Where(`
 				LOWER(products.name) LIKE ?
 				OR LOWER(products.sku) LIKE ?
 				OR LOWER(products.short_desc) LIKE ?
 				OR LOWER(products.description) LIKE ?
-				OR LOWER(recommendation_product_types.name) LIKE ?
-				OR LOWER(recommendation_product_types.slug) LIKE ?
+				OR LOWER(recommendation_product_specification_templates.name) LIKE ?
+				OR LOWER(recommendation_product_specification_templates.slug) LIKE ?
 			`, pattern, pattern, pattern, pattern, pattern, pattern)
 	}
 
@@ -319,8 +357,8 @@ func (r *ProductRepository) ListQuickBuyCandidates(input ProductQuickBuyCandidat
 	query := r.db.Model(&product.Product{}).
 		Preload("Brand").
 		Preload("Media", orderProductMedia).
-		Preload("ProductType.SpecDefinitions", orderSpecDefinitions).
-		Preload("ProductType.Translations", func(db *gorm.DB) *gorm.DB {
+		Preload("ProductSpecificationTemplate.SpecDefinitions", orderSpecDefinitions).
+		Preload("ProductSpecificationTemplate.Translations", func(db *gorm.DB) *gorm.DB {
 			return db.Order("locale ASC, id ASC")
 		}).
 		Preload("SpecValues.SpecDefinition", orderSpecDefinitions).
@@ -432,6 +470,146 @@ func (r *ProductRepository) ListQuickBuyFilterValues(input ProductQuickBuyCandid
 	return result, nil
 }
 
+func (r *ProductRepository) ListFilterableSpecificationsForCategory(categorySlug string) ([]ProductCategoryFilterableSpecification, error) {
+	categorySlug = strings.TrimSpace(categorySlug)
+	if categorySlug == "" {
+		return []ProductCategoryFilterableSpecification{}, nil
+	}
+
+	var productIDs []uint
+	if err := r.db.Table("products").
+		Select("DISTINCT products.id").
+		Where("products.deleted_at IS NULL").
+		Where(`products.product_category_id IN (
+			WITH RECURSIVE category_tree(id) AS (
+				SELECT id FROM product_categories WHERE slug = ? AND is_enabled = TRUE
+
+				UNION ALL
+
+				SELECT child.id
+				FROM product_categories child
+				JOIN category_tree parent ON child.parent_id = parent.id
+				WHERE child.is_enabled = TRUE
+			)
+			SELECT id FROM category_tree
+		)`, categorySlug).
+		Pluck("products.id", &productIDs).Error; err != nil {
+		return nil, err
+	}
+	if len(productIDs) == 0 {
+		return []ProductCategoryFilterableSpecification{}, nil
+	}
+
+	type definitionRow struct {
+		Slug      string
+		Name      string
+		FieldType string
+		Unit      string
+		Options   string
+	}
+	var definitions []definitionRow
+	if err := r.db.Table("product_spec_definitions AS definition").
+		Select("DISTINCT definition.slug, definition.name, definition.field_type, definition.unit, definition.options").
+		Joins("JOIN products ON products.product_specification_template_id = definition.product_specification_template_id").
+		Where("products.id IN ?", productIDs).
+		Where("definition.is_filterable = TRUE AND definition.is_visible = TRUE").
+		Order("definition.slug ASC").
+		Scan(&definitions).Error; err != nil {
+		return nil, err
+	}
+	if len(definitions) == 0 {
+		return []ProductCategoryFilterableSpecification{}, nil
+	}
+
+	result := make([]ProductCategoryFilterableSpecification, 0, len(definitions))
+	valuesBySlug := make(map[string]map[string]struct{}, len(definitions))
+	knownSlugs := make([]string, 0, len(definitions))
+	for _, definition := range definitions {
+		slug := strings.TrimSpace(definition.Slug)
+		if slug == "" {
+			continue
+		}
+		if _, exists := valuesBySlug[slug]; exists {
+			continue
+		}
+		knownSlugs = append(knownSlugs, slug)
+		valuesBySlug[slug] = make(map[string]struct{})
+		options := []string{}
+		if strings.TrimSpace(definition.Options) != "" {
+			_ = json.Unmarshal([]byte(definition.Options), &options)
+		}
+		for _, option := range options {
+			if value := strings.TrimSpace(option); value != "" {
+				valuesBySlug[slug][value] = struct{}{}
+			}
+		}
+		result = append(result, ProductCategoryFilterableSpecification{
+			Slug:      slug,
+			Name:      strings.TrimSpace(definition.Name),
+			FieldType: strings.TrimSpace(definition.FieldType),
+			Unit:      strings.TrimSpace(definition.Unit),
+			Options:   normalizeSpecFilterValues(options),
+		})
+	}
+	if len(knownSlugs) == 0 {
+		return []ProductCategoryFilterableSpecification{}, nil
+	}
+
+	type valueRow struct {
+		Slug  string
+		Value string
+	}
+	var valueRows []valueRow
+	if err := r.db.Table("product_spec_values AS value").
+		Select("definition.slug, value.value").
+		Joins("JOIN product_spec_definitions AS definition ON definition.id = value.spec_definition_id").
+		Where("value.product_id IN ?", productIDs).
+		Where("definition.slug IN ?", knownSlugs).
+		Scan(&valueRows).Error; err != nil {
+		return nil, err
+	}
+	for _, row := range valueRows {
+		if values, exists := valuesBySlug[row.Slug]; exists {
+			if value := strings.TrimSpace(row.Value); value != "" {
+				values[value] = struct{}{}
+			}
+		}
+	}
+
+	var variantOptionValues []string
+	if err := r.db.Model(&product.ProductVariant{}).
+		Where("product_id IN ?", productIDs).
+		Where("deleted_at IS NULL AND is_active = TRUE").
+		Pluck("option_values", &variantOptionValues).Error; err != nil {
+		return nil, err
+	}
+	for _, raw := range variantOptionValues {
+		var values map[string]interface{}
+		if err := json.Unmarshal([]byte(raw), &values); err != nil {
+			continue
+		}
+		for slug, rawValue := range values {
+			knownValues, exists := valuesBySlug[slug]
+			if !exists {
+				continue
+			}
+			if value := strings.TrimSpace(fmt.Sprint(rawValue)); value != "" && value != "<nil>" {
+				knownValues[value] = struct{}{}
+			}
+		}
+	}
+
+	for index := range result {
+		values := make([]string, 0, len(valuesBySlug[result[index].Slug]))
+		for value := range valuesBySlug[result[index].Slug] {
+			values = append(values, value)
+		}
+		sort.Strings(values)
+		result[index].Values = values
+	}
+	return result, nil
+}
+
 func (r *ProductRepository) quickBuyCandidateProductIDs(input ProductQuickBuyCandidateQuery) ([]uint, error) {
 	query := applyQuickBuyCandidateScope(r.db.Model(&product.Product{}), input)
 	filteredQuery, err := applyProductSpecFilters(query, input.SpecFilters, r.db.Dialector.Name())
@@ -443,6 +621,39 @@ func (r *ProductRepository) quickBuyCandidateProductIDs(input ProductQuickBuyCan
 		return nil, err
 	}
 	return productIDs, nil
+}
+
+func (r *ProductRepository) ProductCategoryInQuickBuyScope(productCategoryID *uint, productCategoryIDs []uint) (bool, error) {
+	if len(productCategoryIDs) == 0 {
+		return true, nil
+	}
+	if productCategoryID == nil || *productCategoryID == 0 {
+		return false, nil
+	}
+
+	var count int64
+	err := r.db.Table("product_categories").
+		Where("id = ?", *productCategoryID).
+		Where(`id IN (
+			WITH RECURSIVE quick_buy_category_tree(id) AS (
+				SELECT id
+				FROM product_categories
+				WHERE id IN ? AND is_enabled = TRUE
+
+				UNION ALL
+
+				SELECT child.id
+				FROM product_categories child
+				JOIN quick_buy_category_tree parent ON child.parent_id = parent.id
+				WHERE child.is_enabled = TRUE
+			)
+			SELECT id FROM quick_buy_category_tree
+		)`, productCategoryIDs).
+		Count(&count).Error
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
 }
 
 func productQuickBuyCandidateQueryWithoutSpecFilter(input ProductQuickBuyCandidateQuery, slug string) ProductQuickBuyCandidateQuery {
@@ -464,11 +675,11 @@ func (r *ProductRepository) SearchPublic(input ProductSearchQuery) ([]product.Pr
 	var products []product.Product
 	var total int64
 
-	query := r.db.Model(&product.Product{}).Preload("Brand").Preload("Media", func(db *gorm.DB) *gorm.DB {
+	query := r.db.Model(&product.Product{}).Preload("Brand").Preload("ProductSpecificationTemplate").Preload("CustomsClassificationProfile").Preload("Media", func(db *gorm.DB) *gorm.DB {
 		return orderProductMedia(db)
-	}).Preload("ProductType.SpecDefinitions", func(db *gorm.DB) *gorm.DB {
+	}).Preload("ProductSpecificationTemplate.SpecDefinitions", func(db *gorm.DB) *gorm.DB {
 		return orderSpecDefinitions(db)
-	}).Preload("ProductType.Translations", func(db *gorm.DB) *gorm.DB {
+	}).Preload("ProductSpecificationTemplate.Translations", func(db *gorm.DB) *gorm.DB {
 		return db.Order("locale ASC, id ASC")
 	}).Preload("Variants", func(db *gorm.DB) *gorm.DB {
 		return orderProductVariants(db)
@@ -484,8 +695,25 @@ func (r *ProductRepository) SearchPublic(input ProductSearchQuery) ([]product.Pr
 	if input.Status != "" {
 		query = query.Where("products.status = ?", input.Status)
 	}
-	if input.TypeSlug != "" {
-		query = query.Joins("JOIN product_types ON product_types.id = products.product_type_id AND product_types.slug = ?", input.TypeSlug)
+	if input.ProductSpecificationTemplateSlug != "" {
+		query = query.Joins("JOIN product_specification_templates ON product_specification_templates.id = products.product_specification_template_id AND product_specification_templates.slug = ?", input.ProductSpecificationTemplateSlug)
+	}
+	if input.CategorySlug != "" {
+		query = query.Where(`products.product_category_id IN (
+			WITH RECURSIVE category_tree AS (
+				SELECT id
+				FROM product_categories
+				WHERE slug = ? AND is_enabled = TRUE
+
+				UNION ALL
+
+				SELECT child.id
+				FROM product_categories child
+				JOIN category_tree parent ON child.parent_id = parent.id
+				WHERE child.is_enabled = TRUE
+			)
+			SELECT id FROM category_tree
+		)`, input.CategorySlug)
 	}
 	if input.BrandSlug != "" {
 		query = query.Joins("JOIN product_brands ON product_brands.id = products.brand_id AND product_brands.slug = ? AND product_brands.is_enabled = TRUE", input.BrandSlug)
@@ -527,21 +755,24 @@ func (r *ProductRepository) SearchPublic(input ProductSearchQuery) ([]product.Pr
 	return products, total, err
 }
 
-func (r *ProductRepository) FindAllWithFilters(page, pageSize int, status, locale, search, featured string) ([]product.Product, int64, error) {
+func (r *ProductRepository) FindAllWithFilters(page, pageSize int, status, locale, search, featured, customsStatus, productSpecificationTemplateID string) ([]product.Product, int64, error) {
 	var products []product.Product
 	var total int64
 
-	query := r.db.Model(&product.Product{}).Preload("Brand").Preload("Media", func(db *gorm.DB) *gorm.DB {
+	query := r.preloadProductCategory(r.db.Model(&product.Product{}).Preload("Brand").Preload("ProductSpecificationTemplate").Preload("CustomsClassificationProfile").Preload("Media", func(db *gorm.DB) *gorm.DB {
 		return orderProductMedia(db)
 	}).Preload("Variants", func(db *gorm.DB) *gorm.DB {
 		return orderProductVariants(db)
-	}).Preload("AfterSalesTemplate").Preload("PackagingTemplate")
+	}).Preload("AfterSalesTemplate").Preload("PackagingTemplate"))
 
 	if status != "" {
 		query = query.Where("status = ?", status)
 	}
 	if locale != "" {
 		query = query.Where("locale = ?", locale)
+	}
+	if productSpecificationTemplateID != "" {
+		query = query.Where("product_specification_template_id = ?", productSpecificationTemplateID)
 	}
 	if search != "" {
 		query = query.Where("name LIKE ? OR sku LIKE ? OR description LIKE ?",
@@ -553,6 +784,20 @@ func (r *ProductRepository) FindAllWithFilters(page, pageSize int, status, local
 	case "false":
 		query = query.Where("featured = ?", false)
 	}
+	switch customsStatus {
+	case "complete":
+		query = query.Where("COALESCE(hs_code, '') <> '' AND COALESCE(cn_code, '') <> '' AND COALESCE(country_of_origin, '') <> '' AND COALESCE(customs_description, '') <> ''")
+	case "incomplete":
+		query = query.Where("COALESCE(hs_code, '') = '' OR COALESCE(cn_code, '') = '' OR COALESCE(country_of_origin, '') = '' OR COALESCE(customs_description, '') = ''")
+	case "missing_hs_code":
+		query = query.Where("COALESCE(hs_code, '') = ''")
+	case "missing_cn_code":
+		query = query.Where("COALESCE(cn_code, '') = ''")
+	case "missing_country_of_origin":
+		query = query.Where("COALESCE(country_of_origin, '') = ''")
+	case "missing_customs_description":
+		query = query.Where("COALESCE(customs_description, '') = ''")
+	}
 
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
@@ -562,6 +807,32 @@ func (r *ProductRepository) FindAllWithFilters(page, pageSize int, status, local
 	err := query.Offset(offset).Limit(pageSize).Order("created_at DESC").Find(&products).Error
 
 	return products, total, err
+}
+
+func (r *ProductRepository) GetCustomsSummary(locale string) (ProductCustomsSummary, error) {
+	var summary ProductCustomsSummary
+	query := r.db.Model(&product.Product{}).Select(`
+		COUNT(*) AS total,
+		COALESCE(SUM(CASE WHEN COALESCE(hs_code, '') <> ''
+			AND COALESCE(cn_code, '') <> ''
+			AND COALESCE(country_of_origin, '') <> ''
+			AND COALESCE(customs_description, '') <> '' THEN 1 ELSE 0 END), 0) AS complete,
+		COALESCE(SUM(CASE WHEN COALESCE(hs_code, '') = ''
+			OR COALESCE(cn_code, '') = ''
+			OR COALESCE(country_of_origin, '') = ''
+			OR COALESCE(customs_description, '') = '' THEN 1 ELSE 0 END), 0) AS incomplete,
+		COALESCE(SUM(CASE WHEN COALESCE(hs_code, '') = '' THEN 1 ELSE 0 END), 0) AS missing_hs_code,
+		COALESCE(SUM(CASE WHEN COALESCE(cn_code, '') = '' THEN 1 ELSE 0 END), 0) AS missing_cn_code,
+		COALESCE(SUM(CASE WHEN COALESCE(country_of_origin, '') = '' THEN 1 ELSE 0 END), 0) AS missing_country_of_origin,
+		COALESCE(SUM(CASE WHEN COALESCE(customs_description, '') = '' THEN 1 ELSE 0 END), 0) AS missing_customs_description
+	`)
+	if strings.TrimSpace(locale) != "" {
+		query = query.Where("locale = ?", strings.TrimSpace(locale))
+	}
+	if err := query.Scan(&summary).Error; err != nil {
+		return ProductCustomsSummary{}, err
+	}
+	return summary, nil
 }
 
 // SemanticSearchPublic performs a vector similarity search using pgvector (Stub)

@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS idx_outbox_events_customer_service_realtime_status;

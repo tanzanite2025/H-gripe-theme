@@ -72,25 +72,25 @@ func warrantyStatusResponse(reg *domainregistration.ProductRegistration) gin.H {
 		remaining["expired_days"] = days
 	}
 
-	productTypeCode := ""
-	productTypeName := ""
+	productSpecificationTemplateCode := ""
+	productSpecificationTemplateName := ""
 	productName := ""
 	if reg.Product != nil {
-		productTypeCode = reg.Product.SKU
-		productTypeName = reg.Product.Name
+		productSpecificationTemplateCode = reg.Product.SKU
+		productSpecificationTemplateName = reg.Product.Name
 		productName = reg.Product.Name
 	}
 
 	return gin.H{
-		"product_code":    reg.SerialNumber,
-		"product_type":    gin.H{"code": productTypeCode, "name": productTypeName, "name_zh": productTypeName},
-		"product_name":    productName,
-		"ship_date":       reg.PurchaseDate.Format("2006-01"),
-		"warranty_months": reg.WarrantyPeriod,
-		"warranty_end":    reg.WarrantyExpires.Format("2006-01"),
-		"status":          status,
-		"remaining":       remaining,
-		"records":         []gin.H{},
+		"product_code":                   reg.SerialNumber,
+		"product_specification_template": gin.H{"code": productSpecificationTemplateCode, "name": productSpecificationTemplateName, "name_zh": productSpecificationTemplateName},
+		"product_name":                   productName,
+		"ship_date":                      reg.PurchaseDate.Format("2006-01"),
+		"warranty_months":                reg.WarrantyPeriod,
+		"warranty_end":                   reg.WarrantyExpires.Format("2006-01"),
+		"status":                         status,
+		"remaining":                      remaining,
+		"records":                        []gin.H{},
 	}
 }
 

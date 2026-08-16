@@ -25,6 +25,20 @@ func (r *OpsVPSBindingRepository) List() ([]ops.VPSBinding, error) {
 	return records, err
 }
 
+func (r *OpsVPSBindingRepository) ListByEnvironment(environment string) ([]ops.VPSBinding, error) {
+	var records []ops.VPSBinding
+	query := r.db
+	if environment != "" {
+		query = query.Where("environment = ?", environment)
+	}
+	err := query.
+		Order("enabled DESC").
+		Order("environment ASC").
+		Order("name ASC").
+		Find(&records).Error
+	return records, err
+}
+
 func (r *OpsVPSBindingRepository) FindByID(id uint) (*ops.VPSBinding, error) {
 	var record ops.VPSBinding
 	if err := r.db.First(&record, id).Error; err != nil {

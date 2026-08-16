@@ -7,15 +7,16 @@
       @keydown.right.prevent="next"
     >
       <!-- Navigation Dots -->
-      <div class="absolute inset-x-0 top-2 sm:top-[14px] z-40 flex justify-center gap-2 px-4">
+      <div class="tz-carousel-pagination absolute inset-x-0 top-2 z-40 px-4 sm:top-[14px]">
         <button
           v-for="(_, index) in items"
           :key="index"
           type="button"
-          class="h-1.5 rounded-full transition-[width,background-color] duration-200"
-          :class="index === activeIndex ? 'w-7 bg-sky-400' : 'w-1.5 bg-slate-700 hover:bg-slate-600'"
+          class="tz-carousel-pagination__dot"
+          :class="{ 'is-active': index === activeIndex }"
           @click="goTo(index)"
           :aria-label="`Go to slide ${index + 1}`"
+          :aria-current="index === activeIndex ? 'true' : undefined"
         ></button>
       </div>
 
@@ -52,25 +53,21 @@
         <!-- Prev Button -->
         <button
           type="button"
-          class="absolute left-2 sm:left-4 top-1/2 z-50 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-slate-800/80 text-white backdrop-blur transition-all hover:bg-slate-700 hover:scale-110 shadow-lg border border-slate-700/50"
+          class="tz-directional-arrow tz-directional-arrow--large absolute left-2 top-1/2 z-50 -translate-y-1/2 sm:left-4"
           @click="prev"
           aria-label="Previous image"
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" class="opacity-90">
-            <path d="M15 19L8 12L15 5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
+          <Icon name="lucide:chevron-left" aria-hidden="true" />
         </button>
 
         <!-- Next Button -->
         <button
           type="button"
-          class="absolute right-2 sm:right-4 top-1/2 z-50 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-slate-800/80 text-white backdrop-blur transition-all hover:bg-slate-700 hover:scale-110 shadow-lg border border-slate-700/50"
+          class="tz-directional-arrow tz-directional-arrow--large absolute right-2 top-1/2 z-50 -translate-y-1/2 sm:right-4"
           @click="next"
           aria-label="Next image"
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" class="opacity-90">
-            <path d="M9 5L16 12L9 19" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
+          <Icon name="lucide:chevron-right" aria-hidden="true" />
         </button>
       </div>
     </div>

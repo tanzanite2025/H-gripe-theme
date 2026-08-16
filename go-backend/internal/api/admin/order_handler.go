@@ -314,6 +314,38 @@ func (h *OrderHandler) UpdateAdminNote(c *gin.Context) {
 	})
 }
 
+// UpdateOrderItemCustoms 更新订单商品的最终申报价值
+// PATCH /api/admin/orders/:id/items/:item_id/customs
+func (h *OrderHandler) UpdateOrderItemCustoms(c *gin.Context) {
+	orderID, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid order ID"})
+		return
+	}
+	orderItemID, err := strconv.ParseUint(c.Param("item_id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid order item ID"})
+		return
+	}
+
+	var req orderItemCustomsRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := h.orderService.UpdateOrderItemCustoms(uint(orderID), uint(orderItemID), req.DeclaredValue, req.DeclaredValueConfirmed); err != nil {
+		respondOrderServiceError(c, err, "Failed to update order item customs", http.StatusInternalServerError)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":                  "Order item customs updated successfully",
+		"declared_value":           req.DeclaredValue,
+		"declared_value_confirmed": req.DeclaredValueConfirmed && req.DeclaredValue != nil,
+	})
+}
+
 // BatchUpdateStatus 批量更新订单状态
 // POST /api/admin/orders/batch-status
 func (h *OrderHandler) BatchUpdateStatus(c *gin.Context) {

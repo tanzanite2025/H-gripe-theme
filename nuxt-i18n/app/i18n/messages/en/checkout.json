@@ -8,7 +8,8 @@
     "actions": {
       "viewCart": "View cart",
       "livechat": "Livechat",
-      "email": "Email"
+      "email": "Email",
+      "checkout": "Checkout"
     },
     "messages": {
       "invalidQuote": "Invalid checkout quote response",
@@ -108,7 +109,13 @@
       "points": {
         "b2b": "Recommended for B2B cross-border payments."
       }
-    }
+    },
+    "gatewayFallback": {
+      "title": "This payment provider is having trouble",
+      "description": "The previous attempt may still be processing. Choose another available method only if you did not complete it.",
+      "error": "The selected payment provider is temporarily unavailable. Please choose another available payment method."
+    },
+    "temporarilyUnavailable": "Temporarily unavailable"
   },
   "stepper": {
     "common": {
@@ -161,7 +168,8 @@
         "unavailable": "Unavailable",
         "calculating": "Calculating...",
         "free": "Free"
-      }
+      },
+      "zip": "Postal code"
     },
     "review": {
       "backToShipping": "Back to shipping",
@@ -191,7 +199,8 @@
       "pointsDiscount": "Points discount",
       "couponDiscount": "Coupon discount",
       "giftCardDiscount": "Gift card discount",
-      "total": "Total"
+      "total": "Total",
+      "title": "Order summary"
     }
   },
   "fields": {
@@ -264,5 +273,14 @@
       "checking": "Checking..."
     },
     "qrAlt": "WeChat Pay QR code"
+  },
+  "steps": {
+    "payment": "Choose payment method"
+  },
+  "common": {
+    "processing": "Processing..."
+  },
+  "product": {
+    "buyNow": "Buy now"
   }
 }

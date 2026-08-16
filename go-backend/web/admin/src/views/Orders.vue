@@ -109,6 +109,8 @@
       :dispute-analysis="currentDisputeAnalysis"
       :dispute-analysis-loading="disputeAnalysisLoading"
       :syncing-tracking="syncingTracking"
+      :saving-customs-item-id="savingCustomsItemID"
+      :exporting-customs="exportingCustoms"
       :can-edit="hasPermission('order:edit')"
       :order-status-name="getOrderStatusName"
       :order-status-tone="orderStatusTone"
@@ -127,6 +129,8 @@
       :order-carrier-service-label="orderCarrierServiceLabel"
       @sync-tracking="syncCurrentOrderTracking"
       @update-note="updateAdminNote"
+      @update-customs="updateOrderItemCustoms"
+      @export-customs="exportOrderCustoms"
       @contact-dispute="openDisputeContactEmail"
       @open-payment-workbench="openPaymentWorkbench"
     />
@@ -269,6 +273,8 @@ const disputeLoading = ref(false)
 const disputeAnalysisLoading = ref(false)
 const disputeEmailSending = ref(false)
 const syncingTracking = ref(false)
+const savingCustomsItemID = ref<OrderID | null>(null)
+const exportingCustoms = ref(false)
 const currentOrder = ref<OrderRecord | null>(null)
 const disputeEmailOrderID = ref<OrderID | null>(null)
 const currentDisputeAnalysis = ref<OrderDisputeAnalysis | null>(null)
@@ -745,6 +751,61 @@ const updateAdminNote = async (): Promise<void> => {
     toast.success('管理员备注已保存')
   } catch (error) {
     console.error('Failed to update admin note:', error)
+  }
+}
+
+const updateOrderItemCustoms = async (
+  orderItemID: OrderID,
+  declaredValue: number | null,
+  declaredValueConfirmed: boolean,
+): Promise<void> => {
+  if (!currentOrder.value?.id) return
+
+  savingCustomsItemID.value = orderItemID
+  try {
+    await axios.patch(
+      `/api/admin/orders/${currentOrder.value.id}/items/${orderItemID}/customs`,
+      {
+        declared_value: declaredValue,
+        declared_value_confirmed: declaredValueConfirmed,
+      },
+    )
+
+    const item = currentOrder.value.items?.find((candidate) => String(candidate.id) === String(orderItemID))
+    if (item) {
+      item.declared_value = declaredValue
+      item.declared_value_confirmed = declaredValueConfirmed && declaredValue != null
+    }
+    toast.success('申报价值已保存')
+  } catch (error) {
+    console.error('Failed to update order item customs:', error)
+    toast.error(error?.response?.data?.error || '申报价值保存失败')
+  } finally {
+    savingCustomsItemID.value = null
+  }
+}
+
+const exportOrderCustoms = async (): Promise<void> => {
+  if (!currentOrder.value?.id) return
+
+  exportingCustoms.value = true
+  try {
+    const response = await axios.get(`/api/admin/orders/${currentOrder.value.id}/customs-export`, {
+      responseType: 'blob',
+    })
+    const filename = `customs_${String(currentOrder.value.order_number || currentOrder.value.id).replace(/[^\w.-]+/g, '_')}.csv`
+    const url = window.URL.createObjectURL(new Blob([response.data], { type: 'text/csv;charset=utf-8' }))
+    const link = document.createElement('a')
+    link.href = url
+    link.download = filename
+    link.click()
+    window.URL.revokeObjectURL(url)
+    toast.success('清关资料已下载')
+  } catch (error) {
+    console.error('Failed to export order customs:', error)
+    toast.error(error?.response?.data?.error || '清关资料下载失败')
+  } finally {
+    exportingCustoms.value = false
   }
 }
 
