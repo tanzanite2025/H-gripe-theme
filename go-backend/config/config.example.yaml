@@ -127,6 +127,16 @@ quick_buy_rate_limit:
   session_burst: 20
   fail_open: true
 
+feedback_rate_limit:
+  enabled: true
+  read_ip_requests_per_minute: 120
+  read_ip_burst: 40
+  write_ip_requests_per_minute: 12
+  write_ip_burst: 4
+  write_user_requests_per_minute: 6
+  write_user_burst: 2
+  fail_open: false
+
 showcase_upload_protection:
   enabled: true
   window_seconds: 60
@@ -158,6 +168,9 @@ worker:
   payment_expiration_batch_limit: 100
   payment_risk_monitoring_enabled: false
   payment_risk_monitoring_interval_seconds: 3600
+  media_derivative_rebuild_enabled: true
+  media_derivative_rebuild_interval_seconds: 5
+  media_derivative_rebuild_batch_limit: 10
   showcase_cleanup_enabled: true
   showcase_cleanup_interval_seconds: 86400
   showcase_pending_ttl_seconds: 2592000

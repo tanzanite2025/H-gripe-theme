@@ -190,8 +190,11 @@ export const useWheelsetSelectionAssistant = (
     loading.value = true
     error.value = null
     try {
+      const endpoint = flowSlug === WHEELSET_SELECTION_ASSISTANT_SLUG
+        ? `${publicBaseURL}/wheelset-fit-questionnaire/current`
+        : `${publicBaseURL}/selection-assistant/flows/${encodeURIComponent(flowSlug)}`
       const response = await $fetch<{ data: WheelsetSelectionAssistantFlow }>(
-        `${publicBaseURL}/selection-assistant/flows/${encodeURIComponent(flowSlug)}`,
+        endpoint,
       )
       const nextFlow = response?.data
       if (!nextFlow?.version?.config?.nodes?.length) {

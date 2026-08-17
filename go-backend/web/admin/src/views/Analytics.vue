@@ -3,7 +3,7 @@
     <AdminPageHeader title="Analytics" description="前台访问统计与标签容器">
       <template #actions>
         <Button variant="outline" :disabled="loading || saving" @click="load">
-          <RefreshCw :class="['size-4', loading ? 'animate-spin' : '']" />
+ <RefreshCw :class="['size-4', loading ? 'animate-spin': '']" />
           刷新
         </Button>
         <Button v-if="canEdit" :disabled="loading || saving" @click="save">

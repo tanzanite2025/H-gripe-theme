@@ -762,6 +762,7 @@
     "anonymous": "成员",
     "submitting": "提交中……",
     "defaultTitle": "分享您的反馈",
+    "storeReply": "商家回复",
     "required": "请先输入反馈内容再提交。",
     "submitFailed": "反馈提交失败，请重试。",
     "pendingMessage": "提交成功。您的反馈将在审核后显示。",
@@ -906,14 +907,29 @@
     }
   },
   "giftcards": {
-    "title": "Redeem Points for Gift Cards",
-    "balance": "Balance",
-    "pointsRequired": "Points required",
-    "redeeming": "Redeeming...",
-    "redeem": "Redeem",
-    "noCards": "No gift cards available",
+    "eyebrow": "礼品卡",
+    "title": "使用积分兑换礼品卡",
+    "exchangeIntro": "将会员积分兑换为已发布的礼品卡奖励，并在会员中心查看已兑换礼品卡。",
+    "balance": "余额",
+    "pointsRequired": "所需积分",
+    "redeeming": "兑换中...",
+    "redeem": "兑换",
+    "signInToRedeem": "登录后兑换",
+    "noCards": "暂无可兑换礼品卡",
+    "noCardsTitle": "当前暂无可兑换礼品卡",
+    "noCardsBody": "新的奖励选项发布后，会在这里提供积分兑换。",
+    "viewPointRules": "查看积分规则",
+    "backToMemberInfo": "会员信息",
     "myCards": "我的礼品卡",
-    "remaining": "Remaining"
+    "remaining": "剩余",
+    "stats": {
+      "points": "积分余额",
+      "redemption": "兑换规则",
+      "owned": "已拥有礼品卡"
+    },
+    "signInNotice": "登录后可使用积分兑换，并查看已兑换礼品卡。",
+    "loadingCopy": "正在获取可兑换礼品卡选项。",
+    "loadErrorTitle": "无法加载礼品卡"
   },
   "guidesTireguides": {
     "innerTube": {
@@ -1300,6 +1316,32 @@
       "levers": "等级权益",
       "exchange": "积分兑换",
       "ariaLabel": "Membership sections"
+    },
+    "pages": {
+      "myInfo": {
+        "title": "我的会员信息",
+        "intro": "查看个人资料、会员等级、积分余额、优惠券、礼品卡和保修入口。",
+        "seoTitle": "我的会员信息 - 积分与权益",
+        "seoDescription": "查看 TANZANITE 会员资料、会员等级、积分余额、优惠券、礼品卡和保修工具。",
+        "feedbackTitle": "分享您对会员信息页面的反馈",
+        "feedbackSubtitle": "告诉我们个人资料、权益、优惠券、礼品卡或保修入口是否清楚。"
+      },
+      "levers": {
+        "title": "会员等级与积分规则",
+        "intro": "查看会员等级、折扣权益、积分获取、积分兑换、邀请奖励和签到规则。",
+        "seoTitle": "会员等级与积分规则",
+        "seoDescription": "查看 TANZANITE 会员等级、积分获取规则、兑换比例、邀请奖励和每日签到奖励。",
+        "feedbackTitle": "分享您对会员等级和积分规则的反馈",
+        "feedbackSubtitle": "告诉我们等级权益、积分获取、兑换比例、邀请奖励或签到规则是否清楚。"
+      },
+      "exchange": {
+        "title": "礼品卡兑换",
+        "intro": "使用符合条件的会员积分兑换礼品卡，并在会员中心查看已兑换记录。",
+        "seoTitle": "礼品卡兑换 - 会员积分兑换",
+        "seoDescription": "使用 TANZANITE 会员积分兑换可用礼品卡奖励，并在会员中心管理已兑换礼品卡。",
+        "feedbackTitle": "分享您对礼品卡兑换的反馈",
+        "feedbackSubtitle": "告诉我们积分兑换、可用礼品卡或兑换记录是否容易理解。"
+      }
     },
     "viewAll": "查看全部",
     "myBenefits": "我的权益",

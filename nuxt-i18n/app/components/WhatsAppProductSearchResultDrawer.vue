@@ -77,11 +77,12 @@
                       class="border border-white/10 rounded-xl bg-white/[0.04] hover:bg-white/[0.08]
                              transition-colors overflow-hidden text-left flex flex-col"
                     >
-                      <img
+                      <StorefrontImage
                         v-if="product.thumbnail"
                         :src="product.thumbnail"
                         alt="Product image"
                         class="w-full h-32 object-cover rounded-t-xl"
+                        preset="card"
                       />
                       <div class="px-3 pt-2 pb-3 flex-1 flex flex-col">
                         <div class="text-sm font-semibold text-white truncate">
@@ -145,11 +146,12 @@
               <div class="grid grid-cols-1 md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] gap-4 md:gap-6">
                 <div class="space-y-4">
                   <div class="border border-white/10 rounded-xl bg-white/[0.04] p-3 md:p-4 flex gap-3">
-                    <img
+                    <StorefrontImage
                       v-if="selectedConfigProduct.thumbnail"
                       :src="selectedConfigProduct.thumbnail"
                       alt="Product image"
                       class="w-20 h-20 object-cover rounded-lg flex-shrink-0"
+                      preset="thumbnail"
                     />
                     <div class="flex-1 min-w-0">
                       <div class="text-sm font-semibold text-white truncate">
@@ -379,4 +381,6 @@ watch(
   }
 )
 </script>
+
+<style src="~/assets/css/components/whatsapp-mobile-drawer.css"></style>
 

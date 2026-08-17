@@ -26,7 +26,7 @@
           v-for="profile in profiles"
           :key="profile.id"
           class="cursor-pointer"
-          :class="selectedProfile?.id === profile.id ? 'bg-admin-selected-soft' : ''"
+ :class="selectedProfile?.id === profile.id ? 'bg-admin-selected-soft': ''"
           @click="emit('select-profile', profile)"
         >
           <TableCell class="font-mono text-xs text-muted-foreground">#{{ profile.id }}</TableCell>
@@ -49,13 +49,13 @@
           </TableCell>
           <TableCell>
             <div class="min-w-0">
-              <p class="truncate font-medium">{{ profile.email || '未采集邮箱' }}</p>
-              <p class="mt-1 text-[11px] text-muted-foreground">来源：{{ profile.email_source || 'not_captured' }}</p>
+ <p class="truncate font-medium">{{ profile.email || '未采集邮箱'}}</p>
+ <p class="mt-1 text-[11px] text-muted-foreground">来源：{{ profile.email_source || 'not_captured'}}</p>
             </div>
           </TableCell>
           <TableCell>
-            <p class="truncate text-xs font-bold">{{ profile.region_label || '未采集地区' }}</p>
-            <p class="mt-1 font-mono text-[11px] text-muted-foreground">{{ profile.locale || 'no-locale' }}</p>
+ <p class="truncate text-xs font-bold">{{ profile.region_label || '未采集地区'}}</p>
+ <p class="mt-1 font-mono text-[11px] text-muted-foreground">{{ profile.locale || 'no-locale'}}</p>
           </TableCell>
           <TableCell>
             <div class="flex flex-wrap gap-1.5">

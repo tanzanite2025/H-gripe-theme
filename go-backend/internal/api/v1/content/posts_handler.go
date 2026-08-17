@@ -36,7 +36,7 @@ func (h *Handler) ListPosts(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"data":        PublicPostsFromDomain(posts),
+		"data":        PublicPostsFromDomain(posts, h.mediaService),
 		"total":       total,
 		"page":        page,
 		"page_size":   pageSize,
@@ -54,7 +54,7 @@ func (h *Handler) GetPost(c *gin.Context) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "post not found"})
 			return
 		}
-		c.JSON(http.StatusOK, PublicPostFromDomainWithRoutes(*post, routes))
+		c.JSON(http.StatusOK, PublicPostFromDomainWithRoutes(*post, routes, h.mediaService))
 		return
 	}
 
@@ -70,7 +70,7 @@ func (h *Handler) GetPost(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, PublicPostFromDomainWithRoutes(*post, routes))
+	c.JSON(http.StatusOK, PublicPostFromDomainWithRoutes(*post, routes, h.mediaService))
 }
 
 func resolvePostLocale(c *gin.Context) (string, bool) {

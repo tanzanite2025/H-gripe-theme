@@ -2,7 +2,7 @@
   <div class="space-y-3">
     <div class="flex flex-wrap items-end justify-between gap-3">
       <div>
-        <h2 class="text-sm font-black tracking-tighter italic uppercase">追踪任务</h2>
+        <h2 class="text-sm font-black tracking-tighter uppercase">追踪任务</h2>
         <p class="mt-1 text-xs text-muted-foreground">这里展示订单发货后生成的运单同步状态；后续定时轮询和 17TRACK webhook 都以这张任务表为落点。</p>
       </div>
       <div class="flex flex-wrap gap-2">
@@ -28,7 +28,7 @@
       <div class="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div class="flex flex-wrap items-center gap-2">
-            <h3 class="text-sm font-black tracking-tighter italic uppercase">自动轮询器</h3>
+            <h3 class="text-sm font-black tracking-tighter uppercase">自动轮询器</h3>
             <AdminStatusBadge :tone="trackingPollingState.enabled ? (trackingPollingState.running ? 'blue' : 'green') : 'gray'">
               {{ trackingPollingState.enabled ? (trackingPollingState.running ? '运行中' : '已启用') : '已禁用' }}
             </AdminStatusBadge>
@@ -63,7 +63,7 @@
         </div>
         <div class="rounded-md border bg-muted/25 p-3">
           <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">ERROR / 最近错误</p>
-          <p class="mt-1 line-clamp-2 text-xs" :class="trackingPollingState.last_error ? 'text-destructive' : 'text-muted-foreground'">
+ <p class="mt-1 line-clamp-2 text-xs" :class="trackingPollingState.last_error ? 'text-destructive': 'text-muted-foreground'">
             {{ trackingPollingState.last_error || trackingPollingLastItemError || '无错误' }}
           </p>
         </div>
@@ -74,7 +74,7 @@
       <div class="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div class="flex flex-wrap items-center gap-2">
-            <h3 class="text-sm font-black tracking-tighter italic uppercase">Webhook 推送</h3>
+            <h3 class="text-sm font-black tracking-tighter uppercase">Webhook 推送</h3>
             <AdminStatusBadge :tone="trackingWebhookState.last_accepted ? 'green' : (trackingWebhookState.last_error ? 'coral' : 'gray')">
               {{ trackingWebhookState.last_accepted ? '最近成功' : (trackingWebhookState.last_error ? '最近失败' : '暂无回调') }}
             </AdminStatusBadge>
@@ -93,23 +93,23 @@
         <div class="rounded-md border bg-muted/25 p-3">
           <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">RECEIVED / 最近接收</p>
           <p class="mt-1 font-mono text-xs">{{ formatDate(trackingWebhookState.last_received_at) }}</p>
-          <p class="mt-0.5 text-[10px] text-muted-foreground">HTTP {{ trackingWebhookState.last_http_status || '-' }} / {{ trackingWebhookDurationLabel }}</p>
+ <p class="mt-0.5 text-[10px] text-muted-foreground">HTTP {{ trackingWebhookState.last_http_status || '-'}} / {{ trackingWebhookDurationLabel }}</p>
         </div>
         <div class="rounded-md border bg-muted/25 p-3">
           <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">SIGNATURE / 验签</p>
           <p class="mt-1 text-xs font-bold">{{ trackingWebhookSignatureLabel }}</p>
-          <p class="mt-0.5 text-[10px] text-muted-foreground">Provider {{ trackingWebhookState.last_provider_code || '-' }}</p>
+ <p class="mt-0.5 text-[10px] text-muted-foreground">Provider {{ trackingWebhookState.last_provider_code || '-'}}</p>
         </div>
         <div class="rounded-md border bg-muted/25 p-3">
           <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">SHIPMENT / 命中任务</p>
-          <p class="mt-1 font-mono text-xs">{{ trackingWebhookState.last_tracking_number || '-' }}</p>
+ <p class="mt-1 font-mono text-xs">{{ trackingWebhookState.last_tracking_number || '-'}}</p>
           <p class="mt-0.5 text-[10px] text-muted-foreground">
             订单 #{{ trackingWebhookState.last_order_id || '-' }} / {{ trackingWebhookState.last_carrier_code || '-' }} / {{ trackingWebhookState.last_event_count || 0 }} 事件
           </p>
         </div>
         <div class="rounded-md border bg-muted/25 p-3">
           <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">ERROR / 最近错误</p>
-          <p class="mt-1 line-clamp-2 text-xs" :class="trackingWebhookState.last_error ? 'text-destructive' : 'text-muted-foreground'">
+ <p class="mt-1 line-clamp-2 text-xs" :class="trackingWebhookState.last_error ? 'text-destructive': 'text-muted-foreground'">
             {{ trackingWebhookState.last_error || '无错误' }}
           </p>
         </div>
@@ -269,8 +269,8 @@
           <TableRow v-for="shipment in trackingShipments" :key="shipment.id">
             <TableCell class="font-mono text-xs font-bold">#{{ shipment.order_id }}</TableCell>
             <TableCell>
-              <span class="block font-mono text-xs font-bold">{{ shipment.tracking_number || '-' }}</span>
-              <span class="block font-mono text-[10px] text-muted-foreground/70">{{ shipment.provider_carrier_code || '-' }}</span>
+ <span class="block font-mono text-xs font-bold">{{ shipment.tracking_number || '-'}}</span>
+ <span class="block font-mono text-[10px] text-muted-foreground/70">{{ shipment.provider_carrier_code || '-'}}</span>
             </TableCell>
             <TableCell>
               <span class="block font-bold text-xs">{{ trackingShipmentProviderName(shipment) }}</span>
@@ -290,7 +290,7 @@
             <TableCell class="text-right font-mono text-xs tabular-nums">{{ shipment.event_count || 0 }}</TableCell>
             <TableCell class="font-mono text-[10px] text-muted-foreground">{{ formatDate(shipment.last_synced_at) }}</TableCell>
             <TableCell class="font-mono text-[10px] text-muted-foreground">{{ formatDate(shipment.next_sync_at) }}</TableCell>
-            <TableCell class="max-w-80 truncate text-xs text-destructive">{{ shipment.last_error || '-' }}</TableCell>
+ <TableCell class="max-w-80 truncate text-xs text-destructive">{{ shipment.last_error || '-'}}</TableCell>
             <TableCell class="text-right">
               <div class="inline-flex items-center gap-1">
                 <Button variant="outline" size="sm" :disabled="loading.trackingEvents" @click="openTrackingEvents(shipment)">
@@ -336,7 +336,7 @@
           <div class="rounded-lg border bg-muted/25 p-3">
             <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">PROVIDER</p>
             <p class="mt-1 text-xs font-bold">{{ trackingShipmentProviderName(selectedTrackingShipment) }}</p>
-            <p class="mt-0.5 font-mono text-[10px] text-muted-foreground">{{ selectedTrackingShipment.provider_carrier_code || '-' }}</p>
+ <p class="mt-0.5 font-mono text-[10px] text-muted-foreground">{{ selectedTrackingShipment.provider_carrier_code || '-'}}</p>
           </div>
           <div class="rounded-lg border bg-muted/25 p-3">
             <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">CARRIER</p>
@@ -378,10 +378,10 @@
                     <AdminStatusBadge :tone="trackingEventStatusTone(event.status)">
                       {{ event.status || 'UNKNOWN' }}
                     </AdminStatusBadge>
-                    <span class="font-mono text-xs text-muted-foreground">{{ event.provider_carrier_code || selectedTrackingShipment?.provider_carrier_code || '-' }}</span>
+ <span class="font-mono text-xs text-muted-foreground">{{ event.provider_carrier_code || selectedTrackingShipment?.provider_carrier_code || '-'}}</span>
                   </div>
-                  <p class="mt-2 text-sm font-bold">{{ event.description || '无事件描述' }}</p>
-                  <p class="mt-1 text-xs text-muted-foreground">{{ event.location || '无地点信息' }}</p>
+ <p class="mt-2 text-sm font-bold">{{ event.description || '无事件描述'}}</p>
+ <p class="mt-1 text-xs text-muted-foreground">{{ event.location || '无地点信息'}}</p>
                 </div>
                 <div class="text-right">
                   <p class="font-mono text-xs font-bold">{{ formatDate(event.event_time) }}</p>

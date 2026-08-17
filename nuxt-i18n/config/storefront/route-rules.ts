@@ -7,7 +7,10 @@ import { htmlRouteCacheStorageBase } from './html-cache-runtime'
 
 type StorefrontRouteRule = {
   proxy?: string
-  redirect?: string
+  redirect?: string | {
+    to: string
+    statusCode: 301 | 308
+  }
   headers?: Record<string, string>
   cache?: {
     base: string
@@ -35,12 +38,22 @@ const immutableFontHeaders = {
   'access-control-allow-origin': '*',
 }
 
+const revalidatingFontStylesheetHeaders = {
+  'cache-control': 'no-cache',
+  'access-control-allow-origin': '*',
+}
+
 const noStoreHeaders = {
   'cache-control': 'no-store, max-age=0',
 }
 
 const immutableAssetRoutePatterns = [
   '/_nuxt/**',
+  '/company/aboutus/**',
+  '/company/globalpartners/**',
+  '/company/ourstory/factory/**',
+  '/company/ourstory/holepatterns/**',
+  '/company/ourstory/ourstory/**',
   '/icons/**',
   '/images/**',
   '/testreport/**',
@@ -52,8 +65,14 @@ const storefrontRedirects = [
   {
     from: '/guides/technical',
     to: '/guides',
+    statusCode: 301,
   },
-]
+  {
+    from: '/faq',
+    to: '/support/faqs',
+    statusCode: 301,
+  },
+] as const
 
 const normalizePath = (path: string) => {
   if (path === '/') return '/'
@@ -99,15 +118,24 @@ const addLocalizedRedirect = (
   routeRules: StorefrontRouteRules,
   from: string,
   to: string,
+  statusCode: 301 | 308,
   localeCodes: string[],
   defaultLocale: string,
 ) => {
-  routeRules[normalizePath(from)] = { redirect: normalizePath(to) }
+  routeRules[normalizePath(from)] = {
+    redirect: {
+      to: normalizePath(to),
+      statusCode,
+    },
+  }
 
   for (const locale of localeCodes) {
     if (!locale || locale === defaultLocale) continue
     routeRules[`/${locale}${normalizePath(from)}`] = {
-      redirect: `/${locale}${normalizePath(to)}`,
+      redirect: {
+        to: `/${locale}${normalizePath(to)}`,
+        statusCode,
+      },
     }
   }
 }
@@ -142,6 +170,11 @@ export const buildStorefrontRouteRules = ({
     headers: immutableFontHeaders,
   }
 
+  // Stripe loads this stable path inside an iframe; its referenced font files are content-addressed.
+  routeRules['/fonts/storefront-system.css'] = {
+    headers: revalidatingFontStylesheetHeaders,
+  }
+
   if (htmlCacheEnabled) {
     for (const policy of storefrontHtmlCachePolicies) {
       addLocalizedRule(routeRules, policy.paths, localeCodes, defaultLocale, cacheRule(policy))
@@ -153,7 +186,7 @@ export const buildStorefrontRouteRules = ({
   })
 
   for (const redirect of storefrontRedirects) {
-    addLocalizedRedirect(routeRules, redirect.from, redirect.to, localeCodes, defaultLocale)
+    addLocalizedRedirect(routeRules, redirect.from, redirect.to, redirect.statusCode, localeCodes, defaultLocale)
   }
 
   return routeRules

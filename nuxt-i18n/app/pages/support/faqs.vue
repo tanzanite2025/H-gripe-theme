@@ -66,7 +66,7 @@
         leave-to-class="opacity-0"
         mode="out-in"
       >
-        <div :key="activePageId + searchQuery">
+        <div :key="activePageId + searchQuery" class="faqs-content__results">
           <GlobalAllFaqsDesktopGroupedSearchResultsPanel
             :groups="displayedGroups"
             :expanded-items="expandedItems"
@@ -80,29 +80,28 @@
         </div>
       </Transition>
 
-      <!-- View More Button -->
-      <!-- Only show if we are in 'All' tab AND we have hidden groups AND not searching -->
-      <div 
-        v-if="hasMoreGroups && activePageId === 'all' && !searchQuery" 
-        class="flex justify-center mt-4 mb-8"
-      >
-        <button
-          type="button"
-          class="inline-flex items-center gap-2 px-8 py-3 rounded-full text-sm font-bold bg-slate-800 tz-text-secondary hover:bg-slate-700 hover:text-white hover:shadow-lg transition-all"
-          @click="loadMoreGroups"
-        >
-          {{ t('faq.ui.viewMoreContent') }}
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-          </svg>
-        </button>
-      </div>
     </div>
 
     <!-- 无结果 -->
     <div v-else class="faqs-empty">
       <p>{{ t('faq.ui.noResults', { query: searchQuery }) }}</p>
     </div>
+    </div>
+
+    <div
+      v-if="hasMoreGroups && activePageId === 'all' && !searchQuery"
+      class="faqs-load-more flex justify-center mt-4 mb-8"
+    >
+      <button
+        type="button"
+        class="inline-flex items-center gap-2 px-8 py-3 rounded-full text-sm font-bold bg-slate-800 tz-text-secondary hover:bg-slate-700 hover:text-white hover:shadow-lg transition-all"
+        @click="loadMoreGroups"
+      >
+        {{ t('faq.ui.viewMoreContent') }}
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
     </div>
   </div>
 </template>
@@ -312,20 +311,24 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
 
   .faqs-layout {
     display: grid;
-    grid-template-columns: minmax(11rem, 0.2fr) minmax(0, 0.8fr);
+    grid-template-columns: clamp(15rem, 21vw, 18rem) minmax(0, 1fr);
     gap: 1.5rem;
-    align-items: start;
+    align-items: stretch;
   }
 
   .faqs-sidebar {
     position: sticky;
-    top: calc(var(--site-header-offset, 112px) + 1rem);
+    top: calc(112px + 1rem);
     display: grid;
+    min-width: 0;
+    max-width: 100%;
     gap: 0.25rem;
+    box-sizing: border-box;
     padding: 0.75rem;
     border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 1rem;
     background: #000000;
+    overflow: hidden;
   }
 
   .faqs-sidebar__label {
@@ -340,15 +343,21 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
 
   .faqs-tabs {
     display: grid;
+    min-width: 0;
+    width: 100%;
     gap: 0.25rem;
     justify-content: stretch;
     margin-bottom: 0;
   }
 
   .faqs-tabs__button.premium-button {
+    display: flex;
     justify-content: space-between;
     width: 100%;
+    min-width: 0;
+    max-width: 100%;
     min-height: 2.35rem;
+    box-sizing: border-box;
     padding: 0.68rem 0.85rem;
     border: 0;
     border-radius: 0.75rem;
@@ -375,6 +384,7 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
   }
 
   .faqs-tabs__label {
+    flex: 1 1 auto;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -389,7 +399,7 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
     display: block;
     width: 0.42rem;
     height: 0.42rem;
-    flex-shrink: 0;
+    flex: 0 0 auto;
     border-radius: 999px;
     background: #334155;
   }
@@ -400,14 +410,57 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
   }
 
   .faqs-content {
+    display: flex;
     min-width: 0;
-    min-height: 30rem;
+    flex-direction: column;
+  }
+
+  .faqs-content__results {
+    height: 100%;
+    min-height: 0;
+  }
+
+  .faqs-content__results :deep(.global-all-faqs-desktop-grouped-search-results-panel) {
+    height: 100%;
+    min-height: 100%;
+  }
+
+  .faqs-content__results :deep(.desktop-faq-master-detail__list),
+  .faqs-content__results :deep(.desktop-faq-master-detail__detail-content) {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .faqs-load-more {
+    margin-left: clamp(15rem, 21vw, 18rem);
   }
 
   .faqs-empty {
     grid-column: 2;
     background: #000000;
     border-color: rgba(255, 255, 255, 0.15);
+  }
+}
+
+@media (min-width: 768px) and (max-width: 980px) {
+  .faqs-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .faqs-sidebar {
+    position: static;
+  }
+
+  .faqs-load-more {
+    margin-left: 0;
+  }
+
+  .faqs-tabs {
+    grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  }
+
+  .faqs-empty {
+    grid-column: auto;
   }
 }
 

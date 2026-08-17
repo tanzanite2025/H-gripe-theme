@@ -2,11 +2,13 @@ package admin
 
 import (
 	seoapi "commerce-platform/internal/api/admin/seo"
+	urlapi "commerce-platform/internal/api/admin/urlmanagement"
 	"commerce-platform/internal/api/middleware"
 	"commerce-platform/internal/app"
 	"commerce-platform/internal/domain/auth"
 	"commerce-platform/internal/pkg/config"
 	"commerce-platform/internal/pkg/securecookie"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )
@@ -46,7 +48,12 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 	spokeCatalogHandler := NewSpokeCatalogHandler(services.Spoke)
 	quickBuyHandler := NewQuickBuyHandler(services.QuickBuy)
 	selectionAssistantHandler := NewSelectionAssistantHandler(services.SelectionAssistant)
+	wheelsetFitQuestionnaireHandler := NewWheelsetFitQuestionnaireHandler(services.WheelsetFitQuestionnaire)
 	mediaHandler := NewMediaHandler(services.Media)
+	mediaHandler.ConfigureAuditService(services.Audit)
+	mediaImageDimensionsHandler := NewMediaImageDimensionsHandler(service.NewMediaImageDimensionEngine(services.Media))
+	fontPreflightHandler := NewFontPreflightHandler(cfg.Server.BaseURL, nil)
+	contentLinkPreflightHandler := NewContentLinkPreflightHandler(services.PreflightContentLinks)
 	orderHandler := NewOrderHandler(orderService)
 	orderHandler.ConfigureAuditService(services.Audit)
 	paymentHandler := NewPaymentHandler(paymentService, services.AdminSettings, services.PayPalDisputeInvoiceSellerProfile)
@@ -83,10 +90,13 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 	seoHomeHandler := seoapi.NewHomeHandler(services.SEO)
 	seoArticlesHandler := seoapi.NewArticlesHandler(services.SEOResources)
 	seoProductsHandler := seoapi.NewProductsHandler(services.SEOResources)
-	seoRoutesHandler := seoapi.NewRoutesHandler(services.StorefrontRouteCatalog)
+	urlRoutesHandler := urlapi.NewRoutesHandler(services.StorefrontRouteCatalog)
+	urlRedirectsHandler := urlapi.NewRedirectsHandler(services.StorefrontRedirectRules)
+	urlIssuesHandler := urlapi.NewIssuesHandler(services.StorefrontURLIssues, services.StorefrontRouteCatalog)
 	seoHomeHandler.ConfigureAuditService(services.Audit)
 	seoArticlesHandler.ConfigureAuditService(services.Audit)
 	seoProductsHandler.ConfigureAuditService(services.Audit)
+	urlIssuesHandler.ConfigureAuditService(services.Audit)
 	analyticsHandler := NewAnalyticsHandler(services.Analytics)
 	commercialCrawlerHandler := NewCommercialCrawlerProtectionHandler(orderService)
 	currencyPolicyHandler := NewCurrencyPolicyHandler(services.CurrencyPolicy)
@@ -113,6 +123,17 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 	opsConnectorHandler := NewOpsConnectorHandler(services.OpsConnector)
 	opsConnectorHandler.ConfigureAuditService(services.Audit)
 	opsConnectorHandler.ConfigureOAuthService(services.OpsConnectorOAuth)
+	serviceCenterHandler := NewServiceCenterHandler(
+		services.OpsConnector,
+		services.OpsDomainBinding,
+		opsConnectorHandler,
+	)
+	serviceCenterHandler.ConfigureCloudflareCacheRulesService(
+		service.NewCloudflareCacheRulesService(services.OpsConnector),
+	)
+	serviceCenterHandler.ConfigureAuditService(services.Audit)
+	siteQualityHandler := NewSiteQualityHandler(services.LighthouseRunner, services.SiteQualityEngine)
+	siteQualityHandler.ConfigureAuditService(services.Audit)
 	opsVPSBindingHandler := NewOpsVPSBindingHandler(services.OpsVPSBinding)
 	opsVPSBindingHandler.ConfigureAuditService(services.Audit)
 	opsVPSBindingHandler.ConfigureSyncService(services.OpsHostingerSync)
@@ -125,6 +146,9 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 	opsOverviewHandler := NewOpsOverviewHandler(services.OpsOverview)
 	reviewModerationHandler := NewReviewModerationHandler(services.ReviewModeration)
 	reviewModerationHandler.ConfigureAuditService(services.Audit)
+	pageFeedbackHandler := NewPageFeedbackHandler(services.Feedback)
+	pageFeedbackHandler.ConfigureAuditService(services.Audit)
+	pageFeedbackHandler.ConfigureRedisClient(deps.RedisClient)
 
 	// 管理后台 API 路由组
 	admin := r.Group("/api/admin")
@@ -308,6 +332,19 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 				selectionAssistantGroup.POST("/flow-versions/:version_id/publish", middleware.RequirePermission(auth.PermProductEdit), selectionAssistantHandler.PublishVersion)
 			}
 
+			wheelsetFitQuestionnaireGroup := authenticated.Group("/wheelset-fit-questionnaire")
+			wheelsetFitQuestionnaireGroup.Use(middleware.RequirePermission(auth.PermProductView))
+			{
+				wheelsetFitQuestionnaireGroup.GET("/current", wheelsetFitQuestionnaireHandler.GetCurrentVersion)
+				wheelsetFitQuestionnaireGroup.POST("/draft", middleware.RequirePermission(auth.PermProductEdit), wheelsetFitQuestionnaireHandler.CreateDraft)
+				wheelsetFitQuestionnaireGroup.POST("/questions", middleware.RequirePermission(auth.PermProductEdit), wheelsetFitQuestionnaireHandler.CreateQuestion)
+				wheelsetFitQuestionnaireGroup.PUT("/questions/order", middleware.RequirePermission(auth.PermProductEdit), wheelsetFitQuestionnaireHandler.ReorderQuestions)
+				wheelsetFitQuestionnaireGroup.PUT("/questions/:id", middleware.RequirePermission(auth.PermProductEdit), wheelsetFitQuestionnaireHandler.UpdateQuestion)
+				wheelsetFitQuestionnaireGroup.DELETE("/questions/:id", middleware.RequirePermission(auth.PermProductEdit), wheelsetFitQuestionnaireHandler.DeleteQuestion)
+				wheelsetFitQuestionnaireGroup.POST("/versions/:version_id/validate", wheelsetFitQuestionnaireHandler.ValidateVersion)
+				wheelsetFitQuestionnaireGroup.POST("/versions/:version_id/publish", middleware.RequirePermission(auth.PermProductEdit), wheelsetFitQuestionnaireHandler.PublishVersion)
+			}
+
 			googleMerchantGroup := authenticated.Group("/google-merchant")
 			googleMerchantGroup.Use(middleware.RequirePermission(auth.PermMerchantView))
 			{
@@ -329,6 +366,14 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 			mediaGroup := authenticated.Group("/media")
 			mediaGroup.Use(middleware.RequirePermission(auth.PermMediaView))
 			{
+				mediaGroup.GET("/derivative-presets", mediaHandler.ListDerivativePresets)
+				mediaGroup.POST("/derivative-presets", middleware.RequirePermission(auth.PermMediaConfigure), mediaHandler.CreateDerivativePreset)
+				mediaGroup.PUT("/derivative-presets/:id", middleware.RequirePermission(auth.PermMediaConfigure), mediaHandler.UpdateDerivativePreset)
+				mediaGroup.PATCH("/derivative-presets/:id/enabled", middleware.RequirePermission(auth.PermMediaConfigure), mediaHandler.UpdateDerivativePresetEnabled)
+				mediaGroup.DELETE("/derivative-presets/:id", middleware.RequirePermission(auth.PermMediaConfigure), mediaHandler.DeleteDerivativePreset)
+				mediaGroup.GET("/derivative-rebuild-jobs", mediaHandler.ListDerivativeRebuildJobs)
+				mediaGroup.POST("/derivative-rebuild-jobs", middleware.RequirePermission(auth.PermMediaConfigure), mediaHandler.RequestDerivativeRebuild)
+
 				mediaGroup.GET("/assets", mediaHandler.ListAssets)
 				mediaGroup.GET("/assets/:id/file", mediaHandler.ServeAssetFile)
 				mediaGroup.GET("/assets/:id/copyright-evidence", middleware.RequirePermission(auth.PermMediaEdit), mediaHandler.ExportCopyrightEvidence)
@@ -342,6 +387,24 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 				)
 				mediaGroup.PATCH("/assets/:id", middleware.RequirePermission(auth.PermMediaEdit), mediaHandler.UpdateAsset)
 				mediaGroup.DELETE("/assets/:id", middleware.RequirePermission(auth.PermMediaDelete), mediaHandler.DeleteAsset)
+			}
+
+			preflightGroup := authenticated.Group("/preflight")
+			preflightGroup.Use(middleware.RequireAnyPermission(auth.PermServicesView, auth.PermMediaView))
+			{
+				siteQualityGroup := preflightGroup.Group("/site-quality")
+				siteQualityGroup.Use(middleware.RequirePermission(auth.PermServicesView))
+				registerSiteQualityRoutes(siteQualityGroup, siteQualityHandler, auth.PermServicesManage)
+
+				imageDimensionsGroup := preflightGroup.Group("/image-dimensions")
+				imageDimensionsGroup.Use(middleware.RequirePermission(auth.PermMediaView))
+				registerMediaImageDimensionRoutes(imageDimensionsGroup, mediaImageDimensionsHandler)
+
+				contentLinksGroup := preflightGroup.Group("/content-links")
+				contentLinksGroup.Use(middleware.RequirePermission(auth.PermServicesView))
+				registerPreflightContentLinkRoutes(contentLinksGroup, contentLinkPreflightHandler, auth.PermServicesManage)
+
+				preflightGroup.GET("/fonts", middleware.RequirePermission(auth.PermServicesView), fontPreflightHandler.Get)
 			}
 
 			// 属性管理（需要商品管理权限）
@@ -435,6 +498,22 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 					postsGroup.DELETE("/:id", middleware.RequirePermission(auth.PermContentDelete), contentHandler.DeletePost)
 					postsGroup.POST("/batch-status", middleware.RequirePermission(auth.PermContentEdit), contentHandler.BatchUpdateStatus)
 					postsGroup.POST("/batch-delete", middleware.RequirePermission(auth.PermContentDelete), contentHandler.BatchDelete)
+				}
+
+				feedbackGroup := contentGroup.Group("/feedback")
+				{
+					feedbackGroup.GET("", pageFeedbackHandler.List)
+					feedbackGroup.GET("/risk-overview", pageFeedbackHandler.RiskOverview)
+					feedbackGroup.GET("/:id", pageFeedbackHandler.Get)
+					feedbackGroup.PATCH("/:id", middleware.RequirePermission(auth.PermContentEdit), pageFeedbackHandler.Update)
+				}
+
+				pageFeedbackGroup := contentGroup.Group("/page-feedback")
+				{
+					pageFeedbackGroup.GET("", pageFeedbackHandler.List)
+					pageFeedbackGroup.GET("/risk-overview", pageFeedbackHandler.RiskOverview)
+					pageFeedbackGroup.GET("/:id", pageFeedbackHandler.Get)
+					pageFeedbackGroup.PATCH("/:id", middleware.RequirePermission(auth.PermContentEdit), pageFeedbackHandler.Update)
 				}
 			}
 
@@ -628,13 +707,36 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 				seoGroup.PUT("/articles/:id", middleware.RequirePermission(auth.PermSEOEdit), seoArticlesHandler.Update)
 				seoGroup.GET("/products", seoProductsHandler.Get)
 				seoGroup.PUT("/products/:id", middleware.RequirePermission(auth.PermSEOEdit), seoProductsHandler.Update)
-				seoGroup.GET("/routes/stats", seoRoutesHandler.Stats)
-				seoGroup.GET("/routes", seoRoutesHandler.List)
-				seoGroup.GET("/routes/:id", seoRoutesHandler.Get)
-				seoGroup.GET("/routes/:id/history", seoRoutesHandler.History)
-				seoGroup.POST("/routes/sync", middleware.RequirePermission(auth.PermSEOEdit), seoRoutesHandler.Sync)
-				seoGroup.POST("/routes/check", middleware.RequirePermission(auth.PermSEOEdit), seoRoutesHandler.Check)
-				seoGroup.POST("/routes/:id/check", middleware.RequirePermission(auth.PermSEOEdit), seoRoutesHandler.CheckOne)
+			}
+
+			urlGroup := authenticated.Group("/urls")
+			urlGroup.Use(middleware.RequirePermission(auth.PermURLView))
+			{
+				urlGroup.GET("/stats", urlRoutesHandler.Stats)
+				urlGroup.GET("/routes", urlRoutesHandler.List)
+				urlGroup.GET("/routes/:id", urlRoutesHandler.Get)
+				urlGroup.GET("/routes/:id/history", urlRoutesHandler.History)
+				urlGroup.GET("/issues", urlIssuesHandler.List)
+				urlGroup.GET("/issues/summary", urlIssuesHandler.Summary)
+				urlGroup.GET("/issues/:id", urlIssuesHandler.Get)
+				urlGroup.GET("/issues/:id/events", urlIssuesHandler.Events)
+				urlGroup.GET("/redirects", urlRedirectsHandler.List)
+				urlGroup.GET("/sitemap", urlRoutesHandler.Sitemap)
+				urlGroup.POST("/issues/:id/acknowledge", middleware.RequirePermission(auth.PermURLEdit), urlIssuesHandler.Acknowledge)
+				urlGroup.POST("/issues/:id/claim", middleware.RequirePermission(auth.PermURLEdit), urlIssuesHandler.Claim)
+				urlGroup.POST("/issues/:id/comments", middleware.RequirePermission(auth.PermURLEdit), urlIssuesHandler.Comment)
+				urlGroup.POST("/issues/:id/link-redirect", middleware.RequirePermission(auth.PermURLEdit), urlIssuesHandler.LinkRedirect)
+				urlGroup.POST("/issues/:id/resolve", middleware.RequirePermission(auth.PermURLEdit), urlIssuesHandler.Resolve)
+				urlGroup.POST("/issues/:id/suppress", middleware.RequirePermission(auth.PermURLEdit), urlIssuesHandler.Suppress)
+				urlGroup.POST("/issues/:id/recheck", middleware.RequirePermission(auth.PermURLEdit), urlIssuesHandler.Recheck)
+				urlGroup.POST("/issues/:id/verify", middleware.RequirePermission(auth.PermURLEdit), urlIssuesHandler.Verify)
+				urlGroup.POST("/redirects", middleware.RequirePermission(auth.PermURLEdit), urlRedirectsHandler.Create)
+				urlGroup.POST("/redirects/:id/publish", middleware.RequirePermission(auth.PermURLEdit), urlRedirectsHandler.Publish)
+				urlGroup.POST("/redirects/:id/disable", middleware.RequirePermission(auth.PermURLEdit), urlRedirectsHandler.Disable)
+				urlGroup.POST("/sync", middleware.RequirePermission(auth.PermURLEdit), urlRoutesHandler.Sync)
+				urlGroup.POST("/sitemap/sync", middleware.RequirePermission(auth.PermURLEdit), urlRoutesHandler.SyncSitemap)
+				urlGroup.POST("/check", middleware.RequirePermission(auth.PermURLEdit), urlRoutesHandler.Check)
+				urlGroup.POST("/routes/:id/check", middleware.RequirePermission(auth.PermURLEdit), urlRoutesHandler.CheckOne)
 			}
 
 			analyticsGroup := authenticated.Group("/analytics")
@@ -642,6 +744,20 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 			{
 				analyticsGroup.GET("", analyticsHandler.Get)
 				analyticsGroup.PUT("", middleware.RequirePermission(auth.PermAnalyticsEdit), analyticsHandler.Update)
+			}
+
+			servicesGroup := authenticated.Group("/services")
+			servicesGroup.Use(middleware.RequirePermission(auth.PermServicesView))
+			{
+				servicesGroup.GET("/overview", serviceCenterHandler.Overview)
+				cloudflareGroup := servicesGroup.Group("/cloudflare")
+				{
+					cloudflareGroup.GET("", serviceCenterHandler.Cloudflare)
+					cloudflareGroup.GET("/cache-rules", serviceCenterHandler.GetCloudflareCacheRules)
+					cloudflareGroup.POST("/oauth/start", middleware.RequirePermission(auth.PermServicesManage), serviceCenterHandler.StartCloudflareOAuth)
+					cloudflareGroup.POST("/connectors/:id/test", middleware.RequirePermission(auth.PermServicesManage), serviceCenterHandler.TestCloudflareConnection)
+					cloudflareGroup.PATCH("/cache-rules/:rule_id/enabled", middleware.RequirePermission(auth.PermServicesManage), serviceCenterHandler.UpdateCloudflareCacheRuleEnabled)
+				}
 			}
 
 			// 设置管理（需要设置管理权限）
@@ -847,4 +963,34 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 			}
 		}
 	}
+}
+
+func registerSiteQualityRoutes(group *gin.RouterGroup, handler *SiteQualityHandler, managePermission auth.Permission) {
+	group.GET("", handler.ListSiteQualityRuns)
+	group.GET("/targets", handler.ListSiteQualityTargets)
+	group.POST("/jobs", middleware.RequirePermission(managePermission), handler.CreateSiteQualityJob)
+	group.GET("/jobs/:id", handler.GetSiteQualityJob)
+	group.GET("/findings", handler.ListSiteQualityFindings)
+	group.GET("/findings/:id", handler.GetSiteQualityFinding)
+	group.GET("/findings/:id/events", handler.ListSiteQualityFindingEvents)
+	group.POST("/findings/:id/acknowledge", middleware.RequirePermission(managePermission), handler.AcknowledgeSiteQualityFinding)
+	group.POST("/findings/:id/resolve", middleware.RequirePermission(managePermission), handler.ResolveSiteQualityFinding)
+	group.POST("/findings/:id/recheck", middleware.RequirePermission(managePermission), handler.RecheckSiteQualityFinding)
+}
+
+func registerMediaImageDimensionRoutes(group *gin.RouterGroup, handler *MediaImageDimensionsHandler) {
+	group.GET("", handler.List)
+	group.POST("/:id/reconcile", middleware.RequirePermission(auth.PermMediaEdit), handler.Reconcile)
+}
+
+func registerPreflightContentLinkRoutes(group *gin.RouterGroup, handler *ContentLinkPreflightHandler, managePermission auth.Permission) {
+	group.GET("/targets", handler.ListTargets)
+	group.POST("/runs", middleware.RequirePermission(managePermission), handler.Run)
+	group.GET("/issues", handler.ListIssues)
+	group.GET("/issues/:id", handler.GetIssue)
+	group.GET("/issues/:id/events", handler.ListIssueEvents)
+	group.GET("/stats", handler.Stats)
+	group.POST("/issues/:id/apply", middleware.RequirePermission(managePermission), handler.ApplySuggestion)
+	group.POST("/issues/:id/resolve", middleware.RequirePermission(managePermission), handler.Resolve)
+	group.POST("/issues/:id/recheck", middleware.RequirePermission(managePermission), handler.Recheck)
 }

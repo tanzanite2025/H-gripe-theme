@@ -72,13 +72,13 @@
         <section class="grid gap-3 sm:grid-cols-4">
           <div class="rounded-xl border border-dashed border-border/80 p-3">
             <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">阻断项</p>
-            <p class="mt-2 text-2xl font-black" :class="report.blocking_count ? 'text-rose-600' : 'text-emerald-600'">
+ <p class="mt-2 text-2xl font-black" :class="report.blocking_count ? 'text-rose-600': 'text-emerald-600'">
               {{ report.blocking_count }}
             </p>
           </div>
           <div class="rounded-xl border border-dashed border-border/80 p-3">
             <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">警告项</p>
-            <p class="mt-2 text-2xl font-black" :class="report.warning_count ? 'text-amber-600' : 'text-emerald-600'">
+ <p class="mt-2 text-2xl font-black" :class="report.warning_count ? 'text-amber-600': 'text-emerald-600'">
               {{ report.warning_count }}
             </p>
           </div>
@@ -123,7 +123,7 @@
               :key="group.category"
               type="button"
               class="rounded-lg border border-dashed px-3 py-2 text-left transition hover:bg-muted/40"
-              :class="activeCategory === group.category ? 'border-primary/40 bg-muted/60' : 'border-border/70'"
+ :class="activeCategory === group.category ? 'border-primary/40 bg-muted/60': 'border-border/70'"
               @click="$emit('update:active-category', group.category)"
             >
               <div class="flex items-center justify-between gap-3">

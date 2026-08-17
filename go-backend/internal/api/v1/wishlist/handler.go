@@ -11,11 +11,17 @@ import (
 
 type Handler struct {
 	wishlistService *service.WishlistService
+	mediaService    *service.MediaService
 }
 
-func NewHandler(wishlistService *service.WishlistService) *Handler {
+func NewHandler(wishlistService *service.WishlistService, mediaServices ...*service.MediaService) *Handler {
+	var mediaService *service.MediaService
+	if len(mediaServices) > 0 {
+		mediaService = mediaServices[0]
+	}
 	return &Handler{
 		wishlistService: wishlistService,
+		mediaService:    mediaService,
 	}
 }
 
@@ -37,7 +43,7 @@ func (h *Handler) ListItems(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"items": publicWishlistResponses(items),
+		"items": publicWishlistResponses(items, h.mediaService),
 		"meta":  gin.H{"total": len(items)},
 	})
 }
@@ -65,7 +71,7 @@ func (h *Handler) CreateItem(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"item": publicWishlistResponse(*item)})
+	c.JSON(http.StatusCreated, gin.H{"item": publicWishlistResponse(*item, h.mediaService)})
 }
 
 func (h *Handler) DeleteItem(c *gin.Context) {

@@ -542,7 +542,7 @@ func (s *OpsConnectorService) CloudflareWrite(
 	if method != http.MethodPost && method != http.MethodPut && method != http.MethodPatch && method != http.MethodDelete {
 		return 0, fmt.Errorf("%w: Cloudflare write method is not allowed", ErrInvalidOpsConnector)
 	}
-	if !isAllowedCloudflareWritePath(path) {
+	if !isAllowedCloudflareWritePath(method, path) {
 		return 0, fmt.Errorf("%w: Cloudflare write path is not allowed", ErrInvalidOpsConnector)
 	}
 	record, err := s.repo.FindByID(id)
@@ -989,7 +989,8 @@ func defaultConnectorEndpoint(provider string) string {
 	}
 }
 
-func isAllowedCloudflareWritePath(path string) bool {
+func isAllowedCloudflareWritePath(method, path string) bool {
+	method = strings.ToUpper(strings.TrimSpace(method))
 	path = strings.TrimSpace(path)
 	if path == "" || !strings.HasPrefix(path, "/zones/") || strings.Contains(path, "..") || strings.Contains(path, "?") {
 		return false
@@ -1005,6 +1006,12 @@ func isAllowedCloudflareWritePath(path string) bool {
 		return len(segments) == 3
 	case "settings":
 		return len(segments) == 4 && segments[3] != ""
+	case "rulesets":
+		return method == http.MethodPatch &&
+			len(segments) == 6 &&
+			segments[3] != "" &&
+			segments[4] == "rules" &&
+			segments[5] != ""
 	default:
 		return false
 	}

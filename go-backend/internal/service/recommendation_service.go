@@ -61,6 +61,7 @@ type RecommendationResult struct {
 type RecommendationService struct {
 	productService *ProductService
 	eventRepo      *repository.RecommendationEventRepository
+	mediaResolver  PublicMediaURLResolver
 }
 
 type recommendationCandidateSeed struct {
@@ -86,6 +87,13 @@ func NewRecommendationService(productService *ProductService, eventRepos ...*rep
 		service.eventRepo = eventRepos[0]
 	}
 	return service
+}
+
+func (s *RecommendationService) ConfigureMediaService(mediaService *MediaService) {
+	if s == nil {
+		return
+	}
+	s.mediaResolver = mediaService
 }
 
 func (s *RecommendationService) Recommend(input RecommendationRequest) (RecommendationResult, error) {
@@ -161,7 +169,7 @@ func (s *RecommendationService) Recommend(input RecommendationRequest) (Recommen
 
 	result.Items = make([]RecommendationProduct, 0, minInt(limit, len(scored)))
 	for _, candidate := range scored {
-		result.Items = append(result.Items, makeRecommendationProduct(candidate.Product, candidate.Slot, candidate.Reason))
+		result.Items = append(result.Items, s.makeRecommendationProduct(candidate.Product, candidate.Slot, candidate.Reason))
 		if len(result.Items) >= limit {
 			break
 		}
@@ -450,7 +458,7 @@ func countRecommendationQueryMatches(tokens []string, item product.Product) int 
 	return matches
 }
 
-func makeRecommendationProduct(item product.Product, slot string, reason string) RecommendationProduct {
+func (s *RecommendationService) makeRecommendationProduct(item product.Product, slot string, reason string) RecommendationProduct {
 	price, sale := item.DisplayPrices()
 	if sale != nil {
 		price = *sale
@@ -460,7 +468,7 @@ func makeRecommendationProduct(item product.Product, slot string, reason string)
 		ProductID:  item.ID,
 		Title:      strings.TrimSpace(item.Name),
 		URL:        "/shop/" + strings.TrimSpace(item.Slug),
-		Thumbnail:  primaryRecommendationImage(item),
+		Thumbnail:  canonicalPublicMediaURL(s.mediaResolver, primaryRecommendationImage(item)),
 		PriceLabel: formatRecommendationPrice(price),
 		Slot:       normalizeRecommendationLabel(slot, "trending_available"),
 		Reason:     normalizeRecommendationLabel(reason, "popular_available"),
@@ -470,11 +478,17 @@ func makeRecommendationProduct(item product.Product, slot string, reason string)
 func primaryRecommendationImage(item product.Product) string {
 	for _, media := range item.Media {
 		if media.MediaType == "image" && media.IsVisible && media.IsPrimary && strings.TrimSpace(media.URL) != "" {
+			if thumbnail := strings.TrimSpace(media.ThumbnailURL); thumbnail != "" {
+				return thumbnail
+			}
 			return strings.TrimSpace(media.URL)
 		}
 	}
 	for _, media := range item.Media {
 		if media.MediaType == "image" && media.IsVisible && strings.TrimSpace(media.URL) != "" {
+			if thumbnail := strings.TrimSpace(media.ThumbnailURL); thumbnail != "" {
+				return thumbnail
+			}
 			return strings.TrimSpace(media.URL)
 		}
 	}

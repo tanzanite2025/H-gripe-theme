@@ -26,7 +26,14 @@ func (r *StorefrontRouteCatalogRepository) Stats() (seodomain.StorefrontRouteCat
 					)
 					OR (
 						is_alias = TRUE
-						AND last_check_status IN ('not_found', 'server_error', 'canonical_mismatch', 'error')
+						AND last_check_status IN (
+							'redirect_chain',
+							'redirect_target_mismatch',
+							'not_found',
+							'server_error',
+							'canonical_mismatch',
+							'error'
+						)
 					)
 				THEN 1 ELSE 0
 			END), 0) AS needs_attention,
@@ -40,6 +47,13 @@ func (r *StorefrontRouteCatalogRepository) Stats() (seodomain.StorefrontRouteCat
 			COALESCE(SUM(CASE WHEN last_check_status = 'error' THEN 1 ELSE 0 END), 0) AS errors,
 			COALESCE(SUM(CASE WHEN is_searchable = TRUE THEN 1 ELSE 0 END), 0) AS searchable,
 			COALESCE(SUM(CASE WHEN is_checkable = TRUE THEN 1 ELSE 0 END), 0) AS checkable,
+			COALESCE(SUM(CASE WHEN is_indexable = TRUE THEN 1 ELSE 0 END), 0) AS indexable,
+			COALESCE(SUM(CASE
+				WHEN entry_status = 'active'
+					AND is_alias = FALSE
+					AND is_indexable = TRUE
+				THEN 1 ELSE 0
+			END), 0) AS sitemap_eligible,
 			MAX(last_seen_at) AS last_synced_at,
 			COALESCE(MAX(manifest_version), '') AS manifest_version
 		`).

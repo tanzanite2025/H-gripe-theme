@@ -170,7 +170,7 @@ func (s *GoogleMerchantService) buildGoogleMerchantProductInput(offer *merchant.
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrGoogleMerchantOfferInvalid, err)
 	}
-	imageLink, err := firstGoogleMerchantImage(storefrontBaseURL, offer.Product.Media)
+	imageLink, err := firstGoogleMerchantImage(storefrontBaseURL, offer.Product.Media, s.mediaResolver)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrGoogleMerchantOfferInvalid, err)
 	}
@@ -446,13 +446,13 @@ func googleMerchantResolvePublicResourceURL(baseURL, value, label string) (strin
 	return googleMerchantPublicResourceURL(baseParsed.ResolveReference(relative).String(), label)
 }
 
-func firstGoogleMerchantImage(baseURL string, media []product.ProductMedia) (string, error) {
+func firstGoogleMerchantImage(baseURL string, media []product.ProductMedia, resolver PublicMediaURLResolver) (string, error) {
 	var fallbackErr error
 	for _, item := range media {
 		if !item.IsVisible || item.MediaType != "image" {
 			continue
 		}
-		candidate := strings.TrimSpace(item.URL)
+		candidate := canonicalPublicMediaURL(resolver, item.URL)
 		if candidate == "" {
 			continue
 		}

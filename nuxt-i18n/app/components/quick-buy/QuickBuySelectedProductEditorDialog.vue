@@ -116,11 +116,12 @@ const handleQuantityBlur = () => {
 
           <div class="quickbuy-selected-product-editor-content">
             <div class="quickbuy-selected-product-editor-product">
-              <img
+              <StorefrontImage
                 v-if="product.thumbnail"
                 :src="product.thumbnail"
                 :alt="product.title"
                 class="quickbuy-selected-product-editor-image"
+                preset="thumbnail"
               />
               <span v-else class="quickbuy-selected-product-editor-image quickbuy-selected-product-editor-image--empty">
                 <Icon name="lucide:image" class="h-6 w-6" aria-hidden="true" />

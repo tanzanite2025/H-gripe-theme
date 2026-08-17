@@ -11,7 +11,7 @@
       <div class="relative z-10 flex items-start justify-between gap-3">
         <div class="min-w-0">
           <span class="block text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">{{ metric.label }}</span>
-          <strong class="mt-1 block truncate text-2xl font-black italic tracking-tighter tabular-nums text-foreground">{{ metric.value }}</strong>
+          <strong class="mt-1 block truncate text-2xl font-black tracking-tighter tabular-nums text-foreground">{{ metric.value }}</strong>
         </div>
         <span class="flex size-9 shrink-0 items-center justify-center rounded-full" :class="metricToneClass(metric.tone)">
           <component :is="metric.icon" class="size-4" />

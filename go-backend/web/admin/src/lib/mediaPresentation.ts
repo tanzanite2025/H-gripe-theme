@@ -5,6 +5,10 @@ export interface MediaAssetLike {
   filename?: string | null
   access_url?: string | null
   url?: string | null
+  derivatives?: Array<{
+    preset?: string | null
+    url?: string | null
+  }> | null
   width?: number | string | null
   height?: number | string | null
 }
@@ -16,7 +20,13 @@ export const assetTitle = (asset?: MediaAssetLike | null): string => (
   || `媒体 #${asset?.id || '-'}`
 )
 
-export const assetAccessURL = (asset?: MediaAssetLike | null): string => asset?.access_url || asset?.url || ''
+export const assetAccessURL = (asset?: MediaAssetLike | null): string => {
+  const derivatives = Array.isArray(asset?.derivatives) ? asset.derivatives : []
+  const preferred = ['card', 'thumbnail', 'large']
+    .map((preset) => derivatives.find((item) => item?.preset === preset)?.url)
+    .find((url) => String(url || '').trim())
+  return String(preferred || asset?.access_url || asset?.url || '')
+}
 
 export const statusLabel = (status?: string | null): string => status === 'archived' ? '归档' : '启用'
 

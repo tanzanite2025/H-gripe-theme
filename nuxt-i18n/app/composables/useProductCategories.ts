@@ -1,5 +1,9 @@
 import { computed, watch } from 'vue'
 import { useI18n, useRuntimeConfig, useState } from '#imports'
+import {
+  createStorefrontMediaContext,
+  normalizeStorefrontMediaUrl,
+} from '~/utils/storefrontMedia'
 
 export interface ProductCategory {
   id: number
@@ -39,7 +43,10 @@ const createEmptyState = (): ProductCategoryState => ({
   error: null,
 })
 
-const normalizeCategory = (value: any): ProductCategory | null => {
+const normalizeCategory = (
+  value: any,
+  mediaContext: ReturnType<typeof createStorefrontMediaContext>,
+): ProductCategory | null => {
   const id = Number(value?.id)
   const slug = String(value?.slug || '').trim()
   const name = String(value?.name || '').trim()
@@ -47,7 +54,7 @@ const normalizeCategory = (value: any): ProductCategory | null => {
 
   const children = Array.isArray(value?.children)
     ? value.children
-      .map((child: any) => normalizeCategory(child))
+      .map((child: any) => normalizeCategory(child, mediaContext))
       .filter((child: ProductCategory | null): child is ProductCategory => Boolean(child))
     : []
 
@@ -59,7 +66,7 @@ const normalizeCategory = (value: any): ProductCategory | null => {
     name,
     slug,
     description: String(value?.description || '').trim(),
-    imageUrl: String(value?.image_url || '').trim(),
+    imageUrl: normalizeStorefrontMediaUrl(value?.image_url, mediaContext),
     depth: Math.max(1, Number(value?.depth) || 1),
     sortOrder: Number(value?.sort_order) || 0,
     children,
@@ -78,19 +85,22 @@ const flattenCategories = (tree: ProductCategory[]): ProductCategory[] => {
   return result
 }
 
-const extractProductCategoryList = (payload: unknown): ProductCategoryList => {
+const extractProductCategoryList = (
+  payload: unknown,
+  mediaContext: ReturnType<typeof createStorefrontMediaContext>,
+): ProductCategoryList => {
   let current: any = payload
   for (let depth = 0; depth < 3; depth += 1) {
     if (!current || typeof current !== 'object') break
     if (Array.isArray(current.tree) || Array.isArray(current.flat)) {
       const tree = Array.isArray(current.tree)
         ? current.tree
-          .map((item: any) => normalizeCategory(item))
+          .map((item: any) => normalizeCategory(item, mediaContext))
           .filter((item: ProductCategory | null): item is ProductCategory => Boolean(item))
         : []
       const flat = Array.isArray(current.flat)
         ? current.flat
-          .map((item: any) => normalizeCategory(item))
+          .map((item: any) => normalizeCategory(item, mediaContext))
           .filter((item: ProductCategory | null): item is ProductCategory => Boolean(item))
         : flattenCategories(tree)
 
@@ -112,6 +122,7 @@ const extractProductCategoryList = (payload: unknown): ProductCategoryList => {
 
 export const useProductCategories = () => {
   const config = useRuntimeConfig()
+  const mediaContext = createStorefrontMediaContext(config)
   const { locale } = useI18n()
   const stateStore = useState<ProductCategoryStateStore>('product-categories-by-locale', () => ({}))
   const publicBaseURL = computed(() => (
@@ -149,7 +160,7 @@ export const useProductCategories = () => {
   const requestCategories = async (requestLocale: string): Promise<ProductCategoryList> => {
     const headers = requestLocale ? { 'Accept-Language': requestLocale } : undefined
     const response = await $fetch<unknown>(`${requestBaseURL.value}/products/categories`, { headers })
-    return extractProductCategoryList(response)
+    return extractProductCategoryList(response, mediaContext)
   }
 
   const waitForExistingLoad = (state: ProductCategoryState): Promise<ProductCategory[]> => (

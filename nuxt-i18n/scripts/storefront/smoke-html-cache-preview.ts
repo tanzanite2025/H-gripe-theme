@@ -2,6 +2,10 @@ import { spawn } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import {
+  collectInlineContentHashes,
+  collectResourceOrigins,
+} from '../../server/security/content-security-policy.ts'
 
 interface PurgePayload {
   ok?: boolean
@@ -26,6 +30,12 @@ const driver = String(process.env.HTML_CACHE_SMOKE_DRIVER || process.env.NUXT_HT
 const redisPrefix = process.env.HTML_CACHE_SMOKE_REDIS_PREFIX || process.env.NUXT_HTML_CACHE_PREFIX || 'commerce-platform:storefront:html-cache:smoke'
 const origin = `http://127.0.0.1:${port}`
 
+interface CachedPageResponse {
+  body: string
+  cacheControl: string
+  contentSecurityPolicy: string
+}
+
 const timeout = (ms: number): Promise<void> => new Promise((resolveTimeout) => setTimeout(resolveTimeout, ms))
 
 const fail = (message: string): void => {
@@ -46,9 +56,65 @@ const waitForReady = async (): Promise<void> => {
   throw new Error(`Nuxt preview did not become ready on ${origin}`)
 }
 
-const requestCachedPage = async (): Promise<string> => {
+const assertContentSecurityPolicy = (contentSecurityPolicy: string, body: string): void => {
+  if (!contentSecurityPolicy) {
+    throw new Error(`${targetPath} did not return a Content-Security-Policy header`)
+  }
+  if (!contentSecurityPolicy.includes("require-trusted-types-for 'script'")) {
+    throw new Error('Content-Security-Policy does not require Trusted Types for script sinks')
+  }
+  if (!contentSecurityPolicy.includes('trusted-types vue tanzanite-script-url')) {
+    throw new Error('Content-Security-Policy does not restrict Trusted Types policy names')
+  }
+  if (contentSecurityPolicy.includes("script-src 'self' 'unsafe-inline'")) {
+    throw new Error('Content-Security-Policy allows unsafe inline scripts')
+  }
+
+  const hashes = collectInlineContentHashes(body)
+  for (const hash of [...hashes.script, ...hashes.style]) {
+    if (!contentSecurityPolicy.includes(hash)) {
+      throw new Error(`Content-Security-Policy is missing the final HTML hash ${hash}`)
+    }
+  }
+
+  const directives = new Map(
+    contentSecurityPolicy
+      .split(';')
+      .map(value => value.trim())
+      .filter(Boolean)
+      .map((value) => {
+        const [name, ...sources] = value.split(/\s+/)
+        return [name, sources] as const
+      }),
+  )
+  const resourceOrigins = collectResourceOrigins(body)
+  const resourceDirectives = [
+    ['font', 'font-src'],
+    ['frame', 'frame-src'],
+    ['image', 'img-src'],
+    ['media', 'media-src'],
+    ['script', 'script-src-elem'],
+    ['style', 'style-src-elem'],
+  ] as const
+  const responseOrigin = new URL(origin).origin
+
+  for (const [resourceType, directiveName] of resourceDirectives) {
+    const sources = directives.get(directiveName) || directives.get('default-src') || []
+    for (const resourceOrigin of resourceOrigins[resourceType]) {
+      const allowedBySelf = sources.includes("'self'") && resourceOrigin === responseOrigin
+      if (!allowedBySelf && !sources.includes(resourceOrigin)) {
+        throw new Error(
+          `Content-Security-Policy ${directiveName} does not allow final HTML ${resourceType} origin ${resourceOrigin}`,
+        )
+      }
+    }
+  }
+}
+
+const requestCachedPage = async (): Promise<CachedPageResponse> => {
   const response = await fetch(`${origin}${targetPath}`)
   const cacheControl = response.headers.get('cache-control') || ''
+  const contentSecurityPolicy = response.headers.get('content-security-policy') || ''
   const body = await response.text()
 
   if (response.status !== 200) {
@@ -60,8 +126,13 @@ const requestCachedPage = async (): Promise<string> => {
   if (!body.trim()) {
     throw new Error(`${targetPath} returned an empty body`)
   }
+  assertContentSecurityPolicy(contentSecurityPolicy, body)
 
-  return cacheControl
+  return {
+    body,
+    cacheControl,
+    contentSecurityPolicy,
+  }
 }
 
 const purge = async (): Promise<VerifiedPurgePayload> => {
@@ -152,10 +223,14 @@ if (!existsSync(serverEntry)) {
 
   try {
     await waitForReady()
-    const cacheControl = await requestCachedPage()
+    const firstResponse = await requestCachedPage()
+    const cachedResponse = await requestCachedPage()
+    if (cachedResponse.contentSecurityPolicy !== firstResponse.contentSecurityPolicy) {
+      throw new Error('Cached HTML response did not retain the CSP bound to its body')
+    }
     const payload = await purge()
     assertRuntimeLogs(logs)
-    console.log(`[html-cache-smoke] OK: driver=${driver}, ${targetPath} cache-control="${cacheControl}", purgedKeys=${payload.purgedKeys}`)
+    console.log(`[html-cache-smoke] OK: driver=${driver}, ${targetPath} cache-control="${firstResponse.cacheControl}", purgedKeys=${payload.purgedKeys}`)
   } catch (error: unknown) {
     fail(error instanceof Error ? error.message : String(error))
     if (logs.length > 0) {

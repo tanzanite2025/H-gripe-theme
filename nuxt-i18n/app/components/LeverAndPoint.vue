@@ -43,7 +43,7 @@
         >
           <div class="wa-drawer-backdrop" @click="closePrivacy"></div>
           <div class="relative z-10 pointer-events-none w-full max-w-[1400px]">
-            <PrivacyStatementModal class="pointer-events-auto" @close="closePrivacy" />
+            <LazyPrivacyStatementModal class="pointer-events-auto" @close="closePrivacy" />
           </div>
         </div>
       </Transition>
@@ -55,7 +55,6 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, onBeforeUnmount } from 'vue'
 import { useI18n, useLocalePath } from '#imports'
-import PrivacyStatementModal from '~/components/PrivacyStatementModal.vue'
 import MembershipAndPointsTabs from '~/components/MembershipAndPointsTabs.vue'
 import { setSidebarHandlesHidden } from '~/utils/sidebarHandles'
 
@@ -100,7 +99,13 @@ const handleMemberCenter = (): void => {
 }
 </script>
 
+<style src="~/assets/css/components/whatsapp-mobile-drawer.css"></style>
+
 <style scoped>
+.membership-and-points-modal-card {
+  background-color: var(--tz-card-surface);
+}
+
 /* 自定义滚动条样式 */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;

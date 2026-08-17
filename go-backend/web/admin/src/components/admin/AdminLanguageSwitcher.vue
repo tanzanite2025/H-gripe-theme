@@ -9,7 +9,7 @@
       :key="option.value"
       type="button"
       class="min-w-9 rounded-full px-2 py-1 text-[10px] font-black transition-colors"
-      :class="locale === option.value ? 'bg-foreground text-background' : 'text-muted-foreground hover:bg-muted hover:text-foreground'"
+ :class="locale === option.value ? 'bg-foreground text-background': 'text-muted-foreground hover:bg-muted hover:text-foreground'"
       :aria-label="option.value === 'zh-CN' ? t('language.switchToChinese') : t('language.switchToEnglish')"
       :aria-pressed="locale === option.value"
       @click="setLocale(option.value)"

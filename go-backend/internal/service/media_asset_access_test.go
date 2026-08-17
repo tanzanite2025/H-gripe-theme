@@ -29,7 +29,47 @@ func TestCanonicalPublicImageUploadURLAcceptsMatchingPublicImageAsset(t *testing
 
 	got, err := service.CanonicalPublicImageUploadURL("https://media.example.test/uploads/2026/08/02/photo.jpg?cache=1")
 	require.NoError(t, err)
-	require.Equal(t, "https://media.example.test/uploads/2026/08/02/photo.jpg", got)
+	require.Equal(t, "/uploads/2026/08/02/photo.jpg", got)
+}
+
+func TestCanonicalPublicMediaURLRebuildsFirstPartyUploadURLOnStorefrontOrigin(t *testing.T) {
+	service := NewMediaService(nil, nil, nil, "https://shop.example.test/", 20<<30)
+
+	require.Equal(
+		t,
+		"https://shop.example.test/uploads/2026/08/02/photo.jpg?width=1200",
+		service.CanonicalPublicMediaURL("http://media.internal:8080/uploads/2026/08/02/photo.jpg?width=1200"),
+	)
+	require.Equal(t, "https://cdn.example.test/images/photo.jpg", service.CanonicalPublicMediaURL("https://cdn.example.test/images/photo.jpg"))
+}
+
+func TestCanonicalPublicMediaURLFallsBackToRelativeUploadPath(t *testing.T) {
+	service := NewMediaService(nil, nil, nil, "", 20<<30)
+
+	require.Equal(t, "/uploads/photo.jpg", service.CanonicalPublicMediaURL("/uploads/photo.jpg"))
+	require.Equal(t, "/uploads/photo.jpg", service.CanonicalPublicMediaURL("uploads/photo.jpg"))
+}
+
+func TestPublicMediaDimensionsReturnsKnownUploadAssetSize(t *testing.T) {
+	service := newMediaAssetAccessTestService(t, media.MediaAsset{
+		Filename:         "logo.webp",
+		URL:              "https://media.example.test/uploads/site/logo.webp",
+		StorageKey:       "site/logo.webp",
+		MimeType:         "image/webp",
+		MediaType:        "image",
+		UploaderID:       42,
+		Status:           "active",
+		Visibility:       "public",
+		OriginalFilename: "logo.webp",
+		Width:            320,
+		Height:           80,
+	})
+
+	width, height, ok := service.PublicMediaDimensions("https://shop.example.test/uploads/site/logo.webp?cache=1")
+
+	require.True(t, ok)
+	require.Equal(t, 320, width)
+	require.Equal(t, 80, height)
 }
 
 func TestCanonicalPublicImageUploadURLRejectsUntrustedHost(t *testing.T) {

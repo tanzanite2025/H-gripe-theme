@@ -101,7 +101,7 @@
   </div>
   
   <!-- Quick Buy entry popover from Dock -->
-  <QuickBuyEntryRouterPopover
+  <LazyQuickBuyEntryRouterPopover
     v-if="quickOpen"
     :config="quickBuyConfig"
     :anchor="quickBuyAnchorRef"
@@ -112,7 +112,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, watchEffect } from 'vue'
 import { useI18n } from '#imports'
-import QuickBuyEntryRouterPopover from '@/components/quick-buy/QuickBuyEntryRouterPopover.vue'
 import { useChatWidget } from '~/composables/useChatWidget'
 import { useQuickBuyFlow } from '~/composables/useQuickBuyFlow'
 

@@ -11,10 +11,18 @@ import (
 
 type MediaHandler struct {
 	mediaService *service.MediaService
+	auditService adminAuditRecorder
 }
 
 func NewMediaHandler(mediaService *service.MediaService) *MediaHandler {
 	return &MediaHandler{mediaService: mediaService}
+}
+
+func (h *MediaHandler) ConfigureAuditService(recorder adminAuditRecorder) {
+	if h == nil {
+		return
+	}
+	h.auditService = recorder
 }
 
 func parseMediaAssetID(c *gin.Context) (uint, bool) {

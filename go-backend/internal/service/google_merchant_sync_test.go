@@ -161,6 +161,46 @@ func TestBuildGoogleMerchantProductInputResolvesRelativeImageAndLocaleURL(t *tes
 	}
 }
 
+func TestBuildGoogleMerchantProductInputCanonicalizesFirstPartyImage(t *testing.T) {
+	identifierExists := false
+	offer := &merchant.GoogleMerchantOffer{
+		OfferID:               "tz-internal-image",
+		Brand:                 "Commerce Platform",
+		Condition:             "new",
+		GoogleProductCategory: "Sporting Goods",
+		IdentifierExists:      &identifierExists,
+		ContentLanguage:       "en",
+		FeedLabel:             "US",
+		CurrencyCode:          "USD",
+		Product: &product.Product{
+			Name:        "Internal image source",
+			Slug:        "internal-image-source",
+			Description: "Canonical image source.",
+			Media: []product.ProductMedia{{
+				MediaType: "image",
+				URL:       "http://media.internal:8080/uploads/products/wheel.webp?width=1200",
+				IsVisible: true,
+			}},
+		},
+		Variant: &product.ProductVariant{
+			ID:       702,
+			Price:    999.99,
+			Stock:    5,
+			IsActive: true,
+		},
+	}
+	service := &GoogleMerchantService{}
+	service.ConfigureMediaService(NewMediaService(nil, nil, nil, "https://shop.example.test", 20<<30))
+
+	input, err := service.buildGoogleMerchantProductInput(offer, "https://example.com")
+	if err != nil {
+		t.Fatalf("buildGoogleMerchantProductInput() error = %v", err)
+	}
+	if input.ProductAttributes.ImageLink != "https://shop.example.test/uploads/products/wheel.webp?width=1200" {
+		t.Fatalf("image link = %q", input.ProductAttributes.ImageLink)
+	}
+}
+
 func TestGoogleMerchantProductURLRejectsLocalOrInvalidBase(t *testing.T) {
 	tests := []string{"", "not-a-url", "ftp://example.com", "https://localhost", "https://example.com?preview=true"}
 	for _, input := range tests {

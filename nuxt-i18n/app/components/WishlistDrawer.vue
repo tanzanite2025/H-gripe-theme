@@ -93,11 +93,12 @@
                 :key="item.id"
                 class="border border-white/10 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] transition-colors overflow-hidden flex flex-col"
               >
-                <img
+                <StorefrontImage
                   v-if="item.product?.thumbnail"
                   :src="item.product.thumbnail"
                   :alt="item.product?.name || t('wishlistDrawer.productImageAlt')"
                   class="w-full h-32 object-cover"
+                  preset="card"
                 />
                 <div class="px-3 pt-2 pb-3 flex-1 flex flex-col">
                   <div class="text-sm font-semibold text-white truncate">
@@ -191,6 +192,8 @@ const handleRemove = async (id: number) => {
   await removeFromWishlist(id)
 }
 </script>
+
+<style src="~/assets/css/components/whatsapp-mobile-drawer.css"></style>
 
 <style scoped>
 /* Scoped styles removed in favor of global .wa-drawer classes */

@@ -26,7 +26,7 @@
       <div class="account-cart-list">
         <article v-for="item in cartItems" :key="item.id" class="account-cart-item">
           <div class="account-cart-item__image">
-            <img v-if="cartImage(item)" :src="cartImage(item)" :alt="item.title" loading="lazy" />
+            <StorefrontImage v-if="cartImage(item)" :src="cartImage(item)" :alt="item.title" preset="thumbnail" />
             <Icon v-else name="lucide:image" />
           </div>
           <div class="account-cart-item__body">

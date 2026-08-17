@@ -10,7 +10,7 @@
           导出订单
         </Button>
         <Button v-else variant="outline" :disabled="disputeLoading" @click="fetchOrderDisputes">
-          <RefreshCw :class="['size-4', disputeLoading ? 'animate-spin' : '']" />
+ <RefreshCw :class="['size-4', disputeLoading ? 'animate-spin': '']" />
           刷新拒付
         </Button>
       </template>

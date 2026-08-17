@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import ProductRatingCompact from '~/components/shop/ProductRatingCompact.vue'
-import type { ShopProduct } from '~/composables/useShopProducts'
+import { resolveShopProductImage, type ShopProduct } from '~/composables/useShopProducts'
 
 type ShopProductDisplayCardDensity = 'catalog' | 'quick-buy'
 
@@ -48,6 +49,8 @@ const handleDetailsClick = () => {
 const handleWishlistClick = () => {
   emit('wishlist', props.product)
 }
+
+const productImageSrc = computed(() => resolveShopProductImage(props.product, 'card'))
 </script>
 
 <template>
@@ -77,11 +80,11 @@ const handleWishlistClick = () => {
       </span>
 
       <div class="shop-product-display-card__image">
-        <img
-          v-if="product.thumbnail"
-          :src="product.thumbnail"
+        <StorefrontImage
+          v-if="productImageSrc"
+          :src="productImageSrc"
           :alt="product.title"
-          loading="lazy"
+          preset="card"
         />
         <span v-else class="shop-product-display-card__image-empty">
           <Icon name="lucide:package" class="h-7 w-7" aria-hidden="true" />

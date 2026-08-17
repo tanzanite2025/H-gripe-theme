@@ -51,11 +51,12 @@
             >
               <!-- 商品图片 -->
               <div class="w-20 h-20 flex-shrink-0 bg-white/[0.06] rounded-lg overflow-hidden border border-white">
-                <img
+                <StorefrontImage
                   v-if="item.thumbnail"
                   :src="item.thumbnail"
                   :alt="item.title"
                   class="w-full h-full object-cover"
+                  preset="thumbnail"
                 />
               <div v-else class="w-full h-full flex items-center justify-center tz-text-muted">
                   <Icon name="lucide:image" class="w-8 h-8" />
@@ -492,6 +493,8 @@ onMounted(() => {
   void prepareStripeExpressCheckout()
 })
 </script>
+
+<style src="~/assets/css/components/whatsapp-mobile-drawer.css"></style>
 
 <style scoped>
 .cart-drawer-shell {

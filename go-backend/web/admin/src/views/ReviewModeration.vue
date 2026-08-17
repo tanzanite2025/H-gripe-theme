@@ -64,7 +64,7 @@
               v-for="item in reviews"
               :key="item.id"
               class="cursor-pointer"
-              :class="selected?.id === item.id ? 'bg-primary/5' : ''"
+ :class="selected?.id === item.id ? 'bg-primary/5': ''"
               @click="selectReview(item)"
             >
               <TableCell class="font-mono text-xs">#{{ item.id }}</TableCell>
@@ -73,21 +73,21 @@
                   <Star
                     v-for="star in 5"
                     :key="star"
-                    :class="['size-3', star <= item.rating ? 'fill-current' : 'text-muted-foreground/30']"
+ :class="['size-3', star <= item.rating ? 'fill-current': 'text-muted-foreground/30']"
                   />
                 </div>
               </TableCell>
               <TableCell>
-                <p class="truncate text-xs font-semibold">{{ item.product?.name || '商品已删除' }}</p>
-                <p class="font-mono text-[10px] text-muted-foreground">{{ item.product?.sku || '-' }}</p>
+ <p class="truncate text-xs font-semibold">{{ item.product?.name || '商品已删除'}}</p>
+ <p class="font-mono text-[10px] text-muted-foreground">{{ item.product?.sku || '-'}}</p>
               </TableCell>
               <TableCell>
-                <p class="truncate text-xs font-semibold">{{ item.user?.display_name || '未知用户' }}</p>
-                <p class="truncate text-[10px] text-muted-foreground">{{ item.user?.email || '-' }}</p>
+ <p class="truncate text-xs font-semibold">{{ item.user?.display_name || '未知用户'}}</p>
+ <p class="truncate text-[10px] text-muted-foreground">{{ item.user?.email || '-'}}</p>
               </TableCell>
               <TableCell>
-                <p class="truncate text-xs font-semibold">{{ item.title || '无标题' }}</p>
-                <p class="max-w-[300px] truncate text-xs text-muted-foreground">{{ item.content || '无内容' }}</p>
+ <p class="truncate text-xs font-semibold">{{ item.title || '无标题'}}</p>
+ <p class="max-w-[300px] truncate text-xs text-muted-foreground">{{ item.content || '无内容'}}</p>
               </TableCell>
               <TableCell>
                 <Badge :variant="statusBadgeVariant(item.status)">
@@ -118,7 +118,7 @@
           <div class="flex items-start justify-between gap-3">
             <div class="min-w-0">
               <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">REVIEW #{{ selected.id }}</p>
-              <h2 class="mt-1 truncate text-base font-black">{{ selected.title || '无标题评价' }}</h2>
+ <h2 class="mt-1 truncate text-base font-black">{{ selected.title || '无标题评价'}}</h2>
             </div>
             <Badge :variant="statusBadgeVariant(selected.status)">
               {{ statusLabel(selected.status) }}
@@ -128,13 +128,13 @@
           <div class="grid grid-cols-2 gap-2 text-xs">
             <div class="rounded-xl bg-muted/40 p-3">
               <p class="font-black uppercase text-muted-foreground">商品</p>
-              <p class="mt-1 truncate">{{ selected.product?.name || '商品已删除' }}</p>
-              <p class="font-mono text-[10px] text-muted-foreground">{{ selected.product?.sku || '-' }}</p>
+ <p class="mt-1 truncate">{{ selected.product?.name || '商品已删除'}}</p>
+ <p class="font-mono text-[10px] text-muted-foreground">{{ selected.product?.sku || '-'}}</p>
             </div>
             <div class="rounded-xl bg-muted/40 p-3">
               <p class="font-black uppercase text-muted-foreground">用户</p>
-              <p class="mt-1 truncate">{{ selected.user?.display_name || '未知用户' }}</p>
-              <p class="truncate text-[10px] text-muted-foreground">{{ selected.user?.email || '-' }}</p>
+ <p class="mt-1 truncate">{{ selected.user?.display_name || '未知用户'}}</p>
+ <p class="truncate text-[10px] text-muted-foreground">{{ selected.user?.email || '-'}}</p>
             </div>
           </div>
 
@@ -142,13 +142,13 @@
             <Star
               v-for="star in 5"
               :key="star"
-              :class="['size-4', star <= selected.rating ? 'fill-current' : 'text-muted-foreground/30']"
+ :class="['size-4', star <= selected.rating ? 'fill-current': 'text-muted-foreground/30']"
             />
             <span class="ml-1 text-xs font-semibold text-foreground">{{ selected.rating }}/5</span>
           </div>
 
           <div class="space-y-2 text-sm">
-            <p class="whitespace-pre-wrap leading-6">{{ selected.content || '无评价内容' }}</p>
+ <p class="whitespace-pre-wrap leading-6">{{ selected.content || '无评价内容'}}</p>
             <div v-if="selected.pros" class="border-l-2 border-emerald-500/50 pl-3 text-xs text-muted-foreground">
               优点：{{ selected.pros }}
             </div>

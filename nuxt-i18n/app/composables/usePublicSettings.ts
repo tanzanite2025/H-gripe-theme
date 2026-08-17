@@ -1,6 +1,10 @@
 import { computed } from 'vue'
-import { useAsyncData } from '#imports'
+import { useAsyncData, useRuntimeConfig } from '#imports'
 import { usePublicApiBase } from '~/composables/usePublicApiBase'
+import {
+  createStorefrontMediaContext,
+  normalizeStorefrontMediaUrl,
+} from '~/utils/storefrontMedia'
 
 export interface RuntimeSocialLink {
   network: string
@@ -17,6 +21,8 @@ export interface SiteSettingsResponse {
   brandTitle?: string
   siteDescription?: string
   siteLogo?: string
+  siteLogoWidth?: number
+  siteLogoHeight?: number
   siteFavicon?: string
   contactEmail?: string
   contactPhone?: string
@@ -29,6 +35,11 @@ const asString = (value: unknown) => {
   if (typeof value === 'string') return value
   if (value === null || value === undefined) return ''
   return String(value)
+}
+
+const asPositiveInt = (value: unknown) => {
+  const parsed = Number(value)
+  return Number.isFinite(parsed) && parsed > 0 ? Math.round(parsed) : undefined
 }
 
 const parseArray = (value: unknown) => {
@@ -62,18 +73,29 @@ export const normalizeRuntimeSocialLinks = (value: unknown): ApiSocialLink[] => 
     })
 }
 
-const normalizeSiteSettings = (raw: RawSettings): SiteSettingsResponse => {
+const normalizeSiteSettings = (
+  raw: RawSettings,
+  mediaContext: ReturnType<typeof createStorefrontMediaContext>,
+): SiteSettingsResponse => {
   const brandTitle = asString(raw.brandTitle ?? raw.brand_title)
   const legacySiteTitle = asString(raw.siteTitle ?? raw.site_name)
   const siteTitle = brandTitle || legacySiteTitle
-  const siteLogo = asString(raw.siteLogo ?? raw.site_logo).trim()
-  const siteFavicon = asString(raw.siteFavicon ?? raw.site_favicon).trim()
+  const siteLogo = normalizeStorefrontMediaUrl(
+    asString(raw.siteLogo ?? raw.site_logo).trim(),
+    mediaContext,
+  )
+  const siteFavicon = normalizeStorefrontMediaUrl(
+    asString(raw.siteFavicon ?? raw.site_favicon).trim(),
+    mediaContext,
+  )
 
   return {
     siteTitle,
     brandTitle: brandTitle || siteTitle,
     siteDescription: asString(raw.siteDescription ?? raw.site_description),
     siteLogo: siteLogo === '/images/logo.png' ? '' : siteLogo,
+    siteLogoWidth: asPositiveInt(raw.siteLogoWidth ?? raw.site_logo_width),
+    siteLogoHeight: asPositiveInt(raw.siteLogoHeight ?? raw.site_logo_height),
     siteFavicon,
     contactEmail: asString(raw.contactEmail ?? raw.contact_email),
     contactPhone: asString(raw.contactPhone ?? raw.contact_phone),
@@ -82,7 +104,9 @@ const normalizeSiteSettings = (raw: RawSettings): SiteSettingsResponse => {
 }
 
 export function useSiteSettings() {
+  const runtimeConfig = useRuntimeConfig()
   const apiBase = usePublicApiBase()
+  const mediaContext = createStorefrontMediaContext(runtimeConfig)
 
   const { data } = useAsyncData<SiteSettingsResponse | null>(
     'mytheme-site-settings',
@@ -92,7 +116,7 @@ export function useSiteSettings() {
         const result = await $fetch<RawSettings>(`${apiBase.value}/settings/site`, {
           headers: { accept: 'application/json' }
         })
-        return result ? normalizeSiteSettings(result) : null
+        return result ? normalizeSiteSettings(result, mediaContext) : null
       } catch (error) {
         console.warn('Failed to load site settings:', error)
         return null

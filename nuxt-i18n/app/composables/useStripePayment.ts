@@ -2,6 +2,7 @@ import { loadStripe, type Stripe, type StripeElements, type StripePaymentElement
 import { shallowRef } from 'vue'
 import { useI18n } from '#imports'
 import { storefrontFontFamilyForLocale, storefrontFontStylesheetUrl } from '~/utils/storefrontFonts'
+import { loadStripeScript } from '~/utils/security/trustedScriptUrl'
 
 export interface StripePaymentSession {
   clientSecret: string
@@ -33,6 +34,7 @@ export function useStripePayment() {
 
     destroy()
 
+    await loadStripeScript()
     const loadedStripe = await loadStripe(session.publishableKey)
     if (!loadedStripe) {
       throw new Error('Unable to load Stripe')

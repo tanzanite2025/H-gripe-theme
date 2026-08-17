@@ -5,12 +5,12 @@
         <div class="product-media-layout">
           <div class="product-media-stage">
             <figure v-if="previewMedia?.kind === 'image'" class="product-media-frame">
-              <NuxtImg
+              <StorefrontImage
                 :src="previewMedia.url"
                 :alt="previewMedia.alt"
+                preset="gallery"
                 loading="eager"
                 fetchpriority="high"
-                format="webp"
               />
             </figure>
             <figure v-else-if="previewMedia?.kind === 'video'" class="product-media-frame product-media-frame--video">
@@ -61,12 +61,11 @@
                 :aria-pressed="selectedMediaId === media.id"
                 @click="selectMedia(media.id)"
               >
-                <NuxtImg
+                <StorefrontImage
                   v-if="media.thumbnailUrl"
                   :src="media.thumbnailUrl"
                   :alt="media.alt"
-                  loading="lazy"
-                  format="webp"
+                  preset="thumbnail"
                 />
                 <span v-else class="product-media-thumbnail__placeholder">
                   <Icon
@@ -89,7 +88,11 @@
       </section>
       <div class="product-summary">
         <h1 class="product-title">{{ product.name }}</h1>
-        <p v-if="product.short_description" class="product-description" v-html="product.short_description" />
+        <SafeRichText
+          v-if="product.short_description"
+          class="product-description"
+          :html="product.short_description"
+        />
         <p v-else-if="productSummaryDescription" class="product-description">{{ productSummaryDescription }}</p>
         <div class="product-meta" aria-live="polite" aria-atomic="true">
           <span v-if="formattedPrice" class="product-price">{{ formattedPrice }}</span>
@@ -125,7 +128,7 @@
                     :style="option.swatchUrl ? undefined : option.colorHex ? { backgroundColor: option.colorHex } : undefined"
                     aria-hidden="true"
                   >
-                    <NuxtImg v-if="option.swatchUrl" :src="option.swatchUrl" :alt="option.label" loading="lazy" format="webp" />
+                    <StorefrontImage v-if="option.swatchUrl" :src="option.swatchUrl" :alt="option.label" preset="swatch" />
                   </span>
                   <span class="variant-option-button__label">{{ option.label }}</span>
                   <small v-if="!option.available" class="variant-option-button__status">Out</small>
@@ -212,6 +215,8 @@
                   :key="logo.src"
                   :src="logo.src"
                   :alt="logo.alt"
+                  :width="logo.width"
+                  :height="logo.height"
                   :class="logo.className"
                   loading="lazy"
                 />
@@ -384,6 +389,10 @@ import {
   type StorefrontSeoAlternateLinkEntry,
   useStorefrontSeoRouteOverride,
 } from '~/composables/seo/useStorefrontSeoLinks'
+import {
+  createStorefrontMediaContext,
+  normalizeStorefrontProductMedia,
+} from '~/utils/storefrontMedia'
 
 definePageMeta({
   layout: 'products',
@@ -569,6 +578,7 @@ interface GoProduct {
 
 const route = useRoute()
 const config = useRuntimeConfig()
+const mediaContext = createStorefrontMediaContext(config)
 const requestUrl = useRequestURL()
 const { siteSettings } = useSiteSettings()
 const { locale, t } = useI18n()
@@ -654,7 +664,7 @@ const { data: product, pending } = await useAsyncData<GoProduct>(
         statusMessage: 'Product not found',
       })
     }
-    return data as GoProduct
+    return normalizeStorefrontProductMedia(data as GoProduct, mediaContext)
   },
   {
     server: true,
@@ -1355,7 +1365,9 @@ const productPaymentDescription = (option: CheckoutPaymentOption) => {
 
 const productPaymentLogos = (option: CheckoutPaymentOption): PaymentLogoAsset[] => {
   const method = productPaymentMethod(option)
-  return method ? paymentPresentation(method).logos : [{ src: '/icons/payment/default.svg', alt: productPaymentTitle(option) }]
+  return method
+    ? paymentPresentation(method).logos
+    : [{ src: '/icons/payment/default.svg', alt: productPaymentTitle(option), width: 750, height: 471 }]
 }
 
 const isProductPaymentAvailable = isPaymentOptionAvailable
@@ -1855,6 +1867,10 @@ const productSeoDocument = computed(() => {
     {
       siteOrigin: siteOrigin.value,
       localizedPath: localizedProductPath.value,
+      mediaOrigins: [
+        String((config as { apiInternalOrigin?: string }).apiInternalOrigin || ''),
+        String((config as { imageInternalOrigin?: string }).imageInternalOrigin || ''),
+      ],
     },
   )
 })

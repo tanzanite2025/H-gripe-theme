@@ -3,7 +3,7 @@
     <div class="rounded-[24px] border border-dashed bg-card p-4">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 class="text-sm font-black tracking-tighter italic uppercase">30 天内到期</h2>
+          <h2 class="text-sm font-black tracking-tighter uppercase">30 天内到期</h2>
           <p class="mt-1 text-xs text-muted-foreground">从后端 `/registrations/expiring` 读取，不在前端重新推算。</p>
         </div>
         <AdminStatusBadge tone="amber">{{ expiring.length }} 条</AdminStatusBadge>
@@ -30,7 +30,7 @@
           </TableEmpty>
           <TableRow v-for="item in expiring" :key="item.id">
             <TableCell>{{ productName(item.product) }}</TableCell>
-            <TableCell class="font-mono text-xs font-bold">{{ item.serial_number || '-' }}</TableCell>
+ <TableCell class="font-mono text-xs font-bold">{{ item.serial_number || '-'}}</TableCell>
             <TableCell>{{ userName(item.user) }}</TableCell>
             <TableCell>{{ formatDate(item.warranty_expires) }}</TableCell>
             <TableCell>

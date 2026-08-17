@@ -1,7 +1,7 @@
 <template>
   <div
     class="product-category-tree-row grid gap-3 px-4 py-3"
-    :class="row.is_new || row.dirty ? 'bg-amber-50/60' : ''"
+ :class="row.is_new || row.dirty ? 'bg-amber-50/60': ''"
   >
     <div class="flex min-w-0 items-center gap-2" :style="{ paddingLeft: `${Math.max(row.depth - 1, 0) * 24}px` }">
       <CornerDownRight v-if="row.depth > 1" class="size-4 shrink-0 text-muted-foreground" />
@@ -68,7 +68,7 @@
       </span>
       <span
         class="text-[11px] font-medium"
-        :class="translationMissingCount(row) ? 'text-amber-600' : 'text-emerald-600'"
+ :class="translationMissingCount(row) ? 'text-amber-600': 'text-emerald-600'"
       >
         {{ translationStatusLabel(row) }}
       </span>

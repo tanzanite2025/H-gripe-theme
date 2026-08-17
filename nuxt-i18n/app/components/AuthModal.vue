@@ -459,6 +459,8 @@ const handleCompletionCta = async () => {
 }
 </script>
 
+<style src="~/assets/css/components/whatsapp-mobile-drawer.css"></style>
+
 <style scoped>
 /* Standard styles for non-embedded mode */
 .auth-modal-shell {

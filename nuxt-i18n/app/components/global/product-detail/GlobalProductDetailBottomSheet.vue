@@ -62,11 +62,14 @@
               <div v-else-if="product" class="global-product-detail-bottom-sheet-layout">
                 <section class="global-product-detail-bottom-sheet-media-section" :aria-label="t('products.detail.media', 'Product media')">
                   <div class="global-product-detail-bottom-sheet-media-stage">
-                    <img
+                    <StorefrontImage
                       v-if="selectedMedia?.kind === 'image'"
                       :src="selectedMedia.url"
                       :alt="selectedMedia.alt"
                       class="global-product-detail-bottom-sheet-media-image"
+                      preset="gallery"
+                      loading="eager"
+                      fetchpriority="high"
                     />
                     <video
                       v-else-if="selectedMedia?.kind === 'video'"
@@ -114,11 +117,11 @@
                       :aria-pressed="media.id === selectedMediaId"
                       @click="selectGlobalProductDetailBottomSheetMedia(media.id)"
                     >
-                      <img
+                      <StorefrontImage
                         v-if="media.thumbnailUrl"
                         :src="media.thumbnailUrl"
                         :alt="media.alt"
-                        loading="lazy"
+                        preset="thumbnail"
                       />
                       <span v-else class="global-product-detail-bottom-sheet-media-thumbnail-placeholder">
                         <Icon :name="media.kind === 'video' ? 'lucide:video' : 'lucide:image'" class="h-4 w-4" aria-hidden="true" />
@@ -145,8 +148,14 @@
                     v-if="rawProduct?.short_description || rawProduct?.description || product.description"
                     class="global-product-detail-bottom-sheet-description"
                   >
-                    <p v-if="rawProduct?.short_description" v-html="rawProduct.short_description"></p>
-                    <p v-else v-html="rawProduct?.description || product.description"></p>
+                    <SafeRichText
+                      v-if="rawProduct?.short_description"
+                      :html="rawProduct.short_description"
+                    />
+                    <SafeRichText
+                      v-else
+                      :html="rawProduct?.description || product.description"
+                    />
                   </div>
 
                   <div v-if="variantOptionGroups.length" class="global-product-detail-bottom-sheet-variant-groups">
@@ -318,6 +327,10 @@ import {
 } from '~/composables/useShopProducts'
 import { useCart } from '~/composables/useCart'
 import ProductReviewsSection from '~/components/shop/ProductReviewsSection.vue'
+import {
+  createStorefrontMediaContext,
+  normalizeStorefrontProductMedia,
+} from '~/utils/storefrontMedia'
 
 interface RawProductMedia {
   id?: number | string
@@ -416,6 +429,7 @@ interface VariantOptionGroup {
 
 const { t, locale } = useI18n()
 const config = useRuntimeConfig()
+const mediaContext = createStorefrontMediaContext(config)
 const { displayCurrency, countryCode } = useStorefrontContext()
 const { addToCart, openCart, openCheckout } = useCart()
 const { toCartItem } = useShopProducts()
@@ -474,8 +488,9 @@ const fetchGlobalProductDetailBottomSheetProduct = async () => {
       throw new Error(t('products.detail.notFound', 'Product not found'))
     }
 
-    rawProduct.value = data
-    product.value = normalizeShopProduct(data)
+    const normalizedData = normalizeStorefrontProductMedia(data, mediaContext)
+    rawProduct.value = normalizedData
+    product.value = normalizeShopProduct(normalizedData, 'USD', mediaContext)
     selectedQuantity.value = 1
     selectedVariantId.value = resolveInitialGlobalProductDetailBottomSheetVariantId(product.value)
     selectedMediaId.value = resolveInitialGlobalProductDetailBottomSheetMediaId(data)

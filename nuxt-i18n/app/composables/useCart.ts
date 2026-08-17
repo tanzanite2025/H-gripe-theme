@@ -1,9 +1,15 @@
 import { ref, computed, watch } from 'vue'
+import { useRuntimeConfig } from '#imports'
 import type { CartItem } from '~~/types/cart'
 import { useAuth } from '~/composables/useAuth'
 import { useCartCalculation } from '~/composables/useCartCalculation'
 import { useBehaviorEvents } from '~/composables/useBehaviorEvents'
 import { useOverlayBackStack } from '~/composables/useOverlayBackStack'
+import { isExpectedAnonymousApiMiss, logUnexpectedApiError } from '~/utils/storefrontApiFailures'
+import {
+  createStorefrontMediaContext,
+  normalizeStorefrontMediaUrl,
+} from '~/utils/storefrontMedia'
 
 export interface ShippingAddress {
   name: string
@@ -24,6 +30,7 @@ const shippingAddress = ref<ShippingAddress | null>(null)
 const isLoadingCart = ref(false)
 
 let eventListenersAdded = false
+let cartBackendLoaded = false
 
 const cartItemKey = (productId: number, variantId?: number | null) => variantId || productId
 
@@ -50,7 +57,10 @@ const extractCartSummaryItems = (payload: unknown): unknown[] => {
   return []
 }
 
-const resolveProductThumbnail = (product: any): string => {
+const resolveProductThumbnail = (
+  product: any,
+  mediaContext: ReturnType<typeof createStorefrontMediaContext>,
+): string => {
   const media = Array.isArray(product?.media) ? product.media : []
   const imageMedia = media.filter((item: any) => {
     return item?.media_type === 'image' && item?.url && item?.is_visible !== false
@@ -58,16 +68,31 @@ const resolveProductThumbnail = (product: any): string => {
   const primaryImage =
     imageMedia.find((item: any) => item?.is_primary || item?.role === 'primary') ||
     imageMedia[0]
+  const imageVariants: Record<string, any> = primaryImage?.image_variants && typeof primaryImage.image_variants === 'object'
+    ? primaryImage.image_variants
+    : {}
 
-  return product?.thumbnail || product?.featured_image || primaryImage?.url || ''
+  return normalizeStorefrontMediaUrl(
+    product?.thumbnail ||
+      product?.featured_image ||
+      imageVariants.thumbnail?.url ||
+      primaryImage?.thumbnail_url ||
+      imageVariants.card?.url ||
+      primaryImage?.url,
+    mediaContext,
+  )
 }
 
-const normalizeBackendCartItem = (item: any, fallbackCurrency = 'USD'): CartItem => {
+const normalizeBackendCartItem = (
+  item: any,
+  fallbackCurrency = 'USD',
+  mediaContext: ReturnType<typeof createStorefrontMediaContext>,
+): CartItem => {
   const productId = item.product_id
   const variantId = item.variant_id || null
   const product = item.product || {}
   const variant = item.variant || {}
-  const thumbnail = resolveProductThumbnail(product)
+  const thumbnail = resolveProductThumbnail(product, mediaContext)
   const itemCurrency = normalizeCurrencyCode(item.currency || variant.currency || product.currency) || normalizeCurrencyCode(fallbackCurrency) || 'USD'
 
   return {
@@ -88,6 +113,8 @@ const normalizeBackendCartItem = (item: any, fallbackCurrency = 'USD'): CartItem
 }
 
 export const useCart = () => {
+  const runtimeConfig = useRuntimeConfig()
+  const mediaContext = createStorefrontMediaContext(runtimeConfig)
   const auth = useAuth()
   const calculation = useCartCalculation()
   const { track: trackBehaviorEvent } = useBehaviorEvents()
@@ -99,12 +126,31 @@ export const useCart = () => {
     try {
       const summary = await auth.request<any>('/cart/summary')
       cartItems.value = extractCartSummaryItems(summary)
-        .map((item: any) => normalizeBackendCartItem(item, baseCurrency.value))
+        .map((item: any) => normalizeBackendCartItem(item, baseCurrency.value, mediaContext))
+      cartBackendLoaded = true
     } catch (e) {
-      console.error('Failed to load cart from backend', e)
+      if (isExpectedAnonymousApiMiss(e)) {
+        cartItems.value = []
+        cartBackendLoaded = true
+        return
+      }
+      logUnexpectedApiError('Failed to load cart from backend', e, isExpectedAnonymousApiMiss)
     } finally {
       isLoadingCart.value = false
     }
+  }
+
+  const loadCartForInteraction = async () => {
+    if (cartBackendLoaded || isLoadingCart.value) return
+    if (!auth.initialized.value) {
+      await auth.ensureSession()
+    }
+    const saved = localStorage.getItem('commerce_platform_cart')
+    if (saved && !auth.isAuthenticated.value) {
+      await syncGuestCart()
+      return
+    }
+    await loadCartFromBackend()
   }
 
   const syncGuestCart = async (): Promise<{
@@ -207,12 +253,6 @@ export const useCart = () => {
 
   if (import.meta.client && !eventListenersAdded) {
     eventListenersAdded = true
-    loadCartFromBackend()
-
-    const saved = localStorage.getItem('commerce_platform_cart')
-    if (saved && !auth.isAuthenticated.value) {
-      syncGuestCart()
-    }
 
     window.addEventListener('open-cart-drawer', () => {
       openCart()
@@ -235,9 +275,12 @@ export const useCart = () => {
             window.location.reload()
           }
         }
+      } else if (!result.itemsCount) {
+        await loadCartFromBackend()
       }
     } else if (!newVal && oldVal) {
-      await loadCartFromBackend()
+      cartItems.value = []
+      cartBackendLoaded = false
     }
   })
 
@@ -342,6 +385,7 @@ export const useCart = () => {
   const openCart = () => {
     cartVariant.value = 'default'
     isCartOpen.value = true
+    void loadCartForInteraction()
     overlayBackStack.open('cart-drawer', closeCartState)
   }
 
@@ -359,6 +403,7 @@ export const useCart = () => {
   }
   const openCheckout = (paymentMethod?: string) => {
     preferredCheckoutPaymentMethod.value = normalizeCheckoutPaymentMethod(paymentMethod)
+    void loadCartForInteraction()
 
     const restoreCartOnClose = isCartOpen.value
     if (restoreCartOnClose) {
@@ -389,16 +434,19 @@ export const useCart = () => {
   const openCartFromCheckout = () => {
     cartVariant.value = 'checkout-bottom'
     isCartOpen.value = true
+    void loadCartForInteraction()
     overlayBackStack.open('cart-drawer', closeCartState)
   }
   const openCartFromLever = () => {
     cartVariant.value = 'lever-bottom'
     isCartOpen.value = true
+    void loadCartForInteraction()
     overlayBackStack.open('cart-drawer', closeCartState, { mode: 'push' })
   }
   const openCartFromChat = () => {
     cartVariant.value = 'chat-bottom'
     isCartOpen.value = true
+    void loadCartForInteraction()
     overlayBackStack.open('cart-drawer', closeCartState, { mode: 'push' })
   }
 

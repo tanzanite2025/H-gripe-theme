@@ -30,6 +30,11 @@ Configure the selected CDN/WAF provider to:
   that contain account/session data.
 - Cache immutable static assets and public media only when the cache key does
   not include cookies or authorization headers.
+- Cache successful `/_ipx/*` image derivatives with a cache key that includes
+  the complete path and query string, while respecting the origin cache
+  headers. Do not cache `429`, `4xx`, or `5xx` responses for this path. This
+  keeps repeat image sizes at the CDN and prevents an image view from
+  repeatedly invoking Sharp at the origin.
 - Alert on spikes in `413`, `429`, `5xx`, origin connection count, and upload
   volume.
 
@@ -104,4 +109,12 @@ Before opening public DNS:
 - Confirm upload paths return `413` at the intended body limit and `429` after
   repeated requests.
 - Confirm static media can be cached while authenticated API responses are not.
+- Confirm `/_internal/image-health` succeeds in the storefront container and
+  `/_internal/image-health?source=internal` succeeds from the web container.
+  The second check verifies the private `web:8080` upload origin, the upload
+  mount, IPX, and Sharp together without using public DNS, CDN, or TLS.
+- Configure the CDN rule for `/_ipx/*`, request one known derivative twice,
+  and confirm the second response is served from the edge cache. A cache miss
+  after expiry is expected; a persistent miss indicates the CDN rule or cache
+  key is wrong.
 - Confirm CDN/WAF alerts are connected to the on-call channel.

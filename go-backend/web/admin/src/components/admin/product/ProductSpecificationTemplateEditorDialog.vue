@@ -17,7 +17,7 @@
           <section class="rounded-2xl border border-dashed border-border/80 bg-card/70 p-4">
             <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h3 class="text-sm font-black tracking-tighter italic uppercase">基础信息</h3>
+                <h3 class="text-sm font-black tracking-tighter uppercase">基础信息</h3>
                 <p class="mt-1 text-xs text-muted-foreground">两行内完成模板名称、标识、排序和启用状态。</p>
               </div>
               <label class="inline-flex items-center gap-2 rounded-full border border-dashed px-3 py-1.5 text-xs font-medium">
@@ -50,7 +50,7 @@
           <section class="rounded-2xl border border-dashed border-border/80 bg-card/70 p-4">
             <div class="mb-3 flex flex-wrap items-start justify-between gap-3">
               <div>
-                <h3 class="text-sm font-black tracking-tighter italic uppercase">分类图片</h3>
+                <h3 class="text-sm font-black tracking-tighter uppercase">分类图片</h3>
                 <p class="mt-1 text-xs leading-5 text-muted-foreground">
                   仅支持 WEBP，固定为 {{ productSpecTemplateImageSize }} × {{ productSpecTemplateImageSize }} px（1:1）。
                 </p>
@@ -113,7 +113,7 @@
           <section class="rounded-2xl border border-dashed border-border/80 bg-card/70 p-4">
             <div class="mb-3 flex flex-wrap items-start justify-between gap-3">
               <div>
-                <h3 class="text-sm font-black tracking-tighter italic uppercase">多语言名称</h3>
+                <h3 class="text-sm font-black tracking-tighter uppercase">多语言名称</h3>
                 <p class="mt-1 text-xs leading-5 text-muted-foreground">
                   为已启用后台语言维护分类名称和描述。空名称不会提交，前台会回退到基础名称。
                 </p>
@@ -160,7 +160,7 @@
           <section class="rounded-2xl border border-dashed border-border/80 bg-card/70 p-4">
             <div class="mb-3 flex flex-wrap items-start justify-between gap-3">
               <div class="space-y-1">
-                <h3 class="text-sm font-black tracking-tighter italic uppercase">字段模板</h3>
+                <h3 class="text-sm font-black tracking-tighter uppercase">字段模板</h3>
                 <p class="text-xs leading-5 text-muted-foreground">
                   这里只定义“该类商品编辑时出现哪些字段”。不要在这里填写某个具体产品的重量、尺寸、库存或价格。
                 </p>

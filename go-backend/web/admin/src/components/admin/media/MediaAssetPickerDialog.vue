@@ -41,7 +41,7 @@
             :key="asset.id"
             type="button"
             class="group min-w-0 overflow-hidden rounded-2xl border bg-background text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            :class="isSelected(asset.url) ? 'border-[var(--admin-selected)]' : 'border-border'"
+ :class="isSelected(asset.url) ? 'border-[var(--admin-selected)]': 'border-border'"
             @click="selectAsset(asset)"
           >
             <span class="block aspect-[4/3] overflow-hidden bg-muted">
@@ -63,7 +63,7 @@
                 <span>{{ formatMediaSize(asset.size) }}</span>
               </span>
               <span class="flex justify-end text-[10px] font-bold text-muted-foreground">
-                <span :class="isSelected(asset.url) ? 'text-[var(--admin-selected)]' : ''">
+ <span :class="isSelected(asset.url) ? 'text-[var(--admin-selected)]': ''">
                   {{ isSelected(asset.url) ? '已加入' : '选择' }}
                 </span>
               </span>

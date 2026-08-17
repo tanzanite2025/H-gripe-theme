@@ -16,11 +16,13 @@ import (
 
 type Handler struct {
 	cartService           *service.CartService
+	mediaService          *service.MediaService
 	visitorProfileService *service.VisitorProfileService
 	visitorSecret         []byte
 }
 
 type Options struct {
+	MediaService          *service.MediaService
 	VisitorProfileService *service.VisitorProfileService
 	VisitorSecret         string
 }
@@ -32,6 +34,7 @@ func NewHandler(cartService *service.CartService, opts ...Options) *Handler {
 	}
 	return &Handler{
 		cartService:           cartService,
+		mediaService:          options.MediaService,
 		visitorProfileService: options.VisitorProfileService,
 		visitorSecret:         []byte(options.VisitorSecret),
 	}
@@ -155,7 +158,7 @@ func (h *Handler) GetCartSummary(c *gin.Context) {
 		h.touchPassiveVisitorProfile(c, userID, sessionID)
 	}
 
-	response.Success(c, PublicCartSummaryFromDomain(summary))
+	response.Success(c, PublicCartSummaryFromDomain(summary, h.mediaService))
 }
 
 // AddToCart 添加商品到购物车
@@ -275,7 +278,7 @@ func (h *Handler) SyncCart(c *gin.Context) {
 			apierror.RespondInternalError(c, err)
 			return
 		}
-		response.Success(c, PublicCartSummaryFromDomain(summary))
+		response.Success(c, PublicCartSummaryFromDomain(summary, h.mediaService))
 		return
 	}
 
@@ -302,7 +305,7 @@ func (h *Handler) SyncCart(c *gin.Context) {
 		h.touchVisitorProfile(c, userID, sessionID)
 	}
 
-	response.Success(c, PublicCartSummaryFromDomain(summary))
+	response.Success(c, PublicCartSummaryFromDomain(summary, h.mediaService))
 }
 
 // ClearCart 清空购物车

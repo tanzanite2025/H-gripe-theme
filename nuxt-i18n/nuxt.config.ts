@@ -5,12 +5,43 @@ import { buildStorefrontRouteRules } from './config/storefront/route-rules'
 
 const env = ((globalThis as unknown as { process?: { env?: Record<string, string | undefined> } }).process?.env) || {}
 const trimTrailingSlash = (value: string) => value.replace(/\/$/, '')
+const isTruthyEnv = (value: string | undefined) => ['1', 'true', 'yes', 'on'].includes(
+  String(value || '').trim().toLowerCase()
+)
+const hostFromUrl = (value: string) => {
+  if (!value) return ''
+
+  try {
+    return new URL(value).host
+  } catch {
+    return ''
+  }
+}
 const publicApiBase = trimTrailingSlash(
   env.NUXT_PUBLIC_API_BASE || env.GO_API_BASE || env.API_BASE || ''
 )
 const publicSiteUrl = trimTrailingSlash(env.NUXT_SITE_URL || env.NUXT_PUBLIC_SITE_URL || '')
 const internalApiOrigin = trimTrailingSlash(env.API_INTERNAL_ORIGIN || 'http://localhost:9200')
-const imageProvider = env.NUXT_IMAGE_PROVIDER || 'none'
+const imageProvider = env.NUXT_IMAGE_PROVIDER || 'ipx'
+const imageInternalOrigin = trimTrailingSlash(env.NUXT_IMAGE_INTERNAL_ORIGIN || '')
+const imageMaxInputPixels = Number(env.NUXT_IMAGE_MAX_INPUT_PIXELS || '24000000')
+const imageOptimizeUploads = isTruthyEnv(
+  env.NUXT_IMAGE_OPTIMIZE_UPLOADS || env.NUXT_PUBLIC_IMAGE_UPLOAD_OPTIMIZATION_ENABLED
+)
+const siteImageDomain = hostFromUrl(publicSiteUrl)
+const apiImageDomain = hostFromUrl(publicApiBase)
+const internalImageDomain = hostFromUrl(imageInternalOrigin)
+const configuredImageDomains = (env.NUXT_IMAGE_DOMAINS || '')
+  .split(',')
+  .map(value => value.trim())
+  .filter(Boolean)
+  .map(value => hostFromUrl(value.includes('://') ? value : `https://${value}`) || value)
+const imageDomains = [...new Set([
+  siteImageDomain,
+  apiImageDomain,
+  internalImageDomain,
+  ...configuredImageDomains,
+].filter(Boolean))]
 const htmlCacheDefault = env.NODE_ENV === 'production' ? 'true' : 'false'
 const htmlCacheEnabled = String(env.NUXT_HTML_CACHE_ENABLED ?? htmlCacheDefault).toLowerCase() !== 'false'
 
@@ -183,9 +214,30 @@ export default defineNuxtConfig({
   },
 
   image: {
-    // Keep local builds architecture-neutral; set NUXT_IMAGE_PROVIDER to a CDN/IPX
-    // provider only when that image pipeline is owned by the deployment.
+    // IPX generates only the display-sized derivative. Original uploaded files
+    // remain untouched, and remote transforms are restricted to known domains.
     provider: imageProvider,
+    domains: imageDomains,
+    alias: imageInternalOrigin
+      ? {
+          '/uploads/': `${imageInternalOrigin}/uploads/`,
+        }
+      : {},
+    densities: [1, 2],
+    ipx: {
+      fs: {
+        maxAge: 60 * 60,
+      },
+      http: {
+        maxAge: 60 * 60,
+      },
+      sharpOptions: {
+        failOn: 'error',
+        limitInputPixels: Number.isFinite(imageMaxInputPixels) && imageMaxInputPixels > 0
+          ? Math.floor(imageMaxInputPixels)
+          : 24_000_000,
+      },
+    },
   },
 
   modules: ['@nuxtjs/i18n', '@nuxtjs/sitemap', '@nuxt/image', '@pinia/nuxt', '@nuxt/icon', '@nuxt/fonts'],
@@ -198,6 +250,9 @@ export default defineNuxtConfig({
 
   icon: {
     localApiEndpoint: '/_nuxt_icon',
+    // CSS mode inserts style elements at runtime. SVG keeps icon rendering
+    // compatible with the hash-based CSP used by cached SSR HTML.
+    mode: 'svg',
   },
 
   i18n: {
@@ -222,9 +277,7 @@ export default defineNuxtConfig({
 
   css: [
     '~/assets/css/tailwind.css',
-    '~/assets/css/guide-sections.css',
     '~/assets/css/components/nav.css',
-    '~/assets/css/components/whatsapp-mobile-drawer.css',
   ],
 
   postcss: {
@@ -235,6 +288,9 @@ export default defineNuxtConfig({
   },
 
   vite: {
+    server: {
+      allowedHosts: ['host.docker.internal'],
+    },
     build: {
       sourcemap: false,
       rollupOptions: {
@@ -261,6 +317,13 @@ export default defineNuxtConfig({
       meta: [
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' }
+      ],
+      // Zod otherwise probes Function construction. That is incompatible with
+      // a strict Trusted Types policy and is unnecessary for storefront validation.
+      script: [
+        {
+          textContent: 'globalThis.__zod_globalConfig = Object.assign(globalThis.__zod_globalConfig || {}, { jitless: true })',
+        },
       ],
     }
   },
@@ -292,11 +355,15 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     apiInternalOrigin: internalApiOrigin,
+    imageInternalOrigin,
     public: {
       apiBase: publicApiBase,
       blogApiMode: env.NUXT_PUBLIC_BLOG_API_MODE || env.BLOG_API_MODE || 'auto',
       siteTitle: env.NUXT_SITE_TITLE || '',
       siteUrl: publicSiteUrl,
+      imageDomains: imageDomains.join(','),
+      imageUploadOptimizationEnabled: Boolean(imageInternalOrigin && imageOptimizeUploads),
+      imageUploadAliasEnabled: Boolean(imageInternalOrigin && imageOptimizeUploads),
       googleClientId: env.NUXT_PUBLIC_GOOGLE_CLIENT_ID || env.GOOGLE_CLIENT_ID || '',
       requestSigningKey: env.NUXT_PUBLIC_REQUEST_SIGNING_KEY || '',
       turnstileSiteKey: env.NUXT_PUBLIC_TURNSTILE_SITE_KEY || '',

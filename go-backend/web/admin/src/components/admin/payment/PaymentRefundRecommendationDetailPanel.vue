@@ -1,7 +1,7 @@
 <template>
   <aside class="min-h-0 overflow-auto rounded-[24px] border border-dashed border-border/80 bg-card p-4">
     <div class="mb-4">
-      <h2 class="text-sm font-black uppercase italic tracking-tight">退款建议处理</h2>
+      <h2 class="text-sm font-black uppercase tracking-tight">退款建议处理</h2>
       <p class="mt-1 text-xs text-muted-foreground">建议处理与本地待处理退款分开记录，支付渠道退款需人工后续执行。</p>
     </div>
 
@@ -17,7 +17,7 @@
         </div>
         <div class="rounded-xl bg-muted/40 p-3">
           <dt class="font-black uppercase text-muted-foreground">Provider</dt>
-          <dd class="mt-1 font-mono uppercase">{{ recommendation.provider || '-' }}</dd>
+ <dd class="mt-1 font-mono uppercase">{{ recommendation.provider || '-'}}</dd>
         </div>
         <div class="rounded-xl bg-muted/40 p-3">
           <dt class="font-black uppercase text-muted-foreground">Amount</dt>
@@ -25,15 +25,15 @@
         </div>
         <div class="rounded-xl bg-muted/40 p-3">
           <dt class="font-black uppercase text-muted-foreground">Order</dt>
-          <dd class="mt-1 font-mono">{{ recommendation.order_id ? `#${recommendation.order_id}` : '-' }}</dd>
+ <dd class="mt-1 font-mono">{{ recommendation.order_id ? `#${recommendation.order_id}` : '-'}}</dd>
         </div>
         <div class="rounded-xl bg-muted/40 p-3">
           <dt class="font-black uppercase text-muted-foreground">Refund Draft</dt>
-          <dd class="mt-1 font-mono">{{ recommendation.linked_refund_id ? `#${recommendation.linked_refund_id}` : '-' }}</dd>
+ <dd class="mt-1 font-mono">{{ recommendation.linked_refund_id ? `#${recommendation.linked_refund_id}` : '-'}}</dd>
         </div>
         <div class="col-span-2 rounded-xl bg-muted/40 p-3">
           <dt class="font-black uppercase text-muted-foreground">Reason</dt>
-          <dd class="mt-1 whitespace-pre-wrap">{{ recommendation.reason || '-' }}</dd>
+ <dd class="mt-1 whitespace-pre-wrap">{{ recommendation.reason || '-'}}</dd>
         </div>
         <div class="col-span-2 rounded-xl bg-muted/40 p-3">
           <dt class="font-black uppercase text-muted-foreground">Payment Reference</dt>
@@ -69,7 +69,7 @@
           @update:model-value="emit('update:decisionNotes', String($event))"
         />
       </label>
-      <Button class="w-full rounded-full font-black uppercase tracking-wider" :disabled="recommendation.status !== 'pending' || saving" @click="$emit('save-decision')">
+ <Button class="w-full rounded-full font-black uppercase tracking-wider" :disabled="recommendation.status !== 'pending'|| saving" @click="$emit('save-decision')">
         <CheckCircle2 class="size-4" />
         保存建议处理
       </Button>

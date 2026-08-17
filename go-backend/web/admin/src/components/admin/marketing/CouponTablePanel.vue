@@ -45,9 +45,9 @@
             <TableCell class="font-mono text-xs font-bold">{{ coupon.code }}</TableCell>
             <TableCell>{{ coupon.type === 'fixed' ? '固定金额' : '百分比' }}</TableCell>
             <TableCell class="text-right font-medium tabular-nums">{{ couponValue(coupon) }}</TableCell>
-            <TableCell class="max-w-64 truncate text-muted-foreground">{{ coupon.description || '-' }}</TableCell>
+ <TableCell class="max-w-64 truncate text-muted-foreground">{{ coupon.description || '-'}}</TableCell>
             <TableCell class="text-right tabular-nums">¥{{ formatMoney(coupon.min_amount) }}</TableCell>
-            <TableCell class="tabular-nums">{{ coupon.used_count || 0 }} / {{ coupon.usage_limit || '不限' }}</TableCell>
+ <TableCell class="tabular-nums">{{ coupon.used_count || 0 }} / {{ coupon.usage_limit || '不限'}}</TableCell>
             <TableCell class="text-xs text-muted-foreground">
               {{ formatDate(coupon.start_date) }}<br />{{ formatDate(coupon.end_date) }}
             </TableCell>

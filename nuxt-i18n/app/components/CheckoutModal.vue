@@ -67,6 +67,8 @@
                           :key="logo.src"
                           :src="logo.src"
                           :alt="logo.alt"
+                          :width="logo.width"
+                          :height="logo.height"
                           :class="logo.className"
                           loading="lazy"
                         />
@@ -201,6 +203,8 @@
                           :key="logo.src"
                           :src="logo.src"
                           :alt="logo.alt"
+                          :width="logo.width"
+                          :height="logo.height"
                           :class="logo.className"
                           loading="lazy"
                         />
@@ -217,7 +221,7 @@
                   <div class="mt-3 space-y-3">
                     <article v-for="item in cartItems" :key="item.id" class="flex gap-3">
                       <div class="h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-white/10 bg-white/[0.04]">
-                        <img v-if="item.thumbnail" :src="item.thumbnail" :alt="item.title" class="h-full w-full object-cover" />
+                        <StorefrontImage v-if="item.thumbnail" :src="item.thumbnail" :alt="item.title" class="h-full w-full object-cover" preset="thumbnail" />
                         <div v-else class="flex h-full items-center justify-center text-white/35">
                           <Icon name="lucide:image" class="h-4 w-4" />
                         </div>
@@ -461,7 +465,9 @@ const paymentDescription = (option: CheckoutPaymentOption) => {
 
 const paymentLogos = (option: CheckoutPaymentOption): PaymentLogoAsset[] => {
   const method = paymentMethodFromOption(option)
-  return method ? paymentPresentation(method).logos : [{ src: '/icons/payment/default.svg', alt: paymentTitle(option) }]
+  return method
+    ? paymentPresentation(method).logos
+    : [{ src: '/icons/payment/default.svg', alt: paymentTitle(option), width: 750, height: 471 }]
 }
 
 const unavailableLabel = (option: CheckoutPaymentOption) => {

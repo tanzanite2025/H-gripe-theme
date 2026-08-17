@@ -52,7 +52,7 @@ func (h *Handler) EnsurePublicCustomerServiceConversation(c *gin.Context) {
 	if autoReplyErr != nil {
 		log.Printf("customer-service welcome auto reply failed: conversation=%s error=%v", conversationID, autoReplyErr)
 	} else if autoReplyMessage != nil {
-		autoReplyPayload := publicCustomerServiceMessageResponse(*autoReplyMessage, conversationID, "", "", nil)
+		autoReplyPayload := publicCustomerServiceMessageResponse(*autoReplyMessage, conversationID, "", "", nil, h.mediaService)
 		h.publishPublicCustomerServiceMessageCreated(
 			t,
 			autoReplyMessage.ID,
@@ -154,7 +154,7 @@ func (h *Handler) SendPublicCustomerServiceMessage(c *gin.Context) {
 
 	conversationID = publicConversationID(t)
 	h.touchCustomerServiceVisitorProfile(c, owner, req.SenderEmail, "public_chat")
-	response := publicCustomerServiceMessageResponse(*msg, conversationID, senderName, "", nil)
+	response := publicCustomerServiceMessageResponse(*msg, conversationID, senderName, "", nil, h.mediaService)
 	h.publishPublicCustomerServiceMessageCreated(
 		t,
 		msg.ID,
@@ -184,7 +184,7 @@ func (h *Handler) SendPublicCustomerServiceMessage(c *gin.Context) {
 	if autoReplyErr != nil {
 		log.Printf("customer-service auto reply failed: conversation=%s error=%v", conversationID, autoReplyErr)
 	} else if autoReplyMessage != nil {
-		autoReplyPayload := publicCustomerServiceMessageResponse(*autoReplyMessage, conversationID, "", "", nil)
+		autoReplyPayload := publicCustomerServiceMessageResponse(*autoReplyMessage, conversationID, "", "", nil, h.mediaService)
 		h.publishPublicCustomerServiceMessageCreated(
 			t,
 			autoReplyMessage.ID,
@@ -251,6 +251,15 @@ func (h *Handler) UploadPublicCustomerServiceAttachment(c *gin.Context) {
 		})
 		return
 	}
+	width, height, err := upload.ReadImageDimensions(file)
+	if err != nil {
+		c.JSON(upload.HTTPStatus(err), gin.H{
+			"success": false,
+			"message": err.Error(),
+			"code":    upload.ErrorCode(err),
+		})
+		return
+	}
 
 	source := strings.ToLower(strings.TrimSpace(c.PostForm("source")))
 	if source != "camera" {
@@ -267,6 +276,8 @@ func (h *Handler) UploadPublicCustomerServiceAttachment(c *gin.Context) {
 		MediaType:  "image",
 		Alt:        "Customer service attachment",
 		UploaderID: uploaderID,
+		Width:      width,
+		Height:     height,
 	})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "failed to upload customer-service attachment"})
@@ -277,7 +288,7 @@ func (h *Handler) UploadPublicCustomerServiceAttachment(c *gin.Context) {
 		"success": true,
 		"asset": gin.H{
 			"id":                asset.ID,
-			"url":               asset.URL,
+			"url":               h.mediaService.CanonicalPublicMediaURL(asset.URL),
 			"original_filename": asset.OriginalFilename,
 			"mime_type":         asset.MimeType,
 			"size":              asset.Size,
@@ -436,7 +447,7 @@ func (h *Handler) GetPublicCustomerServiceMessages(c *gin.Context) {
 
 	items := make([]gin.H, 0, len(messages))
 	for _, item := range messages {
-		items = append(items, publicCustomerServiceMessageResponse(item, conversationID, "", "", nil))
+		items = append(items, publicCustomerServiceMessageResponse(item, conversationID, "", "", nil, h.mediaService))
 	}
 
 	c.JSON(http.StatusOK, gin.H{

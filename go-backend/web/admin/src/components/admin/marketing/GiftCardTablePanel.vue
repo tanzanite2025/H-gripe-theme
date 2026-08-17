@@ -2,7 +2,7 @@
   <div class="space-y-3">
     <div class="flex flex-wrap items-start justify-between gap-3">
       <div>
-        <h3 class="text-sm font-black tracking-tighter italic uppercase text-foreground">已发行礼品卡</h3>
+        <h3 class="text-sm font-black tracking-tighter uppercase text-foreground">已发行礼品卡</h3>
         <p class="mt-1 text-xs text-muted-foreground">这里仅查看已经生成的真实卡号和余额。</p>
       </div>
       <label class="w-48 space-y-1.5">
@@ -46,8 +46,8 @@
             <TableCell class="text-right tabular-nums">{{ formatCurrency(giftCard.initial_value, giftCard.currency) }}</TableCell>
             <TableCell class="text-right font-bold tabular-nums">{{ formatCurrency(giftCard.balance, giftCard.currency) }}</TableCell>
             <TableCell>
-              <span class="block font-bold text-xs">{{ giftCard.recipient_name || '-' }}</span>
-              <span class="block text-xs text-muted-foreground">{{ giftCard.recipient_email || '-' }}</span>
+ <span class="block font-bold text-xs">{{ giftCard.recipient_name || '-'}}</span>
+ <span class="block text-xs text-muted-foreground">{{ giftCard.recipient_email || '-'}}</span>
             </TableCell>
             <TableCell>
               <AdminStatusBadge :tone="giftCardStatusTone(giftCard.status)">{{ giftCardStatusName(giftCard.status) }}</AdminStatusBadge>

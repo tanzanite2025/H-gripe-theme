@@ -6,7 +6,7 @@
           variant="ghost"
           size="sm"
           class="min-w-0 flex-1 rounded-md text-xs"
-          :class="{ 'bg-background shadow-sm': mobileView === 'conversations' }"
+ :class="{ 'bg-background shadow-sm': mobileView === 'conversations'}"
           @click="mobileView = 'conversations'"
         >
           <List class="size-3.5" />
@@ -16,7 +16,7 @@
           variant="ghost"
           size="sm"
           class="min-w-0 flex-1 rounded-md text-xs"
-          :class="{ 'bg-background shadow-sm': mobileView === 'messages' }"
+ :class="{ 'bg-background shadow-sm': mobileView === 'messages'}"
           :disabled="!selectedConversation"
           @click="mobileView = 'messages'"
         >
@@ -27,7 +27,7 @@
           variant="ghost"
           size="sm"
           class="min-w-0 flex-1 rounded-md text-xs"
-          :class="{ 'bg-background shadow-sm': mobileView === 'context' }"
+ :class="{ 'bg-background shadow-sm': mobileView === 'context'}"
           :disabled="!selectedConversation"
           @click="mobileView = 'context'"
         >

@@ -1,10 +1,10 @@
 import { getStorefrontLocaleEntry } from '~/utils/storefrontLocales'
 
-export const storefrontFontFamily = 'StorefrontSystem'
-export const storefrontLatinAccentFontFamily = 'StorefrontSystemLatinAccents, StorefrontSystem'
-export const storefrontArabicFontFamily = 'StorefrontSystemArabic, StorefrontSystem'
-export const storefrontDevanagariFontFamily = 'StorefrontSystemDevanagari, StorefrontSystem'
-export const storefrontThaiFontFamily = 'StorefrontSystemThai, StorefrontSystem'
+export const storefrontFontFamily = 'StorefrontSystemLatin, StorefrontSystem'
+export const storefrontLatinAccentFontFamily = `StorefrontSystemLatinAccents, ${storefrontFontFamily}`
+export const storefrontArabicFontFamily = `StorefrontSystemArabic, ${storefrontFontFamily}`
+export const storefrontDevanagariFontFamily = `StorefrontSystemDevanagari, ${storefrontFontFamily}`
+export const storefrontThaiFontFamily = `StorefrontSystemThai, ${storefrontFontFamily}`
 export const storefrontFontStylesheetPath = '/fonts/storefront-system.css'
 
 export const storefrontFontFamilyForLocale = (locale: unknown) => {

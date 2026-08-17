@@ -9,7 +9,7 @@
         <div class="flex items-center gap-2">
           <span
             class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-black"
-            :class="enabled ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-200' : 'border-rose-500/20 bg-rose-500/10 text-rose-700 dark:text-rose-200'"
+ :class="enabled ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-200': 'border-rose-500/20 bg-rose-500/10 text-rose-700 dark:text-rose-200'"
           >
             <ShieldCheck v-if="enabled" class="size-3.5" />
             <ShieldAlert v-else class="size-3.5" />
@@ -22,7 +22,7 @@
             :disabled="loading"
             @click="emit('refresh')"
           >
-            <RefreshCw :class="['size-3.5', loading ? 'animate-spin' : '']" />
+ <RefreshCw :class="['size-3.5', loading ? 'animate-spin': '']" />
             刷新
           </Button>
         </div>
@@ -35,12 +35,42 @@
           class="rounded-xl border bg-background/70 p-3"
         >
           <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">{{ layer.layer }}</p>
-          <p class="mt-1 text-sm font-black text-foreground">{{ layer.status === 'enabled' ? '生效' : layer.status }}</p>
+ <p class="mt-1 text-sm font-black text-foreground">{{ layer.status === 'enabled'? '生效': layer.status }}</p>
         </div>
       </div>
 
       <div class="mt-4 rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2.5 text-xs text-amber-800 dark:text-amber-100">
         命中规则的请求返回 HTTP {{ responseStatus }}，前台页面在公网 Nginx 拦截，API 直连也由 Go 中间件拦截。
+      </div>
+
+      <div class="mt-4 rounded-xl border bg-background/70 p-3">
+        <div class="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Robots TXT Mirror</p>
+            <h3 class="mt-1 text-sm font-black text-foreground">robots.txt 同步</h3>
+          </div>
+          <span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-xs font-black text-emerald-700 dark:text-emerald-200">
+            <ShieldCheck class="size-3.5" />
+            {{ robotsTxt?.path || '/robots.txt' }} 已映射
+          </span>
+        </div>
+
+        <div class="mt-3 grid gap-3 md:grid-cols-3">
+          <div>
+            <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">源文件</p>
+            <code class="mt-1 block break-all text-xs font-bold text-admin-selected">{{ robotsTxt?.source || 'nuxt-i18n/public/robots.txt' }}</code>
+          </div>
+          <div>
+            <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">TXT 拦截规则</p>
+            <p class="mt-1 text-xs text-muted-foreground">
+              {{ robotsTxt?.blocked_user_agents?.length || rules.length }} 个 UA · Disallow {{ robotsTxt?.disallow || '/' }}
+            </p>
+          </div>
+          <div>
+            <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">物理响应</p>
+            <p class="mt-1 text-xs text-muted-foreground">HTTP {{ robotsTxt?.block_status || responseStatus }}，与边缘 / API 防护保持一致</p>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -110,7 +140,7 @@
 
           <div v-if="seed.aliases?.length" class="mt-3">
             <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Aliases</p>
-            <p class="mt-1 text-xs font-semibold text-foreground">{{ seed.aliases.join(' · ') }}</p>
+ <p class="mt-1 text-xs font-semibold text-foreground">{{ seed.aliases.join('· ') }}</p>
           </div>
 
           <div v-if="seed.detection_signals?.length" class="mt-3">
@@ -213,6 +243,7 @@ const responseStatus = computed(() => Number(props.protection?.response_status) 
 const rules = computed<CommercialCrawlerRule[]>(() => Array.isArray(props.protection?.rules) ? props.protection.rules : [])
 const enforcement = computed<CommercialCrawlerEnforcementLayer[]>(() => Array.isArray(props.protection?.enforcement) ? props.protection.enforcement : [])
 const intelligenceSeeds = computed<CommercialCrawlerIntelligenceSeed[]>(() => Array.isArray(props.protection?.intelligence_seeds) ? props.protection.intelligence_seeds : [])
+const robotsTxt = computed(() => props.protection?.robots_txt || null)
 const orderNumberProtection = computed<OrderNumberProtection | null>(() => props.protection?.order_number_protection || null)
 
 const seedCategoryLabel = (category?: string): string => ({

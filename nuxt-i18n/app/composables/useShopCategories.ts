@@ -1,6 +1,10 @@
 import { useRuntimeConfig, useState } from '#imports'
 import { useI18n } from 'vue-i18n'
 import { computed, watch } from 'vue'
+import {
+  createStorefrontMediaContext,
+  normalizeStorefrontMediaUrl,
+} from '~/utils/storefrontMedia'
 
 export interface ShopCategory {
   id: number
@@ -31,7 +35,10 @@ const createEmptyCategoryState = (): ShopCategoryState => ({
   source: 'empty',
 })
 
-const extractProductSpecificationTemplates = (payload: unknown): ShopCategory[] => {
+const extractProductSpecificationTemplates = (
+  payload: unknown,
+  mediaContext: ReturnType<typeof createStorefrontMediaContext>,
+): ShopCategory[] => {
   let current = payload
 
   for (let depth = 0; depth < 3; depth += 1) {
@@ -43,7 +50,10 @@ const extractProductSpecificationTemplates = (payload: unknown): ShopCategory[] 
         const id = Number(record.id)
         const slug = String(record.slug || '').trim()
         const name = String(record.name || '').trim()
-        const image = String(record.image_url || record.image || '').trim()
+        const image = normalizeStorefrontMediaUrl(
+          record.image_url || record.image,
+          mediaContext,
+        )
 
         if (!Number.isFinite(id) || !slug || !name || record.is_enabled === false) return []
         return [{
@@ -65,6 +75,7 @@ const extractProductSpecificationTemplates = (payload: unknown): ShopCategory[] 
 
 export const useShopCategories = () => {
   const config = useRuntimeConfig()
+  const mediaContext = createStorefrontMediaContext(config)
   const { locale } = useI18n()
   // Every storefront surface reads this store so category names, slugs, and images stay aligned.
   const stateStore = useState<ShopCategoryStateStore>('shop-categories-by-locale', () => ({}))
@@ -98,7 +109,7 @@ export const useShopCategories = () => {
   const requestCategories = async (requestLocale: string): Promise<ShopCategory[]> => {
     const headers = requestLocale ? { 'Accept-Language': requestLocale } : undefined
     const response = await $fetch<unknown>(`${requestBaseURL.value}/products/specification-templates`, { headers })
-    return extractProductSpecificationTemplates(response)
+    return extractProductSpecificationTemplates(response, mediaContext)
   }
 
   const waitForExistingLoad = (state: ShopCategoryState): Promise<ShopCategory[]> => (

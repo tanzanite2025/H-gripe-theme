@@ -2,7 +2,7 @@
   <TabsContent value="carriers" class="space-y-3">
     <div class="flex flex-wrap items-end justify-between gap-3">
       <div>
-        <h2 class="text-sm font-black tracking-tighter italic uppercase">承运商</h2>
+        <h2 class="text-sm font-black tracking-tighter uppercase">承运商</h2>
         <p class="mt-1 text-xs text-muted-foreground">维护 DHL、FedEx、UPS、邮政小包、专线等物流公司基础资料。</p>
       </div>
       <Button v-if="canCreate" size="sm" @click="emit('create')">
@@ -32,14 +32,14 @@
             </div>
           </TableEmpty>
           <TableRow v-for="carrier in carriers" :key="carrier.id">
-            <TableCell class="font-mono text-xs font-bold">{{ carrier.code || '-' }}</TableCell>
+ <TableCell class="font-mono text-xs font-bold">{{ carrier.code || '-'}}</TableCell>
             <TableCell>
-              <span class="block font-bold text-xs">{{ carrier.name || '-' }}</span>
-              <span class="block truncate text-xs text-muted-foreground">{{ carrier.tracking_url || '未配置查询链接' }}</span>
+ <span class="block font-bold text-xs">{{ carrier.name || '-'}}</span>
+ <span class="block truncate text-xs text-muted-foreground">{{ carrier.tracking_url || '未配置查询链接'}}</span>
             </TableCell>
             <TableCell>
-              <span class="block truncate text-sm">{{ carrier.contact || '-' }}</span>
-              <span class="block truncate text-xs text-muted-foreground">{{ carrier.email || carrier.phone || '-' }}</span>
+ <span class="block truncate text-sm">{{ carrier.contact || '-'}}</span>
+ <span class="block truncate text-xs text-muted-foreground">{{ carrier.email || carrier.phone || '-'}}</span>
             </TableCell>
             <TableCell class="max-w-80 truncate text-xs text-muted-foreground">{{ serviceAreaLabel(carrier.service_area) }}</TableCell>
             <TableCell class="text-right tabular-nums">{{ carrier.sort_order || 0 }}</TableCell>

@@ -8,6 +8,7 @@
         <div class="products-content__inner page-content-shell">
           <slot />
           <PageFaqSlot />
+          <PageFeedbackSlot />
         </div>
       </section>
     </main>
@@ -53,7 +54,7 @@ useHead(() => ({
 }
 
 .products-header-spacer {
-  height: var(--site-header-offset, 145px);
+  height: 145px;
 }
 
 .products-content {
@@ -66,7 +67,7 @@ useHead(() => ({
 
 @media (min-width: 768px) {
   .products-header-spacer {
-    height: var(--site-header-offset, 112px);
+    height: 112px;
   }
 }
 

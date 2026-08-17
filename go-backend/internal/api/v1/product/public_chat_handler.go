@@ -38,16 +38,16 @@ func (h *Handler) ListPublicChatProducts(c *gin.Context) {
 	}
 
 	products, _, err := h.productService.SearchPublic(service.ProductSearchInput{
-		Locale:       locale,
-		Keyword:      keyword,
-		ProductSpecificationTemplateSlug:     productSpecificationTemplateSlug,
-		CategorySlug: categorySlug,
-		BrandSlug:    brandSlug,
-		PriceMin:     priceMin,
-		PriceMax:     priceMax,
-		SpecFilters:  specFilters,
-		Page:         page,
-		PageSize:     pageSize + 1,
+		Locale:                           locale,
+		Keyword:                          keyword,
+		ProductSpecificationTemplateSlug: productSpecificationTemplateSlug,
+		CategorySlug:                     categorySlug,
+		BrandSlug:                        brandSlug,
+		PriceMin:                         priceMin,
+		PriceMax:                         priceMax,
+		SpecFilters:                      specFilters,
+		Page:                             page,
+		PageSize:                         pageSize + 1,
 	})
 	if err != nil {
 		apierror.RespondInternalError(c, err)
@@ -55,7 +55,7 @@ func (h *Handler) ListPublicChatProducts(c *gin.Context) {
 	}
 
 	publicProducts, hasMore := trimPublicProductPage(products, pageSize)
-	publicProductResponses := PublicProductsFromDomainWithLocale(publicProducts, locale)
+	publicProductResponses := PublicProductsFromDomainWithLocale(publicProducts, locale, h.mediaService)
 	h.attachReviewSummaries(publicProductResponses)
 	c.JSON(200, gin.H{
 		"code":      0,

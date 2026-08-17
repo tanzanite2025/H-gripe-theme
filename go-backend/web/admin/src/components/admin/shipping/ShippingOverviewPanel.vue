@@ -4,7 +4,7 @@
       <div class="rounded-lg border bg-card p-4 shadow-xs">
         <div class="flex items-start justify-between gap-3">
           <div>
-            <h2 class="text-sm font-black tracking-tighter italic uppercase">当前已接入</h2>
+            <h2 class="text-sm font-black tracking-tighter uppercase">当前已接入</h2>
             <p class="mt-1 text-xs text-muted-foreground">已把核心配置入口放到独立物流后台里。</p>
           </div>
           <Badge variant="outline" class="border-emerald-200 bg-emerald-50 text-emerald-700">Phase 1/2</Badge>
@@ -22,7 +22,7 @@
       <div class="rounded-lg border bg-card p-4 shadow-xs">
         <div class="flex items-start justify-between gap-3">
           <div>
-            <h2 class="text-sm font-black tracking-tighter italic uppercase">下一阶段</h2>
+            <h2 class="text-sm font-black tracking-tighter uppercase">下一阶段</h2>
             <p class="mt-1 text-xs text-muted-foreground">下一步进入真正报价链路和追踪集成。</p>
           </div>
           <Badge variant="outline" class="border-amber-200 bg-amber-50 text-amber-700">Phase 4</Badge>
@@ -39,7 +39,7 @@
       <div class="rounded-lg border bg-card p-4 shadow-xs">
         <div class="flex items-start justify-between gap-3">
           <div>
-            <h2 class="text-sm font-black tracking-tighter italic uppercase">前台原则</h2>
+            <h2 class="text-sm font-black tracking-tighter uppercase">前台原则</h2>
             <p class="mt-1 text-xs text-muted-foreground">Nuxt 不再用硬编码运费，后续统一调用后端报价。</p>
           </div>
           <Badge variant="outline" class="border-blue-200 bg-blue-50 text-blue-700">Nuxt</Badge>

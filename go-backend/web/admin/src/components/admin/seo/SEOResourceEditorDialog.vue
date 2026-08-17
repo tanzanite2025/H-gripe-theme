@@ -62,11 +62,11 @@
               </div>
               <div>
                 <dt class="text-muted-foreground">brand</dt>
-                <dd class="mt-1 font-medium">{{ productDiagnostics.brand || '未配置' }}</dd>
+ <dd class="mt-1 font-medium">{{ productDiagnostics.brand || '未配置'}}</dd>
               </div>
               <div>
                 <dt class="text-muted-foreground">SKU</dt>
-                <dd class="mt-1 font-medium">{{ productDiagnostics.sku || '未配置' }}</dd>
+ <dd class="mt-1 font-medium">{{ productDiagnostics.sku || '未配置'}}</dd>
               </div>
               <div>
                 <dt class="text-muted-foreground">价格 / 币种</dt>

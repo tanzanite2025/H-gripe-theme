@@ -9,9 +9,10 @@ import {
   readCookieConsent,
   type CookieConsentPreferences,
 } from '~/utils/cookieConsent'
-
-const GOOGLE_ANALYTICS_SCRIPT_ID = 'commerce-platform-google-analytics'
-const GOOGLE_TAG_MANAGER_SCRIPT_ID = 'commerce-platform-google-tag-manager'
+import {
+  loadGoogleAnalyticsScript,
+  loadGoogleTagManagerScript,
+} from '~/utils/security/trustedScriptUrl'
 
 type Gtag = (...args: unknown[]) => void
 
@@ -59,30 +60,24 @@ const ensureGoogleAnalytics = (measurementId: string, consent: CookieConsentPref
   analyticsWindow.gtag('js', new Date())
   analyticsWindow.gtag('config', measurementId, { send_page_view: false })
 
-  if (!document.getElementById(GOOGLE_ANALYTICS_SCRIPT_ID)) {
-    const script = document.createElement('script')
-    script.id = GOOGLE_ANALYTICS_SCRIPT_ID
-    script.async = true
-    script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(measurementId)}`
-    document.head.appendChild(script)
-  }
+  void loadGoogleAnalyticsScript(measurementId).catch((error: unknown) => {
+    console.warn('Failed to load Google Analytics:', error)
+  })
 }
 
 const ensureGoogleTagManager = (containerId: string) => {
 	const analyticsWindow = window as AnalyticsWindow
 	analyticsWindow.dataLayer = analyticsWindow.dataLayer || []
 
-	if (!document.getElementById(GOOGLE_TAG_MANAGER_SCRIPT_ID)) {
-		analyticsWindow.dataLayer.push({
-			'gtm.start': new Date().getTime(),
-			event: 'gtm.js',
-		})
-		const script = document.createElement('script')
-		script.id = GOOGLE_TAG_MANAGER_SCRIPT_ID
-    script.async = true
-    script.src = `https://www.googletagmanager.com/gtm.js?id=${encodeURIComponent(containerId)}`
-    document.head.appendChild(script)
-  }
+  if (document.getElementById('commerce-platform-google-tag-manager')) return
+
+  analyticsWindow.dataLayer.push({
+    'gtm.start': new Date().getTime(),
+    event: 'gtm.js',
+  })
+  void loadGoogleTagManagerScript(containerId).catch((error: unknown) => {
+    console.warn('Failed to load Google Tag Manager:', error)
+  })
 }
 
 const trackPageView = () => {

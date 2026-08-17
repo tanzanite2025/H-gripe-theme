@@ -3,27 +3,43 @@ package feedback
 import (
 	domainfeedback "commerce-platform/internal/domain/feedback"
 	"commerce-platform/internal/service"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
 
+const maxFeedbackCreateBodyBytes = 16 * 1024
+
 type Handler struct {
-	feedbackService *service.FeedbackService
+	feedbackService  *service.FeedbackService
+	sourceHashSecret string
 }
 
 func NewHandler(feedbackService *service.FeedbackService) *Handler {
 	return &Handler{feedbackService: feedbackService}
 }
 
+func (h *Handler) ConfigureSourceHashSecret(secret string) {
+	if h == nil {
+		return
+	}
+	h.sourceHashSecret = strings.TrimSpace(secret)
+}
+
 type createFeedbackRequest struct {
-	Thread  string `json:"thread" binding:"required"`
-	Content string `json:"content" binding:"required"`
-	Name    string `json:"name"`
-	Email   string `json:"email"`
-	Locale  string `json:"locale"`
+	Thread    string `json:"thread" binding:"required"`
+	Content   string `json:"content" binding:"required"`
+	Name      string `json:"name"`
+	Email     string `json:"email"`
+	Locale    string `json:"locale"`
+	PagePath  string `json:"page_path"`
+	PageTitle string `json:"page_title"`
 }
 
 func (h *Handler) List(c *gin.Context) {
@@ -55,26 +71,39 @@ func (h *Handler) List(c *gin.Context) {
 }
 
 func (h *Handler) Create(c *gin.Context) {
-	userID, exists := c.Get("user_id")
-	if !exists {
+	userID := c.GetUint("user_id")
+	if userID == 0 {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "Please sign in to leave feedback."})
 		return
 	}
 
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxFeedbackCreateBodyBytes)
+
 	var req createFeedbackRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
+		var maxBytesError *http.MaxBytesError
+		if errors.As(err, &maxBytesError) {
+			c.JSON(http.StatusRequestEntityTooLarge, gin.H{
+				"error":   "payload_too_large",
+				"message": "Feedback payload is too large.",
+			})
+			return
+		}
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_payload", "message": err.Error()})
 		return
 	}
 
 	item := &domainfeedback.Feedback{
-		ThreadKey: req.Thread,
-		UserID:    userID.(uint),
-		Name:      fallbackString(req.Name, contextString(c, "username")),
-		Email:     fallbackString(req.Email, contextString(c, "email")),
-		Content:   req.Content,
-		Status:    "pending",
-		Locale:    req.Locale,
+		ThreadKey:  req.Thread,
+		UserID:     userID,
+		Name:       fallbackString(req.Name, contextString(c, "username")),
+		Email:      fallbackString(req.Email, contextString(c, "email")),
+		Content:    req.Content,
+		Status:     "pending",
+		Locale:     req.Locale,
+		PagePath:   req.PagePath,
+		PageTitle:  req.PageTitle,
+		SourceHash: feedbackSourceHash(c.ClientIP(), h.sourceHashSecret),
 	}
 
 	if err := h.feedbackService.Create(item); err != nil {
@@ -90,7 +119,7 @@ func (h *Handler) Create(c *gin.Context) {
 }
 
 func (h *Handler) Eligibility(c *gin.Context) {
-	_, loggedIn := c.Get("user_id")
+	loggedIn := c.GetUint("user_id") > 0
 	var reason *string
 	if !loggedIn {
 		message := "Please sign in to leave feedback."
@@ -138,11 +167,30 @@ func respondFeedbackError(c *gin.Context, err error) {
 	case errors.Is(err, service.ErrFeedbackMissingThread),
 		errors.Is(err, service.ErrFeedbackMissingContent),
 		errors.Is(err, service.ErrFeedbackContentTooLong),
-		errors.Is(err, service.ErrFeedbackNameTooLong):
+		errors.Is(err, service.ErrFeedbackNameTooLong),
+		errors.Is(err, service.ErrFeedbackThreadTooLong),
+		errors.Is(err, service.ErrFeedbackInvalidThread),
+		errors.Is(err, service.ErrFeedbackEmailTooLong),
+		errors.Is(err, service.ErrFeedbackLocaleTooLong),
+		errors.Is(err, service.ErrFeedbackInvalidLocale),
+		errors.Is(err, service.ErrFeedbackPagePathTooLong),
+		errors.Is(err, service.ErrFeedbackPageTitleTooLong),
+		errors.Is(err, service.ErrFeedbackSourceHashTooLong):
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_payload", "message": err.Error()})
 	case errors.Is(err, service.ErrFeedbackInvalidStatus):
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_status", "message": err.Error()})
 	default:
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "feedback_error", "message": err.Error()})
 	}
+}
+
+func feedbackSourceHash(ipAddress, secret string) string {
+	normalizedIP := strings.ToLower(strings.TrimSpace(ipAddress))
+	secret = strings.TrimSpace(secret)
+	if normalizedIP == "" || secret == "" {
+		return ""
+	}
+	mac := hmac.New(sha256.New, []byte(secret))
+	_, _ = mac.Write([]byte(normalizedIP))
+	return hex.EncodeToString(mac.Sum(nil))
 }

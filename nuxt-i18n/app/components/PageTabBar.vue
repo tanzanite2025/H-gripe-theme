@@ -116,7 +116,7 @@ watch(isScrolling, (scrolling) => {
   position: fixed;
   inset-inline-start: 0;
   top: calc(
-    var(--page-tab-bar-sticky-top, var(--site-header-offset, 120px)) +
+  var(--page-tab-bar-sticky-top, 120px) +
     var(--page-tab-bar-flow-offset, 0px)
   );
   z-index: 87;

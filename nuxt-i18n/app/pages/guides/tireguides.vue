@@ -117,6 +117,7 @@ const { activeTab, setActiveTab } = usePageSubNavigationTab({
   tabs,
   basePath: '/guides/tireguides',
   defaultValue: 'tubeless',
+  redirectBasePathToDefaultTab: true,
 })
 const config = useRuntimeConfig()
 
@@ -182,6 +183,8 @@ const handleTireProductsDrawerClose = () => {
 }
 
 </script>
+
+<style src="~/assets/css/guide-sections.css"></style>
 
 <style scoped>
 .products-page__title {

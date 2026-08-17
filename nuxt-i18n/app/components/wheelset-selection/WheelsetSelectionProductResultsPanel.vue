@@ -25,7 +25,7 @@
         class="wheelset-selection-product-results-panel__card"
       >
         <div class="wheelset-selection-product-results-panel__media">
-          <img v-if="product.thumbnail" :src="product.thumbnail" :alt="product.title" loading="lazy">
+          <StorefrontImage v-if="product.thumbnail" :src="product.thumbnail" :alt="product.title" preset="card" />
           <Icon v-else name="lucide:circle-dashed" class="h-7 w-7" />
         </div>
         <div class="wheelset-selection-product-results-panel__title">{{ product.title }}</div>

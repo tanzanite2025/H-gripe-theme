@@ -28,7 +28,7 @@
 
       <section
         v-show="activeTab === 'parameter'"
-        class="spoke-parameter sizecharts-section rounded-2xl p-6 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_10px_26px_-14px_rgba(0,0,0,0.95)]"
+        class="spoke-parameter sizecharts-section rounded-2xl p-6 bg-[var(--tz-card-surface)] shadow-[0_10px_26px_-14px_rgba(0,0,0,0.95)]"
       >
         <h3 class="spoke-parameter__title text-lg font-bold tz-text-primary mb-2">{{ $t('spokeCalculator.parameter.title', 'Parameter definitions') }}</h3>
         
@@ -39,8 +39,8 @@
 
           <!-- Definitions Grid -->
           <div class="grid gap-4 md:grid-cols-2 mb-8">
-            <div class="bg-slate-900/50 rounded-xl p-4 border border-slate-800/50 hover:border-slate-700/50 transition-colors">
-              <h4 class="text-sky-400 font-semibold mb-2 text-sm uppercase tracking-wide">
+            <div class="spoke-parameter__definition-card">
+              <h4 class="spoke-parameter__definition-title">
                 {{ $t('spokeCalculator.parameter.items.erd.title', 'ERD (Effective Rim Diameter)') }}
               </h4>
               <p class="text-sm tz-text-secondary leading-relaxed">
@@ -48,8 +48,8 @@
               </p>
             </div>
             
-            <div class="bg-slate-900/50 rounded-xl p-4 border border-slate-800/50 hover:border-slate-700/50 transition-colors">
-              <h4 class="text-sky-400 font-semibold mb-2 text-sm uppercase tracking-wide">
+            <div class="spoke-parameter__definition-card">
+              <h4 class="spoke-parameter__definition-title">
                 {{ $t('spokeCalculator.parameter.items.flangeDiameter.title', 'Flange diameter') }}
               </h4>
               <p class="text-sm tz-text-secondary leading-relaxed">
@@ -57,8 +57,8 @@
               </p>
             </div>
 
-            <div class="bg-slate-900/50 rounded-xl p-4 border border-slate-800/50 hover:border-slate-700/50 transition-colors">
-              <h4 class="text-sky-400 font-semibold mb-2 text-sm uppercase tracking-wide">
+            <div class="spoke-parameter__definition-card">
+              <h4 class="spoke-parameter__definition-title">
                 {{ $t('spokeCalculator.parameter.items.centerToFlange.title', 'Center-to-flange') }}
               </h4>
               <p class="text-sm tz-text-secondary leading-relaxed">
@@ -66,8 +66,8 @@
               </p>
             </div>
 
-            <div class="bg-slate-900/50 rounded-xl p-4 border border-slate-800/50 hover:border-slate-700/50 transition-colors">
-              <h4 class="text-sky-400 font-semibold mb-2 text-sm uppercase tracking-wide">
+            <div class="spoke-parameter__definition-card">
+              <h4 class="spoke-parameter__definition-title">
                 {{ $t('spokeCalculator.parameter.items.holeCount.title', 'Spoke hole count') }}
               </h4>
               <p class="text-sm tz-text-secondary leading-relaxed">
@@ -75,8 +75,8 @@
               </p>
             </div>
 
-            <div class="bg-slate-900/50 rounded-xl p-4 border border-slate-800/50 hover:border-slate-700/50 transition-colors md:col-span-2">
-              <h4 class="text-sky-400 font-semibold mb-2 text-sm uppercase tracking-wide">
+            <div class="spoke-parameter__definition-card md:col-span-2">
+              <h4 class="spoke-parameter__definition-title">
                 {{ $t('spokeCalculator.parameter.items.crossPattern.title', 'Cross pattern') }}
               </h4>
               <p class="text-sm tz-text-secondary leading-relaxed">
@@ -86,16 +86,16 @@
           </div>
 
           <!-- Note Alert -->
-           <div class="bg-slate-800/40 rounded-lg p-4 mb-10 flex gap-3 text-sm tz-text-secondary border border-slate-700/30">
+           <div class="spoke-parameter__note-card">
              <span class="text-lg">💡</span>
              <p>{{ $t('spokeCalculator.parameter.note', "Tip: If you are unsure, use the manufacturer's published specs. If you measure yourself, measure twice and enter values to the same unit (mm).") }}</p>
           </div>
 
           <!-- Workflow Section -->
-          <div class="border-t border-slate-800/50 pt-8">
-            <h4 class="text-emerald-400 font-bold mb-6 text-center text-base uppercase tracking-wider">Spoke length workflow</h4>
+          <div class="spoke-parameter__workflow">
+            <h4 class="spoke-parameter__workflow-title">Spoke length workflow</h4>
 
-             <div class="mb-8 rounded-xl overflow-hidden shadow-lg border border-slate-800/50 bg-slate-950">
+             <div class="spoke-parameter__workflow-visual">
               <GuideImage
                 src="/public/technical/spoke-length.webp"
                 alt="Overview illustration for calculating bicycle spoke length"
@@ -106,9 +106,9 @@
 
             <div class="space-y-8">
               <!-- Step 1: Measure ERD -->
-              <div class="bg-slate-900/30 rounded-xl p-5 border border-slate-800/30">
+              <div class="spoke-parameter__step-card">
                 <h5 class="tz-text-primary font-bold mb-3 flex items-center gap-2">
-                  <span class="bg-sky-500/10 text-sky-400 w-6 h-6 rounded-full flex items-center justify-center text-xs border border-sky-500/20">1</span>
+                  <span class="spoke-parameter__step-badge">1</span>
                   Measure ERD (Effective Rim Diameter)
                 </h5>
                 
@@ -125,7 +125,7 @@
                         * This method compensates for rim manufacturing tolerances.
                       </p>
                    </div>
-                   <div class="rounded-lg overflow-hidden border border-slate-800/50">
+                   <div class="spoke-parameter__step-illustration">
                       <GuideImage
                         src="/public/technical/what-is-erd.webp"
                         alt="Diagram showing how Effective Rim Diameter (ERD) is measured"
@@ -137,9 +137,9 @@
               </div>
 
                <!-- Step 2: Measure Hub -->
-              <div class="bg-slate-900/30 rounded-xl p-5 border border-slate-800/30">
+              <div class="spoke-parameter__step-card">
                 <h5 class="tz-text-primary font-bold mb-3 flex items-center gap-2">
-                  <span class="bg-sky-500/10 text-sky-400 w-6 h-6 rounded-full flex items-center justify-center text-xs border border-sky-500/20">2</span>
+                  <span class="spoke-parameter__step-badge">2</span>
                   Measure Hub Dimensions
                 </h5>
                  <div class="text-sm tz-text-secondary space-y-3 leading-relaxed">
@@ -153,9 +153,9 @@
               </div>
 
                <!-- Step 3: Calculation -->
-              <div class="bg-slate-900/30 rounded-xl p-5 border border-slate-800/30">
+              <div class="spoke-parameter__step-card">
                 <h5 class="tz-text-primary font-bold mb-3 flex items-center gap-2">
-                  <span class="bg-sky-500/10 text-sky-400 w-6 h-6 rounded-full flex items-center justify-center text-xs border border-sky-500/20">3</span>
+                  <span class="spoke-parameter__step-badge">3</span>
                   Calculate & Round
                 </h5>
                  <div class="text-sm tz-text-secondary space-y-2 leading-relaxed">
@@ -200,6 +200,8 @@ useHead({
   title: 'Spoke Calculator',
 })
 </script>
+
+<style src="~/assets/css/guide-sections.css"></style>
 
 <style scoped>
 .support-page__title {
@@ -250,16 +252,108 @@ useHead({
    margin-top: 0.75rem;
  }
 
- .spoke-parameter__subtitle {
+.spoke-parameter__subtitle {
   margin: 1rem 0 0.4rem;
   font-size: 0.95rem;
   font-weight: 600;
-  color: #38bdf8;
+  color: var(--tz-text-accent);
   text-align: center;
 }
 
 .spoke-parameter__heading {
-  color: #38bdf8;
+  color: var(--tz-text-accent);
+}
+
+.spoke-parameter__definition-card,
+.spoke-parameter__step-card {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.75rem;
+  background: var(--tz-form-panel-surface);
+}
+
+.spoke-parameter__definition-card {
+  padding: 1rem;
+  transition: border-color 0.18s ease, background-color 0.18s ease;
+}
+
+.spoke-parameter__definition-card:hover {
+  border-color: rgba(181, 255, 109, 0.42);
+  background: var(--tz-card-surface);
+}
+
+.spoke-parameter__definition-title {
+  margin: 0 0 0.5rem;
+  color: var(--tz-text-accent);
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  line-height: 1.35;
+  text-transform: uppercase;
+}
+
+.spoke-parameter__note-card {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 2.5rem;
+  border: 1px solid rgba(181, 255, 109, 0.24);
+  border-radius: 0.5rem;
+  background: rgba(181, 255, 109, 0.06);
+  color: var(--tz-text-secondary);
+  font-size: 0.875rem;
+  padding: 1rem;
+}
+
+.spoke-parameter__workflow {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 2rem;
+}
+
+.spoke-parameter__workflow-title {
+  margin: 0 0 1.5rem;
+  color: var(--tz-text-accent);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.35;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.spoke-parameter__workflow-visual,
+.spoke-parameter__step-illustration {
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--tz-form-panel-surface);
+}
+
+.spoke-parameter__workflow-visual {
+  margin-bottom: 2rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 1rem 1.5rem -1rem rgba(0, 0, 0, 0.9);
+}
+
+.spoke-parameter__step-card {
+  padding: 1.25rem;
+}
+
+.spoke-parameter__step-badge {
+  display: inline-flex;
+  width: 1.5rem;
+  height: 1.5rem;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(181, 255, 109, 0.32);
+  border-radius: 50%;
+  background: rgba(181, 255, 109, 0.08);
+  color: var(--tz-text-accent);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.spoke-parameter__step-illustration {
+  border-radius: 0.5rem;
 }
 
 .spoke-parameter__image {
@@ -278,7 +372,7 @@ useHead({
   font-weight: 600;
 }
 
-/* On this page we do not want leading bullets before items; keep guides blue dots only in /guides */
+/* On this page we do not want leading bullets before items. */
 .spoke-parameter .sizecharts-section__list > li {
   padding-left: 0;
 }

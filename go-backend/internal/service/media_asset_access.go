@@ -41,7 +41,7 @@ func (s *MediaService) OpenAssetFile(ctx context.Context, id uint) (*MediaAssetF
 		return nil, err
 	}
 
-	key := assetStorageKey(asset)
+	key := s.mediaAssetObjectKey(asset)
 	if key == "" {
 		return nil, ErrMediaAssetURLUnavailable
 	}
@@ -94,7 +94,20 @@ func (s *MediaService) PublicUploadAssetAccess(key string) (PublicUploadAssetAcc
 	asset, err := s.repo.FindAssetByStorageKey(key)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return PublicUploadAssetAccess{}, nil
+			derivative, derivativeErr := s.repo.FindDerivativeByStorageKey(key)
+			if derivativeErr != nil {
+				if errors.Is(derivativeErr, gorm.ErrRecordNotFound) {
+					return PublicUploadAssetAccess{}, nil
+				}
+				return PublicUploadAssetAccess{}, derivativeErr
+			}
+			if derivative.Asset == nil {
+				return PublicUploadAssetAccess{Found: true, Allowed: false}, nil
+			}
+			return PublicUploadAssetAccess{
+				Found:   true,
+				Allowed: derivative.Asset.Status == "active" && derivative.Asset.Visibility == "public",
+			}, nil
 		}
 		return PublicUploadAssetAccess{}, err
 	}
@@ -102,6 +115,49 @@ func (s *MediaService) PublicUploadAssetAccess(key string) (PublicUploadAssetAcc
 		Found:   true,
 		Allowed: asset.Status == "active" && asset.Visibility == "public",
 	}, nil
+}
+
+func (s *MediaService) PublicMediaDimensions(reference string) (int, int, bool) {
+	if s == nil || s.repo == nil {
+		return 0, 0, false
+	}
+	key, ok := publicUploadStorageKey(reference)
+	if !ok {
+		return 0, 0, false
+	}
+	asset, err := s.repo.FindAssetByStorageKey(key)
+	if err != nil || asset == nil {
+		return 0, 0, false
+	}
+	if asset.DeletedAt.Valid || asset.Status != "active" || asset.Visibility != "public" || asset.MediaType != "image" {
+		return 0, 0, false
+	}
+	if asset.Width <= 0 || asset.Height <= 0 {
+		return 0, 0, false
+	}
+	return asset.Width, asset.Height, true
+}
+
+// CanonicalPublicMediaURL converts first-party upload references to the
+// storefront's public upload URL. Database rows can retain an internal
+// storage origin, but public response contracts must not reproduce it.
+// Non-upload media remains untouched because it may intentionally point to a
+// third-party CDN.
+func (s *MediaService) CanonicalPublicMediaURL(reference string) string {
+	value := strings.TrimSpace(reference)
+	if value == "" {
+		return ""
+	}
+
+	uploadPath, ok := canonicalPublicUploadPath(value)
+	if !ok {
+		return value
+	}
+
+	if s == nil || s.siteURL == "" {
+		return uploadPath
+	}
+	return strings.TrimRight(s.siteURL, "/") + uploadPath
 }
 
 func (s *MediaService) CanonicalPublicImageUploadURL(reference string) (string, error) {
@@ -132,7 +188,72 @@ func (s *MediaService) CanonicalPublicImageUploadURL(reference string) (string, 
 	if refs[0].SourceHost != "" && !sameAttachmentReferenceHost(refs[0].SourceHost, asset.URL) {
 		return "", ugc.ErrAttachmentInvalidURL
 	}
-	return strings.TrimSpace(asset.URL), nil
+	return s.CanonicalPublicMediaURL(asset.URL), nil
+}
+
+func canonicalPublicUploadPath(reference string) (string, bool) {
+	parsed, err := url.Parse(strings.TrimSpace(reference))
+	if err != nil {
+		return "", false
+	}
+
+	candidatePath := parsed.Path
+	if candidatePath == "" && strings.HasPrefix(reference, "/uploads/") {
+		candidatePath = reference
+	}
+	if !strings.HasPrefix(candidatePath, "/") {
+		candidatePath = "/" + candidatePath
+	}
+
+	markerIndex := strings.Index(candidatePath, "/uploads/")
+	if markerIndex < 0 {
+		return "", false
+	}
+
+	key, ok := storage.NormalizeObjectKey(candidatePath[markerIndex+len("/uploads/"):])
+	if !ok {
+		return "", false
+	}
+
+	path := "/uploads/" + key
+	if parsed.RawQuery != "" {
+		path += "?" + parsed.RawQuery
+	}
+	if parsed.Fragment != "" {
+		path += "#" + parsed.Fragment
+	}
+	return path, true
+}
+
+func publicUploadStorageKey(reference string) (string, bool) {
+	value := strings.TrimSpace(reference)
+	if value == "" {
+		return "", false
+	}
+	parsed, err := url.Parse(value)
+	if err != nil {
+		return "", false
+	}
+
+	candidatePath := parsed.Path
+	if candidatePath == "" && strings.HasPrefix(value, "/uploads/") {
+		candidatePath = value
+		if queryIndex := strings.Index(candidatePath, "?"); queryIndex >= 0 {
+			candidatePath = candidatePath[:queryIndex]
+		}
+		if fragmentIndex := strings.Index(candidatePath, "#"); fragmentIndex >= 0 {
+			candidatePath = candidatePath[:fragmentIndex]
+		}
+	}
+	if !strings.HasPrefix(candidatePath, "/") {
+		candidatePath = "/" + candidatePath
+	}
+
+	markerIndex := strings.Index(candidatePath, "/uploads/")
+	if markerIndex < 0 {
+		return "", false
+	}
+	return storage.NormalizeObjectKey(candidatePath[markerIndex+len("/uploads/"):])
 }
 
 func sameAttachmentReferenceHost(sourceHost, assetURL string) bool {
@@ -194,6 +315,15 @@ func assetStorageKey(asset *media.MediaAsset) string {
 		return key
 	}
 	return extractStorageKey(asset.URL)
+}
+
+func (s *MediaService) mediaAssetObjectKey(asset *media.MediaAsset) string {
+	if s != nil && s.storage != nil && asset != nil {
+		if key, err := s.storage.ObjectKey(asset.URL); err == nil && key != "" {
+			return key
+		}
+	}
+	return assetStorageKey(asset)
 }
 
 func extractStorageKey(url string) string {

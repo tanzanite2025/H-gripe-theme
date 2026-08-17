@@ -2,7 +2,7 @@
   <TabsContent value="services" class="space-y-3">
     <div class="flex flex-wrap items-end justify-between gap-3">
       <div>
-        <h2 class="text-sm font-black tracking-tighter italic uppercase">线路服务</h2>
+        <h2 class="text-sm font-black tracking-tighter uppercase">线路服务</h2>
         <p class="mt-1 text-xs text-muted-foreground">维护承运商下的国际线路、计费口径、首续重、体积重和预计时效。</p>
       </div>
       <Button
@@ -40,14 +40,14 @@
           </TableEmpty>
           <TableRow v-for="service in carrierServices" :key="service.id">
             <TableCell>
-              <span class="block font-bold text-xs">{{ service.service_name || '-' }}</span>
+ <span class="block font-bold text-xs">{{ service.service_name || '-'}}</span>
               <span class="block font-mono text-[10px] text-muted-foreground/70">
                 {{ carrierServiceCarrierName(service, carriers) }} · {{ service.service_code || '-' }}
               </span>
             </TableCell>
             <TableCell>
               <span class="block font-bold text-xs">{{ carrierServiceTemplateName(service, templates) }}</span>
-              <span class="block text-[10px] text-muted-foreground/70">{{ service.route_name || '未填写线路渠道' }}</span>
+ <span class="block text-[10px] text-muted-foreground/70">{{ service.route_name || '未填写线路渠道'}}</span>
             </TableCell>
             <TableCell class="max-w-72 truncate text-xs text-muted-foreground">{{ compactListLabel(service.countries) }}</TableCell>
             <TableCell>{{ billingModeLabel(service.billing_mode) }}</TableCell>

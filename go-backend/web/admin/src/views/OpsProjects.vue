@@ -19,7 +19,7 @@
           <option value="">全部环境</option>
         </select>
         <Button variant="outline" :disabled="loading" @click="refreshProjectsPage">
-          <RefreshCw :class="['size-4', loading ? 'animate-spin' : '']" />
+ <RefreshCw :class="['size-4', loading ? 'animate-spin': '']" />
           刷新
         </Button>
         <Button v-if="canEdit" @click="openCreate">
@@ -73,28 +73,28 @@
               <p class="mt-1 text-[10px] text-muted-foreground">{{ environmentLabel(project.environment) }}</p>
             </TableCell>
             <TableCell>
-              <p class="text-xs font-bold">{{ project.vps_name || '未绑定 VPS' }}</p>
-              <p class="mt-1 font-mono text-[10px] text-muted-foreground">{{ project.vps_hostname || project.vps_ipv4 || '-' }}</p>
+ <p class="text-xs font-bold">{{ project.vps_name || '未绑定 VPS'}}</p>
+ <p class="mt-1 font-mono text-[10px] text-muted-foreground">{{ project.vps_hostname || project.vps_ipv4 || '-'}}</p>
               <p class="mt-1 truncate text-[10px] text-muted-foreground" :title="projectConnectorLabel(project)">
                 连接器：{{ projectConnectorLabel(project) }}
               </p>
             </TableCell>
             <TableCell>
-              <p class="font-mono text-xs">{{ project.compose_project_name || '-' }}</p>
-              <p class="mt-1 truncate text-[10px] text-muted-foreground">{{ project.compose_source || '未登记 Compose 来源' }}</p>
+ <p class="font-mono text-xs">{{ project.compose_project_name || '-'}}</p>
+ <p class="mt-1 truncate text-[10px] text-muted-foreground">{{ project.compose_source || '未登记 Compose 来源'}}</p>
               <p v-if="project.gateway_network || project.gateway_alias" class="mt-1 text-[10px] text-muted-foreground">
                 {{ project.gateway_network || '-' }} / {{ project.gateway_alias || '-' }}
               </p>
             </TableCell>
             <TableCell>
-              <p class="font-mono text-xs">{{ project.observed_state || '未同步' }}</p>
-              <p class="mt-1 text-[10px] text-muted-foreground">{{ project.observed_source || '无同步来源' }}</p>
+ <p class="font-mono text-xs">{{ project.observed_state || '未同步'}}</p>
+ <p class="mt-1 text-[10px] text-muted-foreground">{{ project.observed_source || '无同步来源'}}</p>
               <p class="mt-1 font-mono text-[10px] text-muted-foreground">
                 {{ containerSummary(project) }}
               </p>
             </TableCell>
             <TableCell>
-              <p class="max-w-56 truncate text-xs" :title="project.services">{{ project.services || '-' }}</p>
+ <p class="max-w-56 truncate text-xs" :title="project.services">{{ project.services || '-'}}</p>
               <p class="mt-1 max-w-56 truncate text-[10px] text-muted-foreground" :title="project.networks">
                 网络：{{ project.networks || '-' }}
               </p>
@@ -106,7 +106,7 @@
               </p>
             </TableCell>
             <TableCell>
-              <p class="font-mono text-xs">{{ project.current_image_tag || '-' }}</p>
+ <p class="font-mono text-xs">{{ project.current_image_tag || '-'}}</p>
               <p class="mt-1 max-w-36 truncate font-mono text-[10px] text-muted-foreground" :title="project.current_commit_sha">
                 {{ project.current_commit_sha || '未登记 Commit SHA' }}
               </p>

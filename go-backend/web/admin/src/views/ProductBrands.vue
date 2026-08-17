@@ -31,7 +31,7 @@
                   <p class="font-semibold">{{ brand.name }}</p>
                   <span
                     class="rounded-full px-2 py-0.5 text-[11px]"
-                    :class="brand.is_enabled ? 'bg-emerald-500/10 text-emerald-700' : 'bg-muted text-muted-foreground'"
+ :class="brand.is_enabled ? 'bg-emerald-500/10 text-emerald-700': 'bg-muted text-muted-foreground'"
                   >
                     {{ brand.is_enabled ? '启用' : '停用' }}
                   </span>

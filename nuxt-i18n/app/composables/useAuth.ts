@@ -1,5 +1,6 @@
 import { useNuxtApp, useState } from 'nuxt/app'
 import { computed } from 'vue'
+import { hasBrowserCookie } from '~/utils/browserCookies'
 
 interface LoginPayload {
   username: string
@@ -73,6 +74,12 @@ export function useAuth() {
 
     if (initialized.value && !force) {
       return user.value
+    }
+
+    if (import.meta.client && !force && !hasBrowserCookie('csrf_token')) {
+      user.value = null
+      initialized.value = true
+      return null
     }
 
     const sessionRequest = (async () => {

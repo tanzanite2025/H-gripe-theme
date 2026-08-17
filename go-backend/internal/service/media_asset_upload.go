@@ -59,7 +59,7 @@ func (s *MediaService) UploadAsset(ctx context.Context, input MediaUploadInput) 
 		Filename:           path.Base(url),
 		OriginalFilename:   input.File.Filename,
 		URL:                url,
-		StorageKey:         extractStorageKey(url),
+		StorageKey:         storageObjectKey(s.storage, url),
 		MimeType:           input.File.Header.Get("Content-Type"),
 		MediaType:          mediaType,
 		Size:               input.File.Size,
@@ -77,6 +77,26 @@ func (s *MediaService) UploadAsset(ctx context.Context, input MediaUploadInput) 
 	if err := s.repo.CreateAsset(asset); err != nil {
 		_ = s.storage.Delete(ctx, url)
 		return nil, err
+	}
+
+	derivatives, err := s.generateAssetDerivatives(ctx, asset, input.File)
+	if err != nil {
+		_ = s.storage.Delete(ctx, asset.URL)
+		_ = s.repo.HardDeleteAsset(asset.ID)
+		return nil, err
+	}
+	if len(derivatives) > 0 {
+		if err := s.repo.CreateAssetDerivatives(derivatives); err != nil {
+			derivativeURLs := make([]string, 0, len(derivatives))
+			for _, derivative := range derivatives {
+				derivativeURLs = append(derivativeURLs, derivative.URL)
+			}
+			deleteUploadedMediaObjectsBestEffort(ctx, s.storage, derivativeURLs)
+			_ = s.storage.Delete(ctx, asset.URL)
+			_ = s.repo.HardDeleteAsset(asset.ID)
+			return nil, err
+		}
+		asset.Derivatives = derivatives
 	}
 
 	s.hydrateAssetAccessURL(asset)

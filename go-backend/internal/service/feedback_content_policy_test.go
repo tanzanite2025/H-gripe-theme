@@ -1,6 +1,8 @@
 package service
 
 import (
+	"errors"
+	"strings"
 	"testing"
 
 	"commerce-platform/internal/domain/feedback"
@@ -44,4 +46,50 @@ func TestFeedbackServiceListPublicSanitizesLegacyContent(t *testing.T) {
 	require.Len(t, items, 1)
 	assert.Equal(t, "Buyer", items[0].Name)
 	assert.Equal(t, "Old feedback", items[0].Content)
+}
+
+func TestFeedbackServiceCreateRejectsInvalidThreadKey(t *testing.T) {
+	_, feedbackService := newTestFeedbackService(t)
+	item := &feedback.Feedback{
+		ThreadKey: "support payment<script>",
+		UserID:    1,
+		Content:   "Works well.",
+	}
+
+	err := feedbackService.Create(item)
+	if !errors.Is(err, ErrFeedbackInvalidThread) {
+		t.Fatalf("Create() error = %v, want ErrFeedbackInvalidThread", err)
+	}
+}
+
+func TestFeedbackServiceCreateBoundsFeedbackMetadata(t *testing.T) {
+	_, feedbackService := newTestFeedbackService(t)
+	item := &feedback.Feedback{
+		ThreadKey: "support-payment",
+		UserID:    1,
+		Name:      "Buyer",
+		Content:   "Works well.",
+		PagePath:  "/" + strings.Repeat("a", maxFeedbackPagePathRunes+1),
+	}
+
+	err := feedbackService.Create(item)
+	if !errors.Is(err, ErrFeedbackPagePathTooLong) {
+		t.Fatalf("Create() error = %v, want ErrFeedbackPagePathTooLong", err)
+	}
+}
+
+func TestFeedbackServiceCreateNormalizesPageMetadata(t *testing.T) {
+	_, feedbackService := newTestFeedbackService(t)
+	item := &feedback.Feedback{
+		ThreadKey: "support-payment",
+		UserID:    1,
+		Content:   "Works well.",
+		Locale:    "zh_cn",
+		PagePath:  `<p>/support/payment</p><script>alert(1)</script>`,
+		PageTitle: `<strong>Payment FAQ</strong><script>alert(1)</script>`,
+	}
+
+	require.NoError(t, feedbackService.Create(item))
+	assert.Equal(t, "/support/payment", item.PagePath)
+	assert.Equal(t, "Payment FAQ", item.PageTitle)
 }

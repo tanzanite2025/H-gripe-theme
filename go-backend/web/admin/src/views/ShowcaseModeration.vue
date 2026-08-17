@@ -54,7 +54,7 @@
             v-for="item in items"
             :key="item.id"
             class="cursor-pointer"
-            :class="selected?.id === item.id ? 'bg-muted/50' : ''"
+ :class="selected?.id === item.id ? 'bg-muted/50': ''"
             @click="selectItem(item)"
           >
             <TableCell class="font-mono text-xs">#{{ item.id }}</TableCell>
@@ -76,7 +76,7 @@
             </TableCell>
             <TableCell>
               <div class="space-y-1">
-                <p class="text-xs font-semibold">{{ item.nickname || '未填写昵称' }}</p>
+ <p class="text-xs font-semibold">{{ item.nickname || '未填写昵称'}}</p>
                 <p class="font-mono text-[10px] text-muted-foreground">USER #{{ item.user_id }}</p>
               </div>
             </TableCell>
@@ -154,7 +154,7 @@
         <div class="grid gap-4 border-y py-4 sm:grid-cols-2">
           <div>
             <p class="text-[10px] font-bold uppercase text-muted-foreground">投稿信息</p>
-            <p class="mt-1 text-sm">{{ selected.nickname || '未填写昵称' }}</p>
+ <p class="mt-1 text-sm">{{ selected.nickname || '未填写昵称'}}</p>
             <p class="text-xs text-muted-foreground">{{ locationLabel(selected) }}</p>
             <p class="text-xs text-muted-foreground">
               订单 {{ selected.order_id ? `#${selected.order_id}` : '未关联订单' }}
@@ -175,7 +175,7 @@
           </p>
         </div>
 
-        <div v-if="selected.status === 'pending' && canModerate" class="space-y-2">
+ <div v-if="selected.status === 'pending'&& canModerate" class="space-y-2">
           <label for="showcase-reject-reason" class="text-xs font-semibold">拒绝原因</label>
           <Textarea
             id="showcase-reject-reason"

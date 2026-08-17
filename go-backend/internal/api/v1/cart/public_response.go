@@ -1,6 +1,7 @@
 package cart
 
 import (
+	"commerce-platform/internal/api/v1/publicmedia"
 	productdomain "commerce-platform/internal/domain/product"
 )
 
@@ -45,22 +46,31 @@ type PublicCartVariant struct {
 }
 
 type PublicCartMedia struct {
-	MediaType    string `json:"media_type"`
-	Role         string `json:"role"`
-	URL          string `json:"url"`
-	ThumbnailURL string `json:"thumbnail_url,omitempty"`
-	PosterURL    string `json:"poster_url,omitempty"`
-	Alt          string `json:"alt,omitempty"`
-	Title        string `json:"title,omitempty"`
-	SortOrder    int    `json:"sort_order"`
-	IsPrimary    bool   `json:"is_primary"`
+	MediaType     string                            `json:"media_type"`
+	Role          string                            `json:"role"`
+	URL           string                            `json:"url"`
+	ThumbnailURL  string                            `json:"thumbnail_url,omitempty"`
+	PosterURL     string                            `json:"poster_url,omitempty"`
+	ImageVariants map[string]PublicCartImageVariant `json:"image_variants,omitempty"`
+	Alt           string                            `json:"alt,omitempty"`
+	Title         string                            `json:"title,omitempty"`
+	SortOrder     int                               `json:"sort_order"`
+	IsPrimary     bool                              `json:"is_primary"`
 }
 
-func PublicCartSummaryFromDomain(summary *productdomain.CartSummary) PublicCartSummary {
+type PublicCartImageVariant struct {
+	URL      string `json:"url"`
+	Width    int    `json:"width,omitempty"`
+	Height   int    `json:"height,omitempty"`
+	MimeType string `json:"mime_type,omitempty"`
+}
+
+func PublicCartSummaryFromDomain(summary *productdomain.CartSummary, resolvers ...publicmedia.Resolver) PublicCartSummary {
 	if summary == nil {
 		return PublicCartSummary{Items: []PublicCartItem{}}
 	}
 
+	resolver := publicmediaResolver(resolvers)
 	items := make([]PublicCartItem, 0, len(summary.Items))
 	for _, item := range summary.Items {
 		publicItem := PublicCartItem{
@@ -95,7 +105,7 @@ func PublicCartSummaryFromDomain(summary *productdomain.CartSummary) PublicCartS
 				Price:        price,
 				SalePrice:    salePrice,
 				Availability: string(cartAvailabilityForProduct(*item.Product)),
-				Media:        publicCartMediaFromDomain(item.Product.Media),
+				Media:        publicCartMediaFromDomain(item.Product.Media, resolver),
 			}
 			if publicItem.Variant != nil {
 				publicProduct.Availability = publicItem.Variant.Availability
@@ -112,25 +122,59 @@ func PublicCartSummaryFromDomain(summary *productdomain.CartSummary) PublicCartS
 	}
 }
 
-func publicCartMediaFromDomain(items []productdomain.ProductMedia) []PublicCartMedia {
+func publicCartMediaFromDomain(items []productdomain.ProductMedia, resolver publicmedia.Resolver) []PublicCartMedia {
 	media := make([]PublicCartMedia, 0, len(items))
 	for _, item := range items {
 		if !item.IsVisible || item.URL == "" {
 			continue
 		}
 		media = append(media, PublicCartMedia{
-			MediaType:    item.MediaType,
-			Role:         item.Role,
-			URL:          item.URL,
-			ThumbnailURL: item.ThumbnailURL,
-			PosterURL:    item.PosterURL,
-			Alt:          item.Alt,
-			Title:        item.Title,
-			SortOrder:    item.SortOrder,
-			IsPrimary:    item.IsPrimary,
+			MediaType:     item.MediaType,
+			Role:          item.Role,
+			URL:           publicmedia.URL(resolver, item.URL),
+			ThumbnailURL:  publicmedia.URL(resolver, item.ThumbnailURL),
+			PosterURL:     publicmedia.URL(resolver, item.PosterURL),
+			ImageVariants: publicCartImageVariantsFromDomain(productdomain.ParseProductMediaImageVariants(item.ImageVariantData), resolver),
+			Alt:           item.Alt,
+			Title:         item.Title,
+			SortOrder:     item.SortOrder,
+			IsPrimary:     item.IsPrimary,
 		})
 	}
 	return media
+}
+
+func publicCartImageVariantsFromDomain(
+	values map[string]productdomain.ProductMediaImageVariant,
+	resolver publicmedia.Resolver,
+) map[string]PublicCartImageVariant {
+	if len(values) == 0 {
+		return nil
+	}
+
+	result := make(map[string]PublicCartImageVariant, len(values))
+	for preset, item := range values {
+		if preset == "" || item.URL == "" {
+			continue
+		}
+		result[preset] = PublicCartImageVariant{
+			URL:      publicmedia.URL(resolver, item.URL),
+			Width:    item.Width,
+			Height:   item.Height,
+			MimeType: item.MimeType,
+		}
+	}
+	if len(result) == 0 {
+		return nil
+	}
+	return result
+}
+
+func publicmediaResolver(resolvers []publicmedia.Resolver) publicmedia.Resolver {
+	if len(resolvers) == 0 {
+		return nil
+	}
+	return resolvers[0]
 }
 
 func cartAvailabilityForProduct(item productdomain.Product) productAvailability {

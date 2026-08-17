@@ -16,6 +16,7 @@ type SEOResourceService struct {
 	posts            *PostService
 	products         *ProductService
 	settings         *SettingService
+	mediaURLResolver PublicMediaURLResolver
 	canonicalBaseURL string
 }
 
@@ -32,6 +33,13 @@ func (s *SEOResourceService) ConfigureCanonicalBaseURL(baseURL string) {
 		return
 	}
 	s.canonicalBaseURL = strings.TrimRight(strings.TrimSpace(baseURL), "/")
+}
+
+func (s *SEOResourceService) ConfigureMediaService(resolver PublicMediaURLResolver) {
+	if s == nil {
+		return
+	}
+	s.mediaURLResolver = resolver
 }
 
 func (s *SEOResourceService) ListArticles(page, pageSize int, status, locale, search string) ([]post.Post, int64, error) {
@@ -131,7 +139,14 @@ func (s *SEOResourceService) ProductDiagnostics(item product.Product) (seodomain
 	}
 
 	routePath := seodomain.BuildProductRoute(item.Locale, item.Slug).Path
-	return seodomain.BuildProductSEOReadiness(item, brand, routePath), nil
+	result := seodomain.BuildProductSEOReadiness(item, brand, routePath)
+	for index := range result.StructuredData.Image {
+		result.StructuredData.Image[index] = canonicalPublicMediaURL(
+			s.mediaURLResolver,
+			result.StructuredData.Image[index],
+		)
+	}
+	return result, nil
 }
 
 func (s *SEOResourceService) UpdateProduct(id uint, request seodomain.ProductResourceUpdateRequest) (*product.Product, error) {

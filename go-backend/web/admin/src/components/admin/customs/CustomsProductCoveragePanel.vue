@@ -83,7 +83,7 @@
               <td class="px-3 py-3">
                 <span
                   class="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium"
-                  :class="missingFields(product).length ? 'bg-amber-500/10 text-amber-700' : 'bg-emerald-500/10 text-emerald-700'"
+ :class="missingFields(product).length ? 'bg-amber-500/10 text-amber-700': 'bg-emerald-500/10 text-emerald-700'"
                 >
                   <CircleAlert v-if="missingFields(product).length" class="size-3.5" />
                   <CheckCircle2 v-else class="size-3.5" />

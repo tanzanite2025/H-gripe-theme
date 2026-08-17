@@ -1,13 +1,11 @@
 <template>
   <ClientOnly>
     <Teleport to="body">
-    <!-- 第一步：底部简洁横条 -->
-    <Transition name="cookie-slide">
-      <div 
-        v-if="showBanner && !showModal" 
-        ref="bannerRef"
-        class="cookie-banner fixed left-0 right-0 z-[9999] bg-[rgba(0,0,0,0.78)] border-t border-white/10 shadow-[0_-10px_30px_rgba(0,0,0,0.45)]"
-      >
+    <!-- 第一步：底部简洁横条。它是 fixed overlay，不参与文档流。 -->
+    <div
+      v-if="showBanner && !showModal"
+      class="cookie-banner fixed left-0 right-0 z-[9999] bg-[rgba(0,0,0,0.78)] border-t border-white/10 shadow-[0_-10px_30px_rgba(0,0,0,0.45)]"
+    >
         <div class="cookie-banner-inner max-w-5xl mx-auto px-4 py-4 flex flex-wrap items-center justify-center gap-4 sm:justify-between">
           <p class="text-sm text-white/75 text-center sm:text-left">
             {{ t('cookieConsent.banner.message') }}
@@ -36,8 +34,7 @@
             </button>
           </div>
         </div>
-      </div>
-    </Transition>
+    </div>
 
     <!-- 第二步：完整选择弹窗 -->
     <Transition name="cookie-fade">
@@ -164,7 +161,7 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useI18n } from '#imports'
 import {
   COOKIE_CONSENT_KEY,
@@ -178,8 +175,6 @@ const overlayBackStack = useOverlayBackStack()
 
 const showBanner = ref(false)
 const showModal = ref(false)
-const bannerRef = ref<HTMLElement | null>(null)
-let bannerResizeObserver: ResizeObserver | null = null
 
 const closeCookieModalState = () => {
   showModal.value = false
@@ -193,28 +188,6 @@ const openCookieModal = () => {
 const closeCookieModal = () => {
   void overlayBackStack.close('cookie-consent')
   closeCookieModalState()
-}
-
-const clearMobileCookieBannerHeight = () => {
-  if (typeof document !== 'undefined') {
-    document.documentElement.style.removeProperty('--tz-mobile-cookie-banner-height')
-  }
-}
-
-const updateMobileCookieBannerHeight = () => {
-  if (typeof window === 'undefined' || typeof document === 'undefined') return
-
-  const isMobileViewport = typeof window.matchMedia === 'function'
-    ? window.matchMedia('(max-width: 767px)').matches
-    : window.innerWidth <= 767
-
-  if (!isMobileViewport || !showBanner.value || showModal.value || !bannerRef.value) {
-    clearMobileCookieBannerHeight()
-    return
-  }
-
-  const height = Math.ceil(bannerRef.value.getBoundingClientRect().height)
-  document.documentElement.style.setProperty('--tz-mobile-cookie-banner-height', `${height}px`)
 }
 
 const preferences = ref({
@@ -291,39 +264,7 @@ onMounted(() => {
     }
   }
 
-  if (typeof window !== 'undefined') {
-    window.addEventListener('resize', updateMobileCookieBannerHeight)
-    if ('ResizeObserver' in window) {
-      bannerResizeObserver = new ResizeObserver(() => updateMobileCookieBannerHeight())
-      if (bannerRef.value) {
-        bannerResizeObserver.observe(bannerRef.value)
-      }
-    }
-    nextTick(updateMobileCookieBannerHeight)
-  }
-})
-
-watch(bannerRef, (banner, previousBanner) => {
-  if (bannerResizeObserver && previousBanner) {
-    bannerResizeObserver.unobserve(previousBanner)
-  }
-  if (bannerResizeObserver && banner) {
-    bannerResizeObserver.observe(banner)
-  }
-  nextTick(updateMobileCookieBannerHeight)
-})
-
-watch([showBanner, showModal], () => {
-  nextTick(updateMobileCookieBannerHeight)
-})
-
-onBeforeUnmount(() => {
-  if (typeof window !== 'undefined') {
-    window.removeEventListener('resize', updateMobileCookieBannerHeight)
-  }
-  bannerResizeObserver?.disconnect()
-  bannerResizeObserver = null
-  clearMobileCookieBannerHeight()
+  // The banner is fixed and must never change document geometry.
 })
 
 // 暴露方法供外部调用（如用户想重新设置偏好）
@@ -345,17 +286,6 @@ defineExpose({
 
 .cookie-fade-enter-from,
 .cookie-fade-leave-to {
-  opacity: 0;
-}
-
-.cookie-slide-enter-active,
-.cookie-slide-leave-active {
-  transition: transform 0.3s ease, opacity 0.3s ease;
-}
-
-.cookie-slide-enter-from,
-.cookie-slide-leave-to {
-  transform: translateY(100%);
   opacity: 0;
 }
 

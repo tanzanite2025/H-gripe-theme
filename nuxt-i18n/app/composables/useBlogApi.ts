@@ -9,6 +9,10 @@ import {
   normalizeBlogLocalizedRoutes,
   resolveBlogCategory,
 } from '~/utils/seo/blog'
+import {
+  createStorefrontMediaContext,
+  normalizeStorefrontMediaUrl,
+} from '~/utils/storefrontMedia'
 import type {
   BlogCategory,
   BlogPostDetail,
@@ -40,6 +44,7 @@ const resolveApiV1Base = (apiBase: string, internalOrigin: string, isServer: boo
 
 export const useBlogApi = () => {
   const config = useRuntimeConfig()
+  const mediaContext = createStorefrontMediaContext(config)
 
   const apiBase = computed(() => {
     return (config.public as { apiBase?: string }).apiBase || '/api/v1'
@@ -52,6 +57,18 @@ export const useBlogApi = () => {
   const useLocalBlog = computed(() => {
     return ['local', 'mock', 'disabled'].includes(blogApiMode.value)
   })
+
+  const normalizePostMedia = <T extends BlogPostSummary | BlogPostDetail>(post: T): T => {
+    if (!post.featuredImage?.url) return post
+
+    return {
+      ...post,
+      featuredImage: {
+        ...post.featuredImage,
+        url: normalizeStorefrontMediaUrl(post.featuredImage.url, mediaContext),
+      },
+    }
+  }
 
   const apiRoot = computed(() => resolveApiV1Base(
     apiBase.value,
@@ -105,7 +122,13 @@ export const useBlogApi = () => {
     perPage: number
   }): Promise<BlogPostsResponse> => {
     const localResponse = () => buildLocalPostsResponse(params)
-    if (useLocalBlog.value) return localResponse()
+    if (useLocalBlog.value) {
+      const local = localResponse()
+      return {
+        ...local,
+        items: local.items.map(normalizePostMedia),
+      }
+    }
 
     const response = await $fetch<{ data: BlogPostSummary[], total: number }>(
       `${apiRoot.value}/content/posts`,
@@ -128,7 +151,7 @@ export const useBlogApi = () => {
       page: params.page,
       per_page: params.perPage,
       total: response.total || 0,
-      items: response.data.map((item: any) => mapPost(item, params.lang)),
+      items: response.data.map((item: any) => normalizePostMedia(mapPost(item, params.lang))),
     }
   }
 
@@ -136,7 +159,7 @@ export const useBlogApi = () => {
     const localPost = () => getBlogPostBySlug(params)
     if (useLocalBlog.value) {
       const post = localPost()
-      if (post) return post
+      if (post) return normalizePostMedia(post)
       throw new Error('Blog post not found')
     }
 
@@ -153,11 +176,11 @@ export const useBlogApi = () => {
       throw new Error('Blog post response is invalid')
     }
 
-    return {
+    return normalizePostMedia({
       ...mapPost(post, params.lang),
       contentHtml: post.content || '',
       canonicalUrl: post.canonical_url || '',
-    } as BlogPostDetail
+    } as BlogPostDetail)
   }
 
   const getTranslations = async (params: {

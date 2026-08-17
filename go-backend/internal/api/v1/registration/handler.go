@@ -10,6 +10,7 @@ type Handler struct {
 	registrationSvc *service.RegistrationService
 	storageService  storage.StorageService
 	antiBot         *antibot.Service
+	mediaResolver   service.PublicMediaURLResolver
 }
 
 func NewHandler(registrationSvc *service.RegistrationService, storageService storage.StorageService, antiBotServices ...*antibot.Service) *Handler {
@@ -22,4 +23,11 @@ func NewHandler(registrationSvc *service.RegistrationService, storageService sto
 		storageService:  storageService,
 		antiBot:         antiBot,
 	}
+}
+
+func (h *Handler) ConfigureMediaService(resolver service.PublicMediaURLResolver) {
+	if h == nil {
+		return
+	}
+	h.mediaResolver = resolver
 }

@@ -30,8 +30,8 @@
               </AdminStatusBadge>
             </DetailItem>
             <DetailItem label="Quality">Q{{ selectedProfile.profile_quality_score || 0 }}</DetailItem>
-            <DetailItem label="Email" class="col-span-2">{{ selectedProfile.email || '未采集' }}</DetailItem>
-            <DetailItem label="Email Source" class="col-span-2">{{ selectedProfile.email_source || 'not_captured' }}</DetailItem>
+ <DetailItem label="Email" class="col-span-2">{{ selectedProfile.email || '未采集'}}</DetailItem>
+ <DetailItem label="Email Source" class="col-span-2">{{ selectedProfile.email_source || 'not_captured'}}</DetailItem>
           </dl>
         </section>
 
@@ -42,7 +42,7 @@
               {{ selectedProfile.customer_service_visitor_hash_preview || '未绑定' }}
             </FactRow>
             <FactRow label="Cart session" :active="selectedProfile.has_cart_session">
-              <span class="break-all font-mono">{{ selectedProfile.cart_session_id || '未绑定' }}</span>
+ <span class="break-all font-mono">{{ selectedProfile.cart_session_id || '未绑定'}}</span>
             </FactRow>
             <FactRow label="Locale" :active="Boolean(selectedProfile.locale)">
               {{ selectedProfile.locale || '未采集' }} / {{ selectedProfile.locale_source || 'not_captured' }}
@@ -55,8 +55,8 @@
           <dl class="grid grid-cols-2 gap-2 text-xs">
             <DetailItem label="Country">{{ selectedProfile.country_code || '-' }}</DetailItem>
             <DetailItem label="Timezone">{{ selectedProfile.timezone || '-' }}</DetailItem>
-            <DetailItem label="Region" class="col-span-2">{{ selectedProfile.region || '-' }}</DetailItem>
-            <DetailItem label="City" class="col-span-2">{{ selectedProfile.city || '-' }}</DetailItem>
+ <DetailItem label="Region" class="col-span-2">{{ selectedProfile.region || '-'}}</DetailItem>
+ <DetailItem label="City" class="col-span-2">{{ selectedProfile.city || '-'}}</DetailItem>
           </dl>
           <div class="mt-3 flex flex-wrap gap-1.5">
             <AdminStatusBadge :tone="selectedProfile.has_ip_fingerprint ? 'green' : 'gray'">IP fingerprint</AdminStatusBadge>
@@ -123,8 +123,8 @@ const DetailItem = defineComponent({
   },
   setup(props, { slots, attrs }) {
     return () => h('div', { class: ['space-y-1 rounded-xl border p-2', attrs.class] }, [
-      h('dt', { class: 'text-[10px] font-black uppercase tracking-widest text-muted-foreground/70' }, props.label),
-      h('dd', { class: 'break-words font-bold text-foreground' }, slots.default ? slots.default() : '-')
+ h('dt', { class: 'text-[10px] font-black uppercase tracking-widest text-muted-foreground/70'}, props.label),
+ h('dd', { class: 'break-words font-bold text-foreground'}, slots.default ? slots.default() : '-')
     ])
   }
 })
@@ -135,12 +135,12 @@ const FactRow = defineComponent({
     active: { type: Boolean, default: false }
   },
   setup(props, { slots }) {
-    return () => h('div', { class: 'rounded-xl border p-2' }, [
-      h('div', { class: 'mb-1 flex items-center justify-between gap-2' }, [
-        h('span', { class: 'text-[10px] font-black uppercase tracking-widest text-muted-foreground/70' }, props.label),
+ return () => h('div', { class: 'rounded-xl border p-2'}, [
+ h('div', { class: 'mb-1 flex items-center justify-between gap-2'}, [
+ h('span', { class: 'text-[10px] font-black uppercase tracking-widest text-muted-foreground/70'}, props.label),
         h(AdminStatusBadge, { tone: props.active ? 'green' : 'gray' }, { default: () => props.active ? 'captured' : 'missing' })
       ]),
-      h('p', { class: 'break-words font-mono text-[11px] text-foreground' }, slots.default ? slots.default() : '-')
+ h('p', { class: 'break-words font-mono text-[11px] text-foreground'}, slots.default ? slots.default() : '-')
     ])
   }
 })

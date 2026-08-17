@@ -1,43 +1,52 @@
 @font-face {
-  font-family: 'StorefrontSystem';
-  src: url('./StorefrontSystem-CN-Latin.woff2') format('woff2');
+  font-family: 'StorefrontSystemLatin';
+  src: url('./StorefrontSystem-Latin.00af3fec5b34.woff2') format('woff2');
   font-weight: 100 900;
   font-style: normal;
-  font-display: block;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'StorefrontSystem';
+  src: url('./StorefrontSystem-CJK.f8ce6d72e8cb.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0250-02FF, U+0370-052F, U+0530-058F, U+1F00-1FFF, U+2070-209F, U+2150-218F, U+2C00-2DFF, U+2E80-2EFF, U+3000-303F, U+3040-30FF, U+3100-31FF, U+3200-33FF, U+3400-4DBF, U+4E00-9FFF, U+AC00-D7AF, U+F900-FAFF, U+FE30-FE4F, U+FF00-FFEF, U+20000-2FA1F;
 }
 
 @font-face {
   font-family: 'StorefrontSystemDevanagari';
-  src: url('./StorefrontSystem-Devanagari.woff2') format('woff2');
+  src: url('./StorefrontSystem-Devanagari.3b3cae4d2600.woff2') format('woff2');
   font-weight: 100 900;
   font-style: normal;
-  font-display: block;
+  font-display: swap;
   unicode-range: U+0900-097F, U+1CD0-1CF9, U+200C-200D, U+20A8, U+20B9, U+20F0, U+25CC, U+A830-A839, U+A8E0-A8FF, U+11B00-11B09;
 }
 
 @font-face {
   font-family: 'StorefrontSystemLatinAccents';
-  src: url('./StorefrontSystem-Latin-Accents.woff2') format('woff2');
+  src: url('./StorefrontSystem-Latin-Accents.e645edc952b6.woff2') format('woff2');
   font-weight: 100 900;
   font-style: normal;
-  font-display: block;
+  font-display: swap;
   unicode-range: U+00C0-00C1, U+00C4-00C5, U+00C9, U+00D6, U+00DC, U+0130;
 }
 
 @font-face {
   font-family: 'StorefrontSystemArabic';
-  src: url('./StorefrontSystem-Arabic.woff2') format('woff2');
+  src: url('./StorefrontSystem-Arabic.ce85091f0209.woff2') format('woff2');
   font-weight: 100 900;
   font-style: normal;
-  font-display: block;
+  font-display: swap;
   unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC4, U+10EFC-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1;
 }
 
 @font-face {
   font-family: 'StorefrontSystemThai';
-  src: url('./StorefrontSystem-Thai.woff2') format('woff2');
+  src: url('./StorefrontSystem-Thai.1f5a173641bb.woff2') format('woff2');
   font-weight: 100 900;
   font-style: normal;
-  font-display: block;
+  font-display: swap;
   unicode-range: U+02D7, U+0303, U+0331, U+0E01-0E5B, U+200C-200D, U+25CC;
 }

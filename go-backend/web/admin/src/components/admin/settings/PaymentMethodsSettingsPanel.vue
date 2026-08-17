@@ -1,7 +1,7 @@
 <template>
   <section class="max-w-none space-y-3">
     <div class="max-w-3xl">
-      <h2 class="text-sm font-black tracking-tighter italic uppercase text-foreground">{{ t('settings.paymentMethods') }}</h2>
+      <h2 class="text-sm font-black tracking-tighter uppercase text-foreground">{{ t('settings.paymentMethods') }}</h2>
       <p class="mt-1 text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">
         {{ t('settings.paymentMethodsDescription') }}
       </p>

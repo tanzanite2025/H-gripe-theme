@@ -45,13 +45,12 @@
           @click="emitProductCategoryNavigation(productCategory)"
         >
           <span class="product-category-navigation-cards__media" aria-hidden="true">
-            <img
+            <StorefrontImage
               v-if="resolveProductCategoryImageSource(productCategory)"
               class="product-category-navigation-cards__image"
               :src="resolveProductCategoryImageSource(productCategory)"
               :alt="productCategory.name"
-              loading="lazy"
-              decoding="async"
+              preset="card"
               @error="handleProductCategoryImageError(productCategory.id)"
             />
             <span v-else class="product-category-navigation-cards__placeholder">

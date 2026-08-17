@@ -69,7 +69,7 @@
         </div>
         <div v-if="currentOrder.tracking_number && canEdit" class="flex justify-end">
           <Button variant="outline" size="sm" class="rounded-full" :disabled="syncingTracking" @click="emit('sync-tracking')">
-            <RefreshCw :class="['size-3.5', syncingTracking ? 'animate-spin' : '']" />
+ <RefreshCw :class="['size-3.5', syncingTracking ? 'animate-spin': '']" />
             {{ syncingTracking ? '同步中' : '同步轨迹' }}
           </Button>
         </div>
@@ -79,7 +79,7 @@
         <dl class="grid overflow-hidden rounded-lg border sm:grid-cols-2">
           <DetailItem label="姓名">{{ shippingName(currentOrder.shipping_address) }}</DetailItem>
           <DetailItem label="电话">{{ currentOrder.shipping_address?.phone || '-' }}</DetailItem>
-          <DetailItem label="邮箱" class="sm:col-span-2">{{ currentOrder.shipping_address?.email || '-' }}</DetailItem>
+ <DetailItem label="邮箱" class="sm:col-span-2">{{ currentOrder.shipping_address?.email || '-'}}</DetailItem>
           <DetailItem label="地址" class="sm:col-span-2">{{ shippingAddressLine(currentOrder.shipping_address) }}</DetailItem>
           <DetailItem label="城市">{{ currentOrder.shipping_address?.city || '-' }}</DetailItem>
           <DetailItem label="省/州">{{ currentOrder.shipping_address?.state || '-' }}</DetailItem>
@@ -123,7 +123,7 @@
             :disabled="exportingCustoms || !currentOrder.items?.length"
             @click="emit('export-customs')"
           >
-            <Download :class="['size-3.5', exportingCustoms ? 'animate-pulse' : '']" />
+ <Download :class="['size-3.5', exportingCustoms ? 'animate-pulse': '']" />
             {{ exportingCustoms ? '生成中' : '下载清关资料' }}
           </Button>
         </div>
@@ -142,11 +142,11 @@
           <TableBody>
             <TableEmpty v-if="!currentOrder.items?.length" :colspan="7">暂无清关资料</TableEmpty>
             <TableRow v-for="item in currentOrder.items || []" :key="`customs-${item.id || item.sku}`">
-              <TableCell class="max-w-40 truncate font-medium" :title="item.product_name || undefined">{{ item.product_name || '-' }}</TableCell>
-              <TableCell class="font-mono text-xs">{{ item.hs_code || '-' }}</TableCell>
-              <TableCell class="font-mono text-xs">{{ item.cn_code || '-' }}</TableCell>
-              <TableCell class="font-mono text-xs">{{ item.country_of_origin || '-' }}</TableCell>
-              <TableCell class="max-w-52 truncate text-xs" :title="item.customs_description || undefined">{{ item.customs_description || '-' }}</TableCell>
+ <TableCell class="max-w-40 truncate font-medium" :title="item.product_name || undefined">{{ item.product_name || '-'}}</TableCell>
+ <TableCell class="font-mono text-xs">{{ item.hs_code || '-'}}</TableCell>
+ <TableCell class="font-mono text-xs">{{ item.cn_code || '-'}}</TableCell>
+ <TableCell class="font-mono text-xs">{{ item.country_of_origin || '-'}}</TableCell>
+ <TableCell class="max-w-52 truncate text-xs" :title="item.customs_description || undefined">{{ item.customs_description || '-'}}</TableCell>
               <TableCell class="min-w-52">
                 <div v-if="canEdit" class="flex items-center gap-2">
                   <Input
@@ -167,7 +167,7 @@
                     :aria-label="`保存 ${item.product_name || '商品'} 的申报价值`"
                     @click="saveCustomsItem(item)"
                   >
-                    <Save :class="['size-3.5', isSavingCustomsItem(item) ? 'animate-pulse' : '']" />
+ <Save :class="['size-3.5', isSavingCustomsItem(item) ? 'animate-pulse': '']" />
                   </Button>
                 </div>
                 <span v-else class="font-mono text-xs">{{ formatDeclaredValue(item.declared_value) }}</span>
@@ -196,7 +196,7 @@
           <AmountRow label="运费" :value="currentOrder.shipping_fee" />
           <AmountRow label="税费" :value="currentOrder.tax_amount" />
           <AmountRow label="优惠" :value="-Number(currentOrder.discount_amount || 0)" />
-          <div class="flex items-center justify-between border-t border-dashed pt-3 text-base font-black italic uppercase">
+          <div class="flex items-center justify-between border-t border-dashed pt-3 text-base font-black uppercase">
             <dt>订单总额</dt>
             <dd class="tabular-nums text-primary">¥{{ formatMoney(currentOrder.total_amount) }}</dd>
           </div>
@@ -220,8 +220,8 @@
             <TableRow v-for="event in currentTrackingEvents" :key="event.id || `${event.tracking_number}-${event.event_time}-${event.status}`">
               <TableCell class="font-mono text-[10px] text-muted-foreground">{{ formatDate(event.event_time) }}</TableCell>
               <TableCell><AdminStatusBadge tone="blue">{{ event.status || '-' }}</AdminStatusBadge></TableCell>
-              <TableCell class="text-xs">{{ event.location || '-' }}</TableCell>
-              <TableCell class="text-xs">{{ event.description || '-' }}</TableCell>
+ <TableCell class="text-xs">{{ event.location || '-'}}</TableCell>
+ <TableCell class="text-xs">{{ event.description || '-'}}</TableCell>
             </TableRow>
           </TableBody>
         </Table>
@@ -269,8 +269,8 @@
                     {{ dispute.mistake_assessment?.label || '待判断' }}
                   </AdminStatusBadge>
                 </div>
-                <div class="mt-2 break-all font-mono text-xs font-bold">{{ dispute.provider_dispute_id || '-' }}</div>
-                <p class="mt-1 text-xs text-muted-foreground">{{ dispute.suggested_action || dispute.mistake_assessment?.reason || '-' }}</p>
+ <div class="mt-2 break-all font-mono text-xs font-bold">{{ dispute.provider_dispute_id || '-'}}</div>
+ <p class="mt-1 text-xs text-muted-foreground">{{ dispute.suggested_action || dispute.mistake_assessment?.reason || '-'}}</p>
               </div>
               <div class="flex shrink-0 gap-2">
                 <Button
@@ -321,7 +321,7 @@
         <div class="space-y-4">
           <div>
             <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block">NOTE / 客户备注</span>
-            <p class="mt-1 text-sm">{{ currentOrder.customer_note || '-' }}</p>
+ <p class="mt-1 text-sm">{{ currentOrder.customer_note || '-'}}</p>
           </div>
           <div>
             <Label for="admin-note">管理员备注</Label>
@@ -380,8 +380,8 @@ import type {
 const OrderDetailSection = defineComponent({
   props: { title: { type: String, required: true } },
   setup(props, { slots }) {
-    return () => h('section', { class: 'space-y-3 border-t border-dashed pt-5 first:border-t-0 first:pt-0' }, [
-      h('h3', { class: 'text-sm font-black tracking-tighter italic uppercase text-foreground' }, props.title),
+ return () => h('section', { class: 'space-y-3 border-t border-dashed pt-5 first:border-t-0 first:pt-0'}, [
+ h('h3', { class: 'text-sm font-black tracking-tighter uppercase text-foreground'}, props.title),
       slots.default?.(),
     ])
   },
@@ -391,8 +391,8 @@ const DetailItem = defineComponent({
   props: { label: { type: String, required: true } },
   setup(props, { slots, attrs }) {
     return () => h('div', { ...attrs, class: ['border-b p-3 last:border-b-0 sm:border-r sm:last:border-r-0', attrs.class] }, [
-      h('dt', { class: 'text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block' }, props.label),
-      h('dd', { class: 'mt-1 text-xs font-bold' }, slots.default?.()),
+ h('dt', { class: 'text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block'}, props.label),
+ h('dd', { class: 'mt-1 text-xs font-bold'}, slots.default?.()),
     ])
   },
 })
@@ -403,9 +403,9 @@ const AmountRow = defineComponent({
     value: { type: [String, Number], default: 0 },
   },
   setup(props) {
-    return () => h('div', { class: 'flex items-center justify-between' }, [
-      h('dt', { class: 'text-muted-foreground' }, props.label),
-      h('dd', { class: 'tabular-nums' }, `¥${Number(props.value || 0).toFixed(2)}`),
+ return () => h('div', { class: 'flex items-center justify-between'}, [
+ h('dt', { class: 'text-muted-foreground'}, props.label),
+ h('dd', { class: 'tabular-nums'}, `¥${Number(props.value || 0).toFixed(2)}`),
     ])
   },
 })

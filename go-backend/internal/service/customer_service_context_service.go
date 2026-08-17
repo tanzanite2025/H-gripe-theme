@@ -23,6 +23,7 @@ type CustomerServiceContextService struct {
 	orderRepo             *repository.OrderRepository
 	loyaltyRepo           *repository.LoyaltyRepository
 	visitorProfileService *VisitorProfileService
+	mediaURLResolver      PublicMediaURLResolver
 }
 
 func NewCustomerServiceContextService(
@@ -43,6 +44,13 @@ func NewCustomerServiceContextService(
 		loyaltyRepo:           loyaltyRepo,
 		visitorProfileService: visitorProfileService,
 	}
+}
+
+func (s *CustomerServiceContextService) ConfigureMediaService(resolver PublicMediaURLResolver) {
+	if s == nil {
+		return
+	}
+	s.mediaURLResolver = resolver
 }
 
 type CustomerServiceContext struct {
@@ -614,7 +622,7 @@ func (s *CustomerServiceContextService) customerCartContext(userID uint) Custome
 	}
 	result.ItemCount = summary.ItemCount
 	result.Total = summary.Total
-	result.Items = customerCartItems(summary.Items)
+	result.Items = customerCartItems(summary.Items, s.mediaURLResolver)
 	return result
 }
 
@@ -639,7 +647,7 @@ func (s *CustomerServiceContextService) customerCartContextBySessionID(sessionID
 	}
 	result.ItemCount = summary.ItemCount
 	result.Total = summary.Total
-	result.Items = customerCartItems(summary.Items)
+	result.Items = customerCartItems(summary.Items, s.mediaURLResolver)
 	return result
 }
 
@@ -652,7 +660,7 @@ func (s *CustomerServiceContextService) customerWishlistContext(userID uint) Cus
 		return result
 	}
 	result.Count = len(items)
-	result.Items = customerWishlistItems(items, 8)
+	result.Items = customerWishlistItems(items, 8, s.mediaURLResolver)
 	return result
 }
 
@@ -682,7 +690,7 @@ func (s *CustomerServiceContextService) customerBrowsingContext(userID uint) Cus
 	return result
 }
 
-func customerCartItems(items []product.CartItem) []CustomerServiceContextCartItem {
+func customerCartItems(items []product.CartItem, resolvers ...PublicMediaURLResolver) []CustomerServiceContextCartItem {
 	result := make([]CustomerServiceContextCartItem, 0, len(items))
 	for _, item := range items {
 		name := "Unknown product"
@@ -691,7 +699,7 @@ func customerCartItems(items []product.CartItem) []CustomerServiceContextCartIte
 		if item.Product != nil {
 			name = item.Product.Name
 			sku = item.Product.DisplaySKU()
-			image = firstProductImage(item.Product)
+			image = firstProductImage(item.Product, resolvers...)
 		}
 		variantName := ""
 		if item.Variant != nil {
@@ -716,7 +724,7 @@ func customerCartItems(items []product.CartItem) []CustomerServiceContextCartIte
 	return result
 }
 
-func customerWishlistItems(items []wishlist.Item, limit int) []CustomerServiceContextWishlistItem {
+func customerWishlistItems(items []wishlist.Item, limit int, resolvers ...PublicMediaURLResolver) []CustomerServiceContextWishlistItem {
 	if limit > 0 && len(items) > limit {
 		items = items[:limit]
 	}
@@ -728,7 +736,7 @@ func customerWishlistItems(items []wishlist.Item, limit int) []CustomerServiceCo
 		if item.Product != nil {
 			name = item.Product.Name
 			sku = item.Product.DisplaySKU()
-			image = firstProductImage(item.Product)
+			image = firstProductImage(item.Product, resolvers...)
 		}
 		result = append(result, CustomerServiceContextWishlistItem{
 			ID:        item.ID,
@@ -771,13 +779,17 @@ func customerBrowsingItems(items []user.BrowsingHistory) []CustomerServiceContex
 	return result
 }
 
-func firstProductImage(item *product.Product) string {
+func firstProductImage(item *product.Product, resolvers ...PublicMediaURLResolver) string {
 	if item == nil {
 		return ""
 	}
 	for _, media := range item.Media {
 		if media.MediaType == "image" && media.IsVisible && strings.TrimSpace(media.URL) != "" {
-			return media.URL
+			var resolver PublicMediaURLResolver
+			if len(resolvers) > 0 {
+				resolver = resolvers[0]
+			}
+			return canonicalPublicMediaURL(resolver, media.URL)
 		}
 	}
 	return ""

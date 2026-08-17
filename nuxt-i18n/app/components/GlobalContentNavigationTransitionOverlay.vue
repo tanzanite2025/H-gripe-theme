@@ -73,7 +73,7 @@ const emit = defineEmits<{
 const panelRef = ref<HTMLElement | null>(null)
 const panelStyle = ref<Record<string, string>>({
   left: 'auto',
-  top: 'calc(var(--site-header-offset, 0px) + 0.75rem)',
+  top: 'calc(var(--site-header-overlay-offset, 0px) + 0.75rem)',
   '--global-navigation-arrow-left': '50%',
 })
 
@@ -152,7 +152,7 @@ const updatePanelPosition = () => {
   if (!anchor) {
     const fallbackTop = Number.parseFloat(
       getComputedStyle(document.documentElement)
-        .getPropertyValue('--site-header-offset'),
+        .getPropertyValue('--site-header-overlay-offset'),
     ) || 0
     const fallbackLeft = Math.max(
       horizontalPadding,

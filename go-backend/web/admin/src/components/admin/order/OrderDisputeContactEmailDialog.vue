@@ -43,7 +43,7 @@
             :disabled="sending || !form.to || !form.subject || !form.body"
             @click="emit('submit')"
           >
-            <Send :class="['size-3.5', sending ? 'animate-pulse' : '']" />
+ <Send :class="['size-3.5', sending ? 'animate-pulse': '']" />
             {{ sending ? '发送中' : '发送邮件' }}
           </Button>
         </div>

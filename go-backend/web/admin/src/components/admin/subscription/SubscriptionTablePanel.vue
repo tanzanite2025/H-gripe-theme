@@ -52,7 +52,7 @@
               @update:model-value="emit('toggle-subscription', subscription, $event)"
             />
           </TableCell>
-          <TableCell class="font-mono text-xs text-muted-foreground">{{ subscription.id || '-' }}</TableCell>
+ <TableCell class="font-mono text-xs text-muted-foreground">{{ subscription.id || '-'}}</TableCell>
           <TableCell>
             <a :href="`mailto:${subscription.email}`" class="font-medium hover:text-primary hover:underline">
               {{ subscription.email }}
@@ -63,7 +63,7 @@
           </TableCell>
           <TableCell>{{ localeName(subscription.locale) }}</TableCell>
           <TableCell>{{ sourceName(subscription.source) }}</TableCell>
-          <TableCell class="max-w-44 truncate text-xs text-muted-foreground">{{ subscription.tags || '-' }}</TableCell>
+ <TableCell class="max-w-44 truncate text-xs text-muted-foreground">{{ subscription.tags || '-'}}</TableCell>
           <TableCell class="text-xs text-muted-foreground">{{ formatDate(subscription.subscribed_at) }}</TableCell>
           <TableCell class="text-xs text-muted-foreground">{{ formatDate(subscription.unsubscribed_at) }}</TableCell>
           <TableCell class="text-right">

@@ -4,7 +4,7 @@
       <CardHeader class="shrink-0 border-b bg-muted/30 px-4 py-3">
         <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div class="min-w-0">
-            <CardTitle class="truncate">{{ selectedConversation.customer_name || '匿名客户' }}</CardTitle>
+ <CardTitle class="truncate">{{ selectedConversation.customer_name || '匿名客户'}}</CardTitle>
             <CardDescription class="break-all">
               {{ selectedConversation.conversation_id || selectedConversation.ticket_number || selectedConversation.id }}
             </CardDescription>
@@ -66,11 +66,11 @@
               v-for="message in messages"
               :key="message.id"
               class="max-w-[86%] rounded-2xl border px-4 py-3 text-sm"
-              :class="message.is_agent ? 'ml-auto border-blue-200 bg-blue-50/75' : 'mr-auto border-border bg-muted/45'"
+ :class="message.is_agent ? 'ml-auto border-blue-200 bg-blue-50/75': 'mr-auto border-border bg-muted/45'"
             >
               <header class="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
                 <div class="flex items-center gap-2">
-                  <span class="text-xs font-black">{{ message.sender_name || (message.is_agent ? '客服' : '客户') }}</span>
+ <span class="text-xs font-black">{{ message.sender_name || (message.is_agent ? '客服': '客户') }}</span>
                   <AdminStatusBadge :tone="message.is_agent ? 'blue' : 'gray'">
                     {{ message.is_agent ? '客服' : '客户' }}
                   </AdminStatusBadge>
@@ -185,7 +185,7 @@
                     class="rounded-xl border border-emerald-100 bg-white/70 px-3 py-2 text-xs"
                   >
                     <div class="flex items-center justify-between gap-2">
-                      <p class="truncate font-bold text-foreground">{{ item.title || item.product_name || 'Product' }}</p>
+ <p class="truncate font-bold text-foreground">{{ item.title || item.product_name || 'Product'}}</p>
                       <span class="shrink-0 font-mono text-muted-foreground">x{{ item.quantity || 1 }}</span>
                     </div>
                     <p v-if="item.sku" class="mt-1 text-[11px] text-muted-foreground">SKU：{{ item.sku }}</p>
@@ -197,7 +197,7 @@
               </div>
 
               <p v-else class="mt-2 whitespace-pre-wrap break-words leading-6">{{ message.content || message.message }}</p>
-              <div v-if="message.message_type === 'image' && messageAttachments(message).length" class="mt-2 grid gap-2">
+ <div v-if="message.message_type === 'image'&& messageAttachments(message).length" class="mt-2 grid gap-2">
                 <img
                   v-for="attachmentUrl in messageAttachments(message)"
                   :key="attachmentUrl"

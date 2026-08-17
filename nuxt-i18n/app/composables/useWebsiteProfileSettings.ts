@@ -1,7 +1,11 @@
-import { computed, useAsyncData } from '#imports'
+import { computed, useAsyncData, useRuntimeConfig } from '#imports'
 import type { Ref } from 'vue'
 import { isSimplifiedChineseStorefrontLocale } from '~/utils/storefrontLocales'
 import { usePublicApiBase } from '~/composables/usePublicApiBase'
+import {
+  createStorefrontMediaContext,
+  normalizeStorefrontMediaUrl,
+} from '~/utils/storefrontMedia'
 
 export interface WebsiteProfileSettings {
   locale: string
@@ -100,6 +104,7 @@ export const defaultWebsiteProfileSettings = (locale: unknown): WebsiteProfileSe
 const normalizeWebsiteProfileSettings = (
   raw: RawWebsiteProfileSettings | null | undefined,
   locale: unknown,
+  mediaContext: ReturnType<typeof createStorefrontMediaContext>,
 ): WebsiteProfileSettings => {
   const fallback = defaultWebsiteProfileSettings(locale)
   const statementParagraphs = [
@@ -113,7 +118,10 @@ const normalizeWebsiteProfileSettings = (
     title: asString(raw?.title, fallback.title),
     lead: asString(raw?.lead, fallback.lead),
     scope: asString(raw?.scope, fallback.scope),
-    avatarUrl: asString(raw?.avatar_url, fallback.avatarUrl),
+    avatarUrl: normalizeStorefrontMediaUrl(
+      asString(raw?.avatar_url, fallback.avatarUrl),
+      mediaContext,
+    ),
     avatarLabel: asString(raw?.avatar_label, fallback.avatarLabel),
     avatarMark: asString(raw?.avatar_mark, fallback.avatarMark),
     profileLabel: asString(raw?.profile_label, fallback.profileLabel),
@@ -122,7 +130,10 @@ const normalizeWebsiteProfileSettings = (
     statementEyebrow: asString(raw?.statement_eyebrow, fallback.statementEyebrow),
     statementTitle: asString(raw?.statement_title, fallback.statementTitle),
     statementParagraphs,
-    factoryImageUrl: asString(raw?.factory_image_url, fallback.factoryImageUrl),
+    factoryImageUrl: normalizeStorefrontMediaUrl(
+      asString(raw?.factory_image_url, fallback.factoryImageUrl),
+      mediaContext,
+    ),
     factoryImageAlt: asString(raw?.factory_image_alt, fallback.factoryImageAlt),
     factoryImageCaption: asString(raw?.factory_image_caption, fallback.factoryImageCaption),
     factoryEyebrow: asString(raw?.factory_eyebrow, fallback.factoryEyebrow),
@@ -134,7 +145,9 @@ const normalizeWebsiteProfileSettings = (
 }
 
 export function useWebsiteProfileSettings(locale: Ref<string> | string) {
+  const runtimeConfig = useRuntimeConfig()
   const apiBase = usePublicApiBase()
+  const mediaContext = createStorefrontMediaContext(runtimeConfig)
   const localeValue = computed(() => String(typeof locale === 'string' ? locale : locale.value || 'en'))
   const key = computed(() => `mytheme-website-profile-${localeValue.value}`)
 
@@ -152,7 +165,7 @@ export function useWebsiteProfileSettings(locale: Ref<string> | string) {
             headers: { accept: 'application/json' },
           },
         )
-        return normalizeWebsiteProfileSettings(raw, localeValue.value)
+        return normalizeWebsiteProfileSettings(raw, localeValue.value, mediaContext)
       } catch (fetchError) {
         console.warn('Failed to load website profile settings:', fetchError)
         return fallback

@@ -14,6 +14,7 @@ type FAQService struct {
 	storefrontHTMLCacheInvalidator   *StorefrontHTMLCacheInvalidator
 	storefrontContentReleaseNotifier *StorefrontContentReleaseNotifier
 	storage                          storage.StorageService
+	mediaURLResolver                 PublicMediaURLResolver
 }
 
 func NewFAQService(faqRepo *repository.FAQRepository, storageSvc storage.StorageService) *FAQService {
@@ -21,6 +22,13 @@ func NewFAQService(faqRepo *repository.FAQRepository, storageSvc storage.Storage
 		faqRepo: faqRepo,
 		storage: storageSvc,
 	}
+}
+
+func (s *FAQService) ConfigureMediaService(mediaService *MediaService) {
+	if s == nil {
+		return
+	}
+	s.mediaURLResolver = mediaService
 }
 
 func (s *FAQService) SetStorefrontHTMLCacheInvalidator(invalidator *StorefrontHTMLCacheInvalidator) {
@@ -68,7 +76,7 @@ func (s *FAQService) List(locale, pageID, category, status string, page, pageSiz
 		locale = normalizeLocale(locale)
 	}
 	items, total, err := s.faqRepo.List(locale, pageID, category, status, offset, pageSize)
-	return sanitizeFAQSliceForPublic(items), total, err
+	return sanitizeFAQSliceForPublic(items, s.mediaURLResolver), total, err
 }
 
 func (s *FAQService) ListAdmin(locale, pageID, category, status, search string, page, pageSize int) ([]faq.FAQ, int64, error) {
@@ -242,7 +250,7 @@ func (s *FAQService) Search(keyword, locale string, page, pageSize int) ([]faq.F
 		locale = normalizeLocale(locale)
 	}
 	items, total, err := s.faqRepo.Search(keyword, locale, offset, pageSize)
-	return sanitizeFAQSliceForPublic(items), total, err
+	return sanitizeFAQSliceForPublic(items, s.mediaURLResolver), total, err
 }
 
 // UpdateOrder 更新排序
@@ -290,7 +298,7 @@ func (s *FAQService) GetByCategory(category, locale string) ([]faq.FAQ, error) {
 		locale = normalizeLocale(locale)
 	}
 	items, err := s.faqRepo.GetByCategory(category, locale)
-	return sanitizeFAQSliceForPublic(items), err
+	return sanitizeFAQSliceForPublic(items, s.mediaURLResolver), err
 }
 
 // GetPopular 获取热门FAQ
@@ -302,5 +310,5 @@ func (s *FAQService) GetPopular(locale string, limit int) ([]faq.FAQ, error) {
 		locale = normalizeLocale(locale)
 	}
 	items, err := s.faqRepo.GetPopular(locale, limit)
-	return sanitizeFAQSliceForPublic(items), err
+	return sanitizeFAQSliceForPublic(items, s.mediaURLResolver), err
 }

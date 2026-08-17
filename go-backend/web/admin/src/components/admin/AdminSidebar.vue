@@ -62,7 +62,7 @@
 
     <footer class="admin-sidebar__footer">
       <div class="admin-sidebar__user-card">
-        <span class="admin-sidebar__avatar">{{ userInitials || 'AD' }}</span>
+ <span class="admin-sidebar__avatar">{{ userInitials || 'AD'}}</span>
         <span v-if="!collapsed" class="admin-sidebar__user-copy">
           <strong>{{ displayName }}</strong>
           <small>{{ userEmail || roleLabel || t('roles.backofficeUser') }}</small>
@@ -279,7 +279,6 @@ watch(
   color: #ffffff;
   box-shadow: 0 12px 24px rgb(15 23 42 / 0.18);
   font-size: 0.875rem;
-  font-style: italic;
   font-weight: 950;
   letter-spacing: 0;
 }
@@ -296,7 +295,6 @@ watch(
   overflow: hidden;
   color: #0f172a;
   font-size: 0.75rem;
-  font-style: italic;
   font-weight: 950;
   letter-spacing: 0;
   text-overflow: ellipsis;

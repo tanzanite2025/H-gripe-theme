@@ -64,6 +64,11 @@ func (s *StorefrontRouteCatalogService) Sync(ctx context.Context) (StorefrontRou
 	if err := s.repository.UpsertSnapshot(entries, time.Now().UTC()); err != nil {
 		return StorefrontRouteCatalogSyncSummary{}, fmt.Errorf("save storefront route catalog snapshot: %w", err)
 	}
+	if s.issueReconciler != nil {
+		if err := s.issueReconciler.ReconcileCatalog(ctx); err != nil {
+			return StorefrontRouteCatalogSyncSummary{}, fmt.Errorf("reconcile storefront URL issues after sync: %w", err)
+		}
+	}
 	summary.Entries = len(entries)
 	return summary, nil
 }

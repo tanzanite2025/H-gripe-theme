@@ -45,6 +45,29 @@ func TestFAQServicePublicAccessRequiresPublishedFAQ(t *testing.T) {
 	assert.Equal(t, 1, refreshed.ViewCount)
 }
 
+func TestFAQServicePublicResponsesCanonicalizeAnswerImageURL(t *testing.T) {
+	db, faqService := newTestFAQService(t)
+	faqService.ConfigureMediaService(NewMediaService(nil, nil, nil, "https://shop.example.test", 20<<30))
+
+	publishedFAQ := faqdomain.FAQ{
+		Question:       "Image?",
+		Answer:         "<p>Yes</p>",
+		AnswerImageURL: "http://media.internal:8080/uploads/faq/answer.webp",
+		Status:         "published",
+		Locale:         "en",
+	}
+	require.NoError(t, db.Create(&publishedFAQ).Error)
+
+	publicFAQ, err := faqService.GetPublicByID(publishedFAQ.ID)
+	require.NoError(t, err)
+	assert.Equal(t, "https://shop.example.test/uploads/faq/answer.webp", publicFAQ.AnswerImageURL)
+
+	items, _, err := faqService.List("en", "", "", "published", 1, 20)
+	require.NoError(t, err)
+	require.Len(t, items, 1)
+	assert.Equal(t, "https://shop.example.test/uploads/faq/answer.webp", items[0].AnswerImageURL)
+}
+
 func TestFAQServicePublicPageRejectsHiddenPage(t *testing.T) {
 	db, faqService := newTestFAQService(t)
 

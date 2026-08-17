@@ -34,11 +34,12 @@
             </div>
           </div>
           <div class="mt-2 flex gap-3">
-            <img
+            <StorefrontImage
               v-if="configProduct(message).thumbnail"
               :src="configProduct(message).thumbnail"
               alt="Product"
               class="h-16 w-16 shrink-0 rounded-xl object-cover"
+              preset="thumbnail"
             />
             <div class="min-w-0 flex-1">
               <a
@@ -161,11 +162,12 @@
           </div>
 
           <div class="mt-3 flex gap-3">
-            <img
+            <StorefrontImage
               v-if="faqPayload(message).answer_image_url"
               :src="faqPayload(message).answer_image_url"
               :alt="faqPayload(message).answer_image_alt || faqQuestion(message)"
               class="h-16 w-16 shrink-0 rounded-xl border border-white/10 object-cover"
+              preset="thumbnail"
             />
             <div class="min-w-0 flex-1">
               <div class="mb-1 flex flex-wrap gap-x-2 gap-y-1 tz-micro-label text-white/45">
@@ -205,11 +207,12 @@
           rel="noopener"
           class="flex gap-2.5 p-2 border border-white/20 rounded-2xl bg-black/40 hover:bg-white/[0.10] transition-colors max-w-[75%] md:max-w-[70%]"
         >
-          <img
+          <StorefrontImage
             v-if="message.thumbnail"
             :src="message.thumbnail"
             alt="thumbnail"
             class="w-14 h-14 object-cover rounded-xl md:rounded-lg"
+            preset="thumbnail"
           />
           <div class="text-xs md:text-sm text-white">{{ message.title || message.message }}</div>
         </a>
@@ -250,12 +253,13 @@
           </div>
           
           <div v-if="messageAttachments(message).length" class="mt-2 grid gap-2">
-            <img
+            <StorefrontImage
               v-for="attachmentUrl in messageAttachments(message)"
               :key="attachmentUrl"
               :src="attachmentUrl"
               alt="附件"
               class="max-w-full rounded-xl"
+              preset="content"
             />
           </div>
 
@@ -310,11 +314,12 @@
       >
         <div class="flex items-center gap-3">
           <div class="h-12 w-12 shrink-0 overflow-hidden bg-white/[0.05]">
-            <img
+            <StorefrontImage
               v-if="pendingProductReference.thumbnail"
               :src="pendingProductReference.thumbnail"
               :alt="pendingProductTitle"
               class="h-full w-full object-cover"
+              preset="thumbnail"
             />
           </div>
 

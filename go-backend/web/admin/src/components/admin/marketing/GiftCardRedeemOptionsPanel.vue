@@ -14,7 +14,7 @@
       </div>
       <div class="flex gap-2">
         <Button type="button" variant="outline" size="sm" :disabled="loading || saving" @click="emit('refresh')">
-          <RefreshCw :class="['size-3.5', loading ? 'animate-spin' : '']" />
+ <RefreshCw :class="['size-3.5', loading ? 'animate-spin': '']" />
           刷新
         </Button>
         <Button v-if="canEdit" type="button" size="sm" :disabled="loading || saving" @click="emit('save')">

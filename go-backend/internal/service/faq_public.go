@@ -17,6 +17,7 @@ func (s *FAQService) GetPublicByID(id uint) (*faq.FAQ, error) {
 	if sanitized, sanitizeErr := faqcontent.SanitizeAnswer(item.Answer); sanitizeErr == nil {
 		item.Answer = sanitized
 	}
+	item.AnswerImageURL = canonicalPublicMediaURL(s.mediaURLResolver, item.AnswerImageURL)
 	return item, nil
 }
 
@@ -45,7 +46,7 @@ func (s *FAQService) GetPublicPageData(pageID, locale string) (*FAQPublicPageDat
 	if err != nil {
 		return nil, err
 	}
-	faqItems = sanitizeFAQSliceForPublic(faqItems)
+	faqItems = sanitizeFAQSliceForPublic(faqItems, s.mediaURLResolver)
 
 	itemsByCategory := make(map[string][]FAQPublicItem, len(categories))
 	for _, item := range faqItems {
@@ -111,11 +112,16 @@ func (s *FAQService) ListPublicPageData(locale string) ([]FAQPublicPageData, err
 	return result, nil
 }
 
-func sanitizeFAQSliceForPublic(items []faq.FAQ) []faq.FAQ {
+func sanitizeFAQSliceForPublic(items []faq.FAQ, resolvers ...PublicMediaURLResolver) []faq.FAQ {
+	var resolver PublicMediaURLResolver
+	if len(resolvers) > 0 {
+		resolver = resolvers[0]
+	}
 	for index := range items {
 		if sanitized, err := faqcontent.SanitizeAnswer(items[index].Answer); err == nil {
 			items[index].Answer = sanitized
 		}
+		items[index].AnswerImageURL = canonicalPublicMediaURL(resolver, items[index].AnswerImageURL)
 	}
 	return items
 }

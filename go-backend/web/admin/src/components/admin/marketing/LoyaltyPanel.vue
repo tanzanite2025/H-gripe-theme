@@ -26,17 +26,17 @@
             <TableEmpty v-if="transactions.length === 0" :colspan="6">
               <div class="flex flex-col items-center text-muted-foreground">
                 <Coins class="mb-2 size-7 opacity-55" />
-                <span class="text-xs">{{ filters.user_id ? '暂无积分流水' : '请输入用户 ID 查询积分流水' }}</span>
+ <span class="text-xs">{{ filters.user_id ? '暂无积分流水': '请输入用户 ID 查询积分流水'}}</span>
               </div>
             </TableEmpty>
             <TableRow v-for="transaction in transactions" :key="transaction.id">
               <TableCell>{{ loyaltyTypeName(transaction.type) }}</TableCell>
-              <TableCell class="text-right font-bold tabular-nums" :class="Number(transaction.points) >= 0 ? 'text-emerald-600' : 'text-destructive'">
+ <TableCell class="text-right font-bold tabular-nums" :class="Number(transaction.points) >= 0 ? 'text-emerald-600': 'text-destructive'">
                 {{ Number(transaction.points) > 0 ? '+' : '' }}{{ transaction.points }}
               </TableCell>
               <TableCell class="text-right tabular-nums">{{ transaction.balance }}</TableCell>
-              <TableCell class="font-mono text-xs">{{ transaction.source || '-' }} #{{ transaction.source_id || 0 }}</TableCell>
-              <TableCell class="max-w-80 truncate text-muted-foreground">{{ transaction.description || '-' }}</TableCell>
+ <TableCell class="font-mono text-xs">{{ transaction.source || '-'}} #{{ transaction.source_id || 0 }}</TableCell>
+ <TableCell class="max-w-80 truncate text-muted-foreground">{{ transaction.description || '-'}}</TableCell>
               <TableCell class="text-xs text-muted-foreground">{{ formatDate(transaction.created_at) }}</TableCell>
             </TableRow>
           </TableBody>
@@ -55,7 +55,7 @@
 
     <section v-if="canAdjust" class="rounded-xl border bg-card p-4 shadow-sm">
       <div class="mb-4 space-y-1">
-        <h3 class="text-sm font-black tracking-tighter italic uppercase">手动调整积分</h3>
+        <h3 class="text-sm font-black tracking-tighter uppercase">手动调整积分</h3>
         <p class="text-xs text-muted-foreground">所有调整都会写入积分流水，负数表示扣减。</p>
       </div>
       <form class="space-y-4" @submit.prevent="emit('submit')">

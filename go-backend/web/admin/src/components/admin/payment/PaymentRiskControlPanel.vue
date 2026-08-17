@@ -70,7 +70,7 @@
             v-for="control in controls"
             :key="control.id"
             class="cursor-pointer"
-            :class="selectedControl?.id === control.id ? 'bg-primary/5' : ''"
+ :class="selectedControl?.id === control.id ? 'bg-primary/5': ''"
             @click="selectControl(control)"
           >
             <TableCell class="font-mono text-xs">{{ actionLabel(control.action) }}</TableCell>
@@ -88,7 +88,7 @@
 
     <aside class="h-full min-h-[460px] min-w-0 overflow-y-auto overscroll-contain rounded-[24px] border border-dashed border-border/80 bg-card p-5">
       <div class="mb-4">
-        <h2 class="text-sm font-black uppercase italic tracking-tight">新增保护控制</h2>
+        <h2 class="text-sm font-black uppercase tracking-tight">新增保护控制</h2>
         <p class="mt-1 text-xs text-muted-foreground">只影响匹配范围内的新订单与新支付启动，不会退款、切换通道或影响已创建支付。</p>
       </div>
 
@@ -183,10 +183,10 @@
           <div v-if="auditLogs.length" class="mt-2 space-y-2">
             <div v-for="log in auditLogs" :key="log.id" class="rounded-xl bg-muted/40 p-3 text-xs">
               <div class="flex items-center justify-between gap-2">
-                <span class="font-semibold">{{ log.action === 'create' ? '创建' : '撤销' }} · {{ log.username || `用户 ${log.user_id}` }}</span>
+ <span class="font-semibold">{{ log.action === 'create'? '创建': '撤销'}} · {{ log.username || `用户 ${log.user_id}` }}</span>
                 <span class="font-mono text-muted-foreground">{{ formatDate(log.created_at) }}</span>
               </div>
-              <div class="mt-1 text-muted-foreground">{{ log.ip_address || '-' }}</div>
+ <div class="mt-1 text-muted-foreground">{{ log.ip_address || '-'}}</div>
             </div>
           </div>
           <p v-else class="mt-2 text-xs text-muted-foreground">暂无审计记录。</p>

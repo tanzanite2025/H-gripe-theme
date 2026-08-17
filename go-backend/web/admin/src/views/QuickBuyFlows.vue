@@ -40,7 +40,7 @@
             :key="flow.id"
             type="button"
             class="flex w-full items-start justify-between gap-3 px-4 py-3 text-left transition hover:bg-muted/50"
-            :class="activeFlowId === flow.id ? 'bg-muted/60' : ''"
+ :class="activeFlowId === flow.id ? 'bg-muted/60': ''"
             @click="selectFlow(flow.id)"
           >
             <span class="min-w-0">
@@ -105,7 +105,7 @@
             <AlertDescription>保存时会基于当前发布版本创建新的 draft，确认无误后再发布，已开始的前台选配会话仍绑定旧版本。</AlertDescription>
           </Alert>
 
-          <Alert v-if="validationResult" :variant="validationResult.valid ? 'default' : 'destructive'" class="rounded-lg">
+ <Alert v-if="validationResult" :variant="validationResult.valid ? 'default': 'destructive'" class="rounded-lg">
             <ShieldCheck v-if="validationResult.valid" class="size-4" />
             <CircleAlert v-else class="size-4" />
             <AlertTitle>{{ validationTitle }}</AlertTitle>

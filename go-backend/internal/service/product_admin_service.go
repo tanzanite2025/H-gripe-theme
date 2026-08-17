@@ -714,6 +714,21 @@ func (s *ProductService) buildProductMedia(input []ProductMediaInput) ([]product
 		if err != nil {
 			return nil, fmt.Errorf("%w: media %d locale is invalid: %v", ErrProductMediaInvalid, index+1, err)
 		}
+		thumbnailURL := strings.TrimSpace(item.ThumbnailURL)
+		imageVariants := map[string]product.ProductMediaImageVariant{}
+		if mediaType == "image" && item.MediaAssetID != nil && *item.MediaAssetID > 0 {
+			if resolver, ok := s.mediaService.(productMediaImageVariantResolver); ok {
+				variants, derivativeThumbnail, err := resolver.ProductMediaImageVariants(*item.MediaAssetID)
+				if err != nil {
+					return nil, fmt.Errorf("%w: resolve media derivatives: %v", ErrProductMediaInvalid, err)
+				}
+				imageVariants = variants
+				if thumbnailURL == "" {
+					thumbnailURL = derivativeThumbnail
+				}
+			}
+		}
+
 		items = append(items, product.ProductMedia{
 			ID:                   id,
 			VariantID:            item.VariantID,
@@ -722,8 +737,9 @@ func (s *ProductService) buildProductMedia(input []ProductMediaInput) ([]product
 			MediaType:            mediaType,
 			Role:                 role,
 			URL:                  url,
-			ThumbnailURL:         strings.TrimSpace(item.ThumbnailURL),
+			ThumbnailURL:         thumbnailURL,
 			PosterURL:            strings.TrimSpace(item.PosterURL),
+			ImageVariantData:     product.ProductMediaImageVariantsJSON(imageVariants),
 			Alt:                  strings.TrimSpace(item.Alt),
 			Title:                strings.TrimSpace(item.Title),
 			Locale:               mediaLocale,

@@ -5,6 +5,10 @@ import type {
   QuickBuyProductSpecificationTemplate,
   QuickBuyStep,
 } from '~/utils/quickBuy/types'
+import {
+  normalizeStorefrontMediaUrl,
+  type StorefrontMediaContext,
+} from '~/utils/storefrontMedia'
 
 export type QuickBuyRawRecord = Record<string, unknown>
 
@@ -44,7 +48,10 @@ export const extractQuickBuyPayload = (response: unknown): unknown => {
   return current
 }
 
-const normalizeQuickBuyProductSpecificationTemplate = (value: unknown): QuickBuyProductSpecificationTemplate | null => {
+const normalizeQuickBuyProductSpecificationTemplate = (
+  value: unknown,
+  mediaContext: StorefrontMediaContext,
+): QuickBuyProductSpecificationTemplate | null => {
   const record = asQuickBuyRecord(value)
   if (!record) return null
   const id = asQuickBuyNumber(record.id)
@@ -56,18 +63,25 @@ const normalizeQuickBuyProductSpecificationTemplate = (value: unknown): QuickBuy
     id,
     slug,
     name,
-    imageUrl: asQuickBuyString(record.imageUrl ?? record.image_url).trim() || undefined,
+    imageUrl: normalizeStorefrontMediaUrl(
+      record.imageUrl ?? record.image_url,
+      mediaContext,
+    ) || undefined,
     primary: asQuickBuyBoolean(record.primary),
   }
 }
 
-const normalizeQuickBuyStep = (value: unknown, index: number): QuickBuyStep | null => {
+const normalizeQuickBuyStep = (
+  value: unknown,
+  index: number,
+  mediaContext: StorefrontMediaContext,
+): QuickBuyStep | null => {
   const record = asQuickBuyRecord(value)
   if (!record) return null
   const id = asQuickBuyNumber(record.id, index + 1)
   const stepKey = asQuickBuyString(record.stepKey ?? record.step_key ?? record.key).trim()
   const productSpecificationTemplates = asQuickBuyArray(record.productSpecificationTemplates ?? record.product_specification_templates)
-    .map(normalizeQuickBuyProductSpecificationTemplate)
+    .map((item) => normalizeQuickBuyProductSpecificationTemplate(item, mediaContext))
     .filter((item): item is QuickBuyProductSpecificationTemplate => Boolean(item))
   const primaryProductSpecificationTemplate = productSpecificationTemplates.find(item => item.primary) || productSpecificationTemplates[0] || null
   const slug = asQuickBuyString(record.slug || primaryProductSpecificationTemplate?.slug || stepKey || `step-${index + 1}`).trim()
@@ -113,7 +127,10 @@ const normalizeQuickBuyFlowTranslation = (value: unknown): QuickBuyFlowTranslati
   }
 }
 
-export const normalizeQuickBuyFlow = (value: unknown): QuickBuyFlow | null => {
+export const normalizeQuickBuyFlow = (
+  value: unknown,
+  mediaContext: StorefrontMediaContext = { knownOrigins: new Set<string>() },
+): QuickBuyFlow | null => {
   const record = asQuickBuyRecord(value)
   if (!record) return null
   const id = asQuickBuyNumber(record.id)
@@ -122,7 +139,7 @@ export const normalizeQuickBuyFlow = (value: unknown): QuickBuyFlow | null => {
   if (!id || !slug || !name) return null
 
   const steps = asQuickBuyArray(record.steps)
-    .map(normalizeQuickBuyStep)
+    .map((item, index) => normalizeQuickBuyStep(item, index, mediaContext))
     .filter((item): item is QuickBuyStep => Boolean(item))
   const translations = asQuickBuyArray(record.translations ?? record.flowTranslations ?? record.flow_translations)
     .map(normalizeQuickBuyFlowTranslation)

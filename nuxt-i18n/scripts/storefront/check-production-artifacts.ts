@@ -1,6 +1,8 @@
 import { readdir, readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { basename, extname, join, relative } from 'node:path'
+import { fontPolicySourceViolations } from '../font-policy-utils.ts'
+import { storefrontFontArtifactViolations } from './font-artifact-contract.ts'
 
 const outputDirectory = fileURLToPath(new URL('../../.output/', import.meta.url))
 const sourceMapReference = /\/\/[#@]\s*sourceMappingURL=/i
@@ -25,6 +27,7 @@ async function walk(directory: string): Promise<string[]> {
 const files = await walk(outputDirectory)
 const sourceMaps = files.filter((filePath) => basename(filePath).endsWith('.map'))
 const sourceMapReferences: string[] = []
+const fontPolicyViolations: string[] = []
 
 for (const filePath of files) {
   if (!inspectableExtensions.has(extname(filePath))) continue
@@ -39,9 +42,17 @@ for (const filePath of files) {
   if (sourceMapReference.test(content)) {
     sourceMapReferences.push(outputPath)
   }
+  if (extname(filePath) === '.css' && outputPath.startsWith('public/')) {
+    for (const finding of fontPolicySourceViolations(content)) {
+      fontPolicyViolations.push(`${outputPath}:${finding.line}: ${finding.violation}`)
+    }
+    for (const finding of storefrontFontArtifactViolations(content)) {
+      fontPolicyViolations.push(`${outputPath}:${finding.line}: ${finding.violation}`)
+    }
+  }
 }
 
-if (sourceMaps.length > 0 || sourceMapReferences.length > 0) {
+if (sourceMaps.length > 0 || sourceMapReferences.length > 0 || fontPolicyViolations.length > 0) {
   if (sourceMaps.length > 0) {
     console.error('Production output includes source-map files:')
     for (const filePath of sourceMaps) console.error(`- ${relative(outputDirectory, filePath)}`)
@@ -50,7 +61,11 @@ if (sourceMaps.length > 0 || sourceMapReferences.length > 0) {
     console.error('Production output includes source-map references:')
     for (const filePath of sourceMapReferences) console.error(`- ${filePath}`)
   }
+  if (fontPolicyViolations.length > 0) {
+    console.error('Production output includes storefront font policy violations:')
+    for (const violation of fontPolicyViolations) console.error(`- ${violation}`)
+  }
   process.exitCode = 1
 } else {
-  console.log('Production artifact check passed: source maps are absent.')
+  console.log('Production artifact check passed: source maps are absent and built CSS keeps the storefront font baseline.')
 }

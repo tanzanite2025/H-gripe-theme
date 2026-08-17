@@ -317,6 +317,8 @@ const { openWheelsetVideo, goToWheelsetAssembly } = defineProps<{
 }>()
 </script>
 
+<style src="~/assets/css/guide-sections.css"></style>
+
 <style scoped>
 .support-wheelset-test-report {
   --wheelset-report-accent: var(--tz-brand-primary);

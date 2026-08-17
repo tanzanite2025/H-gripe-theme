@@ -78,10 +78,11 @@ const (
 	PermGalleryEdit   Permission = "gallery:edit"
 	PermGalleryDelete Permission = "gallery:delete"
 
-	PermMediaView   Permission = "media:view"
-	PermMediaCreate Permission = "media:create"
-	PermMediaEdit   Permission = "media:edit"
-	PermMediaDelete Permission = "media:delete"
+	PermMediaView      Permission = "media:view"
+	PermMediaCreate    Permission = "media:create"
+	PermMediaEdit      Permission = "media:edit"
+	PermMediaDelete    Permission = "media:delete"
+	PermMediaConfigure Permission = "media:configure"
 
 	PermSubscriptionView   Permission = "subscription:view"
 	PermSubscriptionEdit   Permission = "subscription:edit"
@@ -114,6 +115,8 @@ const (
 	PermSettingsEdit  Permission = "settings:edit"
 	PermSEOView       Permission = "seo:view"
 	PermSEOEdit       Permission = "seo:edit"
+	PermURLView       Permission = "url:view"
+	PermURLEdit       Permission = "url:edit"
 	PermAnalyticsView Permission = "analytics:view"
 	PermAnalyticsEdit Permission = "analytics:edit"
 
@@ -138,6 +141,9 @@ const (
 	PermOpsDeployExecute   Permission = "ops:deploy:execute"
 	PermOpsDeployRollback  Permission = "ops:deploy:rollback"
 	PermOpsWorkflowApprove Permission = "ops:workflow:approve"
+
+	PermServicesView   Permission = "services:view"
+	PermServicesManage Permission = "services:manage"
 )
 
 // RolePermissions maps each role to the admin permissions it receives.
@@ -150,14 +156,14 @@ var RolePermissions = map[Role][]Permission{
 		PermReviewView, PermReviewModerate,
 		PermFAQView, PermFAQCreate, PermFAQEdit, PermFAQDelete,
 		PermGalleryView, PermGalleryCreate, PermGalleryEdit, PermGalleryDelete,
-		PermMediaView, PermMediaCreate, PermMediaEdit, PermMediaDelete,
+		PermMediaView, PermMediaCreate, PermMediaEdit, PermMediaDelete, PermMediaConfigure,
 		PermSubscriptionView, PermSubscriptionEdit, PermSubscriptionDelete, PermSubscriptionExport,
 		PermTicketView, PermTicketCreate, PermTicketEdit, PermTicketAssign, PermTicketClose, PermTicketDelete,
 		PermMarketingView, PermMarketingCreate, PermMarketingEdit, PermMarketingDelete,
 		PermMerchantView, PermMerchantEdit, PermMerchantSync,
 		PermShippingView, PermShippingCreate, PermShippingEdit, PermShippingDelete, PermShippingTracking,
 		PermSettingsView, PermSettingsEdit,
-		PermSEOView, PermSEOEdit, PermAnalyticsView, PermAnalyticsEdit,
+		PermSEOView, PermSEOEdit, PermURLView, PermURLEdit, PermAnalyticsView, PermAnalyticsEdit,
 		PermLogsView,
 		PermSystemManage,
 		PermOpsView, PermOpsDomainView, PermOpsDomainEdit, PermOpsDomainSync,
@@ -165,6 +171,7 @@ var RolePermissions = map[Role][]Permission{
 		PermOpsVPSView, PermOpsVPSEdit, PermOpsVPSSync,
 		PermOpsProjectView, PermOpsProjectEdit, PermOpsProjectSync, PermOpsDeployView,
 		PermOpsDeployDryRun, PermOpsDeployExecute, PermOpsDeployRollback, PermOpsWorkflowApprove,
+		PermServicesView, PermServicesManage,
 	},
 	RoleManager: {
 		PermProductView, PermProductCreate, PermProductEdit, PermProductDelete,
@@ -174,20 +181,21 @@ var RolePermissions = map[Role][]Permission{
 		PermReviewView, PermReviewModerate,
 		PermFAQView, PermFAQCreate, PermFAQEdit, PermFAQDelete,
 		PermGalleryView, PermGalleryCreate, PermGalleryEdit, PermGalleryDelete,
-		PermMediaView, PermMediaCreate, PermMediaEdit, PermMediaDelete,
+		PermMediaView, PermMediaCreate, PermMediaEdit, PermMediaDelete, PermMediaConfigure,
 		PermSubscriptionView, PermSubscriptionEdit, PermSubscriptionExport,
 		PermTicketView, PermTicketCreate, PermTicketEdit, PermTicketAssign, PermTicketClose,
 		PermMarketingView, PermMarketingCreate, PermMarketingEdit, PermMarketingDelete,
 		PermMerchantView, PermMerchantEdit, PermMerchantSync,
 		PermShippingView, PermShippingCreate, PermShippingEdit, PermShippingTracking,
 		PermSettingsView,
-		PermSEOView, PermAnalyticsView,
+		PermSEOView, PermURLView, PermURLEdit, PermAnalyticsView,
 		PermLogsView,
 		PermOpsView, PermOpsDomainView, PermOpsDomainEdit, PermOpsDomainSync,
 		PermOpsConnectorView, PermOpsConnectorEdit,
 		PermOpsVPSView, PermOpsVPSEdit, PermOpsVPSSync,
 		PermOpsProjectView, PermOpsProjectEdit, PermOpsProjectSync, PermOpsDeployView,
 		PermOpsDeployDryRun, PermOpsDeployExecute, PermOpsDeployRollback, PermOpsWorkflowApprove,
+		PermServicesView, PermServicesManage,
 	},
 	RoleEditor: {
 		PermProductView, PermProductCreate, PermProductEdit,
@@ -198,6 +206,7 @@ var RolePermissions = map[Role][]Permission{
 		PermGalleryView, PermGalleryCreate, PermGalleryEdit,
 		PermMediaView, PermMediaCreate, PermMediaEdit,
 		PermMerchantView, PermMerchantEdit, PermMerchantSync,
+		PermURLView,
 	},
 	RoleSupport: {
 		PermOrderView,
@@ -220,7 +229,7 @@ var RolePermissions = map[Role][]Permission{
 		PermSubscriptionView,
 		PermTicketView,
 		PermMarketingView,
-		PermSEOView, PermAnalyticsView,
+		PermSEOView, PermURLView, PermAnalyticsView,
 		PermShippingView,
 		PermSettingsView,
 	},

@@ -6,6 +6,8 @@ type SiteSettings struct {
 	BrandTitle        string `json:"brand_title"`
 	SiteDescription   string `json:"site_description"`
 	SiteLogo          string `json:"site_logo"`
+	SiteLogoWidth     int    `json:"site_logo_width,omitempty"`
+	SiteLogoHeight    int    `json:"site_logo_height,omitempty"`
 	SiteFavicon       string `json:"site_favicon"`
 	ContactEmail      string `json:"contact_email"`
 	ContactPhone      string `json:"contact_phone"`

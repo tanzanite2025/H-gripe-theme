@@ -54,9 +54,9 @@
               <img :src="image.thumbnail || image.url" :alt="image.title" class="size-full object-cover" />
             </button>
           </TableCell>
-          <TableCell class="max-w-64 font-bold text-xs">{{ image.title || '-' }}</TableCell>
-          <TableCell class="max-w-72"><p class="line-clamp-2 text-muted-foreground">{{ image.description || '-' }}</p></TableCell>
-          <TableCell class="max-w-40 truncate text-xs text-muted-foreground">{{ image.tags || '-' }}</TableCell>
+ <TableCell class="max-w-64 font-bold text-xs">{{ image.title || '-'}}</TableCell>
+ <TableCell class="max-w-72"><p class="line-clamp-2 text-muted-foreground">{{ image.description || '-'}}</p></TableCell>
+ <TableCell class="max-w-40 truncate text-xs text-muted-foreground">{{ image.tags || '-'}}</TableCell>
           <TableCell class="text-right tabular-nums">{{ image.order ?? image.sort_order ?? 0 }}</TableCell>
           <TableCell class="text-right">
             <DropdownMenu>

@@ -344,6 +344,27 @@ func TestQuickBuyServiceCreatesSessionAndStoresSelectionSnapshot(t *testing.T) {
 	assert.Contains(t, string(updated.Items[0].ProductSnapshot), "/uploads/quick-buy-rim-thumb.webp")
 }
 
+func TestQuickBuyProductSnapshotCanonicalizesThumbnailURL(t *testing.T) {
+	resolver := NewMediaService(nil, nil, nil, "https://shop.example.test", 20<<30)
+	snapshot := quickBuyProductSnapshot(productdomain.Product{
+		ID:   91,
+		Name: "Quick Media Product",
+		Slug: "quick-media-product",
+		Media: []productdomain.ProductMedia{
+			{
+				MediaType:    "image",
+				URL:          "http://media.internal:8080/uploads/quick-buy/full.webp",
+				ThumbnailURL: "http://media.internal:8080/uploads/quick-buy/thumb.webp",
+				IsPrimary:    true,
+				IsVisible:    true,
+			},
+		},
+	}, resolver)
+
+	assert.Contains(t, string(snapshot), `"thumbnail":"https://shop.example.test/uploads/quick-buy/thumb.webp"`)
+	assert.NotContains(t, string(snapshot), "media.internal")
+}
+
 func TestQuickBuyServiceAllowsClearingAndReselectingStep(t *testing.T) {
 	db, quickBuyService := newQuickBuyTestService(t)
 	productSpecificationTemplate := seedQuickBuyProductSpecificationTemplate(t, db, "Rim", "rim")

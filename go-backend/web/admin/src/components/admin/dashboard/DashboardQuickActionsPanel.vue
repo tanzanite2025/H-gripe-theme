@@ -2,7 +2,7 @@
   <Card class="min-w-0 gap-0 py-0 shadow-none rounded-[24px] border-dashed border-border/80">
     <div class="uds-glow-bg" />
     <CardHeader class="relative z-10 border-b border-dashed border-border/70 py-3.5">
-      <CardTitle class="text-sm font-black tracking-tighter italic uppercase">快速操作</CardTitle>
+      <CardTitle class="text-sm font-black tracking-tighter uppercase">快速操作</CardTitle>
       <CardDescription class="text-[9px] font-black uppercase tracking-widest opacity-60">常用管理入口</CardDescription>
     </CardHeader>
     <CardContent class="relative z-10 grid grid-cols-1 gap-1.5 p-3 sm:grid-cols-2 xl:grid-cols-1">

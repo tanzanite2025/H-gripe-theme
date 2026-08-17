@@ -41,7 +41,7 @@
           </TableCell>
           <TableCell>
             <p class="break-all font-mono text-[11px] font-bold text-foreground">{{ fact.ip_hash_preview }}</p>
-            <p class="mt-1 break-all font-mono text-[10px] text-muted-foreground">{{ fact.user_agent_hash_preview || 'no-ua' }}</p>
+ <p class="mt-1 break-all font-mono text-[10px] text-muted-foreground">{{ fact.user_agent_hash_preview || 'no-ua'}}</p>
             <p v-if="fact.country_code" class="mt-1 font-mono text-[10px] text-muted-foreground">{{ fact.country_code }}</p>
           </TableCell>
           <TableCell>

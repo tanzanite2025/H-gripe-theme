@@ -71,15 +71,15 @@
                 :key="option.code"
                 type="button"
                 class="flex min-w-0 items-center gap-2 rounded-xl px-2.5 py-2 text-left text-[11px] font-bold transition-colors"
-                :class="isSelected(option.code) ? 'bg-primary text-primary-foreground' : 'bg-background/75 text-foreground hover:bg-background'"
+ :class="isSelected(option.code) ? 'bg-primary text-primary-foreground': 'bg-background/75 text-foreground hover:bg-background'"
                 :aria-pressed="isSelected(option.code)"
                 @click="toggleRegion(option.code)"
               >
-                <span class="flex size-4 shrink-0 items-center justify-center rounded-full" :class="isSelected(option.code) ? 'bg-primary-foreground/20' : 'bg-muted'">
+ <span class="flex size-4 shrink-0 items-center justify-center rounded-full" :class="isSelected(option.code) ? 'bg-primary-foreground/20': 'bg-muted'">
                   <Check v-if="isSelected(option.code)" class="size-3" />
                 </span>
                 <span class="min-w-0 flex-1 truncate">{{ option.name }}</span>
-                <span class="shrink-0 font-mono text-[9px]" :class="isSelected(option.code) ? 'text-primary-foreground/70' : 'text-muted-foreground/70'">
+ <span class="shrink-0 font-mono text-[9px]" :class="isSelected(option.code) ? 'text-primary-foreground/70': 'text-muted-foreground/70'">
                   {{ option.code }}
                 </span>
               </button>

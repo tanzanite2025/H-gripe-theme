@@ -47,6 +47,39 @@ services:
     restart: unless-stopped
     command: redis-server --appendonly yes
 
+  site-quality-runner:
+    build:
+      context: ./site-quality-runner
+      dockerfile: Dockerfile
+    container_name: commerce-platform-site-quality-runner
+    ports:
+      - "9240:8080"
+    environment:
+      - SITE_QUALITY_ALLOWED_ORIGIN=${SITE_QUALITY_ALLOWED_ORIGIN:-http://host.docker.internal:9199}
+      - SITE_QUALITY_RUNNER_TOKEN=dev-site-quality-runner-token-0123456789
+      - SITE_QUALITY_RUNNER_ALLOW_PRIVATE_TARGETS=true
+      - SITE_QUALITY_RUNNER_TIMEOUT_SECONDS=90
+      - SITE_QUALITY_RUNNER_MAX_CONCURRENCY=1
+    networks:
+      - commerce-platform-network
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=1024m
+    shm_size: 256m
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 256
+    mem_limit: 2048m
+    memswap_limit: 2048m
+    cpus: 1.00
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/healthz').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
   backend:
     build:
       context: ./go-backend

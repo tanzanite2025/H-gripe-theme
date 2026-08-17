@@ -12,40 +12,51 @@
       {{ t('shopCategoryMenu.empty') }}
     </div>
 
-    <ul v-else class="shop-category-menu__list">
-      <li>
-        <button
-          type="button"
-          class="shop-category-menu__item shop-category-menu__item--all"
-          :class="{ 'shop-category-menu__item--active': !selected }"
-          @click="handleSelect(null)"
-        >
-          <span class="shop-category-menu__arrow" aria-hidden="true">→</span>
-          <span class="shop-category-menu__label">{{ t('shopCategoryMenu.all') }}</span>
-        </button>
-      </li>
+    <div v-else class="shop-category-menu__content">
+      <p class="shop-category-menu__eyebrow">
+        {{ t('filter.categories', 'Categories') }}
+      </p>
 
-      <ShopCategoryMenuBranch
-        v-for="category in categories"
-        :key="category.id"
-        :category="category"
-        :selected="selected"
-        :expanded-keys="expandedKeys"
-        @select="handleSelect"
-        @toggle="toggleCategory"
-      />
-    </ul>
+      <ul class="shop-category-menu__list">
+        <li class="shop-category-menu__branch shop-category-menu__branch--all">
+          <button
+            type="button"
+            class="shop-category-menu__item shop-category-menu__item--all"
+            :class="{ 'shop-category-menu__item--active': !selected }"
+            :title="t('shopCategoryMenu.all')"
+            @click="emit('select', null)"
+          >
+            <span class="shop-category-menu__copy">
+              <span class="shop-category-menu__label-track">
+                <span class="shop-category-menu__label-line">{{ t('shopCategoryMenu.all') }}</span>
+                <span class="shop-category-menu__label-line shop-category-menu__label-line--roll" aria-hidden="true">
+                  {{ t('shopCategoryMenu.all') }}
+                </span>
+              </span>
+            </span>
+            <span class="shop-category-menu__meta" aria-hidden="true">00 / View</span>
+          </button>
+        </li>
+
+        <ShopCategoryMenuBranch
+          v-for="category in categories"
+          :key="category.id"
+          :category="category"
+          :selected="selected"
+          @select="emit('select', $event)"
+        />
+      </ul>
+    </div>
   </nav>
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
 import type { ProductCategory } from '~/composables/useProductCategories'
 import ShopCategoryMenuBranch from './ShopCategoryMenuBranch.vue'
 
 const { t } = useI18n()
 
-const props = defineProps<{
+defineProps<{
   categories: ProductCategory[]
   selected: ProductCategory | null
   loading?: boolean
@@ -55,84 +66,36 @@ const props = defineProps<{
 const emit = defineEmits<{
   (event: 'select', category: ProductCategory | null): void
 }>()
-
-const expandedKeys = ref<Set<number>>(new Set())
-
-const findCategoryPath = (
-  items: ProductCategory[],
-  targetID: number,
-  path: ProductCategory[] = [],
-): ProductCategory[] => {
-  for (const item of items) {
-    const nextPath = [...path, item]
-    if (item.id === targetID) return nextPath
-    const nestedPath = findCategoryPath(item.children, targetID, nextPath)
-    if (nestedPath.length) return nestedPath
-  }
-  return []
-}
-
-const expandPathTo = (category: ProductCategory | null): void => {
-  if (!category) {
-    expandedKeys.value = new Set()
-    return
-  }
-
-  const path = findCategoryPath(props.categories, category.id)
-  if (!path.length) return
-
-  const next = new Set(expandedKeys.value)
-  path.slice(0, -1).forEach((item) => next.add(item.id))
-  expandedKeys.value = next
-}
-
-const handleSelect = (category: ProductCategory | null): void => {
-  expandPathTo(category)
-  emit('select', category)
-}
-
-const toggleCategory = (category: ProductCategory): void => {
-  const next = new Set(expandedKeys.value)
-  if (next.has(category.id)) {
-    next.delete(category.id)
-  } else {
-    if (category.depth === 1) {
-      props.categories.forEach((root) => {
-        if (root.id !== category.id) next.delete(root.id)
-      })
-    }
-    next.add(category.id)
-  }
-  expandedKeys.value = next
-}
-
-watch(
-  () => props.selected?.id,
-  () => expandPathTo(props.selected),
-  { immediate: true },
-)
 </script>
 
 <style scoped>
 .shop-category-menu {
-  --shop-category-accent: #ff6a00;
-  width: min(100%, 18rem);
+  --shop-category-accent: #b5ff6d;
+
+  width: 100%;
+  min-width: 0;
   color: #f8fafc;
 }
 
-.shop-category-menu__list {
+.shop-category-menu__content {
   display: flex;
+  min-width: 0;
   flex-direction: column;
-  gap: 0.4rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
 }
 
+.shop-category-menu__eyebrow {
+  margin: 0 0 1.4rem;
+  color: rgba(248, 250, 252, 0.62);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  line-height: 1.2;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.shop-category-menu__list,
 .shop-category-menu :deep(.shop-category-menu__children) {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -140,141 +103,137 @@ watch(
 
 .shop-category-menu :deep(.shop-category-menu__branch) {
   min-width: 0;
+  padding-left: var(--category-indent, 0rem);
 }
 
-.shop-category-menu :deep(.shop-category-menu__row) {
-  display: flex;
-  min-width: 0;
-  align-items: stretch;
-  gap: 0.25rem;
+.shop-category-menu :deep(.shop-category-menu__children) {
+  margin-left: 0;
 }
 
 .shop-category-menu :deep(.shop-category-menu__item) {
   position: relative;
-  display: flex;
+  display: grid;
+  width: 100%;
   min-width: 0;
-  min-height: 2.6rem;
-  flex: 1 1 auto;
+  min-height: clamp(2rem, 2.9vw, 2.6rem);
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 0.55rem;
-  padding-top: 0.35rem;
-  padding-right: 0.35rem;
-  padding-bottom: 0.35rem;
+  gap: 1rem;
+  overflow: hidden;
   border: 0;
+  border-bottom: 1px solid rgba(248, 250, 252, 0.15);
   background: transparent;
-  color: rgba(248, 250, 252, 0.84);
+  color: #f8fafc;
   cursor: pointer;
-  font-size: 0.95rem;
-  font-weight: 800;
-  line-height: 1.12;
+  padding: 0.2rem 0.15rem;
   text-align: left;
-  transition: color 0.18s ease, background-color 0.18s ease;
 }
 
-.shop-category-menu :deep(.shop-category-menu__item--all) {
-  min-height: 2.25rem;
-}
-
-.shop-category-menu :deep(.shop-category-menu__item:hover),
 .shop-category-menu :deep(.shop-category-menu__item:focus-visible) {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.05);
+  outline: 2px solid var(--shop-category-accent);
+  outline-offset: -2px;
 }
 
-.shop-category-menu :deep(.shop-category-menu__item:focus-visible),
-.shop-category-menu :deep(.shop-category-menu__expand:focus-visible) {
-  outline: 2px solid rgba(255, 106, 0, 0.78);
-  outline-offset: 0.15rem;
-  border-radius: 0.35rem;
+.shop-category-menu :deep(.shop-category-menu__copy) {
+  position: relative;
+  z-index: 2;
+  min-width: 0;
+  height: clamp(1rem, 1.3vw, 1.4rem);
+  overflow: hidden;
 }
 
-.shop-category-menu :deep(.shop-category-menu__item--active) {
-  color: var(--shop-category-accent);
+.shop-category-menu :deep(.shop-category-menu__label-track) {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.06;
+  transition: transform 0.38s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.shop-category-menu :deep(.shop-category-menu__item--active:hover),
-.shop-category-menu :deep(.shop-category-menu__item--active:focus-visible) {
-  color: var(--shop-category-accent);
-}
-
-.shop-category-menu :deep(.shop-category-menu__arrow) {
-  position: absolute;
-  left: 0;
-  width: 1.15rem;
-  color: var(--shop-category-accent);
-  opacity: 0;
-  transform: translateX(-0.35rem);
-  transition: opacity 0.18s ease, transform 0.18s ease;
-}
-
-.shop-category-menu :deep(.shop-category-menu__item--active .shop-category-menu__arrow) {
-  opacity: 1;
-  transform: translateX(0);
-}
-
-.shop-category-menu :deep(.shop-category-menu__label) {
+.shop-category-menu :deep(.shop-category-menu__label-line) {
+  display: block;
   min-width: 0;
   overflow: hidden;
+  font-size: clamp(0.82rem, 1.15vw, 1.25rem);
+  font-weight: 850;
+  letter-spacing: 0;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.shop-category-menu :deep(.shop-category-menu__thumbnail) {
-  display: inline-flex;
-  width: 4rem;
-  height: 2.25rem;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  margin-left: 1.55rem;
-  border: 1px solid rgba(255, 255, 255, 0.13);
-  border-radius: 0.35rem;
-  background: rgba(255, 255, 255, 0.06);
+.shop-category-menu :deep(.shop-category-menu__label-line--roll) {
+  color: var(--shop-category-accent);
 }
 
-.shop-category-menu :deep(.shop-category-menu__thumbnail img) {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+.shop-category-menu :deep(.shop-category-menu__item--child .shop-category-menu__label-line) {
+  font-size: clamp(0.75rem, 0.9vw, 1rem);
 }
 
-.shop-category-menu :deep(.shop-category-menu__thumbnail--placeholder) {
-  border-style: dashed;
+.shop-category-menu :deep(.shop-category-menu__item--child .shop-category-menu__copy) {
+  height: clamp(0.9rem, 1.05vw, 1.12rem);
 }
 
-.shop-category-menu :deep(.shop-category-menu__expand) {
-  display: inline-flex;
-  width: 2.25rem;
-  min-height: 2.25rem;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
-  border: 0;
-  background: transparent;
-  color: rgba(248, 250, 252, 0.58);
-  cursor: pointer;
-  transition: color 0.18s ease, background-color 0.18s ease;
+.shop-category-menu :deep(.shop-category-menu__item:hover .shop-category-menu__label-track),
+.shop-category-menu :deep(.shop-category-menu__item:focus-visible .shop-category-menu__label-track),
+.shop-category-menu :deep(.shop-category-menu__item--active .shop-category-menu__label-track) {
+  transform: translateY(-50%);
 }
 
-.shop-category-menu :deep(.shop-category-menu__expand:hover) {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.06);
+.shop-category-menu :deep(.shop-category-menu__meta) {
+  position: relative;
+  z-index: 2;
+  color: rgba(248, 250, 252, 0.64);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+  text-align: right;
+  text-transform: uppercase;
+  transition: opacity 0.18s ease;
+  white-space: nowrap;
 }
 
-.shop-category-menu :deep(.shop-category-menu__expand svg) {
-  width: 1rem;
-  height: 1rem;
+.shop-category-menu :deep(.shop-category-menu__item:hover .shop-category-menu__meta),
+.shop-category-menu :deep(.shop-category-menu__item:focus-visible .shop-category-menu__meta),
+.shop-category-menu :deep(.shop-category-menu__item--active .shop-category-menu__meta) {
+  opacity: 0;
 }
 
 .shop-category-menu__state {
-  padding-left: 1.75rem;
+  padding: 1rem;
   color: rgba(248, 250, 252, 0.56);
   font-size: 0.9rem;
   line-height: 1.5;
+  text-align: center;
 }
 
 .shop-category-menu__state--error {
   color: #fca5a5;
+}
+
+@media (max-width: 1023px) {
+  .shop-category-menu__eyebrow {
+    margin-bottom: 0.9rem;
+    text-align: left;
+  }
+
+  .shop-category-menu :deep(.shop-category-menu__item) {
+    min-height: 3.4rem;
+    padding: 0.45rem 0.1rem;
+  }
+
+  .shop-category-menu :deep(.shop-category-menu__label-line),
+  .shop-category-menu :deep(.shop-category-menu__item--child .shop-category-menu__label-line) {
+    font-size: 1.05rem;
+    font-weight: 780;
+  }
+
+  .shop-category-menu :deep(.shop-category-menu__copy),
+  .shop-category-menu :deep(.shop-category-menu__item--child .shop-category-menu__copy) {
+    height: 1.2rem;
+  }
+
+  .shop-category-menu :deep(.shop-category-menu__meta) {
+    display: none;
+  }
 }
 </style>

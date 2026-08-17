@@ -198,7 +198,7 @@ func (h *Handler) CreateWarrantyClaim(c *gin.Context) {
 		return
 	}
 
-	response.Created(c, claim)
+	response.Created(c, publicWarrantyClaimFromDomain(claim, h.mediaResolver))
 }
 
 func (h *Handler) GetWarrantyClaim(c *gin.Context) {
@@ -220,7 +220,7 @@ func (h *Handler) GetWarrantyClaim(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, claim)
+	response.Success(c, publicWarrantyClaimFromDomain(*claim, h.mediaResolver))
 }
 
 func (h *Handler) ListRegistrationClaims(c *gin.Context) {
@@ -242,7 +242,7 @@ func (h *Handler) ListRegistrationClaims(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, gin.H{"data": claims})
+	response.Success(c, gin.H{"data": publicWarrantyClaimsFromDomain(claims, h.mediaResolver)})
 }
 
 func (h *Handler) uploadWarrantyClaimFiles(c *gin.Context) ([]string, string, error) {

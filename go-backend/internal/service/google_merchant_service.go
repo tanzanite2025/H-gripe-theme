@@ -26,6 +26,7 @@ type GoogleMerchantService struct {
 	products       *repository.ProductRepository
 	googleConfig   config.GoogleMerchantConfig
 	storefrontURL  string
+	mediaResolver  PublicMediaURLResolver
 	merchantEvents MerchantOfferEventPublisher
 }
 
@@ -69,6 +70,13 @@ func (s *GoogleMerchantService) ConfigureMerchantEventPublisher(publisher Mercha
 		return
 	}
 	s.merchantEvents = publisher
+}
+
+func (s *GoogleMerchantService) ConfigureMediaService(mediaService *MediaService) {
+	if s == nil {
+		return
+	}
+	s.mediaResolver = mediaService
 }
 
 func (s *GoogleMerchantService) ListOffers() ([]merchant.GoogleMerchantOffer, error) {
@@ -345,7 +353,7 @@ func (s *GoogleMerchantService) validateReadyOfferWithStorefrontURL(offer *merch
 	if strings.TrimSpace(offer.Product.Description) == "" || !hasGoogleMerchantImage(offer.Product.Media) {
 		return fmt.Errorf("%w: source product requires a description and visible image", ErrGoogleMerchantOfferInvalid)
 	}
-	if _, err := firstGoogleMerchantImage(storefrontBaseURL, offer.Product.Media); err != nil {
+	if _, err := firstGoogleMerchantImage(storefrontBaseURL, offer.Product.Media, s.mediaResolver); err != nil {
 		return fmt.Errorf("%w: %v", ErrGoogleMerchantOfferInvalid, err)
 	}
 	if offer.Brand == "" || offer.GoogleProductCategory == "" || offer.IdentifierExists == nil {

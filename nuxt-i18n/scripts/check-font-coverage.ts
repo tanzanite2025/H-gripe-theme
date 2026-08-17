@@ -2,39 +2,34 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { create } from 'fontkitten'
+import {
+  collectStorefrontLocaleSources,
+  fontStackForStorefrontLocale,
+  validateStorefrontLocaleSources,
+} from './font-locale-contract.ts'
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url))
 const projectDir = path.resolve(scriptDir, '..')
 const appDir = path.join(projectDir, 'app')
-const localeDir = path.join(appDir, 'i18n', 'locales')
 const fontCssPath = path.join(appDir, 'assets', 'css', 'tailwind.css')
 const stripeFontCssPath = path.join(projectDir, 'public', 'fonts', 'storefront-system.css')
 const baseFontFamily = 'StorefrontSystem'
+const latinFontFamily = 'StorefrontSystemLatin'
 const allowedFontFamilies = new Set([
+  latinFontFamily,
   baseFontFamily,
   'StorefrontSystemArabic',
   'StorefrontSystemDevanagari',
   'StorefrontSystemLatinAccents',
   'StorefrontSystemThai',
 ])
-const localeFontStacks = new Map<string, string[]>([
-  ['ar', ['StorefrontSystemArabic', baseFontFamily]],
-  ['hi', ['StorefrontSystemDevanagari', baseFontFamily]],
-  ['th', ['StorefrontSystemThai', baseFontFamily]],
-  ['da', ['StorefrontSystemLatinAccents', baseFontFamily]],
-  ['de', ['StorefrontSystemLatinAccents', baseFontFamily]],
-  ['es', ['StorefrontSystemLatinAccents', baseFontFamily]],
-  ['fr', ['StorefrontSystemLatinAccents', baseFontFamily]],
-  ['pt', ['StorefrontSystemLatinAccents', baseFontFamily]],
-  ['sv', ['StorefrontSystemLatinAccents', baseFontFamily]],
-  ['tr', ['StorefrontSystemLatinAccents', baseFontFamily]],
-])
 const expectedFontFamilyByFilename = new Map<string, string>([
-  ['StorefrontSystem-CN-Latin.woff2', baseFontFamily],
-  ['StorefrontSystem-Arabic.woff2', 'StorefrontSystemArabic'],
-  ['StorefrontSystem-Devanagari.woff2', 'StorefrontSystemDevanagari'],
-  ['StorefrontSystem-Latin-Accents.woff2', 'StorefrontSystemLatinAccents'],
-  ['StorefrontSystem-Thai.woff2', 'StorefrontSystemThai'],
+  ['StorefrontSystem-Latin.00af3fec5b34.woff2', latinFontFamily],
+  ['StorefrontSystem-CJK.f8ce6d72e8cb.woff2', baseFontFamily],
+  ['StorefrontSystem-Arabic.ce85091f0209.woff2', 'StorefrontSystemArabic'],
+  ['StorefrontSystem-Devanagari.3b3cae4d2600.woff2', 'StorefrontSystemDevanagari'],
+  ['StorefrontSystem-Latin-Accents.e645edc952b6.woff2', 'StorefrontSystemLatinAccents'],
+  ['StorefrontSystem-Thai.1f5a173641bb.woff2', 'StorefrontSystemThai'],
 ])
 
 interface UnicodeRange {
@@ -174,11 +169,6 @@ function compareFontFaces(first: StorefrontFontFace[], second: StorefrontFontFac
   })
 }
 
-function fontStackForLocale(localeFile: string): string[] {
-  const localeCode = localeFile.replace(/\.json$/i, '').replace(/_/g, '-').toLowerCase().split('-')[0]
-  return localeFontStacks.get(localeCode) || [baseFontFamily]
-}
-
 function supportsCodePoint(fontFace: StorefrontFontFace, characterSet: Set<number>, codePoint: number): boolean {
   if (!characterSet.has(codePoint)) return false
   return fontFace.unicodeRanges === null || fontFace.unicodeRanges.some(range => (
@@ -234,20 +224,28 @@ for (const { fontPath } of storefrontFontFaces) {
 }
 
 const missingByLocale: Array<{ locale: string; missing: number[] }> = []
+const localeSources = collectStorefrontLocaleSources(projectDir)
+const localeContractViolations = validateStorefrontLocaleSources(projectDir, localeSources)
 
-for (const localeFile of fs.readdirSync(localeDir).filter(file => file.endsWith('.json')).sort()) {
-  const locale = JSON.parse(fs.readFileSync(path.join(localeDir, localeFile), 'utf8')) as unknown
+if (localeContractViolations.length > 0) {
+  throw new Error(`Storefront locale contract violations:\n${localeContractViolations.map(violation => `- ${violation}`).join('\n')}`)
+}
+
+for (const [localeCode, sourcePaths] of [...localeSources.entries()].sort(([first], [second]) => first.localeCompare(second))) {
   const characters = new Set<number>()
-  collectLocaleCharacters(locale, characters)
+  for (const sourcePath of sourcePaths) {
+    const locale = JSON.parse(fs.readFileSync(sourcePath, 'utf8')) as unknown
+    collectLocaleCharacters(locale, characters)
+  }
 
-  const allowedFamilies = new Set(fontStackForLocale(localeFile))
+  const allowedFamilies = new Set(fontStackForStorefrontLocale(localeCode))
   const localeFontFaces = storefrontFontFaces.filter(fontFace => allowedFamilies.has(fontFace.fontFamily))
   const missing = [...characters].filter(codePoint => !localeFontFaces.some(fontFace => (
     supportsCodePoint(fontFace, fontCharacterSets.get(fontFace.fontPath)!, codePoint)
   )))
 
   if (missing.length > 0) {
-    missingByLocale.push({ locale: localeFile, missing })
+    missingByLocale.push({ locale: localeCode, missing })
   }
 }
 

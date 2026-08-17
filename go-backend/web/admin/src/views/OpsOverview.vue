@@ -17,7 +17,7 @@
           </option>
         </select>
         <Button variant="outline" :disabled="loading" @click="loadOverview">
-          <RefreshCw :class="['size-4', loading ? 'animate-spin' : '']" />
+ <RefreshCw :class="['size-4', loading ? 'animate-spin': '']" />
           刷新
         </Button>
       </template>

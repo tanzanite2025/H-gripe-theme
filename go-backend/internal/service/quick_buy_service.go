@@ -48,6 +48,7 @@ type QuickBuyService struct {
 	repo                *repository.QuickBuyRepository
 	productRepo         *repository.ProductRepository
 	productCategoryRepo *repository.ProductCategoryRepository
+	mediaURLResolver    PublicMediaURLResolver
 }
 
 type QuickBuyFlowInput struct {
@@ -300,6 +301,13 @@ func NewQuickBuyService(repo *repository.QuickBuyRepository, productRepo *reposi
 	return &QuickBuyService{repo: repo, productRepo: productRepo, productCategoryRepo: productCategoryRepo}
 }
 
+func (s *QuickBuyService) ConfigureMediaService(mediaService *MediaService) {
+	if s == nil {
+		return
+	}
+	s.mediaURLResolver = mediaService
+}
+
 func (s *QuickBuyService) ListFlows() ([]QuickBuyFlowSummary, error) {
 	if s == nil || s.repo == nil {
 		return nil, errors.New("quick buy service is not configured")
@@ -360,7 +368,7 @@ func (s *QuickBuyService) CurrentFlow(surface, locale string) (*QuickBuyPublicFl
 	if version == nil {
 		return nil, nil
 	}
-	return quickBuyPublicFlowView(*version, locale), nil
+	return quickBuyPublicFlowView(*version, locale, s.mediaURLResolver), nil
 }
 
 func (s *QuickBuyService) CreateSession(input QuickBuySessionInput) (*QuickBuySessionView, error) {
@@ -399,7 +407,7 @@ func (s *QuickBuyService) CreateSession(input QuickBuySessionInput) (*QuickBuySe
 	if err != nil {
 		return nil, err
 	}
-	return quickBuySessionView(*loaded, &validation), nil
+	return quickBuySessionView(*loaded, &validation, s.mediaURLResolver), nil
 }
 
 func (s *QuickBuyService) GetSession(token string) (*QuickBuySessionView, error) {
@@ -410,7 +418,7 @@ func (s *QuickBuyService) GetSession(token string) (*QuickBuySessionView, error)
 	if err != nil {
 		return nil, err
 	}
-	return quickBuySessionView(*session, nil), nil
+	return quickBuySessionView(*session, nil, s.mediaURLResolver), nil
 }
 
 func (s *QuickBuyService) UpdateSessionSelections(token string, input QuickBuySelectionUpdateInput) (*QuickBuySessionView, error) {
@@ -471,7 +479,7 @@ func (s *QuickBuyService) UpdateSessionSelections(token string, input QuickBuySe
 	if err != nil {
 		return nil, err
 	}
-	return quickBuySessionView(*loaded, &validation), nil
+	return quickBuySessionView(*loaded, &validation, s.mediaURLResolver), nil
 }
 
 func (s *QuickBuyService) ValidateSession(token string) (*QuickBuySessionView, error) {
@@ -487,7 +495,7 @@ func (s *QuickBuyService) ValidateSession(token string) (*QuickBuySessionView, e
 		return nil, err
 	}
 	validation := s.validateQuickBuySession(*version, session.Items)
-	return quickBuySessionView(*session, &validation), nil
+	return quickBuySessionView(*session, &validation, s.mediaURLResolver), nil
 }
 
 func (s *QuickBuyService) ListSessionStepCandidates(token string, input QuickBuyCandidateInput) (*QuickBuyCandidateResult, error) {
@@ -880,7 +888,7 @@ func (s *QuickBuyService) listVersionStepCandidates(version quickbuy.Version, in
 		FlowVersionID: version.ID,
 		Locale:        locale,
 		Currency:      currency,
-		Step:          quickBuyStepView(*step, locale, exposeProductSpecificationTemplates),
+		Step:          quickBuyStepView(*step, locale, exposeProductSpecificationTemplates, s.mediaURLResolver),
 		Products:      []productdomain.Product{},
 		Page:          page,
 		PageSize:      pageSize,
@@ -981,7 +989,7 @@ func (s *QuickBuyService) sessionItemFromSelection(session quickbuy.Session, ver
 		UnitPriceSnapshot: price,
 		CurrencySnapshot:  currency,
 		WeightSnapshotG:   variant.Weight,
-		ProductSnapshot:   quickBuyProductSnapshot(*productItem),
+		ProductSnapshot:   quickBuyProductSnapshot(*productItem, s.mediaURLResolver),
 		VariantSnapshot:   quickBuyVariantSnapshot(*variant),
 		SortOrder:         step.SortOrder*100 + index + 1,
 	}, false, nil
@@ -1587,7 +1595,8 @@ func quickBuySessionTotals(items []quickbuy.SessionItem) (float64, int) {
 	return subtotal, weightG
 }
 
-func quickBuySessionView(session quickbuy.Session, validation *QuickBuySessionValidationResult) *QuickBuySessionView {
+func quickBuySessionView(session quickbuy.Session, validation *QuickBuySessionValidationResult, resolvers ...PublicMediaURLResolver) *QuickBuySessionView {
+	resolver := quickBuyMediaResolver(resolvers)
 	items := make([]QuickBuySessionItemView, 0, len(session.Items))
 	for _, item := range session.Items {
 		items = append(items, QuickBuySessionItemView{
@@ -1599,7 +1608,7 @@ func quickBuySessionView(session quickbuy.Session, validation *QuickBuySessionVa
 			UnitPriceSnapshot: item.UnitPriceSnapshot,
 			CurrencySnapshot:  item.CurrencySnapshot,
 			WeightSnapshotG:   item.WeightSnapshotG,
-			ProductSnapshot:   item.ProductSnapshot,
+			ProductSnapshot:   quickBuyPublicProductSnapshot(item.ProductSnapshot, resolver),
 			VariantSnapshot:   item.VariantSnapshot,
 			SortOrder:         item.SortOrder,
 		})
@@ -1607,7 +1616,7 @@ func quickBuySessionView(session quickbuy.Session, validation *QuickBuySessionVa
 
 	var flow *QuickBuyPublicFlowView
 	if session.Version != nil && session.Version.Flow != nil {
-		flow = quickBuyPublicFlowView(*session.Version, session.Locale)
+		flow = quickBuyPublicFlowView(*session.Version, session.Locale, resolver)
 	}
 	return &QuickBuySessionView{
 		SessionToken:     session.SessionToken,
@@ -1629,8 +1638,25 @@ func quickBuySessionView(session quickbuy.Session, validation *QuickBuySessionVa
 	}
 }
 
-func quickBuyProductSnapshot(item productdomain.Product) datatypes.JSON {
-	thumbnail := quickBuyProductThumbnail(item)
+func quickBuyPublicProductSnapshot(raw datatypes.JSON, resolver PublicMediaURLResolver) datatypes.JSON {
+	if resolver == nil || len(raw) == 0 {
+		return raw
+	}
+
+	var snapshot map[string]interface{}
+	if err := json.Unmarshal(raw, &snapshot); err != nil {
+		return raw
+	}
+	for _, key := range []string{"thumbnail", "featured_image"} {
+		if value, ok := snapshot[key].(string); ok {
+			snapshot[key] = canonicalPublicMediaURL(resolver, value)
+		}
+	}
+	return quickBuyJSON(snapshot)
+}
+
+func quickBuyProductSnapshot(item productdomain.Product, resolvers ...PublicMediaURLResolver) datatypes.JSON {
+	thumbnail := quickBuyProductThumbnail(item, resolvers...)
 	return quickBuyJSON(map[string]interface{}{
 		"id":                                item.ID,
 		"product_specification_template_id": item.ProductSpecificationTemplateID,
@@ -1646,21 +1672,22 @@ func quickBuyProductSnapshot(item productdomain.Product) datatypes.JSON {
 	})
 }
 
-func quickBuyProductThumbnail(item productdomain.Product) string {
+func quickBuyProductThumbnail(item productdomain.Product, resolvers ...PublicMediaURLResolver) string {
+	resolver := quickBuyMediaResolver(resolvers)
 	for _, media := range item.Media {
 		if media.MediaType == "image" && media.IsVisible && media.IsPrimary {
 			if strings.TrimSpace(media.ThumbnailURL) != "" {
-				return strings.TrimSpace(media.ThumbnailURL)
+				return canonicalPublicMediaURL(resolver, media.ThumbnailURL)
 			}
-			return strings.TrimSpace(media.URL)
+			return canonicalPublicMediaURL(resolver, media.URL)
 		}
 	}
 	for _, media := range item.Media {
 		if media.MediaType == "image" && media.IsVisible {
 			if strings.TrimSpace(media.ThumbnailURL) != "" {
-				return strings.TrimSpace(media.ThumbnailURL)
+				return canonicalPublicMediaURL(resolver, media.ThumbnailURL)
 			}
-			return strings.TrimSpace(media.URL)
+			return canonicalPublicMediaURL(resolver, media.URL)
 		}
 	}
 	return ""
@@ -1746,10 +1773,11 @@ func quickBuyFlowView(version quickbuy.Version, locale string) *QuickBuyFlowView
 	}
 }
 
-func quickBuyPublicFlowView(version quickbuy.Version, locale string) *QuickBuyPublicFlowView {
+func quickBuyPublicFlowView(version quickbuy.Version, locale string, resolvers ...PublicMediaURLResolver) *QuickBuyPublicFlowView {
 	if version.Flow == nil {
 		return nil
 	}
+	resolver := quickBuyMediaResolver(resolvers)
 	requestLocale := locales.ResolveSupported(locale)
 	return &QuickBuyPublicFlowView{
 		ID:           version.Flow.ID,
@@ -1767,14 +1795,15 @@ func quickBuyPublicFlowView(version quickbuy.Version, locale string) *QuickBuyPu
 			StartsAt:      version.StartsAt,
 			EndsAt:        version.EndsAt,
 		},
-		Steps: quickBuyStepViews(version.Steps, requestLocale, !isDefaultQuickBuyFlow(version)),
+		Steps: quickBuyStepViews(version.Steps, requestLocale, !isDefaultQuickBuyFlow(version), resolver),
 	}
 }
 
-func quickBuyStepViews(steps []quickbuy.Step, locale string, exposeProductSpecificationTemplates bool) []QuickBuyStepView {
+func quickBuyStepViews(steps []quickbuy.Step, locale string, exposeProductSpecificationTemplates bool, resolvers ...PublicMediaURLResolver) []QuickBuyStepView {
+	resolver := quickBuyMediaResolver(resolvers)
 	result := make([]QuickBuyStepView, 0, len(steps))
 	for _, step := range steps {
-		result = append(result, quickBuyStepView(step, locale, exposeProductSpecificationTemplates))
+		result = append(result, quickBuyStepView(step, locale, exposeProductSpecificationTemplates, resolver))
 	}
 	return result
 }
@@ -1815,7 +1844,8 @@ func quickBuyFlowTranslationViews(translations []quickbuy.FlowTranslation) []Qui
 	return result
 }
 
-func quickBuyStepView(step quickbuy.Step, locale string, exposeProductSpecificationTemplates bool) QuickBuyStepView {
+func quickBuyStepView(step quickbuy.Step, locale string, exposeProductSpecificationTemplates bool, resolvers ...PublicMediaURLResolver) QuickBuyStepView {
+	resolver := quickBuyMediaResolver(resolvers)
 	productCategories := make([]QuickBuyProductCategoryView, 0, len(step.ProductCategories))
 	productSpecificationTemplates := make([]QuickBuyProductSpecificationTemplateView, 0, len(step.ProductSpecificationTemplates))
 	stepSlug := step.StepKey
@@ -1826,7 +1856,7 @@ func quickBuyStepView(step quickbuy.Step, locale string, exposeProductSpecificat
 		if stepSlug == step.StepKey && index == 0 && !isDefaultQuickBuyStepKey(step.StepKey) {
 			stepSlug = item.ProductCategory.Slug
 		}
-		productCategories = append(productCategories, quickBuyProductCategoryView(*item.ProductCategory, locale, item.IsPrimary))
+		productCategories = append(productCategories, quickBuyProductCategoryView(*item.ProductCategory, locale, item.IsPrimary, resolver))
 	}
 	if exposeProductSpecificationTemplates {
 		for index, item := range step.ProductSpecificationTemplates {
@@ -1836,7 +1866,7 @@ func quickBuyStepView(step quickbuy.Step, locale string, exposeProductSpecificat
 			if index == 0 {
 				stepSlug = item.ProductSpecificationTemplate.Slug
 			}
-			productSpecificationTemplates = append(productSpecificationTemplates, quickBuyProductSpecificationTemplateView(*item.ProductSpecificationTemplate, locale, item.IsPrimary))
+			productSpecificationTemplates = append(productSpecificationTemplates, quickBuyProductSpecificationTemplateView(*item.ProductSpecificationTemplate, locale, item.IsPrimary, resolver))
 		}
 	}
 	return QuickBuyStepView{
@@ -1965,17 +1995,19 @@ func quickBuyStepFilters(step quickbuy.Step, valuesBySlug map[string][]string) [
 	return result
 }
 
-func quickBuyProductSpecificationTemplateView(item productdomain.ProductSpecificationTemplate, locale string, primary bool) QuickBuyProductSpecificationTemplateView {
+func quickBuyProductSpecificationTemplateView(item productdomain.ProductSpecificationTemplate, locale string, primary bool, resolvers ...PublicMediaURLResolver) QuickBuyProductSpecificationTemplateView {
+	resolver := quickBuyMediaResolver(resolvers)
 	return QuickBuyProductSpecificationTemplateView{
 		ID:       item.ID,
 		Slug:     item.Slug,
 		Name:     item.NameForLocale(locale),
-		ImageURL: item.ImageURL,
+		ImageURL: canonicalPublicMediaURL(resolver, item.ImageURL),
 		Primary:  primary,
 	}
 }
 
-func quickBuyProductCategoryView(item productdomain.ProductCategory, locale string, primary bool) QuickBuyProductCategoryView {
+func quickBuyProductCategoryView(item productdomain.ProductCategory, locale string, primary bool, resolvers ...PublicMediaURLResolver) QuickBuyProductCategoryView {
+	resolver := quickBuyMediaResolver(resolvers)
 	name := strings.TrimSpace(item.Name)
 	for _, translation := range item.Translations {
 		if locales.Normalize(translation.Locale) != locale {
@@ -1992,9 +2024,16 @@ func quickBuyProductCategoryView(item productdomain.ProductCategory, locale stri
 		Slug:     item.Slug,
 		Name:     name,
 		Depth:    item.Depth,
-		ImageURL: item.ImageURL,
+		ImageURL: canonicalPublicMediaURL(resolver, item.ImageURL),
 		Primary:  primary,
 	}
+}
+
+func quickBuyMediaResolver(resolvers []PublicMediaURLResolver) PublicMediaURLResolver {
+	if len(resolvers) == 0 {
+		return nil
+	}
+	return resolvers[0]
 }
 
 func normalizeQuickBuyKey(value string) string {

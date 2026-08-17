@@ -18,7 +18,7 @@
           <option value="">全部环境</option>
         </select>
         <Button variant="outline" :disabled="loading || Boolean(oauthProvider)" @click="loadConnectors">
-          <RefreshCw :class="['size-4', loading ? 'animate-spin' : '']" />
+ <RefreshCw :class="['size-4', loading ? 'animate-spin': '']" />
           刷新
         </Button>
         <Button

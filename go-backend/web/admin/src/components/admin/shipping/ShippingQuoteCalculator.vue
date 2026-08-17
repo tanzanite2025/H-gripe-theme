@@ -3,7 +3,7 @@
     <div class="rounded-lg border bg-card p-4 shadow-xs">
       <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 class="text-sm font-black tracking-tighter italic uppercase">运费试算器</h2>
+          <h2 class="text-sm font-black tracking-tighter uppercase">运费试算器</h2>
           <p class="mt-1 text-xs text-muted-foreground">
             输入国家和商品/SKU，系统从数据库读取真实价格与 SKU 重量，再走后端报价规则。
           </p>
@@ -88,12 +88,12 @@
     <div class="rounded-lg border bg-card p-4 shadow-xs">
       <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 class="text-sm font-black tracking-tighter italic uppercase">报价结果</h2>
+          <h2 class="text-sm font-black tracking-tighter uppercase">报价结果</h2>
           <p class="mt-1 text-xs text-muted-foreground">
             明细会显示商品/SKU 设置的模板、线路候选、SKU 实重、包装重量、计费重量和分摊运费，方便排查规则矩阵。
           </p>
         </div>
-        <Badge v-if="quote" variant="outline" :class="quote.free_shipping ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-amber-200 bg-amber-50 text-amber-700'">
+ <Badge v-if="quote" variant="outline" :class="quote.free_shipping ? 'border-emerald-200 bg-emerald-50 text-emerald-700': 'border-amber-200 bg-amber-50 text-amber-700'">
           {{ quote.free_shipping ? 'FREE SHIPPING' : 'CHARGED' }}
         </Badge>
       </div>
@@ -110,16 +110,16 @@
           </div>
           <div class="rounded-lg border bg-muted/35 p-3">
             <span class="text-[10px] font-black uppercase tracking-wider text-muted-foreground">币种</span>
-            <p class="mt-1 text-2xl font-black tracking-tighter">{{ quote.currency || '币种缺失' }}</p>
+ <p class="mt-1 text-2xl font-black tracking-tighter">{{ quote.currency || '币种缺失'}}</p>
           </div>
           <div class="rounded-lg border bg-muted/35 p-3">
             <span class="text-[10px] font-black uppercase tracking-wider text-muted-foreground">免运</span>
-            <p class="mt-1 text-2xl font-black tracking-tighter">{{ quote.free_shipping ? '是' : '否' }}</p>
+ <p class="mt-1 text-2xl font-black tracking-tighter">{{ quote.free_shipping ? '是': '否'}}</p>
           </div>
           <div class="rounded-lg border bg-muted/35 p-3">
             <span class="text-[10px] font-black uppercase tracking-wider text-muted-foreground">默认线路</span>
             <p class="mt-1 truncate text-sm font-black tracking-tighter">{{ selectedOptionLabel(quote.selected_option) }}</p>
-            <p class="mt-1 text-[10px] text-muted-foreground">{{ quote.source === 'carrier_service' ? '线路服务报价' : '模板基础报价' }}</p>
+ <p class="mt-1 text-[10px] text-muted-foreground">{{ quote.source === 'carrier_service'? '线路服务报价': '模板基础报价'}}</p>
           </div>
         </div>
 
@@ -162,7 +162,7 @@
                         默认
                       </Badge>
                       <div class="min-w-0">
-                        <span class="block truncate text-xs font-bold">{{ option.service_name || '-' }}</span>
+ <span class="block truncate text-xs font-bold">{{ option.service_name || '-'}}</span>
                         <span class="block truncate font-mono text-[10px] text-muted-foreground">
                           {{ option.carrier_name || '-' }} · {{ option.service_code || '-' }} · template_id={{ option.template_id || '-' }}
                         </span>
@@ -209,14 +209,14 @@
                   variant_id={{ item.variant_id || '-' }}
                 </TableCell>
                 <TableCell>
-                  <span class="block font-bold text-xs">{{ item.template_name || '-' }}</span>
-                  <span class="block text-[10px] text-muted-foreground">template_id={{ item.template_id || '-' }}</span>
+ <span class="block font-bold text-xs">{{ item.template_name || '-'}}</span>
+ <span class="block text-[10px] text-muted-foreground">template_id={{ item.template_id || '-'}}</span>
                 </TableCell>
                 <TableCell class="text-right tabular-nums">{{ item.quantity || 0 }}</TableCell>
                 <TableCell class="text-right tabular-nums">{{ formatMoney(item.unit_price) }}</TableCell>
                 <TableCell class="text-right tabular-nums">{{ formatGrams(item.weight_grams) }}</TableCell>
                 <TableCell>
-                  <span class="block text-xs font-bold">{{ item.packaging_rule_name || '未绑定包装' }}</span>
+ <span class="block text-xs font-bold">{{ item.packaging_rule_name || '未绑定包装'}}</span>
                   <span class="block text-[10px] text-muted-foreground">
                     {{ item.packaging_rule_id ? `rule_id=${item.packaging_rule_id}` : '按 SKU 实重计费' }}
                     · {{ formatGrams(item.packaging_weight_grams) }}

@@ -1,4 +1,5 @@
 import { computed, ref } from 'vue'
+import { useRuntimeConfig } from '#imports'
 import { useI18n } from 'vue-i18n'
 import { normalizeShopProduct, type ShopProductsResult } from '~/composables/useShopProducts'
 import {
@@ -10,6 +11,8 @@ import {
   extractQuickBuyPayload,
   normalizeQuickBuyFlow,
 } from '~/utils/quickBuy/normalize'
+import { createStorefrontMediaContext } from '~/utils/storefrontMedia'
+import type { StorefrontMediaContext } from '~/utils/storefrontMedia'
 import type {
   QuickBuySpecFilter,
   QuickBuySession,
@@ -97,7 +100,10 @@ const normalizeQuickBuySessionItem = (value: unknown): QuickBuySessionItem | nul
   }
 }
 
-const normalizeQuickBuySession = (value: unknown): QuickBuySession | null => {
+const normalizeQuickBuySession = (
+  value: unknown,
+  mediaContext: StorefrontMediaContext = { knownOrigins: new Set<string>() },
+): QuickBuySession | null => {
   const record = asQuickBuyRecord(value)
   if (!record) return null
   const sessionToken = asQuickBuyString(record.sessionToken ?? record.session_token).trim()
@@ -114,7 +120,7 @@ const normalizeQuickBuySession = (value: unknown): QuickBuySession | null => {
     subtotalSnapshot: asQuickBuyNumber(record.subtotalSnapshot ?? record.subtotal_snapshot),
     weightSnapshotG: asQuickBuyNumber(record.weightSnapshotG ?? record.weight_snapshot_g),
     expiresAt: asQuickBuyString(record.expiresAt ?? record.expires_at).trim() || undefined,
-    flow: normalizeQuickBuyFlow(record.flow) || undefined,
+    flow: normalizeQuickBuyFlow(record.flow, mediaContext) || undefined,
     items: asQuickBuyArray(record.items)
       .map(normalizeQuickBuySessionItem)
       .filter((item): item is QuickBuySessionItem => Boolean(item)),
@@ -146,6 +152,8 @@ const readQuickBuyAnonymousId = (): string => {
 }
 
 export function useQuickBuySession(surface = 'dock') {
+  const runtimeConfig = useRuntimeConfig()
+  const mediaContext = createStorefrontMediaContext(runtimeConfig)
   const { request } = useApiRequest()
   const { locale } = useI18n()
   const { countryCode, displayCurrency, baseCurrency } = useStorefrontContext()
@@ -218,7 +226,7 @@ export function useQuickBuySession(surface = 'dock') {
       }),
     }, 'Unable to create QUICK session')
       .then((response) => {
-        const nextSession = normalizeQuickBuySession(extractQuickBuyPayload(response))
+        const nextSession = normalizeQuickBuySession(extractQuickBuyPayload(response), mediaContext)
         return commitSession(nextSession)
       })
       .catch((err) => {
@@ -261,7 +269,7 @@ export function useQuickBuySession(surface = 'dock') {
           },
           'Unable to update QUICK session',
         )
-        const nextSession = normalizeQuickBuySession(extractQuickBuyPayload(response))
+        const nextSession = normalizeQuickBuySession(extractQuickBuyPayload(response), mediaContext)
         return commitSession(nextSession, currentSession.sessionToken)
       } catch (err) {
         setRequestError(requestId, err, 'Unable to update QUICK session')
@@ -322,7 +330,9 @@ export function useQuickBuySession(surface = 'dock') {
       const pagination = payloadRecord || responseRecord
       const stepRecord = asQuickBuyRecord(responseRecord?.step ?? payloadRecord?.step)
       return {
-        items: extractQuickBuyCandidateProducts(response).map((item) => normalizeShopProduct(item, baseCurrency.value)),
+        items: extractQuickBuyCandidateProducts(response).map((item) => (
+          normalizeShopProduct(item, baseCurrency.value, mediaContext)
+        )),
         raw: response,
         page: asQuickBuyNumber(pagination?.page, params.page || 1),
         pageSize: asQuickBuyNumber(pagination?.page_size, params.pageSize || 12),
@@ -349,7 +359,7 @@ export function useQuickBuySession(surface = 'dock') {
           { method: 'POST', headers: storefrontHeaders() },
           'Unable to validate QUICK session',
         )
-        const nextSession = normalizeQuickBuySession(extractQuickBuyPayload(response))
+        const nextSession = normalizeQuickBuySession(extractQuickBuyPayload(response), mediaContext)
         return commitSession(nextSession, currentSession.sessionToken)
       } catch (err) {
         setRequestError(requestId, err, 'Unable to validate QUICK session')

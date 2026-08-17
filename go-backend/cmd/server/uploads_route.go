@@ -60,6 +60,9 @@ func registerLocalUploadsRoute(router *gin.Engine, deps *app.Dependencies) {
 			// object key, so browser and CDN caches can retain them safely.
 			c.Header("Cache-Control", "public, max-age=31536000, immutable")
 		}
+		if service.IsMediaDerivativeStorageKey(key) {
+			c.Header("Cache-Control", "public, max-age=31536000, immutable")
+		}
 
 		c.Request.URL.Path = "/" + key
 		fileServer.ServeHTTP(c.Writer, c.Request)

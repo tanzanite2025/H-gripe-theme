@@ -39,11 +39,11 @@
           <TableCell>
             <button type="button" class="block max-w-72 text-left" @click="emit('view-images', gallery)">
               <span class="block truncate font-bold text-xs hover:text-primary">{{ galleryTitle(gallery) }}</span>
-              <span class="mt-1 block truncate font-mono text-xs text-muted-foreground">{{ gallery.slug || '-' }}</span>
+ <span class="mt-1 block truncate font-mono text-xs text-muted-foreground">{{ gallery.slug || '-'}}</span>
             </button>
           </TableCell>
           <TableCell class="max-w-80">
-            <p class="line-clamp-2 text-muted-foreground">{{ gallery.description || '-' }}</p>
+ <p class="line-clamp-2 text-muted-foreground">{{ gallery.description || '-'}}</p>
           </TableCell>
           <TableCell class="text-right tabular-nums">{{ galleryImageCount(gallery) }}</TableCell>
           <TableCell class="text-xs text-muted-foreground">{{ formatDate(gallery.created_at) }}</TableCell>

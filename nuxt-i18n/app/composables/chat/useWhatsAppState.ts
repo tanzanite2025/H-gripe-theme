@@ -5,6 +5,7 @@ import { useCart } from '~/composables/useCart'
 import { useMembership } from '~/composables/useMembership'
 import { createOverlayInstanceId, useOverlayBackStack } from '~/composables/useOverlayBackStack'
 import { normalizeShopProduct } from '~/composables/useShopProducts'
+import { createStorefrontMediaContext } from '~/utils/storefrontMedia'
 import { loadChatAgentDirectory, normalizeChatAgentOnlineStatus } from '~/composables/chat/useChatAgentDirectory'
 import { useCustomerServiceChatSync } from '~/composables/chat/useCustomerServiceChatSync'
 import { useChatMessageComposer } from '~/composables/chat/useChatMessageComposer'
@@ -43,6 +44,7 @@ export const useWhatsAppState = (
     refreshData: refreshMembershipData,
   } = useMembership()
   const config = useRuntimeConfig()
+  const mediaContext = createStorefrontMediaContext(config)
   const publicApiBase = computed(() => {
     const base = (config.public as { apiBase?: string }).apiBase || '/api/v1'
     return base.replace(/\/$/, '')
@@ -676,7 +678,7 @@ export const useWhatsAppState = (
         const normalized = normalizeShopProduct({
           ...item,
           url: item.preview_url || item.url,
-        })
+        }, 'USD', mediaContext)
         return {
           ...normalized,
           name: normalized.title,

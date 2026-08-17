@@ -9,6 +9,27 @@ import {
   normalizeProductMediaOrder
 } from '@/lib/productMedia'
 
+const imageVariantsFromAsset = (asset: any): Record<string, any> => {
+  const derivatives = Array.isArray(asset?.derivatives) ? asset.derivatives : []
+  const result: Record<string, any> = {}
+  derivatives.forEach((derivative) => {
+    const preset = String(derivative?.preset || '').trim()
+    const url = String(derivative?.url || '').trim()
+    if (!preset || !url) return
+    result[preset] = {
+      url,
+      width: Number(derivative?.width || 0) || undefined,
+      height: Number(derivative?.height || 0) || undefined,
+      mime_type: String(derivative?.mime_type || '').trim() || undefined
+    }
+  })
+  return result
+}
+
+const thumbnailFromImageVariants = (variants: Record<string, any>): string => (
+  variants.thumbnail?.url || variants.card?.url || variants.large?.url || ''
+)
+
 export const useProductMediaManager = (productForm: any, options: Record<string, any> = {}) => {
   const uploadingMedia = ref(false)
   const clearFieldError = options.clearFieldError || (() => {})
@@ -30,12 +51,15 @@ export const useProductMediaManager = (productForm: any, options: Record<string,
 
   const appendUploadedMedia = (asset: any, type: string) => {
     const mediaType = asset?.media_type || type
+    const imageVariants = mediaType === 'image' ? imageVariantsFromAsset(asset) : {}
     const hasPrimaryImage = productForm.media.some((item) => item.media_type === 'image' && item.is_primary)
     productForm.media.push(createProductMediaItem({
       media_asset_id: asset?.id || null,
       media_type: mediaType,
       role: mediaType === 'video' ? 'video' : hasPrimaryImage ? 'gallery' : 'primary',
       url: asset?.url || '',
+      thumbnail_url: mediaType === 'image' ? thumbnailFromImageVariants(imageVariants) : '',
+      image_variants: imageVariants,
       alt: asset?.alt || '',
       title: asset?.original_filename || asset?.filename || '',
       is_primary: mediaType === 'image' && !hasPrimaryImage

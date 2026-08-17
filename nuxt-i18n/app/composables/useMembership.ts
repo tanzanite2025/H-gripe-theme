@@ -4,6 +4,7 @@
  */
 import { ref, computed, onMounted } from 'vue'
 import { useAuth } from '~/composables/useAuth'
+import { isExpectedOptionalConfigMiss, logUnexpectedApiError } from '~/utils/storefrontApiFailures'
 
 // 等级配置类型
 interface TierConfig {
@@ -80,6 +81,9 @@ type LoyaltyRecord = Record<string, unknown>
 type LoyaltyTierRecord = LoyaltyRecord & {
   min?: number | string | null
   max?: number | string | null
+}
+interface MembershipLoadOptions {
+  includePublicConfig?: boolean
 }
 
 const toFiniteNumber = (value: unknown, fallback = 0) => {
@@ -226,7 +230,7 @@ export function useMembership() {
         tierConfigs.value = defaultTierConfigs()
       }
     } catch (error) {
-      console.error('Failed to load tier configs:', error)
+      logUnexpectedApiError('Failed to load tier configs:', error, isExpectedOptionalConfigMiss)
       tierConfigs.value = defaultTierConfigs()
     } finally {
       tierConfigsLoading.value = false
@@ -317,8 +321,12 @@ export function useMembership() {
           : null
       }
     } catch (error) {
-      console.error('Failed to fetch loyalty program config:', error)
-      giftcardsError.value = 'Network error'
+      loyaltyProgramConfig.value = null
+      availableGiftcards.value = []
+      if (!isExpectedOptionalConfigMiss(error)) {
+        console.error('Failed to fetch loyalty program config:', error)
+        giftcardsError.value = 'Network error'
+      }
     } finally {
       giftcardsLoading.value = false
     }
@@ -332,7 +340,7 @@ export function useMembership() {
       const rawRules = (data?.data || data) as any
       loyaltyRules.value = normalizeLoyaltyRules(rawRules)
     } catch (error) {
-      console.error('Failed to fetch loyalty rules:', error)
+      logUnexpectedApiError('Failed to fetch loyalty rules:', error, isExpectedOptionalConfigMiss)
       if (!loyaltyRules.value) {
         loyaltyRules.value = null
       }
@@ -414,36 +422,49 @@ export function useMembership() {
   }
 
   // ========== 初始化 ==========
-  const initMembership = async () => {
+  const initMembership = async (options: MembershipLoadOptions = {}) => {
     try {
       await auth.ensureSession()
-    } catch (error) {
-      console.error('Failed to initialize membership session:', error)
+    } catch {
     }
 
-    await Promise.allSettled([
-      loadTierConfigs(),
+    const tasks: Promise<unknown>[] = [
       fetchUserAssets(),
-      fetchLoyaltyProgramConfig(),
-      fetchLoyaltyRules(),
       fetchUserGiftCards()
-    ])
+    ]
+
+    const shouldLoadPublicConfig = options.includePublicConfig ?? auth.isAuthenticated.value
+    if (shouldLoadPublicConfig) {
+      tasks.push(
+        loadTierConfigs(),
+        fetchLoyaltyProgramConfig(),
+        fetchLoyaltyRules(),
+      )
+    }
+
+    await Promise.allSettled(tasks)
   }
 
   // ========== 刷新数据 ==========
   const refreshData = async () => {
     try {
       await auth.ensureSession()
-    } catch (error) {
-      console.error('Failed to refresh membership session:', error)
+    } catch {
     }
 
-    await Promise.allSettled([
+    const tasks: Promise<unknown>[] = [
       fetchUserAssets(),
-      fetchLoyaltyProgramConfig(),
-      fetchLoyaltyRules(),
       fetchUserGiftCards()
-    ])
+    ]
+
+    if (auth.isAuthenticated.value) {
+      tasks.push(
+        fetchLoyaltyProgramConfig(),
+        fetchLoyaltyRules(),
+      )
+    }
+
+    await Promise.allSettled(tasks)
   }
 
   return {

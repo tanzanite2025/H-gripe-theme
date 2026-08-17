@@ -157,11 +157,12 @@ const handleEditorUpdateQuantity = (
         :class="{ 'quickbuy-selected-step-slot--filled': slot.item }"
       >
         <template v-if="slot.item">
-          <img
+          <StorefrontImage
             v-if="slot.item.thumbnail"
             :src="slot.item.thumbnail"
             :alt="slot.item.title"
             class="quickbuy-selected-card-image"
+            preset="thumbnail"
           />
           <span v-else class="quickbuy-selected-card-image quickbuy-selected-card-image--empty">
             <Icon name="lucide:image" class="h-4 w-4" aria-hidden="true" />

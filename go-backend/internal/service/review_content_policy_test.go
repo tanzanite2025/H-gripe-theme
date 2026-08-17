@@ -95,3 +95,28 @@ func TestReviewServiceDropsUnsafeLegacyImageURLs(t *testing.T) {
 		t.Fatalf("public image list = %q, want []", publicItem.Images)
 	}
 }
+
+func TestReviewServiceCanonicalizesLegacyPublicImageURLs(t *testing.T) {
+	db, reviewService := newTestReviewService(t)
+	reviewService.ConfigureMediaService(NewMediaService(nil, nil, nil, "https://shop.example.test", 20<<30))
+	item := review.Review{
+		ProductID: 1,
+		UserID:    10,
+		Rating:    5,
+		Title:     "Legacy",
+		Content:   "Content",
+		Images:    `["http://media.internal:8080/uploads/reviews/photo.webp"]`,
+		Status:    "approved",
+	}
+	if err := db.Create(&item).Error; err != nil {
+		t.Fatalf("create review: %v", err)
+	}
+
+	publicItem, err := reviewService.GetPublicReview(item.ID)
+	if err != nil {
+		t.Fatalf("GetPublicReview() error = %v", err)
+	}
+	if publicItem.Images != `["https://shop.example.test/uploads/reviews/photo.webp"]` {
+		t.Fatalf("public image list = %q", publicItem.Images)
+	}
+}

@@ -120,12 +120,30 @@ func CommercialCrawlerProtectionSnapshot() gin.H {
 		"response_status":    commercialCrawlerBlockStatus,
 		"rules":              rules,
 		"intelligence_seeds": CommercialIntelligenceSeeds(),
+		"robots_txt":         CommercialCrawlerRobotsPolicy(),
 		"enforcement": []gin.H{
 			{"layer": "Go API middleware", "status": "enabled"},
 			{"layer": "Public Nginx edge", "status": "enabled"},
 			{"layer": "Platform probe filter", "status": "enabled"},
 			{"layer": "robots.txt", "status": "enabled"},
 		},
+	}
+}
+
+func CommercialCrawlerRobotsPolicy() gin.H {
+	rules := CommercialCrawlerRules()
+	userAgents := make([]string, 0, len(rules))
+	for _, rule := range rules {
+		userAgents = append(userAgents, rule.UserAgent)
+	}
+
+	return gin.H{
+		"path":                "/robots.txt",
+		"source":              "nuxt-i18n/public/robots.txt",
+		"wildcard_user_agent": "*",
+		"disallow":            "/",
+		"blocked_user_agents": userAgents,
+		"block_status":        commercialCrawlerBlockStatus,
 	}
 }
 

@@ -7,9 +7,9 @@ import (
 )
 
 const (
-	QuestionnaireSlug          = "wheelset-fit"
+	QuestionnaireSlug           = "wheelset-fit"
 	WheelsetProductCategorySlug = "wheelset"
-	SourceLocale               = "zh_cn"
+	SourceLocale                = "zh_cn"
 
 	VersionStatusDraft     = "draft"
 	VersionStatusPublished = "published"
@@ -41,7 +41,7 @@ type Version struct {
 	PublishedAt     *time.Time     `json:"published_at,omitempty"`
 	PublishedBy     *uint          `gorm:"index" json:"published_by,omitempty"`
 	Questionnaire   *Questionnaire `gorm:"foreignKey:QuestionnaireID" json:"questionnaire,omitempty"`
-	Questions       []Question     `gorm:"foreignKey:QuestionnaireVersionID;constraint:OnDelete:CASCADE" json:"questions,omitempty"`
+	Questions       []Question     `gorm:"foreignKey:QuestionnaireVersionID;constraint:OnDelete:CASCADE" json:"questions"`
 	CreatedAt       time.Time      `json:"created_at"`
 	UpdatedAt       time.Time      `json:"updated_at"`
 }
@@ -61,8 +61,8 @@ type Question struct {
 	AllowUnknown           bool                  `gorm:"not null;default:true" json:"allow_unknown"`
 	IsEnabled              bool                  `gorm:"not null;default:true" json:"is_enabled"`
 	SourceRevision         int                   `gorm:"not null;default:1" json:"source_revision"`
-	Options                []Option              `gorm:"foreignKey:QuestionID;constraint:OnDelete:CASCADE" json:"options,omitempty"`
-	Translations           []QuestionTranslation `gorm:"foreignKey:QuestionID;constraint:OnDelete:CASCADE" json:"translations,omitempty"`
+	Options                []Option              `gorm:"foreignKey:QuestionID;constraint:OnDelete:CASCADE" json:"options"`
+	Translations           []QuestionTranslation `gorm:"foreignKey:QuestionID;constraint:OnDelete:CASCADE" json:"translations"`
 	CreatedAt              time.Time             `json:"created_at"`
 	UpdatedAt              time.Time             `json:"updated_at"`
 }
@@ -72,18 +72,18 @@ func (Question) TableName() string {
 }
 
 type Option struct {
-	ID                   uint              `gorm:"primarykey" json:"id"`
-	QuestionID           uint              `gorm:"not null;index" json:"question_id"`
-	OptionKey            string            `gorm:"size:120;not null" json:"option_key"`
-	AnswerValue          string            `gorm:"size:160;not null" json:"answer_value"`
-	SortOrder            int               `gorm:"not null;default:10" json:"sort_order"`
-	IsUnknown            bool              `gorm:"not null;default:false" json:"is_unknown"`
-	IsEnabled            bool              `gorm:"not null;default:true" json:"is_enabled"`
-	ProductFilterEffects datatypes.JSON    `gorm:"type:jsonb;not null;default:'{}'" json:"product_filter_effects"`
-	SourceRevision       int               `gorm:"not null;default:1" json:"source_revision"`
-	Translations         []OptionTranslation `gorm:"foreignKey:OptionID;constraint:OnDelete:CASCADE" json:"translations,omitempty"`
-	CreatedAt            time.Time         `json:"created_at"`
-	UpdatedAt            time.Time         `json:"updated_at"`
+	ID                   uint                `gorm:"primarykey" json:"id"`
+	QuestionID           uint                `gorm:"not null;index" json:"question_id"`
+	OptionKey            string              `gorm:"size:120;not null" json:"option_key"`
+	AnswerValue          string              `gorm:"size:160;not null" json:"answer_value"`
+	SortOrder            int                 `gorm:"not null;default:10" json:"sort_order"`
+	IsUnknown            bool                `gorm:"not null;default:false" json:"is_unknown"`
+	IsEnabled            bool                `gorm:"not null;default:true" json:"is_enabled"`
+	ProductFilterEffects datatypes.JSON      `gorm:"type:jsonb;not null;default:'{}'" json:"product_filter_effects"`
+	SourceRevision       int                 `gorm:"not null;default:1" json:"source_revision"`
+	Translations         []OptionTranslation `gorm:"foreignKey:OptionID;constraint:OnDelete:CASCADE" json:"translations"`
+	CreatedAt            time.Time           `json:"created_at"`
+	UpdatedAt            time.Time           `json:"updated_at"`
 }
 
 func (Option) TableName() string {
@@ -91,16 +91,16 @@ func (Option) TableName() string {
 }
 
 type QuestionTranslation struct {
-	ID                  uint      `gorm:"primarykey" json:"id"`
-	QuestionID          uint      `gorm:"not null;index" json:"question_id"`
-	Locale              string    `gorm:"size:32;not null" json:"locale"`
-	Prompt              string    `gorm:"type:text;not null;default:''" json:"prompt"`
-	HelpTitle           string    `gorm:"type:text;not null;default:''" json:"help_title"`
-	HelpBody            string    `gorm:"type:text;not null;default:''" json:"help_body"`
-	SourceRevision      int       `gorm:"not null;default:1" json:"source_revision"`
-	TranslatedRevision  int       `gorm:"not null;default:0" json:"translated_revision"`
-	CreatedAt           time.Time `json:"created_at"`
-	UpdatedAt           time.Time `json:"updated_at"`
+	ID                 uint      `gorm:"primarykey" json:"id"`
+	QuestionID         uint      `gorm:"not null;index" json:"question_id"`
+	Locale             string    `gorm:"size:32;not null" json:"locale"`
+	Prompt             string    `gorm:"type:text;not null;default:''" json:"prompt"`
+	HelpTitle          string    `gorm:"type:text;not null;default:''" json:"help_title"`
+	HelpBody           string    `gorm:"type:text;not null;default:''" json:"help_body"`
+	SourceRevision     int       `gorm:"not null;default:1" json:"source_revision"`
+	TranslatedRevision int       `gorm:"not null;default:0" json:"translated_revision"`
+	CreatedAt          time.Time `json:"created_at"`
+	UpdatedAt          time.Time `json:"updated_at"`
 }
 
 func (QuestionTranslation) TableName() string {

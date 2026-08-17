@@ -1,10 +1,25 @@
 {
+  "eyebrow": "Gift cards",
   "title": "Redeem Points for Gift Cards",
+  "exchangeIntro": "Convert loyalty points into published gift card options, then track redeemed cards from your member center.",
   "balance": "Balance",
   "pointsRequired": "Points required",
   "redeeming": "Redeeming...",
   "redeem": "Redeem",
+  "signInToRedeem": "Sign in to redeem",
   "remaining": "Remaining",
+  "stats": {
+    "points": "Points balance",
+    "redemption": "Redemption rule",
+    "owned": "Owned cards"
+  },
+  "signInNotice": "Sign in to redeem points and see your redeemed gift cards.",
+  "loadingCopy": "Fetching active gift card redemption options.",
+  "loadErrorTitle": "Could not load gift cards",
   "noCards": "No gift cards available",
+  "noCardsTitle": "No active gift cards right now",
+  "noCardsBody": "When new reward options are released, they will appear here for points redemption.",
+  "viewPointRules": "View point rules",
+  "backToMemberInfo": "Member info",
   "myCards": "My Gift Cards"
 }

@@ -2,7 +2,7 @@
   <TabsContent value="templates" class="space-y-3">
     <div class="flex flex-wrap items-end justify-between gap-3">
       <div>
-        <h2 class="text-sm font-black tracking-tighter italic uppercase">运费模板</h2>
+        <h2 class="text-sm font-black tracking-tighter uppercase">运费模板</h2>
         <p class="mt-1 text-xs text-muted-foreground">维护基础计费方式、默认费用、免运门槛和区域规则矩阵。</p>
       </div>
       <Button v-if="canCreate" size="sm" @click="emit('create-template')">
@@ -33,8 +33,8 @@
           </TableEmpty>
           <TableRow v-for="template in templates" :key="template.id">
             <TableCell>
-              <span class="block font-bold text-xs">{{ template.name || '-' }}</span>
-              <span class="block max-w-96 truncate text-[10px] text-muted-foreground/70">{{ template.description || '暂无说明' }}</span>
+ <span class="block font-bold text-xs">{{ template.name || '-'}}</span>
+ <span class="block max-w-96 truncate text-[10px] text-muted-foreground/70">{{ template.description || '暂无说明'}}</span>
             </TableCell>
             <TableCell>{{ templateTypeLabel(template.type) }}</TableCell>
             <TableCell class="text-right tabular-nums">{{ formatMoney(template.default_fee) }}</TableCell>
@@ -77,7 +77,7 @@
 
     <div class="flex flex-wrap items-end justify-between gap-3 pt-3">
       <div>
-        <h3 class="text-sm font-black tracking-tighter italic uppercase">承运商代码映射</h3>
+        <h3 class="text-sm font-black tracking-tighter uppercase">承运商代码映射</h3>
         <p class="mt-1 text-xs text-muted-foreground">把本地承运商或线路服务映射到 Provider carrier code，后续追踪号注册和轨迹同步统一读取这里。</p>
       </div>
       <Button
@@ -122,7 +122,7 @@
               <span class="block text-[10px] text-muted-foreground/70">{{ trackingMappingScopeLabel(mapping.scope) }}</span>
             </TableCell>
             <TableCell>
-              <span class="block font-mono text-xs font-bold">{{ mapping.provider_carrier_code || '-' }}</span>
+ <span class="block font-mono text-xs font-bold">{{ mapping.provider_carrier_code || '-'}}</span>
               <span class="block max-w-80 truncate text-[10px] text-muted-foreground/70">
                 {{ mapping.provider_carrier_name || mapping.description || '暂无 Provider 名称' }}
               </span>

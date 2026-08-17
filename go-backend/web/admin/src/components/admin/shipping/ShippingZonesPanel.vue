@@ -2,7 +2,7 @@
   <TabsContent value="zones" class="space-y-3">
     <div class="flex flex-wrap items-end justify-between gap-3">
       <div>
-        <h2 class="text-sm font-black tracking-tighter italic uppercase">配送区域</h2>
+        <h2 class="text-sm font-black tracking-tighter uppercase">配送区域</h2>
         <p class="mt-1 text-xs text-muted-foreground">按国家/地区组织区域，供运费模板匹配使用。</p>
       </div>
       <Button v-if="canCreate" size="sm" @click="emit('create')">
@@ -29,7 +29,7 @@
             </div>
           </TableEmpty>
           <TableRow v-for="zone in zones" :key="zone.id">
-            <TableCell class="font-bold text-xs">{{ zone.name || '-' }}</TableCell>
+ <TableCell class="font-bold text-xs">{{ zone.name || '-'}}</TableCell>
             <TableCell class="max-w-96 truncate text-[10px] text-muted-foreground/70">{{ addressRegionSummary(zone.countries) }}</TableCell>
             <TableCell>
               <AdminStatusBadge :tone="zone.enabled ? 'green' : 'gray'">

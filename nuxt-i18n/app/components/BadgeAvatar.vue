@@ -1,5 +1,12 @@
 <template>
   <div class="badge" :class="tierClass" :style="badgeStyle">
+    <StorefrontImage
+      v-if="tierClass === 'tier-top' && topTierImageUrl"
+      :src="topTierImageUrl"
+      alt=""
+      class="badge__background"
+      preset="avatar"
+    />
     <div class="badge-core">
       <div class="badge-inner">
         <span v-if="showStar" class="icon">★</span>
@@ -41,13 +48,6 @@ const showStar = computed(() => {
 })
 
 const badgeStyle = computed(() => {
-  if (tierClass.value === 'tier-top' && props.topTierImageUrl) {
-    return { 
-      backgroundImage: `url(${props.topTierImageUrl})`, 
-      backgroundSize: 'cover', 
-      backgroundPosition: 'center' 
-    }
-  }
   if (tierClass.value === 'tier-top' && accent.value) {
     const c = accent.value
     return { background: `linear-gradient(180deg, ${c}, rgba(0,0,0,.4))` }
@@ -100,10 +100,11 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.badge { position: relative; width: 96px; height: 96px; border-radius: 9999px; display: inline-flex; align-items: center; justify-content: center; background: #f8fafc; border: 1px solid rgba(255,255,255,0.72); box-shadow: 0 12px 28px rgba(0,0,0,0.32); }
+.badge { position: relative; width: 96px; height: 96px; overflow: hidden; border-radius: 9999px; display: inline-flex; align-items: center; justify-content: center; background: #f8fafc; border: 1px solid rgba(255,255,255,0.72); box-shadow: 0 12px 28px rgba(0,0,0,0.32); }
+.badge__background { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .badge::before { content: none; }
 .badge::after { content: ""; position: absolute; inset: 0; background-image: var(--badge-frame-url, none); background-repeat: no-repeat; background-position: center; background-size: contain; pointer-events: none; }
-.badge-core { width: 86px; height: 86px; border-radius: 9999px; display: flex; align-items: center; justify-content: center; background: var(--tz-card-surface, #111116); border: 1px solid rgba(255,255,255,0.08); }
+.badge-core { position: relative; z-index: 1; width: 86px; height: 86px; border-radius: 9999px; display: flex; align-items: center; justify-content: center; background: var(--tz-card-surface, #111116); border: 1px solid rgba(255,255,255,0.08); }
 .badge-inner { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
 .icon { color: #f8fafc; font-size: 30px; line-height: 1; }
 </style>

@@ -6,7 +6,7 @@
     >
       <template #actions>
         <Button variant="outline" :disabled="loading" @click="loadAccounts">
-          <RefreshCw :class="['size-4', loading ? 'animate-spin' : '']" />
+ <RefreshCw :class="['size-4', loading ? 'animate-spin': '']" />
           刷新账号
         </Button>
       </template>

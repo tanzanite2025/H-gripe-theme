@@ -1,5 +1,5 @@
 <template>
-  <section class="bg-transparent text-white pt-[var(--site-header-offset,140px)] md:pt-[var(--site-header-offset,96px)]">
+  <section class="bg-transparent text-white pt-[140px] md:pt-[96px]">
     <div class="page-content-shell px-0 md:px-4 pb-6 pt-2 lg:pb-8 lg:pt-3">
       <div class="flex flex-col items-center text-center">
         <!-- Mobile: Media above CTAs -->
@@ -33,13 +33,13 @@
               @keydown.left.prevent="prev"
               @keydown.right.prevent="next"
             >
-              <div class="absolute inset-x-0 top-[14px] z-40 flex justify-center gap-2 px-4">
+              <div class="tz-carousel-pagination home-hero-stack-pagination absolute inset-x-0 top-[14px] z-40 px-4">
                 <button
                   v-for="(_, index) in cards"
                   :key="index"
                   type="button"
-                  class="h-1.5 rounded-full transition-[width,background-color] duration-200"
-                  :class="index === activeIndex ? 'w-7 bg-white/90' : 'w-1.5 bg-white/25 hover:bg-white/40'"
+                  class="tz-carousel-pagination__dot"
+                  :class="{ 'is-active': index === activeIndex }"
                   :aria-label="t('home.hero.dotAriaLabel', { index: index + 1 })"
                   @click="goTo(index)"
                 ></button>
@@ -53,10 +53,16 @@
                     class="absolute inset-0 origin-center will-change-transform transition-[transform,filter,opacity] duration-[260ms] ease-[cubic-bezier(0.2,0,0.2,1)]"
                     :class="cardClass(index)"
                   >
-                    <img
+                    <NuxtImg
                       :src="card.src"
                       :alt="t(card.altKey)"
+                      :width="card.width"
+                      :height="card.height"
                       class="h-full w-full object-cover"
+                      sizes="xs:100vw sm:100vw md:100vw lg:100vw xl:1280px"
+                      densities="1x"
+                      format="webp"
+                      quality="84"
                       :loading="index === 0 ? 'eager' : 'lazy'"
                       :fetchpriority="index === 0 ? 'high' : 'low'"
                       decoding="async"
@@ -124,15 +130,21 @@ const heroTitle = computed(() => {
 const cards = computed(() => [
   {
     src: '/company/ourstory/ourstory/ourstory.webp',
-    altKey: 'home.hero.cards.0.alt'
+    altKey: 'home.hero.cards.0.alt',
+    width: 800,
+    height: 600,
   },
   {
     src: '/company/ourstory/factory/factory-premoldlayupworkshop6.webp',
-    altKey: 'home.hero.cards.1.alt'
+    altKey: 'home.hero.cards.1.alt',
+    width: 800,
+    height: 600,
   },
   {
     src: '/company/ourstory/factory/factory-inspectionpacking18.webp',
-    altKey: 'home.hero.cards.2.alt'
+    altKey: 'home.hero.cards.2.alt',
+    width: 800,
+    height: 500,
   }
 ])
 
@@ -201,6 +213,12 @@ const cardClass = (index: number) => {
 .welcome-hand-wave {
   transform-origin: 70% 90%;
   animation: welcome-hand-wave 4.5s ease-in-out infinite;
+}
+
+.home-hero-stack-pagination {
+  --tz-carousel-pagination-dot-bg: rgba(255, 255, 255, 0.25);
+  --tz-carousel-pagination-dot-hover-bg: rgba(255, 255, 255, 0.4);
+  --tz-carousel-pagination-dot-active-bg: rgba(255, 255, 255, 0.9);
 }
 
 @media (prefers-reduced-motion: reduce) {

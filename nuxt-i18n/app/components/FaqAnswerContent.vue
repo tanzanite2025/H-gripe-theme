@@ -4,16 +4,18 @@
     :class="{ 'faq-answer-content--with-image': canShowImage }"
   >
     <figure v-if="canShowImage" class="faq-answer-content__media">
-      <img
-        :src="imageUrl"
+      <StorefrontImage
+        :src="imageUrl || ''"
         :alt="imageAlt || t('faq.ui.illustrationAlt')"
         width="800"
         height="800"
-        loading="lazy"
-        decoding="async"
-      >
+        preset="content"
+      />
     </figure>
-    <div class="tz-rich-text faq-answer-content__body" v-html="answer" />
+    <SafeRichText
+      class="tz-rich-text faq-answer-content__body"
+      :html="answer"
+    />
   </div>
 </template>
 

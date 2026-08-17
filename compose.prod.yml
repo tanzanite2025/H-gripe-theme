@@ -58,6 +58,14 @@ x-api-environment: &api-environment
   QUICK_BUY_RATE_LIMIT_SESSION_REQUESTS_PER_MINUTE: ${QUICK_BUY_RATE_LIMIT_SESSION_REQUESTS_PER_MINUTE:-60}
   QUICK_BUY_RATE_LIMIT_SESSION_BURST: ${QUICK_BUY_RATE_LIMIT_SESSION_BURST:-20}
   QUICK_BUY_RATE_LIMIT_FAIL_OPEN: ${QUICK_BUY_RATE_LIMIT_FAIL_OPEN:-true}
+  FEEDBACK_RATE_LIMIT_ENABLED: ${FEEDBACK_RATE_LIMIT_ENABLED:-true}
+  FEEDBACK_RATE_LIMIT_READ_IP_REQUESTS_PER_MINUTE: ${FEEDBACK_RATE_LIMIT_READ_IP_REQUESTS_PER_MINUTE:-120}
+  FEEDBACK_RATE_LIMIT_READ_IP_BURST: ${FEEDBACK_RATE_LIMIT_READ_IP_BURST:-40}
+  FEEDBACK_RATE_LIMIT_WRITE_IP_REQUESTS_PER_MINUTE: ${FEEDBACK_RATE_LIMIT_WRITE_IP_REQUESTS_PER_MINUTE:-12}
+  FEEDBACK_RATE_LIMIT_WRITE_IP_BURST: ${FEEDBACK_RATE_LIMIT_WRITE_IP_BURST:-4}
+  FEEDBACK_RATE_LIMIT_WRITE_USER_REQUESTS_PER_MINUTE: ${FEEDBACK_RATE_LIMIT_WRITE_USER_REQUESTS_PER_MINUTE:-6}
+  FEEDBACK_RATE_LIMIT_WRITE_USER_BURST: ${FEEDBACK_RATE_LIMIT_WRITE_USER_BURST:-2}
+  FEEDBACK_RATE_LIMIT_FAIL_OPEN: ${FEEDBACK_RATE_LIMIT_FAIL_OPEN:-true}
   COOKIE_SECURE: always
   COOKIE_SAME_SITE: lax
   COOKIE_DOMAIN: ${COOKIE_DOMAIN:-}
@@ -76,6 +84,17 @@ x-api-environment: &api-environment
   WORKER_PAYMENT_EXPIRATION_INTERVAL_SECONDS: ${WORKER_PAYMENT_EXPIRATION_INTERVAL_SECONDS:-900}
   WORKER_PAYMENT_PENDING_TTL_SECONDS: ${WORKER_PAYMENT_PENDING_TTL_SECONDS:-1800}
   WORKER_PAYMENT_EXPIRATION_BATCH_LIMIT: ${WORKER_PAYMENT_EXPIRATION_BATCH_LIMIT:-100}
+  WORKER_SITE_QUALITY_ENABLED: ${WORKER_SITE_QUALITY_ENABLED:-true}
+  WORKER_SITE_QUALITY_DISPATCH_INTERVAL_SECONDS: ${WORKER_SITE_QUALITY_DISPATCH_INTERVAL_SECONDS:-30}
+  WORKER_SITE_QUALITY_BATCH_LIMIT: ${WORKER_SITE_QUALITY_BATCH_LIMIT:-2}
+  WORKER_SITE_QUALITY_LEASE_TIMEOUT_SECONDS: ${WORKER_SITE_QUALITY_LEASE_TIMEOUT_SECONDS:-900}
+  WORKER_SITE_QUALITY_SAMPLE_COUNT: ${WORKER_SITE_QUALITY_SAMPLE_COUNT:-3}
+  WORKER_SITE_QUALITY_CONFIRMATIONS: ${WORKER_SITE_QUALITY_CONFIRMATIONS:-2}
+  WORKER_SITE_QUALITY_CLEAN_EVALUATIONS: ${WORKER_SITE_QUALITY_CLEAN_EVALUATIONS:-2}
+  WORKER_SITE_QUALITY_PROVIDER_CONCURRENCY: ${WORKER_SITE_QUALITY_PROVIDER_CONCURRENCY:-1}
+  WORKER_SITE_QUALITY_PROVIDER_SPACING_SECONDS: ${WORKER_SITE_QUALITY_PROVIDER_SPACING_SECONDS:-5}
+  SITE_QUALITY_RUNNER_URL: http://site-quality-runner:8080
+  SITE_QUALITY_RUNNER_TOKEN: ${SITE_QUALITY_RUNNER_TOKEN:?SITE_QUALITY_RUNNER_TOKEN is required}
   ORDER_PAID_OUTBOX_WEBHOOK_URL: ${ORDER_PAID_OUTBOX_WEBHOOK_URL:-}
   ORDER_PAID_OUTBOX_WEBHOOK_TOKEN: ${ORDER_PAID_OUTBOX_WEBHOOK_TOKEN:-}
   LOG_LEVEL: info
@@ -182,7 +201,7 @@ services:
       retries: 10
     security_opt:
       - no-new-privileges:true
-    mem_limit: 512m
+    mem_limit: 1536m
     cpus: 0.50
     logging: *default-logging
 
@@ -205,6 +224,32 @@ services:
     pids_limit: 128
     mem_limit: 768m
     cpus: 0.75
+    logging: *default-logging
+
+  media-derivatives-backfill:
+    image: ${IMAGE_REGISTRY:?IMAGE_REGISTRY is required}/${IMAGE_NAMESPACE:?IMAGE_NAMESPACE is required}/${IMAGE_PREFIX:-commerce-platform}-api:${IMAGE_TAG:-master}
+    pull_policy: always
+    restart: "no"
+    command: ["backfill-media-derivatives"]
+    environment:
+      <<: *api-environment
+      GOMEMLIMIT: 512MiB
+      GOMAXPROCS: "1"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    volumes:
+      - uploads:/app/uploads
+    networks:
+      - db
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 128
+    mem_limit: 768m
+    cpus: 1.00
     logging: *default-logging
 
   edge-config:
@@ -245,7 +290,11 @@ services:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
+      media-derivatives-backfill:
+        condition: service_completed_successfully
       redis:
+        condition: service_healthy
+      site-quality-runner:
         condition: service_healthy
     volumes:
       - uploads:/app/uploads
@@ -269,6 +318,39 @@ services:
       start_period: 30s
     logging: *default-logging
 
+  site-quality-runner:
+    image: ${IMAGE_REGISTRY:?IMAGE_REGISTRY is required}/${IMAGE_NAMESPACE:?IMAGE_NAMESPACE is required}/${IMAGE_PREFIX:-commerce-platform}-site-quality-runner:${IMAGE_TAG:-master}
+    pull_policy: always
+    restart: unless-stopped
+    expose:
+      - "8080"
+    environment:
+      PORT: "8080"
+      SITE_QUALITY_ALLOWED_ORIGIN: ${STOREFRONT_BASE_URL:?STOREFRONT_BASE_URL is required}
+      SITE_QUALITY_RUNNER_TOKEN: ${SITE_QUALITY_RUNNER_TOKEN:?SITE_QUALITY_RUNNER_TOKEN is required}
+      SITE_QUALITY_RUNNER_TIMEOUT_SECONDS: ${SITE_QUALITY_RUNNER_TIMEOUT_SECONDS:-90}
+      SITE_QUALITY_RUNNER_MAX_CONCURRENCY: ${WORKER_SITE_QUALITY_PROVIDER_CONCURRENCY:-1}
+      SITE_QUALITY_RUNNER_ALLOW_PRIVATE_TARGETS: "false"
+    networks:
+      - app
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=1024m
+    shm_size: 256m
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 256
+    mem_limit: 2048m
+    memswap_limit: 2048m
+    cpus: 1.00
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/healthz').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    logging: *default-logging
+
   storefront:
     image: ${IMAGE_REGISTRY:?IMAGE_REGISTRY is required}/${IMAGE_NAMESPACE:?IMAGE_NAMESPACE is required}/${IMAGE_PREFIX:-commerce-platform}-storefront:${IMAGE_TAG:-master}
     pull_policy: always
@@ -282,6 +364,12 @@ services:
       NUXT_PUBLIC_API_BASE: /api/v1
       NUXT_API_INTERNAL_ORIGIN: http://api:9000
       NUXT_PUBLIC_SITE_URL: ${NUXT_PUBLIC_SITE_URL:?NUXT_PUBLIC_SITE_URL is required}
+      NUXT_IMAGE_INTERNAL_ORIGIN: ${NUXT_IMAGE_INTERNAL_ORIGIN:-http://web:8080}
+      NUXT_IMAGE_OPTIMIZE_UPLOADS: ${NUXT_IMAGE_OPTIMIZE_UPLOADS:-false}
+      NUXT_PUBLIC_IMAGE_UPLOAD_OPTIMIZATION_ENABLED: ${NUXT_IMAGE_OPTIMIZE_UPLOADS:-false}
+      UV_THREADPOOL_SIZE: ${STOREFRONT_IMAGE_THREADPOOL_SIZE:-2}
+      STOREFRONT_IMAGE_SHARP_CONCURRENCY: ${STOREFRONT_IMAGE_SHARP_CONCURRENCY:-1}
+      STOREFRONT_IMAGE_SHARP_CACHE_MEMORY_MB: ${STOREFRONT_IMAGE_SHARP_CACHE_MEMORY_MB:-16}
       NUXT_PUBLIC_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       NUXT_PUBLIC_REQUEST_SIGNING_KEY: ${REQUEST_SIGNING_KEY:?REQUEST_SIGNING_KEY is required}
       NUXT_PUBLIC_TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY:?TURNSTILE_SITE_KEY is required}
@@ -310,10 +398,10 @@ services:
     security_opt:
       - no-new-privileges:true
     pids_limit: 128
-    mem_limit: 512m
+    mem_limit: 1024m
     cpus: 0.75
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:3000/"]
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:3000/_internal/image-health"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -328,6 +416,8 @@ services:
       - "8080"
     depends_on:
       migrate:
+        condition: service_completed_successfully
+      media-derivatives-backfill:
         condition: service_completed_successfully
     networks:
       - app
@@ -381,7 +471,11 @@ services:
     mem_limit: 256m
     cpus: 0.50
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8080/healthz"]
+      test:
+        [
+          "CMD-SHELL",
+          "test -r /srv/uploads && wget -q --spider http://127.0.0.1:8080/healthz && wget -q --spider 'http://storefront:3000/_internal/image-health?source=internal'",
+        ]
       interval: 30s
       timeout: 5s
       retries: 3

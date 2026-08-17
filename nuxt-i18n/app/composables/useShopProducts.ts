@@ -1,6 +1,11 @@
 import { useRuntimeConfig } from '#imports'
 import { useI18n } from 'vue-i18n'
 import type { CartItem } from '~~/types/cart'
+import {
+  createStorefrontMediaContext,
+  normalizeStorefrontMediaUrl,
+  type StorefrontMediaContext,
+} from '~/utils/storefrontMedia'
 
 export type ShopProductAvailability = 'in_stock' | 'out_of_stock'
 
@@ -25,6 +30,7 @@ export interface ShopProduct {
   url: string
   sku?: string
   thumbnail?: string
+  imageVariants?: ShopProductImageVariants
   priceNumber: number
   priceLabel: string
   currency: string
@@ -42,6 +48,15 @@ export interface ShopProduct {
   reviewSummary?: ShopProductReviewSummary | null
   variants: ShopProductVariant[]
 }
+
+export interface ShopProductImageVariant {
+  url: string
+  width?: number
+  height?: number
+  mimeType?: string
+}
+
+export type ShopProductImageVariants = Record<string, ShopProductImageVariant>
 
 export interface ShopProductBrand {
   id?: number
@@ -261,6 +276,35 @@ const normalizeProductSpecificationTemplate = (item: any): ShopProductSpecificat
   }
 }
 
+const normalizeImageVariants = (
+  value: any,
+  mediaContext: StorefrontMediaContext,
+): ShopProductImageVariants => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
+
+  return Object.entries(value).reduce<ShopProductImageVariants>((result, [preset, raw]) => {
+    if (!preset || !raw || typeof raw !== 'object') return result
+    const item = raw as Record<string, unknown>
+    const url = normalizeStorefrontMediaUrl(item.url, mediaContext)
+    if (!url) return result
+    result[preset] = {
+      url,
+      width: toOptionalPositiveNumber(item.width) || undefined,
+      height: toOptionalPositiveNumber(item.height) || undefined,
+      mimeType: item.mime_type ? String(item.mime_type) : undefined,
+    }
+    return result
+  }, {})
+}
+
+export const resolveShopProductImage = (
+  product: Pick<ShopProduct, 'thumbnail' | 'imageVariants'>,
+  preset: 'thumbnail' | 'card' | 'large' = 'card',
+): string => {
+  const variants = product.imageVariants || {}
+  return variants[preset]?.url || variants.card?.url || variants.thumbnail?.url || variants.large?.url || product.thumbnail || ''
+}
+
 const normalizeVariant = (variant: any, fallbackCurrency = 'USD'): ShopProductVariant | null => {
   const id = toFiniteNumber(variant?.id)
   const sku = String(variant?.sku || '').trim()
@@ -293,7 +337,11 @@ const normalizeVariant = (variant: any, fallbackCurrency = 'USD'): ShopProductVa
   }
 }
 
-export const normalizeShopProduct = (item: any, fallbackCurrency = 'USD'): ShopProduct => {
+export const normalizeShopProduct = (
+  item: any,
+  fallbackCurrency = 'USD',
+  mediaContext: StorefrontMediaContext = { knownOrigins: new Set<string>() },
+): ShopProduct => {
   const id = toFiniteNumber(item?.id)
   const variants = Array.isArray(item?.variants)
     ? item.variants.map((variant: any) => normalizeVariant(variant, fallbackCurrency)).filter(Boolean) as ShopProductVariant[]
@@ -319,7 +367,16 @@ export const normalizeShopProduct = (item: any, fallbackCurrency = 'USD'): ShopP
   const primaryMediaImage =
     imageMedia.find((mediaItem: any) => mediaItem?.is_primary || mediaItem?.role === 'primary') ||
     imageMedia[0]
-  const thumbnail = item?.thumbnail || item?.featured_image || primaryMediaImage?.url || undefined
+  const imageVariants = normalizeImageVariants(primaryMediaImage?.image_variants, mediaContext)
+  const thumbnail = normalizeStorefrontMediaUrl(
+    item?.thumbnail ||
+      item?.featured_image ||
+      imageVariants.thumbnail?.url ||
+      primaryMediaImage?.thumbnail_url ||
+      imageVariants.card?.url ||
+      primaryMediaImage?.url,
+    mediaContext,
+  ) || undefined
   return {
     id,
     productId: id,
@@ -330,6 +387,7 @@ export const normalizeShopProduct = (item: any, fallbackCurrency = 'USD'): ShopP
     url: String(item?.preview_url || item?.url || `/shop/${slug}`),
     sku: defaultVariant?.sku || item?.sku || undefined,
     thumbnail,
+    imageVariants: Object.keys(imageVariants).length ? imageVariants : undefined,
     priceNumber,
     priceLabel: formatPriceLabel(displayPrice.amount, displayPrice.currency),
     currency: productCurrency,
@@ -347,7 +405,7 @@ export const normalizeShopProduct = (item: any, fallbackCurrency = 'USD'): ShopP
           id: toOptionalPositiveNumber(item.brand.id) || undefined,
           name: String(item.brand.name),
           slug: String(item.brand.slug || ''),
-          logoUrl: item.brand.logo_url ? String(item.brand.logo_url) : undefined,
+          logoUrl: normalizeStorefrontMediaUrl(item.brand.logo_url, mediaContext) || undefined,
           websiteUrl: item.brand.website_url ? String(item.brand.website_url) : undefined,
         }
       : null,
@@ -373,6 +431,7 @@ const extractPagination = (response: any, fallbackPageSize: number): Pick<ShopPr
 
 export function useShopProducts() {
   const config = useRuntimeConfig()
+  const mediaContext = createStorefrontMediaContext(config)
   const { locale } = useI18n()
   const { displayCurrency, countryCode, baseCurrency } = useStorefrontContext()
   const baseURL = ((config.public as { apiBase?: string }).apiBase || '/api/v1').replace(/\/$/, '')
@@ -392,7 +451,9 @@ export function useShopProducts() {
       params,
       headers: productRequestHeaders(),
     })
-    const items = extractProductItems(response).map((item: any) => normalizeShopProduct(item, baseCurrency.value))
+    const items = extractProductItems(response).map((item: any) => (
+      normalizeShopProduct(item, baseCurrency.value, mediaContext)
+    ))
 
     return {
       items,
@@ -412,7 +473,9 @@ export function useShopProducts() {
         ...params,
       },
     })
-    const items = extractProductItems(response).map((item: any) => normalizeShopProduct(item, baseCurrency.value))
+    const items = extractProductItems(response).map((item: any) => (
+      normalizeShopProduct(item, baseCurrency.value, mediaContext)
+    ))
 
     return {
       items,
@@ -445,7 +508,10 @@ export function useShopProducts() {
       options.salePrice === undefined
         ? product.prices.sale > 0 ? product.prices.sale : null
         : options.salePrice
-    const thumbnail = options.thumbnail ?? product.thumbnail
+    const thumbnail = normalizeStorefrontMediaUrl(
+      options.thumbnail ?? product.thumbnail,
+      mediaContext,
+    ) || undefined
     const title = options.title ?? product.title
     const sku = options.sku ?? selectedVariant?.sku ?? product.sku
     const currency = normalizeCurrencyCode(options.currency || selectedVariant?.currency || product.currency) || baseCurrency.value || 'USD'

@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"strings"
@@ -11,11 +12,17 @@ import (
 )
 
 type StorefrontRouteCatalogService struct {
-	repository     *repository.StorefrontRouteCatalogRepository
-	postService    *PostService
-	productService *ProductService
-	baseURL        string
-	httpClient     *http.Client
+	repository      *repository.StorefrontRouteCatalogRepository
+	postService     *PostService
+	productService  *ProductService
+	baseURL         string
+	httpClient      *http.Client
+	issueReconciler storefrontRouteCatalogIssueReconciler
+}
+
+type storefrontRouteCatalogIssueReconciler interface {
+	ReconcileCatalog(ctx context.Context) error
+	ReconcileEntry(ctx context.Context, routeEntryID uint, latestCheckResultID *uint) error
 }
 
 func NewStorefrontRouteCatalogService(
@@ -33,6 +40,15 @@ func NewStorefrontRouteCatalogService(
 			Timeout: 30 * time.Second,
 		},
 	}
+}
+
+func (s *StorefrontRouteCatalogService) ConfigureIssueReconciler(
+	reconciler storefrontRouteCatalogIssueReconciler,
+) {
+	if s == nil {
+		return
+	}
+	s.issueReconciler = reconciler
 }
 
 type StorefrontRouteCatalogSyncSummary struct {

@@ -47,14 +47,14 @@
 
           <AdminFormField label="API Key" class="lg:col-span-2">
             <Input v-model.trim="form.api_key" class="font-mono" type="password" autocomplete="new-password" />
-            <p v-if="mode === 'edit' && form.api_key_configured" class="mt-1 text-[10px] text-muted-foreground">
+ <p v-if="mode === 'edit'&& form.api_key_configured" class="mt-1 text-[10px] text-muted-foreground">
               已配置 API Key；留空保存时会保持原值，输入新值才覆盖。
             </p>
           </AdminFormField>
 
           <AdminFormField label="Webhook Secret" class="lg:col-span-2">
             <Input v-model.trim="form.webhook_secret" class="font-mono" type="password" autocomplete="new-password" />
-            <p v-if="mode === 'edit' && form.webhook_secret_configured" class="mt-1 text-[10px] text-muted-foreground">
+ <p v-if="mode === 'edit'&& form.webhook_secret_configured" class="mt-1 text-[10px] text-muted-foreground">
               已配置 Webhook Secret；留空保存时会保持原值，输入新值才覆盖。
             </p>
           </AdminFormField>

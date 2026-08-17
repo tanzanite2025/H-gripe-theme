@@ -28,8 +28,8 @@
           <dl class="grid grid-cols-2 gap-2 text-xs">
             <DetailItem label="Claim ID">#{{ selectedClaim.id }}</DetailItem>
             <DetailItem label="Registration">{{ selectedClaim.registration_id || '未绑定' }}</DetailItem>
-            <DetailItem label="Order" class="col-span-2">{{ selectedClaim.order_number || '-' }}</DetailItem>
-            <DetailItem label="Email" class="col-span-2">{{ selectedClaim.email || selectedClaim.registration?.user?.email || '-' }}</DetailItem>
+ <DetailItem label="Order" class="col-span-2">{{ selectedClaim.order_number || '-'}}</DetailItem>
+ <DetailItem label="Email" class="col-span-2">{{ selectedClaim.email || selectedClaim.registration?.user?.email || '-'}}</DetailItem>
           </dl>
         </section>
 
@@ -77,7 +77,7 @@
 
         <section class="rounded-2xl border p-3">
           <h3 class="mb-2 text-xs font-black uppercase tracking-wider">问题描述</h3>
-          <p class="whitespace-pre-wrap text-xs leading-5 text-foreground">{{ selectedClaim.description || '-' }}</p>
+ <p class="whitespace-pre-wrap text-xs leading-5 text-foreground">{{ selectedClaim.description || '-'}}</p>
         </section>
 
         <section class="rounded-2xl border p-3">
@@ -253,8 +253,8 @@ const DetailItem = defineComponent({
   },
   setup(props, { slots, attrs }) {
     return () => h('div', { class: ['space-y-1 rounded-xl border p-2', attrs.class] }, [
-      h('dt', { class: 'text-[10px] font-black uppercase tracking-widest text-muted-foreground/70' }, props.label),
-      h('dd', { class: 'break-words font-bold text-foreground' }, slots.default ? slots.default() : '-')
+ h('dt', { class: 'text-[10px] font-black uppercase tracking-widest text-muted-foreground/70'}, props.label),
+ h('dd', { class: 'break-words font-bold text-foreground'}, slots.default ? slots.default() : '-')
     ])
   }
 })
