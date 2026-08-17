@@ -3,7 +3,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "build": "npm run check:font-preflight && cross-env NODE_OPTIONS=\"--max-old-space-size=8192 --disable-warning=DEP0155\" nuxt build",
+    "build": "npm run check:font-preflight && cross-env NODE_OPTIONS=\"--max-old-space-size=8192 --disable-warning=DEP0155\" nuxt build && npm run check:sharp-runtime",
     "dev": "cross-env NODE_OPTIONS=\"--max-old-space-size=8192 --disable-warning=DEP0155\" NODE_ENV=development NUXT_PORT=9199 NUXT_HTML_CACHE_ENABLED=false NUXT_PUBLIC_API_BASE=http://localhost:9200/api/v1 API_INTERNAL_ORIGIN=http://localhost:9200 tsx scripts/dev-fixed-port.ts",
     "generate": "cross-env NODE_OPTIONS=\"--max-old-space-size=8192 --disable-warning=DEP0155\" nuxt generate",
     "preview": "nuxt preview",
@@ -20,6 +20,7 @@
     "check:html-cache": "tsx scripts/storefront/check-html-cache-build.ts",
     "check:production-artifacts": "npm run check-locales && tsx scripts/storefront/check-production-artifacts.ts && npm run check:critical-css && npm run test:font-policy && npm run test:font-locales && npm run check:font-policy && npm run check:font-performance && npm run check:font-coverage && npm run check:font-preflight && npm run check:security",
     "check:critical-css": "tsx scripts/storefront/check-critical-css.ts",
+    "check:sharp-runtime": "tsx scripts/storefront/ensure-sharp-runtime.ts",
     "smoke:html-cache": "tsx scripts/storefront/smoke-html-cache-preview.ts",
     "check-locales": "tsx scripts/check-locales.ts",
     "check:font-policy": "tsx scripts/check-font-policy.ts",
