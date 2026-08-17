@@ -40,6 +40,13 @@ type Repositories struct {
 	User                       *repository.UserRepository
 	Post                       *repository.PostRepository
 	StorefrontRouteCatalog     *repository.StorefrontRouteCatalogRepository
+	StorefrontRedirectRules    *repository.StorefrontRedirectRuleRepository
+	StorefrontURLIssues        *repository.StorefrontURLIssueRepository
+	PreflightContentLinks      *repository.PreflightContentLinkRepository
+	SiteQualityTargets         *repository.SiteQualityTargetRepository
+	SiteQualityJobs            *repository.SiteQualityJobRepository
+	SiteQualityRuns            *repository.SiteQualityRunRepository
+	SiteQualityFindings        *repository.SiteQualityFindingRepository
 	Product                    *repository.ProductRepository
 	ProductCategory            *repository.ProductCategoryRepository
 	ProductBrand               *repository.ProductBrandRepository
@@ -65,6 +72,8 @@ type Repositories struct {
 	Ticket                     *repository.TicketRepository
 	Gallery                    *repository.GalleryRepository
 	Media                      *repository.MediaRepository
+	MediaDerivativePresets     *repository.MediaDerivativePresetRepository
+	MediaDerivativeRebuildJobs *repository.MediaDerivativeRebuildJobRepository
 	StorefrontMarket           *repository.StorefrontMarketRepository
 	OpsDomainBinding           *repository.OpsDomainBindingRepository
 	OpsConnector               *repository.OpsConnectorRepository
@@ -128,6 +137,11 @@ type Services struct {
 	Subscription                      *service.SubscriptionService
 	Sitemap                           *service.SitemapService
 	StorefrontRouteCatalog            *service.StorefrontRouteCatalogService
+	StorefrontRedirectRules           *service.StorefrontRedirectRuleService
+	StorefrontURLIssues               *service.StorefrontURLIssueService
+	PreflightContentLinks             *service.PreflightContentLinkService
+	LighthouseRunner                  *service.LighthouseRunnerService
+	SiteQualityEngine                 *service.SiteQualityEngineService
 	Showcase                          *service.ShowcaseService
 	Wishlist                          *service.WishlistService
 	Feedback                          *service.FeedbackService
@@ -178,6 +192,13 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		User:                       repository.NewUserRepository(db),
 		Post:                       repository.NewPostRepository(db),
 		StorefrontRouteCatalog:     repository.NewStorefrontRouteCatalogRepository(db),
+		StorefrontRedirectRules:    repository.NewStorefrontRedirectRuleRepository(db),
+		StorefrontURLIssues:        repository.NewStorefrontURLIssueRepository(db),
+		PreflightContentLinks:      repository.NewPreflightContentLinkRepository(db),
+		SiteQualityTargets:         repository.NewSiteQualityTargetRepository(db),
+		SiteQualityJobs:            repository.NewSiteQualityJobRepository(db),
+		SiteQualityRuns:            repository.NewSiteQualityRunRepository(db),
+		SiteQualityFindings:        repository.NewSiteQualityFindingRepository(db),
 		Product:                    repository.NewProductRepository(db),
 		ProductCategory:            repository.NewProductCategoryRepository(db),
 		ProductBrand:               repository.NewProductBrandRepository(db),
@@ -203,6 +224,8 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		Ticket:                     repository.NewTicketRepository(db),
 		Gallery:                    repository.NewGalleryRepository(db),
 		Media:                      repository.NewMediaRepository(db),
+		MediaDerivativePresets:     repository.NewMediaDerivativePresetRepository(db),
+		MediaDerivativeRebuildJobs: repository.NewMediaDerivativeRebuildJobRepository(db),
 		StorefrontMarket:           repository.NewStorefrontMarketRepository(db),
 		OpsDomainBinding:           repository.NewOpsDomainBindingRepository(db),
 		OpsConnector:               repository.NewOpsConnectorRepository(db),
@@ -227,6 +250,10 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		RecommendationEvent:        repository.NewRecommendationEventRepository(db),
 		VisitorRiskFact:            repository.NewVisitorRiskFactRepository(db),
 		Outbox:                     repository.NewOutboxRepository(db),
+	}
+	repos.StorefrontRouteCatalog.ConfigureOutbox(repos.Outbox)
+	if err := service.SeedDefaultMediaDerivativePresets(repos.MediaDerivativePresets); err != nil {
+		return nil, fmt.Errorf("seed media derivative presets: %w", err)
 	}
 
 	storageConfig := storage.LoadConfigFromEnv()
@@ -328,8 +355,41 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 	if storefrontBaseURL == "" {
 		storefrontBaseURL = strings.TrimRight(strings.TrimSpace(cfg.Server.BaseURL), "/")
 	}
+	lighthouseRunnerService := service.NewLighthouseRunnerService(
+		repos.SiteQualityRuns,
+		repos.SiteQualityFindings,
+		service.LighthouseRunnerConfig{
+			RunnerURL:         cfg.SiteQuality.RunnerURL,
+			RunnerToken:       cfg.SiteQuality.RunnerToken,
+			StorefrontBaseURL: storefrontBaseURL,
+		},
+	)
+	lighthouseRunnerService.ConfigureJobRepository(repos.SiteQualityJobs)
+	siteQualityEngineService := service.NewSiteQualityEngineService(
+		repos.SiteQualityTargets,
+		repos.SiteQualityJobs,
+		repos.SiteQualityRuns,
+		repos.SiteQualityFindings,
+		repos.StorefrontRouteCatalog,
+		lighthouseRunnerService,
+		service.SiteQualityEngineConfig{
+			BaseURL:                  storefrontBaseURL,
+			WorkerEnabled:            cfg.Worker.SiteQualityEnabled,
+			WorkerInterval:           time.Duration(cfg.Worker.SiteQualityDispatchIntervalSeconds) * time.Second,
+			SampleCount:              cfg.Worker.SiteQualitySampleCount,
+			RequiredConfirmations:    cfg.Worker.SiteQualityConfirmations,
+			RequiredCleanEvaluations: cfg.Worker.SiteQualityCleanEvaluations,
+			WorkerBatchLimit:         cfg.Worker.SiteQualityBatchLimit,
+			LeaseTimeout:             time.Duration(cfg.Worker.SiteQualityLeaseTimeoutSeconds) * time.Second,
+			ProviderConcurrency:      cfg.Worker.SiteQualityProviderConcurrency,
+			ProviderRequestInterval:  time.Duration(cfg.Worker.SiteQualityProviderSpacingSeconds) * time.Second,
+		},
+	)
 	mediaService := service.NewMediaService(repos.Media, storageSvc, settingService, storefrontBaseURL, cfg.MediaUpload.AccountStorageQuotaBytes)
+	mediaService.ConfigureDerivativePresetRepository(repos.MediaDerivativePresets)
+	mediaService.ConfigureDerivativeRebuildJobRepository(repos.MediaDerivativeRebuildJobs)
 	productService.ConfigureMediaService(mediaService)
+	seoResourceService.ConfigureMediaService(mediaService)
 	seoResourceService.ConfigureCanonicalBaseURL(storefrontBaseURL)
 	storefrontRouteCatalogService := service.NewStorefrontRouteCatalogService(
 		repos.StorefrontRouteCatalog,
@@ -337,6 +397,24 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		productService,
 		storefrontBaseURL,
 	)
+	storefrontRedirectRuleService := service.NewStorefrontRedirectRuleService(
+		repos.StorefrontRedirectRules,
+		repos.StorefrontRouteCatalog,
+	)
+	storefrontURLIssueService := service.NewStorefrontURLIssueService(
+		repos.StorefrontURLIssues,
+		repos.StorefrontRouteCatalog,
+		repos.StorefrontRedirectRules,
+	)
+	preflightContentLinkService := service.NewPreflightContentLinkService(
+		repos.PreflightContentLinks,
+		repos.StorefrontRouteCatalog,
+		postService,
+		service.PreflightContentLinkConfig{
+			BaseURL: storefrontBaseURL,
+		},
+	)
+	storefrontRouteCatalogService.ConfigureIssueReconciler(storefrontURLIssueService)
 	googleMerchantService := service.NewGoogleMerchantService(
 		repos.GoogleMerchant,
 		repos.Product,
@@ -402,6 +480,11 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		Subscription:                      service.NewSubscriptionService(repos.Subscription),
 		Sitemap:                           service.NewSitemapService(repos.Post, cfg.Server.BaseURL),
 		StorefrontRouteCatalog:            storefrontRouteCatalogService,
+		StorefrontRedirectRules:           storefrontRedirectRuleService,
+		StorefrontURLIssues:               storefrontURLIssueService,
+		PreflightContentLinks:             preflightContentLinkService,
+		LighthouseRunner:                  lighthouseRunnerService,
+		SiteQualityEngine:                 siteQualityEngineService,
 		Showcase:                          service.NewShowcaseService(repos.Showcase, storageSvc),
 		ShowcaseUploadProtection:          showcaseUploadProtectionService,
 		ShowcaseUploadEligibility:         showcaseUploadEligibilityService,
@@ -451,9 +534,14 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		Outbox:              service.NewOutboxService(repos.Outbox),
 	}
 	services.Recommendations = service.NewRecommendationService(services.Product, repos.RecommendationEvent)
+	services.Recommendations.ConfigureMediaService(services.Media)
+	services.QuickBuy.ConfigureMediaService(services.Media)
+	services.GoogleMerchant.ConfigureMediaService(services.Media)
 	services.Ticket.ConfigureCustomerServiceRealtimeOutbox(repos.Outbox)
 	services.CustomerServiceAvatar = service.NewCustomerServiceAvatarService(repos.User, storageSvc, repos.Outbox)
 	services.PublicUploadAccess = service.NewPublicUploadAccessService(services.Media, services.Showcase, services.CustomerServiceAvatar)
+	services.FAQ.ConfigureMediaService(services.Media)
+	services.Review.ConfigureMediaService(services.Media)
 	services.Showcase.ConfigureUploadEligibility(services.ShowcaseUploadEligibility)
 	if cfg.ShowcaseUploadProtection.Enabled {
 		services.Showcase.ConfigurePendingSubmissionLimit(cfg.ShowcaseUploadProtection.MaxPendingSubmissionsPerUser)
@@ -499,6 +587,7 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		repos.Loyalty,
 		services.VisitorProfile,
 	)
+	services.CustomerServiceContext.ConfigureMediaService(services.Media)
 	services.CustomerServiceAnalytics = service.NewCustomerServiceAnalyticsService(
 		services.Ticket,
 		services.CustomerServiceContext,
@@ -577,6 +666,10 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 	services.Outbox.RegisterHandler(outbox.EventTypeCustomerServiceRealtime, customerServiceRealtimeOutboxHandler.Handle)
 	customerServiceAvatarCleanupHandler := service.NewCustomerServiceAvatarCleanupHandler(repos.User, storageSvc)
 	services.Outbox.RegisterHandler(outbox.EventTypeCustomerServiceAvatarCleanup, customerServiceAvatarCleanupHandler.Handle)
+	services.Outbox.RegisterHandler(
+		outbox.EventTypeStorefrontRouteCatalogChanged,
+		service.NewSiteQualityRouteCatalogOutboxHandler(services.SiteQualityEngine).Handle,
+	)
 
 	return &Dependencies{
 		Repositories:                 repos,

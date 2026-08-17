@@ -576,6 +576,8 @@ const goToAboutAppearance = async () => {
 }
 </script>
 
+<style src="~/assets/css/guide-sections.css"></style>
+
 <style scoped>
 .products-page__title {
   margin: 0 0 0.75rem;

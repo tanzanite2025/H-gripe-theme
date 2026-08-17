@@ -162,6 +162,41 @@ require_positive_int_env NUXT_HTML_CACHE_REDIS_TTL_SECONDS
 require_positive_int_env NUXT_HTML_CACHE_REDIS_SCAN_COUNT
 require_positive_int_env STOREFRONT_HTML_CACHE_PURGE_DEBOUNCE_MS
 
+site_quality_enabled="$(env_value WORKER_SITE_QUALITY_ENABLED)"
+case "${site_quality_enabled}" in
+  true|false)
+    ;;
+  *)
+    echo "ERR: WORKER_SITE_QUALITY_ENABLED must be true or false." >&2
+    exit 1
+    ;;
+esac
+
+if [[ "${site_quality_enabled}" == "true" ]]; then
+  require_env_key SITE_QUALITY_RUNNER_TOKEN
+  site_quality_runner_token="$(env_value SITE_QUALITY_RUNNER_TOKEN)"
+  if [[ -z "${site_quality_runner_token}" ]]; then
+    echo "ERR: SITE_QUALITY_RUNNER_TOKEN is required when site quality monitoring is enabled." >&2
+    exit 1
+  fi
+  if [[ "${#site_quality_runner_token}" -lt 32 ]]; then
+    echo "ERR: SITE_QUALITY_RUNNER_TOKEN must be at least 32 characters." >&2
+    exit 1
+  fi
+  require_positive_int_env WORKER_SITE_QUALITY_DISPATCH_INTERVAL_SECONDS
+  require_positive_int_env WORKER_SITE_QUALITY_BATCH_LIMIT
+  require_positive_int_env WORKER_SITE_QUALITY_LEASE_TIMEOUT_SECONDS
+  require_positive_int_env WORKER_SITE_QUALITY_SAMPLE_COUNT
+  require_positive_int_env WORKER_SITE_QUALITY_CONFIRMATIONS
+  require_positive_int_env WORKER_SITE_QUALITY_CLEAN_EVALUATIONS
+  require_positive_int_env WORKER_SITE_QUALITY_PROVIDER_CONCURRENCY
+  require_non_negative_int_env WORKER_SITE_QUALITY_PROVIDER_SPACING_SECONDS
+  if (( $(env_value WORKER_SITE_QUALITY_CONFIRMATIONS) > $(env_value WORKER_SITE_QUALITY_SAMPLE_COUNT) )); then
+    echo "ERR: WORKER_SITE_QUALITY_CONFIRMATIONS must not exceed WORKER_SITE_QUALITY_SAMPLE_COUNT." >&2
+    exit 1
+  fi
+fi
+
 html_cache_purge_token="$(env_value NUXT_HTML_CACHE_PURGE_TOKEN)"
 if (( ${#html_cache_purge_token} < 32 )); then
   echo "ERR: NUXT_HTML_CACHE_PURGE_TOKEN must be at least 32 characters." >&2
@@ -290,6 +325,9 @@ wait_for_service_health redis
 
 echo "Running database migrations..."
 "${compose[@]}" up --no-deps --force-recreate --abort-on-container-exit --exit-code-from migrate migrate
+
+echo "Backfilling persistent image derivatives for legacy media..."
+"${compose[@]}" up --no-deps --force-recreate --abort-on-container-exit --exit-code-from media-derivatives-backfill media-derivatives-backfill
 
 echo "Rendering edge configuration from the migrated database..."
 "${compose[@]}" up --no-deps --force-recreate --abort-on-container-exit --exit-code-from edge-config edge-config

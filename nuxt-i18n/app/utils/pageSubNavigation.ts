@@ -12,6 +12,19 @@ export interface PageSubNavigationTab {
   fallback?: string
   description?: string
   descriptionKey?: string
+  pageTitle?: string
+  pageTitleKey?: string
+  pageIntro?: string
+  pageIntroKey?: string
+  seoTitle?: string
+  seoTitleKey?: string
+  seoDescription?: string
+  seoDescriptionKey?: string
+  feedbackThreadKey?: string
+  feedbackTitle?: string
+  feedbackTitleKey?: string
+  feedbackSubtitle?: string
+  feedbackSubtitleKey?: string
   to?: string
 }
 
@@ -115,18 +128,57 @@ export const membershipAndPointsTabs = [
     labelKey: 'member.tabs.myInfo',
     fallback: 'My info',
     description: 'Account profile, benefits, and member details.',
+    pageTitleKey: 'member.pages.myInfo.title',
+    pageTitle: 'My Membership Info',
+    pageIntroKey: 'member.pages.myInfo.intro',
+    pageIntro: 'View your profile, membership level, points balance, coupons, gift cards, and warranty tools.',
+    seoTitleKey: 'member.pages.myInfo.seoTitle',
+    seoTitle: 'My Membership Info - Points and Benefits',
+    seoDescriptionKey: 'member.pages.myInfo.seoDescription',
+    seoDescription: 'View your TANZANITE member profile, loyalty level, points balance, coupons, gift cards, and warranty tools.',
+    feedbackThreadKey: 'membership-myinfo',
+    feedbackTitleKey: 'member.pages.myInfo.feedbackTitle',
+    feedbackTitle: 'Share your feedback about your membership info',
+    feedbackSubtitleKey: 'member.pages.myInfo.feedbackSubtitle',
+    feedbackSubtitle: 'Tell us whether account details, benefits, coupons, gift cards, or warranty tools are clear.',
   },
   {
     id: 'levers',
     labelKey: 'member.tabs.levers',
     fallback: 'Levers',
     description: 'Reward levels, points rules, and upgrade status.',
+    pageTitleKey: 'member.pages.levers.title',
+    pageTitle: 'Membership Levels and Point Rules',
+    pageIntroKey: 'member.pages.levers.intro',
+    pageIntro: 'Review member tiers, discount levels, earning rules, redemption rates, referral rewards, and check-in rules.',
+    seoTitleKey: 'member.pages.levers.seoTitle',
+    seoTitle: 'Membership Levels and Point Rules',
+    seoDescriptionKey: 'member.pages.levers.seoDescription',
+    seoDescription: 'Review TANZANITE membership levels, points earning rules, redemption rates, referral rewards, and daily check-in rewards.',
+    feedbackThreadKey: 'membership-levers',
+    feedbackTitleKey: 'member.pages.levers.feedbackTitle',
+    feedbackTitle: 'Share your feedback about membership levels and points',
+    feedbackSubtitleKey: 'member.pages.levers.feedbackSubtitle',
+    feedbackSubtitle: 'Tell us whether tier rules, earning rules, redemption, referral rewards, or check-in details are clear.',
   },
   {
     id: 'exchange',
     labelKey: 'member.tabs.exchange',
     fallback: 'Exchange',
     description: 'Points redemption, exchange options, and records.',
+    pageTitleKey: 'member.pages.exchange.title',
+    pageTitle: 'Gift Card Exchange',
+    pageIntroKey: 'member.pages.exchange.intro',
+    pageIntro: 'Redeem eligible loyalty points for gift cards and track redeemed cards from your member center.',
+    seoTitleKey: 'member.pages.exchange.seoTitle',
+    seoTitle: 'Gift Card Exchange - Redeem Loyalty Points',
+    seoDescriptionKey: 'member.pages.exchange.seoDescription',
+    seoDescription: 'Redeem TANZANITE loyalty points for available gift card rewards and manage redeemed gift cards from the member center.',
+    feedbackThreadKey: 'membership-exchange',
+    feedbackTitleKey: 'member.pages.exchange.feedbackTitle',
+    feedbackTitle: 'Share your feedback about gift card exchange',
+    feedbackSubtitleKey: 'member.pages.exchange.feedbackSubtitle',
+    feedbackSubtitle: 'Tell us whether point redemption, available gift cards, or redeemed card records are easy to understand.',
   },
 ] as const satisfies readonly PageSubNavigationTab[]
 

@@ -1,6 +1,6 @@
 <template>
   <div class="tire-pressure-section">
-    <div class="mt-1 space-y-4 text-sm text-slate-100">
+    <div class="mt-1 space-y-4 text-sm tz-text-primary">
       <p>
         For safety and performance, the tire and rim on the bike must be perfectly matched. This applies all the more to tubeless
         tires. In addition to the classic hooked rims (crotched type), so-called "hookless" rims (straight side) are becoming
@@ -25,7 +25,7 @@
       <p class="guide-section__cta-wrapper">
         <button
           type="button"
-          class="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-sky-400 to-indigo-500 px-4 py-1.5 text-xs font-semibold text-slate-950 shadow-[0_4px_14px_rgba(0,0,0,0.9)] hover:shadow-[0_8px_22px_-6px_rgba(0,0,0,1)] transition-all"
+          class="tire-pressure-section__cta"
           @click="emit('openTireProducts')"
         >
           Check out tires
@@ -33,7 +33,7 @@
       </p>
 
       <div>
-        <h3 class="text-sm font-semibold text-sky-400 text-center">
+        <h3 class="tire-pressure-section__heading">
           1. Why tire pressure matters
         </h3>
         <ul class="sizecharts-section__list mt-1">
@@ -53,19 +53,19 @@
       </div>
 
       <div>
-        <h3 class="text-sm font-semibold text-sky-400 text-center">
+        <h3 class="tire-pressure-section__heading">
           2. Key factors affecting pressure
         </h3>
-        <div class="mt-2 overflow-x-auto rounded-xl border border-slate-800 bg-slate-950/40">
-          <table class="min-w-full text-left text-xs sm:text-sm text-slate-100">
-            <thead class="bg-slate-900/80">
+        <div class="tire-pressure-section__table-shell">
+          <table class="tire-pressure-section__table">
+            <thead class="tire-pressure-section__table-head">
               <tr>
                 <th class="px-3 py-2 font-semibold">Factor</th>
                 <th class="px-3 py-2 font-semibold">Explanation</th>
                 <th class="px-3 py-2 font-semibold">Adjustment direction</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-slate-800">
+            <tbody>
               <tr>
                 <td class="px-3 py-2 align-top">Rider weight</td>
                 <td class="px-3 py-2 align-top">Heavier riders need higher pressure.</td>
@@ -97,7 +97,7 @@
       </div>
 
       <div>
-        <h3 class="text-sm font-semibold text-sky-400 text-center">
+        <h3 class="tire-pressure-section__heading">
           3. Typical pressure ranges (approximate)
         </h3>
         <ul class="sizecharts-section__list mt-1">
@@ -108,7 +108,7 @@
       </div>
 
       <div>
-        <h3 class="text-sm font-semibold text-sky-400 text-center">
+        <h3 class="tire-pressure-section__heading">
           4. Practical tips
         </h3>
         <ul class="sizecharts-section__list mt-1">
@@ -121,7 +121,7 @@
       </div>
 
       <div>
-        <h3 class="text-sm font-semibold text-sky-400 text-center">
+        <h3 class="tire-pressure-section__heading">
           5. Risks &amp; warnings
         </h3>
         <ul class="sizecharts-section__list mt-1">
@@ -133,20 +133,20 @@
     </div>
 
     <div
-      class="mt-3 rounded-2xl bg-slate-900/70 p-4 shadow-[3px_3px_10px_rgba(0,0,0,0.9)]"
+      class="tire-pressure-section__comparison"
     >
-      <h3 class="mb-3 text-sm font-semibold text-slate-100">
+      <h3 class="mb-3 text-sm font-semibold tz-text-primary">
         Perfect pressure ensures optimum grip and stability
       </h3>
 
       <div class="grid gap-4 md:grid-cols-2">
         <div>
           <div
-            class="mb-2 rounded bg-black px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-slate-100"
+            class="tire-pressure-section__comparison-label"
           >
             High tire pressure
           </div>
-          <ul class="sizecharts-section__list text-slate-100">
+          <ul class="sizecharts-section__list tz-text-primary">
             <li>+ Stability</li>
             <li>+ Puncture protection</li>
             <li>- Less grip</li>
@@ -157,11 +157,11 @@
 
         <div>
           <div
-            class="mb-2 rounded bg-black px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-slate-100"
+            class="tire-pressure-section__comparison-label"
           >
             Low tire pressure
           </div>
-          <ul class="sizecharts-section__list text-slate-100">
+          <ul class="sizecharts-section__list tz-text-primary">
             <li>+ More grip</li>
             <li>+ Better off-road rolling performance</li>
             <li>+ Comfortable</li>
@@ -179,3 +179,99 @@ const emit = defineEmits<{
   (e: 'openTireProducts'): void
 }>()
 </script>
+
+<style scoped>
+.tire-pressure-section__cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 999px;
+  background: var(--tz-text-accent);
+  color: #06111f;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.375rem 1rem;
+  transition: background-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+.tire-pressure-section__cta:hover {
+  background: var(--tz-brand-primary-hover);
+  box-shadow: 0 0.5rem 1.35rem -0.5rem rgba(0, 0, 0, 0.9);
+  transform: translateY(-1px);
+}
+
+.tire-pressure-section__heading {
+  margin: 0;
+  color: var(--tz-text-accent);
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: center;
+}
+
+.tire-pressure-section__table-shell {
+  margin-top: 0.5rem;
+  overflow-x: auto;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.75rem;
+  background: var(--tz-form-panel-surface);
+}
+
+.tire-pressure-section__table {
+  width: 100%;
+  min-width: 40rem;
+  border-collapse: collapse;
+  color: var(--tz-text-primary);
+  font-size: 0.75rem;
+  text-align: left;
+}
+
+.tire-pressure-section__table-head {
+  background: var(--tz-card-surface);
+}
+
+.tire-pressure-section__table th,
+.tire-pressure-section__table td {
+  padding: 0.5rem 0.75rem;
+  vertical-align: top;
+}
+
+.tire-pressure-section__table th {
+  font-weight: 600;
+}
+
+.tire-pressure-section__table tbody tr + tr {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.tire-pressure-section__comparison {
+  margin-top: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.75rem;
+  background: var(--tz-form-panel-surface);
+  box-shadow: 3px 3px 10px rgba(0, 0, 0, 0.9);
+  padding: 1rem;
+}
+
+.tire-pressure-section__comparison-label {
+  margin-bottom: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.35rem;
+  background: #000;
+  color: var(--tz-text-primary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.2;
+  padding: 0.375rem 0.75rem;
+  text-transform: uppercase;
+}
+
+@media (min-width: 640px) {
+  .tire-pressure-section__table {
+    font-size: 0.875rem;
+  }
+}
+</style>

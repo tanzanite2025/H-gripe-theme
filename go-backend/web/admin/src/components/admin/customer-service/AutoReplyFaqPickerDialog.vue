@@ -80,7 +80,7 @@
                     :key="faq.id"
                     type="button"
                     class="group flex min-w-0 gap-3 rounded-xl border p-3 text-left transition hover:-translate-y-0.5 hover:border-[var(--admin-selected)] hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    :class="isSelected(faq) ? 'border-[var(--admin-selected)] bg-[var(--admin-selected)]/5' : 'border-border bg-card'"
+ :class="isSelected(faq) ? 'border-[var(--admin-selected)] bg-[var(--admin-selected)]/5': 'border-border bg-card'"
                     @click="selectFAQ(page, category, faq)"
                   >
                     <span class="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground group-hover:text-foreground">

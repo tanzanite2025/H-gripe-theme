@@ -10,7 +10,7 @@
           </p>
         </div>
         <span
-          :class="enabled ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-700' : 'border-amber-500/25 bg-amber-500/10 text-amber-700'"
+ :class="enabled ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-700': 'border-amber-500/25 bg-amber-500/10 text-amber-700'"
           class="border px-2 py-1 text-[10px] font-black uppercase tracking-wider"
         >
           {{ enabled ? '监控已启用' : '监控未启用' }}
@@ -28,11 +28,11 @@
         </div>
         <div class="bg-card p-3">
           <dt class="text-[10px] font-black uppercase tracking-widest text-muted-foreground">自动升级 3DS</dt>
-          <dd class="mt-1 text-sm font-semibold">{{ policy?.auto_step_up_enabled ? '已开启' : '未开启' }}</dd>
+ <dd class="mt-1 text-sm font-semibold">{{ policy?.auto_step_up_enabled ? '已开启': '未开启'}}</dd>
         </div>
         <div class="bg-card p-3">
           <dt class="text-[10px] font-black uppercase tracking-widest text-muted-foreground">外部告警</dt>
-          <dd class="mt-1 text-sm font-semibold">{{ policy?.alerting_enabled ? '已接入' : '未接入' }}</dd>
+ <dd class="mt-1 text-sm font-semibold">{{ policy?.alerting_enabled ? '已接入': '未接入'}}</dd>
         </div>
       </dl>
 

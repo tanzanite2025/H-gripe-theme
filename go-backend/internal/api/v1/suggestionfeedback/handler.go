@@ -19,6 +19,7 @@ const suggestionFeedbackMaxRequestBytes = 6 << 20
 type Handler struct {
 	suggestionService *service.SuggestionFeedbackService
 	storageService    storage.StorageService
+	mediaService      *service.MediaService
 }
 
 type createSuggestionRequest struct {
@@ -33,10 +34,15 @@ type createSuggestionRequest struct {
 	ThreadKey       string                        `json:"threadKey"`
 }
 
-func NewHandler(suggestionService *service.SuggestionFeedbackService, storageService storage.StorageService) *Handler {
+func NewHandler(suggestionService *service.SuggestionFeedbackService, storageService storage.StorageService, mediaServices ...*service.MediaService) *Handler {
+	var mediaService *service.MediaService
+	if len(mediaServices) > 0 {
+		mediaService = mediaServices[0]
+	}
 	return &Handler{
 		suggestionService: suggestionService,
 		storageService:    storageService,
+		mediaService:      mediaService,
 	}
 }
 
@@ -83,10 +89,17 @@ func (h *Handler) Upload(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
-		"url":  url,
+		"url":  h.publicMediaURL(url),
 		"name": file.Filename,
 		"size": file.Size,
 	})
+}
+
+func (h *Handler) publicMediaURL(value string) string {
+	if h == nil || h.mediaService == nil {
+		return value
+	}
+	return h.mediaService.CanonicalPublicMediaURL(value)
 }
 
 func (h *Handler) Create(c *gin.Context) {

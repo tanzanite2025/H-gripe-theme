@@ -34,14 +34,14 @@
               @click="toggle(product)"
             >
               <span class="min-w-0">
-                <span class="block truncate text-xs font-black text-foreground">{{ product.name || '-' }}</span>
+ <span class="block truncate text-xs font-black text-foreground">{{ product.name || '-'}}</span>
                 <span class="mt-0.5 block truncate font-mono text-[10px] font-bold text-muted-foreground">
                   #{{ product.id }} · {{ product.sku || '-' }} · {{ product.slug || '-' }}
                 </span>
               </span>
               <span
                 class="shrink-0 rounded-full px-2.5 py-1 text-[10px] font-black"
-                :class="isSelected(product.id) ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground'"
+ :class="isSelected(product.id) ? 'bg-primary text-primary-foreground': 'bg-background text-muted-foreground'"
               >
                 {{ isSelected(product.id) ? '已选择' : '选择' }}
               </span>

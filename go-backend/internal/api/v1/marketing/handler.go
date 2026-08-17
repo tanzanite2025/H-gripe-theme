@@ -13,6 +13,7 @@ type Handler struct {
 	marketingService *service.MarketingService
 	settingService   *service.SettingService
 	programService   *service.LoyaltyProgramService
+	mediaResolver    service.PublicMediaURLResolver
 }
 
 func NewHandler(marketingService *service.MarketingService, settingService *service.SettingService, programServices ...*service.LoyaltyProgramService) *Handler {
@@ -24,6 +25,13 @@ func NewHandler(marketingService *service.MarketingService, settingService *serv
 		handler.programService = programServices[0]
 	}
 	return handler
+}
+
+func (h *Handler) ConfigureMediaService(resolver service.PublicMediaURLResolver) {
+	if h == nil {
+		return
+	}
+	h.mediaResolver = resolver
 }
 
 func (h *Handler) ListCoupons(c *gin.Context) {
@@ -185,7 +193,7 @@ func (h *Handler) ListUserGiftCards(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"gift_cards": giftCards,
+		"gift_cards": publicGiftCardsFromDomain(giftCards, h.mediaResolver),
 		"total":      total,
 	})
 }

@@ -37,7 +37,7 @@
         </div>
         <div class="bg-card p-3">
           <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground">人工保护</p>
-          <p class="mt-1 text-sm font-black">{{ protection.enabled ? '可临时强制' : '未启用' }}</p>
+ <p class="mt-1 text-sm font-black">{{ protection.enabled ? '可临时强制': '未启用'}}</p>
           <p class="mt-1 text-[11px] leading-5 text-muted-foreground">强制 3DS 至少 any</p>
         </div>
       </div>
@@ -50,7 +50,7 @@
             <p class="text-[10px] font-black uppercase tracking-[0.18em] text-muted-foreground">Runtime Decision Flow</p>
             <h3 class="mt-1 text-base font-black tracking-tight">一笔 Stripe 支付实际怎么走</h3>
           </div>
-          <span :class="stripeHealth.circuit_open ? 'border-rose-500/25 bg-rose-500/10 text-rose-700' : 'border-emerald-500/25 bg-emerald-500/10 text-emerald-700'" class="border px-2 py-1 text-[10px] font-black">
+ <span :class="stripeHealth.circuit_open ? 'border-rose-500/25 bg-rose-500/10 text-rose-700': 'border-emerald-500/25 bg-emerald-500/10 text-emerald-700'" class="border px-2 py-1 text-[10px] font-black">
             {{ stripeHealth.circuit_open ? '网关熔断中' : '网关允许调用' }}
           </span>
         </div>
@@ -93,14 +93,14 @@
               <dt class="font-semibold">自适应 3DS</dt>
               <dd class="mt-1 text-[11px] leading-5 text-muted-foreground">根据单笔风险、访客画像和历史支付动态升级。</dd>
             </div>
-            <dd class="text-right font-semibold">{{ threeDS.adaptive_enabled ? '开启' : '关闭' }}</dd>
+ <dd class="text-right font-semibold">{{ threeDS.adaptive_enabled ? '开启': '关闭'}}</dd>
           </div>
           <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-3 py-3">
             <div>
               <dt class="font-semibold">30 天组合风险升级</dt>
               <dd class="mt-1 text-[11px] leading-5 text-muted-foreground">争议、EFW 或退款进入预警/严重级别时生效。</dd>
             </div>
-            <dd class="text-right font-semibold">{{ monitoring.auto_step_up_enabled ? '开启' : '关闭' }}</dd>
+ <dd class="text-right font-semibold">{{ monitoring.auto_step_up_enabled ? '开启': '关闭'}}</dd>
           </div>
           <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-3 py-3">
             <div>
@@ -116,7 +116,7 @@
               <dt class="font-semibold">人工保护动作</dt>
               <dd class="mt-1 text-[11px] leading-5 text-muted-foreground">强制 3DS 会把新支付至少提高到 any；暂停支付会在创建 PaymentIntent 前拦截。</dd>
             </div>
-            <dd class="text-right font-semibold">{{ protection.enabled ? '可用' : '不可用' }}</dd>
+ <dd class="text-right font-semibold">{{ protection.enabled ? '可用': '不可用'}}</dd>
           </div>
         </dl>
 
@@ -148,7 +148,7 @@
           v-for="mode in modeCards"
           :key="mode.value"
           class="border p-3"
-          :class="stripeMode === mode.value ? 'border-primary/50 bg-primary/5' : 'border-border/70'"
+ :class="stripeMode === mode.value ? 'border-primary/50 bg-primary/5': 'border-border/70'"
         >
           <div class="flex items-start justify-between gap-2">
             <h4 class="text-xs font-black">{{ mode.title }}</h4>
@@ -176,7 +176,7 @@
             <p class="text-[10px] font-black uppercase tracking-[0.18em] text-muted-foreground">3DS Observability</p>
             <h3 class="mt-1 text-base font-black tracking-tight">最近 30 天实际记录</h3>
           </div>
-          <span class="text-[11px] text-muted-foreground">{{ stripeReport?.snapshot ? formatPeriod(stripeReport.snapshot) : '尚未生成快照' }}</span>
+ <span class="text-[11px] text-muted-foreground">{{ stripeReport?.snapshot ? formatPeriod(stripeReport.snapshot) : '尚未生成快照'}}</span>
         </div>
 
         <template v-if="stripeReport?.snapshot">

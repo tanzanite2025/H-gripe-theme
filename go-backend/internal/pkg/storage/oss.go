@@ -5,7 +5,10 @@ import (
 	"fmt"
 	"io"
 	"mime/multipart"
+	"net/http"
 	"net/url"
+	"path"
+	"strconv"
 	"strings"
 	"time"
 
@@ -123,6 +126,10 @@ func (s *ossStorageImpl) UploadFromReader(ctx context.Context, reader io.Reader,
 }
 
 func (s *ossStorageImpl) UploadFromReaderWithPrefix(ctx context.Context, reader io.Reader, filename string, prefix string) (string, error) {
+	return s.UploadFromReaderWithPrefixAndCacheControl(ctx, reader, filename, prefix, "")
+}
+
+func (s *ossStorageImpl) UploadFromReaderWithPrefixAndCacheControl(_ context.Context, reader io.Reader, filename string, prefix string, cacheControl string) (string, error) {
 	// 生成唯一文件名
 	newFilename, err := generateObjectKey(filename, prefix)
 	if err != nil {
@@ -135,6 +142,9 @@ func (s *ossStorageImpl) UploadFromReaderWithPrefix(ctx context.Context, reader 
 	// 上传选项
 	options := []oss.Option{
 		oss.ContentType(contentType),
+	}
+	if cacheControl = strings.TrimSpace(cacheControl); cacheControl != "" {
+		options = append(options, oss.CacheControl(cacheControl))
 	}
 
 	// 上传到OSS
@@ -237,6 +247,38 @@ func (s *ossStorageImpl) ObjectKey(reference string) (string, error) {
 		return key, nil
 	}
 	return "", fmt.Errorf("invalid object key")
+}
+
+func (s *ossStorageImpl) Open(ctx context.Context, key string) (*StoredObject, error) {
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+	}
+
+	normalizedKey, ok := NormalizeObjectKey(key)
+	if !ok {
+		return nil, fmt.Errorf("invalid object key")
+	}
+
+	headers, err := s.bucket.GetObjectMeta(normalizedKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to inspect OSS object: %w", err)
+	}
+	body, err := s.bucket.GetObject(normalizedKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open OSS object: %w", err)
+	}
+
+	size, _ := strconv.ParseInt(strings.TrimSpace(headers.Get("Content-Length")), 10, 64)
+	modTime, _ := http.ParseTime(headers.Get("Last-Modified"))
+	return &StoredObject{
+		ReadCloser: body,
+		Name:       path.Base(normalizedKey),
+		MimeType:   strings.TrimSpace(headers.Get("Content-Type")),
+		Size:       size,
+		ModTime:    modTime,
+	}, nil
 }
 
 // ListObjects 列出OSS中的对象

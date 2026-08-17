@@ -3,6 +3,9 @@ package middleware
 import (
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -99,5 +102,81 @@ func TestCommercialCrawlerProtectionSnapshotIncludesBuiltInIntelligenceSeeds(t *
 		if len(seed.DetectionSignals) == 0 {
 			t.Errorf("seed %q has no detection signals", seed.ID)
 		}
+	}
+}
+
+func TestCommercialCrawlerRobotsTxtAndNginxStayInSync(t *testing.T) {
+	root := findRepoRoot(t)
+
+	robotsPath := filepath.Join(root, "nuxt-i18n", "public", "robots.txt")
+	nginxPath := filepath.Join(root, "deployment", "nginx", "theme-web.conf")
+
+	robotsContent, err := os.ReadFile(robotsPath)
+	if err != nil {
+		t.Fatalf("read robots.txt: %v", err)
+	}
+	nginxContent, err := os.ReadFile(nginxPath)
+	if err != nil {
+		t.Fatalf("read nginx conf: %v", err)
+	}
+
+	robotsText := string(robotsContent)
+	nginxText := strings.ToLower(string(nginxContent))
+	rules := CommercialCrawlerRules()
+
+	for _, rule := range rules {
+		if !strings.Contains(robotsText, "User-agent: "+rule.UserAgent) {
+			t.Fatalf("robots.txt missing user-agent %q", rule.UserAgent)
+		}
+		if !strings.Contains(nginxText, strings.ToLower(rule.UserAgent)) {
+			t.Fatalf("nginx conf missing crawler token %q", rule.UserAgent)
+		}
+	}
+
+	var commercialGroup strings.Builder
+	for _, rule := range rules {
+		commercialGroup.WriteString("User-agent: ")
+		commercialGroup.WriteString(rule.UserAgent)
+		commercialGroup.WriteByte('\n')
+	}
+	commercialGroup.WriteString("Disallow: /")
+	if !strings.Contains(robotsText, commercialGroup.String()) {
+		t.Fatal("robots.txt must disallow the complete commercial crawler group")
+	}
+	if !strings.Contains(robotsText, "User-Agent: *\nDisallow:") {
+		t.Fatal("robots.txt must retain an allow-all wildcard group")
+	}
+}
+
+func TestCommercialCrawlerProtectionSnapshotIncludesRobotsPolicy(t *testing.T) {
+	snapshot := CommercialCrawlerProtectionSnapshot()
+	policy, ok := snapshot["robots_txt"].(gin.H)
+	if !ok {
+		t.Fatalf("robots_txt type = %T, want gin.H", snapshot["robots_txt"])
+	}
+	if policy["path"] != "/robots.txt" {
+		t.Fatalf("robots txt path = %v, want /robots.txt", policy["path"])
+	}
+	if policy["source"] != "nuxt-i18n/public/robots.txt" {
+		t.Fatalf("robots txt source = %v, want nuxt-i18n/public/robots.txt", policy["source"])
+	}
+}
+
+func findRepoRoot(t *testing.T) string {
+	t.Helper()
+
+	dir, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("getwd: %v", err)
+	}
+	for {
+		if _, err := os.Stat(filepath.Join(dir, "nuxt-i18n", "public", "robots.txt")); err == nil {
+			return dir
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			t.Fatal("repo root not found")
+		}
+		dir = parent
 	}
 }

@@ -61,6 +61,10 @@ if ! grep -Fq '"${compose[@]}" up --no-deps --force-recreate --abort-on-containe
   err "deploy.sh must force-recreate and run the migrate job before application services"
   exit 1
 fi
+if ! grep -Fq '"${compose[@]}" up --no-deps --force-recreate --abort-on-container-exit --exit-code-from media-derivatives-backfill media-derivatives-backfill' "${ROOT_DIR}/deploy.sh"; then
+  err "deploy.sh must force-recreate and run the media derivative backfill before application services"
+  exit 1
+fi
 
 legacy_public_patterns='tanzanite\.site|www\.tanzanite\.site|admin\.tanzanite\.site|tanzanite-edge'
 legacy_public_files=(
@@ -166,6 +170,7 @@ expected_service_networks = {
     "db": {"db"},
     "redis": {"cache"},
     "migrate": {"db"},
+    "media-derivatives-backfill": {"db"},
     "edge-config": {"db"},
     "api": {"db", "cache", "app"},
     "storefront": {"app", "cache"},
@@ -216,10 +221,26 @@ migration_db_dependency = (migrate.get("depends_on") or {}).get("db") or {}
 if migration_db_dependency.get("condition") != "service_healthy":
     errors.append("migrate must wait for db service_healthy")
 
+media_backfill = services.get("media-derivatives-backfill") or {}
+if media_backfill.get("command") != ["backfill-media-derivatives"]:
+    errors.append("media-derivatives-backfill must run only the backfill-media-derivatives command")
+if media_backfill.get("restart") != "no":
+    errors.append("media-derivatives-backfill must be a one-shot service with restart=no")
+if media_backfill.get("pull_policy") != "always":
+    errors.append("media-derivatives-backfill must always pull the release API image")
+backfill_dependency = (media_backfill.get("depends_on") or {}).get("migrate") or {}
+if backfill_dependency.get("condition") != "service_completed_successfully":
+    errors.append("media-derivatives-backfill must wait for migrate service_completed_successfully")
+
 for service_name in ("edge-config", "api", "storefront", "admin", "web"):
     dependency = ((services.get(service_name) or {}).get("depends_on") or {}).get("migrate") or {}
     if dependency.get("condition") != "service_completed_successfully":
         errors.append(f"{service_name} must wait for migrate service_completed_successfully")
+
+for service_name in ("api", "admin"):
+    dependency = ((services.get(service_name) or {}).get("depends_on") or {}).get("media-derivatives-backfill") or {}
+    if dependency.get("condition") != "service_completed_successfully":
+        errors.append(f"{service_name} must wait for media-derivatives-backfill service_completed_successfully")
 
 web = services.get("web") or {}
 edge_config_dependency = (web.get("depends_on") or {}).get("edge-config") or {}

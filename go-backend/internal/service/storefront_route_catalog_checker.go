@@ -44,6 +44,11 @@ func (s *StorefrontRouteCatalogService) CheckEntry(ctx context.Context, id uint)
 	if err := s.repository.SaveCheck(&result); err != nil {
 		return seodomain.StorefrontRouteCheckResult{}, fmt.Errorf("save URL check for %s: %w", entry.Path, err)
 	}
+	if s.issueReconciler != nil {
+		if err := s.issueReconciler.ReconcileEntry(ctx, entry.ID, &result.ID); err != nil {
+			return seodomain.StorefrontRouteCheckResult{}, fmt.Errorf("reconcile URL issue for %s: %w", entry.Path, err)
+		}
+	}
 	return result, nil
 }
 
@@ -73,6 +78,11 @@ func (s *StorefrontRouteCatalogService) Check(ctx context.Context, filter reposi
 		result := s.checkEntry(ctx, entry)
 		if err := s.repository.SaveCheck(&result); err != nil {
 			return summary, fmt.Errorf("save URL check for %s: %w", entry.Path, err)
+		}
+		if s.issueReconciler != nil {
+			if err := s.issueReconciler.ReconcileEntry(ctx, entry.ID, &result.ID); err != nil {
+				return summary, fmt.Errorf("reconcile URL issue for %s: %w", entry.Path, err)
+			}
 		}
 		summary.Checked++
 		incrementRouteCatalogCheckSummary(&summary, result.Status)
@@ -116,7 +126,7 @@ func (s *StorefrontRouteCatalogService) checkEntry(ctx context.Context, entry se
 	redirectCount := 0
 	client := *s.httpClient
 	client.CheckRedirect = func(_ *http.Request, via []*http.Request) error {
-		redirectCount = len(via) + 1
+		redirectCount = len(via)
 		if len(via) >= 10 {
 			return http.ErrUseLastResponse
 		}
@@ -155,6 +165,12 @@ func (s *StorefrontRouteCatalogService) checkEntry(ctx context.Context, entry se
 		result.Status = seodomain.RouteCheckStatusServerError
 	case response.StatusCode >= http.StatusMultipleChoices:
 		result.Status = seodomain.RouteCheckStatusRedirect
+	case entry.IsAlias && redirectCount == 0:
+		result.Status = seodomain.RouteCheckStatusRedirectTarget
+	case entry.IsAlias && canonicalPath(result.FinalURL) != normalizeCatalogRoutePath(entry.CanonicalPath):
+		result.Status = seodomain.RouteCheckStatusRedirectTarget
+	case entry.IsAlias && redirectCount > 1:
+		result.Status = seodomain.RouteCheckStatusRedirectChain
 	case result.CanonicalURL != "" && canonicalPath(result.CanonicalURL) != normalizeCatalogRoutePath(entry.CanonicalPath):
 		result.Status = seodomain.RouteCheckStatusCanonicalMisfit
 	case redirectCount > 0:

@@ -34,7 +34,7 @@
           title="先保存当前 ExchangeRate-API Key 和启用状态，再同步一次汇率缓存；同步目标由价格币种页决定"
           @click.prevent.stop="syncExchangeRateApiSettingsAndRates"
         >
-          <RefreshCw :class="['size-3.5', syncing ? 'animate-spin' : '']" />
+ <RefreshCw :class="['size-3.5', syncing ? 'animate-spin': '']" />
           {{ syncing ? '同步中' : '同步汇率' }}
         </button>
       </div>

@@ -5,6 +5,7 @@
 
 import { ref, onMounted } from 'vue'
 import { useRuntimeConfig } from '#imports'
+import { loadGoogleIdentityScript } from '~/utils/security/trustedScriptUrl'
 
 // Google Identity Services 类型定义
 declare global {
@@ -79,33 +80,13 @@ export function useGoogleAuth() {
                 return
             }
 
-            // 检查是否已经有 script 标签
-            const existingScript = document.querySelector('script[src*="accounts.google.com/gsi/client"]')
-            if (existingScript) {
-                existingScript.addEventListener('load', () => {
-                    isLoaded.value = true
-                    resolve()
-                })
-                return
-            }
-
-            // 创建新的 script 标签
-            const script = document.createElement('script')
-            script.src = 'https://accounts.google.com/gsi/client'
-            script.async = true
-            script.defer = true
-
-            script.onload = () => {
+            void loadGoogleIdentityScript().then(() => {
                 isLoaded.value = true
                 resolve()
-            }
-
-            script.onerror = () => {
+            }).catch(() => {
                 error.value = 'Failed to load Google Sign-In SDK'
                 reject(new Error('Failed to load Google Sign-In SDK'))
-            }
-
-            document.head.appendChild(script)
+            })
         })
     }
 

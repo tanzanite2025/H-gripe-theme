@@ -300,6 +300,14 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '客户账户', permission: 'user:view' }
       },
       {
+        path: 'content',
+        redirect: domainRedirect('ContentBlog', {
+          blog: 'ContentBlog',
+          feedback: 'ContentPageFeedback',
+        }),
+        meta: { permission: 'content:view' }
+      },
+      {
         path: 'content/blog',
         name: 'ContentBlog',
         component: () => import('@/views/Content.vue'),
@@ -330,10 +338,23 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '评价审核', permission: 'review:view' }
       },
       {
+        path: 'content/feedback',
+        name: 'ContentPageFeedback',
+        component: () => import('@/views/PageFeedback.vue'),
+        alias: ['/content/page-feedback'],
+        meta: { title: '页面留言', permission: 'content:view' }
+      },
+      {
         path: 'content/media-library',
         name: 'ContentMediaLibrary',
         component: () => import('@/views/MediaLibrary.vue'),
         meta: { title: '媒体库', permission: 'media:view' }
+      },
+      {
+        path: 'content/media-derivatives',
+        name: 'ContentMediaDerivatives',
+        component: () => import('@/views/MediaDerivativePresets.vue'),
+        meta: { title: '图片尺寸转换', permission: 'media:configure' }
       },
       {
         path: 'content/website-profile',
@@ -453,10 +474,82 @@ const routes: RouteRecordRaw[] = [
         meta: { title: 'SEO / 产品', permission: 'seo:view' }
       },
       {
-        path: 'seo/routes',
-        name: 'SEORoutes',
-        component: () => import('@/views/seo/StorefrontRouteCatalog.vue'),
-        meta: { title: 'SEO / URL 台账', permission: 'seo:view' }
+        path: 'urls',
+        redirect: domainRedirect('URLOverview', {
+          overview: 'URLOverview',
+          catalog: 'URLCatalog',
+          issues: 'URLIssues',
+          redirects: 'URLRedirects',
+          canonical: 'URLCanonical',
+          operations: 'URLOperations',
+        }),
+        meta: { permission: 'url:view' }
+      },
+      {
+        path: 'urls/overview',
+        name: 'URLOverview',
+        component: () => import('@/views/url-management/Overview.vue'),
+        meta: { title: 'URL 管理 / 概览', permission: 'url:view' }
+      },
+      {
+        path: 'urls/catalog',
+        name: 'URLCatalog',
+        component: () => import('@/views/url-management/RouteCatalog.vue'),
+        props: { mode: 'catalog' },
+        meta: { title: 'URL 管理 / 路由台账', permission: 'url:view' }
+      },
+      {
+        path: 'urls/issues',
+        name: 'URLIssues',
+        component: () => import('@/views/url-management/Issues.vue'),
+        meta: { title: 'URL 管理 / 问题队列', permission: 'url:view' }
+      },
+      {
+        path: 'urls/redirects',
+        name: 'URLRedirects',
+        component: () => import('@/views/url-management/RedirectRules.vue'),
+        meta: { title: 'URL 管理 / 重定向', permission: 'url:view' }
+      },
+      {
+        path: 'urls/canonical',
+        name: 'URLCanonical',
+        component: () => import('@/views/url-management/RouteCatalog.vue'),
+        props: { mode: 'canonical' },
+        meta: { title: 'URL 管理 / Canonical 与冲突', permission: 'url:view' }
+      },
+      {
+        path: 'urls/operations',
+        name: 'URLOperations',
+        component: () => import('@/views/url-management/Operations.vue'),
+        meta: { title: 'URL 管理 / 同步与检查', permission: 'url:view' }
+      },
+      {
+        path: 'preflight',
+        redirect: { name: 'PreflightImageDimensions' }
+      },
+      {
+        path: 'preflight/fonts',
+        name: 'PreflightFonts',
+        component: () => import('@/views/preflight/Fonts.vue'),
+        meta: { title: '上线前检查 / 字体', permission: 'services:view' }
+      },
+      {
+        path: 'preflight/site-quality',
+        name: 'PreflightSiteQuality',
+        component: () => import('@/views/preflight/SiteQuality.vue'),
+        meta: { title: '上线前检查 / 页面质量', permission: 'services:view' }
+      },
+      {
+        path: 'preflight/image-dimensions',
+        name: 'PreflightImageDimensions',
+        component: () => import('@/views/preflight/ImageDimensions.vue'),
+        meta: { title: '上线前检查 / 图片尺寸', permission: 'media:view' }
+      },
+      {
+        path: 'preflight/content-links',
+        name: 'PreflightContentLinks',
+        component: () => import('@/views/preflight/ContentLinks.vue'),
+        meta: { title: '上线前检查 / 内容链接', permission: 'services:view' }
       },
       {
         path: 'social',
@@ -524,6 +617,23 @@ const routes: RouteRecordRaw[] = [
         meta: { title: 'Analytics', permission: 'analytics:view' }
       },
       {
+        path: 'services',
+        redirect: { name: 'ServicesOverview' },
+        meta: { permission: 'services:view' }
+      },
+      {
+        path: 'services/overview',
+        name: 'ServicesOverview',
+        component: () => import('@/views/services/ServiceCenter.vue'),
+        meta: { title: '服务中心', permission: 'services:view' }
+      },
+      {
+        path: 'services/cloudflare',
+        name: 'ServicesCloudflare',
+        component: () => import('@/views/services/CloudflareService.vue'),
+        meta: { title: '服务中心 / Cloudflare', permission: 'services:view' }
+      },
+      {
         path: 'ops',
         redirect: { name: 'OpsOverview' },
         meta: { permission: 'ops:view' }
@@ -548,9 +658,8 @@ const routes: RouteRecordRaw[] = [
       },
       {
         path: 'ops/connectors',
-        name: 'OpsConnectors',
-        component: () => import('@/views/OpsConnectors.vue'),
-        meta: { title: '连接器中心', permission: 'ops:connector:view' }
+        redirect: { name: 'ServicesOverview' },
+        meta: { permission: 'services:view' }
       },
       {
         path: 'ops/vps',

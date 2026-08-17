@@ -1,0 +1,12 @@
+DROP INDEX IF EXISTS idx_preflight_content_link_issue_events_issue_created;
+DROP TABLE IF EXISTS preflight_content_link_issue_events;
+
+DROP INDEX IF EXISTS idx_preflight_content_link_issues_source;
+DROP INDEX IF EXISTS idx_preflight_content_link_issues_route;
+DROP INDEX IF EXISTS idx_preflight_content_link_issues_target;
+DROP INDEX IF EXISTS idx_preflight_content_link_issues_state_detected;
+DROP TABLE IF EXISTS preflight_content_link_issues;
+
+DROP INDEX IF EXISTS idx_preflight_content_link_runs_target;
+DROP INDEX IF EXISTS idx_preflight_content_link_runs_checked;
+DROP TABLE IF EXISTS preflight_content_link_runs;

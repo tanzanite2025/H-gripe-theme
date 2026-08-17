@@ -20,6 +20,7 @@ import (
 	"commerce-platform/internal/pkg/database"
 	"commerce-platform/internal/pkg/logger"
 	"commerce-platform/internal/pkg/scheduler"
+	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/pkg/worker"
 	"commerce-platform/internal/repository"
 	"commerce-platform/internal/service"
@@ -98,6 +99,41 @@ func main() {
 			"edge config rendering completed",
 			zap.String("environment", environment),
 			zap.String("output_dir", outputDir),
+		)
+		return
+	}
+
+	if command == "backfill-media-derivatives" {
+		storageSvc, err := storage.NewStorageService(storage.LoadConfigFromEnv())
+		if err != nil {
+			logger.Fatal("media derivative backfill storage initialization failed", zap.Error(err))
+		}
+		mediaRepo := repository.NewMediaRepository(db)
+		presetRepo := repository.NewMediaDerivativePresetRepository(db)
+		if err := service.SeedDefaultMediaDerivativePresets(presetRepo); err != nil {
+			logger.Fatal("seed media derivative presets failed", zap.Error(err))
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Hour)
+		mediaService := service.NewMediaService(
+			mediaRepo,
+			storageSvc,
+			nil,
+			cfg.Server.BaseURL,
+			cfg.MediaUpload.AccountStorageQuotaBytes,
+		)
+		mediaService.ConfigureDerivativePresetRepository(presetRepo)
+		result, backfillErr := mediaService.BackfillMissingImageDerivatives(ctx)
+		cancel()
+		if backfillErr != nil {
+			logger.Fatal("media derivative backfill failed", zap.Error(backfillErr))
+		}
+		logger.Info(
+			"media derivative backfill completed",
+			zap.Int("scanned_assets", result.ScannedAssets),
+			zap.Int("generated_assets", result.GeneratedAssets),
+			zap.Int("generated_derivatives", result.GeneratedDerivatives),
+			zap.Int64("updated_product_media_rows", result.UpdatedProductMediaRows),
 		)
 		return
 	}
@@ -222,6 +258,25 @@ func main() {
 		logger.Info("payment risk monitoring scheduler disabled")
 	}
 
+	var siteQualityWorker *scheduler.SiteQualityWorker
+	if cfg.Worker.SiteQualityEnabled {
+		siteQualityWorker = scheduler.NewSiteQualityWorker(
+			deps.Services.SiteQualityEngine,
+			cfg.Worker,
+		)
+		siteQualityWorker.Start(context.Background())
+	} else {
+		logger.Info("site quality job worker disabled")
+	}
+
+	var mediaDerivativeRebuildScheduler *scheduler.MediaDerivativeRebuildScheduler
+	if cfg.Worker.MediaDerivativeRebuildEnabled {
+		mediaDerivativeRebuildScheduler = scheduler.NewMediaDerivativeRebuildScheduler(deps.Services.Media, cfg.Worker)
+		mediaDerivativeRebuildScheduler.Start(context.Background())
+	} else {
+		logger.Info("media derivative rebuild scheduler disabled")
+	}
+
 	var visitorRiskFlushScheduler *scheduler.VisitorRiskFlushScheduler
 	if cfg.VisitorRisk.Enabled {
 		visitorRiskFlushScheduler = scheduler.NewVisitorRiskFlushScheduler(deps.Services.VisitorRisk, cfg.VisitorRisk)
@@ -277,6 +332,12 @@ func main() {
 	if paymentRiskMonitoringScheduler != nil {
 		paymentRiskMonitoringScheduler.Stop()
 	}
+	if siteQualityWorker != nil {
+		siteQualityWorker.Stop()
+	}
+	if mediaDerivativeRebuildScheduler != nil {
+		mediaDerivativeRebuildScheduler.Stop()
+	}
 	if visitorRiskFlushScheduler != nil {
 		visitorRiskFlushScheduler.Stop()
 	}
@@ -291,7 +352,7 @@ func parseCommand() string {
 	if len(os.Args) <= 1 {
 		return "serve"
 	}
-	if len(os.Args) == 2 && (os.Args[1] == "migrate" || os.Args[1] == "render-edge-config") {
+	if len(os.Args) == 2 && (os.Args[1] == "migrate" || os.Args[1] == "render-edge-config" || os.Args[1] == "backfill-media-derivatives") {
 		return os.Args[1]
 	}
 	log.Fatalf("unsupported command: %v", os.Args[1:])

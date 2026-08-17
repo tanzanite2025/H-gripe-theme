@@ -49,7 +49,7 @@
 
       <div class="rounded-xl border bg-background/70 px-3 py-2.5 md:col-span-2">
         <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">服务商</p>
-        <p class="mt-1 text-sm font-black text-foreground">{{ providerName || '填入 API 地址后自动识别' }}</p>
+ <p class="mt-1 text-sm font-black text-foreground">{{ providerName || '填入 API 地址后自动识别'}}</p>
       </div>
       <AdminFormField label="API 地址" class="md:col-span-2">
         <Input v-model="apiSettings.time_api_endpoint" :disabled="controlsDisabled" type="url" placeholder="https://api.example.com/time" @input="beginEditing" />
@@ -61,7 +61,7 @@
             :key="option.value"
             type="button"
             class="rounded-xl border bg-background/70 px-3 py-2 text-left text-xs font-bold transition hover:border-admin-selected-border hover:bg-admin-selected-soft"
-            :class="apiSettings.time_api_query_template === option.value ? 'border-admin-selected-border bg-admin-selected-soft text-admin-selected shadow-[var(--admin-control-selected-surface-shadow)]' : 'text-foreground'"
+ :class="apiSettings.time_api_query_template === option.value ? 'border-admin-selected-border bg-admin-selected-soft text-admin-selected shadow-[var(--admin-control-selected-surface-shadow)]': 'text-foreground'"
             :disabled="controlsDisabled"
             @click="selectQueryTemplate(option.value)"
           >
@@ -80,11 +80,11 @@
     <div class="mt-4 grid gap-3 sm:grid-cols-3">
       <div class="rounded-xl border bg-background/70 p-3">
         <p class="text-[11px] font-black uppercase tracking-widest text-muted-foreground/60">Timezone</p>
-        <p class="mt-1 text-sm font-black text-foreground">{{ apiSettings.time_api_default_timezone || 'Asia/Shanghai' }}</p>
+ <p class="mt-1 text-sm font-black text-foreground">{{ apiSettings.time_api_default_timezone || 'Asia/Shanghai'}}</p>
       </div>
       <div class="rounded-xl border bg-background/70 p-3">
         <p class="text-[11px] font-black uppercase tracking-widest text-muted-foreground/60">Source</p>
-          <p class="mt-1 text-sm font-black text-foreground">{{ providerName || '待填写' }}</p>
+ <p class="mt-1 text-sm font-black text-foreground">{{ providerName || '待填写'}}</p>
       </div>
       <div class="rounded-xl border bg-background/70 p-3">
         <p class="text-[11px] font-black uppercase tracking-widest text-muted-foreground/60">Refresh</p>

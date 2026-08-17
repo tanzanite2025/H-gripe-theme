@@ -14,7 +14,7 @@
 
       <div class="website-profile" :aria-label="copy.profileLabel">
         <div class="website-profile__avatar" role="img" :aria-label="copy.avatarLabel">
-          <img v-if="copy.avatarUrl" :src="copy.avatarUrl" :alt="copy.avatarLabel" />
+          <StorefrontImage v-if="copy.avatarUrl" :src="copy.avatarUrl" :alt="copy.avatarLabel" preset="avatar" />
           <span v-else>{{ copy.avatarMark }}</span>
         </div>
         <div class="website-profile__meta">
@@ -40,10 +40,10 @@
 
     <section class="website-factory" aria-labelledby="website-factory-title">
       <figure class="website-factory__visual">
-        <img
+        <StorefrontImage
           :src="copy.factoryImageUrl"
           :alt="copy.factoryImageAlt"
-          loading="lazy"
+          preset="content"
         />
         <figcaption>{{ copy.factoryImageCaption }}</figcaption>
       </figure>

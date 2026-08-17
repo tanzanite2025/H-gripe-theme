@@ -56,7 +56,7 @@
             class="lg:col-span-3"
             description="先按文本/JSON 维护，后续会和配送区域、线路模板打通。"
           >
-            <Textarea v-model="form.service_area" class="min-h-24 font-mono text-xs" placeholder='["US", "CA", "EU"]' />
+ <Textarea v-model="form.service_area" class="min-h-24 font-mono text-xs" placeholder='["US","CA","EU"]'/>
           </AdminFormField>
         </div>
 

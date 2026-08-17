@@ -83,7 +83,7 @@
                   v-for="price in row.prices"
                   :key="price.quote_currency || price.currency"
                   class="rounded-md border px-1.5 py-0.5 font-mono text-[11px]"
-                  :class="price.fallback_reason ? 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-200' : 'bg-background text-foreground'"
+ :class="price.fallback_reason ? 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-200': 'bg-background text-foreground'"
                 >
                   {{ formatDisplayPriceResult(price) }}
                 </span>
@@ -95,7 +95,7 @@
         <section class="space-y-3 border-t border-dashed pt-5">
           <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h3 class="text-sm font-black tracking-tighter italic uppercase text-foreground">规则矩阵</h3>
+              <h3 class="text-sm font-black tracking-tighter uppercase text-foreground">规则矩阵</h3>
               <p class="mt-1 text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">Region 建议填国家/区域代码，例如 US、EU、CN；最大值为 0 表示不设上限。</p>
             </div>
             <Button type="button" variant="outline" size="sm" @click="addRule">

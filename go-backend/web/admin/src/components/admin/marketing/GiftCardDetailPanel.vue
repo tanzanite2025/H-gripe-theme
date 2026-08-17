@@ -24,7 +24,7 @@
       </dl>
 
       <div v-if="currentGiftCard.message" class="space-y-1.5">
-        <h3 class="text-sm font-black tracking-tighter italic uppercase">祝福语</h3>
+        <h3 class="text-sm font-black tracking-tighter uppercase">祝福语</h3>
         <p class="whitespace-pre-wrap rounded-lg border bg-muted/30 p-3 text-sm leading-6">{{ currentGiftCard.message }}</p>
       </div>
 
@@ -48,7 +48,7 @@
 
       <section class="space-y-3">
         <div class="flex items-center justify-between">
-          <h3 class="text-sm font-black tracking-tighter italic uppercase">交易记录</h3>
+          <h3 class="text-sm font-black tracking-tighter uppercase">交易记录</h3>
           <span class="text-xs text-muted-foreground">{{ transactions.length }} 条</span>
         </div>
         <div class="overflow-x-auto rounded-lg border">
@@ -68,7 +68,7 @@
                 <TableCell>{{ transactionTypeName(transaction.type) }}</TableCell>
                 <TableCell class="text-right tabular-nums">{{ formatCurrency(transaction.amount, currentGiftCard.currency) }}</TableCell>
                 <TableCell class="text-right tabular-nums">{{ formatCurrency(transaction.balance, currentGiftCard.currency) }}</TableCell>
-                <TableCell class="text-muted-foreground">{{ transaction.note || '-' }}</TableCell>
+ <TableCell class="text-muted-foreground">{{ transaction.note || '-'}}</TableCell>
                 <TableCell class="text-xs text-muted-foreground">{{ formatDate(transaction.created_at) }}</TableCell>
               </TableRow>
             </TableBody>
@@ -91,9 +91,9 @@ import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableR
 const DetailItem = defineComponent({
   props: { label: { type: String, required: true } },
   setup(props, { slots }) {
-    return () => h('div', { class: 'border-b p-3 last:border-b-0 sm:border-b sm:border-r sm:nth-[3n]:border-r-0' }, [
-      h('dt', { class: 'text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block' }, props.label),
-      h('dd', { class: 'mt-1 break-words text-xs font-bold' }, slots.default?.()),
+ return () => h('div', { class: 'border-b p-3 last:border-b-0 sm:border-b sm:border-r sm:nth-[3n]:border-r-0'}, [
+ h('dt', { class: 'text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block'}, props.label),
+ h('dd', { class: 'mt-1 break-words text-xs font-bold'}, slots.default?.()),
     ])
   },
 })

@@ -62,16 +62,16 @@
         </div>
 
         <div class="space-y-4 border-t border-dashed pt-5">
-          <h3 class="text-sm font-black tracking-tighter italic uppercase text-foreground">适用范围</h3>
+          <h3 class="text-sm font-black tracking-tighter uppercase text-foreground">适用范围</h3>
           <div class="grid gap-4 sm:grid-cols-2">
             <AdminFormField label="适用商品" description="JSON 数组；留空表示全部商品">
-              <Textarea v-model="form.applicable_products" class="min-h-20 font-mono text-xs" placeholder='[1, 2, 3]' />
+ <Textarea v-model="form.applicable_products" class="min-h-20 font-mono text-xs" placeholder='[1, 2, 3]'/>
             </AdminFormField>
             <AdminFormField label="排除商品" description="JSON 数组">
-              <Textarea v-model="form.excluded_products" class="min-h-20 font-mono text-xs" placeholder='[4, 5]' />
+ <Textarea v-model="form.excluded_products" class="min-h-20 font-mono text-xs" placeholder='[4, 5]'/>
             </AdminFormField>
             <AdminFormField label="适用分类" description="JSON 数组；留空表示全部分类" class="sm:col-span-2">
-              <Textarea v-model="form.applicable_categories" class="min-h-20 font-mono text-xs" placeholder='["bracelets", "rings"]' />
+ <Textarea v-model="form.applicable_categories" class="min-h-20 font-mono text-xs" placeholder='["bracelets","rings"]'/>
             </AdminFormField>
           </div>
         </div>

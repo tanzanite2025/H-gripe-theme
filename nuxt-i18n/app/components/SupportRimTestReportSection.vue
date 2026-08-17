@@ -340,6 +340,8 @@ const cards = [
 
 </script>
 
+<style src="~/assets/css/guide-sections.css"></style>
+
 <style scoped>
 .support-rim-test-report {
   --rim-report-accent: var(--tz-brand-primary);

@@ -36,11 +36,11 @@
             <div class="bg-card p-3">
               <dt class="text-[10px] font-black uppercase tracking-widest text-muted-foreground">实际值</dt>
               <dd class="mt-1 text-sm font-semibold">{{ modeLabel(stripeMode) }}</dd>
-              <p class="mt-1 font-mono text-[11px] text-muted-foreground">{{ stripeMode || '未读取' }}</p>
+ <p class="mt-1 font-mono text-[11px] text-muted-foreground">{{ stripeMode || '未读取'}}</p>
             </div>
             <div class="bg-card p-3">
               <dt class="text-[10px] font-black uppercase tracking-widest text-muted-foreground">运行环境</dt>
-              <dd class="mt-1 text-sm font-semibold">{{ stripeRuntime?.environment || '未读取' }}</dd>
+ <dd class="mt-1 text-sm font-semibold">{{ stripeRuntime?.environment || '未读取'}}</dd>
             </div>
           </dl>
           <p class="mt-3 text-xs leading-5 text-muted-foreground">{{ modeDescription(stripeMode) }}</p>
@@ -97,7 +97,7 @@
             v-for="mode in threeDSModeCards"
             :key="mode.value"
             class="border p-3"
-            :class="stripeMode === mode.value ? 'border-primary/50 bg-primary/5' : 'border-border/70'"
+ :class="stripeMode === mode.value ? 'border-primary/50 bg-primary/5': 'border-border/70'"
           >
             <div class="flex items-start justify-between gap-2">
               <h4 class="text-xs font-black">{{ mode.label }}</h4>
@@ -142,7 +142,7 @@
           <dl class="mt-3 grid grid-cols-2 gap-px overflow-hidden border border-border/70 bg-border/70">
             <div class="bg-card p-3">
               <dt class="text-[10px] font-black uppercase tracking-widest text-muted-foreground">网关调用</dt>
-              <dd class="mt-1 text-sm font-semibold">{{ gateway.health?.allowed === false ? '当前拦截' : '允许调用' }}</dd>
+ <dd class="mt-1 text-sm font-semibold">{{ gateway.health?.allowed === false ? '当前拦截': '允许调用'}}</dd>
               <p class="mt-1 text-[11px] text-muted-foreground">
                 {{ number(gateway.health?.failure_count) }} / {{ number(gateway.health?.sample_count) }} 次失败
               </p>
@@ -208,7 +208,7 @@
         <dl class="mt-3 space-y-2 text-xs">
           <div class="flex items-start justify-between gap-3 border-b border-dashed border-border/70 pb-2">
             <dt class="text-muted-foreground">状态</dt>
-            <dd class="font-semibold">{{ paymentRisk.enabled ? '已开启' : '未开启' }}</dd>
+ <dd class="font-semibold">{{ paymentRisk.enabled ? '已开启': '未开启'}}</dd>
           </div>
           <div class="flex items-start justify-between gap-3 border-b border-dashed border-border/70 pb-2">
             <dt class="text-muted-foreground">失败计数窗口</dt>
@@ -237,11 +237,11 @@
         <dl class="mt-3 space-y-2 text-xs">
           <div class="flex items-start justify-between gap-3 border-b border-dashed border-border/70 pb-2">
             <dt class="text-muted-foreground">BIN 限流</dt>
-            <dd class="font-semibold">{{ binRateLimit.enabled ? '已开启' : '未开启' }}</dd>
+ <dd class="font-semibold">{{ binRateLimit.enabled ? '已开启': '未开启'}}</dd>
           </div>
           <div class="flex items-start justify-between gap-3 border-b border-dashed border-border/70 pb-2">
             <dt class="text-muted-foreground">网关熔断</dt>
-            <dd class="font-semibold">{{ circuit.enabled ? '已开启' : '未开启' }}</dd>
+ <dd class="font-semibold">{{ circuit.enabled ? '已开启': '未开启'}}</dd>
           </div>
           <div class="flex items-start justify-between gap-3 border-b border-dashed border-border/70 pb-2">
             <dt class="text-muted-foreground">BIN 失败阈值</dt>
@@ -272,7 +272,7 @@
         <dl class="mt-3 space-y-2 text-xs">
           <div class="flex items-start justify-between gap-3 border-b border-dashed border-border/70 pb-2">
             <dt class="text-muted-foreground">采集状态</dt>
-            <dd class="font-semibold">{{ visitorRisk.enabled ? '已开启' : '未开启' }}</dd>
+ <dd class="font-semibold">{{ visitorRisk.enabled ? '已开启': '未开启'}}</dd>
           </div>
           <div class="flex items-start justify-between gap-3 border-b border-dashed border-border/70 pb-2">
             <dt class="text-muted-foreground">观察窗口</dt>
@@ -301,7 +301,7 @@
         <dl class="mt-3 space-y-2 text-xs">
           <div class="flex items-start justify-between gap-3 border-b border-dashed border-border/70 pb-2">
             <dt class="text-muted-foreground">Turnstile</dt>
-            <dd class="font-semibold">{{ antiAbuse.turnstile_required ? (antiAbuse.turnstile_configured ? '已启用且已配置' : '启用但缺密钥') : '未强制' }}</dd>
+ <dd class="font-semibold">{{ antiAbuse.turnstile_required ? (antiAbuse.turnstile_configured ? '已启用且已配置': '启用但缺密钥') : '未强制'}}</dd>
           </div>
           <div class="flex items-start justify-between gap-3 border-b border-dashed border-border/70 pb-2">
             <dt class="text-muted-foreground">支付失败窗口</dt>
@@ -334,7 +334,7 @@
         <dl class="mt-3 space-y-2 text-xs">
           <div class="flex items-start justify-between gap-3 border-b border-dashed border-border/70 pb-2">
             <dt class="text-muted-foreground">状态</dt>
-            <dd class="font-semibold">{{ orderAbuse.enabled ? '已开启' : '未开启' }}</dd>
+ <dd class="font-semibold">{{ orderAbuse.enabled ? '已开启': '未开启'}}</dd>
           </div>
           <div class="flex items-start justify-between gap-3 border-b border-dashed border-border/70 pb-2">
             <dt class="text-muted-foreground">计数窗口</dt>
@@ -361,7 +361,7 @@
             EFW 到达后当前代码会写入风险事件并生成退款建议/人工处理任务，不会在 webhook 里自动退款。
           </p>
         </div>
-        <span :class="circuitOpen ? 'border-rose-500/25 bg-rose-500/10 text-rose-700' : 'border-emerald-500/25 bg-emerald-500/10 text-emerald-700'" class="border px-2 py-1 text-[10px] font-black uppercase tracking-wider">
+ <span :class="circuitOpen ? 'border-rose-500/25 bg-rose-500/10 text-rose-700': 'border-emerald-500/25 bg-emerald-500/10 text-emerald-700'" class="border px-2 py-1 text-[10px] font-black uppercase tracking-wider">
           Stripe 网关 {{ circuitOpen ? '当前熔断' : '当前可用' }}
         </span>
       </div>
@@ -403,7 +403,7 @@
         </div>
         <div class="bg-card p-3">
           <dt class="text-[10px] font-black uppercase tracking-widest text-muted-foreground">自动升级</dt>
-          <dd class="mt-1 text-sm font-semibold">{{ monitoring.auto_step_up_enabled ? '风险快照异常时开启' : '关闭' }}</dd>
+ <dd class="mt-1 text-sm font-semibold">{{ monitoring.auto_step_up_enabled ? '风险快照异常时开启': '关闭'}}</dd>
         </div>
       </dl>
       <p class="mt-3 text-[11px] text-muted-foreground">

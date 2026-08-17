@@ -2,7 +2,7 @@
   <TabsContent value="tracking" class="space-y-3">
     <div class="flex flex-wrap items-end justify-between gap-3">
       <div>
-        <h2 class="text-sm font-black tracking-tighter italic uppercase">追踪配置</h2>
+        <h2 class="text-sm font-black tracking-tighter uppercase">追踪配置</h2>
         <p class="mt-1 text-xs text-muted-foreground">统一维护 17TRACK / AfterShip 等追踪 Provider 的 API 凭证、Webhook 和同步策略。</p>
       </div>
       <Button v-if="canCreate" size="sm" @click="emit('create')">
@@ -33,13 +33,13 @@
           </TableEmpty>
           <TableRow v-for="provider in trackingProviders" :key="provider.id">
             <TableCell>
-              <span class="block font-bold text-xs">{{ provider.provider_name || '-' }}</span>
+ <span class="block font-bold text-xs">{{ provider.provider_name || '-'}}</span>
               <span class="block font-mono text-[10px] text-muted-foreground/70">
                 {{ provider.provider_code || '-' }} · {{ trackingEnvironmentLabel(provider.environment) }}
               </span>
             </TableCell>
             <TableCell>
-              <span class="block max-w-96 truncate font-mono text-xs">{{ provider.base_url || '未配置 Base URL' }}</span>
+ <span class="block max-w-96 truncate font-mono text-xs">{{ provider.base_url || '未配置 Base URL'}}</span>
               <div class="mt-1 flex max-w-96 items-center gap-1 rounded-md bg-muted/35 px-2 py-1">
                 <span
                   class="min-w-0 flex-1 truncate font-mono text-[10px] text-muted-foreground"
@@ -58,7 +58,7 @@
                   <Copy class="size-3.5" />
                 </Button>
               </div>
-              <span class="mt-1 block max-w-96 truncate text-[10px] text-muted-foreground/70">{{ provider.description || '暂无说明' }}</span>
+ <span class="mt-1 block max-w-96 truncate text-[10px] text-muted-foreground/70">{{ provider.description || '暂无说明'}}</span>
             </TableCell>
             <TableCell class="text-xs text-muted-foreground">{{ formatTrackingSyncPolicy(provider) }}</TableCell>
             <TableCell>

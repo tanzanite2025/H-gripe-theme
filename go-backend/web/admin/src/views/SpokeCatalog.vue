@@ -243,8 +243,8 @@
                     class="border-b border-dashed border-border/60 align-top transition-colors hover:bg-muted/20"
                   >
                     <td class="px-3 py-3">
-                      <div class="max-w-[240px] truncate font-black" :title="preset.name">{{ preset.name || '未命名预设' }}</div>
-                      <div class="mt-1 max-w-[240px] truncate font-mono text-[10px] text-muted-foreground" :title="preset.id">{{ preset.id || '未设置 code' }}</div>
+ <div class="max-w-[240px] truncate font-black" :title="preset.name">{{ preset.name || '未命名预设'}}</div>
+ <div class="mt-1 max-w-[240px] truncate font-mono text-[10px] text-muted-foreground" :title="preset.id">{{ preset.id || '未设置 code'}}</div>
                     </td>
                     <td class="px-3 py-3">
                       <div class="max-w-[220px] truncate font-bold" :title="presetHubLabel(preset)">{{ presetHubLabel(preset) }}</div>
@@ -252,7 +252,7 @@
                     <td class="px-3 py-3">
                       <div class="max-w-[220px] truncate font-bold" :title="presetRimLabel(preset)">{{ presetRimLabel(preset) }}</div>
                     </td>
-                    <td class="px-3 py-3 font-black">{{ preset.spokeCount || '—' }}</td>
+ <td class="px-3 py-3 font-black">{{ preset.spokeCount || '—'}}</td>
                     <td class="px-3 py-3">
                       <div class="font-black">{{ preset.crossing }}</div>
                       <div class="mt-1 text-[10px] text-muted-foreground">{{ optionLabel(catalog.options.crossings, preset.crossing) }}</div>

@@ -1,10 +1,13 @@
 package product
 
 import (
+	"strings"
+
+	"commerce-platform/internal/api/v1/publicmedia"
 	"commerce-platform/internal/domain/currency"
 	productdomain "commerce-platform/internal/domain/product"
 	reviewdomain "commerce-platform/internal/domain/review"
-	"strings"
+	"commerce-platform/internal/service"
 )
 
 // Availability is the coarse-grained stock state exposed to storefront clients.
@@ -69,18 +72,26 @@ type PublicProductShippingDetails struct {
 }
 
 type PublicProductMedia struct {
-	ID                   uint   `json:"id,omitempty"`
-	MediaType            string `json:"media_type"`
-	Role                 string `json:"role"`
-	VariantID            *uint  `json:"variant_id,omitempty"`
-	VariantOptionValueID *uint  `json:"variant_option_value_id,omitempty"`
-	URL                  string `json:"url"`
-	ThumbnailURL         string `json:"thumbnail_url,omitempty"`
-	PosterURL            string `json:"poster_url,omitempty"`
-	Alt                  string `json:"alt,omitempty"`
-	Title                string `json:"title,omitempty"`
-	SortOrder            int    `json:"sort_order"`
-	IsPrimary            bool   `json:"is_primary"`
+	ID                   uint                                 `json:"id,omitempty"`
+	MediaType            string                               `json:"media_type"`
+	Role                 string                               `json:"role"`
+	VariantID            *uint                                `json:"variant_id,omitempty"`
+	VariantOptionValueID *uint                                `json:"variant_option_value_id,omitempty"`
+	URL                  string                               `json:"url"`
+	ThumbnailURL         string                               `json:"thumbnail_url,omitempty"`
+	PosterURL            string                               `json:"poster_url,omitempty"`
+	ImageVariants        map[string]PublicProductImageVariant `json:"image_variants,omitempty"`
+	Alt                  string                               `json:"alt,omitempty"`
+	Title                string                               `json:"title,omitempty"`
+	SortOrder            int                                  `json:"sort_order"`
+	IsPrimary            bool                                 `json:"is_primary"`
+}
+
+type PublicProductImageVariant struct {
+	URL      string `json:"url"`
+	Width    int    `json:"width,omitempty"`
+	Height   int    `json:"height,omitempty"`
+	MimeType string `json:"mime_type,omitempty"`
 }
 
 type PublicProductTranslationRoute struct {
@@ -198,8 +209,8 @@ type PublicProductAttributeValue struct {
 	SortOrder   int    `json:"sort_order"`
 }
 
-func PublicProductFromDomain(item productdomain.Product) PublicProduct {
-	return PublicProductFromDomainWithLocale(item, "", "")
+func PublicProductFromDomain(item productdomain.Product, resolvers ...publicmedia.Resolver) PublicProduct {
+	return PublicProductFromDomainWithLocale(item, "", "", resolvers...)
 }
 
 func PublicProductReviewSummaryFromDomain(item *reviewdomain.ReviewSummary) *PublicProductReviewSummary {
@@ -218,15 +229,16 @@ func PublicProductReviewSummaryFromDomain(item *reviewdomain.ReviewSummary) *Pub
 	}
 }
 
-func PublicProductFromDomainWithDisplayCurrency(item productdomain.Product, displayCurrency string) PublicProduct {
-	return PublicProductFromDomainWithLocale(item, displayCurrency, "")
+func PublicProductFromDomainWithDisplayCurrency(item productdomain.Product, displayCurrency string, resolvers ...publicmedia.Resolver) PublicProduct {
+	return PublicProductFromDomainWithLocale(item, displayCurrency, "", resolvers...)
 }
 
-func PublicProductFromDomainWithLocale(item productdomain.Product, displayCurrency, locale string) PublicProduct {
-	return PublicProductFromDomainWithLocaleAndRoutes(item, displayCurrency, locale, nil)
+func PublicProductFromDomainWithLocale(item productdomain.Product, displayCurrency, locale string, resolvers ...publicmedia.Resolver) PublicProduct {
+	return PublicProductFromDomainWithLocaleAndRoutes(item, displayCurrency, locale, nil, resolvers...)
 }
 
-func PublicProductFromDomainWithLocaleAndRoutes(item productdomain.Product, displayCurrency, locale string, translationRoutes []productdomain.ProductTranslationRoute) PublicProduct {
+func PublicProductFromDomainWithLocaleAndRoutes(item productdomain.Product, displayCurrency, locale string, translationRoutes []productdomain.ProductTranslationRoute, resolvers ...publicmedia.Resolver) PublicProduct {
+	resolver := publicmediaResolver(resolvers)
 	price, salePrice := item.DisplayPrices()
 	priceCurrency := item.DisplayPriceCurrency()
 	displayPrices := publicDisplayPricesFromSnapshots(item.DisplayPriceData)
@@ -248,9 +260,10 @@ func PublicProductFromDomainWithLocaleAndRoutes(item productdomain.Product, disp
 			Role:                 mediaItem.Role,
 			VariantID:            mediaItem.VariantID,
 			VariantOptionValueID: mediaItem.VariantOptionValueID,
-			URL:                  mediaItem.URL,
-			ThumbnailURL:         mediaItem.ThumbnailURL,
-			PosterURL:            mediaItem.PosterURL,
+			URL:                  publicmedia.URL(resolver, mediaItem.URL),
+			ThumbnailURL:         publicmedia.URL(resolver, mediaItem.ThumbnailURL),
+			PosterURL:            publicmedia.URL(resolver, mediaItem.PosterURL),
+			ImageVariants:        publicProductImageVariantsFromDomain(productdomain.ParseProductMediaImageVariants(mediaItem.ImageVariantData), resolver),
 			Alt:                  mediaItem.Alt,
 			Title:                mediaItem.Title,
 			SortOrder:            mediaItem.SortOrder,
@@ -277,7 +290,7 @@ func PublicProductFromDomainWithLocaleAndRoutes(item productdomain.Product, disp
 			ValueKey:         optionValue.ValueKey,
 			Label:            optionValue.Label,
 			ColorHex:         optionValue.ColorHex,
-			SwatchURL:        optionValue.SwatchURL,
+			SwatchURL:        publicmedia.URL(resolver, optionValue.SwatchURL),
 			SortOrder:        optionValue.SortOrder,
 			IsEnabled:        optionValue.IsEnabled,
 		})
@@ -310,19 +323,19 @@ func PublicProductFromDomainWithLocaleAndRoutes(item productdomain.Product, disp
 		DisplayPrices:                displayPrices,
 		MetaTitle:                    item.MetaTitle,
 		MetaDesc:                     item.MetaDesc,
-		Brand:                        publicProductBrandFromDomain(item.Brand),
+		Brand:                        publicProductBrandFromDomain(item.Brand, resolver),
 		AfterSalesTemplate:           publicProductInformationTemplateFromDomain(item.AfterSalesTemplate),
 		PackagingTemplate:            publicProductInformationTemplateFromDomain(item.PackagingTemplate),
 		Availability:                 availabilityForProduct(item),
 		Media:                        media,
-		ProductSpecificationTemplate: publicProductSpecificationTemplateFromDomainWithLocale(item.ProductSpecificationTemplate, locale),
+		ProductSpecificationTemplate: publicProductSpecificationTemplateFromDomainWithLocale(item.ProductSpecificationTemplate, locale, resolver),
 		SpecValues:                   specValues,
 		Variants:                     variants,
 		VariantOptionValues:          variantOptionValues,
 	}
 }
 
-func publicProductBrandFromDomain(item *productdomain.ProductBrand) *PublicProductBrand {
+func publicProductBrandFromDomain(item *productdomain.ProductBrand, resolver publicmedia.Resolver) *PublicProductBrand {
 	if item == nil || strings.TrimSpace(item.Name) == "" {
 		return nil
 	}
@@ -330,9 +343,35 @@ func publicProductBrandFromDomain(item *productdomain.ProductBrand) *PublicProdu
 		ID:         item.ID,
 		Name:       item.Name,
 		Slug:       item.Slug,
-		LogoURL:    strings.TrimSpace(item.LogoURL),
+		LogoURL:    publicmedia.URL(resolver, item.LogoURL),
 		WebsiteURL: strings.TrimSpace(item.WebsiteURL),
 	}
+}
+
+func publicProductImageVariantsFromDomain(
+	values map[string]productdomain.ProductMediaImageVariant,
+	resolver publicmedia.Resolver,
+) map[string]PublicProductImageVariant {
+	if len(values) == 0 {
+		return nil
+	}
+
+	result := make(map[string]PublicProductImageVariant, len(values))
+	for preset, item := range values {
+		if strings.TrimSpace(preset) == "" || strings.TrimSpace(item.URL) == "" {
+			continue
+		}
+		result[preset] = PublicProductImageVariant{
+			URL:      publicmedia.URL(resolver, item.URL),
+			Width:    item.Width,
+			Height:   item.Height,
+			MimeType: item.MimeType,
+		}
+	}
+	if len(result) == 0 {
+		return nil
+	}
+	return result
 }
 
 func publicProductInformationTemplateFromDomain(item *productdomain.ProductInformationTemplate) *PublicProductInformationTemplate {
@@ -348,22 +387,22 @@ func publicProductInformationTemplateFromDomain(item *productdomain.ProductInfor
 	}
 }
 
-func PublicProductsFromDomain(items []productdomain.Product) []PublicProduct {
-	return PublicProductsFromDomainWithLocaleAndDisplayCurrency(items, "", "")
+func PublicProductsFromDomain(items []productdomain.Product, resolvers ...publicmedia.Resolver) []PublicProduct {
+	return PublicProductsFromDomainWithLocaleAndDisplayCurrency(items, "", "", resolvers...)
 }
 
-func PublicProductsFromDomainWithDisplayCurrency(items []productdomain.Product, displayCurrency string) []PublicProduct {
-	return PublicProductsFromDomainWithLocaleAndDisplayCurrency(items, displayCurrency, "")
+func PublicProductsFromDomainWithDisplayCurrency(items []productdomain.Product, displayCurrency string, resolvers ...publicmedia.Resolver) []PublicProduct {
+	return PublicProductsFromDomainWithLocaleAndDisplayCurrency(items, displayCurrency, "", resolvers...)
 }
 
-func PublicProductsFromDomainWithLocale(items []productdomain.Product, locale string) []PublicProduct {
-	return PublicProductsFromDomainWithLocaleAndDisplayCurrency(items, "", locale)
+func PublicProductsFromDomainWithLocale(items []productdomain.Product, locale string, resolvers ...publicmedia.Resolver) []PublicProduct {
+	return PublicProductsFromDomainWithLocaleAndDisplayCurrency(items, "", locale, resolvers...)
 }
 
-func PublicProductsFromDomainWithLocaleAndDisplayCurrency(items []productdomain.Product, displayCurrency, locale string) []PublicProduct {
+func PublicProductsFromDomainWithLocaleAndDisplayCurrency(items []productdomain.Product, displayCurrency, locale string, resolvers ...publicmedia.Resolver) []PublicProduct {
 	publicItems := make([]PublicProduct, 0, len(items))
 	for _, item := range items {
-		publicItems = append(publicItems, PublicProductFromDomainWithLocale(item, displayCurrency, locale))
+		publicItems = append(publicItems, PublicProductFromDomainWithLocale(item, displayCurrency, locale, resolvers...))
 	}
 	return publicItems
 }
@@ -425,11 +464,11 @@ func displayPriceForCurrency(displayCurrency string, displayPrices []PublicDispl
 	return nil
 }
 
-func publicProductSpecificationTemplateFromDomain(item *productdomain.ProductSpecificationTemplate) *PublicProductSpecificationTemplate {
-	return publicProductSpecificationTemplateFromDomainWithLocale(item, "")
+func publicProductSpecificationTemplateFromDomain(item *productdomain.ProductSpecificationTemplate, resolver publicmedia.Resolver) *PublicProductSpecificationTemplate {
+	return publicProductSpecificationTemplateFromDomainWithLocale(item, "", resolver)
 }
 
-func publicProductSpecificationTemplateFromDomainWithLocale(item *productdomain.ProductSpecificationTemplate, locale string) *PublicProductSpecificationTemplate {
+func publicProductSpecificationTemplateFromDomainWithLocale(item *productdomain.ProductSpecificationTemplate, locale string, resolver publicmedia.Resolver) *PublicProductSpecificationTemplate {
 	if item == nil {
 		return nil
 	}
@@ -437,7 +476,7 @@ func publicProductSpecificationTemplateFromDomainWithLocale(item *productdomain.
 	result := &PublicProductSpecificationTemplate{
 		Name:            item.NameForLocale(locale),
 		Slug:            item.Slug,
-		ImageURL:        strings.TrimSpace(item.ImageURL),
+		ImageURL:        publicmedia.URL(resolver, item.ImageURL),
 		SpecDefinitions: make([]PublicSpecDefinition, 0, len(item.SpecDefinitions)),
 	}
 	for _, definition := range item.SpecDefinitions {
@@ -465,20 +504,60 @@ func publicSpecDefinitionFromDomain(item productdomain.SpecDefinition) PublicSpe
 	}
 }
 
-func PublicProductSpecificationTemplatesFromDomain(items []productdomain.ProductSpecificationTemplate) []PublicProductSpecificationTemplateIndex {
-	return PublicProductSpecificationTemplatesFromDomainWithLocale(items, "")
+func PublicProductSpecificationTemplatesFromDomain(items []productdomain.ProductSpecificationTemplate, resolvers ...publicmedia.Resolver) []PublicProductSpecificationTemplateIndex {
+	return PublicProductSpecificationTemplatesFromDomainWithLocale(items, "", resolvers...)
 }
 
-func PublicProductSpecificationTemplatesFromDomainWithLocale(items []productdomain.ProductSpecificationTemplate, locale string) []PublicProductSpecificationTemplateIndex {
+func PublicProductSpecificationTemplatesFromDomainWithLocale(items []productdomain.ProductSpecificationTemplate, locale string, resolvers ...publicmedia.Resolver) []PublicProductSpecificationTemplateIndex {
+	resolver := publicmediaResolver(resolvers)
 	result := make([]PublicProductSpecificationTemplateIndex, 0, len(items))
 	for _, item := range items {
 		publicType := PublicProductSpecificationTemplateIndex{
 			ID:       item.ID,
 			Name:     item.NameForLocale(locale),
 			Slug:     item.Slug,
-			ImageURL: strings.TrimSpace(item.ImageURL),
+			ImageURL: publicmedia.URL(resolver, item.ImageURL),
 		}
 		result = append(result, publicType)
+	}
+	return result
+}
+
+func publicmediaResolver(resolvers []publicmedia.Resolver) publicmedia.Resolver {
+	if len(resolvers) == 0 {
+		return nil
+	}
+	return resolvers[0]
+}
+
+func PublicProductCategoryListWithMedia(
+	item *service.ProductCategoryListView,
+	resolver publicmedia.Resolver,
+) *service.ProductCategoryListView {
+	if item == nil {
+		return nil
+	}
+
+	result := *item
+	result.Tree = publicProductCategoryViewsWithMedia(item.Tree, resolver)
+	result.Flat = publicProductCategoryViewsWithMedia(item.Flat, resolver)
+	return &result
+}
+
+func publicProductCategoryViewsWithMedia(
+	items []service.ProductCategoryView,
+	resolver publicmedia.Resolver,
+) []service.ProductCategoryView {
+	if len(items) == 0 {
+		return items
+	}
+
+	result := make([]service.ProductCategoryView, 0, len(items))
+	for _, item := range items {
+		publicItem := item
+		publicItem.ImageURL = publicmedia.URL(resolver, item.ImageURL)
+		publicItem.Children = publicProductCategoryViewsWithMedia(item.Children, resolver)
+		result = append(result, publicItem)
 	}
 	return result
 }

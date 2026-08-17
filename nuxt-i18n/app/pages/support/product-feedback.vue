@@ -1,7 +1,7 @@
 <template>
   <div class="product-feedback-page">
     <header class="support-hero">
-      <div class="support-hero__inner">
+      <div class="support-hero__inner tz-mobile-text-inset">
         <p class="support-hero__eyebrow">{{ t('feedbackForm.pageEyebrow') }}</p>
         <h1 class="support-page__title support-page__title--sr-only">
           {{ t('feedbackForm.pageTitle') }}

@@ -1,5 +1,10 @@
 import { ref } from 'vue'
+import { useRuntimeConfig } from '#imports'
 import { usePublicApiBase } from '~/composables/usePublicApiBase'
+import {
+  createStorefrontMediaContext,
+  normalizeStorefrontMediaUrl,
+} from '~/utils/storefrontMedia'
 
 export interface PictureWarehouseProductLink {
   product_id: number
@@ -51,10 +56,16 @@ const normalizeGalleryId = (value: unknown): string | null => {
   return id ? id : null
 }
 
-const galleryImageUrls = (gallery: PublicGallery): string[] => {
+const galleryImageUrls = (
+  gallery: PublicGallery,
+  mediaContext: ReturnType<typeof createStorefrontMediaContext>,
+): string[] => {
   const images = Array.isArray(gallery.images) ? gallery.images : []
   return images
-    .map((image) => image?.url || image?.thumbnail || '')
+    .map((image) => normalizeStorefrontMediaUrl(
+      image?.url || image?.thumbnail,
+      mediaContext,
+    ))
     .filter((value): value is string => Boolean(value))
 }
 
@@ -67,12 +78,13 @@ const galleryProductLinks = (gallery: PublicGallery): PictureWarehouseProductLin
 const publicGalleryToBrandPhoto = (
   gallery: PublicGallery,
   detailsLoaded = false,
+  mediaContext: ReturnType<typeof createStorefrontMediaContext>,
 ): BrandGalleryPhoto | null => {
   const id = normalizeGalleryId(gallery.id)
   if (!id) return null
 
-  const images = galleryImageUrls(gallery)
-  const cover = gallery.cover_image || images[0] || ''
+  const images = galleryImageUrls(gallery, mediaContext)
+  const cover = normalizeStorefrontMediaUrl(gallery.cover_image, mediaContext) || images[0] || ''
   if (!cover) return null
 
   return {
@@ -89,6 +101,8 @@ const publicGalleryToBrandPhoto = (
 }
 
 export function useBrandGalleryPhotos() {
+  const runtimeConfig = useRuntimeConfig()
+  const mediaContext = createStorefrontMediaContext(runtimeConfig)
   const apiBase = usePublicApiBase()
   const brandPhotos = ref<BrandGalleryPhoto[]>([])
   const brandLoading = ref(true)
@@ -114,7 +128,9 @@ export function useBrandGalleryPhotos() {
           : []
 
       brandPhotos.value = galleries
-        .map((gallery): BrandGalleryPhoto | null => publicGalleryToBrandPhoto(gallery, false))
+        .map((gallery): BrandGalleryPhoto | null => (
+          publicGalleryToBrandPhoto(gallery, false, mediaContext)
+        ))
         .filter((item): item is BrandGalleryPhoto => item !== null)
     } catch {
       brandError.value = 'load_failed'
@@ -146,7 +162,7 @@ export function useBrandGalleryPhotos() {
         return
       }
 
-      const hydratedPhoto = publicGalleryToBrandPhoto(detail, true)
+      const hydratedPhoto = publicGalleryToBrandPhoto(detail, true, mediaContext)
       if (!hydratedPhoto) {
         markGalleryDetailLoaded(index, photo)
         return

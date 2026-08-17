@@ -1,0 +1,5 @@
+DROP INDEX IF EXISTS idx_media_derivative_rebuild_jobs_single_pending;
+DROP INDEX IF EXISTS idx_media_derivative_rebuild_jobs_lease;
+DROP INDEX IF EXISTS idx_media_derivative_rebuild_jobs_status_id;
+
+DROP TABLE IF EXISTS media_derivative_rebuild_jobs;

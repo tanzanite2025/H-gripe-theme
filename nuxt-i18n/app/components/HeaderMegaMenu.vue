@@ -234,7 +234,7 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
 
 .header-mega__shell {
   position: relative;
-  height: min(560px, calc(var(--tz-mobile-safe-viewport-height, 100vh) - var(--site-header-offset, 92px) - 18px));
+  height: min(560px, calc(var(--tz-mobile-safe-viewport-height, 100vh) - var(--site-header-overlay-offset, 92px) - 18px));
   overflow: hidden;
   border-radius: 0;
   border: 1px solid rgba(255, 255, 255, 0.26);
@@ -736,7 +736,7 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
 @media (max-width: 767px) {
   .header-mega {
     position: fixed;
-    inset: var(--header-mega-mobile-top, var(--site-header-offset, 7rem)) 0 0 0;
+    inset: var(--header-mega-mobile-top, var(--site-header-overlay-offset, 7rem)) 0 0 0;
     width: 100vw;
     transform: none;
     z-index: 1300;

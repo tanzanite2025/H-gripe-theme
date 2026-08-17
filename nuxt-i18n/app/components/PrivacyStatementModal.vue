@@ -35,6 +35,8 @@ import PrivacyStatementContent from '~/components/PrivacyStatementContent.vue'
 const emit = defineEmits<{ (e: 'close'): void }>()
 </script>
 
+<style src="~/assets/css/components/whatsapp-mobile-drawer.css"></style>
+
 <style scoped>
 @media (max-width: 767px) {
   .privacy-statement-modal-shell {

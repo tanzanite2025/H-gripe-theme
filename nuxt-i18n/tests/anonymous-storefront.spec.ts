@@ -4,7 +4,7 @@ const storefrontUrl = process.env.STOREFRONT_URL || 'http://127.0.0.1:4317/'
 
 test.use({ locale: 'zh-CN' })
 
-test('anonymous initialization stays quiet and accepts deployed list envelopes', async ({ page }) => {
+test('anonymous initialization stays quiet and avoids optional account probes', async ({ page }) => {
   const apiRequests: string[] = []
   const consoleErrors: string[] = []
   const pageErrors: string[] = []
@@ -46,18 +46,20 @@ test('anonymous initialization stays quiet and accepts deployed list envelopes',
 
   await page.goto(storefrontUrl)
 
-  await expect.poll(() => apiRequests).toContain('/api/v1/shipping/templates')
-  await expect.poll(() => apiRequests).toContain('/api/v1/payment/tax-rates')
-  await expect.poll(() => apiRequests).toContain('/api/v1/auth/profile')
   await page.waitForTimeout(500)
 
+  expect(apiRequests).not.toContain('/api/v1/auth/profile')
+  expect(apiRequests).not.toContain('/api/v1/cart/summary')
   expect(apiRequests).not.toContain('/api/v1/wishlist')
   expect(apiRequests).not.toContain('/api/v1/marketing/loyalty/points')
+  expect(apiRequests).not.toContain('/api/v1/marketing/loyalty/levels')
+  expect(apiRequests).not.toContain('/api/v1/marketing/loyalty/config')
+  expect(apiRequests).not.toContain('/api/v1/marketing/loyalty/rules')
   expect(pageErrors).toEqual([])
   expect(consoleErrors).toEqual([])
 })
 
-test('restored sessions still load wishlist and loyalty points', async ({ page }) => {
+test('session hints restore profile and keep account data lazy', async ({ page, context }) => {
   const apiRequests: string[] = []
 
   page.on('request', (request) => {
@@ -84,9 +86,26 @@ test('restored sessions still load wishlist and loyalty points', async ({ page }
     })
   })
 
+  await context.addCookies([
+    {
+      name: 'csrf_token',
+      value: 'session-hint',
+      url: storefrontUrl,
+    },
+  ])
+
   await page.goto(storefrontUrl)
 
+  await expect.poll(() => apiRequests).toContain('/api/v1/auth/profile')
+  await page.waitForTimeout(500)
+  expect(apiRequests).not.toContain('/api/v1/wishlist')
+  expect(apiRequests).not.toContain('/api/v1/marketing/loyalty/assets')
+
+  await page.evaluate(() => {
+    window.dispatchEvent(new CustomEvent('ui:sidebar-open', { detail: { side: 'left' } }))
+  })
+
   await expect.poll(() => apiRequests).toContain('/api/v1/wishlist')
-  await expect.poll(() => apiRequests).toContain('/api/v1/marketing/loyalty/points')
+  await expect.poll(() => apiRequests).toContain('/api/v1/marketing/loyalty/assets')
   expect(apiRequests.filter((pathname) => pathname === '/api/v1/auth/profile')).toHaveLength(1)
 })

@@ -3,7 +3,7 @@
     <div class="flex h-screen h-dvh overflow-hidden bg-background">
       <aside
         class="hidden shrink-0 border-r border-dashed border-slate-200 bg-white shadow-sm transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] lg:flex"
-        :class="isCollapse ? 'w-[76px]' : 'w-[250px]'"
+ :class="isCollapse ? 'w-[76px]': 'w-[250px]'"
       >
         <AdminSidebar
           :items="visibleNavigationItems"
@@ -74,7 +74,7 @@
 
             <div class="min-w-0">
               <span v-if="panelLabel" class="hidden text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 sm:block">{{ panelLabel }}</span>
-              <strong class="block truncate text-sm font-black tracking-tighter italic uppercase">{{ routeTitle }}</strong>
+              <strong class="block truncate text-sm font-black tracking-tighter uppercase">{{ routeTitle }}</strong>
             </div>
           </div>
           <AdminLanguageSwitcher class="ml-auto" />

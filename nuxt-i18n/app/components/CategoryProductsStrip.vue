@@ -34,11 +34,11 @@
             class="category-strip__card"
           >
             <div class="category-strip__image">
-              <img
-                v-if="product.thumbnail"
-                :src="product.thumbnail"
+              <StorefrontImage
+                v-if="resolveShopProductImage(product, 'card')"
+                :src="resolveShopProductImage(product, 'card')"
                 :alt="product.title"
-                loading="lazy"
+                preset="card"
               />
               <div v-else class="category-strip__image-placeholder">
                 <span class="category-strip__image-icon">📦</span>
@@ -78,7 +78,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useCart } from '~/composables/useCart'
-import { useShopProducts } from '~/composables/useShopProducts'
+import { resolveShopProductImage, useShopProducts } from '~/composables/useShopProducts'
 import type { ShopProduct } from '~/composables/useShopProducts'
 
 const props = defineProps<{

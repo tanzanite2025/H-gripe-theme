@@ -10,7 +10,7 @@
 
     <div
       class="relative z-10 min-w-0"
-      :class="scrollBody ? 'min-h-0 flex-1 overflow-auto' : 'min-h-40 overflow-x-auto'"
+ :class="scrollBody ? 'min-h-0 flex-1 overflow-auto': 'min-h-40 overflow-x-auto'"
     >
       <div
         v-if="loading"

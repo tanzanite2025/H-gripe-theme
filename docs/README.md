@@ -10,6 +10,7 @@ This directory is a project-level documentation hub. It is not the source of tru
 - Backend quick start: `../go-backend/QUICK_START.md`
 - Backend deployment notes: `../go-backend/DEPLOYMENT.md`
 - Current production readiness status: `ops/production-readiness-status.md`
+- CDN/WAF and responsive image cache runbook: `../deployment/EDGE_SECURITY_RUNBOOK.md`
 - Backend module notes: `../go-backend/docs/`
 - Backend security follow-ups: `../go-backend/docs/SECURITY_FOLLOW_UPS.md`
 - Admin console guide: `../go-backend/web/admin/README.md`
@@ -46,4 +47,4 @@ Archived files are historical context only. They should not be used to claim pro
 - Prefer one source of truth for each area: backend docs under `go-backend/`, storefront notes under `nuxt-i18n/`, project-level docs under `docs/`.
 - Remove legacy WordPress compatibility docs unless they describe an explicit migration-only tool.
 
-Last updated: 2026-08-11.
+Last updated: 2026-08-17.

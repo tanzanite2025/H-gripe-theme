@@ -13,7 +13,7 @@
           {{ selectedDisplayCurrencies.length }} 个
         </span>
         <Button type="button" variant="outline" size="sm" :disabled="loading || saving" @click="loadPolicy">
-          <RefreshCw :class="['size-3.5', loading ? 'animate-spin' : '']" />
+ <RefreshCw :class="['size-3.5', loading ? 'animate-spin': '']" />
           刷新
         </Button>
         <Button v-if="canEdit" type="button" size="sm" :disabled="loading || saving" @click="savePolicy">
@@ -30,7 +30,7 @@
           :title="syncRateDisabledReason"
           @click="syncExchangeRates"
         >
-          <RefreshCw :class="['size-3.5', syncingRates ? 'animate-spin' : '']" />
+ <RefreshCw :class="['size-3.5', syncingRates ? 'animate-spin': '']" />
           {{ syncingRates ? '同步中' : '同步汇率缓存' }}
         </Button>
       </div>
@@ -68,7 +68,7 @@
               :key="`display-${option.code}`"
               type="button"
               class="rounded-full border px-3 py-1.5 text-xs font-black transition hover:border-admin-selected-border hover:bg-admin-selected-soft disabled:cursor-not-allowed disabled:opacity-45"
-              :class="isDisplayCurrencySelected(option.code) ? 'border-admin-selected-border bg-admin-selected-soft text-admin-selected shadow-[var(--admin-control-selected-surface-shadow)]' : 'bg-background/70 text-foreground'"
+ :class="isDisplayCurrencySelected(option.code) ? 'border-admin-selected-border bg-admin-selected-soft text-admin-selected shadow-[var(--admin-control-selected-surface-shadow)]': 'bg-background/70 text-foreground'"
               :disabled="!canEdit"
               :title="`${option.code} · ${option.name}`"
               @click="toggleDisplayCurrency(option.code)"
@@ -92,7 +92,7 @@
             </p>
           </div>
           <Button type="button" variant="ghost" size="sm" :disabled="exchangeRateLoading" @click="loadExchangeRates">
-            <RefreshCw :class="['size-3.5', exchangeRateLoading ? 'animate-spin' : '']" />
+ <RefreshCw :class="['size-3.5', exchangeRateLoading ? 'animate-spin': '']" />
             刷新汇率视图
           </Button>
         </div>

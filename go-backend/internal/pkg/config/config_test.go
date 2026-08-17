@@ -2,6 +2,8 @@ package config
 
 import (
 	"net/http"
+	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -100,6 +102,43 @@ func TestValidateConfigRejectsInvalidPaymentRiskMonitoringSchedule(t *testing.T)
 	}
 }
 
+func TestValidateConfigRejectsInvalidSiteQualityWorkerPollInterval(t *testing.T) {
+	cfg := validTestConfig()
+	cfg.Worker.SiteQualityEnabled = true
+	cfg.Worker.SiteQualityDispatchIntervalSeconds = 0
+
+	if err := validateConfig(cfg); err == nil {
+		t.Fatal("validateConfig should reject an invalid site quality schedule")
+	}
+}
+
+func TestValidateConfigRequiresInternalRunnerForEnabledQualityWorker(t *testing.T) {
+	cfg := validTestConfig()
+	cfg.Worker = WorkerConfig{
+		SiteQualityEnabled:                 true,
+		SiteQualityDispatchIntervalSeconds: 30,
+		SiteQualityBatchLimit:              2,
+		SiteQualityLeaseTimeoutSeconds:     900,
+		SiteQualitySampleCount:             3,
+		SiteQualityConfirmations:           2,
+		SiteQualityCleanEvaluations:        2,
+		SiteQualityProviderConcurrency:     1,
+		SiteQualityProviderSpacingSeconds:  5,
+	}
+
+	if err := validateConfig(cfg); err == nil {
+		t.Fatal("validateConfig should require an internal Site Quality runner when monitoring is enabled")
+	}
+
+	cfg.SiteQuality = SiteQualityConfig{
+		RunnerURL:   "http://site-quality-runner:8080",
+		RunnerToken: "01234567890123456789012345678901",
+	}
+	if err := validateConfig(cfg); err != nil {
+		t.Fatalf("validateConfig should allow enabled quality monitoring with an internal runner: %v", err)
+	}
+}
+
 func TestValidateConfigRejectsOrderAbuseWithoutIdentityLimit(t *testing.T) {
 	cfg := validTestConfig()
 	cfg.OrderAbuse = OrderAbuseConfig{
@@ -124,6 +163,44 @@ func TestValidateConfigRejectsInvalidQuickBuyRateLimitConfig(t *testing.T) {
 
 	if err := validateConfig(cfg); err == nil {
 		t.Fatal("validateConfig should reject invalid Quick Buy rate limit config")
+	}
+}
+
+func TestValidateConfigRejectsInvalidFeedbackRateLimitConfig(t *testing.T) {
+	cfg := validTestConfig()
+	cfg.FeedbackRateLimit = FeedbackRateLimitConfig{
+		Enabled:                    true,
+		ReadIPRequestsPerMinute:    120,
+		ReadIPBurst:                40,
+		WriteIPRequestsPerMinute:   12,
+		WriteIPBurst:               0,
+		WriteUserRequestsPerMinute: 6,
+		WriteUserBurst:             2,
+	}
+
+	if err := validateConfig(cfg); err == nil {
+		t.Fatal("validateConfig should reject invalid feedback rate limit config")
+	}
+}
+
+func TestFeedbackRateLimitDefaultsFailClosed(t *testing.T) {
+	t.Setenv("SERVER_MODE", "debug")
+	t.Setenv("FEEDBACK_RATE_LIMIT_FAIL_OPEN", "")
+
+	configFile := filepath.Join(t.TempDir(), "config.yaml")
+	if err := os.WriteFile(configFile, []byte("jwt:\n  secret: test-secret\n"), 0o600); err != nil {
+		t.Fatalf("write test config: %v", err)
+	}
+
+	cfg, err := Load(configFile)
+	if err != nil {
+		t.Fatalf("Load config: %v", err)
+	}
+	if !cfg.FeedbackRateLimit.Enabled {
+		t.Fatal("feedback rate limit should be enabled by default")
+	}
+	if cfg.FeedbackRateLimit.FailOpen {
+		t.Fatal("feedback rate limit must default to fail-closed")
 	}
 }
 
@@ -327,6 +404,8 @@ func TestLoadProductionConfigUsesEnvironmentOverrides(t *testing.T) {
 	t.Setenv("TRUSTED_PROXIES", "10.0.0.0/8, 172.16.0.0/12")
 	t.Setenv("QUICK_BUY_RATE_LIMIT_IP_REQUESTS_PER_MINUTE", "88")
 	t.Setenv("QUICK_BUY_RATE_LIMIT_SESSION_BURST", "9")
+	t.Setenv("FEEDBACK_RATE_LIMIT_WRITE_USER_REQUESTS_PER_MINUTE", "4")
+	t.Setenv("FEEDBACK_RATE_LIMIT_WRITE_USER_BURST", "1")
 
 	cfg, err := Load("../../../config/config.production.yaml")
 	if err != nil {
@@ -347,6 +426,9 @@ func TestLoadProductionConfigUsesEnvironmentOverrides(t *testing.T) {
 	}
 	if cfg.QuickBuyRateLimit.IPRequestsPerMinute != 88 || cfg.QuickBuyRateLimit.SessionBurst != 9 {
 		t.Fatalf("Quick Buy rate limit overrides not applied: %+v", cfg.QuickBuyRateLimit)
+	}
+	if cfg.FeedbackRateLimit.WriteUserRequestsPerMinute != 4 || cfg.FeedbackRateLimit.WriteUserBurst != 1 {
+		t.Fatalf("feedback rate limit overrides not applied: %+v", cfg.FeedbackRateLimit)
 	}
 	if !cfg.CustomerServiceRealtime.Enabled || !cfg.Worker.OutboxDispatchEnabled {
 		t.Fatalf("production config must enable the durable customer-service relay and dispatcher: realtime=%+v worker=%+v", cfg.CustomerServiceRealtime, cfg.Worker)

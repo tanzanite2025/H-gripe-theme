@@ -28,7 +28,7 @@
           同步 Cloudflare
         </Button>
         <Button variant="outline" :disabled="loading" @click="refreshDomainsPage">
-          <RefreshCw :class="['size-4', loading ? 'animate-spin' : '']" />
+ <RefreshCw :class="['size-4', loading ? 'animate-spin': '']" />
           刷新
         </Button>
         <Button v-if="canEdit" @click="openCreate">
@@ -94,10 +94,10 @@
             </TableCell>
             <TableCell>
               <p class="text-xs font-bold">{{ providerLabel(domain.provider) }}</p>
-              <p class="mt-1 text-[10px] text-muted-foreground">{{ domain.zone || '未登记 Zone' }}</p>
+ <p class="mt-1 text-[10px] text-muted-foreground">{{ domain.zone || '未登记 Zone'}}</p>
             </TableCell>
             <TableCell class="max-w-56">
-              <p class="truncate font-mono text-[10px]" :title="domain.target">期望：{{ domain.target || '-' }}</p>
+ <p class="truncate font-mono text-[10px]" :title="domain.target">期望：{{ domain.target || '-'}}</p>
               <p class="mt-1 truncate font-mono text-[10px] text-muted-foreground" :title="domain.observed_target">
                 实际：{{ domain.observed_target || '未同步' }}
               </p>
@@ -270,14 +270,14 @@
             <TabsContent value="dns" class="mt-4">
               <div class="grid gap-2 rounded-lg border border-dashed border-border/70 p-3 text-xs sm:grid-cols-2">
                 <div><span class="text-muted-foreground">Provider：</span>{{ providerLabel(preview.dns.provider) }}</div>
-                <div><span class="text-muted-foreground">Zone：</span>{{ preview.dns.zone || '-' }}</div>
+ <div><span class="text-muted-foreground">Zone：</span>{{ preview.dns.zone || '-'}}</div>
                 <div><span class="text-muted-foreground">Type：</span>{{ preview.dns.record_type }}</div>
                 <div><span class="text-muted-foreground">Name：</span>{{ preview.dns.name }}</div>
-                <div class="sm:col-span-2"><span class="text-muted-foreground">Content：</span>{{ preview.dns.content || '-' }}</div>
+ <div class="sm:col-span-2"><span class="text-muted-foreground">Content：</span>{{ preview.dns.content || '-'}}</div>
                 <div><span class="text-muted-foreground">Proxy：</span>{{ proxyLabel(preview.dns.proxy_mode) }}</div>
                 <div><span class="text-muted-foreground">TLS：</span>{{ tlsLabel(preview.dns.tls_mode) }}</div>
                 <div v-if="preview.dns.redirect" class="sm:col-span-2">
-                  <span class="text-muted-foreground">Redirect：</span>{{ preview.dns.redirect_target || '-' }}
+ <span class="text-muted-foreground">Redirect：</span>{{ preview.dns.redirect_target || '-'}}
                 </div>
               </div>
             </TabsContent>
@@ -385,16 +385,16 @@ const PreviewCodeBlock = defineComponent({
   },
   emits: ['copy'],
   setup(props, { emit }) {
-    return () => h('div', { class: 'overflow-hidden rounded-lg border border-dashed border-border/70' }, [
-      h('div', { class: 'flex items-center justify-between gap-3 border-b border-dashed border-border/70 bg-muted/40 px-3 py-2' }, [
-        h('span', { class: 'truncate font-mono text-[10px] font-bold text-muted-foreground' }, props.filename),
+ return () => h('div', { class: 'overflow-hidden rounded-lg border border-dashed border-border/70'}, [
+ h('div', { class: 'flex items-center justify-between gap-3 border-b border-dashed border-border/70 bg-muted/40 px-3 py-2'}, [
+ h('span', { class: 'truncate font-mono text-[10px] font-bold text-muted-foreground'}, props.filename),
         h(Button, {
           size: 'sm',
           variant: 'ghost',
           onClick: () => emit('copy'),
-        }, () => [h(Copy, { class: 'size-4' }), '复制']),
+ }, () => [h(Copy, { class: 'size-4'}), '复制']),
       ]),
-      h('pre', { class: 'max-h-96 overflow-auto whitespace-pre-wrap break-words p-3 text-xs leading-6' }, props.content),
+ h('pre', { class: 'max-h-96 overflow-auto whitespace-pre-wrap break-words p-3 text-xs leading-6'}, props.content),
     ])
   },
 })

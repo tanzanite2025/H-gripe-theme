@@ -67,7 +67,7 @@
             class="lg:col-span-2"
             description="JSON 数组或逗号分隔；例如 US, CA。为空代表暂未限制。"
           >
-            <Textarea v-model="form.countries" class="min-h-20 font-mono text-xs" placeholder='["US", "CA", "EU"]' />
+ <Textarea v-model="form.countries" class="min-h-20 font-mono text-xs" placeholder='["US","CA","EU"]'/>
           </AdminFormField>
 
           <AdminFormField label="计费模式" required :error="errors.billing_mode">

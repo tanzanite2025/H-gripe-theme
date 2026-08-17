@@ -119,10 +119,10 @@
                 </RouterLink>
               </Button>
               <div class="flex flex-wrap gap-2 text-[11px] lg:col-span-2">
-                <span :class="form.hs_code ? 'bg-emerald-500/10 text-emerald-700' : 'bg-amber-500/10 text-amber-700'" class="rounded-full px-2 py-0.5 font-medium">HS</span>
-                <span :class="form.cn_code ? 'bg-emerald-500/10 text-emerald-700' : 'bg-amber-500/10 text-amber-700'" class="rounded-full px-2 py-0.5 font-medium">CN</span>
-                <span :class="form.country_of_origin ? 'bg-emerald-500/10 text-emerald-700' : 'bg-amber-500/10 text-amber-700'" class="rounded-full px-2 py-0.5 font-medium">原产国</span>
-                <span :class="form.customs_description ? 'bg-emerald-500/10 text-emerald-700' : 'bg-amber-500/10 text-amber-700'" class="rounded-full px-2 py-0.5 font-medium">英文品名</span>
+ <span :class="form.hs_code ? 'bg-emerald-500/10 text-emerald-700': 'bg-amber-500/10 text-amber-700'" class="rounded-full px-2 py-0.5 font-medium">HS</span>
+ <span :class="form.cn_code ? 'bg-emerald-500/10 text-emerald-700': 'bg-amber-500/10 text-amber-700'" class="rounded-full px-2 py-0.5 font-medium">CN</span>
+ <span :class="form.country_of_origin ? 'bg-emerald-500/10 text-emerald-700': 'bg-amber-500/10 text-amber-700'" class="rounded-full px-2 py-0.5 font-medium">原产国</span>
+ <span :class="form.customs_description ? 'bg-emerald-500/10 text-emerald-700': 'bg-amber-500/10 text-amber-700'" class="rounded-full px-2 py-0.5 font-medium">英文品名</span>
               </div>
             </div>
             <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -297,7 +297,7 @@
                 />
                 <div v-else-if="spec.field_type === 'boolean'" class="flex h-9 items-center gap-2">
                   <Switch v-model="form.specs[spec.slug]" :aria-label="spec.name" />
-                  <span class="text-xs text-muted-foreground">{{ form.specs[spec.slug] ? '是' : '否' }}</span>
+ <span class="text-xs text-muted-foreground">{{ form.specs[spec.slug] ? '是': '否'}}</span>
                 </div>
                 <Input
                   v-else

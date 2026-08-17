@@ -36,7 +36,7 @@
     <div v-else class="account-item-list">
       <article v-for="item in items" :key="item.id" class="account-product-card">
         <NuxtLink :to="productPath(item)" class="account-product-card__image" @click="$emit('close')">
-          <img v-if="productImage(item)" :src="productImage(item)" :alt="productTitle(item)" loading="lazy" />
+          <StorefrontImage v-if="productImage(item)" :src="productImage(item)" :alt="productTitle(item)" preset="card" />
           <Icon v-else name="lucide:image" />
         </NuxtLink>
         <div class="account-product-card__body">

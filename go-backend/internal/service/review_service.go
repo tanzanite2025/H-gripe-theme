@@ -7,7 +7,8 @@ import (
 )
 
 type ReviewService struct {
-	reviewRepo *repository.ReviewRepository
+	reviewRepo       *repository.ReviewRepository
+	mediaURLResolver PublicMediaURLResolver
 }
 
 var ErrReviewNotPublic = errors.New("review is not public")
@@ -18,10 +19,18 @@ func NewReviewService(reviewRepo *repository.ReviewRepository) *ReviewService {
 	}
 }
 
+func (s *ReviewService) ConfigureMediaService(mediaService *MediaService) {
+	if s == nil {
+		return
+	}
+	s.mediaURLResolver = mediaService
+}
+
 func (s *ReviewService) CreateReview(r *review.Review) error {
 	if err := normalizeReviewSubmission(r); err != nil {
 		return err
 	}
+	r.Images = canonicalizeReviewImages(r.Images, s.mediaURLResolver)
 
 	exists, err := s.reviewRepo.CheckUserReviewExists(r.UserID, r.ProductID)
 	if err != nil {
@@ -51,7 +60,7 @@ func (s *ReviewService) GetPublicReview(id uint) (*review.Review, error) {
 	if r.Status != review.StatusApproved {
 		return nil, ErrReviewNotPublic
 	}
-	normalizeReviewForPublic(r)
+	normalizeReviewForPublic(r, s.mediaURLResolver)
 	return r, nil
 }
 
@@ -61,7 +70,7 @@ func (s *ReviewService) GetProductReviews(productID uint, page, pageSize int) ([
 		return nil, 0, err
 	}
 	for index := range items {
-		normalizeReviewForPublic(&items[index])
+		normalizeReviewForPublic(&items[index], s.mediaURLResolver)
 	}
 	return items, total, nil
 }
@@ -72,7 +81,7 @@ func (s *ReviewService) GetUserReviews(userID uint, page, pageSize int) ([]revie
 		return nil, 0, err
 	}
 	for index := range items {
-		normalizeReviewForPublic(&items[index])
+		normalizeReviewForPublic(&items[index], s.mediaURLResolver)
 	}
 	return items, total, nil
 }
@@ -83,7 +92,7 @@ func (s *ReviewService) GetFeaturedReviews(limit int) ([]review.Review, error) {
 		return nil, err
 	}
 	for index := range items {
-		normalizeReviewForPublic(&items[index])
+		normalizeReviewForPublic(&items[index], s.mediaURLResolver)
 	}
 	return items, nil
 }

@@ -2,7 +2,7 @@
   <TabsContent value="registrations" class="space-y-3">
     <div class="flex flex-wrap items-end justify-between gap-3">
       <div>
-        <h2 class="text-sm font-black tracking-tighter italic uppercase">产品注册记录</h2>
+        <h2 class="text-sm font-black tracking-tighter uppercase">产品注册记录</h2>
         <p class="mt-1 text-xs text-muted-foreground">按序列号、用户、商品和保修到期时间管理注册状态。</p>
       </div>
       <div class="w-full sm:w-48">
@@ -42,14 +42,14 @@
           <TableRow v-for="registration in registrations" :key="registration.id">
             <TableCell>
               <span class="block font-bold text-xs">{{ productName(registration.product) }}</span>
-              <span class="block font-mono text-[10px] text-muted-foreground/70">product_id={{ registration.product_id || '-' }}</span>
+ <span class="block font-mono text-[10px] text-muted-foreground/70">product_id={{ registration.product_id || '-'}}</span>
             </TableCell>
             <TableCell>
-              <span class="font-mono text-xs font-bold">{{ registration.serial_number || '-' }}</span>
+ <span class="font-mono text-xs font-bold">{{ registration.serial_number || '-'}}</span>
             </TableCell>
             <TableCell>
               <span class="block text-xs font-bold">{{ userName(registration.user) }}</span>
-              <span class="block max-w-56 truncate text-[10px] text-muted-foreground/70">{{ registration.user?.email || '-' }}</span>
+ <span class="block max-w-56 truncate text-[10px] text-muted-foreground/70">{{ registration.user?.email || '-'}}</span>
             </TableCell>
             <TableCell>
               <span class="block text-xs">购买：{{ formatDate(registration.purchase_date) }}</span>

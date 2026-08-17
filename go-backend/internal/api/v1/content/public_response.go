@@ -1,6 +1,7 @@
 package content
 
 import (
+	"commerce-platform/internal/api/v1/publicmedia"
 	"time"
 
 	postdomain "commerce-platform/internal/domain/post"
@@ -35,11 +36,12 @@ type PublicPostTranslationRoute struct {
 	Path   string `json:"path"`
 }
 
-func PublicPostFromDomain(item postdomain.Post) PublicPost {
-	return PublicPostFromDomainWithRoutes(item, nil)
+func PublicPostFromDomain(item postdomain.Post, resolvers ...publicmedia.Resolver) PublicPost {
+	return PublicPostFromDomainWithRoutes(item, nil, resolvers...)
 }
 
-func PublicPostFromDomainWithRoutes(item postdomain.Post, translationRoutes []postdomain.TranslationRoute) PublicPost {
+func PublicPostFromDomainWithRoutes(item postdomain.Post, translationRoutes []postdomain.TranslationRoute, resolvers ...publicmedia.Resolver) PublicPost {
+	resolver := publicmediaResolver(resolvers)
 	return PublicPost{
 		ID:                 item.ID,
 		Title:              item.Title,
@@ -50,7 +52,7 @@ func PublicPostFromDomainWithRoutes(item postdomain.Post, translationRoutes []po
 		AuthorID:           item.AuthorID,
 		Locale:             item.Locale,
 		TranslationGroupID: item.TranslationGroupID,
-		FeaturedImg:        item.FeaturedImg,
+		FeaturedImg:        publicmedia.URL(resolver, item.FeaturedImg),
 		ViewCount:          item.ViewCount,
 		MetaTitle:          item.MetaTitle,
 		MetaDescription:    item.MetaDesc,
@@ -86,14 +88,21 @@ func publicPostTranslationRoutesFromDomain(items []postdomain.TranslationRoute) 
 	return routes
 }
 
-func PublicPostsFromDomain(items []postdomain.Post) []PublicPost {
+func PublicPostsFromDomain(items []postdomain.Post, resolvers ...publicmedia.Resolver) []PublicPost {
 	if len(items) == 0 {
 		return []PublicPost{}
 	}
 
 	result := make([]PublicPost, 0, len(items))
 	for _, item := range items {
-		result = append(result, PublicPostFromDomain(item))
+		result = append(result, PublicPostFromDomain(item, resolvers...))
 	}
 	return result
+}
+
+func publicmediaResolver(resolvers []publicmedia.Resolver) publicmedia.Resolver {
+	if len(resolvers) == 0 {
+		return nil
+	}
+	return resolvers[0]
 }

@@ -1,6 +1,7 @@
 package ticket
 
 import (
+	"commerce-platform/internal/api/v1/publicmedia"
 	"commerce-platform/internal/domain/user"
 	"net/http"
 	"strconv"
@@ -31,21 +32,7 @@ func (h *Handler) ListPublicCustomerServiceAgents(c *gin.Context) {
 		if agent.UserID == nil {
 			continue
 		}
-		onlineStatus := emptyToDefault(agent.OnlineStatus, "offline")
-		items = append(items, gin.H{
-			"id":            *agent.UserID,
-			"user_id":       *agent.UserID,
-			"agent_id":      agent.AgentID,
-			"name":          agent.DisplayName(),
-			"email":         agent.PublicEmail(),
-			"avatar":        agent.Avatar,
-			"whatsapp":      agent.WhatsApp,
-			"online_status": onlineStatus,
-			"status":        onlineStatus,
-			"group_ids":     publicCustomerServiceAgentGroupIDs(agent.Groups),
-			"groups":        publicCustomerServiceAgentGroupsResponse(agent.Groups),
-			"primary_group": publicCustomerServicePrimaryAgentGroup(agent.Groups),
-		})
+		items = append(items, publicCustomerServiceAgentResponse(agent, h.mediaService))
 	}
 	if len(items) == 0 {
 		fallbackAgents, err := h.ticketService.ListCustomerServiceAgents(limit)
@@ -80,6 +67,24 @@ func (h *Handler) ListPublicCustomerServiceAgents(c *gin.Context) {
 			"afterSalesEmail": "",
 		},
 	})
+}
+
+func publicCustomerServiceAgentResponse(agent user.AgentProfile, resolver publicmedia.Resolver) gin.H {
+	onlineStatus := emptyToDefault(agent.OnlineStatus, "offline")
+	return gin.H{
+		"id":            *agent.UserID,
+		"user_id":       *agent.UserID,
+		"agent_id":      agent.AgentID,
+		"name":          agent.DisplayName(),
+		"email":         agent.PublicEmail(),
+		"avatar":        publicmedia.URL(resolver, agent.Avatar),
+		"whatsapp":      agent.WhatsApp,
+		"online_status": onlineStatus,
+		"status":        onlineStatus,
+		"group_ids":     publicCustomerServiceAgentGroupIDs(agent.Groups),
+		"groups":        publicCustomerServiceAgentGroupsResponse(agent.Groups),
+		"primary_group": publicCustomerServicePrimaryAgentGroup(agent.Groups),
+	}
 }
 
 func publicCustomerServiceGroupsResponse(groups []user.AgentGroup) []gin.H {

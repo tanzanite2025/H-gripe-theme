@@ -7,6 +7,7 @@ import (
 
 	"commerce-platform/internal/domain/currency"
 	productdomain "commerce-platform/internal/domain/product"
+	"commerce-platform/internal/service"
 )
 
 func TestPublicProductFromDomainExposesPurchasableSkuFactsWithoutExactInventory(t *testing.T) {
@@ -243,6 +244,77 @@ func TestPublicProductFromDomainExposesVariantOptionPresentationMetadata(t *test
 	}
 	if publicProduct.ProductSpecificationTemplate == nil || len(publicProduct.ProductSpecificationTemplate.SpecDefinitions) != 1 || publicProduct.ProductSpecificationTemplate.SpecDefinitions[0].Presentation != "color" {
 		t.Fatalf("expected public product specification template to expose color presentation, got %#v", publicProduct.ProductSpecificationTemplate)
+	}
+}
+
+func TestPublicProductFromDomainCanonicalizesFirstPartyMediaURLs(t *testing.T) {
+	resolver := service.NewMediaService(nil, nil, nil, "https://shop.example.test", 20<<30)
+	item := productdomain.Product{
+		ID:     91,
+		SKU:    "MEDIA-PRODUCT",
+		Name:   "Media Product",
+		Slug:   "media-product",
+		Status: "active",
+		Brand: &productdomain.ProductBrand{
+			Name:    "Internal Logo Brand",
+			Slug:    "internal-logo-brand",
+			LogoURL: "http://media.internal:8080/uploads/brands/logo.webp",
+		},
+		ProductSpecificationTemplate: &productdomain.ProductSpecificationTemplate{
+			Name:     "Wheelset",
+			Slug:     "wheelset",
+			ImageURL: "http://media.internal:8080/uploads/specs/wheelset.webp",
+			SpecDefinitions: []productdomain.SpecDefinition{
+				{
+					ID:              17,
+					Name:            "Finish",
+					Slug:            "finish",
+					IsVisible:       true,
+					IsVariantOption: true,
+				},
+			},
+		},
+		VariantOptionValues: []productdomain.ProductVariantOptionValue{
+			{
+				ID:               18,
+				SpecDefinitionID: 17,
+				ValueKey:         "black",
+				Label:            "Black",
+				SwatchURL:        "http://media.internal:8080/uploads/swatches/black.webp",
+				IsEnabled:        true,
+			},
+		},
+		Media: []productdomain.ProductMedia{
+			{
+				ID:           19,
+				MediaType:    "image",
+				URL:          "http://media.internal:8080/uploads/products/full.webp",
+				ThumbnailURL: "http://media.internal:8080/uploads/products/thumb.webp",
+				PosterURL:    "http://media.internal:8080/uploads/products/poster.webp",
+				IsVisible:    true,
+			},
+		},
+	}
+
+	payload, err := json.Marshal(PublicProductFromDomain(item, resolver))
+	if err != nil {
+		t.Fatalf("marshal public product: %v", err)
+	}
+	body := string(payload)
+	if strings.Contains(body, "media.internal") {
+		t.Fatalf("public product response exposes internal media origin: %s", body)
+	}
+	for _, expected := range []string{
+		`"url":"https://shop.example.test/uploads/products/full.webp"`,
+		`"thumbnail_url":"https://shop.example.test/uploads/products/thumb.webp"`,
+		`"poster_url":"https://shop.example.test/uploads/products/poster.webp"`,
+		`"logo_url":"https://shop.example.test/uploads/brands/logo.webp"`,
+		`"image_url":"https://shop.example.test/uploads/specs/wheelset.webp"`,
+		`"swatch_url":"https://shop.example.test/uploads/swatches/black.webp"`,
+	} {
+		if !strings.Contains(body, expected) {
+			t.Fatalf("public product response missing canonical media %s: %s", expected, body)
+		}
 	}
 }
 

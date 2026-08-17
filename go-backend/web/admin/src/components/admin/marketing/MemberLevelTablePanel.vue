@@ -21,13 +21,13 @@
         <TableRow v-for="level in levels" :key="level.id || level.name">
           <TableCell>
             <div class="flex items-center gap-2">
-              <span class="size-3 rounded-full border" :style="{ backgroundColor: level.color || '#94a3b8' }" />
+ <span class="size-3 rounded-full border" :style="{ backgroundColor: level.color || '#94a3b8'}" />
               <span class="font-bold text-xs">{{ memberLevelLabel(level.name) }}</span>
             </div>
           </TableCell>
           <TableCell class="tabular-nums">{{ level.min_points }} - {{ level.max_points }}</TableCell>
           <TableCell class="text-right tabular-nums">{{ formatRate(level.discount_rate) }}</TableCell>
-          <TableCell class="max-w-72 truncate text-muted-foreground">{{ level.benefits || '-' }}</TableCell>
+ <TableCell class="max-w-72 truncate text-muted-foreground">{{ level.benefits || '-'}}</TableCell>
           <TableCell class="text-right tabular-nums">{{ level.sort_order || 0 }}</TableCell>
           <TableCell class="text-right">
             <DropdownMenu>

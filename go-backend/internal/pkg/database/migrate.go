@@ -17,6 +17,7 @@ import (
 	outboxdomain "commerce-platform/internal/domain/outbox"
 	"commerce-platform/internal/domain/payment"
 	"commerce-platform/internal/domain/post"
+	preflightdomain "commerce-platform/internal/domain/preflight"
 	"commerce-platform/internal/domain/product"
 	recommendationdomain "commerce-platform/internal/domain/recommendation"
 	"commerce-platform/internal/domain/registration"
@@ -25,10 +26,12 @@ import (
 	"commerce-platform/internal/domain/setting"
 	"commerce-platform/internal/domain/shipping"
 	"commerce-platform/internal/domain/showcase"
+	sitequalitydomain "commerce-platform/internal/domain/sitequality"
 	"commerce-platform/internal/domain/spoke"
 	"commerce-platform/internal/domain/subscription"
 	"commerce-platform/internal/domain/suggestionfeedback"
 	"commerce-platform/internal/domain/ticket"
+	urlmanagementdomain "commerce-platform/internal/domain/urlmanagement"
 	"commerce-platform/internal/domain/user"
 	"commerce-platform/internal/domain/verification"
 	"commerce-platform/internal/domain/visitor"
@@ -149,6 +152,9 @@ func AutoMigrate(db *gorm.DB, serverMode string) error {
 		&showcase.Comment{},
 		&media.Media{},
 		&media.MediaAsset{},
+		&media.MediaAssetDerivative{},
+		&media.MediaDerivativePreset{},
+		&media.MediaDerivativeRebuildJob{},
 		&audit.AuditLog{},
 		&wishlist.Item{},
 		&feedback.Feedback{},
@@ -162,6 +168,19 @@ func AutoMigrate(db *gorm.DB, serverMode string) error {
 		&recommendationdomain.Event{},
 		&seodomain.StorefrontRouteCatalogEntry{},
 		&seodomain.StorefrontRouteCheckResult{},
+		&urlmanagementdomain.StorefrontRedirectRule{},
+		&urlmanagementdomain.StorefrontURLIssue{},
+		&urlmanagementdomain.StorefrontURLIssueEvent{},
+		&preflightdomain.ContentLinkRun{},
+		&preflightdomain.ContentLinkIssue{},
+		&preflightdomain.ContentLinkIssueEvent{},
+		&sitequalitydomain.SiteQualityTarget{},
+		&sitequalitydomain.SiteQualityJob{},
+		&sitequalitydomain.SiteQualityProviderSlot{},
+		&sitequalitydomain.SiteQualityEvaluation{},
+		&sitequalitydomain.SiteQualityRun{},
+		&sitequalitydomain.SiteQualityFinding{},
+		&sitequalitydomain.SiteQualityFindingEvent{},
 	)
 	if err != nil {
 		return err

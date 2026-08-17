@@ -6,13 +6,16 @@
       <div class="flex justify-center mb-4 sm:mb-8">
         <div class="tz-segmented-tabs" role="tablist">
           <button
-            v-for="tab in tabs"
+            v-for="(tab, index) in tabs"
             :key="tab.id"
-            @click="currentTabId = tab.id"
+            type="button"
+            @click="selectTab(tab.id)"
+            @keydown="handleTabKeydown($event, index)"
             class="tz-segmented-tabs__button"
             :class="{ 'is-active': currentTabId === tab.id }"
             role="tab"
-            :aria-pressed="currentTabId === tab.id"
+            :aria-selected="currentTabId === tab.id"
+            :tabindex="currentTabId === tab.id ? 0 : -1"
           >
             {{ $t(tab.labelKey) }}
           </button>
@@ -107,7 +110,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, nextTick, watch } from 'vue'
 import { useI18n } from '#imports'
 import StackedCarousel from '~/components/StackedImageCarousel.vue'
 
@@ -122,6 +125,49 @@ const tabs: { id: TabId; labelKey: string }[] = [
 
 const currentTabId = ref<TabId>('stories')
 const activeIndex = ref(0) // Syncs with carousel
+
+const selectTab = (id: TabId) => {
+  currentTabId.value = id
+}
+
+const handleTabKeydown = (event: KeyboardEvent, index: number) => {
+  const tabCount = tabs.length
+  let nextIndex = index
+
+  switch (event.key) {
+    case 'ArrowRight':
+    case 'ArrowDown':
+      nextIndex = (index + 1) % tabCount
+      break
+    case 'ArrowLeft':
+    case 'ArrowUp':
+      nextIndex = (index - 1 + tabCount) % tabCount
+      break
+    case 'Home':
+      nextIndex = 0
+      break
+    case 'End':
+      nextIndex = tabCount - 1
+      break
+    default:
+      return
+  }
+
+  event.preventDefault()
+  const nextTab = tabs[nextIndex]
+  if (!nextTab) return
+
+  selectTab(nextTab.id)
+  const tabsContainer = event.currentTarget instanceof HTMLElement
+    ? event.currentTarget.parentElement
+    : null
+  nextTick(() => {
+    tabsContainer
+      ?.querySelectorAll<HTMLElement>('[role="tab"]')
+      .item(nextIndex)
+      ?.focus()
+  })
+}
 
 // Reset index when tab changes
 watch(currentTabId, () => {

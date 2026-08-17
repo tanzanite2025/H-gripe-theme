@@ -5,6 +5,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useRuntimeConfig } from 'nuxt/app'
+import { loadTurnstileScript } from '~/utils/security/trustedScriptUrl'
 
 type TurnstileApi = {
   render: (
@@ -49,23 +50,7 @@ const loadTurnstile = () => {
   if (window.turnstile) return Promise.resolve()
   if (loadPromise) return loadPromise
 
-  loadPromise = new Promise<void>((resolve, reject) => {
-    const existing = document.querySelector('script[data-commerce-platform-turnstile]')
-    if (existing) {
-      existing.addEventListener('load', () => resolve(), { once: true })
-      existing.addEventListener('error', () => reject(new Error('Turnstile failed to load')), { once: true })
-      return
-    }
-
-    const script = document.createElement('script')
-    script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit'
-    script.async = true
-    script.defer = true
-    script.dataset.learnGripeTurnstile = 'true'
-    script.addEventListener('load', () => resolve(), { once: true })
-    script.addEventListener('error', () => reject(new Error('Turnstile failed to load')), { once: true })
-    document.head.appendChild(script)
-  })
+  loadPromise = loadTurnstileScript().then(() => undefined)
   return loadPromise
 }
 

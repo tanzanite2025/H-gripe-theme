@@ -33,7 +33,7 @@ func (h *Handler) CreateRegistration(c *gin.Context) {
 		return
 	}
 
-	response.Created(c, reg)
+	response.Created(c, publicRegistrationFromDomain(reg, h.mediaResolver))
 }
 
 func (h *Handler) GetRegistration(c *gin.Context) {
@@ -55,7 +55,7 @@ func (h *Handler) GetRegistration(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, reg)
+	response.Success(c, publicRegistrationFromDomain(*reg, h.mediaResolver))
 }
 
 func (h *Handler) ListUserRegistrations(c *gin.Context) {
@@ -72,7 +72,7 @@ func (h *Handler) ListUserRegistrations(c *gin.Context) {
 		return
 	}
 
-	response.Paged(c, registrations, params.Page, params.PageSize, total)
+	response.Paged(c, publicRegistrationsFromDomain(registrations, h.mediaResolver), params.Page, params.PageSize, total)
 }
 
 func (h *Handler) UpdateRegistration(c *gin.Context) {
@@ -102,7 +102,7 @@ func (h *Handler) UpdateRegistration(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, reg)
+	response.Success(c, publicRegistrationFromDomain(reg, h.mediaResolver))
 }
 
 func respondRegistrationServiceError(c *gin.Context, err error) {

@@ -38,7 +38,7 @@ type SitemapEntry = {
   lastmod?: string
   changefreq: 'weekly' | 'monthly'
   priority: SitemapPriority
-  _i18nTransform: true
+  _i18nTransform?: true
 }
 
 const maxPages = 100
@@ -62,6 +62,20 @@ const addEntry = (entries: SitemapEntry[], seen: Set<string>, entry: SitemapEntr
   if (!entry.loc || seen.has(entry.loc)) return
   seen.add(entry.loc)
   entries.push(entry)
+}
+
+const fetchCatalogSitemapRoutes = async (apiOrigin: string) => {
+  try {
+    const response = await $fetch<{ items?: SitemapEntry[] }>(`${apiOrigin}/api/v1/storefront/sitemap-routes`, {
+      params: {
+        limit: 50000,
+      },
+    })
+    return Array.isArray(response?.items) ? response.items : []
+  } catch (error) {
+    console.error('[sitemap] failed to load storefront route catalog sitemap routes', error)
+    return []
+  }
 }
 
 const fetchAllProducts = async (apiOrigin: string) => {
@@ -116,6 +130,14 @@ export default defineSitemapEventHandler(async () => {
   const seen = new Set<string>()
 
   try {
+    const catalogRoutes = await fetchCatalogSitemapRoutes(apiOrigin)
+    if (catalogRoutes.length > 0) {
+      for (const route of catalogRoutes) {
+        addEntry(entries, seen, route)
+      }
+      return entries
+    }
+
     const [products, faqResponse, posts] = await Promise.all([
       fetchAllProducts(apiOrigin),
       $fetch<FAQPageListResponse>(`${apiOrigin}/api/v1/content/faq-pages`, {

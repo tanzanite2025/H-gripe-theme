@@ -10,7 +10,7 @@
       </div>
       <div class="flex items-center gap-2">
         <Button type="button" variant="outline" size="sm" :disabled="loading" @click="loadMarkets">
-          <RefreshCw :class="['size-3.5', loading ? 'animate-spin' : '']" />
+ <RefreshCw :class="['size-3.5', loading ? 'animate-spin': '']" />
           刷新
         </Button>
         <Button v-if="canEdit" type="button" size="sm" :disabled="loading" @click="openCreateDialog">
@@ -134,7 +134,7 @@
                   :key="languageLocale.code"
                   type="button"
                   class="rounded-full border px-3 py-1.5 text-xs font-black transition hover:border-admin-selected-border hover:bg-admin-selected-soft"
-                  :class="form.supported_locales.includes(languageLocale.code) ? 'border-admin-selected-border bg-admin-selected-soft text-admin-selected shadow-[var(--admin-control-selected-surface-shadow)]' : 'bg-background/70 text-foreground'"
+ :class="form.supported_locales.includes(languageLocale.code) ? 'border-admin-selected-border bg-admin-selected-soft text-admin-selected shadow-[var(--admin-control-selected-surface-shadow)]': 'bg-background/70 text-foreground'"
                   @click="toggleListValue(form.supported_locales, languageLocale.code)"
                 >
                   {{ languageLocale.code }}
@@ -149,7 +149,7 @@
                   :key="currency.code"
                   type="button"
                   class="rounded-full border px-3 py-1.5 text-xs font-black transition hover:border-admin-selected-border hover:bg-admin-selected-soft"
-                  :class="form.display_currencies.includes(currency.code) ? 'border-admin-selected-border bg-admin-selected-soft text-admin-selected shadow-[var(--admin-control-selected-surface-shadow)]' : 'bg-background/70 text-foreground'"
+ :class="form.display_currencies.includes(currency.code) ? 'border-admin-selected-border bg-admin-selected-soft text-admin-selected shadow-[var(--admin-control-selected-surface-shadow)]': 'bg-background/70 text-foreground'"
                   @click="toggleListValue(form.display_currencies, currency.code)"
                 >
                   {{ currency.code }}

@@ -94,7 +94,7 @@
           <TableCell>
             <div class="flex items-baseline gap-1.5 tabular-nums">
               <span v-if="product.sale_price" class="font-mono text-xs font-bold text-destructive">{{ formatMoney(product.sale_price, product.currency) }}</span>
-              <span :class="product.sale_price ? 'font-mono text-[10px] text-muted-foreground/70 line-through' : 'font-mono text-xs font-bold'">
+ <span :class="product.sale_price ? 'font-mono text-[10px] text-muted-foreground/70 line-through': 'font-mono text-xs font-bold'">
                 {{ formatMoney(product.price, product.currency) }}
               </span>
             </div>

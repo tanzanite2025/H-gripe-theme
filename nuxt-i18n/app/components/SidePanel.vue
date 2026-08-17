@@ -49,7 +49,7 @@
 
         <!-- 左侧内容 -->
         <div class="w-full h-full box-border m-0 relative overflow-y-auto pt-10 px-2 pb-0 md:pt-12 md:px-4 md:pb-4 rounded-none md:rounded-2xl">
-          <slot name="left" />
+          <slot v-if="leftEverOpened" name="left" />
         </div>
       </section>
     </aside>
@@ -67,6 +67,7 @@ interface SidebarEventDetail {
 
 // 左侧 Sidebar 打开状态
 const leftOpen = ref<boolean>(false)
+const leftEverOpened = ref<boolean>(false)
 const overlayBackStack = useOverlayBackStack()
 
 // 左侧箭头：关闭时向右，打开时向左
@@ -98,6 +99,7 @@ const handleBackdropClick = () => {
 
 // 暴露方法供外部调用
 const openLeft = () => {
+  leftEverOpened.value = true
   leftOpen.value = true
   overlayBackStack.open('account-sidebar', closeLeftState)
 }

@@ -14,7 +14,7 @@
       </div>
       <div class="flex gap-2">
         <Button type="button" variant="outline" size="sm" :disabled="loading || saving" @click="emit('refresh')">
-          <RefreshCw :class="['size-3.5', loading ? 'animate-spin' : '']" />
+ <RefreshCw :class="['size-3.5', loading ? 'animate-spin': '']" />
           刷新
         </Button>
         <Button v-if="canEdit" type="button" size="sm" :disabled="loading || saving" @click="emit('save')">
@@ -142,12 +142,12 @@ const ProgramSection = defineComponent({
     description: { type: String, default: '' },
   },
   setup(sectionProps, { slots }) {
-    return () => h('section', { class: 'grid w-full max-w-none gap-5 rounded-2xl border bg-card/75 p-4 shadow-sm lg:grid-cols-[190px_minmax(0,1fr)]' }, [
+ return () => h('section', { class: 'grid w-full max-w-none gap-5 rounded-2xl border bg-card/75 p-4 shadow-sm lg:grid-cols-[190px_minmax(0,1fr)]'}, [
       h('div', {}, [
-        h('h4', { class: 'text-sm font-black tracking-tighter italic uppercase text-foreground' }, sectionProps.title),
-        sectionProps.description ? h('p', { class: 'mt-1 text-[10px] font-bold leading-relaxed text-muted-foreground' }, sectionProps.description) : null,
+ h('h4', { class: 'text-sm font-black tracking-tighter uppercase text-foreground'}, sectionProps.title),
+ sectionProps.description ? h('p', { class: 'mt-1 text-[10px] font-bold leading-relaxed text-muted-foreground'}, sectionProps.description) : null,
       ]),
-      h('div', { class: 'min-w-0' }, slots.default?.()),
+ h('div', { class: 'min-w-0'}, slots.default?.()),
     ])
   },
 })

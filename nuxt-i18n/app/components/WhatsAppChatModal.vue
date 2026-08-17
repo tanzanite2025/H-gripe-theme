@@ -76,11 +76,12 @@
                       <span
                         class="w-10 h-10 rounded-full bg-white/12 flex items-center justify-center text-xs font-semibold text-white overflow-hidden flex-shrink-0"
                       >
-                        <img
+                        <StorefrontImage
                           v-if="selectedAgent?.avatar"
                           :src="selectedAgent.avatar"
                           :alt="selectedAgent.name"
                           class="w-full h-full rounded-full object-cover"
+                          preset="avatar"
                         />
                         <span v-else>{{ selectedAgentInitials }}</span>
                       </span>
@@ -175,7 +176,7 @@
                           @click="handleAgentPickerSelect(agent)"
                         >
                           <span class="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-full bg-white/12 text-xs font-semibold text-white flex items-center justify-center">
-                          <img v-if="agent.avatar" :src="agent.avatar" :alt="agent.name" class="h-full w-full object-cover" />
+                          <StorefrontImage v-if="agent.avatar" :src="agent.avatar" :alt="agent.name" class="h-full w-full object-cover" preset="avatar" />
                           <span v-else>{{ getAgentInitials(agent) }}</span>
                           <span class="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border border-black" :class="getAgentStatusDotClass(agent)"></span>
                           </span>
@@ -648,6 +649,8 @@ const handleAgentPickerSelect = (agent: any) => {
   agentPickerOpen.value = false
 }
 </script>
+
+<style src="~/assets/css/components/whatsapp-mobile-drawer.css"></style>
 
 <style scoped>
 /* 淡入淡出动画 */

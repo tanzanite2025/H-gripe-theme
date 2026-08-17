@@ -3,11 +3,11 @@
     <AdminPageHeader title="Google Merchant" description="独立维护 Google 分发资料；不会修改站内商品录入内容。">
       <template #actions>
         <Button v-if="canSubmitToGoogle" variant="outline" :disabled="reconcileLoading || loading" @click="reconcile">
-          <RefreshCw :class="['size-4', reconcileLoading ? 'animate-spin' : '']" />
+ <RefreshCw :class="['size-4', reconcileLoading ? 'animate-spin': '']" />
           {{ reconcileLoading ? '校准中' : '全量校准' }}
         </Button>
         <Button variant="outline" :disabled="loading" @click="refresh">
-          <RefreshCw :class="['size-4', loading ? 'animate-spin' : '']" />
+ <RefreshCw :class="['size-4', loading ? 'animate-spin': '']" />
           刷新
         </Button>
         <Button v-if="canEdit" @click="openCreate">
@@ -32,7 +32,7 @@
       <div class="mt-4 grid gap-3 md:grid-cols-5">
         <div class="rounded-xl border bg-background/70 p-3">
           <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Google 账号</p>
-          <p class="mt-2 truncate text-sm font-bold">{{ connection.google_account_email || '尚未绑定' }}</p>
+ <p class="mt-2 truncate text-sm font-bold">{{ connection.google_account_email || '尚未绑定'}}</p>
         </div>
         <AdminFormField label="Merchant Account ID">
           <Input v-model="connectionForm.merchant_account_id" placeholder="例如 123456789" />
@@ -97,7 +97,7 @@
           :disabled="remoteLoading || !connection.connected || !connection.merchant_account_id"
           @click="refreshRemoteProducts"
         >
-          <RefreshCw :class="['size-4', remoteLoading ? 'animate-spin' : '']" />
+ <RefreshCw :class="['size-4', remoteLoading ? 'animate-spin': '']" />
           刷新 Google 商品
         </Button>
       </div>
@@ -143,7 +143,7 @@
                 </div>
               </div>
             </TableCell>
-            <TableCell class="font-mono text-xs">{{ remoteProduct.offer_id || '-' }}</TableCell>
+ <TableCell class="font-mono text-xs">{{ remoteProduct.offer_id || '-'}}</TableCell>
             <TableCell class="font-mono text-xs">
               <span>{{ formatRemotePrice(remoteProduct.product_attributes?.sale_price || remoteProduct.product_attributes?.price) }}</span>
               <span v-if="remoteProduct.product_attributes?.sale_price" class="ml-1 text-muted-foreground line-through">
@@ -152,7 +152,7 @@
             </TableCell>
             <TableCell><AdminStatusBadge :tone="remoteAvailabilityTone(remoteProduct.product_attributes?.availability)">{{ remoteAvailabilityLabel(remoteProduct.product_attributes?.availability) }}</AdminStatusBadge></TableCell>
             <TableCell><AdminStatusBadge :tone="remoteStatusTone(remoteProduct)">{{ remoteStatusLabel(remoteProduct) }}</AdminStatusBadge></TableCell>
-            <TableCell class="font-mono text-xs">{{ remoteProduct.content_language || '-' }} / {{ remoteProduct.feed_label || '-' }}</TableCell>
+ <TableCell class="font-mono text-xs">{{ remoteProduct.content_language || '-'}} / {{ remoteProduct.feed_label || '-'}}</TableCell>
           </TableRow>
         </TableBody>
       </Table>
@@ -188,7 +188,7 @@
           <TableRow v-for="offer in offers" :key="offer.id">
             <TableCell class="font-bold">{{ offer.product?.name || `商品 #${offer.product_id}` }}</TableCell>
             <TableCell class="font-mono text-xs">{{ offer.variant?.sku || `SKU #${offer.variant_id}` }}</TableCell>
-            <TableCell class="font-mono text-xs">{{ offer.target_country || '-' }} / {{ offer.currency_code || '-' }}</TableCell>
+ <TableCell class="font-mono text-xs">{{ offer.target_country || '-'}} / {{ offer.currency_code || '-'}}</TableCell>
             <TableCell class="font-mono text-xs">{{ offer.offer_id }}</TableCell>
             <TableCell><AdminStatusBadge :tone="statusTone(offer.sync_status)">{{ statusLabel(offer.sync_status) }}</AdminStatusBadge></TableCell>
             <TableCell class="text-xs text-muted-foreground">
@@ -207,7 +207,7 @@
                   :title="syncButtonTitle(offer)"
                   @click="syncOffer(offer)"
                 >
-                  <RefreshCw :class="['size-4', syncingOfferId === offer.id ? 'animate-spin' : '']" />
+ <RefreshCw :class="['size-4', syncingOfferId === offer.id ? 'animate-spin': '']" />
                   {{ syncingOfferId === offer.id ? '同步中' : offer.sync_status === 'sync_failed' ? '重试' : '同步' }}
                 </Button>
                 <Button
@@ -219,7 +219,7 @@
                   :title="removeRemoteButtonTitle(offer)"
                   @click="removeRemote(offer)"
                 >
-                  <Unlink2 :class="['size-4', removingRemoteOfferId === offer.id ? 'animate-pulse' : '']" />
+ <Unlink2 :class="['size-4', removingRemoteOfferId === offer.id ? 'animate-pulse': '']" />
                   {{ removingRemoteOfferId === offer.id ? '撤回中' : '撤回' }}
                 </Button>
                 <Button v-if="canEdit" size="icon" variant="ghost" title="编辑同步资料" @click="openEdit(offer)">

@@ -1,6 +1,8 @@
 package ticket
 
 import (
+	"commerce-platform/internal/domain/user"
+	"commerce-platform/internal/service"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -76,6 +78,23 @@ func TestPublicCustomerServiceLocaleUnknownExplicitValueDoesNotFallback(t *testi
 
 	if got := publicCustomerServiceLocale(context, "xx-YY"); got != "" {
 		t.Fatalf("expected unknown explicit locale to disable localized auto reply, got %q", got)
+	}
+}
+
+func TestPublicCustomerServiceAgentResponseCanonicalizesAvatar(t *testing.T) {
+	userID := uint(42)
+	agent := user.AgentProfile{
+		AgentID:      "agent-42",
+		UserID:       &userID,
+		Name:         "Support",
+		Avatar:       "http://media.internal:8080/uploads/avatars/support.webp",
+		OnlineStatus: "online",
+	}
+	resolver := service.NewMediaService(nil, nil, nil, "https://shop.example.test", 20<<30)
+
+	response := publicCustomerServiceAgentResponse(agent, resolver)
+	if got := response["avatar"]; got != "https://shop.example.test/uploads/avatars/support.webp" {
+		t.Fatalf("avatar = %#v", got)
 	}
 }
 

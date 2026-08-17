@@ -13,7 +13,17 @@
 					<!-- Logo -->
 					<div class="flex items-center justify-start">
 						<NuxtLink :to="localePath('/')" class="site-header-brand site-header-brand--desktop" :class="{ 'site-header-brand--image': siteLogo }" :aria-label="brandHomeLabel">
-							<img v-if="siteLogo" :src="siteLogo" :alt="brandLogoAlt" class="site-header-brand__image" />
+							<StorefrontImage
+								v-if="siteLogo"
+								:src="siteLogo"
+								:alt="brandLogoAlt"
+								:width="siteLogoWidth"
+								:height="siteLogoHeight"
+								class="site-header-brand__image"
+								preset="logo"
+								loading="eager"
+								decoding="async"
+							/>
 							<span v-else class="site-header-brand__text">{{ titleText }}</span>
 						</NuxtLink>
 					</div>
@@ -83,7 +93,7 @@
 								:aria-label="'Switch language'"
 							>
 								<span v-if="currentLocaleFlagSrc" class="inline-flex h-5 w-5 items-center justify-center" aria-hidden="true">
-									<img :src="currentLocaleFlagSrc" alt="" class="block h-5 w-5" />
+										<img :src="currentLocaleFlagSrc" alt="" width="20" height="20" class="block h-5 w-5" />
 								</span>
 								<Icon v-else name="lucide:languages" class="h-5 w-5" aria-hidden="true" />
 								<span class="text-[13px] font-bold uppercase leading-none">{{ currentLocaleLabel }}</span>
@@ -99,9 +109,8 @@
 								>
 									<div
 										v-if="isOpen"
-										class="fixed inset-0 z-[1200] flex items-center justify-center md:items-start md:pt-[calc(var(--site-header-offset,80px)+18px)] tz-mobile-safe-modal-mask tz-mobile-dialog-mask"
+										class="language-dropdown-layer fixed z-[1200] flex items-stretch justify-center md:inset-0 md:items-start md:pt-[calc(var(--site-header-overlay-offset,80px)+18px)]"
 									>
-										<div class="absolute inset-0 bg-black/80 backdrop-blur-sm md:hidden"></div>
 										<div
 											class="language-dropdown-surface tz-mobile-dialog-surface relative w-full md:w-[88vw] md:max-w-[1500px] backdrop-blur-xl border border-white/15 rounded-2xl overflow-auto h-[90vh] max-h-[90vh] md:h-auto md:max-h-[70vh] py-3 md:py-3.5 shadow-[0_18px_56px_rgba(255,255,255,0.10),0_28px_80px_rgba(0,0,0,0.55)] grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-1.5 justify-items-center"
 											role="listbox"
@@ -122,7 +131,7 @@
 												@click="switchLanguage(locale.code)"
 											>
 												<span class="w-[1.2em] inline-block" aria-hidden="true">
-													<img :src="flagSrc(locale)" alt="" class="w-[1.2em] h-[1.2em] block" />
+																	<img :src="flagSrc(locale)" alt="" width="20" height="20" class="w-[1.2em] h-[1.2em] block" />
 												</span>
 												<span :lang="locale.iso || locale.code.replace('_', '-')">{{ locale.name }}</span>
 											</button>
@@ -135,7 +144,8 @@
 					</div>
 
 					<teleport to="body" :disabled="!isMobileViewport">
-						<HeaderMegaMenu
+						<LazyHeaderMegaMenu
+							v-if="activeMegaNavSection"
 							:section="activeMegaNavSection"
 							:panel-id="megaPanelId"
 							@navigate="handleMegaNavNavigate"
@@ -221,20 +231,33 @@
 				</nav>
 			</div>
 
-			<!-- 移动端：新版极简双行布局 -->
+			<!-- 移动端：品牌工具栏、主导航、面包屑三行独立布局 -->
 			<div class="md:hidden flex flex-col gap-0">
-				<div class="site-header-mobile-surface -mx-4 -mt-2 flex flex-col gap-3 bg-[linear-gradient(180deg,#1b1b21_0%,#111116_58%,#0c0c10_100%)] px-4 pt-2 pb-2">
+				<div class="site-header-mobile-surface -mx-4 -mt-2 flex flex-col bg-[linear-gradient(180deg,#1b1b21_0%,#111116_58%,#0c0c10_100%)] px-4 pt-2 pb-0">
 
-				<!-- 第一行：Logo (左) + 工具图标 (右) -->
-				<div class="flex items-center justify-between px-1">
-					<!-- Logo -->
-					<NuxtLink :to="localePath('/')" class="site-header-brand site-header-brand--mobile" :class="{ 'site-header-brand--image': siteLogo }" :aria-label="brandHomeLabel">
-						<img v-if="siteLogo" :src="siteLogo" :alt="brandLogoAlt" class="site-header-brand__image" />
-						<span v-else class="site-header-brand__text">{{ titleText }}</span>
-					</NuxtLink>
+				<!-- 第一行：三等分预留区、居中 Logo、右侧工具图标区 -->
+				<div ref="mobileTopbarRef" class="site-header-mobile-topbar grid grid-cols-3 items-center px-1">
+					<div aria-hidden="true"></div>
 
-					<!-- 右侧工具图标组 -->
-					<div class="site-header-actions site-header-actions--mobile flex items-center">
+					<div class="site-header-mobile-brand-slot flex min-w-0 items-center justify-center">
+						<NuxtLink :to="localePath('/')" class="site-header-brand site-header-brand--mobile" :class="{ 'site-header-brand--image': siteLogo }" :aria-label="brandHomeLabel">
+							<StorefrontImage
+								v-if="siteLogo"
+								:src="siteLogo"
+								:alt="brandLogoAlt"
+								:width="siteLogoWidth"
+								:height="siteLogoHeight"
+								class="site-header-brand__image"
+								preset="logo"
+								loading="eager"
+								decoding="async"
+							/>
+							<span v-else class="site-header-brand__text">{{ titleText }}</span>
+						</NuxtLink>
+					</div>
+
+					<!-- 工具图标固定在右侧三分之一区域内右对齐。 -->
+					<div class="site-header-actions site-header-actions--mobile">
 						<!-- Search (Icon) -->
 						<div class="site-header-action-cell site-header-action-cell--search">
 							<button
@@ -259,7 +282,7 @@
 								:aria-label="'Switch language'"
 							>
 								<span v-if="currentLocaleFlagSrc" class="inline-flex h-5 w-5 items-center justify-center" aria-hidden="true">
-									<img :src="currentLocaleFlagSrc" alt="" class="block h-5 w-5" />
+										<img :src="currentLocaleFlagSrc" alt="" width="20" height="20" class="block h-5 w-5" />
 								</span>
 								<Icon v-else name="lucide:languages" class="h-5 w-5" aria-hidden="true" />
 								<span class="text-[13px] font-bold uppercase leading-none">{{ currentLocaleLabel }}</span>
@@ -269,8 +292,11 @@
 					</div>
 				</div>
 
-				<!-- 第二行：主要导航。移动端同样打开卡片菜单，避免三级 TAB 漏在页面横条里。 -->
-				<nav ref="mobilePrimaryNavRef" class="site-header-mobile-nav rounded-xl p-1 grid grid-cols-4 gap-1 relative shadow-[0_8px_18px_-14px_rgba(0,0,0,0.9)]" aria-label="Mobile primary navigation">
+				</div>
+
+				<!-- 第二行：四个大类独立于品牌工具栏，保持固定可控的行高。 -->
+				<div class="site-header-mobile-nav-row -mx-4 px-4">
+					<nav ref="mobilePrimaryNavRef" class="site-header-mobile-nav w-full rounded-xl px-1 py-0.5 grid grid-cols-4 gap-1 relative shadow-[0_8px_18px_-14px_rgba(0,0,0,0.9)]" aria-label="Mobile primary navigation">
 					<button
 						v-for="section in primaryMegaNavSections"
 						:key="section.id"
@@ -289,7 +315,7 @@
 							:class="{ 'rotate-180 text-[#B5FF6D]': activeMegaNavId === section.id }"
 						/>
 					</button>
-				</nav>
+					</nav>
 				</div>
 
 				<!-- 第三行：面包屑 -->
@@ -409,7 +435,10 @@
 							role="dialog"
 							aria-label="Membership"
 						>
-							<LeverAndPoint @close="closeShare" />
+							<LazyLeverAndPoint
+								v-if="shareOpen"
+								@close="closeShare"
+							/>
 						</div>
 					</Transition>
 				</div>
@@ -425,10 +454,8 @@ import { useI18n, useLocalePath, useRoute, useRouter, useState } from '#imports'
 import { useSiteSettings } from '~/composables/usePublicSettings'
 import { useSiteTitle } from '~/composables/useSiteTitle'
 import { useOverlayBackStack } from '~/composables/useOverlayBackStack'
-import HeaderMegaMenu from '~/components/HeaderMegaMenu.vue'
 import GlobalContentNavigationTransitionOverlay from '~/components/GlobalContentNavigationTransitionOverlay.vue'
 import GlobalAllFaqsSearchOverlay from '~/components/faq/GlobalAllFaqsSearchOverlay.vue'
-import LeverAndPoint from '~/components/LeverAndPoint.vue'
 import {
   findPrimaryMegaNavSectionByPath,
   normalizePrimaryMegaNavPath,
@@ -451,15 +478,20 @@ const { siteSettings } = useSiteSettings()
 const { brandTitle } = useSiteTitle()
 const titleText = computed(() => brandTitle.value)
 const siteLogo = computed(() => (siteSettings.value.siteLogo || '').toString().trim())
+const siteLogoWidth = computed(() => siteSettings.value.siteLogoWidth || undefined)
+const siteLogoHeight = computed(() => siteSettings.value.siteLogoHeight || undefined)
 const brandLogoAlt = computed(() => `${titleText.value || 'Site'} logo`)
 const brandHomeLabel = computed(() => titleText.value ? `${titleText.value} home` : 'Home')
 
 const headerRootRef = ref<HTMLElement | null>(null)
+const mobileTopbarRef = ref<HTMLElement | null>(null)
 const mobilePrimaryNavRef = ref<HTMLElement | null>(null)
 const desktopContentNavigationTriggerRef = ref<HTMLElement | null>(null)
 const mobileContentNavigationTriggerRef = ref<HTMLElement | null>(null)
 const isMobileViewport = ref(false)
 let headerResizeObserver: ResizeObserver | null = null
+let headerMetricsFrame: number | null = null
+const appliedHeaderMetrics = new Map<string, string>()
 
 const megaPanelId = 'header-primary-mega-menu'
 const activeMegaNavId = ref<PrimaryMegaNavId | null>(null)
@@ -493,10 +525,10 @@ const activeMegaNavSection = computed<PrimaryMegaNavSection | null>(() => {
 })
 
 const openMegaNav = (id: PrimaryMegaNavId) => {
-  updateHeaderOffset()
+  scheduleHeaderOffsetUpdate()
   activeMegaNavId.value = id
   isOpen.value = false
-  nextTick(updateHeaderOffset)
+  nextTick(scheduleHeaderOffsetUpdate)
   overlayBackStack.open('header-mega-nav', closeMegaNavState)
 }
 
@@ -511,21 +543,44 @@ const toggleMegaNav = (id: PrimaryMegaNavId) => {
 
 const updateHeaderOffset = () => {
   if (typeof window === 'undefined') return
-  isMobileViewport.value = window.innerWidth < 768
 
   const el = headerRootRef.value
   if (!el) return
 
+  // Read all geometry before changing root styles, keeping this work to one frame.
   const rect = el.getBoundingClientRect()
   const offset = Math.max(0, Math.ceil(rect.bottom))
-  document.documentElement.style.setProperty('--site-header-offset', `${offset}px`)
-
+  const mobileTopbarRect = mobileTopbarRef.value?.getBoundingClientRect()
+  const mobileLanguageTop = Math.max(0, Math.ceil(mobileTopbarRect?.bottom ?? rect.bottom))
   const mobileNavRect = mobilePrimaryNavRef.value?.getBoundingClientRect()
   const mobileMegaTop = Math.max(0, Math.ceil((mobileNavRect?.bottom ?? rect.bottom) + 2))
-  document.documentElement.style.setProperty('--header-mega-mobile-top', `${mobileMegaTop}px`)
+
+  isMobileViewport.value = window.innerWidth < 768
+
+  const metrics = [
+    // Overlay geometry may be measured after mount; document-flow spacers must not use it.
+    ['--site-header-overlay-offset', `${offset}px`],
+    ['--site-header-mobile-topbar-bottom', `${mobileLanguageTop}px`],
+    ['--header-mega-mobile-top', `${mobileMegaTop}px`],
+  ] as const
+
+  for (const [name, value] of metrics) {
+    if (appliedHeaderMetrics.get(name) === value) continue
+    document.documentElement.style.setProperty(name, value)
+    appliedHeaderMetrics.set(name, value)
+  }
 }
 
-const throttledUpdateHeaderOffset = useThrottleFn(updateHeaderOffset, 150)
+const scheduleHeaderOffsetUpdate = () => {
+  if (typeof window === 'undefined' || headerMetricsFrame !== null) return
+
+  headerMetricsFrame = window.requestAnimationFrame(() => {
+    headerMetricsFrame = null
+    updateHeaderOffset()
+  })
+}
+
+const throttledUpdateHeaderOffset = useThrottleFn(scheduleHeaderOffsetUpdate, 150)
 
 // Share button (Membership panel)
 const shareOpen = ref(false)
@@ -1507,7 +1562,7 @@ watch(
   () => {
     closeMegaNav()
     closeBreadcrumbSubNav()
-    nextTick(updateHeaderOffset)
+    nextTick(scheduleHeaderOffsetUpdate)
   },
 )
 
@@ -1516,7 +1571,7 @@ onMounted(() => {
   document.addEventListener('keydown', handleHeaderKeydown)
 
   nextTick(() => {
-    updateHeaderOffset()
+    scheduleHeaderOffsetUpdate()
     window.addEventListener('resize', throttledUpdateHeaderOffset)
     if ('ResizeObserver' in window) {
       headerResizeObserver = new ResizeObserver(() => throttledUpdateHeaderOffset())
@@ -1534,6 +1589,10 @@ onBeforeUnmount(() => {
 
   if (typeof window !== 'undefined') {
     window.removeEventListener('resize', throttledUpdateHeaderOffset)
+    if (headerMetricsFrame !== null) {
+      window.cancelAnimationFrame(headerMetricsFrame)
+      headerMetricsFrame = null
+    }
   }
 
   if (headerResizeObserver) {
@@ -1641,7 +1700,9 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 }
 
 .site-header-brand--mobile {
-	max-width: calc(100vw - 7.5rem);
+	width: 100%;
+	max-width: 100%;
+	justify-content: center;
 }
 
 .site-header-brand--mobile .site-header-brand__text {
@@ -1992,19 +2053,22 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 }
 
 .site-header-actions--mobile {
-	--site-header-action-width: 4.5rem;
 	--site-header-action-height: 2.25rem;
-	gap: 0.38rem !important;
+	display: grid;
+	width: 100%;
+	max-width: 100%;
+	grid-auto-flow: column;
+	grid-auto-columns: minmax(0, 1fr);
+	justify-content: end;
+	margin-left: 0;
+	gap: 0.25rem !important;
 }
 
-.site-header-actions--mobile .site-header-action-cell--search {
-	flex-basis: var(--site-header-action-width);
-	width: var(--site-header-action-width);
-}
-
+.site-header-actions--mobile .site-header-action-cell,
 .site-header-actions--mobile .site-header-language-wrapper {
-	flex-basis: var(--site-header-action-width);
-	width: var(--site-header-action-width);
+	width: 100%;
+	min-width: 0;
+	flex: 1 1 0;
 }
 
 @keyframes site-header-search-nudge {
@@ -2137,11 +2201,19 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 	outline-offset: 0.16rem;
 }
 
+.site-header-mobile-nav-row {
+	display: flex;
+	min-height: 2.875rem;
+	align-items: center;
+	background: linear-gradient(180deg, #111116 0%, #0c0c10 100%);
+	border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
 .site-header-mobile-nav__button {
 	position: relative;
 	overflow: hidden;
-	border: 1px solid rgb(255 255 255 / 0.04);
-	background: #101318;
+	border: 1px solid transparent;
+	background: transparent;
 	color: #ffffff;
 }
 
@@ -2165,7 +2237,7 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 .site-header-mobile-nav__button:hover,
 .site-header-mobile-nav__button:focus-visible,
 .site-header-mobile-nav__button[aria-expanded='true'] {
-	background: #101318;
+	background: transparent;
 	color: #ffffff;
 }
 
@@ -2194,6 +2266,36 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 		rgba(15, 17, 21, 0.96) 38%,
 		rgba(0, 0, 0, 0.98) 100%
 	) !important;
+}
+
+@media (max-width: 767px) {
+	.language-dropdown-layer {
+		top: calc(var(--site-header-mobile-topbar-bottom, 3.5rem) + 1px);
+		right: 1px;
+		bottom: 1px;
+		left: 1px;
+		background: transparent;
+		pointer-events: none;
+	}
+
+	.language-dropdown-surface {
+		width: 100% !important;
+		height: 100% !important;
+		max-height: none !important;
+		row-gap: 0.25rem;
+		column-gap: 0.375rem;
+		align-content: start;
+		padding: 0.5rem !important;
+		border-radius: 1rem !important;
+		background: rgba(12, 12, 16, 0.98) !important;
+		box-shadow: 0 18px 42px rgba(0, 0, 0, 0.54);
+		pointer-events: auto;
+	}
+
+	.language-dropdown-surface > [role='option'] {
+		min-height: 2.5rem;
+		padding-block: 0.5rem !important;
+	}
 }
 
 .site-header-breadcrumb-row {
@@ -2491,22 +2593,12 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 }
 
 @media (max-width: 767px) {
-	.language-dropdown-surface {
-		height: min(90vh, var(--tz-mobile-safe-viewport-height, 90vh));
-		max-height: min(90vh, var(--tz-mobile-safe-viewport-height, 90vh));
-	}
-
 	.leverandpoint-modal-shell {
 		height: min(95vh, calc(var(--tz-mobile-safe-viewport-height, 100vh) - 16px));
 		max-height: min(95vh, calc(var(--tz-mobile-safe-viewport-height, 100vh) - 16px));
 	}
 
 	@supports (height: 100svh) {
-		.language-dropdown-surface {
-			height: min(90svh, var(--tz-mobile-safe-viewport-height, 90svh));
-			max-height: min(90svh, var(--tz-mobile-safe-viewport-height, 90svh));
-		}
-
 		.leverandpoint-modal-shell {
 			height: min(95svh, calc(var(--tz-mobile-safe-viewport-height, 100svh) - 16px));
 			max-height: min(95svh, calc(var(--tz-mobile-safe-viewport-height, 100svh) - 16px));
@@ -2514,11 +2606,6 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 	}
 
 	@supports (height: 100dvh) {
-		.language-dropdown-surface {
-			height: min(90dvh, var(--tz-mobile-safe-viewport-height, 90dvh));
-			max-height: min(90dvh, var(--tz-mobile-safe-viewport-height, 90dvh));
-		}
-
 		.leverandpoint-modal-shell {
 			height: min(95dvh, calc(var(--tz-mobile-safe-viewport-height, 100dvh) - 16px));
 			max-height: min(95dvh, calc(var(--tz-mobile-safe-viewport-height, 100dvh) - 16px));

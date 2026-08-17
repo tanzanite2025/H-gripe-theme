@@ -49,6 +49,17 @@
         <p class="text-sm leading-relaxed text-slate-200 whitespace-pre-line">
           {{ item.content }}
         </p>
+        <div
+          v-if="item.reply_content"
+          class="mt-3 rounded-lg border border-[#B5FF6D]/20 bg-[#B5FF6D]/10 px-3 py-2"
+        >
+          <p class="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#B5FF6D]">
+            {{ $t('feedback.storeReply', 'Store reply') }}
+          </p>
+          <p class="mt-1 text-sm leading-relaxed text-slate-100 whitespace-pre-line">
+            {{ item.reply_content }}
+          </p>
+        </div>
       </article>
     </div>
 
@@ -150,8 +161,8 @@
     </div>
 
     <!-- Auth modal -->
-    <AuthModal v-model="showAuth" @success="onAuthSuccess" />
-    <WhatsAppChatModal
+    <LazyAuthModal v-if="showAuth" v-model="showAuth" @success="onAuthSuccess" />
+    <LazyWhatsAppChatModal
       v-if="showWhatsApp"
       :conversation="{ showAgentList: true }"
       @close="closeWhatsApp"
@@ -161,9 +172,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { useI18n } from '#imports'
-import AuthModal from '~/components/AuthModal.vue'
-import WhatsAppChatModal from '~/components/WhatsAppChatModal.vue'
+import { useI18n, useRoute } from '#imports'
 import { useFeedback } from '~/composables/useFeedback'
 import { createOverlayInstanceId, useOverlayBackStack } from '~/composables/useOverlayBackStack'
 
@@ -172,9 +181,12 @@ const props = defineProps<{
   title?: string
   subtitle?: string
   showSearch?: boolean
+  pagePath?: string
+  pageTitle?: string
 }>()
 
-const { t: $t } = useI18n()
+const { t: $t, locale } = useI18n()
+const route = useRoute()
 
 const {
   items,
@@ -220,6 +232,11 @@ const subtitleText = computed(
 )
 
 const showSearchComputed = computed(() => props.showSearch !== false)
+const submissionPagePath = computed(() => props.pagePath?.trim() || route.path)
+const submissionPageTitle = computed(() => {
+  const routeTitle = route.meta?.title
+  return props.pageTitle?.trim() || props.title?.trim() || (typeof routeTitle === 'string' ? routeTitle : '')
+})
 
 const eligibilityState = computed(() => eligibility.value)
 const eligibilityPending = computed(() => eligibilityState.value === null)
@@ -256,6 +273,9 @@ const handleSubmit = async () => {
     content,
     name: name.value || undefined,
     email: email.value || undefined,
+    locale: locale.value,
+    page_path: submissionPagePath.value,
+    page_title: submissionPageTitle.value,
   })
 
   if (!result.success) {
@@ -296,3 +316,9 @@ onBeforeUnmount(() => {
   }
 })
 </script>
+
+<style scoped>
+.share-your-feedback-card {
+  background-color: var(--tz-card-surface);
+}
+</style>

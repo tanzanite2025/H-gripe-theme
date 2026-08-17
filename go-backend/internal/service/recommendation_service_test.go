@@ -123,6 +123,28 @@ func TestRecommendationServiceUsesPersonalBehaviorSignals(t *testing.T) {
 	require.Equal(t, passive.ID, result.Items[1].ProductID)
 }
 
+func TestRecommendationProductCanonicalizesThumbnailURL(t *testing.T) {
+	recommendationService := NewRecommendationService(nil)
+	recommendationService.ConfigureMediaService(NewMediaService(nil, nil, nil, "https://shop.example.test", 20<<30))
+
+	item := product.Product{
+		ID:   42,
+		Name: "Recommended Wheel",
+		Slug: "recommended-wheel",
+		Media: []product.ProductMedia{
+			{
+				MediaType: "image",
+				URL:       "http://media.internal:8080/uploads/recommendations/wheel.webp",
+				IsPrimary: true,
+				IsVisible: true,
+			},
+		},
+	}
+
+	got := recommendationService.makeRecommendationProduct(item, "slot", "reason")
+	require.Equal(t, "https://shop.example.test/uploads/recommendations/wheel.webp", got.Thumbnail)
+}
+
 func seedRecommendationProduct(
 	t *testing.T,
 	db *gorm.DB,

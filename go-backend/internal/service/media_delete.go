@@ -52,6 +52,18 @@ func (s *MediaService) DeleteAsset(ctx context.Context, id uint, confirmation st
 		return ErrMediaStorageUnavailable
 	}
 
+	derivatives, err := s.repo.FindAssetDerivatives(asset.ID)
+	if err != nil {
+		return fmt.Errorf("list media derivatives: %w", err)
+	}
+	for _, derivative := range derivatives {
+		if strings.TrimSpace(derivative.URL) == "" {
+			continue
+		}
+		if err := s.storage.Delete(ctx, derivative.URL); err != nil {
+			return fmt.Errorf("delete media derivative object: %w", err)
+		}
+	}
 	if err := s.storage.Delete(ctx, asset.URL); err != nil {
 		return fmt.Errorf("delete media object: %w", err)
 	}

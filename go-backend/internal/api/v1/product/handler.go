@@ -16,6 +16,7 @@ import (
 type Handler struct {
 	productService         *service.ProductService
 	productCategoryService *service.ProductCategoryService
+	mediaService           *service.MediaService
 	storefrontContext      *service.StorefrontContextService
 	reviewService          *service.ReviewService
 	shippingService        *service.ShippingService
@@ -37,6 +38,13 @@ func (h *Handler) ConfigureProductCategoryService(categoryService *service.Produ
 		return
 	}
 	h.productCategoryService = categoryService
+}
+
+func (h *Handler) ConfigureMediaService(mediaService *service.MediaService) {
+	if h == nil {
+		return
+	}
+	h.mediaService = mediaService
 }
 
 func (h *Handler) ConfigureStorefrontContext(contextService *service.StorefrontContextService) {
@@ -85,7 +93,7 @@ func (h *Handler) ListProducts(c *gin.Context) {
 	}
 
 	publicProducts, hasMore := trimPublicProductPage(products, params.PageSize)
-	publicProductResponses := PublicProductsFromDomainWithLocaleAndDisplayCurrency(publicProducts, publicContext.DisplayCurrency, locale)
+	publicProductResponses := PublicProductsFromDomainWithLocaleAndDisplayCurrency(publicProducts, publicContext.DisplayCurrency, locale, h.mediaService)
 	h.attachReviewSummaries(publicProductResponses)
 	c.JSON(200, gin.H{
 		"code":      0,
@@ -139,7 +147,7 @@ func (h *Handler) GetProduct(c *gin.Context) {
 		return
 	}
 
-	publicProduct := PublicProductFromDomainWithLocaleAndRoutes(*product, publicContext.DisplayCurrency, publicContext.Locale, translationRoutes)
+	publicProduct := PublicProductFromDomainWithLocaleAndRoutes(*product, publicContext.DisplayCurrency, publicContext.Locale, translationRoutes, h.mediaService)
 	if h.reviewService != nil {
 		if summary, summaryErr := h.reviewService.GetReviewSummary(product.ID); summaryErr == nil {
 			publicProduct.ReviewSummary = PublicProductReviewSummaryFromDomain(summary)
@@ -234,7 +242,7 @@ func (h *Handler) ListProductSpecificationTemplates(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, PublicProductSpecificationTemplatesFromDomainWithLocale(productSpecificationTemplates, middleware.GetLocale(c)))
+	response.Success(c, PublicProductSpecificationTemplatesFromDomainWithLocale(productSpecificationTemplates, middleware.GetLocale(c), h.mediaService))
 }
 
 func (h *Handler) ListCategories(c *gin.Context) {
@@ -255,7 +263,7 @@ func (h *Handler) ListCategories(c *gin.Context) {
 
 	c.JSON(200, gin.H{
 		"code":   0,
-		"data":   categories,
+		"data":   PublicProductCategoryListWithMedia(categories, h.mediaService),
 		"locale": locale,
 	})
 }

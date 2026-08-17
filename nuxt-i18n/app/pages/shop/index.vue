@@ -1,6 +1,6 @@
 <template>
   <main class="shop-page w-full pt-0 pb-16 space-y-6">
-    <section class="rounded-xl bg-white/5 p-4 text-sm tz-text-secondary shadow-[8px_8px_22px_rgba(0,0,0,0.92)]">
+    <section class="rounded-xl bg-[var(--tz-card-surface)] p-4 text-sm tz-text-secondary shadow-[8px_8px_22px_rgba(0,0,0,0.92)]">
       <ShopProductQuickSearchForm
         density="page"
         show-filter-button
@@ -74,7 +74,7 @@
             </p>
           </div>
 
-          <div v-else class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div v-else class="grid grid-cols-2 2xl:grid-cols-3 gap-4">
             <ShopProductDisplayCard
               v-for="product in products"
               :key="product.id"
@@ -478,10 +478,14 @@ const handleAddToWishlist = async (product: ShopProduct) => {
 <style scoped>
 .shop-page {
   --shop-catalog-left-gutter: clamp(0.5rem, 1.2vw, 1.5rem);
-  --shop-category-rail-width: clamp(10rem, 16vw, 18rem);
+  --shop-category-rail-width: clamp(16rem, 20vw, 21rem);
   --shop-catalog-gap: clamp(1rem, 2vw, 2.5rem);
   --shop-products-min-height: clamp(22rem, 48vh, 34rem);
   padding-inline: 1.5rem;
+}
+
+.shop-page-product-collection-display-card {
+  background-color: var(--tz-card-surface);
 }
 
 .shop-catalog-layout {
@@ -541,17 +545,13 @@ const handleAddToWishlist = async (product: ShopProduct) => {
   .shop-category-rail {
     align-items: flex-start;
     box-sizing: border-box;
-    padding: 1.5rem 1rem;
-    border-radius: 0.75rem;
-    background-color: var(--tz-card-surface);
-    box-shadow: 8px 8px 22px rgba(0, 0, 0, 0.92);
+    padding: 1.5rem 0;
   }
 
   .shop-category-rail :deep(.shop-category-menu) {
     width: 100%;
     height: 100%;
-    display: flex;
-    flex-direction: column;
+    min-height: 0;
   }
 
   .shop-category-rail :deep(.shop-category-menu__state) {
@@ -561,6 +561,19 @@ const handleAddToWishlist = async (product: ShopProduct) => {
     justify-content: center;
     padding: 0 0.75rem;
     text-align: center;
+  }
+}
+
+@media (min-width: 1024px) {
+  .shop-page {
+    --shop-category-rail-width: clamp(16rem, 24vw, 22rem);
+    --shop-catalog-gap: clamp(1.25rem, 2vw, 2.5rem);
+  }
+
+  .shop-category-rail {
+    align-items: stretch;
+    overflow: hidden;
+    padding: 1.25rem 0;
   }
 }
 

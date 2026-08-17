@@ -661,3 +661,5 @@ const openSupportChat = () => {
   openChat({ showAgentList: true })
 }
 </script>
+
+<style src="~/assets/css/guide-sections.css"></style>

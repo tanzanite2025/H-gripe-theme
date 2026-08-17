@@ -188,7 +188,7 @@
                   v-for="price in displayPricesForVariant(variant, index)"
                   :key="price.quote_currency || price.currency"
                   class="rounded-md border px-1.5 py-0.5 font-mono text-[11px]"
-                  :class="price.fallback_reason ? 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-200' : 'bg-muted/40 text-foreground'"
+ :class="price.fallback_reason ? 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-200': 'bg-muted/40 text-foreground'"
                 >
                   {{ formatDisplayPriceResult(price) }}
                 </span>

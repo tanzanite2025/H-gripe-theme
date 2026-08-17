@@ -27,15 +27,15 @@
         <TableRow v-for="log in logs" :key="log.id">
           <TableCell class="font-mono text-xs text-muted-foreground">{{ log.id }}</TableCell>
           <TableCell>
-            <span class="block truncate font-medium">{{ log.username || '-' }}</span>
-            <span class="block font-mono text-[11px] text-muted-foreground">ID {{ log.user_id || '-' }}</span>
+ <span class="block truncate font-medium">{{ log.username || '-'}}</span>
+ <span class="block font-mono text-[11px] text-muted-foreground">ID {{ log.user_id || '-'}}</span>
           </TableCell>
           <TableCell><AdminStatusBadge :tone="actionTone(log.action)">{{ actionName(log.action) }}</AdminStatusBadge></TableCell>
           <TableCell>{{ resourceName(log.resource) }}</TableCell>
-          <TableCell class="font-mono text-xs">{{ log.resource_id || '-' }}</TableCell>
+ <TableCell class="font-mono text-xs">{{ log.resource_id || '-'}}</TableCell>
           <TableCell><AdminStatusBadge :tone="methodTone(log.method)">{{ log.method || '-' }}</AdminStatusBadge></TableCell>
-          <TableCell class="max-w-96 truncate font-mono text-xs text-muted-foreground">{{ log.path || '-' }}</TableCell>
-          <TableCell class="font-mono text-xs">{{ log.ip_address || '-' }}</TableCell>
+ <TableCell class="max-w-96 truncate font-mono text-xs text-muted-foreground">{{ log.path || '-'}}</TableCell>
+ <TableCell class="font-mono text-xs">{{ log.ip_address || '-'}}</TableCell>
           <TableCell><AdminStatusBadge :tone="log.status === 'success' ? 'green' : 'coral'">{{ log.status === 'success' ? '成功' : '失败' }}</AdminStatusBadge></TableCell>
           <TableCell class="text-right tabular-nums" :class="durationClass(log.duration)">{{ log.duration || 0 }} ms</TableCell>
           <TableCell class="text-xs text-muted-foreground">{{ formatDate(log.created_at) }}</TableCell>

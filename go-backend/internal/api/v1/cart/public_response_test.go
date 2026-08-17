@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	productdomain "commerce-platform/internal/domain/product"
+	"commerce-platform/internal/service"
 )
 
 func TestPublicCartSummaryUsesMinimalMediaContract(t *testing.T) {
@@ -108,5 +109,44 @@ func TestPublicCartSummaryUsesMinimalMediaContract(t *testing.T) {
 	}
 	if got := response.Items[0].Product.Media[0].URL; got != "https://example.test/public.jpg" {
 		t.Fatalf("unexpected public media URL: %s", got)
+	}
+}
+
+func TestPublicCartSummaryCanonicalizesFirstPartyMediaURLs(t *testing.T) {
+	resolver := service.NewMediaService(nil, nil, nil, "https://shop.example.test", 20<<30)
+	summary := &productdomain.CartSummary{
+		ItemCount: 1,
+		Items: []productdomain.CartItem{
+			{
+				ID:       1,
+				Quantity: 1,
+				Product: &productdomain.Product{
+					ID:   2,
+					Name: "Media Cart Product",
+					Slug: "media-cart-product",
+					Media: []productdomain.ProductMedia{
+						{
+							MediaType:    "image",
+							URL:          "http://media.internal:8080/uploads/cart/full.webp",
+							ThumbnailURL: "http://media.internal:8080/uploads/cart/thumb.webp",
+							IsVisible:    true,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	payload, err := json.Marshal(PublicCartSummaryFromDomain(summary, resolver))
+	if err != nil {
+		t.Fatalf("marshal public cart summary: %v", err)
+	}
+	body := string(payload)
+	if strings.Contains(body, "media.internal") {
+		t.Fatalf("public cart response exposes internal media origin: %s", body)
+	}
+	if !strings.Contains(body, `"url":"https://shop.example.test/uploads/cart/full.webp"`) ||
+		!strings.Contains(body, `"thumbnail_url":"https://shop.example.test/uploads/cart/thumb.webp"`) {
+		t.Fatalf("public cart response missing canonical media URLs: %s", body)
 	}
 }

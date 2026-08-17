@@ -187,6 +187,15 @@ export interface OrderNumberProtection {
   internal_id_policy?: string[]
 }
 
+export interface CommercialCrawlerRobotsTxtPolicy {
+  path?: string
+  source?: string
+  wildcard_user_agent?: string
+  disallow?: string
+  blocked_user_agents?: string[]
+  block_status?: number | string
+}
+
 export interface CommercialCrawlerProtection {
   enabled?: boolean
   response_status?: number | string
@@ -194,4 +203,5 @@ export interface CommercialCrawlerProtection {
   enforcement?: CommercialCrawlerEnforcementLayer[]
   intelligence_seeds?: CommercialCrawlerIntelligenceSeed[]
   order_number_protection?: OrderNumberProtection | null
+  robots_txt?: CommercialCrawlerRobotsTxtPolicy | null
 }

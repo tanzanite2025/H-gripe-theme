@@ -19,7 +19,7 @@
           <option value="">全部环境</option>
         </select>
         <Button variant="outline" :disabled="loading" @click="refreshVPSPage">
-          <RefreshCw :class="['size-4', loading ? 'animate-spin' : '']" />
+ <RefreshCw :class="['size-4', loading ? 'animate-spin': '']" />
           刷新
         </Button>
         <Button v-if="canEdit" @click="openCreate">
@@ -73,11 +73,11 @@
             </TableCell>
             <TableCell>
               <p class="text-xs font-bold">{{ providerLabel(vps.provider) }}</p>
-              <p class="mt-1 font-mono text-[10px] text-muted-foreground">{{ vps.provider_resource_id || '-' }}</p>
+ <p class="mt-1 font-mono text-[10px] text-muted-foreground">{{ vps.provider_resource_id || '-'}}</p>
             </TableCell>
             <TableCell>
-              <p class="font-mono text-xs">{{ vps.observed_state || '未同步' }}</p>
-              <p class="mt-1 text-[10px] text-muted-foreground">{{ vps.observed_source || '无同步来源' }}</p>
+ <p class="font-mono text-xs">{{ vps.observed_state || '未同步'}}</p>
+ <p class="mt-1 text-[10px] text-muted-foreground">{{ vps.observed_source || '无同步来源'}}</p>
               <p v-if="vps.observed_hostname || vps.observed_ipv4" class="mt-1 truncate font-mono text-[10px] text-muted-foreground">
                 {{ vps.observed_hostname || '-' }} / {{ vps.observed_ipv4 || '-' }}
               </p>
@@ -89,12 +89,12 @@
               </p>
             </TableCell>
             <TableCell>
-              <p class="font-mono text-xs">{{ vps.hostname || '-' }}</p>
-              <p class="mt-1 font-mono text-[10px] text-muted-foreground">{{ vps.ipv4 || '-' }}</p>
+ <p class="font-mono text-xs">{{ vps.hostname || '-'}}</p>
+ <p class="mt-1 font-mono text-[10px] text-muted-foreground">{{ vps.ipv4 || '-'}}</p>
             </TableCell>
             <TableCell>
               <p class="text-xs">{{ environmentLabel(vps.environment) }}</p>
-              <p class="mt-1 text-[10px] text-muted-foreground">{{ vps.operating_system || '未登记系统' }}</p>
+ <p class="mt-1 text-[10px] text-muted-foreground">{{ vps.operating_system || '未登记系统'}}</p>
             </TableCell>
             <TableCell>
               <AdminStatusBadge :tone="statusTone(vps.status)">{{ statusLabel(vps.status) }}</AdminStatusBadge>

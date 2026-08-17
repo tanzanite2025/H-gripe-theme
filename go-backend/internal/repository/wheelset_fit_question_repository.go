@@ -1,11 +1,15 @@
 package repository
 
 import (
+	"errors"
+
 	wheelsetfit "commerce-platform/internal/domain/wheelsetfit"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
+
+var ErrWheelsetFitQuestionOrderInvalid = errors.New("wheelset fit question order is invalid")
 
 // SaveDraftQuestion locks the draft before exposing its aggregate to build.
 // Callers therefore merge against current data and write their replacement in
@@ -89,4 +93,78 @@ func replaceWheelsetFitQuestion(tx *gorm.DB, question *wheelsetfit.Question) err
 		return gorm.ErrRecordNotFound
 	}
 	return upsertWheelsetFitQuestionChildren(tx, question)
+}
+
+func (r *WheelsetFitQuestionnaireRepository) DeleteDraftQuestion(versionID, questionID uint) (*wheelsetfit.Version, error) {
+	var savedVersionID uint
+	err := r.db.Transaction(func(tx *gorm.DB) error {
+		draft, err := lockWheelsetFitDraft(tx, versionID)
+		if err != nil {
+			return err
+		}
+
+		result := tx.Where("id = ? AND questionnaire_version_id = ?", questionID, draft.ID).
+			Delete(&wheelsetfit.Question{})
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return gorm.ErrRecordNotFound
+		}
+
+		savedVersionID = draft.ID
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return r.FindVersionByID(savedVersionID)
+}
+
+func (r *WheelsetFitQuestionnaireRepository) ReorderDraftQuestions(versionID uint, questionIDs []uint) (*wheelsetfit.Version, error) {
+	var savedVersionID uint
+	err := r.db.Transaction(func(tx *gorm.DB) error {
+		draft, err := lockWheelsetFitDraft(tx, versionID)
+		if err != nil {
+			return err
+		}
+		if len(questionIDs) != len(draft.Questions) {
+			return ErrWheelsetFitQuestionOrderInvalid
+		}
+
+		expected := make(map[uint]struct{}, len(draft.Questions))
+		for _, question := range draft.Questions {
+			expected[question.ID] = struct{}{}
+		}
+		seen := make(map[uint]struct{}, len(questionIDs))
+		for index, questionID := range questionIDs {
+			if questionID == 0 {
+				return ErrWheelsetFitQuestionOrderInvalid
+			}
+			if _, exists := expected[questionID]; !exists {
+				return ErrWheelsetFitQuestionOrderInvalid
+			}
+			if _, duplicate := seen[questionID]; duplicate {
+				return ErrWheelsetFitQuestionOrderInvalid
+			}
+			seen[questionID] = struct{}{}
+
+			result := tx.Model(&wheelsetfit.Question{}).
+				Where("id = ? AND questionnaire_version_id = ?", questionID, draft.ID).
+				Update("sort_order", (index+1)*10)
+			if result.Error != nil {
+				return result.Error
+			}
+			if result.RowsAffected == 0 {
+				return gorm.ErrRecordNotFound
+			}
+		}
+
+		savedVersionID = draft.ID
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return r.FindVersionByID(savedVersionID)
 }

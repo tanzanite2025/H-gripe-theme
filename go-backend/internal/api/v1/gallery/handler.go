@@ -12,11 +12,17 @@ import (
 
 type GalleryHandler struct {
 	galleryService *service.GalleryService
+	mediaService   *service.MediaService
 }
 
-func NewGalleryHandler(galleryService *service.GalleryService) *GalleryHandler {
+func NewGalleryHandler(galleryService *service.GalleryService, mediaServices ...*service.MediaService) *GalleryHandler {
+	var mediaService *service.MediaService
+	if len(mediaServices) > 0 {
+		mediaService = mediaServices[0]
+	}
 	return &GalleryHandler{
 		galleryService: galleryService,
+		mediaService:   mediaService,
 	}
 }
 
@@ -44,7 +50,7 @@ func (h *GalleryHandler) GetGalleries(c *gin.Context) {
 	totalPages := (int(total) + pageSize - 1) / pageSize
 
 	c.JSON(http.StatusOK, gin.H{
-		"data":        publicGalleriesFromDomain(galleries),
+		"data":        publicGalleriesFromDomain(galleries, h.mediaService),
 		"total":       total,
 		"page":        page,
 		"page_size":   pageSize,
@@ -65,7 +71,7 @@ func (h *GalleryHandler) GetGalleryByID(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": publicGalleryFromDomain(gallery)})
+	c.JSON(http.StatusOK, gin.H{"data": publicGalleryFromDomain(gallery, h.mediaService)})
 }
 
 func (h *GalleryHandler) GetGalleryBySlug(c *gin.Context) {
@@ -75,7 +81,7 @@ func (h *GalleryHandler) GetGalleryBySlug(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": publicGalleryFromDomain(galleryItem)})
+	c.JSON(http.StatusOK, gin.H{"data": publicGalleryFromDomain(galleryItem, h.mediaService)})
 }
 
 func (h *GalleryHandler) GetGalleryImages(c *gin.Context) {
@@ -92,7 +98,7 @@ func (h *GalleryHandler) GetGalleryImages(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"data":  images,
+		"data":  publicGalleryImagesFromDomain(images, h.mediaService),
 		"total": len(images),
 	})
 }
@@ -115,7 +121,7 @@ func (h *GalleryHandler) SearchImages(c *gin.Context) {
 	totalPages := (int(total) + pageSize - 1) / pageSize
 
 	c.JSON(http.StatusOK, gin.H{
-		"data":        images,
+		"data":        publicGalleryImagesFromDomain(images, h.mediaService),
 		"total":       total,
 		"page":        page,
 		"page_size":   pageSize,
@@ -153,7 +159,7 @@ func (h *GalleryHandler) GetImagesByTags(c *gin.Context) {
 	totalPages := (int(total) + pageSize - 1) / pageSize
 
 	c.JSON(http.StatusOK, gin.H{
-		"data":        images,
+		"data":        publicGalleryImagesFromDomain(images, h.mediaService),
 		"total":       total,
 		"page":        page,
 		"page_size":   pageSize,

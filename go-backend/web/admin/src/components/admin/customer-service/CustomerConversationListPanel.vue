@@ -19,7 +19,7 @@
           :key="conversation.id"
           type="button"
           class="group w-full rounded-2xl border border-dashed p-3 text-left transition-all hover:border-admin-selected-border hover:bg-muted/45"
-          :class="selectedConversation?.id === conversation.id ? 'border-admin-selected-border bg-admin-selected-soft shadow-[var(--admin-control-selected-surface-shadow)]' : 'border-border/80 bg-card'"
+ :class="selectedConversation?.id === conversation.id ? 'border-admin-selected-border bg-admin-selected-soft shadow-[var(--admin-control-selected-surface-shadow)]': 'border-border/80 bg-card'"
           @click="emit('select', conversation)"
         >
           <div class="flex items-start gap-3">

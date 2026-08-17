@@ -193,11 +193,11 @@
 
 /* 排版 - 工业级规范 */
 .uds-title-main {
-  @apply text-lg font-black tracking-tighter italic uppercase;
+  @apply text-lg font-black tracking-tighter uppercase;
 }
 
 .uds-title-card {
-  @apply text-sm font-black tracking-tighter italic;
+ @apply text-sm font-black tracking-tighter;
 }
 
 .uds-label {
@@ -275,4 +275,11 @@ textarea::placeholder,
 
 .uds-btn-ghost {
   @apply rounded-full h-9 px-3 font-black text-[10px] uppercase tracking-widest hover:bg-muted transition-all;
+}
+
+/* 后台界面排版不使用斜体，避免斜体字形外伸后被 truncate/flex 边界裁剪。 */
+@layer utilities {
+  .italic {
+    font-style: normal !important;
+  }
 }

@@ -1,7 +1,7 @@
 <template>
   <div class="relative w-full max-w-4xl mx-auto px-0">
     <div
-      class="relative rounded-3xl pt-9 sm:pt-[60px]"
+      class="relative rounded-3xl pt-[56px] sm:pt-[68px]"
       tabindex="0"
       @keydown.left.prevent="prev"
       @keydown.right.prevent="next"
@@ -30,12 +30,18 @@
             :class="cardClass(index)"
           >
             <slot name="card" :item="item" :index="index">
-              <img
+              <StorefrontImage
                 v-if="item.src"
                 :src="item.src"
                 :alt="item.alt || ''"
+                :width="item.width"
+                :height="item.height"
                 class="h-full w-full object-cover rounded-2xl bg-slate-900 shadow-2xl"
+                preset="gallery"
+                :sizes="item.sizes || 'xs:100vw sm:100vw md:768px lg:1024px'"
+                :densities="item.densities || '1x 2x'"
                 loading="lazy"
+                decoding="async"
               />
               <!-- Caption Overlay -->
               <div
@@ -81,6 +87,10 @@ export interface CarouselItem {
   src?: string
   alt?: string
   caption?: string
+  width?: number
+  height?: number
+  sizes?: string
+  densities?: string
   [key: string]: any
 }
 

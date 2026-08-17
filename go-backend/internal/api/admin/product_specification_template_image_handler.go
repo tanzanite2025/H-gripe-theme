@@ -63,6 +63,8 @@ func (h *ProductSpecificationTemplateImageHandler) UploadImage(c *gin.Context) {
 		MediaType:  "image",
 		Alt:        strings.TrimSpace(c.PostForm("alt")),
 		UploaderID: currentUserID(c),
+		Width:      upload.ProductSpecificationTemplateImageWidth,
+		Height:     upload.ProductSpecificationTemplateImageHeight,
 	})
 	if err != nil {
 		respondMediaError(c, err)

@@ -55,6 +55,7 @@
             <FaqCategoryAccordion
               v-if="activeCategory"
               :category="activeCategory"
+              :page-title="displayTitle"
               :theme="theme"
               :show-categories="showCategories"
               :expanded-items="expandedItems"
@@ -68,6 +69,7 @@
             v-for="category in displayCategories"
             :key="category.id"
             :category="category"
+            :page-title="displayTitle"
             :theme="theme"
             :show-categories="showCategories"
             :expanded-items="expandedItems"
@@ -257,9 +259,12 @@ const formatCategoryIndex = (index: number) => String(index + 1).padStart(2, '0'
 
   .page-faq__sidebar {
     position: sticky;
-    top: calc(var(--site-header-offset, 112px) + 1rem);
+    top: calc(112px + 1rem);
     display: grid;
+    min-width: 0;
+    max-width: 100%;
     gap: 0.25rem;
+    box-sizing: border-box;
     padding: 0.75rem;
     border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 1rem;
@@ -281,7 +286,10 @@ const formatCategoryIndex = (index: number) => String(index + 1).padStart(2, '0'
     justify-content: space-between;
     gap: 0.75rem;
     width: 100%;
+    min-width: 0;
+    max-width: 100%;
     min-height: 2.35rem;
+    box-sizing: border-box;
     padding: 0.68rem 0.85rem;
     border: 0;
     border-radius: 0.75rem;
@@ -308,6 +316,7 @@ const formatCategoryIndex = (index: number) => String(index + 1).padStart(2, '0'
   }
 
   .page-faq__sidebar-text {
+    flex: 1 1 auto;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;

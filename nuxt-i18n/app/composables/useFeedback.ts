@@ -4,11 +4,14 @@ import { useAuth } from '~/composables/useAuth'
 export interface FeedbackItem {
   id: number
   thread_key: string
-  user_id: number
+  page_path?: string | null
+  page_title?: string | null
   name: string | null
   content: string
   status: string
   locale: string | null
+  reply_content?: string | null
+  replied_at?: string | null
   created_at: string
 }
 
@@ -35,6 +38,8 @@ export interface CreateFeedbackPayload {
   name?: string
   email?: string
   locale?: string
+  page_path?: string
+  page_title?: string
 }
 
 const feedbackMessage = (err: unknown, fallback: string) => {
@@ -96,6 +101,8 @@ export const useFeedback = (threadKey: string) => {
         name: payload.name,
         email: payload.email,
         locale: payload.locale,
+        page_path: payload.page_path,
+        page_title: payload.page_title,
       }
 
       const response = await auth.request<{ id: number; status: string; message?: string }>(

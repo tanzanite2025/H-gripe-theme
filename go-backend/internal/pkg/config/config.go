@@ -4,6 +4,7 @@ import (
 	"commerce-platform/internal/pkg/locales"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -24,6 +25,7 @@ type Config struct {
 	Cache                        CacheConfig                        `mapstructure:"cache"`
 	Log                          LogConfig                          `mapstructure:"log"`
 	Worker                       WorkerConfig                       `mapstructure:"worker"`
+	SiteQuality                  SiteQualityConfig                  `mapstructure:"site_quality"`
 	CustomerServiceRealtime      CustomerServiceRealtimeConfig      `mapstructure:"customer_service_realtime"`
 	BehaviorEvents               BehaviorEventsConfig               `mapstructure:"behavior_events"`
 	AntiAbuse                    AntiAbuseConfig                    `mapstructure:"anti_abuse"`
@@ -38,6 +40,7 @@ type Config struct {
 	VisitorRisk                  VisitorRiskConfig                  `mapstructure:"visitor_risk"`
 	RequestSigning               RequestSigningConfig               `mapstructure:"request_signing"`
 	QuickBuyRateLimit            QuickBuyRateLimitConfig            `mapstructure:"quick_buy_rate_limit"`
+	FeedbackRateLimit            FeedbackRateLimitConfig            `mapstructure:"feedback_rate_limit"`
 	MediaUpload                  MediaUploadConfig                  `mapstructure:"media_upload"`
 	ShowcaseUploadProtection     ShowcaseUploadProtectionConfig     `mapstructure:"showcase_upload_protection"`
 }
@@ -130,28 +133,47 @@ type LogConfig struct {
 }
 
 type WorkerConfig struct {
-	Enabled                              bool `mapstructure:"enabled"`
-	TrackingPollingEnabled               bool `mapstructure:"tracking_polling_enabled"`
-	TrackingPollingIntervalSeconds       int  `mapstructure:"tracking_polling_interval_seconds"`
-	TrackingPollingBatchLimit            int  `mapstructure:"tracking_polling_batch_limit"`
-	VisitorProfileCleanupEnabled         bool `mapstructure:"visitor_profile_cleanup_enabled"`
-	VisitorProfileCleanupIntervalSeconds int  `mapstructure:"visitor_profile_cleanup_interval_seconds"`
-	BehaviorEventCleanupEnabled          bool `mapstructure:"behavior_event_cleanup_enabled"`
-	BehaviorEventCleanupIntervalSeconds  int  `mapstructure:"behavior_event_cleanup_interval_seconds"`
-	OutboxDispatchEnabled                bool `mapstructure:"outbox_dispatch_enabled"`
-	OutboxDispatchIntervalSeconds        int  `mapstructure:"outbox_dispatch_interval_seconds"`
-	OutboxDispatchBatchLimit             int  `mapstructure:"outbox_dispatch_batch_limit"`
-	OutboxDispatchLockTimeoutSeconds     int  `mapstructure:"outbox_dispatch_lock_timeout_seconds"`
-	PaymentExpirationEnabled             bool `mapstructure:"payment_expiration_enabled"`
-	PaymentExpirationIntervalSeconds     int  `mapstructure:"payment_expiration_interval_seconds"`
-	PaymentPendingTTLSeconds             int  `mapstructure:"payment_pending_ttl_seconds"`
-	PaymentExpirationBatchLimit          int  `mapstructure:"payment_expiration_batch_limit"`
-	PaymentRiskMonitoringEnabled         bool `mapstructure:"payment_risk_monitoring_enabled"`
-	PaymentRiskMonitoringIntervalSeconds int  `mapstructure:"payment_risk_monitoring_interval_seconds"`
-	ShowcaseCleanupEnabled               bool `mapstructure:"showcase_cleanup_enabled"`
-	ShowcaseCleanupIntervalSeconds       int  `mapstructure:"showcase_cleanup_interval_seconds"`
-	ShowcasePendingTTLSeconds            int  `mapstructure:"showcase_pending_ttl_seconds"`
-	ShowcaseCleanupBatchLimit            int  `mapstructure:"showcase_cleanup_batch_limit"`
+	Enabled                               bool `mapstructure:"enabled"`
+	TrackingPollingEnabled                bool `mapstructure:"tracking_polling_enabled"`
+	TrackingPollingIntervalSeconds        int  `mapstructure:"tracking_polling_interval_seconds"`
+	TrackingPollingBatchLimit             int  `mapstructure:"tracking_polling_batch_limit"`
+	VisitorProfileCleanupEnabled          bool `mapstructure:"visitor_profile_cleanup_enabled"`
+	VisitorProfileCleanupIntervalSeconds  int  `mapstructure:"visitor_profile_cleanup_interval_seconds"`
+	BehaviorEventCleanupEnabled           bool `mapstructure:"behavior_event_cleanup_enabled"`
+	BehaviorEventCleanupIntervalSeconds   int  `mapstructure:"behavior_event_cleanup_interval_seconds"`
+	OutboxDispatchEnabled                 bool `mapstructure:"outbox_dispatch_enabled"`
+	OutboxDispatchIntervalSeconds         int  `mapstructure:"outbox_dispatch_interval_seconds"`
+	OutboxDispatchBatchLimit              int  `mapstructure:"outbox_dispatch_batch_limit"`
+	OutboxDispatchLockTimeoutSeconds      int  `mapstructure:"outbox_dispatch_lock_timeout_seconds"`
+	PaymentExpirationEnabled              bool `mapstructure:"payment_expiration_enabled"`
+	PaymentExpirationIntervalSeconds      int  `mapstructure:"payment_expiration_interval_seconds"`
+	PaymentPendingTTLSeconds              int  `mapstructure:"payment_pending_ttl_seconds"`
+	PaymentExpirationBatchLimit           int  `mapstructure:"payment_expiration_batch_limit"`
+	PaymentRiskMonitoringEnabled          bool `mapstructure:"payment_risk_monitoring_enabled"`
+	PaymentRiskMonitoringIntervalSeconds  int  `mapstructure:"payment_risk_monitoring_interval_seconds"`
+	SiteQualityEnabled                    bool `mapstructure:"site_quality_enabled"`
+	SiteQualityDispatchIntervalSeconds    int  `mapstructure:"site_quality_dispatch_interval_seconds"`
+	SiteQualityBatchLimit                 int  `mapstructure:"site_quality_batch_limit"`
+	SiteQualityLeaseTimeoutSeconds        int  `mapstructure:"site_quality_lease_timeout_seconds"`
+	SiteQualitySampleCount                int  `mapstructure:"site_quality_sample_count"`
+	SiteQualityConfirmations              int  `mapstructure:"site_quality_confirmations"`
+	SiteQualityCleanEvaluations           int  `mapstructure:"site_quality_clean_evaluations"`
+	SiteQualityProviderConcurrency        int  `mapstructure:"site_quality_provider_concurrency"`
+	SiteQualityProviderSpacingSeconds     int  `mapstructure:"site_quality_provider_spacing_seconds"`
+	MediaDerivativeRebuildEnabled         bool `mapstructure:"media_derivative_rebuild_enabled"`
+	MediaDerivativeRebuildIntervalSeconds int  `mapstructure:"media_derivative_rebuild_interval_seconds"`
+	MediaDerivativeRebuildBatchLimit      int  `mapstructure:"media_derivative_rebuild_batch_limit"`
+	ShowcaseCleanupEnabled                bool `mapstructure:"showcase_cleanup_enabled"`
+	ShowcaseCleanupIntervalSeconds        int  `mapstructure:"showcase_cleanup_interval_seconds"`
+	ShowcasePendingTTLSeconds             int  `mapstructure:"showcase_pending_ttl_seconds"`
+	ShowcaseCleanupBatchLimit             int  `mapstructure:"showcase_cleanup_batch_limit"`
+}
+
+// SiteQualityConfig describes the internal-only Lighthouse runner endpoint.
+// It is deployment wiring, never an operator-managed integration credential.
+type SiteQualityConfig struct {
+	RunnerURL   string `mapstructure:"runner_url"`
+	RunnerToken string `mapstructure:"runner_token"`
 }
 
 // CustomerServiceRealtimeConfig controls the optional Redis Stream relay for
@@ -284,6 +306,17 @@ type QuickBuyRateLimitConfig struct {
 	SessionRequestsPerMinute int  `mapstructure:"session_requests_per_minute"`
 	SessionBurst             int  `mapstructure:"session_burst"`
 	FailOpen                 bool `mapstructure:"fail_open"`
+}
+
+type FeedbackRateLimitConfig struct {
+	Enabled                    bool `mapstructure:"enabled"`
+	ReadIPRequestsPerMinute    int  `mapstructure:"read_ip_requests_per_minute"`
+	ReadIPBurst                int  `mapstructure:"read_ip_burst"`
+	WriteIPRequestsPerMinute   int  `mapstructure:"write_ip_requests_per_minute"`
+	WriteIPBurst               int  `mapstructure:"write_ip_burst"`
+	WriteUserRequestsPerMinute int  `mapstructure:"write_user_requests_per_minute"`
+	WriteUserBurst             int  `mapstructure:"write_user_burst"`
+	FailOpen                   bool `mapstructure:"fail_open"`
 }
 
 type MediaUploadConfig struct {
@@ -453,6 +486,20 @@ func setDefaults() {
 	viper.SetDefault("worker.payment_expiration_batch_limit", 100)
 	viper.SetDefault("worker.payment_risk_monitoring_enabled", false)
 	viper.SetDefault("worker.payment_risk_monitoring_interval_seconds", 3600)
+	viper.SetDefault("worker.site_quality_enabled", false)
+	viper.SetDefault("worker.site_quality_dispatch_interval_seconds", 30)
+	viper.SetDefault("worker.site_quality_batch_limit", 2)
+	viper.SetDefault("worker.site_quality_lease_timeout_seconds", 900)
+	viper.SetDefault("worker.site_quality_sample_count", 3)
+	viper.SetDefault("worker.site_quality_confirmations", 2)
+	viper.SetDefault("worker.site_quality_clean_evaluations", 2)
+	viper.SetDefault("worker.site_quality_provider_concurrency", 1)
+	viper.SetDefault("worker.site_quality_provider_spacing_seconds", 5)
+	viper.SetDefault("worker.media_derivative_rebuild_enabled", true)
+	viper.SetDefault("worker.media_derivative_rebuild_interval_seconds", 5)
+	viper.SetDefault("worker.media_derivative_rebuild_batch_limit", 10)
+	viper.SetDefault("site_quality.runner_url", "")
+	viper.SetDefault("site_quality.runner_token", "")
 	viper.SetDefault("worker.showcase_cleanup_enabled", true)
 	viper.SetDefault("worker.showcase_cleanup_interval_seconds", 86400)
 	viper.SetDefault("worker.showcase_pending_ttl_seconds", 2592000)
@@ -548,6 +595,15 @@ func setDefaults() {
 	viper.SetDefault("quick_buy_rate_limit.session_burst", 20)
 	viper.SetDefault("quick_buy_rate_limit.fail_open", true)
 
+	viper.SetDefault("feedback_rate_limit.enabled", true)
+	viper.SetDefault("feedback_rate_limit.read_ip_requests_per_minute", 120)
+	viper.SetDefault("feedback_rate_limit.read_ip_burst", 40)
+	viper.SetDefault("feedback_rate_limit.write_ip_requests_per_minute", 12)
+	viper.SetDefault("feedback_rate_limit.write_ip_burst", 4)
+	viper.SetDefault("feedback_rate_limit.write_user_requests_per_minute", 6)
+	viper.SetDefault("feedback_rate_limit.write_user_burst", 2)
+	viper.SetDefault("feedback_rate_limit.fail_open", false)
+
 	viper.SetDefault("media_upload.account_storage_quota_bytes", 20<<30)
 
 	viper.SetDefault("showcase_upload_protection.enabled", true)
@@ -635,6 +691,20 @@ func bindEnvironment() {
 	_ = viper.BindEnv("worker.payment_expiration_batch_limit", "WORKER_PAYMENT_EXPIRATION_BATCH_LIMIT", "PAYMENT_EXPIRATION_BATCH_LIMIT")
 	_ = viper.BindEnv("worker.payment_risk_monitoring_enabled", "WORKER_PAYMENT_RISK_MONITORING_ENABLED", "PAYMENT_RISK_MONITORING_WORKER_ENABLED")
 	_ = viper.BindEnv("worker.payment_risk_monitoring_interval_seconds", "WORKER_PAYMENT_RISK_MONITORING_INTERVAL_SECONDS", "PAYMENT_RISK_MONITORING_INTERVAL_SECONDS")
+	_ = viper.BindEnv("worker.site_quality_enabled", "WORKER_SITE_QUALITY_ENABLED")
+	_ = viper.BindEnv("worker.site_quality_dispatch_interval_seconds", "WORKER_SITE_QUALITY_DISPATCH_INTERVAL_SECONDS")
+	_ = viper.BindEnv("worker.site_quality_batch_limit", "WORKER_SITE_QUALITY_BATCH_LIMIT")
+	_ = viper.BindEnv("worker.site_quality_lease_timeout_seconds", "WORKER_SITE_QUALITY_LEASE_TIMEOUT_SECONDS")
+	_ = viper.BindEnv("worker.site_quality_sample_count", "WORKER_SITE_QUALITY_SAMPLE_COUNT")
+	_ = viper.BindEnv("worker.site_quality_confirmations", "WORKER_SITE_QUALITY_CONFIRMATIONS")
+	_ = viper.BindEnv("worker.site_quality_clean_evaluations", "WORKER_SITE_QUALITY_CLEAN_EVALUATIONS")
+	_ = viper.BindEnv("worker.site_quality_provider_concurrency", "WORKER_SITE_QUALITY_PROVIDER_CONCURRENCY")
+	_ = viper.BindEnv("worker.site_quality_provider_spacing_seconds", "WORKER_SITE_QUALITY_PROVIDER_SPACING_SECONDS")
+	_ = viper.BindEnv("worker.media_derivative_rebuild_enabled", "WORKER_MEDIA_DERIVATIVE_REBUILD_ENABLED")
+	_ = viper.BindEnv("worker.media_derivative_rebuild_interval_seconds", "WORKER_MEDIA_DERIVATIVE_REBUILD_INTERVAL_SECONDS")
+	_ = viper.BindEnv("worker.media_derivative_rebuild_batch_limit", "WORKER_MEDIA_DERIVATIVE_REBUILD_BATCH_LIMIT")
+	_ = viper.BindEnv("site_quality.runner_url", "SITE_QUALITY_RUNNER_URL")
+	_ = viper.BindEnv("site_quality.runner_token", "SITE_QUALITY_RUNNER_TOKEN")
 	_ = viper.BindEnv("worker.showcase_cleanup_enabled", "WORKER_SHOWCASE_CLEANUP_ENABLED", "SHOWCASE_CLEANUP_ENABLED")
 	_ = viper.BindEnv("worker.showcase_cleanup_interval_seconds", "WORKER_SHOWCASE_CLEANUP_INTERVAL_SECONDS", "SHOWCASE_CLEANUP_INTERVAL_SECONDS")
 	_ = viper.BindEnv("worker.showcase_pending_ttl_seconds", "WORKER_SHOWCASE_PENDING_TTL_SECONDS", "SHOWCASE_PENDING_TTL_SECONDS")
@@ -729,6 +799,15 @@ func bindEnvironment() {
 	_ = viper.BindEnv("quick_buy_rate_limit.session_requests_per_minute", "QUICK_BUY_RATE_LIMIT_SESSION_REQUESTS_PER_MINUTE")
 	_ = viper.BindEnv("quick_buy_rate_limit.session_burst", "QUICK_BUY_RATE_LIMIT_SESSION_BURST")
 	_ = viper.BindEnv("quick_buy_rate_limit.fail_open", "QUICK_BUY_RATE_LIMIT_FAIL_OPEN")
+
+	_ = viper.BindEnv("feedback_rate_limit.enabled", "FEEDBACK_RATE_LIMIT_ENABLED")
+	_ = viper.BindEnv("feedback_rate_limit.read_ip_requests_per_minute", "FEEDBACK_RATE_LIMIT_READ_IP_REQUESTS_PER_MINUTE")
+	_ = viper.BindEnv("feedback_rate_limit.read_ip_burst", "FEEDBACK_RATE_LIMIT_READ_IP_BURST")
+	_ = viper.BindEnv("feedback_rate_limit.write_ip_requests_per_minute", "FEEDBACK_RATE_LIMIT_WRITE_IP_REQUESTS_PER_MINUTE")
+	_ = viper.BindEnv("feedback_rate_limit.write_ip_burst", "FEEDBACK_RATE_LIMIT_WRITE_IP_BURST")
+	_ = viper.BindEnv("feedback_rate_limit.write_user_requests_per_minute", "FEEDBACK_RATE_LIMIT_WRITE_USER_REQUESTS_PER_MINUTE")
+	_ = viper.BindEnv("feedback_rate_limit.write_user_burst", "FEEDBACK_RATE_LIMIT_WRITE_USER_BURST")
+	_ = viper.BindEnv("feedback_rate_limit.fail_open", "FEEDBACK_RATE_LIMIT_FAIL_OPEN")
 
 	_ = viper.BindEnv("media_upload.account_storage_quota_bytes", "MEDIA_UPLOAD_ACCOUNT_STORAGE_QUOTA_BYTES")
 
@@ -962,6 +1041,40 @@ func validateConfig(cfg *Config) error {
 	if cfg.Worker.PaymentRiskMonitoringEnabled && cfg.Worker.PaymentRiskMonitoringIntervalSeconds <= 0 {
 		return fmt.Errorf("payment risk monitoring interval must be positive when monitoring is enabled")
 	}
+	if cfg.Worker.SiteQualityEnabled {
+		if cfg.Worker.SiteQualityDispatchIntervalSeconds <= 0 ||
+			cfg.Worker.SiteQualityBatchLimit <= 0 ||
+			cfg.Worker.SiteQualityLeaseTimeoutSeconds <= 0 ||
+			cfg.Worker.SiteQualitySampleCount <= 0 ||
+			cfg.Worker.SiteQualityConfirmations <= 0 ||
+			cfg.Worker.SiteQualityConfirmations > cfg.Worker.SiteQualitySampleCount ||
+			cfg.Worker.SiteQualityCleanEvaluations <= 0 ||
+			cfg.Worker.SiteQualityProviderConcurrency <= 0 ||
+			cfg.Worker.SiteQualityProviderSpacingSeconds < 0 {
+			return fmt.Errorf("site quality job worker configuration is invalid")
+		}
+		if strings.TrimSpace(cfg.SiteQuality.RunnerURL) == "" {
+			return fmt.Errorf("SITE_QUALITY_RUNNER_URL is required when the Site Quality job worker is enabled")
+		}
+		runnerURL, err := url.ParseRequestURI(strings.TrimSpace(cfg.SiteQuality.RunnerURL))
+		if err != nil || runnerURL.Scheme == "" || runnerURL.Host == "" ||
+			(runnerURL.Scheme != "http" && runnerURL.Scheme != "https") {
+			return fmt.Errorf("SITE_QUALITY_RUNNER_URL must be an absolute HTTP(S) URL")
+		}
+		if strings.TrimSpace(cfg.SiteQuality.RunnerToken) == "" {
+			return fmt.Errorf("SITE_QUALITY_RUNNER_TOKEN is required when the Site Quality job worker is enabled")
+		}
+		if len(strings.TrimSpace(cfg.SiteQuality.RunnerToken)) < 32 {
+			return fmt.Errorf("SITE_QUALITY_RUNNER_TOKEN must be at least 32 characters when the Site Quality job worker is enabled")
+		}
+	}
+	if cfg.Worker.MediaDerivativeRebuildEnabled {
+		if cfg.Worker.MediaDerivativeRebuildIntervalSeconds <= 0 ||
+			cfg.Worker.MediaDerivativeRebuildBatchLimit <= 0 ||
+			cfg.Worker.MediaDerivativeRebuildBatchLimit > 100 {
+			return fmt.Errorf("media derivative rebuild worker configuration is invalid")
+		}
+	}
 	if cfg.Worker.ShowcaseCleanupEnabled {
 		if cfg.Worker.ShowcaseCleanupIntervalSeconds <= 0 ||
 			cfg.Worker.ShowcasePendingTTLSeconds <= 0 ||
@@ -1004,6 +1117,16 @@ func validateConfig(cfg *Config) error {
 			cfg.QuickBuyRateLimit.SessionRequestsPerMinute <= 0 ||
 			cfg.QuickBuyRateLimit.SessionBurst <= 0 {
 			return fmt.Errorf("quick buy rate limit configuration is invalid")
+		}
+	}
+	if cfg.FeedbackRateLimit.Enabled {
+		if cfg.FeedbackRateLimit.ReadIPRequestsPerMinute <= 0 ||
+			cfg.FeedbackRateLimit.ReadIPBurst <= 0 ||
+			cfg.FeedbackRateLimit.WriteIPRequestsPerMinute <= 0 ||
+			cfg.FeedbackRateLimit.WriteIPBurst <= 0 ||
+			cfg.FeedbackRateLimit.WriteUserRequestsPerMinute <= 0 ||
+			cfg.FeedbackRateLimit.WriteUserBurst <= 0 {
+			return fmt.Errorf("feedback rate limit configuration is invalid")
 		}
 	}
 	if cfg.Cache.ProductLockTTL <= 0 {

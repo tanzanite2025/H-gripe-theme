@@ -98,6 +98,20 @@ func TestValidateFileRejectsTruncatedWebPWithValidHeader(t *testing.T) {
 	}
 }
 
+func TestValidateFileRejectsAnimatedWebPForGeneratedMedia(t *testing.T) {
+	data := testWebPVP8X(75, 100)
+	data[20] = 0x02
+	file := testFileHeader(t, "animated.webp", data)
+
+	err := ValidateFile(file, ProductImageRule)
+	if err == nil {
+		t.Fatal("expected animated WebP to be rejected")
+	}
+	if ErrorCode(err) != CodeInvalidType {
+		t.Fatalf("expected %q, got %q", CodeInvalidType, ErrorCode(err))
+	}
+}
+
 func TestValidateFileAcceptsFixedDimensionWebP(t *testing.T) {
 	file := testFileHeader(t, "category.webp", validWebPFixture(t))
 

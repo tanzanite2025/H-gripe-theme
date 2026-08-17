@@ -36,6 +36,10 @@ type CacheControlledObjectUploader interface {
 	UploadWithPrefixAndCacheControl(ctx context.Context, file *multipart.FileHeader, prefix string, cacheControl string) (string, error)
 }
 
+type CacheControlledReaderUploader interface {
+	UploadFromReaderWithPrefixAndCacheControl(ctx context.Context, reader io.Reader, filename string, prefix string, cacheControl string) (string, error)
+}
+
 type StoredObject struct {
 	ReadCloser io.ReadCloser
 	Name       string
@@ -168,6 +172,10 @@ func (s *localStorage) UploadFromReader(ctx context.Context, reader io.Reader, f
 }
 
 func (s *localStorage) UploadFromReaderWithPrefix(ctx context.Context, reader io.Reader, filename string, prefix string) (string, error) {
+	return s.UploadFromReaderWithPrefixAndCacheControl(ctx, reader, filename, prefix, "")
+}
+
+func (s *localStorage) UploadFromReaderWithPrefixAndCacheControl(_ context.Context, reader io.Reader, filename string, prefix string, _ string) (string, error) {
 	// 生成唯一文件名
 	newFilename, err := generateObjectKey(filename, prefix)
 	if err != nil {

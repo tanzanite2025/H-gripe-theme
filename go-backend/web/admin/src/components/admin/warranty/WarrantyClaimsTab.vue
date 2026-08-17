@@ -2,7 +2,7 @@
   <TabsContent value="claims" class="space-y-3">
     <div class="flex flex-wrap items-end justify-between gap-3">
       <div>
-        <h2 class="text-sm font-black tracking-tighter italic uppercase">保修申请处理</h2>
+        <h2 class="text-sm font-black tracking-tighter uppercase">保修申请处理</h2>
         <p class="mt-1 text-xs text-muted-foreground">订单型申请和注册型申请统一进入这里，关联注册记录为空时保持真实为空。</p>
       </div>
       <div class="w-full sm:w-48">
@@ -44,7 +44,7 @@
               v-for="claim in claims"
               :key="claim.id"
               class="cursor-pointer"
-              :class="selectedClaim?.id === claim.id ? 'bg-admin-selected-soft' : ''"
+ :class="selectedClaim?.id === claim.id ? 'bg-admin-selected-soft': ''"
               @click="$emit('select-claim', claim)"
             >
               <TableCell>

@@ -105,15 +105,15 @@
                   v-for="review in reviews"
                   :key="review.id"
                   class="cursor-pointer"
-                  :class="selectedReview?.id === review.id ? 'bg-primary/5' : ''"
+ :class="selectedReview?.id === review.id ? 'bg-primary/5': ''"
                   @click="selectReview(review)"
                 >
                   <TableCell class="font-mono text-xs">#{{ review.id }}</TableCell>
                   <TableCell><StatusPill :status="review.status" /></TableCell>
-                  <TableCell class="font-mono text-xs uppercase">{{ review.source || '-' }}</TableCell>
-                  <TableCell class="font-mono text-xs">{{ review.order_id ? `#${review.order_id}` : '-' }}</TableCell>
-                  <TableCell class="max-w-[180px] truncate font-mono text-xs">{{ review.payment_intent_id || '-' }}</TableCell>
-                  <TableCell class="max-w-[220px] truncate text-xs">{{ review.reason || '-' }}</TableCell>
+ <TableCell class="font-mono text-xs uppercase">{{ review.source || '-'}}</TableCell>
+ <TableCell class="font-mono text-xs">{{ review.order_id ? `#${review.order_id}` : '-'}}</TableCell>
+ <TableCell class="max-w-[180px] truncate font-mono text-xs">{{ review.payment_intent_id || '-'}}</TableCell>
+ <TableCell class="max-w-[220px] truncate text-xs">{{ review.reason || '-'}}</TableCell>
                   <TableCell class="text-xs text-muted-foreground">{{ formatDate(review.created_at) }}</TableCell>
                 </TableRow>
                 <TableRow v-if="!reviewLoading && reviews.length === 0">
@@ -128,7 +128,7 @@
 
            <aside class="h-full min-h-[420px] min-w-0 overflow-y-auto overscroll-contain rounded-[24px] border border-dashed border-border/80 bg-card p-5">
             <div class="mb-4">
-              <h2 class="text-sm font-black uppercase italic tracking-tight">复核处理</h2>
+              <h2 class="text-sm font-black uppercase tracking-tight">复核处理</h2>
               <p class="mt-1 text-xs text-muted-foreground">仅记录人工判断，不直接改变 Stripe 或订单支付状态。</p>
             </div>
 
@@ -144,11 +144,11 @@
                 </div>
                 <div class="col-span-2 rounded-xl bg-muted/40 p-3">
                   <dt class="font-black uppercase text-muted-foreground">PaymentIntent</dt>
-                  <dd class="mt-1 break-all font-mono">{{ selectedReview.payment_intent_id || '-' }}</dd>
+ <dd class="mt-1 break-all font-mono">{{ selectedReview.payment_intent_id || '-'}}</dd>
                 </div>
                 <div class="col-span-2 rounded-xl bg-muted/40 p-3">
                   <dt class="font-black uppercase text-muted-foreground">Notes</dt>
-                  <dd class="mt-1 whitespace-pre-wrap">{{ selectedReview.notes || '-' }}</dd>
+ <dd class="mt-1 whitespace-pre-wrap">{{ selectedReview.notes || '-'}}</dd>
                 </div>
               </dl>
 
@@ -165,7 +165,7 @@
                 <span class="block text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">OPERATOR NOTES / 操作备注</span>
                 <Textarea v-model="reviewDecision.notes" rows="5" :disabled="selectedReview.status !== 'pending'" placeholder="记录证据、沟通结论或拒绝原因" />
               </label>
-              <Button class="w-full rounded-full font-black uppercase tracking-wider" :disabled="selectedReview.status !== 'pending' || reviewSaving" @click="submitReviewDecision">
+ <Button class="w-full rounded-full font-black uppercase tracking-wider" :disabled="selectedReview.status !== 'pending'|| reviewSaving" @click="submitReviewDecision">
                 <CheckCircle2 class="size-4" />
                 保存复核
               </Button>
@@ -244,17 +244,17 @@
                   v-for="item in refundRecommendations"
                   :key="item.id"
                   class="cursor-pointer"
-                  :class="selectedRefundRecommendation?.id === item.id ? 'bg-primary/5' : ''"
+ :class="selectedRefundRecommendation?.id === item.id ? 'bg-primary/5': ''"
                   @click="selectRefundRecommendation(item)"
                 >
                   <TableCell class="font-mono text-xs">#{{ item.id }}</TableCell>
-                  <TableCell class="font-mono text-xs uppercase">{{ item.provider || '-' }}</TableCell>
+ <TableCell class="font-mono text-xs uppercase">{{ item.provider || '-'}}</TableCell>
                   <TableCell><StatusPill :status="item.status" /></TableCell>
                   <TableCell class="text-xs">{{ refundRecommendationSourceLabel(item.source_kind) }}</TableCell>
                   <TableCell class="font-mono text-xs">{{ formatMoney(item.recommended_amount, item.currency) }}</TableCell>
-                  <TableCell class="font-mono text-xs">{{ item.order_id ? `#${item.order_id}` : '-' }}</TableCell>
-                  <TableCell class="max-w-[180px] truncate font-mono text-xs">{{ item.provider_payment_id || item.payment_intent_id || item.charge_id || '-' }}</TableCell>
-                  <TableCell class="text-xs" :class="isEvidenceSoon(item.review_by) ? 'font-semibold text-rose-600' : 'text-muted-foreground'">{{ formatDate(item.review_by) }}</TableCell>
+ <TableCell class="font-mono text-xs">{{ item.order_id ? `#${item.order_id}` : '-'}}</TableCell>
+ <TableCell class="max-w-[180px] truncate font-mono text-xs">{{ item.provider_payment_id || item.payment_intent_id || item.charge_id || '-'}}</TableCell>
+ <TableCell class="text-xs" :class="isEvidenceSoon(item.review_by) ? 'font-semibold text-rose-600': 'text-muted-foreground'">{{ formatDate(item.review_by) }}</TableCell>
                 </TableRow>
                 <TableRow v-if="!refundRecommendationLoading && refundRecommendations.length === 0">
                   <TableCell colspan="8" class="h-24 text-center text-sm text-muted-foreground">暂无退款建议</TableCell>
@@ -331,16 +331,16 @@
                   v-for="dispute in disputes"
                   :key="`${disputeProvider}-${dispute.id}`"
                   class="cursor-pointer"
-                  :class="selectedDispute?.id === dispute.id ? 'bg-primary/5' : ''"
+ :class="selectedDispute?.id === dispute.id ? 'bg-primary/5': ''"
                   @click="selectDispute(dispute)"
                 >
                   <TableCell class="font-mono text-xs">#{{ dispute.id }}</TableCell>
                   <TableCell class="max-w-[220px] truncate font-mono text-xs">{{ disputeReference(dispute) }}</TableCell>
                   <TableCell><StatusPill :status="dispute.status" /></TableCell>
                   <TableCell class="font-mono text-xs">{{ formatMoney(dispute.amount, dispute.currency) }}</TableCell>
-                  <TableCell class="text-xs">{{ dispute.reason || '-' }}</TableCell>
-                  <TableCell class="font-mono text-xs">{{ dispute.order_id ? `#${dispute.order_id}` : '-' }}</TableCell>
-                  <TableCell class="text-xs" :class="isEvidenceSoon(dispute.evidence_due_at) ? 'font-semibold text-rose-600' : 'text-muted-foreground'">{{ formatDate(disputeProvider === 'paypal' ? dispute.evidence_submitted_at : dispute.evidence_due_at) }}</TableCell>
+ <TableCell class="text-xs">{{ dispute.reason || '-'}}</TableCell>
+ <TableCell class="font-mono text-xs">{{ dispute.order_id ? `#${dispute.order_id}` : '-'}}</TableCell>
+ <TableCell class="text-xs" :class="isEvidenceSoon(dispute.evidence_due_at) ? 'font-semibold text-rose-600': 'text-muted-foreground'">{{ formatDate(disputeProvider === 'paypal'? dispute.evidence_submitted_at : dispute.evidence_due_at) }}</TableCell>
                   <TableCell class="text-xs text-muted-foreground">{{ formatDate(dispute.updated_at) }}</TableCell>
                 </TableRow>
                 <TableRow v-if="!disputeLoading && disputes.length === 0">
@@ -356,7 +356,7 @@
           <aside class="min-h-0 overflow-auto rounded-[24px] border border-dashed border-border/80 bg-card p-4">
             <div class="mb-4 flex items-start justify-between gap-3">
               <div>
-                <h2 class="text-sm font-black uppercase italic tracking-tight">拒付证据工作台</h2>
+                <h2 class="text-sm font-black uppercase tracking-tight">拒付证据工作台</h2>
                 <p class="mt-1 text-xs text-muted-foreground">{{ disputeWorkbenchSubtitle }}</p>
               </div>
               <div v-if="selectedDispute" class="flex items-center gap-2">
@@ -432,13 +432,13 @@
                             <span class="text-xs font-black">{{ item.title }}</span>
                             <span v-if="item.required" class="text-[10px] font-black uppercase tracking-widest opacity-70">必需</span>
                           </div>
-                          <div class="mt-1 text-[10px] font-mono opacity-70">{{ item.provider_field || '-' }}</div>
+ <div class="mt-1 text-[10px] font-mono opacity-70">{{ item.provider_field || '-'}}</div>
                         </div>
                         <span class="shrink-0 rounded-full px-2 py-1 text-[10px] font-black" :class="evidenceStatusPillClass(item.status)">
                           {{ evidenceStatusLabel(item.status) }}
                         </span>
                       </div>
-                      <p class="mt-2 text-xs leading-5">{{ item.summary || '-' }}</p>
+ <p class="mt-2 text-xs leading-5">{{ item.summary || '-'}}</p>
                       <div class="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[10px] opacity-75">
                         <span>来源：{{ item.source || '-' }}</span>
                         <span>时间：{{ formatDate(item.observed_at) }}</span>
@@ -452,7 +452,7 @@
                   <div
                     v-if="disputeEvidence.submission_check"
                     class="mt-3 rounded-xl border p-3 text-xs"
-                    :class="disputeEvidence.submission_check.ready ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-800' : 'border-rose-500/30 bg-rose-500/10 text-rose-800'"
+ :class="disputeEvidence.submission_check.ready ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-800': 'border-rose-500/30 bg-rose-500/10 text-rose-800'"
                   >
                     <div class="font-black">
                       {{ disputeEvidence.submission_check.ready ? '渠道硬性提交条件已满足' : '当前不能提交：存在渠道硬性阻断' }}
@@ -474,7 +474,7 @@
                   <dl class="space-y-2 text-xs">
                     <div v-for="field in evidenceFields" :key="field.key" class="grid gap-1">
                       <dt class="font-black uppercase text-muted-foreground">{{ field.label }}</dt>
-                      <dd class="whitespace-pre-wrap break-words rounded-lg bg-muted/35 p-2 font-mono">{{ field.value || '-' }}</dd>
+ <dd class="whitespace-pre-wrap break-words rounded-lg bg-muted/35 p-2 font-mono">{{ field.value || '-'}}</dd>
                     </div>
                   </dl>
                 </section>
@@ -484,9 +484,9 @@
                   <div v-if="disputeEvidence.tracking_events?.length" class="max-h-44 space-y-2 overflow-auto pr-1">
                     <div v-for="event in disputeEvidence.tracking_events.slice(0, 12)" :key="event.id || `${event.event_time}-${event.status}`" class="rounded-lg bg-muted/35 p-2 text-xs">
                       <div class="font-mono text-muted-foreground">{{ formatDate(event.event_time) }}</div>
-                      <div class="font-semibold">{{ event.status || '-' }}</div>
-                      <div class="text-muted-foreground">{{ event.location || '-' }}</div>
-                      <p class="mt-1 whitespace-pre-wrap">{{ event.description || '-' }}</p>
+ <div class="font-semibold">{{ event.status || '-'}}</div>
+ <div class="text-muted-foreground">{{ event.location || '-'}}</div>
+ <p class="mt-1 whitespace-pre-wrap">{{ event.description || '-'}}</p>
                     </div>
                   </div>
                   <p v-else class="text-xs text-muted-foreground">暂无物流事件。</p>
@@ -622,9 +622,9 @@ const PaginationBar = defineComponent({
       }
     }
 
-    return () => h('div', { class: 'flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground' }, [
+ return () => h('div', { class: 'flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground'}, [
       h('span', `共 ${props.pagination.total || 0} 条，第 ${props.pagination.page || 1} / ${props.pagination.total_pages || 1} 页`),
-      h('div', { class: 'flex items-center gap-2' }, [
+ h('div', { class: 'flex items-center gap-2'}, [
         h('button', {
           class: 'rounded-full border border-dashed px-3 py-1 font-bold disabled:opacity-40',
           disabled: (props.pagination.page || 1) <= 1,

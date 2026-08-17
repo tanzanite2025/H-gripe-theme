@@ -7,11 +7,11 @@
     :role="props.zoomOnClick ? 'button' : undefined"
   >
     <div class="guide-image__frame">
-      <img
+      <StorefrontImage
         :src="props.src"
         :alt="props.alt || ''"
         class="guide-image__img"
-        loading="lazy"
+        preset="content"
       />
     </div>
     <figcaption
@@ -27,10 +27,12 @@
       <button type="button" class="tz-global-close-btn guide-image__close" @click="close">
         ×
       </button>
-      <img
+      <StorefrontImage
         :src="props.src"
         :alt="props.alt || ''"
         class="guide-image__overlay-img"
+        preset="gallery"
+        loading="eager"
       />
     </div>
   </Teleport>

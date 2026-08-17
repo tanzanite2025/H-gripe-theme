@@ -23,7 +23,10 @@
               :key="page.pageId"
               type="button"
               class="home-faq__sidebar-button"
-              :class="{ 'home-faq__sidebar-button--active': activePageId === page.pageId }"
+              :class="{
+                'home-faq__sidebar-button--active': activePageId === page.pageId
+                  || (activePageId === 'all' && index === 0),
+              }"
               @click="activePageId = page.pageId"
             >
               <span>{{ formatPageIndex(index) }}. {{ page.title || page.pageId }}</span>
@@ -43,42 +46,15 @@
         </aside>
 
         <main class="home-faq__desktop-panel">
-          <section v-for="group in displayGroups" :key="group.pageId" class="home-faq__group">
-            <div class="home-faq__group-title">{{ group.pageTitle }}</div>
-            <div class="home-faq__content">
-              <div
-                v-for="(columnItems, columnIndex) in group.itemColumns"
-                :key="columnIndex"
-                class="home-faq__column"
-              >
-                <div v-for="item in columnItems" :key="item.id" class="home-faq__item">
-                  <button
-                    type="button"
-                    class="home-faq__question group"
-                    @click="toggleItem(item.id)"
-                  >
-                    <span class="home-faq__category">{{ item.category }}</span>
-                    <span class="home-faq__question-text tz-faq-question">{{ item.question }}</span>
-                    <span
-                      class="home-faq__icon"
-                      :class="{ 'home-faq__icon--open': expandedItems.has(item.id) }"
-                    >
-                      <span class="home-faq__plus" aria-hidden="true">+</span>
-                    </span>
-                  </button>
-                  <Transition
-                    enter-active-class="transition-all duration-200 ease-out"
-                    leave-active-class="transition-all duration-150 ease-in"
-                    enter-from-class="opacity-0 max-h-0"
-                    enter-to-class="opacity-100 max-h-none"
-                    leave-from-class="opacity-100 max-h-none"
-                    leave-to-class="opacity-0 max-h-0"
-                  >
-                    <div v-if="expandedItems.has(item.id)" class="home-faq__answer tz-faq-answer" v-html="item.answer" />
-                  </Transition>
-                </div>
-              </div>
-            </div>
+          <section v-if="desktopGroup" :key="desktopGroup.pageId" class="home-faq__group">
+            <div class="home-faq__group-title">{{ desktopGroup.pageTitle }}</div>
+            <DesktopFaqMasterDetail
+              class="home-faq__desktop-master-detail"
+              :items="desktopGroup.items"
+              :expanded-items="expandedItems"
+              id-prefix="home-faq-desktop-answer"
+              @toggle-item="toggleItem"
+            />
           </section>
         </main>
       </div>
@@ -131,7 +107,11 @@
               leave-from-class="opacity-100 max-h-[500px]"
               leave-to-class="opacity-0 max-h-0"
             >
-              <div v-if="expandedItems.has(item.id)" class="home-faq__answer tz-faq-answer bg-slate-900/30" v-html="item.answer" />
+              <SafeRichText
+                v-if="expandedItems.has(item.id)"
+                class="home-faq__answer tz-faq-answer bg-slate-900/30"
+                :html="item.answer"
+              />
             </Transition>
           </div>
         </div>
@@ -156,6 +136,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useLocalePath } from '#imports'
+import DesktopFaqMasterDetail from '~/components/faq/DesktopFaqMasterDetail.vue'
 import { useFaqAccordionState } from '~/composables/useFaqAccordionState'
 import { useFaqCatalog } from '~/composables/useFaqCatalog'
 
@@ -227,8 +208,13 @@ watch(activePageId, () => {
 interface FlatItem {
   id: string
   category: string
+  pageTitle: string
   question: string
   answer: string
+  answerImageUrl?: string
+  answerImageAlt?: string
+  answerImageWidth?: number
+  answerImageHeight?: number
 }
 
 const categoryPriorityByPageId: Record<string, string[]> = {
@@ -261,8 +247,13 @@ const pageItems = (page: typeof allPages.value[number]): FlatItem[] => {
       items.push({
         id: `${page.pageId}-${category.id}-${item.id}`,
         category: category.name,
+        pageTitle: page.title || page.pageId,
         question: item.question,
         answer: item.answer,
+        answerImageUrl: item.answerImageUrl,
+        answerImageAlt: item.answerImageAlt,
+        answerImageWidth: item.answerImageWidth,
+        answerImageHeight: item.answerImageHeight,
       })
     }
 
@@ -272,28 +263,18 @@ const pageItems = (page: typeof allPages.value[number]): FlatItem[] => {
   return items
 }
 
-const makeItemColumns = (items: FlatItem[]): [FlatItem[], FlatItem[]] => {
-  const columns: [FlatItem[], FlatItem[]] = [[], []]
-  items.forEach((item, index) => {
-    columns[index % 2]?.push(item)
-  })
-  return columns
-}
+const desktopGroup = computed(() => {
+  const page = activePageId.value === 'all'
+    ? previewPages.value[0]
+    : previewPages.value.find(item => item.pageId === activePageId.value)
 
-const displayGroups = computed(() => {
-  const pages = activePageId.value === 'all'
-    ? previewPages.value
-    : previewPages.value.filter(page => page.pageId === activePageId.value)
+  if (!page) return null
 
-  return pages.map(page => {
-    const items = pageItems(page)
-    return {
-      pageId: page.pageId,
-      pageTitle: page.title || page.pageId,
-      items,
-      itemColumns: makeItemColumns(items),
-    }
-  })
+  return {
+    pageId: page.pageId,
+    pageTitle: page.title || page.pageId,
+    items: pageItems(page),
+  }
 })
 
 const displayItems = computed<FlatItem[]>(() => {
@@ -543,7 +524,7 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
 
   .home-faq__sidebar {
     position: sticky;
-    top: calc(var(--site-header-offset, 112px) + 1rem);
+  top: calc(112px + 1rem);
     box-sizing: border-box;
     min-width: 0;
     max-width: 100%;
@@ -659,6 +640,10 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
 
   .home-faq__desktop-panel {
     min-width: 0;
+    min-height: 24rem;
+  }
+
+  .home-faq__desktop-master-detail {
     min-height: 24rem;
   }
 

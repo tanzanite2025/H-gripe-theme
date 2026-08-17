@@ -1,4 +1,8 @@
 import { toAbsoluteSeoUrl } from './urls'
+import {
+  createStorefrontMediaContext,
+  normalizeStorefrontMediaUrl,
+} from '~/utils/storefrontMedia'
 import type {
   ProductSeoContext,
   ProductSeoDocument,
@@ -30,12 +34,17 @@ const normalizeCurrency = (value: string | null | undefined): string => {
 
 const normalizeImages = (
   imageUrls: Array<string | null | undefined> | null | undefined,
-  siteOrigin: string,
+  context: ProductSeoContext,
 ): string[] => {
+  const mediaContext = createStorefrontMediaContext({
+    public: { siteUrl: context.siteOrigin },
+    additionalOrigins: context.mediaOrigins,
+  })
   const images = (imageUrls || [])
     .map((image) => cleanText(image))
     .filter(Boolean)
-    .map((image) => toAbsoluteSeoUrl(siteOrigin, image))
+    .map((image) => normalizeStorefrontMediaUrl(image, mediaContext))
+    .map((image) => toAbsoluteSeoUrl(context.siteOrigin, image))
     .filter((image) => /^https?:\/\//i.test(image))
 
   return [...new Set(images)]
@@ -132,7 +141,7 @@ export const buildProductJsonLd = (
 
   const canonicalUrl = toAbsoluteSeoUrl(context.siteOrigin, context.localizedPath)
   const description = resolveProductMetaDescription(input)
-  const images = normalizeImages(input.imageUrls, context.siteOrigin)
+  const images = normalizeImages(input.imageUrls, context)
   if (!images.length) return null
 
   const productSku = cleanText(input.offer?.sku) || cleanText(input.sku)
@@ -202,7 +211,7 @@ export const buildProductGroupJsonLd = (
   }
 
   const description = resolveProductMetaDescription(input)
-  const images = normalizeImages(input.imageUrls, context.siteOrigin)
+  const images = normalizeImages(input.imageUrls, context)
   const group: ProductSeoProductGroupSchema = {
     '@context': 'https://schema.org',
     '@type': 'ProductGroup',
@@ -268,7 +277,7 @@ export const buildProductSeoDocument = (
   const title = resolveProductMetaTitle(input.metaTitle, input.name)
   const description = resolveProductMetaDescription(input)
   const canonicalUrl = toAbsoluteSeoUrl(context.siteOrigin, context.localizedPath)
-  const images = normalizeImages(input.imageUrls, context.siteOrigin)
+  const images = normalizeImages(input.imageUrls, context)
   const schema = buildProductGroupJsonLd(input, context)
 
   return {

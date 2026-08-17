@@ -357,12 +357,12 @@ const SettingsSection = defineComponent({
     description: { type: String, default: '' }
   },
   setup(props, { slots }) {
-    return () => h('section', { class: 'w-full max-w-none space-y-3' }, [
-      h('div', { class: 'max-w-3xl' }, [
-        h('h2', { class: 'text-sm font-black tracking-tighter italic uppercase text-foreground' }, props.title),
-        props.description ? h('p', { class: 'mt-1 text-[9px] font-black uppercase tracking-widest text-muted-foreground/60' }, props.description) : null
+ return () => h('section', { class: 'w-full max-w-none space-y-3'}, [
+ h('div', { class: 'max-w-3xl'}, [
+ h('h2', { class: 'text-sm font-black tracking-tighter uppercase text-foreground'}, props.title),
+ props.description ? h('p', { class: 'mt-1 text-[9px] font-black uppercase tracking-widest text-muted-foreground/60'}, props.description) : null
       ]),
-      h('div', { class: 'min-w-0' }, slots.default?.())
+ h('div', { class: 'min-w-0'}, slots.default?.())
     ])
   }
 })

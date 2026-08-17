@@ -1,6 +1,7 @@
 package wishlist
 
 import (
+	"commerce-platform/internal/api/v1/publicmedia"
 	productdomain "commerce-platform/internal/domain/product"
 	wishlistdomain "commerce-platform/internal/domain/wishlist"
 )
@@ -24,15 +25,15 @@ type PublicWishlistProduct struct {
 	Thumbnail    string   `json:"thumbnail,omitempty"`
 }
 
-func publicWishlistResponses(items []wishlistdomain.Item) []PublicWishlistItem {
+func publicWishlistResponses(items []wishlistdomain.Item, resolvers ...publicmedia.Resolver) []PublicWishlistItem {
 	responses := make([]PublicWishlistItem, 0, len(items))
 	for _, item := range items {
-		responses = append(responses, publicWishlistResponse(item))
+		responses = append(responses, publicWishlistResponse(item, resolvers...))
 	}
 	return responses
 }
 
-func publicWishlistResponse(item wishlistdomain.Item) PublicWishlistItem {
+func publicWishlistResponse(item wishlistdomain.Item, resolvers ...publicmedia.Resolver) PublicWishlistItem {
 	response := PublicWishlistItem{
 		ID:        item.ID,
 		ProductID: item.ProductID,
@@ -41,6 +42,7 @@ func publicWishlistResponse(item wishlistdomain.Item) PublicWishlistItem {
 		return response
 	}
 
+	resolver := publicmediaResolver(resolvers)
 	price, salePrice := item.Product.DisplayPrices()
 	response.Product = &PublicWishlistProduct{
 		ID:           item.Product.ID,
@@ -49,7 +51,7 @@ func publicWishlistResponse(item wishlistdomain.Item) PublicWishlistItem {
 		Price:        price,
 		SalePrice:    salePrice,
 		Availability: string(wishlistAvailabilityForProduct(*item.Product)),
-		Thumbnail:    wishlistThumbnail(*item.Product),
+		Thumbnail:    wishlistThumbnail(*item.Product, resolver),
 	}
 	return response
 }
@@ -63,15 +65,15 @@ func wishlistAvailabilityForProduct(item productdomain.Product) wishlistAvailabi
 	return wishlistAvailabilityOutOfStock
 }
 
-func wishlistThumbnail(item productdomain.Product) string {
+func wishlistThumbnail(item productdomain.Product, resolver publicmedia.Resolver) string {
 	for _, media := range item.Media {
 		if media.MediaType == "image" && media.IsVisible && media.IsPrimary {
-			return wishlistMediaURL(media)
+			return publicmedia.URL(resolver, wishlistMediaURL(media))
 		}
 	}
 	for _, media := range item.Media {
 		if media.MediaType == "image" && media.IsVisible {
-			return wishlistMediaURL(media)
+			return publicmedia.URL(resolver, wishlistMediaURL(media))
 		}
 	}
 	return ""
@@ -82,6 +84,13 @@ func wishlistMediaURL(item productdomain.ProductMedia) string {
 		return item.ThumbnailURL
 	}
 	return item.URL
+}
+
+func publicmediaResolver(resolvers []publicmedia.Resolver) publicmedia.Resolver {
+	if len(resolvers) == 0 {
+		return nil
+	}
+	return resolvers[0]
 }
 
 type wishlistAvailability string

@@ -9,25 +9,16 @@
     <NuxtLayout>
       <SidePanel>
         <template #left>
-          <AccountSidebarPanel />
+          <LazyAccountSidebarPanel />
         </template>
       </SidePanel>
       <!-- Render the current page inside the active layout -->
       <NuxtPage />
     </NuxtLayout>
     
-    <!-- 购物车与搜索面板 -->
-    <LazyCartDrawer />
-    <LazyCheckoutModal />
-    <LazyShopSearchSheet />
-    <LazyProductDetailGlobalProductDetailBottomSheet />
-    
-    <!-- 全局聊天弹窗 -->
-    <LazyWhatsAppChatModal
-      v-if="currentConversation"
-      :conversation="currentConversation"
-      @close="closeChat"
-    />
+    <ClientOnly>
+      <StorefrontClientOverlays />
+    </ClientOnly>
     
     <!-- Cookie 同意弹窗 -->
     <CookieConsent />
@@ -38,15 +29,13 @@
 import { computed, onMounted, ref } from 'vue'
 import { useHead, useI18n } from '#imports'
 import SidePanel from './components/SidePanel.vue'
-import AccountSidebarPanel from '~/components/account/AccountSidebarPanel.vue'
 import SiteHeader from '~/components/SiteHeader.vue'
-import { useChatWidget } from '~/composables/useChatWidget'
+import { useAuth } from '~/composables/useAuth'
 import { useSiteSettings } from '~/composables/usePublicSettings'
 import { useShopCategories } from '~/composables/useShopCategories'
 import localeManifest from '~/i18n/locales.manifest'
 
-// 全局聊天状态
-const { currentConversation, closeChat } = useChatWidget()
+const auth = useAuth()
 const { siteSettings } = useSiteSettings()
 const { loadCategories: prefetchShopCategories } = useShopCategories()
 const { locale } = useI18n()
@@ -91,6 +80,7 @@ if (import.meta.server) {
 }
 
 onMounted(() => {
+  void auth.ensureSession().catch(() => {})
   void prefetchShopCategories().catch(() => {})
 })
 </script>

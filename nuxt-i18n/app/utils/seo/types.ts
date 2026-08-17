@@ -53,6 +53,7 @@ export interface ProductSeoInput {
 export interface ProductSeoContext {
   siteOrigin: string
   localizedPath: string
+  mediaOrigins?: string[]
 }
 
 export interface ProductSeoOffer {

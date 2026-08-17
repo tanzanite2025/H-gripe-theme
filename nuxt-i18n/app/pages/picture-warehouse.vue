@@ -44,12 +44,12 @@
                   @click="openLightbox('user', index)"
                 >
                   <div class="aspect-square w-full overflow-hidden bg-white/[0.045] group-hover:bg-white/[0.075] transition-colors">
-                    <img
+                    <StorefrontImage
                       v-if="photoCover(photo)"
                       :src="photoCover(photo)"
                       :alt="photo.title"
                       class="size-full object-cover transition duration-200 group-hover:scale-[1.03]"
-                      loading="lazy"
+                      preset="card"
                     />
                   </div>
                   <div class="px-2.5 py-2 flex flex-col gap-0.5">
@@ -119,12 +119,12 @@
                   @click="openLightbox('brand', index)"
                 >
                   <div class="aspect-square w-full overflow-hidden bg-slate-900/90 group-hover:bg-slate-800/90 transition-colors">
-                    <img
+                    <StorefrontImage
                       v-if="photoCover(photo)"
                       :src="photoCover(photo)"
                       :alt="photo.title"
                       class="size-full object-cover transition duration-200 group-hover:scale-[1.03]"
-                      loading="lazy"
+                      preset="card"
                     />
                   </div>
                   <div class="px-2.5 py-2 flex flex-col gap-0.5">
@@ -278,10 +278,11 @@
                   class="picture-upload-preview group"
                 >
                   <div class="relative aspect-square overflow-hidden rounded-lg bg-black/20">
-                    <img
+                    <StorefrontImage
                       :src="preview.url"
                       :alt="preview.file.name"
                       class="size-full object-cover"
+                      preset="thumbnail"
                     />
                     <button
                       type="button"
@@ -370,11 +371,13 @@
               <div class="relative w-full h-full flex flex-col items-center justify-center">
                 <!-- 大图 -->
                 <div class="relative flex items-center justify-center w-full h-full">
-                  <img
+                  <StorefrontImage
                     v-if="currentImageUrl"
                     :src="currentImageUrl"
                     alt="Photo"
                     class="picture-lightbox-image max-w-full max-h-[65vh] object-contain rounded shadow-lg"
+                    preset="gallery"
+                    loading="eager"
                   />
                   <div v-else class="w-full max-w-[500px] aspect-square bg-slate-800 rounded flex items-center justify-center tz-text-muted">
                     No image
@@ -394,7 +397,7 @@
                     :class="idx === currentGalleryIndex ? 'border-sky-400 opacity-100' : 'border-transparent opacity-60 hover:opacity-90'"
                     @click.stop="currentGalleryIndex = idx"
                   >
-                    <img :src="img" class="w-full h-full object-cover" loading="lazy" />
+                    <StorefrontImage :src="img" alt="" class="w-full h-full object-cover" preset="thumbnail" />
                   </button>
                 </div>
               </div>
@@ -554,7 +557,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { definePageMeta, useHead, useLocalePath } from '#imports'
+import { definePageMeta, useHead, useLocalePath, useRuntimeConfig } from '#imports'
 
 import { useAuth } from '~/composables/useAuth'
 import {
@@ -566,6 +569,10 @@ import {
   pictureWarehouseTabs,
 } from '~/utils/pageSubNavigation'
 import { usePageSubNavigationTab } from '~/composables/usePageSubNavigationTab'
+import {
+  createStorefrontMediaContext,
+  normalizeStorefrontMediaUrl,
+} from '~/utils/storefrontMedia'
 
 definePageMeta({
   layout: 'products',
@@ -576,6 +583,7 @@ useHead({
 })
 
 const auth = useAuth()
+const mediaContext = createStorefrontMediaContext(useRuntimeConfig())
 const localePath = useLocalePath()
 const {
   brandPhotos,
@@ -856,7 +864,9 @@ const mapPayloadToUserPhotos = (payload: any[]): RiderPhoto[] => {
       if (!id) return null
 
       const galleryImages = Array.isArray(item.gallery_images)
-        ? item.gallery_images.filter((image: unknown): image is string => Boolean(image))
+        ? item.gallery_images
+          .map((image: unknown) => normalizeStorefrontMediaUrl(image, mediaContext))
+          .filter((image: string): image is string => Boolean(image))
         : []
 
       return {

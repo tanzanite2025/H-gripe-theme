@@ -38,6 +38,8 @@ tmp/
 temp/
 build/
 coverage/
+playwright-report/
+test-results/
 
 # Hostinger runtime environment
 deployment/production.env

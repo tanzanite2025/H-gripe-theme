@@ -1,6 +1,8 @@
 package service
 
 import (
+	"encoding/json"
+	"errors"
 	"testing"
 
 	wheelsetfit "commerce-platform/internal/domain/wheelsetfit"
@@ -39,6 +41,47 @@ func TestWheelsetFitQuestionnaireReusesExistingDraft(t *testing.T) {
 	var versionCount int64
 	require.NoError(t, db.Model(&wheelsetfit.Version{}).Where("questionnaire_id = ?", questionnaire.ID).Count(&versionCount).Error)
 	assert.Equal(t, int64(2), versionCount)
+}
+
+func TestWheelsetFitQuestionnaireReturnsEmptyQuestionsArrayForEmptyDraft(t *testing.T) {
+	db, service, _ := newWheelsetFitQuestionnaireTestService(t)
+	seedWheelsetFitQuestionnaire(t, db)
+
+	draft, err := service.GetOrCreateDraft()
+	require.NoError(t, err)
+	require.NotNil(t, draft.Questions)
+	assert.Empty(t, draft.Questions)
+
+	payload, err := json.Marshal(draft)
+	require.NoError(t, err)
+	assert.Contains(t, string(payload), `"questions":[]`)
+}
+
+func TestWheelsetFitQuestionnaireReturnsEmptyOptionsArrayForQuestionWithoutOptions(t *testing.T) {
+	db, service, _ := newWheelsetFitQuestionnaireTestService(t)
+	seedWheelsetFitQuestionnaire(t, db)
+
+	version, err := service.SaveQuestion(WheelsetFitQuestionInput{
+		QuestionKey:  "rear_axle",
+		AnswerKey:    "rear_axle",
+		SortOrder:    10,
+		InputMode:    wheelsetfit.InputModeSingleChoice,
+		IsRequired:   true,
+		AllowUnknown: true,
+		IsEnabled:    true,
+		Translations: []WheelsetFitQuestionTranslationInput{
+			{Locale: "zh_cn", Prompt: "请选择后轴规格"},
+		},
+		Options: []WheelsetFitQuestionOptionInput{},
+	})
+	require.NoError(t, err)
+	require.Len(t, version.Questions, 1)
+	require.NotNil(t, version.Questions[0].Options)
+	assert.Empty(t, version.Questions[0].Options)
+
+	payload, err := json.Marshal(version)
+	require.NoError(t, err)
+	assert.Contains(t, string(payload), `"options":[]`)
 }
 
 func TestWheelsetFitQuestionnaireCreatesDraftByDeepCopyingPublishedVersion(t *testing.T) {
@@ -250,6 +293,85 @@ func TestWheelsetFitQuestionnaireSaveQuestionClearsOptionsWhenExplicitlyEmpty(t 
 	var optionCount int64
 	require.NoError(t, db.Model(&wheelsetfit.Option{}).Where("question_id = ?", question.ID).Count(&optionCount).Error)
 	assert.Zero(t, optionCount)
+}
+
+func TestWheelsetFitQuestionnaireReordersAndDeletesDraftQuestions(t *testing.T) {
+	db, service, _ := newWheelsetFitQuestionnaireTestService(t)
+	seedWheelsetFitQuestionnaire(t, db)
+
+	first, err := service.SaveQuestion(wheelsetFitQuestionInput(
+		0,
+		[]WheelsetFitQuestionTranslationInput{{Locale: "zh_cn", Prompt: "请选择后轴规格"}},
+		[]WheelsetFitQuestionOptionTranslationInput{{Locale: "zh_cn", Label: "148 Boost"}},
+	))
+	require.NoError(t, err)
+	firstQuestion := first.Questions[0]
+
+	secondInput := wheelsetFitQuestionInput(
+		0,
+		[]WheelsetFitQuestionTranslationInput{{Locale: "zh_cn", Prompt: "请选择前轴规格"}},
+		[]WheelsetFitQuestionOptionTranslationInput{{Locale: "zh_cn", Label: "110 Boost"}},
+	)
+	secondInput.QuestionKey = "front_axle"
+	secondInput.AnswerKey = "front_axle"
+	secondInput.SortOrder = 20
+	secondInput.Options[0].OptionKey = "boost_110"
+	secondInput.Options[0].AnswerValue = "15x110"
+	secondInput.Options[0].SortOrder = 10
+	second, err := service.SaveQuestion(secondInput)
+	require.NoError(t, err)
+	secondQuestion := wheelsetFitQuestionByID(t, second, second.Questions[1].ID)
+
+	reordered, err := service.ReorderQuestions(WheelsetFitQuestionOrderInput{
+		QuestionIDs: []uint{secondQuestion.ID, firstQuestion.ID},
+	})
+	require.NoError(t, err)
+	require.Len(t, reordered.Questions, 2)
+	assert.Equal(t, secondQuestion.ID, reordered.Questions[0].ID)
+	assert.Equal(t, 10, reordered.Questions[0].SortOrder)
+	assert.Equal(t, firstQuestion.ID, reordered.Questions[1].ID)
+	assert.Equal(t, 20, reordered.Questions[1].SortOrder)
+
+	deleted, err := service.DeleteQuestion(secondQuestion.ID)
+	require.NoError(t, err)
+	require.Len(t, deleted.Questions, 1)
+	assert.Equal(t, firstQuestion.ID, deleted.Questions[0].ID)
+}
+
+func TestWheelsetFitQuestionnaireValidatesBeforePublishing(t *testing.T) {
+	db, service, _ := newWheelsetFitQuestionnaireTestService(t)
+	seedWheelsetFitQuestionnaire(t, db)
+
+	emptyDraft, err := service.GetOrCreateDraft()
+	require.NoError(t, err)
+	invalid, err := service.ValidateVersion(emptyDraft.ID)
+	require.NoError(t, err)
+	assert.False(t, invalid.Valid)
+	assert.Equal(t, "missing_questions", invalid.Issues[0].Code)
+
+	_, err = service.PublishVersion(emptyDraft.ID, nil)
+	require.Error(t, err)
+	assert.True(t, errors.Is(err, ErrWheelsetFitQuestionnaireInvalid))
+
+	saved, err := service.SaveQuestion(wheelsetFitQuestionInput(
+		0,
+		[]WheelsetFitQuestionTranslationInput{{Locale: "zh_cn", Prompt: "请选择后轴规格"}},
+		[]WheelsetFitQuestionOptionTranslationInput{{Locale: "zh_cn", Label: "148 Boost"}},
+	))
+	require.NoError(t, err)
+
+	valid, err := service.ValidateVersion(saved.ID)
+	require.NoError(t, err)
+	assert.True(t, valid.Valid)
+
+	published, err := service.PublishVersion(saved.ID, nil)
+	require.NoError(t, err)
+	assert.Equal(t, wheelsetfit.VersionStatusPublished, published.Status)
+
+	current, err := service.GetCurrentVersion()
+	require.NoError(t, err)
+	assert.Equal(t, published.ID, current.ID)
+	assert.Equal(t, wheelsetfit.VersionStatusPublished, current.Status)
 }
 
 func newWheelsetFitQuestionnaireTestService(t *testing.T) (*gorm.DB, *WheelsetFitQuestionnaireService, *repository.WheelsetFitQuestionnaireRepository) {

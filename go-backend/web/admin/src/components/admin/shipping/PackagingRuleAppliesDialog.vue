@@ -61,8 +61,8 @@
               <div class="py-4 text-xs text-muted-foreground">暂无适用商品，报价时不会通过商品匹配到此包装规则。</div>
             </TableEmpty>
             <TableRow v-for="apply in localApplies" :key="apply.id || apply.product_id">
-              <TableCell class="font-mono text-xs">#{{ apply.id || '-' }}</TableCell>
-              <TableCell class="font-mono text-xs font-bold">product_id={{ apply.product_id || '-' }}</TableCell>
+ <TableCell class="font-mono text-xs">#{{ apply.id || '-'}}</TableCell>
+ <TableCell class="font-mono text-xs font-bold">product_id={{ apply.product_id || '-'}}</TableCell>
               <TableCell class="font-mono text-[10px] text-muted-foreground">{{ formatDate(apply.created_at) }}</TableCell>
               <TableCell class="text-right">
                 <Button

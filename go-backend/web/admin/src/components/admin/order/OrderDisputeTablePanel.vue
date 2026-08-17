@@ -28,8 +28,8 @@
             <AdminStatusBadge :tone="providerTone(dispute.provider)">{{ providerLabel(dispute.provider) }}</AdminStatusBadge>
           </TableCell>
           <TableCell>
-            <div class="max-w-[220px] truncate font-mono text-xs font-bold">{{ dispute.provider_dispute_id || '-' }}</div>
-            <div class="mt-1 max-w-[220px] truncate text-[10px] text-muted-foreground">{{ dispute.reason || '-' }}</div>
+ <div class="max-w-[220px] truncate font-mono text-xs font-bold">{{ dispute.provider_dispute_id || '-'}}</div>
+ <div class="mt-1 max-w-[220px] truncate text-[10px] text-muted-foreground">{{ dispute.reason || '-'}}</div>
           </TableCell>
           <TableCell>
             <button
@@ -45,8 +45,8 @@
             </div>
           </TableCell>
           <TableCell>
-            <div class="text-xs font-bold">{{ dispute.customer_name || '-' }}</div>
-            <div class="mt-1 max-w-[220px] truncate font-mono text-[10px] text-muted-foreground">{{ dispute.customer_email || '-' }}</div>
+ <div class="text-xs font-bold">{{ dispute.customer_name || '-'}}</div>
+ <div class="mt-1 max-w-[220px] truncate font-mono text-[10px] text-muted-foreground">{{ dispute.customer_email || '-'}}</div>
           </TableCell>
           <TableCell>
             <AdminStatusBadge :tone="statusTone(dispute)">{{ dispute.status || '-' }}</AdminStatusBadge>

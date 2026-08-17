@@ -3,7 +3,7 @@
     <div class="uds-glow-bg" />
     <CardHeader class="relative z-10 flex flex-row items-center justify-between border-b border-dashed border-border/70 py-3.5">
       <div>
-        <CardTitle class="text-sm font-black tracking-tighter italic uppercase">销售趋势</CardTitle>
+        <CardTitle class="text-sm font-black tracking-tighter uppercase">销售趋势</CardTitle>
         <CardDescription class="mt-0.5 text-[9px] font-black uppercase tracking-widest opacity-60">最近 30 天表现</CardDescription>
       </div>
       <Tooltip>
@@ -16,7 +16,7 @@
             :disabled="chartLoading"
             @click="emit('refresh')"
           >
-            <RefreshCw class="size-3.5" :class="chartLoading ? 'animate-spin' : ''" />
+ <RefreshCw class="size-3.5" :class="chartLoading ? 'animate-spin': ''" />
           </Button>
         </TooltipTrigger>
         <TooltipContent class="font-bold text-xs">刷新销售趋势</TooltipContent>

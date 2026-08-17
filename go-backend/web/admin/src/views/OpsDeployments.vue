@@ -11,7 +11,7 @@
           @click="loadProjects"
         >
           <RefreshCw
-            :class="['size-4', loadingProjects ? 'animate-spin' : '']"
+ :class="['size-4', loadingProjects ? 'animate-spin': '']"
           />
           刷新项目
         </Button>
@@ -235,7 +235,7 @@
               </div>
               <div class="flex justify-between gap-3">
                 <dt>VPS</dt>
-                <dd class="truncate">{{ selectedProject.vps_name || "-" }}</dd>
+ <dd class="truncate">{{ selectedProject.vps_name ||"-" }}</dd>
               </div>
               <div class="flex justify-between gap-3">
                 <dt>最近观察</dt>

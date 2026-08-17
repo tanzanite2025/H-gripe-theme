@@ -69,11 +69,11 @@
           @click="trackRecommendationClick(product, index)"
         >
           <span class="product-recommendations__image">
-            <img
+            <StorefrontImage
               v-if="product.thumbnail"
               :src="product.thumbnail"
               :alt="product.title"
-              loading="lazy"
+              preset="card"
             />
             <span v-else class="product-recommendations__image-placeholder" aria-hidden="true">
               <Icon name="lucide:image" />

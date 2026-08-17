@@ -5,6 +5,8 @@ export type StorefrontPaymentMethod = 'card' | 'paypal' | 'alipay' | 'wechat'
 export interface PaymentLogoAsset {
   src: string
   alt: string
+  width: number
+  height: number
   className?: string
 }
 
@@ -54,7 +56,7 @@ export const paymentPresentation = (method: StorefrontPaymentMethod): PaymentPre
         description: 'Pay with a PayPal account or supported wallet.',
         ctaKey: 'checkout.payment.paypal.cta',
         cta: 'Continue to PayPal',
-        logos: [{ src: '/icons/payment/paypal.svg', alt: 'PayPal' }],
+        logos: [{ src: '/icons/payment/paypal.svg', alt: 'PayPal', width: 200, height: 120 }],
       }
     case 'alipay':
       return {
@@ -65,7 +67,7 @@ export const paymentPresentation = (method: StorefrontPaymentMethod): PaymentPre
         description: 'Pay through Alipay.',
         ctaKey: 'checkout.payment.alipay.cta',
         cta: 'Continue to Alipay',
-        logos: [{ src: '/icons/payment/alipay.svg?v=6', alt: 'Alipay', className: 'payment-logo--alipay' }],
+        logos: [{ src: '/icons/payment/alipay.svg?v=6', alt: 'Alipay', width: 200, height: 120, className: 'payment-logo--alipay' }],
       }
     case 'wechat':
       return {
@@ -76,7 +78,7 @@ export const paymentPresentation = (method: StorefrontPaymentMethod): PaymentPre
         description: 'Scan a WeChat Pay QR code to complete payment.',
         ctaKey: 'checkout.payment.wechat.cta',
         cta: 'Continue to WeChat Pay',
-        logos: [{ src: '/icons/payment/wechatpay.svg', alt: 'WeChat Pay' }],
+        logos: [{ src: '/icons/payment/wechatpay.svg', alt: 'WeChat Pay', width: 200, height: 120 }],
       }
     default:
       return {
@@ -88,9 +90,9 @@ export const paymentPresentation = (method: StorefrontPaymentMethod): PaymentPre
         ctaKey: 'checkout.payment.card.cta',
         cta: 'Continue to card checkout',
         logos: [
-          { src: '/icons/payment/visa.svg', alt: 'Visa' },
-          { src: '/icons/payment/mastercard.svg', alt: 'Mastercard' },
-          { src: '/icons/payment/amex.svg', alt: 'American Express' },
+          { src: '/icons/payment/visa.svg', alt: 'Visa', width: 200, height: 120 },
+          { src: '/icons/payment/mastercard.svg', alt: 'Mastercard', width: 200, height: 120 },
+          { src: '/icons/payment/amex.svg', alt: 'American Express', width: 200, height: 120 },
         ],
       }
   }

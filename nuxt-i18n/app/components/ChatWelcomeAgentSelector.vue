@@ -16,7 +16,7 @@
               :class="isSelected(agent) ? 'text-black/80' : 'tz-text-primary'"
             >
               <template v-if="getAvatarSrc(agent)">
-                <img :src="getAvatarSrc(agent)" :alt="agent.name" class="w-full h-full rounded-full object-cover" />
+                <StorefrontImage :src="getAvatarSrc(agent)" :alt="agent.name" class="w-full h-full rounded-full object-cover" preset="avatar" />
               </template>
             </span>
 
@@ -62,7 +62,7 @@
           <span class="relative shrink-0 w-14 h-14">
             <span class="w-full h-full rounded-full bg-white/[0.16] flex items-center justify-center text-xs font-semibold overflow-hidden tz-text-primary">
               <template v-if="getAvatarSrc(agent)">
-                <img :src="getAvatarSrc(agent)" :alt="agent.name" class="w-full h-full rounded-full object-cover" />
+                <StorefrontImage :src="getAvatarSrc(agent)" :alt="agent.name" class="w-full h-full rounded-full object-cover" preset="avatar" />
               </template>
             </span>
             <span

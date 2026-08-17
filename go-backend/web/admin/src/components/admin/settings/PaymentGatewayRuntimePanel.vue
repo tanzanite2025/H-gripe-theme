@@ -63,7 +63,7 @@
             :key="gateway.provider"
             type="button"
             class="inline-flex items-center gap-2 rounded-lg border bg-background/80 px-3 py-2 text-left transition-colors hover:border-admin-selected-border hover:bg-background"
-            :class="selectedGateway === gateway.provider ? 'border-admin-selected-border bg-background shadow-[var(--admin-control-selected-surface-shadow)]' : ''"
+ :class="selectedGateway === gateway.provider ? 'border-admin-selected-border bg-background shadow-[var(--admin-control-selected-surface-shadow)]': ''"
             @click="emit('update:selectedGateway', gateway.provider)"
           >
             <span class="text-xs font-black text-foreground">{{ paymentGatewayLabel(gateway.provider) }}</span>
@@ -109,7 +109,7 @@
               :disabled="loading"
               @click="emit('refresh')"
             >
-              <RefreshCw :class="['size-3.5', loading ? 'animate-spin' : '']" />
+ <RefreshCw :class="['size-3.5', loading ? 'animate-spin': '']" />
               {{ t('common.refresh') }}
             </Button>
           </div>
@@ -125,7 +125,7 @@
             @click="emit('update:selectedGateway', gateway.value)"
           >
             <div class="flex items-center justify-between gap-2">
-              <span class="text-sm font-black" :class="selectedGateway === gateway.value ? 'text-admin-selected' : 'text-foreground'">
+ <span class="text-sm font-black" :class="selectedGateway === gateway.value ? 'text-admin-selected': 'text-foreground'">
                 {{ paymentGatewayLabel(gateway.value) }}
               </span>
               <CheckCircle2 v-if="gatewayRuntimeStatus(gateway.value)?.production_ready" class="size-4 text-emerald-500" />
@@ -167,17 +167,17 @@
           <div class="grid gap-3 md:grid-cols-3">
             <div class="rounded-xl border bg-background/70 p-3">
               <p class="text-[11px] font-black uppercase tracking-widest text-muted-foreground/60">{{ t('payment.environment') }}</p>
-              <p class="mt-1 text-sm font-black text-foreground">{{ selectedRuntimeStatus.environment || 'unknown' }}</p>
+ <p class="mt-1 text-sm font-black text-foreground">{{ selectedRuntimeStatus.environment || 'unknown'}}</p>
             </div>
             <div class="rounded-xl border bg-background/70 p-3">
               <p class="text-[11px] font-black uppercase tracking-widest text-muted-foreground/60">{{ t('payment.credentials') }}</p>
-              <p class="mt-1 text-sm font-black" :class="selectedRuntimeStatus.configured ? 'text-emerald-500' : 'text-amber-500'">
+ <p class="mt-1 text-sm font-black" :class="selectedRuntimeStatus.configured ? 'text-emerald-500': 'text-amber-500'">
                 {{ selectedRuntimeStatus.configured ? t('common.configured') : t('payment.missingFields') }}
               </p>
             </div>
             <div class="rounded-xl border bg-background/70 p-3">
               <p class="text-[11px] font-black uppercase tracking-widest text-muted-foreground/60">{{ t('payment.webhookStatus') }}</p>
-              <p class="mt-1 text-sm font-black" :class="selectedRuntimeStatus.webhook_configured ? 'text-emerald-500' : 'text-amber-500'">
+ <p class="mt-1 text-sm font-black" :class="selectedRuntimeStatus.webhook_configured ? 'text-emerald-500': 'text-amber-500'">
                 {{ selectedRuntimeStatus.webhook_configured ? t('common.configured') : t('payment.missingConfig') }}
               </p>
             </div>
@@ -505,9 +505,9 @@ const FieldList = defineComponent({
     configured: { type: Boolean, default: false },
   },
   setup(props) {
-    return () => h('div', { class: 'rounded-xl border bg-background/70 p-3' }, [
-      h('p', { class: 'text-[11px] font-black uppercase tracking-widest text-muted-foreground/60' }, props.title),
-      h('div', { class: 'mt-2 flex flex-wrap gap-1.5' }, [
+ return () => h('div', { class: 'rounded-xl border bg-background/70 p-3'}, [
+ h('p', { class: 'text-[11px] font-black uppercase tracking-widest text-muted-foreground/60'}, props.title),
+ h('div', { class: 'mt-2 flex flex-wrap gap-1.5'}, [
         ...(props.fields || []).map((field) =>
           h('span', {
             key: field,
@@ -516,7 +516,7 @@ const FieldList = defineComponent({
               : 'rounded-full border bg-muted px-2 py-0.5 font-mono text-[11px] font-bold text-foreground',
           }, String(field))
         ),
-        props.fields?.length ? null : h('span', { class: 'text-xs text-muted-foreground' }, t('common.none')),
+ props.fields?.length ? null : h('span', { class: 'text-xs text-muted-foreground'}, t('common.none')),
       ]),
     ])
   },

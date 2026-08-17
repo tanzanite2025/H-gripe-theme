@@ -15,6 +15,8 @@ const (
 
 	RouteCheckStatusOK              = "ok"
 	RouteCheckStatusRedirect        = "redirect"
+	RouteCheckStatusRedirectChain   = "redirect_chain"
+	RouteCheckStatusRedirectTarget  = "redirect_target_mismatch"
 	RouteCheckStatusNotFound        = "not_found"
 	RouteCheckStatusServerError     = "server_error"
 	RouteCheckStatusCanonicalMisfit = "canonical_mismatch"
@@ -95,6 +97,8 @@ type StorefrontRouteCatalogStats struct {
 	Errors            int64      `json:"errors"`
 	Searchable        int64      `json:"searchable"`
 	Checkable         int64      `json:"checkable"`
+	Indexable         int64      `json:"indexable"`
+	SitemapEligible   int64      `json:"sitemap_eligible"`
 	LastSyncedAt      *time.Time `json:"last_synced_at,omitempty"`
 	ManifestVersion   string     `json:"manifest_version"`
 }

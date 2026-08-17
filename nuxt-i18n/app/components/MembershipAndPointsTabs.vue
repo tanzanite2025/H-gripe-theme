@@ -186,66 +186,20 @@
       </div>
     </section>
 
-    <section v-show="activeTab === 'exchange'" class="company-section membership-section">
-      <div class="membership-details">
-        <div class="giftcard-section">
-          <h4>{{ $t('giftcards.title', 'Redeem Points for Gift Cards') }}</h4>
-
-          <div v-if="giftcardsLoading" class="loading-state">
-            {{ $t('common.loading', 'Loading...') }}
-          </div>
-
-          <div v-else-if="giftcardsError" class="error-state">
-            {{ giftcardsError }}
-          </div>
-
-          <div v-else-if="availableGiftcards.length > 0" class="giftcard-grid">
-            <div v-for="card in availableGiftcards" :key="card.id" class="giftcard-item">
-              <div class="giftcard-header">
-                <Icon name="lucide:credit-card" class="giftcard-icon" aria-hidden="true" />
-                <div class="giftcard-info">
-                  <div class="giftcard-code">{{ card.label }}</div>
-                  <div class="giftcard-label">{{ $t('giftcards.balance', 'Balance') }}</div>
-                </div>
-                <div class="giftcard-value">{{ card.currency }} {{ card.giftcard_value }}</div>
-              </div>
-              <div class="giftcard-footer">
-                <span class="giftcard-points">
-                  {{ $t('giftcards.pointsRequired', 'Points required') }}: {{ card.points_required || 0 }}
-                  <span class="giftcard-stock">· {{ $t('giftcards.remaining', 'Remaining') }}: {{ card.remaining_quantity }}</span>
-                </span>
-                <button
-                  class="btn-redeem"
-                  @click="handleRedeemGiftcard(card)"
-                  :disabled="(isLogged && pointsNumber < (card.points_required || 0)) || redeemingCardId === card.id"
-                >
-                  {{ redeemingCardId === card.id ? $t('giftcards.redeeming', 'Redeeming...') : $t('giftcards.redeem', 'Redeem') }}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div v-else class="empty-state">
-            {{ $t('giftcards.noCards', 'No gift cards available') }}
-          </div>
-
-          <div v-if="isLogged && userGiftCards.length > 0" class="owned-giftcard-list">
-            <h5>{{ $t('giftcards.myCards', 'My Gift Cards') }}</h5>
-            <div v-for="card in userGiftCards" :key="card.id" class="owned-giftcard-item">
-              <div>
-                <strong>{{ card.code }}</strong>
-                <span>{{ card.currency }} {{ Number(card.balance ?? 0).toFixed(2) }}</span>
-              </div>
-              <small>{{ card.status }}</small>
-            </div>
-          </div>
-
-          <div v-if="redeemMessage" class="redeem-message" :class="{ success: redeemSuccess, error: !redeemSuccess }">
-            {{ redeemMessage }}
-          </div>
-        </div>
-      </div>
-    </section>
+    <MembershipGiftCardExchangePanel
+      v-show="activeTab === 'exchange'"
+      :is-logged="isLogged"
+      :points="pointsNumber"
+      :redemption-rule-description="redemptionRuleDescription"
+      :available-giftcards="availableGiftcards"
+      :user-gift-cards="userGiftCards"
+      :loading="giftcardsLoading"
+      :error="giftcardsError"
+      :redeeming-card-id="redeemingCardId"
+      :redeem-message="redeemMessage"
+      :redeem-success="redeemSuccess"
+      @redeem="handleRedeemGiftcard"
+    />
     </div>
   </div>
 </template>
@@ -255,6 +209,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useI18n, useLocalePath } from '#imports'
 import { useMembership } from '~/composables/useMembership'
 import BadgeAvatar from '~/components/BadgeAvatar.vue'
+import MembershipGiftCardExchangePanel from '~/components/membership/MembershipGiftCardExchangePanel.vue'
 import { usePageSubNavigationTab } from '~/composables/usePageSubNavigationTab'
 import {
   membershipAndPointsTabs,
@@ -1169,179 +1124,6 @@ onMounted(() => {
    color: rgba(255, 255, 255, 0.7);
  }
 
- /* 礼品卡 */
- .giftcard-section {
-   background: radial-gradient(circle at top left, rgba(31, 41, 55, 0.96), rgba(15, 23, 42, 0.98));
-   border-radius: 12px;
-   padding: 1rem;
-   box-shadow: 0 3px 9px rgba(0, 0, 0, 0.9);
-   backdrop-filter: blur(14px);
-   -webkit-backdrop-filter: blur(14px);
- }
-
- .giftcard-section h4 {
-   margin: 0 0 0.75rem;
-   font-size: 14px;
-   font-weight: 600;
-   color: rgba(255, 255, 255, 0.9);
- }
-
- .giftcard-grid {
-   display: flex;
-   flex-direction: column;
-   gap: 0.75rem;
- }
-
- .giftcard-item {
-   background: radial-gradient(circle at top left, rgba(31, 41, 55, 0.96), rgba(15, 23, 42, 0.98));
-   border-radius: 12px;
-   padding: 0.75rem;
-   box-shadow: 0 3px 9px rgba(0, 0, 0, 0.9);
-   backdrop-filter: blur(12px);
-   -webkit-backdrop-filter: blur(12px);
-   transition: all 0.2s;
- }
-
- .giftcard-item:hover {
-   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.9);
- }
-
- .giftcard-header {
-   display: flex;
-   align-items: center;
-   gap: 0.75rem;
-   margin-bottom: 0.75rem;
- }
-
- .giftcard-icon {
-   font-size: 1.5rem;
- }
-
- .giftcard-info {
-   flex: 1;
- }
-
- .giftcard-code {
-   font-size: 14px;
-   font-weight: 600;
-   color: rgba(255, 255, 255, 0.9);
- }
-
- .giftcard-label {
-   font-size: 12px;
-   color: rgba(255, 255, 255, 0.5);
- }
-
- .giftcard-value {
-   font-size: 18px;
-   font-weight: 700;
-   color: var(--tz-brand-primary);
-   background: none;
- }
-
-.giftcard-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-top: 0.75rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.owned-giftcard-list {
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.owned-giftcard-list h5 {
-  margin: 0 0 0.65rem;
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.84);
-}
-
-.owned-giftcard-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.65rem 0;
-  color: rgba(255, 255, 255, 0.72);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.owned-giftcard-item > div {
-  display: grid;
-  gap: 0.2rem;
-}
-
-.owned-giftcard-item strong {
-  color: rgba(255, 255, 255, 0.92);
-  font-size: 12px;
-}
-
-.owned-giftcard-item span,
-.owned-giftcard-item small {
-  font-size: 11px;
-}
-
- .giftcard-points {
-   font-size: 12px;
-   color: rgba(255, 255, 255, 0.7);
- }
-
- .btn-redeem {
-   padding: 6px 12px;
-   font-size: 12px;
-   font-weight: 600;
-   border-radius: 8px;
-   background: var(--tz-brand-primary);
-   color: #fff;
-   border: none;
-   cursor: pointer;
-   transition: all 0.2s;
- }
-
- .btn-redeem:hover {
-   filter: brightness(1.1);
- }
-
- .btn-redeem:disabled {
-   opacity: 0.5;
-   cursor: not-allowed;
- }
-
- /* 状态 */
- .loading-state,
- .error-state,
- .empty-state {
-   text-align: center;
-   padding: 1.5rem;
-   font-size: 14px;
-   color: rgba(255, 255, 255, 0.5);
- }
-
- .error-state {
-   color: #f87171;
- }
-
- .redeem-message {
-   margin-top: 0.75rem;
-   padding: 0.5rem;
-   border-radius: 8px;
-   text-align: center;
-   font-size: 14px;
- }
-
- .redeem-message.success {
-   background: rgba(181, 255, 109, 0.2);
-   color: #6ee7b7;
- }
-
- .redeem-message.error {
-   background: rgba(239, 68, 68, 0.2);
-   color: #fca5a5;
- }
-
  .warranty-card,
  .member-header,
  .member-card,
@@ -1352,9 +1134,7 @@ onMounted(() => {
  .tier-table thead tr,
  .tier-table tbody tr,
  .points-rules,
- .rule-item,
- .giftcard-section,
- .giftcard-item {
+ .rule-item {
    background: var(--membership-card-surface);
    border: none;
    box-shadow: var(--membership-card-shadow);
@@ -1363,14 +1143,12 @@ onMounted(() => {
  .stat-item,
  .asset-item,
  .rule-item,
- .profile-item,
- .giftcard-item {
+ .profile-item {
    background: var(--membership-card-subtle);
  }
 
  .warranty-card__btn,
- .btn-primary,
- .btn-redeem {
+ .btn-primary {
    background: var(--membership-accent);
    color: #050505;
  }
@@ -1397,7 +1175,6 @@ onMounted(() => {
 
  .stat-icon,
  .asset-icon,
- .giftcard-icon,
  .warranty-card__icon {
    color: var(--tz-text-secondary);
    stroke-width: 1.8;

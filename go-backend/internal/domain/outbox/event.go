@@ -24,6 +24,7 @@ const (
 	EventTypeProductCacheInvalidate           = "product.cache_invalidate"
 	EventTypeCustomerServiceRealtime          = "customer_service.realtime"
 	EventTypeCustomerServiceAvatarCleanup     = "customer_service.avatar_cleanup"
+	EventTypeStorefrontRouteCatalogChanged    = "storefront.route_catalog_changed"
 	AggregateTypeOrder                        = "order"
 	AggregateTypePaymentRiskProvider          = "payment_risk_provider"
 	AggregateTypeProduct                      = "product"
@@ -34,6 +35,7 @@ const (
 	AggregateTypeMerchantOffer                = "merchant_offer"
 	AggregateTypeCustomerServiceConversation  = "customer_service_conversation"
 	AggregateTypeCustomerServiceAgentProfile  = "customer_service_agent_profile"
+	AggregateTypeStorefrontRouteCatalogEntry  = "storefront_route_catalog_entry"
 	DefaultEventMaxAttempt                    = 10
 )
 

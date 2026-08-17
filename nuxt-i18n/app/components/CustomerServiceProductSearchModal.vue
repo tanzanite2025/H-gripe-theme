@@ -126,11 +126,12 @@
                 class="flex min-h-56 flex-col overflow-hidden border border-white/[0.12] bg-white/[0.035] transition-colors hover:border-[#B5FF6D]/55"
               >
                 <div class="aspect-[4/3] w-full bg-white/[0.03]">
-                  <img
+                  <StorefrontImage
                     v-if="product.thumbnail"
                     :src="product.thumbnail"
                     :alt="product.title"
                     class="h-full w-full object-cover"
+                    preset="card"
                   />
                 </div>
 

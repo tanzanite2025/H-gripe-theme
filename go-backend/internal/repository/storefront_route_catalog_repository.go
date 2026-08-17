@@ -1,19 +1,32 @@
 package repository
 
 import (
-	seodomain "commerce-platform/internal/domain/seo"
+	"encoding/json"
 	"errors"
+	"strconv"
 	"time"
 
+	outboxdomain "commerce-platform/internal/domain/outbox"
+	seodomain "commerce-platform/internal/domain/seo"
+
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
 
 type StorefrontRouteCatalogRepository struct {
-	db *gorm.DB
+	db     *gorm.DB
+	outbox *OutboxRepository
 }
 
 func NewStorefrontRouteCatalogRepository(db *gorm.DB) *StorefrontRouteCatalogRepository {
 	return &StorefrontRouteCatalogRepository{db: db}
+}
+
+func (r *StorefrontRouteCatalogRepository) ConfigureOutbox(outbox *OutboxRepository) {
+	if r == nil {
+		return
+	}
+	r.outbox = outbox
 }
 
 func (r *StorefrontRouteCatalogRepository) UpsertSnapshot(entries []seodomain.StorefrontRouteCatalogEntry, seenAt time.Time) error {
@@ -25,6 +38,12 @@ func (r *StorefrontRouteCatalogRepository) UpsertSnapshot(entries []seodomain.St
 	}
 
 	return r.db.Transaction(func(tx *gorm.DB) error {
+		var staleIDs []uint
+		if err := tx.Model(&seodomain.StorefrontRouteCatalogEntry{}).
+			Where("last_seen_at < ?", seenAt).
+			Pluck("id", &staleIDs).Error; err != nil {
+			return err
+		}
 		if err := tx.Model(&seodomain.StorefrontRouteCatalogEntry{}).
 			Where("last_seen_at < ?", seenAt).
 			Updates(map[string]interface{}{
@@ -42,6 +61,9 @@ func (r *StorefrontRouteCatalogRepository) UpsertSnapshot(entries []seodomain.St
 			err := tx.Where("route_key = ?", entry.RouteKey).First(&existing).Error
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				if err := tx.Create(&entry).Error; err != nil {
+					return err
+				}
+				if err := r.publishRouteCatalogChanged(tx, entry.ID, entry.ManifestVersion, seenAt, "upsert"); err != nil {
 					return err
 				}
 				continue
@@ -71,22 +93,67 @@ func (r *StorefrontRouteCatalogRepository) UpsertSnapshot(entries []seodomain.St
 			}).Error; err != nil {
 				return err
 			}
+			if err := r.publishRouteCatalogChanged(tx, entry.ID, entry.ManifestVersion, seenAt, "upsert"); err != nil {
+				return err
+			}
+		}
+		for _, routeEntryID := range staleIDs {
+			if err := r.publishRouteCatalogChanged(tx, routeEntryID, "", seenAt, "stale"); err != nil {
+				return err
+			}
 		}
 
 		return nil
 	})
 }
 
+func (r *StorefrontRouteCatalogRepository) publishRouteCatalogChanged(
+	tx *gorm.DB,
+	routeEntryID uint,
+	marker string,
+	seenAt time.Time,
+	change string,
+) error {
+	if r == nil || r.outbox == nil || routeEntryID == 0 {
+		return nil
+	}
+	payload, err := json.Marshal(struct {
+		RouteEntryID uint      `json:"route_entry_id"`
+		Marker       string    `json:"marker,omitempty"`
+		Change       string    `json:"change"`
+		SeenAt       time.Time `json:"seen_at"`
+	}{
+		RouteEntryID: routeEntryID,
+		Marker:       marker,
+		Change:       change,
+		SeenAt:       seenAt,
+	})
+	if err != nil {
+		return err
+	}
+	return r.outbox.WithTx(tx).CreateEvent(&outboxdomain.Event{
+		EventKey:      "storefront-route-catalog:" + strconv.FormatUint(uint64(routeEntryID), 10) + ":" + seenAt.Format(time.RFC3339Nano),
+		EventType:     outboxdomain.EventTypeStorefrontRouteCatalogChanged,
+		AggregateType: outboxdomain.AggregateTypeStorefrontRouteCatalogEntry,
+		AggregateID:   strconv.FormatUint(uint64(routeEntryID), 10),
+		Payload:       datatypes.JSON(payload),
+		AvailableAt:   seenAt,
+	})
+}
+
 type StorefrontRouteCatalogListFilter struct {
-	Page         int
-	PageSize     int
-	Locale       string
-	SourceType   string
-	EntryStatus  string
-	CheckStatus  string
-	Search       string
-	Searchable   *bool
-	ExcludeAlias bool
+	Page           int
+	PageSize       int
+	Locale         string
+	SourceType     string
+	EntryStatus    string
+	CheckStatus    string
+	Search         string
+	Searchable     *bool
+	Indexable      *bool
+	NeedsAttention *bool
+	ProblemScope   string
+	ExcludeAlias   bool
 }
 
 func (r *StorefrontRouteCatalogRepository) List(filter StorefrontRouteCatalogListFilter) ([]seodomain.StorefrontRouteCatalogEntry, int64, error) {
@@ -115,6 +182,24 @@ func (r *StorefrontRouteCatalogRepository) List(filter StorefrontRouteCatalogLis
 	}
 	if filter.Searchable != nil {
 		query = query.Where("is_searchable = ?", *filter.Searchable)
+	}
+	if filter.Indexable != nil {
+		query = query.Where("is_indexable = ?", *filter.Indexable)
+	}
+	if filter.NeedsAttention != nil {
+		condition := routeNeedsAttentionCondition()
+		if *filter.NeedsAttention {
+			query = query.Where(condition)
+		} else {
+			query = query.Where("NOT (" + condition + ")")
+		}
+	}
+	if filter.ProblemScope == "canonical" {
+		query = query.Where(
+			"entry_status = ? OR last_check_status = ?",
+			seodomain.RouteEntryStatusDuplicate,
+			seodomain.RouteCheckStatusCanonicalMisfit,
+		)
 	}
 	if filter.ExcludeAlias {
 		query = query.Where("is_alias = ?", false)
@@ -146,12 +231,98 @@ func (r *StorefrontRouteCatalogRepository) List(filter StorefrontRouteCatalogLis
 	return entries, total, err
 }
 
+func (r *StorefrontRouteCatalogRepository) ListSitemapEntries(limit int) ([]seodomain.StorefrontRouteCatalogEntry, error) {
+	if r == nil || r.db == nil {
+		return nil, errors.New("storefront route catalog repository is unavailable")
+	}
+	if limit < 1 || limit > 50000 {
+		limit = 50000
+	}
+
+	var entries []seodomain.StorefrontRouteCatalogEntry
+	err := r.db.
+		Where("entry_status = ? AND is_alias = ? AND is_indexable = ?", seodomain.RouteEntryStatusActive, false, true).
+		Order("locale ASC").
+		Order("path ASC").
+		Limit(limit).
+		Find(&entries).Error
+	return entries, err
+}
+
+func routeNeedsAttentionCondition() string {
+	return `
+		entry_status IN ('duplicate', 'stale')
+		OR (
+			is_alias = FALSE
+			AND last_check_status IN ('redirect', 'not_found', 'server_error', 'canonical_mismatch', 'error')
+		)
+		OR (
+			is_alias = TRUE
+			AND last_check_status IN (
+				'redirect_chain',
+				'redirect_target_mismatch',
+				'not_found',
+				'server_error',
+				'canonical_mismatch',
+				'error'
+			)
+		)
+	`
+}
+
+func (r *StorefrontRouteCatalogRepository) ListIssueCandidateIDs() ([]uint, error) {
+	if r == nil || r.db == nil {
+		return nil, errors.New("storefront route catalog repository is unavailable")
+	}
+
+	var ids []uint
+	err := r.db.Model(&seodomain.StorefrontRouteCatalogEntry{}).
+		Where(routeNeedsAttentionCondition()).
+		Order("id ASC").
+		Pluck("id", &ids).Error
+	return ids, err
+}
+
 func (r *StorefrontRouteCatalogRepository) FindByID(id uint) (*seodomain.StorefrontRouteCatalogEntry, error) {
 	if r == nil || r.db == nil {
 		return nil, errors.New("storefront route catalog repository is unavailable")
 	}
 	var entry seodomain.StorefrontRouteCatalogEntry
 	if err := r.db.First(&entry, id).Error; err != nil {
+		return nil, err
+	}
+	return &entry, nil
+}
+
+func (r *StorefrontRouteCatalogRepository) FindCurrentByPath(path string) (*seodomain.StorefrontRouteCatalogEntry, error) {
+	if r == nil || r.db == nil {
+		return nil, errors.New("storefront route catalog repository is unavailable")
+	}
+
+	var entry seodomain.StorefrontRouteCatalogEntry
+	if err := r.db.
+		Where("path = ? AND entry_status <> ?", path, seodomain.RouteEntryStatusStale).
+		Order("is_alias DESC").
+		First(&entry).Error; err != nil {
+		return nil, err
+	}
+	return &entry, nil
+}
+
+func (r *StorefrontRouteCatalogRepository) FindCanonicalByPath(path string) (*seodomain.StorefrontRouteCatalogEntry, error) {
+	if r == nil || r.db == nil {
+		return nil, errors.New("storefront route catalog repository is unavailable")
+	}
+
+	var entry seodomain.StorefrontRouteCatalogEntry
+	if err := r.db.
+		Where(
+			"path = ? AND is_alias = ? AND entry_status = ?",
+			path,
+			false,
+			seodomain.RouteEntryStatusActive,
+		).
+		First(&entry).Error; err != nil {
 		return nil, err
 	}
 	return &entry, nil

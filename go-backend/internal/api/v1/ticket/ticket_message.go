@@ -1,6 +1,7 @@
 package ticket
 
 import (
+	"commerce-platform/internal/api/v1/publicmedia"
 	"commerce-platform/internal/domain/ticket"
 	"encoding/json"
 	"strings"
@@ -10,8 +11,8 @@ import (
 
 // ============ 客服消息响应 ============
 
-func publicCustomerServiceMessageResponse(item ticket.TicketMessage, conversationID, senderName, messageType string, metadata interface{}) gin.H {
-	attachments := parseTicketMessageAttachments(item.Attachments)
+func publicCustomerServiceMessageResponse(item ticket.TicketMessage, conversationID, senderName, messageType string, metadata interface{}, resolver publicmedia.Resolver) gin.H {
+	attachments := publicTicketMessageAttachments(item.Attachments, resolver)
 	attachmentURL := firstTicketMessageAttachment(attachments)
 
 	if strings.TrimSpace(senderName) == "" {
@@ -31,6 +32,7 @@ func publicCustomerServiceMessageResponse(item ticket.TicketMessage, conversatio
 	if metadata == nil {
 		metadata = parseTicketMessageMetadata(item.Metadata)
 	}
+	metadata = publicTicketMessageMetadata(metadata, resolver)
 
 	return gin.H{
 		"id":              item.ID,
@@ -85,6 +87,14 @@ func parseTicketMessageAttachments(value string) []string {
 	return attachments
 }
 
+func publicTicketMessageAttachments(value string, resolver publicmedia.Resolver) []string {
+	attachments := parseTicketMessageAttachments(value)
+	for index := range attachments {
+		attachments[index] = publicmedia.URL(resolver, attachments[index])
+	}
+	return attachments
+}
+
 func firstTicketMessageAttachment(attachments []string) string {
 	if len(attachments) == 0 {
 		return ""
@@ -133,6 +143,52 @@ func parseTicketMessageMetadata(value string) interface{} {
 		return nil
 	}
 	return payload
+}
+
+func publicTicketMessageMetadata(metadata interface{}, resolver publicmedia.Resolver) interface{} {
+	if metadata == nil || resolver == nil {
+		return metadata
+	}
+
+	switch payload := metadata.(type) {
+	case map[string]interface{}:
+		return publicTicketMessageMetadataObject(payload, resolver)
+	case map[string]string:
+		normalized := make(map[string]string, len(payload))
+		for key, value := range payload {
+			if isPublicTicketMessageMetadataMediaKey(key) {
+				normalized[key] = publicmedia.URL(resolver, value)
+				continue
+			}
+			normalized[key] = value
+		}
+		return normalized
+	default:
+		return metadata
+	}
+}
+
+func publicTicketMessageMetadataObject(payload map[string]interface{}, resolver publicmedia.Resolver) map[string]interface{} {
+	normalized := make(map[string]interface{}, len(payload))
+	for key, value := range payload {
+		if isPublicTicketMessageMetadataMediaKey(key) {
+			if mediaURL, ok := value.(string); ok {
+				normalized[key] = publicmedia.URL(resolver, mediaURL)
+				continue
+			}
+		}
+		normalized[key] = value
+	}
+	return normalized
+}
+
+func isPublicTicketMessageMetadataMediaKey(key string) bool {
+	switch key {
+	case "thumbnail", "answer_image_url":
+		return true
+	default:
+		return false
+	}
 }
 
 func displayName(firstName, lastName, username, email string) string {

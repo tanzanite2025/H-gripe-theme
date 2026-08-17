@@ -53,7 +53,7 @@
     </section>
 
     <section class="mt-10">
-      <div class="mb-5">
+      <div class="mb-5 tz-mobile-text-inset">
         <p class="text-xs font-semibold uppercase tracking-[0.18em] text-[#B5FF6D]">
           Supported methods
         </p>
@@ -70,9 +70,9 @@
         <article class="flex h-full flex-col rounded-2xl bg-[#111116] p-5 shadow-[0_12px_30px_rgba(0,0,0,0.38)]">
           <div class="flex min-h-10 items-center gap-3">
             <div class="flex h-10 items-center gap-1 rounded-xl bg-[#17171d] px-2.5">
-              <img src="/icons/payment/visa.svg" alt="Visa" class="h-5 w-auto" />
-              <img src="/icons/payment/mastercard.svg" alt="Mastercard" class="h-5 w-auto" />
-              <img src="/icons/payment/amex.svg" alt="American Express" class="h-5 w-auto" />
+              <img src="/icons/payment/visa.svg" alt="Visa" width="200" height="120" class="h-5 w-auto" />
+              <img src="/icons/payment/mastercard.svg" alt="Mastercard" width="200" height="120" class="h-5 w-auto" />
+              <img src="/icons/payment/amex.svg" alt="American Express" width="200" height="120" class="h-5 w-auto" />
             </div>
           </div>
           <h3 class="mt-5 text-base font-semibold text-slate-50">Credit and debit cards</h3>
@@ -89,7 +89,7 @@
         <article class="flex h-full flex-col rounded-2xl bg-[#111116] p-5 shadow-[0_12px_30px_rgba(0,0,0,0.38)]">
           <div class="flex min-h-10 items-center">
             <div class="flex h-10 items-center rounded-xl bg-[#17171d] px-3">
-              <img src="/icons/payment/paypal.svg?v=4" alt="PayPal" class="h-6 w-auto" />
+              <img src="/icons/payment/paypal.svg?v=4" alt="PayPal" width="200" height="120" class="h-6 w-auto" />
             </div>
           </div>
           <h3 class="mt-5 text-base font-semibold text-slate-50">PayPal</h3>
@@ -107,7 +107,7 @@
         <article class="flex h-full flex-col rounded-2xl bg-[#111116] p-5 shadow-[0_12px_30px_rgba(0,0,0,0.38)]">
           <div class="flex min-h-10 items-center">
             <div class="flex h-10 items-center rounded-xl bg-[#17171d] px-3">
-              <img src="/icons/payment/alipay.svg?v=6" alt="Alipay" class="h-6 w-auto" />
+              <img src="/icons/payment/alipay.svg?v=6" alt="Alipay" width="200" height="120" class="h-6 w-auto" />
             </div>
           </div>
           <h3 class="mt-5 text-base font-semibold text-slate-50">Alipay</h3>
@@ -125,7 +125,7 @@
         <article class="flex h-full flex-col rounded-2xl bg-[#111116] p-5 shadow-[0_12px_30px_rgba(0,0,0,0.38)]">
           <div class="flex min-h-10 items-center">
             <div class="flex h-10 items-center rounded-xl bg-[#17171d] px-3">
-              <img src="/icons/payment/wechatpay.svg?v=4" alt="WeChat Pay" class="h-6 w-auto" />
+              <img src="/icons/payment/wechatpay.svg?v=4" alt="WeChat Pay" width="200" height="120" class="h-6 w-auto" />
             </div>
           </div>
           <h3 class="mt-5 text-base font-semibold text-slate-50">WeChat Pay</h3>
@@ -143,7 +143,7 @@
     </section>
 
     <section class="mt-10">
-      <div class="mb-5">
+      <div class="mb-5 tz-mobile-text-inset">
         <p class="text-xs font-semibold uppercase tracking-[0.18em] text-[#B5FF6D]">
           Security measures
         </p>
@@ -208,7 +208,7 @@
     </section>
 
     <section class="mt-10">
-      <div class="mb-5">
+      <div class="mb-5 tz-mobile-text-inset">
         <p class="text-xs font-semibold uppercase tracking-[0.18em] text-[#B5FF6D]">
           Common concerns
         </p>

@@ -2,6 +2,7 @@ package settings
 
 import (
 	"commerce-platform/internal/api/middleware"
+	settingdomain "commerce-platform/internal/domain/setting"
 	"commerce-platform/internal/service"
 	"net/http"
 
@@ -11,6 +12,7 @@ import (
 type Handler struct {
 	settingService        *service.SettingService
 	websiteProfileService *service.WebsiteProfileService
+	mediaService          *service.MediaService
 }
 
 func NewHandler(settingService *service.SettingService, websiteProfileServices ...*service.WebsiteProfileService) *Handler {
@@ -25,6 +27,13 @@ func NewHandler(settingService *service.SettingService, websiteProfileServices .
 	}
 }
 
+func (h *Handler) ConfigureMediaService(mediaService *service.MediaService) {
+	if h == nil {
+		return
+	}
+	h.mediaService = mediaService
+}
+
 func (h *Handler) GetSiteSettings(c *gin.Context) {
 	locale := c.DefaultQuery("locale", middleware.GetLocale(c))
 
@@ -34,7 +43,7 @@ func (h *Handler) GetSiteSettings(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, settings)
+	c.JSON(http.StatusOK, h.publicSiteSettings(settings))
 }
 
 func (h *Handler) GetAllPublicSettings(c *gin.Context) {
@@ -46,6 +55,7 @@ func (h *Handler) GetAllPublicSettings(c *gin.Context) {
 		return
 	}
 	settings = service.FilterDomainManagedSettings(settings)
+	settings = h.publicSettings(settings)
 
 	c.JSON(http.StatusOK, gin.H{
 		"settings": settings,
@@ -66,6 +76,7 @@ func (h *Handler) GetSettingsByGroup(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+	settings = h.publicSettings(settings)
 
 	c.JSON(http.StatusOK, gin.H{
 		"group":    group,
@@ -88,7 +99,7 @@ func (h *Handler) GetSetting(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, setting)
+	c.JSON(http.StatusOK, h.publicSetting(setting))
 }
 
 func (h *Handler) GetGroups(c *gin.Context) {
@@ -117,6 +128,71 @@ func (h *Handler) GetSocialSettings(c *gin.Context) {
 	c.JSON(http.StatusOK, settings)
 }
 
+func (h *Handler) publicSiteSettings(settings *settingdomain.SiteSettings) *settingdomain.SiteSettings {
+	if settings == nil {
+		return nil
+	}
+	publicSettings := *settings
+	publicSettings.SiteLogoWidth = 0
+	publicSettings.SiteLogoHeight = 0
+	if width, height, ok := h.publicMediaDimensions(publicSettings.SiteLogo); ok {
+		publicSettings.SiteLogoWidth = width
+		publicSettings.SiteLogoHeight = height
+	}
+	publicSettings.SiteLogo = h.publicMediaURL(publicSettings.SiteLogo)
+	publicSettings.SiteFavicon = h.publicMediaURL(publicSettings.SiteFavicon)
+	return &publicSettings
+}
+
+func (h *Handler) publicWebsiteProfile(settings *settingdomain.WebsiteProfileSettings) *settingdomain.WebsiteProfileSettings {
+	if settings == nil {
+		return nil
+	}
+	publicSettings := *settings
+	publicSettings.AvatarURL = h.publicMediaURL(publicSettings.AvatarURL)
+	publicSettings.FactoryImageURL = h.publicMediaURL(publicSettings.FactoryImageURL)
+	return &publicSettings
+}
+
+func (h *Handler) publicSettings(settings []settingdomain.Setting) []settingdomain.Setting {
+	if len(settings) == 0 {
+		return settings
+	}
+	publicSettings := make([]settingdomain.Setting, 0, len(settings))
+	for _, item := range settings {
+		publicSettings = append(publicSettings, *h.publicSetting(&item))
+	}
+	return publicSettings
+}
+
+func (h *Handler) publicSetting(item *settingdomain.Setting) *settingdomain.Setting {
+	if item == nil {
+		return nil
+	}
+	publicItem := *item
+	switch publicItem.Key {
+	case "site_logo", "site_favicon",
+		settingdomain.WebsiteProfileKeyAvatarURL,
+		settingdomain.WebsiteProfileKeyFactoryImageURL:
+		publicItem.Value = h.publicMediaURL(publicItem.Value)
+	}
+	return &publicItem
+}
+
+func (h *Handler) publicMediaURL(value string) string {
+	if h == nil || h.mediaService == nil {
+		return value
+	}
+	return h.mediaService.CanonicalPublicMediaURL(value)
+}
+
+func (h *Handler) publicMediaDimensions(value string) (int, int, bool) {
+	if h == nil || h.mediaService == nil {
+		return 0, 0, false
+	}
+	return h.mediaService.PublicMediaDimensions(value)
+}
+
 func (h *Handler) GetWebsiteProfile(c *gin.Context) {
 	if h.websiteProfileService == nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "website profile service unavailable"})
@@ -130,5 +206,5 @@ func (h *Handler) GetWebsiteProfile(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, settings)
+	c.JSON(http.StatusOK, h.publicWebsiteProfile(settings))
 }

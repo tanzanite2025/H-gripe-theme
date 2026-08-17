@@ -10,7 +10,7 @@
         <div class="space-y-7 px-5 py-5">
           <section class="grid gap-4 border-t border-dashed pt-6 first:border-t-0 first:pt-0 lg:grid-cols-[170px_minmax(0,1fr)]">
             <div>
-              <h3 class="text-sm font-black tracking-tighter italic uppercase text-foreground">正文内容</h3>
+              <h3 class="text-sm font-black tracking-tighter uppercase text-foreground">正文内容</h3>
               <p class="mt-1 text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">
                 文章标题、摘要与 Markdown 正文。
               </p>
@@ -53,7 +53,7 @@
 
           <section class="grid gap-4 border-t border-dashed pt-6 first:border-t-0 first:pt-0 lg:grid-cols-[170px_minmax(0,1fr)]">
             <div>
-              <h3 class="text-sm font-black tracking-tighter italic uppercase text-foreground">发布信息</h3>
+              <h3 class="text-sm font-black tracking-tighter uppercase text-foreground">发布信息</h3>
               <p class="mt-1 text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">
                 控制文章状态、封面图和内容标签。
               </p>

@@ -12,7 +12,7 @@
           {{ saving ? '保存中' : '保存链接' }}
         </Button>
         <Button v-if="activeTab === 'profiles'" variant="outline" :disabled="loading || saving" @click="refresh">
-          <RefreshCw :class="['size-4', loading ? 'animate-spin' : '']" />
+ <RefreshCw :class="['size-4', loading ? 'animate-spin': '']" />
           刷新
         </Button>
       </template>

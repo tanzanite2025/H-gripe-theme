@@ -154,6 +154,10 @@ func (s *s3StorageImpl) UploadFromReader(ctx context.Context, reader io.Reader, 
 }
 
 func (s *s3StorageImpl) UploadFromReaderWithPrefix(ctx context.Context, reader io.Reader, filename string, prefix string) (string, error) {
+	return s.UploadFromReaderWithPrefixAndCacheControl(ctx, reader, filename, prefix, "")
+}
+
+func (s *s3StorageImpl) UploadFromReaderWithPrefixAndCacheControl(ctx context.Context, reader io.Reader, filename string, prefix string, cacheControl string) (string, error) {
 	// 生成唯一文件名
 	newFilename, err := generateObjectKey(filename, prefix)
 	if err != nil {
@@ -164,12 +168,16 @@ func (s *s3StorageImpl) UploadFromReaderWithPrefix(ctx context.Context, reader i
 	contentType := detectContentType(filename)
 
 	// 上传到S3
-	_, err = s.client.PutObject(ctx, &s3.PutObjectInput{
+	input := &s3.PutObjectInput{
 		Bucket:      aws.String(s.config.Bucket),
 		Key:         aws.String(newFilename),
 		Body:        reader,
 		ContentType: aws.String(contentType),
-	})
+	}
+	if cacheControl = strings.TrimSpace(cacheControl); cacheControl != "" {
+		input.CacheControl = aws.String(cacheControl)
+	}
+	_, err = s.client.PutObject(ctx, input)
 
 	if err != nil {
 		return "", fmt.Errorf("failed to upload to S3: %w", err)
@@ -297,6 +305,36 @@ func (s *s3StorageImpl) ObjectKey(reference string) (string, error) {
 		return key, nil
 	}
 	return "", fmt.Errorf("invalid object key")
+}
+
+func (s *s3StorageImpl) Open(ctx context.Context, key string) (*StoredObject, error) {
+	normalizedKey, ok := NormalizeObjectKey(key)
+	if !ok {
+		return nil, fmt.Errorf("invalid object key")
+	}
+
+	object, err := s.client.GetObject(ctx, &s3.GetObjectInput{
+		Bucket: aws.String(s.config.Bucket),
+		Key:    aws.String(normalizedKey),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to open S3 object: %w", err)
+	}
+	if object.Body == nil {
+		return nil, fmt.Errorf("failed to open S3 object: empty response body")
+	}
+
+	modTime := time.Time{}
+	if object.LastModified != nil {
+		modTime = *object.LastModified
+	}
+	return &StoredObject{
+		ReadCloser: object.Body,
+		Name:       filepath.Base(normalizedKey),
+		MimeType:   aws.ToString(object.ContentType),
+		Size:       object.ContentLength,
+		ModTime:    modTime,
+	}, nil
 }
 
 // detectContentType 检测文件内容类型

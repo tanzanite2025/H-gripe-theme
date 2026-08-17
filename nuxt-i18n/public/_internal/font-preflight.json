@@ -1,0 +1,387 @@
+{
+  "schema_version": 1,
+  "project": "tanzanite-theme storefront",
+  "generated_at": "2026-08-17T23:06:45.598Z",
+  "overall_status": "pass",
+  "baseline": {
+    "id": "storefront-self-hosted-no-fallback-v1",
+    "label": "自托管字体，禁止非预期回退",
+    "font_display": "swap",
+    "rules": [
+      "禁止 system-ui、sans-serif、serif、monospace、平台系统字体、CDN 字体和未批准字体族。",
+      "StorefrontSystem 是完整 Maple UI 的自托管脚本覆盖面，不是系统 fallback。",
+      "font-display 必须保持 swap；性能策略不能通过改成 block 来规避。"
+    ]
+  },
+  "checks": [
+    {
+      "key": "no-external-fallback",
+      "label": "禁止外部 / 系统 / 通用字体回退",
+      "status": "pass",
+      "message": "未发现系统、通用、CDN 或未批准字体回退。",
+      "details": []
+    },
+    {
+      "key": "font-face-contract",
+      "label": "自托管字体合同",
+      "status": "pass",
+      "message": "6 个受控字体分片均为内容寻址的本项目资源，并保持 checkout 声明一致。",
+      "details": []
+    },
+    {
+      "key": "multilingual-split",
+      "label": "多语言分片与首屏策略",
+      "status": "pass",
+      "message": "Latin 子集首屏加载；CJK 与其他脚本按 unicode-range 分片，完整 Maple UI 不参与 Latin 首屏下载。",
+      "details": []
+    },
+    {
+      "key": "layout-parity",
+      "label": "Latin 子集布局一致性",
+      "status": "pass",
+      "message": "Latin 子集与完整 Maple UI 的字体度量、字宽和轮廓一致，不会因字体切换造成布局漂移。",
+      "details": []
+    },
+    {
+      "key": "subset-completeness",
+      "label": "语言资源子集完备性",
+      "status": "pass",
+      "message": "20 个项目语言的所有 locale 与 message JSON 均由其受控字体栈覆盖。",
+      "details": []
+    }
+  ],
+  "strategy": {
+    "status": "pass",
+    "label": "Latin 首屏子集 + unicode-range 脚本分片",
+    "default_stack": [
+      "StorefrontSystemLatin",
+      "StorefrontSystem"
+    ],
+    "latin_bytes": 48272,
+    "latin_budget_bytes": 163840,
+    "complete_maple_ui_family": "StorefrontSystem",
+    "cjk_unicode_range": "U+0250-02FF, U+0370-052F, U+0530-058F, U+1F00-1FFF, U+2070-209F, U+2150-218F, U+2C00-2DFF, U+2E80-2EFF, U+3000-303F, U+3040-30FF, U+3100-31FF, U+3200-33FF, U+3400-4DBF, U+4E00-9FFF, U+AC00-D7AF, U+F900-FAFF, U+FE30-FE4F, U+FF00-FFEF, U+20000-2FA1F",
+    "layout_parity_verified": true,
+    "rationale": "默认 Latin 使用更小的同度量子集；CJK 和非 Latin 语言仅在实际字符命中时加载自托管脚本字体。"
+  },
+  "faces": [
+    {
+      "family": "StorefrontSystemLatin",
+      "role": "默认首屏子集",
+      "script": "Latin",
+      "filename": "StorefrontSystem-Latin.00af3fec5b34.woff2",
+      "bytes": 48272,
+      "font_display": "swap",
+      "unicode_range": "",
+      "self_hosted": true
+    },
+    {
+      "family": "StorefrontSystem",
+      "role": "CJK 与完整字形覆盖",
+      "script": "CJK / complete Maple UI",
+      "filename": "StorefrontSystem-CJK.f8ce6d72e8cb.woff2",
+      "bytes": 6403884,
+      "font_display": "swap",
+      "unicode_range": "U+0250-02FF, U+0370-052F, U+0530-058F, U+1F00-1FFF, U+2070-209F, U+2150-218F, U+2C00-2DFF, U+2E80-2EFF, U+3000-303F, U+3040-30FF, U+3100-31FF, U+3200-33FF, U+3400-4DBF, U+4E00-9FFF, U+AC00-D7AF, U+F900-FAFF, U+FE30-FE4F, U+FF00-FFEF, U+20000-2FA1F",
+      "self_hosted": true
+    },
+    {
+      "family": "StorefrontSystemDevanagari",
+      "role": "印地语分片",
+      "script": "Devanagari",
+      "filename": "StorefrontSystem-Devanagari.3b3cae4d2600.woff2",
+      "bytes": 121192,
+      "font_display": "swap",
+      "unicode_range": "U+0900-097F, U+1CD0-1CF9, U+200C-200D, U+20A8, U+20B9, U+20F0, U+25CC, U+A830-A839, U+A8E0-A8FF, U+11B00-11B09",
+      "self_hosted": true
+    },
+    {
+      "family": "StorefrontSystemLatinAccents",
+      "role": "扩展拉丁语种分片",
+      "script": "Latin accents",
+      "filename": "StorefrontSystem-Latin-Accents.e645edc952b6.woff2",
+      "bytes": 4960,
+      "font_display": "swap",
+      "unicode_range": "U+00C0-00C1, U+00C4-00C5, U+00C9, U+00D6, U+00DC, U+0130",
+      "self_hosted": true
+    },
+    {
+      "family": "StorefrontSystemArabic",
+      "role": "阿拉伯语分片",
+      "script": "Arabic",
+      "filename": "StorefrontSystem-Arabic.ce85091f0209.woff2",
+      "bytes": 165960,
+      "font_display": "swap",
+      "unicode_range": "U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC4, U+10EFC-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1",
+      "self_hosted": true
+    },
+    {
+      "family": "StorefrontSystemThai",
+      "role": "泰语分片",
+      "script": "Thai",
+      "filename": "StorefrontSystem-Thai.1f5a173641bb.woff2",
+      "bytes": 26924,
+      "font_display": "swap",
+      "unicode_range": "U+02D7, U+0303, U+0331, U+0E01-0E5B, U+200C-200D, U+25CC",
+      "self_hosted": true
+    }
+  ],
+  "coverage": {
+    "locale_count": 20,
+    "source_file_count": 900,
+    "checked_characters": 4099,
+    "missing_characters": 0,
+    "locales": [
+      {
+        "locale": "ar",
+        "source_files": 45,
+        "checked_characters": 166,
+        "missing_characters": 0,
+        "missing_sample": [],
+        "font_stack": [
+          "StorefrontSystemArabic",
+          "StorefrontSystemLatin",
+          "StorefrontSystem"
+        ],
+        "status": "pass"
+      },
+      {
+        "locale": "da",
+        "source_files": 45,
+        "checked_characters": 132,
+        "missing_characters": 0,
+        "missing_sample": [],
+        "font_stack": [
+          "StorefrontSystemLatinAccents",
+          "StorefrontSystemLatin",
+          "StorefrontSystem"
+        ],
+        "status": "pass"
+      },
+      {
+        "locale": "de",
+        "source_files": 45,
+        "checked_characters": 132,
+        "missing_characters": 0,
+        "missing_sample": [],
+        "font_stack": [
+          "StorefrontSystemLatinAccents",
+          "StorefrontSystemLatin",
+          "StorefrontSystem"
+        ],
+        "status": "pass"
+      },
+      {
+        "locale": "en",
+        "source_files": 45,
+        "checked_characters": 125,
+        "missing_characters": 0,
+        "missing_sample": [],
+        "font_stack": [
+          "StorefrontSystemLatin",
+          "StorefrontSystem"
+        ],
+        "status": "pass"
+      },
+      {
+        "locale": "es",
+        "source_files": 45,
+        "checked_characters": 134,
+        "missing_characters": 0,
+        "missing_sample": [],
+        "font_stack": [
+          "StorefrontSystemLatinAccents",
+          "StorefrontSystemLatin",
+          "StorefrontSystem"
+        ],
+        "status": "pass"
+      },
+      {
+        "locale": "fi",
+        "source_files": 45,
+        "checked_characters": 127,
+        "missing_characters": 0,
+        "missing_sample": [],
+        "font_stack": [
+          "StorefrontSystemLatin",
+          "StorefrontSystem"
+        ],
+        "status": "pass"
+      },
+      {
+        "locale": "fr",
+        "source_files": 45,
+        "checked_characters": 136,
+        "missing_characters": 0,
+        "missing_sample": [],
+        "font_stack": [
+          "StorefrontSystemLatinAccents",
+          "StorefrontSystemLatin",
+          "StorefrontSystem"
+        ],
+        "status": "pass"
+      },
+      {
+        "locale": "hi",
+        "source_files": 45,
+        "checked_characters": 182,
+        "missing_characters": 0,
+        "missing_sample": [],
+        "font_stack": [
+          "StorefrontSystemDevanagari",
+          "StorefrontSystemLatin",
+          "StorefrontSystem"
+        ],
+        "status": "pass"
+      },
+      {
+        "locale": "id",
+        "source_files": 45,
+        "checked_characters": 125,
+        "missing_characters": 0,
+        "missing_sample": [],
+        "font_stack": [
+          "StorefrontSystemLatin",
+          "StorefrontSystem"
+        ],
+        "status": "pass"
+      },
+      {
+        "locale": "it",
+        "source_files": 45,
+        "checked_characters": 128,
+        "missing_characters": 0,
+        "missing_sample": [],
+        "font_stack": [
+          "StorefrontSystemLatin",
+          "StorefrontSystem"
+        ],
+        "status": "pass"
+      },
+      {
+        "locale": "ja",
+        "source_files": 45,
+        "checked_characters": 502,
+        "missing_characters": 0,
+        "missing_sample": [],
+        "font_stack": [
+          "StorefrontSystemLatin",
+          "StorefrontSystem"
+        ],
+        "status": "pass"
+      },
+      {
+        "locale": "ko",
+        "source_files": 45,
+        "checked_characters": 427,
+        "missing_characters": 0,
+        "missing_sample": [],
+        "font_stack": [
+          "StorefrontSystemLatin",
+          "StorefrontSystem"
+        ],
+        "status": "pass"
+      },
+      {
+        "locale": "ms",
+        "source_files": 45,
+        "checked_characters": 125,
+        "missing_characters": 0,
+        "missing_sample": [],
+        "font_stack": [
+          "StorefrontSystemLatin",
+          "StorefrontSystem"
+        ],
+        "status": "pass"
+      },
+      {
+        "locale": "nl",
+        "source_files": 45,
+        "checked_characters": 128,
+        "missing_characters": 0,
+        "missing_sample": [],
+        "font_stack": [
+          "StorefrontSystemLatin",
+          "StorefrontSystem"
+        ],
+        "status": "pass"
+      },
+      {
+        "locale": "pt",
+        "source_files": 45,
+        "checked_characters": 137,
+        "missing_characters": 0,
+        "missing_sample": [],
+        "font_stack": [
+          "StorefrontSystemLatinAccents",
+          "StorefrontSystemLatin",
+          "StorefrontSystem"
+        ],
+        "status": "pass"
+      },
+      {
+        "locale": "ru",
+        "source_files": 45,
+        "checked_characters": 182,
+        "missing_characters": 0,
+        "missing_sample": [],
+        "font_stack": [
+          "StorefrontSystemLatin",
+          "StorefrontSystem"
+        ],
+        "status": "pass"
+      },
+      {
+        "locale": "sv",
+        "source_files": 45,
+        "checked_characters": 131,
+        "missing_characters": 0,
+        "missing_sample": [],
+        "font_stack": [
+          "StorefrontSystemLatinAccents",
+          "StorefrontSystemLatin",
+          "StorefrontSystem"
+        ],
+        "status": "pass"
+      },
+      {
+        "locale": "th",
+        "source_files": 45,
+        "checked_characters": 183,
+        "missing_characters": 0,
+        "missing_sample": [],
+        "font_stack": [
+          "StorefrontSystemThai",
+          "StorefrontSystemLatin",
+          "StorefrontSystem"
+        ],
+        "status": "pass"
+      },
+      {
+        "locale": "tr",
+        "source_files": 45,
+        "checked_characters": 136,
+        "missing_characters": 0,
+        "missing_sample": [],
+        "font_stack": [
+          "StorefrontSystemLatinAccents",
+          "StorefrontSystemLatin",
+          "StorefrontSystem"
+        ],
+        "status": "pass"
+      },
+      {
+        "locale": "zh-cn",
+        "source_files": 45,
+        "checked_characters": 761,
+        "missing_characters": 0,
+        "missing_sample": [],
+        "font_stack": [
+          "StorefrontSystemLatin",
+          "StorefrontSystem"
+        ],
+        "status": "pass"
+      }
+    ]
+  }
+}

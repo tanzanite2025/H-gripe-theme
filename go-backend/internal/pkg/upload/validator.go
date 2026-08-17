@@ -241,6 +241,16 @@ func imageDimensions(file *multipart.FileHeader, contentType string) (int, int, 
 }
 
 func validateImageContent(file *multipart.FileHeader, contentType string, expectedWidth, expectedHeight int) error {
+	if contentType == "image/webp" {
+		animated, err := webPIsAnimated(file)
+		if err != nil {
+			return validationError(CodeInvalidType, "invalid_type: unable to inspect WebP animation")
+		}
+		if animated {
+			return validationError(CodeInvalidType, "invalid_type: animated WebP is not supported for generated media")
+		}
+	}
+
 	src, err := file.Open()
 	if err != nil {
 		return fmt.Errorf("open image for content validation: %w", err)
@@ -265,6 +275,26 @@ func validateImageContent(file *multipart.FileHeader, contentType string, expect
 		)
 	}
 	return nil
+}
+
+func webPIsAnimated(file *multipart.FileHeader) (bool, error) {
+	src, err := file.Open()
+	if err != nil {
+		return false, err
+	}
+	defer func() { _ = src.Close() }()
+
+	data, err := io.ReadAll(io.LimitReader(src, webPHeaderInspectionBytes))
+	if err != nil {
+		return false, err
+	}
+	if len(data) < 21 || string(data[0:4]) != "RIFF" || string(data[8:12]) != "WEBP" {
+		return false, fmt.Errorf("invalid WebP container")
+	}
+	if string(data[12:16]) != "VP8X" {
+		return false, nil
+	}
+	return data[20]&0x02 != 0, nil
 }
 
 func imageFormatMatchesContentType(format, contentType string) bool {

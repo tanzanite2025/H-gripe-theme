@@ -47,6 +47,8 @@
                 <img
                   :src="icon.src"
                   :alt="icon.alt"
+                  :width="icon.width"
+                  :height="icon.height"
                   :class="['payment-icon-tile__img', icon.className]"
                   loading="lazy"
                   decoding="async"
@@ -71,23 +73,25 @@ const currentYear = computed(() => new Date().getFullYear())
 interface PaymentIcon {
   src: string
   alt: string
+  width: number
+  height: number
   className?: string
 }
 
 const paymentIcons: PaymentIcon[] = [
-  { src: '/icons/payment/paypal.svg', alt: 'PayPal' },
-  { src: '/icons/payment/visa.svg', alt: 'Visa' },
-  { src: '/icons/payment/mastercard.svg', alt: 'Mastercard' },
-  { src: '/icons/payment/amex.svg', alt: 'American Express' },
-  { src: '/icons/payment/discover.svg', alt: 'Discover' },
-  { src: '/icons/payment/jcb.svg', alt: 'JCB' },
-  { src: '/icons/payment/diners.svg', alt: 'Diners Club' },
-  { src: '/icons/payment/alipay.svg?v=6', alt: 'Alipay', className: 'payment-icon--alipay' },
-  { src: '/icons/payment/unionpay.svg', alt: 'UnionPay' },
-  { src: '/icons/payment/wechatpay.svg', alt: 'WeChat Pay' },
-  { src: '/icons/payment/applepay.svg?v=7', alt: 'Apple Pay' },
-  { src: '/icons/payment/googlepay.svg', alt: 'Google Pay' },
-  { src: '/icons/payment/default.svg', alt: 'Card Payment' },
+  { src: '/icons/payment/paypal.svg', alt: 'PayPal', width: 200, height: 120 },
+  { src: '/icons/payment/visa.svg', alt: 'Visa', width: 200, height: 120 },
+  { src: '/icons/payment/mastercard.svg', alt: 'Mastercard', width: 200, height: 120 },
+  { src: '/icons/payment/amex.svg', alt: 'American Express', width: 200, height: 120 },
+  { src: '/icons/payment/discover.svg', alt: 'Discover', width: 200, height: 120 },
+  { src: '/icons/payment/jcb.svg', alt: 'JCB', width: 200, height: 120 },
+  { src: '/icons/payment/diners.svg', alt: 'Diners Club', width: 200, height: 120 },
+  { src: '/icons/payment/alipay.svg?v=6', alt: 'Alipay', width: 200, height: 120, className: 'payment-icon--alipay' },
+  { src: '/icons/payment/unionpay.svg', alt: 'UnionPay', width: 200, height: 120 },
+  { src: '/icons/payment/wechatpay.svg', alt: 'WeChat Pay', width: 200, height: 120 },
+  { src: '/icons/payment/applepay.svg?v=7', alt: 'Apple Pay', width: 200, height: 120 },
+  { src: '/icons/payment/googlepay.svg', alt: 'Google Pay', width: 200, height: 120 },
+  { src: '/icons/payment/default.svg', alt: 'Card Payment', width: 750, height: 471 },
 ]
 </script>
 

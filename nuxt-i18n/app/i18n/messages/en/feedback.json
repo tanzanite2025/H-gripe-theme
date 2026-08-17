@@ -18,6 +18,7 @@
   "anonymous": "Member",
   "submitting": "Submitting...",
   "defaultTitle": "Share your feedback",
+  "storeReply": "Store reply",
   "required": "Please enter your feedback before submitting.",
   "submitFailed": "Failed to submit feedback. Please try again.",
   "pendingMessage": "Submitted successfully. Your feedback will appear after it is reviewed.",

@@ -38,10 +38,11 @@
       :aria-labelledby="tabId(tab.id)"
       tabindex="0"
     >
-      <article
+      <SafeRichText
         v-if="contentByTab[tab.id]"
+        as="article"
         class="product-information__content"
-        v-html="contentByTab[tab.id]"
+        :html="contentByTab[tab.id]"
       />
       <p v-else class="product-information__empty">
         {{ tab.emptyMessage }}

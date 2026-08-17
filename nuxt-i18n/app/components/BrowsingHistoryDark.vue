@@ -71,12 +71,12 @@
 
             <!-- 商品图片 -->
             <div class="browsing-history-dark__image relative w-full h-32 bg-black/20">
-              <img
+              <StorefrontImage
                 v-if="item.thumbnail"
                 :src="item.thumbnail"
                 :alt="item.title"
                 class="w-full h-full object-cover"
-                loading="lazy"
+                preset="thumbnail"
               />
               <div v-else class="w-full h-full flex items-center justify-center tz-text-muted">
                 <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">

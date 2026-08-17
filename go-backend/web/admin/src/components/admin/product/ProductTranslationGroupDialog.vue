@@ -58,9 +58,9 @@
                       <span class="font-bold text-xs">{{ localeName(translation.locale) }}</span>
                     </div>
                   </TableCell>
-                  <TableCell class="max-w-64 truncate text-xs font-bold">{{ translation.name || '-' }}</TableCell>
-                  <TableCell class="max-w-48 truncate font-mono text-[10px] text-muted-foreground">{{ translation.slug || '-' }}</TableCell>
-                  <TableCell class="max-w-40 truncate font-mono text-[10px] text-muted-foreground">{{ translation.sku || '-' }}</TableCell>
+ <TableCell class="max-w-64 truncate text-xs font-bold">{{ translation.name || '-'}}</TableCell>
+ <TableCell class="max-w-48 truncate font-mono text-[10px] text-muted-foreground">{{ translation.slug || '-'}}</TableCell>
+ <TableCell class="max-w-40 truncate font-mono text-[10px] text-muted-foreground">{{ translation.sku || '-'}}</TableCell>
                   <TableCell>
                     <AdminStatusBadge :tone="statusTone(translation.status)">
                       {{ statusName(translation.status) }}

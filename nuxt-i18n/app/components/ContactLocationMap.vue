@@ -56,14 +56,13 @@
           class="relative w-full text-left"
           @click="handleOpenInteractive"
         >
-          <img
+          <StorefrontImage
             v-if="contactLocation.previewImageSrc && !previewImageFailed"
             :src="contactLocation.previewImageSrc"
             :alt="t('contactLocation.previewAlt')"
             class="w-full object-cover"
             :class="mapHeightClass"
-            loading="lazy"
-            decoding="async"
+            preset="content"
             @error="previewImageFailed = true"
           />
           <div v-else class="w-full bg-black" :class="mapHeightClass"></div>

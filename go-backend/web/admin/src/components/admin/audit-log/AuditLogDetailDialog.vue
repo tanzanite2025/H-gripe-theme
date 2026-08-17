@@ -17,10 +17,10 @@
           <DetailItem label="资源">{{ resourceName(currentLog.resource) }} / {{ currentLog.resource_id || '-' }}</DetailItem>
           <DetailItem label="请求方法"><AdminStatusBadge :tone="methodTone(currentLog.method)">{{ currentLog.method || '-' }}</AdminStatusBadge></DetailItem>
           <DetailItem label="耗时">{{ currentLog.duration || 0 }} ms</DetailItem>
-          <DetailItem label="IP 地址"><span class="font-mono text-xs">{{ currentLog.ip_address || '-' }}</span></DetailItem>
+ <DetailItem label="IP 地址"><span class="font-mono text-xs">{{ currentLog.ip_address || '-'}}</span></DetailItem>
           <DetailItem label="时间">{{ formatDate(currentLog.created_at) }}</DetailItem>
-          <DetailItem label="请求路径" class="sm:col-span-2"><span class="break-all font-mono text-xs">{{ currentLog.path || '-' }}</span></DetailItem>
-          <DetailItem label="User Agent" class="sm:col-span-2"><span class="break-all text-xs">{{ currentLog.user_agent || '-' }}</span></DetailItem>
+ <DetailItem label="请求路径" class="sm:col-span-2"><span class="break-all font-mono text-xs">{{ currentLog.path || '-'}}</span></DetailItem>
+ <DetailItem label="User Agent" class="sm:col-span-2"><span class="break-all text-xs">{{ currentLog.user_agent || '-'}}</span></DetailItem>
         </dl>
 
         <Alert v-if="currentLog.error_message" variant="destructive">
@@ -79,9 +79,9 @@ const DetailItem = defineComponent({
     value: { type: [String, Number], default: '' }
   },
   setup(props, { slots }) {
-    return () => h('div', { class: 'space-y-1' }, [
-      h('dt', { class: 'text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block' }, props.label),
-      h('dd', { class: 'text-xs font-bold' }, slots.default ? slots.default() : (props.value || '-'))
+ return () => h('div', { class: 'space-y-1'}, [
+ h('dt', { class: 'text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block'}, props.label),
+ h('dd', { class: 'text-xs font-bold'}, slots.default ? slots.default() : (props.value || '-'))
     ])
   }
 })
@@ -92,9 +92,9 @@ const JsonSection = defineComponent({
     value: { type: null as unknown as PropType<AuditLogJsonValue>, required: true }
   },
   setup(props) {
-    return () => h('section', { class: 'min-w-0 space-y-2' }, [
-      h('h3', { class: 'text-sm font-black tracking-tighter italic uppercase text-foreground' }, props.title),
-      h('pre', { class: 'max-h-80 overflow-auto rounded-lg border border-dashed bg-muted/40 p-3 font-mono text-xs leading-5 whitespace-pre-wrap break-words' }, formatJSON(props.value))
+ return () => h('section', { class: 'min-w-0 space-y-2'}, [
+ h('h3', { class: 'text-sm font-black tracking-tighter uppercase text-foreground'}, props.title),
+ h('pre', { class: 'max-h-80 overflow-auto rounded-lg border border-dashed bg-muted/40 p-3 font-mono text-xs leading-5 whitespace-pre-wrap break-words'}, formatJSON(props.value))
     ])
   }
 })

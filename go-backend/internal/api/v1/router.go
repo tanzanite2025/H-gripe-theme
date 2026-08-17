@@ -31,6 +31,7 @@ import (
 	"commerce-platform/internal/api/v1/subscription"
 	"commerce-platform/internal/api/v1/suggestionfeedback"
 	"commerce-platform/internal/api/v1/ticket"
+	wheelsetfitapi "commerce-platform/internal/api/v1/wheelsetfit"
 	"commerce-platform/internal/api/v1/wishlist"
 	"commerce-platform/internal/app"
 	attributionpkg "commerce-platform/internal/pkg/attribution"
@@ -77,29 +78,36 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 	}
 	authHandler := auth.NewHandler(authService, cookieOptions)
 	browsingHistoryHandler := auth.NewBrowsingHistoryHandler(services.User)
-	contentHandler := content.NewHandler(postService, faqService)
+	contentHandler := content.NewHandler(postService, faqService, services.Media)
 	faqHandler := faq.NewHandler(faqService)
 	productHandler := product.NewHandler(productService)
 	productHandler.ConfigureProductCategoryService(services.ProductCategory)
+	productHandler.ConfigureMediaService(services.Media)
 	productHandler.ConfigureStorefrontContext(services.StorefrontContext)
 	productHandler.ConfigureReviewService(reviewService)
 	productHandler.ConfigureShippingService(services.Shipping)
-	quickBuyHandler := quickbuyapi.NewHandler(services.QuickBuy)
+	quickBuyHandler := quickbuyapi.NewHandler(services.QuickBuy, services.Media)
 	selectionAssistantHandler := selectionassistantapi.NewHandler(services.SelectionAssistant)
+	wheelsetFitQuestionnaireHandler := wheelsetfitapi.NewHandler(services.WheelsetFitQuestionnaire)
 	cartHandler := cart.NewHandler(cartService, cart.Options{
+		MediaService:          services.Media,
 		VisitorProfileService: services.VisitorProfile,
 		VisitorSecret:         cfg.JWT.Secret,
 	})
 	settingsHandler := settings.NewHandler(settingService, services.WebsiteProfile)
+	settingsHandler.ConfigureMediaService(services.Media)
 	seoHomeHandler := seohomeapi.NewHandler(services.SEO)
 	analyticsHandler := analyticsapi.NewHandler(services.Analytics)
 	storefrontContextHandler := storefront.NewContextHandler(services.StorefrontContext)
+	storefrontRedirectsHandler := storefront.NewRedirectsHandler(services.StorefrontRedirectRules)
+	storefrontSitemapHandler := storefront.NewSitemapHandler(services.StorefrontRouteCatalog)
 	currencyHandler := currencyapi.NewHandler(services.CurrencyPolicy, services.ExchangeRate)
 	orderHandler := order.NewHandler(orderService, cartService, deps.AntiFraud)
 	orderHandler.ConfigureOrderAbuse(deps.OrderAbuse)
 	orderHandler.ConfigurePaymentProtection(services.PaymentProtection)
 	checkoutHandler := checkout.NewHandler(checkoutService, cartService)
 	marketingHandler := marketing.NewHandler(marketingService, settingService, services.LoyaltyProgram)
+	marketingHandler.ConfigureMediaService(services.Media)
 	reviewHandler := review.NewHandler(reviewService)
 	ticketHandler := ticket.NewHandler(ticketService, ticket.Options{
 		MediaService:          services.Media,
@@ -124,16 +132,18 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 	paymentHandler.ConfigureCardBINLimiter(deps.CardBINLimiter)
 	paymentHandler.ConfigurePaymentGatewayCircuitBreaker(deps.PaymentGatewayCircuitBreaker)
 	shippingHandler := shipping.NewHandler(services.Shipping, orderService)
-	galleryHandler := gallery.NewGalleryHandler(galleryService)
+	galleryHandler := gallery.NewGalleryHandler(galleryService, services.Media)
 	registrationHandler := registration.NewHandler(registrationService, storageSvc, deps.AntiBot)
+	registrationHandler.ConfigureMediaService(services.Media)
 	subscriptionHandler := subscription.NewHandler(subscriptionService, deps.AntiBot)
 	i18nHandler := i18n.NewHandler(postService, sitemapService)
 	showcaseHandler := showcase.NewShowcaseHandler(showcaseService)
 	showcaseHandler.ConfigureUploadProtection(services.ShowcaseUploadProtection)
 	showcaseHandler.ConfigureUploadEligibility(services.ShowcaseUploadEligibility)
-	wishlistHandler := wishlist.NewHandler(wishlistService)
+	wishlistHandler := wishlist.NewHandler(wishlistService, services.Media)
 	feedbackHandler := feedback.NewHandler(feedbackService)
-	suggestionFeedbackHandler := suggestionfeedback.NewHandler(suggestionFeedbackService, storageSvc)
+	feedbackHandler.ConfigureSourceHashSecret(cfg.JWT.Secret)
+	suggestionFeedbackHandler := suggestionfeedback.NewHandler(suggestionFeedbackService, storageSvc, services.Media)
 	spokeHandler := spoke.NewHandler(services.Spoke)
 	behaviorEventHandler := behavior.NewHandler(services.BehaviorEvents)
 	recommendationHandler := recommendation.NewHandler(services.Recommendations)
@@ -167,6 +177,8 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 		storefrontGroup := v1.Group("/storefront")
 		{
 			storefrontGroup.GET("/context", storefrontContextHandler.GetContext)
+			storefrontGroup.GET("/redirects", storefrontRedirectsHandler.ListPublished)
+			storefrontGroup.GET("/sitemap-routes", storefrontSitemapHandler.List)
 		}
 
 		// 认证路由（公开）
@@ -245,6 +257,11 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 			selectionAssistantGroup.GET("/flows/:slug", selectionAssistantHandler.GetPublishedFlow)
 		}
 
+		wheelsetFitQuestionnaireGroup := v1.Group("/wheelset-fit-questionnaire")
+		{
+			wheelsetFitQuestionnaireGroup.GET("/current", wheelsetFitQuestionnaireHandler.GetCurrentFlow)
+		}
+
 		// 购物车路由（可选认证）
 		cartGroup := v1.Group("/cart")
 		cartGroup.Use(
@@ -270,9 +287,15 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 
 		feedbackGroup := v1.Group("/feedback")
 		{
-			feedbackGroup.GET("", feedbackHandler.List)
+			feedbackGroup.GET("", middleware.FeedbackReadRateLimit(deps.RedisClient, cfg.FeedbackRateLimit), middleware.RateLimit(20), feedbackHandler.List)
 			feedbackGroup.GET("/eligibility", middleware.OptionalAuthMiddleware(authService), feedbackHandler.Eligibility)
-			feedbackGroup.POST("", middleware.AuthMiddleware(authService), middleware.RateLimitByUser(2), feedbackHandler.Create)
+			feedbackGroup.POST(
+				"",
+				middleware.AuthMiddleware(authService),
+				middleware.FeedbackWriteRateLimit(deps.RedisClient, cfg.FeedbackRateLimit),
+				middleware.RateLimitByUserPerMinute(6, 2),
+				feedbackHandler.Create,
+			)
 		}
 
 		suggestionFeedbackGroup := v1.Group("/suggestion-feedback")

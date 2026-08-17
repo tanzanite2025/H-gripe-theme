@@ -63,9 +63,13 @@ func normalizeReviewSubmission(item *review.Review) error {
 	return nil
 }
 
-func normalizeReviewForPublic(item *review.Review) {
+func normalizeReviewForPublic(item *review.Review, resolvers ...PublicMediaURLResolver) {
 	if item == nil {
 		return
+	}
+	var resolver PublicMediaURLResolver
+	if len(resolvers) > 0 {
+		resolver = resolvers[0]
 	}
 	item.Title = normalizeReviewPublicText(item.Title)
 	item.Content = normalizeReviewPublicText(item.Content)
@@ -75,7 +79,7 @@ func normalizeReviewForPublic(item *review.Review) {
 		item.Images = "[]"
 		return
 	}
-	item.Images = images
+	item.Images = canonicalizeReviewImages(images, resolver)
 }
 
 func normalizeReviewPublicText(value string) string {
@@ -84,6 +88,25 @@ func normalizeReviewPublicText(value string) string {
 		return ""
 	}
 	return normalized
+}
+
+func canonicalizeReviewImages(raw string, resolver PublicMediaURLResolver) string {
+	if resolver == nil || strings.TrimSpace(raw) == "" {
+		return raw
+	}
+
+	var values []string
+	if err := json.Unmarshal([]byte(raw), &values); err != nil {
+		return raw
+	}
+	for index := range values {
+		values[index] = resolver.CanonicalPublicMediaURL(values[index])
+	}
+	encoded, err := json.Marshal(values)
+	if err != nil {
+		return raw
+	}
+	return string(encoded)
 }
 
 func normalizeReviewImages(raw string) (string, error) {

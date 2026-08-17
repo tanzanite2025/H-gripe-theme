@@ -48,7 +48,7 @@
                   {{ customerAccount.member_tier.name }}
                 </span>
               </div>
-              <p class="mt-1 break-all text-muted-foreground">{{ customerAccount.email || '未填写邮箱' }}</p>
+ <p class="mt-1 break-all text-muted-foreground">{{ customerAccount.email || '未填写邮箱'}}</p>
             </div>
             <dl class="grid grid-cols-2 gap-2 text-[11px]">
               <div class="rounded-xl border p-2">
@@ -57,11 +57,11 @@
               </div>
               <div class="rounded-xl border p-2">
                 <dt class="text-muted-foreground">语言</dt>
-                <dd class="mt-1 font-mono font-bold">{{ customerAccount.locale || '-' }}</dd>
+ <dd class="mt-1 font-mono font-bold">{{ customerAccount.locale || '-'}}</dd>
               </div>
               <div class="rounded-xl border p-2">
                 <dt class="text-muted-foreground">状态</dt>
-                <dd class="mt-1 font-mono font-bold">{{ customerAccount.status || '-' }}</dd>
+ <dd class="mt-1 font-mono font-bold">{{ customerAccount.status || '-'}}</dd>
               </div>
               <div class="rounded-xl border p-2">
                 <dt class="text-muted-foreground">注册</dt>
@@ -76,7 +76,7 @@
             </p>
             <div class="rounded-xl border p-3">
               <span class="block text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">visitor hash</span>
-              <span class="mt-1 block font-mono text-foreground">{{ customerAnonymous?.visitor_hash_preview || '未绑定' }}</span>
+ <span class="mt-1 block font-mono text-foreground">{{ customerAnonymous?.visitor_hash_preview || '未绑定'}}</span>
             </div>
           </div>
         </section>
@@ -90,22 +90,22 @@
             <div class="flex items-start gap-2 rounded-xl border p-2">
               <Mail class="mt-0.5 size-3.5 text-muted-foreground" />
               <div class="min-w-0">
-                <p class="break-all font-bold text-foreground">{{ customerContact.email || '未采集邮箱' }}</p>
-                <p class="text-[11px] text-muted-foreground">来源：{{ customerContact.email_source || 'not_captured' }}</p>
+ <p class="break-all font-bold text-foreground">{{ customerContact.email || '未采集邮箱'}}</p>
+ <p class="text-[11px] text-muted-foreground">来源：{{ customerContact.email_source || 'not_captured'}}</p>
               </div>
             </div>
             <div class="flex items-start gap-2 rounded-xl border p-2">
               <Info class="mt-0.5 size-3.5 text-muted-foreground" />
               <div class="min-w-0">
-                <p class="font-bold text-foreground">{{ customerContact.locale || '未采集语言' }}</p>
-                <p class="text-[11px] text-muted-foreground">来源：{{ customerContact.locale_source || 'not_captured' }}</p>
+ <p class="font-bold text-foreground">{{ customerContact.locale || '未采集语言'}}</p>
+ <p class="text-[11px] text-muted-foreground">来源：{{ customerContact.locale_source || 'not_captured'}}</p>
               </div>
             </div>
             <div class="flex items-start gap-2 rounded-xl border p-2">
               <MapPin class="mt-0.5 size-3.5 text-muted-foreground" />
               <div class="min-w-0">
-                <p class="font-bold text-foreground">{{ signalItems[0]?.value || '未采集地区' }}</p>
-                <p class="text-[11px] text-muted-foreground">{{ signalItems[0]?.reason || '需要 visitor profile / GeoIP 层' }}</p>
+ <p class="font-bold text-foreground">{{ signalItems[0]?.value || '未采集地区'}}</p>
+ <p class="text-[11px] text-muted-foreground">{{ signalItems[0]?.reason || '需要 visitor profile / GeoIP 层'}}</p>
               </div>
             </div>
           </div>
@@ -136,7 +136,7 @@
               </div>
               <div class="min-w-0 flex-1 text-xs">
                 <p class="truncate font-bold">{{ item.name }}</p>
-                <p class="mt-0.5 truncate text-[11px] text-muted-foreground">{{ item.sku || item.variant_name || '无 SKU' }}</p>
+ <p class="mt-0.5 truncate text-[11px] text-muted-foreground">{{ item.sku || item.variant_name || '无 SKU'}}</p>
                 <p class="mt-1 font-mono text-[11px]">x{{ item.quantity }} · {{ formatMoney(item.line_total) }}</p>
               </div>
             </article>

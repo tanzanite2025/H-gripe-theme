@@ -41,7 +41,7 @@
             </div>
             <div class="flex justify-between gap-3">
               <dt>创建人</dt>
-              <dd class="truncate">{{ workflow.created_by || "-" }}</dd>
+ <dd class="truncate">{{ workflow.created_by ||"-" }}</dd>
             </div>
             <div v-if="workflow.approved_by" class="flex justify-between gap-3">
               <dt>审批人</dt>

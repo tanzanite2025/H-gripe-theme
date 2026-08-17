@@ -12,6 +12,7 @@ $Ports = [ordered]@{
   Storefront = 9199
   Api        = 9200
   Admin      = 9300
+  SiteQualityRunner = 9240
   Postgres   = 9400
   Redis      = 9510
 }
@@ -278,7 +279,7 @@ function Stop-Dev {
   if (Test-CommandExists 'docker') {
     Push-Location $Root
     try {
-      docker compose stop postgres redis | Out-Host
+      docker compose stop postgres redis site-quality-runner | Out-Host
     } catch {
       Write-Warn "Docker infra was not stopped: $($_.Exception.Message)"
     } finally {
@@ -305,6 +306,7 @@ Write-Host 'Port plan:' -ForegroundColor Cyan
 Write-Host "  Storefront Nuxt : http://localhost:$($Ports.Storefront)" -ForegroundColor White
 Write-Host "  Go API          : http://localhost:$($Ports.Api)" -ForegroundColor White
 Write-Host "  Admin Console   : http://localhost:$($Ports.Admin)" -ForegroundColor White
+Write-Host "  Quality Runner  : http://localhost:$($Ports.SiteQualityRunner)/healthz" -ForegroundColor White
 Write-Host "  PostgreSQL      : localhost:$($Ports.Postgres)" -ForegroundColor White
 Write-Host "  Redis           : localhost:$($Ports.Redis)" -ForegroundColor White
 
@@ -323,10 +325,10 @@ foreach ($port in $AppPorts) {
   Stop-ListenersOnPort $port
 }
 
-Write-Section 'Starting PostgreSQL / Redis'
+Write-Section 'Starting PostgreSQL / Redis / Site Quality runner'
 Push-Location $Root
 try {
-  docker compose up -d postgres redis | Out-Host
+  docker compose up -d postgres redis site-quality-runner | Out-Host
 } finally {
   Pop-Location
 }
@@ -344,6 +346,12 @@ if (-not $redisReady) {
   exit 1
 }
 Write-Ok "Redis ready: localhost:$($Ports.Redis)"
+
+if (-not (Wait-HttpOk -Url "http://localhost:$($Ports.SiteQualityRunner)/healthz" -TimeoutSeconds 120)) {
+  Write-Fail "Site Quality runner is not ready on http://localhost:$($Ports.SiteQualityRunner)/healthz"
+  exit 1
+}
+Write-Ok "Site Quality runner ready: http://localhost:$($Ports.SiteQualityRunner)/healthz"
 
 Write-Section 'Starting Go API'
 $corsOrigins = @(
@@ -366,6 +374,18 @@ $backendCommand = @"
 `$env:DB_NAME='commerce_platform'
 `$env:REDIS_HOST='localhost'
 `$env:REDIS_PORT='$($Ports.Redis)'
+`$env:STOREFRONT_BASE_URL='http://host.docker.internal:$($Ports.Storefront)'
+`$env:SITE_QUALITY_RUNNER_URL='http://localhost:$($Ports.SiteQualityRunner)'
+`$env:SITE_QUALITY_RUNNER_TOKEN='dev-site-quality-runner-token-0123456789'
+`$env:WORKER_SITE_QUALITY_ENABLED='true'
+`$env:WORKER_SITE_QUALITY_DISPATCH_INTERVAL_SECONDS='30'
+`$env:WORKER_SITE_QUALITY_BATCH_LIMIT='2'
+`$env:WORKER_SITE_QUALITY_LEASE_TIMEOUT_SECONDS='900'
+`$env:WORKER_SITE_QUALITY_SAMPLE_COUNT='3'
+`$env:WORKER_SITE_QUALITY_CONFIRMATIONS='2'
+`$env:WORKER_SITE_QUALITY_CLEAN_EVALUATIONS='2'
+`$env:WORKER_SITE_QUALITY_PROVIDER_CONCURRENCY='1'
+`$env:WORKER_SITE_QUALITY_PROVIDER_SPACING_SECONDS='5'
 `$env:PAYMENT_CONFIG_MASTER_KEY='dev-payment-config-master-key-change-before-production'
 `$env:CORS_ORIGINS='$corsOrigins'
 `$env:STOREFRONT_HTML_CACHE_PURGE_URL='http://localhost:$($Ports.Storefront)/_internal/html-cache/purge'
@@ -415,6 +435,7 @@ Write-Section 'Local DEV is up'
 Write-Host "Storefront : http://localhost:$($Ports.Storefront)" -ForegroundColor White
 Write-Host "Go API     : http://localhost:$($Ports.Api)" -ForegroundColor White
 Write-Host "Admin      : http://localhost:$($Ports.Admin)" -ForegroundColor White
+Write-Host "Quality    : http://localhost:$($Ports.SiteQualityRunner)/healthz" -ForegroundColor White
 Write-Host "Logs       : $LogDir" -ForegroundColor White
 Write-Host ''
 Write-Host 'Stop with: npm run dev:stop' -ForegroundColor Yellow

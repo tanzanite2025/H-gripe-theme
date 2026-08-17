@@ -8,7 +8,7 @@
       <div class="uds-glow-bg opacity-30 group-hover:opacity-100 transition-opacity" />
       <div class="relative z-10 flex min-w-0 flex-1 items-baseline gap-2">
         <span class="min-w-0 truncate text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">{{ item.label }}</span>
-        <strong class="shrink-0 truncate text-xl font-black italic tabular-nums text-foreground">{{ item.value }}</strong>
+        <strong class="shrink-0 truncate text-xl font-black tabular-nums text-foreground">{{ item.value }}</strong>
       </div>
       <span v-if="item.icon" class="relative z-10 flex size-8 shrink-0 items-center justify-center rounded-full" :class="toneClass(item.tone)">
         <component :is="item.icon" class="size-4" />

@@ -17,6 +17,7 @@ import (
 
 type Handler struct {
 	quickBuyService *service.QuickBuyService
+	mediaService    *service.MediaService
 }
 
 const (
@@ -24,8 +25,12 @@ const (
 	quickBuyCandidateMaxPageSize     = 24
 )
 
-func NewHandler(quickBuyService *service.QuickBuyService) *Handler {
-	return &Handler{quickBuyService: quickBuyService}
+func NewHandler(quickBuyService *service.QuickBuyService, mediaServices ...*service.MediaService) *Handler {
+	var mediaService *service.MediaService
+	if len(mediaServices) > 0 {
+		mediaService = mediaServices[0]
+	}
+	return &Handler{quickBuyService: quickBuyService, mediaService: mediaService}
 }
 
 func (h *Handler) GetCurrentFlow(c *gin.Context) {
@@ -128,7 +133,7 @@ func (h *Handler) ListSessionStepCandidates(c *gin.Context) {
 
 	c.JSON(200, gin.H{
 		"code":            0,
-		"data":            productapi.PublicProductsFromDomainWithLocaleAndDisplayCurrency(result.Products, result.Currency, result.Locale),
+		"data":            productapi.PublicProductsFromDomainWithLocaleAndDisplayCurrency(result.Products, result.Currency, result.Locale, h.mediaService),
 		"step":            result.Step,
 		"flow_id":         result.FlowID,
 		"flow_version_id": result.FlowVersionID,

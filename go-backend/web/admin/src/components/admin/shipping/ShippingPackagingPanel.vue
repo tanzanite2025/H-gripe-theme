@@ -2,7 +2,7 @@
   <TabsContent value="packaging" class="space-y-3">
     <div class="flex flex-wrap items-end justify-between gap-3">
       <div>
-        <h2 class="text-sm font-black tracking-tighter italic uppercase">包装规则</h2>
+        <h2 class="text-sm font-black tracking-tighter uppercase">包装规则</h2>
         <p class="mt-1 text-xs text-muted-foreground">管理包装箱重量、尺寸、最大承重和适用商品；当前先保持产品级事实源，SKU 级包装规则后续统一升级。</p>
       </div>
       <Button v-if="canCreate" size="sm" @click="emit('create')">
@@ -33,8 +33,8 @@
           </TableEmpty>
           <TableRow v-for="rule in packagingRules" :key="rule.id">
             <TableCell>
-              <span class="block font-bold text-xs">{{ rule.rule_name || '-' }}</span>
-              <span class="block max-w-96 truncate text-xs text-muted-foreground">{{ rule.description || '暂无说明' }}</span>
+ <span class="block font-bold text-xs">{{ rule.rule_name || '-'}}</span>
+ <span class="block max-w-96 truncate text-xs text-muted-foreground">{{ rule.description || '暂无说明'}}</span>
             </TableCell>
             <TableCell class="text-right tabular-nums">{{ formatWeight(rule.box_weight) }}</TableCell>
             <TableCell class="font-mono text-xs text-muted-foreground">{{ formatDimensions(rule) }}</TableCell>

@@ -13,14 +13,14 @@
                 <span v-if="brandInitial" class="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-black text-primary-foreground shadow-xs">
                   {{ brandInitial }}
                 </span>
-                <strong v-if="brandName" class="truncate text-sm font-black italic uppercase">{{ brandName }}</strong>
+                <strong v-if="brandName" class="truncate text-sm font-black uppercase">{{ brandName }}</strong>
               </div>
               <span v-if="panelLabel" class="ml-auto shrink-0 text-[9px] font-black uppercase tracking-widest text-muted-foreground/70">{{ panelLabel }}</span>
             </div>
           </div>
           <span class="block text-[9px] font-black uppercase tracking-[0.16em] text-muted-foreground/60">{{ t('auth.controlAccess') }}</span>
           <div class="min-h-7">
-            <CardTitle v-if="loginTitle" class="text-lg font-black italic uppercase text-foreground">{{ loginTitle }}</CardTitle>
+            <CardTitle v-if="loginTitle" class="text-lg font-black uppercase text-foreground">{{ loginTitle }}</CardTitle>
           </div>
           <CardDescription class="text-[10px] font-medium leading-5 text-muted-foreground">{{ t('auth.description') }}</CardDescription>
           <div class="min-h-[52px]" aria-live="assertive">

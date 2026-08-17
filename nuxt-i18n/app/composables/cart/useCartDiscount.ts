@@ -4,6 +4,7 @@
  */
 import { ref, computed } from 'vue'
 import { useAuth } from '~/composables/useAuth'
+import { isExpectedOptionalConfigMiss, logUnexpectedApiError } from '~/utils/storefrontApiFailures'
 import { getTierByPoints } from './config/member-tiers'
 import type { UserPoints, Coupon, CouponValidationResponse, MemberTier } from './types/cart-calculation-types'
 
@@ -142,7 +143,7 @@ export const useCartDiscount = (userPoints: ReturnType<typeof ref<UserPoints | n
         loyaltyExchangeRatePoints.value = exchangeRatePoints
       }
     } catch (error) {
-      console.error('Failed to load loyalty program config for cart discount:', error)
+      logUnexpectedApiError('Failed to load loyalty program config for cart discount:', error, isExpectedOptionalConfigMiss)
     }
   }
 

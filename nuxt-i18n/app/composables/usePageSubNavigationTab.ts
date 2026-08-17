@@ -14,6 +14,7 @@ interface UsePageSubNavigationTabOptions<Tabs extends readonly PageSubNavigation
   basePath: string
   defaultValue: TabId<Tabs>
   syncWithUrl?: MaybeRefOrGetter<boolean>
+  redirectBasePathToDefaultTab?: MaybeRefOrGetter<boolean>
 }
 
 const resolveBooleanOption = (value: MaybeRefOrGetter<boolean> | undefined, fallback: boolean) => {
@@ -27,6 +28,7 @@ export const usePageSubNavigationTab = <Tabs extends readonly PageSubNavigationT
   basePath,
   defaultValue,
   syncWithUrl = true,
+  redirectBasePathToDefaultTab = false,
 }: UsePageSubNavigationTabOptions<Tabs>) => {
   const route = useRoute()
   const router = useRouter()
@@ -34,8 +36,12 @@ export const usePageSubNavigationTab = <Tabs extends readonly PageSubNavigationT
   const activeTab = ref(defaultValue) as Ref<TabId<Tabs>>
 
   const shouldSyncWithUrl = () => resolveBooleanOption(syncWithUrl, true)
+  const shouldRedirectBasePathToDefaultTab = () => {
+    return resolveBooleanOption(redirectBasePathToDefaultTab, false)
+  }
 
   const localizedTabPath = (tabId: TabId<Tabs>) => localePath(pageSubNavigationChildPath(basePath, tabId))
+  const localizedBasePath = () => localePath(basePath)
 
   const replaceRouteWithTab = (tabId: TabId<Tabs>) => {
     if (!shouldSyncWithUrl() || typeof window === 'undefined') return
@@ -43,7 +49,13 @@ export const usePageSubNavigationTab = <Tabs extends readonly PageSubNavigationT
     const path = localizedTabPath(tabId)
     if (route.path === path) return
 
-    void router.replace({ path, query: route.query }).catch(() => {})
+    void router.replace({ path, query: route.query, hash: route.hash }).catch(() => {})
+  }
+
+  const redirectBasePathToDefault = () => {
+    if (!shouldRedirectBasePathToDefaultTab() || route.path !== localizedBasePath()) return
+
+    replaceRouteWithTab(defaultValue)
   }
 
   const syncActiveTabFromRoute = () => {
@@ -51,6 +63,7 @@ export const usePageSubNavigationTab = <Tabs extends readonly PageSubNavigationT
 
     const pathTab = getPageSubNavigationTabFromPath(tabs, basePath, route.path, { match: 'nested' })
     activeTab.value = pathTab || defaultValue
+    if (!pathTab) redirectBasePathToDefault()
   }
 
   watch(

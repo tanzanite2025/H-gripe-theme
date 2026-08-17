@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="tz-mobile-text-inset">
     <h2 class="support-page__title">Shipping instructions</h2>
     <p class="support-page__intro">
       This page provides an overview of our shipping, including handling time, delivery

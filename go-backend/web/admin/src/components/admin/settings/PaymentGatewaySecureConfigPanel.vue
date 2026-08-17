@@ -15,7 +15,7 @@
       </div>
       <span
         class="rounded-full border px-2.5 py-1 text-[11px] font-black"
-        :class="secretStoreConfigured ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-200' : 'border-rose-500/20 bg-rose-500/10 text-rose-700 dark:text-rose-200'"
+ :class="secretStoreConfigured ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-200': 'border-rose-500/20 bg-rose-500/10 text-rose-700 dark:text-rose-200'"
       >
         {{ secretStoreConfigured ? t('payment.masterKeyReady') : t('payment.missingMasterKey') }}
       </span>
@@ -144,7 +144,7 @@
               v-for="mode in threeDSModeCards"
               :key="mode.value"
               class="border p-3"
-              :class="normalizedThreeDSMode === mode.value ? 'border-primary/50 bg-primary/5' : 'border-border/70'"
+ :class="normalizedThreeDSMode === mode.value ? 'border-primary/50 bg-primary/5': 'border-border/70'"
             >
               <div class="flex items-start justify-between gap-2">
                 <p class="text-xs font-black">{{ mode.label }}</p>

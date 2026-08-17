@@ -4,7 +4,7 @@
     <Tabs :model-value="activeActivity" class="relative z-10" @update:model-value="updateActiveActivity">
       <CardHeader class="flex flex-col gap-3 border-b border-dashed border-border/70 py-3.5 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <CardTitle class="text-sm font-black tracking-tighter italic uppercase">最近活动</CardTitle>
+          <CardTitle class="text-sm font-black tracking-tighter uppercase">最近活动</CardTitle>
           <CardDescription class="mt-0.5 text-[9px] font-black uppercase tracking-widest opacity-60">最新业务动态记录</CardDescription>
         </div>
         <TabsList variant="line" class="rounded-full bg-muted/40 p-1">
@@ -84,9 +84,9 @@ const EmptyActivity = defineComponent({
     label: { type: String, required: true },
   },
   setup(props) {
-    return () => h('div', { class: 'flex min-h-36 flex-col items-center justify-center text-muted-foreground' }, [
-      h(Inbox, { class: 'mb-2 size-6 opacity-55' }),
-      h('span', { class: 'text-xs' }, props.label),
+ return () => h('div', { class: 'flex min-h-36 flex-col items-center justify-center text-muted-foreground'}, [
+ h(Inbox, { class: 'mb-2 size-6 opacity-55'}),
+ h('span', { class: 'text-xs'}, props.label),
     ])
   },
 })

@@ -1,8 +1,10 @@
 package product
 
 import (
+	"encoding/json"
 	"time"
 
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
 
@@ -20,6 +22,7 @@ type ProductMedia struct {
 	URL                  string         `gorm:"not null" json:"url"`
 	ThumbnailURL         string         `json:"thumbnail_url"`
 	PosterURL            string         `json:"poster_url"`
+	ImageVariantData     datatypes.JSON `gorm:"column:image_variants;type:jsonb;not null;default:'{}'" json:"image_variants,omitempty"`
 	Alt                  string         `json:"alt"`
 	Title                string         `json:"title"`
 	Locale               string         `gorm:"index" json:"locale"`
@@ -33,4 +36,57 @@ type ProductMedia struct {
 
 func (ProductMedia) TableName() string {
 	return "product_media"
+}
+
+func (m *ProductMedia) BeforeCreate(tx *gorm.DB) error {
+	m.ensureImageVariantData()
+	return nil
+}
+
+func (m *ProductMedia) BeforeSave(tx *gorm.DB) error {
+	m.ensureImageVariantData()
+	return nil
+}
+
+func (m *ProductMedia) ensureImageVariantData() {
+	if len(m.ImageVariantData) == 0 {
+		m.ImageVariantData = datatypes.JSON([]byte("{}"))
+	}
+}
+
+type ProductMediaImageVariant struct {
+	URL      string `json:"url"`
+	Width    int    `json:"width,omitempty"`
+	Height   int    `json:"height,omitempty"`
+	MimeType string `json:"mime_type,omitempty"`
+}
+
+func ProductMediaImageVariantsJSON(values map[string]ProductMediaImageVariant) datatypes.JSON {
+	if len(values) == 0 {
+		return datatypes.JSON([]byte("{}"))
+	}
+	encoded, err := json.Marshal(values)
+	if err != nil {
+		return datatypes.JSON([]byte("{}"))
+	}
+	return datatypes.JSON(encoded)
+}
+
+func ParseProductMediaImageVariants(raw datatypes.JSON) map[string]ProductMediaImageVariant {
+	if len(raw) == 0 {
+		return map[string]ProductMediaImageVariant{}
+	}
+	var values map[string]ProductMediaImageVariant
+	if err := json.Unmarshal(raw, &values); err != nil || len(values) == 0 {
+		return map[string]ProductMediaImageVariant{}
+	}
+
+	normalized := make(map[string]ProductMediaImageVariant, len(values))
+	for preset, item := range values {
+		if preset == "" || item.URL == "" {
+			continue
+		}
+		normalized[preset] = item
+	}
+	return normalized
 }

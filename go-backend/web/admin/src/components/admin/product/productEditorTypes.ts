@@ -39,6 +39,7 @@ export interface ProductMediaForm {
   url: string
   thumbnail_url?: string
   poster_url?: string
+  image_variants?: Record<string, ProductMediaImageVariant>
   alt?: string
   title?: string
   locale?: string
@@ -124,6 +125,13 @@ export interface ProductRecord {
   variants?: ProductVariantRecord[]
   translation_group?: ProductTranslationGroup | null
   [key: string]: any
+}
+
+export interface ProductMediaImageVariant {
+  url?: string
+  width?: number | string
+  height?: number | string
+  mime_type?: string
 }
 
 export interface ProductTranslation {

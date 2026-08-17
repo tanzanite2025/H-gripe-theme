@@ -63,7 +63,7 @@
         <TabsContent value="identity">
           <section class="grid w-full max-w-none gap-4 lg:grid-cols-[160px_minmax(0,1fr)]">
             <div>
-              <h2 class="text-sm font-black tracking-tighter italic uppercase text-foreground">页面身份</h2>
+              <h2 class="text-sm font-black tracking-tighter uppercase text-foreground">页面身份</h2>
               <p class="mt-1 text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">
                 首屏说明与头像信息
               </p>
@@ -149,7 +149,7 @@
         <TabsContent value="statement">
           <section class="grid w-full max-w-none gap-4 lg:grid-cols-[160px_minmax(0,1fr)]">
             <div>
-              <h2 class="text-sm font-black tracking-tighter italic uppercase text-foreground">页面说明</h2>
+              <h2 class="text-sm font-black tracking-tighter uppercase text-foreground">页面说明</h2>
               <p class="mt-1 text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">
                 解释页面为什么存在
               </p>
@@ -174,7 +174,7 @@
         <TabsContent value="factory">
           <section class="grid w-full max-w-none gap-4 lg:grid-cols-[160px_minmax(0,1fr)]">
             <div>
-              <h2 class="text-sm font-black tracking-tighter italic uppercase text-foreground">工厂关联</h2>
+              <h2 class="text-sm font-black tracking-tighter uppercase text-foreground">工厂关联</h2>
               <p class="mt-1 text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">
                 保持网站与工厂工作的同一口径
               </p>

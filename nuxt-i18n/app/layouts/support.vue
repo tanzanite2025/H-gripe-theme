@@ -40,7 +40,7 @@ import PageFaqSlot from '~/components/PageFaqSlot.vue'
 }
 
 .support-header-spacer {
-  height: var(--site-header-offset, 145px);
+  height: 145px;
 }
 
 .support-hero {
@@ -103,7 +103,7 @@ import PageFaqSlot from '~/components/PageFaqSlot.vue'
 
 @media (min-width: 768px) {
   .support-header-spacer {
-    height: var(--site-header-offset, 112px);
+    height: 112px;
   }
 }
 

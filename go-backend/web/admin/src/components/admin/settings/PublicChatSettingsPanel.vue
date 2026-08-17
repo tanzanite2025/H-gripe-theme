@@ -57,7 +57,7 @@
             <TableCell class="font-mono text-xs text-muted-foreground">{{ group.id }}</TableCell>
             <TableCell class="font-bold">{{ group.name }}</TableCell>
             <TableCell class="font-mono text-xs">{{ group.code }}</TableCell>
-            <TableCell class="max-w-[360px] truncate text-xs text-muted-foreground">{{ group.description || '-' }}</TableCell>
+ <TableCell class="max-w-[360px] truncate text-xs text-muted-foreground">{{ group.description || '-'}}</TableCell>
             <TableCell class="font-mono text-xs">{{ group.sort_order || 0 }}</TableCell>
             <TableCell>
               <AdminStatusBadge :tone="group.status === 'active' ? 'green' : 'gray'">{{ group.status }}</AdminStatusBadge>
@@ -82,11 +82,11 @@
     <section class="grid gap-3 sm:grid-cols-2" aria-label="Public Chat 客服统计">
       <div class="rounded-[20px] border border-dashed border-border/80 bg-muted/20 p-3">
         <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">可分配 Agent Profile</span>
-        <strong class="mt-1 block text-2xl font-black italic tracking-tighter tabular-nums">{{ summary.profile_count || 0 }}</strong>
+        <strong class="mt-1 block text-2xl font-black tracking-tighter tabular-nums">{{ summary.profile_count || 0 }}</strong>
       </div>
       <div class="rounded-[20px] border border-dashed border-border/80 bg-muted/20 p-3">
         <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">目前生效（只读）</span>
-        <strong class="mt-1 block text-2xl font-black italic tracking-tighter tabular-nums">{{ summary.exposed_agents || 0 }}</strong>
+        <strong class="mt-1 block text-2xl font-black tracking-tighter tabular-nums">{{ summary.exposed_agents || 0 }}</strong>
       </div>
     </section>
 
@@ -129,13 +129,13 @@
                   <AvatarFallback>{{ agentInitials(agent) }}</AvatarFallback>
                 </Avatar>
                 <div class="min-w-0">
-                  <span class="block truncate font-bold text-xs">{{ agent.display_name || agent.username || '-' }}</span>
-                  <span class="block truncate text-xs text-muted-foreground">{{ agent.email || agent.whatsapp || '-' }}</span>
+ <span class="block truncate font-bold text-xs">{{ agent.display_name || agent.username || '-'}}</span>
+ <span class="block truncate text-xs text-muted-foreground">{{ agent.email || agent.whatsapp || '-'}}</span>
                 </div>
               </div>
             </TableCell>
-            <TableCell class="font-mono text-xs">{{ agent.agent_id || '-' }}</TableCell>
-            <TableCell class="font-mono text-xs">{{ agent.user_id || '-' }}</TableCell>
+ <TableCell class="font-mono text-xs">{{ agent.agent_id || '-'}}</TableCell>
+ <TableCell class="font-mono text-xs">{{ agent.user_id || '-'}}</TableCell>
             <TableCell>{{ agent.raw_role || '-' }}</TableCell>
             <TableCell>{{ agent.normalized_role || '-' }}</TableCell>
             <TableCell>
