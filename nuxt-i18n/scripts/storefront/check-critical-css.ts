@@ -76,6 +76,9 @@ const child = spawn(process.execPath, [serverEntry], {
     HOST: '127.0.0.1',
     PORT: String(port),
     NITRO_PORT: String(port),
+    // Use the pass-through image provider for this CSS-only preview check so
+    // the server does not need native sharp/libvips runtime binaries in CI.
+    NUXT_IMAGE_PROVIDER: 'none',
     NUXT_HTML_CACHE_ENABLED: 'false',
   },
   stdio: ['ignore', 'pipe', 'pipe'],
