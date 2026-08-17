@@ -88,7 +88,7 @@
             class="home-faq__item border-b border-slate-800/50 last:border-b-0"
           >
             <button type="button" class="home-faq__question group" @click="toggleItem(item.id)">
-              <span class="home-faq__question-text tz-faq-question group-hover:text-sky-400 transition-colors">{{ item.question }}</span>
+              <span class="home-faq__question-text tz-faq-question group-hover:text-[var(--tz-brand-primary)] transition-colors">{{ item.question }}</span>
               <svg
                 class="home-faq__chevron"
                 :class="{ 'home-faq__icon--open': expandedItems.has(item.id) }"

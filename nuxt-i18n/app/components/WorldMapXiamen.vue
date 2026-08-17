@@ -242,7 +242,7 @@ onMounted(() => {
 
 .map-label--origin {
   font-weight: 700;
-  fill: #a5b4fc;
+  fill: var(--tz-brand-primary, #b5ff6d);
 }
 
 .map-label--right {
@@ -255,7 +255,7 @@ onMounted(() => {
 
 .path-arc {
   fill: none;
-  stroke: #38bdf8;
+  stroke: var(--tz-brand-primary, #b5ff6d);
   stroke-width: 1.4;
   stroke-linecap: round;
   filter: url(#glow);
@@ -306,11 +306,11 @@ onMounted(() => {
 }
 
 .point-core {
-  fill: #38bdf8;
+  fill: var(--tz-brand-primary, #b5ff6d);
 }
 
 .point-pulse {
-  fill: #38bdf8;
+  fill: var(--tz-brand-primary, #b5ff6d);
   opacity: 0.55;
   animation: pulse 2.4s ease-out infinite;
 }

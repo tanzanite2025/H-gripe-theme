@@ -71,7 +71,7 @@ const resolvedFaqPageId = computed(() => resolvedFaqData.value ? getPageFaqId(re
   border-radius: 1.25rem;
   border: 1px solid rgba(148, 163, 184, 0.14);
   background:
-    radial-gradient(circle at top left, rgba(14, 165, 233, 0.12), transparent 36%),
+    radial-gradient(circle at top left, rgba(181, 255, 109, 0.08), transparent 36%),
     rgba(15, 23, 42, 0.62);
   color: var(--tz-text-secondary);
 }
@@ -96,8 +96,8 @@ const resolvedFaqPageId = computed(() => resolvedFaqData.value ? getPageFaqId(re
   width: 0.55rem;
   height: 0.55rem;
   border-radius: 999px;
-  background: #38bdf8;
-  box-shadow: 0 0 18px rgba(56, 189, 248, 0.75);
+  background: var(--tz-brand-primary, #b5ff6d);
+  box-shadow: 0 0 18px rgba(181, 255, 109, 0.65);
   animation: page-faq-slot-pulse 0.95s ease-in-out infinite alternate;
 }
 
