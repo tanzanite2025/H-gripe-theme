@@ -189,6 +189,34 @@ const shouldIgnoreNitroBuildWarning = (warning: RollupBuildWarning) => {
   )
 }
 
+const runtimeSharpTraceDeps = (() => {
+  if (process.platform === 'linux') {
+    const glibcVersionRuntime = process.report?.getReport?.().header?.glibcVersionRuntime
+    if (glibcVersionRuntime) {
+      return [
+        'sharp',
+        '@img/sharp-linux-x64*',
+        '@img/sharp-libvips-linux-x64*',
+      ]
+    }
+
+    return [
+      'sharp',
+      '@img/sharp-linuxmusl-x64*',
+      '@img/sharp-libvips-linuxmusl-x64*',
+    ]
+  }
+
+  if (process.platform === 'win32') {
+    return [
+      'sharp',
+      '@img/sharp-win32-x64*',
+    ]
+  }
+
+  return ['sharp']
+})()
+
 export default defineNuxtConfig({
   extends: ['./layers/admin', './layers/shop'],
   compatibilityDate: '2025-07-15',
@@ -341,6 +369,7 @@ export default defineNuxtConfig({
   nitro: {
     preset: env.NITRO_PRESET || 'node-server',
     sourceMap: false,
+    traceDeps: runtimeSharpTraceDeps,
     rollupConfig: {
       onwarn(warning, warn) {
         if (shouldIgnoreNitroBuildWarning(warning as RollupBuildWarning)) return
