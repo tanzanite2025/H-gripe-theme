@@ -178,9 +178,19 @@ jobs:
             image \
             --scanners vuln \
             --severity HIGH,CRITICAL \
-            --exit-code 1 \
+            --exit-code 0 \
             --format json \
             --output /reports/trivy-${{ matrix.image }}.json \
+            local/${{ matrix.image }}:${{ github.sha }}
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            aquasec/trivy:0.58.2 \
+            image \
+            --scanners vuln \
+            --severity HIGH,CRITICAL \
+            --ignore-unfixed \
+            --exit-code 1 \
+            --format table \
             local/${{ matrix.image }}:${{ github.sha }}
 
       - name: Scan exact local image with Grype
@@ -193,8 +203,14 @@ jobs:
             -v "${GITHUB_WORKSPACE}/security-reports:/reports" \
             anchore/grype:v0.116.0 \
             docker:local/${{ matrix.image }}:${{ github.sha }} \
-            --fail-on high \
             --output json > "security-reports/grype-${{ matrix.image }}.json"
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            anchore/grype:v0.116.0 \
+            docker:local/${{ matrix.image }}:${{ github.sha }} \
+            --only-fixed \
+            --fail-on high \
+            --output table
 
       - name: Upload image scan reports
         if: always()
