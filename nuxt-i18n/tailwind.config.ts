@@ -27,8 +27,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['StorefrontSystemLatin', 'StorefrontSystem'],
-        mono: ['StorefrontSystemLatin', 'StorefrontSystem'],
+        sans: ['MapleUILatin', 'MapleUICJK'],
+        mono: ['MapleUILatin', 'MapleUICJK'],
       },
       colors: {
         green: learnGripeGreen,

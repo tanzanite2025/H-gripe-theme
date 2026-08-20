@@ -1,8 +1,8 @@
-import { loadStripe, type Stripe, type StripeElements, type StripePaymentElement } from '@stripe/stripe-js'
+import type { Stripe, StripeElements, StripePaymentElement } from '@stripe/stripe-js'
 import { shallowRef } from 'vue'
 import { useI18n } from '#imports'
 import { storefrontFontFamilyForLocale, storefrontFontStylesheetUrl } from '~/utils/storefrontFonts'
-import { loadStripeScript } from '~/utils/security/trustedScriptUrl'
+import { createStripeInstance } from '~/utils/security/stripeClient'
 
 export interface StripePaymentSession {
   clientSecret: string
@@ -34,11 +34,7 @@ export function useStripePayment() {
 
     destroy()
 
-    await loadStripeScript()
-    const loadedStripe = await loadStripe(session.publishableKey)
-    if (!loadedStripe) {
-      throw new Error('Unable to load Stripe')
-    }
+    const loadedStripe = await createStripeInstance(session.publishableKey)
 
     const loadedElements = loadedStripe.elements({
       clientSecret: session.clientSecret,

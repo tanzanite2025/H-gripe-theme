@@ -35,7 +35,7 @@
             <svg class="footer-secure-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" title="SSL Secure">
               <path d="M12 2L3 5V11C3 16.55 6.84 21.74 12 23C17.16 21.74 21 16.55 21 11V5L12 2Z" fill="#B5FF6D" stroke="#B5FF6D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               <path d="M12 2L3 5V11C3 16.55 6.84 21.74 12 23" fill="#B5FF6D" stroke="#B5FF6D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              <text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" fill="white" font-size="6" font-weight="bold" font-family="StorefrontSystem">SSL</text>
+              <text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" fill="white" font-size="6" font-weight="bold" font-family="MapleUILatin">SSL</text>
               <rect x="10.5" y="14" width="3" height="2" rx="0.5" fill="#F59E0B" />
               <path d="M10.5 14V13C10.5 12.4477 10.9477 12 11.5 12C12.0523 12 12.5 12.4477 12.5 13V14" stroke="#F59E0B" stroke-width="0.5"/>
             </svg>

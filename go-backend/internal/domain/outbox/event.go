@@ -13,6 +13,7 @@ const (
 	EventStatusProcessing = "processing"
 	EventStatusProcessed  = "processed"
 	EventStatusFailed     = "failed"
+	EventStatusUnknown    = "unknown"
 	EventStatusDeadLetter = "dead_letter"
 
 	EventTypeOrderPaid                        = "order.paid"
@@ -40,23 +41,26 @@ const (
 )
 
 type Event struct {
-	ID            uint           `gorm:"primarykey" json:"id"`
-	EventKey      string         `gorm:"size:160;uniqueIndex;not null" json:"event_key"`
-	EventType     string         `gorm:"size:80;not null;index" json:"event_type"`
-	AggregateType string         `gorm:"size:80;not null;index" json:"aggregate_type"`
-	AggregateID   string         `gorm:"size:80;not null;index" json:"aggregate_id"`
-	Payload       datatypes.JSON `gorm:"not null" json:"payload"`
-	Status        string         `gorm:"size:20;not null;default:'pending';index" json:"status"`
-	Attempts      int            `gorm:"not null;default:0" json:"attempts"`
-	MaxAttempts   int            `gorm:"not null;default:10" json:"max_attempts"`
-	AvailableAt   time.Time      `gorm:"not null;index" json:"available_at"`
-	LockedAt      *time.Time     `gorm:"index" json:"locked_at"`
-	LockedBy      string         `gorm:"size:128;index" json:"locked_by"`
-	ProcessedAt   *time.Time     `gorm:"index" json:"processed_at"`
-	LastError     string         `gorm:"type:text" json:"last_error"`
-	CreatedAt     time.Time      `json:"created_at"`
-	UpdatedAt     time.Time      `json:"updated_at"`
-	DeletedAt     gorm.DeletedAt `gorm:"index" json:"-"`
+	ID             uint           `gorm:"primarykey" json:"id"`
+	EventKey       string         `gorm:"size:160;uniqueIndex;not null" json:"event_key"`
+	EventType      string         `gorm:"size:80;not null;index" json:"event_type"`
+	AggregateType  string         `gorm:"size:80;not null;index" json:"aggregate_type"`
+	AggregateID    string         `gorm:"size:80;not null;index" json:"aggregate_id"`
+	Payload        datatypes.JSON `gorm:"not null" json:"payload"`
+	Status         string         `gorm:"size:20;not null;default:'pending';index" json:"status"`
+	Attempts       int            `gorm:"not null;default:0" json:"attempts"`
+	MaxAttempts    int            `gorm:"not null;default:10" json:"max_attempts"`
+	AvailableAt    time.Time      `gorm:"not null;index" json:"available_at"`
+	LockedAt       *time.Time     `gorm:"index" json:"locked_at"`
+	LockedBy       string         `gorm:"size:128;index" json:"locked_by"`
+	ProcessedAt    *time.Time     `gorm:"index" json:"processed_at"`
+	LastAttemptAt  *time.Time     `gorm:"index" json:"last_attempt_at"`
+	UncertainAt    *time.Time     `gorm:"index" json:"uncertain_at"`
+	ReconcileAfter *time.Time     `gorm:"index" json:"reconcile_after"`
+	LastError      string         `gorm:"type:text" json:"last_error"`
+	CreatedAt      time.Time      `json:"created_at"`
+	UpdatedAt      time.Time      `json:"updated_at"`
+	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
 func (Event) TableName() string {

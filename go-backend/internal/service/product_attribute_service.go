@@ -16,21 +16,12 @@ import (
 var productSpecificationTemplateSlugPattern = regexp.MustCompile(`^[a-z0-9]+(?:[_-][a-z0-9]+)*$`)
 
 type ProductSpecificationTemplateInput struct {
-	Name               string
-	Slug               string
-	Description        string
-	SortOrder          int
-	IsEnabled          bool
-	Translations       []ProductSpecificationTemplateTranslationInput
-	UpdateTranslations bool
-	SpecDefinitions    []ProductSpecDefinitionInput
-}
-
-type ProductSpecificationTemplateTranslationInput struct {
-	ID          uint
-	Locale      string
-	Name        string
-	Description string
+	Name            string
+	Slug            string
+	Description     string
+	SortOrder       int
+	IsEnabled       bool
+	SpecDefinitions []ProductSpecDefinitionInput
 }
 
 type ProductSpecDefinitionInput struct {
@@ -117,69 +108,6 @@ func (s *ProductService) GetProductSpecificationTemplate(id uint) (*product.Prod
 	return productSpecificationTemplate, nil
 }
 
-func (s *ProductService) UpdateProductSpecificationTemplateImage(id uint, mediaAssetID *uint, imageURL string) (*product.ProductSpecificationTemplate, error) {
-	existing, err := s.GetProductSpecificationTemplate(id)
-	if err != nil {
-		return nil, err
-	}
-	previousAssetID := existing.ImageMediaAssetID
-
-	imageURL = strings.TrimSpace(imageURL)
-	if mediaAssetID != nil && *mediaAssetID == 0 {
-		mediaAssetID = nil
-	}
-	if mediaAssetID == nil && imageURL != "" {
-		return nil, fmt.Errorf("%w: image asset is required when an image URL is provided", ErrProductSpecificationTemplateInvalid)
-	}
-	if mediaAssetID != nil && imageURL == "" {
-		return nil, fmt.Errorf("%w: image URL is required when an image asset is selected", ErrProductSpecificationTemplateInvalid)
-	}
-
-	if s.txManager != nil {
-		err := s.txManager.WithinTx(func(tx repository.TxRepositories) error {
-			if tx.Product == nil {
-				return errors.New("transactional product repository is not configured")
-			}
-			if err := tx.Product.UpdateProductSpecificationTemplateImage(id, mediaAssetID, imageURL); err != nil {
-				if err == gorm.ErrRecordNotFound {
-					return ErrProductSpecificationTemplateNotFound
-				}
-				return err
-			}
-			cacheEvents, _, err := s.transactionalProductPublishers(tx.Outbox)
-			if err != nil {
-				return err
-			}
-			return cacheEvents.EnqueueProductCacheInvalidateByProductSpecificationTemplateID(id, "admin product specification template image update")
-		})
-		if err != nil {
-			return nil, err
-		}
-		s.InvalidateProductCacheByProductSpecificationTemplateID(id)
-		s.invalidateStorefrontHTMLCache("admin product specification template image update")
-		if previousAssetID != nil && (mediaAssetID == nil || *mediaAssetID != *previousAssetID) {
-			s.cleanupProductSpecificationTemplateImageAsset(*previousAssetID, "product specification template image replacement or removal")
-		}
-		return s.productRepo.FindProductSpecificationTemplateByID(id)
-	}
-
-	if err := s.productRepo.UpdateProductSpecificationTemplateImage(id, mediaAssetID, imageURL); err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return nil, ErrProductSpecificationTemplateNotFound
-		}
-		return nil, err
-	}
-	s.InvalidateProductCacheByProductSpecificationTemplateID(id)
-	if err := s.enqueueProductCacheInvalidationByProductSpecificationTemplateID(id, "admin product specification template image update"); err != nil {
-		return nil, err
-	}
-	s.invalidateStorefrontHTMLCache("admin product specification template image update")
-	if previousAssetID != nil && (mediaAssetID == nil || *mediaAssetID != *previousAssetID) {
-		s.cleanupProductSpecificationTemplateImageAsset(*previousAssetID, "product specification template image replacement or removal")
-	}
-	return s.productRepo.FindProductSpecificationTemplateByID(id)
-}
-
 func (s *ProductService) CreateProductSpecificationTemplate(input ProductSpecificationTemplateInput) (*product.ProductSpecificationTemplate, error) {
 	productSpecificationTemplate, err := normalizeProductSpecificationTemplateInput(input)
 	if err != nil {
@@ -258,7 +186,7 @@ func (s *ProductService) UpdateProductSpecificationTemplate(id uint, input Produ
 			if tx.Product == nil {
 				return errors.New("transactional product repository is not configured")
 			}
-			if err := tx.Product.UpdateProductSpecificationTemplate(productSpecificationTemplate, removedIDs, input.UpdateTranslations); err != nil {
+			if err := tx.Product.UpdateProductSpecificationTemplate(productSpecificationTemplate, removedIDs); err != nil {
 				if err == gorm.ErrRecordNotFound {
 					return ErrProductSpecificationTemplateNotFound
 				}
@@ -278,7 +206,7 @@ func (s *ProductService) UpdateProductSpecificationTemplate(id uint, input Produ
 		return s.productRepo.FindProductSpecificationTemplateByID(id)
 	}
 
-	if err := s.productRepo.UpdateProductSpecificationTemplate(productSpecificationTemplate, removedIDs, input.UpdateTranslations); err != nil {
+	if err := s.productRepo.UpdateProductSpecificationTemplate(productSpecificationTemplate, removedIDs); err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, ErrProductSpecificationTemplateNotFound
 		}
@@ -322,9 +250,6 @@ func (s *ProductService) DeleteProductSpecificationTemplate(id uint) error {
 		}
 		s.InvalidateProductCacheByProductSpecificationTemplateID(id)
 		s.invalidateStorefrontHTMLCache("admin product specification template delete")
-		if existing.ImageMediaAssetID != nil {
-			s.cleanupProductSpecificationTemplateImageAsset(*existing.ImageMediaAssetID, "product specification template deletion")
-		}
 		return nil
 	}
 
@@ -339,9 +264,6 @@ func (s *ProductService) DeleteProductSpecificationTemplate(id uint) error {
 		return err
 	}
 	s.invalidateStorefrontHTMLCache("admin product specification template delete")
-	if existing.ImageMediaAssetID != nil {
-		s.cleanupProductSpecificationTemplateImageAsset(*existing.ImageMediaAssetID, "product specification template deletion")
-	}
 	return nil
 }
 
@@ -406,11 +328,6 @@ func normalizeProductSpecificationTemplateInput(input ProductSpecificationTempla
 		return nil, fmt.Errorf("%w: slug must use lowercase letters, numbers, dashes, or underscores", ErrProductSpecificationTemplateInvalid)
 	}
 
-	translations, err := normalizeProductSpecificationTemplateTranslations(input.Translations)
-	if err != nil {
-		return nil, err
-	}
-
 	definitions := make([]product.SpecDefinition, 0, len(input.SpecDefinitions))
 	seenIDs := make(map[uint]struct{}, len(input.SpecDefinitions))
 	seenSlugs := make(map[string]struct{}, len(input.SpecDefinitions))
@@ -438,45 +355,8 @@ func normalizeProductSpecificationTemplateInput(input ProductSpecificationTempla
 		Description:     strings.TrimSpace(input.Description),
 		SortOrder:       input.SortOrder,
 		IsEnabled:       input.IsEnabled,
-		Translations:    translations,
 		SpecDefinitions: definitions,
 	}, nil
-}
-
-func normalizeProductSpecificationTemplateTranslations(input []ProductSpecificationTemplateTranslationInput) ([]product.ProductSpecificationTemplateTranslation, error) {
-	if input == nil {
-		return nil, nil
-	}
-
-	result := make([]product.ProductSpecificationTemplateTranslation, 0, len(input))
-	seenLocales := make(map[string]struct{}, len(input))
-	for index, item := range input {
-		locale, err := requireSupportedLocale(item.Locale)
-		if err != nil {
-			return nil, fmt.Errorf("%w: translation %d has invalid locale", ErrProductSpecificationTemplateTranslationInvalid, index+1)
-		}
-
-		name := strings.TrimSpace(item.Name)
-		if name == "" {
-			return nil, fmt.Errorf("%w: translation %d requires a name", ErrProductSpecificationTemplateTranslationInvalid, index+1)
-		}
-		if len(name) > 120 {
-			return nil, fmt.Errorf("%w: translation %d name is too long", ErrProductSpecificationTemplateTranslationInvalid, index+1)
-		}
-		if _, exists := seenLocales[locale]; exists {
-			return nil, fmt.Errorf("%w: duplicate locale %q", ErrProductSpecificationTemplateTranslationInvalid, locale)
-		}
-		seenLocales[locale] = struct{}{}
-
-		result = append(result, product.ProductSpecificationTemplateTranslation{
-			ID:          item.ID,
-			Locale:      locale,
-			Name:        name,
-			Description: strings.TrimSpace(item.Description),
-		})
-	}
-
-	return result, nil
 }
 
 func normalizeSpecDefinition(input ProductSpecDefinitionInput, index int) (product.SpecDefinition, error) {

@@ -25,11 +25,17 @@ database:
   log_level: "silent"  # silent, error, warn, info
 
 redis:
+  mode: "standalone"  # standalone or sentinel; cluster is rejected until all multi-key scripts are hash-tagged
   host: "localhost"
   port: 9510
+  addrs: []  # sentinel example: ["redis-sentinel-1:26379", "redis-sentinel-2:26379", "redis-sentinel-3:26379"]
+  username: ""
   password: ""
   db: 0
   pool_size: 10
+  master_name: ""  # required for sentinel
+  sentinel_username: ""
+  sentinel_password: ""
 
 jwt:
   secret: "your-secret-key-change-this-in-production"
@@ -91,6 +97,7 @@ cors:
     - "Origin"
     - "Content-Type"
     - "Accept-Language"
+    - "Idempotency-Key"
     - "X-CSRF-Token"
     - "X-Locale"
     - "X-Display-Currency"
@@ -100,6 +107,8 @@ cors:
     - "X-Anonymous-ID"
   expose_headers:
     - "Content-Length"
+    - "Idempotency-Replayed"
+    - "Retry-After"
   allow_credentials: true
   max_age: 43200  # 12 hours
 
@@ -211,6 +220,19 @@ payment_gateway_circuit_breaker:
   failure_rate_threshold: 0.15
   minimum_sample_count: 20
   open_duration_seconds: 30
+  half_open_probe_timeout_seconds: 60
+
+outbound_http_resilience:
+  # Shared Redis-backed breaker for Google OAuth, Google Merchant, shipping, and Outbox webhooks.
+  enabled: true
+  retry_max_attempts: 3
+  retry_base_delay_millis: 250
+  retry_max_delay_millis: 3000
+  retry_jitter_millis: 250
+  failure_threshold: 4
+  failure_window_seconds: 60
+  open_duration_seconds: 30
+  half_open_probe_timeout_seconds: 30
 
 payment_risk_monitoring:
   enabled: true

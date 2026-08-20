@@ -13,13 +13,7 @@ type Client struct {
 
 // NewClient initializes a new Asynq client for enqueuing tasks
 func NewClient(cfg *config.RedisConfig) *Client {
-	redisOpt := asynq.RedisClientOpt{
-		Addr:     cfg.GetRedisAddr(),
-		Password: cfg.Password,
-		DB:       cfg.DB,
-	}
-
-	client := asynq.NewClient(redisOpt)
+	client := asynq.NewClient(newRedisConnOpt(cfg))
 
 	return &Client{
 		client: client,

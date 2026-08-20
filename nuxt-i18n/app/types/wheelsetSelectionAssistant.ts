@@ -10,16 +10,6 @@ export type WheelsetSelectionAssistantSource =
   | 'chat'
   | string
 
-export type WheelsetSelectionAssistantStepKey =
-  | 'start'
-  | 'knowledge'
-  | 'bike-basics'
-  | 'hub'
-  | 'rim'
-  | 'spoke'
-  | 'nipple'
-  | 'summary'
-
 export type WheelsetSelectionKnownSectionKey = 'hub' | 'rim' | 'spoke' | 'nipple'
 
 export type WheelsetSelectionCompletionStatus = 'draft' | 'partial' | 'complete'
@@ -59,6 +49,8 @@ export interface WheelsetSelectionGraphNode {
   type: 'question' | 'terminal' | 'support'
   prompt?: WheelsetSelectionLocalizedText
   helper?: WheelsetSelectionLocalizedText
+  help_title?: WheelsetSelectionLocalizedText
+  help_body?: WheelsetSelectionLocalizedText
   options?: WheelsetSelectionGraphOption[]
   editor?: {
     x: number
@@ -128,11 +120,6 @@ export interface WheelsetSelectionRequestDraft {
   metadata: WheelsetSelectionRequestMetadata
 }
 
-export interface WheelsetSelectionAssistantShellStep {
-  key: WheelsetSelectionAssistantStepKey | string
-  label: string
-}
-
 export interface WheelsetSelectionOption {
   value: string
   label: string
@@ -142,6 +129,7 @@ export interface WheelsetSelectionOption {
 export interface WheelsetSelectionQuestion {
   key: string
   prompt: string
-  helper?: string
+  helpTitle?: string
+  helpBody?: string
   options: WheelsetSelectionOption[]
 }

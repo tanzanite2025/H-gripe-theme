@@ -56,6 +56,7 @@
 import { computed, ref, watchEffect } from 'vue'
 import { useI18n, useLocalePath, useHead, useState, useAsyncData } from '#imports'
 import { useBlogApi } from '~/composables/useBlogApi'
+import { useBlogListingSeo } from '~/composables/seo/useBlogListingSeo'
 import type { BlogPostSummary } from '~/utils/blogMock'
 
 definePageMeta({
@@ -91,6 +92,15 @@ watchEffect(() => {
 
 const visiblePosts = computed(() => posts.value)
 const canLoadMore = computed(() => posts.value.length < total.value)
+const pageTitle = computed(() => t('blog.pages.news.title'))
+const pageDescription = computed(() => t('blog.pages.news.intro'))
+
+useBlogListingSeo({
+  category: 'news',
+  title: pageTitle,
+  description: pageDescription,
+  posts,
+})
 
 const loadMore = async () => {
   if (!canLoadMore.value || loadingMore.value) return

@@ -294,8 +294,8 @@
     </div>
 
     <!-- 底部输入栏 -->
-    <div class="chat-composer-bar px-3 pb-4 md:px-5 md:pt-5 md:pb-6 border-t border-white/15 md:border-white/[0.08] md:bg-white/[0.02]">
-      <div v-if="showVisitorEmailCapture" class="mb-2 rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2">
+    <div class="chat-composer-bar tz-mobile-chrome-bottom px-3 pb-4 md:px-5 md:pt-5 md:pb-6 border-t border-white/15 md:border-white/[0.08]">
+      <div v-if="showVisitorEmailCapture" class="chat-email-capture mb-2 rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2">
         <label class="block tz-compact-label text-white/55">Email for follow-up · optional</label>
         <input
           :value="visitorEmail"
@@ -304,7 +304,7 @@
           inputmode="email"
           autocomplete="email"
           placeholder="you@example.com"
-          class="mt-1 h-8 w-full bg-transparent tz-caption text-white placeholder:text-white/35 focus:outline-none"
+          class="chat-email-capture__input mt-1 h-8 w-full bg-transparent tz-caption text-white placeholder:text-white/35 focus:outline-none"
         />
       </div>
 
@@ -742,8 +742,32 @@ const handleMessageContextMenu = (message: any) => {
 </script>
 
 <style scoped>
+.chat-email-capture {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(12, 12, 16, 0.2);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.chat-email-capture input.chat-email-capture__input {
+  border: 0 !important;
+  border-radius: 0.65rem;
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.12) !important;
+  padding-inline: 0.25rem;
+}
+
+.chat-email-capture input.chat-email-capture__input:focus {
+  background: rgba(0, 0, 0, 0.08) !important;
+  background-color: rgba(0, 0, 0, 0.08) !important;
+  box-shadow:
+    inset 0 -1px 0 var(--tz-brand-primary),
+    0 0 0 1px rgba(181, 255, 109, 0.24) !important;
+}
+
 @media (max-width: 767px) {
   .chat-composer-bar {
+    border-top-color: var(--tz-mobile-chrome-edge-border);
     padding-bottom: var(--tz-mobile-modal-safe-padding-bottom, 1rem);
   }
 }

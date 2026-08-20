@@ -16,6 +16,14 @@ type PaymentGateway interface {
 	VerifyWebhook(payload []byte, signature string) (bool, error)
 }
 
+type CaptureOptions struct {
+	IdempotencyKey string `json:"-"`
+}
+
+type CapturePaymentWithOptions interface {
+	CapturePaymentWithOptions(ctx context.Context, paymentID string, options CaptureOptions) (*PaymentResponse, error)
+}
+
 // PaymentRequest 支付请求
 type PaymentRequest struct {
 	Amount         float64           `json:"amount"`
@@ -82,15 +90,18 @@ const (
 	GatewayWechat GatewayType = "wechat"
 )
 
+const defaultPaymentGatewayTimeout = 15 * time.Second
+
 // Config 支付网关配置
 type Config struct {
-	Type           GatewayType
-	APIKey         string
-	SecretKey      string
-	PublishableKey string
-	WebhookSecret  string
-	ThreeDSecure   string
-	Environment    string // sandbox, production
+	Type               GatewayType
+	APIKey             string
+	SecretKey          string
+	PublishableKey     string
+	WebhookSecret      string
+	ThreeDSecure       string
+	Environment        string // sandbox, production
+	PaymentMethodTypes []string
 
 	// Provider-specific webhook credentials. Keep these out of the generic
 	// fields so callback verification can evolve without overloading names.
@@ -136,4 +147,14 @@ func newAlipayGateway(config *Config) (PaymentGateway, error) {
 
 func newWechatGateway(config *Config) (PaymentGateway, error) {
 	return NewWechatGateway(config)
+}
+
+func paymentGatewayContext(ctx context.Context) (context.Context, context.CancelFunc) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if _, ok := ctx.Deadline(); ok {
+		return ctx, func() {}
+	}
+	return context.WithTimeout(ctx, defaultPaymentGatewayTimeout)
 }

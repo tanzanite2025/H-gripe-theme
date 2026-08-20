@@ -1,4 +1,6 @@
 import { fork } from 'node:child_process'
+import { readdir, readFile } from 'node:fs/promises'
+import { setTimeout as delay } from 'node:timers/promises'
 import { fileURLToPath } from 'node:url'
 
 import { launch } from 'chrome-launcher'
@@ -7,7 +9,7 @@ import lighthouse from 'lighthouse'
 import { captureRenderedDocumentAudit } from './rendered_document.mjs'
 
 const workerScript = fileURLToPath(new URL('./lighthouse_worker.mjs', import.meta.url))
-const workerHeapLimitMB = 768
+const defaultWorkerHeapLimitMB = 1024
 const workerGraceMilliseconds = 5_000
 
 export class LighthouseExecutionError extends Error {
@@ -22,6 +24,7 @@ export class LighthouseExecutionError extends Error {
 // A child-process boundary guarantees that memory is reclaimed after each job.
 export function runLighthouseInWorker(input, config) {
   return new Promise((resolve, reject) => {
+    const workerHeapLimitMB = normalizeWorkerHeapLimitMB(config?.workerHeapLimitMB)
     const worker = fork(workerScript, [], {
       execArgv: [`--max-old-space-size=${workerHeapLimitMB}`],
       stdio: ['ignore', 'ignore', 'inherit', 'ipc'],
@@ -121,6 +124,7 @@ export async function runLighthouse(input, config) {
       output: 'json',
       logLevel: 'error',
       onlyCategories: ['performance', 'accessibility', 'best-practices', 'seo'],
+      disableFullPageScreenshot: true,
       formFactor: input.strategy,
       screenEmulation: input.strategy === 'mobile'
         ? { mobile: true, width: 412, height: 823, deviceScaleFactor: 1.75, disabled: false }
@@ -169,6 +173,64 @@ export async function runLighthouse(input, config) {
     } catch {
       // A timed-out or failed Chrome process may already be gone.
     }
+  }
+}
+
+export async function cleanupOrphanLighthouseBrowsers() {
+  const entries = await readdir('/proc', { withFileTypes: true }).catch(() => [])
+  const stalePIDs = []
+
+  await Promise.all(entries.map(async (entry) => {
+    if (!entry.isDirectory() || !/^\d+$/.test(entry.name)) return
+
+    const pid = Number.parseInt(entry.name, 10)
+    if (!Number.isInteger(pid) || pid <= 1 || pid === process.pid) return
+
+    const command = await readFile(`/proc/${pid}/cmdline`, 'utf8').catch(() => '')
+    if (!isLighthouseBrowserCommand(command)) return
+
+    if (signalProcess(pid, 'SIGTERM')) {
+      stalePIDs.push(pid)
+    }
+  }))
+
+  if (stalePIDs.length === 0) {
+    return 0
+  }
+
+  await delay(250)
+  stalePIDs.forEach((pid) => {
+    signalProcess(pid, 'SIGKILL')
+  })
+
+  return stalePIDs.length
+}
+
+function normalizeWorkerHeapLimitMB(value) {
+  const parsed = Number.parseInt(String(value || ''), 10)
+  if (!Number.isInteger(parsed)) {
+    return defaultWorkerHeapLimitMB
+  }
+  return Math.min(Math.max(parsed, 384), 1536)
+}
+
+function isLighthouseBrowserCommand(command) {
+  const normalized = String(command || '').replace(/\0/g, ' ')
+  if (!normalized) {
+    return false
+  }
+  return (
+    normalized.includes('/usr/lib/chromium/chromium') ||
+    normalized.includes('/usr/lib/chromium/chrome_crashpad_handler')
+  )
+}
+
+function signalProcess(pid, signal) {
+  try {
+    process.kill(pid, signal)
+    return true
+  } catch (error) {
+    return error?.code === 'ESRCH'
   }
 }
 

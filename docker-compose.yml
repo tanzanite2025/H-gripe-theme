@@ -59,6 +59,7 @@ services:
       - SITE_QUALITY_RUNNER_TOKEN=dev-site-quality-runner-token-0123456789
       - SITE_QUALITY_RUNNER_ALLOW_PRIVATE_TARGETS=true
       - SITE_QUALITY_RUNNER_TIMEOUT_SECONDS=90
+      - SITE_QUALITY_RUNNER_WORKER_HEAP_LIMIT_MB=1024
       - SITE_QUALITY_RUNNER_MAX_CONCURRENCY=1
     networks:
       - commerce-platform-network
@@ -100,7 +101,14 @@ services:
       - JWT_SECRET=dev-secret-key-change-in-production
       - PAYMENT_CONFIG_MASTER_KEY=${PAYMENT_CONFIG_MASTER_KEY:-dev-payment-config-master-key-change-before-production}
       - LOG_LEVEL=debug
+      - STORAGE_TYPE=local
+      - STORAGE_LOCAL_PATH=/app/uploads
+      - STORAGE_BASE_URL=http://localhost:9200
+      - SITE_LOGO_STORAGE_TYPE=local
+      - SITE_LOGO_STORAGE_LOCAL_PATH=/app/site-logo-uploads
+      - SITE_LOGO_STORAGE_BASE_URL=http://localhost:9200
       - STOREFRONT_HTML_CACHE_PURGE_URL=http://frontend:3000/_internal/html-cache/purge
+      - STOREFRONT_INTERNAL_ORIGIN=http://frontend:3000
       - STOREFRONT_HTML_CACHE_PURGE_TOKEN=dev-html-cache-purge-token
       - STOREFRONT_HTML_CACHE_PURGE_DEBOUNCE_MS=500
     depends_on:
@@ -110,6 +118,9 @@ services:
         condition: service_healthy
     networks:
       - commerce-platform-network
+    volumes:
+      - ./go-backend/uploads:/app/uploads
+      - ./go-backend/site-logo-uploads:/app/site-logo-uploads
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9000/health"]
       interval: 30s

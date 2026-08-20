@@ -1,5 +1,4 @@
 import {
-  loadStripe,
   type Stripe,
   type StripeElements,
   type StripeExpressCheckoutElement,
@@ -15,7 +14,7 @@ import {
 import { shallowRef, ref } from 'vue'
 import { useI18n } from '#imports'
 import { storefrontFontFamilyForLocale, storefrontFontStylesheetUrl } from '~/utils/storefrontFonts'
-import { loadStripeScript } from '~/utils/security/trustedScriptUrl'
+import { createStripeInstance } from '~/utils/security/stripeClient'
 
 export interface StripeExpressCheckoutLineItem {
   name: string
@@ -184,11 +183,7 @@ export function useStripeExpressCheckout() {
     destroy()
     const currentMountGeneration = ++mountGeneration
 
-    await loadStripeScript()
-    const loadedStripe = await loadStripe(session.publishableKey)
-    if (!loadedStripe) {
-      throw new Error('Unable to load Stripe Express Checkout')
-    }
+    const loadedStripe = await createStripeInstance(session.publishableKey)
     if (currentMountGeneration !== mountGeneration) return
 
     const loadedElements = loadedStripe.elements({

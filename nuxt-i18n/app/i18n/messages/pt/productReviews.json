@@ -6,7 +6,7 @@
   "loading": "A carregar avaliações...",
   "loadError": "Não foi possível carregar as avaliações.",
   "retry": "Tentar novamente",
-  "empty": "Ainda não existem avaliações aprovadas.",
+  "empty": "Ainda não há avaliações.",
   "ratingLabel": "{rating} de 5 estrelas",
   "imageAlt": "Imagem da avaliação do cliente",
   "verifiedPurchase": "Compra verificada",

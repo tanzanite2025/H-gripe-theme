@@ -4,18 +4,21 @@ import (
 	"strings"
 
 	analyticsdomain "commerce-platform/internal/domain/analytics"
+	refundreturndomain "commerce-platform/internal/domain/refundreturn"
 	seodomain "commerce-platform/internal/domain/seo"
 	"commerce-platform/internal/domain/setting"
 )
 
 var domainManagedSettingGroups = map[string]struct{}{
-	"loyalty":        {},
-	"redeem":         {},
-	"currency":       {},
-	"payment_secret": {},
+	"loyalty":              {},
+	"redeem":               {},
+	"currency":             {},
+	"payment_secret":       {},
+	"payment_installments": {},
 	setting.PayPalDisputeInvoiceSellerProfileGroup: {},
-	seodomain.Group:       {},
-	analyticsdomain.Group: {},
+	refundreturndomain.Group:                       {},
+	seodomain.Group:                                {},
+	analyticsdomain.Group:                          {},
 }
 
 func IsDomainManagedSettingGroup(group string) bool {
@@ -29,7 +32,9 @@ func IsDomainManagedSettingKey(key string) bool {
 		strings.HasPrefix(normalized, "tz_redeem_") ||
 		strings.HasPrefix(normalized, "currency_") ||
 		strings.HasPrefix(normalized, "payment_gateway_") ||
+		strings.HasPrefix(normalized, "payment_installments_") ||
 		strings.HasPrefix(normalized, "paypal_dispute_invoice_seller_") ||
+		normalized == refundreturndomain.Key ||
 		normalized == seodomain.HomeKeys.MetaTitle ||
 		normalized == seodomain.HomeKeys.MetaDescription ||
 		normalized == "google_analytics" ||

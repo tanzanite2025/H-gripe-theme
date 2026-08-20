@@ -1,21 +1,27 @@
 import { getStorefrontLocaleEntry } from '~/utils/storefrontLocales'
+import type { LocaleFontFamily } from '~/i18n/locales.manifest'
 
-export const storefrontFontFamily = 'StorefrontSystemLatin, StorefrontSystem'
-export const storefrontLatinAccentFontFamily = `StorefrontSystemLatinAccents, ${storefrontFontFamily}`
-export const storefrontArabicFontFamily = `StorefrontSystemArabic, ${storefrontFontFamily}`
-export const storefrontDevanagariFontFamily = `StorefrontSystemDevanagari, ${storefrontFontFamily}`
-export const storefrontThaiFontFamily = `StorefrontSystemThai, ${storefrontFontFamily}`
-export const storefrontFontStylesheetPath = '/fonts/storefront-system.css'
+export const storefrontFontFamily = 'MapleUILatin, MapleUICJK'
+export const storefrontLatinFontFamily = storefrontFontFamily
+export const storefrontMapleUIFontFamily = storefrontFontFamily
+export const storefrontLatinAccentFontFamily = `MapleUICoverageNotoSansLatinAccents, ${storefrontFontFamily}`
+export const storefrontArabicFontFamily = `MapleUICoverageNotoSansArabic, ${storefrontFontFamily}`
+export const storefrontDevanagariFontFamily = `MapleUICoverageNotoSansDevanagari, ${storefrontFontFamily}`
+export const storefrontThaiFontFamily = `MapleUICoverageNotoSansThai, ${storefrontFontFamily}`
+export const storefrontFontStylesheetPath = '/fonts/maple-ui.css'
+
+export const storefrontFontFamilyByShard: Record<LocaleFontFamily, string> = {
+  latin: storefrontLatinFontFamily,
+  'latin-accent': storefrontLatinAccentFontFamily,
+  'maple-ui': storefrontMapleUIFontFamily,
+  arabic: storefrontArabicFontFamily,
+  devanagari: storefrontDevanagariFontFamily,
+  thai: storefrontThaiFontFamily,
+}
 
 export const storefrontFontFamilyForLocale = (locale: unknown) => {
-  const fontFamily = getStorefrontLocaleEntry(locale)?.fontFamily
-
-  if (fontFamily === 'arabic') return storefrontArabicFontFamily
-  if (fontFamily === 'devanagari') return storefrontDevanagariFontFamily
-  if (fontFamily === 'thai') return storefrontThaiFontFamily
-  if (fontFamily === 'latin-accent') return storefrontLatinAccentFontFamily
-
-  return storefrontFontFamily
+  const fontFamily = getStorefrontLocaleEntry(locale)?.fontFamily || 'latin'
+  return storefrontFontFamilyByShard[fontFamily] || storefrontFontFamily
 }
 
 export const storefrontFontStylesheetUrl = (origin?: string) => {

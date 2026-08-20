@@ -293,7 +293,7 @@ func newTestFeedbackWriteRateLimiter(t *testing.T, cfg config.FeedbackRateLimitC
 	}
 }
 
-func newFeedbackRateLimitRedis(t *testing.T) (*miniredis.Miniredis, *redis.Client) {
+func newFeedbackRateLimitRedis(t *testing.T) (*miniredis.Miniredis, redis.UniversalClient) {
 	t.Helper()
 
 	redisServer := miniredis.RunT(t)

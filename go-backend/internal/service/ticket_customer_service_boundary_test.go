@@ -629,6 +629,18 @@ func TestCustomerServiceConversationListFiltersUseBackendSource(t *testing.T) {
 	agentA := createTicketBoundaryUser(t, db, "agent-a@example.test", "agent-a", "support")
 	agentB := createTicketBoundaryUser(t, db, "agent-b@example.test", "agent-b", "support")
 
+	emptyConversationID := "empty-conversation"
+	emptyChat := ticket.Ticket{
+		TicketNumber:   "TK-FILTER-EMPTY",
+		UserID:         agentA.ID,
+		ConversationID: &emptyConversationID,
+		Subject:        "Empty customer service chat",
+		Category:       customerServiceTicketCategory,
+		Status:         "open",
+		AssignedTo:     agentA.ID,
+	}
+	require.NoError(t, ticketService.createTicket(&emptyChat))
+
 	memberConversationID := "member-conversation"
 	memberChat := ticket.Ticket{
 		TicketNumber:   "TK-FILTER-MEMBER",
@@ -674,6 +686,12 @@ func TestCustomerServiceConversationListFiltersUseBackendSource(t *testing.T) {
 		IsStaff:  false,
 		IsRead:   true,
 	}))
+
+	allChats, total, err := ticketService.ListCustomerServiceConversationsForAgent(1, 20, 0, true, CustomerServiceConversationListInput{})
+	require.NoError(t, err)
+	assert.EqualValues(t, 2, total)
+	require.Len(t, allChats, 2)
+	assert.NotContains(t, []uint{allChats[0].ID, allChats[1].ID}, emptyChat.ID)
 
 	accountChats, total, err := ticketService.ListCustomerServiceConversationsForAgent(1, 20, 0, true, CustomerServiceConversationListInput{Identity: "account"})
 	require.NoError(t, err)

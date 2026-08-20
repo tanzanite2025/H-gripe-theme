@@ -62,7 +62,7 @@ const statusLabel = (status: FontPreflightStatus): string => ({
 }[status])
 
 const faceStatus = (face: FontPreflightFace): FontPreflightStatus => (
-  face.self_hosted && face.font_display === 'swap' ? 'pass' : 'block'
+  face.self_hosted && face.font_display === 'block' ? 'pass' : 'block'
 )
 
 const localeStatus = (locale: FontPreflightLocaleCoverage): FontPreflightStatus => locale.status

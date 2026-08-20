@@ -2,7 +2,7 @@
   <div class="space-y-4">
     <AdminPageHeader
       title="运维中心 / 项目中心"
-      description="维护 Hostinger Compose 项目、服务边界、当前版本和备份恢复记录；这里只做台账维护。"
+      description="维护 Compose 项目、服务边界、当前版本和备份恢复记录；这里只做台账维护。"
     >
       <template #actions>
         <select
@@ -55,7 +55,7 @@
             <TableHead>项目</TableHead>
             <TableHead>VPS</TableHead>
             <TableHead>Compose / 网关</TableHead>
-            <TableHead>Hostinger 实际</TableHead>
+            <TableHead>Provider 实际</TableHead>
             <TableHead>服务边界</TableHead>
             <TableHead>当前版本</TableHead>
             <TableHead>健康 / 期望</TableHead>

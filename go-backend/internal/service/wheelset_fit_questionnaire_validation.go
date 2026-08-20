@@ -2,14 +2,22 @@ package service
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 
+	selectionconfiguration "commerce-platform/internal/domain/selectionconfiguration"
 	wheelsetfit "commerce-platform/internal/domain/wheelsetfit"
 	"commerce-platform/internal/pkg/locales"
+	"commerce-platform/internal/repository"
+
+	"gorm.io/gorm"
 )
 
-func validateWheelsetFitQuestionnaireVersion(version wheelsetfit.Version) WheelsetFitQuestionnaireValidationResult {
+func validateWheelsetFitQuestionnaireVersion(
+	version wheelsetfit.Version,
+	selectionConfigurationKeyRepository *repository.SelectionConfigurationKeyRepository,
+) WheelsetFitQuestionnaireValidationResult {
 	result := WheelsetFitQuestionnaireValidationResult{
 		Valid:  true,
 		Issues: []WheelsetFitQuestionnaireValidationIssue{},
@@ -63,6 +71,15 @@ func validateWheelsetFitQuestionnaireVersion(version wheelsetfit.Version) Wheels
 		} else {
 			questionKeys[question.QuestionKey] = struct{}{}
 		}
+		addSelectionConfigurationKeyValidationIssue(
+			addIssue,
+			context,
+			selectionConfigurationKeyRepository,
+			selectionconfiguration.SelectionConfigurationKeyKindQuestionKey,
+			question.QuestionKey,
+			"question_key",
+			"问题 key",
+		)
 		if normalizeWheelsetFitKey(question.AnswerKey) == "" {
 			addIssue(withWheelsetFitQuestionnaireIssue(context, "error", "invalid_answer_key", "回答 key 必须使用小写 snake_case"))
 		} else if _, duplicated := answerKeys[question.AnswerKey]; duplicated {
@@ -70,6 +87,15 @@ func validateWheelsetFitQuestionnaireVersion(version wheelsetfit.Version) Wheels
 		} else {
 			answerKeys[question.AnswerKey] = struct{}{}
 		}
+		addSelectionConfigurationKeyValidationIssue(
+			addIssue,
+			context,
+			selectionConfigurationKeyRepository,
+			selectionconfiguration.SelectionConfigurationKeyKindAnswerKey,
+			question.AnswerKey,
+			"answer_key",
+			"回答 key",
+		)
 		if question.SortOrder <= 0 {
 			addIssue(withWheelsetFitQuestionnaireIssue(context, "error", "invalid_question_order", "问题排序必须为正数"))
 		} else if _, duplicated := sortOrders[question.SortOrder]; duplicated {
@@ -143,6 +169,48 @@ func validateWheelsetFitQuestionnaireVersion(version wheelsetfit.Version) Wheels
 	}
 
 	return result
+}
+
+func addSelectionConfigurationKeyValidationIssue(
+	addIssue func(WheelsetFitQuestionnaireValidationIssue),
+	context WheelsetFitQuestionnaireValidationIssue,
+	selectionConfigurationKeyRepository *repository.SelectionConfigurationKeyRepository,
+	keyKind string,
+	keyCode string,
+	keyFieldName string,
+	keyDisplayName string,
+) {
+	if selectionConfigurationKeyRepository == nil || normalizeWheelsetFitKey(keyCode) == "" {
+		return
+	}
+
+	selectionConfigurationKey, err := selectionConfigurationKeyRepository.FindSelectionConfigurationKeyByKindAndCode(keyKind, normalizeWheelsetFitKey(keyCode))
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		addIssue(withWheelsetFitQuestionnaireIssue(
+			context,
+			"error",
+			"unregistered_"+keyFieldName,
+			fmt.Sprintf("%s %q 未在选型配置 Key 管理中注册", keyDisplayName, keyCode),
+		))
+		return
+	}
+	if err != nil {
+		addIssue(withWheelsetFitQuestionnaireIssue(
+			context,
+			"error",
+			"selection_configuration_key_lookup_failed",
+			fmt.Sprintf("读取%s %q 的选型配置 Key 失败", keyDisplayName, keyCode),
+		))
+		return
+	}
+	if !selectionConfigurationKey.IsEnabled {
+		addIssue(withWheelsetFitQuestionnaireIssue(
+			context,
+			"error",
+			"disabled_"+keyFieldName,
+			fmt.Sprintf("%s %q 已停用，不能用于轮组选型问卷", keyDisplayName, keyCode),
+		))
+	}
 }
 
 func withWheelsetFitQuestionnaireIssue(

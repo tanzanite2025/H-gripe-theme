@@ -1,7 +1,7 @@
 <template>
   <div class="layout layout--support">
     <main class="layout-main">
-      <div class="support-header-spacer" aria-hidden="true"></div>
+      <div class="site-header-layout-spacer" aria-hidden="true"></div>
 
       <!-- Support page content -->
       <section class="support-content">
@@ -19,10 +19,42 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useHead, useRequestURL, useRuntimeConfig } from '#imports'
 import AppFooter from '~/components/AppFooter.vue'
 import BehaviorAttributionBootstrap from '~/components/BehaviorAttributionBootstrap.vue'
 import GradientDockMenu from '~/components/GradientDockMenu.vue'
 import PageFaqSlot from '~/components/PageFaqSlot.vue'
+import { useSiteSettings } from '~/composables/usePublicSettings'
+import { useSiteTitle } from '~/composables/useSiteTitle'
+import { createSeoJsonLdScript } from '~/utils/seo/jsonLd'
+
+const config = useRuntimeConfig()
+const requestUrl = useRequestURL()
+const { siteSettings } = useSiteSettings()
+const { siteTitle } = useSiteTitle()
+
+const siteUrl = computed(() => {
+  const configured = String((config.public as { siteUrl?: string }).siteUrl || '').trim()
+  return (configured || requestUrl.origin).replace(/\/+$/, '')
+})
+
+const siteLogo = computed(() => {
+  const configured = String(siteSettings.value.siteLogo || '').trim()
+  return configured || `${siteUrl.value}/logo.png`
+})
+
+const organizationSchema = computed(() => ({
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: siteTitle.value,
+  url: siteUrl.value,
+  logo: siteLogo.value,
+}))
+
+useHead(() => ({
+  script: [createSeoJsonLdScript(organizationSchema.value)],
+}))
 </script>
 
 <style scoped>
@@ -37,10 +69,6 @@ import PageFaqSlot from '~/components/PageFaqSlot.vue'
   flex: 1;
   display: flex;
   flex-direction: column;
-}
-
-.support-header-spacer {
-  height: 145px;
 }
 
 .support-hero {
@@ -98,12 +126,6 @@ import PageFaqSlot from '~/components/PageFaqSlot.vue'
 
   .support-content__inner {
     max-width: none;
-  }
-}
-
-@media (min-width: 768px) {
-  .support-header-spacer {
-    height: 112px;
   }
 }
 

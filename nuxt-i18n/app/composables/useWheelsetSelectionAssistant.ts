@@ -35,14 +35,10 @@ const localizedText = (
   if (!value) return ''
   const normalized = normalizeLocale(locale)
   const base = normalized.split('_')[0] || ''
-  return String(
-    value[normalized]
-      || value[base]
-      || value.en
-      || value.zh_cn
-      || Object.values(value)[0]
-      || '',
-  )
+  if (normalized === 'zh_cn' || base === 'zh') {
+    return String(value[normalized] || value[base] || value.zh_cn || value.en || '')
+  }
+  return String(value[normalized] || value[base] || value.en || '')
 }
 
 const cloneFilters = (filters: Record<string, string[]>): Record<string, string[]> => (
@@ -86,7 +82,8 @@ export const useWheelsetSelectionAssistant = (
     return {
       key: node.key,
       prompt: localizedText(node.prompt, String(locale.value)),
-      helper: localizedText(node.helper, String(locale.value)) || undefined,
+      helpTitle: localizedText(node.help_title, String(locale.value)) || undefined,
+      helpBody: localizedText(node.help_body, String(locale.value)) || undefined,
       options: (node.options || []).map(option => ({
         value: option.key,
         label: localizedText(option.label, String(locale.value)) || option.key,
@@ -186,6 +183,20 @@ export const useWheelsetSelectionAssistant = (
     rebuildFromPath()
   }
 
+  const jumpToPathIndex = (targetIndex: number) => {
+    const normalizedTargetIndex = Math.max(
+      0,
+      Math.min(Number.isFinite(targetIndex) ? Math.trunc(targetIndex) : 0, path.value.length),
+    )
+
+    if (normalizedTargetIndex === path.value.length) {
+      return
+    }
+
+    path.value = path.value.slice(0, normalizedTargetIndex)
+    rebuildFromPath()
+  }
+
   const load = async () => {
     loading.value = true
     error.value = null
@@ -231,6 +242,7 @@ export const useWheelsetSelectionAssistant = (
     canGoBack,
     selectOption,
     goBack,
+    jumpToPathIndex,
     reset,
     reload: load,
   }

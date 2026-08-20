@@ -107,7 +107,7 @@ type feedbackRateLimitEvaluation struct {
 }
 
 type redisFeedbackRateLimitStore struct {
-	client *redis.Client
+	client redis.UniversalClient
 }
 
 type FeedbackRateLimitBlockedSummary struct {
@@ -139,15 +139,15 @@ const (
 
 var defaultFeedbackLocalRateLimitStore = newFeedbackLocalRateLimitStore(time.Now)
 
-func NewFeedbackReadRateLimiter(redisClient *redis.Client, cfg config.FeedbackRateLimitConfig) *FeedbackRateLimiter {
+func NewFeedbackReadRateLimiter(redisClient redis.UniversalClient, cfg config.FeedbackRateLimitConfig) *FeedbackRateLimiter {
 	return newFeedbackRateLimiter(redisClient, cfg, feedbackRateLimitRead)
 }
 
-func NewFeedbackWriteRateLimiter(redisClient *redis.Client, cfg config.FeedbackRateLimitConfig) *FeedbackRateLimiter {
+func NewFeedbackWriteRateLimiter(redisClient redis.UniversalClient, cfg config.FeedbackRateLimitConfig) *FeedbackRateLimiter {
 	return newFeedbackRateLimiter(redisClient, cfg, feedbackRateLimitWrite)
 }
 
-func newFeedbackRateLimiter(redisClient *redis.Client, cfg config.FeedbackRateLimitConfig, kind feedbackRateLimitKind) *FeedbackRateLimiter {
+func newFeedbackRateLimiter(redisClient redis.UniversalClient, cfg config.FeedbackRateLimitConfig, kind feedbackRateLimitKind) *FeedbackRateLimiter {
 	limiter := &FeedbackRateLimiter{
 		cfg:           cfg,
 		kind:          kind,
@@ -160,11 +160,11 @@ func newFeedbackRateLimiter(redisClient *redis.Client, cfg config.FeedbackRateLi
 	return limiter
 }
 
-func FeedbackReadRateLimit(redisClient *redis.Client, cfg config.FeedbackRateLimitConfig) gin.HandlerFunc {
+func FeedbackReadRateLimit(redisClient redis.UniversalClient, cfg config.FeedbackRateLimitConfig) gin.HandlerFunc {
 	return NewFeedbackReadRateLimiter(redisClient, cfg).Middleware()
 }
 
-func FeedbackWriteRateLimit(redisClient *redis.Client, cfg config.FeedbackRateLimitConfig) gin.HandlerFunc {
+func FeedbackWriteRateLimit(redisClient redis.UniversalClient, cfg config.FeedbackRateLimitConfig) gin.HandlerFunc {
 	return NewFeedbackWriteRateLimiter(redisClient, cfg).Middleware()
 }
 
@@ -640,7 +640,7 @@ func FeedbackLocalRateLimitBlockedCounts(hours int) FeedbackRateLimitBlockedSumm
 	return defaultFeedbackLocalRateLimitStore.BlockedCounts(hours)
 }
 
-func FeedbackRateLimitBlockedCounts(ctx context.Context, redisClient *redis.Client, hours int) (FeedbackRateLimitBlockedSummary, error) {
+func FeedbackRateLimitBlockedCounts(ctx context.Context, redisClient redis.UniversalClient, hours int) (FeedbackRateLimitBlockedSummary, error) {
 	if hours < 1 || hours > 168 {
 		hours = 24
 	}

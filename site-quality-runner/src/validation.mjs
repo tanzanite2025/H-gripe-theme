@@ -2,6 +2,7 @@ import dns from 'node:dns/promises'
 import net from 'node:net'
 
 const maxURLLength = 2048
+const defaultWorkerHeapLimitMB = 1024
 
 export class RunnerInputError extends Error {
   constructor(message) {
@@ -15,6 +16,12 @@ export function loadRunnerConfig(environment = process.env) {
   const token = String(environment.SITE_QUALITY_RUNNER_TOKEN || '').trim()
   const timeoutSeconds = readBoundedInt(environment.SITE_QUALITY_RUNNER_TIMEOUT_SECONDS, 90, 15, 300)
   const maxConcurrency = readBoundedInt(environment.SITE_QUALITY_RUNNER_MAX_CONCURRENCY, 1, 1, 4)
+  const workerHeapLimitMB = readBoundedInt(
+    environment.SITE_QUALITY_RUNNER_WORKER_HEAP_LIMIT_MB,
+    defaultWorkerHeapLimitMB,
+    384,
+    1536,
+  )
   const headingSettleMilliseconds = readBoundedInt(environment.SITE_QUALITY_HEADING_SETTLE_MS, 1_500, 250, 10_000)
   const allowPrivateTarget = normalizeBoolean(environment.SITE_QUALITY_RUNNER_ALLOW_PRIVATE_TARGETS)
 
@@ -27,6 +34,7 @@ export function loadRunnerConfig(environment = process.env) {
     token,
     timeoutMilliseconds: timeoutSeconds * 1000,
     maxConcurrency,
+    workerHeapLimitMB,
     headingSettleMilliseconds,
     allowPrivateTarget,
   }

@@ -22,7 +22,7 @@ var productionComposeBaseline = deploymentComposeBaseline{
 	Source:         "compose.prod.yml",
 	Services:       []string{"db", "redis", "migrate", "edge-config", "api", "storefront", "admin", "web"},
 	Networks:       []string{"db", "cache", "app", "shared-edge"},
-	VolumeKeys:     []string{"postgres_data", "redis_data", "uploads"},
+	VolumeKeys:     []string{"postgres_data", "redis_data", "uploads", "site_logo_uploads"},
 	GatewayNetwork: "shared-edge",
 	GatewayAlias:   "theme-web",
 }

@@ -6,7 +6,7 @@
   "loading": "Yorumlar yükleniyor...",
   "loadError": "Yorumlar yüklenemedi.",
   "retry": "Tekrar dene",
-  "empty": "Henüz onaylanmış yorum yok.",
+  "empty": "Henüz yorum yok.",
   "ratingLabel": "5 üzerinden {rating} yıldız",
   "imageAlt": "Müşteri yorumu görseli",
   "verifiedPurchase": "Doğrulanmış satın alma",

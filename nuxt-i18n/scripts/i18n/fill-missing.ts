@@ -14,9 +14,6 @@ import {
 const baseLocale = 'en'
 
 const manualFallbacks: Record<string, string> = {
-  'feedbackForm.messages.loginRequired': 'Log in to attach files.',
-  'feedbackForm.messages.membersOnly': 'Attachments are available for eligible members.',
-  'feedbackForm.messages.submitError': 'We could not submit your feedback. Please try again.',
   'policyTabs.cookie': 'Cookie',
   'policyTabs.privacy': 'Privacy',
   'policyTabs.refundReturn': 'Refund & Return',

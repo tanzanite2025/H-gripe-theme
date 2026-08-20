@@ -15,6 +15,7 @@
     "noResults": "FAQ по запросу «{query}» не найдены",
     "allFaqsMetaTitle": "Все FAQ",
     "loadingAnswers": "Загрузка ответов",
-    "illustrationAlt": "Иллюстрация FAQ"
+    "illustrationAlt": "Иллюстрация FAQ",
+    "selectQuestion": "Select a question to view the answer."
   }
 }

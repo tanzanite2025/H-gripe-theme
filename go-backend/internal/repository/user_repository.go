@@ -31,6 +31,17 @@ func (r *UserRepository) FindByID(id uint) (*user.User, error) {
 	return &u, nil
 }
 
+func (r *UserRepository) FindByIDs(ids []uint) ([]user.User, error) {
+	ids = uniqueUintValues(ids)
+	if len(ids) == 0 {
+		return []user.User{}, nil
+	}
+
+	var users []user.User
+	err := r.db.Where("id IN ?", ids).Find(&users).Error
+	return users, err
+}
+
 // FindByEmail 根据邮箱查找用户
 func (r *UserRepository) FindByEmail(email string) (*user.User, error) {
 	var u user.User

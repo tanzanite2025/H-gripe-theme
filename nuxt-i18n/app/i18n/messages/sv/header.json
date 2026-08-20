@@ -2,5 +2,11 @@
   "searchHint": {
     "title": "Sök produkter och FAQ",
     "body": "Klicka för att söka produkter, FAQ och mer."
+  },
+  "globalNavigationTransition": {
+    "ariaLabel": "Global content navigation",
+    "optionsLabel": "Choose a destination",
+    "trigger": "Open content navigation",
+    "triggerBody": "Choose Products, FAQ, Pages, or Blog."
   }
 }

@@ -50,6 +50,7 @@
       @toggle-all-orders="toggleAllOrders"
       @toggle-order="toggleOrder"
       @view-detail="showOrderDetail"
+      @fulfill="showFulfillmentDialog"
       @show-status="showStatusDialog"
       @delete="requestDelete"
       @update-page="updatePage"
@@ -131,8 +132,16 @@
       @update-note="updateAdminNote"
       @update-customs="updateOrderItemCustoms"
       @export-customs="exportOrderCustoms"
+      @create-after-sales="openAfterSalesDialog"
       @contact-dispute="openDisputeContactEmail"
       @open-payment-workbench="openPaymentWorkbench"
+    />
+
+    <OrderAfterSalesDialog
+      v-model:open="afterSalesDialogVisible"
+      :order="currentOrder"
+      :submitting="afterSalesSubmitting"
+      @submit="createAfterSales"
     />
 
     <OrderDisputeContactEmailDialog
@@ -154,6 +163,7 @@
       :carriers="carriers"
       :filtered-status-carrier-services="filteredStatusCarrierServices"
       :resolved-provider-carrier-code-label="resolvedProviderCarrierCodeLabel"
+      :fulfillment-mode="fulfillmentMode"
       :submitting="submitting"
       @submit="submitStatus"
       @carrier-change="handleStatusCarrierChange"
@@ -188,6 +198,7 @@ import AdminConfirmDialog from '@/components/admin/AdminConfirmDialog.vue'
 import AdminFilterPanel from '@/components/admin/AdminFilterPanel.vue'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import AdminStatsGrid from '@/components/admin/AdminStatsGrid.vue'
+import OrderAfterSalesDialog from '@/components/admin/order/OrderAfterSalesDialog.vue'
 import OrderDisputeContactEmailDialog from '@/components/admin/order/OrderDisputeContactEmailDialog.vue'
 import OrderDisputeTablePanel from '@/components/admin/order/OrderDisputeTablePanel.vue'
 import OrderDetailDialog from '@/components/admin/order/OrderDetailDialog.vue'
@@ -196,6 +207,8 @@ import OrderStatusDialog from '@/components/admin/order/OrderStatusDialog.vue'
 import OrderTablePanel from '@/components/admin/order/OrderTablePanel.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { afterSalesApi } from '@/api/afterSales'
+import type { CreateAfterSalesCaseInput } from '@/api/afterSales'
 import { ordersApi } from '@/api/orders'
 import { shippingApi } from '@/api/shipping'
 import {
@@ -266,9 +279,12 @@ const orders = ref<OrderRecord[]>([])
 const disputeOrders = ref<OrderDisputeCase[]>([])
 const selectedOrders = ref<OrderRecord[]>([])
 const detailDialogVisible = ref(false)
+const afterSalesDialogVisible = ref(false)
 const disputeEmailDialogVisible = ref(false)
 const statusDialogVisible = ref(false)
+const fulfillmentMode = ref(false)
 const submitting = ref(false)
+const afterSalesSubmitting = ref(false)
 const disputeLoading = ref(false)
 const disputeAnalysisLoading = ref(false)
 const disputeEmailSending = ref(false)
@@ -599,6 +615,33 @@ const showDisputeOrderDetail = (dispute: OrderDisputeCase): void => {
   })
 }
 
+const openAfterSalesDialog = (): void => {
+  if (!currentOrder.value?.id) return
+  afterSalesDialogVisible.value = true
+}
+
+const createAfterSales = async (input: CreateAfterSalesCaseInput): Promise<void> => {
+  const order = currentOrder.value
+  if (!order?.id) return
+
+  afterSalesSubmitting.value = true
+  try {
+    const record = await afterSalesApi.create(order.id, input)
+    toast.success(`售后单 #${record.id} 已创建`)
+    afterSalesDialogVisible.value = false
+    detailDialogVisible.value = false
+    await router.push({
+      name: 'AfterSalesCases',
+      query: order.order_number ? { search: order.order_number } : undefined,
+    })
+  } catch (error) {
+    console.error('Failed to create after-sales case:', error)
+    toast.error(error?.response?.data?.error || '售后单创建失败')
+  } finally {
+    afterSalesSubmitting.value = false
+  }
+}
+
 const openDisputeContactEmail = (dispute: OrderDisputeCase): void => {
   if (!dispute.order_id || !dispute.contact_draft?.can_send) return
   disputeEmailOrderID.value = dispute.order_id
@@ -614,8 +657,9 @@ const openDisputeContactEmail = (dispute: OrderDisputeCase): void => {
 }
 
 const openPaymentWorkbench = (dispute: OrderDisputeCase): void => {
+  const routeName = dispute.provider === 'paypal' ? 'PaymentPayPalDisputes' : 'PaymentStripeDisputes'
   void router.push({
-    name: 'PaymentRiskDisputes',
+    name: routeName,
     query: {
       provider: dispute.provider,
       dispute_id: String(dispute.dispute_id)
@@ -646,18 +690,29 @@ const submitDisputeContactEmail = async (): Promise<void> => {
   }
 }
 
-const showStatusDialog = async (order: OrderRecord): Promise<void> => {
-  await fetchShippingLookups()
+const initializeStatusForm = (order: OrderRecord, isFulfillment = false): void => {
+  fulfillmentMode.value = isFulfillment
   Object.assign(statusForm, {
     id: order.id,
     order_number: order.order_number,
-    status: order.status,
-    shipping_status: order.shipping_status,
+    status: isFulfillment ? 'shipped' : order.status,
+    shipping_status: isFulfillment ? 'shipped' : order.shipping_status,
     tracking_number: order.tracking_number || '',
     tracking_provider_id: defaultTrackingProviderForOrder(order),
     carrier_id: selectValueFromID(order.carrier_id),
     carrier_service_id: selectValueFromID(order.carrier_service_id)
   })
+}
+
+const showStatusDialog = async (order: OrderRecord): Promise<void> => {
+  await fetchShippingLookups()
+  initializeStatusForm(order)
+  statusDialogVisible.value = true
+}
+
+const showFulfillmentDialog = async (order: OrderRecord): Promise<void> => {
+  await fetchShippingLookups()
+  initializeStatusForm(order, true)
   statusDialogVisible.value = true
 }
 
@@ -692,14 +747,16 @@ const handleStatusCarrierServiceChange = (value: string): void => {
 const submitStatus = async (): Promise<void> => {
   submitting.value = true
   try {
-    await axios.patch(`/api/admin/orders/${statusForm.id}/status`, { status: statusForm.status })
-    await axios.patch(`/api/admin/orders/${statusForm.id}/shipping-status`, { shipping_status: statusForm.shipping_status })
     const trackingNumber = statusForm.tracking_number?.trim()
-    if (trackingNumber) {
-      const trackingProviderID = numericSelectID(statusForm.tracking_provider_id)
-      const carrierID = numericSelectID(statusForm.carrier_id)
-      const carrierServiceID = numericSelectID(statusForm.carrier_service_id)
+    const trackingProviderID = numericSelectID(statusForm.tracking_provider_id)
+    const carrierID = numericSelectID(statusForm.carrier_id)
+    const carrierServiceID = numericSelectID(statusForm.carrier_service_id)
 
+    if (fulfillmentMode.value) {
+      if (!trackingNumber) {
+        toast.error('请填写物流单号')
+        return
+      }
       if (!trackingProviderID) {
         toast.error('请选择追踪 Provider')
         return
@@ -709,6 +766,37 @@ const submitStatus = async (): Promise<void> => {
         return
       }
 
+      const response = await axios.post(`/api/admin/orders/${statusForm.id}/fulfillment`, {
+        tracking_number: trackingNumber,
+        tracking_provider_id: trackingProviderID,
+        carrier_id: carrierID,
+        carrier_service_id: carrierServiceID
+      })
+      const registrationError = response.data?.tracking_registration_error
+      if (registrationError) {
+        toast.warning(`订单已发货，17TRACK 登记失败：${registrationError}`)
+      } else {
+        toast.success('订单已发货，17TRACK 追踪任务已建立')
+      }
+      statusDialogVisible.value = false
+      await refreshOrders()
+      return
+    }
+
+    if (trackingNumber) {
+      if (!trackingProviderID) {
+        toast.error('请选择追踪 Provider')
+        return
+      }
+      if (!carrierID && !carrierServiceID) {
+        toast.error('请选择本地承运商或线路服务')
+        return
+      }
+    }
+
+    await axios.patch(`/api/admin/orders/${statusForm.id}/status`, { status: statusForm.status })
+    await axios.patch(`/api/admin/orders/${statusForm.id}/shipping-status`, { shipping_status: statusForm.shipping_status })
+    if (trackingNumber) {
       await axios.patch(`/api/admin/orders/${statusForm.id}/tracking`, {
         tracking_number: trackingNumber,
         tracking_provider_id: trackingProviderID,
@@ -721,6 +809,7 @@ const submitStatus = async (): Promise<void> => {
     await refreshOrders()
   } catch (error) {
     console.error('Failed to update order status:', error)
+    toast.error(error?.response?.data?.error || (fulfillmentMode.value ? '订单发货失败' : '订单状态更新失败'))
   } finally {
     submitting.value = false
   }

@@ -59,11 +59,11 @@ type AttemptInput struct {
 }
 
 type Service struct {
-	redis  *redis.Client
+	redis  redis.UniversalClient
 	config config.PaymentRiskConfig
 }
 
-func New(redisClient *redis.Client, cfg config.PaymentRiskConfig) *Service {
+func New(redisClient redis.UniversalClient, cfg config.PaymentRiskConfig) *Service {
 	if redisClient == nil {
 		return nil
 	}

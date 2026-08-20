@@ -31,6 +31,7 @@
       @update-note="emit('update-note')"
       @update-customs="forwardCustomsUpdate"
       @export-customs="emit('export-customs')"
+      @create-after-sales="emit('create-after-sales')"
       @contact-dispute="emit('contact-dispute', $event)"
       @open-payment-workbench="emit('open-payment-workbench', $event)"
     />
@@ -104,6 +105,7 @@ const emit = defineEmits<{
   (event: 'update-note'): void
   (event: 'update-customs', orderItemId: OrderID, declaredValue: number | null, declaredValueConfirmed: boolean): void
   (event: 'export-customs'): void
+  (event: 'create-after-sales'): void
   (event: 'contact-dispute', dispute: OrderDisputeCase): void
   (event: 'open-payment-workbench', dispute: OrderDisputeCase): void
 }>()

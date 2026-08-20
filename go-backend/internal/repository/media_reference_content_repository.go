@@ -46,7 +46,7 @@ func (r *MediaRepository) postReferences(query mediaAssetReferenceQuery) ([]medi
 		return []media.AssetReference{}, nil
 	}
 
-	containsSQL, containsArgs := mediaReferenceContainsCondition([]string{"content"}, query.URLs)
+	containsSQL, containsArgs := r.mediaReferenceContainsCondition([]string{"content"}, query.URLs)
 	type row struct {
 		ID          uint
 		Title       string
@@ -88,7 +88,7 @@ func (r *MediaRepository) showcaseReferences(query mediaAssetReferenceQuery) ([]
 		return []media.AssetReference{}, nil
 	}
 
-	containsSQL, containsArgs := mediaReferenceContainsCondition([]string{"images"}, query.URLs)
+	containsSQL, containsArgs := r.mediaReferenceContainsCondition([]string{"images"}, query.URLs)
 	type row struct {
 		ID    uint
 		Title string
@@ -120,7 +120,7 @@ func (r *MediaRepository) reviewReferences(query mediaAssetReferenceQuery) ([]me
 		return []media.AssetReference{}, nil
 	}
 
-	containsSQL, containsArgs := mediaReferenceContainsCondition([]string{"images"}, query.URLs)
+	containsSQL, containsArgs := r.mediaReferenceContainsCondition([]string{"images"}, query.URLs)
 	type row struct {
 		ID        uint
 		ProductID uint

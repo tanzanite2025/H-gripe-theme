@@ -3,6 +3,8 @@ package payment
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"strings"
 	"time"
 
 	"github.com/plutov/paypal/v4"
@@ -40,9 +42,12 @@ func NewPayPalGateway(config *Config) (PaymentGateway, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create paypal client: %w", err)
 	}
+	client.SetHTTPClient(&http.Client{Timeout: defaultPaymentGatewayTimeout})
 
 	// 获取访问令牌
-	_, err = client.GetAccessToken(context.Background())
+	ctx, cancel := paymentGatewayContext(context.Background())
+	defer cancel()
+	_, err = client.GetAccessToken(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get paypal access token: %w", err)
 	}
@@ -55,6 +60,9 @@ func NewPayPalGateway(config *Config) (PaymentGateway, error) {
 
 // CreatePayment 创建PayPal支付
 func (g *paypalGatewayImpl) CreatePayment(ctx context.Context, req *PaymentRequest) (*PaymentResponse, error) {
+	ctx, cancel := paymentGatewayContext(ctx)
+	defer cancel()
+
 	if err := ValidatePaymentRequest(req); err != nil {
 		return nil, fmt.Errorf("invalid payment request: %w", err)
 	}
@@ -94,14 +102,37 @@ func (g *paypalGatewayImpl) CreatePayment(ctx context.Context, req *PaymentReque
 		appCtx.CancelURL = req.CancelURL
 	}
 
-	// 创建订单（使用SDK v4的正确API）
-	createdOrder, err := g.client.CreateOrder(
-		ctx,
-		paypal.OrderIntentCapture,
-		units,
-		nil, // PaymentSource可选
-		appCtx,
-	)
+	var createdOrder *paypal.Order
+	if requestID := strings.TrimSpace(req.IdempotencyKey); requestID != "" {
+		if client, ok := g.client.(interface {
+			CreateOrderWithPaypalRequestID(context.Context, string, []paypal.PurchaseUnitRequest, *paypal.PaymentSource, *paypal.ApplicationContext, string) (*paypal.Order, error)
+		}); ok {
+			createdOrder, err = client.CreateOrderWithPaypalRequestID(
+				ctx,
+				paypal.OrderIntentCapture,
+				units,
+				nil,
+				appCtx,
+				requestID,
+			)
+		} else {
+			createdOrder, err = g.client.CreateOrder(
+				ctx,
+				paypal.OrderIntentCapture,
+				units,
+				nil,
+				appCtx,
+			)
+		}
+	} else {
+		createdOrder, err = g.client.CreateOrder(
+			ctx,
+			paypal.OrderIntentCapture,
+			units,
+			nil,
+			appCtx,
+		)
+	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to create paypal order: %w", err)
 	}

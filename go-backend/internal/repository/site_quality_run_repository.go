@@ -51,7 +51,7 @@ func (r *SiteQualityRunRepository) List(
 		filter.PageSize = 20
 	}
 
-	query := r.db.Model(&sitequalitydomain.SiteQualityRun{})
+	query := r.runQuery()
 	if filter.TargetURL != "" {
 		query = query.Where("target_url = ?", filter.TargetURL)
 	}
@@ -79,7 +79,7 @@ func (r *SiteQualityRunRepository) LatestSuccessfulAt() (*time.Time, error) {
 		return nil, errors.New("SiteQuality run repository is unavailable")
 	}
 	var run sitequalitydomain.SiteQualityRun
-	err := r.db.
+	err := r.runQuery().
 		Where("status = ?", sitequalitydomain.SiteQualityRunStatusSuccess).
 		Order("created_at DESC").
 		Order("id DESC").
@@ -92,4 +92,24 @@ func (r *SiteQualityRunRepository) LatestSuccessfulAt() (*time.Time, error) {
 	}
 	latestSuccessAt := run.CreatedAt.UTC()
 	return &latestSuccessAt, nil
+}
+
+func (r *SiteQualityRunRepository) FindByID(id uint) (*sitequalitydomain.SiteQualityRun, error) {
+	if r == nil || r.db == nil {
+		return nil, errors.New("SiteQuality run repository is unavailable")
+	}
+	var run sitequalitydomain.SiteQualityRun
+	if err := r.runQuery().Where("id = ?", id).First(&run).Error; err != nil {
+		return nil, err
+	}
+	return &run, nil
+}
+
+func (r *SiteQualityRunRepository) runQuery() *gorm.DB {
+	if r.db.Migrator().HasTable(&sitequalitydomain.SiteQualityRunArchive{}) {
+		return r.db.Table(
+			"(SELECT * FROM site_quality_runs UNION ALL SELECT * FROM site_quality_runs_archive) AS site_quality_runs",
+		)
+	}
+	return r.db.Model(&sitequalitydomain.SiteQualityRun{})
 }

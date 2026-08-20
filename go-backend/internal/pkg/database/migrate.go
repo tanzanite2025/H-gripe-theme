@@ -1,6 +1,7 @@
 package database
 
 import (
+	"commerce-platform/internal/domain/aftersales"
 	attributiondomain "commerce-platform/internal/domain/attribution"
 	"commerce-platform/internal/domain/audit"
 	"commerce-platform/internal/domain/coupon"
@@ -22,6 +23,7 @@ import (
 	recommendationdomain "commerce-platform/internal/domain/recommendation"
 	"commerce-platform/internal/domain/registration"
 	"commerce-platform/internal/domain/review"
+	selectionconfigurationdomain "commerce-platform/internal/domain/selectionconfiguration"
 	seodomain "commerce-platform/internal/domain/seo"
 	"commerce-platform/internal/domain/setting"
 	"commerce-platform/internal/domain/shipping"
@@ -35,6 +37,7 @@ import (
 	"commerce-platform/internal/domain/user"
 	"commerce-platform/internal/domain/verification"
 	"commerce-platform/internal/domain/visitor"
+	visualshowcasedomain "commerce-platform/internal/domain/visualshowcase"
 	"commerce-platform/internal/domain/wishlist"
 	"commerce-platform/internal/pkg/config"
 	"commerce-platform/internal/pkg/logger"
@@ -71,7 +74,6 @@ func AutoMigrate(db *gorm.DB, serverMode string) error {
 		&product.ProductSpecificationTemplate{},
 		&product.ProductCategory{},
 		&product.ProductCategoryTranslation{},
-		&product.ProductSpecificationTemplateTranslation{},
 		&product.SpecDefinition{},
 		&product.ProductSpecValue{},
 		&product.ProductVariant{},
@@ -84,10 +86,19 @@ func AutoMigrate(db *gorm.DB, serverMode string) error {
 		&ops.Connector{},
 		&ops.VPSBinding{},
 		&ops.ProjectBinding{},
+		&ops.NetworkRule{},
 		&marketdomain.StorefrontMarket{},
 		&marketdomain.MarketCountry{},
 		&orderdomain.Order{},
 		&orderdomain.OrderItem{},
+		&orderdomain.OrderIdempotency{},
+		&orderdomain.PolicyDisclosure{},
+		&aftersales.AfterSalesCase{},
+		&aftersales.AfterSalesCaseItem{},
+		&aftersales.AfterSalesCaseEvent{},
+		&aftersales.AfterSalesCaseEventArchive{},
+		&aftersales.AfterSalesCaseAttachment{},
+		&aftersales.AfterSalesRefundReview{},
 		&attributiondomain.OrderAttribution{},
 		&outboxdomain.Event{},
 		&payment.PaymentMethod{},
@@ -138,6 +149,7 @@ func AutoMigrate(db *gorm.DB, serverMode string) error {
 		&review.Review{},
 		&review.ReviewHelpful{},
 		&review.ReviewSummary{},
+		&selectionconfigurationdomain.SelectionConfigurationKey{},
 		&setting.Setting{},
 		&ticket.Ticket{},
 		&ticket.TicketMessage{},
@@ -174,11 +186,13 @@ func AutoMigrate(db *gorm.DB, serverMode string) error {
 		&preflightdomain.ContentLinkRun{},
 		&preflightdomain.ContentLinkIssue{},
 		&preflightdomain.ContentLinkIssueEvent{},
+		&visualshowcasedomain.Item{},
 		&sitequalitydomain.SiteQualityTarget{},
 		&sitequalitydomain.SiteQualityJob{},
 		&sitequalitydomain.SiteQualityProviderSlot{},
 		&sitequalitydomain.SiteQualityEvaluation{},
 		&sitequalitydomain.SiteQualityRun{},
+		&sitequalitydomain.SiteQualityRunArchive{},
 		&sitequalitydomain.SiteQualityFinding{},
 		&sitequalitydomain.SiteQualityFindingEvent{},
 	)

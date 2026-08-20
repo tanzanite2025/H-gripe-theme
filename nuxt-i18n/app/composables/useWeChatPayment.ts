@@ -14,6 +14,7 @@ export interface WeChatPaymentSession {
 
 export interface CreateWeChatOrderInput {
   orderNumber: string
+  idempotencyKey?: string
 }
 
 const unwrapApiData = <T>(payload: ApiEnvelope<T> | null | undefined): T | null => {
@@ -45,9 +46,14 @@ export function useWeChatPayment() {
 
   const createWeChatOrder = async (input: CreateWeChatOrderInput): Promise<WeChatPaymentSession> => {
     const orderNumber = assertOrderNumber(input.orderNumber)
+    const idempotencyKey = String(input.idempotencyKey || '').trim()
     const response = await request<ApiEnvelope<WeChatPaymentSession>>('/payment/wechat/orders', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        ...(idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {}),
+      },
       body: JSON.stringify({ order_number: orderNumber }),
     }, 'Unable to start WeChat Pay payment')
 
@@ -61,13 +67,18 @@ export function useWeChatPayment() {
     return session
   }
 
-  const confirmWeChatOrder = async (orderNumber: string): Promise<WeChatPaymentSession> => {
+  const confirmWeChatOrder = async (orderNumber: string, idempotencyKey?: string): Promise<WeChatPaymentSession> => {
     const normalizedOrderNumber = assertOrderNumber(orderNumber)
+    const normalizedIdempotencyKey = String(idempotencyKey || '').trim()
     const response = await request<ApiEnvelope<WeChatPaymentSession>>(
       `/payment/wechat/orders/${encodeURIComponent(normalizedOrderNumber)}/confirm`,
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          ...(normalizedIdempotencyKey ? { 'Idempotency-Key': normalizedIdempotencyKey } : {}),
+        },
         body: JSON.stringify({}),
       },
       'Unable to confirm WeChat Pay payment',

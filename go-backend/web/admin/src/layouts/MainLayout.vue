@@ -3,7 +3,7 @@
     <div class="flex h-screen h-dvh overflow-hidden bg-background">
       <aside
         class="hidden shrink-0 border-r border-dashed border-slate-200 bg-white shadow-sm transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] lg:flex"
- :class="isCollapse ? 'w-[76px]': 'w-[250px]'"
+ :class="isCollapse ? 'w-[76px]': 'w-[288px]'"
       >
         <AdminSidebar
           :items="visibleNavigationItems"

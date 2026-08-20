@@ -170,6 +170,7 @@ func GatewayConfigFromSecureConfig(config SecureGatewayConfig) *Config {
 		gatewayConfig.PublishableKey = credentials["publishable_key"]
 		gatewayConfig.WebhookSecret = credentials["webhook_secret"]
 		gatewayConfig.ThreeDSecure = NormalizeThreeDSecureMode(credentials["three_ds_mode"])
+		gatewayConfig.PaymentMethodTypes = parseConfiguredPaymentMethodTypes(os.Getenv("STRIPE_PAYMENT_METHOD_TYPES"))
 	case GatewayPayPal:
 		gatewayConfig.APIKey = credentials["client_id"]
 		gatewayConfig.SecretKey = credentials["secret"]

@@ -6,7 +6,6 @@ import { supportPaymentFaq } from './pages/support-payment'
 import { supportShippingFaq } from './pages/support-shipping'
 import { supportWarrantyFaq } from './pages/support-warranty'
 import { supportWarrantyCheckFaq } from './pages/support-warranty-check'
-import { supportProductFeedbackFaq } from './pages/support-product-feedback'
 import { supportTestReportFaq } from './pages/support-test-report'
 import { companyMembershipFaq } from './pages/company-membership'
 import { guidesWheelsetBuyersFaq } from './pages/guides-wheelset-buyers'
@@ -23,7 +22,6 @@ export const faqRegistry: FaqRegistry = {
   'support-shipping': supportShippingFaq,
   'support-warranty': supportWarrantyFaq,
   'support-warranty-check': supportWarrantyCheckFaq,
-  'support-product-feedback': supportProductFeedbackFaq,
   'support-test-report': supportTestReportFaq,
   'company-membership': companyMembershipFaq,
   'guides-wheelset-buyers': guidesWheelsetBuyersFaq,
@@ -44,7 +42,6 @@ export const faqRoutePathByPageId: Record<string, string> = {
   'support-shipping': '/support/shipping',
   'support-warranty': '/support/warranty',
   'support-warranty-check': '/support/warranty-check',
-  'support-product-feedback': '/support/product-feedback',
   'support-test-report': '/support/test-report',
   'company-membership': '/membershipandpoints',
   'company-oem-odm': '/company/oem-odm',

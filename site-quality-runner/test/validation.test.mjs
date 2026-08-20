@@ -20,6 +20,31 @@ test('normalizes a same-origin mobile run', async () => {
   assert.equal(result.releaseID, 'release-1')
 })
 
+test('loads a bounded worker heap limit', () => {
+  const defaultConfig = loadRunnerConfig({
+    SITE_QUALITY_ALLOWED_ORIGIN: 'https://shop.example.com',
+    SITE_QUALITY_RUNNER_TOKEN: '01234567890123456789012345678901',
+  })
+
+  assert.equal(defaultConfig.workerHeapLimitMB, 1024)
+
+  const overriddenConfig = loadRunnerConfig({
+    SITE_QUALITY_ALLOWED_ORIGIN: 'https://shop.example.com',
+    SITE_QUALITY_RUNNER_TOKEN: '01234567890123456789012345678901',
+    SITE_QUALITY_RUNNER_WORKER_HEAP_LIMIT_MB: '1536',
+  })
+
+  assert.equal(overriddenConfig.workerHeapLimitMB, 1536)
+
+  const cappedConfig = loadRunnerConfig({
+    SITE_QUALITY_ALLOWED_ORIGIN: 'https://shop.example.com',
+    SITE_QUALITY_RUNNER_TOKEN: '01234567890123456789012345678901',
+    SITE_QUALITY_RUNNER_WORKER_HEAP_LIMIT_MB: '4096',
+  })
+
+  assert.equal(cappedConfig.workerHeapLimitMB, 1536)
+})
+
 test('rejects a target outside the configured storefront origin', async () => {
   await assert.rejects(
     () => normalizeRunInput(

@@ -79,6 +79,13 @@
                   <Eye class="size-4" />
                   查看详情
                 </DropdownMenuItem>
+                <DropdownMenuItem
+                  v-if="canEdit && ['paid', 'processing'].includes(order.status || '') && order.payment_status === 'paid'"
+                  @select="emit('fulfill', order)"
+                >
+                  <Truck class="size-4" />
+                  发货
+                </DropdownMenuItem>
                 <DropdownMenuItem v-if="canEdit" @select="emit('show-status', order)">
                   <RefreshCw class="size-4" />
                   状态管理
@@ -112,7 +119,7 @@
 </template>
 
 <script setup lang="ts">
-import { CircleCheck, CircleX, Eye, MoreHorizontal, RefreshCw, ShoppingBag, Trash2 } from '@lucide/vue'
+import { CircleCheck, CircleX, Eye, MoreHorizontal, RefreshCw, ShoppingBag, Trash2, Truck } from '@lucide/vue'
 import AdminPagination from '@/components/admin/AdminPagination.vue'
 import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
 import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
@@ -169,6 +176,7 @@ const emit = defineEmits<{
   (event: 'toggle-all-orders', checked: OrderSelectionState): void
   (event: 'toggle-order', order: OrderRecord, checked: OrderSelectionState): void
   (event: 'view-detail', order: OrderRecord): void
+  (event: 'fulfill', order: OrderRecord): void
   (event: 'show-status', order: OrderRecord): void
   (event: 'delete', order: OrderRecord): void
   (event: 'update-page', page: number): void

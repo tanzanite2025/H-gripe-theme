@@ -36,7 +36,19 @@
       "description": "Coming next."
     },
     "eyebrow": "QUICKBUY",
-    "title": "Choose how to start"
+    "title": "Choose how to start",
+    "wheelsetSelectionAssistant": {
+      "title": "Find my bike specs",
+      "description": "Answer guided fit questions.",
+      "action": "Start",
+      "modalDescription": "Choose what you know now. We only ask for missing fit details."
+    },
+    "contactService": {
+      "modalTitle": "Email or chat with support",
+      "title": "Email support",
+      "description": "Send specs or questions by email.",
+      "action": "Start"
+    }
   },
   "help": {
     "title": "QUICK instructions"

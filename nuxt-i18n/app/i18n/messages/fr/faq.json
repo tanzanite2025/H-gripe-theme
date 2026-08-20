@@ -15,6 +15,7 @@
     "noResults": "Aucune FAQ trouvée pour « {query} »",
     "allFaqsMetaTitle": "Toutes les FAQ",
     "loadingAnswers": "Chargement des réponses",
-    "illustrationAlt": "Illustration FAQ"
+    "illustrationAlt": "Illustration FAQ",
+    "selectQuestion": "Select a question to view the answer."
   }
 }

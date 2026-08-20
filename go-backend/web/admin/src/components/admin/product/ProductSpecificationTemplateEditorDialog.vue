@@ -49,116 +49,6 @@
 
           <section class="rounded-2xl border border-dashed border-border/80 bg-card/70 p-4">
             <div class="mb-3 flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <h3 class="text-sm font-black tracking-tighter uppercase">分类图片</h3>
-                <p class="mt-1 text-xs leading-5 text-muted-foreground">
-                  仅支持 WEBP，固定为 {{ productSpecTemplateImageSize }} × {{ productSpecTemplateImageSize }} px（1:1）。
-                </p>
-              </div>
-              <span
-                v-if="imagePreviewSource"
-                class="rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs text-emerald-700 dark:text-emerald-300"
-              >
-                已选择
-              </span>
-            </div>
-
-            <div class="flex flex-col gap-4 sm:flex-row sm:items-start">
-              <div class="relative aspect-square w-36 shrink-0 overflow-hidden rounded-xl border bg-muted/50">
-                <img
-                  v-if="imagePreviewSource && !imageLoadFailed"
-                  :src="imagePreviewSource"
-                  alt="分类图片预览"
-                  class="h-full w-full object-cover"
-                  @error="imageLoadFailed = true"
-                />
-                <div v-else class="flex h-full w-full items-center justify-center text-muted-foreground/50">
-                  <ImageOff class="size-8" />
-                </div>
-              </div>
-
-              <div class="min-w-0 space-y-3">
-                <div class="flex flex-wrap items-center gap-2">
-                  <Button type="button" variant="outline" size="sm" @click="imageInput?.click()">
-                    <UploadCloud class="size-3.5" />
-                    选择 WEBP
-                  </Button>
-                  <Button
-                    v-if="imagePreviewSource"
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    class="size-8"
-                    title="移除分类图片"
-                    aria-label="移除分类图片"
-                    @click="clearImage"
-                  >
-                    <Trash2 class="size-4 text-destructive" />
-                  </Button>
-                </div>
-                <input
-                  ref="imageInput"
-                  type="file"
-                  class="sr-only"
-                  accept=".webp,image/webp"
-                  @change="handleImageInput"
-                />
-                <p class="text-xs leading-5 text-muted-foreground">
-                  首页分类卡片会按正方形显示；{{ form.id === null ? '保存模板后上传图片。' : '保存模板时同步替换图片。' }}
-                </p>
-              </div>
-            </div>
-          </section>
-
-          <section class="rounded-2xl border border-dashed border-border/80 bg-card/70 p-4">
-            <div class="mb-3 flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <h3 class="text-sm font-black tracking-tighter uppercase">多语言名称</h3>
-                <p class="mt-1 text-xs leading-5 text-muted-foreground">
-                  为已启用后台语言维护分类名称和描述。空名称不会提交，前台会回退到基础名称。
-                </p>
-              </div>
-              <span class="rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">
-                {{ filledTranslationCount(form.translations) }} 个已填写
-              </span>
-            </div>
-
-            <div v-if="form.translations.length" class="grid min-w-0 gap-3 md:grid-cols-2 xl:grid-cols-4">
-              <section
-                v-for="translation in form.translations"
-                :key="translation.locale"
-                class="min-w-0 rounded-xl border bg-background/80 p-3"
-              >
-                <div class="mb-2 flex items-center justify-between gap-2">
-                  <div class="min-w-0">
-                    <p class="truncate text-xs font-black">{{ languageLabel(translation.locale) }}</p>
-                    <p class="font-mono text-[10px] text-muted-foreground">{{ translation.locale }}</p>
-                  </div>
-                  <span class="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
-                    可选
-                  </span>
-                </div>
-                <div class="space-y-2">
-                  <AdminFormField label="名称">
-                    <Input v-model="translation.name" :placeholder="`请输入${languageLabel(translation.locale)}名称`" />
-                  </AdminFormField>
-                  <AdminFormField label="描述">
-                    <Textarea
-                      v-model="translation.description"
-                      class="min-h-16 resize-y"
-                      :placeholder="`请输入${languageLabel(translation.locale)}描述（可选）`"
-                    />
-                  </AdminFormField>
-                </div>
-              </section>
-            </div>
-            <div v-else class="rounded-xl border border-dashed py-6 text-center text-xs text-muted-foreground">
-              暂无已启用语言。请先在语言设置中启用语言。
-            </div>
-          </section>
-
-          <section class="rounded-2xl border border-dashed border-border/80 bg-card/70 p-4">
-            <div class="mb-3 flex flex-wrap items-start justify-between gap-3">
               <div class="space-y-1">
                 <h3 class="text-sm font-black tracking-tighter uppercase">字段模板</h3>
                 <p class="text-xs leading-5 text-muted-foreground">
@@ -298,8 +188,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
-import { ImageOff, LoaderCircle, Plus, SlidersHorizontal, Trash2, UploadCloud } from '@lucide/vue'
+import { LoaderCircle, Plus, SlidersHorizontal, Trash2 } from '@lucide/vue'
 import AdminFormField from '@/components/admin/AdminFormField.vue'
 import { Button } from '@/components/ui/button'
 import {
@@ -314,16 +203,13 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
-import type { LanguageOption } from '@/lib/languages'
 import type {
   ProductSpecificSpecPredicate,
   ProductSpecTemplateDialogMode,
   ProductSpecTemplateForm,
   ProductSpecTemplateFormErrors,
-  ProductSpecTemplateSpecForm,
-  ProductSpecTemplateTranslationForm
+  ProductSpecTemplateSpecForm
 } from './productSpecificationTemplateTypes'
-import { PRODUCT_SPEC_TEMPLATE_IMAGE_SIZE } from './productSpecificationTemplateTypes'
 
 const props = withDefaults(defineProps<{
   open?: boolean
@@ -334,89 +220,14 @@ const props = withDefaults(defineProps<{
   showSpecAdvanced?: boolean
   systemManaged?: boolean
   isProductSpecificSelect: ProductSpecificSpecPredicate
-  languageOptions?: LanguageOption[]
 }>(), {
   open: false,
   mode: 'create',
   errors: () => ({}),
   submitting: false,
   showSpecAdvanced: false,
-  systemManaged: false,
-  languageOptions: () => []
+  systemManaged: false
 })
-
-const languageLabel = (locale: string): string => (
-  props.languageOptions.find((option) => option.value === locale)?.label || locale
-)
-const filledTranslationCount = (translations: ProductSpecTemplateTranslationForm[]): number => (
-  translations.filter((translation) => translation.name.trim()).length
-)
-const imageInput = ref<HTMLInputElement | null>(null)
-const pendingImagePreviewURL = ref('')
-const imageLoadFailed = ref(false)
-const productSpecTemplateImageSize = PRODUCT_SPEC_TEMPLATE_IMAGE_SIZE
-let previewObjectURL = ''
-
-const imagePreviewSource = computed(() => (
-  pendingImagePreviewURL.value || String(props.form.image_url || '').trim()
-))
-
-const revokePreviewObjectURL = (): void => {
-  if (!previewObjectURL) return
-  URL.revokeObjectURL(previewObjectURL)
-  previewObjectURL = ''
-}
-
-watch(() => props.form.pending_image_file, (file) => {
-  revokePreviewObjectURL()
-  pendingImagePreviewURL.value = ''
-  imageLoadFailed.value = false
-  if (!file) return
-  previewObjectURL = URL.createObjectURL(file)
-  pendingImagePreviewURL.value = previewObjectURL
-}, { immediate: true })
-
-watch(imagePreviewSource, () => {
-  imageLoadFailed.value = false
-})
-
-onBeforeUnmount(() => {
-  revokePreviewObjectURL()
-})
-
-const handleImageInput = (event: Event): void => {
-  const input = event.target instanceof HTMLInputElement ? event.target : null
-  const file = input?.files?.[0] || null
-  if (input) input.value = ''
-  if (!file) return
-
-  const isWebP = file.name.toLowerCase().endsWith('.webp')
-    && (!file.type || file.type === 'image/webp')
-  if (!isWebP) {
-    emit('image-error', '分类图片只能上传 WEBP 文件')
-    return
-  }
-
-  const objectURL = URL.createObjectURL(file)
-  const image = new window.Image()
-  image.onload = () => {
-    URL.revokeObjectURL(objectURL)
-    if (image.naturalWidth !== productSpecTemplateImageSize || image.naturalHeight !== productSpecTemplateImageSize) {
-      emit('image-error', `分类图片必须是 ${productSpecTemplateImageSize} × ${productSpecTemplateImageSize} px`)
-      return
-    }
-    emit('image-selected', file)
-  }
-  image.onerror = () => {
-    URL.revokeObjectURL(objectURL)
-    emit('image-error', '无法读取分类图片，请重新选择有效的 WEBP 文件')
-  }
-  image.src = objectURL
-}
-
-const clearImage = (): void => {
-  emit('image-cleared')
-}
 
 const emit = defineEmits<{
   (event: 'update:open', value: boolean): void
@@ -425,8 +236,5 @@ const emit = defineEmits<{
   (event: 'clear-error', key: string): void
   (event: 'add-spec'): void
   (event: 'remove-spec', index: number): void
-  (event: 'image-selected', value: File): void
-  (event: 'image-cleared'): void
-  (event: 'image-error', message: string): void
 }>()
 </script>

@@ -12,6 +12,8 @@ const (
 	RoleSupport Role = "support"
 	RoleViewer  Role = "viewer"
 	RoleUser    Role = "user"
+	// RoleTestUser is a storefront-only account used by the production test channel.
+	RoleTestUser Role = "test_user"
 )
 
 func NormalizeRole(raw string) Role {
@@ -26,9 +28,16 @@ func NormalizeRole(raw string) Role {
 		return RoleEditor
 	case RoleViewer:
 		return RoleViewer
+	case RoleTestUser:
+		return RoleTestUser
 	default:
 		return RoleUser
 	}
+}
+
+func IsStorefrontRole(raw string) bool {
+	role := NormalizeRole(raw)
+	return role == RoleUser || role == RoleTestUser
 }
 
 func IsCustomerServiceAgentRole(raw string) bool {
@@ -233,7 +242,8 @@ var RolePermissions = map[Role][]Permission{
 		PermShippingView,
 		PermSettingsView,
 	},
-	RoleUser: {},
+	RoleUser:     {},
+	RoleTestUser: {},
 }
 
 func (r Role) HasPermission(perm Permission) bool {
@@ -256,7 +266,7 @@ func (r Role) GetPermissions() []Permission {
 
 func (r Role) IsValid() bool {
 	switch r {
-	case RoleAdmin, RoleManager, RoleEditor, RoleSupport, RoleViewer, RoleUser:
+	case RoleAdmin, RoleManager, RoleEditor, RoleSupport, RoleViewer, RoleUser, RoleTestUser:
 		return true
 	default:
 		return false

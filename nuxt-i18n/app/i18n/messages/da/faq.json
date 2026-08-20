@@ -15,6 +15,7 @@
     "noResults": "Ingen FAQ fundet for \"{query}\"",
     "allFaqsMetaTitle": "Alle FAQ",
     "loadingAnswers": "Indlæser svar",
-    "illustrationAlt": "FAQ-illustration"
+    "illustrationAlt": "FAQ-illustration",
+    "selectQuestion": "Select a question to view the answer."
   }
 }

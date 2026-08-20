@@ -4,7 +4,7 @@
     class="chat-modal-shell tz-mobile-dialog-surface relative w-full md:w-[560px] max-w-full md:max-w-[calc(100vw-3rem)] tz-mobile-safe-full-height rounded-none md:rounded-2xl overflow-hidden flex flex-col bg-black shadow-[-12px_0_28px_rgba(0,0,0,0.45)] pointer-events-auto"
   >
     <div
-      class="chat-modal-drag-handle border-b border-white/[0.08] bg-white/[0.03] backdrop-blur-md"
+      class="chat-modal-drag-handle tz-mobile-chrome-top border-b border-white/[0.08] backdrop-blur-md"
       @pointerdown="emit('dragStart', $event)"
     >
       <div class="px-3 py-2 flex items-center justify-between gap-3">
@@ -57,7 +57,7 @@
       </div>
     </div>
 
-    <div class="chat-welcome-footer p-2 md:px-5 md:pt-4 md:pb-5 shrink-0 z-20 bg-white/[0.02] border-t border-white/[0.08]">
+    <div class="chat-welcome-footer tz-mobile-chrome-bottom p-2 md:px-5 md:pt-4 md:pb-5 shrink-0 z-20 border-t border-white/[0.08]">
       <ChatStartButton
         class="w-full text-sm"
         :label="startButtonLabel"
@@ -158,6 +158,7 @@ const selectedAgentEmail = computed(() => {
   }
 
   .chat-welcome-footer {
+    border-top-color: var(--tz-mobile-chrome-edge-border);
     padding-bottom: var(--tz-mobile-modal-safe-padding-bottom, 0.75rem);
   }
 }

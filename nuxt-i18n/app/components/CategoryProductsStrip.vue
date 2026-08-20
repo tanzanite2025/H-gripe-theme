@@ -61,7 +61,8 @@
                   Add to cart
                 </button>
                 <NuxtLink
-                  :to="product.url"
+                  v-if="product.url"
+                  :to="resolveProductUrl(product.url)"
                   class="category-strip__button category-strip__button--ghost"
                 >
                   View
@@ -77,6 +78,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
+import { useLocalePath } from '#imports'
 import { useCart } from '~/composables/useCart'
 import { resolveShopProductImage, useShopProducts } from '~/composables/useShopProducts'
 import type { ShopProduct } from '~/composables/useShopProducts'
@@ -97,6 +99,7 @@ const scrollContainer = ref<HTMLElement | null>(null)
 
 const { addToCart, openCart } = useCart()
 const { fetchShopProducts, toCartItem } = useShopProducts()
+const localePath = useLocalePath()
 
 const perPage = computed(() => props.perPage ?? 12)
 const showAddToCart = computed(() => props.showAddToCart ?? true)
@@ -107,6 +110,14 @@ const resolvedEmptyMessage = computed(
 )
 
 const categoryKeyword = computed(() => props.categorySlug.replace(/[-_]+/g, ' ').trim())
+
+const resolveProductUrl = (value: string) => {
+  const rawUrl = String(value || '').trim()
+  if (!rawUrl) return ''
+  if (/^https?:\/\//i.test(rawUrl)) return rawUrl
+  if (/^\/[a-z]{2}(?:[_-][a-z]{2})?\/shop\/[^/?#]+(?:[?#].*)?$/i.test(rawUrl)) return rawUrl
+  return localePath(rawUrl)
+}
 
 const loadProducts = async () => {
   if (!categoryKeyword.value) {
@@ -163,8 +174,7 @@ watch(
   padding: 0.75rem 0.75rem 0.9rem;
   border-radius: 0.9rem;
   border: 1px solid rgba(148, 163, 184, 0.3);
-  background: radial-gradient(circle at top left, rgba(56, 189, 248, 0.12), transparent 45%),
-    rgba(15, 23, 42, 0.85);
+  background: var(--tz-card-surface);
 }
 
 .category-strip__header {
@@ -200,7 +210,7 @@ watch(
   height: 0.8rem;
   border-radius: 9999px;
   border: 2px solid rgba(148, 163, 184, 0.4);
-  border-top-color: rgba(56, 189, 248, 0.9);
+  border-top-color: rgba(181, 255, 109, 0.9);
   animation: strip-spin 0.7s linear infinite;
 }
 
@@ -221,7 +231,7 @@ watch(
   flex-direction: column;
   border-radius: 0.75rem;
   border: 1px solid rgba(148, 163, 184, 0.35);
-  background: rgba(15, 23, 42, 0.95);
+  background: var(--tz-card-surface);
   overflow: hidden;
 }
 
@@ -229,7 +239,7 @@ watch(
   position: relative;
   width: 100%;
   height: 6.5rem;
-  background: rgba(15, 23, 42, 0.9);
+  background: var(--tz-image-loading-surface);
 }
 
 .category-strip__image img {
@@ -292,9 +302,9 @@ watch(
 }
 
 .category-strip__button--primary {
-  background-image: linear-gradient(135deg, rgba(56, 189, 248, 0.95), rgba(59, 130, 246, 0.98));
-  border-color: rgba(56, 189, 248, 0.9);
-  color: #020617;
+  background: var(--tz-brand-primary);
+  border-color: rgba(181, 255, 109, 0.9);
+  color: #050505;
 }
 
 .category-strip__button--ghost {

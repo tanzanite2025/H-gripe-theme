@@ -3,20 +3,20 @@
     <header class="wheelset-selection-product-results-panel__header">
       <div class="min-w-0">
         <span>{{ categorySlug }}</span>
-        <h3>Wheelset products</h3>
+        <h3>{{ t('wheelsetSelectionAssistant.results.title') }}</h3>
       </div>
       <strong v-if="selectedLabel" class="truncate">{{ selectedLabel }}</strong>
     </header>
 
     <div v-if="loading" class="wheelset-selection-product-results-panel__state">
       <Icon name="lucide:loader-circle" class="h-5 w-5 animate-spin" />
-      <span>Matching wheelsets...</span>
+      <span>{{ t('wheelsetSelectionAssistant.results.loading') }}</span>
     </div>
     <div v-else-if="error" class="wheelset-selection-product-results-panel__state wheelset-selection-product-results-panel__state--error">
       {{ error }}
     </div>
     <div v-else-if="products.length === 0" class="wheelset-selection-product-results-panel__state">
-      <span>No wheelsets match these answers yet.</span>
+      <span>{{ t('wheelsetSelectionAssistant.results.empty') }}</span>
     </div>
     <div v-else class="wheelset-selection-product-results-panel__grid">
       <article
@@ -37,12 +37,12 @@
 
     <nav
       class="wheelset-selection-product-results-panel__pagination"
-      aria-label="Wheelset product result pages"
+      :aria-label="t('wheelsetSelectionAssistant.results.pagination')"
     >
       <button
         type="button"
         class="tz-directional-arrow tz-directional-arrow--small"
-        aria-label="Previous page"
+        :aria-label="t('wheelsetSelectionAssistant.results.previousPage')"
         :disabled="page <= 1 || loading"
         @click="emit('previousPage')"
       >
@@ -54,7 +54,7 @@
       <button
         type="button"
         class="tz-directional-arrow tz-directional-arrow--small"
-        aria-label="Next page"
+        :aria-label="t('wheelsetSelectionAssistant.results.nextPage')"
         :disabled="!hasMore || loading"
         @click="emit('nextPage')"
       >
@@ -65,6 +65,7 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from '#imports'
 import type { ShopProduct } from '~/composables/useShopProducts'
 
 defineProps<{
@@ -81,6 +82,8 @@ const emit = defineEmits<{
   previousPage: []
   nextPage: []
 }>()
+
+const { t } = useI18n()
 </script>
 
 <style scoped>

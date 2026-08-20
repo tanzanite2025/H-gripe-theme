@@ -27,12 +27,13 @@ type Dependencies struct {
 	Repositories                 Repositories
 	Services                     Services
 	Storage                      storage.StorageService
+	SiteLogoStorage              storage.StorageService
 	AntiBot                      *antibot.Service
 	AntiFraud                    *antifraud.Service
 	CardBINLimiter               *cardtesting.Service
 	PaymentGatewayCircuitBreaker *service.PaymentGatewayCircuitBreakerService
 	OrderAbuse                   *orderabuse.Service
-	RedisClient                  *redis.Client
+	RedisClient                  redis.UniversalClient
 	CustomerServiceRealtimeRelay *service.CustomerServiceRealtimeRelay
 }
 
@@ -47,6 +48,7 @@ type Repositories struct {
 	SiteQualityJobs            *repository.SiteQualityJobRepository
 	SiteQualityRuns            *repository.SiteQualityRunRepository
 	SiteQualityFindings        *repository.SiteQualityFindingRepository
+	HotDataArchive             *repository.HotDataArchiveRepository
 	Product                    *repository.ProductRepository
 	ProductCategory            *repository.ProductCategoryRepository
 	ProductBrand               *repository.ProductBrandRepository
@@ -56,6 +58,10 @@ type Repositories struct {
 	Setting                    *repository.SettingRepository
 	FAQ                        *repository.FAQRepository
 	Order                      *repository.OrderRepository
+	AfterSales                 *repository.AfterSalesCaseRepository
+	AfterSalesRefundReview     *repository.AfterSalesRefundReviewRepository
+	OrderIdempotency           *repository.OrderIdempotencyRepository
+	OrderPolicyDisclosure      *repository.OrderPolicyDisclosureRepository
 	OrderAttribution           *repository.OrderAttributionRepository
 	Payment                    *repository.PaymentRepository
 	PaymentRisk                *repository.PaymentRiskRepository
@@ -72,6 +78,7 @@ type Repositories struct {
 	Ticket                     *repository.TicketRepository
 	Gallery                    *repository.GalleryRepository
 	Media                      *repository.MediaRepository
+	SiteLogo                   *repository.SiteLogoRepository
 	MediaDerivativePresets     *repository.MediaDerivativePresetRepository
 	MediaDerivativeRebuildJobs *repository.MediaDerivativeRebuildJobRepository
 	StorefrontMarket           *repository.StorefrontMarketRepository
@@ -80,17 +87,20 @@ type Repositories struct {
 	OpsConnectorOAuth          *repository.OpsConnectorOAuthRepository
 	OpsVPSBinding              *repository.OpsVPSBindingRepository
 	OpsProjectBinding          *repository.OpsProjectBindingRepository
+	OpsNetworkRule             *repository.OpsNetworkRuleRepository
 	OpsDeploymentWorkflow      *repository.OpsDeploymentWorkflowRepository
 	GoogleMerchant             *repository.GoogleMerchantRepository
 	Registration               *repository.RegistrationRepository
 	Audit                      *repository.AuditRepository
 	Showcase                   *repository.ShowcaseRepository
+	VisualShowcase             *repository.VisualShowcaseRepository
 	Wishlist                   *repository.WishlistRepository
 	Feedback                   *repository.FeedbackRepository
 	SuggestionFeedback         *repository.SuggestionFeedbackRepository
 	Spoke                      *repository.SpokeRepository
 	QuickBuy                   *repository.QuickBuyRepository
 	SelectionAssistant         *repository.SelectionAssistantRepository
+	SelectionConfigurationKey  *repository.SelectionConfigurationKeyRepository
 	WheelsetFitQuestionnaire   *repository.WheelsetFitQuestionnaireRepository
 	Subscription               *repository.SubscriptionRepository
 	EmailChallenge             *repository.EmailChallengeRepository
@@ -112,6 +122,7 @@ type Services struct {
 	Cart                              *service.CartService
 	Setting                           *service.SettingService
 	WebsiteProfile                    *service.WebsiteProfileService
+	RefundReturnPolicy                *service.RefundReturnPolicyService
 	PayPalDisputeInvoiceSellerProfile *service.PayPalDisputeInvoiceSellerProfileService
 	AdminSettings                     *service.AdminSettingsService
 	SEO                               *service.SEOService
@@ -122,9 +133,11 @@ type Services struct {
 	FAQ                               *service.FAQService
 	Gallery                           *service.GalleryService
 	Media                             *service.MediaService
+	SiteLogo                          *service.SiteLogoService
 	Registration                      *service.RegistrationService
 	Checkout                          *service.CheckoutService
 	Order                             *service.OrderService
+	AfterSales                        *service.AfterSalesService
 	Payment                           *service.PaymentService
 	Marketing                         *service.MarketingService
 	LoyaltyProgram                    *service.LoyaltyProgramService
@@ -142,6 +155,7 @@ type Services struct {
 	PreflightContentLinks             *service.PreflightContentLinkService
 	LighthouseRunner                  *service.LighthouseRunnerService
 	SiteQualityEngine                 *service.SiteQualityEngineService
+	HotDataArchive                    *service.HotDataArchiveService
 	Showcase                          *service.ShowcaseService
 	Wishlist                          *service.WishlistService
 	Feedback                          *service.FeedbackService
@@ -153,6 +167,7 @@ type Services struct {
 	Spoke                             *service.SpokeService
 	QuickBuy                          *service.QuickBuyService
 	SelectionAssistant                *service.SelectionAssistantService
+	SelectionConfigurationKey         *service.SelectionConfigurationKeyService
 	WheelsetFitQuestionnaire          *service.WheelsetFitQuestionnaireService
 	VisitorProfile                    *service.VisitorProfileService
 	BehaviorEvents                    *service.BehaviorEventService
@@ -174,6 +189,7 @@ type Services struct {
 	OpsConnectorOAuth                 *service.OpsConnectorOAuthService
 	OpsVPSBinding                     *service.OpsVPSBindingService
 	OpsProjectBinding                 *service.OpsProjectBindingService
+	OpsNetworkSummary                 *service.OpsNetworkSummaryService
 	OpsHostingerSync                  *service.OpsHostingerSyncService
 	OpsDeploymentPreflight            *service.OpsDeploymentPreflightService
 	OpsDeploymentHealthCheck          *service.OpsDeploymentHealthCheckService
@@ -185,6 +201,7 @@ type Services struct {
 	ShowcaseUploadProtection          *service.ShowcaseUploadProtectionService
 	ShowcaseUploadEligibility         *service.ShowcaseUploadEligibilityService
 	PublicUploadAccess                *service.PublicUploadAccessService
+	VisualShowcase                    *service.VisualShowcaseService
 }
 
 func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Config) (*Dependencies, error) {
@@ -199,6 +216,7 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		SiteQualityJobs:            repository.NewSiteQualityJobRepository(db),
 		SiteQualityRuns:            repository.NewSiteQualityRunRepository(db),
 		SiteQualityFindings:        repository.NewSiteQualityFindingRepository(db),
+		HotDataArchive:             repository.NewHotDataArchiveRepository(db),
 		Product:                    repository.NewProductRepository(db),
 		ProductCategory:            repository.NewProductCategoryRepository(db),
 		ProductBrand:               repository.NewProductBrandRepository(db),
@@ -208,6 +226,10 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		Setting:                    repository.NewSettingRepository(db),
 		FAQ:                        repository.NewFAQRepository(db),
 		Order:                      repository.NewOrderRepository(db),
+		AfterSales:                 repository.NewAfterSalesCaseRepository(db),
+		AfterSalesRefundReview:     repository.NewAfterSalesRefundReviewRepository(db),
+		OrderIdempotency:           repository.NewOrderIdempotencyRepository(db),
+		OrderPolicyDisclosure:      repository.NewOrderPolicyDisclosureRepository(db),
 		OrderAttribution:           repository.NewOrderAttributionRepository(db),
 		Payment:                    repository.NewPaymentRepository(db),
 		PaymentRisk:                repository.NewPaymentRiskRepository(db),
@@ -224,6 +246,7 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		Ticket:                     repository.NewTicketRepository(db),
 		Gallery:                    repository.NewGalleryRepository(db),
 		Media:                      repository.NewMediaRepository(db),
+		SiteLogo:                   repository.NewSiteLogoRepository(db),
 		MediaDerivativePresets:     repository.NewMediaDerivativePresetRepository(db),
 		MediaDerivativeRebuildJobs: repository.NewMediaDerivativeRebuildJobRepository(db),
 		StorefrontMarket:           repository.NewStorefrontMarketRepository(db),
@@ -232,17 +255,20 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		OpsConnectorOAuth:          repository.NewOpsConnectorOAuthRepository(db),
 		OpsVPSBinding:              repository.NewOpsVPSBindingRepository(db),
 		OpsProjectBinding:          repository.NewOpsProjectBindingRepository(db),
+		OpsNetworkRule:             repository.NewOpsNetworkRuleRepository(db),
 		OpsDeploymentWorkflow:      repository.NewOpsDeploymentWorkflowRepository(db),
 		GoogleMerchant:             repository.NewGoogleMerchantRepository(db),
 		Registration:               repository.NewRegistrationRepository(db),
 		Audit:                      repository.NewAuditRepository(db),
 		Showcase:                   repository.NewShowcaseRepository(db),
+		VisualShowcase:             repository.NewVisualShowcaseRepository(db),
 		Wishlist:                   repository.NewWishlistRepository(db),
 		Feedback:                   repository.NewFeedbackRepository(db),
 		SuggestionFeedback:         repository.NewSuggestionFeedbackRepository(db),
 		Spoke:                      repository.NewSpokeRepository(db),
 		QuickBuy:                   repository.NewQuickBuyRepository(db),
 		SelectionAssistant:         repository.NewSelectionAssistantRepository(db),
+		SelectionConfigurationKey:  repository.NewSelectionConfigurationKeyRepository(db),
 		WheelsetFitQuestionnaire:   repository.NewWheelsetFitQuestionnaireRepository(db),
 		Subscription:               repository.NewSubscriptionRepository(db),
 		EmailChallenge:             repository.NewEmailChallengeRepository(db),
@@ -264,6 +290,11 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 	if err != nil {
 		return nil, fmt.Errorf("initialize storage: %w", err)
 	}
+	siteLogoStorageConfig := storage.LoadSiteLogoConfigFromEnv(storageConfig)
+	siteLogoStorageSvc, err := storage.NewStorageService(siteLogoStorageConfig)
+	if err != nil {
+		return nil, fmt.Errorf("initialize site logo storage: %w", err)
+	}
 	emailSvc, err := email.NewEmailService(email.LoadConfigFromEnv())
 	if err != nil {
 		return nil, fmt.Errorf("initialize email service: %w", err)
@@ -273,13 +304,24 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 	txManager.ConfigureLoyaltyProgramRepository(repos.LoyaltyProgram)
 	txManager.ConfigureOutboxRepository(repos.Outbox)
 	txManager.ConfigureProductBrandRepository(repos.ProductBrand)
+	txManager.ConfigureOrderIdempotencyRepository(repos.OrderIdempotency)
 	txManager.ConfigureOrderAttributionRepository(repos.OrderAttribution)
 	txManager.ConfigureSettingRepository(repos.Setting)
 	txManager.ConfigureExchangeRateRepository(repos.ExchangeRate)
+	txManager.ConfigureOrderPolicyDisclosureRepository(repos.OrderPolicyDisclosure)
 	txManager.ConfigurePaymentRefundRecommendationRepository(repos.PaymentRefundReview)
 	txManager.ConfigurePaymentRefundExecutionRepository(repos.PaymentRefundExec)
+	txManager.ConfigureAfterSalesRefundReviewRepository(repos.AfterSalesRefundReview)
 
 	shippingService := service.NewShippingService(repos.Shipping, repos.Product)
+	outboundHTTPResilience := newOutboundHTTPResilience(
+		redisCache.Client(),
+		cfg.OutboundHTTPResilience,
+	)
+	shippingService.ConfigureOutboundTrackingResilience(
+		outboundHTTPResilience.retry,
+		outboundHTTPResilience.breaker,
+	)
 	antiBotService := antibot.New(redisCache.Client(), cfg.AntiAbuse)
 	antiFraudService := antifraud.New(redisCache.Client(), cfg.PaymentRisk)
 	cardBINLimiter := cardtesting.New(redisCache.Client(), cfg.PaymentBINRateLimit)
@@ -294,6 +336,7 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 	storefrontHTMLCacheInvalidator := service.NewStorefrontHTMLCacheInvalidatorFromEnv()
 	storefrontContentReleaseNotifier := service.NewStorefrontContentReleaseNotifierFromEnv()
 	settingService := service.NewSettingService(repos.Setting, redisCache, cfg.Cache.SettingsTTL)
+	refundReturnPolicyService := service.NewRefundReturnPolicyService(repos.Setting)
 	seoService := service.NewSEOService(settingService)
 	postService := service.NewPostService(repos.Post, redisCache, cfg.Cache.PostTTL)
 	productService := service.NewProductServiceWithCacheOptions(repos.Product, redisCache, cfg.Cache.ProductTTL, cfg.Cache.ProductLockTTL)
@@ -312,6 +355,13 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 	opsDomainDiffService := service.NewOpsDomainDiffService(repos.OpsDomainBinding)
 	opsDomainPreviewService := service.NewOpsDomainPreviewService(repos.OpsDomainBinding)
 	opsConnectorService := service.NewOpsConnectorService(repos.OpsConnector)
+	opsNetworkSummaryService := service.NewOpsNetworkSummaryService(
+		repos.OpsNetworkRule,
+		repos.OpsVPSBinding,
+		repos.OpsProjectBinding,
+		repos.OpsDomainBinding,
+		repos.OpsConnector,
+	)
 	opsDomainSyncService := service.NewOpsDomainSyncService(repos.OpsDomainBinding, opsConnectorService)
 	opsHostingerSyncService := service.NewOpsHostingerSyncService(
 		repos.OpsVPSBinding,
@@ -388,6 +438,7 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 	mediaService := service.NewMediaService(repos.Media, storageSvc, settingService, storefrontBaseURL, cfg.MediaUpload.AccountStorageQuotaBytes)
 	mediaService.ConfigureDerivativePresetRepository(repos.MediaDerivativePresets)
 	mediaService.ConfigureDerivativeRebuildJobRepository(repos.MediaDerivativeRebuildJobs)
+	siteLogoService := service.NewSiteLogoService(repos.SiteLogo, siteLogoStorageSvc, storefrontBaseURL)
 	productService.ConfigureMediaService(mediaService)
 	seoResourceService.ConfigureMediaService(mediaService)
 	seoResourceService.ConfigureCanonicalBaseURL(storefrontBaseURL)
@@ -421,6 +472,10 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		cfg.GoogleMerchant,
 		storefrontBaseURL,
 	)
+	googleMerchantService.ConfigureOutboundHTTPResilience(
+		outboundHTTPResilience.retry,
+		outboundHTTPResilience.breaker,
+	)
 	loyaltyProgramService := service.NewLoyaltyProgramService(repos.LoyaltyProgram)
 	loyaltyProgramService.ConfigureCurrencyPolicy(currencyPolicyService)
 	orderNumberGenerator, err := ordernumber.NewGeneratorWithPreviousSecret(
@@ -431,9 +486,22 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 	if err != nil {
 		return nil, fmt.Errorf("initialize order number generator: %w", err)
 	}
+	afterSalesService := service.NewAfterSalesService(repos.AfterSales, repos.Order, repos.AfterSalesRefundReview)
+	afterSalesService.ConfigureUserRepository(repos.User)
+	afterSalesService.ConfigureTxManager(txManager)
+	afterSalesService.ConfigureAttachmentStorage(storageSvc)
+	hotDataArchiveService := service.NewHotDataArchiveService(
+		repos.HotDataArchive,
+		cfg.Worker.HotDataArchiveBatchLimit,
+	)
+	authService := service.NewAuthService(repos.User, cfg.JWT, cfg.OAuth)
+	authService.ConfigureGoogleOAuthResilience(
+		outboundHTTPResilience.retry,
+		outboundHTTPResilience.breaker,
+	)
 
 	services := Services{
-		Auth:                              service.NewAuthService(repos.User, cfg.JWT, cfg.OAuth),
+		Auth:                              authService,
 		AdminAccountMaintenance:           service.NewAdminAccountMaintenanceService(db),
 		Post:                              postService,
 		Product:                           productService,
@@ -444,6 +512,7 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		Cart:                              service.NewCartService(repos.Cart, repos.Product),
 		Setting:                           settingService,
 		WebsiteProfile:                    service.NewWebsiteProfileService(settingService),
+		RefundReturnPolicy:                refundReturnPolicyService,
 		PayPalDisputeInvoiceSellerProfile: service.NewPayPalDisputeInvoiceSellerProfileService(settingService),
 		SEO:                               seoService,
 		SEOResources:                      seoResourceService,
@@ -459,6 +528,7 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		OpsConnectorOAuth:                 opsConnectorOAuthService,
 		OpsVPSBinding:                     service.NewOpsVPSBindingService(repos.OpsVPSBinding, repos.OpsConnector, repos.OpsProjectBinding),
 		OpsProjectBinding:                 service.NewOpsProjectBindingService(repos.OpsProjectBinding, repos.OpsVPSBinding, repos.OpsConnector),
+		OpsNetworkSummary:                 opsNetworkSummaryService,
 		OpsHostingerSync:                  opsHostingerSyncService,
 		OpsDeploymentPreflight:            opsDeploymentPreflightService,
 		OpsDeploymentHealthCheck:          opsDeploymentHealthCheckService,
@@ -469,8 +539,10 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		FAQ:                               service.NewFAQService(repos.FAQ, storageSvc),
 		Gallery:                           service.NewGalleryService(repos.Gallery, repos.Media),
 		Media:                             mediaService,
+		SiteLogo:                          siteLogoService,
 		Registration:                      service.NewRegistrationService(repos.Registration, repos.Product, repos.Order),
 		Checkout:                          service.NewCheckoutService(repos.Product, repos.Coupon, repos.Payment, repos.Loyalty, shippingService),
+		AfterSales:                        afterSalesService,
 		Marketing:                         service.NewMarketingService(txManager, repos.Coupon, repos.Loyalty, settingService),
 		LoyaltyProgram:                    loyaltyProgramService,
 		Review:                            service.NewReviewService(repos.Review),
@@ -485,7 +557,9 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		PreflightContentLinks:             preflightContentLinkService,
 		LighthouseRunner:                  lighthouseRunnerService,
 		SiteQualityEngine:                 siteQualityEngineService,
+		HotDataArchive:                    hotDataArchiveService,
 		Showcase:                          service.NewShowcaseService(repos.Showcase, storageSvc),
+		VisualShowcase:                    service.NewVisualShowcaseService(repos.VisualShowcase, storageSvc),
 		ShowcaseUploadProtection:          showcaseUploadProtectionService,
 		ShowcaseUploadEligibility:         showcaseUploadEligibilityService,
 		Wishlist:                          service.NewWishlistService(repos.Wishlist, repos.Product),
@@ -503,12 +577,14 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 			repos.OpsProjectBinding,
 			service.NewAuditService(repos.Audit),
 		),
-		Shipping:           shippingService,
-		Spoke:              service.NewSpokeService(repos.Spoke),
-		QuickBuy:           service.NewQuickBuyService(repos.QuickBuy, repos.Product, repos.ProductCategory),
-		SelectionAssistant: service.NewSelectionAssistantService(repos.SelectionAssistant),
+		Shipping:                  shippingService,
+		Spoke:                     service.NewSpokeService(repos.Spoke),
+		QuickBuy:                  service.NewQuickBuyService(repos.QuickBuy, repos.Product, repos.ProductCategory),
+		SelectionAssistant:        service.NewSelectionAssistantService(repos.SelectionAssistant),
+		SelectionConfigurationKey: service.NewSelectionConfigurationKeyService(repos.SelectionConfigurationKey),
 		WheelsetFitQuestionnaire: service.NewWheelsetFitQuestionnaireService(
 			repos.WheelsetFitQuestionnaire,
+			repos.SelectionConfigurationKey,
 		),
 		VisitorProfile: service.NewVisitorProfileService(
 			repos.VisitorProfile,
@@ -535,11 +611,13 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 	}
 	services.Recommendations = service.NewRecommendationService(services.Product, repos.RecommendationEvent)
 	services.Recommendations.ConfigureMediaService(services.Media)
+	services.Recommendations.ConfigureReviewService(services.Review)
 	services.QuickBuy.ConfigureMediaService(services.Media)
 	services.GoogleMerchant.ConfigureMediaService(services.Media)
 	services.Ticket.ConfigureCustomerServiceRealtimeOutbox(repos.Outbox)
 	services.CustomerServiceAvatar = service.NewCustomerServiceAvatarService(repos.User, storageSvc, repos.Outbox)
 	services.PublicUploadAccess = service.NewPublicUploadAccessService(services.Media, services.Showcase, services.CustomerServiceAvatar)
+	services.PublicUploadAccess.ConfigureSiteLogoService(services.SiteLogo)
 	services.FAQ.ConfigureMediaService(services.Media)
 	services.Review.ConfigureMediaService(services.Media)
 	services.Showcase.ConfigureUploadEligibility(services.ShowcaseUploadEligibility)
@@ -602,11 +680,13 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 	)
 	services.Order.ConfigureProductCacheInvalidator(services.Product)
 	services.Order.ConfigureProductCacheEventPublisher(productCacheOutboxPublisher)
+	services.Order.ConfigureRefundReturnPolicy(services.RefundReturnPolicy)
 	services.Payment = service.NewPaymentService(txManager, repos.Payment)
 	services.Payment.ConfigureProductCacheInvalidator(services.Product)
 	services.Payment.ConfigureProductCacheEventPublisher(productCacheOutboxPublisher)
 	services.Payment.ConfigureRisk(repos.Order, antiFraudService)
 	services.Payment.ConfigureEvidenceSources(repos.Order, repos.Shipping, repos.Ticket)
+	services.Payment.ConfigurePolicyDisclosureRepository(repos.OrderPolicyDisclosure)
 	services.Payment.ConfigurePayPalDisputeEvidenceDocumentStorage(storageSvc)
 	services.Payment.ConfigurePayPalDisputeInvoiceSellerProfileProvider(services.PayPalDisputeInvoiceSellerProfile)
 	services.Payment.ConfigurePayPalDisputeInvoiceOptions(service.PayPalDisputeInvoiceOptions{
@@ -643,15 +723,24 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		services.CustomerServiceEvents.ConfigureReplayProvider(customerServiceRealtimeRelay)
 	}
 
-	orderPaidWebhookHandler := service.NewOrderPaidOutboxWebhookHandlerFromEnv()
+	orderPaidWebhookHandler := service.NewOrderPaidOutboxWebhookHandlerFromEnvWithResilience(
+		outboundHTTPResilience.retry,
+		outboundHTTPResilience.breaker,
+	)
 	if orderPaidWebhookHandler.Configured() {
 		services.Outbox.RegisterHandler(outbox.EventTypeOrderPaid, orderPaidWebhookHandler.Handle)
 	}
-	verifiedConversionWebhookHandler := service.NewVerifiedConversionOutboxWebhookHandlerFromEnv()
+	verifiedConversionWebhookHandler := service.NewVerifiedConversionOutboxWebhookHandlerFromEnvWithResilience(
+		outboundHTTPResilience.retry,
+		outboundHTTPResilience.breaker,
+	)
 	if verifiedConversionWebhookHandler.Configured() {
 		services.Outbox.RegisterHandler(outbox.EventTypeVerifiedConversion, verifiedConversionWebhookHandler.Handle)
 	}
-	paymentRiskAlertWebhookHandler := service.NewPaymentRiskAlertOutboxWebhookHandlerFromEnv()
+	paymentRiskAlertWebhookHandler := service.NewPaymentRiskAlertOutboxWebhookHandlerFromEnvWithResilience(
+		outboundHTTPResilience.retry,
+		outboundHTTPResilience.breaker,
+	)
 	if cfg.PaymentRiskMonitoring.AlertEnabled && paymentRiskAlertWebhookHandler.Configured() {
 		services.PaymentRiskMonitoring.ConfigureAlerting(true)
 		services.Outbox.RegisterHandler(outbox.EventTypePaymentRiskLevelChanged, paymentRiskAlertWebhookHandler.Handle)
@@ -675,6 +764,7 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		Repositories:                 repos,
 		Services:                     services,
 		Storage:                      storageSvc,
+		SiteLogoStorage:              siteLogoStorageSvc,
 		AntiBot:                      antiBotService,
 		AntiFraud:                    antiFraudService,
 		CardBINLimiter:               cardBINLimiter,

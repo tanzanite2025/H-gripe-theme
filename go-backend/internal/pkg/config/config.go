@@ -34,6 +34,7 @@ type Config struct {
 	PaymentRisk                  PaymentRiskConfig                  `mapstructure:"payment_risk"`
 	PaymentBINRateLimit          PaymentBINRateLimitConfig          `mapstructure:"payment_bin_rate_limit"`
 	PaymentGatewayCircuitBreaker PaymentGatewayCircuitBreakerConfig `mapstructure:"payment_gateway_circuit_breaker"`
+	OutboundHTTPResilience       OutboundHTTPResilienceConfig       `mapstructure:"outbound_http_resilience"`
 	PaymentRiskMonitoring        PaymentRiskMonitoringConfig        `mapstructure:"payment_risk_monitoring"`
 	PaymentProtection            PaymentProtectionConfig            `mapstructure:"payment_protection"`
 	PaymentThreeDS               PaymentThreeDSConfig               `mapstructure:"payment_3ds"`
@@ -44,6 +45,15 @@ type Config struct {
 	MediaUpload                  MediaUploadConfig                  `mapstructure:"media_upload"`
 	ShowcaseUploadProtection     ShowcaseUploadProtectionConfig     `mapstructure:"showcase_upload_protection"`
 }
+
+// MinimumPaymentGatewayHalfOpenProbeTimeoutSeconds is intentionally longer
+// than the fixed provider request timeout because PayPal can perform token
+// acquisition during gateway initialization before it creates the payment.
+const MinimumPaymentGatewayHalfOpenProbeTimeoutSeconds = 60
+
+// MinimumOutboundHTTPHalfOpenProbeTimeoutSeconds leaves enough time for the
+// longest configured non-payment HTTP client plus a small Redis/network margin.
+const MinimumOutboundHTTPHalfOpenProbeTimeoutSeconds = 30
 
 type ServerConfig struct {
 	Port              string   `mapstructure:"port"`
@@ -72,11 +82,17 @@ type DatabaseConfig struct {
 }
 
 type RedisConfig struct {
-	Host     string `mapstructure:"host"`
-	Port     int    `mapstructure:"port"`
-	Password string `mapstructure:"password"`
-	DB       int    `mapstructure:"db"`
-	PoolSize int    `mapstructure:"pool_size"`
+	Mode             string   `mapstructure:"mode"`
+	Host             string   `mapstructure:"host"`
+	Port             int      `mapstructure:"port"`
+	Addrs            []string `mapstructure:"addrs"`
+	Username         string   `mapstructure:"username"`
+	Password         string   `mapstructure:"password"`
+	DB               int      `mapstructure:"db"`
+	PoolSize         int      `mapstructure:"pool_size"`
+	MasterName       string   `mapstructure:"master_name"`
+	SentinelUsername string   `mapstructure:"sentinel_username"`
+	SentinelPassword string   `mapstructure:"sentinel_password"`
 }
 
 type JWTConfig struct {
@@ -167,6 +183,9 @@ type WorkerConfig struct {
 	ShowcaseCleanupIntervalSeconds        int  `mapstructure:"showcase_cleanup_interval_seconds"`
 	ShowcasePendingTTLSeconds             int  `mapstructure:"showcase_pending_ttl_seconds"`
 	ShowcaseCleanupBatchLimit             int  `mapstructure:"showcase_cleanup_batch_limit"`
+	HotDataArchiveEnabled                 bool `mapstructure:"hot_data_archive_enabled"`
+	HotDataArchiveIntervalSeconds         int  `mapstructure:"hot_data_archive_interval_seconds"`
+	HotDataArchiveBatchLimit              int  `mapstructure:"hot_data_archive_batch_limit"`
 }
 
 // SiteQualityConfig describes the internal-only Lighthouse runner endpoint.
@@ -246,11 +265,27 @@ type PaymentBINRateLimitConfig struct {
 }
 
 type PaymentGatewayCircuitBreakerConfig struct {
-	Enabled              bool    `mapstructure:"enabled"`
-	WindowSeconds        int     `mapstructure:"window_seconds"`
-	FailureRateThreshold float64 `mapstructure:"failure_rate_threshold"`
-	MinimumSampleCount   int     `mapstructure:"minimum_sample_count"`
-	OpenDurationSeconds  int     `mapstructure:"open_duration_seconds"`
+	Enabled                 bool    `mapstructure:"enabled"`
+	WindowSeconds           int     `mapstructure:"window_seconds"`
+	FailureRateThreshold    float64 `mapstructure:"failure_rate_threshold"`
+	MinimumSampleCount      int     `mapstructure:"minimum_sample_count"`
+	OpenDurationSeconds     int     `mapstructure:"open_duration_seconds"`
+	HalfOpenProbeTimeoutSec int     `mapstructure:"half_open_probe_timeout_seconds"`
+}
+
+// OutboundHTTPResilienceConfig protects non-payment third-party HTTP calls.
+// State is stored in Redis so every API and worker replica observes the same
+// circuit state and shares a single half-open probe.
+type OutboundHTTPResilienceConfig struct {
+	Enabled                 bool `mapstructure:"enabled"`
+	RetryMaxAttempts        int  `mapstructure:"retry_max_attempts"`
+	RetryBaseDelayMillis    int  `mapstructure:"retry_base_delay_millis"`
+	RetryMaxDelayMillis     int  `mapstructure:"retry_max_delay_millis"`
+	RetryJitterMillis       int  `mapstructure:"retry_jitter_millis"`
+	FailureThreshold        int  `mapstructure:"failure_threshold"`
+	FailureWindowSeconds    int  `mapstructure:"failure_window_seconds"`
+	OpenDurationSeconds     int  `mapstructure:"open_duration_seconds"`
+	HalfOpenProbeTimeoutSec int  `mapstructure:"half_open_probe_timeout_seconds"`
 }
 
 type PaymentRiskMonitoringConfig struct {
@@ -375,6 +410,12 @@ func Load(configFiles ...string) (*Config, error) {
 	if paths, configured := os.LookupEnv("REQUEST_SIGNING_REQUIRED_PATHS"); configured {
 		viper.Set("request_signing.required_paths", splitEnvList(paths))
 	}
+	if addrs, configured := os.LookupEnv("REDIS_ADDRS"); configured {
+		viper.Set("redis.addrs", splitEnvList(addrs))
+	}
+	if addrs, configured := os.LookupEnv("REDIS_SENTINEL_ADDRS"); configured {
+		viper.Set("redis.addrs", splitEnvList(addrs))
+	}
 
 	var cfg Config
 	if err := viper.Unmarshal(&cfg); err != nil {
@@ -412,11 +453,17 @@ func setDefaults() {
 	viper.SetDefault("database.auto_migrate", true)
 	viper.SetDefault("database.log_level", "silent")
 
+	viper.SetDefault("redis.mode", "standalone")
 	viper.SetDefault("redis.host", "localhost")
 	viper.SetDefault("redis.port", 9510)
+	viper.SetDefault("redis.addrs", []string{})
+	viper.SetDefault("redis.username", "")
 	viper.SetDefault("redis.password", "")
 	viper.SetDefault("redis.db", 0)
 	viper.SetDefault("redis.pool_size", 10)
+	viper.SetDefault("redis.master_name", "")
+	viper.SetDefault("redis.sentinel_username", "")
+	viper.SetDefault("redis.sentinel_password", "")
 
 	viper.SetDefault("jwt.expire_hours", 24)
 	viper.SetDefault("jwt.refresh_expire_hours", 168)
@@ -439,6 +486,7 @@ func setDefaults() {
 		"Origin",
 		"Content-Type",
 		"Accept-Language",
+		"Idempotency-Key",
 		"X-CSRF-Token",
 		"X-Locale",
 		"X-Display-Currency",
@@ -450,7 +498,11 @@ func setDefaults() {
 		"X-Quick-Buy-Session",
 		"X-Anonymous-ID",
 	})
-	viper.SetDefault("cors.expose_headers", []string{"Content-Length"})
+	viper.SetDefault("cors.expose_headers", []string{
+		"Content-Length",
+		"Idempotency-Replayed",
+		"Retry-After",
+	})
 	viper.SetDefault("cors.allow_credentials", true)
 	viper.SetDefault("cors.max_age", 43200)
 
@@ -488,7 +540,7 @@ func setDefaults() {
 	viper.SetDefault("worker.payment_risk_monitoring_interval_seconds", 3600)
 	viper.SetDefault("worker.site_quality_enabled", false)
 	viper.SetDefault("worker.site_quality_dispatch_interval_seconds", 30)
-	viper.SetDefault("worker.site_quality_batch_limit", 2)
+	viper.SetDefault("worker.site_quality_batch_limit", 1)
 	viper.SetDefault("worker.site_quality_lease_timeout_seconds", 900)
 	viper.SetDefault("worker.site_quality_sample_count", 3)
 	viper.SetDefault("worker.site_quality_confirmations", 2)
@@ -504,6 +556,9 @@ func setDefaults() {
 	viper.SetDefault("worker.showcase_cleanup_interval_seconds", 86400)
 	viper.SetDefault("worker.showcase_pending_ttl_seconds", 2592000)
 	viper.SetDefault("worker.showcase_cleanup_batch_limit", 100)
+	viper.SetDefault("worker.hot_data_archive_enabled", false)
+	viper.SetDefault("worker.hot_data_archive_interval_seconds", 86400)
+	viper.SetDefault("worker.hot_data_archive_batch_limit", 500)
 
 	viper.SetDefault("customer_service_realtime.enabled", false)
 	viper.SetDefault("customer_service_realtime.stream", "customer_service:{realtime}:v1")
@@ -551,6 +606,20 @@ func setDefaults() {
 	viper.SetDefault("payment_gateway_circuit_breaker.failure_rate_threshold", 0.15)
 	viper.SetDefault("payment_gateway_circuit_breaker.minimum_sample_count", 20)
 	viper.SetDefault("payment_gateway_circuit_breaker.open_duration_seconds", 30)
+	viper.SetDefault(
+		"payment_gateway_circuit_breaker.half_open_probe_timeout_seconds",
+		MinimumPaymentGatewayHalfOpenProbeTimeoutSeconds,
+	)
+
+	viper.SetDefault("outbound_http_resilience.enabled", true)
+	viper.SetDefault("outbound_http_resilience.retry_max_attempts", 3)
+	viper.SetDefault("outbound_http_resilience.retry_base_delay_millis", 250)
+	viper.SetDefault("outbound_http_resilience.retry_max_delay_millis", 3000)
+	viper.SetDefault("outbound_http_resilience.retry_jitter_millis", 250)
+	viper.SetDefault("outbound_http_resilience.failure_threshold", 4)
+	viper.SetDefault("outbound_http_resilience.failure_window_seconds", 60)
+	viper.SetDefault("outbound_http_resilience.open_duration_seconds", 30)
+	viper.SetDefault("outbound_http_resilience.half_open_probe_timeout_seconds", 30)
 
 	viper.SetDefault("payment_risk_monitoring.enabled", true)
 	viper.SetDefault("payment_risk_monitoring.alert_enabled", false)
@@ -641,10 +710,16 @@ func bindEnvironment() {
 	_ = viper.BindEnv("database.auto_migrate", "DB_AUTO_MIGRATE", "DATABASE_AUTO_MIGRATE")
 	_ = viper.BindEnv("database.log_level", "DB_LOG_LEVEL", "DATABASE_LOG_LEVEL")
 
+	_ = viper.BindEnv("redis.mode", "REDIS_MODE")
 	_ = viper.BindEnv("redis.host", "REDIS_HOST")
 	_ = viper.BindEnv("redis.port", "REDIS_PORT")
+	_ = viper.BindEnv("redis.username", "REDIS_USERNAME")
 	_ = viper.BindEnv("redis.password", "REDIS_PASSWORD")
 	_ = viper.BindEnv("redis.db", "REDIS_DB")
+	_ = viper.BindEnv("redis.pool_size", "REDIS_POOL_SIZE")
+	_ = viper.BindEnv("redis.master_name", "REDIS_MASTER_NAME", "REDIS_SENTINEL_MASTER_NAME")
+	_ = viper.BindEnv("redis.sentinel_username", "REDIS_SENTINEL_USERNAME")
+	_ = viper.BindEnv("redis.sentinel_password", "REDIS_SENTINEL_PASSWORD")
 
 	_ = viper.BindEnv("jwt.secret", "JWT_SECRET")
 	_ = viper.BindEnv("jwt.expire_hours", "JWT_EXPIRE_HOURS")
@@ -709,6 +784,9 @@ func bindEnvironment() {
 	_ = viper.BindEnv("worker.showcase_cleanup_interval_seconds", "WORKER_SHOWCASE_CLEANUP_INTERVAL_SECONDS", "SHOWCASE_CLEANUP_INTERVAL_SECONDS")
 	_ = viper.BindEnv("worker.showcase_pending_ttl_seconds", "WORKER_SHOWCASE_PENDING_TTL_SECONDS", "SHOWCASE_PENDING_TTL_SECONDS")
 	_ = viper.BindEnv("worker.showcase_cleanup_batch_limit", "WORKER_SHOWCASE_CLEANUP_BATCH_LIMIT", "SHOWCASE_CLEANUP_BATCH_LIMIT")
+	_ = viper.BindEnv("worker.hot_data_archive_enabled", "WORKER_HOT_DATA_ARCHIVE_ENABLED")
+	_ = viper.BindEnv("worker.hot_data_archive_interval_seconds", "WORKER_HOT_DATA_ARCHIVE_INTERVAL_SECONDS")
+	_ = viper.BindEnv("worker.hot_data_archive_batch_limit", "WORKER_HOT_DATA_ARCHIVE_BATCH_LIMIT")
 
 	_ = viper.BindEnv("customer_service_realtime.enabled", "CUSTOMER_SERVICE_REALTIME_ENABLED")
 	_ = viper.BindEnv("customer_service_realtime.stream", "CUSTOMER_SERVICE_REALTIME_STREAM")
@@ -756,6 +834,17 @@ func bindEnvironment() {
 	_ = viper.BindEnv("payment_gateway_circuit_breaker.failure_rate_threshold", "PAYMENT_GATEWAY_CIRCUIT_BREAKER_FAILURE_RATE_THRESHOLD")
 	_ = viper.BindEnv("payment_gateway_circuit_breaker.minimum_sample_count", "PAYMENT_GATEWAY_CIRCUIT_BREAKER_MINIMUM_SAMPLE_COUNT")
 	_ = viper.BindEnv("payment_gateway_circuit_breaker.open_duration_seconds", "PAYMENT_GATEWAY_CIRCUIT_BREAKER_OPEN_DURATION_SECONDS")
+	_ = viper.BindEnv("payment_gateway_circuit_breaker.half_open_probe_timeout_seconds", "PAYMENT_GATEWAY_CIRCUIT_BREAKER_HALF_OPEN_PROBE_TIMEOUT_SECONDS")
+
+	_ = viper.BindEnv("outbound_http_resilience.enabled", "OUTBOUND_HTTP_RESILIENCE_ENABLED")
+	_ = viper.BindEnv("outbound_http_resilience.retry_max_attempts", "OUTBOUND_HTTP_RESILIENCE_RETRY_MAX_ATTEMPTS")
+	_ = viper.BindEnv("outbound_http_resilience.retry_base_delay_millis", "OUTBOUND_HTTP_RESILIENCE_RETRY_BASE_DELAY_MILLIS")
+	_ = viper.BindEnv("outbound_http_resilience.retry_max_delay_millis", "OUTBOUND_HTTP_RESILIENCE_RETRY_MAX_DELAY_MILLIS")
+	_ = viper.BindEnv("outbound_http_resilience.retry_jitter_millis", "OUTBOUND_HTTP_RESILIENCE_RETRY_JITTER_MILLIS")
+	_ = viper.BindEnv("outbound_http_resilience.failure_threshold", "OUTBOUND_HTTP_RESILIENCE_FAILURE_THRESHOLD")
+	_ = viper.BindEnv("outbound_http_resilience.failure_window_seconds", "OUTBOUND_HTTP_RESILIENCE_FAILURE_WINDOW_SECONDS")
+	_ = viper.BindEnv("outbound_http_resilience.open_duration_seconds", "OUTBOUND_HTTP_RESILIENCE_OPEN_DURATION_SECONDS")
+	_ = viper.BindEnv("outbound_http_resilience.half_open_probe_timeout_seconds", "OUTBOUND_HTTP_RESILIENCE_HALF_OPEN_PROBE_TIMEOUT_SECONDS")
 
 	_ = viper.BindEnv("payment_risk_monitoring.enabled", "PAYMENT_RISK_MONITORING_ENABLED")
 	_ = viper.BindEnv("payment_risk_monitoring.alert_enabled", "PAYMENT_RISK_MONITORING_ALERT_ENABLED")
@@ -861,6 +950,32 @@ func (c *RedisConfig) GetRedisAddr() string {
 	return fmt.Sprintf("%s:%d", c.Host, c.Port)
 }
 
+func (c RedisConfig) NormalizedMode() string {
+	switch strings.ToLower(strings.TrimSpace(c.Mode)) {
+	case "", "single", "standalone":
+		return "standalone"
+	case "sentinel", "failover":
+		return "sentinel"
+	case "cluster":
+		return "cluster"
+	default:
+		return strings.ToLower(strings.TrimSpace(c.Mode))
+	}
+}
+
+func (c RedisConfig) GetRedisAddrs() []string {
+	addrs := make([]string, 0, len(c.Addrs)+1)
+	for _, addr := range c.Addrs {
+		if trimmed := strings.TrimSpace(addr); trimmed != "" {
+			addrs = append(addrs, trimmed)
+		}
+	}
+	if len(addrs) == 0 && strings.TrimSpace(c.Host) != "" {
+		addrs = append(addrs, c.GetRedisAddr())
+	}
+	return addrs
+}
+
 func (c *CookieConfig) SecureEnabled(server ServerConfig) bool {
 	switch strings.ToLower(strings.TrimSpace(c.Secure)) {
 	case "false", "no", "never", "off", "0":
@@ -894,6 +1009,36 @@ func (c *JWTConfig) GetRefreshExpireDuration() time.Duration {
 	return time.Duration(c.RefreshExpireHours) * time.Hour
 }
 
+func validateRedisConfig(cfg RedisConfig) error {
+	switch cfg.NormalizedMode() {
+	case "standalone":
+		if len(cfg.GetRedisAddrs()) != 1 {
+			return fmt.Errorf("standalone Redis requires exactly one address")
+		}
+	case "sentinel":
+		if len(cfg.Addrs) == 0 {
+			return fmt.Errorf("Redis Sentinel requires at least one sentinel address")
+		}
+		if strings.TrimSpace(cfg.MasterName) == "" {
+			return fmt.Errorf("Redis Sentinel requires redis.master_name or REDIS_MASTER_NAME")
+		}
+	case "cluster":
+		return fmt.Errorf("Redis Cluster mode is not enabled yet: multi-key rate limit and anti-abuse scripts still need cluster-wide hash-tag migration")
+	default:
+		return fmt.Errorf("unsupported Redis mode %q", cfg.Mode)
+	}
+	if cfg.Port <= 0 && len(cfg.Addrs) == 0 {
+		return fmt.Errorf("Redis port must be positive")
+	}
+	if cfg.DB < 0 {
+		return fmt.Errorf("Redis DB must not be negative")
+	}
+	if cfg.PoolSize < 0 {
+		return fmt.Errorf("Redis pool size must not be negative")
+	}
+	return nil
+}
+
 // validateConfig 验证配置是否完整
 func validateConfig(cfg *Config) error {
 	if cfg.JWT.Secret == "" {
@@ -909,6 +1054,9 @@ func validateConfig(cfg *Config) error {
 		cfg.Server.IdleTimeout <= 0 ||
 		cfg.Server.MaxHeaderBytes <= 0 {
 		return fmt.Errorf("server timeout and header size limits must be positive")
+	}
+	if err := validateRedisConfig(cfg.Redis); err != nil {
+		return err
 	}
 
 	if cfg.AntiAbuse.TurnstileRequired {
@@ -968,8 +1116,24 @@ func validateConfig(cfg *Config) error {
 			cfg.PaymentGatewayCircuitBreaker.FailureRateThreshold <= 0 ||
 			cfg.PaymentGatewayCircuitBreaker.FailureRateThreshold > 1 ||
 			cfg.PaymentGatewayCircuitBreaker.MinimumSampleCount <= 0 ||
-			cfg.PaymentGatewayCircuitBreaker.OpenDurationSeconds <= 0 {
+			cfg.PaymentGatewayCircuitBreaker.OpenDurationSeconds <= 0 ||
+			cfg.PaymentGatewayCircuitBreaker.HalfOpenProbeTimeoutSec <
+				MinimumPaymentGatewayHalfOpenProbeTimeoutSeconds {
 			return fmt.Errorf("payment gateway circuit breaker configuration is invalid")
+		}
+	}
+	if cfg.OutboundHTTPResilience.Enabled {
+		if cfg.OutboundHTTPResilience.RetryMaxAttempts <= 0 ||
+			cfg.OutboundHTTPResilience.RetryBaseDelayMillis <= 0 ||
+			cfg.OutboundHTTPResilience.RetryMaxDelayMillis <= 0 ||
+			cfg.OutboundHTTPResilience.RetryBaseDelayMillis > cfg.OutboundHTTPResilience.RetryMaxDelayMillis ||
+			cfg.OutboundHTTPResilience.RetryJitterMillis < 0 ||
+			cfg.OutboundHTTPResilience.FailureThreshold <= 0 ||
+			cfg.OutboundHTTPResilience.FailureWindowSeconds <= 0 ||
+			cfg.OutboundHTTPResilience.OpenDurationSeconds <= 0 ||
+			cfg.OutboundHTTPResilience.HalfOpenProbeTimeoutSec <
+				MinimumOutboundHTTPHalfOpenProbeTimeoutSeconds {
+			return fmt.Errorf("outbound HTTP resilience configuration is invalid")
 		}
 	}
 	if cfg.PaymentRiskMonitoring.Enabled {
@@ -1080,6 +1244,12 @@ func validateConfig(cfg *Config) error {
 			cfg.Worker.ShowcasePendingTTLSeconds <= 0 ||
 			cfg.Worker.ShowcaseCleanupBatchLimit <= 0 {
 			return fmt.Errorf("showcase cleanup configuration is invalid")
+		}
+	}
+	if cfg.Worker.HotDataArchiveEnabled {
+		if cfg.Worker.HotDataArchiveIntervalSeconds <= 0 ||
+			cfg.Worker.HotDataArchiveBatchLimit <= 0 {
+			return fmt.Errorf("hot data archive configuration is invalid")
 		}
 	}
 	if cfg.BehaviorEvents.LowIntentRetentionDays != 0 ||

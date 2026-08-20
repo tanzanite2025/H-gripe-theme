@@ -1,13 +1,13 @@
 import { basename } from 'node:path'
 
-const unversionedStorefrontFontReferencePattern = /\bStorefrontSystem-[A-Za-z-]+\.woff2\b/g
+const unversionedStorefrontFontReferencePattern = /\bMapleUI-[A-Za-z-]+\.woff2\b/g
 const expectedStorefrontFontFaces: ReadonlyMap<string, { filename: string; unicodeRange: boolean }> = new Map([
-  ['StorefrontSystemLatin', { filename: 'StorefrontSystem-Latin.00af3fec5b34.woff2', unicodeRange: false }],
-  ['StorefrontSystem', { filename: 'StorefrontSystem-CJK.f8ce6d72e8cb.woff2', unicodeRange: true }],
-  ['StorefrontSystemDevanagari', { filename: 'StorefrontSystem-Devanagari.3b3cae4d2600.woff2', unicodeRange: true }],
-  ['StorefrontSystemLatinAccents', { filename: 'StorefrontSystem-Latin-Accents.e645edc952b6.woff2', unicodeRange: true }],
-  ['StorefrontSystemArabic', { filename: 'StorefrontSystem-Arabic.ce85091f0209.woff2', unicodeRange: true }],
-  ['StorefrontSystemThai', { filename: 'StorefrontSystem-Thai.1f5a173641bb.woff2', unicodeRange: true }],
+  ['MapleUILatin', { filename: 'MapleUI-Latin.00af3fec5b34.woff2', unicodeRange: false }],
+  ['MapleUICJK', { filename: 'MapleUI-CJK.f8ce6d72e8cb.woff2', unicodeRange: true }],
+  ['MapleUICoverageNotoSansDevanagari', { filename: 'MapleUI-Coverage-NotoSans-Devanagari.3b3cae4d2600.woff2', unicodeRange: true }],
+  ['MapleUICoverageNotoSansLatinAccents', { filename: 'MapleUI-Coverage-NotoSans-Latin-Accents.e645edc952b6.woff2', unicodeRange: true }],
+  ['MapleUICoverageNotoSansArabic', { filename: 'MapleUI-Coverage-NotoSans-Arabic.ce85091f0209.woff2', unicodeRange: true }],
+  ['MapleUICoverageNotoSansThai', { filename: 'MapleUI-Coverage-NotoSans-Thai.1f5a173641bb.woff2', unicodeRange: true }],
 ] as const)
 
 interface BuiltFontFace {
@@ -61,12 +61,12 @@ export const storefrontFontArtifactViolations = (css: string): StorefrontFontArt
   for (const match of css.matchAll(unversionedStorefrontFontReferencePattern)) {
     violations.push({
       line: lineForIndex(css, match.index ?? 0),
-      violation: `storefront font file reference must be content-addressed: ${match[0]}`,
+      violation: `Maple UI font file reference must be content-addressed: ${match[0]}`,
     })
   }
 
   for (const fontFace of fontFaceSources(css)) {
-    if (!fontFace.fontFamily.startsWith('StorefrontSystem')) continue
+    if (!fontFace.fontFamily.startsWith('MapleUI')) continue
 
     const expectedFontFace = expectedStorefrontFontFaces.get(fontFace.fontFamily)
     const filename = basename(fontFace.sourcePath)
@@ -74,7 +74,7 @@ export const storefrontFontArtifactViolations = (css: string): StorefrontFontArt
     if (!expectedFontFace) {
       violations.push({
         line: fontFace.line,
-        violation: `unapproved storefront @font-face family "${fontFace.fontFamily}"`,
+        violation: `unapproved Maple UI @font-face family "${fontFace.fontFamily}"`,
       })
       continue
     }
@@ -86,10 +86,10 @@ export const storefrontFontArtifactViolations = (css: string): StorefrontFontArt
       })
     }
 
-    if (fontFace.fontDisplay !== 'swap') {
+    if (fontFace.fontDisplay !== 'block') {
       violations.push({
         line: fontFace.line,
-        violation: `${fontFace.fontFamily} must use font-display: swap`,
+        violation: `${fontFace.fontFamily} must use font-display: block`,
       })
     }
 

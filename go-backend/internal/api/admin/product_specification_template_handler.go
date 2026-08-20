@@ -10,20 +10,12 @@ import (
 )
 
 type productSpecificationTemplateRequest struct {
-	Name            string                                            `json:"name" binding:"required"`
-	Slug            string                                            `json:"slug" binding:"required"`
-	Description     string                                            `json:"description"`
-	SortOrder       int                                               `json:"sort_order"`
-	IsEnabled       *bool                                             `json:"is_enabled" binding:"required"`
-	Translations    *[]productSpecificationTemplateTranslationRequest `json:"translations"`
-	SpecDefinitions []productSpecDefinitionRequest                    `json:"spec_definitions"`
-}
-
-type productSpecificationTemplateTranslationRequest struct {
-	ID          uint   `json:"id"`
-	Locale      string `json:"locale" binding:"required"`
-	Name        string `json:"name" binding:"required"`
-	Description string `json:"description"`
+	Name            string                         `json:"name" binding:"required"`
+	Slug            string                         `json:"slug" binding:"required"`
+	Description     string                         `json:"description"`
+	SortOrder       int                            `json:"sort_order"`
+	IsEnabled       *bool                          `json:"is_enabled" binding:"required"`
+	SpecDefinitions []productSpecDefinitionRequest `json:"spec_definitions"`
 }
 
 type productSpecDefinitionRequest struct {
@@ -139,18 +131,6 @@ func productSpecificationTemplateInputFromRequest(request productSpecificationTe
 		IsEnabled:       request.IsEnabled != nil && *request.IsEnabled,
 		SpecDefinitions: definitions,
 	}
-	if request.Translations != nil {
-		input.UpdateTranslations = true
-		input.Translations = make([]service.ProductSpecificationTemplateTranslationInput, 0, len(*request.Translations))
-		for _, translation := range *request.Translations {
-			input.Translations = append(input.Translations, service.ProductSpecificationTemplateTranslationInput{
-				ID:          translation.ID,
-				Locale:      translation.Locale,
-				Name:        translation.Name,
-				Description: translation.Description,
-			})
-		}
-	}
 	return input
 }
 
@@ -164,7 +144,7 @@ func respondProductSpecificationTemplateServiceError(c *gin.Context, err error) 
 		c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
 	case errors.Is(err, service.ErrProductSpecificationTemplateInvalid), errors.Is(err, service.ErrProductSpecInvalid):
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-	case errors.Is(err, service.ErrProductSpecificationTemplateTranslationInvalid), errors.Is(err, service.ErrUnsupportedLocale):
+	case errors.Is(err, service.ErrUnsupportedLocale):
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	default:
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to manage product specification template"})

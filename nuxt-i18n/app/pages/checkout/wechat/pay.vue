@@ -108,7 +108,10 @@ const pollPayment = async (): Promise<boolean> => {
   if (!orderNumber.value || isPolling.value || status.value === 'success') return status.value === 'success'
   isPolling.value = true
   try {
-    const result = await confirmWeChatOrder(orderNumber.value)
+    const result = await confirmWeChatOrder(
+      orderNumber.value,
+      `wechat-confirm-${orderNumber.value}`,
+    )
     if (isPaidStatus(result.status)) {
       completePayment()
       return true
@@ -154,7 +157,10 @@ onMounted(async () => {
       throw new Error(t('checkout.wechatPay.messages.missingData'))
     }
 
-    const session = loadStoredSession() || await createWeChatOrder({ orderNumber: orderNumber.value })
+    const session = loadStoredSession() || await createWeChatOrder({
+      orderNumber: orderNumber.value,
+      idempotencyKey: `wechat-create-${orderNumber.value}`,
+    })
     storeSession(session)
     qrDataUrl.value = await createWeChatQrDataUrl(session.payment_url || '')
     status.value = 'waiting'
@@ -211,7 +217,7 @@ onUnmounted(stopPolling)
 }
 
 .wechat-pay-order {
-  font-family: var(--tz-font-system);
+  font-family: var(--tz-font-ui);
   color: #fff !important;
 }
 

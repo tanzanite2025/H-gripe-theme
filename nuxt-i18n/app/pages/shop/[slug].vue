@@ -579,6 +579,14 @@ interface GoProduct {
 const route = useRoute()
 const config = useRuntimeConfig()
 const mediaContext = createStorefrontMediaContext(config)
+const seoMediaOrigins = [
+  ...(import.meta.server
+    ? [
+        String((config as { apiInternalOrigin?: string }).apiInternalOrigin || ''),
+        String((config as { imageInternalOrigin?: string }).imageInternalOrigin || ''),
+      ]
+    : []),
+]
 const requestUrl = useRequestURL()
 const { siteSettings } = useSiteSettings()
 const { locale, t } = useI18n()
@@ -1597,7 +1605,6 @@ watch(productPaymentOptions, (options) => {
 onMounted(() => {
   document.addEventListener('visibilitychange', handleProductVisibilityChange)
   loadProductPaymentMethods()
-  void prepareStripeExpressCheckout()
 })
 
 watch(countryCode, (value, previousValue) => {
@@ -1867,10 +1874,7 @@ const productSeoDocument = computed(() => {
     {
       siteOrigin: siteOrigin.value,
       localizedPath: localizedProductPath.value,
-      mediaOrigins: [
-        String((config as { apiInternalOrigin?: string }).apiInternalOrigin || ''),
-        String((config as { imageInternalOrigin?: string }).imageInternalOrigin || ''),
-      ],
+      mediaOrigins: seoMediaOrigins,
     },
   )
 })

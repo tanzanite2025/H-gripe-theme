@@ -1,0 +1,76 @@
+{
+  "featuredProducts": {
+    "loading": {
+      "title": "正在加载精选轮组",
+      "description": "正在准备当前精选。"
+    },
+    "error": {
+      "title": "精选轮组暂时无法显示",
+      "description": "请重试，或直接查看完整轮组列表。"
+    },
+    "empty": {
+      "title": "暂时没有精选轮组",
+      "description": "精选内容准备期间，你可以先查看完整轮组列表。"
+    }
+  },
+  "hero": {
+    "loading": {
+      "title": "正在加载视觉展示",
+      "description": "正在准备最新的工厂与产品视觉内容。"
+    },
+    "error": {
+      "title": "视觉展示暂时无法显示",
+      "description": "首页的其他内容仍可正常浏览。"
+    },
+    "localeFallback": {
+      "title": "正在使用标准视觉展示",
+      "description": "当前语言的专属视觉内容暂未配置。"
+    },
+    "builtInFallback": {
+      "title": "正在使用内置视觉展示",
+      "description": "最新配置的视觉内容暂时无法加载。"
+    }
+  },
+  "productFamilies": {
+    "localeFallback": {
+      "title": "正在使用默认本店精选",
+      "description": "当前语言的本店精选暂未单独配置。"
+    },
+    "loading": {
+      "title": "正在加载本店精选",
+      "description": "正在准备当前精选展示。"
+    },
+    "error": {
+      "title": "本店精选暂时无法显示",
+      "description": "你仍可浏览全部商品。"
+    },
+    "emptyConfigured": {
+      "title": "本店精选正在准备中",
+      "description": "精选内容更新期间，你仍可浏览全部商品。"
+    },
+    "emptyUnconfigured": {
+      "title": "本店精选暂未设置",
+      "description": "你可以先浏览全部商品。"
+    }
+  },
+  "refundReturnPolicy": {
+    "error": {
+      "title": "退款与退货政策暂时无法显示",
+      "description": "如需退货或退款帮助，请联系客户服务。"
+    },
+    "loading": {
+      "title": "正在加载退款与退货政策",
+      "description": "正在准备当前政策详情。"
+    },
+    "empty": {
+      "title": "退款与退货政策暂时不可用",
+      "description": "如需退货或退款帮助，请联系客户服务。"
+    },
+    "contactSupport": "Contact Support",
+    "lastUpdated": "Last Updated",
+    "fallbackNotice": {
+      "title": "正在显示标准退款与退货政策",
+      "description": "当前政策暂时无法加载，因此正在显示标准版本。"
+    }
+  }
+}

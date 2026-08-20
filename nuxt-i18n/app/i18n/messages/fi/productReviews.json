@@ -6,7 +6,7 @@
   "loading": "Ladataan arvioita...",
   "loadError": "Arvioita ei voitu ladata.",
   "retry": "Yritä uudelleen",
-  "empty": "Hyväksyttyjä arvioita ei ole vielä.",
+  "empty": "Ei vielä arvioita.",
   "ratingLabel": "{rating} tähteä viidestä",
   "imageAlt": "Asiakasarvion kuva",
   "verifiedPurchase": "Vahvistettu ostos",

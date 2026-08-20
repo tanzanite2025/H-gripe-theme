@@ -63,7 +63,7 @@ type store interface {
 }
 
 type redisStore struct {
-	client *redis.Client
+	client redis.UniversalClient
 }
 
 func (s redisStore) CheckBlocked(ctx context.Context, key string) (bool, time.Duration, error) {
@@ -130,7 +130,7 @@ type Service struct {
 	cfg   config.PaymentBINRateLimitConfig
 }
 
-func New(redisClient *redis.Client, cfg config.PaymentBINRateLimitConfig) *Service {
+func New(redisClient redis.UniversalClient, cfg config.PaymentBINRateLimitConfig) *Service {
 	if redisClient == nil {
 		return nil
 	}

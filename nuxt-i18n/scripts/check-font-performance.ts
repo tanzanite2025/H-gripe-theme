@@ -7,20 +7,20 @@ const scriptDir = path.dirname(fileURLToPath(import.meta.url))
 const projectDir = path.resolve(scriptDir, '..')
 const fontDir = path.join(projectDir, 'public', 'fonts')
 const fontCssPath = path.join(projectDir, 'app', 'assets', 'css', 'tailwind.css')
-const stripeFontCssPath = path.join(projectDir, 'public', 'fonts', 'storefront-system.css')
+const stripeFontCssPath = path.join(projectDir, 'public', 'fonts', 'maple-ui.css')
 const tailwindConfigPath = path.join(projectDir, 'tailwind.config.ts')
-const latinFontFamily = 'StorefrontSystemLatin'
-const cjkFontFamily = 'StorefrontSystem'
-const fontDisplay = 'swap'
+const latinFontFamily = 'MapleUILatin'
+const cjkFontFamily = 'MapleUICJK'
+const fontDisplay = 'block'
 const maximumLatinFontBytes = 160 * 1024
-const versionedFontFilenamePattern = /^StorefrontSystem-[A-Za-z-]+\.[a-f0-9]{12}\.woff2$/
+const versionedFontFilenamePattern = /^MapleUI-[A-Za-z-]+\.[a-f0-9]{12}\.woff2$/
 const expectedFontFaces = [
-  { fontFamily: latinFontFamily, filename: 'StorefrontSystem-Latin.00af3fec5b34.woff2', unicodeRange: false },
-  { fontFamily: cjkFontFamily, filename: 'StorefrontSystem-CJK.f8ce6d72e8cb.woff2', unicodeRange: true },
-  { fontFamily: 'StorefrontSystemDevanagari', filename: 'StorefrontSystem-Devanagari.3b3cae4d2600.woff2', unicodeRange: true },
-  { fontFamily: 'StorefrontSystemLatinAccents', filename: 'StorefrontSystem-Latin-Accents.e645edc952b6.woff2', unicodeRange: true },
-  { fontFamily: 'StorefrontSystemArabic', filename: 'StorefrontSystem-Arabic.ce85091f0209.woff2', unicodeRange: true },
-  { fontFamily: 'StorefrontSystemThai', filename: 'StorefrontSystem-Thai.1f5a173641bb.woff2', unicodeRange: true },
+  { fontFamily: latinFontFamily, filename: 'MapleUI-Latin.00af3fec5b34.woff2', unicodeRange: false },
+  { fontFamily: cjkFontFamily, filename: 'MapleUI-CJK.f8ce6d72e8cb.woff2', unicodeRange: true },
+  { fontFamily: 'MapleUICoverageNotoSansDevanagari', filename: 'MapleUI-Coverage-NotoSans-Devanagari.3b3cae4d2600.woff2', unicodeRange: true },
+  { fontFamily: 'MapleUICoverageNotoSansLatinAccents', filename: 'MapleUI-Coverage-NotoSans-Latin-Accents.e645edc952b6.woff2', unicodeRange: true },
+  { fontFamily: 'MapleUICoverageNotoSansArabic', filename: 'MapleUI-Coverage-NotoSans-Arabic.ce85091f0209.woff2', unicodeRange: true },
+  { fontFamily: 'MapleUICoverageNotoSansThai', filename: 'MapleUI-Coverage-NotoSans-Thai.1f5a173641bb.woff2', unicodeRange: true },
 ] as const
 const matchingFontMetrics = ['unitsPerEm', 'ascent', 'descent', 'lineGap', 'capHeight', 'xHeight'] as const
 
@@ -81,18 +81,18 @@ const stripeFontFaces = findFontFaceSources(fs.readFileSync(stripeFontCssPath, '
 const latinFontFace = fontFaces.find(fontFace => fontFace.fontFamily === latinFontFamily)
 const cjkFontFace = fontFaces.find(fontFace => fontFace.fontFamily === cjkFontFamily)
 
-if (!fontCss.includes("--tz-font-base: 'StorefrontSystemLatin', 'StorefrontSystem';")) {
-  violations.push('The default storefront font stack must prefer StorefrontSystemLatin before StorefrontSystem.')
+if (!fontCss.includes("--tz-font-base: 'MapleUILatin', 'MapleUICJK';")) {
+  violations.push('The default storefront font stack must prefer MapleUILatin before MapleUICJK.')
 }
 
 for (const fontUtility of ['sans', 'mono']) {
-  if (!tailwindConfig.includes(`${fontUtility}: ['StorefrontSystemLatin', 'StorefrontSystem']`)) {
-    violations.push(`Tailwind font-${fontUtility} must prefer StorefrontSystemLatin before StorefrontSystem.`)
+  if (!tailwindConfig.includes(`${fontUtility}: ['MapleUILatin', 'MapleUICJK']`)) {
+    violations.push(`Tailwind font-${fontUtility} must prefer MapleUILatin before MapleUICJK.`)
   }
 }
 
 if (!latinFontFace) {
-  violations.push('StorefrontSystemLatin must be declared as a self-hosted @font-face.')
+  violations.push('MapleUILatin must be declared as a self-hosted @font-face.')
 } else {
   const latinFontPath = path.join(projectDir, 'public', latinFontFace.sourcePath.replace(/^\//, ''))
 
@@ -106,7 +106,7 @@ if (!latinFontFace) {
 }
 
 if (!cjkFontFace?.unicodeRange) {
-  violations.push('StorefrontSystem must declare unicode-range so unsupported Latin symbols and emoji do not download the CJK fallback.')
+  violations.push('MapleUICJK must declare unicode-range so Latin first paint does not download the CJK/extended built-in shard.')
 }
 
 if (!compareFontFaceContracts(fontFaces, stripeFontFaces)) {

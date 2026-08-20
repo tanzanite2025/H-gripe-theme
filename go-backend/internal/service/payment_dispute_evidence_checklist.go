@@ -162,6 +162,8 @@ func buildDisputeEvidenceChecklist(
 	events []shippingdomain.TrackingEvent,
 	communications []StripeDisputeCommunicationEvidence,
 	authentication *DisputePaymentAuthenticationEvidence,
+	policyDisclosure *DisputePolicyDisclosureEvidence,
+	refunds []DisputeRefundEvidence,
 ) DisputeEvidenceChecklist {
 	provider = strings.ToLower(strings.TrimSpace(provider))
 	items := make([]DisputeEvidenceChecklistItem, 0, 7)
@@ -274,15 +276,65 @@ func buildDisputeEvidenceChecklist(
 	})
 
 	items = append(items, DisputeEvidenceChecklistItem{
-		Key:            "policy_disclosure",
-		Title:          "售后条款与退款政策披露",
-		ProviderField:  "refund_policy_disclosure",
-		Status:         DisputeEvidenceStatusUnavailable,
-		Required:       true,
-		ManualRequired: true,
-		Source:         "checkout_policy_consent",
-		Summary:        "前台政策页面存在，但订单没有保存政策版本、披露 URL 和结算页 Consent 时间戳。",
-		MissingReason:  "尚未接入订单级政策同意记录，无法证明买家在下单前看到并同意具体版本。",
+		Key:           "policy_disclosure",
+		Title:         "售后条款与退款政策披露",
+		ProviderField: "refund_policy_disclosure",
+		Status:        DisputeEvidenceStatusMissing,
+		Required:      true,
+		Source:        "order_policy_disclosures",
+		Summary:       "订单没有保存退款政策的历史披露快照。",
+		MissingReason: "无法证明买家在下单时看到的具体政策版本；当前政策页面不会被当作历史证据。",
+	})
+	if policyDisclosure != nil &&
+		strings.TrimSpace(policyDisclosure.PolicyHash) != "" &&
+		strings.TrimSpace(policyDisclosure.PolicyURL) != "" &&
+		!policyDisclosure.DisclosedAt.IsZero() {
+		policySummary := fmt.Sprintf(
+			"订单已保存退款政策快照：version=%s，locale=%s，URL=%s，disclosed_at=%s。",
+			policyDisclosure.PolicyVersion,
+			policyDisclosure.Locale,
+			policyDisclosure.PolicyURL,
+			policyDisclosure.DisclosedAt.UTC().Format(time.RFC3339),
+		)
+		policyReason := ""
+		manualRequired := false
+		policyStatus := DisputeEvidenceStatusReady
+		if policyDisclosure.ConsentedAt == nil {
+			policySummary += " 未记录显式结算页 Consent 时间戳。"
+			policyReason = "快照已保存，但建单请求没有显式确认政策同意时间；可补充前台 Consent 事件作为人工佐证。"
+			manualRequired = true
+			policyStatus = DisputeEvidenceStatusManualRequired
+		}
+		for index := range items {
+			if items[index].Key != "policy_disclosure" {
+				continue
+			}
+			items[index].Status = policyStatus
+			items[index].ManualRequired = manualRequired
+			items[index].ObservedAt = disputeTimePointer(policyDisclosure.DisclosedAt)
+			items[index].Summary = policySummary
+			items[index].MissingReason = policyReason
+			break
+		}
+	}
+
+	refundReady := len(refunds) > 0
+	refundSummary := "订单没有退款记录。"
+	refundReason := "没有可关联的退款事实；这不代表订单没有售后争议，只表示系统没有保存退款记录。"
+	if refundReady {
+		refundSummary = fmt.Sprintf("已关联 %d 条退款事实，包含金额、状态、支付渠道退款 ID 和商品行快照摘要。", len(refunds))
+		refundReason = ""
+	}
+	items = append(items, DisputeEvidenceChecklistItem{
+		Key:           "refund_activity",
+		Title:         "退款执行事实",
+		ProviderField: disputeProviderField(provider, "uncategorized_text", "notes"),
+		Status:        checklistStatus(refundReady, DisputeEvidenceStatusMissing),
+		Required:      false,
+		Source:        "refunds + refund_line_items",
+		ObservedAt:    latestRefundEvidenceAt(refunds),
+		Summary:       refundSummary,
+		MissingReason: refundReason,
 	})
 
 	communicationReady := len(communications) > 0

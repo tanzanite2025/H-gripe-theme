@@ -7,9 +7,11 @@ import {
   safeRichTextMediaOriginsFromRuntimeConfig,
 } from '../../app/utils/security/safeRichText'
 import {
+  applyScriptNonce,
   collectInlineContentHashes,
   collectResourceOrigins,
   createContentSecurityPolicy,
+  secureHtmlWithContentSecurityPolicy,
 } from '../../server/security/content-security-policy'
 import {
   createStorefrontMediaContext,
@@ -73,14 +75,21 @@ const html = [
   '<img src="https://unreviewed-csp-origin.invalid/asset.png" alt="">',
   '</body></html>',
 ].join('')
-const policy = createContentSecurityPolicy(html)
-const hashes = collectInlineContentHashes(html)
+const securedHtml = secureHtmlWithContentSecurityPolicy(html)
+const policy = securedHtml.contentSecurityPolicy
+const hashes = collectInlineContentHashes(securedHtml.body)
 const resourceOrigins = collectResourceOrigins(html)
 
 assert(policy.includes("require-trusted-types-for 'script'"), 'Trusted Types enforcement is missing')
-assert(policy.includes('trusted-types vue tanzanite-script-url'), 'Trusted Types policy allowlist is missing')
+assert(policy.includes('trusted-types default vue tanzanite-script-url'), 'Trusted Types policy allowlist is missing')
 assert(policy.includes("script-src-attr 'none'"), 'Inline event handlers are not blocked')
 assert(!policy.includes("script-src 'self' 'unsafe-inline'"), 'Inline scripts must not be allowed')
+assert(!policy.includes("'unsafe-inline' 'strict-dynamic'"), 'Script policy must not use unsafe-inline for strict-dynamic fallback')
+assert(policy.includes("'strict-dynamic'"), 'Script policy does not use strict-dynamic')
+assert(/script-src [^;]*https:\/\/\*\.js\.stripe\.com/.test(policy), 'Stripe dynamic script origin is missing')
+assert(/frame-src [^;]*https:\/\/\*\.js\.stripe\.com/.test(policy), 'Stripe dynamic frame origin is missing')
+assert(/script-src [^;]*'nonce-[A-Za-z0-9+/]{24}'/.test(policy), 'Script policy does not include a per-response nonce')
+assert(/<script\b[^>]*\bnonce="[A-Za-z0-9+/]{24}"/.test(securedHtml.body), 'Rendered script tags do not include CSP nonces')
 assert(policy.includes("style-src-attr 'unsafe-inline'"), 'Vue-owned dynamic style attributes must remain explicitly scoped')
 
 for (const hash of [...hashes.script, ...hashes.style]) {
@@ -93,6 +102,19 @@ assert(
 assert(
   !policy.includes('https://unreviewed-csp-origin.invalid'),
   'Final HTML resource origins must not automatically widen the CSP',
+)
+
+const deterministicNonceHtml = applyScriptNonce(html, 'abcdefghijklmnopqrstuvwx')
+const deterministicPolicy = createContentSecurityPolicy(deterministicNonceHtml, {
+  scriptNonce: 'abcdefghijklmnopqrstuvwx',
+})
+assert(
+  deterministicPolicy.includes("script-src 'sha256-"),
+  'Script hash sources should remain present alongside the nonce trust chain',
+)
+assert(
+  deterministicPolicy.includes("'nonce-abcdefghijklmnopqrstuvwx' 'strict-dynamic'"),
+  'Deterministic nonce trust chain was not reflected in script-src',
 )
 
 assert(existsSync(resolve(projectRoot, 'app/utils/security/trustedScriptUrl.ts')), 'Trusted script URL policy helper is missing')
@@ -143,4 +165,4 @@ if (failures.length > 0) {
   process.exit(1)
 }
 
-console.log('[csp-check] OK: CSP hashes, Trusted Types, and safe rich-text boundaries are enforced.')
+console.log('[csp-check] OK: CSP nonces, hashes, strict-dynamic, Trusted Types, and safe rich-text boundaries are enforced.')

@@ -109,29 +109,21 @@ func TestPublicProductFromDomainStatusOverridesSkuAvailability(t *testing.T) {
 	}
 }
 
-func TestPublicProductSpecificationTemplateUsesRequestedTranslationWithEnglishFallback(t *testing.T) {
+func TestPublicProductSpecificationTemplateUsesBaseNameRegardlessOfLocale(t *testing.T) {
 	item := productdomain.Product{
 		ProductSpecificationTemplate: &productdomain.ProductSpecificationTemplate{
-			Name:     "Wheelset",
-			ImageURL: "https://cdn.example.com/categories/wheelset.webp",
-			Translations: []productdomain.ProductSpecificationTemplateTranslation{
-				{Locale: "en", Name: "Wheelset"},
-				{Locale: "zh_cn", Name: "轮组"},
-			},
+			Name: "Wheelset",
 		},
 	}
 
 	translated := PublicProductFromDomainWithLocale(item, "", "zh_cn")
-	if translated.ProductSpecificationTemplate == nil || translated.ProductSpecificationTemplate.Name != "轮组" {
-		t.Fatalf("expected zh_cn product specification template translation, got %#v", translated.ProductSpecificationTemplate)
+	if translated.ProductSpecificationTemplate == nil || translated.ProductSpecificationTemplate.Name != "Wheelset" {
+		t.Fatalf("expected base product specification template name, got %#v", translated.ProductSpecificationTemplate)
 	}
 
 	fallback := PublicProductFromDomainWithLocale(item, "", "fr")
 	if fallback.ProductSpecificationTemplate == nil || fallback.ProductSpecificationTemplate.Name != "Wheelset" {
-		t.Fatalf("expected English product specification template fallback, got %#v", fallback.ProductSpecificationTemplate)
-	}
-	if translated.ProductSpecificationTemplate.ImageURL != "https://cdn.example.com/categories/wheelset.webp" {
-		t.Fatalf("expected product specification template image URL to be exposed, got %#v", translated.ProductSpecificationTemplate)
+		t.Fatalf("expected product specification template name to remain stable, got %#v", fallback.ProductSpecificationTemplate)
 	}
 }
 
@@ -261,9 +253,8 @@ func TestPublicProductFromDomainCanonicalizesFirstPartyMediaURLs(t *testing.T) {
 			LogoURL: "http://media.internal:8080/uploads/brands/logo.webp",
 		},
 		ProductSpecificationTemplate: &productdomain.ProductSpecificationTemplate{
-			Name:     "Wheelset",
-			Slug:     "wheelset",
-			ImageURL: "http://media.internal:8080/uploads/specs/wheelset.webp",
+			Name: "Wheelset",
+			Slug: "wheelset",
 			SpecDefinitions: []productdomain.SpecDefinition{
 				{
 					ID:              17,
@@ -309,7 +300,6 @@ func TestPublicProductFromDomainCanonicalizesFirstPartyMediaURLs(t *testing.T) {
 		`"thumbnail_url":"https://shop.example.test/uploads/products/thumb.webp"`,
 		`"poster_url":"https://shop.example.test/uploads/products/poster.webp"`,
 		`"logo_url":"https://shop.example.test/uploads/brands/logo.webp"`,
-		`"image_url":"https://shop.example.test/uploads/specs/wheelset.webp"`,
 		`"swatch_url":"https://shop.example.test/uploads/swatches/black.webp"`,
 	} {
 		if !strings.Contains(body, expected) {

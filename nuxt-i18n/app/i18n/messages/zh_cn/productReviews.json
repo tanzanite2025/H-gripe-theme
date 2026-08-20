@@ -6,7 +6,7 @@
   "loading": "正在加载评价...",
   "loadError": "评价暂时无法加载。",
   "retry": "重试",
-  "empty": "暂时还没有已通过审核的评价。",
+  "empty": "暂无评价",
   "ratingLabel": "满分 5 分，{rating} 星",
   "imageAlt": "客户评价图片",
   "verifiedPurchase": "已验证购买",

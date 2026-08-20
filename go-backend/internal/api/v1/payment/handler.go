@@ -229,12 +229,18 @@ func (h *Handler) CreateStripePaymentIntent(c *gin.Context) {
 		apierror.RespondInternalError(c, err)
 		return
 	}
+	config.PaymentMethodTypes, err = h.resolveStripePaymentMethodTypes(orderRecord.ShippingAddress.Country, orderCurrency, config.PaymentMethodTypes)
+	if err != nil {
+		apierror.RespondInternalError(c, err)
+		return
+	}
 	if !ensureGatewayCurrency(c, pgateway.GatewayStripe, orderCurrency) {
 		return
 	}
 	if !h.allowPaymentGatewayAttemptOrRespondWithFallbackRecommendation(c, pgateway.GatewayStripe) {
 		return
 	}
+	defer h.releasePaymentGatewayAttemptIfUnrecorded(c, pgateway.GatewayStripe)
 	gateway, err := h.createPaymentGatewayFromConfiguration(config)
 	if err != nil {
 		h.respondToPaymentGatewayOperationFailure(
@@ -254,12 +260,23 @@ func (h *Handler) CreateStripePaymentIntent(c *gin.Context) {
 		metadata[key] = value
 	}
 
+	attempt, ok := h.ensurePaymentAttempt(
+		c,
+		pgateway.GatewayStripe,
+		"stripe",
+		orderRecord,
+		orderRecord.TotalAmount,
+		orderCurrency,
+	)
+	if !ok {
+		return
+	}
 	paymentResponse, err := gateway.CreatePayment(c.Request.Context(), &pgateway.PaymentRequest{
 		Amount:         orderRecord.TotalAmount,
 		Currency:       orderCurrency,
 		OrderID:        orderRecord.OrderNumber,
 		Description:    fmt.Sprintf("Order %s", orderRecord.OrderNumber),
-		IdempotencyKey: fmt.Sprintf("order-%d-stripe-payment-intent", orderRecord.ID),
+		IdempotencyKey: attempt.ProviderRequestKey,
 		ThreeDSecure:   threeDSDecision.Mode,
 		CardBIN:        cardBIN,
 		Customer: &pgateway.Customer{
@@ -270,6 +287,18 @@ func (h *Handler) CreateStripePaymentIntent(c *gin.Context) {
 		Metadata: metadata,
 	})
 	if err != nil {
+		_ = h.paymentService.RecordGatewayPaymentAttempt(service.GatewayPaymentAttemptInput{
+			Provider:           string(pgateway.GatewayStripe),
+			OrderNumber:        orderRecord.OrderNumber,
+			TransactionID:      attempt.TransactionID,
+			AttemptKey:         attempt.AttemptKey,
+			ProviderRequestKey: attempt.ProviderRequestKey,
+			PaymentMethod:      "stripe",
+			Status:             "failed",
+			Amount:             orderRecord.TotalAmount,
+			Currency:           orderCurrency,
+			ErrorMessage:       err.Error(),
+		})
 		h.respondToPaymentGatewayOperationFailure(
 			c,
 			pgateway.GatewayStripe,
@@ -282,7 +311,7 @@ func (h *Handler) CreateStripePaymentIntent(c *gin.Context) {
 		}
 		return
 	}
-	h.recordSuccessfulPaymentGatewayAPIResponse(c.Request.Context(), pgateway.GatewayStripe)
+	h.recordSuccessfulPaymentGatewayAPIResponse(c, pgateway.GatewayStripe)
 	if h.antiFraud != nil {
 		if err := h.antiFraud.BindPaymentIntent(c.Request.Context(), paymentResponse.TransactionID, riskIdentity); err != nil {
 			apierror.RespondInternalError(c, err)
@@ -296,13 +325,15 @@ func (h *Handler) CreateStripePaymentIntent(c *gin.Context) {
 		}
 	}
 	if err := h.paymentService.RecordGatewayPaymentAttempt(service.GatewayPaymentAttemptInput{
-		Provider:      string(pgateway.GatewayStripe),
-		OrderNumber:   orderRecord.OrderNumber,
-		TransactionID: paymentResponse.TransactionID,
-		PaymentMethod: "stripe",
-		Status:        "pending",
-		Amount:        paymentResponse.Amount,
-		Currency:      paymentResponse.Currency,
+		Provider:           string(pgateway.GatewayStripe),
+		OrderNumber:        orderRecord.OrderNumber,
+		TransactionID:      paymentResponse.TransactionID,
+		AttemptKey:         attempt.AttemptKey,
+		ProviderRequestKey: attempt.ProviderRequestKey,
+		PaymentMethod:      "stripe",
+		Status:             "pending",
+		Amount:             paymentResponse.Amount,
+		Currency:           paymentResponse.Currency,
 	}); err != nil {
 		apierror.RespondInternalError(c, err)
 		return

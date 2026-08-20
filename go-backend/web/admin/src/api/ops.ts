@@ -466,6 +466,58 @@ export interface OpsOverviewAuditLog {
   created_at: string;
 }
 
+export interface OpsNetworkSummaryItem {
+  key: string;
+  kind: "rule" | "domain_dns" | string;
+  id: number;
+  name: string;
+  environment: string;
+  owner_kind: string;
+  owner_id: number;
+  owner_name: string;
+  vps_binding_id?: number | null;
+  vps_name?: string;
+  project_binding_id?: number | null;
+  project_name?: string;
+  domain_binding_id?: number | null;
+  domain_name?: string;
+  connector_id?: number | null;
+  connector_name?: string;
+  managed_by: string;
+  source_kind: string;
+  scope: string;
+  direction: string;
+  protocol: string;
+  ports: string;
+  source_cidr: string;
+  target: string;
+  desired_state: string;
+  observed_state: string;
+  effective_state: string;
+  status: string;
+  enabled: boolean;
+  last_observed_at?: string;
+  last_error?: string;
+  notes?: string;
+}
+
+export interface OpsNetworkSummary {
+  environment: string;
+  generated_at: string;
+  summary: {
+    total: number;
+    enabled: number;
+    attention: number;
+    unknown: number;
+    explicit_rule_count: number;
+    inferred_item_count: number;
+    vps_count: number;
+    managed_by: Record<string, number>;
+    scopes: Record<string, number>;
+  };
+  items: OpsNetworkSummaryItem[];
+}
+
 const readPayload = (response: unknown, endpoint: string) =>
   unwrapApiPayload(response, endpoint);
 
@@ -523,6 +575,19 @@ const readOverviewPayload = (response: unknown, endpoint: string) => {
   requireApiArrayField(topology, "domains", endpoint);
   requireApiArrayField(payload, "attention", endpoint);
   requireApiArrayField(payload, "recent_audit", endpoint);
+  return payload;
+};
+
+const readNetworkSummaryPayload = (response: unknown, endpoint: string) => {
+  const payload = readObjectPayload(response, endpoint);
+  requireApiStringField(payload, "environment", endpoint);
+  requireApiStringField(payload, "generated_at", endpoint);
+  const summary = requireApiObjectField(payload, "summary", endpoint);
+  requireApiNumberField(summary, "total", endpoint);
+  requireApiNumberField(summary, "explicit_rule_count", endpoint);
+  requireApiNumberField(summary, "inferred_item_count", endpoint);
+  requireApiNumberField(summary, "vps_count", endpoint);
+  requireApiArrayField(payload, "items", endpoint);
   return payload;
 };
 
@@ -619,6 +684,17 @@ export default {
       await axios.get(endpoint, { params: { environment } }),
       endpoint,
     ) as OpsOverview;
+  },
+  async getNetworkSummary(
+    environment?: OpsEnvironment,
+  ): Promise<OpsNetworkSummary> {
+    const endpoint = "/api/admin/ops/network/summary";
+    return readNetworkSummaryPayload(
+      await axios.get(endpoint, {
+        params: environment ? { environment } : undefined,
+      }),
+      endpoint,
+    ) as OpsNetworkSummary;
   },
   async listAdminAccounts(search = ""): Promise<OpsAdminAccount[]> {
     const endpoint = "/api/admin/ops/admin-accounts";

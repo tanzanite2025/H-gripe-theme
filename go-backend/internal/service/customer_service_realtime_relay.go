@@ -66,7 +66,7 @@ func DefaultCustomerServiceRealtimeRelayConfig() CustomerServiceRealtimeRelayCon
 }
 
 type CustomerServiceRealtimeRelay struct {
-	client *redis.Client
+	client redis.UniversalClient
 	hub    *CustomerServiceEventHub
 	config CustomerServiceRealtimeRelayConfig
 
@@ -76,7 +76,7 @@ type CustomerServiceRealtimeRelay struct {
 }
 
 func NewCustomerServiceRealtimeRelay(
-	client *redis.Client,
+	client redis.UniversalClient,
 	hub *CustomerServiceEventHub,
 	config CustomerServiceRealtimeRelayConfig,
 ) (*CustomerServiceRealtimeRelay, error) {

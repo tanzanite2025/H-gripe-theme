@@ -11,6 +11,7 @@ import (
 	"commerce-platform/internal/domain/merchant"
 	"commerce-platform/internal/domain/product"
 	"commerce-platform/internal/pkg/config"
+	"commerce-platform/internal/pkg/resilience"
 	"commerce-platform/internal/repository"
 
 	"gorm.io/gorm"
@@ -28,6 +29,8 @@ type GoogleMerchantService struct {
 	storefrontURL  string
 	mediaResolver  PublicMediaURLResolver
 	merchantEvents MerchantOfferEventPublisher
+	httpClient     *resilience.HTTPClient
+	oauthHTTPClient *resilience.HTTPClient
 }
 
 type GoogleMerchantOfferInput struct {
@@ -70,6 +73,17 @@ func (s *GoogleMerchantService) ConfigureMerchantEventPublisher(publisher Mercha
 		return
 	}
 	s.merchantEvents = publisher
+}
+
+func (s *GoogleMerchantService) ConfigureOutboundHTTPResilience(
+	retry resilience.HTTPRetryPolicy,
+	breaker resilience.CircuitController,
+) {
+	if s == nil {
+		return
+	}
+	s.httpClient = newGoogleMerchantHTTPClient(retry, breaker)
+	s.oauthHTTPClient = newGoogleMerchantOAuthHTTPClient(retry, breaker)
 }
 
 func (s *GoogleMerchantService) ConfigureMediaService(mediaService *MediaService) {

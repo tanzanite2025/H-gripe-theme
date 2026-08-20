@@ -64,5 +64,31 @@
   "pointCards": "Point Cards",
   "copyLink": "Copy Invite Link",
   "pageTitle": "Membership and Points",
-  "giftCards": "Gift Cards"
+  "giftCards": "Gift Cards",
+  "pages": {
+    "myInfo": {
+      "title": "My Membership Info",
+      "intro": "View your profile, membership level, points balance, coupons, gift cards, and warranty tools.",
+      "seoTitle": "My Membership Info - Points and Benefits",
+      "seoDescription": "View your TANZANITE member profile, loyalty level, points balance, coupons, gift cards, and warranty tools.",
+      "feedbackTitle": "Share your feedback about your membership info",
+      "feedbackSubtitle": "Tell us whether account details, benefits, coupons, gift cards, or warranty tools are clear."
+    },
+    "levers": {
+      "title": "Membership Levels and Point Rules",
+      "intro": "Review member tiers, discount levels, earning rules, redemption rates, referral rewards, and check-in rules.",
+      "seoTitle": "Membership Levels and Point Rules",
+      "seoDescription": "Review TANZANITE membership levels, points earning rules, redemption rates, referral rewards, and daily check-in rewards.",
+      "feedbackTitle": "Share your feedback about membership levels and points",
+      "feedbackSubtitle": "Tell us whether tier rules, earning rules, redemption, referral rewards, or check-in details are clear."
+    },
+    "exchange": {
+      "title": "Gift Card Exchange",
+      "intro": "Redeem eligible loyalty points for gift cards and track redeemed cards from your member center.",
+      "seoTitle": "Gift Card Exchange - Redeem Loyalty Points",
+      "seoDescription": "Redeem TANZANITE loyalty points for available gift card rewards and manage redeemed gift cards from the member center.",
+      "feedbackTitle": "Share your feedback about gift card exchange",
+      "feedbackSubtitle": "Tell us whether point redemption, available gift cards, or redeemed card records are easy to understand."
+    }
+  }
 }

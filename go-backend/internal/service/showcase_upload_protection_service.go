@@ -73,10 +73,10 @@ type showcaseUploadProtectionFailure struct {
 }
 
 type redisShowcaseUploadProtectionStore struct {
-	client *redis.Client
+	client redis.UniversalClient
 }
 
-func NewShowcaseUploadProtectionService(redisClient *redis.Client, cfg config.ShowcaseUploadProtectionConfig) *ShowcaseUploadProtectionService {
+func NewShowcaseUploadProtectionService(redisClient redis.UniversalClient, cfg config.ShowcaseUploadProtectionConfig) *ShowcaseUploadProtectionService {
 	if redisClient == nil {
 		return &ShowcaseUploadProtectionService{
 			cfg:         cfg,

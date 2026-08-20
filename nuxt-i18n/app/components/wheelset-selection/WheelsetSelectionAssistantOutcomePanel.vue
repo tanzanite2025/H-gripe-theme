@@ -1,7 +1,9 @@
 <template>
   <div class="wheelset-selection-outcome-panel">
     <div class="wheelset-selection-outcome-panel__copy">
-      <span class="wheelset-selection-outcome-panel__eyebrow">Fit profile</span>
+      <span class="wheelset-selection-outcome-panel__eyebrow">
+        {{ t('wheelsetSelectionAssistant.outcome.eyebrow') }}
+      </span>
       <h3>{{ prompt }}</h3>
       <p v-if="helper">{{ helper }}</p>
     </div>
@@ -14,7 +16,7 @@
         @click="emit('back')"
       >
         <Icon name="lucide:arrow-left" class="h-4 w-4" />
-        <span>Review previous answer</span>
+        <span>{{ t('wheelsetSelectionAssistant.outcome.back') }}</span>
       </button>
       <button
         type="button"
@@ -22,18 +24,22 @@
         @click="emit('contactSupport')"
       >
         <Icon name="lucide:message-circle" class="h-4 w-4" />
-        <span>Send fit profile to support</span>
+        <span>{{ t('wheelsetSelectionAssistant.outcome.contact') }}</span>
       </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from '#imports'
+
 defineProps<{
   prompt: string
   helper?: string
   canGoBack: boolean
 }>()
+
+const { t } = useI18n()
 
 const emit = defineEmits<{
   back: []

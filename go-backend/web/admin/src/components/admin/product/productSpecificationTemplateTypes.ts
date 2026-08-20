@@ -1,7 +1,6 @@
 export type ProductSpecTemplateDialogMode = 'create' | 'edit'
 export type ProductSpecFieldType = 'text' | 'number' | 'select' | 'boolean'
 export type ProductSpecPresentation = 'text' | 'color' | 'image'
-export const PRODUCT_SPEC_TEMPLATE_IMAGE_SIZE = 800
 
 export interface ProductSpecTemplateFilters {
   search: string
@@ -25,32 +24,15 @@ export interface ProductSpecTemplateSpecDefinition {
   validation?: string | null
 }
 
-export interface ProductSpecTemplateTranslation {
-  id?: number | string | null
-  locale: string
-  name: string
-  description?: string | null
-}
-
-export interface ProductSpecTemplateTranslationForm {
-  id?: number | string | null
-  locale: string
-  name: string
-  description: string
-}
-
 export interface ProductSpecTemplateRecord {
   id: number | string
   name?: string | null
   slug?: string | null
   description?: string | null
-  image_media_asset_id?: number | string | null
-  image_url?: string | null
   sort_order?: number | string | null
   is_enabled?: boolean
   is_system_managed?: boolean
   updated_at?: string | null
-  translations?: ProductSpecTemplateTranslation[]
   spec_definitions?: ProductSpecTemplateSpecDefinition[]
 }
 
@@ -79,13 +61,8 @@ export interface ProductSpecTemplateForm {
   name: string
   slug: string
   description: string
-  image_media_asset_id: number | string | null
-  image_url: string
-  pending_image_file: File | null
-  remove_image: boolean
   sort_order: number
   is_enabled: boolean
-  translations: ProductSpecTemplateTranslationForm[]
   spec_definitions: ProductSpecTemplateSpecForm[]
 }
 
@@ -112,7 +89,6 @@ export interface ProductSpecTemplatePayload {
   description: string
   sort_order: number
   is_enabled: boolean
-  translations: ProductSpecTemplateTranslation[]
   spec_definitions: ProductSpecTemplateSpecPayload[]
 }
 

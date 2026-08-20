@@ -73,6 +73,9 @@ func NewWechatGateway(config *Config) (PaymentGateway, error) {
 
 // CreatePayment 创建微信支付（Native扫码支付）
 func (g *wechatGatewayImpl) CreatePayment(ctx context.Context, req *PaymentRequest) (*PaymentResponse, error) {
+	ctx, cancel := paymentGatewayContext(ctx)
+	defer cancel()
+
 	if err := ValidatePaymentRequest(req); err != nil {
 		return nil, fmt.Errorf("invalid payment request: %w", err)
 	}
@@ -155,6 +158,9 @@ func (g *wechatGatewayImpl) RefundPayment(ctx context.Context, paymentID string,
 }
 
 func (g *wechatGatewayImpl) RefundPaymentWithOptions(ctx context.Context, paymentID string, amount float64, options RefundOptions) (*RefundResponse, error) {
+	ctx, cancel := paymentGatewayContext(ctx)
+	defer cancel()
+
 	paymentID = strings.TrimSpace(paymentID)
 	if paymentID == "" {
 		return nil, fmt.Errorf("payment ID is required")
@@ -237,6 +243,9 @@ func buildWechatRefundRequest(paymentID string, amount float64, refundNo string,
 
 // GetPayment 查询微信支付
 func (g *wechatGatewayImpl) GetPayment(ctx context.Context, paymentID string) (*PaymentResponse, error) {
+	ctx, cancel := paymentGatewayContext(ctx)
+	defer cancel()
+
 	if paymentID == "" {
 		return nil, fmt.Errorf("payment ID is required")
 	}

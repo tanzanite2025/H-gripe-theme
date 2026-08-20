@@ -4,6 +4,7 @@ import type {
 } from '@stripe/stripe-js'
 import type { CartItem } from '~~/types/cart'
 import { useAuth } from '~/composables/useAuth'
+import { createIdempotencyKey } from '~/utils/idempotency'
 
 type ApiResponse<T> = T | { data?: T | { data?: T } }
 
@@ -102,6 +103,7 @@ export function useStripeExpressCheckoutOrder() {
     confirmationEvent: StripeExpressCheckoutElementConfirmEvent,
     cartItems: CartItem[],
     ensureCartReady?: () => Promise<void>,
+    idempotencyKey?: string,
   ) => {
     const session = await auth.ensureSession()
     if (!session) {
@@ -136,7 +138,11 @@ export function useStripeExpressCheckoutOrder() {
 
     const response = await auth.request<ApiResponse<{ order_number?: string }>>('/orders', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        ...(String(idempotencyKey || '').trim() ? { 'Idempotency-Key': String(idempotencyKey || '').trim() } : {}),
+      },
       body: JSON.stringify({
         items: cartItems.map(item => ({
           product_id: Number(item.product_id || item.id || 0),
@@ -159,7 +165,7 @@ export function useStripeExpressCheckoutOrder() {
     }
   }
 
-  const createStripePaymentIntentForExpressCheckoutOrder = async (orderNumber: string) => {
+  const createStripePaymentIntentForExpressCheckoutOrder = async (orderNumber: string, idempotencyKey?: string) => {
     const response = await auth.request<ApiResponse<{
       client_secret?: string
       clientSecret?: string
@@ -167,7 +173,11 @@ export function useStripeExpressCheckoutOrder() {
       publishableKey?: string
     }>>('/payment/stripe/payment-intents', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        ...(String(idempotencyKey || '').trim() ? { 'Idempotency-Key': String(idempotencyKey || '').trim() } : {}),
+      },
       body: JSON.stringify({ order_number: orderNumber }),
     }, 'Stripe Express Checkout PaymentIntent creation failed')
     const payment = unwrapApiData<{
@@ -189,12 +199,14 @@ export function useStripeExpressCheckoutOrder() {
     cartItems: CartItem[],
     ensureCartReady?: () => Promise<void>,
   ): Promise<StripeExpressCheckoutOrderSession> => {
+    const idempotencyKey = createIdempotencyKey('stripe-express-checkout')
     const order = await createLocalOrderFromStripeExpressCheckoutConfirmation(
       confirmationEvent,
       cartItems,
       ensureCartReady,
+      idempotencyKey,
     )
-    const payment = await createStripePaymentIntentForExpressCheckoutOrder(order.orderNumber)
+    const payment = await createStripePaymentIntentForExpressCheckoutOrder(order.orderNumber, idempotencyKey)
     const publishableKey = payment.publishableKey || await loadStripeExpressCheckoutPublishableKey()
     return {
       orderNumber: order.orderNumber,

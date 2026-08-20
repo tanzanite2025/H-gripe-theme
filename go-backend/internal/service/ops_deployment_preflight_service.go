@@ -544,7 +544,7 @@ func checkBackups(project *ops.ProjectBindingView) ops.DeploymentPreflightCheck 
 	policy := strings.TrimSpace(project.BackupPolicy)
 	restore := strings.TrimSpace(project.RestoreNotes)
 	if policy == "" {
-		return blockedCheck("backups", "evidence", "备份记录", "未登记备份策略。", "至少需要记录 PostgreSQL、uploads、异地保存和恢复安排。")
+		return blockedCheck("backups", "evidence", "备份记录", "未登记备份策略。", "至少需要记录 PostgreSQL、普通媒体 uploads、站点 Logo site_logo_uploads、异地保存和恢复安排。")
 	}
 	if restore == "" {
 		return warningCheck("backups", "evidence", "备份记录", "已登记备份策略，但没有恢复记录。", policy)

@@ -82,14 +82,6 @@
               {{ $t('footer.support.warranty', 'Warranty') }}
             </NuxtLink>
           </li>
-          <li class="footer-menus__item">
-            <NuxtLink
-              :to="localePath('/support/product-feedback')"
-              class="footer-menus__link"
-            >
-              {{ $t('footer.support.productFeedback', 'Product Feedback') }}
-            </NuxtLink>
-          </li>
         </ul>
 
         <!-- Default link-list -->

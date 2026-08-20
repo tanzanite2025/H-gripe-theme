@@ -1,0 +1,9 @@
+DROP INDEX IF EXISTS idx_ops_network_rule_connector;
+DROP INDEX IF EXISTS idx_ops_network_rule_domain;
+DROP INDEX IF EXISTS idx_ops_network_rule_project;
+DROP INDEX IF EXISTS idx_ops_network_rule_vps;
+DROP INDEX IF EXISTS idx_ops_network_rule_scope;
+DROP INDEX IF EXISTS idx_ops_network_rule_manager;
+DROP INDEX IF EXISTS idx_ops_network_rule_owner;
+DROP INDEX IF EXISTS idx_ops_network_rule_environment;
+DROP TABLE IF EXISTS ops_network_rules;

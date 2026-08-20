@@ -621,7 +621,7 @@ const tireSizeAvailabilityColumns = [
 
 .tire-size-availability-table td:first-child {
   color: var(--tz-text-primary);
-  font-family: var(--tz-font-system);
+  font-family: var(--tz-font-ui);
   font-weight: 800;
   white-space: nowrap;
 }

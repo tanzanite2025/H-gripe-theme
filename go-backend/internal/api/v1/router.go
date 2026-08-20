@@ -31,6 +31,7 @@ import (
 	"commerce-platform/internal/api/v1/subscription"
 	"commerce-platform/internal/api/v1/suggestionfeedback"
 	"commerce-platform/internal/api/v1/ticket"
+	visualshowcaseapi "commerce-platform/internal/api/v1/visualshowcase"
 	wheelsetfitapi "commerce-platform/internal/api/v1/wheelsetfit"
 	"commerce-platform/internal/api/v1/wishlist"
 	"commerce-platform/internal/app"
@@ -96,6 +97,8 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 	})
 	settingsHandler := settings.NewHandler(settingService, services.WebsiteProfile)
 	settingsHandler.ConfigureMediaService(services.Media)
+	settingsHandler.ConfigureSiteLogoService(services.SiteLogo)
+	settingsHandler.ConfigureRefundReturnPolicyService(services.RefundReturnPolicy)
 	seoHomeHandler := seohomeapi.NewHandler(services.SEO)
 	analyticsHandler := analyticsapi.NewHandler(services.Analytics)
 	storefrontContextHandler := storefront.NewContextHandler(services.StorefrontContext)
@@ -105,6 +108,7 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 	orderHandler := order.NewHandler(orderService, cartService, deps.AntiFraud)
 	orderHandler.ConfigureOrderAbuse(deps.OrderAbuse)
 	orderHandler.ConfigurePaymentProtection(services.PaymentProtection)
+	orderHandler.ConfigureAfterSales(services.AfterSales, storageSvc)
 	checkoutHandler := checkout.NewHandler(checkoutService, cartService)
 	marketingHandler := marketing.NewHandler(marketingService, settingService, services.LoyaltyProgram)
 	marketingHandler.ConfigureMediaService(services.Media)
@@ -140,6 +144,7 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 	showcaseHandler := showcase.NewShowcaseHandler(showcaseService)
 	showcaseHandler.ConfigureUploadProtection(services.ShowcaseUploadProtection)
 	showcaseHandler.ConfigureUploadEligibility(services.ShowcaseUploadEligibility)
+	visualShowcaseHandler := visualshowcaseapi.NewHandler(services.VisualShowcase, services.Media)
 	wishlistHandler := wishlist.NewHandler(wishlistService, services.Media)
 	feedbackHandler := feedback.NewHandler(feedbackService)
 	feedbackHandler.ConfigureSourceHashSecret(cfg.JWT.Secret)
@@ -262,6 +267,11 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 			wheelsetFitQuestionnaireGroup.GET("/current", wheelsetFitQuestionnaireHandler.GetCurrentFlow)
 		}
 
+		visualShowcaseGroup := v1.Group("/visual-showcases")
+		{
+			visualShowcaseGroup.GET("/:showcase_key", visualShowcaseHandler.Get)
+		}
+
 		// 购物车路由（可选认证）
 		cartGroup := v1.Group("/cart")
 		cartGroup.Use(
@@ -326,9 +336,14 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 			middleware.CommercialOrderEnumerationGuard(deps.RedisClient),
 		)
 		{
-			orderGroup.POST("", middleware.RateLimitByUser(2), orderHandler.CreateOrder)
+			orderGroup.POST("", middleware.Idempotency(deps.RedisClient), middleware.RateLimitByUser(2), orderHandler.CreateOrder)
 			orderGroup.GET("", orderHandler.ListOrders)
 			orderGroup.GET("/stats", orderHandler.GetOrderStats)
+			orderGroup.POST(
+				"/:order_number/after-sales",
+				middleware.RateLimitByUser(2),
+				orderHandler.CreateAfterSalesRequest,
+			)
 			orderGroup.GET("/:order_number", orderHandler.GetOrder)
 			orderGroup.POST("/:order_number/cancel", orderHandler.CancelOrder)
 		}
@@ -437,6 +452,7 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 			settingsGroup.GET("/site", settingsHandler.GetSiteSettings)
 			settingsGroup.GET("/social", settingsHandler.GetSocialSettings)
 			settingsGroup.GET("/website-profile", settingsHandler.GetWebsiteProfile)
+			settingsGroup.GET("/refund-return-policy", settingsHandler.GetRefundReturnPolicy)
 			settingsGroup.GET("/public", settingsHandler.GetAllPublicSettings)
 			settingsGroup.GET("/groups", settingsHandler.GetGroups)
 			settingsGroup.GET("/group/:group", settingsHandler.GetSettingsByGroup)
@@ -490,13 +506,13 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 				authPayment.GET("/orders/:order_id/transactions", paymentHandler.GetOrderTransactions)
 				authPayment.GET("/refunds/:id", paymentHandler.GetRefund)
 				authPayment.GET("/orders/:order_id/refunds", paymentHandler.GetOrderRefunds)
-				authPayment.POST("/stripe/payment-intents", middleware.RateLimitByUser(3), paymentHandler.CreateStripePaymentIntent)
-				authPayment.POST("/paypal/orders", middleware.RateLimitByUser(3), paymentHandler.CreatePayPalOrder)
-				authPayment.POST("/paypal/orders/:paypal_order_id/capture", middleware.RateLimitByUser(5), paymentHandler.CapturePayPalOrder)
-				authPayment.POST("/alipay/orders", middleware.RateLimitByUser(3), paymentHandler.CreateAlipayOrder)
-				authPayment.POST("/alipay/orders/:order_number/confirm", middleware.RateLimitByUser(5), paymentHandler.ConfirmAlipayOrder)
-				authPayment.POST("/wechat/orders", middleware.RateLimitByUser(3), paymentHandler.CreateWechatOrder)
-				authPayment.POST("/wechat/orders/:order_number/confirm", middleware.RateLimitByUser(5), paymentHandler.ConfirmWechatOrder)
+				authPayment.POST("/stripe/payment-intents", middleware.Idempotency(deps.RedisClient), middleware.RateLimitByUser(3), paymentHandler.CreateStripePaymentIntent)
+				authPayment.POST("/paypal/orders", middleware.Idempotency(deps.RedisClient), middleware.RateLimitByUser(3), paymentHandler.CreatePayPalOrder)
+				authPayment.POST("/paypal/orders/:paypal_order_id/capture", middleware.Idempotency(deps.RedisClient), middleware.RateLimitByUser(5), paymentHandler.CapturePayPalOrder)
+				authPayment.POST("/alipay/orders", middleware.Idempotency(deps.RedisClient), middleware.RateLimitByUser(3), paymentHandler.CreateAlipayOrder)
+				authPayment.POST("/alipay/orders/:order_number/confirm", middleware.Idempotency(deps.RedisClient), middleware.RateLimitByUser(5), paymentHandler.ConfirmAlipayOrder)
+				authPayment.POST("/wechat/orders", middleware.Idempotency(deps.RedisClient), middleware.RateLimitByUser(3), paymentHandler.CreateWechatOrder)
+				authPayment.POST("/wechat/orders/:order_number/confirm", middleware.Idempotency(deps.RedisClient), middleware.RateLimitByUser(5), paymentHandler.ConfirmWechatOrder)
 			}
 		}
 

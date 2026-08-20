@@ -164,7 +164,7 @@ const formatCategoryIndex = (index: number) => String(index + 1).padStart(2, '0'
 <style scoped>
 .page-faq {
   /* Smooth scrolling for anchor links */
-  scroll-margin-top: 80px;
+  scroll-margin-top: calc(var(--tz-site-header-spacer-height) + 1rem);
 }
 
 .page-faq__header {

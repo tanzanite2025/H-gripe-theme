@@ -6,7 +6,7 @@
   "loading": "Reviews laden...",
   "loadError": "Reviews konden niet worden geladen.",
   "retry": "Opnieuw proberen",
-  "empty": "Er zijn nog geen goedgekeurde reviews.",
+  "empty": "Nog geen reviews.",
   "ratingLabel": "{rating} van 5 sterren",
   "imageAlt": "Afbeelding uit klantreview",
   "verifiedPurchase": "Geverifieerde aankoop",

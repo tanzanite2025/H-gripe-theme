@@ -1,12 +1,12 @@
 import { expect, test, type Page } from '@playwright/test'
 
 const storefrontUrl = process.env.STOREFRONT_URL || 'http://127.0.0.1:9199/'
-const latinFontPath = '/fonts/StorefrontSystem-Latin.00af3fec5b34.woff2'
-const cjkFontPath = '/fonts/StorefrontSystem-CJK.f8ce6d72e8cb.woff2'
-const latinAccentFontPath = '/fonts/StorefrontSystem-Latin-Accents.e645edc952b6.woff2'
-const arabicFontPath = '/fonts/StorefrontSystem-Arabic.ce85091f0209.woff2'
-const devanagariFontPath = '/fonts/StorefrontSystem-Devanagari.3b3cae4d2600.woff2'
-const thaiFontPath = '/fonts/StorefrontSystem-Thai.1f5a173641bb.woff2'
+const latinFontPath = '/fonts/MapleUI-Latin.00af3fec5b34.woff2'
+const cjkFontPath = '/fonts/MapleUI-CJK.f8ce6d72e8cb.woff2'
+const latinAccentFontPath = '/fonts/MapleUI-Coverage-NotoSans-Latin-Accents.e645edc952b6.woff2'
+const arabicFontPath = '/fonts/MapleUI-Coverage-NotoSans-Arabic.ce85091f0209.woff2'
+const devanagariFontPath = '/fonts/MapleUI-Coverage-NotoSans-Devanagari.3b3cae4d2600.woff2'
+const thaiFontPath = '/fonts/MapleUI-Coverage-NotoSans-Thai.1f5a173641bb.woff2'
 const approvedStorefrontFontPaths = [
   latinFontPath,
   cjkFontPath,
@@ -33,18 +33,18 @@ const optionalHomepageFontRangeSpecs = [
       [0xfe30, 0xfe4f], [0xff00, 0xffef], [0x20000, 0x2fa1f],
     ],
   },
-  { label: 'LatinAccents', ranges: [[0x00c0, 0x00c1], [0x00c4, 0x00c5], [0x00c9, 0x00c9], [0x00d6, 0x00d6], [0x00dc, 0x00dc], [0x0130, 0x0130]] },
+  { label: 'LatinAccents', ranges: [[0x00c0, 0x00c1], [0x00c4, 0x00c5], [0x00c8, 0x00c9], [0x00cb, 0x00cb], [0x00cc, 0x00cd], [0x00cf, 0x00cf], [0x00d2, 0x00d3], [0x00d6, 0x00d6], [0x00d9, 0x00da], [0x00dc, 0x00dc], [0x0116, 0x0116], [0x0130, 0x0130], [0x016e, 0x016e], [0x01d7, 0x01d7], [0x01db, 0x01db], [0x01fa, 0x01fa], [0x0226, 0x0226], [0x022e, 0x022e], [0x0300, 0x0301], [0x0307, 0x0308], [0x030a, 0x030a], [0x1e2e, 0x1e2e], [0xfe00, 0xfe00]] },
   { label: 'Arabic', ranges: [[0x0600, 0x06ff], [0x0750, 0x077f], [0x0870, 0x08ff], [0xfb50, 0xfdff], [0xfe70, 0xfefc], [0x102e0, 0x102fb], [0x10e60, 0x10e7e], [0x10ec2, 0x10eff], [0x1ee00, 0x1eef1]] },
   { label: 'Devanagari', ranges: [[0x0900, 0x097f], [0x1cd0, 0x1cf9], [0x20a8, 0x20a8], [0x20b9, 0x20b9], [0xa830, 0xa839], [0xa8e0, 0xa8ff], [0x11b00, 0x11b09]] },
   { label: 'Thai', ranges: [[0x02d7, 0x02d7], [0x0303, 0x0303], [0x0331, 0x0331], [0x0e01, 0x0e5b], [0x200c, 0x200d], [0x25cc, 0x25cc]] },
 ]
 const expectedFontDisplayByFamily = {
-  StorefrontSystemLatin: 'swap',
-  StorefrontSystem: 'swap',
-  StorefrontSystemDevanagari: 'swap',
-  StorefrontSystemLatinAccents: 'swap',
-  StorefrontSystemArabic: 'swap',
-  StorefrontSystemThai: 'swap',
+  MapleUILatin: 'block',
+  MapleUICJK: 'block',
+  MapleUICoverageNotoSansDevanagari: 'block',
+  MapleUICoverageNotoSansLatinAccents: 'block',
+  MapleUICoverageNotoSansArabic: 'block',
+  MapleUICoverageNotoSansThai: 'block',
 } as const
 
 const fontPathname = (url: string): string => {
@@ -107,16 +107,16 @@ const collectLoadedFontPaths = async (
 
     return performance.getEntriesByType('resource')
       .map(entry => new URL(entry.name).pathname)
-      .filter(path => path.startsWith('/fonts/StorefrontSystem-') && path.endsWith('.woff2'))
+      .filter(path => path.startsWith('/fonts/MapleUI-') && path.endsWith('.woff2'))
       .sort()
-  }, { cssHref: new URL('/fonts/storefront-system.css', storefrontUrl).toString(), sample, fontFamily })
+  }, { cssHref: new URL('/fonts/maple-ui.css', storefrontUrl).toString(), sample, fontFamily })
 }
 
 test('the English storefront home page only requests the default Latin shard', async ({ page }) => {
   const requestedFontPaths: string[] = []
   page.on('request', (request) => {
     const pathname = fontPathname(request.url())
-    if (pathname.startsWith('/fonts/StorefrontSystem-') && pathname.endsWith('.woff2')) {
+    if (pathname.startsWith('/fonts/MapleUI-') && pathname.endsWith('.woff2')) {
       requestedFontPaths.push(pathname)
     }
   })
@@ -227,7 +227,7 @@ test('the English storefront home page only requests the default Latin shard', a
       bodyFont: getComputedStyle(document.body).fontFamily,
       resourceFontPaths: performance.getEntriesByType('resource')
         .map(entry => new URL(entry.name).pathname)
-        .filter(path => path.startsWith('/fonts/StorefrontSystem-') && path.endsWith('.woff2')),
+        .filter(path => path.startsWith('/fonts/MapleUI-') && path.endsWith('.woff2')),
       renderedOptionalShardText,
     }
   }, { rangeSpecs: optionalHomepageFontRangeSpecs })
@@ -235,7 +235,7 @@ test('the English storefront home page only requests the default Latin shard', a
   const loadedFontPaths = [...new Set([...requestedFontPaths, ...report.resourceFontPaths])].sort()
 
   expect(report.htmlLang).toBe('en-US')
-  expect(report.bodyFont.replace(/\s+/g, '')).toBe('StorefrontSystemLatin,StorefrontSystem')
+  expect(report.bodyFont.replace(/\s+/g, '')).toBe('MapleUILatin,MapleUICJK')
   expect(report.renderedOptionalShardText).toEqual([])
   expect(loadedFontPaths).toContain(latinFontPath)
   expect(loadedFontPaths.filter(path => !approvedStorefrontFontPaths.includes(path))).toEqual([])
@@ -259,7 +259,7 @@ test('the Latin subset cannot shift layout against the complete Maple UI face', 
       }
 
       const face = new FontFace(family, await response.arrayBuffer(), {
-        display: 'swap',
+        display: 'block',
         style: 'normal',
         weight: '100 900',
       })
@@ -351,7 +351,7 @@ test('the Latin subset cannot shift layout against the complete Maple UI face', 
     }
   }, { latinFontPath, cjkFontPath, expectedFontDisplayByFamily })
 
-  expect(result.bodyFont).toBe('StorefrontSystemLatin, StorefrontSystem')
+  expect(result.bodyFont).toBe('MapleUILatin, MapleUICJK')
   expect(result.fontDisplayByFamily).toEqual(expectedFontDisplayByFamily)
   expect(result.latin).toEqual(result.cjk)
 })
@@ -360,7 +360,7 @@ test('unicode-range segmentation loads only the font shards required by rendered
   const asciiFonts = await collectLoadedFontPaths(
     page,
     'Factory Direct Carbon Wheelsets 2026 USD 99.95',
-    '"StorefrontSystemLatin", "StorefrontSystem"',
+    '"MapleUILatin", "MapleUICJK"',
   )
   expect(asciiFonts).toContain(latinFontPath)
   expect(asciiFonts).not.toContain(cjkFontPath)
@@ -369,20 +369,20 @@ test('unicode-range segmentation loads only the font shards required by rendered
   const cjkFonts = await collectLoadedFontPaths(
     page,
     '碳纤维轮组',
-    '"StorefrontSystem"',
+    '"MapleUICJK"',
   )
   expect(cjkFonts).toContain(cjkFontPath)
 
   const accentFonts = await collectLoadedFontPaths(
     page,
     'Français Español Österreich',
-    '"StorefrontSystemLatinAccents"',
+    '"MapleUICoverageNotoSansLatinAccents"',
   )
   expect(accentFonts).toContain(latinAccentFontPath)
   expect(accentFonts).not.toContain(cjkFontPath)
 })
 
-test('the deployed font preflight manifest enforces the no-fallback release gate', async ({ request }) => {
+test('the deployed font preflight manifest enforces the built-in font shard release gate', async ({ request }) => {
   const response = await request.get(new URL('/_internal/font-preflight.json', storefrontUrl).toString())
   expect(response.ok()).toBeTruthy()
 
@@ -392,12 +392,14 @@ test('the deployed font preflight manifest enforces the no-fallback release gate
     project: 'tanzanite-theme storefront',
     overall_status: 'pass',
     baseline: {
-      id: 'storefront-self-hosted-no-fallback-v1',
-      font_display: 'swap',
+      id: 'storefront-built-in-font-shards-v1',
+      font_display: 'block',
     },
     strategy: {
       status: 'pass',
-      default_stack: ['StorefrontSystemLatin', 'StorefrontSystem'],
+      default_stack: ['MapleUILatin', 'MapleUICJK'],
+      maple_ui_cjk_family: 'MapleUICJK',
+      coverage_source_faces: ['Noto Sans Devanagari', 'Noto Sans', 'Noto Sans Arabic', 'Noto Sans Thai'],
       layout_parity_verified: true,
     },
     coverage: {
@@ -406,7 +408,7 @@ test('the deployed font preflight manifest enforces the no-fallback release gate
   })
   expect(report.strategy.latin_bytes).toBeLessThanOrEqual(report.strategy.latin_budget_bytes)
   expect(report.checks.map((check: { key: string; status: string }) => [check.key, check.status])).toEqual([
-    ['no-external-fallback', 'pass'],
+    ['no-external-system-fonts', 'pass'],
     ['font-face-contract', 'pass'],
     ['multilingual-split', 'pass'],
     ['layout-parity', 'pass'],
@@ -414,7 +416,7 @@ test('the deployed font preflight manifest enforces the no-fallback release gate
   ])
   expect(report.faces).toHaveLength(6)
   expect(report.faces.every((face: { self_hosted: boolean; font_display: string }) => (
-    face.self_hosted && face.font_display === 'swap'
+    face.self_hosted && face.font_display === 'block'
   ))).toBeTruthy()
   expect(report.coverage.locales.length).toBe(report.coverage.locale_count)
   expect(report.coverage.locales.every((locale: { status: string; missing_characters: number }) => (

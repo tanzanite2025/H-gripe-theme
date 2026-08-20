@@ -18,14 +18,8 @@ type Server struct {
 
 // NewServer initializes a new Asynq worker server
 func NewServer(cfg *config.RedisConfig) *Server {
-	redisOpt := asynq.RedisClientOpt{
-		Addr:     cfg.GetRedisAddr(),
-		Password: cfg.Password,
-		DB:       cfg.DB,
-	}
-
 	srv := asynq.NewServer(
-		redisOpt,
+		newRedisConnOpt(cfg),
 		asynq.Config{
 			Concurrency: 10,
 			Queues: map[string]int{

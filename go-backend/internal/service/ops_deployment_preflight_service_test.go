@@ -80,6 +80,18 @@ func TestPreflightBackupsWarnWhenRestoreExerciseIsPending(t *testing.T) {
 	}
 }
 
+func TestPreflightBackupsBlockWithoutPolicyAndNameBothUploadVolumes(t *testing.T) {
+	check := checkBackups(&ops.ProjectBindingView{})
+	if check.Status != ops.DeploymentCheckBlock {
+		t.Fatalf("checkBackups missing policy status = %q, want block: %#v", check.Status, check)
+	}
+	for _, expected := range []string{"uploads", "site_logo_uploads"} {
+		if !strings.Contains(check.Detail, expected) {
+			t.Fatalf("checkBackups missing policy detail = %q, want %q", check.Detail, expected)
+		}
+	}
+}
+
 func TestPreflightHostingerConnectorAcceptsEnvironmentCredentials(t *testing.T) {
 	t.Setenv("HOSTINGER_API_TOKEN", "configured-token")
 
@@ -315,7 +327,7 @@ func TestPreflightProductionVolumeBaselineAcceptsResolvedAndLogicalNames(t *test
 		ProjectBinding: ops.ProjectBinding{
 			Environment:        ops.ProjectEnvironmentProduction,
 			ComposeProjectName: "commerce-platform",
-			Volumes:            "commerce-platform-postgres-data, commerce-platform-redis-data, uploads",
+			Volumes:            "commerce-platform-postgres-data, commerce-platform-redis-data, uploads, site_logo_uploads",
 		},
 	}
 
@@ -620,7 +632,7 @@ func TestDeploymentPreflightServiceUsesEffectiveVPSConnector(t *testing.T) {
 		GatewayAlias:           "theme-web",
 		Services:               "db, redis, migrate, edge-config, api, storefront, admin, web",
 		Networks:               "db, cache, app, shared-edge",
-		Volumes:                "commerce-platform-postgres-data, commerce-platform-redis-data, uploads",
+		Volumes:                "commerce-platform-postgres-data, commerce-platform-redis-data, uploads, site_logo_uploads",
 		CurrentImageTag:        "sha-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		CurrentCommitSHA:       "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		Status:                 ops.ProjectStatusActive,
@@ -630,8 +642,8 @@ func TestDeploymentPreflightServiceUsesEffectiveVPSConnector(t *testing.T) {
 		ObservedHealthyCount:   7,
 		LastCheckedAt:          &now,
 		LastDeploymentAt:       &now,
-		BackupPolicy:           "Daily PostgreSQL and uploads backups with off-VPS copy.",
-		RestoreNotes:           "2026-08-13 已完成恢复演练，PostgreSQL 与 uploads 校验通过。",
+		BackupPolicy:           "Daily PostgreSQL, uploads, and site-logo-uploads backups with off-VPS copy.",
+		RestoreNotes:           "2026-08-13 已完成恢复演练，PostgreSQL、uploads 与 site-logo-uploads 校验通过。",
 		Enabled:                true,
 	}
 	if err := repos.projects.Create(project); err != nil {
@@ -912,7 +924,7 @@ func newPreflightFixtureProject(name string, vpsID uint, now time.Time) *ops.Pro
 		GatewayAlias:           "theme-web",
 		Services:               "db, redis, migrate, edge-config, api, storefront, admin, web",
 		Networks:               "db, cache, app, shared-edge",
-		Volumes:                name + "-postgres-data, " + name + "-redis-data, uploads",
+		Volumes:                name + "-postgres-data, " + name + "-redis-data, uploads, site_logo_uploads",
 		CurrentImageTag:        "sha-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
 		CurrentCommitSHA:       "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
 		Status:                 ops.ProjectStatusActive,
@@ -922,7 +934,7 @@ func newPreflightFixtureProject(name string, vpsID uint, now time.Time) *ops.Pro
 		ObservedHealthyCount:   7,
 		LastCheckedAt:          &now,
 		LastDeploymentAt:       &now,
-		BackupPolicy:           "Daily PostgreSQL and uploads backups with off-VPS copy.",
+		BackupPolicy:           "Daily PostgreSQL, uploads, and site-logo-uploads backups with off-VPS copy.",
 		RestoreNotes:           "2026-08-13 restore exercise completed.",
 		Enabled:                true,
 	}

@@ -118,7 +118,6 @@ type PublicProductBrand struct {
 type PublicProductSpecificationTemplate struct {
 	Name            string                 `json:"name"`
 	Slug            string                 `json:"slug"`
-	ImageURL        string                 `json:"image_url,omitempty"`
 	SpecDefinitions []PublicSpecDefinition `json:"spec_definitions,omitempty"`
 }
 
@@ -182,10 +181,9 @@ type PublicDisplayPrice struct {
 // category navigation and filters. It does not expose the editable admin
 // fields or audit trail of product specification templates.
 type PublicProductSpecificationTemplateIndex struct {
-	ID       uint   `json:"id"`
-	Name     string `json:"name"`
-	Slug     string `json:"slug"`
-	ImageURL string `json:"image_url,omitempty"`
+	ID   uint   `json:"id"`
+	Name string `json:"name"`
+	Slug string `json:"slug"`
 }
 
 type PublicProductAttribute struct {
@@ -328,7 +326,7 @@ func PublicProductFromDomainWithLocaleAndRoutes(item productdomain.Product, disp
 		PackagingTemplate:            publicProductInformationTemplateFromDomain(item.PackagingTemplate),
 		Availability:                 availabilityForProduct(item),
 		Media:                        media,
-		ProductSpecificationTemplate: publicProductSpecificationTemplateFromDomainWithLocale(item.ProductSpecificationTemplate, locale, resolver),
+		ProductSpecificationTemplate: publicProductSpecificationTemplateFromDomain(item.ProductSpecificationTemplate),
 		SpecValues:                   specValues,
 		Variants:                     variants,
 		VariantOptionValues:          variantOptionValues,
@@ -464,19 +462,14 @@ func displayPriceForCurrency(displayCurrency string, displayPrices []PublicDispl
 	return nil
 }
 
-func publicProductSpecificationTemplateFromDomain(item *productdomain.ProductSpecificationTemplate, resolver publicmedia.Resolver) *PublicProductSpecificationTemplate {
-	return publicProductSpecificationTemplateFromDomainWithLocale(item, "", resolver)
-}
-
-func publicProductSpecificationTemplateFromDomainWithLocale(item *productdomain.ProductSpecificationTemplate, locale string, resolver publicmedia.Resolver) *PublicProductSpecificationTemplate {
+func publicProductSpecificationTemplateFromDomain(item *productdomain.ProductSpecificationTemplate) *PublicProductSpecificationTemplate {
 	if item == nil {
 		return nil
 	}
 
 	result := &PublicProductSpecificationTemplate{
-		Name:            item.NameForLocale(locale),
+		Name:            item.Name,
 		Slug:            item.Slug,
-		ImageURL:        publicmedia.URL(resolver, item.ImageURL),
 		SpecDefinitions: make([]PublicSpecDefinition, 0, len(item.SpecDefinitions)),
 	}
 	for _, definition := range item.SpecDefinitions {
@@ -504,19 +497,17 @@ func publicSpecDefinitionFromDomain(item productdomain.SpecDefinition) PublicSpe
 	}
 }
 
-func PublicProductSpecificationTemplatesFromDomain(items []productdomain.ProductSpecificationTemplate, resolvers ...publicmedia.Resolver) []PublicProductSpecificationTemplateIndex {
-	return PublicProductSpecificationTemplatesFromDomainWithLocale(items, "", resolvers...)
+func PublicProductSpecificationTemplatesFromDomain(items []productdomain.ProductSpecificationTemplate) []PublicProductSpecificationTemplateIndex {
+	return PublicProductSpecificationTemplatesFromDomainWithLocale(items, "")
 }
 
-func PublicProductSpecificationTemplatesFromDomainWithLocale(items []productdomain.ProductSpecificationTemplate, locale string, resolvers ...publicmedia.Resolver) []PublicProductSpecificationTemplateIndex {
-	resolver := publicmediaResolver(resolvers)
+func PublicProductSpecificationTemplatesFromDomainWithLocale(items []productdomain.ProductSpecificationTemplate, _ string) []PublicProductSpecificationTemplateIndex {
 	result := make([]PublicProductSpecificationTemplateIndex, 0, len(items))
 	for _, item := range items {
 		publicType := PublicProductSpecificationTemplateIndex{
-			ID:       item.ID,
-			Name:     item.NameForLocale(locale),
-			Slug:     item.Slug,
-			ImageURL: publicmedia.URL(resolver, item.ImageURL),
+			ID:   item.ID,
+			Name: item.Name,
+			Slug: item.Slug,
 		}
 		result = append(result, publicType)
 	}

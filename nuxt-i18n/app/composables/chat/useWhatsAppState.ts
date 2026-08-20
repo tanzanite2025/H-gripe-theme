@@ -675,14 +675,10 @@ export const useWhatsAppState = (
       if (!response || !Array.isArray(response.items)) { throw new Error('[CRITICAL] Invalid response format for products API'); }
       
       searchResults.value = response.items.map((item: any) => {
-        const normalized = normalizeShopProduct({
-          ...item,
-          url: item.preview_url || item.url,
-        }, 'USD', mediaContext)
+        const normalized = normalizeShopProduct(item, 'USD', mediaContext)
         return {
           ...normalized,
           name: normalized.title,
-          url: item.preview_url || normalized.url,
           priceValue: normalized.priceNumber,
           price: normalized.priceLabel,
         }

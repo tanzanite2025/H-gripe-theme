@@ -21,52 +21,58 @@
           :aria-labelledby="modalTitleId"
           tabindex="-1"
         >
-          <header class="wheelset-selection-assistant-modal__header flex shrink-0 items-center justify-between gap-4 px-4 py-2 md:px-6 md:py-2.5">
-            <div class="min-w-0">
-              <span v-if="eyebrowLabel" class="wheelset-selection-assistant-modal__eyebrow">
-                {{ eyebrowLabel }}
-              </span>
-              <h2 :id="modalTitleId" class="wheelset-selection-assistant-modal__title">
-                {{ titleLabel }}
-              </h2>
-              <p v-if="descriptionLabel" class="wheelset-selection-assistant-modal__description">
-                {{ descriptionLabel }}
-              </p>
-            </div>
+          <header class="wheelset-selection-assistant-modal__header shrink-0 px-4 py-2 md:px-6 md:py-2.5">
+            <div class="wheelset-selection-assistant-modal__header-row">
+              <div class="min-w-0">
+                <span v-if="eyebrowLabel" class="wheelset-selection-assistant-modal__eyebrow">
+                  {{ eyebrowLabel }}
+                </span>
+                <h2 :id="modalTitleId" class="wheelset-selection-assistant-modal__title">
+                  {{ titleLabel }}
+                </h2>
+                <p v-if="descriptionLabel" class="wheelset-selection-assistant-modal__description">
+                  {{ descriptionLabel }}
+                </p>
+              </div>
 
-            <button
-              type="button"
-              class="tz-global-close-btn shrink-0"
-              :aria-label="t('common.close', 'Close')"
-              :title="t('common.close', 'Close')"
-              @click="handleClose"
+              <button
+                type="button"
+                class="tz-global-close-btn shrink-0"
+                :aria-label="t('common.close', 'Close')"
+                :title="t('common.close', 'Close')"
+                @click="handleClose"
+              >
+                <Icon name="lucide:x" class="h-3.5 w-3.5" />
+              </button>
+            </div>
+            <nav
+              v-if="hasQuestionPagination"
+              class="wheelset-selection-assistant-modal__pagination-row"
             >
-              <Icon name="lucide:x" class="h-3.5 w-3.5" />
-            </button>
+              <div
+                class="wheelset-selection-assistant-modal__pagination tz-carousel-pagination"
+                :aria-label="t('wheelsetSelectionAssistant.questionPagination.label', 'Question cards')"
+              >
+                <button
+                  v-for="questionNumber in questionPaginationTotal"
+                  :key="questionNumber"
+                  type="button"
+                  class="tz-carousel-pagination__dot wheelset-selection-assistant-modal__pagination-dot"
+                  :class="{
+                    'is-active': questionNumber - 1 === questionPaginationActiveIndex,
+                    'is-future': questionNumber - 1 > questionPaginationReachableIndex,
+                  }"
+                  :aria-current="questionNumber - 1 === questionPaginationActiveIndex ? 'step' : undefined"
+                  :aria-label="t('wheelsetSelectionAssistant.questionPagination.goToQuestion', `Show question ${questionNumber}`)"
+                  :title="t('wheelsetSelectionAssistant.questionPagination.goToQuestion', `Show question ${questionNumber}`)"
+                  @click="handleQuestionPaginationClick(questionNumber - 1)"
+                />
+              </div>
+            </nav>
           </header>
-
-          <div
-            v-if="steps.length > 0"
-            class="wheelset-selection-assistant-modal__steps shrink-0 px-4 py-3 md:px-6"
-          >
-            <div class="wheelset-selection-assistant-modal__step-meta flex items-center justify-between gap-3">
-              <span>{{ currentStepLabel }}</span>
-              <span>{{ progressLabel }}</span>
-            </div>
-            <div class="mt-3 grid gap-1" :style="stepTrackStyle">
-              <span
-                v-for="step in steps"
-                :key="step.key"
-                class="wheelset-selection-assistant-modal__step-bar"
-                :class="{ 'wheelset-selection-assistant-modal__step-bar--active': isStepActiveOrComplete(step.key) }"
-                aria-hidden="true"
-              />
-            </div>
-          </div>
 
           <div class="wheelset-selection-assistant-modal__body min-h-0 flex-1 overflow-y-auto px-4 py-4 md:px-6">
             <slot
-              :current-step-key="normalizedCurrentStepKey"
               :source="source"
             />
           </div>
@@ -78,7 +84,6 @@
             <slot
               name="footer"
               :close="handleClose"
-              :current-step-key="normalizedCurrentStepKey"
             />
           </footer>
         </section>
@@ -88,12 +93,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, useSlots, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref, useSlots, watch } from 'vue'
 import { useI18n } from '#imports'
+import { wheelsetSelectionAssistantQuestionPaginationKey } from '~/composables/useWheelsetSelectionAssistantQuestionPagination'
 import type {
-  WheelsetSelectionAssistantShellStep,
   WheelsetSelectionAssistantSource,
-  WheelsetSelectionAssistantStepKey,
 } from '~/types/wheelsetSelectionAssistant'
 
 const props = withDefaults(defineProps<{
@@ -102,16 +106,10 @@ const props = withDefaults(defineProps<{
   title?: string
   eyebrow?: string
   description?: string | null
-  currentStepKey?: WheelsetSelectionAssistantStepKey | string
-  steps?: WheelsetSelectionAssistantShellStep[]
-  showSteps?: boolean
 }>(), {
   source: 'guides/wheelset-buyers',
   title: '',
   eyebrow: '',
-  currentStepKey: 'start',
-  steps: () => [],
-  showSteps: true,
 })
 
 const emit = defineEmits<{
@@ -124,6 +122,10 @@ const slots = useSlots()
 const modalElement = ref<HTMLElement | null>(null)
 const modalTitleId = 'wheelset-selection-assistant-modal-title'
 const hasFooterSlot = computed(() => Boolean(slots.footer))
+const questionPaginationTotal = ref(0)
+const questionPaginationActiveIndex = ref(0)
+const questionPaginationReachableIndex = ref(0)
+const questionPaginationJumpToIndexHandler = ref<((questionIndex: number) => void) | null>(null)
 
 const isQuickBuyWheelsetSelectionAssistantSource = computed(() => props.source === 'quick-buy/wheelset-selection-assistant')
 const titleLabel = computed(() => props.title || (
@@ -148,33 +150,21 @@ const descriptionLabel = computed(() => {
   )
 })
 
-const defaultSteps = computed<WheelsetSelectionAssistantShellStep[]>(() => [
-  { key: 'start', label: t('wheelsetSelectionAssistant.steps.start', 'Start') },
-  { key: 'knowledge', label: t('wheelsetSelectionAssistant.steps.knowledge', 'Known specs') },
-  { key: 'bike-basics', label: t('wheelsetSelectionAssistant.steps.bikeBasics', 'Bike fit') },
-  { key: 'summary', label: t('wheelsetSelectionAssistant.steps.summary', 'Summary') },
-])
-const steps = computed(() => {
-  if (!props.showSteps) return []
-  return props.steps.length > 0 ? props.steps : defaultSteps.value
-})
-const normalizedCurrentStepKey = computed(() => props.currentStepKey || steps.value[0]?.key || 'start')
-const currentStepIndex = computed(() => {
-  const index = steps.value.findIndex(step => step.key === normalizedCurrentStepKey.value)
-  return index >= 0 ? index : 0
-})
-const currentStepLabel = computed(() => steps.value[currentStepIndex.value]?.label || titleLabel.value)
-const progressLabel = computed(() => {
-  if (steps.value.length === 0) return ''
-  return `${currentStepIndex.value + 1}/${steps.value.length}`
-})
-const stepTrackStyle = computed(() => ({
-  gridTemplateColumns: `repeat(${Math.max(steps.value.length, 1)}, minmax(0, 1fr))`,
-}))
+const hasQuestionPagination = computed(() => (
+  questionPaginationTotal.value > 1 && Boolean(questionPaginationJumpToIndexHandler.value)
+))
 
-const isStepActiveOrComplete = (stepKey: string) => {
-  const index = steps.value.findIndex(step => step.key === stepKey)
-  return index >= 0 && index <= currentStepIndex.value
+provide(wheelsetSelectionAssistantQuestionPaginationKey, {
+  total: questionPaginationTotal,
+  activeIndex: questionPaginationActiveIndex,
+  reachableIndex: questionPaginationReachableIndex,
+  registerJumpToIndexHandler: handler => {
+    questionPaginationJumpToIndexHandler.value = handler
+  },
+})
+
+const handleQuestionPaginationClick = (questionIndex: number) => {
+  questionPaginationJumpToIndexHandler.value?.(questionIndex)
 }
 
 const handleClose = () => {
@@ -239,6 +229,42 @@ onBeforeUnmount(() => {
     );
 }
 
+.wheelset-selection-assistant-modal__header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.wheelset-selection-assistant-modal__pagination-row {
+  display: flex;
+  justify-content: center;
+  margin-top: 0.4rem;
+}
+
+.wheelset-selection-assistant-modal__pagination {
+  display: inline-flex;
+  justify-content: flex-end;
+  gap: 0.125rem;
+}
+
+.wheelset-selection-assistant-modal__pagination-dot {
+  width: 1.75rem;
+  height: 1.75rem;
+  min-width: 1.75rem;
+  min-height: 1.75rem;
+  --tz-carousel-pagination-dot-width: 0.42rem;
+  --tz-carousel-pagination-dot-height: 0.42rem;
+}
+
+.wheelset-selection-assistant-modal__pagination-dot.is-future {
+  opacity: 0.7;
+}
+
+.wheelset-selection-assistant-modal__pagination-dot.is-future::before {
+  background: rgba(255, 255, 255, 0.22);
+}
+
 .wheelset-selection-assistant-modal__eyebrow {
   color: rgba(181, 255, 109, 0.82);
   font-size: 0.625rem;
@@ -262,35 +288,12 @@ onBeforeUnmount(() => {
   line-height: 1.45;
 }
 
-.wheelset-selection-assistant-modal__steps,
 .wheelset-selection-assistant-modal__footer {
   background: var(--quickbuy-panel-surface-soft);
 }
 
 .wheelset-selection-assistant-modal__body {
   background: var(--tz-input-surface, #0b0b0e);
-}
-
-.wheelset-selection-assistant-modal__steps {
-  border-bottom: 1px solid var(--quickbuy-divider);
-}
-
-.wheelset-selection-assistant-modal__step-meta {
-  color: var(--tz-text-muted, #94a3b8);
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.wheelset-selection-assistant-modal__step-bar {
-  height: 0.25rem;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.14);
-}
-
-.wheelset-selection-assistant-modal__step-bar--active {
-  background: var(--tz-brand-primary, #b5ff6d);
 }
 
 .wheelset-selection-assistant-modal__footer {

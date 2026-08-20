@@ -108,6 +108,8 @@ func newPayPalDisputeInvoicePreviewHandler(t *testing.T, configureSeller bool) (
 	require.NoError(t, db.AutoMigrate(
 		&orderdomain.Order{},
 		&orderdomain.OrderItem{},
+		&paymentdomain.Refund{},
+		&paymentdomain.RefundLineItem{},
 		&paymentdomain.PayPalDispute{},
 	))
 

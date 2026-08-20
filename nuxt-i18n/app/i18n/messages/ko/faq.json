@@ -15,6 +15,7 @@
     "noResults": "\"{query}\"와 일치하는 FAQ를 찾을 수 없습니다",
     "allFaqsMetaTitle": "모든 FAQ",
     "loadingAnswers": "답변 불러오는 중",
-    "illustrationAlt": "FAQ 이미지"
+    "illustrationAlt": "FAQ 이미지",
+    "selectQuestion": "Select a question to view the answer."
   }
 }

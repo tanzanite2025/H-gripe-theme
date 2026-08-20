@@ -1,214 +1,199 @@
 <template>
-  <section class="bg-transparent text-white pt-6 pb-2">
+  <section id="home-why-choose-us" class="home-features-tabs bg-transparent text-white pt-6 pb-2">
     <div class="page-content-shell px-0 md:px-4">
-      
-      <!-- Tab Navigation -->
-      <div class="flex justify-center mb-4 sm:mb-8">
-        <div class="tz-segmented-tabs" role="tablist">
-          <button
-            v-for="(tab, index) in tabs"
-            :key="tab.id"
-            type="button"
-            @click="selectTab(tab.id)"
-            @keydown="handleTabKeydown($event, index)"
-            class="tz-segmented-tabs__button"
-            :class="{ 'is-active': currentTabId === tab.id }"
-            role="tab"
-            :aria-selected="currentTabId === tab.id"
-            :tabindex="currentTabId === tab.id ? 0 : -1"
+      <section
+        class="home-features-tabs__group"
+        aria-labelledby="why-us-features-title"
+      >
+        <h2 id="why-us-features-title" class="home-features-tabs__group-title">
+          {{ $t('home.whyChooseUs.title') }}
+        </h2>
+
+        <div class="home-features-tabs__grid home-features-tabs__grid--why_us">
+          <article
+            v-for="(item, index) in whyUsCards"
+            :key="item.titleKey"
+            class="home-features-tabs__card"
           >
-            {{ $t(tab.labelKey) }}
-          </button>
+            <div class="home-features-tabs__card-heading">
+              <span class="home-features-tabs__card-index">{{ String(index + 1).padStart(2, '0') }}</span>
+              <h3>{{ $t(item.titleKey) }}</h3>
+            </div>
+
+            <p v-if="hasContent(item.descriptionKey)" class="home-features-tabs__description">
+              {{ $t(item.descriptionKey) }}
+            </p>
+
+            <ul v-if="visibleBullets(item).length" class="home-features-tabs__bullets">
+              <li v-for="bulletKey in visibleBullets(item)" :key="bulletKey">
+                <span aria-hidden="true">•</span>
+                <span>{{ $t(bulletKey) }}</span>
+              </li>
+            </ul>
+          </article>
         </div>
-      </div>
-
-      <h2 class="sr-only">
-        {{ $t(currentTabId === 'trust' ? 'home.trust.title' : 'home.whyChooseUs.title') }}
-      </h2>
-
-      <!-- Main Content Area -->
-      <div class="grid lg:grid-cols-12 gap-3 sm:gap-6 items-start">
-        
-        <!-- Left Column: Interactive List (Summary) -->
-        <div class="lg:col-span-4 lg:pr-4 order-1 lg:self-center">
-          <!-- Mobile Title (optional, since tabs show it) -->
-          
-          <ul class="space-y-1 sm:space-y-2">
-            <li
-              v-for="(item, index) in currentTabItems"
-              :key="index"
-              class="tz-selectable-list-item p-2 sm:p-3"
-              :class="{ 'is-active': activeIndex === index }"
-              @click="activeIndex = index"
-              @mouseenter="activeIndex = index"
-            >
-              <div class="flex items-center gap-3">
-                <!-- Active Indicator Dot -->
-                <div 
-                  class="tz-selectable-list-item__indicator"
-                ></div>
-                
-                <span 
-                  class="tz-selectable-list-item__label text-sm font-medium"
-                >
-                  {{ $t(item.titleKey) }}
-                </span>
-              </div>
-            </li>
-          </ul>
-        </div>
-
-        <!-- Right Column: Visual Carousel -->
-        <div class="lg:col-span-8 order-2">
-          <StackedImageCarousel 
-            :items="currentTabItems" 
-            v-model="activeIndex"
-          >
-            <template #card="{ item, index }">
-              <div class="h-full w-full rounded-2xl premium-card p-6 flex flex-col justify-center items-center text-center border border-white/10 bg-[var(--tz-card-surface)]">
-                
-                <!-- Card Content -->
-                <h3 class="text-xl font-bold text-white mb-3">{{ $t(item.titleKey) }}</h3>
-                <p class="tz-text-secondary text-sm leading-relaxed max-w-lg mx-auto mb-6">
-                  {{ $t(item.descriptionKey) }}
-                </p>
-
-                <!-- Special Content for Payment Card (Trust Tab Index 0) -->
-                <div v-if="currentTabId === 'trust' && index === 0" class="w-full">
-                  <div class="flex flex-wrap justify-center gap-4 mb-4">
-                     <!-- Icons Row 1 -->
-                     <div class="flex gap-2">
-                        <img src="/icons/payment/visa.svg" alt="Visa" width="200" height="120" class="h-6 w-auto opacity-90" />
-                        <img src="/icons/payment/mastercard.svg" alt="Mastercard" width="200" height="120" class="h-6 w-auto opacity-90" />
-                        <img src="/icons/payment/amex.svg" alt="Amex" width="200" height="120" class="h-6 w-auto opacity-90" />
-                     </div>
-                     <!-- Icons Row 2 -->
-                     <div class="flex gap-2">
-                        <img src="/icons/payment/paypal.svg" alt="PayPal" width="200" height="120" class="h-6 w-auto opacity-90" />
-                        <img src="/icons/payment/wechatpay.svg" alt="WeChat" width="200" height="120" class="h-6 w-auto opacity-90" />
-                        <img src="/icons/payment/alipay.svg" alt="Alipay" width="200" height="120" class="h-6 w-auto opacity-90" />
-                     </div>
-                  </div>
-                  <div class="flex items-center justify-center gap-2 text-teal-300 text-xs font-mono uppercase tracking-widest mb-4">
-                    <span>SSL Secure Encyption</span>
-                    <span>🔒</span>
-                  </div>
-                  
-                  <NuxtLink to="/support/payment" class="premium-button text-sm px-6 py-2">
-                    View Payment Details
-                  </NuxtLink>
-                </div>
-
-                <!-- Standard Bullets for other cards -->
-                <ul v-else class="space-y-2 text-sm text-left inline-block mx-auto">
-                   <li v-for="bulletKey in item.bullets" :key="bulletKey" class="flex gap-3">
-                      <span class="text-teal-400 mt-1">•</span>
-                      <span class="tz-text-secondary">{{ $t(bulletKey) }}</span>
-                   </li>
-                </ul>
-
-              </div>
-            </template>
-          </StackedImageCarousel>
-        </div>
-
-      </div>
+      </section>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick, watch } from 'vue'
 import { useI18n } from '#imports'
-import StackedImageCarousel from '~/components/StackedImageCarousel.vue'
 
 const { t } = useI18n()
 
-type TabId = 'trust' | 'why_us'
-
-const tabs: { id: TabId; labelKey: string }[] = [
-  { id: 'trust', labelKey: 'home.trust.title' },
-  { id: 'why_us', labelKey: 'home.whyChooseUs.title' }
-]
-
-const currentTabId = ref<TabId>('trust')
-const activeIndex = ref(0) // Syncs with carousel
-
-const selectTab = (id: TabId) => {
-  currentTabId.value = id
+type FeatureItem = {
+  titleKey: string
+  descriptionKey: string
+  bullets: string[]
 }
 
-const handleTabKeydown = (event: KeyboardEvent, index: number) => {
-  const tabCount = tabs.length
-  let nextIndex = index
+const whyUsCards: FeatureItem[] = Array.from({ length: 6 }, (_, index) => ({
+  titleKey: `home.whyChooseUs.items.${index}.title`,
+  descriptionKey: `home.whyChooseUs.items.${index}.description`,
+  bullets: [0, 1, 2].map((bulletIndex) => `home.whyChooseUs.items.${index}.bullets.${bulletIndex}`),
+}))
 
-  switch (event.key) {
-    case 'ArrowRight':
-    case 'ArrowDown':
-      nextIndex = (index + 1) % tabCount
-      break
-    case 'ArrowLeft':
-    case 'ArrowUp':
-      nextIndex = (index - 1 + tabCount) % tabCount
-      break
-    case 'Home':
-      nextIndex = 0
-      break
-    case 'End':
-      nextIndex = tabCount - 1
-      break
-    default:
-      return
-  }
-
-  event.preventDefault()
-  const nextTab = tabs[nextIndex]
-  if (!nextTab) return
-
-  selectTab(nextTab.id)
-  const tabsContainer = event.currentTarget instanceof HTMLElement
-    ? event.currentTarget.parentElement
-    : null
-  nextTick(() => {
-    tabsContainer
-      ?.querySelectorAll<HTMLElement>('[role="tab"]')
-      .item(nextIndex)
-      ?.focus()
-  })
+const hasContent = (key: string) => {
+  return !/placeholder/i.test(String(t(key)))
 }
 
-// Reset index when tab changes
-watch(currentTabId, () => {
-  activeIndex.value = 0
-})
-
-// --- Data Definition ---
-
-// Trust (Shop With Confidence) Data
-const trustCards = computed(() => {
-  return Array.from({ length: 4 }, (_, index) => ({
-    titleKey: `home.shopWithConfidence.items.${index}.title`,
-    descriptionKey: `home.shopWithConfidence.items.${index}.description`,
-    bullets: [0, 1, 2].map((bulletIndex) => `home.shopWithConfidence.items.${index}.bullets.${bulletIndex}`),
-    // Additional metadata for list view if needed
-  }))
-})
-
-// Why Choose Us Data
-const whyUsCards = computed(() => {
-  return Array.from({ length: 6 }, (_, index) => ({
-    titleKey: `home.whyChooseUs.items.${index}.title`,
-    descriptionKey: `home.whyChooseUs.items.${index}.description`,
-    bullets: [0, 1, 2].map((bulletIndex) => `home.whyChooseUs.items.${index}.bullets.${bulletIndex}`),
-  }))
-})
-
-const currentTabItems = computed(() => {
-  return currentTabId.value === 'trust' ? trustCards.value : whyUsCards.value
-})
+const visibleBullets = (item: { bullets?: string[] }) => {
+  return (item.bullets || []).filter((key) => hasContent(key))
+}
 
 </script>
 
 <style scoped>
-/* Optional: specific visual tweaks if premium-card needs adjustment in this context */
+#home-why-choose-us {
+  scroll-margin-top: calc(var(--tz-site-header-spacer-height) + 1rem);
+}
+
+.home-features-tabs__group-title {
+  margin: 0 0 18px;
+  color: #f8fafc;
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.home-features-tabs__grid {
+  display: grid;
+  gap: 14px;
+  align-items: start;
+}
+
+.home-features-tabs__grid--why_us {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.home-features-tabs__card {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  background: var(--tz-card-surface, #111116);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 16px 36px -28px rgba(0, 0, 0, 0.96);
+}
+
+.home-features-tabs__card-heading {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.home-features-tabs__card-index {
+  flex: 0 0 auto;
+  padding-top: 2px;
+  color: var(--tz-brand-primary, #b5ff6d);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.home-features-tabs__card-heading h3 {
+  min-width: 0;
+  margin: 0;
+  color: #f8fafc;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.home-features-tabs__description {
+  margin: 0;
+  color: var(--tz-text-secondary, rgba(203, 213, 225, 0.72));
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.home-features-tabs__bullets {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  color: var(--tz-text-secondary, rgba(203, 213, 225, 0.72));
+  font-size: 13px;
+  line-height: 1.35;
+  list-style: none;
+}
+
+.home-features-tabs__bullets li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+}
+
+.home-features-tabs__bullets li > span:first-child {
+  color: var(--tz-brand-primary, #b5ff6d);
+}
+
+@media (max-width: 900px) {
+  .home-features-tabs__grid--why_us {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .home-features-tabs__group-title {
+    margin-bottom: 14px;
+    font-size: 20px;
+  }
+
+  .home-features-tabs__grid {
+    gap: 10px;
+  }
+
+  .home-features-tabs__grid--why_us {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .home-features-tabs__card {
+    gap: 9px;
+    padding: 13px;
+    border-radius: 14px;
+  }
+
+  .home-features-tabs__card-heading {
+    gap: 7px;
+  }
+
+  .home-features-tabs__card-heading h3 {
+    font-size: 14px;
+  }
+
+  .home-features-tabs__description,
+  .home-features-tabs__bullets {
+    font-size: 12px;
+  }
+
+}
 </style>

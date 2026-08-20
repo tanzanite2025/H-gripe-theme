@@ -64,7 +64,7 @@ const orderNumber = computed(() => firstQueryValue(route.query.order_number).tri
 }
 
 .paypal-cancel-order {
-  font-family: var(--tz-font-system);
+  font-family: var(--tz-font-ui);
   color: #fff !important;
 }
 

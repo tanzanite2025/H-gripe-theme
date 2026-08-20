@@ -71,6 +71,7 @@ func (h *Handler) CreateWechatOrder(c *gin.Context) {
 	if !h.allowPaymentGatewayAttemptOrRespondWithFallbackRecommendation(c, pgateway.GatewayWechat) {
 		return
 	}
+	defer h.releasePaymentGatewayAttemptIfUnrecorded(c, pgateway.GatewayWechat)
 	gateway, err := h.createPaymentGatewayFromConfiguration(config)
 	if err != nil {
 		h.respondToPaymentGatewayOperationFailure(
@@ -83,13 +84,24 @@ func (h *Handler) CreateWechatOrder(c *gin.Context) {
 		return
 	}
 
+	attempt, ok := h.ensurePaymentAttempt(
+		c,
+		pgateway.GatewayWechat,
+		"wechat",
+		orderRecord,
+		orderRecord.TotalAmount,
+		orderCurrency,
+	)
+	if !ok {
+		return
+	}
 	paymentResponse, err := gateway.CreatePayment(c.Request.Context(), &pgateway.PaymentRequest{
 		Amount:         orderRecord.TotalAmount,
 		Currency:       orderCurrency,
 		OrderID:        orderRecord.OrderNumber,
 		Description:    fmt.Sprintf("Order %s", orderRecord.OrderNumber),
 		NotifyURL:      h.providerWebhookURL(c, pgateway.GatewayWechat),
-		IdempotencyKey: fmt.Sprintf("order-%d-wechat-native", orderRecord.ID),
+		IdempotencyKey: attempt.ProviderRequestKey,
 		Customer:       paymentCustomerFromOrder(orderRecord),
 		Metadata: map[string]string{
 			"order_number": orderRecord.OrderNumber,
@@ -98,6 +110,18 @@ func (h *Handler) CreateWechatOrder(c *gin.Context) {
 		},
 	})
 	if err != nil {
+		_ = h.paymentService.RecordGatewayPaymentAttempt(service.GatewayPaymentAttemptInput{
+			Provider:           string(pgateway.GatewayWechat),
+			OrderNumber:        orderRecord.OrderNumber,
+			TransactionID:      attempt.TransactionID,
+			AttemptKey:         attempt.AttemptKey,
+			ProviderRequestKey: attempt.ProviderRequestKey,
+			PaymentMethod:      "wechat",
+			Status:             "failed",
+			Amount:             orderRecord.TotalAmount,
+			Currency:           orderCurrency,
+			ErrorMessage:       err.Error(),
+		})
 		h.respondToPaymentGatewayOperationFailure(
 			c,
 			pgateway.GatewayWechat,
@@ -107,18 +131,20 @@ func (h *Handler) CreateWechatOrder(c *gin.Context) {
 		)
 		return
 	}
-	h.recordSuccessfulPaymentGatewayAPIResponse(c.Request.Context(), pgateway.GatewayWechat)
+	h.recordSuccessfulPaymentGatewayAPIResponse(c, pgateway.GatewayWechat)
 
 	gatewayResponse, _ := json.Marshal(paymentResponse)
 	if err := h.paymentService.RecordGatewayPaymentAttempt(service.GatewayPaymentAttemptInput{
-		Provider:        string(pgateway.GatewayWechat),
-		OrderNumber:     orderRecord.OrderNumber,
-		TransactionID:   gatewayTransactionID(paymentResponse, orderRecord.OrderNumber),
-		PaymentMethod:   "wechat",
-		Status:          wechatAttemptStatus(paymentResponse.Status),
-		Amount:          paymentResponse.Amount,
-		Currency:        paymentResponse.Currency,
-		GatewayResponse: string(gatewayResponse),
+		Provider:           string(pgateway.GatewayWechat),
+		OrderNumber:        orderRecord.OrderNumber,
+		TransactionID:      gatewayTransactionID(paymentResponse, orderRecord.OrderNumber),
+		AttemptKey:         attempt.AttemptKey,
+		ProviderRequestKey: attempt.ProviderRequestKey,
+		PaymentMethod:      "wechat",
+		Status:             wechatAttemptStatus(paymentResponse.Status),
+		Amount:             paymentResponse.Amount,
+		Currency:           paymentResponse.Currency,
+		GatewayResponse:    string(gatewayResponse),
 	}); err != nil {
 		respondVerifiedProviderPaymentError(c, err)
 		return
@@ -170,6 +196,10 @@ func (h *Handler) ConfirmWechatOrder(c *gin.Context) {
 		apierror.RespondError(c, http.StatusServiceUnavailable, "wechat_not_configured", "WeChat Pay is not configured")
 		return
 	}
+	if !h.allowPaymentGatewayAttemptOrRespondWithFallbackRecommendation(c, pgateway.GatewayWechat) {
+		return
+	}
+	defer h.releasePaymentGatewayAttemptIfUnrecorded(c, pgateway.GatewayWechat)
 
 	gateway, err := h.createPaymentGatewayFromConfiguration(config)
 	if err != nil {
@@ -193,7 +223,7 @@ func (h *Handler) ConfirmWechatOrder(c *gin.Context) {
 		)
 		return
 	}
-	h.recordSuccessfulPaymentGatewayAPIResponse(c.Request.Context(), pgateway.GatewayWechat)
+	h.recordSuccessfulPaymentGatewayAPIResponse(c, pgateway.GatewayWechat)
 	if !providerPaymentResponseMatchesOrder(paymentResponse, orderRecord.OrderNumber) {
 		apierror.RespondError(c, http.StatusBadRequest, "wechat_order_mismatch", "WeChat Pay trade does not match this order")
 		return

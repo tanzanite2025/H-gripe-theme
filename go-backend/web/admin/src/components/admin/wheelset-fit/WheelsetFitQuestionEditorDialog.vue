@@ -1,18 +1,36 @@
 <template>
   <Dialog :open="open" @update:open="emit('update:open', $event)">
- <DialogContent size="xl" class="max-h-[calc(100dvh-1rem)] overflow-y-auto p-4 sm:p-5" @open-auto-focus.prevent>
- <form class="space-y-5" @submit.prevent="emit('submit')">
+    <DialogContent size="xl" class="max-h-[calc(100dvh-1rem)] overflow-y-auto p-4 sm:p-5" @open-auto-focus.prevent>
+      <form class="space-y-5" @submit.prevent="emit('submit')">
         <DialogHeader>
           <DialogTitle>{{ mode === 'create' ? '新增问题' : '编辑问题' }}</DialogTitle>
           <DialogDescription>单选题按固定顺序展示；内容按语言分别维护。</DialogDescription>
         </DialogHeader>
 
- <section class="grid gap-3 border-t border-dashed border-border/70 pt-4 sm:grid-cols-2">
-          <AdminFormField label="问题 Key" required>
- <Input v-model="form.question_key" class="font-mono" placeholder="rear_axle" :disabled="disabled" />
+        <section class="grid gap-3 border-t border-dashed border-border/70 pt-4 sm:grid-cols-2">
+          <AdminFormField label="问题 Key" required description="从选型配置 Key 管理中选择启用项">
+            <Select v-model="form.question_key" :disabled="disabled || selectionConfigurationKeyOptionsLoading">
+              <SelectTrigger class="w-full font-mono">
+                <SelectValue placeholder="选择问题 Key" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem v-for="option in questionKeySelectionOptions" :key="option.code" :value="option.code">
+                  {{ option.display_label }} · {{ option.code }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </AdminFormField>
-          <AdminFormField label="回答 Key" required>
- <Input v-model="form.answer_key" class="font-mono" placeholder="rear_axle" :disabled="disabled" />
+          <AdminFormField label="回答 Key" required description="从选型配置 Key 管理中选择启用项">
+            <Select v-model="form.answer_key" :disabled="disabled || selectionConfigurationKeyOptionsLoading">
+              <SelectTrigger class="w-full font-mono">
+                <SelectValue placeholder="选择回答 Key" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem v-for="option in answerKeySelectionOptions" :key="option.code" :value="option.code">
+                  {{ option.display_label }} · {{ option.code }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </AdminFormField>
 
  <div class="flex flex-wrap gap-x-6 gap-y-3 sm:col-span-2">
@@ -42,17 +60,17 @@
           </div>
 
  <div class="grid gap-3">
-            <AdminFormField label="问题标题" :required="activeLocale === sourceLocale">
-              <Input v-model="currentQuestionTranslation.prompt" placeholder="请输入问题标题" :disabled="disabled" />
-            </AdminFormField>
- <div class="grid gap-3 sm:grid-cols-2">
+            <div class="grid gap-3 sm:grid-cols-2">
+              <AdminFormField label="问题标题" :required="activeLocale === sourceLocale">
+                <Input v-model="currentQuestionTranslation.prompt" placeholder="请输入问题标题" :disabled="disabled" />
+              </AdminFormField>
               <AdminFormField label="HELP 标题">
                 <Input v-model="currentQuestionTranslation.help_title" placeholder="为什么需要这个？" :disabled="disabled" />
               </AdminFormField>
-              <AdminFormField label="HELP 内容">
- <Textarea v-model="currentQuestionTranslation.help_body" class="min-h-20 resize-y" placeholder="请输入帮助说明" :disabled="disabled" />
-              </AdminFormField>
             </div>
+            <AdminFormField label="HELP 内容">
+ <Textarea v-model="currentQuestionTranslation.help_body" class="min-h-20 resize-y" placeholder="请输入帮助说明" :disabled="disabled" />
+            </AdminFormField>
           </div>
         </section>
 
@@ -103,26 +121,66 @@
                 </div>
               </div>
 
- <div class="grid gap-3 sm:grid-cols-2">
-                <AdminFormField label="选项 Key" required>
- <Input v-model="option.option_key" class="font-mono" placeholder="boost_148" :disabled="disabled" />
-                </AdminFormField>
-                <AdminFormField label="回答值" required>
- <Input v-model="option.answer_value" class="font-mono" placeholder="148_boost" :disabled="disabled" />
-                </AdminFormField>
-                <AdminFormField label="选项名称" :required="activeLocale === sourceLocale">
-                  <Input v-model="optionTranslation(option).label" placeholder="请输入选项名称" :disabled="disabled" />
-                </AdminFormField>
-                <AdminFormField label="选项说明">
-                  <Input v-model="optionTranslation(option).description" placeholder="可选" :disabled="disabled" />
-                </AdminFormField>
+              <div class="space-y-3">
+                <div class="rounded-lg border border-border/60 bg-muted/20 px-3 py-2">
+                  <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">
+                    前台展示文案 · 当前语言
+                  </p>
+                  <p class="mt-1 text-xs font-bold text-muted-foreground">
+                    用户在前台看到的是下面的名称和说明；切换右上角语言后，分别维护对应语言的文字。
+                  </p>
+                </div>
+
+                <div class="grid gap-3 sm:grid-cols-2">
+                  <AdminFormField
+                    label="前台选项名称"
+                    :required="activeLocale === sourceLocale"
+                    description="用户实际看到的选项文字，例如：山地车"
+                  >
+                    <Input v-model="optionTranslation(option).label" placeholder="请输入前台显示名称" :disabled="disabled" />
+                  </AdminFormField>
+                  <AdminFormField
+                    label="前台选项说明"
+                    description="显示在选项名称下方，可选"
+                  >
+                    <Input v-model="optionTranslation(option).description" placeholder="可选" :disabled="disabled" />
+                  </AdminFormField>
+                </div>
+
+                <details class="rounded-lg border border-dashed border-border/70 px-3 py-2">
+                  <summary class="flex cursor-pointer list-none items-center justify-between gap-3 text-left [&::-webkit-details-marker]:hidden">
+                    <span class="text-xs font-black text-muted-foreground/70">系统字段 · 不展示给用户</span>
+                    <ChevronRight class="size-4 shrink-0 text-muted-foreground" />
+                  </summary>
+                  <div class="mt-3 space-y-3">
+                    <p class="text-xs font-bold text-muted-foreground">
+                      这两个值用于系统识别选项、生成答案和执行商品筛选；即使前台名称按语言变化，也应保持稳定。
+                    </p>
+                    <div class="grid gap-3 sm:grid-cols-2">
+                      <AdminFormField
+                        label="内部选项 Key"
+                        required
+                        description="系统唯一标识，使用小写 snake_case，例如 boost_148"
+                      >
+                        <Input v-model="option.option_key" class="font-mono" placeholder="boost_148" :disabled="disabled" />
+                      </AdminFormField>
+                      <AdminFormField
+                        label="系统回答值"
+                        required
+                        description="提交到选型结果和客服数据的标准值，例如 mtb"
+                      >
+                        <Input v-model="option.answer_value" class="font-mono" placeholder="mtb" :disabled="disabled" />
+                      </AdminFormField>
+                    </div>
+                  </div>
+                </details>
               </div>
 
-              <AdminFormField label="商品筛选规则">
-                <Textarea
+              <AdminFormField label="商品筛选规则" description="从轮组商品真实动态值里选择，自动生成规则。">
+                <WheelsetFitProductFilterBuilder
                   v-model="option.product_filter_effects_json"
- class="min-h-20 resize-y font-mono text-xs"
-                  placeholder="{&quot;spec_filters&quot;:{&quot;axle&quot;:[&quot;boost_148&quot;]}}"
+                  :filter-options="productFilterOptions"
+                  :loading="productFilterOptionsLoading"
                   :disabled="disabled"
                 />
               </AdminFormField>
@@ -158,14 +216,18 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { ChevronDown, ChevronUp, Plus, Save, Trash2 } from '@lucide/vue'
+import { ChevronDown, ChevronRight, ChevronUp, Plus, Save, Trash2 } from '@lucide/vue'
 import AdminFormField from '@/components/admin/AdminFormField.vue'
+import WheelsetFitProductFilterBuilder from '@/components/admin/wheelset-fit/WheelsetFitProductFilterBuilder.vue'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import type { SelectionConfigurationKeyOption } from '@/api/selectionConfigurationKeys'
+import type { WheelsetFitProductFilterOption } from '@/api/wheelsetFitQuestionnaire'
 import type { WheelsetFitQuestionForm, WheelsetFitQuestionOptionForm } from '@/modules/wheelset-fit/questionnaire'
 
 interface LanguageOption {
@@ -179,11 +241,21 @@ const props = withDefaults(defineProps<{
   form: WheelsetFitQuestionForm
   languageOptions: LanguageOption[]
   sourceLocale: string
+  productFilterOptions: WheelsetFitProductFilterOption[]
+  productFilterOptionsLoading?: boolean
+  questionKeyOptions?: SelectionConfigurationKeyOption[]
+  answerKeyOptions?: SelectionConfigurationKeyOption[]
+  selectionConfigurationKeyOptionsLoading?: boolean
   disabled?: boolean
   saving?: boolean
 }>(), {
   open: false,
   mode: 'create',
+  productFilterOptions: () => [],
+  productFilterOptionsLoading: false,
+  questionKeyOptions: () => [],
+  answerKeyOptions: () => [],
+  selectionConfigurationKeyOptionsLoading: false,
   disabled: false,
   saving: false,
 })
@@ -203,6 +275,31 @@ const currentQuestionTranslation = computed(() => {
   if (existing) return existing
   return props.form.translations[0]
 })
+
+const buildSelectionConfigurationKeyOptions = (
+  options: SelectionConfigurationKeyOption[],
+  currentValue: string,
+) => {
+  const normalizedCurrentValue = currentValue.trim()
+  if (!normalizedCurrentValue) return options
+  if (options.some((option) => option.code === normalizedCurrentValue)) return options
+  return [
+    {
+      id: 0,
+      code: normalizedCurrentValue,
+      display_label: `${normalizedCurrentValue}（当前值）`,
+    },
+    ...options,
+  ]
+}
+
+const questionKeySelectionOptions = computed(() => (
+  buildSelectionConfigurationKeyOptions(props.questionKeyOptions, props.form.question_key)
+))
+
+const answerKeySelectionOptions = computed(() => (
+  buildSelectionConfigurationKeyOptions(props.answerKeyOptions, props.form.answer_key)
+))
 
 watch(
   () => [props.open, props.sourceLocale],

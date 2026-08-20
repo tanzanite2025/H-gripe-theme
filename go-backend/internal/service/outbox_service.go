@@ -5,24 +5,30 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"os"
+	"math/rand"
 	"time"
 
 	"commerce-platform/internal/domain/outbox"
 	appLogger "commerce-platform/internal/pkg/logger"
 	"commerce-platform/internal/pkg/metrics"
+	"commerce-platform/internal/pkg/resilience"
 	"commerce-platform/internal/repository"
 
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
 const (
-	defaultOutboxBatchLimit       = 100
-	defaultOutboxLockTimeout      = 5 * time.Minute
-	defaultOutboxRetryBaseDelay   = 30 * time.Second
-	defaultOutboxRetryMaxDelay    = 15 * time.Minute
-	maxOutboxDispatchErrorMessage = 2000
+	defaultOutboxBatchLimit            = 100
+	defaultOutboxLockTimeout           = 5 * time.Minute
+	defaultOutboxRetryBaseDelay        = 30 * time.Second
+	defaultOutboxRetryMaxDelay         = 15 * time.Minute
+	defaultOutboxRetryJitter           = 15 * time.Second
+	defaultOutboxUnknownReconcileDelay = 15 * time.Minute
+	maxOutboxDispatchErrorMessage      = 2000
 )
+
+var outboxRetryJitterInt63n = rand.Int63n
 
 type OutboxEventHandler func(ctx context.Context, event outbox.Event) error
 
@@ -30,6 +36,7 @@ type OutboxDispatchResult struct {
 	Claimed    int    `json:"claimed"`
 	Processed  int    `json:"processed"`
 	Failed     int    `json:"failed"`
+	Unknown    int    `json:"unknown"`
 	DeadLetter int    `json:"dead_letter"`
 	Unhandled  int    `json:"unhandled"`
 	BatchLimit int    `json:"batch_limit"`
@@ -46,7 +53,7 @@ type OutboxService struct {
 func NewOutboxService(repo *repository.OutboxRepository) *OutboxService {
 	return &OutboxService{
 		repo:        repo,
-		workerID:    fmt.Sprintf("outbox-%d-%d", os.Getpid(), time.Now().UnixNano()),
+		workerID:    fmt.Sprintf("outbox-%s", uuid.NewString()),
 		handlers:    map[string]OutboxEventHandler{},
 		lockTimeout: defaultOutboxLockTimeout,
 	}
@@ -117,7 +124,21 @@ func (s *OutboxService) ProcessPending(ctx context.Context, now time.Time, limit
 			continue
 		}
 
-		if err := handler(ctx, event); err != nil {
+		if err := s.handleEventWithLeaseHeartbeat(ctx, event, handler); err != nil {
+			if errors.Is(err, repository.ErrOutboxOwnershipLost) {
+				return result, err
+			}
+			if errors.Is(err, resilience.ErrExternalOutcomeUnknown) {
+				if markErr := s.markDispatchUnknown(event, err, now); markErr != nil {
+					return result, markErr
+				}
+				result.Unknown++
+				s.recordCustomerServiceRealtimeOutboxOutcome(event, "unknown")
+				continue
+			}
+			if ctxErr := ctx.Err(); ctxErr != nil {
+				return result, ctxErr
+			}
 			if markErr := s.markDispatchFailure(event, err, now); markErr != nil {
 				return result, markErr
 			}
@@ -130,7 +151,7 @@ func (s *OutboxService) ProcessPending(ctx context.Context, now time.Time, limit
 			continue
 		}
 
-		if err := s.repo.MarkProcessed(event.ID, now); err != nil {
+		if err := s.repo.MarkProcessedByWorker(event.ID, s.workerID, now); err != nil {
 			return result, err
 		}
 		result.Processed++
@@ -163,11 +184,38 @@ func (s *OutboxService) RefreshCustomerServiceRealtimeMetrics() error {
 		outbox.EventStatusPending,
 		outbox.EventStatusProcessing,
 		outbox.EventStatusFailed,
+		outbox.EventStatusUnknown,
 		outbox.EventStatusDeadLetter,
 	} {
 		metrics.CustomerServiceRealtimeOutboxEvents.WithLabelValues(status).Set(float64(counts[status]))
 	}
 	return nil
+}
+
+func (s *OutboxService) ListUnknownEvents(limit int) ([]outbox.Event, error) {
+	if s == nil || s.repo == nil {
+		return nil, nil
+	}
+	return s.repo.FindUnknownEvents(limit)
+}
+
+// ResumeUnknownEvent is an explicit reconciliation decision. It is not called
+// by the normal worker because an unknown external result must be verified
+// before the side effect is attempted again.
+func (s *OutboxService) ResumeUnknownEvent(id uint, nextAvailableAt time.Time, note string, resumedAt time.Time) error {
+	if s == nil || s.repo == nil {
+		return repository.ErrOutboxUnknownNotFound
+	}
+	return s.repo.ResumeUnknownEvent(id, nextAvailableAt, note, resumedAt)
+}
+
+// MarkUnknownEventProcessed records that reconciliation confirmed the external
+// side effect already happened, so the local event must not be sent again.
+func (s *OutboxService) MarkUnknownEventProcessed(id uint, note string, processedAt time.Time) error {
+	if s == nil || s.repo == nil {
+		return repository.ErrOutboxUnknownNotFound
+	}
+	return s.repo.MarkUnknownProcessed(id, note, processedAt)
 }
 
 func (s *OutboxService) refreshCustomerServiceRealtimeOutboxMetrics() {
@@ -190,19 +238,126 @@ func (s *OutboxService) markDispatchFailure(event outbox.Event, dispatchErr erro
 	if status != outbox.EventStatusDeadLetter {
 		nextRetryAt = now.Add(outboxRetryDelay(event.Attempts))
 	}
-	return s.repo.MarkFailed(event.ID, status, truncateOutboxError(dispatchErr.Error()), nextRetryAt, now)
+	return s.repo.MarkFailedByWorker(
+		event.ID,
+		s.workerID,
+		status,
+		truncateOutboxError(dispatchErr.Error()),
+		nextRetryAt,
+		now,
+	)
+}
+
+func (s *OutboxService) markDispatchUnknown(event outbox.Event, dispatchErr error, now time.Time) error {
+	if dispatchErr == nil {
+		dispatchErr = resilience.ErrExternalOutcomeUnknown
+	}
+	return s.repo.MarkUnknownByWorker(
+		event.ID,
+		s.workerID,
+		truncateOutboxError(dispatchErr.Error()),
+		now.Add(defaultOutboxUnknownReconcileDelay),
+		now,
+	)
+}
+
+func (s *OutboxService) handleEventWithLeaseHeartbeat(
+	ctx context.Context,
+	event outbox.Event,
+	handler OutboxEventHandler,
+) error {
+	if s == nil || s.repo == nil || handler == nil {
+		return nil
+	}
+	interval := outboxLeaseHeartbeatInterval(s.lockTimeout)
+	if interval <= 0 {
+		return handler(ctx, event)
+	}
+
+	handlerCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	stop := make(chan struct{})
+	done := make(chan struct{})
+	heartbeatErr := make(chan error, 1)
+	go func() {
+		defer close(done)
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-handlerCtx.Done():
+				return
+			case <-stop:
+				return
+			case tick := <-ticker.C:
+				if err := s.repo.RefreshProcessingLockByWorker(event.ID, s.workerID, tick.UTC()); err != nil {
+					// Once the lease heartbeat is no longer reliable, the
+					// external outcome cannot be proven safe to replay.
+					heartbeatErr <- errors.Join(err, resilience.ErrExternalOutcomeUnknown)
+					cancel()
+					return
+				}
+			}
+		}
+	}()
+
+	err := handler(handlerCtx, event)
+	close(stop)
+	<-done
+
+	select {
+	case leaseErr := <-heartbeatErr:
+		if leaseErr != nil {
+			return leaseErr
+		}
+	default:
+	}
+	return err
+}
+
+func outboxLeaseHeartbeatInterval(lockTimeout time.Duration) time.Duration {
+	if lockTimeout <= 0 {
+		return 0
+	}
+	interval := lockTimeout / 3
+	if interval > 30*time.Second {
+		interval = 30 * time.Second
+	}
+	if interval <= 0 {
+		interval = lockTimeout / 2
+	}
+	if interval <= 0 {
+		return 0
+	}
+	return interval
 }
 
 func outboxRetryDelay(attempt int) time.Duration {
 	if attempt <= 0 {
-		return defaultOutboxRetryBaseDelay
+		attempt = 1
 	}
 	multiplier := math.Pow(2, float64(attempt-1))
 	delay := time.Duration(multiplier) * defaultOutboxRetryBaseDelay
 	if delay > defaultOutboxRetryMaxDelay {
-		return defaultOutboxRetryMaxDelay
+		delay = defaultOutboxRetryMaxDelay
 	}
-	return delay
+	return delay + outboxRetryJitter(delay)
+}
+
+func outboxRetryJitter(delay time.Duration) time.Duration {
+	if defaultOutboxRetryJitter <= 0 || delay >= defaultOutboxRetryMaxDelay {
+		return 0
+	}
+	jitterLimit := defaultOutboxRetryJitter
+	if remaining := defaultOutboxRetryMaxDelay - delay; remaining < jitterLimit {
+		jitterLimit = remaining
+	}
+	if jitterLimit <= 0 {
+		return 0
+	}
+	return time.Duration(outboxRetryJitterInt63n(int64(jitterLimit)))
 }
 
 func truncateOutboxError(value string) string {

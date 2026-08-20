@@ -2,5 +2,11 @@
   "searchHint": {
     "title": "Cari produk dan FAQ",
     "body": "Klik untuk mencari produk, FAQ, dan lainnya."
+  },
+  "globalNavigationTransition": {
+    "ariaLabel": "Global content navigation",
+    "optionsLabel": "Choose a destination",
+    "trigger": "Open content navigation",
+    "triggerBody": "Choose Products, FAQ, Pages, or Blog."
   }
 }

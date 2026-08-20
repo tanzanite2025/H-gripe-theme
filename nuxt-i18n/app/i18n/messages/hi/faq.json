@@ -15,6 +15,7 @@
     "noResults": "\"{query}\" से मेल खाने वाला कोई FAQ नहीं मिला",
     "allFaqsMetaTitle": "सभी FAQ",
     "loadingAnswers": "उत्तर लोड हो रहे हैं",
-    "illustrationAlt": "FAQ चित्र"
+    "illustrationAlt": "FAQ चित्र",
+    "selectQuestion": "Select a question to view the answer."
   }
 }

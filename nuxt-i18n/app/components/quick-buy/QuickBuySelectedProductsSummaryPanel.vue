@@ -6,7 +6,7 @@ import type {
 } from '~/utils/quickBuy/selection'
 import QuickBuySelectedProductEditorDialog from '~/components/quick-buy/QuickBuySelectedProductEditorDialog.vue'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   title: string
   slots: QuickBuySelectedProductStepSlot[]
   totalQty: number
@@ -26,7 +26,12 @@ const props = defineProps<{
   doneLabel: string
   previousProductLabel: string
   nextProductLabel: string
-}>()
+  showHeader?: boolean
+  mobileStepList?: boolean
+}>(), {
+  showHeader: true,
+  mobileStepList: false,
+})
 
 const {
   title,
@@ -48,6 +53,8 @@ const {
   doneLabel,
   previousProductLabel,
   nextProductLabel,
+  showHeader,
+  mobileStepList,
 } = toRefs(props)
 
 const emit = defineEmits<{
@@ -56,6 +63,7 @@ const emit = defineEmits<{
   updateQuantity: [product: QuickBuySelectedProduct, value: string]
   addToCart: []
   directPayment: []
+  selectStep: [stepIndex: number]
 }>()
 
 const selectedRailIndex = ref(0)
@@ -123,11 +131,26 @@ const handleEditorUpdateQuantity = (
 ) => {
   emit('updateQuantity', product, value)
 }
+
+const handleStepSlotClick = (stepIndex: number) => {
+  if (!mobileStepList.value) return
+  emit('selectStep', stepIndex)
+}
+
+const handleStepSlotKeydown = (event: KeyboardEvent, stepIndex: number) => {
+  if (!mobileStepList.value || (event.key !== 'Enter' && event.key !== ' ')) return
+  event.preventDefault()
+  emit('selectStep', stepIndex)
+}
 </script>
 
 <template>
-  <aside class="quickbuy-summary-panel" :aria-label="title">
-    <div class="quickbuy-summary-panel-header">
+  <aside
+    class="quickbuy-summary-panel"
+    :class="{ 'quickbuy-summary-panel--mobile-step-list': mobileStepList }"
+    :aria-label="title"
+  >
+    <div v-if="showHeader" class="quickbuy-summary-panel-header">
       <div class="quickbuy-panel-heading-row quickbuy-panel-heading-row--summary">
         <h3 class="my-0 text-base font-semibold text-white">
           {{ title }}
@@ -149,64 +172,140 @@ const handleEditorUpdateQuantity = (
       </button>
 
       <div class="quickbuy-selected-list">
-      <div
-        v-for="slot in slots"
-        :key="slot.slotKey"
-        ref="selectedRailItems"
-        class="quickbuy-selected-step-slot"
-        :class="{ 'quickbuy-selected-step-slot--filled': slot.item }"
-      >
-        <template v-if="slot.item">
-          <StorefrontImage
-            v-if="slot.item.thumbnail"
-            :src="slot.item.thumbnail"
-            :alt="slot.item.title"
-            class="quickbuy-selected-card-image"
-            preset="thumbnail"
-          />
-          <span v-else class="quickbuy-selected-card-image quickbuy-selected-card-image--empty">
-            <Icon name="lucide:image" class="h-4 w-4" aria-hidden="true" />
-          </span>
-          <span class="quickbuy-selected-card-content">
-            <span class="quickbuy-selected-card-step">
-              {{ slot.stepLabel }}
-            </span>
-            <span class="quickbuy-selected-card-title">{{ slot.item.title }}</span>
-            <span class="quickbuy-selected-card-meta">
-              <span>{{ itemsLabel }}: {{ slot.item.quantity }}</span>
-              <span v-if="slot.additionalItemCount" class="quickbuy-selected-card-extra-count">
-                +{{ slot.additionalItemCount }}
+        <template v-if="mobileStepList">
+          <div
+            v-for="slot in slots"
+            :key="slot.slotKey"
+            class="quickbuy-mobile-step-group"
+          >
+            <button
+              class="quickbuy-mobile-step-trigger"
+              type="button"
+              :aria-label="`${slot.stepLabel}: ${slot.item?.title || title}`"
+              @click="handleStepSlotClick(slot.index)"
+              @keydown="handleStepSlotKeydown($event, slot.index)"
+            >
+              <span class="quickbuy-mobile-step-trigger__index">{{ slot.index }}</span>
+              <span class="quickbuy-mobile-step-trigger__label">{{ slot.stepLabel }}</span>
+              <Icon
+                name="lucide:chevron-right"
+                class="quickbuy-mobile-step-chevron"
+                aria-hidden="true"
+              />
+            </button>
+
+            <div
+              v-if="slot.item"
+              class="quickbuy-mobile-product-row quickbuy-mobile-product-row--filled"
+            >
+              <StorefrontImage
+                v-if="slot.item.thumbnail"
+                :src="slot.item.thumbnail"
+                :alt="slot.item.title"
+                class="quickbuy-selected-card-image"
+                preset="thumbnail"
+              />
+              <span v-else class="quickbuy-selected-card-image quickbuy-selected-card-image--empty">
+                <Icon name="lucide:image" class="h-4 w-4" aria-hidden="true" />
               </span>
-            </span>
-          </span>
-          <span
-            class="quickbuy-selected-card-quantity"
-            :aria-label="`${itemsLabel} ${slot.item.title}: ${slot.item.quantity}`"
-          >
-            {{ slot.item.quantity }}
-          </span>
-          <button
-            class="quickbuy-selected-card-details"
-            type="button"
-            :aria-label="`${viewDetailsLabel}: ${slot.item.title}`"
-            :title="viewDetailsLabel"
-            @click="openSelectedProductEditor(slot.item)"
-          >
-            <Icon name="lucide:sliders-horizontal" class="h-3.5 w-3.5" aria-hidden="true" />
-            <span>{{ viewDetailsLabel }}</span>
-          </button>
+              <span class="quickbuy-selected-card-content">
+                <span class="quickbuy-selected-card-title">{{ slot.item.title }}</span>
+                <span class="quickbuy-selected-card-meta">
+                  <span>{{ itemsLabel }}: {{ slot.item.quantity }}</span>
+                  <span v-if="slot.additionalItemCount" class="quickbuy-selected-card-extra-count">
+                    +{{ slot.additionalItemCount }}
+                  </span>
+                </span>
+              </span>
+              <span
+                class="quickbuy-selected-card-quantity"
+                :aria-label="`${itemsLabel} ${slot.item.title}: ${slot.item.quantity}`"
+              >
+                {{ slot.item.quantity }}
+              </span>
+              <button
+                class="quickbuy-selected-card-details quickbuy-mobile-product-details"
+                type="button"
+                :aria-label="`${viewDetailsLabel}: ${slot.item.title}`"
+                :title="viewDetailsLabel"
+                @click="openSelectedProductEditor(slot.item)"
+              >
+                <Icon name="lucide:sliders-horizontal" class="h-3.5 w-3.5" aria-hidden="true" />
+                <span>{{ viewDetailsLabel }}</span>
+              </button>
+            </div>
+            <button
+              v-else
+              class="quickbuy-mobile-product-row quickbuy-mobile-product-row--empty"
+              type="button"
+              :aria-label="`${slot.stepLabel}: ${title}`"
+              :title="`${slot.stepLabel}: ${title}`"
+              @click="handleStepSlotClick(slot.index)"
+            >
+              <Icon name="lucide:plus" class="quickbuy-mobile-product-plus" aria-hidden="true" />
+            </button>
+          </div>
         </template>
         <template v-else>
-          <span class="quickbuy-selected-step-slot-placeholder">
-            <span class="quickbuy-selected-step-slot-placeholder__index">
-              {{ slot.index }}
-            </span>
-            <span class="quickbuy-selected-step-slot-placeholder__label">
-              {{ slot.stepLabel }}
-            </span>
-          </span>
+          <div
+            v-for="slot in slots"
+            :key="slot.slotKey"
+            ref="selectedRailItems"
+            class="quickbuy-selected-step-slot"
+            :class="{ 'quickbuy-selected-step-slot--filled': slot.item }"
+          >
+            <template v-if="slot.item">
+              <StorefrontImage
+                v-if="slot.item.thumbnail"
+                :src="slot.item.thumbnail"
+                :alt="slot.item.title"
+                class="quickbuy-selected-card-image"
+                preset="thumbnail"
+              />
+              <span v-else class="quickbuy-selected-card-image quickbuy-selected-card-image--empty">
+                <Icon name="lucide:image" class="h-4 w-4" aria-hidden="true" />
+              </span>
+              <span class="quickbuy-selected-card-content">
+                <span class="quickbuy-selected-card-step">
+                  {{ slot.stepLabel }}
+                </span>
+                <span class="quickbuy-selected-card-title">{{ slot.item.title }}</span>
+                <span class="quickbuy-selected-card-meta">
+                  <span>{{ itemsLabel }}: {{ slot.item.quantity }}</span>
+                  <span v-if="slot.additionalItemCount" class="quickbuy-selected-card-extra-count">
+                    +{{ slot.additionalItemCount }}
+                  </span>
+                </span>
+              </span>
+              <span
+                class="quickbuy-selected-card-quantity"
+                :aria-label="`${itemsLabel} ${slot.item.title}: ${slot.item.quantity}`"
+              >
+                {{ slot.item.quantity }}
+              </span>
+              <button
+                class="quickbuy-selected-card-details"
+                type="button"
+                :aria-label="`${viewDetailsLabel}: ${slot.item.title}`"
+                :title="viewDetailsLabel"
+                @click="openSelectedProductEditor(slot.item)"
+              >
+                <Icon name="lucide:sliders-horizontal" class="h-3.5 w-3.5" aria-hidden="true" />
+                <span>{{ viewDetailsLabel }}</span>
+              </button>
+            </template>
+            <template v-else>
+              <span class="quickbuy-selected-step-slot-placeholder">
+                <span class="quickbuy-selected-step-slot-placeholder__index">
+                  {{ slot.index }}
+                </span>
+                <span class="quickbuy-selected-step-slot-placeholder__label">
+                  {{ slot.stepLabel }}
+                </span>
+              </span>
+            </template>
+          </div>
         </template>
-      </div>
       </div>
 
       <button
@@ -221,67 +320,70 @@ const handleEditorUpdateQuantity = (
       </button>
     </div>
 
-    <div class="quickbuy-summary-stats">
-      <span
-        class="quickbuy-summary-stat"
-        :title="`${itemsLabel}: ${totalQty}`"
-        :aria-label="`${itemsLabel}: ${totalQty}`"
-      >
-        <span class="quickbuy-summary-stat__icon">
-          <Icon name="lucide:package" class="h-4 w-4" aria-hidden="true" />
+    <div
+      class="quickbuy-summary-footer"
+      :class="{ 'quickbuy-summary-footer--mobile-pinned': mobileStepList }"
+    >
+      <!-- Summary stat cards: items / weight / price. Labels are intentionally not rendered visually; title/aria-label keep the names available for QA and accessibility. -->
+      <div class="quickbuy-summary-stats">
+        <span
+          class="quickbuy-summary-stat quickbuy-summary-stat--items"
+          :title="`${itemsLabel}: ${totalQty}`"
+          :aria-label="`${itemsLabel}: ${totalQty}`"
+        >
+          <span class="quickbuy-summary-stat__icon">
+            <Icon name="lucide:package" class="h-4 w-4" aria-hidden="true" />
+          </span>
+          <span class="quickbuy-summary-stat__content">
+            <span class="quickbuy-summary-stat__value">{{ totalQty }}</span>
+          </span>
         </span>
-        <span class="quickbuy-summary-stat__content">
-          <span class="quickbuy-summary-stat__label">{{ itemsLabel }}</span>
-          <span class="quickbuy-summary-stat__value">{{ totalQty }}</span>
+        <span
+          class="quickbuy-summary-stat quickbuy-summary-stat--weight"
+          :title="`${weightLabel}: ${totalWeightG}g`"
+          :aria-label="`${weightLabel}: ${totalWeightG}g`"
+        >
+          <span class="quickbuy-summary-stat__icon">
+            <Icon name="lucide:scale" class="h-4 w-4" aria-hidden="true" />
+          </span>
+          <span class="quickbuy-summary-stat__content">
+            <span class="quickbuy-summary-stat__value">{{ totalWeightG }}g</span>
+          </span>
         </span>
-      </span>
-      <span
-        class="quickbuy-summary-stat"
-        :title="`${weightLabel}: ${totalWeightG}g`"
-        :aria-label="`${weightLabel}: ${totalWeightG}g`"
-      >
-        <span class="quickbuy-summary-stat__icon">
-          <Icon name="lucide:scale" class="h-4 w-4" aria-hidden="true" />
+        <span
+          class="quickbuy-summary-stat quickbuy-summary-stat--price"
+          :title="`${priceLabel}: $${formattedTotalPrice}`"
+          :aria-label="`${priceLabel}: $${formattedTotalPrice}`"
+        >
+          <span class="quickbuy-summary-stat__icon">
+            <Icon name="lucide:circle-dollar-sign" class="h-4 w-4" aria-hidden="true" />
+          </span>
+          <span class="quickbuy-summary-stat__content">
+            <span class="quickbuy-summary-stat__value">${{ formattedTotalPrice }}</span>
+          </span>
         </span>
-        <span class="quickbuy-summary-stat__content">
-          <span class="quickbuy-summary-stat__label">{{ weightLabel }}</span>
-          <span class="quickbuy-summary-stat__value">{{ totalWeightG }}g</span>
-        </span>
-      </span>
-      <span
-        class="quickbuy-summary-stat quickbuy-summary-stat--price"
-        :title="`${priceLabel}: $${formattedTotalPrice}`"
-        :aria-label="`${priceLabel}: $${formattedTotalPrice}`"
-      >
-        <span class="quickbuy-summary-stat__icon">
-          <Icon name="lucide:circle-dollar-sign" class="h-4 w-4" aria-hidden="true" />
-        </span>
-        <span class="quickbuy-summary-stat__content">
-          <span class="quickbuy-summary-stat__label">{{ priceLabel }}</span>
-          <span class="quickbuy-summary-stat__value">${{ formattedTotalPrice }}</span>
-        </span>
-      </span>
-    </div>
+      </div>
 
-    <div class="quickbuy-summary-actions">
-      <button
-        class="quickbuy-summary-action quickbuy-summary-action--secondary"
-        type="button"
-        :disabled="!hasSelectedProducts"
-        @click="emit('addToCart')"
-      >
-        <Icon name="lucide:shopping-cart" class="h-4 w-4" aria-hidden="true" />
-        <span>{{ addToCartLabel }}</span>
-      </button>
-      <button
-        class="quickbuy-summary-action quickbuy-summary-action--primary"
-        type="button"
-        :disabled="!hasSelectedProducts"
-        @click="emit('directPayment')"
-      >
-        <Icon name="lucide:credit-card" class="h-4 w-4" aria-hidden="true" />
-        <span>{{ directPaymentLabel }}</span>
-      </button>
+      <div class="quickbuy-summary-actions">
+        <button
+          class="quickbuy-summary-action quickbuy-summary-action--secondary"
+          type="button"
+          :disabled="!hasSelectedProducts"
+          @click="emit('addToCart')"
+        >
+          <Icon name="lucide:shopping-cart" class="h-4 w-4" aria-hidden="true" />
+          <span>{{ addToCartLabel }}</span>
+        </button>
+        <button
+          class="quickbuy-summary-action quickbuy-summary-action--primary"
+          type="button"
+          :disabled="!hasSelectedProducts"
+          @click="emit('directPayment')"
+        >
+          <Icon name="lucide:credit-card" class="h-4 w-4" aria-hidden="true" />
+          <span>{{ directPaymentLabel }}</span>
+        </button>
+      </div>
     </div>
 
     <QuickBuySelectedProductEditorDialog
@@ -317,6 +419,10 @@ const handleEditorUpdateQuantity = (
     0 16px 42px rgba(0, 0, 0, 0.34),
     inset 0 1px 0 rgba(255, 255, 255, 0.045),
     inset 0 -1px 0 var(--quickbuy-dark-edge, rgba(0, 0, 0, 0.5));
+}
+
+.quickbuy-summary-panel--mobile-step-list {
+  min-height: 0;
 }
 
 .quickbuy-summary-panel-header {
@@ -524,6 +630,10 @@ const handleEditorUpdateQuantity = (
   transform: translateY(-1px);
 }
 
+.quickbuy-mobile-step-chevron {
+  display: none;
+}
+
 .quickbuy-selected-card-extra-count {
   display: inline-flex;
   flex: 0 0 auto;
@@ -621,6 +731,7 @@ const handleEditorUpdateQuantity = (
   color: white;
 }
 
+/* Stat card selectors kept explicit for QA: --items, --weight, --price map to the three label-free summary cards. */
 .quickbuy-summary-stat {
   display: flex;
   min-width: 0;
@@ -757,16 +868,59 @@ const handleEditorUpdateQuantity = (
   background: rgba(255, 255, 255, 0.88);
 }
 
+@media (min-width: 768px) and (max-width: 1100px) {
+  .quickbuy-summary-stat {
+    min-height: 4.75rem;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.25rem;
+    padding: 0.45rem 0.25rem;
+  }
+
+  .quickbuy-summary-stat__icon {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+
+  .quickbuy-summary-stat__icon :deep(svg) {
+    width: 0.8rem;
+    height: 0.8rem;
+  }
+
+  .quickbuy-summary-stat__content {
+    width: 100%;
+    justify-items: center;
+  }
+
+  .quickbuy-summary-stat__label {
+    max-width: 100%;
+    overflow: visible;
+    font-size: 0.6rem;
+    text-align: center;
+    text-overflow: clip;
+  }
+
+  .quickbuy-summary-stat__value,
+  .quickbuy-summary-stat--price .quickbuy-summary-stat__value {
+    max-width: 100%;
+    overflow: visible;
+    font-size: 0.95rem;
+    text-align: center;
+    text-overflow: clip;
+  }
+}
+
 @media (max-width: 767px) {
   .quickbuy-summary-panel {
     min-height: 15rem;
+    padding: 0.5rem;
   }
 
   .quickbuy-selected-list-shell {
     display: grid;
     grid-template-columns: 1.75rem minmax(0, 1fr) 1.75rem;
     align-items: center;
-    gap: 0.375rem;
+    gap: 0.25rem;
     flex: 0 1 auto;
     min-height: 0;
   }
@@ -775,13 +929,225 @@ const handleEditorUpdateQuantity = (
     display: inline-grid;
   }
 
+  .quickbuy-summary-panel--mobile-step-list {
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .quickbuy-summary-panel--mobile-step-list .quickbuy-selected-list-shell {
+    display: flex;
+    flex: 0 0 auto;
+    width: 100%;
+    align-items: stretch;
+    min-height: 0;
+  }
+
+  .quickbuy-summary-panel--mobile-step-list .quickbuy-selected-list-arrow {
+    display: none;
+  }
+
+  .quickbuy-summary-panel--mobile-step-list .quickbuy-selected-list {
+    display: flex;
+    flex: 0 0 auto;
+    width: 100%;
+    flex-direction: column;
+    gap: 0.3rem;
+    justify-content: flex-start;
+    min-height: 0;
+    padding: 0;
+    overflow: visible;
+  }
+
+  .quickbuy-mobile-step-group {
+    display: grid;
+    width: 100%;
+    min-width: 0;
+    gap: 0.2rem;
+  }
+
+  .quickbuy-mobile-step-trigger {
+    display: flex;
+    width: 100%;
+    min-width: 0;
+    min-height: 2.25rem;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.25rem 0.4rem;
+    border: 0;
+    border-radius: 0.45rem;
+    color: rgba(255, 255, 255, 0.68);
+    background:
+      linear-gradient(180deg, var(--quickbuy-control-surface-raised, #171920), var(--quickbuy-control-surface, #0d0f14));
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.035),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.34);
+    cursor: pointer;
+    text-align: left;
+    transition: background-color 160ms ease, color 160ms ease, transform 160ms ease;
+  }
+
+  .quickbuy-mobile-step-trigger:hover {
+    color: #fff;
+    background:
+      linear-gradient(180deg, #252831, #171920);
+    transform: translateY(-1px);
+  }
+
+  .quickbuy-mobile-step-trigger:focus-visible {
+    outline: 2px solid rgba(181, 255, 109, 0.72);
+    outline-offset: 2px;
+  }
+
+  .quickbuy-mobile-step-trigger__index {
+    display: grid;
+    width: 1.35rem;
+    height: 1.35rem;
+    flex: 0 0 auto;
+    place-items: center;
+    border-radius: 0.35rem;
+    color: rgba(255, 255, 255, 0.54);
+    background: var(--quickbuy-control-surface, #0d0f14);
+    font-size: 0.625rem;
+    font-weight: 800;
+  }
+
+  .quickbuy-mobile-step-trigger__label {
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
+    font-size: 0.6875rem;
+    font-weight: 750;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .quickbuy-mobile-step-trigger .quickbuy-mobile-step-chevron {
+    display: block;
+    width: 0.9rem;
+    height: 0.9rem;
+    flex: 0 0 auto;
+    color: rgba(255, 255, 255, 0.48);
+  }
+
+  .quickbuy-mobile-product-row {
+    display: flex;
+    width: 100%;
+    min-width: 0;
+    min-height: 4.25rem;
+    box-sizing: border-box;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.45rem 0.55rem;
+    border-radius: 0.45rem;
+  }
+
+  .quickbuy-mobile-product-row--filled {
+    background:
+      linear-gradient(180deg, var(--quickbuy-panel-surface-raised, #1c1e25), var(--quickbuy-panel-surface, #15171d));
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.045),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.36);
+  }
+
+  .quickbuy-mobile-product-row--empty {
+    justify-content: center;
+    border: 1px dashed rgba(181, 255, 109, 0.3);
+    color: rgba(181, 255, 109, 0.9);
+    background: rgba(181, 255, 109, 0.035);
+    cursor: pointer;
+    transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease;
+  }
+
+  .quickbuy-mobile-product-row--empty:hover {
+    border-color: rgba(181, 255, 109, 0.62);
+    background: rgba(181, 255, 109, 0.09);
+    transform: translateY(-1px);
+  }
+
+  .quickbuy-mobile-product-row--empty:focus-visible {
+    outline: 2px solid rgba(181, 255, 109, 0.72);
+    outline-offset: 2px;
+  }
+
+  .quickbuy-mobile-product-plus {
+    width: 1.35rem;
+    height: 1.35rem;
+  }
+
+  .quickbuy-mobile-product-row .quickbuy-selected-card-image {
+    width: 3rem;
+    height: 3rem;
+  }
+
+  .quickbuy-mobile-product-row .quickbuy-selected-card-content {
+    gap: 0.0625rem;
+  }
+
+  .quickbuy-mobile-product-row .quickbuy-selected-card-title {
+    font-size: 0.75rem;
+  }
+
+  .quickbuy-mobile-product-row .quickbuy-selected-card-meta {
+    font-size: 0.625rem;
+  }
+
+  .quickbuy-mobile-product-row .quickbuy-selected-card-quantity {
+    min-width: 2rem;
+    height: 2rem;
+    padding: 0 0.25rem;
+    font-size: 0.75rem;
+  }
+
+  .quickbuy-mobile-product-details {
+    width: 2rem;
+    min-width: 2rem;
+    min-height: 2rem;
+    padding: 0.35rem;
+  }
+
+  .quickbuy-mobile-product-details > span {
+    display: none;
+  }
+
+  .quickbuy-summary-panel--mobile-step-list .quickbuy-selected-step-slot {
+    width: 100%;
+    min-width: 0;
+    flex: 0 0 auto;
+  }
+
+  .quickbuy-summary-footer--mobile-pinned {
+    position: sticky;
+    bottom: 0;
+    z-index: 3;
+    display: block;
+    flex: 0 0 auto;
+    width: 100%;
+    box-sizing: border-box;
+    padding-top: 0.5rem;
+    padding-bottom: max(0.25rem, var(--tz-safe-area-bottom, 0px));
+    margin-top: auto;
+    border-top: 1px solid var(--quickbuy-divider, rgba(255, 255, 255, 0.045));
+    background: rgba(11, 13, 18, 0.96);
+    backdrop-filter: blur(10px);
+  }
+
+  .quickbuy-summary-footer--mobile-pinned .quickbuy-summary-stats {
+    padding-top: 0;
+    box-shadow: none;
+  }
+
+  .quickbuy-summary-footer--mobile-pinned .quickbuy-summary-actions {
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+  }
+
   .quickbuy-selected-list {
     display: flex;
     flex: 0 1 auto;
     max-height: none;
-    gap: 0.5rem;
-    min-height: 7.25rem;
-    padding: 0.625rem 0;
+    gap: 0.25rem;
+    min-height: 6rem;
+    padding: 0.25rem 0;
     overflow: hidden;
     scroll-behavior: smooth;
     scroll-snap-type: x mandatory;
@@ -796,22 +1162,22 @@ const handleEditorUpdateQuantity = (
 
   .quickbuy-summary-actions {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.375rem;
-    padding-top: 0.625rem;
-    margin-top: 0.625rem;
+    gap: 0.25rem;
+    padding-top: 0.5rem;
+    margin-top: 0.5rem;
   }
 
   .quickbuy-summary-stats {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.375rem;
-    padding-top: 0.625rem;
+    gap: 0.25rem;
+    padding-top: 0.5rem;
   }
 
   .quickbuy-summary-stat {
     min-height: 3.25rem;
     justify-content: center;
-    gap: 0.375rem;
-    padding: 0.45rem 0.375rem;
+    gap: 0.3rem;
+    padding: 0.35rem 0.25rem;
     border-radius: 0.5rem;
   }
 
@@ -843,9 +1209,9 @@ const handleEditorUpdateQuantity = (
   }
 
   .quickbuy-summary-action {
-    min-height: 2.625rem;
-    gap: 0.3rem;
-    padding: 0.5rem 0.375rem;
+    min-height: 2.5rem;
+    gap: 0.25rem;
+    padding: 0.45rem 0.3rem;
     font-size: 0.6875rem;
   }
 

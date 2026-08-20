@@ -148,8 +148,8 @@
 #### 社交媒体设置
 - ✅ 社交平台链接（Facebook, Twitter, Instagram, LinkedIn, YouTube, 微信）
 
-#### 支付设置
-- ✅ 支付网关选择
+#### 收款接入
+- ✅ 收款渠道选择
 - ✅ API 密钥配置
 - ✅ 测试模式开关
 
@@ -189,7 +189,7 @@
 | 订阅管理 | Subscriptions.vue | 订阅列表、状态管理、导出 | ✅ 完成 |
 | 工单管理 | Tickets.vue | 工单处理、消息回复、分配 | ✅ 完成 |
 | 营销管理 | Marketing.vue | 优惠券、礼品卡、会员等级 | ✅ 完成 |
-| 系统设置 | Settings.vue | 站点、邮件、SEO、社交、支付 | ✅ 完成 |
+| 系统设置 | Settings.vue | 站点、邮件、SEO、社交、收款接入 | ✅ 完成 |
 | 审计日志 | AuditLogs.vue | 日志查询、详情查看 | ✅ 完成 |
 
 ### 之前已完成的页面

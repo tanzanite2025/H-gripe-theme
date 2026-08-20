@@ -121,6 +121,9 @@ func (s *SelectionAssistantService) ListFlows() ([]SelectionAssistantFlowSummary
 	}
 	result := make([]SelectionAssistantFlowSummary, 0, len(flows))
 	for _, flow := range flows {
+		if isReservedSelectionAssistantSlug(flow.Slug) {
+			continue
+		}
 		result = append(result, selectionAssistantFlowSummary(flow))
 	}
 	return result, nil
@@ -133,6 +136,9 @@ func (s *SelectionAssistantService) GetFlow(id uint) (*SelectionAssistantFlowVie
 	}
 	if err != nil {
 		return nil, err
+	}
+	if isReservedSelectionAssistantSlug(flow.Slug) {
+		return nil, ErrSelectionAssistantNotFound
 	}
 	version := latestSelectionAssistantVersion(flow.Versions)
 	if version == nil {
@@ -148,6 +154,9 @@ func (s *SelectionAssistantService) GetFlow(id uint) (*SelectionAssistantFlowVie
 func (s *SelectionAssistantService) GetPublishedFlowBySlug(slug string) (*SelectionAssistantFlowView, error) {
 	slug = normalizeSelectionAssistantKey(slug)
 	if slug == "" {
+		return nil, ErrSelectionAssistantNotFound
+	}
+	if isReservedSelectionAssistantSlug(slug) {
 		return nil, ErrSelectionAssistantNotFound
 	}
 
@@ -189,6 +198,9 @@ func (s *SelectionAssistantService) SaveFlowConfiguration(id uint, input Selecti
 	}
 	if err != nil {
 		return nil, err
+	}
+	if isReservedSelectionAssistantSlug(flow.Slug) {
+		return nil, ErrSelectionAssistantNotFound
 	}
 	normalizedFlow, normalizedVersion, err := s.normalizeFlowInput(input)
 	if err != nil {
@@ -251,6 +263,9 @@ func (s *SelectionAssistantService) PublishVersion(id uint, publishedBy *uint) (
 	if err != nil {
 		return nil, err
 	}
+	if version.Flow != nil && isReservedSelectionAssistantSlug(version.Flow.Slug) {
+		return nil, ErrSelectionAssistantNotFound
+	}
 	if version.Status != selectionassistant.FlowVersionStatusDraft {
 		return nil, ErrSelectionAssistantNotMutable
 	}
@@ -269,6 +284,9 @@ func (s *SelectionAssistantService) normalizeFlowInput(input SelectionAssistantF
 	slug := normalizeSelectionAssistantKey(input.Slug)
 	if slug == "" {
 		return nil, nil, fmt.Errorf("%w: slug is required and must use lowercase letters, numbers, dashes, or underscores", ErrSelectionAssistantInvalid)
+	}
+	if isReservedSelectionAssistantSlug(slug) {
+		return nil, nil, fmt.Errorf("%w: slug %q is managed by the wheelset fit questionnaire", ErrSelectionAssistantInvalid, slug)
 	}
 	name := strings.TrimSpace(input.Name)
 	if name == "" {
@@ -393,6 +411,10 @@ func normalizeSelectionAssistantKey(value string) string {
 		return ""
 	}
 	return value
+}
+
+func isReservedSelectionAssistantSlug(slug string) bool {
+	return normalizeSelectionAssistantKey(slug) == wheelsetFitAssistantSlug
 }
 
 func ValidateConfig(config selectionassistant.Config) (selectionassistant.Config, SelectionAssistantValidationResult) {

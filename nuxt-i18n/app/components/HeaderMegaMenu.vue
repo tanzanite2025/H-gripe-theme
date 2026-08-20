@@ -37,12 +37,6 @@
                     {{ cardLabel(card) }}
                   </span>
                   <span class="header-mega-card__title">{{ cardTitle(card) }}</span>
-                  <span
-                    v-if="!shouldShowProductCategoryNavigationCardsInsideCard(card)"
-                    class="header-mega-card__description"
-                  >
-                    {{ card.description }}
-                  </span>
                 </span>
 
                 <span
@@ -67,6 +61,7 @@
                   :aria-label="childAccessibleLabel(child)"
                   @click.stop="scheduleNavigateClose"
                 >
+                  <span class="header-mega-card__child-dot" aria-hidden="true"></span>
                   <span class="header-mega-card__child-label">{{ childLabel(child) }}</span>
                   <span class="header-mega-card__child-arrow" aria-hidden="true">
                     <Icon name="lucide:arrow-up-right" />
@@ -326,40 +321,118 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
   display: grid;
   height: 100%;
   min-height: 0;
-  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
-  grid-template-rows: repeat(2, minmax(0, 1fr));
-  align-items: stretch;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 0.92fr);
+  grid-template-rows: repeat(4, minmax(0, auto));
+  align-items: start;
+  align-content: start;
   column-count: initial;
   column-gap: normal;
   gap: 14px;
 }
 
 .header-mega__grid--products .header-mega-card {
-  height: 100%;
+  height: auto;
   min-height: 0;
   margin: 0;
-  break-inside: auto;
-  overflow: hidden;
+  break-inside: avoid;
+  overflow: visible;
 }
 
 .header-mega__grid--products .header-mega-card--card-shop {
-  grid-column: 1;
+  grid-column: 1 / 4;
   grid-row: 1 / -1;
+  height: 100%;
+  overflow: hidden;
 }
 
-.header-mega__grid--products .header-mega-card--card-membership-and-points {
-  grid-column: 2;
+.header-mega__grid--products .header-mega-card--card-membership-and-points,
+.header-mega__grid--products .header-mega-card--card-picture-warehouse,
+.header-mega__grid--products .header-mega-card--card-spoke-calculator,
+.header-mega__grid--products .header-mega-card--card-blog {
+  grid-column: 4;
+}
+
+.header-mega__grid--support,
+.header-mega__grid--guides {
+  display: grid;
+  height: 100%;
+  min-height: 0;
+  align-items: start;
+  align-content: start;
+  column-count: initial;
+  column-gap: normal;
+  gap: 14px;
+}
+
+.header-mega__grid--support {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.65fr) minmax(0, 1fr);
+  grid-template-rows: repeat(4, minmax(0, auto));
+}
+
+.header-mega__grid--support .header-mega-card,
+.header-mega__grid--guides .header-mega-card {
+  height: auto;
+  min-height: 0;
+  margin: 0;
+  break-inside: avoid;
+  overflow: visible;
+}
+
+.header-mega__grid--support .header-mega-card--card-faqs {
+  grid-column: 1;
   grid-row: 1;
 }
 
-.header-mega__grid--products .header-mega-card--card-picture-warehouse {
-  grid-column: 2;
+.header-mega__grid--support .header-mega-card--card-payment {
+  grid-column: 1;
   grid-row: 2;
 }
 
-.header-mega__grid--products .header-mega-card--card-spoke-calculator {
+.header-mega__grid--support .header-mega-card--card-shipping {
+  grid-column: 1;
+  grid-row: 3;
+}
+
+.header-mega__grid--support .header-mega-card--card-warranty {
+  grid-column: 2;
+  grid-row: 1 / 4;
+}
+
+.header-mega__grid--support .header-mega-card--card-warranty-check {
+  grid-column: 2;
+  grid-row: 4;
+}
+
+.header-mega__grid--support .header-mega-card--card-test-report {
   grid-column: 3;
-  grid-row: 1 / -1;
+  grid-row: 2 / 4;
+}
+
+.header-mega__grid--guides {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.header-mega__grid--guides .header-mega-card {
+  height: 100%;
+}
+
+.header-mega__grid--support .header-mega-card--has-children .header-mega-card__children {
+  display: grid;
+  grid-template-columns: repeat(2, max-content);
+  justify-content: start;
+  align-items: start;
+  column-gap: 22px;
+  row-gap: 10px;
+}
+
+.header-mega__grid--guides .header-mega-card--has-children .header-mega-card__children {
+  display: grid;
+  grid-template-columns: repeat(3, max-content);
+  justify-content: space-between;
+  align-items: start;
+  column-gap: 18px;
+  row-gap: 8px;
 }
 
 .header-mega__product-category-navigation {
@@ -379,7 +452,7 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
 
 .header-mega__product-category-navigation :deep(.product-category-navigation-cards__item) {
   border-color: rgba(181, 255, 109, 0);
-  background: rgba(255, 255, 255, 0.055);
+  background: var(--tz-card-surface, #111116);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.06),
     0 12px 28px -24px rgba(0, 0, 0, 1);
@@ -391,7 +464,7 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
 }
 
 .header-mega__product-category-navigation :deep(.product-category-navigation-cards__footer) {
-  background: rgba(11, 13, 17, 0.94);
+  background: var(--tz-card-surface, #111116);
 }
 
 .header-mega-card--card-shop .header-mega-card__main {
@@ -406,6 +479,8 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
   --mega-accent-shadow: rgba(181, 255, 109, 0.35);
   --mega-card-padding: 16px;
   --mega-card-child-offset: 74px;
+  --mega-card-title-size: 16px;
+  --mega-child-width: 156px;
 
   position: relative;
   display: flex;
@@ -414,34 +489,21 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
   break-inside: avoid;
   min-width: 0;
   width: 100%;
-  min-height: 132px;
+  min-height: 0;
   margin: 0 0 14px;
   overflow: hidden;
   vertical-align: top;
   border: 1px solid rgba(181, 255, 109, 0);
   border-radius: 16px;
-  background: linear-gradient(180deg, rgba(18, 21, 25, 0.98), rgba(10, 12, 16, 0.98));
+  background: var(--tz-card-surface, #111116);
   color: inherit;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.06),
     0 18px 44px -34px rgba(0, 0, 0, 1);
-  transition:
-    border-color 0.18s ease,
-    background 0.18s ease,
-    box-shadow 0.18s ease,
-    color 0.22s ease;
 }
 
 .header-mega-card::before {
   display: none;
-}
-
-.header-mega-card:hover {
-  border-color: rgba(181, 255, 109, 0.2);
-  background: linear-gradient(180deg, rgba(22, 25, 30, 0.98), rgba(12, 14, 18, 0.98));
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    0 20px 48px -32px rgba(0, 0, 0, 1);
 }
 
 .header-mega-card__main {
@@ -455,16 +517,13 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
   padding: var(--mega-card-padding);
   color: inherit;
   text-decoration: none;
+  transition: color 0.18s ease;
 }
 
 .header-mega-card--has-children .header-mega-card__main {
   flex: 0 0 auto;
   min-height: 0;
   padding-bottom: 10px;
-}
-
-.header-mega-card--has-children .header-mega-card__description {
-  -webkit-line-clamp: 2;
 }
 
 .header-mega-card__glow {
@@ -491,7 +550,7 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
 .header-mega-card__title {
   margin-top: 6px;
   color: #f8fafc;
-  font-size: 20px;
+  font-size: var(--mega-card-title-size);
   font-weight: 800;
   line-height: 1.15;
   letter-spacing: 0;
@@ -499,17 +558,6 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
 
 .header-mega-card__body > .header-mega-card__title:first-child {
   margin-top: 0;
-}
-
-.header-mega-card__description {
-  display: -webkit-box;
-  margin-top: 8px;
-  overflow: hidden;
-  color: rgba(203, 213, 225, 0.72);
-  font-size: 17px;
-  line-height: 1.48;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
 }
 
 .header-mega-card__arrow {
@@ -531,7 +579,8 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
   height: 16px;
 }
 
-.header-mega-card:hover .header-mega-card__arrow {
+.header-mega-card__main:hover .header-mega-card__arrow,
+.header-mega-card__main:focus-visible .header-mega-card__arrow {
   color: #ffffff;
   transform: translate(3px, -3px);
 }
@@ -548,48 +597,96 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
 }
 
 .header-mega-card__child {
-  display: inline-flex;
+  --mega-child-hover-scale: 1.05;
+
+  display: flex;
+  flex: 0 0 auto;
+  width: auto;
   max-width: 100%;
+  min-width: 0;
   min-height: 38px;
   align-items: center;
   justify-content: center;
   gap: 7px;
   border-radius: 999px;
-  border: 1px solid rgba(181, 255, 109, 0.18);
-  background: rgba(255, 255, 255, 0.055);
+  border: 0;
+  background: transparent;
   padding: 0.56rem 0.92rem 0.56rem 1rem;
   color: rgba(241, 245, 249, 0.86);
   font-size: 14px;
   font-weight: 800;
   line-height: 1.1;
   text-decoration: none;
+  transform-origin: left center;
   transition:
-    border-color 0.18s ease,
-    background-color 0.18s ease,
     color 0.18s ease,
     transform 0.18s ease;
 }
 
 .header-mega-card__child:hover {
-  border-color: var(--mega-accent);
-  background: var(--mega-accent-soft);
   color: #ffffff;
-  transform: translateY(-1px);
+  transform: scale(var(--mega-child-hover-scale));
 }
 
 .header-mega-card__child:focus-visible {
-  outline: 2px solid rgba(181, 255, 109, 0.54);
-  outline-offset: 2px;
+  outline: none;
+}
+
+.header-mega-card__child-dot {
+  width: 0.44rem;
+  height: 0.44rem;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: var(--mega-accent);
+  transition: box-shadow 0.18s ease;
+}
+
+.header-mega-card__child:hover .header-mega-card__child-dot,
+.header-mega-card__child:focus-visible .header-mega-card__child-dot {
+  box-shadow: 0 0 10px rgba(181, 255, 109, 0.72);
 }
 
 .header-mega-card__child-label {
+  position: relative;
+  display: inline-block;
   min-width: 0;
   max-width: 100%;
   color: rgba(248, 250, 252, 0.92);
   font-size: 14px;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow: visible;
+  overflow-wrap: normal;
+  text-overflow: clip;
+  text-align: center;
   white-space: nowrap;
+  transition: color 0.18s ease;
+}
+
+.header-mega-card__child-label::after {
+  position: absolute;
+  right: 0;
+  bottom: -0.28rem;
+  left: 0;
+  width: 0;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--mega-accent);
+  box-shadow: 0 0 8px rgba(181, 255, 109, 0.58);
+  content: '';
+  opacity: 0;
+  transition:
+    width 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.18s ease;
+}
+
+.header-mega-card__child:hover .header-mega-card__child-label,
+.header-mega-card__child:focus-visible .header-mega-card__child-label {
+  color: #ffffff;
+}
+
+.header-mega-card__child:hover .header-mega-card__child-label::after,
+.header-mega-card__child:focus-visible .header-mega-card__child-label::after {
+  width: 100%;
+  opacity: 1;
 }
 
 .header-mega-card__child-description {
@@ -616,19 +713,14 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
   height: 14px;
 }
 
-.header-mega-card__child:hover .header-mega-card__child-arrow {
+.header-mega-card__child:hover .header-mega-card__child-arrow,
+.header-mega-card__child:focus-visible .header-mega-card__child-arrow {
   color: #ffffff;
-  transform: translate(2px, -2px);
 }
 
 .header-mega-card--feature {
   --mega-card-padding: 20px;
   --mega-card-child-offset: 90px;
-}
-
-.header-mega-card--feature .header-mega-card__description {
-  font-size: 17px;
-  -webkit-line-clamp: 4;
 }
 
 .header-mega-card--compact {
@@ -637,10 +729,6 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
 
 .header-mega-card--compact .header-mega-card__main {
   align-items: center;
-}
-
-.header-mega-card--compact .header-mega-card__description {
-  -webkit-line-clamp: 2;
 }
 
 .header-mega-card--mint {
@@ -709,43 +797,90 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
   .header-mega__grid--products {
     height: auto;
     min-height: 0;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: auto;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 0.92fr);
+    grid-template-rows: repeat(4, minmax(0, auto));
     align-items: start;
+    align-content: start;
     gap: 14px;
   }
 
   .header-mega__grid--products .header-mega-card--card-shop {
-    grid-column: 1 / -1;
-    grid-row: auto;
+    grid-column: 1 / 4;
+    grid-row: 1 / -1;
   }
 
   .header-mega__grid--products .header-mega-card--card-membership-and-points,
   .header-mega__grid--products .header-mega-card--card-picture-warehouse,
-  .header-mega__grid--products .header-mega-card--card-spoke-calculator {
-    grid-column: auto;
-    grid-row: auto;
+  .header-mega__grid--products .header-mega-card--card-spoke-calculator,
+  .header-mega__grid--products .header-mega-card--card-blog {
+    grid-column: 4;
   }
 
   .header-mega__grid--products .header-mega-card {
     height: auto;
     overflow: visible;
   }
+
+  .header-mega__grid--support,
+  .header-mega__grid--guides {
+    height: auto;
+    min-height: 0;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+    align-items: start;
+    align-content: start;
+    gap: 10px;
+  }
+
+  .header-mega__grid--support .header-mega-card,
+  .header-mega__grid--guides .header-mega-card {
+    grid-column: 1 / -1;
+    grid-row: auto;
+    height: auto;
+    overflow: hidden;
+  }
+
+  .header-mega__grid--support .header-mega-card--has-children .header-mega-card__children,
+  .header-mega__grid--guides .header-mega-card--has-children .header-mega-card__children {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    justify-content: stretch;
+    column-gap: 0;
+    row-gap: 6px;
+  }
+
+  .header-mega__grid--support .header-mega-card__child,
+  .header-mega__grid--guides .header-mega-card__child {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .header-mega__grid--support .header-mega-card__child-label,
+  .header-mega__grid--guides .header-mega-card__child-label {
+    flex: 1 1 auto;
+    text-align: left;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
 }
 
 @media (max-width: 767px) {
   .header-mega {
     position: fixed;
-    inset: var(--header-mega-mobile-top, var(--site-header-overlay-offset, 7rem)) 0 0 0;
-    width: 100vw;
+    inset: calc(var(--header-mega-mobile-top, var(--site-header-overlay-offset, 7rem)) + 2px) 2px 2px;
+    width: auto;
     transform: none;
-    z-index: 1300;
+    z-index: 10010;
   }
 
   .header-mega__shell {
     height: 100%;
-    border-radius: 0;
+    border: 1px solid #ffffff;
+    border-radius: 14px;
     box-sizing: border-box;
+    box-shadow:
+      0 24px 64px -28px #000000,
+      inset 0 1px 0 #ffffff;
   }
 
   .header-mega__content {
@@ -759,18 +894,32 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
   }
 
   .header-mega__grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    column-count: initial;
-    column-gap: normal;
-    gap: 10px;
+    column-count: 1;
+    column-gap: 0;
   }
 
-  .header-mega-card--feature,
-  .header-mega-card--wide,
-  .header-mega-card--standard,
-  .header-mega-card--compact {
-    grid-column: 1 / -1;
+  .header-mega__grid--products {
+    display: block;
+    column-count: 1;
+    column-gap: 0;
+  }
+
+  .header-mega__grid--support,
+  .header-mega__grid--guides {
+    display: block;
+    height: auto;
+    column-count: 1;
+    column-gap: 0;
+  }
+
+  .header-mega__grid--products .header-mega-card--card-shop {
+    column-span: all;
+  }
+
+  .header-mega__grid--products .header-mega-card,
+  .header-mega__grid--support .header-mega-card,
+  .header-mega__grid--guides .header-mega-card {
+    margin: 0 0 10px;
   }
 
   .header-mega__product-category-navigation {
@@ -781,25 +930,22 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
   .header-mega-card {
     --mega-card-padding: 12px;
     --mega-card-child-offset: 12px;
+    --mega-card-title-size: 13px;
     min-height: 0;
-    width: auto;
-    margin: 0;
-    break-inside: auto;
+    width: 100%;
+    margin: 0 0 10px;
+    break-inside: avoid;
     border-radius: 16px;
   }
 
   .header-mega-card__main {
     gap: 10px;
+    align-items: flex-start;
   }
 
   .header-mega-card__title,
   .header-mega-card--feature .header-mega-card__title {
-    font-size: 17px;
-  }
-
-  /* Mobile keeps the category title and actions; descriptions are desktop-only. */
-  .header-mega-card__description {
-    display: none;
+    font-size: var(--mega-card-title-size);
   }
 
   .header-mega-card__children {
@@ -810,20 +956,39 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
 
   .header-mega-card__child {
     min-height: 36px;
-    justify-content: center;
+    justify-content: flex-start;
+    width: 100%;
     padding: 0.55rem 0.82rem;
-    border-color: rgba(181, 255, 109, 0.16);
-    background: rgba(255, 255, 255, 0.055);
+    background: transparent;
     font-size: 13px;
     line-height: 1.1;
   }
 
   .header-mega-card__child-label {
+    min-width: 0;
+    max-width: 100%;
     font-size: 13px;
+    line-height: 1.2;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .header-mega-card__title {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    line-height: 1.2;
   }
 
   .header-mega-card__child-arrow {
     display: none;
+  }
+
+  .header-mega__grid--support .header-mega-card--has-children .header-mega-card__children,
+  .header-mega__grid--guides .header-mega-card--has-children .header-mega-card__children {
+    display: grid;
+    grid-template-columns: 1fr;
+    column-gap: 0;
+    row-gap: 6px;
   }
 }
 </style>

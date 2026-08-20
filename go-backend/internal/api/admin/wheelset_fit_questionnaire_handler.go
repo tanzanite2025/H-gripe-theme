@@ -3,6 +3,7 @@ package admin
 import (
 	"errors"
 
+	wheelsetfit "commerce-platform/internal/domain/wheelsetfit"
 	"commerce-platform/internal/pkg/apierror"
 	"commerce-platform/internal/pkg/response"
 	"commerce-platform/internal/service"
@@ -11,20 +12,38 @@ import (
 )
 
 type WheelsetFitQuestionnaireHandler struct {
-	service *service.WheelsetFitQuestionnaireService
+	service        *service.WheelsetFitQuestionnaireService
+	productService *service.ProductService
 }
 
-func NewWheelsetFitQuestionnaireHandler(questionnaireService *service.WheelsetFitQuestionnaireService) *WheelsetFitQuestionnaireHandler {
-	return &WheelsetFitQuestionnaireHandler{service: questionnaireService}
+func NewWheelsetFitQuestionnaireHandler(questionnaireService *service.WheelsetFitQuestionnaireService, productService *service.ProductService) *WheelsetFitQuestionnaireHandler {
+	return &WheelsetFitQuestionnaireHandler{service: questionnaireService, productService: productService}
 }
 
 func (h *WheelsetFitQuestionnaireHandler) GetCurrentVersion(c *gin.Context) {
 	version, err := h.service.GetCurrentVersion()
 	if err != nil {
+		if errors.Is(err, service.ErrWheelsetFitQuestionnaireNotFound) || errors.Is(err, service.ErrWheelsetFitQuestionnaireVersionNotFound) {
+			response.Success(c, gin.H{"data": nil})
+			return
+		}
 		respondWheelsetFitQuestionnaireError(c, err)
 		return
 	}
 	response.Success(c, gin.H{"data": version})
+}
+
+func (h *WheelsetFitQuestionnaireHandler) GetProductFilterOptions(c *gin.Context) {
+	if h.productService == nil {
+		apierror.RespondInternalError(c, errors.New("product service is not configured"))
+		return
+	}
+	options, err := h.productService.ListFilterableSpecificationsWithDynamicValuesForCategory(wheelsetfit.WheelsetProductCategorySlug)
+	if err != nil {
+		apierror.RespondInternalError(c, err)
+		return
+	}
+	response.Success(c, gin.H{"data": options})
 }
 
 func (h *WheelsetFitQuestionnaireHandler) CreateDraft(c *gin.Context) {
@@ -136,6 +155,11 @@ func respondWheelsetFitQuestionnaireError(c *gin.Context, err error) {
 		errors.Is(err, service.ErrWheelsetFitQuestionNotFound):
 		apierror.RespondNotFound(c, "Wheelset fit questionnaire")
 	case errors.Is(err, service.ErrWheelsetFitQuestionnaireInvalid):
+		apierror.RespondBadRequest(c, err.Error())
+	case errors.Is(err, service.ErrWheelsetFitQuestionKeyNotRegistered),
+		errors.Is(err, service.ErrWheelsetFitQuestionKeyDisabled),
+		errors.Is(err, service.ErrWheelsetFitAnswerKeyNotRegistered),
+		errors.Is(err, service.ErrWheelsetFitAnswerKeyDisabled):
 		apierror.RespondBadRequest(c, err.Error())
 	case errors.Is(err, service.ErrWheelsetFitQuestionnaireNotMutable):
 		apierror.RespondConflict(c, err.Error())

@@ -149,6 +149,8 @@ func newPayPalDisputeWebhookHarness(t *testing.T) (*gorm.DB, *Handler, *fakePayP
 		&orderdomain.Order{},
 		&orderdomain.OrderItem{},
 		&paymentdomain.Transaction{},
+		&paymentdomain.Refund{},
+		&paymentdomain.RefundLineItem{},
 		&paymentdomain.PayPalDispute{},
 		&shippingdomain.TrackingProviderConfig{},
 		&shippingdomain.TrackingShipment{},

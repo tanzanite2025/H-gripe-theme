@@ -28,6 +28,8 @@ type ServiceCenterHandler struct {
 	domainService     *service.OpsDomainBindingService
 	connectorHandler  *OpsConnectorHandler
 	cacheRulesService *service.CloudflareCacheRulesService
+	opsOverview       *service.OpsOverviewService
+	opsNetworkSummary *service.OpsNetworkSummaryService
 	auditService      adminAuditRecorder
 }
 
@@ -48,6 +50,20 @@ func (h *ServiceCenterHandler) ConfigureCloudflareCacheRulesService(cacheRulesSe
 		return
 	}
 	h.cacheRulesService = cacheRulesService
+}
+
+func (h *ServiceCenterHandler) ConfigureOpsOverviewService(opsOverview *service.OpsOverviewService) {
+	if h == nil {
+		return
+	}
+	h.opsOverview = opsOverview
+}
+
+func (h *ServiceCenterHandler) ConfigureOpsNetworkSummaryService(opsNetworkSummary *service.OpsNetworkSummaryService) {
+	if h == nil {
+		return
+	}
+	h.opsNetworkSummary = opsNetworkSummary
 }
 
 func (h *ServiceCenterHandler) ConfigureAuditService(recorder adminAuditRecorder) {
@@ -76,8 +92,25 @@ type serviceCenterCloudflareZone struct {
 	Domains       []ops.DomainBinding `json:"domains"`
 }
 
+type serviceCenterAssetOverview struct {
+	VPS      []ops.VPSBinding         `json:"vps"`
+	Projects []ops.ProjectBindingView `json:"projects"`
+	Domains  []ops.DomainBinding      `json:"domains"`
+}
+
 func (h *ServiceCenterHandler) Overview(c *gin.Context) {
-	connectors, domains, err := h.loadResources("")
+	environment := strings.TrimSpace(c.Query("environment"))
+	connectors, domains, err := h.loadResources(environment)
+	if err != nil {
+		h.respondResourceError(c, err)
+		return
+	}
+	assets, err := h.loadAssets(environment)
+	if err != nil {
+		h.respondResourceError(c, err)
+		return
+	}
+	network, err := h.loadNetworkSummary(environment)
 	if err != nil {
 		h.respondResourceError(c, err)
 		return
@@ -86,6 +119,7 @@ func (h *ServiceCenterHandler) Overview(c *gin.Context) {
 	cloudflareConnectors := filterServiceConnectors(connectors, ops.ConnectorProviderCloudflare)
 	hostingerConnectors := filterServiceConnectors(connectors, ops.ConnectorProviderHostinger)
 	cloudflareDomains := filterServiceDomains(domains, ops.DomainProviderCloudflare)
+	hostingerVPSCount := countServiceVPS(assets.VPS, ops.VPSProviderHostinger)
 
 	response.Success(c, gin.H{
 		"generated_at": time.Now().UTC(),
@@ -100,11 +134,14 @@ func (h *ServiceCenterHandler) Overview(c *gin.Context) {
 			newServiceCenterProviderSummary(
 				serviceProviderHostinger,
 				"Hostinger",
-				"",
+				"/ops/vps",
 				hostingerConnectors,
-				0,
+				hostingerVPSCount,
 			),
 		},
+		"environment": environment,
+		"assets":      assets,
+		"network":     network,
 	})
 }
 
@@ -301,8 +338,58 @@ func (h *ServiceCenterHandler) loadResources(environment string) ([]ops.Connecto
 	return connectors, domains, nil
 }
 
+func (h *ServiceCenterHandler) loadAssets(environment string) (*serviceCenterAssetOverview, error) {
+	result := &serviceCenterAssetOverview{
+		VPS:      []ops.VPSBinding{},
+		Projects: []ops.ProjectBindingView{},
+		Domains:  []ops.DomainBinding{},
+	}
+	if h == nil || h.opsOverview == nil {
+		return result, nil
+	}
+
+	environments := []string{environment}
+	if strings.TrimSpace(environment) == "" {
+		environments = []string{
+			ops.DomainEnvironmentProduction,
+			ops.DomainEnvironmentStaging,
+			ops.DomainEnvironmentTest,
+			ops.DomainEnvironmentLocal,
+		}
+	}
+
+	for _, currentEnvironment := range environments {
+		overview, err := h.opsOverview.GetForEnvironment(currentEnvironment)
+		if err != nil {
+			return nil, err
+		}
+		result.VPS = append(result.VPS, overview.Topology.VPS...)
+		result.Projects = append(result.Projects, overview.Topology.Projects...)
+		result.Domains = append(result.Domains, overview.Topology.Domains...)
+	}
+	return result, nil
+}
+
+func (h *ServiceCenterHandler) loadNetworkSummary(environment string) (*ops.NetworkSummary, error) {
+	if h == nil || h.opsNetworkSummary == nil {
+		return &ops.NetworkSummary{
+			Environment: strings.TrimSpace(environment),
+			GeneratedAt: time.Now().UTC(),
+			Summary: ops.NetworkSummaryCounts{
+				ManagedBy: map[string]int{},
+				Scopes:    map[string]int{},
+			},
+			Items: []ops.NetworkSummaryItem{},
+		}, nil
+	}
+	return h.opsNetworkSummary.Get(environment)
+}
+
 func (h *ServiceCenterHandler) respondResourceError(c *gin.Context, err error) {
-	if errors.Is(err, service.ErrInvalidOpsConnectorEnvironment) || errors.Is(err, service.ErrInvalidOpsDomainEnvironment) {
+	if errors.Is(err, service.ErrInvalidOpsConnectorEnvironment) ||
+		errors.Is(err, service.ErrInvalidOpsDomainEnvironment) ||
+		errors.Is(err, service.ErrInvalidOpsOverviewEnvironment) ||
+		errors.Is(err, service.ErrInvalidOpsNetworkEnvironment) {
 		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
@@ -401,6 +488,16 @@ func countActiveServiceConnections(connectors []ops.ConnectorView) int {
 	count := 0
 	for _, connector := range connectors {
 		if connector.Enabled && connector.Status == ops.ConnectorStatusActive {
+			count++
+		}
+	}
+	return count
+}
+
+func countServiceVPS(records []ops.VPSBinding, provider string) int {
+	count := 0
+	for _, record := range records {
+		if record.Provider == provider {
 			count++
 		}
 	}

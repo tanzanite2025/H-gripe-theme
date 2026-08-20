@@ -15,6 +15,7 @@
     "noResults": "ไม่พบ FAQ ที่ตรงกับ \"{query}\"",
     "allFaqsMetaTitle": "FAQ ทั้งหมด",
     "loadingAnswers": "กำลังโหลดคำตอบ",
-    "illustrationAlt": "ภาพประกอบ FAQ"
+    "illustrationAlt": "ภาพประกอบ FAQ",
+    "selectQuestion": "Select a question to view the answer."
   }
 }

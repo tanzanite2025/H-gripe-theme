@@ -2,15 +2,15 @@ import assert from 'node:assert/strict'
 import { fontPolicyLineViolations, fontPolicySourceViolations } from './font-policy-utils.ts'
 
 assert.deepEqual(
-  fontPolicyLineViolations("font-family: 'StorefrontSystemLatin', 'StorefrontSystem';"),
+  fontPolicyLineViolations("font-family: 'MapleUILatin', 'MapleUICJK';"),
   [],
 )
 assert.deepEqual(
-  fontPolicyLineViolations('font-family: StorefrontSystemLatin, StorefrontSystem;'),
+  fontPolicyLineViolations('font-family: MapleUILatin, MapleUICJK;'),
   [],
 )
 assert.deepEqual(
-  fontPolicyLineViolations('font-family: var(--tz-font-system);'),
+  fontPolicyLineViolations('font-family: var(--tz-font-ui);'),
   [],
 )
 assert.deepEqual(
@@ -18,8 +18,8 @@ assert.deepEqual(
   ['unapproved storefront font variable "--storefront-font-system"'],
 )
 assert.deepEqual(
-  fontPolicyLineViolations('font-family: var(--tz-font-system, Inter);'),
-  ['unapproved storefront font family "Inter"'],
+  fontPolicyLineViolations('font-family: var(--tz-font-ui, Inter);'),
+  ['unapproved Maple UI font family "Inter"'],
 )
 assert.deepEqual(
   fontPolicyLineViolations('fontFamily: family'),
@@ -31,21 +31,21 @@ assert.deepEqual(
 )
 assert.deepEqual(
   fontPolicyLineViolations("font-family: 'Inter';"),
-  ['unapproved storefront font family "Inter"'],
+  ['unapproved Maple UI font family "Inter"'],
 )
 assert.deepEqual(
-  fontPolicyLineViolations('font-family: StorefrontSystemLatin, Inter;'),
-  ['unapproved storefront font family "Inter"'],
+  fontPolicyLineViolations('font-family: MapleUILatin, Inter;'),
+  ['unapproved Maple UI font family "Inter"'],
 )
 assert.deepEqual(
-  fontPolicyLineViolations("font-family: 'StorefrontSystemLatin', Arial, sans-serif;"),
-  ['system or generic font fallback'],
+  fontPolicyLineViolations("font-family: 'MapleUILatin', Arial, sans-serif;"),
+  ['forbidden system or generic font family'],
 )
 assert.deepEqual(
   fontPolicyLineViolations("font: 700 1rem/1.2 'Inter', sans-serif;"),
   [
-    'system or generic font fallback',
-    'unapproved storefront font family "Inter"',
+    'forbidden system or generic font family',
+    'unapproved Maple UI font family "Inter"',
   ],
 )
 assert.deepEqual(
@@ -54,14 +54,14 @@ assert.deepEqual(
 )
 assert.deepEqual(
   fontPolicyLineViolations('font: menu;'),
-  ['system or generic font fallback'],
+  ['forbidden system or generic font family'],
 )
 assert.deepEqual(
-  fontPolicyLineViolations("[font-family:StorefrontSystemLatin,Inter]"),
-  ['unapproved storefront font family "Inter"'],
+  fontPolicyLineViolations("[font-family:MapleUILatin,Inter]"),
+  ['unapproved Maple UI font family "Inter"'],
 )
 assert.deepEqual(
-  fontPolicyLineViolations("@font-face { src: local('Inter'), url('/fonts/StorefrontSystem-Latin.woff2') format('woff2'); }"),
+  fontPolicyLineViolations("@font-face { src: local('Inter'), url('/fonts/MapleUI-Latin.woff2') format('woff2'); }"),
   ['local font source'],
 )
 assert.deepEqual(
@@ -76,45 +76,91 @@ assert.deepEqual(
   fontPolicySourceViolations(`
 .sample {
   font-family:
-    StorefrontSystemLatin,
+    MapleUILatin,
     Inter,
     sans-serif;
 }
 `).map(finding => finding.violation),
   [
-    'system or generic font fallback',
-    'unapproved storefront font family "Inter"',
+    'forbidden system or generic font family',
+    'unapproved Maple UI font family "Inter"',
   ],
 )
 assert.deepEqual(
   fontPolicySourceViolations(`
 :root {
-  --tz-font-system: StorefrontSystemLatin, Inter;
+  --tz-font-ui: MapleUILatin, Inter;
 }
 `).map(finding => finding.violation),
-  ['unapproved storefront font family "Inter"'],
+  ['unapproved Maple UI font family "Inter"'],
 )
 assert.deepEqual(
   fontPolicySourceViolations(`
-export const storefrontFontFamily = 'StorefrontSystemLatin, Inter'
-export const storefrontArabicFontFamily = \`StorefrontSystemArabic, \${storefrontFontFamily}\`
+<div class="font-serif">Address</div>
+<text font-family="Georgia">Address</text>
 `).map(finding => finding.violation),
-  ['unapproved storefront font family "Inter"'],
+  [
+    'forbidden Tailwind font family utility "font-serif"',
+    'forbidden system or generic font family',
+  ],
 )
 assert.deepEqual(
   fontPolicySourceViolations(`
-export const storefrontFontFamily = 'StorefrontSystemLatin, StorefrontSystem'
-export const storefrontThaiFontFamily = \`StorefrontSystemThai, \${storefrontFontFamily}\`
+export const storefrontFontFamily = 'MapleUILatin, Inter'
+export const storefrontArabicFontFamily = \`MapleUICoverageNotoSansArabic, \${storefrontFontFamily}\`
+`).map(finding => finding.violation),
+  ['unapproved Maple UI font family "Inter"'],
+)
+assert.deepEqual(
+  fontPolicySourceViolations(`
+export const storefrontFontFamily = 'MapleUILatin, MapleUICJK'
+export const storefrontThaiFontFamily = \`MapleUICoverageNotoSansThai, \${storefrontFontFamily}\`
 `).map(finding => finding.violation),
   [],
 )
 assert.deepEqual(
   fontPolicyLineViolations("[font-family:'AerialFaster',sans-serif]"),
   [
-    'obsolete AerialFaster reference',
-    'system or generic font fallback',
-    'unapproved storefront font family "AerialFaster"',
+    'obsolete or secondary font authority reference',
+    'forbidden system or generic font family',
+    'unapproved Maple UI font family "AerialFaster"',
   ],
+)
+assert.deepEqual(
+  fontPolicyLineViolations("@nuxt/fonts"),
+  ['obsolete or secondary font authority reference'],
+)
+assert.deepEqual(
+  fontPolicyLineViolations("src: url('/fonts/StorefrontSystem-Latin.00af3fec5b34.woff2')"),
+  ['obsolete or secondary font authority reference'],
+)
+assert.deepEqual(
+  fontPolicyLineViolations('<text font-family="MapleUILatin">SSL</text>'),
+  [],
+)
+assert.deepEqual(
+  fontPolicyLineViolations('<text font-family="Georgia">SSL</text>'),
+  ['forbidden system or generic font family'],
+)
+assert.deepEqual(
+  fontPolicyLineViolations('<div class="text-sm font-serif">Address</div>'),
+  ['forbidden Tailwind font family utility "font-serif"'],
+)
+assert.deepEqual(
+  fontPolicyLineViolations('<div class="md:font-serif">Address</div>'),
+  ['forbidden Tailwind font family utility "md:font-serif"'],
+)
+assert.deepEqual(
+  fontPolicyLineViolations('<div class="font-[family-name:var(--tz-font-ui)]">Address</div>'),
+  [],
+)
+assert.deepEqual(
+  fontPolicyLineViolations('<div class="font-[family-name:\'Inter\']">Address</div>'),
+  ['unapproved Maple UI font family "Inter"'],
+)
+assert.deepEqual(
+  fontPolicyLineViolations('<div class="font-[Inter]">Address</div>'),
+  ['unapproved Maple UI font family "Inter"'],
 )
 
 console.log('Font policy edge-case contract passed.')

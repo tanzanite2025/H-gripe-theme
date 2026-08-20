@@ -14,6 +14,10 @@ import (
 	"gorm.io/gorm"
 )
 
+type mediaAssetDeleter interface {
+	DeleteAsset(ctx context.Context, id uint, confirmation string) error
+}
+
 type ProductService struct {
 	productRepo                    *repository.ProductRepository
 	productBrandRepo               *repository.ProductBrandRepository
@@ -83,6 +87,13 @@ func (s *ProductService) ConfigureCustomsClassificationRepository(repo *reposito
 	s.customsClassificationRepo = repo
 }
 
+func (s *ProductService) ConfigureMediaService(mediaService mediaAssetDeleter) {
+	if s == nil {
+		return
+	}
+	s.mediaService = mediaService
+}
+
 func (s *ProductService) ConfigureProductCategoryRepository(repo *repository.ProductCategoryRepository) {
 	if s == nil {
 		return
@@ -130,13 +141,6 @@ func (s *ProductService) validateProductCategory(id *uint, allowDisabled bool) e
 	return nil
 }
 
-func (s *ProductService) ConfigureMediaService(mediaService mediaAssetDeleter) {
-	if s == nil {
-		return
-	}
-	s.mediaService = mediaService
-}
-
 func (s *ProductService) SetStorefrontHTMLCacheInvalidator(invalidator *StorefrontHTMLCacheInvalidator) {
 	s.storefrontHTMLCacheInvalidator = invalidator
 }
@@ -163,38 +167,39 @@ func (s *ProductService) ConfigureTxManager(manager *repository.TxManager) {
 }
 
 var (
-	ErrProductNotFound                                = errors.New("product not found")
-	ErrProductSKUExists                               = errors.New("product sku already exists")
-	ErrProductSpecificationTemplateNotFound           = errors.New("product specification template not found")
-	ErrProductSpecificationTemplateInvalid            = errors.New("product specification template invalid")
-	ErrProductSpecificationTemplateSlugExists         = errors.New("product specification template slug already exists")
-	ErrProductSpecificationTemplateSystemManaged      = errors.New("system product specification template structure is managed by the platform")
-	ErrProductSpecificationTemplateTranslationInvalid = errors.New("product specification template translation invalid")
-	ErrProductLocaleImmutable                         = errors.New("product locale cannot be changed after creation")
-	ErrProductSpecInvalid                             = errors.New("product spec invalid")
-	ErrProductVariantInvalid                          = errors.New("product variant invalid")
-	ErrProductMediaInvalid                            = errors.New("product media invalid")
-	ErrProductCustomsInfoInvalid                      = errors.New("product customs information invalid")
-	ErrProductCustomsProfileNotFound                  = errors.New("product customs classification profile not found")
-	ErrProductCustomsProfileInvalid                   = errors.New("product customs classification profile invalid")
-	ErrProductTranslationInvalid                      = errors.New("product translation relationship invalid")
+	ErrProductNotFound                           = errors.New("product not found")
+	ErrProductSKUExists                          = errors.New("product sku already exists")
+	ErrProductSpecificationTemplateNotFound      = errors.New("product specification template not found")
+	ErrProductSpecificationTemplateInvalid       = errors.New("product specification template invalid")
+	ErrProductSpecificationTemplateSlugExists    = errors.New("product specification template slug already exists")
+	ErrProductSpecificationTemplateSystemManaged = errors.New("system product specification template structure is managed by the platform")
+	ErrProductLocaleImmutable                    = errors.New("product locale cannot be changed after creation")
+	ErrProductSpecInvalid                        = errors.New("product spec invalid")
+	ErrProductVariantInvalid                     = errors.New("product variant invalid")
+	ErrProductMediaInvalid                       = errors.New("product media invalid")
+	ErrProductCustomsInfoInvalid                 = errors.New("product customs information invalid")
+	ErrProductCustomsProfileNotFound             = errors.New("product customs classification profile not found")
+	ErrProductCustomsProfileInvalid              = errors.New("product customs classification profile invalid")
+	ErrProductTranslationInvalid                 = errors.New("product translation relationship invalid")
 )
 
 type ProductSearchInput struct {
-	Locale       string
-	Status       string
-	Keyword      string
-	ProductSpecificationTemplateSlug     string
-	CategorySlug string
-	BrandSlug    string
-	PriceMin     *float64
-	PriceMax     *float64
-	SpecFilters  map[string][]string
-	Page         int
-	PageSize     int
+	Locale                           string
+	Status                           string
+	Featured                         *bool
+	Keyword                          string
+	ProductSpecificationTemplateSlug string
+	CategorySlug                     string
+	BrandSlug                        string
+	PriceMin                         *float64
+	PriceMax                         *float64
+	SpecFilters                      map[string][]string
+	Page                             int
+	PageSize                         int
 }
 
 type ProductRecommendationCandidateInput struct {
+	Locale                         string
 	ProductSpecificationTemplateID *uint
 	Keyword                        string
 	ExcludeProductIDs              []uint
@@ -511,6 +516,7 @@ func (s *ProductService) ListRecommendationCandidates(input ProductRecommendatio
 
 	offset := (page - 1) * pageSize
 	products, total, err := s.productRepo.ListRecommendationCandidates(repository.ProductRecommendationQuery{
+		Locale:                         input.Locale,
 		ProductSpecificationTemplateID: input.ProductSpecificationTemplateID,
 		Keyword:                        input.Keyword,
 		ExcludeProductIDs:              input.ExcludeProductIDs,
@@ -531,17 +537,18 @@ func (s *ProductService) SearchPublic(input ProductSearchInput) ([]product.Produ
 	}
 	offset := (page - 1) * pageSize
 	query := repository.ProductSearchQuery{
-		Locale:       input.Locale,
-		Status:       "active",
-		Keyword:      input.Keyword,
-		ProductSpecificationTemplateSlug:     input.ProductSpecificationTemplateSlug,
-		CategorySlug: input.CategorySlug,
-		BrandSlug:    input.BrandSlug,
-		PriceMin:     input.PriceMin,
-		PriceMax:     input.PriceMax,
-		SpecFilters:  input.SpecFilters,
-		Offset:       offset,
-		Limit:        pageSize,
+		Locale:                           input.Locale,
+		Status:                           "active",
+		Featured:                         input.Featured,
+		Keyword:                          input.Keyword,
+		ProductSpecificationTemplateSlug: input.ProductSpecificationTemplateSlug,
+		CategorySlug:                     input.CategorySlug,
+		BrandSlug:                        input.BrandSlug,
+		PriceMin:                         input.PriceMin,
+		PriceMax:                         input.PriceMax,
+		SpecFilters:                      input.SpecFilters,
+		Offset:                           offset,
+		Limit:                            pageSize,
 	}
 	products, total, err := s.productRepo.SearchPublic(query)
 	return sanitizeProductSliceHTML(products), total, err

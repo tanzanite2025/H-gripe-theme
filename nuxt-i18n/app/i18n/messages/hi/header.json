@@ -2,5 +2,11 @@
   "searchHint": {
     "title": "उत्पाद और FAQ खोजें",
     "body": "उत्पाद, FAQ और अधिक खोजने के लिए क्लिक करें।"
+  },
+  "globalNavigationTransition": {
+    "ariaLabel": "Global content navigation",
+    "optionsLabel": "Choose a destination",
+    "trigger": "Open content navigation",
+    "triggerBody": "Choose Products, FAQ, Pages, or Blog."
   }
 }

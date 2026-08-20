@@ -1,5 +1,6 @@
 {
   "close": "Close",
+  "share": "Share",
   "previous": "Previous",
   "next": "Next",
   "currentPage": "Current page",
@@ -13,5 +14,6 @@
   "decrease": "Decrease",
   "increase": "Increase",
   "remove": "Remove",
-  "done": "Done"
+  "done": "Done",
+  "shop": "Shop"
 }

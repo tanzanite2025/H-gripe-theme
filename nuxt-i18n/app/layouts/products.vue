@@ -1,7 +1,7 @@
 <template>
   <div class="layout layout--products">
     <main class="layout-main">
-      <div class="products-header-spacer" aria-hidden="true"></div>
+      <div class="site-header-layout-spacer" aria-hidden="true"></div>
 
       <!-- Products page content -->
       <section class="products-content">
@@ -53,22 +53,12 @@ useHead(() => ({
   flex-direction: column;
 }
 
-.products-header-spacer {
-  height: 145px;
-}
-
 .products-content {
   padding: var(--tz-page-content-top-gap) 0 3rem;
 }
 
 .products-content__inner {
   max-width: none;
-}
-
-@media (min-width: 768px) {
-  .products-header-spacer {
-    height: 112px;
-  }
 }
 
 </style>

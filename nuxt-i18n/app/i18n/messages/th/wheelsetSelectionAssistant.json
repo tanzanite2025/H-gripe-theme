@@ -1,0 +1,37 @@
+{
+  "title": "Wheelset fit helper",
+  "eyebrow": "Wheelset guide",
+  "steps": {
+    "start": "Start",
+    "knowledge": "Known specs",
+    "bikeBasics": "Bike fit",
+    "summary": "Summary"
+  },
+  "question": {
+    "back": "Back"
+  },
+  "support": {
+    "title": "Need help choosing?",
+    "description": "Contact support with your bike model or requirements.",
+    "action": "Contact support"
+  },
+  "states": {
+    "loading": "Loading fit questions...",
+    "retry": "Try again",
+    "empty": "No fit question is available yet."
+  },
+  "outcome": {
+    "eyebrow": "Fit profile",
+    "fallbackTitle": "Your fit profile is ready.",
+    "back": "Review previous answer",
+    "contact": "Send fit profile to support"
+  },
+  "results": {
+    "title": "Wheelset products",
+    "loading": "Matching wheelsets...",
+    "empty": "No wheelsets match these answers yet.",
+    "pagination": "Wheelset product result pages",
+    "previousPage": "Previous page",
+    "nextPage": "Next page"
+  }
+}

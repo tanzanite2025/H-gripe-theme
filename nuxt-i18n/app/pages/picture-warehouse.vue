@@ -94,7 +94,7 @@
               :key="n"
               class="flex flex-col overflow-hidden rounded-xl bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_3px_9px_rgba(0,0,0,0.9)] backdrop-blur-md"
             >
-              <div class="aspect-square w-full bg-slate-900/80 animate-pulse"></div>
+              <div class="aspect-square w-full bg-[var(--tz-image-loading-surface)] animate-pulse"></div>
               <div class="px-2.5 py-2 flex flex-col gap-1">
                 <div class="h-2.5 w-3/4 rounded bg-slate-700/80 animate-pulse"></div>
                 <div class="h-2 w-1/2 rounded bg-slate-800/80 animate-pulse"></div>
@@ -118,7 +118,7 @@
                   class="group flex flex-col overflow-hidden rounded-xl bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] shadow-[0_3px_9px_rgba(0,0,0,0.9)] backdrop-blur-md hover:shadow-[0_4px_12px_rgba(0,0,0,0.9)] transition-all"
                   @click="openLightbox('brand', index)"
                 >
-                  <div class="aspect-square w-full overflow-hidden bg-slate-900/90 group-hover:bg-slate-800/90 transition-colors">
+                  <div class="aspect-square w-full overflow-hidden bg-[var(--tz-image-loading-surface)] group-hover:bg-[#121216] transition-colors">
                     <StorefrontImage
                       v-if="photoCover(photo)"
                       :src="photoCover(photo)"
@@ -333,7 +333,7 @@
         leave-to-class="opacity-0"
       >
         <div
-          v-if="isLightboxOpen"
+          v-if="isLightboxOpen && activeKind === 'user'"
           class="tz-standard-modal-mask tz-standard-modal-mask--compact fixed inset-0 z-[1400] flex items-center justify-center px-3 tz-mobile-safe-modal-mask"
           @click.self="closeLightbox"
         >
@@ -358,7 +358,7 @@
             </header>
 
             <!-- 中部：大图区域 + 左右切换 -->
-            <div class="relative flex-1 flex items-center justify-center bg-slate-900 p-4 overflow-hidden">
+            <div class="relative flex-1 flex items-center justify-center bg-[var(--tz-image-loading-surface)] p-4 overflow-hidden">
               <button
                 type="button"
                 class="tz-directional-arrow tz-directional-arrow--large absolute left-2 z-20 sm:left-4"
@@ -552,6 +552,12 @@
         </div>
       </transition>
     </teleport>
+
+    <GlobalBrandGalleryLightbox
+      :open="isLightboxOpen && activeKind === 'brand'"
+      :gallery="activeBrandPhoto"
+      @close="closeLightbox"
+    />
   </div>
 </template>
 
@@ -559,12 +565,13 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { definePageMeta, useHead, useLocalePath, useRuntimeConfig } from '#imports'
 
+import GlobalBrandGalleryLightbox from '~/components/global/gallery/GlobalBrandGalleryLightbox.vue'
 import { useAuth } from '~/composables/useAuth'
-import {
-  useBrandGalleryPhotos,
-  type BrandGalleryPhoto,
-  type PictureWarehouseProductLink,
-} from '~/composables/useBrandGalleryPhotos'
+import { useBrandGalleryPhotos } from '~/composables/useBrandGalleryPhotos'
+import type {
+  BrandGalleryPhoto,
+  PictureWarehouseProductLink,
+} from '~/types/brandGalleryPhotos'
 import {
   pictureWarehouseTabs,
 } from '~/utils/pageSubNavigation'
@@ -840,7 +847,10 @@ const visibleBrandPhotos = computed<PicturePhoto[]>(() => {
 const hasMoreUserPhotos = computed(() => userPhotos.value.length > 6)
 const hasMoreBrandPhotos = computed(() => brandPhotos.value.length > 6)
 
-const photoCover = (photo: PicturePhoto): string => photo.galleryImages?.[0] || ''
+const photoCover = (photo: PicturePhoto): string =>
+  photo.kind === 'brand'
+    ? photo.coverImage || photo.galleryImages?.[0] || ''
+    : photo.galleryImages?.[0] || ''
 const productLinkPath = (product: PictureWarehouseProductLink): string => {
   const slug = String(product.slug || '').trim()
   return slug ? localePath(`/shop/${slug}`) : localePath('/shop')
@@ -963,6 +973,11 @@ const activePhoto = computed<PicturePhoto | null>(() => {
   const list = activeList.value
   if (!list || !list.length || activeIndex.value === null) return null
   return list[activeIndex.value] ?? null
+})
+
+const activeBrandPhoto = computed<BrandGalleryPhoto | null>(() => {
+  if (activeKind.value !== 'brand' || activeIndex.value === null) return null
+  return brandPhotos.value[activeIndex.value] ?? null
 })
 
 const activePhotoProductLinks = computed<PictureWarehouseProductLink[]>(() =>

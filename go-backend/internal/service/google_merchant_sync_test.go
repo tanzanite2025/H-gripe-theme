@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync/atomic"
 	"testing"
 
 	"commerce-platform/internal/domain/merchant"
@@ -261,6 +262,41 @@ func TestInsertGoogleMerchantProductInputUsesV1Contract(t *testing.T) {
 	})
 	if err != nil {
 		t.Fatalf("insertGoogleMerchantProductInput() error = %v", err)
+	}
+}
+
+func TestInsertGoogleMerchantProductInputRetriesTransientFailures(t *testing.T) {
+	originalTransport := http.DefaultTransport
+	t.Cleanup(func() {
+		http.DefaultTransport = originalTransport
+	})
+
+	var requests atomic.Int32
+	http.DefaultTransport = googleMerchantRoundTripper(func(_ *http.Request) (*http.Response, error) {
+		if requests.Add(1) < 3 {
+			return &http.Response{
+				StatusCode: http.StatusBadGateway,
+				Header:     make(http.Header),
+				Body:       io.NopCloser(strings.NewReader(`{"error":{"message":"temporary upstream failure"}}`)),
+			}, nil
+		}
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Header:     make(http.Header),
+			Body:       io.NopCloser(strings.NewReader(`{}`)),
+		}, nil
+	})
+
+	err := insertGoogleMerchantProductInput(context.Background(), "access-token", "123", "456", &googleMerchantProductInput{
+		OfferID:         "tz-wheel-700",
+		ContentLanguage: "en",
+		FeedLabel:       "US",
+	})
+	if err != nil {
+		t.Fatalf("insertGoogleMerchantProductInput() error = %v", err)
+	}
+	if requests.Load() != 3 {
+		t.Fatalf("requests = %d, want 3", requests.Load())
 	}
 }
 

@@ -17,15 +17,32 @@
 </template>
 
 <script setup lang="ts">
-withDefaults(defineProps<{
+import { computed } from 'vue'
+import { useI18n } from '#imports'
+
+const props = withDefaults(defineProps<{
   title?: string
   description?: string
   actionLabel?: string
 }>(), {
-  title: '不想一步步填写？',
-  description: '可以直接联系客服，把车型或需求告诉我们。',
-  actionLabel: '联系客服',
+  title: '',
+  description: '',
+  actionLabel: '',
 })
+
+const { t } = useI18n()
+const title = computed(() => props.title || t(
+  'wheelsetSelectionAssistant.support.title',
+  'Need help choosing?',
+))
+const description = computed(() => props.description || t(
+  'wheelsetSelectionAssistant.support.description',
+  'Contact support with your bike model or requirements.',
+))
+const actionLabel = computed(() => props.actionLabel || t(
+  'wheelsetSelectionAssistant.support.action',
+  'Contact support',
+))
 
 const emit = defineEmits<{
   contactSupport: []

@@ -2,34 +2,47 @@
   <AdminFormSection title="商品媒体" description="这里只维护商品主图、图库图片和商品视频；详情内容中的图片或视频请放在详细描述里。">
     <div class="space-y-4">
       <div class="grid gap-3 md:grid-cols-2">
-        <label class="flex min-h-24 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed bg-muted/20 px-4 py-5 text-center transition hover:border-primary/60 hover:bg-primary/5">
-          <input
-            class="sr-only"
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            multiple
-            :disabled="uploading"
-            @change="emit('upload', $event, 'image')"
-          />
+        <button
+          type="button"
+          class="flex min-h-24 flex-col items-center justify-center gap-2 rounded-xl border border-dashed bg-muted/20 px-4 py-5 text-center transition hover:border-primary/60 hover:bg-primary/5 disabled:cursor-not-allowed disabled:opacity-60"
+          :disabled="uploading"
+          @click="chooseUpload('image')"
+        >
           <ImageIcon class="size-5 text-muted-foreground" />
           <span class="text-sm font-medium">上传商品图片</span>
           <span class="text-xs text-muted-foreground">主图或图库图片，按排序展示在商品页媒体区</span>
-        </label>
+        </button>
 
-        <label class="flex min-h-24 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed bg-muted/20 px-4 py-5 text-center transition hover:border-primary/60 hover:bg-primary/5">
-          <input
-            class="sr-only"
-            type="file"
-            accept="video/mp4,video/quicktime,video/webm"
-            multiple
-            :disabled="uploading"
-            @change="emit('upload', $event, 'video')"
-          />
+        <button
+          type="button"
+          class="flex min-h-24 flex-col items-center justify-center gap-2 rounded-xl border border-dashed bg-muted/20 px-4 py-5 text-center transition hover:border-primary/60 hover:bg-primary/5 disabled:cursor-not-allowed disabled:opacity-60"
+          :disabled="uploading"
+          @click="chooseUpload('video')"
+        >
           <Video class="size-5 text-muted-foreground" />
           <span class="text-sm font-medium">上传商品视频</span>
           <span class="text-xs text-muted-foreground">支持 MP4 / MOV / WEBM，视频可配置封面图</span>
-        </label>
+        </button>
       </div>
+
+      <input
+        ref="imageInput"
+        class="sr-only"
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        multiple
+        :disabled="uploading"
+        @change="emit('upload', $event, 'image')"
+      />
+      <input
+        ref="videoInput"
+        class="sr-only"
+        type="file"
+        accept="video/mp4,video/quicktime,video/webm"
+        multiple
+        :disabled="uploading"
+        @change="emit('upload', $event, 'video')"
+      />
 
       <div class="flex flex-wrap gap-2">
         <Button type="button" variant="outline" size="sm" @click="emit('add-url', 'image')">
@@ -194,7 +207,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { ImageIcon, LoaderCircle, Plus, Star, Trash2, Video } from '@lucide/vue'
 import AdminFormField from '@/components/admin/AdminFormField.vue'
 import AdminFormSection from '@/components/admin/AdminFormSection.vue'
@@ -229,6 +242,9 @@ const props = withDefaults(defineProps<{
   error: '',
 })
 
+const imageInput = ref<HTMLInputElement | null>(null)
+const videoInput = ref<HTMLInputElement | null>(null)
+
 const emit = defineEmits<{
   (event: 'upload', value: Event, mediaType: ProductMediaType): void
   (event: 'add-url', mediaType: ProductMediaType): void
@@ -253,5 +269,13 @@ const setMediaScope = (item: ProductMediaForm, value: unknown): void => {
   const raw = String(value || '')
   item.variant_id = raw.startsWith('variant:') ? Number(raw.slice(8)) : null
   item.variant_option_value_id = raw.startsWith('option:') ? Number(raw.slice(7)) : null
+}
+
+const chooseUpload = (type: ProductMediaType): void => {
+  if (type === 'image') {
+    imageInput.value?.click()
+    return
+  }
+  videoInput.value?.click()
 }
 </script>

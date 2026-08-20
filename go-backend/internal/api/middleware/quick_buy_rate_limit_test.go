@@ -263,7 +263,7 @@ func newTestQuickBuyRateLimiter(t *testing.T, cfg config.QuickBuyRateLimitConfig
 	}
 }
 
-func newQuickBuyRateLimitRedis(t *testing.T) (*miniredis.Miniredis, *redis.Client) {
+func newQuickBuyRateLimitRedis(t *testing.T) (*miniredis.Miniredis, redis.UniversalClient) {
 	t.Helper()
 
 	redisServer := miniredis.RunT(t)

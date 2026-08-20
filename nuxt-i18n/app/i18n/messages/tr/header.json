@@ -2,5 +2,11 @@
   "searchHint": {
     "title": "Ürünleri ve SSSyi ara",
     "body": "Ürün arama, SSS arama ve daha fazlası için tıklayın."
+  },
+  "globalNavigationTransition": {
+    "ariaLabel": "Global content navigation",
+    "optionsLabel": "Choose a destination",
+    "trigger": "Open content navigation",
+    "triggerBody": "Choose Products, FAQ, Pages, or Blog."
   }
 }

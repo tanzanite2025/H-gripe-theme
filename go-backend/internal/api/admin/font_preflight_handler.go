@@ -22,7 +22,7 @@ const (
 )
 
 var requiredFontPreflightCheckKeys = []string{
-	"no-external-fallback",
+	"no-external-system-fonts",
 	"font-face-contract",
 	"multilingual-split",
 	"layout-parity",
@@ -30,12 +30,12 @@ var requiredFontPreflightCheckKeys = []string{
 }
 
 var requiredFontPreflightFamilies = []string{
-	"StorefrontSystemLatin",
-	"StorefrontSystem",
-	"StorefrontSystemDevanagari",
-	"StorefrontSystemLatinAccents",
-	"StorefrontSystemArabic",
-	"StorefrontSystemThai",
+	"MapleUILatin",
+	"MapleUICJK",
+	"MapleUICoverageNotoSansDevanagari",
+	"MapleUICoverageNotoSansLatinAccents",
+	"MapleUICoverageNotoSansArabic",
+	"MapleUICoverageNotoSansThai",
 }
 
 type FontPreflightHandler struct {
@@ -71,21 +71,23 @@ type FontPreflightCheck struct {
 }
 
 type FontPreflightStrategy struct {
-	Status                string   `json:"status"`
-	Label                 string   `json:"label"`
-	DefaultStack          []string `json:"default_stack"`
-	LatinBytes            int64    `json:"latin_bytes"`
-	LatinBudgetBytes      int64    `json:"latin_budget_bytes"`
-	CompleteMapleUIFamily string   `json:"complete_maple_ui_family"`
-	CJKUnicodeRange       string   `json:"cjk_unicode_range"`
-	LayoutParityVerified  bool     `json:"layout_parity_verified"`
-	Rationale             string   `json:"rationale"`
+	Status               string   `json:"status"`
+	Label                string   `json:"label"`
+	DefaultStack         []string `json:"default_stack"`
+	LatinBytes           int64    `json:"latin_bytes"`
+	LatinBudgetBytes     int64    `json:"latin_budget_bytes"`
+	MapleUICJKFamily     string   `json:"maple_ui_cjk_family"`
+	CoverageSourceFaces  []string `json:"coverage_source_faces"`
+	CJKUnicodeRange      string   `json:"cjk_unicode_range"`
+	LayoutParityVerified bool     `json:"layout_parity_verified"`
+	Rationale            string   `json:"rationale"`
 }
 
 type FontPreflightFace struct {
 	Family       string `json:"family"`
 	Role         string `json:"role"`
 	Script       string `json:"script"`
+	SourceFace   string `json:"source_face"`
 	Filename     string `json:"filename"`
 	Bytes        int64  `json:"bytes"`
 	FontDisplay  string `json:"font_display"`
@@ -219,8 +221,8 @@ func validateFontPreflightReport(report *FontPreflightReport) error {
 	if !isFontPreflightStatus(report.OverallStatus) {
 		return fmt.Errorf("invalid font preflight overall status: %q", report.OverallStatus)
 	}
-	if report.Baseline.ID != "storefront-self-hosted-no-fallback-v1" || report.Baseline.FontDisplay != "swap" {
-		return errors.New("font preflight manifest does not declare the required no-fallback swap baseline")
+	if report.Baseline.ID != "storefront-built-in-font-shards-v1" || report.Baseline.FontDisplay != "block" {
+		return errors.New("font preflight manifest does not declare the required built-in block-loading font baseline")
 	}
 	if len(report.Checks) == 0 || len(report.Faces) == 0 || len(report.Coverage.Locales) == 0 {
 		return errors.New("font preflight manifest is incomplete")
@@ -231,8 +233,11 @@ func validateFontPreflightReport(report *FontPreflightReport) error {
 	if report.Strategy.Status != "" && !isFontPreflightStatus(report.Strategy.Status) {
 		return fmt.Errorf("invalid font preflight strategy status: %q", report.Strategy.Status)
 	}
-	if len(report.Strategy.DefaultStack) != 2 || report.Strategy.DefaultStack[0] != "StorefrontSystemLatin" || report.Strategy.DefaultStack[1] != "StorefrontSystem" {
-		return errors.New("font preflight manifest does not declare the required storefront default font stack")
+	if len(report.Strategy.DefaultStack) != 2 || report.Strategy.DefaultStack[0] != "MapleUILatin" || report.Strategy.DefaultStack[1] != "MapleUICJK" {
+		return errors.New("font preflight manifest does not declare the required Maple UI default font stack")
+	}
+	if report.Strategy.MapleUICJKFamily != "MapleUICJK" {
+		return errors.New("font preflight manifest does not declare the required Maple UI CJK family")
 	}
 	if report.Strategy.LatinBudgetBytes <= 0 || report.Strategy.LatinBytes < 0 || report.Strategy.LatinBytes > report.Strategy.LatinBudgetBytes {
 		return errors.New("font preflight manifest contains an invalid Latin subset budget")
@@ -263,8 +268,8 @@ func validateFontPreflightReport(report *FontPreflightReport) error {
 
 	facesByFamily := make(map[string]FontPreflightFace, len(report.Faces))
 	for _, face := range report.Faces {
-		if strings.TrimSpace(face.Family) == "" || strings.TrimSpace(face.Filename) == "" || face.FontDisplay != "swap" || !face.SelfHosted {
-			return errors.New("font preflight manifest contains an invalid self-hosted font face")
+		if strings.TrimSpace(face.Family) == "" || strings.TrimSpace(face.Filename) == "" || strings.TrimSpace(face.SourceFace) == "" || face.FontDisplay != "block" || !face.SelfHosted {
+			return errors.New("font preflight manifest contains an invalid built-in font face")
 		}
 		if _, exists := facesByFamily[face.Family]; exists {
 			return fmt.Errorf("font preflight manifest contains duplicate font face: %s", face.Family)

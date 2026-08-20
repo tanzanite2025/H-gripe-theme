@@ -151,6 +151,40 @@ if [[ "${html_cache_driver}" != "redis" ]]; then
   exit 1
 fi
 
+redis_mode="$(env_value REDIS_MODE)"
+if [[ -z "${redis_mode}" ]]; then
+  redis_mode="standalone"
+fi
+case "${redis_mode,,}" in
+  standalone|single)
+    redis_mode="standalone"
+    ;;
+  sentinel|failover)
+    redis_mode="sentinel"
+    require_env_key REDIS_ADDRS
+    require_env_key REDIS_MASTER_NAME
+    require_env_key REDIS_SENTINEL_PASSWORD
+    sentinel_count="$(env_value REDIS_ADDRS | tr ',' '\n' | sed '/^[[:space:]]*$/d' | wc -l)"
+    if [[ "${sentinel_count}" -lt 3 ]]; then
+      echo "ERR: REDIS_ADDRS must contain at least three Sentinel addresses." >&2
+      exit 1
+    fi
+    if [[ -z "$(env_value REDIS_MASTER_NAME)" ]]; then
+      echo "ERR: REDIS_MASTER_NAME must not be empty in Sentinel mode." >&2
+      exit 1
+    fi
+    sentinel_password="$(env_value REDIS_SENTINEL_PASSWORD)"
+    if (( ${#sentinel_password} < 16 )); then
+      echo "ERR: REDIS_SENTINEL_PASSWORD must be at least 16 characters in Sentinel mode." >&2
+      exit 1
+    fi
+    ;;
+  *)
+    echo "ERR: REDIS_MODE must be standalone or sentinel." >&2
+    exit 1
+    ;;
+esac
+
 html_cache_prefix="$(env_value NUXT_HTML_CACHE_PREFIX)"
 if [[ -z "${html_cache_prefix}" ]]; then
   echo "ERR: NUXT_HTML_CACHE_PREFIX must not be empty." >&2
@@ -274,6 +308,9 @@ export IMAGE_TAG="sha-${release_sha}"
 echo "Deploying ${IMAGE_TAG} from ${deploy_ref}."
 
 compose=(docker compose --env-file "${ENV_FILE}" -f "${COMPOSE_FILE}")
+if [[ "${redis_mode}" == "sentinel" ]]; then
+  compose+=(-f deployment/redis-sentinel.compose.yml)
+fi
 "${compose[@]}" config --quiet
 
 pull_succeeded=false
@@ -294,7 +331,11 @@ if [[ "${pull_succeeded}" != "true" ]]; then
 fi
 
 echo "Starting database and Redis dependencies..."
-"${compose[@]}" up -d db redis
+redis_services=(redis)
+if [[ "${redis_mode}" == "sentinel" ]]; then
+  redis_services+=(redis-replica-1 redis-replica-2 redis-sentinel-1 redis-sentinel-2 redis-sentinel-3)
+fi
+"${compose[@]}" up -d db "${redis_services[@]}"
 
 wait_for_service_health() {
   local service="$1"
@@ -320,8 +361,59 @@ wait_for_service_health() {
   return 1
 }
 
+wait_for_any_service_health() {
+  local attempts="${1:-60}"
+  shift
+  local services=("$@")
+
+  for ((attempt = 1; attempt <= attempts; attempt++)); do
+    for service in "${services[@]}"; do
+      if wait_for_service_health "${service}" 1 >/dev/null 2>&1; then
+        return 0
+      fi
+    done
+    if (( attempt < attempts )); then
+      sleep 2
+    fi
+  done
+
+  echo "ERR: none of the services became healthy: ${services[*]}." >&2
+  "${compose[@]}" ps "${services[@]}" >&2 || true
+  return 1
+}
+
+wait_for_minimum_healthy_services() {
+  local required="$1"
+  local attempts="$2"
+  shift 2
+  local services=("$@")
+
+  for ((attempt = 1; attempt <= attempts; attempt++)); do
+    local healthy=0
+    for service in "${services[@]}"; do
+      if wait_for_service_health "${service}" 1 >/dev/null 2>&1; then
+        ((healthy += 1))
+      fi
+    done
+    if (( healthy >= required )); then
+      return 0
+    fi
+    if (( attempt < attempts )); then
+      sleep 2
+    fi
+  done
+
+  echo "ERR: only ${healthy}/${#services[@]} services became healthy; need at least ${required}." >&2
+  "${compose[@]}" ps "${services[@]}" >&2 || true
+  return 1
+}
+
 wait_for_service_health db
 wait_for_service_health redis
+if [[ "${redis_mode}" == "sentinel" ]]; then
+  wait_for_any_service_health 60 redis-replica-1 redis-replica-2
+  wait_for_minimum_healthy_services 2 60 redis-sentinel-1 redis-sentinel-2 redis-sentinel-3
+fi
 
 echo "Running database migrations..."
 "${compose[@]}" up --no-deps --force-recreate --abort-on-container-exit --exit-code-from migrate migrate
@@ -439,6 +531,76 @@ wait_for_service_health api
 wait_for_service_health storefront
 wait_for_service_health admin
 wait_for_service_health web
+
+assert_unique_edge_alias() {
+  local alias_name="theme-web"
+  local expected_container_id
+
+  expected_container_id="$("${compose[@]}" ps -q web)"
+  if [[ -z "${expected_container_id}" ]]; then
+    echo "ERR: could not resolve the current web container id." >&2
+    return 1
+  fi
+
+  "${PYTHON_CMD[@]}" - "${EDGE_NETWORK}" "${alias_name}" "${expected_container_id}" <<'PY'
+import json
+import subprocess
+import sys
+
+network_name, alias_name, expected_container_id = sys.argv[1:4]
+expected_container_id = expected_container_id.strip()
+
+container_ids = [
+    item.strip()
+    for item in subprocess.check_output(["docker", "ps", "-q"], text=True).splitlines()
+    if item.strip()
+]
+
+matches = []
+if container_ids:
+    containers = json.loads(subprocess.check_output(["docker", "inspect", *container_ids], text=True))
+    for container in containers:
+        networks = (container.get("NetworkSettings") or {}).get("Networks") or {}
+        endpoint = networks.get(network_name)
+        if not endpoint:
+            continue
+
+        aliases = endpoint.get("Aliases") or []
+        if alias_name not in aliases:
+            continue
+
+        container_id = container.get("Id") or ""
+        config = container.get("Config") or {}
+        matches.append({
+            "id": container_id,
+            "short_id": container_id[:12],
+            "name": (container.get("Name") or "").lstrip("/"),
+            "image": config.get("Image") or "",
+            "aliases": aliases,
+        })
+
+if len(matches) != 1 or matches[0]["id"] != expected_container_id:
+    print(
+        f"ERR: edge alias {alias_name!r} on network {network_name!r} must point to exactly "
+        "the current Compose web container.",
+        file=sys.stderr,
+    )
+    print(f"Expected web container: {expected_container_id[:12]}", file=sys.stderr)
+    print("Observed matching containers:", file=sys.stderr)
+    for match in matches:
+        print(
+            f"  - {match['short_id']} {match['name']} image={match['image']} aliases={','.join(match['aliases'])}",
+            file=sys.stderr,
+        )
+    if not matches:
+        print("  <none>", file=sys.stderr)
+    raise SystemExit(1)
+
+print(f"Edge alias {alias_name} points only to current web container {matches[0]['short_id']}.")
+PY
+}
+
+assert_unique_edge_alias
 
 publish_edge_route() {
   local candidate="${edge_config_dir}/caddy.caddy"

@@ -9,9 +9,9 @@
  <RefreshCw class="size-4" />
           刷新
         </Button>
-        <Button v-if="showCreateDraft" variant="outline" :disabled="creatingDraft || !canEdit" @click="createDraft">
+        <Button v-if="showCreateDraft" variant="outline" :disabled="creatingDraft || !canEdit" @click="openCreateDialog">
  <FilePlus2 class="size-4" />
-          创建草稿
+          {{ createDraftButtonLabel }}
         </Button>
         <Button variant="outline" :disabled="validating || !currentVersion" @click="validateCurrentVersion()">
  <ShieldCheck class="size-4" />
@@ -34,7 +34,7 @@
  <Alert v-else-if="currentVersion && !isDraft" class="rounded-lg">
  <Info class="size-4" />
       <AlertTitle>当前显示已发布版本</AlertTitle>
-      <AlertDescription>创建草稿后再编辑，已发布内容会保持不变。</AlertDescription>
+      <AlertDescription>点击“开始编辑”或列表中的编辑操作会自动创建草稿，已发布内容会保持不变。</AlertDescription>
     </Alert>
  <Alert v-if="validationResult" :variant="validationResult.valid ? 'default': 'destructive'" class="rounded-lg">
  <ShieldCheck v-if="validationResult.valid" class="size-4" />
@@ -57,7 +57,7 @@
  <h2 class="text-sm font-black uppercase tracking-tight">问题列表</h2>
  <p class="text-[11px] font-bold text-muted-foreground">
               <template v-if="currentVersion">版本 {{ currentVersion.version_number }} · {{ versionStatusLabel }}</template>
-              <template v-else>正在读取问卷</template>
+              <template v-else>尚未创建问卷</template>
             </p>
           </div>
           <Button size="sm" variant="outline" :disabled="controlsDisabled" @click="openCreateDialog">
@@ -118,7 +118,8 @@
         </article>
       </div>
  <div v-else-if="!loading" class="px-4 py-14 text-center text-sm font-bold text-muted-foreground">
-        当前版本还没有问题
+        <template v-if="currentVersion">当前版本还没有问题</template>
+        <template v-else>还没有创建问卷，点击上方按钮开始初始化。</template>
       </div>
     </AdminTablePanel>
 
@@ -129,6 +130,11 @@
       :form="editorForm"
       :language-options="languageOptions"
       :source-locale="sourceLocale"
+      :product-filter-options="productFilterOptions"
+      :product-filter-options-loading="productFilterOptionsLoading"
+      :question-key-options="questionKeyOptions"
+      :answer-key-options="answerKeyOptions"
+      :selection-configuration-key-options-loading="selectionConfigurationKeyOptionsLoading"
       :disabled="controlsDisabled"
       :saving="savingQuestion"
       @submit="saveQuestion"
@@ -179,18 +185,24 @@ import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import AdminStatsGrid from '@/components/admin/AdminStatsGrid.vue'
 import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
 import WheelsetFitQuestionEditorDialog from '@/components/admin/wheelset-fit/WheelsetFitQuestionEditorDialog.vue'
+import selectionConfigurationKeyApi, { type SelectionConfigurationKeyOption } from '@/api/selectionConfigurationKeys'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import wheelsetFitQuestionnaireApi, {
   type WheelsetFitQuestion,
+  type WheelsetFitProductFilterOption,
   type WheelsetFitQuestionnaireValidationIssue,
   type WheelsetFitQuestionnaireValidationResult,
   type WheelsetFitQuestionnaireVersion,
   type WheelsetFitQuestionPayload,
 } from '@/api/wheelsetFitQuestionnaire'
 import { useSupportedLanguages } from '@/composables/useSupportedLanguages'
+import {
+  selectionConfigurationKeyKindAnswerKey,
+  selectionConfigurationKeyKindQuestionKey,
+} from '@/modules/selection-configuration/selectionConfigurationKeys'
 import type { WheelsetFitQuestionForm, WheelsetFitQuestionOptionForm } from '@/modules/wheelset-fit/questionnaire'
 import { useAuthStore } from '@/stores/auth'
 
@@ -201,6 +213,11 @@ const authStore = useAuthStore()
 const currentVersion = ref<WheelsetFitQuestionnaireVersion | null>(null)
 const validationResult = ref<WheelsetFitQuestionnaireValidationResult | null>(null)
 const loading = ref(false)
+const productFilterOptionsLoading = ref(false)
+const productFilterOptions = ref<WheelsetFitProductFilterOption[]>([])
+const selectionConfigurationKeyOptionsLoading = ref(false)
+const questionKeyOptions = ref<SelectionConfigurationKeyOption[]>([])
+const answerKeyOptions = ref<SelectionConfigurationKeyOption[]>([])
 const creatingDraft = ref(false)
 const savingQuestion = ref(false)
 const moving = ref(false)
@@ -216,15 +233,16 @@ let nextClientID = 1
 const canEdit = computed(() => authStore.hasPermission('product:edit'))
 const sourceLocale = computed(() => currentVersion.value?.questionnaire?.source_locale || 'zh_cn')
 const isDraft = computed(() => currentVersion.value?.status === 'draft')
-const controlsDisabled = computed(() => !canEdit.value || !isDraft.value)
-const showCreateDraft = computed(() => !!currentVersion.value && !isDraft.value)
+const controlsDisabled = computed(() => !canEdit.value || creatingDraft.value)
+const showCreateDraft = computed(() => !isDraft.value)
+const createDraftButtonLabel = computed(() => (currentVersion.value ? '开始编辑' : '初始化问卷'))
 const questions = computed(() => (
   [...(currentVersion.value?.questions || [])].sort((left, right) => (
     left.sort_order - right.sort_order || left.id - right.id
   ))
 ))
 const versionStatusLabel = computed(() => {
-  if (!currentVersion.value) return '-'
+  if (!currentVersion.value) return '尚未创建'
   if (currentVersion.value.status === 'draft') return '草稿'
   if (currentVersion.value.status === 'published') return '已发布'
   return currentVersion.value.status
@@ -412,7 +430,7 @@ const assertQuestionForm = (form: WheelsetFitQuestionForm) => {
   }
 }
 
-const hydrateVersion = (version: WheelsetFitQuestionnaireVersion) => {
+const hydrateVersion = (version: WheelsetFitQuestionnaireVersion | null) => {
   currentVersion.value = version
   validationResult.value = null
 }
@@ -430,34 +448,87 @@ const reload = async () => {
 
 const createDraft = async () => {
   if (!canEdit.value) return
+  if (isDraft.value) return currentVersion.value
+  const isInitializingEmptyQuestionnaire = !currentVersion.value
   creatingDraft.value = true
   try {
     hydrateVersion(await wheelsetFitQuestionnaireApi.createDraft())
-    toast.success('草稿已创建')
+    toast.success(isInitializingEmptyQuestionnaire ? '已初始化空白问卷' : '已创建可编辑草稿')
+    return currentVersion.value
   } catch (error) {
     toast.error(extractErrorMessage(error, '创建草稿失败'))
+    return null
   } finally {
     creatingDraft.value = false
   }
 }
 
-const openCreateDialog = () => {
-  if (controlsDisabled.value) return
+const loadProductFilterOptions = async () => {
+  productFilterOptionsLoading.value = true
+  try {
+    productFilterOptions.value = await wheelsetFitQuestionnaireApi.getProductFilterOptions()
+  } catch (error) {
+    toast.error(extractErrorMessage(error, '轮组商品动态值加载失败'))
+    productFilterOptions.value = []
+  } finally {
+    productFilterOptionsLoading.value = false
+  }
+}
+
+const loadSelectionConfigurationKeyOptions = async () => {
+  selectionConfigurationKeyOptionsLoading.value = true
+  try {
+    const [loadedQuestionKeyOptions, loadedAnswerKeyOptions] = await Promise.all([
+      selectionConfigurationKeyApi.listEnabledKeyOptions(selectionConfigurationKeyKindQuestionKey),
+      selectionConfigurationKeyApi.listEnabledKeyOptions(selectionConfigurationKeyKindAnswerKey),
+    ])
+    questionKeyOptions.value = loadedQuestionKeyOptions
+    answerKeyOptions.value = loadedAnswerKeyOptions
+  } catch (error) {
+    questionKeyOptions.value = []
+    answerKeyOptions.value = []
+    toast.error(extractErrorMessage(error, '选型配置 Key 加载失败'))
+  } finally {
+    selectionConfigurationKeyOptionsLoading.value = false
+  }
+}
+
+const ensureEditableDraft = async () => {
+  if (!canEdit.value) {
+    toast.error('当前账号没有 product:edit 权限')
+    return null
+  }
+  if (isDraft.value) return currentVersion.value
+  return createDraft()
+}
+
+const openCreateDialog = async () => {
+  const version = await ensureEditableDraft()
+  if (!version || controlsDisabled.value) return
   editorMode.value = 'create'
   editorForm.value = createQuestionForm()
   editorOpen.value = true
 }
 
-const openEditDialog = (question: WheelsetFitQuestion) => {
-  if (controlsDisabled.value) return
+const openEditDialog = async (question: WheelsetFitQuestion) => {
+  const version = await ensureEditableDraft()
+  if (!version || controlsDisabled.value) return
+  const editableQuestion = version.questions.find((item) => item.question_key === question.question_key)
+    || version.questions.find((item) => item.id === question.id)
+  if (!editableQuestion) {
+    toast.error('无法找到要编辑的问题')
+    return
+  }
   editorMode.value = 'edit'
-  editorForm.value = createQuestionForm(question)
+  editorForm.value = createQuestionForm(editableQuestion)
   editorOpen.value = true
 }
 
 const saveQuestion = async () => {
   const form = editorForm.value
-  if (!form || controlsDisabled.value) return
+  if (!form) return
+  const version = await ensureEditableDraft()
+  if (!version || controlsDisabled.value) return
   try {
     assertQuestionForm(form)
   } catch (error) {
@@ -483,6 +554,8 @@ const saveQuestion = async () => {
 
 const moveQuestion = async (index: number, direction: number) => {
   if (controlsDisabled.value || moving.value) return
+  const version = await ensureEditableDraft()
+  if (!version || controlsDisabled.value) return
   const targetIndex = index + direction
   if (targetIndex < 0 || targetIndex >= questions.value.length) return
   const reordered = [...questions.value]
@@ -499,9 +572,12 @@ const moveQuestion = async (index: number, direction: number) => {
   }
 }
 
-const requestDelete = (question: WheelsetFitQuestion) => {
-  if (controlsDisabled.value) return
-  deleteTarget.value = question
+const requestDelete = async (question: WheelsetFitQuestion) => {
+  const version = await ensureEditableDraft()
+  if (!version || controlsDisabled.value) return
+  deleteTarget.value = version.questions.find((item) => item.question_key === question.question_key)
+    || version.questions.find((item) => item.id === question.id)
+    || null
 }
 
 const handleDeleteDialog = (open: boolean) => {
@@ -540,6 +616,7 @@ const validateCurrentVersion = async (options: { silent?: boolean } = {}) => {
 }
 
 const requestPublish = async () => {
+  if (!canEdit.value || !isDraft.value) return
   const result = await validateCurrentVersion({ silent: true })
   if (!result?.valid) {
     toast.error('请先处理校验错误')
@@ -549,7 +626,7 @@ const requestPublish = async () => {
 }
 
 const publishVersion = async () => {
-  if (!currentVersion.value || controlsDisabled.value) return
+  if (!currentVersion.value || !canEdit.value || !isDraft.value) return
   publishing.value = true
   try {
     hydrateVersion(await wheelsetFitQuestionnaireApi.publishVersion(currentVersion.value.id))
@@ -564,6 +641,8 @@ const publishVersion = async () => {
 
 onMounted(async () => {
   await supportedLanguages.fetchLanguages()
+  await loadSelectionConfigurationKeyOptions()
+  await loadProductFilterOptions()
   await reload()
 })
 </script>

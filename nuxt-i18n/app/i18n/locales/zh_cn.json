@@ -596,7 +596,8 @@
     }
   },
   "common": {
-    "close": "Close",
+    "close": "关闭",
+    "share": "分享",
     "previous": "Previous",
     "next": "Next",
     "loading": "Loading...",
@@ -610,7 +611,8 @@
     "decrease": "Decrease",
     "increase": "Increase",
     "remove": "Remove",
-    "done": "Done"
+    "done": "Done",
+    "shop": "Shop"
   },
   "company": {
     "nav": {
@@ -739,7 +741,8 @@
       "noResults": "没有找到与“{query}”匹配的 FAQ",
       "allFaqsMetaTitle": "全部 FAQ",
       "loadingAnswers": "正在加载答案",
-      "illustrationAlt": "FAQ 配图"
+      "illustrationAlt": "FAQ 配图",
+      "selectQuestion": "Select a question to view the answer."
     }
   },
   "feedback": {
@@ -1010,6 +1013,12 @@
     "searchHint": {
       "title": "搜索产品和 FAQ",
       "body": "点击搜索产品、FAQ 等内容。"
+    },
+    "globalNavigationTransition": {
+      "ariaLabel": "Global content navigation",
+      "optionsLabel": "Choose a destination",
+      "trigger": "Open content navigation",
+      "triggerBody": "Choose Products, FAQ, Pages, or Blog."
     }
   },
   "home": {
@@ -1041,45 +1050,79 @@
       }
     },
     "trust": {
-      "title": "Shop with Confidence"
+      "title": "放心购物"
+    },
+    "mainProductCategories": {
+      "eyebrow": "本店精选",
+      "heading": "本店主力产品精选",
+      "shopAll": "查看所有商品",
+      "cardAction": "查看详情",
+      "localeFallbackTitle": "正在使用默认精选",
+      "localeFallbackDescription": "当前语言的本店精选暂未单独配置。",
+      "loadingTitle": "正在加载本店精选",
+      "loadingDescription": "正在准备当前精选展示。",
+      "errorTitle": "本店精选暂时无法显示",
+      "errorDescription": "你仍可浏览全部商品。",
+      "emptyConfiguredTitle": "本店精选正在准备中",
+      "emptyConfiguredDescription": "精选内容更新期间，你仍可浏览全部商品。",
+      "emptyUnconfiguredTitle": "本店精选暂未设置",
+      "emptyUnconfiguredDescription": "你可以先浏览全部商品。"
+    },
+    "storePicksGuide": {
+      "precisionMatching": {
+        "title": "需要精准匹配？",
+        "description": "下方可查看如何选择。",
+        "action": "查看如何选择"
+      },
+      "customProduction": {
+        "title": "批量定制或寻求合作？",
+        "description": "查看我们的定制与生产全流程。",
+        "action": "查看定制流程"
+      },
+      "productGallery": {
+        "title": "或者先查看我们的产品图集？",
+        "description": "先了解产品图集，再决定选择。",
+        "action": "查看产品图集"
+      },
+      "paymentSafety": {
+        "title": "支付与售后安全",
+        "description": "查看放心购物中的支付与售后保障。",
+        "action": "查看安全保障"
+      },
+      "quickbuyBuild": {
+        "title": "想与众不同，自选配件组装轮组？",
+        "description": "打开 QuickBuy 步骤选择弹窗，自选配件组装轮组。",
+        "action": "打开 QuickBuy"
+      }
     },
     "shopWithConfidence": {
-      "items": {
-        "0": {
-          "title": "Secure Payment",
-          "description": "All transactions are protected by industry-standard HTTPS encryption.",
-          "bullets": {
-            "0": "Verified SSL Security",
-            "1": "Major Cards via Stripe",
-            "2": "PayPal, WeChat & Alipay"
-          }
+      "eyebrow": "付款保障",
+      "subtitle": "使用你熟悉的支付服务商完成付款。我们会核验付款结果，并为每笔订单提供清晰的支持入口。",
+      "paymentMethodsLabel": "支持的支付方式",
+      "paymentAssurances": {
+        "0": "支付信息由支付服务商安全处理。",
+        "1": "本店不会存储完整卡号、CVV 或 PIN。"
+      },
+      "cards": {
+        "securePayment": {
+          "title": "安全支付",
+          "description": "结账时可选择受信任的银行卡或钱包支付服务商。",
+          "action": "查看支付安全"
         },
-        "1": {
-          "title": "Worldwide Shipping",
-          "description": "Placeholder copy. Add delivery, tracking, and packaging details here.",
-          "bullets": {
-            "0": "Placeholder bullet",
-            "1": "Placeholder bullet",
-            "2": "Placeholder bullet"
-          }
+        "paymentVerification": {
+          "title": "付款结果核验",
+          "description": "付款结果、金额和币种均会在服务器端核对，订单才会标记为已付款。",
+          "action": "获取付款帮助"
         },
-        "2": {
-          "title": "Warranty Coverage",
-          "description": "Placeholder copy. Add warranty terms and verification details here.",
-          "bullets": {
-            "0": "Placeholder bullet",
-            "1": "Placeholder bullet",
-            "2": "Placeholder bullet"
-          }
+        "deliverySupport": {
+          "title": "订单与配送支持",
+          "description": "保留订单号或支付服务商凭证；需要核实付款或咨询配送时，客服可以协助跟进。",
+          "action": "查看配送说明"
         },
-        "3": {
-          "title": "After‑Sales Support",
-          "description": "Placeholder copy. Add support response and service coverage details here.",
-          "bullets": {
-            "0": "Placeholder bullet",
-            "1": "Placeholder bullet",
-            "2": "Placeholder bullet"
-          }
+        "afterSalesSupport": {
+          "title": "保修与售后支持",
+          "description": "遇到运输损坏、保修或退换问题，可通过专门的支持入口提交和跟进。",
+          "action": "查看保修与售后"
         }
       }
     },
@@ -1193,6 +1236,14 @@
       "title": "Featured Products",
       "subtitle": "Explore our carbon rims and wheelsets. More categories and components will be added over time.",
       "viewAll": "Shop all",
+      "eyebrow": "轮组精选",
+      "heading": "精选轮组",
+      "description": "查看店内精选轮组、当前价格、评分，并快速进入产品详情页。",
+      "shopAll": "查看全部轮组",
+      "mobilePagesLabel": "推荐轮组分页",
+      "mobilePageLabel": "显示推荐轮组第 {page} 页",
+      "moreAvailable": "查看全部 {count} 款轮组",
+      "moreAvailableUnknown": "查看全部轮组",
       "items": {
         "0": {
           "title": "Carbon Rim Set",
@@ -1215,6 +1266,77 @@
           "price": "From $—"
         }
       }
+    },
+    "wheelsetStandards": {
+      "eyebrow": "轮组标准",
+      "title": "在发货前，我们会检查这些项目",
+      "ariaLabel": "轮组标准",
+      "previous": "显示上一项轮组标准",
+      "next": "显示下一项轮组标准",
+      "progress": "轮组标准进度",
+      "showStep": "显示第 {step} 项轮组标准",
+      "steps": {
+        "0": {
+          "step": "01 / 调圈",
+          "title": "检查调圈精度",
+          "description": "在终检前，会在校正台上检查径向和横向跳动。",
+          "visualLabel": "跳动",
+          "visualValue": "百分表检查"
+        },
+        "1": {
+          "step": "02 / 张力",
+          "title": "平衡辐条张力",
+          "description": "张力会逐步建立，并在整只车轮上检查，确保受力均匀。",
+          "visualLabel": "张力",
+          "visualValue": "均匀受力"
+        },
+        "2": {
+          "step": "03 / 应力释放",
+          "title": "包含应力释放",
+          "description": "在最后一次张力与跳动检查前完成应力释放，帮助轮组稳定。",
+          "visualLabel": "应力",
+          "visualValue": "完成释放"
+        },
+        "3": {
+          "step": "04 / 对中",
+          "title": "核对碟形与对中",
+          "description": "根据选择的车架和传动配置，检查花鼓位置、圈中心和碟形。",
+          "visualLabel": "对中",
+          "visualValue": "完成核对"
+        },
+        "4": {
+          "step": "05 / 配置",
+          "title": "遵循所选配置",
+          "description": "垫带、气嘴、塔基等装配细节会对应你选择的轮组配置。",
+          "visualLabel": "配置",
+          "visualValue": "按规格完成"
+        },
+        "5": {
+          "step": "06 / 终检",
+          "title": "完成最终质检",
+          "description": "包装前会对成品轮组进行最后检查，并核对其与订单配置一致。",
+          "visualLabel": "质量",
+          "visualValue": "完成签核"
+        }
+      }
+    },
+    "brandPhotoCarousel": {
+      "eyebrow": "图库",
+      "title": "品牌图片",
+      "viewMore": "查看更多",
+      "ariaLabel": "品牌图片轮播",
+      "previous": "显示上一张品牌图片",
+      "next": "显示下一张品牌图片",
+      "progress": "品牌图片进度",
+      "showSlide": "显示第 {slide} 个品牌图库",
+      "lightboxClose": "关闭图库",
+      "lightboxPreviousImage": "上一张图片",
+      "lightboxNextImage": "下一张图片",
+      "lightboxImageThumbnails": "图库图片缩略图",
+      "lightboxLoadingDetails": "正在加载图库详情...",
+      "lightboxNoImage": "暂无图片",
+      "lightboxRelatedProducts": "关联产品",
+      "lightboxNoRelatedProducts": "暂未配置关联产品。"
     },
     "innovationRd": {
       "title": "Innovation & R&D",
@@ -1503,7 +1625,7 @@
     "loading": "正在加载评价...",
     "loadError": "评价暂时无法加载。",
     "retry": "重试",
-    "empty": "暂时还没有已通过审核的评价。",
+    "empty": "暂无评价",
     "ratingLabel": "满分 5 分，{rating} 星",
     "imageAlt": "客户评价图片",
     "verifiedPurchase": "已验证购买",
@@ -1597,7 +1719,13 @@
         "modalDescription": "先选择你已经知道的内容，我们只询问缺失的适配信息。"
       },
       "eyebrow": "QUICKBUY",
-      "title": "Choose how to start"
+      "title": "Choose how to start",
+      "contactService": {
+        "modalTitle": "Email or chat with support",
+        "title": "Email support",
+        "description": "Send specs or questions by email.",
+        "action": "Start"
+      }
     },
     "help": {
       "title": "QUICK instructions"
@@ -1714,6 +1842,82 @@
       "note": "Tip: If you are unsure, use the manufacturer's published specs. If you measure yourself, measure twice and enter values to the same unit (mm)."
     }
   },
+  "storefrontDataNotice": {
+    "featuredProducts": {
+      "loading": {
+        "title": "正在加载精选轮组",
+        "description": "正在准备当前精选。"
+      },
+      "error": {
+        "title": "精选轮组暂时无法显示",
+        "description": "请重试，或直接查看完整轮组列表。"
+      },
+      "empty": {
+        "title": "暂时没有精选轮组",
+        "description": "精选内容准备期间，你可以先查看完整轮组列表。"
+      }
+    },
+    "hero": {
+      "loading": {
+        "title": "正在加载视觉展示",
+        "description": "正在准备最新的工厂与产品视觉内容。"
+      },
+      "error": {
+        "title": "视觉展示暂时无法显示",
+        "description": "首页的其他内容仍可正常浏览。"
+      },
+      "localeFallback": {
+        "title": "正在使用标准视觉展示",
+        "description": "当前语言的专属视觉内容暂未配置。"
+      },
+      "builtInFallback": {
+        "title": "正在使用内置视觉展示",
+        "description": "最新配置的视觉内容暂时无法加载。"
+      }
+    },
+    "productFamilies": {
+      "localeFallback": {
+        "title": "正在使用默认本店精选",
+        "description": "当前语言的本店精选暂未单独配置。"
+      },
+      "loading": {
+        "title": "正在加载本店精选",
+        "description": "正在准备当前精选展示。"
+      },
+      "error": {
+        "title": "本店精选暂时无法显示",
+        "description": "你仍可浏览全部商品。"
+      },
+      "emptyConfigured": {
+        "title": "本店精选正在准备中",
+        "description": "精选内容更新期间，你仍可浏览全部商品。"
+      },
+      "emptyUnconfigured": {
+        "title": "本店精选暂未设置",
+        "description": "你可以先浏览全部商品。"
+      }
+    },
+    "refundReturnPolicy": {
+      "error": {
+        "title": "退款与退货政策暂时无法显示",
+        "description": "如需退货或退款帮助，请联系客户服务。"
+      },
+      "loading": {
+        "title": "正在加载退款与退货政策",
+        "description": "正在准备当前政策详情。"
+      },
+      "empty": {
+        "title": "退款与退货政策暂时不可用",
+        "description": "如需退货或退款帮助，请联系客户服务。"
+      },
+      "contactSupport": "Contact Support",
+      "lastUpdated": "Last Updated",
+      "fallbackNotice": {
+        "title": "正在显示标准退款与退货政策",
+        "description": "当前政策暂时无法加载，因此正在显示标准版本。"
+      }
+    }
+  },
   "support": {
     "nav": {
       "faqs": "常见问题",
@@ -1779,6 +1983,47 @@
     },
     "cardDesc": "Enter your product code to check warranty status and history.",
     "checkNow": "Check Now"
+  },
+  "wheelsetSelectionAssistant": {
+    "title": "轮组适配助手",
+    "eyebrow": "轮组选型指南",
+    "steps": {
+      "start": "开始",
+      "knowledge": "已知规格",
+      "bikeBasics": "车辆适配",
+      "summary": "结果摘要"
+    },
+    "question": {
+      "back": "返回"
+    },
+    "questionPagination": {
+      "label": "问题卡片",
+      "goToQuestion": "显示问题"
+    },
+    "support": {
+      "title": "不确定怎么选？",
+      "description": "可以联系客服，告诉我们你的车型或具体需求。",
+      "action": "联系客服"
+    },
+    "states": {
+      "loading": "正在加载适配问题……",
+      "retry": "重新尝试",
+      "empty": "暂时没有可用的适配问题。"
+    },
+    "outcome": {
+      "eyebrow": "适配结果",
+      "fallbackTitle": "你的适配结果已生成。",
+      "back": "返回检查上一项回答",
+      "contact": "把适配结果发送给客服"
+    },
+    "results": {
+      "title": "匹配的轮组",
+      "loading": "正在匹配轮组……",
+      "empty": "暂时没有符合这些回答的轮组。",
+      "pagination": "轮组商品结果分页",
+      "previousPage": "上一页",
+      "nextPage": "下一页"
+    }
   },
   "wishlistDrawer": {
     "title": "心愿单",

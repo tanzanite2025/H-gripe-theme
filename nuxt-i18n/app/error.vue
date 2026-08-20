@@ -20,7 +20,7 @@ const description = computed(() => (
 
 useHead({
   link: [
-    { rel: 'stylesheet', href: '/fonts/storefront-system.css' },
+    { rel: 'stylesheet', href: '/fonts/maple-ui.css' },
   ],
 })
 
@@ -47,7 +47,7 @@ const returnHome = (): Promise<void> => clearError({ redirect: '/' })
   place-items: center;
   background: #050507;
   color: #f8fafc;
-  font-family: 'StorefrontSystemLatin', 'StorefrontSystem';
+  font-family: 'MapleUILatin', 'MapleUICJK';
   padding: 1.5rem;
 }
 

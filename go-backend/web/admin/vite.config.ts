@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite'
+import { defineConfig, type Plugin } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import tailwindcss from '@tailwindcss/vite'
 import { resolve } from 'node:path'
@@ -6,8 +6,39 @@ import { fileURLToPath } from 'node:url'
 
 const projectRoot = fileURLToPath(new URL('.', import.meta.url))
 
+const normalizeAdminFontFallbacks = (source: string): string => source
+  .replace(
+    /var\(\s*--default-font-family\s*,\s*[^)]*\)/gi,
+    'var(--tz-font-admin-ui)',
+  )
+  .replace(
+    /var\(\s*--default-mono-font-family\s*,\s*[^)]*\)/gi,
+    'var(--tz-font-admin-ui)',
+  )
+  .replace(
+    /font-family\s*:\s*ui-sans-serif,\s*system-ui,\s*-apple-system,\s*BlinkMacSystemFont,\s*Segoe UI,\s*Roboto,\s*Helvetica Neue,\s*Arial,\s*Noto Sans,\s*sans-serif,\s*Apple Color Emoji,\s*Segoe UI Emoji,\s*Segoe UI Symbol,\s*Noto Color Emoji\s*;/gi,
+    'font-family: var(--tz-font-admin-ui);',
+  )
+
+const adminFontAuthorityPlugin = (): Plugin => ({
+  name: 'admin-font-authority',
+  enforce: 'post',
+  transform(code, id) {
+    if (!id.includes('.css')) return null
+
+    const normalized = normalizeAdminFontFallbacks(code)
+    return normalized === code ? null : { code: normalized, map: null }
+  },
+  generateBundle(_options, bundle) {
+    for (const output of Object.values(bundle)) {
+      if (output.type !== 'asset' || !output.fileName.endsWith('.css')) continue
+      output.source = normalizeAdminFontFallbacks(String(output.source))
+    }
+  },
+})
+
 export default defineConfig({
-  plugins: [vue(), tailwindcss()],
+  plugins: [vue(), tailwindcss(), adminFontAuthorityPlugin()],
   resolve: {
     alias: {
       '@': resolve(projectRoot, 'src')

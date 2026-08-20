@@ -2,7 +2,6 @@ package repository
 
 import (
 	"commerce-platform/internal/domain/product"
-	"strings"
 
 	"gorm.io/gorm"
 )
@@ -100,8 +99,6 @@ func (r *ProductRepository) FindAllProductSpecificationTemplates(includeDisabled
 	var productSpecificationTemplates []product.ProductSpecificationTemplate
 	query := r.db.Preload("SpecDefinitions", func(db *gorm.DB) *gorm.DB {
 		return orderSpecDefinitions(db)
-	}).Preload("Translations", func(db *gorm.DB) *gorm.DB {
-		return db.Order("locale ASC, id ASC")
 	})
 	if !includeDisabled {
 		query = query.Where("is_enabled = ?", true)
@@ -113,11 +110,7 @@ func (r *ProductRepository) FindAllProductSpecificationTemplates(includeDisabled
 
 func (r *ProductRepository) FindPublicProductSpecificationTemplates(includeDisabled bool) ([]product.ProductSpecificationTemplate, error) {
 	var productSpecificationTemplates []product.ProductSpecificationTemplate
-	query := r.db.
-		Select("id", "name", "slug", "image_url", "sort_order", "is_enabled").
-		Preload("Translations", func(db *gorm.DB) *gorm.DB {
-			return db.Order("locale ASC, id ASC")
-		})
+	query := r.db.Select("id", "name", "slug", "sort_order", "is_enabled")
 	if !includeDisabled {
 		query = query.Where("is_enabled = ?", true)
 	}
@@ -130,8 +123,6 @@ func (r *ProductRepository) FindProductSpecificationTemplateByID(id uint) (*prod
 	var productSpecificationTemplate product.ProductSpecificationTemplate
 	err := r.db.Preload("SpecDefinitions", func(db *gorm.DB) *gorm.DB {
 		return orderSpecDefinitions(db)
-	}).Preload("Translations", func(db *gorm.DB) *gorm.DB {
-		return db.Order("locale ASC, id ASC")
 	}).First(&productSpecificationTemplate, id).Error
 	if err != nil {
 		return nil, err
@@ -143,8 +134,6 @@ func (r *ProductRepository) FindProductSpecificationTemplateBySlug(slug string) 
 	var productSpecificationTemplate product.ProductSpecificationTemplate
 	err := r.db.Preload("SpecDefinitions", func(db *gorm.DB) *gorm.DB {
 		return orderSpecDefinitions(db)
-	}).Preload("Translations", func(db *gorm.DB) *gorm.DB {
-		return db.Order("locale ASC, id ASC")
 	}).Where("slug = ?", slug).First(&productSpecificationTemplate).Error
 	if err != nil {
 		return nil, err
@@ -167,10 +156,8 @@ func (r *ProductRepository) ProductSpecificationTemplateSlugExists(slug string, 
 func (r *ProductRepository) CreateProductSpecificationTemplate(productSpecificationTemplate *product.ProductSpecificationTemplate) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		definitions := productSpecificationTemplate.SpecDefinitions
-		translations := productSpecificationTemplate.Translations
 		isEnabled := productSpecificationTemplate.IsEnabled
 		productSpecificationTemplate.SpecDefinitions = nil
-		productSpecificationTemplate.Translations = nil
 		if err := tx.Create(productSpecificationTemplate).Error; err != nil {
 			return err
 		}
@@ -187,20 +174,11 @@ func (r *ProductRepository) CreateProductSpecificationTemplate(productSpecificat
 		}
 		productSpecificationTemplate.SpecDefinitions = definitions
 
-		for index := range translations {
-			translations[index].ProductSpecificationTemplateID = productSpecificationTemplate.ID
-		}
-		if len(translations) > 0 {
-			if err := tx.Create(&translations).Error; err != nil {
-				return err
-			}
-		}
-		productSpecificationTemplate.Translations = translations
 		return nil
 	})
 }
 
-func (r *ProductRepository) UpdateProductSpecificationTemplate(productSpecificationTemplate *product.ProductSpecificationTemplate, removedSpecIDs []uint, updateTranslations bool) error {
+func (r *ProductRepository) UpdateProductSpecificationTemplate(productSpecificationTemplate *product.ProductSpecificationTemplate, removedSpecIDs []uint) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		result := tx.Model(&product.ProductSpecificationTemplate{}).Where("id = ?", productSpecificationTemplate.ID).Updates(map[string]interface{}{
 			"name":        productSpecificationTemplate.Name,
@@ -244,45 +222,8 @@ func (r *ProductRepository) UpdateProductSpecificationTemplate(productSpecificat
 			}
 		}
 
-		if updateTranslations {
-			if err := tx.Where("product_specification_template_id = ?", productSpecificationTemplate.ID).
-				Delete(&product.ProductSpecificationTemplateTranslation{}).Error; err != nil {
-				return err
-			}
-
-			translations := productSpecificationTemplate.Translations
-			for index := range translations {
-				translations[index].ID = 0
-				translations[index].ProductSpecificationTemplateID = productSpecificationTemplate.ID
-			}
-			if len(translations) > 0 {
-				if err := tx.Create(&translations).Error; err != nil {
-					return err
-				}
-			}
-		}
 		return nil
 	})
-}
-
-func (r *ProductRepository) UpdateProductSpecificationTemplateImage(id uint, mediaAssetID *uint, imageURL string) error {
-	updates := map[string]interface{}{
-		"image_url": strings.TrimSpace(imageURL),
-	}
-	if mediaAssetID == nil {
-		updates["image_media_asset_id"] = nil
-	} else {
-		updates["image_media_asset_id"] = *mediaAssetID
-	}
-
-	result := r.db.Model(&product.ProductSpecificationTemplate{}).Where("id = ?", id).Updates(updates)
-	if result.Error != nil {
-		return result.Error
-	}
-	if result.RowsAffected == 0 {
-		return gorm.ErrRecordNotFound
-	}
-	return nil
 }
 
 func (r *ProductRepository) DeleteProductSpecificationTemplate(id uint) error {

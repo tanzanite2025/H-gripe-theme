@@ -16,11 +16,13 @@ export interface CreatePayPalOrderInput {
   orderNumber: string
   returnUrl?: string
   cancelUrl?: string
+  idempotencyKey?: string
 }
 
 export interface CapturePayPalOrderInput {
   orderNumber: string
   paypalOrderId: string
+  idempotencyKey?: string
 }
 
 const unwrapApiData = <T>(payload: ApiEnvelope<T> | null | undefined): T | null => {
@@ -52,9 +54,14 @@ export function usePayPalPayment() {
 
   const createPayPalOrder = async (input: CreatePayPalOrderInput): Promise<PayPalPaymentSession> => {
     const orderNumber = assertOrderNumber(input.orderNumber)
+    const idempotencyKey = String(input.idempotencyKey || '').trim()
     const response = await request<ApiEnvelope<PayPalPaymentSession>>('/payment/paypal/orders', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        ...(idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {}),
+      },
       body: JSON.stringify({
         order_number: orderNumber,
         return_url: input.returnUrl || '',
@@ -73,6 +80,7 @@ export function usePayPalPayment() {
   const capturePayPalOrder = async (input: CapturePayPalOrderInput): Promise<PayPalPaymentSession> => {
     const orderNumber = assertOrderNumber(input.orderNumber)
     const paypalOrderId = String(input.paypalOrderId || '').trim()
+    const idempotencyKey = String(input.idempotencyKey || '').trim()
     if (!paypalOrderId) {
       throw new Error('PayPal order id is required')
     }
@@ -81,7 +89,11 @@ export function usePayPalPayment() {
       `/payment/paypal/orders/${encodeURIComponent(paypalOrderId)}/capture`,
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          ...(idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {}),
+        },
         body: JSON.stringify({ order_number: orderNumber }),
       },
       'Unable to capture PayPal payment',

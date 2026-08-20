@@ -6,10 +6,14 @@ import type { ShopProductReviewSummary } from '~/composables/useShopProducts'
 const props = withDefaults(defineProps<{
   summary?: ShopProductReviewSummary | null
   showCount?: boolean
+  showEmpty?: boolean
+  emptyLabel?: string
   size?: 'xs' | 'sm'
 }>(), {
   summary: null,
   showCount: true,
+  showEmpty: false,
+  emptyLabel: '',
   size: 'sm',
 })
 
@@ -31,6 +35,9 @@ const ratingLabel = computed(() => t('productReviews.summaryLabel', {
   rating: formattedRating.value,
   count: formattedCount.value,
 }))
+const resolvedEmptyLabel = computed(() => (
+  props.emptyLabel || t('productReviews.empty', 'No reviews yet.')
+))
 
 const starFillPercentages = computed(() => {
   return [0, 1, 2, 3, 4].map((index) => {
@@ -74,6 +81,15 @@ const starFillPercentages = computed(() => {
     <span class="product-rating-compact__score">{{ formattedRating }}</span>
     <span v-if="showCount" class="product-rating-compact__count">({{ formattedCount }})</span>
   </span>
+  <span
+    v-else-if="showEmpty"
+    class="product-rating-compact product-rating-compact--empty"
+    :class="`product-rating-compact--${size}`"
+    role="img"
+    :aria-label="resolvedEmptyLabel"
+  >
+    <span class="product-rating-compact__empty-label">{{ resolvedEmptyLabel }}</span>
+  </span>
 </template>
 
 <style scoped>
@@ -97,11 +113,25 @@ const starFillPercentages = computed(() => {
   font-size: 0.66rem;
 }
 
+.product-rating-compact--empty {
+  width: 100%;
+  justify-content: center;
+  text-align: center;
+  color: var(--product-rating-empty-text, rgba(226, 232, 240, 0.5));
+}
+
 .product-rating-compact__stars {
   display: inline-flex;
   flex: 0 0 auto;
   align-items: center;
   gap: 0.08rem;
+}
+
+.product-rating-compact__empty-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .product-rating-compact__star {

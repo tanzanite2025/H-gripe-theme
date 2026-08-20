@@ -1,12 +1,14 @@
 package order
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
+	"commerce-platform/internal/api/middleware"
 	"commerce-platform/internal/domain/order"
 	"commerce-platform/internal/pkg/antifraud"
 	"commerce-platform/internal/pkg/apierror"
@@ -15,6 +17,7 @@ import (
 	"commerce-platform/internal/pkg/orderabuse"
 	"commerce-platform/internal/pkg/pagination"
 	"commerce-platform/internal/pkg/response"
+	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -27,6 +30,8 @@ type Handler struct {
 	orderAbuse        *orderabuse.Service
 	paymentProtection *service.PaymentProtectionService
 	attributionSigner *attributionpkg.Signer
+	afterSalesService *service.AfterSalesService
+	storageService    storage.StorageService
 }
 
 func NewHandler(orderService *service.OrderService, cartService *service.CartService, riskServices ...*antifraud.Service) *Handler {
@@ -57,6 +62,17 @@ func (h *Handler) ConfigureAttribution(signer *attributionpkg.Signer) {
 	if h != nil {
 		h.attributionSigner = signer
 	}
+}
+
+func (h *Handler) ConfigureAfterSales(
+	afterSalesService *service.AfterSalesService,
+	storageService storage.StorageService,
+) {
+	if h == nil {
+		return
+	}
+	h.afterSalesService = afterSalesService
+	h.storageService = storageService
 }
 
 // CreateOrder 创建订单
@@ -163,7 +179,7 @@ func (h *Handler) CreateOrder(c *gin.Context) {
 	}
 
 	// 创建订单
-	o, err := h.orderService.CreateOrderWithAttribution(
+	o, err := h.orderService.CreateOrderWithAttributionAndOptions(
 		c.Request.Context(),
 		userID.(uint),
 		items,
@@ -174,12 +190,20 @@ func (h *Handler) CreateOrder(c *gin.Context) {
 		req.CouponCode,
 		req.PointsToUse,
 		attributionContext,
+		service.OrderCreationOptions{
+			PolicyLocale:                 middleware.GetLocale(c),
+			PolicyURL:                    "/policies/refund-return",
+			PolicyDisclosureAcknowledged: req.PolicyDisclosureAcknowledged,
+			PolicySource:                 "checkout_order_creation",
+			IdempotencyKey:               middleware.GetIdempotencyKey(c),
+			IdempotencyRequestHash:       middleware.GetIdempotencyRequestHash(c),
+		},
 	)
 	if err != nil {
 		if isCardLikePaymentMethod(req.PaymentMethod) && h.riskService != nil {
 			_ = h.riskService.RecordFailure(c.Request.Context(), riskKey)
 		}
-		apierror.RespondBadRequest(c, err.Error())
+		respondCreateOrderError(c, err)
 		return
 	}
 	if isCardLikePaymentMethod(req.PaymentMethod) && h.riskService != nil {
@@ -191,6 +215,31 @@ func (h *Handler) CreateOrder(c *gin.Context) {
 	}
 
 	response.Created(c, publicOrderResponse(*o))
+}
+
+func respondCreateOrderError(c *gin.Context, err error) {
+	if errors.Is(err, service.ErrOrderIdempotencyConflict) {
+		apierror.RespondError(c, http.StatusConflict, "idempotency_key_conflict", err.Error())
+		return
+	}
+	if errors.Is(err, service.ErrOrderIdempotencyInProgress) {
+		c.Header("Retry-After", "1")
+		apierror.RespondError(c, http.StatusConflict, "idempotency_request_in_progress", err.Error())
+		return
+	}
+	if errors.Is(err, service.ErrOrderIdempotencyUnavailable) {
+		apierror.RespondError(c, http.StatusServiceUnavailable, "idempotency_service_unavailable", err.Error())
+		return
+	}
+	if errors.Is(err, service.ErrOrderIdempotencyHashRequired) {
+		apierror.RespondError(c, http.StatusBadRequest, "idempotency_key_invalid", err.Error())
+		return
+	}
+	if errors.Is(err, service.ErrOrderPolicyDisclosureFailure) {
+		apierror.RespondInternalError(c, err)
+		return
+	}
+	apierror.RespondBadRequest(c, err.Error())
 }
 
 func (h *Handler) readAttributionContext(c *gin.Context) (attributionpkg.Context, error) {

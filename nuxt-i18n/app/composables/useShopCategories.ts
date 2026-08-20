@@ -80,11 +80,11 @@ export const useShopCategories = () => {
   // Every storefront surface reads this store so category names, slugs, and images stay aligned.
   const stateStore = useState<ShopCategoryStateStore>('shop-categories-by-locale', () => ({}))
   const publicBaseURL = computed(() => ((config.public as { apiBase?: string }).apiBase || '/api/v1').replace(/\/$/, ''))
+  const internalApiOrigin = import.meta.server
+    ? String((config as { apiInternalOrigin?: string }).apiInternalOrigin || '').replace(/\/$/, '')
+    : ''
   const requestBaseURL = computed(() => {
-    if (import.meta.server) {
-      const internalOrigin = String((config as { apiInternalOrigin?: string }).apiInternalOrigin || '').replace(/\/$/, '')
-      if (internalOrigin) return `${internalOrigin}/api/v1`
-    }
+    if (internalApiOrigin) return `${internalApiOrigin}/api/v1`
     return publicBaseURL.value
   })
   const localeCode = computed(() => String(locale.value || '').trim() || 'en')

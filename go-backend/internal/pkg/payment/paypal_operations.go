@@ -2,6 +2,8 @@ package payment
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"strings"
 	"time"
@@ -11,13 +13,33 @@ import (
 
 // CapturePayment 捕获PayPal支付
 func (g *paypalGatewayImpl) CapturePayment(ctx context.Context, paymentID string) (*PaymentResponse, error) {
+	return g.CapturePaymentWithOptions(ctx, paymentID, CaptureOptions{})
+}
+
+func (g *paypalGatewayImpl) CapturePaymentWithOptions(ctx context.Context, paymentID string, options CaptureOptions) (*PaymentResponse, error) {
+	ctx, cancel := paymentGatewayContext(ctx)
+	defer cancel()
+
 	if paymentID == "" {
 		return nil, fmt.Errorf("payment ID is required")
 	}
 
 	// 捕获订单
 	captureReq := paypal.CaptureOrderRequest{}
-	capturedOrder, err := g.client.CaptureOrder(ctx, paymentID, captureReq)
+	var capturedOrder *paypal.CaptureOrderResponse
+	var err error
+	requestID := strings.TrimSpace(options.IdempotencyKey)
+	if requestID != "" {
+		if client, ok := g.client.(interface {
+			CaptureOrderWithPaypalRequestId(context.Context, string, paypal.CaptureOrderRequest, string, *paypal.CaptureOrderMockResponse) (*paypal.CaptureOrderResponse, error)
+		}); ok {
+			capturedOrder, err = client.CaptureOrderWithPaypalRequestId(ctx, paymentID, captureReq, requestID, nil)
+		} else {
+			capturedOrder, err = g.client.CaptureOrder(ctx, paymentID, captureReq)
+		}
+	} else {
+		capturedOrder, err = g.client.CaptureOrder(ctx, paymentID, captureReq)
+	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to capture paypal order: %w", err)
 	}
@@ -75,6 +97,11 @@ func (g *paypalGatewayImpl) CapturePayment(ctx context.Context, paymentID string
 	}, nil
 }
 
+func PayPalCaptureRequestID(paymentID string) string {
+	sum := sha256.Sum256([]byte("paypal:capture:" + strings.TrimSpace(paymentID)))
+	return "cap-" + hex.EncodeToString(sum[:16])
+}
+
 // RefundPayment 退款PayPal支付
 func (g *paypalGatewayImpl) RefundPayment(ctx context.Context, paymentID string, amount float64) (*RefundResponse, error) {
 	return g.RefundPaymentWithOptions(ctx, paymentID, amount, RefundOptions{})
@@ -90,6 +117,9 @@ func (g *paypalGatewayImpl) RefundPaymentWithOptions(ctx context.Context, paymen
 }
 
 func (g *paypalGatewayImpl) refundPayPalCapture(ctx context.Context, paymentReference string, captureID string, amount float64, options RefundOptions) (*RefundResponse, error) {
+	ctx, cancel := paymentGatewayContext(ctx)
+	defer cancel()
+
 	captureID = strings.TrimSpace(captureID)
 	if captureID == "" {
 		return nil, fmt.Errorf("paypal capture id is required")
@@ -140,6 +170,9 @@ func (g *paypalGatewayImpl) refundPayPalCapture(ctx context.Context, paymentRefe
 
 // GetPayment 查询PayPal支付
 func (g *paypalGatewayImpl) GetPayment(ctx context.Context, paymentID string) (*PaymentResponse, error) {
+	ctx, cancel := paymentGatewayContext(ctx)
+	defer cancel()
+
 	if paymentID == "" {
 		return nil, fmt.Errorf("payment ID is required")
 	}

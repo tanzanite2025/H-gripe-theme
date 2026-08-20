@@ -15,5 +15,6 @@ export const toAbsoluteSeoUrl = (origin: string, path: string): string => {
 
 export const buildProductPath = (slug: string): string => {
   const normalizedSlug = String(slug || '').trim()
+  if (!normalizedSlug) return ''
   return `/shop/${encodeURIComponent(normalizedSlug)}`
 }

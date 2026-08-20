@@ -1,9 +1,11 @@
 package repository
 
 import (
+	"errors"
 	"regexp"
 	"testing"
 
+	"commerce-platform/internal/domain/setting"
 	"github.com/DATA-DOG/go-sqlmock"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -64,6 +66,50 @@ func TestGetGroupsQuotesReservedGroupColumnForPostgres(t *testing.T) {
 	}
 	if len(groups) != 2 || groups[0] != "site" || groups[1] != "seo" {
 		t.Fatalf("unexpected groups: %#v", groups)
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("unmet SQL expectations: %v", err)
+	}
+}
+
+func TestSetReturnsLookupErrorInsteadOfSaving(t *testing.T) {
+	repo, mock, cleanup := newMockSettingRepository(t)
+	defer cleanup()
+
+	dbErr := errors.New("database unavailable")
+	mock.ExpectQuery(`SELECT .* FROM "settings"`).
+		WillReturnError(dbErr)
+
+	err := repo.Set(&setting.Setting{
+		Key:    "refund_return_policy",
+		Locale: "en",
+		Value:  "{}",
+	})
+	if !errors.Is(err, dbErr) {
+		t.Fatalf("Set() error = %v, want %v", err, dbErr)
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("unmet SQL expectations: %v", err)
+	}
+}
+
+func TestBatchSetReturnsLookupErrorInsteadOfSaving(t *testing.T) {
+	repo, mock, cleanup := newMockSettingRepository(t)
+	defer cleanup()
+
+	dbErr := errors.New("database unavailable")
+	mock.ExpectBegin()
+	mock.ExpectQuery(`SELECT .* FROM "settings"`).
+		WillReturnError(dbErr)
+	mock.ExpectRollback()
+
+	err := repo.BatchSet([]setting.Setting{{
+		Key:    "refund_return_policy",
+		Locale: "en",
+		Value:  "{}",
+	}})
+	if !errors.Is(err, dbErr) {
+		t.Fatalf("BatchSet() error = %v, want %v", err, dbErr)
 	}
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Fatalf("unmet SQL expectations: %v", err)

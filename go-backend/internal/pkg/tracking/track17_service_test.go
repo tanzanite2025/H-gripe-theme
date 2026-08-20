@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -144,4 +145,40 @@ func TestTrack17RegisterTrackingsUsesV24Register(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, "/track/v2.4/register", requestPath)
+}
+
+func TestTrack17RetriesTransientAPIFailures(t *testing.T) {
+	var requests atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		if requests.Add(1) < 3 {
+			w.WriteHeader(http.StatusBadGateway)
+			_, _ = w.Write([]byte(`{"code":500,"msg":"upstream unavailable"}`))
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{
+			"code": 0,
+			"data": {
+				"accepted": [
+					{"number":"YT123456789CN","carrier":190271}
+				],
+				"rejected": []
+			}
+		}`))
+	}))
+	defer server.Close()
+
+	service := NewTrackingService(&Config{
+		Provider: "17track",
+		APIKey:   "test-token",
+		BaseURL:  server.URL,
+		Timeout:  time.Second,
+	})
+
+	results, err := service.BatchTrack(t.Context(), []TrackingRequest{
+		{TrackingNumber: "YT123456789CN", Carrier: "190271"},
+	})
+	require.NoError(t, err)
+	require.Len(t, results, 1)
+	require.Equal(t, int32(3), requests.Load())
 }

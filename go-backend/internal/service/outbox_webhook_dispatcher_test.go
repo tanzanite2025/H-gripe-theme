@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -21,6 +22,7 @@ func TestOutboxWebhookDispatcherDeliversAuthenticatedEnvelope(t *testing.T) {
 		require.Equal(t, "Bearer alert-token", request.Header.Get("Authorization"))
 		require.Equal(t, "risk:stripe:2", request.Header.Get("X-Outbox-Event-Key"))
 		require.Equal(t, outbox.EventTypePaymentRiskLevelChanged, request.Header.Get("X-Outbox-Event-Type"))
+		require.Equal(t, "risk:stripe:2", request.Header.Get("Idempotency-Key"))
 
 		var envelope OutboxWebhookEnvelope
 		require.NoError(t, json.NewDecoder(request.Body).Decode(&envelope))
@@ -51,4 +53,26 @@ func TestOutboxWebhookDispatcherDeliversAuthenticatedEnvelope(t *testing.T) {
 func TestPaymentRiskAlertOutboxWebhookHandlerRequiresConfiguredDispatcher(t *testing.T) {
 	handler := &PaymentRiskAlertOutboxWebhookHandler{}
 	require.ErrorIs(t, handler.Handle(context.Background(), outbox.Event{}), ErrPaymentRiskAlertOutboxWebhookNotConfigured)
+}
+
+func TestOutboxWebhookDispatcherRetriesTransientFailures(t *testing.T) {
+	var requests atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
+		if requests.Add(1) < 3 {
+			writer.WriteHeader(http.StatusServiceUnavailable)
+			_, _ = writer.Write([]byte("temporary"))
+			return
+		}
+		writer.WriteHeader(http.StatusNoContent)
+	}))
+	defer server.Close()
+
+	dispatcher := NewOutboxWebhookDispatcher(server.URL, "alert-token", server.Client())
+	require.NoError(t, dispatcher.Dispatch(context.Background(), outbox.Event{
+		ID:        11,
+		EventKey:  "retry:event:11",
+		EventType: outbox.EventTypeOrderPaid,
+		Payload:   datatypes.JSON([]byte(`{"order_id":11}`)),
+	}))
+	require.Equal(t, int32(3), requests.Load())
 }

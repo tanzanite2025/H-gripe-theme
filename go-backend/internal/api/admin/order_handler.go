@@ -268,6 +268,35 @@ func (h *OrderHandler) UpdateTrackingInfo(c *gin.Context) {
 	})
 }
 
+// FulfillOrder 确认发货，并原子写入订单状态、物流状态和追踪任务。
+// POST /api/admin/orders/:id/fulfillment
+func (h *OrderHandler) FulfillOrder(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid order ID"})
+		return
+	}
+
+	var req orderFulfillmentRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	result, err := h.orderService.FulfillOrder(c.Request.Context(), uint(id), req.toServiceInput())
+	if err != nil {
+		respondOrderServiceError(c, err, "Failed to fulfill order", http.StatusInternalServerError)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":                     "Order fulfilled successfully",
+		"order":                       result.Order,
+		"tracking_shipment":           result.TrackingShipment,
+		"tracking_registration_error": result.TrackingRegistrationError,
+	})
+}
+
 // SyncTrackingInfo 同步物流追踪轨迹
 // POST /api/admin/orders/:id/tracking/sync
 func (h *OrderHandler) SyncTrackingInfo(c *gin.Context) {

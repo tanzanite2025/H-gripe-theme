@@ -874,6 +874,85 @@ func TestOrderServiceUpdateTrackingInfoDefaultsToOrderCarrierService(t *testing.
 	assert.Equal(t, "DHL-EXP-US", shipment.ProviderCarrierCode)
 }
 
+func TestOrderServiceFulfillOrderMarksOrderShippedAndCreatesTrackingTask(t *testing.T) {
+	db, orderService := newTestOrderService(t)
+	provider, _, carrierService := seedTrackingProviderCarrierAndService(t, db)
+	mapping := seedTrackingCarrierMapping(t, db, provider.ID, "carrier_service", nil, &carrierService.ID, "DHL-EXP-US")
+
+	orderRecord := order.Order{
+		OrderNumber:    "ORD-FULFILL",
+		UserID:         42,
+		Status:         "processing",
+		PaymentStatus:  "paid",
+		ShippingStatus: "pending",
+		TotalAmount:    100,
+		Currency:       "USD",
+	}
+	require.NoError(t, db.Create(&orderRecord).Error)
+
+	result, err := orderService.FulfillOrder(context.Background(), orderRecord.ID, OrderTrackingUpdateInput{
+		TrackingNumber:     "TRACK-FULFILL-123",
+		TrackingProviderID: provider.ID,
+		CarrierServiceID:   &carrierService.ID,
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	require.NotNil(t, result.Order)
+	require.NotNil(t, result.TrackingShipment)
+	assert.Empty(t, result.TrackingRegistrationError)
+	assert.Equal(t, "shipped", result.Order.Status)
+	assert.Equal(t, "shipped", result.Order.ShippingStatus)
+	assert.Equal(t, "TRACK-FULFILL-123", result.Order.TrackingNumber)
+	assert.NotNil(t, result.Order.ShippedAt)
+	assert.NotNil(t, result.Order.TrackingCarrierMappingID)
+	assert.Equal(t, mapping.ID, *result.Order.TrackingCarrierMappingID)
+	assert.Equal(t, "DHL-EXP-US", result.Order.ProviderCarrierCode)
+	assert.Equal(t, orderRecord.ID, result.TrackingShipment.OrderID)
+	assert.Equal(t, "TRACK-FULFILL-123", result.TrackingShipment.TrackingNumber)
+	assert.Equal(t, "pending", result.TrackingShipment.SyncStatus)
+
+	var savedOrder order.Order
+	require.NoError(t, db.First(&savedOrder, orderRecord.ID).Error)
+	assert.Equal(t, "shipped", savedOrder.Status)
+	assert.Equal(t, "shipped", savedOrder.ShippingStatus)
+}
+
+func TestOrderServiceFulfillOrderDoesNotMarkOrderShippedWhenCarrierMappingFails(t *testing.T) {
+	db, orderService := newTestOrderService(t)
+	provider, _, carrierService := seedTrackingProviderCarrierAndService(t, db)
+
+	orderRecord := order.Order{
+		OrderNumber:    "ORD-FULFILL-MAPPING-FAIL",
+		UserID:         42,
+		Status:         "processing",
+		PaymentStatus:  "paid",
+		ShippingStatus: "pending",
+		TotalAmount:    100,
+		Currency:       "USD",
+	}
+	require.NoError(t, db.Create(&orderRecord).Error)
+
+	result, err := orderService.FulfillOrder(context.Background(), orderRecord.ID, OrderTrackingUpdateInput{
+		TrackingNumber:     "TRACK-NO-MAPPING",
+		TrackingProviderID: provider.ID,
+		CarrierServiceID:   &carrierService.ID,
+	})
+
+	require.ErrorIs(t, err, ErrTrackingCarrierMappingMissing)
+	assert.Nil(t, result)
+
+	var savedOrder order.Order
+	require.NoError(t, db.First(&savedOrder, orderRecord.ID).Error)
+	assert.Equal(t, "processing", savedOrder.Status)
+	assert.Equal(t, "pending", savedOrder.ShippingStatus)
+	assert.Empty(t, savedOrder.TrackingNumber)
+
+	var shipmentCount int64
+	require.NoError(t, db.Model(&shippingdomain.TrackingShipment{}).Where("order_id = ?", orderRecord.ID).Count(&shipmentCount).Error)
+	assert.Zero(t, shipmentCount)
+}
+
 func TestOrderServiceSyncOrderTrackingUsesStoredTrackingSource(t *testing.T) {
 	db, orderService := newTestOrderService(t)
 	provider := shippingdomain.TrackingProviderConfig{
@@ -958,6 +1037,8 @@ func newTestOrderService(t *testing.T) (*gorm.DB, *OrderService) {
 		&product.ProductVariant{},
 		&order.Order{},
 		&order.OrderItem{},
+		&order.OrderIdempotency{},
+		&order.PolicyDisclosure{},
 		&outboxdomain.Event{},
 		&coupon.Coupon{},
 		&coupon.CouponUsage{},
@@ -992,9 +1073,11 @@ func newTestOrderService(t *testing.T) (*gorm.DB, *OrderService) {
 	seedDefaultShippingTemplate(t, db)
 	checkoutService := NewCheckoutService(productRepo, couponRepo, paymentRepo, loyaltyRepo, shippingService)
 	txManager := repository.NewTxManager(db, orderRepo, productRepo, couponRepo, loyaltyRepo, paymentRepo, shippingRepo)
+	txManager.ConfigureOrderIdempotencyRepository(repository.NewOrderIdempotencyRepository(db))
 	currencyPolicyService := seedTestCurrencyPolicy(t, db)
 	exchangeRateRepo := repository.NewExchangeRateRepository(db)
 	txManager.ConfigureSettingRepository(repository.NewSettingRepository(db))
+	txManager.ConfigureOrderPolicyDisclosureRepository(repository.NewOrderPolicyDisclosureRepository(db))
 	txManager.ConfigureExchangeRateRepository(exchangeRateRepo)
 	txManager.ConfigureOutboxRepository(repository.NewOutboxRepository(db))
 	checkoutService.ConfigureCurrencyPolicy(currencyPolicyService)

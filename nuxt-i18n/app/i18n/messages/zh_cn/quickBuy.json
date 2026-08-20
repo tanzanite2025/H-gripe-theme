@@ -38,7 +38,13 @@
       "modalDescription": "先选择你已经知道的内容，我们只询问缺失的适配信息。"
     },
     "eyebrow": "QUICKBUY",
-    "title": "Choose how to start"
+    "title": "Choose how to start",
+    "contactService": {
+      "modalTitle": "Email or chat with support",
+      "title": "Email support",
+      "description": "Send specs or questions by email.",
+      "action": "Start"
+    }
   },
   "help": {
     "title": "QUICK instructions"

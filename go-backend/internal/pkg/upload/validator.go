@@ -18,14 +18,11 @@ import (
 )
 
 const (
-	CodeEmptyFile                           = "empty_file"
-	CodeFileTooLarge                        = "file_too_large"
-	CodeInvalidType                         = "invalid_type"
-	CodeInvalidDimensions                   = "invalid_dimensions"
-	CodeTooManyFiles                        = "too_many_files"
-	ProductSpecificationTemplateImageWidth  = 800
-	ProductSpecificationTemplateImageHeight = 800
-
+	CodeEmptyFile              = "empty_file"
+	CodeFileTooLarge           = "file_too_large"
+	CodeInvalidType            = "invalid_type"
+	CodeInvalidDimensions      = "invalid_dimensions"
+	CodeTooManyFiles           = "too_many_files"
 	imageHeaderInspectionBytes = 1 << 20
 	webPHeaderInspectionBytes  = 64
 )
@@ -84,13 +81,6 @@ var (
 		MaxWidth:            800,
 		MaxHeight:           800,
 		MaxPixels:           800 * 800,
-	}
-	ProductSpecificationTemplateImageRule = FileRule{
-		MaxSize:             3 << 20,
-		AllowedExtensions:   []string{".webp"},
-		AllowedContentTypes: []string{"image/webp"},
-		ExactWidth:          ProductSpecificationTemplateImageWidth,
-		ExactHeight:         ProductSpecificationTemplateImageHeight,
 	}
 	WarrantyImageRule = FilesRule{
 		FileRule: FileRule{

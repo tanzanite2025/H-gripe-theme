@@ -1,13 +1,8 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
-import QuickBuyModal from '~/components/QuickBuy.vue'
-import WheelsetSelectionAssistantModal from '~/components/WheelsetSelectionAssistantModal.vue'
-import WheelsetSelectionAssistantFlow from '~/components/wheelset-selection/WheelsetSelectionAssistantFlow.vue'
 import QuickBuyEntryModePanel from '~/components/quick-buy/QuickBuyEntryModePanel.vue'
 import { createOverlayInstanceId, useOverlayBackStack } from '~/composables/useOverlayBackStack'
-import { useChatWidget } from '~/composables/useChatWidget'
 import type { QuickBuyConfig } from '~/utils/quickBuy/types'
-import type { WheelsetSelectionRequestDraft } from '~/types/wheelsetSelectionAssistant'
 
 const props = withDefaults(defineProps<{
   config: QuickBuyConfig | null
@@ -16,12 +11,15 @@ const props = withDefaults(defineProps<{
   anchor: null,
 })
 
-const emit = defineEmits<{ close: [] }>()
+const emit = defineEmits<{
+  close: []
+  'direct-select': []
+  'contact-service': []
+  'wheelset-selection-assistant': []
+}>()
 const overlayBackStack = useOverlayBackStack()
 const overlayId = createOverlayInstanceId('quick-buy')
-const { openChat } = useChatWidget()
 
-const activeMode = ref<'entry' | 'direct-select' | 'wheelset-selection-assistant'>('entry')
 const popoverRef = ref<HTMLElement | null>(null)
 const popoverStyle = ref<Record<string, string>>({
   left: '50%',
@@ -44,7 +42,7 @@ const updatePopoverPosition = async () => {
     return
   }
 
-  const viewportPadding = 12
+  const viewportPadding = window.innerWidth <= 767 ? 2 : 12
   const gap = 12
   const anchorCenter = anchorRect.left + anchorRect.width / 2
   const preferredLeft = anchorCenter - popoverRect.width / 2
@@ -61,52 +59,41 @@ const updatePopoverPosition = async () => {
   }
 }
 
-const openDirectSelect = () => {
-  activeMode.value = 'direct-select'
-}
-
-const openWheelsetSelectionAssistant = () => {
-  activeMode.value = 'wheelset-selection-assistant'
-}
-
-const returnToEntryMode = () => {
-  activeMode.value = 'entry'
-  void updatePopoverPosition()
-}
-
-const handleWheelsetSelectionAssistantModelUpdate = (value: boolean) => {
-  if (!value) {
-    returnToEntryMode()
-  }
-}
+let isClosing = false
 
 const closeState = () => {
   emit('close')
 }
 
 const closeQuickBuyOverlay = async () => {
-  const closePromise = overlayBackStack.close(overlayId)
-  emit('close')
-  await closePromise
-}
+  if (isClosing) return
+  isClosing = true
 
-const openWheelsetSelectionSupportChat = async (draft?: WheelsetSelectionRequestDraft) => {
-  // Replace QuickBuy with chat in one overlay transaction so browser-back
-  // cannot race the handoff and discard the chat state.
-  openChat({
-    showAgentList: true,
-    source: 'wheelset-selection-assistant',
-    pendingSelectionRequest: draft || null,
-  })
-  await nextTick()
+  if (overlayBackStack.isActive(overlayId)) {
+    await overlayBackStack.close(overlayId)
+    return
+  }
+
+  emit('close')
 }
 
 const handleClose = () => {
   void closeQuickBuyOverlay()
 }
 
-const closeWhenClickingOutside = (event: PointerEvent) => {
-  if (activeMode.value !== 'entry') return
+const handleDirectSelect = () => {
+  emit('direct-select')
+}
+
+const handleContactService = () => {
+  emit('contact-service')
+}
+
+const handleWheelsetSelectionAssistant = () => {
+  emit('wheelset-selection-assistant')
+}
+
+const closeWhenClickingOutside = (event: MouseEvent) => {
   const target = event.target
   if (!(target instanceof Node)) return
   if (popoverRef.value?.contains(target)) return
@@ -115,7 +102,6 @@ const closeWhenClickingOutside = (event: PointerEvent) => {
 }
 
 const closeWhenEscapeIsPressed = (event: KeyboardEvent) => {
-  if (activeMode.value !== 'entry') return
   if (event.key === 'Escape') {
     handleClose()
   }
@@ -126,7 +112,7 @@ onMounted(() => {
   updatePopoverPosition()
   window.addEventListener('resize', updatePopoverPosition)
   window.addEventListener('scroll', updatePopoverPosition, true)
-  document.addEventListener('pointerdown', closeWhenClickingOutside, true)
+  document.addEventListener('click', closeWhenClickingOutside, true)
   window.addEventListener('keydown', closeWhenEscapeIsPressed)
 })
 
@@ -136,61 +122,43 @@ onBeforeUnmount(() => {
   }
   window.removeEventListener('resize', updatePopoverPosition)
   window.removeEventListener('scroll', updatePopoverPosition, true)
-  document.removeEventListener('pointerdown', closeWhenClickingOutside, true)
+  document.removeEventListener('click', closeWhenClickingOutside, true)
   window.removeEventListener('keydown', closeWhenEscapeIsPressed)
 })
 </script>
 
 <template>
-  <QuickBuyModal
-    v-if="activeMode === 'direct-select'"
-    :config="config"
-    @close="handleClose"
-  />
-
-  <WheelsetSelectionAssistantModal
-    v-else-if="activeMode === 'wheelset-selection-assistant'"
-    :model-value="true"
-    source="quick-buy/wheelset-selection-assistant"
-    description=""
-    :show-steps="false"
-    @update:model-value="handleWheelsetSelectionAssistantModelUpdate"
-    @close="returnToEntryMode"
-  >
-    <WheelsetSelectionAssistantFlow
-      source="quick-buy/wheelset-selection-assistant"
-      @contact-support="openWheelsetSelectionSupportChat"
-    />
-  </WheelsetSelectionAssistantModal>
-
-  <teleport v-else to="body">
-    <Transition name="quickbuy-entry-popover">
+  <teleport to="body">
       <div
-        ref="popoverRef"
-        class="quickbuy-entry-router-popover"
-        :style="popoverStyle"
-        role="dialog"
-        aria-modal="false"
+        class="quickbuy-entry-router-layer"
+        role="presentation"
+        @click.self="handleClose"
       >
-        <QuickBuyEntryModePanel
-          @direct-select="openDirectSelect"
-          @wheelset-selection-assistant="openWheelsetSelectionAssistant"
-        />
+        <div
+          ref="popoverRef"
+          class="quickbuy-entry-router-popover"
+          :style="popoverStyle"
+          role="dialog"
+          aria-modal="false"
+          @click.stop
+        >
+          <QuickBuyEntryModePanel
+            @direct-select="handleDirectSelect"
+            @contact-service="handleContactService"
+            @wheelset-selection-assistant="handleWheelsetSelectionAssistant"
+          />
+        </div>
       </div>
-    </Transition>
   </teleport>
 </template>
 
 <style scoped>
-.quickbuy-entry-popover-enter-active,
-.quickbuy-entry-popover-leave-active {
-  transition: opacity 160ms ease, transform 160ms ease;
-}
-
-.quickbuy-entry-popover-enter-from,
-.quickbuy-entry-popover-leave-to {
-  opacity: 0;
-  transform: translateY(0.25rem) scale(0.98);
+.quickbuy-entry-router-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 10002;
+  background: transparent;
+  pointer-events: auto;
 }
 
 .quickbuy-entry-router-popover {
@@ -202,8 +170,9 @@ onBeforeUnmount(() => {
   --quickbuy-divider: rgba(255, 255, 255, 0.045);
   --quickbuy-entry-accent-edge: color-mix(in srgb, var(--tz-brand-primary, #b5ff6d) 74%, transparent);
   position: fixed;
-  z-index: 10002;
+  z-index: 1;
   width: min(34rem, calc(100vw - 1.5rem));
+  box-sizing: border-box;
   border: 1px solid var(--quickbuy-entry-accent-edge);
   border-radius: 0.875rem;
   background:
@@ -232,7 +201,7 @@ onBeforeUnmount(() => {
 
 @media (max-width: 767px) {
   .quickbuy-entry-router-popover {
-    width: min(22rem, calc(100vw - 1rem));
+    width: calc(100vw - 4px);
   }
 }
 </style>

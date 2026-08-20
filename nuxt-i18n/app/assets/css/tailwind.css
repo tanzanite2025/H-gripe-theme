@@ -3,74 +3,77 @@
 @tailwind utilities;
 
 /*
- * Latin is the default first-paint face. Keep the complete Maple UI file as a
- * fallback so CJK content and uncommon glyphs retain the existing typeface.
+ * All storefront locale typography is served from built-in font shards.
+ * MapleUILatin and MapleUICJK are Maple UI core shards. MapleUICoverage*
+ * shards are local Noto Sans coverage shards for the enabled language set.
  */
 @font-face {
-  font-family: 'StorefrontSystemLatin';
-  src: url('/fonts/StorefrontSystem-Latin.00af3fec5b34.woff2') format('woff2');
+  font-family: 'MapleUILatin';
+  src: url('/fonts/MapleUI-Latin.00af3fec5b34.woff2') format('woff2');
   font-weight: 100 900;
   font-style: normal;
-  font-display: swap;
+  font-display: block;
 }
 
 @font-face {
-  font-family: 'StorefrontSystem';
-  src: url('/fonts/StorefrontSystem-CJK.f8ce6d72e8cb.woff2') format('woff2');
+  font-family: 'MapleUICJK';
+  src: url('/fonts/MapleUI-CJK.f8ce6d72e8cb.woff2') format('woff2');
   font-weight: 100 900;
   font-style: normal;
-  font-display: swap;
+  font-display: block;
   unicode-range: U+0250-02FF, U+0370-052F, U+0530-058F, U+1F00-1FFF, U+2070-209F, U+2150-218F, U+2C00-2DFF, U+2E80-2EFF, U+3000-303F, U+3040-30FF, U+3100-31FF, U+3200-33FF, U+3400-4DBF, U+4E00-9FFF, U+AC00-D7AF, U+F900-FAFF, U+FE30-FE4F, U+FF00-FFEF, U+20000-2FA1F;
 }
 
-/* Noto Sans Devanagari, self-hosted from the official OFL release. */
+/* Maple UI coverage shard built from Noto Sans Devanagari. */
 @font-face {
-  font-family: 'StorefrontSystemDevanagari';
-  src: url('/fonts/StorefrontSystem-Devanagari.3b3cae4d2600.woff2') format('woff2');
+  font-family: 'MapleUICoverageNotoSansDevanagari';
+  src: url('/fonts/MapleUI-Coverage-NotoSans-Devanagari.3b3cae4d2600.woff2') format('woff2');
   font-weight: 100 900;
   font-style: normal;
-  font-display: swap;
+  font-display: block;
   unicode-range: U+0900-097F, U+1CD0-1CF9, U+200C-200D, U+20A8, U+20B9, U+20F0, U+25CC, U+A830-A839, U+A8E0-A8FF, U+11B00-11B09;
 }
 
-/* Noto Sans, self-hosted only for Latin-accent locales whose glyphs are absent from Maple UI. */
+/* Maple UI coverage shard built from Noto Sans Latin accent glyphs. */
 @font-face {
-  font-family: 'StorefrontSystemLatinAccents';
-  src: url('/fonts/StorefrontSystem-Latin-Accents.e645edc952b6.woff2') format('woff2');
+  font-family: 'MapleUICoverageNotoSansLatinAccents';
+  src: url('/fonts/MapleUI-Coverage-NotoSans-Latin-Accents.e645edc952b6.woff2') format('woff2');
   font-weight: 100 900;
   font-style: normal;
-  font-display: swap;
-  unicode-range: U+00C0-00C1, U+00C4-00C5, U+00C9, U+00D6, U+00DC, U+0130;
+  font-display: block;
+  unicode-range: U+00C0-00C1, U+00C4-00C5, U+00C8-00C9, U+00CB, U+00CC-00CD, U+00CF, U+00D2-00D3, U+00D6, U+00D9-00DA, U+00DC, U+0116, U+0130, U+016E, U+01D7, U+01DB, U+01FA, U+0226, U+022E, U+0300-0301, U+0307-0308, U+030A, U+1E2E, U+FE00;
 }
 
-/* Noto Sans Arabic, self-hosted from the official OFL release. */
+/* Maple UI coverage shard built from Noto Sans Arabic. */
 @font-face {
-  font-family: 'StorefrontSystemArabic';
-  src: url('/fonts/StorefrontSystem-Arabic.ce85091f0209.woff2') format('woff2');
+  font-family: 'MapleUICoverageNotoSansArabic';
+  src: url('/fonts/MapleUI-Coverage-NotoSans-Arabic.ce85091f0209.woff2') format('woff2');
   font-weight: 100 900;
   font-style: normal;
-  font-display: swap;
+  font-display: block;
   unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC4, U+10EFC-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1;
 }
 
-/* Noto Sans Thai, self-hosted from the official OFL release. */
+/* Maple UI coverage shard built from Noto Sans Thai. */
 @font-face {
-  font-family: 'StorefrontSystemThai';
-  src: url('/fonts/StorefrontSystem-Thai.1f5a173641bb.woff2') format('woff2');
+  font-family: 'MapleUICoverageNotoSansThai';
+  src: url('/fonts/MapleUI-Coverage-NotoSans-Thai.1f5a173641bb.woff2') format('woff2');
   font-weight: 100 900;
   font-style: normal;
-  font-display: swap;
+  font-display: block;
   unicode-range: U+02D7, U+0303, U+0331, U+0E01-0E5B, U+200C-200D, U+25CC;
 }
 
 @layer base {
   :root {
-    --tz-font-base: 'StorefrontSystemLatin', 'StorefrontSystem';
-    --tz-font-system: var(--tz-font-base);
-    --tz-font-latin-accents: 'StorefrontSystemLatinAccents', var(--tz-font-base);
-    --tz-font-arabic: 'StorefrontSystemArabic', var(--tz-font-base);
-    --tz-font-devanagari: 'StorefrontSystemDevanagari', var(--tz-font-base);
-    --tz-font-thai: 'StorefrontSystemThai', var(--tz-font-base);
+    --tz-font-latin: 'MapleUILatin', 'MapleUICJK';
+    --tz-font-maple-ui: 'MapleUILatin', 'MapleUICJK';
+    --tz-font-base: 'MapleUILatin', 'MapleUICJK';
+    --tz-font-ui: var(--tz-font-base);
+    --tz-font-latin-accents: 'MapleUICoverageNotoSansLatinAccents', var(--tz-font-base);
+    --tz-font-arabic: 'MapleUICoverageNotoSansArabic', var(--tz-font-base);
+    --tz-font-devanagari: 'MapleUICoverageNotoSansDevanagari', var(--tz-font-base);
+    --tz-font-thai: 'MapleUICoverageNotoSansThai', var(--tz-font-base);
     /*
       Frontend typography ladder.
       Keep user-facing page titles, section titles and embedded FAQ content
@@ -91,6 +94,14 @@
       navigation. Page roots must not add their own arbitrary top offsets.
     */
     --tz-page-content-top-gap: clamp(1rem, 1vw, 1.25rem);
+    --tz-site-header-mobile-topbar-height: 50px;
+    --tz-site-header-mobile-nav-height: 44px;
+    --tz-site-header-mobile-breadcrumb-height: 32px;
+    --tz-site-header-mobile-stack-height: 126px;
+    --tz-site-header-desktop-mainbar-height: 64px;
+    --tz-site-header-desktop-breadcrumb-height: 31px;
+    --tz-site-header-desktop-stack-height: 95px;
+    --tz-site-header-spacer-height: var(--tz-site-header-mobile-stack-height);
     --tz-safe-area-top: env(safe-area-inset-top, 0px);
     --tz-safe-area-right: env(safe-area-inset-right, 0px);
     --tz-safe-area-bottom: env(safe-area-inset-bottom, 0px);
@@ -103,6 +114,9 @@
     --tz-mobile-dialog-inset: 2px;
     --tz-bottom-dock-height: 4.5rem;
     --tz-bottom-dock-content-clearance: calc(var(--tz-bottom-dock-height) + 1.25rem);
+    --tz-mobile-top-chrome-gradient: linear-gradient(180deg, #151519 0%, #18181c 18%, #1d1d21 38%, #242428 58%, #2b2b2f 78%, #303034 100%);
+    --tz-mobile-bottom-chrome-gradient: linear-gradient(180deg, #303034 0%, #2b2b2f 22%, #242428 42%, #1d1d21 62%, #18181c 82%, #151519 100%);
+    --tz-mobile-chrome-edge-border: #171717;
 
     /*
       Semantic text colors for the dark storefront.
@@ -120,6 +134,7 @@
     --tz-input-surface: #0b0b0e;
     --tz-form-panel-surface: #141414;
     --tz-form-control-surface: #090909;
+    --tz-image-loading-surface: #0b0b0e;
     --tz-form-control-border: rgba(255, 255, 255, 0.22);
     --tz-form-control-focus-border: rgba(255, 255, 255, 0.78);
     --tz-form-control-focus-ring: rgba(255, 255, 255, 0.24);
@@ -129,54 +144,40 @@
     @apply overflow-x-hidden overscroll-x-none;
   }
 
+  @media (min-width: 768px) {
+    :root {
+      --tz-site-header-spacer-height: var(--tz-site-header-desktop-stack-height);
+    }
+  }
+
   body {
     @apply overflow-x-hidden overscroll-x-none bg-black;
-    font-family: var(--tz-font-system);
+    font-family: var(--tz-font-ui);
     color: var(--tz-text-primary);
   }
 
-  html:lang(da),
-  html:lang(de),
-  html:lang(es),
-  html:lang(fr),
-  html:lang(pt),
-  html:lang(sv),
-  html:lang(tr) {
-    --tz-font-system: var(--tz-font-latin-accents);
+  html[data-storefront-font-family='latin'] {
+    --tz-font-ui: var(--tz-font-latin);
   }
 
-  html:lang(ar) {
-    --tz-font-system: var(--tz-font-arabic);
+  html[data-storefront-font-family='latin-accent'] {
+    --tz-font-ui: var(--tz-font-latin-accents);
   }
 
-  html:lang(hi) {
-    --tz-font-system: var(--tz-font-devanagari);
+  html[data-storefront-font-family='maple-ui'] {
+    --tz-font-ui: var(--tz-font-maple-ui);
   }
 
-  html:lang(th) {
-    --tz-font-system: var(--tz-font-thai);
+  html[data-storefront-font-family='arabic'] {
+    --tz-font-ui: var(--tz-font-arabic);
   }
 
-  :lang(da),
-  :lang(de),
-  :lang(es),
-  :lang(fr),
-  :lang(pt),
-  :lang(sv),
-  :lang(tr) {
-    font-family: var(--tz-font-latin-accents);
+  html[data-storefront-font-family='devanagari'] {
+    --tz-font-ui: var(--tz-font-devanagari);
   }
 
-  :lang(ar) {
-    font-family: var(--tz-font-arabic);
-  }
-
-  :lang(hi) {
-    font-family: var(--tz-font-devanagari);
-  }
-
-  :lang(th) {
-    font-family: var(--tz-font-thai);
+  html[data-storefront-font-family='thai'] {
+    --tz-font-ui: var(--tz-font-thai);
   }
 
   button,
@@ -265,23 +266,88 @@
   }
 
   /*
-   * Shared image-carousel pagination. The active state uses a horizontal
-   * white track; inactive slides remain compact white dots.
+   * Shared storefront product card sizing.
+   * Catalog surfaces use 300x300 media with a 120px text block.
+   * Density-specific components can override the width or media ratio when
+   * they need a tighter layout, such as quick-buy rails.
+   */
+  .tz-product-card {
+    --tz-product-card-media-size: 18.75rem;
+    --tz-product-card-width: var(--tz-product-card-media-size);
+    --tz-product-card-content-height: 7.5rem;
+    box-sizing: border-box;
+    width: min(100%, var(--tz-product-card-width));
+    max-width: 100%;
+    justify-self: center;
+  }
+
+  .tz-product-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(var(--tz-product-card-media-size), 100%), var(--tz-product-card-media-size)));
+    justify-content: center;
+    gap: 1rem;
+    align-items: start;
+  }
+
+  .tz-product-card__image {
+    box-sizing: border-box;
+    width: 100%;
+    height: var(--tz-product-card-media-size);
+    flex: 0 0 auto;
+    aspect-ratio: 1 / 1;
+    min-width: 0;
+  }
+
+  .tz-product-card__image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .tz-product-card__body {
+    box-sizing: border-box;
+    height: var(--tz-product-card-content-height);
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  @media (max-width: 767px) {
+    .tz-product-card-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.5rem;
+    }
+
+    .tz-product-card-grid > .tz-product-card {
+      --tz-product-card-width: 100%;
+      width: 100%;
+    }
+
+    .tz-product-card-grid .tz-product-card__image {
+      height: auto;
+    }
+  }
+
+  /*
+   * Shared image-carousel pagination. Keep the hit area and gap stable while
+   * marking the active slide with a brand-colored ring.
    */
   .tz-carousel-pagination {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.625rem;
+    gap: 0.5rem;
+  }
+
+  .tz-image-carousel .tz-directional-arrow {
+    display: none;
   }
 
   .tz-carousel-pagination__dot {
-    --tz-carousel-pagination-dot-width: 0.375rem;
-    --tz-carousel-pagination-dot-height: 0.375rem;
-    --tz-carousel-pagination-dot-active-width: 1.75rem;
-    --tz-carousel-pagination-dot-bg: rgba(255, 255, 255, 0.42);
+    --tz-carousel-pagination-dot-width: 0.62rem;
+    --tz-carousel-pagination-dot-height: 0.62rem;
+    --tz-carousel-pagination-dot-bg: rgba(255, 255, 255, 0.28);
     --tz-carousel-pagination-dot-hover-bg: rgba(255, 255, 255, 0.72);
-    --tz-carousel-pagination-dot-active-bg: #ffffff;
+    --tz-carousel-pagination-dot-active-bg: var(--tz-brand-primary, #b5ff6d);
 
     display: inline-flex;
     width: 3rem;
@@ -295,20 +361,29 @@
     border-radius: 999px;
     background: transparent;
     cursor: pointer;
+    position: relative;
     touch-action: manipulation;
   }
 
-  .tz-carousel-pagination__dot::before {
+  .tz-carousel-pagination__dot::before,
+  .tz-carousel-pagination__dot::after {
+    position: absolute;
+    top: 50%;
+    left: 50%;
     display: block;
+    border-radius: inherit;
+    content: "";
+    transform: translate(-50%, -50%);
+  }
+
+  .tz-carousel-pagination__dot::before {
     width: var(--tz-carousel-pagination-dot-width);
     height: var(--tz-carousel-pagination-dot-height);
-    border-radius: inherit;
     background: var(--tz-carousel-pagination-dot-bg);
-    content: "";
     transition:
-      width 0.2s ease,
+      transform 200ms ease,
       background-color 0.2s ease,
-      opacity 0.2s ease;
+      box-shadow 200ms ease;
   }
 
   .tz-carousel-pagination__dot:hover:not(.is-active)::before {
@@ -316,8 +391,9 @@
   }
 
   .tz-carousel-pagination__dot.is-active::before {
-    width: var(--tz-carousel-pagination-dot-active-width);
     background: var(--tz-carousel-pagination-dot-active-bg);
+    box-shadow: 0 0 0 4px rgba(181, 255, 109, 0.15);
+    transform: translate(-50%, -50%) scale(1.45);
   }
 
   .tz-carousel-pagination__dot:focus-visible {
@@ -493,6 +569,14 @@
     box-sizing: border-box;
   }
 
+  .site-header-layout-spacer {
+    width: 100%;
+    height: var(--tz-site-header-spacer-height);
+    flex: 0 0 auto;
+    background: transparent;
+    pointer-events: none;
+  }
+
   .tz-page-title {
     margin: 0 0 0.75rem;
     font-size: var(--tz-type-page-title);
@@ -647,13 +731,16 @@
   /* 全局统一的高级按钮样式 (Pill Button) */
   /* 用于 Read More, View All, Tabs 等 */
   .premium-button {
-    @apply border-none rounded-full px-5 py-2 text-[0.8rem] font-semibold text-slate-300 bg-slate-800/50 cursor-pointer transition-all duration-200 inline-flex items-center no-underline;
+    @apply border-none rounded-full px-5 py-2 text-[0.8rem] font-semibold cursor-pointer transition-all duration-200 inline-flex items-center no-underline;
+    background: rgba(17, 17, 22, 0.96);
     color: var(--tz-text-secondary);
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
   }
 
   .premium-button:hover {
-    @apply bg-slate-700/80 text-white -translate-y-px;
+    background: rgba(255, 255, 255, 0.06);
+    color: #ffffff;
+    transform: translateY(-1px);
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
   }
 
@@ -687,6 +774,14 @@
 
   .tz-text-accent {
     color: var(--tz-text-accent);
+  }
+
+  .tz-mobile-chrome-top {
+    background: var(--tz-mobile-top-chrome-gradient) !important;
+  }
+
+  .tz-mobile-chrome-bottom {
+    background: var(--tz-mobile-bottom-chrome-gradient) !important;
   }
 
   /*
@@ -788,6 +883,23 @@
   :root {
     --tz-bottom-dock-height: calc(4rem + var(--tz-safe-area-bottom));
     --tz-bottom-dock-content-clearance: calc(var(--tz-bottom-dock-height) + 1rem);
+  }
+
+  /*
+   * Mobile browsers keep scrolling functional while hiding the desktop-style
+   * scrollbar gutter. This keeps fixed header, content, and dock aligned to
+   * the full narrow viewport in headed browser previews as well.
+   */
+  html,
+  body {
+    scrollbar-width: none;
+  }
+
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
   }
 
   .page-content-shell {

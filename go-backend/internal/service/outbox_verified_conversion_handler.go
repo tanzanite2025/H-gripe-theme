@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"commerce-platform/internal/domain/outbox"
+	"commerce-platform/internal/pkg/resilience"
 )
 
 var ErrVerifiedConversionOutboxWebhookNotConfigured = errors.New("verified conversion outbox webhook is not configured")
@@ -14,16 +15,40 @@ type VerifiedConversionOutboxWebhookHandler struct {
 }
 
 func NewVerifiedConversionOutboxWebhookHandlerFromEnv() *VerifiedConversionOutboxWebhookHandler {
+	return newVerifiedConversionOutboxWebhookHandler(
+		resilience.HTTPRetryPolicy{},
+		nil,
+	)
+}
+
+func NewVerifiedConversionOutboxWebhookHandlerFromEnvWithResilience(
+	retry resilience.HTTPRetryPolicy,
+	breaker resilience.CircuitController,
+) *VerifiedConversionOutboxWebhookHandler {
+	return newVerifiedConversionOutboxWebhookHandler(retry, breaker)
+}
+
+func newVerifiedConversionOutboxWebhookHandler(
+	retry resilience.HTTPRetryPolicy,
+	breaker resilience.CircuitController,
+) *VerifiedConversionOutboxWebhookHandler {
+	url := firstNonEmptyEnv(
+		"VERIFIED_CONVERSION_OUTBOX_WEBHOOK_URL",
+		"OUTBOX_VERIFIED_CONVERSION_WEBHOOK_URL",
+	)
+	token := firstNonEmptyEnv(
+		"VERIFIED_CONVERSION_OUTBOX_WEBHOOK_TOKEN",
+		"OUTBOX_VERIFIED_CONVERSION_WEBHOOK_TOKEN",
+	)
+	if breaker != nil {
+		return &VerifiedConversionOutboxWebhookHandler{
+			dispatcher: NewOutboxWebhookDispatcherWithResilience(url, token, nil, retry, breaker),
+		}
+	}
 	return &VerifiedConversionOutboxWebhookHandler{
 		dispatcher: NewOutboxWebhookDispatcher(
-			firstNonEmptyEnv(
-				"VERIFIED_CONVERSION_OUTBOX_WEBHOOK_URL",
-				"OUTBOX_VERIFIED_CONVERSION_WEBHOOK_URL",
-			),
-			firstNonEmptyEnv(
-				"VERIFIED_CONVERSION_OUTBOX_WEBHOOK_TOKEN",
-				"OUTBOX_VERIFIED_CONVERSION_WEBHOOK_TOKEN",
-			),
+			url,
+			token,
 			nil,
 		),
 	}

@@ -2,7 +2,7 @@
   <div class="space-y-4">
     <AdminPageHeader
       title="运维中心 / VPS 中心"
-      description="维护 Hostinger VPS 资源基线和观察状态；这里不创建、删除或部署 VPS。"
+      description="维护各 Provider 的 VPS 资源基线和观察状态；这里不创建、删除或部署 VPS。"
     >
       <template #actions>
         <select
@@ -54,7 +54,7 @@
           <TableRow>
             <TableHead>资源名称</TableHead>
             <TableHead>Provider / ID</TableHead>
-            <TableHead>Hostinger 实际</TableHead>
+            <TableHead>Provider 实际</TableHead>
             <TableHead>主机地址</TableHead>
             <TableHead>环境 / 系统</TableHead>
             <TableHead>期望状态</TableHead>

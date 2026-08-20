@@ -3,10 +3,10 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "build": "npm run check:font-preflight && cross-env NODE_OPTIONS=\"--max-old-space-size=8192 --disable-warning=DEP0155\" nuxt build && npm run check:sharp-runtime",
+    "build": "npm run clean && npm run check:font-preflight && cross-env NODE_OPTIONS=\"--max-old-space-size=8192 --disable-warning=DEP0155\" nuxt build && npm run check:sharp-runtime && tsx scripts/storefront/check-production-artifacts.ts",
     "dev": "cross-env NODE_OPTIONS=\"--max-old-space-size=8192 --disable-warning=DEP0155\" NODE_ENV=development NUXT_PORT=9199 NUXT_HTML_CACHE_ENABLED=false NUXT_PUBLIC_API_BASE=http://localhost:9200/api/v1 API_INTERNAL_ORIGIN=http://localhost:9200 tsx scripts/dev-fixed-port.ts",
-    "generate": "cross-env NODE_OPTIONS=\"--max-old-space-size=8192 --disable-warning=DEP0155\" nuxt generate",
-    "preview": "nuxt preview",
+    "generate": "npm run clean && cross-env NODE_OPTIONS=\"--max-old-space-size=8192 --disable-warning=DEP0155\" nuxt generate && tsx scripts/storefront/check-production-artifacts.ts",
+    "preview": "node scripts/storefront/run-production-server.mjs",
     "postinstall": "nuxt prepare",
     "sync-data": "tsx scripts/sync-spoke-data.ts",
     "scripts:typecheck": "tsc --project tsconfig.scripts.json",
@@ -32,13 +32,12 @@
     "test:font-locales": "tsx scripts/font-locale-contract.test.ts",
     "test:font-policy": "tsx scripts/font-policy-utils.test.ts && tsx scripts/storefront/font-artifact-contract.test.ts",
     "check:security": "tsx scripts/security/check-content-security-policy.ts",
-    "clean": "node -e \"require('fs').rmSync('.nuxt', { recursive: true, force: true }); require('fs').rmSync('node_modules/.cache', { recursive: true, force: true });\""
+    "clean": "tsx scripts/storefront/clean-build-artifacts.ts"
   },
   "overrides": {
     "sharp": "0.35.0"
   },
   "dependencies": {
-    "@nuxt/fonts": "^0.14.0",
     "@nuxt/icon": "^2.2.4",
     "@nuxt/image": "^2.0.0",
     "@nuxtjs/i18n": "^9.1.0",

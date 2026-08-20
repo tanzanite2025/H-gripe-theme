@@ -171,7 +171,7 @@ export const buildStorefrontRouteRules = ({
   }
 
   // Stripe loads this stable path inside an iframe; its referenced font files are content-addressed.
-  routeRules['/fonts/storefront-system.css'] = {
+  routeRules['/fonts/maple-ui.css'] = {
     headers: revalidatingFontStylesheetHeaders,
   }
 

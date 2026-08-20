@@ -1,8 +1,17 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import locales, { type LocaleManifestEntry } from '../app/i18n/locales.manifest.ts'
+import locales, { type LocaleFontFamily, type LocaleManifestEntry } from '../app/i18n/locales.manifest.ts'
 
-const baseFontStack = ['StorefrontSystemLatin', 'StorefrontSystem']
+const baseFontStack = ['MapleUILatin', 'MapleUICJK']
+const fontStackByLocaleFamily: Record<LocaleFontFamily, string[]> = {
+  latin: [...baseFontStack],
+  'latin-accent': ['MapleUICoverageNotoSansLatinAccents', ...baseFontStack],
+  'maple-ui': [...baseFontStack],
+  arabic: ['MapleUICoverageNotoSansArabic', ...baseFontStack],
+  devanagari: ['MapleUICoverageNotoSansDevanagari', ...baseFontStack],
+  thai: ['MapleUICoverageNotoSansThai', ...baseFontStack],
+}
+const approvedLocaleFontFamilies = new Set(Object.keys(fontStackByLocaleFamily))
 
 export const normalizeStorefrontLocaleCode = (locale: string): string => (
   locale.trim().replace(/_/g, '-').toLowerCase()
@@ -51,18 +60,7 @@ export const fontStackForStorefrontLocale = (
     normalizeStorefrontLocaleCode(candidate.code) === normalizeStorefrontLocaleCode(locale)
   ))
 
-  switch (entry?.fontFamily) {
-    case 'arabic':
-      return ['StorefrontSystemArabic', ...baseFontStack]
-    case 'devanagari':
-      return ['StorefrontSystemDevanagari', ...baseFontStack]
-    case 'thai':
-      return ['StorefrontSystemThai', ...baseFontStack]
-    case 'latin-accent':
-      return ['StorefrontSystemLatinAccents', ...baseFontStack]
-    default:
-      return [...baseFontStack]
-  }
+  return [...(fontStackByLocaleFamily[entry?.fontFamily || 'latin'] || baseFontStack)]
 }
 
 export const validateStorefrontLocaleSources = (
@@ -96,6 +94,11 @@ export const validateStorefrontLocaleSources = (
     const localeFile = path.join(localeRoot, entry.file)
     if (!fs.existsSync(localeFile)) {
       violations.push(`Configured locale ${entry.code} is missing ${path.relative(projectDir, localeFile).replace(/\\/g, '/')}.`)
+    }
+    if (!entry.fontFamily) {
+      violations.push(`Configured locale ${entry.code} must declare a storefront fontFamily shard.`)
+    } else if (!approvedLocaleFontFamilies.has(entry.fontFamily)) {
+      violations.push(`Configured locale ${entry.code} declares an unknown storefront fontFamily shard: ${entry.fontFamily}.`)
     }
     if ((sources.get(localeCode) || []).length === 0) {
       violations.push(`Configured locale ${entry.code} has no locale or message JSON resources.`)

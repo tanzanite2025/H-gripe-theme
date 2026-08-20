@@ -75,6 +75,14 @@ export interface WheelsetFitQuestionnaireVersion {
   questions: WheelsetFitQuestion[]
 }
 
+export interface WheelsetFitProductFilterOption {
+  slug: string
+  name: string
+  field_type: string
+  unit: string
+  values: string[]
+}
+
 export interface WheelsetFitQuestionTranslationPayload {
   locale: string
   prompt: string
@@ -137,6 +145,20 @@ const readVersion = (response: unknown, endpoint: string): WheelsetFitQuestionna
   return version as unknown as WheelsetFitQuestionnaireVersion
 }
 
+const readNullableVersion = (response: unknown, endpoint: string): WheelsetFitQuestionnaireVersion | null => {
+  const envelope = requireApiObject(unwrapApiPayload(response, endpoint), endpoint, 'response payload')
+  if (!('data' in envelope) || envelope.data == null) {
+    return null
+  }
+
+  const version = requireApiObject(envelope.data, endpoint, 'field "data"')
+  requireApiNumberField(version, 'id', endpoint)
+  requireApiNumberField(version, 'version_number', endpoint)
+  requireApiStringField(version, 'status', endpoint)
+  requireApiArrayField(version, 'questions', endpoint)
+  return version as unknown as WheelsetFitQuestionnaireVersion
+}
+
 const readValidation = (response: unknown, endpoint: string): WheelsetFitQuestionnaireValidationResult => {
   const envelope = requireApiObject(unwrapApiPayload(response, endpoint), endpoint, 'response payload')
   const result = requireApiObjectField(envelope, 'data', endpoint)
@@ -144,10 +166,21 @@ const readValidation = (response: unknown, endpoint: string): WheelsetFitQuestio
   return result as unknown as WheelsetFitQuestionnaireValidationResult
 }
 
+const readProductFilterOptions = (response: unknown, endpoint: string): WheelsetFitProductFilterOption[] => {
+  const envelope = requireApiObject(unwrapApiPayload(response, endpoint), endpoint, 'response payload')
+  const options = requireApiArrayField(envelope, 'data', endpoint)
+  return options as WheelsetFitProductFilterOption[]
+}
+
 export const wheelsetFitQuestionnaireApi = {
-  async getCurrentVersion(): Promise<WheelsetFitQuestionnaireVersion> {
+  async getCurrentVersion(): Promise<WheelsetFitQuestionnaireVersion | null> {
     const endpoint = `${baseEndpoint}/current`
-    return readVersion(await axios.get(endpoint), endpoint)
+    return readNullableVersion(await axios.get(endpoint), endpoint)
+  },
+
+  async getProductFilterOptions(): Promise<WheelsetFitProductFilterOption[]> {
+    const endpoint = `${baseEndpoint}/product-filter-options`
+    return readProductFilterOptions(await axios.get(endpoint), endpoint)
   },
 
   async createDraft(): Promise<WheelsetFitQuestionnaireVersion> {

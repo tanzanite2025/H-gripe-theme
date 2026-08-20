@@ -48,20 +48,33 @@ func TestSafeGormLoggerDoesNotExpandSQLParams(t *testing.T) {
 	if sql != "SELECT * FROM users WHERE email = ?" {
 		t.Fatalf("unexpected filtered SQL: %s", sql)
 	}
-	if params != nil {
-		t.Fatalf("expected params to be removed, got %#v", params)
+	if len(params) != 1 || params[0] == "alice@example.com" {
+		t.Fatalf("expected the parameter to be retained in a redacted form, got %#v", params)
 	}
 
 	called := false
-	logger.Trace(context.Background(), time.Now(), func() (string, int64) {
+	logger.Trace(context.Background(), time.Now().Add(-logger.slowThreshold-time.Millisecond), func() (string, int64) {
 		called = true
-		return "SELECT * FROM users WHERE email = 'alice@example.com'", 1
+		return "SELECT * FROM users WHERE email = '[REDACTED_STRING len=17]'", 1
 	}, nil)
 
-	if called {
-		t.Fatal("Trace called SQL formatter and may expand sensitive params")
+	if !called {
+		t.Fatal("Trace did not collect the SQL for the slow-query log")
+	}
+	if !strings.Contains(output.String(), "[SLOW SQL]") {
+		t.Fatalf("slow-query marker is missing from log output: %s", output.String())
+	}
+	if !strings.Contains(output.String(), "rows") {
+		t.Fatalf("row count is missing from log output: %s", output.String())
 	}
 	if strings.Contains(output.String(), "alice@example.com") {
 		t.Fatalf("log output contains sensitive SQL parameter: %s", output.String())
+	}
+}
+
+func TestNewGormLoggerUsesExplicitSlowQueryThreshold(t *testing.T) {
+	logger := newGormLogger("warn").(safeGormLogger)
+	if logger.slowThreshold != 200*time.Millisecond {
+		t.Fatalf("slow query threshold = %s, want 200ms", logger.slowThreshold)
 	}
 }

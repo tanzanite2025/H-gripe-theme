@@ -30,6 +30,9 @@ func NewStripeGateway(config *Config) (PaymentGateway, error) {
 
 // CreatePayment 创建Stripe支付
 func (g *stripeGatewayImpl) CreatePayment(ctx context.Context, req *PaymentRequest) (*PaymentResponse, error) {
+	ctx, cancel := paymentGatewayContext(ctx)
+	defer cancel()
+
 	if err := ValidatePaymentRequest(req); err != nil {
 		return nil, fmt.Errorf("invalid payment request: %w", err)
 	}
@@ -47,17 +50,22 @@ func (g *stripeGatewayImpl) CreatePayment(ctx context.Context, req *PaymentReque
 	}
 
 	// 构建支付意图参数
+	paymentMethodTypes := g.config.PaymentMethodTypes
+	if len(paymentMethodTypes) == 0 {
+		paymentMethodTypes = []string{"card"}
+	}
 	params := &stripe.PaymentIntentParams{
 		Amount:             stripe.Int64(amount),
 		Currency:           stripe.String(req.Currency),
 		Description:        stripe.String(req.Description),
-		PaymentMethodTypes: stripe.StringSlice([]string{"card"}),
+		PaymentMethodTypes: stripe.StringSlice(paymentMethodTypes),
 		PaymentMethodOptions: &stripe.PaymentIntentPaymentMethodOptionsParams{
 			Card: &stripe.PaymentIntentPaymentMethodOptionsCardParams{
 				RequestThreeDSecure: stripe.String(threeDSMode),
 			},
 		},
 	}
+	params.Context = ctx
 	if req.IdempotencyKey != "" {
 		params.SetIdempotencyKey(req.IdempotencyKey)
 	}
@@ -135,12 +143,16 @@ func (g *stripeGatewayImpl) CreatePayment(ctx context.Context, req *PaymentReque
 
 // CapturePayment 捕获Stripe支付
 func (g *stripeGatewayImpl) CapturePayment(ctx context.Context, paymentID string) (*PaymentResponse, error) {
+	ctx, cancel := paymentGatewayContext(ctx)
+	defer cancel()
+
 	if paymentID == "" {
 		return nil, fmt.Errorf("payment ID is required")
 	}
 
 	// 捕获支付意图
 	params := &stripe.PaymentIntentCaptureParams{}
+	params.Context = ctx
 	pi, err := paymentintent.Capture(paymentID, params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to capture stripe payment: %w", err)
@@ -170,17 +182,23 @@ func (g *stripeGatewayImpl) RefundPayment(ctx context.Context, paymentID string,
 }
 
 func (g *stripeGatewayImpl) RefundPaymentWithOptions(ctx context.Context, paymentID string, amount float64, options RefundOptions) (*RefundResponse, error) {
+	ctx, cancel := paymentGatewayContext(ctx)
+	defer cancel()
+
 	if paymentID == "" {
 		return nil, fmt.Errorf("payment ID is required")
 	}
 
-	pi, err := paymentintent.Get(paymentID, nil)
+	getParams := &stripe.PaymentIntentParams{}
+	getParams.Context = ctx
+	pi, err := paymentintent.Get(paymentID, getParams)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get stripe payment for refund: %w", err)
 	}
 	params := &stripe.RefundParams{
 		PaymentIntent: stripe.String(paymentID),
 	}
+	params.Context = ctx
 	if options.IdempotencyKey = strings.TrimSpace(options.IdempotencyKey); options.IdempotencyKey != "" {
 		params.SetIdempotencyKey(options.IdempotencyKey)
 	}
@@ -216,12 +234,17 @@ func (g *stripeGatewayImpl) RefundPaymentWithOptions(ctx context.Context, paymen
 
 // GetPayment 查询Stripe支付
 func (g *stripeGatewayImpl) GetPayment(ctx context.Context, paymentID string) (*PaymentResponse, error) {
+	ctx, cancel := paymentGatewayContext(ctx)
+	defer cancel()
+
 	if paymentID == "" {
 		return nil, fmt.Errorf("payment ID is required")
 	}
 
 	// 获取支付意图
-	pi, err := paymentintent.Get(paymentID, nil)
+	params := &stripe.PaymentIntentParams{}
+	params.Context = ctx
+	pi, err := paymentintent.Get(paymentID, params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get stripe payment: %w", err)
 	}

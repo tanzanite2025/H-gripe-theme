@@ -1,7 +1,7 @@
 <template>
   <div class="relative w-full max-w-4xl mx-auto px-0">
     <div
-      class="relative rounded-3xl pt-[56px] sm:pt-[68px]"
+      class="tz-image-carousel relative rounded-3xl pt-[56px] sm:pt-[68px]"
       tabindex="0"
       @keydown.left.prevent="prev"
       @keydown.right.prevent="next"
@@ -36,7 +36,7 @@
                 :alt="item.alt || ''"
                 :width="item.width"
                 :height="item.height"
-                class="h-full w-full object-cover rounded-2xl bg-slate-900 shadow-2xl"
+                class="h-full w-full object-cover rounded-2xl bg-[var(--tz-image-loading-surface)] shadow-2xl"
                 preset="gallery"
                 :sizes="item.sizes || 'xs:100vw sm:100vw md:768px lg:1024px'"
                 :densities="item.densities || '1x 2x'"
@@ -56,25 +56,6 @@
           </li>
         </ul>
 
-        <!-- Prev Button -->
-        <button
-          type="button"
-          class="tz-directional-arrow tz-directional-arrow--large absolute left-2 top-1/2 z-50 -translate-y-1/2 sm:left-4"
-          @click="prev"
-          aria-label="Previous image"
-        >
-          <Icon name="lucide:chevron-left" aria-hidden="true" />
-        </button>
-
-        <!-- Next Button -->
-        <button
-          type="button"
-          class="tz-directional-arrow tz-directional-arrow--large absolute right-2 top-1/2 z-50 -translate-y-1/2 sm:right-4"
-          @click="next"
-          aria-label="Next image"
-        >
-          <Icon name="lucide:chevron-right" aria-hidden="true" />
-        </button>
       </div>
     </div>
   </div>

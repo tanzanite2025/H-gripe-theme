@@ -140,6 +140,13 @@ func (s *ProductService) GetCustomsSummary(locale string) (repository.ProductCus
 	return s.productRepo.GetCustomsSummary(locale)
 }
 
+func (s *ProductService) ListFilterableSpecificationsWithDynamicValuesForCategory(categorySlug string) ([]repository.ProductCategoryFilterableSpecification, error) {
+	if s == nil || s.productRepo == nil {
+		return []repository.ProductCategoryFilterableSpecification{}, errors.New("product repository is not configured")
+	}
+	return s.productRepo.ListFilterableSpecificationsWithDynamicValuesForCategory(categorySlug)
+}
+
 func (s *ProductService) CreateAdminProduct(input ProductCreateInput) (*product.Product, error) {
 	locale, err := requireSupportedLocale(input.Locale)
 	if err != nil {

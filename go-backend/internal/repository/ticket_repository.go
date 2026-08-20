@@ -86,7 +86,15 @@ func (r *TicketRepository) FindCustomerServiceConversations(page, pageSize int, 
 	var total int64
 
 	baseQuery := func() *gorm.DB {
-		query := r.db.Model(&ticket.Ticket{}).Where("tickets.category = ?", "customer_service")
+		query := r.db.Model(&ticket.Ticket{}).
+			Where("tickets.category = ?", "customer_service").
+			Where(`
+				EXISTS (
+					SELECT 1
+					FROM ticket_messages customer_service_conversation_messages
+					WHERE customer_service_conversation_messages.ticket_id = tickets.id
+				)
+			`)
 		return applyCustomerServiceConversationFilters(query, filters)
 	}
 

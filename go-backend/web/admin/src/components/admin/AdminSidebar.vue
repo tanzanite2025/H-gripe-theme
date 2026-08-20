@@ -348,13 +348,13 @@ watch(
   min-height: 0;
   flex: 1;
   overflow-y: auto;
-  padding: 0.5rem 0.75rem 1rem;
+  padding: 0.375rem 0.75rem 0.875rem;
 }
 
 .admin-sidebar__menu {
-  display: flex;
-  flex-direction: column;
-  gap: 0.125rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.125rem 0.375rem;
 }
 
 .admin-sidebar__group {
@@ -366,7 +366,7 @@ watch(
   position: relative;
   min-width: 0;
   width: 100%;
-  height: 2.25rem;
+  height: 2.125rem;
   align-items: center;
   gap: 0.75rem;
   border: 0;
@@ -564,13 +564,14 @@ watch(
 
 .admin-sidebar--collapsed .admin-sidebar__link {
   width: 2.75rem;
-  height: 2.5rem;
+  height: 2.375rem;
   justify-content: center;
   gap: 0;
   padding-inline: 0;
 }
 
 .admin-sidebar--collapsed .admin-sidebar__menu {
+  grid-template-columns: 1fr;
   align-items: center;
 }
 

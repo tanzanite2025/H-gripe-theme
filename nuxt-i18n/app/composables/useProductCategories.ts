@@ -58,6 +58,21 @@ const normalizeCategory = (
       .filter((child: ProductCategory | null): child is ProductCategory => Boolean(child))
     : []
 
+  const imageSource = [
+    value?.image_url,
+    value?.imageUrl,
+    value?.image,
+    value?.thumbnail_url,
+    value?.thumbnailUrl,
+    value?.thumbnail,
+    value?.cover_image,
+    value?.coverImage,
+    value?.featured_image,
+    value?.featuredImage,
+  ].find((candidate): candidate is string => {
+    return typeof candidate === 'string' && candidate.trim().length > 0
+  })
+
   return {
     id,
     parentId: Number.isFinite(Number(value?.parent_id)) && Number(value.parent_id) > 0
@@ -66,7 +81,7 @@ const normalizeCategory = (
     name,
     slug,
     description: String(value?.description || '').trim(),
-    imageUrl: normalizeStorefrontMediaUrl(value?.image_url, mediaContext),
+    imageUrl: normalizeStorefrontMediaUrl(imageSource, mediaContext),
     depth: Math.max(1, Number(value?.depth) || 1),
     sortOrder: Number(value?.sort_order) || 0,
     children,
@@ -128,13 +143,11 @@ export const useProductCategories = () => {
   const publicBaseURL = computed(() => (
     ((config.public as { apiBase?: string }).apiBase || '/api/v1').replace(/\/$/, '')
   ))
+  const internalApiOrigin = import.meta.server
+    ? String((config as { apiInternalOrigin?: string }).apiInternalOrigin || '').replace(/\/$/, '')
+    : ''
   const requestBaseURL = computed(() => {
-    if (import.meta.server) {
-      const internalOrigin = String(
-        (config as { apiInternalOrigin?: string }).apiInternalOrigin || '',
-      ).replace(/\/$/, '')
-      if (internalOrigin) return `${internalOrigin}/api/v1`
-    }
+    if (internalApiOrigin) return `${internalApiOrigin}/api/v1`
     return publicBaseURL.value
   })
   const localeCode = computed(() => String(locale.value || '').trim() || 'en')

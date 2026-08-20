@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"errors"
 	"strings"
 	"time"
 
@@ -8,6 +9,11 @@ import (
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+)
+
+var (
+	ErrOutboxOwnershipLost   = errors.New("outbox event ownership lost")
+	ErrOutboxUnknownNotFound = errors.New("unknown outbox event not found")
 )
 
 type OutboxRepository struct {
@@ -122,11 +128,12 @@ func (r *OutboxRepository) ClaimReadyEvents(now time.Time, workerID string, limi
 		if err := tx.Model(&outbox.Event{}).
 			Where("id IN ?", ids).
 			Updates(map[string]interface{}{
-				"status":     outbox.EventStatusProcessing,
-				"locked_at":  now,
-				"locked_by":  workerID,
-				"attempts":   gorm.Expr("attempts + 1"),
-				"updated_at": now,
+				"status":          outbox.EventStatusProcessing,
+				"locked_at":       now,
+				"locked_by":       workerID,
+				"last_attempt_at": now,
+				"attempts":        gorm.Expr("attempts + 1"),
+				"updated_at":      now,
 			}).Error; err != nil {
 			return err
 		}
@@ -144,24 +151,51 @@ func (r *OutboxRepository) ClaimReadyEvents(now time.Time, workerID string, limi
 }
 
 func (r *OutboxRepository) MarkProcessed(id uint, processedAt time.Time) error {
+	return r.MarkProcessedByWorker(id, "", processedAt)
+}
+
+func (r *OutboxRepository) MarkProcessedByWorker(id uint, workerID string, processedAt time.Time) error {
 	if processedAt.IsZero() {
 		processedAt = time.Now().UTC()
 	} else {
 		processedAt = processedAt.UTC()
 	}
-	return r.db.Model(&outbox.Event{}).
-		Where("id = ?", id).
+	query := r.db.Model(&outbox.Event{}).Where("id = ?", id)
+	if strings.TrimSpace(workerID) != "" {
+		query = query.Where("status = ? AND locked_by = ?", outbox.EventStatusProcessing, workerID)
+	}
+	result := query.
 		Updates(map[string]interface{}{
-			"status":       outbox.EventStatusProcessed,
-			"processed_at": processedAt,
-			"locked_at":    nil,
-			"locked_by":    "",
-			"last_error":   "",
-			"updated_at":   processedAt,
-		}).Error
+			"status":          outbox.EventStatusProcessed,
+			"processed_at":    processedAt,
+			"locked_at":       gorm.Expr("NULL"),
+			"locked_by":       "",
+			"last_error":      "",
+			"uncertain_at":    gorm.Expr("NULL"),
+			"reconcile_after": gorm.Expr("NULL"),
+			"updated_at":      processedAt,
+		})
+	if result.Error != nil {
+		return result.Error
+	}
+	if strings.TrimSpace(workerID) != "" && result.RowsAffected == 0 {
+		return ErrOutboxOwnershipLost
+	}
+	return nil
 }
 
 func (r *OutboxRepository) MarkFailed(id uint, status, errorMessage string, nextAvailableAt, failedAt time.Time) error {
+	return r.MarkFailedByWorker(id, "", status, errorMessage, nextAvailableAt, failedAt)
+}
+
+func (r *OutboxRepository) MarkFailedByWorker(
+	id uint,
+	workerID string,
+	status,
+	errorMessage string,
+	nextAvailableAt,
+	failedAt time.Time,
+) error {
 	if failedAt.IsZero() {
 		failedAt = time.Now().UTC()
 	} else {
@@ -176,14 +210,157 @@ func (r *OutboxRepository) MarkFailed(id uint, status, errorMessage string, next
 		status = outbox.EventStatusFailed
 	}
 
-	return r.db.Model(&outbox.Event{}).
-		Where("id = ?", id).
+	query := r.db.Model(&outbox.Event{}).Where("id = ?", id)
+	if strings.TrimSpace(workerID) != "" {
+		query = query.Where("status = ? AND locked_by = ?", outbox.EventStatusProcessing, workerID)
+	}
+	result := query.
 		Updates(map[string]interface{}{
-			"status":       status,
-			"available_at": nextAvailableAt,
-			"locked_at":    nil,
-			"locked_by":    "",
-			"last_error":   errorMessage,
-			"updated_at":   failedAt,
-		}).Error
+			"status":          status,
+			"available_at":    nextAvailableAt,
+			"locked_at":       gorm.Expr("NULL"),
+			"locked_by":       "",
+			"last_error":      errorMessage,
+			"uncertain_at":    gorm.Expr("NULL"),
+			"reconcile_after": gorm.Expr("NULL"),
+			"updated_at":      failedAt,
+		})
+	if result.Error != nil {
+		return result.Error
+	}
+	if strings.TrimSpace(workerID) != "" && result.RowsAffected == 0 {
+		return ErrOutboxOwnershipLost
+	}
+	return nil
+}
+
+func (r *OutboxRepository) RefreshProcessingLockByWorker(id uint, workerID string, lockedAt time.Time) error {
+	if lockedAt.IsZero() {
+		lockedAt = time.Now().UTC()
+	} else {
+		lockedAt = lockedAt.UTC()
+	}
+	workerID = strings.TrimSpace(workerID)
+	if workerID == "" {
+		return ErrOutboxOwnershipLost
+	}
+	result := r.db.Model(&outbox.Event{}).
+		Where("id = ? AND status = ? AND locked_by = ?", id, outbox.EventStatusProcessing, workerID).
+		Updates(map[string]interface{}{
+			"locked_at":  lockedAt,
+			"updated_at": lockedAt,
+		})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return ErrOutboxOwnershipLost
+	}
+	return nil
+}
+
+func (r *OutboxRepository) MarkUnknownByWorker(
+	id uint,
+	workerID string,
+	errorMessage string,
+	reconcileAfter,
+	uncertainAt time.Time,
+) error {
+	if uncertainAt.IsZero() {
+		uncertainAt = time.Now().UTC()
+	} else {
+		uncertainAt = uncertainAt.UTC()
+	}
+	if reconcileAfter.IsZero() {
+		reconcileAfter = uncertainAt
+	} else {
+		reconcileAfter = reconcileAfter.UTC()
+	}
+
+	result := r.db.Model(&outbox.Event{}).
+		Where("id = ? AND status = ? AND locked_by = ?", id, outbox.EventStatusProcessing, workerID).
+		Updates(map[string]interface{}{
+			"status":          outbox.EventStatusUnknown,
+			"available_at":    reconcileAfter,
+			"locked_at":       nil,
+			"locked_by":       "",
+			"uncertain_at":    uncertainAt,
+			"reconcile_after": reconcileAfter,
+			"last_error":      errorMessage,
+			"updated_at":      uncertainAt,
+		})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return ErrOutboxOwnershipLost
+	}
+	return nil
+}
+
+func (r *OutboxRepository) FindUnknownEvents(limit int) ([]outbox.Event, error) {
+	if limit <= 0 || limit > 500 {
+		limit = 100
+	}
+	var events []outbox.Event
+	err := r.db.Where("status = ?", outbox.EventStatusUnknown).
+		Order("reconcile_after ASC, id ASC").
+		Limit(limit).
+		Find(&events).Error
+	return events, err
+}
+
+func (r *OutboxRepository) ResumeUnknownEvent(id uint, nextAvailableAt time.Time, note string, resumedAt time.Time) error {
+	if resumedAt.IsZero() {
+		resumedAt = time.Now().UTC()
+	} else {
+		resumedAt = resumedAt.UTC()
+	}
+	if nextAvailableAt.IsZero() {
+		nextAvailableAt = resumedAt
+	} else {
+		nextAvailableAt = nextAvailableAt.UTC()
+	}
+	result := r.db.Model(&outbox.Event{}).
+		Where("id = ? AND status = ?", id, outbox.EventStatusUnknown).
+		Updates(map[string]interface{}{
+			"status":          outbox.EventStatusFailed,
+			"available_at":    nextAvailableAt,
+			"uncertain_at":    gorm.Expr("NULL"),
+			"reconcile_after": gorm.Expr("NULL"),
+			"last_error":      note,
+			"updated_at":      resumedAt,
+		})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return ErrOutboxUnknownNotFound
+	}
+	return nil
+}
+
+func (r *OutboxRepository) MarkUnknownProcessed(id uint, note string, processedAt time.Time) error {
+	if processedAt.IsZero() {
+		processedAt = time.Now().UTC()
+	} else {
+		processedAt = processedAt.UTC()
+	}
+	result := r.db.Model(&outbox.Event{}).
+		Where("id = ? AND status = ?", id, outbox.EventStatusUnknown).
+		Updates(map[string]interface{}{
+			"status":          outbox.EventStatusProcessed,
+			"processed_at":    processedAt,
+			"uncertain_at":    gorm.Expr("NULL"),
+			"reconcile_after": gorm.Expr("NULL"),
+			"last_error":      note,
+			"updated_at":      processedAt,
+		})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return ErrOutboxUnknownNotFound
+	}
+	return nil
 }

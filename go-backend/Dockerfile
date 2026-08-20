@@ -52,7 +52,7 @@ COPY --from=builder /app/config /app/config
 COPY --from=builder /app/migrations /app/migrations
 
 # 创建必要的目录
-RUN mkdir -p /app/logs /app/uploads && \
+RUN mkdir -p /app/logs /app/uploads /app/site-logo-uploads && \
     chown -R app:app /app
 
 # 切换到非root用户

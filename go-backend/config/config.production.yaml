@@ -25,11 +25,20 @@ database:
   log_level: silent
 
 redis:
+  # For long-lived multi-replica deployments prefer a managed Redis primary
+  # endpoint or Sentinel mode. Cluster mode is intentionally rejected until all
+  # multi-key rate-limit/anti-abuse scripts are migrated to shared hash tags.
+  mode: standalone
   host: ${REDIS_HOST}
   port: ${REDIS_PORT}
+  addrs: []
+  username: ""
   password: ${REDIS_PASSWORD}
   db: 0
   pool_size: 20
+  master_name: ""
+  sentinel_username: ""
+  sentinel_password: ""
 
 customer_service_realtime:
   # The production customer-service path is WebSocket-only. Every API replica
@@ -95,6 +104,7 @@ cors:
     - Origin
     - Content-Type
     - Accept-Language
+    - Idempotency-Key
     - X-CSRF-Token
     - X-Locale
     - X-Display-Currency
@@ -109,6 +119,8 @@ cors:
   expose_headers:
     - Content-Length
     - X-Request-ID
+    - Idempotency-Replayed
+    - Retry-After
   allow_credentials: true
   max_age: 43200
 
@@ -190,6 +202,21 @@ payment_gateway_circuit_breaker:
   failure_rate_threshold: 0.15
   minimum_sample_count: 20
   open_duration_seconds: 30
+  # Must cover PayPal token acquisition plus payment creation. A single shared
+  # probe protects every API replica after the open window expires.
+  half_open_probe_timeout_seconds: 60
+
+outbound_http_resilience:
+  # Shared Redis-backed breaker for Google OAuth, Google Merchant, shipping, and Outbox webhooks.
+  enabled: true
+  retry_max_attempts: 3
+  retry_base_delay_millis: 250
+  retry_max_delay_millis: 3000
+  retry_jitter_millis: 250
+  failure_threshold: 4
+  failure_window_seconds: 60
+  open_duration_seconds: 30
+  half_open_probe_timeout_seconds: 30
 
 payment_risk_monitoring:
   enabled: true
