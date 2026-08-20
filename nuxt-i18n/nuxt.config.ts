@@ -372,9 +372,7 @@ export default defineNuxtConfig({
   nitro: {
     preset: env.NITRO_PRESET || 'node-server',
     sourceMap: false,
-    externals: {
-      traceInclude: runtimeSharpTraceDeps,
-    },
+    traceDeps: runtimeSharpTraceDeps,
     rollupConfig: {
       onwarn(warning, warn) {
         if (shouldIgnoreNitroBuildWarning(warning as RollupBuildWarning)) return
