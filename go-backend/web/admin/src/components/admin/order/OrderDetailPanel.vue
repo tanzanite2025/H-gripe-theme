@@ -90,6 +90,13 @@
       </TabsContent>
 
       <TabsContent value="items" class="space-y-6">
+      <div v-if="canCreateAfterSales" class="flex justify-end">
+        <Button size="sm" @click="emit('create-after-sales')">
+          <RotateCcw class="size-3.5" />
+          发起售后
+        </Button>
+      </div>
+
       <OrderDetailSection title="订单商品">
         <Table>
           <TableHeader>
@@ -344,7 +351,7 @@
 
 <script setup lang="ts">
 import { computed, defineComponent, h, reactive, watch } from 'vue'
-import { CreditCard, Download, Mail, RefreshCw, Save } from '@lucide/vue'
+import { CreditCard, Download, Mail, RefreshCw, RotateCcw, Save } from '@lucide/vue'
 import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -455,6 +462,7 @@ const emit = defineEmits<{
   (event: 'update-note'): void
   (event: 'update-customs', orderItemId: OrderID, declaredValue: number | null, declaredValueConfirmed: boolean): void
   (event: 'export-customs'): void
+  (event: 'create-after-sales'): void
   (event: 'contact-dispute', dispute: OrderDisputeCase): void
   (event: 'open-payment-workbench', dispute: OrderDisputeCase): void
 }>()
@@ -462,6 +470,18 @@ const emit = defineEmits<{
 const adminNoteModel = computed<string>({
   get: () => props.adminNote,
   set: (value: string) => emit('update:adminNote', value),
+})
+
+const canCreateAfterSales = computed(() => {
+  const order = props.currentOrder
+  const status = String(order?.status || '').trim().toLowerCase()
+  const paymentStatus = String(order?.payment_status || '').trim().toLowerCase()
+  return Boolean(
+    props.canEdit &&
+    paymentStatus === 'paid' &&
+    ['paid', 'processing', 'shipped', 'completed'].includes(status) &&
+    order?.items?.some((item) => item.id != null && Number(item.quantity || 0) > 0),
+  )
 })
 
 const declaredValueDrafts = reactive<Record<string, string>>({})

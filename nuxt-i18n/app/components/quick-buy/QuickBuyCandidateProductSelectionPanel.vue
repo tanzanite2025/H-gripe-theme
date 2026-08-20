@@ -23,8 +23,6 @@ const props = withDefaults(defineProps<{
   canGoToNextProductPage?: boolean
   showProductPagination?: boolean
   productPage?: number
-  currentStepIndex: number
-  totalSteps: number
   previousLabel: string
   nextLabel: string
   productRailLabel: string
@@ -34,6 +32,8 @@ const props = withDefaults(defineProps<{
   helpTriggerAriaLabel: string
   closeLabel: string
   isProductSelected?: (product: ShopProduct) => boolean
+  hideTitle?: boolean
+  showHelp?: boolean
 }>(), {
   errorMessage: '',
   loading: false,
@@ -46,6 +46,8 @@ const props = withDefaults(defineProps<{
   canGoToNextProductPage: false,
   showProductPagination: false,
   productPage: 1,
+  hideTitle: false,
+  showHelp: true,
 })
 
 const emit = defineEmits<{
@@ -58,8 +60,6 @@ const emit = defineEmits<{
   openProductDetails: [product: ShopProduct]
   toggleFilter: [slug: string, value: string]
   clearFilters: []
-  previousStep: []
-  nextStep: []
 }>()
 
 const handleSearchInput = (event: Event) => {
@@ -72,7 +72,7 @@ const handleSearchInput = (event: Event) => {
   <div class="quickbuy-selection-panel">
     <div class="quickbuy-selection-panel-header">
       <div class="quickbuy-panel-heading-row">
-        <h2 class="my-0 min-w-0 text-lg font-semibold text-white">
+        <h2 v-if="!hideTitle" class="my-0 min-w-0 text-lg font-semibold text-white">
           {{ title || fallbackTitle }}
         </h2>
         <input
@@ -84,6 +84,7 @@ const handleSearchInput = (event: Event) => {
           @input="handleSearchInput"
         />
         <QuickBuyLocalizedHelpQuestionMarkDialog
+          v-if="showHelp"
           :title="helpTitle"
           :content="helpContent"
           :trigger-aria-label="helpTriggerAriaLabel"
@@ -197,28 +198,6 @@ const handleSearchInput = (event: Event) => {
       </div>
     </div>
 
-    <div class="quickbuy-step-actions">
-      <button
-        class="tz-directional-arrow tz-directional-arrow--large"
-        type="button"
-        :disabled="currentStepIndex <= 1"
-        :title="previousLabel"
-        :aria-label="previousLabel"
-        @click="emit('previousStep')"
-      >
-        <Icon name="lucide:chevron-left" aria-hidden="true" />
-      </button>
-      <button
-        v-if="currentStepIndex < totalSteps"
-        class="tz-directional-arrow tz-directional-arrow--large"
-        type="button"
-        :title="nextLabel"
-        :aria-label="nextLabel"
-        @click="emit('nextStep')"
-      >
-        <Icon name="lucide:chevron-right" aria-hidden="true" />
-      </button>
-    </div>
   </div>
 </template>
 
@@ -229,6 +208,7 @@ const handleSearchInput = (event: Event) => {
   min-height: 0;
   box-sizing: border-box;
   flex-direction: column;
+  overflow: hidden;
   padding: 0.75rem;
   border: 1px solid rgba(255, 255, 255, 0.035);
   border-radius: 0.75rem;
@@ -376,16 +356,6 @@ const handleSearchInput = (event: Event) => {
   font-size: 0.6875rem;
 }
 
-.quickbuy-step-actions {
-  display: flex;
-  flex: 0 0 auto;
-  justify-content: center;
-  gap: 0.5rem;
-  padding-top: 0.75rem;
-  margin-top: 0.75rem;
-  box-shadow: inset 0 1px 0 var(--quickbuy-divider, rgba(255, 255, 255, 0.045));
-}
-
 .quickbuy-product-grid-shell {
   display: grid;
   grid-template-columns: 2rem minmax(0, 1fr) 2rem;
@@ -463,10 +433,13 @@ const handleSearchInput = (event: Event) => {
 @media (max-width: 767px) {
   .quickbuy-selection-panel {
     min-height: 15rem;
+    padding: 0.5rem;
   }
 
-  .quickbuy-step-actions {
-    display: none;
+  .quickbuy-candidate-area {
+    flex: 0 0 auto;
+    min-height: 0;
+    margin-top: 0.5rem;
   }
 
   .quickbuy-panel-heading-row {
@@ -486,10 +459,13 @@ const handleSearchInput = (event: Event) => {
   }
 
   .quickbuy-product-grid-shell {
+    flex: 0 0 auto;
+    height: auto;
     grid-template-columns: 1.75rem minmax(0, 1fr) 1.75rem;
-    gap: 0.35rem;
+    gap: 0.25rem;
     min-height: 20rem;
-    padding: 0.375rem;
+    overflow: hidden;
+    padding: 0.25rem;
   }
 
   .quickbuy-product-grid-arrow {
@@ -498,12 +474,27 @@ const handleSearchInput = (event: Event) => {
   }
 
   .quickbuy-product-grid {
+    height: auto;
+    min-height: 0;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     grid-template-rows: repeat(3, minmax(0, 1fr));
-    gap: 0.5rem;
+    gap: 0.375rem;
+    overflow: hidden;
   }
 
   .quickbuy-product-grid-stage {
+    height: auto;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .quickbuy-product-grid :deep(.shop-product-display-card) {
+    height: 100%;
+    min-height: 0;
+  }
+
+  .quickbuy-product-grid :deep(.shop-product-display-card__image),
+  .quickbuy-product-grid :deep(.shop-product-display-card__content) {
     min-height: 0;
   }
 }

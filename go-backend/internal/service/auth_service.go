@@ -5,6 +5,7 @@ import (
 
 	"commerce-platform/internal/domain/user"
 	"commerce-platform/internal/pkg/config"
+	"commerce-platform/internal/pkg/resilience"
 )
 
 type UserRepository interface {
@@ -18,9 +19,11 @@ type UserRepository interface {
 }
 
 type AuthService struct {
-	userRepo UserRepository
-	jwtCfg   config.JWTConfig
-	oauthCfg config.OAuthConfig
+	userRepo                UserRepository
+	jwtCfg                  config.JWTConfig
+	oauthCfg                config.OAuthConfig
+	googleOAuthHTTPClient   *resilience.HTTPClient
+	googleTokenInfoEndpoint string
 }
 
 func NewAuthService(userRepo UserRepository, jwtCfg config.JWTConfig, oauthCfg ...config.OAuthConfig) *AuthService {
@@ -29,9 +32,10 @@ func NewAuthService(userRepo UserRepository, jwtCfg config.JWTConfig, oauthCfg .
 		oauthConfig = oauthCfg[0]
 	}
 	return &AuthService{
-		userRepo: userRepo,
-		jwtCfg:   jwtCfg,
-		oauthCfg: oauthConfig,
+		userRepo:                userRepo,
+		jwtCfg:                  jwtCfg,
+		oauthCfg:                oauthConfig,
+		googleTokenInfoEndpoint: googleTokenInfoEndpoint,
 	}
 }
 

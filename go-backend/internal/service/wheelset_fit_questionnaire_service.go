@@ -18,10 +18,15 @@ var (
 	ErrWheelsetFitQuestionnaireVersionNotFound = errors.New("wheelset fit questionnaire version not found")
 	ErrWheelsetFitQuestionNotFound             = errors.New("wheelset fit question not found")
 	ErrWheelsetFitQuestionnaireNotMutable      = errors.New("wheelset fit questionnaire version is not mutable")
+	ErrWheelsetFitQuestionKeyNotRegistered     = errors.New("wheelset fit question key is not registered")
+	ErrWheelsetFitQuestionKeyDisabled          = errors.New("wheelset fit question key is disabled")
+	ErrWheelsetFitAnswerKeyNotRegistered       = errors.New("wheelset fit answer key is not registered")
+	ErrWheelsetFitAnswerKeyDisabled            = errors.New("wheelset fit answer key is disabled")
 )
 
 type WheelsetFitQuestionnaireService struct {
-	repo *repository.WheelsetFitQuestionnaireRepository
+	wheelsetFitQuestionnaireRepository  *repository.WheelsetFitQuestionnaireRepository
+	selectionConfigurationKeyRepository *repository.SelectionConfigurationKeyRepository
 }
 
 type WheelsetFitQuestionOrderInput struct {
@@ -43,8 +48,18 @@ type WheelsetFitQuestionnaireValidationIssue struct {
 	Locale      string `json:"locale,omitempty"`
 }
 
-func NewWheelsetFitQuestionnaireService(repo *repository.WheelsetFitQuestionnaireRepository) *WheelsetFitQuestionnaireService {
-	return &WheelsetFitQuestionnaireService{repo: repo}
+func NewWheelsetFitQuestionnaireService(
+	wheelsetFitQuestionnaireRepository *repository.WheelsetFitQuestionnaireRepository,
+	selectionConfigurationKeyRepositories ...*repository.SelectionConfigurationKeyRepository,
+) *WheelsetFitQuestionnaireService {
+	var selectionConfigurationKeyRepository *repository.SelectionConfigurationKeyRepository
+	if len(selectionConfigurationKeyRepositories) > 0 {
+		selectionConfigurationKeyRepository = selectionConfigurationKeyRepositories[0]
+	}
+	return &WheelsetFitQuestionnaireService{
+		wheelsetFitQuestionnaireRepository:  wheelsetFitQuestionnaireRepository,
+		selectionConfigurationKeyRepository: selectionConfigurationKeyRepository,
+	}
 }
 
 func (s *WheelsetFitQuestionnaireService) GetCurrentVersion() (*wheelsetfit.Version, error) {
@@ -53,7 +68,7 @@ func (s *WheelsetFitQuestionnaireService) GetCurrentVersion() (*wheelsetfit.Vers
 		return nil, err
 	}
 
-	version, err := s.repo.FindCurrentVersion(questionnaire.ID)
+	version, err := s.wheelsetFitQuestionnaireRepository.FindCurrentVersion(questionnaire.ID)
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, ErrWheelsetFitQuestionnaireVersionNotFound
 	}
@@ -75,15 +90,15 @@ func (s *WheelsetFitQuestionnaireService) GetOrCreateDraft() (*wheelsetfit.Versi
 	if err != nil {
 		return nil, err
 	}
-	return s.repo.GetOrCreateDraft(questionnaire.ID)
+	return s.wheelsetFitQuestionnaireRepository.GetOrCreateDraft(questionnaire.ID)
 }
 
 func (s *WheelsetFitQuestionnaireService) getQuestionnaire() (*wheelsetfit.Questionnaire, error) {
-	if s == nil || s.repo == nil {
+	if s == nil || s.wheelsetFitQuestionnaireRepository == nil {
 		return nil, errors.New("wheelset fit questionnaire service is not configured")
 	}
 
-	questionnaire, err := s.repo.FindSingleton()
+	questionnaire, err := s.wheelsetFitQuestionnaireRepository.FindSingleton()
 	if repository.IsRecordNotFound(err) {
 		return nil, ErrWheelsetFitQuestionnaireNotFound
 	}
@@ -103,8 +118,11 @@ func (s *WheelsetFitQuestionnaireService) SaveQuestion(input WheelsetFitQuestion
 	if err != nil {
 		return nil, err
 	}
+	if err := s.validateWheelsetFitQuestionKeyAndAnswerKeyAreRegisteredAndEnabled(input.QuestionKey, input.AnswerKey); err != nil {
+		return nil, err
+	}
 
-	saved, err := s.repo.SaveDraftQuestion(draft.ID, func(lockedDraft *wheelsetfit.Version) (*wheelsetfit.Question, error) {
+	saved, err := s.wheelsetFitQuestionnaireRepository.SaveDraftQuestion(draft.ID, func(lockedDraft *wheelsetfit.Version) (*wheelsetfit.Question, error) {
 		sourceLocale, err := wheelsetFitQuestionnaireSourceLocale(lockedDraft)
 		if err != nil {
 			return nil, err
@@ -133,7 +151,7 @@ func (s *WheelsetFitQuestionnaireService) DeleteQuestion(questionID uint) (*whee
 	if err != nil {
 		return nil, err
 	}
-	deleted, err := s.repo.DeleteDraftQuestion(draft.ID, questionID)
+	deleted, err := s.wheelsetFitQuestionnaireRepository.DeleteDraftQuestion(draft.ID, questionID)
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, ErrWheelsetFitQuestionNotFound
 	}
@@ -151,7 +169,7 @@ func (s *WheelsetFitQuestionnaireService) ReorderQuestions(input WheelsetFitQues
 	if err != nil {
 		return nil, err
 	}
-	reordered, err := s.repo.ReorderDraftQuestions(draft.ID, input.QuestionIDs)
+	reordered, err := s.wheelsetFitQuestionnaireRepository.ReorderDraftQuestions(draft.ID, input.QuestionIDs)
 	if errors.Is(err, repository.ErrWheelsetFitQuestionOrderInvalid) {
 		return nil, fmt.Errorf("%w: question_ids must include every draft question exactly once", ErrWheelsetFitQuestionnaireInvalid)
 	}
@@ -165,19 +183,19 @@ func (s *WheelsetFitQuestionnaireService) ReorderQuestions(input WheelsetFitQues
 }
 
 func (s *WheelsetFitQuestionnaireService) ValidateVersion(versionID uint) (*WheelsetFitQuestionnaireValidationResult, error) {
-	version, err := s.repo.FindVersionByID(versionID)
+	version, err := s.wheelsetFitQuestionnaireRepository.FindVersionByID(versionID)
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, ErrWheelsetFitQuestionnaireVersionNotFound
 	}
 	if err != nil {
 		return nil, err
 	}
-	result := validateWheelsetFitQuestionnaireVersion(*version)
+	result := validateWheelsetFitQuestionnaireVersion(*version, s.selectionConfigurationKeyRepository)
 	return &result, nil
 }
 
 func (s *WheelsetFitQuestionnaireService) PublishVersion(versionID uint, publishedBy *uint) (*wheelsetfit.Version, error) {
-	version, err := s.repo.FindVersionByID(versionID)
+	version, err := s.wheelsetFitQuestionnaireRepository.FindVersionByID(versionID)
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, ErrWheelsetFitQuestionnaireVersionNotFound
 	}
@@ -188,12 +206,12 @@ func (s *WheelsetFitQuestionnaireService) PublishVersion(versionID uint, publish
 		return nil, ErrWheelsetFitQuestionnaireNotMutable
 	}
 
-	validation := validateWheelsetFitQuestionnaireVersion(*version)
+	validation := validateWheelsetFitQuestionnaireVersion(*version, s.selectionConfigurationKeyRepository)
 	if !validation.Valid {
 		return nil, fmt.Errorf("%w: %s", ErrWheelsetFitQuestionnaireInvalid, validation.Issues[0].Message)
 	}
-	if err := s.repo.PublishVersionIfValid(versionID, publishedBy, time.Now().UTC(), func(locked *wheelsetfit.Version) error {
-		result := validateWheelsetFitQuestionnaireVersion(*locked)
+	if err := s.wheelsetFitQuestionnaireRepository.PublishVersionIfValid(versionID, publishedBy, time.Now().UTC(), func(locked *wheelsetfit.Version) error {
+		result := validateWheelsetFitQuestionnaireVersion(*locked, s.selectionConfigurationKeyRepository)
 		if result.Valid {
 			return nil
 		}
@@ -204,7 +222,7 @@ func (s *WheelsetFitQuestionnaireService) PublishVersion(versionID uint, publish
 		}
 		return nil, err
 	}
-	return s.repo.FindVersionByID(versionID)
+	return s.wheelsetFitQuestionnaireRepository.FindVersionByID(versionID)
 }
 
 func validateWheelsetFitQuestionnaire(questionnaire wheelsetfit.Questionnaire) error {

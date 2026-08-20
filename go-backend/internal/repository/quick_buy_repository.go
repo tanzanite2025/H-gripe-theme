@@ -223,9 +223,6 @@ func preloadQuickBuyVersion(db *gorm.DB) *gorm.DB {
 		Preload("Steps.ProductSpecificationTemplates.ProductSpecificationTemplate.SpecDefinitions", func(db *gorm.DB) *gorm.DB {
 			return db.Order("sort_order ASC, id ASC")
 		}).
-		Preload("Steps.ProductSpecificationTemplates.ProductSpecificationTemplate.Translations", func(db *gorm.DB) *gorm.DB {
-			return db.Order("locale ASC, id ASC")
-		}).
 		Preload("Steps.Filters", func(db *gorm.DB) *gorm.DB {
 			return db.Order("sort_order ASC, id ASC")
 		}).

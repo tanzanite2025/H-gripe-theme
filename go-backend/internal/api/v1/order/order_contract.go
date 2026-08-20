@@ -7,14 +7,15 @@ import (
 
 // CreateOrderRequest 创建订单请求
 type CreateOrderRequest struct {
-	Items           []OrderItemRequest `json:"items" binding:"required,min=1"`
-	ShippingAddress AddressRequest     `json:"shipping_address" binding:"required"`
-	BillingAddress  AddressRequest     `json:"billing_address"`
-	PaymentMethod   string             `json:"payment_method" binding:"required"`
-	ShippingMethod  string             `json:"shipping_method" binding:"required"`
-	CouponCode      string             `json:"coupon_code"`
-	PointsToUse     int                `json:"points_to_use"`
-	ClientRisk      *ClientRiskRequest `json:"client_risk,omitempty"`
+	Items                        []OrderItemRequest `json:"items" binding:"required,min=1"`
+	ShippingAddress              AddressRequest     `json:"shipping_address" binding:"required"`
+	BillingAddress               AddressRequest     `json:"billing_address"`
+	PaymentMethod                string             `json:"payment_method" binding:"required"`
+	ShippingMethod               string             `json:"shipping_method" binding:"required"`
+	CouponCode                   string             `json:"coupon_code"`
+	PointsToUse                  int                `json:"points_to_use"`
+	PolicyDisclosureAcknowledged bool               `json:"policy_disclosure_acknowledged"`
+	ClientRisk                   *ClientRiskRequest `json:"client_risk,omitempty"`
 }
 
 type ClientRiskRequest struct {

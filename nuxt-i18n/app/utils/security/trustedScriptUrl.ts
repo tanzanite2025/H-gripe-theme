@@ -1,10 +1,12 @@
 const POLICY_NAME = 'tanzanite-script-url'
+const DEFAULT_POLICY_NAME = 'default'
 
 interface TrustedScriptURLPolicy {
   createScriptURL: (value: string) => unknown
 }
 
 interface TrustedTypesFactory {
+  defaultPolicy?: TrustedScriptURLPolicy | null
   createPolicy: (
     name: string,
     rules: {
@@ -25,6 +27,7 @@ declare global {
   interface Window {
     trustedTypes?: TrustedTypesFactory
     __tanzaniteTrustedScriptUrlPolicy?: TrustedScriptURLPolicy
+    __tanzaniteDefaultTrustedTypesPolicyInitialized?: boolean
   }
 }
 
@@ -52,9 +55,27 @@ const googleScriptUrl = (value: string): string | null => {
   }
 }
 
+const stripeScriptUrl = (value: string): string | null => {
+  try {
+    const url = new URL(value)
+    if (url.protocol !== 'https:') return null
+    if (url.username || url.password) return null
+    if (url.hostname !== 'js.stripe.com' && !/^[a-z0-9-]+\.js\.stripe\.com$/i.test(url.hostname)) {
+      return null
+    }
+
+    return url.href
+  } catch {
+    return null
+  }
+}
+
 const allowedScriptUrl = (value: string): string => {
   const normalized = value.trim()
   if (trustedExternalScriptUrls.has(normalized)) return normalized
+
+  const stripeUrl = stripeScriptUrl(normalized)
+  if (stripeUrl) return stripeUrl
 
   const googleUrl = googleScriptUrl(normalized)
   if (googleUrl) return googleUrl
@@ -62,8 +83,31 @@ const allowedScriptUrl = (value: string): string => {
   throw new TypeError(`Refused an unapproved external script URL: ${normalized}`)
 }
 
+const initializeDefaultTrustedTypesPolicy = (): void => {
+  if (!import.meta.client || !window.trustedTypes) return
+  if (window.__tanzaniteDefaultTrustedTypesPolicyInitialized || window.trustedTypes.defaultPolicy) {
+    window.__tanzaniteDefaultTrustedTypesPolicyInitialized = true
+    return
+  }
+
+  try {
+    window.trustedTypes.createPolicy(DEFAULT_POLICY_NAME, {
+      createScriptURL: allowedScriptUrl,
+    })
+    window.__tanzaniteDefaultTrustedTypesPolicyInitialized = true
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    if (/already exists/i.test(message)) {
+      window.__tanzaniteDefaultTrustedTypesPolicyInitialized = true
+      return
+    }
+    throw error
+  }
+}
+
 const policy = (): TrustedScriptURLPolicy | null => {
   if (!import.meta.client || !window.trustedTypes) return null
+  initializeDefaultTrustedTypesPolicy()
   if (window.__tanzaniteTrustedScriptUrlPolicy) return window.__tanzaniteTrustedScriptUrlPolicy
 
   const trustedTypesPolicy = window.trustedTypes.createPolicy(POLICY_NAME, {
@@ -99,6 +143,7 @@ const waitForScript = (script: HTMLScriptElement): Promise<HTMLScriptElement> =>
 }
 
 export const initializeTrustedTypes = (): void => {
+  initializeDefaultTrustedTypesPolicy()
   void policy()
 }
 

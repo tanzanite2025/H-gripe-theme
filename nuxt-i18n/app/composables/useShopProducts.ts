@@ -6,6 +6,7 @@ import {
   normalizeStorefrontMediaUrl,
   type StorefrontMediaContext,
 } from '~/utils/storefrontMedia'
+import { buildProductPath } from '~/utils/seo/urls'
 
 export type ShopProductAvailability = 'in_stock' | 'out_of_stock'
 
@@ -34,6 +35,7 @@ export interface ShopProduct {
   priceNumber: number
   priceLabel: string
   currency: string
+  weightGrams?: number
   displayPriceNumber: number
   displayPriceCurrency: string
   displayPriceLabel: string
@@ -169,8 +171,41 @@ const formatPriceLabel = (amount: number, currency = 'USD') => {
   }
 }
 
+const normalizeWeightGrams = (value: unknown) => {
+  const weight = toOptionalPositiveNumber(value)
+  return weight ? Math.round(weight) : undefined
+}
+
 const normalizeAvailability = (value: unknown): ShopProductAvailability => {
   return value === 'out_of_stock' ? 'out_of_stock' : 'in_stock'
+}
+
+const productDetailPathPattern = /(?:^|\/)(?:[a-z]{2}(?:[_-][a-z]{2})?\/)?shop\/([^/?#]+)$/i
+
+const extractProductDetailSlug = (value: unknown): string => {
+  const raw = String(value || '').trim()
+  if (!raw) return ''
+
+  let candidate = raw
+  if (/^https?:\/\//i.test(candidate)) {
+    try {
+      candidate = new URL(candidate).pathname
+    } catch {
+      return ''
+    }
+  }
+
+  const path = (candidate.split(/[?#]/, 1)[0] || '').replace(/\/+$/, '')
+  const match = path.match(productDetailPathPattern)
+  if (!match?.[1]) return ''
+
+  let slug = match[1]
+  try {
+    slug = decodeURIComponent(slug)
+  } catch {
+    // Keep the raw slug when it is already decoded or malformed.
+  }
+  return String(slug || '').trim()
 }
 
 const normalizeReviewSummary = (value: any, fallbackProductId: number): ShopProductReviewSummary | null => {
@@ -359,7 +394,13 @@ export const normalizeShopProduct = (
   const productCurrency = normalizeCurrencyCode(defaultVariant?.currency || item?.currency) || normalizeCurrencyCode(fallbackCurrency) || 'USD'
   const displayPrice = normalizeDisplayPrice(item?.display_price, priceNumber, productCurrency)
   const displayPrices = normalizeDisplayPrices(item?.display_prices, productCurrency)
-  const slug = String(item?.slug || id)
+  const weightGrams = normalizeWeightGrams(item?.weight_grams ?? defaultVariant?.weightGrams)
+  const slug = String(
+    item?.slug ||
+      extractProductDetailSlug(item?.url) ||
+      extractProductDetailSlug(item?.preview_url) ||
+      ''
+  ).trim()
   const media = Array.isArray(item?.media) ? item.media : []
   const imageMedia = media.filter((mediaItem: any) => {
     return mediaItem?.media_type === 'image' && mediaItem?.url && mediaItem?.is_visible !== false
@@ -377,6 +418,7 @@ export const normalizeShopProduct = (
       primaryMediaImage?.url,
     mediaContext,
   ) || undefined
+  const url = buildProductPath(slug)
   return {
     id,
     productId: id,
@@ -384,13 +426,14 @@ export const normalizeShopProduct = (
     title: String(item?.title || item?.name || ''),
     description: item?.excerpt || item?.short_description || item?.description || undefined,
     slug,
-    url: String(item?.preview_url || item?.url || `/shop/${slug}`),
+    url,
     sku: defaultVariant?.sku || item?.sku || undefined,
     thumbnail,
     imageVariants: Object.keys(imageVariants).length ? imageVariants : undefined,
     priceNumber,
     priceLabel: formatPriceLabel(displayPrice.amount, displayPrice.currency),
     currency: productCurrency,
+    ...(weightGrams ? { weightGrams } : {}),
     displayPriceNumber: displayPrice.amount,
     displayPriceCurrency: displayPrice.currency,
     displayPriceLabel: formatPriceLabel(displayPrice.amount, displayPrice.currency),

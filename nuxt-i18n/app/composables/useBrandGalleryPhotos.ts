@@ -1,112 +1,24 @@
-import { ref } from 'vue'
-import { useRuntimeConfig } from '#imports'
+import { useRuntimeConfig, useState } from '#imports'
 import { usePublicApiBase } from '~/composables/usePublicApiBase'
+import type { BrandGalleryPhoto } from '~/types/brandGalleryPhotos'
+import {
+  extractPublicGalleries,
+  mapPublicGalleryToBrandPhoto,
+  type GalleryDetailEnvelope,
+  type GalleryListEnvelope,
+  type PublicGallery,
+} from '~/utils/brandGalleryPhotos'
 import {
   createStorefrontMediaContext,
-  normalizeStorefrontMediaUrl,
 } from '~/utils/storefrontMedia'
-
-export interface PictureWarehouseProductLink {
-  product_id: number
-  name?: string
-  slug?: string
-  locale?: string
-}
-
-export interface BrandGalleryPhoto {
-  id: string
-  kind: 'brand'
-  title: string
-  region: string
-  nickname?: string
-  galleryId: string
-  galleryDetailsLoaded: boolean
-  galleryImages: string[]
-  productLinks: PictureWarehouseProductLink[]
-}
-
-interface PublicGalleryImage {
-  id?: number | string
-  url?: string
-  thumbnail?: string
-  title?: string
-}
-
-interface PublicGallery {
-  id?: number | string
-  name?: string
-  title?: string
-  slug?: string
-  description?: string
-  cover_image?: string
-  images?: PublicGalleryImage[]
-  product_links?: PictureWarehouseProductLink[]
-}
-
-interface GalleryListEnvelope {
-  data?: PublicGallery[]
-}
-
-interface GalleryDetailEnvelope {
-  data?: PublicGallery
-}
-
-const normalizeGalleryId = (value: unknown): string | null => {
-  const id = String(value ?? '').trim()
-  return id ? id : null
-}
-
-const galleryImageUrls = (
-  gallery: PublicGallery,
-  mediaContext: ReturnType<typeof createStorefrontMediaContext>,
-): string[] => {
-  const images = Array.isArray(gallery.images) ? gallery.images : []
-  return images
-    .map((image) => normalizeStorefrontMediaUrl(
-      image?.url || image?.thumbnail,
-      mediaContext,
-    ))
-    .filter((value): value is string => Boolean(value))
-}
-
-const galleryProductLinks = (gallery: PublicGallery): PictureWarehouseProductLink[] => {
-  return Array.isArray(gallery.product_links)
-    ? gallery.product_links.filter((product) => Boolean(product.slug || product.name))
-    : []
-}
-
-const publicGalleryToBrandPhoto = (
-  gallery: PublicGallery,
-  detailsLoaded = false,
-  mediaContext: ReturnType<typeof createStorefrontMediaContext>,
-): BrandGalleryPhoto | null => {
-  const id = normalizeGalleryId(gallery.id)
-  if (!id) return null
-
-  const images = galleryImageUrls(gallery, mediaContext)
-  const cover = normalizeStorefrontMediaUrl(gallery.cover_image, mediaContext) || images[0] || ''
-  if (!cover) return null
-
-  return {
-    id: `gallery-${id}`,
-    kind: 'brand',
-    title: String(gallery.name || gallery.title || 'Brand gallery'),
-    region: String(gallery.slug || 'Gallery'),
-    nickname: gallery.description ? String(gallery.description) : undefined,
-    galleryId: id,
-    galleryDetailsLoaded: detailsLoaded,
-    galleryImages: images.length ? images : [cover],
-    productLinks: galleryProductLinks(gallery),
-  }
-}
 
 export function useBrandGalleryPhotos() {
   const runtimeConfig = useRuntimeConfig()
   const mediaContext = createStorefrontMediaContext(runtimeConfig)
   const apiBase = usePublicApiBase()
-  const brandPhotos = ref<BrandGalleryPhoto[]>([])
-  const brandLoading = ref(true)
-  const brandError = ref<string | null>(null)
+  const brandPhotos = useState<BrandGalleryPhoto[]>('brand-gallery-photos', () => [])
+  const brandLoading = useState<boolean>('brand-gallery-photos-loading', () => true)
+  const brandError = useState<string | null>('brand-gallery-photos-error', () => null)
   const detailLoads = new Set<string>()
 
   const fetchBrandPhotos = async () => {
@@ -121,15 +33,11 @@ export function useBrandGalleryPhotos() {
           query: { page: 1, page_size: 100 },
         },
       )
-      const galleries = Array.isArray(response)
-        ? response
-        : Array.isArray(response?.data)
-          ? response.data
-          : []
+      const galleries = extractPublicGalleries(response)
 
       brandPhotos.value = galleries
         .map((gallery): BrandGalleryPhoto | null => (
-          publicGalleryToBrandPhoto(gallery, false, mediaContext)
+          mapPublicGalleryToBrandPhoto(gallery, mediaContext, false)
         ))
         .filter((item): item is BrandGalleryPhoto => item !== null)
     } catch {
@@ -140,10 +48,14 @@ export function useBrandGalleryPhotos() {
     }
   }
 
-  const markGalleryDetailLoaded = (index: number, photo: BrandGalleryPhoto) => {
+  const updateGalleryDetailState = (
+    index: number,
+    photo: BrandGalleryPhoto,
+    patch: Partial<BrandGalleryPhoto>,
+  ) => {
     const current = brandPhotos.value[index]
     if (!current || current.galleryId !== photo.galleryId) return
-    brandPhotos.value.splice(index, 1, { ...current, galleryDetailsLoaded: true })
+    brandPhotos.value.splice(index, 1, { ...current, ...patch })
   }
 
   const loadBrandGalleryDetails = async (index: number) => {
@@ -151,6 +63,7 @@ export function useBrandGalleryPhotos() {
     if (!photo?.galleryId || photo.galleryDetailsLoaded || detailLoads.has(photo.galleryId)) return
 
     detailLoads.add(photo.galleryId)
+    updateGalleryDetailState(index, photo, { galleryDetailsLoading: true })
     try {
       const response = await $fetch<GalleryDetailEnvelope>(
         `${apiBase.value}/galleries/${encodeURIComponent(photo.galleryId)}`,
@@ -158,13 +71,19 @@ export function useBrandGalleryPhotos() {
       )
       const detail = response?.data
       if (!detail) {
-        markGalleryDetailLoaded(index, photo)
+        updateGalleryDetailState(index, photo, {
+          galleryDetailsLoaded: true,
+          galleryDetailsLoading: false,
+        })
         return
       }
 
-      const hydratedPhoto = publicGalleryToBrandPhoto(detail, true, mediaContext)
+      const hydratedPhoto = mapPublicGalleryToBrandPhoto(detail, mediaContext, true)
       if (!hydratedPhoto) {
-        markGalleryDetailLoaded(index, photo)
+        updateGalleryDetailState(index, photo, {
+          galleryDetailsLoaded: true,
+          galleryDetailsLoading: false,
+        })
         return
       }
 
@@ -174,10 +93,14 @@ export function useBrandGalleryPhotos() {
         ...hydratedPhoto,
         id: photo.id,
         galleryId: photo.galleryId,
+        galleryDetailsLoading: false,
       })
     } catch {
-      markGalleryDetailLoaded(index, photo)
+      updateGalleryDetailState(index, photo, {
+        galleryDetailsLoading: false,
+      })
     } finally {
+      updateGalleryDetailState(index, photo, { galleryDetailsLoading: false })
       detailLoads.delete(photo.galleryId)
     }
   }

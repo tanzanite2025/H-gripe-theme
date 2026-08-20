@@ -22,7 +22,7 @@ const pageFeedbackAuditResource = "page_feedback"
 type PageFeedbackHandler struct {
 	feedbackService *service.FeedbackService
 	auditService    adminAuditRecorder
-	redisClient     *redis.Client
+	redisClient     redis.UniversalClient
 }
 
 type AdminFeedbackUpdateRequest struct {
@@ -62,7 +62,7 @@ func (h *PageFeedbackHandler) ConfigureAuditService(recorder adminAuditRecorder)
 	h.auditService = recorder
 }
 
-func (h *PageFeedbackHandler) ConfigureRedisClient(redisClient *redis.Client) {
+func (h *PageFeedbackHandler) ConfigureRedisClient(redisClient redis.UniversalClient) {
 	if h == nil {
 		return
 	}

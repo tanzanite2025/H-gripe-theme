@@ -1,5 +1,6 @@
 {
   "close": "Close",
+  "share": "Teilen",
   "previous": "Previous",
   "next": "Next",
   "loading": "Loading...",
@@ -13,5 +14,6 @@
   "decrease": "Decrease",
   "increase": "Increase",
   "remove": "Remove",
-  "done": "Done"
+  "done": "Done",
+  "shop": "Shop"
 }

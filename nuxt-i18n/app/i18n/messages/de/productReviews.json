@@ -6,7 +6,7 @@
   "loading": "Bewertungen werden geladen...",
   "loadError": "Bewertungen konnten nicht geladen werden.",
   "retry": "Erneut versuchen",
-  "empty": "Noch keine freigegebenen Bewertungen.",
+  "empty": "Noch keine Bewertungen.",
   "ratingLabel": "{rating} von 5 Sternen",
   "imageAlt": "Bild einer Kundenbewertung",
   "verifiedPurchase": "Verifizierter Kauf",

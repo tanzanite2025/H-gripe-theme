@@ -29,12 +29,12 @@ var (
 )
 
 type Service struct {
-	redis      *redis.Client
+	redis      redis.UniversalClient
 	config     config.AntiAbuseConfig
 	httpClient *http.Client
 }
 
-func New(redisClient *redis.Client, cfg config.AntiAbuseConfig) *Service {
+func New(redisClient redis.UniversalClient, cfg config.AntiAbuseConfig) *Service {
 	if redisClient == nil {
 		return nil
 	}

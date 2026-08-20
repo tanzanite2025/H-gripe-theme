@@ -12,9 +12,9 @@
           <AdminFormField :label="t('settings.contactPhone')">
             <Input v-model="siteSettings.contact_phone" type="tel" />
           </AdminFormField>
-          <AdminFormField :label="t('settings.siteLogo')" description="支持输入图片 URL，或上传到媒体库后自动填入。">
+          <AdminFormField :label="t('settings.siteLogo')" description="仅支持上传 48×48 SVG；更换时自动删除旧 Logo。">
             <div class="flex min-w-0 items-center gap-2">
-              <Input v-model="siteSettings.site_logo" type="url" placeholder="Logo URL" :disabled="uploadingSiteLogo" />
+              <Input :model-value="siteSettings.site_logo" type="text" placeholder="尚未上传站点 Logo" readonly :disabled="uploadingSiteLogo" />
               <Button type="button" variant="outline" size="icon" :disabled="!canEdit || uploadingSiteLogo" :title="t('settings.uploadLogo')" @click="chooseSiteLogo">
                 <LoaderCircle v-if="uploadingSiteLogo" class="size-4 animate-spin" />
                 <ImagePlus v-else class="size-4" />
@@ -23,7 +23,7 @@
                 <Trash2 class="size-4" />
               </Button>
             </div>
-            <input ref="siteLogoInput" type="file" class="sr-only" accept="image/jpeg,image/png,image/webp,image/gif" :disabled="!canEdit || uploadingSiteLogo" @change="uploadSiteLogo" />
+            <input ref="siteLogoInput" type="file" class="sr-only" accept=".svg,image/svg+xml" :disabled="!canEdit || uploadingSiteLogo" @change="uploadSiteLogo" />
           </AdminFormField>
           <AdminFormField :label="t('settings.siteFavicon')" description="用于浏览器 TAB、收藏夹和 PWA 图标；支持直接填写图片 URL 或上传图标。">
             <div class="flex min-w-0 items-center gap-2">
@@ -144,34 +144,6 @@
       <StorefrontMarketsSettingsPanel :can-edit="canEdit" />
     </TabsContent>
 
-    <TabsContent value="payment">
-      <div class="space-y-6">
-        <SettingsSection :title="t('settings.paymentAccount')" :description="t('settings.paymentAccountDescription')">
-          <div class="space-y-4">
-            <div class="flex items-start gap-3 rounded-xl border border-amber-500/20 bg-amber-500/10 p-3 text-amber-900 dark:text-amber-100">
-              <AlertTriangle class="mt-0.5 size-4 flex-none" />
-              <div class="space-y-1">
-                <p class="text-sm font-black">{{ t('settings.paymentWarningTitle') }}</p>
-                <p class="text-xs leading-relaxed text-amber-800/80 dark:text-amber-100/75">
-                  {{ t('settings.paymentWarning') }}
-                </p>
-              </div>
-            </div>
-
-            <PaymentGatewayRuntimePanel
-              v-model:selected-gateway="paymentSettings.gateway"
-              :runtime="paymentRuntime"
-              :loading="loadingPaymentRuntime"
-              :can-edit="canEdit"
-              @refresh="emit('refresh-payment-runtime')"
-            />
-          </div>
-        </SettingsSection>
-
-        <PaymentMethodsSettingsPanel :can-edit="canEdit" />
-      </div>
-    </TabsContent>
-
     <TabsContent value="api">
       <SettingsSection title="API 管理" description="统一管理第三方接口配置、刷新策略和凭据引用。">
         <ApiManagementSettingsPanel
@@ -210,6 +182,21 @@
         @refresh="emit('refresh-public-chat')"
       />
     </TabsContent>
+
+    <TabsContent value="refund_return" class="space-y-4">
+      <RefundReturnPolicySettingsPanel
+        :policy="refundReturnPolicy"
+        :locale="refundReturnPolicyLocale"
+        :fallback="refundReturnPolicyFallback"
+        :loading="loadingRefundReturnPolicy"
+        :saving="savingRefundReturnPolicy"
+        :can-edit="canEdit"
+        :uploading-section="uploadingRefundReturnSection"
+        @locale-change="emit('refund-return-locale-change', $event)"
+        @save="emit('save-refund-return-policy')"
+        @upload-image="emit('upload-refund-return-image', $event)"
+      />
+    </TabsContent>
   </Tabs>
 </template>
 
@@ -217,7 +204,6 @@
 import { defineComponent, h, ref } from 'vue'
 import type { PropType } from 'vue'
 import {
-  AlertTriangle,
   Eye,
   EyeOff,
   ImagePlus,
@@ -227,9 +213,8 @@ import {
 import AdminFormField from '@/components/admin/AdminFormField.vue'
 import ApiManagementSettingsPanel from '@/components/admin/settings/ApiManagementSettingsPanel.vue'
 import CurrencyPolicySettingsCard from '@/components/admin/settings/CurrencyPolicySettingsCard.vue'
-import PaymentGatewayRuntimePanel from '@/components/admin/settings/PaymentGatewayRuntimePanel.vue'
-import PaymentMethodsSettingsPanel from '@/components/admin/settings/PaymentMethodsSettingsPanel.vue'
 import PublicChatSettingsPanel from '@/components/admin/settings/PublicChatSettingsPanel.vue'
+import RefundReturnPolicySettingsPanel from '@/components/admin/settings/RefundReturnPolicySettingsPanel.vue'
 import StorefrontMarketsSettingsPanel from '@/components/admin/settings/StorefrontMarketsSettingsPanel.vue'
 import { Button } from '@/components/ui/button'
 import CommercialCrawlerProtectionPanel from '@/components/admin/settings/CommercialCrawlerProtectionPanel.vue'
@@ -243,6 +228,7 @@ import type {
   PublicChatGroup,
   PublicChatSummary,
 } from './settingsTypes'
+import type { RefundReturnPolicyEditor } from '@/api/refundReturnPolicy'
 
 interface APISettings {
   exchange_rate_enabled: boolean | string | number
@@ -272,19 +258,15 @@ const props = defineProps({
   activeTab: { type: String, default: 'site' },
   siteSettings: { type: Object, required: true },
   emailSettings: { type: Object, required: true },
-  paymentSettings: { type: Object, required: true },
   apiSettings: { type: Object as PropType<APISettings>, required: true },
   primaryPricingCurrency: { type: String, default: '' },
   commercialCrawlerProtection: { type: Object as PropType<CommercialCrawlerProtection | null>, default: null },
   loadingCommercialCrawlerProtection: { type: Boolean, default: false },
   uploadingSiteLogo: { type: Boolean, default: false },
   uploadingSiteFavicon: { type: Boolean, default: false },
-  paymentRuntime: { type: Object, default: null },
-  loadingPaymentRuntime: { type: Boolean, default: false },
   syncingExchangeRates: { type: Boolean, default: false },
   savingApiSettings: { type: Boolean, default: false },
   showSmtpPassword: { type: Boolean, default: false },
-  showPaymentSecrets: { type: Boolean, default: false },
   loadingPublicChatAgents: { type: Boolean, default: false },
   loadingPublicChatGroups: { type: Boolean, default: false },
   loadingPublicChatAgentCandidates: { type: Boolean, default: false },
@@ -292,23 +274,31 @@ const props = defineProps({
   publicChatAgents: { type: Array as PropType<PublicChatAgent[]>, default: () => [] },
   publicChatGroups: { type: Array as PropType<PublicChatGroup[]>, default: () => [] },
   publicChatAgentWarnings: { type: Array as PropType<string[]>, default: () => [] },
+  refundReturnPolicy: { type: Object as PropType<RefundReturnPolicyEditor>, required: true },
+  refundReturnPolicyLocale: { type: String, default: 'en' },
+  refundReturnPolicyFallback: { type: Boolean, default: false },
+  loadingRefundReturnPolicy: { type: Boolean, default: false },
+  savingRefundReturnPolicy: { type: Boolean, default: false },
+  uploadingRefundReturnSection: { type: Number as PropType<number | null>, default: null },
   canEdit: { type: Boolean, default: false },
 })
 
 const emit = defineEmits([
   'update:showSmtpPassword',
-  'update:showPaymentSecrets',
   'upload-site-logo',
+  'clear-site-logo',
   'upload-site-favicon',
   'open-agent-dialog',
   'open-group-dialog',
   'edit-group',
   'delete-group',
   'refresh-public-chat',
-  'refresh-payment-runtime',
   'currency-policy-saved',
   'sync-exchange-rates',
   'refresh-commercial-crawler-protection',
+  'refund-return-locale-change',
+  'save-refund-return-policy',
+  'upload-refund-return-image',
 ])
 
 const siteLogoInput = ref<HTMLInputElement | null>(null)
@@ -343,7 +333,7 @@ const uploadSiteFavicon = (event: Event) => {
 
 const clearSiteLogo = () => {
   if (props.uploadingSiteLogo) return
-  props.siteSettings.site_logo = ''
+  emit('clear-site-logo')
 }
 
 const clearSiteFavicon = () => {

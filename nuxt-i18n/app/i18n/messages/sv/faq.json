@@ -15,6 +15,7 @@
     "noResults": "Inga FAQ hittades för \"{query}\"",
     "allFaqsMetaTitle": "Alla FAQ",
     "loadingAnswers": "Laddar svar",
-    "illustrationAlt": "FAQ-illustration"
+    "illustrationAlt": "FAQ-illustration",
+    "selectQuestion": "Select a question to view the answer."
   }
 }

@@ -191,7 +191,12 @@ const shouldIgnoreNitroBuildWarning = (warning: RollupBuildWarning) => {
 
 const runtimeSharpTraceDeps = (() => {
   if (process.platform === 'linux') {
-    const glibcVersionRuntime = process.report?.getReport?.().header?.glibcVersionRuntime
+    const report = process.report?.getReport?.() as {
+      header?: {
+        glibcVersionRuntime?: string
+      }
+    } | undefined
+    const glibcVersionRuntime = report?.header?.glibcVersionRuntime
     if (glibcVersionRuntime) {
       return [
         'sharp',
@@ -268,7 +273,7 @@ export default defineNuxtConfig({
     },
   },
 
-  modules: ['@nuxtjs/i18n', '@nuxtjs/sitemap', '@nuxt/image', '@pinia/nuxt', '@nuxt/icon', '@nuxt/fonts'],
+  modules: ['@nuxtjs/i18n', '@nuxtjs/sitemap', '@nuxt/image', '@pinia/nuxt', '@nuxt/icon'],
 
   hooks: {
     'pages:extend'(pages) {
@@ -346,11 +351,9 @@ export default defineNuxtConfig({
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' }
       ],
-      // Zod otherwise probes Function construction. That is incompatible with
-      // a strict Trusted Types policy and is unnecessary for storefront validation.
       script: [
         {
-          textContent: 'globalThis.__zod_globalConfig = Object.assign(globalThis.__zod_globalConfig || {}, { jitless: true })',
+          src: '/zod-global-config.js',
         },
       ],
     }
@@ -369,7 +372,9 @@ export default defineNuxtConfig({
   nitro: {
     preset: env.NITRO_PRESET || 'node-server',
     sourceMap: false,
-    traceDeps: runtimeSharpTraceDeps,
+    externals: {
+      traceInclude: runtimeSharpTraceDeps,
+    },
     rollupConfig: {
       onwarn(warning, warn) {
         if (shouldIgnoreNitroBuildWarning(warning as RollupBuildWarning)) return

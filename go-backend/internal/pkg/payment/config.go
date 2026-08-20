@@ -29,6 +29,7 @@ func LoadConfigFromEnv(gatewayType GatewayType) *Config {
 		if config.PublishableKey == "" {
 			config.PublishableKey = os.Getenv("STRIPE_PUBLIC_KEY")
 		}
+		config.PaymentMethodTypes = parseConfiguredPaymentMethodTypes(os.Getenv("STRIPE_PAYMENT_METHOD_TYPES"))
 	case GatewayPayPal:
 		if config.APIKey == "" {
 			config.APIKey = os.Getenv("PAYPAL_CLIENT_ID")
@@ -81,4 +82,22 @@ func getEnv(key, defaultValue string) string {
 		return defaultValue
 	}
 	return value
+}
+
+func parseConfiguredPaymentMethodTypes(value string) []string {
+	items := strings.Split(value, ",")
+	seen := map[string]struct{}{}
+	result := make([]string, 0, len(items))
+	for _, item := range items {
+		method := strings.ToLower(strings.TrimSpace(item))
+		if method == "" {
+			continue
+		}
+		if _, ok := seen[method]; ok {
+			continue
+		}
+		seen[method] = struct{}{}
+		result = append(result, method)
+	}
+	return result
 }

@@ -3,12 +3,12 @@
     <template #question>
       <div v-if="assistant.loading.value" class="wheelset-selection-assistant-flow__state">
         <Icon name="lucide:loader-circle" class="h-5 w-5 animate-spin" />
-        <span>Loading fit questions...</span>
+        <span>{{ t('wheelsetSelectionAssistant.states.loading') }}</span>
       </div>
       <div v-else-if="assistant.error.value" class="wheelset-selection-assistant-flow__state wheelset-selection-assistant-flow__state--error">
         <p>{{ assistant.error.value }}</p>
         <button type="button" class="wheelset-selection-assistant-flow__retry" @click="assistant.reload">
-          Try again
+          {{ t('wheelsetSelectionAssistant.states.retry') }}
         </button>
       </div>
       <WheelsetSelectionAssistantOutcomePanel
@@ -31,7 +31,7 @@
         </template>
       </WheelsetSelectionQuestionPanel>
       <div v-else class="wheelset-selection-assistant-flow__state">
-        <span>No fit question is available yet.</span>
+        <span>{{ t('wheelsetSelectionAssistant.states.empty') }}</span>
       </div>
     </template>
 
@@ -52,12 +52,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, watchEffect } from 'vue'
+import { useI18n } from '#imports'
 import WheelsetSelectionAssistantTwoColumnLayout from '~/components/wheelset-selection/WheelsetSelectionAssistantTwoColumnLayout.vue'
 import WheelsetSelectionAssistantOutcomePanel from '~/components/wheelset-selection/WheelsetSelectionAssistantOutcomePanel.vue'
 import WheelsetSelectionProductResultsPanel from '~/components/wheelset-selection/WheelsetSelectionProductResultsPanel.vue'
 import WheelsetSelectionQuestionPanel from '~/components/wheelset-selection/WheelsetSelectionQuestionPanel.vue'
 import WheelsetSelectionSupportCta from '~/components/wheelset-selection/WheelsetSelectionSupportCta.vue'
+import { useWheelsetSelectionAssistantQuestionPagination } from '~/composables/useWheelsetSelectionAssistantQuestionPagination'
 import {
   type WheelsetSelectionAssistantSource,
   type WheelsetSelectionRequestDraft,
@@ -75,22 +77,94 @@ const emit = defineEmits<{
   contactSupport: [draft: WheelsetSelectionRequestDraft]
 }>()
 
+const { t, locale } = useI18n()
 const assistant = useWheelsetSelectionAssistant()
 const products = useWheelsetSelectionProducts(assistant.productQuery)
+const questionPagination = useWheelsetSelectionAssistantQuestionPagination()
 
 const selectedAnswerLabel = computed(() => (
   assistant.path.value.map(entry => entry.label).join(' / ')
 ))
+const localizedGraphText = (value?: Record<string, string>) => {
+  if (!value) return ''
+
+  const normalizedLocale = String(locale.value || '').trim().replace(/-/g, '_').toLowerCase()
+  const baseLocale = normalizedLocale.split('_')[0] || ''
+
+  if (normalizedLocale === 'zh_cn' || baseLocale === 'zh') {
+    return String(value[normalizedLocale] || value[baseLocale] || value.zh_cn || value.en || '')
+  }
+  return String(value[normalizedLocale] || value[baseLocale] || value.en || '')
+}
+
 const localizedNodePrompt = computed(() => (
-  assistant.currentNode.value?.prompt?.zh_cn
-    || assistant.currentNode.value?.prompt?.en
-    || 'Your fit profile is ready.'
+  localizedGraphText(assistant.currentNode.value?.prompt)
+    || t('wheelsetSelectionAssistant.outcome.fallbackTitle')
 ))
-const localizedNodeHelper = computed(() => (
-  assistant.currentNode.value?.helper?.zh_cn
-    || assistant.currentNode.value?.helper?.en
-    || ''
+const localizedNodeHelper = computed(() => localizedGraphText(assistant.currentNode.value?.helper))
+
+const orderedQuestionNodeKeys = computed(() => (
+  (assistant.config.value?.nodes || [])
+    .filter(node => node.type === 'question')
+    .sort((left, right) => {
+      const leftX = Number(left.editor?.x ?? 0)
+      const rightX = Number(right.editor?.x ?? 0)
+      if (leftX !== rightX) return leftX - rightX
+      return String(left.key).localeCompare(String(right.key))
+    })
+    .map(node => node.key)
 ))
+
+const activeQuestionIndex = computed(() => {
+  const currentKey = assistant.currentQuestion.value?.key || assistant.currentNode.value?.key || ''
+  const directIndex = orderedQuestionNodeKeys.value.findIndex(key => key === currentKey)
+  if (directIndex >= 0) return directIndex
+  return Math.max(0, Math.min(assistant.path.value.length, Math.max(orderedQuestionNodeKeys.value.length - 1, 0)))
+})
+
+const reachableQuestionIndex = computed(() => (
+  Math.max(
+    0,
+    Math.min(
+      Math.max(activeQuestionIndex.value, assistant.path.value.length),
+      Math.max(orderedQuestionNodeKeys.value.length - 1, 0),
+    ),
+  )
+))
+
+const jumpToQuestionIndex = (questionIndex: number) => {
+  const normalizedQuestionIndex = Math.max(
+    0,
+    Math.min(Number.isFinite(questionIndex) ? Math.trunc(questionIndex) : 0, orderedQuestionNodeKeys.value.length - 1),
+  )
+  const targetQuestionKey = orderedQuestionNodeKeys.value[normalizedQuestionIndex]
+  if (!targetQuestionKey) return
+
+  if (normalizedQuestionIndex <= assistant.path.value.length) {
+    assistant.jumpToPathIndex(normalizedQuestionIndex)
+    return
+  }
+
+  assistant.currentNodeKey.value = targetQuestionKey
+}
+
+watchEffect(() => {
+  if (!questionPagination) return
+
+  questionPagination.total.value = orderedQuestionNodeKeys.value.length
+  questionPagination.activeIndex.value = activeQuestionIndex.value
+  questionPagination.reachableIndex.value = reachableQuestionIndex.value
+  questionPagination.registerJumpToIndexHandler(jumpToQuestionIndex)
+})
+
+onBeforeUnmount(() => {
+  if (!questionPagination) return
+
+  questionPagination.total.value = 0
+  questionPagination.activeIndex.value = 0
+  questionPagination.reachableIndex.value = 0
+  questionPagination.registerJumpToIndexHandler(null)
+})
 
 const handleContactSupport = () => {
   emit('contactSupport', buildWheelsetSelectionRequestDraft({

@@ -104,38 +104,6 @@ func TestMediaDeleteAssetBlocksReferencedProductMedia(t *testing.T) {
 	require.EqualValues(t, 1, assetCount)
 }
 
-func TestMediaDeleteAssetBlocksReferencedProductSpecificationTemplateImage(t *testing.T) {
-	db := newMediaDeleteTestDB(t, &media.MediaAsset{}, &product.ProductSpecificationTemplate{})
-	uploadRoot := t.TempDir()
-	service := newMediaDeleteTestService(t, db, uploadRoot)
-
-	asset, err := service.UploadAsset(context.Background(), MediaUploadInput{
-		File:       multipartFileHeader(t, "category.webp", "image/webp", []byte("category media bytes")),
-		MediaType:  "image",
-		UploaderID: 42,
-	})
-	require.NoError(t, err)
-
-	assetID := asset.ID
-	require.NoError(t, db.Create(&product.ProductSpecificationTemplate{
-		Name:              "Category image reference",
-		Slug:              "category-image-reference",
-		ImageMediaAssetID: &assetID,
-		ImageURL:          asset.URL,
-		IsEnabled:         true,
-	}).Error)
-
-	report, err := service.GetAssetReferences(asset.ID)
-	require.NoError(t, err)
-	require.Equal(t, 1, report.Total)
-	require.Equal(t, "product_specification_template", report.References[0].ResourceType)
-	require.Contains(t, report.References[0].Field, "image_media_asset_id")
-	require.Contains(t, report.References[0].Field, "image_url")
-
-	err = service.DeleteAsset(context.Background(), asset.ID, MediaAssetDeleteConfirmation(asset.ID))
-	require.ErrorIs(t, err, ErrMediaAssetInUse)
-}
-
 func newMediaDeleteTestDB(t *testing.T, models ...interface{}) *gorm.DB {
 	t.Helper()
 

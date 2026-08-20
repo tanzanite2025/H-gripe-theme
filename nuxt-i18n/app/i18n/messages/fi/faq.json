@@ -15,6 +15,7 @@
     "noResults": "Hakua \"{query}\" vastaavia FAQ-tuloksia ei löytynyt",
     "allFaqsMetaTitle": "Kaikki FAQ:t",
     "loadingAnswers": "Ladataan vastauksia",
-    "illustrationAlt": "FAQ-kuvitus"
+    "illustrationAlt": "FAQ-kuvitus",
+    "selectQuestion": "Select a question to view the answer."
   }
 }

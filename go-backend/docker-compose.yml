@@ -38,11 +38,15 @@ services:
       - STORAGE_TYPE=local
       - STORAGE_LOCAL_PATH=/app/uploads
       - STORAGE_BASE_URL=http://localhost:9200
+      - SITE_LOGO_STORAGE_TYPE=local
+      - SITE_LOGO_STORAGE_LOCAL_PATH=/app/site-logo-uploads
+      - SITE_LOGO_STORAGE_BASE_URL=http://localhost:9200
       # 日志配置
       - LOG_LEVEL=info
       - LOG_FORMAT=json
     volumes:
       - ./uploads:/app/uploads
+      - ./site-logo-uploads:/app/site-logo-uploads
       - ./logs:/app/logs
     depends_on:
       postgres:

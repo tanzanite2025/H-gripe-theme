@@ -42,7 +42,7 @@
             <!-- 聊天区域 -->
             <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
               <div
-                class="chat-modal-drag-handle border-b border-white/[0.08] bg-white/[0.03] backdrop-blur-md"
+                class="chat-modal-drag-handle tz-mobile-chrome-top border-b border-white/[0.08] backdrop-blur-md"
                 @pointerdown="handleChatModalDragStart"
               >
                 <div class="px-3 py-2 flex items-center justify-end gap-3">
@@ -60,7 +60,7 @@
               </div>
 
               <!-- 头部 - 当前客服信息 -->
-              <div class="relative z-30 border-b border-white/[0.08] bg-[#050505]">
+              <div class="relative z-30 border-b border-white/[0.08] tz-mobile-chrome-bottom">
                 <div class="px-4 py-3 flex items-center gap-3">
                   <div
                     data-no-drag
@@ -360,7 +360,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from '#imports'
 import { useWhatsAppState } from '~/composables/chat/useWhatsAppState'
 import CustomerServiceProductSearchModal from '~/components/CustomerServiceProductSearchModal.vue'
@@ -374,6 +374,7 @@ const props = defineProps<{
   conversation?: {
     showAgentList?: boolean
     pendingSelectionRequest?: import('~/types/wheelsetSelectionAssistant').WheelsetSelectionRequestDraft | null
+    pendingProductReference?: Record<string, any> | null
   }
 }>()
 
@@ -596,6 +597,34 @@ const {
 } = useWhatsAppState(emit, {
   initialSelectionRequest: props.conversation?.pendingSelectionRequest || null,
 })
+
+const queuedConversationProductReference = ref<Record<string, any> | null>(
+  props.conversation?.pendingProductReference || null
+)
+
+const applyQueuedConversationProductReference = () => {
+  const productReference = queuedConversationProductReference.value
+  if (!productReference || !selectedAgent.value?.id) return
+  pendingProductReference.value = productReference
+  activeTab.value = 'chat'
+  queuedConversationProductReference.value = null
+}
+
+watch(
+  () => props.conversation?.pendingProductReference,
+  (productReference) => {
+    if (!productReference) return
+    queuedConversationProductReference.value = productReference
+    applyQueuedConversationProductReference()
+  },
+  { immediate: true }
+)
+
+watch(
+  () => selectedAgent.value?.id,
+  () => applyQueuedConversationProductReference(),
+  { flush: 'post' }
+)
 
 const getAgentInitials = (agent: any) => {
   const name = String(agent?.name || agent?.display_name || agent?.email || '').trim()

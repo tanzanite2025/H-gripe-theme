@@ -101,7 +101,7 @@ const answerId = (itemId: string) => (
   min-width: 0;
   align-items: center;
   gap: 0.7rem;
-  padding: 0.75rem 0.7rem;
+  padding: 0.9rem 1rem;
   border: 0;
   background: transparent;
   color: #ffffff;
@@ -132,7 +132,7 @@ const answerId = (itemId: string) => (
 .global-all-faqs-mobile-search-accordion__question {
   min-width: 0;
   color: #ffffff;
-  font-size: 0.76rem;
+  font-size: 1rem;
   line-height: 1.45;
 }
 

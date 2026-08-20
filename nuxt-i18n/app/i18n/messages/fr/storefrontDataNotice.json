@@ -1,0 +1,76 @@
+{
+  "featuredProducts": {
+    "loading": {
+      "title": "Loading featured wheelsets",
+      "description": "Preparing the current selection."
+    },
+    "error": {
+      "title": "Featured wheelsets are unavailable",
+      "description": "Please retry or browse the complete wheelset collection."
+    },
+    "empty": {
+      "title": "No featured wheelsets yet",
+      "description": "Browse the complete wheelset collection while new recommendations are being prepared."
+    }
+  },
+  "hero": {
+    "loading": {
+      "title": "Loading the visual showcase",
+      "description": "Preparing the latest factory and product visuals."
+    },
+    "error": {
+      "title": "The visual showcase is unavailable",
+      "description": "The rest of the home page is still ready to explore."
+    },
+    "localeFallback": {
+      "title": "Using our standard visual showcase",
+      "description": "A localized visual selection is not available yet."
+    },
+    "builtInFallback": {
+      "title": "Using the built-in visual showcase",
+      "description": "The latest configured visual selection could not be loaded."
+    }
+  },
+  "productFamilies": {
+    "localeFallback": {
+      "title": "Using the standard product families",
+      "description": "A localized product-family selection is not available yet."
+    },
+    "loading": {
+      "title": "Loading product families",
+      "description": "Preparing the current product categories."
+    },
+    "error": {
+      "title": "Product families are unavailable",
+      "description": "Browse all products while the category selection is restored."
+    },
+    "emptyConfigured": {
+      "title": "Product families are being prepared",
+      "description": "Browse all products while the selected categories are being updated."
+    },
+    "emptyUnconfigured": {
+      "title": "Product families are not ready yet",
+      "description": "Browse all products while categories are being prepared."
+    }
+  },
+  "refundReturnPolicy": {
+    "error": {
+      "title": "The refund and return policy is unavailable",
+      "description": "Please contact support for help with a return or refund."
+    },
+    "loading": {
+      "title": "Loading the refund and return policy",
+      "description": "Preparing the current policy details."
+    },
+    "empty": {
+      "title": "The refund and return policy is not available",
+      "description": "Please contact support for help with a return or refund."
+    },
+    "contactSupport": "Contact Support",
+    "lastUpdated": "Last Updated",
+    "fallbackNotice": {
+      "title": "Showing the standard refund and return policy",
+      "description": "The current policy could not be loaded, so we are showing the standard version."
+    }
+  }
+}

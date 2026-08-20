@@ -5,7 +5,7 @@
       data-product-editor-dialog
       class="!flex h-[94dvh] max-h-[calc(100dvh-1rem)] !w-[95dvw] !max-w-[95dvw] flex-col gap-0 overflow-hidden p-0"
       style="overflow: hidden;"
-      @open-auto-focus.prevent
+      @open-auto-focus="handleOpenAutoFocus"
     >
       <form class="flex min-h-0 min-w-0 flex-1 flex-col" @submit.prevent="emit('submit')">
         <DialogHeader class="shrink-0 border-b px-5 py-4 pr-12">
@@ -14,6 +14,7 @@
         </DialogHeader>
 
         <div
+          ref="scrollContainer"
           class="product-editor-dialog__scroll min-h-0 min-w-0 flex-1 space-y-4 overflow-x-hidden overflow-y-auto overscroll-contain px-5 pb-8 pt-4 [scrollbar-gutter:stable]"
           @wheel.stop
           @touchmove.stop
@@ -419,6 +420,7 @@
 </template>
 
 <script setup lang="ts">
+import { nextTick, ref } from 'vue'
 import type { PropType } from 'vue'
 import { RouterLink } from 'vue-router'
 import { LoaderCircle, Tags } from '@lucide/vue'
@@ -514,6 +516,17 @@ interface LanguageOption {
 }
 
 type ProductFormValue = string | number | boolean | null | undefined
+
+const scrollContainer = ref<HTMLElement | null>(null)
+
+const handleOpenAutoFocus = (event: Event) => {
+  event.preventDefault()
+  void nextTick(() => {
+    requestAnimationFrame(() => {
+      scrollContainer.value?.scrollTo({ top: 0, behavior: 'auto' })
+    })
+  })
+}
 
 defineProps({
   open: { type: Boolean, default: false },

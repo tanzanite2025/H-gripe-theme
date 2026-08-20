@@ -38,18 +38,6 @@ export const productSpecTemplateApi = {
     return readProductSpecTemplate(await axios.put(endpoint, payload), endpoint)
   },
 
-  async uploadImage(id: number | string, file: File) {
-    const formData = new FormData()
-    formData.append('file', file)
-    const endpoint = `/api/admin/product-specification-templates/${id}/image`
-    return readProductSpecTemplate(await axios.post(endpoint, formData), endpoint)
-  },
-
-  async deleteImage(id: number | string) {
-    const endpoint = `/api/admin/product-specification-templates/${id}/image`
-    return readProductSpecTemplate(await axios.delete(endpoint), endpoint)
-  },
-
   async deleteProductSpecTemplate(id: number | string) {
     const endpoint = `/api/admin/product-specification-templates/${id}`
     return requireApiAcknowledgement(await axios.delete(endpoint), endpoint)

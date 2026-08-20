@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"commerce-platform/internal/pkg/config"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -32,8 +33,8 @@ func CORS(cfg config.CORSConfig) gin.HandlerFunc {
 		}
 
 		c.Header("Access-Control-Allow-Methods", joinStrings(cfg.AllowedMethods, ", "))
-		c.Header("Access-Control-Allow-Headers", joinStrings(cfg.AllowedHeaders, ", "))
-		c.Header("Access-Control-Expose-Headers", joinStrings(cfg.ExposeHeaders, ", "))
+		c.Header("Access-Control-Allow-Headers", joinStrings(corsAllowedHeaders(cfg.AllowedHeaders), ", "))
+		c.Header("Access-Control-Expose-Headers", joinStrings(corsExposedHeaders(cfg.ExposeHeaders), ", "))
 
 		if cfg.AllowCredentials {
 			c.Header("Access-Control-Allow-Credentials", "true")
@@ -46,6 +47,25 @@ func CORS(cfg config.CORSConfig) gin.HandlerFunc {
 
 		c.Next()
 	}
+}
+
+func corsAllowedHeaders(headers []string) []string {
+	headers = appendHeaderIfMissing(headers, idempotencyKeyHeader)
+	return appendHeaderIfMissing(headers, "X-Anonymous-ID")
+}
+
+func corsExposedHeaders(headers []string) []string {
+	headers = appendHeaderIfMissing(headers, idempotencyReplayHeader)
+	return appendHeaderIfMissing(headers, "Retry-After")
+}
+
+func appendHeaderIfMissing(headers []string, required string) []string {
+	for _, header := range headers {
+		if strings.EqualFold(strings.TrimSpace(header), required) {
+			return headers
+		}
+	}
+	return append(append([]string(nil), headers...), required)
 }
 
 func joinStrings(strs []string, sep string) string {

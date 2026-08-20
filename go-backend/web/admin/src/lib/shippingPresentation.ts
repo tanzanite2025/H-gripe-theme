@@ -1,3 +1,5 @@
+import { adminApiUrl } from '@/lib/adminUrl'
+
 export const templateTypeLabel = (type: string) => {
   const labels: Record<string, string> = {
     weight: '按重量',
@@ -72,26 +74,12 @@ export const trackingEnvironmentLabel = (environment: string) => {
   return labels[environment] || environment || '-'
 }
 
-const apiBaseUrl = () => {
-  const configured = String(import.meta.env.VITE_API_BASE_URL || '').trim().replace(/\/+$/, '')
-  if (/^https?:\/\//i.test(configured)) {
-    try {
-      return new URL(configured).origin
-    } catch {
-      return configured
-    }
-  }
-  if (typeof window !== 'undefined' && window.location?.origin) return window.location.origin
-  return ''
-}
-
 export const trackingWebhookUrl = (provider: any) => {
   const providerCode = String(provider?.provider_code || '').trim()
   if (!providerCode) return ''
 
   const path = `/api/v1/shipping/webhook/${encodeURIComponent(providerCode)}`
-  const base = apiBaseUrl()
-  return base ? `${base}${path}` : path
+  return adminApiUrl(path)
 }
 
 export const trackingProviderHasApiKey = (provider: any) => provider?.api_key_configured === true || Boolean(provider?.api_key)

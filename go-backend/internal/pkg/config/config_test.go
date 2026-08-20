@@ -92,6 +92,89 @@ func TestValidateConfigRejectsInvalidPaymentExpirationConfig(t *testing.T) {
 	}
 }
 
+func TestValidateConfigRejectsInvalidOutboundHTTPResilienceConfig(t *testing.T) {
+	cfg := validTestConfig()
+	cfg.OutboundHTTPResilience = OutboundHTTPResilienceConfig{
+		Enabled:                 true,
+		RetryMaxAttempts:        3,
+		RetryBaseDelayMillis:    500,
+		RetryMaxDelayMillis:     250,
+		RetryJitterMillis:       100,
+		FailureThreshold:        4,
+		FailureWindowSeconds:    60,
+		OpenDurationSeconds:     30,
+		HalfOpenProbeTimeoutSec: 30,
+	}
+
+	if err := validateConfig(cfg); err == nil {
+		t.Fatal("validateConfig should reject a retry base delay above the maximum delay")
+	}
+}
+
+func TestValidateConfigRejectsPaymentProbeLeaseShorterThanProviderBudget(t *testing.T) {
+	cfg := validTestConfig()
+	cfg.PaymentGatewayCircuitBreaker = PaymentGatewayCircuitBreakerConfig{
+		Enabled:                 true,
+		WindowSeconds:           60,
+		FailureRateThreshold:    0.15,
+		MinimumSampleCount:      20,
+		OpenDurationSeconds:     30,
+		HalfOpenProbeTimeoutSec: MinimumPaymentGatewayHalfOpenProbeTimeoutSeconds - 1,
+	}
+
+	if err := validateConfig(cfg); err == nil {
+		t.Fatalf("validateConfig should reject a payment half-open probe lease shorter than %d seconds", MinimumPaymentGatewayHalfOpenProbeTimeoutSeconds)
+	}
+}
+
+func TestValidateConfigRejectsOutboundProbeLeaseShorterThanHTTPBudget(t *testing.T) {
+	cfg := validTestConfig()
+	cfg.OutboundHTTPResilience = OutboundHTTPResilienceConfig{
+		Enabled:                 true,
+		RetryMaxAttempts:        3,
+		RetryBaseDelayMillis:    250,
+		RetryMaxDelayMillis:     3000,
+		RetryJitterMillis:       250,
+		FailureThreshold:        4,
+		FailureWindowSeconds:    60,
+		OpenDurationSeconds:     30,
+		HalfOpenProbeTimeoutSec: MinimumOutboundHTTPHalfOpenProbeTimeoutSeconds - 1,
+	}
+
+	if err := validateConfig(cfg); err == nil {
+		t.Fatalf("validateConfig should reject an outbound half-open probe lease shorter than %d seconds", MinimumOutboundHTTPHalfOpenProbeTimeoutSeconds)
+	}
+}
+
+func TestValidateConfigAllowsRedisSentinel(t *testing.T) {
+	cfg := validTestConfig()
+	cfg.Redis = RedisConfig{
+		Mode:       "sentinel",
+		Addrs:      []string{"redis-sentinel-1:26379", "redis-sentinel-2:26379"},
+		MasterName: "mymaster",
+		DB:         0,
+		PoolSize:   20,
+	}
+
+	if err := validateConfig(cfg); err != nil {
+		t.Fatalf("validateConfig should allow Redis Sentinel: %v", err)
+	}
+}
+
+func TestValidateConfigRejectsRedisClusterUntilScriptsAreHashTagged(t *testing.T) {
+	cfg := validTestConfig()
+	cfg.Redis = RedisConfig{
+		Mode:     "cluster",
+		Addrs:    []string{"redis-cluster:6379"},
+		DB:       0,
+		PoolSize: 20,
+	}
+
+	if err := validateConfig(cfg); err == nil {
+		t.Fatal("validateConfig should reject Redis Cluster until every multi-key script is cluster-safe")
+	}
+}
+
 func TestValidateConfigRejectsInvalidPaymentRiskMonitoringSchedule(t *testing.T) {
 	cfg := validTestConfig()
 	cfg.Worker.PaymentRiskMonitoringEnabled = true
@@ -406,6 +489,7 @@ func TestLoadProductionConfigUsesEnvironmentOverrides(t *testing.T) {
 	t.Setenv("QUICK_BUY_RATE_LIMIT_SESSION_BURST", "9")
 	t.Setenv("FEEDBACK_RATE_LIMIT_WRITE_USER_REQUESTS_PER_MINUTE", "4")
 	t.Setenv("FEEDBACK_RATE_LIMIT_WRITE_USER_BURST", "1")
+	t.Setenv("OUTBOUND_HTTP_RESILIENCE_FAILURE_THRESHOLD", "7")
 
 	cfg, err := Load("../../../config/config.production.yaml")
 	if err != nil {
@@ -436,6 +520,9 @@ func TestLoadProductionConfigUsesEnvironmentOverrides(t *testing.T) {
 	if cfg.Worker.OutboxDispatchIntervalSeconds != 2 {
 		t.Fatalf("production outbox dispatcher interval = %d, want 2", cfg.Worker.OutboxDispatchIntervalSeconds)
 	}
+	if !cfg.OutboundHTTPResilience.Enabled || cfg.OutboundHTTPResilience.FailureThreshold != 7 {
+		t.Fatalf("outbound HTTP resilience environment override not applied: %+v", cfg.OutboundHTTPResilience)
+	}
 }
 
 func validTestConfig() *Config {
@@ -452,6 +539,12 @@ func validTestConfig() *Config {
 		Database: DatabaseConfig{
 			Host:     "localhost",
 			Database: "commerce_platform",
+		},
+		Redis: RedisConfig{
+			Mode:     "standalone",
+			Host:     "localhost",
+			Port:     6379,
+			PoolSize: 10,
 		},
 		JWT: JWTConfig{Secret: "test-secret"},
 		Cache: CacheConfig{

@@ -299,6 +299,7 @@ import {
   paymentPresentation,
   type PaymentLogoAsset,
 } from '~/utils/paymentPresentation'
+import { createIdempotencyKey } from '~/utils/idempotency'
 import StripePaymentElement from '~/components/StripePaymentElement.vue'
 
 type ApiResponse<T> = T | { data?: T | { data?: T } }
@@ -352,10 +353,22 @@ const isSubmitting = ref(false)
 const showAuthModal = ref(false)
 const stripePaymentSession = ref<StripePaymentSession | null>(null)
 const checkoutQuote = ref<CheckoutQuote | null>(null)
+const checkoutSubmissionKey = ref('')
 let quoteTimer: ReturnType<typeof setTimeout> | null = null
 
 const normalizeCheckoutPaymentMethod = (value?: string | null) => {
   return normalizeStorefrontPaymentMethod(value)
+}
+
+const resetCheckoutSubmissionKey = () => {
+  checkoutSubmissionKey.value = ''
+}
+
+const ensureCheckoutSubmissionKey = () => {
+  if (!checkoutSubmissionKey.value) {
+    checkoutSubmissionKey.value = createIdempotencyKey('checkout')
+  }
+  return checkoutSubmissionKey.value
 }
 
 const form = ref({
@@ -502,12 +515,14 @@ const selectPaymentOption = (option: CheckoutPaymentOption) => {
   stripePaymentSession.value = null
   checkoutError.value = ''
   gatewayFallbackOptions.value = []
+  resetCheckoutSubmissionKey()
 }
 
 const selectGatewayFallbackPaymentOption = (option: CheckoutPaymentOption) => {
   selectedMethod.value = option.id
   stripePaymentSession.value = null
   checkoutError.value = ''
+  resetCheckoutSubmissionKey()
 }
 
 const buildShippingAddressPayload = () => {
@@ -572,10 +587,14 @@ const requireAuthenticatedUser = async () => {
   return false
 }
 
-const createLocalOrder = async (): Promise<OrderResponse> => {
+const createLocalOrder = async (idempotencyKey: string): Promise<OrderResponse> => {
   const response = await auth.request<ApiResponse<OrderResponse>>('/orders', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      'Idempotency-Key': idempotencyKey,
+    },
     body: JSON.stringify({
       items: cartItems.value.map(item => ({
         product_id: Number(item.product_id || item.id || 0),
@@ -599,12 +618,13 @@ const checkoutUrl = (path: string, orderNumber: string) => {
   return target.toString()
 }
 
-const startProviderPayment = async (orderNumber: string) => {
+const startProviderPayment = async (orderNumber: string, idempotencyKey: string) => {
   if (selectedMethod.value === 'paypal') {
     const session = await createPayPalOrder({
       orderNumber,
       returnUrl: checkoutUrl('/checkout/paypal/return', orderNumber),
       cancelUrl: checkoutUrl('/checkout/paypal/cancel', orderNumber),
+      idempotencyKey,
     })
     redirectToPayPal(session)
     return
@@ -615,13 +635,14 @@ const startProviderPayment = async (orderNumber: string) => {
       orderNumber,
       returnUrl: checkoutUrl('/checkout/alipay/return', orderNumber),
       cancelUrl: '',
+      idempotencyKey,
     })
     redirectToAlipay(session)
     return
   }
 
   if (selectedMethod.value === 'wechat') {
-    const session: WeChatPaymentSession = await createWeChatOrder({ orderNumber })
+    const session: WeChatPaymentSession = await createWeChatOrder({ orderNumber, idempotencyKey })
     if (import.meta.client) {
       window.sessionStorage.setItem(`checkout:wechat:${orderNumber}`, JSON.stringify(session))
       const target = new URL(localePath('/checkout/wechat/pay'), window.location.origin)
@@ -633,7 +654,11 @@ const startProviderPayment = async (orderNumber: string) => {
 
   const response = await auth.request<ApiResponse<StripePaymentSession & { client_secret?: string; publishable_key?: string }>>('/payment/stripe/payment-intents', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      'Idempotency-Key': idempotencyKey,
+    },
     body: JSON.stringify({ order_number: orderNumber }),
   })
   const session = unwrapApiData<StripePaymentSession & { client_secret?: string; publishable_key?: string }>(response)
@@ -719,9 +744,10 @@ const submitOrder = async () => {
 
   isSubmitting.value = true
   try {
+    const idempotencyKey = ensureCheckoutSubmissionKey()
     await refreshCheckoutQuote()
-    const order = await createLocalOrder()
-    await startProviderPayment(order.order_number)
+    const order = await createLocalOrder(idempotencyKey)
+    await startProviderPayment(order.order_number, idempotencyKey)
   } catch (error) {
     if (applyPaymentGatewayFallbackRecommendation(error)) {
       checkoutError.value = t(
@@ -775,6 +801,7 @@ watch(isCheckoutOpen, (open) => {
     stripePaymentSession.value = null
     checkoutError.value = ''
     gatewayFallbackOptions.value = []
+    resetCheckoutSubmissionKey()
   }
 }, { immediate: true })
 
@@ -786,10 +813,12 @@ watch(preferredCheckoutPaymentMethod, (method) => {
   stripePaymentSession.value = null
   checkoutError.value = ''
   gatewayFallbackOptions.value = []
+  resetCheckoutSubmissionKey()
 })
 
 watch(() => form.value.country, () => {
   if (isCheckoutOpen.value) {
+    resetCheckoutSubmissionKey()
     void loadPaymentMethods(form.value.country || undefined)
     scheduleQuoteRefresh()
   }
@@ -798,7 +827,26 @@ watch(() => form.value.country, () => {
 watch(
   () => [form.value.name, form.value.phone, form.value.address, form.value.city, form.value.zip],
   () => {
-    if (isCheckoutOpen.value) scheduleQuoteRefresh()
+    if (isCheckoutOpen.value) {
+      resetCheckoutSubmissionKey()
+      scheduleQuoteRefresh()
+    }
+  },
+)
+
+watch(
+  () => [
+    cartCurrency.value,
+    ...cartItems.value.map(item => [
+      item.product_id || item.id,
+      item.variant_id || '',
+      item.quantity || 0,
+    ].join(':')),
+  ],
+  () => {
+    if (isCheckoutOpen.value) {
+      resetCheckoutSubmissionKey()
+    }
   },
 )
 

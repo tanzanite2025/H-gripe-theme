@@ -98,20 +98,41 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '辐条计算器数据', permission: 'product:view' }
       },
       {
-        path: 'catalog/quick-buy',
-        name: 'CatalogQuickBuy',
+        path: 'selection',
+        redirect: { name: 'SelectionQuickBuy' },
+        meta: { permission: 'product:view' }
+      },
+      {
+        path: 'selection/quick-buy',
+        name: 'SelectionQuickBuy',
         component: () => import('@/views/QuickBuyFlows.vue'),
         meta: { title: 'QUICK 选配流程', permission: 'product:view' }
       },
       {
-        path: 'catalog/wheelset-fit-questionnaire',
-        name: 'CatalogWheelsetFitQuestionnaire',
+        path: 'selection/configuration-keys',
+        name: 'SelectionConfigurationKeys',
+        component: () => import('@/views/SelectionConfigurationKeys.vue'),
+        meta: { title: '选型配置 Key', permission: 'product:view' }
+      },
+      {
+        path: 'selection/wheelset-fit-questionnaire',
+        name: 'SelectionWheelsetFitQuestionnaire',
         component: () => import('@/views/WheelsetFitQuestionnaire.vue'),
         meta: { title: '轮组选型问卷', permission: 'product:view' }
       },
       {
+        path: 'catalog/quick-buy',
+        redirect: { name: 'SelectionQuickBuy' },
+        meta: { permission: 'product:view' }
+      },
+      {
+        path: 'catalog/wheelset-fit-questionnaire',
+        redirect: { name: 'SelectionWheelsetFitQuestionnaire' },
+        meta: { permission: 'product:view' }
+      },
+      {
         path: 'catalog/selection-assistants',
-        redirect: { name: 'CatalogWheelsetFitQuestionnaire' }
+        redirect: { name: 'SelectionWheelsetFitQuestionnaire' }
       },
       {
         path: 'google-merchant',
@@ -137,57 +158,140 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '拒付订单', permission: 'order:view' }
       },
       {
-        path: 'payment/settings',
-        name: 'PaymentSettings',
-        component: () => import('@/views/Settings.vue'),
-        meta: { title: '支付设置', permission: 'settings:view' }
+        path: 'orders/after-sales',
+        name: 'AfterSalesCases',
+        component: () => import('@/views/AfterSales.vue'),
+        meta: { title: '退换货管理', permission: 'order:view' }
       },
       {
-        path: 'payment/currency',
-        name: 'PaymentCurrency',
-        redirect: { name: 'SettingsCurrency' },
-        meta: { title: '价格币种', permission: 'settings:view' }
+        path: 'payment/methods',
+        name: 'PaymentCollectionMethods',
+        component: () => import('@/views/PaymentCollectionMethods.vue'),
+        meta: { title: '收款方式', permission: 'settings:view' }
       },
       {
-        path: 'payment/paypal-invoice',
+        path: 'payment/stripe/integration',
+        name: 'PaymentStripeIntegration',
+        component: () => import('@/views/PaymentIntegrations.vue'),
+        props: { provider: 'stripe' },
+        meta: { title: 'Stripe 接入', permission: 'settings:view' }
+      },
+      {
+        path: 'payment/stripe/installments',
+        name: 'PaymentStripeInstallments',
+        component: () => import('@/views/PaymentProviderInstallments.vue'),
+        props: { provider: 'stripe' },
+        meta: { title: 'Stripe 分期', permission: 'settings:view' }
+      },
+      {
+        path: 'payment/stripe/risk-overview',
+        name: 'StripeRiskStrategyOverview',
+        component: () => import('@/views/risk-strategy/StripeRiskStrategyOverviewTab.vue'),
+        meta: { title: 'Stripe 风控总览', permission: 'order:view' }
+      },
+      {
+        path: 'payment/stripe/3ds',
+        name: 'PaymentStripeThreeDS',
+        component: () => import('@/views/RiskStrategy.vue'),
+        props: { defaultDisputeProvider: 'stripe' },
+        meta: { title: 'Stripe 3DS / 风控策略', permission: 'order:view' }
+      },
+      {
+        path: 'payment/stripe/disputes',
+        name: 'PaymentStripeDisputes',
+        component: () => import('@/views/RiskStrategy.vue'),
+        props: { defaultDisputeProvider: 'stripe' },
+        meta: { title: 'Stripe 拒付处理', permission: 'order:view' }
+      },
+      {
+        path: 'payment/wechat/integration',
+        name: 'PaymentWeChatIntegration',
+        component: () => import('@/views/PaymentIntegrations.vue'),
+        props: { provider: 'wechat' },
+        meta: { title: '微信支付接入', permission: 'settings:view' }
+      },
+      {
+        path: 'payment/wechat/installments',
+        name: 'PaymentWeChatInstallments',
+        component: () => import('@/views/PaymentProviderInstallments.vue'),
+        props: { provider: 'wechat' },
+        meta: { title: '微信支付分期', permission: 'settings:view' }
+      },
+      {
+        path: 'payment/alipay/integration',
+        name: 'PaymentAlipayIntegration',
+        component: () => import('@/views/PaymentIntegrations.vue'),
+        props: { provider: 'alipay' },
+        meta: { title: '支付宝接入', permission: 'settings:view' }
+      },
+      {
+        path: 'payment/alipay/installments',
+        name: 'PaymentAlipayInstallments',
+        component: () => import('@/views/PaymentProviderInstallments.vue'),
+        props: { provider: 'alipay' },
+        meta: { title: '支付宝分期', permission: 'settings:view' }
+      },
+      {
+        path: 'payment/paypal/integration',
+        name: 'PaymentPayPalIntegration',
+        component: () => import('@/views/PaymentIntegrations.vue'),
+        props: { provider: 'paypal' },
+        meta: { title: 'PayPal 接入', permission: 'settings:view' }
+      },
+      {
+        path: 'payment/paypal/installments',
+        name: 'PaymentPayPalInstallments',
+        component: () => import('@/views/PaymentProviderInstallments.vue'),
+        props: { provider: 'paypal' },
+        meta: { title: 'PayPal 分期', permission: 'settings:view' }
+      },
+      {
+        path: 'payment/paypal/risk-overview',
+        name: 'PayPalRiskStrategyOverview',
+        component: () => import('@/views/risk-strategy/PayPalRiskStrategyOverviewTab.vue'),
+        meta: { title: 'PayPal 风控总览', permission: 'order:view' }
+      },
+      {
+        path: 'payment/paypal/disputes',
+        name: 'PaymentPayPalDisputes',
+        component: () => import('@/views/RiskStrategy.vue'),
+        props: { defaultDisputeProvider: 'paypal' },
+        meta: { title: 'PayPal 拒付处理', permission: 'order:view' }
+      },
+      {
+        path: 'payment/paypal/invoice',
         name: 'PaymentPayPalInvoice',
         component: () => import('@/views/PaymentPayPalInvoice.vue'),
         meta: { title: 'PayPal 发票卖方资料', permission: 'settings:view' }
       },
       {
-        path: 'payment/risk/overview',
-        name: 'PaymentRiskOverview',
-        component: () => import('@/views/PaymentRisk.vue'),
-        meta: { title: '风控总览', permission: 'order:view' }
+        path: 'payment-risk/overview',
+        name: 'RiskStrategyOverview',
+        component: () => import('@/views/RiskStrategy.vue'),
+        meta: { title: '风控策略总览', permission: 'order:view' }
       },
       {
-        path: 'payment/risk/3ds',
-        name: 'PaymentRiskThreeDS',
-        component: () => import('@/views/PaymentRisk.vue'),
+        path: 'payment-risk/3ds',
+        name: 'RiskStrategyThreeDS',
+        component: () => import('@/views/RiskStrategy.vue'),
         meta: { title: '3DS 策略', permission: 'order:view' }
       },
       {
-        path: 'payment/risk/reviews',
-        name: 'PaymentRiskReviews',
-        component: () => import('@/views/PaymentRisk.vue'),
+        path: 'payment-risk/reviews',
+        name: 'RiskStrategyReviews',
+        component: () => import('@/views/RiskStrategy.vue'),
         meta: { title: '人工复核', permission: 'order:view' }
       },
       {
-        path: 'payment/risk/refund-recommendations',
-        name: 'PaymentRiskRefundRecommendations',
-        component: () => import('@/views/PaymentRisk.vue'),
+        path: 'payment-risk/refund-recommendations',
+        name: 'RiskStrategyRefundRecommendations',
+        component: () => import('@/views/RiskStrategy.vue'),
         meta: { title: '退款建议', permission: 'order:view' }
       },
       {
-        path: 'payment/risk/disputes',
-        name: 'PaymentRiskDisputes',
-        component: () => import('@/views/PaymentRisk.vue'),
-        meta: { title: 'Stripe 拒付', permission: 'order:view' }
-      },
-      {
-        path: 'payment/risk/controls',
-        name: 'PaymentRiskControls',
-        component: () => import('@/views/PaymentRisk.vue'),
+        path: 'payment-risk/controls',
+        name: 'RiskStrategyControls',
+        component: () => import('@/views/RiskStrategy.vue'),
         meta: { title: '人工保护', permission: 'order:view' }
       },
       {
@@ -349,6 +453,18 @@ const routes: RouteRecordRaw[] = [
         name: 'ContentMediaLibrary',
         component: () => import('@/views/MediaLibrary.vue'),
         meta: { title: '媒体库', permission: 'media:view' }
+      },
+      {
+        path: 'content/visual-showcase',
+        name: 'ContentVisualShowcase',
+        component: () => import('@/views/VisualShowcase.vue'),
+        meta: { title: '首页视觉目录', permission: 'content:view' }
+      },
+      {
+        path: 'content/home-main-products',
+        name: 'ContentHomeMainProducts',
+        component: () => import('@/views/HomeMainProductCategories.vue'),
+        meta: { title: '首页主力产品', permission: 'content:view' }
       },
       {
         path: 'content/media-derivatives',
@@ -733,6 +849,12 @@ const routes: RouteRecordRaw[] = [
         name: 'SettingsCommercialCrawler',
         component: () => import('@/views/Settings.vue'),
         meta: { title: '商业爬虫防护', permission: 'settings:view' }
+      },
+      {
+        path: 'settings/refund-return',
+        name: 'SettingsRefundReturn',
+        component: () => import('@/views/Settings.vue'),
+        meta: { title: '退货退款', permission: 'settings:view' }
       },
       {
         path: 'audit-logs',

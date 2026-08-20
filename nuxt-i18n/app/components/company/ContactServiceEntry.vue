@@ -17,6 +17,7 @@
           v-if="contactEmail"
           :href="emailHref"
           class="contact-service-entry__action"
+          @click="emit('email-open')"
         >
           <Icon name="lucide:mail" class="h-5 w-5 shrink-0" aria-hidden="true" />
           <span class="min-w-0 text-left">
@@ -73,6 +74,15 @@ import { useSiteSettings } from '~/composables/usePublicSettings'
 
 const { openChat } = useChatWidget()
 const { siteSettings } = useSiteSettings()
+const props = withDefaults(defineProps<{
+  chatSource?: string
+}>(), {
+  chatSource: 'company-contact',
+})
+const emit = defineEmits<{
+  'email-open': []
+  'open-chat': []
+}>()
 
 const contactEmail = computed(() => siteSettings.value.contactEmail?.trim() || '')
 const emailHref = computed(() => `mailto:${contactEmail.value}`)
@@ -80,8 +90,9 @@ const emailHref = computed(() => `mailto:${contactEmail.value}`)
 const openSupportChat = () => {
   openChat({
     showAgentList: true,
-    source: 'company-contact',
+    source: props.chatSource,
   })
+  emit('open-chat')
 }
 </script>
 

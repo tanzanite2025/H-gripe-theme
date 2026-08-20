@@ -22,18 +22,14 @@
       <SettingsTabsPanel
         :active-tab="activeTab"
         v-model:show-smtp-password="showSmtpPassword"
-        v-model:show-payment-secrets="showPaymentSecrets"
         :site-settings="siteSettings"
         :email-settings="emailSettings"
-        :payment-settings="paymentSettings"
         :api-settings="apiSettings"
         :primary-pricing-currency="primaryPricingCurrency"
         :commercial-crawler-protection="commercialCrawlerProtection"
         :loading-commercial-crawler-protection="loadingCommercialCrawlerProtection"
         :uploading-site-logo="uploadingSiteLogo"
         :uploading-site-favicon="uploadingSiteFavicon"
-        :payment-runtime="paymentRuntime"
-        :loading-payment-runtime="loadingPaymentRuntime"
         :syncing-exchange-rates="syncingExchangeRates"
         :saving-api-settings="saving && activeTab === 'api'"
         :loading-public-chat-agents="loadingPublicChatAgents"
@@ -43,18 +39,27 @@
         :public-chat-agents="publicChatAgents"
         :public-chat-groups="publicChatGroups"
         :public-chat-agent-warnings="publicChatAgentWarnings"
+        :refund-return-policy="refundReturnPolicy"
+        :refund-return-policy-locale="refundReturnPolicyLocale"
+        :refund-return-policy-fallback="refundReturnPolicyFallback"
+        :loading-refund-return-policy="loadingRefundReturnPolicy"
+        :saving-refund-return-policy="savingRefundReturnPolicy"
+        :uploading-refund-return-section="uploadingRefundReturnSection"
         :can-edit="hasPermission('settings:edit')"
         @open-agent-dialog="openPublicChatAgentDialog"
         @open-group-dialog="openPublicChatGroupDialog"
         @edit-group="editPublicChatGroup"
         @delete-group="deletePublicChatGroup"
         @refresh-public-chat="refreshPublicChat"
-        @refresh-payment-runtime="fetchPaymentRuntime"
         @sync-exchange-rates="syncExchangeRates"
         @currency-policy-saved="handleCurrencyPolicySaved"
         @refresh-commercial-crawler-protection="fetchCommercialCrawlerProtection"
         @upload-site-logo="uploadSiteLogo"
+        @clear-site-logo="clearSiteLogo"
         @upload-site-favicon="uploadSiteFavicon"
+        @refund-return-locale-change="changeRefundReturnPolicyLocale"
+        @save-refund-return-policy="saveRefundReturnPolicy"
+        @upload-refund-return-image="uploadRefundReturnImage"
       />
     </div>
 
@@ -91,6 +96,13 @@ import SettingsTabsPanel from '@/components/admin/settings/SettingsTabsPanel.vue
 import { Button } from '@/components/ui/button'
 import { useRouteTab } from '@/composables/useRouteTab'
 import { useAdminI18n } from '@/i18n'
+import refundReturnPolicyApi from '@/api/refundReturnPolicy'
+import type {
+  RefundReturnPolicy,
+  RefundReturnPolicyEditor,
+  RefundReturnPolicyEditorSection,
+  RefundReturnPolicySection,
+} from '@/api/refundReturnPolicy'
 import mediaApi from '@/api/media'
 import { assetAccessURL } from '@/lib/mediaPresentation'
 import { useAuthStore } from '@/stores/auth'
@@ -106,16 +118,16 @@ const CUSTOMS_LOOKUP_US_HTS_ENDPOINT = 'https://hts.usitc.gov/reststop/search'
 const CUSTOMS_LOOKUP_UK_TRADE_TARIFF_ENDPOINT = 'https://www.trade-tariff.service.gov.uk/api/v2/commodities'
 const activeTab = useRouteTab({
   defaultValue: 'site',
-  values: ['site', 'email', 'currency', 'markets', 'payment', 'api', 'commercial_crawler', 'public_chat'],
+  values: ['site', 'email', 'currency', 'markets', 'api', 'commercial_crawler', 'public_chat', 'refund_return'],
   routes: {
     site: 'SettingsSite',
     email: 'SettingsEmail',
-    currency: ['SettingsCurrency', 'PaymentCurrency'],
+    currency: 'SettingsCurrency',
     markets: 'SettingsMarkets',
-    payment: 'PaymentSettings',
     api: 'SettingsApi',
     commercial_crawler: 'SettingsCommercialCrawler',
     public_chat: 'SupportPublicChat',
+    refund_return: 'SettingsRefundReturn',
   },
 })
 
@@ -133,8 +145,8 @@ interface SettingsGroupDefinition {
 }
 
 const pageTitle = computed(() => (
-  ['currency', 'payment'].includes(activeTab.value)
-    ? activeTab.value === 'currency' ? t('settings.systemTitle') : t('settings.paymentTitle')
+  activeTab.value === 'currency'
+    ? t('settings.systemTitle')
     : activeTab.value === 'public_chat'
       ? t('settings.publicChatTitle')
       : t('settings.systemTitle')
@@ -142,8 +154,8 @@ const pageTitle = computed(() => (
 const pageDescription = computed(() => {
   if (activeTab.value === 'currency') return t('settings.currencyDescription')
   if (activeTab.value === 'markets') return t('settings.marketsDescription')
-  if (activeTab.value === 'payment') return t('settings.paymentDescription')
   if (activeTab.value === 'public_chat') return t('settings.publicChatDescription')
+  if (activeTab.value === 'refund_return') return '集中维护前台退货退款政策，支持图片说明并可在页面或弹窗复用。'
   return t('settings.systemDescription')
 })
 const saving = ref(false)
@@ -151,9 +163,8 @@ const loadingSettings = ref(false)
 const uploadingSiteLogo = ref(false)
 const uploadingSiteFavicon = ref(false)
 const showSmtpPassword = ref(false)
-const showPaymentSecrets = ref(false)
 const loadedGroups = new Set()
-const selfSavingTabs = new Set(['currency', 'markets', 'api', 'commercial_crawler', 'public_chat'])
+const selfSavingTabs = new Set(['currency', 'markets', 'api', 'commercial_crawler', 'public_chat', 'refund_return'])
 
 const siteSettings = reactive({
   site_name: '',
@@ -174,7 +185,6 @@ const siteSettings = reactive({
   admin_html_title: ''
 })
 const emailSettings = reactive({ smtp_host: '', smtp_port: 587, smtp_username: '', smtp_password: '', from_email: '', from_name: '' })
-const paymentSettings = reactive({ gateway: 'stripe' })
 const apiSettings = reactive({
   exchange_rate_enabled: false,
   exchange_rate_provider: EXCHANGE_RATE_PROVIDER,
@@ -198,13 +208,16 @@ const apiSettings = reactive({
   customs_lookup_uk_trade_tariff_api_key: '',
   customs_lookup_uk_trade_tariff_api_key_header: 'X-API-Key'
 })
-const paymentRuntime = ref(null)
-const loadingPaymentRuntime = ref(false)
 const syncingExchangeRates = ref(false)
 const primaryPricingCurrency = ref(DEFAULT_PRICING_CURRENCY)
 const currencyPolicyLoaded = ref(false)
 const commercialCrawlerProtection = ref(null)
 const loadingCommercialCrawlerProtection = ref(false)
+const refundReturnPolicyLocale = ref('en')
+const refundReturnPolicyFallback = ref(false)
+const loadingRefundReturnPolicy = ref(false)
+const savingRefundReturnPolicy = ref(false)
+const uploadingRefundReturnSection = ref<number | null>(null)
 
 const loadingPublicChatAgents = ref(false)
 const publicChatAgentsOverview = ref(null)
@@ -241,6 +254,17 @@ const publicChatGroupForm = reactive({
 const selectedPublicChatAgentCandidate = computed(() =>
   publicChatAgentCandidates.value.find((candidate) => String(candidate.user_id) === String(publicChatAgentForm.user_id))
 )
+
+const createRefundReturnPolicyForm = (): RefundReturnPolicyEditor => ({
+  title: '',
+  intro: '',
+  sections: [],
+  contact_label: '',
+  contact_url: '/company/contact',
+  updated_at: '',
+})
+
+const refundReturnPolicy = reactive<RefundReturnPolicyEditor>(createRefundReturnPolicyForm())
 
 const normalizeCurrencyCode = (currency) => String(currency || '').trim().toUpperCase()
 const validCurrencyCodeOrDefault = (currency) => {
@@ -313,12 +337,6 @@ const groupDefinitions: Record<string, SettingsGroupDefinition> = {
       smtp_password: { type: 'string', public: false, description: 'SMTP password' },
       from_email: { type: 'string', public: false, description: 'Sender email' },
       from_name: { type: 'string', public: false, description: 'Sender name' }
-    }
-  },
-  payment: {
-    target: paymentSettings,
-    fields: {
-      gateway: { type: 'string', public: false, description: 'Payment gateway' }
     }
   },
   api: {
@@ -394,9 +412,6 @@ const fetchSettings = async (group, force = false) => {
     ;[...prefixed, ...canonical].forEach((setting) => applyFetchedSetting(setting, group, definition))
     loadedGroups.add(group)
     if (group === 'site') normalizeSiteBrandSettings()
-    if (group === 'payment' && !String(paymentSettings.gateway || '').trim()) {
-      paymentSettings.gateway = 'stripe'
-    }
     if (group === 'api') {
       applyAPIRefreshDefaults()
     }
@@ -436,19 +451,6 @@ const refreshPublicChat = async () => {
   await Promise.all([fetchPublicChatAgents(), fetchPublicChatGroups()])
 }
 
-const fetchPaymentRuntime = async () => {
-  loadingPaymentRuntime.value = true
-  try {
-    const response = await axios.get('/api/admin/settings/payment-runtime')
-    paymentRuntime.value = response.data?.data || response.data || null
-  } catch (error) {
-    console.error('Failed to fetch payment runtime:', error)
-    paymentRuntime.value = null
-  } finally {
-    loadingPaymentRuntime.value = false
-  }
-}
-
 const fetchCommercialCrawlerProtection = async () => {
   loadingCommercialCrawlerProtection.value = true
   try {
@@ -462,12 +464,118 @@ const fetchCommercialCrawlerProtection = async () => {
   }
 }
 
-const deleteLegacyPaymentSecrets = async () => {
-  await Promise.allSettled(
-    ['api_key', 'api_secret'].map((key) =>
-      axios.delete(`/api/admin/settings/${key}`, { params: { locale: 'en' } })
-    )
-  )
+const normalizePolicySection = (section: Partial<RefundReturnPolicySection>, index: number): RefundReturnPolicyEditorSection => ({
+  id: String(section?.id || `section-${index + 1}`).trim(),
+  title: String(section?.title || '').trim(),
+  body: String(section?.body || '').trim(),
+  bullets: Array.isArray(section?.bullets) ? section.bullets.map((item) => String(item || '').trim()).filter(Boolean) : [],
+  bulletsText: Array.isArray(section?.bullets) ? section.bullets.map((item) => String(item || '').trim()).filter(Boolean).join('\n') : '',
+  image: {
+    url: String(section?.image?.url || '').trim(),
+    alt: String(section?.image?.alt || '').trim(),
+    caption: String(section?.image?.caption || '').trim(),
+  },
+})
+
+const applyRefundReturnPolicy = (policy: Partial<RefundReturnPolicy> = {}) => {
+  Object.assign(refundReturnPolicy, {
+    title: String(policy.title || '').trim(),
+    intro: String(policy.intro || '').trim(),
+    sections: Array.isArray(policy.sections)
+      ? policy.sections.map((section, index) => normalizePolicySection(section, index))
+      : [],
+    contact_label: String(policy.contact_label || '').trim(),
+    contact_url: String(policy.contact_url || '/company/contact').trim(),
+    updated_at: String(policy.updated_at || '').trim(),
+  })
+}
+
+const fetchRefundReturnPolicy = async () => {
+  loadingRefundReturnPolicy.value = true
+  try {
+    const response = await refundReturnPolicyApi.get(refundReturnPolicyLocale.value)
+    applyRefundReturnPolicy(response.policy || {})
+    refundReturnPolicyFallback.value = Boolean(response.fallback)
+  } catch (error) {
+    console.error('Failed to fetch refund return policy:', error)
+    toast.error('退货退款内容加载失败')
+  } finally {
+    loadingRefundReturnPolicy.value = false
+  }
+}
+
+const normalizePolicyForSave = (): RefundReturnPolicy => ({
+  title: refundReturnPolicy.title.trim(),
+  intro: refundReturnPolicy.intro.trim(),
+  sections: refundReturnPolicy.sections.map((section, index) => ({
+    id: section.id.trim() || `section-${index + 1}`,
+    title: section.title.trim(),
+    body: section.body.trim(),
+    bullets: String(section.bulletsText || '')
+      .split(/\r?\n/)
+      .map((item) => item.trim())
+      .filter(Boolean),
+    image: section.image.url.trim()
+      ? {
+          url: section.image.url.trim(),
+          alt: section.image.alt.trim(),
+          caption: section.image.caption.trim(),
+        }
+      : undefined,
+  })),
+  contact_label: refundReturnPolicy.contact_label.trim(),
+  contact_url: refundReturnPolicy.contact_url.trim(),
+  updated_at: refundReturnPolicy.updated_at,
+})
+
+const saveRefundReturnPolicy = async () => {
+  if (!hasPermission('settings:edit')) return
+  savingRefundReturnPolicy.value = true
+  try {
+    const response = await refundReturnPolicyApi.update(refundReturnPolicyLocale.value, normalizePolicyForSave())
+    applyRefundReturnPolicy(response.policy || {})
+    refundReturnPolicyFallback.value = Boolean(response.fallback)
+    toast.success('退货退款内容已保存')
+  } catch (error) {
+    console.error('Failed to save refund return policy:', error)
+    toast.error(error?.response?.data?.error || '退货退款内容保存失败')
+  } finally {
+    savingRefundReturnPolicy.value = false
+  }
+}
+
+const changeRefundReturnPolicyLocale = async (locale) => {
+  const nextLocale = String(locale || '').trim()
+  if (!nextLocale || nextLocale === refundReturnPolicyLocale.value) return
+  refundReturnPolicyLocale.value = nextLocale
+  await fetchRefundReturnPolicy()
+}
+
+const uploadRefundReturnImage = async ({ index, file }) => {
+  if (!file || !refundReturnPolicy.sections[index]) return
+  uploadingRefundReturnSection.value = index
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('media_type', 'image')
+    formData.append('alt', refundReturnPolicy.sections[index].image.alt || refundReturnPolicy.sections[index].title || 'Refund return policy image')
+    const asset = await mediaApi.uploadAsset(formData)
+    const imageURL = String(assetAccessURL(asset) || asset?.url || '').trim()
+    if (!imageURL) {
+      toast.error('上传成功但没有返回图片地址')
+      return
+    }
+    refundReturnPolicy.sections[index].image.url = imageURL
+    if (!refundReturnPolicy.sections[index].image.alt && asset.alt) {
+      refundReturnPolicy.sections[index].image.alt = String(asset.alt)
+    }
+    toast.success('图片已上传，保存后前台生效')
+  } catch (error) {
+    console.error('Failed to upload refund return image:', error)
+    toast.error(error?.response?.data?.error || '退货退款图片上传失败')
+  } finally {
+    uploadingRefundReturnSection.value = null
+  }
 }
 
 const fetchPublicChatAgentCandidates = async () => {
@@ -633,8 +741,8 @@ const deletePublicChatGroup = async (group) => {
 
 const uploadSiteLogo = async (file) => {
   if (!file) return
-  if (!file.type?.startsWith('image/')) {
-    toast.error('Logo 只能上传图片文件')
+  if (!file.name?.toLowerCase().endsWith('.svg')) {
+    toast.error('站点 Logo 只能上传 SVG 文件')
     return
   }
 
@@ -642,18 +750,34 @@ const uploadSiteLogo = async (file) => {
   try {
     const formData = new FormData()
     formData.append('file', file)
-    formData.append('media_type', 'image')
-    const asset = await mediaApi.uploadAsset(formData)
-    const logoURL = String(assetAccessURL(asset) || asset?.url || '').trim()
+    const response = await axios.post('/api/admin/settings/site-logo', formData)
+    const logo = response.data?.data?.logo || response.data?.logo || {}
+    const logoURL = String(logo?.url || logo?.access_url || '').trim()
     if (!logoURL) {
       toast.error('上传成功但没有返回 Logo 地址')
       return
     }
     siteSettings.site_logo = logoURL
-    toast.success('Logo 已上传，保存设置后前台生效')
+    toast.success('Logo 已上传并替换当前站点 Logo')
   } catch (error) {
     console.error('Failed to upload site logo:', error)
     toast.error('Logo 上传失败，请检查文件类型和大小')
+  } finally {
+    uploadingSiteLogo.value = false
+  }
+}
+
+const clearSiteLogo = async () => {
+  if (!siteSettings.site_logo || uploadingSiteLogo.value) return
+
+  uploadingSiteLogo.value = true
+  try {
+    await axios.delete('/api/admin/settings/site-logo')
+    siteSettings.site_logo = ''
+    toast.success('站点 Logo 已删除')
+  } catch (error) {
+    console.error('Failed to delete site logo:', error)
+    toast.error(error?.response?.data?.error || '站点 Logo 删除失败')
   } finally {
     uploadingSiteLogo.value = false
   }
@@ -709,9 +833,7 @@ const saveSettings = async () => {
     const response = await axios.post('/api/admin/settings/batch', { settings })
     toast.success(`已保存 ${response.data.count ?? settings.length} 项设置`)
     loadedGroups.delete(group)
-    if (group === 'payment') await deleteLegacyPaymentSecrets()
     await fetchSettings(group, true)
-    if (group === 'payment') await fetchPaymentRuntime()
     return true
   } catch (error) {
     console.error('Failed to save settings:', error)
@@ -754,9 +876,11 @@ watch(activeTab, (tab) => {
   else if (tab === 'api') {
     fetchCurrencyPolicyForSettings().finally(() => fetchSettings(tab))
   }
+  else if (tab === 'refund_return') {
+    fetchRefundReturnPolicy()
+  }
   else {
     fetchSettings(tab)
-    if (tab === 'payment') fetchPaymentRuntime()
   }
 }, { immediate: true })
 </script>

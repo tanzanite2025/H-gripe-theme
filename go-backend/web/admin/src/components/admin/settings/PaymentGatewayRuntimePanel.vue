@@ -53,7 +53,7 @@
             <p class="mt-1 text-xs text-muted-foreground">{{ t('payment.boundGatewaysDescription') }}</p>
           </div>
           <span class="rounded-full border bg-background/80 px-2.5 py-1 text-[11px] font-black text-foreground">
-            {{ t('payment.boundCount', { bound: adminBoundGateways.length, total: paymentGatewayOptions.length }) }}
+            {{ t('payment.boundCount', { bound: adminBoundGateways.length, total: visiblePaymentGatewayOptions.length }) }}
           </span>
         </div>
 
@@ -117,7 +117,7 @@
 
         <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <button
-            v-for="gateway in paymentGatewayOptions"
+            v-for="gateway in visiblePaymentGatewayOptions"
             :key="gateway.value"
             type="button"
             class="group min-h-28 rounded-xl border p-3 text-left transition-all hover:-translate-y-0.5"
@@ -321,11 +321,13 @@ const props = withDefaults(defineProps<{
   runtime?: PaymentGatewayRuntime | null
   loading?: boolean
   canEdit?: boolean
+  providers?: string[]
 }>(), {
   selectedGateway: '',
   runtime: null,
   loading: false,
   canEdit: false,
+  providers: () => [],
 })
 
 const emit = defineEmits<{
@@ -364,6 +366,16 @@ const paymentGatewayOptions: PaymentGatewayOption[] = [
 ]
 
 const paymentGatewayOption = (value: string): PaymentGatewayOption | undefined => paymentGatewayOptions.find((gateway) => gateway.value === value)
+const visibleGatewayValues = computed(() => (
+  Array.isArray(props.providers) && props.providers.length
+    ? new Set(props.providers.map((provider) => String(provider || '').trim().toLowerCase()).filter(Boolean))
+    : null
+))
+const visiblePaymentGatewayOptions = computed(() => (
+  visibleGatewayValues.value
+    ? paymentGatewayOptions.filter((gateway) => visibleGatewayValues.value?.has(gateway.value))
+    : paymentGatewayOptions
+))
 const paymentGatewayLabel = (value: string): string => {
   const key = `payment.${value}`
   return t(key, {}, paymentGatewayOption(value)?.label || t('payment.selectGateway'))
@@ -376,7 +388,9 @@ const selectedGatewayOption = computed(() => paymentGatewayOption(props.selected
 const gatewayRuntimeStatus = (value: string): PaymentGatewayRuntimeStatus | undefined => (props.runtime?.gateways || []).find((gateway) => gateway.provider === value)
 const selectedRuntimeStatus = computed(() => gatewayRuntimeStatus(props.selectedGateway))
 const adminBoundGateways = computed(() => (
-  (props.runtime?.gateways || []).filter((gateway) => gateway.admin_config_configured === true)
+  (props.runtime?.gateways || [])
+    .filter((gateway) => gateway.admin_config_configured === true)
+    .filter((gateway) => !visibleGatewayValues.value || visibleGatewayValues.value.has(String(gateway.provider || '').trim().toLowerCase()))
 ))
 const credentialSourceLabel = (source?: string): string => {
   if (source === 'admin-encrypted') return t('payment.adminEncrypted')

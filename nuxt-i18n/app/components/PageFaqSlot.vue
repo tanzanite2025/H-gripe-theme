@@ -69,10 +69,10 @@ const resolvedFaqPageId = computed(() => resolvedFaqData.value ? getPageFaqId(re
   min-height: 9.75rem;
   padding: clamp(0.9rem, 1.4vw, 1.25rem);
   border-radius: 1.25rem;
-  border: 1px solid rgba(148, 163, 184, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   background:
     radial-gradient(circle at top left, rgba(181, 255, 109, 0.08), transparent 36%),
-    rgba(15, 23, 42, 0.62);
+    var(--tz-card-surface);
   color: var(--tz-text-secondary);
 }
 
@@ -129,15 +129,15 @@ const resolvedFaqPageId = computed(() => resolvedFaqData.value ? getPageFaqId(re
   gap: 0.45rem;
   padding: 0.8rem 0.9rem;
   border-radius: 0.9rem;
-  border: 1px solid rgba(148, 163, 184, 0.1);
-  background: rgba(2, 6, 23, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .page-faq-slot__skeleton-line {
   display: block;
   height: 0.55rem;
   border-radius: 999px;
-  background: rgba(148, 163, 184, 0.18);
+  background: rgba(255, 255, 255, 0.14);
 }
 
 .page-faq-slot__skeleton-line--question {

@@ -67,12 +67,14 @@ type BaseProductQuery struct {
 }
 
 type Node struct {
-	Key     string            `json:"key"`
-	Type    string            `json:"type"`
-	Prompt  map[string]string `json:"prompt,omitempty"`
-	Helper  map[string]string `json:"helper,omitempty"`
-	Options []Option          `json:"options,omitempty"`
-	Editor  EditorPosition    `json:"editor,omitempty"`
+	Key       string            `json:"key"`
+	Type      string            `json:"type"`
+	Prompt    map[string]string `json:"prompt,omitempty"`
+	Helper    map[string]string `json:"helper,omitempty"`
+	HelpTitle map[string]string `json:"help_title,omitempty"`
+	HelpBody  map[string]string `json:"help_body,omitempty"`
+	Options   []Option          `json:"options,omitempty"`
+	Editor    EditorPosition    `json:"editor,omitempty"`
 }
 
 type Option struct {

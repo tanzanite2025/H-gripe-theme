@@ -58,7 +58,7 @@ const canShowImage = computed(() => {
   aspect-ratio: 1 / 1;
   overflow: hidden;
   border-radius: 1rem;
-  background: rgba(15, 23, 42, 0.12);
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .faq-answer-content__media img {

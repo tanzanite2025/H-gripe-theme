@@ -173,11 +173,10 @@ type QuickBuySpecFilterView struct {
 }
 
 type QuickBuyProductSpecificationTemplateView struct {
-	ID       uint   `json:"id"`
-	Slug     string `json:"slug"`
-	Name     string `json:"name"`
-	ImageURL string `json:"image_url,omitempty"`
-	Primary  bool   `json:"primary"`
+	ID      uint   `json:"id"`
+	Slug    string `json:"slug"`
+	Name    string `json:"name"`
+	Primary bool   `json:"primary"`
 }
 
 type QuickBuyProductCategoryView struct {
@@ -1866,7 +1865,7 @@ func quickBuyStepView(step quickbuy.Step, locale string, exposeProductSpecificat
 			if index == 0 {
 				stepSlug = item.ProductSpecificationTemplate.Slug
 			}
-			productSpecificationTemplates = append(productSpecificationTemplates, quickBuyProductSpecificationTemplateView(*item.ProductSpecificationTemplate, locale, item.IsPrimary, resolver))
+			productSpecificationTemplates = append(productSpecificationTemplates, quickBuyProductSpecificationTemplateView(*item.ProductSpecificationTemplate, item.IsPrimary))
 		}
 	}
 	return QuickBuyStepView{
@@ -1995,14 +1994,12 @@ func quickBuyStepFilters(step quickbuy.Step, valuesBySlug map[string][]string) [
 	return result
 }
 
-func quickBuyProductSpecificationTemplateView(item productdomain.ProductSpecificationTemplate, locale string, primary bool, resolvers ...PublicMediaURLResolver) QuickBuyProductSpecificationTemplateView {
-	resolver := quickBuyMediaResolver(resolvers)
+func quickBuyProductSpecificationTemplateView(item productdomain.ProductSpecificationTemplate, primary bool) QuickBuyProductSpecificationTemplateView {
 	return QuickBuyProductSpecificationTemplateView{
-		ID:       item.ID,
-		Slug:     item.Slug,
-		Name:     item.NameForLocale(locale),
-		ImageURL: canonicalPublicMediaURL(resolver, item.ImageURL),
-		Primary:  primary,
+		ID:      item.ID,
+		Slug:    item.Slug,
+		Name:    item.Name,
+		Primary: primary,
 	}
 }
 

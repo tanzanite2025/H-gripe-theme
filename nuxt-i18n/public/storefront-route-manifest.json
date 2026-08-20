@@ -209,15 +209,6 @@
       "is_indexable": true
     },
     {
-      "key": "support-product-feedback",
-      "path": "/support/product-feedback",
-      "label": "Product Feedback",
-      "description": "Product feedback",
-      "is_searchable": true,
-      "is_checkable": true,
-      "is_indexable": true
-    },
-    {
       "key": "support-shipping",
       "path": "/support/shipping",
       "label": "Shipping Support",

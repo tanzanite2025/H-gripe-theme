@@ -269,6 +269,17 @@ func main() {
 		logger.Info("site quality job worker disabled")
 	}
 
+	var hotDataArchiveScheduler *scheduler.HotDataArchiveScheduler
+	if cfg.Worker.HotDataArchiveEnabled {
+		hotDataArchiveScheduler = scheduler.NewHotDataArchiveScheduler(
+			deps.Services.HotDataArchive,
+			cfg.Worker,
+		)
+		hotDataArchiveScheduler.Start(context.Background())
+	} else {
+		logger.Info("hot data archive scheduler disabled")
+	}
+
 	var mediaDerivativeRebuildScheduler *scheduler.MediaDerivativeRebuildScheduler
 	if cfg.Worker.MediaDerivativeRebuildEnabled {
 		mediaDerivativeRebuildScheduler = scheduler.NewMediaDerivativeRebuildScheduler(deps.Services.Media, cfg.Worker)
@@ -334,6 +345,9 @@ func main() {
 	}
 	if siteQualityWorker != nil {
 		siteQualityWorker.Stop()
+	}
+	if hotDataArchiveScheduler != nil {
+		hotDataArchiveScheduler.Stop()
 	}
 	if mediaDerivativeRebuildScheduler != nil {
 		mediaDerivativeRebuildScheduler.Stop()

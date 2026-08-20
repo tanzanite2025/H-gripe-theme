@@ -1,6 +1,7 @@
 <template>
   <NuxtImg
-    v-if="canOptimize && !optimizationFailed"
+    v-if="props.optimize && canOptimize && !optimizationFailed"
+    class="tz-storefront-image"
     :src="transformSource"
     :alt="alt"
     :width="width"
@@ -17,6 +18,7 @@
   />
   <img
     v-else
+    class="tz-storefront-image"
     :src="fallbackSource"
     :alt="alt"
     :width="width"
@@ -72,6 +74,7 @@ const props = withDefaults(defineProps<{
   densities?: string
   format?: string
   quality?: number | string
+  optimize?: boolean
   loading?: 'eager' | 'lazy'
   fetchpriority?: 'high' | 'low' | 'auto'
   decoding?: 'async' | 'sync' | 'auto'
@@ -84,6 +87,7 @@ const props = withDefaults(defineProps<{
   densities: '1x 2x',
   format: 'webp',
   quality: 84,
+  optimize: true,
   loading: 'lazy',
   fetchpriority: 'auto',
   decoding: 'async',
@@ -222,3 +226,10 @@ watch(transformSource, () => {
   optimizationFailed.value = false
 })
 </script>
+
+<style scoped>
+.tz-storefront-image {
+  display: block;
+  background-color: var(--tz-image-loading-surface, #0b0b0e);
+}
+</style>

@@ -6,7 +6,7 @@
   "loading": "レビューを読み込んでいます...",
   "loadError": "レビューを読み込めませんでした。",
   "retry": "再試行",
-  "empty": "承認済みのレビューはまだありません。",
+  "empty": "レビューはまだありません。",
   "ratingLabel": "5点満点中{rating}つ星",
   "imageAlt": "お客様レビューの画像",
   "verifiedPurchase": "購入確認済み",

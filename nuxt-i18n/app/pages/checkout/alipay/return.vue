@@ -62,7 +62,10 @@ onMounted(async () => {
       throw new Error(t('checkout.alipayReturn.messages.missingData'))
     }
 
-    const result = await confirmAlipayOrder(orderNumber.value)
+    const result = await confirmAlipayOrder(
+      orderNumber.value,
+      `alipay-confirm-${orderNumber.value}`,
+    )
     if (!['TRADE_SUCCESS', 'TRADE_FINISHED'].includes(String(result.status || '').toUpperCase())) {
       throw new Error(t('checkout.alipayReturn.messages.incomplete'))
     }
@@ -115,7 +118,7 @@ onMounted(async () => {
 }
 
 .wallet-return-order {
-  font-family: var(--tz-font-system);
+  font-family: var(--tz-font-ui);
   color: #fff !important;
 }
 

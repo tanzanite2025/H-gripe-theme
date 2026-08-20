@@ -18,6 +18,7 @@ import (
 
 	"commerce-platform/internal/domain/merchant"
 	"commerce-platform/internal/pkg/config"
+	"commerce-platform/internal/pkg/resilience"
 	"commerce-platform/internal/pkg/secretbox"
 
 	"gorm.io/gorm"
@@ -343,7 +344,7 @@ func (s *GoogleMerchantService) CompleteOAuth(ctx context.Context, state, code, 
 		return err
 	}
 
-	token, err := exchangeGoogleMerchantCode(ctx, s.googleConfig, code)
+	token, err := exchangeGoogleMerchantCodeWithClient(ctx, s.oauthOutboundHTTPClient(), s.googleConfig, code)
 	if err != nil {
 		connection.Status = "error"
 		connection.LastError = err.Error()
@@ -358,7 +359,7 @@ func (s *GoogleMerchantService) CompleteOAuth(ctx context.Context, state, code, 
 		return err
 	}
 
-	userInfo, err := fetchGoogleMerchantUserInfo(ctx, token.AccessToken)
+	userInfo, err := fetchGoogleMerchantUserInfoWithClient(ctx, s.oauthOutboundHTTPClient(), token.AccessToken)
 	if err != nil {
 		connection.Status = "error"
 		connection.LastError = err.Error()
@@ -450,7 +451,7 @@ func (s *GoogleMerchantService) AccessToken(ctx context.Context) (string, error)
 	if err != nil {
 		return "", fmt.Errorf("%w: stored refresh token cannot be decrypted", ErrGoogleMerchantOAuthExchange)
 	}
-	token, err := refreshGoogleMerchantAccessToken(ctx, s.googleConfig, refreshToken)
+	token, err := refreshGoogleMerchantAccessTokenWithClient(ctx, s.oauthOutboundHTTPClient(), s.googleConfig, refreshToken)
 	if err != nil {
 		return "", err
 	}
@@ -492,7 +493,7 @@ func (s *GoogleMerchantService) ListRemoteProducts(ctx context.Context, pageSize
 	if err != nil {
 		return nil, err
 	}
-	return fetchGoogleMerchantProducts(ctx, accessToken, accountID, pageSize, pageToken)
+	return fetchGoogleMerchantProductsWithClient(ctx, s.outboundHTTPClient(), accessToken, accountID, pageSize, pageToken)
 }
 
 func (s *GoogleMerchantService) connectionView(connection *merchant.GoogleMerchantConnection) *GoogleMerchantConnectionView {
@@ -535,6 +536,15 @@ func (s *GoogleMerchantService) oauthConfigured() bool {
 }
 
 func exchangeGoogleMerchantCode(ctx context.Context, cfg config.GoogleMerchantConfig, code string) (*googleMerchantTokenResponse, error) {
+	return exchangeGoogleMerchantCodeWithClient(ctx, googleMerchantOAuthHTTPClient(), cfg, code)
+}
+
+func exchangeGoogleMerchantCodeWithClient(
+	ctx context.Context,
+	client *resilience.HTTPClient,
+	cfg config.GoogleMerchantConfig,
+	code string,
+) (*googleMerchantTokenResponse, error) {
 	form := url.Values{}
 	form.Set("code", code)
 	form.Set("client_id", strings.TrimSpace(cfg.ClientID))
@@ -542,15 +552,18 @@ func exchangeGoogleMerchantCode(ctx context.Context, cfg config.GoogleMerchantCo
 	form.Set("redirect_uri", strings.TrimSpace(cfg.RedirectURL))
 	form.Set("grant_type", "authorization_code")
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, googleMerchantOAuthTokenEndpoint, strings.NewReader(form.Encode()))
-	if err != nil {
-		return nil, fmt.Errorf("%w: create token request", ErrGoogleMerchantOAuthExchange)
+	if client == nil {
+		client = googleMerchantOAuthHTTPClient()
 	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	client := &http.Client{Timeout: 10 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
+	resp, err := client.Do(ctx, func() (*http.Request, error) {
+		req, createErr := http.NewRequestWithContext(ctx, http.MethodPost, googleMerchantOAuthTokenEndpoint, strings.NewReader(form.Encode()))
+		if createErr != nil {
+			return nil, fmt.Errorf("%w: create token request", ErrGoogleMerchantOAuthExchange)
+		}
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		return req, nil
+	})
+	if err != nil && (resp == nil || resp.Body == nil) {
 		return nil, fmt.Errorf("%w: %v", ErrGoogleMerchantOAuthExchange, err)
 	}
 	defer resp.Body.Close()
@@ -559,7 +572,7 @@ func exchangeGoogleMerchantCode(ctx context.Context, cfg config.GoogleMerchantCo
 	if err := json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&token); err != nil {
 		return nil, fmt.Errorf("%w: invalid token response", ErrGoogleMerchantOAuthExchange)
 	}
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 || token.Error != "" {
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 || token.Error != "" || err != nil {
 		message := strings.TrimSpace(token.ErrorMessage)
 		if message == "" {
 			message = strings.TrimSpace(token.Error)
@@ -567,27 +580,42 @@ func exchangeGoogleMerchantCode(ctx context.Context, cfg config.GoogleMerchantCo
 		if message == "" {
 			message = "Google rejected the authorization code"
 		}
+		if err != nil {
+			message = fmt.Sprintf("%s: %v", message, err)
+		}
 		return nil, fmt.Errorf("%w: %s", ErrGoogleMerchantOAuthExchange, message)
 	}
 	return &token, nil
 }
 
 func refreshGoogleMerchantAccessToken(ctx context.Context, cfg config.GoogleMerchantConfig, refreshToken string) (*googleMerchantTokenResponse, error) {
+	return refreshGoogleMerchantAccessTokenWithClient(ctx, googleMerchantOAuthHTTPClient(), cfg, refreshToken)
+}
+
+func refreshGoogleMerchantAccessTokenWithClient(
+	ctx context.Context,
+	client *resilience.HTTPClient,
+	cfg config.GoogleMerchantConfig,
+	refreshToken string,
+) (*googleMerchantTokenResponse, error) {
 	form := url.Values{}
 	form.Set("client_id", strings.TrimSpace(cfg.ClientID))
 	form.Set("client_secret", strings.TrimSpace(cfg.ClientSecret))
 	form.Set("refresh_token", refreshToken)
 	form.Set("grant_type", "refresh_token")
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, googleMerchantOAuthTokenEndpoint, strings.NewReader(form.Encode()))
-	if err != nil {
-		return nil, fmt.Errorf("%w: create refresh request", ErrGoogleMerchantOAuthExchange)
+	if client == nil {
+		client = googleMerchantOAuthHTTPClient()
 	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	client := &http.Client{Timeout: 10 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
+	resp, err := client.Do(ctx, func() (*http.Request, error) {
+		req, createErr := http.NewRequestWithContext(ctx, http.MethodPost, googleMerchantOAuthTokenEndpoint, strings.NewReader(form.Encode()))
+		if createErr != nil {
+			return nil, fmt.Errorf("%w: create refresh request", ErrGoogleMerchantOAuthExchange)
+		}
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		return req, nil
+	})
+	if err != nil && (resp == nil || resp.Body == nil) {
 		return nil, fmt.Errorf("%w: %v", ErrGoogleMerchantOAuthExchange, err)
 	}
 	defer resp.Body.Close()
@@ -596,7 +624,7 @@ func refreshGoogleMerchantAccessToken(ctx context.Context, cfg config.GoogleMerc
 	if err := json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&token); err != nil {
 		return nil, fmt.Errorf("%w: invalid refresh response", ErrGoogleMerchantOAuthExchange)
 	}
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 || token.Error != "" || token.AccessToken == "" {
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 || token.Error != "" || token.AccessToken == "" || err != nil {
 		message := strings.TrimSpace(token.ErrorMessage)
 		if message == "" {
 			message = strings.TrimSpace(token.Error)
@@ -604,12 +632,26 @@ func refreshGoogleMerchantAccessToken(ctx context.Context, cfg config.GoogleMerc
 		if message == "" {
 			message = "Google rejected the refresh token"
 		}
+		if err != nil {
+			message = fmt.Sprintf("%s: %v", message, err)
+		}
 		return nil, fmt.Errorf("%w: %s", ErrGoogleMerchantOAuthExchange, message)
 	}
 	return &token, nil
 }
 
 func fetchGoogleMerchantProducts(ctx context.Context, accessToken, accountID string, pageSize int, pageToken string) (*GoogleMerchantRemoteProductPage, error) {
+	return fetchGoogleMerchantProductsWithClient(ctx, googleMerchantHTTPClient(), accessToken, accountID, pageSize, pageToken)
+}
+
+func fetchGoogleMerchantProductsWithClient(
+	ctx context.Context,
+	client *resilience.HTTPClient,
+	accessToken,
+	accountID string,
+	pageSize int,
+	pageToken string,
+) (*GoogleMerchantRemoteProductPage, error) {
 	endpoint := fmt.Sprintf("%s/accounts/%s/products", googleMerchantProductsEndpoint, url.PathEscape(accountID))
 	query := url.Values{}
 	query.Set("pageSize", strconv.Itoa(pageSize))
@@ -617,20 +659,23 @@ func fetchGoogleMerchantProducts(ctx context.Context, accessToken, accountID str
 		query.Set("pageToken", pageToken)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint+"?"+query.Encode(), nil)
-	if err != nil {
-		return nil, fmt.Errorf("%w: create products request", ErrGoogleMerchantRemoteAPI)
+	if client == nil {
+		client = googleMerchantHTTPClient()
 	}
-	req.Header.Set("Authorization", "Bearer "+accessToken)
-
-	client := &http.Client{Timeout: 15 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
+	resp, err := client.Do(ctx, func() (*http.Request, error) {
+		req, createErr := http.NewRequestWithContext(ctx, http.MethodGet, endpoint+"?"+query.Encode(), nil)
+		if createErr != nil {
+			return nil, fmt.Errorf("%w: create products request", ErrGoogleMerchantRemoteAPI)
+		}
+		req.Header.Set("Authorization", "Bearer "+accessToken)
+		return req, nil
+	})
+	if err != nil && (resp == nil || resp.Body == nil) {
 		return nil, fmt.Errorf("%w: %v", ErrGoogleMerchantRemoteAPI, err)
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 || err != nil {
 		var apiResponse struct {
 			Error struct {
 				Message string `json:"message"`
@@ -640,6 +685,9 @@ func fetchGoogleMerchantProducts(ctx context.Context, accessToken, accountID str
 		message := strings.TrimSpace(apiResponse.Error.Message)
 		if message == "" {
 			message = "Google Merchant rejected the products request"
+		}
+		if err != nil {
+			message = fmt.Sprintf("%s: %v", message, err)
 		}
 		return nil, fmt.Errorf("%w: %s", ErrGoogleMerchantRemoteAPI, message)
 	}
@@ -730,15 +778,26 @@ func toGoogleMerchantRemotePrice(price *googleMerchantAPIPrice) *GoogleMerchantR
 }
 
 func fetchGoogleMerchantUserInfo(ctx context.Context, accessToken string) (*googleMerchantUserInfo, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, googleMerchantUserInfoEndpoint, nil)
-	if err != nil {
-		return nil, fmt.Errorf("%w: create userinfo request", ErrGoogleMerchantOAuthExchange)
-	}
-	req.Header.Set("Authorization", "Bearer "+accessToken)
+	return fetchGoogleMerchantUserInfoWithClient(ctx, googleMerchantOAuthHTTPClient(), accessToken)
+}
 
-	client := &http.Client{Timeout: 10 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
+func fetchGoogleMerchantUserInfoWithClient(
+	ctx context.Context,
+	client *resilience.HTTPClient,
+	accessToken string,
+) (*googleMerchantUserInfo, error) {
+	if client == nil {
+		client = googleMerchantOAuthHTTPClient()
+	}
+	resp, err := client.Do(ctx, func() (*http.Request, error) {
+		req, createErr := http.NewRequestWithContext(ctx, http.MethodGet, googleMerchantUserInfoEndpoint, nil)
+		if createErr != nil {
+			return nil, fmt.Errorf("%w: create userinfo request", ErrGoogleMerchantOAuthExchange)
+		}
+		req.Header.Set("Authorization", "Bearer "+accessToken)
+		return req, nil
+	})
+	if err != nil && (resp == nil || resp.Body == nil) {
 		return nil, fmt.Errorf("%w: %v", ErrGoogleMerchantOAuthExchange, err)
 	}
 	defer resp.Body.Close()
@@ -747,8 +806,12 @@ func fetchGoogleMerchantUserInfo(ctx context.Context, accessToken string) (*goog
 	if err := json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&userInfo); err != nil {
 		return nil, fmt.Errorf("%w: invalid Google account response", ErrGoogleMerchantOAuthExchange)
 	}
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("%w: Google account identity request rejected", ErrGoogleMerchantOAuthExchange)
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 || err != nil {
+		message := "Google account identity request rejected"
+		if err != nil {
+			message = fmt.Sprintf("%s: %v", message, err)
+		}
+		return nil, fmt.Errorf("%w: %s", ErrGoogleMerchantOAuthExchange, message)
 	}
 	return &userInfo, nil
 }

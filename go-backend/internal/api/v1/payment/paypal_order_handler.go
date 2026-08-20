@@ -1,6 +1,7 @@
 package payment
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -72,6 +73,7 @@ func (h *Handler) CreatePayPalOrder(c *gin.Context) {
 	if !h.allowPaymentGatewayAttemptOrRespondWithFallbackRecommendation(c, pgateway.GatewayPayPal) {
 		return
 	}
+	defer h.releasePaymentGatewayAttemptIfUnrecorded(c, pgateway.GatewayPayPal)
 	gateway, err := h.createPaymentGatewayFromConfiguration(config)
 	if err != nil {
 		h.respondToPaymentGatewayOperationFailure(
@@ -84,6 +86,17 @@ func (h *Handler) CreatePayPalOrder(c *gin.Context) {
 		return
 	}
 
+	attempt, ok := h.ensurePaymentAttempt(
+		c,
+		pgateway.GatewayPayPal,
+		"paypal",
+		orderRecord,
+		orderRecord.TotalAmount,
+		orderCurrency,
+	)
+	if !ok {
+		return
+	}
 	paymentResponse, err := gateway.CreatePayment(c.Request.Context(), &pgateway.PaymentRequest{
 		Amount:         orderRecord.TotalAmount,
 		Currency:       orderCurrency,
@@ -91,7 +104,7 @@ func (h *Handler) CreatePayPalOrder(c *gin.Context) {
 		Description:    fmt.Sprintf("Order %s", orderRecord.OrderNumber),
 		ReturnURL:      sanitizedPayPalRedirectURL(req.ReturnURL),
 		CancelURL:      sanitizedPayPalRedirectURL(req.CancelURL),
-		IdempotencyKey: fmt.Sprintf("order-%d-paypal-order", orderRecord.ID),
+		IdempotencyKey: attempt.ProviderRequestKey,
 		Customer: &pgateway.Customer{
 			Name:  strings.TrimSpace(orderRecord.ShippingAddress.FirstName + " " + orderRecord.ShippingAddress.LastName),
 			Email: orderRecord.ShippingAddress.Email,
@@ -102,6 +115,18 @@ func (h *Handler) CreatePayPalOrder(c *gin.Context) {
 		},
 	})
 	if err != nil {
+		_ = h.paymentService.RecordGatewayPaymentAttempt(service.GatewayPaymentAttemptInput{
+			Provider:           string(pgateway.GatewayPayPal),
+			OrderNumber:        orderRecord.OrderNumber,
+			TransactionID:      attempt.TransactionID,
+			AttemptKey:         attempt.AttemptKey,
+			ProviderRequestKey: attempt.ProviderRequestKey,
+			PaymentMethod:      "paypal",
+			Status:             "failed",
+			Amount:             orderRecord.TotalAmount,
+			Currency:           orderCurrency,
+			ErrorMessage:       err.Error(),
+		})
 		h.respondToPaymentGatewayOperationFailure(
 			c,
 			pgateway.GatewayPayPal,
@@ -111,18 +136,20 @@ func (h *Handler) CreatePayPalOrder(c *gin.Context) {
 		)
 		return
 	}
-	h.recordSuccessfulPaymentGatewayAPIResponse(c.Request.Context(), pgateway.GatewayPayPal)
+	h.recordSuccessfulPaymentGatewayAPIResponse(c, pgateway.GatewayPayPal)
 
 	gatewayResponse, _ := json.Marshal(paymentResponse)
 	if err := h.paymentService.RecordGatewayPaymentAttempt(service.GatewayPaymentAttemptInput{
-		Provider:        string(pgateway.GatewayPayPal),
-		OrderNumber:     orderRecord.OrderNumber,
-		TransactionID:   paymentResponse.TransactionID,
-		PaymentMethod:   "paypal",
-		Status:          paypalAttemptStatus(paymentResponse.Status),
-		Amount:          paymentResponse.Amount,
-		Currency:        paymentResponse.Currency,
-		GatewayResponse: string(gatewayResponse),
+		Provider:           string(pgateway.GatewayPayPal),
+		OrderNumber:        orderRecord.OrderNumber,
+		TransactionID:      paymentResponse.TransactionID,
+		AttemptKey:         attempt.AttemptKey,
+		ProviderRequestKey: attempt.ProviderRequestKey,
+		PaymentMethod:      "paypal",
+		Status:             paypalAttemptStatus(paymentResponse.Status),
+		Amount:             paymentResponse.Amount,
+		Currency:           paymentResponse.Currency,
+		GatewayResponse:    string(gatewayResponse),
 	}); err != nil {
 		respondVerifiedProviderPaymentError(c, err)
 		return
@@ -163,6 +190,10 @@ func (h *Handler) CapturePayPalOrder(c *gin.Context) {
 		apierror.RespondError(c, http.StatusServiceUnavailable, "paypal_not_configured", "PayPal is not configured")
 		return
 	}
+	if !h.allowPaymentGatewayAttemptOrRespondWithFallbackRecommendation(c, pgateway.GatewayPayPal) {
+		return
+	}
+	defer h.releasePaymentGatewayAttemptIfUnrecorded(c, pgateway.GatewayPayPal)
 
 	gateway, err := h.createPaymentGatewayFromConfiguration(config)
 	if err != nil {
@@ -175,7 +206,12 @@ func (h *Handler) CapturePayPalOrder(c *gin.Context) {
 		)
 		return
 	}
-	paymentResponse, err := gateway.CapturePayment(c.Request.Context(), paypalOrderID)
+	paymentResponse, err := capturePayPalPayment(
+		c.Request.Context(),
+		gateway,
+		paypalOrderID,
+		pgateway.PayPalCaptureRequestID(paypalOrderID),
+	)
 	if err != nil {
 		h.respondToPaymentGatewayOperationFailure(
 			c,
@@ -186,7 +222,7 @@ func (h *Handler) CapturePayPalOrder(c *gin.Context) {
 		)
 		return
 	}
-	h.recordSuccessfulPaymentGatewayAPIResponse(c.Request.Context(), pgateway.GatewayPayPal)
+	h.recordSuccessfulPaymentGatewayAPIResponse(c, pgateway.GatewayPayPal)
 	if !paypalResponseMatchesOrder(paymentResponse, orderRecord.OrderNumber) {
 		apierror.RespondError(c, http.StatusBadRequest, "paypal_order_mismatch", "PayPal order does not match this order")
 		return
@@ -232,6 +268,20 @@ func (h *Handler) CapturePayPalOrder(c *gin.Context) {
 	}
 
 	response.Success(c, paymentResponse)
+}
+
+func capturePayPalPayment(
+	ctx context.Context,
+	gateway pgateway.PaymentGateway,
+	paypalOrderID string,
+	idempotencyKey string,
+) (*pgateway.PaymentResponse, error) {
+	if gatewayWithOptions, ok := gateway.(pgateway.CapturePaymentWithOptions); ok {
+		return gatewayWithOptions.CapturePaymentWithOptions(ctx, paypalOrderID, pgateway.CaptureOptions{
+			IdempotencyKey: idempotencyKey,
+		})
+	}
+	return gateway.CapturePayment(ctx, paypalOrderID)
 }
 
 func (h *Handler) loadPayablePayPalOrder(c *gin.Context, orderNumber string, userID uint) (*orderdomain.Order, bool) {

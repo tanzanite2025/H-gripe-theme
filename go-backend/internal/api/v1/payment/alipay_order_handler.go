@@ -73,6 +73,7 @@ func (h *Handler) CreateAlipayOrder(c *gin.Context) {
 	if !h.allowPaymentGatewayAttemptOrRespondWithFallbackRecommendation(c, pgateway.GatewayAlipay) {
 		return
 	}
+	defer h.releasePaymentGatewayAttemptIfUnrecorded(c, pgateway.GatewayAlipay)
 	gateway, err := h.createPaymentGatewayFromConfiguration(config)
 	if err != nil {
 		h.respondToPaymentGatewayOperationFailure(
@@ -85,6 +86,17 @@ func (h *Handler) CreateAlipayOrder(c *gin.Context) {
 		return
 	}
 
+	attempt, ok := h.ensurePaymentAttempt(
+		c,
+		pgateway.GatewayAlipay,
+		"alipay",
+		orderRecord,
+		orderRecord.TotalAmount,
+		orderCurrency,
+	)
+	if !ok {
+		return
+	}
 	paymentResponse, err := gateway.CreatePayment(c.Request.Context(), &pgateway.PaymentRequest{
 		Amount:         orderRecord.TotalAmount,
 		Currency:       orderCurrency,
@@ -93,7 +105,7 @@ func (h *Handler) CreateAlipayOrder(c *gin.Context) {
 		ReturnURL:      sanitizedPaymentRedirectURL(req.ReturnURL),
 		CancelURL:      sanitizedPaymentRedirectURL(req.CancelURL),
 		NotifyURL:      h.providerWebhookURL(c, pgateway.GatewayAlipay),
-		IdempotencyKey: fmt.Sprintf("order-%d-alipay-page-pay", orderRecord.ID),
+		IdempotencyKey: attempt.ProviderRequestKey,
 		Customer:       paymentCustomerFromOrder(orderRecord),
 		Metadata: map[string]string{
 			"order_number": orderRecord.OrderNumber,
@@ -102,6 +114,18 @@ func (h *Handler) CreateAlipayOrder(c *gin.Context) {
 		},
 	})
 	if err != nil {
+		_ = h.paymentService.RecordGatewayPaymentAttempt(service.GatewayPaymentAttemptInput{
+			Provider:           string(pgateway.GatewayAlipay),
+			OrderNumber:        orderRecord.OrderNumber,
+			TransactionID:      attempt.TransactionID,
+			AttemptKey:         attempt.AttemptKey,
+			ProviderRequestKey: attempt.ProviderRequestKey,
+			PaymentMethod:      "alipay",
+			Status:             "failed",
+			Amount:             orderRecord.TotalAmount,
+			Currency:           orderCurrency,
+			ErrorMessage:       err.Error(),
+		})
 		h.respondToPaymentGatewayOperationFailure(
 			c,
 			pgateway.GatewayAlipay,
@@ -111,18 +135,20 @@ func (h *Handler) CreateAlipayOrder(c *gin.Context) {
 		)
 		return
 	}
-	h.recordSuccessfulPaymentGatewayAPIResponse(c.Request.Context(), pgateway.GatewayAlipay)
+	h.recordSuccessfulPaymentGatewayAPIResponse(c, pgateway.GatewayAlipay)
 
 	gatewayResponse, _ := json.Marshal(paymentResponse)
 	if err := h.paymentService.RecordGatewayPaymentAttempt(service.GatewayPaymentAttemptInput{
-		Provider:        string(pgateway.GatewayAlipay),
-		OrderNumber:     orderRecord.OrderNumber,
-		TransactionID:   gatewayTransactionID(paymentResponse, orderRecord.OrderNumber),
-		PaymentMethod:   "alipay",
-		Status:          alipayAttemptStatus(paymentResponse.Status),
-		Amount:          paymentResponse.Amount,
-		Currency:        paymentResponse.Currency,
-		GatewayResponse: string(gatewayResponse),
+		Provider:           string(pgateway.GatewayAlipay),
+		OrderNumber:        orderRecord.OrderNumber,
+		TransactionID:      gatewayTransactionID(paymentResponse, orderRecord.OrderNumber),
+		AttemptKey:         attempt.AttemptKey,
+		ProviderRequestKey: attempt.ProviderRequestKey,
+		PaymentMethod:      "alipay",
+		Status:             alipayAttemptStatus(paymentResponse.Status),
+		Amount:             paymentResponse.Amount,
+		Currency:           paymentResponse.Currency,
+		GatewayResponse:    string(gatewayResponse),
 	}); err != nil {
 		respondVerifiedProviderPaymentError(c, err)
 		return
@@ -174,6 +200,10 @@ func (h *Handler) ConfirmAlipayOrder(c *gin.Context) {
 		apierror.RespondError(c, http.StatusServiceUnavailable, "alipay_not_configured", "Alipay is not configured")
 		return
 	}
+	if !h.allowPaymentGatewayAttemptOrRespondWithFallbackRecommendation(c, pgateway.GatewayAlipay) {
+		return
+	}
+	defer h.releasePaymentGatewayAttemptIfUnrecorded(c, pgateway.GatewayAlipay)
 
 	gateway, err := h.createPaymentGatewayFromConfiguration(config)
 	if err != nil {
@@ -197,7 +227,7 @@ func (h *Handler) ConfirmAlipayOrder(c *gin.Context) {
 		)
 		return
 	}
-	h.recordSuccessfulPaymentGatewayAPIResponse(c.Request.Context(), pgateway.GatewayAlipay)
+	h.recordSuccessfulPaymentGatewayAPIResponse(c, pgateway.GatewayAlipay)
 	if !providerPaymentResponseMatchesOrder(paymentResponse, orderRecord.OrderNumber) {
 		apierror.RespondError(c, http.StatusBadRequest, "alipay_order_mismatch", "Alipay trade does not match this order")
 		return

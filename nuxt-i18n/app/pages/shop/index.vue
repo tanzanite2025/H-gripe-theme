@@ -58,7 +58,7 @@
 
       <!-- 右侧商品列表区域 -->
       <div class="shop-catalog-main">
-        <section class="shop-page-product-collection-display-card shop-products-panel rounded-xl p-6 text-sm tz-text-secondary shadow-[8px_8px_22px_rgba(0,0,0,0.92)]">
+        <section class="shop-page-product-collection-display-card shop-products-panel rounded-xl p-2 text-sm tz-text-secondary shadow-[8px_8px_22px_rgba(0,0,0,0.92)] md:p-6">
           <div v-if="loading" class="shop-products-state py-12">
             <p class="tz-text-secondary text-sm">{{ $t('shopPage.products.loading', 'Loading products...') }}</p>
           </div>
@@ -74,7 +74,7 @@
             </p>
           </div>
 
-          <div v-else class="grid grid-cols-2 2xl:grid-cols-3 gap-4">
+          <div v-else class="tz-product-card-grid content-start">
             <ShopProductDisplayCard
               v-for="product in products"
               :key="product.id"
@@ -173,7 +173,6 @@ const {
   error: categoriesError,
   loadCategories,
 } = useProductCategories()
-const selectedCategory = ref<ProductCategory | null>(null)
 
 interface ProductSearchFiltersPayload {
   priceRange: [number, number]
@@ -196,31 +195,26 @@ const createDefaultSearchFilters = (): ProductSearchFiltersPayload => ({
 
 const { pendingSearch } = useShopSearchSheet()
 
-const routeProductCategorySlug = computed(() => {
+const readRouteProductCategorySlug = () => {
   const value = route.query.product_category
   const raw = Array.isArray(value) ? value[0] : value
   return String(raw || '').trim()
+}
+
+const selectedCategorySlug = ref(readRouteProductCategorySlug())
+const selectedCategory = computed<ProductCategory | null>(() => {
+  const slug = String(selectedCategorySlug.value || '').trim()
+  if (!slug) return null
+  return flatCategories.value.find(category => category.slug === slug) || null
 })
 
 const syncSelectedCategoryFromRoute = () => {
-  const slug = routeProductCategorySlug.value
-  if (!slug) {
-    selectedCategory.value = null
-    return
-  }
-
-  const match = flatCategories.value.find(category => category.slug === slug)
-  if (match) {
-    selectedCategory.value = match
-    return
-  }
-
-  selectedCategory.value = null
+  selectedCategorySlug.value = readRouteProductCategorySlug()
 }
 
 const replaceProductCategoryRoute = async (category: ProductCategory | null) => {
   const nextSlug = category?.slug || ''
-  if (routeProductCategorySlug.value === nextSlug) return false
+  if (readRouteProductCategorySlug() === nextSlug) return false
 
   const nextQuery: Record<string, any> = { ...route.query }
   if (nextSlug) {
@@ -389,8 +383,6 @@ const handleSearch = (payload: ProductSearchPayload) => {
 }
 
 const onCategorySelect = async (category: ProductCategory | null) => {
-  selectedCategory.value = category
-
   const base: ProductSearchPayload =
     currentSearch.value || ({
       query: '',
@@ -401,6 +393,7 @@ const onCategorySelect = async (category: ProductCategory | null) => {
     ...base,
   }
 
+  selectedCategorySlug.value = category?.slug || ''
   currentProductPage.value = 1
   currentSearch.value = next
   const routeChanged = await replaceProductCategoryRoute(category)
@@ -480,7 +473,6 @@ const handleAddToWishlist = async (product: ShopProduct) => {
   --shop-catalog-left-gutter: clamp(0.5rem, 1.2vw, 1.5rem);
   --shop-category-rail-width: clamp(16rem, 20vw, 21rem);
   --shop-catalog-gap: clamp(1rem, 2vw, 2.5rem);
-  --shop-products-min-height: clamp(22rem, 48vh, 34rem);
   padding-inline: 1.5rem;
 }
 
@@ -500,7 +492,6 @@ const handleAddToWishlist = async (product: ShopProduct) => {
 }
 
 .shop-category-rail {
-  min-height: var(--shop-products-min-height);
   display: flex;
   align-items: center;
   align-self: stretch;
@@ -517,7 +508,6 @@ const handleAddToWishlist = async (product: ShopProduct) => {
 }
 
 .shop-products-panel {
-  min-height: var(--shop-products-min-height);
   display: flex;
   flex-direction: column;
 }
@@ -644,7 +634,7 @@ const handleAddToWishlist = async (product: ShopProduct) => {
 .shop-pagination__count {
   min-width: 4.5rem;
   text-align: center;
-  font-family: var(--tz-font-system);
+  font-family: var(--tz-font-ui);
   font-size: var(--tz-type-caption);
   font-weight: 850;
   color: rgba(226, 232, 240, 0.82);

@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url'
 const scriptDir = dirname(fileURLToPath(import.meta.url))
 const projectRoot = resolve(scriptDir, '../..')
 const serverEntry = resolve(projectRoot, '.output/server/index.mjs')
+const serverLauncher = resolve(projectRoot, 'scripts/storefront/run-production-server.mjs')
 const publicDirectory = resolve(projectRoot, '.output/public')
 const port = Number.parseInt(process.env.CRITICAL_CSS_CHECK_PORT || '4021', 10)
 const origin = `http://127.0.0.1:${port}`
@@ -67,8 +68,12 @@ if (!existsSync(serverEntry)) {
   console.error(`[critical-css] FAILED: Missing ${serverEntry}. Run npm run build first.`)
   process.exit(1)
 }
+if (!existsSync(serverLauncher)) {
+  console.error(`[critical-css] FAILED: Missing ${serverLauncher}.`)
+  process.exit(1)
+}
 
-const child = spawn(process.execPath, [serverEntry], {
+const child = spawn(process.execPath, [serverLauncher], {
   cwd: projectRoot,
   env: {
     ...process.env,

@@ -447,6 +447,55 @@ func LoadConfigFromEnv() *Config {
 	}
 }
 
+func LoadSiteLogoConfigFromEnv(base *Config) *Config {
+	cfg := Config{}
+	if base != nil {
+		cfg = *base
+	} else {
+		cfg = *LoadConfigFromEnv()
+	}
+
+	if value := strings.TrimSpace(os.Getenv("SITE_LOGO_STORAGE_TYPE")); value != "" {
+		cfg.Type = StorageType(value)
+	}
+	if value := strings.TrimSpace(os.Getenv("SITE_LOGO_STORAGE_LOCAL_PATH")); value != "" {
+		cfg.LocalPath = value
+	} else if cfg.Type == StorageTypeLocal {
+		cfg.LocalPath = defaultSiteLogoLocalPath(cfg.LocalPath)
+	}
+	if value := strings.TrimSpace(os.Getenv("SITE_LOGO_STORAGE_BASE_URL")); value != "" {
+		cfg.BaseURL = value
+	}
+	if value := strings.TrimSpace(os.Getenv("SITE_LOGO_STORAGE_BUCKET")); value != "" {
+		cfg.Bucket = value
+	}
+	if value := strings.TrimSpace(os.Getenv("SITE_LOGO_STORAGE_REGION")); value != "" {
+		cfg.Region = value
+	}
+	if value := strings.TrimSpace(os.Getenv("SITE_LOGO_STORAGE_ACCESS_KEY_ID")); value != "" {
+		cfg.AccessKeyID = value
+	}
+	if value := strings.TrimSpace(os.Getenv("SITE_LOGO_STORAGE_SECRET_ACCESS_KEY")); value != "" {
+		cfg.SecretAccessKey = value
+	}
+	if value := strings.TrimSpace(os.Getenv("SITE_LOGO_STORAGE_ENDPOINT")); value != "" {
+		cfg.Endpoint = value
+	}
+	return &cfg
+}
+
+func defaultSiteLogoLocalPath(localPath string) string {
+	cleanPath := filepath.Clean(strings.TrimSpace(localPath))
+	if cleanPath == "" || cleanPath == "." {
+		return "./site-logo-uploads"
+	}
+	dir := filepath.Dir(cleanPath)
+	if dir == "." {
+		return "./site-logo-uploads"
+	}
+	return filepath.Join(dir, "site-logo-uploads")
+}
+
 func getEnv(key, defaultValue string) string {
 	value := os.Getenv(key)
 	if value == "" {

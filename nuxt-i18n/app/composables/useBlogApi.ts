@@ -45,6 +45,9 @@ const resolveApiV1Base = (apiBase: string, internalOrigin: string, isServer: boo
 export const useBlogApi = () => {
   const config = useRuntimeConfig()
   const mediaContext = createStorefrontMediaContext(config)
+  const internalApiOrigin = import.meta.server
+    ? String((config as { apiInternalOrigin?: string }).apiInternalOrigin || '')
+    : ''
 
   const apiBase = computed(() => {
     return (config.public as { apiBase?: string }).apiBase || '/api/v1'
@@ -72,7 +75,7 @@ export const useBlogApi = () => {
 
   const apiRoot = computed(() => resolveApiV1Base(
     apiBase.value,
-    String((config as { apiInternalOrigin?: string }).apiInternalOrigin || ''),
+    internalApiOrigin,
     import.meta.server,
   ))
 

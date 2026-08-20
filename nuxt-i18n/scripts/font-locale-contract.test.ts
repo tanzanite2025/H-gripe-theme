@@ -10,7 +10,7 @@ import {
 } from './font-locale-contract.ts'
 
 const manifest: LocaleManifestEntry[] = [
-  { code: 'en', iso: 'en-US', name: 'English', file: 'en.json' },
+  { code: 'en', iso: 'en-US', name: 'English', file: 'en.json', fontFamily: 'latin' },
   { code: 'ar', iso: 'ar-SA', name: 'Arabic', file: 'ar.json', fontFamily: 'arabic' },
 ]
 const projectDir = fs.mkdtempSync(path.join(os.tmpdir(), 'storefront-font-locale-contract-'))
@@ -31,7 +31,7 @@ try {
   assert.deepEqual(validateStorefrontLocaleSources(projectDir, validSources, manifest), [])
   assert.deepEqual(
     fontStackForStorefrontLocale('ar', manifest),
-    ['StorefrontSystemArabic', 'StorefrontSystemLatin', 'StorefrontSystem'],
+    ['MapleUICoverageNotoSansArabic', 'MapleUILatin', 'MapleUICJK'],
   )
 
   fs.rmSync(path.join(localeDir, 'ar.json'))

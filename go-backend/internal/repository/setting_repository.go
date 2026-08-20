@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"errors"
+
 	"commerce-platform/internal/domain/setting"
 
 	"gorm.io/gorm"
@@ -64,8 +66,11 @@ func (r *SettingRepository) Set(s *setting.Setting) error {
 	var existing setting.Setting
 	err := r.db.Where("key = ? AND locale = ?", s.Key, s.Locale).First(&existing).Error
 
-	if err == gorm.ErrRecordNotFound {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return r.db.Create(s).Error
+	}
+	if err != nil {
+		return err
 	}
 
 	existing.Value = s.Value
@@ -107,7 +112,7 @@ func (r *SettingRepository) BatchSet(settings []setting.Setting) error {
 			var existing setting.Setting
 			err := tx.Where("key = ? AND locale = ?", s.Key, s.Locale).First(&existing).Error
 
-			if err == gorm.ErrRecordNotFound {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
 				isPublic := s.IsPublic
 				if err := tx.Create(&s).Error; err != nil {
 					return err
@@ -118,15 +123,19 @@ func (r *SettingRepository) BatchSet(settings []setting.Setting) error {
 					}
 					s.IsPublic = false
 				}
-			} else {
-				existing.Value = s.Value
-				existing.Type = s.Type
-				existing.Group = s.Group
-				existing.IsPublic = s.IsPublic
-				existing.Description = s.Description
-				if err := tx.Save(&existing).Error; err != nil {
-					return err
-				}
+				continue
+			}
+			if err != nil {
+				return err
+			}
+
+			existing.Value = s.Value
+			existing.Type = s.Type
+			existing.Group = s.Group
+			existing.IsPublic = s.IsPublic
+			existing.Description = s.Description
+			if err := tx.Save(&existing).Error; err != nil {
+				return err
 			}
 		}
 		return nil

@@ -664,7 +664,6 @@ func newQuickBuyTestService(t *testing.T) (*gorm.DB, *QuickBuyService) {
 	require.NoError(t, db.AutoMigrate(
 		&productdomain.ProductInformationTemplate{},
 		&productdomain.ProductSpecificationTemplate{},
-		&productdomain.ProductSpecificationTemplateTranslation{},
 		&productdomain.ProductCategory{},
 		&productdomain.ProductCategoryTranslation{},
 		&productdomain.SpecDefinition{},

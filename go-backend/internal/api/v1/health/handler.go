@@ -12,7 +12,7 @@ import (
 
 type Handler struct {
 	db        *gorm.DB
-	redis     *redis.Client
+	redis     redis.UniversalClient
 	version   string
 	buildTime string
 }
@@ -25,7 +25,7 @@ type HealthResponse struct {
 	Services  map[string]string `json:"services"`
 }
 
-func NewHandler(db *gorm.DB, redis *redis.Client, version, buildTime string) *Handler {
+func NewHandler(db *gorm.DB, redis redis.UniversalClient, version, buildTime string) *Handler {
 	return &Handler{
 		db:        db,
 		redis:     redis,
@@ -34,7 +34,7 @@ func NewHandler(db *gorm.DB, redis *redis.Client, version, buildTime string) *Ha
 	}
 }
 
-func RegisterRoutes(r *gin.RouterGroup, db *gorm.DB, redis *redis.Client, version, buildTime string) {
+func RegisterRoutes(r *gin.RouterGroup, db *gorm.DB, redis redis.UniversalClient, version, buildTime string) {
 	handler := NewHandler(db, redis, version, buildTime)
 
 	r.GET("/health", handler.Health)

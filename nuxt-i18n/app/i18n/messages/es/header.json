@@ -2,5 +2,11 @@
   "searchHint": {
     "title": "Buscar productos y FAQ",
     "body": "Haz clic para buscar productos, FAQ y más."
+  },
+  "globalNavigationTransition": {
+    "ariaLabel": "Global content navigation",
+    "optionsLabel": "Choose a destination",
+    "trigger": "Open content navigation",
+    "triggerBody": "Choose Products, FAQ, Pages, or Blog."
   }
 }

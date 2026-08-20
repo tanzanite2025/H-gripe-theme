@@ -443,7 +443,7 @@ export type FontPreflightStatus = 'pass' | 'warning' | 'block'
 export interface FontPreflightBaseline {
   id: string
   label: string
-  font_display: 'swap'
+  font_display: 'block'
   rules: string[]
 }
 
@@ -461,7 +461,8 @@ export interface FontPreflightStrategy {
   default_stack: string[]
   latin_bytes: number
   latin_budget_bytes: number
-  complete_maple_ui_family: string
+  maple_ui_cjk_family: string
+  coverage_source_faces: string[]
   cjk_unicode_range: string
   layout_parity_verified: boolean
   rationale: string
@@ -471,6 +472,7 @@ export interface FontPreflightFace {
   family: string
   role: string
   script: string
+  source_face: string
   filename: string
   bytes: number
   font_display: string

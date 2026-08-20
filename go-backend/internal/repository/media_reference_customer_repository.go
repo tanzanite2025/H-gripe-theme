@@ -46,7 +46,7 @@ func (r *MediaRepository) warrantyClaimReferences(query mediaAssetReferenceQuery
 		return []media.AssetReference{}, nil
 	}
 
-	containsSQL, containsArgs := mediaReferenceContainsCondition([]string{"images"}, query.URLs)
+	containsSQL, containsArgs := r.mediaReferenceContainsCondition([]string{"images"}, query.URLs)
 	type row struct {
 		ID       uint
 		Images   string
@@ -87,7 +87,7 @@ func (r *MediaRepository) suggestionFeedbackReferences(query mediaAssetReference
 		return []media.AssetReference{}, nil
 	}
 
-	containsSQL, containsArgs := mediaReferenceContainsCondition([]string{"attachments"}, query.URLs)
+	containsSQL, containsArgs := r.mediaReferenceContainsCondition([]string{"attachments"}, query.URLs)
 	type row struct {
 		ID uint
 	}
@@ -118,7 +118,7 @@ func (r *MediaRepository) ticketAutoReplyReferences(query mediaAssetReferenceQue
 		return []media.AssetReference{}, nil
 	}
 
-	containsSQL, containsArgs := mediaReferenceContainsCondition([]string{"attachments"}, query.URLs)
+	containsSQL, containsArgs := r.mediaReferenceContainsCondition([]string{"attachments"}, query.URLs)
 	type row struct {
 		ID uint
 	}
@@ -149,7 +149,7 @@ func (r *MediaRepository) ticketMessageReferences(query mediaAssetReferenceQuery
 		return []media.AssetReference{}, nil
 	}
 
-	containsSQL, containsArgs := mediaReferenceContainsCondition([]string{"attachments"}, query.URLs)
+	containsSQL, containsArgs := r.mediaReferenceContainsCondition([]string{"attachments"}, query.URLs)
 	type row struct {
 		ID       uint
 		TicketID uint

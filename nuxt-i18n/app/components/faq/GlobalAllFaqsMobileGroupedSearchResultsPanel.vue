@@ -24,9 +24,6 @@
             :class="{ 'is-expanded': expandedItems.has(item.id) }"
             @click="emit('toggle-item', item.id)"
           >
-            <span class="global-all-faqs-mobile-grouped-search-results-panel__category">
-              {{ item.category }}
-            </span>
             <span class="global-all-faqs-mobile-grouped-search-results-panel__question">
               {{ item.question }}
             </span>
@@ -102,8 +99,8 @@ const emit = defineEmits<{
 
 .global-all-faqs-mobile-grouped-search-results-panel__group {
   margin-bottom: 2rem;
-  padding: 0.75rem;
-  border-radius: 1rem;
+  padding: 1rem;
+  border-radius: 1.25rem;
   background: var(--tz-card-surface);
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
 }
@@ -114,7 +111,7 @@ const emit = defineEmits<{
   justify-content: center;
   margin-bottom: 1rem;
   padding-bottom: 0.75rem;
-  border-bottom: 1px solid rgba(30, 41, 59, 0.5);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .global-all-faqs-mobile-grouped-search-results-panel__group-header h3 {
@@ -124,14 +121,14 @@ const emit = defineEmits<{
 
 .global-all-faqs-mobile-grouped-search-results-panel__list {
   overflow: hidden;
-  border: 1px solid rgba(30, 41, 59, 0.5);
-  border-radius: 0.75rem;
-  background: rgba(15, 23, 42, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1rem;
+  background: var(--tz-card-surface);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
 }
 
 .global-all-faqs-mobile-grouped-search-results-panel__item {
-  border-bottom: 1px solid rgba(30, 41, 59, 0.5);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .global-all-faqs-mobile-grouped-search-results-panel__item:last-child {
@@ -143,8 +140,9 @@ const emit = defineEmits<{
   width: 100%;
   min-width: 0;
   align-items: center;
+  justify-content: space-between;
   gap: 0.75rem;
-  padding: 0.75rem;
+  padding: 0.9rem 1rem;
   border: 0;
   background: transparent;
   color: var(--tz-text-primary);
@@ -158,29 +156,11 @@ const emit = defineEmits<{
   background: rgba(255, 255, 255, 0.05);
 }
 
-.global-all-faqs-mobile-grouped-search-results-panel__category {
-  flex-shrink: 0;
-  max-width: 36%;
-  overflow: hidden;
-  padding: 0.25rem 0.55rem;
-  border: 1px solid rgba(51, 65, 85, 1);
-  border-radius: 999px;
-  background: rgba(30, 41, 59, 0.85);
-  color: var(--tz-text-muted);
-  font-size: 0.62rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  line-height: 1.2;
-  text-overflow: ellipsis;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
 .global-all-faqs-mobile-grouped-search-results-panel__question {
   min-width: 0;
   flex: 1;
   color: var(--tz-text-primary);
-  font-size: 0.84rem;
+  font-size: 1rem;
   line-height: 1.45;
 }
 
@@ -207,11 +187,13 @@ const emit = defineEmits<{
 
 .global-all-faqs-mobile-grouped-search-results-panel__answer-wrap {
   overflow: hidden;
-  background: rgba(15, 23, 42, 0.3);
+  background:
+    linear-gradient(0deg, rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0.025)),
+    var(--tz-card-surface);
 }
 
 .global-all-faqs-mobile-grouped-search-results-panel__answer {
-  padding: 0.25rem 1rem 1rem;
+  padding: 0.25rem 0.9rem 1rem;
   color: var(--tz-text-secondary);
   line-height: 1.7;
 }

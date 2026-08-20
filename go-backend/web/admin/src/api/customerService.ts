@@ -8,6 +8,7 @@ import {
   requireApiPagination,
   unwrapApiPayload,
 } from '@/utils/apiResponse'
+import { adminApiBaseUrl } from '@/lib/adminUrl'
 
 const readObjectPayload = (response: unknown, path: string) => (
   requireApiObject(unwrapApiPayload(response, path), path)
@@ -97,8 +98,7 @@ export const customerServiceApi = {
     }
 
     const baseURL = String(axios.defaults?.baseURL || '').trim()
-    const origin = typeof window === 'undefined' ? 'http://localhost' : window.location.origin
-    const url = new URL(`/api/admin/customer-service/ws?${query.toString()}`, baseURL || origin)
+    const url = new URL(`/api/admin/customer-service/ws?${query.toString()}`, baseURL || adminApiBaseUrl() || 'http://localhost')
     url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:'
     return url.toString()
   },

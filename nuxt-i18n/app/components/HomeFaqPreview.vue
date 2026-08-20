@@ -81,38 +81,46 @@
           </button>
         </div>
 
-        <div class="home-faq__mobile-list rounded-xl overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.5)] bg-slate-900/40 border border-slate-800/50">
-          <div
-            v-for="item in displayItems"
-            :key="item.id"
-            class="home-faq__item border-b border-slate-800/50 last:border-b-0"
-          >
-            <button type="button" class="home-faq__question group" @click="toggleItem(item.id)">
-              <span class="home-faq__question-text tz-faq-question group-hover:text-[var(--tz-brand-primary)] transition-colors">{{ item.question }}</span>
-              <svg
-                class="home-faq__chevron"
-                :class="{ 'home-faq__icon--open': expandedItems.has(item.id) }"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-            <Transition
-              enter-active-class="transition-all duration-200 ease-out"
-              leave-active-class="transition-all duration-150 ease-in"
-              enter-from-class="opacity-0 max-h-0"
-              enter-to-class="opacity-100 max-h-[500px]"
-              leave-from-class="opacity-100 max-h-[500px]"
-              leave-to-class="opacity-0 max-h-0"
+        <div class="home-faq__mobile-card">
+          <div class="home-faq__mobile-card-header">
+            <h3 class="home-faq__mobile-card-title tz-faq-category-title">
+              {{ mobileGroupTitle }}
+            </h3>
+          </div>
+
+          <div class="home-faq__mobile-list">
+            <div
+              v-for="item in displayItems"
+              :key="item.id"
+              class="home-faq__item"
             >
-              <SafeRichText
-                v-if="expandedItems.has(item.id)"
-                class="home-faq__answer tz-faq-answer bg-slate-900/30"
-                :html="item.answer"
-              />
-            </Transition>
+              <button type="button" class="home-faq__question group" @click="toggleItem(item.id)">
+                <span class="home-faq__question-text tz-faq-question group-hover:text-[var(--tz-brand-primary)] transition-colors">{{ item.question }}</span>
+                <svg
+                  class="home-faq__chevron"
+                  :class="{ 'home-faq__icon--open': expandedItems.has(item.id) }"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              <Transition
+                enter-active-class="transition-all duration-200 ease-out"
+                leave-active-class="transition-all duration-150 ease-in"
+                enter-from-class="opacity-0 max-h-0"
+                enter-to-class="opacity-100 max-h-[500px]"
+                leave-from-class="opacity-100 max-h-[500px]"
+                leave-to-class="opacity-0 max-h-0"
+              >
+                <SafeRichText
+                  v-if="expandedItems.has(item.id)"
+                  class="home-faq__answer tz-faq-answer"
+                  :html="item.answer"
+                />
+              </Transition>
+            </div>
           </div>
         </div>
       </div>
@@ -277,6 +285,8 @@ const desktopGroup = computed(() => {
   }
 })
 
+const mobileGroupTitle = computed(() => desktopGroup.value?.pageTitle || t('faq.ui.quickAnswers'))
+
 const displayItems = computed<FlatItem[]>(() => {
   const page = activePageId.value === 'all'
     ? previewPages.value[0]
@@ -352,13 +362,55 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
-  padding: 0.75rem 1rem;
+  gap: 0.75rem;
+  padding: 0.9rem 1rem;
   background: transparent;
   border: none;
   text-align: left;
   cursor: pointer;
   transition: background 0.15s;
+}
+
+.home-faq__mobile-card {
+  padding: 1rem;
+  border-radius: 1.25rem;
+  background: var(--tz-card-surface);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+}
+
+.home-faq__mobile-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.home-faq__mobile-card-title {
+  margin: 0;
+  color: var(--tz-text-primary);
+  font-size: 1rem;
+  font-weight: 900;
+  line-height: 1.2;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.home-faq__mobile-list {
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1rem;
+  background: var(--tz-card-surface);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+}
+
+.home-faq__item {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.home-faq__item:last-child {
+  border-bottom: 0;
 }
 
 .home-faq__question:hover {
@@ -368,6 +420,8 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
 .home-faq__question-text {
   flex: 1;
   color: var(--tz-text-secondary);
+  font-size: 1rem;
+  line-height: 1.45;
 }
 
 .home-faq__icon {
@@ -395,6 +449,9 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
 
 .home-faq__answer {
   padding: 0 1.25rem 1.25rem 1.25rem;
+  background:
+    linear-gradient(0deg, rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0.025)),
+    var(--tz-card-surface);
   color: var(--tz-text-secondary);
   overflow: hidden;
 }

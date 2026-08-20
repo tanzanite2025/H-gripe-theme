@@ -12,24 +12,24 @@ const scriptDir = path.dirname(fileURLToPath(import.meta.url))
 const projectDir = path.resolve(scriptDir, '..')
 const appDir = path.join(projectDir, 'app')
 const fontCssPath = path.join(appDir, 'assets', 'css', 'tailwind.css')
-const stripeFontCssPath = path.join(projectDir, 'public', 'fonts', 'storefront-system.css')
-const baseFontFamily = 'StorefrontSystem'
-const latinFontFamily = 'StorefrontSystemLatin'
+const stripeFontCssPath = path.join(projectDir, 'public', 'fonts', 'maple-ui.css')
+const baseFontFamily = 'MapleUICJK'
+const latinFontFamily = 'MapleUILatin'
 const allowedFontFamilies = new Set([
   latinFontFamily,
   baseFontFamily,
-  'StorefrontSystemArabic',
-  'StorefrontSystemDevanagari',
-  'StorefrontSystemLatinAccents',
-  'StorefrontSystemThai',
+  'MapleUICoverageNotoSansArabic',
+  'MapleUICoverageNotoSansDevanagari',
+  'MapleUICoverageNotoSansLatinAccents',
+  'MapleUICoverageNotoSansThai',
 ])
 const expectedFontFamilyByFilename = new Map<string, string>([
-  ['StorefrontSystem-Latin.00af3fec5b34.woff2', latinFontFamily],
-  ['StorefrontSystem-CJK.f8ce6d72e8cb.woff2', baseFontFamily],
-  ['StorefrontSystem-Arabic.ce85091f0209.woff2', 'StorefrontSystemArabic'],
-  ['StorefrontSystem-Devanagari.3b3cae4d2600.woff2', 'StorefrontSystemDevanagari'],
-  ['StorefrontSystem-Latin-Accents.e645edc952b6.woff2', 'StorefrontSystemLatinAccents'],
-  ['StorefrontSystem-Thai.1f5a173641bb.woff2', 'StorefrontSystemThai'],
+  ['MapleUI-Latin.00af3fec5b34.woff2', latinFontFamily],
+  ['MapleUI-CJK.f8ce6d72e8cb.woff2', baseFontFamily],
+  ['MapleUI-Coverage-NotoSans-Arabic.ce85091f0209.woff2', 'MapleUICoverageNotoSansArabic'],
+  ['MapleUI-Coverage-NotoSans-Devanagari.3b3cae4d2600.woff2', 'MapleUICoverageNotoSansDevanagari'],
+  ['MapleUI-Coverage-NotoSans-Latin-Accents.e645edc952b6.woff2', 'MapleUICoverageNotoSansLatinAccents'],
+  ['MapleUI-Coverage-NotoSans-Thai.1f5a173641bb.woff2', 'MapleUICoverageNotoSansThai'],
 ])
 
 interface UnicodeRange {
@@ -85,7 +85,7 @@ function parseUnicodeRanges(declaration: string): UnicodeRange[] | null {
     .map((value) => {
       const range = value.match(/^U\+([0-9A-F?]{1,6})(?:-([0-9A-F]{1,6}))?$/)
       if (!range) {
-        throw new Error(`Unsupported unicode-range value in storefront fonts: ${value}`)
+        throw new Error(`Invalid unicode-range value in storefront fonts: ${value}`)
       }
 
       const start = Number.parseInt(range[1].replace(/\?/g, '0'), 16)

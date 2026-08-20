@@ -6,7 +6,7 @@
   "loading": "Memuatkan ulasan...",
   "loadError": "Ulasan tidak dapat dimuatkan.",
   "retry": "Cuba lagi",
-  "empty": "Belum ada ulasan yang diluluskan.",
+  "empty": "Belum ada ulasan.",
   "ratingLabel": "{rating} daripada 5 bintang",
   "imageAlt": "Imej ulasan pelanggan",
   "verifiedPurchase": "Pembelian disahkan",

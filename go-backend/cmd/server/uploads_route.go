@@ -18,22 +18,14 @@ import (
 
 func registerLocalUploadsRoute(router *gin.Engine, deps *app.Dependencies) {
 	storageConfig := storage.LoadConfigFromEnv()
-	if storageConfig.Type != storage.StorageTypeLocal {
+	siteLogoStorageConfig := storage.LoadSiteLogoConfigFromEnv(storageConfig)
+
+	uploadFileServer, uploadFileServerOK := localUploadFileServer(storageConfig, "local upload directory")
+	siteLogoFileServer, siteLogoFileServerOK := localUploadFileServer(siteLogoStorageConfig, "local site logo upload directory")
+	if !uploadFileServerOK && !siteLogoFileServerOK {
 		return
 	}
 
-	uploadRoot, err := filepath.Abs(storageConfig.LocalPath)
-	if err != nil {
-		logger.Warn("failed to resolve local upload directory", zap.Error(err))
-		return
-	}
-
-	if err := os.MkdirAll(uploadRoot, 0o750); err != nil {
-		logger.Warn("failed to create local upload directory", zap.String("path", uploadRoot), zap.Error(err))
-		return
-	}
-
-	fileServer := http.FileServer(restrictedUploadDirectory{root: uploadRoot})
 	router.GET("/uploads/*key", func(c *gin.Context) {
 		key, ok := sanitizePublicUploadKey(c.Param("key"))
 		if !ok {
@@ -64,9 +56,38 @@ func registerLocalUploadsRoute(router *gin.Engine, deps *app.Dependencies) {
 			c.Header("Cache-Control", "public, max-age=31536000, immutable")
 		}
 
+		fileServer := uploadFileServer
+		if service.IsSiteLogoStorageKey(key) {
+			fileServer = siteLogoFileServer
+			c.Header("Cache-Control", "public, max-age=31536000, immutable")
+		}
+		if fileServer == nil {
+			c.Status(http.StatusNotFound)
+			return
+		}
+
 		c.Request.URL.Path = "/" + key
 		fileServer.ServeHTTP(c.Writer, c.Request)
 	})
+}
+
+func localUploadFileServer(storageConfig *storage.Config, label string) (http.Handler, bool) {
+	if storageConfig == nil || storageConfig.Type != storage.StorageTypeLocal {
+		return nil, false
+	}
+
+	uploadRoot, err := filepath.Abs(storageConfig.LocalPath)
+	if err != nil {
+		logger.Warn("failed to resolve "+label, zap.Error(err))
+		return nil, false
+	}
+
+	if err := os.MkdirAll(uploadRoot, 0o750); err != nil {
+		logger.Warn("failed to create "+label, zap.String("path", uploadRoot), zap.Error(err))
+		return nil, false
+	}
+
+	return http.FileServer(restrictedUploadDirectory{root: uploadRoot}), true
 }
 
 func sanitizePublicUploadKey(raw string) (string, bool) {

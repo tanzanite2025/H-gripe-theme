@@ -66,6 +66,7 @@ onMounted(async () => {
     const result = await capturePayPalOrder({
       orderNumber: orderNumber.value,
       paypalOrderId: paypalOrderId.value,
+      idempotencyKey: `paypal-capture-${paypalOrderId.value}`,
     })
     if (String(result.status || '').toUpperCase() !== 'COMPLETED') {
       throw new Error(t('checkout.paypalReturn.messages.incomplete'))
@@ -119,7 +120,7 @@ onMounted(async () => {
 }
 
 .paypal-return-order {
-  font-family: var(--tz-font-system);
+  font-family: var(--tz-font-ui);
   color: #fff !important;
 }
 

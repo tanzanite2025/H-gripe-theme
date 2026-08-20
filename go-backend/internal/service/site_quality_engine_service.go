@@ -15,7 +15,7 @@ const (
 	defaultSiteQualityRequiredConfirmations = 2
 	defaultSiteQualityRequiredCleanRuns     = 2
 	defaultSiteQualityLeaseTimeout          = 15 * time.Minute
-	defaultSiteQualityWorkerBatchLimit      = 2
+	defaultSiteQualityWorkerBatchLimit      = 1
 	defaultSiteQualityProviderInterval      = 5 * time.Second
 )
 

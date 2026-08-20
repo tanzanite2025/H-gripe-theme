@@ -1,7 +1,11 @@
 import crypto from 'node:crypto'
 import http from 'node:http'
 
-import { LighthouseExecutionError, runLighthouseInWorker } from './lighthouse.mjs'
+import {
+  cleanupOrphanLighthouseBrowsers,
+  LighthouseExecutionError,
+  runLighthouseInWorker,
+} from './lighthouse.mjs'
 import { RunnerInputError, loadRunnerConfig, normalizeRunInput } from './validation.mjs'
 
 const config = loadRunnerConfig()
@@ -27,12 +31,20 @@ const server = http.createServer(async (request, response) => {
     return
   }
 
+  activeRuns++
   let startedRun = false
   try {
     const input = await readJSON(request)
     const normalized = await normalizeRunInput(input, config)
-    activeRuns++
     startedRun = true
+
+    if (config.maxConcurrency === 1) {
+      const cleanedCount = await cleanupOrphanLighthouseBrowsers()
+      if (cleanedCount > 0) {
+        console.warn(`Cleaned ${cleanedCount} stale Chromium process(es) before running Lighthouse`)
+      }
+    }
+
     const report = await runLighthouseInWorker(normalized, config)
     writeJSON(response, 200, report)
   } catch (error) {
@@ -49,6 +61,8 @@ const server = http.createServer(async (request, response) => {
     })
   } finally {
     if (startedRun) {
+      activeRuns--
+    } else if (activeRuns > 0) {
       activeRuns--
     }
   }

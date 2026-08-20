@@ -138,6 +138,99 @@ func TestRecordVerifiedGatewayPaymentEmitsOneVerifiedConversionWithOrderAttribut
 	require.Equal(t, "click_123", payload.Attribution.ClickID)
 }
 
+func TestEnsureGatewayPaymentAttemptReusesProviderRequestKeyForSameAttempt(t *testing.T) {
+	db, paymentService := newTestPaymentService(t)
+	orderRecord := seedPaymentOrder(t, db, "ORD-PAY-ATTEMPT-KEY", 84, "pending", "unpaid")
+
+	first, err := paymentService.EnsureGatewayPaymentAttempt(EnsureGatewayPaymentAttemptInput{
+		Provider:           "stripe",
+		OrderNumber:        orderRecord.OrderNumber,
+		AttemptKey:         "checkout-attempt-1",
+		ProviderRequestKey: PaymentProviderRequestKey("stripe", orderRecord.ID, "checkout-attempt-1"),
+		PaymentMethod:      "stripe",
+		Amount:             84,
+		Currency:           "USD",
+	})
+	require.NoError(t, err)
+
+	second, err := paymentService.EnsureGatewayPaymentAttempt(EnsureGatewayPaymentAttemptInput{
+		Provider:      "stripe",
+		OrderNumber:   orderRecord.OrderNumber,
+		AttemptKey:    "checkout-attempt-1",
+		PaymentMethod: "stripe",
+		Amount:        84,
+		Currency:      "USD",
+	})
+	require.NoError(t, err)
+	require.Equal(t, first.ID, second.ID)
+	assert.Equal(t, first.ProviderRequestKey, second.ProviderRequestKey)
+	assert.Equal(t, first.TransactionID, second.TransactionID)
+
+	var count int64
+	require.NoError(t, db.Model(&paymentdomain.Transaction{}).
+		Where("order_id = ? AND payment_method = ? AND attempt_key = ?", orderRecord.ID, "stripe", "checkout-attempt-1").
+		Count(&count).Error)
+	assert.Equal(t, int64(1), count)
+}
+
+func TestEnsureGatewayPaymentAttemptCreatesDifferentProviderRequestKeyForNewAttempt(t *testing.T) {
+	db, paymentService := newTestPaymentService(t)
+	orderRecord := seedPaymentOrder(t, db, "ORD-PAY-ATTEMPT-KEY-2", 84, "pending", "unpaid")
+
+	first, err := paymentService.EnsureGatewayPaymentAttempt(EnsureGatewayPaymentAttemptInput{
+		Provider:      "paypal",
+		OrderNumber:   orderRecord.OrderNumber,
+		AttemptKey:    "checkout-attempt-1",
+		PaymentMethod: "paypal",
+		Amount:        84,
+		Currency:      "USD",
+	})
+	require.NoError(t, err)
+
+	second, err := paymentService.EnsureGatewayPaymentAttempt(EnsureGatewayPaymentAttemptInput{
+		Provider:      "paypal",
+		OrderNumber:   orderRecord.OrderNumber,
+		AttemptKey:    "checkout-attempt-2",
+		PaymentMethod: "paypal",
+		Amount:        84,
+		Currency:      "USD",
+	})
+	require.NoError(t, err)
+
+	assert.NotEqual(t, first.ID, second.ID)
+	assert.NotEqual(t, first.ProviderRequestKey, second.ProviderRequestKey)
+	assert.NotEqual(t, first.TransactionID, second.TransactionID)
+}
+
+func TestEnsureGatewayPaymentAttemptKeepsExistingDurableKeyWhenCallerSuppliesAnotherKey(t *testing.T) {
+	db, paymentService := newTestPaymentService(t)
+	orderRecord := seedPaymentOrder(t, db, "ORD-PAY-ATTEMPT-KEY-3", 84, "pending", "unpaid")
+
+	first, err := paymentService.EnsureGatewayPaymentAttempt(EnsureGatewayPaymentAttemptInput{
+		Provider:           "stripe",
+		OrderNumber:        orderRecord.OrderNumber,
+		AttemptKey:         "checkout-attempt-1",
+		ProviderRequestKey: "provider-key-original",
+		PaymentMethod:      "stripe",
+		Amount:             84,
+		Currency:           "USD",
+	})
+	require.NoError(t, err)
+
+	second, err := paymentService.EnsureGatewayPaymentAttempt(EnsureGatewayPaymentAttemptInput{
+		Provider:           "stripe",
+		OrderNumber:        orderRecord.OrderNumber,
+		AttemptKey:         "checkout-attempt-1",
+		ProviderRequestKey: "provider-key-forged-or-raced",
+		PaymentMethod:      "stripe",
+		Amount:             84,
+		Currency:           "USD",
+	})
+	require.NoError(t, err)
+	require.Equal(t, first.ID, second.ID)
+	assert.Equal(t, "provider-key-original", second.ProviderRequestKey)
+}
+
 func TestRecordVerifiedGatewayPaymentCompletesExistingPendingAttempt(t *testing.T) {
 	db, paymentService := newTestPaymentService(t)
 	orderRecord := seedPaymentOrder(t, db, "ORD-PAY-PENDING-ATTEMPT", 84, "pending", "unpaid")
@@ -904,6 +997,7 @@ func newTestPaymentService(t *testing.T) (*gorm.DB, *PaymentService) {
 		&productdomain.ProductVariant{},
 		&order.Order{},
 		&order.OrderItem{},
+		&order.PolicyDisclosure{},
 		&attributiondomain.OrderAttribution{},
 		&outboxdomain.Event{},
 		&paymentdomain.Transaction{},
@@ -932,9 +1026,11 @@ func newTestPaymentService(t *testing.T) (*gorm.DB, *PaymentService) {
 	txManager := repository.NewTxManager(db, orderRepo, productRepo, couponRepo, loyaltyRepo, paymentRepo, shippingRepo)
 	txManager.ConfigureOutboxRepository(outboxRepo)
 	txManager.ConfigureOrderAttributionRepository(repository.NewOrderAttributionRepository(db))
+	policyDisclosureRepo := repository.NewOrderPolicyDisclosureRepository(db)
 
 	paymentService := NewPaymentService(txManager, paymentRepo)
 	paymentService.ConfigureEvidenceSources(orderRepo, shippingRepo, ticketRepo)
+	paymentService.ConfigurePolicyDisclosureRepository(policyDisclosureRepo)
 	return db, paymentService
 }
 

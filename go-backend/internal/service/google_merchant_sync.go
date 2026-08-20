@@ -1,6 +1,7 @@
 package service
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
@@ -16,6 +17,7 @@ import (
 
 	"commerce-platform/internal/domain/merchant"
 	"commerce-platform/internal/domain/product"
+	"commerce-platform/internal/pkg/resilience"
 
 	"gorm.io/gorm"
 )
@@ -42,6 +44,11 @@ type googleMerchantWriteAttributes struct {
 	Price                 googleMerchantAPIPrice  `json:"price"`
 	SalePrice             *googleMerchantAPIPrice `json:"salePrice,omitempty"`
 }
+
+const (
+	googleMerchantAPIBreakerKey   = "google-merchant-api"
+	googleMerchantOAuthBreakerKey = "google-oauth-api"
+)
 
 // SyncOffer inserts exactly one channel offer. The Merchant API operation is
 // idempotent for the same offerId/contentLanguage/dataSource tuple, so the
@@ -98,7 +105,7 @@ func (s *GoogleMerchantService) SyncOffer(ctx context.Context, id uint) (*mercha
 	if err != nil {
 		return s.failOfferSync(offer, err, "sync_failed")
 	}
-	if err := insertGoogleMerchantProductInput(ctx, accessToken, accountID, dataSourceID, input); err != nil {
+	if err := insertGoogleMerchantProductInputWithClient(ctx, s.outboundHTTPClient(), accessToken, accountID, dataSourceID, input); err != nil {
 		return s.failOfferSync(offer, err, "sync_failed")
 	}
 
@@ -148,7 +155,7 @@ func (s *GoogleMerchantService) RemoveRemoteOffer(ctx context.Context, id uint) 
 	if err != nil {
 		return s.failOfferSync(offer, err, "sync_failed")
 	}
-	if err := deleteGoogleMerchantProductInput(ctx, accessToken, accountID, dataSourceID, offer.ContentLanguage, offer.FeedLabel, offer.OfferID); err != nil {
+	if err := deleteGoogleMerchantProductInputWithClient(ctx, s.outboundHTTPClient(), accessToken, accountID, dataSourceID, offer.ContentLanguage, offer.FeedLabel, offer.OfferID); err != nil {
 		return s.failOfferSync(offer, err, "sync_failed")
 	}
 
@@ -262,6 +269,22 @@ func (s *GoogleMerchantService) failOfferSync(offer *merchant.GoogleMerchantOffe
 }
 
 func insertGoogleMerchantProductInput(ctx context.Context, accessToken, accountID, dataSourceID string, input *googleMerchantProductInput) error {
+	return insertGoogleMerchantProductInputWithClient(
+		ctx,
+		googleMerchantHTTPClient(),
+		accessToken,
+		accountID,
+		dataSourceID,
+		input,
+	)
+}
+
+func insertGoogleMerchantProductInputWithClient(
+	ctx context.Context,
+	client *resilience.HTTPClient,
+	accessToken, accountID, dataSourceID string,
+	input *googleMerchantProductInput,
+) error {
 	endpoint := fmt.Sprintf("%s/accounts/%s/productInputs:insert", googleMerchantProductsEndpoint, url.PathEscape(accountID))
 	query := url.Values{}
 	query.Set("dataSource", fmt.Sprintf("accounts/%s/dataSources/%s", accountID, dataSourceID))
@@ -270,19 +293,23 @@ func insertGoogleMerchantProductInput(ctx context.Context, accessToken, accountI
 		return fmt.Errorf("%w: encode product input", ErrGoogleMerchantRemoteAPI)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint+"?"+query.Encode(), strings.NewReader(string(body)))
+	resp, err := client.Do(ctx, func() (*http.Request, error) {
+		clonedReq, createErr := http.NewRequestWithContext(ctx, http.MethodPost, endpoint+"?"+query.Encode(), bytes.NewReader(body))
+		if createErr != nil {
+			return nil, fmt.Errorf("%w: create product input request: %v", ErrGoogleMerchantRemoteAPI, createErr)
+		}
+		clonedReq.Header.Set("Authorization", "Bearer "+accessToken)
+		clonedReq.Header.Set("Content-Type", "application/json")
+		return clonedReq, nil
+	})
 	if err != nil {
-		return fmt.Errorf("%w: create product input request", ErrGoogleMerchantRemoteAPI)
+		if resp == nil || resp.Body == nil {
+			return fmt.Errorf("%w: %v", ErrGoogleMerchantRemoteAPI, err)
+		}
+		defer resp.Body.Close()
+	} else {
+		defer resp.Body.Close()
 	}
-	req.Header.Set("Authorization", "Bearer "+accessToken)
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{Timeout: 20 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
-		return fmt.Errorf("%w: %v", ErrGoogleMerchantRemoteAPI, err)
-	}
-	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		var apiResponse struct {
@@ -295,6 +322,9 @@ func insertGoogleMerchantProductInput(ctx context.Context, accessToken, accountI
 		if message == "" {
 			message = "Google Merchant rejected the product input"
 		}
+		if err != nil {
+			message = fmt.Sprintf("%s: %v", message, err)
+		}
 		return fmt.Errorf("%w: %s", ErrGoogleMerchantRemoteAPI, message)
 	}
 	_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 1<<20))
@@ -302,6 +332,23 @@ func insertGoogleMerchantProductInput(ctx context.Context, accessToken, accountI
 }
 
 func deleteGoogleMerchantProductInput(ctx context.Context, accessToken, accountID, dataSourceID, contentLanguage, feedLabel, offerID string) error {
+	return deleteGoogleMerchantProductInputWithClient(
+		ctx,
+		googleMerchantHTTPClient(),
+		accessToken,
+		accountID,
+		dataSourceID,
+		contentLanguage,
+		feedLabel,
+		offerID,
+	)
+}
+
+func deleteGoogleMerchantProductInputWithClient(
+	ctx context.Context,
+	client *resilience.HTTPClient,
+	accessToken, accountID, dataSourceID, contentLanguage, feedLabel, offerID string,
+) error {
 	name, err := googleMerchantProductInputName(accountID, contentLanguage, feedLabel, offerID)
 	if err != nil {
 		return fmt.Errorf("%w: %v", ErrGoogleMerchantOfferInvalid, err)
@@ -309,18 +356,23 @@ func deleteGoogleMerchantProductInput(ctx context.Context, accessToken, accountI
 	endpoint := googleMerchantProductsEndpoint + "/" + name
 	query := url.Values{}
 	query.Set("dataSource", fmt.Sprintf("accounts/%s/dataSources/%s", accountID, dataSourceID))
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, endpoint+"?"+query.Encode(), nil)
-	if err != nil {
-		return fmt.Errorf("%w: create product input delete request", ErrGoogleMerchantRemoteAPI)
-	}
-	req.Header.Set("Authorization", "Bearer "+accessToken)
 
-	client := &http.Client{Timeout: 20 * time.Second}
-	resp, err := client.Do(req)
+	resp, err := client.Do(ctx, func() (*http.Request, error) {
+		clonedReq, createErr := http.NewRequestWithContext(ctx, http.MethodDelete, endpoint+"?"+query.Encode(), nil)
+		if createErr != nil {
+			return nil, fmt.Errorf("%w: create product input delete request: %v", ErrGoogleMerchantRemoteAPI, createErr)
+		}
+		clonedReq.Header.Set("Authorization", "Bearer "+accessToken)
+		return clonedReq, nil
+	})
 	if err != nil {
-		return fmt.Errorf("%w: %v", ErrGoogleMerchantRemoteAPI, err)
+		if resp == nil || resp.Body == nil {
+			return fmt.Errorf("%w: %v", ErrGoogleMerchantRemoteAPI, err)
+		}
+		defer resp.Body.Close()
+	} else {
+		defer resp.Body.Close()
 	}
-	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusNotFound {
 		_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 1<<20))
@@ -337,10 +389,89 @@ func deleteGoogleMerchantProductInput(ctx context.Context, accessToken, accountI
 		if message == "" {
 			message = "Google Merchant rejected the product input deletion"
 		}
+		if err != nil {
+			message = fmt.Sprintf("%s: %v", message, err)
+		}
 		return fmt.Errorf("%w: %s", ErrGoogleMerchantRemoteAPI, message)
 	}
 	_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 1<<20))
 	return nil
+}
+
+func googleMerchantHTTPClient() *resilience.HTTPClient {
+	return newGoogleMerchantHTTPClient(resilience.HTTPRetryPolicy{
+		MaxAttempts: 3,
+		Backoff: resilience.BackoffPolicy{
+			BaseDelay: 300 * time.Millisecond,
+			MaxDelay:  3 * time.Second,
+			Jitter:    300 * time.Millisecond,
+		},
+		RetryUnsafeMethods: true,
+	}, resilience.SharedCircuitBreaker(googleMerchantAPIBreakerKey, resilience.CircuitBreakerConfig{
+		FailureThreshold: 4,
+		FailureWindow:    60 * time.Second,
+		OpenDuration:     30 * time.Second,
+	}))
+}
+
+func newGoogleMerchantHTTPClient(
+	retry resilience.HTTPRetryPolicy,
+	breaker resilience.CircuitController,
+) *resilience.HTTPClient {
+	return newGoogleMerchantHTTPClientWithOptions(googleMerchantAPIBreakerKey, 20*time.Second, retry, breaker)
+}
+
+func googleMerchantOAuthHTTPClient() *resilience.HTTPClient {
+	const breakerKey = googleMerchantOAuthBreakerKey
+	return newGoogleMerchantOAuthHTTPClient(resilience.HTTPRetryPolicy{
+		MaxAttempts: 3,
+		Backoff: resilience.BackoffPolicy{
+			BaseDelay: 300 * time.Millisecond,
+			MaxDelay:  3 * time.Second,
+			Jitter:    300 * time.Millisecond,
+		},
+		RetryUnsafeMethods: false,
+	}, resilience.SharedCircuitBreaker(breakerKey, resilience.CircuitBreakerConfig{
+		FailureThreshold: 4,
+		FailureWindow:    60 * time.Second,
+		OpenDuration:     30 * time.Second,
+	}))
+}
+
+func newGoogleMerchantOAuthHTTPClient(
+	retry resilience.HTTPRetryPolicy,
+	breaker resilience.CircuitController,
+) *resilience.HTTPClient {
+	retry.RetryUnsafeMethods = false
+	return newGoogleMerchantHTTPClientWithOptions(googleMerchantOAuthBreakerKey, 10*time.Second, retry, breaker)
+}
+
+func newGoogleMerchantHTTPClientWithOptions(
+	breakerKey string,
+	timeout time.Duration,
+	retry resilience.HTTPRetryPolicy,
+	breaker resilience.CircuitController,
+) *resilience.HTTPClient {
+	return resilience.NewHTTPClient(
+		&http.Client{Timeout: timeout},
+		retry,
+		breaker,
+		breakerKey,
+	)
+}
+
+func (s *GoogleMerchantService) outboundHTTPClient() *resilience.HTTPClient {
+	if s != nil && s.httpClient != nil {
+		return s.httpClient
+	}
+	return googleMerchantHTTPClient()
+}
+
+func (s *GoogleMerchantService) oauthOutboundHTTPClient() *resilience.HTTPClient {
+	if s != nil && s.oauthHTTPClient != nil {
+		return s.oauthHTTPClient
+	}
+	return googleMerchantOAuthHTTPClient()
 }
 
 func googleMerchantProductInputName(accountID, contentLanguage, feedLabel, offerID string) (string, error) {

@@ -10,6 +10,7 @@ type PublicUploadAccessService struct {
 	media                 *MediaService
 	showcase              *ShowcaseService
 	customerServiceAvatar *CustomerServiceAvatarService
+	siteLogo              *SiteLogoService
 }
 
 func NewPublicUploadAccessService(
@@ -28,12 +29,22 @@ func NewPublicUploadAccessService(
 	}
 }
 
+func (s *PublicUploadAccessService) ConfigureSiteLogoService(siteLogoService *SiteLogoService) {
+	if s == nil {
+		return
+	}
+	s.siteLogo = siteLogoService
+}
+
 func (s *PublicUploadAccessService) CanServePublicUpload(ctx context.Context, key string) (bool, error) {
 	normalizedKey, ok := storage.NormalizeObjectKey(key)
 	if !ok {
 		return false, nil
 	}
 	if showcaseStorageKeyIsPending(normalizedKey) {
+		return false, nil
+	}
+	if IsAfterSalesEvidenceStorageKey(normalizedKey) {
 		return false, nil
 	}
 
@@ -58,6 +69,13 @@ func (s *PublicUploadAccessService) CanServePublicUpload(ctx context.Context, ke
 			return false, nil
 		}
 		return s.customerServiceAvatar.CanServePublicAvatar(ctx, normalizedKey)
+	}
+
+	if IsSiteLogoStorageKey(normalizedKey) {
+		if s == nil || s.siteLogo == nil {
+			return false, nil
+		}
+		return s.siteLogo.CanServePublicLogo(ctx, normalizedKey)
 	}
 
 	if s != nil && s.media != nil {

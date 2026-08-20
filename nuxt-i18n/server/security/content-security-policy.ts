@@ -1,5 +1,5 @@
-import { createHash } from 'node:crypto'
-import { parse } from 'parse5'
+import { createHash, randomBytes } from 'node:crypto'
+import { parse, serialize } from 'parse5'
 
 interface ParsedHtmlNode {
   nodeName?: string
@@ -26,8 +26,18 @@ interface ResourceOrigins {
   style: string[]
 }
 
+interface ContentSecurityPolicyOptions {
+  scriptNonce?: string
+}
+
+interface SecuredHtmlResponse {
+  body: string
+  contentSecurityPolicy: string
+}
+
 const CSP_CACHE_LIMIT = 512
 const cspByDocumentHash = new Map<string, string>()
+const SCRIPT_NONCE_BYTES = 18
 
 const executableScriptTypes = new Set([
   '',
@@ -44,6 +54,7 @@ const executableScriptTypes = new Set([
 const staticScriptSources = [
   'https://accounts.google.com',
   'https://challenges.cloudflare.com',
+  'https://*.js.stripe.com',
   'https://js.stripe.com',
   'https://www.googletagmanager.com',
 ]
@@ -60,6 +71,7 @@ const staticFrameSources = [
   'https://accounts.google.com',
   'https://challenges.cloudflare.com',
   'https://hooks.stripe.com',
+  'https://*.js.stripe.com',
   'https://js.stripe.com',
   'https://maps.google.com',
   'https://www.google.com',
@@ -132,6 +144,17 @@ const attributeValue = (node: ParsedHtmlNode, attributeName: string): string => 
   node.attrs?.find(attribute => attribute.name.toLowerCase() === attributeName)?.value || ''
 )
 
+const setAttributeValue = (node: ParsedHtmlNode, attributeName: string, value: string): void => {
+  const attrs = node.attrs || []
+  const existing = attrs.find(attribute => attribute.name.toLowerCase() === attributeName)
+  if (existing) {
+    existing.value = value
+  } else {
+    attrs.push({ name: attributeName, value })
+  }
+  node.attrs = attrs
+}
+
 const textContent = (node: ParsedHtmlNode): string => (
   node.childNodes?.map(child => child.value || textContent(child)).join('') || ''
 )
@@ -178,6 +201,9 @@ const walkNodes = (
     script: Set<string>
     style: Set<string>
   },
+  options: {
+    scriptNonce?: string
+  } = {},
 ): void => {
   for (const node of nodes || []) {
     const tagName = String(node.tagName || '').toLowerCase()
@@ -186,6 +212,8 @@ const walkNodes = (
       const content = textContent(node)
       if (content) hashes.style.add(sha256Source(content))
     } else if (tagName === 'script') {
+      if (options.scriptNonce) setAttributeValue(node, 'nonce', options.scriptNonce)
+
       const source = attributeValue(node, 'src')
       if (source) {
         addResourceOrigin(resourceOrigins.script, source)
@@ -218,7 +246,7 @@ const walkNodes = (
       }
     }
 
-    walkNodes(node.childNodes, hashes, resourceOrigins)
+    walkNodes(node.childNodes, hashes, resourceOrigins, options)
   }
 }
 
@@ -273,9 +301,33 @@ export const collectResourceOrigins = (html: string): ResourceOrigins => {
 
 const directive = (name: string, sources: string[]): string => `${name} ${sources.join(' ')}`
 
-export const createContentSecurityPolicy = (html: string): string => {
+export const createScriptNonce = (): string => randomBytes(SCRIPT_NONCE_BYTES).toString('base64')
+
+export const applyScriptNonce = (html: string, scriptNonce: string): string => {
+  const document = parse(html) as unknown as ParsedHtmlNode
+  const hashes = {
+    script: new Set<string>(),
+    style: new Set<string>(),
+  }
+  const origins = {
+    font: new Set<string>(),
+    frame: new Set<string>(),
+    image: new Set<string>(),
+    media: new Set<string>(),
+    script: new Set<string>(),
+    style: new Set<string>(),
+  }
+
+  walkNodes(document.childNodes, hashes, origins, { scriptNonce })
+  return serialize(document as any)
+}
+
+export const createContentSecurityPolicy = (
+  html: string,
+  options: ContentSecurityPolicyOptions = {},
+): string => {
   const documentHash = createHash('sha256').update(html, 'utf8').digest('base64')
-  const cached = cspByDocumentHash.get(documentHash)
+  const cached = options.scriptNonce ? undefined : cspByDocumentHash.get(documentHash)
   if (cached) return cached
 
   const hashes = collectInlineContentHashes(html)
@@ -293,7 +345,12 @@ export const createContentSecurityPolicy = (html: string): string => {
     ['https://checkout.stripe.com'],
     configuredSources('NUXT_CSP_FORM_ACTION_SRC'),
   )
-  const scriptSources = uniqueSources(staticScriptSources, cdnOrigins, configuredSources('NUXT_CSP_SCRIPT_SRC'), hashes.script)
+  const scriptTrustSources = uniqueSources(
+    hashes.script,
+    options.scriptNonce ? [`'nonce-${options.scriptNonce}'`, "'strict-dynamic'"] : [],
+  )
+  const scriptFallbackSources = uniqueSources(staticScriptSources, cdnOrigins, configuredSources('NUXT_CSP_SCRIPT_SRC'))
+  const scriptSources = uniqueSources(scriptTrustSources, "'self'", scriptFallbackSources)
   const styleSources = uniqueSources(cdnOrigins, configuredSources('NUXT_CSP_STYLE_SRC'), hashes.style)
   const frameSources = uniqueSources(staticFrameSources, configuredSources('NUXT_CSP_FRAME_SRC'))
   // Vite injects component-scoped styles through runtime <style> elements in
@@ -309,8 +366,8 @@ export const createContentSecurityPolicy = (html: string): string => {
     directive('object-src', ["'none'"]),
     directive('frame-ancestors', ["'self'"]),
     directive('form-action', ["'self'", ...formActionSources]),
-    directive('script-src', ["'self'", ...scriptSources]),
-    directive('script-src-elem', ["'self'", ...scriptSources]),
+    directive('script-src', scriptSources),
+    directive('script-src-elem', scriptSources),
     directive('script-src-attr', ["'none'"]),
     directive('style-src', ["'self'", ...developmentStyleSources, ...styleSources]),
     directive('style-src-elem', ["'self'", ...developmentStyleSources, ...styleSources]),
@@ -322,7 +379,7 @@ export const createContentSecurityPolicy = (html: string): string => {
     directive('frame-src', frameSources),
     directive('worker-src', ["'self'", 'blob:']),
     directive('manifest-src', ["'self'"]),
-    directive('trusted-types', ['vue', 'tanzanite-script-url']),
+    directive('trusted-types', ['default', 'vue', 'tanzanite-script-url']),
     directive('require-trusted-types-for', ["'script'"]),
   ]
 
@@ -331,10 +388,22 @@ export const createContentSecurityPolicy = (html: string): string => {
   }
 
   const value = policy.join('; ')
-  if (cspByDocumentHash.size >= CSP_CACHE_LIMIT) {
-    const oldestDocumentHash = cspByDocumentHash.keys().next().value
-    if (oldestDocumentHash) cspByDocumentHash.delete(oldestDocumentHash)
+  if (!options.scriptNonce) {
+    if (cspByDocumentHash.size >= CSP_CACHE_LIMIT) {
+      const oldestDocumentHash = cspByDocumentHash.keys().next().value
+      if (oldestDocumentHash) cspByDocumentHash.delete(oldestDocumentHash)
+    }
+    cspByDocumentHash.set(documentHash, value)
   }
-  cspByDocumentHash.set(documentHash, value)
   return value
+}
+
+export const secureHtmlWithContentSecurityPolicy = (html: string): SecuredHtmlResponse => {
+  const scriptNonce = createScriptNonce()
+  const body = applyScriptNonce(html, scriptNonce)
+
+  return {
+    body,
+    contentSecurityPolicy: createContentSecurityPolicy(body, { scriptNonce }),
+  }
 }

@@ -97,7 +97,7 @@ type quickBuyRateLimitEvaluation struct {
 }
 
 type redisQuickBuyRateLimitStore struct {
-	client *redis.Client
+	client redis.UniversalClient
 }
 
 type QuickBuyRateLimiter struct {
@@ -106,7 +106,7 @@ type QuickBuyRateLimiter struct {
 	now   func() time.Time
 }
 
-func NewQuickBuyRateLimiter(redisClient *redis.Client, cfg config.QuickBuyRateLimitConfig) *QuickBuyRateLimiter {
+func NewQuickBuyRateLimiter(redisClient redis.UniversalClient, cfg config.QuickBuyRateLimitConfig) *QuickBuyRateLimiter {
 	if redisClient == nil {
 		return &QuickBuyRateLimiter{cfg: cfg, now: time.Now}
 	}
@@ -117,7 +117,7 @@ func NewQuickBuyRateLimiter(redisClient *redis.Client, cfg config.QuickBuyRateLi
 	}
 }
 
-func QuickBuyRateLimit(redisClient *redis.Client, cfg config.QuickBuyRateLimitConfig) gin.HandlerFunc {
+func QuickBuyRateLimit(redisClient redis.UniversalClient, cfg config.QuickBuyRateLimitConfig) gin.HandlerFunc {
 	return NewQuickBuyRateLimiter(redisClient, cfg).Middleware()
 }
 

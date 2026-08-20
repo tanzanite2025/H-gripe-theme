@@ -15,6 +15,7 @@
     "noResults": "لم يتم العثور على FAQ تطابق \"{query}\"",
     "allFaqsMetaTitle": "كل FAQ",
     "loadingAnswers": "جار تحميل الإجابات",
-    "illustrationAlt": "صورة FAQ"
+    "illustrationAlt": "صورة FAQ",
+    "selectQuestion": "Select a question to view the answer."
   }
 }

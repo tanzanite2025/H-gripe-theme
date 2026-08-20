@@ -1,97 +1,104 @@
 <template>
-  <section class="bg-transparent text-white pt-[140px] md:pt-[96px]">
-    <div class="page-content-shell px-0 md:px-4 pb-6 pt-2 lg:pb-8 lg:pt-3">
+  <section class="home-hero bg-transparent text-white">
+    <div class="page-content-shell px-0 md:px-4 pb-6 pt-1 sm:pt-2 lg:pb-8 lg:pt-3">
       <div class="flex flex-col items-center text-center">
-        <!-- Mobile: Media above CTAs -->
-        <div class="mt-3 flex items-center justify-center gap-2.5 text-base font-medium leading-tight text-white sm:gap-3 sm:text-lg">
-          <span class="welcome-hand-wave inline-flex shrink-0" aria-hidden="true">
-            <Icon
-              name="lucide:hand"
-              class="h-7 w-7 text-[#B5FF6D] sm:h-8 sm:w-8"
-            />
-          </span>
-          <span>{{ welcomeText }}</span>
-        </div>
-        <h1 class="mt-6 px-2 text-xl font-semibold leading-[1.05] tracking-tight sm:mt-7 sm:text-3xl lg:text-4xl">
-          <template v-if="heroTitle.accent">
-            {{ heroTitle.before }}<span class="text-[#B5FF6D]">{{ heroTitle.accent }}</span>{{ heroTitle.after }}
-          </template>
-          <template v-else>
-            {{ heroTitle.full }}
-          </template>
-        </h1>
-        <p class="mt-2 max-w-2xl px-2 text-sm leading-relaxed tz-text-secondary sm:text-lg">
-          {{ t('home.hero.subtitle') }}
-        </p>
-
-        <div class="mt-2 w-full">
-          <div class="relative mx-auto w-full">
-            <div
-              class="relative rounded-3xl pt-[72px] sm:pt-[92px]"
-              :aria-label="t('home.hero.stackAriaLabel')"
-              tabindex="0"
-              @keydown.left.prevent="prev"
-              @keydown.right.prevent="next"
-            >
-              <div class="tz-carousel-pagination home-hero-stack-pagination absolute inset-x-0 top-[14px] z-40 px-4">
-                <button
-                  v-for="(_, index) in cards"
-                  :key="index"
-                  type="button"
-                  class="tz-carousel-pagination__dot"
-                  :class="{ 'is-active': index === activeIndex }"
-                  :aria-label="t('home.hero.dotAriaLabel', { index: index + 1 })"
-                  @click="goTo(index)"
-                ></button>
-              </div>
-
-              <div class="relative aspect-[16/10] overflow-visible sm:aspect-[16/9] md:aspect-[21/9]">
-                <ul class="absolute inset-0 overflow-visible" aria-live="polite">
-                  <li
-                    v-for="(card, index) in cards"
-                    :key="card.src"
-                    class="absolute inset-0 origin-center will-change-transform transition-[transform,filter,opacity] duration-[260ms] ease-[cubic-bezier(0.2,0,0.2,1)]"
-                    :class="cardClass(index)"
-                  >
-                    <NuxtImg
-                      :src="card.src"
-                      :alt="t(card.altKey)"
-                      :width="card.width"
-                      :height="card.height"
-                      class="h-full w-full object-cover"
-                      sizes="xs:100vw sm:100vw md:100vw lg:100vw xl:1280px"
-                      densities="1x"
-                      format="webp"
-                      quality="84"
-                      :loading="index === 0 ? 'eager' : 'lazy'"
-                      :fetchpriority="index === 0 ? 'high' : 'low'"
-                      decoding="async"
-                    />
-                    <div
-                      class="absolute inset-0 rounded-3xl bg-gradient-to-t from-black/55 via-black/10 to-transparent"
-                      aria-hidden="true"
-                    ></div>
-                  </li>
-                </ul>
-
-                <button
-                  type="button"
-                  class="tz-directional-arrow tz-directional-arrow--large absolute left-[12px] top-1/2 z-40 -translate-y-1/2"
-                  :aria-label="t('common.previous')"
-                  @click="prev"
-                >
-                  <Icon name="lucide:chevron-left" aria-hidden="true" />
-                </button>
-                <button
-                  type="button"
-                  class="tz-directional-arrow tz-directional-arrow--large absolute right-[12px] top-1/2 z-40 -translate-y-1/2"
-                  :aria-label="t('common.next')"
-                  @click="next"
-                >
-                  <Icon name="lucide:chevron-right" aria-hidden="true" />
-                </button>
-              </div>
+        <div class="home-hero__content mt-3 grid w-full gap-7 sm:mt-5 lg:mt-2 lg:grid-cols-[minmax(0,3fr)_minmax(0,7fr)] lg:items-center lg:gap-12">
+          <div class="home-hero__copy flex flex-col items-center px-2 text-center lg:h-full lg:justify-center lg:items-start lg:px-0 lg:text-left">
+            <div class="mb-4 flex items-center justify-center gap-2.5 text-base font-medium leading-tight text-white sm:gap-3 sm:text-lg lg:justify-start">
+              <span class="welcome-hand-wave inline-flex shrink-0" aria-hidden="true">
+                <Icon
+                  name="lucide:hand"
+                  class="h-7 w-7 text-[#B5FF6D] sm:h-8 sm:w-8"
+                />
+              </span>
+              <span>{{ welcomeText }}</span>
             </div>
+            <h1 class="text-xl font-semibold leading-[1.05] tracking-tight sm:text-3xl lg:text-4xl">
+              <template v-if="heroTitle.accent">
+                {{ heroTitle.before }}<span class="text-[#B5FF6D]">{{ heroTitle.accent }}</span>{{ heroTitle.after }}
+              </template>
+              <template v-else>
+                {{ heroTitle.full }}
+              </template>
+            </h1>
+            <p class="mt-3 max-w-2xl text-sm leading-relaxed tz-text-secondary sm:text-lg">
+              {{ t('home.hero.subtitle') }}
+            </p>
+
+            <div class="mt-5 flex w-full flex-row items-center justify-center gap-2 sm:w-auto sm:gap-3 lg:justify-start">
+              <button
+                type="button"
+                class="premium-button premium-button--active home-hero__cta inline-flex min-w-0 flex-1 items-center justify-center sm:w-auto sm:flex-none"
+                @click="scrollToSection('home-buying-path')"
+              >
+                <Icon name="lucide:route" class="mr-2 h-4 w-4" aria-hidden="true" />
+                Find my wheelset
+              </button>
+              <button
+                type="button"
+                class="premium-button home-hero__cta inline-flex min-w-0 flex-1 items-center justify-center sm:w-auto sm:flex-none"
+                @click="scrollToSection('featured-products')"
+              >
+                <Icon name="lucide:shopping-bag" class="mr-2 h-4 w-4" aria-hidden="true" />
+                Shop best sellers
+              </button>
+            </div>
+          </div>
+
+          <div class="home-hero__media relative hidden w-full lg:block lg:justify-self-stretch">
+            <HomeHeroVisualShowcaseDesktopCollage
+              :items="homeHeroVisualShowcaseItems"
+              :ariaLabel="t('home.hero.stackAriaLabel')"
+            />
+            <StorefrontDataNotice
+              v-if="heroVisualNotice"
+              class="home-hero__visual-notice"
+              :tone="heroVisualNotice.tone"
+              :title="heroVisualNotice.title"
+              :description="heroVisualNotice.description"
+              :role="heroVisualNotice.role"
+              compact
+            >
+              <template v-if="showHeroVisualRetry" #actions>
+                <button
+                  type="button"
+                  class="storefront-data-notice-action"
+                  :disabled="homeHeroVisualShowcasePending"
+                  @click="retryHomeHeroVisualShowcase"
+                >
+                  <Icon name="lucide:refresh-cw" aria-hidden="true" />
+                  {{ t('common.retry') }}
+                </button>
+              </template>
+            </StorefrontDataNotice>
+          </div>
+
+          <div class="home-hero__mobile-media relative mx-auto w-full lg:hidden">
+            <HomeHeroVisualShowcaseMobilePairGallery
+              :items="homeHeroVisualShowcaseItems"
+              :ariaLabel="t('home.hero.stackAriaLabel')"
+            />
+            <StorefrontDataNotice
+              v-if="heroVisualNotice"
+              class="home-hero__visual-notice"
+              :tone="heroVisualNotice.tone"
+              :title="heroVisualNotice.title"
+              :description="heroVisualNotice.description"
+              :role="heroVisualNotice.role"
+              compact
+            >
+              <template v-if="showHeroVisualRetry" #actions>
+                <button
+                  type="button"
+                  class="storefront-data-notice-action"
+                  :disabled="homeHeroVisualShowcasePending"
+                  @click="retryHomeHeroVisualShowcase"
+                >
+                  <Icon name="lucide:refresh-cw" aria-hidden="true" />
+                  {{ t('common.retry') }}
+                </button>
+              </template>
+            </StorefrontDataNotice>
           </div>
         </div>
 
@@ -101,9 +108,19 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, useI18n } from '#imports'
+import { computed, useI18n } from '#imports'
+import StorefrontDataNotice from '~/components/StorefrontDataNotice.vue'
+import HomeHeroVisualShowcaseDesktopCollage from '~/components/home/HomeHeroVisualShowcaseDesktopCollage.vue'
+import HomeHeroVisualShowcaseMobilePairGallery from '~/components/home/HomeHeroVisualShowcaseMobilePairGallery.vue'
+import { useHomeHeroVisualShowcase } from '~/composables/useHomeHeroVisualShowcase'
 
 const { t } = useI18n()
+const {
+  homeHeroVisualShowcaseItems,
+  homeHeroVisualShowcaseSource,
+  homeHeroVisualShowcasePending,
+  refreshHomeHeroVisualShowcase,
+} = await useHomeHeroVisualShowcase()
 
 const welcomeText = computed(() => {
   const translated = t('home.hero.welcome')
@@ -127,61 +144,86 @@ const heroTitle = computed(() => {
   }
 })
 
-const cards = computed(() => [
-  {
-    src: '/company/ourstory/ourstory/ourstory.webp',
-    altKey: 'home.hero.cards.0.alt',
-    width: 800,
-    height: 600,
-  },
-  {
-    src: '/company/ourstory/factory/factory-premoldlayupworkshop6.webp',
-    altKey: 'home.hero.cards.1.alt',
-    width: 800,
-    height: 600,
-  },
-  {
-    src: '/company/ourstory/factory/factory-inspectionpacking18.webp',
-    altKey: 'home.hero.cards.2.alt',
-    width: 800,
-    height: 500,
+const scrollToSection = (targetId: string) => {
+  if (!import.meta.client) return
+
+  document.getElementById(targetId)?.scrollIntoView({
+    behavior: 'smooth',
+    block: 'start',
+  })
+}
+
+const heroVisualNotice = computed(() => {
+  switch (homeHeroVisualShowcaseSource.value) {
+    case 'loading':
+      return {
+        tone: 'empty' as const,
+        role: 'status' as const,
+        title: t('storefrontDataNotice.hero.loading.title'),
+        description: t('storefrontDataNotice.hero.loading.description'),
+      }
+    case 'error':
+      return {
+        tone: 'error' as const,
+        role: 'alert' as const,
+        title: t('storefrontDataNotice.hero.error.title'),
+        description: t('storefrontDataNotice.hero.error.description'),
+      }
+    case 'locale-fallback':
+      return {
+        tone: 'fallback' as const,
+        role: 'status' as const,
+        title: t('storefrontDataNotice.hero.localeFallback.title'),
+        description: t('storefrontDataNotice.hero.localeFallback.description'),
+      }
+    case 'built-in-fallback':
+      return {
+        tone: 'fallback' as const,
+        role: 'status' as const,
+        title: t('storefrontDataNotice.hero.builtInFallback.title'),
+        description: t('storefrontDataNotice.hero.builtInFallback.description'),
+      }
+    default:
+      return null
   }
-])
+})
 
-const activeIndex = ref(0)
+const showHeroVisualRetry = computed(() => homeHeroVisualShowcaseSource.value === 'error')
 
-const next = () => {
-  activeIndex.value = (activeIndex.value + 1) % cards.value.length
-}
-
-const prev = () => {
-  activeIndex.value = (activeIndex.value - 1 + cards.value.length) % cards.value.length
-}
-
-const goTo = (index: number) => {
-  activeIndex.value = index
-}
-
-const relativeSlot = (index: number) => {
-  return (index - activeIndex.value + cards.value.length) % cards.value.length
-}
-
-const cardClass = (index: number) => {
-  const slot = relativeSlot(index)
-
-  if (slot === 0) {
-    return 'z-30 opacity-100 translate-y-0 scale-100 brightness-100 rounded-3xl overflow-hidden border-2 border-white/20 bg-slate-900/50 shadow-[0_25px_50px_rgba(0,0,0,0.7)]'
-  }
-
-  if (slot === 1) {
-    return 'z-20 opacity-100 -translate-y-[10%] scale-[0.94] brightness-[0.85] rounded-3xl overflow-hidden border-2 border-white/20 bg-slate-900/50 shadow-[0_15px_30px_rgba(0,0,0,0.4)]'
-  }
-
-  return 'z-10 opacity-100 -translate-y-[20%] scale-[0.88] brightness-[0.7] rounded-3xl overflow-hidden border-2 border-white/20 bg-slate-900/50 shadow-[0_15px_30px_rgba(0,0,0,0.4)]'
+const retryHomeHeroVisualShowcase = () => {
+  void refreshHomeHeroVisualShowcase()
 }
 </script>
 
 <style scoped>
+.home-hero__visual-notice {
+  margin-top: 0.7rem;
+}
+
+.home-hero__cta {
+  padding-inline: 0.85rem;
+  white-space: nowrap;
+}
+
+@media (max-width: 380px) {
+  .home-hero__cta {
+    font-size: 0.72rem;
+    padding-inline: 0.65rem;
+  }
+
+  .home-hero__cta :deep(svg) {
+    width: 0.9rem;
+    height: 0.9rem;
+    margin-right: 0.35rem;
+  }
+}
+
+@media (min-width: 640px) {
+  .home-hero__cta {
+    padding-inline: 1.25rem;
+  }
+}
+
 @keyframes welcome-hand-wave {
   0%,
   72%,
@@ -213,12 +255,6 @@ const cardClass = (index: number) => {
 .welcome-hand-wave {
   transform-origin: 70% 90%;
   animation: welcome-hand-wave 4.5s ease-in-out infinite;
-}
-
-.home-hero-stack-pagination {
-  --tz-carousel-pagination-dot-bg: rgba(255, 255, 255, 0.25);
-  --tz-carousel-pagination-dot-hover-bg: rgba(255, 255, 255, 0.4);
-  --tz-carousel-pagination-dot-active-bg: rgba(255, 255, 255, 0.9);
 }
 
 @media (prefers-reduced-motion: reduce) {

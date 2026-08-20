@@ -22,6 +22,7 @@ interface VerifiedPurgePayload {
 const scriptDir = dirname(fileURLToPath(import.meta.url))
 const projectRoot = resolve(scriptDir, '../..')
 const serverEntry = resolve(projectRoot, '.output/server/index.mjs')
+const serverLauncher = resolve(projectRoot, 'scripts/storefront/run-production-server.mjs')
 
 const port = Number.parseInt(process.env.HTML_CACHE_SMOKE_PORT || '4020', 10)
 const token = process.env.NUXT_HTML_CACHE_PURGE_TOKEN || 'codex-html-cache-smoke-token'
@@ -68,6 +69,15 @@ const assertContentSecurityPolicy = (contentSecurityPolicy: string, body: string
   }
   if (contentSecurityPolicy.includes("script-src 'self' 'unsafe-inline'")) {
     throw new Error('Content-Security-Policy allows unsafe inline scripts')
+  }
+  if (!contentSecurityPolicy.includes("'strict-dynamic'")) {
+    throw new Error('Content-Security-Policy does not use strict-dynamic for trusted scripts')
+  }
+  if (!/script-src [^;]*'nonce-[A-Za-z0-9+/]{24}'/.test(contentSecurityPolicy)) {
+    throw new Error('Content-Security-Policy does not include a script nonce')
+  }
+  if (!/<script\b[^>]*\bnonce="[A-Za-z0-9+/]{24}"/.test(body)) {
+    throw new Error('Rendered HTML does not nonce its script tags')
   }
 
   const hashes = collectInlineContentHashes(body)
@@ -196,8 +206,10 @@ const assertRuntimeLogs = (logs: string[]): void => {
 
 if (!existsSync(serverEntry)) {
   fail(`Missing ${serverEntry}. Run npm run build first.`)
+} else if (!existsSync(serverLauncher)) {
+  fail(`Missing ${serverLauncher}.`)
 } else {
-  const child = spawn(process.execPath, [serverEntry], {
+  const child = spawn(process.execPath, [serverLauncher], {
     cwd: projectRoot,
     env: {
       ...process.env,

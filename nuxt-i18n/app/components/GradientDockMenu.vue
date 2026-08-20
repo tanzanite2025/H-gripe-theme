@@ -1,11 +1,11 @@
 <template>
   <!-- Dock 菜单容器 (统一胶囊风格) -->
-  <div class="dock-bar fixed inset-x-0 bottom-0 w-full z-[101] pointer-events-auto transition-all duration-300 bg-[linear-gradient(180deg,#0c0c10_0%,#111116_42%,#1a1a20_100%)]">
-    <div class="dock-surface mx-auto w-full md:max-w-[500px] rounded-none px-1 py-2.5 md:px-4 md:py-3 flex items-center justify-between transition-all duration-300">
+  <div class="dock-bar fixed inset-x-0 bottom-0 w-full z-[101] pointer-events-auto transition-all duration-300">
+    <div class="dock-surface mx-auto w-full md:max-w-[500px] rounded-none px-1 py-2.5 md:px-4 md:py-3 items-center transition-all duration-300">
       
       <!-- 1. Menu (Sidebar) -->
       <button 
-        class="flex-1 h-11 md:h-12 flex items-center justify-center tz-text-secondary hover:text-white transition-colors min-w-[40px]"
+        class="dock-icon-button h-11 md:h-12 tz-text-secondary hover:text-white transition-colors"
         @click="openSidebarLeft"
         :aria-label="$t('dockMenu.openSidebar')"
       >
@@ -15,7 +15,7 @@
       <!-- 2. Chat -->
       <button 
         :class="[
-          'flex-1 h-11 md:h-12 flex items-center justify-center transition-colors min-w-[40px]',
+          'dock-icon-button h-11 md:h-12 transition-colors',
           isChatOpen ? 'text-[#B5FF6D]' : 'tz-text-secondary hover:text-white'
         ]"
         @click="toggleChatFromDock()" 
@@ -57,11 +57,11 @@
       <!-- 3. Quick Buy -->
       <button 
         ref="quickBuyAnchorRef"
-        class="dock-quick-buy-button flex-1 h-11 md:h-12 flex items-center justify-center tz-text-secondary hover:text-[#B5FF6D] transition-colors min-w-[40px]"
-        :class="{ 'dock-quick-buy-button--active': quickOpen }"
+        class="dock-icon-button dock-quick-buy-button h-11 md:h-12 tz-text-secondary hover:text-[#B5FF6D] transition-colors"
+        :class="{ 'dock-quick-buy-button--active': quickActive }"
         @click="openQuick()" 
         aria-haspopup="dialog" 
-        :aria-expanded="quickOpen" 
+        :aria-expanded="quickActive"
         :aria-label="$t('dockMenu.quickBuy')"
       >
         <span class="dock-quick-buy-frame">
@@ -105,19 +105,55 @@
     v-if="quickOpen"
     :config="quickBuyConfig"
     :anchor="quickBuyAnchorRef"
-    @close="quickOpen = false"
+    @close="closeQuickEntry"
+    @direct-select="openQuickDirectSelect"
+    @contact-service="openQuickContactService"
+    @wheelset-selection-assistant="openQuickWheelsetSelectionAssistant"
   />
+
+  <QuickBuyModal
+    v-if="quickDirectSelectOpen"
+    :config="quickBuyConfig"
+    @close="closeQuickDirectSelect"
+  />
+
+  <QuickBuyContactServiceModal
+    v-if="quickContactServiceOpen"
+    @close="closeQuickContactService"
+  />
+
+  <WheelsetSelectionAssistantModal
+    v-if="quickWheelsetSelectionAssistantOpen"
+    :model-value="true"
+    source="quick-buy/wheelset-selection-assistant"
+    description=""
+    @update:model-value="handleQuickWheelsetSelectionAssistantModelUpdate"
+    @close="closeQuickWheelsetSelectionAssistant"
+  >
+    <WheelsetSelectionAssistantFlow
+      source="quick-buy/wheelset-selection-assistant"
+      @contact-support="openWheelsetSelectionSupportChat"
+    />
+  </WheelsetSelectionAssistantModal>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, watchEffect } from 'vue'
+import { ref, computed, nextTick, onMounted, onBeforeUnmount, watchEffect } from 'vue'
 import { useI18n } from '#imports'
+import QuickBuyModal from '~/components/QuickBuy.vue'
+import QuickBuyContactServiceModal from '~/components/quick-buy/QuickBuyContactServiceModal.vue'
+import WheelsetSelectionAssistantModal from '~/components/WheelsetSelectionAssistantModal.vue'
+import WheelsetSelectionAssistantFlow from '~/components/wheelset-selection/WheelsetSelectionAssistantFlow.vue'
 import { useChatWidget } from '~/composables/useChatWidget'
 import { useQuickBuyFlow } from '~/composables/useQuickBuyFlow'
+import type { WheelsetSelectionRequestDraft } from '~/types/wheelsetSelectionAssistant'
 
 // floating submenu state
 const isOpen = ref(false)
 const quickOpen = ref(false)
+const quickDirectSelectOpen = ref(false)
+const quickContactServiceOpen = ref(false)
+const quickWheelsetSelectionAssistantOpen = ref(false)
 const quickBuyAnchorRef = ref<HTMLElement | null>(null)
 
 // 全局聊天窗口状态（在多个布局之间保持一致）
@@ -127,17 +163,84 @@ const { currentConversation, isChatOpen, openChat, closeChat } = useChatWidget()
 const closeAll = () => {
   isOpen.value = false
   quickOpen.value = false
+  quickDirectSelectOpen.value = false
+  quickContactServiceOpen.value = false
+  quickWheelsetSelectionAssistantOpen.value = false
 }
 
+const quickActive = computed(() =>
+  quickOpen.value || quickDirectSelectOpen.value || quickContactServiceOpen.value || quickWheelsetSelectionAssistantOpen.value,
+)
+
+const openQuickEntry = () => {
+  closeAll()
+  quickOpen.value = true
+}
 
 const openQuick = () => {
-  if (quickOpen.value) {
-    quickOpen.value = false
+  if (quickActive.value) {
+    closeAll()
     return
   }
 
-  closeAll()
-  quickOpen.value = true
+  openQuickEntry()
+}
+
+const openQuickFromGlobalEvent = () => {
+  openQuickEntry()
+}
+
+const closeQuickEntry = () => {
+  quickOpen.value = false
+}
+
+const openQuickDirectSelect = () => {
+  quickOpen.value = false
+  quickContactServiceOpen.value = false
+  quickWheelsetSelectionAssistantOpen.value = false
+  quickDirectSelectOpen.value = true
+}
+
+const closeQuickDirectSelect = () => {
+  quickDirectSelectOpen.value = false
+}
+
+const openQuickContactService = () => {
+  quickOpen.value = false
+  quickDirectSelectOpen.value = false
+  quickWheelsetSelectionAssistantOpen.value = false
+  quickContactServiceOpen.value = true
+}
+
+const closeQuickContactService = () => {
+  quickContactServiceOpen.value = false
+}
+
+const openQuickWheelsetSelectionAssistant = () => {
+  quickOpen.value = false
+  quickDirectSelectOpen.value = false
+  quickContactServiceOpen.value = false
+  quickWheelsetSelectionAssistantOpen.value = true
+}
+
+const closeQuickWheelsetSelectionAssistant = () => {
+  quickWheelsetSelectionAssistantOpen.value = false
+}
+
+const handleQuickWheelsetSelectionAssistantModelUpdate = (value: boolean) => {
+  if (!value) {
+    closeQuickWheelsetSelectionAssistant()
+  }
+}
+
+const openWheelsetSelectionSupportChat = async (draft?: WheelsetSelectionRequestDraft) => {
+  closeQuickWheelsetSelectionAssistant()
+  openChat({
+    showAgentList: true,
+    source: 'wheelset-selection-assistant',
+    pendingSelectionRequest: draft || null,
+  })
+  await nextTick()
 }
 
 // removed old share popup and outside-click listeners; modal closes by overlay click
@@ -195,6 +298,7 @@ let unreadInterval: ReturnType<typeof setInterval> | null = null
 
 onMounted(() => {
   calculateUnreadCount()
+  window.addEventListener('quickbuy:open-entry', openQuickFromGlobalEvent)
   
   // 每30秒更新一次未读消息数
   unreadInterval = setInterval(calculateUnreadCount, 30000)
@@ -263,14 +367,15 @@ onBeforeUnmount(() => {
   if (unreadInterval) {
     clearInterval(unreadInterval)
   }
+  window.removeEventListener('quickbuy:open-entry', openQuickFromGlobalEvent)
 })
 
 // defensive: ensure mutual exclusivity if any state is toggled externally
 watchEffect(() => {
-  const openCount = [isOpen.value, quickOpen.value].filter(Boolean).length
+  const openCount = [isOpen.value, quickActive.value].filter(Boolean).length
   if (openCount > 1) {
     // prefer the most recently opened by simple priority: quick > fab
-    if (quickOpen.value) {
+    if (quickActive.value) {
       isOpen.value = false
     } else if (isOpen.value) {
       quickOpen.value = false
@@ -282,13 +387,24 @@ watchEffect(() => {
 <style scoped>
 .dock-bar {
   min-height: var(--tz-bottom-dock-height, 4.5rem);
+  background: linear-gradient(180deg, #0c0c10 0%, #111116 42%, #1a1a20 100%);
   box-shadow:
     0 -12px 32px rgba(0, 0, 0, 0.28),
     inset 0 1px 0 rgba(255, 255, 255, 0.035);
 }
 
 .dock-surface {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(3rem, 1fr)) minmax(9.25rem, 1.85fr);
+  column-gap: 0.25rem;
   max-width: min(100%, 500px);
+}
+
+.dock-icon-button {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
 }
 
 .dock-quick-buy-button {
@@ -325,8 +441,8 @@ watchEffect(() => {
 
 .dock-cart-button {
   display: flex;
-  flex: 1.18 1 0;
-  min-width: 6.8rem;
+  width: 100%;
+  min-width: 0;
   height: 2.5rem;
   align-items: center;
   justify-content: center;
@@ -385,7 +501,6 @@ watchEffect(() => {
 
 .dock-cart-count {
   display: inline-flex;
-  width: 1.875rem;
   min-width: 1.875rem;
   height: 1.875rem;
   flex: 0 0 auto;
@@ -397,12 +512,12 @@ watchEffect(() => {
   color: #050505;
   font-size: 1rem;
   font-weight: 900;
-  padding: 0;
+  padding: 0 0.35rem;
 }
 
 .dock-cart-total {
   min-width: 0;
-  max-width: 6rem;
+  max-width: 7rem;
   overflow: hidden;
   font-size: 1.2rem;
   letter-spacing: 0;
@@ -418,11 +533,10 @@ watchEffect(() => {
 
   .dock-cart-button {
     height: 2.75rem;
-    min-width: 7.4rem;
   }
 
   .dock-cart-total {
-    max-width: 6.5rem;
+    max-width: 7.75rem;
     font-size: 1.3rem;
   }
 
@@ -433,14 +547,19 @@ watchEffect(() => {
 }
 
 @media (max-width: 767px) {
+  .dock-bar {
+    background: linear-gradient(180deg, #303034 0%, #2b2b2f 22%, #242428 42%, #1d1d21 62%, #18181c 82%, #151519 100%);
+  }
+
   .dock-surface {
+    grid-template-columns: repeat(3, minmax(2.75rem, 1fr)) minmax(9.15rem, 1.85fr);
+    column-gap: 0.25rem;
     padding-bottom: max(0.625rem, calc(0.625rem + var(--tz-safe-area-bottom, 0px)));
   }
 
   .dock-cart-button {
-    min-width: 6.35rem;
     height: 2.5rem;
-    padding-inline: 0.45rem;
+    padding-inline: 0.4rem;
   }
 
   .dock-cart-content {
@@ -448,8 +567,40 @@ watchEffect(() => {
   }
 
   .dock-cart-total {
-    max-width: 4.4rem;
-    font-size: 1.1rem;
+    max-width: 5.75rem;
+    font-size: 1.05rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .dock-surface {
+    grid-template-columns: repeat(3, minmax(2.55rem, 1fr)) minmax(8.65rem, 1.9fr);
+    column-gap: 0.125rem;
+  }
+
+  .dock-cart-button {
+    padding-inline: 0.35rem;
+  }
+
+  .dock-cart-content {
+    gap: 0.25rem;
+  }
+
+  .dock-cart-currency {
+    width: 1.15rem;
+    height: 1.15rem;
+  }
+
+  .dock-cart-count {
+    min-width: 1.75rem;
+    height: 1.75rem;
+    font-size: 0.95rem;
+    padding-inline: 0.3rem;
+  }
+
+  .dock-cart-total {
+    max-width: 5.25rem;
+    font-size: 1rem;
   }
 }
 </style>

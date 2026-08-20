@@ -72,6 +72,7 @@ func (h *Handler) ListProducts(c *gin.Context) {
 	publicContext := h.resolvePublicContext(c)
 	locale := publicContext.Locale
 	featured := c.Query("featured") == "true"
+	categorySlug := strings.TrimSpace(c.Query("product_category"))
 	params := pagination.ParsePagination(c)
 
 	if c.Query("page_size") == "" {
@@ -81,12 +82,29 @@ func (h *Handler) ListProducts(c *gin.Context) {
 		params.PageSize = publicCatalogMaxPageSize
 	}
 
-	products, _, err := h.productService.ListPublic(
-		locale,
-		featured,
-		params.Page,
-		params.PageSize+1,
-	)
+	var products []productdomain.Product
+	var total int64
+	var err error
+	if categorySlug == "" {
+		products, total, err = h.productService.ListPublic(
+			locale,
+			featured,
+			params.Page,
+			params.PageSize+1,
+		)
+	} else {
+		var featuredFilter *bool
+		if featured {
+			featuredFilter = &featured
+		}
+		products, total, err = h.productService.SearchPublic(service.ProductSearchInput{
+			Locale:       locale,
+			Featured:     featuredFilter,
+			CategorySlug: categorySlug,
+			Page:         params.Page,
+			PageSize:     params.PageSize + 1,
+		})
+	}
 	if err != nil {
 		apierror.RespondInternalError(c, err)
 		return
@@ -99,7 +117,9 @@ func (h *Handler) ListProducts(c *gin.Context) {
 		"code":      0,
 		"data":      publicProductResponses,
 		"context":   publicContext.Response,
+		"page":      params.Page,
 		"page_size": params.PageSize,
+		"total":     total,
 		"has_more":  hasMore,
 	})
 }
@@ -242,7 +262,7 @@ func (h *Handler) ListProductSpecificationTemplates(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, PublicProductSpecificationTemplatesFromDomainWithLocale(productSpecificationTemplates, middleware.GetLocale(c), h.mediaService))
+	response.Success(c, PublicProductSpecificationTemplatesFromDomainWithLocale(productSpecificationTemplates, middleware.GetLocale(c)))
 }
 
 func (h *Handler) ListCategories(c *gin.Context) {

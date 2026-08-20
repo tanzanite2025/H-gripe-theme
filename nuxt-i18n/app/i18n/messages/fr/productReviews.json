@@ -6,7 +6,7 @@
   "loading": "Chargement des avis...",
   "loadError": "Les avis ne peuvent pas être chargés.",
   "retry": "Réessayer",
-  "empty": "Aucun avis approuvé pour le moment.",
+  "empty": "Aucun avis pour le moment.",
   "ratingLabel": "{rating} étoiles sur 5",
   "imageAlt": "Image de l'avis client",
   "verifiedPurchase": "Achat vérifié",

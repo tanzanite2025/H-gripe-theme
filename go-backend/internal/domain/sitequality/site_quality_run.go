@@ -47,3 +47,13 @@ type SiteQualityRun struct {
 func (SiteQualityRun) TableName() string {
 	return "site_quality_runs"
 }
+
+// SiteQualityRunArchive mirrors the immutable run shape without retaining
+// foreign keys to the hot table.
+type SiteQualityRunArchive struct {
+	SiteQualityRun
+}
+
+func (SiteQualityRunArchive) TableName() string {
+	return "site_quality_runs_archive"
+}

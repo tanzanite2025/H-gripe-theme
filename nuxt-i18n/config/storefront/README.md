@@ -105,7 +105,6 @@ Nuxt SSR 页面在高流量时会消耗 Node.js CPU。热门商品详情页、�
 - `/shop`
 - `/membershipandpoints`
 - `/spoke-calculator`
-- `/support/product-feedback`
 - `/support/test-report`
 - `/support/warranty-check`
 - `/api/**`

@@ -68,6 +68,8 @@ func (s livePayPalDisputeEvidenceSubmitter) ProvideEvidence(ctx context.Context,
 type PayPalDisputeEvidencePackage struct {
 	Dispute           *paymentdomain.PayPalDispute          `json:"dispute"`
 	Order             *orderdomain.Order                    `json:"order,omitempty"`
+	PolicyDisclosure  *DisputePolicyDisclosureEvidence      `json:"policy_disclosure,omitempty"`
+	Refunds           []DisputeRefundEvidence               `json:"refunds"`
 	Shipment          *shippingdomain.TrackingShipment      `json:"shipment,omitempty"`
 	TrackingEvents    []shippingdomain.TrackingEvent        `json:"tracking_events"`
 	Communications    []StripeDisputeCommunicationEvidence  `json:"communications"`
@@ -136,6 +138,7 @@ func (s *PaymentService) BuildPayPalDisputeEvidencePackage(disputeID uint) (*Pay
 
 	pkg := &PayPalDisputeEvidencePackage{
 		Dispute:        record,
+		Refunds:        []DisputeRefundEvidence{},
 		TrackingEvents: []shippingdomain.TrackingEvent{},
 		Communications: []StripeDisputeCommunicationEvidence{},
 		Warnings:       []string{},
@@ -158,6 +161,24 @@ func (s *PaymentService) BuildPayPalDisputeEvidencePackage(disputeID uint) (*Pay
 		return nil, err
 	}
 	pkg.Order = orderRecord
+	if s.paymentRepo != nil {
+		refunds, err := s.paymentRepo.FindRefundsByOrderID(orderRecord.ID)
+		if err != nil {
+			return nil, err
+		}
+		pkg.Refunds = buildRefundEvidence(refunds, orderRecord.Currency)
+	}
+	if s.policyDisclosureRepo != nil {
+		disclosure, err := s.policyDisclosureRepo.FindByOrderID(orderRecord.ID)
+		if err == nil {
+			pkg.PolicyDisclosure = buildPolicyDisclosureEvidence(disclosure)
+		} else if !repository.IsRecordNotFound(err) {
+			return nil, err
+		}
+	}
+	if pkg.PolicyDisclosure == nil {
+		pkg.Warnings = append(pkg.Warnings, "No order-level refund and return policy disclosure snapshot was found; the current policy page will not be used as historical evidence.")
+	}
 
 	if s.shippingRepo != nil {
 		if shipment, err := s.shippingRepo.FindTrackingShipmentByOrderID(orderRecord.ID); err == nil {
@@ -433,6 +454,8 @@ func finalizePayPalDisputeEvidencePackage(pkg *PayPalDisputeEvidencePackage) {
 		pkg.TrackingEvents,
 		pkg.Communications,
 		pkg.Authentication,
+		pkg.PolicyDisclosure,
+		pkg.Refunds,
 	)
 	pkg.SubmissionCheck = buildDisputeEvidenceSubmissionCheck(pkg.CanSubmit, pkg.EvidenceChecklist)
 }
@@ -464,6 +487,21 @@ func paypalDisputeEvidenceNotes(pkg *PayPalDisputeEvidencePackage, draft PayPalD
 	if draft.CommunicationSummary != "" {
 		lines = append(lines, "Customer communication summary:")
 		lines = append(lines, draft.CommunicationSummary)
+	}
+	if pkg.PolicyDisclosure != nil {
+		lines = append(lines, fmt.Sprintf(
+			"Refund and return policy disclosure: version=%s; hash=%s; locale=%s; URL=%s; disclosed_at=%s; consented_at=%s; source=%s.",
+			pkg.PolicyDisclosure.PolicyVersion,
+			pkg.PolicyDisclosure.PolicyHash,
+			pkg.PolicyDisclosure.Locale,
+			pkg.PolicyDisclosure.PolicyURL,
+			pkg.PolicyDisclosure.DisclosedAt.UTC().Format(time.RFC3339),
+			formatOptionalDisputeTime(pkg.PolicyDisclosure.ConsentedAt),
+			pkg.PolicyDisclosure.Source,
+		))
+	}
+	if summary := refundEvidenceSummary(pkg.Refunds); summary != "" {
+		lines = append(lines, summary)
 	}
 	if strings.TrimSpace(additionalStatement) != "" {
 		lines = append(lines, "Operator statement:")

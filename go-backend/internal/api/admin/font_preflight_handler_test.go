@@ -7,6 +7,8 @@ import (
 	"strings"
 	"testing"
 
+	"commerce-platform/internal/pkg/config"
+
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
 )
@@ -36,7 +38,7 @@ func TestFontPreflightHandlerReadsConfiguredStorefrontManifest(t *testing.T) {
 	require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &body))
 	require.Equal(t, 0, body.Code)
 	require.Equal(t, "pass", body.Data.OverallStatus)
-	require.Equal(t, "StorefrontSystemLatin", body.Data.Strategy.DefaultStack[0])
+	require.Equal(t, "MapleUILatin", body.Data.Strategy.DefaultStack[0])
 	require.Equal(t, "no-store, max-age=0", recorder.Header().Get("Cache-Control"))
 }
 
@@ -92,6 +94,48 @@ func TestFontPreflightHandlerDoesNotFollowStorefrontRedirects(t *testing.T) {
 	require.Equal(t, 0, redirectedRequests)
 }
 
+func TestFontPreflightStorefrontOriginPrefersInternalOrigin(t *testing.T) {
+	t.Setenv("STOREFRONT_INTERNAL_ORIGIN", "http://frontend:3000/")
+	t.Setenv("STOREFRONT_BASE_URL", "http://localhost:9199")
+
+	origin := fontPreflightStorefrontOrigin(&config.Config{
+		Server: config.ServerConfig{
+			Mode:    "debug",
+			BaseURL: "http://localhost:9200",
+		},
+	})
+
+	require.Equal(t, "http://frontend:3000", origin)
+}
+
+func TestFontPreflightStorefrontOriginUsesDevHostFallback(t *testing.T) {
+	t.Setenv("STOREFRONT_INTERNAL_ORIGIN", "")
+	t.Setenv("STOREFRONT_BASE_URL", "")
+
+	origin := fontPreflightStorefrontOrigin(&config.Config{
+		Server: config.ServerConfig{
+			Mode:    "debug",
+			BaseURL: "http://localhost:9200",
+		},
+	})
+
+	require.Equal(t, "http://localhost:9199", origin)
+}
+
+func TestFontPreflightStorefrontOriginDoesNotUsePublicServerBaseInProduction(t *testing.T) {
+	t.Setenv("STOREFRONT_INTERNAL_ORIGIN", "")
+	t.Setenv("STOREFRONT_BASE_URL", "https://learn.gripe")
+
+	origin := fontPreflightStorefrontOrigin(&config.Config{
+		Server: config.ServerConfig{
+			Mode:    "release",
+			BaseURL: "https://learn.gripe",
+		},
+	})
+
+	require.Empty(t, origin)
+}
+
 func TestFontPreflightHandlerRejectsOversizedAndBaselineBreakingManifest(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	testCases := []struct {
@@ -104,7 +148,7 @@ func TestFontPreflightHandlerRejectsOversizedAndBaselineBreakingManifest(t *test
 		},
 		{
 			name: "wrong_font_display",
-			body: strings.Replace(validFontPreflightManifest, `"font_display": "swap"`, `"font_display": "block"`, 1),
+			body: strings.Replace(validFontPreflightManifest, `"font_display": "block"`, `"font_display": "swap"`, 1),
 		},
 		{
 			name: "inconsistent_overall_status",
@@ -142,15 +186,15 @@ const validFontPreflightManifest = `{
   "generated_at": "2026-08-17T00:00:00.000Z",
   "overall_status": "pass",
   "baseline": {
-    "id": "storefront-self-hosted-no-fallback-v1",
-    "label": "self-hosted only",
-    "font_display": "swap",
-    "rules": ["no external fallback"]
+    "id": "storefront-built-in-font-shards-v1",
+    "label": "built-in font shards only",
+    "font_display": "block",
+    "rules": ["no OS/system or generic font fallback"]
   },
   "checks": [
     {
-      "key": "no-external-fallback",
-      "label": "no fallback",
+      "key": "no-external-system-fonts",
+      "label": "no system fonts",
       "status": "pass",
       "message": "passed",
       "details": []
@@ -187,72 +231,79 @@ const validFontPreflightManifest = `{
   "strategy": {
     "status": "pass",
     "label": "Latin subset",
-    "default_stack": ["StorefrontSystemLatin", "StorefrontSystem"],
+    "default_stack": ["MapleUILatin", "MapleUICJK"],
     "latin_bytes": 100,
     "latin_budget_bytes": 163840,
-    "complete_maple_ui_family": "StorefrontSystem",
+    "maple_ui_cjk_family": "MapleUICJK",
+    "coverage_source_faces": ["Noto Sans Devanagari", "Noto Sans", "Noto Sans Arabic", "Noto Sans Thai"],
     "cjk_unicode_range": "U+4E00-9FFF",
     "layout_parity_verified": true,
     "rationale": "same metrics"
   },
   "faces": [
     {
-      "family": "StorefrontSystemLatin",
+      "family": "MapleUILatin",
       "role": "Latin",
       "script": "Latin",
-      "filename": "StorefrontSystem-Latin.00af3fec5b34.woff2",
+      "source_face": "Maple UI",
+      "filename": "MapleUI-Latin.00af3fec5b34.woff2",
       "bytes": 100,
-      "font_display": "swap",
+      "font_display": "block",
       "unicode_range": "",
       "self_hosted": true
     },
     {
-      "family": "StorefrontSystem",
+      "family": "MapleUICJK",
       "role": "CJK",
       "script": "CJK",
-      "filename": "StorefrontSystem-CJK.f8ce6d72e8cb.woff2",
+      "source_face": "Maple UI",
+      "filename": "MapleUI-CJK.f8ce6d72e8cb.woff2",
       "bytes": 100,
-      "font_display": "swap",
+      "font_display": "block",
       "unicode_range": "U+4E00-9FFF",
       "self_hosted": true
     },
     {
-      "family": "StorefrontSystemDevanagari",
+      "family": "MapleUICoverageNotoSansDevanagari",
       "role": "Devanagari",
       "script": "Devanagari",
-      "filename": "StorefrontSystem-Devanagari.3b3cae4d2600.woff2",
+      "source_face": "Noto Sans Devanagari",
+      "filename": "MapleUI-Coverage-NotoSans-Devanagari.3b3cae4d2600.woff2",
       "bytes": 100,
-      "font_display": "swap",
+      "font_display": "block",
       "unicode_range": "U+0900-097F",
       "self_hosted": true
     },
     {
-      "family": "StorefrontSystemLatinAccents",
+      "family": "MapleUICoverageNotoSansLatinAccents",
       "role": "Latin accents",
       "script": "Latin accents",
-      "filename": "StorefrontSystem-Latin-Accents.e645edc952b6.woff2",
+      "source_face": "Noto Sans",
+      "filename": "MapleUI-Coverage-NotoSans-Latin-Accents.e645edc952b6.woff2",
       "bytes": 100,
-      "font_display": "swap",
+      "font_display": "block",
       "unicode_range": "U+00C0-00C1",
       "self_hosted": true
     },
     {
-      "family": "StorefrontSystemArabic",
+      "family": "MapleUICoverageNotoSansArabic",
       "role": "Arabic",
       "script": "Arabic",
-      "filename": "StorefrontSystem-Arabic.ce85091f0209.woff2",
+      "source_face": "Noto Sans Arabic",
+      "filename": "MapleUI-Coverage-NotoSans-Arabic.ce85091f0209.woff2",
       "bytes": 100,
-      "font_display": "swap",
+      "font_display": "block",
       "unicode_range": "U+0600-06FF",
       "self_hosted": true
     },
     {
-      "family": "StorefrontSystemThai",
+      "family": "MapleUICoverageNotoSansThai",
       "role": "Thai",
       "script": "Thai",
-      "filename": "StorefrontSystem-Thai.1f5a173641bb.woff2",
+      "source_face": "Noto Sans Thai",
+      "filename": "MapleUI-Coverage-NotoSans-Thai.1f5a173641bb.woff2",
       "bytes": 100,
-      "font_display": "swap",
+      "font_display": "block",
       "unicode_range": "U+0E01-0E5B",
       "self_hosted": true
     }
@@ -268,7 +319,7 @@ const validFontPreflightManifest = `{
       "checked_characters": 10,
       "missing_characters": 0,
       "missing_sample": [],
-      "font_stack": ["StorefrontSystemLatin", "StorefrontSystem"],
+      "font_stack": ["MapleUILatin", "MapleUICJK"],
       "status": "pass"
     }]
   }

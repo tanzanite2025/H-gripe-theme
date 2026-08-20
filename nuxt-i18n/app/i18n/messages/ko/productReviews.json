@@ -6,7 +6,7 @@
   "loading": "리뷰를 불러오는 중...",
   "loadError": "리뷰를 불러올 수 없습니다.",
   "retry": "다시 시도",
-  "empty": "아직 승인된 리뷰가 없습니다.",
+  "empty": "아직 리뷰가 없습니다.",
   "ratingLabel": "5점 만점에 {rating}점",
   "imageAlt": "고객 리뷰 이미지",
   "verifiedPurchase": "구매 확인됨",

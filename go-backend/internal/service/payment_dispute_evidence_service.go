@@ -42,6 +42,8 @@ func (s liveStripeDisputeEvidenceSubmitter) Update(id string, params *stripe.Dis
 type StripeDisputeEvidencePackage struct {
 	Dispute           *paymentdomain.StripeDispute          `json:"dispute"`
 	Order             *orderdomain.Order                    `json:"order,omitempty"`
+	PolicyDisclosure  *DisputePolicyDisclosureEvidence      `json:"policy_disclosure,omitempty"`
+	Refunds           []DisputeRefundEvidence               `json:"refunds"`
 	Shipment          *shippingdomain.TrackingShipment      `json:"shipment,omitempty"`
 	TrackingEvents    []shippingdomain.TrackingEvent        `json:"tracking_events"`
 	Communications    []StripeDisputeCommunicationEvidence  `json:"communications"`
@@ -117,6 +119,7 @@ func (s *PaymentService) BuildStripeDisputeEvidencePackage(disputeID uint) (*Str
 
 	pkg := &StripeDisputeEvidencePackage{
 		Dispute:        record,
+		Refunds:        []DisputeRefundEvidence{},
 		TrackingEvents: []shippingdomain.TrackingEvent{},
 		Communications: []StripeDisputeCommunicationEvidence{},
 		Warnings:       []string{},
@@ -139,6 +142,24 @@ func (s *PaymentService) BuildStripeDisputeEvidencePackage(disputeID uint) (*Str
 		return nil, err
 	}
 	pkg.Order = orderRecord
+	if s.paymentRepo != nil {
+		refunds, err := s.paymentRepo.FindRefundsByOrderID(orderRecord.ID)
+		if err != nil {
+			return nil, err
+		}
+		pkg.Refunds = buildRefundEvidence(refunds, orderRecord.Currency)
+	}
+	if s.policyDisclosureRepo != nil {
+		disclosure, err := s.policyDisclosureRepo.FindByOrderID(orderRecord.ID)
+		if err == nil {
+			pkg.PolicyDisclosure = buildPolicyDisclosureEvidence(disclosure)
+		} else if !repository.IsRecordNotFound(err) {
+			return nil, err
+		}
+	}
+	if pkg.PolicyDisclosure == nil {
+		pkg.Warnings = append(pkg.Warnings, "No order-level refund and return policy disclosure snapshot was found; the current policy page will not be used as historical evidence.")
+	}
 
 	if s.shippingRepo != nil {
 		if shipment, err := s.shippingRepo.FindTrackingShipmentByOrderID(orderRecord.ID); err == nil {
@@ -296,7 +317,7 @@ func buildStripeDisputeEvidenceDraft(pkg *StripeDisputeEvidencePackage) StripeDi
 		ShippingTrackingNumber: disputeTrackingNumber(orderRecord, pkg.Shipment),
 		CommunicationSummary:   disputeCommunicationSummary(pkg.Communications),
 	}
-	draft.UncategorizedText = disputeUncategorizedText(orderRecord, pkg.Dispute, pkg.TrackingEvents)
+	draft.UncategorizedText = disputeUncategorizedText(orderRecord, pkg.Dispute, pkg.TrackingEvents, pkg.PolicyDisclosure, pkg.Refunds)
 	return draft
 }
 
@@ -312,6 +333,8 @@ func finalizeStripeDisputeEvidencePackage(pkg *StripeDisputeEvidencePackage) {
 		pkg.TrackingEvents,
 		pkg.Communications,
 		pkg.Authentication,
+		pkg.PolicyDisclosure,
+		pkg.Refunds,
 	)
 	pkg.SubmissionCheck = buildDisputeEvidenceSubmissionCheck(pkg.CanSubmit, pkg.EvidenceChecklist)
 }
@@ -336,7 +359,7 @@ func disputeProductDescription(orderRecord *orderdomain.Order) string {
 	return truncateEvidenceText(strings.Join(lines, "\n"), 20000)
 }
 
-func disputeUncategorizedText(orderRecord *orderdomain.Order, disputeRecord *paymentdomain.StripeDispute, events []shippingdomain.TrackingEvent) string {
+func disputeUncategorizedText(orderRecord *orderdomain.Order, disputeRecord *paymentdomain.StripeDispute, events []shippingdomain.TrackingEvent, policyDisclosure *DisputePolicyDisclosureEvidence, refunds []DisputeRefundEvidence) string {
 	if orderRecord == nil {
 		return ""
 	}
@@ -357,6 +380,21 @@ func disputeUncategorizedText(orderRecord *orderdomain.Order, disputeRecord *pay
 	}
 	if disputeRecord != nil {
 		lines = append(lines, fmt.Sprintf("Stripe dispute reason: %s; disputed amount: %.2f %s.", disputeRecord.Reason, disputeRecord.Amount, disputeRecord.Currency))
+	}
+	if policyDisclosure != nil {
+		lines = append(lines, fmt.Sprintf(
+			"Refund and return policy disclosure: version=%s; hash=%s; locale=%s; URL=%s; disclosed_at=%s; consented_at=%s; source=%s.",
+			policyDisclosure.PolicyVersion,
+			policyDisclosure.PolicyHash,
+			policyDisclosure.Locale,
+			policyDisclosure.PolicyURL,
+			policyDisclosure.DisclosedAt.UTC().Format(time.RFC3339),
+			formatOptionalDisputeTime(policyDisclosure.ConsentedAt),
+			policyDisclosure.Source,
+		))
+	}
+	if summary := refundEvidenceSummary(refunds); summary != "" {
+		lines = append(lines, summary)
 	}
 	if delivered := deliveredTrackingEvent(events); delivered != nil {
 		lines = append(lines, fmt.Sprintf("Delivered tracking event: %s | %s | %s | %s", delivered.EventTime.UTC().Format(time.RFC3339), delivered.Status, delivered.Location, delivered.Description))

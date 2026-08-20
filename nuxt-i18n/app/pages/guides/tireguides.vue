@@ -102,6 +102,7 @@ import InnerTubeGuide from '~/components/tireguides/InnerTubeGuide.vue'
 import InstallationGuide from '~/components/tireguides/InstallationGuide.vue'
 import TireSizeGuide from '~/components/tireguides/TireSizeGuide.vue'
 import { usePageSubNavigationTab } from '~/composables/usePageSubNavigationTab'
+import { normalizeShopProduct } from '~/composables/useShopProducts'
 import { tireGuideTabs } from '~/utils/pageSubNavigation'
 
 definePageMeta({
@@ -149,18 +150,19 @@ const openTireProductsDrawer = async () => {
 
     const products = Array.isArray(response?.items) ? response.items : []
     if (products.length > 0) {
-      tireProductsResults.value = products.map((item: any) => ({
-        id: item.id,
-        title: item.title,
-        url: item.preview_url || `/shop/${item.slug || item.id}`,
-        thumbnail: item.thumbnail,
-        price:
-          Number(item.prices?.sale) > 0
-            ? `$${item.prices.sale}`
-            : Number(item.prices?.regular) > 0
-              ? `$${item.prices.regular}`
-              : '',
-      }))
+      tireProductsResults.value = products.map((item: any) => {
+        const normalized = normalizeShopProduct(item)
+        return {
+          ...normalized,
+          thumbnail: normalized.thumbnail || item.thumbnail,
+          price: normalized.priceLabel ||
+            (Number(item.prices?.sale) > 0
+              ? `$${item.prices.sale}`
+              : Number(item.prices?.regular) > 0
+                ? `$${item.prices.regular}`
+                : ''),
+        }
+      })
     } else {
       tireProductsResults.value = []
     }

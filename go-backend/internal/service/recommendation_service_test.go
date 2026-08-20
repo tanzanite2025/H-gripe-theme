@@ -55,6 +55,23 @@ func TestRecommendationServiceUsesEnglishFallbackWhenLocaleHasNoProducts(t *test
 	require.Equal(t, englishProduct.ID, result.Items[0].ProductID)
 }
 
+func TestRecommendationServicePrefersRequestedLocaleProducts(t *testing.T) {
+	db, productService := newTestProductService(t)
+	englishProduct := seedRecommendationProduct(t, db, "english-wheel", "English Wheel", "en", true, 2, false, 1)
+	seedRecommendationProduct(t, db, "french-wheel", "French Wheel", "fr", true, 2, true, 100)
+
+	recommendationService := NewRecommendationService(productService)
+	result, err := recommendationService.Recommend(RecommendationRequest{
+		Surface: "homepage",
+		Locale:  "en-US",
+		Limit:   1,
+	})
+
+	require.NoError(t, err)
+	require.Len(t, result.Items, 1)
+	require.Equal(t, englishProduct.ID, result.Items[0].ProductID)
+}
+
 func TestRecommendationServiceValidatesSurfaceAndLimit(t *testing.T) {
 	recommendationService := NewRecommendationService(&ProductService{})
 

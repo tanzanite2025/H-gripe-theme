@@ -15,6 +15,7 @@
     "noResults": "Tidak ada FAQ yang cocok dengan \"{query}\"",
     "allFaqsMetaTitle": "Semua FAQ",
     "loadingAnswers": "Memuat jawaban",
-    "illustrationAlt": "Ilustrasi FAQ"
+    "illustrationAlt": "Ilustrasi FAQ",
+    "selectQuestion": "Select a question to view the answer."
   }
 }

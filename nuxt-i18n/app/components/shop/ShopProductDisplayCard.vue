@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import { useLocalePath } from '#imports'
 import ProductRatingCompact from '~/components/shop/ProductRatingCompact.vue'
+import ProductSharePopover from '~/components/shop/ProductSharePopover.vue'
 import { resolveShopProductImage, type ShopProduct } from '~/composables/useShopProducts'
 
 type ShopProductDisplayCardDensity = 'catalog' | 'quick-buy'
@@ -12,6 +14,7 @@ const props = withDefaults(defineProps<{
   selected?: boolean
   showDetailsAction?: boolean
   showRating?: boolean
+  showShareAction?: boolean
   showWishlistAction?: boolean
   showViewAction?: boolean
 }>(), {
@@ -20,6 +23,7 @@ const props = withDefaults(defineProps<{
   selected: false,
   showDetailsAction: false,
   showRating: true,
+  showShareAction: true,
   showWishlistAction: false,
   showViewAction: true,
 })
@@ -28,6 +32,7 @@ const emit = defineEmits<{
   select: [product: ShopProduct]
   details: [product: ShopProduct]
   wishlist: [product: ShopProduct]
+  view: [product: ShopProduct]
 }>()
 
 const handleProductBodyClick = () => {
@@ -50,12 +55,52 @@ const handleWishlistClick = () => {
   emit('wishlist', props.product)
 }
 
+const handleViewClick = () => {
+  emit('view', props.product)
+}
+
+const shareDialogOpen = ref(false)
+const shareButtonElement = ref<HTMLElement | null>(null)
+const localePath = useLocalePath()
+
+const handleShareClick = () => {
+  shareDialogOpen.value = !shareDialogOpen.value
+}
+
+const handleShareDialogClose = () => {
+  shareDialogOpen.value = false
+}
+
 const productImageSrc = computed(() => resolveShopProductImage(props.product, 'card'))
+const productWeightGrams = computed(() => {
+  const productWeight = Number(props.product.weightGrams || 0)
+  if (productWeight > 0) return Math.round(productWeight)
+
+  const defaultVariant = props.product.variants.find(variant => variant.isDefault) || props.product.variants[0] || null
+  const variantWeight = Number(defaultVariant?.weightGrams || 0)
+  return variantWeight > 0 ? Math.round(variantWeight) : 0
+})
+const productWeightLabel = computed(() => {
+  const grams = productWeightGrams.value
+  if (grams <= 0) return ''
+  if (grams < 1000) return `${grams}g`
+
+  const kilograms = grams / 1000
+  return `${kilograms.toFixed(kilograms >= 10 ? 1 : 2).replace(/\.?0+$/, '')}kg`
+})
+
+const productDetailUrl = computed(() => {
+  const rawUrl = String(props.product.url || '').trim()
+  if (!rawUrl) return ''
+  if (/^https?:\/\//i.test(rawUrl)) return rawUrl
+  if (/^\/[a-z]{2}(?:[_-][a-z]{2})?\/shop\/[^/?#]+(?:[?#].*)?$/i.test(rawUrl)) return rawUrl
+  return localePath(rawUrl)
+})
 </script>
 
 <template>
   <article
-    class="shop-product-display-card"
+    class="shop-product-display-card tz-product-card"
     :class="[
       `shop-product-display-card--${density}`,
       { 'shop-product-display-card--selected': selectable && selected },
@@ -79,7 +124,7 @@ const productImageSrc = computed(() => resolveShopProductImage(props.product, 'c
         <Icon v-if="selected" name="lucide:check" class="h-3.5 w-3.5" />
       </span>
 
-      <div class="shop-product-display-card__image">
+      <div class="shop-product-display-card__image tz-product-card__image">
         <StorefrontImage
           v-if="productImageSrc"
           :src="productImageSrc"
@@ -91,7 +136,7 @@ const productImageSrc = computed(() => resolveShopProductImage(props.product, 'c
         </span>
       </div>
 
-      <div class="shop-product-display-card__content">
+      <div class="shop-product-display-card__content tz-product-card__body">
         <h3 class="shop-product-display-card__title">
           {{ product.title }}
         </h3>
@@ -99,12 +144,39 @@ const productImageSrc = computed(() => resolveShopProductImage(props.product, 'c
           v-if="showRating"
           class="shop-product-display-card__rating"
           :summary="product.reviewSummary"
+          show-empty
           :size="density === 'quick-buy' ? 'xs' : 'sm'"
           :show-count="density !== 'quick-buy'"
         />
-        <p v-if="product.priceLabel" class="shop-product-display-card__price">
-          {{ product.priceLabel }}
-        </p>
+        <div
+          v-if="productWeightLabel || product.priceLabel"
+          class="shop-product-display-card__facts"
+        >
+          <span
+            v-if="productWeightLabel"
+            class="shop-product-display-card__fact shop-product-display-card__fact--weight"
+            :aria-label="`${$t('quickBuy.summary.weight', 'Weight')}: ${productWeightLabel}`"
+            :title="`${$t('quickBuy.summary.weight', 'Weight')}: ${productWeightLabel}`"
+          >
+            <Icon name="lucide:weight" class="h-3.5 w-3.5" aria-hidden="true" />
+            <span class="shop-product-display-card__fact-value">{{ productWeightLabel }}</span>
+          </span>
+          <span
+            v-else
+            class="shop-product-display-card__fact-placeholder"
+            aria-hidden="true"
+          />
+
+          <span
+            v-if="product.priceLabel"
+            class="shop-product-display-card__fact shop-product-display-card__fact--price"
+            :aria-label="`${$t('quickBuy.summary.price', 'Price')}: ${product.priceLabel}`"
+            :title="`${$t('quickBuy.summary.price', 'Price')}: ${product.priceLabel}`"
+          >
+            <Icon name="lucide:badge-dollar-sign" class="h-3.5 w-3.5" aria-hidden="true" />
+            <span class="shop-product-display-card__fact-value">{{ product.priceLabel }}</span>
+          </span>
+        </div>
       </div>
     </div>
 
@@ -120,7 +192,7 @@ const productImageSrc = computed(() => resolveShopProductImage(props.product, 'c
     </button>
 
     <div
-      v-if="showWishlistAction || (showViewAction && product.url)"
+      v-if="showWishlistAction || (showViewAction && product.url) || (showShareAction && product.url)"
       class="shop-product-display-card__actions"
     >
       <button
@@ -134,13 +206,42 @@ const productImageSrc = computed(() => resolveShopProductImage(props.product, 'c
         <Icon name="lucide:heart" class="h-3.5 w-3.5" aria-hidden="true" />
       </button>
 
+      <!-- Product-detail link: opens the current product's detail page. -->
       <NuxtLink
         v-if="showViewAction && product.url"
-        :to="product.url"
+        :to="productDetailUrl"
         class="shop-product-display-card__view-action"
+        :aria-label="`${$t('products.detail.viewDetails', 'View product details')}: ${product.title}`"
+        :title="`${$t('products.detail.viewDetails', 'View product details')}: ${product.title}`"
+        @click="handleViewClick"
       >
-        {{ $t('shopPage.actions.view', 'View') }}
+        <Icon name="lucide:eye" class="h-4 w-4" aria-hidden="true" />
       </NuxtLink>
+
+      <div
+        v-if="showShareAction && product.url"
+        class="shop-product-display-card__share-group"
+      >
+        <button
+          ref="shareButtonElement"
+          type="button"
+          class="shop-product-display-card__share-action"
+          :class="{ 'shop-product-display-card__share-action--active': shareDialogOpen }"
+          :aria-expanded="shareDialogOpen"
+          :aria-label="`${$t('common.share', 'Share')}: ${product.title}`"
+          :title="`${$t('common.share', 'Share')}: ${product.title}`"
+          @click.stop="handleShareClick"
+        >
+          <Icon name="lucide:share-2" class="h-4 w-4" aria-hidden="true" />
+        </button>
+
+        <ProductSharePopover
+          v-if="shareDialogOpen"
+          :product="product"
+          :anchor-el="shareButtonElement"
+          @close="handleShareDialogClose"
+        />
+      </div>
     </div>
   </article>
 </template>
@@ -165,6 +266,8 @@ const productImageSrc = computed(() => resolveShopProductImage(props.product, 'c
 
 .shop-product-display-card--quick-buy {
   height: 100%;
+  --tz-product-card-width: 100%;
+  --tz-product-card-content-height: auto;
   border: 0;
   background:
     linear-gradient(180deg, var(--quickbuy-panel-surface-raised, #17171b), #0e0e11);
@@ -182,9 +285,12 @@ const productImageSrc = computed(() => resolveShopProductImage(props.product, 'c
 
 .shop-product-display-card--quick-buy .shop-product-display-card__image {
   aspect-ratio: 16 / 9;
+  height: auto;
 }
 
 .shop-product-display-card--quick-buy .shop-product-display-card__content {
+  height: auto;
+  min-height: 0;
   padding: 0.5rem 0.625rem 0.625rem;
 }
 
@@ -192,7 +298,7 @@ const productImageSrc = computed(() => resolveShopProductImage(props.product, 'c
   font-size: 0.6875rem;
 }
 
-.shop-product-display-card--quick-buy .shop-product-display-card__price {
+.shop-product-display-card--quick-buy .shop-product-display-card__facts {
   font-size: 0.6875rem;
 }
 
@@ -293,11 +399,41 @@ const productImageSrc = computed(() => resolveShopProductImage(props.product, 'c
   margin: 0.05rem 0 0.4rem;
 }
 
-.shop-product-display-card__price {
+.shop-product-display-card__facts {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0.5rem;
   margin: auto 0 0;
-  color: #b5ff6d;
   font-size: 0.75rem;
+  font-weight: 700;
   line-height: 1.25;
+}
+
+.shop-product-display-card__fact,
+.shop-product-display-card__fact-placeholder {
+  min-width: 0;
+}
+
+.shop-product-display-card__fact {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.shop-product-display-card__fact--weight {
+  color: rgba(226, 232, 240, 0.78);
+}
+
+.shop-product-display-card__fact--price {
+  justify-content: flex-end;
+  color: #b5ff6d;
+}
+
+.shop-product-display-card__fact-value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .shop-product-display-card__details-action {
@@ -327,11 +463,23 @@ const productImageSrc = computed(() => resolveShopProductImage(props.product, 'c
 .shop-product-display-card__actions {
   display: flex;
   align-items: center;
-  gap: 0.375rem;
+  justify-content: center;
+  gap: 0.625rem;
   padding: 0 0.75rem 0.75rem;
 }
 
-.shop-product-display-card__wishlist-action {
+.shop-product-display-card__share-group {
+  position: relative;
+  display: inline-flex;
+  min-width: 0;
+  flex: 0 1 auto;
+  align-items: center;
+  justify-content: center;
+}
+
+.shop-product-display-card__wishlist-action,
+.shop-product-display-card__view-action,
+.shop-product-display-card__share-action {
   display: grid;
   width: 2rem;
   height: 2rem;
@@ -340,34 +488,26 @@ const productImageSrc = computed(() => resolveShopProductImage(props.product, 'c
   border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: 999px;
   color: rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.08);
   transition: background-color 160ms ease, color 160ms ease;
 }
 
-.shop-product-display-card__wishlist-action:hover {
+.shop-product-display-card__wishlist-action:hover,
+.shop-product-display-card__view-action:hover,
+.shop-product-display-card__share-action:hover {
   color: white;
   background: rgba(255, 255, 255, 0.15);
 }
 
-.shop-product-display-card__view-action {
-  display: flex;
-  min-width: 0;
-  flex: 1 1 auto;
-  align-items: center;
-  justify-content: center;
-  padding: 0.375rem 0.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 0.25rem;
-  color: white;
-  background: rgba(255, 255, 255, 0.1);
-  font-size: 0.6875rem;
-  line-height: 1.25;
-  text-align: center;
-  transition: background-color 160ms ease, border-color 160ms ease;
+.shop-product-display-card__share-action:hover,
+.shop-product-display-card__share-action--active {
+  border-color: var(--tz-brand-primary, #b5ff6d);
+  color: var(--tz-brand-primary, #b5ff6d);
+  background: rgba(181, 255, 109, 0.1);
 }
 
-.shop-product-display-card__view-action:hover {
-  border-color: rgba(255, 255, 255, 0.4);
-  background: rgba(255, 255, 255, 0.2);
+.shop-product-display-card__view-action {
+  color: white;
 }
 
 @media (max-width: 767px) {

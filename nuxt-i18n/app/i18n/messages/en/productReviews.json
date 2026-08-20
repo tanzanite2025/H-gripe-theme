@@ -6,7 +6,7 @@
   "loading": "Loading reviews...",
   "loadError": "Reviews could not be loaded.",
   "retry": "Try again",
-  "empty": "No approved reviews yet.",
+  "empty": "No reviews yet.",
   "ratingLabel": "{rating} out of 5 stars",
   "imageAlt": "Customer review image",
   "verifiedPurchase": "Verified purchase",

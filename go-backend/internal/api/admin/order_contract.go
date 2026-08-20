@@ -23,6 +23,13 @@ type trackingInfoRequest struct {
 	CarrierServiceID   *uint  `json:"carrier_service_id"`
 }
 
+type orderFulfillmentRequest struct {
+	TrackingNumber     string `json:"tracking_number" binding:"required"`
+	TrackingProviderID uint   `json:"tracking_provider_id" binding:"required"`
+	CarrierID          *uint  `json:"carrier_id"`
+	CarrierServiceID   *uint  `json:"carrier_service_id"`
+}
+
 type adminNoteRequest struct {
 	AdminNote string `json:"admin_note"`
 }
@@ -54,6 +61,15 @@ func (r trackingInfoRequest) toServiceInput() service.OrderTrackingUpdateInput {
 	}
 }
 
+func (r orderFulfillmentRequest) toServiceInput() service.OrderTrackingUpdateInput {
+	return service.OrderTrackingUpdateInput{
+		TrackingNumber:     r.TrackingNumber,
+		TrackingProviderID: r.TrackingProviderID,
+		CarrierID:          r.CarrierID,
+		CarrierServiceID:   r.CarrierServiceID,
+	}
+}
+
 func respondOrderServiceError(c *gin.Context, err error, fallbackMessage string, defaultStatus int) {
 	switch {
 	case errors.Is(err, service.ErrOrderNotFound):
@@ -70,6 +86,9 @@ func respondOrderServiceError(c *gin.Context, err error, fallbackMessage string,
 	case errors.Is(err, service.ErrOrderDisputeEmailNotConfigured):
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Order dispute contact email is not configured"})
 	case errors.Is(err, service.ErrSystemManagedOrderStatus):
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	case errors.Is(err, service.ErrOrderFulfillmentNotAllowed),
+		errors.Is(err, service.ErrOrderFulfillmentPaymentRequired):
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	case errors.Is(err, service.ErrOrderDeleteNotAllowed):
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})

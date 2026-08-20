@@ -8,10 +8,18 @@
         @click="emit('back')"
       >
         <Icon name="lucide:arrow-left" class="h-4 w-4" />
-        <span>Back</span>
+        <span>{{ t('wheelsetSelectionAssistant.question.back') }}</span>
       </button>
-      <h3>{{ question.prompt }}</h3>
-      <p v-if="question.helper">{{ question.helper }}</p>
+      <div class="wheelset-selection-question-panel__title-row">
+        <h3>{{ question.prompt }}</h3>
+        <QuickBuyLocalizedHelpQuestionMarkDialog
+          v-if="question.helpBody"
+          :title="question.helpTitle || t('quickBuy.help.title', 'Help')"
+          :content="question.helpBody"
+          :trigger-aria-label="question.helpTitle || t('quickBuy.help.title', 'Help')"
+          :close-label="t('common.close', 'Close')"
+        />
+      </div>
     </div>
 
     <div class="wheelset-selection-question-panel__options">
@@ -33,6 +41,8 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from '#imports'
+import QuickBuyLocalizedHelpQuestionMarkDialog from '~/components/quick-buy/QuickBuyLocalizedHelpQuestionMarkDialog.vue'
 import type { WheelsetSelectionQuestion } from '~/types/wheelsetSelectionAssistant'
 
 withDefaults(defineProps<{
@@ -42,6 +52,8 @@ withDefaults(defineProps<{
 }>(), {
   canGoBack: false,
 })
+
+const { t } = useI18n()
 
 const emit = defineEmits<{
   select: [value: string]
@@ -63,6 +75,12 @@ const emit = defineEmits<{
   gap: 0.35rem;
 }
 
+.wheelset-selection-question-panel__title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
 .wheelset-selection-question-panel__back {
   display: inline-flex;
   width: fit-content;
@@ -74,16 +92,12 @@ const emit = defineEmits<{
 }
 
 .wheelset-selection-question-panel__copy h3 {
+  min-width: 0;
+  margin: 0;
   color: var(--tz-text-primary, #f8fafc);
   font-size: 1rem;
   font-weight: 800;
   line-height: 1.35;
-}
-
-.wheelset-selection-question-panel__copy p {
-  color: var(--tz-text-muted, #94a3b8);
-  font-size: 0.875rem;
-  line-height: 1.5;
 }
 
 .wheelset-selection-question-panel__options {

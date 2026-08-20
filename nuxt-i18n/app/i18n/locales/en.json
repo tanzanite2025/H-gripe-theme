@@ -597,6 +597,7 @@
   },
   "common": {
     "close": "Close",
+    "share": "Share",
     "previous": "Previous",
     "next": "Next",
     "currentPage": "Current page",
@@ -610,7 +611,8 @@
     "decrease": "Decrease",
     "increase": "Increase",
     "remove": "Remove",
-    "done": "Done"
+    "done": "Done",
+    "shop": "Shop"
   },
   "company": {
     "nav": {
@@ -739,7 +741,8 @@
       "noResults": "No FAQs found matching \"{query}\"",
       "allFaqsMetaTitle": "All FAQs",
       "loadingAnswers": "Loading answers",
-      "illustrationAlt": "FAQ illustration"
+      "illustrationAlt": "FAQ illustration",
+      "selectQuestion": "Select a question to view the answer."
     }
   },
   "feedback": {
@@ -1010,6 +1013,12 @@
     "searchHint": {
       "title": "Search products and FAQ",
       "body": "Click to search products, FAQ, and more."
+    },
+    "globalNavigationTransition": {
+      "ariaLabel": "Global content navigation",
+      "optionsLabel": "Choose a destination",
+      "trigger": "Open content navigation",
+      "triggerBody": "Choose Products, FAQ, Pages, or Blog."
     }
   },
   "home": {
@@ -1043,43 +1052,77 @@
     "trust": {
       "title": "Shop with Confidence"
     },
+    "mainProductCategories": {
+      "eyebrow": "Store picks",
+      "heading": "Featured picks from our shop",
+      "shopAll": "Shop all",
+      "cardAction": "View details",
+      "localeFallbackTitle": "Using the default store picks",
+      "localeFallbackDescription": "A localized store-pick selection is not available yet.",
+      "loadingTitle": "Loading store picks",
+      "loadingDescription": "Preparing the current featured selection.",
+      "errorTitle": "Store picks are unavailable",
+      "errorDescription": "You can still browse all products.",
+      "emptyConfiguredTitle": "Store picks are being prepared",
+      "emptyConfiguredDescription": "Browse all products while the featured selection is being updated.",
+      "emptyUnconfiguredTitle": "Store picks are not set yet",
+      "emptyUnconfiguredDescription": "You can browse all products for now."
+    },
+    "storePicksGuide": {
+      "precisionMatching": {
+        "title": "Need precision matching?",
+        "description": "See below how to choose.",
+        "action": "See how to choose"
+      },
+      "customProduction": {
+        "title": "Bulk custom or partnership?",
+        "description": "View our custom order and full production workflow.",
+        "action": "View custom workflow"
+      },
+      "productGallery": {
+        "title": "Want to browse the product gallery first?",
+        "description": "View our product gallery before deciding.",
+        "action": "View product gallery"
+      },
+      "paymentSafety": {
+        "title": "Payment and after-sales safety",
+        "description": "Review payment and after-sales protection in Shop with Confidence.",
+        "action": "View safety details"
+      },
+      "quickbuyBuild": {
+        "title": "Want to build a wheelset with your own components?",
+        "description": "Open the QuickBuy step selector to choose your own components and build path.",
+        "action": "Open QuickBuy"
+      }
+    },
     "shopWithConfidence": {
-      "items": {
-        "0": {
-          "title": "Secure Payment",
-          "description": "All transactions are protected by industry-standard HTTPS encryption.",
-          "bullets": {
-            "0": "Verified SSL Security",
-            "1": "Major Cards via Stripe",
-            "2": "PayPal, WeChat & Alipay"
-          }
+      "eyebrow": "Payment protection",
+      "subtitle": "Pay through providers you recognize. Your payment is verified against your order, and every purchase has a clear support path.",
+      "paymentMethodsLabel": "Supported payment methods",
+      "paymentAssurances": {
+        "0": "Payment details are handled securely by the payment provider.",
+        "1": "We do not store your full card number, CVV, or PIN."
+      },
+      "cards": {
+        "securePayment": {
+          "title": "Secure payment",
+          "description": "Choose a trusted card or wallet provider at checkout.",
+          "action": "View payment security"
         },
-        "1": {
-          "title": "Worldwide Shipping",
-          "description": "Placeholder copy. Add delivery, tracking, and packaging details here.",
-          "bullets": {
-            "0": "Placeholder bullet",
-            "1": "Placeholder bullet",
-            "2": "Placeholder bullet"
-          }
+        "paymentVerification": {
+          "title": "Payment verified before completion",
+          "description": "We verify the payment result, amount, and currency on the server before an order is marked as paid.",
+          "action": "Get payment help"
         },
-        "2": {
-          "title": "Warranty Coverage",
-          "description": "Placeholder copy. Add warranty terms and verification details here.",
-          "bullets": {
-            "0": "Placeholder bullet",
-            "1": "Placeholder bullet",
-            "2": "Placeholder bullet"
-          }
+        "deliverySupport": {
+          "title": "Order and delivery support",
+          "description": "Keep your order number or provider reference. Our team can help check payment and delivery questions with you.",
+          "action": "View shipping information"
         },
-        "3": {
-          "title": "After‑Sales Support",
-          "description": "Placeholder copy. Add support response and service coverage details here.",
-          "bullets": {
-            "0": "Placeholder bullet",
-            "1": "Placeholder bullet",
-            "2": "Placeholder bullet"
-          }
+        "afterSalesSupport": {
+          "title": "Warranty and after-sales help",
+          "description": "For transit damage, warranty questions, or return requests, use the dedicated support route.",
+          "action": "View warranty and support"
         }
       }
     },
@@ -1193,6 +1236,14 @@
       "title": "Featured Products",
       "subtitle": "Explore our carbon rims and wheelsets. More categories and components will be added over time.",
       "viewAll": "Shop all",
+      "eyebrow": "Featured wheelsets",
+      "heading": "Featured wheelsets",
+      "description": "See our featured wheelsets, current prices, ratings, and the fastest route to a product page.",
+      "shopAll": "Shop all wheelsets",
+      "mobilePagesLabel": "Featured wheelset pages",
+      "mobilePageLabel": "Show featured wheelsets page {page}",
+      "moreAvailable": "Browse all {count} wheelsets",
+      "moreAvailableUnknown": "Browse all wheelsets",
       "items": {
         "0": {
           "title": "Carbon Rim Set",
@@ -1215,6 +1266,77 @@
           "price": "From $—"
         }
       }
+    },
+    "wheelsetStandards": {
+      "eyebrow": "Wheelset standards",
+      "title": "Know what is checked before it ships",
+      "ariaLabel": "Wheelset standards",
+      "previous": "Show previous wheelset standard",
+      "next": "Show next wheelset standard",
+      "progress": "Wheelset standards progress",
+      "showStep": "Show wheelset standard {step}",
+      "steps": {
+        "0": {
+          "step": "01 / Truing",
+          "title": "Precision is checked",
+          "description": "Radial and lateral runout are checked on a truing stand before final inspection.",
+          "visualLabel": "Runout",
+          "visualValue": "DIAL CHECK"
+        },
+        "1": {
+          "step": "02 / Tension",
+          "title": "Spoke tension is balanced",
+          "description": "Tension is brought up progressively and checked across the wheel for an even load path.",
+          "visualLabel": "Tension",
+          "visualValue": "EVEN LOAD"
+        },
+        "2": {
+          "step": "03 / Stress relief",
+          "title": "Stress relief is included",
+          "description": "The wheel is stress-relieved before the last tension and true check, helping the build settle.",
+          "visualLabel": "Stress",
+          "visualValue": "RELIEVED"
+        },
+        "3": {
+          "step": "04 / Alignment",
+          "title": "Dish and alignment are verified",
+          "description": "Hub position, rim center, and dish are checked against the selected frame and drivetrain setup.",
+          "visualLabel": "Alignment",
+          "visualValue": "VERIFIED"
+        },
+        "4": {
+          "step": "05 / Setup",
+          "title": "The selected setup is respected",
+          "description": "Rim tape, valve, freehub, and other build details follow the wheelset configuration you choose.",
+          "visualLabel": "Build",
+          "visualValue": "TO SPEC"
+        },
+        "5": {
+          "step": "06 / Sign-off",
+          "title": "Final quality check",
+          "description": "The finished wheelset gets a final review before packing, with the build matched to the order.",
+          "visualLabel": "Quality",
+          "visualValue": "SIGNED OFF"
+        }
+      }
+    },
+    "brandPhotoCarousel": {
+      "eyebrow": "Gallery",
+      "title": "Brand Photo",
+      "viewMore": "View more",
+      "ariaLabel": "Brand photo carousel",
+      "previous": "Show previous brand photo",
+      "next": "Show next brand photo",
+      "progress": "Brand photo progress",
+      "showSlide": "Show brand photo category {slide}",
+      "lightboxClose": "Close gallery",
+      "lightboxPreviousImage": "Previous image",
+      "lightboxNextImage": "Next image",
+      "lightboxImageThumbnails": "Gallery image thumbnails",
+      "lightboxLoadingDetails": "Loading gallery details...",
+      "lightboxNoImage": "No image available",
+      "lightboxRelatedProducts": "Related products",
+      "lightboxNoRelatedProducts": "No related products configured."
     },
     "innovationRd": {
       "title": "Innovation & R&D",
@@ -1503,7 +1625,7 @@
     "loading": "Loading reviews...",
     "loadError": "Reviews could not be loaded.",
     "retry": "Try again",
-    "empty": "No approved reviews yet.",
+    "empty": "No reviews yet.",
     "ratingLabel": "{rating} out of 5 stars",
     "imageAlt": "Customer review image",
     "verifiedPurchase": "Verified purchase",
@@ -1597,7 +1719,13 @@
         "modalDescription": "Choose what you know now. We only ask for missing fit details."
       },
       "eyebrow": "QUICKBUY",
-      "title": "Choose how to start"
+      "title": "Choose how to start",
+      "contactService": {
+        "modalTitle": "Email or chat with support",
+        "title": "Email support",
+        "description": "Send specs or questions by email.",
+        "action": "Start"
+      }
     },
     "help": {
       "title": "QUICK instructions"
@@ -1714,6 +1842,82 @@
       "note": "Tip: If you are unsure, use the manufacturer's published specs. If you measure yourself, measure twice and enter values to the same unit (mm)."
     }
   },
+  "storefrontDataNotice": {
+    "featuredProducts": {
+      "loading": {
+        "title": "Loading featured wheelsets",
+        "description": "Preparing the current selection."
+      },
+      "error": {
+        "title": "Featured wheelsets are unavailable",
+        "description": "Please retry or browse the complete wheelset collection."
+      },
+      "empty": {
+        "title": "No featured wheelsets yet",
+        "description": "Browse the complete wheelset collection while new recommendations are being prepared."
+      }
+    },
+    "hero": {
+      "loading": {
+        "title": "Loading the visual showcase",
+        "description": "Preparing the latest factory and product visuals."
+      },
+      "error": {
+        "title": "The visual showcase is unavailable",
+        "description": "The rest of the home page is still ready to explore."
+      },
+      "localeFallback": {
+        "title": "Using our standard visual showcase",
+        "description": "A localized visual selection is not available yet."
+      },
+      "builtInFallback": {
+        "title": "Using the built-in visual showcase",
+        "description": "The latest configured visual selection could not be loaded."
+      }
+    },
+    "productFamilies": {
+      "localeFallback": {
+        "title": "Using the default store picks",
+        "description": "A localized store-pick selection is not available yet."
+      },
+      "loading": {
+        "title": "Loading store picks",
+        "description": "Preparing the current featured selection."
+      },
+      "error": {
+        "title": "Store picks are unavailable",
+        "description": "You can still browse all products."
+      },
+      "emptyConfigured": {
+        "title": "Store picks are being prepared",
+        "description": "Browse all products while the featured selection is being updated."
+      },
+      "emptyUnconfigured": {
+        "title": "Store picks are not set yet",
+        "description": "You can browse all products for now."
+      }
+    },
+    "refundReturnPolicy": {
+      "error": {
+        "title": "The refund and return policy is unavailable",
+        "description": "Please contact support for help with a return or refund."
+      },
+      "loading": {
+        "title": "Loading the refund and return policy",
+        "description": "Preparing the current policy details."
+      },
+      "empty": {
+        "title": "The refund and return policy is not available",
+        "description": "Please contact support for help with a return or refund."
+      },
+      "contactSupport": "Contact Support",
+      "lastUpdated": "Last Updated",
+      "fallbackNotice": {
+        "title": "Showing the standard refund and return policy",
+        "description": "The current policy could not be loaded, so we are showing the standard version."
+      }
+    }
+  },
   "support": {
     "nav": {
       "faqs": "All FAQs",
@@ -1779,6 +1983,47 @@
     },
     "cardDesc": "Enter your product code to check warranty status and history.",
     "checkNow": "Check Now"
+  },
+  "wheelsetSelectionAssistant": {
+    "title": "Wheelset fit helper",
+    "eyebrow": "Wheelset guide",
+    "steps": {
+      "start": "Start",
+      "knowledge": "Known specs",
+      "bikeBasics": "Bike fit",
+      "summary": "Summary"
+    },
+    "question": {
+      "back": "Back"
+    },
+    "questionPagination": {
+      "label": "Question cards",
+      "goToQuestion": "Show question"
+    },
+    "support": {
+      "title": "Need help choosing?",
+      "description": "Contact support with your bike model or requirements.",
+      "action": "Contact support"
+    },
+    "states": {
+      "loading": "Loading fit questions...",
+      "retry": "Try again",
+      "empty": "No fit question is available yet."
+    },
+    "outcome": {
+      "eyebrow": "Fit profile",
+      "fallbackTitle": "Your fit profile is ready.",
+      "back": "Review previous answer",
+      "contact": "Send fit profile to support"
+    },
+    "results": {
+      "title": "Wheelset products",
+      "loading": "Matching wheelsets...",
+      "empty": "No wheelsets match these answers yet.",
+      "pagination": "Wheelset product result pages",
+      "previousPage": "Previous page",
+      "nextPage": "Next page"
+    }
   },
   "wishlistDrawer": {
     "title": "Wishlist",

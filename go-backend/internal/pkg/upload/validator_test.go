@@ -127,6 +127,46 @@ func TestValidateFileAcceptsFixedDimensionWebP(t *testing.T) {
 	}
 }
 
+func TestValidateSVGFileAccepts48By48SiteLogo(t *testing.T) {
+	file := testFileHeader(t, "site-logo.svg", []byte(`<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48"><path d="M0 0h48v48H0z"/></svg>`))
+
+	if err := ValidateSVGFile(file, SiteLogoSVGRule); err != nil {
+		t.Fatalf("expected 48x48 SVG to be accepted, got %v", err)
+	}
+}
+
+func TestValidateSVGFileAccepts48By48ViewBox(t *testing.T) {
+	file := testFileHeader(t, "site-logo.svg", []byte(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path d="M0 0h48v48H0z"/></svg>`))
+
+	if err := ValidateSVGFile(file, SiteLogoSVGRule); err != nil {
+		t.Fatalf("expected 48x48 viewBox SVG to be accepted, got %v", err)
+	}
+}
+
+func TestValidateSVGFileRejectsNon48By48SiteLogo(t *testing.T) {
+	file := testFileHeader(t, "site-logo.svg", []byte(`<svg xmlns="http://www.w3.org/2000/svg" width="500" height="500"><path d="M0 0h500v500H0z"/></svg>`))
+
+	err := ValidateSVGFile(file, SiteLogoSVGRule)
+	if err == nil {
+		t.Fatal("expected non-48x48 SVG to be rejected")
+	}
+	if ErrorCode(err) != CodeInvalidDimensions {
+		t.Fatalf("expected %q, got %q", CodeInvalidDimensions, ErrorCode(err))
+	}
+}
+
+func TestValidateSVGFileRejectsActiveContent(t *testing.T) {
+	file := testFileHeader(t, "site-logo.svg", []byte(`<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48"><script>alert(1)</script></svg>`))
+
+	err := ValidateSVGFile(file, SiteLogoSVGRule)
+	if err == nil {
+		t.Fatal("expected active SVG content to be rejected")
+	}
+	if ErrorCode(err) != CodeInvalidType {
+		t.Fatalf("expected %q, got %q", CodeInvalidType, ErrorCode(err))
+	}
+}
+
 func TestReadImageDimensionsReturnsWebPDimensions(t *testing.T) {
 	file := testFileHeader(t, "category.webp", validWebPFixture(t))
 

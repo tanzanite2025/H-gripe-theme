@@ -1,6 +1,6 @@
 <template>
  <div class="space-y-4">
-    <AdminPageHeader title="服务中心 / Cloudflare" description="账户、站点与缓存资源">
+    <AdminPageHeader title="服务中心 / Cloudflare" description="查看 Cloudflare 授权、Zone/DNS、代理/TLS 与 Cache Rules 的实际状态">
       <template #actions>
         <select
           v-model="environmentFilter"
@@ -30,19 +30,33 @@
       </template>
     </AdminPageHeader>
 
- <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+    <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
  <div v-for="item in summaryItems" :key="item.label" class="border bg-card p-3">
  <p class="text-[9px] font-black uppercase tracking-widest text-muted-foreground/70">{{ item.label }}</p>
  <p class="mt-2 text-2xl font-black" :class="item.tone">{{ item.value }}</p>
       </div>
     </section>
 
+    <section class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+      <button
+        v-for="item in capabilityItems"
+        :key="item.key"
+        type="button"
+        class="border border-dashed border-border/80 bg-card p-3 text-left transition-colors hover:border-primary/50 hover:bg-muted/20"
+        @click="activeTab = item.tab"
+      >
+        <p class="text-[9px] font-black uppercase tracking-widest text-muted-foreground/70">{{ item.label }}</p>
+        <p class="mt-2 text-sm font-black">{{ item.value }}</p>
+        <p class="mt-1 text-[10px] text-muted-foreground">{{ item.detail }}</p>
+      </button>
+    </section>
+
     <Tabs v-model="activeTab">
- <TabsList variant="line" class="max-w-full overflow-x-auto">
- <TabsTrigger value="connections"><Link2 class="size-3.5" />连接</TabsTrigger>
- <TabsTrigger value="zones"><Globe2 class="size-3.5" />站点</TabsTrigger>
- <TabsTrigger value="cache"><Gauge class="size-3.5" />缓存</TabsTrigger>
- <TabsTrigger value="status"><Activity class="size-3.5" />状态</TabsTrigger>
+      <TabsList variant="line" class="max-w-full overflow-x-auto">
+        <TabsTrigger value="connections"><Link2 class="size-3.5" />授权与权限</TabsTrigger>
+        <TabsTrigger value="zones"><Globe2 class="size-3.5" />Zone / DNS</TabsTrigger>
+        <TabsTrigger value="cache"><Gauge class="size-3.5" />Cache Rules</TabsTrigger>
+        <TabsTrigger value="status"><Activity class="size-3.5" />状态</TabsTrigger>
       </TabsList>
 
  <TabsContent value="connections" class="mt-3">
@@ -326,6 +340,40 @@ const summaryItems = computed(() => [
   { label: 'Zone', value: cloudflare.value?.zone_count || 0, tone: '' },
   { label: '待处理', value: cloudflare.value?.attention_count || 0, tone: 'text-amber-600' },
 ])
+const capabilityItems = computed(() => {
+  const configuredConnections = connections.value.filter((connection) => connection.credential_configured).length
+  const proxiedDomains = (cloudflare.value?.domains || []).filter((domain) => domain.proxy_mode === 'proxied').length
+  return [
+    {
+      key: 'authorization',
+      label: 'API 授权',
+      value: configuredConnections ? `${configuredConnections} 个已授权` : '未完成授权',
+      detail: connections.value.length ? '查看权限范围与最近测试' : '需要先连接 Cloudflare',
+      tab: 'connections',
+    },
+    {
+      key: 'dns',
+      label: 'Zone / DNS',
+      value: `${zones.value.length} 个 Zone`,
+      detail: `${cloudflare.value?.domains.length || 0} 个域名绑定`,
+      tab: 'zones',
+    },
+    {
+      key: 'proxy',
+      label: '代理 / TLS',
+      value: proxiedDomains ? `${proxiedDomains} 个已代理` : '暂无已代理域名',
+      detail: (cloudflare.value?.domains.length || 0) ? '进入 Zone / DNS 查看每个域名' : '尚未关联域名',
+      tab: 'zones',
+    },
+    {
+      key: 'cache',
+      label: 'Cache Rules',
+      value: cacheTargets.value.length ? '可按 Zone 查看' : '暂无可用 Zone',
+      detail: cacheTargets.value.length ? '进入后读取并管理规则' : '需要先绑定 Cloudflare Zone',
+      tab: 'cache',
+    },
+  ]
+})
 const pendingRuleChangeDescription = computed(() => {
   if (!pendingRuleChange.value || !selectedCacheTarget.value) return ''
   const { rule, enabled } = pendingRuleChange.value

@@ -15,6 +15,7 @@
     "noResults": "没有找到与“{query}”匹配的 FAQ",
     "allFaqsMetaTitle": "全部 FAQ",
     "loadingAnswers": "正在加载答案",
-    "illustrationAlt": "FAQ 配图"
+    "illustrationAlt": "FAQ 配图",
+    "selectQuestion": "Select a question to view the answer."
   }
 }

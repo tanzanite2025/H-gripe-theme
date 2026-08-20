@@ -34,7 +34,7 @@ type commercialBehaviorBucket struct {
 type commercialBehaviorTracker struct {
 	mu          sync.Mutex
 	buckets     map[string]*commercialBehaviorBucket
-	redisClient *redis.Client
+	redisClient redis.UniversalClient
 	fallback    *commercialBehaviorTracker
 }
 
@@ -115,7 +115,7 @@ func (t *commercialBehaviorTracker) cleanupExpired(now time.Time) {
 // CommercialInventoryProbeGuard observes public product reads and rate-limits
 // high-volume catalog enumeration. Internal SSR calls without a forwarded
 // client identity are deliberately ignored.
-func CommercialInventoryProbeGuard(redisClients ...*redis.Client) gin.HandlerFunc {
+func CommercialInventoryProbeGuard(redisClients ...redis.UniversalClient) gin.HandlerFunc {
 	tracker := newCommercialBehaviorTrackerWithRedis(optionalCommercialBehaviorRedisClient(redisClients))
 
 	return func(c *gin.Context) {
@@ -150,7 +150,7 @@ func CommercialInventoryProbeGuard(redisClients ...*redis.Client) gin.HandlerFun
 // CommercialOrderEnumerationGuard protects authenticated order detail reads
 // from high-volume guessing. Public order numbers are opaque, so a numeric
 // adjacency signal is no longer available or needed.
-func CommercialOrderEnumerationGuard(redisClients ...*redis.Client) gin.HandlerFunc {
+func CommercialOrderEnumerationGuard(redisClients ...redis.UniversalClient) gin.HandlerFunc {
 	tracker := newCommercialBehaviorTrackerWithRedis(optionalCommercialBehaviorRedisClient(redisClients))
 
 	return func(c *gin.Context) {
@@ -187,7 +187,7 @@ func CommercialOrderEnumerationGuard(redisClients ...*redis.Client) gin.HandlerF
 // CommercialCartProbeGuard limits the high-volume cart mutations commonly used
 // to discover inventory thresholds. It never fabricates inventory responses:
 // authoritative availability remains validated by the cart service.
-func CommercialCartProbeGuard(redisClients ...*redis.Client) gin.HandlerFunc {
+func CommercialCartProbeGuard(redisClients ...redis.UniversalClient) gin.HandlerFunc {
 	tracker := newCommercialBehaviorTrackerWithRedis(optionalCommercialBehaviorRedisClient(redisClients))
 
 	return func(c *gin.Context) {

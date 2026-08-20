@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"commerce-platform/internal/domain/outbox"
+	"commerce-platform/internal/pkg/resilience"
 )
 
 var ErrOutboxWebhookNotConfigured = errors.New("outbox webhook is not configured")
@@ -33,17 +34,52 @@ type OutboxWebhookEnvelope struct {
 type OutboxWebhookDispatcher struct {
 	webhookURL string
 	token      string
-	client     *http.Client
+	client     *resilience.HTTPClient
 }
 
 func NewOutboxWebhookDispatcher(webhookURL, token string, client *http.Client) *OutboxWebhookDispatcher {
+	webhookURL = strings.TrimSpace(webhookURL)
+	breakerKey := "outbox-webhook:" + webhookURL
+	return NewOutboxWebhookDispatcherWithResilience(
+		webhookURL,
+		token,
+		client,
+		resilience.HTTPRetryPolicy{
+			MaxAttempts: 3,
+			Backoff: resilience.BackoffPolicy{
+				BaseDelay: 250 * time.Millisecond,
+				MaxDelay:  3 * time.Second,
+				Jitter:    250 * time.Millisecond,
+			},
+			RetryUnsafeMethods: true,
+		},
+		resilience.SharedCircuitBreaker(breakerKey, resilience.CircuitBreakerConfig{
+			FailureThreshold: 3,
+			FailureWindow:    60 * time.Second,
+			OpenDuration:     30 * time.Second,
+		}),
+	)
+}
+
+// NewOutboxWebhookDispatcherWithResilience accepts a shared circuit
+// controller so every dispatcher replica observes the same third-party
+// outage. EventKey remains the downstream idempotency key.
+func NewOutboxWebhookDispatcherWithResilience(
+	webhookURL string,
+	token string,
+	client *http.Client,
+	retry resilience.HTTPRetryPolicy,
+	breaker resilience.CircuitController,
+) *OutboxWebhookDispatcher {
 	if client == nil {
 		client = &http.Client{Timeout: 10 * time.Second}
 	}
+	webhookURL = strings.TrimSpace(webhookURL)
+	breakerKey := "outbox-webhook:" + webhookURL
 	return &OutboxWebhookDispatcher{
-		webhookURL: strings.TrimSpace(webhookURL),
+		webhookURL: webhookURL,
 		token:      strings.TrimSpace(token),
-		client:     client,
+		client:     resilience.NewHTTPClient(client, retry, breaker, breakerKey),
 	}
 }
 
@@ -77,19 +113,25 @@ func (d *OutboxWebhookDispatcher) Dispatch(ctx context.Context, event outbox.Eve
 		return fmt.Errorf("encode outbox webhook envelope: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, d.webhookURL, bytes.NewReader(body))
+	resp, err := d.client.Do(ctx, func() (*http.Request, error) {
+		clonedBody := bytes.NewReader(body)
+		request, createErr := http.NewRequestWithContext(ctx, http.MethodPost, d.webhookURL, clonedBody)
+		if createErr != nil {
+			return nil, createErr
+		}
+		request.Header.Set("Content-Type", "application/json")
+		request.Header.Set("X-Outbox-Event-Key", event.EventKey)
+		request.Header.Set("X-Outbox-Event-Type", event.EventType)
+		request.Header.Set("Idempotency-Key", event.EventKey)
+		if d.token != "" {
+			request.Header.Set("Authorization", "Bearer "+d.token)
+		}
+		return request, nil
+	})
 	if err != nil {
-		return fmt.Errorf("create outbox webhook request: %w", err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-Outbox-Event-Key", event.EventKey)
-	req.Header.Set("X-Outbox-Event-Type", event.EventType)
-	if d.token != "" {
-		req.Header.Set("Authorization", "Bearer "+d.token)
-	}
-
-	resp, err := d.client.Do(req)
-	if err != nil {
+		if resp != nil && resp.Body != nil {
+			_ = resp.Body.Close()
+		}
 		return fmt.Errorf("send outbox webhook: %w", err)
 	}
 	defer resp.Body.Close()

@@ -4,6 +4,7 @@ import (
 	"commerce-platform/internal/domain/currency"
 	"commerce-platform/internal/domain/product"
 	"commerce-platform/internal/domain/shipping"
+	"commerce-platform/internal/pkg/resilience"
 	"commerce-platform/internal/pkg/tracking"
 	"commerce-platform/internal/repository"
 	"context"
@@ -18,11 +19,13 @@ import (
 )
 
 type ShippingService struct {
-	shippingRepo *repository.ShippingRepository
-	productRepo  *repository.ProductRepository
-	trackingRun  TrackingPollingRunState
-	webhookRun   TrackingWebhookRunState
-	trackingMu   sync.RWMutex
+	shippingRepo    *repository.ShippingRepository
+	productRepo     *repository.ProductRepository
+	trackingRun     TrackingPollingRunState
+	webhookRun      TrackingWebhookRunState
+	trackingMu      sync.RWMutex
+	trackingRetry   resilience.HTTPRetryPolicy
+	trackingBreaker resilience.CircuitController
 }
 
 type ShippingCalculationInput struct {
@@ -285,6 +288,19 @@ func NewShippingService(shippingRepo *repository.ShippingRepository, productRepo
 		service.productRepo = productRepo[0]
 	}
 	return service
+}
+
+func (s *ShippingService) ConfigureOutboundTrackingResilience(
+	retry resilience.HTTPRetryPolicy,
+	breaker resilience.CircuitController,
+) {
+	if s == nil {
+		return
+	}
+	s.trackingMu.Lock()
+	defer s.trackingMu.Unlock()
+	s.trackingRetry = retry
+	s.trackingBreaker = breaker
 }
 
 func (s *ShippingService) ConfigureTrackingPolling(enabled bool, interval time.Duration, batchLimit int) {
@@ -724,7 +740,7 @@ func (s *ShippingService) NewTrackingClientForProvider(providerID uint) (trackin
 	if err != nil {
 		return nil, err
 	}
-	return newTrackingClientFromProvider(provider)
+	return s.newTrackingClientFromProvider(provider)
 }
 
 func (s *ShippingService) GetTrackingShipmentByOrderID(orderID uint) (*shipping.TrackingShipment, error) {
@@ -986,7 +1002,7 @@ func (s *ShippingService) SyncTracking(ctx context.Context, input TrackingSyncIn
 		return nil, err
 	}
 
-	client, err := newTrackingClientFromProvider(provider)
+	client, err := s.newTrackingClientFromProvider(provider)
 	if err != nil {
 		_ = s.shippingRepo.UpdateTrackingShipmentSyncFailure(input.OrderID, err.Error(), nextTrackingSyncAt(provider, time.Now()))
 		return nil, err
@@ -2015,6 +2031,25 @@ func nextTrackingSyncAt(provider *shipping.TrackingProviderConfig, now time.Time
 }
 
 func newTrackingClientFromProvider(provider *shipping.TrackingProviderConfig) (tracking.TrackingService, error) {
+	return newTrackingClientFromProviderWithResilience(provider, resilience.HTTPRetryPolicy{}, nil)
+}
+
+func (s *ShippingService) newTrackingClientFromProvider(provider *shipping.TrackingProviderConfig) (tracking.TrackingService, error) {
+	if s == nil {
+		return newTrackingClientFromProvider(provider)
+	}
+	s.trackingMu.RLock()
+	retry := s.trackingRetry
+	breaker := s.trackingBreaker
+	s.trackingMu.RUnlock()
+	return newTrackingClientFromProviderWithResilience(provider, retry, breaker)
+}
+
+func newTrackingClientFromProviderWithResilience(
+	provider *shipping.TrackingProviderConfig,
+	retry resilience.HTTPRetryPolicy,
+	breaker resilience.CircuitController,
+) (tracking.TrackingService, error) {
 	if provider == nil || provider.ID == 0 {
 		return nil, ErrTrackingProviderRequired
 	}
@@ -2049,6 +2084,8 @@ func newTrackingClientFromProvider(provider *shipping.TrackingProviderConfig) (t
 			APIKey:   apiKey,
 			BaseURL:  baseURL,
 			Timeout:  time.Duration(timeoutSeconds) * time.Second,
+			Retry:    retry,
+			Breaker:  breaker,
 		}), nil
 	default:
 		return nil, fmt.Errorf("%w: %s", ErrTrackingProviderUnsupported, provider.ProviderCode)

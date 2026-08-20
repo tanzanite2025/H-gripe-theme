@@ -21,5 +21,6 @@
   "required": "Please enter your feedback before submitting.",
   "submitFailed": "Failed to submit feedback. Please try again.",
   "pendingMessage": "Submitted successfully. Your feedback will appear after it is reviewed.",
-  "checkingEligibility": "Checking sign-in status..."
+  "checkingEligibility": "Checking sign-in status...",
+  "storeReply": "Store reply"
 }

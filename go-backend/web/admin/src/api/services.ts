@@ -7,7 +7,15 @@ import {
   requireApiStringField,
   unwrapApiPayload,
 } from '@/utils/apiResponse'
-import type { OpsConnector, OpsConnectorOAuthStartResult, OpsDomain, OpsEnvironment } from '@/api/ops'
+import type {
+  OpsConnector,
+  OpsConnectorOAuthStartResult,
+  OpsDomain,
+  OpsEnvironment,
+  OpsNetworkSummary,
+  OpsProject,
+  OpsVPS,
+} from '@/api/ops'
 
 export interface ServiceCenterProvider {
   id: string
@@ -20,8 +28,15 @@ export interface ServiceCenterProvider {
 }
 
 export interface ServiceCenterOverview {
+  environment: OpsEnvironment | ''
   generated_at: string
   providers: ServiceCenterProvider[]
+  assets: {
+    vps: OpsVPS[]
+    projects: OpsProject[]
+    domains: OpsDomain[]
+  }
+  network: OpsNetworkSummary
 }
 
 export interface ServiceCenterCloudflareZone {
@@ -79,8 +94,21 @@ const readObjectPayload = (response: unknown, endpoint: string) => (
 
 const readOverviewPayload = (response: unknown, endpoint: string): ServiceCenterOverview => {
   const payload = readObjectPayload(response, endpoint)
+  requireApiStringField(payload, 'environment', endpoint)
   requireApiStringField(payload, 'generated_at', endpoint)
   requireApiArrayField(payload, 'providers', endpoint)
+  const assets = requireApiObject(payload.assets, endpoint)
+  requireApiArrayField(assets, 'vps', endpoint)
+  requireApiArrayField(assets, 'projects', endpoint)
+  requireApiArrayField(assets, 'domains', endpoint)
+  const network = requireApiObject(payload.network, endpoint)
+  requireApiStringField(network, 'environment', endpoint)
+  requireApiStringField(network, 'generated_at', endpoint)
+  const networkSummary = requireApiObject(network.summary, endpoint)
+  requireApiNumberField(networkSummary, 'total', endpoint)
+  requireApiNumberField(networkSummary, 'explicit_rule_count', endpoint)
+  requireApiNumberField(networkSummary, 'inferred_item_count', endpoint)
+  requireApiArrayField(network, 'items', endpoint)
   return payload as ServiceCenterOverview
 }
 
@@ -117,9 +145,12 @@ const readCloudflareCacheRulesPayload = (response: unknown, endpoint: string): C
 }
 
 export default {
-  async getOverview(): Promise<ServiceCenterOverview> {
+  async getOverview(environment?: OpsEnvironment): Promise<ServiceCenterOverview> {
     const endpoint = '/api/admin/services/overview'
-    return readOverviewPayload(await axios.get(endpoint), endpoint)
+    return readOverviewPayload(
+      await axios.get(endpoint, { params: environment ? { environment } : undefined }),
+      endpoint,
+    )
   },
   async getCloudflare(environment?: OpsEnvironment): Promise<ServiceCenterCloudflare> {
     const endpoint = '/api/admin/services/cloudflare'

@@ -15,6 +15,7 @@
     "noResults": "\"{query}\" ile eşleşen FAQ bulunamadı",
     "allFaqsMetaTitle": "Tüm FAQ’lar",
     "loadingAnswers": "Yanıtlar yükleniyor",
-    "illustrationAlt": "FAQ görseli"
+    "illustrationAlt": "FAQ görseli",
+    "selectQuestion": "Select a question to view the answer."
   }
 }

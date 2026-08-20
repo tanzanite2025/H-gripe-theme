@@ -38,10 +38,10 @@
       <article
         v-for="index in skeletonCount"
         :key="`recommendation-skeleton-${index}`"
-        class="product-recommendations__card product-recommendations__card--skeleton"
+        class="product-recommendations__skeleton-card tz-product-card"
       >
-        <span class="product-recommendations__image product-recommendations__skeleton-block"></span>
-        <span class="product-recommendations__body">
+        <span class="product-recommendations__skeleton-image product-recommendations__skeleton-block tz-product-card__image"></span>
+        <span class="product-recommendations__skeleton-body tz-product-card__body">
           <span class="product-recommendations__skeleton-line"></span>
           <span class="product-recommendations__skeleton-line product-recommendations__skeleton-line--short"></span>
         </span>
@@ -61,29 +61,20 @@
           'product-recommendations__grid--carousel': showCarouselControls,
         }"
       >
-        <NuxtLink
+        <div
           v-for="(product, index) in displayedProductCards"
           :key="product.id"
-          :to="product.url"
           class="product-recommendations__card"
-          @click="trackRecommendationClick(product, index)"
         >
-          <span class="product-recommendations__image">
-            <StorefrontImage
-              v-if="product.thumbnail"
-              :src="product.thumbnail"
-              :alt="product.title"
-              preset="card"
-            />
-            <span v-else class="product-recommendations__image-placeholder" aria-hidden="true">
-              <Icon name="lucide:image" />
-            </span>
-          </span>
-          <span class="product-recommendations__body">
-            <span class="product-recommendations__title">{{ product.title }}</span>
-            <span v-if="product.priceLabel" class="product-recommendations__price">{{ product.priceLabel }}</span>
-          </span>
-        </NuxtLink>
+          <ShopProductDisplayCard
+            :product="product"
+            density="catalog"
+            :show-details-action="false"
+            :show-wishlist-action="false"
+            :show-view-action="true"
+            @view="trackRecommendationClick(product, index)"
+          />
+        </div>
       </div>
     </div>
 
@@ -97,10 +88,12 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { useLocalePath } from '#imports'
 import type { BehaviorEventMetadata } from '~/types/behavior'
 import type { RecommendationProductCard } from '~/types/recommendation'
 import { useBehaviorEvents } from '~/composables/useBehaviorEvents'
 import { useSmartRecommendations } from '~/composables/useSmartRecommendations'
+import ShopProductDisplayCard from '~/components/shop/ShopProductDisplayCard.vue'
 
 const props = withDefaults(defineProps<{
   surface: string
@@ -125,6 +118,7 @@ const props = withDefaults(defineProps<{
 
 const route = useRoute()
 const { t } = useI18n()
+const localePath = useLocalePath()
 const { track } = useBehaviorEvents()
 const {
   displayedProductCards,
@@ -208,6 +202,14 @@ const scrollRecommendations = (direction: -1 | 1) => {
   })
 }
 
+const resolveProductDetailUrl = (product: RecommendationProductCard) => {
+  const rawUrl = String(product.url || '').trim() || (product.slug ? `/shop/${product.slug}` : '')
+  if (!rawUrl) return ''
+  if (/^https?:\/\//i.test(rawUrl)) return rawUrl
+  if (/^\/[a-z]{2}(?:[_-][a-z]{2})?\/shop\/[^/?#]+(?:[?#].*)?$/i.test(rawUrl)) return rawUrl
+  return localePath(rawUrl)
+}
+
 const requestKey = computed(() => JSON.stringify({
   surface: props.surface,
   productId: contextProductId.value,
@@ -278,14 +280,14 @@ const trackRecommendationClick = (product: RecommendationProductCard, index: num
     eventType: 'recommendation_click',
     productId: recommendedProductId || undefined,
     categoryId: contextCategoryId.value || undefined,
-    metadata: buildMetadata({
-      position: index + 1,
-      slot: product.slot,
-      reason: product.reason,
-      target_url: product.url,
-    }),
-  })
-}
+        metadata: buildMetadata({
+          position: index + 1,
+          slot: product.slot,
+          reason: product.reason,
+          target_url: resolveProductDetailUrl(product),
+        }),
+      })
+    }
 
 onMounted(() => {
   window.addEventListener('resize', updateScrollControls)
@@ -326,7 +328,7 @@ watch(
 <style scoped>
 .product-recommendations {
   --recommendation-visible-columns: 2;
-  --recommendation-card-width: calc((100% - 0.7rem) / 2);
+  --recommendation-card-width: var(--tz-product-card-media-size, 21.875rem);
   display: grid;
   width: 100%;
   gap: 0.9rem;
@@ -368,12 +370,13 @@ watch(
 
 .product-recommendations__grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(var(--recommendation-card-width), 100%), var(--recommendation-card-width)));
+  justify-content: center;
   gap: 0.7rem;
 }
 
 .product-recommendations__grid--filled {
-  grid-template-columns: repeat(var(--recommendation-visible-columns), minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(var(--recommendation-card-width), 100%), var(--recommendation-card-width)));
 }
 
 .product-recommendations__grid--carousel {
@@ -383,88 +386,22 @@ watch(
   min-width: 100%;
 }
 
-.product-recommendations__grid--carousel .product-recommendations__card {
-  flex: 0 0 var(--recommendation-card-width);
-}
-
 .product-recommendations__card {
-  display: grid;
+  display: block;
+  width: min(100%, var(--recommendation-card-width));
   min-width: 0;
-  grid-template-rows: auto 1fr;
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  background: #050506;
+  justify-self: center;
   color: inherit;
   text-decoration: none;
-  transition: border-color 0.2s ease, background-color 0.2s ease, transform 0.2s ease;
 }
 
 .product-recommendations__card:hover {
-  border-color: rgba(181, 255, 109, 0.45);
-  background: #0c0d0f;
-  transform: translateY(-1px);
+  text-decoration: none;
 }
 
 .product-recommendations__card:focus-visible {
   outline: 2px solid var(--tz-brand-primary);
   outline-offset: 3px;
-}
-
-.product-recommendations__image {
-  display: block;
-  aspect-ratio: 1;
-  min-width: 0;
-  overflow: hidden;
-  background: rgba(255, 255, 255, 0.055);
-}
-
-.product-recommendations__image img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.product-recommendations__image-placeholder {
-  display: flex;
-  width: 100%;
-  height: 100%;
-  align-items: center;
-  justify-content: center;
-  color: var(--tz-text-muted);
-}
-
-.product-recommendations__image-placeholder :deep(svg) {
-  width: 1.45rem;
-  height: 1.45rem;
-}
-
-.product-recommendations__body {
-  display: grid;
-  min-width: 0;
-  align-content: start;
-  gap: 0.42rem;
-  min-height: 4.45rem;
-  padding: 0.72rem;
-}
-
-.product-recommendations__title {
-  display: -webkit-box;
-  overflow: hidden;
-  color: var(--tz-text-primary);
-  font-size: 0.82rem;
-  font-weight: 750;
-  line-height: 1.32;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-}
-
-.product-recommendations__price {
-  color: var(--tz-brand-primary);
-  font-size: 0.82rem;
-  font-weight: 800;
-  line-height: 1;
 }
 
 .product-recommendations__empty {
@@ -491,8 +428,19 @@ watch(
   color: var(--tz-brand-primary);
 }
 
-.product-recommendations__card--skeleton {
+.product-recommendations__skeleton-card {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: #050506;
   pointer-events: none;
+}
+
+.product-recommendations__grid--carousel .product-recommendations__card {
+  flex: 0 0 var(--recommendation-card-width);
 }
 
 .product-recommendations__skeleton-block,
@@ -521,30 +469,47 @@ watch(
   gap: 0.55rem;
 }
 
-.product-recommendations--compact .product-recommendations__body {
-  min-height: 3.9rem;
+.product-recommendations--compact .product-recommendations__skeleton-body {
   padding: 0.62rem;
 }
 
 @media (min-width: 640px) {
   .product-recommendations {
     --recommendation-visible-columns: 3;
-    --recommendation-card-width: calc((100% - 1.4rem) / 3);
-  }
-
-  .product-recommendations__grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
 @media (min-width: 1024px) {
   .product-recommendations {
     --recommendation-visible-columns: 5;
-    --recommendation-card-width: calc((100% - 2.8rem) / 5);
+  }
+}
+
+@media (max-width: 767px) {
+  .product-recommendations {
+    --recommendation-card-width: calc((100vw - 2.25rem) / 2);
   }
 
-  .product-recommendations__grid {
-    grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+  .product-recommendations__grid:not(.product-recommendations__grid--carousel) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .product-recommendations__card {
+    width: 100%;
+  }
+
+  .product-recommendations__grid--carousel .product-recommendations__card {
+    width: var(--recommendation-card-width);
+    flex-basis: var(--recommendation-card-width);
+  }
+
+  .product-recommendations__card :deep(.tz-product-card) {
+    --tz-product-card-width: 100%;
+    width: 100%;
+  }
+
+  .product-recommendations__card :deep(.tz-product-card__image) {
+    height: auto;
   }
 }
 </style>

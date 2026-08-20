@@ -3,6 +3,10 @@ package service
 import (
 	"strings"
 	"testing"
+	"context"
+	"io"
+	"net/http"
+	"sync/atomic"
 
 	"commerce-platform/internal/pkg/config"
 )
@@ -115,5 +119,69 @@ func TestGoogleMerchantRemoteProductMapping(t *testing.T) {
 	}
 	if product.ProductStatus == nil || len(product.ProductStatus.ItemLevelIssues) != 1 {
 		t.Fatalf("unexpected status mapping: %#v", product.ProductStatus)
+	}
+}
+
+func TestGoogleMerchantOAuthTokenExchangeDoesNotRetryUnsafePOST(t *testing.T) {
+	originalTransport := http.DefaultTransport
+	t.Cleanup(func() {
+		http.DefaultTransport = originalTransport
+	})
+
+	var requests atomic.Int32
+	http.DefaultTransport = googleMerchantRoundTripper(func(*http.Request) (*http.Response, error) {
+		requests.Add(1)
+		return &http.Response{
+			StatusCode: http.StatusInternalServerError,
+			Header:     make(http.Header),
+			Body:       io.NopCloser(strings.NewReader(`{"error":{"message":"temporary"}}`)),
+		}, nil
+	})
+
+	_, err := exchangeGoogleMerchantCode(context.Background(), config.GoogleMerchantConfig{
+		ClientID:    "client-id",
+		ClientSecret: "client-secret",
+		RedirectURL: "https://admin.example.test/api/admin/google-merchant/oauth/callback",
+	}, "authorization-code")
+	if err == nil {
+		t.Fatal("exchangeGoogleMerchantCode() error = nil, want failure")
+	}
+	if requests.Load() != 1 {
+		t.Fatalf("requests = %d, want 1 for unsafe POST", requests.Load())
+	}
+}
+
+func TestGoogleMerchantUserInfoRetriesGetRequests(t *testing.T) {
+	originalTransport := http.DefaultTransport
+	t.Cleanup(func() {
+		http.DefaultTransport = originalTransport
+	})
+
+	var requests atomic.Int32
+	http.DefaultTransport = googleMerchantRoundTripper(func(*http.Request) (*http.Response, error) {
+		count := requests.Add(1)
+		if count < 3 {
+			return &http.Response{
+				StatusCode: http.StatusBadGateway,
+				Header:     make(http.Header),
+				Body:       io.NopCloser(strings.NewReader(`{"error":{"message":"temporary"}}`)),
+			}, nil
+		}
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Header:     make(http.Header),
+			Body:       io.NopCloser(strings.NewReader(`{"sub":"123","email":"buyer@example.test","email_verified":true}`)),
+		}, nil
+	})
+
+	userInfo, err := fetchGoogleMerchantUserInfo(context.Background(), "access-token")
+	if err != nil {
+		t.Fatalf("fetchGoogleMerchantUserInfo() error = %v", err)
+	}
+	if userInfo.Email != "buyer@example.test" {
+		t.Fatalf("userInfo.Email = %q", userInfo.Email)
+	}
+	if requests.Load() != 3 {
+		t.Fatalf("requests = %d, want 3 for retried GET", requests.Load())
 	}
 }

@@ -10,12 +10,26 @@ import (
 	"commerce-platform/internal/pkg/requestctx"
 	"commerce-platform/internal/repository"
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
 
 	"go.uber.org/zap"
 )
+
+type OrderCreationOptions struct {
+	PolicyLocale                 string
+	PolicyURL                    string
+	PolicyDisclosureAcknowledged bool
+	PolicySource                 string
+	IdempotencyKey               string
+	IdempotencyRequestHash       string
+}
+
+var ErrOrderPolicyDisclosureFailure = errors.New("order policy disclosure capture failed")
+
+const orderCreateIdempotencyScope = "order_create"
 
 func (s *OrderService) CreateOrder(
 	ctx context.Context,
@@ -54,6 +68,34 @@ func (s *OrderService) CreateOrderWithAttribution(
 	pointsToUse int,
 	attributionContext attributionpkg.Context,
 ) (*order.Order, error) {
+	return s.CreateOrderWithAttributionAndOptions(
+		ctx,
+		userID,
+		items,
+		shippingAddress,
+		billingAddress,
+		paymentMethod,
+		shippingMethod,
+		couponCode,
+		pointsToUse,
+		attributionContext,
+		OrderCreationOptions{},
+	)
+}
+
+func (s *OrderService) CreateOrderWithAttributionAndOptions(
+	ctx context.Context,
+	userID uint,
+	items []order.OrderItem,
+	shippingAddress order.Address,
+	billingAddress order.Address,
+	paymentMethod string,
+	shippingMethod string,
+	couponCode string,
+	pointsToUse int,
+	attributionContext attributionpkg.Context,
+	options OrderCreationOptions,
+) (*order.Order, error) {
 	traceID := ""
 	if ctx != nil {
 		if tid, ok := requestctx.TraceID(ctx); ok {
@@ -61,6 +103,12 @@ func (s *OrderService) CreateOrderWithAttribution(
 		}
 	}
 	logger.Info("CreateOrder started", zap.String("trace_id", traceID), zap.Uint("user_id", userID))
+
+	idempotencyKey := strings.TrimSpace(options.IdempotencyKey)
+	idempotencyRequestHash := strings.TrimSpace(options.IdempotencyRequestHash)
+	if idempotencyKey != "" && idempotencyRequestHash == "" {
+		return nil, ErrOrderIdempotencyHashRequired
+	}
 
 	var affectedProductIDs []uint
 	quoteInput := CheckoutQuoteInput{
@@ -77,13 +125,59 @@ func (s *OrderService) CreateOrderWithAttribution(
 		}
 		quoteInput.LoyaltyProgramConfig = config
 	}
-	orderNumber, err := s.generateOrderNumber()
-	if err != nil {
-		return nil, err
-	}
 
 	var createdOrder *order.Order
 	txErr := s.txManager.WithinTx(func(repos repository.TxRepositories) error {
+		var idempotencyRecord *order.OrderIdempotency
+		if idempotencyKey != "" {
+			if repos.OrderIdempotency == nil {
+				return ErrOrderIdempotencyUnavailable
+			}
+			record := &order.OrderIdempotency{
+				UserID:         userID,
+				Scope:          orderCreateIdempotencyScope,
+				IdempotencyKey: idempotencyKey,
+				RequestHash:    idempotencyRequestHash,
+			}
+			claimed, err := repos.OrderIdempotency.TryCreate(record)
+			if err != nil {
+				return err
+			}
+			if !claimed {
+				existing, err := repos.OrderIdempotency.FindByUserScopeKey(userID, orderCreateIdempotencyScope, idempotencyKey)
+				if repository.IsRecordNotFound(err) {
+					claimed, err = repos.OrderIdempotency.TryCreate(record)
+					if err != nil {
+						return err
+					}
+					if claimed {
+						idempotencyRecord = record
+					} else {
+						existing, err = repos.OrderIdempotency.FindByUserScopeKey(userID, orderCreateIdempotencyScope, idempotencyKey)
+					}
+				}
+				if err != nil {
+					return err
+				}
+				if idempotencyRecord == nil {
+					if strings.TrimSpace(existing.RequestHash) != idempotencyRequestHash {
+						return ErrOrderIdempotencyConflict
+					}
+					if existing.OrderID != nil && *existing.OrderID > 0 {
+						replayedOrder, err := repos.Order.FindByID(*existing.OrderID)
+						if err != nil {
+							return normalizeOrderError(err)
+						}
+						createdOrder = replayedOrder
+						return nil
+					}
+					return ErrOrderIdempotencyInProgress
+				}
+			} else {
+				idempotencyRecord = record
+			}
+		}
+
 		quote, err := s.checkout.QuoteWithRepositories(quoteInput, repos)
 		if err != nil {
 			return err
@@ -117,6 +211,11 @@ func (s *OrderService) CreateOrderWithAttribution(
 		}
 		if shippingMethodSnapshot == "" {
 			shippingMethodSnapshot = "standard"
+		}
+
+		orderNumber, err := s.generateOrderNumber()
+		if err != nil {
+			return err
 		}
 
 		o := &order.Order{
@@ -163,7 +262,36 @@ func (s *OrderService) CreateOrderWithAttribution(
 		if err := repos.Order.Create(o); err != nil {
 			return fmt.Errorf("[CRITICAL] Failed to create order in database: %w", err)
 		}
+		if idempotencyRecord != nil {
+			if err := repos.OrderIdempotency.BindOrderID(idempotencyRecord.ID, o.ID); err != nil {
+				return fmt.Errorf("[CRITICAL] Failed to bind order idempotency record: %w", err)
+			}
+		}
 		createdOrder = o
+		if s.refundReturnPolicy != nil {
+			if repos.PolicyDisclosure == nil || repos.Setting == nil {
+				return fmt.Errorf("%w: repositories are not configured", ErrOrderPolicyDisclosureFailure)
+			}
+			var consentedAt *time.Time
+			if options.PolicyDisclosureAcknowledged {
+				value := time.Now().UTC()
+				consentedAt = &value
+			}
+			disclosure, err := s.refundReturnPolicy.BuildOrderDisclosure(
+				repos.Setting,
+				o.ID,
+				options.PolicyLocale,
+				options.PolicyURL,
+				options.PolicySource,
+				consentedAt,
+			)
+			if err != nil {
+				return fmt.Errorf("[CRITICAL] %w: capture refund and return policy disclosure: %w", ErrOrderPolicyDisclosureFailure, err)
+			}
+			if err := repos.PolicyDisclosure.Create(disclosure); err != nil {
+				return fmt.Errorf("[CRITICAL] %w: save refund and return policy disclosure: %w", ErrOrderPolicyDisclosureFailure, err)
+			}
+		}
 		if err := persistOrderAttribution(repos.OrderAttribution, o.ID, attributionContext); err != nil {
 			return fmt.Errorf("[CRITICAL] Failed to save order attribution: %w", err)
 		}

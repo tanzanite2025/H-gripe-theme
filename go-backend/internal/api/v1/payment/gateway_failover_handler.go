@@ -20,6 +20,8 @@ type gatewayFallbackPaymentMethodResponse struct {
 	Name     string `json:"name"`
 }
 
+const paymentGatewayCircuitPermitContextKeyPrefix = "payment_gateway_circuit_permit:"
+
 func (h *Handler) ConfigurePaymentGatewayCircuitBreaker(
 	circuitBreaker *service.PaymentGatewayCircuitBreakerService,
 ) {
@@ -47,6 +49,7 @@ func (h *Handler) allowPaymentGatewayAttemptOrRespondWithFallbackRecommendation(
 		return true
 	}
 	if decision.Allowed {
+		h.storePaymentGatewayCircuitPermit(c, provider, decision)
 		return true
 	}
 
@@ -55,14 +58,16 @@ func (h *Handler) allowPaymentGatewayAttemptOrRespondWithFallbackRecommendation(
 }
 
 func (h *Handler) recordSuccessfulPaymentGatewayAPIResponse(
-	ctx context.Context,
+	c *gin.Context,
 	provider pgateway.GatewayType,
 ) {
 	if h == nil {
 		return
 	}
+	ctx := paymentGatewayRequestContext(c)
+	permitToken := takePaymentGatewayCircuitPermit(c, provider)
 	if h.gatewayCircuitBreaker != nil {
-		_ = h.gatewayCircuitBreaker.RecordSuccessfulGatewayAPIResponse(ctx, string(provider))
+		_ = h.gatewayCircuitBreaker.RecordSuccessfulGatewayAPIResponse(ctx, string(provider), permitToken)
 	}
 	if h.antiFraud != nil {
 		h.antiFraud.RecordProviderSuccess(string(provider))
@@ -77,18 +82,23 @@ func (h *Handler) respondToPaymentGatewayOperationFailure(
 	err error,
 ) {
 	if !pgateway.IsTransientGatewayNetworkOrServerError(err) {
+		h.releasePaymentGatewayAttemptIfUnrecorded(c, provider)
 		apierror.RespondError(c, status, errorCode, err.Error())
 		return
 	}
 
 	decision := service.PaymentGatewayCircuitBreakerDecision{Allowed: true}
 	if h != nil && h.gatewayCircuitBreaker != nil {
+		permitToken := takePaymentGatewayCircuitPermit(c, provider)
 		recordedDecision, recordErr := h.gatewayCircuitBreaker.RecordFailedGatewayAPIResponse(
 			c.Request.Context(),
 			string(provider),
+			permitToken,
 		)
 		if recordErr == nil {
 			decision = recordedDecision
+		} else if permitToken != "" {
+			_ = h.gatewayCircuitBreaker.ReleaseGatewayPaymentAttempt(c.Request.Context(), string(provider), permitToken)
 		}
 	}
 	if h != nil && h.antiFraud != nil {
@@ -185,7 +195,7 @@ func (h *Handler) gatewayCircuitBreakerAvailability(
 	if h == nil || h.gatewayCircuitBreaker == nil {
 		return true, ""
 	}
-	decision, err := h.gatewayCircuitBreaker.IsGatewayPaymentAttemptAllowed(
+	decision, err := h.gatewayCircuitBreaker.ReadGatewayPaymentAttemptAvailability(
 		c.Request.Context(),
 		string(provider),
 	)
@@ -193,6 +203,59 @@ func (h *Handler) gatewayCircuitBreakerAvailability(
 		return true, ""
 	}
 	return false, "gateway_circuit_open"
+}
+
+func (h *Handler) releasePaymentGatewayAttemptIfUnrecorded(c *gin.Context, provider pgateway.GatewayType) {
+	if h == nil || h.gatewayCircuitBreaker == nil {
+		return
+	}
+	permitToken := takePaymentGatewayCircuitPermit(c, provider)
+	if permitToken == "" {
+		return
+	}
+	_ = h.gatewayCircuitBreaker.ReleaseGatewayPaymentAttempt(
+		paymentGatewayRequestContext(c),
+		string(provider),
+		permitToken,
+	)
+}
+
+func (h *Handler) storePaymentGatewayCircuitPermit(
+	c *gin.Context,
+	provider pgateway.GatewayType,
+	decision service.PaymentGatewayCircuitBreakerDecision,
+) {
+	if c == nil || strings.TrimSpace(decision.PermitToken) == "" {
+		return
+	}
+	c.Set(paymentGatewayCircuitPermitContextKey(provider), decision.PermitToken)
+}
+
+func takePaymentGatewayCircuitPermit(c *gin.Context, provider pgateway.GatewayType) string {
+	if c == nil {
+		return ""
+	}
+	key := paymentGatewayCircuitPermitContextKey(provider)
+	value, exists := c.Get(key)
+	if !exists {
+		return ""
+	}
+	if c.Keys != nil {
+		delete(c.Keys, key)
+	}
+	token, _ := value.(string)
+	return strings.TrimSpace(token)
+}
+
+func paymentGatewayCircuitPermitContextKey(provider pgateway.GatewayType) string {
+	return paymentGatewayCircuitPermitContextKeyPrefix + string(provider)
+}
+
+func paymentGatewayRequestContext(c *gin.Context) context.Context {
+	if c != nil && c.Request != nil && c.Request.Context() != nil {
+		return c.Request.Context()
+	}
+	return context.Background()
 }
 
 func durationToCeilingSeconds(value time.Duration) int64 {

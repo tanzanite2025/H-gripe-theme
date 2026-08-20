@@ -43,14 +43,10 @@
       :submitting="submitting"
       :system-managed="templateForm.is_system_managed"
       :is-product-specific-select="isProductSpecificSelect"
-      :language-options="languageOptions"
       @submit="submitForm"
       @clear-error="clearFieldError"
       @add-spec="addSpecDefinition"
       @remove-spec="removeSpecDefinition"
-      @image-selected="handleImageSelected"
-      @image-cleared="handleImageCleared"
-      @image-error="handleImageError"
     />
 
     <AdminConfirmDialog
@@ -65,7 +61,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { toast } from 'vue-sonner'
 import {
@@ -92,19 +88,13 @@ import type {
   ProductSpecTemplatePayload,
   ProductSpecTemplateRecord,
   ProductSpecTemplateSpecDefinition,
-  ProductSpecTemplateSpecForm,
-  ProductSpecTemplateTranslation,
-  ProductSpecTemplateTranslationForm
+  ProductSpecTemplateSpecForm
 } from '@/components/admin/product/productSpecificationTemplateTypes'
 import { Button } from '@/components/ui/button'
-import { useSupportedLanguages } from '@/composables/useSupportedLanguages'
-import { normalizeLocaleCode } from '@/lib/languages'
 import { useAuthStore } from '@/stores/auth'
 import productSpecTemplateApi from '@/api/productSpecificationTemplates'
 
 const authStore = useAuthStore()
-const supportedLanguages = useSupportedLanguages()
-const languageOptions = supportedLanguages.languageOptions
 const loading = ref(false)
 const submitting = ref(false)
 const dialogVisible = ref(false)
@@ -122,13 +112,8 @@ const templateForm = reactive<ProductSpecTemplateForm>({
   name: '',
   slug: '',
   description: '',
-  image_media_asset_id: null,
-  image_url: '',
-  pending_image_file: null,
-  remove_image: false,
   sort_order: 0,
   is_enabled: true,
-  translations: [],
   spec_definitions: []
 })
 
@@ -140,7 +125,6 @@ const filteredTemplates = computed<ProductSpecTemplateRecord[]>(() => {
     if (!keyword) return true
     return String(template.name || '').toLowerCase().includes(keyword)
       || String(template.slug || '').toLowerCase().includes(keyword)
-      || (template.translations || []).some((translation) => String(translation.name || '').toLowerCase().includes(keyword))
   })
 })
 
@@ -214,56 +198,14 @@ const apiSpecToForm = (spec: ProductSpecTemplateSpecDefinition): ProductSpecTemp
   optionsText: optionsToText(spec.options)
 })
 
-const translationRowsFor = (source: ProductSpecTemplateTranslation[] = []): ProductSpecTemplateTranslationForm[] => {
-  const existing = new Map<string, ProductSpecTemplateTranslation>()
-  source.forEach((translation) => {
-    const locale = normalizeLocaleCode(translation.locale)
-    if (locale) existing.set(locale, translation)
-  })
-
-  const rows = languageOptions.value.map((option) => {
-    const translation = existing.get(option.value)
-    return {
-      id: translation?.id ?? null,
-      locale: option.value,
-      name: String(translation?.name || ''),
-      description: String(translation?.description || '')
-    }
-  })
-  const displayedLocales = new Set(rows.map((translation) => translation.locale))
-
-  for (const [locale, translation] of existing) {
-    if (displayedLocales.has(locale)) continue
-    rows.push({
-      id: translation.id ?? null,
-      locale,
-      name: String(translation.name || ''),
-      description: String(translation.description || '')
-    })
-  }
-
-  return rows
-}
-
-watch(languageOptions, () => {
-  if (templateForm.id === null && templateForm.translations.length === 0) {
-    templateForm.translations = translationRowsFor()
-  }
-})
-
 const resetForm = (): void => {
   Object.assign(templateForm, {
     id: null,
     name: '',
     slug: '',
     description: '',
-    image_media_asset_id: null,
-    image_url: '',
-    pending_image_file: null,
-    remove_image: false,
     sort_order: 0,
     is_enabled: true,
-    translations: translationRowsFor(),
     spec_definitions: []
   })
   clearFormErrors()
@@ -285,13 +227,8 @@ const showEditTemplateDialog = (template: ProductSpecTemplateRecord): void => {
     name: template.name || '',
     slug: template.slug || '',
     description: template.description || '',
-    image_media_asset_id: template.image_media_asset_id ?? null,
-    image_url: String(template.image_url || ''),
-    pending_image_file: null,
-    remove_image: false,
     sort_order: Number(template.sort_order || 0),
     is_enabled: template.is_enabled !== false,
-    translations: translationRowsFor(template.translations || []),
     spec_definitions: (template.spec_definitions || []).map(apiSpecToForm)
   })
   clearFormErrors()
@@ -311,23 +248,6 @@ const removeSpecDefinition = (index: number): void => {
 
 const clearFormErrors = (): void => Object.keys(formErrors).forEach((key) => delete formErrors[key])
 const clearFieldError = (key: string): void => { delete formErrors[key] }
-
-const handleImageSelected = (file: File): void => {
-  templateForm.pending_image_file = file
-  templateForm.remove_image = false
-}
-
-const handleImageCleared = (): void => {
-  const hadExistingImage = Boolean(templateForm.image_url || templateForm.image_media_asset_id)
-  templateForm.pending_image_file = null
-  templateForm.image_url = ''
-  templateForm.image_media_asset_id = null
-  templateForm.remove_image = hadExistingImage
-}
-
-const handleImageError = (message: string): void => {
-  toast.error(message)
-}
 
 const specOptionsFromText = (text?: string | null): string[] => String(text || '')
   .split(/\r?\n/)
@@ -373,14 +293,6 @@ const buildPayload = (
   description: String(source.description || '').trim(),
   sort_order: Number(source.sort_order || 0),
   is_enabled: Boolean(enabled),
-  translations: (source.translations || [])
-    .map((translation) => ({
-      id: Number(translation.id || 0),
-      locale: String(translation.locale || '').trim(),
-      name: String(translation.name || '').trim(),
-      description: String(translation.description || '').trim()
-    }))
-    .filter((translation) => translation.locale && translation.name),
   spec_definitions: (source.spec_definitions || []).map((spec) => {
     const fieldType = normalizeFieldType(spec.field_type)
     return {
@@ -433,30 +345,6 @@ const submitForm = async (): Promise<void> => {
     templateForm.id = savedTemplate.id
     dialogMode.value = 'edit'
 
-    const pendingImageFile = templateForm.pending_image_file
-    const removingImage = templateForm.remove_image
-    if (pendingImageFile || removingImage) {
-      try {
-        if (pendingImageFile) {
-          const withImage = await productSpecTemplateApi.uploadImage(savedTemplate.id, pendingImageFile)
-          templateForm.image_media_asset_id = withImage.image_media_asset_id ?? null
-          templateForm.image_url = String(withImage.image_url || '')
-          templateForm.pending_image_file = null
-          templateForm.remove_image = false
-        } else {
-          const withoutImage = await productSpecTemplateApi.deleteImage(savedTemplate.id)
-          templateForm.image_media_asset_id = withoutImage.image_media_asset_id ?? null
-          templateForm.image_url = String(withoutImage.image_url || '')
-          templateForm.remove_image = false
-        }
-      } catch (imageError) {
-        console.error('Failed to sync product specification template image:', imageError)
-        await fetchProductSpecificationTemplates()
-      toast.warning(`商品规格模板已${wasCreating ? '创建' : '更新'}，但模板图片${pendingImageFile ? '上传' : '移除'}失败，请重试`)
-        return
-      }
-    }
-
     toast.success(wasCreating ? '商品规格模板已创建' : '商品规格模板已更新')
     dialogVisible.value = false
     await fetchProductSpecificationTemplates()
@@ -499,9 +387,6 @@ const deleteTemplate = async (): Promise<void> => {
 const resetFilters = (): void => { Object.assign(filters, { search: '', status: 'all' }) }
 
 onMounted(() => {
-  void Promise.all([
-    supportedLanguages.fetchLanguages(),
-    fetchProductSpecificationTemplates()
-  ])
+  void fetchProductSpecificationTemplates()
 })
 </script>

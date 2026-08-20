@@ -2,5 +2,11 @@
   "searchHint": {
     "title": "ابحث عن المنتجات والأسئلة الشائعة",
     "body": "انقر للبحث عن المنتجات والأسئلة الشائعة والمزيد."
+  },
+  "globalNavigationTransition": {
+    "ariaLabel": "Global content navigation",
+    "optionsLabel": "Choose a destination",
+    "trigger": "Open content navigation",
+    "triggerBody": "Choose Products, FAQ, Pages, or Blog."
   }
 }

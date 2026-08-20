@@ -6,7 +6,7 @@
   "loading": "Cargando reseñas...",
   "loadError": "No se han podido cargar las reseñas.",
   "retry": "Reintentar",
-  "empty": "Todavía no hay reseñas aprobadas.",
+  "empty": "Aún no hay reseñas.",
   "ratingLabel": "{rating} de 5 estrellas",
   "imageAlt": "Imagen de la reseña del cliente",
   "verifiedPurchase": "Compra verificada",

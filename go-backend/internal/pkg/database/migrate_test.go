@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -203,6 +204,9 @@ func TestPrepareSchemaAgainstFreshPostgres(t *testing.T) {
 		"orders",
 		"order_items",
 		"transactions",
+		"refunds",
+		"refund_line_items",
+		"order_policy_disclosures",
 		"product_attributes",
 		"product_variants",
 		"spoke_rim_brands",
@@ -227,7 +231,7 @@ func TestPrepareSchemaAgainstFreshPostgres(t *testing.T) {
 		}
 	}
 
-	requiredConstraints := []struct {
+	removedConstraints := []struct {
 		tableName      string
 		constraintName string
 	}{
@@ -240,7 +244,7 @@ func TestPrepareSchemaAgainstFreshPostgres(t *testing.T) {
 			constraintName: "ck_product_specification_templates_image_reference_pair",
 		},
 	}
-	for _, constraint := range requiredConstraints {
+	for _, constraint := range removedConstraints {
 		var exists bool
 		if err := testDB.QueryRowContext(ctx, `
 			SELECT EXISTS (
@@ -253,8 +257,26 @@ func TestPrepareSchemaAgainstFreshPostgres(t *testing.T) {
 		`, constraint.tableName, constraint.constraintName).Scan(&exists); err != nil {
 			t.Fatalf("check constraint %s: %v", constraint.constraintName, err)
 		}
-		if !exists {
-			t.Fatalf("required constraint %s is missing from %s", constraint.constraintName, constraint.tableName)
+		if exists {
+			t.Fatalf("removed constraint %s still exists on %s", constraint.constraintName, constraint.tableName)
+		}
+	}
+
+	for _, columnName := range []string{"image_media_asset_id", "image_url"} {
+		var exists bool
+		if err := testDB.QueryRowContext(ctx, `
+			SELECT EXISTS (
+				SELECT 1
+				FROM information_schema.columns
+				WHERE table_schema = 'public'
+				  AND table_name = 'product_specification_templates'
+				  AND column_name = $1
+			)
+		`, columnName).Scan(&exists); err != nil {
+			t.Fatalf("check removed column %s: %v", columnName, err)
+		}
+		if exists {
+			t.Fatalf("removed column %s still exists on product_specification_templates", columnName)
 		}
 	}
 
@@ -309,6 +331,7 @@ func TestPrepareSchemaAgainstFreshPostgres(t *testing.T) {
 	}
 
 	assertProductTemplateSourceReset(ctx, t, testDB)
+	assertRefundAndPolicyMigrationState(ctx, t, testDB)
 }
 
 func assertMigrationState(ctx context.Context, t *testing.T, db *sql.DB, expectedVersion int, expectedDirty bool) {
@@ -381,5 +404,102 @@ func assertProductTemplateSourceReset(ctx context.Context, t *testing.T, db *sql
 	}
 	if specCount != 46 {
 		t.Fatalf("expected forty-six product spec definitions, got %d", specCount)
+	}
+}
+
+func assertRefundAndPolicyMigrationState(ctx context.Context, t *testing.T, db *sql.DB) {
+	t.Helper()
+
+	assertPostgresColumns(ctx, t, db, "refunds", map[string]string{
+		"requested_amount":         "numeric",
+		"discount_clawback_amount": "numeric",
+		"calculation_snapshot":     "text",
+		"fx_snapshot":              "jsonb",
+	})
+	assertPostgresColumns(ctx, t, db, "refund_line_items", map[string]string{
+		"refund_id":     "int8",
+		"order_id":      "int8",
+		"order_item_id": "int8",
+		"restock":       "bool",
+		"restocked_at":  "timestamptz",
+	})
+	assertPostgresColumns(ctx, t, db, "order_policy_disclosures", map[string]string{
+		"order_id":         "int8",
+		"policy_key":       "varchar",
+		"locale":           "varchar",
+		"requested_locale": "varchar",
+		"fallback":         "bool",
+		"policy_version":   "varchar",
+		"policy_hash":      "varchar",
+		"policy_json":      "text",
+		"policy_url":       "text",
+		"disclosed_at":     "timestamptz",
+		"consented_at":     "timestamptz",
+		"source":           "varchar",
+	})
+
+	var policyValue, policyType, policyGroup string
+	var isPublic bool
+	if err := db.QueryRowContext(ctx, `
+		SELECT value, type, "group", is_public
+		FROM settings
+		WHERE key = 'refund_return_policy' AND locale = 'en'
+	`).Scan(&policyValue, &policyType, &policyGroup, &isPublic); err != nil {
+		t.Fatalf("load default refund and return policy setting: %v", err)
+	}
+	if policyType != "json" || policyGroup != "refund_return" || !isPublic {
+		t.Fatalf(
+			"unexpected refund and return policy metadata: type=%q group=%q is_public=%t",
+			policyType,
+			policyGroup,
+			isPublic,
+		)
+	}
+	var policy struct {
+		Title    string            `json:"title"`
+		Sections []json.RawMessage `json:"sections"`
+	}
+	if err := json.Unmarshal([]byte(policyValue), &policy); err != nil {
+		t.Fatalf("decode default refund and return policy setting: %v", err)
+	}
+	if policy.Title != "Refund & Return Policy" || len(policy.Sections) == 0 {
+		t.Fatalf("default refund and return policy payload is incomplete")
+	}
+
+	var hasUniqueConstraint bool
+	if err := db.QueryRowContext(ctx, `
+		SELECT EXISTS (
+			SELECT 1
+			FROM information_schema.table_constraints
+			WHERE constraint_schema = 'public'
+			  AND table_name = 'order_policy_disclosures'
+			  AND constraint_name = 'uq_order_policy_disclosures_order_policy'
+			  AND constraint_type = 'UNIQUE'
+		)
+	`).Scan(&hasUniqueConstraint); err != nil {
+		t.Fatalf("check order policy disclosure uniqueness constraint: %v", err)
+	}
+	if !hasUniqueConstraint {
+		t.Fatal("order policy disclosure uniqueness constraint is missing")
+	}
+}
+
+func assertPostgresColumns(ctx context.Context, t *testing.T, db *sql.DB, tableName string, expected map[string]string) {
+	t.Helper()
+
+	for columnName, expectedType := range expected {
+		var actualType string
+		if err := db.QueryRowContext(ctx, `
+			SELECT udt_name
+			FROM information_schema.columns
+			WHERE table_schema = 'public'
+			  AND table_name = $1
+			  AND column_name = $2
+		`, tableName, columnName).Scan(&actualType); err != nil {
+			t.Fatalf("load column %s.%s: %v", tableName, columnName, err)
+		}
+		if actualType != expectedType {
+			t.Fatalf("unexpected type for %s.%s: got %q, want %q", tableName, columnName, actualType, expectedType)
+		}
 	}
 }

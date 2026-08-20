@@ -83,3 +83,18 @@ func TestNormalizeThreeDSecureModeSupportsChallenge(t *testing.T) {
 		t.Fatalf("NormalizeThreeDSecureMode(challenge) = %q, want challenge", got)
 	}
 }
+
+func TestGatewayConfigFromSecureConfigReadsStripePaymentMethodTypesFromEnv(t *testing.T) {
+	t.Setenv("STRIPE_PAYMENT_METHOD_TYPES", "card,klarna")
+	config := GatewayConfigFromSecureConfig(SecureGatewayConfig{
+		Provider:    GatewayStripe,
+		Environment: "production",
+		Credentials: map[string]string{
+			"api_key":        "sk_live_123",
+			"webhook_secret": "whsec_123",
+		},
+	})
+	if len(config.PaymentMethodTypes) != 2 || config.PaymentMethodTypes[0] != "card" || config.PaymentMethodTypes[1] != "klarna" {
+		t.Fatalf("unexpected payment method types: %#v", config.PaymentMethodTypes)
+	}
+}

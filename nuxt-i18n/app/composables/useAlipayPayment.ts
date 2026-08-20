@@ -16,6 +16,7 @@ export interface CreateAlipayOrderInput {
   orderNumber: string
   returnUrl?: string
   cancelUrl?: string
+  idempotencyKey?: string
 }
 
 const unwrapApiData = <T>(payload: ApiEnvelope<T> | null | undefined): T | null => {
@@ -47,9 +48,14 @@ export function useAlipayPayment() {
 
   const createAlipayOrder = async (input: CreateAlipayOrderInput): Promise<AlipayPaymentSession> => {
     const orderNumber = assertOrderNumber(input.orderNumber)
+    const idempotencyKey = String(input.idempotencyKey || '').trim()
     const response = await request<ApiEnvelope<AlipayPaymentSession>>('/payment/alipay/orders', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        ...(idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {}),
+      },
       body: JSON.stringify({
         order_number: orderNumber,
         return_url: input.returnUrl || '',
@@ -64,13 +70,18 @@ export function useAlipayPayment() {
     return session
   }
 
-  const confirmAlipayOrder = async (orderNumber: string): Promise<AlipayPaymentSession> => {
+  const confirmAlipayOrder = async (orderNumber: string, idempotencyKey?: string): Promise<AlipayPaymentSession> => {
     const normalizedOrderNumber = assertOrderNumber(orderNumber)
+    const normalizedIdempotencyKey = String(idempotencyKey || '').trim()
     const response = await request<ApiEnvelope<AlipayPaymentSession>>(
       `/payment/alipay/orders/${encodeURIComponent(normalizedOrderNumber)}/confirm`,
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          ...(normalizedIdempotencyKey ? { 'Idempotency-Key': normalizedIdempotencyKey } : {}),
+        },
         body: JSON.stringify({}),
       },
       'Unable to confirm Alipay payment',

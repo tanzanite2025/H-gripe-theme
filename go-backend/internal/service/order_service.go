@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"commerce-platform/internal/domain/order"
+	shippingdomain "commerce-platform/internal/domain/shipping"
 	"commerce-platform/internal/pkg/email"
 	"commerce-platform/internal/pkg/ordernumber"
 	"commerce-platform/internal/repository"
@@ -19,16 +20,24 @@ type OrderService struct {
 	numberGenerator    *ordernumber.Generator
 	productCache       ProductCacheInvalidator
 	productCacheEvents ProductCacheEventPublisher
+	refundReturnPolicy *RefundReturnPolicyService
 }
 
 var (
 	ErrOrderNotFound                     = errors.New("order not found")
 	ErrOrderDeleteNotAllowed             = errors.New("only cancelled, payment expired, or refunded orders can be deleted")
 	ErrSystemManagedOrderStatus          = errors.New("order status is managed by payment workflow")
+	ErrOrderFulfillmentNotAllowed        = errors.New("only paid, processing, or already shipped orders can be fulfilled")
+	ErrOrderFulfillmentPaymentRequired   = errors.New("only paid orders can be fulfilled")
+	ErrOrderFulfillmentTransactionNeeded = errors.New("order fulfillment transaction is not configured")
 	ErrTrackingNumberRequired            = errors.New("tracking number is required")
 	ErrOrderShippingNotConfigured        = errors.New("order shipping service is not configured")
 	ErrOrderNumberNotConfigured          = errors.New("order number generator is not configured")
 	ErrOrderItemNotFound                 = errors.New("order item not found")
+	ErrOrderIdempotencyUnavailable       = errors.New("order idempotency is not configured")
+	ErrOrderIdempotencyConflict          = errors.New("idempotency key was already used for a different order request")
+	ErrOrderIdempotencyInProgress        = errors.New("idempotent order request is already being processed")
+	ErrOrderIdempotencyHashRequired      = errors.New("idempotency request hash is required")
 	ErrDeclaredValueInvalid              = errors.New("declared value must be a finite non-negative number")
 	ErrDeclaredValueConfirmationRequired = errors.New("declared value is required when confirming")
 )
@@ -52,6 +61,13 @@ func NewOrderService(
 		numberGenerator: numberGenerator,
 	}
 	return service
+}
+
+func (s *OrderService) ConfigureRefundReturnPolicy(policy *RefundReturnPolicyService) {
+	if s == nil {
+		return
+	}
+	s.refundReturnPolicy = policy
 }
 
 func (s *OrderService) ConfigureProductCacheInvalidator(invalidator ProductCacheInvalidator) {
@@ -87,6 +103,12 @@ type OrderTrackingUpdateInput struct {
 	TrackingProviderID uint
 	CarrierID          *uint
 	CarrierServiceID   *uint
+}
+
+type OrderFulfillmentResult struct {
+	Order                     *order.Order
+	TrackingShipment          *shippingdomain.TrackingShipment
+	TrackingRegistrationError string
 }
 
 func (s *OrderService) GetOrder(id uint, userID uint) (*order.Order, error) {

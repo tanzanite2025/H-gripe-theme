@@ -23,7 +23,6 @@ func TestGetProductAllowsNumericSlugWithoutIDLookup(t *testing.T) {
 	}
 	if err := db.AutoMigrate(
 		&productdomain.ProductSpecificationTemplate{},
-		&productdomain.ProductSpecificationTemplateTranslation{},
 		&productdomain.SpecDefinition{},
 		&productdomain.Product{},
 		&productdomain.ProductMedia{},
@@ -72,6 +71,99 @@ func TestGetProductAllowsNumericSlugWithoutIDLookup(t *testing.T) {
 	}
 }
 
+func TestListProductsFiltersFeaturedResultsByProductCategory(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	if err != nil {
+		t.Fatalf("open test db: %v", err)
+	}
+	if err := db.AutoMigrate(
+		&productdomain.ProductCategory{},
+		&productdomain.Product{},
+		&productdomain.ProductMedia{},
+		&productdomain.ProductVariant{},
+	); err != nil {
+		t.Fatalf("migrate test db: %v", err)
+	}
+
+	wheelsetCategory := productdomain.ProductCategory{
+		Name:      "Wheelsets",
+		Slug:      "wheelset",
+		Depth:     1,
+		IsEnabled: true,
+	}
+	rimCategory := productdomain.ProductCategory{
+		Name:      "Rims",
+		Slug:      "rim",
+		Depth:     1,
+		IsEnabled: true,
+	}
+	if err := db.Create(&wheelsetCategory).Error; err != nil {
+		t.Fatalf("seed wheelset category: %v", err)
+	}
+	if err := db.Create(&rimCategory).Error; err != nil {
+		t.Fatalf("seed rim category: %v", err)
+	}
+
+	createProduct := func(categoryID uint, slug string, featured bool) {
+		categoryIDCopy := categoryID
+		item := productdomain.Product{
+			ProductCategoryID: &categoryIDCopy,
+			SKU:               strings.ToUpper(slug),
+			Name:              slug,
+			Slug:              slug,
+			Status:            "active",
+			Locale:            "en",
+			Featured:          featured,
+			Price:             100,
+		}
+		if err := db.Create(&item).Error; err != nil {
+			t.Fatalf("seed product %s: %v", slug, err)
+		}
+		if err := db.Create(&productdomain.ProductVariant{
+			ProductID: item.ID,
+			SKU:       strings.ToUpper(slug) + "-VAR",
+			Title:     "Default",
+			Price:     100,
+			Stock:     1,
+			IsDefault: true,
+			IsActive:  true,
+		}).Error; err != nil {
+			t.Fatalf("seed product variant %s: %v", slug, err)
+		}
+	}
+
+	createProduct(wheelsetCategory.ID, "wheelset-featured", true)
+	createProduct(wheelsetCategory.ID, "wheelset-regular", false)
+	createProduct(rimCategory.ID, "rim-featured", true)
+
+	router := gin.New()
+	router.Use(func(c *gin.Context) {
+		c.Set("locale", "en")
+		c.Next()
+	})
+	handler := NewHandler(service.NewProductService(repository.NewProductRepository(db), nil, 0))
+	router.GET("/products", handler.ListProducts)
+
+	response := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/products?featured=true&product_category=wheelset", nil)
+	router.ServeHTTP(response, request)
+
+	if response.Code != http.StatusOK {
+		t.Fatalf("expected featured wheelsets response to return 200, got %d: %s", response.Code, response.Body.String())
+	}
+	body := response.Body.String()
+	if !strings.Contains(body, `"slug":"wheelset-featured"`) {
+		t.Fatalf("expected featured wheelset in response, got %s", body)
+	}
+	if strings.Contains(body, `"slug":"wheelset-regular"`) || strings.Contains(body, `"slug":"rim-featured"`) {
+		t.Fatalf("response ignored featured wheelset scope: %s", body)
+	}
+	if !strings.Contains(body, `"page":1`) || !strings.Contains(body, `"total":1`) {
+		t.Fatalf("response omitted product pagination metadata: %s", body)
+	}
+}
+
 func TestListProductSpecificationTemplatesDoesNotExposeSpecDefinitions(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
@@ -80,7 +172,6 @@ func TestListProductSpecificationTemplatesDoesNotExposeSpecDefinitions(t *testin
 	}
 	if err := db.AutoMigrate(
 		&productdomain.ProductSpecificationTemplate{},
-		&productdomain.ProductSpecificationTemplateTranslation{},
 		&productdomain.SpecDefinition{},
 	); err != nil {
 		t.Fatalf("migrate test db: %v", err)
@@ -90,9 +181,6 @@ func TestListProductSpecificationTemplatesDoesNotExposeSpecDefinitions(t *testin
 		Name:      "Wheelset",
 		Slug:      "wheelset",
 		IsEnabled: true,
-		Translations: []productdomain.ProductSpecificationTemplateTranslation{
-			{Locale: "zh_cn", Name: "轮组"},
-		},
 		SpecDefinitions: []productdomain.SpecDefinition{
 			{Name: "Material", Slug: "material", FieldType: "text", IsVisible: true},
 		},

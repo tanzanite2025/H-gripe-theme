@@ -8,9 +8,9 @@ const messagesFor = (css: string): string[] => (
 assert.deepEqual(
   messagesFor(`
 @font-face {
-  font-family: StorefrontSystem;
-  src: url(../fonts/StorefrontSystem-CJK.f8ce6d72e8cb.woff2) format("woff2");
-  font-display: swap;
+  font-family: MapleUICJK;
+  src: url(../fonts/MapleUI-CJK.f8ce6d72e8cb.woff2) format("woff2");
+  font-display: block;
   unicode-range: U+4E00-9FFF;
 }
 `),
@@ -19,38 +19,37 @@ assert.deepEqual(
 
 assert.deepEqual(
   messagesFor(`
-:host,html{font-family:StorefrontSystem}
-@font-face{font-family:StorefrontSystem;src:url(../fonts/StorefrontSystem-CN-Latin.woff2) format("woff2");font-weight:100 900;font-style:normal;font-display:block}
+:host,html{font-family:MapleUICJK}
+@font-face{font-family:MapleUICJK;src:url(../fonts/MapleUI-CN-Latin.woff2) format("woff2");font-weight:100 900;font-style:normal;font-display:block}
 `),
   [
-    'storefront font file reference must be content-addressed: StorefrontSystem-CN-Latin.woff2',
-    'StorefrontSystem must use StorefrontSystem-CJK.f8ce6d72e8cb.woff2, not StorefrontSystem-CN-Latin.woff2',
-    'StorefrontSystem must use font-display: swap',
-    'StorefrontSystem must declare unicode-range in built CSS',
+    'Maple UI font file reference must be content-addressed: MapleUI-CN-Latin.woff2',
+    'MapleUICJK must use MapleUI-CJK.f8ce6d72e8cb.woff2, not MapleUI-CN-Latin.woff2',
+    'MapleUICJK must declare unicode-range in built CSS',
   ],
 )
 
 assert.deepEqual(
   messagesFor(`
 @font-face {
-  font-family: StorefrontSystemLatin;
-  src: url(../fonts/StorefrontSystem-Latin.00af3fec5b34.woff2) format("woff2");
-  font-display: swap;
+  font-family: MapleUILatin;
+  src: url(../fonts/MapleUI-Latin.00af3fec5b34.woff2) format("woff2");
+  font-display: block;
   unicode-range: U+0000-00FF;
 }
 `),
-  ['StorefrontSystemLatin must not declare unicode-range in built CSS'],
+  ['MapleUILatin must not declare unicode-range in built CSS'],
 )
 
 assert.deepEqual(
   messagesFor(`
 @font-face {
-  font-family: StorefrontSystemLegacy;
-  src: url(../fonts/StorefrontSystem-Legacy.0123456789ab.woff2) format("woff2");
-  font-display: swap;
+  font-family: MapleUILegacy;
+  src: url(../fonts/MapleUI-Legacy.0123456789ab.woff2) format("woff2");
+  font-display: block;
 }
 `),
-  ['unapproved storefront @font-face family "StorefrontSystemLegacy"'],
+  ['unapproved Maple UI @font-face family "MapleUILegacy"'],
 )
 
 console.log('Font artifact contract edge-case checks passed.')

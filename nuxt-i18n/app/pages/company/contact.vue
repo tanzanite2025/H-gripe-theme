@@ -24,7 +24,7 @@
             <p class="tz-text-secondary mb-4 flex-grow leading-relaxed text-sm">
                 Strategic hub for international trade, logistics, and global customer support.
             </p>
-            <div class="rounded-lg border border-white/10 bg-[var(--tz-form-panel-surface)] p-3 font-mono text-sm tz-text-secondary">
+            <div class="rounded-lg border border-white/10 bg-[var(--tz-form-panel-surface)] p-3 text-sm tz-text-secondary">
                 Flat 1602, 16/F, Lucky Centre,<br>
                 No.165-171 Wan Chai Road, Wan Chai,<br>
                 Hong Kong
@@ -38,7 +38,7 @@
             <p class="tz-text-secondary mb-4 flex-grow leading-relaxed text-sm">
                 State-of-the-art facility for carbon fiber layup, precision molding, and rigorous testing.
             </p>
-            <div class="rounded-lg border border-white/10 bg-[var(--tz-form-panel-surface)] p-3 font-mono text-sm tz-text-secondary">
+            <div class="rounded-lg border border-white/10 bg-[var(--tz-form-panel-surface)] p-3 text-sm tz-text-secondary">
                 Building 6, No. 639 Tongji South Road,<br>
                 Industrial Concentration Zone, Tong'an Dist,<br>
                 Xiamen, Fujian, China
@@ -66,7 +66,7 @@
             <div class="grid grid-cols-1 gap-x-8 gap-y-4 border-t border-white/10 pt-6 text-sm md:grid-cols-2">
                 <div>
                     <span class="block tz-text-muted text-xs uppercase tracking-wider mb-1">Beneficiary Name</span>
-        <span class="inline-block rounded border border-white/10 bg-[var(--tz-form-panel-surface)] px-2 py-1 font-mono tz-text-primary">Top Sports Co., Limited</span>
+        <span class="inline-block rounded border border-white/10 bg-[var(--tz-form-panel-surface)] px-2 py-1 tz-text-primary">Top Sports Co., Limited</span>
                 </div>
                 <div>
                     <span class="block tz-text-muted text-xs uppercase tracking-wider mb-1">Bank Name</span>

@@ -44,7 +44,7 @@ func (s *WheelsetFitQuestionnaireService) GetPublishedFlow() (*WheelsetFitQuesti
 	if err != nil {
 		return nil, err
 	}
-	version, err := s.repo.FindPublishedVersion(questionnaire.ID)
+	version, err := s.wheelsetFitQuestionnaireRepository.FindPublishedVersion(questionnaire.ID)
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, ErrWheelsetFitQuestionnaireVersionNotFound
 	}
@@ -110,11 +110,12 @@ func buildWheelsetFitQuestionnaireConfig(questionnaire *wheelsetfit.Questionnair
 			nextNodeKey = questions[index+1].QuestionKey
 		}
 		nodes = append(nodes, selectionassistant.Node{
-			Key:     question.QuestionKey,
-			Type:    selectionassistant.NodeTypeQuestion,
-			Prompt:  localizedQuestionPromptMap(question, sourceLocale),
-			Helper:  localizedQuestionHelperMap(question, sourceLocale),
-			Options: localizedQuestionOptions(question, sourceLocale, nextNodeKey),
+			Key:       question.QuestionKey,
+			Type:      selectionassistant.NodeTypeQuestion,
+			Prompt:    localizedQuestionPromptMap(question, sourceLocale),
+			HelpTitle: localizedQuestionHelpTitleMap(question, sourceLocale),
+			HelpBody:  localizedQuestionHelpBodyMap(question, sourceLocale),
+			Options:   localizedQuestionOptions(question, sourceLocale, nextNodeKey),
 			Editor: selectionassistant.EditorPosition{
 				X: index * 320,
 				Y: 0,
@@ -157,42 +158,53 @@ func localizedQuestionPromptMap(question wheelsetfit.Question, sourceLocale stri
 		seed = strings.TrimSpace(translations[wheelsetfit.SourceLocale].Prompt)
 	}
 	if seed != "" {
-		if result["en"] == "" {
+		if strings.EqualFold(sourceLocale, "en") && result["en"] == "" {
 			result["en"] = seed
 		}
-		if result["zh_cn"] == "" {
+		if strings.EqualFold(sourceLocale, "zh_cn") && result["zh_cn"] == "" {
 			result["zh_cn"] = seed
 		}
 	}
 	return result
 }
 
-func localizedQuestionHelperMap(question wheelsetfit.Question, sourceLocale string) map[string]string {
+func localizedQuestionHelpTitleMap(question wheelsetfit.Question, sourceLocale string) map[string]string {
+	return localizedQuestionHelpFieldMap(question, sourceLocale, func(translation wheelsetfit.QuestionTranslation) string {
+		return translation.HelpTitle
+	})
+}
+
+func localizedQuestionHelpBodyMap(question wheelsetfit.Question, sourceLocale string) map[string]string {
+	return localizedQuestionHelpFieldMap(question, sourceLocale, func(translation wheelsetfit.QuestionTranslation) string {
+		return translation.HelpBody
+	})
+}
+
+func localizedQuestionHelpFieldMap(
+	question wheelsetfit.Question,
+	sourceLocale string,
+	field func(wheelsetfit.QuestionTranslation) string,
+) map[string]string {
 	translations := wheelsetFitQuestionTranslationsByLocale(&question)
 	result := make(map[string]string, len(translations)+2)
 	for _, translation := range translations {
-		helper := strings.TrimSpace(strings.TrimSpace(translation.HelpTitle + " " + translation.HelpBody))
-		if helper != "" {
-			result[translation.Locale] = helper
+		if text := strings.TrimSpace(field(translation)); text != "" {
+			result[translation.Locale] = text
 		}
 	}
-	seed := localizedQuestionHelperText(translations[sourceLocale])
+	seed := strings.TrimSpace(field(translations[sourceLocale]))
 	if seed == "" {
-		seed = localizedQuestionHelperText(translations[wheelsetfit.SourceLocale])
+		seed = strings.TrimSpace(field(translations[wheelsetfit.SourceLocale]))
 	}
 	if seed != "" {
-		if result["en"] == "" {
+		if strings.EqualFold(sourceLocale, "en") && result["en"] == "" {
 			result["en"] = seed
 		}
-		if result["zh_cn"] == "" {
+		if strings.EqualFold(sourceLocale, "zh_cn") && result["zh_cn"] == "" {
 			result["zh_cn"] = seed
 		}
 	}
 	return result
-}
-
-func localizedQuestionHelperText(translation wheelsetfit.QuestionTranslation) string {
-	return strings.TrimSpace(strings.TrimSpace(translation.HelpTitle + " " + translation.HelpBody))
 }
 
 func localizedQuestionOptions(question wheelsetfit.Question, sourceLocale, nextNodeKey string) []selectionassistant.Option {
@@ -248,10 +260,10 @@ func localizedOptionLabelMap(translations map[string]wheelsetfit.OptionTranslati
 		seed = strings.TrimSpace(translations[wheelsetfit.SourceLocale].Label)
 	}
 	if seed != "" {
-		if result["en"] == "" {
+		if strings.EqualFold(sourceLocale, "en") && result["en"] == "" {
 			result["en"] = seed
 		}
-		if result["zh_cn"] == "" {
+		if strings.EqualFold(sourceLocale, "zh_cn") && result["zh_cn"] == "" {
 			result["zh_cn"] = seed
 		}
 	}
@@ -270,10 +282,10 @@ func localizedOptionDescriptionMap(translations map[string]wheelsetfit.OptionTra
 		seed = strings.TrimSpace(translations[wheelsetfit.SourceLocale].Description)
 	}
 	if seed != "" {
-		if result["en"] == "" {
+		if strings.EqualFold(sourceLocale, "en") && result["en"] == "" {
 			result["en"] = seed
 		}
-		if result["zh_cn"] == "" {
+		if strings.EqualFold(sourceLocale, "zh_cn") && result["zh_cn"] == "" {
 			result["zh_cn"] = seed
 		}
 	}

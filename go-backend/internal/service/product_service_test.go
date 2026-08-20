@@ -61,6 +61,91 @@ func TestProductServiceCreateAdminProductPersistsTemplateSpecs(t *testing.T) {
 	assert.JSONEq(t, `{"brake_type":"disc"}`, createdProduct.Variants[0].OptionValues)
 }
 
+func TestProductServiceListsOnlyWheelsetDynamicValuesForCategoryTree(t *testing.T) {
+	db, productService := newTestProductService(t)
+	wheelsetCategory := seedProductCategoryForProductServiceTest(t, db, "Wheelsets", "wheelset", nil)
+	childCategory := seedProductCategoryForProductServiceTest(t, db, "Carbon Wheelsets", "carbon-wheelsets", &wheelsetCategory.ID)
+	otherCategory := seedProductCategoryForProductServiceTest(t, db, "Tires", "tires", nil)
+	productSpecificationTemplate := seedCarbonRimType(t, db)
+
+	_, err := productService.CreateAdminProduct(ProductCreateInput{
+		ProductSpecificationTemplateID: &productSpecificationTemplate.ID,
+		ProductCategoryID:              &childCategory.ID,
+		Name:                           "Wheelset 30",
+		Slug:                           "wheelset-30",
+		Status:                         "active",
+		Locale:                         "en",
+		SpecValues: map[string]string{
+			"outer_width_mm": "30.5",
+		},
+		Variants: []ProductVariantInput{
+			{
+				SKU:          "WS-30",
+				OptionValues: map[string]string{"brake_type": "disc"},
+				Price:        399,
+				Stock:        5,
+				IsDefault:    true,
+				IsActive:     boolPtr(true),
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	_, err = productService.CreateAdminProduct(ProductCreateInput{
+		ProductSpecificationTemplateID: &productSpecificationTemplate.ID,
+		ProductCategoryID:              &childCategory.ID,
+		Name:                           "Wheelset 45",
+		Slug:                           "wheelset-45",
+		Status:                         "active",
+		Locale:                         "en",
+		SpecValues: map[string]string{
+			"outer_width_mm": "45",
+		},
+		Variants: []ProductVariantInput{
+			{
+				SKU:          "WS-45",
+				OptionValues: map[string]string{"brake_type": "rim"},
+				Price:        459,
+				Stock:        3,
+				IsDefault:    true,
+				IsActive:     boolPtr(true),
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	_, err = productService.CreateAdminProduct(ProductCreateInput{
+		ProductSpecificationTemplateID: &productSpecificationTemplate.ID,
+		ProductCategoryID:              &otherCategory.ID,
+		Name:                           "Tire 99",
+		Slug:                           "tire-99",
+		Status:                         "active",
+		Locale:                         "en",
+		SpecValues: map[string]string{
+			"outer_width_mm": "99",
+		},
+		Variants: []ProductVariantInput{
+			{
+				SKU:          "TR-99",
+				OptionValues: map[string]string{"brake_type": "disc"},
+				Price:        109,
+				Stock:        8,
+				IsDefault:    true,
+				IsActive:     boolPtr(true),
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	filters, err := productService.ListFilterableSpecificationsWithDynamicValuesForCategory("wheelset")
+	require.NoError(t, err)
+	require.Len(t, filters, 2)
+	assert.Equal(t, "brake_type", filters[0].Slug)
+	assert.Equal(t, []string{"disc", "rim"}, filters[0].Values)
+	assert.Equal(t, "outer_width_mm", filters[1].Slug)
+	assert.Equal(t, []string{"30.5", "45"}, filters[1].Values)
+}
+
 func TestProductServiceAdminProductPersistsCustomsInformation(t *testing.T) {
 	db, productService := newTestProductService(t)
 
@@ -1285,8 +1370,9 @@ func newTestProductService(t *testing.T) (*gorm.DB, *ProductService) {
 	})
 
 	require.NoError(t, db.AutoMigrate(
+		&product.ProductCategory{},
+		&product.ProductCategoryTranslation{},
 		&product.ProductSpecificationTemplate{},
-		&product.ProductSpecificationTemplateTranslation{},
 		&product.SpecDefinition{},
 		&product.ProductInformationTemplate{},
 		&product.Product{},
@@ -1298,6 +1384,7 @@ func newTestProductService(t *testing.T) (*gorm.DB, *ProductService) {
 	))
 
 	productService := NewProductService(repository.NewProductRepository(db), nil, 0)
+	productService.ConfigureProductCategoryRepository(repository.NewProductCategoryRepository(db))
 	productService.ConfigureInformationTemplateRepository(repository.NewProductInformationTemplateRepository(db))
 	return db, productService
 }
@@ -1352,6 +1439,25 @@ func seedCarbonRimType(t *testing.T, db *gorm.DB) product.ProductSpecificationTe
 	require.NoError(t, db.Create(&specDefinitions).Error)
 
 	return productSpecificationTemplate
+}
+
+func seedProductCategoryForProductServiceTest(t *testing.T, db *gorm.DB, name, slug string, parentID *uint) product.ProductCategory {
+	t.Helper()
+
+	category := product.ProductCategory{
+		Name:     name,
+		Slug:     slug,
+		ParentID: parentID,
+		Depth:    1,
+		IsEnabled: true,
+	}
+	if parentID != nil {
+		var parent product.ProductCategory
+		require.NoError(t, db.First(&parent, *parentID).Error)
+		category.Depth = parent.Depth + 1
+	}
+	require.NoError(t, db.Create(&category).Error)
+	return category
 }
 
 func createProductWithSpecs(t *testing.T, productService *ProductService, productSpecificationTemplateID uint, sku, slug string, specs map[string]string, variantOptions map[string]string) *product.Product {

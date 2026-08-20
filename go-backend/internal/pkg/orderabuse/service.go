@@ -40,7 +40,7 @@ type counterStore interface {
 }
 
 type redisCounterStore struct {
-	client *redis.Client
+	client redis.UniversalClient
 }
 
 const incrementWithTTLScript = `
@@ -63,7 +63,7 @@ type Service struct {
 	cfg   config.OrderAbuseConfig
 }
 
-func New(redisClient *redis.Client, cfg config.OrderAbuseConfig) *Service {
+func New(redisClient redis.UniversalClient, cfg config.OrderAbuseConfig) *Service {
 	if redisClient == nil {
 		return nil
 	}

@@ -3,11 +3,12 @@ import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import type { ShopCategory } from '~/composables/useShopCategories'
 import { useShopCategories } from '~/composables/useShopCategories'
-import { useShopProducts } from '~/composables/useShopProducts'
+import { useShopProducts, type ShopProductReviewSummary } from '~/composables/useShopProducts'
 import { useApiRequest } from '~/composables/useApiRequest'
 import { useBehaviorEvents } from '~/composables/useBehaviorEvents'
 import type {
   RecommendationAPIResult,
+  RecommendationAPIReviewSummary,
   RecommendationProductCard,
   RecommendationRequest,
 } from '~/types/recommendation'
@@ -62,6 +63,74 @@ const normalizeExcludedProductIds = (values?: Array<number | null | undefined>) 
 const isProductDetailUrl = (value: unknown) => {
   const url = String(value || '').trim().replace(/\/+$/, '')
   return /(?:^|\/)shop\/[^/?#]+$/.test(url)
+}
+
+const extractProductSlugFromUrl = (value: unknown) => {
+  const url = String(value || '').trim().replace(/\/+$/, '')
+  const match = url.match(/(?:^|\/)shop\/([^/?#]+)$/)
+  return match?.[1] ? decodeURIComponent(match[1]) : ''
+}
+
+const normalizeRecommendationReviewSummary = (
+  value: RecommendationAPIReviewSummary | null | undefined,
+  fallbackProductId: number,
+): ShopProductReviewSummary | null => {
+  if (!value || typeof value !== 'object') return null
+
+  const toCount = (count: unknown) => Math.max(0, Math.floor(Number(count) || 0))
+  const averageRating = Number(value.average_rating)
+
+  return {
+    productId: toPositiveInteger(value.product_id) || fallbackProductId,
+    totalReviews: toCount(value.total_reviews),
+    averageRating: Number.isFinite(averageRating)
+      ? Math.min(5, Math.max(0, averageRating))
+      : 0,
+    rating5Count: toCount(value.rating_5_count),
+    rating4Count: toCount(value.rating_4_count),
+    rating3Count: toCount(value.rating_3_count),
+    rating2Count: toCount(value.rating_2_count),
+    rating1Count: toCount(value.rating_1_count),
+  }
+}
+
+const createRecommendationFallbackCard = (
+  item: RecommendationAPIResult['items'][number],
+): RecommendationProductCard | null => {
+  const productId = toPositiveInteger(item?.product_id)
+  const title = String(item?.title || '').trim()
+  const url = String(item?.url || '').trim()
+  if (!productId || !title || !isProductDetailUrl(url)) {
+    return null
+  }
+
+  const priceLabel = String(item?.price_label || '').trim()
+  return {
+    id: productId,
+    productId,
+    defaultVariantId: null,
+    title,
+    slug: extractProductSlugFromUrl(url) || String(productId),
+    url,
+    thumbnail: item?.thumbnail || undefined,
+    priceNumber: 0,
+    priceLabel,
+    currency: 'USD',
+    weightGrams: toPositiveInteger(item?.weight_grams) || undefined,
+    displayPriceNumber: 0,
+    displayPriceCurrency: 'USD',
+    displayPriceLabel: priceLabel,
+    displayPrices: [],
+    prices: {
+      regular: 0,
+      sale: 0,
+    },
+    availability: 'in_stock',
+    reviewSummary: normalizeRecommendationReviewSummary(item.review_summary, productId),
+    variants: [],
+    slot: item?.slot || undefined,
+    reason: item?.reason || undefined,
+  }
 }
 
 const isRecommendationProduct = (product: RecommendationProductCard | null | undefined) => {
@@ -145,11 +214,7 @@ export const useSmartRecommendations = () => {
 
         seenProductIds.add(productId)
         filledCards.push({
-          id: productId,
-          title,
-          url,
-          thumbnail: product.thumbnail,
-          priceLabel: product.priceLabel,
+          ...product,
           slot: 'catalog_fill',
           reason: 'fill_recommendation_slots',
         })
@@ -168,6 +233,14 @@ export const useSmartRecommendations = () => {
     }
 
     return [...existingCards, ...filledCards].slice(0, targetCount)
+  }
+
+  const resolveRecommendationCards = (
+    items: RecommendationAPIResult['items'],
+  ) => {
+    return items
+      .map(createRecommendationFallbackCard)
+      .filter((card): card is RecommendationProductCard => Boolean(card))
   }
 
   const loadBaselineRecommendations = async (options: RecommendationLoadOptions = {}) => {
@@ -221,21 +294,10 @@ export const useSmartRecommendations = () => {
       const items = Array.isArray(payload?.items) ? payload.items : []
       if (loadId !== activeRecommendationLoadId) return
 
-      recommendedProducts.value = items
-        .filter((item) => (
-          Number(item?.product_id) > 0
-          && item?.title
-          && isProductDetailUrl(item?.url)
-        ))
-        .map((item) => ({
-          id: Number(item.product_id),
-          title: String(item.title),
-          url: String(item.url),
-          thumbnail: item.thumbnail || undefined,
-          priceLabel: item.price_label || undefined,
-          slot: item.slot || undefined,
-          reason: item.reason || undefined,
-        }))
+      const algorithmCards = resolveRecommendationCards(items)
+      if (loadId !== activeRecommendationLoadId) return
+
+      recommendedProducts.value = algorithmCards
       recommendationRequestId.value = String(payload?.request_id || '')
       recommendationAlgorithmVersion.value = String(payload?.algorithm_version || '')
 
@@ -246,7 +308,6 @@ export const useSmartRecommendations = () => {
         }
       }
 
-      const algorithmCards = recommendedProducts.value
       const filledCards = await fillRecommendationSlots(
         algorithmCards,
         excludeProductIds,

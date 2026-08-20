@@ -20,7 +20,7 @@ const (
 	requestSignatureHeader = "X-Request-Signature"
 )
 
-func RequestSignature(cfg config.RequestSigningConfig, redisClient *redis.Client) gin.HandlerFunc {
+func RequestSignature(cfg config.RequestSigningConfig, redisClient redis.UniversalClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if !cfg.Enabled {
 			c.Next()

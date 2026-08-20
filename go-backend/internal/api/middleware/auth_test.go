@@ -77,6 +77,13 @@ func TestBackofficeDashboardGateUsesCurrentUserRole(t *testing.T) {
 			expectedStatus: http.StatusForbidden,
 		},
 		{
+			name:           "production test user cannot access dashboard",
+			tokenRole:      "test_user",
+			currentRole:    "test_user",
+			currentStatus:  "active",
+			expectedStatus: http.StatusForbidden,
+		},
+		{
 			name:           "demoted staff token cannot access dashboard",
 			tokenRole:      "admin",
 			currentRole:    "user",

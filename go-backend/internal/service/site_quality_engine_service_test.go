@@ -50,6 +50,15 @@ func TestSiteQualityOperationalStatusRequiresManualJobWorker(t *testing.T) {
 	}
 }
 
+func TestNewSiteQualityEngineServiceDefaultsToSingleRunnerBatch(t *testing.T) {
+	t.Parallel()
+
+	engine := NewSiteQualityEngineService(nil, nil, nil, nil, nil, nil, SiteQualityEngineConfig{})
+
+	require.Equal(t, 1, engine.cfg.WorkerBatchLimit)
+	require.Equal(t, 1, engine.cfg.ProviderConcurrency)
+}
+
 func TestSiteQualityRecheckDecisionKeepsOnlyBoundFinding(t *testing.T) {
 	decision, detections := restrictSiteQualityDecisionToFinding(
 		siteQualityEvaluationDecision{

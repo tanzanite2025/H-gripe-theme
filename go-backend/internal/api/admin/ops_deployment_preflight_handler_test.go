@@ -248,7 +248,7 @@ func newOpsDeploymentPreflightTestHandler(t *testing.T) (*OpsDeploymentPreflight
 		ComposeProjectName:     "staging-project",
 		Services:               "api",
 		Networks:               "app",
-		Volumes:                "uploads",
+		Volumes:                "uploads, site_logo_uploads",
 		CurrentImageTag:        "sha-cccccccccccccccccccccccccccccccccccccccc",
 		CurrentCommitSHA:       "cccccccccccccccccccccccccccccccccccccccc",
 		GatewayNetwork:         "staging-edge",

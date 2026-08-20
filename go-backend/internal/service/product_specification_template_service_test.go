@@ -1,7 +1,6 @@
 package service
 
 import (
-	"context"
 	"testing"
 
 	"commerce-platform/internal/domain/product"
@@ -96,38 +95,6 @@ func TestProductServiceAllowsDynamicSelectSpecificationWithoutSharedOptions(t *t
 	assert.JSONEq(t, `[]`, created.SpecDefinitions[0].Options)
 }
 
-func TestProductServicePersistsAndReplacesProductSpecificationTemplateTranslations(t *testing.T) {
-	_, productService := newTestProductService(t)
-
-	created, err := productService.CreateProductSpecificationTemplate(ProductSpecificationTemplateInput{
-		Name:      "Wheelset",
-		Slug:      "wheelset_translation_test",
-		IsEnabled: true,
-		Translations: []ProductSpecificationTemplateTranslationInput{
-			{Locale: "en", Name: "Wheelset"},
-			{Locale: "zh-CN", Name: "轮组"},
-		},
-	})
-	require.NoError(t, err)
-	require.Len(t, created.Translations, 2)
-	assert.Equal(t, "轮组", created.NameForLocale("zh_cn"))
-
-	updated, err := productService.UpdateProductSpecificationTemplate(created.ID, ProductSpecificationTemplateInput{
-		Name:               "Wheelset",
-		Slug:               "wheelset_translation_test",
-		IsEnabled:          true,
-		UpdateTranslations: true,
-		Translations: []ProductSpecificationTemplateTranslationInput{
-			{Locale: "en", Name: "Wheelset"},
-			{Locale: "fr", Name: "Jeu de roues"},
-		},
-	})
-	require.NoError(t, err)
-	require.Len(t, updated.Translations, 2)
-	assert.Equal(t, "Wheelset", updated.NameForLocale("zh_cn"))
-	assert.Equal(t, "Jeu de roues", updated.NameForLocale("fr"))
-}
-
 func TestProductServiceListsPublicProductSpecificationTemplatesWithoutSpecifications(t *testing.T) {
 	_, productService := newTestProductService(t)
 
@@ -135,9 +102,6 @@ func TestProductServiceListsPublicProductSpecificationTemplatesWithoutSpecificat
 		Name:      "Wheelset",
 		Slug:      "wheelset_public_index",
 		IsEnabled: true,
-		Translations: []ProductSpecificationTemplateTranslationInput{
-			{Locale: "zh-CN", Name: "轮组"},
-		},
 		SpecDefinitions: []ProductSpecDefinitionInput{
 			{Name: "Material", Slug: "material", FieldType: "text", IsVisible: true},
 		},
@@ -149,7 +113,7 @@ func TestProductServiceListsPublicProductSpecificationTemplatesWithoutSpecificat
 	require.NoError(t, err)
 	require.Len(t, publicTypes, 1)
 	assert.Empty(t, publicTypes[0].SpecDefinitions)
-	assert.Equal(t, "轮组", publicTypes[0].NameForLocale("zh_cn"))
+	assert.Equal(t, "Wheelset", publicTypes[0].Name)
 }
 
 func TestProductServiceUpdatesProductSpecificationTemplateAndReplacesSpecs(t *testing.T) {
@@ -199,108 +163,6 @@ func TestProductServiceProductSpecificationTemplateMutationInvalidatesDependentP
 	assert.Contains(t, cache.deletedKeys, "product:slug:typed-product:en")
 }
 
-func TestProductServiceUpdatesAndClearsProductSpecificationTemplateImage(t *testing.T) {
-	_, productService := newTestProductService(t)
-	created, err := productService.CreateProductSpecificationTemplate(ProductSpecificationTemplateInput{
-		Name:      "首饰",
-		Slug:      "jewelry_image",
-		IsEnabled: true,
-	})
-	require.NoError(t, err)
-
-	assetID := uint(42)
-	updated, err := productService.UpdateProductSpecificationTemplateImage(created.ID, &assetID, "https://cdn.example.com/categories/jewelry.webp")
-	require.NoError(t, err)
-	require.NotNil(t, updated.ImageMediaAssetID)
-	assert.Equal(t, assetID, *updated.ImageMediaAssetID)
-	assert.Equal(t, "https://cdn.example.com/categories/jewelry.webp", updated.ImageURL)
-
-	cleared, err := productService.UpdateProductSpecificationTemplateImage(created.ID, nil, "")
-	require.NoError(t, err)
-	assert.Nil(t, cleared.ImageMediaAssetID)
-	assert.Empty(t, cleared.ImageURL)
-}
-
-func TestProductServiceCleansUpDetachedProductSpecificationTemplateImageAssets(t *testing.T) {
-	_, productService := newTestProductService(t)
-	deleter := &recordingMediaAssetDeleter{}
-	productService.ConfigureMediaService(deleter)
-
-	created, err := productService.CreateProductSpecificationTemplate(ProductSpecificationTemplateInput{
-		Name:      "首饰",
-		Slug:      "jewelry_image_cleanup",
-		IsEnabled: true,
-	})
-	require.NoError(t, err)
-
-	firstAssetID := uint(101)
-	_, err = productService.UpdateProductSpecificationTemplateImage(created.ID, &firstAssetID, "https://cdn.example.com/categories/first.webp")
-	require.NoError(t, err)
-
-	secondAssetID := uint(102)
-	_, err = productService.UpdateProductSpecificationTemplateImage(created.ID, &secondAssetID, "https://cdn.example.com/categories/second.webp")
-	require.NoError(t, err)
-
-	_, err = productService.UpdateProductSpecificationTemplateImage(created.ID, nil, "")
-	require.NoError(t, err)
-
-	assert.Equal(t, []uint{firstAssetID, secondAssetID}, deleter.ids)
-	assert.Equal(t,
-		[]string{
-			MediaAssetDeleteConfirmation(firstAssetID),
-			MediaAssetDeleteConfirmation(secondAssetID),
-		},
-		deleter.confirmations,
-	)
-}
-
-func TestProductServiceCleansUpProductSpecificationTemplateImageOnDelete(t *testing.T) {
-	_, productService := newTestProductService(t)
-	deleter := &recordingMediaAssetDeleter{}
-	productService.ConfigureMediaService(deleter)
-
-	created, err := productService.CreateProductSpecificationTemplate(ProductSpecificationTemplateInput{
-		Name:      "首饰",
-		Slug:      "jewelry_image_delete_cleanup",
-		IsEnabled: true,
-	})
-	require.NoError(t, err)
-
-	assetID := uint(103)
-	_, err = productService.UpdateProductSpecificationTemplateImage(created.ID, &assetID, "https://cdn.example.com/categories/delete.webp")
-	require.NoError(t, err)
-
-	require.NoError(t, productService.DeleteProductSpecificationTemplate(created.ID))
-	assert.Equal(t, []uint{assetID}, deleter.ids)
-}
-
-func TestProductServiceKeepsProductSpecificationTemplateWhenDetachedImageAssetIsStillReferenced(t *testing.T) {
-	_, productService := newTestProductService(t)
-	deleter := &recordingMediaAssetDeleter{err: ErrMediaAssetInUse}
-	productService.ConfigureMediaService(deleter)
-
-	created, err := productService.CreateProductSpecificationTemplate(ProductSpecificationTemplateInput{
-		Name:      "首饰",
-		Slug:      "jewelry_image_shared",
-		IsEnabled: true,
-	})
-	require.NoError(t, err)
-
-	firstAssetID := uint(104)
-	_, err = productService.UpdateProductSpecificationTemplateImage(created.ID, &firstAssetID, "https://cdn.example.com/categories/shared-first.webp")
-	require.NoError(t, err)
-
-	secondAssetID := uint(105)
-	_, err = productService.UpdateProductSpecificationTemplateImage(created.ID, &secondAssetID, "https://cdn.example.com/categories/shared-second.webp")
-	require.NoError(t, err)
-
-	assert.Equal(t, []uint{firstAssetID}, deleter.ids)
-	updated, err := productService.GetProductSpecificationTemplate(created.ID)
-	require.NoError(t, err)
-	require.NotNil(t, updated.ImageMediaAssetID)
-	assert.Equal(t, secondAssetID, *updated.ImageMediaAssetID)
-}
-
 func TestProductServiceRejectsDuplicateProductSpecificationTemplateSlug(t *testing.T) {
 	_, productService := newTestProductService(t)
 	_, err := productService.CreateProductSpecificationTemplate(ProductSpecificationTemplateInput{Name: "首饰", Slug: "jewelry", IsEnabled: true})
@@ -325,16 +187,4 @@ func TestProductServiceDeletesProductSpecificationTemplate(t *testing.T) {
 	require.NoError(t, productService.DeleteProductSpecificationTemplate(created.ID))
 	_, err = productService.GetProductSpecificationTemplate(created.ID)
 	assert.ErrorIs(t, err, ErrProductSpecificationTemplateNotFound)
-}
-
-type recordingMediaAssetDeleter struct {
-	ids           []uint
-	confirmations []string
-	err           error
-}
-
-func (d *recordingMediaAssetDeleter) DeleteAsset(_ context.Context, id uint, confirmation string) error {
-	d.ids = append(d.ids, id)
-	d.confirmations = append(d.confirmations, confirmation)
-	return d.err
 }

@@ -36,12 +36,16 @@ func (r *MediaRepository) hasTable(table string) bool {
 	return r.db.Migrator().HasTable(table)
 }
 
-func mediaReferenceContainsCondition(columns, urls []string) (string, []interface{}) {
+func (r *MediaRepository) mediaReferenceContainsCondition(columns, urls []string) (string, []interface{}) {
 	conditions := make([]string, 0, len(columns)*len(urls))
 	args := make([]interface{}, 0, len(columns)*len(urls))
+	dialect := ""
+	if r != nil && r.db != nil {
+		dialect = r.db.Dialector.Name()
+	}
 	for _, column := range columns {
 		for _, value := range urls {
-			conditions = append(conditions, column+" LIKE ?")
+			conditions = append(conditions, mediaReferenceTextExpression(dialect, column)+" LIKE ?")
 			args = append(args, "%"+value+"%")
 		}
 	}
@@ -49,6 +53,17 @@ func mediaReferenceContainsCondition(columns, urls []string) (string, []interfac
 		return "1 = 0", []interface{}{}
 	}
 	return strings.Join(conditions, " OR "), args
+}
+
+func mediaReferenceTextExpression(dialect, column string) string {
+	switch strings.ToLower(strings.TrimSpace(dialect)) {
+	case "mysql":
+		return "CAST(" + column + " AS CHAR)"
+	default:
+		// PostgreSQL JSON/JSONB and SQLite JSON values need an explicit text cast
+		// before LIKE can inspect embedded media URLs.
+		return "CAST(" + column + " AS TEXT)"
+	}
 }
 
 func containsMediaReferenceURL(urls []string, value string) bool {

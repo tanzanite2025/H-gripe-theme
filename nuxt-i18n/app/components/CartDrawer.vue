@@ -227,7 +227,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch, onBeforeUnmount, onMounted } from 'vue'
+import { computed, ref, watch, onBeforeUnmount } from 'vue'
 import type {
   StripeExpressCheckoutElementConfirmEvent,
   StripeExpressCheckoutElementShippingAddressChangeEvent,
@@ -325,9 +325,7 @@ const shouldPrepareStripeExpressCheckout = computed(() =>
 
 watch(isCartOpen, (open) => {
   setSidebarHandlesHidden(SIDEBAR_TOKEN_CART, open)
-  if (open) {
-    void prepareStripeExpressCheckout()
-  } else {
+  if (!open) {
     stripeExpressCheckoutError.value = ''
     isStripeExpressCheckoutProcessing.value = false
     isStripeExpressCheckoutWalletAvailable.value = true
@@ -489,9 +487,6 @@ const onQuantityInput = (id: number, event: Event) => {
   updateQuantity(id, parsed)
 }
 
-onMounted(() => {
-  void prepareStripeExpressCheckout()
-})
 </script>
 
 <style src="~/assets/css/components/whatsapp-mobile-drawer.css"></style>

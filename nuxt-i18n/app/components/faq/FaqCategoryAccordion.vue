@@ -76,7 +76,7 @@
           <div
             v-if="expandedItems.has(item.id)"
             class="faq-item__answer-wrap overflow-hidden bg-opacity-30"
-            :class="theme === 'dark' ? 'bg-slate-950/30' : 'bg-gray-50/50'"
+            :class="theme === 'dark' ? 'faq-item__answer-wrap--dark' : 'bg-gray-50/50'"
           >
             <div
               class="page-faq__answer tz-faq-answer px-4 pb-4 pt-1"
@@ -137,9 +137,38 @@ const desktopItems = computed(() => (
   display: none !important;
 }
 
+.faq-category-card {
+  padding: 1rem !important;
+  border-radius: 1.25rem !important;
+}
+
 .page-faq__category-header {
-  margin-bottom: 0.75rem;
-  padding-bottom: 0.55rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+}
+
+.page-faq__category-title {
+  font-size: 1rem;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.faq-list--mobile {
+  border-radius: 1rem !important;
+}
+
+.faq-list--mobile .faq-item__button {
+  padding: 0.9rem 1rem !important;
+}
+
+.faq-list--mobile .page-faq__question-text {
+  font-size: 1rem !important;
+  line-height: 1.45;
+}
+
+.faq-list--mobile .faq-item__chevron {
+  width: 1.1rem;
+  height: 1.1rem;
 }
 
 @media (min-width: 768px) {
@@ -162,6 +191,7 @@ const desktopItems = computed(() => (
 }
 
 @media (max-width: 767.98px) {
+  .faq-item__answer-wrap--dark,
   .faq-list--mobile .faq-item__answer-wrap {
     background:
       linear-gradient(0deg, rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0.025)),

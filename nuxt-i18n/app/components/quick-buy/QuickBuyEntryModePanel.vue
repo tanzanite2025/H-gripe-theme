@@ -2,8 +2,9 @@
 import { computed } from 'vue'
 
 const emit = defineEmits<{
-  directSelect: []
-  wheelsetSelectionAssistant: []
+  'direct-select': []
+  'contact-service': []
+  'wheelset-selection-assistant': []
 }>()
 
 const { t } = useI18n()
@@ -21,15 +22,15 @@ const entryModes = computed(() => [
     action: t('quickBuy.entry.directSelect.action', 'Start'),
   },
   {
-    key: 'ready-match',
-    enabled: false,
-    icon: 'lucide:circle-help',
-    title: t('quickBuy.entry.readyMatch.title', 'Match ready wheelsets'),
+    key: 'contact-service',
+    enabled: true,
+    icon: 'lucide:mail',
+    title: t('quickBuy.entry.contactService.title', 'Email support'),
     description: t(
-      'quickBuy.entry.readyMatch.description',
-      'Coming next.',
+      'quickBuy.entry.contactService.description',
+      'Send specs or questions by email.',
     ),
-    action: '?',
+    action: t('quickBuy.entry.contactService.action', 'Start'),
   },
   {
     key: 'wheelset-selection-assistant',
@@ -47,10 +48,13 @@ const entryModes = computed(() => [
 const handleEntryModeClick = (key: string, enabled: boolean) => {
   if (!enabled) return
   if (key === 'direct-select') {
-    emit('directSelect')
+    emit('direct-select')
+  }
+  if (key === 'contact-service') {
+    emit('contact-service')
   }
   if (key === 'wheelset-selection-assistant') {
-    emit('wheelsetSelectionAssistant')
+    emit('wheelset-selection-assistant')
   }
 }
 </script>

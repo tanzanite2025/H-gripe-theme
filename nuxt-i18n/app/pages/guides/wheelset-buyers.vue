@@ -442,12 +442,6 @@
       </section>
     </div>
   </div>
-  <QuickBuyEntryRouterPopover
-    v-if="quickOpen"
-    :config="quickBuyConfig"
-    :anchor="quickBuyAnchorRef"
-    @close="quickOpen = false"
-  />
 </template>
 
 <script setup lang="ts">
@@ -459,7 +453,6 @@ import WheelsetAppearanceLogoSection from '~/components/WheelsetAppearanceLogoSe
 import WheelsetChooseFreehubSection from '~/components/WheelsetChooseFreehubSection.vue'
 import WheelsetMixedRimSection from '~/components/WheelsetMixedRimSection.vue'
 import { useChatWidget } from '~/composables/useChatWidget'
-import QuickBuyEntryRouterPopover from '@/components/quick-buy/QuickBuyEntryRouterPopover.vue'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
 import SmartAccordion from '~/components/ui/SmartAccordion.vue'
 import AccordionItem from '~/components/ui/AccordionItem.vue'
@@ -470,7 +463,6 @@ import TechnicalNipplesSection from '~/components/TechnicalNipplesSection.vue'
 import TireRimHelper from '~/components/TireRimHelper.vue'
 import FreehubGroupsetHelper from '~/components/FreehubGroupsetHelper.vue'
 import { usePageSubNavigationTab } from '~/composables/usePageSubNavigationTab'
-import { useQuickBuyFlow } from '~/composables/useQuickBuyFlow'
 import { wheelsetBuyerTabs } from '~/utils/pageSubNavigation'
 
 
@@ -489,16 +481,12 @@ const { activeTab, localizedTabPath, setActiveTab } = usePageSubNavigationTab({
   basePath: '/guides/wheelset-buyers',
   defaultValue: 'overview',
 })
-const quickOpen = ref(false)
-const quickBuyAnchorRef = ref<HTMLElement | null>(null)
-const { quickBuyFlowConfig: quickBuyConfig } = useQuickBuyFlow('dock')
-
 const { openChat } = useChatWidget()
 const router = useRouter()
 const localePath = useLocalePath()
 
 const ctaNotes = {
-  quickBuyEntry: 'Opens the QUICKBUY entry popover from /guides/wheelset-buyers; the direct-select option opens the existing wheelset product selection builder.',
+  quickBuyEntry: 'Opens the bottom QUICKBUY menu; the direct-select option opens the existing wheelset product selection builder.',
   wheelComponentsTab: 'Switches /guides/wheelset-buyers to the Wheel Components tab with hubs, rims, spokes, and nipples.',
   tireWidthGuideNewTab: 'Opens /guides/tireguides/choose in a new tab for tire width, hooked TC, and hookless TSS rim chart details.',
   tireSystemGuideNewTab: 'Opens /guides/tireguides/tubeless in a new tab for tube, tubeless, hookless, and tubular tire system guidance.',
@@ -566,9 +554,9 @@ const goToHolePatterns = async () => {
   await router.push(localePath('/company/about/hole-patterns'))
 }
 
-const openQuickBuy = (event?: MouseEvent) => {
-  quickBuyAnchorRef.value = event?.currentTarget instanceof HTMLElement ? event.currentTarget : null
-  quickOpen.value = true
+const openQuickBuy = () => {
+  if (typeof window === 'undefined') return
+  window.dispatchEvent(new CustomEvent('quickbuy:open-entry'))
 }
 
 const goToAboutAppearance = async () => {

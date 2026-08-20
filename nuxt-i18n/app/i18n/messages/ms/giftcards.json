@@ -6,5 +6,20 @@
   "redeem": "Redeem",
   "noCards": "No gift cards available",
   "myCards": "My Gift Cards",
-  "remaining": "Remaining"
+  "remaining": "Remaining",
+  "eyebrow": "Gift cards",
+  "exchangeIntro": "Convert loyalty points into published gift card options, then track redeemed cards from your member center.",
+  "signInToRedeem": "Sign in to redeem",
+  "stats": {
+    "points": "Points balance",
+    "redemption": "Redemption rule",
+    "owned": "Owned cards"
+  },
+  "signInNotice": "Sign in to redeem points and see your redeemed gift cards.",
+  "loadingCopy": "Fetching active gift card redemption options.",
+  "loadErrorTitle": "Could not load gift cards",
+  "noCardsTitle": "No active gift cards right now",
+  "noCardsBody": "When new reward options are released, they will appear here for points redemption.",
+  "viewPointRules": "View point rules",
+  "backToMemberInfo": "Member info"
 }

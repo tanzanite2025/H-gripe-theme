@@ -104,7 +104,7 @@ func TestCustomerServiceRealtimeRelayReplaysAudience(t *testing.T) {
 	assert.Equal(t, CustomerServiceRealtimeAudiencePublic, replayed[0].Audience)
 }
 
-func newCustomerServiceRealtimeRelayTestClient(t *testing.T) *redis.Client {
+func newCustomerServiceRealtimeRelayTestClient(t *testing.T) redis.UniversalClient {
 	t.Helper()
 
 	server := miniredis.RunT(t)
@@ -115,7 +115,7 @@ func newCustomerServiceRealtimeRelayTestClient(t *testing.T) *redis.Client {
 	return client
 }
 
-func newCustomerServiceRealtimeRelayForTest(t *testing.T, client *redis.Client, hub *CustomerServiceEventHub) *CustomerServiceRealtimeRelay {
+func newCustomerServiceRealtimeRelayForTest(t *testing.T, client redis.UniversalClient, hub *CustomerServiceEventHub) *CustomerServiceRealtimeRelay {
 	t.Helper()
 
 	relay, err := NewCustomerServiceRealtimeRelay(client, hub, CustomerServiceRealtimeRelayConfig{

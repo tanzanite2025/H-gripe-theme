@@ -1,0 +1,183 @@
+services:
+  redis:
+    command:
+      - sh
+      - -c
+      - exec redis-server --requirepass "$$REDIS_PASSWORD" --masterauth "$$REDIS_PASSWORD" --appendonly yes --appendfsync everysec --min-replicas-to-write 1 --min-replicas-max-lag 10
+
+  redis-replica-1:
+    image: redis:7-alpine
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
+    command:
+      - sh
+      - -c
+      - exec redis-server --requirepass "$$REDIS_PASSWORD" --masterauth "$$REDIS_PASSWORD" --replicaof redis 6379 --appendonly yes --appendfsync everysec --min-replicas-to-write 1 --min-replicas-max-lag 10
+    volumes:
+      - redis_replica_1_data:/data
+    networks:
+      - cache
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "REDISCLI_AUTH=$$REDIS_PASSWORD redis-cli info replication | grep -q '^master_link_status:up$'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    security_opt:
+      - no-new-privileges:true
+
+  redis-replica-2:
+    image: redis:7-alpine
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
+    command:
+      - sh
+      - -c
+      - exec redis-server --requirepass "$$REDIS_PASSWORD" --masterauth "$$REDIS_PASSWORD" --replicaof redis 6379 --appendonly yes --appendfsync everysec --min-replicas-to-write 1 --min-replicas-max-lag 10
+    volumes:
+      - redis_replica_2_data:/data
+    networks:
+      - cache
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "REDISCLI_AUTH=$$REDIS_PASSWORD redis-cli info replication | grep -q '^master_link_status:up$'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    security_opt:
+      - no-new-privileges:true
+
+  redis-sentinel-1:
+    image: redis:7-alpine
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
+      REDIS_SENTINEL_PASSWORD: ${REDIS_SENTINEL_PASSWORD:?REDIS_SENTINEL_PASSWORD is required}
+    command:
+      - sh
+      - -c
+      - |
+        set -eu
+        if [ ! -s /data/sentinel.conf ]; then
+          cat > /data/sentinel.conf <<EOF
+        port 26379
+        dir /data
+        sentinel monitor mymaster redis 6379 2
+        sentinel auth-pass mymaster $${REDIS_PASSWORD}
+        sentinel down-after-milliseconds mymaster 5000
+        sentinel failover-timeout mymaster 60000
+        sentinel parallel-syncs mymaster 1
+        requirepass $${REDIS_SENTINEL_PASSWORD}
+        EOF
+        fi
+        exec redis-server /data/sentinel.conf --sentinel
+    volumes:
+      - redis_sentinel_1_data:/data
+    networks:
+      - cache
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "REDISCLI_AUTH=$$REDIS_SENTINEL_PASSWORD redis-cli -p 26379 ping | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    security_opt:
+      - no-new-privileges:true
+
+  redis-sentinel-2:
+    image: redis:7-alpine
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
+      REDIS_SENTINEL_PASSWORD: ${REDIS_SENTINEL_PASSWORD:?REDIS_SENTINEL_PASSWORD is required}
+    command:
+      - sh
+      - -c
+      - |
+        set -eu
+        if [ ! -s /data/sentinel.conf ]; then
+          cat > /data/sentinel.conf <<EOF
+        port 26379
+        dir /data
+        sentinel monitor mymaster redis 6379 2
+        sentinel auth-pass mymaster $${REDIS_PASSWORD}
+        sentinel down-after-milliseconds mymaster 5000
+        sentinel failover-timeout mymaster 60000
+        sentinel parallel-syncs mymaster 1
+        requirepass $${REDIS_SENTINEL_PASSWORD}
+        EOF
+        fi
+        exec redis-server /data/sentinel.conf --sentinel
+    volumes:
+      - redis_sentinel_2_data:/data
+    networks:
+      - cache
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "REDISCLI_AUTH=$$REDIS_SENTINEL_PASSWORD redis-cli -p 26379 sentinel get-master-addr-by-name mymaster | grep -q '^redis$'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    security_opt:
+      - no-new-privileges:true
+
+  redis-sentinel-3:
+    image: redis:7-alpine
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
+      REDIS_SENTINEL_PASSWORD: ${REDIS_SENTINEL_PASSWORD:?REDIS_SENTINEL_PASSWORD is required}
+    command:
+      - sh
+      - -c
+      - |
+        set -eu
+        if [ ! -s /data/sentinel.conf ]; then
+          cat > /data/sentinel.conf <<EOF
+        port 26379
+        dir /data
+        sentinel monitor mymaster redis 6379 2
+        sentinel auth-pass mymaster $${REDIS_PASSWORD}
+        sentinel down-after-milliseconds mymaster 5000
+        sentinel failover-timeout mymaster 60000
+        sentinel parallel-syncs mymaster 1
+        requirepass $${REDIS_SENTINEL_PASSWORD}
+        EOF
+        fi
+        exec redis-server /data/sentinel.conf --sentinel
+    volumes:
+      - redis_sentinel_3_data:/data
+    networks:
+      - cache
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "REDISCLI_AUTH=$$REDIS_SENTINEL_PASSWORD redis-cli -p 26379 sentinel get-master-addr-by-name mymaster | grep -q '^redis$'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  redis_replica_1_data:
+    name: ${REDIS_REPLICA_1_DATA_VOLUME_NAME:-commerce-platform-redis-replica-1-data}
+  redis_replica_2_data:
+    name: ${REDIS_REPLICA_2_DATA_VOLUME_NAME:-commerce-platform-redis-replica-2-data}
+  redis_sentinel_1_data:
+    name: ${REDIS_SENTINEL_1_DATA_VOLUME_NAME:-commerce-platform-redis-sentinel-1-data}
+  redis_sentinel_2_data:
+    name: ${REDIS_SENTINEL_2_DATA_VOLUME_NAME:-commerce-platform-redis-sentinel-2-data}
+  redis_sentinel_3_data:
+    name: ${REDIS_SENTINEL_3_DATA_VOLUME_NAME:-commerce-platform-redis-sentinel-3-data}

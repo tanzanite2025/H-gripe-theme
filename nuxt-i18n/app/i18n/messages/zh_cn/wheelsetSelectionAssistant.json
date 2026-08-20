@@ -1,0 +1,41 @@
+{
+  "title": "轮组适配助手",
+  "eyebrow": "轮组选型指南",
+  "steps": {
+    "start": "开始",
+    "knowledge": "已知规格",
+    "bikeBasics": "车辆适配",
+    "summary": "结果摘要"
+  },
+  "question": {
+    "back": "返回"
+  },
+  "questionPagination": {
+    "label": "问题卡片",
+    "goToQuestion": "显示问题"
+  },
+  "support": {
+    "title": "不确定怎么选？",
+    "description": "可以联系客服，告诉我们你的车型或具体需求。",
+    "action": "联系客服"
+  },
+  "states": {
+    "loading": "正在加载适配问题……",
+    "retry": "重新尝试",
+    "empty": "暂时没有可用的适配问题。"
+  },
+  "outcome": {
+    "eyebrow": "适配结果",
+    "fallbackTitle": "你的适配结果已生成。",
+    "back": "返回检查上一项回答",
+    "contact": "把适配结果发送给客服"
+  },
+  "results": {
+    "title": "匹配的轮组",
+    "loading": "正在匹配轮组……",
+    "empty": "暂时没有符合这些回答的轮组。",
+    "pagination": "轮组商品结果分页",
+    "previousPage": "上一页",
+    "nextPage": "下一页"
+  }
+}

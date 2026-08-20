@@ -10,9 +10,11 @@ import (
 )
 
 type Handler struct {
-	settingService        *service.SettingService
-	websiteProfileService *service.WebsiteProfileService
-	mediaService          *service.MediaService
+	settingService            *service.SettingService
+	websiteProfileService     *service.WebsiteProfileService
+	mediaService              *service.MediaService
+	siteLogoService           *service.SiteLogoService
+	refundReturnPolicyService *service.RefundReturnPolicyService
 }
 
 func NewHandler(settingService *service.SettingService, websiteProfileServices ...*service.WebsiteProfileService) *Handler {
@@ -32,6 +34,20 @@ func (h *Handler) ConfigureMediaService(mediaService *service.MediaService) {
 		return
 	}
 	h.mediaService = mediaService
+}
+
+func (h *Handler) ConfigureSiteLogoService(siteLogoService *service.SiteLogoService) {
+	if h == nil {
+		return
+	}
+	h.siteLogoService = siteLogoService
+}
+
+func (h *Handler) ConfigureRefundReturnPolicyService(policyService *service.RefundReturnPolicyService) {
+	if h == nil {
+		return
+	}
+	h.refundReturnPolicyService = policyService
 }
 
 func (h *Handler) GetSiteSettings(c *gin.Context) {
@@ -135,11 +151,17 @@ func (h *Handler) publicSiteSettings(settings *settingdomain.SiteSettings) *sett
 	publicSettings := *settings
 	publicSettings.SiteLogoWidth = 0
 	publicSettings.SiteLogoHeight = 0
-	if width, height, ok := h.publicMediaDimensions(publicSettings.SiteLogo); ok {
+	if logoURL := h.currentSiteLogoURL(); logoURL != "" {
+		publicSettings.SiteLogo = logoURL
+	}
+	if width, height, ok := h.publicSiteLogoDimensions(publicSettings.SiteLogo); ok {
+		publicSettings.SiteLogoWidth = width
+		publicSettings.SiteLogoHeight = height
+	} else if width, height, ok := h.publicMediaDimensions(publicSettings.SiteLogo); ok {
 		publicSettings.SiteLogoWidth = width
 		publicSettings.SiteLogoHeight = height
 	}
-	publicSettings.SiteLogo = h.publicMediaURL(publicSettings.SiteLogo)
+	publicSettings.SiteLogo = h.publicSiteLogoURL(publicSettings.SiteLogo)
 	publicSettings.SiteFavicon = h.publicMediaURL(publicSettings.SiteFavicon)
 	return &publicSettings
 }
@@ -171,12 +193,39 @@ func (h *Handler) publicSetting(item *settingdomain.Setting) *settingdomain.Sett
 	}
 	publicItem := *item
 	switch publicItem.Key {
-	case "site_logo", "site_favicon",
+	case "site_logo":
+		publicItem.Value = h.publicSiteLogoURL(publicItem.Value)
+	case "site_favicon",
 		settingdomain.WebsiteProfileKeyAvatarURL,
 		settingdomain.WebsiteProfileKeyFactoryImageURL:
 		publicItem.Value = h.publicMediaURL(publicItem.Value)
 	}
 	return &publicItem
+}
+
+func (h *Handler) currentSiteLogoURL() string {
+	if h == nil || h.siteLogoService == nil {
+		return ""
+	}
+	return h.siteLogoService.CurrentPublicURL()
+}
+
+func (h *Handler) publicSiteLogoURL(value string) string {
+	if h == nil || h.siteLogoService == nil {
+		return h.publicMediaURL(value)
+	}
+	canonical := h.siteLogoService.CanonicalPublicURL(value)
+	if canonical != value {
+		return canonical
+	}
+	return h.publicMediaURL(value)
+}
+
+func (h *Handler) publicSiteLogoDimensions(value string) (int, int, bool) {
+	if h == nil || h.siteLogoService == nil {
+		return 0, 0, false
+	}
+	return h.siteLogoService.PublicDimensions(value)
 }
 
 func (h *Handler) publicMediaURL(value string) string {

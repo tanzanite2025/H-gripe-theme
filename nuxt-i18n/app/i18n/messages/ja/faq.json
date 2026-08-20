@@ -15,6 +15,7 @@
     "noResults": "「{query}」に一致するFAQは見つかりません",
     "allFaqsMetaTitle": "すべてのFAQ",
     "loadingAnswers": "回答を読み込み中",
-    "illustrationAlt": "FAQ画像"
+    "illustrationAlt": "FAQ画像",
+    "selectQuestion": "Select a question to view the answer."
   }
 }

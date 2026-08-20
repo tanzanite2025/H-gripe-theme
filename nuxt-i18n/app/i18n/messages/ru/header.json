@@ -2,5 +2,11 @@
   "searchHint": {
     "title": "Поиск товаров и FAQ",
     "body": "Нажмите, чтобы искать товары, FAQ и многое другое."
+  },
+  "globalNavigationTransition": {
+    "ariaLabel": "Global content navigation",
+    "optionsLabel": "Choose a destination",
+    "trigger": "Open content navigation",
+    "triggerBody": "Choose Products, FAQ, Pages, or Blog."
   }
 }

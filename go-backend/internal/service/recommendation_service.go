@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"commerce-platform/internal/domain/product"
+	reviewdomain "commerce-platform/internal/domain/review"
+	"commerce-platform/internal/pkg/locales"
 	"commerce-platform/internal/repository"
 
 	"github.com/google/uuid"
@@ -42,13 +44,26 @@ type RecommendationRequest struct {
 }
 
 type RecommendationProduct struct {
-	ProductID  uint   `json:"product_id"`
-	Title      string `json:"title"`
-	URL        string `json:"url"`
-	Thumbnail  string `json:"thumbnail,omitempty"`
-	PriceLabel string `json:"price_label,omitempty"`
-	Slot       string `json:"slot"`
-	Reason     string `json:"reason"`
+	ProductID     uint                         `json:"product_id"`
+	Title         string                       `json:"title"`
+	URL           string                       `json:"url"`
+	Thumbnail     string                       `json:"thumbnail,omitempty"`
+	PriceLabel    string                       `json:"price_label,omitempty"`
+	WeightGrams   int                          `json:"weight_grams,omitempty"`
+	ReviewSummary *RecommendationReviewSummary `json:"review_summary,omitempty"`
+	Slot          string                       `json:"slot"`
+	Reason        string                       `json:"reason"`
+}
+
+type RecommendationReviewSummary struct {
+	ProductID     uint    `json:"product_id"`
+	TotalReviews  int     `json:"total_reviews"`
+	AverageRating float64 `json:"average_rating"`
+	Rating5Count  int     `json:"rating_5_count"`
+	Rating4Count  int     `json:"rating_4_count"`
+	Rating3Count  int     `json:"rating_3_count"`
+	Rating2Count  int     `json:"rating_2_count"`
+	Rating1Count  int     `json:"rating_1_count"`
 }
 
 type RecommendationResult struct {
@@ -62,6 +77,7 @@ type RecommendationService struct {
 	productService *ProductService
 	eventRepo      *repository.RecommendationEventRepository
 	mediaResolver  PublicMediaURLResolver
+	reviewService  *ReviewService
 }
 
 type recommendationCandidateSeed struct {
@@ -94,6 +110,13 @@ func (s *RecommendationService) ConfigureMediaService(mediaService *MediaService
 		return
 	}
 	s.mediaResolver = mediaService
+}
+
+func (s *RecommendationService) ConfigureReviewService(reviewService *ReviewService) {
+	if s == nil {
+		return
+	}
+	s.reviewService = reviewService
 }
 
 func (s *RecommendationService) Recommend(input RecommendationRequest) (RecommendationResult, error) {
@@ -131,10 +154,17 @@ func (s *RecommendationService) Recommend(input RecommendationRequest) (Recommen
 	categoryID := recommendationCategoryID(input.CategoryID, contextProduct)
 	query := normalizeRecommendationQuery(input.Query)
 	candidateLimit := recommendationCandidateLimit(limit, len(excluded))
+	requestedLocale := normalizeRecommendationLocale(input.Locale)
 
-	candidates, err := s.collectRecommendationCandidates(surface, categoryID, query, excluded, candidateLimit)
+	candidates, err := s.collectRecommendationCandidates(surface, categoryID, query, excluded, candidateLimit, requestedLocale)
 	if err != nil {
 		return result, err
+	}
+	if len(candidates) == 0 && requestedLocale != "en" {
+		candidates, err = s.collectRecommendationCandidates(surface, categoryID, query, excluded, candidateLimit, "en")
+		if err != nil {
+			return result, err
+		}
 	}
 	if len(candidates) == 0 {
 		return result, nil
@@ -167,9 +197,19 @@ func (s *RecommendationService) Recommend(input RecommendationRequest) (Recommen
 		Now:             now,
 	})
 
+	reviewSummaries := map[uint]reviewdomain.ReviewSummary{}
+	if s.reviewService != nil {
+		reviewSummaries, _ = s.reviewService.GetReviewSummaries(candidateIDs)
+	}
+
 	result.Items = make([]RecommendationProduct, 0, minInt(limit, len(scored)))
 	for _, candidate := range scored {
-		result.Items = append(result.Items, s.makeRecommendationProduct(candidate.Product, candidate.Slot, candidate.Reason))
+		result.Items = append(result.Items, s.makeRecommendationProduct(
+			candidate.Product,
+			candidate.Slot,
+			candidate.Reason,
+			reviewSummaries[candidate.Product.ID],
+		))
 		if len(result.Items) >= limit {
 			break
 		}
@@ -193,7 +233,15 @@ func (s *RecommendationService) loadRecommendationContextProduct(productID *uint
 	return item, nil
 }
 
-func (s *RecommendationService) collectRecommendationCandidates(surface string, categoryID *uint, query string, excluded map[uint]struct{}, limit int) ([]recommendationCandidateSeed, error) {
+func normalizeRecommendationLocale(value string) string {
+	locale := locales.ResolveSupported(value)
+	if locale != "" {
+		return locale
+	}
+	return "en"
+}
+
+func (s *RecommendationService) collectRecommendationCandidates(surface string, categoryID *uint, query string, excluded map[uint]struct{}, limit int, locale string) ([]recommendationCandidateSeed, error) {
 	seeds := make([]recommendationCandidateSeed, 0, limit)
 	seen := make(map[uint]struct{}, len(excluded)+limit)
 	excludeIDs := recommendationExcludeIDs(excluded)
@@ -207,6 +255,7 @@ func (s *RecommendationService) collectRecommendationCandidates(surface string, 
 			return nil
 		}
 		products, _, err := s.productService.ListRecommendationCandidates(ProductRecommendationCandidateInput{
+			Locale:                         locale,
 			ProductSpecificationTemplateID: productSpecificationTemplateID,
 			Keyword:                        keyword,
 			ExcludeProductIDs:              excludeIDs,
@@ -458,20 +507,49 @@ func countRecommendationQueryMatches(tokens []string, item product.Product) int 
 	return matches
 }
 
-func (s *RecommendationService) makeRecommendationProduct(item product.Product, slot string, reason string) RecommendationProduct {
+func (s *RecommendationService) makeRecommendationProduct(
+	item product.Product,
+	slot string,
+	reason string,
+	reviewSummaries ...reviewdomain.ReviewSummary,
+) RecommendationProduct {
 	price, sale := item.DisplayPrices()
 	if sale != nil {
 		price = *sale
 	}
+	weightGrams := 0
+	if variant := item.DefaultVariant(); variant != nil {
+		weightGrams = variant.Weight
+	}
+
+	var summary *RecommendationReviewSummary
+	var reviewSummary reviewdomain.ReviewSummary
+	if len(reviewSummaries) > 0 {
+		reviewSummary = reviewSummaries[0]
+	}
+	if reviewSummary.ProductID > 0 {
+		summary = &RecommendationReviewSummary{
+			ProductID:     reviewSummary.ProductID,
+			TotalReviews:  reviewSummary.TotalReviews,
+			AverageRating: reviewSummary.AverageRating,
+			Rating5Count:  reviewSummary.Rating5Count,
+			Rating4Count:  reviewSummary.Rating4Count,
+			Rating3Count:  reviewSummary.Rating3Count,
+			Rating2Count:  reviewSummary.Rating2Count,
+			Rating1Count:  reviewSummary.Rating1Count,
+		}
+	}
 
 	return RecommendationProduct{
-		ProductID:  item.ID,
-		Title:      strings.TrimSpace(item.Name),
-		URL:        "/shop/" + strings.TrimSpace(item.Slug),
-		Thumbnail:  canonicalPublicMediaURL(s.mediaResolver, primaryRecommendationImage(item)),
-		PriceLabel: formatRecommendationPrice(price),
-		Slot:       normalizeRecommendationLabel(slot, "trending_available"),
-		Reason:     normalizeRecommendationLabel(reason, "popular_available"),
+		ProductID:     item.ID,
+		Title:         strings.TrimSpace(item.Name),
+		URL:           "/shop/" + strings.TrimSpace(item.Slug),
+		Thumbnail:     canonicalPublicMediaURL(s.mediaResolver, primaryRecommendationImage(item)),
+		PriceLabel:    formatRecommendationPrice(price),
+		WeightGrams:   weightGrams,
+		ReviewSummary: summary,
+		Slot:          normalizeRecommendationLabel(slot, "trending_available"),
+		Reason:        normalizeRecommendationLabel(reason, "popular_available"),
 	}
 }
 
@@ -600,9 +678,6 @@ func recommendationProductSpecificationTemplateText(item product.Product) string
 		return ""
 	}
 	parts := []string{item.ProductSpecificationTemplate.Name, item.ProductSpecificationTemplate.Slug, item.ProductSpecificationTemplate.Description}
-	for _, translation := range item.ProductSpecificationTemplate.Translations {
-		parts = append(parts, translation.Name, translation.Description)
-	}
 	return strings.Join(parts, " ")
 }
 

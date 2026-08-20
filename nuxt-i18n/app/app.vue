@@ -56,6 +56,7 @@ const htmlLanguage = computed(() => (
   activeLocaleEntry.value?.iso || activeLocaleEntry.value?.language || String(locale.value || 'en').replace(/_/g, '-')
 ))
 const htmlDirection = computed(() => activeLocaleEntry.value?.dir || 'ltr')
+const htmlFontFamily = computed(() => activeLocaleEntry.value?.fontFamily || 'latin')
 const siteFavicon = computed(() => {
   const configuredFavicon = (siteSettings.value.siteFavicon || '').toString().trim()
   if (configuredFavicon) return configuredFavicon
@@ -68,6 +69,7 @@ useHead(() => ({
   htmlAttrs: {
     lang: htmlLanguage.value,
     dir: htmlDirection.value,
+    'data-storefront-font-family': htmlFontFamily.value,
   },
   link: [
     { rel: 'icon', href: siteFavicon.value },

@@ -3,6 +3,7 @@ package payment
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
@@ -38,6 +39,7 @@ func NewAlipayGateway(config *Config) (PaymentGateway, error) {
 			return nil, fmt.Errorf("failed to load alipay public key: %w", err)
 		}
 	}
+	client.Client = &http.Client{Timeout: defaultPaymentGatewayTimeout}
 
 	return &alipayGatewayImpl{
 		config: config,
@@ -102,6 +104,9 @@ func (g *alipayGatewayImpl) CreatePayment(ctx context.Context, req *PaymentReque
 
 // CapturePayment 捕获支付宝支付（支付宝自动完成，此方法用于查询状态）
 func (g *alipayGatewayImpl) CapturePayment(ctx context.Context, paymentID string) (*PaymentResponse, error) {
+	ctx, cancel := paymentGatewayContext(ctx)
+	defer cancel()
+
 	if paymentID == "" {
 		return nil, fmt.Errorf("payment ID is required")
 	}
@@ -141,6 +146,9 @@ func (g *alipayGatewayImpl) RefundPayment(ctx context.Context, paymentID string,
 }
 
 func (g *alipayGatewayImpl) RefundPaymentWithOptions(ctx context.Context, paymentID string, amount float64, options RefundOptions) (*RefundResponse, error) {
+	ctx, cancel := paymentGatewayContext(ctx)
+	defer cancel()
+
 	paymentID = strings.TrimSpace(paymentID)
 	if paymentID == "" {
 		return nil, fmt.Errorf("payment ID is required")
@@ -215,6 +223,9 @@ func buildAlipayRefundRequest(paymentID string, amount float64, refundNo string,
 
 // GetPayment 查询支付宝支付
 func (g *alipayGatewayImpl) GetPayment(ctx context.Context, paymentID string) (*PaymentResponse, error) {
+	ctx, cancel := paymentGatewayContext(ctx)
+	defer cancel()
+
 	if paymentID == "" {
 		return nil, fmt.Errorf("payment ID is required")
 	}

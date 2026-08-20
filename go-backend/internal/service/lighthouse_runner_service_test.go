@@ -965,6 +965,42 @@ func TestRenderedStructuredDataAuditAcceptsCompleteArticleSchema(t *testing.T) {
 	require.Empty(t, issues)
 }
 
+func TestRenderedStructuredDataAuditAcceptsBlogListingCollectionSchema(t *testing.T) {
+	issues := siteQualityRenderedStructuredDataAuditIssues(
+		"https://example.com/ms/blog/news",
+		"https://example.com/ms/blog/news",
+		&siteQualityRenderedStructuredDataAudit{
+			Status:   "complete",
+			Source:   "chrome-rendered-dom",
+			FinalURL: "https://example.com/ms/blog/news",
+			Page: siteQualityStructuredDataPage{
+				CanonicalURL: "https://example.com/ms/blog/news",
+			},
+			JSONLD: []siteQualityStructuredDataScript{
+				{
+					Nodes: []siteQualityStructuredDataNode{
+						{
+							Types:     []string{"CollectionPage"},
+							Type:      "CollectionPage",
+							Name:      "News",
+							URL:       "https://example.com/ms/blog/news",
+							GraphPath: "script[0]",
+							Data: json.RawMessage(`{
+								"@context": "https://schema.org",
+								"@type": "CollectionPage",
+								"name": "News",
+								"url": "https://example.com/ms/blog/news"
+							}`),
+						},
+					},
+				},
+			},
+		},
+	)
+
+	require.Empty(t, issues)
+}
+
 func TestRenderedStructuredDataAuditDetectsIncompleteArticleSchema(t *testing.T) {
 	issues := siteQualityRenderedStructuredDataAuditIssues(
 		"https://example.com/blog/rim-testing",

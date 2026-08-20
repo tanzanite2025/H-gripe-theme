@@ -15,6 +15,7 @@
     "noResults": "Geen FAQ gevonden voor \"{query}\"",
     "allFaqsMetaTitle": "Alle FAQ",
     "loadingAnswers": "Antwoorden laden",
-    "illustrationAlt": "FAQ-afbeelding"
+    "illustrationAlt": "FAQ-afbeelding",
+    "selectQuestion": "Select a question to view the answer."
   }
 }

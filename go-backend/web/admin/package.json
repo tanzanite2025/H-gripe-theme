@@ -4,10 +4,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1 --port 9300 --strictPort",
-    "build": "vite build",
+    "build": "npm run check:admin-font-policy && vite build && npm run check:admin-font-policy -- --dist",
     "preview": "vite preview",
     "check:storefront-locale-ui": "node scripts/check-storefront-locale-ui.ts",
-    "typecheck": "npm run check:storefront-locale-ui && vue-tsc --noEmit"
+    "check:admin-font-policy": "node scripts/check-admin-font-policy.ts",
+    "typecheck": "npm run check:admin-font-policy && npm run check:storefront-locale-ui && vue-tsc --noEmit"
   },
   "dependencies": {
     "@lucide/vue": "^1.25.0",

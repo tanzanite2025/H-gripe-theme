@@ -2,5 +2,11 @@
   "searchHint": {
     "title": "製品とFAQを検索",
     "body": "クリックして製品検索、FAQ検索などを開きます。"
+  },
+  "globalNavigationTransition": {
+    "ariaLabel": "Global content navigation",
+    "optionsLabel": "Choose a destination",
+    "trigger": "Open content navigation",
+    "triggerBody": "Choose Products, FAQ, Pages, or Blog."
   }
 }

@@ -27,14 +27,14 @@ local unique_target_count = redis.call("SCARD", KEYS[2])
 return {request_count, unique_target_count}
 `)
 
-func optionalCommercialBehaviorRedisClient(clients []*redis.Client) *redis.Client {
+func optionalCommercialBehaviorRedisClient(clients []redis.UniversalClient) redis.UniversalClient {
 	if len(clients) == 0 {
 		return nil
 	}
 	return clients[0]
 }
 
-func newCommercialBehaviorTrackerWithRedis(redisClient *redis.Client) *commercialBehaviorTracker {
+func newCommercialBehaviorTrackerWithRedis(redisClient redis.UniversalClient) *commercialBehaviorTracker {
 	if redisClient == nil {
 		return newCommercialBehaviorTracker()
 	}

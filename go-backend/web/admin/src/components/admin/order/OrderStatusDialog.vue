@@ -3,12 +3,14 @@
     <DialogContent size="lg">
       <form @submit.prevent="emit('submit')">
         <DialogHeader>
-          <DialogTitle>状态管理</DialogTitle>
-          <DialogDescription>更新订单 {{ statusForm.order_number }} 的履约状态。</DialogDescription>
+          <DialogTitle>{{ fulfillmentMode ? '确认发货' : '状态管理' }}</DialogTitle>
+          <DialogDescription>
+            {{ fulfillmentMode ? `为订单 ${statusForm.order_number} 填写发货信息。` : `更新订单 ${statusForm.order_number} 的履约状态。` }}
+          </DialogDescription>
         </DialogHeader>
 
         <div class="space-y-4 py-5">
-          <label class="block space-y-1">
+          <label v-if="!fulfillmentMode" class="block space-y-1">
             <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block">STATUS / 订单状态</span>
             <Select v-model="statusForm.status">
               <SelectTrigger class="w-full"><SelectValue /></SelectTrigger>
@@ -18,7 +20,7 @@
             </Select>
           </label>
 
-          <label class="block space-y-1">
+          <label v-if="!fulfillmentMode" class="block space-y-1">
             <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block">SHIPPING / 物流状态</span>
             <Select v-model="statusForm.shipping_status">
               <SelectTrigger class="w-full"><SelectValue /></SelectTrigger>
@@ -84,7 +86,7 @@
           <Button type="button" variant="outline" @click="emit('update:open', false)">取消</Button>
           <Button type="submit" :disabled="submitting">
             <LoaderCircle v-if="submitting" class="size-4 animate-spin" />
-            {{ submitting ? '正在保存' : '保存' }}
+            {{ submitting ? (fulfillmentMode ? '正在发货' : '正在保存') : (fulfillmentMode ? '确认发货' : '保存') }}
           </Button>
         </DialogFooter>
       </form>
@@ -122,6 +124,7 @@ withDefaults(defineProps<{
   carriers?: ShippingCarrier[]
   filteredStatusCarrierServices?: ShippingCarrierService[]
   resolvedProviderCarrierCodeLabel?: string
+  fulfillmentMode?: boolean
   submitting?: boolean
 }>(), {
   open: false,
@@ -131,6 +134,7 @@ withDefaults(defineProps<{
   carriers: () => [],
   filteredStatusCarrierServices: () => [],
   resolvedProviderCarrierCodeLabel: '未匹配映射',
+  fulfillmentMode: false,
   submitting: false
 })
 

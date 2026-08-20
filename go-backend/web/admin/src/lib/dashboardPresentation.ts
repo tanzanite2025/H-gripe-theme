@@ -2,6 +2,9 @@ import type { EChartsOption } from 'echarts'
 
 export type DashboardTone = 'blue' | 'green' | 'amber' | 'coral' | 'gray'
 
+export const adminChartFontFamily = 'MapleUICJK'
+const adminChartTextStyle = { fontFamily: adminChartFontFamily } as const
+
 export interface SalesChartPoint {
   date: string
   count: number
@@ -72,18 +75,19 @@ export const buildSalesChartOption = (data?: SalesChartPoint[] | null): EChartsO
 
   return {
     color: ['#2563eb', '#16803c'],
+    textStyle: adminChartTextStyle,
     tooltip: {
       trigger: 'axis',
       backgroundColor: '#182230',
       borderWidth: 0,
-      textStyle: { color: '#ffffff' }
+      textStyle: { ...adminChartTextStyle, color: '#ffffff' }
     },
     legend: {
       top: 0,
       right: 0,
       itemWidth: 10,
       itemHeight: 10,
-      textStyle: { color: '#667085' },
+      textStyle: { ...adminChartTextStyle, color: '#667085' },
       data: ['订单数', '销售额']
     },
     grid: {
@@ -99,22 +103,22 @@ export const buildSalesChartOption = (data?: SalesChartPoint[] | null): EChartsO
       data: data.map((item) => item.date),
       axisLine: { lineStyle: { color: '#e4e7ec' } },
       axisTick: { show: false },
-      axisLabel: { color: '#667085' }
+      axisLabel: { ...adminChartTextStyle, color: '#667085' }
     },
     yAxis: [
       {
         type: 'value',
         name: '订单数',
-        nameTextStyle: { color: '#667085' },
+        nameTextStyle: { ...adminChartTextStyle, color: '#667085' },
         splitLine: { lineStyle: { color: '#eaecf0' } },
-        axisLabel: { color: '#667085' }
+        axisLabel: { ...adminChartTextStyle, color: '#667085' }
       },
       {
         type: 'value',
         name: '销售额',
-        nameTextStyle: { color: '#667085' },
+        nameTextStyle: { ...adminChartTextStyle, color: '#667085' },
         splitLine: { show: false },
-        axisLabel: { color: '#667085' }
+        axisLabel: { ...adminChartTextStyle, color: '#667085' }
       }
     ],
     series: [

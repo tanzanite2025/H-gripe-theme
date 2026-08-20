@@ -2,5 +2,11 @@
   "searchHint": {
     "title": "제품 및 FAQ 검색",
     "body": "클릭하여 제품 검색, FAQ 검색 등을 엽니다."
+  },
+  "globalNavigationTransition": {
+    "ariaLabel": "Global content navigation",
+    "optionsLabel": "Choose a destination",
+    "trigger": "Open content navigation",
+    "triggerBody": "Choose Products, FAQ, Pages, or Blog."
   }
 }

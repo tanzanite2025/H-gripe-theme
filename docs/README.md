@@ -14,6 +14,7 @@ This directory is a project-level documentation hub. It is not the source of tru
 - Backend module notes: `../go-backend/docs/`
 - Backend security follow-ups: `../go-backend/docs/SECURITY_FOLLOW_UPS.md`
 - Admin console guide: `../go-backend/web/admin/README.md`
+- Payment channel and risk architecture: `design/payment-channel-domain-architecture.md`
 - Storefront hub: `../nuxt-i18n/docs/README.md`
 - Storefront active notes: `../nuxt-i18n/docs/notes/`
 - Storefront archive: `../nuxt-i18n/docs/archive/`

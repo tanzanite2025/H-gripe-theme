@@ -10,6 +10,8 @@ func TestNormalizeRole(t *testing.T) {
 		"support":                    RoleSupport,
 		"editor":                     RoleEditor,
 		"viewer":                     RoleViewer,
+		"test_user":                  RoleTestUser,
+		"TEST_USER":                  RoleTestUser,
 		"administrator":              RoleUser,
 		"shop_manager":               RoleUser,
 		"agent":                      RoleUser,
@@ -43,6 +45,21 @@ func TestIsCustomerServiceAgentRole(t *testing.T) {
 func TestRoleUserIsValid(t *testing.T) {
 	if !RoleUser.IsValid() {
 		t.Fatal("expected user role to be valid")
+	}
+}
+
+func TestTestUserIsStorefrontOnly(t *testing.T) {
+	if !RoleTestUser.IsValid() {
+		t.Fatal("expected test user role to be valid")
+	}
+	if !IsStorefrontRole(RoleTestUser.String()) {
+		t.Fatal("expected test user role to be a storefront role")
+	}
+	if IsBackofficeRole(RoleTestUser.String()) {
+		t.Fatal("test user role must not be a backoffice role")
+	}
+	if len(RoleTestUser.GetPermissions()) != 0 {
+		t.Fatal("test user role must not receive backoffice permissions")
 	}
 }
 

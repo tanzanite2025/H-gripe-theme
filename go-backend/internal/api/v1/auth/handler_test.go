@@ -159,6 +159,53 @@ func TestLoginHandler(t *testing.T) {
 	mockRepo.AssertExpectations(t)
 }
 
+func TestLoginHandlerAllowsProductionTestUserInStorefront(t *testing.T) {
+	mockRepo := new(MockUserRepository)
+	authService := service.NewAuthService(mockRepo, config.JWTConfig{
+		Secret:             "test-secret",
+		ExpireHours:        24,
+		RefreshExpireHours: 168,
+	})
+	handler := NewHandler(authService)
+
+	router := setupTestRouter()
+	router.POST("/login", handler.Login)
+
+	testUser := &user.User{
+		ID:       2,
+		Email:    "production-test@example.com",
+		Username: "production-test",
+		Role:     "test_user",
+		Status:   "active",
+	}
+	assert.NoError(t, testUser.HashPassword("password123"))
+	mockRepo.On("FindByEmail", testUser.Email).Return(testUser, nil)
+
+	body, err := json.Marshal(LoginRequest{
+		EmailOrUsername: testUser.Email,
+		Password:        "password123",
+	})
+	assert.NoError(t, err)
+
+	w := httptest.NewRecorder()
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, "/login", bytes.NewReader(body))
+	assert.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var payload struct {
+		Data struct {
+			User struct {
+				Role string `json:"role"`
+			} `json:"user"`
+		} `json:"data"`
+	}
+	assert.NoError(t, json.Unmarshal(w.Body.Bytes(), &payload))
+	assert.Equal(t, "test_user", payload.Data.User.Role)
+	mockRepo.AssertExpectations(t)
+}
+
 func TestGetProfileHandlerReturnsNoContentWithoutSession(t *testing.T) {
 	mockRepo := new(MockUserRepository)
 	authService := service.NewAuthService(mockRepo, config.JWTConfig{Secret: "test-secret"})

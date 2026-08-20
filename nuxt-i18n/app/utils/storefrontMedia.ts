@@ -14,6 +14,15 @@ export interface StorefrontMediaContext {
 
 const syntheticBaseUrl = 'https://storefront.invalid/'
 
+const localUploadHostnames = new Set([
+  'localhost',
+  '127.0.0.1',
+  '0.0.0.0',
+  '[::1]',
+  '::1',
+  'host.docker.internal',
+])
+
 const normalizeOrigin = (value: unknown): string | null => {
   const candidate = String(value || '').trim()
   if (!candidate) return null
@@ -29,6 +38,12 @@ const normalizeOrigin = (value: unknown): string | null => {
 }
 
 const relativeUrl = (url: URL): string => `${url.pathname}${url.search}${url.hash}`
+
+const isUploadPath = (pathname: string): boolean => /^\/uploads(?:\/|$)/i.test(pathname)
+
+const isLocalUploadOrigin = (url: URL): boolean => (
+  isUploadPath(url.pathname) && localUploadHostnames.has(url.hostname.toLowerCase())
+)
 
 const normalizeMediaRecord = (
   value: unknown,
@@ -53,13 +68,24 @@ export const createStorefrontMediaContext = (
   const origins = [
     runtimeConfig.public?.apiBase,
     runtimeConfig.public?.siteUrl,
-    runtimeConfig.apiInternalOrigin,
-    runtimeConfig.imageInternalOrigin,
-    ...(runtimeConfig.additionalOrigins || []),
     browserOrigin,
   ]
     .map(normalizeOrigin)
     .filter((origin): origin is string => Boolean(origin))
+
+  // Private runtime config is only available during SSR. Reading it in the
+  // browser triggers Nuxt warnings and cannot improve client-side requests.
+  if (import.meta.server) {
+    origins.push(
+      ...[
+        runtimeConfig.apiInternalOrigin,
+        runtimeConfig.imageInternalOrigin,
+        ...(runtimeConfig.additionalOrigins || []),
+      ]
+        .map(normalizeOrigin)
+        .filter((origin): origin is string => Boolean(origin)),
+    )
+  }
 
   return {
     knownOrigins: new Set(origins),
@@ -86,7 +112,7 @@ export const normalizeStorefrontMediaUrl = (
     if (!['http:', 'https:'].includes(url.protocol)) return candidate
     if (url.username || url.password) return candidate
 
-    if (context.knownOrigins.has(url.origin)) {
+    if (context.knownOrigins.has(url.origin) || isLocalUploadOrigin(url)) {
       return relativeUrl(url)
     }
 

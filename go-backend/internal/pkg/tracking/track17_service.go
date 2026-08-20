@@ -12,6 +12,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"commerce-platform/internal/pkg/resilience"
 )
 
 const (
@@ -22,7 +24,7 @@ const (
 // track17Service 17TRACK V2.4 服务实现。
 type track17Service struct {
 	config     *Config
-	httpClient *http.Client
+	httpClient *resilience.HTTPClient
 }
 
 type track17RequestItem struct {
@@ -114,11 +116,40 @@ func NewTrackingService(config *Config) TrackingService {
 		timeout = config.Timeout
 	}
 
-	return &track17Service{
-		config: config,
-		httpClient: &http.Client{
-			Timeout: timeout,
+	baseURL := ""
+	provider := "track17"
+	if config != nil {
+		baseURL = strings.TrimSpace(config.BaseURL)
+		if strings.TrimSpace(config.Provider) != "" {
+			provider = strings.ToLower(strings.TrimSpace(config.Provider))
+		}
+	}
+	breakerKey := "tracking:" + provider + ":" + strings.TrimRight(baseURL, "/")
+	retry := resilience.HTTPRetryPolicy{
+		MaxAttempts: 3,
+		Backoff: resilience.BackoffPolicy{
+			BaseDelay: 300 * time.Millisecond,
+			MaxDelay:  3 * time.Second,
+			Jitter:    300 * time.Millisecond,
 		},
+		RetryUnsafeMethods: true,
+	}
+	var breaker resilience.CircuitController = resilience.SharedCircuitBreaker(breakerKey, resilience.CircuitBreakerConfig{
+		FailureThreshold: 4,
+		FailureWindow:    60 * time.Second,
+		OpenDuration:     30 * time.Second,
+	})
+	if config != nil {
+		if config.Retry.MaxAttempts > 0 {
+			retry = config.Retry
+		}
+		if config.Breaker != nil {
+			breaker = config.Breaker
+		}
+	}
+	return &track17Service{
+		config:     config,
+		httpClient: resilience.NewHTTPClient(&http.Client{Timeout: timeout}, retry, breaker, breakerKey),
 	}
 }
 
@@ -204,15 +235,19 @@ func (s *track17Service) sendRequest(ctx context.Context, endpoint string, body 
 		return nil, fmt.Errorf("failed to build 17TRACK request url: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, requestURL, bytes.NewBuffer(jsonBody))
+	resp, err := s.httpClient.Do(ctx, func() (*http.Request, error) {
+		req, createErr := http.NewRequestWithContext(ctx, http.MethodPost, requestURL, bytes.NewReader(jsonBody))
+		if createErr != nil {
+			return nil, fmt.Errorf("failed to create 17TRACK request: %w", createErr)
+		}
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("17token", strings.TrimSpace(s.config.APIKey))
+		return req, nil
+	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to create 17TRACK request: %w", err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("17token", strings.TrimSpace(s.config.APIKey))
-
-	resp, err := s.httpClient.Do(req)
-	if err != nil {
+		if resp != nil && resp.Body != nil {
+			_ = resp.Body.Close()
+		}
 		return nil, fmt.Errorf("failed to send 17TRACK request: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()

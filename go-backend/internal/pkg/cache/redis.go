@@ -16,7 +16,7 @@ import (
 )
 
 type RedisCache struct {
-	client *redis.Client
+	client redis.UniversalClient
 	ctx    context.Context
 }
 
@@ -43,18 +43,28 @@ type RedisLock struct {
 }
 
 // Client returns the underlying redis client
-func (r *RedisCache) Client() *redis.Client {
+func (r *RedisCache) Client() redis.UniversalClient {
 	return r.client
 }
 
 // Init 初始化Redis连接
 func Init(cfg config.RedisConfig) (*RedisCache, error) {
-	client := redis.NewClient(&redis.Options{
-		Addr:     cfg.GetRedisAddr(),
-		Password: cfg.Password,
-		DB:       cfg.DB,
-		PoolSize: cfg.PoolSize,
-	})
+	options := &redis.UniversalOptions{
+		Addrs:            cfg.GetRedisAddrs(),
+		Username:         cfg.Username,
+		Password:         cfg.Password,
+		DB:               cfg.DB,
+		PoolSize:         cfg.PoolSize,
+		MasterName:       cfg.MasterName,
+		SentinelUsername: cfg.SentinelUsername,
+		SentinelPassword: cfg.SentinelPassword,
+	}
+	if cfg.NormalizedMode() != "sentinel" {
+		options.MasterName = ""
+		options.SentinelUsername = ""
+		options.SentinelPassword = ""
+	}
+	client := redis.NewUniversalClient(options)
 
 	ctx := context.Background()
 

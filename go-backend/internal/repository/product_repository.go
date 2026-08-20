@@ -147,8 +147,6 @@ func (r *ProductRepository) FindByIDContext(ctx context.Context, id uint) (*prod
 		return orderProductMedia(db)
 	}).Preload("ProductSpecificationTemplate.SpecDefinitions", func(db *gorm.DB) *gorm.DB {
 		return orderSpecDefinitions(db)
-	}).Preload("ProductSpecificationTemplate.Translations", func(db *gorm.DB) *gorm.DB {
-		return db.Order("locale ASC, id ASC")
 	}).Preload("SpecValues.SpecDefinition", func(db *gorm.DB) *gorm.DB {
 		return orderSpecDefinitions(db)
 	}).Preload("Variants", func(db *gorm.DB) *gorm.DB {
@@ -174,8 +172,6 @@ func (r *ProductRepository) FindBySlugContext(ctx context.Context, slug, locale 
 		return orderProductMedia(db)
 	}).Preload("ProductSpecificationTemplate.SpecDefinitions", func(db *gorm.DB) *gorm.DB {
 		return orderSpecDefinitions(db)
-	}).Preload("ProductSpecificationTemplate.Translations", func(db *gorm.DB) *gorm.DB {
-		return db.Order("locale ASC, id ASC")
 	}).Preload("SpecValues.SpecDefinition", func(db *gorm.DB) *gorm.DB {
 		return orderSpecDefinitions(db)
 	}).Preload("Variants", func(db *gorm.DB) *gorm.DB {

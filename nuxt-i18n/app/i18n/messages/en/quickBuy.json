@@ -38,7 +38,13 @@
       "modalDescription": "Choose what you know now. We only ask for missing fit details."
     },
     "eyebrow": "QUICKBUY",
-    "title": "Choose how to start"
+    "title": "Choose how to start",
+    "contactService": {
+      "modalTitle": "Email or chat with support",
+      "title": "Email support",
+      "description": "Send specs or questions by email.",
+      "action": "Start"
+    }
   },
   "help": {
     "title": "QUICK instructions"
