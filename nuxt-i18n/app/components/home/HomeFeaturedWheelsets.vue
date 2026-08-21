@@ -6,7 +6,7 @@
       data-home-featured-wheelsets
     >
       <div class="home-featured-wheelsets__desktop-grid">
-        <ShopProductDisplayCard
+        <AsyncShopProductDisplayCard
           v-for="product in desktopProducts"
           :key="product.id"
           :product="product"
@@ -18,7 +18,7 @@
 
       <div class="home-featured-wheelsets__mobile-carousel">
         <div class="home-featured-wheelsets__mobile-grid">
-          <ShopProductDisplayCard
+          <AsyncShopProductDisplayCard
             v-for="product in mobileVisibleProducts"
             :key="product.id"
             :product="product"
@@ -108,11 +108,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, ref, watch } from 'vue'
 import { useI18n } from '#imports'
 import StorefrontDataNotice from '~/components/StorefrontDataNotice.vue'
-import ShopProductDisplayCard from '~/components/shop/ShopProductDisplayCard.vue'
 import type { ShopProduct } from '~/composables/useShopProducts'
+
+const AsyncShopProductDisplayCard = defineAsyncComponent(
+  () => import('~/components/shop/ShopProductDisplayCard.vue'),
+)
 
 const props = defineProps<{
   products: ShopProduct[]
