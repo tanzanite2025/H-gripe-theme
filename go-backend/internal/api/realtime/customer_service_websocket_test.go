@@ -167,18 +167,19 @@ func TestCustomerServiceWebSocketControlsAndReplayDeduplication(t *testing.T) {
 }
 
 func TestCustomerServiceWebSocketReleasesConnectionSlotAfterDisconnect(t *testing.T) {
-	before := customerServiceWebSocketConnections.Load()
+	require.Eventually(t, func() bool {
+		return customerServiceWebSocketConnections.Load() == 0
+	}, 5*time.Second, 10*time.Millisecond)
+
 	hub := service.NewCustomerServiceEventHub()
 	server := newCustomerServiceWebSocketTestServer(t, hub, CustomerServiceWebSocketOptions{})
 	connection := dialCustomerServiceWebSocket(t, server.URL)
 	assert.Equal(t, "ready", readCustomerServiceWebSocketFrame(t, connection)["type"])
 	require.NoError(t, connection.Close())
 
-	deadline := time.Now().Add(time.Second)
-	for customerServiceWebSocketConnections.Load() != before && time.Now().Before(deadline) {
-		time.Sleep(10 * time.Millisecond)
-	}
-	assert.Equal(t, before, customerServiceWebSocketConnections.Load())
+	require.Eventually(t, func() bool {
+		return customerServiceWebSocketConnections.Load() == 0
+	}, 5*time.Second, 10*time.Millisecond)
 }
 
 func newCustomerServiceWebSocketTestServer(t *testing.T, hub *service.CustomerServiceEventHub, options CustomerServiceWebSocketOptions) *httptest.Server {
