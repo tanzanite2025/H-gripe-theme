@@ -543,9 +543,9 @@
     },
     "paypalCancel": {
       "title": "PayPal 支付已取消",
-      "message": "订单仍处于未支付状态。你可以重新尝试支付，或联系客服处理。",
+      "message": "订单仍处于未支付状态。你可以重新打开购物车选择信用卡或其他支付方式，也可以联系客服处理。",
       "actions": {
-        "tryAgain": "重新支付"
+        "tryAgain": "重新打开购物车"
       }
     },
     "alipayReturn": {

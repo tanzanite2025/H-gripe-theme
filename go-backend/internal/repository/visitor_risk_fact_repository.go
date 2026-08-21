@@ -22,6 +22,7 @@ func NewVisitorRiskFactRepository(db *gorm.DB) *VisitorRiskFactRepository {
 type VisitorRiskFactDelta struct {
 	Day                   time.Time
 	IPHash                string
+	DeviceFingerprintHash string
 	UserAgentHash         string
 	CountryCode           string
 	FirstSeenAt           time.Time
@@ -75,29 +76,40 @@ func (r *VisitorRiskFactRepository) FindFactByID(id uint) (visitor.RiskDailyFact
 	return fact, nil
 }
 
-func (r *VisitorRiskFactRepository) FindLatestByIdentity(dayAfter time.Time, ipHash, userAgentHash string) (*visitor.RiskDailyFact, error) {
+func (r *VisitorRiskFactRepository) FindLatestByIdentity(dayAfter time.Time, ipHash, userAgentHash, deviceFingerprintHash string) (*visitor.RiskDailyFact, error) {
 	if r == nil || r.db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
 	ipHash = strings.TrimSpace(ipHash)
 	userAgentHash = strings.TrimSpace(userAgentHash)
-	if ipHash == "" {
+	deviceFingerprintHash = strings.TrimSpace(deviceFingerprintHash)
+	if ipHash == "" && deviceFingerprintHash == "" {
 		return nil, gorm.ErrRecordNotFound
 	}
 
-	query := r.db.Model(&visitor.RiskDailyFact{}).
-		Where("ip_hash = ?", ipHash)
-	if !dayAfter.IsZero() {
-		query = query.Where("day >= ?", visitorRiskDay(dayAfter))
-	}
-	if userAgentHash != "" {
-		query = query.Where("(user_agent_hash = ? OR user_agent_hash = '')", userAgentHash)
-	} else {
-		query = query.Where("user_agent_hash = ''")
+	buildQuery := func(useFingerprint bool) *gorm.DB {
+		query := r.db.Model(&visitor.RiskDailyFact{})
+		if !dayAfter.IsZero() {
+			query = query.Where("day >= ?", visitorRiskDay(dayAfter))
+		}
+		if useFingerprint && deviceFingerprintHash != "" {
+			return query.Where("device_fingerprint_hash = ?", deviceFingerprintHash)
+		}
+		if userAgentHash != "" {
+			return query.Where("ip_hash = ? AND user_agent_hash = ? AND device_fingerprint_hash = ''", ipHash, userAgentHash)
+		}
+		return query.Where("ip_hash = ? AND user_agent_hash = '' AND device_fingerprint_hash = ''", ipHash)
 	}
 
 	var fact visitor.RiskDailyFact
-	if err := query.Order("day DESC").Order("last_seen_at DESC").First(&fact).Error; err != nil {
+	if deviceFingerprintHash != "" {
+		if err := buildQuery(true).Order("day DESC").Order("last_seen_at DESC").First(&fact).Error; err == nil {
+			return &fact, nil
+		} else if !IsRecordNotFound(err) {
+			return nil, err
+		}
+	}
+	if err := buildQuery(false).Order("day DESC").Order("last_seen_at DESC").First(&fact).Error; err != nil {
 		return nil, err
 	}
 	return &fact, nil
@@ -113,13 +125,14 @@ func (r *VisitorRiskFactRepository) CreateDecision(decision *visitor.RiskDecisio
 	return r.db.Create(decision).Error
 }
 
-func (r *VisitorRiskFactRepository) ListActiveDecisionsForIdentity(ipHash, userAgentHash string, now time.Time) ([]visitor.RiskDecision, error) {
+func (r *VisitorRiskFactRepository) ListActiveDecisionsForIdentity(ipHash, userAgentHash, deviceFingerprintHash string, now time.Time) ([]visitor.RiskDecision, error) {
 	if r == nil || r.db == nil {
 		return []visitor.RiskDecision{}, nil
 	}
 	ipHash = strings.TrimSpace(ipHash)
 	userAgentHash = strings.TrimSpace(userAgentHash)
-	if ipHash == "" {
+	deviceFingerprintHash = strings.TrimSpace(deviceFingerprintHash)
+	if ipHash == "" && deviceFingerprintHash == "" {
 		return []visitor.RiskDecision{}, nil
 	}
 	if now.IsZero() {
@@ -128,8 +141,16 @@ func (r *VisitorRiskFactRepository) ListActiveDecisionsForIdentity(ipHash, userA
 		now = now.UTC()
 	}
 
-	clauses := []string{"(scope = ? AND value_hash = ?)"}
-	args := []interface{}{visitor.RiskDecisionScopeIPHash, ipHash}
+	clauses := make([]string, 0, 3)
+	args := make([]interface{}, 0, 6)
+	if deviceFingerprintHash != "" {
+		clauses = append(clauses, "(scope = ? AND value_hash = ?)")
+		args = append(args, visitor.RiskDecisionScopeDeviceFingerprintHash, deviceFingerprintHash)
+	}
+	if ipHash != "" {
+		clauses = append(clauses, "(scope = ? AND value_hash = ?)")
+		args = append(args, visitor.RiskDecisionScopeIPHash, ipHash)
+	}
 	if userAgentHash != "" {
 		if valueHash := visitor.RiskDecisionIPUAValueHash(ipHash, userAgentHash); valueHash != "" {
 			clauses = append(clauses, "(scope = ? AND value_hash = ?)")
@@ -162,6 +183,10 @@ func (r *VisitorRiskFactRepository) ListActiveDecisionsForFacts(facts []visitor.
 	clauses := make([]string, 0, len(facts)*2)
 	args := make([]interface{}, 0, len(facts)*4)
 	for _, fact := range facts {
+		if deviceFingerprintHash := strings.TrimSpace(fact.DeviceFingerprintHash); deviceFingerprintHash != "" {
+			clauses = append(clauses, "(scope = ? AND value_hash = ?)")
+			args = append(args, visitor.RiskDecisionScopeDeviceFingerprintHash, deviceFingerprintHash)
+		}
 		if valueHash := visitor.RiskDecisionIPUAValueHash(fact.IPHash, fact.UserAgentHash); valueHash != "" {
 			clauses = append(clauses, "(scope = ? AND value_hash = ?)")
 			args = append(args, visitor.RiskDecisionScopeIPUAHash, valueHash)
@@ -199,9 +224,24 @@ func (r *VisitorRiskFactRepository) UpsertDelta(delta VisitorRiskFactDelta) erro
 
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		var fact visitor.RiskDailyFact
-		err := tx.
-			Where("day = ? AND ip_hash = ? AND user_agent_hash = ?", delta.Day, delta.IPHash, delta.UserAgentHash).
-			First(&fact).Error
+		query := tx.Where("day = ?", delta.Day)
+		switch {
+		case delta.DeviceFingerprintHash != "":
+			query = query.Where("device_fingerprint_hash = ?", delta.DeviceFingerprintHash)
+		case delta.UserAgentHash != "":
+			query = query.Where("ip_hash = ? AND user_agent_hash = ? AND device_fingerprint_hash = ''", delta.IPHash, delta.UserAgentHash)
+		default:
+			query = query.Where("ip_hash = ? AND user_agent_hash = '' AND device_fingerprint_hash = ''", delta.IPHash)
+		}
+		err := query.First(&fact).Error
+		if IsRecordNotFound(err) && delta.DeviceFingerprintHash != "" {
+			if delta.UserAgentHash != "" {
+				query = tx.Where("day = ? AND ip_hash = ? AND user_agent_hash = ? AND device_fingerprint_hash = ''", delta.Day, delta.IPHash, delta.UserAgentHash)
+			} else {
+				query = tx.Where("day = ? AND ip_hash = ? AND user_agent_hash = '' AND device_fingerprint_hash = ''", delta.Day, delta.IPHash)
+			}
+			err = query.First(&fact).Error
+		}
 		if err != nil {
 			if !IsRecordNotFound(err) {
 				return err
@@ -209,6 +249,7 @@ func (r *VisitorRiskFactRepository) UpsertDelta(delta VisitorRiskFactDelta) erro
 			fact = visitor.RiskDailyFact{
 				Day:                   delta.Day,
 				IPHash:                delta.IPHash,
+				DeviceFingerprintHash: delta.DeviceFingerprintHash,
 				UserAgentHash:         delta.UserAgentHash,
 				CountryCode:           delta.CountryCode,
 				FirstSeenAt:           delta.FirstSeenAt,
@@ -234,6 +275,7 @@ func (r *VisitorRiskFactRepository) UpsertDelta(delta VisitorRiskFactDelta) erro
 		updates := map[string]interface{}{
 			"last_seen_at":              maxVisitorRiskTime(fact.LastSeenAt, delta.LastSeenAt),
 			"request_count":             fact.RequestCount + delta.RequestCount,
+			"device_fingerprint_hash":   fact.DeviceFingerprintHash,
 			"unique_path_count":         fact.UniquePathCount + delta.UniquePathCount,
 			"unique_anonymous_count":    fact.UniqueAnonymousCount + delta.UniqueAnonymousCount,
 			"unique_session_count":      fact.UniqueSessionCount + delta.UniqueSessionCount,
@@ -249,6 +291,9 @@ func (r *VisitorRiskFactRepository) UpsertDelta(delta VisitorRiskFactDelta) erro
 		}
 		if !delta.FirstSeenAt.IsZero() && delta.FirstSeenAt.Before(fact.FirstSeenAt) {
 			updates["first_seen_at"] = delta.FirstSeenAt
+		}
+		if fact.DeviceFingerprintHash == "" && delta.DeviceFingerprintHash != "" {
+			updates["device_fingerprint_hash"] = delta.DeviceFingerprintHash
 		}
 		if strings.TrimSpace(fact.CountryCode) == "" && delta.CountryCode != "" {
 			updates["country_code"] = delta.CountryCode
@@ -381,7 +426,7 @@ func (r *VisitorRiskFactRepository) applyVisitorRiskFactFilters(query *gorm.DB, 
 	if search := strings.ToLower(strings.TrimSpace(filters.Search)); search != "" {
 		like := "%" + search + "%"
 		query = query.Where(
-			"LOWER(ip_hash) LIKE ? OR LOWER(user_agent_hash) LIKE ? OR LOWER(country_code) LIKE ? OR CAST(id AS TEXT) LIKE ?",
+			"LOWER(ip_hash) LIKE ? OR LOWER(device_fingerprint_hash) LIKE ? OR LOWER(user_agent_hash) LIKE ? OR LOWER(country_code) LIKE ? OR CAST(id AS TEXT) LIKE ?",
 			like, like, like, like,
 		)
 	}
@@ -402,6 +447,7 @@ func (r *VisitorRiskFactRepository) applyVisitorRiskFactFilters(query *gorm.DB, 
 func normalizeVisitorRiskDelta(delta VisitorRiskFactDelta) VisitorRiskFactDelta {
 	delta.Day = visitorRiskDay(delta.Day)
 	delta.IPHash = strings.TrimSpace(delta.IPHash)
+	delta.DeviceFingerprintHash = strings.ToLower(strings.TrimSpace(delta.DeviceFingerprintHash))
 	delta.UserAgentHash = strings.TrimSpace(delta.UserAgentHash)
 	delta.CountryCode = strings.ToUpper(strings.TrimSpace(delta.CountryCode))
 	if delta.FirstSeenAt.IsZero() {

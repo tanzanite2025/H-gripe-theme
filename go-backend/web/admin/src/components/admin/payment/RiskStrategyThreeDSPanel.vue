@@ -100,7 +100,14 @@
               <dt class="font-semibold">30 天组合风险升级</dt>
               <dd class="mt-1 text-[11px] leading-5 text-muted-foreground">争议、EFW 或退款进入预警/严重级别时生效。</dd>
             </div>
- <dd class="text-right font-semibold">{{ monitoring.auto_step_up_enabled ? '开启': '关闭'}}</dd>
+            <dd class="text-right font-semibold">{{ monitoring.auto_step_up_enabled ? '开启' : '关闭' }}</dd>
+          </div>
+          <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-3 py-3">
+            <div>
+              <dt class="font-semibold">AVS 交叉阈值</dt>
+              <dd class="mt-1 text-[11px] leading-5 text-muted-foreground">账单国与收货国不一致且金额超过这个值时，直接请求 challenge。</dd>
+            </div>
+            <dd class="text-right font-mono font-semibold">&gt; {{ money(threeDS.avs_billing_shipping_mismatch_high_value_threshold_usd) }}</dd>
           </div>
           <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-3 py-3">
             <div>
@@ -122,7 +129,7 @@
 
         <div class="mt-4 border border-sky-500/20 bg-sky-500/5 p-3 text-[11px] leading-5 text-sky-900 dark:text-sky-100">
           <p class="font-black">可修改位置</p>
-          <p class="mt-1">基础模式：支付设置 → Stripe → 基础 3DS 认证策略；人工保护：本页“人工保护”；Step-up、Challenge 和 30 天阈值：当前由服务端运行配置提供，页面只读展示。</p>
+          <p class="mt-1">基础模式：支付设置 → Stripe → 基础 3DS 认证策略；人工保护：本页“人工保护”；Step-up、Challenge、AVS 金额阈值和 30 天阈值：当前由服务端运行配置提供，页面只读展示。</p>
         </div>
 
         <Button v-if="canViewPaymentSettings" type="button" variant="outline" class="mt-3 w-full rounded-full font-black" @click="goToPaymentSettings">
@@ -342,6 +349,10 @@ function number(value: unknown): string {
 }
 const count = (value: unknown): string => number(value)
 const percent = (value: unknown): string => `${(Number(value || 0) * 100).toFixed(2)}%`
+const money = (value: unknown): string => {
+  const parsed = Number(value || 0)
+  return Number.isFinite(parsed) && parsed > 0 ? `≤ ${parsed.toFixed(2)}（订单币种）` : '未设置'
+}
 function modeLabel(mode: string): string {
   return ({
   automatic: '自动判断（automatic）',

@@ -70,6 +70,91 @@ func TestPaymentThreeDSPolicyMarksTrustedCustomerAsExemptionCandidate(t *testing
 	require.Contains(t, decision.Reasons, "trusted_customer")
 }
 
+func TestPaymentThreeDSPolicyIgnoresHighValueAvsRuleWhenCountriesMatch(t *testing.T) {
+	policy := newTestPaymentThreeDSPolicy(
+		config.PaymentThreeDSConfig{
+			AdaptiveEnabled:     true,
+			LowRiskMaxAmount:    0,
+			TrustedPaidOrders:   1,
+			VisitorRiskLookback: 30,
+			StepUpRiskScore:     20,
+			ChallengeRiskScore:  60,
+		},
+	)
+
+	decision := policy.Decide(context.Background(), PaymentThreeDSDecisionInput{
+		UserID:          10,
+		OrderID:         99,
+		Amount:          1000,
+		Currency:        "USD",
+		BaseMode:        PaymentThreeDSModeAutomatic,
+		IPAddress:       "203.0.113.10",
+		UserAgent:       "Mozilla/5.0",
+		BillingCountry:  "US",
+		ShippingCountry: "US",
+	})
+
+	require.Equal(t, PaymentThreeDSModeAutomatic, decision.Mode)
+	require.Equal(t, "adaptive_default", decision.Strategy)
+	require.NotContains(t, decision.Reasons, paymentThreeDSBillingShippingMismatchReason)
+}
+
+func TestPaymentThreeDSPolicyHonorsConfiguredAvsThreshold(t *testing.T) {
+	policy := newTestPaymentThreeDSPolicy(
+		config.PaymentThreeDSConfig{
+			AdaptiveEnabled:  true,
+			LowRiskMaxAmount: 0,
+			AVSBillingShippingMismatchHighValueThresholdUSD: 1000,
+			TrustedPaidOrders:   1,
+			VisitorRiskLookback: 30,
+			StepUpRiskScore:     20,
+			ChallengeRiskScore:  60,
+		},
+	)
+
+	decision := policy.Decide(context.Background(), PaymentThreeDSDecisionInput{
+		UserID:          10,
+		OrderID:         99,
+		Amount:          800,
+		Currency:        "USD",
+		BaseMode:        PaymentThreeDSModeAutomatic,
+		IPAddress:       "203.0.113.10",
+		UserAgent:       "Mozilla/5.0",
+		BillingCountry:  "US",
+		ShippingCountry: "DE",
+	})
+
+	require.Equal(t, PaymentThreeDSModeAutomatic, decision.Mode)
+	require.Equal(t, "adaptive_default", decision.Strategy)
+	require.NotContains(t, decision.Reasons, paymentThreeDSBillingShippingMismatchReason)
+}
+
+func TestPaymentThreeDSPolicyChallengesHighValueAvsMismatchEvenWhenAdaptiveRiskIsDisabled(t *testing.T) {
+	policy := newTestPaymentThreeDSPolicy(
+		config.PaymentThreeDSConfig{
+			AdaptiveEnabled: false,
+		},
+	)
+
+	decision := policy.Decide(context.Background(), PaymentThreeDSDecisionInput{
+		UserID:          10,
+		OrderID:         99,
+		Amount:          801,
+		Currency:        "USD",
+		BaseMode:        PaymentThreeDSModeAutomatic,
+		IPAddress:       "203.0.113.10",
+		UserAgent:       "Mozilla/5.0",
+		BillingCountry:  "US",
+		ShippingCountry: "DE",
+	})
+
+	require.Equal(t, PaymentThreeDSModeChallenge, decision.Mode)
+	require.Equal(t, "adaptive_challenge", decision.Strategy)
+	require.Equal(t, visitor.RiskLevelSuspicious, decision.RiskLevel)
+	require.Contains(t, decision.Reasons, paymentThreeDSBillingShippingMismatchReason)
+	require.Contains(t, decision.Reasons, "adaptive_3ds_disabled")
+}
+
 func TestPaymentThreeDSPolicyChallengesHighPaymentRisk(t *testing.T) {
 	policy := newTestPaymentThreeDSPolicy(
 		config.PaymentThreeDSConfig{
@@ -133,6 +218,35 @@ func TestPaymentThreeDSPolicyStepsUpVisitorWatchDecision(t *testing.T) {
 	require.False(t, decision.ExemptionCandidate)
 	require.Equal(t, "adaptive_step_up", decision.Strategy)
 	require.Contains(t, decision.Reasons, "visitor_risk_manual_watch")
+}
+
+func TestPaymentThreeDSPolicyForwardsDeviceFingerprintToVisitorRisk(t *testing.T) {
+	policy := newTestPaymentThreeDSPolicy(
+		config.PaymentThreeDSConfig{
+			AdaptiveEnabled:     true,
+			LowRiskMaxAmount:    100,
+			TrustedPaidOrders:   1,
+			VisitorRiskLookback: 30,
+			StepUpRiskScore:     20,
+			ChallengeRiskScore:  60,
+		},
+	)
+	visitorRisk := policy.visitorRisk.(*fakeThreeDSVisitorRisk)
+
+	decision := policy.Decide(context.Background(), PaymentThreeDSDecisionInput{
+		UserID:            10,
+		OrderID:           99,
+		Amount:            200,
+		Currency:          "USD",
+		BaseMode:          PaymentThreeDSModeAutomatic,
+		IPAddress:         "203.0.113.10",
+		DeviceFingerprint: "browser-fingerprint-hash",
+		UserAgent:         "Mozilla/5.0",
+	})
+
+	require.Equal(t, PaymentThreeDSModeAutomatic, decision.Mode)
+	require.Equal(t, "browser-fingerprint-hash", visitorRisk.lastInput.DeviceFingerprint)
+	require.Equal(t, "203.0.113.10", visitorRisk.lastInput.IPAddress)
 }
 
 func TestPaymentThreeDSPolicyChallengesVisitorBlockCandidate(t *testing.T) {
@@ -354,10 +468,12 @@ func (f *fakeThreeDSOrderHistory) CountPaidOrdersForUserBefore(userID uint, excl
 
 type fakeThreeDSVisitorRisk struct {
 	assessment VisitorRiskIdentityAssessment
+	lastInput  VisitorRiskIdentityAssessmentInput
 	err        error
 }
 
 func (f *fakeThreeDSVisitorRisk) AssessIdentity(ctx context.Context, input VisitorRiskIdentityAssessmentInput) (VisitorRiskIdentityAssessment, error) {
+	f.lastInput = input
 	if f.assessment.RiskLevel == "" {
 		f.assessment.RiskLevel = visitor.RiskLevelNormal
 	}

@@ -55,7 +55,7 @@ func (h *Handler) recordPayPalDisputeRiskEvent(c *gin.Context, event pgateway.Pa
 		Payload:           string(payload),
 		Metadata:          metadata,
 	}
-	if err := h.recordAndRefreshPaymentRiskEvent(c, riskInput); err != nil {
+	if err := h.recordAndRefreshPaymentRiskEvent(riskInput); err != nil {
 		return true, err
 	}
 	if err := h.enqueueRefundRecommendation(riskInput); err != nil {

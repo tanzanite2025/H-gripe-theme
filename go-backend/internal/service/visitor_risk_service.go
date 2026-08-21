@@ -37,16 +37,17 @@ var (
 )
 
 type VisitorRiskRecordInput struct {
-	IPAddress        string
-	UserAgent        string
-	Path             string
-	CountryCode      string
-	AnonymousID      string
-	SessionID        string
-	HasCookieHeader  bool
-	StatusCode       int
-	OccurredAt       time.Time
-	MeaningfulAction bool
+	IPAddress         string
+	DeviceFingerprint string
+	UserAgent         string
+	Path              string
+	CountryCode       string
+	AnonymousID       string
+	SessionID         string
+	HasCookieHeader   bool
+	StatusCode        int
+	OccurredAt        time.Time
+	MeaningfulAction  bool
 }
 
 type VisitorRiskFlushResult struct {
@@ -68,29 +69,30 @@ type VisitorRiskFactListInput struct {
 }
 
 type VisitorRiskFactSnapshot struct {
-	ID                    uint                         `json:"id"`
-	Day                   time.Time                    `json:"day"`
-	IPHashPreview         string                       `json:"ip_hash_preview"`
-	UserAgentHashPreview  string                       `json:"user_agent_hash_preview,omitempty"`
-	CountryCode           string                       `json:"country_code,omitempty"`
-	FirstSeenAt           time.Time                    `json:"first_seen_at"`
-	LastSeenAt            time.Time                    `json:"last_seen_at"`
-	RequestCount          int                          `json:"request_count"`
-	UniquePathCount       int                          `json:"unique_path_count"`
-	UniqueAnonymousCount  int                          `json:"unique_anonymous_count"`
-	UniqueSessionCount    int                          `json:"unique_session_count"`
-	InvalidRequestCount   int                          `json:"invalid_request_count"`
-	AuthFailureCount      int                          `json:"auth_failure_count"`
-	CheckoutFailureCount  int                          `json:"checkout_failure_count"`
-	BotLikeUserAgentCount int                          `json:"bot_like_user_agent_count"`
-	NoCookieRequestCount  int                          `json:"no_cookie_request_count"`
-	MeaningfulActionCount int                          `json:"meaningful_action_count"`
-	RiskScore             int                          `json:"risk_score"`
-	RiskLevel             string                       `json:"risk_level"`
-	SamplePaths           []string                     `json:"sample_paths"`
-	Decision              *VisitorRiskDecisionSnapshot `json:"decision,omitempty"`
-	CreatedAt             time.Time                    `json:"created_at"`
-	UpdatedAt             time.Time                    `json:"updated_at"`
+	ID                           uint                         `json:"id"`
+	Day                          time.Time                    `json:"day"`
+	IPHashPreview                string                       `json:"ip_hash_preview"`
+	DeviceFingerprintHashPreview string                       `json:"device_fingerprint_hash_preview,omitempty"`
+	UserAgentHashPreview         string                       `json:"user_agent_hash_preview,omitempty"`
+	CountryCode                  string                       `json:"country_code,omitempty"`
+	FirstSeenAt                  time.Time                    `json:"first_seen_at"`
+	LastSeenAt                   time.Time                    `json:"last_seen_at"`
+	RequestCount                 int                          `json:"request_count"`
+	UniquePathCount              int                          `json:"unique_path_count"`
+	UniqueAnonymousCount         int                          `json:"unique_anonymous_count"`
+	UniqueSessionCount           int                          `json:"unique_session_count"`
+	InvalidRequestCount          int                          `json:"invalid_request_count"`
+	AuthFailureCount             int                          `json:"auth_failure_count"`
+	CheckoutFailureCount         int                          `json:"checkout_failure_count"`
+	BotLikeUserAgentCount        int                          `json:"bot_like_user_agent_count"`
+	NoCookieRequestCount         int                          `json:"no_cookie_request_count"`
+	MeaningfulActionCount        int                          `json:"meaningful_action_count"`
+	RiskScore                    int                          `json:"risk_score"`
+	RiskLevel                    string                       `json:"risk_level"`
+	SamplePaths                  []string                     `json:"sample_paths"`
+	Decision                     *VisitorRiskDecisionSnapshot `json:"decision,omitempty"`
+	CreatedAt                    time.Time                    `json:"created_at"`
+	UpdatedAt                    time.Time                    `json:"updated_at"`
 }
 
 type VisitorRiskDecisionSnapshot struct {
@@ -126,10 +128,11 @@ type VisitorRiskStatsSnapshot struct {
 }
 
 type VisitorRiskIdentityAssessmentInput struct {
-	IPAddress    string
-	UserAgent    string
-	Now          time.Time
-	LookbackDays int
+	IPAddress         string
+	DeviceFingerprint string
+	UserAgent         string
+	Now               time.Time
+	LookbackDays      int
 }
 
 type VisitorRiskIdentityAssessment struct {
@@ -147,6 +150,7 @@ type VisitorRiskIdentityAssessment struct {
 type visitorRiskAccumulator struct {
 	Day                   time.Time
 	IPHash                string
+	DeviceFingerprintHash string
 	UserAgentHash         string
 	CountryCode           string
 	FirstSeenAt           time.Time
@@ -216,28 +220,45 @@ func (s *VisitorRiskService) RecordRequest(input VisitorRiskRecordInput) {
 	if input.UserAgent != "" {
 		uaHash = s.hash(input.UserAgent)
 	}
+	deviceFingerprintHash := ""
+	if input.DeviceFingerprint != "" {
+		deviceFingerprintHash = s.hash(input.DeviceFingerprint)
+	}
 	day := visitorRiskDay(input.OccurredAt)
-	key := visitorRiskAccumulatorKey(day, ipHash, uaHash)
+	key := visitorRiskAccumulatorKey(day, ipHash, uaHash, deviceFingerprintHash)
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	acc := s.pending[key]
+	promotedFromFallback := false
+	if acc == nil && deviceFingerprintHash != "" {
+		fallbackKey := visitorRiskAccumulatorKey(day, ipHash, uaHash, "")
+		if fallback := s.pending[fallbackKey]; fallback != nil {
+			acc = fallback
+			delete(s.pending, fallbackKey)
+			acc.DeviceFingerprintHash = deviceFingerprintHash
+			promotedFromFallback = true
+		}
+	}
 	if acc == nil {
 		if len(s.pending) >= s.maxPendingFacts {
 			return
 		}
 		acc = &visitorRiskAccumulator{
-			Day:           day,
-			IPHash:        ipHash,
-			UserAgentHash: uaHash,
-			CountryCode:   input.CountryCode,
-			FirstSeenAt:   input.OccurredAt,
-			LastSeenAt:    input.OccurredAt,
-			pathSet:       map[string]struct{}{},
-			anonymousSet:  map[string]struct{}{},
-			sessionSet:    map[string]struct{}{},
+			Day:                   day,
+			IPHash:                ipHash,
+			DeviceFingerprintHash: deviceFingerprintHash,
+			UserAgentHash:         uaHash,
+			CountryCode:           input.CountryCode,
+			FirstSeenAt:           input.OccurredAt,
+			LastSeenAt:            input.OccurredAt,
+			pathSet:               map[string]struct{}{},
+			anonymousSet:          map[string]struct{}{},
+			sessionSet:            map[string]struct{}{},
 		}
+		s.pending[key] = acc
+	} else if promotedFromFallback {
 		s.pending[key] = acc
 	}
 
@@ -487,6 +508,7 @@ func (s *VisitorRiskService) AssessIdentity(ctx context.Context, input VisitorRi
 		return assessment, nil
 	}
 	input.IPAddress = normalizeVisitorRiskIP(input.IPAddress)
+	input.DeviceFingerprint = strings.ToLower(strings.TrimSpace(input.DeviceFingerprint))
 	input.UserAgent = strings.TrimSpace(input.UserAgent)
 	if input.Now.IsZero() {
 		input.Now = time.Now().UTC()
@@ -496,7 +518,7 @@ func (s *VisitorRiskService) AssessIdentity(ctx context.Context, input VisitorRi
 	if input.LookbackDays <= 0 {
 		input.LookbackDays = 30
 	}
-	if input.IPAddress == "" {
+	if input.IPAddress == "" && input.DeviceFingerprint == "" {
 		return assessment, nil
 	}
 
@@ -508,13 +530,20 @@ func (s *VisitorRiskService) AssessIdentity(ctx context.Context, input VisitorRi
 	if ipHash == "" {
 		return assessment, nil
 	}
+	deviceFingerprintHash := ""
+	if input.DeviceFingerprint != "" {
+		deviceFingerprintHash = s.hash(input.DeviceFingerprint)
+	}
+	if ipHash == "" && deviceFingerprintHash == "" {
+		return assessment, nil
+	}
 
 	if err := ctx.Err(); err != nil {
 		return assessment, err
 	}
 
 	dayAfter := visitorRiskDay(input.Now.AddDate(0, 0, -input.LookbackDays))
-	fact, err := s.riskRepo.FindLatestByIdentity(dayAfter, ipHash, uaHash)
+	fact, err := s.riskRepo.FindLatestByIdentity(dayAfter, ipHash, uaHash, deviceFingerprintHash)
 	if err != nil && !repository.IsRecordNotFound(err) {
 		return assessment, err
 	}
@@ -531,7 +560,7 @@ func (s *VisitorRiskService) AssessIdentity(ctx context.Context, input VisitorRi
 		assessment.NoCookieRequestCount = fact.NoCookieRequestCount
 	}
 
-	decisions, err := s.riskRepo.ListActiveDecisionsForIdentity(ipHash, uaHash, input.Now)
+	decisions, err := s.riskRepo.ListActiveDecisionsForIdentity(ipHash, uaHash, deviceFingerprintHash, input.Now)
 	if err != nil {
 		return assessment, err
 	}
@@ -575,10 +604,11 @@ func (s *VisitorRiskService) restorePendingDeltas(deltas []repository.VisitorRis
 		if len(s.pending) >= s.maxPendingFacts {
 			return
 		}
-		key := visitorRiskAccumulatorKey(delta.Day, delta.IPHash, delta.UserAgentHash)
+		key := visitorRiskAccumulatorKey(delta.Day, delta.IPHash, delta.UserAgentHash, delta.DeviceFingerprintHash)
 		acc := &visitorRiskAccumulator{
 			Day:                   delta.Day,
 			IPHash:                delta.IPHash,
+			DeviceFingerprintHash: delta.DeviceFingerprintHash,
 			UserAgentHash:         delta.UserAgentHash,
 			CountryCode:           delta.CountryCode,
 			FirstSeenAt:           delta.FirstSeenAt,
@@ -607,6 +637,7 @@ func (acc *visitorRiskAccumulator) toDelta(samplePathLimit int) repository.Visit
 	return repository.VisitorRiskFactDelta{
 		Day:                   acc.Day,
 		IPHash:                acc.IPHash,
+		DeviceFingerprintHash: acc.DeviceFingerprintHash,
 		UserAgentHash:         acc.UserAgentHash,
 		CountryCode:           acc.CountryCode,
 		FirstSeenAt:           acc.FirstSeenAt,
@@ -629,6 +660,7 @@ func (acc *visitorRiskAccumulator) toDelta(samplePathLimit int) repository.Visit
 
 func normalizeVisitorRiskRecordInput(input VisitorRiskRecordInput) VisitorRiskRecordInput {
 	input.IPAddress = normalizeVisitorRiskIP(input.IPAddress)
+	input.DeviceFingerprint = strings.ToLower(strings.TrimSpace(input.DeviceFingerprint))
 	input.UserAgent = strings.TrimSpace(input.UserAgent)
 	input.Path = normalizeVisitorRiskPath(input.Path)
 	input.CountryCode = strings.ToUpper(strings.TrimSpace(input.CountryCode))
@@ -680,8 +712,15 @@ func visitorRiskDay(value time.Time) time.Time {
 	return time.Date(value.Year(), value.Month(), value.Day(), 0, 0, 0, 0, time.UTC)
 }
 
-func visitorRiskAccumulatorKey(day time.Time, ipHash string, userAgentHash string) string {
-	return fmt.Sprintf("%s|%s|%s", day.Format("2006-01-02"), ipHash, userAgentHash)
+func visitorRiskAccumulatorKey(day time.Time, ipHash string, userAgentHash string, deviceFingerprintHash string) string {
+	dayKey := day.Format("2006-01-02")
+	if deviceFingerprintHash != "" {
+		return fmt.Sprintf("%s|device|%s", dayKey, deviceFingerprintHash)
+	}
+	if ipHash != "" && userAgentHash != "" {
+		return fmt.Sprintf("%s|ipua|%s", dayKey, visitor.RiskDecisionIPUAValueHash(ipHash, userAgentHash))
+	}
+	return fmt.Sprintf("%s|ip|%s", dayKey, ipHash)
 }
 
 func (s *VisitorRiskService) hash(value string) string {
@@ -805,33 +844,37 @@ func parseVisitorRiskMinScore(value string) *int {
 
 func visitorRiskFactSnapshot(fact visitor.RiskDailyFact, decision *visitor.RiskDecision) VisitorRiskFactSnapshot {
 	return VisitorRiskFactSnapshot{
-		ID:                    fact.ID,
-		Day:                   fact.Day,
-		IPHashPreview:         maskVisitorRiskHash(fact.IPHash),
-		UserAgentHashPreview:  maskVisitorRiskHash(fact.UserAgentHash),
-		CountryCode:           strings.TrimSpace(fact.CountryCode),
-		FirstSeenAt:           fact.FirstSeenAt,
-		LastSeenAt:            fact.LastSeenAt,
-		RequestCount:          fact.RequestCount,
-		UniquePathCount:       fact.UniquePathCount,
-		UniqueAnonymousCount:  fact.UniqueAnonymousCount,
-		UniqueSessionCount:    fact.UniqueSessionCount,
-		InvalidRequestCount:   fact.InvalidRequestCount,
-		AuthFailureCount:      fact.AuthFailureCount,
-		CheckoutFailureCount:  fact.CheckoutFailureCount,
-		BotLikeUserAgentCount: fact.BotLikeUserAgentCount,
-		NoCookieRequestCount:  fact.NoCookieRequestCount,
-		MeaningfulActionCount: fact.MeaningfulActionCount,
-		RiskScore:             fact.RiskScore,
-		RiskLevel:             strings.TrimSpace(fact.RiskLevel),
-		SamplePaths:           decodeVisitorRiskSamplePaths(fact.SamplePaths),
-		Decision:              visitorRiskDecisionSnapshotPtr(decision),
-		CreatedAt:             fact.CreatedAt,
-		UpdatedAt:             fact.UpdatedAt,
+		ID:                           fact.ID,
+		Day:                          fact.Day,
+		IPHashPreview:                maskVisitorRiskHash(fact.IPHash),
+		DeviceFingerprintHashPreview: maskVisitorRiskHash(fact.DeviceFingerprintHash),
+		UserAgentHashPreview:         maskVisitorRiskHash(fact.UserAgentHash),
+		CountryCode:                  strings.TrimSpace(fact.CountryCode),
+		FirstSeenAt:                  fact.FirstSeenAt,
+		LastSeenAt:                   fact.LastSeenAt,
+		RequestCount:                 fact.RequestCount,
+		UniquePathCount:              fact.UniquePathCount,
+		UniqueAnonymousCount:         fact.UniqueAnonymousCount,
+		UniqueSessionCount:           fact.UniqueSessionCount,
+		InvalidRequestCount:          fact.InvalidRequestCount,
+		AuthFailureCount:             fact.AuthFailureCount,
+		CheckoutFailureCount:         fact.CheckoutFailureCount,
+		BotLikeUserAgentCount:        fact.BotLikeUserAgentCount,
+		NoCookieRequestCount:         fact.NoCookieRequestCount,
+		MeaningfulActionCount:        fact.MeaningfulActionCount,
+		RiskScore:                    fact.RiskScore,
+		RiskLevel:                    strings.TrimSpace(fact.RiskLevel),
+		SamplePaths:                  decodeVisitorRiskSamplePaths(fact.SamplePaths),
+		Decision:                     visitorRiskDecisionSnapshotPtr(decision),
+		CreatedAt:                    fact.CreatedAt,
+		UpdatedAt:                    fact.UpdatedAt,
 	}
 }
 
 func visitorRiskDecisionIdentity(fact visitor.RiskDailyFact) (string, string) {
+	if deviceFingerprintHash := strings.TrimSpace(fact.DeviceFingerprintHash); deviceFingerprintHash != "" {
+		return visitor.RiskDecisionScopeDeviceFingerprintHash, deviceFingerprintHash
+	}
 	if valueHash := visitor.RiskDecisionIPUAValueHash(fact.IPHash, fact.UserAgentHash); valueHash != "" {
 		return visitor.RiskDecisionScopeIPUAHash, valueHash
 	}
@@ -854,16 +897,26 @@ func activeVisitorRiskDecisionForFact(fact visitor.RiskDailyFact, decisions map[
 	if scope == "" || valueHash == "" {
 		return nil
 	}
-	decision, exists := decisions[visitorRiskDecisionKey(scope, valueHash)]
-	if !exists {
-		if scope != visitor.RiskDecisionScopeIPHash {
-			decision, exists = decisions[visitorRiskDecisionKey(visitor.RiskDecisionScopeIPHash, fact.IPHash)]
+	if decision, exists := decisions[visitorRiskDecisionKey(scope, valueHash)]; exists {
+		return &decision
+	}
+
+	switch scope {
+	case visitor.RiskDecisionScopeDeviceFingerprintHash:
+		if valueHash := visitor.RiskDecisionIPUAValueHash(fact.IPHash, fact.UserAgentHash); valueHash != "" {
+			if decision, exists := decisions[visitorRiskDecisionKey(visitor.RiskDecisionScopeIPUAHash, valueHash)]; exists {
+				return &decision
+			}
+		}
+		fallthrough
+	case visitor.RiskDecisionScopeIPUAHash:
+		if ipHash := strings.TrimSpace(fact.IPHash); ipHash != "" {
+			if decision, exists := decisions[visitorRiskDecisionKey(visitor.RiskDecisionScopeIPHash, ipHash)]; exists {
+				return &decision
+			}
 		}
 	}
-	if !exists {
-		return nil
-	}
-	return &decision
+	return nil
 }
 
 func visitorRiskDecisionKey(scope, valueHash string) string {

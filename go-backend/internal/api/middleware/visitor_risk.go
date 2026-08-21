@@ -26,16 +26,17 @@ func VisitorRiskTelemetry(visitorRiskService *service.VisitorRiskService) gin.Ha
 		c.Next()
 
 		visitorRiskService.RecordRequest(service.VisitorRiskRecordInput{
-			IPAddress:        c.ClientIP(),
-			UserAgent:        c.GetHeader("User-Agent"),
-			Path:             path,
-			CountryCode:      visitorRiskCountryCode(c),
-			AnonymousID:      visitorRiskAnonymousID(c),
-			SessionID:        visitorRiskSessionID(c),
-			HasCookieHeader:  strings.TrimSpace(c.GetHeader("Cookie")) != "",
-			StatusCode:       c.Writer.Status(),
-			OccurredAt:       startedAt,
-			MeaningfulAction: visitorRiskMeaningfulAction(c.Request.Method, path, c.Writer.Status()),
+			IPAddress:         c.ClientIP(),
+			DeviceFingerprint: visitorRiskDeviceFingerprint(c),
+			UserAgent:         c.GetHeader("User-Agent"),
+			Path:              path,
+			CountryCode:       visitorRiskCountryCode(c),
+			AnonymousID:       visitorRiskAnonymousID(c),
+			SessionID:         visitorRiskSessionID(c),
+			HasCookieHeader:   strings.TrimSpace(c.GetHeader("Cookie")) != "",
+			StatusCode:        c.Writer.Status(),
+			OccurredAt:        startedAt,
+			MeaningfulAction:  visitorRiskMeaningfulAction(c.Request.Method, path, c.Writer.Status()),
 		})
 	}
 }
@@ -65,6 +66,10 @@ func visitorRiskSessionID(c *gin.Context) string {
 		}
 	}
 	return ""
+}
+
+func visitorRiskDeviceFingerprint(c *gin.Context) string {
+	return strings.ToLower(strings.TrimSpace(c.GetHeader("X-Device-Fingerprint")))
 }
 
 func visitorRiskMeaningfulAction(method string, path string, statusCode int) bool {

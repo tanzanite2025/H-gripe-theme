@@ -54,6 +54,7 @@ export interface RiskStrategyConfiguration {
     runtime_available?: boolean
     adaptive_enabled?: boolean
     low_risk_max_amount?: number | string
+    avs_billing_shipping_mismatch_high_value_threshold_usd?: number | string
     trusted_paid_orders?: number | string
     visitor_risk_lookback_days?: number | string
     step_up_risk_score?: number | string

@@ -67,6 +67,7 @@ import {
 import { useWheelsetSelectionAssistant } from '~/composables/useWheelsetSelectionAssistant'
 import { useWheelsetSelectionProducts } from '~/composables/useWheelsetSelectionProducts'
 import { buildWheelsetSelectionRequestDraft } from '~/utils/wheelsetSelection/payload'
+import { normalizeStorefrontLocaleCode } from '~/utils/storefrontLocales'
 
 const props = withDefaults(defineProps<{
   source?: WheelsetSelectionAssistantSource
@@ -88,12 +89,9 @@ const selectedAnswerLabel = computed(() => (
 const localizedGraphText = (value?: Record<string, string>) => {
   if (!value) return ''
 
-  const normalizedLocale = String(locale.value || '').trim().replace(/-/g, '_').toLowerCase()
+  const normalizedLocale = normalizeStorefrontLocaleCode(locale.value) || 'en'
   const baseLocale = normalizedLocale.split('_')[0] || ''
 
-  if (normalizedLocale === 'zh_cn' || baseLocale === 'zh') {
-    return String(value[normalizedLocale] || value[baseLocale] || value.zh_cn || value.en || '')
-  }
   return String(value[normalizedLocale] || value[baseLocale] || value.en || '')
 }
 

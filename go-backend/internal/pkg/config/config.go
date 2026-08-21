@@ -310,12 +310,13 @@ type PaymentProtectionConfig struct {
 }
 
 type PaymentThreeDSConfig struct {
-	AdaptiveEnabled     bool    `mapstructure:"adaptive_enabled"`
-	LowRiskMaxAmount    float64 `mapstructure:"low_risk_max_amount"`
-	TrustedPaidOrders   int     `mapstructure:"trusted_paid_orders"`
-	VisitorRiskLookback int     `mapstructure:"visitor_risk_lookback_days"`
-	StepUpRiskScore     int     `mapstructure:"step_up_risk_score"`
-	ChallengeRiskScore  int     `mapstructure:"challenge_risk_score"`
+	AdaptiveEnabled                                 bool    `mapstructure:"adaptive_enabled"`
+	LowRiskMaxAmount                                float64 `mapstructure:"low_risk_max_amount"`
+	AVSBillingShippingMismatchHighValueThresholdUSD float64 `mapstructure:"avs_billing_shipping_mismatch_high_value_threshold_usd"`
+	TrustedPaidOrders                               int     `mapstructure:"trusted_paid_orders"`
+	VisitorRiskLookback                             int     `mapstructure:"visitor_risk_lookback_days"`
+	StepUpRiskScore                                 int     `mapstructure:"step_up_risk_score"`
+	ChallengeRiskScore                              int     `mapstructure:"challenge_risk_score"`
 }
 
 type VisitorRiskConfig struct {
@@ -640,6 +641,7 @@ func setDefaults() {
 
 	viper.SetDefault("payment_3ds.adaptive_enabled", true)
 	viper.SetDefault("payment_3ds.low_risk_max_amount", 100.0)
+	viper.SetDefault("payment_3ds.avs_billing_shipping_mismatch_high_value_threshold_usd", 800.0)
 	viper.SetDefault("payment_3ds.trusted_paid_orders", 1)
 	viper.SetDefault("payment_3ds.visitor_risk_lookback_days", 30)
 	viper.SetDefault("payment_3ds.step_up_risk_score", 20)
@@ -865,6 +867,7 @@ func bindEnvironment() {
 
 	_ = viper.BindEnv("payment_3ds.adaptive_enabled", "PAYMENT_3DS_ADAPTIVE_ENABLED")
 	_ = viper.BindEnv("payment_3ds.low_risk_max_amount", "PAYMENT_3DS_LOW_RISK_MAX_AMOUNT")
+	_ = viper.BindEnv("payment_3ds.avs_billing_shipping_mismatch_high_value_threshold_usd", "PAYMENT_3DS_AVS_BILLING_SHIPPING_MISMATCH_HIGH_VALUE_THRESHOLD_USD")
 	_ = viper.BindEnv("payment_3ds.trusted_paid_orders", "PAYMENT_3DS_TRUSTED_PAID_ORDERS")
 	_ = viper.BindEnv("payment_3ds.visitor_risk_lookback_days", "PAYMENT_3DS_VISITOR_RISK_LOOKBACK_DAYS")
 	_ = viper.BindEnv("payment_3ds.step_up_risk_score", "PAYMENT_3DS_STEP_UP_RISK_SCORE")
@@ -1157,6 +1160,9 @@ func validateConfig(cfg *Config) error {
 			cfg.PaymentThreeDS.StepUpRiskScore > cfg.PaymentThreeDS.ChallengeRiskScore {
 			return fmt.Errorf("payment 3DS configuration is invalid")
 		}
+	}
+	if cfg.PaymentThreeDS.AVSBillingShippingMismatchHighValueThresholdUSD <= 0 {
+		return fmt.Errorf("payment 3DS configuration is invalid")
 	}
 	if cfg.PaymentProtection.Enabled {
 		if cfg.PaymentProtection.MaxControlDurationHours <= 0 ||

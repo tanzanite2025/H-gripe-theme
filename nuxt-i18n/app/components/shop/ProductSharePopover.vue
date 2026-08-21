@@ -2,6 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n, useLocalePath } from '#imports'
 import { useChatWidget } from '~/composables/useChatWidget'
+import { isSimplifiedChineseStorefrontLocale } from '~/utils/storefrontLocales'
 import type { ShopProduct } from '~/composables/useShopProducts'
 
 type ProductShareTarget = {
@@ -53,7 +54,7 @@ const productUrl = computed(() => {
 
 const encodedProductUrl = computed(() => encodeURIComponent(productUrl.value))
 const encodedProductTitle = computed(() => encodeURIComponent(props.product.title || ''))
-const isChineseLocale = computed(() => String(locale.value || '').toLowerCase().startsWith('zh'))
+const isChineseLocale = computed(() => isSimplifiedChineseStorefrontLocale(locale.value))
 const shareLabel = computed(() => (isChineseLocale.value ? '分享商品' : 'Share product'))
 const shareToChatLabel = computed(() => (isChineseLocale.value ? '发送到聊天' : 'Send to chat'))
 const copiedMessage = computed(() => (isChineseLocale.value ? '链接已复制' : 'Link copied'))

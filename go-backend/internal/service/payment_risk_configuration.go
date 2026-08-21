@@ -8,14 +8,15 @@ import (
 )
 
 type PaymentRiskThreeDSConfigurationView struct {
-	Enabled                 bool    `json:"enabled"`
-	RuntimeAvailable        bool    `json:"runtime_available"`
-	AdaptiveEnabled         bool    `json:"adaptive_enabled"`
-	LowRiskMaxAmount        float64 `json:"low_risk_max_amount"`
-	TrustedPaidOrders       int     `json:"trusted_paid_orders"`
-	VisitorRiskLookbackDays int     `json:"visitor_risk_lookback_days"`
-	StepUpRiskScore         int     `json:"step_up_risk_score"`
-	ChallengeRiskScore      int     `json:"challenge_risk_score"`
+	Enabled                                         bool    `json:"enabled"`
+	RuntimeAvailable                                bool    `json:"runtime_available"`
+	AdaptiveEnabled                                 bool    `json:"adaptive_enabled"`
+	LowRiskMaxAmount                                float64 `json:"low_risk_max_amount"`
+	AVSBillingShippingMismatchHighValueThresholdUSD float64 `json:"avs_billing_shipping_mismatch_high_value_threshold_usd"`
+	TrustedPaidOrders                               int     `json:"trusted_paid_orders"`
+	VisitorRiskLookbackDays                         int     `json:"visitor_risk_lookback_days"`
+	StepUpRiskScore                                 int     `json:"step_up_risk_score"`
+	ChallengeRiskScore                              int     `json:"challenge_risk_score"`
 }
 
 type PaymentRiskEngineConfigurationView struct {
@@ -132,8 +133,9 @@ func BuildPaymentRiskConfigurationView(
 	if threeDS != nil {
 		threeDSConfigView := threeDS.PolicyView()
 		threeDSConfig = config.PaymentThreeDSConfig{
-			AdaptiveEnabled:     threeDSConfigView.AdaptiveEnabled,
-			LowRiskMaxAmount:    threeDSConfigView.LowRiskMaxAmount,
+			AdaptiveEnabled:  threeDSConfigView.AdaptiveEnabled,
+			LowRiskMaxAmount: threeDSConfigView.LowRiskMaxAmount,
+			AVSBillingShippingMismatchHighValueThresholdUSD: threeDSConfigView.AVSBillingShippingMismatchHighValueThresholdUSD,
 			TrustedPaidOrders:   threeDSConfigView.TrustedPaidOrders,
 			VisitorRiskLookback: threeDSConfigView.VisitorRiskLookbackDays,
 			StepUpRiskScore:     threeDSConfigView.StepUpRiskScore,
@@ -176,10 +178,11 @@ func BuildPaymentRiskConfigurationView(
 			WorkerIntervalSeconds:           source.Worker.PaymentRiskMonitoringIntervalSeconds,
 		},
 		ThreeDS: PaymentRiskThreeDSConfigurationView{
-			Enabled:                 threeDSConfig.AdaptiveEnabled,
-			RuntimeAvailable:        threeDSRuntimeAvailable,
-			AdaptiveEnabled:         threeDSConfig.AdaptiveEnabled,
-			LowRiskMaxAmount:        threeDSConfig.LowRiskMaxAmount,
+			Enabled:          threeDSConfig.AdaptiveEnabled,
+			RuntimeAvailable: threeDSRuntimeAvailable,
+			AdaptiveEnabled:  threeDSConfig.AdaptiveEnabled,
+			LowRiskMaxAmount: threeDSConfig.LowRiskMaxAmount,
+			AVSBillingShippingMismatchHighValueThresholdUSD: threeDSConfig.AVSBillingShippingMismatchHighValueThresholdUSD,
 			TrustedPaidOrders:       threeDSConfig.TrustedPaidOrders,
 			VisitorRiskLookbackDays: threeDSConfig.VisitorRiskLookback,
 			StepUpRiskScore:         threeDSConfig.StepUpRiskScore,

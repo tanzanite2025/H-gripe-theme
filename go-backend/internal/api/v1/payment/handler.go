@@ -229,7 +229,7 @@ func (h *Handler) CreateStripePaymentIntent(c *gin.Context) {
 		apierror.RespondInternalError(c, err)
 		return
 	}
-	config.PaymentMethodTypes, err = h.resolveStripePaymentMethodTypes(orderRecord.ShippingAddress.Country, orderCurrency, config.PaymentMethodTypes)
+	config.PaymentMethodTypes, err = h.resolveStripePaymentMethodTypes(orderRecord.ShippingAddress.Country, orderCurrency, orderRecord.TotalAmount, config.PaymentMethodTypes)
 	if err != nil {
 		apierror.RespondInternalError(c, err)
 		return
@@ -464,19 +464,20 @@ func (h *Handler) decideStripeThreeDS(
 	}
 
 	return h.threeDSPolicy.Decide(c.Request.Context(), service.PaymentThreeDSDecisionInput{
-		Provider:        string(pgateway.GatewayStripe),
-		UserID:          userID,
-		OrderID:         orderRecord.ID,
-		Amount:          orderRecord.TotalAmount,
-		Currency:        normalizedOrderCurrency(orderRecord),
-		BaseMode:        baseMode,
-		IPAddress:       c.ClientIP(),
-		IPCountry:       stripeRequestCountry(c),
-		UserAgent:       c.Request.UserAgent(),
-		SessionID:       stripeRequestSessionID(c),
-		BillingCountry:  orderRecord.BillingAddress.Country,
-		ShippingCountry: orderRecord.ShippingAddress.Country,
-		PaymentMethod:   orderRecord.PaymentMethod,
+		Provider:          string(pgateway.GatewayStripe),
+		UserID:            userID,
+		OrderID:           orderRecord.ID,
+		Amount:            orderRecord.TotalAmount,
+		Currency:          normalizedOrderCurrency(orderRecord),
+		BaseMode:          baseMode,
+		IPAddress:         c.ClientIP(),
+		DeviceFingerprint: stripeRequestDeviceFingerprint(c),
+		IPCountry:         stripeRequestCountry(c),
+		UserAgent:         c.Request.UserAgent(),
+		SessionID:         stripeRequestSessionID(c),
+		BillingCountry:    orderRecord.BillingAddress.Country,
+		ShippingCountry:   orderRecord.ShippingAddress.Country,
+		PaymentMethod:     orderRecord.PaymentMethod,
 	})
 }
 
@@ -506,6 +507,10 @@ func stripeRequestSessionID(c *gin.Context) string {
 		}
 	}
 	return ""
+}
+
+func stripeRequestDeviceFingerprint(c *gin.Context) string {
+	return strings.ToLower(strings.TrimSpace(c.GetHeader("X-Device-Fingerprint")))
 }
 
 func stripeRequestAnonymousID(c *gin.Context) string {

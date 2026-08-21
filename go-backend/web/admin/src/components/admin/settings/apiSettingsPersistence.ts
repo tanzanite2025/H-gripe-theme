@@ -1,3 +1,5 @@
+import { deviceFingerprintHeaderName, resolveDeviceFingerprint } from '@/utils/deviceFingerprint'
+
 const API_SETTINGS_GROUP = 'api'
 const API_SETTINGS_LOCALE = 'en'
 const CSRF_COOKIE_NAME = 'csrf_token'
@@ -51,12 +53,14 @@ const readCookieValue = (name: string): string => {
   return match ? decodeURIComponent(match.slice(prefix.length)) : ''
 }
 
-const apiSettingsSaveHeaders = (): Record<string, string> => {
+const apiSettingsSaveHeaders = async (): Promise<Record<string, string>> => {
   const csrfToken = readCookieValue(CSRF_COOKIE_NAME)
+  const deviceFingerprint = await resolveDeviceFingerprint()
   return {
     'Content-Type': 'application/json',
     Accept: 'application/json',
     ...(csrfToken ? { [CSRF_HEADER_NAME]: csrfToken } : {}),
+    ...(deviceFingerprint ? { [deviceFingerprintHeaderName]: deviceFingerprint } : {}),
   }
 }
 
@@ -81,10 +85,11 @@ export const postApiSettingsBatch = async (
     options.timeoutMs || DEFAULT_SAVE_TIMEOUT_MS,
   )
   try {
+    const headers = await apiSettingsSaveHeaders()
     const response = await fetch('/api/admin/settings/batch', {
       method: 'POST',
       credentials: 'include',
-      headers: apiSettingsSaveHeaders(),
+      headers,
       body: JSON.stringify({ settings }),
       signal: controller.signal,
     })

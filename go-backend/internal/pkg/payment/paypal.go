@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/plutov/paypal/v4"
@@ -12,8 +13,9 @@ import (
 
 // paypalGatewayImpl PayPal 支付网关完整实现
 type paypalGatewayImpl struct {
-	config *Config
-	client payPalCheckoutClient
+	config    *Config
+	client    payPalCheckoutClient
+	refreshMu sync.Mutex
 }
 
 type payPalCheckoutClient interface {
@@ -102,37 +104,41 @@ func (g *paypalGatewayImpl) CreatePayment(ctx context.Context, req *PaymentReque
 		appCtx.CancelURL = req.CancelURL
 	}
 
-	var createdOrder *paypal.Order
-	if requestID := strings.TrimSpace(req.IdempotencyKey); requestID != "" {
-		if client, ok := g.client.(interface {
-			CreateOrderWithPaypalRequestID(context.Context, string, []paypal.PurchaseUnitRequest, *paypal.PaymentSource, *paypal.ApplicationContext, string) (*paypal.Order, error)
-		}); ok {
-			createdOrder, err = client.CreateOrderWithPaypalRequestID(
-				ctx,
-				paypal.OrderIntentCapture,
-				units,
-				nil,
-				appCtx,
-				requestID,
-			)
+	createdOrder, err := retryPayPalOperation(g, ctx, func(callCtx context.Context) (*paypal.Order, error) {
+		var order *paypal.Order
+		var callErr error
+		if requestID := strings.TrimSpace(req.IdempotencyKey); requestID != "" {
+			if client, ok := g.client.(interface {
+				CreateOrderWithPaypalRequestID(context.Context, string, []paypal.PurchaseUnitRequest, *paypal.PaymentSource, *paypal.ApplicationContext, string) (*paypal.Order, error)
+			}); ok {
+				order, callErr = client.CreateOrderWithPaypalRequestID(
+					callCtx,
+					paypal.OrderIntentCapture,
+					units,
+					nil,
+					appCtx,
+					requestID,
+				)
+			} else {
+				order, callErr = g.client.CreateOrder(
+					callCtx,
+					paypal.OrderIntentCapture,
+					units,
+					nil,
+					appCtx,
+				)
+			}
 		} else {
-			createdOrder, err = g.client.CreateOrder(
-				ctx,
+			order, callErr = g.client.CreateOrder(
+				callCtx,
 				paypal.OrderIntentCapture,
 				units,
 				nil,
 				appCtx,
 			)
 		}
-	} else {
-		createdOrder, err = g.client.CreateOrder(
-			ctx,
-			paypal.OrderIntentCapture,
-			units,
-			nil,
-			appCtx,
-		)
-	}
+		return order, callErr
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create paypal order: %w", err)
 	}

@@ -64,7 +64,7 @@
               {{ threeDS.runtime_available ? '后端已挂载' : '后端不可用' }}
             </span>
           </div>
-          <dl class="mt-3 grid grid-cols-2 gap-px overflow-hidden border border-border/70 bg-border/70">
+          <dl class="mt-3 grid grid-cols-2 gap-px overflow-hidden border border-border/70 bg-border/70 xl:grid-cols-3">
             <div class="bg-card p-3">
               <dt class="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Step-up 分数</dt>
               <dd class="mt-1 font-mono text-sm font-semibold">≥ {{ number(threeDS.step_up_risk_score) }}</dd>
@@ -75,9 +75,14 @@
               <dd class="mt-1 font-mono text-sm font-semibold">≥ {{ number(threeDS.challenge_risk_score) }}</dd>
               <p class="mt-1 text-[11px] text-muted-foreground">升级为 challenge</p>
             </div>
+            <div class="bg-card p-3">
+              <dt class="text-[10px] font-black uppercase tracking-widest text-muted-foreground">AVS 金额阈值</dt>
+              <dd class="mt-1 font-mono text-sm font-semibold">&gt; {{ money(threeDS.avs_billing_shipping_mismatch_high_value_threshold_usd) }}</dd>
+              <p class="mt-1 text-[11px] text-muted-foreground">账单国与收货国不一致时强制 challenge</p>
+            </div>
           </dl>
           <p class="mt-3 text-xs leading-5 text-muted-foreground">
-            分数来自风控策略与访客风险评估；一旦命中高风险，最终模式不会被低金额或老客条件覆盖。
+            分数来自风控策略与访客风险评估；一旦命中高风险，最终模式不会被低金额、老客或 AVS 阈值覆盖。
           </p>
         </section>
       </div>

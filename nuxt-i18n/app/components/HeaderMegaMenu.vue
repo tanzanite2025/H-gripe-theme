@@ -12,71 +12,84 @@
         <div class="header-mega__content">
           <div
             class="header-mega__grid"
-            :class="`header-mega__grid--${section.id}`"
+            :class="[
+              `header-mega__grid--${section.id}`,
+              { 'header-mega__grid--separated-columns': shouldUseSeparatedColumns },
+            ]"
           >
-            <article
-              v-for="{ card, children, displaySize } in cardsWithChildren"
-              :key="card.id"
-              class="header-mega-card"
-              :class="[
-                `header-mega-card--${displaySize}`,
-                `header-mega-card--${card.accent}`,
-                `header-mega-card--card-${card.id}`,
-                { 'header-mega-card--has-children': children.length > 0 },
-              ]"
+            <div
+              v-for="column in menuColumns"
+              :key="column.id"
+              class="header-mega__column"
+              :class="`header-mega__column--${column.kind}`"
             >
-              <span class="header-mega-card__glow" aria-hidden="true"></span>
-
-              <NuxtLink
-                class="header-mega-card__main"
-                :to="localizedTo(card.to)"
-                @click="scheduleNavigateClose"
+              <article
+                v-for="{ card, children, displaySize } in column.cards"
+                :key="card.id"
+                class="header-mega-card"
+                :class="[
+                  `header-mega-card--${displaySize}`,
+                  `header-mega-card--${card.accent}`,
+                  `header-mega-card--card-${card.id}`,
+                  { 'header-mega-card--has-children': children.length > 0 },
+                ]"
               >
-                <span class="header-mega-card__body">
-                  <span v-if="shouldShowCardLabel(card)" class="header-mega-card__label">
-                    {{ cardLabel(card) }}
-                  </span>
-                  <span class="header-mega-card__title">{{ cardTitle(card) }}</span>
-                </span>
+                <span class="header-mega-card__glow" aria-hidden="true"></span>
 
-                <span
-                  v-if="!children.length && !shouldShowProductCategoryNavigationCardsInsideCard(card)"
-                  class="header-mega-card__arrow"
-                  aria-hidden="true"
-                >
-                  <Icon name="lucide:arrow-up-right" />
-                </span>
-              </NuxtLink>
-
-              <div
-                v-if="children.length"
-                class="header-mega-card__children"
-                :aria-label="`${cardTitle(card)} sections`"
-              >
                 <NuxtLink
-                  v-for="child in children"
-                  :key="child.id"
-                  class="header-mega-card__child"
-                  :to="localizedTo(child.to)"
-                  :aria-label="childAccessibleLabel(child)"
-                  @click.stop="scheduleNavigateClose"
+                  class="header-mega-card__main"
+                  :to="localizedTo(card.to)"
+                  @click="scheduleNavigateClose"
                 >
-                  <span class="header-mega-card__child-dot" aria-hidden="true"></span>
-                  <span class="header-mega-card__child-label">{{ childLabel(child) }}</span>
-                  <span class="header-mega-card__child-arrow" aria-hidden="true">
+                  <span class="header-mega-card__icon" aria-hidden="true">
+                    <Icon :name="card.icon" />
+                  </span>
+
+                  <span class="header-mega-card__body">
+                    <span v-if="shouldShowCardLabel(card)" class="header-mega-card__label">
+                      {{ cardLabel(card) }}
+                    </span>
+                    <span class="header-mega-card__title">{{ cardTitle(card) }}</span>
+                  </span>
+
+                  <span
+                    v-if="!children.length && !shouldShowProductCategoryNavigationCardsInsideCard(card)"
+                    class="header-mega-card__arrow"
+                    aria-hidden="true"
+                  >
                     <Icon name="lucide:arrow-up-right" />
                   </span>
                 </NuxtLink>
-              </div>
 
-              <ProductCategoryNavigationCards
-                v-if="shouldShowProductCategoryNavigationCardsInsideCard(card)"
-                class="header-mega__product-category-navigation"
-                density="compact"
-                :product-category-display-limit="4"
-                @navigate="scheduleNavigateClose"
-              />
-            </article>
+                <div
+                  v-if="children.length"
+                  class="header-mega-card__children"
+                  :aria-label="`${cardTitle(card)} sections`"
+                >
+                  <NuxtLink
+                    v-for="child in children"
+                    :key="child.id"
+                    class="header-mega-card__child"
+                    :to="localizedTo(child.to)"
+                    :aria-label="childAccessibleLabel(child)"
+                    @click.stop="scheduleNavigateClose"
+                  >
+                    <span class="header-mega-card__child-label">{{ childLabel(child) }}</span>
+                    <span class="header-mega-card__child-arrow" aria-hidden="true">
+                      <Icon name="lucide:arrow-up-right" />
+                    </span>
+                  </NuxtLink>
+                </div>
+
+                <ProductCategoryNavigationCards
+                  v-if="shouldShowProductCategoryNavigationCardsInsideCard(card)"
+                  class="header-mega__product-category-navigation"
+                  density="compact"
+                  :product-category-display-limit="4"
+                  @navigate="scheduleNavigateClose"
+                />
+              </article>
+            </div>
           </div>
         </div>
 
@@ -97,7 +110,11 @@
 import { computed, unref } from 'vue'
 import { useI18n, useLocalePath } from '#imports'
 import ProductCategoryNavigationCards from '~/components/shop/ProductCategoryNavigationCards.vue'
-import type { PrimaryMegaNavCard, PrimaryMegaNavSection } from '~/utils/primaryMegaNav'
+import type {
+  PrimaryMegaNavCard,
+  PrimaryMegaNavCardSize,
+  PrimaryMegaNavSection,
+} from '~/utils/primaryMegaNav'
 import {
   getPrimaryMegaNavCardChildren,
   type PageSubNavigationChild,
@@ -111,6 +128,24 @@ const props = defineProps<{
 const emit = defineEmits<{
   navigate: []
 }>()
+
+type MegaMenuCardItem = {
+  card: PrimaryMegaNavCard
+  children: PageSubNavigationChild[]
+  displaySize: PrimaryMegaNavCardSize
+}
+
+type MegaMenuColumn = {
+  id: string
+  kind: 'flat' | 'standalone' | 'nested'
+  cards: MegaMenuCardItem[]
+}
+
+const separatedColumnSectionIds = new Set<PrimaryMegaNavSection['id']>([
+  'support',
+  'company',
+  'guides',
+])
 
 const { t, locales } = useI18n() as any
 const localePath = useLocalePath()
@@ -152,7 +187,10 @@ const closePanel = () => {
   emit('navigate')
 }
 
-const displaySizeForCard = (card: PrimaryMegaNavCard, children: PageSubNavigationChild[]) => {
+const displaySizeForCard = (
+  card: PrimaryMegaNavCard,
+  children: PageSubNavigationChild[],
+): PrimaryMegaNavCardSize => {
   if (children.length > 0 && (card.size === 'compact' || card.size === 'standard')) {
     return 'wide'
   }
@@ -160,7 +198,7 @@ const displaySizeForCard = (card: PrimaryMegaNavCard, children: PageSubNavigatio
   return card.size
 }
 
-const cardsWithChildren = computed(() => {
+const cardsWithChildren = computed<MegaMenuCardItem[]>(() => {
   const section = props.section
   if (!section) return []
 
@@ -178,6 +216,53 @@ const cardsWithChildren = computed(() => {
 const shouldShowProductCategoryNavigationCardsInsideCard = (card: PrimaryMegaNavCard) => {
   return props.section?.id === 'products' && card.id === 'shop'
 }
+
+const shouldUseSeparatedColumns = computed(() => {
+  const sectionId = props.section?.id
+  return sectionId ? separatedColumnSectionIds.has(sectionId) : false
+})
+
+const menuColumns = computed<MegaMenuColumn[]>(() => {
+  const cards = cardsWithChildren.value
+
+  if (!shouldUseSeparatedColumns.value) {
+    return [{ id: 'flat', kind: 'flat', cards }]
+  }
+
+  const standaloneCards = cards.filter(({ card, children }) => {
+    return !children.length && !shouldShowProductCategoryNavigationCardsInsideCard(card)
+  })
+  const nestedColumns: [MegaMenuCardItem[], MegaMenuCardItem[]] = [[], []]
+
+  cards
+    .filter(({ card, children }) => {
+      return children.length > 0 || shouldShowProductCategoryNavigationCardsInsideCard(card)
+    })
+    .forEach((item, index) => {
+      if (index % 2 === 0) {
+        nestedColumns[0].push(item)
+        return
+      }
+
+      nestedColumns[1].push(item)
+    })
+
+  const columns: MegaMenuColumn[] = []
+
+  if (standaloneCards.length > 0) {
+    columns.push({ id: 'standalone', kind: 'standalone', cards: standaloneCards })
+  }
+
+  if (nestedColumns[0].length > 0) {
+    columns.push({ id: 'nested-a', kind: 'nested', cards: nestedColumns[0] })
+  }
+
+  if (nestedColumns[1].length > 0) {
+    columns.push({ id: 'nested-b', kind: 'nested', cards: nestedColumns[1] })
+  }
+
+  return columns
+})
 
 const cardLabel = (card: PrimaryMegaNavCard) => {
   return t(card.labelKey, card.labelFallback) as string
@@ -229,15 +314,18 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
 
 .header-mega__shell {
   position: relative;
-  height: min(560px, calc(var(--tz-mobile-safe-viewport-height, 100vh) - var(--site-header-overlay-offset, 92px) - 18px));
+  --header-mega-max-height: min(560px, calc(var(--tz-mobile-safe-viewport-height, 100vh) - var(--site-header-overlay-offset, 92px) - 18px));
+
+  height: auto;
+  max-height: var(--header-mega-max-height);
   overflow: hidden;
   border-radius: 0;
-  border: 1px solid rgba(255, 255, 255, 0.26);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   border-right: 0;
   border-left: 0;
-  border-top-color: rgba(255, 255, 255, 0.38);
-  border-bottom-color: rgba(255, 255, 255, 0.34);
-  background: #000000;
+  border-top-color: rgba(255, 255, 255, 0.26);
+  border-bottom-color: rgba(255, 255, 255, 0.24);
+  background: linear-gradient(180deg, #19191d 0%, #111116 100%);
   box-shadow:
     0 30px 80px -28px rgba(0, 0, 0, 1),
     inset 0 1px 0 rgba(255, 255, 255, 0.12),
@@ -256,11 +344,11 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
   position: relative;
   z-index: 1;
   box-sizing: border-box;
-  height: 100%;
-  max-height: none;
+  height: auto;
+  max-height: var(--header-mega-max-height);
   overflow-x: hidden;
   overflow-y: auto;
-  padding: 18px clamp(18px, 4vw, 56px) 54px;
+  padding: 18px clamp(16px, 3.4vw, 48px) 50px;
   scrollbar-width: thin;
   scrollbar-color: rgba(100, 116, 139, 0.7) transparent;
 }
@@ -317,9 +405,17 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
   column-gap: 16px;
 }
 
+.header-mega__column {
+  min-width: 0;
+}
+
+.header-mega__column--flat {
+  display: contents;
+}
+
 .header-mega__grid--products {
   display: grid;
-  height: 100%;
+  height: auto;
   min-height: 0;
   grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 0.92fr);
   grid-template-rows: repeat(4, minmax(0, auto));
@@ -341,7 +437,7 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
 .header-mega__grid--products .header-mega-card--card-shop {
   grid-column: 1 / 4;
   grid-row: 1 / -1;
-  height: 100%;
+  height: auto;
   overflow: hidden;
 }
 
@@ -353,9 +449,10 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
 }
 
 .header-mega__grid--support,
+.header-mega__grid--company,
 .header-mega__grid--guides {
   display: grid;
-  height: 100%;
+  height: auto;
   min-height: 0;
   align-items: start;
   align-content: start;
@@ -364,13 +461,28 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
   gap: 14px;
 }
 
-.header-mega__grid--support {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.65fr) minmax(0, 1fr);
-  grid-template-rows: repeat(4, minmax(0, auto));
+.header-mega__grid--separated-columns {
+  grid-template-columns: minmax(220px, 0.64fr) repeat(2, minmax(0, 1fr));
+  grid-template-rows: none;
+  gap: 12px clamp(20px, 3vw, 40px);
 }
 
-.header-mega__grid--support .header-mega-card,
-.header-mega__grid--guides .header-mega-card {
+.header-mega__grid--separated-columns .header-mega__column {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.header-mega__grid--separated-columns .header-mega__column--standalone {
+  gap: 22px;
+}
+
+.header-mega__grid--separated-columns .header-mega__column--nested {
+  gap: 28px;
+}
+
+.header-mega__grid--separated-columns .header-mega-card {
   height: auto;
   min-height: 0;
   margin: 0;
@@ -378,60 +490,12 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
   overflow: visible;
 }
 
-.header-mega__grid--support .header-mega-card--card-faqs {
-  grid-column: 1;
-  grid-row: 1;
-}
-
-.header-mega__grid--support .header-mega-card--card-payment {
-  grid-column: 1;
-  grid-row: 2;
-}
-
-.header-mega__grid--support .header-mega-card--card-shipping {
-  grid-column: 1;
-  grid-row: 3;
-}
-
-.header-mega__grid--support .header-mega-card--card-warranty {
-  grid-column: 2;
-  grid-row: 1 / 4;
-}
-
-.header-mega__grid--support .header-mega-card--card-warranty-check {
-  grid-column: 2;
-  grid-row: 4;
-}
-
-.header-mega__grid--support .header-mega-card--card-test-report {
-  grid-column: 3;
-  grid-row: 2 / 4;
-}
-
-.header-mega__grid--guides {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  grid-template-rows: minmax(0, 1fr);
-}
-
-.header-mega__grid--guides .header-mega-card {
-  height: 100%;
-}
-
-.header-mega__grid--support .header-mega-card--has-children .header-mega-card__children {
+.header-mega__grid--separated-columns .header-mega-card--has-children .header-mega-card__children {
   display: grid;
-  grid-template-columns: repeat(2, max-content);
+  grid-template-columns: repeat(2, minmax(0, var(--mega-child-width)));
   justify-content: start;
   align-items: start;
-  column-gap: 22px;
-  row-gap: 10px;
-}
-
-.header-mega__grid--guides .header-mega-card--has-children .header-mega-card__children {
-  display: grid;
-  grid-template-columns: repeat(3, max-content);
-  justify-content: space-between;
-  align-items: start;
-  column-gap: 18px;
+  column-gap: 12px;
   row-gap: 8px;
 }
 
@@ -480,7 +544,8 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
   --mega-card-padding: 16px;
   --mega-card-child-offset: 74px;
   --mega-card-title-size: 16px;
-  --mega-child-width: 156px;
+  --mega-main-link-width: 260px;
+  --mega-child-width: 184px;
 
   position: relative;
   display: flex;
@@ -491,15 +556,13 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
   width: 100%;
   min-height: 0;
   margin: 0 0 14px;
-  overflow: hidden;
+  overflow: visible;
   vertical-align: top;
-  border: 1px solid rgba(181, 255, 109, 0);
-  border-radius: 16px;
-  background: var(--tz-card-surface, #111116);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   color: inherit;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    0 18px 44px -34px rgba(0, 0, 0, 1);
+  box-shadow: none;
 }
 
 .header-mega-card::before {
@@ -511,13 +574,28 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
   z-index: 1;
   display: flex;
   flex: 1 1 auto;
+  width: 100%;
   min-width: 0;
   min-height: inherit;
+  align-items: center;
   gap: 12px;
+  border-radius: 10px;
   padding: var(--mega-card-padding);
   color: inherit;
   text-decoration: none;
-  transition: color 0.18s ease;
+  transition:
+    background-color 0.18s ease,
+    color 0.18s ease;
+}
+
+.header-mega-card__main:hover,
+.header-mega-card__main:focus-visible {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.header-mega-card__main:focus-visible {
+  outline: 1px solid rgba(181, 255, 109, 0.58);
+  outline-offset: 2px;
 }
 
 .header-mega-card--has-children .header-mega-card__main {
@@ -528,6 +606,22 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
 
 .header-mega-card__glow {
   display: none;
+}
+
+.header-mega-card__icon {
+  display: inline-flex;
+  width: 26px;
+  height: 26px;
+  flex: 0 0 26px;
+  align-items: center;
+  justify-content: center;
+  color: var(--mega-accent);
+}
+
+.header-mega-card__icon :deep(svg) {
+  width: 20px;
+  height: 20px;
+  stroke-width: 2.2;
 }
 
 .header-mega-card__body {
@@ -588,82 +682,69 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
 .header-mega-card__children {
   position: relative;
   z-index: 2;
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  width: fit-content;
+  grid-template-columns: repeat(2, minmax(0, var(--mega-child-width)));
+  justify-content: start;
   align-content: flex-start;
-  gap: 8px;
+  gap: 8px 16px;
   margin-top: 0;
   padding: 0 var(--mega-card-padding) var(--mega-card-padding);
 }
 
 .header-mega-card__child {
-  --mega-child-hover-scale: 1.05;
-
-  display: flex;
-  flex: 0 0 auto;
-  width: auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  width: 100%;
   max-width: 100%;
   min-width: 0;
-  min-height: 38px;
+  min-height: 34px;
   align-items: center;
-  justify-content: center;
-  gap: 7px;
-  border-radius: 999px;
+  justify-content: stretch;
+  gap: 8px;
+  border-radius: 8px;
   border: 0;
   background: transparent;
-  padding: 0.56rem 0.92rem 0.56rem 1rem;
+  padding: 0.45rem 0.52rem;
   color: rgba(241, 245, 249, 0.86);
   font-size: 14px;
   font-weight: 800;
-  line-height: 1.1;
+  line-height: 1.2;
   text-decoration: none;
   transform-origin: left center;
   transition:
+    background-color 0.18s ease,
     color 0.18s ease,
     transform 0.18s ease;
 }
 
 .header-mega-card__child:hover {
+  background: rgba(255, 255, 255, 0.03);
   color: #ffffff;
-  transform: scale(var(--mega-child-hover-scale));
+  transform: translateX(2px);
 }
 
 .header-mega-card__child:focus-visible {
   outline: none;
 }
 
-.header-mega-card__child-dot {
-  width: 0.44rem;
-  height: 0.44rem;
-  flex: 0 0 auto;
-  border-radius: 999px;
-  background: var(--mega-accent);
-  transition: box-shadow 0.18s ease;
-}
-
-.header-mega-card__child:hover .header-mega-card__child-dot,
-.header-mega-card__child:focus-visible .header-mega-card__child-dot {
-  box-shadow: 0 0 10px rgba(181, 255, 109, 0.72);
-}
-
 .header-mega-card__child-label {
   position: relative;
-  display: inline-block;
+  display: block;
   min-width: 0;
   max-width: 100%;
   color: rgba(248, 250, 252, 0.92);
   font-size: 14px;
   overflow: visible;
-  overflow-wrap: normal;
+  overflow-wrap: anywhere;
   text-overflow: clip;
-  text-align: center;
-  white-space: nowrap;
+  text-align: left;
+  white-space: normal;
   transition: color 0.18s ease;
 }
 
 .header-mega-card__child-label::after {
   position: absolute;
-  right: 0;
   bottom: -0.28rem;
   left: 0;
   width: 0;
@@ -699,9 +780,11 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
 
 .header-mega-card__child-arrow {
   display: inline-flex;
-  flex: 0 0 auto;
+  flex: 0 0 14px;
   align-items: center;
   justify-content: center;
+  justify-self: end;
+  margin-left: 0;
   color: rgba(226, 232, 240, 0.58);
   transition:
     color 0.18s ease,
@@ -821,46 +904,46 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
     overflow: visible;
   }
 
-  .header-mega__grid--support,
-  .header-mega__grid--guides {
-    height: auto;
-    min-height: 0;
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: none;
-    align-items: start;
-    align-content: start;
-    gap: 10px;
+  .header-mega__grid--separated-columns {
+    grid-template-columns: minmax(200px, 0.68fr) repeat(2, minmax(0, 1fr));
+    gap: 12px clamp(16px, 2.8vw, 36px);
   }
 
-  .header-mega__grid--support .header-mega-card,
-  .header-mega__grid--guides .header-mega-card {
-    grid-column: 1 / -1;
-    grid-row: auto;
-    height: auto;
-    overflow: hidden;
+  .header-mega__grid--separated-columns .header-mega__column--standalone {
+    gap: 20px;
   }
 
-  .header-mega__grid--support .header-mega-card--has-children .header-mega-card__children,
-  .header-mega__grid--guides .header-mega-card--has-children .header-mega-card__children {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    justify-content: stretch;
-    column-gap: 0;
+  .header-mega__grid--separated-columns .header-mega__column--nested {
+    gap: 24px;
+  }
+
+  .header-mega__grid--separated-columns .header-mega-card--has-children .header-mega-card__children {
+    grid-template-columns: repeat(2, minmax(0, var(--mega-child-width)));
+    column-gap: 10px;
     row-gap: 6px;
   }
 
-  .header-mega__grid--support .header-mega-card__child,
-  .header-mega__grid--guides .header-mega-card__child {
+  .header-mega__grid--separated-columns .header-mega-card__child {
     width: 100%;
-    justify-content: flex-start;
+    justify-content: stretch;
   }
 
-  .header-mega__grid--support .header-mega-card__child-label,
-  .header-mega__grid--guides .header-mega-card__child-label {
-    flex: 1 1 auto;
+  .header-mega__grid--separated-columns .header-mega-card__child-label {
     text-align: left;
     white-space: normal;
     overflow-wrap: anywhere;
+  }
+
+  .header-mega__grid--support,
+  .header-mega__grid--company,
+  .header-mega__grid--guides {
+    height: auto;
+    min-height: 0;
+    grid-template-columns: minmax(200px, 0.68fr) repeat(2, minmax(0, 1fr));
+    grid-template-rows: none;
+    align-items: start;
+    align-content: start;
+    gap: 12px clamp(16px, 2.8vw, 36px);
   }
 }
 
@@ -874,18 +957,19 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
   }
 
   .header-mega__shell {
-    height: 100%;
-    border: 1px solid #ffffff;
+    height: auto;
+    max-height: var(--header-mega-max-height);
+    border: 1px solid rgba(172, 172, 172, 0.32);
     border-radius: 14px;
     box-sizing: border-box;
     box-shadow:
       0 24px 64px -28px #000000,
-      inset 0 1px 0 #ffffff;
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
   }
 
   .header-mega__content {
-    height: 100%;
-    max-height: none;
+    height: auto;
+    max-height: var(--header-mega-max-height);
     padding: 10px 10px calc(48px + env(safe-area-inset-bottom));
   }
 
@@ -904,12 +988,23 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
     column-gap: 0;
   }
 
+  .header-mega__grid--separated-columns,
   .header-mega__grid--support,
+  .header-mega__grid--company,
   .header-mega__grid--guides {
     display: block;
     height: auto;
     column-count: 1;
     column-gap: 0;
+  }
+
+  .header-mega__grid--separated-columns .header-mega__column {
+    display: block;
+  }
+
+  .header-mega__grid--separated-columns .header-mega__column--standalone,
+  .header-mega__grid--separated-columns .header-mega__column--nested {
+    gap: 0;
   }
 
   .header-mega__grid--products .header-mega-card--card-shop {
@@ -918,8 +1013,9 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
 
   .header-mega__grid--products .header-mega-card,
   .header-mega__grid--support .header-mega-card,
+  .header-mega__grid--company .header-mega-card,
   .header-mega__grid--guides .header-mega-card {
-    margin: 0 0 10px;
+    margin: 0 0 5px;
   }
 
   .header-mega__product-category-navigation {
@@ -928,19 +1024,25 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
   }
 
   .header-mega-card {
-    --mega-card-padding: 12px;
+    --mega-card-padding: 8px;
     --mega-card-child-offset: 12px;
     --mega-card-title-size: 13px;
     min-height: 0;
     width: 100%;
-    margin: 0 0 10px;
+    margin: 0 0 5px;
     break-inside: avoid;
-    border-radius: 16px;
+    border-radius: 10px;
   }
 
   .header-mega-card__main {
-    gap: 10px;
-    align-items: flex-start;
+    gap: 7px;
+    align-items: center;
+    padding: 8px;
+  }
+
+  .header-mega-card--has-children .header-mega-card__main,
+  .header-mega-card--card-shop .header-mega-card__main {
+    padding-bottom: 4px;
   }
 
   .header-mega-card__title,
@@ -949,26 +1051,31 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
   }
 
   .header-mega-card__children {
-    margin-top: auto;
+    width: 100%;
+    margin-top: 0;
     padding-top: 0;
-    gap: 7px;
+    padding-right: 8px;
+    padding-bottom: 5px;
+    padding-left: 8px;
+    gap: 3px 6px;
   }
 
   .header-mega-card__child {
-    min-height: 36px;
-    justify-content: flex-start;
+    min-height: 25px;
+    justify-content: stretch;
     width: 100%;
-    padding: 0.55rem 0.82rem;
+    gap: 6px;
+    padding: 0.2rem 0.3rem;
     background: transparent;
-    font-size: 13px;
+    font-size: 12px;
     line-height: 1.1;
   }
 
   .header-mega-card__child-label {
     min-width: 0;
     max-width: 100%;
-    font-size: 13px;
-    line-height: 1.2;
+    font-size: 12px;
+    line-height: 1.1;
     white-space: normal;
     overflow-wrap: anywhere;
   }
@@ -980,15 +1087,24 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
   }
 
   .header-mega-card__child-arrow {
-    display: none;
+    display: inline-flex;
+    flex: 0 0 12px;
+    justify-self: end;
+    margin-left: 0;
+    color: rgba(226, 232, 240, 0.72);
   }
 
-  .header-mega__grid--support .header-mega-card--has-children .header-mega-card__children,
-  .header-mega__grid--guides .header-mega-card--has-children .header-mega-card__children {
+  .header-mega-card__child-arrow :deep(svg) {
+    width: 12px;
+    height: 12px;
+  }
+
+  .header-mega__grid--separated-columns .header-mega-card--has-children .header-mega-card__children {
     display: grid;
-    grid-template-columns: 1fr;
-    column-gap: 0;
-    row-gap: 6px;
+    width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 6px;
+    row-gap: 2px;
   }
 }
 </style>

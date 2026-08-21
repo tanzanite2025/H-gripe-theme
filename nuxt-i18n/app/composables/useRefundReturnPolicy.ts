@@ -8,14 +8,12 @@ import type {
   RefundReturnPolicyResponse,
   RefundReturnPolicySection,
 } from '~/types/refundReturnPolicy'
+import { normalizeStorefrontLocaleCode } from '~/utils/storefrontLocales'
 
 type LocaleInput = Ref<string> | string | undefined
 
 const normalizeLocale = (value: unknown): string => {
-  const raw = String(value || '').trim().toLowerCase().replace(/-/g, '_')
-  if (!raw) return 'en'
-  if (raw === 'zh' || raw === 'zh_cn' || raw === 'zh_hans') return 'zh_cn'
-  return raw.split('_')[0] || 'en'
+  return normalizeStorefrontLocaleCode(value) || String(value || '').trim().toLowerCase().replace(/-/g, '_') || 'en'
 }
 
 const asString = (value: unknown): string => typeof value === 'string' ? value.trim() : ''

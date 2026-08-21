@@ -440,7 +440,7 @@ func (h *Handler) handleStripeDispute(c *gin.Context, event stripe.Event, payloa
 			"status": string(dispute.Status),
 		},
 	}
-	if err := h.recordAndRefreshPaymentRiskEvent(c, riskInput); err != nil {
+	if err := h.recordAndRefreshPaymentRiskEvent(riskInput); err != nil {
 		apierror.RespondInternalError(c, err)
 		return
 	}

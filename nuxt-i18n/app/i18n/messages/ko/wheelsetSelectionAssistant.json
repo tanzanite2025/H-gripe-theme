@@ -33,5 +33,9 @@
     "pagination": "Wheelset product result pages",
     "previousPage": "Previous page",
     "nextPage": "Next page"
+  },
+  "questionPagination": {
+    "label": "Question cards",
+    "goToQuestion": "Show question"
   }
 }

@@ -68,6 +68,70 @@ func TestVisitorRiskServiceAggregatesRequestsIntoDailyFact(t *testing.T) {
 	assert.JSONEq(t, `["/api/v1/products/42","/api/v1/cart/add","/api/v1/auth/login"]`, string(fact.SamplePaths))
 }
 
+func TestVisitorRiskServiceAggregatesRequestsByDeviceFingerprintAcrossIPs(t *testing.T) {
+	db, visitorRiskService := newTestVisitorRiskService(t, true)
+	now := time.Date(2026, 7, 29, 10, 0, 0, 0, time.UTC)
+	fingerprint := "browser-fingerprint-hash"
+
+	visitorRiskService.RecordRequest(VisitorRiskRecordInput{
+		IPAddress:         "203.0.113.20",
+		DeviceFingerprint: fingerprint,
+		UserAgent:         "Mozilla/5.0",
+		Path:              "/api/v1/products/42",
+		StatusCode:        200,
+		OccurredAt:        now,
+	})
+	visitorRiskService.RecordRequest(VisitorRiskRecordInput{
+		IPAddress:         "198.51.100.17",
+		DeviceFingerprint: fingerprint,
+		UserAgent:         "Mozilla/5.0",
+		Path:              "/api/v1/cart/add",
+		StatusCode:        200,
+		OccurredAt:        now.Add(time.Minute),
+		MeaningfulAction:  true,
+	})
+
+	result, err := visitorRiskService.Flush(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, 1, result.FlushedFacts)
+
+	var facts []visitor.RiskDailyFact
+	require.NoError(t, db.Find(&facts).Error)
+	require.Len(t, facts, 1)
+	fact := facts[0]
+	assert.Equal(t, 2, fact.RequestCount)
+	assert.NotEmpty(t, fact.DeviceFingerprintHash)
+	assert.NotContains(t, fact.DeviceFingerprintHash, fingerprint)
+}
+
+func TestVisitorRiskServiceAssessesIdentityByDeviceFingerprintAcrossIPs(t *testing.T) {
+	_, visitorRiskService := newTestVisitorRiskService(t, true)
+	now := time.Date(2026, 7, 29, 10, 0, 0, 0, time.UTC)
+	fingerprint := "browser-fingerprint-hash"
+
+	visitorRiskService.RecordRequest(VisitorRiskRecordInput{
+		IPAddress:         "203.0.113.20",
+		DeviceFingerprint: fingerprint,
+		UserAgent:         "Mozilla/5.0",
+		Path:              "/api/v1/products/42",
+		StatusCode:        200,
+		OccurredAt:        now,
+	})
+	_, err := visitorRiskService.Flush(context.Background())
+	require.NoError(t, err)
+
+	assessment, err := visitorRiskService.AssessIdentity(context.Background(), VisitorRiskIdentityAssessmentInput{
+		IPAddress:         "198.51.100.17",
+		DeviceFingerprint: fingerprint,
+		UserAgent:         "Mozilla/5.0",
+		Now:               now.Add(2 * time.Minute),
+		LookbackDays:      30,
+	})
+	require.NoError(t, err)
+	require.True(t, assessment.Known)
+	assert.Equal(t, 1, assessment.RequestCount)
+}
+
 func TestVisitorRiskServiceDisabledDoesNotAccumulate(t *testing.T) {
 	_, visitorRiskService := newTestVisitorRiskService(t, false)
 
@@ -248,6 +312,33 @@ func TestVisitorRiskServiceCreatesAndResolvesCurrentDecision(t *testing.T) {
 	require.Len(t, facts, 1)
 	require.NotNil(t, facts[0].Decision)
 	assert.Equal(t, decision.ID, facts[0].Decision.ID)
+}
+
+func TestVisitorRiskServiceUsesDeviceFingerprintDecisionScope(t *testing.T) {
+	db, visitorRiskService := newTestVisitorRiskService(t, true)
+	now := time.Date(2026, 7, 28, 12, 0, 0, 0, time.UTC)
+	fact := visitor.RiskDailyFact{
+		Day:                   now,
+		IPHash:                "ip-hash",
+		UserAgentHash:         "ua-hash",
+		DeviceFingerprintHash: "device-fingerprint-hash",
+		FirstSeenAt:           now,
+		LastSeenAt:            now,
+		RiskLevel:             visitor.RiskLevelSuspicious,
+		SamplePaths:           []byte(`[]`),
+	}
+	require.NoError(t, db.Create(&fact).Error)
+
+	decision, err := visitorRiskService.CreateDecision(fact.ID, VisitorRiskDecisionInput{
+		Action: visitor.RiskDecisionActionWatch,
+		Reason: "Device fingerprint review.",
+	}, 42)
+	require.NoError(t, err)
+	assert.Equal(t, visitor.RiskDecisionScopeDeviceFingerprintHash, decision.Scope)
+
+	var storedDecision visitor.RiskDecision
+	require.NoError(t, db.First(&storedDecision, decision.ID).Error)
+	assert.Equal(t, fact.DeviceFingerprintHash, storedDecision.ValueHash)
 }
 
 func TestVisitorRiskServiceExpiresDecisionAndFallsBackToIPScope(t *testing.T) {

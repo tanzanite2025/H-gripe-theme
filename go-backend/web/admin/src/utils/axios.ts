@@ -1,6 +1,7 @@
 import axios, { AxiosHeaders } from 'axios'
 import type { AxiosError, InternalAxiosRequestConfig } from 'axios'
 import { toast } from 'vue-sonner'
+import { deviceFingerprintHeaderName, resolveDeviceFingerprint } from './deviceFingerprint'
 
 interface ApiErrorPayload {
   error?: string
@@ -51,6 +52,17 @@ const attachCsrfHeader = (headers?: InternalAxiosRequestConfig['headers']): Axio
   return nextHeaders
 }
 
+const attachDeviceFingerprintHeader = async (
+  headers?: InternalAxiosRequestConfig['headers'],
+): Promise<AxiosHeaders> => {
+  const nextHeaders = AxiosHeaders.from(headers || {})
+  const fingerprint = await resolveDeviceFingerprint()
+  if (fingerprint && !nextHeaders.has(deviceFingerprintHeaderName)) {
+    nextHeaders.set(deviceFingerprintHeaderName, fingerprint)
+  }
+  return nextHeaders
+}
+
 const clearAdminAuth = (): void => {
   AUTH_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key))
 }
@@ -73,7 +85,7 @@ const refreshAdminToken = async (): Promise<boolean> => {
       baseURL: instance.defaults.baseURL,
       timeout: instance.defaults.timeout,
       withCredentials: true,
-      headers: attachCsrfHeader()
+      headers: await attachDeviceFingerprintHeader(attachCsrfHeader())
     }).then(() => {
       sessionExpiredHandled = false
       return true
@@ -103,12 +115,19 @@ const endRequest = (): void => {
 }
 
 instance.interceptors.request.use(
-  (config) => {
+  async (config) => {
     beginRequest()
-    if (isUnsafeMethod(config.method)) {
-      config.headers = attachCsrfHeader(config.headers)
+    try {
+      let headers = AxiosHeaders.from(config.headers || {})
+      if (isUnsafeMethod(config.method)) {
+        headers = attachCsrfHeader(headers)
+      }
+      config.headers = await attachDeviceFingerprintHeader(headers)
+      return config
+    } catch (error) {
+      endRequest()
+      return Promise.reject(error)
     }
-    return config
   },
   (error) => {
     return Promise.reject(error)
