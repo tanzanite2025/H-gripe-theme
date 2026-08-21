@@ -332,6 +332,7 @@ export const adminNavigationItems: AdminNavigationItem[] = [
     children: [
       { id: 'services-overview', path: '/services/overview', routeName: 'ServicesOverview', label: '服务总览' },
       { id: 'services-cloudflare', path: '/services/cloudflare', routeName: 'ServicesCloudflare', label: 'Cloudflare' },
+      { id: 'services-connectors', path: '/services/connectors', routeName: 'ServicesConnectors', label: '连接器配置' },
     ],
   },
   {
@@ -341,7 +342,6 @@ export const adminNavigationItems: AdminNavigationItem[] = [
     icon: Server,
     permission: 'ops:view',
     children: [
-      { id: 'ops-overview', path: '/ops/overview', routeName: 'OpsOverview', label: '运维总览', permission: 'ops:view' },
       { id: 'ops-admin-accounts', path: '/ops/admin-accounts', routeName: 'OpsAdminAccounts', label: '后台账号', permission: 'system:manage' },
       { id: 'ops-domains', path: '/ops/domains', routeName: 'OpsDomains', label: '域名中心', permission: 'ops:domain:view' },
       { id: 'ops-vps', path: '/ops/vps', routeName: 'OpsVPS', label: 'VPS 中心', permission: 'ops:vps:view' },

@@ -28,6 +28,8 @@ const (
 	hostingerOAuthRegisterURL     = hostingerOAuthIssuer + "/api/external/v1/oauth-server/register"
 	hostingerOAuthAuthorizeURL    = hostingerOAuthIssuer + "/api/external/v1/oauth-server/authorize"
 	hostingerOAuthTokenURL        = hostingerOAuthIssuer + "/api/external/v1/oauth-server/token"
+	githubOAuthAuthorizeURL       = "https://github.com/login/oauth/authorize"
+	githubOAuthTokenURL           = "https://github.com/login/oauth/access_token"
 )
 
 var (
@@ -125,7 +127,7 @@ func (s *OpsConnectorOAuthService) Start(
 	}
 	provider := normalizeOAuthProvider(input.Provider)
 	if provider == "" {
-		return nil, fmt.Errorf("%w: provider must be Cloudflare or Hostinger", ErrOpsConnectorOAuthNotConfigured)
+		return nil, fmt.Errorf("%w: provider must be Cloudflare, Hostinger, or GitHub", ErrOpsConnectorOAuthNotConfigured)
 	}
 	environment, err := normalizeOAuthConnectorEnvironment(input.Environment)
 	if err != nil {
@@ -141,12 +143,21 @@ func (s *OpsConnectorOAuthService) Start(
 	}
 	returnPath := normalizeOAuthReturnPath(input.ReturnPath)
 	clientID := ""
-	if provider == ops.ConnectorProviderHostinger {
+	switch provider {
+	case ops.ConnectorProviderHostinger:
 		clientID, err = s.hostingerClientID(ctx, *connector, redirectURI)
 		if err != nil {
 			return nil, err
 		}
-	} else {
+	case ops.ConnectorProviderGitHub:
+		clientID = strings.TrimSpace(os.Getenv("OPS_GITHUB_OAUTH_CLIENT_ID"))
+		if clientID == "" {
+			return nil, fmt.Errorf("%w: OPS_GITHUB_OAUTH_CLIENT_ID is required", ErrOpsConnectorOAuthNotConfigured)
+		}
+		if strings.TrimSpace(os.Getenv("OPS_GITHUB_OAUTH_CLIENT_SECRET")) == "" {
+			return nil, fmt.Errorf("%w: OPS_GITHUB_OAUTH_CLIENT_SECRET is required", ErrOpsConnectorOAuthNotConfigured)
+		}
+	default:
 		clientID = strings.TrimSpace(os.Getenv("OPS_CLOUDFLARE_OAUTH_CLIENT_ID"))
 		if clientID == "" {
 			return nil, fmt.Errorf("%w: OPS_CLOUDFLARE_OAUTH_CLIENT_ID is required", ErrOpsConnectorOAuthNotConfigured)
@@ -281,16 +292,65 @@ func (s *OpsConnectorOAuthService) Complete(
 		return fail(errors.New(message))
 	}
 
-	if session.Provider == ops.ConnectorProviderHostinger {
+	connectorLabel := connector.Name
+	switch session.Provider {
+	case ops.ConnectorProviderGitHub:
+		ghcrConnector, ghcrErr := s.resolveConnector(
+			ops.ConnectorProviderGHCR,
+			nil,
+			connector.Environment,
+		)
+		if ghcrErr != nil {
+			result.BindingWarnings = append(result.BindingWarnings,
+				fmt.Sprintf("GitHub connected, but GHCR connector could not be prepared: %v", ghcrErr),
+			)
+			break
+		}
+		ghcrCredentials, credentialsErr := s.connectorService.readCredentials(*ghcrConnector)
+		if credentialsErr != nil && strings.TrimSpace(ghcrConnector.CredentialsEncrypted) != "" {
+			result.BindingWarnings = append(result.BindingWarnings,
+				fmt.Sprintf("GitHub connected, but existing GHCR credentials could not be read: %v", credentialsErr),
+			)
+			break
+		}
+		if ghcrCredentials == nil {
+			ghcrCredentials = map[string]string{}
+		}
+		for key, value := range token {
+			if strings.TrimSpace(value) != "" {
+				ghcrCredentials[key] = value
+			}
+		}
+		ghcrCredentials["client_id"] = session.ClientID
+		if storeErr := s.storeOAuthCredentials(*ghcrConnector, ghcrCredentials); storeErr != nil {
+			result.BindingWarnings = append(result.BindingWarnings,
+				fmt.Sprintf("GitHub connected, but GHCR credentials could not be saved: %v", storeErr),
+			)
+			break
+		}
+		ghcrTest, ghcrTestErr := s.connectorService.Test(ctx, ghcrConnector.ID)
+		if ghcrTestErr != nil || ghcrTest == nil || !ghcrTest.Success {
+			message := "GHCR connector test failed"
+			if ghcrTest != nil && ghcrTest.Message != "" {
+				message += ": " + ghcrTest.Message
+			}
+			if ghcrTestErr != nil {
+				message += ": " + ghcrTestErr.Error()
+			}
+			result.BindingWarnings = append(result.BindingWarnings, message)
+			break
+		}
+		connectorLabel += " + " + ghcrConnector.Name
+	case ops.ConnectorProviderHostinger:
 		if err := s.bindHostinger(ctx, connector.ID, connector.Environment, result); err != nil {
 			return fail(err)
 		}
-	} else {
+	case ops.ConnectorProviderCloudflare:
 		if err := s.bindCloudflare(ctx, connector.ID, connector.Environment, result); err != nil {
 			return fail(err)
 		}
 	}
-	finalizeOAuthBindingResult(connector.Name, result)
+	finalizeOAuthBindingResult(connectorLabel, result)
 	return result, nil
 }
 
@@ -353,6 +413,16 @@ func (s *OpsConnectorOAuthService) resolveConnector(provider string, connectorID
 		name = "Hostinger " + oauthConnectorEnvironmentLabel(environment)
 		endpoint = hostingerAPIBaseURL + "/api/vps/v1/virtual-machines"
 		scopes = "vps:read,project:read"
+		authType = ops.ConnectorAuthBearer
+	} else if provider == ops.ConnectorProviderGitHub {
+		name = "GitHub " + oauthConnectorEnvironmentLabel(environment)
+		endpoint = "https://api.github.com/user"
+		scopes = githubOAuthScopes()
+		authType = ops.ConnectorAuthBearer
+	} else if provider == ops.ConnectorProviderGHCR {
+		name = "GHCR " + oauthConnectorEnvironmentLabel(environment)
+		endpoint = "https://api.github.com/user"
+		scopes = githubOAuthScopes()
 		authType = ops.ConnectorAuthBearer
 	}
 	created, err := s.connectorService.Create(OpsConnectorInput{
@@ -441,6 +511,12 @@ func (s *OpsConnectorOAuthService) buildAuthorizationURL(
 		}
 		return cloudflareOAuthAuthorizeURL + "?" + query.Encode(), nil
 	}
+	if provider == ops.ConnectorProviderGitHub {
+		if scopes := githubOAuthScopesFromConnector(connectorScopes); scopes != "" {
+			query.Set("scope", scopes)
+		}
+		return githubOAuthAuthorizeURL + "?" + query.Encode(), nil
+	}
 	return hostingerOAuthAuthorizeURL + "?" + query.Encode(), nil
 }
 
@@ -497,12 +573,19 @@ func (s *OpsConnectorOAuthService) exchangeCode(
 	endpoint := hostingerOAuthTokenURL
 	if provider == ops.ConnectorProviderCloudflare {
 		endpoint = cloudflareOAuthTokenURL
+	} else if provider == ops.ConnectorProviderGitHub {
+		endpoint = githubOAuthTokenURL
+		form.Set("client_secret", strings.TrimSpace(os.Getenv("OPS_GITHUB_OAUTH_CLIENT_SECRET")))
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, strings.NewReader(form.Encode()))
 	if err != nil {
 		return nil, fmt.Errorf("%w: create token request", ErrOpsConnectorOAuthExchange)
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	if provider == ops.ConnectorProviderGitHub {
+		req.Header.Set("Accept", "application/json")
+		req.Header.Set("User-Agent", "tanzanite-ops-github-oauth/1.0")
+	}
 	if provider == ops.ConnectorProviderCloudflare {
 		if secret := strings.TrimSpace(os.Getenv("OPS_CLOUDFLARE_OAUTH_CLIENT_SECRET")); secret != "" {
 			req.SetBasicAuth(clientID, secret)
@@ -569,12 +652,19 @@ func refreshConnectorOAuthToken(ctx context.Context, provider string, credential
 	endpoint := hostingerOAuthTokenURL
 	if provider == ops.ConnectorProviderCloudflare {
 		endpoint = cloudflareOAuthTokenURL
+	} else if provider == ops.ConnectorProviderGitHub {
+		endpoint = githubOAuthTokenURL
+		form.Set("client_secret", strings.TrimSpace(os.Getenv("OPS_GITHUB_OAUTH_CLIENT_SECRET")))
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, strings.NewReader(form.Encode()))
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	if provider == ops.ConnectorProviderGitHub {
+		req.Header.Set("Accept", "application/json")
+		req.Header.Set("User-Agent", "tanzanite-ops-github-oauth-refresh/1.0")
+	}
 	if provider == ops.ConnectorProviderCloudflare {
 		if secret := strings.TrimSpace(os.Getenv("OPS_CLOUDFLARE_OAUTH_CLIENT_SECRET")); secret != "" {
 			req.SetBasicAuth(clientID, secret)
@@ -911,6 +1001,8 @@ func normalizeOAuthProvider(value string) string {
 		return ops.ConnectorProviderCloudflare
 	case ops.ConnectorProviderHostinger:
 		return ops.ConnectorProviderHostinger
+	case ops.ConnectorProviderGitHub:
+		return ops.ConnectorProviderGitHub
 	default:
 		return ""
 	}
@@ -940,6 +1032,27 @@ func cloudflareOAuthScopesFromConnector(value string) string {
 	return strings.Join(strings.FieldsFunc(value, func(r rune) bool {
 		return r == ',' || r == '\n' || r == '\r' || r == '\t'
 	}), " ")
+}
+
+func githubOAuthScopes() string {
+	value := strings.TrimSpace(os.Getenv("OPS_GITHUB_OAUTH_SCOPES"))
+	if value == "" {
+		return "read:user user:email repo read:packages"
+	}
+	return normalizeGitHubOAuthScopes(value)
+}
+
+func githubOAuthScopesFromConnector(value string) string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return githubOAuthScopes()
+	}
+	return normalizeGitHubOAuthScopes(value)
+}
+
+func normalizeGitHubOAuthScopes(value string) string {
+	value = strings.NewReplacer(",", " ", "\n", " ", "\r", " ", "\t", " ").Replace(value)
+	return strings.Join(strings.Fields(value), " ")
 }
 
 func randomOAuthString(size int) (string, error) {

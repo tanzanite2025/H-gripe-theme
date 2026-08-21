@@ -11,28 +11,35 @@
           {{ t('wheelsetSelectionAssistant.states.retry') }}
         </button>
       </div>
-      <WheelsetSelectionAssistantOutcomePanel
-        v-else-if="assistant.isComplete.value && assistant.currentNode.value"
-        :prompt="localizedNodePrompt"
-        :helper="localizedNodeHelper"
-        :can-go-back="assistant.canGoBack.value"
-        @back="assistant.goBack"
-        @contact-support="handleContactSupport"
-      />
-      <WheelsetSelectionQuestionPanel
-        v-else-if="assistant.currentQuestion.value"
-        :question="assistant.currentQuestion.value"
-        :can-go-back="assistant.canGoBack.value"
-        @select="assistant.selectOption"
-        @back="assistant.goBack"
+      <Transition
+        v-else
+        name="wheelset-selection-assistant-question"
+        mode="out-in"
+        @after-enter="handleQuestionTransitionFinished"
       >
-        <template #after-options>
-          <WheelsetSelectionSupportCta @contact-support="handleContactSupport" />
-        </template>
-      </WheelsetSelectionQuestionPanel>
-      <div v-else class="wheelset-selection-assistant-flow__state">
-        <span>{{ t('wheelsetSelectionAssistant.states.empty') }}</span>
-      </div>
+        <WheelsetSelectionAssistantOutcomePanel
+          v-if="assistant.isComplete.value && assistant.currentNode.value"
+          key="outcome"
+          :prompt="localizedNodePrompt"
+          :helper="localizedNodeHelper"
+          :can-go-back="assistant.canGoBack.value"
+          @back="assistant.goBack"
+          @contact-support="handleContactSupport"
+        />
+        <WheelsetSelectionQuestionPanel
+          v-else-if="assistant.currentQuestion.value"
+          :key="assistant.currentQuestion.value.key"
+          :question="assistant.currentQuestion.value"
+          :selected-value="selectedQuestionOptionKey"
+          :can-go-back="assistant.canGoBack.value"
+          :is-selecting="isQuestionTransitioning"
+          @select="handleQuestionSelect"
+          @back="assistant.goBack"
+        />
+        <div v-else key="empty" class="wheelset-selection-assistant-flow__state">
+          <span>{{ t('wheelsetSelectionAssistant.states.empty') }}</span>
+        </div>
+      </Transition>
     </template>
 
     <template #results>
@@ -40,25 +47,27 @@
         :category-slug="assistant.productQuery.value.category_slug"
         :selected-label="selectedAnswerLabel"
         :products="products.products.value"
+        :total="products.total.value"
         :loading="products.loading.value"
         :error="products.error.value"
         :page="products.page.value"
         :has-more="products.hasMore.value"
         @previous-page="products.setPage(products.page.value - 1)"
         @next-page="products.setPage(products.page.value + 1)"
+        @retry="products.reload"
       />
     </template>
   </WheelsetSelectionAssistantTwoColumnLayout>
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, watchEffect } from 'vue'
+import { computed, onBeforeUnmount, ref, watchEffect } from 'vue'
 import { useI18n } from '#imports'
 import WheelsetSelectionAssistantTwoColumnLayout from '~/components/wheelset-selection/WheelsetSelectionAssistantTwoColumnLayout.vue'
 import WheelsetSelectionAssistantOutcomePanel from '~/components/wheelset-selection/WheelsetSelectionAssistantOutcomePanel.vue'
 import WheelsetSelectionProductResultsPanel from '~/components/wheelset-selection/WheelsetSelectionProductResultsPanel.vue'
 import WheelsetSelectionQuestionPanel from '~/components/wheelset-selection/WheelsetSelectionQuestionPanel.vue'
-import WheelsetSelectionSupportCta from '~/components/wheelset-selection/WheelsetSelectionSupportCta.vue'
+import { useWheelsetSelectionAssistantHelp } from '~/composables/useWheelsetSelectionAssistantHelp'
 import { useWheelsetSelectionAssistantQuestionPagination } from '~/composables/useWheelsetSelectionAssistantQuestionPagination'
 import {
   type WheelsetSelectionAssistantSource,
@@ -81,7 +90,11 @@ const emit = defineEmits<{
 const { t, locale } = useI18n()
 const assistant = useWheelsetSelectionAssistant()
 const products = useWheelsetSelectionProducts(assistant.productQuery)
+const assistantHelp = useWheelsetSelectionAssistantHelp()
 const questionPagination = useWheelsetSelectionAssistantQuestionPagination()
+const selectedQuestionOptionKey = ref<string | undefined>()
+const isQuestionTransitioning = ref(false)
+let pendingQuestionSelectionTimer: ReturnType<typeof setTimeout> | null = null
 
 const selectedAnswerLabel = computed(() => (
   assistant.path.value.map(entry => entry.label).join(' / ')
@@ -100,6 +113,22 @@ const localizedNodePrompt = computed(() => (
     || t('wheelsetSelectionAssistant.outcome.fallbackTitle')
 ))
 const localizedNodeHelper = computed(() => localizedGraphText(assistant.currentNode.value?.helper))
+
+const handleQuestionSelect = (optionKey: string) => {
+  if (isQuestionTransitioning.value) return
+
+  selectedQuestionOptionKey.value = optionKey
+  isQuestionTransitioning.value = true
+  pendingQuestionSelectionTimer = setTimeout(() => {
+    pendingQuestionSelectionTimer = null
+    assistant.selectOption(optionKey)
+    selectedQuestionOptionKey.value = undefined
+  }, 260)
+}
+
+const handleQuestionTransitionFinished = () => {
+  isQuestionTransitioning.value = false
+}
 
 const orderedQuestionNodeKeys = computed(() => (
   (assistant.config.value?.nodes || [])
@@ -138,15 +167,19 @@ const jumpToQuestionIndex = (questionIndex: number) => {
   const targetQuestionKey = orderedQuestionNodeKeys.value[normalizedQuestionIndex]
   if (!targetQuestionKey) return
 
-  if (normalizedQuestionIndex <= assistant.path.value.length) {
-    assistant.jumpToPathIndex(normalizedQuestionIndex)
-    return
-  }
-
-  assistant.currentNodeKey.value = targetQuestionKey
+  if (normalizedQuestionIndex > reachableQuestionIndex.value) return
+  assistant.jumpToPathIndex(normalizedQuestionIndex)
 }
 
 watchEffect(() => {
+  if (assistantHelp) {
+    const question = assistant.currentQuestion.value
+    assistantHelp.setHelp({
+      title: question?.helpTitle || t('quickBuy.help.title', 'Help'),
+      content: question?.helpBody || '',
+    })
+  }
+
   if (!questionPagination) return
 
   questionPagination.total.value = orderedQuestionNodeKeys.value.length
@@ -156,6 +189,13 @@ watchEffect(() => {
 })
 
 onBeforeUnmount(() => {
+  if (pendingQuestionSelectionTimer) {
+    clearTimeout(pendingQuestionSelectionTimer)
+    pendingQuestionSelectionTimer = null
+  }
+
+  assistantHelp?.clearHelp()
+
   if (!questionPagination) return
 
   questionPagination.total.value = 0
@@ -206,5 +246,35 @@ const handleContactSupport = () => {
   color: #101014;
   font-size: 0.8rem;
   font-weight: 800;
+}
+
+.wheelset-selection-assistant-question-enter-active,
+.wheelset-selection-assistant-question-leave-active {
+  transition:
+    opacity 260ms ease,
+    transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+
+.wheelset-selection-assistant-question-enter-from {
+  opacity: 0;
+  transform: translateX(1.5rem);
+}
+
+.wheelset-selection-assistant-question-leave-to {
+  opacity: 0;
+  transform: translateX(-1.5rem);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wheelset-selection-assistant-question-enter-active,
+  .wheelset-selection-assistant-question-leave-active {
+    transition: opacity 120ms ease;
+  }
+
+  .wheelset-selection-assistant-question-enter-from,
+  .wheelset-selection-assistant-question-leave-to {
+    transform: none;
+  }
 }
 </style>

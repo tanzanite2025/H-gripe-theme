@@ -78,9 +78,11 @@ func TestServiceCenterHandlerOverviewIncludesProviders(t *testing.T) {
 	}
 	require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &body))
 	require.Equal(t, 0, body.Code)
-	require.Len(t, body.Data.Providers, 2)
+	require.Len(t, body.Data.Providers, 4)
 	require.Equal(t, serviceProviderCloudflare, body.Data.Providers[0].ID)
 	require.Equal(t, 2, body.Data.Providers[0].ResourceCount)
+	require.Equal(t, "github", body.Data.Providers[2].ID)
+	require.Equal(t, 1, body.Data.Providers[2].ResourceCount)
 	require.Equal(t, 1, body.Data.Network.Summary.ExplicitRuleCount)
 	require.Equal(t, 2, body.Data.Network.Summary.InferredItemCount)
 	require.Equal(t, 1, body.Data.Network.Summary.VPSCount)
@@ -119,6 +121,23 @@ func newServiceCenterTestHandler(t *testing.T) *ServiceCenterHandler {
 		Status:      ops.ConnectorStatusPending,
 		Enabled:     true,
 	}).Error)
+	githubConnector := &ops.Connector{
+		Name:        "GitHub Production",
+		Provider:    ops.ConnectorProviderGitHub,
+		Environment: ops.ConnectorEnvironmentProduction,
+		AuthType:    ops.ConnectorAuthBearer,
+		Status:      ops.ConnectorStatusActive,
+		Enabled:     true,
+	}
+	require.NoError(t, db.Create(githubConnector).Error)
+	require.NoError(t, db.Create(&ops.Connector{
+		Name:        "GHCR Production",
+		Provider:    ops.ConnectorProviderGHCR,
+		Environment: ops.ConnectorEnvironmentProduction,
+		AuthType:    ops.ConnectorAuthBearer,
+		Status:      ops.ConnectorStatusPending,
+		Enabled:     true,
+	}).Error)
 	vps := &ops.VPSBinding{
 		Name:        "Hostinger Production VPS",
 		Provider:    ops.VPSProviderHostinger,
@@ -130,6 +149,7 @@ func newServiceCenterTestHandler(t *testing.T) *ServiceCenterHandler {
 	project := &ops.ProjectBinding{
 		Name:         "commerce-platform",
 		VPSBindingID: vps.ID,
+		ConnectorID:  &githubConnector.ID,
 		Environment:  ops.ProjectEnvironmentProduction,
 		Status:       ops.ProjectStatusActive,
 		HealthStatus: ops.ProjectHealthUnknown,
@@ -190,6 +210,13 @@ func newServiceCenterTestHandler(t *testing.T) *ServiceCenterHandler {
 		repository.NewOpsProjectBindingRepository(db),
 		repository.NewOpsDomainBindingRepository(db),
 		repository.NewOpsConnectorRepository(db),
+	))
+	handler.ConfigureOpsOverviewService(service.NewOpsOverviewService(
+		repository.NewOpsDomainBindingRepository(db),
+		repository.NewOpsConnectorRepository(db),
+		repository.NewOpsVPSBindingRepository(db),
+		repository.NewOpsProjectBindingRepository(db),
+		nil,
 	))
 	return handler
 }

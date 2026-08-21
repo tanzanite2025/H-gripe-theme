@@ -493,6 +493,7 @@ func setDefaults() {
 		"X-Display-Currency",
 		"X-Market-Country",
 		"X-Country-Code",
+		"X-Device-Fingerprint",
 		"X-Request-Timestamp",
 		"X-Request-Nonce",
 		"X-Request-Signature",

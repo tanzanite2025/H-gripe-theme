@@ -1,6 +1,9 @@
 <template>
-  <div class="wheelset-selection-product-results-panel">
-    <header class="wheelset-selection-product-results-panel__header">
+  <div
+    class="wheelset-selection-product-results-panel"
+    :class="{ 'wheelset-selection-product-results-panel--mobile-expanded': isMobileResultsExpanded }"
+  >
+    <header class="wheelset-selection-product-results-panel__header wheelset-selection-product-results-panel__header--desktop">
       <div class="min-w-0">
         <span>{{ categorySlug }}</span>
         <h3>{{ t('wheelsetSelectionAssistant.results.title') }}</h3>
@@ -8,70 +11,109 @@
       <strong v-if="selectedLabel" class="truncate">{{ selectedLabel }}</strong>
     </header>
 
-    <div v-if="loading" class="wheelset-selection-product-results-panel__state">
-      <Icon name="lucide:loader-circle" class="h-5 w-5 animate-spin" />
-      <span>{{ t('wheelsetSelectionAssistant.results.loading') }}</span>
-    </div>
-    <div v-else-if="error" class="wheelset-selection-product-results-panel__state wheelset-selection-product-results-panel__state--error">
-      {{ error }}
-    </div>
-    <div v-else-if="products.length === 0" class="wheelset-selection-product-results-panel__state">
-      <span>{{ t('wheelsetSelectionAssistant.results.empty') }}</span>
-    </div>
-    <div v-else class="wheelset-selection-product-results-panel__grid">
-      <article
-        v-for="product in products"
-        :key="product.id"
-        class="wheelset-selection-product-results-panel__card"
-      >
-        <div class="wheelset-selection-product-results-panel__media">
-          <StorefrontImage v-if="product.thumbnail" :src="product.thumbnail" :alt="product.title" preset="card" />
-          <Icon v-else name="lucide:circle-dashed" class="h-7 w-7" />
-        </div>
-        <div class="wheelset-selection-product-results-panel__title">{{ product.title }}</div>
-        <div class="wheelset-selection-product-results-panel__price">
-          {{ product.displayPriceLabel || product.priceLabel }}
-        </div>
-      </article>
-    </div>
-
-    <nav
-      class="wheelset-selection-product-results-panel__pagination"
-      :aria-label="t('wheelsetSelectionAssistant.results.pagination')"
+    <button
+      type="button"
+      class="wheelset-selection-product-results-panel__mobile-toggle"
+      :aria-expanded="isMobileResultsExpanded"
+      :aria-controls="mobileResultsContentId"
+      @click="toggleMobileResults"
     >
-      <button
-        type="button"
-        class="tz-directional-arrow tz-directional-arrow--small"
-        :aria-label="t('wheelsetSelectionAssistant.results.previousPage')"
-        :disabled="page <= 1 || loading"
-        @click="emit('previousPage')"
-      >
-        <Icon name="lucide:chevron-left" aria-hidden="true" />
-      </button>
-      <span class="wheelset-selection-product-results-panel__page wheelset-selection-product-results-panel__page--active">
-        {{ page }}
+      <span class="wheelset-selection-product-results-panel__mobile-toggle-copy">
+        <span>{{ categorySlug }}</span>
+        <strong>{{ t('wheelsetSelectionAssistant.results.title') }}</strong>
       </span>
-      <button
-        type="button"
-        class="tz-directional-arrow tz-directional-arrow--small"
-        :aria-label="t('wheelsetSelectionAssistant.results.nextPage')"
-        :disabled="!hasMore || loading"
-        @click="emit('nextPage')"
+      <span class="wheelset-selection-product-results-panel__mobile-toggle-meta">
+        <span class="wheelset-selection-product-results-panel__count">
+          {{ matchingProductCount }}
+        </span>
+        <Icon
+          name="lucide:chevron-down"
+          class="wheelset-selection-product-results-panel__toggle-icon"
+          aria-hidden="true"
+        />
+      </span>
+    </button>
+
+    <div
+      :id="mobileResultsContentId"
+      class="wheelset-selection-product-results-panel__content"
+      :class="{ 'wheelset-selection-product-results-panel__content--collapsed': !isMobileResultsExpanded }"
+    >
+      <div v-if="loading" class="wheelset-selection-product-results-panel__state">
+        <Icon name="lucide:loader-circle" class="h-5 w-5 animate-spin" />
+        <span>{{ t('wheelsetSelectionAssistant.results.loading') }}</span>
+      </div>
+      <div v-else-if="error" class="wheelset-selection-product-results-panel__state wheelset-selection-product-results-panel__state--error">
+        <span>{{ error }}</span>
+        <button
+          type="button"
+          class="wheelset-selection-product-results-panel__retry"
+          @click="emit('retry')"
+        >
+          {{ t('wheelsetSelectionAssistant.states.retry') }}
+        </button>
+      </div>
+      <div v-else-if="products.length === 0" class="wheelset-selection-product-results-panel__state">
+        <span>{{ t('wheelsetSelectionAssistant.results.empty') }}</span>
+      </div>
+      <div v-else class="wheelset-selection-product-results-panel__grid">
+        <article
+          v-for="product in products"
+          :key="product.id"
+          class="wheelset-selection-product-results-panel__card"
+        >
+          <div class="wheelset-selection-product-results-panel__media">
+            <StorefrontImage v-if="product.thumbnail" :src="product.thumbnail" :alt="product.title" preset="card" />
+            <Icon v-else name="lucide:circle-dashed" class="h-7 w-7" />
+          </div>
+          <div class="wheelset-selection-product-results-panel__title">{{ product.title }}</div>
+          <div class="wheelset-selection-product-results-panel__price">
+            {{ product.displayPriceLabel || product.priceLabel }}
+          </div>
+        </article>
+      </div>
+
+      <nav
+        class="wheelset-selection-product-results-panel__pagination"
+        :aria-label="t('wheelsetSelectionAssistant.results.pagination')"
       >
-        <Icon name="lucide:chevron-right" aria-hidden="true" />
-      </button>
-    </nav>
+        <button
+          type="button"
+          class="tz-directional-arrow tz-directional-arrow--small"
+          :aria-label="t('wheelsetSelectionAssistant.results.previousPage')"
+          :disabled="page <= 1 || loading"
+          @click="emit('previousPage')"
+        >
+          <Icon name="lucide:chevron-left" aria-hidden="true" />
+        </button>
+        <span class="wheelset-selection-product-results-panel__page wheelset-selection-product-results-panel__page--active">
+          {{ page }}
+        </span>
+        <button
+          type="button"
+          class="tz-directional-arrow tz-directional-arrow--small"
+          :aria-label="t('wheelsetSelectionAssistant.results.nextPage')"
+          :disabled="!hasMore || loading"
+          @click="emit('nextPage')"
+        >
+          <Icon name="lucide:chevron-right" aria-hidden="true" />
+        </button>
+      </nav>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { computed, ref } from 'vue'
 import { useI18n } from '#imports'
+import { useWheelsetSelectionAccordion } from '~/composables/useWheelsetSelectionAccordion'
 import type { ShopProduct } from '~/composables/useShopProducts'
 
-defineProps<{
+const props = defineProps<{
   categorySlug: string
   selectedLabel?: string
   products: ShopProduct[]
+  total?: number
   loading: boolean
   error?: string | null
   page: number
@@ -81,18 +123,48 @@ defineProps<{
 const emit = defineEmits<{
   previousPage: []
   nextPage: []
+  retry: []
 }>()
 
 const { t } = useI18n()
+const accordion = useWheelsetSelectionAccordion()
+const localMobileResultsExpanded = ref(false)
+const isMobileResultsExpanded = computed(() => (
+  accordion?.isExpanded('results').value ?? localMobileResultsExpanded.value
+))
+const mobileResultsContentId = 'wheelset-selection-results-content'
+const matchingProductCount = computed(() => Math.max(0, Number(props.total ?? props.products.length)))
+
+const toggleMobileResults = () => {
+  if (accordion) {
+    accordion.toggle('results')
+    return
+  }
+
+  localMobileResultsExpanded.value = !localMobileResultsExpanded.value
+}
 </script>
 
 <style scoped>
 .wheelset-selection-product-results-panel {
   display: flex;
+  height: 100%;
   min-height: 100%;
   flex-direction: column;
   gap: 0.75rem;
   padding: 0.85rem;
+}
+
+.wheelset-selection-product-results-panel__content {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.wheelset-selection-product-results-panel__mobile-toggle {
+  display: none;
 }
 
 .wheelset-selection-product-results-panel__header {
@@ -191,6 +263,16 @@ const { t } = useI18n()
   color: #fca5a5;
 }
 
+.wheelset-selection-product-results-panel__retry {
+  min-height: 2.25rem;
+  border-radius: 0.65rem;
+  background: var(--tz-brand-primary, #b5ff6d);
+  padding: 0 0.9rem;
+  color: #101014;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
 .wheelset-selection-product-results-panel__pagination {
   display: flex;
   min-height: 2.25rem;
@@ -221,6 +303,89 @@ const { t } = useI18n()
 }
 
 @media (max-width: 767px) {
+  .wheelset-selection-product-results-panel {
+    min-height: 0;
+    padding: 0.75rem;
+  }
+
+  .wheelset-selection-product-results-panel__header--desktop {
+    display: none;
+  }
+
+  .wheelset-selection-product-results-panel__mobile-toggle {
+    display: flex;
+    width: 100%;
+    min-height: 3.25rem;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    border: 1px solid var(--quickbuy-divider-strong, rgba(255, 255, 255, 0.12));
+    border-radius: 0.75rem;
+    background: var(--quickbuy-panel-surface-raised, #22242c);
+    padding: 0.65rem 0.75rem;
+    text-align: left;
+  }
+
+  .wheelset-selection-product-results-panel__mobile-toggle-copy {
+    display: grid;
+    min-width: 0;
+    gap: 0.2rem;
+  }
+
+  .wheelset-selection-product-results-panel__mobile-toggle-copy span {
+    overflow: hidden;
+    color: var(--tz-brand-primary, #b5ff6d);
+    font-size: 0.63rem;
+    font-weight: 850;
+    letter-spacing: 0.12em;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .wheelset-selection-product-results-panel__mobile-toggle-copy strong {
+    overflow: hidden;
+    color: var(--tz-text-primary, #f8fafc);
+    font-size: 0.95rem;
+    font-weight: 800;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .wheelset-selection-product-results-panel__mobile-toggle-meta {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .wheelset-selection-product-results-panel__count {
+    display: inline-flex;
+    min-width: 1.75rem;
+    height: 1.75rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: var(--tz-brand-primary, #b5ff6d);
+    color: #101014;
+    font-size: 0.75rem;
+    font-weight: 850;
+  }
+
+  .wheelset-selection-product-results-panel__toggle-icon {
+    color: var(--tz-text-secondary, #cbd5e1);
+    transition: transform 160ms ease;
+  }
+
+  .wheelset-selection-product-results-panel--mobile-expanded
+    .wheelset-selection-product-results-panel__toggle-icon {
+    transform: rotate(180deg);
+  }
+
+  .wheelset-selection-product-results-panel__content--collapsed {
+    display: none;
+  }
+
   .wheelset-selection-product-results-panel__grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     grid-template-rows: repeat(6, minmax(0, 1fr));

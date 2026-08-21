@@ -10,14 +10,9 @@
           class="h-9 rounded-md border bg-background px-3 text-sm"
           aria-label="筛选项目环境"
           :disabled="loading"
-          @change="changeEnvironment"
-        >
-          <option value="production">生产</option>
-          <option value="staging">预发布</option>
-          <option value="test">测试</option>
-          <option value="local">本地</option>
-          <option value="">全部环境</option>
-        </select>
+          :options="opsProjectEnvironmentOptions"
+          @update:model-value="changeEnvironment"
+        />
         <Button variant="outline" :disabled="loading" @click="refreshProjectsPage">
  <RefreshCw :class="['size-4', loading ? 'animate-spin': '']" />
           刷新
@@ -29,24 +24,7 @@
       </template>
     </AdminPageHeader>
 
-    <section class="grid gap-3 md:grid-cols-4">
-      <div class="rounded-2xl border border-dashed border-border/80 bg-card p-3">
-        <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">已登记项目</p>
-        <p class="mt-2 text-2xl font-black">{{ projects.length }}</p>
-      </div>
-      <div class="rounded-2xl border border-dashed border-border/80 bg-card p-3">
-        <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">当前启用</p>
-        <p class="mt-2 text-2xl font-black text-emerald-600">{{ enabledCount }}</p>
-      </div>
-      <div class="rounded-2xl border border-dashed border-border/80 bg-card p-3">
-        <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">健康状态</p>
-        <p class="mt-2 text-2xl font-black text-primary">{{ healthyCount }}</p>
-      </div>
-      <div class="rounded-2xl border border-dashed border-border/80 bg-card p-3">
-        <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">需处理状态</p>
-        <p class="mt-2 text-2xl font-black text-amber-600">{{ attentionCount }}</p>
-      </div>
-    </section>
+    <OpsSummaryCards :items="summaryCards" />
 
     <AdminTablePanel :loading="loading" :batch-visible="false">
       <Table class="min-w-[1480px]">
@@ -183,6 +161,8 @@ import { LoaderCircle, Pencil, Plus, Power, RefreshCw } from '@lucide/vue'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import AdminStatusBadge, { type AdminStatusTone } from '@/components/admin/AdminStatusBadge.vue'
 import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
+import OpsEnvironmentSelect from '@/components/admin/ops/OpsEnvironmentSelect.vue'
+import OpsSummaryCards, { type OpsSummaryCardItem } from '@/components/admin/ops/OpsSummaryCards.vue'
 import OpsProjectBindingFormDialog from '@/components/admin/ops/OpsProjectBindingFormDialog.vue'
 import {
   assignOpsProjectForm,
@@ -228,6 +208,12 @@ const attentionCount = computed(() => projects.value.filter((project) => (
   ['pending', 'drifted', 'error'].includes(project.status) ||
   ['degraded', 'offline'].includes(project.health_status)
 )).length)
+const summaryCards = computed<readonly OpsSummaryCardItem[]>(() => [
+  { key: 'projects', label: '已登记项目', value: projects.value.length, detail: `当前启用 ${enabledCount.value}` },
+  { key: 'enabled', label: '当前启用', value: enabledCount.value, detail: `共 ${projects.value.length} 个项目`, tone: 'green' },
+  { key: 'healthy', label: '健康状态', value: healthyCount.value, detail: `待检查 ${Math.max(projects.value.length - healthyCount.value, 0)}`, tone: 'primary' },
+  { key: 'attention', label: '需处理状态', value: attentionCount.value, detail: '期望状态或实际状态异常', tone: 'amber' },
+])
 
 const assignForm = (project?: Partial<OpsProject>): void => {
   assignOpsProjectForm(form, project)

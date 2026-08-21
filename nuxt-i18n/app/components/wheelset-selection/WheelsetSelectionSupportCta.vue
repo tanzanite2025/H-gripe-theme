@@ -33,7 +33,7 @@ const props = withDefaults(defineProps<{
 const { t } = useI18n()
 const title = computed(() => props.title || t(
   'wheelsetSelectionAssistant.support.title',
-  'Need help choosing?',
+  'Contact support directly',
 ))
 const description = computed(() => props.description || t(
   'wheelsetSelectionAssistant.support.description',
@@ -51,16 +51,22 @@ const emit = defineEmits<{
 
 <style scoped>
 .wheelset-selection-support-cta {
-  display: grid;
+  display: flex;
+  width: 100%;
+  box-sizing: border-box;
+  flex: 0 0 auto;
+  align-items: center;
   gap: 0.75rem;
-  margin-top: auto;
+  margin-top: 0;
   border-radius: 0.75rem;
-  background: rgba(255, 255, 255, 0.045);
+  background: var(--quickbuy-panel-surface-soft, #16171d);
   padding: 0.875rem;
 }
 
 .wheelset-selection-support-cta__copy {
   display: grid;
+  min-width: 0;
+  flex: 1 1 auto;
   gap: 0.25rem;
 }
 
@@ -78,21 +84,29 @@ const emit = defineEmits<{
 
 .wheelset-selection-support-cta__button {
   display: inline-flex;
+  flex: 0 0 auto;
   min-height: 2.5rem;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
   border-radius: 0.75rem;
-  background: var(--tz-brand-primary, #b5ff6d);
+  background: #ffffff;
   padding: 0 0.875rem;
   color: #101014;
   font-size: 0.875rem;
   font-weight: 800;
-  transition: background 160ms ease, transform 160ms ease;
+  white-space: nowrap;
+  transition: background 160ms ease;
 }
 
 .wheelset-selection-support-cta__button:hover {
-  background: var(--tz-brand-primary-hover, #c8ff91);
-  transform: translateY(-1px);
+  background: #f1f5f9;
 }
+
+@media (max-width: 767px) {
+  .wheelset-selection-support-cta__copy p {
+    display: none;
+  }
+}
+
 </style>

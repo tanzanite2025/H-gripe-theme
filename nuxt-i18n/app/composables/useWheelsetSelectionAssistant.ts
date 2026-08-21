@@ -14,6 +14,7 @@ import {
   WHEELSET_SELECTION_ASSISTANT_SLUG,
 } from '~/types/wheelsetSelectionAssistant'
 import { normalizeStorefrontLocaleCode } from '~/utils/storefrontLocales'
+import { toUserFacingApiError } from '~/utils/storefrontApiFailures'
 
 interface AssistantSelectionState {
   nodeKey: string
@@ -59,7 +60,7 @@ export const useWheelsetSelectionAssistant = (
   flowSlug = WHEELSET_SELECTION_ASSISTANT_SLUG,
 ) => {
   const config = useRuntimeConfig()
-  const { locale } = useI18n()
+  const { locale, t } = useI18n()
   const publicBaseURL = ((config.public as { apiBase?: string }).apiBase || '/api/v1').replace(/\/$/, '')
   const flow = ref<WheelsetSelectionAssistantFlow | null>(null)
   const loading = ref(false)
@@ -187,10 +188,6 @@ export const useWheelsetSelectionAssistant = (
       Math.min(Number.isFinite(targetIndex) ? Math.trunc(targetIndex) : 0, path.value.length),
     )
 
-    if (normalizedTargetIndex === path.value.length) {
-      return
-    }
-
     path.value = path.value.slice(0, normalizedTargetIndex)
     rebuildFromPath()
   }
@@ -214,7 +211,13 @@ export const useWheelsetSelectionAssistant = (
     } catch (cause: any) {
       flow.value = null
       currentNodeKey.value = ''
-      error.value = cause?.data?.message || cause?.message || 'Unable to load the wheelset selection assistant.'
+      error.value = toUserFacingApiError(
+        cause,
+        t(
+          'wheelsetSelectionAssistant.states.unavailable',
+          'The fit service is temporarily unavailable. Please try again.',
+        ),
+      )
     } finally {
       loading.value = false
     }

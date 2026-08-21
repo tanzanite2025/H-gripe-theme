@@ -1,6 +1,9 @@
 package service
 
 import (
+	"net/url"
+	"os"
+	"strings"
 	"testing"
 
 	"commerce-platform/internal/domain/ops"
@@ -62,6 +65,61 @@ func TestNormalizeOAuthConnectorEnvironment(t *testing.T) {
 	}
 }
 
+func TestNormalizeOAuthProviderSupportsGitHub(t *testing.T) {
+	if got := normalizeOAuthProvider(" GitHub "); got != ops.ConnectorProviderGitHub {
+		t.Fatalf("normalizeOAuthProvider(GitHub) = %q, want %q", got, ops.ConnectorProviderGitHub)
+	}
+	if got := normalizeOAuthProvider("ghcr"); got != "" {
+		t.Fatalf("normalizeOAuthProvider(ghcr) = %q, want empty provider", got)
+	}
+}
+
+func TestGitHubOAuthScopesUseConfiguredValue(t *testing.T) {
+	previous := os.Getenv("OPS_GITHUB_OAUTH_SCOPES")
+	t.Cleanup(func() {
+		_ = os.Setenv("OPS_GITHUB_OAUTH_SCOPES", previous)
+	})
+	_ = os.Setenv("OPS_GITHUB_OAUTH_SCOPES", "read:user, user:email\nrepo")
+
+	if got := githubOAuthScopes(); got != "read:user user:email repo" {
+		t.Fatalf("githubOAuthScopes() = %q, want normalized configured scopes", got)
+	}
+	if got := githubOAuthScopesFromConnector(""); got != "read:user user:email repo" {
+		t.Fatalf("githubOAuthScopesFromConnector(empty) = %q, want configured scopes", got)
+	}
+}
+
+func TestBuildGitHubAuthorizationURL(t *testing.T) {
+	oauthService := &OpsConnectorOAuthService{}
+	authorizationURL, err := oauthService.buildAuthorizationURL(
+		ops.ConnectorProviderGitHub,
+		"client-id",
+		"https://ops.example.com/api/admin/ops/connectors/oauth/callback",
+		"oauth-state",
+		"pkce-challenge",
+		"read:user,repo",
+	)
+	if err != nil {
+		t.Fatalf("buildGitHubAuthorizationURL returned error: %v", err)
+	}
+	parsed, err := url.Parse(authorizationURL)
+	if err != nil {
+		t.Fatalf("parse GitHub authorization URL: %v", err)
+	}
+	if parsed.Scheme != "https" || parsed.Host != "github.com" || parsed.Path != "/login/oauth/authorize" {
+		t.Fatalf("authorization URL = %q, want GitHub authorize endpoint", authorizationURL)
+	}
+	query := parsed.Query()
+	if query.Get("client_id") != "client-id" ||
+		query.Get("redirect_uri") != "https://ops.example.com/api/admin/ops/connectors/oauth/callback" ||
+		query.Get("state") != "oauth-state" ||
+		query.Get("code_challenge") != "pkce-challenge" ||
+		query.Get("code_challenge_method") != "S256" ||
+		query.Get("scope") != "read:user repo" {
+		t.Fatalf("authorization query = %v, want GitHub OAuth parameters", query)
+	}
+}
+
 func TestOAuthResolveConnectorUsesRequestedEnvironment(t *testing.T) {
 	connectorService, connectorRepo := newOpsConnectorTestService(t)
 	oauthService := &OpsConnectorOAuthService{
@@ -82,6 +140,33 @@ func TestOAuthResolveConnectorUsesRequestedEnvironment(t *testing.T) {
 	}
 	if connector.Name != "Cloudflare Staging" {
 		t.Fatalf("connector name = %q, want Cloudflare Staging", connector.Name)
+	}
+
+	github, err := oauthService.resolveConnector(
+		ops.ConnectorProviderGitHub,
+		nil,
+		ops.ConnectorEnvironmentProduction,
+	)
+	if err != nil {
+		t.Fatalf("resolveConnector GitHub returned error: %v", err)
+	}
+	if github.Name != "GitHub Production" || github.Endpoint != "https://api.github.com/user" {
+		t.Fatalf("GitHub connector = %#v, want default GitHub connector", github)
+	}
+	if !strings.Contains(github.Scopes, "read:packages") {
+		t.Fatalf("GitHub connector scopes = %q, want read:packages", github.Scopes)
+	}
+
+	ghcr, err := oauthService.resolveConnector(
+		ops.ConnectorProviderGHCR,
+		nil,
+		ops.ConnectorEnvironmentProduction,
+	)
+	if err != nil {
+		t.Fatalf("resolveConnector GHCR returned error: %v", err)
+	}
+	if ghcr.Name != "GHCR Production" || ghcr.Endpoint != "https://api.github.com/user" {
+		t.Fatalf("GHCR connector = %#v, want default GHCR connector", ghcr)
 	}
 
 	production := &ops.Connector{

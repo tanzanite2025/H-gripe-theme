@@ -1,8 +1,8 @@
 <template>
   <div class="space-y-4">
     <AdminPageHeader
-      title="服务中心 / 绑定总览"
-      description="查看第三方服务连接，以及它们当前关联的 VPS、项目和域名。"
+      title="服务中心 / 服务总览"
+      description="统一查看服务连接、服务器、项目、域名和网络关系；具体配置与发布操作在运维中心完成。"
     >
       <template #actions>
         <select
@@ -27,9 +27,9 @@
       <div class="flex items-start gap-3">
         <Link2 class="mt-0.5 size-5 shrink-0 text-primary" />
         <div>
-          <p class="text-sm font-black">当前查看：{{ environmentLabel(serviceOverview?.environment) }}</p>
+          <p class="text-sm font-black">当前总览：{{ environmentLabel(serviceOverview?.environment) }}</p>
           <p class="mt-1 text-xs text-muted-foreground">
-            服务中心显示“服务与资产的关系”；VPS、项目和域名的编辑仍在运维中心完成。
+            这里是服务和线上资源的唯一总览入口；运维中心只保留 VPS、项目、域名维护，以及检查、同步和发布动作。
           </p>
         </div>
       </div>
@@ -38,21 +38,31 @@
       </AdminStatusBadge>
     </section>
 
-    <section class="grid gap-3 sm:grid-cols-3">
+    <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
       <div class="border border-dashed border-border/80 bg-card p-3">
         <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">已登记 VPS</p>
         <p class="mt-2 text-2xl font-black">{{ vpsList.length }}</p>
-        <p class="mt-1 text-[10px] text-muted-foreground">可在 VPS 中心查看具体资源</p>
+        <p class="mt-1 text-[10px] text-muted-foreground">健康 {{ healthyVPSCount }} · 待检查 {{ vpsAttentionCount }}</p>
       </div>
       <div class="border border-dashed border-border/80 bg-card p-3">
         <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">已绑定项目</p>
         <p class="mt-2 text-2xl font-black">{{ projectList.length }}</p>
-        <p class="mt-1 text-[10px] text-muted-foreground">每个项目归属一台 VPS</p>
+        <p class="mt-1 text-[10px] text-muted-foreground">健康 {{ healthyProjectCount }} · 待检查 {{ projectAttentionCount }}</p>
       </div>
       <div class="border border-dashed border-border/80 bg-card p-3">
         <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">已登记域名</p>
         <p class="mt-2 text-2xl font-black">{{ domainList.length }}</p>
-        <p class="mt-1 text-[10px] text-muted-foreground">DNS、代理和 TLS 在域名中心查看</p>
+        <p class="mt-1 text-[10px] text-muted-foreground">已匹配 {{ matchedDomainCount }} · 待检查 {{ domainAttentionCount }}</p>
+      </div>
+      <div class="border border-dashed border-border/80 bg-card p-3">
+        <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">服务连接</p>
+        <p class="mt-2 text-2xl font-black">{{ totalConnectionCount }}</p>
+        <p class="mt-1 text-[10px] text-muted-foreground">可用 {{ activeConnectionCount }} · 待处理 {{ connectorAttentionCount }}</p>
+      </div>
+      <div class="border border-dashed border-border/80 bg-card p-3">
+        <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">网络记录</p>
+        <p class="mt-2 text-2xl font-black">{{ networkCounts?.total || 0 }}</p>
+        <p class="mt-1 text-[10px] text-muted-foreground">待验证 {{ networkCounts?.attention || 0 }}</p>
       </div>
     </section>
 
@@ -118,10 +128,16 @@
           <h2 class="text-base font-black">当前绑定资产</h2>
           <p class="mt-1 text-xs text-muted-foreground">按 VPS → 项目 → 域名查看实际关系。</p>
         </div>
-        <Button variant="ghost" size="sm" @click="navigateTo('/ops/overview')">
-          打开运维总览
-          <ChevronRight class="size-4" />
-        </Button>
+        <div class="flex items-center gap-1">
+          <Button variant="ghost" size="sm" @click="navigateTo('/ops/vps')">
+            VPS 维护
+            <ChevronRight class="size-4" />
+          </Button>
+          <Button variant="ghost" size="sm" @click="navigateTo('/ops/deployments', { tab: 'overview' })">
+            发布中心
+            <ChevronRight class="size-4" />
+          </Button>
+        </div>
       </div>
 
       <div class="grid gap-4 p-4 xl:grid-cols-[1.15fr_1fr_1fr]">
@@ -336,7 +352,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
-import { ChevronRight, Cloud, Globe2, Link2, RefreshCw, Server, ShieldAlert, Workflow } from '@lucide/vue'
+import { ChevronRight, Cloud, GitBranch, Globe2, Link2, Package, RefreshCw, Server, ShieldAlert, Workflow } from '@lucide/vue'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import AdminStatusBadge, { type AdminStatusTone } from '@/components/admin/AdminStatusBadge.vue'
 import { Button } from '@/components/ui/button'
@@ -371,6 +387,26 @@ const domainList = computed<OpsDomain[]>(() => serviceOverview.value?.assets?.do
 const networkSummary = computed<OpsNetworkSummary | null>(() => serviceOverview.value?.network || null)
 const networkCounts = computed(() => networkSummary.value?.summary)
 const networkItems = computed<OpsNetworkSummaryItem[]>(() => networkSummary.value?.items || [])
+const healthyVPSCount = computed(() => vpsList.value.filter((vps) => vps.observed_status === 'healthy').length)
+const vpsAttentionCount = computed(() => vpsList.value.filter((vps) => (
+  ['pending', 'drifted', 'error'].includes(vps.status)
+  || ['unknown', 'degraded', 'offline'].includes(vps.observed_status)
+)).length)
+const healthyProjectCount = computed(() => projectList.value.filter((project) => project.health_status === 'healthy').length)
+const projectAttentionCount = computed(() => projectList.value.filter((project) => (
+  ['pending', 'drifted', 'error'].includes(project.status)
+  || ['unknown', 'degraded', 'offline'].includes(project.health_status)
+)).length)
+const matchedDomainCount = computed(() => domainList.value.filter((domain) => domain.observed_status === 'matched').length)
+const domainAttentionCount = computed(() => domainList.value.filter((domain) => (
+  ['pending', 'drifted', 'error'].includes(domain.status)
+  || ['unknown', 'drifted', 'error'].includes(domain.observed_status)
+)).length)
+const totalConnectionCount = computed(() => providers.value.reduce((total, provider) => total + provider.connection_count, 0))
+const activeConnectionCount = computed(() => providers.value.reduce((total, provider) => total + provider.active_connection_count, 0))
+const connectorAttentionCount = computed(() => providers.value
+  .filter((provider) => ['attention', 'pending'].includes(provider.status))
+  .reduce((total, provider) => total + provider.connection_count, 0))
 const cloudflareDomains = computed(() => domainList.value.filter((domain) => domain.provider === 'cloudflare'))
 const cloudflareProvider = computed(() => providers.value.find((provider) => provider.id === 'cloudflare'))
 const generatedLabel = computed(() => serviceOverview.value?.generated_at ? formatDate(serviceOverview.value.generated_at) : '尚未生成')
@@ -408,6 +444,10 @@ const navigateTo = (path: string, extraQuery: Record<string, string> = {}): void
 }
 
 const openProvider = (provider: ServiceCenterProvider): void => {
+  if (provider.id === 'github' || provider.id === 'ghcr') {
+    navigateTo('/ops/deployments', { tab: 'github' })
+    return
+  }
   if (provider.route) navigateTo(provider.route)
 }
 
@@ -419,11 +459,15 @@ const environmentLabel = (value?: string): string => {
 const providerIcon = (provider: string) => ({
   cloudflare: Cloud,
   hostinger: Server,
+  github: GitBranch,
+  ghcr: Package,
 }[provider] || Cloud)
 
 const providerRouteLabel = (provider: ServiceCenterProvider): string => ({
   cloudflare: '进入 Cloudflare 能力详情',
   hostinger: '进入 VPS 中心查看资源',
+  github: '进入发布中心查看 GitHub / GHCR',
+  ghcr: '进入发布中心查看 GitHub / GHCR',
 }[provider.id] || (provider.route ? '查看详情' : '暂未提供详情页'))
 
 const statusLabel = (status: ServiceCenterProvider['status']): string => ({
@@ -462,12 +506,14 @@ const openNetworkItem = (item: OpsNetworkSummaryItem): void => {
     navigateTo('/ops/domains')
     return
   }
-  navigateTo('/ops/overview')
+  navigateTo('/ops/vps')
 }
 
 const providerLabel = (value: string): string => ({
   hostinger: 'Hostinger',
   cloudflare: 'Cloudflare',
+  github: 'GitHub',
+  ghcr: 'GHCR',
   other: '其他 Provider',
 }[value] || value || '未指定 Provider')
 

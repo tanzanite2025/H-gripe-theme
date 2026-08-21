@@ -1,29 +1,29 @@
 <template>
-  <!-- Dock 菜单容器 (统一胶囊风格) -->
   <div class="dock-bar fixed inset-x-0 bottom-0 w-full z-[101] pointer-events-auto transition-all duration-300">
     <div class="dock-surface mx-auto w-full md:max-w-[500px] rounded-none px-1 py-2.5 md:px-4 md:py-3 items-center transition-all duration-300">
-      
       <!-- 1. Menu (Sidebar) -->
-      <button 
+      <button
         class="dock-icon-button h-11 md:h-12 tz-text-secondary hover:text-white transition-colors"
         @click="openSidebarLeft"
         :aria-label="$t('dockMenu.openSidebar')"
       >
-        <Icon name="lucide:user-round-check" class="dock-account-icon w-7 h-7 md:w-9 md:h-9 transition-all" />
+        <span class="dock-icon-slot">
+          <Icon name="lucide:user-round-check" class="w-full h-full transition-all" />
+        </span>
       </button>
 
       <!-- 2. Chat -->
-      <button 
+      <button
         :class="[
           'dock-icon-button h-11 md:h-12 transition-colors',
           isChatOpen ? 'text-[#B5FF6D]' : 'tz-text-secondary hover:text-white'
         ]"
-        @click="toggleChatFromDock()" 
+        @click="toggleChatFromDock()"
         :aria-label="$t('dockMenu.chat')"
       >
-        <span class="relative inline-flex h-7 w-7 md:h-9 md:w-9 items-center justify-center">
+        <span class="dock-icon-slot relative">
           <svg
-            class="dock-chat-icon w-full h-full transition-all"
+            class="w-full h-full transition-all"
             viewBox="0 0 48 48"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
@@ -46,7 +46,6 @@
               />
             </g>
           </svg>
-          <!-- Unread Badge -->
           <span
             v-if="totalUnreadCount > 0"
             class="absolute top-0 right-0 w-2 h-2 md:w-2.5 md:h-2.5 bg-red-500 rounded-full border border-[#0b1020]"
@@ -63,9 +62,9 @@
             type="button"
             :aria-label="$t('dockMenu.quickBuy')"
           >
-            <span class="dock-quick-buy-frame">
+            <span class="dock-icon-slot dock-quick-buy-frame">
               <svg
-                class="dock-quick-buy-icon w-7 h-7 md:w-9 md:h-9 transition-all"
+                class="w-full h-full transition-all"
                 viewBox="0 0 24 24"
                 xmlns="http://www.w3.org/2000/svg"
                 aria-hidden="true"
@@ -97,7 +96,6 @@
           <span class="dock-cart-count">{{ itemsCount }}</span>
         </span>
       </button>
-
     </div>
   </div>
 </template>
@@ -107,13 +105,11 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useI18n } from '#imports'
 import { useChatWidget } from '~/composables/useChatWidget'
 
-// floating submenu state
 const isOpen = ref(false)
-
-// 全局聊天窗口状态（在多个布局之间保持一致）
 const { isChatOpen, openChat, closeChat } = useChatWidget()
+const { t: $t } = useI18n()
+const totalUnreadCount = ref(0)
 
-// mutually exclusive open helpers
 const closeAll = () => {
   isOpen.value = false
   if (typeof window !== 'undefined') {
@@ -121,12 +117,6 @@ const closeAll = () => {
   }
 }
 
-const { t: $t } = useI18n()
-
-// 未读消息数（从 localStorage 跟踪）
-const totalUnreadCount = ref(0)
-
-// Dock 内部控制聊天开关：需要兼顾全局状态和现有事件
 const toggleChatFromDock = () => {
   if (isChatOpen.value) {
     closeChat()
@@ -136,49 +126,40 @@ const toggleChatFromDock = () => {
   }
 }
 
-// 打开左侧 Sidebar（通过全局自定义事件通知 SidePanel）
 const openSidebarLeft = () => {
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('ui:sidebar-open', { detail: { side: 'left' } }))
   }
 }
 
-// 计算未读消息数（从 localStorage）
 const calculateUnreadCount = () => {
   try {
     let total = 0
-    const keys = Object.keys(localStorage)
-    const chatKeys = keys.filter(key => key.startsWith('tz_chat_'))
-    
+    const chatKeys = Object.keys(localStorage).filter(key => key.startsWith('tz_chat_'))
+
     chatKeys.forEach(key => {
       const data = localStorage.getItem(key)
       if (data) {
         const parsed = JSON.parse(data)
-        // 统计未读消息（这里简单处理，可以根据实际需求调整）
         const unread = parsed.messages?.filter((msg: any) => !msg.is_read && msg.is_agent)
         total += unread?.length || 0
       }
     })
-    
+
     totalUnreadCount.value = total
   } catch (error) {
     console.error('计算未读消息失败:', error)
   }
 }
 
-// 组件挂载时计算未读消息数
 let unreadInterval: ReturnType<typeof setInterval> | null = null
 
 onMounted(() => {
   calculateUnreadCount()
-
-  // 每30秒更新一次未读消息数
   unreadInterval = setInterval(calculateUnreadCount, 30000)
 })
 
-// 集成购物车系统
 const { cartCount, total, cartCurrency, openCart } = useCart()
-
 const itemsCount = computed(() => cartCount.value)
 
 const priceDisplay = computed(() => {
@@ -265,15 +246,20 @@ onBeforeUnmount(() => {
   justify-content: center;
 }
 
+.dock-icon-slot {
+  display: inline-flex;
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+}
+
 .dock-quick-buy-button {
   --dock-quickbuy-active-edge: color-mix(in srgb, var(--tz-brand-primary, #b5ff6d) 74%, transparent);
 }
 
 .dock-quick-buy-frame {
-  display: grid;
-  width: 2.5rem;
-  height: 2.5rem;
-  place-items: center;
   border-radius: 999px;
   transition:
     background-color 180ms ease,
@@ -384,11 +370,6 @@ onBeforeUnmount(() => {
 }
 
 @media (min-width: 768px) {
-  .dock-quick-buy-frame {
-    width: 3rem;
-    height: 3rem;
-  }
-
   .dock-cart-button {
     height: 2.75rem;
   }

@@ -1,15 +1,19 @@
 import { ref, watch, type ComputedRef } from 'vue'
+import { useI18n } from '#imports'
 import { useShopProducts, type ShopProduct } from '~/composables/useShopProducts'
 import type { WheelsetSelectionProductQuery } from '~/types/wheelsetSelectionAssistant'
+import { toUserFacingApiError } from '~/utils/storefrontApiFailures'
 
 export const useWheelsetSelectionProducts = (
   query: ComputedRef<WheelsetSelectionProductQuery>,
 ) => {
+  const { t } = useI18n()
   const { fetchShopProducts } = useShopProducts()
   const products = ref<ShopProduct[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
   const page = ref(1)
+  const total = ref(0)
   const hasMore = ref(false)
   let requestSequence = 0
 
@@ -30,12 +34,21 @@ export const useWheelsetSelectionProducts = (
       })
       if (requestId !== requestSequence) return
       products.value = result.items
+      const reportedTotal = Number(result.total)
+      total.value = reportedTotal > 0 ? reportedTotal : result.items.length
       hasMore.value = Boolean(result.hasMore)
     } catch (cause: any) {
       if (requestId !== requestSequence) return
       products.value = []
+      total.value = 0
       hasMore.value = false
-      error.value = cause?.data?.message || cause?.message || 'Unable to load wheelset products.'
+      error.value = toUserFacingApiError(
+        cause,
+        t(
+          'wheelsetSelectionAssistant.results.unavailable',
+          'Matching products are temporarily unavailable. Please try again.',
+        ),
+      )
     } finally {
       if (requestId === requestSequence) loading.value = false
     }
@@ -58,6 +71,7 @@ export const useWheelsetSelectionProducts = (
     loading,
     error,
     page,
+    total,
     hasMore,
     setPage,
     reload: load,

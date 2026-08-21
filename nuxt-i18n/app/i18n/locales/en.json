@@ -2001,13 +2001,14 @@
       "goToQuestion": "Show question"
     },
     "support": {
-      "title": "Need help choosing?",
+      "title": "Contact support directly",
       "description": "Contact support with your bike model or requirements.",
       "action": "Contact support"
     },
     "states": {
       "loading": "Loading fit questions...",
       "retry": "Try again",
+      "unavailable": "The fit service is temporarily unavailable. Please try again.",
       "empty": "No fit question is available yet."
     },
     "outcome": {
@@ -2019,6 +2020,7 @@
     "results": {
       "title": "Wheelset products",
       "loading": "Matching wheelsets...",
+      "unavailable": "Matching products are temporarily unavailable. Please try again.",
       "empty": "No wheelsets match these answers yet.",
       "pagination": "Wheelset product result pages",
       "previousPage": "Previous page",

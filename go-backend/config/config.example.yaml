@@ -103,6 +103,7 @@ cors:
     - "X-Display-Currency"
     - "X-Market-Country"
     - "X-Country-Code"
+    - "X-Device-Fingerprint"
     - "X-Quick-Buy-Session"
     - "X-Anonymous-ID"
   expose_headers:

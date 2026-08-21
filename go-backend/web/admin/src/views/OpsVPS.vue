@@ -10,14 +10,9 @@
           class="h-9 rounded-md border bg-background px-3 text-sm"
           aria-label="筛选 VPS 环境"
           :disabled="loading"
-          @change="changeEnvironment"
-        >
-          <option value="production">生产</option>
-          <option value="staging">预发布</option>
-          <option value="test">测试</option>
-          <option value="local">本地</option>
-          <option value="">全部环境</option>
-        </select>
+          :options="opsVPSEnvironmentOptions"
+          @update:model-value="changeEnvironment"
+        />
         <Button variant="outline" :disabled="loading" @click="refreshVPSPage">
  <RefreshCw :class="['size-4', loading ? 'animate-spin': '']" />
           刷新
@@ -29,24 +24,7 @@
       </template>
     </AdminPageHeader>
 
-    <section class="grid gap-3 md:grid-cols-4">
-      <div class="rounded-2xl border border-dashed border-border/80 bg-card p-3">
-        <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">已登记 VPS</p>
-        <p class="mt-2 text-2xl font-black">{{ vpsList.length }}</p>
-      </div>
-      <div class="rounded-2xl border border-dashed border-border/80 bg-card p-3">
-        <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">当前启用</p>
-        <p class="mt-2 text-2xl font-black text-emerald-600">{{ enabledCount }}</p>
-      </div>
-      <div class="rounded-2xl border border-dashed border-border/80 bg-card p-3">
-        <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">已确认观察</p>
-        <p class="mt-2 text-2xl font-black text-primary">{{ observedCount }}</p>
-      </div>
-      <div class="rounded-2xl border border-dashed border-border/80 bg-card p-3">
-        <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">需处理状态</p>
-        <p class="mt-2 text-2xl font-black text-amber-600">{{ attentionCount }}</p>
-      </div>
-    </section>
+    <OpsSummaryCards :items="summaryCards" />
 
     <AdminTablePanel :loading="loading" :batch-visible="false">
       <Table class="min-w-[1280px]">
@@ -163,6 +141,8 @@ import { LoaderCircle, Pencil, Plus, Power, RefreshCw } from '@lucide/vue'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import AdminStatusBadge, { type AdminStatusTone } from '@/components/admin/AdminStatusBadge.vue'
 import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
+import OpsEnvironmentSelect from '@/components/admin/ops/OpsEnvironmentSelect.vue'
+import OpsSummaryCards, { type OpsSummaryCardItem } from '@/components/admin/ops/OpsSummaryCards.vue'
 import OpsVPSBindingFormDialog from '@/components/admin/ops/OpsVPSBindingFormDialog.vue'
 import {
   assignOpsVPSForm,
@@ -197,6 +177,12 @@ const form = reactive<OpsVPSForm>(emptyOpsVPSForm())
 const enabledCount = computed(() => vpsList.value.filter((vps) => vps.enabled).length)
 const observedCount = computed(() => vpsList.value.filter((vps) => vps.observed_status !== 'unknown').length)
 const attentionCount = computed(() => vpsList.value.filter((vps) => ['pending', 'drifted', 'error'].includes(vps.status) || ['degraded', 'offline'].includes(vps.observed_status)).length)
+const summaryCards = computed<readonly OpsSummaryCardItem[]>(() => [
+  { key: 'vps', label: '已登记 VPS', value: vpsList.value.length, detail: `当前启用 ${enabledCount.value}` },
+  { key: 'enabled', label: '当前启用', value: enabledCount.value, detail: `共 ${vpsList.value.length} 台 VPS`, tone: 'green' },
+  { key: 'observed', label: '已确认观察', value: observedCount.value, detail: `待观察 ${Math.max(vpsList.value.length - observedCount.value, 0)}`, tone: 'primary' },
+  { key: 'attention', label: '需处理状态', value: attentionCount.value, detail: '期望状态或实际状态异常', tone: 'amber' },
+])
 
 const assignForm = (vps?: Partial<OpsVPS>): void => {
   assignOpsVPSForm(form, vps)

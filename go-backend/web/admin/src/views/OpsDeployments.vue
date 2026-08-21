@@ -9,6 +9,7 @@
           variant="outline"
           :disabled="loadingProjects || generating"
           @click="loadProjects"
+          v-if="activeTab === 'overview'"
         >
           <RefreshCw
  :class="['size-4', loadingProjects ? 'animate-spin': '']"
@@ -19,6 +20,7 @@
           variant="outline"
           :disabled="!overview || loadingProjects || generating"
           @click="copyOverview"
+          v-if="activeTab === 'overview'"
         >
           <Copy class="size-4" />
           复制总览
@@ -26,6 +28,7 @@
         <Button
           :disabled="!selectedProjectId || generating"
           @click="generateReport"
+          v-if="activeTab === 'overview'"
         >
           <LoaderCircle v-if="generating" class="size-4 animate-spin" />
           <FileSearch v-else class="size-4" />
@@ -34,6 +37,7 @@
         <Button
           :disabled="!selectedProjectId || workflowBusy"
           @click="createDryRun"
+          v-if="activeTab === 'workflow'"
         >
           <LoaderCircle v-if="workflowBusy" class="size-4 animate-spin" />
           <CircleCheck v-else class="size-4" />
@@ -44,6 +48,7 @@
           :disabled="!selectedProjectId || workflowBusy || selectedProject?.environment !== 'production'"
           title="仅生产环境项目可以创建生产发布工作流"
           @click="createProduction"
+          v-if="activeTab === 'workflow'"
         >
           <ShieldAlert class="size-4" />
           创建生产工作流
@@ -51,7 +56,35 @@
       </template>
     </AdminPageHeader>
 
-    <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <nav class="flex flex-wrap gap-1 border-b border-border/70" aria-label="部署中心视图">
+      <button
+        v-for="tab in deploymentTabs"
+        :key="tab.value"
+        type="button"
+        class="border-b-2 px-3 py-2 text-xs font-black transition-colors"
+        :class="activeTab === tab.value
+          ? 'border-primary text-foreground'
+          : 'border-transparent text-muted-foreground hover:text-foreground'"
+        @click="selectTab(tab.value)"
+      >
+        {{ tab.label }}
+      </button>
+    </nav>
+
+    <OpsGitHubIntegrationPanel
+      v-if="activeTab === 'github'"
+      :connectors="githubConnectors"
+      :projects="projects"
+      :github-loading="githubLoading"
+      :github-o-auth-loading="githubOAuthLoading"
+      :testing-connector-id="testingConnectorID"
+      @connect="connectGitHub"
+      @refresh="loadGitHubConnectors"
+      @configure="openConnectorConfig"
+      @test="testGitHubConnector"
+    />
+
+    <section v-if="activeTab === 'overview'" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
       <div
         v-for="item in overviewStats"
         :key="item.key"
@@ -82,7 +115,7 @@
     </section>
 
     <section
-      v-if="overviewRiskCategories.length"
+      v-if="activeTab === 'overview' && overviewRiskCategories.length"
       class="grid gap-3 md:grid-cols-2 xl:grid-cols-4"
     >
       <button
@@ -112,21 +145,42 @@
       </button>
     </section>
 
-    <OpsDeploymentWorkflowPanel
-      :selected-project-id="selectedProjectId"
-      :workflow="workflow"
-      :workflows="workflows"
-      :workflow-busy="workflowBusy"
-      @validate="validateWorkflow"
-      @approve="approveWorkflow"
-      @execute="executeWorkflow"
-      @retry="retryWorkflow"
-      @rollback="rollbackWorkflow"
-      @cancel="cancelWorkflow"
-      @select="workflow = $event"
-    />
+    <section v-if="activeTab === 'workflow'" class="space-y-3">
+      <Card size="sm">
+        <CardHeader class="border-b border-dashed border-border/70">
+          <CardTitle>工作流项目</CardTitle>
+          <CardDescription>选择要验证、审批或执行的项目。</CardDescription>
+        </CardHeader>
+        <CardContent class="pt-3">
+          <select
+            v-model.number="selectedProjectId"
+            class="h-10 w-full rounded-md border bg-background px-3 text-sm"
+            :disabled="loadingProjects || workflowBusy"
+          >
+            <option :value="0">请选择项目</option>
+            <option v-for="project in projectOptions" :key="project.id" :value="project.id">
+              {{ project.name }} · {{ environmentLabel(project.environment) }}
+            </option>
+          </select>
+        </CardContent>
+      </Card>
+      <OpsDeploymentWorkflowPanel
+        :selected-project-id="selectedProjectId"
+        :workflow="workflow"
+        :workflows="workflows"
+        :workflow-busy="workflowBusy"
+        @validate="validateWorkflow"
+        @approve="approveWorkflow"
+        @execute="executeWorkflow"
+        @retry="retryWorkflow"
+        @rollback="rollbackWorkflow"
+        @cancel="cancelWorkflow"
+        @select="workflow = $event"
+      />
+    </section>
 
     <section
+      v-if="activeTab === 'overview'"
       class="grid gap-3 xl:grid-cols-[minmax(18rem,0.64fr)_minmax(0,1.36fr)]"
     >
       <Card size="sm">
@@ -389,6 +443,7 @@ import AdminPageHeader from "@/components/admin/AdminPageHeader.vue";
 import AdminStatusBadge, {
   type AdminStatusTone,
 } from "@/components/admin/AdminStatusBadge.vue";
+import OpsGitHubIntegrationPanel from "@/components/admin/ops/OpsGitHubIntegrationPanel.vue";
 import OpsDeploymentWorkflowPanel from "@/components/admin/ops/OpsDeploymentWorkflowPanel.vue";
 import OpsDeploymentPreflightReportPanel from "@/components/admin/ops/OpsDeploymentPreflightReportPanel.vue";
 import { Button } from "@/components/ui/button";
@@ -404,6 +459,7 @@ import opsApi, {
   type OpsDeploymentPreflightGroup,
   type OpsDeploymentPreflightOverview,
   type OpsDeploymentWorkflow,
+  type OpsConnector,
   type OpsProject,
 } from "@/api/ops";
 import {
@@ -443,6 +499,14 @@ const queryChoice = <T extends string>(
   return allowed.includes(candidate) ? candidate : fallback;
 };
 
+type DeploymentTab = "overview" | "github" | "workflow";
+
+const deploymentTabs: Array<{ value: DeploymentTab; label: string }> = [
+  { value: "overview", label: "发布总览" },
+  { value: "github", label: "GitHub / GHCR" },
+  { value: "workflow", label: "工作流" },
+];
+
 const projects = ref<OpsProject[]>([]);
 const overview = ref<OpsDeploymentPreflightOverview | null>(null);
 const selectedProjectId = ref(queryNumber(route.query.project));
@@ -470,6 +534,13 @@ const overviewEnvironmentFilter = ref(
 const overviewSort = ref<DeploymentPreflightOverviewSort>(
   queryChoice(route.query.sort, ["risk", "name", "generated"] as const, "risk"),
 );
+const activeTab = ref<DeploymentTab>(
+  queryChoice(route.query.tab, ["overview", "github", "workflow"] as const, "overview"),
+);
+const githubConnectors = ref<OpsConnector[]>([]);
+const githubLoading = ref(false);
+const githubOAuthLoading = ref(false);
+const testingConnectorID = ref(0);
 let projectLoadSequence = 0;
 let workflowLoadSequence = 0;
 let reportLoadSequence = 0;
@@ -479,6 +550,132 @@ const selectedProject = computed(
     projects.value.find((project) => project.id === selectedProjectId.value) ||
     null,
 );
+
+const loadGitHubConnectors = async (): Promise<void> => {
+  githubLoading.value = true;
+  try {
+    const result = await opsApi.listConnectors(overviewEnvironmentFilter.value || undefined);
+    githubConnectors.value = (result.connectors || []).filter((connector) => (
+      connector.provider === "github" || connector.provider === "ghcr"
+    ));
+  } catch (error: any) {
+    toast.error(
+      error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        "GitHub / GHCR 连接状态加载失败",
+    );
+  } finally {
+    githubLoading.value = false;
+  }
+};
+
+const gitHubOAuthReturnPath = (): string => {
+  const query = new URLSearchParams({
+    tab: "github",
+    environment: overviewEnvironmentFilter.value || "production",
+  });
+  return `${route.path}?${query.toString()}`;
+};
+
+const connectGitHub = async (): Promise<void> => {
+  githubOAuthLoading.value = true;
+  try {
+    const result = await opsApi.startConnectorOAuth(
+      "github",
+      undefined,
+      gitHubOAuthReturnPath(),
+      overviewEnvironmentFilter.value || "production",
+    );
+    window.location.assign(result.authorization_url);
+  } catch (error: any) {
+    githubOAuthLoading.value = false;
+    toast.error(
+      error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        "GitHub OAuth 启动失败，请检查后台 OAuth 配置",
+    );
+  }
+};
+
+const clearOAuthCallbackQuery = async (): Promise<void> => {
+  const query: Record<string, string> = {};
+  for (const key of [
+    "project",
+    "category",
+    "mode",
+    "status",
+    "environment",
+    "sort",
+    "tab",
+  ]) {
+    const value = queryValue(route.query[key]);
+    if (value) query[key] = value;
+  }
+  await router.replace({ query });
+};
+
+const handleGitHubOAuthCallback = async (): Promise<void> => {
+  const status = queryValue(route.query.ops_oauth_status);
+  if (!status) return;
+  const provider = queryValue(route.query.ops_oauth_provider);
+  if (provider && provider !== "github") return;
+
+  const message =
+    queryValue(route.query.ops_oauth_message) ||
+    (status === "error" ? "GitHub OAuth 绑定失败" : "GitHub OAuth 绑定完成");
+  if (status === "connected") {
+    toast.success(message);
+  } else if (status === "connected_with_warnings") {
+    toast.warning(message);
+  } else {
+    toast.error(message);
+  }
+  await loadGitHubConnectors();
+  await clearOAuthCallbackQuery();
+};
+
+const openConnectorConfig = (): void => {
+  void router.push({
+    path: "/services/connectors",
+    query: overviewEnvironmentFilter.value
+      ? { environment: overviewEnvironmentFilter.value }
+      : undefined,
+  });
+};
+
+const selectTab = (tab: DeploymentTab): void => {
+  activeTab.value = tab;
+  if (tab === "github") void loadGitHubConnectors();
+};
+
+const testGitHubConnector = async (connector: OpsConnector): Promise<void> => {
+  testingConnectorID.value = connector.id;
+  try {
+    const result = await opsApi.testConnector(connector.id);
+    const index = githubConnectors.value.findIndex((item) => item.id === connector.id);
+    if (index >= 0) {
+      githubConnectors.value[index] = {
+        ...connector,
+        credential_configured: result.credential_configured,
+        last_test_status: result.success ? "success" : "failed",
+        last_tested_at: result.checked_at,
+        last_error: result.success ? "" : result.message,
+        status: result.success ? "active" : connector.enabled ? "error" : "disabled",
+      };
+    }
+    toast[result.success ? "success" : "error"](
+      result.message || (result.success ? "连接测试成功" : "连接测试失败"),
+    );
+  } catch (error: any) {
+    toast.error(
+      error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        "GitHub / GHCR 连接测试失败",
+    );
+  } finally {
+    testingConnectorID.value = 0;
+  }
+};
 const requestedRefCandidates = computed(() => {
   const values = [
     { label: "Commit", value: selectedProject.value?.current_commit_sha || "" },
@@ -998,6 +1195,7 @@ watch(
     activeCategory.value = "all";
     detailMode.value = "all";
     void loadProjects();
+    void loadGitHubConnectors();
   },
 );
 
@@ -1012,6 +1210,18 @@ watch(
 );
 
 watch(
+  () => route.query.tab,
+  (value) => {
+    const nextTab = queryChoice(
+      value,
+      ["overview", "github", "workflow"] as const,
+      "overview",
+    );
+    if (nextTab !== activeTab.value) activeTab.value = nextTab;
+  },
+);
+
+watch(
   [
     selectedProjectId,
     activeCategory,
@@ -1019,8 +1229,9 @@ watch(
     overviewStatusFilter,
     overviewEnvironmentFilter,
     overviewSort,
+    activeTab,
   ],
-  async ([projectID, category, mode, status, environment, sort]) => {
+  async ([projectID, category, mode, status, environment, sort, tab]) => {
     const query: Record<string, string> = {};
     if (projectID) query.project = String(projectID);
     if (category && category !== "all") query.category = category;
@@ -1028,6 +1239,7 @@ watch(
     if (status && status !== "all") query.status = status;
     query.environment = environment || "all";
     if (sort && sort !== "risk") query.sort = sort;
+    if (tab && tab !== "overview") query.tab = tab;
     if (JSON.stringify(route.query) !== JSON.stringify(query)) {
       await router.replace({ query });
     }
@@ -1035,6 +1247,10 @@ watch(
 );
 
 onMounted(async () => {
+  await handleGitHubOAuthCallback();
+  if (activeTab.value === "github") {
+    await loadGitHubConnectors();
+  }
   await loadProjects();
   if (!selectedProjectId.value && projectOptions.value.length) {
     selectedProjectId.value = projectOptions.value[0].id;

@@ -8,9 +8,9 @@
     :aria-expanded="quickActive"
     :aria-label="$t('dockMenu.quickBuy')"
   >
-    <span class="dock-quick-buy-frame">
+    <span class="dock-icon-slot dock-quick-buy-frame">
       <svg
-        class="dock-quick-buy-icon w-7 h-7 md:w-9 md:h-9 transition-all"
+        class="dock-quick-buy-icon w-full h-full transition-all"
         viewBox="0 0 24 24"
         xmlns="http://www.w3.org/2000/svg"
         aria-hidden="true"
@@ -57,6 +57,9 @@
       source="quick-buy/wheelset-selection-assistant"
       @contact-support="openWheelsetSelectionSupportChat"
     />
+    <template #footer>
+      <WheelsetSelectionSupportCta @contact-support="openWheelsetSelectionSupportChat" />
+    </template>
   </LazyWheelsetSelectionAssistantModal>
 </template>
 
@@ -65,6 +68,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from '#imports'
 import { useChatWidget } from '~/composables/useChatWidget'
 import { useQuickBuyFlow } from '~/composables/useQuickBuyFlow'
+import WheelsetSelectionSupportCta from '~/components/wheelset-selection/WheelsetSelectionSupportCta.vue'
 import type { WheelsetSelectionRequestDraft } from '~/types/wheelsetSelectionAssistant'
 
 const quickOpen = ref(false)
@@ -177,3 +181,38 @@ onBeforeUnmount(() => {
   window.removeEventListener('quickbuy:close-all', closeQuickFromGlobalEvent)
 })
 </script>
+
+<style scoped>
+.dock-icon-slot {
+  display: inline-flex;
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+}
+
+.dock-quick-buy-frame {
+  border-radius: 999px;
+  transition:
+    background-color 180ms ease,
+    box-shadow 180ms ease,
+    color 180ms ease,
+    transform 180ms ease;
+}
+
+.dock-quick-buy-button--active {
+  color: var(--tz-brand-primary, #b5ff6d);
+}
+
+.dock-quick-buy-button--active .dock-quick-buy-frame {
+  background: rgba(181, 255, 109, 0.08);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--tz-brand-primary, #b5ff6d) 74%, transparent),
+    0 0 0 4px rgba(181, 255, 109, 0.075);
+}
+
+.dock-quick-buy-button:hover .dock-quick-buy-frame {
+  transform: translateY(-0.0625rem);
+}
+</style>

@@ -10,13 +10,9 @@
           class="h-9 rounded-md border bg-background px-3 text-sm"
           aria-label="筛选域名环境"
           :disabled="loading || syncingAll"
-          @change="changeEnvironment"
-        >
-          <option v-for="option in opsDomainEnvironmentOptions" :key="option.value" :value="option.value">
-            {{ option.label }}
-          </option>
-          <option value="">全部环境</option>
-        </select>
+          :options="opsDomainEnvironmentOptions"
+          @update:model-value="changeEnvironment"
+        />
         <Button
           v-if="canSync"
           variant="outline"
@@ -38,24 +34,7 @@
       </template>
     </AdminPageHeader>
 
-    <section class="grid gap-3 md:grid-cols-4">
-      <div class="rounded-2xl border border-dashed border-border/80 bg-card p-3">
-        <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">已登记域名</p>
-        <p class="mt-2 text-2xl font-black">{{ domains.length }}</p>
-      </div>
-      <div class="rounded-2xl border border-dashed border-border/80 bg-card p-3">
-        <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">当前启用</p>
-        <p class="mt-2 text-2xl font-black text-emerald-600">{{ enabledCount }}</p>
-      </div>
-      <div class="rounded-2xl border border-dashed border-border/80 bg-card p-3">
-        <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">生产域名</p>
-        <p class="mt-2 text-2xl font-black text-primary">{{ productionCount }}</p>
-      </div>
-      <div class="rounded-2xl border border-dashed border-border/80 bg-card p-3">
-        <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">需处理 / 未同步</p>
-        <p class="mt-2 text-2xl font-black text-amber-600">{{ attentionCount }}</p>
-      </div>
-    </section>
+    <OpsSummaryCards :items="summaryCards" />
 
     <AdminTablePanel :loading="loading" :batch-visible="false">
       <Table class="min-w-[1440px]">
@@ -316,6 +295,8 @@ import { Copy, FileCode2, GitCompareArrows, LoaderCircle, Pencil, Plus, Power, R
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import AdminStatusBadge, { type AdminStatusTone } from '@/components/admin/AdminStatusBadge.vue'
 import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
+import OpsEnvironmentSelect from '@/components/admin/ops/OpsEnvironmentSelect.vue'
+import OpsSummaryCards, { type OpsSummaryCardItem } from '@/components/admin/ops/OpsSummaryCards.vue'
 import OpsDomainBindingFormDialog from '@/components/admin/ops/OpsDomainBindingFormDialog.vue'
 import {
   assignOpsDomainForm,
@@ -408,6 +389,12 @@ const attentionCount = computed(() => domains.value.filter((domain) => (
   ['pending', 'drifted', 'error'].includes(domain.status)
   || ['unknown', 'drifted', 'error'].includes(domain.observed_status)
 )).length)
+const summaryCards = computed<readonly OpsSummaryCardItem[]>(() => [
+  { key: 'domains', label: '已登记域名', value: domains.value.length, detail: `当前启用 ${enabledCount.value}` },
+  { key: 'enabled', label: '当前启用', value: enabledCount.value, detail: `共 ${domains.value.length} 个域名`, tone: 'green' },
+  { key: 'production', label: '生产域名', value: productionCount.value, detail: '当前列表中的生产环境', tone: 'primary' },
+  { key: 'attention', label: '需处理 / 未同步', value: attentionCount.value, detail: '期望状态或实际状态异常', tone: 'amber' },
+])
 
 const assignForm = (domain?: Partial<OpsDomain>): void => {
   assignOpsDomainForm(form, domain)
