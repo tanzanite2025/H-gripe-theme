@@ -41,6 +41,72 @@ export const useCustomerServiceChatSync = ({
   let browserRecoveryListenersAttached = false
   const seenRealtimeEventIds = new Set<string>()
 
+  const getHttpStatus = (error: unknown): number | null => {
+    if (!error || typeof error !== 'object') return null
+
+    const candidates = [
+      (error as any).status,
+      (error as any).statusCode,
+      (error as any).response?.status,
+      (error as any).response?.statusCode,
+      (error as any).cause?.status,
+      (error as any).cause?.statusCode,
+    ]
+
+    for (const candidate of candidates) {
+      const status = Number(candidate)
+      if (Number.isInteger(status)) return status
+    }
+
+    return null
+  }
+
+  const isAccessDeniedError = (error: unknown): boolean => {
+    const status = getHttpStatus(error)
+    if (status === 401 || status === 403) return true
+
+    const message = error instanceof Error ? error.message : String(error || '')
+    return /access denied|forbidden|unauthori[sz]ed/i.test(message)
+  }
+
+  const clearCustomerServiceConversationState = () => {
+    closeCustomerServiceRealtime()
+    realtimeReconnectAttempt = 0
+    realtimeCursorConversationId.value = ''
+    realtimeLastEventId = ''
+    seenRealtimeEventIds.clear()
+    conversationId.value = ''
+  }
+
+  const postCustomerServiceMessage = async (currentConversationId: string, messageData: any) => {
+    const response = await authRequest<any>(
+      '/customer-service/messages',
+      {
+        method: 'POST',
+        headers: {
+          accept: 'application/json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          conversation_id: currentConversationId,
+          message: messageData.message,
+          sender_type: user.value ? 'user' : 'visitor',
+          sender_name: user.value?.display_name || '访客',
+          sender_email: currentSenderEmail(),
+          agent_id: selectedAgent.value?.id != null ? String(selectedAgent.value.id) : '',
+          locale: locale.value,
+          message_type: messageData.message_type || 'text',
+          metadata: messageData.metadata || null,
+          attachment_url: messageData.attachment_url || '',
+          attachments: Array.isArray(messageData.attachments) ? messageData.attachments : []
+        })
+      },
+      'Failed to send customer-service message'
+    )
+    rememberConversationId(response)
+    return response
+  }
+
   const rememberConversationId = (payload: any) => {
     const id = payload?.conversation_id || payload?.conversationId || payload?.data?.conversation_id || payload?.data?.conversationId
     if (typeof id === 'string' && id.length > 0) {
@@ -217,6 +283,10 @@ export const useCustomerServiceChatSync = ({
       mergePersistedMessages(extractMessageItems(response))
       scrollToBottom()
     } catch (error) {
+      if (isAccessDeniedError(error)) {
+        clearCustomerServiceConversationState()
+        return
+      }
       console.warn('同步客服消息失败:', error)
     }
   }
@@ -224,35 +294,22 @@ export const useCustomerServiceChatSync = ({
   const sendMessageToAPI = async (messageData: any) => {
     try {
       const currentConversationId = await ensureCustomerServiceConversation()
-      const response = await authRequest<any>(
-        '/customer-service/messages',
-        {
-          method: 'POST',
-          headers: {
-            accept: 'application/json',
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            conversation_id: currentConversationId,
-            message: messageData.message,
-            sender_type: user.value ? 'user' : 'visitor',
-            sender_name: user.value?.display_name || '访客',
-            sender_email: currentSenderEmail(),
-            agent_id: selectedAgent.value?.id != null ? String(selectedAgent.value.id) : '',
-            locale: locale.value,
-            message_type: messageData.message_type || 'text',
-            metadata: messageData.metadata || null,
-            attachment_url: messageData.attachment_url || '',
-            attachments: Array.isArray(messageData.attachments) ? messageData.attachments : []
-          })
-        },
-        'Failed to send customer-service message'
-      )
-      rememberConversationId(response)
-      return response
+      return await postCustomerServiceMessage(currentConversationId, messageData)
     } catch (error) {
-      console.error('发送消息到API失败:', error)
-      throw error
+      if (!isAccessDeniedError(error)) {
+        console.error('发送消息到API失败:', error)
+        throw error
+      }
+
+      clearCustomerServiceConversationState()
+
+      try {
+        const currentConversationId = await ensureCustomerServiceConversation()
+        return await postCustomerServiceMessage(currentConversationId, messageData)
+      } catch (retryError) {
+        console.error('发送消息到API失败:', retryError)
+        throw retryError
+      }
     }
   }
 

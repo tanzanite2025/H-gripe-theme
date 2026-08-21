@@ -20,6 +20,11 @@ const (
 	PaymentThreeDSModeChallenge = "challenge"
 )
 
+const (
+	paymentThreeDSBillingShippingMismatchReason       = "avs_billing_shipping_mismatch_high_value"
+	paymentThreeDSBillingShippingMismatchThresholdUSD = 800.0
+)
+
 type paymentThreeDSVisitorAssessor interface {
 	AssessIdentity(ctx context.Context, input VisitorRiskIdentityAssessmentInput) (VisitorRiskIdentityAssessment, error)
 }
@@ -50,19 +55,20 @@ type PaymentThreeDSPolicyService struct {
 }
 
 type PaymentThreeDSDecisionInput struct {
-	Provider        string
-	UserID          uint
-	OrderID         uint
-	Amount          float64
-	Currency        string
-	BaseMode        string
-	IPAddress       string
-	IPCountry       string
-	UserAgent       string
-	SessionID       string
-	BillingCountry  string
-	ShippingCountry string
-	PaymentMethod   string
+	Provider          string
+	UserID            uint
+	OrderID           uint
+	Amount            float64
+	Currency          string
+	BaseMode          string
+	IPAddress         string
+	DeviceFingerprint string
+	IPCountry         string
+	UserAgent         string
+	SessionID         string
+	BillingCountry    string
+	ShippingCountry   string
+	PaymentMethod     string
 }
 
 type PaymentThreeDSDecision struct {
@@ -76,12 +82,13 @@ type PaymentThreeDSDecision struct {
 }
 
 type PaymentThreeDSConfigurationView struct {
-	AdaptiveEnabled         bool    `json:"adaptive_enabled"`
-	LowRiskMaxAmount        float64 `json:"low_risk_max_amount"`
-	TrustedPaidOrders       int     `json:"trusted_paid_orders"`
-	VisitorRiskLookbackDays int     `json:"visitor_risk_lookback_days"`
-	StepUpRiskScore         int     `json:"step_up_risk_score"`
-	ChallengeRiskScore      int     `json:"challenge_risk_score"`
+	AdaptiveEnabled                                 bool    `json:"adaptive_enabled"`
+	LowRiskMaxAmount                                float64 `json:"low_risk_max_amount"`
+	AVSBillingShippingMismatchHighValueThresholdUSD float64 `json:"avs_billing_shipping_mismatch_high_value_threshold_usd"`
+	TrustedPaidOrders                               int     `json:"trusted_paid_orders"`
+	VisitorRiskLookbackDays                         int     `json:"visitor_risk_lookback_days"`
+	StepUpRiskScore                                 int     `json:"step_up_risk_score"`
+	ChallengeRiskScore                              int     `json:"challenge_risk_score"`
 }
 
 func NewPaymentThreeDSPolicyService(
@@ -118,8 +125,9 @@ func (s *PaymentThreeDSPolicyService) PolicyView() PaymentThreeDSConfigurationVi
 	}
 	cfg := normalizePaymentThreeDSConfig(s.cfg)
 	return PaymentThreeDSConfigurationView{
-		AdaptiveEnabled:         cfg.AdaptiveEnabled,
-		LowRiskMaxAmount:        cfg.LowRiskMaxAmount,
+		AdaptiveEnabled:  cfg.AdaptiveEnabled,
+		LowRiskMaxAmount: cfg.LowRiskMaxAmount,
+		AVSBillingShippingMismatchHighValueThresholdUSD: cfg.AVSBillingShippingMismatchHighValueThresholdUSD,
 		TrustedPaidOrders:       cfg.TrustedPaidOrders,
 		VisitorRiskLookbackDays: cfg.VisitorRiskLookback,
 		StepUpRiskScore:         cfg.StepUpRiskScore,
@@ -151,18 +159,22 @@ func (s *PaymentThreeDSPolicyService) Decide(ctx context.Context, input PaymentT
 			manualProtectionApplied = true
 		}
 	}
+	avsApplied := false
+	if s != nil {
+		avsApplied = s.applyBillingShippingMismatchHighValueRule(&decision, input)
+	}
 	if s == nil || !s.cfg.AdaptiveEnabled {
 		decision.Reasons = append(decision.Reasons, "adaptive_3ds_disabled")
 		return decision
 	}
 
-	if !manualProtectionApplied {
+	if !manualProtectionApplied && !avsApplied {
 		decision.Strategy = "adaptive_default"
 	}
 	portfolioRiskPolicy, portfolioRiskErr := s.evaluatePortfolioRisk(input)
 	if portfolioRiskErr != nil {
 		decision.Mode = strongerThreeDSMode(decision.Mode, PaymentThreeDSModeAny)
-		decision.Strategy = "adaptive_step_up"
+		decision.Strategy = strongerPaymentThreeDSStrategy(decision.Strategy, "adaptive_step_up")
 		decision.Reasons = append(decision.Reasons, "portfolio_risk_unavailable")
 	} else {
 		decision.PortfolioRiskLevel = string(portfolioRiskPolicy.Level)
@@ -176,7 +188,7 @@ func (s *PaymentThreeDSPolicyService) Decide(ctx context.Context, input PaymentT
 	paymentRiskDecision, paymentRiskErr := s.evaluatePaymentRisk(ctx, input)
 	if paymentRiskErr != nil {
 		decision.Mode = strongerThreeDSMode(decision.Mode, PaymentThreeDSModeAny)
-		decision.Strategy = "adaptive_step_up"
+		decision.Strategy = strongerPaymentThreeDSStrategy(decision.Strategy, "adaptive_step_up")
 		decision.Reasons = append(decision.Reasons, "payment_risk_unavailable")
 	} else {
 		decision.RiskScore = paymentThreeDSMaxInt(decision.RiskScore, paymentRiskDecision.Score)
@@ -186,7 +198,7 @@ func (s *PaymentThreeDSPolicyService) Decide(ctx context.Context, input PaymentT
 	visitorAssessment, visitorRiskErr := s.evaluateVisitorRisk(ctx, input)
 	if visitorRiskErr != nil {
 		decision.Mode = strongerThreeDSMode(decision.Mode, PaymentThreeDSModeAny)
-		decision.Strategy = "adaptive_step_up"
+		decision.Strategy = strongerPaymentThreeDSStrategy(decision.Strategy, "adaptive_step_up")
 		decision.Reasons = append(decision.Reasons, "visitor_risk_unavailable")
 	} else {
 		decision.RiskScore = paymentThreeDSMaxInt(decision.RiskScore, visitorAssessment.RiskScore)
@@ -199,7 +211,7 @@ func (s *PaymentThreeDSPolicyService) Decide(ctx context.Context, input PaymentT
 	paidOrders, err := s.paidOrderCount(input)
 	if err != nil {
 		decision.Mode = strongerThreeDSMode(decision.Mode, PaymentThreeDSModeAny)
-		decision.Strategy = "adaptive_step_up"
+		decision.Strategy = strongerPaymentThreeDSStrategy(decision.Strategy, "adaptive_step_up")
 		decision.Reasons = append(decision.Reasons, "customer_history_unavailable")
 	} else if decision.Mode == PaymentThreeDSModeAutomatic && s.lowRiskExemptionCandidate(input, paidOrders, paymentRiskDecision, visitorAssessment) {
 		decision.Strategy = "adaptive_exemption_candidate"
@@ -279,10 +291,11 @@ func (s *PaymentThreeDSPolicyService) evaluateVisitorRisk(ctx context.Context, i
 		return VisitorRiskIdentityAssessment{RiskLevel: visitor.RiskLevelNormal}, nil
 	}
 	return s.visitorRisk.AssessIdentity(ctx, VisitorRiskIdentityAssessmentInput{
-		IPAddress:    input.IPAddress,
-		UserAgent:    input.UserAgent,
-		Now:          time.Now().UTC(),
-		LookbackDays: s.cfg.VisitorRiskLookback,
+		IPAddress:         input.IPAddress,
+		DeviceFingerprint: input.DeviceFingerprint,
+		UserAgent:         input.UserAgent,
+		Now:               time.Now().UTC(),
+		LookbackDays:      s.cfg.VisitorRiskLookback,
 	})
 }
 
@@ -298,6 +311,34 @@ func (s *PaymentThreeDSPolicyService) applyPaymentRiskDecision(decision *Payment
 		decision.Strategy = strongerPaymentThreeDSStrategy(decision.Strategy, "adaptive_step_up")
 		decision.Reasons = append(decision.Reasons, "payment_risk_step_up")
 	}
+}
+
+func (s *PaymentThreeDSPolicyService) applyBillingShippingMismatchHighValueRule(
+	decision *PaymentThreeDSDecision,
+	input PaymentThreeDSDecisionInput,
+) bool {
+	if s == nil || decision == nil {
+		return false
+	}
+	billingCountry := strings.ToUpper(strings.TrimSpace(input.BillingCountry))
+	shippingCountry := strings.ToUpper(strings.TrimSpace(input.ShippingCountry))
+	if billingCountry == "" || shippingCountry == "" || billingCountry == shippingCountry {
+		return false
+	}
+	if !strings.EqualFold(strings.TrimSpace(input.Currency), "USD") {
+		return false
+	}
+	if input.Amount <= s.cfg.AVSBillingShippingMismatchHighValueThresholdUSD {
+		return false
+	}
+
+	decision.Mode = strongerThreeDSMode(decision.Mode, PaymentThreeDSModeChallenge)
+	decision.Strategy = strongerPaymentThreeDSStrategy(decision.Strategy, "adaptive_challenge")
+	decision.RiskLevel = strongerVisitorRiskLevel(decision.RiskLevel, visitor.RiskLevelSuspicious)
+	decision.RiskScore = paymentThreeDSMaxInt(decision.RiskScore, s.cfg.ChallengeRiskScore)
+	decision.ExemptionCandidate = false
+	decision.Reasons = append(decision.Reasons, paymentThreeDSBillingShippingMismatchReason)
+	return true
 }
 
 func (s *PaymentThreeDSPolicyService) applyVisitorRiskAssessment(decision *PaymentThreeDSDecision, assessment VisitorRiskIdentityAssessment) {
@@ -380,6 +421,9 @@ func (s *PaymentThreeDSPolicyService) lowRiskExemptionCandidate(
 func normalizePaymentThreeDSConfig(cfg config.PaymentThreeDSConfig) config.PaymentThreeDSConfig {
 	if cfg.LowRiskMaxAmount < 0 {
 		cfg.LowRiskMaxAmount = 0
+	}
+	if cfg.AVSBillingShippingMismatchHighValueThresholdUSD <= 0 {
+		cfg.AVSBillingShippingMismatchHighValueThresholdUSD = paymentThreeDSBillingShippingMismatchThresholdUSD
 	}
 	if cfg.TrustedPaidOrders <= 0 {
 		cfg.TrustedPaidOrders = 1

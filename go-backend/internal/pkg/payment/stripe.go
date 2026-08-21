@@ -7,12 +7,12 @@ import (
 	"time"
 
 	"github.com/stripe/stripe-go/v76"
-	"github.com/stripe/stripe-go/v76/paymentintent"
-	"github.com/stripe/stripe-go/v76/refund"
+	stripeclient "github.com/stripe/stripe-go/v76/client"
 )
 
 // stripeGatewayImpl Stripe 支付网关完整实现
 type stripeGatewayImpl struct {
+	client *stripeclient.API
 	config *Config
 }
 
@@ -22,10 +22,17 @@ func NewStripeGateway(config *Config) (PaymentGateway, error) {
 		return nil, fmt.Errorf("config cannot be nil")
 	}
 
-	// 设置Stripe API密钥
-	stripe.Key = config.APIKey
+	return &stripeGatewayImpl{
+		client: stripeclient.New(config.APIKey, nil),
+		config: config,
+	}, nil
+}
 
-	return &stripeGatewayImpl{config: config}, nil
+func (g *stripeGatewayImpl) stripeClient() (*stripeclient.API, error) {
+	if g == nil || g.client == nil {
+		return nil, fmt.Errorf("stripe client is not initialized")
+	}
+	return g.client, nil
 }
 
 // CreatePayment 创建Stripe支付
@@ -105,7 +112,11 @@ func (g *stripeGatewayImpl) CreatePayment(ctx context.Context, req *PaymentReque
 	}
 
 	// 创建支付意图
-	pi, err := paymentintent.New(params)
+	client, err := g.stripeClient()
+	if err != nil {
+		return nil, err
+	}
+	pi, err := client.PaymentIntents.New(params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create stripe payment intent: %w", err)
 	}
@@ -153,7 +164,11 @@ func (g *stripeGatewayImpl) CapturePayment(ctx context.Context, paymentID string
 	// 捕获支付意图
 	params := &stripe.PaymentIntentCaptureParams{}
 	params.Context = ctx
-	pi, err := paymentintent.Capture(paymentID, params)
+	client, err := g.stripeClient()
+	if err != nil {
+		return nil, err
+	}
+	pi, err := client.PaymentIntents.Capture(paymentID, params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to capture stripe payment: %w", err)
 	}
@@ -189,9 +204,13 @@ func (g *stripeGatewayImpl) RefundPaymentWithOptions(ctx context.Context, paymen
 		return nil, fmt.Errorf("payment ID is required")
 	}
 
+	client, err := g.stripeClient()
+	if err != nil {
+		return nil, err
+	}
 	getParams := &stripe.PaymentIntentParams{}
 	getParams.Context = ctx
-	pi, err := paymentintent.Get(paymentID, getParams)
+	pi, err := client.PaymentIntents.Get(paymentID, getParams)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get stripe payment for refund: %w", err)
 	}
@@ -213,7 +232,7 @@ func (g *stripeGatewayImpl) RefundPaymentWithOptions(ctx context.Context, paymen
 	}
 
 	// 创建退款
-	r, err := refund.New(params)
+	r, err := client.Refunds.New(params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create stripe refund: %w", err)
 	}
@@ -242,9 +261,13 @@ func (g *stripeGatewayImpl) GetPayment(ctx context.Context, paymentID string) (*
 	}
 
 	// 获取支付意图
+	client, err := g.stripeClient()
+	if err != nil {
+		return nil, err
+	}
 	params := &stripe.PaymentIntentParams{}
 	params.Context = ctx
-	pi, err := paymentintent.Get(paymentID, params)
+	pi, err := client.PaymentIntents.Get(paymentID, params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get stripe payment: %w", err)
 	}

@@ -301,8 +301,9 @@ func TestValidateConfigRejectsShortPreviousOrderNumberSecretInRelease(t *testing
 func TestValidateConfigRejectsInvalidPaymentThreeDSConfig(t *testing.T) {
 	cfg := validTestConfig()
 	cfg.PaymentThreeDS = PaymentThreeDSConfig{
-		AdaptiveEnabled:     true,
-		LowRiskMaxAmount:    100,
+		AdaptiveEnabled:  true,
+		LowRiskMaxAmount: 100,
+		AVSBillingShippingMismatchHighValueThresholdUSD: 800,
 		TrustedPaidOrders:   0,
 		VisitorRiskLookback: 30,
 		StepUpRiskScore:     80,
@@ -311,6 +312,23 @@ func TestValidateConfigRejectsInvalidPaymentThreeDSConfig(t *testing.T) {
 
 	if err := validateConfig(cfg); err == nil {
 		t.Fatal("validateConfig should reject invalid payment 3DS config")
+	}
+}
+
+func TestValidateConfigRejectsInvalidPaymentThreeDSAvsThreshold(t *testing.T) {
+	cfg := validTestConfig()
+	cfg.PaymentThreeDS = PaymentThreeDSConfig{
+		AdaptiveEnabled:  true,
+		LowRiskMaxAmount: 100,
+		AVSBillingShippingMismatchHighValueThresholdUSD: 0,
+		TrustedPaidOrders:   1,
+		VisitorRiskLookback: 30,
+		StepUpRiskScore:     20,
+		ChallengeRiskScore:  60,
+	}
+
+	if err := validateConfig(cfg); err == nil {
+		t.Fatal("validateConfig should reject non-positive AVS threshold")
 	}
 }
 
@@ -552,6 +570,9 @@ func validTestConfig() *Config {
 		},
 		MediaUpload: MediaUploadConfig{
 			AccountStorageQuotaBytes: 20 << 30,
+		},
+		PaymentThreeDS: PaymentThreeDSConfig{
+			AVSBillingShippingMismatchHighValueThresholdUSD: 800,
 		},
 	}
 }

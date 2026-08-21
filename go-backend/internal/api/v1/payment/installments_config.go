@@ -7,11 +7,8 @@ import (
 	"commerce-platform/internal/repository"
 )
 
-func (h *Handler) resolveStripePaymentMethodTypes(orderCountry, orderCurrency string, fallback []string) ([]string, error) {
-	defaultTypes := normalizeStripePaymentMethodTypes(fallback)
-	if len(defaultTypes) == 0 {
-		defaultTypes = []string{"card"}
-	}
+func (h *Handler) resolveStripePaymentMethodTypes(orderCountry, orderCurrency string, orderAmount float64, fallback []string) ([]string, error) {
+	defaultTypes := finalizeStripePaymentMethodTypes(fallback, orderCurrency)
 	if h == nil || h.settingsService == nil {
 		return defaultTypes, nil
 	}
@@ -37,8 +34,14 @@ func (h *Handler) resolveStripePaymentMethodTypes(orderCountry, orderCurrency st
 	if len(settings.Currencies) > 0 && !containsNormalizedString(settings.Currencies, orderCurrency, true) {
 		return defaultTypes, nil
 	}
+	if settings.MinAmount > 0 && orderAmount < settings.MinAmount {
+		return defaultTypes, nil
+	}
+	if settings.MaxAmount > 0 && orderAmount > settings.MaxAmount {
+		return defaultTypes, nil
+	}
 
-	return settings.PaymentMethodTypes, nil
+	return finalizeStripePaymentMethodTypes(settings.PaymentMethodTypes, orderCurrency), nil
 }
 
 func normalizeStripePaymentMethodTypes(values []string) []string {
@@ -56,6 +59,87 @@ func normalizeStripePaymentMethodTypes(values []string) []string {
 		result = append(result, item)
 	}
 	return result
+}
+
+func finalizeStripePaymentMethodTypes(values []string, currency string) []string {
+	return filterStripePaymentMethodTypesForCurrency(ensureStripeCardPaymentMethodType(normalizeStripePaymentMethodTypes(values)), currency)
+}
+
+func ensureStripeCardPaymentMethodType(values []string) []string {
+	if containsStripePaymentMethodType(values, "card") {
+		return values
+	}
+	result := make([]string, 0, len(values)+1)
+	result = append(result, "card")
+	result = append(result, values...)
+	return result
+}
+
+func containsStripePaymentMethodType(values []string, target string) bool {
+	target = strings.ToLower(strings.TrimSpace(target))
+	for _, value := range values {
+		if strings.ToLower(strings.TrimSpace(value)) == target {
+			return true
+		}
+	}
+	return false
+}
+
+func filterStripePaymentMethodTypesForCurrency(values []string, currency string) []string {
+	currency = strings.ToUpper(strings.TrimSpace(currency))
+	result := make([]string, 0, len(values))
+	for _, value := range values {
+		if stripePaymentMethodTypeSupportsCurrency(value, currency) {
+			result = append(result, value)
+		}
+	}
+	if len(result) == 0 {
+		return []string{"card"}
+	}
+	return result
+}
+
+func stripePaymentMethodTypeSupportsCurrency(methodType, currency string) bool {
+	if currency == "" {
+		return true
+	}
+	supportedCurrencies, restricted := stripePaymentMethodCurrencySupport()[strings.ToLower(strings.TrimSpace(methodType))]
+	if !restricted {
+		return true
+	}
+	_, ok := supportedCurrencies[currency]
+	return ok
+}
+
+func stripePaymentMethodCurrencySupport() map[string]map[string]struct{} {
+	return map[string]map[string]struct{}{
+		"affirm": {
+			"CAD": {},
+			"USD": {},
+		},
+		"afterpay_clearpay": {
+			"AUD": {},
+			"CAD": {},
+			"GBP": {},
+			"NZD": {},
+			"USD": {},
+		},
+		"klarna": {
+			"AUD": {},
+			"CAD": {},
+			"CHF": {},
+			"CZK": {},
+			"DKK": {},
+			"EUR": {},
+			"GBP": {},
+			"NOK": {},
+			"NZD": {},
+			"PLN": {},
+			"RON": {},
+			"SEK": {},
+			"USD": {},
+		},
+	}
 }
 
 func containsNormalizedString(values []string, target string, upper bool) bool {

@@ -1,6 +1,7 @@
 package payment
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -8,11 +9,13 @@ import (
 
 	paymentdomain "commerce-platform/internal/domain/payment"
 	"commerce-platform/internal/pkg/apierror"
+	"commerce-platform/internal/pkg/logger"
 	pgateway "commerce-platform/internal/pkg/payment"
 	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stripe/stripe-go/v76"
+	"go.uber.org/zap"
 )
 
 func (h *Handler) handleStripeEarlyFraudWarning(c *gin.Context, event stripe.Event, payload []byte) {
@@ -55,7 +58,7 @@ func (h *Handler) handleStripeEarlyFraudWarning(c *gin.Context, event stripe.Eve
 			"event_type": string(event.Type),
 		},
 	}
-	if err := h.recordAndRefreshPaymentRiskEvent(c, riskInput); err != nil {
+	if err := h.recordAndRefreshPaymentRiskEvent(riskInput); err != nil {
 		apierror.RespondInternalError(c, err)
 		return
 	}
@@ -91,15 +94,34 @@ func (h *Handler) handleStripeEarlyFraudWarning(c *gin.Context, event stripe.Eve
 	})
 }
 
-func (h *Handler) recordAndRefreshPaymentRiskEvent(c *gin.Context, input service.PaymentRiskEventInput) error {
+func (h *Handler) recordAndRefreshPaymentRiskEvent(input service.PaymentRiskEventInput) error {
 	if h == nil || h.riskMonitoring == nil || !h.riskMonitoring.Enabled() {
 		return nil
 	}
 	if err := h.riskMonitoring.RecordEvent(input); err != nil {
 		return err
 	}
-	_, err := h.riskMonitoring.RecomputeProvider(c.Request.Context(), input.Provider, time.Now().UTC())
-	return err
+	h.refreshPaymentRiskSnapshotAsync(input.Provider, time.Now().UTC())
+	return nil
+}
+
+func (h *Handler) refreshPaymentRiskSnapshotAsync(provider string, now time.Time) {
+	if h == nil || h.riskMonitoring == nil || !h.riskMonitoring.Enabled() {
+		return
+	}
+	provider = strings.ToLower(strings.TrimSpace(provider))
+	if provider == "" {
+		return
+	}
+	monitoring := h.riskMonitoring
+	go func(provider string, now time.Time) {
+		if _, err := monitoring.RecomputeProvider(context.Background(), provider, now); err != nil {
+			logger.Warn("refresh payment risk snapshot failed",
+				zap.String("provider", provider),
+				zap.Error(err),
+			)
+		}
+	}(provider, now)
 }
 
 func (h *Handler) enqueueRefundRecommendation(input service.PaymentRiskEventInput) error {

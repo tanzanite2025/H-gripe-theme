@@ -26,20 +26,17 @@ func (g *paypalGatewayImpl) CapturePaymentWithOptions(ctx context.Context, payme
 
 	// 捕获订单
 	captureReq := paypal.CaptureOrderRequest{}
-	var capturedOrder *paypal.CaptureOrderResponse
-	var err error
 	requestID := strings.TrimSpace(options.IdempotencyKey)
-	if requestID != "" {
-		if client, ok := g.client.(interface {
-			CaptureOrderWithPaypalRequestId(context.Context, string, paypal.CaptureOrderRequest, string, *paypal.CaptureOrderMockResponse) (*paypal.CaptureOrderResponse, error)
-		}); ok {
-			capturedOrder, err = client.CaptureOrderWithPaypalRequestId(ctx, paymentID, captureReq, requestID, nil)
-		} else {
-			capturedOrder, err = g.client.CaptureOrder(ctx, paymentID, captureReq)
+	capturedOrder, err := retryPayPalOperation(g, ctx, func(callCtx context.Context) (*paypal.CaptureOrderResponse, error) {
+		if requestID != "" {
+			if client, ok := g.client.(interface {
+				CaptureOrderWithPaypalRequestId(context.Context, string, paypal.CaptureOrderRequest, string, *paypal.CaptureOrderMockResponse) (*paypal.CaptureOrderResponse, error)
+			}); ok {
+				return client.CaptureOrderWithPaypalRequestId(callCtx, paymentID, captureReq, requestID, nil)
+			}
 		}
-	} else {
-		capturedOrder, err = g.client.CaptureOrder(ctx, paymentID, captureReq)
-	}
+		return g.client.CaptureOrder(callCtx, paymentID, captureReq)
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to capture paypal order: %w", err)
 	}

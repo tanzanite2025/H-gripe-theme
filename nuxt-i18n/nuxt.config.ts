@@ -374,16 +374,16 @@ export default defineNuxtConfig({
     sourceMap: false,
     traceDeps: runtimeSharpTraceDeps,
     rollupConfig: {
-      onwarn(warning, warn) {
+      onwarn(warning: any, warn: any) {
         if (shouldIgnoreNitroBuildWarning(warning as RollupBuildWarning)) return
         warn(warning)
       },
-      onLog(level, log, handler) {
+      onLog(level: any, log: any, handler: any) {
         if (level === 'warn' && shouldIgnoreNitroBuildWarning(log as RollupBuildWarning)) return
         handler(level, log)
       },
     },
-  },
+  } as any,
 
   runtimeConfig: {
     apiInternalOrigin: internalApiOrigin,

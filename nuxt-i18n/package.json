@@ -3,9 +3,9 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "build": "npm run clean && npm run check:font-preflight && cross-env NODE_OPTIONS=\"--max-old-space-size=8192 --disable-warning=DEP0155\" nuxt build && npm run check:sharp-runtime && tsx scripts/storefront/check-production-artifacts.ts",
+    "build": "npm run clean && npm run postinstall && npm run check:font-preflight && cross-env NODE_OPTIONS=\"--max-old-space-size=8192 --disable-warning=DEP0155\" nuxt build && npm run check:sharp-runtime && tsx scripts/storefront/check-production-artifacts.ts",
     "dev": "cross-env NODE_OPTIONS=\"--max-old-space-size=8192 --disable-warning=DEP0155\" NODE_ENV=development NUXT_PORT=9199 NUXT_HTML_CACHE_ENABLED=false NUXT_PUBLIC_API_BASE=http://localhost:9200/api/v1 API_INTERNAL_ORIGIN=http://localhost:9200 tsx scripts/dev-fixed-port.ts",
-    "generate": "npm run clean && cross-env NODE_OPTIONS=\"--max-old-space-size=8192 --disable-warning=DEP0155\" nuxt generate && tsx scripts/storefront/check-production-artifacts.ts",
+    "generate": "npm run clean && npm run postinstall && cross-env NODE_OPTIONS=\"--max-old-space-size=8192 --disable-warning=DEP0155\" nuxt generate && tsx scripts/storefront/check-production-artifacts.ts",
     "preview": "node scripts/storefront/run-production-server.mjs",
     "postinstall": "nuxt prepare",
     "sync-data": "tsx scripts/sync-spoke-data.ts",

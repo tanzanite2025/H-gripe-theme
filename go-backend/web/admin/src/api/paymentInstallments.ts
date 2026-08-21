@@ -3,6 +3,7 @@ import {
   requireApiArrayField,
   requireApiBooleanField,
   requireApiObject,
+  requireApiNumberField,
   requireApiStringField,
   unwrapApiPayload,
 } from "@/utils/apiResponse";
@@ -13,6 +14,8 @@ export interface PaymentProviderInstallmentsSettings {
   payment_method_types?: string[];
   countries?: string[];
   currencies?: string[];
+  min_amount?: number;
+  max_amount?: number;
   notes?: string;
 }
 
@@ -21,6 +24,8 @@ export interface PaymentProviderInstallmentsUpdateRequest {
   payment_method_types: string[];
   countries: string[];
   currencies: string[];
+  min_amount: number;
+  max_amount: number;
   notes: string;
 }
 
@@ -56,6 +61,12 @@ const readPaymentProviderInstallmentsSettings = (
       "currencies",
       path,
     );
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, "min_amount")) {
+    settings.min_amount = requireApiNumberField(payload, "min_amount", path);
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, "max_amount")) {
+    settings.max_amount = requireApiNumberField(payload, "max_amount", path);
   }
   if (Object.prototype.hasOwnProperty.call(payload, "notes")) {
     settings.notes = requireApiStringField(payload, "notes", path);

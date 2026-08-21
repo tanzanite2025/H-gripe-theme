@@ -15,8 +15,9 @@ const (
 	RiskLevelSuspicious = "suspicious"
 	RiskLevelBlock      = "block"
 
-	RiskDecisionScopeIPHash   = "ip_hash"
-	RiskDecisionScopeIPUAHash = "ip_ua_hash"
+	RiskDecisionScopeIPHash                = "ip_hash"
+	RiskDecisionScopeIPUAHash              = "ip_ua_hash"
+	RiskDecisionScopeDeviceFingerprintHash = "device_fingerprint_hash"
 
 	RiskDecisionActionIgnore         = "ignore"
 	RiskDecisionActionWatch          = "watch"
@@ -28,6 +29,7 @@ type RiskDailyFact struct {
 	ID                    uint           `gorm:"primarykey" json:"id"`
 	Day                   time.Time      `gorm:"type:date;not null;uniqueIndex:uk_visitor_risk_daily_fact" json:"day"`
 	IPHash                string         `gorm:"size:64;not null;uniqueIndex:uk_visitor_risk_daily_fact;index" json:"ip_hash"`
+	DeviceFingerprintHash string         `gorm:"size:64;not null;default:'';index" json:"device_fingerprint_hash,omitempty"`
 	UserAgentHash         string         `gorm:"size:64;not null;default:'';uniqueIndex:uk_visitor_risk_daily_fact" json:"user_agent_hash"`
 	CountryCode           string         `gorm:"size:8;index" json:"country_code,omitempty"`
 	FirstSeenAt           time.Time      `gorm:"not null" json:"first_seen_at"`

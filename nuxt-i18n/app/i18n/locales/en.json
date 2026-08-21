@@ -543,9 +543,9 @@
     },
     "paypalCancel": {
       "title": "PayPal payment cancelled",
-      "message": "The order is still unpaid. You can try payment again or contact support.",
+      "message": "The order is still unpaid. Reopen the cart to choose card or another payment method, or contact support.",
       "actions": {
-        "tryAgain": "Try again"
+        "tryAgain": "Reopen cart"
       }
     },
     "alipayReturn": {

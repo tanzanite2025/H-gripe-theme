@@ -13,6 +13,7 @@ import {
   WHEELSET_PRODUCT_CATEGORY_SLUG,
   WHEELSET_SELECTION_ASSISTANT_SLUG,
 } from '~/types/wheelsetSelectionAssistant'
+import { normalizeStorefrontLocaleCode } from '~/utils/storefrontLocales'
 
 interface AssistantSelectionState {
   nodeKey: string
@@ -33,11 +34,8 @@ const localizedText = (
   locale: string,
 ): string => {
   if (!value) return ''
-  const normalized = normalizeLocale(locale)
+  const normalized = normalizeStorefrontLocaleCode(locale) || normalizeLocale(locale)
   const base = normalized.split('_')[0] || ''
-  if (normalized === 'zh_cn' || base === 'zh') {
-    return String(value[normalized] || value[base] || value.zh_cn || value.en || '')
-  }
   return String(value[normalized] || value[base] || value.en || '')
 }
 

@@ -1,4 +1,5 @@
 import { useRuntimeConfig } from 'nuxt/app'
+import { attachDeviceFingerprintHeader } from '~/utils/deviceFingerprint'
 
 export type MaybeJson = Record<string, unknown> | string | null
 
@@ -135,12 +136,13 @@ export function useApiRequest() {
         headers.set(csrfHeaderName, csrfToken)
       }
     }
-    await signRequest(headers, (init.method || 'GET').toUpperCase(), baseURL, path, init.body, requestSigningKey)
+    const requestHeaders = await attachDeviceFingerprintHeader(headers)
+    await signRequest(requestHeaders, (init.method || 'GET').toUpperCase(), baseURL, path, init.body, requestSigningKey)
 
     const finalInit: RequestInit = {
       credentials: defaultCredentials,
       ...init,
-      headers,
+      headers: requestHeaders,
     }
 
     const response = await fetch(`${baseURL}${path}`, finalInit)

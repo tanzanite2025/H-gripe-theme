@@ -6,7 +6,12 @@
       <p>{{ t('checkout.paypalCancel.message') }}</p>
       <p v-if="orderNumber" class="paypal-cancel-order">{{ orderNumber }}</p>
       <div class="paypal-cancel-actions">
+        <button class="paypal-cancel-button paypal-cancel-button--primary" type="button" @click="openCart">
+          <Icon name="lucide:rotate-ccw" class="paypal-cancel-button__icon" />
+          {{ t('checkout.paypalCancel.actions.tryAgain') }}
+        </button>
         <NuxtLink class="paypal-cancel-button" :to="localePath('/')">
+          <Icon name="lucide:shopping-bag" class="paypal-cancel-button__icon" />
           {{ t('checkout.paypalReturn.actions.continueShopping') }}
         </NuxtLink>
       </div>
@@ -17,10 +22,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n, useLocalePath, useRoute } from '#imports'
+import { useCart } from '~/composables/useCart'
 
 const { t } = useI18n()
 const route = useRoute()
 const localePath = useLocalePath()
+const { openCart } = useCart()
 const firstQueryValue = (value: unknown) => Array.isArray(value) ? String(value[0] || '') : String(value || '')
 const orderNumber = computed(() => firstQueryValue(route.query.order_number).trim())
 </script>
@@ -77,6 +84,10 @@ const orderNumber = computed(() => firstQueryValue(route.query.order_number).tri
 }
 
 .paypal-cancel-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
   border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: 8px;
   padding: 0.7rem 1rem;
@@ -88,5 +99,10 @@ const orderNumber = computed(() => firstQueryValue(route.query.order_number).tri
 .paypal-cancel-button--primary {
   background: #fff;
   color: #020617;
+}
+
+.paypal-cancel-button__icon {
+  width: 1rem;
+  height: 1rem;
 }
 </style>

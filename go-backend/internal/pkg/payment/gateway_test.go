@@ -3,6 +3,8 @@ package payment
 import (
 	"context"
 	"testing"
+
+	"github.com/stripe/stripe-go/v76"
 )
 
 func TestValidatePaymentRequest(t *testing.T) {
@@ -259,5 +261,34 @@ func TestValidateConfig(t *testing.T) {
 				t.Errorf("validateConfig() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
+	}
+}
+
+func TestNewStripeGatewayInitializesClientWithoutTouchingGlobalKey(t *testing.T) {
+	originalKey := stripe.Key
+	defer func() {
+		stripe.Key = originalKey
+	}()
+
+	stripe.Key = "sentinel_key"
+
+	gateway, err := NewStripeGateway(&Config{
+		Type:        GatewayStripe,
+		APIKey:      "sk_test_123",
+		Environment: "sandbox",
+	})
+	if err != nil {
+		t.Fatalf("NewStripeGateway() error = %v", err)
+	}
+	if stripe.Key != "sentinel_key" {
+		t.Fatalf("NewStripeGateway() mutated stripe.Key = %q, want %q", stripe.Key, "sentinel_key")
+	}
+
+	impl, ok := gateway.(*stripeGatewayImpl)
+	if !ok {
+		t.Fatalf("NewStripeGateway() type = %T, want *stripeGatewayImpl", gateway)
+	}
+	if impl.client == nil || impl.client.PaymentIntents == nil || impl.client.Refunds == nil {
+		t.Fatal("NewStripeGateway() did not initialize Stripe client subclients")
 	}
 }

@@ -3,6 +3,7 @@ import { useI18n } from '#imports'
 import { useAuth } from '~/composables/useAuth'
 import { useCart } from '~/composables/useCart'
 import { useMembership } from '~/composables/useMembership'
+import { ApiRequestError } from '~/composables/useApiRequest'
 import { createOverlayInstanceId, useOverlayBackStack } from '~/composables/useOverlayBackStack'
 import { normalizeShopProduct } from '~/composables/useShopProducts'
 import { createStorefrontMediaContext } from '~/utils/storefrontMedia'
@@ -775,6 +776,10 @@ export const useWhatsAppState = (
       if (!Array.isArray(response)) throw new Error('[CRITICAL] Invalid response format for orders API');
       ordersList.value = response
     } catch (error) {
+      if (error instanceof ApiRequestError && (error.status === 401 || error.status === 403)) {
+        ordersList.value = []
+        return
+      }
       console.error('加载订单失败:', error)
       ordersList.value = []
     } finally {

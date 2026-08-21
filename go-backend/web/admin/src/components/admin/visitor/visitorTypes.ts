@@ -48,6 +48,7 @@ export interface VisitorRiskFact {
   risk_score?: number | string
   decision?: VisitorRiskDecision | null
   ip_hash_preview?: string
+  device_fingerprint_hash_preview?: string
   user_agent_hash_preview?: string
   country_code?: string
   request_count?: number | string

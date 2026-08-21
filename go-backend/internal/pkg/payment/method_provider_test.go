@@ -56,19 +56,26 @@ func TestGatewayCurrencyCapabilities(t *testing.T) {
 }
 
 func TestFormatMajorAmountUsesCurrencyMinorUnits(t *testing.T) {
-	value, err := FormatMajorAmount(123.45, "USD")
-	if err != nil {
-		t.Fatalf("FormatMajorAmount USD error = %v", err)
-	}
-	if value != "123.45" {
-		t.Fatalf("FormatMajorAmount USD = %q, want 123.45", value)
+	tests := []struct {
+		name     string
+		amount   float64
+		currency string
+		want     string
+	}{
+		{name: "usd uses two decimals", amount: 123.45, currency: "USD", want: "123.45"},
+		{name: "eur uses two decimals", amount: 123.4, currency: "EUR", want: "123.40"},
+		{name: "jpy uses zero decimals", amount: 123, currency: "JPY", want: "123"},
 	}
 
-	value, err = FormatMajorAmount(123, "JPY")
-	if err != nil {
-		t.Fatalf("FormatMajorAmount JPY error = %v", err)
-	}
-	if value != "123" {
-		t.Fatalf("FormatMajorAmount JPY = %q, want 123", value)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			value, err := FormatMajorAmount(tt.amount, tt.currency)
+			if err != nil {
+				t.Fatalf("FormatMajorAmount(%s) error = %v", tt.currency, err)
+			}
+			if value != tt.want {
+				t.Fatalf("FormatMajorAmount(%s) = %q, want %q", tt.currency, value, tt.want)
+			}
+		})
 	}
 }

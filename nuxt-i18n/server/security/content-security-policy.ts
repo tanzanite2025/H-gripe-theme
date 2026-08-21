@@ -102,7 +102,7 @@ const normalizeConfiguredSource = (
 
   try {
     const url = new URL(candidate)
-    if (!['http:', 'https:'].includes(url.protocol)) return null
+    if (!['http:', 'https:', 'ws:', 'wss:'].includes(url.protocol)) return null
     if (url.username || url.password || url.hostname.includes('*') || url.pathname !== '/' || url.search || url.hash) return null
     return url.origin
   } catch {
@@ -175,6 +175,30 @@ const originFromUrl = (value: string): string | null => {
     return null
   }
 }
+
+const websocketOriginFromUrl = (value: string): string | null => {
+  const candidate = value.trim()
+  if (!candidate) return null
+
+  try {
+    const url = new URL(candidate)
+    if (url.protocol === 'http:') {
+      url.protocol = 'ws:'
+      return url.origin
+    }
+    if (url.protocol === 'https:') {
+      url.protocol = 'wss:'
+      return url.origin
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
+const publicWebSocketOrigins = uniqueSources(publicSiteOrigins, publicApiOrigins)
+  .map(websocketOriginFromUrl)
+  .filter((value): value is string => Boolean(value))
 
 const addResourceOrigin = (origins: Set<string>, value: string): void => {
   const origin = originFromUrl(value)
@@ -338,6 +362,7 @@ export const createContentSecurityPolicy = (
     staticConnectSources,
     publicApiOrigins,
     publicSiteOrigins,
+    publicWebSocketOrigins,
     configuredSources('NUXT_CSP_CONNECT_SRC'),
   )
   const fontSources = uniqueSources(assetSources, configuredSources('NUXT_CSP_FONT_SRC', new Set(['data:'])))

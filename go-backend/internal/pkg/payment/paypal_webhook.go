@@ -12,6 +12,8 @@ import (
 	"github.com/plutov/paypal/v4"
 )
 
+const paypalWebhookVerificationTimeout = 5 * time.Second
+
 // VerifyWebhook 验证PayPal Webhook签名
 func (g *paypalGatewayImpl) VerifyWebhook(payload []byte, signature string) (bool, error) {
 	return false, fmt.Errorf("paypal webhook verification requires full PayPal transmission headers")
@@ -31,6 +33,9 @@ type PayPalWebhookVerifier interface {
 }
 
 func VerifyPayPalWebhook(ctx context.Context, config *Config, headers http.Header, payload []byte, verifier PayPalWebhookVerifier) (PayPalWebhookEvent, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	if config == nil {
 		return PayPalWebhookEvent{}, fmt.Errorf("paypal config is required")
 	}
@@ -56,7 +61,10 @@ func VerifyPayPalWebhook(ctx context.Context, config *Config, headers http.Heade
 	}
 	req.Header = headers.Clone()
 
-	verification, err := verifier.VerifyWebhookSignature(ctx, req, config.WebhookSecret)
+	verificationCtx, cancel := context.WithTimeout(ctx, paypalWebhookVerificationTimeout)
+	defer cancel()
+
+	verification, err := verifier.VerifyWebhookSignature(verificationCtx, req, config.WebhookSecret)
 	if err != nil {
 		return PayPalWebhookEvent{}, fmt.Errorf("paypal webhook signature verification failed: %w", err)
 	}
@@ -93,6 +101,14 @@ func newPayPalVerificationClient(config *Config) (*paypal.Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	client.SetHTTPClient(&http.Client{Timeout: 10 * time.Second})
+	client.SetHTTPClient(&http.Client{
+		Timeout: paypalWebhookVerificationTimeout,
+		Transport: &http.Transport{
+			Proxy:               http.ProxyFromEnvironment,
+			MaxIdleConns:        50,
+			MaxIdleConnsPerHost: 50,
+			IdleConnTimeout:     90 * time.Second,
+		},
+	})
 	return client, nil
 }

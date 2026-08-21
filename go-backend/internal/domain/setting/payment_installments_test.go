@@ -5,9 +5,11 @@ import "testing"
 func TestPaymentProviderInstallmentsSettingsRoundTrip(t *testing.T) {
 	request := PaymentProviderInstallmentsUpdateRequest{
 		Enabled:            true,
-		PaymentMethodTypes: []string{"card", "klarna", "card"},
+		PaymentMethodTypes: []string{"klarna", "card", "klana", "card"},
 		Countries:          []string{"us", "gb", "US"},
 		Currencies:         []string{"usd", "eur", "usd"},
+		MinAmount:          100,
+		MaxAmount:          5000,
 		Notes:              "  test note  ",
 	}
 	settings := request.Settings("stripe")
@@ -23,6 +25,9 @@ func TestPaymentProviderInstallmentsSettingsRoundTrip(t *testing.T) {
 	if len(settings.Currencies) != 2 || settings.Currencies[0] != "USD" || settings.Currencies[1] != "EUR" {
 		t.Fatalf("unexpected currencies: %#v", settings.Currencies)
 	}
+	if settings.MinAmount != 100 || settings.MaxAmount != 5000 {
+		t.Fatalf("unexpected amount thresholds: min=%v max=%v", settings.MinAmount, settings.MaxAmount)
+	}
 	if settings.Notes != "test note" {
 		t.Fatalf("unexpected notes: %q", settings.Notes)
 	}
@@ -35,7 +40,7 @@ func TestPaymentProviderInstallmentsSettingsRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("PaymentProviderInstallmentsSettingsFromValue() error = %v", err)
 	}
-	if !parsed.Enabled || len(parsed.PaymentMethodTypes) != 2 {
+	if !parsed.Enabled || len(parsed.PaymentMethodTypes) != 2 || parsed.MinAmount != 100 || parsed.MaxAmount != 5000 {
 		t.Fatalf("unexpected parsed settings: %#v", parsed)
 	}
 }

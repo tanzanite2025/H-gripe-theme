@@ -6,18 +6,21 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/plutov/paypal/v4"
 )
 
 type fakePayPalWebhookVerifier struct {
-	status string
-	err    error
-	seen   *http.Request
-	seenID string
+	status  string
+	err     error
+	seen    *http.Request
+	seenCtx context.Context
+	seenID  string
 }
 
 func (f *fakePayPalWebhookVerifier) VerifyWebhookSignature(ctx context.Context, httpReq *http.Request, webhookID string) (*paypal.VerifyWebhookResponse, error) {
+	f.seenCtx = ctx
 	f.seen = httpReq
 	f.seenID = webhookID
 	if f.err != nil {
@@ -75,6 +78,56 @@ func TestVerifyPayPalWebhookFailsClosedWhenOfficialVerifierRejects(t *testing.T)
 		t.Fatalf("expected PayPal verifier error, got %v", err)
 	}
 
+}
+
+func TestVerifyPayPalWebhookUsesFiveSecondTimeout(t *testing.T) {
+	verifier := &fakePayPalWebhookVerifier{status: "SUCCESS"}
+
+	_, err := VerifyPayPalWebhook(context.Background(), &Config{
+		WebhookSecret: "webhook-id",
+	}, validPayPalWebhookHeaders(), []byte(`{"id":"evt_1","event_type":"CHECKOUT.ORDER.COMPLETED"}`), verifier)
+	if err != nil {
+		t.Fatalf("VerifyPayPalWebhook() error = %v", err)
+	}
+	if verifier.seenCtx == nil {
+		t.Fatalf("expected webhook verifier to receive a context")
+	}
+	deadline, ok := verifier.seenCtx.Deadline()
+	if !ok {
+		t.Fatalf("expected webhook verifier context deadline")
+	}
+	remaining := time.Until(deadline)
+	if remaining <= 0 || remaining > 5*time.Second {
+		t.Fatalf("unexpected webhook verification timeout remaining: %v", remaining)
+	}
+}
+
+func TestNewPayPalVerificationClientUsesPooledHTTPClient(t *testing.T) {
+	client, err := newPayPalVerificationClient(&Config{
+		APIKey:        "client-id",
+		SecretKey:     "secret",
+		Environment:   "production",
+		WebhookSecret: "webhook-id",
+	})
+	if err != nil {
+		t.Fatalf("newPayPalVerificationClient() error = %v", err)
+	}
+	if client.Client == nil {
+		t.Fatalf("expected configured HTTP client")
+	}
+	if client.Client.Timeout != paypalWebhookVerificationTimeout {
+		t.Fatalf("unexpected http client timeout: %v", client.Client.Timeout)
+	}
+	transport, ok := client.Client.Transport.(*http.Transport)
+	if !ok {
+		t.Fatalf("expected http transport, got %T", client.Client.Transport)
+	}
+	if transport.MaxIdleConns != 50 || transport.MaxIdleConnsPerHost != 50 {
+		t.Fatalf("unexpected transport idle conns config: %+v", transport)
+	}
+	if transport.IdleConnTimeout != 90*time.Second {
+		t.Fatalf("unexpected transport idle conn timeout: %v", transport.IdleConnTimeout)
+	}
 }
 
 func TestVerifyAlipayWebhookFailsClosedWithoutSignatureOrPublicKey(t *testing.T) {

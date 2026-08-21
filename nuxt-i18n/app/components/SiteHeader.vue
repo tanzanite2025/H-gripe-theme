@@ -299,23 +299,23 @@
 				</div>
 
 				<!-- 第二行：四个大类独立于品牌工具栏，保持固定可控的行高。 -->
-				<div class="site-header-mobile-nav-row -mx-4 px-4">
-					<nav ref="mobilePrimaryNavRef" class="site-header-mobile-nav w-full rounded-xl px-1 py-0.5 grid grid-cols-4 gap-1 relative shadow-[0_8px_18px_-14px_rgba(0,0,0,0.9)]" aria-label="Mobile primary navigation">
+				<div class="site-header-mobile-nav-row -mx-4 px-0">
+					<nav ref="mobilePrimaryNavRef" class="site-header-mobile-nav w-full rounded-none px-0 py-0 grid grid-cols-4 gap-0 relative shadow-[0_8px_18px_-14px_rgba(0,0,0,0.9)]" aria-label="Mobile primary navigation">
 					<button
 						v-for="section in primaryMegaNavSections"
 						:key="section.id"
 						type="button"
-						class="site-header-mobile-nav__button min-w-0 py-2 rounded-lg text-[13px] phone-390:text-[14px] font-semibold text-center text-white transition-all inline-flex items-center justify-center gap-0.5"
+						class="site-header-mobile-nav__button min-w-0 w-full py-2 px-0.5 rounded-none text-[13px] font-semibold uppercase leading-none text-center text-white transition-all inline-flex items-center justify-center gap-1"
 						:class="{ 'site-header-mobile-nav__button--active': currentMegaNavId === section.id }"
 						:aria-controls="megaPanelId"
 						:aria-expanded="activeMegaNavId === section.id"
 						aria-haspopup="dialog"
 						@click.stop="toggleMegaNav(section.id)"
 					>
-						<span class="truncate">{{ t(section.labelKey, section.labelFallback) }}</span>
+						<span class="min-w-0 truncate">{{ t(section.labelKey, section.labelFallback) }}</span>
 						<Icon
 							name="lucide:chevron-down"
-							class="h-3 w-3 shrink-0 transition-transform duration-200"
+							class="h-3.5 w-3.5 shrink-0 transition-transform duration-200"
 							:class="{ 'rotate-180 text-[#B5FF6D]': activeMegaNavId === section.id }"
 						/>
 					</button>
@@ -2160,12 +2160,13 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 }
 
 .site-header-menu-laser__text {
-	display: inline-block;
-	transform-origin: center;
-	transition:
-		color 0.3s ease,
-		transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-	white-space: nowrap;
+  display: inline-block;
+  transform-origin: center;
+  transition:
+    color 0.3s ease,
+    transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .site-header-menu-laser__icon {
@@ -2626,7 +2627,7 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 	}
 
 	.site-header-mobile-nav-row {
-		--site-header-mobile-nav-inline-padding: 16px;
+		--site-header-mobile-nav-inline-padding: 0px;
 		width: 100%;
 		margin: 0;
 		padding-right: var(--site-header-mobile-nav-inline-padding);
@@ -2641,6 +2642,7 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 
 	.site-header-mobile-nav__button {
 		color: #f0f0f0;
+		text-transform: uppercase;
 	}
 
 	.site-header-mobile-nav__button:hover,
@@ -2690,8 +2692,27 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 	}
 
 	.desktop-header-grid {
-		display: flex !important;
-		grid-template-columns: none;
+		display: grid !important;
+		grid-template-columns: 168px minmax(0, 1fr) 152px;
+		gap: 0.5rem;
+		align-items: center;
+	}
+
+	.desktop-header-grid > :first-child {
+		min-width: 0;
+	}
+
+	.desktop-header-grid > nav {
+		min-width: 0;
+		width: 100%;
+		justify-content: space-between;
+		gap: 0;
+	}
+
+	.site-header-menu-laser {
+		flex: 1 1 0;
+		min-width: 0;
+		padding-inline: 0.35rem;
 	}
 
 	.desktop-lang-switcher {

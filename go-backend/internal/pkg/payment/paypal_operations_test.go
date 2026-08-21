@@ -3,6 +3,7 @@ package payment
 import (
 	"context"
 	"errors"
+	"net/http"
 	"testing"
 
 	"github.com/plutov/paypal/v4"
@@ -63,21 +64,105 @@ func TestPayPalRefundDoesNotResolveCaptureFromOrderID(t *testing.T) {
 	}
 }
 
+func TestPayPalCreatePaymentRetriesOnUnauthorized(t *testing.T) {
+	client := &fakePayPalCheckoutClient{
+		createOrderErrs: []error{paypalUnauthorizedError(t)},
+		createOrderResponse: &paypal.Order{
+			ID:     "ORDER-2",
+			Status: "CREATED",
+			Links: []paypal.Link{
+				{Rel: "approve", Href: "https://paypal.example/approve"},
+			},
+		},
+	}
+	gateway := &paypalGatewayImpl{config: &Config{Type: GatewayPayPal}, client: client}
+
+	response, err := gateway.CreatePayment(context.Background(), &PaymentRequest{
+		Amount:      12.34,
+		Currency:    "USD",
+		OrderID:     "ORDER-1",
+		Description: "test order",
+		Customer:    &Customer{Email: "buyer@example.com", Name: "Buyer"},
+	})
+	if err != nil {
+		t.Fatalf("CreatePayment() error = %v", err)
+	}
+	if client.createOrderCalls != 2 {
+		t.Fatalf("expected create order retry, got %d calls", client.createOrderCalls)
+	}
+	if client.accessTokenRefreshes != 1 {
+		t.Fatalf("expected one access token refresh, got %d", client.accessTokenRefreshes)
+	}
+	if response.ID != "ORDER-2" || response.PaymentURL != "https://paypal.example/approve" {
+		t.Fatalf("unexpected payment response: %#v", response)
+	}
+}
+
+func TestPayPalCapturePaymentRetriesOnUnauthorized(t *testing.T) {
+	client := &fakePayPalCheckoutClient{
+		captureOrderErrs: []error{paypalUnauthorizedError(t)},
+		captureOrderResponse: &paypal.CaptureOrderResponse{
+			ID:     "ORDER-1",
+			Status: "PENDING",
+		},
+	}
+	gateway := &paypalGatewayImpl{config: &Config{Type: GatewayPayPal}, client: client}
+
+	response, err := gateway.CapturePayment(context.Background(), "ORDER-1")
+	if err != nil {
+		t.Fatalf("CapturePayment() error = %v", err)
+	}
+	if client.captureOrderCalls != 2 {
+		t.Fatalf("expected capture retry, got %d calls", client.captureOrderCalls)
+	}
+	if client.accessTokenRefreshes != 1 {
+		t.Fatalf("expected one access token refresh, got %d", client.accessTokenRefreshes)
+	}
+	if response.ID != "ORDER-1" || response.Status != "PENDING" {
+		t.Fatalf("unexpected capture response: %#v", response)
+	}
+}
+
 type fakePayPalCheckoutClient struct {
-	order           *paypal.Order
-	getOrderID      string
-	refundCaptureID string
-	refundRequest   paypal.RefundCaptureRequest
-	refundRequestID string
-	refundErr       error
-	refundResponse  *paypal.RefundResponse
+	order                *paypal.Order
+	getOrderID           string
+	refundCaptureID      string
+	refundRequest        paypal.RefundCaptureRequest
+	refundRequestID      string
+	refundErr            error
+	refundResponse       *paypal.RefundResponse
+	createOrderCalls     int
+	captureOrderCalls    int
+	createOrderErrs      []error
+	captureOrderErrs     []error
+	createOrderResponse  *paypal.Order
+	captureOrderResponse *paypal.CaptureOrderResponse
+	accessTokenRefreshes int
 }
 
 func (c *fakePayPalCheckoutClient) CreateOrder(context.Context, string, []paypal.PurchaseUnitRequest, *paypal.PaymentSource, *paypal.ApplicationContext) (*paypal.Order, error) {
+	c.createOrderCalls++
+	if len(c.createOrderErrs) > 0 {
+		err := c.createOrderErrs[0]
+		c.createOrderErrs = c.createOrderErrs[1:]
+		return nil, err
+	}
+	if c.createOrderResponse != nil {
+		return c.createOrderResponse, nil
+	}
 	return nil, errors.New("not implemented")
 }
 
 func (c *fakePayPalCheckoutClient) CaptureOrder(context.Context, string, paypal.CaptureOrderRequest) (*paypal.CaptureOrderResponse, error) {
+	c.captureOrderCalls++
+	if len(c.captureOrderErrs) > 0 {
+		err := c.captureOrderErrs[0]
+		c.captureOrderErrs = c.captureOrderErrs[1:]
+		return nil, err
+	}
+	if c.captureOrderResponse != nil {
+		return c.captureOrderResponse, nil
+	}
 	return nil, errors.New("not implemented")
 }
 
@@ -99,4 +184,24 @@ func (c *fakePayPalCheckoutClient) RefundCaptureWithPaypalRequestId(_ context.Co
 		return nil, err
 	}
 	return c.refundResponse, nil
+}
+
+func (c *fakePayPalCheckoutClient) GetAccessToken(context.Context) (*paypal.TokenResponse, error) {
+	c.accessTokenRefreshes++
+	return &paypal.TokenResponse{Token: "refreshed-token"}, nil
+}
+
+func paypalUnauthorizedError(t *testing.T) error {
+	t.Helper()
+	req, err := http.NewRequest(http.MethodPost, "https://api-m.paypal.com/v2/checkout/orders", nil)
+	if err != nil {
+		t.Fatalf("failed to build paypal unauthorized request: %v", err)
+	}
+	return &paypal.ErrorResponse{
+		Response: &http.Response{
+			StatusCode: http.StatusUnauthorized,
+			Request:    req,
+		},
+		Message: "Unauthorized",
+	}
 }
