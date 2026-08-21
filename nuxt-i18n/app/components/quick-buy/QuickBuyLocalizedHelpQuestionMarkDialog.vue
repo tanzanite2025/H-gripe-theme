@@ -15,40 +15,44 @@
       <span aria-hidden="true">?</span>
     </button>
 
-    <Transition name="quickbuy-localized-help-dialog-fade">
-      <section
-        v-if="isQuickBuyLocalizedHelpDialogOpen"
-        class="quickbuy-localized-help-dialog"
-        role="dialog"
-        :aria-modal="false"
-        :aria-label="dialogTitle"
-        @click.stop
-      >
-        <header class="quickbuy-localized-help-dialog__header">
-          <h3 class="quickbuy-localized-help-dialog__title">
-            {{ dialogTitle }}
-          </h3>
-          <button
-            class="quickbuy-localized-help-dialog__close"
-            type="button"
-            :aria-label="closeLabel"
-            :title="closeLabel"
-            @click="closeQuickBuyLocalizedHelpDialog"
-          >
-            <Icon name="lucide:x" class="h-4 w-4" aria-hidden="true" />
-          </button>
-        </header>
+    <Teleport to="body">
+      <Transition name="quickbuy-localized-help-dialog-fade">
+        <section
+          v-if="isQuickBuyLocalizedHelpDialogOpen"
+          ref="quickBuyLocalizedHelpDialogRef"
+          class="quickbuy-localized-help-dialog"
+          :style="quickBuyLocalizedHelpDialogStyle"
+          role="dialog"
+          :aria-modal="false"
+          :aria-label="dialogTitle"
+          @click.stop
+        >
+          <header class="quickbuy-localized-help-dialog__header">
+            <h3 class="quickbuy-localized-help-dialog__title">
+              {{ dialogTitle }}
+            </h3>
+            <button
+              class="quickbuy-localized-help-dialog__close tz-global-close-btn"
+              type="button"
+              :aria-label="closeLabel"
+              :title="closeLabel"
+              @click="closeQuickBuyLocalizedHelpDialog"
+            >
+              <Icon name="lucide:x" class="h-4 w-4" aria-hidden="true" />
+            </button>
+          </header>
 
-        <div class="quickbuy-localized-help-dialog__content">
-          {{ normalizedLocalizedHelpContent }}
-        </div>
-      </section>
-    </Transition>
+          <div class="quickbuy-localized-help-dialog__content">
+            {{ normalizedLocalizedHelpContent }}
+          </div>
+        </section>
+      </Transition>
+    </Teleport>
   </span>
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 
 const props = withDefaults(defineProps<{
   title: string
@@ -62,6 +66,8 @@ const props = withDefaults(defineProps<{
 
 const isQuickBuyLocalizedHelpDialogOpen = ref(false)
 const quickBuyLocalizedHelpDialogRoot = ref<HTMLElement | null>(null)
+const quickBuyLocalizedHelpDialogRef = ref<HTMLElement | null>(null)
+const quickBuyLocalizedHelpDialogStyle = ref<Record<string, string>>({})
 
 const normalizedLocalizedHelpContent = computed(() => String(props.content || '').trim())
 const hasLocalizedHelpContent = computed(() => normalizedLocalizedHelpContent.value.length > 0)
@@ -76,6 +82,59 @@ const closeQuickBuyLocalizedHelpDialog = () => {
   isQuickBuyLocalizedHelpDialogOpen.value = false
 }
 
+const updateQuickBuyLocalizedHelpDialogPosition = async () => {
+  await nextTick()
+  if (typeof window === 'undefined') return
+
+  const dialog = quickBuyLocalizedHelpDialogRef.value
+  const root = quickBuyLocalizedHelpDialogRoot.value
+  if (!dialog || !root) return
+
+  const rootRect = root.getBoundingClientRect()
+  const boundary = root.closest<HTMLElement>('[role="dialog"]')
+  const boundaryRect = boundary?.getBoundingClientRect()
+  const viewportInset = window.matchMedia('(max-width: 767px)').matches ? 8 : 2
+  const boundaryInset = 8
+  const gap = 8
+  const isMobile = window.matchMedia('(max-width: 767px)').matches
+  const dialogRect = dialog.getBoundingClientRect()
+  const preferredTop = rootRect.bottom + gap
+  const boundaryTop = Math.max(viewportInset, boundaryRect?.top ?? viewportInset)
+  const boundaryRight = Math.min(window.innerWidth - viewportInset, boundaryRect?.right ?? window.innerWidth - viewportInset)
+  const boundaryBottom = Math.min(window.innerHeight - viewportInset, boundaryRect?.bottom ?? window.innerHeight - viewportInset)
+  const boundaryLeft = Math.max(viewportInset, boundaryRect?.left ?? viewportInset)
+  const availableWidth = Math.max(0, boundaryRight - boundaryLeft)
+  const width = Math.min(dialogRect.width, availableWidth - boundaryInset * 2)
+  const leftBoundary = boundaryLeft + boundaryInset
+  const rightBoundary = boundaryRight - boundaryInset
+  const maxTop = boundaryBottom - dialogRect.height - boundaryInset
+  const top = Math.max(
+    boundaryTop + boundaryInset,
+    Math.min(preferredTop, maxTop),
+  )
+
+  if (isMobile) {
+    quickBuyLocalizedHelpDialogStyle.value = {
+      top: `${top}px`,
+    }
+    return
+  }
+
+  const preferredLeft = rootRect.left
+  const maxLeft = rightBoundary - width
+  const left = Math.max(
+    leftBoundary,
+    Math.min(preferredLeft, maxLeft),
+  )
+
+  quickBuyLocalizedHelpDialogStyle.value = {
+    top: `${top}px`,
+    right: 'auto',
+    left: `${left}px`,
+    width: `${width}px`,
+  }
+}
+
 const closeQuickBuyLocalizedHelpDialogWhenEscapeIsPressed = (event: KeyboardEvent) => {
   if (event.key === 'Escape') {
     closeQuickBuyLocalizedHelpDialog()
@@ -84,7 +143,11 @@ const closeQuickBuyLocalizedHelpDialogWhenEscapeIsPressed = (event: KeyboardEven
 
 const closeQuickBuyLocalizedHelpDialogWhenClickingOutside = (event: PointerEvent) => {
   const target = event.target
-  if (target instanceof Node && !quickBuyLocalizedHelpDialogRoot.value?.contains(target)) {
+  if (
+    target instanceof Node
+    && !quickBuyLocalizedHelpDialogRoot.value?.contains(target)
+    && !quickBuyLocalizedHelpDialogRef.value?.contains(target)
+  ) {
     closeQuickBuyLocalizedHelpDialog()
   }
 }
@@ -94,9 +157,15 @@ watch(isQuickBuyLocalizedHelpDialogOpen, (isOpen) => {
   if (isOpen) {
     window.addEventListener('keydown', closeQuickBuyLocalizedHelpDialogWhenEscapeIsPressed)
     document.addEventListener('pointerdown', closeQuickBuyLocalizedHelpDialogWhenClickingOutside, true)
+    window.addEventListener('resize', updateQuickBuyLocalizedHelpDialogPosition)
+    window.addEventListener('scroll', updateQuickBuyLocalizedHelpDialogPosition, true)
+    void updateQuickBuyLocalizedHelpDialogPosition()
   } else {
     window.removeEventListener('keydown', closeQuickBuyLocalizedHelpDialogWhenEscapeIsPressed)
     document.removeEventListener('pointerdown', closeQuickBuyLocalizedHelpDialogWhenClickingOutside, true)
+    window.removeEventListener('resize', updateQuickBuyLocalizedHelpDialogPosition)
+    window.removeEventListener('scroll', updateQuickBuyLocalizedHelpDialogPosition, true)
+    quickBuyLocalizedHelpDialogStyle.value = {}
   }
 })
 
@@ -104,6 +173,8 @@ onBeforeUnmount(() => {
   if (typeof window !== 'undefined') {
     window.removeEventListener('keydown', closeQuickBuyLocalizedHelpDialogWhenEscapeIsPressed)
     document.removeEventListener('pointerdown', closeQuickBuyLocalizedHelpDialogWhenClickingOutside, true)
+    window.removeEventListener('resize', updateQuickBuyLocalizedHelpDialogPosition)
+    window.removeEventListener('scroll', updateQuickBuyLocalizedHelpDialogPosition, true)
   }
 })
 </script>
@@ -145,25 +216,24 @@ onBeforeUnmount(() => {
 }
 
 .quickbuy-localized-help-dialog {
-  position: absolute;
+  position: fixed;
   top: calc(100% + 0.5rem);
   right: 0;
-  z-index: 10008;
+  z-index: 10060;
   display: flex;
   width: min(28rem, calc(100vw - 2rem));
   max-height: min(72vh, 34rem);
   flex-direction: column;
   overflow: hidden;
   box-sizing: border-box;
-  border: 0;
+  min-width: 0;
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 0.875rem;
   color: white;
-  background:
-    linear-gradient(180deg, var(--quickbuy-panel-surface, #111116), #0a0a0c);
+  background: var(--tz-card-surface, #111116);
   box-shadow:
     0 22px 60px rgba(0, 0, 0, 0.64),
-    inset 0 1px 0 rgba(255, 255, 255, 0.026),
-    inset 0 0 0 1px rgba(0, 0, 0, 0.68);
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .quickbuy-localized-help-dialog__header {
@@ -183,25 +253,6 @@ onBeforeUnmount(() => {
   font-weight: 800;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.quickbuy-localized-help-dialog__close {
-  display: inline-grid;
-  width: 2rem;
-  height: 2rem;
-  flex: 0 0 auto;
-  place-items: center;
-  border: 0;
-  border-radius: 999px;
-  color: rgba(255, 255, 255, 0.72);
-  background: var(--quickbuy-control-surface-raised, #151519);
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.68);
-  transition: background-color 160ms ease, color 160ms ease;
-}
-
-.quickbuy-localized-help-dialog__close:hover {
-  color: white;
-  background: #202026;
 }
 
 .quickbuy-localized-help-dialog__content {
@@ -255,8 +306,12 @@ onBeforeUnmount(() => {
   }
 
   .quickbuy-localized-help-dialog {
-    right: -0.5rem;
-    width: min(20rem, calc(100vw - 2rem));
+    position: fixed;
+    top: 0;
+    right: var(--tz-mobile-dialog-inset, 2px);
+    left: var(--tz-mobile-dialog-inset, 2px);
+    width: auto;
+    max-width: none;
     max-height: min(60vh, 30rem);
     border-radius: 0.75rem;
   }

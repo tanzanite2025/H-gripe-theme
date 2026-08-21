@@ -118,6 +118,8 @@ func (h *ServiceCenterHandler) Overview(c *gin.Context) {
 
 	cloudflareConnectors := filterServiceConnectors(connectors, ops.ConnectorProviderCloudflare)
 	hostingerConnectors := filterServiceConnectors(connectors, ops.ConnectorProviderHostinger)
+	githubConnectors := filterServiceConnectors(connectors, ops.ConnectorProviderGitHub)
+	ghcrConnectors := filterServiceConnectors(connectors, ops.ConnectorProviderGHCR)
 	cloudflareDomains := filterServiceDomains(domains, ops.DomainProviderCloudflare)
 	hostingerVPSCount := countServiceVPS(assets.VPS, ops.VPSProviderHostinger)
 
@@ -137,6 +139,20 @@ func (h *ServiceCenterHandler) Overview(c *gin.Context) {
 				"/ops/vps",
 				hostingerConnectors,
 				hostingerVPSCount,
+			),
+			newServiceCenterProviderSummary(
+				"github",
+				"GitHub",
+				"/ops/deployments",
+				githubConnectors,
+				countServiceProjectsForConnector(assets.Projects, githubConnectors),
+			),
+			newServiceCenterProviderSummary(
+				"ghcr",
+				"GHCR",
+				"/ops/deployments",
+				ghcrConnectors,
+				countServiceProjectsForConnector(assets.Projects, ghcrConnectors),
 			),
 		},
 		"environment": environment,
@@ -498,6 +514,27 @@ func countServiceVPS(records []ops.VPSBinding, provider string) int {
 	count := 0
 	for _, record := range records {
 		if record.Provider == provider {
+			count++
+		}
+	}
+	return count
+}
+
+func countServiceProjectsForConnector(
+	projects []ops.ProjectBindingView,
+	connectors []ops.ConnectorView,
+) int {
+	connectorIDs := make(map[uint]struct{}, len(connectors))
+	for _, connector := range connectors {
+		connectorIDs[connector.ID] = struct{}{}
+	}
+
+	count := 0
+	for _, project := range projects {
+		if project.ConnectorID == nil {
+			continue
+		}
+		if _, ok := connectorIDs[*project.ConnectorID]; ok {
 			count++
 		}
 	}

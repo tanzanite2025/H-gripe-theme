@@ -8,13 +8,13 @@
           class="home-store-picks-guide__card premium-card"
         >
           <div class="home-store-picks-guide__content">
-            <span class="home-store-picks-guide__icon" aria-hidden="true">
-              <Icon :name="card.icon" class="h-6 w-6" />
-            </span>
-            <div class="home-store-picks-guide__copy">
+            <div class="home-store-picks-guide__title-row">
+              <span class="home-store-picks-guide__icon" aria-hidden="true">
+                <Icon :name="card.icon" class="h-6 w-6" />
+              </span>
               <h3>{{ tt(card.titleKey) }}</h3>
-              <p>{{ tt(card.descriptionKey) }}</p>
             </div>
+            <p>{{ tt(card.descriptionKey) }}</p>
           </div>
 
           <NuxtLink
@@ -201,14 +201,15 @@ const handleCardAction = (card: HomeStorePicksGuideCard) => {
 .home-store-picks-guide__content {
   display: flex;
   min-width: 0;
-  align-items: flex-start;
-  gap: 0.75rem;
+  flex-direction: column;
+  gap: 0.625rem;
 }
 
-.home-store-picks-guide__copy {
-  display: grid;
+.home-store-picks-guide__title-row {
+  display: flex;
   min-width: 0;
-  gap: 0.375rem;
+  align-items: flex-start;
+  gap: 0.75rem;
 }
 
 .home-store-picks-guide__icon {

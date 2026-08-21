@@ -1,22 +1,18 @@
 <template>
   <div class="space-y-4">
     <AdminPageHeader
-      title="运维中心 / 连接器中心"
+      title="服务中心 / 连接器配置"
       description="网页登录授权并自动绑定 Cloudflare、Hostinger 资源；发现和同步只读，不直接执行发布或 DNS 写入。"
     >
       <template #actions>
-        <select
+        <OpsEnvironmentSelect
           v-model="environmentFilter"
           class="h-9 rounded-md border bg-background px-3 text-sm"
           aria-label="筛选连接器环境"
           :disabled="loading || Boolean(oauthProvider)"
-          @change="changeEnvironment"
-        >
-          <option v-for="option in opsConnectorEnvironmentOptions" :key="option.value" :value="option.value">
-            {{ option.label }}
-          </option>
-          <option value="">全部环境</option>
-        </select>
+          :options="opsConnectorEnvironmentOptions"
+          @update:model-value="changeEnvironment"
+        />
         <Button variant="outline" :disabled="loading || Boolean(oauthProvider)" @click="loadConnectors">
  <RefreshCw :class="['size-4', loading ? 'animate-spin': '']" />
           刷新
@@ -60,24 +56,7 @@
       </template>
     </AdminPageHeader>
 
-    <section class="grid gap-3 md:grid-cols-4">
-      <div class="rounded-2xl border border-dashed border-border/80 bg-card p-3">
-        <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">已登记连接</p>
-        <p class="mt-2 text-2xl font-black">{{ connectors.length }}</p>
-      </div>
-      <div class="rounded-2xl border border-dashed border-border/80 bg-card p-3">
-        <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">当前启用</p>
-        <p class="mt-2 text-2xl font-black text-emerald-600">{{ enabledCount }}</p>
-      </div>
-      <div class="rounded-2xl border border-dashed border-border/80 bg-card p-3">
-        <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">凭据已配置</p>
-        <p class="mt-2 text-2xl font-black text-primary">{{ credentialCount }}</p>
-      </div>
-      <div class="rounded-2xl border border-dashed border-border/80 bg-card p-3">
-        <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">需处理状态</p>
-        <p class="mt-2 text-2xl font-black text-amber-600">{{ attentionCount }}</p>
-      </div>
-    </section>
+    <OpsSummaryCards :items="summaryCards" />
 
     <AdminTablePanel :loading="loading" :batch-visible="false">
       <Table class="min-w-[1120px]">
@@ -203,6 +182,8 @@ import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import AdminStatusBadge, { type AdminStatusTone } from '@/components/admin/AdminStatusBadge.vue'
 import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
 import OpsConnectorBindingFormDialog from '@/components/admin/ops/OpsConnectorBindingFormDialog.vue'
+import OpsEnvironmentSelect from '@/components/admin/ops/OpsEnvironmentSelect.vue'
+import OpsSummaryCards, { type OpsSummaryCardItem } from '@/components/admin/ops/OpsSummaryCards.vue'
 import {
   assignOpsConnectorForm,
   emptyOpsConnectorForm,
@@ -240,6 +221,12 @@ const form = reactive<OpsConnectorForm>(emptyOpsConnectorForm())
 const enabledCount = computed(() => connectors.value.filter((connector) => connector.enabled).length)
 const credentialCount = computed(() => connectors.value.filter((connector) => connector.credential_configured).length)
 const attentionCount = computed(() => connectors.value.filter((connector) => ['pending', 'error'].includes(connector.status)).length)
+const summaryCards = computed<readonly OpsSummaryCardItem[]>(() => [
+  { key: 'connectors', label: '已登记连接', value: connectors.value.length, detail: `当前启用 ${enabledCount.value}` },
+  { key: 'enabled', label: '当前启用', value: enabledCount.value, detail: `共 ${connectors.value.length} 个连接`, tone: 'green' },
+  { key: 'credentials', label: '凭据已配置', value: credentialCount.value, detail: `待配置 ${Math.max(connectors.value.length - credentialCount.value, 0)}`, tone: 'primary' },
+  { key: 'attention', label: '需处理状态', value: attentionCount.value, detail: '待验证或测试失败', tone: 'amber' },
+])
 
 const assignForm = (connector?: Partial<OpsConnector>): void => {
   assignOpsConnectorForm(form, connector)
@@ -378,7 +365,7 @@ const isOpsEnvironment = (value: string | null): value is OpsEnvironment => (
 const oauthReturnPath = (environment: OpsEnvironment, nextProvider?: 'cloudflare'): string => {
   const query = new URLSearchParams({ ops_oauth_environment: environment })
   if (nextProvider) query.set('ops_oauth_next', nextProvider)
-  return `/ops/connectors?${query.toString()}`
+  return `/services/connectors?${query.toString()}`
 }
 
 const startOAuth = async (

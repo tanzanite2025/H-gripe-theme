@@ -27,51 +27,65 @@
                 <span v-if="eyebrowLabel" class="wheelset-selection-assistant-modal__eyebrow">
                   {{ eyebrowLabel }}
                 </span>
-                <h2 :id="modalTitleId" class="wheelset-selection-assistant-modal__title">
-                  {{ titleLabel }}
-                </h2>
+                <div class="wheelset-selection-assistant-modal__title-row">
+                  <h2 :id="modalTitleId" class="wheelset-selection-assistant-modal__title">
+                    {{ titleLabel }}
+                  </h2>
+                  <QuickBuyLocalizedHelpQuestionMarkDialog
+                    v-if="assistantHelp.content.value"
+                    :key="assistantHelp.content.value"
+                    :title="assistantHelp.title.value || t('quickBuy.help.title', 'Help')"
+                    :content="assistantHelp.content.value"
+                    :trigger-aria-label="assistantHelp.title.value || t('quickBuy.help.title', 'Help')"
+                    :close-label="t('common.close', 'Close')"
+                  />
+                </div>
                 <p v-if="descriptionLabel" class="wheelset-selection-assistant-modal__description">
                   {{ descriptionLabel }}
                 </p>
               </div>
 
-              <button
-                type="button"
-                class="tz-global-close-btn shrink-0"
-                :aria-label="t('common.close', 'Close')"
-                :title="t('common.close', 'Close')"
-                @click="handleClose"
-              >
-                <Icon name="lucide:x" class="h-3.5 w-3.5" />
-              </button>
-            </div>
-            <nav
-              v-if="hasQuestionPagination"
-              class="wheelset-selection-assistant-modal__pagination-row"
-            >
-              <div
-                class="wheelset-selection-assistant-modal__pagination tz-carousel-pagination"
-                :aria-label="t('wheelsetSelectionAssistant.questionPagination.label', 'Question cards')"
-              >
+              <div class="wheelset-selection-assistant-modal__header-actions">
                 <button
-                  v-for="questionNumber in questionPaginationTotal"
-                  :key="questionNumber"
                   type="button"
-                  class="tz-carousel-pagination__dot wheelset-selection-assistant-modal__pagination-dot"
-                  :class="{
-                    'is-active': questionNumber - 1 === questionPaginationActiveIndex,
-                    'is-future': questionNumber - 1 > questionPaginationReachableIndex,
-                  }"
-                  :aria-current="questionNumber - 1 === questionPaginationActiveIndex ? 'step' : undefined"
-                  :aria-label="t('wheelsetSelectionAssistant.questionPagination.goToQuestion', `Show question ${questionNumber}`)"
-                  :title="t('wheelsetSelectionAssistant.questionPagination.goToQuestion', `Show question ${questionNumber}`)"
-                  @click="handleQuestionPaginationClick(questionNumber - 1)"
-                />
+                  class="tz-global-close-btn shrink-0"
+                  :aria-label="t('common.close', 'Close')"
+                  :title="t('common.close', 'Close')"
+                  @click="handleClose"
+                >
+                  <Icon name="lucide:x" class="h-3.5 w-3.5" />
+                </button>
               </div>
-            </nav>
+            </div>
           </header>
 
-          <div class="wheelset-selection-assistant-modal__body min-h-0 flex-1 overflow-y-auto px-4 py-4 md:px-6">
+          <nav
+            v-if="hasQuestionPagination"
+            class="wheelset-selection-assistant-modal__pagination-row shrink-0"
+          >
+            <div
+              class="wheelset-selection-assistant-modal__pagination tz-carousel-pagination"
+              :aria-label="t('wheelsetSelectionAssistant.questionPagination.label', 'Question cards')"
+            >
+              <button
+                v-for="questionNumber in questionPaginationTotal"
+                :key="questionNumber"
+                type="button"
+                class="tz-carousel-pagination__dot wheelset-selection-assistant-modal__pagination-dot"
+                :class="{
+                  'is-active': questionNumber - 1 === questionPaginationActiveIndex,
+                  'is-future': questionNumber - 1 > questionPaginationReachableIndex,
+                }"
+                :aria-current="questionNumber - 1 === questionPaginationActiveIndex ? 'step' : undefined"
+                :aria-label="t('wheelsetSelectionAssistant.questionPagination.goToQuestion', `Show question ${questionNumber}`)"
+                :title="t('wheelsetSelectionAssistant.questionPagination.goToQuestion', `Show question ${questionNumber}`)"
+                :disabled="questionNumber - 1 > questionPaginationReachableIndex"
+                @click="handleQuestionPaginationClick(questionNumber - 1)"
+              />
+            </div>
+          </nav>
+
+          <div class="wheelset-selection-assistant-modal__body min-h-0 flex-1 overflow-hidden px-0 py-0 md:px-6">
             <slot
               :source="source"
             />
@@ -95,6 +109,8 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref, useSlots, watch } from 'vue'
 import { useI18n } from '#imports'
+import QuickBuyLocalizedHelpQuestionMarkDialog from '~/components/quick-buy/QuickBuyLocalizedHelpQuestionMarkDialog.vue'
+import { provideWheelsetSelectionAssistantHelp } from '~/composables/useWheelsetSelectionAssistantHelp'
 import { wheelsetSelectionAssistantQuestionPaginationKey } from '~/composables/useWheelsetSelectionAssistantQuestionPagination'
 import type {
   WheelsetSelectionAssistantSource,
@@ -122,6 +138,7 @@ const slots = useSlots()
 const modalElement = ref<HTMLElement | null>(null)
 const modalTitleId = 'wheelset-selection-assistant-modal-title'
 const hasFooterSlot = computed(() => Boolean(slots.footer))
+const assistantHelp = provideWheelsetSelectionAssistantHelp()
 const questionPaginationTotal = ref(0)
 const questionPaginationActiveIndex = ref(0)
 const questionPaginationReachableIndex = ref(0)
@@ -164,6 +181,7 @@ provide(wheelsetSelectionAssistantQuestionPaginationKey, {
 })
 
 const handleQuestionPaginationClick = (questionIndex: number) => {
+  if (questionIndex > questionPaginationReachableIndex.value) return
   questionPaginationJumpToIndexHandler.value?.(questionIndex)
 }
 
@@ -220,7 +238,6 @@ onBeforeUnmount(() => {
 }
 
 .wheelset-selection-assistant-modal__header {
-  border-bottom: 1px solid var(--quickbuy-divider);
   background:
     linear-gradient(
       180deg,
@@ -236,25 +253,49 @@ onBeforeUnmount(() => {
   gap: 0.75rem;
 }
 
+.wheelset-selection-assistant-modal__header-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.wheelset-selection-assistant-modal__title-row {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.wheelset-selection-assistant-modal__title-row .wheelset-selection-assistant-modal__title {
+  min-width: 0;
+}
+
 .wheelset-selection-assistant-modal__pagination-row {
   display: flex;
   justify-content: center;
-  margin-top: 0.4rem;
+  padding: 0.1rem 1rem 0.35rem;
+  border: 0;
+  background: var(--tz-input-surface, #0b0b0e);
+  box-shadow: none;
 }
 
 .wheelset-selection-assistant-modal__pagination {
   display: inline-flex;
   justify-content: flex-end;
-  gap: 0.125rem;
+  gap: 0.5rem;
+  border: 0;
+  background: var(--tz-input-surface, #0b0b0e);
+  box-shadow: none;
 }
 
 .wheelset-selection-assistant-modal__pagination-dot {
-  width: 1.75rem;
-  height: 1.75rem;
-  min-width: 1.75rem;
-  min-height: 1.75rem;
-  --tz-carousel-pagination-dot-width: 0.42rem;
-  --tz-carousel-pagination-dot-height: 0.42rem;
+  width: 2rem;
+  height: 2rem;
+  min-width: 2rem;
+  min-height: 2rem;
+  --tz-carousel-pagination-dot-width: 0.5rem;
+  --tz-carousel-pagination-dot-height: 0.5rem;
 }
 
 .wheelset-selection-assistant-modal__pagination-dot.is-future {
@@ -263,6 +304,10 @@ onBeforeUnmount(() => {
 
 .wheelset-selection-assistant-modal__pagination-dot.is-future::before {
   background: rgba(255, 255, 255, 0.22);
+}
+
+.wheelset-selection-assistant-modal__pagination-dot:focus {
+  outline: 0;
 }
 
 .wheelset-selection-assistant-modal__eyebrow {
@@ -293,11 +338,19 @@ onBeforeUnmount(() => {
 }
 
 .wheelset-selection-assistant-modal__body {
+  display: flex;
+  padding-block: 2px;
   background: var(--tz-input-surface, #0b0b0e);
 }
 
 .wheelset-selection-assistant-modal__footer {
   border-top: 1px solid var(--quickbuy-divider);
+}
+
+@media (max-width: 767px) {
+  .wheelset-selection-assistant-modal__footer {
+    padding: 0;
+  }
 }
 
 .wheelset-selection-assistant-modal-enter-active,

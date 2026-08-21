@@ -1,5 +1,32 @@
 import { ApiRequestError } from '~/composables/useApiRequest'
 
+const readErrorMessage = (error: unknown) => {
+  if (!error || typeof error !== 'object') {
+    return ''
+  }
+
+  const dataMessage = (error as { data?: { message?: unknown } }).data?.message
+  if (typeof dataMessage === 'string' && dataMessage.trim()) {
+    return dataMessage.trim()
+  }
+
+  const message = (error as { message?: unknown }).message
+  return typeof message === 'string' ? message.trim() : ''
+}
+
+export const toUserFacingApiError = (error: unknown, fallback: string) => {
+  const message = readErrorMessage(error)
+  if (
+    !message
+    || /failed to fetch|no response|network error/i.test(message)
+    || /https?:\/\//i.test(message)
+  ) {
+    return fallback
+  }
+
+  return message
+}
+
 const toStatus = (error: unknown) => {
   if (error instanceof ApiRequestError) {
     return error.status

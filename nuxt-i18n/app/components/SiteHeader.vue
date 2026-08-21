@@ -2216,7 +2216,7 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 .site-header-mobile-nav-row {
 	display: flex;
 	min-height: 2.875rem;
-	align-items: center;
+	align-items: stretch;
 	background: linear-gradient(180deg, #111116 0%, #0c0c10 100%);
 	border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
@@ -2563,6 +2563,9 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 	.site-header-mobile-nav {
 		background: transparent !important;
 		box-shadow: none !important;
+		height: 100%;
+		min-height: 0;
+		align-items: stretch;
 	}
 
 	.site-header-mobile-surface {
@@ -2641,6 +2644,9 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 	}
 
 	.site-header-mobile-nav__button {
+		height: 100%;
+		padding-top: 0;
+		padding-bottom: 0;
 		color: #f0f0f0;
 		text-transform: uppercase;
 	}
@@ -2660,15 +2666,18 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 		height: var(--tz-site-header-mobile-breadcrumb-height);
 		min-height: var(--tz-site-header-mobile-breadcrumb-height);
 		margin-inline: 0;
+		align-items: stretch;
 		background: linear-gradient(180deg, #090909 0%, #070707 100%);
-		border-top: 1px solid #161616;
+		border-top: 0;
 		border-bottom: 1px solid #161616;
 	}
 
 	.site-header-breadcrumb-row--mobile .site-header-breadcrumb-list {
 		--site-header-mobile-breadcrumb-inline-padding: 0.75rem;
-		padding-top: 0.36rem;
-		padding-bottom: 0.42rem;
+		height: 100%;
+		min-height: 0;
+		padding-top: 0;
+		padding-bottom: 0;
 		padding-inline: max(var(--site-header-mobile-breadcrumb-inline-padding), env(safe-area-inset-left)) max(var(--site-header-mobile-breadcrumb-inline-padding), env(safe-area-inset-right));
 		color: #d6d6d6;
 	}

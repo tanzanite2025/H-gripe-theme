@@ -423,49 +423,6 @@ export interface OpsDeploymentWorkflow {
   updated_at: string;
 }
 
-export interface OpsOverview {
-  environment: string;
-  generated_at: string;
-  summary: Record<
-    string,
-    {
-      total: number;
-      enabled: number;
-      attention: number;
-      unknown: number;
-      healthy: number;
-      configured: number;
-    }
-  >;
-  topology: {
-    vps: OpsVPS[];
-    projects: OpsProject[];
-    domains: OpsDomain[];
-  };
-  attention: Array<{
-    kind: string;
-    id: number;
-    name: string;
-    environment: string;
-    status: string;
-    observed_status?: string;
-    health_status?: string;
-    message: string;
-    target?: string;
-    updated_at: string;
-  }>;
-  recent_audit: OpsOverviewAuditLog[];
-}
-
-export interface OpsOverviewAuditLog {
-  id: number;
-  resource: string;
-  action: string;
-  status: string;
-  username?: string;
-  created_at: string;
-}
-
 export interface OpsNetworkSummaryItem {
   key: string;
   kind: "rule" | "domain_dns" | string;
@@ -561,20 +518,6 @@ const readProjectSyncResult = (response: unknown, endpoint: string) => {
   requireApiNumberField(payload, "project_id", endpoint);
   requireApiStringField(payload, "health_status", endpoint);
   requireApiStringField(payload, "message", endpoint);
-  return payload;
-};
-
-const readOverviewPayload = (response: unknown, endpoint: string) => {
-  const payload = readObjectPayload(response, endpoint);
-  requireApiStringField(payload, "environment", endpoint);
-  requireApiStringField(payload, "generated_at", endpoint);
-  const topology = requireApiObjectField(payload, "topology", endpoint);
-  requireApiObjectField(payload, "summary", endpoint);
-  requireApiArrayField(topology, "vps", endpoint);
-  requireApiArrayField(topology, "projects", endpoint);
-  requireApiArrayField(topology, "domains", endpoint);
-  requireApiArrayField(payload, "attention", endpoint);
-  requireApiArrayField(payload, "recent_audit", endpoint);
   return payload;
 };
 
@@ -676,15 +619,6 @@ const readAdminAccountResult = (response: unknown, endpoint: string) => {
 };
 
 export default {
-  async getOverview(
-    environment: OpsEnvironment = "production",
-  ): Promise<OpsOverview> {
-    const endpoint = "/api/admin/ops/overview";
-    return readOverviewPayload(
-      await axios.get(endpoint, { params: { environment } }),
-      endpoint,
-    ) as OpsOverview;
-  },
   async getNetworkSummary(
     environment?: OpsEnvironment,
   ): Promise<OpsNetworkSummary> {
@@ -794,9 +728,9 @@ export default {
     return readConnectorTestPayload(await axios.post(endpoint), endpoint) as OpsConnectorTestResult;
   },
   async startConnectorOAuth(
-    provider: "cloudflare" | "hostinger",
+    provider: "cloudflare" | "hostinger" | "github",
     connectorID?: number,
-    returnPath = "/ops/connectors",
+    returnPath = "/services/connectors",
     environment?: OpsEnvironment,
   ): Promise<OpsConnectorOAuthStartResult> {
     const endpoint = "/api/admin/ops/connectors/oauth/start";

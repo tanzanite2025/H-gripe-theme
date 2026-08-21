@@ -750,15 +750,15 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '服务中心 / Cloudflare', permission: 'services:view' }
       },
       {
-        path: 'ops',
-        redirect: { name: 'OpsOverview' },
-        meta: { permission: 'ops:view' }
+        path: 'services/connectors',
+        name: 'ServicesConnectors',
+        component: () => import('@/views/services/ServiceConnectors.vue'),
+        meta: { title: '服务中心 / 连接器配置', permission: 'services:view' }
       },
       {
-        path: 'ops/overview',
-        name: 'OpsOverview',
-        component: () => import('@/views/OpsOverview.vue'),
-        meta: { title: '运维总览', permission: 'ops:view' }
+        path: 'ops',
+        redirect: { name: 'OpsVPS' },
+        meta: { permission: 'ops:view' }
       },
       {
         path: 'ops/admin-accounts',
@@ -771,11 +771,6 @@ const routes: RouteRecordRaw[] = [
         name: 'OpsDomains',
         component: () => import('@/views/OpsDomains.vue'),
         meta: { title: '域名中心', permission: 'ops:domain:view' }
-      },
-      {
-        path: 'ops/connectors',
-        redirect: { name: 'ServicesOverview' },
-        meta: { permission: 'services:view' }
       },
       {
         path: 'ops/vps',
