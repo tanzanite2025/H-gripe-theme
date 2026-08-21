@@ -61,18 +61,24 @@
 
               <div
                 v-else-if="card.kind === 'quickbuy-options'"
-                class="grid gap-2"
               >
-                <button
-                  v-for="action in card.quickBuyActions"
-                  :key="action.id"
-                  type="button"
-                  class="premium-button w-full justify-center"
-                  @click="handleQuickBuyAction(action.id)"
-                >
-                  <Icon :name="action.icon" class="mr-2 h-4 w-4" aria-hidden="true" />
-                  {{ action.label }}
-                </button>
+                <ClientOnly>
+                  <LazyHomePurchasePathQuickBuyActions :actions="card.quickBuyActions || []" />
+                  <template #fallback>
+                    <div class="grid gap-2">
+                      <button
+                        v-for="action in card.quickBuyActions || []"
+                        :key="action.id"
+                        type="button"
+                        class="premium-button w-full justify-center"
+                        disabled
+                      >
+                        <Icon :name="action.icon" class="mr-2 h-4 w-4" aria-hidden="true" />
+                        {{ action.label }}
+                      </button>
+                    </div>
+                  </template>
+                </ClientOnly>
               </div>
 
               <button
@@ -90,84 +96,28 @@
       </div>
   </section>
 
-    <QuickBuyContactServiceModal
+    <LazyQuickBuyContactServiceModal
       v-if="contactServiceOpen"
       @close="contactServiceOpen = false"
     />
 
-    <QuickBuyModal
-      v-if="quickBuyDirectSelectOpen"
-      :config="quickBuyConfig"
-      @close="quickBuyDirectSelectOpen = false"
-    />
-
-  <WheelsetSelectionAssistantModal
-    v-if="quickBuyWheelsetSelectionAssistantOpen"
-    :model-value="true"
-    source="quick-buy/wheelset-selection-assistant"
-    description=""
-    @update:model-value="handleQuickBuyAssistantModelUpdate"
-    @close="quickBuyWheelsetSelectionAssistantOpen = false"
-  >
-    <WheelsetSelectionAssistantFlow
-      source="quick-buy/wheelset-selection-assistant"
-      @contact-support="openWheelsetSelectionSupportChat"
-    />
-  </WheelsetSelectionAssistantModal>
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref, useLocalePath } from '#imports'
-import QuickBuyModal from '~/components/QuickBuy.vue'
-import QuickBuyContactServiceModal from '~/components/quick-buy/QuickBuyContactServiceModal.vue'
-import WheelsetSelectionAssistantModal from '~/components/WheelsetSelectionAssistantModal.vue'
-import WheelsetSelectionAssistantFlow from '~/components/wheelset-selection/WheelsetSelectionAssistantFlow.vue'
-import { useChatWidget } from '~/composables/useChatWidget'
-import { useQuickBuyFlow } from '~/composables/useQuickBuyFlow'
+import { ref, useLocalePath } from '#imports'
 import {
   homePurchasePathSection,
   type HomePurchasePathCard,
-  type HomePurchasePathQuickBuyAction,
 } from '~/utils/homePurchasePath'
-import type { WheelsetSelectionRequestDraft } from '~/types/wheelsetSelectionAssistant'
 
 const localePath = useLocalePath()
 const contactServiceOpen = ref(false)
-const quickBuyDirectSelectOpen = ref(false)
-const quickBuyWheelsetSelectionAssistantOpen = ref(false)
 const section = homePurchasePathSection
-const { quickBuyFlowConfig } = useQuickBuyFlow('dock')
-const quickBuyConfig = computed(() => quickBuyFlowConfig.value)
-const { openChat } = useChatWidget()
 
 const handleCardAction = (card: HomePurchasePathCard) => {
   if (card.kind === 'contact-service') {
-    quickBuyDirectSelectOpen.value = false
-    quickBuyWheelsetSelectionAssistantOpen.value = false
     contactServiceOpen.value = true
   }
-}
-
-const handleQuickBuyAction = (actionId: HomePurchasePathQuickBuyAction['id']) => {
-  contactServiceOpen.value = false
-  quickBuyDirectSelectOpen.value = actionId === 'direct-select'
-  quickBuyWheelsetSelectionAssistantOpen.value = actionId === 'wheelset-selection-assistant'
-}
-
-const handleQuickBuyAssistantModelUpdate = (value: boolean) => {
-  if (!value) {
-    quickBuyWheelsetSelectionAssistantOpen.value = false
-  }
-}
-
-const openWheelsetSelectionSupportChat = async (draft?: WheelsetSelectionRequestDraft) => {
-  quickBuyWheelsetSelectionAssistantOpen.value = false
-  openChat({
-    showAgentList: true,
-    source: 'wheelset-selection-assistant',
-    pendingSelectionRequest: draft || null,
-  })
-  await nextTick()
 }
 </script>
 

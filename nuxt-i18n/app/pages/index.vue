@@ -9,7 +9,7 @@
 
     <HomeStorePicksGuide />
 
-    <HomePurchasePath />
+    <LazyHomePurchasePath />
 
     <Suspense>
       <AsyncHomeFeaturedProducts />
@@ -37,7 +37,6 @@
 import { defineAsyncComponent, onMounted } from 'vue'
 import HomeHero from '~/components/home/HomeHero.vue'
 import HomeRideCategoryStrip from '~/components/home/HomeRideCategoryStrip.vue'
-import HomePurchasePath from '~/components/home/HomePurchasePath.vue'
 import HomeMainProductCategories from '~/components/home/HomeMainProductCategories.vue'
 import HomeStorePicksGuide from '~/components/home/HomeStorePicksGuide.vue'
 import HomeShopWithConfidence from '~/components/home/HomeShopWithConfidence.vue'
