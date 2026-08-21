@@ -324,6 +324,7 @@ services:
         condition: service_healthy
     volumes:
       - uploads:/app/uploads
+      - site_logo_uploads:/app/site-logo-uploads
     networks:
       - db
       - cache
