@@ -8,11 +8,14 @@ ENV NODE_ENV=production \
     XDG_CACHE_HOME=/tmp/runner-cache \
     XDG_RUNTIME_DIR=/tmp/runner-runtime
 
+ARG CHROMIUM_VERSION=151.0.7922.169-1~deb13u1
+
 RUN apt-get update \
     && apt-get upgrade -y \
     && apt-get install -y --no-install-recommends \
         ca-certificates \
-        chromium \
+        "chromium=${CHROMIUM_VERSION}" \
+        "chromium-common=${CHROMIUM_VERSION}" \
         dumb-init \
     && rm -rf /var/lib/apt/lists/*
 
