@@ -41,57 +41,61 @@
           </Button>
         </div>
 
-        <div v-if="optionsForSpec(spec).length" class="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
-          <div v-for="option in optionsForSpec(spec)" :key="option.local_key || option.id || `${spec.id}-${option.value_key}`" class="min-w-0 rounded-lg border bg-background p-2.5">
-            <div class="mb-2 flex items-center justify-between gap-2">
-              <div
-                class="size-9 shrink-0 overflow-hidden rounded-md border bg-muted"
-                :style="option.swatch_url ? undefined : (option.color_hex ? { backgroundColor: option.color_hex } : undefined)"
-              >
-                <img v-if="option.swatch_url" :src="option.swatch_url" alt="" class="h-full w-full object-cover" />
+        <template v-if="optionsForSpec(spec).length">
+          <div class="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+            <div v-for="option in optionsForSpec(spec)" :key="option.local_key || option.id || `${spec.id}-${option.value_key}`" class="min-w-0 rounded-lg border bg-background p-2.5">
+              <div class="mb-2 flex items-center justify-between gap-2">
+                <div
+                  class="size-9 shrink-0 overflow-hidden rounded-md border bg-muted"
+                  :style="option.swatch_url ? undefined : (option.color_hex ? { backgroundColor: option.color_hex } : undefined)"
+                >
+                  <img v-if="option.swatch_url" :src="option.swatch_url" alt="" class="h-full w-full object-cover" />
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  class="size-8 text-destructive hover:text-destructive"
+                  :aria-label="`删除${spec.name}选项`"
+                  @click="removeOptionValue(option)"
+                >
+                  <Trash2 class="size-4" />
+                </Button>
               </div>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                class="size-8 text-destructive hover:text-destructive"
-                :aria-label="`删除${spec.name}选项`"
-                @click="removeOptionValue(option)"
-              >
-                <Trash2 class="size-4" />
-              </Button>
-            </div>
 
-            <div class="space-y-2">
-              <Input v-model="option.value_key" class="font-mono text-xs" placeholder="稳定值，如 carbon-red" />
-              <Input v-model="option.label" class="text-xs" :placeholder="`${spec.name}显示名称`" />
-              <Input
-                v-if="spec.presentation === 'color'"
-                v-model="option.color_hex"
-                class="font-mono text-xs uppercase"
-                placeholder="#8F2028"
-              />
-              <label class="flex cursor-pointer items-center justify-center gap-1.5 rounded-md border border-dashed px-2 py-1.5 text-xs text-muted-foreground transition hover:border-primary/50 hover:text-foreground">
-                <input class="sr-only" type="file" :accept="uploadSpecAccept('product_variant_swatch')" :disabled="swatchUploadingKey === optionKey(option)" @change="uploadSwatch($event, option)" />
-                <LoaderCircle v-if="swatchUploadingKey === optionKey(option)" class="size-3.5 animate-spin" />
-                <ImageUp v-else class="size-3.5" />
-                {{ option.swatch_url ? '更换展示图片' : '上传展示图片' }}
-              </label>
-              <button
-                v-if="option.swatch_url"
-                type="button"
-                class="text-[11px] text-muted-foreground underline underline-offset-2"
-                @click="clearSwatch(option)"
-              >
-                清除图片，使用色板颜色
-              </button>
+              <div class="space-y-2">
+                <Input v-model="option.value_key" class="font-mono text-xs" placeholder="稳定值，如 carbon-red" />
+                <Input v-model="option.label" class="text-xs" :placeholder="`${spec.name}显示名称`" />
+                <Input
+                  v-if="spec.presentation === 'color'"
+                  v-model="option.color_hex"
+                  class="font-mono text-xs uppercase"
+                  placeholder="#8F2028"
+                />
+                <label class="flex cursor-pointer items-center justify-center gap-1.5 rounded-md border border-dashed px-2 py-1.5 text-xs text-muted-foreground transition hover:border-primary/50 hover:text-foreground">
+                  <input class="sr-only" type="file" :accept="uploadSpecAccept('product_variant_swatch')" :disabled="swatchUploadingKey === optionKey(option)" @change="uploadSwatch($event, option)" />
+                  <LoaderCircle v-if="swatchUploadingKey === optionKey(option)" class="size-3.5 animate-spin" />
+                  <ImageUp v-else class="size-3.5" />
+                  {{ option.swatch_url ? '更换展示图片' : '上传展示图片' }}
+                </label>
+                <button
+                  v-if="option.swatch_url"
+                  type="button"
+                  class="text-[11px] text-muted-foreground underline underline-offset-2"
+                  @click="clearSwatch(option)"
+                >
+                  清除图片，使用色板颜色
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-        <UploadSpecHint code="product_variant_swatch" />
-        <p v-else class="rounded-md border border-dashed px-3 py-3 text-center text-xs text-muted-foreground">
+        </template>
+        <template v-else>
+          <p class="rounded-md border border-dashed px-3 py-3 text-center text-xs text-muted-foreground">
           还没有配置展示选项；先添加颜色或图片选项，再在下方 SKU 表中选择。
-        </p>
+          </p>
+        </template>
+        <UploadSpecHint code="product_variant_swatch" />
       </div>
     </div>
 
