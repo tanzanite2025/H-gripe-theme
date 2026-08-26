@@ -16,6 +16,7 @@ type StorefrontRouteCatalogService struct {
 	postService     *PostService
 	productService  *ProductService
 	baseURL         string
+	internalBaseURL string
 	httpClient      *http.Client
 	issueReconciler storefrontRouteCatalogIssueReconciler
 }
@@ -30,12 +31,20 @@ func NewStorefrontRouteCatalogService(
 	postService *PostService,
 	productService *ProductService,
 	baseURL string,
+	internalBaseURL string,
 ) *StorefrontRouteCatalogService {
+	publicOrigin := strings.TrimRight(strings.TrimSpace(baseURL), "/")
+	privateOrigin := strings.TrimRight(strings.TrimSpace(internalBaseURL), "/")
+	if privateOrigin == "" {
+		privateOrigin = publicOrigin
+	}
+
 	return &StorefrontRouteCatalogService{
-		repository:     routeRepository,
-		postService:    postService,
-		productService: productService,
-		baseURL:        strings.TrimRight(strings.TrimSpace(baseURL), "/"),
+		repository:      routeRepository,
+		postService:     postService,
+		productService:  productService,
+		baseURL:         publicOrigin,
+		internalBaseURL: privateOrigin,
 		httpClient: &http.Client{
 			Timeout: 30 * time.Second,
 		},

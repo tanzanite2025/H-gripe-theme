@@ -88,6 +88,7 @@ const subtreeRootClasses = new Set([
 ])
 
 const timeout = (ms: number): Promise<void> => new Promise(resolveTimeout => setTimeout(resolveTimeout, ms))
+const previewReadyAttempts = 240
 
 const fail = (message: string): never => {
   console.error(`[critical-css-generate] FAILED: ${message}`)
@@ -160,7 +161,7 @@ const collectCriticalInventory = (html: string): CriticalInventory => {
 }
 
 const waitForReady = async (): Promise<void> => {
-  for (let attempt = 0; attempt < 60; attempt += 1) {
+  for (let attempt = 0; attempt < previewReadyAttempts; attempt += 1) {
     try {
       const response = await fetch(`${origin}${targetPath}`)
       if (response.status < 500) return
@@ -170,7 +171,7 @@ const waitForReady = async (): Promise<void> => {
     await timeout(250)
   }
 
-  fail(`Nuxt preview did not become ready on ${origin}`)
+  throw new Error(`Nuxt preview did not become ready on ${origin} after ${previewReadyAttempts * 250}ms`)
 }
 
 const fetchHomepageHtml = async (): Promise<string> => {

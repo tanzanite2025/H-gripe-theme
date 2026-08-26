@@ -52,6 +52,22 @@ const defaultPagination = (pageSize: number): SEOResourcePagination => ({
   total_pages: 0,
 })
 
+const errorMessage = (error: unknown): string => {
+  if (error && typeof error === 'object') {
+    const responseData = (error as { response?: { data?: unknown } }).response?.data
+    if (responseData && typeof responseData === 'object') {
+      const record = responseData as Record<string, unknown>
+      for (const key of ['error', 'message']) {
+        if (typeof record[key] === 'string' && record[key].trim()) {
+          return record[key].trim()
+        }
+      }
+    }
+  }
+
+  return error instanceof Error ? error.message : ''
+}
+
 export function useStorefrontRouteCatalog(canEdit: boolean) {
   const stats = ref<StorefrontRouteCatalogStats>(defaultStorefrontRouteCatalogStats())
   const items = ref<StorefrontRouteCatalogEntry[]>([])
@@ -172,7 +188,8 @@ export function useStorefrontRouteCatalog(canEdit: boolean) {
       await refreshAll()
     } catch (error) {
       console.error('Failed to sync storefront route catalog:', error)
-      toast.error('URL 同步失败，请检查 STOREFRONT_BASE_URL 和 manifest')
+      const detail = errorMessage(error)
+      toast.error(detail ? `URL 同步失败：${detail}` : 'URL 同步失败，请检查 STOREFRONT_INTERNAL_ORIGIN 和 manifest')
     } finally {
       syncing.value = false
     }
