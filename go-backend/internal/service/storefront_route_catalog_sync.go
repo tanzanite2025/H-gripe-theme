@@ -81,11 +81,11 @@ func (s *StorefrontRouteCatalogService) loadManifest(ctx context.Context) (seodo
 		}
 		return decodeRouteManifest(data)
 	}
-	if s.baseURL == "" {
-		return seodomain.StorefrontRouteManifest{}, errors.New("storefront base URL is not configured")
+	if s.internalBaseURL == "" {
+		return seodomain.StorefrontRouteManifest{}, errors.New("storefront internal origin is not configured")
 	}
 
-	request, err := http.NewRequestWithContext(ctx, http.MethodGet, s.baseURL+routeCatalogManifestPath, nil)
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, s.internalBaseURL+routeCatalogManifestPath, nil)
 	if err != nil {
 		return seodomain.StorefrontRouteManifest{}, err
 	}

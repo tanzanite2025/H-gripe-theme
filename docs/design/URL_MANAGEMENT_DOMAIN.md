@@ -215,6 +215,21 @@ Runs discovery and checks, displays their execution history, and explains
 which evidence generated or verified issues. It does not silently close an
 issue without a successful verification check.
 
+### Runtime Access Boundary
+
+`STOREFRONT_BASE_URL` is the public canonical origin. It is used for
+canonical links, public URLs, and external site-quality workflows.
+
+`STOREFRONT_INTERNAL_ORIGIN` is the backend-to-storefront origin used by URL
+catalog synchronization and route checks. In production it must point to the
+private Compose service, normally `http://storefront:3000`. This keeps manifest
+reads and route probes away from Cloudflare or another public edge challenge.
+
+The backend must not use `STOREFRONT_BASE_URL` as a substitute for the internal
+origin during synchronization. A public edge returning a challenge or access
+policy response is an infrastructure boundary result, not a missing or broken
+storefront route.
+
 ## 7. Storefront Route Registry
 
 Static route facts currently exist in several places:

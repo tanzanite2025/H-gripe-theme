@@ -115,7 +115,7 @@ func (s *StorefrontRouteCatalogService) checkEntry(ctx context.Context, entry se
 		Status:       seodomain.RouteCheckStatusError,
 	}
 
-	target := s.baseURL + entry.Path
+	target := s.internalBaseURL + entry.Path
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, target, nil)
 	if err != nil {
 		result.ErrorMessage = err.Error()

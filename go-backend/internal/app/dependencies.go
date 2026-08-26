@@ -463,6 +463,7 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 	if storefrontBaseURL == "" {
 		storefrontBaseURL = strings.TrimRight(strings.TrimSpace(cfg.Server.BaseURL), "/")
 	}
+	storefrontInternalOrigin := strings.TrimRight(strings.TrimSpace(os.Getenv("STOREFRONT_INTERNAL_ORIGIN")), "/")
 	lighthouseRunnerService := service.NewLighthouseRunnerService(
 		repos.SiteQualityRuns,
 		repos.SiteQualityFindings,
@@ -505,6 +506,7 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		postService,
 		productService,
 		storefrontBaseURL,
+		storefrontInternalOrigin,
 	)
 	storefrontRedirectRuleService := service.NewStorefrontRedirectRuleService(
 		repos.StorefrontRedirectRules,
