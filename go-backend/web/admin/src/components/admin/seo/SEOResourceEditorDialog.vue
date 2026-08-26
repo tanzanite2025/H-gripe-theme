@@ -3,7 +3,7 @@
     <DialogContent size="lg" class="max-h-[92dvh] overflow-y-auto p-0" @open-auto-focus.prevent>
       <form @submit.prevent="submit">
         <DialogHeader class="border-b px-5 py-4 pr-12">
-          <DialogTitle>编辑{{ kind === 'article' ? '文章' : '产品' }} SEO</DialogTitle>
+          <DialogTitle>编辑{{ resourceKindLabel }} SEO</DialogTitle>
           <DialogDescription>这里只更新当前资源的搜索元数据。</DialogDescription>
         </DialogHeader>
 
@@ -38,6 +38,12 @@
                 maxlength="2048"
                 type="url"
                 placeholder="留空则使用当前页面路由"
+                :disabled="!canEdit || saving"
+              />
+            </AdminFormField>
+            <AdminFormField v-if="kind === 'category'" label="分类导语">
+              <ProductDescriptionEditor
+                v-model="form.intro"
                 :disabled="!canEdit || saving"
               />
             </AdminFormField>
@@ -120,6 +126,44 @@
               <pre class="mt-3 max-h-72 overflow-auto whitespace-pre-wrap break-all text-[11px] leading-5 text-muted-foreground">{{ structuredDataPreview }}</pre>
             </details>
           </section>
+
+          <section v-if="kind === 'product'" class="rounded-xl border bg-muted/20 p-4">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">SEO Breadcrumb</p>
+                <p class="mt-1 text-sm font-bold">分类仍使用 /shop 层级，商品末项使用 /products</p>
+              </div>
+              <AdminStatusBadge :tone="breadcrumbPathComplete ? 'green' : 'amber'">
+                {{ breadcrumbPathComplete ? '路径完整' : '需检查' }}
+              </AdminStatusBadge>
+            </div>
+            <dl class="mt-4 grid gap-3 text-xs sm:grid-cols-2">
+              <div>
+                <dt class="text-muted-foreground">主分类</dt>
+                <dd class="mt-1 font-medium">
+                  <template v-if="productDiagnostics?.primary_category">
+                    {{ productDiagnostics.primary_category.name }}
+                    <code class="ml-1 text-[11px] text-muted-foreground">
+                      {{ productDiagnostics.primary_category.path }}
+                    </code>
+                  </template>
+                  <span v-else>未解析</span>
+                </dd>
+              </div>
+              <div>
+                <dt class="text-muted-foreground">SSR BreadcrumbList</dt>
+                <dd class="mt-1 font-medium">{{ breadcrumbSSRStatusLabel }}</dd>
+              </div>
+              <div class="sm:col-span-2">
+                <dt class="text-muted-foreground">面包屑预览</dt>
+                <dd class="mt-1 break-words font-medium">{{ breadcrumbPreview }}</dd>
+              </div>
+              <div v-if="breadcrumbReason" class="sm:col-span-2">
+                <dt class="text-muted-foreground">异常原因</dt>
+                <dd class="mt-1 font-medium text-amber-700 dark:text-amber-300">{{ breadcrumbReasonLabel }}</dd>
+              </div>
+            </dl>
+          </section>
         </div>
 
         <DialogFooter class="sticky bottom-0 mx-0 mb-0 rounded-b-lg border-t bg-background px-5 py-4">
@@ -140,6 +184,7 @@ import { computed, reactive, watch } from 'vue'
 import { LockKeyhole, LoaderCircle, Save } from '@lucide/vue'
 import AdminFormField from '@/components/admin/AdminFormField.vue'
 import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
+import ProductDescriptionEditor from '@/components/admin/product/ProductDescriptionEditor.vue'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -159,7 +204,7 @@ import type {
 
 const props = withDefaults(defineProps<{
   open?: boolean
-  kind: 'article' | 'product'
+  kind: 'article' | 'product' | 'category'
   resource?: SEOResourceItem | null
   saving?: boolean
   canEdit?: boolean
@@ -179,6 +224,7 @@ const form = reactive<SEOResourceEditorValues>({
   meta_title: '',
   meta_description: '',
   canonical_url: '',
+  intro: '',
 })
 
 const resetForm = (resource: SEOResourceItem | null): void => {
@@ -186,10 +232,17 @@ const resetForm = (resource: SEOResourceItem | null): void => {
     meta_title: resource?.metaTitle || '',
     meta_description: resource?.metaDescription || '',
     canonical_url: resource?.canonicalUrl || '',
+    intro: resource?.intro || '',
   })
 }
 
 watch(() => props.resource, resetForm, { immediate: true })
+
+const resourceKindLabel = computed(() => {
+  if (props.kind === 'article') return '文章'
+  if (props.kind === 'category') return '分类'
+  return '产品'
+})
 
 const productDiagnostics = computed(() => (
   props.kind === 'product' ? props.resource?.productDiagnostics || null : null
@@ -200,6 +253,44 @@ const structuredDataPreview = computed(() => (
     ? JSON.stringify(productDiagnostics.value.structured_data, null, 2)
     : ''
 ))
+
+const breadcrumbPathComplete = computed(() => (
+  productDiagnostics.value?.breadcrumb_path_complete === true
+))
+
+const breadcrumbPreview = computed(() => {
+  const items = productDiagnostics.value?.breadcrumb?.items || []
+  if (!items.length) return '未生成'
+  return items.map((item) => item.name).filter(Boolean).join(' > ') || '未生成'
+})
+
+const breadcrumbSSRStatusLabel = computed(() => {
+  switch (productDiagnostics.value?.breadcrumb_ssr_status) {
+    case 'ready':
+      return '已就绪，初始 HTML 可输出'
+    case 'blocked':
+      return '未就绪，初始 HTML 不输出'
+    default:
+      return '未检查'
+  }
+})
+
+const breadcrumbReason = computed(() => (
+  productDiagnostics.value?.breadcrumb_reason
+    || productDiagnostics.value?.breadcrumb?.reason
+    || ''
+))
+
+const breadcrumbReasonLabel = computed(() => {
+  const labels: Record<string, string> = {
+    category_service_unavailable: '分类服务不可用',
+    missing_category: '商品没有主分类',
+    category_cycle: '分类父级存在循环',
+    category_path_incomplete: '分类层级不完整或包含未启用分类',
+    breadcrumb_unavailable: '面包屑数据不可用',
+  }
+  return labels[breadcrumbReason.value] || breadcrumbReason.value
+})
 
 const metaStateLabel = (state: SEOProductMetaFieldState): string => {
   if (state.is_custom) {

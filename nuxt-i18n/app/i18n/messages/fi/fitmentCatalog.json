@@ -1,0 +1,61 @@
+{
+  "trigger": {
+    "label": "Tarkista yhteensopivuus"
+  },
+  "dialog": {
+    "eyebrow": "Yhteensopivuusluettelo",
+    "title": "Etsi runko tai haarukka",
+    "description": "Hae erillisestä yhteensopivuusluettelosta merkin, mallin tai vuoden perusteella. Tulokset sisältävät kullekin tietueelle tallennetut navan tekniset tiedot.",
+    "close": "Sulje",
+    "tabListLabel": "Yhteensopivuusluettelon osiot"
+  },
+  "tabs": {
+    "frame": "Rungon yhteensopivuus",
+    "fork": "Haarukan yhteensopivuus"
+  },
+  "search": {
+    "label": "Haku",
+    "placeholder": "Hae merkin tai mallin perusteella",
+    "yearLabel": "Mallivuosi",
+    "yearPlaceholder": "esim. 2024",
+    "submit": "Hae",
+    "clear": "Tyhjennä",
+    "searching": "Haetaan..."
+  },
+  "states": {
+    "initial": "Syötä merkki, malli tai vuosi etsiäksesi luettelosta.",
+    "empty": "Vastaavia tietueita ei löytynyt.",
+    "unavailable": "Yhteensopivuustiedot eivät ole tilapäisesti saatavilla. Yritä uudelleen.",
+    "noHubSpecifications": "Navan teknisiä tietoja ei ole tallennettu."
+  },
+  "entry": {
+    "series": "Sarja",
+    "generation": "Sukupolvi",
+    "market": "Markkina",
+    "hubSpecifications": "Navan tekniset tiedot",
+    "unknownYear": "Vuotta ei määritetty",
+    "allYears": "Kaikki vuodet"
+  },
+  "pagination": {
+    "label": "Yhteensopivuustulokset",
+    "previous": "Edellinen sivu",
+    "next": "Seuraava sivu",
+    "page": "Sivu {page}/{totalPages}"
+  },
+  "hub": {
+    "position": "Sijainti",
+    "axleType": "Akselityyppi",
+    "axleSpacing": "Akseliväli",
+    "millimetres": "mm",
+    "positions": {
+      "front": "Etu",
+      "rear": "Taka"
+    },
+    "axleTypes": {
+      "quickRelease": "Pikalinkku",
+      "thruAxle": "Läpiakseli",
+      "boltOn": "Pulttikiinnitys",
+      "other": "Muu"
+    }
+  }
+}

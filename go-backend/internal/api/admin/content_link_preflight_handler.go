@@ -67,6 +67,11 @@ func (h *ContentLinkPreflightHandler) ListIssues(c *gin.Context) {
 		return
 	}
 	page, pageSize := contentLinkPagination(c)
+	runID, err := contentLinkRunID(c)
+	if err != nil {
+		apierror.RespondBadRequest(c, err.Error())
+		return
+	}
 	var fixable *bool
 	switch strings.TrimSpace(c.Query("fixable")) {
 	case "true", "1", "yes":
@@ -80,6 +85,8 @@ func (h *ContentLinkPreflightHandler) ListIssues(c *gin.Context) {
 		Page:      page,
 		PageSize:  pageSize,
 		State:     strings.TrimSpace(c.DefaultQuery("state", "active")),
+		RuleID:    strings.TrimSpace(c.Query("rule_id")),
+		RunID:     runID,
 		TargetURL: strings.TrimSpace(c.Query("url")),
 		Search:    strings.TrimSpace(c.Query("search")),
 		Fixable:   fixable,
@@ -88,7 +95,11 @@ func (h *ContentLinkPreflightHandler) ListIssues(c *gin.Context) {
 		apierror.RespondInternalError(c, err)
 		return
 	}
-	stats, err := h.service.Stats()
+	stats, err := h.service.Stats(repository.PreflightContentLinkStatsFilter{
+		RuleID:    strings.TrimSpace(c.Query("rule_id")),
+		RunID:     runID,
+		TargetURL: strings.TrimSpace(c.Query("url")),
+	})
 	if err != nil {
 		apierror.RespondInternalError(c, err)
 		return
@@ -110,7 +121,16 @@ func (h *ContentLinkPreflightHandler) Stats(c *gin.Context) {
 		apierror.RespondInternalError(c, service.ErrContentLinkPreflightUnavailable)
 		return
 	}
-	stats, err := h.service.Stats()
+	runID, err := contentLinkRunID(c)
+	if err != nil {
+		apierror.RespondBadRequest(c, err.Error())
+		return
+	}
+	stats, err := h.service.Stats(repository.PreflightContentLinkStatsFilter{
+		RuleID:    strings.TrimSpace(c.Query("rule_id")),
+		RunID:     runID,
+		TargetURL: strings.TrimSpace(c.Query("url")),
+	})
 	if err != nil {
 		apierror.RespondInternalError(c, err)
 		return
@@ -252,6 +272,18 @@ func contentLinkIssueID(c *gin.Context) (uint, error) {
 	value, err := strconv.ParseUint(strings.TrimSpace(c.Param("id")), 10, 64)
 	if err != nil || value == 0 {
 		return 0, errors.New("invalid content link issue ID")
+	}
+	return uint(value), nil
+}
+
+func contentLinkRunID(c *gin.Context) (uint, error) {
+	raw := strings.TrimSpace(c.Query("run_id"))
+	if raw == "" {
+		return 0, nil
+	}
+	value, err := strconv.ParseUint(raw, 10, 64)
+	if err != nil || value == 0 {
+		return 0, errors.New("invalid content link run ID")
 	}
 	return uint(value), nil
 }

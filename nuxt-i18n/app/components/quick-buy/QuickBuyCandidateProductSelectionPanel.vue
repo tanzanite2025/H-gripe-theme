@@ -72,14 +72,14 @@ const handleSearchInput = (event: Event) => {
   <div class="quickbuy-selection-panel">
     <div class="quickbuy-selection-panel-header">
       <div class="quickbuy-panel-heading-row">
-        <h2 v-if="!hideTitle" class="my-0 min-w-0 text-lg font-semibold text-white">
+        <h2 v-if="!hideTitle" class="my-0 min-w-0 text-lg font-semibold tz-text-primary">
           {{ title || fallbackTitle }}
         </h2>
         <input
           :value="query"
           type="text"
           :placeholder="searchPlaceholder"
-          class="quickbuy-search-input w-full px-3 py-2.5 rounded-lg text-white box-border max-w-full focus:outline-none transition-colors"
+          class="quickbuy-search-input w-full px-3 py-2.5 rounded-lg tz-text-primary box-border max-w-full focus:outline-none transition-colors"
           @keydown.enter.prevent="emit('submitSearch')"
           @input="handleSearchInput"
         />
@@ -210,13 +210,13 @@ const handleSearchInput = (event: Event) => {
   flex-direction: column;
   overflow: hidden;
   padding: 0.75rem;
-  border: 1px solid rgba(255, 255, 255, 0.035);
+  border: 1px solid var(--tz-border-subtle);
   border-radius: 0.75rem;
-  background: #0b0d12;
+  background: var(--quickbuy-panel-surface, var(--tz-card-surface));
   box-shadow:
-    0 16px 42px rgba(0, 0, 0, 0.34),
-    inset 0 1px 0 rgba(255, 255, 255, 0.045),
-    inset 0 -1px 0 var(--quickbuy-dark-edge, rgba(0, 0, 0, 0.5));
+    0 16px 42px rgba(20, 32, 43, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    inset 0 -1px 0 var(--quickbuy-dark-edge, rgba(20, 32, 43, 0.12));
 }
 
 .quickbuy-selection-panel-header {
@@ -225,23 +225,21 @@ const handleSearchInput = (event: Event) => {
 
 .quickbuy-search-input {
   border: 0 !important;
-  background-color: var(--quickbuy-control-surface, #1b1c23) !important;
-  background-image:
-    linear-gradient(180deg, var(--quickbuy-control-surface-raised, #171920), var(--quickbuy-control-surface, #0d0f14)) !important;
+  background-color: var(--quickbuy-control-surface, var(--tz-input-surface)) !important;
+  background-image: none !important;
   box-shadow:
-    inset 0 1px 3px rgba(0, 0, 0, 0.34),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.035);
+    inset 0 1px 3px rgba(20, 32, 43, 0.06),
+    inset 0 0 0 1px var(--tz-border-subtle);
 }
 
 .quickbuy-search-input:focus {
   border: 0 !important;
-  background-color: var(--quickbuy-control-surface, #1b1c23) !important;
-  background-image:
-    linear-gradient(180deg, var(--quickbuy-control-surface-raised, #171920), var(--quickbuy-control-surface, #0d0f14)) !important;
+  background-color: var(--quickbuy-control-surface, var(--tz-input-surface)) !important;
+  background-image: none !important;
   box-shadow:
-    inset 0 1px 2px rgba(0, 0, 0, 0.3),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.045),
-    0 0 0 3px var(--quickbuy-focus-ring, rgba(181, 255, 109, 0.12));
+    inset 0 1px 2px rgba(20, 32, 43, 0.05),
+    inset 0 0 0 1px var(--tz-border-subtle),
+    0 0 0 3px var(--quickbuy-focus-ring, rgba(5, 150, 105, 0.12));
 }
 
 .quickbuy-panel-heading-row {
@@ -283,10 +281,10 @@ const handleSearchInput = (event: Event) => {
   flex: 0 0 auto;
   margin-top: 0.75rem;
   padding: 0.625rem 0.75rem;
-  border: 1px solid rgba(255, 255, 255, 0.045);
+  border: 1px solid var(--tz-border-subtle);
   border-radius: 0.625rem;
-  background: var(--quickbuy-control-surface, #111219);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  background: var(--quickbuy-control-surface, var(--tz-input-surface));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 .quickbuy-filter-bar__header {
@@ -298,7 +296,7 @@ const handleSearchInput = (event: Event) => {
 
 .quickbuy-filter-bar__title,
 .quickbuy-filter-group__label {
-  color: rgba(255, 255, 255, 0.78);
+  color: var(--tz-text-secondary);
   font-size: 0.6875rem;
   font-weight: 800;
 }
@@ -306,7 +304,7 @@ const handleSearchInput = (event: Event) => {
 .quickbuy-filter-bar__clear {
   border: 0;
   padding: 0;
-  color: rgba(181, 255, 109, 0.9);
+  color: rgba(5, 150, 105, 0.9);
   background: transparent;
   font-size: 0.6875rem;
   font-weight: 700;
@@ -336,23 +334,23 @@ const handleSearchInput = (event: Event) => {
   gap: 0.3rem;
   min-height: 1.7rem;
   padding: 0.2rem 0.45rem;
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  border: 1px solid var(--tz-border-subtle);
   border-radius: 0.4rem;
-  color: rgba(255, 255, 255, 0.7);
-  background: rgba(255, 255, 255, 0.025);
+  color: var(--tz-text-secondary);
+  background: var(--tz-surface-subtle);
   font-size: 0.6875rem;
 }
 
 .quickbuy-filter-option input {
   width: 0.8rem;
   height: 0.8rem;
-  accent-color: #b5ff6d;
+  accent-color: #059669;
 }
 
 .quickbuy-filter-group__empty {
   display: inline-block;
   margin-top: 0.3rem;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--tz-text-muted);
   font-size: 0.6875rem;
 }
 
@@ -368,10 +366,10 @@ const handleSearchInput = (event: Event) => {
   border: 0;
   border-radius: 0.75rem;
   background:
-    linear-gradient(180deg, var(--quickbuy-control-surface-raised, #171920), var(--quickbuy-control-surface, #0d0f14));
+    var(--quickbuy-control-surface-raised, var(--tz-surface-subtle));
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.035),
-    inset 0 -18px 36px rgba(0, 0, 0, 0.2);
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    inset 0 -18px 36px rgba(20, 32, 43, 0.04);
 }
 
 .quickbuy-product-grid-stage {
@@ -401,7 +399,7 @@ const handleSearchInput = (event: Event) => {
   display: grid;
   place-items: center;
   padding: 1rem;
-  color: rgba(255, 255, 255, 0.62);
+  color: var(--tz-text-muted);
   font-size: 0.8125rem;
   text-align: center;
 }
@@ -421,11 +419,11 @@ const handleSearchInput = (event: Event) => {
   place-items: center;
   border: 0;
   border-radius: 999px;
-  color: rgba(255, 255, 255, 0.78);
-  background: var(--quickbuy-control-surface-raised, #171920);
+  color: var(--tz-text-secondary);
+  background: var(--quickbuy-control-surface-raised, var(--tz-surface-subtle));
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.035),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.36);
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    inset 0 -1px 0 rgba(20, 32, 43, 0.08);
   font-size: 0.6875rem;
   font-weight: 700;
 }

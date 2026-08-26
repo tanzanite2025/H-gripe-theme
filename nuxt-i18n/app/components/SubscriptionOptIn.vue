@@ -9,14 +9,14 @@
         type="email"
         v-model="email"
         :placeholder="placeholder"
-        class="subscription-opt-in__input rounded-full bg-[var(--tz-input-surface)] border-none text-white placeholder:text-slate-500 text-sm shadow-[0_0_0_1px_rgba(0,0,0,0.6)] focus:shadow-[0_0_0_2px_rgba(0,0,0,0.9)] focus:outline-none transition-all"
+        class="subscription-opt-in__input rounded-full bg-[var(--tz-input-surface)] border-none tz-text-primary placeholder:tz-text-muted text-sm shadow-md focus:shadow-md focus:outline-none transition-all"
         :disabled="loading"
         required
         autocomplete="email"
       />
       <button
         type="submit"
-        class="subscription-opt-in__button flex shrink-0 items-center justify-center rounded-full bg-white text-sm font-semibold text-[#0b1020] shadow-[0_4px_14px_rgba(0,0,0,0.45)] transition-all hover:shadow-[0_5px_16px_rgba(0,0,0,0.5)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
+        class="subscription-opt-in__button flex shrink-0 items-center justify-center rounded-full bg-white text-sm font-semibold text-[#0b1020] shadow-md transition-all hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
         :disabled="loading"
       >
         <span v-if="loading" class="flex items-center gap-1.5">
@@ -32,7 +32,7 @@
 
     <p
       v-if="successMessage"
-      class="text-xs text-emerald-400 text-center mt-2 font-medium"
+      class="text-xs text-emerald-600 text-center mt-2 font-medium"
     >
       {{ successMessage }}
     </p>

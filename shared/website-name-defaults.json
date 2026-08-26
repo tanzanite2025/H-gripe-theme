@@ -1,0 +1,47 @@
+{
+  "group": "website_name",
+  "fields": {
+    "status": {
+      "key": "website_name_status",
+      "description": "status"
+    },
+    "intro": {
+      "key": "website_name_intro",
+      "description": "intro"
+    },
+    "eyebrow": {
+      "key": "website_name_eyebrow",
+      "description": "eyebrow"
+    },
+    "title": {
+      "key": "website_name_title",
+      "description": "title"
+    },
+    "body": {
+      "key": "website_name_body",
+      "description": "body"
+    },
+    "note": {
+      "key": "website_name_note",
+      "description": "note"
+    }
+  },
+  "locales": {
+    "en": {
+      "status": "Website context",
+      "intro": "This page will explain the working relationship behind this website before describing why I use the name “Me & This Website”.",
+      "eyebrow": "WHY THIS NAME",
+      "title": "Why This Name",
+      "body": "",
+      "note": ""
+    },
+    "zh_cn": {
+      "status": "网站说明",
+      "intro": "这里会先说明这个网站背后的工作关系，再继续解释我为什么使用“Me & This Website”这个名字。",
+      "eyebrow": "WHY THIS NAME",
+      "title": "为什么叫这个名字",
+      "body": "",
+      "note": ""
+    }
+  }
+}

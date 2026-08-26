@@ -5,8 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"commerce-platform/internal/domain/currency"
@@ -20,19 +23,28 @@ const (
 	defaultExchangeRateEndpoint = "https://v6.exchangerate-api.com/v6/{apiKey}/latest/{base}"
 	defaultExchangeRateBase     = "USD"
 	defaultExchangeRateRefresh  = 1440
+	exchangeRateSyncLeaseKey    = "exchange-rate-api-sync"
+	exchangeRateSyncLeaseTTL    = 30 * time.Minute
 )
 
 var (
-	ErrExchangeRateDisabled      = errors.New("exchange rate API is disabled")
-	ErrExchangeRateNotConfigured = errors.New("exchange rate API is not configured")
-	ErrExchangeRateMissing       = errors.New("exchange rate is missing")
+	ErrExchangeRateDisabled       = errors.New("exchange rate API is disabled")
+	ErrExchangeRateNotConfigured  = errors.New("exchange rate API is not configured")
+	ErrExchangeRateMissing        = errors.New("exchange rate is missing")
+	ErrExchangeRateSyncInProgress = errors.New("exchange rate sync is already running")
 )
 
 type ExchangeRateService struct {
-	repo           *repository.ExchangeRateRepository
-	settings       *repository.SettingRepository
-	currencyPolicy *CurrencyPolicyService
-	client         *http.Client
+	repo            *repository.ExchangeRateRepository
+	settings        *repository.SettingRepository
+	currencyPolicy  *CurrencyPolicyService
+	marketService   *StorefrontMarketService
+	productService  *ProductService
+	shippingService *ShippingService
+	client          *http.Client
+	syncOwnerID     string
+	syncLeaseTTL    time.Duration
+	syncMu          sync.Mutex
 }
 
 type ExchangeRateConfig struct {
@@ -47,10 +59,12 @@ type ExchangeRateConfig struct {
 }
 
 type ExchangeRateSyncResult struct {
-	Config    ExchangeRateConfig      `json:"config"`
-	Rates     []currency.ExchangeRate `json:"rates"`
-	FetchedAt time.Time               `json:"fetched_at"`
-	ExpiresAt *time.Time              `json:"expires_at,omitempty"`
+	Config                      ExchangeRateConfig                 `json:"config"`
+	Rates                       []currency.ExchangeRate            `json:"rates"`
+	FetchedAt                   time.Time                          `json:"fetched_at"`
+	ExpiresAt                   *time.Time                         `json:"expires_at,omitempty"`
+	DisplayPriceRefresh         *ProductDisplayPriceRefreshResult  `json:"display_price_refresh,omitempty"`
+	ShippingDisplayPriceRefresh *ShippingDisplayPriceRefreshResult `json:"shipping_display_price_refresh,omitempty"`
 }
 
 type CurrencyConversion struct {
@@ -74,9 +88,11 @@ type exchangeRateAPIResponse struct {
 
 func NewExchangeRateService(repo *repository.ExchangeRateRepository, settings *repository.SettingRepository) *ExchangeRateService {
 	return &ExchangeRateService{
-		repo:     repo,
-		settings: settings,
-		client:   &http.Client{Timeout: 12 * time.Second},
+		repo:         repo,
+		settings:     settings,
+		client:       &http.Client{Timeout: 12 * time.Second},
+		syncOwnerID:  exchangeRateSyncOwnerID(),
+		syncLeaseTTL: exchangeRateSyncLeaseTTL,
 	}
 }
 
@@ -85,6 +101,27 @@ func (s *ExchangeRateService) ConfigureCurrencyPolicy(policy *CurrencyPolicyServ
 		return
 	}
 	s.currencyPolicy = policy
+}
+
+func (s *ExchangeRateService) ConfigureStorefrontMarkets(markets *StorefrontMarketService) {
+	if s == nil {
+		return
+	}
+	s.marketService = markets
+}
+
+func (s *ExchangeRateService) ConfigureProductService(productService *ProductService) {
+	if s == nil {
+		return
+	}
+	s.productService = productService
+}
+
+func (s *ExchangeRateService) ConfigureShippingService(shippingService *ShippingService) {
+	if s == nil {
+		return
+	}
+	s.shippingService = shippingService
 }
 
 func (s *ExchangeRateService) GetConfig() (ExchangeRateConfig, error) {
@@ -122,28 +159,28 @@ func (s *ExchangeRateService) GetConfig() (ExchangeRateConfig, error) {
 			config.APIKeySet = config.apiKey != ""
 		}
 	}
-	if policyBaseCurrency, ok := exchangeRatePrimaryCurrencyFromPricingPolicy(s); ok {
-		config.BaseCurrency = policyBaseCurrency
+	if backendEntryCurrency, ok := exchangeRateBackendEntryCurrencyFromPolicy(s); ok {
+		config.BaseCurrency = backendEntryCurrency
 	}
-	if policyQuoteCurrencies, ok := exchangeRateQuoteCurrenciesFromPricingPolicy(s, config.BaseCurrency); ok {
-		config.QuoteCurrencies = policyQuoteCurrencies
+	if marketQuoteCurrencies, ok := exchangeRateQuoteCurrenciesFromStorefrontMarkets(s, config.BaseCurrency); ok {
+		config.QuoteCurrencies = marketQuoteCurrencies
 	}
 	config.QuoteCurrencies = removeCurrency(config.QuoteCurrencies, config.BaseCurrency)
 	return config, nil
 }
 
 func exchangeRateDefaultBase(s *ExchangeRateService) string {
-	if primary, ok := exchangeRatePrimaryCurrencyFromPricingPolicy(s); ok {
+	if primary, ok := exchangeRateBackendEntryCurrencyFromPolicy(s); ok {
 		return primary
 	}
 	return defaultExchangeRateBase
 }
 
-func exchangeRatePrimaryCurrencyFromPricingPolicy(s *ExchangeRateService) (string, bool) {
+func exchangeRateBackendEntryCurrencyFromPolicy(s *ExchangeRateService) (string, bool) {
 	if s == nil || s.currencyPolicy == nil {
 		return "", false
 	}
-	primary, err := s.currencyPolicy.PrimaryCurrency()
+	primary, err := s.currencyPolicy.BackendEntryCurrency()
 	if err != nil {
 		return "", false
 	}
@@ -154,11 +191,15 @@ func exchangeRatePrimaryCurrencyFromPricingPolicy(s *ExchangeRateService) (strin
 	return primary, true
 }
 
-func exchangeRateQuoteCurrenciesFromPricingPolicy(s *ExchangeRateService, baseCurrency string) ([]string, bool) {
-	if s == nil || s.currencyPolicy == nil {
-		return nil, false
+func exchangeRateQuoteCurrenciesFromStorefrontMarkets(s *ExchangeRateService, baseCurrency string) ([]string, bool) {
+	markets := (*StorefrontMarketService)(nil)
+	if s != nil {
+		markets = s.marketService
 	}
-	values, err := s.currencyPolicy.DisplayCurrencies()
+	if markets == nil {
+		markets = &StorefrontMarketService{}
+	}
+	values, err := markets.ListStorefrontDisplayCurrencies(true)
 	if err != nil {
 		return nil, false
 	}
@@ -179,16 +220,41 @@ func (s *ExchangeRateService) Sync() (*ExchangeRateSyncResult, error) {
 	if !config.APIKeySet {
 		return nil, ErrExchangeRateNotConfigured
 	}
+	if !s.syncMu.TryLock() {
+		return nil, ErrExchangeRateSyncInProgress
+	}
+	defer s.syncMu.Unlock()
 
+	now := time.Now().UTC()
+	ownerID := strings.TrimSpace(s.syncOwnerID)
+	if ownerID == "" {
+		ownerID = exchangeRateSyncOwnerID()
+	}
+	leaseTTL := s.syncLeaseTTL
+	if leaseTTL <= 0 {
+		leaseTTL = exchangeRateSyncLeaseTTL
+	}
+	acquired, err := s.repo.TryAcquireSyncLease(exchangeRateSyncLeaseKey, ownerID, now, leaseTTL)
+	if err != nil {
+		return nil, err
+	}
+	if !acquired {
+		return nil, ErrExchangeRateSyncInProgress
+	}
+	defer func() {
+		_ = s.repo.ReleaseSyncLease(exchangeRateSyncLeaseKey, ownerID, time.Now().UTC())
+	}()
+
+	cacheFetchedAt := time.Now().UTC()
 	apiResponse, err := s.fetch(config)
 	if err != nil {
 		return nil, err
 	}
-	fetchedAt := time.Now().UTC()
+	fetchedAt := cacheFetchedAt
 	if apiResponse.TimeLastUpdateUnix > 0 {
 		fetchedAt = time.Unix(apiResponse.TimeLastUpdateUnix, 0).UTC()
 	}
-	expiresAt := fetchedAt.Add(time.Duration(config.RefreshMinutes) * time.Minute)
+	expiresAt := cacheFetchedAt.Add(time.Duration(config.RefreshMinutes) * time.Minute)
 	rates := make([]currency.ExchangeRate, 0, len(config.QuoteCurrencies)+1)
 	rates = append(rates, currency.ExchangeRate{
 		BaseCurrency:  config.BaseCurrency,
@@ -215,7 +281,35 @@ func (s *ExchangeRateService) Sync() (*ExchangeRateSyncResult, error) {
 	if err := s.repo.UpsertRates(rates); err != nil {
 		return nil, err
 	}
-	return &ExchangeRateSyncResult{Config: config, Rates: rates, FetchedAt: fetchedAt, ExpiresAt: &expiresAt}, nil
+	result := &ExchangeRateSyncResult{
+		Config:    config,
+		Rates:     rates,
+		FetchedAt: fetchedAt,
+		ExpiresAt: &expiresAt,
+	}
+	if s.productService != nil {
+		displayPriceRefresh, err := s.productService.RefreshDisplayPriceSnapshots(
+			config.BaseCurrency,
+			config.QuoteCurrencies,
+			rates,
+		)
+		if err != nil {
+			return nil, err
+		}
+		result.DisplayPriceRefresh = &displayPriceRefresh
+	}
+	if s.shippingService != nil {
+		shippingDisplayPriceRefresh, err := s.shippingService.RefreshDisplayPriceSnapshots(
+			config.BaseCurrency,
+			config.QuoteCurrencies,
+			rates,
+		)
+		if err != nil {
+			return nil, err
+		}
+		result.ShippingDisplayPriceRefresh = &shippingDisplayPriceRefresh
+	}
+	return result, nil
 }
 
 func (s *ExchangeRateService) List(baseCurrency string) ([]currency.ExchangeRate, error) {
@@ -250,7 +344,7 @@ func (s *ExchangeRateService) Convert(amount float64, baseCurrency string, quote
 }
 
 func (s *ExchangeRateService) directConversion(amount float64, base string, quote string) (CurrencyConversion, bool) {
-	rate, err := s.repo.Find(base, quote)
+	rate, err := s.repo.FindFresh(base, quote, time.Now().UTC())
 	if err != nil || rate.Rate <= 0 {
 		return CurrencyConversion{}, false
 	}
@@ -258,7 +352,7 @@ func (s *ExchangeRateService) directConversion(amount float64, base string, quot
 }
 
 func (s *ExchangeRateService) reverseConversion(amount float64, base string, quote string) (CurrencyConversion, bool) {
-	rate, err := s.repo.Find(quote, base)
+	rate, err := s.repo.FindFresh(quote, base, time.Now().UTC())
 	if err != nil || rate.Rate <= 0 {
 		return CurrencyConversion{}, false
 	}
@@ -274,11 +368,12 @@ func (s *ExchangeRateService) crossConversion(amount float64, base string, quote
 	if anchor == "" || anchor == base || anchor == quote {
 		return CurrencyConversion{}, false
 	}
-	baseRate, err := s.repo.Find(anchor, base)
+	now := time.Now().UTC()
+	baseRate, err := s.repo.FindFresh(anchor, base, now)
 	if err != nil || baseRate.Rate <= 0 {
 		return CurrencyConversion{}, false
 	}
-	quoteRate, err := s.repo.Find(anchor, quote)
+	quoteRate, err := s.repo.FindFresh(anchor, quote, now)
 	if err != nil || quoteRate.Rate <= 0 {
 		return CurrencyConversion{}, false
 	}
@@ -354,4 +449,16 @@ func removeCurrency(values []string, target string) []string {
 		result = append(result, code)
 	}
 	return result
+}
+
+var exchangeRateSyncInstanceSequence uint64
+
+func exchangeRateSyncOwnerID() string {
+	host, _ := os.Hostname()
+	host = strings.TrimSpace(host)
+	if host == "" {
+		host = "unknown-host"
+	}
+	instanceID := atomic.AddUint64(&exchangeRateSyncInstanceSequence, 1)
+	return fmt.Sprintf("%s:%d:%d", host, os.Getpid(), instanceID)
 }

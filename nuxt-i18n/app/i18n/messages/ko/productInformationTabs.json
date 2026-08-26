@@ -5,12 +5,12 @@
     "details": "상세 정보",
     "afterSales": "사후 서비스",
     "packaging": "포장",
-    "shipping": "배송"
+    "productShippingInfo": "배송"
   },
   "empty": {
     "details": "제품 상세 정보가 아직 추가되지 않았습니다.",
     "afterSales": "사후 서비스 정보가 아직 추가되지 않았습니다.",
     "packaging": "포장 정보가 아직 추가되지 않았습니다.",
-    "shipping": "배송 정보가 아직 추가되지 않았습니다."
+    "productShippingInfo": "배송 정보가 아직 추가되지 않았습니다."
   }
 }

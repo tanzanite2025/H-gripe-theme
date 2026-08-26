@@ -11,6 +11,9 @@ import {
 } from '@/utils/apiResponse'
 import type { MediaAsset, MediaID, MediaPagination } from '@/api/media'
 
+export const SITE_QUALITY_RULE_ID_DESCRIPTIVE_LINK_TEXT = 'link_descriptive_text'
+export const SITE_QUALITY_PROVIDER_AUDIT_ID_LINK_TEXT = 'link-text'
+
 export type SiteQualityStrategy = 'mobile' | 'desktop'
 
 export interface SiteQualityRemediation {
@@ -20,6 +23,8 @@ export interface SiteQualityRemediation {
 
 export interface SiteQualityIssue {
   id: string
+  rule_id: string
+  provider_audit_id?: string
   kind?: string
   rule_version?: string
   title: string
@@ -31,6 +36,7 @@ export interface SiteQualityIssue {
   savings_bytes?: number
   severity: 'low' | 'medium' | 'high' | 'critical'
   resources?: SiteQualityFindingResource[]
+  links?: SiteQualityLinkEvidence[]
   headings?: SiteQualityHeadingEvidence[]
   structured_data?: SiteQualityStructuredDataEvidence[]
   remediation?: SiteQualityRemediation
@@ -42,8 +48,16 @@ export interface SiteQualityFindingResource {
   wasted_ms?: number
 }
 
+export interface SiteQualityLinkEvidence {
+  href: string
+  text: string
+  text_lang?: string
+}
+
 export interface SiteQualityFindingEvidence {
   audit_id: string
+  rule_id: string
+  provider_audit_id?: string
   title: string
   description?: string
   score?: number
@@ -52,6 +66,7 @@ export interface SiteQualityFindingEvidence {
   savings_ms?: number
   savings_bytes?: number
   resources?: SiteQualityFindingResource[]
+  links?: SiteQualityLinkEvidence[]
   headings?: SiteQualityHeadingEvidence[]
   structured_data?: SiteQualityStructuredDataEvidence[]
 }
@@ -78,7 +93,7 @@ export interface SiteQualityStructuredDataEvidence {
 
 export type SiteQualityFindingState = 'open' | 'acknowledged' | 'resolved' | 'verified'
 export type SiteQualityFindingStateFilter = SiteQualityFindingState | 'active' | 'all'
-export type SiteQualityFindingKind = 'opportunity' | 'headings' | 'schema'
+export type SiteQualityFindingKind = 'opportunity' | 'links' | 'headings' | 'schema'
 
 export interface SiteQualityFinding {
   id: number
@@ -86,6 +101,8 @@ export interface SiteQualityFinding {
   target_url: string
   strategy: SiteQualityStrategy
   audit_id: string
+  rule_id: string
+  provider_audit_id?: string
   finding_kind?: SiteQualityFindingKind
   rule_version?: string
   confidence: number
@@ -351,6 +368,8 @@ export interface PreflightContentLinkTargetList {
 export interface PreflightContentLinkRun {
   id: number
   target_url: string
+  rule_id: string
+  provider_audit_id?: string
   route_entry_id?: number
   status: 'success' | 'failed'
   checked_at: string
@@ -365,6 +384,8 @@ export interface PreflightContentLinkIssue {
   route_entry_id?: number
   run_id: number
   target_url: string
+  rule_id: string
+  provider_audit_id?: string
   final_url: string
   link_url: string
   link_text: string
@@ -516,21 +537,42 @@ const readObjectPayload = (response: unknown, endpoint: string) => (
   requireApiObject(readPayload(response, endpoint), endpoint)
 )
 
-const readSiteQualityRunPayload = (response: unknown, endpoint: string): SiteQualityRun => {
-  const payload = readObjectPayload(response, endpoint)
+const readSiteQualityRunObject = (payload: Record<string, any>, endpoint: string): SiteQualityRun => {
   requireApiNumberField(payload, 'id', endpoint)
   requireApiStringField(payload, 'target_url', endpoint)
   requireApiStringField(payload, 'strategy', endpoint)
   requireApiStringField(payload, 'status', endpoint)
-  requireApiArrayField(payload, 'issues', endpoint)
+  const issues = requireApiArrayField<SiteQualityIssue>(payload, 'issues', endpoint)
+  issues.forEach((issue, index) => {
+    const issueEndpoint = `${endpoint}.issues[${index}]`
+    requireApiObject(issue, issueEndpoint)
+    requireApiStringField(issue, 'id', issueEndpoint)
+    requireApiStringField(issue, 'rule_id', issueEndpoint)
+  })
   return payload as SiteQualityRun
 }
+
+const readSiteQualityRunPayload = (response: unknown, endpoint: string): SiteQualityRun => (
+  readSiteQualityRunObject(readObjectPayload(response, endpoint), endpoint)
+)
 
 const readSiteQualityRunsPayload = (response: unknown, endpoint: string): SiteQualityRunList => {
   const payload = readObjectPayload(response, endpoint)
   requireApiBooleanField(payload, 'runner_configured', endpoint)
-  requireApiArrayField(payload, 'items', endpoint)
-  requireApiObjectField(payload, 'summary', endpoint)
+  const items = requireApiArrayField<Record<string, any>>(payload, 'items', endpoint)
+  items.forEach((run, index) => {
+    readSiteQualityRunObject(
+      requireApiObject(run, `${endpoint}.items[${index}]`),
+      `${endpoint}.items[${index}]`,
+    )
+  })
+  const summary = requireApiObjectField<Record<string, any>>(payload, 'summary', endpoint)
+  if (summary.latest_run !== undefined) {
+    readSiteQualityRunObject(
+      requireApiObject(summary.latest_run, `${endpoint}.summary.latest_run`),
+      `${endpoint}.summary.latest_run`,
+    )
+  }
   requireApiObject(payload.pagination, `${endpoint}.pagination`)
   return payload as SiteQualityRunList
 }
@@ -547,18 +589,25 @@ const readSiteQualityFindingPayload = (response: unknown, endpoint: string): Sit
   requireApiNumberField(payload, 'id', endpoint)
   requireApiStringField(payload, 'target_url', endpoint)
   requireApiStringField(payload, 'audit_id', endpoint)
+  requireApiStringField(payload, 'rule_id', endpoint)
   requireApiStringField(payload, 'state', endpoint)
   return payload as SiteQualityFinding
 }
 
 const readSiteQualityFindingActionPayload = (response: unknown, endpoint: string): SiteQualityFinding => {
   const payload = readObjectPayload(response, endpoint)
-  return requireApiObject(payload.finding, `${endpoint}.finding`) as SiteQualityFinding
+  return readSiteQualityFindingPayload({ data: payload.finding }, `${endpoint}.finding`)
 }
 
 const readSiteQualityFindingsPayload = (response: unknown, endpoint: string): SiteQualityFindingList => {
   const payload = readObjectPayload(response, endpoint)
-  requireApiArrayField(payload, 'items', endpoint)
+  const items = requireApiArrayField<SiteQualityFinding>(payload, 'items', endpoint)
+  items.forEach((finding, index) => {
+    const findingEndpoint = `${endpoint}.items[${index}]`
+    requireApiObject(finding, findingEndpoint)
+    requireApiStringField(finding, 'audit_id', findingEndpoint)
+    requireApiStringField(finding, 'rule_id', findingEndpoint)
+  })
   requireApiObject(payload.stats, `${endpoint}.stats`)
   requireApiObject(payload.pagination, `${endpoint}.pagination`)
   return payload as SiteQualityFindingList
@@ -606,18 +655,25 @@ const readContentLinkIssuePayload = (response: unknown, endpoint: string): Prefl
   requireApiNumberField(payload, 'id', endpoint)
   requireApiStringField(payload, 'target_url', endpoint)
   requireApiStringField(payload, 'link_text', endpoint)
+  requireApiStringField(payload, 'rule_id', endpoint)
   requireApiStringField(payload, 'state', endpoint)
   return payload as PreflightContentLinkIssue
 }
 
 const readContentLinkIssueActionPayload = (response: unknown, endpoint: string): PreflightContentLinkIssue => {
   const payload = readObjectPayload(response, endpoint)
-  return requireApiObjectField<PreflightContentLinkIssue>(payload, 'issue', endpoint)
+  const issue = requireApiObjectField<PreflightContentLinkIssue>(payload, 'issue', endpoint)
+  return readContentLinkIssuePayload({ data: issue }, `${endpoint}.issue`)
 }
 
 const readContentLinkIssuesPayload = (response: unknown, endpoint: string): PreflightContentLinkIssueList => {
   const payload = readObjectPayload(response, endpoint)
-  requireApiArrayField(payload, 'items', endpoint)
+  const items = requireApiArrayField<PreflightContentLinkIssue>(payload, 'items', endpoint)
+  items.forEach((issue, index) => {
+    const issueEndpoint = `${endpoint}.items[${index}]`
+    requireApiObject(issue, issueEndpoint)
+    requireApiStringField(issue, 'rule_id', issueEndpoint)
+  })
   requireApiObjectField(payload, 'stats', endpoint)
   requireApiObjectField(payload, 'pagination', endpoint)
   return payload as PreflightContentLinkIssueList
@@ -632,8 +688,16 @@ const readContentLinkStatsPayload = (response: unknown, endpoint: string): Prefl
 
 const readContentLinkRunResultPayload = (response: unknown, endpoint: string): PreflightContentLinkRunResult => {
   const payload = readObjectPayload(response, endpoint)
-  requireApiObjectField(payload, 'run', endpoint)
-  requireApiArrayField(payload, 'issues', endpoint)
+  const run = requireApiObjectField(payload, 'run', endpoint)
+  requireApiNumberField(run, 'id', `${endpoint}.run`)
+  requireApiStringField(run, 'target_url', `${endpoint}.run`)
+  requireApiStringField(run, 'rule_id', `${endpoint}.run`)
+  const issues = requireApiArrayField<PreflightContentLinkIssue>(payload, 'issues', endpoint)
+  issues.forEach((issue, index) => {
+    const issueEndpoint = `${endpoint}.issues[${index}]`
+    requireApiObject(issue, issueEndpoint)
+    requireApiStringField(issue, 'rule_id', issueEndpoint)
+  })
   requireApiObjectField(payload, 'stats', endpoint)
   return payload as PreflightContentLinkRunResult
 }
@@ -723,6 +787,7 @@ export const preflightApi = {
     pageSize?: number
     state?: SiteQualityFindingStateFilter
     severity?: SiteQualityFinding['severity']
+    ruleID?: string
     url?: string
     strategy?: SiteQualityStrategy
     kind?: SiteQualityFindingKind
@@ -733,6 +798,7 @@ export const preflightApi = {
     if (params?.pageSize) query.page_size = params.pageSize
     if (params?.state) query.state = params.state
     if (params?.severity) query.severity = params.severity
+    if (params?.ruleID) query.rule_id = params.ruleID
     if (params?.url) query.url = params.url
     if (params?.strategy) query.strategy = params.strategy
     if (params?.kind) query.kind = params.kind
@@ -807,6 +873,8 @@ export const preflightApi = {
     page?: number
     pageSize?: number
     state?: PreflightContentLinkIssueStateFilter
+    ruleID?: string
+    runID?: number
     url?: string
     search?: string
     fixable?: boolean
@@ -816,15 +884,25 @@ export const preflightApi = {
     if (params?.page) query.page = params.page
     if (params?.pageSize) query.page_size = params.pageSize
     if (params?.state) query.state = params.state
+    if (params?.ruleID) query.rule_id = params.ruleID
+    if (params?.runID) query.run_id = params.runID
     if (params?.url) query.url = params.url
     if (params?.search) query.search = params.search
     if (typeof params?.fixable === 'boolean') query.fixable = params.fixable
     return readContentLinkIssuesPayload(await axios.get(endpoint, { params: query }), endpoint)
   },
 
-  async getContentLinkStats(): Promise<PreflightContentLinkStats> {
+  async getContentLinkStats(params?: {
+    ruleID?: string
+    runID?: number
+    url?: string
+  }): Promise<PreflightContentLinkStats> {
     const endpoint = '/api/admin/preflight/content-links/stats'
-    return readContentLinkStatsPayload(await axios.get(endpoint), endpoint)
+    const query: Record<string, string | number> = {}
+    if (params?.ruleID) query.rule_id = params.ruleID
+    if (params?.runID) query.run_id = params.runID
+    if (params?.url) query.url = params.url
+    return readContentLinkStatsPayload(await axios.get(endpoint, { params: query }), endpoint)
   },
 
   async getContentLinkIssue(id: number): Promise<PreflightContentLinkIssue> {

@@ -19,6 +19,7 @@ var domainManagedSettingGroups = map[string]struct{}{
 	refundreturndomain.Group:                       {},
 	seodomain.Group:                                {},
 	analyticsdomain.Group:                          {},
+	setting.WebsiteNameGroup:                       {},
 }
 
 func IsDomainManagedSettingGroup(group string) bool {
@@ -34,6 +35,7 @@ func IsDomainManagedSettingKey(key string) bool {
 		strings.HasPrefix(normalized, "payment_gateway_") ||
 		strings.HasPrefix(normalized, "payment_installments_") ||
 		strings.HasPrefix(normalized, "paypal_dispute_invoice_seller_") ||
+		strings.HasPrefix(normalized, "website_name_") ||
 		normalized == refundreturndomain.Key ||
 		normalized == seodomain.HomeKeys.MetaTitle ||
 		normalized == seodomain.HomeKeys.MetaDescription ||

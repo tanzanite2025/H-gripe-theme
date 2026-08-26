@@ -1,7 +1,6 @@
 <template>
   <section class="home-faq" :class="{ 'home-faq--wide': wide, 'home-faq--fluid': fluid }">
-    <!-- Premium Card Container -->
-    <div class="rounded-2xl premium-card p-3 md:p-4">
+    <div class="home-faq__surface">
       
       <div class="home-faq__header">
         <div class="home-faq__header-main">
@@ -81,12 +80,11 @@
           </button>
         </div>
 
-        <div class="home-faq__mobile-card">
-          <div class="home-faq__mobile-card-header">
-            <h3 class="home-faq__mobile-card-title tz-faq-category-title">
-              {{ mobileGroupTitle }}
-            </h3>
-          </div>
+        <div class="home-faq__mobile-card-header">
+          <h3 class="home-faq__mobile-card-title tz-faq-category-title">
+            {{ mobileGroupTitle }}
+          </h3>
+        </div>
 
           <div class="home-faq__mobile-list">
             <div
@@ -95,7 +93,7 @@
               class="home-faq__item"
             >
               <button type="button" class="home-faq__question group" @click="toggleItem(item.id)">
-                <span class="home-faq__question-text tz-faq-question group-hover:text-[var(--tz-brand-primary)] transition-colors">{{ item.question }}</span>
+                <span class="home-faq__question-text tz-faq-question group-hover:text-[var(--tz-text-accent)] transition-colors">{{ item.question }}</span>
                 <svg
                   class="home-faq__chevron"
                   :class="{ 'home-faq__icon--open': expandedItems.has(item.id) }"
@@ -121,7 +119,6 @@
                 />
               </Transition>
             </div>
-          </div>
         </div>
       </div>
 
@@ -302,17 +299,17 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
   width: 100%;
   max-width: 960px;
   margin: 0 auto;
-  padding: 2rem 0;
+  padding: 1.25rem 0;
 }
 
 .home-faq--wide {
   max-width: 1200px;
-  padding: 2rem 0.5rem;
+  padding: 1.25rem 0.5rem;
 }
 
 @media (min-width: 640px) {
   .home-faq--wide {
-    padding: 2rem 1rem;
+    padding: 1.5rem 1rem;
   }
 }
 
@@ -321,9 +318,14 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
   padding-inline: 0;
 }
 
+.home-faq__surface {
+  width: 100%;
+  box-sizing: border-box;
+}
+
 .home-faq__header {
   text-align: center;
-  margin-bottom: 2rem;
+  margin-bottom: 1.25rem;
 }
 
 .home-faq__header-main {
@@ -355,15 +357,33 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
   display: block;
 }
 
-/* Global classes .nav-pill-tabs and .nav-pill-item are used now */
+.home-faq .nav-pill-tabs {
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  overflow-x: auto;
+  padding-bottom: 0.2rem;
+  scrollbar-width: none;
+}
+
+.home-faq .nav-pill-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.home-faq .nav-pill-item {
+  flex: 0 0 auto;
+  padding: 0.5rem 0.85rem;
+  font-size: 0.75rem;
+}
 
 .home-faq__question {
   width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.9rem 1rem;
+  gap: 0.5rem;
+  padding: 0.8rem 1rem;
   background: transparent;
   border: none;
   text-align: left;
@@ -371,20 +391,13 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
   transition: background 0.15s;
 }
 
-.home-faq__mobile-card {
-  padding: 1rem;
-  border-radius: 1.25rem;
-  background: var(--tz-card-surface);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
-}
-
 .home-faq__mobile-card-header {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 1rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid rgba(20, 32, 43, 0.12);
 }
 
 .home-faq__mobile-card-title {
@@ -399,14 +412,14 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
 
 .home-faq__mobile-list {
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 1rem;
+  border: 1px solid rgba(20, 32, 43, 0.12);
+  border-radius: 0.875rem;
   background: var(--tz-card-surface);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 3px 12px rgba(20, 32, 43, 0.06);
 }
 
 .home-faq__item {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(20, 32, 43, 0.1);
 }
 
 .home-faq__item:last-child {
@@ -414,14 +427,14 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
 }
 
 .home-faq__question:hover {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(20, 32, 43, 0.04);
 }
 
 .home-faq__question-text {
   flex: 1;
   color: var(--tz-text-secondary);
-  font-size: 1rem;
-  line-height: 1.45;
+  font-size: 0.96rem;
+  line-height: 1.4;
 }
 
 .home-faq__icon {
@@ -438,7 +451,7 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
 
 .home-faq__icon--open {
   transform: rotate(180deg);
-  color: #B5FF6D;
+  color: var(--tz-text-accent);
 }
 
 .home-faq__chevron {
@@ -450,7 +463,7 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
 .home-faq__answer {
   padding: 0 1.25rem 1.25rem 1.25rem;
   background:
-    linear-gradient(0deg, rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0.025)),
+    linear-gradient(0deg, rgba(20, 32, 43, 0.025), rgba(20, 32, 43, 0.025)),
     var(--tz-card-surface);
   color: var(--tz-text-secondary);
   overflow: hidden;
@@ -458,7 +471,7 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
 
 .home-faq__footer {
   text-align: center;
-  margin-top: 2rem;
+  margin-top: 1.25rem;
 }
 
 .home-faq__footer-actions {
@@ -477,10 +490,10 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
   border-radius: 9999px;
   font-size: 0.85rem;
   font-weight: 700;
-  color: #000000;
-  background: #B5FF6D;
+  color: #ffffff;
+  background: var(--tz-action-primary);
   border: none;
-  box-shadow: 0 4px 12px rgba(181, 255, 109, 0.22);
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.22);
   text-decoration: none;
   transition: all 0.2s ease;
   letter-spacing: 0.025em;
@@ -488,8 +501,8 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
 
 .home-faq__link:hover {
   transform: translateY(-1px);
-  background: #c8ff91;
-  box-shadow: 0 8px 16px -4px rgba(181, 255, 109, 0.38);
+  background: var(--tz-action-primary-hover);
+  box-shadow: 0 8px 16px -4px rgb(15 23 42 / 0.24);
 }
 
 .home-faq__link-icon {
@@ -503,9 +516,10 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
     padding: 2rem 0 2.25rem;
   }
 
-  .home-faq > .premium-card {
+  .home-faq__surface {
     padding: 0 !important;
     border-radius: 0 !important;
+    border: none !important;
     background: transparent !important;
     box-shadow: none !important;
   }
@@ -513,7 +527,7 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
   .home-faq__header {
     margin-bottom: 1rem;
     padding-bottom: 0.75rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid rgba(20, 32, 43, 0.12);
     text-align: left;
   }
 
@@ -524,7 +538,7 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
   .home-faq__title {
     display: block;
     margin: 0;
-    color: #ffffff;
+    color: var(--tz-text-primary);
     font-size: 1.45rem;
     font-style: italic;
     font-weight: 900;
@@ -535,7 +549,7 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
   .home-faq__subtitle {
     max-width: none;
     margin: 0.25rem 0 0;
-    color: #94a3b8;
+    color: var(--tz-text-secondary);
     font-size: 0.9rem;
     text-align: left;
   }
@@ -546,10 +560,10 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
     gap: 0.4rem;
     flex-shrink: 0;
     padding: 0.18rem 0.65rem;
-    border: 1px solid rgba(181, 255, 109, 0.32);
+    border: 1px solid rgba(4, 120, 87, 0.28);
     border-radius: 999px;
-    background: rgba(6, 78, 59, 0.36);
-    color: #B5FF6D;
+    background: rgba(5, 150, 105, 0.2);
+    color: var(--tz-text-accent);
     font-size: 0.68rem;
     font-weight: 900;
     line-height: 1.2;
@@ -560,8 +574,8 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
     width: 0.38rem;
     height: 0.38rem;
     border-radius: 999px;
-    background: #B5FF6D;
-    box-shadow: 0 0 12px rgba(181, 255, 109, 0.8);
+    background: #059669;
+    box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.22);
     animation: home-faq-status-pulse 1s ease-in-out infinite alternate;
   }
 
@@ -587,16 +601,17 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
     max-width: 100%;
     overflow: hidden;
     display: grid;
+    align-content: start;
     gap: 0.25rem;
     padding: 0.75rem;
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(20, 32, 43, 0.14);
     border-radius: 1rem;
-    background: #000000;
+    background: var(--tz-card-surface);
   }
 
   .home-faq__sidebar-label {
     padding: 0.25rem 0.75rem 0.35rem;
-    color: #64748b;
+    color: var(--tz-text-muted);
     font-size: 0.68rem;
     font-weight: 900;
     line-height: 1.2;
@@ -615,7 +630,7 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
     gap: 0.35rem;
     min-height: 1.45rem;
     margin-top: 0.15rem;
-    color: #B5FF6D;
+    color: var(--tz-text-accent);
     opacity: 0.78;
   }
 
@@ -651,7 +666,7 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
     border: 0;
     border-radius: 0.75rem;
     background: transparent;
-    color: #94a3b8;
+    color: var(--tz-text-secondary);
     text-align: left;
     font-size: 0.86rem;
     font-weight: 900;
@@ -662,14 +677,14 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
   }
 
   .home-faq__sidebar-button:hover {
-    color: #ffffff;
-    background: rgba(255, 255, 255, 0.04);
+    color: var(--tz-text-primary);
+    background: rgba(20, 32, 43, 0.04);
   }
 
   .home-faq__sidebar-button--active {
-    color: #000000;
-    background: #ffffff;
-    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
+    color: #ffffff;
+    background: var(--tz-text-primary);
+    box-shadow: 0 8px 18px rgba(20, 32, 43, 0.16);
   }
 
   .home-faq__sidebar-button > span:first-child {
@@ -687,12 +702,12 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
     height: 0.42rem;
     flex-shrink: 0;
     border-radius: 999px;
-    background: #334155;
+    background: #cbd5e1;
   }
 
   .home-faq__sidebar-button--active .home-faq__sidebar-dot {
-    background: #B5FF6D;
-    box-shadow: 0 0 10px rgba(181, 255, 109, 0.7);
+    background: #059669;
+    box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.2);
   }
 
   .home-faq__desktop-panel {
@@ -716,8 +731,8 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
     display: block;
     margin-bottom: 0.65rem;
     padding-bottom: 0.55rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    color: #94a3b8;
+    border-bottom: 1px solid rgba(20, 32, 43, 0.12);
+    color: var(--tz-text-secondary);
     font-size: 0.86rem;
     font-weight: 900;
     letter-spacing: 0.16em;
@@ -746,9 +761,9 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
     position: relative;
     align-self: start;
     overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(20, 32, 43, 0.12) !important;
     border-radius: 1rem;
-    background: #000000;
+    background: var(--tz-card-surface);
   }
 
   .home-faq__item::before {
@@ -756,13 +771,13 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
     inset: 0 auto 0 0;
     width: 0;
     content: '';
-    background: #B5FF6D;
-    box-shadow: 0 0 10px #B5FF6D;
+    background: #059669;
+    box-shadow: 0 0 10px #059669;
     transition: width 0.3s ease;
   }
 
   .home-faq__item:has(.home-faq__icon--open) {
-    border-color: rgba(255, 255, 255, 0.3) !important;
+    border-color: rgba(20, 32, 43, 0.24) !important;
   }
 
   .home-faq__item:has(.home-faq__icon--open)::before {
@@ -781,7 +796,7 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
   }
 
   .home-faq__question:hover {
-    background: rgba(255, 255, 255, 0.025) !important;
+    background: rgba(20, 32, 43, 0.025) !important;
   }
 
   .home-faq__category {
@@ -790,10 +805,10 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
     overflow: hidden;
     flex-shrink: 0;
     padding: 0.25rem 0.65rem;
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(20, 32, 43, 0.12);
     border-radius: 999px;
-    background: rgba(15, 23, 42, 0.72);
-    color: #94a3b8;
+    background: #f3f6f8;
+    color: var(--tz-text-secondary);
     font-size: 0.72rem;
     font-weight: 700;
     letter-spacing: 0.08em;
@@ -805,7 +820,7 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
 
   .home-faq__question-text {
     min-width: 0;
-    color: #ffffff !important;
+    color: var(--tz-text-primary) !important;
     font-size: 0.96rem;
     font-weight: 800;
     line-height: 1.45;
@@ -819,7 +834,7 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
     height: 1.5rem;
     border-radius: 0;
     background: transparent;
-    color: #94a3b8;
+    color: var(--tz-text-muted);
     transform: none;
   }
 
@@ -861,15 +876,15 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
   }
 
   .home-faq__icon--open {
-    color: #B5FF6D;
+    color: var(--tz-text-accent);
     transform: rotate(45deg);
   }
 
   .home-faq__answer {
     margin: 0 1rem 1rem;
     padding: 0.8rem 0 0 !important;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    color: #cbd5e1;
+    border-top: 1px solid rgba(20, 32, 43, 0.12);
+    color: var(--tz-text-secondary);
     font-size: 0.9rem;
     line-height: 1.7;
   }

@@ -15,13 +15,16 @@
     "oemOdm": "OEM & ODM",
     "certificates": "Certificates",
     "membershipPoints": "Membership and Points",
-    "pictureWarehouse": "Picture warehouse"
+    "pictureWarehouse": "Picture warehouse",
+    "meThisWebsite": "Me & This Website",
+    "whyThisName": "Why This Name"
   },
   "menus": {
     "products": "Products",
     "support": "Support",
     "company": "Company",
     "resources": "RESOURCES",
+    "siteOverview": "Site Overview",
     "policies": "Policies"
   },
   "brand": {

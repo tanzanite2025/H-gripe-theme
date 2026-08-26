@@ -1,6 +1,6 @@
 <template>
   <section id="submit-warranty" class="support-section">
-    <h2 class="support-section__title text-center mb-6 text-white">Submit Warranty Claim</h2>
+    <h2 class="support-section__title text-center mb-6 tz-text-primary">Submit Warranty Claim</h2>
     
     <div class="w-full max-w-none">
       <div v-if="submitMessage" :class="['p-4 rounded mb-6 text-center', submitStatus === 'success' ? 'bg-green-500/20 text-green-200 border border-green-500/30' : 'bg-red-500/20 text-red-200 border border-red-500/30']">
@@ -18,7 +18,7 @@
               type="text" 
               required
               :disabled="!isFormLocked"
-              class="w-full bg-slate-800/50 border border-slate-600 rounded px-3 py-2 tz-text-primary focus:outline-none focus:border-teal-500 transition-colors disabled:opacity-50"
+              class="w-full tz-surface-panel border tz-border-subtle rounded px-3 py-2 tz-text-primary focus:outline-none focus:border-emerald-500 transition-colors disabled:opacity-50"
               placeholder="e.g. TANZ-12345"
             />
           </div>
@@ -31,7 +31,7 @@
               type="email" 
               required
               :disabled="!isFormLocked"
-              class="w-full bg-slate-800/50 border border-slate-600 rounded px-3 py-2 tz-text-primary focus:outline-none focus:border-teal-500 transition-colors disabled:opacity-50"
+              class="w-full tz-surface-panel border tz-border-subtle rounded px-3 py-2 tz-text-primary focus:outline-none focus:border-emerald-500 transition-colors disabled:opacity-50"
               placeholder="Your email address"
             />
           </div>
@@ -43,7 +43,7 @@
             type="button"
             @click="verifyOrder"
             :disabled="isVerifying || !form.order_number || !form.email"
-            class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-6 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            class="bg-[var(--tz-action-primary)] hover:bg-[var(--tz-action-primary-hover)] text-white font-bold py-2 px-6 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <span v-if="isVerifying" class="flex items-center gap-2">
               <svg class="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
@@ -68,7 +68,7 @@
             <input 
               v-model="form.tire_pressure" 
               type="text" 
-              class="w-full bg-slate-800/50 border border-slate-600 rounded px-3 py-2 tz-text-primary focus:outline-none focus:border-teal-500 transition-colors"
+              class="w-full tz-surface-panel border tz-border-subtle rounded px-3 py-2 tz-text-primary focus:outline-none focus:border-emerald-500 transition-colors"
               placeholder="e.g. 80"
             />
           </div>
@@ -78,11 +78,11 @@
             <label class="block tz-text-primary text-sm font-bold mb-1">Tubeless Setup?</label>
             <div class="flex items-center space-x-6 mt-2">
                <label class="flex items-center cursor-pointer">
-                 <input type="radio" v-model="form.is_tubeless" value="yes" class="form-radio text-teal-500 bg-slate-800 border-slate-600 focus:ring-teal-500/50">
+                 <input type="radio" v-model="form.is_tubeless" value="yes" class="form-radio text-emerald-600 tz-surface-panel tz-border-subtle focus:ring-emerald-600/30">
                  <span class="ml-2 tz-text-secondary">Yes</span>
                </label>
                <label class="flex items-center cursor-pointer">
-                 <input type="radio" v-model="form.is_tubeless" value="no" class="form-radio text-teal-500 bg-slate-800 border-slate-600 focus:ring-teal-500/50">
+                 <input type="radio" v-model="form.is_tubeless" value="no" class="form-radio text-emerald-600 tz-surface-panel tz-border-subtle focus:ring-emerald-600/30">
                  <span class="ml-2 tz-text-secondary">No</span>
                </label>
             </div>
@@ -96,7 +96,7 @@
             v-model="form.issue_description" 
             rows="4"
             required
-            class="w-full bg-slate-800/50 border border-slate-600 rounded px-3 py-2 tz-text-primary focus:outline-none focus:border-teal-500 transition-colors"
+            class="w-full tz-surface-panel border tz-border-subtle rounded px-3 py-2 tz-text-primary focus:outline-none focus:border-emerald-500 transition-colors"
             placeholder="Please describe the issue in detail..."
           ></textarea>
         </div>
@@ -108,7 +108,7 @@
             <button 
               type="button" 
               @click="triggerImageUpload"
-              class="bg-slate-700 hover:bg-slate-600 text-teal-400 font-semibold py-1.5 px-4 rounded text-sm transition-colors"
+              class="tz-surface-panel hover:tz-surface-subtle text-emerald-600 font-semibold py-1.5 px-4 rounded text-sm transition-colors"
             >
               Choose Files
             </button>
@@ -120,11 +120,11 @@
             ref="imageInput"
             type="file" 
             multiple 
-            accept=".jpg,.jpeg,.png,.webp,.gif,image/jpeg,image/png,image/webp,image/gif" 
+            :accept="uploadSpecAccept('warranty_evidence')"
             @change="handleImages"
             class="hidden"
           />
-          <p class="mt-1 text-xs tz-text-muted">Up to 10 images. JPG, PNG, WebP or GIF. Max 8MB each / 80MB total.</p>
+          <p class="mt-1 text-xs tz-text-muted">{{ uploadSpecHint('warranty_evidence') }}</p>
         </div>
 
         <!-- Video -->
@@ -134,7 +134,7 @@
             <button 
               type="button" 
               @click="triggerVideoUpload"
-              class="bg-slate-700 hover:bg-slate-600 text-teal-400 font-semibold py-1.5 px-4 rounded text-sm transition-colors"
+              class="tz-surface-panel hover:tz-surface-subtle text-emerald-600 font-semibold py-1.5 px-4 rounded text-sm transition-colors"
             >
               Choose File
             </button>
@@ -157,10 +157,10 @@
           <button 
             type="submit" 
             :disabled="isSubmitting || isFormLocked"
-            class="w-full bg-teal-600 hover:bg-teal-500 text-white font-bold py-2.5 px-4 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-teal-900/20"
+            class="w-full bg-[var(--tz-action-primary)] hover:bg-[var(--tz-action-primary-hover)] text-white font-bold py-2.5 px-4 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-slate-900/20"
           >
             <span v-if="isSubmitting" class="flex items-center justify-center gap-2">
-              <svg class="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+              <svg class="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l-3-2.647z"></path></svg>
               Processing...
             </span>
             <span v-else>Submit Claim</span>
@@ -176,6 +176,11 @@
 import { onMounted, ref, watch } from 'vue'
 import { useRoute } from '#imports'
 import { useAuth } from '~/composables/useAuth'
+import {
+  uploadSpecAccept,
+  uploadSpecHint,
+  validateStorefrontUploadFiles,
+} from '~/utils/uploadSpecs'
 
 const auth = useAuth()
 
@@ -201,10 +206,7 @@ const route = useRoute()
 const turnstileChallenge = ref<{ execute: () => Promise<string> } | null>(null)
 
 const MAX_IMAGE_FILES = 10
-const MAX_IMAGE_SIZE = 8 * 1024 * 1024
-const MAX_IMAGE_TOTAL_SIZE = 80 * 1024 * 1024
 const MAX_VIDEO_SIZE = 50 * 1024 * 1024
-const ALLOWED_IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.gif']
 const ALLOWED_VIDEO_EXTENSIONS = ['.mp4', '.mov', '.webm']
 
 const formatUploadSize = (bytes: number) => `${Math.round(bytes / 1024 / 1024)}MB`
@@ -229,26 +231,9 @@ const clearUploadError = () => {
   }
 }
 
-const validateImages = (files: File[]) => {
-  if (files.length > MAX_IMAGE_FILES) {
-    return `You can upload up to ${MAX_IMAGE_FILES} images.`
-  }
-
-  const totalSize = files.reduce((sum, file) => sum + file.size, 0)
-  if (totalSize > MAX_IMAGE_TOTAL_SIZE) {
-    return `Image uploads must be ${formatUploadSize(MAX_IMAGE_TOTAL_SIZE)} or less in total.`
-  }
-
-  for (const file of files) {
-    if (!hasAllowedExtension(file, ALLOWED_IMAGE_EXTENSIONS)) {
-      return `${file.name} is not supported. Use JPG, PNG, WebP or GIF.`
-    }
-    if (file.size > MAX_IMAGE_SIZE) {
-      return `${file.name} exceeds the ${formatUploadSize(MAX_IMAGE_SIZE)} image limit.`
-    }
-  }
-
-  return ''
+const validateImages = async (files: File[]) => {
+  const result = await validateStorefrontUploadFiles(files, 'warranty_evidence')
+  return result.ok ? '' : result.error || `You can upload up to ${MAX_IMAGE_FILES} images.`
 }
 
 const validateVideo = (file: File | null) => {
@@ -262,7 +247,7 @@ const validateVideo = (file: File | null) => {
   return ''
 }
 
-const validateUploads = () => validateImages(imageFiles.value) || validateVideo(videoFile.value)
+const validateUploads = async () => (await validateImages(imageFiles.value)) || validateVideo(videoFile.value)
 
 const verifyEmailToken = async (token: string) => {
   const normalizedToken = token.trim()
@@ -274,7 +259,7 @@ const verifyEmailToken = async (token: string) => {
 
   try {
     await auth.request<{ verified: boolean }>(
-      `/registrations/warranty/verify/${encodeURIComponent(normalizedToken)}`,
+      `/warranty/verify/${encodeURIComponent(normalizedToken)}`,
       {
         method: 'GET',
         headers: {
@@ -305,7 +290,7 @@ const verifyOrder = async () => {
   try {
     const captchaToken = await turnstileChallenge.value?.execute()
     await auth.request<{ success: boolean; message?: string }>(
-      '/registrations/warranty/verify-order',
+      '/warranty/verify-order',
       {
         method: 'POST',
         headers: {
@@ -341,11 +326,11 @@ const triggerVideoUpload = () => {
   videoInput.value?.click()
 }
 
-const handleImages = (event: Event) => {
+const handleImages = async (event: Event) => {
   const target = event.target as HTMLInputElement
   if (target.files) {
     const files = Array.from(target.files)
-    const error = validateImages(files)
+    const error = await validateImages(files)
     if (error) {
       imageFiles.value = []
       target.value = ''
@@ -391,7 +376,7 @@ const submitClaim = async () => {
 
   try {
     const captchaToken = await turnstileChallenge.value?.execute()
-    const uploadError = validateUploads()
+    const uploadError = await validateUploads()
     if (uploadError) {
       setUploadError(uploadError)
       return
@@ -415,7 +400,7 @@ const submitClaim = async () => {
     }
 
     const response = await auth.request<{ success: boolean; message?: string; id?: number }>(
-      '/registrations/warranty/claim',
+      '/warranty/claim',
       {
         method: 'POST',
         body: formData,

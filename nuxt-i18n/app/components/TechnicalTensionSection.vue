@@ -168,11 +168,11 @@ const localePath = useLocalePath()
 
 <style scoped>
 .tension-section {
-  --tension-accent: var(--tz-brand-primary);
-  --tension-accent-soft: rgba(181, 255, 109, 0.12);
-  --tension-border: rgba(255, 255, 255, 0.08);
-  --tension-border-strong: rgba(255, 255, 255, 0.14);
-  --tension-soft-surface: rgba(255, 255, 255, 0.035);
+  --tension-accent: var(--tz-site-accent);
+  --tension-accent-soft: rgba(5, 150, 105, 0.12);
+  --tension-border: var(--tz-border-subtle);
+  --tension-border-strong: var(--tz-border-strong);
+  --tension-soft-surface: var(--tz-surface-subtle);
   color: var(--tz-text-secondary);
 }
 
@@ -287,7 +287,7 @@ const localePath = useLocalePath()
   border: 1px solid var(--tension-border);
   border-radius: 0.45rem;
   padding: 0.3rem 0.5rem;
-  background: rgba(0, 0, 0, 0.16);
+  background: var(--tz-input-surface);
   color: var(--tz-text-muted);
 }
 
@@ -303,7 +303,7 @@ const localePath = useLocalePath()
 }
 
 .tension-table th {
-  background: rgba(255, 255, 255, 0.018);
+  background: var(--tz-surface-subtle);
   color: var(--tz-text-secondary);
   font-weight: 600;
 }
@@ -326,8 +326,8 @@ const localePath = useLocalePath()
 }
 
 .tension-note {
-  border-top: 1px solid rgba(181, 255, 109, 0.16);
-  background: rgba(181, 255, 109, 0.045);
+  border-top: 1px solid rgba(5, 150, 105, 0.16);
+  background: rgba(5, 150, 105, 0.045);
   color: var(--tz-text-secondary);
   line-height: 1.6;
   padding: 1rem 1.25rem;
@@ -339,7 +339,7 @@ const localePath = useLocalePath()
 }
 
 .tension-timeline {
-  border-left: 1px solid rgba(181, 255, 109, 0.22);
+  border-left: 1px solid rgba(5, 150, 105, 0.22);
 }
 
 .tension-step__marker {

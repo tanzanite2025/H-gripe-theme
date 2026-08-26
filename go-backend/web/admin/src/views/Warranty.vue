@@ -2,7 +2,7 @@
   <div class="space-y-4">
     <AdminPageHeader
       title="保修管理"
-      description="统一查看产品注册、保修申请和即将到期记录；当前只消费 Go 后端保修事实源。"
+      description="从已发货订单补充售后凭据，并处理保修申请和服务记录。"
     >
       <template #actions>
         <Button variant="outline" :disabled="refreshing" @click="refreshCurrent">
@@ -15,17 +15,25 @@
     <AdminStatsGrid :items="statItems" />
 
     <Tabs :model-value="activeTab" class="gap-4">
-      <WarrantyRegistrationsTab
-        :registrations="registrations"
-        :loading="loading.registrations"
-        :filters="registrationFilters"
-        :pagination="registrationPagination"
-        :status-updating="statusUpdating"
-        :status-options="registrationStatusOptions"
+      <WarrantyShipmentsTab
+        :shipments="shipments"
+        :loading="loading.shipments"
+        :detail-loading="loading.shipmentDetail"
+        :saving="loading.shipmentSaving"
+        :uploading="loading.shipmentUploading"
+        :filters="shipmentFilters"
+        :pagination="shipmentPagination"
+        :selected-shipment="selectedShipment"
+        :draft="shipmentDraft"
         :can-edit="canEdit"
-        @update-status="updateRegistrationStatus"
-        @update-page="updateRegistrationPage"
-        @update-page-size="updateRegistrationPageSize"
+        @select-shipment="selectShipment"
+        @update-search="shipmentFilters.keyword = $event"
+        @update-draft="updateShipmentDraft"
+        @remove-image="removeShipmentImage"
+        @save="saveShipment"
+        @upload-images="uploadShipmentImages"
+        @update-page="updateShipmentPage"
+        @update-page-size="updateShipmentPageSize"
       />
 
       <WarrantyClaimsTab
@@ -62,11 +70,6 @@
         @update-page-size="updateClaimPageSize"
       />
 
-      <WarrantyExpiringTab
-        :expiring="expiring"
-        :loading="loading.expiring"
-      />
-
       <WarrantyBoundaryTab />
     </Tabs>
   </div>
@@ -80,8 +83,7 @@ import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import AdminStatsGrid from '@/components/admin/AdminStatsGrid.vue'
 import WarrantyBoundaryTab from '@/components/admin/warranty/WarrantyBoundaryTab.vue'
 import WarrantyClaimsTab from '@/components/admin/warranty/WarrantyClaimsTab.vue'
-import WarrantyExpiringTab from '@/components/admin/warranty/WarrantyExpiringTab.vue'
-import WarrantyRegistrationsTab from '@/components/admin/warranty/WarrantyRegistrationsTab.vue'
+import WarrantyShipmentsTab from '@/components/admin/warranty/WarrantyShipmentsTab.vue'
 import { Button } from '@/components/ui/button'
 import { Tabs } from '@/components/ui/tabs'
 import { useWarrantyAdmin } from '@/composables/warranty/useWarrantyAdmin'
@@ -89,9 +91,10 @@ import { useWarrantyAdmin } from '@/composables/warranty/useWarrantyAdmin'
 const {
   activeTab,
   refreshing,
-  registrations,
+  shipments,
   claims,
-  expiring,
+  selectedShipment,
+  shipmentDraft,
   selectedClaim,
   claimResolutionDraft,
   claimOrderItems,
@@ -100,18 +103,21 @@ const {
   serviceRecordForm,
   loading,
   statusUpdating,
-  registrationFilters,
+  shipmentFilters,
   claimFilters,
-  registrationPagination,
+  shipmentPagination,
   claimPagination,
   canEdit,
   statItems,
-  registrationStatusOptions,
   claimStatusOptions,
   serviceTypeOptions,
   serviceStatusOptions,
   refreshCurrent,
-  updateRegistrationStatus,
+  selectShipment,
+  updateShipmentDraft,
+  removeShipmentImage,
+  saveShipment,
+  uploadShipmentImages,
   updateClaimStatus,
   selectClaim,
   updateOrderItemSelection,
@@ -120,8 +126,8 @@ const {
   saveClaimResolution,
   updateServiceRecordForm,
   createServiceRecord,
-  updateRegistrationPage,
-  updateRegistrationPageSize,
+  updateShipmentPage,
+  updateShipmentPageSize,
   updateClaimPage,
   updateClaimPageSize
 } = useWarrantyAdmin()

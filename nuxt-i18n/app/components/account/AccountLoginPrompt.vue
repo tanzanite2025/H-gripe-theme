@@ -96,9 +96,9 @@ const features = [
   gap: 0.9rem;
   border-radius: 1.5rem;
   background:
-    radial-gradient(circle at top left, rgba(181, 255, 109, 0.06), transparent 48%),
-    linear-gradient(135deg, rgba(20, 20, 22, 0.98), rgba(5, 5, 5, 0.92));
-  box-shadow: 0 18px 42px -24px rgba(0, 0, 0, 0.95);
+    radial-gradient(circle at top left, rgba(5, 150, 105, 0.06), transparent 48%),
+    var(--tz-card-surface);
+  box-shadow: 0 18px 42px -24px rgba(15, 23, 42, 0.12);
   padding: 1rem;
 }
 
@@ -110,9 +110,9 @@ const features = [
   align-items: center;
   justify-content: center;
   border-radius: 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.86);
+  border: 1px solid var(--tz-border-strong);
   background: #ffffff;
-  color: #050505;
+  color: var(--tz-text-primary);
 }
 
 .account-login-prompt__icon :deep(svg) {
@@ -126,7 +126,7 @@ const features = [
 
 .account-login-prompt__eyebrow {
   margin: 0 0 0.3rem;
-  color: #B5FF6D;
+  color: #059669;
   font-size: var(--tz-type-micro-label);
   font-weight: 800;
   letter-spacing: 0.18em;
@@ -135,7 +135,7 @@ const features = [
 
 .account-login-prompt__copy h3 {
   margin: 0;
-  color: #ffffff;
+  color: var(--tz-text-primary);
   font-size: clamp(1rem, 3.5vw, 1.35rem);
   font-weight: 800;
   line-height: 1.18;
@@ -164,15 +164,15 @@ const features = [
 }
 
 .account-login-prompt__primary {
-  border: 1px solid rgba(255, 255, 255, 0.86);
+  border: 1px solid var(--tz-border-strong);
   background: #ffffff;
-  color: #050505;
+  color: var(--tz-text-primary);
 }
 
 .account-login-prompt__secondary {
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  background: rgba(255, 255, 255, 0.06);
-  color: #ffffff;
+  border: 1px solid var(--tz-border-subtle);
+  background: var(--tz-surface-subtle);
+  color: var(--tz-text-primary);
 }
 
 .account-login-prompt__primary:hover,
@@ -193,14 +193,14 @@ const features = [
   gap: 0.75rem;
   align-items: center;
   border-radius: 1.1rem;
-  background: rgba(255, 255, 255, 0.055);
+  background: var(--tz-surface-subtle);
   padding: 0.8rem;
 }
 
 .account-login-prompt__feature :deep(svg) {
   width: 1.1rem;
   height: 1.1rem;
-  color: #B5FF6D;
+  color: #059669;
 }
 
 .account-login-prompt__feature strong,
@@ -209,13 +209,13 @@ const features = [
 }
 
 .account-login-prompt__feature strong {
-  color: #ffffff;
+  color: var(--tz-text-primary);
   font-size: 0.86rem;
 }
 
 .account-login-prompt__feature span {
   margin-top: 0.1rem;
-  color: rgba(232, 232, 232, 0.78);
+  color: var(--tz-text-secondary);
   font-size: 0.76rem;
   line-height: 1.4;
 }

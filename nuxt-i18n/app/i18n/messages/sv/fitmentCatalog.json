@@ -1,0 +1,61 @@
+{
+  "trigger": {
+    "label": "Kontrollera kompatibilitet"
+  },
+  "dialog": {
+    "eyebrow": "Kompatibilitetskatalog",
+    "title": "Hitta din ram eller gaffel",
+    "description": "Sök i den fristående kompatibilitetskatalogen efter märke, modell eller år. Resultaten innehåller navspecifikationerna som registrerats för varje post.",
+    "close": "Stäng",
+    "tabListLabel": "Kompatibilitetskatalogens avsnitt"
+  },
+  "tabs": {
+    "frame": "Ramkompatibilitet",
+    "fork": "Gaffelkompatibilitet"
+  },
+  "search": {
+    "label": "Sök",
+    "placeholder": "Sök efter märke eller modell",
+    "yearLabel": "Modellår",
+    "yearPlaceholder": "t.ex. 2024",
+    "submit": "Sök",
+    "clear": "Rensa",
+    "searching": "Söker..."
+  },
+  "states": {
+    "initial": "Ange ett märke, en modell eller ett år för att söka i katalogen.",
+    "empty": "Inga matchande poster hittades.",
+    "unavailable": "Kompatibilitetsdata är tillfälligt otillgängliga. Försök igen.",
+    "noHubSpecifications": "Inga navspecifikationer har registrerats."
+  },
+  "entry": {
+    "series": "Serie",
+    "generation": "Generation",
+    "market": "Marknad",
+    "hubSpecifications": "Navspecifikationer",
+    "unknownYear": "År ej angivet",
+    "allYears": "Alla år"
+  },
+  "pagination": {
+    "label": "Kompatibilitetsresultat",
+    "previous": "Föregående sida",
+    "next": "Nästa sida",
+    "page": "Sida {page} av {totalPages}"
+  },
+  "hub": {
+    "position": "Position",
+    "axleType": "Axeltyp",
+    "axleSpacing": "Axelbredd",
+    "millimetres": "mm",
+    "positions": {
+      "front": "Fram",
+      "rear": "Bak"
+    },
+    "axleTypes": {
+      "quickRelease": "Snabblås",
+      "thruAxle": "Genomgående axel",
+      "boltOn": "Bultmonterad",
+      "other": "Övrigt"
+    }
+  }
+}

@@ -103,6 +103,8 @@ export interface CustomerContact {
   email_source?: string
   locale?: string
   locale_source?: string
+  timezone?: string
+  timezone_source?: string
 }
 
 export interface CustomerCartItem {

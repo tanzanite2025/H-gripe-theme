@@ -4,6 +4,7 @@ import { useI18n, useLocalePath } from '#imports'
 import { useChatWidget } from '~/composables/useChatWidget'
 import { isSimplifiedChineseStorefrontLocale } from '~/utils/storefrontLocales'
 import type { ShopProduct } from '~/composables/useShopProducts'
+import { buildProductPath } from '~/utils/seo/urls'
 
 type ProductShareTarget = {
   id: string
@@ -11,7 +12,7 @@ type ProductShareTarget = {
   mode: 'chat' | 'open' | 'copy'
   url?: string
   iconName?: string
-  iconPath?: string
+  iconSrc?: string
 }
 
 const props = defineProps<{
@@ -23,12 +24,7 @@ const emit = defineEmits<{
   close: []
 }>()
 
-const socialIconPaths: Record<string, string> = {
-  x: 'M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z',
-  facebook: 'M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.463h-1.261c-1.243 0-1.631.771-1.631 1.562V12h2.773l-.443 2.891h-2.33v6.987C18.343 21.128 22 16.991 22 12z',
-  instagram: 'M7 2C4.2 2 2 4.2 2 7v10c0 2.8 2.2 5 5 5h10c2.8 0 5-2.2 5-5V7c0-2.8-2.2-5-5-5H7zm10 2c1.7 0 3 1.3 3 3v10c0 1.7-1.3 3-3 3H7c-1.7 0-3-1.3-3-3V7c0-1.7 1.3-3 3-3h10zm-5 3a5 5 0 100 10 5 5 0 000-10zm0 2.2a2.8 2.8 0 110 5.6 2.8 2.8 0 010-5.6zM17.8 6.2a1 1 0 110 2 1 1 0 010-2z',
-  wechat: 'M8.5 4C4.91 4 2 6.46 2 9.5c0 1.7.94 3.24 2.45 4.27l-.62 2.23 2.31-1.16c.73.23 1.53.36 2.36.36.2 0 .4-.01.6-.02A5.96 5.96 0 0011 11.5c0-3.04-2.91-5.5-6.5-5.5zm-2.25 4.25a.9.9 0 110 1.8.9.9 0 010-1.8zm4.5 0a.9.9 0 110 1.8.9.9 0 010-1.8zM15.5 8c-3.59 0-6.5 2.24-6.5 5s2.91 5 6.5 5c.83 0 1.63-.13 2.36-.36l2.31 1.16-.62-2.23C21.06 15.54 22 14 22 12.5c0-2.49-2.07-4.38-4.93-4.85A7.85 7.85 0 0015.5 8zm-2.25 4a.9.9 0 110 1.8.9.9 0 010-1.8zm4.5 0a.9.9 0 110 1.8.9.9 0 010-1.8z',
-}
+const shareIconSrc = (name: string) => `/icons/social-share/${name}.svg`
 
 const { locale } = useI18n()
 const localePath = useLocalePath()
@@ -41,10 +37,10 @@ const popoverPlacement = ref<'bottom' | 'top'>('bottom')
 let copiedStateTimer: number | null = null
 
 const productUrl = computed(() => {
-  const rawUrl = String(props.product.url || (props.product.slug ? `/shop/${props.product.slug}` : '')).trim()
+  const rawUrl = String(props.product.url || (props.product.slug ? buildProductPath(props.product.slug) : '')).trim()
   if (!rawUrl) return ''
   if (/^https?:\/\//i.test(rawUrl)) return rawUrl
-  if (/^\/[a-z]{2}(?:[_-][a-z]{2})?\/shop\/[^/?#]+(?:[?#].*)?$/i.test(rawUrl)) return import.meta.client
+  if (/^\/[a-z]{2}(?:[_-][a-z]{2})?\/products\/[^/?#]+(?:[?#].*)?$/i.test(rawUrl)) return import.meta.client
     ? new URL(rawUrl, window.location.origin).toString()
     : rawUrl
   const localizedPath = localePath(rawUrl)
@@ -70,33 +66,33 @@ const shareTargets = computed<ProductShareTarget[]>(() => [
     id: 'x',
     label: 'X',
     mode: 'open',
-    iconPath: socialIconPaths.x,
-    url: `https://twitter.com/intent/tweet?url=${encodedProductUrl.value}&text=${encodedProductTitle.value}`,
+    iconSrc: shareIconSrc('x'),
+    url: `https://x.com/intent/post?url=${encodedProductUrl.value}&text=${encodedProductTitle.value}`,
   },
   {
     id: 'facebook',
     label: 'Facebook',
     mode: 'open',
-    iconPath: socialIconPaths.facebook,
+    iconSrc: shareIconSrc('facebook'),
     url: `https://www.facebook.com/sharer/sharer.php?u=${encodedProductUrl.value}`,
   },
   {
     id: 'instagram',
     label: 'Instagram',
     mode: 'copy',
-    iconPath: socialIconPaths.instagram,
+    iconSrc: shareIconSrc('instagram'),
   },
   {
-    id: 'rabbit',
-    label: 'Rabbit',
+    id: 'reddit',
+    label: 'Reddit',
     mode: 'copy',
-    iconName: 'lucide:rabbit',
+    iconSrc: shareIconSrc('reddit'),
   },
   {
     id: 'wechat',
     label: '微信',
     mode: 'copy',
-    iconPath: socialIconPaths.wechat,
+    iconSrc: shareIconSrc('wechat'),
   },
 ])
 
@@ -260,16 +256,14 @@ watch(
           class="product-share-popover__target-icon"
           aria-hidden="true"
         />
-        <svg
-          v-else
+        <img
+          v-else-if="target.iconSrc"
+          :src="target.iconSrc"
+          alt=""
           class="product-share-popover__target-icon"
-          viewBox="0 0 24 24"
-          fill="currentColor"
-          focusable="false"
           aria-hidden="true"
-        >
-          <path :d="target.iconPath" />
-        </svg>
+          decoding="async"
+        />
       </button>
       <span v-if="copiedTargetId" class="product-share-popover__status" role="status">
         {{ copiedMessage }}
@@ -290,13 +284,13 @@ watch(
   flex-wrap: nowrap;
   gap: 0.28rem;
   padding: 0.34rem;
-  border: 1px solid var(--tz-brand-primary, #b5ff6d);
+  border: 1px solid var(--tz-site-accent, #059669);
   border-radius: 999px;
-  color: rgba(248, 250, 252, 0.86);
-  background: var(--tz-card-surface, #111116);
+  color: var(--tz-text-secondary);
+  background: var(--tz-card-surface);
   box-shadow:
-    0 8px 22px rgba(0, 0, 0, 0.36),
-    0 0 0 1px rgba(181, 255, 109, 0.16);
+    0 8px 22px rgba(20, 32, 43, 0.12),
+    0 0 0 1px rgba(5, 150, 105, 0.16);
   transform: translateX(-50%);
 }
 
@@ -317,7 +311,7 @@ watch(
 .product-share-popover::before {
   top: -0.55rem;
   border-right: 0.5rem solid transparent;
-  border-bottom: 0.5rem solid var(--tz-brand-primary, #b5ff6d);
+  border-bottom: 0.5rem solid var(--tz-site-accent, #059669);
   border-left: 0.5rem solid transparent;
 }
 
@@ -331,7 +325,7 @@ watch(
 .product-share-popover--above::before {
   top: auto;
   bottom: -0.55rem;
-  border-top: 0.5rem solid var(--tz-brand-primary, #b5ff6d);
+  border-top: 0.5rem solid var(--tz-site-accent, #059669);
   border-bottom: 0;
 }
 
@@ -350,7 +344,7 @@ watch(
   place-items: center;
   border: 0;
   border-radius: 999px;
-  color: rgba(255, 255, 255, 0.78);
+  color: var(--tz-text-secondary);
   background: transparent;
   transition:
     background-color 160ms ease,
@@ -361,13 +355,13 @@ watch(
 .product-share-popover__target:hover,
 .product-share-popover__target:focus-visible,
 .product-share-popover__target--copied {
-  color: #0b0b0e;
-  background: #b5ff6d;
+  color: var(--tz-text-primary);
+  background: #059669;
   transform: translateY(-1px);
 }
 
 .product-share-popover__target:focus-visible {
-  outline: 2px solid rgba(181, 255, 109, 0.72);
+  outline: 2px solid rgba(5, 150, 105, 0.72);
   outline-offset: 2px;
 }
 

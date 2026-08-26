@@ -32,16 +32,8 @@ export function useSiteTitle() {
     const fromRuntime = String(
       (runtimeConfig.public as { siteTitle?: string }).siteTitle || ''
     ).trim()
-    return fromRuntime || 'Tanzanite'
+    return fromRuntime
   })
 
-  const brandTitle = computed(() => {
-    return (
-      (siteSettings.value.brandTitle || siteSettings.value.siteTitle || siteTitle.value)
-        .toString()
-        .trim()
-    )
-  })
-
-  return { siteTitle, brandTitle }
+  return { siteTitle }
 }

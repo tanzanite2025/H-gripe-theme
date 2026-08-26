@@ -21,6 +21,7 @@ type SiteQualityFindingListFilter struct {
 	PageSize    int
 	State       string
 	Severity    string
+	RuleID      string
 	TargetURL   string
 	Strategy    string
 	FindingKind string
@@ -62,6 +63,9 @@ func (r *SiteQualityFindingRepository) List(
 	if filter.Severity != "" {
 		query = query.Where("severity = ?", filter.Severity)
 	}
+	if ruleID := strings.TrimSpace(filter.RuleID); ruleID != "" {
+		query = query.Where("rule_id = ?", sitequalitydomain.RuleIDForAuditID(ruleID))
+	}
 	if filter.TargetURL != "" {
 		query = query.Where("target_url = ?", filter.TargetURL)
 	}
@@ -84,6 +88,9 @@ func (r *SiteQualityFindingRepository) List(
 		Offset((filter.Page - 1) * filter.PageSize).
 		Limit(filter.PageSize).
 		Find(&findings).Error
+	for index := range findings {
+		normalizeSiteQualityFindingIdentity(&findings[index])
+	}
 	return findings, total, err
 }
 
@@ -116,6 +123,7 @@ func (r *SiteQualityFindingRepository) FindByID(
 	if err := r.db.First(&finding, id).Error; err != nil {
 		return nil, err
 	}
+	normalizeSiteQualityFindingIdentity(&finding)
 	return &finding, nil
 }
 
@@ -168,6 +176,16 @@ func (r *SiteQualityFindingRepository) RecordDetection(
 		detection.DetectedAt = time.Now().UTC()
 	}
 	detection.DetectedAt = detection.DetectedAt.UTC()
+	ruleID := strings.TrimSpace(detection.RuleID)
+	if ruleID == "" {
+		ruleID = sitequalitydomain.RuleIDForAuditID(detection.AuditID)
+	} else {
+		ruleID = sitequalitydomain.RuleIDForAuditID(ruleID)
+	}
+	providerAuditID := strings.TrimSpace(detection.ProviderAuditID)
+	if providerAuditID == "" {
+		providerAuditID = sitequalitydomain.ProviderAuditIDForAuditID(detection.AuditID)
+	}
 
 	var result sitequalitydomain.SiteQualityFinding
 	err := r.db.Transaction(func(tx *gorm.DB) error {
@@ -198,6 +216,8 @@ func (r *SiteQualityFindingRepository) RecordDetection(
 				TargetURL:          detection.TargetURL,
 				Strategy:           detection.Strategy,
 				AuditID:            detection.AuditID,
+				RuleID:             ruleID,
+				ProviderAuditID:    providerAuditID,
 				FindingKind:        findingKind,
 				RuleVersion:        strings.TrimSpace(detection.RuleVersion),
 				Confidence:         detection.Confidence,
@@ -228,6 +248,7 @@ func (r *SiteQualityFindingRepository) RecordDetection(
 				"",
 				map[string]interface{}{
 					"audit_id": detection.AuditID,
+					"rule_id":  ruleID,
 					"severity": detection.Severity,
 				},
 				detection.DetectedAt,
@@ -244,6 +265,8 @@ func (r *SiteQualityFindingRepository) RecordDetection(
 		updates := map[string]interface{}{
 			"target_id":            detection.TargetID,
 			"target_url":           detection.TargetURL,
+			"rule_id":              ruleID,
+			"provider_audit_id":    providerAuditID,
 			"title":                detection.Title,
 			"description":          detection.Description,
 			"severity":             detection.Severity,
@@ -283,7 +306,11 @@ func (r *SiteQualityFindingRepository) RecordDetection(
 				sitequalitydomain.SiteQualityFindingEventReopened,
 				0,
 				"",
-				map[string]interface{}{"audit_id": detection.AuditID},
+				map[string]interface{}{
+					"audit_id":          detection.AuditID,
+					"rule_id":           ruleID,
+					"provider_audit_id": providerAuditID,
+				},
 				detection.DetectedAt,
 			); err != nil {
 				return err
@@ -294,6 +321,7 @@ func (r *SiteQualityFindingRepository) RecordDetection(
 	if err != nil {
 		return nil, err
 	}
+	normalizeSiteQualityFindingIdentity(&result)
 	return &result, nil
 }
 
@@ -420,6 +448,9 @@ func (r *SiteQualityFindingRepository) ApplyEvaluation(
 				0,
 				"",
 				map[string]interface{}{
+					"audit_id":          finding.AuditID,
+					"rule_id":           finding.RuleID,
+					"provider_audit_id": finding.ProviderAuditID,
 					"clean_evaluations": nextClean,
 					"sample_policy":     "all_samples_absent",
 				},
@@ -466,7 +497,7 @@ func (r *SiteQualityFindingRepository) UpdateWithEvent(
 			}
 		}
 		if eventType != "" {
-			if err := r.createEvent(tx, id, nil, eventType, actorUserID, note, metadata, now); err != nil {
+			if err := r.createEvent(tx, id, nil, eventType, actorUserID, note, withSiteQualityRuleMetadata(metadata, finding), now); err != nil {
 				return err
 			}
 		}
@@ -476,6 +507,72 @@ func (r *SiteQualityFindingRepository) UpdateWithEvent(
 		return nil, err
 	}
 	return &result, nil
+}
+
+func withSiteQualityRuleMetadata(
+	metadata map[string]interface{},
+	finding sitequalitydomain.SiteQualityFinding,
+) map[string]interface{} {
+	normalizeSiteQualityFindingIdentity(&finding)
+	next := make(map[string]interface{}, len(metadata)+3)
+	for key, value := range metadata {
+		next[key] = value
+	}
+	if _, exists := next["audit_id"]; !exists {
+		next["audit_id"] = finding.AuditID
+	}
+	if _, exists := next["rule_id"]; !exists {
+		next["rule_id"] = finding.RuleID
+	}
+	if _, exists := next["provider_audit_id"]; !exists {
+		next["provider_audit_id"] = finding.ProviderAuditID
+	}
+	return next
+}
+
+func normalizeSiteQualityFindingIdentity(finding *sitequalitydomain.SiteQualityFinding) {
+	if finding == nil {
+		return
+	}
+	finding.RuleID, finding.ProviderAuditID = sitequalitydomain.NormalizeRuleIdentity(
+		finding.RuleID,
+		finding.AuditID,
+		finding.ProviderAuditID,
+	)
+	finding.LatestEvidence = normalizeSiteQualityFindingEvidence(
+		finding.LatestEvidence,
+		finding.AuditID,
+		finding.RuleID,
+		finding.ProviderAuditID,
+	)
+}
+
+func normalizeSiteQualityFindingEvidence(
+	raw string,
+	auditID string,
+	ruleID string,
+	providerAuditID string,
+) string {
+	evidence := map[string]interface{}{}
+	if strings.TrimSpace(raw) != "" {
+		if err := json.Unmarshal([]byte(raw), &evidence); err != nil || evidence == nil {
+			return raw
+		}
+	}
+	if _, exists := evidence["audit_id"]; !exists {
+		evidence["audit_id"] = strings.TrimSpace(auditID)
+	}
+	if strings.TrimSpace(ruleID) != "" {
+		evidence["rule_id"] = strings.TrimSpace(ruleID)
+	}
+	if strings.TrimSpace(providerAuditID) != "" {
+		evidence["provider_audit_id"] = strings.TrimSpace(providerAuditID)
+	}
+	encoded, err := json.Marshal(evidence)
+	if err != nil {
+		return raw
+	}
+	return string(encoded)
 }
 
 func (r *SiteQualityFindingRepository) createEvent(

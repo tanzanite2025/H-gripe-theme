@@ -70,11 +70,11 @@ const emit = defineEmits<{
 
 <style scoped>
 .shop-category-menu {
-  --shop-category-accent: #b5ff6d;
+  --shop-category-accent: var(--tz-site-accent, #059669);
 
   width: 100%;
   min-width: 0;
-  color: #f8fafc;
+  color: var(--tz-text-primary);
 }
 
 .shop-category-menu__content {
@@ -85,7 +85,7 @@ const emit = defineEmits<{
 
 .shop-category-menu__eyebrow {
   margin: 0 0 1.4rem;
-  color: rgba(248, 250, 252, 0.62);
+  color: var(--tz-text-secondary);
   font-size: 0.72rem;
   font-weight: 800;
   letter-spacing: 0.1em;
@@ -121,9 +121,9 @@ const emit = defineEmits<{
   gap: 1rem;
   overflow: hidden;
   border: 0;
-  border-bottom: 1px solid rgba(248, 250, 252, 0.15);
+  border-bottom: 1px solid rgba(20, 32, 43, 0.12);
   background: transparent;
-  color: #f8fafc;
+  color: var(--tz-text-primary);
   cursor: pointer;
   padding: 0.2rem 0.15rem;
   text-align: left;
@@ -181,7 +181,7 @@ const emit = defineEmits<{
 .shop-category-menu :deep(.shop-category-menu__meta) {
   position: relative;
   z-index: 2;
-  color: rgba(248, 250, 252, 0.64);
+  color: var(--tz-text-muted);
   font-size: 0.7rem;
   font-weight: 800;
   letter-spacing: 0.06em;
@@ -200,7 +200,7 @@ const emit = defineEmits<{
 
 .shop-category-menu__state {
   padding: 1rem;
-  color: rgba(248, 250, 252, 0.56);
+  color: var(--tz-text-secondary);
   font-size: 0.9rem;
   line-height: 1.5;
   text-align: center;

@@ -15,14 +15,17 @@
     "oemOdm": "OEM & ODM",
     "certificates": "Certificates",
     "membershipPoints": "Membership and Points",
-    "pictureWarehouse": "Picture warehouse"
+    "pictureWarehouse": "Picture warehouse",
+    "meThisWebsite": "我与这个网站",
+    "whyThisName": "为什么叫这个名字"
   },
   "menus": {
     "products": "Products",
     "support": "Support",
     "company": "Company",
     "policies": "Policies",
-    "resources": "RESOURCES"
+    "resources": "RESOURCES",
+    "siteOverview": "站点概要"
   },
   "brand": {
     "line1": "A brand of Top Sports Co., Limited.",

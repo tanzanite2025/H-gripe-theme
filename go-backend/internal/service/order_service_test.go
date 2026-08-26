@@ -763,7 +763,7 @@ func TestOrderServiceCreateOrderPersistsHistoricalFXSnapshot(t *testing.T) {
 	assert.InDelta(t, 7.0, snapshot.BaseToOrderRate, 0.0001)
 	assert.Equal(t, "test-rate", snapshot.Source)
 	require.NotNil(t, snapshot.RateFetchedAt)
-	assert.Equal(t, time.Date(2026, 8, 6, 10, 0, 0, 0, time.UTC), *snapshot.RateFetchedAt)
+	assert.WithinDuration(t, time.Now().UTC().Add(-time.Minute), *snapshot.RateFetchedAt, 5*time.Second)
 	assert.False(t, snapshot.CapturedAt.IsZero())
 }
 
@@ -1043,6 +1043,7 @@ func newTestOrderService(t *testing.T) (*gorm.DB, *OrderService) {
 		&coupon.Coupon{},
 		&coupon.CouponUsage{},
 		&currency.ExchangeRate{},
+		&currency.ExchangeRateSyncLease{},
 		&loyalty.UserLoyalty{},
 		&loyalty.LoyaltyTransaction{},
 		&loyalty.ProgramConfig{},
@@ -1144,6 +1145,14 @@ func seedProductWithCurrency(t *testing.T, db *gorm.DB, price float64, stock int
 	record := seedProductShell(t, db, price, stock)
 	record.Currency = currencyCode
 	require.NoError(t, db.Save(&record).Error)
+	if record.ShippingTemplateID != nil {
+		require.NoError(t, db.Model(&shippingdomain.ShippingTemplate{}).
+			Where("id = ?", *record.ShippingTemplateID).
+			Update("currency", currencyCode).Error)
+		require.NoError(t, db.Model(&shippingdomain.ShippingRule{}).
+			Where("template_id = ?", *record.ShippingTemplateID).
+			Update("currency", currencyCode).Error)
+	}
 	require.NoError(t, db.Create(&product.ProductVariant{
 		ProductID:    record.ID,
 		SKU:          record.SKU,

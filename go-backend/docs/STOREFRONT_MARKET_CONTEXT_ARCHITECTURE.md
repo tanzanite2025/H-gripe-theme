@@ -40,11 +40,12 @@ The backend should expose a dedicated currency/pricing management area with:
 - Cached exchange rates: backend-owned rates refreshed by manual sync or a daily
   scheduler.
 
-The pricing-currency page owns the first two items. It defines one primary base
-currency and the explicit secondary display currencies. Saving that page writes
-the ExchangeRate-API base and quote currency settings. The API management page
-does not define another currency list; it only stores provider enable/API key
-settings and can trigger cache sync.
+The currency/FX center owns the primary pricing currency, provider settings, and
+cached-rate status. The storefront market tab owns the secondary display
+currencies through each market's `default_currency` and `display_currencies`.
+`ExchangeRateService.GetConfig()` combines those two domains into one API base
+and one set of quote targets. The API management card stores provider enable/API
+key settings and can trigger cache sync; it does not define another currency list.
 
 Example:
 
@@ -77,6 +78,12 @@ pricing boundary obvious:
   If a requested display currency has no stored snapshot, the public product API
   should leave that display price absent instead of converting it at request
   time.
+- The daily/manual exchange-rate sync rebuilds product and SKU snapshots from
+  current source amounts. It only refreshes rows whose source currency matches
+  the current backend entry currency.
+- If the backend entry currency changes, existing product and SKU source amounts
+  are preserved. Rows in the old currency are reported by the backend currency
+  audit and are not silently reinterpreted as the new currency.
 - Shipping uses the same one-click conversion helper in admin and persists
   secondary display prices by exact money field. Template snapshots are keyed by
   `default_fee` and `free_threshold`; rule snapshots are keyed by `fee`,
@@ -158,8 +165,8 @@ Current product and variant responses include one resolved display price:
 
 `display_price` is a storefront label only. The original `currency`, `price`,
 and `sale_price` fields remain the catalog truth used by cart, checkout, order,
-payment, and refund. If a cached rate is missing, `display_price` falls back to
-catalog currency and includes `fallback_reason`.
+payment, and refund. If a cached snapshot is missing, `display_price` is absent;
+the source currency and source amount remain available in the catalog fields.
 
 Product and variant responses also expose a `display_prices` list for all
 filled secondary currencies. That lets Nuxt render a currency dropdown from the
@@ -216,8 +223,8 @@ comes from the database or the built-in bootstrap fallback.
 
 Exchange-rate settings live under the admin API settings module because the
 provider key and endpoint are operational credentials, not market definitions.
-The current implementation supports manual sync through the admin panel and
-admin API:
+The implementation supports manual sync through the admin panel/admin API and a
+daily backend scheduler:
 
 ```http
 GET  /api/admin/settings/exchange-rates
@@ -226,9 +233,9 @@ POST /api/admin/settings/exchange-rates/sync
 
 The sync endpoint stores rates in `currency_exchange_rates`. Admin pricing
 helpers and storefront product/shipping responses read this cached table through
-Go services. No scheduler is required for the current pre-launch state; a later
-daily scheduler should call the same service method and preserve the same audit
-trail.
+Go services. The scheduler calls the same sync service at startup and then at
+`worker.exchange_rate_sync_interval_seconds`, so manual and scheduled refreshes
+share one code path and one audit trail.
 
 Admin pricing forms use `POST /api/admin/pricing/exchange-rates/convert` to
 fill inline secondary display price previews from the cached rates. This helper
@@ -236,13 +243,23 @@ does not select payment methods and does not call the third-party provider.
 
 The currency policy is stored as:
 
-- `currency_primary_currency`: the backend primary pricing currency.
-- `currency_display_currencies`: secondary display currencies only; the backend
-  removes the primary currency from this list if it is submitted there.
+- `currency_primary_currency`: the backend entry currency for product/SKU source
+  amounts entered by admins.
+- `currency_display_currencies`: legacy compatibility field only. Storefront
+  display currencies no longer come from this global setting.
 
-Exchange-rate sync reads this currency policy directly. The admin API settings
-page only stores the ExchangeRate-API enable flag and private key; it is not a
-second currency source.
+Storefront display currencies belong to the market/localization TAB. Each
+enabled market contributes its `default_currency` and `display_currencies` to
+the exchange-rate target list. Exchange-rate sync uses
+`currency_primary_currency` as the API base currency and those enabled market
+currencies as quote targets.
+
+Changing the backend entry currency does not silently rewrite historical product
+or SKU amounts. The admin currency policy page exposes
+`GET /api/admin/settings/currency-policy/audit` to detect products/SKUs whose
+saved source currency differs from the current backend entry currency. See
+`docs/CURRENCY_EXCHANGE_OPERATING_MODEL.md` for the maintenance rules and
+function boundaries.
 
 ## Future Product Modules
 

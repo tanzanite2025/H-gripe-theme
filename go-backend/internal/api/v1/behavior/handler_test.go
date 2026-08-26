@@ -31,7 +31,7 @@ func TestIngestBatchAcceptsAnonymousEvents(t *testing.T) {
 				"anonymous_id": "anon_handler",
 				"session_id":   "session_handler",
 				"locale":       "en-US",
-				"path":         "/shop/carbon-wheelset",
+				"path":         "/products/carbon-wheelset",
 				"occurred_at":  time.Now().UTC(),
 			},
 		},

@@ -162,9 +162,9 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  border: 1px solid var(--spoke-border, rgba(255, 255, 255, 0.12));
+  border: 1px solid var(--spoke-border, var(--tz-border-subtle));
   border-radius: 0.5rem;
-  background: var(--spoke-control-surface, #030604);
+  background: var(--spoke-control-surface, var(--tz-input-surface));
   color: var(--tz-text-primary);
   padding: 0.75rem 0.875rem;
   text-align: left;
@@ -176,14 +176,14 @@ onBeforeUnmount(() => {
 
 .spoke-calculator-select__button:hover,
 .spoke-calculator-select__button[aria-expanded='true'] {
-  border-color: var(--spoke-border-strong, rgba(255, 255, 255, 0.28));
-  background: var(--spoke-result-surface, #0b0b0b);
+  border-color: var(--spoke-border-strong, var(--tz-border-strong));
+  background: var(--spoke-result-surface, var(--tz-surface-subtle));
 }
 
 .spoke-calculator-select__button:focus-visible {
   outline: none;
-  border-color: var(--spoke-border-strong, rgba(255, 255, 255, 0.28));
-  box-shadow: 0 0 0 1px var(--spoke-focus-ring, rgba(255, 255, 255, 0.14));
+  border-color: var(--spoke-border-strong, var(--tz-border-strong));
+  box-shadow: 0 0 0 1px var(--spoke-focus-ring, var(--tz-form-control-focus-ring));
 }
 
 .spoke-calculator-select__button:disabled {
@@ -216,11 +216,11 @@ onBeforeUnmount(() => {
   width: 100%;
   max-height: 15rem;
   overflow-y: auto;
-  border: 1px solid var(--spoke-border-strong, rgba(255, 255, 255, 0.28));
+  border: 1px solid var(--spoke-border-strong, var(--tz-border-strong));
   border-radius: 0.5rem;
-  background: var(--spoke-control-surface, #030604);
+  background: var(--spoke-control-surface, var(--tz-input-surface));
   padding: 0.35rem;
-  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.55);
+  box-shadow: 0 18px 42px rgba(20, 32, 43, 0.14);
 }
 
 .spoke-calculator-select__option {
@@ -239,12 +239,12 @@ onBeforeUnmount(() => {
 
 .spoke-calculator-select__option:hover,
 .spoke-calculator-select__option--active {
-  background: #141414;
+  background: var(--tz-surface-muted);
   color: var(--tz-text-primary);
 }
 
 .spoke-calculator-select__option--selected {
-  background: #1a1a1a;
+  background: var(--tz-surface-subtle);
   color: var(--tz-text-primary);
 }
 </style>

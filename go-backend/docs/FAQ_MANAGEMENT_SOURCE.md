@@ -96,7 +96,10 @@ Nuxt 页面不再长期手写 `<PageFaq page-id="..." />`。页面只负责自�
 Flow:
 
 1. `PageFaqSlot` 读取当前 route path，并依据 Nuxt 的 locale manifest 移除 locale 前缀，例如 `/zh_cn/support/payment` -> `/support/payment`；新增语言不需要再手写一份 FAQ 路由正则。
-2. `PageFaqSlot` 会先把动态商品详情页映射到稳定 lookup route，例如 `/shop/g35-disc-brake` -> `/shop/:slug`；旧 `/products/<slug>` route 若被访问则映射到 `/products/:slug`。后台只维护通用的产品详情 FAQ 结构，不按每个商品 slug 复制页面。
+2. 当前运行时，`PageFaqSlot` 会把正式商品详情页映射到稳定 lookup
+   route，例如 `/products/g35-disc-brake` -> `/products/:slug`。
+   `/shop/:slug` 只用于分类路径，未匹配分类时不会映射到商品 FAQ。后台只
+   维护通用的产品详情 FAQ 结构，不按每个商品 slug 复制页面。
 3. FAQ 聚合页 `/support/faqs` 和旧 `/faq` 页面本身不再自动插入另一个 FAQ 区块，避免页面内重复嵌套。
 4. `PageFaqSlot` 请求 Go backend 的 route resolver，通过 `faq_pages.route_path` 找到对应 `page_id`。
 5. 如果后台返回可展示 FAQ 内容，slot 直接渲染 `PageFaq`。
@@ -158,9 +161,10 @@ Forbidden in `answer`:
 - 暂不把 `PageFaqSlot` 放到 `default` / `spokecalc` layout；这些 layout 目前没有稳定的 FAQ 插入需求，等页面域确认后再扩展。
 - 已新增 FAQ 轻量答案边界：后台答案编辑支持轻量 HTML，Go 后端保存和公开读取时统一清洗，图片从答案 HTML 中拆出为 FAQ 专用单图字段。
 - 已新增 FAQ 图片上传边界：后台和 Go 后端都校验 `image/webp`、`800 x 800`、最多一张；Nuxt 用固定答案内容组件渲染桌面两列/移动单列，并取消 FAQ 展开内容的固定 `max-height` 截断。
-- 已新增 `031_faq_route_coverage.up.sql`，把当前使用 `products` / `support` layout 的 Nuxt 页面补进 `faq_pages` / `faq_categories`，包括 `/shop`、`/shop/:slug`、旧 `/products/:slug`、blog、policies、`/company/about`、`/picture-warehouse`、`/support/faqs` 和旧 `/faq`。这些页面即使暂时没有 FAQ 条目，也能在后台结构面板看到，不再让前台自动容器请求稳定页面时出现 404。
+- 已新增 `031_faq_route_coverage.up.sql`，把使用 `products` / `support` layout 的 Nuxt 页面补进 `faq_pages` / `faq_categories`，其中正式商品详情 lookup 是 `/products/:slug`。
+- 已新增迁移 `219_remove_legacy_product_faq_route.up.sql` 清理预发布阶段误建的商品 FAQ 路由结构，只保留 `/products/:slug`。
 - 已新增 `041_faq_structure_supported_locales.up.sql`，把旧 `zh` 数据迁到 `zh_cn`，并为系统 20 个 storefront locale 补齐 FAQ 页面/分类结构壳。FAQ 问答内容不会复制到未录入的语言。
-- 已新增 Nuxt FAQ lookup 规则：真实商品详情 URL 统一查 `/shop/:slug`，旧产品详情 route 查 `/products/:slug`；`/support/faqs` 与 `/faq` 作为 FAQ 聚合页只展示自身内容，不再通过 layout 自动追加第二个 FAQ 区块。
+- 已新增 Nuxt FAQ lookup 规则：正式商品详情 URL 统一查 `/products/:slug`；`/shop/...` 作为分类路径，不承担商品详情 FAQ lookup。`/support/faqs` 与 `/faq` 作为 FAQ 聚合页只展示自身内容，不再通过 layout 自动追加第二个 FAQ 区块。
 - 已完成 `PageFaqSlot` 统一 FAQ skeleton loading：接口等待或客户端路由切换时显示 FAQ 标题、加载提示和三条骨架问题/答案行，不再显示裸 `LOAD` 文本。
 
 下一次涉及 FAQ 后台、FAQ 页面结构、Nuxt 页面 FAQ 自动插入、FAQ loading 样式时，必须同步更新本文件，记录完成范围和仍未完成的部分。

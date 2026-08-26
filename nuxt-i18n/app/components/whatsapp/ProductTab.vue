@@ -8,10 +8,10 @@
           @input="$emit('update:searchQuery', ($event.target as HTMLInputElement).value)"
           type="text"
           placeholder="Search products..."
-          class="flex-1 h-10 md:h-[42px] px-3 rounded-xl md:rounded-lg text-white text-sm focus:outline-none transition-colors"
+          class="flex-1 h-10 md:h-[42px] px-3 rounded-xl md:rounded-lg tz-text-primary text-sm focus:outline-none transition-colors"
           :class="[
-            'bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))]',
-            'shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)]',
+            'tz-surface-input border tz-border-subtle',
+            'shadow-[0_2px_6px_rgba(20,32,43,0.08)]',
           ]"
           @keydown.enter.prevent="$emit('search')"
         />
@@ -20,8 +20,8 @@
           :disabled="isSearching"
           class="h-10 md:h-[42px] px-3 md:px-4 rounded-xl md:rounded-lg text-sm font-semibold disabled:opacity-50 transition-colors whitespace-nowrap"
           :class="isSearching
-            ? 'bg-[rgba(15,23,42,0.98)] tz-text-disabled shadow-[0_2px_6px_-4px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)]'
-            : 'bg-white text-slate-950 shadow-[0_4px_14px_-8px_rgba(0,0,0,0.95),0_0_14px_rgba(255,255,255,0.14)] hover:bg-white/90'"
+            ? 'tz-surface-muted tz-text-disabled shadow-[0_2px_6px_rgba(20,32,43,0.08)]'
+            : 'bg-white text-slate-950 shadow-[0_4px_14px_-8px_rgba(20,32,43,0.16)] hover:bg-slate-50'"
         >
           {{ isSearching ? 'Searching...' : 'Search' }}
         </button>
@@ -32,7 +32,7 @@
         <button
           type="button"
           @click="$emit('openHistory')"
-          class="flex-1 md:flex-none md:px-4 h-10 md:h-[34px] rounded-full md:rounded-full tz-caption md:text-sm font-semibold md:font-medium tracking-wide flex items-center justify-center gap-1.5 transition-all bg-[rgba(31,41,55,0.9)] text-white shadow-[0_3px_9px_rgba(0,0,0,0.9)] hover:bg-[rgba(51,65,85,0.95)]"
+          class="flex-1 md:flex-none md:px-4 h-10 md:h-[34px] rounded-full md:rounded-full tz-caption md:text-sm font-semibold md:font-medium tracking-wide flex items-center justify-center gap-1.5 transition-all tz-surface-muted tz-text-primary shadow-[0_3px_9px_rgba(20,32,43,0.1)] hover:tz-surface-subtle"
           :style="{ borderColor: currentThemeColor }"
         >
           <svg class="w-3.5 h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -44,7 +44,7 @@
         <button
           type="button"
           @click="$emit('openCart')"
-          class="flex-1 md:flex-none md:px-4 h-10 md:h-[34px] rounded-full tz-caption md:text-sm font-semibold md:font-medium tracking-wide flex items-center justify-center gap-1.5 transition-all bg-[rgba(31,41,55,0.9)] text-white shadow-[0_3px_9px_rgba(0,0,0,0.9)] hover:bg-[rgba(51,65,85,0.95)]"
+          class="flex-1 md:flex-none md:px-4 h-10 md:h-[34px] rounded-full tz-caption md:text-sm font-semibold md:font-medium tracking-wide flex items-center justify-center gap-1.5 transition-all tz-surface-muted tz-text-primary shadow-[0_3px_9px_rgba(20,32,43,0.1)] hover:tz-surface-subtle"
           :style="{ borderColor: currentThemeColor }"
         >
           <svg class="w-3.5 h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -57,7 +57,7 @@
         <button
           type="button"
           @click="$emit('openWishlist')"
-          class="flex-1 md:flex-none md:px-4 h-10 md:h-[34px] rounded-full tz-caption md:text-sm font-semibold md:font-medium tracking-wide flex items-center justify-center gap-1.5 transition-all bg-[rgba(31,41,55,0.9)] text-white shadow-[0_3px_9px_rgba(0,0,0,0.9)] hover:bg-[rgba(51,65,85,0.95)]"
+          class="flex-1 md:flex-none md:px-4 h-10 md:h-[34px] rounded-full tz-caption md:text-sm font-semibold md:font-medium tracking-wide flex items-center justify-center gap-1.5 transition-all tz-surface-muted tz-text-primary shadow-[0_3px_9px_rgba(20,32,43,0.1)] hover:tz-surface-subtle"
           :style="{ borderColor: currentThemeColor }"
         >
           <svg class="w-3.5 h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

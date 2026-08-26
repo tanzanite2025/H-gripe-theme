@@ -63,6 +63,22 @@ func (s *OrderService) UpdateOrderStatus(id uint, status string) error {
 		return s.cancelOrderWithRollback(o)
 	}
 
+	if status == "shipped" && s.txManager != nil {
+		return s.txManager.WithinTx(func(repos repository.TxRepositories) error {
+			lockedOrder, err := repos.Order.FindByIDForUpdateWithItems(id)
+			if err != nil {
+				return normalizeOrderError(err)
+			}
+			if !lockedOrder.CanTransitionTo(status) {
+				return fmt.Errorf("invalid status transition from %s to %s", lockedOrder.Status, status)
+			}
+			if err := repos.Order.UpdateStatus(id, status); err != nil {
+				return err
+			}
+			return nil
+		})
+	}
+
 	return s.orderRepo.UpdateStatus(id, status)
 }
 
@@ -71,10 +87,22 @@ func isSystemManagedOrderStatus(status string) bool {
 }
 
 func (s *OrderService) UpdateShippingStatus(id uint, shippingStatus string) error {
+	if s.txManager != nil {
+		return s.txManager.WithinTx(func(repos repository.TxRepositories) error {
+			_, err := repos.Order.FindByIDForUpdate(id)
+			if err != nil {
+				return normalizeOrderError(err)
+			}
+			if err := repos.Order.UpdateShippingStatus(id, shippingStatus); err != nil {
+				return err
+			}
+			return nil
+		})
+	}
+
 	if _, err := s.findOrder(id); err != nil {
 		return err
 	}
-
 	return s.orderRepo.UpdateShippingStatus(id, shippingStatus)
 }
 
@@ -172,7 +200,10 @@ func (s *OrderService) UpdateTrackingInfo(ctx context.Context, id uint, input Or
 
 			shippingService := NewShippingService(repos.Shipping)
 			_, err := shippingService.UpsertTrackingShipment(resolvedTracking.trackingShipment)
-			return err
+			if err != nil {
+				return err
+			}
+			return nil
 		}); err != nil {
 			return err
 		}
@@ -180,9 +211,11 @@ func (s *OrderService) UpdateTrackingInfo(ctx context.Context, id uint, input Or
 		if err := s.orderRepo.UpdateTrackingInfo(id, resolvedTracking.trackingInfo); err != nil {
 			return err
 		}
-		if _, err = s.shipping.UpsertTrackingShipment(resolvedTracking.trackingShipment); err != nil {
+		trackingShipment, err := s.shipping.UpsertTrackingShipment(resolvedTracking.trackingShipment)
+		if err != nil {
 			return err
 		}
+		_ = trackingShipment
 	}
 
 	if resolvedTracking.autoRegister {
@@ -218,7 +251,7 @@ func (s *OrderService) FulfillOrder(ctx context.Context, id uint, input OrderTra
 			return ErrOrderShippingNotConfigured
 		}
 
-		o, err := repos.Order.FindByIDForUpdate(id)
+		o, err := repos.Order.FindByIDForUpdateWithItems(id)
 		if err != nil {
 			return normalizeOrderError(err)
 		}
@@ -241,6 +274,13 @@ func (s *OrderService) FulfillOrder(ctx context.Context, id uint, input OrderTra
 		}
 		if _, err := txShippingService.UpsertTrackingShipment(resolvedTracking.trackingShipment); err != nil {
 			return err
+		}
+
+		shippedAt := time.Now().UTC()
+		if o.ShippedAt != nil && !o.ShippedAt.IsZero() {
+			shippedAt = o.ShippedAt.UTC()
+		} else {
+			o.ShippedAt = &shippedAt
 		}
 		if o.Status != "shipped" {
 			if err := repos.Order.UpdateStatus(id, "shipped"); err != nil {

@@ -5,7 +5,6 @@
       :key="item.key || item.label"
       class="group relative flex min-h-14 items-center justify-between gap-3 overflow-hidden rounded-lg border border-dashed border-border/80 bg-card px-3 py-2.5 text-card-foreground shadow-xs transition-all hover:border-primary/40"
     >
-      <div class="uds-glow-bg opacity-30 group-hover:opacity-100 transition-opacity" />
       <div class="relative z-10 flex min-w-0 flex-1 items-baseline gap-2">
         <span class="min-w-0 truncate text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">{{ item.label }}</span>
         <strong class="shrink-0 truncate text-xl font-black tabular-nums text-foreground">{{ item.value }}</strong>

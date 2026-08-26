@@ -182,16 +182,16 @@ const answerId = (itemId: string) => (
   overflow: hidden;
   border: 1px solid transparent;
   border-radius: 0.75rem;
-  background: var(--tz-card-surface, #111116);
+  background: var(--tz-card-surface, #ffffff);
   transition: border-color 0.2s ease, background 0.2s ease;
 }
 
 .desktop-faq-master-detail__item:hover,
 .desktop-faq-master-detail__item.is-expanded {
-  border-color: rgba(181, 255, 109, 0.52);
+  border-color: rgba(4, 120, 87, 0.28);
   background:
-    linear-gradient(0deg, rgba(181, 255, 109, 0.045), rgba(181, 255, 109, 0.045)),
-    var(--tz-card-surface, #111116);
+    linear-gradient(0deg, rgba(5, 150, 105, 0.045), rgba(5, 150, 105, 0.045)),
+    var(--tz-card-surface, #ffffff);
 }
 
 .desktop-faq-master-detail__button {
@@ -206,13 +206,13 @@ const answerId = (itemId: string) => (
   padding: 0.85rem 1rem;
   border: 0;
   background: transparent;
-  color: #ffffff;
+  color: var(--tz-text-primary);
   text-align: left;
   cursor: pointer;
 }
 
 .desktop-faq-master-detail__button:focus-visible {
-  outline: 2px solid #B5FF6D;
+  outline: 2px solid var(--tz-form-control-focus-border);
   outline-offset: -2px;
 }
 
@@ -231,7 +231,7 @@ const answerId = (itemId: string) => (
   align-items: center;
   gap: 0.5rem;
   overflow: hidden;
-  color: #64748b;
+  color: var(--tz-text-muted);
   font-size: 0.57rem;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -242,7 +242,7 @@ const answerId = (itemId: string) => (
 .desktop-faq-master-detail__category {
   max-width: 14rem;
   overflow: hidden;
-  color: #B5FF6D;
+  color: #047857;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -257,7 +257,7 @@ const answerId = (itemId: string) => (
 .desktop-faq-master-detail__question {
   min-width: 0;
   overflow-wrap: anywhere;
-  color: #ffffff;
+  color: var(--tz-text-primary);
   font-size: 0.82rem;
   font-weight: 800;
   line-height: 1.45;
@@ -267,12 +267,12 @@ const answerId = (itemId: string) => (
   width: 1.1rem;
   height: 1.1rem;
   flex: 0 0 auto;
-  color: #94a3b8;
+  color: var(--tz-text-muted);
   transition: transform 0.25s ease, color 0.25s ease;
 }
 
 .desktop-faq-master-detail__icon.is-expanded {
-  color: #B5FF6D;
+  color: var(--tz-text-accent);
   transform: rotate(45deg);
 }
 
@@ -285,7 +285,7 @@ const answerId = (itemId: string) => (
   overflow: hidden;
   border: 1px solid transparent;
   border-radius: 0.75rem;
-  background: var(--tz-card-surface, #111116);
+  background: var(--tz-card-surface, #ffffff);
 }
 
 .desktop-faq-master-detail__detail-content,
@@ -312,7 +312,7 @@ const answerId = (itemId: string) => (
 
 .desktop-faq-master-detail__detail-question {
   margin: 0;
-  color: #ffffff;
+  color: var(--tz-text-primary);
   font-size: 0.95rem;
   font-weight: 900;
   line-height: 1.45;
@@ -322,7 +322,7 @@ const answerId = (itemId: string) => (
   align-items: center;
   justify-content: center;
   gap: 0.65rem;
-  color: #64748b;
+  color: var(--tz-text-muted);
   font-size: 0.78rem;
   line-height: 1.5;
   text-align: center;
@@ -331,14 +331,14 @@ const answerId = (itemId: string) => (
 .desktop-faq-master-detail__detail-empty :deep(svg) {
   width: 1.35rem;
   height: 1.35rem;
-  color: #B5FF6D;
+  color: var(--tz-text-accent);
 }
 
 .desktop-faq-master-detail__answer {
   min-width: 0;
   margin-top: 1rem;
   overflow-wrap: anywhere;
-  color: #cbd5e1;
+  color: var(--tz-text-secondary);
   font-size: 0.77rem;
   line-height: 1.7;
 }

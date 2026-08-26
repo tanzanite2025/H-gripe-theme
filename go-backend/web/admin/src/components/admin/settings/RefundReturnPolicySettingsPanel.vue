@@ -107,10 +107,11 @@
                 :ref="(element) => setImageInputRef(index, element)"
                 type="file"
                 class="sr-only"
-                accept="image/jpeg,image/png,image/webp,image/gif"
+                :accept="uploadSpecAccept('refund_return_image')"
                 :disabled="!canEdit || saving"
                 @change="handleImageChange($event, index)"
               />
+              <UploadSpecHint code="refund_return_image" />
             </div>
             <AdminFormField label="图片替代文字" class="min-w-0">
               <Input v-model="section.image.alt" :disabled="!canEdit || saving" />
@@ -163,6 +164,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { STOREFRONT_SUPPORTED_LANGUAGES, buildLanguageOptions } from '@/lib/languages'
+import UploadSpecHint from '@/components/admin/UploadSpecHint.vue'
+import { uploadSpecAccept } from '@/lib/uploadSpecs'
 import type { RefundReturnPolicyEditor, RefundReturnPolicyEditorSection } from '@/api/refundReturnPolicy'
 
 const props = withDefaults(defineProps<{

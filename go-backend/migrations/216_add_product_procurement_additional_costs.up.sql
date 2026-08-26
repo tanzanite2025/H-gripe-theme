@@ -1,0 +1,5 @@
+ALTER TABLE product_procurement_records
+    ADD COLUMN IF NOT EXISTS inbound_shipping_unit_cost NUMERIC(14, 2) NOT NULL DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS customs_unit_cost NUMERIC(14, 2) NOT NULL DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS packaging_unit_cost NUMERIC(14, 2) NOT NULL DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS other_unit_cost NUMERIC(14, 2) NOT NULL DEFAULT 0;

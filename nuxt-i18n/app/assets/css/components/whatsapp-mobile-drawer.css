@@ -29,12 +29,11 @@
     }
 }
 
-/* 2. Backdrop (Dark overlay) */
+/* 2. Backdrop */
 .wa-drawer-backdrop {
     position: absolute;
     inset: 0;
-    background-color: rgba(0, 0, 0, 0.6);
-    /* bg-black/60 */
+    background-color: rgba(15, 23, 42, 0.2);
     backdrop-filter: blur(4px);
     /* backdrop-blur-sm */
     pointer-events: auto;
@@ -52,12 +51,13 @@
     border-radius: 1rem;
     /* rounded-2xl */
     border-width: 1px;
-    border-color: rgba(255, 255, 255, 0.15);
+    border-color: var(--tz-border-subtle);
 
-    background-image: radial-gradient(circle at top left, rgba(31, 41, 55, 0.96), rgba(15, 23, 42, 0.98));
+    background: var(--tz-card-surface);
+    background-image: none;
     backdrop-filter: blur(12px);
     /* backdrop-blur-md */
-    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.72);
+    box-shadow: 0 18px 44px rgba(15, 23, 42, 0.16);
 
     display: flex;
     flex-direction: column;
@@ -98,8 +98,7 @@
     justify-content: space-between;
     padding: 0.75rem 1rem;
     /* px-4 py-3 */
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    /* border-white/10 */
+    border-bottom: 1px solid var(--tz-border-subtle);
     flex-shrink: 0;
 }
 
@@ -107,7 +106,7 @@
     font-size: 0.875rem;
     /* text-sm */
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.9);
+    color: var(--tz-text-primary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -117,9 +116,9 @@
     width: 2rem;
     height: 2rem;
     border-radius: 0.75rem;
-    border: 1px solid rgba(0, 0, 0, 0.12);
-    background: #ffffff;
-    color: #050505;
+    border: 1px solid var(--tz-border-strong);
+    background: var(--tz-card-surface);
+    color: var(--tz-text-primary);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -127,7 +126,7 @@
     font-size: 0.875rem;
     font-weight: 800;
     line-height: 1;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 12px rgb(15 23 42 / 0.1);
     transition:
         background-color 0.18s ease,
         border-color 0.18s ease,
@@ -138,10 +137,10 @@
 }
 
 .wa-drawer-close-btn:hover {
-    background-color: #f3f3f3;
-    border-color: rgba(0, 0, 0, 0.2);
-    color: #000000;
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.28);
+    background-color: var(--tz-input-surface);
+    border-color: var(--tz-site-accent-hover);
+    color: var(--tz-text-primary);
+    box-shadow: 0 6px 16px rgb(15 23 42 / 0.14);
     transform: scale(1.05);
 }
 
@@ -156,7 +155,7 @@
 }
 
 .wa-drawer-close-btn:focus-visible {
-    outline: 2px solid rgba(255, 255, 255, 0.9);
+    outline: 2px solid var(--tz-form-control-focus-border);
     outline-offset: 2px;
 }
 

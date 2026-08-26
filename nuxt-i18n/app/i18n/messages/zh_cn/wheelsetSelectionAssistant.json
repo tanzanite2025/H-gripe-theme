@@ -22,7 +22,8 @@
   "states": {
     "loading": "正在加载适配问题……",
     "retry": "重新尝试",
-    "empty": "暂时没有可用的适配问题。"
+    "empty": "暂时没有可用的适配问题。",
+    "unavailable": "适配服务暂时不可用，请稍后再试。"
   },
   "outcome": {
     "eyebrow": "适配结果",
@@ -34,6 +35,7 @@
     "title": "匹配的轮组",
     "loading": "正在匹配轮组……",
     "empty": "暂时没有符合这些回答的轮组。",
+    "unavailable": "匹配商品暂时不可用，请稍后再试。",
     "pagination": "轮组商品结果分页",
     "previousPage": "上一页",
     "nextPage": "下一页"

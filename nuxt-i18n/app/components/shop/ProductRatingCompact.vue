@@ -100,7 +100,7 @@ const starFillPercentages = computed(() => {
   min-width: 0;
   align-items: center;
   gap: 0.28rem;
-  color: var(--product-rating-text, rgba(15, 23, 42, 0.66));
+  color: var(--product-rating-text, var(--tz-text-secondary));
   font-size: 0.72rem;
   font-weight: 700;
   line-height: 1;
@@ -117,7 +117,7 @@ const starFillPercentages = computed(() => {
   width: 100%;
   justify-content: center;
   text-align: center;
-  color: var(--product-rating-empty-text, rgba(226, 232, 240, 0.5));
+  color: var(--product-rating-empty-text, var(--tz-text-muted));
 }
 
 .product-rating-compact__stars {
@@ -151,7 +151,7 @@ const starFillPercentages = computed(() => {
 }
 
 .product-rating-compact__star-icon--empty {
-  color: var(--product-rating-empty, rgba(15, 23, 42, 0.24));
+  color: var(--product-rating-empty, rgba(20, 32, 43, 0.24));
   fill: transparent;
 }
 

@@ -6,41 +6,6 @@ import (
 	"strings"
 )
 
-func (r *MediaRepository) registrationReferences(query mediaAssetReferenceQuery) ([]media.AssetReference, error) {
-	if !r.hasTable("product_registrations") {
-		return []media.AssetReference{}, nil
-	}
-
-	type row struct {
-		ID           uint
-		SerialNumber string
-	}
-	var rows []row
-	if err := r.db.Table("product_registrations").
-		Select("id, serial_number").
-		Where("deleted_at IS NULL AND purchase_proof IN ?", query.URLs).
-		Find(&rows).Error; err != nil {
-		return nil, err
-	}
-
-	references := make([]media.AssetReference, 0, len(rows))
-	for _, item := range rows {
-		label := fmt.Sprintf("产品注册 #%d", item.ID)
-		if strings.TrimSpace(item.SerialNumber) != "" {
-			label = fmt.Sprintf("产品注册 #%d：%s", item.ID, item.SerialNumber)
-		}
-		references = append(references, newMediaReference(
-			media.ReferenceCategoryCustomer,
-			"product_registration",
-			item.ID,
-			0,
-			label,
-			"purchase_proof",
-		))
-	}
-	return references, nil
-}
-
 func (r *MediaRepository) warrantyClaimReferences(query mediaAssetReferenceQuery) ([]media.AssetReference, error) {
 	if !r.hasTable("warranty_claims") {
 		return []media.AssetReference{}, nil

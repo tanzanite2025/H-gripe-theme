@@ -6,8 +6,6 @@
     <StorefrontImage
       :src="item.src"
       :alt="item.altText"
-      :width="item.width"
-      :height="item.height"
       class="home-hero-visual-showcase-figure__image h-full w-full object-cover"
       :sizes="sizes"
       densities="1x"

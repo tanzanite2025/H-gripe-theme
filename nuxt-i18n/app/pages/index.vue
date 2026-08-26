@@ -1,5 +1,5 @@
 <template>
-  <main class="min-h-[100dvh] text-white">
+  <main class="min-h-[100dvh] tz-text-primary">
     <div class="site-header-layout-spacer" aria-hidden="true"></div>
     <HomeHero />
 

@@ -25,6 +25,8 @@ const { t } = useI18n()
 
 definePageMeta({
   layout: 'products',
+  footerLabelKey: 'company.nav.oemOdm',
+  footerLabelFallback: 'OEM & ODM',
 })
 
 useHead({

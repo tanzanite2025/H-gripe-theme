@@ -66,6 +66,7 @@ import { useI18n, useLocalePath } from '#imports'
 import { useAuth } from '~/composables/useAuth'
 import { useCart } from '~/composables/useCart'
 import { useWishlist, type WishlistItem } from '~/composables/useWishlist'
+import { buildProductPath } from '~/utils/seo/urls'
 
 const props = defineProps<{
   active: boolean
@@ -81,6 +82,7 @@ interface ProductLike {
   slug?: string
   thumbnail?: string
   price?: number | string
+  currency?: string
   sale_price?: number | string | null
 }
 
@@ -123,7 +125,7 @@ const productSlug = (item: WishlistItem) => {
 
 const productPath = (item: WishlistItem) => {
   const slug = productSlug(item)
-  return localePath(slug ? `/shop/${slug}` : '/shop')
+  return localePath(slug ? buildProductPath(slug) : '/shop')
 }
 
 const rawPrice = (item: WishlistItem) => {
@@ -160,6 +162,7 @@ const addWishlistItemToCart = (item: WishlistItem) => {
     name: productTitle(item),
     slug: product.slug || '',
     price,
+    currency: product.currency,
     sale_price: toNumber(product.sale_price),
     thumbnail: productImage(item),
     image: productImage(item),
@@ -213,7 +216,7 @@ watch(
 }
 
 .tab-head p {
-  color: rgba(181, 255, 109, 0.9);
+  color: rgba(5, 150, 105, 0.9);
   font-size: var(--tz-type-micro-label);
   font-weight: 800;
   letter-spacing: 0.15em;
@@ -222,7 +225,7 @@ watch(
 
 .tab-head h3 {
   margin-top: 0.18rem;
-  color: #ffffff;
+  color: var(--tz-text-primary);
   font-size: 1.05rem;
   font-weight: 850;
 }
@@ -231,8 +234,8 @@ watch(
   min-height: 2.1rem;
   flex: 0 0 auto;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
-  color: #ffffff;
+  background: var(--tz-surface-muted);
+  color: var(--tz-text-primary);
   padding: 0 0.85rem;
   font-size: var(--tz-type-micro-label);
   font-weight: 800;
@@ -253,14 +256,14 @@ watch(
   justify-content: center;
   gap: 0.55rem;
   border-radius: 1.25rem;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--tz-surface-card);
   padding: 1rem;
   text-align: center;
 }
 
 .account-loading,
 .account-empty span {
-  color: rgba(232, 232, 232, 0.78);
+  color: var(--tz-text-secondary);
   font-size: 0.82rem;
 }
 
@@ -278,19 +281,19 @@ watch(
 .account-empty :deep(svg) {
   width: 2.2rem;
   height: 2.2rem;
-  color: rgba(181, 255, 109, 0.72);
+  color: rgba(5, 150, 105, 0.72);
 }
 
 .account-empty strong {
-  color: #ffffff;
+  color: var(--tz-text-primary);
   font-size: 0.95rem;
 }
 
 .account-empty a {
   margin-top: 0.3rem;
   border-radius: 999px;
-  background: #B5FF6D;
-  color: #050505;
+  background: var(--tz-action-primary);
+  color: var(--tz-action-primary-foreground);
   padding: 0.65rem 1rem;
   font-size: 0.8rem;
   font-weight: 850;
@@ -312,7 +315,7 @@ watch(
   grid-template-columns: 4.4rem 1fr;
   gap: 0.78rem;
   border-radius: 1.15rem;
-  background: rgba(255, 255, 255, 0.055);
+  background: var(--tz-surface-subtle);
   padding: 0.75rem;
 }
 
@@ -324,8 +327,8 @@ watch(
   justify-content: center;
   overflow: hidden;
   border-radius: 0.95rem;
-  background: rgba(255, 255, 255, 0.07);
-  color: rgba(232, 232, 232, 0.72);
+  background: var(--tz-surface-muted);
+  color: var(--tz-text-secondary);
 }
 
 .account-product-card__image img {
@@ -346,7 +349,7 @@ watch(
 .account-product-card__title {
   display: block;
   overflow: hidden;
-  color: #ffffff;
+  color: var(--tz-text-primary);
   font-size: 0.84rem;
   font-weight: 800;
   line-height: 1.35;
@@ -358,7 +361,7 @@ watch(
 .account-product-card__price {
   display: block;
   margin-top: 0.2rem;
-  color: #B5FF6D;
+  color: #059669;
   font-size: 0.79rem;
   font-weight: 850;
 }
@@ -373,7 +376,7 @@ watch(
 .account-product-card__actions button {
   min-height: 1.9rem;
   border-radius: 999px;
-  background: rgba(181, 255, 109, 0.16);
+  background: rgba(5, 150, 105, 0.16);
   color: #ffffff;
   padding: 0 0.72rem;
   font-size: var(--tz-type-micro-label);
@@ -381,15 +384,15 @@ watch(
 }
 
 .account-product-card__actions .account-product-card__ghost {
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(232, 232, 232, 0.82);
+  background: var(--tz-surface-muted);
+  color: var(--tz-text-secondary);
 }
 
 .account-toast {
   margin: 0;
   border-radius: 999px;
-  background: rgba(181, 255, 109, 0.12);
-  color: #e7ffd1;
+  background: rgba(5, 150, 105, 0.12);
+  color: var(--tz-text-primary);
   padding: 0.6rem 0.8rem;
   text-align: center;
   font-size: 0.75rem;

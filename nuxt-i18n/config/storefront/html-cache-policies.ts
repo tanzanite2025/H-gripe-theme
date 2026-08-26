@@ -32,7 +32,7 @@ export const storefrontHtmlCachePolicies: StorefrontHtmlCachePolicy[] = [
   {
     name: 'product-detail',
     description: 'Individual product detail pages with short-lived SSR HTML.',
-    paths: ['/shop/**'],
+    paths: ['/products/**'],
     ...storefrontHtmlCacheDurations.productDetail,
   },
   {
@@ -45,7 +45,7 @@ export const storefrontHtmlCachePolicies: StorefrontHtmlCachePolicy[] = [
   {
     name: 'content',
     description: 'Editorial and guide pages that change less frequently than product data.',
-    paths: ['/blog/**', '/guides/**', '/picture-warehouse', '/faq'],
+    paths: ['/resources/blog/**', '/guides/**', '/resources/picture-warehouse/**', '/faq'],
     ...storefrontHtmlCacheDurations.contentPage,
   },
   {
@@ -67,8 +67,8 @@ export const storefrontNoStorePagePaths = [
   // Query/search/filter state lives in the URL, but the list is data-heavy and
   // changes frequently. Keep it uncached until a query-aware cache strategy is added.
   '/shop',
-  '/membershipandpoints',
-  '/spoke-calculator',
+  '/resources/membershipandpoints/**',
+  '/resources/spoke-calculator/**',
   '/support/test-report',
   '/support/warranty-check',
 ]

@@ -4,14 +4,14 @@
     <!-- 第一步：底部简洁横条。它是 fixed overlay，不参与文档流。 -->
     <div
       v-if="showBanner && !showModal"
-      class="cookie-banner fixed left-0 right-0 z-[9999] bg-[rgba(0,0,0,0.78)] border-t border-white/10 shadow-[0_-10px_30px_rgba(0,0,0,0.45)]"
+      class="cookie-banner fixed left-0 right-0 z-[9999] border-t border-slate-200 bg-white shadow-[0_-10px_30px_rgba(20,32,43,0.12)]"
     >
         <div class="cookie-banner-inner max-w-5xl mx-auto px-4 py-4 flex flex-wrap items-center justify-center gap-4 sm:justify-between">
-          <p class="text-sm text-white/75 text-center sm:text-left">
+          <p class="text-sm tz-text-secondary text-center sm:text-left">
             {{ t('cookieConsent.banner.message') }}
             <NuxtLink 
               to="/policies/cookie"
-              class="text-[#B5FF6D] hover:text-white underline decoration-white/30 underline-offset-4 transition-colors"
+              class="tz-text-accent hover:text-[var(--tz-text-accent-hover)] hover:underline underline decoration-[var(--tz-site-accent)] underline-offset-4 transition-colors"
               @click="hideBanner"
             >
               {{ t('cookieConsent.banner.learnMore') }}
@@ -20,14 +20,14 @@
           <div class="flex items-center gap-3">
             <button 
               type="button"
-              class="px-4 py-2 text-sm font-medium text-white/75 bg-white/5 border border-white/10 rounded-full hover:bg-white/10 hover:text-white transition-colors"
+              class="px-4 py-2 text-sm font-medium tz-text-muted bg-slate-50 border border-slate-200 rounded-full hover:bg-slate-100 hover:text-slate-900 transition-colors"
               @click="openCookieModal"
             >
               {{ t('cookieConsent.banner.customize') }}
             </button>
             <button 
               type="button"
-              class="px-4 py-2 text-sm font-bold text-black bg-white rounded-full hover:bg-white/90 transition-colors shadow-[0_8px_20px_rgba(255,255,255,0.12)]"
+              class="px-4 py-2 text-sm font-bold text-white bg-[var(--tz-action-primary)] rounded-full hover:bg-[var(--tz-action-primary-hover)] transition-colors shadow-[0_8px_20px_rgba(15,23,42,0.16)]"
               @click="handleAcceptAll"
             >
               {{ t('cookieConsent.banner.accept') }}
@@ -43,10 +43,10 @@
         class="tz-standard-modal-mask fixed inset-0 z-[10000] flex items-center justify-center p-4 tz-mobile-safe-modal-mask"
         @click.self="closeCookieModal"
       >
-        <div class="cookie-modal-panel tz-standard-modal-surface bg-[rgba(0,0,0,0.88)] max-w-lg w-full max-h-[90vh] overflow-y-auto">
+        <div class="cookie-modal-panel tz-standard-modal-surface bg-white max-w-lg w-full max-h-[90vh] overflow-y-auto">
           <!-- Header -->
           <div class="flex items-center justify-between p-6 pb-4">
-            <h2 class="text-xl font-bold text-white">{{ t('cookieConsent.modal.title') }}</h2>
+            <h2 class="text-xl font-bold tz-text-primary">{{ t('cookieConsent.modal.title') }}</h2>
             <button 
               type="button"
               class="tz-global-close-btn"
@@ -63,7 +63,7 @@
           <div class="px-6 pb-4">
             <p class="text-sm tz-text-secondary leading-relaxed">
               {{ t('cookieConsent.modal.descriptionBeforePolicy') }}
-              <NuxtLink to="/policies/cookie" class="text-[#B5FF6D] hover:text-white hover:underline" @click="hideAll">
+              <NuxtLink to="/policies/cookie" class="tz-text-primary hover:underline" @click="hideAll">
                 {{ t('cookieConsent.modal.policyLink') }}
               </NuxtLink>{{ t('cookieConsent.modal.descriptionAfterPolicy') }}
             </p>
@@ -78,10 +78,10 @@
                 id="essential" 
                 checked 
                 disabled
-                class="mt-1 w-4 h-4 accent-[#B5FF6D] rounded cursor-not-allowed"
+                class="mt-1 w-4 h-4 accent-[#059669] rounded cursor-not-allowed"
               />
               <div>
-                <label for="essential" class="text-sm font-semibold text-white">{{ t('cookieConsent.options.essential.title') }}</label>
+                <label for="essential" class="text-sm font-semibold tz-text-primary">{{ t('cookieConsent.options.essential.title') }}</label>
                 <p class="text-xs tz-text-muted mt-0.5">{{ t('cookieConsent.options.essential.description') }}</p>
               </div>
             </div>
@@ -92,10 +92,10 @@
                 type="checkbox" 
                 id="performance" 
                 v-model="preferences.performance"
-                class="mt-1 w-4 h-4 accent-[#B5FF6D] rounded cursor-pointer"
+                class="mt-1 w-4 h-4 accent-[#059669] rounded cursor-pointer"
               />
               <div>
-                <label for="performance" class="text-sm font-semibold text-white cursor-pointer">{{ t('cookieConsent.options.performance.title') }}</label>
+                <label for="performance" class="text-sm font-semibold tz-text-primary cursor-pointer">{{ t('cookieConsent.options.performance.title') }}</label>
                 <p class="text-xs tz-text-muted mt-0.5">{{ t('cookieConsent.options.performance.description') }}</p>
               </div>
             </div>
@@ -106,10 +106,10 @@
                 type="checkbox" 
                 id="preference" 
                 v-model="preferences.preference"
-                class="mt-1 w-4 h-4 accent-[#B5FF6D] rounded cursor-pointer"
+                class="mt-1 w-4 h-4 accent-[#059669] rounded cursor-pointer"
               />
               <div>
-                <label for="preference" class="text-sm font-semibold text-white cursor-pointer">{{ t('cookieConsent.options.preference.title') }}</label>
+                <label for="preference" class="text-sm font-semibold tz-text-primary cursor-pointer">{{ t('cookieConsent.options.preference.title') }}</label>
                 <p class="text-xs tz-text-muted mt-0.5">{{ t('cookieConsent.options.preference.description') }}</p>
               </div>
             </div>
@@ -120,10 +120,10 @@
                 type="checkbox" 
                 id="advertising" 
                 v-model="preferences.advertising"
-                class="mt-1 w-4 h-4 accent-[#B5FF6D] rounded cursor-pointer"
+                class="mt-1 w-4 h-4 accent-[#059669] rounded cursor-pointer"
               />
               <div>
-                <label for="advertising" class="text-sm font-semibold text-white cursor-pointer">{{ t('cookieConsent.options.advertising.title') }}</label>
+                <label for="advertising" class="text-sm font-semibold tz-text-primary cursor-pointer">{{ t('cookieConsent.options.advertising.title') }}</label>
                 <p class="text-xs tz-text-muted mt-0.5">{{ t('cookieConsent.options.advertising.description') }}</p>
               </div>
             </div>
@@ -133,21 +133,21 @@
           <div class="cookie-modal-actions flex flex-wrap gap-3 p-6 pt-0">
             <button 
               type="button"
-              class="px-4 py-2.5 text-sm font-medium text-white/70 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 hover:text-white transition-colors"
+              class="px-4 py-2.5 text-sm font-medium tz-text-muted bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 hover:text-slate-900 transition-colors"
               @click="handleSavePreferences"
             >
               {{ t('cookieConsent.actions.savePreferences') }}
             </button>
             <button 
               type="button"
-              class="px-4 py-2.5 text-sm font-medium text-white/70 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 hover:text-white transition-colors"
+              class="px-4 py-2.5 text-sm font-medium tz-text-muted bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 hover:text-slate-900 transition-colors"
               @click="handleRejectAll"
             >
               {{ t('cookieConsent.actions.rejectAll') }}
             </button>
             <button 
               type="button"
-              class="px-4 py-2.5 text-sm font-semibold text-black bg-white rounded-lg hover:bg-white/90 transition-colors shadow-lg shadow-white/10"
+              class="px-4 py-2.5 text-sm font-semibold text-white bg-[var(--tz-action-primary)] rounded-lg hover:bg-[var(--tz-action-primary-hover)] transition-colors shadow-[0_8px_18px_rgba(15,23,42,0.16)]"
               @click="handleAcceptAll"
             >
               {{ t('cookieConsent.actions.acceptAll') }}

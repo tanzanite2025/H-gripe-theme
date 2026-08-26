@@ -161,8 +161,10 @@ export function useQuickBuySelectionState(
       thumbnail: product.thumbnail || '',
       quantity: 1,
       weightGrams: selectedVariant?.weightGrams || 0,
-      unitPrice: product.displayPriceNumber || product.priceNumber,
-      currency: product.displayPriceCurrency || product.currency,
+      // QUICK selections are later submitted as cart lines. Keep the
+      // catalog/source amount here; display snapshots are presentation only.
+      unitPrice: selectedVariant?.priceNumber ?? product.priceNumber,
+      currency: selectedVariant?.currency || product.currency,
     }
   }
 

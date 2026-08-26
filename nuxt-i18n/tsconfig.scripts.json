@@ -14,6 +14,7 @@
     "scripts/*.ts",
     "scripts/**/*.d.ts",
     "scripts/i18n/**/*.ts",
+    "scripts/seo/check-sitemap-xml.ts",
     "scripts/storefront/**/*.ts",
     "tailwind.config.ts"
   ]

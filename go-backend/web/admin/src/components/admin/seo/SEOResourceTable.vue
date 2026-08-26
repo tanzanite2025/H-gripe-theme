@@ -1,13 +1,13 @@
 <template>
   <AdminTablePanel :loading="loading">
-    <Table class="min-w-[860px]">
+    <Table class="min-w-[980px]">
       <TableHeader>
         <TableRow>
           <TableHead>页面资源</TableHead>
           <TableHead>实际路由</TableHead>
           <TableHead class="w-28">语言</TableHead>
           <TableHead class="w-28">SEO 状态</TableHead>
-          <TableHead class="w-28 text-right">操作</TableHead>
+          <TableHead class="w-56 text-right">操作</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -46,10 +46,24 @@
             </AdminStatusBadge>
           </TableCell>
           <TableCell class="text-right">
-            <Button v-if="canEdit" variant="outline" size="sm" @click="emit('edit', item)">
-              <Pencil class="size-3.5" />
-              SEO
-            </Button>
+            <div v-if="canEdit" class="flex flex-wrap justify-end gap-2">
+              <Button
+                v-if="showIndexing"
+                variant="outline"
+                size="sm"
+                :disabled="!indexingReady || item.status !== 'active' || indexingLoadingId === item.id"
+                :title="item.status !== 'active' ? '仅 active 商品可通知 Google' : indexingDisabledReason"
+                @click="emit('push-indexing', item)"
+              >
+                <RefreshCw v-if="indexingLoadingId === item.id" class="size-3.5 animate-spin" />
+                <Send v-else class="size-3.5" />
+                {{ indexingLoadingId === item.id ? '推送中' : '通知 Google' }}
+              </Button>
+              <Button variant="outline" size="sm" @click="emit('edit', item)">
+                <Pencil class="size-3.5" />
+                SEO
+              </Button>
+            </div>
             <span v-else class="text-xs text-muted-foreground">只读</span>
           </TableCell>
         </TableRow>
@@ -69,7 +83,7 @@
 </template>
 
 <script setup lang="ts">
-import { ExternalLink, FileSearch, Pencil } from '@lucide/vue'
+import { ExternalLink, FileSearch, Pencil, RefreshCw, Send } from '@lucide/vue'
 import AdminPagination from '@/components/admin/AdminPagination.vue'
 import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
 import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
@@ -83,20 +97,32 @@ const props = withDefaults(defineProps<{
   resourceLabel: string
   loading?: boolean
   canEdit?: boolean
+  showIndexing?: boolean
+  indexingReady?: boolean
+  indexingLoadingId?: number | string | null
+  indexingDisabledReason?: string
 }>(), {
   items: () => [],
   loading: false,
   canEdit: false,
+  showIndexing: false,
+  indexingReady: false,
+  indexingLoadingId: null,
+  indexingDisabledReason: 'Google Indexing 尚未配置',
 })
 
 const emit = defineEmits<{
   (event: 'edit', item: SEOResourceItem): void
+  (event: 'push-indexing', item: SEOResourceItem): void
   (event: 'update-page', page: number): void
   (event: 'update-page-size', pageSize: number): void
 }>()
 
 const hasSeo = (item: SEOResourceItem): boolean => Boolean(
-  item.metaTitle.trim() || item.metaDescription.trim() || item.canonicalUrl?.trim()
+  item.metaTitle.trim()
+    || item.metaDescription.trim()
+    || item.intro?.trim()
+    || item.canonicalUrl?.trim()
 )
 
 const statusTone = (item: SEOResourceItem): 'green' | 'amber' | 'gray' => {

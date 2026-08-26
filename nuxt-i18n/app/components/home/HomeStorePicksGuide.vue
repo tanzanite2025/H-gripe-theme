@@ -1,5 +1,5 @@
 <template>
-  <section id="home-store-picks-guide" class="home-store-picks-guide bg-transparent text-white">
+  <section id="home-store-picks-guide" class="home-store-picks-guide bg-transparent tz-text-primary">
     <div class="page-content-shell px-0 md:px-6">
       <div class="home-store-picks-guide__grid">
         <article
@@ -216,16 +216,16 @@ const handleCardAction = (card: HomeStorePicksGuideCard) => {
   display: grid;
   flex: 0 0 auto;
   width: 2.75rem;
-  height: 2.75rem;
+  height: 1.5rem;
   place-items: center;
   border-radius: 8px;
-  color: var(--tz-brand-primary, #b5ff6d);
+  color: var(--tz-site-accent, #059669);
 }
 
 .home-store-picks-guide__card h3 {
   margin: 0;
   min-width: 0;
-  color: #f8fafc;
+  color: var(--tz-text-primary);
   font-size: 1rem;
   font-weight: 800;
   line-height: 1.25;

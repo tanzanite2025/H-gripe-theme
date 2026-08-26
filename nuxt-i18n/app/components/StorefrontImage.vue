@@ -7,7 +7,7 @@
     :width="width"
     :height="height"
     :sizes="resolvedSizes"
-    :densities="densities"
+    :densities="resolvedDensities"
     :format="format"
     :quality="quality"
     :loading="loading"
@@ -38,33 +38,16 @@ import {
   createStorefrontMediaContext,
   normalizeStorefrontMediaUrl,
 } from '~/utils/storefrontMedia'
+import {
+  STOREFRONT_IMAGE_SPECS,
+  type StorefrontImagePreset,
+} from '~/utils/storefrontImageSpecs'
 
 defineOptions({
   inheritAttrs: false,
 })
 
 const emit = defineEmits(['error'])
-
-type StorefrontImagePreset =
-  | 'avatar'
-  | 'card'
-  | 'content'
-  | 'gallery'
-  | 'hero'
-  | 'logo'
-  | 'swatch'
-  | 'thumbnail'
-
-const PRESET_SIZES: Record<StorefrontImagePreset, string> = {
-  avatar: 'xs:56px sm:64px',
-  card: 'xs:50vw sm:33vw md:280px lg:320px',
-  content: 'xs:100vw sm:100vw md:768px lg:1024px',
-  gallery: 'xs:100vw sm:100vw md:50vw lg:640px xl:960px',
-  hero: 'xs:100vw sm:100vw md:100vw lg:1280px',
-  logo: 'xs:120px sm:160px md:280px',
-  swatch: 'xs:40px sm:40px',
-  thumbnail: 'xs:72px sm:96px',
-}
 
 const props = withDefaults(defineProps<{
   src: string
@@ -78,13 +61,14 @@ const props = withDefaults(defineProps<{
   loading?: 'eager' | 'lazy'
   fetchpriority?: 'high' | 'low' | 'auto'
   decoding?: 'async' | 'sync' | 'auto'
+  // Only pass these for intentional intrinsic dimensions. API media metadata must stay out of this prop.
   width?: number | string
   height?: number | string
 }>(), {
   alt: '',
   preset: 'content',
   sizes: '',
-  densities: '1x 2x',
+  densities: '',
   format: 'webp',
   quality: 84,
   optimize: true,
@@ -101,6 +85,7 @@ const mediaContext = computed(() => createStorefrontMediaContext(
 ))
 const normalizedSource = computed(() => normalizeStorefrontMediaUrl(props.src, mediaContext.value))
 const optimizationFailed = ref(false)
+const resolvedImageSpec = computed(() => STOREFRONT_IMAGE_SPECS[props.preset])
 
 const parseUrl = (value: string, base?: string) => {
   try {
@@ -116,13 +101,13 @@ const truthyConfig = (value: unknown) => (
 )
 
 const siteOrigin = computed(() => {
-  const configuredSiteUrl = String((runtimeConfig.public as { siteUrl?: string }).siteUrl || '').trim()
-  const siteUrl = parseUrl(configuredSiteUrl)
-  if (siteUrl) return siteUrl.origin
-
   const configuredApiBase = String((runtimeConfig.public as { apiBase?: string }).apiBase || '').trim()
   const apiUrl = parseUrl(configuredApiBase)
   if (apiUrl) return apiUrl.origin
+
+  const configuredSiteUrl = String((runtimeConfig.public as { siteUrl?: string }).siteUrl || '').trim()
+  const siteUrl = parseUrl(configuredSiteUrl)
+  if (siteUrl) return siteUrl.origin
 
   if (import.meta.client) return window.location.origin
   return ''
@@ -180,6 +165,8 @@ const transformSource = computed(() => {
   return fallbackSource.value
 })
 
+const isVectorSource = computed(() => /\.svg(?:[?#]|$)/i.test(normalizedSource.value))
+
 const allowedHosts = computed(() => {
   const config = runtimeConfig.public as {
     apiBase?: string
@@ -203,7 +190,7 @@ const allowedHosts = computed(() => {
 
 const canOptimize = computed(() => {
   const source = transformSource.value
-  if (!source || /^(?:data|blob):/i.test(source)) return false
+  if (!source || isVectorSource.value || /^(?:data|blob):/i.test(source)) return false
   if (uploadPath.value && !uploadOptimizationEnabled.value) return false
   if (source.startsWith('/')) return true
 
@@ -211,7 +198,8 @@ const canOptimize = computed(() => {
   return Boolean(url && /^https?:$/i.test(url.protocol) && allowedHosts.value.has(url.host))
 })
 
-const resolvedSizes = computed(() => props.sizes || PRESET_SIZES[props.preset])
+const resolvedSizes = computed(() => props.sizes || resolvedImageSpec.value.sizes)
+const resolvedDensities = computed(() => props.densities || resolvedImageSpec.value.densities)
 
 const handleOptimizationError = (event: unknown) => {
   optimizationFailed.value = true

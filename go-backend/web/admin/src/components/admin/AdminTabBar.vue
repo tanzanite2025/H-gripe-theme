@@ -63,7 +63,7 @@ const tabLabel = computed(() => props.label || t('layout.navigation'))
   overflow-x: auto;
   border: 1px solid #e2e8f0;
   border-radius: 1.25rem;
-  background: #f8fafc;
+  background: var(--secondary);
   padding: 0.35rem;
   scrollbar-width: thin;
 }

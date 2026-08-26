@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
 
@@ -112,6 +113,7 @@ func (r *ShippingRepository) UpdateTemplateWithRules(template *shipping.Shipping
 		updates := map[string]interface{}{
 			"name":                    template.Name,
 			"type":                    template.Type,
+			"currency":                template.Currency,
 			"free_shipping":           template.FreeShipping,
 			"free_threshold":          template.FreeThreshold,
 			"default_fee":             template.DefaultFee,
@@ -172,6 +174,7 @@ func (r *ShippingRepository) UpdateRule(rule *shipping.ShippingRule) error {
 func (r *ShippingRepository) UpdateRuleForTemplate(rule *shipping.ShippingRule) error {
 	updates := map[string]interface{}{
 		"region":                  rule.Region,
+		"currency":                rule.Currency,
 		"min_value":               rule.MinValue,
 		"max_value":               rule.MaxValue,
 		"fee":                     rule.Fee,
@@ -182,6 +185,47 @@ func (r *ShippingRepository) UpdateRuleForTemplate(rule *shipping.ShippingRule) 
 	return r.db.Model(&shipping.ShippingRule{}).
 		Where("id = ? AND template_id = ?", rule.ID, rule.TemplateID).
 		Updates(updates).Error
+}
+
+type ShippingDisplayPriceSnapshotUpdate struct {
+	TemplateID       uint
+	DisplayPriceData datatypes.JSON
+	RuleUpdates      []ShippingRuleDisplayPriceSnapshotUpdate
+}
+
+type ShippingRuleDisplayPriceSnapshotUpdate struct {
+	RuleID           uint
+	DisplayPriceData datatypes.JSON
+}
+
+func (r *ShippingRepository) UpdateDisplayPriceSnapshots(updates []ShippingDisplayPriceSnapshotUpdate) error {
+	if len(updates) == 0 {
+		return nil
+	}
+
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		for _, update := range updates {
+			if update.TemplateID == 0 {
+				continue
+			}
+			if err := tx.Model(&shipping.ShippingTemplate{}).
+				Where("id = ?", update.TemplateID).
+				Update("display_price_snapshots", update.DisplayPriceData).Error; err != nil {
+				return err
+			}
+			for _, ruleUpdate := range update.RuleUpdates {
+				if ruleUpdate.RuleID == 0 {
+					continue
+				}
+				if err := tx.Model(&shipping.ShippingRule{}).
+					Where("id = ? AND template_id = ?", ruleUpdate.RuleID, update.TemplateID).
+					Update("display_price_snapshots", ruleUpdate.DisplayPriceData).Error; err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	})
 }
 
 // DeleteRule 閸掔娀娅庣憴鍕灟

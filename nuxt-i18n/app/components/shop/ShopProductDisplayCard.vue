@@ -3,7 +3,8 @@ import { computed, ref } from 'vue'
 import { useLocalePath } from '#imports'
 import ProductRatingCompact from '~/components/shop/ProductRatingCompact.vue'
 import ProductSharePopover from '~/components/shop/ProductSharePopover.vue'
-import { resolveShopProductImage, type ShopProduct } from '~/composables/useShopProducts'
+import { useCart } from '~/composables/useCart'
+import { resolveShopProductImage, type ShopProduct, useShopProducts } from '~/composables/useShopProducts'
 
 type ShopProductDisplayCardDensity = 'catalog' | 'quick-buy'
 
@@ -62,6 +63,8 @@ const handleViewClick = () => {
 const shareDialogOpen = ref(false)
 const shareButtonElement = ref<HTMLElement | null>(null)
 const localePath = useLocalePath()
+const { addToCart, openCart } = useCart()
+const { toCartItem } = useShopProducts()
 
 const handleShareClick = () => {
   shareDialogOpen.value = !shareDialogOpen.value
@@ -69,6 +72,17 @@ const handleShareClick = () => {
 
 const handleShareDialogClose = () => {
   shareDialogOpen.value = false
+}
+
+const canAddToCart = computed(() => props.product.availability !== 'out_of_stock')
+
+const handleAddToCart = () => {
+  if (!canAddToCart.value) return
+
+  const result = addToCart(toCartItem(props.product))
+  if (result?.success) {
+    openCart()
+  }
 }
 
 const productImageSrc = computed(() => resolveShopProductImage(props.product, 'card'))
@@ -93,7 +107,7 @@ const productDetailUrl = computed(() => {
   const rawUrl = String(props.product.url || '').trim()
   if (!rawUrl) return ''
   if (/^https?:\/\//i.test(rawUrl)) return rawUrl
-  if (/^\/[a-z]{2}(?:[_-][a-z]{2})?\/shop\/[^/?#]+(?:[?#].*)?$/i.test(rawUrl)) return rawUrl
+  if (/^\/[a-z]{2}(?:[_-][a-z]{2})?\/products\/[^/?#]+(?:[?#].*)?$/i.test(rawUrl)) return rawUrl
   return localePath(rawUrl)
 })
 </script>
@@ -192,9 +206,21 @@ const productDetailUrl = computed(() => {
     </button>
 
     <div
-      v-if="showWishlistAction || (showViewAction && product.url) || (showShareAction && product.url)"
+      v-if="density === 'catalog' || showWishlistAction || (showViewAction && product.url) || (showShareAction && product.url)"
       class="shop-product-display-card__actions"
     >
+      <button
+        v-if="density === 'catalog'"
+        type="button"
+        class="shop-product-display-card__add-to-cart-action"
+        :disabled="!canAddToCart"
+        :title="$t('quickBuy.actions.addToCart', 'Add to cart')"
+        :aria-label="`${$t('quickBuy.actions.addToCart', 'Add to cart')}: ${product.title}`"
+        @click.stop="handleAddToCart"
+      >
+        <Icon name="lucide:shopping-cart" class="h-3.5 w-3.5" aria-hidden="true" />
+      </button>
+
       <button
         v-if="showWishlistAction"
         type="button"
@@ -254,32 +280,31 @@ const productDetailUrl = computed(() => {
   min-height: 0;
   flex-direction: column;
   overflow: hidden;
+  border: 1px solid rgba(20, 32, 43, 0.1);
   border-radius: 0.75rem;
-  background: rgba(0, 0, 0, 0.4);
-  box-shadow: 8px 8px 22px rgba(0, 0, 0, 0.92);
+  background: var(--tz-card-surface);
+  box-shadow: 0 10px 26px rgba(20, 32, 43, 0.12);
   transition: background-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 }
 
 .shop-product-display-card:hover {
-  background: rgba(0, 0, 0, 0.6);
+  background: var(--tz-form-panel-surface);
+  box-shadow: 0 14px 30px rgba(20, 32, 43, 0.16);
 }
 
 .shop-product-display-card--quick-buy {
   height: 100%;
   --tz-product-card-width: 100%;
   --tz-product-card-content-height: auto;
-  border: 0;
-  background:
-    linear-gradient(180deg, var(--quickbuy-panel-surface-raised, #17171b), #0e0e11);
+  border-color: rgba(20, 32, 43, 0.1);
+  background: var(--tz-form-panel-surface);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.026),
-    inset 0 0 0 1px rgba(0, 0, 0, 0.56),
-    0 8px 22px rgba(0, 0, 0, 0.24);
+    inset 0 1px 0 rgba(255, 255, 255, 0.82),
+    0 8px 22px rgba(20, 32, 43, 0.1);
 }
 
 .shop-product-display-card--quick-buy:hover {
-  background:
-    linear-gradient(180deg, #1e1e24, #111115);
+  background: var(--tz-card-surface);
   transform: translateY(-1px);
 }
 
@@ -303,13 +328,11 @@ const productDetailUrl = computed(() => {
 }
 
 .shop-product-display-card--quick-buy.shop-product-display-card--selected {
-  background:
-    linear-gradient(180deg, rgba(181, 255, 109, 0.13), rgba(181, 255, 109, 0.055)),
-    var(--quickbuy-panel-surface-raised, #17171b);
+  background: var(--tz-site-accent-selected-surface);
   box-shadow:
-    inset 0 0 0 1px rgba(181, 255, 109, 0.28),
-    0 0 0 3px rgba(181, 255, 109, 0.055),
-    0 10px 26px rgba(0, 0, 0, 0.28);
+    inset 0 0 0 1px rgba(5, 150, 105, 0.28),
+    0 0 0 3px rgba(5, 150, 105, 0.055),
+    0 10px 26px rgba(20, 32, 43, 0.14);
 }
 
 .shop-product-display-card__body {
@@ -325,7 +348,7 @@ const productDetailUrl = computed(() => {
 }
 
 .shop-product-display-card__body--selectable:focus-visible {
-  box-shadow: inset 0 0 0 2px rgba(181, 255, 109, 0.82);
+  box-shadow: inset 0 0 0 2px rgba(5, 150, 105, 0.82);
 }
 
 .shop-product-display-card__selection-indicator {
@@ -337,19 +360,18 @@ const productDetailUrl = computed(() => {
   width: 1.25rem;
   height: 1.25rem;
   place-items: center;
-  border: 0;
+  border: 1px solid rgba(20, 32, 43, 0.16);
   border-radius: 999px;
-  color: #0b1020;
-  background: rgba(0, 0, 0, 0.64);
+  color: var(--tz-text-primary);
+  background: var(--tz-form-panel-surface);
   box-shadow:
-    inset 0 0 0 1px rgba(0, 0, 0, 0.68),
-    0 3px 10px rgba(0, 0, 0, 0.28);
+    0 3px 10px rgba(20, 32, 43, 0.16);
 }
 
 .shop-product-display-card__selection-indicator--selected {
-  background: #b5ff6d;
+  background: #059669;
   box-shadow:
-    0 0 0 3px rgba(181, 255, 109, 0.12),
+    0 0 0 3px rgba(5, 150, 105, 0.12),
     0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
@@ -359,7 +381,7 @@ const productDetailUrl = computed(() => {
   aspect-ratio: 1;
   place-items: center;
   overflow: hidden;
-  background: rgba(0, 0, 0, 0.36);
+  background: var(--tz-form-panel-surface);
 }
 
 .shop-product-display-card__image img {
@@ -371,11 +393,11 @@ const productDetailUrl = computed(() => {
 .shop-product-display-card__image-empty {
   display: grid;
   place-items: center;
-  color: rgba(255, 255, 255, 0.45);
+  color: var(--tz-text-muted);
 }
 
 .shop-product-display-card__content {
-  --product-rating-text: rgba(226, 232, 240, 0.72);
+  --product-rating-text: var(--tz-text-secondary);
   display: flex;
   min-width: 0;
   flex: 1 1 auto;
@@ -387,7 +409,7 @@ const productDetailUrl = computed(() => {
   display: -webkit-box;
   margin: 0 0 0.25rem;
   overflow: hidden;
-  color: white;
+  color: var(--tz-text-primary);
   font-size: 0.75rem;
   font-weight: 600;
   line-height: 1.35;
@@ -421,12 +443,12 @@ const productDetailUrl = computed(() => {
 }
 
 .shop-product-display-card__fact--weight {
-  color: rgba(226, 232, 240, 0.78);
+  color: var(--tz-text-secondary);
 }
 
 .shop-product-display-card__fact--price {
   justify-content: flex-end;
-  color: #b5ff6d;
+  color: #059669;
 }
 
 .shop-product-display-card__fact-value {
@@ -445,19 +467,18 @@ const productDetailUrl = computed(() => {
   width: 1.5rem;
   height: 1.5rem;
   place-items: center;
-  border: 0;
+  border: 1px solid rgba(20, 32, 43, 0.16);
   border-radius: 999px;
-  color: white;
-  background: rgba(0, 0, 0, 0.7);
+  color: var(--tz-text-primary);
+  background: var(--tz-card-surface);
   box-shadow:
-    inset 0 0 0 1px rgba(0, 0, 0, 0.7),
-    0 4px 12px rgba(0, 0, 0, 0.28);
+    0 4px 12px rgba(20, 32, 43, 0.16);
   transition: background-color 160ms ease, color 160ms ease;
 }
 
 .shop-product-display-card__details-action:hover {
-  color: #b5ff6d;
-  background: rgba(0, 0, 0, 0.82);
+  color: var(--tz-text-primary);
+  background: var(--tz-form-panel-surface);
 }
 
 .shop-product-display-card__actions {
@@ -478,6 +499,7 @@ const productDetailUrl = computed(() => {
 }
 
 .shop-product-display-card__wishlist-action,
+.shop-product-display-card__add-to-cart-action,
 .shop-product-display-card__view-action,
 .shop-product-display-card__share-action {
   display: grid;
@@ -485,29 +507,46 @@ const productDetailUrl = computed(() => {
   height: 2rem;
   flex: 0 0 auto;
   place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(20, 32, 43, 0.16);
   border-radius: 999px;
-  color: rgba(255, 255, 255, 0.72);
-  background: rgba(255, 255, 255, 0.08);
+  color: var(--tz-text-secondary);
+  background: var(--tz-form-panel-surface);
   transition: background-color 160ms ease, color 160ms ease;
+}
+
+.shop-product-display-card__add-to-cart-action {
+  border-color: var(--tz-site-accent, #059669);
+  color: #ffffff;
+  background: var(--tz-site-accent, #059669);
+}
+
+.shop-product-display-card__add-to-cart-action:hover:not(:disabled) {
+  border-color: var(--tz-site-accent-hover, #047857);
+  color: #ffffff;
+  background: var(--tz-site-accent-hover, #047857);
+}
+
+.shop-product-display-card__add-to-cart-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
 }
 
 .shop-product-display-card__wishlist-action:hover,
 .shop-product-display-card__view-action:hover,
 .shop-product-display-card__share-action:hover {
-  color: white;
-  background: rgba(255, 255, 255, 0.15);
+  color: var(--tz-text-primary);
+  background: var(--tz-card-surface);
 }
 
 .shop-product-display-card__share-action:hover,
 .shop-product-display-card__share-action--active {
-  border-color: var(--tz-brand-primary, #b5ff6d);
-  color: var(--tz-brand-primary, #b5ff6d);
-  background: rgba(181, 255, 109, 0.1);
+  border-color: var(--tz-site-accent, #059669);
+  color: var(--tz-site-accent, #059669);
+  background: rgba(5, 150, 105, 0.1);
 }
 
 .shop-product-display-card__view-action {
-  color: white;
+  color: var(--tz-text-primary);
 }
 
 @media (max-width: 767px) {

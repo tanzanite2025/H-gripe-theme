@@ -8,7 +8,10 @@ import (
 	"strings"
 )
 
-var ErrCartNotFound = errors.New("cart not found")
+var (
+	ErrCartNotFound           = errors.New("cart not found")
+	ErrCartMultipleCurrencies = errors.New("cart contains multiple price currencies")
+)
 
 type CartService struct {
 	cartRepo    *repository.CartRepository
@@ -95,6 +98,9 @@ func (s *CartService) AddToCart(cartID, productID uint, variantID *uint, quantit
 		return err
 	}
 
+	if err := s.ensureCartCurrency(cartID, itemCurrency); err != nil {
+		return err
+	}
 	existingItem, err := s.cartRepo.FindItem(cartID, productID, resolvedVariantID)
 	if err == nil {
 		if existingItem.Quantity+quantity > availableStock {
@@ -165,11 +171,13 @@ func (s *CartService) SyncCart(cartID uint, items []SyncCartItemReq) error {
 	}
 
 	var cartItems []product.CartItem
+	currencySet := make(map[string]struct{})
 	for _, req := range items {
 		price, itemCurrency, _, resolvedVariantID, err := s.resolvePurchasableCartItem(req.ProductID, req.VariantID, req.Quantity)
 		if err != nil {
 			continue
 		}
+		currencySet[itemCurrency] = struct{}{}
 
 		cartItems = append(cartItems, product.CartItem{
 			CartID:    cartID,
@@ -181,6 +189,16 @@ func (s *CartService) SyncCart(cartID uint, items []SyncCartItemReq) error {
 		})
 	}
 
+	if len(currencySet) > 1 {
+		return ErrCartMultipleCurrencies
+	}
+	if len(currencySet) == 1 {
+		for itemCurrency := range currencySet {
+			if err := s.ensureCartCurrency(cartID, itemCurrency); err != nil {
+				return err
+			}
+		}
+	}
 	return s.cartRepo.BulkUpsertItems(cartItems)
 }
 
@@ -206,6 +224,20 @@ func emptyCartSummary() *product.CartSummary {
 
 func (s *CartService) ClearCart(cartID uint) error {
 	return s.cartRepo.ClearCart(cartID)
+}
+
+func (s *CartService) ensureCartCurrency(cartID uint, itemCurrency string) error {
+	summary, err := s.cartRepo.GetSummary(cartID)
+	if err != nil {
+		return err
+	}
+	for _, item := range summary.Items {
+		existingCurrency := currency.NormalizeCode(item.Currency)
+		if existingCurrency != "" && existingCurrency != itemCurrency {
+			return ErrCartMultipleCurrencies
+		}
+	}
+	return nil
 }
 
 func (s *CartService) resolvePurchasableCartItem(productID uint, variantID *uint, quantity int) (float64, string, int, *uint, error) {

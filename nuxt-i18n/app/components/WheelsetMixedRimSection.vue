@@ -80,12 +80,12 @@ const { openQuickBuy, openWhatsAppChat } = defineProps<{
 }
 
 .wheelset-link {
-  color: #B5FF6D;
+  color: #059669;
   text-decoration: underline;
 }
 
 .wheelset-link:hover {
-  color: #60a5fa;
+  color: var(--tz-site-accent-hover);
 }
 
 .wheelset-inline-button {
@@ -95,19 +95,19 @@ const { openQuickBuy, openWhatsAppChat } = defineProps<{
   padding: 0.25rem 0.65rem;
   margin: 0 0.25rem;
   border-radius: 9999px;
-  border: none;
-  background: rgba(31, 41, 55, 0.65);
-  color: var(--tz-text-primary);
+  border: 1px solid var(--tz-action-primary);
+  background: var(--tz-action-primary);
+  color: var(--tz-action-primary-foreground);
   font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
-  box-shadow:
-    0 10px 22px rgba(0, 0, 0, 0.85);
+  box-shadow: 0 8px 18px rgba(5, 150, 105, 0.16);
   transition: background-color 0.15s ease, transform 0.08s ease;
 }
 
 .wheelset-inline-button:hover {
-  background: rgba(51, 65, 85, 0.75);
+  border-color: var(--tz-action-primary-hover);
+  background: var(--tz-action-primary-hover);
 }
 
 .wheelset-inline-button:active {

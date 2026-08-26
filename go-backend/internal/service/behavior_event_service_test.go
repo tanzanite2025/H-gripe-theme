@@ -31,7 +31,7 @@ func TestBehaviorEventServiceIngestIsIdempotent(t *testing.T) {
 		SessionID:   "session_test",
 		ProductID:   behaviorTestUintPointer(42),
 		Locale:      "en-US",
-		Path:        "/shop/carbon-wheelset",
+		Path:        "/products/carbon-wheelset",
 		Metadata: map[string]any{
 			"surface":  "product_page",
 			"position": float64(1),

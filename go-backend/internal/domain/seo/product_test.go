@@ -28,7 +28,7 @@ func TestBuildProductSEOReadinessUsesSourceDataAndFallbacks(t *testing.T) {
 		}},
 	}
 
-	diagnostics := BuildProductSEOReadiness(item, "HACK-GRIPE", "/shop/c50-disc-carbon-wheelset")
+	diagnostics := BuildProductSEOReadiness(item, "HACK-GRIPE", "/products/c50-disc-carbon-wheelset")
 
 	require.True(t, diagnostics.Ready)
 	require.Equal(t, "HACK-GRIPE", diagnostics.Brand)
@@ -61,12 +61,12 @@ func TestBuildProductSEOReadinessUsesProductGroupForActiveVariants(t *testing.T)
 		}},
 	}
 
-	diagnostics := BuildProductSEOReadiness(item, "", "/shop/variant-wheelset")
+	diagnostics := BuildProductSEOReadiness(item, "", "/products/variant-wheelset")
 
 	require.True(t, diagnostics.Ready)
 	require.Equal(t, "ProductGroup", diagnostics.StructuredDataType)
 	require.Len(t, diagnostics.StructuredData.HasVariant, 2)
-	require.Equal(t, "/shop/variant-wheelset?variant=10", diagnostics.StructuredData.HasVariant[0].URL)
+	require.Equal(t, "/products/variant-wheelset?variant=10", diagnostics.StructuredData.HasVariant[0].URL)
 	require.Contains(t, diagnostics.Warnings, "brand")
 	require.Contains(t, diagnostics.Missing, "brand")
 }
@@ -79,7 +79,7 @@ func TestBuildProductSEOReadinessBlocksInactiveProductAndMissingImage(t *testing
 		Status:   "inactive",
 	}
 
-	diagnostics := BuildProductSEOReadiness(item, "Brand", "/shop/unpublished")
+	diagnostics := BuildProductSEOReadiness(item, "Brand", "/products/unpublished")
 
 	require.False(t, diagnostics.Ready)
 	require.Contains(t, diagnostics.BlockingIssues, "product_not_public")

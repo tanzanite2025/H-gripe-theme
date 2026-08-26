@@ -1,0 +1,61 @@
+{
+  "trigger": {
+    "label": "Tjek kompatibilitet"
+  },
+  "dialog": {
+    "eyebrow": "Kompatibilitetskatalog",
+    "title": "Find dit stel eller din forgaffel",
+    "description": "Søg i det uafhængige kompatibilitetskatalog efter mærke, model eller år. Resultaterne indeholder de navspecifikationer, der er registreret for hvert opslag.",
+    "close": "Luk",
+    "tabListLabel": "Sektioner i kompatibilitetskataloget"
+  },
+  "tabs": {
+    "frame": "Stelkompatibilitet",
+    "fork": "Forgaffelkompatibilitet"
+  },
+  "search": {
+    "label": "Søg",
+    "placeholder": "Søg efter mærke eller model",
+    "yearLabel": "Modelår",
+    "yearPlaceholder": "f.eks. 2024",
+    "submit": "Søg",
+    "clear": "Ryd",
+    "searching": "Søger..."
+  },
+  "states": {
+    "initial": "Indtast et mærke, en model eller et år for at søge i kataloget.",
+    "empty": "Der blev ikke fundet nogen matchende registreringer.",
+    "unavailable": "Kompatibilitetsdata er midlertidigt utilgængelige. Prøv igen.",
+    "noHubSpecifications": "Der er ikke registreret nogen navspecifikationer."
+  },
+  "entry": {
+    "series": "Serie",
+    "generation": "Generation",
+    "market": "Marked",
+    "hubSpecifications": "Navspecifikationer",
+    "unknownYear": "År ikke angivet",
+    "allYears": "Alle år"
+  },
+  "pagination": {
+    "label": "Kompatibilitetsresultater",
+    "previous": "Forrige side",
+    "next": "Næste side",
+    "page": "Side {page} af {totalPages}"
+  },
+  "hub": {
+    "position": "Position",
+    "axleType": "Akseltype",
+    "axleSpacing": "Akselafstand",
+    "millimetres": "mm",
+    "positions": {
+      "front": "Foran",
+      "rear": "Bagpå"
+    },
+    "axleTypes": {
+      "quickRelease": "Quick release",
+      "thruAxle": "Gennemgående aksel",
+      "boltOn": "Boltmonteret",
+      "other": "Andet"
+    }
+  }
+}

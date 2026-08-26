@@ -1,6 +1,7 @@
 import { ref, computed, unref } from 'vue'
 import type { MaybeRef } from 'vue'
 import { useAuth } from '~/composables/useAuth'
+import { validateStorefrontUploadFile } from '~/utils/uploadSpecs'
 
 interface SuggestionEligibility {
   loggedIn: boolean
@@ -105,6 +106,10 @@ export const useSuggestionFeedback = (threadKey: MaybeRef<string> = 'product_ser
   }
 
   const uploadAttachment = async (file: File) => {
+    const validation = await validateStorefrontUploadFile(file, 'suggestion_attachment')
+    if (!validation.ok) {
+      throw new Error(validation.error || 'Feedback image does not meet the upload requirements.')
+    }
     const formData = new FormData()
     formData.append('file', file)
 

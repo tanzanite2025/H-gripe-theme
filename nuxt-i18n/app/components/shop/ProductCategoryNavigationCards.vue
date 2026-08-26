@@ -90,6 +90,7 @@ type ProductCategoryNavigationCardCategory = {
   id: number
   slug: string
   name: string
+  routePath?: string
   count?: number
   isProductSpecificationTemplate?: boolean
   image?: string
@@ -213,6 +214,8 @@ const allProductCategoriesRoute = computed(() => localizedProductCategoryBasePat
 const buildProductCategoryNavigationRoute = (
   productCategory: ProductCategoryNavigationCardCategory,
 ): ProductCategoryNavigationRouteLocation => {
+  if (productCategory.routePath) return productCategory.routePath
+
   const queryParameterName = props.productCategoryQueryParameterName
   if (!queryParameterName) return localizedProductCategoryBasePath.value
 
@@ -278,7 +281,7 @@ onMounted(() => {
 
 <style scoped>
 .product-category-navigation-cards {
-  --product-category-navigation-accent: #b5ff6d;
+  --product-category-navigation-accent: var(--tz-site-accent, #059669);
 
   display: flex;
   height: 100%;
@@ -286,7 +289,7 @@ onMounted(() => {
   min-height: 0;
   flex-direction: column;
   gap: 12px;
-  color: #f8fafc;
+  color: var(--tz-text-primary);
 }
 
 .product-category-navigation-cards__header {
@@ -299,7 +302,7 @@ onMounted(() => {
 
 .product-category-navigation-cards__title {
   min-width: 0;
-  color: rgba(248, 250, 252, 0.94);
+  color: var(--tz-text-primary);
   font-size: 13px;
   font-weight: 850;
   line-height: 1.2;
@@ -327,11 +330,11 @@ onMounted(() => {
   gap: 8px;
   max-width: 100%;
   padding: 6px 14px;
-  border: 1px solid rgba(181, 255, 109, 0.48);
+  border: 1px solid rgba(5, 150, 105, 0.48);
   border-radius: 999px;
-  background: rgba(13, 50, 29, 0.78);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  color: var(--product-category-navigation-accent);
+  background: rgba(5, 150, 105, 0.18);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  color: var(--tz-text-primary);
   font-size: 12px;
   font-weight: 850;
   letter-spacing: 0;
@@ -353,9 +356,9 @@ onMounted(() => {
 
 .product-category-navigation-cards__all-link:hover,
 .product-category-navigation-cards__all-link:focus-visible {
-  border-color: rgba(181, 255, 109, 0.75);
-  background: rgba(17, 64, 37, 0.9);
-  color: #d8ffad;
+  border-color: rgba(5, 150, 105, 0.75);
+  background: rgba(5, 150, 105, 0.28);
+  color: var(--tz-text-primary);
 }
 
 .product-category-navigation-cards__list {
@@ -386,22 +389,22 @@ onMounted(() => {
   aspect-ratio: 1 / 1;
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.13);
+  border: 1px solid rgba(20, 32, 43, 0.12);
   border-radius: 14px;
   background: var(--tz-card-surface);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
-  color: rgba(248, 250, 252, 0.9);
+  box-shadow: 0 8px 20px rgba(20, 32, 43, 0.1);
+  color: var(--tz-text-primary);
   text-decoration: none;
   transition: border-color 0.18s ease;
 }
 
 .product-category-navigation-cards__item:hover,
 .product-category-navigation-cards__item:focus-visible {
-  border-color: rgba(181, 255, 109, 0.62);
+  border-color: rgba(5, 150, 105, 0.62);
 }
 
 .product-category-navigation-cards__item:focus-visible {
-  outline: 2px solid rgba(181, 255, 109, 0.58);
+  outline: 2px solid rgba(5, 150, 105, 0.58);
   outline-offset: 2px;
 }
 
@@ -411,7 +414,7 @@ onMounted(() => {
   flex: 1 1 auto;
   min-height: 0;
   overflow: hidden;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(20, 32, 43, 0.08);
   background: var(--tz-form-panel-surface);
 }
 
@@ -437,7 +440,7 @@ onMounted(() => {
   height: 100%;
   align-items: center;
   justify-content: center;
-  color: rgba(248, 250, 252, 0.22);
+  color: var(--tz-text-muted);
 }
 
 .product-category-navigation-cards__placeholder :deep(svg) {
@@ -508,7 +511,7 @@ onMounted(() => {
 }
 
 .product-category-navigation-cards__count {
-  color: rgba(248, 250, 252, 0.52);
+  color: var(--tz-text-muted);
   font-size: 12px;
   font-weight: 750;
   line-height: 1;
@@ -519,7 +522,7 @@ onMounted(() => {
   width: 14px;
   height: 14px;
   margin-left: auto;
-  color: rgba(248, 250, 252, 0.56);
+  color: var(--tz-text-secondary);
   transition:
     color 0.18s ease,
     transform 0.18s ease;
@@ -527,7 +530,7 @@ onMounted(() => {
 
 .product-category-navigation-cards__item:hover .product-category-navigation-cards__meta :deep(svg),
 .product-category-navigation-cards__item:focus-visible .product-category-navigation-cards__meta :deep(svg) {
-  color: rgba(248, 250, 252, 0.56);
+  color: var(--tz-text-primary);
   transform: none;
 }
 
@@ -535,11 +538,11 @@ onMounted(() => {
   min-height: 44px;
   display: flex;
   align-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.13);
+  border: 1px solid rgba(20, 32, 43, 0.12);
   border-radius: 8px;
   background: var(--tz-card-surface);
   padding: 0 12px;
-  color: rgba(248, 250, 252, 0.62);
+  color: var(--tz-text-secondary);
   font-size: 14px;
   font-weight: 700;
   line-height: 1.35;

@@ -27,6 +27,18 @@ export interface SEOArticleResource {
   published_at?: string | null
 }
 
+export interface SEOCategoryResource {
+  id: number | string
+  name?: string | null
+  slug?: string | null
+  route_path?: string | null
+  status?: string | null
+  locale?: string | null
+  meta_title?: string | null
+  meta_description?: string | null
+  intro?: string | null
+}
+
 export interface SEOProductResource {
   id: number | string
   name?: string | null
@@ -83,6 +95,27 @@ export interface SEOProductStructuredDataPreview {
   hasVariant?: SEOProductStructuredDataVariant[]
 }
 
+export interface SEOProductBreadcrumbItem {
+  type: string
+  id?: number
+  name: string
+  slug?: string
+  path: string
+}
+
+export interface SEOProductBreadcrumbPreview {
+  status: string
+  reason?: string
+  items: SEOProductBreadcrumbItem[]
+}
+
+export interface SEOProductPrimaryCategory {
+  id: number
+  name: string
+  slug: string
+  path: string
+}
+
 export interface SEOProductDiagnostics {
   product_name: string
   brand: string
@@ -106,6 +139,11 @@ export interface SEOProductDiagnostics {
   blocking_issues: string[]
   warnings: string[]
   structured_data: SEOProductStructuredDataPreview
+  primary_category?: SEOProductPrimaryCategory | null
+  breadcrumb?: SEOProductBreadcrumbPreview | null
+  breadcrumb_path_complete?: boolean
+  breadcrumb_ssr_status?: string
+  breadcrumb_reason?: string
 }
 
 export interface SEOResourceListParams {
@@ -132,10 +170,12 @@ export interface SEOResourceItem {
   title: string
   routePath: string
   href: string
+  locale?: string
   localeLabel: string
   status: string
   metaTitle: string
   metaDescription: string
+  intro?: string
   canonicalUrl?: string
   productDiagnostics?: SEOProductDiagnostics | null
 }
@@ -144,4 +184,22 @@ export interface SEOResourceEditorValues {
   meta_title: string
   meta_description: string
   canonical_url: string
+  intro: string
+}
+
+export interface GoogleIndexingStatus {
+  enabled: boolean
+  configured: boolean
+  ready: boolean
+  message: string
+}
+
+export interface GoogleIndexingPushResult {
+  product_id: number | string
+  url: string
+  notification_type: string
+  accepted: boolean
+  http_status: number
+  submitted_at: string
+  metadata?: Record<string, unknown> | null
 }

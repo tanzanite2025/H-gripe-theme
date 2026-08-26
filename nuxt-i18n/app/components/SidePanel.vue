@@ -10,7 +10,7 @@
     >
       <div
         v-if="leftOpen"
-        class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9998]"
+        class="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-[9998]"
         @click="handleBackdropClick"
       ></div>
     </transition>
@@ -21,7 +21,7 @@
       aria-label="Sidebar"
     >
       <section
-        class="sidebar-panel relative w-[85vw] md:w-[45vw] h-full flex border border-white/20 rounded-none md:rounded-2xl shadow-[0_18px_60px_-24px_rgba(0,0,0,1)] pointer-events-auto transition-transform duration-[280ms] ease-in-out"
+        class="sidebar-panel relative w-[85vw] md:w-[45vw] h-full flex border tz-border-subtle rounded-none md:rounded-2xl shadow-md pointer-events-auto transition-transform duration-[280ms] ease-in-out"
         :class="{
           'translate-x-0': leftOpen,
           '-translate-x-full': !leftOpen
@@ -39,7 +39,7 @@
 
         <!-- 左侧把手按钮 -->
         <button
-          class="sidebar-handle sidebar-handle--left w-[26px] h-[120px] rounded-r-[26px] box-border inline-flex items-center justify-center absolute -right-[26px] top-1/2 -translate-y-1/2 bg-[#B5FF6D] border-2 border-[rgba(181,255,109,0.8)] shadow-[0_0_0_3px_rgba(181,255,109,0.16)] text-black cursor-pointer pointer-events-auto hover:brightness-110 hover:shadow-[0_0_0_4px_rgba(181,255,109,0.2),0_8px_22px_rgba(0,0,0,0.42)] focus-visible:brightness-110 focus-visible:shadow-[0_0_0_4px_rgba(181,255,109,0.2),0_8px_22px_rgba(0,0,0,0.42)] transition-all"
+          class="sidebar-handle sidebar-handle--left w-[26px] h-[120px] rounded-r-[26px] box-border inline-flex items-center justify-center absolute -right-[26px] top-1/2 -translate-y-1/2 bg-[#059669] border-2 border-[rgba(5, 150, 105,0.8)] shadow-[0_0_0_3px_rgba(5, 150, 105,0.16)] text-white cursor-pointer pointer-events-auto hover:bg-[#047857] hover:shadow-md focus-visible:bg-[#047857] focus-visible:shadow-md transition-all"
           type="button"
           @click="toggleLeft"
           :aria-expanded="leftOpen"
@@ -145,7 +145,7 @@ onBeforeUnmount(() => {
 <style>
 /* 侧边栏面板背景 */
 .sidebar-panel {
-  background: #000;
+  background: var(--tz-card-surface);
 }
 
  .sidepanel-shell {

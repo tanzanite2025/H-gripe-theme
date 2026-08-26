@@ -75,6 +75,7 @@ export const defaultShippingTemplateForm = () => ({
   id: null,
   name: '',
   type: 'weight',
+  currency: '',
   free_shipping: false,
   free_threshold: 0,
   default_fee: 0,

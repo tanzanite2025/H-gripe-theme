@@ -1,6 +1,6 @@
 <template>
   <main class="shop-page w-full pt-0 pb-16 space-y-6">
-    <section class="rounded-xl bg-[var(--tz-card-surface)] p-4 text-sm tz-text-secondary shadow-[8px_8px_22px_rgba(0,0,0,0.92)]">
+<section class="rounded-xl tz-surface-card p-4 text-sm tz-text-secondary shadow-[8px_8px_22px_rgb(15_23_42_/_0.08)]">
       <ShopProductQuickSearchForm
         density="page"
         show-filter-button
@@ -58,7 +58,7 @@
 
       <!-- 右侧商品列表区域 -->
       <div class="shop-catalog-main">
-        <section class="shop-page-product-collection-display-card shop-products-panel rounded-xl p-2 text-sm tz-text-secondary shadow-[8px_8px_22px_rgba(0,0,0,0.92)] md:p-6">
+<section class="shop-page-product-collection-display-card shop-products-panel rounded-xl p-2 text-sm tz-text-secondary shadow-[8px_8px_22px_rgb(15_23_42_/_0.08)] md:p-6">
           <div v-if="loading" class="shop-products-state py-12">
             <p class="tz-text-secondary text-sm">{{ $t('shopPage.products.loading', 'Loading products...') }}</p>
           </div>
@@ -214,6 +214,17 @@ const syncSelectedCategoryFromRoute = () => {
 
 const replaceProductCategoryRoute = async (category: ProductCategory | null) => {
   const nextSlug = category?.slug || ''
+  if (category?.routePath) {
+    const nextQuery: Record<string, any> = { ...route.query }
+    delete nextQuery.product_category
+
+    await router.replace({
+      path: category.routePath,
+      query: nextQuery,
+    })
+    return true
+  }
+
   if (readRouteProductCategorySlug() === nextSlug) return false
 
   const nextQuery: Record<string, any> = { ...route.query }
@@ -604,9 +615,9 @@ const handleAddToWishlist = async (product: ShopProduct) => {
   justify-content: center;
   gap: 6px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  background: rgba(255, 255, 255, 0.08);
-  color: #ffffff;
+  border: 1px solid var(--tz-border-strong);
+  background: var(--tz-card-surface);
+  color: var(--tz-text-secondary);
   padding: 0 12px;
   font-size: var(--tz-type-caption);
   font-weight: 800;
@@ -617,8 +628,9 @@ const handleAddToWishlist = async (product: ShopProduct) => {
 }
 
 .shop-pagination__button:hover:not(:disabled) {
-  border-color: rgba(255, 255, 255, 0.34);
-  background: rgba(255, 255, 255, 0.14);
+  border-color: var(--tz-site-accent);
+  background: var(--tz-site-accent-soft-surface);
+  color: var(--tz-text-primary);
 }
 
 .shop-pagination__button:disabled {
@@ -650,7 +662,7 @@ const handleAddToWishlist = async (product: ShopProduct) => {
     inset: 0;
     z-index: 1700;
     display: flex;
-    background: rgba(0, 0, 0, 0.64);
+    background: rgb(15 23 42 / 0.2);
   }
 
   .shop-category-sidebar__panel {
@@ -660,10 +672,9 @@ const handleAddToWishlist = async (product: ShopProduct) => {
     height: 100%;
     flex-direction: column;
     overflow: hidden;
-    border-right: 1px solid rgba(181, 255, 109, 0.24);
-    background:
-      linear-gradient(180deg, rgba(19, 22, 28, 0.99), rgba(5, 7, 10, 0.99));
-    box-shadow: 24px 0 60px -28px rgba(0, 0, 0, 1);
+    border-right: 1px solid var(--tz-border-strong);
+    background: var(--tz-card-surface);
+    box-shadow: 24px 0 60px -28px rgb(15 23 42 / 0.16);
   }
 
   .shop-category-sidebar__header {
@@ -674,8 +685,8 @@ const handleAddToWishlist = async (product: ShopProduct) => {
     justify-content: space-between;
     gap: 12px;
     padding: 0.75rem 1rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    color: #ffffff;
+    border-bottom: 1px solid var(--tz-border-subtle);
+    color: var(--tz-text-primary);
     font-size: 14px;
     font-weight: 850;
     letter-spacing: 0.08em;
@@ -689,20 +700,20 @@ const handleAddToWishlist = async (product: ShopProduct) => {
     flex: 0 0 auto;
     align-items: center;
     justify-content: center;
-    border: 1px solid rgba(255, 255, 255, 0.14);
+    border: 1px solid var(--tz-border-strong);
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.08);
-    color: #ffffff;
+    background: var(--tz-surface-subtle);
+    color: var(--tz-text-primary);
   }
 
   .shop-category-sidebar__close:hover,
   .shop-category-sidebar__close:focus-visible {
-    border-color: rgba(181, 255, 109, 0.64);
-    background: rgba(181, 255, 109, 0.12);
+    border-color: rgba(5, 150, 105, 0.64);
+    background: var(--tz-site-accent-soft-surface);
   }
 
   .shop-category-sidebar__close:focus-visible {
-    outline: 2px solid rgba(181, 255, 109, 0.72);
+    outline: 2px solid rgba(5, 150, 105, 0.72);
     outline-offset: 2px;
   }
 
@@ -717,7 +728,7 @@ const handleAddToWishlist = async (product: ShopProduct) => {
     overflow-y: auto;
     padding: 0.75rem 0.75rem calc(1rem + env(safe-area-inset-bottom));
     scrollbar-width: thin;
-    scrollbar-color: rgba(181, 255, 109, 0.46) transparent;
+    scrollbar-color: rgba(5, 150, 105, 0.46) transparent;
   }
 
   .shop-category-sidebar__panel :deep(.shop-category-menu__list) {

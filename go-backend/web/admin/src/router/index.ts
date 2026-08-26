@@ -92,6 +92,30 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '清关资料中心', permission: 'product:view' }
       },
       {
+        path: 'procurement/records',
+        name: 'ProcurementRecords',
+        component: () => import('@/views/ProcurementRecords.vue'),
+        meta: { title: '商品成本', permission: 'procurement:view' }
+      },
+      {
+        path: 'fitment-catalog/frame-entries',
+        name: 'FitmentFrameEntries',
+        component: () => import('@/views/FrameFitmentEntries.vue'),
+        meta: { title: '车架 / 车型', permission: 'fitment_catalog:view' }
+      },
+      {
+        path: 'fitment-catalog/fork-entries',
+        name: 'FitmentForkEntries',
+        component: () => import('@/views/ForkFitmentEntries.vue'),
+        meta: { title: '前叉', permission: 'fitment_catalog:view' }
+      },
+      {
+        path: 'fitment-catalog/hub-specifications',
+        name: 'FitmentHubSpecifications',
+        component: () => import('@/views/HubSpecificationEntries.vue'),
+        meta: { title: '花鼓规格', permission: 'fitment_catalog:view' }
+      },
+      {
         path: 'content/spoke-calculator',
         name: 'ContentSpokeCalculator',
         component: () => import('@/views/SpokeCatalog.vue'),
@@ -265,6 +289,23 @@ const routes: RouteRecordRaw[] = [
         meta: { title: 'PayPal 发票卖方资料', permission: 'settings:view' }
       },
       {
+        path: 'currency-exchange',
+        redirect: { name: 'CurrencyExchangeOverview' },
+        meta: { permission: 'settings:view' }
+      },
+      {
+        path: 'currency-exchange/overview',
+        name: 'CurrencyExchangeOverview',
+        component: () => import('@/views/CurrencyExchange.vue'),
+        meta: { title: '币种总览', permission: 'settings:view' }
+      },
+      {
+        path: 'currency-exchange/api',
+        name: 'CurrencyExchangeApi',
+        component: () => import('@/views/CurrencyExchange.vue'),
+        meta: { title: '汇率 API', permission: 'settings:view' }
+      },
+      {
         path: 'payment-risk/overview',
         name: 'RiskStrategyOverview',
         component: () => import('@/views/RiskStrategy.vue'),
@@ -296,31 +337,24 @@ const routes: RouteRecordRaw[] = [
       },
       {
         path: 'warranty',
-        redirect: domainRedirect('WarrantyRegistrations', {
-          registrations: 'WarrantyRegistrations',
+        redirect: domainRedirect('WarrantyShipments', {
+          shipments: 'WarrantyShipments',
           claims: 'WarrantyClaims',
-          expiring: 'WarrantyExpiring',
           boundary: 'WarrantyBoundary',
         }),
         meta: { permission: 'product:view' }
       },
-      {
-        path: 'warranty/registrations',
-        name: 'WarrantyRegistrations',
-        component: () => import('@/views/Warranty.vue'),
-        meta: { title: '注册记录', permission: 'product:view' }
-      },
+        {
+          path: 'warranty/shipments',
+          name: 'WarrantyShipments',
+          component: () => import('@/views/Warranty.vue'),
+          meta: { title: '已发货', permission: 'product:view' }
+        },
       {
         path: 'warranty/claims',
         name: 'WarrantyClaims',
         component: () => import('@/views/Warranty.vue'),
         meta: { title: '保修申请', permission: 'product:view' }
-      },
-      {
-        path: 'warranty/expiring',
-        name: 'WarrantyExpiring',
-        component: () => import('@/views/Warranty.vue'),
-        meta: { title: '即将到期', permission: 'product:view' }
       },
       {
         path: 'warranty/boundary',
@@ -404,6 +438,52 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '客户账户', permission: 'user:view' }
       },
       {
+        path: 'media',
+        redirect: { name: 'MediaLibrary' },
+        meta: { permission: 'media:view' }
+      },
+      {
+        path: 'media/library',
+        name: 'MediaLibrary',
+        component: () => import('@/views/MediaLibrary.vue'),
+        meta: { title: '媒体库', permission: 'media:view' }
+      },
+      {
+        path: 'media/derivatives',
+        name: 'MediaDerivatives',
+        component: () => import('@/views/MediaDerivativePresets.vue'),
+        meta: { title: '图片尺寸转换', permission: 'media:configure' }
+      },
+      {
+        path: 'media/copyright',
+        name: 'MediaCopyright',
+        component: () => import('@/views/MediaCopyright.vue'),
+        meta: { title: '图片版权', permission: 'settings:view' }
+      },
+      {
+        path: 'site-introduction',
+        redirect: { name: 'SiteIntroductionWebsiteProfile' },
+        meta: { permission: 'settings:view' }
+      },
+      {
+        path: 'site-introduction/site',
+        name: 'SettingsSite',
+        component: () => import('@/views/Settings.vue'),
+        meta: { title: '站点', permission: 'settings:view' }
+      },
+      {
+        path: 'site-introduction/website-profile',
+        name: 'SiteIntroductionWebsiteProfile',
+        component: () => import('@/views/SettingsWebsiteProfile.vue'),
+        meta: { title: '我与这个网站', permission: 'settings:view' }
+      },
+      {
+        path: 'site-introduction/why-this-name',
+        name: 'SiteIntroductionWhyThisName',
+        component: () => import('@/views/SettingsWebsiteName.vue'),
+        meta: { title: '为什么叫这个名字', permission: 'settings:view' }
+      },
+      {
         path: 'content',
         redirect: domainRedirect('ContentBlog', {
           blog: 'ContentBlog',
@@ -449,12 +529,6 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '页面留言', permission: 'content:view' }
       },
       {
-        path: 'content/media-library',
-        name: 'ContentMediaLibrary',
-        component: () => import('@/views/MediaLibrary.vue'),
-        meta: { title: '媒体库', permission: 'media:view' }
-      },
-      {
         path: 'content/visual-showcase',
         name: 'ContentVisualShowcase',
         component: () => import('@/views/VisualShowcase.vue'),
@@ -465,18 +539,6 @@ const routes: RouteRecordRaw[] = [
         name: 'ContentHomeMainProducts',
         component: () => import('@/views/HomeMainProductCategories.vue'),
         meta: { title: '首页主力产品', permission: 'content:view' }
-      },
-      {
-        path: 'content/media-derivatives',
-        name: 'ContentMediaDerivatives',
-        component: () => import('@/views/MediaDerivativePresets.vue'),
-        meta: { title: '图片尺寸转换', permission: 'media:configure' }
-      },
-      {
-        path: 'content/website-profile',
-        name: 'ContentWebsiteProfile',
-        component: () => import('@/views/SettingsWebsiteProfile.vue'),
-        meta: { title: '我与这个网站', permission: 'settings:view' }
       },
       {
         path: 'support/conversations',
@@ -590,6 +652,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: 'SEO / 产品', permission: 'seo:view' }
       },
       {
+        path: 'seo/categories',
+        name: 'SEOCategories',
+        component: () => import('@/views/seo/Categories.vue'),
+        meta: { title: 'SEO / 分类', permission: 'seo:view' }
+      },
+      {
         path: 'urls',
         redirect: domainRedirect('URLOverview', {
           overview: 'URLOverview',
@@ -652,8 +720,26 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'preflight/site-quality',
         name: 'PreflightSiteQuality',
-        component: () => import('@/views/preflight/SiteQuality.vue'),
+        redirect: { name: 'PreflightSiteQualityHeadings' },
         meta: { title: '上线前检查 / 页面质量', permission: 'services:view' }
+      },
+      {
+        path: 'preflight/site-quality/headings',
+        name: 'PreflightSiteQualityHeadings',
+        component: () => import('@/views/preflight/SiteQuality.vue'),
+        meta: { title: '上线前检查 / 页面质量 / H1 层级', permission: 'services:view' }
+      },
+      {
+        path: 'preflight/site-quality/schema',
+        name: 'PreflightSiteQualitySchema',
+        component: () => import('@/views/preflight/SiteQuality.vue'),
+        meta: { title: '上线前检查 / 页面质量 / Schema', permission: 'services:view' }
+      },
+      {
+        path: 'preflight/site-quality/links',
+        name: 'PreflightSiteQualityLinks',
+        component: () => import('@/views/preflight/SiteQuality.vue'),
+        meta: { title: '上线前检查 / 页面质量 / 链接文字', permission: 'services:view' }
       },
       {
         path: 'preflight/image-dimensions',
@@ -697,28 +783,16 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '社交媒体 / Facebook / Instagram', permission: 'settings:view' }
       },
       {
-        path: 'social/tiktok',
-        name: 'SocialTikTok',
-        component: () => import('@/views/SocialMedia.vue'),
-        meta: { title: '社交媒体 / TikTok', permission: 'settings:view' }
-      },
-      {
-        path: 'social/linkedin',
-        name: 'SocialLinkedIn',
-        component: () => import('@/views/SocialMedia.vue'),
-        meta: { title: '社交媒体 / LinkedIn', permission: 'settings:view' }
-      },
-      {
         path: 'social/x',
         name: 'SocialX',
         component: () => import('@/views/SocialMedia.vue'),
         meta: { title: '社交媒体 / X', permission: 'settings:view' }
       },
       {
-        path: 'social/wechat',
-        name: 'SocialWeChat',
+        path: 'social/reddit',
+        name: 'SocialReddit',
         component: () => import('@/views/SocialMedia.vue'),
-        meta: { title: '社交媒体 / 微信', permission: 'settings:view' }
+        meta: { title: '社交媒体 / Reddit', permission: 'settings:view' }
       },
       {
         path: 'social/publications',
@@ -792,22 +866,15 @@ const routes: RouteRecordRaw[] = [
       },
       {
         path: 'settings',
-        redirect: domainRedirect('SettingsSite', {
-          site: 'SettingsSite',
+        redirect: domainRedirect('SettingsEmail', {
           email: 'SettingsEmail',
           social: 'SocialProfiles',
-          currency: 'SettingsCurrency',
+          currency: 'CurrencyExchangeOverview',
           markets: 'SettingsMarkets',
           api: 'SettingsApi',
           commercial_crawler: 'SettingsCommercialCrawler',
         }),
         meta: { permission: 'settings:view' }
-      },
-      {
-        path: 'settings/site',
-        name: 'SettingsSite',
-        component: () => import('@/views/Settings.vue'),
-        meta: { title: '站点', permission: 'settings:view' }
       },
       {
         path: 'settings/email',
@@ -823,8 +890,7 @@ const routes: RouteRecordRaw[] = [
       },
       {
         path: 'settings/currency',
-        name: 'SettingsCurrency',
-        component: () => import('@/views/Settings.vue'),
+        redirect: { name: 'CurrencyExchangeOverview' },
         meta: { title: '价格币种', permission: 'settings:view' }
       },
       {

@@ -123,7 +123,7 @@ func (h *Handler) uploadAfterSalesEvidence(
 	if _, ok := h.storageService.(storage.PrivateObjectUploader); !ok {
 		return nil, nil, errAfterSalesEvidenceStorageUnavailable
 	}
-	if err := upload.ValidateFiles(imageFiles, upload.WarrantyImageRule); err != nil {
+	if err := upload.ValidateSpecFiles(imageFiles, string(upload.SpecAfterSalesEvidence)); err != nil {
 		return nil, nil, err
 	}
 	if len(videoFiles) > 1 {

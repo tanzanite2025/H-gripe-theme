@@ -65,6 +65,27 @@ type ProductStructuredDataPreview struct {
 	HasVariant     []ProductStructuredDataVariant `json:"hasVariant,omitempty"`
 }
 
+type ProductSEOBreadcrumbItem struct {
+	Type string `json:"type"`
+	ID   uint   `json:"id,omitempty"`
+	Name string `json:"name"`
+	Slug string `json:"slug,omitempty"`
+	Path string `json:"path"`
+}
+
+type ProductSEOBreadcrumbPreview struct {
+	Status string                     `json:"status"`
+	Reason string                     `json:"reason,omitempty"`
+	Items  []ProductSEOBreadcrumbItem `json:"items"`
+}
+
+type ProductSEOPrimaryCategory struct {
+	ID   uint   `json:"id"`
+	Name string `json:"name"`
+	Slug string `json:"slug"`
+	Path string `json:"path"`
+}
+
 type ProductSEOReadiness struct {
 	ProductName        string                       `json:"product_name"`
 	Brand              string                       `json:"brand"`
@@ -88,6 +109,11 @@ type ProductSEOReadiness struct {
 	BlockingIssues     []string                     `json:"blocking_issues"`
 	Warnings           []string                     `json:"warnings"`
 	StructuredData     ProductStructuredDataPreview `json:"structured_data"`
+	PrimaryCategory    *ProductSEOPrimaryCategory   `json:"primary_category,omitempty"`
+	Breadcrumb         ProductSEOBreadcrumbPreview  `json:"breadcrumb"`
+	BreadcrumbComplete bool                         `json:"breadcrumb_path_complete"`
+	BreadcrumbSSR      string                       `json:"breadcrumb_ssr_status"`
+	BreadcrumbReason   string                       `json:"breadcrumb_reason,omitempty"`
 }
 
 func BuildProductSEOReadiness(item productdomain.Product, brand, routePath string) ProductSEOReadiness {

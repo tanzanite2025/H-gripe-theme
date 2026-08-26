@@ -10,11 +10,11 @@
         <div class="grid gap-6 md:grid-cols-2">
           <!-- ========== FRONT WHEEL COLUMN ========== -->
           <div class="spoke-calculator__panel space-y-4">
-            <h3 class="text-sm font-semibold text-[var(--tz-brand-primary)] uppercase tracking-wide">Front Wheel</h3>
+            <h3 class="text-sm font-semibold text-[var(--tz-site-accent)] uppercase tracking-wide">Front Wheel</h3>
 
             <!-- Spoke count -->
               <div class="space-y-1.5">
-                <label for="front-spoke-count" class="block text-xs font-medium text-slate-200">Spoke count</label>
+                <label for="front-spoke-count" class="block text-xs font-medium tz-text-secondary">Spoke count</label>
                 <SpokeCalculatorSelect
                   id="front-spoke-count"
                   v-model="frontConfig.spokeCount"
@@ -24,7 +24,7 @@
 
             <!-- Lacing pattern -->
               <div class="space-y-1.5">
-                <label for="front-lacing" class="block text-xs font-medium text-slate-200">Lacing pattern</label>
+                <label for="front-lacing" class="block text-xs font-medium tz-text-secondary">Lacing pattern</label>
                 <SpokeCalculatorSelect
                   id="front-lacing"
                   v-model="frontConfig.crossing"
@@ -35,7 +35,7 @@
             <div class="space-y-3">
               <!-- Nipple type -->
               <div class="space-y-1.5">
-                <label for="front-nipple" class="block text-xs font-medium text-slate-200">Nipple type</label>
+                <label for="front-nipple" class="block text-xs font-medium tz-text-secondary">Nipple type</label>
                 <SpokeCalculatorSelect
                   id="front-nipple"
                   v-model="frontConfig.nippleType"
@@ -45,7 +45,7 @@
 
               <!-- Nipple length (hidden nipples only) -->
               <div v-if="frontConfig.nippleType === 'hidden'" class="space-y-1.5">
-                <label for="front-nipple-length" class="block text-xs font-medium text-slate-200">Nipple length</label>
+                <label for="front-nipple-length" class="block text-xs font-medium tz-text-secondary">Nipple length</label>
                 <div class="spoke-calculator__unit-field">
                   <input
                     id="front-nipple-length"
@@ -65,7 +65,7 @@
             <div class="space-y-3">
                <!-- Brand -->
                <div class="space-y-1.5">
-                <label for="front-rim-brand" class="block text-xs font-medium text-slate-200">
+                <label for="front-rim-brand" class="block text-xs font-medium tz-text-secondary">
                   Rim Brand
                 </label>
                 <SpokeCalculatorSelect
@@ -78,7 +78,7 @@
 
                <!-- Model -->
               <div class="space-y-1.5">
-                <label for="front-rim-model" class="block text-xs font-medium text-slate-200">
+                <label for="front-rim-model" class="block text-xs font-medium tz-text-secondary">
                   Rim Model
                 </label>
                 <SpokeCalculatorSelect
@@ -95,7 +95,7 @@
             <div class="space-y-3">
                <!-- Brand -->
                <div class="space-y-1.5">
-                <label for="front-hub-brand" class="block text-xs font-medium text-slate-200">
+                <label for="front-hub-brand" class="block text-xs font-medium tz-text-secondary">
                   Hub Brand
                 </label>
                 <SpokeCalculatorSelect
@@ -108,7 +108,7 @@
 
                <!-- Model -->
               <div class="space-y-1.5">
-                <label for="front-hub-model" class="block text-xs font-medium text-slate-200">
+                <label for="front-hub-model" class="block text-xs font-medium tz-text-secondary">
                   Hub Model
                 </label>
                 <SpokeCalculatorSelect
@@ -123,7 +123,7 @@
 
             <!-- ERD -->
               <div class="space-y-1.5">
-                <label for="front-erd" class="block text-xs font-medium text-slate-200">ERD (effective rim diameter)</label>
+                <label for="front-erd" class="block text-xs font-medium tz-text-secondary">ERD (effective rim diameter)</label>
                 <div class="spoke-calculator__unit-field">
                   <input
                     id="front-erd"
@@ -139,7 +139,7 @@
 
             <!-- Left flange distance -->
               <div class="space-y-1.5">
-                <label for="front-left-flange" class="block text-xs font-medium text-slate-200">Left flange distance</label>
+                <label for="front-left-flange" class="block text-xs font-medium tz-text-secondary">Left flange distance</label>
                 <div class="spoke-calculator__unit-field">
                   <input
                     id="front-left-flange"
@@ -155,7 +155,7 @@
 
             <!-- Right flange distance -->
               <div class="space-y-1.5">
-                <label for="front-right-flange" class="block text-xs font-medium text-slate-200">Right flange distance</label>
+                <label for="front-right-flange" class="block text-xs font-medium tz-text-secondary">Right flange distance</label>
                 <div class="spoke-calculator__unit-field">
                   <input
                     id="front-right-flange"
@@ -171,7 +171,7 @@
 
             <!-- Left flange PCD -->
               <div class="space-y-1.5">
-                <label for="front-left-flange-pcd" class="block text-xs font-medium text-slate-200">Left flange PCD</label>
+                <label for="front-left-flange-pcd" class="block text-xs font-medium tz-text-secondary">Left flange PCD</label>
                 <div class="spoke-calculator__unit-field">
                   <input
                     id="front-left-flange-pcd"
@@ -187,7 +187,7 @@
 
             <!-- Right flange PCD -->
               <div class="space-y-1.5">
-                <label for="front-right-flange-pcd" class="block text-xs font-medium text-slate-200">Right flange PCD</label>
+                <label for="front-right-flange-pcd" class="block text-xs font-medium tz-text-secondary">Right flange PCD</label>
                 <div class="spoke-calculator__unit-field">
                   <input
                     id="front-right-flange-pcd"
@@ -204,11 +204,11 @@
 
           <!-- ========== REAR WHEEL COLUMN ========== -->
           <div class="spoke-calculator__panel space-y-4">
-            <h3 class="text-sm font-semibold text-[var(--tz-brand-primary)] uppercase tracking-wide">Rear Wheel</h3>
+            <h3 class="text-sm font-semibold text-[var(--tz-site-accent)] uppercase tracking-wide">Rear Wheel</h3>
 
             <!-- Spoke count -->
               <div class="space-y-1.5">
-                <label for="rear-spoke-count" class="block text-xs font-medium text-slate-200">Spoke count</label>
+                <label for="rear-spoke-count" class="block text-xs font-medium tz-text-secondary">Spoke count</label>
                 <SpokeCalculatorSelect
                   id="rear-spoke-count"
                   v-model="rearConfig.spokeCount"
@@ -218,7 +218,7 @@
 
             <!-- Lacing pattern -->
               <div class="space-y-1.5">
-                <label for="rear-lacing" class="block text-xs font-medium text-slate-200">Lacing pattern</label>
+                <label for="rear-lacing" class="block text-xs font-medium tz-text-secondary">Lacing pattern</label>
                 <SpokeCalculatorSelect
                   id="rear-lacing"
                   v-model="rearConfig.crossing"
@@ -229,7 +229,7 @@
             <div class="space-y-3">
               <!-- Nipple type -->
               <div class="space-y-1.5">
-                <label for="rear-nipple" class="block text-xs font-medium text-slate-200">Nipple type</label>
+                <label for="rear-nipple" class="block text-xs font-medium tz-text-secondary">Nipple type</label>
                 <SpokeCalculatorSelect
                   id="rear-nipple"
                   v-model="rearConfig.nippleType"
@@ -239,7 +239,7 @@
 
               <!-- Nipple length (hidden nipples only) -->
               <div v-if="rearConfig.nippleType === 'hidden'" class="space-y-1.5">
-                <label for="rear-nipple-length" class="block text-xs font-medium text-slate-200">Nipple length</label>
+                <label for="rear-nipple-length" class="block text-xs font-medium tz-text-secondary">Nipple length</label>
                 <div class="spoke-calculator__unit-field">
                   <input
                     id="rear-nipple-length"
@@ -259,7 +259,7 @@
             <div class="space-y-3">
                <!-- Brand -->
                <div class="space-y-1.5">
-                <label for="rear-rim-brand" class="block text-xs font-medium text-slate-200">
+                <label for="rear-rim-brand" class="block text-xs font-medium tz-text-secondary">
                   Rim Brand
                 </label>
                 <SpokeCalculatorSelect
@@ -272,7 +272,7 @@
 
                <!-- Model -->
               <div class="space-y-1.5">
-                <label for="rear-rim-model" class="block text-xs font-medium text-slate-200">
+                <label for="rear-rim-model" class="block text-xs font-medium tz-text-secondary">
                   Rim Model
                 </label>
                 <SpokeCalculatorSelect
@@ -289,7 +289,7 @@
             <div class="space-y-3">
                <!-- Brand -->
                <div class="space-y-1.5">
-                <label for="rear-hub-brand" class="block text-xs font-medium text-slate-200">
+                <label for="rear-hub-brand" class="block text-xs font-medium tz-text-secondary">
                   Hub Brand
                 </label>
                 <SpokeCalculatorSelect
@@ -302,7 +302,7 @@
 
                <!-- Model -->
               <div class="space-y-1.5">
-                <label for="rear-hub-model" class="block text-xs font-medium text-slate-200">
+                <label for="rear-hub-model" class="block text-xs font-medium tz-text-secondary">
                   Hub Model
                 </label>
                 <SpokeCalculatorSelect
@@ -317,7 +317,7 @@
 
             <!-- ERD -->
               <div class="space-y-1.5">
-                <label for="rear-erd" class="block text-xs font-medium text-slate-200">ERD (effective rim diameter)</label>
+                <label for="rear-erd" class="block text-xs font-medium tz-text-secondary">ERD (effective rim diameter)</label>
                 <div class="spoke-calculator__unit-field">
                   <input
                     id="rear-erd"
@@ -333,7 +333,7 @@
 
             <!-- Left flange distance -->
               <div class="space-y-1.5">
-                <label for="rear-left-flange" class="block text-xs font-medium text-slate-200">Left flange distance</label>
+                <label for="rear-left-flange" class="block text-xs font-medium tz-text-secondary">Left flange distance</label>
                 <div class="spoke-calculator__unit-field">
                   <input
                     id="rear-left-flange"
@@ -349,7 +349,7 @@
 
             <!-- Right flange distance -->
               <div class="space-y-1.5">
-                <label for="rear-right-flange" class="block text-xs font-medium text-slate-200">Right flange distance</label>
+                <label for="rear-right-flange" class="block text-xs font-medium tz-text-secondary">Right flange distance</label>
                 <div class="spoke-calculator__unit-field">
                   <input
                     id="rear-right-flange"
@@ -365,7 +365,7 @@
 
             <!-- Left flange PCD -->
               <div class="space-y-1.5">
-                <label for="rear-left-flange-pcd" class="block text-xs font-medium text-slate-200">Left flange PCD</label>
+                <label for="rear-left-flange-pcd" class="block text-xs font-medium tz-text-secondary">Left flange PCD</label>
                 <div class="spoke-calculator__unit-field">
                   <input
                     id="rear-left-flange-pcd"
@@ -381,7 +381,7 @@
 
             <!-- Right flange PCD -->
               <div class="space-y-1.5">
-                <label for="rear-right-flange-pcd" class="block text-xs font-medium text-slate-200">Right flange PCD</label>
+                <label for="rear-right-flange-pcd" class="block text-xs font-medium tz-text-secondary">Right flange PCD</label>
                 <div class="spoke-calculator__unit-field">
                   <input
                     id="rear-right-flange-pcd"
@@ -398,14 +398,14 @@
         </div>
 
         <!-- Action row -->
-        <div class="mt-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between border-t border-slate-800/50 pt-4">
+        <div class="mt-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between border-t tz-border-subtle pt-4">
           <p class="tz-description tz-text-muted max-w-md">
             This is only a visual prototype. Replace the mock formula in the script section with your own calculation logic.
           </p>
           <div class="flex items-center gap-3">
             <button
               type="button"
-              class="inline-flex items-center rounded-lg bg-[var(--tz-brand-primary)] px-4 py-2 text-sm font-medium text-slate-900 shadow-sm hover:bg-[var(--tz-brand-primary-hover)] focus:outline-none focus:ring-2 focus:ring-[color:var(--tz-brand-primary)] focus:ring-offset-2 focus:ring-offset-[var(--tz-card-surface)] disabled:opacity-50 disabled:cursor-not-allowed"
+              class="inline-flex items-center rounded-lg bg-[var(--tz-action-primary)] px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-[var(--tz-action-primary-hover)] focus:outline-none focus:ring-2 focus:ring-[color:var(--tz-site-accent)] focus:ring-offset-2 focus:ring-offset-[var(--tz-card-surface)] disabled:opacity-50 disabled:cursor-not-allowed"
               :disabled="loading"
               @click="onCalculate"
             >
@@ -437,7 +437,7 @@
                     <span v-if="frontLeftSourceLabel" class="spoke-calculator__source-badge">{{ frontLeftSourceLabel }}</span>
                   </div>
                   <div class="flex items-baseline gap-1">
-                    <span class="text-2xl font-semibold text-[var(--tz-brand-primary)]">{{ frontLeftDisplay }}</span>
+                    <span class="text-2xl font-semibold text-[var(--tz-site-accent)]">{{ frontLeftDisplay }}</span>
                     <span v-if="frontLeftDisplay !== '--'" class="text-xs tz-text-muted">mm</span>
                   </div>
                 </div>
@@ -447,7 +447,7 @@
                     <span v-if="frontRightSourceLabel" class="spoke-calculator__source-badge">{{ frontRightSourceLabel }}</span>
                   </div>
                   <div class="flex items-baseline gap-1">
-                    <span class="text-2xl font-semibold text-[var(--tz-brand-primary)]">{{ frontRightDisplay }}</span>
+                    <span class="text-2xl font-semibold text-[var(--tz-site-accent)]">{{ frontRightDisplay }}</span>
                     <span v-if="frontRightDisplay !== '--'" class="text-xs tz-text-muted">mm</span>
                   </div>
                 </div>
@@ -464,7 +464,7 @@
                     <span v-if="rearLeftSourceLabel" class="spoke-calculator__source-badge">{{ rearLeftSourceLabel }}</span>
                   </div>
                   <div class="flex items-baseline gap-1">
-                    <span class="text-2xl font-semibold text-[var(--tz-brand-primary)]">{{ rearLeftDisplay }}</span>
+                    <span class="text-2xl font-semibold text-[var(--tz-site-accent)]">{{ rearLeftDisplay }}</span>
                     <span v-if="rearLeftDisplay !== '--'" class="text-xs tz-text-muted">mm</span>
                   </div>
                 </div>
@@ -474,7 +474,7 @@
                     <span v-if="rearRightSourceLabel" class="spoke-calculator__source-badge">{{ rearRightSourceLabel }}</span>
                   </div>
                   <div class="flex items-baseline gap-1">
-                    <span class="text-2xl font-semibold text-[var(--tz-brand-primary)]">{{ rearRightDisplay }}</span>
+                    <span class="text-2xl font-semibold text-[var(--tz-site-accent)]">{{ rearRightDisplay }}</span>
                     <span v-if="rearRightDisplay !== '--'" class="text-xs tz-text-muted">mm</span>
                   </div>
                 </div>
@@ -909,13 +909,13 @@ watch(
 
 <style scoped>
 .spoke-calculator {
-  --spoke-shell-surface: #050505;
-  --spoke-panel-surface: #090909;
-  --spoke-control-surface: #020202;
-  --spoke-result-surface: #0b0b0b;
-  --spoke-border: rgba(255, 255, 255, 0.12);
-  --spoke-border-strong: rgba(255, 255, 255, 0.28);
-  --spoke-focus-ring: rgba(255, 255, 255, 0.14);
+  --spoke-shell-surface: var(--tz-card-surface);
+  --spoke-panel-surface: var(--tz-form-panel-surface);
+  --spoke-control-surface: var(--tz-input-surface);
+  --spoke-result-surface: var(--tz-surface-subtle);
+  --spoke-border: var(--tz-border-subtle);
+  --spoke-border-strong: var(--tz-border-strong);
+  --spoke-focus-ring: var(--tz-form-control-focus-ring);
   color: var(--tz-text-primary);
 }
 
@@ -924,7 +924,7 @@ watch(
   border: 1px solid var(--spoke-border);
   border-radius: 0.5rem;
   background: var(--spoke-shell-surface);
-  box-shadow: 0 10px 26px -14px rgba(0, 0, 0, 0.7);
+  box-shadow: 0 10px 26px -14px rgba(20, 32, 43, 0.12);
 }
 
 .spoke-calculator__shell {

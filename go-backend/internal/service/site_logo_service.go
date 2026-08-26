@@ -49,7 +49,7 @@ func (s *SiteLogoService) UploadCurrent(ctx context.Context, file *multipart.Fil
 	if uploaderID == 0 {
 		return nil, ErrSiteLogoUploadIdentityRequired
 	}
-	if err := upload.ValidateSVGFile(file, upload.SiteLogoSVGRule); err != nil {
+	if err := upload.ValidateSpecFile(file, string(upload.SpecSiteLogo)); err != nil {
 		return nil, err
 	}
 

@@ -19,6 +19,8 @@ type Config struct {
 	JWT                          JWTConfig                          `mapstructure:"jwt"`
 	OAuth                        OAuthConfig                        `mapstructure:"oauth"`
 	GoogleMerchant               GoogleMerchantConfig               `mapstructure:"google_merchant"`
+	GoogleIndexing               GoogleIndexingConfig               `mapstructure:"google_indexing"`
+	SocialOAuth                  SocialOAuthConfig                  `mapstructure:"social_oauth"`
 	I18n                         I18nConfig                         `mapstructure:"i18n"`
 	CORS                         CORSConfig                         `mapstructure:"cors"`
 	Cookie                       CookieConfig                       `mapstructure:"cookie"`
@@ -114,6 +116,31 @@ type GoogleMerchantConfig struct {
 	StateTTLSeconds    int    `mapstructure:"state_ttl_seconds"`
 }
 
+type GoogleIndexingConfig struct {
+	Enabled               bool   `mapstructure:"enabled"`
+	ServiceAccountJSON    string `mapstructure:"service_account_json"`
+	ServiceAccountFile    string `mapstructure:"service_account_file"`
+	RequestTimeoutSeconds int    `mapstructure:"request_timeout_seconds"`
+}
+
+type SocialOAuthProviderConfig struct {
+	ClientID     string `mapstructure:"client_id"`
+	ClientSecret string `mapstructure:"client_secret"`
+	RedirectURL  string `mapstructure:"redirect_url"`
+	Scopes       string `mapstructure:"scopes"`
+}
+
+type SocialOAuthConfig struct {
+	Meta                SocialOAuthProviderConfig `mapstructure:"meta"`
+	X                   SocialOAuthProviderConfig `mapstructure:"x"`
+	YouTube             SocialOAuthProviderConfig `mapstructure:"youtube"`
+	Reddit              SocialOAuthProviderConfig `mapstructure:"reddit"`
+	PostConnectURL      string                    `mapstructure:"post_connect_url"`
+	TokenEncryptionKey  string                    `mapstructure:"token_encryption_key"`
+	StateTTLSeconds     int                       `mapstructure:"state_ttl_seconds"`
+	MetaGraphAPIVersion string                    `mapstructure:"meta_graph_api_version"`
+}
+
 type I18nConfig struct {
 	DefaultLocale    string   `mapstructure:"default_locale"`
 	SupportedLocales []string `mapstructure:"supported_locales"`
@@ -167,6 +194,8 @@ type WorkerConfig struct {
 	PaymentExpirationBatchLimit           int  `mapstructure:"payment_expiration_batch_limit"`
 	PaymentRiskMonitoringEnabled          bool `mapstructure:"payment_risk_monitoring_enabled"`
 	PaymentRiskMonitoringIntervalSeconds  int  `mapstructure:"payment_risk_monitoring_interval_seconds"`
+	ExchangeRateSyncEnabled               bool `mapstructure:"exchange_rate_sync_enabled"`
+	ExchangeRateSyncIntervalSeconds       int  `mapstructure:"exchange_rate_sync_interval_seconds"`
 	SiteQualityEnabled                    bool `mapstructure:"site_quality_enabled"`
 	SiteQualityDispatchIntervalSeconds    int  `mapstructure:"site_quality_dispatch_interval_seconds"`
 	SiteQualityBatchLimit                 int  `mapstructure:"site_quality_batch_limit"`
@@ -478,6 +507,32 @@ func setDefaults() {
 	viper.SetDefault("google_merchant.token_encryption_key", "")
 	viper.SetDefault("google_merchant.state_ttl_seconds", 600)
 
+	viper.SetDefault("google_indexing.enabled", false)
+	viper.SetDefault("google_indexing.service_account_json", "")
+	viper.SetDefault("google_indexing.service_account_file", "")
+	viper.SetDefault("google_indexing.request_timeout_seconds", 15)
+
+	viper.SetDefault("social_oauth.meta.client_id", "")
+	viper.SetDefault("social_oauth.meta.client_secret", "")
+	viper.SetDefault("social_oauth.meta.redirect_url", "")
+	viper.SetDefault("social_oauth.meta.scopes", "")
+	viper.SetDefault("social_oauth.x.client_id", "")
+	viper.SetDefault("social_oauth.x.client_secret", "")
+	viper.SetDefault("social_oauth.x.redirect_url", "")
+	viper.SetDefault("social_oauth.x.scopes", "")
+	viper.SetDefault("social_oauth.youtube.client_id", "")
+	viper.SetDefault("social_oauth.youtube.client_secret", "")
+	viper.SetDefault("social_oauth.youtube.redirect_url", "")
+	viper.SetDefault("social_oauth.youtube.scopes", "")
+	viper.SetDefault("social_oauth.reddit.client_id", "")
+	viper.SetDefault("social_oauth.reddit.client_secret", "")
+	viper.SetDefault("social_oauth.reddit.redirect_url", "")
+	viper.SetDefault("social_oauth.reddit.scopes", "")
+	viper.SetDefault("social_oauth.post_connect_url", "http://localhost:9300/social")
+	viper.SetDefault("social_oauth.token_encryption_key", "")
+	viper.SetDefault("social_oauth.state_ttl_seconds", 600)
+	viper.SetDefault("social_oauth.meta_graph_api_version", "v23.0")
+
 	viper.SetDefault("i18n.default_locale", "en")
 	viper.SetDefault("i18n.supported_locales", locales.SupportedLocaleCodes())
 
@@ -540,6 +595,8 @@ func setDefaults() {
 	viper.SetDefault("worker.payment_expiration_batch_limit", 100)
 	viper.SetDefault("worker.payment_risk_monitoring_enabled", false)
 	viper.SetDefault("worker.payment_risk_monitoring_interval_seconds", 3600)
+	viper.SetDefault("worker.exchange_rate_sync_enabled", true)
+	viper.SetDefault("worker.exchange_rate_sync_interval_seconds", 86400)
 	viper.SetDefault("worker.site_quality_enabled", false)
 	viper.SetDefault("worker.site_quality_dispatch_interval_seconds", 30)
 	viper.SetDefault("worker.site_quality_batch_limit", 1)
@@ -737,6 +794,32 @@ func bindEnvironment() {
 	_ = viper.BindEnv("google_merchant.token_encryption_key", "GOOGLE_MERCHANT_TOKEN_ENCRYPTION_KEY")
 	_ = viper.BindEnv("google_merchant.state_ttl_seconds", "GOOGLE_MERCHANT_STATE_TTL_SECONDS")
 
+	_ = viper.BindEnv("google_indexing.enabled", "GOOGLE_INDEXING_ENABLED")
+	_ = viper.BindEnv("google_indexing.service_account_json", "GOOGLE_INDEXING_SERVICE_ACCOUNT_JSON")
+	_ = viper.BindEnv("google_indexing.service_account_file", "GOOGLE_INDEXING_SERVICE_ACCOUNT_FILE")
+	_ = viper.BindEnv("google_indexing.request_timeout_seconds", "GOOGLE_INDEXING_REQUEST_TIMEOUT_SECONDS")
+
+	_ = viper.BindEnv("social_oauth.meta.client_id", "SOCIAL_OAUTH_META_CLIENT_ID")
+	_ = viper.BindEnv("social_oauth.meta.client_secret", "SOCIAL_OAUTH_META_CLIENT_SECRET")
+	_ = viper.BindEnv("social_oauth.meta.redirect_url", "SOCIAL_OAUTH_META_REDIRECT_URL")
+	_ = viper.BindEnv("social_oauth.meta.scopes", "SOCIAL_OAUTH_META_SCOPES")
+	_ = viper.BindEnv("social_oauth.x.client_id", "SOCIAL_OAUTH_X_CLIENT_ID")
+	_ = viper.BindEnv("social_oauth.x.client_secret", "SOCIAL_OAUTH_X_CLIENT_SECRET")
+	_ = viper.BindEnv("social_oauth.x.redirect_url", "SOCIAL_OAUTH_X_REDIRECT_URL")
+	_ = viper.BindEnv("social_oauth.x.scopes", "SOCIAL_OAUTH_X_SCOPES")
+	_ = viper.BindEnv("social_oauth.youtube.client_id", "SOCIAL_OAUTH_YOUTUBE_CLIENT_ID")
+	_ = viper.BindEnv("social_oauth.youtube.client_secret", "SOCIAL_OAUTH_YOUTUBE_CLIENT_SECRET")
+	_ = viper.BindEnv("social_oauth.youtube.redirect_url", "SOCIAL_OAUTH_YOUTUBE_REDIRECT_URL")
+	_ = viper.BindEnv("social_oauth.youtube.scopes", "SOCIAL_OAUTH_YOUTUBE_SCOPES")
+	_ = viper.BindEnv("social_oauth.reddit.client_id", "SOCIAL_OAUTH_REDDIT_CLIENT_ID")
+	_ = viper.BindEnv("social_oauth.reddit.client_secret", "SOCIAL_OAUTH_REDDIT_CLIENT_SECRET")
+	_ = viper.BindEnv("social_oauth.reddit.redirect_url", "SOCIAL_OAUTH_REDDIT_REDIRECT_URL")
+	_ = viper.BindEnv("social_oauth.reddit.scopes", "SOCIAL_OAUTH_REDDIT_SCOPES")
+	_ = viper.BindEnv("social_oauth.post_connect_url", "SOCIAL_OAUTH_POST_CONNECT_URL")
+	_ = viper.BindEnv("social_oauth.token_encryption_key", "SOCIAL_OAUTH_TOKEN_ENCRYPTION_KEY")
+	_ = viper.BindEnv("social_oauth.state_ttl_seconds", "SOCIAL_OAUTH_STATE_TTL_SECONDS")
+	_ = viper.BindEnv("social_oauth.meta_graph_api_version", "SOCIAL_OAUTH_META_GRAPH_API_VERSION")
+
 	_ = viper.BindEnv("cookie.secure", "COOKIE_SECURE")
 	_ = viper.BindEnv("cookie.same_site", "COOKIE_SAME_SITE")
 	_ = viper.BindEnv("cookie.domain", "COOKIE_DOMAIN")
@@ -769,6 +852,8 @@ func bindEnvironment() {
 	_ = viper.BindEnv("worker.payment_expiration_batch_limit", "WORKER_PAYMENT_EXPIRATION_BATCH_LIMIT", "PAYMENT_EXPIRATION_BATCH_LIMIT")
 	_ = viper.BindEnv("worker.payment_risk_monitoring_enabled", "WORKER_PAYMENT_RISK_MONITORING_ENABLED", "PAYMENT_RISK_MONITORING_WORKER_ENABLED")
 	_ = viper.BindEnv("worker.payment_risk_monitoring_interval_seconds", "WORKER_PAYMENT_RISK_MONITORING_INTERVAL_SECONDS", "PAYMENT_RISK_MONITORING_INTERVAL_SECONDS")
+	_ = viper.BindEnv("worker.exchange_rate_sync_enabled", "WORKER_EXCHANGE_RATE_SYNC_ENABLED", "EXCHANGE_RATE_SYNC_ENABLED")
+	_ = viper.BindEnv("worker.exchange_rate_sync_interval_seconds", "WORKER_EXCHANGE_RATE_SYNC_INTERVAL_SECONDS", "EXCHANGE_RATE_SYNC_INTERVAL_SECONDS")
 	_ = viper.BindEnv("worker.site_quality_enabled", "WORKER_SITE_QUALITY_ENABLED")
 	_ = viper.BindEnv("worker.site_quality_dispatch_interval_seconds", "WORKER_SITE_QUALITY_DISPATCH_INTERVAL_SECONDS")
 	_ = viper.BindEnv("worker.site_quality_batch_limit", "WORKER_SITE_QUALITY_BATCH_LIMIT")
@@ -1212,6 +1297,9 @@ func validateConfig(cfg *Config) error {
 	if cfg.Worker.PaymentRiskMonitoringEnabled && cfg.Worker.PaymentRiskMonitoringIntervalSeconds <= 0 {
 		return fmt.Errorf("payment risk monitoring interval must be positive when monitoring is enabled")
 	}
+	if cfg.Worker.ExchangeRateSyncEnabled && cfg.Worker.ExchangeRateSyncIntervalSeconds <= 0 {
+		return fmt.Errorf("exchange rate sync interval must be positive when sync is enabled")
+	}
 	if cfg.Worker.SiteQualityEnabled {
 		if cfg.Worker.SiteQualityDispatchIntervalSeconds <= 0 ||
 			cfg.Worker.SiteQualityBatchLimit <= 0 ||
@@ -1350,6 +1438,12 @@ func validateConfig(cfg *Config) error {
 	if googleMerchantConfiguredFields != 0 && cfg.GoogleMerchant.StateTTLSeconds <= 0 {
 		return fmt.Errorf("Google Merchant OAuth state TTL must be positive")
 	}
+	if err := validateGoogleIndexingConfig(cfg.GoogleIndexing); err != nil {
+		return err
+	}
+	if err := validateSocialOAuthConfig(cfg.SocialOAuth); err != nil {
+		return err
+	}
 	if strings.EqualFold(cfg.Server.Mode, "release") && len(cfg.Server.TrustedProxies) == 0 {
 		return fmt.Errorf("trusted proxies are required in release mode")
 	}
@@ -1374,6 +1468,61 @@ func validateConfig(cfg *Config) error {
 		return fmt.Errorf("cookie.same_site=none requires secure cookies")
 	}
 
+	return nil
+}
+
+func validateGoogleIndexingConfig(cfg GoogleIndexingConfig) error {
+	jsonConfigured := strings.TrimSpace(cfg.ServiceAccountJSON) != ""
+	fileConfigured := strings.TrimSpace(cfg.ServiceAccountFile) != ""
+	if jsonConfigured && fileConfigured {
+		return fmt.Errorf("Google Indexing requires either service account JSON or service account file, not both")
+	}
+	if cfg.RequestTimeoutSeconds < 0 {
+		return fmt.Errorf("Google Indexing request timeout must not be negative")
+	}
+	if cfg.Enabled && !jsonConfigured && !fileConfigured {
+		return fmt.Errorf("Google Indexing requires GOOGLE_INDEXING_SERVICE_ACCOUNT_JSON or GOOGLE_INDEXING_SERVICE_ACCOUNT_FILE when enabled")
+	}
+	return nil
+}
+
+func validateSocialOAuthConfig(cfg SocialOAuthConfig) error {
+	providers := map[string]SocialOAuthProviderConfig{
+		"Meta":    cfg.Meta,
+		"X":       cfg.X,
+		"YouTube": cfg.YouTube,
+		"Reddit":  cfg.Reddit,
+	}
+	configured := false
+	for name, provider := range providers {
+		fields := []string{
+			strings.TrimSpace(provider.ClientID),
+			strings.TrimSpace(provider.ClientSecret),
+			strings.TrimSpace(provider.RedirectURL),
+		}
+		configuredFields := 0
+		for _, field := range fields {
+			if field != "" {
+				configuredFields++
+			}
+		}
+		if configuredFields != 0 && configuredFields != len(fields) {
+			return fmt.Errorf("Social OAuth %s requires client id, client secret, and redirect URL together", name)
+		}
+		configured = configured || configuredFields == len(fields)
+	}
+	if !configured {
+		return nil
+	}
+	if len(strings.TrimSpace(cfg.TokenEncryptionKey)) < 32 {
+		return fmt.Errorf("SOCIAL_OAUTH_TOKEN_ENCRYPTION_KEY must be at least 32 characters when Social OAuth is configured")
+	}
+	if cfg.StateTTLSeconds <= 0 {
+		return fmt.Errorf("Social OAuth state TTL must be positive")
+	}
+	if strings.TrimSpace(cfg.PostConnectURL) == "" {
+		return fmt.Errorf("SOCIAL_OAUTH_POST_CONNECT_URL is required when Social OAuth is configured")
+	}
 	return nil
 }
 

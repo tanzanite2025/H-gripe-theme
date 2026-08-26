@@ -6,6 +6,7 @@ import { useShopCategories } from '~/composables/useShopCategories'
 import { useShopProducts, type ShopProductReviewSummary } from '~/composables/useShopProducts'
 import { useApiRequest } from '~/composables/useApiRequest'
 import { useBehaviorEvents } from '~/composables/useBehaviorEvents'
+import { buildProductPath } from '~/utils/seo/urls'
 import type {
   RecommendationAPIResult,
   RecommendationAPIReviewSummary,
@@ -62,12 +63,12 @@ const normalizeExcludedProductIds = (values?: Array<number | null | undefined>) 
 
 const isProductDetailUrl = (value: unknown) => {
   const url = String(value || '').trim().replace(/\/+$/, '')
-  return /(?:^|\/)shop\/[^/?#]+$/.test(url)
+  return /(?:^|\/)products\/[^/?#]+$/.test(url)
 }
 
 const extractProductSlugFromUrl = (value: unknown) => {
   const url = String(value || '').trim().replace(/\/+$/, '')
-  const match = url.match(/(?:^|\/)shop\/([^/?#]+)$/)
+  const match = url.match(/(?:^|\/)products\/([^/?#]+)$/)
   return match?.[1] ? decodeURIComponent(match[1]) : ''
 }
 
@@ -207,7 +208,7 @@ export const useSmartRecommendations = () => {
       for (const product of result.items) {
         const productId = toPositiveInteger(product.id)
         const title = String(product.title || '').trim()
-        const url = String(product.url || '').trim() || (product.slug ? `/shop/${product.slug}` : '')
+        const url = String(product.url || '').trim() || (product.slug ? buildProductPath(product.slug) : '')
         if (!productId || seenProductIds.has(productId) || !title || !isProductDetailUrl(url)) {
           continue
         }

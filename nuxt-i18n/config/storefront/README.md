@@ -1,8 +1,17 @@
 # Storefront route policy and SSR HTML cache
 
-这个目录是用户端 Nuxt storefront 的路由策略中心，包含页面级 SSR HTML 缓存策略、API 代理规则、静态资源缓存头、i18n 本地化路由规则和旧路由重定向规则。
+这个目录是用户端 Nuxt storefront 的路由策略中心，包含页面级 SSR HTML 缓存策略、API 代理规则、静态资源缓存头、i18n 本地化路由规则和 URL Management 重定向规则。
 
 长期约束：不要把新的页面缓存规则继续堆回 `nuxt.config.ts`。所有用户端公开页面的缓存策略，必须先在这里声明，再由 `route-rules.ts` 转成 Nuxt/Nitro `routeRules`。
+
+## 商品路由和缓存说明
+
+正式商品 permalink 是扁平的 `/products/:slug`，分类路径是层级化的
+`/shop/...`，详见 `../../../docs/seo/ECOMMERCE_URL_ARCHITECTURE.md`。
+
+`/shop/:slug` 只匹配单级分类；匹配不到分类时返回 404，不查询商品，也不
+自动 301 到 `/products/:slug`。站点尚未运营，不生成商品旧 alias。未来如
+果确实存在已对外传播的 URL，由 URL Management domain 手工发布 301 规则。
 
 ## 为什么要做这层结构
 
@@ -25,7 +34,7 @@ Nuxt SSR 页面在高流量时会消耗 Node.js CPU。热门商品详情页、�
 - `route-rules.ts`
   - 把 `html-cache-policies.ts` 中的策略转换为 Nuxt/Nitro `routeRules`。
   - 统一处理 i18n 语言前缀路由。
-  - 统一处理 `/api/**` 代理、静态资源长缓存、旧路由重定向。
+  - 统一处理 `/api/**` 代理、静态资源长缓存、URL Management 重定向。
 
 - `../../server/plugins/html-cache-storage.server.ts`
   - 运行时读取 `NUXT_HTML_CACHE_*` 和兼容的 `REDIS_*` 环境变量。
@@ -63,17 +72,24 @@ Nuxt SSR 页面在高流量时会消耗 Node.js CPU。热门商品详情页、�
 - 已新增 Go 后端文章和 FAQ 写操作后的自动 HTML cache purge。
 - 已新增 Go 后端 HTML cache purge 合并窗口，短时间内多次写操作会合并为一次 purge。
 - 已验证 `npm run build` 通过。
-- 已验证构建产物中包含 `/shop/**`、语言前缀路由、`no-store` 路由和 Redis cache 插件。
+- 已验证构建产物中包含 `/products/**` 商品路由、`/shop/**` 分类路由、语言前缀路由、`no-store` 路由和 Redis cache 插件。
 
 ## 当前缓存策略
 
 ### 商品详情页
 
-- 路由：`/shop/**` 和对应语言前缀，例如 `/fr/shop/**`、`/zh_cn/shop/**`
+- 路由：`/products/**` 和对应语言前缀，例如 `/fr/products/**`、`/zh_cn/products/**`
 - fresh TTL：300 秒
 - stale TTL：3600 秒
 
 说明：商品详情页可能包含价格和库存快照，所以 fresh TTL 不能太长。购物车、结账、库存确认仍然必须以 API 为事实源。
+
+### 分类页
+
+- 路由：`/shop/**` 及其语言前缀
+- 默认不进入商品详情缓存策略
+
+说明：`/shop/**` 是分类层级，不得套用 `/products/**` 的商品详情缓存契约。
 
 ### 语言首页
 
@@ -184,7 +200,7 @@ STOREFRONT_HTML_CACHE_PURGE_DEBOUNCE_MS=500
 
 | 页面范围 | SSR HTML 中的数据源 | 当前失效责任 |
 | --- | --- | --- |
-| `/shop/**` | Go 商品详情、商品媒体、SKU 等公开数据 | 商品和商品规格模板写操作触发 HTML purge |
+| `/products/**` | Go 商品详情、商品媒体、SKU 等公开数据 | 商品和商品规格模板写操作触发 HTML purge |
 | `/blog/**` | Go 文章列表和文章详情，失败时回退本地 mock | 文章写操作触发 HTML purge |
 | `/support/faqs` 和各页面 `PageFaq` | Go FAQ，失败时回退本地 FAQ 文件 | FAQ 写操作、排序操作触发 HTML purge |
 | `/guides/**` | 静态指南内容 + `PageFaq`；商品搜索抽屉是用户点击后才请求 API | FAQ 写操作触发 HTML purge；点击后搜索结果不进 HTML cache |
@@ -236,7 +252,8 @@ npm run smoke:html-cache
 - `check:html-cache` 是否通过。
 - Nitro 产物中是否包含目标 `routeRules`。
 - `/shop`、`/api/**`、`/_internal/**` 仍然是 `no-store`。
-- `/shop/**` 和各语言前缀商品详情页仍然使用 `/cache/html`。
+- `/products/**` 和各语言前缀商品详情页仍然使用 `/cache/html`。
+- `/shop/**` 只作为分类路由处理，不得被误判为商品详情缓存。
 - purge 端点产物仍然按 `/cache/html` 列 key、删 key，并返回 `purgedKeys`。
 - `smoke:html-cache` 是否能启动本地 preview，并实际缓存一个页面后通过 purge 删除至少 1 个 HTML key。
 - Redis cache driver 是否先连接并 ping 同一个 client，然后才挂载到 Nitro `cache` storage。

@@ -1,0 +1,61 @@
+{
+  "trigger": {
+    "label": "Compatibiliteit controleren"
+  },
+  "dialog": {
+    "eyebrow": "Compatibiliteitscatalogus",
+    "title": "Zoek je frame of vork",
+    "description": "Zoek in de onafhankelijke compatibiliteitscatalogus op merk, model of jaar. De resultaten bevatten de geregistreerde naafspecificaties voor elk item.",
+    "close": "Sluiten",
+    "tabListLabel": "Onderdelen van de compatibiliteitscatalogus"
+  },
+  "tabs": {
+    "frame": "Framecompatibiliteit",
+    "fork": "Vorkcompatibiliteit"
+  },
+  "search": {
+    "label": "Zoeken",
+    "placeholder": "Zoeken op merk of model",
+    "yearLabel": "Modeljaar",
+    "yearPlaceholder": "bijv. 2024",
+    "submit": "Zoeken",
+    "clear": "Wissen",
+    "searching": "Bezig met zoeken..."
+  },
+  "states": {
+    "initial": "Voer een merk, model of jaar in om de catalogus te doorzoeken.",
+    "empty": "Geen overeenkomende items gevonden.",
+    "unavailable": "Compatibiliteitsgegevens zijn tijdelijk niet beschikbaar. Probeer het opnieuw.",
+    "noHubSpecifications": "Er zijn geen naafspecificaties geregistreerd."
+  },
+  "entry": {
+    "series": "Serie",
+    "generation": "Generatie",
+    "market": "Markt",
+    "hubSpecifications": "Naafspecificaties",
+    "unknownYear": "Jaar niet opgegeven",
+    "allYears": "Alle jaren"
+  },
+  "pagination": {
+    "label": "Compatibiliteitsresultaten",
+    "previous": "Vorige pagina",
+    "next": "Volgende pagina",
+    "page": "Pagina {page} van {totalPages}"
+  },
+  "hub": {
+    "position": "Positie",
+    "axleType": "Astype",
+    "axleSpacing": "Asafstand",
+    "millimetres": "mm",
+    "positions": {
+      "front": "Voor",
+      "rear": "Achter"
+    },
+    "axleTypes": {
+      "quickRelease": "Snelspanner",
+      "thruAxle": "Steekas",
+      "boltOn": "Boutbevestiging",
+      "other": "Andere"
+    }
+  }
+}

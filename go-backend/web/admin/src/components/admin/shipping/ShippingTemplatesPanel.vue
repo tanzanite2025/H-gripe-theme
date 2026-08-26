@@ -17,6 +17,7 @@
           <TableRow>
             <TableHead>模板名称</TableHead>
             <TableHead class="w-28">计费类型</TableHead>
+            <TableHead class="w-24">源币种</TableHead>
             <TableHead class="w-28 text-right">默认运费</TableHead>
             <TableHead class="w-36 text-right">免运门槛</TableHead>
             <TableHead>规则摘要</TableHead>
@@ -25,7 +26,7 @@
           </TableRow>
         </TableHeader>
         <TableBody>
-          <TableEmpty v-if="templates.length === 0" :colspan="7">
+          <TableEmpty v-if="templates.length === 0" :colspan="8">
             <div class="flex flex-col items-center text-muted-foreground">
               <Calculator class="mb-2 size-7 opacity-55" />
               <span class="text-xs">暂无运费模板</span>
@@ -37,6 +38,7 @@
  <span class="block max-w-96 truncate text-[10px] text-muted-foreground/70">{{ template.description || '暂无说明'}}</span>
             </TableCell>
             <TableCell>{{ templateTypeLabel(template.type) }}</TableCell>
+            <TableCell class="font-mono font-bold">{{ template.currency || '-' }}</TableCell>
             <TableCell class="text-right tabular-nums">{{ formatMoney(template.default_fee) }}</TableCell>
             <TableCell class="text-right tabular-nums">
               {{ template.free_shipping ? formatMoney(template.free_threshold) : '未开启' }}

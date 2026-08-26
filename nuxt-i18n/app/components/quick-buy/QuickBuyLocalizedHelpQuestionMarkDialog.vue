@@ -194,13 +194,13 @@ onBeforeUnmount(() => {
   place-items: center;
   border: 0;
   border-radius: 999px;
-  color: rgba(181, 255, 109, 0.96);
+  color: rgba(5, 150, 105, 0.96);
   background:
-    linear-gradient(180deg, rgba(181, 255, 109, 0.13), rgba(181, 255, 109, 0.06)),
-    var(--quickbuy-control-surface-raised, #151519);
+    linear-gradient(180deg, rgba(5, 150, 105, 0.13), rgba(5, 150, 105, 0.06)),
+    var(--quickbuy-control-surface-raised, var(--tz-surface-subtle));
   box-shadow:
-    0 0 0 0 rgba(181, 255, 109, 0.18),
-    inset 0 0 0 1px rgba(0, 0, 0, 0.62);
+    0 0 0 0 rgba(5, 150, 105, 0.18),
+    inset 0 0 0 1px var(--tz-border-subtle);
   font-size: 0.9375rem;
   font-weight: 800;
   line-height: 1;
@@ -211,8 +211,8 @@ onBeforeUnmount(() => {
 .quickbuy-localized-help-question-trigger:hover {
   color: white;
   background:
-    linear-gradient(180deg, rgba(181, 255, 109, 0.2), rgba(181, 255, 109, 0.09)),
-    var(--quickbuy-control-surface-raised, #151519);
+    linear-gradient(180deg, rgba(5, 150, 105, 0.2), rgba(5, 150, 105, 0.09)),
+    var(--quickbuy-control-surface-raised, var(--tz-surface-subtle));
 }
 
 .quickbuy-localized-help-dialog {
@@ -227,13 +227,13 @@ onBeforeUnmount(() => {
   overflow: hidden;
   box-sizing: border-box;
   min-width: 0;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid var(--tz-border-subtle);
   border-radius: 0.875rem;
-  color: white;
-  background: var(--tz-card-surface, #111116);
+  color: var(--tz-text-primary);
+  background: var(--tz-card-surface);
   box-shadow:
-    0 22px 60px rgba(0, 0, 0, 0.64),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    0 22px 60px rgba(20, 32, 43, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 .quickbuy-localized-help-dialog__header {
@@ -258,7 +258,7 @@ onBeforeUnmount(() => {
 .quickbuy-localized-help-dialog__content {
   overflow-y: auto;
   padding: 1rem;
-  color: rgba(255, 255, 255, 0.78);
+  color: var(--tz-text-secondary);
   font-size: 0.875rem;
   line-height: 1.65;
   white-space: pre-line;
@@ -278,17 +278,17 @@ onBeforeUnmount(() => {
   0%,
   70%,
   100% {
-    box-shadow: 0 0 0 0 rgba(181, 255, 109, 0);
+    box-shadow: 0 0 0 0 rgba(5, 150, 105, 0);
     transform: translateY(0) scale(1);
   }
 
   76% {
-    box-shadow: 0 0 0 0.35rem rgba(181, 255, 109, 0.08);
+    box-shadow: 0 0 0 0.35rem rgba(5, 150, 105, 0.08);
     transform: translateY(-0.125rem) scale(1.06);
   }
 
   82% {
-    box-shadow: 0 0 0 0 rgba(181, 255, 109, 0);
+    box-shadow: 0 0 0 0 rgba(5, 150, 105, 0);
     transform: translateY(0) scale(1);
   }
 }

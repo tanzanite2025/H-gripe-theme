@@ -61,7 +61,7 @@ func TestStorefrontContextUsesGlobalFallbackForUnknownCountry(t *testing.T) {
 	require.Equal(t, "USD", context.Currency.Resolved)
 }
 
-func TestStorefrontContextGlobalFallbackKeepsPrimaryCurrencySelectable(t *testing.T) {
+func TestStorefrontContextGlobalFallbackUsesBackendEntryCurrencyOnly(t *testing.T) {
 	policy := newTestCurrencyPolicyService(t)
 	_, err := policy.UpdatePolicy(currency.Policy{
 		PrimaryCurrency:   "CNY",
@@ -78,7 +78,7 @@ func TestStorefrontContextGlobalFallbackKeepsPrimaryCurrencySelectable(t *testin
 	require.NoError(t, err)
 	require.Equal(t, "GLOBAL", context.Market.Code)
 	require.Equal(t, "CNY", context.Market.DefaultCurrency)
-	require.Equal(t, []string{"CNY", "USD", "EUR"}, context.Market.DisplayCurrencies)
+	require.Equal(t, []string{"CNY"}, context.Market.DisplayCurrencies)
 	require.Equal(t, "CNY", context.Currency.Base)
 	require.Equal(t, "CNY", context.Currency.Resolved)
 }

@@ -2,9 +2,10 @@ import type {
   APIID,
   WarrantyClaim as ApiWarrantyClaim,
   WarrantyOrderItem as ApiWarrantyOrderItem,
-  WarrantyRegistration as ApiWarrantyRegistration,
-  WarrantyServiceRecord as ApiWarrantyServiceRecord
-} from '@/api/registrations'
+  WarrantyServiceRecord as ApiWarrantyServiceRecord,
+  ShipmentRecord as ApiShipmentRecord,
+  ShipmentItemSnapshot as ApiShipmentItemSnapshot
+} from '@/api/warranty'
 
 export type WarrantyID = APIID
 
@@ -27,20 +28,6 @@ export interface WarrantyProduct {
   sku?: string | null
 }
 
-export interface WarrantyRegistration extends ApiWarrantyRegistration {
-  id?: WarrantyID | null
-  status?: string | null
-  product_id?: WarrantyID | null
-  product?: WarrantyProduct | null
-  serial_number?: string | null
-  user?: WarrantyUser | null
-  purchase_date?: string | null
-  warranty_expires?: string | null
-  purchase_proof?: string | null
-  created_at?: string | null
-  updated_at?: string | null
-}
-
 export interface WarrantyOrderItem extends ApiWarrantyOrderItem {
   id?: WarrantyID | null
   product_id?: WarrantyID | null
@@ -61,17 +48,48 @@ export interface WarrantyServiceRecord extends ApiWarrantyServiceRecord {
   created_at?: string | null
 }
 
-export interface WarrantyClaimRegistration {
+export interface WarrantyShipmentItem extends ApiShipmentItemSnapshot {
   id?: WarrantyID | null
-  product?: WarrantyProduct | null
-  user?: WarrantyUser | null
+  product_id?: WarrantyID | null
+  product_name?: string | null
+  sku?: string | null
+  variant_id?: WarrantyID | null
+  quantity?: number | string | null
+}
+
+export interface WarrantyShipmentRecord extends ApiShipmentRecord {
+  id?: WarrantyID | null
+  order_id?: WarrantyID | null
+  order_number?: string | null
+  user_id?: WarrantyID | null
+  customer_name?: string | null
+  customer_email?: string | null
+  tracking_number?: string | null
+  shipped_at?: string | null
+  items_snapshot?: WarrantyShipmentItem[]
+  product_codes?: string[]
+  shipping_note?: string | null
+  shipping_images?: string[]
+  warranty_months?: number | null
+  warranty_start_at?: string | null
+  warranty_expires?: string | null
+  status?: string | null
+  record_bound?: boolean
+  order_status?: string | null
+  shipping_status?: string | null
+}
+
+export interface WarrantyShipmentDraft {
+  shippingNote: string
+  shippingImages: string[]
+  productCodes: string[]
+  warrantyMonths: number
+  warrantyStart: string
 }
 
 export interface WarrantyClaim extends ApiWarrantyClaim {
   id?: WarrantyID | null
   status?: string | null
-  registration_id?: WarrantyID | null
-  registration?: WarrantyClaimRegistration | null
   email?: string | null
   order_number?: string | null
   issue_type?: string | null
@@ -90,6 +108,7 @@ export interface WarrantyClaim extends ApiWarrantyClaim {
 
 export interface WarrantyFilters {
   status: string
+  keyword?: string
 }
 
 export interface WarrantyPagination {
@@ -99,7 +118,6 @@ export interface WarrantyPagination {
 }
 
 export interface WarrantyStatusUpdating {
-  registration: WarrantyID | null
   claim: WarrantyID | null
 }
 

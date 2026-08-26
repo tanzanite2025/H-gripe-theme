@@ -1,0 +1,61 @@
+{
+  "trigger": {
+    "label": "Semak keserasian"
+  },
+  "dialog": {
+    "eyebrow": "Katalog keserasian",
+    "title": "Cari rangka atau fork anda",
+    "description": "Cari dalam katalog keserasian bebas berdasarkan jenama, model atau tahun. Hasil carian termasuk spesifikasi hab yang direkodkan untuk setiap entri.",
+    "close": "Tutup",
+    "tabListLabel": "Bahagian katalog keserasian"
+  },
+  "tabs": {
+    "frame": "Keserasian rangka",
+    "fork": "Keserasian fork"
+  },
+  "search": {
+    "label": "Cari",
+    "placeholder": "Cari mengikut jenama atau model",
+    "yearLabel": "Tahun model",
+    "yearPlaceholder": "cth. 2024",
+    "submit": "Cari",
+    "clear": "Kosongkan",
+    "searching": "Sedang mencari..."
+  },
+  "states": {
+    "initial": "Masukkan jenama, model atau tahun untuk mencari dalam katalog.",
+    "empty": "Tiada rekod yang sepadan ditemui.",
+    "unavailable": "Data keserasian tidak tersedia buat sementara waktu. Sila cuba lagi.",
+    "noHubSpecifications": "Tiada spesifikasi hab direkodkan."
+  },
+  "entry": {
+    "series": "Siri",
+    "generation": "Generasi",
+    "market": "Pasaran",
+    "hubSpecifications": "Spesifikasi hab",
+    "unknownYear": "Tahun tidak dinyatakan",
+    "allYears": "Semua tahun"
+  },
+  "pagination": {
+    "label": "Hasil keserasian",
+    "previous": "Halaman sebelumnya",
+    "next": "Halaman seterusnya",
+    "page": "Halaman {page} daripada {totalPages}"
+  },
+  "hub": {
+    "position": "Kedudukan",
+    "axleType": "Jenis gandar",
+    "axleSpacing": "Jarak gandar",
+    "millimetres": "mm",
+    "positions": {
+      "front": "Hadapan",
+      "rear": "Belakang"
+    },
+    "axleTypes": {
+      "quickRelease": "Pelepas cepat",
+      "thruAxle": "Gandar tembus",
+      "boltOn": "Dipasang dengan bolt",
+      "other": "Lain-lain"
+    }
+  }
+}

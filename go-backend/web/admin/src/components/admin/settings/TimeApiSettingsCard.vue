@@ -6,30 +6,18 @@
           <Clock3 class="size-4" />
         </span>
         <div>
-          <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Time API</p>
-          <h3 class="mt-1 text-sm font-black tracking-tight text-foreground">时间接口</h3>
+          <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Timezone Policy</p>
+          <h3 class="mt-1 text-sm font-black tracking-tight text-foreground">时区规则</h3>
         </div>
       </div>
       <div class="flex items-center gap-2">
-        <span class="rounded-full border px-2.5 py-1 text-[11px] font-black" :class="statusBadgeClass(apiSettings.time_api_enabled, apiSettings.time_api_endpoint)">
-          {{ statusLabel(apiSettings.time_api_enabled, apiSettings.time_api_endpoint) }}
+        <span class="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-black text-emerald-700 dark:text-emerald-200">
+          内置
         </span>
-        <Button
-          v-if="isConfigured"
-          type="button"
-          variant="outline"
-          size="sm"
-          :disabled="!canEdit || effectiveSaving"
-          @click="toggleEditing"
-        >
-          <LockKeyhole v-if="isEditing" class="size-3.5" />
-          <Pencil v-else class="size-3.5" />
-          {{ isEditing ? '锁定' : '修改' }}
-        </Button>
-        <Button v-if="canEdit" type="button" size="sm" :disabled="effectiveSaving" @click="saveTimeApiSettings">
+        <Button v-if="canEdit" type="button" size="sm" :disabled="effectiveSaving" @click="saveTimezoneSettings">
           <LoaderCircle v-if="effectiveSaving" class="size-3.5 animate-spin" />
           <Save v-else class="size-3.5" />
-          {{ effectiveSaving ? '保存中' : '保存时间 API' }}
+          {{ effectiveSaving ? '保存中' : '保存时区规则' }}
         </Button>
       </div>
     </div>
@@ -38,72 +26,66 @@
       {{ lastSaveMessage }}
     </p>
 
+    <p
+      v-if="hasLegacyExternalTimeApi"
+      class="mt-3 rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs font-semibold text-amber-700 dark:text-amber-200"
+    >
+      检测到旧时间 API 配置；保存本卡片会清空 Endpoint、参数规则和 Key 引用，切换为内置时区。
+    </p>
+
     <div class="mt-4 grid gap-4 md:grid-cols-2">
-      <div class="flex items-center justify-between gap-3 rounded-xl border bg-background/70 px-3 py-2.5 md:col-span-2">
-        <div>
-          <span class="text-xs font-bold text-foreground">启用时间接口</span>
-          <p class="mt-0.5 text-xs text-muted-foreground">用于统一时区、接口时间戳校准和后台排查。</p>
-        </div>
-        <Switch v-model="timeApiEnabled" :disabled="controlsDisabled" aria-label="启用时间接口" />
+      <div class="rounded-xl border bg-background/70 px-3 py-2.5 md:col-span-2">
+        <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">时间来源</p>
+        <p class="mt-1 text-sm font-bold leading-relaxed text-foreground">
+          后端时间统一使用 UTC 存储和计算；时区只负责后台展示、统计窗口和排查口径，不再接第三方时间 API。
+        </p>
       </div>
 
-      <div class="rounded-xl border bg-background/70 px-3 py-2.5 md:col-span-2">
-        <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">服务商</p>
- <p class="mt-1 text-sm font-black text-foreground">{{ providerName || '填入 API 地址后自动识别'}}</p>
+      <AdminFormField label="默认经营时区" description="使用 IANA 时区名称；当前默认用于后台口径说明和后续需要统一本地日界线的功能。">
+        <Input v-model="apiSettings.time_api_default_timezone" :disabled="controlsDisabled" placeholder="Asia/Shanghai" />
+      </AdminFormField>
+
+      <div class="rounded-xl border bg-background/70 px-3 py-2.5">
+        <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">外部时间 API</p>
+        <p class="mt-1 text-sm font-black text-foreground">关闭</p>
+        <p class="mt-1 text-xs leading-relaxed text-muted-foreground">只有以后出现跨系统签名校时需求，才重新评估服务端校时。</p>
       </div>
-      <AdminFormField label="API 地址" class="md:col-span-2">
-        <Input v-model="apiSettings.time_api_endpoint" :disabled="controlsDisabled" type="url" placeholder="https://api.example.com/time" @input="beginEditing" />
-      </AdminFormField>
-      <AdminFormField label="参数规则" class="md:col-span-2">
-        <div class="grid gap-2 sm:grid-cols-3">
-          <button
-            v-for="option in timeQueryTemplateOptions"
-            :key="option.value"
-            type="button"
-            class="rounded-xl border bg-background/70 px-3 py-2 text-left text-xs font-bold transition hover:border-admin-selected-border hover:bg-admin-selected-soft"
- :class="apiSettings.time_api_query_template === option.value ? 'border-admin-selected-border bg-admin-selected-soft text-admin-selected shadow-[var(--admin-control-selected-surface-shadow)]': 'text-foreground'"
-            :disabled="controlsDisabled"
-            @click="selectQueryTemplate(option.value)"
-          >
-            {{ option.label }}
-          </button>
-        </div>
-      </AdminFormField>
-      <AdminFormField label="默认时区">
-        <Input v-model="apiSettings.time_api_default_timezone" :disabled="controlsDisabled" placeholder="Asia/Shanghai" @input="beginEditing" />
-      </AdminFormField>
-      <AdminFormField label="密钥引用名" description="需要 Key 的接口只填安全凭据引用，不在这里写明文。">
-        <Input v-model="apiSettings.time_api_key_ref" :disabled="controlsDisabled" autocomplete="off" placeholder="time_api_key" @input="beginEditing" />
-      </AdminFormField>
     </div>
 
     <div class="mt-4 grid gap-3 sm:grid-cols-3">
       <div class="rounded-xl border bg-background/70 p-3">
         <p class="text-[11px] font-black uppercase tracking-widest text-muted-foreground/60">Timezone</p>
- <p class="mt-1 text-sm font-black text-foreground">{{ apiSettings.time_api_default_timezone || 'Asia/Shanghai'}}</p>
+        <p class="mt-1 text-sm font-black text-foreground">{{ normalizedTimezone }}</p>
       </div>
       <div class="rounded-xl border bg-background/70 p-3">
         <p class="text-[11px] font-black uppercase tracking-widest text-muted-foreground/60">Source</p>
- <p class="mt-1 text-sm font-black text-foreground">{{ providerName || '待填写'}}</p>
+        <p class="mt-1 text-sm font-black text-foreground">Built-in</p>
       </div>
       <div class="rounded-xl border bg-background/70 p-3">
         <p class="text-[11px] font-black uppercase tracking-widest text-muted-foreground/60">Refresh</p>
-        <p class="mt-1 text-sm font-black text-foreground">每日自动</p>
+        <p class="mt-1 text-sm font-black text-foreground">不刷新</p>
+      </div>
+    </div>
+
+    <div class="mt-4 rounded-xl border bg-background/70 px-3 py-3">
+      <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">不要重复建设</p>
+      <div class="mt-2 grid gap-2 text-xs leading-relaxed text-muted-foreground md:grid-cols-3">
+        <p><span class="font-black text-foreground">业务存储：</span>继续用 UTC，不按时区写入数据库。</p>
+        <p><span class="font-black text-foreground">本地统计：</span>需要日界线时由调用端传 offset 或显式时区。</p>
+        <p><span class="font-black text-foreground">访客画像：</span>继续记录 CF-Timezone / X-Timezone 请求头。</p>
       </div>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch, watchEffect } from 'vue'
-import { Clock3, LoaderCircle, LockKeyhole, Pencil, Save } from '@lucide/vue'
+import { computed, ref } from 'vue'
+import { Clock3, LoaderCircle, Save } from '@lucide/vue'
 import { toast } from 'vue-sonner'
 import AdminFormField from '@/components/admin/AdminFormField.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Switch } from '@/components/ui/switch'
 import { apiSettingPayload, postApiSettingsBatch } from '@/components/admin/settings/apiSettingsPersistence'
-import { inferAPIProviderFromEndpoint } from '@/components/admin/settings/apiProviderDetection'
 
 interface TimeAPISettings {
   time_api_enabled: boolean | string | number
@@ -124,118 +106,91 @@ const props = withDefaults(defineProps<{
   saving: false,
 })
 
-const DAILY_API_REFRESH_MINUTES = 1440
+const BUILT_IN_PROVIDER = 'built-in'
+const DEFAULT_TIMEZONE = 'Asia/Shanghai'
+const DISABLED_REFRESH_MINUTES = 0
 
-const timeQueryTemplateOptions = [
-  { value: 'timezone={timezone}', label: 'timezone' },
-  { value: 'tz={timezone}', label: 'tz' },
-  { value: 'zone={timezone}', label: 'zone' },
-]
-
-const isEditing = ref(false)
 const localSaving = ref(false)
 const lastSaveMessage = ref('')
 const lastSaveStatus = ref<'success' | 'error' | 'saving' | ''>('')
 const canEdit = computed(() => props.canEdit)
 const effectiveSaving = computed(() => props.saving || localSaving.value)
-const isConfigured = computed(() => Boolean(String(props.apiSettings.time_api_endpoint || '').trim()))
-const controlsDisabled = computed(() => !canEdit.value || effectiveSaving.value || (isConfigured.value && !isEditing.value))
-const timeApiEnabled = computed<boolean>({
-  get: () => normalizeBooleanSetting(props.apiSettings.time_api_enabled),
-  set: (value) => {
-    props.apiSettings.time_api_enabled = value
-  }
-})
-const providerName = computed(() => props.apiSettings.time_api_provider || inferAPIProviderFromEndpoint(props.apiSettings.time_api_endpoint))
+const controlsDisabled = computed(() => !canEdit.value || effectiveSaving.value)
+const normalizedTimezone = computed(() => normalizeTimezone(props.apiSettings.time_api_default_timezone))
+const hasLegacyExternalTimeApi = computed(() =>
+  normalizeBooleanSetting(props.apiSettings.time_api_enabled)
+  || hasValue(props.apiSettings.time_api_endpoint)
+  || hasValue(props.apiSettings.time_api_key_ref)
+  || (hasValue(props.apiSettings.time_api_provider) && props.apiSettings.time_api_provider !== BUILT_IN_PROVIDER)
+)
 const lastSaveMessageClass = computed(() => {
   if (lastSaveStatus.value === 'success') return 'border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-200'
   if (lastSaveStatus.value === 'error') return 'border-red-500/20 bg-red-500/10 text-red-700 dark:text-red-200'
   return 'border-border bg-muted text-muted-foreground'
 })
 
-watch(
-  () => props.apiSettings.time_api_endpoint,
-  (endpoint) => {
-    props.apiSettings.time_api_provider = inferAPIProviderFromEndpoint(endpoint)
-  },
-  { immediate: true }
-)
-
-const beginEditing = () => {
-  if (controlsDisabled.value) return
-  isEditing.value = true
-}
-
-const toggleEditing = () => {
-  if (!canEdit.value || effectiveSaving.value) return
-  isEditing.value = !isEditing.value
-}
-
-const selectQueryTemplate = (value: string) => {
-  beginEditing()
-  props.apiSettings.time_api_query_template = value
-}
-
-watchEffect(() => {
-  if (!timeQueryTemplateOptions.some((option) => option.value === props.apiSettings.time_api_query_template)) {
-    props.apiSettings.time_api_query_template = timeQueryTemplateOptions[0].value
-  }
-})
-
-const errorMessage = (error: unknown, fallback: string): string =>
-  error instanceof Error ? error.message : fallback
+const hasValue = (value: unknown): boolean => String(value || '').trim().length > 0
 
 const normalizeBooleanSetting = (value: unknown): boolean =>
   value === true || value === 'true' || value === '1' || value === 1
 
-const saveTimeApiSettings = async (): Promise<void> => {
+const normalizeTimezone = (value: unknown): string => String(value || '').trim() || DEFAULT_TIMEZONE
+
+const isValidTimezone = (value: string): boolean => {
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: value }).format(new Date())
+    return true
+  } catch {
+    return false
+  }
+}
+
+const setErrorMessage = (message: string) => {
+  lastSaveStatus.value = 'error'
+  lastSaveMessage.value = message
+  toast.error(message)
+}
+
+const errorMessage = (error: unknown, fallback: string): string =>
+  error instanceof Error ? error.message : fallback
+
+const saveTimezoneSettings = async (): Promise<void> => {
   if (!canEdit.value || effectiveSaving.value) return
+  const defaultTimezone = normalizeTimezone(props.apiSettings.time_api_default_timezone)
+  if (!isValidTimezone(defaultTimezone)) {
+    setErrorMessage('请输入有效 IANA 时区，例如 Asia/Shanghai')
+    return
+  }
+
   localSaving.value = true
   lastSaveStatus.value = 'saving'
-  lastSaveMessage.value = '正在保存时间 API 设置...'
+  lastSaveMessage.value = '正在保存时区规则...'
   try {
-    const endpoint = String(props.apiSettings.time_api_endpoint || '').trim()
-    const queryTemplate = props.apiSettings.time_api_query_template || timeQueryTemplateOptions[0].value
-    const defaultTimezone = String(props.apiSettings.time_api_default_timezone || '').trim() || 'Asia/Shanghai'
-    const keyRef = String(props.apiSettings.time_api_key_ref || '').trim()
-    const provider = inferAPIProviderFromEndpoint(endpoint)
     await postApiSettingsBatch([
-      apiSettingPayload('time_api_enabled', normalizeBooleanSetting(props.apiSettings.time_api_enabled), 'boolean', 'Time API enabled'),
-      apiSettingPayload('time_api_provider', provider, 'string', 'Time API provider'),
-      apiSettingPayload('time_api_endpoint', endpoint, 'string', 'Time API endpoint'),
-      apiSettingPayload('time_api_query_template', queryTemplate, 'string', 'Time API query template'),
-      apiSettingPayload('time_api_default_timezone', defaultTimezone, 'string', 'Time API default timezone'),
-      apiSettingPayload('time_api_refresh_minutes', DAILY_API_REFRESH_MINUTES, 'number', 'Time API refresh interval in minutes'),
-      apiSettingPayload('time_api_key_ref', keyRef, 'string', 'Time API key reference'),
-    ], { label: '时间 API 设置' })
-    props.apiSettings.time_api_provider = provider
-    props.apiSettings.time_api_endpoint = endpoint
-    props.apiSettings.time_api_query_template = queryTemplate
+      apiSettingPayload('time_api_enabled', false, 'boolean', 'External Time API disabled; timezone is built in'),
+      apiSettingPayload('time_api_provider', BUILT_IN_PROVIDER, 'string', 'Timezone source'),
+      apiSettingPayload('time_api_endpoint', '', 'string', 'External Time API endpoint disabled'),
+      apiSettingPayload('time_api_query_template', '', 'string', 'External Time API query template disabled'),
+      apiSettingPayload('time_api_default_timezone', defaultTimezone, 'string', 'Default business timezone'),
+      apiSettingPayload('time_api_refresh_minutes', DISABLED_REFRESH_MINUTES, 'number', 'External Time API refresh interval disabled'),
+      apiSettingPayload('time_api_key_ref', '', 'string', 'External Time API key reference disabled'),
+    ], { label: '时区规则' })
+    props.apiSettings.time_api_enabled = false
+    props.apiSettings.time_api_provider = BUILT_IN_PROVIDER
+    props.apiSettings.time_api_endpoint = ''
+    props.apiSettings.time_api_query_template = ''
     props.apiSettings.time_api_default_timezone = defaultTimezone
-    props.apiSettings.time_api_refresh_minutes = DAILY_API_REFRESH_MINUTES
-    props.apiSettings.time_api_key_ref = keyRef
-    isEditing.value = false
+    props.apiSettings.time_api_refresh_minutes = DISABLED_REFRESH_MINUTES
+    props.apiSettings.time_api_key_ref = ''
     lastSaveStatus.value = 'success'
-    lastSaveMessage.value = '时间 API 设置已保存'
+    lastSaveMessage.value = '时区规则已保存'
     toast.success(lastSaveMessage.value)
   } catch (error) {
     lastSaveStatus.value = 'error'
-    lastSaveMessage.value = errorMessage(error, '时间 API 设置保存失败')
+    lastSaveMessage.value = errorMessage(error, '时区规则保存失败')
     toast.error(lastSaveMessage.value)
   } finally {
     localSaving.value = false
   }
-}
-
-const statusLabel = (enabled: unknown, endpoint: unknown): string => {
-  if (!normalizeBooleanSetting(enabled)) return '未启用'
-  if (!endpoint) return '缺 Endpoint'
-  return '已启用'
-}
-
-const statusBadgeClass = (enabled: unknown, endpoint: unknown): string => {
-  if (!normalizeBooleanSetting(enabled)) return 'border-border bg-muted text-muted-foreground'
-  if (!endpoint) return 'border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-200'
-  return 'border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-200'
 }
 </script>

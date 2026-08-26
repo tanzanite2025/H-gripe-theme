@@ -136,6 +136,22 @@ func (s *StorefrontMarketService) Options() StorefrontMarketOptionSet {
 	}
 }
 
+// ListStorefrontDisplayCurrencies returns the unique currencies configured for
+// customer-facing market display. This includes both each market default
+// currency and its optional selectable display currencies.
+func (s *StorefrontMarketService) ListStorefrontDisplayCurrencies(enabledOnly bool) ([]string, error) {
+	markets, err := s.List(enabledOnly)
+	if err != nil {
+		return nil, err
+	}
+	codes := make([]string, 0, len(markets)*2)
+	for _, market := range markets {
+		codes = append(codes, market.DefaultCurrency)
+		codes = append(codes, market.DisplayCurrencies...)
+	}
+	return normalizeStorefrontMarketDisplayCurrencies(codes, nil), nil
+}
+
 func normalizeStorefrontMarketInput(input StorefrontMarketInput) (marketdomain.StorefrontMarket, error) {
 	code := normalizeMarketCode(input.Code)
 	if code == "" {

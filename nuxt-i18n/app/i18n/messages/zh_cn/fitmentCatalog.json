@@ -1,0 +1,61 @@
+{
+  "trigger": {
+    "label": "查询适配"
+  },
+  "dialog": {
+    "eyebrow": "适配资料库",
+    "title": "查询车架或前叉适配",
+    "description": "按品牌、型号或年份搜索独立的适配资料库。结果会显示该条目已录入的花鼓规格。",
+    "close": "关闭",
+    "tabListLabel": "适配资料库分类"
+  },
+  "tabs": {
+    "frame": "车架适配",
+    "fork": "前叉适配"
+  },
+  "search": {
+    "label": "搜索",
+    "placeholder": "搜索品牌或型号",
+    "yearLabel": "车型年份",
+    "yearPlaceholder": "例如 2024",
+    "submit": "搜索",
+    "clear": "清除",
+    "searching": "搜索中..."
+  },
+  "states": {
+    "initial": "请输入品牌、型号或年份来搜索资料库。",
+    "empty": "没有找到匹配的记录。",
+    "unavailable": "适配数据暂时无法使用，请稍后再试。",
+    "noHubSpecifications": "尚未录入花鼓规格。"
+  },
+  "entry": {
+    "series": "系列",
+    "generation": "代际",
+    "market": "市场",
+    "hubSpecifications": "花鼓规格",
+    "unknownYear": "未指定年份",
+    "allYears": "全部年份"
+  },
+  "pagination": {
+    "label": "适配查询结果",
+    "previous": "上一页",
+    "next": "下一页",
+    "page": "第 {page} 页，共 {totalPages} 页"
+  },
+  "hub": {
+    "position": "位置",
+    "axleType": "轴类型",
+    "axleSpacing": "轴开档",
+    "millimetres": "毫米",
+    "positions": {
+      "front": "前",
+      "rear": "后"
+    },
+    "axleTypes": {
+      "quickRelease": "快拆",
+      "thruAxle": "筒轴",
+      "boltOn": "螺栓固定",
+      "other": "其他"
+    }
+  }
+}

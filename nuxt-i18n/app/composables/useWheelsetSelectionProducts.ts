@@ -30,7 +30,7 @@ export const useWheelsetSelectionProducts = (
           ? JSON.stringify(current.spec_filters)
           : undefined,
         page: page.value,
-        per_page: 12,
+        per_page: 6,
       })
       if (requestId !== requestSequence) return
       products.value = result.items

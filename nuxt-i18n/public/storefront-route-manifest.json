@@ -1,5 +1,5 @@
 {
-  "version": "2026-08-15",
+  "version": "2026-08-23",
   "routes": [
     {
       "key": "home",
@@ -20,8 +20,8 @@
       "is_indexable": true
     },
     {
-      "key": "blog",
-      "path": "/blog",
+      "key": "resources-blog",
+      "path": "/resources/blog",
       "label": "Blog",
       "description": "Blog landing page",
       "is_searchable": true,
@@ -29,8 +29,8 @@
       "is_indexable": true
     },
     {
-      "key": "blog-news",
-      "path": "/blog/news",
+      "key": "resources-blog-news",
+      "path": "/resources/blog/news",
       "label": "News",
       "description": "News articles",
       "is_searchable": true,
@@ -38,8 +38,8 @@
       "is_indexable": true
     },
     {
-      "key": "blog-wheelsbuild",
-      "path": "/blog/wheelsbuild",
+      "key": "resources-blog-wheelsbuild",
+      "path": "/resources/blog/wheelsbuild",
       "label": "Wheel Build",
       "description": "Wheel build articles",
       "is_searchable": true,
@@ -101,10 +101,28 @@
       "is_indexable": true
     },
     {
-      "key": "company-website",
-      "path": "/company/website",
+      "key": "website",
+      "path": "/website",
       "label": "Website",
-      "description": "Website information",
+      "description": "Information about this website",
+      "is_searchable": true,
+      "is_checkable": true,
+      "is_indexable": true
+    },
+    {
+      "key": "website-me-this-website",
+      "path": "/website/me-this-website",
+      "label": "Me & This Website",
+      "description": "The person and work behind this website",
+      "is_searchable": true,
+      "is_checkable": true,
+      "is_indexable": true
+    },
+    {
+      "key": "website-why-this-name",
+      "path": "/website/why-this-name",
+      "label": "Why This Name",
+      "description": "Why this website uses its name",
       "is_searchable": true,
       "is_checkable": true,
       "is_indexable": true
@@ -128,8 +146,8 @@
       "is_indexable": true
     },
     {
-      "key": "membershipandpoints",
-      "path": "/membershipandpoints",
+      "key": "resources-membershipandpoints",
+      "path": "/resources/membershipandpoints",
       "label": "Membership and Points",
       "description": "Membership and points",
       "is_searchable": true,
@@ -137,8 +155,8 @@
       "is_indexable": true
     },
     {
-      "key": "picture-warehouse",
-      "path": "/picture-warehouse",
+      "key": "resources-picture-warehouse",
+      "path": "/resources/picture-warehouse",
       "label": "Picture Warehouse",
       "description": "Product image reference gallery",
       "is_searchable": true,
@@ -182,8 +200,8 @@
       "is_indexable": true
     },
     {
-      "key": "spoke-calculator",
-      "path": "/spoke-calculator",
+      "key": "resources-spoke-calculator",
+      "path": "/resources/spoke-calculator",
       "label": "Spoke Calculator",
       "description": "Spoke length calculator",
       "is_searchable": true,

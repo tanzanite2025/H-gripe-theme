@@ -26,7 +26,7 @@ import GradientDockMenu from '~/components/GradientDockMenu.vue'
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #000;
+  background: var(--tz-surface-page);
 }
 
 .layout-main {

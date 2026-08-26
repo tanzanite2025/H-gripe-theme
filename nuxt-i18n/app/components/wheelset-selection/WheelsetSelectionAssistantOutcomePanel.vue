@@ -64,7 +64,7 @@ const emit = defineEmits<{
 }
 
 .wheelset-selection-outcome-panel__eyebrow {
-  color: var(--tz-brand-primary, #b5ff6d);
+  color: var(--tz-site-accent, #059669);
   font-size: 0.66rem;
   font-weight: 850;
   letter-spacing: 0.14em;
@@ -72,7 +72,7 @@ const emit = defineEmits<{
 }
 
 .wheelset-selection-outcome-panel__copy h3 {
-  color: var(--tz-text-primary, #f8fafc);
+  color: var(--tz-text-primary, #0f172a);
   font-size: 1.05rem;
   font-weight: 800;
   line-height: 1.4;
@@ -103,12 +103,12 @@ const emit = defineEmits<{
 }
 
 .wheelset-selection-outcome-panel__back {
-  color: var(--tz-text-secondary, #cbd5e1);
-  background: var(--quickbuy-control-surface-raised, #1a1c24);
+  color: var(--tz-text-secondary);
+  background: var(--quickbuy-control-surface-raised, var(--tz-surface-subtle));
 }
 
 .wheelset-selection-outcome-panel__contact {
-  color: #101014;
-  background: var(--tz-brand-primary, #b5ff6d);
+  color: #ffffff;
+  background: var(--tz-site-accent, #059669);
 }
 </style>

@@ -45,7 +45,7 @@ interface BrandPhotoSlide {
 const sectionId = 'home-brand-photo-carousel'
 const { t } = useI18n()
 const localePath = useLocalePath()
-const brandPhotoPath = localePath('/picture-warehouse/brand')
+const brandPhotoPath = localePath('/resources/picture-warehouse/brand')
 const {
   brandPhotos,
   brandLoading,

@@ -1,0 +1,61 @@
+{
+  "trigger": {
+    "label": "互換性を確認"
+  },
+  "dialog": {
+    "eyebrow": "互換性カタログ",
+    "title": "フレームまたはフォークを検索",
+    "description": "ブランド、モデル、年式から独立した互換性カタログを検索できます。各登録項目に記録されたハブ仕様も確認できます。",
+    "close": "閉じる",
+    "tabListLabel": "互換性カタログのセクション"
+  },
+  "tabs": {
+    "frame": "フレームの互換性",
+    "fork": "フォークの互換性"
+  },
+  "search": {
+    "label": "検索",
+    "placeholder": "ブランドまたはモデルで検索",
+    "yearLabel": "モデル年式",
+    "yearPlaceholder": "例: 2024",
+    "submit": "検索",
+    "clear": "クリア",
+    "searching": "検索中..."
+  },
+  "states": {
+    "initial": "ブランド、モデル、または年式を入力してカタログを検索してください。",
+    "empty": "一致する登録項目が見つかりませんでした。",
+    "unavailable": "互換性データを一時的に利用できません。もう一度お試しください。",
+    "noHubSpecifications": "ハブ仕様は登録されていません。"
+  },
+  "entry": {
+    "series": "シリーズ",
+    "generation": "世代",
+    "market": "市場",
+    "hubSpecifications": "ハブ仕様",
+    "unknownYear": "年式未指定",
+    "allYears": "全ての年式"
+  },
+  "pagination": {
+    "label": "互換性の検索結果",
+    "previous": "前のページ",
+    "next": "次のページ",
+    "page": "{totalPages}ページ中{page}ページ"
+  },
+  "hub": {
+    "position": "位置",
+    "axleType": "アクスルタイプ",
+    "axleSpacing": "アクスル幅",
+    "millimetres": "mm",
+    "positions": {
+      "front": "フロント",
+      "rear": "リア"
+    },
+    "axleTypes": {
+      "quickRelease": "クイックリリース",
+      "thruAxle": "スルーアクスル",
+      "boltOn": "ボルト固定",
+      "other": "その他"
+    }
+  }
+}

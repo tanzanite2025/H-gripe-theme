@@ -31,7 +31,7 @@
       >
         <div class="relative p-5 grid gap-4 md:grid-cols-[1fr,auto]">
           <div>
-            <h3 class="text-sm font-semibold tz-text-primary mb-1 transition-colors group-hover:text-[var(--tz-brand-primary)]">
+            <h3 class="text-sm font-semibold tz-text-primary mb-1 transition-colors group-hover:text-[var(--tz-site-accent)]">
               {{ config.name }}
             </h3>
             <p v-if="config.description" class="tz-caption tz-text-secondary mb-3 line-clamp-1">
@@ -58,7 +58,7 @@
             <div class="grid grid-cols-2 gap-x-4 gap-y-2">
               <div v-for="cell in resultCells(config)" :key="cell.label" class="text-center">
                 <div class="tz-compact-label tz-text-muted mb-0.5">{{ cell.label }}</div>
-                <div class="text-lg font-mono font-bold text-[var(--tz-brand-primary)]">
+                <div class="text-lg font-mono font-bold text-[var(--tz-site-accent)]">
                   {{ cell.value }}<span class="tz-micro-label tz-text-muted ml-0.5">mm</span>
                 </div>
               </div>
@@ -167,37 +167,37 @@ function nippleTypeLabel(value: WheelBuildPreset['nippleType']) {
 }
 
 .spoke-smart-search__badge {
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--tz-border-subtle);
+  background: var(--tz-surface-subtle);
   color: var(--tz-text-secondary);
 }
 
 .spoke-smart-search__card {
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--tz-border-subtle);
   border-radius: 0.5rem;
   background: var(--tz-form-panel-surface);
-  box-shadow: 0 8px 22px -14px rgba(0, 0, 0, 0.65);
+  box-shadow: 0 8px 22px -14px rgba(20, 32, 43, 0.14);
 }
 
 .spoke-smart-search__card:hover {
-  border-color: rgba(255, 255, 255, 0.16);
-  background: #17171d;
+  border-color: var(--tz-border-strong);
+  background: var(--tz-surface-muted);
 }
 
 .spoke-smart-search__chip {
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--tz-border-subtle);
+  background: var(--tz-surface-subtle);
   color: var(--tz-text-secondary);
 }
 
 .spoke-smart-search__result-stack {
-  border-color: rgba(255, 255, 255, 0.08);
+  border-color: var(--tz-border-subtle);
 }
 
 .spoke-smart-search__empty {
-  border: 1px dashed rgba(255, 255, 255, 0.14);
+  border: 1px dashed var(--tz-border-strong);
   border-radius: 0.5rem;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--tz-surface-subtle);
 }
 
 .list-results-enter-active,

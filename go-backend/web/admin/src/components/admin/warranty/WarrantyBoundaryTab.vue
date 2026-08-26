@@ -5,14 +5,14 @@
         <ShieldCheck class="size-5 text-emerald-600" />
         <h2 class="mt-3 text-sm font-black tracking-tighter uppercase">单一事实源</h2>
         <p class="mt-2 text-xs leading-5 text-muted-foreground">
-          后台只读取 Go 后端 `product_registrations`、`warranty_claims` 和 `warranty_service_records`，不接 WordPress，也不在前端保留影子数据。
+          订单状态和商品快照来自 `orders`；已发货订单的售后凭据来自可选的 `shipment_records`，不建立产品注册表。
         </p>
       </div>
       <div class="rounded-[24px] border border-dashed bg-card p-4">
         <GitBranch class="size-5 text-blue-600" />
         <h2 class="mt-3 text-sm font-black tracking-tighter uppercase">订单行边界</h2>
         <p class="mt-2 text-xs leading-5 text-muted-foreground">
-          订单型申请通过 `warranty_claims.order_item_id` 绑定具体购买行；没有订单号时保持为空，不用处理备注伪造绑定。
+          保修申请通过订单号进入，并可通过 `warranty_claims.order_item_id` 绑定具体购买行；不使用产品编码或序列号作为主键。
         </p>
       </div>
       <div class="rounded-[24px] border border-dashed bg-card p-4">

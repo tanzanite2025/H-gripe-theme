@@ -162,7 +162,11 @@ func (s *VisualShowcaseService) UploadAdminImage(
 	if file == nil {
 		return nil, ErrVisualShowcaseUploadFileRequired
 	}
-	if err := upload.ValidateFile(file, upload.ProductImageRule); err != nil {
+	specCode := upload.SpecVisualShowcaseEditorial
+	if key == HomeMainProductCategoriesShowcaseKey {
+		specCode = upload.SpecVisualShowcaseHomeCategories
+	}
+	if err := upload.ValidateSpecFile(file, string(specCode)); err != nil {
 		return nil, err
 	}
 

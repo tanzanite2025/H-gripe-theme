@@ -64,7 +64,7 @@ const assertContentSecurityPolicy = (contentSecurityPolicy: string, body: string
   if (!contentSecurityPolicy.includes("require-trusted-types-for 'script'")) {
     throw new Error('Content-Security-Policy does not require Trusted Types for script sinks')
   }
-  if (!contentSecurityPolicy.includes('trusted-types vue tanzanite-script-url')) {
+  if (!contentSecurityPolicy.includes('trusted-types default vue tanzanite-script-url')) {
     throw new Error('Content-Security-Policy does not restrict Trusted Types policy names')
   }
   if (contentSecurityPolicy.includes("script-src 'self' 'unsafe-inline'")) {

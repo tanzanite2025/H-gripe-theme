@@ -152,7 +152,7 @@ const handleStepSlotKeydown = (event: KeyboardEvent, stepIndex: number) => {
   >
     <div v-if="showHeader" class="quickbuy-summary-panel-header">
       <div class="quickbuy-panel-heading-row quickbuy-panel-heading-row--summary">
-        <h3 class="my-0 text-base font-semibold text-white">
+        <h3 class="my-0 text-base font-semibold tz-text-primary">
           {{ title }}
         </h3>
       </div>
@@ -412,13 +412,13 @@ const handleStepSlotKeydown = (event: KeyboardEvent, stepIndex: number) => {
   box-sizing: border-box;
   flex-direction: column;
   padding: 0.75rem;
-  border: 1px solid rgba(255, 255, 255, 0.035);
+  border: 1px solid var(--tz-border-subtle);
   border-radius: 0.75rem;
-  background: #0b0d12;
+  background: var(--quickbuy-panel-surface, var(--tz-card-surface));
   box-shadow:
-    0 16px 42px rgba(0, 0, 0, 0.34),
-    inset 0 1px 0 rgba(255, 255, 255, 0.045),
-    inset 0 -1px 0 var(--quickbuy-dark-edge, rgba(0, 0, 0, 0.5));
+    0 16px 42px rgba(20, 32, 43, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    inset 0 -1px 0 var(--quickbuy-dark-edge, rgba(20, 32, 43, 0.12));
 }
 
 .quickbuy-summary-panel--mobile-step-list {
@@ -479,19 +479,19 @@ const handleStepSlotKeydown = (event: KeyboardEvent, stepIndex: number) => {
   border: 0;
   border-radius: 0.5rem;
   background:
-    linear-gradient(180deg, var(--quickbuy-control-surface-raised, #171920), var(--quickbuy-control-surface, #0d0f14));
+    var(--quickbuy-control-surface-raised, var(--tz-surface-subtle));
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.035),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.34);
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    inset 0 -1px 0 var(--tz-border-subtle);
 }
 
 .quickbuy-selected-step-slot--filled {
   background:
-    linear-gradient(180deg, var(--quickbuy-panel-surface-raised, #1c1e25), var(--quickbuy-panel-surface, #15171d));
+    var(--quickbuy-panel-surface-raised, var(--tz-surface-muted));
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.045),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.36),
-    0 8px 24px rgba(0, 0, 0, 0.22);
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    inset 0 -1px 0 var(--tz-border-subtle),
+    0 8px 24px rgba(20, 32, 43, 0.08);
 }
 
 .quickbuy-selected-step-slot-placeholder {
@@ -500,7 +500,7 @@ const handleStepSlotKeydown = (event: KeyboardEvent, stepIndex: number) => {
   width: 100%;
   align-items: center;
   gap: 0.5rem;
-  color: rgba(255, 255, 255, 0.3);
+  color: var(--tz-text-disabled);
 }
 
 .quickbuy-selected-step-slot-placeholder__index {
@@ -511,11 +511,11 @@ const handleStepSlotKeydown = (event: KeyboardEvent, stepIndex: number) => {
   place-items: center;
   border: 0;
   border-radius: 0.375rem;
-  color: rgba(255, 255, 255, 0.42);
-  background: var(--quickbuy-control-surface, #0d0f14);
+  color: var(--tz-text-muted);
+  background: var(--quickbuy-control-surface, var(--tz-input-surface));
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.03),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.38);
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    inset 0 -1px 0 var(--tz-border-subtle);
   font-size: 0.6875rem;
   font-weight: 700;
 }
@@ -536,11 +536,11 @@ const handleStepSlotKeydown = (event: KeyboardEvent, stepIndex: number) => {
   place-items: center;
   object-fit: cover;
   border-radius: 0.45rem;
-  background: var(--quickbuy-control-surface, #0d0f14);
+  background: var(--quickbuy-control-surface, var(--tz-input-surface));
 }
 
 .quickbuy-selected-card-image--empty {
-  color: rgba(255, 255, 255, 0.45);
+  color: var(--tz-text-muted);
 }
 
 .quickbuy-selected-card-content {
@@ -553,7 +553,7 @@ const handleStepSlotKeydown = (event: KeyboardEvent, stepIndex: number) => {
 
 .quickbuy-selected-card-title {
   overflow: hidden;
-  color: white;
+  color: var(--tz-text-primary);
   font-size: 0.75rem;
   font-weight: 700;
   text-overflow: ellipsis;
@@ -562,7 +562,7 @@ const handleStepSlotKeydown = (event: KeyboardEvent, stepIndex: number) => {
 
 .quickbuy-selected-card-step {
   overflow: hidden;
-  color: rgba(181, 255, 109, 0.82);
+  color: rgba(5, 150, 105, 0.82);
   font-size: 0.625rem;
   font-weight: 700;
   text-overflow: ellipsis;
@@ -575,7 +575,7 @@ const handleStepSlotKeydown = (event: KeyboardEvent, stepIndex: number) => {
   align-items: center;
   gap: 0.35rem;
   overflow: hidden;
-  color: rgba(255, 255, 255, 0.62);
+  color: var(--tz-text-muted);
   font-size: 0.625rem;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -589,8 +589,8 @@ const handleStepSlotKeydown = (event: KeyboardEvent, stepIndex: number) => {
   place-items: center;
   padding: 0 0.4rem;
   border-radius: 0.5rem;
-  color: #fff;
-  background: rgba(255, 255, 255, 0.08);
+  color: var(--tz-text-primary);
+  background: var(--tz-surface-subtle);
   font-size: 0.8rem;
   font-weight: 800;
 }
@@ -606,12 +606,11 @@ const handleStepSlotKeydown = (event: KeyboardEvent, stepIndex: number) => {
   padding: 0.35rem 0.55rem;
   border: 0;
   border-radius: 0.45rem;
-  color: #fff;
-  background:
-    linear-gradient(180deg, var(--quickbuy-control-surface-raised, #171920), var(--quickbuy-control-surface, #0d0f14));
+  color: var(--tz-text-primary);
+  background: var(--tz-surface-subtle);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.035),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.34);
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    inset 0 -1px 0 var(--tz-border-subtle);
   font-size: 0.68rem;
   font-weight: 700;
   transition: background-color 160ms ease, transform 160ms ease;
@@ -626,7 +625,7 @@ const handleStepSlotKeydown = (event: KeyboardEvent, stepIndex: number) => {
 
 .quickbuy-selected-card-details:hover {
   background:
-    linear-gradient(180deg, #32343d, #24262e);
+    var(--tz-surface-muted);
   transform: translateY(-1px);
 }
 
@@ -640,8 +639,8 @@ const handleStepSlotKeydown = (event: KeyboardEvent, stepIndex: number) => {
   align-items: center;
   padding: 0.1rem 0.3rem;
   border-radius: 999px;
-  color: rgba(181, 255, 109, 0.9);
-  background: rgba(181, 255, 109, 0.08);
+  color: rgba(5, 150, 105, 0.9);
+  background: rgba(5, 150, 105, 0.08);
   font-size: 0.5625rem;
   line-height: 1;
 }
@@ -660,16 +659,15 @@ const handleStepSlotKeydown = (event: KeyboardEvent, stepIndex: number) => {
   place-items: center;
   border: 0;
   border-radius: 0.375rem;
-  color: white;
-  background:
-    linear-gradient(180deg, var(--quickbuy-control-surface-raised, #151519), #101013);
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.68);
+  color: var(--tz-text-primary);
+  background: var(--tz-surface-subtle);
+  box-shadow: inset 0 0 0 1px var(--tz-border-subtle);
   transition: background-color 160ms ease, opacity 160ms ease;
 }
 
 .quickbuy-quantity-button:hover:not(:disabled) {
   background:
-    linear-gradient(180deg, #202026, #151519);
+    var(--tz-surface-muted);
 }
 
 .quickbuy-quantity-button:disabled {
@@ -683,8 +681,8 @@ const handleStepSlotKeydown = (event: KeyboardEvent, stepIndex: number) => {
   box-sizing: border-box;
   border: 0 !important;
   border-radius: 0.375rem;
-  color: white;
-  background: #070708 !important;
+  color: var(--tz-text-primary);
+  background: var(--tz-input-surface) !important;
   background-image: none !important;
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.82);
   font-size: 0.75rem;
@@ -696,7 +694,7 @@ const handleStepSlotKeydown = (event: KeyboardEvent, stepIndex: number) => {
   outline: none !important;
   box-shadow:
     inset 0 1px 2px rgba(0, 0, 0, 0.7),
-    0 0 0 3px var(--quickbuy-focus-ring, rgba(181, 255, 109, 0.12));
+    0 0 0 3px var(--quickbuy-focus-ring, rgba(5, 150, 105, 0.12));
 }
 
 .quickbuy-quantity-input::-webkit-inner-spin-button,
@@ -712,13 +710,13 @@ const handleStepSlotKeydown = (event: KeyboardEvent, stepIndex: number) => {
   flex: 0 0 auto;
   place-items: center;
   border-radius: 999px;
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--tz-text-muted);
   transition: background-color 160ms ease, color 160ms ease;
 }
 
 .quickbuy-selected-card-remove:hover {
-  color: white;
-  background: rgba(255, 255, 255, 0.12);
+  color: var(--tz-text-primary);
+  background: var(--tz-surface-subtle);
 }
 
 .quickbuy-summary-stats {
@@ -728,7 +726,7 @@ const handleStepSlotKeydown = (event: KeyboardEvent, stepIndex: number) => {
   gap: 0.5rem;
   padding-top: 0.75rem;
   box-shadow: inset 0 1px 0 var(--quickbuy-divider, rgba(255, 255, 255, 0.045));
-  color: white;
+  color: var(--tz-text-primary);
 }
 
 /* Stat card selectors kept explicit for QA: --items, --weight, --price map to the three label-free summary cards. */
@@ -742,20 +740,20 @@ const handleStepSlotKeydown = (event: KeyboardEvent, stepIndex: number) => {
   border: 0;
   border-radius: 0.65rem;
   background:
-    linear-gradient(180deg, var(--quickbuy-panel-surface-raised, #1c1e25), var(--quickbuy-panel-surface, #15171d));
+    var(--quickbuy-panel-surface-raised, var(--tz-surface-muted));
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.045),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.36),
-    0 8px 22px rgba(0, 0, 0, 0.2);
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    inset 0 -1px 0 var(--tz-border-subtle),
+    0 8px 22px rgba(20, 32, 43, 0.08);
 }
 
 .quickbuy-summary-stat--price {
   background:
-    linear-gradient(180deg, #252831, var(--quickbuy-panel-surface-raised, #1c1e25));
+    var(--quickbuy-panel-surface-raised, var(--tz-surface-muted));
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.32),
-    0 12px 30px rgba(0, 0, 0, 0.24);
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    inset 0 -1px 0 var(--tz-border-subtle),
+    0 12px 30px rgba(20, 32, 43, 0.08);
 }
 
 .quickbuy-summary-stat__icon {
@@ -765,13 +763,13 @@ const handleStepSlotKeydown = (event: KeyboardEvent, stepIndex: number) => {
   flex: 0 0 auto;
   place-items: center;
   border-radius: 999px;
-  background: #2b2e38;
-  color: rgba(255, 255, 255, 0.86);
+  background: var(--tz-surface-muted);
+  color: var(--tz-text-secondary);
 }
 
 .quickbuy-summary-stat--price .quickbuy-summary-stat__icon {
   background: #ffffff;
-  color: #050505;
+  color: var(--tz-text-primary);
 }
 
 .quickbuy-summary-stat__content {
@@ -782,7 +780,7 @@ const handleStepSlotKeydown = (event: KeyboardEvent, stepIndex: number) => {
 
 .quickbuy-summary-stat__label {
   overflow: hidden;
-  color: rgba(255, 255, 255, 0.62);
+  color: var(--tz-text-muted);
   font-size: 0.6875rem;
   font-weight: 700;
   line-height: 1.1;
@@ -793,7 +791,7 @@ const handleStepSlotKeydown = (event: KeyboardEvent, stepIndex: number) => {
 
 .quickbuy-summary-stat__value {
   overflow: hidden;
-  color: #ffffff;
+  color: var(--tz-text-primary);
   font-size: 1.05rem;
   font-weight: 850;
   letter-spacing: 0;
@@ -826,13 +824,12 @@ const handleStepSlotKeydown = (event: KeyboardEvent, stepIndex: number) => {
   padding: 0.5rem 0.625rem;
   border: 0;
   border-radius: 0.5rem;
-  color: white;
-  background:
-    linear-gradient(180deg, var(--quickbuy-control-surface-raised, #171920), var(--quickbuy-control-surface, #0d0f14));
+  color: var(--tz-text-primary);
+  background: var(--tz-surface-subtle);
   box-shadow:
-    0 6px 18px rgba(0, 0, 0, 0.24),
-    inset 0 1px 0 rgba(255, 255, 255, 0.035),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.36);
+    0 6px 18px rgba(20, 32, 43, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    inset 0 -1px 0 var(--tz-border-subtle);
   font-size: 0.75rem;
   font-weight: 700;
   text-align: center;
@@ -848,7 +845,7 @@ const handleStepSlotKeydown = (event: KeyboardEvent, stepIndex: number) => {
 
 .quickbuy-summary-action:hover:not(:disabled) {
   background:
-    linear-gradient(180deg, #32343d, #24262e);
+    var(--tz-surface-muted);
 }
 
 .quickbuy-summary-action:disabled {
@@ -857,15 +854,17 @@ const handleStepSlotKeydown = (event: KeyboardEvent, stepIndex: number) => {
 }
 
 .quickbuy-summary-action--primary {
-  color: black;
-  background: white;
+  color: var(--tz-action-primary-foreground);
+  background: var(--tz-action-primary);
+  border: 1px solid var(--tz-action-primary);
   box-shadow:
     0 8px 20px rgba(0, 0, 0, 0.32),
     inset 0 0 0 1px rgba(0, 0, 0, 0.08);
 }
 
 .quickbuy-summary-action--primary:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.88);
+  background: var(--tz-action-primary-hover);
+  border-color: var(--tz-action-primary-hover);
 }
 
 @media (min-width: 768px) and (max-width: 1100px) {
@@ -975,26 +974,25 @@ const handleStepSlotKeydown = (event: KeyboardEvent, stepIndex: number) => {
     padding: 0.25rem 0.4rem;
     border: 0;
     border-radius: 0.45rem;
-    color: rgba(255, 255, 255, 0.68);
+    color: var(--tz-text-secondary);
     background:
-      linear-gradient(180deg, var(--quickbuy-control-surface-raised, #171920), var(--quickbuy-control-surface, #0d0f14));
+      var(--quickbuy-control-surface-raised, var(--tz-surface-subtle));
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.035),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.34);
+      inset 0 1px 0 rgba(255, 255, 255, 0.8),
+      inset 0 -1px 0 var(--tz-border-subtle);
     cursor: pointer;
     text-align: left;
     transition: background-color 160ms ease, color 160ms ease, transform 160ms ease;
   }
 
   .quickbuy-mobile-step-trigger:hover {
-    color: #fff;
-    background:
-      linear-gradient(180deg, #252831, #171920);
+    color: var(--tz-text-primary);
+    background: var(--tz-surface-muted);
     transform: translateY(-1px);
   }
 
   .quickbuy-mobile-step-trigger:focus-visible {
-    outline: 2px solid rgba(181, 255, 109, 0.72);
+    outline: 2px solid rgba(5, 150, 105, 0.72);
     outline-offset: 2px;
   }
 
@@ -1005,8 +1003,8 @@ const handleStepSlotKeydown = (event: KeyboardEvent, stepIndex: number) => {
     flex: 0 0 auto;
     place-items: center;
     border-radius: 0.35rem;
-    color: rgba(255, 255, 255, 0.54);
-    background: var(--quickbuy-control-surface, #0d0f14);
+    color: var(--tz-text-muted);
+    background: var(--quickbuy-control-surface, var(--tz-input-surface));
     font-size: 0.625rem;
     font-weight: 800;
   }
@@ -1026,7 +1024,7 @@ const handleStepSlotKeydown = (event: KeyboardEvent, stepIndex: number) => {
     width: 0.9rem;
     height: 0.9rem;
     flex: 0 0 auto;
-    color: rgba(255, 255, 255, 0.48);
+    color: var(--tz-text-muted);
   }
 
   .quickbuy-mobile-product-row {
@@ -1043,29 +1041,29 @@ const handleStepSlotKeydown = (event: KeyboardEvent, stepIndex: number) => {
 
   .quickbuy-mobile-product-row--filled {
     background:
-      linear-gradient(180deg, var(--quickbuy-panel-surface-raised, #1c1e25), var(--quickbuy-panel-surface, #15171d));
+      var(--quickbuy-panel-surface-raised, var(--tz-surface-muted));
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.045),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.36);
+      inset 0 1px 0 rgba(255, 255, 255, 0.8),
+      inset 0 -1px 0 var(--tz-border-subtle);
   }
 
   .quickbuy-mobile-product-row--empty {
     justify-content: center;
-    border: 1px dashed rgba(181, 255, 109, 0.3);
-    color: rgba(181, 255, 109, 0.9);
-    background: rgba(181, 255, 109, 0.035);
+    border: 1px dashed rgba(5, 150, 105, 0.3);
+    color: rgba(5, 150, 105, 0.9);
+    background: rgba(5, 150, 105, 0.035);
     cursor: pointer;
     transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease;
   }
 
   .quickbuy-mobile-product-row--empty:hover {
-    border-color: rgba(181, 255, 109, 0.62);
-    background: rgba(181, 255, 109, 0.09);
+    border-color: rgba(5, 150, 105, 0.62);
+    background: rgba(5, 150, 105, 0.09);
     transform: translateY(-1px);
   }
 
   .quickbuy-mobile-product-row--empty:focus-visible {
-    outline: 2px solid rgba(181, 255, 109, 0.72);
+    outline: 2px solid rgba(5, 150, 105, 0.72);
     outline-offset: 2px;
   }
 

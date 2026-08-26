@@ -45,6 +45,7 @@ func TestVisitorProfileTouchBindsCartAndCustomerServiceVisitor(t *testing.T) {
 		CountryCode:                "us",
 		Region:                     "California",
 		City:                       "Los Angeles",
+		Timezone:                   "America/Los_Angeles",
 		IPAddress:                  "203.0.113.10",
 		UserAgent:                  "Mozilla/5.0 Test",
 		SeenAt:                     firstSeen.Add(time.Hour),
@@ -56,6 +57,7 @@ func TestVisitorProfileTouchBindsCartAndCustomerServiceVisitor(t *testing.T) {
 	assert.Equal(t, "customer@example.com", updated.Email)
 	assert.Equal(t, "public_chat", updated.EmailSource)
 	assert.Equal(t, "US", updated.CountryCode)
+	assert.Equal(t, "America/Los_Angeles", updated.Timezone)
 	assert.NotEmpty(t, updated.IPHash)
 	assert.NotContains(t, updated.IPHash, "203.0.113.10")
 	assert.NotEmpty(t, updated.UserAgentHash)

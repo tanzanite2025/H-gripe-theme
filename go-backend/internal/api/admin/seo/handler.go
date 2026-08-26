@@ -45,6 +45,10 @@ func writeResourceError(c *gin.Context, err error, notFound error) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "SEO resource not found"})
 		return
 	}
+	if errors.Is(err, service.ErrInvalidSEOSettings) || errors.Is(err, service.ErrProductCategorySEOInvalid) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 	if errors.Is(err, service.ErrInvalidSEOCanonicalURL) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "canonical_url must be an absolute same-site URL without query or fragment"})
 		return

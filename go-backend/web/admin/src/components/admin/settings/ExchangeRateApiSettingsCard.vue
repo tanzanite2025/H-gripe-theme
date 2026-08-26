@@ -19,7 +19,7 @@
           class="inline-flex h-7 items-center justify-center gap-1 rounded-full border border-transparent bg-admin-selected px-2.5 text-xs font-black uppercase tracking-wider text-admin-selected-foreground shadow-[var(--admin-control-selected-shadow)] transition active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50"
           type="button"
           :disabled="effectiveSaving"
-          title="保存并启用 ExchangeRate-API Key；请求 base 跟随价格币种页的主基准币种"
+          title="保存并启用 ExchangeRate-API Key；请求 base 跟随后台录入币种"
           @click.prevent.stop="saveExchangeRateApiEnableStateAndApiKey"
         >
           <LoaderCircle v-if="effectiveSaving" class="size-3.5 animate-spin" />
@@ -31,7 +31,7 @@
           class="inline-flex h-7 items-center justify-center gap-1 rounded-full border border-dashed border-border/80 bg-background px-2.5 text-xs font-black uppercase tracking-wider text-foreground transition hover:bg-muted active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50"
           type="button"
           :disabled="syncDisabled"
-          title="先保存当前 ExchangeRate-API Key 和启用状态，再同步一次汇率缓存；同步目标由价格币种页决定"
+          title="先保存当前 ExchangeRate-API Key 和启用状态，再同步一次汇率缓存；同步目标由启用市场的展示币种决定"
           @click.prevent.stop="syncExchangeRateApiSettingsAndRates"
         >
  <RefreshCw :class="['size-3.5', syncing ? 'animate-spin': '']" />
@@ -48,7 +48,7 @@
       <div class="flex items-center justify-between gap-3 rounded-xl border bg-background/70 px-3 py-2.5 md:col-span-2">
         <div>
           <span class="text-xs font-bold text-foreground">启用汇率接口</span>
-          <p class="mt-0.5 text-xs text-muted-foreground">这里只管理 API 启用状态和 Key；请求 base 来自“价格币种”页的主基准币种。</p>
+          <p class="mt-0.5 text-xs text-muted-foreground">这里只管理 API 启用状态和 Key；请求 base 来自后台录入币种，quote targets 来自市场 TAB 的展示币种。</p>
         </div>
         <Switch
           :model-value="exchangeRateApiEnabledInput"
@@ -70,7 +70,7 @@
       <AdminFormField
         label="API Key"
         class="md:col-span-2"
-        description="这里只填 ExchangeRate-API 后台生成的 Key；完整请求地址由后端自动拼成 https://v6.exchangerate-api.com/v6/你的Key/latest/主基准币种，不公开给 Nuxt 前台。"
+        description="这里只填 ExchangeRate-API 后台生成的 Key；完整请求地址由后端自动拼成 https://v6.exchangerate-api.com/v6/你的Key/latest/后台录入币种，不公开给 Nuxt 前台。"
       >
         <div class="space-y-2">
           <div class="relative">
@@ -225,10 +225,10 @@ const saveExchangeRateApiEnableStateAndApiKey = async (): Promise<boolean> => {
   if (!canEdit.value || effectiveSaving.value) return false
   localSaving.value = true
   lastSaveStatus.value = 'saving'
-  lastSaveMessage.value = '正在保存 ExchangeRate-API Key...'
+    lastSaveMessage.value = '正在保存 ExchangeRate-API Key...'
   try {
     const apiKey = String(props.apiSettings.exchange_rate_api_key || '').trim()
-    const enabled = Boolean(apiKey)
+    const enabled = exchangeRateApiEnabledInput.value
     await postApiSettingsBatch([
       apiSettingPayload('exchange_rate_enabled', enabled, 'boolean', '是否启用 ExchangeRate-API 汇率缓存'),
       apiSettingPayload('exchange_rate_provider', EXCHANGE_RATE_PROVIDER, 'string', '汇率接口提供方'),

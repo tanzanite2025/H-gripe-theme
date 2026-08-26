@@ -10,6 +10,7 @@ import { createStorefrontMediaContext } from '~/utils/storefrontMedia'
 import { loadChatAgentDirectory, normalizeChatAgentOnlineStatus } from '~/composables/chat/useChatAgentDirectory'
 import { useCustomerServiceChatSync } from '~/composables/chat/useCustomerServiceChatSync'
 import { useChatMessageComposer } from '~/composables/chat/useChatMessageComposer'
+import { validateStorefrontUploadFiles } from '~/utils/uploadSpecs'
 import {
   CHAT_STORAGE_EXPIRY_DAYS,
   createEmptyChatRoom,
@@ -681,6 +682,7 @@ export const useWhatsAppState = (
           ...normalized,
           name: normalized.title,
           priceValue: normalized.priceNumber,
+          currency: normalized.currency,
           price: normalized.priceLabel,
         }
       })
@@ -705,6 +707,7 @@ export const useWhatsAppState = (
       sku: product.sku,
       thumbnail: product.thumbnail,
       price: Number(product.priceValue || 0),
+      currency: product.currency,
     })
   
     if (result.success) {
@@ -854,7 +857,7 @@ export const useWhatsAppState = (
     loadMessagesFromStorage()
   }
   
-  const agentThemePalette = ['#6b73ff', '#B5FF6D', '#C77DFF'] as const
+  const agentThemePalette = ['#059669', '#047857', '#10b981'] as const
   const getAgentThemeColor = (agentId: number) => {
     return agentThemePalette[(agentId - 1) % agentThemePalette.length] || agentThemePalette[0]
   }
@@ -878,17 +881,10 @@ export const useWhatsAppState = (
       return
     }
 
-    for (const file of files) {
-      // 检查文件大小（限制5MB）
-      if (file.size > 5 * 1024 * 1024) {
-        alert('图片大小不能超过 5MB')
-        return
-      }
-
-      if (!file.type.startsWith('image/')) {
-        alert('请选择图片文件')
-        return
-      }
+    const validation = await validateStorefrontUploadFiles(files, 'customer_service_attachment')
+    if (!validation.ok) {
+      alert(validation.error || '请选择符合规范的图片文件')
+      return
     }
 
     isUploadingImage.value = true

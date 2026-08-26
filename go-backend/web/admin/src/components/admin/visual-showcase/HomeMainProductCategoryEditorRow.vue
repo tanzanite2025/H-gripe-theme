@@ -34,10 +34,11 @@
         ref="fileInput"
         type="file"
         class="hidden"
-        accept="image/jpeg,image/png,image/webp"
+        :accept="uploadSpecAccept('visual_showcase_home_categories')"
         :disabled="!canEdit || uploading"
         @change="handleUploadFile"
       />
+      <UploadSpecHint code="visual_showcase_home_categories" />
       <p class="truncate text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">
         {{ item.storage_key || '未上传到专用目录' }}
       </p>
@@ -60,7 +61,7 @@
         />
       </AdminFormField>
 
-      <AdminFormField label="跳转链接" description="例如 /shop 或 /shop/product-slug">
+      <AdminFormField label="跳转链接" description="例如 /shop 或 /shop/category-slug">
         <Input
           :model-value="item.target_url"
           :disabled="!canEdit"
@@ -110,6 +111,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { toast } from 'vue-sonner'
 import { ImagePlus, LoaderCircle } from '@lucide/vue'
 import AdminFormField from '@/components/admin/AdminFormField.vue'
 import { Badge } from '@/components/ui/badge'
@@ -117,6 +119,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
+import UploadSpecHint from '@/components/admin/UploadSpecHint.vue'
+import { uploadSpecAccept, validateUploadFile } from '@/lib/uploadSpecs'
 import type {
   VisualShowcaseAdministrationItemFormState,
   VisualShowcaseAdministrationUploadRequest,
@@ -162,11 +166,17 @@ const updatePublished = (value: boolean): void => {
   patchItem({ is_published: Boolean(value) })
 }
 
-const handleUploadFile = (event: Event): void => {
+const handleUploadFile = async (event: Event): Promise<void> => {
   const input = event.target instanceof HTMLInputElement ? event.target : null
   const file = input?.files?.[0] || null
   if (input) input.value = ''
   if (!file) return
+  const validation = await validateUploadFile(file, 'visual_showcase_home_categories')
+  if (!validation.ok) {
+    toast.error(validation.error || '首页视觉图片不符合上传规范')
+    return
+  }
+  if (validation.warning) toast.warning(validation.warning)
   emit('upload-image', { index: props.index, file })
 }
 </script>

@@ -15,7 +15,7 @@
     <svg
       ref="svgRef"
       id="worldMap"
-      class="h-auto w-full rounded-2xl bg-gradient-to-b from-slate-950 via-slate-950 to-black shadow-[3px_3px_10px_rgba(0,0,0,0.9)]"
+      class="h-auto w-full rounded-2xl bg-gradient-to-b from-slate-950 via-slate-950 to-black shadow-md"
       viewBox="0 0 800 400"
       xmlns="http://www.w3.org/2000/svg"
       aria-labelledby="title desc"
@@ -39,8 +39,8 @@
 
         <!-- soft radial highlight behind Asia region as a hint -->
         <radialGradient id="asiaHighlight" cx="65%" cy="50" r="0.35">
-          <stop offset="0%" stop-color="#B5FF6D" stop-opacity="0.25" />
-          <stop offset="100%" stop-color="#B5FF6D" stop-opacity="0" />
+          <stop offset="0%" stop-color="#059669" stop-opacity="0.25" />
+          <stop offset="100%" stop-color="#059669" stop-opacity="0" />
         </radialGradient>
       </defs>
 
@@ -242,7 +242,7 @@ onMounted(() => {
 
 .map-label--origin {
   font-weight: 700;
-  fill: var(--tz-brand-primary, #b5ff6d);
+  fill: var(--tz-site-accent, #059669);
 }
 
 .map-label--right {
@@ -255,7 +255,7 @@ onMounted(() => {
 
 .path-arc {
   fill: none;
-  stroke: var(--tz-brand-primary, #b5ff6d);
+  stroke: var(--tz-site-accent, #059669);
   stroke-width: 1.4;
   stroke-linecap: round;
   filter: url(#glow);
@@ -306,11 +306,11 @@ onMounted(() => {
 }
 
 .point-core {
-  fill: var(--tz-brand-primary, #b5ff6d);
+  fill: var(--tz-site-accent, #059669);
 }
 
 .point-pulse {
-  fill: var(--tz-brand-primary, #b5ff6d);
+  fill: var(--tz-site-accent, #059669);
   opacity: 0.55;
   animation: pulse 2.4s ease-out infinite;
 }

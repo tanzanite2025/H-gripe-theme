@@ -468,6 +468,8 @@ import { wheelsetBuyerTabs } from '~/utils/pageSubNavigation'
 
 definePageMeta({
   layout: 'products',
+  footerLabelKey: 'products.nav.wheelsetBuyersGuide',
+  footerLabelFallback: 'Wheelset Guide',
 })
 
 useHead({
@@ -572,7 +574,7 @@ const goToAboutAppearance = async () => {
   font-size: var(--tz-type-page-title);
   line-height: 1.18;
   font-weight: 600;
-  color: #f9fafb;
+  color: var(--tz-text-primary);
 }
 
 .products-page__title--sr-only {
@@ -594,18 +596,18 @@ const goToAboutAppearance = async () => {
 }
 
 .wheelset-page {
-  --wheelset-accent: #b9bec7;
-  --wheelset-accent-strong: #eef0f3;
-  --wheelset-accent-soft: rgba(185, 190, 199, 0.1);
-  --wheelset-accent-softer: rgba(185, 190, 199, 0.055);
-  --wheelset-border: rgba(185, 190, 199, 0.14);
-  --wheelset-border-strong: rgba(185, 190, 199, 0.24);
-  --wheelset-card-tint: rgba(255, 255, 255, 0.035);
-  --wheelset-card-tint-strong: rgba(255, 255, 255, 0.06);
-  --wheelset-caution: #b9bec7;
-  --wheelset-warning: #d99a38;
-  --wheelset-critical: #bd8d88;
-  --tz-form-panel-surface: #151515;
+  --wheelset-accent: var(--tz-site-accent);
+  --wheelset-accent-strong: var(--tz-site-accent-hover);
+  --wheelset-accent-soft: rgba(5, 150, 105, 0.1);
+  --wheelset-accent-softer: rgba(5, 150, 105, 0.06);
+  --wheelset-border: rgba(203, 213, 225, 0.72);
+  --wheelset-border-strong: var(--tz-border-strong);
+  --wheelset-card-tint: var(--tz-surface-subtle);
+  --wheelset-card-tint-strong: var(--tz-surface-muted);
+  --wheelset-caution: var(--tz-status-warning-text);
+  --wheelset-warning: var(--tz-status-warning-text);
+  --wheelset-critical: var(--tz-status-danger-text);
+  --tz-form-panel-surface: var(--tz-surface-muted);
   --tz-text-accent: var(--wheelset-accent);
   margin: 0 auto;
   width: 100%;
@@ -615,7 +617,7 @@ const goToAboutAppearance = async () => {
 .wheelset-section :deep(.sizecharts-section__title),
 .wheelset-page .sizecharts-section__title {
   margin: 0 0 2rem;
-  color: #ffffff;
+  color: var(--tz-text-primary);
   font-weight: 650;
   text-align: center;
 }
@@ -646,9 +648,9 @@ const goToAboutAppearance = async () => {
   width: fit-content;
   max-width: 100%;
   margin-bottom: 0.65rem;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  border: 1px solid var(--tz-border-subtle);
   border-radius: 9999px;
-  color: #f8fafc;
+  color: var(--tz-text-primary);
   padding: 0.28rem 0.65rem;
   font-size: 0.78rem;
   font-weight: 700;
@@ -687,10 +689,10 @@ const goToAboutAppearance = async () => {
   height: 2rem;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(148, 163, 184, 0.48);
+  border: 1px solid var(--tz-border-strong);
   border-radius: 999px;
-  background: #1f2937;
-  color: #cbd5e1;
+  background: var(--tz-surface-muted);
+  color: var(--tz-text-secondary);
   font-size: 0.82rem;
   font-weight: 700;
   line-height: 1;
@@ -711,7 +713,7 @@ const goToAboutAppearance = async () => {
   align-items: center;
   margin: 0 0 0.55rem;
   padding-left: 3rem;
-  color: #f1f5f9;
+  color: var(--tz-text-primary);
   font-size: 1.05rem;
   font-weight: 700;
   line-height: 1.35;
@@ -729,7 +731,7 @@ const goToAboutAppearance = async () => {
 .wheelset-guide-step__body strong,
 .wheelset-page :deep(.wheelset-guide-step__body strong),
 .wheelset-page :deep(.wheelset-guide-panel strong) {
-  color: #ffffff;
+  color: var(--tz-text-primary);
   font-weight: 650;
 }
 
@@ -757,10 +759,10 @@ const goToAboutAppearance = async () => {
   width: fit-content;
   max-width: 100%;
   margin-bottom: 0.65rem;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  border: 1px solid var(--tz-border-subtle);
   border-radius: 9999px;
   background: transparent;
-  color: #f8fafc;
+  color: var(--tz-text-primary);
   padding: 0.28rem 0.65rem;
   font-size: 0.78rem;
   font-weight: 700;
@@ -802,10 +804,10 @@ const goToAboutAppearance = async () => {
   min-height: 2.25rem;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(255, 255, 255, 0.88);
+  border: 1px solid var(--tz-action-primary);
   border-radius: 9999px;
-  background: #ffffff;
-  color: #070707;
+  background: var(--tz-action-primary);
+  color: var(--tz-action-primary-foreground);
   padding: 0.6rem 1rem;
   font-size: 0.82rem;
   font-weight: 700;
@@ -818,16 +820,16 @@ const goToAboutAppearance = async () => {
 
 .wheelset-guide-button:hover,
 .wheelset-page :deep(.wheelset-guide-button:hover) {
-  border-color: #ffffff;
-  background: #f1f5f9;
-  color: #000000;
+  border-color: var(--tz-action-primary-hover);
+  background: var(--tz-action-primary-hover);
+  color: #ffffff;
 }
 
 .wheelset-guide-button--solid,
 .wheelset-page :deep(.wheelset-guide-button--solid) {
-  border-color: rgba(255, 255, 255, 0.88);
-  background: #ffffff;
-  color: #070707;
+  border-color: var(--tz-action-primary);
+  background: var(--tz-action-primary);
+  color: var(--tz-action-primary-foreground);
 }
 
 .wheelset-guide-note,
@@ -854,316 +856,9 @@ const goToAboutAppearance = async () => {
   gap: 1rem;
 }
 
-.wheelset-page :deep([class*="bg-[var(--tz-card-surface)]"]),
-.wheelset-page :deep(.bg-slate-800\/30),
-.wheelset-page :deep(.bg-slate-800\/40),
-.wheelset-page :deep(.bg-slate-800\/50),
-.wheelset-page :deep(.bg-slate-900\/50) {
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  background-color: var(--tz-card-surface) !important;
-  background-image: none !important;
-}
-
-.wheelset-page :deep(.rounded-2xl),
-.wheelset-page :deep(.rounded-xl) {
-  border-radius: 0.5rem !important;
-}
-
-.wheelset-page :deep([class*="shadow-"]) {
-  box-shadow: none !important;
-}
-
-.wheelset-page :deep([class*="hover:translate-y"]:hover),
-.wheelset-page :deep([class*="hover:-translate-y"]:hover),
-.wheelset-page :deep(.hover\:-translate-y-1:hover) {
-  transform: none !important;
-}
-
-.wheelset-page :deep(.bg-gradient-to-r) {
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background-image: linear-gradient(135deg, #141416, #1b1b1e) !important;
-}
-
-.wheelset-page :deep(.nav-pill-item--active) {
-  background: var(--wheelset-accent) !important;
-  color: #151515 !important;
-}
-
-.wheelset-page :deep(.wheelset-safety-notice__icon),
-.wheelset-page :deep(.wheelset-safety-notice__title) {
-  color: var(--wheelset-warning) !important;
-}
-
-.wheelset-page :deep(.tire-rim-helper-card),
-.wheelset-page :deep(.freehub-groupset-helper) {
-  margin-top: 0;
-  border: none;
-  border-radius: 0.5rem;
-  background: rgba(255, 255, 255, 0.045) !important;
-  box-shadow: none;
-  text-align: left;
-}
-
-.wheelset-page :deep(.tire-rim-helper-card h3),
-.wheelset-page :deep(.freehub-groupset-helper h3) {
-  color: #f8fafc;
-  text-align: left;
-}
-
-.wheelset-page :deep(.tire-rim-helper-card p),
-.wheelset-page :deep(.freehub-groupset-helper p) {
-  text-align: left;
-}
-
-.wheelset-page :deep(.tire-rim-helper__input),
-.wheelset-page :deep(.freehub-groupset-helper select) {
-  border-color: rgba(255, 255, 255, 0.12) !important;
-  background-color: rgba(0, 0, 0, 0.22) !important;
-  box-shadow: none !important;
-}
-
-.wheelset-page :deep(.tire-rim-helper__input:focus),
-.wheelset-page :deep(.freehub-groupset-helper select:focus) {
-  border-color: rgba(255, 255, 255, 0.36) !important;
-}
-
-.wheelset-page :deep(.tire-rim-helper__toggle-group) {
-  background-color: rgba(0, 0, 0, 0.22) !important;
-  box-shadow: none !important;
-}
-
-.wheelset-page :deep(.tire-rim-helper__toggle) {
-  border-color: rgba(255, 255, 255, 0.16) !important;
-  background-color: transparent !important;
-  color: var(--tz-text-secondary) !important;
-}
-
-.wheelset-page :deep(.tire-rim-helper__toggle:hover),
-.wheelset-page :deep(.tire-rim-helper__toggle:focus-visible) {
-  border-color: rgba(255, 255, 255, 0.38) !important;
-  color: #ffffff !important;
-}
-
-.wheelset-page :deep(.tire-rim-helper__toggle--active),
-.wheelset-page :deep(.tire-rim-helper__toggle--active:hover),
-.wheelset-page :deep(.tire-rim-helper__toggle--active:focus-visible) {
-  border-color: #ffffff !important;
-  background-color: #ffffff !important;
-  color: #070707 !important;
-  box-shadow: none !important;
-}
-
-.wheelset-page :deep(.tire-rim-helper__result),
-.wheelset-page :deep(.freehub-groupset-helper .text-sky-300) {
-  color: #f8fafc !important;
-}
-
-.wheelset-page :deep(.text-emerald-300),
-.wheelset-page :deep(.text-emerald-400),
-.wheelset-page :deep(.text-emerald-500),
-.wheelset-page :deep(.text-green-300),
-.wheelset-page :deep(.text-green-400),
-.wheelset-page :deep(.text-green-500),
-.wheelset-page :deep(.text-lime-300),
-.wheelset-page :deep(.text-lime-400),
-.wheelset-page :deep(.text-lime-500),
-.wheelset-page :deep(.text-teal-300),
-.wheelset-page :deep(.text-teal-400),
-.wheelset-page :deep(.text-teal-500),
-.wheelset-page :deep(.text-sky-300),
-.wheelset-page :deep(.text-sky-400),
-.wheelset-page :deep(.text-sky-500),
-.wheelset-page :deep(.text-blue-300),
-.wheelset-page :deep(.text-blue-400),
-.wheelset-page :deep(.text-blue-500),
-.wheelset-page :deep(.text-cyan-300),
-.wheelset-page :deep(.text-cyan-400),
-.wheelset-page :deep(.text-cyan-500),
-.wheelset-page :deep(.text-indigo-200),
-.wheelset-page :deep(.text-indigo-300),
-.wheelset-page :deep(.text-indigo-400),
-.wheelset-page :deep(.text-indigo-500),
-.wheelset-page :deep(.text-violet-300),
-.wheelset-page :deep(.text-violet-400),
-.wheelset-page :deep(.text-violet-500),
-.wheelset-page :deep(.text-fuchsia-300),
-.wheelset-page :deep(.text-fuchsia-400),
-.wheelset-page :deep(.text-fuchsia-500) {
-  color: var(--wheelset-accent) !important;
-}
-
-.wheelset-page :deep(.text-amber-300),
-.wheelset-page :deep(.text-amber-400),
-.wheelset-page :deep(.text-amber-500),
-.wheelset-page :deep(.text-yellow-300),
-.wheelset-page :deep(.text-yellow-400),
-.wheelset-page :deep(.text-yellow-500) {
-  color: var(--wheelset-caution) !important;
-}
-
-.wheelset-page :deep(.text-red-300),
-.wheelset-page :deep(.text-red-400),
-.wheelset-page :deep(.text-red-500),
-.wheelset-page :deep(.text-rose-300),
-.wheelset-page :deep(.text-rose-400),
-.wheelset-page :deep(.text-rose-500) {
-  color: var(--wheelset-critical) !important;
-}
-
-.wheelset-page :deep([class*="text-emerald-"][class*="/"]),
-.wheelset-page :deep([class*="text-green-"][class*="/"]),
-.wheelset-page :deep([class*="text-lime-"][class*="/"]),
-.wheelset-page :deep([class*="text-teal-"][class*="/"]),
-.wheelset-page :deep([class*="text-sky-"][class*="/"]),
-.wheelset-page :deep([class*="text-blue-"][class*="/"]),
-.wheelset-page :deep([class*="text-cyan-"][class*="/"]),
-.wheelset-page :deep([class*="text-indigo-"][class*="/"]),
-.wheelset-page :deep([class*="text-violet-"][class*="/"]),
-.wheelset-page :deep([class*="text-fuchsia-"][class*="/"]),
-.wheelset-page :deep([class*="text-amber-"][class*="/"]),
-.wheelset-page :deep([class*="text-yellow-"][class*="/"]) {
-  color: rgba(185, 190, 199, 0.78) !important;
-}
-
-.wheelset-page :deep(.text-rose-300),
-.wheelset-page :deep([class*="text-red-"][class*="/"]),
-.wheelset-page :deep([class*="text-rose-"][class*="/"]) {
-  color: rgba(201, 146, 131, 0.82) !important;
-}
-
-.wheelset-page :deep(.bg-emerald-500\/5),
-.wheelset-page :deep(.bg-emerald-500\/10),
-.wheelset-page :deep(.bg-emerald-500\/20),
-.wheelset-page :deep(.bg-emerald-800\/20),
-.wheelset-page :deep(.bg-emerald-900\/20),
-.wheelset-page :deep(.bg-green-500\/5),
-.wheelset-page :deep(.bg-green-500\/10),
-.wheelset-page :deep(.bg-lime-500\/5),
-.wheelset-page :deep(.bg-lime-500\/10),
-.wheelset-page :deep(.bg-teal-500\/5),
-.wheelset-page :deep(.bg-teal-500\/10),
-.wheelset-page :deep(.bg-sky-500\/5),
-.wheelset-page :deep(.bg-sky-500\/10),
-.wheelset-page :deep(.bg-sky-500\/20),
-.wheelset-page :deep(.bg-blue-500\/5),
-.wheelset-page :deep(.bg-blue-500\/10),
-.wheelset-page :deep(.bg-cyan-500\/10),
-.wheelset-page :deep(.bg-indigo-500\/5),
-.wheelset-page :deep(.bg-indigo-500\/10),
-.wheelset-page :deep(.bg-indigo-500\/20),
-.wheelset-page :deep(.bg-indigo-900\/20),
-.wheelset-page :deep(.bg-violet-500\/5),
-.wheelset-page :deep(.bg-violet-500\/10),
-.wheelset-page :deep(.bg-fuchsia-500\/5),
-.wheelset-page :deep(.bg-fuchsia-500\/10),
-.wheelset-page :deep(.bg-red-500\/5),
-.wheelset-page :deep(.bg-red-500\/10),
-.wheelset-page :deep(.bg-rose-500\/5),
-.wheelset-page :deep(.bg-rose-500\/10),
-.wheelset-page :deep(.bg-rose-900\/20),
-.wheelset-page :deep(.bg-amber-500\/5),
-.wheelset-page :deep(.bg-amber-500\/10),
-.wheelset-page :deep(.bg-amber-900\/10) {
-  background-color: var(--wheelset-accent-softer) !important;
-  background-image: none !important;
-}
-
-.wheelset-page :deep(.bg-emerald-500),
-.wheelset-page :deep(.bg-green-500),
-.wheelset-page :deep(.bg-lime-500),
-.wheelset-page :deep(.bg-teal-500),
-.wheelset-page :deep(.bg-sky-500),
-.wheelset-page :deep(.bg-blue-500),
-.wheelset-page :deep(.bg-cyan-500),
-.wheelset-page :deep(.bg-indigo-500),
-.wheelset-page :deep(.bg-violet-500),
-.wheelset-page :deep(.bg-fuchsia-500),
-.wheelset-page :deep(.bg-amber-500),
-.wheelset-page :deep(.bg-yellow-500) {
-  background-color: var(--wheelset-accent) !important;
-  color: #151515 !important;
-}
-
-.wheelset-page :deep(.bg-red-500),
-.wheelset-page :deep(.bg-rose-500) {
-  background-color: var(--wheelset-critical) !important;
-}
-
-.wheelset-page :deep([class*="hover:bg-emerald-"]:hover),
-.wheelset-page :deep([class*="hover:bg-green-"]:hover),
-.wheelset-page :deep([class*="hover:bg-lime-"]:hover),
-.wheelset-page :deep([class*="hover:bg-teal-"]:hover),
-.wheelset-page :deep([class*="hover:bg-sky-"]:hover),
-.wheelset-page :deep([class*="hover:bg-blue-"]:hover),
-.wheelset-page :deep([class*="hover:bg-cyan-"]:hover),
-.wheelset-page :deep([class*="hover:bg-indigo-"]:hover),
-.wheelset-page :deep([class*="hover:bg-violet-"]:hover),
-.wheelset-page :deep([class*="hover:bg-fuchsia-"]:hover),
-.wheelset-page :deep([class*="hover:bg-amber-"]:hover),
-.wheelset-page :deep([class*="hover:bg-yellow-"]:hover),
-.wheelset-page :deep([class*="hover:bg-red-"]:hover),
-.wheelset-page :deep([class*="hover:bg-rose-"]:hover) {
-  background-color: var(--wheelset-accent-soft) !important;
-}
-
-.wheelset-page :deep(.border-emerald-400),
-.wheelset-page :deep(.border-emerald-500),
-.wheelset-page :deep(.border-emerald-500\/10),
-.wheelset-page :deep(.border-emerald-500\/20),
-.wheelset-page :deep(.border-emerald-500\/30),
-.wheelset-page :deep(.border-emerald-500\/35),
-.wheelset-page :deep(.border-green-500),
-.wheelset-page :deep(.border-lime-500),
-.wheelset-page :deep(.border-teal-500),
-.wheelset-page :deep(.border-teal-500\/10),
-.wheelset-page :deep(.border-teal-500\/20),
-.wheelset-page :deep(.border-sky-500),
-.wheelset-page :deep(.border-sky-500\/10),
-.wheelset-page :deep(.border-sky-500\/20),
-.wheelset-page :deep(.border-sky-500\/25),
-.wheelset-page :deep(.border-sky-500\/30),
-.wheelset-page :deep(.border-blue-500\/10),
-.wheelset-page :deep(.border-blue-500\/20),
-.wheelset-page :deep(.border-indigo-500),
-.wheelset-page :deep(.border-indigo-500\/10),
-.wheelset-page :deep(.border-indigo-500\/20),
-.wheelset-page :deep(.border-indigo-500\/25),
-.wheelset-page :deep(.border-indigo-500\/30),
-.wheelset-page :deep(.border-indigo-900\/50),
-.wheelset-page :deep(.border-violet-500\/10),
-.wheelset-page :deep(.border-fuchsia-500\/10),
-.wheelset-page :deep(.border-fuchsia-500\/20),
-.wheelset-page :deep(.border-fuchsia-500\/50),
-.wheelset-page :deep(.border-amber-500),
-.wheelset-page :deep(.border-amber-500\/10),
-.wheelset-page :deep(.border-amber-500\/20),
-.wheelset-page :deep(.border-amber-500\/30),
-.wheelset-page :deep(.border-amber-600\/50),
-.wheelset-page :deep(.border-red-500\/10),
-.wheelset-page :deep(.border-rose-500\/20) {
-  border-color: var(--wheelset-border-strong) !important;
-}
-
-.wheelset-page :deep(.ring-emerald-500\/20),
-.wheelset-page :deep(.ring-indigo-500\/20) {
-  --tw-ring-color: var(--wheelset-border-strong) !important;
-}
-
-.wheelset-page :deep([class*="shadow-emerald-"]),
-.wheelset-page :deep([class*="shadow-sky-"]),
-.wheelset-page :deep([class*="shadow-indigo-"]) {
-  --tw-shadow-color: rgba(185, 190, 199, 0.2) !important;
-  --tw-shadow: var(--tw-shadow-colored) !important;
-}
-
-.wheelset-page :deep(.wheelset-safety-notice__icon),
-.wheelset-page :deep(.wheelset-safety-notice__title) {
-  color: var(--wheelset-warning) !important;
-}
-
 /* Page-level tab entry points are rendered by the header/mobile mega menu. */
 .wheelset-section--sample > p {
-  color: #f9fafb;
+  color: var(--tz-text-secondary);
   text-align: center;
 }
 
@@ -1206,18 +901,19 @@ const goToAboutAppearance = async () => {
   margin: 0 0.25rem;
   border-radius: 9999px;
   border: none;
-  background: rgba(31, 41, 55, 0.65);
-  color: #ffffff;
+  border: 1px solid var(--tz-action-primary);
+  background: var(--tz-action-primary);
+  color: var(--tz-action-primary-foreground);
   font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
-  box-shadow:
-    0 10px 22px rgba(0, 0, 0, 0.85);
+  box-shadow: 0 8px 18px rgba(5, 150, 105, 0.16);
   transition: background-color 0.15s ease, transform 0.08s ease;
 }
 
 .wheelset-inline-button:hover {
-  background: rgba(51, 65, 85, 0.75);
+  border-color: var(--tz-action-primary-hover);
+  background: var(--tz-action-primary-hover);
 }
 
 .wheelset-inline-button:active {
@@ -1230,12 +926,11 @@ const goToAboutAppearance = async () => {
 
 /* Make Mixed rim CTA text readable on dark background */
 .wheelset-section .guide-section__cta-wrapper {
-  color: #e5e7eb;
+  color: var(--tz-text-secondary);
 }
 
 .wheelset-special-card {
-  box-shadow:
-    4px 6px 18px rgba(0, 0, 0, 0.9);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
 }
 
 @media (min-width: 768px) {

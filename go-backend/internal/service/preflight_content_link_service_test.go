@@ -34,6 +34,42 @@ func TestContentLinkDetectionFlagsGenericAnchorsOnly(t *testing.T) {
 	}
 }
 
+func TestContentLinkDetectionMatchesOfficialLinkTextBoundaries(t *testing.T) {
+	svc := &PreflightContentLinkService{}
+	detections, err := svc.detectContentLinks(`
+		<html>
+			<body>
+				<a href="/guides">Click this</a>
+				<a href="/guides" rel="nofollow">Go</a>
+				<a href="#details">Here</a>
+				<a href="mailto:test@example.test">More</a>
+				<a href="/guides">View more</a>
+			</body>
+		</html>
+	`, "https://example.test/", "https://example.test/", nil)
+	if err != nil {
+		t.Fatalf("detect content links: %v", err)
+	}
+	if len(detections) != 1 {
+		t.Fatalf("expected one official link-text finding, got %d", len(detections))
+	}
+	if detections[0].LinkText != "Click this" {
+		t.Fatalf("unexpected link text %q", detections[0].LinkText)
+	}
+	if detections[0].RuleID != preflightdomain.ContentLinkRuleID {
+		t.Fatalf("unexpected rule ID %q", detections[0].RuleID)
+	}
+	if detections[0].ProviderAuditID != preflightdomain.ContentLinkProviderAuditID {
+		t.Fatalf("unexpected provider audit ID %q", detections[0].ProviderAuditID)
+	}
+	if !strings.HasPrefix(
+		detections[0].IssueKey,
+		"content-link:"+preflightdomain.ContentLinkRuleID+":",
+	) {
+		t.Fatalf("content link issue key is not rule-scoped: %q", detections[0].IssueKey)
+	}
+}
+
 func TestReplaceFirstContentLinkSuggestionMatchesSourceAnchor(t *testing.T) {
 	issue := &preflightdomain.ContentLinkIssue{
 		TargetURL:     "https://example.test/blog/example",

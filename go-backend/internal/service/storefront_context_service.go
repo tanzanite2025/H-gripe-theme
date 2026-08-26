@@ -97,21 +97,18 @@ func (s *StorefrontContextService) Resolve(input StorefrontContextInput) (*Store
 	if err != nil {
 		return nil, err
 	}
-	displayCurrencies, err := s.configuredSecondaryDisplayCurrenciesForStorefront(primaryCurrency)
-	if err != nil {
-		return nil, err
-	}
+	fallbackDisplayCurrencies := fallbackDisplayCurrenciesForUnknownMarket(primaryCurrency)
 	country := normalizeStorefrontCountry(input.Country)
 	countrySource := strings.TrimSpace(input.CountrySource)
 	if countrySource == "" {
 		countrySource = "fallback"
 	}
-	market, err := s.resolveStorefrontMarketForDetectedCountry(country, displayCurrencies, primaryCurrency)
+	market, err := s.resolveStorefrontMarketForDetectedCountry(country, fallbackDisplayCurrencies, primaryCurrency)
 	if err != nil {
 		return nil, err
 	}
 	resolvedLanguageLocale, languageLocaleSource, requestedLanguageLocale := resolveStorefrontLanguageLocaleFromRequestCookieHeaderOrMarket(input, market)
-	displayCurrency, currencySource, requestedCurrency := resolveStorefrontDisplayCurrencyFromRequestCookieOrMarket(input, market, displayCurrencies, primaryCurrency)
+	displayCurrency, currencySource, requestedCurrency := resolveStorefrontDisplayCurrencyFromRequestCookieOrMarket(input, market, fallbackDisplayCurrencies, primaryCurrency)
 
 	return &StorefrontContext{
 		Country: StorefrontCountryContext{Code: country, Source: countrySource},
@@ -153,23 +150,12 @@ func (s *StorefrontContextService) primaryPricingCurrencyForAdminEnteredAmounts(
 	return value, nil
 }
 
-func (s *StorefrontContextService) configuredSecondaryDisplayCurrenciesForStorefront(primaryCurrency string) ([]string, error) {
+func fallbackDisplayCurrenciesForUnknownMarket(primaryCurrency string) []string {
 	primaryCurrency = currency.NormalizeCode(primaryCurrency)
 	if primaryCurrency == "" {
 		primaryCurrency = currency.DefaultPrimaryCurrency
 	}
-	if s == nil || s.currencyPolicy == nil {
-		return []string{primaryCurrency}, nil
-	}
-	values, err := s.currencyPolicy.DisplayCurrencies()
-	if err != nil {
-		return nil, err
-	}
-	values = currency.NormalizeCodes(values)
-	if len(values) == 0 {
-		return []string{primaryCurrency}, nil
-	}
-	return values, nil
+	return []string{primaryCurrency}
 }
 
 func (s *StorefrontContextService) resolveStorefrontMarketForDetectedCountry(country string, displayCurrencies []string, primaryCurrency string) (StorefrontMarket, error) {
@@ -189,7 +175,7 @@ func (s *StorefrontContextService) resolveStorefrontMarketForDetectedCountry(cou
 	for _, market := range markets {
 		for _, candidate := range market.Countries {
 			if normalizeStorefrontCountry(candidate) == country {
-				return normalizeStorefrontMarket(market, displayCurrencies), nil
+				return normalizeStorefrontMarket(market, nil), nil
 			}
 		}
 	}
@@ -236,7 +222,7 @@ func resolveStorefrontDisplayCurrencyFromRequestCookieOrMarket(input StorefrontC
 		return resolved, "market_default", ""
 	}
 	if len(configured) > 0 {
-		return configured[0], "currency_policy", ""
+		return configured[0], "backend_entry_currency", ""
 	}
 	if code := currency.NormalizeCode(primaryCurrency); code != "" {
 		return code, "fallback", ""

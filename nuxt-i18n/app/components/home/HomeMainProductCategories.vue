@@ -1,5 +1,5 @@
 <template>
-  <section id="home-main-product-categories" class="bg-transparent py-8 text-white sm:py-10 lg:py-14">
+  <section id="home-main-product-categories" class="bg-transparent py-8 tz-text-primary sm:py-10 lg:py-14">
     <div class="page-content-shell px-0 md:px-6">
       <div class="flex flex-col gap-4 sm:gap-5 lg:flex-row lg:items-end lg:justify-between">
         <div class="max-w-3xl">
@@ -7,7 +7,7 @@
             <Icon name="lucide:star" class="h-3.5 w-3.5" aria-hidden="true" />
             {{ mainProductsCopy.eyebrow }}
           </span>
-          <h2 class="mt-3 text-2xl font-semibold leading-tight text-white sm:text-3xl">
+          <h2 class="mt-3 text-2xl font-semibold leading-tight tz-text-primary sm:text-3xl">
             {{ mainProductsCopy.heading }}
           </h2>
         </div>
@@ -71,8 +71,6 @@
             <StorefrontImage
               :src="item.src"
               :alt="item.altText"
-              :width="item.width"
-              :height="item.height"
               preset="card"
               sizes="xs:100vw sm:50vw lg:33vw"
               class="home-main-product-categories__image"
@@ -173,11 +171,11 @@ const retryHomeMainProductCategories = () => {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  border: 1px solid rgba(181, 255, 109, 0.3);
+  border: 1px solid rgba(5, 150, 105, 0.3);
   border-radius: 999px;
   padding: 0.25rem 0.75rem;
-  background: rgba(181, 255, 109, 0.1);
-  color: var(--tz-brand-primary);
+  background: rgba(5, 150, 105, 0.1);
+  color: var(--tz-site-accent);
   font-size: 0.6875rem;
   font-weight: 600;
   letter-spacing: 0.16em;
@@ -200,7 +198,7 @@ const retryHomeMainProductCategories = () => {
 }
 
 .home-main-product-categories__card:focus-visible {
-  outline: 2px solid rgba(181, 255, 109, 0.92);
+  outline: 2px solid rgba(5, 150, 105, 0.92);
   outline-offset: 3px;
 }
 
@@ -278,7 +276,7 @@ const retryHomeMainProductCategories = () => {
   flex: 0 0 auto;
   align-items: center;
   gap: 0.3rem;
-  color: var(--tz-brand-primary);
+  color: var(--tz-site-accent);
   font-size: 0.72rem;
   font-weight: 700;
   line-height: 1.2;

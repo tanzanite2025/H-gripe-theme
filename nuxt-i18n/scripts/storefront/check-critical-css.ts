@@ -11,7 +11,8 @@ const serverLauncher = resolve(projectRoot, 'scripts/storefront/run-production-s
 const publicDirectory = resolve(projectRoot, '.output/public')
 const port = Number.parseInt(process.env.CRITICAL_CSS_CHECK_PORT || '4021', 10)
 const origin = `http://127.0.0.1:${port}`
-const maxCriticalCssGzipBytes = 35 * 1024
+const maxBlockingCssGzipBytes = 20 * 1024
+const maxInlineCriticalCssGzipBytes = 16 * 1024
 const forbiddenStylesheetNames = [
   'AuthModal',
   'BrowsingHistoryDark',
@@ -32,14 +33,28 @@ const forbiddenStylesheetNames = [
 
 const timeout = (ms: number): Promise<void> => new Promise(resolveTimeout => setTimeout(resolveTimeout, ms))
 
+const stripNoscriptContent = (html: string): string => html.replace(/<noscript\b[^>]*>[\s\S]*?<\/noscript>/gi, '')
+
 const findStylesheetHrefs = (html: string): string[] => {
-  const linkTags = html.match(/<link\b[^>]*>/gi) || []
+  const linkTags = stripNoscriptContent(html).match(/<link\b[^>]*>/gi) || []
 
   return linkTags
     .filter(tag => /\brel=(['"])stylesheet\1/i.test(tag))
     .map((tag) => tag.match(/\bhref=(['"])(.*?)\1/i)?.[2] || '')
     .filter(Boolean)
 }
+
+const findInlineCriticalCss = (html: string): string => (
+  html.match(/<style\b[^>]*\bdata-storefront-critical-css=(['"])entry\1[^>]*>([\s\S]*?)<\/style>/i)?.[2] || ''
+)
+
+const hasEntryCssPreload = (html: string): boolean => (
+  /<link\b(?=[^>]*\brel=(['"])preload\1)(?=[^>]*\bas=(['"])style\2)(?=[^>]*\bhref=(['"])\/_nuxt\/entry\.[^"']+\.css\3)[^>]*>/i.test(html)
+)
+
+const hasEntryCssLoader = (html: string): boolean => (
+  /<script\b[^>]*\bdata-storefront-critical-css-loader=(['"])entry\1[^>]*>/i.test(html)
+)
 
 const waitForReady = async (): Promise<void> => {
   for (let attempt = 0; attempt < 60; attempt += 1) {
@@ -105,6 +120,33 @@ try {
   }
 
   const stylesheets = findStylesheetHrefs(html)
+  const blockingEntryStylesheets = stylesheets.filter(href => new URL(href, origin).pathname.startsWith('/_nuxt/entry.'))
+  if (blockingEntryStylesheets.length > 0) {
+    throw new Error(`Homepage entry CSS is still blocking: ${blockingEntryStylesheets.join(', ')}`)
+  }
+
+  const inlineCriticalCss = findInlineCriticalCss(html)
+  if (!inlineCriticalCss) {
+    throw new Error('Homepage entry critical CSS was not inlined')
+  }
+  if (!/@font-face\b/i.test(inlineCriticalCss)) {
+    throw new Error('Homepage inline critical CSS is missing font-face declarations')
+  }
+  if (!hasEntryCssPreload(html)) {
+    throw new Error('Homepage entry CSS preload was not rendered')
+  }
+  if (!hasEntryCssLoader(html)) {
+    throw new Error('Homepage entry CSS async loader was not rendered')
+  }
+
+  const inlineCriticalCssGzipBytes = gzipSync(inlineCriticalCss).byteLength
+  if (inlineCriticalCssGzipBytes > maxInlineCriticalCssGzipBytes) {
+    throw new Error(
+      `Homepage inline critical CSS is ${(inlineCriticalCssGzipBytes / 1024).toFixed(2)} KiB gzip; `
+      + `budget is ${(maxInlineCriticalCssGzipBytes / 1024).toFixed(0)} KiB`,
+    )
+  }
+
   const forbiddenStylesheets = stylesheets.filter(href =>
     forbiddenStylesheetNames.some(name => href.includes(name)),
   )
@@ -112,7 +154,7 @@ try {
     throw new Error(`Deferred UI CSS was rendered as blocking: ${forbiddenStylesheets.join(', ')}`)
   }
 
-  const criticalCssGzipBytes = stylesheets.reduce((total, href) => {
+  const blockingCssGzipBytes = stylesheets.reduce((total, href) => {
     const assetPath = getAssetPath(href)
     if (!existsSync(assetPath)) {
       throw new Error(`Missing critical stylesheet asset: ${href}`)
@@ -120,16 +162,17 @@ try {
     return total + gzipSync(readFileSync(assetPath)).byteLength
   }, 0)
 
-  if (criticalCssGzipBytes > maxCriticalCssGzipBytes) {
+  if (blockingCssGzipBytes > maxBlockingCssGzipBytes) {
     throw new Error(
-      `Homepage critical CSS is ${(criticalCssGzipBytes / 1024).toFixed(2)} KiB gzip; `
-      + `budget is ${(maxCriticalCssGzipBytes / 1024).toFixed(0)} KiB`,
+      `Homepage blocking CSS is ${(blockingCssGzipBytes / 1024).toFixed(2)} KiB gzip; `
+      + `budget is ${(maxBlockingCssGzipBytes / 1024).toFixed(0)} KiB`,
     )
   }
 
   console.log(
     `[critical-css] OK: ${stylesheets.length} blocking stylesheet(s), `
-    + `${(criticalCssGzipBytes / 1024).toFixed(2)} KiB gzip`,
+    + `${(blockingCssGzipBytes / 1024).toFixed(2)} KiB blocking gzip, `
+    + `${(inlineCriticalCssGzipBytes / 1024).toFixed(2)} KiB inline critical gzip`,
   )
 } catch (error: unknown) {
   console.error(`[critical-css] FAILED: ${error instanceof Error ? error.message : String(error)}`)

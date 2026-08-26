@@ -11,9 +11,10 @@
           ref="fileInput"
           class="hidden"
           type="file"
-          accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm"
+          :accept="`${uploadSpecAccept('media_library_image')},video/mp4,video/quicktime,video/webm`"
           @change="handleUpload"
         />
+        <UploadSpecHint code="media_library_image" />
       </template>
     </AdminPageHeader>
 
@@ -107,9 +108,11 @@ import MediaDeleteDialog from '@/components/admin/media/MediaDeleteDialog.vue'
 import MediaLibraryFilters from '@/components/admin/media/MediaLibraryFilters.vue'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import UploadSpecHint from '@/components/admin/UploadSpecHint.vue'
 import { useMediaDeletion } from '@/composables/media/useMediaDeletion'
 import { useMediaLibraryAssets } from '@/composables/media/useMediaLibraryAssets'
 import { assetAccessURL } from '@/lib/mediaPresentation'
+import { uploadSpecAccept } from '@/lib/uploadSpecs'
 import { useAuthStore } from '@/stores/auth'
 
 interface MediaEditorState extends Record<string, unknown> {

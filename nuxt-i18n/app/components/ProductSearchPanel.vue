@@ -132,16 +132,16 @@ watch(presetKeywords, () => {
 <style scoped>
 /* 搜索面板容器 */
 .search-panel-c {
-  --search-accent: #B5FF6D;
-  --search-accent-soft: rgba(181, 255, 109, 0.42);
-  --search-accent-muted: rgba(181, 255, 109, 0.24);
+  --search-accent: #059669;
+  --search-accent-soft: rgba(5, 150, 105, 0.42);
+  --search-accent-muted: rgba(5, 150, 105, 0.24);
   width: 100%;
   max-width: 1540px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  background: #000000;
+  background: var(--tz-card-surface);
   border-radius: 0;
   border: none;
   padding: 0;

@@ -1,8 +1,8 @@
 <template>
   <div class="match-guide space-y-8">
     <!-- Card 1: Tire and Frame Clearance -->
-    <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 text-center">
-      <h2 class="text-xl font-bold text-slate-100 mb-4 flex items-center justify-center gap-2">
+    <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6 text-center">
+      <h2 class="text-xl font-bold tz-text-secondary mb-4 flex items-center justify-center gap-2">
         Tire and Frame Clearance Guide
       </h2>
       <p class="tz-text-secondary text-sm leading-relaxed mb-6 max-w-3xl mx-auto">
@@ -14,19 +14,19 @@
 
       <div class="mt-3 grid grid-cols-1 gap-4 md:grid-cols-2">
         <GuideImage
-          class="rounded-xl overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.5)]"
+          class="rounded-xl overflow-hidden shadow-md"
           src="/public/tiresizecharts/match/schwalbe-tire-fit-frame1.webp"
           alt="Frame clearance overview 1 for checking whether wide tires fit in the frame"
           :zoomOnClick="true"
         />
         <GuideImage
-          class="rounded-xl overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.5)]"
+          class="rounded-xl overflow-hidden shadow-md"
           src="/public/tiresizecharts/match/schwalbe-tire-fit-frame2.webp"
           alt="Frame clearance overview 2 showing dimensions for wide tires"
           :zoomOnClick="true"
         />
         <GuideImage
-          class="rounded-xl overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.5)] md:col-span-2"
+          class="rounded-xl overflow-hidden shadow-md md:col-span-2"
           src="/public/tiresizecharts/match/schwalbe-tire-fit-frame3.webp"
           alt="Frame clearance overview 3 with detailed extra-wide tire measurements"
           :zoomOnClick="true"
@@ -35,8 +35,8 @@
     </div>
 
     <!-- Card 2: Circumference -->
-    <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 text-center">
-      <h3 class="text-lg font-bold text-slate-100 mb-4 flex items-center justify-center gap-2 uppercase tracking-wide">
+    <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6 text-center">
+      <h3 class="text-lg font-bold tz-text-secondary mb-4 flex items-center justify-center gap-2 uppercase tracking-wide">
         Exact Circumference Guide
       </h3>
       <p class="tz-text-secondary text-sm leading-relaxed mb-6 max-w-3xl mx-auto">
@@ -55,7 +55,7 @@
       <div class="mt-3 flex justify-center">
         <div class="w-full max-w-4xl">
            <GuideImage
-            class="rounded-xl overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.5)]"
+            class="rounded-xl overflow-hidden shadow-md"
             src="/public/tiresizecharts/match/exact-circumference-of-tire.webp"
             alt="Example chart for determining the exact circumference of a Schwalbe tire for bike computer setup"
             :zoomOnClick="true"

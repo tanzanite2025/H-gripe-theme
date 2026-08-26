@@ -5,7 +5,7 @@
     aria-live="polite"
     :aria-label="t('common.loading')"
   >
-    <div class="h-full w-1/3 animate-[admin-loading-bar_1.1s_ease-in-out_infinite] bg-gradient-to-r from-primary via-sky-400 to-primary" />
+    <div class="h-full w-1/3 animate-[admin-loading-bar_1.1s_ease-in-out_infinite] bg-primary" />
   </div>
   <router-view />
   <Toaster rich-colors position="top-right" />

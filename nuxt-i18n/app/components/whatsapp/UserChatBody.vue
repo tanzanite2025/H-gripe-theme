@@ -3,7 +3,7 @@
     <!-- Container -->
     <div class="flex flex-col h-full min-h-0">
       <!-- 二级导航栏 -->
-      <div class="flex-none px-2 pt-3 pb-2 md:py-3 md:px-4 md:border-b md:border-white/[0.08] md:bg-white/[0.02]">
+      <div class="flex-none px-2 pt-3 pb-2 md:py-3 md:px-4 md:border-b md:tz-border-strong/[0.08] md:tz-surface-subtle">
         <div class="grid grid-cols-5 md:flex md:flex-wrap gap-1 md:gap-2 justify-center">
           <button
             v-for="tab in tabs"
@@ -12,8 +12,8 @@
             class="relative h-9 w-9 md:h-8 md:w-8 rounded-full border transition-all flex items-center justify-center"
             :class="[
               activeTab === tab.id
-                ? 'border-white bg-white text-slate-950 shadow-[0_4px_12px_rgba(0,0,0,0.55)]'
-                : 'border-white/15 bg-white/[0.08] text-white shadow-[0_3px_9px_rgba(0,0,0,0.55)] hover:border-[#B5FF6D]/60 hover:bg-white/[0.14]',
+                ? 'tz-border-strong bg-white text-slate-950 shadow-md'
+                : 'tz-border-subtle tz-surface-subtle tz-text-primary shadow-[0_3px_9px_rgba(20,32,43,0.1)] hover:border-[#059669]/60 hover:tz-surface-muted',
               tab.id === 'chat' && activeTab !== 'chat' ? 'chat-return-attention' : ''
             ]"
             :title="t(tab.labelKey)"
@@ -176,21 +176,21 @@ const handleUploadImage = (event: Event, source: 'library' | 'camera') => {
   0%,
   100% {
     opacity: 0;
-    box-shadow: 0 0 0 0 rgba(181, 255, 109, 0);
+    box-shadow: 0 0 0 0 rgba(5, 150, 105, 0);
   }
 
   18% {
     opacity: 1;
     box-shadow:
-      0 0 0 1px rgba(181, 255, 109, 0.28),
-      0 0 10px rgba(181, 255, 109, 0.18);
+      0 0 0 1px rgba(5, 150, 105, 0.28),
+      0 0 10px rgba(5, 150, 105, 0.18);
   }
 
   64% {
     opacity: 0.18;
     box-shadow:
-      0 0 0 5px rgba(181, 255, 109, 0),
-      0 0 14px rgba(181, 255, 109, 0.1);
+      0 0 0 5px rgba(5, 150, 105, 0),
+      0 0 14px rgba(5, 150, 105, 0.1);
   }
 }
 

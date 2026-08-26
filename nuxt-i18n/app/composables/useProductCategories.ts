@@ -11,6 +11,10 @@ export interface ProductCategory {
   name: string
   slug: string
   description: string
+  metaTitle: string
+  metaDescription: string
+  intro: string
+  routePath: string
   imageUrl: string
   depth: number
   sortOrder: number
@@ -81,6 +85,10 @@ const normalizeCategory = (
     name,
     slug,
     description: String(value?.description || '').trim(),
+    metaTitle: String(value?.meta_title || value?.metaTitle || '').trim(),
+    metaDescription: String(value?.meta_description || value?.metaDescription || '').trim(),
+    intro: String(value?.intro || value?.seo_intro || '').trim(),
+    routePath: String(value?.route_path || value?.routePath || '').trim(),
     imageUrl: normalizeStorefrontMediaUrl(imageSource, mediaContext),
     depth: Math.max(1, Number(value?.depth) || 1),
     sortOrder: Number(value?.sort_order) || 0,
@@ -176,6 +184,42 @@ export const useProductCategories = () => {
     return extractProductCategoryList(response, mediaContext)
   }
 
+  const fetchCategory = async (slugOrPath: string): Promise<ProductCategory | null> => {
+    const rawValue = String(slugOrPath || '').trim()
+    if (!rawValue) return null
+
+    const pathWithoutQuery = (rawValue.split(/[?#]/, 1)[0] || '').replace(/\/+$/, '')
+    const lastSegment = pathWithoutQuery.split('/').filter(Boolean).pop() || pathWithoutQuery
+    let categorySlug = lastSegment
+    try {
+      categorySlug = decodeURIComponent(categorySlug)
+    } catch {
+      // Keep the raw segment when it is already decoded or malformed.
+    }
+    if (!categorySlug) return null
+
+    const headers = localeCode.value ? { 'Accept-Language': localeCode.value } : undefined
+    try {
+      const response = await $fetch<unknown>(
+        `${requestBaseURL.value}/products/categories/${encodeURIComponent(categorySlug)}`,
+        { headers },
+      )
+      let current: any = response
+      for (let depth = 0; depth < 3; depth += 1) {
+        if (!current || typeof current !== 'object') break
+        if (current.id || current.slug) {
+          return normalizeCategory(current, mediaContext)
+        }
+        current = current.data
+      }
+      return null
+    } catch (error: any) {
+      const status = Number(error?.statusCode || error?.status || error?.response?.status || 0)
+      if (status === 404) return null
+      throw error
+    }
+  }
+
   const waitForExistingLoad = (state: ProductCategoryState): Promise<ProductCategory[]> => (
     new Promise((resolve) => {
       const stop = watch(
@@ -229,5 +273,6 @@ export const useProductCategories = () => {
     loaded,
     error,
     loadCategories,
+    fetchCategory,
   }
 }

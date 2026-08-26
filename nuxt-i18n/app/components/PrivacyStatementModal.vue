@@ -3,9 +3,9 @@
     class="privacy-statement-modal-shell wa-drawer-shell"
   >
     <!-- Header -->
-    <div class="flex items-center justify-between px-6 py-3 md:py-4 border-b border-white/10">
+    <div class="flex items-center justify-between px-6 py-3 md:py-4 border-b tz-border-subtle">
       <h2
-        class="text-xl md:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#B5FF6D] to-[#6b73ff]"
+        class="text-xl md:text-2xl font-bold text-emerald-600"
       >
         {{ $t('privacy.title', 'Privacy statement') }}
       </h2>

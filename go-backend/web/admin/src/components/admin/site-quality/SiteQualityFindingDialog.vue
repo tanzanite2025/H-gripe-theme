@@ -29,7 +29,12 @@
  <div class="border border-dashed border-border/80 p-3">
  <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">策略</p>
  <p class="mt-1 text-sm font-bold">{{ strategyLabel(selectedFinding.strategy) }}</p>
- <p class="mt-1 font-mono text-[10px] text-muted-foreground">{{ selectedFinding.audit_id }}</p>
+ <p class="mt-1 font-mono text-[10px] text-muted-foreground" :title="selectedFinding.rule_id">
+              {{ selectedFinding.rule_id || selectedFinding.audit_id }}
+            </p>
+ <p v-if="selectedFinding.provider_audit_id" class="mt-1 truncate font-mono text-[10px] text-muted-foreground" :title="selectedFinding.provider_audit_id">
+              provider={{ selectedFinding.provider_audit_id }}
+            </p>
           </div>
  <div class="border border-dashed border-border/80 p-3">
  <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">最近证据</p>
@@ -63,7 +68,49 @@
           {{ selectedFindingEvidence.description }}
         </div>
 
- <section v-if="selectedFindingEvidence?.headings?.length" class="border border-dashed border-border/80">
+        <section v-if="selectedFindingEvidence?.links?.length" class="border border-dashed border-border/80">
+          <div class="flex items-center justify-between gap-3 border-b border-dashed border-border/70 px-3 py-3">
+            <div>
+              <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">LINK TEXT</p>
+              <h3 class="mt-1 text-sm font-black">非描述性链接</h3>
+            </div>
+            <span class="font-mono text-[10px] text-muted-foreground">
+              {{ selectedFindingEvidence.links.length }} 项
+            </span>
+          </div>
+          <div class="divide-y">
+            <div
+              v-for="(link, index) in selectedFindingEvidence.links"
+              :key="`${link.href || link.text || 'link'}-${index}`"
+              class="grid gap-2 px-3 py-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]"
+            >
+              <div class="min-w-0">
+                <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">链接文字</p>
+                <p class="mt-1 truncate text-xs font-bold" :title="link.text">{{ link.text || '空文本' }}</p>
+                <p v-if="link.text_lang" class="mt-1 font-mono text-[10px] text-muted-foreground">
+                  lang={{ link.text_lang }}
+                </p>
+              </div>
+              <div class="min-w-0">
+                <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">链接目标</p>
+                <p class="mt-1 truncate font-mono text-[10px] text-muted-foreground" :title="link.href">
+                  {{ link.href || '-' }}
+                </p>
+              </div>
+              <Button
+                v-if="link.href"
+                size="icon"
+                variant="ghost"
+                title="打开链接目标"
+                @click="openExternal(link.href)"
+              >
+                <ExternalLink class="size-3.5" />
+              </Button>
+            </div>
+          </div>
+        </section>
+
+        <section v-if="selectedFindingEvidence?.headings?.length" class="border border-dashed border-border/80">
  <div class="flex items-center justify-between gap-3 border-b border-dashed border-border/70 px-3 py-3">
             <div>
  <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">HEADINGS</p>
@@ -138,7 +185,13 @@
           </div>
         </section>
 
-        <section class="border border-dashed border-border/80">
+        <section
+          v-if="selectedFindingEvidence?.resources?.length
+            || (!selectedFindingEvidence?.links?.length
+              && !selectedFindingEvidence?.headings?.length
+              && !selectedFindingEvidence?.structured_data?.length)"
+          class="border border-dashed border-border/80"
+        >
  <div class="flex items-center justify-between gap-3 border-b border-dashed border-border/70 px-3 py-3">
             <div>
  <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">EVIDENCE</p>
@@ -242,7 +295,7 @@
 </template>
 
 <script setup lang="ts">
-import { BadgeCheck, Braces, Check, CheckCheck } from '@lucide/vue'
+import { BadgeCheck, Braces, Check, CheckCheck, ExternalLink } from '@lucide/vue'
 import AdminStatusBadge, { type AdminStatusTone } from '@/components/admin/AdminStatusBadge.vue'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -317,8 +370,10 @@ const evidenceCountLabel = (finding: SiteQualityFinding): string => (
     ? '检测状态'
     : finding.finding_kind === 'headings'
       ? '标题节点'
-      : finding.finding_kind === 'schema'
-        ? '结构化证据'
+    : finding.finding_kind === 'schema'
+      ? '结构化证据'
+      : finding.finding_kind === 'links'
+        ? '非描述性链接'
       : '资源影响'
 )
 const evidenceCountUnit = (finding: SiteQualityFinding): string => (
@@ -327,8 +382,10 @@ const evidenceCountUnit = (finding: SiteQualityFinding): string => (
     ? '项'
     : finding.finding_kind === 'headings'
       ? '个节点'
-      : finding.finding_kind === 'schema'
-        ? '项证据'
+    : finding.finding_kind === 'schema'
+      ? '项证据'
+      : finding.finding_kind === 'links'
+        ? '个链接'
       : '个资源'
 )
 const formatConfidence = (value?: number): string => (
@@ -344,6 +401,10 @@ const formatBytes = (value?: number): string => {
   if (value < 1024) return `${Math.round(value)} B`
   if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KiB`
   return `${(value / (1024 * 1024)).toFixed(2)} MiB`
+}
+const openExternal = (value: string): void => {
+  if (!value) return
+  window.open(value, '_blank', 'noopener,noreferrer')
 }
 const findingEventLabel = (eventType: string): string => ({
   detected: '检测到问题',

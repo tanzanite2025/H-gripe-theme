@@ -41,7 +41,11 @@ func (h *MediaHandler) UploadAsset(c *gin.Context) {
 		return
 	}
 
-	mediaType, err := validateMediaUpload(file, c.PostForm("media_type"))
+	mediaType, err := validateMediaUpload(
+		file,
+		c.PostForm("media_type"),
+		c.PostForm("image_purpose"),
+	)
 	if err != nil {
 		c.JSON(upload.HTTPStatus(err), gin.H{
 			"error": err.Error(),
@@ -97,13 +101,26 @@ func isRequestBodyTooLarge(err error) bool {
 	return errors.As(err, &maxBytesError) || strings.Contains(strings.ToLower(err.Error()), "request body too large")
 }
 
-func validateMediaUpload(file *multipart.FileHeader, requestedType string) (string, error) {
+func validateMediaUpload(file *multipart.FileHeader, requestedType, requestedPurpose string) (string, error) {
+	purpose := strings.TrimSpace(requestedPurpose)
 	switch strings.ToLower(strings.TrimSpace(requestedType)) {
 	case "image":
+		if purpose != "" {
+			if _, ok := upload.RuleForSpec(purpose); !ok {
+				return "", upload.ValidateSpecFile(file, purpose)
+			}
+			return "image", upload.ValidateSpecFile(file, purpose)
+		}
 		return "image", upload.ValidateFile(file, upload.ProductImageRule)
 	case "video":
 		return "video", upload.ValidateFile(file, upload.ProductVideoRule)
 	default:
+		if purpose != "" {
+			if _, ok := upload.RuleForSpec(purpose); !ok {
+				return "", upload.ValidateSpecFile(file, purpose)
+			}
+			return "image", upload.ValidateSpecFile(file, purpose)
+		}
 		if err := upload.ValidateFile(file, upload.ProductImageRule); err == nil {
 			return "image", nil
 		}

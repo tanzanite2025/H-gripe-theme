@@ -2,7 +2,7 @@
   <section 
     class="page-faq w-full"
     :class="[
-      theme === 'dark' ? 'bg-transparent' : 'bg-gray-50',
+      theme === 'dark' ? 'bg-transparent' : 'bg-white',
       'py-4 md:py-6'
     ]"
   >
@@ -25,7 +25,7 @@
         <p 
           v-if="faqData?.subtitle"
           class="page-faq__subtitle tz-faq-subtitle max-w-2xl mx-auto"
-          :class="theme === 'dark' ? 'tz-text-secondary' : 'text-gray-600'"
+          :class="theme === 'dark' ? 'tz-text-secondary' : 'tz-text-muted'"
         >
           {{ faqData.subtitle }}
         </p>
@@ -82,7 +82,7 @@
       <div 
         v-else
         class="text-center py-12 rounded-2xl border-2 border-dashed"
-        :class="theme === 'dark' ? 'border-slate-800 tz-text-muted' : 'border-gray-200 text-gray-500'"
+            :class="theme === 'dark' ? 'tz-border-subtle tz-text-muted' : 'border-[var(--tz-form-control-border)] tz-text-muted'"
       >
         <p class="text-sm">{{ t('faq.ui.emptySection') }}</p>
       </div>
@@ -96,8 +96,8 @@
           :to="localePath('/support/faqs')"
           class="inline-flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-bold transition-all shadow-lg hover:-translate-y-0.5"
           :class="theme === 'dark' 
-            ? 'bg-slate-800 tz-text-secondary hover:bg-slate-700 hover:text-white hover:shadow-slate-900/50'
-            : 'bg-gray-800 text-white hover:bg-gray-700'"
+            ? 'tz-surface-panel tz-text-secondary hover:tz-surface-panel hover:tz-text-primary hover:shadow-md'
+            : 'bg-[var(--tz-action-primary)] text-white hover:bg-[var(--tz-action-primary-hover)] hover:shadow-[0_8px_18px_rgba(15,23,42,0.16)]'"
         >
           {{ t('faq.ui.viewAll') }}
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -117,7 +117,7 @@ import { usePageFaq } from '~/composables/usePageFaq'
 import type { PageFaqProps } from '../data/faq/types'
 
 const props = withDefaults(defineProps<PageFaqProps>(), {
-  theme: 'dark',
+  theme: 'light',
   showCategories: true,
   showViewAllLink: false,
 })
@@ -165,6 +165,7 @@ const formatCategoryIndex = (index: number) => String(index + 1).padStart(2, '0'
 .page-faq {
   /* Smooth scrolling for anchor links */
   scroll-margin-top: calc(var(--tz-site-header-spacer-height) + 1rem);
+  color: var(--tz-text-primary);
 }
 
 .page-faq__header {
@@ -180,8 +181,8 @@ const formatCategoryIndex = (index: number) => String(index + 1).padStart(2, '0'
 @media (min-width: 768px) {
   .page-faq {
     padding: 2rem 0 2.25rem;
-    background-color: #000000;
-    background-image: radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 0);
+    background-color: var(--tz-card-surface);
+    background-image: radial-gradient(rgba(20, 32, 43, 0.04) 1px, transparent 0);
     background-size: 24px 24px;
   }
 
@@ -192,7 +193,7 @@ const formatCategoryIndex = (index: number) => String(index + 1).padStart(2, '0'
   .page-faq__header {
     margin-bottom: 1.5rem;
     padding-bottom: 0.75rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid rgba(20, 32, 43, 0.12);
     text-align: left;
   }
 
@@ -205,7 +206,7 @@ const formatCategoryIndex = (index: number) => String(index + 1).padStart(2, '0'
 
   .page-faq__title {
     display: block;
-    color: #ffffff !important;
+    color: var(--tz-text-primary) !important;
     font-size: 1.25rem;
     font-style: italic;
     font-weight: 900;
@@ -220,9 +221,9 @@ const formatCategoryIndex = (index: number) => String(index + 1).padStart(2, '0'
     flex-shrink: 0;
     padding: 0.18rem 0.65rem;
     border-radius: 999px;
-    border: 1px solid rgba(181, 255, 109, 0.32);
-    background: rgba(6, 78, 59, 0.36);
-    color: #B5FF6D;
+    border: 1px solid rgba(4, 120, 87, 0.28);
+    background: rgba(5, 150, 105, 0.2);
+    color: var(--tz-text-accent);
     font-size: 0.58rem;
     font-weight: 900;
     line-height: 1.2;
@@ -233,15 +234,15 @@ const formatCategoryIndex = (index: number) => String(index + 1).padStart(2, '0'
     width: 0.38rem;
     height: 0.38rem;
     border-radius: 999px;
-    background: #B5FF6D;
-    box-shadow: 0 0 12px rgba(181, 255, 109, 0.8);
+    background: #059669;
+    box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.22);
     animation: page-faq-status-pulse 1s ease-in-out infinite alternate;
   }
 
   .page-faq__subtitle {
     max-width: none;
     margin: 0.25rem 0 0;
-    color: #94a3b8 !important;
+    color: var(--tz-text-secondary) !important;
     font-size: 0.78rem;
     text-align: left;
   }
@@ -261,19 +262,20 @@ const formatCategoryIndex = (index: number) => String(index + 1).padStart(2, '0'
     position: sticky;
     top: calc(112px + 1rem);
     display: grid;
+    align-content: start;
     min-width: 0;
     max-width: 100%;
     gap: 0.25rem;
     box-sizing: border-box;
     padding: 0.75rem;
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(20, 32, 43, 0.14);
     border-radius: 1rem;
-    background: #000000;
+    background: var(--tz-card-surface);
   }
 
   .page-faq__sidebar-label {
     padding: 0.25rem 0.75rem 0.35rem;
-    color: #64748b;
+    color: var(--tz-text-muted);
     font-size: 0.58rem;
     font-weight: 900;
     line-height: 1.2;
@@ -294,7 +296,7 @@ const formatCategoryIndex = (index: number) => String(index + 1).padStart(2, '0'
     border: 0;
     border-radius: 0.75rem;
     background: transparent;
-    color: #94a3b8;
+    color: var(--tz-text-secondary);
     text-align: left;
     font-size: 0.74rem;
     font-weight: 900;
@@ -305,14 +307,14 @@ const formatCategoryIndex = (index: number) => String(index + 1).padStart(2, '0'
   }
 
   .page-faq__sidebar-button:hover {
-    color: #ffffff;
-    background: rgba(255, 255, 255, 0.04);
+    color: var(--tz-text-primary);
+    background: rgba(20, 32, 43, 0.04);
   }
 
   .page-faq__sidebar-button--active {
-    color: #000000;
-    background: #ffffff;
-    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
+    color: #ffffff;
+    background: var(--tz-text-primary);
+    box-shadow: 0 8px 18px rgba(20, 32, 43, 0.16);
   }
 
   .page-faq__sidebar-text {
@@ -328,12 +330,12 @@ const formatCategoryIndex = (index: number) => String(index + 1).padStart(2, '0'
     height: 0.42rem;
     flex-shrink: 0;
     border-radius: 999px;
-    background: #334155;
+    background: #cbd5e1;
   }
 
   .page-faq__sidebar-button--active .page-faq__sidebar-dot {
-    background: #B5FF6D;
-    box-shadow: 0 0 10px rgba(181, 255, 109, 0.7);
+    background: #059669;
+    box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.2);
   }
 
   .page-faq__desktop-panel {

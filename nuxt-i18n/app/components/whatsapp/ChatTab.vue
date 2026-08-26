@@ -23,10 +23,10 @@
         <!-- 配置确认消息 -->
         <div
           v-if="isConfigConfirmMessage(message)"
-          class="max-w-[82%] md:max-w-[76%] rounded-2xl border border-[#a5b4fc]/45 bg-[#111827]/90 p-3 text-white shadow-lg"
+            class="max-w-[82%] md:max-w-[76%] rounded-2xl border tz-border-subtle tz-surface-subtle p-3 tz-text-primary shadow-lg"
         >
           <div class="flex items-center justify-between gap-3">
-            <div class="tz-caption font-semibold uppercase tracking-[0.16em] text-[#a5b4fc]">
+            <div class="tz-caption font-semibold uppercase tracking-[0.16em] text-emerald-700">
               Configuration request
             </div>
             <div class="tz-micro-label opacity-50 whitespace-nowrap">
@@ -47,23 +47,23 @@
                 :href="configProduct(message).url"
                 target="_blank"
                 rel="noopener"
-                class="block truncate text-sm font-semibold text-white hover:underline"
+                class="block truncate text-sm font-semibold tz-text-primary hover:underline"
               >
                 {{ configProduct(message).title || message.message }}
               </a>
-              <div v-else class="truncate text-sm font-semibold text-white">
+              <div v-else class="truncate text-sm font-semibold tz-text-primary">
                 {{ configProduct(message).title || message.message }}
               </div>
-              <div v-if="configProduct(message).price" class="mt-1 text-xs text-[#B5FF6D]">
+              <div v-if="configProduct(message).price" class="mt-1 text-xs text-[#059669]">
                 {{ configProduct(message).price }}
               </div>
-              <div v-if="configProduct(message).sku" class="mt-1 tz-caption text-white/55">
+              <div v-if="configProduct(message).sku" class="mt-1 tz-caption tz-text-primary/55">
                 SKU: {{ configProduct(message).sku }}
               </div>
             </div>
           </div>
-          <div class="mt-3 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 tz-caption leading-5 text-white/70">
-            <div v-if="configSelection(message).variant_title" class="font-semibold text-white/85">
+          <div class="mt-3 rounded-xl border tz-border-subtle tz-surface-subtle px-3 py-2 tz-caption leading-5 tz-text-muted">
+            <div v-if="configSelection(message).variant_title" class="font-semibold tz-text-primary/85">
               Selected: {{ configSelection(message).variant_title }}
             </div>
             <div
@@ -73,17 +73,17 @@
               <div
                 v-for="option in configOptionRows(message)"
                 :key="option.key"
-                class="rounded-lg bg-white/[0.05] px-2 py-1.5"
+                class="rounded-lg tz-surface-subtle px-2 py-1.5"
               >
-                <span class="block tz-compact-label text-white/45">
+                <span class="block tz-compact-label tz-text-primary/45">
                   {{ option.label }}
                 </span>
-                <span class="font-semibold text-white/80">
+                <span class="font-semibold tz-text-secondary">
                   {{ option.value }}<span v-if="option.unit"> {{ option.unit }}</span>
                 </span>
               </div>
             </div>
-            <div v-if="configSelection(message).weight_grams" class="mt-2 tz-caption text-white/60">
+            <div v-if="configSelection(message).weight_grams" class="mt-2 tz-caption tz-text-muted">
               Weight: {{ configSelection(message).weight_grams }}g
             </div>
             <div
@@ -97,10 +97,10 @@
         <!-- 订单确认消息 -->
         <div
           v-else-if="isOrderMessage(message)"
-          class="max-w-[82%] md:max-w-[76%] rounded-2xl border border-[#B5FF6D]/35 bg-[#07120b]/85 p-3 text-white shadow-lg"
+            class="max-w-[82%] md:max-w-[76%] rounded-2xl border border-[#059669]/35 bg-emerald-50 p-3 tz-text-primary shadow-lg"
         >
           <div class="flex items-center justify-between gap-3">
-            <div class="tz-caption font-semibold uppercase tracking-[0.16em] text-[#B5FF6D]">
+            <div class="tz-caption font-semibold uppercase tracking-[0.16em] text-[#059669]">
               Order confirmation
             </div>
             <div class="tz-micro-label opacity-50 whitespace-nowrap">
@@ -113,19 +113,19 @@
               :href="orderPayload(message).url"
               target="_blank"
               rel="noopener"
-              class="block truncate text-sm font-semibold text-white hover:underline"
+              class="block truncate text-sm font-semibold tz-text-primary hover:underline"
             >
               {{ orderPayload(message).title || message.message }}
             </a>
-            <div v-else class="truncate text-sm font-semibold text-white">
+            <div v-else class="truncate text-sm font-semibold tz-text-primary">
               {{ orderPayload(message).title || message.message }}
             </div>
-            <div class="mt-1 flex flex-wrap gap-x-2 gap-y-1 tz-caption text-white/55">
+            <div class="mt-1 flex flex-wrap gap-x-2 gap-y-1 tz-caption tz-text-primary/55">
               <span v-if="orderPayload(message).status">Status: {{ orderPayload(message).status }}</span>
               <span v-if="orderPayload(message).payment_status">Payment: {{ orderPayload(message).payment_status }}</span>
               <span v-if="orderPayload(message).shipping_status">Shipping: {{ orderPayload(message).shipping_status }}</span>
             </div>
-            <div class="mt-2 text-xs font-semibold text-[#B5FF6D]">
+            <div class="mt-2 text-xs font-semibold text-[#059669]">
               {{ formatOrderTotal(orderPayload(message)) }}
             </div>
           </div>
@@ -133,15 +133,15 @@
             <div
               v-for="item in orderItems(message).slice(0, 3)"
               :key="item.id || `${item.product_id}-${item.sku}`"
-              class="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 tz-caption"
+              class="rounded-xl border tz-border-subtle tz-surface-subtle px-3 py-2 tz-caption"
             >
               <div class="flex items-center justify-between gap-2">
-                <span class="truncate font-semibold text-white/85">{{ item.title || item.product_name || 'Product' }}</span>
-                <span class="shrink-0 text-white/60">x{{ item.quantity || 1 }}</span>
+                <span class="truncate font-semibold tz-text-primary/85">{{ item.title || item.product_name || 'Product' }}</span>
+                <span class="shrink-0 tz-text-muted">x{{ item.quantity || 1 }}</span>
               </div>
-              <div v-if="item.sku" class="mt-1 text-white/45">SKU: {{ item.sku }}</div>
+              <div v-if="item.sku" class="mt-1 tz-text-primary/45">SKU: {{ item.sku }}</div>
             </div>
-            <div v-if="orderItems(message).length > 3" class="tz-micro-label text-white/45">
+            <div v-if="orderItems(message).length > 3" class="tz-micro-label tz-text-primary/45">
               +{{ orderItems(message).length - 3 }} more item{{ orderItems(message).length - 3 > 1 ? 's' : '' }}
             </div>
           </div>
@@ -150,10 +150,10 @@
         <!-- FAQ 引用消息 -->
         <div
           v-else-if="isFaqMessage(message)"
-          class="max-w-[82%] md:max-w-[76%] rounded-2xl border border-white/15 bg-black/80 p-3 text-white shadow-lg"
+            class="max-w-[82%] md:max-w-[76%] rounded-2xl border tz-border-subtle tz-surface-muted p-3 tz-text-primary shadow-lg"
         >
           <div class="flex items-center justify-between gap-3">
-            <div class="tz-caption font-semibold uppercase tracking-[0.16em] text-[#B5FF6D]">
+            <div class="tz-caption font-semibold uppercase tracking-[0.16em] text-[#059669]">
               {{ t('chatModal.tabs.faq') }}
             </div>
             <div class="tz-micro-label whitespace-nowrap opacity-50">
@@ -166,11 +166,11 @@
               v-if="faqPayload(message).answer_image_url"
               :src="faqPayload(message).answer_image_url"
               :alt="faqPayload(message).answer_image_alt || faqQuestion(message)"
-              class="h-16 w-16 shrink-0 rounded-xl border border-white/10 object-cover"
+              class="h-16 w-16 shrink-0 rounded-xl border tz-border-subtle object-cover"
               preset="thumbnail"
             />
             <div class="min-w-0 flex-1">
-              <div class="mb-1 flex flex-wrap gap-x-2 gap-y-1 tz-micro-label text-white/45">
+              <div class="mb-1 flex flex-wrap gap-x-2 gap-y-1 tz-micro-label tz-text-primary/45">
                 <span v-if="faqPayload(message).page_title || faqPayload(message).page_id">
                   {{ faqPayload(message).page_title || faqPayload(message).page_id }}
                 </span>
@@ -178,10 +178,10 @@
                   · {{ faqPayload(message).category_label || faqPayload(message).category }}
                 </span>
               </div>
-              <div class="break-words text-sm font-semibold leading-5 text-white">
+              <div class="break-words text-sm font-semibold leading-5 tz-text-primary">
                 {{ faqQuestion(message) }}
               </div>
-              <div v-if="faqExcerpt(message)" class="mt-2 line-clamp-3 text-xs leading-5 text-white/60">
+              <div v-if="faqExcerpt(message)" class="mt-2 line-clamp-3 text-xs leading-5 tz-text-muted">
                 {{ faqExcerpt(message) }}
               </div>
             </div>
@@ -192,7 +192,7 @@
             :href="faqUrl(message)"
             :target="isExternalFaqUrl(message) ? '_blank' : undefined"
             rel="noopener"
-            class="mt-3 flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-semibold text-white/85 transition-colors hover:border-[#B5FF6D]/45 hover:text-[#B5FF6D]"
+            class="mt-3 flex items-center justify-between gap-3 rounded-xl border tz-border-subtle tz-surface-subtle px-3 py-2 text-xs font-semibold tz-text-primary/85 transition-colors hover:border-[#059669]/45 hover:text-[#059669]"
           >
             <span>{{ t('faq.ui.viewAll') }}</span>
             <span aria-hidden="true">↗</span>
@@ -205,7 +205,7 @@
           :href="message.url || '#'"
           target="_blank"
           rel="noopener"
-          class="flex gap-2.5 p-2 border border-white/20 rounded-2xl bg-black/40 hover:bg-white/[0.10] transition-colors max-w-[75%] md:max-w-[70%]"
+          class="flex gap-2.5 p-2 border tz-border-subtle rounded-2xl tz-surface-subtle hover:tz-surface-muted transition-colors max-w-[75%] md:max-w-[70%]"
         >
           <StorefrontImage
             v-if="message.thumbnail"
@@ -214,19 +214,19 @@
             class="w-14 h-14 object-cover rounded-xl md:rounded-lg"
             preset="thumbnail"
           />
-          <div class="text-xs md:text-sm text-white">{{ message.title || message.message }}</div>
+          <div class="text-xs md:text-sm tz-text-primary">{{ message.title || message.message }}</div>
         </a>
 
         <!-- 普通/图片消息 -->
         <div
           v-else
-          class="max-w-[75%] md:max-w-[70%] rounded-2xl md:rounded-xl px-3 py-2 text-white shadow-lg relative group"
+          class="max-w-[75%] md:max-w-[70%] rounded-2xl md:rounded-xl px-3 py-2 tz-text-primary shadow-lg relative group"
           :class="[
-            message.is_agent ? '' : 'bg-[rgba(255,255,255,0.08)] border border-[rgba(255,255,255,0.2)] md:bg-[rgba(64,122,255,0.35)] md:border-[rgba(64,122,255,0.6)]'
+            message.is_agent ? '' : 'tz-surface-subtle border tz-border-subtle md:bg-blue-50 md:border-blue-200'
           ]"
           :style="message.is_agent 
-            ? { backgroundColor: 'rgba(0,0,0,0.4)', border: `1px solid ${currentThemeColor}` } // Agent 样式: 深色背景 + 主题色边框
-            : isDesktop ? {} : { backgroundColor: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)' } // Mobile Visitor 样式
+            ? { backgroundColor: 'var(--tz-surface-muted)', border: `1px solid ${currentThemeColor}` }
+          : isDesktop ? {} : { backgroundColor: 'var(--tz-surface-subtle)', border: '1px solid var(--tz-border-subtle)' } // Mobile Visitor 样式
           "
           @touchstart="handleMessageTouchStart(message)"
           @touchend="handleMessageTouchEnd"
@@ -268,12 +268,12 @@
             :href="messageMetadata(message).url"
             target="_blank"
             rel="noopener noreferrer"
-            class="mt-2 block rounded-xl border border-white/15 bg-white/[0.05] px-3 py-2 text-xs text-[#B5FF6D] underline-offset-4 hover:underline"
+            class="mt-2 block rounded-xl border tz-border-subtle tz-surface-subtle px-3 py-2 text-xs text-[#059669] underline-offset-4 hover:underline"
           >
-            <span class="block font-semibold text-white/90">
+            <span class="block font-semibold tz-text-secondary">
               {{ messageMetadata(message).title || message.message }}
             </span>
-            <span class="mt-1 block truncate text-white/55">
+            <span class="mt-1 block truncate tz-text-primary/55">
               {{ messageMetadata(message).url }}
             </span>
           </a>
@@ -281,8 +281,8 @@
       </div>
 
       <div v-if="agentTyping?.active" class="flex justify-end">
-        <div class="max-w-[75%] rounded-2xl border border-white/15 bg-black/35 px-3 py-2 tz-caption text-white/70 shadow-lg">
-          <span class="font-semibold text-white/85">{{ agentTyping.displayName || 'Agent' }}</span>
+        <div class="max-w-[75%] rounded-2xl border tz-border-subtle tz-surface-subtle px-3 py-2 tz-caption tz-text-muted shadow-lg">
+          <span class="font-semibold tz-text-primary/85">{{ agentTyping.displayName || 'Agent' }}</span>
           <span class="ml-1">is typing</span>
           <span class="ml-1 inline-flex gap-0.5 align-middle">
             <span class="h-1 w-1 animate-pulse rounded-full bg-white/60"></span>
@@ -294,9 +294,9 @@
     </div>
 
     <!-- 底部输入栏 -->
-    <div class="chat-composer-bar tz-mobile-chrome-bottom px-3 pb-4 md:px-5 md:pt-5 md:pb-6 border-t border-white/15 md:border-white/[0.08]">
-      <div v-if="showVisitorEmailCapture" class="chat-email-capture mb-2 rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2">
-        <label class="block tz-compact-label text-white/55">Email for follow-up · optional</label>
+    <div class="chat-composer-bar tz-mobile-chrome-bottom px-3 pb-4 md:px-5 md:pt-5 md:pb-6 border-t tz-border-subtle md:tz-border-strong/[0.08]">
+      <div v-if="showVisitorEmailCapture" class="chat-email-capture mb-2 rounded-2xl border tz-border-subtle tz-surface-subtle px-3 py-2">
+        <label class="block tz-compact-label tz-text-primary/55">Email for follow-up · optional</label>
         <input
           :value="visitorEmail"
           @input="$emit('update:visitorEmail', ($event.target as HTMLInputElement).value)"
@@ -304,16 +304,16 @@
           inputmode="email"
           autocomplete="email"
           placeholder="you@example.com"
-          class="chat-email-capture__input mt-1 h-8 w-full bg-transparent tz-caption text-white placeholder:text-white/35 focus:outline-none"
+          class="chat-email-capture__input mt-1 h-8 w-full bg-transparent tz-caption tz-text-primary placeholder:tz-text-primary/35 focus:outline-none"
         />
       </div>
 
       <div
         v-if="pendingProductReference"
-        class="mb-2 border border-[#B5FF6D]/35 bg-[#07120b]/85 px-3 py-2 text-white shadow-[0_8px_24px_rgba(0,0,0,0.35)]"
+            class="mb-2 border border-[#059669]/35 bg-emerald-50 px-3 py-2 tz-text-primary shadow-[0_8px_24px_rgba(15,23,42,0.1)]"
       >
         <div class="flex items-center gap-3">
-          <div class="h-12 w-12 shrink-0 overflow-hidden bg-white/[0.05]">
+          <div class="h-12 w-12 shrink-0 overflow-hidden tz-surface-subtle">
             <StorefrontImage
               v-if="pendingProductReference.thumbnail"
               :src="pendingProductReference.thumbnail"
@@ -324,21 +324,21 @@
           </div>
 
           <div class="min-w-0 flex-1">
-            <div class="tz-micro-label uppercase tracking-[0.14em] text-[#B5FF6D]">
+            <div class="tz-micro-label uppercase tracking-[0.14em] text-[#059669]">
               {{ t('chatModal.productDraft.selected') }}
             </div>
-            <div class="truncate text-sm font-semibold text-white">
+            <div class="truncate text-sm font-semibold tz-text-primary">
               {{ pendingProductTitle }}
             </div>
-            <div class="mt-0.5 flex min-w-0 gap-2 text-xs text-white/50">
-              <span v-if="pendingProductPrice" class="shrink-0 text-[#B5FF6D]">{{ pendingProductPrice }}</span>
+            <div class="mt-0.5 flex min-w-0 gap-2 text-xs tz-text-primary/50">
+              <span v-if="pendingProductPrice" class="shrink-0 text-[#059669]">{{ pendingProductPrice }}</span>
               <span v-if="pendingProductSku" class="min-w-0 truncate">SKU: {{ pendingProductSku }}</span>
             </div>
           </div>
 
           <button
             type="button"
-            class="flex h-8 w-8 shrink-0 items-center justify-center border border-white/20 text-white/60 transition-colors hover:border-white/50 hover:text-white"
+            class="flex h-8 w-8 shrink-0 items-center justify-center border tz-border-subtle tz-text-muted transition-colors hover:tz-border-strong/50 hover:tz-text-primary"
             :aria-label="t('chatModal.productDraft.remove')"
             :title="t('chatModal.productDraft.remove')"
             @click="$emit('clearPendingProductReference')"
@@ -359,7 +359,7 @@
           @input="$emit('update:newMessage', ($event.target as HTMLInputElement).value)"
           type="text"
           placeholder="Type a message..."
-          class="flex-1 h-11 rounded-full border border-white/14 bg-[#1f1f1f] px-4 tz-caption text-white placeholder:text-white/58 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.03),0_2px_6px_rgba(0,0,0,0.35)] transition-colors focus:border-[#B5FF6D]/70 focus:bg-[#242424] focus:outline-none md:text-base"
+          class="flex-1 h-11 rounded-full border tz-border-strong/14 tz-surface-input px-4 tz-caption tz-text-primary placeholder:tz-text-primary/58 shadow-[inset_0_0_0_1px_rgba(15,23,42,0.04),0_2px_6px_rgba(15,23,42,0.08)] transition-colors focus:border-[#059669]/70 focus:tz-surface-card focus:outline-none md:text-base"
           :style="{ borderColor: currentThemeColor }"
           :disabled="isSending"
         />
@@ -368,7 +368,7 @@
           <input
             ref="imageLibraryInput"
             type="file"
-            accept="image/*"
+            :accept="uploadSpecAccept('customer_service_attachment')"
             multiple
             class="hidden"
             @change="handleImageUpload($event, 'library')"
@@ -377,7 +377,7 @@
           <input
             ref="cameraInput"
             type="file"
-            accept="image/*"
+            :accept="uploadSpecAccept('customer_service_attachment')"
             capture="environment"
             class="hidden"
             @change="handleImageUpload($event, 'camera')"
@@ -387,7 +387,7 @@
             type="button"
             @click="attachmentHubOpen = !attachmentHubOpen"
             :disabled="isUploadingImage || isSending"
-            class="shrink-0 w-10 h-10 md:w-11 md:h-11 rounded-full bg-white/[0.08] hover:bg-white/[0.18] text-white flex items-center justify-center shadow-sm shadow-black/40 disabled:opacity-50 transition-colors"
+            class="shrink-0 w-10 h-10 md:w-11 md:h-11 rounded-full tz-surface-subtle hover:bg-white/[0.18] tz-text-primary flex items-center justify-center shadow-sm disabled:opacity-50 transition-colors"
             :aria-label="t('chatModal.attachments.open')"
             :title="t('chatModal.attachments.open')"
           >
@@ -408,7 +408,7 @@
         <button
           type="submit"
           :disabled="(!newMessage.trim() && !pendingProductReference) || isSending"
-          class="shrink-0 px-4 md:px-6 h-11 rounded-full bg-[#B5FF6D] font-semibold text-sm md:text-base text-black flex items-center justify-center transition-colors hover:bg-[#A7F75D] disabled:cursor-not-allowed disabled:bg-[#B5FF6D] disabled:text-black [&_svg]:text-black"
+          class="shrink-0 px-4 md:px-6 h-11 rounded-full bg-[#059669] font-semibold text-sm md:text-base text-white flex items-center justify-center transition-colors hover:bg-[#047857] disabled:cursor-not-allowed disabled:bg-[#059669] disabled:text-white [&_svg]:text-white"
           title="Send message"
         >
           <span v-if="!isSending">
@@ -425,6 +425,9 @@
           </span>
         </button>
       </form>
+      <p class="mt-1 px-1 text-[10px] leading-4 tz-text-muted">
+        Image attachments: {{ uploadSpecHint('customer_service_attachment') }}
+      </p>
     </div>
   </div>
 </template>
@@ -436,6 +439,7 @@ import { useI18n, useLocalePath } from '#imports'
 import ChatAttachmentHub from './ChatAttachmentHub.vue'
 import type { ChatAttachmentActionId } from '~/composables/chat/useChatAttachmentActions'
 import { getStorefrontLocaleEntry } from '~/utils/storefrontLocales'
+import { uploadSpecAccept, uploadSpecHint } from '~/utils/uploadSpecs'
 
 const props = defineProps<{
   messages: any[]
@@ -743,9 +747,9 @@ const handleMessageContextMenu = (message: any) => {
 
 <style scoped>
 .chat-email-capture {
-  border-color: rgba(255, 255, 255, 0.12);
-  background: rgba(12, 12, 16, 0.2);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  border-color: var(--tz-border-subtle);
+  background: var(--tz-surface-subtle);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 .chat-email-capture input.chat-email-capture__input {
@@ -753,16 +757,16 @@ const handleMessageContextMenu = (message: any) => {
   border-radius: 0.65rem;
   background: transparent !important;
   background-color: transparent !important;
-  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.12) !important;
+  box-shadow: inset 0 -1px 0 var(--tz-border-subtle) !important;
   padding-inline: 0.25rem;
 }
 
 .chat-email-capture input.chat-email-capture__input:focus {
-  background: rgba(0, 0, 0, 0.08) !important;
-  background-color: rgba(0, 0, 0, 0.08) !important;
+  background: var(--tz-card-surface) !important;
+  background-color: var(--tz-card-surface) !important;
   box-shadow:
-    inset 0 -1px 0 var(--tz-brand-primary),
-    0 0 0 1px rgba(181, 255, 109, 0.24) !important;
+    inset 0 -1px 0 var(--tz-site-accent),
+    0 0 0 1px rgba(5, 150, 105, 0.24) !important;
 }
 
 @media (max-width: 767px) {

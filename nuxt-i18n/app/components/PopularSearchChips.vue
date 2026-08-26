@@ -72,20 +72,20 @@ const toggle = (keyword: string) => {
   cursor: pointer;
   padding: 0.32rem 0.62rem;
   border-radius: 9999px;
-  background: #070707;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: none;
+  background: var(--tz-surface-subtle);
+  border: 1px solid var(--tz-border-subtle);
+  box-shadow: 0 4px 12px rgba(20, 32, 43, 0.05);
   font-size: 0.8125rem;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--tz-text-secondary);
   transition: background-color 0.2s, color 0.2s, border-color 0.2s, transform 0.08s ease;
 }
 
 .popular-searches__chip--active {
-  background: #050505;
-  border-color: rgba(181, 255, 109, 0.62);
+  background: var(--tz-card-surface);
+  border-color: rgba(5, 150, 105, 0.62);
   box-shadow: none;
-  color: #ffffff;
+  color: var(--tz-text-primary);
 }
 
 @media (min-width: 769px) {

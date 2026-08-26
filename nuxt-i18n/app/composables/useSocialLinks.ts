@@ -1,23 +1,16 @@
 import { ref, computed, onMounted } from 'vue'
 import { useAsyncData } from '#imports'
-import {
-  normalizeRuntimeSocialLinks,
-  useSiteSettings
-} from '~/composables/usePublicSettings'
+import { useSiteSettings } from '~/composables/usePublicSettings'
 import { usePublicApiBase } from '~/composables/usePublicApiBase'
+import {
+  normalizeSocialLinkItems,
+  socialSettingDefinitions,
+  type SocialNetwork,
+} from '~/utils/socialLinks'
 
-export interface SocialLinkViewModel { network: string; url: string; label: string; size: number }
+import type { SocialLinkViewModel } from '~/utils/socialLinks'
 
-type RawSocialSettings = Partial<Record<'facebook' | 'twitter' | 'instagram' | 'linkedin' | 'youtube' | 'wechat', unknown>>
-
-const socialSettingDefinitions = [
-  { network: 'facebook', label: 'Facebook' },
-  { network: 'twitter', label: 'Twitter' },
-  { network: 'instagram', label: 'Instagram' },
-  { network: 'linkedin', label: 'LinkedIn' },
-  { network: 'youtube', label: 'YouTube' },
-  { network: 'wechat', label: 'WeChat' },
-] as const
+type RawSocialSettings = Partial<Record<SocialNetwork, unknown>>
 
 export function useSocialLinks() {
   const previewLinks = ref<SocialLinkViewModel[] | null>(null)
@@ -56,7 +49,7 @@ export function useSocialLinks() {
             const apply = (v: unknown) => {
               try {
                 const arr = Array.isArray(v) ? v : typeof v === 'string' ? JSON.parse(v) : []
-                previewLinks.value = normalize(arr)
+                previewLinks.value = normalizeSocialLinkItems(arr)
               } catch {
                 previewLinks.value = null
               }
@@ -69,27 +62,12 @@ export function useSocialLinks() {
     })
   }
 
-  const normalize = (items: unknown) => {
-    return normalizeRuntimeSocialLinks(items)
-      .map((item) => {
-        const network = String(item.network || '').toLowerCase()
-        const url = String(item.url || '')
-        const label = 'label' in item && item.label ? String(item.label) : network.toUpperCase()
-        const size = Number('size' in item && item.size ? item.size : 24) || 24
-        return { network, url, label, size } as SocialLinkViewModel
-      })
-      .filter((x) => x.network && x.url)
-  }
-
   const normalizeConfiguredSettings = (settings: RawSocialSettings) => {
-    return socialSettingDefinitions
-      .map(({ network, label }) => ({
-        network,
-        url: String(settings[network] ?? '').trim(),
-        label,
-        size: 24
-      }))
-      .filter((item) => item.url)
+    return normalizeSocialLinkItems(socialSettingDefinitions.map(({ network, label }) => ({
+      network,
+      url: String(settings[network] ?? '').trim(),
+      label,
+    })))
   }
 
   const socialLinks = computed<SocialLinkViewModel[]>(() => {
@@ -97,7 +75,7 @@ export function useSocialLinks() {
     if (configuredSocialSettings.value !== null) {
       return normalizeConfiguredSettings(configuredSocialSettings.value)
     }
-    return normalize(siteSettings.value.socialLinks || [])
+    return normalizeSocialLinkItems(siteSettings.value.socialLinks || [])
   })
 
   return { socialLinks }

@@ -11,19 +11,23 @@
 
 .nav-pill-item {
   @apply border-none rounded-full px-5 py-2 text-[0.8rem] font-semibold cursor-pointer transition-all duration-200 inline-flex items-center no-underline;
-  background: rgba(17, 17, 22, 0.96);
+  background: #ffffff;
   color: var(--tz-text-secondary);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--tz-border-strong);
+  box-shadow: 0 6px 16px rgb(15 23 42 / 0.06);
 }
 
 .nav-pill-item:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: #ffffff;
+  background: var(--tz-input-surface);
+  color: var(--tz-text-primary);
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 9px 20px rgb(15 23 42 / 0.1);
 }
 
 .nav-pill-item--active {
-  @apply bg-white text-slate-900 font-semibold;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  @apply font-semibold;
+  background: var(--tz-site-accent);
+  color: #ffffff;
+  border-color: var(--tz-site-accent);
+  box-shadow: 0 8px 18px rgb(5 150 105 / 0.18);
 }

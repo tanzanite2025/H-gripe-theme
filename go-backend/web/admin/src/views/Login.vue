@@ -1,8 +1,5 @@
 <template>
   <div class="admin-login-shell relative min-h-screen min-h-dvh overflow-x-hidden overflow-y-auto">
-    <div aria-hidden="true" class="admin-login-rail absolute inset-y-0 left-0 hidden w-[34vw] lg:block" />
-    <div aria-hidden="true" class="admin-login-blueprint absolute right-[7vw] top-[12vh] hidden size-[22rem] lg:block" />
-
     <main class="relative z-10 flex min-h-screen min-h-dvh items-center justify-center px-4 py-8 sm:px-6">
       <AdminLanguageSwitcher class="absolute right-4 top-4 sm:right-6 sm:top-6" />
       <Card class="min-h-[490px] w-full max-w-[430px] rounded-xl border-border/70 bg-card/95 py-5 shadow-2xl backdrop-blur-sm">
@@ -288,52 +285,6 @@ const onGoogleSubmit = async (): Promise<void> => {
 <style scoped>
 .admin-login-shell {
   scrollbar-gutter: stable;
-  background:
-    linear-gradient(135deg, color-mix(in oklch, var(--primary) 8%, var(--background)) 0%, var(--background) 46%, color-mix(in oklch, var(--accent) 42%, var(--background)) 100%);
-}
-
-.admin-login-shell::before {
-  position: absolute;
-  inset: 0;
-  content: '';
-  pointer-events: none;
-  background-image:
-    linear-gradient(to right, color-mix(in oklch, var(--border) 72%, transparent) 1px, transparent 1px),
-    linear-gradient(to bottom, color-mix(in oklch, var(--border) 72%, transparent) 1px, transparent 1px);
-  background-position: center;
-  background-size: 34px 34px;
-  mask-image: linear-gradient(to bottom, black 0%, rgb(0 0 0 / 0.72) 42%, transparent 86%);
-  opacity: 0.62;
-}
-
-.admin-login-shell::after {
-  position: absolute;
-  inset: 0;
-  content: '';
-  pointer-events: none;
-  background:
-    linear-gradient(112deg, transparent 0 52%, color-mix(in oklch, var(--primary) 12%, transparent) 52.1% 52.3%, transparent 52.4%),
-    linear-gradient(112deg, transparent 0 64%, color-mix(in oklch, var(--chart-2) 10%, transparent) 64.1% 64.25%, transparent 64.35%);
-  opacity: 0.75;
-}
-
-.admin-login-rail {
-  border-right: 1px solid color-mix(in oklch, var(--primary) 15%, var(--border));
-  background:
-    repeating-linear-gradient(135deg, transparent 0 22px, color-mix(in oklch, var(--primary) 7%, transparent) 22px 23px, transparent 23px 48px),
-    linear-gradient(180deg, color-mix(in oklch, var(--primary) 8%, transparent), transparent 72%);
-  clip-path: polygon(0 0, 76% 0, 52% 100%, 0 100%);
-  opacity: 0.8;
-}
-
-.admin-login-blueprint {
-  border: 1px solid color-mix(in oklch, var(--primary) 20%, var(--border));
-  background:
-    linear-gradient(to right, transparent 49.7%, color-mix(in oklch, var(--primary) 24%, transparent) 50%, transparent 50.3%),
-    linear-gradient(to bottom, transparent 49.7%, color-mix(in oklch, var(--chart-2) 22%, transparent) 50%, transparent 50.3%),
-    repeating-linear-gradient(0deg, transparent 0 23px, color-mix(in oklch, var(--border) 70%, transparent) 23px 24px),
-    repeating-linear-gradient(90deg, transparent 0 23px, color-mix(in oklch, var(--border) 70%, transparent) 23px 24px);
-  opacity: 0.55;
-  transform: rotate(8deg);
+  background: var(--background);
 }
 </style>

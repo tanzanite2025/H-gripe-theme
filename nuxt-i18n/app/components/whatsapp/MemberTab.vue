@@ -10,7 +10,7 @@
           <div class="tz-micro-label tz-text-muted truncate">
             {{ isMemberLogged ? 'Your membership' : 'Membership program' }}
           </div>
-          <div class="text-sm font-semibold text-white truncate">
+          <div class="text-sm font-semibold tz-text-primary truncate">
             <span v-if="isMemberLogged">Level {{ levelName }}</span>
             <span v-else>Log in to unlock member prices</span>
           </div>
@@ -21,19 +21,19 @@
       <div class="grid grid-cols-2 gap-2 md:gap-3 tz-caption">
         <div class="member-tab-metric rounded-xl px-2.5 md:px-3 py-2">
           <div class="tz-text-muted">Points</div>
-          <div class="text-sm font-semibold text-white">
+          <div class="text-sm font-semibold tz-text-primary">
             {{ isMemberLogged ? points : '—' }}
           </div>
         </div>
         <div class="member-tab-metric rounded-xl px-2.5 md:px-3 py-2">
           <div class="tz-text-muted">Discount rate</div>
-          <div class="text-sm font-semibold text-white">
+          <div class="text-sm font-semibold tz-text-primary">
             {{ isMemberLogged ? formatDiscountRate(levelDiscounts.discountRate) : '—' }}
           </div>
         </div>
         <div class="member-tab-metric rounded-xl px-2.5 md:px-3 py-2">
           <div class="tz-text-muted">Coupons / Cards</div>
-          <div class="text-sm font-semibold text-white">
+          <div class="text-sm font-semibold tz-text-primary">
             {{ isMemberLogged ? `× ${userCoupons} / × ${userPointCards}` : '—' }}
           </div>
         </div>
@@ -41,7 +41,7 @@
 
       <!-- 等级进度条 -->
       <div v-if="isMemberLogged" class="space-y-1.5">
-        <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
+        <div class="h-1.5 rounded-full tz-surface-subtle overflow-hidden">
           <div
             class="member-tab-progress__bar h-full"
             :style="{ width: tierInfo.pct + '%' }"
@@ -113,50 +113,50 @@ const formatDiscountRate = (value?: number) => `${formatBenefitNumber(Number(val
 .member-tab-card {
   background: var(--tz-card-surface);
   border: none;
-  box-shadow: 0 3px 9px rgba(0, 0, 0, 0.9);
+  box-shadow: 0 8px 20px rgba(20, 32, 43, 0.1);
   backdrop-filter: blur(12px);
 }
 
 .member-tab-avatar {
-  background: rgba(255, 255, 255, 0.08);
-  border: none;
+  background: var(--tz-surface-muted);
+  border: 1px solid var(--tz-border-subtle);
 }
 
 .member-tab-metric {
-  background: rgba(255, 255, 255, 0.045);
-  border: none;
+  background: var(--tz-surface-subtle);
+  border: 1px solid var(--tz-border-subtle);
 }
 
 .member-tab-progress__bar {
-  background: var(--tz-brand-primary);
+  background: var(--tz-site-accent);
 }
 
 .member-tab-primary-action {
-  background: var(--tz-brand-primary);
+  background: var(--tz-action-primary);
   border: none;
-  color: #050505;
-  box-shadow: 0 4px 12px -4px rgba(181, 255, 109, 0.75);
+  color: var(--tz-action-primary-foreground);
+  box-shadow: 0 4px 12px -4px rgb(15 23 42 / 0.24);
 }
 
 .member-tab-primary-action:hover {
-  background: var(--tz-brand-primary-hover);
+  background: var(--tz-action-primary-hover);
   transform: translateY(-1px);
 }
 
 .member-tab-secondary-action {
-  background: rgba(255, 255, 255, 0.08);
-  border: none;
+  background: var(--tz-surface-muted);
+  border: 1px solid var(--tz-border-subtle);
   color: var(--tz-text-primary);
   box-shadow:
-    0 2px 6px -3px rgba(0, 0, 0, 0.9),
-    0 0 6px rgba(0, 0, 0, 0.7);
+    0 2px 6px -3px rgba(20, 32, 43, 0.12),
+    0 0 6px rgba(20, 32, 43, 0.06);
 }
 
 .member-tab-secondary-action:hover {
-  background: rgba(255, 255, 255, 0.14);
+  background: var(--tz-surface-subtle);
   transform: translateY(-1px);
   box-shadow:
-    0 4px 12px -4px rgba(0, 0, 0, 0.95),
-    0 0 8px rgba(0, 0, 0, 0.9);
+    0 4px 12px -4px rgba(20, 32, 43, 0.16),
+    0 0 8px rgba(20, 32, 43, 0.08);
 }
 </style>

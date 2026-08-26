@@ -28,6 +28,7 @@ type PublicProduct struct {
 	Name                         string                              `json:"name"`
 	Slug                         string                              `json:"slug"`
 	LocalizedRoutes              []PublicProductTranslationRoute     `json:"localized_routes,omitempty"`
+	Breadcrumb                   *service.ProductBreadcrumbView      `json:"breadcrumb,omitempty"`
 	SKU                          string                              `json:"sku,omitempty"`
 	Description                  string                              `json:"description"`
 	ShortDesc                    string                              `json:"short_description"`
@@ -533,6 +534,14 @@ func PublicProductCategoryListWithMedia(
 	result.Tree = publicProductCategoryViewsWithMedia(item.Tree, resolver)
 	result.Flat = publicProductCategoryViewsWithMedia(item.Flat, resolver)
 	return &result
+}
+
+func PublicProductCategoryViewWithMedia(
+	item service.ProductCategoryView,
+	resolver publicmedia.Resolver,
+) service.ProductCategoryView {
+	item.ImageURL = publicmedia.URL(resolver, item.ImageURL)
+	return item
 }
 
 func publicProductCategoryViewsWithMedia(

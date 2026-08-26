@@ -1,6 +1,5 @@
 <template>
   <header class="uds-header-box px-4 py-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-    <div class="uds-glow-bg" />
     <div class="relative z-10">
       <span class="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 block">OVERVIEW / 综合监控</span>
       <h1 class="text-lg font-black tracking-tighter uppercase text-foreground">仪表板</h1>

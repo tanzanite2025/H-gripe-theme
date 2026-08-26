@@ -187,8 +187,8 @@ const emit = defineEmits<{
   justify-content: center;
   border: 0;
   border-radius: 999px;
-  background: var(--tz-text-accent);
-  color: #06111f;
+  background: var(--tz-action-primary);
+  color: var(--tz-action-primary-foreground);
   cursor: pointer;
   font-size: 0.75rem;
   font-weight: 700;
@@ -197,7 +197,7 @@ const emit = defineEmits<{
 }
 
 .tire-pressure-section__cta:hover {
-  background: var(--tz-brand-primary-hover);
+  background: var(--tz-action-primary-hover);
   box-shadow: 0 0.5rem 1.35rem -0.5rem rgba(0, 0, 0, 0.9);
   transform: translateY(-1px);
 }
@@ -214,7 +214,7 @@ const emit = defineEmits<{
 .tire-pressure-section__table-shell {
   margin-top: 0.5rem;
   overflow-x: auto;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--tz-border-subtle);
   border-radius: 0.75rem;
   background: var(--tz-form-panel-surface);
 }
@@ -243,23 +243,23 @@ const emit = defineEmits<{
 }
 
 .tire-pressure-section__table tbody tr + tr {
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid var(--tz-border-subtle);
 }
 
 .tire-pressure-section__comparison {
   margin-top: 0.75rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--tz-border-subtle);
   border-radius: 0.75rem;
   background: var(--tz-form-panel-surface);
-  box-shadow: 3px 3px 10px rgba(0, 0, 0, 0.9);
+  box-shadow: 3px 3px 10px rgba(20, 32, 43, 0.1);
   padding: 1rem;
 }
 
 .tire-pressure-section__comparison-label {
   margin-bottom: 0.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--tz-border-subtle);
   border-radius: 0.35rem;
-  background: #000;
+  background: var(--tz-surface-muted);
   color: var(--tz-text-primary);
   font-size: 0.75rem;
   font-weight: 600;

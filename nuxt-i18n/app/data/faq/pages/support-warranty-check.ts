@@ -15,16 +15,15 @@ export const supportWarrantyCheckFaq: PageFaqData = {
       items: [
         {
           id: 'wc-1',
-          question: 'Where can I find my product code?',
-          answer: `Your product code can be found in several places:
+          question: 'Where can I find my order number?',
+          answer: `Your order number can be found in several places:
             <ul>
-              <li><strong>Product packaging</strong>: On the original box or packaging</li>
-              <li><strong>Warranty card</strong>: Included with your purchase</li>
-              <li><strong>Product label</strong>: On the rim or hub sticker</li>
               <li><strong>Order confirmation email</strong>: Listed in your order details</li>
+              <li><strong>Account orders</strong>: Open your order history after signing in</li>
+              <li><strong>Support correspondence</strong>: Included in messages about the order</li>
             </ul>
-            The code is typically a combination of letters and numbers (e.g., TZ-2024-ABC123).`,
-          tags: ['product code', 'find', 'location'],
+            Enter the order number exactly as shown, for example TZ202608230001.`,
+          tags: ['order number', 'find', 'location'],
         },
         {
           id: 'wc-2',
@@ -62,15 +61,15 @@ export const supportWarrantyCheckFaq: PageFaqData = {
       items: [
         {
           id: 'wc-4',
-          question: 'What if my product code is not found?',
-          answer: `If your product code is not found, please check:
+          question: 'What if my order number is not found?',
+          answer: `If your order number is not found, please check:
             <ul>
-              <li>The code is entered correctly (no typos)</li>
-              <li>You're using the correct format</li>
-              <li>The product is a genuine product from our store</li>
+              <li>The order number is entered exactly as shown (no typos)</li>
+              <li>The order has already been shipped; warranty lookup is available for shipped orders</li>
+              <li>You're using the order number from the correct store account</li>
             </ul>
             If the issue persists, please contact our support team with your order details.`,
-          tags: ['not found', 'error', 'troubleshoot'],
+          tags: ['order number', 'not found', 'troubleshoot'],
         },
         {
           id: 'wc-5',

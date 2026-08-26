@@ -1,14 +1,5 @@
 <template>
   <div class="grid items-start gap-4 xl:grid-cols-2">
-    <ExchangeRateApiSettingsCard
-      :api-settings="apiSettings"
-      :primary-pricing-currency="primaryPricingCurrency"
-      :can-edit="canEdit"
-      :syncing="syncingExchangeRates"
-      :saving="savingApiSettings"
-      @sync="emit('sync-exchange-rates')"
-    />
-
     <TimeApiSettingsCard
       :api-settings="apiSettings"
       :can-edit="canEdit"
@@ -34,14 +25,14 @@
           <KeyRound class="mt-0.5 size-4 flex-none text-admin-selected" />
           <div>
             <p class="text-xs font-black text-foreground">私有 Key</p>
-            <p class="mt-1 text-xs leading-relaxed text-muted-foreground">ExchangeRate-API Key 只保存在后台私有设置，不写进 Nuxt 前台包。</p>
+            <p class="mt-1 text-xs leading-relaxed text-muted-foreground">第三方接口凭据只保存在后台私有设置，不写进 Nuxt 前台包。</p>
           </div>
         </div>
         <div class="flex items-start gap-3">
           <RefreshCw class="mt-0.5 size-4 flex-none text-admin-selected" />
           <div>
-            <p class="text-xs font-black text-foreground">缓存优先</p>
-            <p class="mt-1 text-xs leading-relaxed text-muted-foreground">汇率和时间接口失败时，业务可以继续使用最近一次有效缓存。</p>
+            <p class="text-xs font-black text-foreground">缓存与内置规则</p>
+            <p class="mt-1 text-xs leading-relaxed text-muted-foreground">汇率接口继续走缓存；时区使用内置规则，不再配置外部时间 API。</p>
           </div>
         </div>
       </div>
@@ -52,16 +43,9 @@
 <script setup lang="ts">
 import { KeyRound, RefreshCw, ShieldCheck } from '@lucide/vue'
 import CustomsLookupApiSettingsCard from '@/components/admin/settings/CustomsLookupApiSettingsCard.vue'
-import ExchangeRateApiSettingsCard from '@/components/admin/settings/ExchangeRateApiSettingsCard.vue'
 import TimeApiSettingsCard from '@/components/admin/settings/TimeApiSettingsCard.vue'
 
 interface APISettings {
-  exchange_rate_enabled: boolean | string | number
-  exchange_rate_provider: string
-  exchange_rate_endpoint: string
-  exchange_rate_query_template: string
-  exchange_rate_refresh_minutes: number
-  exchange_rate_api_key: string
   time_api_enabled: boolean | string | number
   time_api_provider: string
   time_api_endpoint: string
@@ -81,18 +65,10 @@ interface APISettings {
 
 withDefaults(defineProps<{
   apiSettings: APISettings
-  primaryPricingCurrency?: string
   canEdit?: boolean
-  syncingExchangeRates?: boolean
   savingApiSettings?: boolean
 }>(), {
-  primaryPricingCurrency: '',
   canEdit: false,
-  syncingExchangeRates: false,
   savingApiSettings: false,
 })
-
-const emit = defineEmits<{
-  'sync-exchange-rates': []
-}>()
 </script>

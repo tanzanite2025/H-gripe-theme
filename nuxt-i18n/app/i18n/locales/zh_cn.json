@@ -543,9 +543,9 @@
     },
     "paypalCancel": {
       "title": "PayPal 支付已取消",
-      "message": "订单仍处于未支付状态。你可以重新打开购物车选择信用卡或其他支付方式，也可以联系客服处理。",
+      "message": "订单仍处于未支付状态。你可以重新尝试支付，或联系客服处理。",
       "actions": {
-        "tryAgain": "重新打开购物车"
+        "tryAgain": "重新支付"
       }
     },
     "alipayReturn": {
@@ -623,7 +623,8 @@
       "certificates": "Certificates",
       "membershipPoints": "Membership and Points",
       "pictureWarehouse": "Picture warehouse",
-      "contact": "Contact Us"
+      "contact": "Contact Us",
+      "aboutWebsite": "Me & This Website"
     },
     "index": {
       "title": "Company",
@@ -866,6 +867,67 @@
     "to": "To",
     "currency": "货币"
   },
+  "fitmentCatalog": {
+    "trigger": {
+      "label": "查询适配"
+    },
+    "dialog": {
+      "eyebrow": "适配资料库",
+      "title": "查询车架或前叉适配",
+      "description": "按品牌、型号或年份搜索独立的适配资料库。结果会显示该条目已录入的花鼓规格。",
+      "close": "关闭",
+      "tabListLabel": "适配资料库分类"
+    },
+    "tabs": {
+      "frame": "车架适配",
+      "fork": "前叉适配"
+    },
+    "search": {
+      "label": "搜索",
+      "placeholder": "搜索品牌或型号",
+      "yearLabel": "车型年份",
+      "yearPlaceholder": "例如 2024",
+      "submit": "搜索",
+      "clear": "清除",
+      "searching": "搜索中..."
+    },
+    "states": {
+      "initial": "请输入品牌、型号或年份来搜索资料库。",
+      "empty": "没有找到匹配的记录。",
+      "unavailable": "适配数据暂时无法使用，请稍后再试。",
+      "noHubSpecifications": "尚未录入花鼓规格。"
+    },
+    "entry": {
+      "series": "系列",
+      "generation": "代际",
+      "market": "市场",
+      "hubSpecifications": "花鼓规格",
+      "unknownYear": "未指定年份",
+      "allYears": "全部年份"
+    },
+    "pagination": {
+      "label": "适配查询结果",
+      "previous": "上一页",
+      "next": "下一页",
+      "page": "第 {page} 页，共 {totalPages} 页"
+    },
+    "hub": {
+      "position": "位置",
+      "axleType": "轴类型",
+      "axleSpacing": "轴开档",
+      "millimetres": "毫米",
+      "positions": {
+        "front": "前",
+        "rear": "后"
+      },
+      "axleTypes": {
+        "quickRelease": "快拆",
+        "thruAxle": "筒轴",
+        "boltOn": "螺栓固定",
+        "other": "其他"
+      }
+    }
+  },
   "footer": {
     "links": {
       "technicalDocs": "技术",
@@ -883,14 +945,17 @@
       "oemOdm": "OEM & ODM",
       "certificates": "Certificates",
       "membershipPoints": "Membership and Points",
-      "pictureWarehouse": "Picture warehouse"
+      "pictureWarehouse": "Picture warehouse",
+      "meThisWebsite": "我与这个网站",
+      "whyThisName": "为什么叫这个名字"
     },
     "menus": {
       "products": "Products",
       "support": "Support",
       "company": "Company",
       "policies": "Policies",
-      "resources": "RESOURCES"
+      "resources": "RESOURCES",
+      "siteOverview": "站点概要"
     },
     "brand": {
       "line1": "A brand of Top Sports Co., Limited.",
@@ -1444,7 +1509,7 @@
         "title": "我的会员信息",
         "intro": "查看个人资料、会员等级、积分余额、优惠券、礼品卡和保修入口。",
         "seoTitle": "我的会员信息 - 积分与权益",
-        "seoDescription": "查看 TANZANITE 会员资料、会员等级、积分余额、优惠券、礼品卡和保修工具。",
+        "seoDescription": "查看 会员资料、会员等级、积分余额、优惠券、礼品卡和保修工具。",
         "feedbackTitle": "分享您对会员信息页面的反馈",
         "feedbackSubtitle": "告诉我们个人资料、权益、优惠券、礼品卡或保修入口是否清楚。"
       },
@@ -1452,7 +1517,7 @@
         "title": "会员等级与积分规则",
         "intro": "查看会员等级、折扣权益、积分获取、积分兑换、邀请奖励和签到规则。",
         "seoTitle": "会员等级与积分规则",
-        "seoDescription": "查看 TANZANITE 会员等级、积分获取规则、兑换比例、邀请奖励和每日签到奖励。",
+        "seoDescription": "查看 会员等级、积分获取规则、兑换比例、邀请奖励和每日签到奖励。",
         "feedbackTitle": "分享您对会员等级和积分规则的反馈",
         "feedbackSubtitle": "告诉我们等级权益、积分获取、兑换比例、邀请奖励或签到规则是否清楚。"
       },
@@ -1460,7 +1525,7 @@
         "title": "礼品卡兑换",
         "intro": "使用符合条件的会员积分兑换礼品卡，并在会员中心查看已兑换记录。",
         "seoTitle": "礼品卡兑换 - 会员积分兑换",
-        "seoDescription": "使用 TANZANITE 会员积分兑换可用礼品卡奖励，并在会员中心管理已兑换礼品卡。",
+        "seoDescription": "使用 会员积分兑换可用礼品卡奖励，并在会员中心管理已兑换礼品卡。",
         "feedbackTitle": "分享您对礼品卡兑换的反馈",
         "feedbackSubtitle": "告诉我们积分兑换、可用礼品卡或兑换记录是否容易理解。"
       }
@@ -1608,13 +1673,13 @@
       "details": "商品详情",
       "afterSales": "售后说明",
       "packaging": "包装说明",
-      "shipping": "运输方式"
+      "productShippingInfo": "运输方式"
     },
     "empty": {
       "details": "暂未添加商品详情。",
       "afterSales": "暂未添加售后说明。",
       "packaging": "暂未添加包装说明。",
-      "shipping": "暂未添加运输方式说明。"
+      "productShippingInfo": "暂未添加运输方式说明。"
     }
   },
   "productReviews": {
@@ -1768,6 +1833,7 @@
   },
   "shopCategoryMenu": {
     "ariaLabel": "商品分类",
+    "children": "子分类",
     "loading": "正在加载分类...",
     "empty": "暂时没有可用商品分类。",
     "all": "全部"
@@ -1944,23 +2010,23 @@
     "subtitle": "查询您的产品保修状态",
     "login_required": "请登录后查询产品保修信息。",
     "login_button": "登录",
-    "input_label": "请输入产品编码：",
-    "input_placeholder": "例如：ABC123",
+    "input_label": "请输入订单号：",
+    "input_placeholder": "例如：TZ202608230001",
     "check_button": "查询",
-    "help_text": "产品编码可在产品包装或保修卡上找到。",
+    "help_text": "订单发货后可按订单号查询发货商品和剩余保修时间。",
     "months": "个月",
     "days": "天",
     "result": {
       "valid": "保修有效",
       "expired": "保修已过期",
-      "not_found": "未找到产品"
+      "not_found": "未找到发货记录"
     },
     "actions": {
       "check_another": "查询其他产品",
       "contact_support": "联系客服"
     },
     "fields": {
-      "product_code": "产品编码",
+      "order_number": "订单号",
       "product_type": "产品类型",
       "product_name": "产品名称",
       "ship_date": "出货日期",
@@ -1974,15 +2040,15 @@
       "no_records": "暂无服务记录"
     },
     "errors": {
-      "not_found_message": "未找到编码为 {code} 的产品",
+      "not_found_message": "未找到订单号为 {code} 的发货记录",
       "check_tips": {
-        "0": "Check that the product code was entered exactly as printed.",
-        "1": "Contact support if your product code still cannot be found."
+        "0": "请确认订单号与订单中显示的内容一致。",
+        "1": "如果仍找不到已发货订单，请联系客服。"
       },
       "error_contact": "如有疑问，请联系我们。"
     },
-    "cardDesc": "Enter your product code to check warranty status and history.",
-    "checkNow": "Check Now"
+    "cardDesc": "输入订单号查询发货商品、保修期限和售后记录。",
+    "checkNow": "立即查询"
   },
   "wheelsetSelectionAssistant": {
     "title": "轮组适配助手",
@@ -2008,8 +2074,8 @@
     "states": {
       "loading": "正在加载适配问题……",
       "retry": "重新尝试",
-      "unavailable": "适配服务暂时不可用，请稍后重试。",
-      "empty": "暂时没有可用的适配问题。"
+      "empty": "暂时没有可用的适配问题。",
+      "unavailable": "适配服务暂时不可用，请稍后再试。"
     },
     "outcome": {
       "eyebrow": "适配结果",
@@ -2020,8 +2086,8 @@
     "results": {
       "title": "匹配的轮组",
       "loading": "正在匹配轮组……",
-      "unavailable": "匹配商品服务暂时不可用，请稍后重试。",
       "empty": "暂时没有符合这些回答的轮组。",
+      "unavailable": "匹配商品暂时不可用，请稍后再试。",
       "pagination": "轮组商品结果分页",
       "previousPage": "上一页",
       "nextPage": "下一页"

@@ -1,5 +1,5 @@
 <template>
-  <section id="home-why-choose-us" class="home-features-tabs bg-transparent text-white pt-6 pb-2">
+  <section id="home-why-choose-us" class="home-features-tabs bg-transparent tz-text-primary pt-6 pb-2">
     <div class="page-content-shell px-0 md:px-4">
       <section
         class="home-features-tabs__group"
@@ -71,7 +71,7 @@ const visibleBullets = (item: { bullets?: string[] }) => {
 
 .home-features-tabs__group-title {
   margin: 0 0 18px;
-  color: #f8fafc;
+  color: var(--tz-text-primary);
   font-size: 24px;
   font-weight: 800;
   line-height: 1.2;
@@ -95,12 +95,12 @@ const visibleBullets = (item: { bullets?: string[] }) => {
   flex-direction: column;
   gap: 12px;
   padding: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(20, 32, 43, 0.1);
   border-radius: 16px;
   background: var(--tz-card-surface, #111116);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.05),
-    0 16px 36px -28px rgba(0, 0, 0, 0.96);
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    0 16px 36px -28px rgba(20, 32, 43, 0.16);
 }
 
 .home-features-tabs__card-heading {
@@ -113,7 +113,7 @@ const visibleBullets = (item: { bullets?: string[] }) => {
 .home-features-tabs__card-index {
   flex: 0 0 auto;
   padding-top: 2px;
-  color: var(--tz-brand-primary, #b5ff6d);
+  color: var(--tz-site-accent, #059669);
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.12em;
@@ -122,7 +122,7 @@ const visibleBullets = (item: { bullets?: string[] }) => {
 .home-features-tabs__card-heading h3 {
   min-width: 0;
   margin: 0;
-  color: #f8fafc;
+  color: var(--tz-text-primary);
   font-size: 16px;
   font-weight: 800;
   line-height: 1.25;
@@ -153,7 +153,7 @@ const visibleBullets = (item: { bullets?: string[] }) => {
 }
 
 .home-features-tabs__bullets li > span:first-child {
-  color: var(--tz-brand-primary, #b5ff6d);
+  color: var(--tz-site-accent, #059669);
 }
 
 @media (max-width: 900px) {

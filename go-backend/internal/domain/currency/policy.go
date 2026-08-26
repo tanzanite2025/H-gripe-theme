@@ -7,11 +7,14 @@ import (
 
 const DefaultPrimaryCurrency = "USD"
 
-// Policy stores the store's primary pricing currency and secondary display
-// currencies. Payment collection currency is resolved from the order and
-// verified by gateway callbacks, not by this policy.
+// Policy stores the backend entry currency for admin-entered commercial
+// amounts. Storefront display currencies are owned by storefront market
+// settings, not by this global policy.
 type Policy struct {
-	PrimaryCurrency     string           `json:"primary_currency"`
+	PrimaryCurrency string `json:"primary_currency"`
+	// DisplayCurrencies is kept in the response for backward compatibility.
+	// New code should resolve storefront display currencies from enabled
+	// StorefrontMarket records.
 	DisplayCurrencies   []string         `json:"display_currencies"`
 	AvailableCurrencies []CurrencyOption `json:"available_currencies"`
 }
@@ -87,7 +90,7 @@ func MinorUnits(value string) (int, bool) {
 	return 0, false
 }
 
-// Catalog is the admin-facing list for primary pricing and secondary display
+// Catalog is the admin-facing list for backend entry and storefront display
 // currencies. It is not a claim about any enabled payment provider.
 func Catalog() []CurrencyOption {
 	return []CurrencyOption{

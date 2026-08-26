@@ -811,14 +811,14 @@ func siteQualityStructuredDataExpectedGroups(
 			Types:       []string{"Organization", "LocalBusiness"},
 			Description: "home page site identity",
 		})
-	case strings.HasPrefix(path, "/shop/") && path != "/shop/":
+	case strings.HasPrefix(path, "/products/") && path != "/products/":
 		groups = appendSiteQualityStructuredDataExpectedGroup(groups, siteQualityStructuredDataExpectedGroup{
 			Label:       "Product or ProductGroup",
 			Types:       []string{"Product", "ProductGroup"},
 			Description: "product detail page",
 		})
-	case strings.HasPrefix(path, "/blog/") &&
-		path != "/blog/" &&
+	case strings.HasPrefix(path, "/resources/blog/") &&
+		path != "/resources/blog/" &&
 		!siteQualityStructuredDataPathLooksLikeBlogListing(path):
 		groups = appendSiteQualityStructuredDataExpectedGroup(groups, siteQualityStructuredDataExpectedGroup{
 			Label:       "Article, BlogPosting, or NewsArticle",
@@ -870,9 +870,10 @@ func siteQualityStructuredDataPathLooksLikeFAQ(path string) bool {
 func siteQualityStructuredDataPathLooksLikeBlogListing(path string) bool {
 	path = strings.Trim(strings.ToLower(strings.TrimSpace(path)), "/")
 	parts := strings.Split(path, "/")
-	return len(parts) == 2 &&
-		parts[0] == "blog" &&
-		(parts[1] == "news" || parts[1] == "wheelsbuild")
+	return len(parts) == 3 &&
+		parts[0] == "resources" &&
+		parts[1] == "blog" &&
+		(parts[2] == "news" || parts[2] == "wheelsbuild")
 }
 
 func siteQualityStructuredDataComparablePath(rawURL string) string {

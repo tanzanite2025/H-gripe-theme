@@ -2,6 +2,7 @@ import { reactive, ref } from 'vue'
 import { toast } from 'vue-sonner'
 import mediaApi from '@/api/media'
 import type { MediaAsset } from '@/api/media'
+import { validateUploadFile } from '@/lib/uploadSpecs'
 
 export interface MediaLibraryFilters {
   search: string
@@ -65,11 +66,20 @@ export const useMediaLibraryAssets = () => {
 
   const uploadFile = async (file?: File | null): Promise<void> => {
     if (!file) return
+    if (file.type.startsWith('image/') || /\.(jpe?g|png|webp)$/i.test(file.name)) {
+      const validation = await validateUploadFile(file, 'media_library_image')
+      if (!validation.ok) {
+        toast.error(validation.error || '媒体库图片不符合上传规范')
+        return
+      }
+      if (validation.warning) toast.warning(validation.warning)
+    }
     uploading.value = true
     try {
       const formData = new FormData()
       formData.append('file', file)
       formData.append('media_type', file.type.startsWith('video/') ? 'video' : 'image')
+      if (!file.type.startsWith('video/')) formData.append('image_purpose', 'media_library_image')
       await mediaApi.uploadAsset(formData)
       toast.success('媒体资源已上传')
       await fetchAssets()

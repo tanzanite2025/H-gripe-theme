@@ -79,23 +79,26 @@ type SiteQualityOperationalSummary struct {
 }
 
 type siteQualityDecision struct {
-	AuditID        string                                                `json:"audit_id"`
-	Kind           string                                                `json:"kind"`
-	RuleVersion    string                                                `json:"rule_version"`
-	Title          string                                                `json:"title"`
-	Description    string                                                `json:"description,omitempty"`
-	Severity       string                                                `json:"severity"`
-	Confirmations  int                                                   `json:"confirmations"`
-	SampleCount    int                                                   `json:"sample_count"`
-	Confidence     float64                                               `json:"confidence"`
-	MedianScore    *float64                                              `json:"median_score,omitempty"`
-	MedianMS       *float64                                              `json:"median_savings_ms,omitempty"`
-	MedianBytes    *int64                                                `json:"median_savings_bytes,omitempty"`
-	Resources      []LighthouseRunnerResource                            `json:"resources,omitempty"`
-	Headings       []sitequalitydomain.SiteQualityHeadingEvidence        `json:"headings,omitempty"`
-	StructuredData []sitequalitydomain.SiteQualityStructuredDataEvidence `json:"structured_data,omitempty"`
-	DisplayValue   string                                                `json:"display_value,omitempty"`
-	NumericValue   *float64                                              `json:"numeric_value,omitempty"`
+	AuditID         string                                                `json:"audit_id"`
+	RuleID          string                                                `json:"rule_id"`
+	ProviderAuditID string                                                `json:"provider_audit_id,omitempty"`
+	Kind            string                                                `json:"kind"`
+	RuleVersion     string                                                `json:"rule_version"`
+	Title           string                                                `json:"title"`
+	Description     string                                                `json:"description,omitempty"`
+	Severity        string                                                `json:"severity"`
+	Confirmations   int                                                   `json:"confirmations"`
+	SampleCount     int                                                   `json:"sample_count"`
+	Confidence      float64                                               `json:"confidence"`
+	MedianScore     *float64                                              `json:"median_score,omitempty"`
+	MedianMS        *float64                                              `json:"median_savings_ms,omitempty"`
+	MedianBytes     *int64                                                `json:"median_savings_bytes,omitempty"`
+	Resources       []LighthouseRunnerResource                            `json:"resources,omitempty"`
+	Links           []sitequalitydomain.SiteQualityLinkEvidence           `json:"links,omitempty"`
+	Headings        []sitequalitydomain.SiteQualityHeadingEvidence        `json:"headings,omitempty"`
+	StructuredData  []sitequalitydomain.SiteQualityStructuredDataEvidence `json:"structured_data,omitempty"`
+	DisplayValue    string                                                `json:"display_value,omitempty"`
+	NumericValue    *float64                                              `json:"numeric_value,omitempty"`
 }
 
 type siteQualityEvaluationDecision struct {

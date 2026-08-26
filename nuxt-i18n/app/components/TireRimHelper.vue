@@ -78,7 +78,7 @@
     <div v-if="!hideSearchButton" class="mt-4 flex justify-center">
       <button
         type="button"
-        class="tire-rim-helper__search inline-flex items-center justify-center rounded-full px-4 py-1.5 text-xs font-semibold shadow-[0_4px_14px_rgba(0,0,0,0.9)] transition-all"
+        class="tire-rim-helper__search inline-flex items-center justify-center rounded-full px-4 py-1.5 text-xs font-semibold shadow-md transition-all"
         @click="() => openShopSearch()"
       >
         Search for suitable width rims
@@ -210,74 +210,74 @@ const tireRimSuggestion = computed<TireRimSuggestion | null>(() => {
 
 <style scoped>
 .tire-rim-helper-card {
-  border: 1px solid rgba(181, 255, 109, 0.14);
+  border: 1px solid rgba(5, 150, 105, 0.14);
   background-color: var(--tz-form-panel-surface) !important;
   background-image: none !important;
-  box-shadow: 3px 3px 10px rgba(0, 0, 0, 0.78);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
 }
 
 .tire-rim-helper__input {
   border: 1px solid var(--tz-form-control-border);
   background-color: var(--tz-form-control-surface) !important;
   background-image: none !important;
-  box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.72);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06);
 }
 
 .tire-rim-helper__input:focus {
-  border-color: var(--tz-brand-primary);
+  border-color: var(--tz-site-accent);
 }
 
 .tire-rim-helper__toggle-group {
   background-color: var(--tz-form-control-surface) !important;
   background-image: none !important;
-  box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.72);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06);
 }
 
 .tire-rim-helper__result {
-  color: var(--tz-brand-primary);
+  color: var(--tz-site-accent);
 }
 
 .tire-rim-helper__toggle {
-  border: 1px solid rgba(181, 255, 109, 0.35);
-  background-color: #171d13;
+  border: 1px solid rgba(5, 150, 105, 0.35);
+  background-color: var(--tz-surface-muted);
   background-image: none;
   color: var(--tz-text-secondary);
 }
 
 .tire-rim-helper__toggle:hover,
 .tire-rim-helper__toggle:focus-visible {
-  border-color: rgba(181, 255, 109, 0.85);
-  color: #f8fff1;
+  border-color: rgba(5, 150, 105, 0.85);
+  color: var(--tz-text-primary);
   outline: none;
 }
 
 .tire-rim-helper__toggle--active {
-  border-color: var(--tz-brand-primary);
-  background-color: var(--tz-brand-primary);
+  border-color: var(--tz-site-accent);
+  background-color: var(--tz-site-accent);
   background-image: none;
-  color: #0b1020;
-  box-shadow: 0 0 0 1px rgba(181, 255, 109, 0.15), 0 4px 14px rgba(181, 255, 109, 0.16);
+  color: #ffffff;
+  box-shadow: 0 0 0 1px rgba(5, 150, 105, 0.15), 0 4px 14px rgba(5, 150, 105, 0.16);
 }
 
 .tire-rim-helper__toggle--active:hover,
 .tire-rim-helper__toggle--active:focus-visible {
-  border-color: var(--tz-brand-primary-hover);
-  background-color: var(--tz-brand-primary-hover);
+  border-color: var(--tz-site-accent-hover);
+  background-color: var(--tz-site-accent-hover);
   background-image: none;
-  color: #0b1020;
+  color: #ffffff;
 }
 
 .tire-rim-helper__search {
-  border: 1px solid var(--tz-brand-primary);
-  background: var(--tz-brand-primary);
-  color: #0b1020;
+  border: 1px solid var(--tz-action-primary);
+  background: var(--tz-action-primary);
+  color: var(--tz-action-primary-foreground);
 }
 
 .tire-rim-helper__search:hover,
 .tire-rim-helper__search:focus-visible {
-  border-color: var(--tz-brand-primary-hover);
-  background: var(--tz-brand-primary-hover);
-  box-shadow: 0 8px 22px -6px rgba(181, 255, 109, 0.55);
+  border-color: var(--tz-action-primary-hover);
+  background: var(--tz-action-primary-hover);
+  box-shadow: 0 8px 22px -6px rgb(15 23 42 / 0.24);
   transform: translateY(-1px);
   outline: none;
 }

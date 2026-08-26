@@ -2,7 +2,7 @@
   <section class="stripe-payment-element space-y-3" aria-live="polite">
     <div
       ref="paymentContainer"
-      class="min-h-[160px] rounded-xl border border-white/10 bg-black/20 p-3"
+      class="min-h-[160px] rounded-xl border tz-border-subtle tz-surface-subtle p-3"
       :class="{ 'opacity-60': isConfirming }"
     />
 

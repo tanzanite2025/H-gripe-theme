@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	seodomain "commerce-platform/internal/domain/seo"
 	"commerce-platform/internal/pkg/locales"
@@ -28,11 +29,18 @@ func (s *StorefrontRouteCatalogService) buildProductRouteCatalogEntries(
 			return nil, fmt.Errorf("list products for %s: %w", locale, err)
 		}
 		for _, item := range products {
+			itemLocale := locales.Normalize(item.Locale)
+			if itemLocale != locales.Normalize(locale) || strings.TrimSpace(item.Slug) == "" {
+				continue
+			}
 			canonicalPath := seodomain.BuildProductRoute(item.Locale, item.Slug).Path
+			if !seodomain.IsProductRoute(itemLocale, canonicalPath, item.Slug) {
+				continue
+			}
 			entries = append(entries, seodomain.StorefrontRouteCatalogEntry{
-				RouteKey:      fmt.Sprintf("product:%d:%s", item.ID, item.Locale),
+				RouteKey:      fmt.Sprintf("product:%d:%s", item.ID, itemLocale),
 				Path:          canonicalPath,
-				Locale:        item.Locale,
+				Locale:        itemLocale,
 				SourceType:    seodomain.RouteSourceProduct,
 				SourceID:      catalogUintPointer(item.ID),
 				SourceKey:     item.Slug,
@@ -44,24 +52,7 @@ func (s *StorefrontRouteCatalogService) buildProductRouteCatalogEntries(
 				IsIndexable:   true,
 				EntryStatus:   seodomain.RouteEntryStatusActive,
 			})
-			entries = append(entries, seodomain.StorefrontRouteCatalogEntry{
-				RouteKey:      fmt.Sprintf("product-alias:%d:%s", item.ID, item.Locale),
-				Path:          seodomain.BuildLegacyProductRoute(item.Locale, item.Slug).Path,
-				Locale:        item.Locale,
-				SourceType:    seodomain.RouteSourceAlias,
-				SourceID:      catalogUintPointer(item.ID),
-				SourceKey:     item.Slug,
-				Title:         item.Name + " (Legacy Alias)",
-				Summary:       "Legacy product route redirected to the canonical shop route",
-				CanonicalPath: canonicalPath,
-				IsAlias:       true,
-				IsSearchable:  false,
-				IsCheckable:   true,
-				IsIndexable:   false,
-				EntryStatus:   seodomain.RouteEntryStatusAlias,
-			})
 			summary.ProductEntries++
-			summary.AliasEntries++
 		}
 	}
 

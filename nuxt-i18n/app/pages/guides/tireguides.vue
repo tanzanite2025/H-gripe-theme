@@ -10,7 +10,7 @@
       <section
         v-show="activeTab === 'size'"
         id="size"
-        class="sizecharts-section text-slate-100"
+        class="sizecharts-section tz-text-secondary"
       >
         <TireSizeGuide @open-tire-products="openTireProductsDrawer" />
       </section>
@@ -107,6 +107,8 @@ import { tireGuideTabs } from '~/utils/pageSubNavigation'
 
 definePageMeta({
   layout: 'products',
+  footerLabelKey: 'products.nav.tireSizeCharts',
+  footerLabelFallback: 'Tire Guides',
 })
 
 useHead({
@@ -194,7 +196,7 @@ const handleTireProductsDrawerClose = () => {
   font-size: var(--tz-type-page-title);
   line-height: 1.18;
   font-weight: 600;
-  color: #f9fafb;
+  color: var(--tz-text-primary);
 }
 
 .products-page__intro {
@@ -253,13 +255,9 @@ const handleTireProductsDrawerClose = () => {
   margin-top: 0.5rem;
   padding: 0.25rem 0.8rem;
   border-radius: 9999px;
-  border: 1px solid rgba(56, 189, 248, 0.9);
-  background-image: linear-gradient(
-    135deg,
-    rgba(56, 189, 248, 0.9),
-    rgba(59, 130, 246, 0.95)
-  );
-  color: #0b1020;
+  border: 1px solid var(--tz-action-primary);
+  background: var(--tz-action-primary);
+  color: var(--tz-action-primary-foreground);
   font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
@@ -267,6 +265,11 @@ const handleTireProductsDrawerClose = () => {
   align-items: center;
   justify-content: center;
   text-align: center;
+}
+
+.sizecharts-brand-button:hover {
+  border-color: var(--tz-action-primary-hover);
+  background: var(--tz-action-primary-hover);
 }
 
 .sizecharts-feedback {

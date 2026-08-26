@@ -11,8 +11,8 @@
           <Save v-else class="size-4" />
           {{ saving ? '保存中' : '保存链接' }}
         </Button>
-        <Button v-if="activeTab === 'profiles'" variant="outline" :disabled="loading || saving" @click="refresh">
- <RefreshCw :class="['size-4', loading ? 'animate-spin': '']" />
+        <Button v-if="activeTab === 'profiles'" variant="outline" :disabled="loading || saving || oauthLoading" @click="refresh">
+ <RefreshCw :class="['size-4', loading || oauthLoading ? 'animate-spin': '']" />
           刷新
         </Button>
       </template>
@@ -57,7 +57,7 @@
           </div>
           <div class="flex items-center gap-2">
             <AdminStatusBadge tone="blue">域结构已就绪</AdminStatusBadge>
-            <AdminStatusBadge tone="amber">OAuth 待接入</AdminStatusBadge>
+            <AdminStatusBadge tone="green">OAuth 已接入</AdminStatusBadge>
           </div>
         </div>
 
@@ -74,11 +74,11 @@
               <ShieldCheck class="size-4 text-emerald-600" />
               账号连接
             </div>
-            <p class="mt-2 text-xs leading-5 text-muted-foreground">未来单独保存账号、频道、权限范围和加密 Token 状态。</p>
+            <p class="mt-2 text-xs leading-5 text-muted-foreground">账号、频道、权限范围和加密 Token 独立保存。</p>
           </div>
           <div class="rounded-xl border bg-background/70 p-3">
             <div class="flex items-center gap-2 text-xs font-black">
-              <Send class="size-4 text-violet-600" />
+              <Send class="size-4 text-emerald-600" />
               内容发布
             </div>
             <p class="mt-2 text-xs leading-5 text-muted-foreground">发布任务、定时任务和平台返回结果统一进入发布记录。</p>
@@ -113,7 +113,7 @@
           <div>
             <h2 class="text-sm font-black">数据边界</h2>
             <p class="mt-1 max-w-3xl text-xs leading-5 text-muted-foreground">
-              这些 URL 仍然兼容原来的 `settings.social` 数据。YouTube 等平台的 OAuth 账号、频道和发布凭据不会写入这里。
+              这些 URL 写入 `settings.social`，只用于前台展示。YouTube 等平台的 OAuth 账号、频道和发布凭据不会写入这里。
             </p>
           </div>
         </div>
@@ -165,14 +165,16 @@
               <p class="mt-1 max-w-2xl text-xs leading-5 text-muted-foreground">{{ currentPlatform.description }}</p>
             </div>
           </div>
-          <AdminStatusBadge tone="amber">待接入</AdminStatusBadge>
+          <AdminStatusBadge :tone="connectionTone(currentConnection)">{{ connectionStatusLabel(currentConnection) }}</AdminStatusBadge>
         </div>
 
         <div class="mt-5 grid gap-3 md:grid-cols-3">
           <div class="rounded-xl border bg-muted/20 p-4">
             <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">账号状态</p>
-            <p class="mt-2 text-sm font-black">尚未绑定</p>
-            <p class="mt-1 text-xs leading-5 text-muted-foreground">后端 OAuth 连接接口接入后显示账号名称和连接状态。</p>
+            <p class="mt-2 truncate text-sm font-black">{{ currentConnection.connected ? currentConnection.provider_account_name : '尚未绑定' }}</p>
+            <p class="mt-1 break-words text-xs leading-5 text-muted-foreground">
+              {{ currentConnection.connected ? (currentConnection.provider_account_email || currentConnection.provider_account_url || '账号已授权') : currentConnection.configured ? '点击授权按钮绑定官方账号。' : '后台尚未配置该平台 OAuth 应用。' }}
+            </p>
           </div>
           <div class="rounded-xl border bg-muted/20 p-4">
             <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">发布能力</p>
@@ -186,14 +188,43 @@
           </div>
         </div>
 
+        <div v-if="activeTab === 'meta' && currentConnection.connected" class="mt-4 grid gap-3 md:grid-cols-2">
+          <div class="rounded-xl border bg-muted/20 p-4">
+            <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Facebook Page</p>
+            <template v-if="metaResources.pages?.length">
+              <a v-for="page in metaResources.pages" :key="page.id" :href="page.url" target="_blank" rel="noreferrer" class="mt-2 block text-sm font-black text-sky-700 hover:underline">
+                {{ page.name || page.id }}
+              </a>
+            </template>
+            <p v-else class="mt-2 text-xs text-muted-foreground">未发现可管理的 Facebook Page。</p>
+          </div>
+          <div class="rounded-xl border bg-muted/20 p-4">
+            <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Instagram</p>
+            <template v-if="metaResources.instagram_accounts?.length">
+              <a v-for="account in metaResources.instagram_accounts" :key="account.id" :href="account.url" target="_blank" rel="noreferrer" class="mt-2 block text-sm font-black text-pink-700 hover:underline">
+                {{ account.username ? `@${account.username}` : account.name || account.id }}
+              </a>
+            </template>
+            <p v-else class="mt-2 text-xs text-muted-foreground">未发现已关联的 Instagram Professional Account。</p>
+          </div>
+        </div>
+
         <div class="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-dashed pt-4">
           <p class="text-xs text-muted-foreground">
-            {{ activeTab === 'youtube' ? '下一步将接入 Google OAuth、频道选择和视频发布参数。' : '当前先完成平台域结构，后续按平台逐个接入账号绑定。' }}
+            {{ currentConnection.connected ? `已连接 ${currentConnection.provider_account_name || currentPlatform.label}` : currentConnection.configured ? '授权后会回到当前后台页面。' : '请先在后端配置该平台 OAuth 应用。' }}
           </p>
-          <Button variant="outline" disabled :title="connectionButtonTitle">
-            <Link2 class="size-4" />
-            {{ activeTab === 'youtube' ? '绑定 YouTube 账号' : '绑定平台账号' }}
-          </Button>
+          <div class="flex items-center gap-2">
+            <Button v-if="currentConnection.connected" variant="outline" :disabled="oauthActionLoading || !canEdit" @click="disconnectProvider">
+              <LoaderCircle v-if="oauthActionLoading" class="size-4 animate-spin" />
+              <Unplug v-else class="size-4" />
+              解绑账号
+            </Button>
+            <Button v-else variant="outline" :disabled="oauthActionLoading || !canEdit || !currentConnection.configured" :title="currentConnection.configured ? '跳转官方授权页面' : '请先配置 OAuth 应用'" @click="startOAuth">
+              <LoaderCircle v-if="oauthActionLoading" class="size-4 animate-spin" />
+              <Link2 v-else class="size-4" />
+              {{ currentPlatform.provider === 'youtube' ? '绑定 YouTube 账号' : `绑定 ${currentPlatform.label}` }}
+            </Button>
+          </div>
         </div>
       </section>
     </template>
@@ -202,50 +233,61 @@
 
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
-import type { Component } from 'vue'
 import {
-  AtSign,
-  BriefcaseBusiness,
   Clock3,
   Link2,
   LoaderCircle,
-  MessageCircle,
-  Music2,
   RefreshCw,
   Save,
   Send,
-  Share2,
   ShieldCheck,
-  Video,
+  Unplug,
 } from '@lucide/vue'
 import { toast } from 'vue-sonner'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import AdminFormField from '@/components/admin/AdminFormField.vue'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
+import socialApi, {
+  type SocialConnection,
+  type SocialPublicLinkUpdate,
+} from '@/api/social'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useRouteTab } from '@/composables/useRouteTab'
 import { useAuthStore } from '@/stores/auth'
-import axios from '@/utils/axios'
+import {
+  socialFields,
+  socialPlatforms,
+  socialProviderList,
+  type SocialFieldKey,
+  type SocialProvider,
+} from '@/utils/socialPlatforms'
 
-type SocialTab = 'overview' | 'profiles' | 'youtube' | 'meta' | 'tiktok' | 'linkedin' | 'x' | 'wechat' | 'publications'
-type SocialFieldKey = 'facebook' | 'twitter' | 'instagram' | 'linkedin' | 'youtube' | 'wechat'
+type SocialTab = 'overview' | 'profiles' | 'youtube' | 'meta' | 'x' | 'reddit' | 'publications'
+
+const makeEmptyConnection = (provider: SocialProvider): SocialConnection => ({
+  provider,
+  label: socialPlatforms[provider].label,
+  configured: false,
+  connected: false,
+  status: 'disconnected',
+  provider_resources: {},
+})
 
 const authStore = useAuthStore()
+const route = useRoute()
 const router = useRouter()
 const activeTab = useRouteTab<SocialTab>({
   defaultValue: 'overview',
-  values: ['overview', 'profiles', 'youtube', 'meta', 'tiktok', 'linkedin', 'x', 'wechat', 'publications'],
+  values: ['overview', 'profiles', 'youtube', 'meta', 'x', 'reddit', 'publications'],
   routes: {
     overview: 'SocialOverview',
     profiles: 'SocialProfiles',
     youtube: 'SocialYouTube',
     meta: 'SocialMeta',
-    tiktok: 'SocialTikTok',
-    linkedin: 'SocialLinkedIn',
     x: 'SocialX',
-    wechat: 'SocialWeChat',
+    reddit: 'SocialReddit',
     publications: 'SocialPublications',
   },
 })
@@ -253,49 +295,64 @@ const activeTab = useRouteTab<SocialTab>({
 const canEdit = computed(() => authStore.hasPermission('settings:edit'))
 const loading = ref(false)
 const saving = ref(false)
-
-const socialFields: Array<{ key: SocialFieldKey; label: string; placeholder: string }> = [
-  { key: 'facebook', label: 'Facebook', placeholder: 'Facebook 页面 URL' },
-  { key: 'twitter', label: 'Twitter / X', placeholder: '账号 URL' },
-  { key: 'instagram', label: 'Instagram', placeholder: '账号 URL' },
-  { key: 'linkedin', label: 'LinkedIn', placeholder: '页面 URL' },
-  { key: 'youtube', label: 'YouTube', placeholder: '频道 URL' },
-  { key: 'wechat', label: '微信', placeholder: '二维码 URL' },
-]
+const oauthLoading = ref(false)
+const oauthActionLoading = ref(false)
+const oauthConnections = ref<SocialConnection[]>([])
 
 const socialSettings = reactive<Record<SocialFieldKey, string>>({
   facebook: '',
-  twitter: '',
   instagram: '',
-  linkedin: '',
+  x: '',
   youtube: '',
-  wechat: '',
+  reddit: '',
 })
 
-const platformCards = [
-  { key: 'youtube', label: 'YouTube', description: '绑定频道并发布视频', capability: '视频发布', status: '待绑定', tone: 'amber' as const, routeName: 'SocialYouTube', icon: Video },
-  { key: 'meta', label: 'Facebook / Instagram', description: '管理 Meta 平台账号', capability: '图文 / 视频', status: '待绑定', tone: 'amber' as const, routeName: 'SocialMeta', icon: Share2 },
-  { key: 'tiktok', label: 'TikTok', description: '准备短视频发布通道', capability: '短视频发布', status: '规划中', tone: 'gray' as const, routeName: 'SocialTikTok', icon: Music2 },
-  { key: 'linkedin', label: 'LinkedIn', description: '管理品牌内容分发', capability: '内容发布', status: '规划中', tone: 'gray' as const, routeName: 'SocialLinkedIn', icon: BriefcaseBusiness },
-  { key: 'x', label: 'X', description: '管理品牌内容分发', capability: '内容发布', status: '规划中', tone: 'gray' as const, routeName: 'SocialX', icon: AtSign },
-  { key: 'wechat', label: '微信', description: '管理微信内容入口', capability: '内容发布', status: '规划中', tone: 'gray' as const, routeName: 'SocialWeChat', icon: MessageCircle },
-]
+const connectionByProvider = computed<Record<SocialProvider, SocialConnection>>(() => {
+  const result = Object.fromEntries(
+    socialProviderList.map((provider) => [provider, makeEmptyConnection(provider)])
+  ) as Record<SocialProvider, SocialConnection>
+  oauthConnections.value.forEach((connection) => {
+    if (connection.provider in result) {
+      result[connection.provider] = { ...result[connection.provider], ...connection }
+    }
+  })
+  return result
+})
 
-const platformTabs: Record<Exclude<SocialTab, 'overview' | 'profiles' | 'publications'>, {
-  label: string
-  description: string
-  capability: string
-  icon: Component
-}> = {
-  youtube: { label: 'YouTube', description: '绑定 Google 账号和 YouTube Channel，为后续视频发布提供账号上下文。', capability: '视频发布', icon: Video },
-  meta: { label: 'Facebook / Instagram', description: '统一维护 Meta 账号连接，并为 Facebook 页面与 Instagram 账号预留发布能力。', capability: '图文 / 视频', icon: Share2 },
-  tiktok: { label: 'TikTok', description: '为短视频内容准备平台账号、发布参数和任务状态管理。', capability: '短视频发布', icon: Music2 },
-  linkedin: { label: 'LinkedIn', description: '为品牌动态、视频和内容分发预留账号连接能力。', capability: '内容发布', icon: BriefcaseBusiness },
-  x: { label: 'X', description: '为品牌内容、媒体资源和发布记录预留平台连接能力。', capability: '内容发布', icon: AtSign },
-  wechat: { label: '微信', description: '为公众号、视频号或二维码展示配置预留独立管理入口。', capability: '内容发布', icon: MessageCircle },
+const connectionStatusLabel = (connection: SocialConnection): string => {
+  if (connection.connected) return '已连接'
+  if (connection.status === 'error') return '连接异常'
+  if (!connection.configured) return '未配置'
+  return '待绑定'
 }
 
-const currentPlatform = computed(() => platformTabs[activeTab.value as keyof typeof platformTabs] || platformTabs.youtube)
+const connectionTone = (connection: SocialConnection): 'green' | 'coral' | 'amber' | 'gray' => {
+  if (connection.connected) return 'green'
+  if (connection.status === 'error') return 'coral'
+  if (!connection.configured) return 'gray'
+  return 'amber'
+}
+
+const platformCards = computed(() => socialProviderList.map((provider) => {
+  const platform = socialPlatforms[provider]
+  const connection = connectionByProvider.value[provider]
+  return {
+    key: provider,
+    label: platform.label,
+    description: platform.overviewDescription,
+    capability: platform.capability,
+    status: connectionStatusLabel(connection),
+    tone: connectionTone(connection),
+    routeName: platform.routeName,
+    icon: platform.icon,
+  }
+}))
+
+const currentPlatform = computed(() => (
+  socialPlatforms[activeTab.value as SocialProvider] || socialPlatforms.youtube
+))
+const currentConnection = computed(() => connectionByProvider.value[currentPlatform.value.provider])
+const metaResources = computed(() => currentConnection.value.provider_resources || {})
 const pageTitle = computed(() => {
   if (activeTab.value === 'overview') return '社交媒体'
   if (activeTab.value === 'profiles') return '前台展示'
@@ -308,22 +365,20 @@ const pageDescription = computed(() => {
   if (activeTab.value === 'publications') return '查看平台发布任务、结果和失败记录'
   return currentPlatform.value.description
 })
-const connectionButtonTitle = '当前阶段先完成社交媒体域结构，平台 OAuth 接口将在对应平台接入时启用'
 
 const applySetting = (key: string, value: unknown): void => {
-  const normalizedKey = key.startsWith('social_') ? key.slice('social_'.length) : key
-  if (normalizedKey in socialSettings) {
-    socialSettings[normalizedKey as SocialFieldKey] = String(value ?? '')
+  const settingKey = key.startsWith('social_') ? key.slice('social_'.length) : key
+  if (settingKey in socialSettings) {
+    socialSettings[settingKey as SocialFieldKey] = String(value ?? '')
   }
 }
 
 const fetchPublicLinks = async (): Promise<void> => {
   loading.value = true
   try {
-    const response = await axios.get('/api/admin/settings/social', { params: { locale: 'en' } })
-    const settings = Array.isArray(response.data?.settings) ? response.data.settings : []
-    settings.forEach((setting: { key?: string; value?: unknown }) => {
-      if (setting.key) applySetting(setting.key, setting.value)
+    const settings = await socialApi.listPublicLinks('en')
+    settings.forEach((setting) => {
+      applySetting(setting.key, setting.value)
     })
   } catch (error) {
     console.error('Failed to fetch social media links:', error)
@@ -333,11 +388,69 @@ const fetchPublicLinks = async (): Promise<void> => {
   }
 }
 
+const fetchOAuthConnections = async (): Promise<void> => {
+  oauthLoading.value = true
+  try {
+    oauthConnections.value = await socialApi.listOAuthConnections()
+  } catch (error) {
+    console.error('Failed to fetch social OAuth connections:', error)
+    toast.error('社交账号状态加载失败')
+  } finally {
+    oauthLoading.value = false
+  }
+}
+
+const startOAuth = async (): Promise<void> => {
+  if (!canEdit.value || oauthActionLoading.value || !currentConnection.value.configured) return
+  oauthActionLoading.value = true
+  try {
+    const authorizationURL = await socialApi.startOAuth(currentPlatform.value.provider, route.fullPath)
+    window.location.assign(authorizationURL)
+  } catch (error) {
+    console.error('Failed to start social OAuth:', error)
+    toast.error('无法开始平台授权')
+    oauthActionLoading.value = false
+  }
+}
+
+const disconnectProvider = async (): Promise<void> => {
+  if (!canEdit.value || oauthActionLoading.value) return
+  if (!window.confirm(`确定解绑 ${currentPlatform.value.label} 账号吗？`)) return
+  oauthActionLoading.value = true
+  try {
+    await socialApi.disconnect(currentPlatform.value.provider)
+    toast.success(`${currentPlatform.value.label} 已解绑`)
+    await fetchOAuthConnections()
+  } catch (error) {
+    console.error('Failed to disconnect social OAuth:', error)
+    toast.error('社交账号解绑失败')
+  } finally {
+    oauthActionLoading.value = false
+  }
+}
+
+const handleOAuthCallbackMessage = async (): Promise<void> => {
+  const status = String(route.query.social_oauth_status || '')
+  if (!status) return
+  const message = String(route.query.social_oauth_message || '')
+  if (status === 'connected') {
+    toast.success(message || '社交账号已连接')
+  } else if (status === 'error') {
+    toast.error(message || '社交账号授权失败')
+  }
+  await fetchOAuthConnections()
+  const query = { ...route.query }
+  delete query.social_oauth_status
+  delete query.social_oauth_provider
+  delete query.social_oauth_message
+  await router.replace({ query })
+}
+
 const savePublicLinks = async (): Promise<void> => {
   if (!canEdit.value || saving.value) return
   saving.value = true
   try {
-    const settings = socialFields.map((field) => ({
+    const settings: SocialPublicLinkUpdate[] = socialFields.map((field) => ({
       key: field.key,
       value: socialSettings[field.key],
       type: 'string',
@@ -346,8 +459,8 @@ const savePublicLinks = async (): Promise<void> => {
       is_public: true,
       description: field.label,
     }))
-    const response = await axios.post('/api/admin/settings/batch', { settings })
-    toast.success(`已保存 ${response.data?.count ?? settings.length} 项社交媒体链接`)
+    const count = await socialApi.savePublicLinks(settings)
+    toast.success(`已保存 ${count} 项社交媒体链接`)
   } catch (error) {
     console.error('Failed to save social media links:', error)
     toast.error('社交媒体链接保存失败')
@@ -360,6 +473,7 @@ const refresh = async (): Promise<void> => {
   if (activeTab.value === 'profiles') {
     await fetchPublicLinks()
   }
+  await fetchOAuthConnections()
 }
 
 const openPlatform = (routeName: string): void => {
@@ -368,5 +482,10 @@ const openPlatform = (routeName: string): void => {
 
 watch(activeTab, (tab) => {
   if (tab === 'profiles') void fetchPublicLinks()
+  void fetchOAuthConnections()
+}, { immediate: true })
+
+watch(() => route.query.social_oauth_status, () => {
+  void handleOAuthCallbackMessage()
 }, { immediate: true })
 </script>

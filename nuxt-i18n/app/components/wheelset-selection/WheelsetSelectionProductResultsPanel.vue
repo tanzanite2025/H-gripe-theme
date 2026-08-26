@@ -57,20 +57,15 @@
         <span>{{ t('wheelsetSelectionAssistant.results.empty') }}</span>
       </div>
       <div v-else class="wheelset-selection-product-results-panel__grid">
-        <article
+        <ShopProductDisplayCard
           v-for="product in products"
           :key="product.id"
-          class="wheelset-selection-product-results-panel__card"
-        >
-          <div class="wheelset-selection-product-results-panel__media">
-            <StorefrontImage v-if="product.thumbnail" :src="product.thumbnail" :alt="product.title" preset="card" />
-            <Icon v-else name="lucide:circle-dashed" class="h-7 w-7" />
-          </div>
-          <div class="wheelset-selection-product-results-panel__title">{{ product.title }}</div>
-          <div class="wheelset-selection-product-results-panel__price">
-            {{ product.displayPriceLabel || product.priceLabel }}
-          </div>
-        </article>
+          :product="product"
+          show-wishlist-action
+          show-share-action
+          show-view-action
+          @wishlist="handleAddToWishlist"
+        />
       </div>
 
       <nav
@@ -106,7 +101,9 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from '#imports'
+import ShopProductDisplayCard from '~/components/shop/ShopProductDisplayCard.vue'
 import { useWheelsetSelectionAccordion } from '~/composables/useWheelsetSelectionAccordion'
+import { useWishlist } from '~/composables/useWishlist'
 import type { ShopProduct } from '~/composables/useShopProducts'
 
 const props = defineProps<{
@@ -128,12 +125,18 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const accordion = useWheelsetSelectionAccordion()
+const { addToWishlist } = useWishlist()
 const localMobileResultsExpanded = ref(false)
 const isMobileResultsExpanded = computed(() => (
   accordion?.isExpanded('results').value ?? localMobileResultsExpanded.value
 ))
 const mobileResultsContentId = 'wheelset-selection-results-content'
 const matchingProductCount = computed(() => Math.max(0, Number(props.total ?? props.products.length)))
+
+const handleAddToWishlist = async (product: ShopProduct) => {
+  if (!product?.id) return
+  await addToWishlist(product.id)
+}
 
 const toggleMobileResults = () => {
   if (accordion) {
@@ -148,6 +151,7 @@ const toggleMobileResults = () => {
 <style scoped>
 .wheelset-selection-product-results-panel {
   display: flex;
+  box-sizing: border-box;
   height: 100%;
   min-height: 100%;
   flex-direction: column;
@@ -177,7 +181,7 @@ const toggleMobileResults = () => {
 
 .wheelset-selection-product-results-panel__header span,
 .wheelset-selection-product-results-panel__header strong {
-  color: var(--tz-brand-primary, #b5ff6d);
+  color: var(--tz-site-accent, #059669);
   font-size: 0.63rem;
   font-weight: 850;
   letter-spacing: 0.12em;
@@ -186,66 +190,55 @@ const toggleMobileResults = () => {
 
 .wheelset-selection-product-results-panel__header h3 {
   margin-top: 0.2rem;
-  color: var(--tz-text-primary, #f8fafc);
+  color: var(--tz-text-primary);
   font-size: 0.95rem;
   font-weight: 800;
 }
 
 .wheelset-selection-product-results-panel__grid {
+  --wheelset-selection-card-min-width: 16rem;
+  --wheelset-selection-card-width: clamp(16rem, 100%, 18.75rem);
   display: grid;
-  flex: 1;
+  flex: 1 1 0;
   min-height: 0;
-  gap: 0.55rem;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-template-rows: repeat(4, minmax(0, 1fr));
-}
-
-.wheelset-selection-product-results-panel__card {
-  display: grid;
   min-width: 0;
-  min-height: 0;
   align-content: start;
-  gap: 0.3rem;
-  overflow: hidden;
-  border-radius: 0.65rem;
-  background: var(--quickbuy-panel-surface-raised, #22242c);
-  padding: 0.4rem;
+  gap: 0.55rem;
+  grid-template-columns: repeat(auto-fit, minmax(var(--wheelset-selection-card-min-width), 1fr));
+  grid-auto-rows: max-content;
+  justify-content: start;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  padding: 0.1rem;
 }
 
-.wheelset-selection-product-results-panel__media {
-  display: grid;
+.wheelset-selection-product-results-panel__grid :deep(.shop-product-display-card) {
+  --tz-product-card-width: var(--wheelset-selection-card-width);
+  width: min(100%, var(--wheelset-selection-card-width));
+  height: auto;
+  min-height: 0;
+  align-self: start;
+}
+
+.wheelset-selection-product-results-panel__grid :deep(.shop-product-display-card__image) {
+  flex: 0 0 auto;
   width: 100%;
-  aspect-ratio: 1.45;
-  place-items: center;
-  overflow: hidden;
-  border-radius: 0.45rem;
-  background: rgba(255, 255, 255, 0.055);
-  color: rgba(255, 255, 255, 0.35);
+  height: auto;
+  aspect-ratio: 1 / 1;
 }
 
-.wheelset-selection-product-results-panel__media img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+.wheelset-selection-product-results-panel__grid :deep(.shop-product-display-card__actions) {
+  gap: 0.25rem;
+  padding-right: 0.4rem;
+  padding-left: 0.4rem;
 }
 
-.wheelset-selection-product-results-panel__title {
-  overflow: hidden;
-  color: var(--tz-text-primary, #f8fafc);
-  font-size: 0.68rem;
-  font-weight: 750;
-  line-height: 1.25;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.wheelset-selection-product-results-panel__price {
-  overflow: hidden;
-  color: var(--tz-brand-primary, #b5ff6d);
-  font-size: 0.65rem;
-  font-weight: 800;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.wheelset-selection-product-results-panel__grid :deep(.shop-product-display-card__wishlist-action),
+.wheelset-selection-product-results-panel__grid :deep(.shop-product-display-card__add-to-cart-action),
+.wheelset-selection-product-results-panel__grid :deep(.shop-product-display-card__view-action),
+.wheelset-selection-product-results-panel__grid :deep(.shop-product-display-card__share-action) {
+  width: 1.75rem;
+  height: 1.75rem;
 }
 
 .wheelset-selection-product-results-panel__state {
@@ -266,9 +259,9 @@ const toggleMobileResults = () => {
 .wheelset-selection-product-results-panel__retry {
   min-height: 2.25rem;
   border-radius: 0.65rem;
-  background: var(--tz-brand-primary, #b5ff6d);
+  background: var(--tz-site-accent, #059669);
   padding: 0 0.9rem;
-  color: #101014;
+  color: #ffffff;
   font-size: 0.8rem;
   font-weight: 800;
 }
@@ -280,7 +273,7 @@ const toggleMobileResults = () => {
   align-items: center;
   justify-content: center;
   gap: 0.35rem;
-  border-top: 1px solid var(--quickbuy-divider, rgba(255, 255, 255, 0.085));
+  border-top: 1px solid var(--quickbuy-divider, var(--tz-border-subtle));
   padding-top: 0.55rem;
 }
 
@@ -292,14 +285,14 @@ const toggleMobileResults = () => {
   justify-content: center;
   border-radius: 0.45rem;
   color: var(--tz-text-secondary, #cbd5e1);
-  background: var(--quickbuy-control-surface-raised, #1a1c24);
+  background: var(--quickbuy-control-surface-raised, var(--tz-surface-subtle));
   font-size: 0.75rem;
   font-weight: 800;
 }
 
 .wheelset-selection-product-results-panel__page--active {
-  color: #101014;
-  background: var(--tz-brand-primary, #b5ff6d);
+  color: #ffffff;
+  background: var(--tz-site-accent, #059669);
 }
 
 @media (max-width: 767px) {
@@ -319,9 +312,9 @@ const toggleMobileResults = () => {
     align-items: center;
     justify-content: space-between;
     gap: 0.75rem;
-    border: 1px solid var(--quickbuy-divider-strong, rgba(255, 255, 255, 0.12));
+    border: 1px solid var(--quickbuy-divider-strong, var(--tz-border-strong));
     border-radius: 0.75rem;
-    background: var(--quickbuy-panel-surface-raised, #22242c);
+    background: var(--quickbuy-panel-surface-raised, var(--tz-surface-muted));
     padding: 0.65rem 0.75rem;
     text-align: left;
   }
@@ -334,7 +327,7 @@ const toggleMobileResults = () => {
 
   .wheelset-selection-product-results-panel__mobile-toggle-copy span {
     overflow: hidden;
-    color: var(--tz-brand-primary, #b5ff6d);
+    color: var(--tz-site-accent, #059669);
     font-size: 0.63rem;
     font-weight: 850;
     letter-spacing: 0.12em;
@@ -345,7 +338,7 @@ const toggleMobileResults = () => {
 
   .wheelset-selection-product-results-panel__mobile-toggle-copy strong {
     overflow: hidden;
-    color: var(--tz-text-primary, #f8fafc);
+    color: var(--tz-text-primary);
     font-size: 0.95rem;
     font-weight: 800;
     text-overflow: ellipsis;
@@ -366,8 +359,8 @@ const toggleMobileResults = () => {
     align-items: center;
     justify-content: center;
     border-radius: 999px;
-    background: var(--tz-brand-primary, #b5ff6d);
-    color: #101014;
+    background: var(--tz-site-accent, #059669);
+    color: #ffffff;
     font-size: 0.75rem;
     font-weight: 850;
   }
@@ -387,8 +380,10 @@ const toggleMobileResults = () => {
   }
 
   .wheelset-selection-product-results-panel__grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: repeat(6, minmax(0, 1fr));
+    flex: 1 1 auto;
+    --wheelset-selection-card-min-width: 0;
+    --wheelset-selection-card-width: 18.75rem;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 </style>

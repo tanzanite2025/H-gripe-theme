@@ -45,8 +45,8 @@ const returnHome = (): Promise<void> => clearError({ redirect: '/' })
   display: grid;
   min-height: 100vh;
   place-items: center;
-  background: #050507;
-  color: #f8fafc;
+  background: var(--tz-surface-page);
+  color: var(--tz-text-primary);
   font-family: 'MapleUILatin', 'MapleUICJK';
   padding: 1.5rem;
 }
@@ -57,14 +57,14 @@ const returnHome = (): Promise<void> => clearError({ redirect: '/' })
 }
 
 .storefront-error__code {
-  color: #b5ff6d;
+  color: #059669;
   font-size: clamp(4rem, 12vw, 7rem);
   font-weight: 900;
   line-height: 0.95;
 }
 
 .storefront-error__title {
-  color: #ffffff;
+  color: var(--tz-text-primary);
   font-size: clamp(1.4rem, 3vw, 2.1rem);
   font-weight: 900;
   line-height: 1.1;
@@ -72,7 +72,7 @@ const returnHome = (): Promise<void> => clearError({ redirect: '/' })
 }
 
 .storefront-error__description {
-  color: #cbd5e1;
+  color: var(--tz-text-secondary);
   font-size: 0.95rem;
   line-height: 1.6;
   margin: 0.9rem auto 0;
@@ -81,9 +81,9 @@ const returnHome = (): Promise<void> => clearError({ redirect: '/' })
 
 .storefront-error__button {
   align-items: center;
-  background: #b5ff6d;
-  border: 0;
-  color: #050507;
+  background: var(--tz-action-primary);
+  border: 1px solid var(--tz-action-primary);
+  color: var(--tz-action-primary-foreground);
   cursor: pointer;
   display: inline-flex;
   font: inherit;
@@ -96,7 +96,7 @@ const returnHome = (): Promise<void> => clearError({ redirect: '/' })
 }
 
 .storefront-error__button:focus-visible {
-  outline: 2px solid #ffffff;
+  outline: 2px solid var(--tz-form-control-focus-border);
   outline-offset: 3px;
 }
 </style>

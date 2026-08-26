@@ -1,14 +1,12 @@
 <template>
   <div
     class="faq-answer-content"
-    :class="{ 'faq-answer-content--with-image': canShowImage }"
+    :class="{ 'faq-answer-content--with-image': hasImage }"
   >
-    <figure v-if="canShowImage" class="faq-answer-content__media">
+    <figure v-if="hasImage" class="faq-answer-content__media">
       <StorefrontImage
         :src="imageUrl || ''"
         :alt="imageAlt || t('faq.ui.illustrationAlt')"
-        width="800"
-        height="800"
         preset="content"
       />
     </figure>
@@ -32,10 +30,8 @@ const props = defineProps<{
   imageHeight?: number
 }>()
 
-const canShowImage = computed(() => {
-  if (!props.imageUrl) return false
-  return Number(props.imageWidth || 800) === 800 && Number(props.imageHeight || 800) === 800
-})
+// Image dimensions from the API are metadata. The FAQ frame owns the display geometry.
+const hasImage = computed(() => Boolean(props.imageUrl))
 </script>
 
 <style scoped>
@@ -58,7 +54,7 @@ const canShowImage = computed(() => {
   aspect-ratio: 1 / 1;
   overflow: hidden;
   border-radius: 1rem;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--tz-image-loading-surface, #f8fafc);
 }
 
 .faq-answer-content__media img {

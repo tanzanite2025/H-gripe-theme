@@ -1,6 +1,6 @@
 <template>
   <Card class="relative gap-0 overflow-hidden py-0 shadow-none rounded-[24px] border-dashed border-border/80 bg-card">
-    <div class="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent pointer-events-none" />
+    <div class="absolute inset-0 bg-primary/5 pointer-events-none" />
     <div v-if="batchVisible && $slots.batch" class="relative z-10 border-b border-dashed border-border/70 bg-muted/20 px-4 py-2.5">
       <slot name="batch" />
     </div>

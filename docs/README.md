@@ -23,8 +23,11 @@ This directory is a project-level documentation hub. It is not the source of tru
 - QUICK selection flow architecture: `design/quick-buy-configuration-architecture.md`
 - Wheelset fit questionnaire specification: `design/wheelset-fit-questionnaire-specification.md`
 - Storefront recommendation UX and algorithm contract: `design/storefront-recommendation-ux.md`
+- Storefront light-theme color tokens: `design/emerald-light-theme-palette.md`
 - Ops control plane and workflow engine design: `design/ops-control-plane-workflow-engine.md`
+- Product profitability and procurement isolation design: `design/product-profit-procurement-isolation-architecture.md`
 - SEO architecture: `seo/SEO_SYSTEM_ARCHITECTURE.md`
+- E-commerce URL and SEO target architecture: `seo/ECOMMERCE_URL_ARCHITECTURE.md`
 - SEO documentation index: `seo/README.md`
 
 ## Archive

@@ -3,7 +3,7 @@
     <div class="flex flex-wrap items-end justify-between gap-3">
       <div>
         <h2 class="text-sm font-black tracking-tighter uppercase">保修申请处理</h2>
-        <p class="mt-1 text-xs text-muted-foreground">订单型申请和注册型申请统一进入这里，关联注册记录为空时保持真实为空。</p>
+        <p class="mt-1 text-xs text-muted-foreground">保修申请按订单号进入这里，必要时绑定具体订单行。</p>
       </div>
       <div class="w-full sm:w-48">
         <Select v-model="filters.status">
@@ -53,13 +53,13 @@
                   订单：{{ claim.order_number || '-' }}
                 </span>
                 <span class="block max-w-60 truncate text-[10px] text-muted-foreground/70">
-                  邮箱：{{ claim.email || claim.registration?.user?.email || '-' }}
+                  邮箱：{{ claim.email || '-' }}
                 </span>
               </TableCell>
               <TableCell>
-                <span class="block text-xs font-bold">{{ registrationProductName(claim) }}</span>
+                <span class="block text-xs font-bold">{{ claimProductName(claim) }}</span>
                 <span class="block font-mono text-[10px] text-muted-foreground/70">
-                  registration_id={{ claim.registration_id || '-' }}
+                  order_item_id={{ claim.order_item_id || '-' }}
                 </span>
               </TableCell>
               <TableCell>
@@ -161,9 +161,9 @@ import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableR
 import { TabsContent } from '@/components/ui/tabs'
 import {
   claimImages,
+  claimProductName,
   formatDateTime,
-  issueTypeLabel,
-  registrationProductName
+  issueTypeLabel
 } from '@/lib/warrantyPresentation'
 import type {
   WarrantyClaim,

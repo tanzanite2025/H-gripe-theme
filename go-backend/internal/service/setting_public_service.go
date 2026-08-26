@@ -2,10 +2,56 @@ package service
 
 import (
 	"commerce-platform/internal/domain/setting"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
 )
+
+type publicSocialLink struct {
+	Network string `json:"network"`
+	URL     string `json:"url"`
+	Label   string `json:"label,omitempty"`
+}
+
+var supportedPublicSocialNetworks = map[string]struct{}{
+	"facebook":  {},
+	"instagram": {},
+	"x":         {},
+	"youtube":   {},
+	"reddit":    {},
+}
+
+func normalizePublicSocialLinks(raw string) string {
+	if strings.TrimSpace(raw) == "" {
+		return raw
+	}
+
+	var links []publicSocialLink
+	if err := json.Unmarshal([]byte(raw), &links); err != nil {
+		return ""
+	}
+
+	cleaned := make([]publicSocialLink, 0, len(links))
+	for _, link := range links {
+		link.Network = strings.ToLower(strings.TrimSpace(link.Network))
+		link.URL = strings.TrimSpace(link.URL)
+		link.Label = strings.TrimSpace(link.Label)
+		if link.URL == "" {
+			continue
+		}
+		if _, ok := supportedPublicSocialNetworks[link.Network]; !ok {
+			continue
+		}
+		cleaned = append(cleaned, link)
+	}
+
+	encoded, err := json.Marshal(cleaned)
+	if err != nil {
+		return ""
+	}
+	return string(encoded)
+}
 
 // GetSiteSettings 获取站点设置
 func (s *SettingService) GetSiteSettings(locale string) (*setting.SiteSettings, error) {
@@ -14,6 +60,7 @@ func (s *SettingService) GetSiteSettings(locale string) (*setting.SiteSettings, 
 	// 尝试从缓存获取
 	var siteSettings setting.SiteSettings
 	if s.cache != nil && s.cache.Get(cacheKey, &siteSettings) == nil {
+		siteSettings.SocialLinks = normalizePublicSocialLinks(siteSettings.SocialLinks)
 		return &siteSettings, nil
 	}
 
@@ -28,8 +75,6 @@ func (s *SettingService) GetSiteSettings(locale string) (*setting.SiteSettings, 
 		switch st.Key {
 		case "site_name":
 			siteSettings.SiteName = st.Value
-		case "brand_title":
-			siteSettings.BrandTitle = st.Value
 		case "site_description":
 			siteSettings.SiteDescription = st.Value
 		case "site_logo":
@@ -41,7 +86,7 @@ func (s *SettingService) GetSiteSettings(locale string) (*setting.SiteSettings, 
 		case "contact_phone":
 			siteSettings.ContactPhone = st.Value
 		case "social_links":
-			siteSettings.SocialLinks = st.Value
+			siteSettings.SocialLinks = normalizePublicSocialLinks(st.Value)
 		case "admin_brand_name":
 			siteSettings.AdminBrandName = st.Value
 		case "admin_brand_initial":
@@ -56,12 +101,6 @@ func (s *SettingService) GetSiteSettings(locale string) (*setting.SiteSettings, 
 			siteSettings.AdminHTMLTitle = st.Value
 		}
 	}
-	if siteSettings.BrandTitle != "" {
-		siteSettings.SiteName = siteSettings.BrandTitle
-	} else {
-		siteSettings.BrandTitle = siteSettings.SiteName
-	}
-
 	// 写入缓存
 	if s.cache != nil {
 		_ = s.cache.Set(cacheKey, &siteSettings, s.cacheTTL)
@@ -183,16 +222,14 @@ func (s *SettingService) GetSocialSettings(locale string) (*setting.SocialSettin
 		switch st.Key {
 		case "facebook":
 			socialSettings.Facebook = st.Value
-		case "twitter":
-			socialSettings.Twitter = st.Value
 		case "instagram":
 			socialSettings.Instagram = st.Value
-		case "linkedin":
-			socialSettings.LinkedIn = st.Value
+		case "x":
+			socialSettings.X = st.Value
 		case "youtube":
 			socialSettings.YouTube = st.Value
-		case "wechat":
-			socialSettings.WeChat = st.Value
+		case "reddit":
+			socialSettings.Reddit = st.Value
 		}
 	}
 

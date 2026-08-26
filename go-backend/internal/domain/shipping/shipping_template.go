@@ -35,6 +35,7 @@ type ShippingTemplate struct {
 	ID               uint           `gorm:"primarykey" json:"id"`
 	Name             string         `gorm:"not null" json:"name"`
 	Type             string         `gorm:"not null" json:"type"` // weight, quantity, price
+	Currency         string         `gorm:"size:3;not null;default:'USD';index" json:"currency"`
 	FreeShipping     bool           `gorm:"default:false" json:"free_shipping"`
 	FreeThreshold    float64        `gorm:"default:0" json:"free_threshold"` // 免邮门槛
 	DefaultFee       float64        `gorm:"default:0" json:"default_fee"`
@@ -63,6 +64,9 @@ func (t *ShippingTemplate) BeforeSave(tx *gorm.DB) error {
 }
 
 func (t *ShippingTemplate) ensureDisplayPriceData() {
+	if !currency.IsCatalogCode(t.Currency) {
+		t.Currency = currency.DefaultPrimaryCurrency
+	}
 	if len(t.DisplayPriceData) == 0 {
 		t.DisplayPriceData = datatypes.JSON([]byte("{}"))
 	}
@@ -73,6 +77,7 @@ type ShippingRule struct {
 	ID               uint           `gorm:"primarykey" json:"id"`
 	TemplateID       uint           `gorm:"not null;index" json:"template_id"`
 	Region           string         `json:"region"` // 地区代码，如 US, CN, EU
+	Currency         string         `gorm:"size:3;not null;default:'USD';index" json:"currency"`
 	MinValue         float64        `gorm:"default:0" json:"min_value"`
 	MaxValue         float64        `gorm:"default:0" json:"max_value"`
 	Fee              float64        `gorm:"not null" json:"fee"`
@@ -97,15 +102,26 @@ func (r *ShippingRule) BeforeSave(tx *gorm.DB) error {
 }
 
 func (r *ShippingRule) ensureDisplayPriceData() {
+	if !currency.IsCatalogCode(r.Currency) {
+		r.Currency = currency.DefaultPrimaryCurrency
+	}
 	if len(r.DisplayPriceData) == 0 {
 		r.DisplayPriceData = datatypes.JSON([]byte("{}"))
 	}
 }
 
-func TemplateDisplayPriceSnapshotsJSON(values map[string][]currency.DisplayPriceSnapshot) datatypes.JSON {
-	return currency.DisplayPriceSnapshotMapJSON(values, "", ShippingTemplateDisplayPriceFields...)
+func TemplateDisplayPriceSnapshotsJSON(values map[string][]currency.DisplayPriceSnapshot, baseCurrency ...string) datatypes.JSON {
+	base := ""
+	if len(baseCurrency) > 0 {
+		base = baseCurrency[0]
+	}
+	return currency.DisplayPriceSnapshotMapJSON(values, base, ShippingTemplateDisplayPriceFields...)
 }
 
-func RuleDisplayPriceSnapshotsJSON(values map[string][]currency.DisplayPriceSnapshot) datatypes.JSON {
-	return currency.DisplayPriceSnapshotMapJSON(values, "", ShippingRuleDisplayPriceFields...)
+func RuleDisplayPriceSnapshotsJSON(values map[string][]currency.DisplayPriceSnapshot, baseCurrency ...string) datatypes.JSON {
+	base := ""
+	if len(baseCurrency) > 0 {
+		base = baseCurrency[0]
+	}
+	return currency.DisplayPriceSnapshotMapJSON(values, base, ShippingRuleDisplayPriceFields...)
 }

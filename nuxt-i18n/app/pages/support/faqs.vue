@@ -94,7 +94,7 @@
     >
       <button
         type="button"
-        class="inline-flex items-center gap-2 px-8 py-3 rounded-full text-sm font-bold bg-slate-800 tz-text-secondary hover:bg-slate-700 hover:text-white hover:shadow-lg transition-all"
+        class="inline-flex items-center gap-2 px-8 py-3 rounded-full text-sm font-bold bg-[var(--tz-action-primary)] text-white hover:bg-[var(--tz-action-primary-hover)] hover:shadow-[0_8px_18px_rgba(15,23,42,0.16)] transition-all"
         @click="loadMoreGroups"
       >
         {{ t('faq.ui.viewMoreContent') }}
@@ -114,6 +114,8 @@ import { useGlobalAllFaqsSearchAndGroupedResults } from '~/composables/useGlobal
 
 definePageMeta({
   layout: 'support',
+  footerLabelKey: 'support.nav.faqs',
+  footerLabelFallback: 'All FAQs',
 })
 
 const { t } = useI18n()
@@ -174,7 +176,7 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
   padding: 0.8rem 2.5rem 0.8rem 1.25rem;
   border-radius: 9999px;
   border: 1px solid rgba(148, 163, 184, 0.1);
-  background: rgba(30, 41, 59, 0.5);
+  background: var(--tz-input-surface);
   color: var(--tz-text-primary);
   font-size: 0.95rem;
   transition: all 0.2s;
@@ -186,9 +188,9 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
 
 .faqs-search__input:focus {
   outline: none;
-  border-color: rgba(181, 255, 109, 0.5);
-  background: rgba(30, 41, 59, 0.8);
-  box-shadow: 0 0 0 4px rgba(181, 255, 109, 0.1);
+  border-color: var(--tz-form-control-focus-border);
+  background: var(--tz-input-surface);
+  box-shadow: 0 0 0 4px var(--tz-form-control-focus-ring);
 }
 
 .faqs-search__clear {
@@ -218,7 +220,7 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
   padding: 4rem 1rem;
   color: var(--tz-text-muted);
   font-size: 1rem;
-  background: rgba(30, 41, 59, 0.3);
+  background: var(--tz-form-panel-surface);
   border-radius: 1rem;
   border: 1px dashed rgba(148, 163, 184, 0.2);
 }
@@ -227,16 +229,16 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
   .faqs-page {
     max-width: min(100rem, calc(100vw - 5rem));
     padding: 2rem 0 0;
-    background-color: #000000;
-    background-image: radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 0);
+    background-color: var(--tz-card-surface);
+    background-image: radial-gradient(rgba(20, 32, 43, 0.04) 1px, transparent 0);
     background-size: 24px 24px;
-    color: #ffffff;
+    color: var(--tz-text-primary);
   }
 
   .faqs-page__header {
     margin-bottom: 1rem;
     padding-bottom: 0.75rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid rgba(20, 32, 43, 0.12);
   }
 
   .faqs-page__header-main {
@@ -249,7 +251,7 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
   .faqs-page__title {
     display: block;
     margin: 0;
-    color: #ffffff;
+    color: var(--tz-text-primary);
     font-size: 1.25rem;
     font-style: italic;
     font-weight: 900;
@@ -264,9 +266,9 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
     flex-shrink: 0;
     padding: 0.18rem 0.65rem;
     border-radius: 999px;
-    border: 1px solid rgba(181, 255, 109, 0.32);
-    background: rgba(6, 78, 59, 0.36);
-    color: #B5FF6D;
+    border: 1px solid rgba(4, 120, 87, 0.28);
+    background: rgba(5, 150, 105, 0.2);
+    color: var(--tz-text-accent);
     font-size: 0.58rem;
     font-weight: 900;
     line-height: 1.2;
@@ -277,15 +279,15 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
     width: 0.38rem;
     height: 0.38rem;
     border-radius: 999px;
-    background: #B5FF6D;
-    box-shadow: 0 0 12px rgba(181, 255, 109, 0.8);
+    background: #059669;
+    box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.22);
     animation: faqs-page-status-pulse 1s ease-in-out infinite alternate;
   }
 
   .faqs-page__intro {
     max-width: none;
     margin: 0.25rem 0 0;
-    color: #94a3b8;
+    color: var(--tz-text-secondary);
     font-size: 0.78rem;
     text-align: left;
   }
@@ -298,15 +300,15 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
   .faqs-search__input {
     padding: 0.78rem 2.5rem 0.78rem 1rem;
     border-radius: 0.9rem;
-    border-color: rgba(255, 255, 255, 0.15);
-    background: #000000;
+    border-color: rgba(20, 32, 43, 0.14);
+    background: var(--tz-card-surface);
     font-size: 0.82rem;
   }
 
   .faqs-search__input:focus {
-    border-color: rgba(181, 255, 109, 0.55);
-    background: #000000;
-    box-shadow: 0 0 0 4px rgba(181, 255, 109, 0.1);
+    border-color: var(--tz-form-control-focus-border);
+    background: var(--tz-input-surface);
+    box-shadow: 0 0 0 4px var(--tz-form-control-focus-ring);
   }
 
   .faqs-layout {
@@ -320,21 +322,22 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
     position: sticky;
     top: calc(112px + 1rem);
     display: grid;
+    align-content: start;
     min-width: 0;
     max-width: 100%;
     gap: 0.25rem;
     box-sizing: border-box;
     padding: 0.75rem;
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(20, 32, 43, 0.14);
     border-radius: 1rem;
-    background: #000000;
+    background: var(--tz-card-surface);
     overflow: hidden;
   }
 
   .faqs-sidebar__label {
     display: block;
     padding: 0.25rem 0.75rem 0.35rem;
-    color: #64748b;
+    color: var(--tz-text-muted);
     font-size: 0.58rem;
     font-weight: 900;
     line-height: 1.2;
@@ -363,7 +366,7 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
     border-radius: 0.75rem;
     background: transparent !important;
     box-shadow: none !important;
-    color: #94a3b8;
+    color: var(--tz-text-secondary);
     font-size: 0.74rem;
     font-weight: 900;
     line-height: 1.25;
@@ -372,15 +375,15 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
   }
 
   .faqs-tabs__button.premium-button:hover {
-    color: #ffffff;
-    background: rgba(255, 255, 255, 0.04) !important;
+    color: var(--tz-text-primary);
+    background: rgba(20, 32, 43, 0.04) !important;
     transform: none;
   }
 
   .faqs-tabs__button.premium-button--active {
-    color: #000000 !important;
-    background: #ffffff !important;
-    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35) !important;
+    color: #ffffff !important;
+    background: var(--tz-text-primary) !important;
+    box-shadow: 0 8px 18px rgba(20, 32, 43, 0.16) !important;
   }
 
   .faqs-tabs__label {
@@ -401,12 +404,12 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
     height: 0.42rem;
     flex: 0 0 auto;
     border-radius: 999px;
-    background: #334155;
+    background: #cbd5e1;
   }
 
   .faqs-tabs__button.premium-button--active .faqs-tabs__dot {
-    background: #B5FF6D;
-    box-shadow: 0 0 10px rgba(181, 255, 109, 0.7);
+    background: #059669;
+    box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.2);
   }
 
   .faqs-content {
@@ -437,8 +440,8 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
 
   .faqs-empty {
     grid-column: 2;
-    background: #000000;
-    border-color: rgba(255, 255, 255, 0.15);
+    background: var(--tz-card-surface);
+    border-color: rgba(20, 32, 43, 0.14);
   }
 }
 

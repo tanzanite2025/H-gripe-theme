@@ -16,45 +16,46 @@
 :root {
   --tz-font-admin-ui: 'MapleUICJK';
   --radius: 0.5rem;
-  --background: oklch(0.982 0.003 247.858);
-  --foreground: oklch(0.205 0.015 258.338);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.205 0.015 258.338);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.205 0.015 258.338);
-  --primary: oklch(0.546 0.245 262.881);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.968 0.007 247.896);
-  --secondary-foreground: oklch(0.278 0.018 256.848);
-  --muted: oklch(0.968 0.007 247.896);
-  --muted-foreground: oklch(0.554 0.023 257.417);
-  --accent: oklch(0.951 0.02 260.03);
-  --accent-foreground: oklch(0.424 0.18 265.638);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0.013 255.508);
-  --input: oklch(0.872 0.013 258.338);
-  --ring: oklch(0.623 0.214 259.815);
-  --chart-1: oklch(0.546 0.245 262.881);
-  --chart-2: oklch(0.627 0.194 149.214);
-  --chart-3: oklch(0.666 0.179 58.318);
-  --chart-4: oklch(0.637 0.237 25.331);
-  --chart-5: oklch(0.554 0.023 257.417);
-  --sidebar: oklch(1 0 0);
-  --sidebar-foreground: oklch(0.278 0.018 256.848);
-  --sidebar-primary: oklch(0.546 0.245 262.881);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.951 0.02 260.03);
-  --sidebar-accent-foreground: oklch(0.424 0.18 265.638);
-  --sidebar-border: oklch(0.922 0.013 255.508);
-  --sidebar-ring: oklch(0.623 0.214 259.815);
-  --admin-control-selected: #0f172a;
-  --admin-control-selected-hover: #111827;
+  --background: #f1f5f9;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+  --primary: #0f172a;
+  --primary-foreground: #ffffff;
+  --secondary: #f8fafc;
+  --secondary-foreground: #475569;
+  --muted: #f8fafc;
+  --muted-foreground: #475569;
+  --accent: #ecfdf5;
+  --accent-foreground: #047857;
+  --destructive: #dc2626;
+  --border: #cbd5e1;
+  --input: #cbd5e1;
+  --ring: #059669;
+  --chart-1: #059669;
+  --chart-2: #2563eb;
+  --chart-3: #d97706;
+  --chart-4: #dc2626;
+  --chart-5: #94a3b8;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #0f172a;
+  --sidebar-primary: #059669;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #ecfdf5;
+  --sidebar-accent-foreground: #047857;
+  --sidebar-border: #cbd5e1;
+  --sidebar-ring: #059669;
+  --admin-control-selected: #059669;
+  --admin-control-selected-hover: #047857;
   --admin-control-selected-foreground: #ffffff;
-  --admin-control-selected-icon: #34d399;
-  --admin-control-selected-soft: rgb(15 23 42 / 0.05);
-  --admin-control-selected-border: rgb(15 23 42 / 0.24);
-  --admin-control-selected-shadow: 0 14px 26px rgb(15 23 42 / 0.18);
+  --admin-control-selected-icon: #ffffff;
+  --admin-control-selected-soft: rgb(5 150 105 / 0.1);
+  --admin-control-selected-border: rgb(5 150 105 / 0.28);
+  --admin-control-selected-shadow: 0 14px 26px rgb(5 150 105 / 0.18);
   --admin-control-selected-surface-shadow: 0 10px 28px rgb(15 23 42 / 0.08);
+  --admin-action-primary-shadow: 0 14px 26px rgb(15 23 42 / 0.18);
 
 }
 
@@ -181,7 +182,7 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cfd4dc;
+  background: #cbd5e1;
   border: 3px solid transparent;
   border-radius: 8px;
   background-clip: padding-box;
@@ -252,10 +253,6 @@ textarea::placeholder,
   @apply rounded-[24px] border border-dashed border-border/80 bg-card relative overflow-hidden;
 }
 
-.uds-glow-bg {
-  @apply absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent pointer-events-none;
-}
-
 /* 工业级状态语义徽章 */
 .uds-badge-healthy {
   @apply bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 rounded-full font-mono text-[8px] h-4 px-2 inline-flex items-center gap-1 font-bold;
@@ -271,14 +268,86 @@ textarea::placeholder,
 
 /* 按钮 - 工业主胶囊与幽灵按钮 */
 .uds-btn-primary {
-  @apply rounded-full h-9 px-4 font-black text-[10px] uppercase tracking-widest bg-admin-selected text-admin-selected-foreground shadow-[var(--admin-control-selected-shadow)] hover:bg-admin-selected/90 transition-all active:scale-[0.98];
+  @apply rounded-full h-9 px-4 font-black text-[10px] uppercase tracking-widest bg-primary text-primary-foreground shadow-[var(--admin-action-primary-shadow)] hover:bg-primary/90 transition-all active:scale-[0.98];
 }
 
-.uds-btn-ghost {
-  @apply rounded-full h-9 px-3 font-black text-[10px] uppercase tracking-widest hover:bg-muted transition-all;
+  .uds-btn-ghost {
+    @apply rounded-full h-9 px-3 font-black text-[10px] uppercase tracking-widest hover:bg-muted transition-all;
+  }
+
+/*
+ * Keep the standard shadcn controls on the shared light-theme surface
+ * hierarchy. Individual forms should not need to restate these colors.
+ */
+input:not([type='checkbox']):not([type='radio']):not([type='range']),
+textarea,
+select,
+[data-slot='input'],
+[data-slot='textarea'],
+[data-slot='select-trigger'] {
+  background-color: #f8fafc;
+  color: #0f172a;
+  border-color: #cbd5e1;
 }
 
-/* 后台界面排版不使用斜体，避免斜体字形外伸后被 truncate/flex 边界裁剪。 */
+input:not([type='checkbox']):not([type='radio']):not([type='range'])::placeholder,
+textarea::placeholder,
+[data-slot='input']::placeholder,
+[data-slot='textarea']::placeholder {
+  color: #94a3b8;
+}
+
+@layer utilities {
+  .bg-emerald-500\/5,
+  .bg-emerald-500\/10,
+  .bg-emerald-500\/20 {
+    background-color: #ecfdf5;
+  }
+
+  .bg-amber-500\/5,
+  .bg-amber-500\/10,
+  .bg-amber-500\/20 {
+    background-color: #fffbeb;
+  }
+
+  .bg-rose-500\/5,
+  .bg-rose-500\/10,
+  .bg-rose-500\/20,
+  .bg-red-500\/5,
+  .bg-red-500\/10,
+  .bg-red-500\/20 {
+    background-color: #fef2f2;
+  }
+
+  .bg-blue-500\/5,
+  .bg-blue-500\/10,
+  .bg-blue-500\/20,
+  .bg-sky-500\/5,
+  .bg-sky-500\/10,
+  .bg-sky-500\/20 {
+    background-color: #eff6ff;
+  }
+
+  .text-emerald-600 {
+    color: #059669;
+  }
+
+  .text-amber-600 {
+    color: #d97706;
+  }
+
+  .text-rose-600,
+  .text-red-600 {
+    color: #dc2626;
+  }
+
+  .text-blue-600,
+  .text-sky-600 {
+    color: #2563eb;
+  }
+}
+
+  /* 后台界面排版不使用斜体，避免斜体字形外伸后被 truncate/flex 边界裁剪。 */
 @layer utilities {
   .italic {
     font-style: normal !important;

@@ -176,11 +176,13 @@ func TestQuoteCartReturnsDisplayPriceFromStoredShippingSnapshots(t *testing.T) {
 	template := shippingdomain.ShippingTemplate{
 		Name:       "Stored display quote template",
 		Type:       "weight",
+		Currency:   "CNY",
 		DefaultFee: 99,
 		Enabled:    true,
 		Rules: []shippingdomain.ShippingRule{
 			{
 				Region:     "US",
+				Currency:   "CNY",
 				MinValue:   0,
 				MaxValue:   10,
 				Fee:        5,
@@ -223,11 +225,13 @@ func TestQuoteCartOmitsIncompleteShippingDisplayPrice(t *testing.T) {
 	template := shippingdomain.ShippingTemplate{
 		Name:       "Incomplete display quote template",
 		Type:       "weight",
+		Currency:   "CNY",
 		DefaultFee: 99,
 		Enabled:    true,
 		Rules: []shippingdomain.ShippingRule{
 			{
 				Region:     "US",
+				Currency:   "CNY",
 				MinValue:   0,
 				MaxValue:   10,
 				Fee:        5,

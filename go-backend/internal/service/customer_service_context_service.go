@@ -131,10 +131,12 @@ type CustomerServiceContextIdentityClaim struct {
 }
 
 type CustomerServiceContextContact struct {
-	Email        string `json:"email"`
-	EmailSource  string `json:"email_source"`
-	Locale       string `json:"locale"`
-	LocaleSource string `json:"locale_source"`
+	Email          string `json:"email"`
+	EmailSource    string `json:"email_source"`
+	Locale         string `json:"locale"`
+	LocaleSource   string `json:"locale_source"`
+	Timezone       string `json:"timezone"`
+	TimezoneSource string `json:"timezone_source"`
 }
 
 type CustomerServiceContextCart struct {
@@ -249,8 +251,9 @@ func (s *CustomerServiceContextService) GetConversationContextForAgent(ticketID,
 			},
 		},
 		Contact: CustomerServiceContextContact{
-			EmailSource:  "not_captured",
-			LocaleSource: "not_captured",
+			EmailSource:    "not_captured",
+			LocaleSource:   "not_captured",
+			TimezoneSource: "not_captured",
 		},
 		Cart: CustomerServiceContextCart{
 			Available: false,
@@ -294,6 +297,7 @@ func (s *CustomerServiceContextService) GetConversationContextForAgent(ticketID,
 				Value:  strconv.FormatUint(uint64(customerUserID), 10),
 				Status: "missing_user",
 			}
+			s.applyVisitorTimezone(context, t.VisitorSessionHash, customerUserID)
 			return context, nil
 		}
 		return nil, err
@@ -320,12 +324,14 @@ func (s *CustomerServiceContextService) GetConversationContextForAgent(ticketID,
 		},
 	}
 	context.Contact = CustomerServiceContextContact{
-		Email:        account.Email,
-		EmailSource:  "account",
-		Locale:       account.Locale,
-		LocaleSource: "account",
+		Email:          account.Email,
+		EmailSource:    "account",
+		Locale:         account.Locale,
+		LocaleSource:   "account",
+		TimezoneSource: "not_captured",
 	}
 	context.Signals.EmailCapture = CustomerServiceContextSignal{Status: "captured", Value: account.Email, Reason: "来自登录账号。"}
+	s.applyVisitorTimezone(context, t.VisitorSessionHash, customerUserID)
 
 	context.Cart = s.customerCartContext(customerUserID)
 	context.Wishlist = s.customerWishlistContext(customerUserID)
@@ -471,6 +477,7 @@ func (s *CustomerServiceContextService) applyAnonymousVisitorProfile(context *Cu
 		context.Contact.Locale = profile.Locale
 		context.Contact.LocaleSource = profile.LocaleSource
 	}
+	applyProfileTimezone(context, profile)
 
 	if strings.TrimSpace(profile.CartSessionID) != "" {
 		context.Cart = s.customerCartContextBySessionID(profile.CartSessionID)
@@ -501,6 +508,41 @@ func (s *CustomerServiceContextService) applyVisitorProfileSignals(context *Cust
 		}
 	}
 	applyProfileLocationSignals(context, profile.ID, profile.CountryCode, profile.Region, profile.City)
+}
+
+func (s *CustomerServiceContextService) applyVisitorTimezone(context *CustomerServiceContext, visitorSessionHash string, userID uint) {
+	if context == nil || s == nil || s.visitorProfileService == nil {
+		return
+	}
+
+	if strings.TrimSpace(visitorSessionHash) != "" {
+		if profile, err := s.visitorProfileService.FindByCustomerServiceVisitorHash(visitorSessionHash); err == nil {
+			if applyProfileTimezone(context, profile) {
+				return
+			}
+		}
+	}
+
+	if userID > 0 {
+		if profile, err := s.visitorProfileService.FindByUserID(userID); err == nil {
+			applyProfileTimezone(context, profile)
+		}
+	}
+}
+
+func applyProfileTimezone(context *CustomerServiceContext, profile *visitor.Profile) bool {
+	if context == nil || profile == nil {
+		return false
+	}
+
+	timezone := strings.TrimSpace(profile.Timezone)
+	if timezone == "" {
+		return false
+	}
+
+	context.Contact.Timezone = timezone
+	context.Contact.TimezoneSource = "visitor_profile"
+	return true
 }
 
 func applyProfileLocationSignals(context *CustomerServiceContext, profileID uint, countryCode, region, city string) {

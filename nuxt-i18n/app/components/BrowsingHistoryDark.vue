@@ -1,22 +1,22 @@
 <template>
   <div
-    class="browsing-history-dark w-full rounded-2xl border backdrop-blur-md shadow-[0_3px_9px_rgba(0,0,0,0.9)] overflow-hidden"
+    class="browsing-history-dark w-full rounded-2xl border backdrop-blur-md shadow-md overflow-hidden"
     :class="[
       density === 'cart'
-        ? 'browsing-history-dark--cart border-white/15 bg-white/[0.04]'
-        : 'border-[rgba(110,110,233,0.35)] bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))]',
+        ? 'browsing-history-dark--cart tz-border-subtle tz-surface-subtle'
+        : 'tz-border-subtle tz-surface-card',
       {
         'browsing-history-dark--cart-empty': density === 'cart' && !hasHistory,
       },
     ]"
   >
     <!-- 标题栏 -->
-    <div class="browsing-history-dark__header flex items-center justify-between px-4 py-3 border-b border-white/10 bg-black/20">
+    <div class="browsing-history-dark__header flex items-center justify-between px-4 py-3 border-b tz-border-subtle tz-surface-subtle">
       <div class="flex items-center gap-2">
       <svg class="w-5 h-5 tz-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
-        <h3 class="text-sm font-semibold text-white">Recently Viewed</h3>
+        <h3 class="text-sm font-semibold tz-text-primary">Recently Viewed</h3>
       <span class="text-xs tz-text-muted">({{ historyCount }})</span>
       </div>
       <button
@@ -32,7 +32,7 @@
     <div class="browsing-history-dark__body relative">
       <!-- 空状态 -->
       <div v-if="!hasHistory" class="browsing-history-dark__empty flex flex-col items-center justify-center py-8 px-4">
-        <svg class="w-16 h-16 text-white/20 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-16 h-16 tz-text-primary/20 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
         <p class="tz-text-secondary text-sm">No browsing history</p>
@@ -54,29 +54,29 @@
           <!-- 商品卡片：暗色玻璃 + 纯黑阴影，无边框 -->
           <div
             class="browsing-history-dark__product-card relative rounded-[14px]
-                   bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))]
-                   shadow-[0_4px_12px_-4px_rgba(0,0,0,1)] overflow-hidden
+                   tz-surface-card
+                   shadow-[0_4px_12px_-4px_rgba(15,23,42,0.12)] overflow-hidden
                    transition-all duration-200"
           >
             <!-- 删除按钮 -->
             <button
               @click="handleRemoveItem(item.id)"
-              class="absolute top-1 right-1 z-10 w-5 h-5 bg-black/70 hover:bg-red-600 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+               class="absolute top-1 right-1 z-10 w-5 h-5 tz-surface-muted hover:bg-red-100 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
               title="Remove"
             >
-              <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="w-3 h-3 tz-text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
 
             <!-- 商品图片 -->
-            <div class="browsing-history-dark__image relative w-full h-32 bg-black/20">
+            <div class="browsing-history-dark__image relative w-full h-32 tz-surface-subtle">
               <StorefrontImage
                 v-if="item.thumbnail"
                 :src="item.thumbnail"
                 :alt="item.title"
                 class="w-full h-full object-cover"
-                preset="thumbnail"
+                preset="history"
               />
               <div v-else class="w-full h-full flex items-center justify-center tz-text-muted">
                 <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -87,12 +87,12 @@
 
             <!-- 商品信息 -->
             <div class="p-2">
-              <h4 class="text-xs font-medium text-white line-clamp-2 mb-1">
+              <h4 class="text-xs font-medium tz-text-primary line-clamp-2 mb-1">
                 {{ item.title }}
               </h4>
               <p
                 class="browsing-history-dark__price text-sm font-semibold mb-2"
-                :class="density === 'cart' ? 'text-white/90' : 'text-[#B5FF6D]'"
+                :class="density === 'cart' ? 'tz-text-secondary' : 'text-[#059669]'"
               >
                 {{ item.price }}
               </p>
@@ -102,7 +102,7 @@
                 <!-- 加入心愿单按钮 -->
                 <button
                   @click="handleAddToWishlist(item)"
-          class="w-8 h-8 flex items-center justify-center rounded-full border border-white/25 tz-text-secondary hover:bg-white/15 transition-colors"
+          class="w-8 h-8 flex items-center justify-center rounded-full border tz-border-strong/25 tz-text-secondary hover:tz-surface-subtle transition-colors"
                   title="Add to wishlist"
                 >
                   <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -113,7 +113,7 @@
                 <!-- 查看详情按钮 -->
                 <NuxtLink
                   :to="item.url"
-                  class="flex-1 px-2 py-1.5 bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/40 rounded text-xs text-white text-center transition-all"
+                  class="flex-1 px-2 py-1.5 tz-surface-subtle hover:tz-surface-subtle border tz-border-subtle hover:tz-border-strong/40 rounded text-xs tz-text-primary text-center transition-all"
                   title="View Product"
                 >
                   <svg class="w-3.5 h-3.5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -125,10 +125,10 @@
                 <!-- 分享到聊天按钮 -->
                 <button
                   @click="(e) => handleShareToChat(e, item)"
-                  class="browsing-history-dark__share-btn flex-1 px-2 py-1.5 rounded text-xs text-white transition-all"
+                  class="browsing-history-dark__share-btn flex-1 px-2 py-1.5 rounded text-xs tz-text-primary transition-all"
                   :class="density === 'cart'
-                    ? 'border border-white/20 bg-white/10 hover:border-white/40 hover:bg-white/20'
-                    : 'bg-gradient-to-r from-[#B5FF6D] to-[#6b73ff] hover:from-[#A6F05F] hover:to-[#5a62ee] shadow-lg'"
+                    ? 'border tz-border-subtle tz-surface-subtle hover:tz-border-strong/40 hover:tz-surface-subtle'
+                    : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg'"
                   title="Share to Chat"
                 >
                   <svg class="w-3.5 h-3.5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -145,18 +145,18 @@
       <button
         v-if="hasHistory && showLeftArrow"
         @click="scrollLeft"
-        class="hidden md:flex absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/10 hover:bg-white/20 backdrop-blur-sm shadow-lg rounded-full items-center justify-center z-10 border border-white/20"
+        class="hidden md:flex absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 tz-surface-subtle hover:tz-surface-subtle backdrop-blur-sm shadow-lg rounded-full items-center justify-center z-10 border tz-border-subtle"
       >
-        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-4 h-4 tz-text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
         </svg>
       </button>
       <button
         v-if="hasHistory && showRightArrow"
         @click="scrollRight"
-        class="hidden md:flex absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/10 hover:bg-white/20 backdrop-blur-sm shadow-lg rounded-full items-center justify-center z-10 border border-white/20"
+        class="hidden md:flex absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 tz-surface-subtle hover:tz-surface-subtle backdrop-blur-sm shadow-lg rounded-full items-center justify-center z-10 border tz-border-subtle"
       >
-        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-4 h-4 tz-text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
         </svg>
       </button>
@@ -279,15 +279,15 @@ onUnmounted(() => {
   height: auto;
   min-height: 0;
   flex-direction: column;
-  border-color: rgba(255, 255, 255, 0.14) !important;
-  background: rgba(255, 255, 255, 0.04) !important;
+  border-color: var(--tz-border-subtle) !important;
+  background: var(--tz-surface-subtle) !important;
   background-image: none !important;
 }
 
 .browsing-history-dark--cart .browsing-history-dark__header {
   flex: 0 0 auto;
   padding-block: 0.55rem;
-  background: rgba(255, 255, 255, 0.03) !important;
+  background: var(--tz-surface-muted) !important;
 }
 
 .browsing-history-dark--cart .browsing-history-dark__body {
@@ -335,26 +335,26 @@ onUnmounted(() => {
 }
 
 .browsing-history-dark--cart .browsing-history-dark__product-card {
-  background: rgba(255, 255, 255, 0.055) !important;
+  background: var(--tz-surface-card) !important;
   background-image: none !important;
-  box-shadow: 0 4px 12px -4px rgba(0, 0, 0, 1);
+  box-shadow: 0 4px 12px -4px rgba(15, 23, 42, 0.12);
 }
 
 .browsing-history-dark--cart .browsing-history-dark__price {
-  color: rgba(255, 255, 255, 0.92) !important;
+  color: var(--tz-text-primary) !important;
 }
 
 .browsing-history-dark--cart .browsing-history-dark__share-btn {
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid var(--tz-border-strong);
+  background: var(--tz-surface-muted) !important;
   background-image: none !important;
-  color: #fff !important;
+  color: var(--tz-text-primary) !important;
   box-shadow: none !important;
 }
 
 .browsing-history-dark--cart .browsing-history-dark__share-btn:hover {
-  border-color: rgba(255, 255, 255, 0.4);
-  background: rgba(255, 255, 255, 0.18) !important;
+  border-color: var(--tz-border-strong);
+  background: var(--tz-surface-subtle) !important;
 }
 
 .browsing-history-dark--cart .browsing-history-dark__mobile-hint {

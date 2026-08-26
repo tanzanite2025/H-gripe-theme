@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "project": "tanzanite-theme storefront",
-  "generated_at": "2026-08-21T16:11:45.957Z",
+  "generated_at": "2026-08-25T20:40:00.768Z",
   "overall_status": "pass",
   "baseline": {
     "id": "storefront-built-in-font-shards-v1",
@@ -140,14 +140,14 @@
   ],
   "coverage": {
     "locale_count": 20,
-    "source_file_count": 940,
-    "checked_characters": 4140,
+    "source_file_count": 960,
+    "checked_characters": 4192,
     "missing_characters": 0,
     "locales": [
       {
         "locale": "ar",
-        "source_files": 47,
-        "checked_characters": 166,
+        "source_files": 48,
+        "checked_characters": 167,
         "missing_characters": 0,
         "missing_sample": [],
         "font_stack": [
@@ -159,7 +159,7 @@
       },
       {
         "locale": "da",
-        "source_files": 47,
+        "source_files": 48,
         "checked_characters": 132,
         "missing_characters": 0,
         "missing_sample": [],
@@ -172,7 +172,7 @@
       },
       {
         "locale": "de",
-        "source_files": 47,
+        "source_files": 48,
         "checked_characters": 132,
         "missing_characters": 0,
         "missing_sample": [],
@@ -185,7 +185,7 @@
       },
       {
         "locale": "en",
-        "source_files": 47,
+        "source_files": 48,
         "checked_characters": 125,
         "missing_characters": 0,
         "missing_sample": [],
@@ -197,7 +197,7 @@
       },
       {
         "locale": "es",
-        "source_files": 47,
+        "source_files": 48,
         "checked_characters": 134,
         "missing_characters": 0,
         "missing_sample": [],
@@ -210,7 +210,7 @@
       },
       {
         "locale": "fi",
-        "source_files": 47,
+        "source_files": 48,
         "checked_characters": 127,
         "missing_characters": 0,
         "missing_sample": [],
@@ -223,7 +223,7 @@
       },
       {
         "locale": "fr",
-        "source_files": 47,
+        "source_files": 48,
         "checked_characters": 136,
         "missing_characters": 0,
         "missing_sample": [],
@@ -236,7 +236,7 @@
       },
       {
         "locale": "hi",
-        "source_files": 47,
+        "source_files": 48,
         "checked_characters": 182,
         "missing_characters": 0,
         "missing_sample": [],
@@ -249,7 +249,7 @@
       },
       {
         "locale": "id",
-        "source_files": 47,
+        "source_files": 48,
         "checked_characters": 125,
         "missing_characters": 0,
         "missing_sample": [],
@@ -261,7 +261,7 @@
       },
       {
         "locale": "it",
-        "source_files": 47,
+        "source_files": 48,
         "checked_characters": 128,
         "missing_characters": 0,
         "missing_sample": [],
@@ -274,8 +274,8 @@
       },
       {
         "locale": "ja",
-        "source_files": 47,
-        "checked_characters": 501,
+        "source_files": 48,
+        "checked_characters": 524,
         "missing_characters": 0,
         "missing_sample": [],
         "font_stack": [
@@ -286,8 +286,8 @@
       },
       {
         "locale": "ko",
-        "source_files": 47,
-        "checked_characters": 426,
+        "source_files": 48,
+        "checked_characters": 442,
         "missing_characters": 0,
         "missing_sample": [],
         "font_stack": [
@@ -298,7 +298,7 @@
       },
       {
         "locale": "ms",
-        "source_files": 47,
+        "source_files": 48,
         "checked_characters": 125,
         "missing_characters": 0,
         "missing_sample": [],
@@ -310,7 +310,7 @@
       },
       {
         "locale": "nl",
-        "source_files": 47,
+        "source_files": 48,
         "checked_characters": 128,
         "missing_characters": 0,
         "missing_sample": [],
@@ -323,7 +323,7 @@
       },
       {
         "locale": "pt",
-        "source_files": 47,
+        "source_files": 48,
         "checked_characters": 137,
         "missing_characters": 0,
         "missing_sample": [],
@@ -336,8 +336,8 @@
       },
       {
         "locale": "ru",
-        "source_files": 47,
-        "checked_characters": 182,
+        "source_files": 48,
+        "checked_characters": 183,
         "missing_characters": 0,
         "missing_sample": [],
         "font_stack": [
@@ -348,7 +348,7 @@
       },
       {
         "locale": "sv",
-        "source_files": 47,
+        "source_files": 48,
         "checked_characters": 131,
         "missing_characters": 0,
         "missing_sample": [],
@@ -361,7 +361,7 @@
       },
       {
         "locale": "th",
-        "source_files": 47,
+        "source_files": 48,
         "checked_characters": 183,
         "missing_characters": 0,
         "missing_sample": [],
@@ -374,7 +374,7 @@
       },
       {
         "locale": "tr",
-        "source_files": 47,
+        "source_files": 48,
         "checked_characters": 136,
         "missing_characters": 0,
         "missing_sample": [],
@@ -387,8 +387,8 @@
       },
       {
         "locale": "zh-cn",
-        "source_files": 47,
-        "checked_characters": 804,
+        "source_files": 48,
+        "checked_characters": 815,
         "missing_characters": 0,
         "missing_sample": [],
         "font_stack": [

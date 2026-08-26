@@ -5,7 +5,7 @@
       :src="topTierImageUrl"
       alt=""
       class="badge__background"
-      preset="avatar"
+      preset="badge"
     />
     <div class="badge-core">
       <div class="badge-inner">
@@ -66,7 +66,7 @@ onMounted(() => {
     try {
       // 1) 优先读取全局 CSS 变量
       const root = getComputedStyle(document.documentElement)
-      const vars = ['--accent-color','--pricebar-accent','--brand-primary','--mytheme-accent']
+      const vars = ['--accent-color','--pricebar-accent','--mytheme-accent']
       for (const v of vars) {
         const val = root.getPropertyValue(v).trim()
         if (val) { 

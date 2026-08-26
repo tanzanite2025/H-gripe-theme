@@ -159,7 +159,7 @@ jobs:
             NUXT_IMAGE_DOMAINS=${{ vars.STOREFRONT_IMAGE_DOMAINS || 'learn.gripe' }}
             NUXT_IMAGE_INTERNAL_ORIGIN=${{ vars.STOREFRONT_IMAGE_INTERNAL_ORIGIN || 'http://web:8080' }}
             NUXT_IMAGE_MAX_INPUT_PIXELS=${{ vars.STOREFRONT_IMAGE_MAX_INPUT_PIXELS || '24000000' }}
-            NUXT_IMAGE_OPTIMIZE_UPLOADS=${{ vars.STOREFRONT_IMAGE_OPTIMIZE_UPLOADS || 'false' }}
+            NUXT_IMAGE_OPTIMIZE_UPLOADS=${{ vars.STOREFRONT_IMAGE_OPTIMIZE_UPLOADS || 'true' }}
           load: true
           tags: local/${{ matrix.image }}:${{ github.sha }}
           labels: ${{ steps.meta.outputs.labels }}

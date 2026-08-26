@@ -1,6 +1,11 @@
-<script setup lang="ts">
-const route = useRoute()
-const slug = route.params.slug
+<template>
+  <ProductDetailPage />
+</template>
 
-await navigateTo({ path: `/shop/${slug}` }, { redirectCode: 301 })
+<script setup lang="ts">
+import ProductDetailPage from '~/components/shop/ProductDetailPage.vue'
+
+definePageMeta({
+  layout: 'products',
+})
 </script>

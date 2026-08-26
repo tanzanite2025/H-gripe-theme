@@ -9,6 +9,7 @@ import (
 
 	"commerce-platform/internal/domain/product"
 	reviewdomain "commerce-platform/internal/domain/review"
+	seodomain "commerce-platform/internal/domain/seo"
 	"commerce-platform/internal/pkg/locales"
 	"commerce-platform/internal/repository"
 
@@ -543,7 +544,7 @@ func (s *RecommendationService) makeRecommendationProduct(
 	return RecommendationProduct{
 		ProductID:     item.ID,
 		Title:         strings.TrimSpace(item.Name),
-		URL:           "/shop/" + strings.TrimSpace(item.Slug),
+		URL:           seodomain.BuildProductRoute(item.Locale, item.Slug).Path,
 		Thumbnail:     canonicalPublicMediaURL(s.mediaResolver, primaryRecommendationImage(item)),
 		PriceLabel:    formatRecommendationPrice(price),
 		WeightGrams:   weightGrams,

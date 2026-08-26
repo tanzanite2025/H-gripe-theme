@@ -1,7 +1,7 @@
 <template>
   <section
     id="home-ride-category-strip"
-    class="bg-transparent pb-4 pt-0 text-white sm:pb-5 lg:pb-6"
+    class="bg-transparent pb-4 pt-0 tz-text-primary sm:pb-5 lg:pb-6"
     aria-label="Product categories"
   >
     <div class="page-content-shell px-0 md:px-6">
@@ -239,9 +239,9 @@ onBeforeUnmount(() => {
   aspect-ratio: 1;
   overflow: hidden;
   place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(20, 32, 43, 0.1);
   border-radius: 999px;
-  background: #f8fafc;
+  background: var(--tz-surface-inset);
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.16);
   transition:
     border-color 180ms ease,
@@ -250,13 +250,13 @@ onBeforeUnmount(() => {
 }
 
 .home-ride-category-strip__link:hover .home-ride-category-strip__media {
-  border-color: rgba(181, 255, 109, 0.4);
+  border-color: rgba(5, 150, 105, 0.4);
   box-shadow: 0 14px 28px rgba(0, 0, 0, 0.22);
   transform: translateY(-1px);
 }
 
 .home-ride-category-strip__link:focus-visible {
-  outline: 2px solid rgba(181, 255, 109, 0.92);
+  outline: 2px solid rgba(5, 150, 105, 0.92);
   outline-offset: 3px;
 }
 
@@ -273,8 +273,8 @@ onBeforeUnmount(() => {
   width: 100%;
   height: 100%;
   place-items: center;
-  background: linear-gradient(180deg, rgba(181, 255, 109, 0.15), rgba(181, 255, 109, 0.08));
-  color: var(--tz-brand-primary);
+  background: linear-gradient(180deg, rgba(5, 150, 105, 0.15), rgba(5, 150, 105, 0.08));
+  color: var(--tz-site-accent);
 }
 
 .home-ride-category-strip__placeholder :deep(svg) {
@@ -300,13 +300,13 @@ onBeforeUnmount(() => {
 
 .home-ride-category-strip__media--skeleton,
 .home-ride-category-strip__name--skeleton {
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.05));
+  background: linear-gradient(90deg, rgba(20, 32, 43, 0.04), rgba(20, 32, 43, 0.1), rgba(20, 32, 43, 0.04));
   background-size: 220% 100%;
   animation: home-ride-category-strip-shimmer 1.4s ease-in-out infinite;
 }
 
 .home-ride-category-strip__media--skeleton {
-  background-color: rgba(255, 255, 255, 0.04);
+  background-color: rgba(20, 32, 43, 0.04);
 }
 
 .home-ride-category-strip__name--skeleton {

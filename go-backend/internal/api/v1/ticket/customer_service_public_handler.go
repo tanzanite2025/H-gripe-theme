@@ -243,7 +243,7 @@ func (h *Handler) UploadPublicCustomerServiceAttachment(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "file is required"})
 		return
 	}
-	if err := upload.ValidateFile(file, upload.SuggestionImageRule); err != nil {
+	if err := upload.ValidateSpecFile(file, string(upload.SpecCustomerServiceAttachment)); err != nil {
 		c.JSON(upload.HTTPStatus(err), gin.H{
 			"success": false,
 			"message": err.Error(),

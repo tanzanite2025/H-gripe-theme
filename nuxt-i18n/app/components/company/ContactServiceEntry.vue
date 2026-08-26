@@ -103,7 +103,7 @@ const openSupportChat = () => {
   padding: 1.5rem;
   border-radius: 1rem;
   background: var(--tz-card-surface);
-  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 18px 38px rgba(20, 32, 43, 0.12);
 }
 
 .contact-service-entry__copy {
@@ -118,7 +118,7 @@ const openSupportChat = () => {
   align-items: center;
   gap: 0.5rem;
   margin: 0;
-  color: #b5ff6d;
+  color: #059669;
   font-size: var(--tz-type-caption);
   font-weight: 700;
   line-height: 1.3;
@@ -158,17 +158,17 @@ const openSupportChat = () => {
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem 0.875rem;
-  border: 1px solid rgba(255, 255, 255, 0.13);
+  border: 1px solid var(--tz-border-subtle);
   border-radius: 6px;
-  background: #121217;
+  background: var(--tz-surface-subtle);
   color: var(--tz-text-primary);
   text-decoration: none;
   transition: border-color 0.18s ease, background-color 0.18s ease, transform 0.18s ease;
 }
 
 .contact-service-entry__action:hover {
-  border-color: rgba(181, 255, 109, 0.72);
-  background: #17171d;
+  border-color: rgba(5, 150, 105, 0.72);
+  background: var(--tz-surface-muted);
   transform: translateY(-1px);
 }
 
@@ -212,7 +212,7 @@ const openSupportChat = () => {
   align-items: flex-start;
   padding: 1.25rem;
   border-radius: 1rem;
-  background: #0d0d10;
+  background: var(--tz-surface-subtle);
 }
 
 .contact-service-entry__status {
@@ -220,10 +220,10 @@ const openSupportChat = () => {
   align-items: center;
   gap: 0.5rem;
   padding: 0.375rem 0.625rem;
-  border: 1px solid rgba(181, 255, 109, 0.18);
+  border: 1px solid rgba(5, 150, 105, 0.18);
   border-radius: 999px;
-  background: rgba(181, 255, 109, 0.09);
-  color: #d9ffb2;
+  background: rgba(5, 150, 105, 0.09);
+  color: var(--tz-site-accent);
   font-size: var(--tz-type-caption);
   font-weight: 600;
   line-height: 1.25;
@@ -233,8 +233,8 @@ const openSupportChat = () => {
   width: 0.5rem;
   height: 0.5rem;
   border-radius: 999px;
-  background: #b5ff6d;
-  box-shadow: 0 0 0 3px rgba(181, 255, 109, 0.1);
+  background: #059669;
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1);
 }
 
 .contact-service-entry__panel-icon {
@@ -243,9 +243,9 @@ const openSupportChat = () => {
   height: 3.5rem;
   margin-top: auto;
   place-items: center;
-  border: 1px solid rgba(181, 255, 109, 0.28);
+  border: 1px solid rgba(5, 150, 105, 0.28);
   border-radius: 999px;
-  color: #b5ff6d;
+  color: #059669;
 }
 
 .contact-service-entry__panel h3 {
@@ -271,10 +271,10 @@ const openSupportChat = () => {
   min-height: 2.625rem;
   margin-top: 1.25rem;
   padding: 0.625rem 0.875rem;
-  border: 1px solid #b5ff6d;
+  border: 1px solid var(--tz-action-primary);
   border-radius: 6px;
-  background: #b5ff6d;
-  color: #0b0b0e;
+  background: var(--tz-action-primary);
+  color: var(--tz-action-primary-foreground);
   cursor: pointer;
   font-size: var(--tz-type-caption);
   font-weight: 700;
@@ -283,8 +283,8 @@ const openSupportChat = () => {
 }
 
 .contact-service-entry__chat-button:hover {
-  border-color: #c8ff91;
-  background: #c8ff91;
+  border-color: var(--tz-action-primary-hover);
+  background: var(--tz-action-primary-hover);
   transform: translateY(-1px);
 }
 

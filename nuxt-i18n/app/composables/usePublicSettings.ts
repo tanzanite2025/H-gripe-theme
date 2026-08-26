@@ -13,12 +13,10 @@ export interface RuntimeSocialLink {
 
 export interface ApiSocialLink extends RuntimeSocialLink {
   label?: string
-  size?: number
 }
 
 export interface SiteSettingsResponse {
   siteTitle?: string
-  brandTitle?: string
   siteDescription?: string
   siteLogo?: string
   siteLogoWidth?: number
@@ -62,26 +60,20 @@ const isSocialLink = (value: unknown): value is ApiSocialLink => {
 export const normalizeRuntimeSocialLinks = (value: unknown): ApiSocialLink[] => {
   return parseArray(value)
     .filter(isSocialLink)
-    .map((item) => {
-      const size = Number(item.size)
-      return {
-        network: item.network,
-        url: item.url,
-        label: item.label,
-        size: Number.isFinite(size) && size > 0 ? size : undefined
-      }
-    })
+    .map((item) => ({
+      network: item.network,
+      url: item.url,
+      label: item.label,
+    }))
 }
 
 const normalizeSiteSettings = (
   raw: RawSettings,
   mediaContext: ReturnType<typeof createStorefrontMediaContext>,
 ): SiteSettingsResponse => {
-  const brandTitle = asString(raw.brandTitle ?? raw.brand_title)
-  const legacySiteTitle = asString(raw.siteTitle ?? raw.site_name)
-  const siteTitle = brandTitle || legacySiteTitle
+  const siteTitle = asString(raw.site_name).trim()
   const siteLogo = normalizeStorefrontMediaUrl(
-    asString(raw.siteLogo ?? raw.site_logo).trim(),
+    asString(raw.site_logo).trim(),
     mediaContext,
   )
   const siteFavicon = normalizeStorefrontMediaUrl(
@@ -91,7 +83,6 @@ const normalizeSiteSettings = (
 
   return {
     siteTitle,
-    brandTitle: brandTitle || siteTitle,
     siteDescription: asString(raw.siteDescription ?? raw.site_description),
     siteLogo: siteLogo === '/images/logo.png' ? '' : siteLogo,
     siteLogoWidth: asPositiveInt(raw.siteLogoWidth ?? raw.site_logo_width),

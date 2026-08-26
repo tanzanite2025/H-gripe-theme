@@ -25,6 +25,16 @@
             </Select>
           </AdminFormField>
 
+          <AdminFormField label="运费录入币种" required :error="errors.currency">
+            <Input
+              v-model.trim="form.currency"
+              class="font-mono uppercase"
+              maxlength="3"
+              placeholder="CNY / USD"
+              @input="handleTemplateCurrencyInput"
+            />
+          </AdminFormField>
+
           <div class="flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5">
             <div>
               <span class="text-xs font-bold uppercase tracking-wider">启用模板 / ENABLED</span>
@@ -57,7 +67,7 @@
         <section class="rounded-lg border bg-background px-3 py-3">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <div class="text-xs leading-5 text-muted-foreground">
-              运费金额按后台主基准币种 {{ primaryPricingCurrency }} 录入；按钮会读取后台缓存汇率并按金额字段填充次展示价，随模板保存。
+              运费金额按本模板源币种 {{ sourceBaseCurrency }} 录入；按钮只刷新展示快照，不会修改默认运费、免运门槛或规则金额。
             </div>
             <Button
               type="button"
@@ -169,12 +179,13 @@ const props = defineProps({
 const emit = defineEmits(['update:open', 'submit', 'clear-error'])
 const displayPriceLoading = ref(false)
 const displayPriceError = ref('')
-const primaryPricingCurrency = ref('USD')
+const primaryPricingCurrency = ref('')
+const sourceBaseCurrency = computed(() => normalizeCurrencyCode(props.form.currency) || primaryPricingCurrency.value)
 
 const displayPriceRows = computed(() => shippingAmountEntries()
   .map(entry => ({
     ...entry,
-    baseCurrency: '主币种',
+    baseCurrency: sourceBaseCurrency.value,
     prices: displayPricesForEntry(entry),
   }))
   .filter(row => row.prices.length))
@@ -193,6 +204,7 @@ const addRule = () => {
     max_value: 0,
     fee: 0,
     additional: 0,
+    currency: sourceBaseCurrency.value,
     display_price_snapshots: {},
   })
 }
@@ -211,9 +223,12 @@ const loadPrimaryPricingCurrencyForShippingDisplayPriceFill = async () => {
   try {
     const response = await axios.get('/api/admin/settings/currency-policy')
     const policy = response.data?.policy || response.data?.data?.policy || {}
-    primaryPricingCurrency.value = normalizeCurrencyCode(policy.primary_currency) || 'USD'
+    primaryPricingCurrency.value = normalizeCurrencyCode(policy.primary_currency)
+    if (!normalizeCurrencyCode(props.form.currency)) {
+      props.form.currency = primaryPricingCurrency.value
+    }
   } catch (error) {
-    primaryPricingCurrency.value = 'USD'
+    primaryPricingCurrency.value = ''
   }
 }
 
@@ -275,6 +290,25 @@ const clearRuleDisplayPrice = (rule, field) => {
 const handleDefaultFeeInput = () => {
   clearTemplateDisplayPrice('default_fee')
   emit('clear-error', 'default_fee')
+}
+
+const clearAllDisplayPrices = () => {
+  props.form.display_price_snapshots = {}
+  if (Array.isArray(props.form.rules)) {
+    props.form.rules.forEach((rule) => {
+      rule.display_price_snapshots = {}
+      rule.currency = normalizeCurrencyCode(props.form.currency)
+    })
+  }
+}
+
+const handleTemplateCurrencyInput = () => {
+  const nextCurrency = String(props.form.currency || '').trim().toUpperCase().slice(0, 3)
+  if (props.form.currency !== nextCurrency) {
+    props.form.currency = nextCurrency
+  }
+  clearAllDisplayPrices()
+  emit('clear-error', 'currency')
 }
 
 const shippingAmountEntries = () => {
@@ -342,7 +376,7 @@ const fillShippingDisplayPrices = async () => {
     const rows = await Promise.all(entries.map(async (entry) => {
       const response = await axios.post('/api/admin/pricing/exchange-rates/convert', {
         amount: entry.amount,
-        base_currency: primaryPricingCurrency.value
+        base_currency: sourceBaseCurrency.value
       })
       const data = response.data?.data || response.data || {}
       return {

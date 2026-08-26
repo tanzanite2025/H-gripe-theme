@@ -237,14 +237,13 @@ const handleQuantityBlur = () => {
   max-height: min(32rem, calc(100vh - 2rem));
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.055);
+  border: 1px solid var(--tz-border-subtle);
   border-radius: 1rem;
-  background:
-    linear-gradient(180deg, #1b1d24 0%, #15171d 48%, #101218 100%);
+  background: var(--tz-card-surface);
   box-shadow:
-    0 24px 72px rgba(0, 0, 0, 0.68),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.42);
+    0 24px 72px rgba(20, 32, 43, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    inset 0 -1px 0 var(--tz-border-subtle);
 }
 
 .quickbuy-selected-product-editor-header {
@@ -254,7 +253,7 @@ const handleQuantityBlur = () => {
   justify-content: space-between;
   gap: 1rem;
   padding: 0.9rem 1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+  border-bottom: 1px solid var(--tz-border-subtle);
 }
 
 .quickbuy-selected-product-editor-heading {
@@ -264,7 +263,7 @@ const handleQuantityBlur = () => {
 .quickbuy-selected-product-editor-eyebrow {
   display: block;
   margin-bottom: 0.2rem;
-  color: rgba(181, 255, 109, 0.78);
+  color: rgba(5, 150, 105, 0.78);
   font-size: 0.65rem;
   font-weight: 800;
   letter-spacing: 0.05em;
@@ -274,7 +273,7 @@ const handleQuantityBlur = () => {
 .quickbuy-selected-product-editor-heading h2 {
   margin: 0;
   overflow: hidden;
-  color: #fff;
+  color: var(--tz-text-primary);
   font-size: 1rem;
   font-weight: 800;
   line-height: 1.25;
@@ -290,13 +289,13 @@ const handleQuantityBlur = () => {
   place-items: center;
   border: 0;
   border-radius: 999px;
-  color: #fff;
-  background: rgba(255, 255, 255, 0.1);
+  color: var(--tz-text-primary);
+  background: var(--tz-surface-subtle);
   transition: background-color 160ms ease;
 }
 
 .quickbuy-selected-product-editor-close:hover {
-  background: rgba(255, 255, 255, 0.18);
+  background: var(--tz-surface-muted);
 }
 
 .quickbuy-selected-product-editor-content {
@@ -314,11 +313,10 @@ const handleQuantityBlur = () => {
   gap: 0.75rem;
   padding: 0.7rem;
   border-radius: 0.7rem;
-  background:
-    linear-gradient(180deg, #1b1e25, #15171d);
+  background: var(--tz-surface-subtle);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.04),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.36);
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    inset 0 -1px 0 var(--tz-border-subtle);
 }
 
 .quickbuy-selected-product-editor-image {
@@ -329,11 +327,11 @@ const handleQuantityBlur = () => {
   place-items: center;
   object-fit: cover;
   border-radius: 0.55rem;
-  background: #0d0f14;
+  background: var(--tz-image-loading-surface);
 }
 
 .quickbuy-selected-product-editor-image--empty {
-  color: rgba(255, 255, 255, 0.48);
+  color: var(--tz-text-muted);
 }
 
 .quickbuy-selected-product-editor-product-copy {
@@ -351,18 +349,18 @@ const handleQuantityBlur = () => {
 }
 
 .quickbuy-selected-product-editor-product-copy strong {
-  color: #fff;
+  color: var(--tz-text-primary);
   font-size: 0.85rem;
 }
 
 .quickbuy-selected-product-editor-product-copy span {
-  color: rgba(255, 255, 255, 0.58);
+  color: var(--tz-text-muted);
   font-size: 0.7rem;
 }
 
 .quickbuy-selected-product-editor-price {
   flex: 0 0 auto;
-  color: #fff;
+  color: var(--tz-text-primary);
   font-size: 0.95rem;
 }
 
@@ -378,12 +376,12 @@ const handleQuantityBlur = () => {
   gap: 0.2rem;
   padding: 0.65rem;
   border-radius: 0.6rem;
-  background: rgba(255, 255, 255, 0.045);
+  background: var(--tz-surface-subtle);
 }
 
 .quickbuy-selected-product-editor-facts small {
   overflow: hidden;
-  color: rgba(255, 255, 255, 0.52);
+  color: var(--tz-text-muted);
   font-size: 0.62rem;
   text-overflow: ellipsis;
   text-transform: uppercase;
@@ -392,7 +390,7 @@ const handleQuantityBlur = () => {
 
 .quickbuy-selected-product-editor-facts strong {
   overflow: hidden;
-  color: #fff;
+  color: var(--tz-text-primary);
   font-size: 0.78rem;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -404,7 +402,7 @@ const handleQuantityBlur = () => {
   justify-content: space-between;
   gap: 1rem;
   padding-top: 0.25rem;
-  color: #fff;
+  color: var(--tz-text-primary);
   font-size: 0.85rem;
   font-weight: 700;
 }
@@ -422,10 +420,9 @@ const handleQuantityBlur = () => {
   box-sizing: border-box;
   border: 0;
   border-radius: 0.45rem;
-  color: #fff;
-  background:
-    linear-gradient(180deg, #171920, #0d0f14);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+  color: var(--tz-text-primary);
+  background: var(--tz-input-surface);
+  box-shadow: inset 0 0 0 1px var(--tz-border-subtle);
 }
 
 .quickbuy-selected-product-editor-stepper button {
@@ -435,8 +432,7 @@ const handleQuantityBlur = () => {
 }
 
 .quickbuy-selected-product-editor-stepper button:hover:not(:disabled) {
-  background:
-    linear-gradient(180deg, #2b2d36, #20222a);
+  background: var(--tz-surface-muted);
 }
 
 .quickbuy-selected-product-editor-stepper button:disabled {
@@ -446,7 +442,7 @@ const handleQuantityBlur = () => {
 
 .quickbuy-selected-product-editor-stepper input {
   padding: 0 0.25rem;
-  background: #0d0f14;
+  background: var(--tz-input-surface);
   text-align: center;
 }
 
@@ -455,7 +451,7 @@ const handleQuantityBlur = () => {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 0.5rem;
   padding: 0.85rem 1rem 1rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.09);
+  border-top: 1px solid var(--tz-border-subtle);
 }
 
 .quickbuy-selected-product-editor-action {
@@ -468,9 +464,8 @@ const handleQuantityBlur = () => {
   padding: 0.5rem 0.75rem;
   border: 0;
   border-radius: 0.5rem;
-  color: #fff;
-  background:
-    linear-gradient(180deg, #171920, #0d0f14);
+  color: var(--tz-text-primary);
+  background: var(--tz-surface-subtle);
   font-size: 0.75rem;
   font-weight: 700;
 }
@@ -480,8 +475,14 @@ const handleQuantityBlur = () => {
 }
 
 .quickbuy-selected-product-editor-action--primary {
-  color: #050505;
-  background: #eef0f1;
+  color: var(--tz-action-primary-foreground);
+  background: var(--tz-action-primary);
+  border: 1px solid var(--tz-action-primary);
+}
+
+.quickbuy-selected-product-editor-action--primary:hover:not(:disabled) {
+  background: var(--tz-action-primary-hover);
+  border-color: var(--tz-action-primary-hover);
 }
 
 @media (max-width: 767px) {

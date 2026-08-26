@@ -8,6 +8,7 @@ import (
 	"commerce-platform/internal/domain/currency"
 	"commerce-platform/internal/domain/faq"
 	"commerce-platform/internal/domain/feedback"
+	fitmentcatalogdomain "commerce-platform/internal/domain/fitmentcatalog"
 	"commerce-platform/internal/domain/gallery"
 	"commerce-platform/internal/domain/loyalty"
 	marketdomain "commerce-platform/internal/domain/market"
@@ -19,9 +20,9 @@ import (
 	"commerce-platform/internal/domain/payment"
 	"commerce-platform/internal/domain/post"
 	preflightdomain "commerce-platform/internal/domain/preflight"
+	procurementdomain "commerce-platform/internal/domain/procurement"
 	"commerce-platform/internal/domain/product"
 	recommendationdomain "commerce-platform/internal/domain/recommendation"
-	"commerce-platform/internal/domain/registration"
 	"commerce-platform/internal/domain/review"
 	selectionconfigurationdomain "commerce-platform/internal/domain/selectionconfiguration"
 	seodomain "commerce-platform/internal/domain/seo"
@@ -29,6 +30,7 @@ import (
 	"commerce-platform/internal/domain/shipping"
 	"commerce-platform/internal/domain/showcase"
 	sitequalitydomain "commerce-platform/internal/domain/sitequality"
+	"commerce-platform/internal/domain/social"
 	"commerce-platform/internal/domain/spoke"
 	"commerce-platform/internal/domain/subscription"
 	"commerce-platform/internal/domain/suggestionfeedback"
@@ -38,6 +40,7 @@ import (
 	"commerce-platform/internal/domain/verification"
 	"commerce-platform/internal/domain/visitor"
 	visualshowcasedomain "commerce-platform/internal/domain/visualshowcase"
+	"commerce-platform/internal/domain/warranty"
 	"commerce-platform/internal/domain/wishlist"
 	"commerce-platform/internal/pkg/config"
 	"commerce-platform/internal/pkg/logger"
@@ -80,8 +83,15 @@ func AutoMigrate(db *gorm.DB, serverMode string) error {
 		&product.ProductVariantOptionValue{},
 		&product.Cart{},
 		&product.CartItem{},
+		&procurementdomain.ProductProcurement{},
+		&procurementdomain.ProductProfitCalculation{},
+		&fitmentcatalogdomain.FrameFitmentEntry{},
+		&fitmentcatalogdomain.HubSpecification{},
+		&fitmentcatalogdomain.FrameHubSpecification{},
 		&merchant.GoogleMerchantConnection{},
 		&merchant.GoogleMerchantOffer{},
+		&social.OAuthConnection{},
+		&social.OAuthSession{},
 		&ops.DomainBinding{},
 		&ops.Connector{},
 		&ops.VPSBinding{},
@@ -116,6 +126,7 @@ func AutoMigrate(db *gorm.DB, serverMode string) error {
 		&payment.PaymentProtectionControl{},
 		&payment.PaymentRefundRecommendation{},
 		&currency.ExchangeRate{},
+		&currency.ExchangeRateSyncLease{},
 		&shipping.ShippingTemplate{},
 		&shipping.ShippingRule{},
 		&shipping.Carrier{},
@@ -124,6 +135,7 @@ func AutoMigrate(db *gorm.DB, serverMode string) error {
 		&shipping.TrackingCarrierMapping{},
 		&shipping.TrackingShipment{},
 		&shipping.TrackingEvent{},
+		&shipping.ShipmentRecord{},
 		&shipping.ShippingZone{},
 		&shipping.PackagingRule{},
 		&shipping.PackagingRuleApply{},
@@ -144,8 +156,8 @@ func AutoMigrate(db *gorm.DB, serverMode string) error {
 		&faq.FAQ{},
 		&gallery.Gallery{},
 		&gallery.GalleryImage{},
-		&registration.ProductRegistration{},
-		&registration.WarrantyClaim{},
+		&warranty.WarrantyClaim{},
+		&warranty.WarrantyServiceRecord{},
 		&review.Review{},
 		&review.ReviewHelpful{},
 		&review.ReviewSummary{},

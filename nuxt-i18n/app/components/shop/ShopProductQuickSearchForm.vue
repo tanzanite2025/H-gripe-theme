@@ -170,8 +170,8 @@ watch(() => props.initialPriceRange, (range) => {
   background: var(--tz-card-surface);
   border-radius: 10px;
   box-shadow:
-    0 2px 6px -3px rgba(0, 0, 0, 0.9),
-    0 0 0 1px rgba(255, 255, 255, 0.04);
+    0 4px 12px -6px rgba(20, 32, 43, 0.24),
+    0 0 0 1px rgba(20, 32, 43, 0.08);
 }
 
 .shop-search-input-inner {
@@ -180,7 +180,7 @@ watch(() => props.initialPriceRange, (range) => {
   height: 38px;
   border: none;
   background: transparent;
-  color: #ffffff;
+  color: var(--tz-text-primary);
   font-size: 13px;
   outline: none;
 }
@@ -197,7 +197,7 @@ watch(() => props.initialPriceRange, (range) => {
   min-width: 0;
   min-height: 38px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(20, 32, 43, 0.1);
   background: var(--tz-card-surface);
   padding: 4px 8px;
 }
@@ -210,7 +210,7 @@ watch(() => props.initialPriceRange, (range) => {
 }
 
 .shop-price-range__label {
-  color: rgba(226, 232, 240, 0.72);
+  color: var(--tz-text-secondary);
   font-size: var(--tz-type-micro-label);
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -220,11 +220,11 @@ watch(() => props.initialPriceRange, (range) => {
 
 .shop-price-range__currency {
   flex: 0 0 auto;
-  border: 1px solid rgba(181, 255, 109, 0.28);
+  border: 1px solid rgba(5, 150, 105, 0.28);
   border-radius: 999px;
   padding: 2px 5px;
-  color: #b5ff6d;
-  background: rgba(181, 255, 109, 0.08);
+  color: var(--tz-text-primary);
+  background: rgba(5, 150, 105, 0.08);
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.04em;
@@ -243,7 +243,7 @@ watch(() => props.initialPriceRange, (range) => {
 }
 
 .shop-price-field span {
-  color: rgba(203, 213, 225, 0.78);
+  color: var(--tz-text-secondary);
   font-size: var(--tz-type-micro-label);
   font-weight: 750;
   white-space: nowrap;
@@ -254,7 +254,7 @@ watch(() => props.initialPriceRange, (range) => {
   min-width: 0;
   border: none;
   background: transparent;
-  color: #ffffff;
+  color: var(--tz-text-primary);
   font-size: 13px;
   outline: none;
 }
@@ -284,13 +284,15 @@ watch(() => props.initialPriceRange, (range) => {
 }
 
 .shop-search-submit {
-  background: #ffffff;
-  color: #000000;
-  box-shadow: 8px 8px 22px rgba(0, 0, 0, 0.92);
+  border: 1px solid rgba(20, 32, 43, 0.14);
+  background: var(--tz-card-surface);
+  color: var(--tz-text-primary);
+  box-shadow: 0 8px 18px rgba(20, 32, 43, 0.14);
 }
 
 .shop-search-submit:hover {
-  box-shadow: 10px 10px 26px rgba(0, 0, 0, 0.95);
+  background: var(--tz-form-panel-surface);
+  box-shadow: 0 10px 22px rgba(20, 32, 43, 0.18);
 }
 
 .shop-filter-button {
@@ -298,14 +300,14 @@ watch(() => props.initialPriceRange, (range) => {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
+  border: 1px solid rgba(20, 32, 43, 0.16);
+  background: var(--tz-form-panel-surface);
+  color: var(--tz-text-primary);
 }
 
 .shop-filter-button:hover {
-  border-color: rgba(255, 255, 255, 0.4);
-  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(20, 32, 43, 0.24);
+  background: var(--tz-card-surface);
 }
 
 .shop-filter-button :deep(svg) {

@@ -10,13 +10,17 @@ policies, or Google Merchant channel credentials.
 ## Documents
 
 - [SEO system architecture](./SEO_SYSTEM_ARCHITECTURE.md)
+- [E-commerce URL and SEO architecture](./ECOMMERCE_URL_ARCHITECTURE.md)
+- [Google Indexing API](./GOOGLE_INDEXING.md)
 - [Google Merchant Center implementation plan](../../go-backend/docs/GOOGLE_MERCHANT_CENTER_IMPLEMENTATION_PLAN.md)
 
 ## Current Decisions
 
 - Keep SEO as a top-level collapsible administration domain.
-- Keep three SEO resource sections: Home, Articles, and Products.
-- Keep the Article and Product lists linked to their real storefront routes.
+- Keep four SEO resource sections: Home, Articles, Products, and Categories.
+- Keep the Article, Product, and Category lists linked to their real storefront routes.
+- Keep Category SEO metadata attached to the product-category aggregate:
+  `Meta Title`, `Meta Description`, and the sanitized rich-text `intro`.
 - Return those routes as a read-only `route_path` projection from the SEO API;
   the admin UI must not infer article categories or locale prefixes.
 - Use `Blog` as the content-center name. Keep `news` and `wheelsbuild` as
@@ -33,6 +37,10 @@ policies, or Google Merchant channel credentials.
   domain.
 - Generate Product JSON-LD from the same public product data shown on the
   storefront. Do not make JSON-LD fields manually editable in the SEO dialog.
+- Use hierarchical `/shop/...` routes for category landing pages and the flat
+  `/products/:slug` route for the target product detail architecture.
+- Keep product permalinks independent from category membership. Express the
+  category path through visible navigation and SSR `BreadcrumbList` JSON-LD.
 - Generate Product canonical URLs from the localized route by default. Manual
   canonical overrides are exceptional and require explicit validation.
 - Use Product's real `localized_routes` projection for hreflang. Never create
@@ -44,7 +52,11 @@ policies, or Google Merchant channel credentials.
 
 ## Maintenance Rule
 
-When implementation and documentation disagree, the current code is the
-runtime source of truth until the architecture decision is updated and the
-code is migrated. Do not add a second SEO storage model only to make the
-administration UI easier.
+When implementation and documentation disagree, resolve the discrepancy
+against the formal route contract before adding more SEO behavior. Do not add a
+second SEO storage model only to make the administration UI easier.
+
+The e-commerce URL document is the active route contract: categories use
+`/shop/...`, products use `/products/:slug`, and a non-category `/shop/:slug`
+returns 404. URL Management 301 rules are reserved for real URLs created after
+the site is operated; pre-launch code must not generate product aliases.

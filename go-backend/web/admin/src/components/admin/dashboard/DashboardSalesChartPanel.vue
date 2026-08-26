@@ -1,6 +1,5 @@
 <template>
   <Card class="min-w-0 gap-0 py-0 shadow-none rounded-[24px] border-dashed border-border/80">
-    <div class="uds-glow-bg" />
     <CardHeader class="relative z-10 flex flex-row items-center justify-between border-b border-dashed border-border/70 py-3.5">
       <div>
         <CardTitle class="text-sm font-black tracking-tighter uppercase">销售趋势</CardTitle>

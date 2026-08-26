@@ -4,7 +4,7 @@
       <Icon
         :name="statusIcon"
         class="wallet-return-icon"
-        :class="status === 'success' ? 'text-emerald-300' : status === 'error' ? 'text-rose-300' : 'text-sky-300'"
+:class="status === 'success' ? 'text-emerald-600' : status === 'error' ? 'text-rose-600' : 'text-blue-600'"
       />
       <h1>{{ title }}</h1>
       <p>{{ message }}</p>
@@ -86,18 +86,18 @@ onMounted(async () => {
   display: grid;
   place-items: center;
   padding: 8rem 1.25rem 4rem;
-  background: #000;
-  color: #fff;
+   background: var(--tz-surface-page);
+   color: var(--tz-text-primary);
 }
 
 .wallet-return-panel {
   width: min(100%, 520px);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+   border: 1px solid var(--tz-border-subtle);
   border-radius: 8px;
-  background: rgba(15, 23, 42, 0.86);
+   background: var(--tz-card-surface);
   padding: 2rem;
   text-align: center;
-  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.42);
+   box-shadow: 0 18px 44px rgba(15, 23, 42, 0.14);
 }
 
 .wallet-return-icon {
@@ -114,12 +114,12 @@ onMounted(async () => {
 
 .wallet-return-panel p {
   margin: 0.75rem 0 0;
-  color: rgba(255, 255, 255, 0.72);
+   color: var(--tz-text-secondary);
 }
 
 .wallet-return-order {
   font-family: var(--tz-font-ui);
-  color: #fff !important;
+   color: var(--tz-text-primary) !important;
 }
 
 .wallet-return-actions {
@@ -131,10 +131,10 @@ onMounted(async () => {
 }
 
 .wallet-return-button {
-  border: 1px solid rgba(255, 255, 255, 0.22);
+   border: 1px solid var(--tz-border-strong);
   border-radius: 8px;
   padding: 0.7rem 1rem;
-  color: #fff;
+   color: var(--tz-text-primary);
   font-size: 0.875rem;
   font-weight: 700;
 }

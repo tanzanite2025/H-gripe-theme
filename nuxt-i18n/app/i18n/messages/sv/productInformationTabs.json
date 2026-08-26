@@ -5,12 +5,12 @@
     "details": "Detaljer",
     "afterSales": "Eftermarknad",
     "packaging": "Förpackning",
-    "shipping": "Frakt"
+    "productShippingInfo": "Frakt"
   },
   "empty": {
     "details": "Produktdetaljer har inte lagts till ännu.",
     "afterSales": "Eftermarknadsinformation har inte lagts till ännu.",
     "packaging": "Förpackningsinformation har inte lagts till ännu.",
-    "shipping": "Fraktinformation har inte lagts till ännu."
+    "productShippingInfo": "Fraktinformation har inte lagts till ännu."
   }
 }

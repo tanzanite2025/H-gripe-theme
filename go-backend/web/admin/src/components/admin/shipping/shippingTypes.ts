@@ -17,6 +17,7 @@ export type ShippingDisplayPriceSnapshots = Record<string, ShippingDisplayPrice[
 export interface ShippingTemplateRule {
   id?: ShippingID | null
   region?: string | null
+  currency?: string | null
   min_value?: number | string | null
   max_value?: number | string | null
   fee?: number | string | null
@@ -28,6 +29,7 @@ export interface ShippingTemplate {
   id: ShippingID
   name?: string | null
   type?: string | null
+  currency?: string | null
   free_shipping?: boolean
   free_threshold?: number | string | null
   default_fee?: number | string | null
@@ -41,6 +43,7 @@ export interface ShippingTemplateForm {
   id: ShippingID | null
   name: string
   type: string
+  currency: string
   free_shipping: boolean
   free_threshold: number
   default_fee: number

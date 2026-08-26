@@ -35,7 +35,7 @@ export const faqRegistry: FaqRegistry = {
 }
 
 export const faqRoutePathByPageId: Record<string, string> = {
-  'products-spoke-calculator': '/spoke-calculator',
+  'products-spoke-calculator': '/resources/spoke-calculator',
   'guides-tireguides': '/guides/tireguides',
   'guides-wheelset-buyers': '/guides/wheelset-buyers',
   'support-payment': '/support/payment',
@@ -43,7 +43,7 @@ export const faqRoutePathByPageId: Record<string, string> = {
   'support-warranty': '/support/warranty',
   'support-warranty-check': '/support/warranty-check',
   'support-test-report': '/support/test-report',
-  'company-membership': '/membershipandpoints',
+  'company-membership': '/resources/membershipandpoints',
   'company-oem-odm': '/company/oem-odm',
   'company-certificates': '/company/certificates',
   'company-contact': '/company/contact',

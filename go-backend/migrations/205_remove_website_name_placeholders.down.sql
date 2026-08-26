@@ -1,0 +1,1 @@
+-- No rollback: an empty value may have been intentionally saved after the cleanup.

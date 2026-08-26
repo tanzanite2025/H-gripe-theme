@@ -68,6 +68,42 @@ google_merchant:
   token_encryption_key: ""
   state_ttl_seconds: 600
 
+google_indexing:
+  # Keep service account credentials outside source control. Configure through
+  # GOOGLE_INDEXING_SERVICE_ACCOUNT_FILE or GOOGLE_INDEXING_SERVICE_ACCOUNT_JSON.
+  enabled: false
+  service_account_json: ""
+  service_account_file: ""
+  request_timeout_seconds: 15
+
+social_oauth:
+  # Set the provider credentials with SOCIAL_OAUTH_* environment variables.
+  # Keep these values empty in source control.
+  meta:
+    client_id: ""
+    client_secret: ""
+    redirect_url: ""
+    scopes: ""
+  x:
+    client_id: ""
+    client_secret: ""
+    redirect_url: ""
+    scopes: ""
+  youtube:
+    client_id: ""
+    client_secret: ""
+    redirect_url: ""
+    scopes: ""
+  reddit:
+    client_id: ""
+    client_secret: ""
+    redirect_url: ""
+    scopes: ""
+  post_connect_url: ""
+  token_encryption_key: ""
+  state_ttl_seconds: 600
+  meta_graph_api_version: "v23.0"
+
 i18n:
   default_locale: en
   supported_locales:
@@ -154,6 +190,9 @@ worker:
   payment_expiration_batch_limit: 100
   payment_risk_monitoring_enabled: true
   payment_risk_monitoring_interval_seconds: 3600
+  # Independent from worker.enabled. Keeps cached display exchange rates fresh once per day.
+  exchange_rate_sync_enabled: true
+  exchange_rate_sync_interval_seconds: 86400
   media_derivative_rebuild_enabled: true
   media_derivative_rebuild_interval_seconds: 5
   media_derivative_rebuild_batch_limit: 10

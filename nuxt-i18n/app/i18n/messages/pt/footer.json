@@ -4,6 +4,7 @@
     "support": "Support",
     "company": "Company",
     "resources": "RESOURCES",
+    "siteOverview": "Site Overview",
     "policies": "Policies"
   },
   "links": {
@@ -22,7 +23,9 @@
     "oemOdm": "OEM & ODM",
     "certificates": "Certificates",
     "membershipPoints": "Membership and Points",
-    "pictureWarehouse": "Picture warehouse"
+    "pictureWarehouse": "Picture warehouse",
+    "meThisWebsite": "Me & This Website",
+    "whyThisName": "Why This Name"
   },
   "brand": {
     "line1": "A brand of Top Sports Co., Limited.",

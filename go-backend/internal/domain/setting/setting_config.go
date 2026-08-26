@@ -3,7 +3,6 @@ package setting
 // SiteSettings 站点设置响应
 type SiteSettings struct {
 	SiteName          string `json:"site_name"`
-	BrandTitle        string `json:"brand_title"`
 	SiteDescription   string `json:"site_description"`
 	SiteLogo          string `json:"site_logo"`
 	SiteLogoWidth     int    `json:"site_logo_width,omitempty"`
@@ -65,9 +64,8 @@ type EmailSettings struct {
 // SocialSettings 社交媒体设置
 type SocialSettings struct {
 	Facebook  string `json:"facebook"`
-	Twitter   string `json:"twitter"`
 	Instagram string `json:"instagram"`
-	LinkedIn  string `json:"linkedin"`
+	X         string `json:"x"`
 	YouTube   string `json:"youtube"`
-	WeChat    string `json:"wechat"`
+	Reddit    string `json:"reddit"`
 }

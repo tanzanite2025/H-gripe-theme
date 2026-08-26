@@ -14,6 +14,8 @@ import RefundReturnPolicyContent from '~/components/RefundReturnPolicyContent.vu
 
 definePageMeta({
   layout: 'products',
+  footerLabelKey: 'policyTabs.refundReturn',
+  footerLabelFallback: 'Refund & Return',
 })
 
 useHead({

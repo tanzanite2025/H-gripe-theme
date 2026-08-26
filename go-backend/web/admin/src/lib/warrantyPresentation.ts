@@ -10,13 +10,8 @@ interface WarrantyProductLike {
   sku?: string | null
 }
 
-interface WarrantyRegistrationLike {
-  product?: WarrantyProductLike | null
-}
-
 interface WarrantyClaimLike {
-  registration?: WarrantyRegistrationLike | null
-  registration_id?: number | string | null
+  order_item?: OrderItemLike | null
   images?: string | null
 }
 
@@ -36,13 +31,6 @@ interface OrderItemLike {
   variant_id?: number | string | null
   quantity?: number | string | null
 }
-
-export const REGISTRATION_STATUS_OPTIONS: StatusOption[] = [
-  { value: 'active', label: '有效' },
-  { value: 'expired', label: '已过期' },
-  { value: 'claimed', label: '已申请' },
-  { value: 'cancelled', label: '已取消' }
-]
 
 export const CLAIM_STATUS_OPTIONS: StatusOption[] = [
   { value: 'submitted', label: '已提交' },
@@ -73,19 +61,6 @@ export const WARRANTY_SERVICE_STATUS_OPTIONS: StatusOption[] = [
   { value: 'resolved', label: '已解决' },
   { value: 'closed', label: '已关闭' }
 ]
-
-export const registrationStatusLabel = (status?: string | null): string =>
-  REGISTRATION_STATUS_OPTIONS.find((item) => item.value === status)?.label || status || '-'
-
-export const registrationStatusTone = (status?: string | null): StatusTone => {
-  const tones: Record<string, StatusTone> = {
-    active: 'green',
-    expired: 'amber',
-    claimed: 'blue',
-    cancelled: 'gray'
-  }
-  return tones[status || ''] || 'gray'
-}
 
 export const claimStatusLabel = (status?: string | null): string =>
   CLAIM_STATUS_OPTIONS.find((item) => item.value === status)?.label || status || '-'
@@ -121,11 +96,8 @@ export const serviceStatusTone = (status?: string | null): StatusTone => {
 
 export const productName = (product?: WarrantyProductLike | null): string => product?.name || product?.sku || '未关联商品'
 
-export const registrationProductName = (claim?: WarrantyClaimLike | null): string => {
-  if (claim?.registration?.product) return productName(claim.registration.product)
-  if (claim?.registration_id) return `Registration #${claim.registration_id}`
-  return '未绑定注册记录'
-}
+export const claimProductName = (claim?: WarrantyClaimLike | null): string =>
+  claim?.order_item ? orderItemLabel(claim.order_item) : '未绑定订单行'
 
 export const userName = (user?: WarrantyUserLike | null): string => {
   if (!user) return '未关联用户'

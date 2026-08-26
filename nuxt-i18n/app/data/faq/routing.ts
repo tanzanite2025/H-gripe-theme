@@ -25,12 +25,8 @@ export function normalizeFaqRoutePath(routePath: string) {
 export function resolveFaqRouteLookupPath(routePath: string) {
   const normalizedPath = normalizeFaqRoutePath(routePath)
 
-  if (/^\/membershipandpoints\/(?:myinfo|levers|exchange)$/.test(normalizedPath)) {
-    return '/membershipandpoints'
-  }
-
-  if (/^\/shop\/[^/]+$/.test(normalizedPath)) {
-    return '/shop/:slug'
+  if (/^\/resources\/membershipandpoints\/(?:myinfo|levers|exchange)$/.test(normalizedPath)) {
+    return '/resources/membershipandpoints'
   }
 
   if (/^\/products\/[^/]+$/.test(normalizedPath)) {

@@ -284,6 +284,7 @@ func TestPrepareSchemaAgainstFreshPostgres(t *testing.T) {
 		"chat_messages",
 		"chat_sessions",
 		"shipping_template_bindings",
+		"product_registrations",
 	}
 	for _, table := range retiredTables {
 		var exists bool
@@ -305,7 +306,6 @@ func TestPrepareSchemaAgainstFreshPostgres(t *testing.T) {
 		"users",
 		"galleries",
 		"gallery_images",
-		"product_registrations",
 		"warranty_claims",
 		"tickets",
 		"ticket_messages",
@@ -319,6 +319,30 @@ func TestPrepareSchemaAgainstFreshPostgres(t *testing.T) {
 		}
 		if count != 0 {
 			t.Fatalf("business table %s contains %d seeded rows", table, count)
+		}
+	}
+
+	for _, column := range []struct {
+		table string
+		name  string
+	}{
+		{table: "warranty_claims", name: "registration_id"},
+		{table: "warranty_service_records", name: "registration_id"},
+	} {
+		var exists bool
+		if err := testDB.QueryRowContext(ctx, `
+			SELECT EXISTS (
+				SELECT 1
+				FROM information_schema.columns
+				WHERE table_schema = 'public'
+				  AND table_name = $1
+				  AND column_name = $2
+			)
+		`, column.table, column.name).Scan(&exists); err != nil {
+			t.Fatalf("check removed column %s.%s: %v", column.table, column.name, err)
+		}
+		if exists {
+			t.Fatalf("removed column %s.%s still exists", column.table, column.name)
 		}
 	}
 

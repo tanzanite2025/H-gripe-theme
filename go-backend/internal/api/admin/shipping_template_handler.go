@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"commerce-platform/internal/domain/currency"
 	shippingdomain "commerce-platform/internal/domain/shipping"
 	"commerce-platform/internal/pkg/apierror"
 	"commerce-platform/internal/pkg/response"
@@ -188,6 +189,9 @@ func validateShippingTemplate(template shippingdomain.ShippingTemplate) error {
 	if strings.TrimSpace(template.Name) == "" {
 		return errors.New("template name is required")
 	}
+	if template.Currency != "" && !currency.IsCatalogCode(template.Currency) {
+		return errors.New("template source currency is required")
+	}
 	switch template.Type {
 	case "weight", "quantity", "price":
 	default:
@@ -207,6 +211,9 @@ func validateShippingTemplate(template shippingdomain.ShippingTemplate) error {
 func validateShippingRule(rule shippingdomain.ShippingRule) error {
 	if rule.Region == "" {
 		return errors.New("rule region is required")
+	}
+	if rule.Currency != "" && !currency.IsCatalogCode(rule.Currency) {
+		return errors.New("rule source currency is required")
 	}
 	if rule.MinValue < 0 || rule.MaxValue < 0 || rule.Fee < 0 || rule.Additional < 0 {
 		return errors.New("rule values and fees cannot be negative")

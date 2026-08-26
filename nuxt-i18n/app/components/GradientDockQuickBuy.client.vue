@@ -1,7 +1,7 @@
 <template>
   <button
     ref="quickBuyAnchorRef"
-    class="dock-icon-button dock-quick-buy-button h-11 md:h-12 tz-text-secondary hover:text-[#B5FF6D] transition-colors"
+    class="dock-icon-button dock-quick-buy-button h-11 md:h-12 tz-text-secondary hover:text-[#059669] transition-colors"
     :class="{ 'dock-quick-buy-button--active': quickActive }"
     @click="openQuick()"
     aria-haspopup="dialog"
@@ -183,11 +183,18 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+.dock-icon-button {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+}
+
 .dock-icon-slot {
   display: inline-flex;
-  flex: 0 0 36px;
-  width: 36px;
-  height: 36px;
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
   align-items: center;
   justify-content: center;
 }
@@ -202,17 +209,25 @@ onBeforeUnmount(() => {
 }
 
 .dock-quick-buy-button--active {
-  color: var(--tz-brand-primary, #b5ff6d);
+  color: var(--tz-site-accent, #059669);
 }
 
 .dock-quick-buy-button--active .dock-quick-buy-frame {
-  background: rgba(181, 255, 109, 0.08);
+  background: rgba(5, 150, 105, 0.08);
   box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--tz-brand-primary, #b5ff6d) 74%, transparent),
-    0 0 0 4px rgba(181, 255, 109, 0.075);
+    inset 0 0 0 1px color-mix(in srgb, var(--tz-site-accent, #059669) 74%, transparent),
+    0 0 0 4px rgba(5, 150, 105, 0.075);
 }
 
 .dock-quick-buy-button:hover .dock-quick-buy-frame {
   transform: translateY(-0.0625rem);
+}
+
+@media (max-width: 767px) {
+  .dock-icon-slot {
+    flex-basis: 28px;
+    width: 28px;
+    height: 28px;
+  }
 }
 </style>

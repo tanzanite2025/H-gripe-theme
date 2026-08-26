@@ -13,9 +13,9 @@ export const resolveBlogCategory = (categories: unknown): BlogCategory | null =>
 
 export const buildBlogPath = (category: BlogCategory | null, slug: string): string => {
   const cleanSlug = String(slug || '').trim()
-  if (!cleanSlug) return '/blog'
+  if (!cleanSlug) return '/resources/blog'
 
-  const prefix = category ? `/blog/${category}` : '/blog'
+  const prefix = category ? `/resources/blog/${category}` : '/resources/blog'
   return `${prefix}/${encodeURIComponent(cleanSlug)}`
 }
 

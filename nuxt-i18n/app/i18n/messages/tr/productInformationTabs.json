@@ -5,12 +5,12 @@
     "details": "Detaylar",
     "afterSales": "Satış sonrası",
     "packaging": "Paketleme",
-    "shipping": "Gönderim"
+    "productShippingInfo": "Gönderim"
   },
   "empty": {
     "details": "Ürün detayları henüz eklenmedi.",
     "afterSales": "Satış sonrası bilgileri henüz eklenmedi.",
     "packaging": "Paketleme bilgileri henüz eklenmedi.",
-    "shipping": "Gönderim bilgileri henüz eklenmedi."
+    "productShippingInfo": "Gönderim bilgileri henüz eklenmedi."
   }
 }

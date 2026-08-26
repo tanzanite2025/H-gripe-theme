@@ -1,5 +1,6 @@
 {
   "ariaLabel": "Categorie del negozio",
+  "children": "Sottocategorie",
   "loading": "Caricamento categorie...",
   "all": "Tutto",
   "empty": "No shop categories are available yet."

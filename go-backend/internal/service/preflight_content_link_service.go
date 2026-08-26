@@ -79,6 +79,8 @@ type PreflightContentLinkService struct {
 type contentLinkAnchor struct {
 	Href     string
 	Text     string
+	Rel      string
+	TextLang string
 	Selector string
 	Snippet  string
 	Heading  string
@@ -100,19 +102,20 @@ type contentLinkSourceLocation struct {
 }
 
 type contentLinkEvidence struct {
-	Rule           string `json:"rule"`
-	Href           string `json:"href"`
-	LinkURL        string `json:"link_url"`
-	LinkText       string `json:"link_text"`
-	NormalizedText string `json:"normalized_text"`
-	Selector       string `json:"selector"`
-	Snippet        string `json:"snippet"`
-	ContextHeading string `json:"context_heading,omitempty"`
-	SuggestedText  string `json:"suggested_text"`
-	SourceType     string `json:"source_type"`
-	SourceKey      string `json:"source_key"`
-	SourceField    string `json:"source_field,omitempty"`
-	SourceHint     string `json:"source_hint,omitempty"`
+	RuleID          string `json:"rule_id"`
+	ProviderAuditID string `json:"provider_audit_id,omitempty"`
+	Href            string `json:"href"`
+	LinkURL         string `json:"link_url"`
+	LinkText        string `json:"link_text"`
+	NormalizedText  string `json:"normalized_text"`
+	Selector        string `json:"selector"`
+	Snippet         string `json:"snippet"`
+	ContextHeading  string `json:"context_heading,omitempty"`
+	SuggestedText   string `json:"suggested_text"`
+	SourceType      string `json:"source_type"`
+	SourceKey       string `json:"source_key"`
+	SourceField     string `json:"source_field,omitempty"`
+	SourceHint      string `json:"source_hint,omitempty"`
 }
 
 func NewPreflightContentLinkService(
@@ -241,10 +244,12 @@ func (s *PreflightContentLinkService) RunCheck(
 	routeEntryID := routeEntryIDFor(routeEntry)
 	checkedAt := time.Now().UTC()
 	run := &preflightdomain.ContentLinkRun{
-		TargetURL:    targetURL,
-		RouteEntryID: routeEntryID,
-		Status:       preflightdomain.ContentLinkRunStatusSuccess,
-		CheckedAt:    checkedAt,
+		TargetURL:       targetURL,
+		RuleID:          preflightdomain.ContentLinkRuleID,
+		ProviderAuditID: preflightdomain.ContentLinkProviderAuditID,
+		RouteEntryID:    routeEntryID,
+		Status:          preflightdomain.ContentLinkRunStatusSuccess,
+		CheckedAt:       checkedAt,
 	}
 
 	htmlBody, finalURL, fetchErr := s.fetchHTML(ctx, targetURL)
@@ -254,7 +259,9 @@ func (s *PreflightContentLinkService) RunCheck(
 		if err := s.repository.CreateRun(run); err != nil {
 			return nil, err
 		}
-		stats, _ := s.repository.Stats()
+		stats, _ := s.repository.Stats(repository.PreflightContentLinkStatsFilter{
+			RuleID: run.RuleID,
+		})
 		return &ContentLinkRunResult{Run: *run, Stats: stats}, nil
 	}
 	if finalURL == "" {
@@ -268,7 +275,9 @@ func (s *PreflightContentLinkService) RunCheck(
 		if err := s.repository.CreateRun(run); err != nil {
 			return nil, err
 		}
-		stats, _ := s.repository.Stats()
+		stats, _ := s.repository.Stats(repository.PreflightContentLinkStatsFilter{
+			RuleID: run.RuleID,
+		})
 		return &ContentLinkRunResult{Run: *run, Stats: stats}, nil
 	}
 	run.IssueCount = len(detections)
@@ -290,12 +299,16 @@ func (s *PreflightContentLinkService) RunCheck(
 		Page:      1,
 		PageSize:  200,
 		State:     "active",
+		RuleID:    run.RuleID,
+		RunID:     run.ID,
 		TargetURL: targetURL,
 	})
 	if err != nil {
 		return nil, err
 	}
-	stats, err := s.repository.Stats()
+	stats, err := s.repository.Stats(repository.PreflightContentLinkStatsFilter{
+		RuleID: run.RuleID,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -311,11 +324,13 @@ func (s *PreflightContentLinkService) ListIssues(
 	return s.repository.ListIssues(filter)
 }
 
-func (s *PreflightContentLinkService) Stats() (preflightdomain.ContentLinkIssueStats, error) {
+func (s *PreflightContentLinkService) Stats(
+	filter repository.PreflightContentLinkStatsFilter,
+) (preflightdomain.ContentLinkIssueStats, error) {
 	if s == nil || s.repository == nil {
 		return preflightdomain.ContentLinkIssueStats{}, ErrContentLinkPreflightUnavailable
 	}
-	return s.repository.Stats()
+	return s.repository.Stats(filter)
 }
 
 func (s *PreflightContentLinkService) GetIssue(
@@ -441,37 +456,40 @@ func (s *PreflightContentLinkService) detectContentLinks(
 	anchors := collectContentLinkAnchors(doc)
 	detections := make([]preflightdomain.ContentLinkDetection, 0)
 	for _, anchor := range anchors {
-		if !contentLinkHrefInspectable(anchor.Href) {
-			continue
-		}
-		match, ok := matchGenericContentLinkText(anchor.Text)
-		if !ok {
-			continue
-		}
 		linkURL := resolvedLinkURL(anchor.Href, finalURL, targetURL)
 		if linkURL == "" {
 			linkURL = strings.TrimSpace(anchor.Href)
 		}
+		if !contentLinkAnchorInspectable(anchor, linkURL, finalURL) {
+			continue
+		}
+		match, ok := matchGenericContentLinkText(anchor.Text, anchor.TextLang)
+		if !ok {
+			continue
+		}
 		suggestedText := s.suggestContentLinkText(match, anchor, linkURL)
 		source := s.locateContentLinkSource(routeEntry, anchor, linkURL, targetURL)
 		evidence := contentLinkEvidence{
-			Rule:           "descriptive_link_text",
-			Href:           strings.TrimSpace(anchor.Href),
-			LinkURL:        linkURL,
-			LinkText:       strings.TrimSpace(anchor.Text),
-			NormalizedText: match.Normalized,
-			Selector:       anchor.Selector,
-			Snippet:        anchor.Snippet,
-			ContextHeading: strings.TrimSpace(anchor.Heading),
-			SuggestedText:  suggestedText,
-			SourceType:     source.SourceType,
-			SourceKey:      source.SourceKey,
-			SourceField:    source.SourceField,
-			SourceHint:     source.SourceHint,
+			RuleID:          preflightdomain.ContentLinkRuleID,
+			ProviderAuditID: preflightdomain.ContentLinkProviderAuditID,
+			Href:            strings.TrimSpace(anchor.Href),
+			LinkURL:         linkURL,
+			LinkText:        strings.TrimSpace(anchor.Text),
+			NormalizedText:  match.Normalized,
+			Selector:        anchor.Selector,
+			Snippet:         anchor.Snippet,
+			ContextHeading:  strings.TrimSpace(anchor.Heading),
+			SuggestedText:   suggestedText,
+			SourceType:      source.SourceType,
+			SourceKey:       source.SourceKey,
+			SourceField:     source.SourceField,
+			SourceHint:      source.SourceHint,
 		}
 		detection := preflightdomain.ContentLinkDetection{
 			RouteEntryID:    routeEntryIDFor(routeEntry),
 			TargetURL:       targetURL,
+			RuleID:          preflightdomain.ContentLinkRuleID,
+			ProviderAuditID: preflightdomain.ContentLinkProviderAuditID,
 			FinalURL:        finalURL,
 			LinkURL:         linkURL,
 			LinkText:        strings.TrimSpace(anchor.Text),
@@ -481,7 +499,7 @@ func (s *PreflightContentLinkService) detectContentLinks(
 			SourceID:        source.SourceID,
 			SourceKey:       source.SourceKey,
 			SourceField:     source.SourceField,
-			IssueKey:        contentLinkIssueKey(targetURL, linkURL, match.Normalized, anchor.Selector),
+			IssueKey:        contentLinkIssueKey(preflightdomain.ContentLinkRuleID, targetURL, linkURL, match.Normalized, anchor.Selector),
 			Severity:        "medium",
 			SuggestedText:   suggestedText,
 			FixStatus:       source.FixStatus,
@@ -760,6 +778,8 @@ func collectContentLinkAnchors(root *html.Node) []contentLinkAnchor {
 				anchors = append(anchors, contentLinkAnchor{
 					Href:     href,
 					Text:     collapseWhitespace(textContent(node)),
+					Rel:      htmlNodeAttr(node, "rel"),
+					TextLang: htmlNodeAttr(node, "lang"),
 					Selector: htmlNodeSelector(node),
 					Snippet:  truncateContentLinkText(renderHTMLNode(node), 260),
 					Heading:  currentHeading,
@@ -774,32 +794,23 @@ func collectContentLinkAnchors(root *html.Node) []contentLinkAnchor {
 	return anchors
 }
 
-func matchGenericContentLinkText(value string) (contentLinkTextMatch, bool) {
-	normalized := normalizeContentLinkText(value)
+func matchGenericContentLinkText(value string, textLang string) (contentLinkTextMatch, bool) {
+	normalized := normalizeOfficialLinkText(value)
 	if normalized == "" {
 		return contentLinkTextMatch{}, false
 	}
-	generic := map[string]contentLinkTextMatch{
-		"read more":    {Normalized: normalized, Language: "en", Kind: "read"},
-		"learn more":   {Normalized: normalized, Language: "en", Kind: "learn"},
-		"click here":   {Normalized: normalized, Language: "en", Kind: "view"},
-		"here":         {Normalized: normalized, Language: "en", Kind: "view"},
-		"more":         {Normalized: normalized, Language: "en", Kind: "read"},
-		"view more":    {Normalized: normalized, Language: "en", Kind: "view"},
-		"see more":     {Normalized: normalized, Language: "en", Kind: "view"},
-		"details":      {Normalized: normalized, Language: "en", Kind: "view"},
-		"open article": {Normalized: normalized, Language: "en", Kind: "view"},
-		"了解更多":         {Normalized: normalized, Language: "zh", Kind: "learn"},
-		"查看更多":         {Normalized: normalized, Language: "zh", Kind: "view"},
-		"点击这里":         {Normalized: normalized, Language: "zh", Kind: "view"},
-		"更多":           {Normalized: normalized, Language: "zh", Kind: "read"},
-		"阅读全文":         {Normalized: normalized, Language: "zh", Kind: "read"},
-	}
-	match, ok := generic[normalized]
-	if !ok {
+	if !officialLinkTextMatches(value, textLang) {
 		return contentLinkTextMatch{}, false
 	}
-	return match, true
+	language := strings.ToLower(strings.TrimSpace(textLang))
+	if language != "" {
+		language = strings.Split(language, "-")[0]
+	}
+	return contentLinkTextMatch{
+		Normalized: normalized,
+		Language:   language,
+		Kind:       officialLinkTextKind(value),
+	}, true
 }
 
 func contentLinkHrefInspectable(value string) bool {
@@ -817,6 +828,25 @@ func contentLinkHrefInspectable(value string) bool {
 	default:
 		return false
 	}
+}
+
+func contentLinkAnchorInspectable(anchor contentLinkAnchor, linkURL string, finalURL string) bool {
+	if !contentLinkHrefInspectable(anchor.Href) {
+		return false
+	}
+	if strings.ContainsFunc(anchor.Rel, func(r rune) bool { return unicode.IsSpace(r) }) {
+		for _, token := range strings.Fields(anchor.Rel) {
+			if strings.EqualFold(token, "nofollow") {
+				return false
+			}
+		}
+	} else if strings.EqualFold(strings.TrimSpace(anchor.Rel), "nofollow") {
+		return false
+	}
+	if sameContentLinkDestinationIgnoringFragment(linkURL, finalURL) {
+		return false
+	}
+	return true
 }
 
 func normalizeContentLinkText(value string) string {
@@ -955,6 +985,26 @@ func normalizedContentLinkDestination(raw string, baseURL string) string {
 	return parsed.String()
 }
 
+func sameContentLinkDestinationIgnoringFragment(left string, right string) bool {
+	leftURL, leftErr := url.Parse(strings.TrimSpace(left))
+	rightURL, rightErr := url.Parse(strings.TrimSpace(right))
+	if leftErr != nil || rightErr != nil || leftURL == nil || rightURL == nil {
+		return false
+	}
+	leftURL.Fragment = ""
+	rightURL.Fragment = ""
+	if leftURL.Path == "" {
+		leftURL.Path = "/"
+	}
+	if rightURL.Path == "" {
+		rightURL.Path = "/"
+	}
+	return strings.EqualFold(leftURL.Scheme, rightURL.Scheme) &&
+		strings.EqualFold(leftURL.Host, rightURL.Host) &&
+		leftURL.Path == rightURL.Path &&
+		leftURL.RawQuery == rightURL.RawQuery
+}
+
 func resolvedLinkURL(href string, finalURL string, targetURL string) string {
 	baseRaw := strings.TrimSpace(finalURL)
 	if baseRaw == "" {
@@ -976,14 +1026,14 @@ func resolvedLinkURL(href string, finalURL string, targetURL string) string {
 	return resolved.String()
 }
 
-func contentLinkIssueKey(targetURL string, linkURL string, normalizedText string, selector string) string {
+func contentLinkIssueKey(ruleID string, targetURL string, linkURL string, normalizedText string, selector string) string {
 	hash := sha256.Sum256([]byte(strings.Join([]string{
 		strings.TrimSpace(targetURL),
 		strings.TrimSpace(linkURL),
 		strings.TrimSpace(normalizedText),
 		strings.TrimSpace(selector),
 	}, "\x00")))
-	return "content-link:" + hex.EncodeToString(hash[:])[:32]
+	return "content-link:" + strings.TrimSpace(ruleID) + ":" + hex.EncodeToString(hash[:])[:32]
 }
 
 func encodeContentLinkEvidence(evidence contentLinkEvidence) string {

@@ -6,26 +6,24 @@
 		<div
 			class="site-header-surface relative w-full rounded-none px-4 py-2 md:px-0 md:py-0"
 		>
-			<!-- 桌面端：全宽单层横向导航 -->
-			<div class="hidden md:flex flex-col items-stretch">
-				<div class="site-header-mainbar desktop-header-grid w-full grid grid-cols-[220px_1fr_220px] xl:grid-cols-[280px_1fr_280px] items-center gap-4 px-4 lg:px-8 py-0 min-h-[64px] bg-[linear-gradient(180deg,#1b1b21_0%,#111116_58%,#0c0c10_100%)] shadow-[0_10px_26px_-14px_rgba(0,0,0,0.95)]">
+			<!-- 桌面端：全宽单层横向导航（1280px+） -->
+			<div class="hidden xl:flex flex-col items-stretch">
+				<div class="site-header-mainbar desktop-header-grid w-full grid grid-cols-[220px_1fr_220px] xl:grid-cols-[280px_1fr_280px] items-center gap-4 px-4 lg:px-8 py-0 min-h-[64px]">
 
 					<!-- Logo -->
 					<div class="flex items-center justify-start">
-						<NuxtLink :to="localePath('/')" class="site-header-brand site-header-brand--desktop" :class="{ 'site-header-brand--image': siteLogo }" :aria-label="brandHomeLabel">
+						<NuxtLink v-if="hasSiteLogo" :to="localePath('/')" class="site-header-brand site-header-brand--desktop site-header-brand--image" :aria-label="brandHomeLabel">
+							<!-- Original asset dimensions are metadata; the header uses a fixed display box. -->
 							<StorefrontImage
-								v-if="siteLogo"
+								v-if="hasSiteLogo"
 								:src="siteLogo"
-								:alt="brandLogoAlt"
-								:width="siteLogoWidth"
-								:height="siteLogoHeight"
+								alt=""
 								class="site-header-brand__image"
 								preset="logo"
-								:optimize="false"
 								loading="eager"
 								decoding="async"
+								@error="handleSiteLogoError"
 							/>
-							<span v-else class="site-header-brand__text">{{ titleText }}</span>
 						</NuxtLink>
 					</div>
 
@@ -52,7 +50,7 @@
 							<Icon
 								name="lucide:chevron-down"
 								class="site-header-menu-laser__icon"
-								:class="{ 'rotate-180 text-[#B5FF6D]': activeMegaNavId === section.id }"
+								:class="{ 'rotate-180 text-[#059669]': activeMegaNavId === section.id }"
 							/>
 						</button>
 
@@ -85,7 +83,7 @@
 						<!-- Language -->
 						<div class="site-header-action-cell site-header-language-wrapper relative" data-lang-wrapper>
 							<button
-								class="site-header-action-button site-header-language-trigger tz-text-secondary hover:text-white transition-colors"
+								class="site-header-action-button site-header-language-trigger tz-text-secondary transition-colors"
 								@click.stop="toggleDropdown"
 								@keydown="onButtonKeydown"
 								:id="buttonId"
@@ -113,7 +111,7 @@
 										class="language-dropdown-layer fixed z-[1200] flex items-stretch justify-center md:inset-0 md:items-start md:pt-[calc(var(--site-header-overlay-offset,80px)+18px)]"
 									>
 										<div
-											class="language-dropdown-surface tz-mobile-dialog-surface relative w-full md:w-[88vw] md:max-w-[1500px] backdrop-blur-xl border border-white/15 rounded-2xl overflow-auto h-[90vh] max-h-[90vh] md:h-auto md:max-h-[70vh] py-3 md:py-3.5 shadow-[0_18px_56px_rgba(255,255,255,0.10),0_28px_80px_rgba(0,0,0,0.55)] grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-1.5 justify-items-center"
+											class="language-dropdown-surface tz-mobile-dialog-surface relative w-full md:w-[88vw] md:max-w-[1500px] backdrop-blur-xl border tz-border-subtle rounded-2xl overflow-auto h-[90vh] max-h-[90vh] md:h-auto md:max-h-[70vh] py-3 md:py-3.5 shadow-md grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-1.5 justify-items-center"
 											role="listbox"
 											:id="dropdownId"
 											:aria-labelledby="buttonId"
@@ -123,8 +121,8 @@
 											<button
 												v-for="(locale, index) in availableLocales"
 												:key="locale.code"
-												class="w-full py-2.5 px-3 bg-transparent border-none text-white text-sm text-center cursor-pointer transition-all duration-200 inline-flex items-center justify-center gap-2 hover:bg-white/10"
-												:class="{ 'bg-white/10 font-medium': locale.code === currentLocale.code }"
+												class="w-full py-2.5 px-3 bg-transparent border-none tz-text-primary text-sm text-center cursor-pointer transition-all duration-200 inline-flex items-center justify-center gap-2 hover:tz-surface-subtle"
+												:class="{ 'tz-surface-subtle font-medium': locale.code === currentLocale.code }"
 												role="option"
 												:aria-selected="locale.code === currentLocale.code"
 												:tabindex="-1"
@@ -156,11 +154,11 @@
 
 				<!-- 面包屑：点击当前层级箭头弹出该层级的同级路由 -->
 				<nav
-					v-if="breadcrumbs.length"
+					v-if="breadcrumbs.length && !isStorefrontCatalogDetailBreadcrumbRoute"
 					aria-label="Breadcrumb"
 					class="site-header-breadcrumb-row"
 				>
-					<ol class="site-header-breadcrumb-list flex items-center gap-1.5 text-sm tz-text-muted leading-tight transition-colors hover:text-slate-300">
+					<ol class="site-header-breadcrumb-list flex items-center gap-1.5 text-sm tz-text-secondary leading-tight transition-colors">
 						<li
 							v-for="(crumb, index) in breadcrumbs"
 							:key="crumb.id"
@@ -210,53 +208,67 @@
 							<NuxtLink
 								v-else-if="crumb.id === 'home'"
 								:to="crumb.to || localePath('/')"
-								class="tz-text-secondary hover:text-white transition-colors inline-flex items-center justify-center"
+								class="tz-text-secondary transition-colors inline-flex items-center justify-center"
 								:aria-label="crumb.label"
 								:title="crumb.label"
 							>
-								<Icon name="lucide:house" class="h-4 w-4" aria-hidden="true" />
+								<Icon name="lucide:house" class="h-4 w-4 text-[var(--tz-site-accent)]" aria-hidden="true" />
 							</NuxtLink>
 							<NuxtLink
 								v-else-if="crumb.to && index < breadcrumbs.length - 1"
 								:to="crumb.to"
-								class="tz-text-secondary hover:text-white transition-colors"
+								class="tz-text-secondary transition-colors"
 							>
 								{{ crumb.label }}
 							</NuxtLink>
 							<span v-else class="tz-text-secondary font-medium">
 								{{ crumb.label }}
 							</span>
-							<span v-if="index < breadcrumbs.length - 1" class="site-header-breadcrumb-separator tz-text-disabled">/</span>
+							<span v-if="index < breadcrumbs.length - 1" class="site-header-breadcrumb-separator tz-text-muted">/</span>
 						</li>
 					</ol>
 				</nav>
 			</div>
 
-			<!-- 移动端：品牌工具栏、主导航、面包屑三行独立布局 -->
-			<div class="md:hidden flex flex-col gap-0">
+			<!-- 移动端和平板：品牌工具栏、主导航、面包屑三行独立布局 -->
+			<div class="xl:hidden flex flex-col gap-0">
 				<div class="site-header-mobile-surface -mx-4 -mt-2 flex flex-col px-4 pt-2 pb-0">
 
-				<!-- 第一行：三等分预留区、居中 Logo、右侧工具图标区 -->
+				<!-- 第一行：左侧 Shop 图标、居中 Logo、右侧工具图标区 -->
 				<div ref="mobileTopbarRef" class="site-header-mobile-topbar grid grid-cols-3 items-center px-1">
-					<div aria-hidden="true"></div>
+					<div class="site-header-mobile-shop-slot flex items-center justify-start">
+						<button
+							v-if="mobileShopSection"
+							type="button"
+							class="site-header-mobile-shop-trigger"
+							:class="{ 'site-header-mobile-shop-trigger--active': currentMegaNavId === mobileShopSection.id }"
+							:aria-controls="megaPanelId"
+							:aria-expanded="activeMegaNavId === mobileShopSection.id"
+							aria-haspopup="dialog"
+							:aria-label="mobileShopLabel"
+							:title="mobileShopLabel"
+							@click.prevent.stop="toggleMegaNav(mobileShopSection.id)"
+						>
+							<Icon name="lucide:shopping-bag" class="h-5 w-5" aria-hidden="true" />
+						</button>
+					</div>
 
 					<div class="site-header-mobile-brand-slot flex min-w-0 items-center justify-center">
-						<NuxtLink :to="localePath('/')" class="site-header-brand site-header-brand--mobile" :class="{ 'site-header-brand--image': siteLogo }" :aria-label="brandHomeLabel">
+						<NuxtLink v-if="hasSiteLogo" :to="localePath('/')" class="site-header-brand site-header-brand--mobile site-header-brand--image" :aria-label="brandHomeLabel">
 							<StorefrontImage
-								v-if="siteLogo"
+								v-if="hasSiteLogo"
 								:src="siteLogo"
-								:alt="brandLogoAlt"
+								alt=""
 								width="48"
 								height="48"
 								class="site-header-brand__image"
 								preset="logo"
 								sizes="48px"
-								densities="1x"
-								:optimize="false"
+								densities="1x 2x"
 								loading="eager"
 								decoding="async"
+								@error="handleSiteLogoError"
 							/>
-							<span v-else class="site-header-brand__text">{{ titleText }}</span>
 						</NuxtLink>
 					</div>
 
@@ -277,7 +289,7 @@
 						<!-- Language Switcher (Text + Icon) -->
 						<div class="site-header-action-cell site-header-language-wrapper relative" data-lang-wrapper>
 							<button
-								class="site-header-action-button site-header-language-trigger tz-text-secondary hover:text-white transition-colors"
+								class="site-header-action-button site-header-language-trigger tz-text-secondary transition-colors"
 								@click.stop="toggleDropdown"
 								@keydown="onButtonKeydown"
 								:id="buttonId"
@@ -289,7 +301,7 @@
 										<img :src="currentLocaleFlagSrc" alt="" width="20" height="20" class="block h-5 w-5" />
 								</span>
 								<Icon v-else name="lucide:languages" class="h-5 w-5" aria-hidden="true" />
-								<span class="text-[13px] font-bold uppercase leading-none">{{ currentLocaleLabel }}</span>
+								<span class="site-header-language-label--mobile text-[13px] font-bold uppercase leading-none">{{ currentLocaleLabel }}</span>
 							</button>
 						</div>
 
@@ -298,14 +310,14 @@
 
 				</div>
 
-				<!-- 第二行：四个大类独立于品牌工具栏，保持固定可控的行高。 -->
+				<!-- 第二行：其余四个大类独立于品牌工具栏，保持固定可控的行高。 -->
 				<div class="site-header-mobile-nav-row -mx-4 px-0">
-					<nav ref="mobilePrimaryNavRef" class="site-header-mobile-nav w-full rounded-none px-0 py-0 grid grid-cols-4 gap-0 relative shadow-[0_8px_18px_-14px_rgba(0,0,0,0.9)]" aria-label="Mobile primary navigation">
+					<nav ref="mobilePrimaryNavRef" class="site-header-mobile-nav w-full rounded-none px-0 py-0 grid grid-cols-4 gap-0 relative shadow-md" aria-label="Mobile primary navigation">
 					<button
-						v-for="section in primaryMegaNavSections"
+						v-for="section in mobileSecondaryNavSections"
 						:key="section.id"
 						type="button"
-						class="site-header-mobile-nav__button min-w-0 w-full py-2 px-0.5 rounded-none text-[13px] font-semibold uppercase leading-none text-center text-white transition-all inline-flex items-center justify-center gap-1"
+						class="site-header-mobile-nav__button min-w-0 w-full py-2 px-0.5 rounded-none text-[13px] font-semibold uppercase leading-none text-center tz-text-primary transition-all inline-flex items-center justify-center gap-1"
 						:class="{ 'site-header-mobile-nav__button--active': currentMegaNavId === section.id }"
 						:aria-controls="megaPanelId"
 						:aria-expanded="activeMegaNavId === section.id"
@@ -316,7 +328,7 @@
 						<Icon
 							name="lucide:chevron-down"
 							class="h-3.5 w-3.5 shrink-0 transition-transform duration-200"
-							:class="{ 'rotate-180 text-[#B5FF6D]': activeMegaNavId === section.id }"
+							:class="{ 'rotate-180 text-[#059669]': activeMegaNavId === section.id }"
 						/>
 					</button>
 					</nav>
@@ -324,11 +336,11 @@
 
 				<!-- 第三行：面包屑 -->
 				<nav
-					v-if="breadcrumbs.length"
+					v-if="breadcrumbs.length && !isStorefrontCatalogDetailBreadcrumbRoute"
 					aria-label="Breadcrumb"
 					class="site-header-breadcrumb-row site-header-breadcrumb-row--mobile"
 				>
-					<ol class="site-header-breadcrumb-list flex items-center gap-1.5 text-sm tz-text-muted leading-tight">
+					<ol class="site-header-breadcrumb-list flex items-center gap-1.5 text-sm tz-text-secondary leading-tight">
 						<li
 							v-for="(crumb, index) in breadcrumbs"
 							:key="crumb.id"
@@ -378,23 +390,23 @@
 							<NuxtLink
 								v-else-if="crumb.id === 'home'"
 								:to="crumb.to || localePath('/')"
-								class="tz-text-secondary hover:text-white transition-colors inline-flex items-center justify-center"
+								class="tz-text-secondary transition-colors inline-flex items-center justify-center"
 								:aria-label="crumb.label"
 								:title="crumb.label"
 							>
-								<Icon name="lucide:house" class="h-4 w-4" aria-hidden="true" />
+								<Icon name="lucide:house" class="h-4 w-4 text-[var(--tz-site-accent)]" aria-hidden="true" />
 							</NuxtLink>
 							<NuxtLink
 								v-else-if="crumb.to && index < breadcrumbs.length - 1"
 								:to="crumb.to"
-								class="tz-text-secondary hover:text-white transition-colors truncate max-w-[100px]"
+								class="tz-text-secondary transition-colors truncate max-w-[100px]"
 							>
 								{{ crumb.label }}
 							</NuxtLink>
 							<span v-else class="tz-text-secondary font-medium truncate max-w-[120px]">
 								{{ crumb.label }}
 							</span>
-							<span v-if="index < breadcrumbs.length - 1" class="site-header-breadcrumb-separator tz-text-disabled">/</span>
+							<span v-if="index < breadcrumbs.length - 1" class="site-header-breadcrumb-separator tz-text-muted">/</span>
 						</li>
 					</ol>
 				</nav>
@@ -428,7 +440,7 @@
 				>
 					<!-- 不透明背景遮罩 -->
 					<div
-						class="absolute inset-0 bg-black/80 backdrop-blur-sm pointer-events-auto"
+						class="absolute inset-0 bg-slate-900/20 backdrop-blur-sm pointer-events-auto"
 						@click="closeShare"
 					></div>
 					<!-- 弹窗内容：自下而上的 slide-up 动画，与其它弹窗保持一致 -->
@@ -456,7 +468,6 @@ import { ref, computed, onMounted, onBeforeUnmount, nextTick, unref, watch, type
 import { useThrottleFn } from '@vueuse/core'
 import { useI18n, useLocalePath, useRoute, useRouter, useState } from '#imports'
 import { useSiteSettings } from '~/composables/usePublicSettings'
-import { useSiteTitle } from '~/composables/useSiteTitle'
 import { useOverlayBackStack } from '~/composables/useOverlayBackStack'
 import GlobalContentNavigationTransitionOverlay from '~/components/GlobalContentNavigationTransitionOverlay.vue'
 import GlobalAllFaqsSearchOverlay from '~/components/faq/GlobalAllFaqsSearchOverlay.vue'
@@ -477,15 +488,20 @@ import {
 } from '~/utils/pageSubNavigation'
 import localeManifest from '~/i18n/locales.manifest'
 
-// Header brand title is controlled only by the public site settings API.
+// Header brand logo is controlled only by the public site settings API.
 const { siteSettings } = useSiteSettings()
-const { brandTitle } = useSiteTitle()
-const titleText = computed(() => brandTitle.value)
 const siteLogo = computed(() => (siteSettings.value.siteLogo || '').toString().trim())
-const siteLogoWidth = computed(() => siteSettings.value.siteLogoWidth || undefined)
-const siteLogoHeight = computed(() => siteSettings.value.siteLogoHeight || undefined)
-const brandLogoAlt = computed(() => `${titleText.value || 'Site'} logo`)
-const brandHomeLabel = computed(() => titleText.value ? `${titleText.value} home` : 'Home')
+const siteLogoFailed = ref(false)
+const hasSiteLogo = computed(() => Boolean(siteLogo.value && !siteLogoFailed.value))
+const brandHomeLabel = computed(() => 'Home')
+
+const handleSiteLogoError = () => {
+	siteLogoFailed.value = true
+}
+
+watch(siteLogo, () => {
+	siteLogoFailed.value = false
+})
 
 const headerRootRef = ref<HTMLElement | null>(null)
 const mobileTopbarRef = ref<HTMLElement | null>(null)
@@ -499,6 +515,8 @@ const appliedHeaderMetrics = new Map<string, string>()
 
 const megaPanelId = 'header-primary-mega-menu'
 const activeMegaNavId = ref<PrimaryMegaNavId | null>(null)
+const mobileShopSection = primaryMegaNavSections.find((section) => section.id === 'products') || null
+const mobileSecondaryNavSections = primaryMegaNavSections.filter((section) => section.id !== 'products')
 const activeBreadcrumbSubNavId = ref<string | null>(null)
 const breadcrumbSubNavMobileTop = ref('8.5rem')
 const contentNavigationTransitionOpen = ref(false)
@@ -527,6 +545,12 @@ const activeMegaNavSection = computed<PrimaryMegaNavSection | null>(() => {
   if (!activeMegaNavId.value) return null
   return primaryMegaNavSections.find(section => section.id === activeMegaNavId.value) || null
 })
+
+const mobileShopLabel = computed(() => (
+  mobileShopSection
+    ? t(mobileShopSection.labelKey, mobileShopSection.labelFallback) as string
+    : 'Shop'
+))
 
 const openMegaNav = (id: PrimaryMegaNavId) => {
   scheduleHeaderOffsetUpdate()
@@ -559,7 +583,7 @@ const updateHeaderOffset = () => {
   const mobileNavRect = mobilePrimaryNavRef.value?.getBoundingClientRect()
   const mobileMegaTop = Math.max(0, Math.ceil((mobileNavRect?.bottom ?? rect.bottom) + 2))
 
-  isMobileViewport.value = window.innerWidth < 768
+  isMobileViewport.value = window.innerWidth < 1280
 
   const metrics = [
     // Overlay geometry may be measured after mount; document-flow spacers must not use it.
@@ -750,7 +774,7 @@ const routePathFromTo = (to: string) => {
 }
 
 const cardDisplayLabel = (card: PrimaryMegaNavCard) => {
-  return card.title || (t(card.labelKey, card.labelFallback) as string)
+  return card.title || card.labelFallback
 }
 
 const localizedNavTarget = (to: string) => {
@@ -811,20 +835,21 @@ interface BreadcrumbRouteLevelGroup {
 }
 
 const breadcrumbLabelDefinitions: Record<string, BreadcrumbLabelDefinition> = {
-  '/blog': { labelKey: 'breadcrumbs.blog', fallback: 'Blog' },
-  '/blog/news': { labelKey: 'blog.nav.news', fallback: 'News' },
-  '/blog/wheelsbuild': { labelKey: 'blog.nav.wheelsbuild', fallback: 'Wheelbuild' },
+  '/resources': { labelKey: 'footer.menus.resources', fallback: 'Resources' },
+  '/resources/blog': { labelKey: 'breadcrumbs.blog', fallback: 'Blog' },
+  '/resources/blog/news': { labelKey: 'blog.nav.news', fallback: 'News' },
+  '/resources/blog/wheelsbuild': { labelKey: 'blog.nav.wheelsbuild', fallback: 'Wheelbuild' },
   '/company': { labelKey: 'footer.menus.company', fallback: 'Company' },
   '/guides': { labelKey: 'breadcrumbs.guides', fallback: 'Guides' },
-  '/membershipandpoints': { labelKey: 'company.nav.membershipPoints', fallback: 'Membership & Points' },
-  '/picture-warehouse': { labelKey: 'company.nav.pictureWarehouse', fallback: 'Picture Warehouse' },
+  '/resources/membershipandpoints': { labelKey: 'company.nav.membershipPoints', fallback: 'Membership & Points' },
+  '/resources/picture-warehouse': { labelKey: 'company.nav.pictureWarehouse', fallback: 'Picture Warehouse' },
   '/policies': { labelKey: 'footer.menus.policies', fallback: 'Policies' },
   '/policies/cookie': { fallback: 'Cookie Policy' },
   '/policies/privacy': { fallback: 'Privacy Policy' },
   '/policies/refund-return': { fallback: 'Refund & Return Policy' },
   '/policies/terms': { fallback: 'Terms of Service' },
   '/shop': { labelKey: 'products.nav.shop', fallback: 'Shop' },
-  '/spoke-calculator': { labelKey: 'support.nav.spokeCalculator', fallback: 'Spoke Calculator' },
+  '/resources/spoke-calculator': { labelKey: 'support.nav.spokeCalculator', fallback: 'Spoke Calculator' },
   '/support': { labelKey: 'footer.menus.support', fallback: 'Support' },
 }
 
@@ -910,13 +935,24 @@ const fallbackBreadcrumbRouteFamilyLabel = (segment: string) => {
 }
 
 const resolveBreadcrumbLabelDefinition = (definition: BreadcrumbLabelDefinition) => {
-  return definition.labelKey
-    ? t(definition.labelKey, definition.fallback) as string
-    : definition.fallback
+  return definition.fallback
 }
 
 const getBreadcrumbMetaLabel = (meta: Record<string, unknown> | undefined) => {
   if (!meta) return ''
+
+  const labelKey =
+    meta.breadcrumbLabelKey ||
+    meta.navLabelKey ||
+    meta.footerLabelKey
+  const labelFallback =
+    meta.breadcrumbLabelFallback ||
+    meta.navLabelFallback ||
+    meta.footerLabelFallback
+
+  if (typeof labelKey === 'string') {
+    return typeof labelFallback === 'string' ? labelFallback.trim() : ''
+  }
 
   const rawLabel =
     meta.breadcrumb ||
@@ -927,10 +963,9 @@ const getBreadcrumbMetaLabel = (meta: Record<string, unknown> | undefined) => {
 
   if (typeof rawLabel === 'string') return rawLabel.trim()
   if (rawLabel && typeof rawLabel === 'object') {
-    const localized = (rawLabel as Record<string, unknown>)[String(locale.value || '')]
-    const fallback = (rawLabel as Record<string, unknown>).default
-    if (typeof localized === 'string') return localized.trim()
-    if (typeof fallback === 'string') return fallback.trim()
+    const labels = rawLabel as Record<string, unknown>
+    const english = labels.en || labels['en-US'] || labels.default
+    if (typeof english === 'string') return english.trim()
   }
 
   return ''
@@ -1058,7 +1093,17 @@ const getBreadcrumbKnownLabel = (path: string) => {
 }
 
 const getBreadcrumbRouteFamilyLabel = (segment: string) => {
-  return getBreadcrumbKnownLabel(`/${segment}`) || fallbackBreadcrumbRouteFamilyLabel(segment)
+  const path = `/${segment}`
+  const routeCandidate = getStaticBreadcrumbRouteCandidateForPath(path)
+  const routeMetaLabel = getBreadcrumbMetaLabel(
+    routeCandidate?.routeRecord.meta as Record<string, unknown> | undefined
+  )
+
+  return (
+    getBreadcrumbKnownLabel(path) ||
+    routeMetaLabel ||
+    fallbackBreadcrumbRouteFamilyLabel(segment)
+  )
 }
 
 const getBreadcrumbRouteLabel = (path: string, segment: string) => {
@@ -1223,7 +1268,6 @@ const getRouteFamilyBreadcrumbSubNavigation = (
 }
 
 const pageSubNavigationTabLabel = (tab: PageSubNavigationTab) => {
-  if (tab.labelKey) return t(tab.labelKey, tab.fallback || tab.label || tab.id) as string
   return tab.label || tab.fallback || fallbackBreadcrumbRouteFamilyLabel(tab.id)
 }
 
@@ -1304,7 +1348,7 @@ const getBreadcrumbSiblingSubNavigation = (
 const breadcrumbs = computed<BreadcrumbItem[]>(() => {
   const items: BreadcrumbItem[] = [{
     id: 'home',
-    label: t('breadcrumbs.home', 'Home') as string,
+    label: 'Home',
     to: localePath('/'),
   }]
 
@@ -1327,6 +1371,14 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => {
   })
 
   return items
+})
+
+const isStorefrontCatalogDetailBreadcrumbRoute = computed(() => {
+  const segments = getBreadcrumbPathSegments(route.path || '/')
+  if (segments[0] === 'products') {
+    return segments.length === 2
+  }
+  return segments[0] === 'shop' && segments.length >= 2
 })
 
 const lastExpandableBreadcrumbId = computed(() => {
@@ -1665,24 +1717,8 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 }
 
 .site-header-brand:focus-visible {
-	outline: 2px solid rgba(181, 255, 109, 0.68);
+	outline: 2px solid rgba(5, 150, 105, 0.68);
 	outline-offset: 4px;
-}
-
-.site-header-brand__text {
-	margin: 0;
-	max-width: 100%;
-	overflow: hidden;
-	background-image: linear-gradient(90deg, #ffffff, #e5e7eb, #94a3b8);
-	background-clip: text;
-	-webkit-background-clip: text;
-	color: transparent;
-	font-weight: 900;
-	letter-spacing: 0;
-	line-height: 1;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-	filter: drop-shadow(0 2px 8px rgba(226, 232, 240, 0.22));
 }
 
 .site-header-brand__image {
@@ -1692,17 +1728,20 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 }
 
 .site-header-brand--desktop {
+	width: 17.5rem;
+	height: 3.4rem;
 	max-width: 17.5rem;
 	--tz-image-loading-surface: transparent;
 }
 
-.site-header-brand--desktop .site-header-brand__text {
-	font-size: 1.875rem;
-}
-
 .site-header-brand--desktop .site-header-brand__image {
-	max-height: 3.4rem;
+	width: 100%;
+	height: 100%;
+	max-width: 100%;
+	max-height: 100%;
 	background: transparent !important;
+	object-fit: contain;
+	object-position: left center;
 }
 
 .site-header-brand--mobile {
@@ -1711,21 +1750,11 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 	justify-content: center;
 }
 
-.site-header-brand--mobile .site-header-brand__text {
-	font-size: 1.625rem;
-}
-
 .site-header-brand--mobile .site-header-brand__image {
 	max-height: 2.9rem;
 }
 
-@media (min-width: 390px) and (max-width: 767px) {
-	.site-header-brand--mobile .site-header-brand__text {
-		font-size: 2rem;
-	}
-}
-
-@media (min-width: 768px) {
+@media (min-width: 1280px) {
 	.site-header-root {
 		width: 100%;
 		max-width: none;
@@ -1737,7 +1766,9 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 		height: var(--tz-site-header-desktop-mainbar-height);
 		min-height: var(--tz-site-header-desktop-mainbar-height);
 		box-sizing: border-box;
-		border-bottom: 0;
+    background: var(--tz-input-surface);
+		border-bottom: 1px solid rgba(20, 32, 43, 0.12);
+		box-shadow: 0 12px 28px -16px rgba(20, 32, 43, 0.26);
 	}
 
 	.desktop-header-grid {
@@ -1816,7 +1847,7 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 	overflow: visible;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 1280px) {
 	.site-header-action-cell--search {
 		flex-basis: var(--site-header-action-width);
 		width: var(--site-header-action-width);
@@ -1857,7 +1888,7 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 	border-radius: 9999px;
 	background: transparent !important;
 	background-image: none !important;
-	color: rgba(226, 232, 240, 0.94);
+	color: var(--tz-text-primary);
 	padding: 0 0.5rem !important;
 	letter-spacing: 0;
 	line-height: 1;
@@ -1876,7 +1907,7 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 	background: transparent !important;
 	background-image: none !important;
 	box-shadow: none !important;
-	color: #ffffff;
+	color: var(--tz-text-primary);
 }
 
 .site-header-action-button:focus-visible {
@@ -1889,7 +1920,7 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 	background: transparent !important;
 	background-image: none !important;
 	box-shadow: none !important;
-	color: rgba(255, 255, 255, 0.88);
+	color: var(--tz-text-secondary);
 	padding-inline: 0.42rem !important;
 }
 
@@ -1900,7 +1931,7 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 	background: transparent !important;
 	background-image: none !important;
 	box-shadow: none !important;
-	color: #ffffff;
+	color: var(--tz-text-primary);
 }
 
 .site-header-language-trigger > span:first-child {
@@ -1934,7 +1965,7 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 	background: transparent !important;
 	background-image: none !important;
 	box-shadow: none !important;
-	color: #B5FF6D;
+	color: #059669;
 }
 
 .site-header-membership-trigger svg {
@@ -1950,7 +1981,7 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 	background: transparent !important;
 	background-image: none !important;
 	box-shadow: none !important;
-	color: #B5FF6D;
+	color: var(--tz-text-primary);
 	padding: 0 !important;
 	font-size: 0.82rem;
 	font-weight: 720;
@@ -1962,7 +1993,7 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 	background: transparent !important;
 	background-image: none !important;
 	box-shadow: none !important;
-	color: #ffffff;
+	color: var(--tz-text-primary);
 }
 
 .site-header-search-trigger__icon {
@@ -2012,10 +2043,10 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 	transform: translate(-50%, -0.2rem);
 	gap: 0.25rem;
 	padding: 0.72rem 0.86rem;
-	border: 1px solid rgba(181, 255, 109, 0.22);
+	border: 1px solid rgba(20, 32, 43, 0.14);
 	border-radius: 10px;
-	background: rgba(0, 0, 0, 0.94);
-	box-shadow: 0 12px 34px rgba(0, 0, 0, 0.45);
+	background: #ffffff;
+	box-shadow: 0 12px 34px rgba(20, 32, 43, 0.16);
 	opacity: 0;
 	pointer-events: none;
 	transition: opacity 0.18s ease, transform 0.18s ease;
@@ -2030,13 +2061,13 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 	width: 9px;
 	height: 9px;
 	transform: translateX(-50%) rotate(45deg);
-	border-top: 1px solid rgba(181, 255, 109, 0.22);
-	border-left: 1px solid rgba(181, 255, 109, 0.22);
-	background: rgba(0, 0, 0, 0.94);
+	border-top: 1px solid rgba(20, 32, 43, 0.14);
+	border-left: 1px solid rgba(20, 32, 43, 0.14);
+	background: #ffffff;
 }
 
 .site-header-search-hint__title {
-	color: #B5FF6D;
+	color: var(--tz-text-primary);
 	font-size: 0.78rem;
 	font-weight: 720;
 	line-height: 1.25;
@@ -2044,7 +2075,7 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 }
 
 .site-header-search-hint__body {
-	color: rgba(226, 232, 240, 0.84);
+	color: var(--tz-text-secondary);
 	font-size: 0.72rem;
 	font-weight: 500;
 	line-height: 1.35;
@@ -2065,21 +2096,24 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 
 .site-header-actions--mobile {
 	--site-header-action-height: 2.25rem;
-	display: grid;
+	display: flex;
 	width: 100%;
 	max-width: 100%;
-	grid-auto-flow: column;
-	grid-auto-columns: minmax(0, 1fr);
-	justify-content: end;
+	align-items: center;
+	justify-content: flex-end;
 	margin-left: 0;
-	gap: 0.25rem !important;
+	gap: 0.625rem !important;
 }
 
 .site-header-actions--mobile .site-header-action-cell,
 .site-header-actions--mobile .site-header-language-wrapper {
-	width: 100%;
+	width: auto;
 	min-width: 0;
-	flex: 1 1 0;
+	flex: 0 0 auto;
+}
+
+.site-header-actions--mobile .site-header-search-trigger--mobile {
+	width: var(--site-header-action-height);
 }
 
 @keyframes site-header-search-nudge {
@@ -2134,7 +2168,7 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 	border-radius: 9999px;
 	background: transparent;
 	padding: 0.5rem 0.75rem 0.75rem;
-	color: rgb(203 213 225 / 0.88);
+	color: var(--tz-text-primary);
 	font-size: 1.125rem;
 	font-weight: 800;
 	letter-spacing: 0;
@@ -2151,8 +2185,8 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 	content: '';
 	transform: translateX(-50%);
 	border-radius: 9999px;
-	background: #B5FF6D;
-	box-shadow: 0 0 10px #B5FF6D;
+	background: #059669;
+	box-shadow: 0 0 10px #059669;
 	transition:
 		width 0.35s cubic-bezier(0.4, 0, 0.2, 1),
 		opacity 0.3s ease;
@@ -2181,7 +2215,7 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 .site-header-menu-laser:hover,
 .site-header-menu-laser:focus-visible,
 .site-header-menu-laser[aria-expanded='true'] {
-	color: #ffffff;
+	color: var(--tz-text-primary);
 }
 
 .site-header-menu-laser:hover::after,
@@ -2196,29 +2230,69 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 .site-header-menu-laser:focus-visible .site-header-menu-laser__text,
 .site-header-menu-laser[aria-expanded='true'] .site-header-menu-laser__text {
 	transform: scale(1.08);
-	color: #ffffff;
+	color: var(--tz-text-primary);
 }
 
 .site-header-menu-laser--active {
-	color: #B5FF6D;
+	color: #059669;
 	font-weight: 900;
 }
 
 .site-header-menu-laser--active .site-header-menu-laser__text {
-	color: #B5FF6D;
+	color: #059669;
 }
 
 .site-header-menu-laser:focus-visible {
-	outline: 1px solid rgb(181 255 109 / 0.55);
+	outline: 1px solid rgb(16 185 129 / 0.55);
 	outline-offset: 0.16rem;
+}
+
+.site-header-mobile-shop-slot {
+	min-width: 0;
+}
+
+.site-header-mobile-shop-trigger {
+	display: inline-flex;
+	width: var(--site-header-action-height, 2.25rem);
+	height: var(--site-header-action-height, 2.25rem);
+	align-items: center;
+	justify-content: center;
+	border: 0;
+	border-radius: 9999px;
+	background: transparent;
+	padding: 0;
+	color: var(--tz-text-primary);
+	cursor: pointer;
+	transition:
+		background-color 0.18s ease,
+		color 0.18s ease,
+		transform 0.18s ease;
+}
+
+.site-header-mobile-shop-trigger:hover,
+.site-header-mobile-shop-trigger:focus-visible,
+.site-header-mobile-shop-trigger[aria-expanded='true'] {
+	background: rgba(5, 150, 105, 0.1);
+	color: #059669;
+	transform: translateY(-1px);
+}
+
+.site-header-mobile-shop-trigger:focus-visible {
+	outline: 1px solid rgb(16 185 129 / 0.55);
+	outline-offset: 0.12rem;
+}
+
+.site-header-mobile-shop-trigger--active {
+	color: #059669;
 }
 
 .site-header-mobile-nav-row {
 	display: flex;
+	overflow: hidden;
 	min-height: 2.875rem;
 	align-items: stretch;
-	background: linear-gradient(180deg, #111116 0%, #0c0c10 100%);
-	border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--tz-mobile-bottom-chrome-surface);
+	border-bottom: 1px solid var(--tz-mobile-chrome-edge-border);
 }
 
 .site-header-mobile-nav__button {
@@ -2226,7 +2300,7 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 	overflow: hidden;
 	border: 1px solid transparent;
 	background: transparent;
-	color: #ffffff;
+	color: var(--tz-text-secondary);
 }
 
 .site-header-mobile-nav__button::after {
@@ -2238,8 +2312,8 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 	content: '';
 	transform: translateX(-50%);
 	border-radius: 9999px;
-	background: #B5FF6D;
-	box-shadow: 0 0 10px rgb(181 255 109 / 0.72);
+	background: #059669;
+	box-shadow: 0 0 10px rgb(16 185 129 / 0.72);
 	opacity: 0;
 	transition:
 		width 0.28s cubic-bezier(0.4, 0, 0.2, 1),
@@ -2250,11 +2324,11 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 .site-header-mobile-nav__button:focus-visible,
 .site-header-mobile-nav__button[aria-expanded='true'] {
 	background: transparent;
-	color: #ffffff;
+	color: var(--tz-text-primary);
 }
 
 .site-header-mobile-nav__button:focus-visible {
-	outline: 1px solid rgb(181 255 109 / 0.55);
+	outline: 1px solid rgb(16 185 129 / 0.55);
 	outline-offset: 0.12rem;
 }
 
@@ -2267,20 +2341,15 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 }
 
 .site-header-mobile-nav__button--active {
-	color: #B5FF6D;
+	color: #059669;
 	font-weight: 800;
 }
 
 .language-dropdown-surface {
-	background: linear-gradient(
-		135deg,
-		rgba(148, 163, 184, 0.12) 0%,
-		rgba(15, 17, 21, 0.96) 38%,
-		rgba(0, 0, 0, 0.98) 100%
-	) !important;
+	background: #ffffff !important;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 1279px) {
 	.language-dropdown-layer {
 		top: calc(var(--site-header-mobile-topbar-bottom, 3.5rem) + 1px);
 		right: 1px;
@@ -2299,8 +2368,8 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 		align-content: start;
 		padding: 0.5rem !important;
 		border-radius: 1rem !important;
-		background: rgba(12, 12, 16, 0.98) !important;
-		box-shadow: 0 18px 42px rgba(0, 0, 0, 0.54);
+		background: #ffffff !important;
+		box-shadow: 0 18px 42px rgba(20, 32, 43, 0.16);
 		pointer-events: auto;
 	}
 
@@ -2315,9 +2384,9 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 	width: 100%;
 	min-width: 0;
 	align-items: center;
-	background: #000000;
-	border-top: 1px solid rgba(255, 255, 255, 0.08);
-	border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+	background: #f7f9fa;
+	border-top: 1px solid rgba(20, 32, 43, 0.1);
+	border-bottom: 1px solid rgba(20, 32, 43, 0.1);
 	overflow: visible;
 	scrollbar-width: none;
 }
@@ -2372,11 +2441,11 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 .breadcrumb-subnav-trigger:hover,
 .breadcrumb-subnav-trigger:focus-visible,
 .breadcrumb-subnav-trigger--open {
-	color: #ffffff;
+	color: var(--tz-text-primary);
 }
 
 .breadcrumb-subnav-trigger:focus-visible {
-	outline: 1px solid rgba(181, 255, 109, 0.72);
+	outline: 1px solid rgba(5, 150, 105, 0.72);
 	outline-offset: 0.18rem;
 }
 
@@ -2394,7 +2463,7 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 	min-height: 0.82rem;
 	display: block;
 	flex: 0 0 0.82rem;
-	color: #B5FF6D;
+	color: #059669;
 	transition: transform 0.18s ease;
 }
 
@@ -2403,10 +2472,10 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 	height: 0.44rem;
 	flex: 0 0 auto;
 	border-radius: 9999px;
-	background: #B5FF6D;
+	background: #059669;
 	box-shadow:
-		0 0 0 0 rgba(181, 255, 109, 0.46),
-		0 0 10px rgba(181, 255, 109, 0.72);
+		0 0 0 0 rgba(5, 150, 105, 0.46),
+		0 0 10px rgba(5, 150, 105, 0.72);
 	animation: breadcrumb-pulse-dot 1.35s ease-in-out infinite;
 }
 
@@ -2416,16 +2485,16 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 		opacity: 0.58;
 		transform: scale(0.86);
 		box-shadow:
-			0 0 0 0 rgba(181, 255, 109, 0.42),
-			0 0 8px rgba(181, 255, 109, 0.56);
+			0 0 0 0 rgba(5, 150, 105, 0.42),
+			0 0 8px rgba(5, 150, 105, 0.56);
 	}
 
 	50% {
 		opacity: 1;
 		transform: scale(1);
 		box-shadow:
-			0 0 0 5px rgba(181, 255, 109, 0),
-			0 0 12px rgba(181, 255, 109, 0.86);
+			0 0 0 5px rgba(5, 150, 105, 0),
+			0 0 12px rgba(5, 150, 105, 0.86);
 	}
 }
 
@@ -2446,14 +2515,14 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 	transform: translateX(-50%);
 	gap: 0.25rem;
 	overflow: auto;
-	border: 1px solid rgba(255, 255, 255, 0.18);
+	border: 1px solid var(--tz-border-subtle);
 	border-radius: 0.95rem;
 	background: var(--tz-card-surface, #111116);
 	background-image: none;
 	padding: 0.42rem;
 	box-shadow:
-		0 24px 54px -22px rgba(0, 0, 0, 1),
-		inset 0 1px 0 rgba(255, 255, 255, 0.06);
+		0 24px 54px -22px rgba(20, 32, 43, 0.16),
+		inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 .breadcrumb-subnav-link {
@@ -2462,7 +2531,7 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 	justify-content: space-between;
 	border-radius: 0.72rem;
 	padding: 0.58rem 0.72rem;
-	color: rgba(226, 232, 240, 0.86);
+	color: var(--tz-text-secondary);
 	font-size: 0.78rem;
 	font-weight: 700;
 	line-height: 1.15;
@@ -2476,21 +2545,21 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 
 .breadcrumb-subnav-link:hover,
 .breadcrumb-subnav-link:focus-visible {
-	background: rgba(255, 255, 255, 0.08);
-	color: #ffffff;
+	background: rgba(20, 32, 43, 0.05);
+	color: var(--tz-text-primary);
 	transform: translateY(-1px);
 }
 
 .breadcrumb-subnav-link:focus-visible {
-	outline: 1px solid rgba(181, 255, 109, 0.72);
+	outline: 1px solid rgba(5, 150, 105, 0.72);
 	outline-offset: 0.12rem;
 }
 
 .breadcrumb-subnav-link--active,
 .breadcrumb-subnav-link--active:hover,
 .breadcrumb-subnav-link--active:focus-visible {
-	background: #ffffff;
-	color: #020617;
+	background: rgba(5, 150, 105, 0.24);
+	color: var(--tz-text-primary);
 }
 
 .breadcrumb-subnav-trigger--mobile {
@@ -2522,7 +2591,7 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 	transform: none;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 1279px) {
 	.site-header-root {
 		height: var(--tz-site-header-mobile-stack-height);
 		max-height: var(--tz-site-header-mobile-stack-height);
@@ -2537,6 +2606,10 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 		min-width: 0;
 		gap: 0.36rem !important;
 		padding-inline: 0.3rem !important;
+	}
+
+	.site-header-language-label--mobile {
+		display: none;
 	}
 
 	.site-header-search-trigger {
@@ -2564,21 +2637,23 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 		background: transparent !important;
 		box-shadow: none !important;
 		height: 100%;
+		min-width: 0;
 		min-height: 0;
 		align-items: stretch;
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+		overflow: hidden;
 	}
 
 	.site-header-mobile-surface {
-		--site-header-mobile-brand-inline-padding: 16px;
 		width: 100%;
 		margin: 0;
-		padding-right: var(--site-header-mobile-brand-inline-padding);
-		padding-left: var(--site-header-mobile-brand-inline-padding);
+		padding-right: 0;
+		padding-left: 0;
 		padding-top: 0;
 		height: var(--tz-site-header-mobile-topbar-height);
 		min-height: var(--tz-site-header-mobile-topbar-height);
 		box-sizing: border-box;
-		background: var(--tz-mobile-top-chrome-gradient);
+		background: var(--tz-input-surface);
 		border-bottom: 0;
 		box-shadow: none;
 	}
@@ -2587,6 +2662,8 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 		height: var(--tz-site-header-mobile-topbar-height);
 		min-height: var(--tz-site-header-mobile-topbar-height);
 		box-sizing: border-box;
+		padding-right: 0;
+		padding-left: 0;
 		padding-top: 0;
 		padding-bottom: 0;
 		border-bottom: 0;
@@ -2595,11 +2672,6 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 	.site-header-brand--mobile {
 		--tz-image-loading-surface: transparent;
 		background: transparent !important;
-	}
-
-	.site-header-brand--mobile .site-header-brand__text {
-		background-image: linear-gradient(90deg, #ffffff, #efefef, #cfcfcf);
-		filter: none;
 	}
 
 	.site-header-brand--mobile :deep(.tz-storefront-image),
@@ -2615,7 +2687,7 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 	.site-header-actions--mobile .site-header-action-button,
 	.site-header-actions--mobile .site-header-language-trigger,
 	.site-header-actions--mobile .site-header-search-trigger {
-		color: #f4f4f4 !important;
+		color: var(--tz-text-primary) !important;
 	}
 
 	.site-header-actions--mobile .site-header-action-button:hover,
@@ -2626,7 +2698,7 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 	.site-header-actions--mobile .site-header-language-trigger[aria-expanded='true'],
 	.site-header-actions--mobile .site-header-search-trigger:hover,
 	.site-header-actions--mobile .site-header-search-trigger:focus-visible {
-		color: #ffffff !important;
+		color: var(--tz-text-primary) !important;
 	}
 
 	.site-header-mobile-nav-row {
@@ -2638,27 +2710,45 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 		height: var(--tz-site-header-mobile-nav-height);
 		min-height: var(--tz-site-header-mobile-nav-height);
 		box-sizing: border-box;
-		background: var(--tz-mobile-bottom-chrome-gradient);
+    background: var(--tz-mobile-bottom-chrome-surface);
 		border-top: 0;
 		border-bottom: 1px solid var(--tz-mobile-chrome-edge-border);
 	}
 
 	.site-header-mobile-nav__button {
 		height: 100%;
+		min-width: 0 !important;
+		width: 100% !important;
+		gap: 0.18rem;
+		overflow: hidden;
 		padding-top: 0;
 		padding-bottom: 0;
-		color: #f0f0f0;
+		color: var(--tz-text-secondary);
 		text-transform: uppercase;
+	}
+
+	.site-header-mobile-nav__button > span:first-child {
+		min-width: 0;
+		max-width: calc(100% - 1rem);
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.site-header-mobile-nav__button > :deep(svg) {
+		flex: 0 0 0.875rem;
+		width: 0.875rem;
+		height: 0.875rem;
 	}
 
 	.site-header-mobile-nav__button:hover,
 	.site-header-mobile-nav__button:focus-visible,
 	.site-header-mobile-nav__button[aria-expanded='true'] {
-		color: #ffffff;
+		color: var(--tz-text-primary);
 	}
 
 	.site-header-mobile-nav__button--active {
-		color: #B5FF6D;
+		color: #059669;
 	}
 
 	.site-header-breadcrumb-row--mobile {
@@ -2667,9 +2757,9 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 		min-height: var(--tz-site-header-mobile-breadcrumb-height);
 		margin-inline: 0;
 		align-items: stretch;
-		background: linear-gradient(180deg, #090909 0%, #070707 100%);
+    background: var(--tz-mobile-top-chrome-surface);
 		border-top: 0;
-		border-bottom: 1px solid #161616;
+		border-bottom: 1px solid var(--tz-mobile-chrome-edge-border);
 	}
 
 	.site-header-breadcrumb-row--mobile .site-header-breadcrumb-list {
@@ -2679,17 +2769,17 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 		padding-top: 0;
 		padding-bottom: 0;
 		padding-inline: max(var(--site-header-mobile-breadcrumb-inline-padding), env(safe-area-inset-left)) max(var(--site-header-mobile-breadcrumb-inline-padding), env(safe-area-inset-right));
-		color: #d6d6d6;
+		color: var(--tz-text-secondary);
 	}
 
 	.breadcrumb-subnav-trigger--mobile {
-		color: #e6e6e6;
+		color: var(--tz-text-secondary);
 	}
 
 	.breadcrumb-subnav-trigger--mobile:hover,
 	.breadcrumb-subnav-trigger--mobile:focus-visible,
 	.breadcrumb-subnav-trigger--mobile.breadcrumb-subnav-trigger--open {
-		color: #ffffff;
+		color: var(--tz-text-primary);
 	}
 
 }
@@ -2712,8 +2802,10 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 	}
 
 	.desktop-header-grid > nav {
+		position: static;
 		min-width: 0;
 		width: 100%;
+		transform: none;
 		justify-content: space-between;
 		gap: 0;
 	}
@@ -2755,7 +2847,7 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 	opacity: 1;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 1279px) {
 	.leverandpoint-modal-shell {
 		height: min(95vh, calc(var(--tz-mobile-safe-viewport-height, 100vh) - 16px));
 		max-height: min(95vh, calc(var(--tz-mobile-safe-viewport-height, 100vh) - 16px));
@@ -2782,4 +2874,73 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 		max-height: 130px;
 	}
 }
+
+/* Light storefront chrome: keep the brand green for active states and focus. */
+:global(.tz-light-theme) .site-header-surface {
+	background: #ffffff;
+	color: var(--tz-text-primary);
+}
+
+:global(.tz-light-theme) .site-header-mainbar {
+    background: var(--tz-input-surface) !important;
+	border-bottom: 1px solid rgba(20, 32, 43, 0.12);
+	box-shadow: 0 12px 28px -16px rgba(20, 32, 43, 0.26) !important;
+}
+
+:global(.tz-light-theme) .site-header-action-button,
+:global(.tz-light-theme) .site-header-language-trigger,
+:global(.tz-light-theme) .site-header-menu-laser {
+	color: var(--tz-text-secondary);
+}
+
+:global(.tz-light-theme) .site-header-action-button:hover,
+:global(.tz-light-theme) .site-header-action-button:focus-visible,
+:global(.tz-light-theme) .site-header-action-button[aria-expanded='true'],
+:global(.tz-light-theme) .site-header-language-trigger:hover,
+:global(.tz-light-theme) .site-header-language-trigger:focus-visible,
+:global(.tz-light-theme) .site-header-language-trigger[aria-expanded='true'],
+:global(.tz-light-theme) .site-header-menu-laser:hover,
+:global(.tz-light-theme) .site-header-menu-laser:focus-visible,
+:global(.tz-light-theme) .site-header-menu-laser[aria-expanded='true'] {
+	color: var(--tz-text-primary);
+}
+
+:global(.tz-light-theme) .site-header-mobile-nav-row {
+    background: var(--tz-mobile-bottom-chrome-surface);
+	border-bottom-color: var(--tz-mobile-chrome-edge-border);
+}
+
+:global(.tz-light-theme) .site-header-mobile-nav__button {
+	color: var(--tz-text-secondary);
+}
+
+:global(.tz-light-theme) .site-header-mobile-nav__button:hover,
+:global(.tz-light-theme) .site-header-mobile-nav__button:focus-visible,
+:global(.tz-light-theme) .site-header-mobile-nav__button[aria-expanded='true'] {
+	color: var(--tz-text-primary);
+}
+
+:global(.tz-light-theme) .site-header-breadcrumb-row,
+:global(.tz-light-theme) .site-header-breadcrumb-row--mobile {
+	background: #f7f9fa;
+	border-color: rgba(20, 32, 43, 0.1);
+}
+
+:global(.tz-light-theme) .language-dropdown-surface,
+:global(.tz-light-theme) .breadcrumb-subnav-menu {
+	background: #ffffff !important;
+	border-color: rgba(20, 32, 43, 0.12);
+	box-shadow: 0 18px 42px rgba(20, 32, 43, 0.16);
+}
+
+:global(.tz-light-theme) .breadcrumb-subnav-link {
+	color: var(--tz-text-secondary);
+}
+
+:global(.tz-light-theme) .breadcrumb-subnav-link:hover,
+:global(.tz-light-theme) .breadcrumb-subnav-link:focus-visible {
+	background: #f1f4f6;
+	color: var(--tz-text-primary);
+}
+
 </style>

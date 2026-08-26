@@ -759,6 +759,9 @@ POST /api/v1/recommendations
 
 响应示例：
 
+以下商品 URL 统一使用扁平的 `/products/:slug`；推荐接口不得输出
+`/shop/:slug` 商品地址。
+
 ```json
 {
   "request_id": "rec_req_xxx",
@@ -768,7 +771,7 @@ POST /api/v1/recommendations
     {
       "product_id": 123,
       "title": "Carbon Wheelset",
-      "url": "/shop/carbon-wheelset",
+      "url": "/products/carbon-wheelset",
       "thumbnail": "/media/carbon-wheelset.webp",
       "price_label": "$1,299",
       "slot": "technical_match",

@@ -1,0 +1,61 @@
+{
+  "trigger": {
+    "label": "Periksa kompatibilitas"
+  },
+  "dialog": {
+    "eyebrow": "Katalog kompatibilitas",
+    "title": "Cari frame atau fork Anda",
+    "description": "Cari di katalog kompatibilitas independen berdasarkan merek, model, atau tahun. Hasilnya mencakup spesifikasi hub yang dicatat untuk setiap entri.",
+    "close": "Tutup",
+    "tabListLabel": "Bagian katalog kompatibilitas"
+  },
+  "tabs": {
+    "frame": "Kompatibilitas frame",
+    "fork": "Kompatibilitas fork"
+  },
+  "search": {
+    "label": "Cari",
+    "placeholder": "Cari berdasarkan merek atau model",
+    "yearLabel": "Tahun model",
+    "yearPlaceholder": "mis. 2024",
+    "submit": "Cari",
+    "clear": "Hapus",
+    "searching": "Mencari..."
+  },
+  "states": {
+    "initial": "Masukkan merek, model, atau tahun untuk mencari di katalog.",
+    "empty": "Tidak ada catatan yang cocok.",
+    "unavailable": "Data kompatibilitas sedang tidak tersedia. Silakan coba lagi.",
+    "noHubSpecifications": "Belum ada spesifikasi hub yang dicatat."
+  },
+  "entry": {
+    "series": "Seri",
+    "generation": "Generasi",
+    "market": "Pasar",
+    "hubSpecifications": "Spesifikasi hub",
+    "unknownYear": "Tahun tidak ditentukan",
+    "allYears": "Semua tahun"
+  },
+  "pagination": {
+    "label": "Hasil kompatibilitas",
+    "previous": "Halaman sebelumnya",
+    "next": "Halaman berikutnya",
+    "page": "Halaman {page} dari {totalPages}"
+  },
+  "hub": {
+    "position": "Posisi",
+    "axleType": "Jenis as",
+    "axleSpacing": "Jarak as",
+    "millimetres": "mm",
+    "positions": {
+      "front": "Depan",
+      "rear": "Belakang"
+    },
+    "axleTypes": {
+      "quickRelease": "Quick release",
+      "thruAxle": "Thru axle",
+      "boltOn": "Bolt-on",
+      "other": "Lainnya"
+    }
+  }
+}

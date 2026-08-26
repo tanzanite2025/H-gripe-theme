@@ -94,6 +94,7 @@ import type { RecommendationProductCard } from '~/types/recommendation'
 import { useBehaviorEvents } from '~/composables/useBehaviorEvents'
 import { useSmartRecommendations } from '~/composables/useSmartRecommendations'
 import ShopProductDisplayCard from '~/components/shop/ShopProductDisplayCard.vue'
+import { buildProductPath } from '~/utils/seo/urls'
 
 const props = withDefaults(defineProps<{
   surface: string
@@ -203,10 +204,10 @@ const scrollRecommendations = (direction: -1 | 1) => {
 }
 
 const resolveProductDetailUrl = (product: RecommendationProductCard) => {
-  const rawUrl = String(product.url || '').trim() || (product.slug ? `/shop/${product.slug}` : '')
+  const rawUrl = String(product.url || '').trim() || (product.slug ? buildProductPath(product.slug) : '')
   if (!rawUrl) return ''
   if (/^https?:\/\//i.test(rawUrl)) return rawUrl
-  if (/^\/[a-z]{2}(?:[_-][a-z]{2})?\/shop\/[^/?#]+(?:[?#].*)?$/i.test(rawUrl)) return rawUrl
+  if (/^\/[a-z]{2}(?:[_-][a-z]{2})?\/products\/[^/?#]+(?:[?#].*)?$/i.test(rawUrl)) return rawUrl
   return localePath(rawUrl)
 }
 
@@ -400,7 +401,7 @@ watch(
 }
 
 .product-recommendations__card:focus-visible {
-  outline: 2px solid var(--tz-brand-primary);
+  outline: 2px solid var(--tz-site-accent);
   outline-offset: 3px;
 }
 
@@ -411,9 +412,9 @@ watch(
   justify-content: center;
   gap: 0.5rem;
   box-sizing: border-box;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--tz-border-subtle);
   border-radius: 8px;
-  background: #050506;
+  background: var(--tz-card-surface);
   color: var(--tz-text-muted);
   font-size: 0.82rem;
   font-weight: 700;
@@ -425,7 +426,7 @@ watch(
 .product-recommendations__empty :deep(svg) {
   width: 1rem;
   height: 1rem;
-  color: var(--tz-brand-primary);
+  color: var(--tz-site-accent);
 }
 
 .product-recommendations__skeleton-card {
@@ -433,9 +434,9 @@ watch(
   min-width: 0;
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--tz-border-subtle);
   border-radius: 8px;
-  background: #050506;
+  background: var(--tz-card-surface);
   pointer-events: none;
 }
 
@@ -447,7 +448,7 @@ watch(
 .product-recommendations__skeleton-line {
   position: relative;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.075);
+  background: var(--tz-surface-muted);
 }
 
 .product-recommendations__skeleton-line {

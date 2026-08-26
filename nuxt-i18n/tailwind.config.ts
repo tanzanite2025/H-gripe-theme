@@ -1,17 +1,17 @@
 import type { Config } from 'tailwindcss'
 
-const learnGripeGreen = {
-  50: '#F5FFE8',
-  100: '#E9FFD1',
-  200: '#D9FFB2',
-  300: '#C8FF8F',
-  400: '#B5FF6D',
-  500: '#B5FF6D',
-  600: '#A6F05F',
-  700: '#86C948',
-  800: '#5F9138',
-  900: '#365621',
-  950: '#1B2E10',
+const themeEmerald = {
+  50: '#ECFDF5',
+  100: '#D1FAE5',
+  200: '#A7F3D0',
+  300: '#6EE7B7',
+  400: '#34D399',
+  500: '#10B981',
+  600: '#059669',
+  700: '#047857',
+  800: '#065F46',
+  900: '#064E3B',
+  950: '#022C22',
 } as const
 
 export default {
@@ -31,10 +31,8 @@ export default {
         mono: ['MapleUILatin', 'MapleUICJK'],
       },
       colors: {
-        green: learnGripeGreen,
-        emerald: learnGripeGreen,
-        lime: learnGripeGreen,
-        teal: learnGripeGreen,
+        green: themeEmerald,
+        emerald: themeEmerald,
       },
       screens: {
         // More granular mobile breakpoints for precise layout tuning.

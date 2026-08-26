@@ -239,14 +239,59 @@ func (r *StorefrontRouteCatalogRepository) ListSitemapEntries(limit int) ([]seod
 		limit = 50000
 	}
 
-	var entries []seodomain.StorefrontRouteCatalogEntry
-	err := r.db.
+	query := r.db.
 		Where("entry_status = ? AND is_alias = ? AND is_indexable = ?", seodomain.RouteEntryStatusActive, false, true).
+		// This coarse predicate keeps known legacy product paths out of the
+		// bounded query; exact route validation still happens below.
+		Where("source_type <> ? OR path NOT LIKE ?", seodomain.RouteSourceProduct, "%/shop/%").
 		Order("locale ASC").
-		Order("path ASC").
-		Limit(limit).
-		Find(&entries).Error
-	return entries, err
+		Order("path ASC")
+
+	const pageSize = 1000
+	entries := make([]seodomain.StorefrontRouteCatalogEntry, 0, limit)
+	offset := 0
+	for len(entries) < limit {
+		var page []seodomain.StorefrontRouteCatalogEntry
+		err := query.Offset(offset).Limit(pageSize).Find(&page).Error
+		if err != nil {
+			return nil, err
+		}
+		if len(page) == 0 {
+			break
+		}
+
+		for _, entry := range page {
+			if !sitemapEligibleRouteEntry(entry) {
+				continue
+			}
+			entries = append(entries, entry)
+			if len(entries) >= limit {
+				break
+			}
+		}
+
+		offset += len(page)
+		if len(page) < pageSize {
+			break
+		}
+	}
+	return entries, nil
+}
+
+func sitemapEligibleRouteEntry(entry seodomain.StorefrontRouteCatalogEntry) bool {
+	if entry.EntryStatus != seodomain.RouteEntryStatusActive ||
+		entry.IsAlias ||
+		!entry.IsIndexable ||
+		entry.Path == "" {
+		return false
+	}
+
+	if entry.SourceType != seodomain.RouteSourceProduct {
+		return true
+	}
+
+	return seodomain.IsProductRoute(entry.Locale, entry.Path, entry.SourceKey) &&
+		entry.CanonicalPath == entry.Path
 }
 
 func routeNeedsAttentionCondition() string {

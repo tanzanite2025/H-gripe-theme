@@ -111,7 +111,7 @@ const {
 
 <style scoped>
 .brand-gallery-lightbox {
-  background: rgba(2, 6, 23, 0.84);
+  background: rgba(15, 23, 42, 0.2);
   backdrop-filter: blur(8px);
 }
 
@@ -121,10 +121,10 @@ const {
   max-height: min(92vh, 52rem);
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 1px solid var(--tz-border-subtle);
   border-radius: 0.75rem;
-  background: #020617;
-  box-shadow: 0 20px 70px rgba(0, 0, 0, 0.48);
+  background: var(--tz-card-surface);
+  box-shadow: 0 20px 70px rgba(15, 23, 42, 0.16);
 }
 
 .brand-gallery-lightbox__header {
@@ -132,14 +132,14 @@ const {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--tz-border-subtle);
   padding: 0.85rem 1rem;
 }
 
 .brand-gallery-lightbox__eyebrow {
   margin: 0 0 0.25rem;
   overflow: hidden;
-  color: #b5ff6d;
+  color: #059669;
   font-size: 0.625rem;
   font-weight: 700;
   line-height: 1.2;
@@ -151,7 +151,7 @@ const {
 .brand-gallery-lightbox__title {
   margin: 0;
   overflow: hidden;
-  color: #fff;
+  color: var(--tz-text-primary);
   font-size: 1rem;
   font-weight: 700;
   line-height: 1.25;
@@ -165,17 +165,17 @@ const {
   width: 2.25rem;
   height: 2.25rem;
   place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  border: 1px solid var(--tz-border-strong);
   border-radius: 999px;
-  color: rgba(255, 255, 255, 0.82);
+  color: var(--tz-text-secondary);
   transition: border-color 160ms ease, background-color 160ms ease, color 160ms ease;
 }
 
 .brand-gallery-lightbox__close:hover,
 .brand-gallery-lightbox__close:focus-visible {
-  border-color: rgba(181, 255, 109, 0.72);
-  background: rgba(181, 255, 109, 0.1);
-  color: #b5ff6d;
+  border-color: rgba(5, 150, 105, 0.72);
+  background: rgba(5, 150, 105, 0.1);
+  color: #059669;
 }
 
 .brand-gallery-lightbox__body {

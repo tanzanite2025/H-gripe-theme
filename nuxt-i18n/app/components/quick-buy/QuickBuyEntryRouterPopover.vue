@@ -162,26 +162,25 @@ onBeforeUnmount(() => {
 }
 
 .quickbuy-entry-router-popover {
-  --quickbuy-shell-surface: #050505;
-  --quickbuy-panel-surface: var(--tz-card-surface, #111116);
-  --quickbuy-panel-surface-soft: #0c0c0e;
-  --quickbuy-panel-surface-raised: #17171b;
-  --quickbuy-control-surface-raised: #151519;
-  --quickbuy-divider: rgba(255, 255, 255, 0.045);
-  --quickbuy-entry-accent-edge: color-mix(in srgb, var(--tz-brand-primary, #b5ff6d) 74%, transparent);
+  --quickbuy-shell-surface: var(--tz-card-surface);
+  --quickbuy-panel-surface: var(--tz-card-surface);
+  --quickbuy-panel-surface-soft: var(--tz-surface-subtle);
+  --quickbuy-panel-surface-raised: var(--tz-surface-muted);
+  --quickbuy-control-surface-raised: var(--tz-surface-subtle);
+  --quickbuy-divider: var(--tz-border-subtle);
+  --quickbuy-entry-accent-edge: color-mix(in srgb, var(--tz-site-accent, #059669) 74%, transparent);
   position: fixed;
   z-index: 1;
   width: min(34rem, calc(100vw - 1.5rem));
   box-sizing: border-box;
   border: 1px solid var(--quickbuy-entry-accent-edge);
   border-radius: 0.875rem;
-  background:
-    linear-gradient(180deg, #080808 0%, var(--quickbuy-shell-surface) 100%);
+  background: var(--quickbuy-shell-surface);
   box-shadow:
     0 20px 54px rgba(0, 0, 0, 0.72),
-    0 0 0 4px rgba(181, 255, 109, 0.055),
-    inset 0 1px 0 rgba(255, 255, 255, 0.025),
-    inset 0 0 0 1px rgba(0, 0, 0, 0.72);
+    0 0 0 4px rgba(5, 150, 105, 0.055),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    inset 0 0 0 1px var(--tz-border-subtle);
 }
 
 .quickbuy-entry-router-popover::after {
@@ -190,7 +189,7 @@ onBeforeUnmount(() => {
   bottom: -0.5rem;
   width: 1rem;
   height: 1rem;
-  background: #050505;
+  background: var(--quickbuy-shell-surface);
   border-right: 1px solid var(--quickbuy-entry-accent-edge);
   border-bottom: 1px solid var(--quickbuy-entry-accent-edge);
   box-shadow:

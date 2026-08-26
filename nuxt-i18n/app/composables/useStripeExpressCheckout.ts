@@ -198,7 +198,7 @@ export function useStripeExpressCheckout() {
       appearance: {
         theme: 'night',
         variables: {
-          colorPrimary: '#b5ff6d',
+          colorPrimary: '#059669',
           colorBackground: '#080a0c',
           colorText: '#f5f7f8',
           colorDanger: '#fb7185',

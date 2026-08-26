@@ -65,8 +65,8 @@ const displayedCategories = computed(() => (
 .recommend-panel {
   min-width: 0;
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: #020202;
+  border: 1px solid var(--tz-border-subtle);
+  background: var(--tz-card-surface);
   padding: 12px;
 }
 

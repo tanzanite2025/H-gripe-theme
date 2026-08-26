@@ -28,6 +28,12 @@ const normalizePath = (value: string): string => {
   return `/${value.replace(/^\/+/, '')}`.replace(/\/+$/, '')
 }
 
+const appendQuery = (targetPath: string, query: string): string => {
+  const normalizedQuery = String(query || '').replace(/^\?/, '')
+  if (!normalizedQuery) return targetPath
+  return `${targetPath}${targetPath.includes('?') ? '&' : '?'}${normalizedQuery}`
+}
+
 const loadPublishedRules = async (): Promise<Map<string, PublishedRedirectRule>> => {
   const now = Date.now()
   if (cachedAt > 0 && now - cachedAt < cacheLifetimeMS) return cachedRules
@@ -66,7 +72,7 @@ export default defineEventHandler(async (event) => {
   if (bypassPath(requestURL.pathname)) return
 
   const rule = (await loadPublishedRules()).get(normalizePath(requestURL.pathname))
-  if (!rule) return
-
-  return sendRedirect(event, rule.target_path, rule.status_code)
+  if (rule) {
+    return sendRedirect(event, appendQuery(rule.target_path, requestURL.search), rule.status_code)
+  }
 })

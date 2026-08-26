@@ -8,14 +8,14 @@
       :aria-label="t('chatModal.attachments.title')"
       @click.stop
     >
-      <div class="rounded-2xl border border-white/15 bg-black/95 p-3 shadow-[0_18px_44px_rgba(0,0,0,0.62)] backdrop-blur-xl">
+      <div class="rounded-2xl border tz-border-subtle tz-surface-card p-3 shadow-[0_18px_44px_rgba(20,32,43,0.16)] backdrop-blur-xl">
         <div class="mb-2 flex items-center justify-between gap-3 px-1">
-          <span class="text-sm font-semibold text-white">
+          <span class="text-sm font-semibold tz-text-primary">
             {{ t('chatModal.attachments.title') }}
           </span>
           <button
             type="button"
-            class="flex h-7 w-7 items-center justify-center rounded-full text-white/55 transition-colors hover:bg-white/10 hover:text-white"
+            class="flex h-7 w-7 items-center justify-center rounded-full tz-text-primary/55 transition-colors hover:tz-surface-subtle hover:tz-text-primary"
             :aria-label="t('chatModal.actions.close')"
             @click="$emit('close')"
           >
@@ -28,10 +28,10 @@
             v-for="action in actions"
             :key="action.id"
             type="button"
-            class="flex min-h-20 flex-col items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-2 py-3 text-center text-white transition-colors hover:border-[#B5FF6D]/60 hover:bg-[#B5FF6D]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B5FF6D]"
+            class="flex min-h-20 flex-col items-center justify-center gap-2 rounded-xl border tz-border-subtle tz-surface-subtle px-2 py-3 text-center tz-text-primary transition-colors hover:border-[#059669]/60 hover:bg-[#059669]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#059669]"
             @click="$emit('select', action.id)"
           >
-            <span class="flex h-9 w-9 items-center justify-center rounded-full bg-white/[0.08] text-white">
+            <span class="flex h-9 w-9 items-center justify-center rounded-full tz-surface-subtle tz-text-primary">
               <Icon :name="action.icon" class="h-5 w-5" />
             </span>
             <span class="text-xs font-semibold leading-4">
@@ -39,6 +39,9 @@
             </span>
           </button>
         </div>
+        <p class="mt-2 px-1 text-[11px] leading-4 tz-text-muted">
+          {{ uploadSpecHint('customer_service_attachment') }}
+        </p>
       </div>
     </div>
   </Transition>
@@ -51,6 +54,7 @@ import {
   CHAT_ATTACHMENT_ACTIONS,
   type ChatAttachmentActionId,
 } from '~/composables/chat/useChatAttachmentActions'
+import { uploadSpecHint } from '~/utils/uploadSpecs'
 
 defineProps<{
   open: boolean

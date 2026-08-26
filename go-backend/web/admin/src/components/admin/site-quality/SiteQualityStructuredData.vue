@@ -2,8 +2,8 @@
   <section class="border bg-card">
     <div class="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3">
       <div>
-        <h2 class="text-sm font-black">结构化数据</h2>
-        <p class="mt-1 text-xs text-muted-foreground">JSON-LD / microdata / RDFa</p>
+        <h2 class="text-sm font-black">Schema 检查</h2>
+        <p class="mt-1 text-xs text-muted-foreground">只检查 JSON-LD / microdata / RDFa</p>
       </div>
       <div class="flex items-center gap-2">
         <select

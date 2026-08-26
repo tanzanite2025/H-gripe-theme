@@ -208,12 +208,12 @@ const updateActiveStep = () => {
   justify-content: space-between;
   gap: 1rem;
   padding-bottom: 0.875rem;
-  border-bottom: 1px solid rgba(181, 255, 109, 0.22);
+  border-bottom: 1px solid rgba(5, 150, 105, 0.22);
 }
 
 .wheelset-standards__eyebrow {
   margin: 0;
-  color: #b5ff6d;
+  color: #059669;
   font-size: 0.6875rem;
   font-weight: 600;
   letter-spacing: 0;
@@ -223,7 +223,7 @@ const updateActiveStep = () => {
 
 .wheelset-standards__title {
   margin: 0.375rem 0 0;
-  color: #fff;
+  color: var(--tz-text-primary);
   font-size: 1.125rem;
   font-weight: 700;
   letter-spacing: 0;
@@ -241,18 +241,18 @@ const updateActiveStep = () => {
   width: 2rem;
   height: 2rem;
   place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  border: 1px solid var(--tz-border-subtle);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.04);
-  color: #fff;
+  background: var(--tz-surface-subtle);
+  color: var(--tz-text-secondary);
   transition: border-color 160ms ease, background-color 160ms ease, color 160ms ease;
 }
 
 .wheelset-standards__arrow:hover,
 .wheelset-standards__arrow:focus-visible {
-  border-color: rgba(181, 255, 109, 0.75);
-  background: rgba(181, 255, 109, 0.12);
-  color: #b5ff6d;
+  border-color: rgba(5, 150, 105, 0.75);
+  background: rgba(5, 150, 105, 0.08);
+  color: #059669;
 }
 
 .wheelset-standards__rail {
@@ -281,9 +281,9 @@ const updateActiveStep = () => {
   aspect-ratio: 1 / 1;
   overflow: hidden;
   scroll-snap-align: start;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 1px solid var(--tz-border-subtle);
   border-radius: 0.5rem;
-  background: rgba(255, 255, 255, 0.025);
+  background: var(--tz-card-surface);
 }
 
 .wheelset-standards__visual {
@@ -294,11 +294,11 @@ const updateActiveStep = () => {
   min-height: 0;
   overflow: hidden;
   padding: 1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--tz-border-subtle);
   background:
-    linear-gradient(135deg, rgba(181, 255, 109, 0.12), transparent 42%),
-    repeating-linear-gradient(0deg, transparent 0, transparent 1.65rem, rgba(255, 255, 255, 0.05) 1.7rem),
-    #111318;
+    linear-gradient(135deg, rgba(5, 150, 105, 0.12), transparent 42%),
+    repeating-linear-gradient(0deg, transparent 0, transparent 1.65rem, rgba(20, 32, 43, 0.05) 1.7rem),
+    var(--tz-surface-muted);
 }
 
 .wheelset-standards__visual::after {
@@ -307,8 +307,8 @@ const updateActiveStep = () => {
   right: 1rem;
   width: 2.25rem;
   height: 2.25rem;
-  border-top: 1px solid rgba(181, 255, 109, 0.8);
-  border-right: 1px solid rgba(181, 255, 109, 0.8);
+  border-top: 1px solid rgba(5, 150, 105, 0.8);
+  border-right: 1px solid rgba(5, 150, 105, 0.8);
   content: '';
 }
 
@@ -318,12 +318,12 @@ const updateActiveStep = () => {
   left: 1rem;
   width: 1.25rem;
   height: 1.25rem;
-  color: #b5ff6d;
+  color: #059669;
 }
 
 .wheelset-standards__visual-label {
   position: relative;
-  color: rgba(255, 255, 255, 0.58);
+  color: var(--tz-text-secondary);
   font-size: 0.625rem;
   font-weight: 600;
   letter-spacing: 0;
@@ -336,7 +336,7 @@ const updateActiveStep = () => {
   display: block;
   max-width: 85%;
   margin-top: 0.35rem;
-  color: #fff;
+  color: var(--tz-text-primary);
   font-size: clamp(1.25rem, 2.4vw, 1.75rem);
   font-weight: 700;
   letter-spacing: 0;
@@ -350,7 +350,7 @@ const updateActiveStep = () => {
   height: 0.2rem;
   margin-top: 0.8rem;
   border-radius: 999px;
-  background: #b5ff6d;
+  background: #059669;
 }
 
 .wheelset-standards__copy {
@@ -360,7 +360,7 @@ const updateActiveStep = () => {
 
 .wheelset-standards__step {
   display: inline-flex;
-  color: #b5ff6d;
+  color: #059669;
   font-size: 0.625rem;
   font-weight: 700;
   letter-spacing: 0;
@@ -370,7 +370,7 @@ const updateActiveStep = () => {
 
 .wheelset-standards__copy h4 {
   margin: 0.4rem 0 0;
-  color: #fff;
+  color: var(--tz-text-primary);
   font-size: 0.9375rem;
   font-weight: 700;
   letter-spacing: 0;
@@ -381,7 +381,7 @@ const updateActiveStep = () => {
   display: -webkit-box;
   margin: 0.4rem 0 0;
   overflow: hidden;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--tz-text-secondary);
   font-size: 0.75rem;
   letter-spacing: 0;
   line-height: 1.4;

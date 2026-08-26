@@ -77,7 +77,7 @@ func (h *Handler) Upload(c *gin.Context) {
 	if c.Request.MultipartForm != nil {
 		defer func() { _ = c.Request.MultipartForm.RemoveAll() }()
 	}
-	if err := upload.ValidateFile(file, upload.SuggestionImageRule); err != nil {
+	if err := upload.ValidateSpecFile(file, string(upload.SpecSuggestionAttachment)); err != nil {
 		c.JSON(upload.HTTPStatus(err), gin.H{"error": upload.ErrorCode(err), "message": err.Error()})
 		return
 	}

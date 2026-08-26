@@ -3,8 +3,8 @@
     <TabsContent value="site" class="space-y-6">
       <SettingsSection :title="t('settings.siteProfile')" :description="t('settings.siteProfileDescription')">
         <div class="grid gap-4 md:grid-cols-2">
-          <AdminFormField :label="t('settings.siteBrand')" description="控制 Nuxt 顶部品牌字样、SEO 站点名和页脚品牌名。">
-            <Input v-model="siteSettings.brand_title" />
+          <AdminFormField :label="t('settings.siteName')" description="前台顶部、SEO 和页脚使用的站点名称。">
+            <Input v-model="siteSettings.site_name" />
           </AdminFormField>
           <AdminFormField :label="t('settings.contactEmail')">
             <Input v-model="siteSettings.contact_email" type="email" />
@@ -23,7 +23,8 @@
                 <Trash2 class="size-4" />
               </Button>
             </div>
-            <input ref="siteLogoInput" type="file" class="sr-only" accept=".svg,image/svg+xml" :disabled="!canEdit || uploadingSiteLogo" @change="uploadSiteLogo" />
+            <input ref="siteLogoInput" type="file" class="sr-only" :accept="uploadSpecAccept('site_logo')" :disabled="!canEdit || uploadingSiteLogo" @change="uploadSiteLogo" />
+            <UploadSpecHint code="site_logo" />
           </AdminFormField>
           <AdminFormField :label="t('settings.siteFavicon')" description="用于浏览器 TAB、收藏夹和 PWA 图标；支持直接填写图片 URL 或上传图标。">
             <div class="flex min-w-0 items-center gap-2">
@@ -36,7 +37,8 @@
                 <Trash2 class="size-4" />
               </Button>
             </div>
-            <input ref="siteFaviconInput" type="file" class="sr-only" accept="image/jpeg,image/png,image/webp" :disabled="!canEdit || uploadingSiteFavicon" @change="uploadSiteFavicon" />
+            <input ref="siteFaviconInput" type="file" class="sr-only" :accept="uploadSpecAccept('site_favicon')" :disabled="!canEdit || uploadingSiteFavicon" @change="uploadSiteFavicon" />
+            <UploadSpecHint code="site_favicon" />
           </AdminFormField>
           <AdminFormField :label="t('settings.siteDescription')" class="md:col-span-2">
             <Textarea v-model="siteSettings.site_description" class="min-h-24" />
@@ -48,24 +50,6 @@
             <img :src="siteSettings.site_favicon" :alt="t('settings.siteFaviconPreview')" class="size-12 object-contain" />
             <span class="text-sm text-muted-foreground">{{ t('settings.siteFaviconPreview') }}</span>
           </div>
-        </div>
-      </SettingsSection>
-
-      <SettingsSection :title="t('settings.copyrightEvidence')" :description="t('settings.copyrightEvidenceDescription')">
-        <div class="grid gap-4 md:grid-cols-2">
-          <AdminFormField :label="t('settings.rightHolder')">
-            <Input v-model="siteSettings.copyright_holder" placeholder="公司或版权主体名称" />
-          </AdminFormField>
-          <AdminFormField :label="t('settings.copyrightPolicyUrl')">
-            <Input v-model="siteSettings.copyright_url" type="url" placeholder="https://example.com/policies/copyright" />
-          </AdminFormField>
-          <AdminFormField :label="t('settings.copyrightNotice')" class="md:col-span-2">
-            <Textarea
-              v-model="siteSettings.copyright_notice"
-              class="min-h-20"
-              placeholder="Copyright 2026 Example. All rights reserved."
-            />
-          </AdminFormField>
         </div>
       </SettingsSection>
 
@@ -136,23 +120,16 @@
       </SettingsSection>
     </TabsContent>
 
-    <TabsContent value="currency">
-      <CurrencyPolicySettingsCard :can-edit="canEdit" @saved="emit('currency-policy-saved', $event)" />
-    </TabsContent>
-
     <TabsContent value="markets">
       <StorefrontMarketsSettingsPanel :can-edit="canEdit" />
     </TabsContent>
 
     <TabsContent value="api">
-      <SettingsSection title="API 管理" description="统一管理第三方接口配置、刷新策略和凭据引用。">
+      <SettingsSection title="API 管理" description="统一管理第三方接口配置、缓存策略和系统时区规则。">
         <ApiManagementSettingsPanel
           :api-settings="apiSettings"
-          :primary-pricing-currency="primaryPricingCurrency"
           :can-edit="canEdit"
-          :syncing-exchange-rates="syncingExchangeRates"
           :saving-api-settings="savingApiSettings"
-          @sync-exchange-rates="emit('sync-exchange-rates')"
         />
       </SettingsSection>
     </TabsContent>
@@ -212,10 +189,11 @@ import {
 } from '@lucide/vue'
 import AdminFormField from '@/components/admin/AdminFormField.vue'
 import ApiManagementSettingsPanel from '@/components/admin/settings/ApiManagementSettingsPanel.vue'
-import CurrencyPolicySettingsCard from '@/components/admin/settings/CurrencyPolicySettingsCard.vue'
 import PublicChatSettingsPanel from '@/components/admin/settings/PublicChatSettingsPanel.vue'
 import RefundReturnPolicySettingsPanel from '@/components/admin/settings/RefundReturnPolicySettingsPanel.vue'
 import StorefrontMarketsSettingsPanel from '@/components/admin/settings/StorefrontMarketsSettingsPanel.vue'
+import UploadSpecHint from '@/components/admin/UploadSpecHint.vue'
+import { uploadSpecAccept } from '@/lib/uploadSpecs'
 import { Button } from '@/components/ui/button'
 import CommercialCrawlerProtectionPanel from '@/components/admin/settings/CommercialCrawlerProtectionPanel.vue'
 import { Input } from '@/components/ui/input'
@@ -231,12 +209,6 @@ import type {
 import type { RefundReturnPolicyEditor } from '@/api/refundReturnPolicy'
 
 interface APISettings {
-  exchange_rate_enabled: boolean | string | number
-  exchange_rate_provider: string
-  exchange_rate_endpoint: string
-  exchange_rate_query_template: string
-  exchange_rate_refresh_minutes: number
-  exchange_rate_api_key: string
   time_api_enabled: boolean | string | number
   time_api_provider: string
   time_api_endpoint: string
@@ -259,12 +231,10 @@ const props = defineProps({
   siteSettings: { type: Object, required: true },
   emailSettings: { type: Object, required: true },
   apiSettings: { type: Object as PropType<APISettings>, required: true },
-  primaryPricingCurrency: { type: String, default: '' },
   commercialCrawlerProtection: { type: Object as PropType<CommercialCrawlerProtection | null>, default: null },
   loadingCommercialCrawlerProtection: { type: Boolean, default: false },
   uploadingSiteLogo: { type: Boolean, default: false },
   uploadingSiteFavicon: { type: Boolean, default: false },
-  syncingExchangeRates: { type: Boolean, default: false },
   savingApiSettings: { type: Boolean, default: false },
   showSmtpPassword: { type: Boolean, default: false },
   loadingPublicChatAgents: { type: Boolean, default: false },
@@ -293,8 +263,6 @@ const emit = defineEmits([
   'edit-group',
   'delete-group',
   'refresh-public-chat',
-  'currency-policy-saved',
-  'sync-exchange-rates',
   'refresh-commercial-crawler-protection',
   'refund-return-locale-change',
   'save-refund-return-policy',

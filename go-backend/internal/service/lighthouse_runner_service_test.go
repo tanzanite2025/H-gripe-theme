@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -19,6 +20,16 @@ import (
 )
 
 const testLighthouseRunnerToken = "01234567890123456789012345678901"
+
+func TestSiteQualityRunViewNormalizesHistoricalIssueRuleIdentity(t *testing.T) {
+	view := siteQualityRunView(sitequalitydomain.SiteQualityRun{
+		IssuesJSON: `[{"id":"link-text","rule_id":"link-text","provider_audit_id":"link_descriptive_text"}]`,
+	})
+
+	require.Len(t, view.Issues, 1)
+	require.Equal(t, sitequalitydomain.SiteQualityRuleIDDescriptiveLinkText, view.Issues[0].RuleID)
+	require.Equal(t, sitequalitydomain.SiteQualityProviderAuditIDLinkText, view.Issues[0].ProviderAuditID)
+}
 
 func TestLighthouseRunnerServiceCaptureNormalizesAndPersistsLeasedResult(t *testing.T) {
 	db := newLighthouseRunnerTestDB(t)
@@ -721,14 +732,14 @@ func TestRenderedHeadingAuditFailureBlocksCleanHeadingResult(t *testing.T) {
 
 func TestRenderedStructuredDataAuditIssuesValidateProductSchema(t *testing.T) {
 	issues := siteQualityRenderedStructuredDataAuditIssues(
-		"https://example.com/shop/carbon-rim",
-		"https://example.com/shop/carbon-rim",
+		"https://example.com/products/carbon-rim",
+		"https://example.com/products/carbon-rim",
 		&siteQualityRenderedStructuredDataAudit{
 			Status:   "complete",
 			Source:   "chrome-rendered-dom",
-			FinalURL: "https://example.com/shop/carbon-rim",
+			FinalURL: "https://example.com/products/carbon-rim",
 			Page: siteQualityStructuredDataPage{
-				CanonicalURL: "https://example.com/shop/carbon-rim",
+				CanonicalURL: "https://example.com/products/carbon-rim",
 			},
 			JSONLD: []siteQualityStructuredDataScript{
 				{
@@ -739,13 +750,13 @@ func TestRenderedStructuredDataAuditIssuesValidateProductSchema(t *testing.T) {
 							Types:     []string{"Product"},
 							Type:      "Product",
 							Name:      "Carbon Rim",
-							URL:       "https://example.com/shop/carbon-rim",
+							URL:       "https://example.com/products/carbon-rim",
 							GraphPath: "script[0]",
 							Data: json.RawMessage(`{
 								"@context": "https://schema.org",
 								"@type": "Product",
 								"name": "Carbon Rim",
-								"url": "https://example.com/shop/carbon-rim",
+								"url": "https://example.com/products/carbon-rim",
 								"image": ["https://example.com/uploads/rim.webp"],
 								"offers": {
 									"@type": "Offer",
@@ -766,14 +777,14 @@ func TestRenderedStructuredDataAuditIssuesValidateProductSchema(t *testing.T) {
 
 func TestRenderedStructuredDataAuditIssuesDetectProductDefects(t *testing.T) {
 	issues := siteQualityRenderedStructuredDataAuditIssues(
-		"https://example.com/shop/carbon-rim",
-		"https://example.com/shop/carbon-rim",
+		"https://example.com/products/carbon-rim",
+		"https://example.com/products/carbon-rim",
 		&siteQualityRenderedStructuredDataAudit{
 			Status:   "complete",
 			Source:   "chrome-rendered-dom",
-			FinalURL: "https://example.com/shop/carbon-rim",
+			FinalURL: "https://example.com/products/carbon-rim",
 			Page: siteQualityStructuredDataPage{
-				CanonicalURL: "https://example.com/shop/carbon-rim",
+				CanonicalURL: "https://example.com/products/carbon-rim",
 			},
 			JSONLD: []siteQualityStructuredDataScript{
 				{
@@ -784,13 +795,13 @@ func TestRenderedStructuredDataAuditIssuesDetectProductDefects(t *testing.T) {
 							Types:     []string{"Product"},
 							Type:      "Product",
 							Name:      "Carbon Rim",
-							URL:       "https://example.com/shop/other-rim",
+							URL:       "https://example.com/products/other-rim",
 							GraphPath: "script[0]",
 							Data: json.RawMessage(`{
 								"@context": "https://schema.org",
 								"@type": "Product",
 								"name": "Carbon Rim",
-								"url": "https://example.com/shop/other-rim",
+								"url": "https://example.com/products/other-rim",
 								"image": ["https://example.com/uploads/rim.webp"]
 							}`),
 						},
@@ -1039,6 +1050,36 @@ func TestRenderedStructuredDataAuditDetectsIncompleteArticleSchema(t *testing.T)
 	require.ElementsMatch(t, []string{"image", "datePublished", "author", "url"}, structuredDataIssueProperties(issues[0]))
 }
 
+func TestSiteQualityLinkTextAuditUsesOfficialEvidence(t *testing.T) {
+	score := 0.0
+	audit := siteQualityAPIAudit{
+		ID:               siteQualityLinkTextAuditID,
+		Title:            "Links do not have descriptive text",
+		Description:      "Descriptive link text helps search engines understand your content.",
+		Score:            &score,
+		ScoreDisplayMode: "numeric",
+	}
+	audit.Details.Items = []json.RawMessage{
+		json.RawMessage(`{"href":"https://example.com/guides","text":"Click this"}`),
+		json.RawMessage(`{"href":"https://example.com/more","text":"More","textLang":"en-US"}`),
+	}
+
+	issues, err := normalizeSiteQualityIssues(map[string]siteQualityAPIAudit{
+		siteQualityLinkTextAuditID: audit,
+	})
+	require.NoError(t, err)
+	require.Len(t, issues, 1)
+	require.Equal(t, siteQualityLinkTextAuditID, issues[0].ID)
+	require.Equal(t, siteQualityLinkDescriptiveTextRuleID, issues[0].RuleID)
+	require.Equal(t, siteQualityLinkTextAuditID, issues[0].ProviderAuditID)
+	require.Equal(t, "links", issues[0].Kind)
+	require.Equal(t, "medium", issues[0].Severity)
+	require.Len(t, issues[0].Links, 2)
+	require.Equal(t, "https://example.com/guides", issues[0].Links[0].Href)
+	require.Equal(t, "Click this", issues[0].Links[0].Text)
+	require.Equal(t, "en-US", issues[0].Links[1].TextLang)
+}
+
 func TestRenderedStructuredDataAuditRequiresOrganizationLogoOnHome(t *testing.T) {
 	issues := siteQualityRenderedStructuredDataAuditIssues(
 		"https://example.com/",
@@ -1120,28 +1161,28 @@ func TestRenderedStructuredDataAuditDoesNotFlagRepeatedSameProductEntity(t *test
 	productData := `{
 		"@context": "https://schema.org",
 		"@type": "Product",
-		"@id": "https://example.com/shop/carbon-rim#product",
+		"@id": "https://example.com/products/carbon-rim#product",
 		"name": "Carbon Rim",
-		"url": "https://example.com/shop/carbon-rim",
+		"url": "https://example.com/products/carbon-rim",
 		"image": ["https://example.com/uploads/rim.webp"],
 		"offers": {"@type": "Offer", "price": 899, "priceCurrency": "USD", "availability": "https://schema.org/InStock"}
 	}`
 	issues := siteQualityRenderedStructuredDataAuditIssues(
-		"https://example.com/shop/carbon-rim",
-		"https://example.com/shop/carbon-rim",
+		"https://example.com/products/carbon-rim",
+		"https://example.com/products/carbon-rim",
 		&siteQualityRenderedStructuredDataAudit{
 			Status:   "complete",
 			Source:   "chrome-rendered-dom",
-			FinalURL: "https://example.com/shop/carbon-rim",
+			FinalURL: "https://example.com/products/carbon-rim",
 			Page: siteQualityStructuredDataPage{
-				CanonicalURL: "https://example.com/shop/carbon-rim",
+				CanonicalURL: "https://example.com/products/carbon-rim",
 			},
 			JSONLD: []siteQualityStructuredDataScript{
 				{Nodes: []siteQualityStructuredDataNode{
-					{Types: []string{"Product"}, Type: "Product", ID: "https://example.com/shop/carbon-rim#product", URL: "https://example.com/shop/carbon-rim", GraphPath: "script[0]", Data: json.RawMessage(productData)},
+					{Types: []string{"Product"}, Type: "Product", ID: "https://example.com/products/carbon-rim#product", URL: "https://example.com/products/carbon-rim", GraphPath: "script[0]", Data: json.RawMessage(productData)},
 				}},
 				{Nodes: []siteQualityStructuredDataNode{
-					{Types: []string{"Product"}, Type: "Product", ID: "https://example.com/shop/carbon-rim#product", URL: "https://example.com/shop/carbon-rim", GraphPath: "script[1]", Data: json.RawMessage(productData)},
+					{Types: []string{"Product"}, Type: "Product", ID: "https://example.com/products/carbon-rim#product", URL: "https://example.com/products/carbon-rim", GraphPath: "script[1]", Data: json.RawMessage(productData)},
 				}},
 			},
 		},
@@ -1180,15 +1221,15 @@ func TestApplySiteQualityResultReplacesLighthouseHeadingOrderWithRenderedDOM(t *
 					{
 						"index": 0,
 						"selector": "html > head > script:nth-of-type(1)",
-						"raw": "{\"@context\":\"https://schema.org\",\"@type\":\"Organization\",\"name\":\"TANZANITE\",\"url\":\"https://example.com/\"}",
+						"raw": "{\"@context\":\"https://schema.org\",\"@type\":\"Product\",\"name\":\"Carbon Rims\",\"url\":\"https://example.com/products/wheel\",\"image\":[\"https://example.com/uploads/rim.webp\"],\"offers\":{\"@type\":\"Offer\",\"price\":899,\"priceCurrency\":\"USD\",\"availability\":\"https://schema.org/InStock\"}}",
 						"nodes": [
 							{
-								"types": ["Organization"],
-								"type": "Organization",
-								"name": "TANZANITE",
-								"url": "https://example.com/",
+								"types": ["Product"],
+								"type": "Product",
+								"name": "Carbon Rims",
+								"url": "https://example.com/products/wheel",
 								"graphPath": "script[0]",
-								"data": {"@context": "https://schema.org", "@type": "Organization", "name": "TANZANITE", "url": "https://example.com/"}
+								"data": {"@context": "https://schema.org", "@type": "Product", "name": "Carbon Rims", "url": "https://example.com/products/wheel", "image": ["https://example.com/uploads/rim.webp"], "offers": {"@type": "Offer", "price": 899, "priceCurrency": "USD", "availability": "https://schema.org/InStock"}}
 							}
 						]
 					}
@@ -1573,6 +1614,35 @@ func siteQualityRunnerTestResponseWithCleanHeadings(t *testing.T, raw string) st
 	}
 	if _, exists := lighthouseResult["renderedStructuredData"]; !exists {
 		finalURL, _ := lighthouseResult["finalUrl"].(string)
+		structuredDataType := "Organization"
+		structuredDataName := "TANZANITE"
+		structuredDataURL := "https://example.com/"
+		structuredData := map[string]interface{}{
+			"@context": "https://schema.org",
+			"@type":    structuredDataType,
+			"name":     structuredDataName,
+			"url":      structuredDataURL,
+		}
+		if strings.Contains(finalURL, "/products/") {
+			structuredDataType = "Product"
+			structuredDataName = "Carbon Rims"
+			structuredDataURL = finalURL
+			structuredData = map[string]interface{}{
+				"@context": "https://schema.org",
+				"@type":    structuredDataType,
+				"name":     structuredDataName,
+				"url":      structuredDataURL,
+				"image":    []string{"https://example.com/uploads/rim.webp"},
+				"offers": map[string]interface{}{
+					"@type":         "Offer",
+					"price":         899,
+					"priceCurrency": "USD",
+					"availability":  "https://schema.org/InStock",
+				},
+			}
+		}
+		structuredDataRaw, err := json.Marshal(structuredData)
+		require.NoError(t, err)
 		lighthouseResult["renderedStructuredData"] = map[string]interface{}{
 			"status":   "complete",
 			"source":   "chrome-rendered-dom",
@@ -1585,20 +1655,15 @@ func siteQualityRunnerTestResponseWithCleanHeadings(t *testing.T, raw string) st
 				{
 					"index":    0,
 					"selector": "html > head > script:nth-of-type(1)",
-					"raw":      `{"@context":"https://schema.org","@type":"Organization","name":"TANZANITE","url":"https://example.com/"}`,
+					"raw":      string(structuredDataRaw),
 					"nodes": []map[string]interface{}{
 						{
-							"types":     []string{"Organization"},
-							"type":      "Organization",
-							"name":      "TANZANITE",
-							"url":       "https://example.com/",
+							"types":     []string{structuredDataType},
+							"type":      structuredDataType,
+							"name":      structuredDataName,
+							"url":       structuredDataURL,
 							"graphPath": "script[0]",
-							"data": map[string]interface{}{
-								"@context": "https://schema.org",
-								"@type":    "Organization",
-								"name":     "TANZANITE",
-								"url":      "https://example.com/",
-							},
+							"data":      structuredData,
 						},
 					},
 				},

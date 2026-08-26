@@ -170,9 +170,9 @@ const currentTags = computed(() =>
 
 .brand-gallery-lightbox__arrow:hover,
 .brand-gallery-lightbox__arrow:focus-visible {
-  border-color: rgba(181, 255, 109, 0.75);
-  background: rgba(181, 255, 109, 0.12);
-  color: #b5ff6d;
+  border-color: rgba(5, 150, 105, 0.75);
+  background: rgba(5, 150, 105, 0.12);
+  color: #059669;
 }
 
 .brand-gallery-lightbox__arrow--left {
@@ -223,10 +223,10 @@ const currentTags = computed(() =>
 }
 
 .brand-gallery-lightbox__tag {
-  border: 1px solid rgba(181, 255, 109, 0.28);
+  border: 1px solid rgba(5, 150, 105, 0.28);
   border-radius: 999px;
   padding: 0.2rem 0.45rem;
-  color: #b5ff6d;
+  color: #059669;
   font-size: 0.625rem;
   line-height: 1.2;
 }
@@ -258,7 +258,7 @@ const currentTags = computed(() =>
 .brand-gallery-lightbox__thumbnail:hover,
 .brand-gallery-lightbox__thumbnail:focus-visible,
 .brand-gallery-lightbox__thumbnail.is-active {
-  border-color: #b5ff6d;
+  border-color: #059669;
   opacity: 1;
 }
 

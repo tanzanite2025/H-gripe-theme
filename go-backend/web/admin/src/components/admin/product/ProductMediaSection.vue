@@ -11,6 +11,7 @@
           <ImageIcon class="size-5 text-muted-foreground" />
           <span class="text-sm font-medium">上传商品图片</span>
           <span class="text-xs text-muted-foreground">主图或图库图片，按排序展示在商品页媒体区</span>
+          <UploadSpecHint code="product_image" />
         </button>
 
         <button
@@ -29,7 +30,7 @@
         ref="imageInput"
         class="sr-only"
         type="file"
-        accept="image/jpeg,image/png,image/webp"
+        :accept="uploadSpecAccept('product_image')"
         multiple
         :disabled="uploading"
         @change="emit('upload', $event, 'image')"
@@ -211,9 +212,11 @@ import { computed, ref } from 'vue'
 import { ImageIcon, LoaderCircle, Plus, Star, Trash2, Video } from '@lucide/vue'
 import AdminFormField from '@/components/admin/AdminFormField.vue'
 import AdminFormSection from '@/components/admin/AdminFormSection.vue'
+import UploadSpecHint from '@/components/admin/UploadSpecHint.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { uploadSpecAccept } from '@/lib/uploadSpecs'
 import {
   getProductMediaRoleOptions,
   getProductMediaTypeLabel,

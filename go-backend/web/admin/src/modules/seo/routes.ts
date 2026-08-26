@@ -11,3 +11,7 @@ export const buildArticlePath = (resource: { route_path?: string | null }): stri
 export const buildProductPath = (resource: { route_path?: string | null }): string => {
   return String(resource.route_path || '').trim()
 }
+
+export const buildCategoryPath = (resource: { route_path?: string | null }): string => {
+  return String(resource.route_path || '').trim()
+}

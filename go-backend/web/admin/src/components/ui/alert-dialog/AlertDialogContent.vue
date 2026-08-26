@@ -47,7 +47,6 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
         )
       "
     >
-      <div class="uds-glow-bg pointer-events-none" />
       <slot />
     </AlertDialogContent>
   </AlertDialogPortal>

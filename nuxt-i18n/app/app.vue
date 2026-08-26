@@ -1,7 +1,7 @@
 <template>
-  <div>
+  <div class="tz-light-theme">
     <NuxtLoadingIndicator
-      color="repeating-linear-gradient(90deg, #22d3ee 0%, #8b5cf6 50%, #22d3ee 100%)"
+      color="#059669"
       :height="3"
       :throttle="80"
     />
@@ -27,7 +27,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { useHead, useI18n } from '#imports'
+import { useHead, useI18n, useRuntimeConfig } from '#imports'
 import SidePanel from './components/SidePanel.vue'
 import SiteHeader from '~/components/SiteHeader.vue'
 import { useAuth } from '~/composables/useAuth'
@@ -36,6 +36,7 @@ import { useShopCategories } from '~/composables/useShopCategories'
 import localeManifest from '~/i18n/locales.manifest'
 
 const auth = useAuth()
+const runtimeConfig = useRuntimeConfig()
 const { siteSettings } = useSiteSettings()
 const { loadCategories: prefetchShopCategories } = useShopCategories()
 const { locale } = useI18n()
@@ -57,12 +58,25 @@ const htmlLanguage = computed(() => (
 ))
 const htmlDirection = computed(() => activeLocaleEntry.value?.dir || 'ltr')
 const htmlFontFamily = computed(() => activeLocaleEntry.value?.fontFamily || 'latin')
+const resolveConfiguredAsset = (value: string) => {
+  if (!/^\/uploads\//i.test(value)) return value
+
+  const apiBase = String(
+    (runtimeConfig.public as { apiBase?: string }).apiBase || ''
+  ).trim()
+
+  try {
+    return new URL(value, apiBase).toString()
+  } catch {
+    return value
+  }
+}
 const siteFavicon = computed(() => {
   const configuredFavicon = (siteSettings.value.siteFavicon || '').toString().trim()
-  if (configuredFavicon) return configuredFavicon
+  if (configuredFavicon) return resolveConfiguredAsset(configuredFavicon)
 
   const configuredLogo = (siteSettings.value.siteLogo || '').toString().trim()
-  return configuredLogo || '/favicon.svg'
+  return configuredLogo ? resolveConfiguredAsset(configuredLogo) : '/favicon.svg'
 })
 
 useHead(() => ({

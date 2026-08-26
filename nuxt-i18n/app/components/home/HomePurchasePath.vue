@@ -1,15 +1,15 @@
 <template>
-  <section id="home-buying-path" class="bg-transparent py-8 text-white sm:py-10 lg:py-12">
+  <section id="home-buying-path" class="bg-transparent py-8 tz-text-primary sm:py-10 lg:py-12">
       <div class="page-content-shell px-0 md:px-6">
         <div class="flex flex-col gap-4 sm:gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div class="max-w-3xl">
             <span
-              class="inline-flex items-center gap-2 rounded-full border border-[#B5FF6D]/30 bg-[#B5FF6D]/10 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-[#B5FF6D]"
+              class="inline-flex items-center gap-2 rounded-full border border-[#059669]/30 bg-[#059669]/10 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-[#059669]"
             >
               <Icon name="lucide:route" class="h-3.5 w-3.5" aria-hidden="true" />
               {{ section.eyebrow }}
             </span>
-            <h2 class="mt-3 text-2xl font-semibold leading-tight text-white sm:text-3xl">
+            <h2 class="mt-3 text-2xl font-semibold leading-tight tz-text-primary sm:text-3xl">
               {{ section.title }}
             </h2>
           </div>
@@ -24,12 +24,12 @@
             <div>
               <div class="flex items-center gap-3">
                 <div
-                  class="grid h-11 w-11 shrink-0 place-items-center text-[#B5FF6D]"
+                  class="grid h-11 w-11 shrink-0 place-items-center text-[#059669]"
                   aria-hidden="true"
                 >
                   <Icon :name="card.icon" class="h-6 w-6" />
                 </div>
-                <h3 class="min-w-0 text-lg font-semibold leading-tight text-white">{{ card.title }}</h3>
+                <h3 class="min-w-0 text-lg font-semibold leading-tight tz-text-primary">{{ card.title }}</h3>
               </div>
               <p class="mt-4 text-sm leading-relaxed tz-text-secondary">
                 {{ card.description }}
@@ -42,7 +42,7 @@
                 <span
                   v-for="highlight in card.highlights"
                   :key="highlight"
-                  class="rounded-full border border-white/10 bg-white/[0.06] px-2.5 py-1 text-[11px] font-semibold uppercase leading-none tracking-[0.12em] text-white/90"
+                  class="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold uppercase leading-none tracking-[0.12em] tz-text-muted"
                 >
                   {{ highlight }}
                 </span>

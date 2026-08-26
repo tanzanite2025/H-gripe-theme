@@ -15,17 +15,20 @@ var ErrInvalidSEOCanonicalURL = errors.New("invalid SEO canonical URL")
 type SEOResourceService struct {
 	posts            *PostService
 	products         *ProductService
-	settings         *SettingService
+	categories       *ProductCategoryService
 	mediaURLResolver PublicMediaURLResolver
 	canonicalBaseURL string
 }
 
-func NewSEOResourceService(posts *PostService, products *ProductService, settings *SettingService) *SEOResourceService {
-	return &SEOResourceService{
+func NewSEOResourceService(posts *PostService, products *ProductService, categoryServices ...*ProductCategoryService) *SEOResourceService {
+	service := &SEOResourceService{
 		posts:    posts,
 		products: products,
-		settings: settings,
 	}
+	if len(categoryServices) > 0 {
+		service.categories = categoryServices[0]
+	}
+	return service
 }
 
 func (s *SEOResourceService) ConfigureCanonicalBaseURL(baseURL string) {
@@ -128,15 +131,6 @@ func (s *SEOResourceService) ProductDiagnostics(item product.Product) (seodomain
 	if item.Brand != nil {
 		brand = item.Brand.Name
 	}
-	if s.settings != nil {
-		siteSettings, err := s.settings.GetSiteSettings(item.Locale)
-		if err != nil {
-			return seodomain.ProductSEOReadiness{}, err
-		}
-		if siteSettings != nil && brand == "" {
-			brand = siteSettings.BrandTitle
-		}
-	}
 
 	routePath := seodomain.BuildProductRoute(item.Locale, item.Slug).Path
 	result := seodomain.BuildProductSEOReadiness(item, brand, routePath)
@@ -146,7 +140,95 @@ func (s *SEOResourceService) ProductDiagnostics(item product.Product) (seodomain
 			result.StructuredData.Image[index],
 		)
 	}
+	result.Breadcrumb = seodomain.ProductSEOBreadcrumbPreview{
+		Status: "unavailable",
+		Items:  []seodomain.ProductSEOBreadcrumbItem{},
+	}
+	result.BreadcrumbSSR = "blocked"
+	if s.categories == nil {
+		result.Breadcrumb.Reason = "category_service_unavailable"
+		result.BreadcrumbReason = result.Breadcrumb.Reason
+		return result, nil
+	}
+
+	breadcrumb, err := s.categories.BuildProductBreadcrumb(item, item.Locale)
+	if err != nil {
+		return seodomain.ProductSEOReadiness{}, err
+	}
+	result.Breadcrumb = projectProductBreadcrumb(breadcrumb)
+	result.BreadcrumbComplete = productBreadcrumbPathComplete(result.Breadcrumb)
+	if result.BreadcrumbComplete {
+		result.BreadcrumbSSR = "ready"
+	} else {
+		result.BreadcrumbSSR = "blocked"
+	}
+	result.BreadcrumbReason = result.Breadcrumb.Reason
+	for _, item := range result.Breadcrumb.Items {
+		if item.Type != "category" {
+			continue
+		}
+		result.PrimaryCategory = &seodomain.ProductSEOPrimaryCategory{
+			ID:   item.ID,
+			Name: item.Name,
+			Slug: item.Slug,
+			Path: item.Path,
+		}
+		break
+	}
 	return result, nil
+}
+
+func projectProductBreadcrumb(view *ProductBreadcrumbView) seodomain.ProductSEOBreadcrumbPreview {
+	result := seodomain.ProductSEOBreadcrumbPreview{
+		Status: "unavailable",
+		Items:  []seodomain.ProductSEOBreadcrumbItem{},
+	}
+	if view == nil {
+		result.Reason = "breadcrumb_unavailable"
+		return result
+	}
+	result.Status = view.Status
+	result.Reason = view.Reason
+	result.Items = make([]seodomain.ProductSEOBreadcrumbItem, 0, len(view.Items))
+	for _, item := range view.Items {
+		result.Items = append(result.Items, seodomain.ProductSEOBreadcrumbItem{
+			Type: item.Type,
+			ID:   item.ID,
+			Name: item.Name,
+			Slug: item.Slug,
+			Path: item.Path,
+		})
+	}
+	return result
+}
+
+func productBreadcrumbPathComplete(view seodomain.ProductSEOBreadcrumbPreview) bool {
+	if view.Status != "ready" || len(view.Items) < 3 {
+		return false
+	}
+	if view.Items[0].Type != "home" || view.Items[1].Type != "shop" {
+		return false
+	}
+	if view.Items[0].Path == "" || view.Items[1].Path == "" {
+		return false
+	}
+
+	categoryCount := 0
+	for index, item := range view.Items {
+		if item.Name == "" || item.Path == "" {
+			return false
+		}
+		if index == len(view.Items)-1 {
+			return item.Type == "product" && strings.Contains(item.Path, "/products/")
+		}
+		if item.Type == "category" {
+			categoryCount++
+			if !strings.Contains(item.Path, "/shop/") {
+				return false
+			}
+		}
+	}
+	return categoryCount > 0
 }
 
 func (s *SEOResourceService) UpdateProduct(id uint, request seodomain.ProductResourceUpdateRequest) (*product.Product, error) {
@@ -157,4 +239,51 @@ func (s *SEOResourceService) UpdateProduct(id uint, request seodomain.ProductRes
 		MetaTitle:       request.MetaTitle,
 		MetaDescription: request.MetaDescription,
 	})
+}
+
+func (s *SEOResourceService) ListCategories(page, pageSize int, locale, search string) ([]ProductCategorySEOView, int64, error) {
+	if s == nil || s.categories == nil {
+		return nil, 0, ErrProductCategoryNotFound
+	}
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 {
+		pageSize = 20
+	}
+
+	items, err := s.categories.ListSEO(true, locale, search)
+	if err != nil {
+		return nil, 0, err
+	}
+	total := int64(len(items))
+	offset := (page - 1) * pageSize
+	if offset >= len(items) {
+		return []ProductCategorySEOView{}, total, nil
+	}
+	end := offset + pageSize
+	if end > len(items) {
+		end = len(items)
+	}
+	return items[offset:end], total, nil
+}
+
+func (s *SEOResourceService) GetCategory(id uint, locale string) (*ProductCategorySEOView, error) {
+	if s == nil || s.categories == nil {
+		return nil, ErrProductCategoryNotFound
+	}
+	return s.categories.GetSEO(id, locale)
+}
+
+func (s *SEOResourceService) UpdateCategory(id uint, request seodomain.CategoryResourceUpdateRequest) (*ProductCategorySEOView, error) {
+	if s == nil || s.categories == nil {
+		return nil, ErrProductCategoryNotFound
+	}
+	return s.categories.UpdateSEO(
+		id,
+		request.Locale,
+		request.MetaTitle,
+		request.MetaDescription,
+		request.Intro,
+	)
 }

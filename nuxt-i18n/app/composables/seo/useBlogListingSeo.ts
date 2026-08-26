@@ -32,11 +32,11 @@ export const useBlogListingSeo = (options: UseBlogListingSeoOptions) => {
     return trimTrailingSlash(configured || requestUrl.origin)
   })
 
-  const listingPath = computed(() => `/blog/${options.category}`)
+  const listingPath = computed(() => `/resources/blog/${options.category}`)
   const listingUrl = computed(() => {
     return toAbsoluteSeoUrl(siteOrigin.value, localePath(listingPath.value))
   })
-  const blogPath = computed(() => localePath('/blog'))
+  const blogPath = computed(() => localePath('/resources/blog'))
   const blogUrl = computed(() => toAbsoluteSeoUrl(siteOrigin.value, blogPath.value))
   const title = computed(() => cleanText(toValue(options.title)))
   const description = computed(() => cleanText(toValue(options.description)))
@@ -51,7 +51,7 @@ export const useBlogListingSeo = (options: UseBlogListingSeoOptions) => {
 
       const articleUrl = toAbsoluteSeoUrl(
         siteOrigin.value,
-        localePath(`/blog/${options.category}/${slug}`),
+        localePath(`/resources/blog/${options.category}/${slug}`),
       )
       const imageUrl = cleanText(post.featuredImage?.url)
       const article = {

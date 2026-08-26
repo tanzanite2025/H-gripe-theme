@@ -1,7 +1,7 @@
 <template>
-  <section class="share-your-feedback-card mt-10 rounded-2xl backdrop-blur-xl p-4 md:p-6 shadow-[0_12px_30px_-18px_rgba(0,0,0,0.98)]">
+  <section class="share-your-feedback-card mt-10 rounded-2xl backdrop-blur-xl p-4 md:p-6 shadow-md">
     <header class="mb-4 md:mb-6">
-      <h2 class="text-lg md:text-xl font-semibold text-slate-50">
+      <h2 class="text-lg md:text-xl font-semibold tz-text-primary">
         {{ titleText }}
       </h2>
       <p v-if="subtitleText" class="mt-1 text-sm tz-text-secondary">
@@ -19,7 +19,7 @@
           v-model="searchQuery"
           type="text"
           :placeholder="$t('feedback.searchPlaceholder', 'Type to filter comments on this page...')"
-          class="w-full rounded-lg border-none bg-slate-900/70 px-3 py-2 text-sm text-slate-50 placeholder:text-slate-500 shadow-[0_2px_6px_rgba(0,0,0,0.9)] focus:outline-none focus:ring-2 focus:ring-[#B5FF6D]"
+          class="w-full rounded-lg border-none tz-surface-panel px-3 py-2 text-sm tz-text-primary placeholder:tz-text-muted shadow-md focus:outline-none focus:ring-2 focus:ring-[#059669]"
         />
       </div>
     </div>
@@ -36,27 +36,27 @@
         v-for="item in filteredItems"
         v-else
         :key="item.id"
-        class="rounded-xl border border-slate-700/60 bg-slate-900/60 px-3 py-2.5 md:px-4 md:py-3 shadow-[0_4px_10px_-4px_rgba(0,0,0,0.95)]"
+        class="rounded-xl border tz-border-subtle tz-surface-panel px-3 py-2.5 md:px-4 md:py-3 shadow-md"
       >
         <header class="mb-1.5 flex items-center justify-between gap-2">
-          <span class="text-sm font-medium text-slate-100">
+          <span class="text-sm font-medium tz-text-secondary">
             {{ item.name || $t('feedback.anonymous', 'Member') }}
           </span>
           <span class="text-xs tz-text-muted">
             {{ formatDate(item.created_at) }}
           </span>
         </header>
-        <p class="text-sm leading-relaxed text-slate-200 whitespace-pre-line">
+        <p class="text-sm leading-relaxed tz-text-secondary whitespace-pre-line">
           {{ item.content }}
         </p>
         <div
           v-if="item.reply_content"
-          class="mt-3 rounded-lg border border-[#B5FF6D]/20 bg-[#B5FF6D]/10 px-3 py-2"
+          class="mt-3 rounded-lg border border-[#059669]/20 bg-[#059669]/10 px-3 py-2"
         >
-          <p class="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#B5FF6D]">
+          <p class="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#059669]">
             {{ $t('feedback.storeReply', 'Store reply') }}
           </p>
-          <p class="mt-1 text-sm leading-relaxed text-slate-100 whitespace-pre-line">
+          <p class="mt-1 text-sm leading-relaxed tz-text-secondary whitespace-pre-line">
             {{ item.reply_content }}
           </p>
         </div>
@@ -64,7 +64,7 @@
     </div>
 
     <!-- Divider -->
-    <div class="mt-6 border-t border-white/10 pt-4 md:pt-5">
+    <div class="mt-6 border-t tz-border-subtle pt-4 md:pt-5">
       <!-- Eligibility message -->
       <div v-if="eligibilityPending" class="space-y-3">
         <p class="text-sm tz-text-secondary">
@@ -78,14 +78,14 @@
         <div class="flex flex-wrap gap-2">
           <button
             type="button"
-            class="inline-flex items-center justify-center rounded-full bg-white px-4 py-2 text-sm font-semibold text-black shadow-[8px_8px_22px_rgba(0,0,0,0.92)] hover:bg-white/90 hover:shadow-[10px_10px_26px_rgba(0,0,0,0.95)] transition-all"
+            class="inline-flex items-center justify-center rounded-full bg-white px-4 py-2 text-sm font-semibold text-black shadow-md hover:bg-white/90 hover:shadow-md transition-all"
             @click="showAuth = true"
           >
             {{ $t('feedback.loginCta', 'Sign in or create an account') }}
           </button>
           <button
             type="button"
-            class="inline-flex items-center justify-center rounded-full bg-white px-4 py-2 text-sm font-semibold text-black shadow-[8px_8px_22px_rgba(0,0,0,0.92)] hover:bg-white/90 hover:shadow-[10px_10px_26px_rgba(0,0,0,0.95)] transition-all"
+            class="inline-flex items-center justify-center rounded-full bg-white px-4 py-2 text-sm font-semibold text-black shadow-md hover:bg-white/90 hover:shadow-md transition-all"
             @click="openWhatsApp"
           >
             {{ $t('feedback.liveChatCta', 'To live chat') }}
@@ -106,7 +106,7 @@
           <textarea
             v-model="message"
             rows="3"
-            class="w-full rounded-lg border-none bg-slate-900/70 px-3 py-2 text-sm text-slate-50 placeholder:text-slate-500 shadow-[0_2px_6px_rgba(0,0,0,0.9)] focus:outline-none focus:ring-2 focus:ring-[#B5FF6D]"
+          class="w-full rounded-lg border-none tz-surface-panel px-3 py-2 text-sm tz-text-primary placeholder:tz-text-muted shadow-md focus:outline-none focus:ring-2 focus:ring-[#059669]"
             :placeholder="$t('feedback.messagePlaceholder', 'Tell us what worked well and what could be improved...')"
           />
         </div>
@@ -119,7 +119,7 @@
             <input
               v-model="name"
               type="text"
-              class="w-full rounded-lg border-none bg-slate-900/70 px-3 py-2 text-sm text-slate-50 placeholder:text-slate-500 shadow-[0_2px_6px_rgba(0,0,0,0.9)] focus:outline-none focus:ring-2 focus:ring-[#B5FF6D]"
+              class="w-full rounded-lg border-none tz-surface-panel px-3 py-2 text-sm tz-text-primary placeholder:tz-text-muted shadow-md focus:outline-none focus:ring-2 focus:ring-[#059669]"
               :placeholder="$t('feedback.namePlaceholder', 'How should we address you?')"
             />
           </div>
@@ -130,7 +130,7 @@
             <input
               v-model="email"
               type="email"
-              class="w-full rounded-lg border-none bg-slate-900/70 px-3 py-2 text-sm text-slate-50 placeholder:text-slate-500 shadow-[0_2px_6px_rgba(0,0,0,0.9)] focus:outline-none focus:ring-2 focus:ring-[#B5FF6D]"
+            class="w-full rounded-lg border-none tz-surface-panel px-3 py-2 text-sm tz-text-primary placeholder:tz-text-muted shadow-md focus:outline-none focus:ring-2 focus:ring-[#059669]"
               :placeholder="$t('feedback.emailPlaceholder', 'For follow-up only, never shared publicly.')"
             />
           </div>
@@ -139,7 +139,7 @@
         <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <button
             type="submit"
-            class="inline-flex items-center justify-center rounded-full bg-[#B5FF6D] px-5 py-2.5 text-sm font-semibold text-black shadow-md transition-all hover:bg-[#c8ff91] disabled:cursor-not-allowed disabled:opacity-60"
+            class="inline-flex items-center justify-center rounded-full bg-[#059669] px-5 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:bg-[#047857] disabled:cursor-not-allowed disabled:opacity-60"
             :disabled="loadingSubmit || !message.trim()"
           >
             <span v-if="loadingSubmit">
@@ -150,7 +150,7 @@
             </span>
           </button>
 
-          <p v-if="submitMessage" class="text-xs text-emerald-400">
+          <p v-if="submitMessage" class="text-xs text-emerald-600">
             {{ submitMessage }}
           </p>
           <p v-else-if="submitError" class="text-xs text-red-400">

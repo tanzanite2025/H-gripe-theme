@@ -23,8 +23,8 @@
     <!-- Tab 1: Brass VS Alloy -->
     <div v-show="activeTab === 'brass-vs-alloy'" class="space-y-8">
        <!-- Intro -->
-       <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 text-center border-t-4 border-amber-500">
-          <h3 class="text-xl font-bold text-slate-100 mb-2">Brass vs. Alloy Nipples: How to Choose</h3>
+       <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6 text-center border-t-4 border-amber-500">
+          <h3 class="text-xl font-bold tz-text-secondary mb-2">Brass vs. Alloy Nipples: How to Choose</h3>
       <p class="text-sm tz-text-secondary max-w-2xl mx-auto">
              When configuring a wheelset, the choice between brass and alloy affects weight, durability, and aesthetics. Here is a breakdown to help you decide.
           </p>
@@ -33,19 +33,19 @@
        <!-- Comparison Grid -->
        <div class="grid gap-6 md:grid-cols-2">
           <!-- 1. Weight -->
-          <div class="bg-slate-800/30 p-5 rounded-xl border border-slate-700/50 hover:border-slate-600 transition-colors">
+          <div class="tz-surface-panel p-5 rounded-xl border tz-border-subtle hover:tz-border-subtle transition-colors">
              <div class="flex items-center gap-3 mb-4">
-                <span class="flex h-8 w-8 items-center justify-center rounded-full bg-slate-700 text-slate-300 font-bold text-sm">1</span>
+                <span class="flex h-8 w-8 items-center justify-center rounded-full tz-surface-panel tz-text-secondary font-bold text-sm">1</span>
         <h4 class="text-lg font-bold tz-text-primary">Weight</h4>
              </div>
           <ul class="space-y-3 text-sm tz-text-secondary">
-                <li class="flex justify-between border-b border-slate-700/50 pb-2">
+                <li class="flex justify-between border-b tz-border-subtle pb-2">
                    <span>Brass</span>
             <span class="font-mono tz-text-primary">~1.0g / pc</span>
                 </li>
-                 <li class="flex justify-between border-b border-slate-700/50 pb-2">
+                 <li class="flex justify-between border-b tz-border-subtle pb-2">
                    <span>Alloy</span>
-                   <span class="font-mono text-emerald-400">~0.33g / pc</span>
+                   <span class="font-mono text-emerald-600">~0.33g / pc</span>
                 </li>
                 <li class="text-xs tz-text-muted italic pt-1">
                    Impact: Significant rotational weight savings across 44-72 nipples positioned at the rim perimeter.
@@ -54,9 +54,9 @@
           </div>
 
            <!-- 2. Color -->
-          <div class="bg-slate-800/30 p-5 rounded-xl border border-slate-700/50 hover:border-slate-600 transition-colors">
+          <div class="tz-surface-panel p-5 rounded-xl border tz-border-subtle hover:tz-border-subtle transition-colors">
              <div class="flex items-center gap-3 mb-4">
-                <span class="flex h-8 w-8 items-center justify-center rounded-full bg-slate-700 text-slate-300 font-bold text-sm">2</span>
+                <span class="flex h-8 w-8 items-center justify-center rounded-full tz-surface-panel tz-text-secondary font-bold text-sm">2</span>
         <h4 class="text-lg font-bold tz-text-primary">Color Options</h4>
              </div>
           <ul class="space-y-3 text-sm tz-text-secondary">
@@ -65,16 +65,16 @@
                    <span>Limited (Black/Silver). Black coating may fade over time.</span>
                 </li>
                  <li class="flex items-start gap-2">
-                   <strong class="text-fuchsia-400 shrink-0">Alloy:</strong>
+                   <strong class="text-emerald-600 shrink-0">Alloy:</strong>
                    <span>Anodized in vibrant colors (Red, Blue, Gold, Purple, etc).</span>
                 </li>
              </ul>
           </div>
 
            <!-- 3. Strength -->
-          <div class="bg-slate-800/30 p-5 rounded-xl border border-slate-700/50 hover:border-slate-600 transition-colors">
+          <div class="tz-surface-panel p-5 rounded-xl border tz-border-subtle hover:tz-border-subtle transition-colors">
              <div class="flex items-center gap-3 mb-4">
-                <span class="flex h-8 w-8 items-center justify-center rounded-full bg-slate-700 text-slate-300 font-bold text-sm">3</span>
+                <span class="flex h-8 w-8 items-center justify-center rounded-full tz-surface-panel tz-text-secondary font-bold text-sm">3</span>
         <h4 class="text-lg font-bold tz-text-primary">Strength & Engagement</h4>
              </div>
         <p class="text-sm tz-text-secondary mb-3">
@@ -86,12 +86,12 @@
           </div>
 
            <!-- 4. Building -->
-          <div class="bg-slate-800/30 p-5 rounded-xl border border-slate-700/50 hover:border-slate-600 transition-colors">
+          <div class="tz-surface-panel p-5 rounded-xl border tz-border-subtle hover:tz-border-subtle transition-colors">
              <div class="flex items-center gap-3 mb-4">
-                <span class="flex h-8 w-8 items-center justify-center rounded-full bg-slate-700 text-slate-300 font-bold text-sm">4</span>
+                <span class="flex h-8 w-8 items-center justify-center rounded-full tz-surface-panel tz-text-secondary font-bold text-sm">4</span>
                 <h4 class="text-lg font-bold tz-text-primary">Assembly</h4>
              </div>
-             <ul class="space-y-2 text-sm tz-text-secondary list-disc list-inside marker:text-slate-600">
+             <ul class="space-y-2 text-sm tz-text-secondary list-disc list-inside marker:tz-text-muted">
                 <li>Alloy has less threading friction (less wind-up).</li>
                 <li>Alloy requires precise tools (4-sided/Squorx) to prevent rounding.</li>
                 <li>High-end Alloy (Sapim Polyax) uses 7075-T6 heat treatment.</li>
@@ -100,9 +100,9 @@
           </div>
 
            <!-- 5. Corrosion -->
-          <div class="bg-slate-800/30 p-5 rounded-xl border border-slate-700/50 hover:border-slate-600 transition-colors md:col-span-2">
+          <div class="tz-surface-panel p-5 rounded-xl border tz-border-subtle hover:tz-border-subtle transition-colors md:col-span-2">
              <div class="flex items-center gap-3 mb-4">
-                <span class="flex h-8 w-8 items-center justify-center rounded-full bg-slate-700 text-slate-300 font-bold text-sm">5</span>
+                <span class="flex h-8 w-8 items-center justify-center rounded-full tz-surface-panel tz-text-secondary font-bold text-sm">5</span>
                 <h4 class="text-lg font-bold tz-text-primary">Corrosion Resistance</h4>
              </div>
              <div class="grid md:grid-cols-2 gap-4">
@@ -110,8 +110,8 @@
                    <strong class="block text-amber-500 mb-1 text-sm">Brass</strong>
                    <p class="text-xs tz-text-secondary">Naturally robust against corrosion. Best for coastal/winter riding.</p>
                 </div>
-                 <div class="bg-indigo-500/5 p-3 rounded-lg">
-                   <strong class="block text-indigo-400 mb-1 text-sm">High-End Alloy</strong>
+                 <div class="bg-emerald-50 p-3 rounded-lg">
+                   <strong class="block text-emerald-600 mb-1 text-sm">High-End Alloy</strong>
                    <p class="text-xs tz-text-secondary">Cheap alloy corrodes easily. Premium alloy (Sapim) has special treatments outperforming basic plated brass.</p>
                 </div>
              </div>
@@ -119,24 +119,24 @@
        </div>
 
        <!-- Summary -->
-       <div class="rounded-2xl bg-gradient-to-r from-emerald-900/20 to-emerald-800/20 border border-emerald-500/30 p-6">
-          <h4 class="text-emerald-400 font-bold text-lg mb-4 flex items-center gap-2">
+       <div class="rounded-2xl bg-emerald-50 border border-emerald-200 p-6">
+          <h4 class="text-emerald-600 font-bold text-lg mb-4 flex items-center gap-2">
              ✅ Summary Recommendations
           </h4>
           <div class="space-y-3">
-             <div class="flex items-center gap-3 bg-slate-900/50 p-3 rounded-lg">
+             <div class="flex items-center gap-3 tz-surface-panel p-3 rounded-lg">
                 <span class="tz-text-secondary text-sm">Lightweight & Color</span>
-                <span class="flex-1 border-b border-dashed border-slate-700 mx-2"></span>
-                <strong class="text-emerald-400 text-sm">Choose Alloy</strong>
+                <span class="flex-1 border-b border-dashed tz-border-strong mx-2"></span>
+                <strong class="text-emerald-600 text-sm">Choose Alloy</strong>
              </div>
-             <div class="flex items-center gap-3 bg-slate-900/50 p-3 rounded-lg">
+             <div class="flex items-center gap-3 tz-surface-panel p-3 rounded-lg">
                 <span class="tz-text-secondary text-sm">Max Durability</span>
-                <span class="flex-1 border-b border-dashed border-slate-700 mx-2"></span>
+                <span class="flex-1 border-b border-dashed tz-border-strong mx-2"></span>
                 <strong class="text-amber-500 text-sm">Choose Brass</strong>
              </div>
-             <div class="flex items-center gap-3 bg-slate-900/50 p-3 rounded-lg">
+             <div class="flex items-center gap-3 tz-surface-panel p-3 rounded-lg">
                 <span class="tz-text-secondary text-sm">Carbon Rims</span>
-                <span class="flex-1 border-b border-dashed border-slate-700 mx-2"></span>
+                <span class="flex-1 border-b border-dashed tz-border-strong mx-2"></span>
                 <strong class="tz-text-primary text-sm">High-Quality Alloy or Brass</strong>
              </div>
           </div>
@@ -149,7 +149,7 @@
        <!-- Section 1: Deep Rims & Angles -->
        <section>
           <div class="mb-6">
-            <h3 class="text-xl font-bold text-slate-100 mb-3">Rim Depth & Spoke Entry Angles</h3>
+            <h3 class="text-xl font-bold tz-text-secondary mb-3">Rim Depth & Spoke Entry Angles</h3>
             <p class="text-sm tz-text-secondary leading-relaxed max-w-3xl">
                As rims get deeper (≥40-50mm), the angle at which spokes enter the rim becomes sharper. Standard nipples may bind against the rim bed, causing spoke bending. Using <strong>Polyax (rounded head)</strong> nipples and appropriate internal/extended designs helps align the spoke line.
             </p>
@@ -157,13 +157,13 @@
           
           <div class="grid md:grid-cols-2 gap-6">
              <div class="space-y-4">
-                <div class="bg-indigo-500/5 p-4 rounded-xl border border-indigo-500/10">
-                   <strong class="block text-indigo-400 text-sm mb-2">The Deep Rim Challenge</strong>
+                <div class="bg-emerald-50 p-4 rounded-xl border border-emerald-200">
+                   <strong class="block text-emerald-600 text-sm mb-2">The Deep Rim Challenge</strong>
                    <p class="text-xs tz-text-secondary leading-relaxed">
                       On deep rims, nipples have less room to tilt. If the nipple cannot align with the spoke hub flange, the spoke bends at the threaded section, leading to fatigue failures.
                    </p>
                 </div>
-                 <div class="bg-slate-800/40 p-4 rounded-xl">
+                 <div class="tz-surface-panel p-4 rounded-xl">
                     <strong class="block tz-text-primary text-sm mb-2">Matched Drilling</strong>
                     <p class="text-xs tz-text-secondary leading-relaxed">
                        We recommend rims with "matched drilling" (angled holes) or using Polyax nipples + washers to strictly minimize spoke bending.
@@ -193,16 +193,16 @@
        
        <!-- Section 2: Special Nipple Types -->
        <section>
-          <h3 class="text-lg font-bold text-slate-100 mb-6 flex items-center gap-2">
-             <span class="w-1 h-6 bg-sky-500 rounded-full"></span>
+          <h3 class="text-lg font-bold tz-text-secondary mb-6 flex items-center gap-2">
+             <span class="w-1 h-6 bg-emerald-500 rounded-full"></span>
              Advanced Nipple Options
           </h3>
           
           <div class="grid md:grid-cols-3 gap-6">
              <!-- Double Square -->
-             <div class="bg-[var(--tz-card-surface)] rounded-xl overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.5)] flex flex-col">
+             <div class="bg-[var(--tz-card-surface)] rounded-xl overflow-hidden shadow-md flex flex-col">
                 <div class="p-4 flex-1">
-                   <strong class="block text-sky-400 mb-2">Double Square</strong>
+                   <strong class="block text-emerald-600 mb-2">Double Square</strong>
                    <p class="text-xs tz-text-secondary mb-3">
                       Extended head with a square tool interface. Allows tightening from inside the rim.
                    </p>
@@ -215,7 +215,7 @@
              </div>
 
              <!-- Upside Down (Internal) -->
-             <div class="bg-[var(--tz-card-surface)] rounded-xl overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.5)] flex flex-col">
+             <div class="bg-[var(--tz-card-surface)] rounded-xl overflow-hidden shadow-md flex flex-col">
                 <div class="p-4 flex-1">
                    <strong class="block tz-text-primary mb-2">Internal (Upside Down)</strong>
                    <p class="text-xs tz-text-secondary mb-3">
@@ -230,8 +230,8 @@
              </div>
              
              <!-- Secure Lock -->
-             <div class="bg-[var(--tz-card-surface)] rounded-xl overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.5)] flex flex-col">
-                <div class="h-32 overflow-hidden bg-white/5">
+             <div class="bg-[var(--tz-card-surface)] rounded-xl overflow-hidden shadow-md flex flex-col">
+                <div class="h-32 overflow-hidden tz-surface-subtle">
                     <GuideImage
                       src="/public/wheelsetbuyersguide/wheelcomponents/nipple/choosenipple/sapim-securelock-nipple.webp"
                       alt="Sapim Secure Lock Nipple"
@@ -250,17 +250,17 @@
        </section>
        
        <!-- Section 3: Washers -->
-       <section class="bg-slate-800/30 rounded-2xl p-6 border border-slate-700/30">
+       <section class="tz-surface-panel rounded-2xl p-6 border tz-border-subtle">
           <div class="flex flex-col md:flex-row gap-8 items-center">
              <div class="flex-1">
-                <h3 class="text-lg font-bold text-slate-100 mb-3">Why Washers Matter</h3>
+                <h3 class="text-lg font-bold tz-text-secondary mb-3">Why Washers Matter</h3>
                 <p class="text-sm tz-text-secondary leading-relaxed mb-4">
                    Washers increase the contact area between the nipple and rim bed. They act like a micro spherical seat, allowing the nipple to better align with the spoke angle, reducing bending stress and preventing rim bed damage.
                 </p>
                 <div class="flex flex-wrap gap-2">
-                   <span class="px-3 py-1 rounded-full bg-slate-700 text-xs tz-text-secondary">Load Spreading</span>
-                   <span class="px-3 py-1 rounded-full bg-slate-700 text-xs tz-text-secondary">Angle Adaptation</span>
-                   <span class="px-3 py-1 rounded-full bg-slate-700 text-xs tz-text-secondary">Rim Protection</span>
+                   <span class="px-3 py-1 rounded-full tz-surface-subtle text-xs tz-text-secondary">Load Spreading</span>
+                   <span class="px-3 py-1 rounded-full tz-surface-subtle text-xs tz-text-secondary">Angle Adaptation</span>
+                   <span class="px-3 py-1 rounded-full tz-surface-subtle text-xs tz-text-secondary">Rim Protection</span>
                 </div>
              </div>
              <div class="flex gap-4 shrink-0">
