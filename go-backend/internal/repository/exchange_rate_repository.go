@@ -78,6 +78,14 @@ func (r *ExchangeRateRepository) UpsertRates(rates []currency.ExchangeRate) erro
 			{Name: "base_currency"},
 			{Name: "quote_currency"},
 		},
+		TargetWhere: clause.Where{
+			Exprs: []clause.Expression{
+				clause.Eq{
+					Column: clause.Column{Name: "deleted_at"},
+					Value:  nil,
+				},
+			},
+		},
 		DoUpdates: clause.AssignmentColumns([]string{
 			"rate",
 			"source",
