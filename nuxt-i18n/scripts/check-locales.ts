@@ -438,7 +438,10 @@ function addNuxtActiveSourceLocaleFailures(
       const normalizedLiteral = normalizeLocaleLiteral(literal)
       const line = lineNumberAt(source, match.index || 0)
 
-      if (legacyUnsupportedStorefrontLocaleLiterals.has(normalizedLiteral)) {
+      if (
+        !supportedCodes.has(literal) &&
+        legacyUnsupportedStorefrontLocaleLiterals.has(normalizedLiteral)
+      ) {
         failures.push({
           source: 'nuxt active source',
           message: `${toDisplayPath(filePath)}:${line} uses legacy/unsupported storefront locale literal ${JSON.stringify(literal)}. Use normalizeStorefrontLocaleCode() and the fixed manifest registry.`,
