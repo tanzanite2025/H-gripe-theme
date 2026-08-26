@@ -25,12 +25,10 @@
         :site-settings="siteSettings"
         :email-settings="emailSettings"
         :api-settings="apiSettings"
-        :primary-pricing-currency="primaryPricingCurrency"
         :commercial-crawler-protection="commercialCrawlerProtection"
         :loading-commercial-crawler-protection="loadingCommercialCrawlerProtection"
         :uploading-site-logo="uploadingSiteLogo"
         :uploading-site-favicon="uploadingSiteFavicon"
-        :syncing-exchange-rates="syncingExchangeRates"
         :saving-api-settings="saving && activeTab === 'api'"
         :loading-public-chat-agents="loadingPublicChatAgents"
         :loading-public-chat-groups="loadingPublicChatGroups"
@@ -51,8 +49,6 @@
         @edit-group="editPublicChatGroup"
         @delete-group="deletePublicChatGroup"
         @refresh-public-chat="refreshPublicChat"
-        @sync-exchange-rates="syncExchangeRates"
-        @currency-policy-saved="handleCurrencyPolicySaved"
         @refresh-commercial-crawler-protection="fetchCommercialCrawlerProtection"
         @upload-site-logo="uploadSiteLogo"
         @clear-site-logo="clearSiteLogo"
@@ -105,24 +101,21 @@ import type {
 } from '@/api/refundReturnPolicy'
 import mediaApi from '@/api/media'
 import { assetAccessURL } from '@/lib/mediaPresentation'
+import { validateUploadFile } from '@/lib/uploadSpecs'
 import { useAuthStore } from '@/stores/auth'
 import axios from '@/utils/axios'
 
 const authStore = useAuthStore()
 const { t } = useAdminI18n()
-const DAILY_API_REFRESH_MINUTES = 1440
-const EXCHANGE_RATE_PROVIDER = 'ExchangeRate-API'
-const DEFAULT_PRICING_CURRENCY = 'USD'
-const EXCHANGE_RATE_ENDPOINT = 'https://v6.exchangerate-api.com/v6/{apiKey}/latest/{base}'
+const DISABLED_TIME_API_REFRESH_MINUTES = 0
 const CUSTOMS_LOOKUP_US_HTS_ENDPOINT = 'https://hts.usitc.gov/reststop/search'
 const CUSTOMS_LOOKUP_UK_TRADE_TARIFF_ENDPOINT = 'https://www.trade-tariff.service.gov.uk/api/v2/commodities'
 const activeTab = useRouteTab({
   defaultValue: 'site',
-  values: ['site', 'email', 'currency', 'markets', 'api', 'commercial_crawler', 'public_chat', 'refund_return'],
+  values: ['site', 'email', 'markets', 'api', 'commercial_crawler', 'public_chat', 'refund_return'],
   routes: {
     site: 'SettingsSite',
     email: 'SettingsEmail',
-    currency: 'SettingsCurrency',
     markets: 'SettingsMarkets',
     api: 'SettingsApi',
     commercial_crawler: 'SettingsCommercialCrawler',
@@ -145,14 +138,11 @@ interface SettingsGroupDefinition {
 }
 
 const pageTitle = computed(() => (
-  activeTab.value === 'currency'
-    ? t('settings.systemTitle')
-    : activeTab.value === 'public_chat'
-      ? t('settings.publicChatTitle')
-      : t('settings.systemTitle')
+  activeTab.value === 'public_chat'
+    ? t('settings.publicChatTitle')
+    : t('settings.systemTitle')
 ))
 const pageDescription = computed(() => {
-  if (activeTab.value === 'currency') return t('settings.currencyDescription')
   if (activeTab.value === 'markets') return t('settings.marketsDescription')
   if (activeTab.value === 'public_chat') return t('settings.publicChatDescription')
   if (activeTab.value === 'refund_return') return '集中维护前台退货退款政策，支持图片说明并可在页面或弹窗复用。'
@@ -164,19 +154,15 @@ const uploadingSiteLogo = ref(false)
 const uploadingSiteFavicon = ref(false)
 const showSmtpPassword = ref(false)
 const loadedGroups = new Set()
-const selfSavingTabs = new Set(['currency', 'markets', 'api', 'commercial_crawler', 'public_chat', 'refund_return'])
+const selfSavingTabs = new Set(['markets', 'api', 'commercial_crawler', 'public_chat', 'refund_return'])
 
 const siteSettings = reactive({
   site_name: '',
-  brand_title: '',
   site_description: '',
   site_logo: '',
   site_favicon: '',
   contact_email: '',
   contact_phone: '',
-  copyright_holder: '',
-  copyright_notice: '',
-  copyright_url: '',
   admin_brand_name: '',
   admin_brand_initial: '',
   admin_panel_label: '',
@@ -186,18 +172,12 @@ const siteSettings = reactive({
 })
 const emailSettings = reactive({ smtp_host: '', smtp_port: 587, smtp_username: '', smtp_password: '', from_email: '', from_name: '' })
 const apiSettings = reactive({
-  exchange_rate_enabled: false,
-  exchange_rate_provider: EXCHANGE_RATE_PROVIDER,
-  exchange_rate_endpoint: EXCHANGE_RATE_ENDPOINT,
-  exchange_rate_query_template: '',
-  exchange_rate_refresh_minutes: DAILY_API_REFRESH_MINUTES,
-  exchange_rate_api_key: '',
   time_api_enabled: false,
-  time_api_provider: '',
+  time_api_provider: 'built-in',
   time_api_endpoint: '',
-  time_api_query_template: 'timezone={timezone}',
+  time_api_query_template: '',
   time_api_default_timezone: 'Asia/Shanghai',
-  time_api_refresh_minutes: DAILY_API_REFRESH_MINUTES,
+  time_api_refresh_minutes: DISABLED_TIME_API_REFRESH_MINUTES,
   time_api_key_ref: '',
   customs_lookup_us_hts_enabled: true,
   customs_lookup_us_hts_endpoint: CUSTOMS_LOOKUP_US_HTS_ENDPOINT,
@@ -208,9 +188,6 @@ const apiSettings = reactive({
   customs_lookup_uk_trade_tariff_api_key: '',
   customs_lookup_uk_trade_tariff_api_key_header: 'X-API-Key'
 })
-const syncingExchangeRates = ref(false)
-const primaryPricingCurrency = ref(DEFAULT_PRICING_CURRENCY)
-const currencyPolicyLoaded = ref(false)
 const commercialCrawlerProtection = ref(null)
 const loadingCommercialCrawlerProtection = ref(false)
 const refundReturnPolicyLocale = ref('en')
@@ -266,60 +243,27 @@ const createRefundReturnPolicyForm = (): RefundReturnPolicyEditor => ({
 
 const refundReturnPolicy = reactive<RefundReturnPolicyEditor>(createRefundReturnPolicyForm())
 
-const normalizeCurrencyCode = (currency) => String(currency || '').trim().toUpperCase()
-const validCurrencyCodeOrDefault = (currency) => {
-  const normalized = normalizeCurrencyCode(currency)
-  return /^[A-Z]{3}$/.test(normalized) ? normalized : DEFAULT_PRICING_CURRENCY
-}
-
-const fetchCurrencyPolicyForSettings = async (force = false) => {
-  if (!force && currencyPolicyLoaded.value) return
-  try {
-    const response = await axios.get('/api/admin/settings/currency-policy')
-    const policy = response.data?.policy || {}
-    primaryPricingCurrency.value = validCurrencyCodeOrDefault(policy.primary_currency)
-    currencyPolicyLoaded.value = true
-  } catch (error) {
-    console.error('Failed to fetch currency policy:', error)
-    primaryPricingCurrency.value = DEFAULT_PRICING_CURRENCY
-  }
-}
-
-const handleCurrencyPolicySaved = async (policy = null) => {
-  currencyPolicyLoaded.value = false
-  if (policy) {
-    primaryPricingCurrency.value = validCurrencyCodeOrDefault(policy.primary_currency)
-    currencyPolicyLoaded.value = true
-  } else {
-    await fetchCurrencyPolicyForSettings(true)
-  }
-}
-
-const applyExchangeRatePreset = () => {
-  apiSettings.exchange_rate_provider = EXCHANGE_RATE_PROVIDER
-  apiSettings.exchange_rate_endpoint = EXCHANGE_RATE_ENDPOINT
-  apiSettings.exchange_rate_query_template = ''
-  apiSettings.exchange_rate_refresh_minutes = DAILY_API_REFRESH_MINUTES
-}
-
-const applyAPIRefreshDefaults = () => {
-  applyExchangeRatePreset()
-  apiSettings.time_api_refresh_minutes = DAILY_API_REFRESH_MINUTES
+const applyTimezoneDefaults = (clearExternalConfig = false) => {
+  apiSettings.time_api_default_timezone = String(apiSettings.time_api_default_timezone || '').trim() || 'Asia/Shanghai'
+  if (!clearExternalConfig) return
+  apiSettings.time_api_enabled = false
+  apiSettings.time_api_provider = 'built-in'
+  apiSettings.time_api_endpoint = ''
+  apiSettings.time_api_query_template = ''
+  apiSettings.time_api_refresh_minutes = DISABLED_TIME_API_REFRESH_MINUTES
+  apiSettings.time_api_key_ref = ''
 }
 
 const groupDefinitions: Record<string, SettingsGroupDefinition> = {
   site: {
     target: siteSettings,
     fields: {
-      brand_title: { type: 'string', public: true, description: 'Public brand title' },
+      site_name: { type: 'string', public: true, description: 'Site name' },
       site_description: { type: 'string', public: true, description: 'Site description' },
       site_logo: { type: 'string', public: true, description: 'Site logo URL' },
       site_favicon: { type: 'string', public: true, description: 'Browser favicon URL' },
       contact_email: { type: 'string', public: true, description: 'Contact email' },
       contact_phone: { type: 'string', public: true, description: 'Contact phone' },
-      copyright_holder: { type: 'string', public: false, description: 'Copyright holder for image evidence' },
-      copyright_notice: { type: 'string', public: false, description: 'Copyright notice for image evidence' },
-      copyright_url: { type: 'string', public: false, description: 'Copyright policy URL for image evidence' },
       admin_brand_name: { type: 'string', public: true, description: 'Admin brand name' },
       admin_brand_initial: { type: 'string', public: true, description: 'Admin brand initial' },
       admin_panel_label: { type: 'string', public: true, description: 'Admin panel label' },
@@ -342,19 +286,13 @@ const groupDefinitions: Record<string, SettingsGroupDefinition> = {
   api: {
     target: apiSettings,
     fields: {
-      exchange_rate_enabled: { type: 'boolean', public: false, description: 'Exchange rate API enabled' },
-      exchange_rate_provider: { type: 'string', public: false, description: 'Exchange rate API provider' },
-      exchange_rate_endpoint: { type: 'string', public: false, description: 'Exchange rate API endpoint' },
-      exchange_rate_query_template: { type: 'string', public: false, description: 'Exchange rate API query template' },
-      exchange_rate_refresh_minutes: { type: 'number', public: false, description: 'Exchange rate refresh interval in minutes' },
-      exchange_rate_api_key: { type: 'string', public: false, description: 'ExchangeRate-API key' },
-      time_api_enabled: { type: 'boolean', public: false, description: 'Time API enabled' },
-      time_api_provider: { type: 'string', public: false, description: 'Time API provider' },
-      time_api_endpoint: { type: 'string', public: false, description: 'Time API endpoint' },
-      time_api_query_template: { type: 'string', public: false, description: 'Time API query template' },
-      time_api_default_timezone: { type: 'string', public: false, description: 'Time API default timezone' },
-      time_api_refresh_minutes: { type: 'number', public: false, description: 'Time API refresh interval in minutes' },
-      time_api_key_ref: { type: 'string', public: false, description: 'Time API key reference' },
+      time_api_enabled: { type: 'boolean', public: false, description: 'External Time API disabled; timezone is built in' },
+      time_api_provider: { type: 'string', public: false, description: 'Timezone source' },
+      time_api_endpoint: { type: 'string', public: false, description: 'External Time API endpoint disabled' },
+      time_api_query_template: { type: 'string', public: false, description: 'External Time API query template disabled' },
+      time_api_default_timezone: { type: 'string', public: false, description: 'Default business timezone' },
+      time_api_refresh_minutes: { type: 'number', public: false, description: 'External Time API refresh interval disabled' },
+      time_api_key_ref: { type: 'string', public: false, description: 'External Time API key reference disabled' },
       customs_lookup_us_hts_enabled: { type: 'boolean', public: false, description: 'US HTS customs lookup enabled' },
       customs_lookup_us_hts_endpoint: { type: 'string', public: false, description: 'US HTS customs lookup endpoint' },
       customs_lookup_us_hts_api_key: { type: 'string', public: false, description: 'US HTS customs lookup API key' },
@@ -381,22 +319,10 @@ const settingKey = (setting, group, fields) => {
   return setting.key.startsWith(`${group}_`) ? setting.key.slice(group.length + 1) : setting.key
 }
 
-const legacySiteSettingKeys = new Set(['site_name'])
-
 const applyFetchedSetting = (setting, group, definition) => {
   const key = settingKey(setting, group, definition.fields)
   if (key in definition.target) {
     definition.target[key] = coerceSettingValue(setting.value, definition.fields[key]?.type || setting.type)
-    return
-  }
-  if (group === 'site' && legacySiteSettingKeys.has(key)) {
-    definition.target[key] = coerceSettingValue(setting.value, setting.type || 'string')
-  }
-}
-
-const normalizeSiteBrandSettings = () => {
-  if (!siteSettings.brand_title.trim() && siteSettings.site_name.trim()) {
-    siteSettings.brand_title = siteSettings.site_name
   }
 }
 
@@ -411,9 +337,8 @@ const fetchSettings = async (group, force = false) => {
     const canonical = settings.filter((setting) => !setting.key.startsWith(`${group}_`))
     ;[...prefixed, ...canonical].forEach((setting) => applyFetchedSetting(setting, group, definition))
     loadedGroups.add(group)
-    if (group === 'site') normalizeSiteBrandSettings()
     if (group === 'api') {
-      applyAPIRefreshDefaults()
+      applyTimezoneDefaults()
     }
   } catch (error) {
     console.error(`Failed to fetch ${group} settings:`, error)
@@ -553,11 +478,18 @@ const changeRefundReturnPolicyLocale = async (locale) => {
 
 const uploadRefundReturnImage = async ({ index, file }) => {
   if (!file || !refundReturnPolicy.sections[index]) return
+  const validation = await validateUploadFile(file, 'refund_return_image')
+  if (!validation.ok) {
+    toast.error(validation.error || '退货退款图片不符合上传规范')
+    return
+  }
+  if (validation.warning) toast.warning(validation.warning)
   uploadingRefundReturnSection.value = index
   try {
     const formData = new FormData()
     formData.append('file', file)
     formData.append('media_type', 'image')
+    formData.append('image_purpose', 'refund_return_image')
     formData.append('alt', refundReturnPolicy.sections[index].image.alt || refundReturnPolicy.sections[index].title || 'Refund return policy image')
     const asset = await mediaApi.uploadAsset(formData)
     const imageURL = String(assetAccessURL(asset) || asset?.url || '').trim()
@@ -741,8 +673,9 @@ const deletePublicChatGroup = async (group) => {
 
 const uploadSiteLogo = async (file) => {
   if (!file) return
-  if (!file.name?.toLowerCase().endsWith('.svg')) {
-    toast.error('站点 Logo 只能上传 SVG 文件')
+  const validation = await validateUploadFile(file, 'site_logo')
+  if (!validation.ok) {
+    toast.error(validation.error || '站点 Logo 不符合上传规范')
     return
   }
 
@@ -785,16 +718,19 @@ const clearSiteLogo = async () => {
 
 const uploadSiteFavicon = async (file) => {
   if (!file) return
-  if (!file.type?.startsWith('image/')) {
-    toast.error('Favicon 只能上传图片文件')
+  const validation = await validateUploadFile(file, 'site_favicon')
+  if (!validation.ok) {
+    toast.error(validation.error || 'Favicon 不符合上传规范')
     return
   }
+  if (validation.warning) toast.warning(validation.warning)
 
   uploadingSiteFavicon.value = true
   try {
-    const formData = new FormData()
-    formData.append('file', file)
-    formData.append('media_type', 'image')
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('media_type', 'image')
+      formData.append('image_purpose', 'site_favicon')
     const asset = await mediaApi.uploadAsset(formData)
     const faviconURL = String(assetAccessURL(asset) || asset?.url || '').trim()
     if (!faviconURL) {
@@ -815,9 +751,8 @@ const saveSettings = async () => {
   const group = activeTab.value
   const definition = groupDefinitions[group]
   if (!definition) return
-  if (group === 'site') normalizeSiteBrandSettings()
   if (group === 'api') {
-    applyAPIRefreshDefaults()
+    applyTimezoneDefaults(true)
   }
   const settings = Object.entries(definition.fields).map(([key, metadata]) => ({
     key,
@@ -843,23 +778,6 @@ const saveSettings = async () => {
   }
 }
 
-const syncExchangeRates = async () => {
-  if (!hasPermission('settings:edit')) return
-  syncingExchangeRates.value = true
-  try {
-    const response = await axios.post('/api/admin/settings/exchange-rates/sync')
-    const rates = response.data?.data?.rates || response.data?.rates || []
-    toast.success(`汇率缓存已同步：${rates.length} 个币种`)
-    loadedGroups.delete('api')
-    await fetchSettings('api', true)
-  } catch (error) {
-    console.error('Failed to sync exchange rates:', error)
-    toast.error(error?.response?.data?.message || error?.response?.data?.error || '汇率同步失败')
-  } finally {
-    syncingExchangeRates.value = false
-  }
-}
-
 watch(() => publicChatAgentForm.user_id, (userID) => {
   if (!userID) return
   applyPublicChatCandidateDefaults(selectedPublicChatAgentCandidate.value)
@@ -872,9 +790,6 @@ watch(activeTab, (tab) => {
   }
   else if (tab === 'commercial_crawler') {
     fetchCommercialCrawlerProtection()
-  }
-  else if (tab === 'api') {
-    fetchCurrencyPolicyForSettings().finally(() => fetchSettings(tab))
   }
   else if (tab === 'refund_return') {
     fetchRefundReturnPolicy()

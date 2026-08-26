@@ -27,7 +27,7 @@ Large domains now use multiple files by responsibility:
 
 - `product`: product, media, variants, specs, product specification templates, attributes, cart, response contracts.
 - `shipping`: templates, carrier services, tracking, zones, packaging rules, template bindings.
-- `registration`: product registration, warranty claim, warranty service record.
+- `warranty`: order-backed warranty claims and warranty service records.
 - `coupon`: coupons and gift cards are separate facts.
 - `loyalty`: transactions, check-ins, referrals, member levels, user balances.
 - `ticket`: ticket, ticket message, auto-reply rule.

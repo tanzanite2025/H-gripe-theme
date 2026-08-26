@@ -1,0 +1,61 @@
+{
+  "trigger": {
+    "label": "호환성 확인"
+  },
+  "dialog": {
+    "eyebrow": "호환성 카탈로그",
+    "title": "프레임 또는 포크 찾기",
+    "description": "브랜드, 모델 또는 연도로 독립 호환성 카탈로그를 검색하세요. 결과에는 각 항목에 등록된 허브 사양이 포함됩니다.",
+    "close": "닫기",
+    "tabListLabel": "호환성 카탈로그 섹션"
+  },
+  "tabs": {
+    "frame": "프레임 호환성",
+    "fork": "포크 호환성"
+  },
+  "search": {
+    "label": "검색",
+    "placeholder": "브랜드 또는 모델로 검색",
+    "yearLabel": "모델 연식",
+    "yearPlaceholder": "예: 2024",
+    "submit": "검색",
+    "clear": "지우기",
+    "searching": "검색 중..."
+  },
+  "states": {
+    "initial": "브랜드, 모델 또는 연식을 입력하여 카탈로그를 검색하세요.",
+    "empty": "일치하는 항목을 찾지 못했습니다.",
+    "unavailable": "호환성 데이터를 일시적으로 사용할 수 없습니다. 다시 시도해 주세요.",
+    "noHubSpecifications": "등록된 허브 사양이 없습니다."
+  },
+  "entry": {
+    "series": "시리즈",
+    "generation": "세대",
+    "market": "시장",
+    "hubSpecifications": "허브 사양",
+    "unknownYear": "연식 미지정",
+    "allYears": "전체 연식"
+  },
+  "pagination": {
+    "label": "호환성 검색 결과",
+    "previous": "이전 페이지",
+    "next": "다음 페이지",
+    "page": "{totalPages}페이지 중 {page}페이지"
+  },
+  "hub": {
+    "position": "위치",
+    "axleType": "액슬 유형",
+    "axleSpacing": "액슬 간격",
+    "millimetres": "mm",
+    "positions": {
+      "front": "앞",
+      "rear": "뒤"
+    },
+    "axleTypes": {
+      "quickRelease": "퀵 릴리스",
+      "thruAxle": "스루 액슬",
+      "boltOn": "볼트 고정",
+      "other": "기타"
+    }
+  }
+}

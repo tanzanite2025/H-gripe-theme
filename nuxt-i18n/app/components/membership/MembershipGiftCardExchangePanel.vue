@@ -94,10 +94,10 @@
               }}
             </p>
             <div class="giftcard-exchange__empty-actions">
-              <NuxtLink :to="localePath('/membershipandpoints/levers')" class="giftcard-exchange__link giftcard-exchange__link--primary">
+<NuxtLink :to="localePath('/resources/membershipandpoints/levers')" class="giftcard-exchange__link giftcard-exchange__link--primary">
                 {{ t('giftcards.viewPointRules', 'View point rules') }}
               </NuxtLink>
-              <NuxtLink :to="localePath('/membershipandpoints/myinfo')" class="giftcard-exchange__link">
+<NuxtLink :to="localePath('/resources/membershipandpoints/myinfo')" class="giftcard-exchange__link">
                 {{ t('giftcards.backToMemberInfo', 'Member info') }}
               </NuxtLink>
             </div>
@@ -220,7 +220,7 @@ const redeemButtonLabel = (card: GiftCardOption) => {
   display: grid;
   gap: 1.1rem;
   border-radius: 1rem;
-  background: var(--membership-card-surface, var(--tz-card-surface, #111116));
+  background: var(--membership-card-surface, var(--tz-card-surface));
   padding: 1rem;
   box-shadow: var(--membership-card-shadow, 0 16px 34px rgba(0, 0, 0, 0.34));
 }
@@ -238,7 +238,7 @@ const redeemButtonLabel = (card: GiftCardOption) => {
 
 .giftcard-exchange__eyebrow {
   margin: 0 0 0.35rem;
-  color: var(--membership-accent, var(--tz-brand-primary, #b5ff6d));
+  color: var(--membership-accent, var(--tz-site-accent, #059669));
   font-size: var(--tz-type-micro-label);
   font-weight: 850;
   letter-spacing: 0.08em;
@@ -270,7 +270,7 @@ const redeemButtonLabel = (card: GiftCardOption) => {
 .giftcard-exchange__stat {
   min-width: 0;
   border-radius: 0.85rem;
-  background: var(--membership-card-subtle, rgba(255, 255, 255, 0.035));
+  background: var(--membership-card-subtle, var(--tz-surface-subtle));
   padding: 0.75rem;
 }
 
@@ -297,7 +297,7 @@ const redeemButtonLabel = (card: GiftCardOption) => {
 
 .giftcard-exchange__notice {
   border-radius: 0.85rem;
-  background: rgba(181, 255, 109, 0.08);
+  background: rgba(5, 150, 105, 0.08);
   padding: 0.75rem 0.85rem;
   color: var(--tz-text-secondary);
   font-size: 0.84rem;
@@ -318,7 +318,7 @@ const redeemButtonLabel = (card: GiftCardOption) => {
 .giftcard-item {
   min-width: 0;
   border-radius: 0.9rem;
-  background: var(--membership-card-subtle, rgba(255, 255, 255, 0.035));
+  background: var(--membership-card-subtle, var(--tz-surface-subtle));
   padding: 0.85rem;
 }
 
@@ -345,7 +345,7 @@ const redeemButtonLabel = (card: GiftCardOption) => {
 
 .giftcard-code {
   overflow: hidden;
-  color: rgba(255, 255, 255, 0.92);
+  color: var(--tz-text-primary);
   font-size: 0.9rem;
   font-weight: 750;
   text-overflow: ellipsis;
@@ -360,7 +360,7 @@ const redeemButtonLabel = (card: GiftCardOption) => {
 
 .giftcard-value {
   flex: 0 0 auto;
-  color: var(--membership-accent, var(--tz-brand-primary, #b5ff6d));
+  color: var(--membership-accent, var(--tz-site-accent, #059669));
   font-size: 1.05rem;
   font-weight: 850;
 }
@@ -371,7 +371,7 @@ const redeemButtonLabel = (card: GiftCardOption) => {
   justify-content: space-between;
   gap: 0.75rem;
   padding-top: 0.75rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid var(--tz-border-subtle);
 }
 
 .giftcard-points {
@@ -393,8 +393,8 @@ const redeemButtonLabel = (card: GiftCardOption) => {
   justify-content: center;
   border: 0;
   border-radius: 9999px;
-  background: var(--membership-accent, var(--tz-brand-primary, #b5ff6d));
-  color: #050505;
+  background: var(--membership-accent, var(--tz-site-accent, #059669));
+  color: #ffffff;
   cursor: pointer;
   font-size: 0.78rem;
   font-weight: 800;
@@ -421,7 +421,7 @@ const redeemButtonLabel = (card: GiftCardOption) => {
   min-height: 8rem;
   place-items: center;
   border-radius: 0.9rem;
-  background: var(--membership-card-subtle, rgba(255, 255, 255, 0.035));
+  background: var(--membership-card-subtle, var(--tz-surface-subtle));
   padding: 1.25rem;
   text-align: center;
 }
@@ -462,8 +462,8 @@ const redeemButtonLabel = (card: GiftCardOption) => {
   align-items: center;
   justify-content: center;
   border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.07);
-  color: #ffffff;
+  background: var(--tz-surface-muted);
+  color: var(--tz-text-primary);
   font-size: 0.8rem;
   font-weight: 780;
   padding: 0.5rem 0.9rem;
@@ -472,19 +472,19 @@ const redeemButtonLabel = (card: GiftCardOption) => {
 
 .giftcard-exchange__link--primary {
   background: #ffffff;
-  color: #050505;
+  color: var(--tz-text-primary);
 }
 
 .owned-giftcard-list {
   display: grid;
   gap: 0.4rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid var(--tz-border-subtle);
   padding-top: 1rem;
 }
 
 .owned-giftcard-list h4 {
   margin: 0 0 0.2rem;
-  color: rgba(255, 255, 255, 0.86);
+  color: var(--tz-text-secondary);
   font-size: 0.86rem;
   font-weight: 800;
 }
@@ -495,7 +495,7 @@ const redeemButtonLabel = (card: GiftCardOption) => {
   justify-content: space-between;
   gap: 0.75rem;
   border-radius: 0.75rem;
-  background: var(--membership-card-subtle, rgba(255, 255, 255, 0.035));
+  background: var(--membership-card-subtle, var(--tz-surface-subtle));
   color: var(--tz-text-secondary);
   padding: 0.65rem 0.75rem;
 }
@@ -508,7 +508,7 @@ const redeemButtonLabel = (card: GiftCardOption) => {
 
 .owned-giftcard-item strong {
   overflow: hidden;
-  color: rgba(255, 255, 255, 0.92);
+  color: var(--tz-text-primary);
   font-size: 0.78rem;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -528,7 +528,7 @@ const redeemButtonLabel = (card: GiftCardOption) => {
 }
 
 .redeem-message.success {
-  background: rgba(181, 255, 109, 0.14);
+  background: rgba(5, 150, 105, 0.14);
   color: #a7f3d0;
 }
 

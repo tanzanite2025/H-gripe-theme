@@ -11,8 +11,9 @@ import (
 )
 
 type CurrencyPolicyHandler struct {
-	policyService *service.CurrencyPolicyService
-	auditService  adminAuditRecorder
+	policyService  *service.CurrencyPolicyService
+	productService *service.ProductService
+	auditService   adminAuditRecorder
 }
 
 func NewCurrencyPolicyHandler(policyService *service.CurrencyPolicyService) *CurrencyPolicyHandler {
@@ -26,6 +27,13 @@ func (h *CurrencyPolicyHandler) ConfigureAuditService(recorder adminAuditRecorde
 	h.auditService = recorder
 }
 
+func (h *CurrencyPolicyHandler) ConfigureProductService(productService *service.ProductService) {
+	if h == nil {
+		return
+	}
+	h.productService = productService
+}
+
 func (h *CurrencyPolicyHandler) GetPolicy(c *gin.Context) {
 	policy, err := h.policyService.GetPolicy()
 	if err != nil {
@@ -33,6 +41,24 @@ func (h *CurrencyPolicyHandler) GetPolicy(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"policy": policy})
+}
+
+func (h *CurrencyPolicyHandler) GetBackendEntryCurrencyAudit(c *gin.Context) {
+	if h == nil || h.policyService == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "currency policy service is not configured"})
+		return
+	}
+	policy, err := h.policyService.GetPolicy()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	audit, err := h.backendEntryCurrencyAudit(policy.PrimaryCurrency)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"audit": audit})
 }
 
 func (h *CurrencyPolicyHandler) UpdatePolicy(c *gin.Context) {
@@ -93,5 +119,20 @@ func (h *CurrencyPolicyHandler) UpdatePolicy(c *gin.Context) {
 		OldValue:  currencyPolicyOldValue(oldPolicy),
 		NewValue:  currencyPolicyAuditDetails(*policy),
 	})
-	c.JSON(http.StatusOK, gin.H{"policy": policy})
+	payload := gin.H{"policy": policy}
+	if audit, err := h.backendEntryCurrencyAudit(policy.PrimaryCurrency); err == nil && audit != nil {
+		payload["audit"] = audit
+	}
+	c.JSON(http.StatusOK, payload)
+}
+
+func (h *CurrencyPolicyHandler) backendEntryCurrencyAudit(expectedCurrency string) (*service.BackendEntryCurrencyAudit, error) {
+	if h == nil || h.productService == nil {
+		return nil, nil
+	}
+	audit, err := h.productService.AuditBackendEntryCurrencyConsistency(expectedCurrency, 10)
+	if err != nil {
+		return nil, err
+	}
+	return &audit, nil
 }

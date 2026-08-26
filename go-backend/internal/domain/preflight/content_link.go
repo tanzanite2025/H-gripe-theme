@@ -1,11 +1,17 @@
 package preflight
 
-import "time"
+import (
+	"time"
+
+	sitequalitydomain "commerce-platform/internal/domain/sitequality"
+)
 
 const (
 	ContentLinkRunStatusSuccess = "success"
 	ContentLinkRunStatusFailed  = "failed"
 
+	ContentLinkRuleID             = sitequalitydomain.SiteQualityRuleIDDescriptiveLinkText
+	ContentLinkProviderAuditID    = sitequalitydomain.SiteQualityProviderAuditIDLinkText
 	ContentLinkIssueStateOpen     = "open"
 	ContentLinkIssueStateResolved = "resolved"
 	ContentLinkIssueStateVerified = "verified"
@@ -26,15 +32,17 @@ const (
 )
 
 type ContentLinkRun struct {
-	ID           uint      `gorm:"primaryKey" json:"id"`
-	TargetURL    string    `gorm:"type:text;not null;index" json:"target_url"`
-	RouteEntryID *uint     `gorm:"index" json:"route_entry_id,omitempty"`
-	Status       string    `gorm:"size:24;not null;index" json:"status"`
-	CheckedAt    time.Time `gorm:"not null;index" json:"checked_at"`
-	IssueCount   int       `gorm:"not null;default:0" json:"issue_count"`
-	FixableCount int       `gorm:"not null;default:0" json:"fixable_count"`
-	ErrorMessage string    `gorm:"type:text;not null;default:''" json:"error_message"`
-	CreatedAt    time.Time `json:"created_at"`
+	ID              uint      `gorm:"primaryKey" json:"id"`
+	TargetURL       string    `gorm:"type:text;not null;index" json:"target_url"`
+	RuleID          string    `gorm:"size:128;not null;default:'link_descriptive_text';index" json:"rule_id"`
+	ProviderAuditID string    `gorm:"size:128;not null;default:'link-text'" json:"provider_audit_id,omitempty"`
+	RouteEntryID    *uint     `gorm:"index" json:"route_entry_id,omitempty"`
+	Status          string    `gorm:"size:24;not null;index" json:"status"`
+	CheckedAt       time.Time `gorm:"not null;index" json:"checked_at"`
+	IssueCount      int       `gorm:"not null;default:0" json:"issue_count"`
+	FixableCount    int       `gorm:"not null;default:0" json:"fixable_count"`
+	ErrorMessage    string    `gorm:"type:text;not null;default:''" json:"error_message"`
+	CreatedAt       time.Time `json:"created_at"`
 }
 
 func (ContentLinkRun) TableName() string {
@@ -46,6 +54,8 @@ type ContentLinkIssue struct {
 	RouteEntryID    *uint      `gorm:"index" json:"route_entry_id,omitempty"`
 	RunID           uint       `gorm:"not null;index" json:"run_id"`
 	TargetURL       string     `gorm:"type:text;not null;index" json:"target_url"`
+	RuleID          string     `gorm:"size:128;not null;default:'link_descriptive_text';index" json:"rule_id"`
+	ProviderAuditID string     `gorm:"size:128;not null;default:'link-text'" json:"provider_audit_id,omitempty"`
 	FinalURL        string     `gorm:"type:text;not null;default:''" json:"final_url"`
 	LinkURL         string     `gorm:"type:text;not null;default:''" json:"link_url"`
 	LinkText        string     `gorm:"type:text;not null;default:''" json:"link_text"`
@@ -55,7 +65,7 @@ type ContentLinkIssue struct {
 	SourceID        *uint      `gorm:"index" json:"source_id,omitempty"`
 	SourceKey       string     `gorm:"type:text;not null;default:''" json:"source_key"`
 	SourceField     string     `gorm:"size:80;not null;default:''" json:"source_field"`
-	IssueKey        string     `gorm:"size:128;not null;uniqueIndex" json:"issue_key"`
+	IssueKey        string     `gorm:"size:256;not null;uniqueIndex" json:"issue_key"`
 	Severity        string     `gorm:"size:16;not null;default:'medium';index" json:"severity"`
 	State           string     `gorm:"size:24;not null;default:'open';index" json:"state"`
 	SuggestedText   string     `gorm:"type:text;not null;default:''" json:"suggested_text"`
@@ -104,6 +114,8 @@ type ContentLinkDetection struct {
 	RouteEntryID    *uint
 	RunID           uint
 	TargetURL       string
+	RuleID          string
+	ProviderAuditID string
 	FinalURL        string
 	LinkURL         string
 	LinkText        string

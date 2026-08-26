@@ -1,0 +1,61 @@
+{
+  "trigger": {
+    "label": "Verifica compatibilità"
+  },
+  "dialog": {
+    "eyebrow": "Catalogo compatibilità",
+    "title": "Trova il tuo telaio o la tua forcella",
+    "description": "Cerca nel catalogo indipendente della compatibilità per marca, modello o anno. I risultati includono le specifiche del mozzo registrate per ogni voce.",
+    "close": "Chiudi",
+    "tabListLabel": "Sezioni del catalogo compatibilità"
+  },
+  "tabs": {
+    "frame": "Compatibilità del telaio",
+    "fork": "Compatibilità della forcella"
+  },
+  "search": {
+    "label": "Cerca",
+    "placeholder": "Cerca per marca o modello",
+    "yearLabel": "Anno del modello",
+    "yearPlaceholder": "es. 2024",
+    "submit": "Cerca",
+    "clear": "Cancella",
+    "searching": "Ricerca in corso..."
+  },
+  "states": {
+    "initial": "Inserisci una marca, un modello o un anno per cercare nel catalogo.",
+    "empty": "Non sono stati trovati risultati corrispondenti.",
+    "unavailable": "I dati di compatibilità non sono temporaneamente disponibili. Riprova.",
+    "noHubSpecifications": "Non sono state registrate specifiche del mozzo."
+  },
+  "entry": {
+    "series": "Serie",
+    "generation": "Generazione",
+    "market": "Mercato",
+    "hubSpecifications": "Specifiche del mozzo",
+    "unknownYear": "Anno non specificato",
+    "allYears": "Tutti gli anni"
+  },
+  "pagination": {
+    "label": "Risultati compatibilità",
+    "previous": "Pagina precedente",
+    "next": "Pagina successiva",
+    "page": "Pagina {page} di {totalPages}"
+  },
+  "hub": {
+    "position": "Posizione",
+    "axleType": "Tipo di asse",
+    "axleSpacing": "Battuta asse",
+    "millimetres": "mm",
+    "positions": {
+      "front": "Anteriore",
+      "rear": "Posteriore"
+    },
+    "axleTypes": {
+      "quickRelease": "Sgancio rapido",
+      "thruAxle": "Perno passante",
+      "boltOn": "Fissaggio con bulloni",
+      "other": "Altro"
+    }
+  }
+}

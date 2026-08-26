@@ -133,16 +133,16 @@ const getFlagEmoji = (locale: string): string => {
 .post-translations {
   margin: 2rem 0;
   padding: 1.5rem;
-  background-color: #f9fafb;
+  background-color: var(--tz-surface-subtle);
   border-radius: 0.5rem;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--tz-border-subtle);
 }
 
 .translations-title {
   margin: 0 0 1rem 0;
   font-size: 1.125rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--tz-text-primary);
 }
 
 .translations-list {
@@ -163,25 +163,25 @@ const getFlagEmoji = (locale: string): string => {
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 1rem;
-  background-color: white;
-  border: 1px solid #e5e7eb;
+  background-color: var(--tz-card-surface);
+  border: 1px solid var(--tz-border-subtle);
   border-radius: 0.375rem;
   text-decoration: none;
-  color: #374151;
+  color: var(--tz-text-secondary);
   font-size: 0.875rem;
   transition: all 0.2s;
 }
 
 .translation-link:hover {
-  background-color: #eff6ff;
-  border-color: #3b82f6;
-  color: #3b82f6;
+  background-color: var(--tz-site-accent-soft-surface);
+  border-color: var(--tz-site-accent);
+  color: var(--tz-site-accent);
 }
 
 .current-locale .translation-link {
-  background-color: #3b82f6;
-  border-color: #3b82f6;
-  color: white;
+  background-color: var(--tz-site-accent);
+  border-color: var(--tz-site-accent);
+  color: #ffffff;
   cursor: default;
 }
 

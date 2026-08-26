@@ -38,76 +38,86 @@ type Dependencies struct {
 }
 
 type Repositories struct {
-	User                       *repository.UserRepository
-	Post                       *repository.PostRepository
-	StorefrontRouteCatalog     *repository.StorefrontRouteCatalogRepository
-	StorefrontRedirectRules    *repository.StorefrontRedirectRuleRepository
-	StorefrontURLIssues        *repository.StorefrontURLIssueRepository
-	PreflightContentLinks      *repository.PreflightContentLinkRepository
-	SiteQualityTargets         *repository.SiteQualityTargetRepository
-	SiteQualityJobs            *repository.SiteQualityJobRepository
-	SiteQualityRuns            *repository.SiteQualityRunRepository
-	SiteQualityFindings        *repository.SiteQualityFindingRepository
-	HotDataArchive             *repository.HotDataArchiveRepository
-	Product                    *repository.ProductRepository
-	ProductCategory            *repository.ProductCategoryRepository
-	ProductBrand               *repository.ProductBrandRepository
-	ProductInformationTemplate *repository.ProductInformationTemplateRepository
-	CustomsClassification      *repository.CustomsClassificationRepository
-	Cart                       *repository.CartRepository
-	Setting                    *repository.SettingRepository
-	FAQ                        *repository.FAQRepository
-	Order                      *repository.OrderRepository
-	AfterSales                 *repository.AfterSalesCaseRepository
-	AfterSalesRefundReview     *repository.AfterSalesRefundReviewRepository
-	OrderIdempotency           *repository.OrderIdempotencyRepository
-	OrderPolicyDisclosure      *repository.OrderPolicyDisclosureRepository
-	OrderAttribution           *repository.OrderAttributionRepository
-	Payment                    *repository.PaymentRepository
-	PaymentRisk                *repository.PaymentRiskRepository
-	PaymentProtection          *repository.PaymentProtectionRepository
-	PaymentRefundReview        *repository.PaymentRefundRecommendationRepository
-	PaymentRefundExec          *repository.PaymentRefundExecutionRepository
-	ExchangeRate               *repository.ExchangeRateRepository
-	Shipping                   *repository.ShippingRepository
-	Coupon                     *repository.CouponRepository
-	Loyalty                    *repository.LoyaltyRepository
-	LoyaltyProgram             *repository.LoyaltyProgramRepository
-	GiftCardRedemption         *repository.GiftCardRedemptionRepository
-	Review                     *repository.ReviewRepository
-	Ticket                     *repository.TicketRepository
-	Gallery                    *repository.GalleryRepository
-	Media                      *repository.MediaRepository
-	SiteLogo                   *repository.SiteLogoRepository
-	MediaDerivativePresets     *repository.MediaDerivativePresetRepository
-	MediaDerivativeRebuildJobs *repository.MediaDerivativeRebuildJobRepository
-	StorefrontMarket           *repository.StorefrontMarketRepository
-	OpsDomainBinding           *repository.OpsDomainBindingRepository
-	OpsConnector               *repository.OpsConnectorRepository
-	OpsConnectorOAuth          *repository.OpsConnectorOAuthRepository
-	OpsVPSBinding              *repository.OpsVPSBindingRepository
-	OpsProjectBinding          *repository.OpsProjectBindingRepository
-	OpsNetworkRule             *repository.OpsNetworkRuleRepository
-	OpsDeploymentWorkflow      *repository.OpsDeploymentWorkflowRepository
-	GoogleMerchant             *repository.GoogleMerchantRepository
-	Registration               *repository.RegistrationRepository
-	Audit                      *repository.AuditRepository
-	Showcase                   *repository.ShowcaseRepository
-	VisualShowcase             *repository.VisualShowcaseRepository
-	Wishlist                   *repository.WishlistRepository
-	Feedback                   *repository.FeedbackRepository
-	SuggestionFeedback         *repository.SuggestionFeedbackRepository
-	Spoke                      *repository.SpokeRepository
-	QuickBuy                   *repository.QuickBuyRepository
-	SelectionAssistant         *repository.SelectionAssistantRepository
-	SelectionConfigurationKey  *repository.SelectionConfigurationKeyRepository
-	WheelsetFitQuestionnaire   *repository.WheelsetFitQuestionnaireRepository
-	Subscription               *repository.SubscriptionRepository
-	EmailChallenge             *repository.EmailChallengeRepository
-	VisitorProfile             *repository.VisitorProfileRepository
-	RecommendationEvent        *repository.RecommendationEventRepository
-	VisitorRiskFact            *repository.VisitorRiskFactRepository
-	Outbox                     *repository.OutboxRepository
+	User                         *repository.UserRepository
+	Post                         *repository.PostRepository
+	StorefrontRouteCatalog       *repository.StorefrontRouteCatalogRepository
+	StorefrontRedirectRules      *repository.StorefrontRedirectRuleRepository
+	StorefrontURLIssues          *repository.StorefrontURLIssueRepository
+	PreflightContentLinks        *repository.PreflightContentLinkRepository
+	SiteQualityTargets           *repository.SiteQualityTargetRepository
+	SiteQualityJobs              *repository.SiteQualityJobRepository
+	SiteQualityRuns              *repository.SiteQualityRunRepository
+	SiteQualityFindings          *repository.SiteQualityFindingRepository
+	HotDataArchive               *repository.HotDataArchiveRepository
+	Product                      *repository.ProductRepository
+	ProductProcurement           *repository.ProductProcurementRepository
+	FrameFitmentEntry            *repository.FrameFitmentEntryRepository
+	ForkFitmentEntry             *repository.ForkFitmentEntryRepository
+	FitmentFrameHubSpecification *repository.FitmentFrameHubSpecificationRepository
+	FitmentForkHubSpecification  *repository.FitmentForkHubSpecificationRepository
+	FitmentHubSpecification      *repository.FitmentHubSpecificationRepository
+	ProductProcurementCatalog    *repository.ProductProcurementCatalogRepository
+	ProductProfitCalculation     *repository.ProductProfitCalculationRepository
+	ProductCategory              *repository.ProductCategoryRepository
+	ProductBrand                 *repository.ProductBrandRepository
+	ProductInformationTemplate   *repository.ProductInformationTemplateRepository
+	CustomsClassification        *repository.CustomsClassificationRepository
+	Cart                         *repository.CartRepository
+	Setting                      *repository.SettingRepository
+	FAQ                          *repository.FAQRepository
+	Order                        *repository.OrderRepository
+	AfterSales                   *repository.AfterSalesCaseRepository
+	AfterSalesRefundReview       *repository.AfterSalesRefundReviewRepository
+	OrderIdempotency             *repository.OrderIdempotencyRepository
+	OrderPolicyDisclosure        *repository.OrderPolicyDisclosureRepository
+	OrderAttribution             *repository.OrderAttributionRepository
+	Payment                      *repository.PaymentRepository
+	PaymentRisk                  *repository.PaymentRiskRepository
+	PaymentProtection            *repository.PaymentProtectionRepository
+	PaymentRefundReview          *repository.PaymentRefundRecommendationRepository
+	PaymentRefundExec            *repository.PaymentRefundExecutionRepository
+	ExchangeRate                 *repository.ExchangeRateRepository
+	Shipping                     *repository.ShippingRepository
+	Coupon                       *repository.CouponRepository
+	Loyalty                      *repository.LoyaltyRepository
+	LoyaltyProgram               *repository.LoyaltyProgramRepository
+	GiftCardRedemption           *repository.GiftCardRedemptionRepository
+	Review                       *repository.ReviewRepository
+	Ticket                       *repository.TicketRepository
+	Gallery                      *repository.GalleryRepository
+	Media                        *repository.MediaRepository
+	SiteLogo                     *repository.SiteLogoRepository
+	MediaDerivativePresets       *repository.MediaDerivativePresetRepository
+	MediaDerivativeRebuildJobs   *repository.MediaDerivativeRebuildJobRepository
+	StorefrontMarket             *repository.StorefrontMarketRepository
+	OpsDomainBinding             *repository.OpsDomainBindingRepository
+	OpsConnector                 *repository.OpsConnectorRepository
+	OpsConnectorOAuth            *repository.OpsConnectorOAuthRepository
+	OpsVPSBinding                *repository.OpsVPSBindingRepository
+	OpsProjectBinding            *repository.OpsProjectBindingRepository
+	OpsNetworkRule               *repository.OpsNetworkRuleRepository
+	OpsDeploymentWorkflow        *repository.OpsDeploymentWorkflowRepository
+	GoogleMerchant               *repository.GoogleMerchantRepository
+	SocialOAuth                  *repository.SocialOAuthRepository
+	Warranty                     *repository.WarrantyRepository
+	ShipmentRecord               *repository.ShipmentRecordRepository
+	Audit                        *repository.AuditRepository
+	Showcase                     *repository.ShowcaseRepository
+	VisualShowcase               *repository.VisualShowcaseRepository
+	Wishlist                     *repository.WishlistRepository
+	Feedback                     *repository.FeedbackRepository
+	SuggestionFeedback           *repository.SuggestionFeedbackRepository
+	Spoke                        *repository.SpokeRepository
+	QuickBuy                     *repository.QuickBuyRepository
+	SelectionAssistant           *repository.SelectionAssistantRepository
+	SelectionConfigurationKey    *repository.SelectionConfigurationKeyRepository
+	WheelsetFitQuestionnaire     *repository.WheelsetFitQuestionnaireRepository
+	Subscription                 *repository.SubscriptionRepository
+	EmailChallenge               *repository.EmailChallengeRepository
+	VisitorProfile               *repository.VisitorProfileRepository
+	RecommendationEvent          *repository.RecommendationEventRepository
+	VisitorRiskFact              *repository.VisitorRiskFactRepository
+	Outbox                       *repository.OutboxRepository
 }
 
 type Services struct {
@@ -115,6 +125,11 @@ type Services struct {
 	AdminAccountMaintenance           *service.AdminAccountMaintenanceService
 	Post                              *service.PostService
 	Product                           *service.ProductService
+	ProductProcurement                *service.ProductProcurementService
+	FrameFitmentEntry                 *service.FrameFitmentEntryService
+	ForkFitmentEntry                  *service.ForkFitmentEntryService
+	FitmentHubSpecification           *service.FitmentHubSpecificationService
+	ProductProfitability              *service.ProductProfitabilityService
 	ProductCategory                   *service.ProductCategoryService
 	ProductBrand                      *service.ProductBrandService
 	ProductInformationTemplate        *service.ProductInformationTemplateService
@@ -122,11 +137,13 @@ type Services struct {
 	Cart                              *service.CartService
 	Setting                           *service.SettingService
 	WebsiteProfile                    *service.WebsiteProfileService
+	WebsiteName                       *service.WebsiteNameService
 	RefundReturnPolicy                *service.RefundReturnPolicyService
 	PayPalDisputeInvoiceSellerProfile *service.PayPalDisputeInvoiceSellerProfileService
 	AdminSettings                     *service.AdminSettingsService
 	SEO                               *service.SEOService
 	SEOResources                      *service.SEOResourceService
+	GoogleIndexing                    *service.GoogleIndexingService
 	Analytics                         *service.AnalyticsService
 	AdminPublicChat                   *service.AdminPublicChatAgentService
 	CustomerServiceAvatar             *service.CustomerServiceAvatarService
@@ -134,7 +151,8 @@ type Services struct {
 	Gallery                           *service.GalleryService
 	Media                             *service.MediaService
 	SiteLogo                          *service.SiteLogoService
-	Registration                      *service.RegistrationService
+	Warranty                          *service.WarrantyService
+	ShipmentRecord                    *service.ShipmentRecordService
 	Checkout                          *service.CheckoutService
 	Order                             *service.OrderService
 	AfterSales                        *service.AfterSalesService
@@ -198,6 +216,7 @@ type Services struct {
 	OpsOverview                       *service.OpsOverviewService
 	StorefrontContext                 *service.StorefrontContextService
 	GoogleMerchant                    *service.GoogleMerchantService
+	SocialOAuth                       *service.SocialOAuthService
 	ShowcaseUploadProtection          *service.ShowcaseUploadProtectionService
 	ShowcaseUploadEligibility         *service.ShowcaseUploadEligibilityService
 	PublicUploadAccess                *service.PublicUploadAccessService
@@ -205,77 +224,91 @@ type Services struct {
 }
 
 func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Config) (*Dependencies, error) {
+	fitmentFrameHubSpecificationRepository := repository.NewFitmentFrameHubSpecificationRepository(db)
+	fitmentForkHubSpecificationRepository := repository.NewFitmentForkHubSpecificationRepository(db)
+	fitmentHubSpecificationRepository := repository.NewFitmentHubSpecificationRepository(db, fitmentFrameHubSpecificationRepository)
+	fitmentHubSpecificationRepository.ConfigureForkHubSpecificationRepository(fitmentForkHubSpecificationRepository)
 	repos := Repositories{
-		User:                       repository.NewUserRepository(db),
-		Post:                       repository.NewPostRepository(db),
-		StorefrontRouteCatalog:     repository.NewStorefrontRouteCatalogRepository(db),
-		StorefrontRedirectRules:    repository.NewStorefrontRedirectRuleRepository(db),
-		StorefrontURLIssues:        repository.NewStorefrontURLIssueRepository(db),
-		PreflightContentLinks:      repository.NewPreflightContentLinkRepository(db),
-		SiteQualityTargets:         repository.NewSiteQualityTargetRepository(db),
-		SiteQualityJobs:            repository.NewSiteQualityJobRepository(db),
-		SiteQualityRuns:            repository.NewSiteQualityRunRepository(db),
-		SiteQualityFindings:        repository.NewSiteQualityFindingRepository(db),
-		HotDataArchive:             repository.NewHotDataArchiveRepository(db),
-		Product:                    repository.NewProductRepository(db),
-		ProductCategory:            repository.NewProductCategoryRepository(db),
-		ProductBrand:               repository.NewProductBrandRepository(db),
-		ProductInformationTemplate: repository.NewProductInformationTemplateRepository(db),
-		CustomsClassification:      repository.NewCustomsClassificationRepository(db),
-		Cart:                       repository.NewCartRepository(db),
-		Setting:                    repository.NewSettingRepository(db),
-		FAQ:                        repository.NewFAQRepository(db),
-		Order:                      repository.NewOrderRepository(db),
-		AfterSales:                 repository.NewAfterSalesCaseRepository(db),
-		AfterSalesRefundReview:     repository.NewAfterSalesRefundReviewRepository(db),
-		OrderIdempotency:           repository.NewOrderIdempotencyRepository(db),
-		OrderPolicyDisclosure:      repository.NewOrderPolicyDisclosureRepository(db),
-		OrderAttribution:           repository.NewOrderAttributionRepository(db),
-		Payment:                    repository.NewPaymentRepository(db),
-		PaymentRisk:                repository.NewPaymentRiskRepository(db),
-		PaymentProtection:          repository.NewPaymentProtectionRepository(db),
-		PaymentRefundReview:        repository.NewPaymentRefundRecommendationRepository(db),
-		PaymentRefundExec:          repository.NewPaymentRefundExecutionRepository(db),
-		ExchangeRate:               repository.NewExchangeRateRepository(db),
-		Shipping:                   repository.NewShippingRepository(db),
-		Coupon:                     repository.NewCouponRepository(db),
-		Loyalty:                    repository.NewLoyaltyRepository(db),
-		LoyaltyProgram:             repository.NewLoyaltyProgramRepository(db),
-		GiftCardRedemption:         repository.NewGiftCardRedemptionRepository(db),
-		Review:                     repository.NewReviewRepository(db),
-		Ticket:                     repository.NewTicketRepository(db),
-		Gallery:                    repository.NewGalleryRepository(db),
-		Media:                      repository.NewMediaRepository(db),
-		SiteLogo:                   repository.NewSiteLogoRepository(db),
-		MediaDerivativePresets:     repository.NewMediaDerivativePresetRepository(db),
-		MediaDerivativeRebuildJobs: repository.NewMediaDerivativeRebuildJobRepository(db),
-		StorefrontMarket:           repository.NewStorefrontMarketRepository(db),
-		OpsDomainBinding:           repository.NewOpsDomainBindingRepository(db),
-		OpsConnector:               repository.NewOpsConnectorRepository(db),
-		OpsConnectorOAuth:          repository.NewOpsConnectorOAuthRepository(db),
-		OpsVPSBinding:              repository.NewOpsVPSBindingRepository(db),
-		OpsProjectBinding:          repository.NewOpsProjectBindingRepository(db),
-		OpsNetworkRule:             repository.NewOpsNetworkRuleRepository(db),
-		OpsDeploymentWorkflow:      repository.NewOpsDeploymentWorkflowRepository(db),
-		GoogleMerchant:             repository.NewGoogleMerchantRepository(db),
-		Registration:               repository.NewRegistrationRepository(db),
-		Audit:                      repository.NewAuditRepository(db),
-		Showcase:                   repository.NewShowcaseRepository(db),
-		VisualShowcase:             repository.NewVisualShowcaseRepository(db),
-		Wishlist:                   repository.NewWishlistRepository(db),
-		Feedback:                   repository.NewFeedbackRepository(db),
-		SuggestionFeedback:         repository.NewSuggestionFeedbackRepository(db),
-		Spoke:                      repository.NewSpokeRepository(db),
-		QuickBuy:                   repository.NewQuickBuyRepository(db),
-		SelectionAssistant:         repository.NewSelectionAssistantRepository(db),
-		SelectionConfigurationKey:  repository.NewSelectionConfigurationKeyRepository(db),
-		WheelsetFitQuestionnaire:   repository.NewWheelsetFitQuestionnaireRepository(db),
-		Subscription:               repository.NewSubscriptionRepository(db),
-		EmailChallenge:             repository.NewEmailChallengeRepository(db),
-		VisitorProfile:             repository.NewVisitorProfileRepository(db),
-		RecommendationEvent:        repository.NewRecommendationEventRepository(db),
-		VisitorRiskFact:            repository.NewVisitorRiskFactRepository(db),
-		Outbox:                     repository.NewOutboxRepository(db),
+		User:                         repository.NewUserRepository(db),
+		Post:                         repository.NewPostRepository(db),
+		StorefrontRouteCatalog:       repository.NewStorefrontRouteCatalogRepository(db),
+		StorefrontRedirectRules:      repository.NewStorefrontRedirectRuleRepository(db),
+		StorefrontURLIssues:          repository.NewStorefrontURLIssueRepository(db),
+		PreflightContentLinks:        repository.NewPreflightContentLinkRepository(db),
+		SiteQualityTargets:           repository.NewSiteQualityTargetRepository(db),
+		SiteQualityJobs:              repository.NewSiteQualityJobRepository(db),
+		SiteQualityRuns:              repository.NewSiteQualityRunRepository(db),
+		SiteQualityFindings:          repository.NewSiteQualityFindingRepository(db),
+		HotDataArchive:               repository.NewHotDataArchiveRepository(db),
+		Product:                      repository.NewProductRepository(db),
+		ProductProcurement:           repository.NewProductProcurementRepository(db),
+		FrameFitmentEntry:            repository.NewFrameFitmentEntryRepository(db),
+		ForkFitmentEntry:             repository.NewForkFitmentEntryRepository(db),
+		FitmentFrameHubSpecification: fitmentFrameHubSpecificationRepository,
+		FitmentForkHubSpecification:  fitmentForkHubSpecificationRepository,
+		FitmentHubSpecification:      fitmentHubSpecificationRepository,
+		ProductProcurementCatalog:    repository.NewProductProcurementCatalogRepository(db),
+		ProductProfitCalculation:     repository.NewProductProfitCalculationRepository(db),
+		ProductCategory:              repository.NewProductCategoryRepository(db),
+		ProductBrand:                 repository.NewProductBrandRepository(db),
+		ProductInformationTemplate:   repository.NewProductInformationTemplateRepository(db),
+		CustomsClassification:        repository.NewCustomsClassificationRepository(db),
+		Cart:                         repository.NewCartRepository(db),
+		Setting:                      repository.NewSettingRepository(db),
+		FAQ:                          repository.NewFAQRepository(db),
+		Order:                        repository.NewOrderRepository(db),
+		AfterSales:                   repository.NewAfterSalesCaseRepository(db),
+		AfterSalesRefundReview:       repository.NewAfterSalesRefundReviewRepository(db),
+		OrderIdempotency:             repository.NewOrderIdempotencyRepository(db),
+		OrderPolicyDisclosure:        repository.NewOrderPolicyDisclosureRepository(db),
+		OrderAttribution:             repository.NewOrderAttributionRepository(db),
+		Payment:                      repository.NewPaymentRepository(db),
+		PaymentRisk:                  repository.NewPaymentRiskRepository(db),
+		PaymentProtection:            repository.NewPaymentProtectionRepository(db),
+		PaymentRefundReview:          repository.NewPaymentRefundRecommendationRepository(db),
+		PaymentRefundExec:            repository.NewPaymentRefundExecutionRepository(db),
+		ExchangeRate:                 repository.NewExchangeRateRepository(db),
+		Shipping:                     repository.NewShippingRepository(db),
+		Coupon:                       repository.NewCouponRepository(db),
+		Loyalty:                      repository.NewLoyaltyRepository(db),
+		LoyaltyProgram:               repository.NewLoyaltyProgramRepository(db),
+		GiftCardRedemption:           repository.NewGiftCardRedemptionRepository(db),
+		Review:                       repository.NewReviewRepository(db),
+		Ticket:                       repository.NewTicketRepository(db),
+		Gallery:                      repository.NewGalleryRepository(db),
+		Media:                        repository.NewMediaRepository(db),
+		SiteLogo:                     repository.NewSiteLogoRepository(db),
+		MediaDerivativePresets:       repository.NewMediaDerivativePresetRepository(db),
+		MediaDerivativeRebuildJobs:   repository.NewMediaDerivativeRebuildJobRepository(db),
+		StorefrontMarket:             repository.NewStorefrontMarketRepository(db),
+		OpsDomainBinding:             repository.NewOpsDomainBindingRepository(db),
+		OpsConnector:                 repository.NewOpsConnectorRepository(db),
+		OpsConnectorOAuth:            repository.NewOpsConnectorOAuthRepository(db),
+		OpsVPSBinding:                repository.NewOpsVPSBindingRepository(db),
+		OpsProjectBinding:            repository.NewOpsProjectBindingRepository(db),
+		OpsNetworkRule:               repository.NewOpsNetworkRuleRepository(db),
+		OpsDeploymentWorkflow:        repository.NewOpsDeploymentWorkflowRepository(db),
+		GoogleMerchant:               repository.NewGoogleMerchantRepository(db),
+		SocialOAuth:                  repository.NewSocialOAuthRepository(db),
+		Warranty:                     repository.NewWarrantyRepository(db),
+		ShipmentRecord:               repository.NewShipmentRecordRepository(db),
+		Audit:                        repository.NewAuditRepository(db),
+		Showcase:                     repository.NewShowcaseRepository(db),
+		VisualShowcase:               repository.NewVisualShowcaseRepository(db),
+		Wishlist:                     repository.NewWishlistRepository(db),
+		Feedback:                     repository.NewFeedbackRepository(db),
+		SuggestionFeedback:           repository.NewSuggestionFeedbackRepository(db),
+		Spoke:                        repository.NewSpokeRepository(db),
+		QuickBuy:                     repository.NewQuickBuyRepository(db),
+		SelectionAssistant:           repository.NewSelectionAssistantRepository(db),
+		SelectionConfigurationKey:    repository.NewSelectionConfigurationKeyRepository(db),
+		WheelsetFitQuestionnaire:     repository.NewWheelsetFitQuestionnaireRepository(db),
+		Subscription:                 repository.NewSubscriptionRepository(db),
+		EmailChallenge:               repository.NewEmailChallengeRepository(db),
+		VisitorProfile:               repository.NewVisitorProfileRepository(db),
+		RecommendationEvent:          repository.NewRecommendationEventRepository(db),
+		VisitorRiskFact:              repository.NewVisitorRiskFactRepository(db),
+		Outbox:                       repository.NewOutboxRepository(db),
 	}
 	repos.StorefrontRouteCatalog.ConfigureOutbox(repos.Outbox)
 	if err := service.SeedDefaultMediaDerivativePresets(repos.MediaDerivativePresets); err != nil {
@@ -340,16 +373,41 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 	seoService := service.NewSEOService(settingService)
 	postService := service.NewPostService(repos.Post, redisCache, cfg.Cache.PostTTL)
 	productService := service.NewProductServiceWithCacheOptions(repos.Product, redisCache, cfg.Cache.ProductTTL, cfg.Cache.ProductLockTTL)
+	productProcurementService := service.NewProductProcurementServiceWithProfitability(
+		repos.ProductProcurement,
+		repos.ProductProfitCalculation,
+	)
+	productProcurementService.ConfigureCatalogRepository(repos.ProductProcurementCatalog)
+	fitmentHubSpecificationService := service.NewFitmentHubSpecificationService(
+		repos.FitmentHubSpecification,
+		repos.FitmentFrameHubSpecification,
+	)
+	fitmentHubSpecificationService.ConfigureForkHubSpecificationRepository(repos.FitmentForkHubSpecification)
+	frameFitmentEntryService := service.NewFrameFitmentEntryService(
+		repos.FrameFitmentEntry,
+		repos.FitmentHubSpecification,
+		repos.FitmentFrameHubSpecification,
+	)
+	forkFitmentEntryService := service.NewForkFitmentEntryService(
+		repos.ForkFitmentEntry,
+		repos.FitmentHubSpecification,
+		repos.FitmentForkHubSpecification,
+	)
+	productProfitabilityService := service.NewProductProfitabilityServiceWithProcurement(
+		repos.ProductProfitCalculation,
+		repos.ProductProcurement,
+	)
 	productCategoryService := service.NewProductCategoryService(repos.ProductCategory, repos.Media)
 	productBrandService := service.NewProductBrandService(repos.ProductBrand)
 	productInformationTemplateService := service.NewProductInformationTemplateService(repos.ProductInformationTemplate)
 	customsClassificationService := service.NewCustomsClassificationService(repos.CustomsClassification, settingService)
 	merchantOutboxPublisher := service.NewMerchantOutboxPublisher(repos.Outbox)
 	productCacheOutboxPublisher := service.NewProductCacheOutboxPublisher(repos.Outbox)
-	seoResourceService := service.NewSEOResourceService(postService, productService, settingService)
+	seoResourceService := service.NewSEOResourceService(postService, productService, productCategoryService)
 	analyticsService := service.NewAnalyticsService(settingService)
 	currencyPolicyService := service.NewCurrencyPolicyService(repos.Setting)
 	exchangeRateService := service.NewExchangeRateService(repos.ExchangeRate, repos.Setting)
+	shippingService.ConfigureCurrencyPolicy(currencyPolicyService)
 	storefrontMarketService := service.NewStorefrontMarketService(repos.StorefrontMarket)
 	opsDomainBindingService := service.NewOpsDomainBindingService(repos.OpsDomainBinding, repos.OpsProjectBinding, repos.OpsConnector)
 	opsDomainDiffService := service.NewOpsDomainDiffService(repos.OpsDomainBinding)
@@ -476,6 +534,19 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		outboundHTTPResilience.retry,
 		outboundHTTPResilience.breaker,
 	)
+	googleIndexingService, err := service.NewGoogleIndexingService(
+		productService,
+		cfg.GoogleIndexing,
+		storefrontBaseURL,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("initialize Google Indexing service: %w", err)
+	}
+	googleIndexingService.ConfigureOutboundHTTPResilience(
+		outboundHTTPResilience.retry,
+		outboundHTTPResilience.breaker,
+	)
+	socialOAuthService := service.NewSocialOAuthService(repos.SocialOAuth, cfg.SocialOAuth)
 	loyaltyProgramService := service.NewLoyaltyProgramService(repos.LoyaltyProgram)
 	loyaltyProgramService.ConfigureCurrencyPolicy(currencyPolicyService)
 	orderNumberGenerator, err := ordernumber.NewGeneratorWithPreviousSecret(
@@ -505,6 +576,11 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		AdminAccountMaintenance:           service.NewAdminAccountMaintenanceService(db),
 		Post:                              postService,
 		Product:                           productService,
+		ProductProcurement:                productProcurementService,
+		FrameFitmentEntry:                 frameFitmentEntryService,
+		ForkFitmentEntry:                  forkFitmentEntryService,
+		FitmentHubSpecification:           fitmentHubSpecificationService,
+		ProductProfitability:              productProfitabilityService,
 		ProductCategory:                   productCategoryService,
 		ProductBrand:                      productBrandService,
 		ProductInformationTemplate:        productInformationTemplateService,
@@ -512,10 +588,12 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		Cart:                              service.NewCartService(repos.Cart, repos.Product),
 		Setting:                           settingService,
 		WebsiteProfile:                    service.NewWebsiteProfileService(settingService),
+		WebsiteName:                       service.NewWebsiteNameService(settingService),
 		RefundReturnPolicy:                refundReturnPolicyService,
 		PayPalDisputeInvoiceSellerProfile: service.NewPayPalDisputeInvoiceSellerProfileService(settingService),
 		SEO:                               seoService,
 		SEOResources:                      seoResourceService,
+		GoogleIndexing:                    googleIndexingService,
 		Analytics:                         analyticsService,
 		CurrencyPolicy:                    currencyPolicyService,
 		ExchangeRate:                      exchangeRateService,
@@ -536,11 +614,13 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		OpsDeploymentWorkflow:             opsDeploymentWorkflowService,
 		StorefrontContext:                 service.NewStorefrontContextServiceWithMarkets(currencyPolicyService, storefrontMarketService),
 		GoogleMerchant:                    googleMerchantService,
+		SocialOAuth:                       socialOAuthService,
 		FAQ:                               service.NewFAQService(repos.FAQ, storageSvc),
 		Gallery:                           service.NewGalleryService(repos.Gallery, repos.Media),
 		Media:                             mediaService,
 		SiteLogo:                          siteLogoService,
-		Registration:                      service.NewRegistrationService(repos.Registration, repos.Product, repos.Order),
+		Warranty:                          service.NewWarrantyService(repos.Warranty, repos.Order),
+		ShipmentRecord:                    service.NewShipmentRecordService(repos.ShipmentRecord),
 		Checkout:                          service.NewCheckoutService(repos.Product, repos.Coupon, repos.Payment, repos.Loyalty, shippingService),
 		AfterSales:                        afterSalesService,
 		Marketing:                         service.NewMarketingService(txManager, repos.Coupon, repos.Loyalty, settingService),
@@ -644,8 +724,11 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 	services.ProductInformationTemplate.ConfigureProductCacheEventPublisher(productCacheOutboxPublisher)
 	services.GoogleMerchant.ConfigureMerchantEventPublisher(merchantOutboxPublisher)
 	services.ExchangeRate.ConfigureCurrencyPolicy(currencyPolicyService)
-	services.Registration.ConfigureEmailChallenges(repos.EmailChallenge, cfg.JWT.Secret, emailSvc)
-	services.Registration.ConfigureEmailBaseURL(storefrontBaseURL)
+	services.ExchangeRate.ConfigureStorefrontMarkets(storefrontMarketService)
+	services.ExchangeRate.ConfigureProductService(productService)
+	services.ExchangeRate.ConfigureShippingService(shippingService)
+	services.Warranty.ConfigureEmailChallenges(repos.EmailChallenge, cfg.JWT.Secret, emailSvc)
+	services.Warranty.ConfigureEmailBaseURL(storefrontBaseURL)
 	services.Subscription.ConfigureEmailChallenges(repos.EmailChallenge, cfg.JWT.Secret, emailSvc)
 	services.Subscription.ConfigureEmailBaseURL(storefrontBaseURL)
 	services.Product.SetStorefrontHTMLCacheInvalidator(storefrontHTMLCacheInvalidator)

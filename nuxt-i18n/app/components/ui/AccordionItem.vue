@@ -1,11 +1,11 @@
 <template>
-  <div :id="`accordion-item-${id}`" class="accordion-item flex flex-col rounded-xl overflow-hidden border border-white/5 transition-colors duration-3000" :class="{ 'bg-[var(--tz-card-surface)]': isActive, 'bg-slate-800/20': !isActive }">
+  <div :id="`accordion-item-${id}`" class="accordion-item flex flex-col rounded-xl overflow-hidden border tz-border-strong/5 transition-colors duration-3000" :class="{ 'bg-[var(--tz-card-surface)]': isActive, 'tz-surface-panel': !isActive }">
     
     <!-- Header -->
     <button
       type="button"
       class="accordion-header w-full text-left p-3 md:p-4 flex items-center justify-between group transition-colors duration-200"
-      :class="{ 'text-sky-400': isActive, 'tz-text-secondary hover:bg-white/5': !isActive }"
+      :class="{ 'text-emerald-600': isActive, 'tz-text-secondary hover:tz-surface-subtle': !isActive }"
       @click="toggleItem(id)"
     >
       <div class="flex flex-col">
@@ -16,7 +16,7 @@
       <!-- Icon Indicator -->
       <span 
         class="shrink-0 ml-4 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300"
-        :class="{ 'bg-sky-500/10 rotate-180': isActive, 'bg-slate-700/50': !isActive }"
+        :class="{ 'bg-emerald-50 rotate-180': isActive, 'tz-surface-panel': !isActive }"
       >
         <svg 
           xmlns="http://www.w3.org/2000/svg" 
@@ -29,7 +29,7 @@
           stroke-linecap="round" 
           stroke-linejoin="round"
           class="transition-colors duration-200"
-          :class="{ 'text-sky-400': isActive, 'tz-text-muted': !isActive }"
+          :class="{ 'text-emerald-600': isActive, 'tz-text-muted': !isActive }"
         >
           <polyline points="6 9 12 15 18 9"></polyline>
         </svg>
@@ -40,7 +40,7 @@
     <div
       v-show="isActive"
       :id="`accordion-content-${id}`"
-      class="border-t border-slate-700/50 bg-slate-900/20 p-4"
+      class="border-t tz-border-subtle tz-surface-panel p-4"
     >
       <slot />
     </div>

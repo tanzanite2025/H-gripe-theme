@@ -389,7 +389,7 @@ watch(
 
 .admin-sidebar__link:hover,
 .admin-sidebar__link:focus-visible {
-  background: #f1f5f9;
+  background: var(--muted);
   color: #0f172a;
 }
 
@@ -456,7 +456,7 @@ watch(
   gap: 0.75rem;
   border: 1px solid #e2e8f0;
   border-radius: 1rem;
-  background: #f8fafc;
+  background: var(--secondary);
   padding: 0.625rem;
 }
 

@@ -6,7 +6,7 @@
         v-if="conversation"
         class="fixed inset-0 z-[10000] flex items-center justify-center md:items-end md:justify-end p-0 md:pr-6 md:pb-8 pointer-events-none tz-mobile-safe-modal-mask tz-mobile-dialog-mask"
       >
-        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm md:hidden pointer-events-auto"></div>
+        <div class="absolute inset-0 bg-slate-900/20 backdrop-blur-sm md:hidden pointer-events-auto"></div>
         <!-- 聊天窗口容器 - 右下角定位 -->
         
         <!-- 客户侧聊天：前台只负责访客/会员与客服 Profile 建立会话 -->
@@ -35,14 +35,14 @@
             v-else
             key="chat"
             ref="chatModalRef"
-            class="chat-modal-draggable-shell chat-modal-shell tz-mobile-dialog-surface relative w-full md:w-[560px] max-w-full md:max-w-[calc(100vw-3rem)] tz-mobile-safe-full-height rounded-none md:rounded-2xl overflow-hidden flex flex-col bg-[#111111] shadow-[-12px_0_28px_rgba(0,0,0,0.45)] transition-colors duration-300 pointer-events-auto"
+            class="chat-modal-draggable-shell chat-modal-shell tz-mobile-dialog-surface relative w-full md:w-[560px] max-w-full md:max-w-[calc(100vw-3rem)] tz-mobile-safe-full-height rounded-none md:rounded-2xl overflow-hidden flex flex-col tz-surface-card shadow-[-12px_0_28px_rgba(15,23,42,0.16)] transition-colors duration-300 pointer-events-auto"
             :class="{ 'chat-modal-shell--dragging': isDraggingChatModal }"
             :style="chatModalDragStyle"
           >
             <!-- 聊天区域 -->
             <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
               <div
-                class="chat-modal-drag-handle tz-mobile-chrome-top border-b border-white/[0.08] backdrop-blur-md"
+                class="chat-modal-drag-handle tz-mobile-chrome-top border-b tz-border-strong/[0.08] backdrop-blur-md"
                 @pointerdown="handleChatModalDragStart"
               >
                 <div class="px-3 py-2 flex items-center justify-end gap-3">
@@ -60,11 +60,11 @@
               </div>
 
               <!-- 头部 - 当前客服信息 -->
-              <div class="relative z-30 border-b border-white/[0.08] tz-mobile-chrome-bottom">
+              <div class="relative z-30 border-b tz-border-strong/[0.08] tz-mobile-chrome-bottom">
                 <div class="px-4 py-3 flex items-center gap-3">
                   <div
                     data-no-drag
-                    class="flex min-w-0 flex-1 items-center gap-2 rounded-full bg-[#111111] px-2.5 py-2 transition-colors hover:bg-[#171717]"
+                    class="flex min-w-0 flex-1 items-center gap-2 rounded-full tz-surface-subtle px-2.5 py-2 transition-colors hover:tz-surface-muted"
                   >
                     <button
                       type="button"
@@ -74,7 +74,7 @@
                       @click="toggleAgentPicker"
                     >
                       <span
-                        class="w-10 h-10 rounded-full bg-white/12 flex items-center justify-center text-xs font-semibold text-white overflow-hidden flex-shrink-0"
+                        class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-xs font-semibold tz-text-primary overflow-hidden flex-shrink-0"
                       >
                         <StorefrontImage
                           v-if="selectedAgent?.avatar"
@@ -87,7 +87,7 @@
                       </span>
 
                       <span class="flex-1 min-w-0">
-                        <span class="block text-white font-medium text-sm truncate">{{ selectedAgent?.name || t('chatModal.fallback.agent') }}</span>
+                        <span class="block tz-text-primary font-medium text-sm truncate">{{ selectedAgent?.name || t('chatModal.fallback.agent') }}</span>
                         <span class="block tz-text-muted text-xs truncate">{{ selectedAgentContactLabel }}</span>
                       </span>
 
@@ -97,7 +97,7 @@
                       <a
                         v-if="getAgentEmailHref(selectedAgent)"
                         :href="getAgentEmailHref(selectedAgent)"
-                        class="flex h-8 w-8 items-center justify-center rounded-full border border-white/15 bg-[#151515] text-white transition-colors hover:border-white/35 hover:bg-[#202020]"
+                        class="flex h-8 w-8 items-center justify-center rounded-full border tz-border-subtle tz-surface-card tz-text-primary transition-colors hover:tz-border-strong/35 hover:tz-surface-muted"
                         :title="t('chatModal.actions.email')"
                         :aria-label="t('chatModal.actions.email')"
                         @click.stop
@@ -106,7 +106,7 @@
                       </a>
                       <span
                         v-else
-                        class="flex h-8 w-8 cursor-not-allowed items-center justify-center rounded-full border border-white/[0.07] bg-[#0d0d0d] text-white/24"
+                        class="flex h-8 w-8 cursor-not-allowed items-center justify-center rounded-full border tz-border-strong/[0.07] tz-surface-muted tz-text-primary/24"
                         :title="t('chatModal.actions.email')"
                         :aria-label="t('chatModal.actions.email')"
                         aria-disabled="true"
@@ -119,7 +119,7 @@
                         :href="getAgentWhatsAppHref(selectedAgent)"
                         target="_blank"
                         rel="noopener noreferrer"
-                        class="flex h-8 w-8 items-center justify-center rounded-full border border-white/15 bg-[#151515] text-white transition-colors hover:border-white/35 hover:bg-[#202020]"
+                        class="flex h-8 w-8 items-center justify-center rounded-full border tz-border-subtle tz-surface-card tz-text-primary transition-colors hover:tz-border-strong/35 hover:tz-surface-muted"
                         :title="t('chatModal.actions.contactViaWhatsApp')"
                         :aria-label="t('chatModal.actions.contactViaWhatsApp')"
                         @click.stop
@@ -130,7 +130,7 @@
                       </a>
                       <span
                         v-else
-                        class="flex h-8 w-8 cursor-not-allowed items-center justify-center rounded-full border border-white/[0.07] bg-[#0d0d0d] text-white/24"
+                        class="flex h-8 w-8 cursor-not-allowed items-center justify-center rounded-full border tz-border-strong/[0.07] tz-surface-muted tz-text-primary/24"
                         :title="t('chatModal.actions.contactViaWhatsApp')"
                         :aria-label="t('chatModal.actions.contactViaWhatsApp')"
                         aria-disabled="true"
@@ -142,7 +142,7 @@
                     </span>
                     <button
                       type="button"
-                      class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/[0.07] bg-[#0d0d0d] text-white/55 transition-colors hover:border-white/20 hover:bg-[#151515] hover:text-white"
+                      class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border tz-border-strong/[0.07] tz-surface-muted tz-text-primary/55 transition-colors hover:tz-border-subtle hover:tz-surface-card hover:tz-text-primary"
                       :aria-expanded="agentPickerOpen"
                       aria-haspopup="listbox"
                       @click="toggleAgentPicker"
@@ -158,14 +158,14 @@
                 <div
                   v-if="agentPickerOpen"
                   data-no-drag
-                  class="absolute left-4 right-4 top-[calc(100%+0.5rem)] z-[80] overflow-hidden rounded-[30px] bg-[#050505] opacity-100 shadow-[0_18px_50px_rgba(0,0,0,0.85)]"
+                  class="absolute left-4 right-4 top-[calc(100%+0.5rem)] z-[80] overflow-hidden rounded-[30px] tz-surface-card opacity-100 shadow-[0_18px_50px_rgba(15,23,42,0.18)]"
                 >
-                  <div class="max-h-[min(380px,55vh)] overflow-y-auto bg-[#050505] p-2" role="listbox">
+                  <div class="max-h-[min(380px,55vh)] overflow-y-auto tz-surface-card p-2" role="listbox">
                     <div
                       v-for="agent in agents"
                       :key="agent.id"
                       class="w-full rounded-full border transition-colors"
-                      :class="isSelectedAgent(agent) ? 'border-[#B5FF6D]/70 bg-[#151515]' : 'border-transparent bg-[#080808] hover:border-white/14 hover:bg-[#101010]'"
+                      :class="isSelectedAgent(agent) ? 'border-[#059669]/70 tz-surface-subtle' : 'border-transparent tz-surface-card hover:tz-border-strong/14 hover:tz-surface-muted'"
                       role="option"
                       :aria-selected="isSelectedAgent(agent)"
                     >
@@ -175,22 +175,22 @@
                           class="flex min-w-0 flex-1 items-center gap-3 text-left"
                           @click="handleAgentPickerSelect(agent)"
                         >
-                          <span class="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-full bg-white/12 text-xs font-semibold text-white flex items-center justify-center">
+                          <span class="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-full bg-slate-100 text-xs font-semibold tz-text-primary flex items-center justify-center">
                           <StorefrontImage v-if="agent.avatar" :src="agent.avatar" :alt="agent.name" class="h-full w-full object-cover" preset="avatar" />
                           <span v-else>{{ getAgentInitials(agent) }}</span>
                           <span class="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border border-black" :class="getAgentStatusDotClass(agent)"></span>
                           </span>
                           <span class="min-w-0 flex-1">
-                            <span class="block truncate text-sm font-semibold text-white">{{ agent.name || t('chatModal.fallback.agent') }}</span>
-                            <span class="block truncate text-xs text-white/58">{{ getAgentContactLabel(agent) }}</span>
+                            <span class="block truncate text-sm font-semibold tz-text-primary">{{ agent.name || t('chatModal.fallback.agent') }}</span>
+                            <span class="block truncate text-xs tz-text-primary/58">{{ getAgentContactLabel(agent) }}</span>
                           </span>
                         </button>
-                        <span v-if="isSelectedAgent(agent)" class="h-2 w-2 rounded-full bg-[#B5FF6D]"></span>
+                        <span v-if="isSelectedAgent(agent)" class="h-2 w-2 rounded-full bg-[#059669]"></span>
                         <span class="flex shrink-0 items-center gap-1">
                           <a
                             v-if="getAgentEmailHref(agent)"
                             :href="getAgentEmailHref(agent)"
-                            class="flex h-8 w-8 items-center justify-center rounded-full border border-white/15 bg-[#151515] text-white transition-colors hover:border-white/35 hover:bg-[#202020]"
+                            class="flex h-8 w-8 items-center justify-center rounded-full border tz-border-subtle tz-surface-card tz-text-primary transition-colors hover:tz-border-strong/35 hover:tz-surface-muted"
                             :title="t('chatModal.actions.email')"
                             :aria-label="t('chatModal.actions.email')"
                             @click.stop
@@ -199,7 +199,7 @@
                           </a>
                           <span
                             v-else
-                            class="flex h-8 w-8 cursor-not-allowed items-center justify-center rounded-full border border-white/[0.07] bg-[#0d0d0d] text-white/24"
+                            class="flex h-8 w-8 cursor-not-allowed items-center justify-center rounded-full border tz-border-strong/[0.07] tz-surface-muted tz-text-primary/24"
                             :title="t('chatModal.actions.email')"
                             :aria-label="t('chatModal.actions.email')"
                             aria-disabled="true"
@@ -212,7 +212,7 @@
                             :href="getAgentWhatsAppHref(agent)"
                             target="_blank"
                             rel="noopener noreferrer"
-                            class="flex h-8 w-8 items-center justify-center rounded-full border border-white/15 bg-[#151515] text-white transition-colors hover:border-white/35 hover:bg-[#202020]"
+                            class="flex h-8 w-8 items-center justify-center rounded-full border tz-border-subtle tz-surface-card tz-text-primary transition-colors hover:tz-border-strong/35 hover:tz-surface-muted"
                             :title="t('chatModal.actions.contactViaWhatsApp')"
                             :aria-label="t('chatModal.actions.contactViaWhatsApp')"
                             @click.stop
@@ -223,7 +223,7 @@
                           </a>
                           <span
                             v-else
-                            class="flex h-8 w-8 cursor-not-allowed items-center justify-center rounded-full border border-white/[0.07] bg-[#0d0d0d] text-white/24"
+                            class="flex h-8 w-8 cursor-not-allowed items-center justify-center rounded-full border tz-border-strong/[0.07] tz-surface-muted tz-text-primary/24"
                             :title="t('chatModal.actions.contactViaWhatsApp')"
                             :aria-label="t('chatModal.actions.contactViaWhatsApp')"
                             aria-disabled="true"
@@ -283,7 +283,7 @@
     <Transition name="fade">
       <div
         v-if="showToast"
-        class="chat-toast fixed bottom-20 left-1/2 -translate-x-1/2 z-[10001] px-4 py-2 bg-black/90 text-white text-sm rounded-lg shadow-lg backdrop-blur-sm"
+        class="chat-toast fixed bottom-20 left-1/2 -translate-x-1/2 z-[10001] px-4 py-2 tz-surface-card tz-text-primary text-sm rounded-lg shadow-lg backdrop-blur-sm"
       >
         {{ toastMessage }}
       </div>
@@ -657,7 +657,7 @@ const getAgentContactLabel = (agent: any) => {
 
 const getAgentStatusDotClass = (agent: any) => {
   const status = String(agent?.online_status || agent?.status || '').trim().toLowerCase()
-  if (status === 'online') return 'bg-[#B5FF6D]'
+  if (status === 'online') return 'bg-[#059669]'
   if (status === 'busy') return 'bg-white/70'
   if (status === 'away') return 'bg-white/45'
   return 'bg-white/25'
@@ -731,21 +731,6 @@ const handleAgentPickerSelect = (agent: any) => {
   transform: scale(0.95);
 }
 
-/* 渐变边框按钮 */
-.gradient-border-btn {
-  background: linear-gradient(black, black) padding-box,
-              linear-gradient(to right, #fff, #fff) border-box;
-  border: 2px solid transparent;
-}
-
-/* 渐变文字 */
-.gradient-text {
-  background: linear-gradient(to right, #fff, #fff);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
 /* 自定义滚动条 */
 .overflow-y-auto::-webkit-scrollbar {
   width: 6px;
@@ -774,11 +759,11 @@ const handleAgentPickerSelect = (agent: any) => {
 .chat-modal-shell {
   height: 100vh;
   max-height: 100vh;
-  background: #000 !important;
+  background: var(--tz-card-surface) !important;
   box-shadow:
-    0 0 1px rgba(255, 255, 255, 0.42),
-    0 0 8px rgba(255, 255, 255, 0.12),
-    0 0 18px rgba(255, 255, 255, 0.055);
+    0 0 1px rgba(15, 23, 42, 0.16),
+    0 0 8px rgba(15, 23, 42, 0.08),
+    0 0 18px rgba(15, 23, 42, 0.04);
 }
 
 .chat-history-shell {

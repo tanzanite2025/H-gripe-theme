@@ -1,12 +1,12 @@
 <template>
   <div
     class="faq-category-card rounded-2xl p-3 md:p-4"
-    :class="theme === 'dark' ? 'bg-[var(--tz-card-surface)] shadow-[0_8px_30px_rgba(0,0,0,0.6)]' : 'bg-white shadow-lg'"
+    :class="theme === 'dark' ? 'bg-[var(--tz-card-surface)] shadow-md' : 'bg-white shadow-lg'"
   >
     <div
       v-if="showCategories"
       class="page-faq__category-header flex items-center justify-center gap-3 border-b"
-      :class="theme === 'dark' ? 'border-white/10' : 'border-gray-100'"
+      :class="theme === 'dark' ? 'tz-border-subtle' : 'border-gray-100'"
     >
       <h4
         class="page-faq__category-title tz-faq-category-title"
@@ -18,14 +18,14 @@
 
     <div
       class="faq-list faq-list--mobile space-y-0 rounded-xl overflow-hidden border"
-      :class="theme === 'dark' ? 'bg-[var(--tz-card-surface)] border-white/10 shadow-[0_4px_16px_rgba(0,0,0,0.5)]' : 'bg-white border-gray-200 shadow-sm'"
+      :class="theme === 'dark' ? 'bg-[var(--tz-card-surface)] tz-border-subtle shadow-md' : 'bg-white border-gray-200 shadow-sm'"
     >
       <div
         v-for="item in category.items"
         :key="item.id"
         class="faq-item border-b last:border-b-0"
         :class="[
-          theme === 'dark' ? 'border-white/10' : 'border-gray-100',
+          theme === 'dark' ? 'tz-border-subtle' : 'border-gray-100',
           expandedItems.has(item.id) ? 'faq-item--expanded' : '',
         ]"
       >
@@ -33,9 +33,9 @@
           type="button"
           class="faq-item__button w-full flex items-center justify-between gap-3 px-3 py-3 text-left transition-colors group"
           :class="[
-            theme === 'dark' ? 'hover:bg-white/5' : 'hover:bg-gray-50',
+            theme === 'dark' ? 'hover:tz-surface-subtle' : 'hover:bg-gray-50',
             expandedItems.has(item.id)
-              ? (theme === 'dark' ? 'bg-white/5' : 'bg-gray-50')
+              ? (theme === 'dark' ? 'tz-surface-subtle' : 'bg-gray-50')
               : '',
           ]"
           @click="emit('toggle-item', item.id)"
@@ -55,8 +55,8 @@
             class="faq-item__icon flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full transition-all duration-200"
             :class="[
               expandedItems.has(item.id)
-                ? 'bg-[rgba(181,255,109,0.12)] text-[var(--tz-text-accent)] rotate-180'
-                : (theme === 'dark' ? 'tz-text-muted bg-transparent' : 'text-gray-500 bg-transparent'),
+                ? 'bg-[rgba(5,150,105,0.16)] text-[var(--tz-text-accent)] rotate-180'
+                : (theme === 'dark' ? 'tz-text-muted bg-transparent' : 'tz-text-secondary0 bg-transparent'),
             ]"
           >
             <svg class="faq-item__chevron w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -80,7 +80,7 @@
           >
             <div
               class="page-faq__answer tz-faq-answer px-4 pb-4 pt-1"
-              :class="theme === 'dark' ? 'tz-text-secondary' : 'text-gray-600'"
+              :class="theme === 'dark' ? 'tz-text-secondary' : 'tz-text-muted'"
             >
               <FaqAnswerContent
                 :answer="item.answer"
@@ -193,9 +193,7 @@ const desktopItems = computed(() => (
 @media (max-width: 767.98px) {
   .faq-item__answer-wrap--dark,
   .faq-list--mobile .faq-item__answer-wrap {
-    background:
-      linear-gradient(0deg, rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0.025)),
-      var(--tz-card-surface, #111116) !important;
+    background: var(--tz-input-surface) !important;
   }
 }
 </style>

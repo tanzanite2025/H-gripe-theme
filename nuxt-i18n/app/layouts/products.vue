@@ -44,7 +44,7 @@ useHead(() => ({
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  background: #000000;
+  background: var(--tz-surface-page);
 }
 
 .layout-main {

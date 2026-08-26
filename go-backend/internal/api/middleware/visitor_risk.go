@@ -93,7 +93,7 @@ func visitorRiskMeaningfulAction(method string, path string, statusCode int) boo
 		"/api/v1/wishlist",
 		"/api/v1/spoke/calc",
 		"/api/v1/subscriptions",
-		"/api/v1/registrations",
+		"/api/v1/warranty",
 	}
 	for _, prefix := range meaningfulPrefixes {
 		if strings.HasPrefix(path, prefix) {

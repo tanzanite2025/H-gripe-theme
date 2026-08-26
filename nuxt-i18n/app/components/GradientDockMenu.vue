@@ -3,7 +3,7 @@
     <div class="dock-surface mx-auto w-full md:max-w-[500px] rounded-none px-1 py-2.5 md:px-4 md:py-3 items-center transition-all duration-300">
       <!-- 1. Menu (Sidebar) -->
       <button
-        class="dock-icon-button h-11 md:h-12 tz-text-secondary hover:text-white transition-colors"
+        class="dock-icon-button h-11 md:h-12 tz-text-secondary hover:tz-text-primary transition-colors"
         @click="openSidebarLeft"
         :aria-label="$t('dockMenu.openSidebar')"
       >
@@ -16,7 +16,7 @@
       <button
         :class="[
           'dock-icon-button h-11 md:h-12 transition-colors',
-          isChatOpen ? 'text-[#B5FF6D]' : 'tz-text-secondary hover:text-white'
+          isChatOpen ? 'text-[#059669]' : 'tz-text-secondary hover:tz-text-primary'
         ]"
         @click="toggleChatFromDock()"
         :aria-label="$t('dockMenu.chat')"
@@ -58,7 +58,7 @@
         <LazyGradientDockQuickBuy @open="isOpen = false" />
         <template #fallback>
           <button
-            class="dock-icon-button dock-quick-buy-button h-11 md:h-12 tz-text-secondary hover:text-[#B5FF6D] transition-colors"
+            class="dock-icon-button dock-quick-buy-button h-11 md:h-12 tz-text-secondary hover:text-[#059669] transition-colors"
             type="button"
             :aria-label="$t('dockMenu.quickBuy')"
           >
@@ -226,10 +226,11 @@ onBeforeUnmount(() => {
 <style scoped>
 .dock-bar {
   min-height: var(--tz-bottom-dock-height, 4.5rem);
-  background: linear-gradient(180deg, #0c0c10 0%, #111116 42%, #1a1a20 100%);
+  background: var(--tz-input-surface);
+  border-top: 1px solid var(--tz-border-subtle);
   box-shadow:
-    0 -12px 32px rgba(0, 0, 0, 0.28),
-    inset 0 1px 0 rgba(255, 255, 255, 0.035);
+    0 -12px 32px rgba(20, 32, 43, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
 .dock-surface {
@@ -248,15 +249,15 @@ onBeforeUnmount(() => {
 
 .dock-icon-slot {
   display: inline-flex;
-  flex: 0 0 36px;
-  width: 36px;
-  height: 36px;
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
   align-items: center;
   justify-content: center;
 }
 
 .dock-quick-buy-button {
-  --dock-quickbuy-active-edge: color-mix(in srgb, var(--tz-brand-primary, #b5ff6d) 74%, transparent);
+  --dock-quickbuy-active-edge: color-mix(in srgb, var(--tz-site-accent, #059669) 74%, transparent);
 }
 
 .dock-quick-buy-frame {
@@ -269,14 +270,14 @@ onBeforeUnmount(() => {
 }
 
 .dock-quick-buy-button--active {
-  color: var(--tz-brand-primary, #b5ff6d);
+  color: var(--tz-site-accent, #059669);
 }
 
 .dock-quick-buy-button--active .dock-quick-buy-frame {
-  background: rgba(181, 255, 109, 0.08);
+  background: rgba(5, 150, 105, 0.08);
   box-shadow:
     inset 0 0 0 1px var(--dock-quickbuy-active-edge),
-    0 0 0 4px rgba(181, 255, 109, 0.075);
+    0 0 0 4px rgba(5, 150, 105, 0.075);
 }
 
 .dock-quick-buy-button:hover .dock-quick-buy-frame {
@@ -294,7 +295,7 @@ onBeforeUnmount(() => {
   border: 1px solid rgba(255, 255, 255, 0.82);
   border-radius: 999px;
   background: #ffffff;
-  color: #050505;
+  color: var(--tz-text-primary);
   font-weight: 900;
   line-height: 1;
   white-space: nowrap;
@@ -327,20 +328,20 @@ onBeforeUnmount(() => {
 }
 
 .dock-cart-button:hover {
-  background: #f8fafc;
-  color: #050505;
+  background: var(--tz-surface-inset);
+  color: var(--tz-text-primary);
   transform: translateY(-0.125rem);
 }
 
 .dock-cart-button--active {
   border-color: #ffffff;
   background: #ffffff;
-  color: #050505;
+  color: var(--tz-text-primary);
 }
 
 .dock-cart-button--active:hover {
-  background: #f8fafc;
-  color: #050505;
+  background: var(--tz-surface-inset);
+  color: var(--tz-text-primary);
 }
 
 .dock-cart-count {
@@ -352,8 +353,8 @@ onBeforeUnmount(() => {
   justify-content: center;
   border: 0;
   border-radius: 999px;
-  background: var(--tz-brand-primary, #b5ff6d);
-  color: #050505;
+  background: var(--tz-site-accent, #059669);
+  color: var(--tz-text-primary);
   font-size: 1rem;
   font-weight: 900;
   padding: 0 0.35rem;
@@ -387,7 +388,13 @@ onBeforeUnmount(() => {
 
 @media (max-width: 767px) {
   .dock-bar {
-    background: linear-gradient(180deg, #303034 0%, #2b2b2f 22%, #242428 42%, #1d1d21 62%, #18181c 82%, #151519 100%);
+    background: var(--tz-mobile-bottom-chrome-surface);
+  }
+
+  .dock-icon-slot {
+    flex-basis: 28px;
+    width: 28px;
+    height: 28px;
   }
 
   .dock-surface {

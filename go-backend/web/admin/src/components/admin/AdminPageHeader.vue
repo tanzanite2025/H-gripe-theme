@@ -1,6 +1,5 @@
 <template>
   <header class="uds-header-box px-4 py-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-    <div class="uds-glow-bg" />
     <div class="relative z-10 min-w-0">
       <span class="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 block">{{ t('layout.moduleControl') }}</span>
       <h1 class="truncate text-lg font-black tracking-tighter uppercase text-foreground">{{ title }}</h1>

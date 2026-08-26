@@ -1,0 +1,61 @@
+{
+  "trigger": {
+    "label": "Verificar compatibilidade"
+  },
+  "dialog": {
+    "eyebrow": "Catálogo de compatibilidade",
+    "title": "Encontre o seu quadro ou forqueta",
+    "description": "Pesquise no catálogo independente de compatibilidade por marca, modelo ou ano. Os resultados incluem as especificações do cubo registadas para cada entrada.",
+    "close": "Fechar",
+    "tabListLabel": "Secções do catálogo de compatibilidade"
+  },
+  "tabs": {
+    "frame": "Compatibilidade do quadro",
+    "fork": "Compatibilidade da forqueta"
+  },
+  "search": {
+    "label": "Pesquisar",
+    "placeholder": "Pesquisar por marca ou modelo",
+    "yearLabel": "Ano do modelo",
+    "yearPlaceholder": "ex.: 2024",
+    "submit": "Pesquisar",
+    "clear": "Limpar",
+    "searching": "A pesquisar..."
+  },
+  "states": {
+    "initial": "Introduza uma marca, um modelo ou um ano para pesquisar no catálogo.",
+    "empty": "Não foram encontrados registos correspondentes.",
+    "unavailable": "Os dados de compatibilidade estão temporariamente indisponíveis. Tente novamente.",
+    "noHubSpecifications": "Não foram registadas especificações do cubo."
+  },
+  "entry": {
+    "series": "Série",
+    "generation": "Geração",
+    "market": "Mercado",
+    "hubSpecifications": "Especificações do cubo",
+    "unknownYear": "Ano não especificado",
+    "allYears": "Todos os anos"
+  },
+  "pagination": {
+    "label": "Resultados de compatibilidade",
+    "previous": "Página anterior",
+    "next": "Página seguinte",
+    "page": "Página {page} de {totalPages}"
+  },
+  "hub": {
+    "position": "Posição",
+    "axleType": "Tipo de eixo",
+    "axleSpacing": "Espaçamento do eixo",
+    "millimetres": "mm",
+    "positions": {
+      "front": "Dianteira",
+      "rear": "Traseira"
+    },
+    "axleTypes": {
+      "quickRelease": "Fecho rápido",
+      "thruAxle": "Eixo passante",
+      "boltOn": "Fixação por parafusos",
+      "other": "Outro"
+    }
+  }
+}

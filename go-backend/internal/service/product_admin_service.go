@@ -396,12 +396,17 @@ func (s *ProductService) UpdateAdminProduct(id uint, input ProductUpdateInput) (
 		}
 		existingProduct.ShortDesc = shortDesc
 	}
-	priceCurrency := existingProduct.Currency
+	priceCurrency := normalizeStoredProductPriceCurrency(existingProduct.Currency)
 	if input.UpdateCurrency {
-		if input.Currency == nil {
-			priceCurrency = s.primaryPricingCurrency()
-		} else {
-			priceCurrency, err = s.normalizeAdminProductPriceCurrency(*input.Currency)
+		requestedCurrency := priceCurrency
+		if input.Currency != nil {
+			requestedCurrency = currency.NormalizeCode(*input.Currency)
+		}
+		if requestedCurrency == "" {
+			requestedCurrency = priceCurrency
+		}
+		if requestedCurrency != priceCurrency {
+			priceCurrency, err = s.normalizeAdminProductPriceCurrency(requestedCurrency)
 			if err != nil {
 				return nil, err
 			}
@@ -573,6 +578,14 @@ func (s *ProductService) normalizeAdminProductPriceCurrency(value string) (strin
 		return "", fmt.Errorf("%w: product price currency must match primary pricing currency %s", ErrProductVariantInvalid, primaryCurrency)
 	}
 	return code, nil
+}
+
+func normalizeStoredProductPriceCurrency(value string) string {
+	code := currency.NormalizeCode(value)
+	if !currency.IsValidCode(code) || !currency.IsCatalogCode(code) {
+		return product.DefaultPriceCurrency
+	}
+	return code
 }
 
 type productCustomsInfo struct {

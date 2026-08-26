@@ -178,8 +178,8 @@ const handleSearchInput = (event: Event) => {
   overflow: hidden;
   border: 0;
   border-radius: 0.8rem;
-  background: #050505;
-  box-shadow: 0 20px 54px rgba(0, 0, 0, 0.8);
+  background: var(--tz-card-surface, #ffffff);
+  box-shadow: 0 20px 54px rgba(20, 32, 43, 0.18);
 }
 
 .global-all-faqs-mobile-search-overlay-panel__header {
@@ -188,13 +188,13 @@ const handleSearchInput = (event: Event) => {
   justify-content: space-between;
   gap: 0.7rem;
   padding: 0.8rem 0.75rem 0.65rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  background: linear-gradient(180deg, #17171b 0%, #0d0d10 100%);
+  border-bottom: 1px solid rgba(20, 32, 43, 0.12);
+    background: var(--tz-card-surface);
 }
 
 .global-all-faqs-mobile-search-overlay-panel__eyebrow {
   margin-bottom: 0.2rem;
-  color: #B5FF6D;
+  color: var(--tz-text-accent);
   font-size: 0.51rem;
   font-weight: 900;
   letter-spacing: 0.12em;
@@ -203,7 +203,7 @@ const handleSearchInput = (event: Event) => {
 
 .global-all-faqs-mobile-search-overlay-panel__title {
   margin: 0;
-  color: #ffffff;
+  color: var(--tz-text-primary);
   font-size: 0.92rem;
   font-weight: 900;
   line-height: 1.2;
@@ -214,9 +214,9 @@ const handleSearchInput = (event: Event) => {
   display: inline-grid;
   flex: 0 0 auto;
   place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.04);
-  color: #cbd5e1;
+  border: 1px solid rgba(20, 32, 43, 0.14);
+  background: #f3f6f8;
+  color: var(--tz-text-secondary);
   cursor: pointer;
 }
 
@@ -249,10 +249,10 @@ const handleSearchInput = (event: Event) => {
   gap: 0.48rem;
   margin: 0.6rem 0.65rem 0.55rem;
   padding: 0 0.65rem;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(20, 32, 43, 0.18);
   border-radius: 0.65rem;
-  background: var(--tz-input-surface, #0b0b0e);
-  color: #94a3b8;
+  background: var(--tz-input-surface, #ffffff);
+  color: var(--tz-text-secondary);
 }
 
 .global-all-faqs-mobile-search-overlay-panel__search > :deep(svg) {
@@ -267,12 +267,12 @@ const handleSearchInput = (event: Event) => {
   border: 0;
   outline: 0;
   background: transparent;
-  color: #ffffff;
+  color: var(--tz-text-primary);
   font-size: 0.76rem;
 }
 
 .global-all-faqs-mobile-search-overlay-panel__search input::placeholder {
-  color: #64748b;
+  color: var(--tz-text-muted);
 }
 
 .global-all-faqs-mobile-search-overlay-panel__clear {
@@ -283,8 +283,8 @@ const handleSearchInput = (event: Event) => {
   place-items: center;
   border: 0;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
-  color: #94a3b8;
+  background: #e4eaee;
+  color: var(--tz-text-secondary);
   cursor: pointer;
 }
 
@@ -342,7 +342,7 @@ const handleSearchInput = (event: Event) => {
 .global-all-faqs-mobile-search-overlay-panel__section-kicker {
   display: block;
   margin-bottom: 0.16rem;
-  color: #64748b;
+  color: var(--tz-text-muted);
   font-size: 0.5rem;
   font-weight: 900;
   letter-spacing: 0.11em;
@@ -352,7 +352,7 @@ const handleSearchInput = (event: Event) => {
 
 .global-all-faqs-mobile-search-overlay-panel__section-heading h3 {
   margin: 0;
-  color: #ffffff;
+  color: var(--tz-text-primary);
   font-size: 0.75rem;
   font-weight: 900;
   line-height: 1.25;
@@ -363,9 +363,9 @@ const handleSearchInput = (event: Event) => {
   min-width: 1.55rem;
   height: 1.55rem;
   place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(20, 32, 43, 0.16);
   border-radius: 999px;
-  color: #B5FF6D;
+  color: var(--tz-text-accent);
   font-size: 0.57rem;
   font-weight: 900;
 }
@@ -385,17 +385,17 @@ const handleSearchInput = (event: Event) => {
   padding: 0.65rem;
   border: 1px solid transparent;
   border-radius: 0.65rem;
-  background: var(--tz-card-surface, #111116);
-  color: #ffffff;
+  background: var(--tz-card-surface, #ffffff);
+  color: var(--tz-text-primary);
   text-align: left;
   cursor: pointer;
 }
 
 .global-all-faqs-mobile-search-overlay-panel__topic.is-active {
-  border-color: rgba(181, 255, 109, 0.48);
+  border-color: rgba(5, 150, 105, 0.48);
   background:
-    linear-gradient(0deg, rgba(181, 255, 109, 0.075), rgba(181, 255, 109, 0.075)),
-    var(--tz-card-surface, #111116);
+    linear-gradient(0deg, rgba(5, 150, 105, 0.075), rgba(5, 150, 105, 0.075)),
+    var(--tz-card-surface, #ffffff);
 }
 
 .global-all-faqs-mobile-search-overlay-panel__topic-label {
@@ -408,7 +408,7 @@ const handleSearchInput = (event: Event) => {
 }
 
 .global-all-faqs-mobile-search-overlay-panel__topic-count {
-  color: #64748b;
+  color: var(--tz-text-muted);
   font-size: 0.54rem;
   font-weight: 800;
   letter-spacing: 0.07em;
@@ -420,16 +420,16 @@ const handleSearchInput = (event: Event) => {
   display: grid;
   min-height: 9rem;
   place-items: center;
-  border: 1px dashed rgba(255, 255, 255, 0.18);
+  border: 1px dashed rgba(20, 32, 43, 0.18);
   border-radius: 0.7rem;
-  color: #94a3b8;
+  color: var(--tz-text-secondary);
   font-size: 0.74rem;
   line-height: 1.5;
   text-align: center;
 }
 
 .global-all-faqs-mobile-search-overlay-panel__loading {
-  color: #B5FF6D;
+  color: var(--tz-text-accent);
 }
 
 @media (min-width: 768px) {

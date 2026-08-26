@@ -14,7 +14,7 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-func TestCurrencyPolicyPersistsPrimaryCurrencyAndSecondaryDisplays(t *testing.T) {
+func TestCurrencyPolicyPersistsBackendEntryCurrencyOnly(t *testing.T) {
 	service := newTestCurrencyPolicyService(t)
 
 	policy, err := service.UpdatePolicy(currency.Policy{
@@ -23,15 +23,15 @@ func TestCurrencyPolicyPersistsPrimaryCurrencyAndSecondaryDisplays(t *testing.T)
 	})
 	require.NoError(t, err)
 	require.Equal(t, "CNY", policy.PrimaryCurrency)
-	require.Equal(t, []string{"USD", "EUR"}, policy.DisplayCurrencies)
+	require.Empty(t, policy.DisplayCurrencies)
 
 	loaded, err := service.GetPolicy()
 	require.NoError(t, err)
 	require.Equal(t, "CNY", loaded.PrimaryCurrency)
-	require.Equal(t, []string{"USD", "EUR"}, loaded.DisplayCurrencies)
+	require.Empty(t, loaded.DisplayCurrencies)
 }
 
-func TestCurrencyPolicyDefaultsSecondaryDisplaysToEmptyWhenUnset(t *testing.T) {
+func TestCurrencyPolicyDefaultsDisplayCurrenciesToEmptyWhenUnset(t *testing.T) {
 	service := newTestCurrencyPolicyService(t)
 
 	policy, err := service.GetPolicy()
@@ -39,6 +39,26 @@ func TestCurrencyPolicyDefaultsSecondaryDisplaysToEmptyWhenUnset(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, currency.DefaultPrimaryCurrency, policy.PrimaryCurrency)
 	require.Empty(t, policy.DisplayCurrencies)
+}
+
+func TestCurrencyPolicyDeletesLegacyGlobalDisplayCurrenciesWhenSaved(t *testing.T) {
+	service := newTestCurrencyPolicyService(t)
+	require.NoError(t, service.settings.BatchSet([]setting.Setting{
+		{
+			Key:      "currency_display_currencies",
+			Value:    "USD,EUR",
+			Type:     "string",
+			Locale:   "en",
+			Group:    "currency",
+			IsPublic: true,
+		},
+	}))
+
+	_, err := service.UpdatePolicy(currency.Policy{PrimaryCurrency: "CNY"})
+
+	require.NoError(t, err)
+	_, err = service.settings.Get("currency_display_currencies", "en")
+	require.True(t, repository.IsRecordNotFound(err))
 }
 
 func TestCurrencyPolicyRejectsUnsupportedPrimaryCurrency(t *testing.T) {

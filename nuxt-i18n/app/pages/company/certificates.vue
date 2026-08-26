@@ -25,6 +25,8 @@ const { t } = useI18n()
 
 definePageMeta({
   layout: 'products',
+  footerLabelKey: 'company.nav.certificates',
+  footerLabelFallback: 'Certificates',
 })
 
 useHead({

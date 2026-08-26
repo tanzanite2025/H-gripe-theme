@@ -9,7 +9,7 @@
 
       <!-- Video Section -->
       <div class="flex justify-center mb-10">
-         <div class="relative group cursor-pointer rounded-xl overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.5)] border border-slate-700/50 max-w-3xl w-full" @click="showHolePatternVideo = true">
+         <div class="relative group cursor-pointer rounded-xl overflow-hidden shadow-md border tz-border-subtle max-w-3xl w-full" @click="showHolePatternVideo = true">
             <video 
               class="w-full h-auto object-cover opacity-90 group-hover:opacity-100 transition-opacity duration-300"
               src="/company/ourstory/holepatterns/automated-wheel-rimhole-drilling–customizable-Patterns_medium.webm?v=2"
@@ -20,8 +20,8 @@
             ></video>
             <!-- Play Overlay -->
             <div class="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/10 transition-colors duration-300">
-               <div class="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30 group-hover:scale-110 transition-transform duration-300">
-                  <svg class="w-8 h-8 text-white ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+               <div class="w-16 h-16 rounded-full tz-surface-subtle backdrop-blur-sm flex items-center justify-center border tz-border-strong/30 group-hover:scale-110 transition-transform duration-300">
+                  <svg class="w-8 h-8 tz-text-primary ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                </div>
             </div>
          </div>
@@ -30,52 +30,52 @@
       <!-- Info Grid -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
          <!-- Card 1: Our Support -->
-         <div class="bg-[var(--tz-card-surface)] p-6 rounded-2xl shadow-[0_4px_16px_rgba(0,0,0,0.5)] border border-slate-800/50">
-            <h3 class="text-lg font-bold text-slate-100 mb-4 border-b border-slate-700/50 pb-2">Our Support</h3>
+         <div class="bg-[var(--tz-card-surface)] p-6 rounded-2xl shadow-md border tz-border-subtle">
+            <h3 class="text-lg font-bold tz-text-secondary mb-4 border-b tz-border-subtle pb-2">Our Support</h3>
             <ul class="space-y-3 text-sm tz-text-secondary">
                <li class="flex items-start gap-3">
-                  <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-teal-400 shrink-0"></span>
-                  <span><strong class="text-white">Symmetrical Drilling:</strong> Suitable for standard hubs, providing balanced spoke tension.</span>
+                  <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"></span>
+                  <span><strong class="tz-text-primary">Symmetrical Drilling:</strong> Suitable for standard hubs, providing balanced spoke tension.</span>
                </li>
                <li class="flex items-start gap-3">
-                  <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-teal-400 shrink-0"></span>
-                  <span><strong class="text-white">Asymmetrical Drilling:</strong> Optimizes tension between the drive and non-drive sides, enhancing stability.</span>
+                  <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"></span>
+                  <span><strong class="tz-text-primary">Asymmetrical Drilling:</strong> Optimizes tension between the drive and non-drive sides, enhancing stability.</span>
                </li>
                <li class="flex items-start gap-3">
-                  <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-teal-400 shrink-0"></span>
-                  <span><strong class="text-white">Custom Hole Counts:</strong> Available in 16, 20, 24, 28, 32, and 36-hole configurations.</span>
+                  <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"></span>
+                  <span><strong class="tz-text-primary">Custom Hole Counts:</strong> Available in 16, 20, 24, 28, 32, and 36-hole configurations.</span>
                </li>
                <li class="flex items-start gap-3">
-                  <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-teal-400 shrink-0"></span>
-                  <span><strong class="text-white">Angled Drilling:</strong> Hole angles optimized for specific lacing patterns to reduce spoke stress.</span>
+                  <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"></span>
+                  <span><strong class="tz-text-primary">Angled Drilling:</strong> Hole angles optimized for specific lacing patterns to reduce spoke stress.</span>
                </li>
             </ul>
          </div>
 
          <!-- Card 2: Customization Services -->
-         <div class="bg-[var(--tz-card-surface)] p-6 rounded-2xl shadow-[0_4px_16px_rgba(0,0,0,0.5)] border border-slate-800/50">
-            <h3 class="text-lg font-bold text-slate-100 mb-4 border-b border-slate-700/50 pb-2">Customization Services</h3>
+         <div class="bg-[var(--tz-card-surface)] p-6 rounded-2xl shadow-md border tz-border-subtle">
+            <h3 class="text-lg font-bold tz-text-secondary mb-4 border-b tz-border-subtle pb-2">Customization Services</h3>
             <p class="text-sm tz-text-secondary mb-3">We support customers with tailored drilling solutions based on specific needs:</p>
             <ul class="space-y-3 text-sm tz-text-secondary">
                <li class="flex items-start gap-3">
-                  <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0"></span>
+                  <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"></span>
                   <span>Special hole counts</span>
                </li>
                <li class="flex items-start gap-3">
-                  <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0"></span>
+                  <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"></span>
                   <span>Custom lacing compatibility</span>
                </li>
                <li class="flex items-start gap-3">
-                  <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0"></span>
+                  <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"></span>
                   <span>OEM/ODM exclusive designs</span>
                </li>
             </ul>
          </div>
 
          <!-- Card 3: Advantages -->
-         <div class="bg-[var(--tz-card-surface)] p-6 rounded-2xl shadow-[0_4px_16px_rgba(0,0,0,0.5)] border border-slate-800/50">
-            <h3 class="text-lg font-bold text-slate-100 mb-4 border-b border-slate-700/50 pb-2">Advantages of Automated Machinery</h3>
-            <p class="text-sm tz-text-secondary mb-3">All drilling processes are carried out using our <strong class="text-white">self-developed automated machinery</strong>, ensuring:</p>
+         <div class="bg-[var(--tz-card-surface)] p-6 rounded-2xl shadow-md border tz-border-subtle">
+            <h3 class="text-lg font-bold tz-text-secondary mb-4 border-b tz-border-subtle pb-2">Advantages of Automated Machinery</h3>
+            <p class="text-sm tz-text-secondary mb-3">All drilling processes are carried out using our <strong class="tz-text-primary">self-developed automated machinery</strong>, ensuring:</p>
             <ul class="space-y-3 text-sm tz-text-secondary">
                <li class="flex items-start gap-3">
                   <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"></span>
@@ -93,8 +93,8 @@
          </div>
 
          <!-- Card 4: Our Commitment -->
-         <div class="bg-[var(--tz-card-surface)] p-6 rounded-2xl shadow-[0_4px_16px_rgba(0,0,0,0.5)] border border-slate-800/50">
-            <h3 class="text-lg font-bold text-slate-100 mb-4 border-b border-slate-700/50 pb-2">Our Commitment</h3>
+         <div class="bg-[var(--tz-card-surface)] p-6 rounded-2xl shadow-md border tz-border-subtle">
+            <h3 class="text-lg font-bold tz-text-secondary mb-4 border-b tz-border-subtle pb-2">Our Commitment</h3>
              <p class="text-sm tz-text-secondary leading-relaxed">
                By combining automation with customization, we provide suitable rim drilling solutions for different riders and brands, supporting long-term stability and reliability.
              </p>
@@ -106,7 +106,7 @@
        <button type="button" class="tz-global-close-btn absolute top-4 right-4 z-10" aria-label="Close video" @click="showHolePatternVideo = false">
           ×
        </button>
-       <div class="hole-pattern-video-content tz-standard-modal-surface relative w-full max-w-5xl aspect-video bg-black overflow-hidden" @click.stop>
+       <div class="hole-pattern-video-content tz-standard-modal-surface relative w-full max-w-5xl aspect-video tz-surface-card overflow-hidden" @click.stop>
           <video 
             class="w-full h-full object-contain"
             src="/company/ourstory/holepatterns/automated-wheel-rimhole-drilling–customizable-Patterns_medium.webm?v=2"

@@ -41,7 +41,9 @@ export function useStorefrontContext() {
           },
         })
         const context = 'data' in Object(response) ? (response as { data?: StorefrontContextPayload }).data : response as StorefrontContextPayload
-        if (context?.currency?.resolved) {
+        // SSR HTML may be cached by URL. Do not emit a Set-Cookie while rendering
+        // a cached page; the client can persist the resolved preference instead.
+        if (import.meta.client && context?.currency?.resolved) {
           displayCurrencyCookie.value = context.currency.resolved
         }
         return context || null

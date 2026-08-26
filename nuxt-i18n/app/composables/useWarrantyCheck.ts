@@ -10,7 +10,7 @@ interface WarrantyRemaining {
 }
 
 interface WarrantyResult {
-  product_code: string
+  order_number?: string
   product_type: {
     code: string
     name: string
@@ -42,23 +42,23 @@ export const useWarrantyCheck = () => {
   const auth = useAuth()
 
   // 表单与结果状态
-  const productCode = ref('')
-  const searchedCode = ref('')
+  const orderNumber = ref('')
+  const searchedOrderNumber = ref('')
   const loading = ref(false)
   const error = ref(false)
   const result = ref<WarrantyResult | null>(null)
 
   const checkWarranty = async () => {
-    if (!productCode.value.trim()) return
+    if (!orderNumber.value.trim()) return
 
     loading.value = true
     error.value = false
     result.value = null
-    searchedCode.value = productCode.value.trim()
+    searchedOrderNumber.value = orderNumber.value.trim()
 
     try {
       const response = await auth.request<WarrantyCheckResponse>(
-        `/registrations/warranty/${encodeURIComponent(searchedCode.value)}`,
+        `/warranty/orders/${encodeURIComponent(searchedOrderNumber.value)}`,
         {
           headers: { accept: 'application/json' },
         },
@@ -80,8 +80,8 @@ export const useWarrantyCheck = () => {
   }
 
   const reset = () => {
-    productCode.value = ''
-    searchedCode.value = ''
+    orderNumber.value = ''
+    searchedOrderNumber.value = ''
     error.value = false
     result.value = null
   }
@@ -114,8 +114,8 @@ export const useWarrantyCheck = () => {
   }
 
   return {
-    productCode,
-    searchedCode,
+    orderNumber,
+    searchedOrderNumber,
     loading,
     error,
     result,

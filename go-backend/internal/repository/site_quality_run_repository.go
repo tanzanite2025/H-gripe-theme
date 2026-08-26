@@ -20,6 +20,37 @@ type SiteQualityRunListFilter struct {
 	Strategy  string
 }
 
+const siteQualityRunColumns = `
+	id,
+	target_id,
+	job_id,
+	target_url,
+	canonical_url,
+	final_url,
+	strategy,
+	status,
+	initiated_by_user_id,
+	provider,
+	lighthouse_version,
+	environment_json,
+	release_id,
+	performance_score,
+	accessibility_score,
+	best_practices_score,
+	seo_score,
+	first_contentful_paint_ms,
+	largest_contentful_paint_ms,
+	interaction_to_next_paint_ms,
+	cumulative_layout_shift,
+	total_blocking_time_ms,
+	speed_index_ms,
+	issues_json,
+	raw_response_json,
+	error_message,
+	created_at,
+	updated_at
+`
+
 func NewSiteQualityRunRepository(db *gorm.DB) *SiteQualityRunRepository {
 	return &SiteQualityRunRepository{db: db}
 }
@@ -108,7 +139,9 @@ func (r *SiteQualityRunRepository) FindByID(id uint) (*sitequalitydomain.SiteQua
 func (r *SiteQualityRunRepository) runQuery() *gorm.DB {
 	if r.db.Migrator().HasTable(&sitequalitydomain.SiteQualityRunArchive{}) {
 		return r.db.Table(
-			"(SELECT * FROM site_quality_runs UNION ALL SELECT * FROM site_quality_runs_archive) AS site_quality_runs",
+			"(SELECT " + siteQualityRunColumns + " FROM site_quality_runs " +
+				"UNION ALL " +
+				"SELECT " + siteQualityRunColumns + " FROM site_quality_runs_archive) AS site_quality_runs",
 		)
 	}
 	return r.db.Model(&sitequalitydomain.SiteQualityRun{})

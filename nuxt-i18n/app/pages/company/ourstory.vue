@@ -112,6 +112,8 @@ const factoryTabTo = computed(() => {
 
 definePageMeta({
   layout: 'products',
+  footerLabelKey: 'company.nav.ourStory',
+  footerLabelFallback: 'Our Story',
 })
 
 useHead(() => ({
@@ -121,12 +123,12 @@ useHead(() => ({
 
 <style scoped>
 .ourstory-container {
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--tz-border-subtle);
   background:
-    radial-gradient(circle at 86% 0%, rgba(181, 255, 109, 0.08), transparent 34rem),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.012)),
+    radial-gradient(circle at 86% 0%, rgba(5, 150, 105, 0.08), transparent 34rem),
+    linear-gradient(180deg, rgba(248, 250, 252, 0.9), rgba(255, 255, 255, 0.7)),
     var(--tz-card-surface);
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.46);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.12);
 }
 
 .ourstory-header {
@@ -172,13 +174,13 @@ useHead(() => ({
   aspect-ratio: 21 / 9;
   width: 100%;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--tz-border-subtle);
   border-radius: 0.9rem;
-  box-shadow: 0 20px 38px rgba(0, 0, 0, 0.32);
+  box-shadow: 0 20px 38px rgba(15, 23, 42, 0.12);
 }
 
 .ourstory-image__scrim {
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.42), transparent);
+  background: linear-gradient(to top, rgba(15, 23, 42, 0.2), transparent);
 }
 
 .ourstory-hero__caption {
@@ -208,9 +210,9 @@ useHead(() => ({
   content: '';
   background: linear-gradient(
     to bottom,
-    rgba(181, 255, 109, 0.55),
-    rgba(255, 255, 255, 0.12) 42%,
-    rgba(181, 255, 109, 0.35)
+    rgba(5, 150, 105, 0.55),
+    rgba(203, 213, 225, 0.9) 42%,
+    rgba(5, 150, 105, 0.35)
   );
 }
 
@@ -232,9 +234,9 @@ useHead(() => ({
   height: 2.15rem;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(181, 255, 109, 0.45);
+  border: 1px solid rgba(5, 150, 105, 0.45);
   border-radius: 9999px;
-  background: #111116;
+  background: var(--tz-surface-muted);
   color: var(--tz-text-accent);
   font-size: 0.68rem;
   font-weight: 800;
@@ -274,7 +276,7 @@ useHead(() => ({
   max-width: 58rem;
   margin: 0.25rem auto 0;
   padding-top: 1.35rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid var(--tz-border-subtle);
 }
 
 .ourstory-cta__body {
@@ -286,14 +288,14 @@ useHead(() => ({
 }
 
 .ourstory-factory-link {
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(17, 17, 22, 0.86);
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.36);
+  border: 1px solid var(--tz-border-subtle);
+  background: var(--tz-surface-subtle);
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.1);
 }
 
 .ourstory-factory-link:hover {
-  border-color: rgba(181, 255, 109, 0.36);
-  background: rgba(26, 26, 31, 0.92);
+  border-color: rgba(5, 150, 105, 0.36);
+  background: var(--tz-surface-muted);
 }
 
 .ourstory-factory-link__icon {

@@ -1,0 +1,61 @@
+{
+  "trigger": {
+    "label": "Check compatibility"
+  },
+  "dialog": {
+    "eyebrow": "Compatibility catalog",
+    "title": "Find your frame or fork",
+    "description": "Search the independent compatibility catalog by brand, model, or year. Results include the hub specifications recorded for each entry.",
+    "close": "Close",
+    "tabListLabel": "Compatibility catalog sections"
+  },
+  "tabs": {
+    "frame": "Frame compatibility",
+    "fork": "Fork compatibility"
+  },
+  "search": {
+    "label": "Search",
+    "placeholder": "Search by brand or model",
+    "yearLabel": "Model year",
+    "yearPlaceholder": "e.g. 2024",
+    "submit": "Search",
+    "clear": "Clear",
+    "searching": "Searching..."
+  },
+  "states": {
+    "initial": "Enter a brand, model, or year to search the catalog.",
+    "empty": "No matching records were found.",
+    "unavailable": "Compatibility data is temporarily unavailable. Please try again.",
+    "noHubSpecifications": "No hub specifications have been recorded."
+  },
+  "entry": {
+    "series": "Series",
+    "generation": "Generation",
+    "market": "Market",
+    "hubSpecifications": "Hub specifications",
+    "unknownYear": "Year not specified",
+    "allYears": "All years"
+  },
+  "pagination": {
+    "label": "Compatibility results",
+    "previous": "Previous page",
+    "next": "Next page",
+    "page": "Page {page} of {totalPages}"
+  },
+  "hub": {
+    "position": "Position",
+    "axleType": "Axle type",
+    "axleSpacing": "Axle spacing",
+    "millimetres": "mm",
+    "positions": {
+      "front": "Front",
+      "rear": "Rear"
+    },
+    "axleTypes": {
+      "quickRelease": "Quick release",
+      "thruAxle": "Thru axle",
+      "boltOn": "Bolt-on",
+      "other": "Other"
+    }
+  }
+}

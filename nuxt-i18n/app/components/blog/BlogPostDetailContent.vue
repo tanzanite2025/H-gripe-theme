@@ -13,7 +13,7 @@
     </header>
 
     <article
-      class="mt-6 rounded-2xl border border-slate-700/60 bg-[radial-gradient(circle_at_top_left,rgba(31,41,55,0.96),rgba(15,23,42,0.98))] p-4 tz-text-secondary"
+      class="mt-6 rounded-2xl border tz-border-strong tz-surface-card p-4 tz-text-secondary"
     >
       <SafeRichText class="space-y-4" :html="post.contentHtml" />
     </article>

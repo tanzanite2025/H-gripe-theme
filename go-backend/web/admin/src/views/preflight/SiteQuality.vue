@@ -1,8 +1,8 @@
 <template>
  <div class="space-y-4">
-    <AdminPageHeader title="上线前检查 / 页面质量" description="按需运行的内部 Lighthouse 页面质量检测">
+    <AdminPageHeader title="上线前检查 / 页面质量" description="H1 层级与 Schema 独立检查">
       <template #actions>
-        <Button size="icon" variant="outline" title="刷新检测历史" :disabled="loading || targetOptionsLoading" @click="refreshSiteQualityData">
+        <Button size="icon" variant="outline" title="刷新页面质量检查" :disabled="loading || targetOptionsLoading" @click="refreshSiteQualityData">
  <RefreshCw :class="['size-4', loading || targetOptionsLoading ? 'animate-spin': '']" />
         </Button>
       </template>
@@ -49,130 +49,19 @@
 
     <Tabs v-model="activeQualityTab" class="gap-4">
       <TabsList variant="line" class="h-9 w-full justify-start border-b bg-transparent p-0">
-        <TabsTrigger value="overview" class="max-w-36 flex-none rounded-none px-3">
-          <ListChecks class="size-3.5" />
-          总览
-        </TabsTrigger>
-        <TabsTrigger value="headings" class="max-w-36 flex-none rounded-none px-3">
+        <TabsTrigger value="headings" class="max-w-40 flex-none rounded-none px-3">
           <Heading2 class="size-3.5" />
-          Headings
-          <span
-            v-if="headingPagination.total > 0"
-            class="rounded-full bg-rose-500/10 px-1.5 py-0.5 text-[9px] text-rose-600"
-          >
-            {{ headingPagination.total }}
-          </span>
+          H1 层级
         </TabsTrigger>
         <TabsTrigger value="schema" class="max-w-40 flex-none rounded-none px-3">
           <Braces class="size-3.5" />
           Schema
-          <span
-            v-if="schemaPagination.total > 0"
-            class="rounded-full bg-rose-500/10 px-1.5 py-0.5 text-[9px] text-rose-600"
-          >
-            {{ schemaPagination.total }}
-          </span>
+        </TabsTrigger>
+        <TabsTrigger value="links" class="max-w-40 flex-none rounded-none px-3">
+          <Link2 class="size-3.5" />
+          链接文字
         </TabsTrigger>
       </TabsList>
-
-      <TabsContent value="overview" class="mt-0 space-y-4">
-    <SiteQualityFindings
-      :loading="findingsLoading"
-      :findings="findings"
-      :state="findingStateFilter"
-      :pagination="findingPagination"
-      @change-filter="applyFindingFilter"
-      @refresh="() => loadFindings()"
-      @open="openFinding"
-      @change-page="changeFindingPage"
-    />
-
- <section v-if="selectedRun" class="space-y-3">
- <div class="flex flex-wrap items-start justify-between gap-3 border bg-card px-4 py-3">
- <div class="min-w-0">
- <p class="truncate text-sm font-black">{{ selectedRun.final_url || selectedRun.target_url }}</p>
- <p class="mt-1 text-xs text-muted-foreground">
-            {{ strategyLabel(selectedRun.strategy) }} · {{ formatDate(selectedRun.created_at) }}
-          </p>
-        </div>
-        <AdminStatusBadge :tone="runTone(selectedRun.status)">
-          {{ selectedRun.status === 'success' ? '已完成' : '检测失败' }}
-        </AdminStatusBadge>
-      </div>
-
- <div v-if="selectedRun.status === 'failed'" class="border-l-2 border-rose-500 bg-card px-4 py-3 text-sm text-rose-700">
-        {{ selectedRun.error_message || '内部 Lighthouse 运行器未返回可用结果' }}
-      </div>
-
-      <template v-else>
- <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
- <div v-for="score in scoreItems(selectedRun)" :key="score.label" class="border bg-card p-4">
- <p class="text-[9px] font-black uppercase tracking-widest text-muted-foreground/70">{{ score.label }}</p>
- <p class="mt-3 text-3xl font-black" :class="scoreTone(score.value)">{{ displayScore(score.value) }}</p>
-          </div>
-        </section>
-
- <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
- <div v-for="metric in metricItems(selectedRun)" :key="metric.label" class="border bg-card p-3">
- <p class="text-[9px] font-black uppercase tracking-widest text-muted-foreground/70">{{ metric.label }}</p>
- <p class="mt-2 text-lg font-black">{{ metric.value }}</p>
-          </div>
-        </section>
-
- <section class="border bg-card">
- <div class="flex items-center justify-between gap-3 border-b px-4 py-3">
-            <div>
- <p class="text-sm font-black">待处理项</p>
- <p class="mt-1 text-xs text-muted-foreground">{{ selectedRun.issues.length }} 个检测项</p>
-            </div>
- <Gauge class="size-4 text-muted-foreground" />
-          </div>
- <div v-if="selectedRun.issues.length === 0" class="p-8 text-center text-sm text-muted-foreground">
-            当前检测未发现低分项
-          </div>
- <div v-else class="divide-y">
-            <article
-              v-for="issue in selectedRun.issues"
-              :key="issue.id"
- class="grid gap-3 px-4 py-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center"
-            >
- <div class="min-w-0">
- <div class="flex flex-wrap items-center gap-2">
- <p class="text-sm font-black">{{ issue.title }}</p>
-                  <AdminStatusBadge :tone="issueTone(issue.severity)">
-                    {{ issueSeverityLabel(issue.severity) }}
-                  </AdminStatusBadge>
-                </div>
- <p v-if="issue.display_value || issueSavings(issue)" class="mt-1 text-xs font-bold text-muted-foreground">
-                  {{ issue.display_value || issueSavings(issue) }}
-                </p>
- <p v-if="issue.description" class="mt-2 text-xs leading-5 text-muted-foreground">{{ issue.description }}</p>
-              </div>
-              <Button
-                v-if="issue.remediation"
-                variant="outline"
-                size="sm"
-                :title="issue.remediation.label"
-                @click="openRemediation(issue.remediation.route)"
-              >
- <Wrench class="size-3.5" />
-                {{ issue.remediation.label }}
-              </Button>
-            </article>
-          </div>
-        </section>
-      </template>
-    </section>
-
-    <SiteQualityRuns
-      :loading="loading"
-      :runs="runs"
-      :selected-run="selectedRun"
-      :pagination="pagination"
-      @select-run="selectedRun = $event"
-      @change-page="changePage"
-    />
-      </TabsContent>
 
       <TabsContent value="headings" class="mt-0">
         <SiteQualityHeadings
@@ -186,6 +75,7 @@
           @change-page="changeHeadingPage"
         />
       </TabsContent>
+
       <TabsContent value="schema" class="mt-0">
         <SiteQualityStructuredData
           :loading="schemaLoading"
@@ -196,6 +86,19 @@
           @refresh="() => loadSchemaFindings()"
           @open="openFinding"
           @change-page="changeSchemaPage"
+        />
+      </TabsContent>
+
+      <TabsContent value="links" class="mt-0">
+        <SiteQualityLinks
+          :loading="linksLoading"
+          :findings="linkFindings"
+          :state="linkStateFilter"
+          :pagination="linkPagination"
+          @change-filter="applyLinkFilter"
+          @refresh="() => loadLinkFindings()"
+          @open="openFinding"
+          @change-page="changeLinkPage"
         />
       </TabsContent>
     </Tabs>
@@ -219,54 +122,53 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { Braces, Gauge, Heading2, ListChecks, LoaderCircle, Play, RefreshCw, Wrench } from '@lucide/vue'
+import { computed, onMounted, ref, watch } from 'vue'
+import { Braces, Heading2, Link2, LoaderCircle, Play, RefreshCw } from '@lucide/vue'
 import { toast } from 'vue-sonner'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
-import AdminStatusBadge, { type AdminStatusTone } from '@/components/admin/AdminStatusBadge.vue'
+import type { AdminStatusTone } from '@/components/admin/AdminStatusBadge.vue'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import preflightApi, {
+  SITE_QUALITY_RULE_ID_DESCRIPTIVE_LINK_TEXT,
   type SiteQualityOperationalSummary,
   type SiteQualityFinding,
   type SiteQualityFindingEvidence,
   type SiteQualityFindingEvent,
   type SiteQualityFindingStateFilter,
-  type SiteQualityRun,
   type SiteQualityTargetOption,
   type SiteQualityStrategy,
 } from '@/api/preflight'
 import { useAuthStore } from '@/stores/auth'
 import SiteQualityFindingDialog from '@/components/admin/site-quality/SiteQualityFindingDialog.vue'
-import SiteQualityFindings from '@/components/admin/site-quality/SiteQualityFindings.vue'
 import SiteQualityHeadings from '@/components/admin/site-quality/SiteQualityHeadings.vue'
 import SiteQualityStructuredData from '@/components/admin/site-quality/SiteQualityStructuredData.vue'
-import SiteQualityRuns from '@/components/admin/site-quality/SiteQualityRuns.vue'
+import SiteQualityLinks from '@/components/admin/site-quality/SiteQualityLinks.vue'
 import SiteQualitySummary from '@/components/admin/site-quality/SiteQualitySummary.vue'
+import { useRouteTab } from '@/composables/useRouteTab'
 import { useSiteQualityJobs } from '@/composables/useSiteQualityJobs'
 
-const router = useRouter()
 const authStore = useAuthStore()
 const { enqueueInspection, enqueueFindingRecheck } = useSiteQualityJobs()
 const canManage = computed(() => authStore.hasPermission('services:manage'))
 const loading = ref(false)
 const running = ref(false)
-const activeQualityTab = ref<'overview' | 'headings' | 'schema'>('overview')
+const activeQualityTab = useRouteTab<'headings' | 'schema' | 'links'>({
+  defaultValue: 'headings',
+  values: ['headings', 'schema', 'links'],
+  routes: {
+    headings: 'PreflightSiteQualityHeadings',
+    schema: 'PreflightSiteQualitySchema',
+    links: 'PreflightSiteQualityLinks',
+  },
+})
 const targetURL = ref('')
 const targetOptionsLoading = ref(false)
 const targetOptions = ref<SiteQualityTargetOption[]>([])
 const strategy = ref<SiteQualityStrategy>('mobile')
-const runs = ref<SiteQualityRun[]>([])
-const selectedRun = ref<SiteQualityRun | null>(null)
-const pagination = ref({ page: 1, page_size: 20, total: 0, total_pages: 1 })
 const runnerConfigured = ref(false)
 const operationalSummary = ref<SiteQualityOperationalSummary | null>(null)
-const findingsLoading = ref(false)
-const findings = ref<SiteQualityFinding[]>([])
-const findingStateFilter = ref<SiteQualityFindingStateFilter>('active')
-const findingPagination = ref({ page: 1, page_size: 20, total: 0, total_pages: 1 })
 const headingsLoading = ref(false)
 const headingFindings = ref<SiteQualityFinding[]>([])
 const headingStateFilter = ref<SiteQualityFindingStateFilter>('active')
@@ -275,6 +177,10 @@ const schemaLoading = ref(false)
 const schemaFindings = ref<SiteQualityFinding[]>([])
 const schemaStateFilter = ref<SiteQualityFindingStateFilter>('active')
 const schemaPagination = ref({ page: 1, page_size: 20, total: 0, total_pages: 1 })
+const linksLoading = ref(false)
+const linkFindings = ref<SiteQualityFinding[]>([])
+const linkStateFilter = ref<SiteQualityFindingStateFilter>('active')
+const linkPagination = ref({ page: 1, page_size: 20, total: 0, total_pages: 1 })
 const findingDetailOpen = ref(false)
 const findingDetailLoading = ref(false)
 const findingActionKey = ref<string | null>(null)
@@ -391,19 +297,16 @@ const loadTargets = async (): Promise<void> => {
   }
 }
 
-const loadRuns = async (page = pagination.value.page, preserveSelection = false): Promise<void> => {
+const loadRuns = async (): Promise<void> => {
   loading.value = true
   try {
-    const data = await preflightApi.getSiteQualityRuns({ page, pageSize: 20 })
-    runs.value = data.items
-    pagination.value = data.pagination
+    const data = await preflightApi.getSiteQualityRuns({ page: 1, pageSize: 1 })
     runnerConfigured.value = data.runner_configured
     operationalSummary.value = data.summary
     if (!targetURL.value && data.default_url) targetURL.value = data.default_url
     if (targetOptions.value.length === 0 && data.default_url) {
       targetOptions.value = [fallbackTargetOption(data.default_url)]
     }
-    if (!preserveSelection) selectedRun.value = data.items[0] || null
   } catch (error: any) {
     toast.error(error?.response?.data?.message || error?.response?.data?.error || '页面质量检测历史加载失败')
   } finally {
@@ -413,7 +316,7 @@ const loadRuns = async (page = pagination.value.page, preserveSelection = false)
 
 const refreshSiteQualityData = async (): Promise<void> => {
   await loadTargets()
-  await Promise.all([loadRuns(1), loadFindings(1), loadHeadingFindings(1), loadSchemaFindings(1)])
+  await Promise.all([loadRuns(), loadActiveFindings()])
 }
 
 const runInspection = async (): Promise<void> => {
@@ -425,38 +328,13 @@ const runInspection = async (): Promise<void> => {
       throw new Error(job.last_error || `页面质量任务 ${job.status}`)
     }
     toast.success('页面质量检测完成')
-    await Promise.all([loadRuns(1, true), loadFindings(1), loadHeadingFindings(1), loadSchemaFindings(1)])
-    selectedRun.value = runs.value[0] || null
+    await Promise.all([loadRuns(), loadActiveFindings(1)])
   } catch (error: any) {
     toast.error(error?.response?.data?.message || error?.response?.data?.error || '页面质量检测失败')
-    await loadRuns(1, true)
+    await loadRuns()
   } finally {
     running.value = false
   }
-}
-
-const loadFindings = async (page = findingPagination.value.page): Promise<void> => {
-  findingsLoading.value = true
-  try {
-    const data = await preflightApi.getSiteQualityFindings({
-      page,
-      pageSize: findingPagination.value.page_size,
-      state: findingStateFilter.value,
-      kind: 'opportunity',
-    })
-    findings.value = data.items
-    findingPagination.value = data.pagination
-  } catch (error: any) {
-    toast.error(error?.response?.data?.message || error?.response?.data?.error || '页面质量事项加载失败')
-  } finally {
-    findingsLoading.value = false
-  }
-}
-
-const applyFindingFilter = (state: SiteQualityFindingStateFilter): void => {
-  findingStateFilter.value = state
-  findingPagination.value.page = 1
-  void loadFindings(1)
 }
 
 const loadHeadingFindings = async (page = headingPagination.value.page): Promise<void> => {
@@ -507,9 +385,29 @@ const applySchemaFilter = (state: SiteQualityFindingStateFilter): void => {
   void loadSchemaFindings(1)
 }
 
-const changeFindingPage = (page: number): void => {
-  if (page < 1 || page > findingPagination.value.total_pages || page === findingPagination.value.page) return
-  void loadFindings(page)
+const loadLinkFindings = async (page = linkPagination.value.page): Promise<void> => {
+  linksLoading.value = true
+  try {
+    const data = await preflightApi.getSiteQualityFindings({
+      page,
+      pageSize: linkPagination.value.page_size,
+      state: linkStateFilter.value,
+      kind: 'links',
+      ruleID: SITE_QUALITY_RULE_ID_DESCRIPTIVE_LINK_TEXT,
+    })
+    linkFindings.value = data.items
+    linkPagination.value = data.pagination
+  } catch (error: any) {
+    toast.error(error?.response?.data?.message || error?.response?.data?.error || '链接文字检查事项加载失败')
+  } finally {
+    linksLoading.value = false
+  }
+}
+
+const applyLinkFilter = (state: SiteQualityFindingStateFilter): void => {
+  linkStateFilter.value = state
+  linkPagination.value.page = 1
+  void loadLinkFindings(1)
 }
 
 const changeHeadingPage = (page: number): void => {
@@ -521,6 +419,19 @@ const changeSchemaPage = (page: number): void => {
   if (page < 1 || page > schemaPagination.value.total_pages || page === schemaPagination.value.page) return
   void loadSchemaFindings(page)
 }
+
+const changeLinkPage = (page: number): void => {
+  if (page < 1 || page > linkPagination.value.total_pages || page === linkPagination.value.page) return
+  void loadLinkFindings(page)
+}
+
+const loadActiveFindings = (page?: number): Promise<void> => (
+  activeQualityTab.value === 'schema'
+    ? loadSchemaFindings(page)
+    : activeQualityTab.value === 'links'
+      ? loadLinkFindings(page)
+      : loadHeadingFindings(page)
+)
 
 const loadFindingEvents = async (findingID: number): Promise<void> => {
   const data = await preflightApi.getSiteQualityFindingEvents(findingID, {
@@ -552,7 +463,12 @@ const openFinding = async (findingID: number): Promise<void> => {
 
 const refreshSelectedFinding = async (finding: SiteQualityFinding): Promise<void> => {
   selectedFinding.value = finding
-  await Promise.all([loadFindings(), loadHeadingFindings(), loadSchemaFindings(), loadFindingEvents(finding.id)])
+  const reloadFindingList = finding.finding_kind === 'schema'
+    ? loadSchemaFindings()
+    : finding.finding_kind === 'links'
+      ? loadLinkFindings()
+      : loadHeadingFindings()
+  await Promise.all([reloadFindingList, loadFindingEvents(finding.id)])
 }
 
 const acknowledgeFinding = async (): Promise<void> => {
@@ -596,8 +512,7 @@ const recheckFinding = async (): Promise<void> => {
     }
     const finding = await preflightApi.getSiteQualityFinding(selectedFinding.value.id)
     await refreshSelectedFinding(finding)
-    await loadRuns(1, true)
-    selectedRun.value = runs.value[0] || null
+    await loadRuns()
     if (finding.state === 'verified') {
       toast.success('复检通过，质量事项已验证关闭')
     } else if (finding.state === 'open') {
@@ -612,50 +527,6 @@ const recheckFinding = async (): Promise<void> => {
   }
 }
 
-const changePage = (page: number): void => {
-  if (page < 1 || page > pagination.value.total_pages || page === pagination.value.page) return
-  void loadRuns(page)
-}
-
-const openRemediation = (route: string): void => {
-  void router.push(route)
-}
-
-const displayScore = (score?: number): string => typeof score === 'number' ? String(score) : '-'
-const scoreTone = (score?: number): string => {
-  if (typeof score !== 'number') return ''
-  if (score >= 90) return 'text-emerald-600'
-  if (score >= 50) return 'text-amber-600'
-  return 'text-rose-600'
-}
-const scoreItems = (run: SiteQualityRun) => [
-  { label: '性能', value: run.performance_score },
-  { label: '无障碍', value: run.accessibility_score },
-  { label: '最佳实践', value: run.best_practices_score },
-  { label: 'SEO', value: run.seo_score },
-]
-const metricItems = (run: SiteQualityRun) => [
-  { label: 'FCP', value: formatMilliseconds(run.first_contentful_paint_ms) },
-  { label: 'LCP', value: formatMilliseconds(run.largest_contentful_paint_ms) },
-  { label: 'INP', value: formatMilliseconds(run.interaction_to_next_paint_ms) },
-  { label: 'CLS', value: typeof run.cumulative_layout_shift === 'number' ? run.cumulative_layout_shift.toFixed(3) : '-' },
-  { label: 'TBT', value: formatMilliseconds(run.total_blocking_time_ms) },
-  { label: 'Speed Index', value: formatMilliseconds(run.speed_index_ms) },
-]
-const issueSavings = (issue: SiteQualityRun['issues'][number]): string => {
-  if (typeof issue.savings_ms === 'number' && issue.savings_ms > 0) {
-    return `预计节省 ${formatMilliseconds(issue.savings_ms)}`
-  }
-  if (typeof issue.savings_bytes === 'number' && issue.savings_bytes > 0) {
-    return `预计节省 ${(issue.savings_bytes / 1024).toFixed(1)} KiB`
-  }
-  return ''
-}
-const formatMilliseconds = (value?: number): string => {
-  if (typeof value !== 'number') return '-'
-  if (value < 1000) return `${Math.round(value)} ms`
-  return `${(value / 1000).toFixed(2)} s`
-}
 const formatDate = (value: string): string => new Date(value).toLocaleString('zh-CN')
 const operationalStatusLabel = (status?: SiteQualityOperationalSummary['status']): string => ({
   healthy: '健康',
@@ -681,21 +552,6 @@ const operationalStatusBadgeTone = (status?: SiteQualityOperationalSummary['stat
   not_configured: 'gray',
   unavailable: 'coral',
 } as const)[status || 'not_configured']
-const strategyLabel = (value: SiteQualityStrategy): string => value === 'mobile' ? '移动端' : '桌面端'
-const runTone = (status: SiteQualityRun['status']): AdminStatusTone => status === 'success' ? 'green' : 'coral'
-const issueTone = (severity: string): AdminStatusTone => (
-  severity === 'critical' || severity === 'high'
-    ? 'coral'
-    : severity === 'medium'
-      ? 'amber'
-      : 'gray'
-)
-const issueSeverityLabel = (severity: string): string => ({
-  critical: '严重',
-  high: '高',
-  medium: '中',
-  low: '低',
-}[severity] || severity)
 
 const targetOptionLabel = (option: SiteQualityTargetOption): string => {
   const parts: string[] = []
@@ -710,7 +566,12 @@ const targetOptionLabel = (option: SiteQualityTargetOption): string => {
 onMounted(() => {
   void (async () => {
     await loadTargets()
-    await Promise.all([loadRuns(1), loadFindings(1), loadHeadingFindings(1), loadSchemaFindings(1)])
+    await loadRuns()
+    await loadActiveFindings(1)
   })()
+})
+
+watch(activeQualityTab, () => {
+  void loadActiveFindings(1)
 })
 </script>

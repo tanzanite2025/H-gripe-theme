@@ -11,6 +11,7 @@ import (
 	currencyapi "commerce-platform/internal/api/v1/currency"
 	"commerce-platform/internal/api/v1/faq"
 	"commerce-platform/internal/api/v1/feedback"
+	fitmentcatalogapi "commerce-platform/internal/api/v1/fitmentcatalog"
 	"commerce-platform/internal/api/v1/gallery"
 	"commerce-platform/internal/api/v1/i18n"
 	"commerce-platform/internal/api/v1/marketing"
@@ -19,7 +20,6 @@ import (
 	"commerce-platform/internal/api/v1/product"
 	quickbuyapi "commerce-platform/internal/api/v1/quickbuy"
 	"commerce-platform/internal/api/v1/recommendation"
-	"commerce-platform/internal/api/v1/registration"
 	"commerce-platform/internal/api/v1/review"
 	selectionassistantapi "commerce-platform/internal/api/v1/selectionassistant"
 	seohomeapi "commerce-platform/internal/api/v1/seo/home"
@@ -32,6 +32,7 @@ import (
 	"commerce-platform/internal/api/v1/suggestionfeedback"
 	"commerce-platform/internal/api/v1/ticket"
 	visualshowcaseapi "commerce-platform/internal/api/v1/visualshowcase"
+	"commerce-platform/internal/api/v1/warranty"
 	wheelsetfitapi "commerce-platform/internal/api/v1/wheelsetfit"
 	"commerce-platform/internal/api/v1/wishlist"
 	"commerce-platform/internal/app"
@@ -56,7 +57,7 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 	settingService := services.Setting
 	faqService := services.FAQ
 	galleryService := services.Gallery
-	registrationService := services.Registration
+	warrantyService := services.Warranty
 	checkoutService := services.Checkout
 	orderService := services.Order
 	paymentService := services.Payment
@@ -90,6 +91,11 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 	quickBuyHandler := quickbuyapi.NewHandler(services.QuickBuy, services.Media)
 	selectionAssistantHandler := selectionassistantapi.NewHandler(services.SelectionAssistant)
 	wheelsetFitQuestionnaireHandler := wheelsetfitapi.NewHandler(services.WheelsetFitQuestionnaire)
+	fitmentCatalogHandler := fitmentcatalogapi.NewHandler(
+		services.FrameFitmentEntry,
+		services.ForkFitmentEntry,
+		services.FitmentHubSpecification,
+	)
 	cartHandler := cart.NewHandler(cartService, cart.Options{
 		MediaService:          services.Media,
 		VisitorProfileService: services.VisitorProfile,
@@ -98,6 +104,7 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 	settingsHandler := settings.NewHandler(settingService, services.WebsiteProfile)
 	settingsHandler.ConfigureMediaService(services.Media)
 	settingsHandler.ConfigureSiteLogoService(services.SiteLogo)
+	settingsHandler.ConfigureWebsiteNameService(services.WebsiteName)
 	settingsHandler.ConfigureRefundReturnPolicyService(services.RefundReturnPolicy)
 	seoHomeHandler := seohomeapi.NewHandler(services.SEO)
 	analyticsHandler := analyticsapi.NewHandler(services.Analytics)
@@ -137,8 +144,9 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 	paymentHandler.ConfigurePaymentGatewayCircuitBreaker(deps.PaymentGatewayCircuitBreaker)
 	shippingHandler := shipping.NewHandler(services.Shipping, orderService)
 	galleryHandler := gallery.NewGalleryHandler(galleryService, services.Media)
-	registrationHandler := registration.NewHandler(registrationService, storageSvc, deps.AntiBot)
-	registrationHandler.ConfigureMediaService(services.Media)
+	warrantyHandler := warranty.NewHandler(warrantyService, storageSvc, deps.AntiBot)
+	warrantyHandler.ConfigureMediaService(services.Media)
+	warrantyHandler.ConfigureShipmentRecordService(services.ShipmentRecord)
 	subscriptionHandler := subscription.NewHandler(subscriptionService, deps.AntiBot)
 	i18nHandler := i18n.NewHandler(postService, sitemapService)
 	showcaseHandler := showcase.NewShowcaseHandler(showcaseService)
@@ -179,6 +187,8 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 	v1.Use(middleware.I18n())
 	v1.Use(middleware.VisitorRiskTelemetry(services.VisitorRisk))
 	{
+		v1.GET("/upload-specs", GetUploadSpecs)
+
 		storefrontGroup := v1.Group("/storefront")
 		{
 			storefrontGroup.GET("/context", storefrontContextHandler.GetContext)
@@ -242,6 +252,7 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 			productGroup.GET("", productHandler.ListProducts)
 			productGroup.GET("/specification-templates", productHandler.ListProductSpecificationTemplates)
 			productGroup.GET("/categories", productHandler.ListCategories)
+			productGroup.GET("/categories/:slug", productHandler.GetCategory)
 			productGroup.GET("/attributes/filterable", productHandler.GetFilterableAttributes)
 			productGroup.GET("/:id", productHandler.GetProduct)
 		}
@@ -265,6 +276,11 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 		wheelsetFitQuestionnaireGroup := v1.Group("/wheelset-fit-questionnaire")
 		{
 			wheelsetFitQuestionnaireGroup.GET("/current", wheelsetFitQuestionnaireHandler.GetCurrentFlow)
+		}
+
+		fitmentCatalogGroup := v1.Group("/fitment-catalog")
+		{
+			fitmentCatalogHandler.RegisterRoutes(fitmentCatalogGroup)
 		}
 
 		visualShowcaseGroup := v1.Group("/visual-showcases")
@@ -452,6 +468,7 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 			settingsGroup.GET("/site", settingsHandler.GetSiteSettings)
 			settingsGroup.GET("/social", settingsHandler.GetSocialSettings)
 			settingsGroup.GET("/website-profile", settingsHandler.GetWebsiteProfile)
+			settingsGroup.GET("/website-name", settingsHandler.GetWebsiteName)
 			settingsGroup.GET("/refund-return-policy", settingsHandler.GetRefundReturnPolicy)
 			settingsGroup.GET("/public", settingsHandler.GetAllPublicSettings)
 			settingsGroup.GET("/groups", settingsHandler.GetGroups)
@@ -549,27 +566,20 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 			galleryGroup.GET("/:id", galleryHandler.GetGalleryByID)
 		}
 
-		// 产品注册路由
-		registrationGroup := v1.Group("/registrations")
+		// 订单保修路由
+		warrantyGroup := v1.Group("/warranty")
 		{
 			// 公开端点
-			registrationGroup.POST("/verify", middleware.RateLimit(2), registrationHandler.VerifySerialNumber)
-			registrationGroup.POST("/warranty/verify-order", middleware.RateLimit(2), registrationHandler.VerifyWarrantyOrder)
-			registrationGroup.GET("/warranty/verify/:token", middleware.RateLimit(5), registrationHandler.VerifyWarrantyOrderToken)
-			registrationGroup.POST("/warranty/claim", middleware.RateLimit(1), registrationHandler.SubmitWarrantyClaim)
+			warrantyGroup.POST("/verify-order", middleware.RateLimit(2), warrantyHandler.VerifyWarrantyOrder)
+			warrantyGroup.GET("/verify/:token", middleware.RateLimit(5), warrantyHandler.VerifyWarrantyOrderToken)
+			warrantyGroup.POST("/claim", middleware.RateLimit(1), warrantyHandler.SubmitWarrantyClaim)
 
 			// 需要认证的端点
-			authRegistration := registrationGroup.Group("")
-			authRegistration.Use(middleware.AuthMiddleware(authService))
+			authWarranty := warrantyGroup.Group("")
+			authWarranty.Use(middleware.AuthMiddleware(authService))
 			{
-				authRegistration.GET("/warranty/:code", registrationHandler.GetWarrantyStatus)
-				authRegistration.POST("", registrationHandler.CreateRegistration)
-				authRegistration.GET("", registrationHandler.ListUserRegistrations)
-				authRegistration.GET("/:id", registrationHandler.GetRegistration)
-				authRegistration.PUT("/:id", registrationHandler.UpdateRegistration)
-				authRegistration.POST("/warranty-claims", registrationHandler.CreateWarrantyClaim)
-				authRegistration.GET("/warranty-claims/:id", registrationHandler.GetWarrantyClaim)
-				authRegistration.GET("/:id/warranty-claims", registrationHandler.ListRegistrationClaims)
+				authWarranty.GET("/orders/:order_number", warrantyHandler.GetWarrantyStatus)
+				authWarranty.GET("/claims/:id", warrantyHandler.GetWarrantyClaim)
 			}
 		}
 

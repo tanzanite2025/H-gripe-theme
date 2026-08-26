@@ -1,5 +1,6 @@
 {
   "ariaLabel": "Mağaza kategorileri",
+  "children": "Alt kategoriler",
   "loading": "Kategoriler yükleniyor...",
   "all": "Tümü",
   "empty": "No shop categories are available yet."

@@ -329,7 +329,7 @@ func normalizeVisitorProfileTouch(input VisitorProfileTouchInput) VisitorProfile
 	input.CountryCode = strings.ToUpper(strings.TrimSpace(input.CountryCode))
 	input.Region = strings.TrimSpace(input.Region)
 	input.City = strings.TrimSpace(input.City)
-	input.Timezone = strings.TrimSpace(input.Timezone)
+	input.Timezone = normalizeVisitorTimezone(input.Timezone)
 	input.IPAddress = normalizeVisitorIP(input.IPAddress)
 	input.UserAgent = strings.TrimSpace(input.UserAgent)
 	input.MeaningfulAction = normalizeVisitorProfileAction(input.MeaningfulAction)
@@ -346,6 +346,17 @@ func normalizeVisitorProfileTouch(input VisitorProfileTouchInput) VisitorProfile
 		input.LocaleSource = "request"
 	}
 	return input
+}
+
+func normalizeVisitorTimezone(value string) string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return ""
+	}
+	if _, err := time.LoadLocation(value); err != nil {
+		return ""
+	}
+	return value
 }
 
 func (input VisitorProfileTouchInput) hasIdentity() bool {

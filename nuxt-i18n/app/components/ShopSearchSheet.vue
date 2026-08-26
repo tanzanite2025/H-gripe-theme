@@ -25,7 +25,7 @@
             class="shop-search-sheet-shell w-full"
           >
             <section
-              class="shop-search-sheet-panel tz-mobile-dialog-surface relative pointer-events-auto w-full max-w-none tz-mobile-safe-full-height md:h-[82vh] md:max-h-[900px] bg-black rounded-none flex flex-col overflow-hidden"
+            class="shop-search-sheet-panel tz-mobile-dialog-surface tz-surface-card relative pointer-events-auto w-full max-w-none tz-mobile-safe-full-height md:h-[82vh] md:max-h-[900px] rounded-none flex flex-col overflow-hidden"
               :class="{ 'shop-search-sheet-panel--dragging': isDraggingPanel }"
               ref="panelRef"
               aria-modal="true"
@@ -39,7 +39,7 @@
               ></div>
 
               <header class="relative z-10 flex items-center justify-between px-4 md:px-6 py-4">
-                <h2 class="text-lg md:text-xl font-semibold text-[#B5FF6D]">
+                <h2 class="text-lg md:text-xl font-semibold text-[#059669]">
                   {{ $t('sidebar.searchProducts', 'Search Products') }}
                 </h2>
                 <button
@@ -48,7 +48,7 @@
                   :aria-label="$t('common.close', 'Close')"
                   @click="close"
                 >
-                  <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg class="w-5 h-5 tz-text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
@@ -184,14 +184,14 @@ onBeforeUnmount(() => {
 .shop-search-sheet-panel {
   height: calc(var(--tz-mobile-safe-viewport-height, 100dvh) - var(--tz-mobile-dialog-inset, 2px) * 2);
   max-height: calc(var(--tz-mobile-safe-viewport-height, 100dvh) - var(--tz-mobile-dialog-inset, 2px) * 2);
-  background: #000000;
+  background: var(--tz-card-surface);
   background-image: none;
-  border: 1px solid rgba(181, 255, 109, 0.22);
+  border: 1px solid rgba(5, 150, 105, 0.22);
   transform: translateY(var(--shop-search-sheet-drag-y, 0));
   transition: transform 0.2s ease;
   will-change: transform;
   box-shadow:
-    0 24px 80px rgba(0, 0, 0, 0.78);
+    0 24px 80px rgba(20, 32, 43, 0.16);
 }
 
 .shop-search-sheet-panel::before {
@@ -202,7 +202,7 @@ onBeforeUnmount(() => {
   z-index: 20;
   height: 1px;
   content: '';
-  background: #B5FF6D;
+  background: #059669;
   opacity: 0.62;
 }
 

@@ -4,6 +4,7 @@ import (
 	"commerce-platform/internal/domain/product"
 	"context"
 
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
 
@@ -213,6 +214,69 @@ func (r *ProductRepository) FindProductsByIDs(ids []uint) ([]product.Product, er
 		return orderProductVariants(db)
 	}).Where("id IN ?", ids).Find(&products).Error
 	return products, err
+}
+
+// ListProductsForDisplayPriceRefresh loads only the source price fields needed
+// to rebuild customer-facing display price snapshots.
+func (r *ProductRepository) ListProductsForDisplayPriceRefresh() ([]product.Product, error) {
+	var products []product.Product
+	query := r.db.
+		Select("id", "currency", "price", "sale_price", "display_prices").
+		Preload("Variants", func(db *gorm.DB) *gorm.DB {
+			return db.
+				Select("id", "product_id", "currency", "price", "sale_price", "display_prices").
+				Order("sort_order ASC, id ASC")
+		})
+	if err := query.Find(&products).Error; err != nil {
+		return nil, err
+	}
+	return products, nil
+}
+
+type ProductVariantDisplayPriceSnapshotUpdate struct {
+	VariantID        uint
+	DisplayPriceData datatypes.JSON
+}
+
+type ProductDisplayPriceSnapshotUpdate struct {
+	ProductID              uint
+	UpdateProduct          bool
+	DisplayPriceData       datatypes.JSON
+	VariantSnapshotUpdates []ProductVariantDisplayPriceSnapshotUpdate
+}
+
+// UpdateDisplayPriceSnapshots updates only product/SKU display snapshot JSON.
+// Source currencies and source amounts are deliberately excluded from this
+// mutation.
+func (r *ProductRepository) UpdateDisplayPriceSnapshots(updates []ProductDisplayPriceSnapshotUpdate) error {
+	if len(updates) == 0 {
+		return nil
+	}
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		for _, update := range updates {
+			if update.ProductID == 0 {
+				continue
+			}
+			if update.UpdateProduct {
+				if err := tx.Model(&product.Product{}).
+					Where("id = ?", update.ProductID).
+					UpdateColumn("display_prices", update.DisplayPriceData).Error; err != nil {
+					return err
+				}
+			}
+			for _, variantUpdate := range update.VariantSnapshotUpdates {
+				if variantUpdate.VariantID == 0 {
+					continue
+				}
+				if err := tx.Model(&product.ProductVariant{}).
+					Where("id = ? AND product_id = ?", variantUpdate.VariantID, update.ProductID).
+					UpdateColumn("display_prices", variantUpdate.DisplayPriceData).Error; err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	})
 }
 
 func (r *ProductRepository) FindProductCacheIdentitiesByIDs(ids []uint) ([]product.Product, error) {

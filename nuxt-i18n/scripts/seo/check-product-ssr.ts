@@ -1,3 +1,5 @@
+import locales from '../../app/i18n/locales.manifest'
+
 const targetUrl = process.env.SEO_PRODUCT_URL
 
 if (!targetUrl) {
@@ -47,6 +49,29 @@ if (canonicalMatches.length !== 1) {
 const canonicalUrl = readTagAttribute(canonicalMatches[0], 'href')
 if (!canonicalUrl) {
   throw new Error('Canonical link must contain an href.')
+}
+
+const canonicalUrlObject = new URL(canonicalUrl)
+if (canonicalUrlObject.search || canonicalUrlObject.hash) {
+  throw new Error('Canonical link must not contain a query string or hash.')
+}
+
+const localeCodes = new Set(
+  locales.map((locale) => String(locale.code || '').trim().toLowerCase()).filter(Boolean),
+)
+
+const stripLocalePrefix = (value: string) => {
+  const parsed = new URL(value)
+  const segments = parsed.pathname.split('/').filter(Boolean)
+  if (segments[0] && localeCodes.has(segments[0].toLowerCase())) {
+    segments.shift()
+  }
+  return segments.length ? `/${segments.join('/')}` : '/'
+}
+
+const canonicalPath = stripLocalePrefix(canonicalUrl)
+if (!/^\/products\/[^/]+$/.test(canonicalPath)) {
+  throw new Error(`Product canonical must use the flat /products/:slug route: ${canonicalUrl}`)
 }
 
 const alternateLinks = linkTags
@@ -102,6 +127,53 @@ if (h1Text !== String(productSchema.name).trim()) {
 }
 if (!titleText.toLowerCase().includes(String(productSchema.name).trim().toLowerCase())) {
   throw new Error(`Page title must contain the visible product name: ${titleText}`)
+}
+
+const breadcrumbSchema = schemas.find((schema) => schema?.['@type'] === 'BreadcrumbList')
+if (!breadcrumbSchema) {
+  throw new Error('Product SSR HTML must include a BreadcrumbList JSON-LD object.')
+}
+
+const breadcrumbItems = Array.isArray(breadcrumbSchema.itemListElement)
+  ? breadcrumbSchema.itemListElement
+  : []
+if (breadcrumbItems.length < 4) {
+  throw new Error('BreadcrumbList must include Home, Shop, at least one category, and Product.')
+}
+
+const breadcrumbPaths = breadcrumbItems.map((item: any, index: number) => {
+  if (!item || typeof item !== 'object') {
+    throw new Error(`Breadcrumb item ${index + 1} is not an object.`)
+  }
+  if (Number(item.position) !== index + 1) {
+    throw new Error(`Breadcrumb item ${index + 1} has an invalid position.`)
+  }
+  if (!String(item.name || '').trim()) {
+    throw new Error(`Breadcrumb item ${index + 1} is missing a name.`)
+  }
+  const itemUrl = String(item.item || '').trim()
+  if (!itemUrl) {
+    throw new Error(`Breadcrumb item ${index + 1} is missing an item URL.`)
+  }
+  const parsed = new URL(itemUrl)
+  if (parsed.origin !== canonicalUrlObject.origin || parsed.search || parsed.hash) {
+    throw new Error(`Breadcrumb item ${index + 1} must be a clean same-site URL.`)
+  }
+  return stripLocalePrefix(itemUrl)
+})
+
+if (breadcrumbPaths[0] !== '/') {
+  throw new Error(`Breadcrumb must start at Home: ${breadcrumbPaths[0]}`)
+}
+if (breadcrumbPaths[1] !== '/shop') {
+  throw new Error(`Breadcrumb second item must be /shop: ${breadcrumbPaths[1]}`)
+}
+const breadcrumbCategoryPaths = breadcrumbPaths.slice(2, -1)
+if (!breadcrumbCategoryPaths.length || breadcrumbCategoryPaths.some((path) => !path.startsWith('/shop/'))) {
+  throw new Error('Breadcrumb must contain at least one real /shop/... category path.')
+}
+if (breadcrumbPaths[breadcrumbPaths.length - 1] !== canonicalPath) {
+  throw new Error('Breadcrumb product item must match the flat product canonical path.')
 }
 
 const validateImages = (images: unknown, label: string) => {

@@ -8,14 +8,14 @@
         @click.self="handleClose"
       >
         <div
-          class="absolute inset-0 bg-black/80 backdrop-blur-sm"
+          class="absolute inset-0 bg-slate-900/20 backdrop-blur-sm"
           aria-hidden="true"
           @click="handleClose"
         />
 
         <section
           ref="modalElement"
-          class="wheelset-selection-assistant-modal-shell tz-mobile-dialog-surface relative flex h-full w-full max-w-none flex-col overflow-hidden text-white md:h-[95dvh] md:max-h-[95dvh] md:w-[95vw] md:max-w-[95vw] md:rounded-2xl"
+          class="wheelset-selection-assistant-modal-shell tz-mobile-dialog-surface relative flex h-full w-full max-w-none flex-col overflow-hidden tz-text-primary md:h-[95dvh] md:max-h-[95dvh] md:w-[95vw] md:max-w-[95vw] md:rounded-2xl"
           role="dialog"
           aria-modal="true"
           :aria-labelledby="modalTitleId"
@@ -58,32 +58,6 @@
               </div>
             </div>
           </header>
-
-          <nav
-            v-if="hasQuestionPagination"
-            class="wheelset-selection-assistant-modal__pagination-row shrink-0"
-          >
-            <div
-              class="wheelset-selection-assistant-modal__pagination tz-carousel-pagination"
-              :aria-label="t('wheelsetSelectionAssistant.questionPagination.label', 'Question cards')"
-            >
-              <button
-                v-for="questionNumber in questionPaginationTotal"
-                :key="questionNumber"
-                type="button"
-                class="tz-carousel-pagination__dot wheelset-selection-assistant-modal__pagination-dot"
-                :class="{
-                  'is-active': questionNumber - 1 === questionPaginationActiveIndex,
-                  'is-future': questionNumber - 1 > questionPaginationReachableIndex,
-                }"
-                :aria-current="questionNumber - 1 === questionPaginationActiveIndex ? 'step' : undefined"
-                :aria-label="t('wheelsetSelectionAssistant.questionPagination.goToQuestion', `Show question ${questionNumber}`)"
-                :title="t('wheelsetSelectionAssistant.questionPagination.goToQuestion', `Show question ${questionNumber}`)"
-                :disabled="questionNumber - 1 > questionPaginationReachableIndex"
-                @click="handleQuestionPaginationClick(questionNumber - 1)"
-              />
-            </div>
-          </nav>
 
           <div class="wheelset-selection-assistant-modal__body min-h-0 flex-1 overflow-hidden px-0 py-0 md:px-6">
             <slot
@@ -142,7 +116,6 @@ const assistantHelp = provideWheelsetSelectionAssistantHelp()
 const questionPaginationTotal = ref(0)
 const questionPaginationActiveIndex = ref(0)
 const questionPaginationReachableIndex = ref(0)
-const questionPaginationJumpToIndexHandler = ref<((questionIndex: number) => void) | null>(null)
 
 const isQuickBuyWheelsetSelectionAssistantSource = computed(() => props.source === 'quick-buy/wheelset-selection-assistant')
 const titleLabel = computed(() => props.title || (
@@ -167,23 +140,11 @@ const descriptionLabel = computed(() => {
   )
 })
 
-const hasQuestionPagination = computed(() => (
-  questionPaginationTotal.value > 1 && Boolean(questionPaginationJumpToIndexHandler.value)
-))
-
 provide(wheelsetSelectionAssistantQuestionPaginationKey, {
   total: questionPaginationTotal,
   activeIndex: questionPaginationActiveIndex,
   reachableIndex: questionPaginationReachableIndex,
-  registerJumpToIndexHandler: handler => {
-    questionPaginationJumpToIndexHandler.value = handler
-  },
 })
-
-const handleQuestionPaginationClick = (questionIndex: number) => {
-  if (questionIndex > questionPaginationReachableIndex.value) return
-  questionPaginationJumpToIndexHandler.value?.(questionIndex)
-}
 
 const handleClose = () => {
   emit('update:modelValue', false)
@@ -215,35 +176,26 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .wheelset-selection-assistant-modal-shell {
-  --quickbuy-shell-surface: #17181f;
-  --quickbuy-shell-surface-soft: #111218;
-  --quickbuy-panel-surface: #1b1c23;
-  --quickbuy-panel-surface-soft: #16171d;
-  --quickbuy-panel-surface-raised: #22242c;
-  --quickbuy-control-surface-raised: #1a1c24;
-  --quickbuy-divider: rgba(255, 255, 255, 0.085);
-  --quickbuy-divider-strong: rgba(255, 255, 255, 0.12);
-  background:
-    linear-gradient(
-      180deg,
-      #24262e 0%,
-      #1d1f26 34%,
-      var(--quickbuy-shell-surface) 68%,
-      var(--quickbuy-shell-surface-soft) 100%
-    );
+  --quickbuy-shell-surface: var(--tz-card-surface);
+  --quickbuy-shell-surface-soft: var(--tz-form-panel-surface);
+  --quickbuy-panel-surface: var(--tz-card-surface);
+  --quickbuy-panel-surface-soft: var(--tz-surface-subtle);
+  --quickbuy-panel-surface-raised: var(--tz-surface-muted);
+  --quickbuy-control-surface-raised: var(--tz-surface-subtle);
+  --quickbuy-divider: var(--tz-border-subtle);
+  --quickbuy-divider-strong: var(--tz-border-strong);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  min-height: 0;
+  background: var(--quickbuy-shell-surface);
   box-shadow:
-    0 30px 90px rgba(0, 0, 0, 0.66),
-    inset 0 1px 0 rgba(255, 255, 255, 0.075),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.045);
+    0 30px 90px rgba(20, 32, 43, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    inset 0 0 0 1px var(--tz-border-subtle);
 }
 
 .wheelset-selection-assistant-modal__header {
-  background:
-    linear-gradient(
-      180deg,
-      var(--quickbuy-panel-surface-raised),
-      var(--tz-card-surface, #111116)
-    );
+  background: var(--quickbuy-panel-surface-raised);
 }
 
 .wheelset-selection-assistant-modal__header-row {
@@ -271,47 +223,8 @@ onBeforeUnmount(() => {
   min-width: 0;
 }
 
-.wheelset-selection-assistant-modal__pagination-row {
-  display: flex;
-  justify-content: center;
-  padding: 0.1rem 1rem 0.35rem;
-  border: 0;
-  background: var(--tz-input-surface, #0b0b0e);
-  box-shadow: none;
-}
-
-.wheelset-selection-assistant-modal__pagination {
-  display: inline-flex;
-  justify-content: flex-end;
-  gap: 0.5rem;
-  border: 0;
-  background: var(--tz-input-surface, #0b0b0e);
-  box-shadow: none;
-}
-
-.wheelset-selection-assistant-modal__pagination-dot {
-  width: 2rem;
-  height: 2rem;
-  min-width: 2rem;
-  min-height: 2rem;
-  --tz-carousel-pagination-dot-width: 0.5rem;
-  --tz-carousel-pagination-dot-height: 0.5rem;
-}
-
-.wheelset-selection-assistant-modal__pagination-dot.is-future {
-  opacity: 0.7;
-}
-
-.wheelset-selection-assistant-modal__pagination-dot.is-future::before {
-  background: rgba(255, 255, 255, 0.22);
-}
-
-.wheelset-selection-assistant-modal__pagination-dot:focus {
-  outline: 0;
-}
-
 .wheelset-selection-assistant-modal__eyebrow {
-  color: rgba(181, 255, 109, 0.82);
+  color: rgba(5, 150, 105, 0.82);
   font-size: 0.625rem;
   font-weight: 800;
   letter-spacing: 0.24em;
@@ -320,7 +233,7 @@ onBeforeUnmount(() => {
 
 .wheelset-selection-assistant-modal__title {
   margin-top: 0.25rem;
-  color: var(--tz-text-primary, #f8fafc);
+  color: var(--tz-text-primary);
   font-size: 1rem;
   font-weight: 700;
   line-height: 1.25;
@@ -328,7 +241,7 @@ onBeforeUnmount(() => {
 
 .wheelset-selection-assistant-modal__description {
   margin-top: 0.25rem;
-  color: var(--tz-text-muted, #94a3b8);
+  color: var(--tz-text-muted);
   font-size: 0.75rem;
   line-height: 1.45;
 }
@@ -339,8 +252,11 @@ onBeforeUnmount(() => {
 
 .wheelset-selection-assistant-modal__body {
   display: flex;
+  min-height: 0;
+  box-sizing: border-box;
+  overflow: hidden;
   padding-block: 2px;
-  background: var(--tz-input-surface, #0b0b0e);
+  background: var(--tz-input-surface);
 }
 
 .wheelset-selection-assistant-modal__footer {

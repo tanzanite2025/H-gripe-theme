@@ -66,7 +66,7 @@ func TestBuildGoogleMerchantProductInputUsesOneSKUAndStorefrontFields(t *testing
 	if attributes.Title != "Carbon Wheelset" || attributes.Description != "A fast wheelset." {
 		t.Fatalf("unexpected title/description mapping: %#v", attributes)
 	}
-	if attributes.Link != "https://example.com/shop/carbon-wheelset?variant=700" || attributes.ImageLink != "https://cdn.example.com/wheelset.jpg" {
+	if attributes.Link != "https://example.com/products/carbon-wheelset?variant=700" || attributes.ImageLink != "https://cdn.example.com/wheelset.jpg" {
 		t.Fatalf("unexpected URL mapping: %#v", attributes)
 	}
 	if attributes.Availability != "IN_STOCK" || attributes.Condition != "NEW" {
@@ -154,7 +154,7 @@ func TestBuildGoogleMerchantProductInputResolvesRelativeImageAndLocaleURL(t *tes
 	if err != nil {
 		t.Fatalf("buildGoogleMerchantProductInput() error = %v", err)
 	}
-	if input.ProductAttributes.Link != "https://example.com/fr/shop/roue-carbone?variant=701" {
+	if input.ProductAttributes.Link != "https://example.com/fr/products/roue-carbone?variant=701" {
 		t.Fatalf("link = %q", input.ProductAttributes.Link)
 	}
 	if input.ProductAttributes.ImageLink != "https://example.com/uploads/roue.jpg?width=1200" {

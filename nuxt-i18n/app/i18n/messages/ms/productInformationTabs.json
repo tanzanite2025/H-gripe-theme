@@ -5,12 +5,12 @@
     "details": "Butiran",
     "afterSales": "Selepas jualan",
     "packaging": "Pembungkusan",
-    "shipping": "Penghantaran"
+    "productShippingInfo": "Penghantaran"
   },
   "empty": {
     "details": "Butiran produk belum ditambah.",
     "afterSales": "Maklumat selepas jualan belum ditambah.",
     "packaging": "Maklumat pembungkusan belum ditambah.",
-    "shipping": "Maklumat penghantaran belum ditambah."
+    "productShippingInfo": "Maklumat penghantaran belum ditambah."
   }
 }

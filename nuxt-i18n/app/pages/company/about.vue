@@ -107,6 +107,8 @@ const { activeTab } = usePageSubNavigationTab({
 
 definePageMeta({
   layout: 'products',
+  footerLabelKey: 'company.nav.about',
+  footerLabelFallback: 'About Us',
 })
 
 useHead({
@@ -126,7 +128,7 @@ useHead({
   font-size: var(--tz-type-page-title);
   line-height: 1.18;
   font-weight: 600;
-  color: #f9fafb;
+  color: var(--tz-text-primary);
 }
 
 .company-page__title--sr-only {
@@ -186,9 +188,9 @@ useHead({
   margin-top: 0.5rem;
   padding: 0.35rem 0.85rem;
   border-radius: 9999px;
-  border: 1px solid rgba(148, 163, 184, 0.6);
-  background: rgba(15, 23, 42, 0.9);
-  color: var(--tz-text-primary);
+  border: 1px solid var(--tz-action-primary);
+  background: var(--tz-action-primary);
+  color: var(--tz-action-primary-foreground);
   font-size: 0.85rem;
   font-weight: 500;
   cursor: pointer;
@@ -222,8 +224,8 @@ useHead({
 .company-values__item {
   padding: 0.75rem 0.9rem;
   border-radius: 0.75rem;
-  background: rgba(15, 23, 42, 0.8);
-  border: 1px solid rgba(148, 163, 184, 0.24);
+  background: var(--tz-card-surface);
+  border: 1px solid var(--tz-border-subtle);
 }
 
 .company-values__title {

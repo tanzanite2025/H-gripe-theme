@@ -255,7 +255,7 @@ const setActiveIndex = (index: number): void => {
 }
 
 .home-hero-visual-showcase-desktop__card:focus-visible {
-  outline: 2px solid rgba(181, 255, 109, 0.95);
+  outline: 2px solid rgba(5, 150, 105, 0.95);
   outline-offset: 4px;
   border-radius: 1rem;
 }

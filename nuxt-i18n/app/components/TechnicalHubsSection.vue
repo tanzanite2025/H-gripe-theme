@@ -23,23 +23,23 @@
     <!-- Tab: Technology (Existing Content) -->
     <div v-show="activeTab === 'technology'" class="space-y-8">
     <!-- Intro Card -->
-    <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 text-center border-t-4 border-slate-500">
-       <h3 class="text-lg font-bold text-slate-100 mb-2">Bicycle Hub Key Specifications</h3>
+    <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6 text-center border-t-4 border-slate-500">
+       <h3 class="text-lg font-bold tz-text-secondary mb-2">Bicycle Hub Key Specifications</h3>
       <p class="text-sm tz-text-secondary leading-relaxed max-w-2xl mx-auto">
           Understanding the core specifications of your hubs is critical for wheel building and frame compatibility.
        </p>
     </div>
 
     <!-- 1. Spoke Interface Card -->
-    <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6">
-       <div class="flex items-center gap-3 mb-6 pb-3 border-b border-sky-500/10">
+    <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6">
+       <div class="flex items-center gap-3 mb-6 pb-3 border-b border-emerald-200">
         <h3 class="text-lg font-bold tz-text-primary">1. Spoke Type: J-Bend vs. Straight-Pull</h3>
        </div>
 
        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
           <!-- J-Bend -->
-          <div class="bg-indigo-500/5 rounded-xl p-4 shadow-[0_4px_16px_rgba(0,0,0,0.5)]">
-              <h4 class="text-indigo-400 font-bold mb-3 flex items-center gap-2">
+          <div class="bg-emerald-50 rounded-xl p-4 shadow-md">
+              <h4 class="text-emerald-600 font-bold mb-3 flex items-center gap-2">
                  J-Bend (Classic)
               </h4>
         <ul class="space-y-2 text-sm tz-text-secondary mb-4">
@@ -66,8 +66,8 @@
           </div>
 
           <!-- Straight-Pull -->
-          <div class="bg-emerald-500/5 rounded-xl p-4 shadow-[0_4px_16px_rgba(0,0,0,0.5)]">
-              <h4 class="text-emerald-400 font-bold mb-3 flex items-center gap-2">
+          <div class="bg-emerald-50 rounded-xl p-4 shadow-md">
+              <h4 class="text-emerald-600 font-bold mb-3 flex items-center gap-2">
                  Straight-Pull (Modern)
               </h4>
         <ul class="space-y-2 text-sm tz-text-secondary mb-4">
@@ -98,16 +98,16 @@
     <!-- 2. Tech Specs Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
        <!-- Axle Specs -->
-       <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
+       <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
            <h3 class="text-lg font-bold text-amber-500 mb-4 flex items-center gap-2">
               Axle Standards
            </h3>
         <div class="space-y-4 text-sm tz-text-secondary">
-              <div class="bg-slate-800/50 p-3 rounded-lg">
+              <div class="tz-surface-panel p-3 rounded-lg">
           <strong class="block tz-text-primary mb-1">Front Hubs</strong>
                  <p>QR (9x100), 12x100 (Road/Gravel), 15x100, <strong>15x110 (Boost)</strong></p>
               </div>
-              <div class="bg-slate-800/50 p-3 rounded-lg">
+              <div class="tz-surface-panel p-3 rounded-lg">
           <strong class="block tz-text-primary mb-1">Rear Hubs</strong>
                  <p>QR (135mm), 12x142, <strong>12x148 (Boost)</strong></p>
               </div>
@@ -118,7 +118,7 @@
        </div>
 
        <!-- Brake Interface -->
-       <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
+       <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
            <h3 class="text-lg font-bold text-rose-500 mb-4 flex items-center gap-2">
               Brake Interface
            </h3>
@@ -144,16 +144,16 @@
     <!-- 3. Ratchet & Holes -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
        <!-- Hole Count -->
-       <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
-           <h3 class="text-lg font-bold text-fuchsia-500 mb-4 flex items-center gap-2">
+       <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
+           <h3 class="text-lg font-bold text-emerald-600 mb-4 flex items-center gap-2">
               Hole Count Logic
            </h3>
            <div class="space-y-4">
-              <div class="flex items-center justify-between text-sm border-b border-white/5 pb-2">
+              <div class="flex items-center justify-between text-sm border-b tz-border-strong/5 pb-2">
             <span class="tz-text-muted">Lightweight / Road</span>
             <span class="tz-text-primary font-bold">20H / 24H</span>
               </div>
-              <div class="flex items-center justify-between text-sm border-b border-white/5 pb-2">
+              <div class="flex items-center justify-between text-sm border-b tz-border-strong/5 pb-2">
                    <span class="tz-text-muted">Standard MTB / Gravel</span>
                    <span class="tz-text-primary font-bold">28H / 32H</span>
               </div>
@@ -165,24 +165,24 @@
        </div>
 
        <!-- Ratchet System -->
-       <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
-           <h3 class="text-lg font-bold text-cyan-500 mb-4 flex items-center gap-2">
+       <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
+           <h3 class="text-lg font-bold text-emerald-600 mb-4 flex items-center gap-2">
               Ratchet Engagement
            </h3>
             <p class="text-sm tz-text-secondary mb-4">
               Higher tooth counts = faster engagement (less lag when you start pedaling).
            </p>
            <div class="grid grid-cols-3 gap-2 text-center">
-              <div class="bg-cyan-500/10 rounded-lg p-2 shadow-[0_4px_16px_rgba(0,0,0,0.5)]">
-                 <div class="text-lg font-bold text-cyan-400">18T</div>
+              <div class="bg-emerald-50 rounded-lg p-2 shadow-md">
+                 <div class="text-lg font-bold text-emerald-600">18T</div>
                   <div class="tz-caption tz-text-muted">Standard</div>
               </div>
-              <div class="bg-cyan-500/10 rounded-lg p-2 shadow-[0_4px_16px_rgba(0,0,0,0.5)]">
-                 <div class="text-lg font-bold text-cyan-400">36T</div>
+              <div class="bg-emerald-50 rounded-lg p-2 shadow-md">
+                 <div class="text-lg font-bold text-emerald-600">36T</div>
                   <div class="tz-caption tz-text-muted">Balanced</div>
               </div>
-              <div class="bg-cyan-500/10 rounded-lg p-2 shadow-[0_4px_16px_rgba(0,0,0,0.5)]">
-                 <div class="text-lg font-bold text-cyan-400">54T</div>
+              <div class="bg-emerald-50 rounded-lg p-2 shadow-md">
+                 <div class="text-lg font-bold text-emerald-600">54T</div>
                   <div class="tz-caption tz-text-muted">Instant</div>
               </div>
            </div>
@@ -190,14 +190,14 @@
     </div>
 
     <!-- 4. Freehub Summary Card (Link) -->
-    <div class="rounded-2xl bg-gradient-to-r from-slate-900 to-slate-800 shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-6 flex flex-col md:flex-row items-center justify-between gap-6">
+    <div class="rounded-2xl tz-surface-card border tz-border-subtle shadow-md p-6 flex flex-col md:flex-row items-center justify-between gap-6">
        <div class="text-center md:text-left">
            <h3 class="text-lg font-bold tz-text-primary mb-1">Freehub Body Compatibility</h3>
            <p class="text-sm tz-text-secondary">HG vs MS vs XD vs XDR vs N3W? Check our detailed guide.</p>
        </div>
        <button
         type="button"
-        class="shrink-0 inline-flex items-center justify-center rounded-full bg-sky-500 px-6 py-2.5 text-sm font-bold text-white shadow-lg hover:bg-sky-400 hover:shadow-sky-500/25 transition-all"
+        class="shrink-0 inline-flex items-center justify-center rounded-full bg-[var(--tz-action-primary)] px-6 py-2.5 text-sm font-bold text-white shadow-lg hover:bg-[var(--tz-action-primary-hover)] hover:shadow-slate-900/20 transition-all"
         @click="goToChooseFreehub"
       >
         View Guide
@@ -208,7 +208,7 @@
     <!-- Tab: Choose hubs (New Content) -->
     <div v-show="activeTab === 'choose-hubs'" class="space-y-8">
       <!-- Intro Card -->
-      <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 text-center border-t-4 border-indigo-500">
+      <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6 text-center border-t-4 border-emerald-500">
           <h3 class="text-xl font-bold tz-text-primary mb-2">Hub Selection Guide</h3>
           <p class="text-sm tz-text-secondary max-w-2xl mx-auto">
             Choosing the right hub is a balance between serviceability, performance, and compatibility.
@@ -219,21 +219,21 @@
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
          <div class="space-y-6">
             <!-- J-bend -->
-            <div class="bg-indigo-500/5 rounded-xl p-5 shadow-[0_4px_16px_rgba(0,0,0,0.5)] border border-indigo-500/10">
-               <strong class="block text-indigo-400 text-lg mb-3">1. J-bend Hub</strong>
+            <div class="bg-emerald-50 rounded-xl p-5 shadow-md border border-emerald-200">
+               <strong class="block text-emerald-600 text-lg mb-3">1. J-bend Hub</strong>
                 <p class="text-sm tz-text-secondary mb-2"><strong>Structure:</strong> Flange holes designed for spokes with a 90° bend (elbow).</p>
                 <p class="text-sm tz-text-secondary mb-2"><strong>Advantages:</strong> Traditional design, easy to source replacements, convenient maintenance.</p>
                 <p class="text-sm tz-text-secondary mb-4"><strong>Best for:</strong> Riders valuing universality and ease of future maintenance.</p>
-               <div class="bg-indigo-500/10 px-3 py-1.5 rounded text-xs text-indigo-300 inline-block font-medium">Compatible: J-bend spokes</div>
+               <div class="bg-emerald-50 px-3 py-1.5 rounded text-xs text-emerald-700 inline-block font-medium">Compatible: J-bend spokes</div>
             </div>
 
             <!-- Straight-pull -->
-            <div class="bg-emerald-500/5 rounded-xl p-5 shadow-[0_4px_16px_rgba(0,0,0,0.5)] border border-emerald-500/10">
-               <strong class="block text-emerald-400 text-lg mb-3">2. Straight-pull Hub</strong>
+            <div class="bg-emerald-50 rounded-xl p-5 shadow-md border border-emerald-200">
+               <strong class="block text-emerald-600 text-lg mb-3">2. Straight-pull Hub</strong>
                 <p class="text-sm tz-text-secondary mb-2"><strong>Structure:</strong> Flange holes designed for spokes that insert directly without bending.</p>
                 <p class="text-sm tz-text-secondary mb-2"><strong>Advantages:</strong> Stiffer structure, more even tension, high-performance aesthetic.</p>
                 <p class="text-sm tz-text-secondary mb-4"><strong>Best for:</strong> Racing or performance use seeking rigidity and weight savings.</p>
-               <div class="bg-emerald-500/10 px-3 py-1.5 rounded text-xs text-emerald-300 inline-block font-medium">Compatible: Straight-pull spokes</div>
+               <div class="bg-emerald-50 px-3 py-1.5 rounded text-xs text-emerald-700 inline-block font-medium">Compatible: Straight-pull spokes</div>
             </div>
          </div>
 
@@ -244,31 +244,31 @@
                alt="Comparison of J-bend and Straight-pull hub flange designs"
                :zoomOnClick="true"
                caption="J-bend (Left) vs Straight-pull (Right) Interface"
-               class="rounded-xl overflow-hidden shadow-[0_8px_30px_rgba(0,0,0,0.6)] h-full object-cover"
+               class="rounded-xl overflow-hidden shadow-md h-full object-cover"
             />
          </div>
       </div>
 
       <!-- 3. Hole Count -->
-      <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-6">
-         <h3 class="text-lg font-bold text-fuchsia-400 mb-4 flex items-center gap-2">
+      <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-6">
+         <h3 class="text-lg font-bold text-emerald-600 mb-4 flex items-center gap-2">
             3. Hole Count Selection
          </h3>
          <div class="grid md:grid-cols-2 gap-6">
-            <div class="bg-slate-800/30 p-4 rounded-xl border border-slate-700/50">
+            <div class="tz-surface-panel p-4 rounded-xl border tz-border-subtle">
                <strong class="block tz-text-primary mb-2">Lightweight (20H / 24H)</strong>
                <p class="text-sm tz-text-secondary leading-relaxed">
                   Lighter weight, strictly for road bikes and climbing sets. Requires higher spoke tension and stiffer rims.
                </p>
             </div>
-            <div class="bg-slate-800/30 p-4 rounded-xl border border-slate-700/50">
+            <div class="tz-surface-panel p-4 rounded-xl border tz-border-subtle">
                <strong class="block tz-text-primary mb-2">Durability (28H / 32H)</strong>
                <p class="text-sm tz-text-secondary leading-relaxed">
                   More durable, suitable for MTB, heavy loads, or touring. Distributes stress across more spokes.
                </p>
             </div>
          </div>
-         <p class="mt-4 text-xs text-fuchsia-400/80 bg-fuchsia-500/5 p-3 rounded-lg border border-fuchsia-500/20">
+         <p class="mt-4 text-xs text-emerald-600/80 bg-emerald-50 p-3 rounded-lg border border-emerald-200">
             <strong>Key Principle:</strong> Hub hole count must match rim hole count exactly.
          </p>
       </div>

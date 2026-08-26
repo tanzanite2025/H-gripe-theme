@@ -179,6 +179,8 @@ func evaluateSiteQualityRuns(
 			TargetURL:          target.CanonicalURL,
 			Strategy:           job.Strategy,
 			AuditID:            auditID,
+			RuleID:             decision.RuleID,
+			ProviderAuditID:    decision.ProviderAuditID,
 			FindingKind:        decision.Kind,
 			RuleVersion:        decision.RuleVersion,
 			Confidence:         decision.Confidence,
@@ -250,23 +252,26 @@ func siteQualityDecisionFromIssues(
 		return siteQualityResourceWastedMS(resources[i]) > siteQualityResourceWastedMS(resources[j])
 	})
 	return siteQualityDecision{
-		AuditID:        auditID,
-		Kind:           rule.Kind,
-		RuleVersion:    siteQualityAuditRuleVersion,
-		Title:          best.Title,
-		Description:    best.Description,
-		Severity:       siteQualityConfirmedSeverity(best, savingsMS, savingsBytes),
-		Confirmations:  len(issues),
-		SampleCount:    sampleCount,
-		Confidence:     float64(len(issues)) / float64(sampleCount),
-		MedianScore:    medianFloat64(scores),
-		MedianMS:       medianFloat64(savingsMS),
-		MedianBytes:    medianInt64(savingsBytes),
-		Resources:      resources,
-		Headings:       best.Headings,
-		StructuredData: best.StructuredData,
-		DisplayValue:   best.DisplayValue,
-		NumericValue:   copyFloat64(best.NumericValue),
+		AuditID:         auditID,
+		RuleID:          siteQualityRuleIDForAudit(auditID),
+		ProviderAuditID: siteQualityProviderAuditIDForAudit(auditID),
+		Kind:            rule.Kind,
+		RuleVersion:     siteQualityAuditRuleVersion,
+		Title:           best.Title,
+		Description:     best.Description,
+		Severity:        siteQualityConfirmedSeverity(best, savingsMS, savingsBytes),
+		Confirmations:   len(issues),
+		SampleCount:     sampleCount,
+		Confidence:      float64(len(issues)) / float64(sampleCount),
+		MedianScore:     medianFloat64(scores),
+		MedianMS:        medianFloat64(savingsMS),
+		MedianBytes:     medianInt64(savingsBytes),
+		Resources:       resources,
+		Links:           best.Links,
+		Headings:        best.Headings,
+		StructuredData:  best.StructuredData,
+		DisplayValue:    best.DisplayValue,
+		NumericValue:    copyFloat64(best.NumericValue),
 	}
 }
 
@@ -276,6 +281,9 @@ func siteQualityDecisionEvidenceCount(decision siteQualityDecision) int {
 	}
 	if len(decision.StructuredData) > 0 {
 		return len(decision.StructuredData)
+	}
+	if len(decision.Links) > 0 {
+		return len(decision.Links)
 	}
 	return len(decision.Resources)
 }
@@ -352,17 +360,20 @@ func lastSiteQualityRunID(runIDs []uint) uint {
 
 func mustEncodeSiteQualityFindingEvidence(decision siteQualityDecision) string {
 	evidence := sitequalitydomain.SiteQualityFindingEvidence{
-		AuditID:        decision.AuditID,
-		Title:          decision.Title,
-		Description:    decision.Description,
-		Score:          decision.MedianScore,
-		DisplayValue:   decision.DisplayValue,
-		NumericValue:   decision.NumericValue,
-		SavingsMS:      decision.MedianMS,
-		SavingsBytes:   decision.MedianBytes,
-		Resources:      siteQualityFindingResourcesFromLighthouse(decision.Resources),
-		Headings:       decision.Headings,
-		StructuredData: decision.StructuredData,
+		AuditID:         decision.AuditID,
+		RuleID:          decision.RuleID,
+		ProviderAuditID: decision.ProviderAuditID,
+		Title:           decision.Title,
+		Description:     decision.Description,
+		Score:           decision.MedianScore,
+		DisplayValue:    decision.DisplayValue,
+		NumericValue:    decision.NumericValue,
+		SavingsMS:       decision.MedianMS,
+		SavingsBytes:    decision.MedianBytes,
+		Resources:       siteQualityFindingResourcesFromLighthouse(decision.Resources),
+		Links:           decision.Links,
+		Headings:        decision.Headings,
+		StructuredData:  decision.StructuredData,
 	}
 	encoded, err := json.Marshal(evidence)
 	if err != nil {

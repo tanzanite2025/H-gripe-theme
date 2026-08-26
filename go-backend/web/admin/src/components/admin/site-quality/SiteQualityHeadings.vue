@@ -2,8 +2,8 @@
   <section class="border bg-card">
     <div class="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3">
       <div>
-        <h2 class="text-sm font-black">标题层级</h2>
-        <p class="mt-1 text-xs text-muted-foreground">H1 / H2 / H3</p>
+        <h2 class="text-sm font-black">H1 层级检查</h2>
+        <p class="mt-1 text-xs text-muted-foreground">只检查页面标题层级与 H1 结构</p>
       </div>
       <div class="flex items-center gap-2">
         <select

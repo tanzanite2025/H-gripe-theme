@@ -296,7 +296,7 @@ const levelSubmitting = ref(false)
 const levelErrors = reactive<MemberLevelErrors>({})
 const levelForm = reactive<MemberLevelEditorForm>({
   id: null, name: '', min_points: 0, max_points: 0, discount_rate: 0,
-  sort_order: 0, benefits: '', icon: '', color: '#B5FF6D'
+  sort_order: 0, benefits: '', icon: '', color: '#059669'
 })
 
 const DEFAULT_MEMBER_LEVELS = [
@@ -702,7 +702,7 @@ const fetchLevels = async () => {
 const resetLevelForm = () => {
   Object.assign(levelForm, {
     id: null, name: '', min_points: 0, max_points: 0, discount_rate: 0,
-    sort_order: 0, benefits: '', icon: '', color: '#B5FF6D'
+    sort_order: 0, benefits: '', icon: '', color: '#059669'
   })
   clearErrors(levelErrors)
 }
@@ -719,7 +719,7 @@ const showEditLevelDialog = async (level: MemberLevel) => {
     Object.assign(levelForm, {
       id: data.id, name: data.name || '', min_points: Number(data.min_points || 0), max_points: Number(data.max_points || 0),
       discount_rate: Number(data.discount_rate || 0),
-      sort_order: Number(data.sort_order || 0), benefits: data.benefits || '', icon: data.icon || '', color: data.color || '#B5FF6D'
+      sort_order: Number(data.sort_order || 0), benefits: data.benefits || '', icon: data.icon || '', color: data.color || '#059669'
     })
     clearErrors(levelErrors)
     levelDialogVisible.value = true

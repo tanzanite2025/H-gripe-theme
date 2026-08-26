@@ -17,13 +17,17 @@ import {
 } from '@lucide/vue'
 import { toast } from 'vue-sonner'
 import mediaApi from '@/api/media'
+import UploadSpecHint from '@/components/admin/UploadSpecHint.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { uploadSpecAccept, validateUploadFile } from '@/lib/uploadSpecs'
 
 const props = withDefaults(defineProps<{
   modelValue: string
+  disabled?: boolean
 }>(), {
   modelValue: '',
+  disabled: false,
 })
 
 const emit = defineEmits<{
@@ -74,7 +78,7 @@ onMounted(syncEditor)
 watch(() => props.modelValue, syncEditor)
 
 const emitContent = () => {
-  if (!editor.value || syncing.value) return
+  if (!editor.value || syncing.value || props.disabled) return
   emit('update:modelValue', editor.value.innerHTML)
   saveSelection()
 }
@@ -166,9 +170,18 @@ const uploadAndInsert = async (event: Event, type: 'image' | 'video') => {
 
   uploading.value = true
   try {
+    if (type === 'image') {
+      const validation = await validateUploadFile(file, 'product_description_image')
+      if (!validation.ok) {
+        toast.error(validation.error || '详情图片不符合上传规范')
+        return
+      }
+      if (validation.warning) toast.warning(validation.warning)
+    }
     const formData = new FormData()
     formData.append('file', file)
     formData.append('media_type', type)
+    if (type === 'image') formData.append('image_purpose', 'product_description_image')
     const asset = await mediaApi.uploadAsset(formData)
     const url = String(asset?.url || '').trim()
     if (!url) {
@@ -187,7 +200,7 @@ const uploadAndInsert = async (event: Event, type: 'image' | 'video') => {
 </script>
 
 <template>
-  <div class="rounded-lg border bg-muted/15 p-2">
+  <div class="rounded-lg border bg-muted/15 p-2" :class="{ 'pointer-events-none opacity-60': disabled }">
     <div class="flex flex-wrap items-center gap-1 border-b pb-2">
       <Button type="button" variant="ghost" size="icon-sm" title="撤销" @click="exec('undo')">
         <Undo2 class="size-4" />
@@ -255,13 +268,14 @@ const uploadAndInsert = async (event: Event, type: 'image' | 'video') => {
       <Button type="button" variant="outline" size="icon-sm" title="上传详情视频" :disabled="uploading" @click="chooseUpload('video')">
         <Video class="size-4" />
       </Button>
-      <input ref="imageInput" type="file" class="sr-only" accept="image/jpeg,image/png,image/webp" :disabled="uploading" @change="uploadAndInsert($event, 'image')" />
+      <input ref="imageInput" type="file" class="sr-only" :accept="uploadSpecAccept('product_description_image')" :disabled="uploading" @change="uploadAndInsert($event, 'image')" />
       <input ref="videoInput" type="file" class="sr-only" accept="video/mp4,video/quicktime,video/webm" :disabled="uploading" @change="uploadAndInsert($event, 'video')" />
     </div>
+    <UploadSpecHint code="product_description_image" />
 
     <div
       ref="editor"
-      contenteditable="true"
+      :contenteditable="disabled ? 'false' : 'true'"
       role="textbox"
       aria-multiline="true"
       class="product-description-editor__canvas mt-2 min-h-48 rounded-md bg-background px-4 py-3 text-sm leading-6 outline-none focus:ring-2 focus:ring-ring"

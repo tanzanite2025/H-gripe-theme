@@ -114,44 +114,68 @@
     --tz-mobile-dialog-inset: 2px;
     --tz-bottom-dock-height: 4.5rem;
     --tz-bottom-dock-content-clearance: calc(var(--tz-bottom-dock-height) + 1.25rem);
-    --tz-mobile-top-chrome-gradient: linear-gradient(180deg, #151519 0%, #18181c 18%, #1d1d21 38%, #242428 58%, #2b2b2f 78%, #303034 100%);
-    --tz-mobile-bottom-chrome-gradient: linear-gradient(180deg, #303034 0%, #2b2b2f 22%, #242428 42%, #1d1d21 62%, #18181c 82%, #151519 100%);
-    --tz-mobile-chrome-edge-border: #171717;
+    --tz-mobile-top-chrome-surface: var(--tz-surface-card);
+    --tz-mobile-bottom-chrome-surface: var(--tz-surface-muted);
+    --tz-mobile-chrome-edge-border: #cbd5e1;
 
     /*
-      Semantic text colors for the dark storefront.
-      Keep these in one place so mobile and desktop surfaces do not drift
-      into low-contrast one-off grays.
+      Semantic text colors for the light storefront.
+      Keep these in one place so page surfaces, controls and overlays share
+      the same readable contrast.
     */
-    --tz-text-primary: #f8fafc;
-    --tz-text-secondary: #cbd5e1;
+    --tz-text-primary: #0f172a;
+    --tz-text-secondary: #475569;
     --tz-text-muted: #94a3b8;
-    --tz-text-disabled: #64748b;
-    --tz-brand-primary: #b5ff6d;
-    --tz-brand-primary-hover: #c8ff91;
-    --tz-text-accent: var(--tz-brand-primary);
-    --tz-card-surface: #111116;
-    --tz-input-surface: #0b0b0e;
-    --tz-form-panel-surface: #141414;
-    --tz-form-control-surface: #090909;
-    --tz-image-loading-surface: #0b0b0e;
-    --tz-form-control-border: rgba(255, 255, 255, 0.22);
-    --tz-form-control-focus-border: rgba(255, 255, 255, 0.78);
-    --tz-form-control-focus-ring: rgba(255, 255, 255, 0.24);
+    --tz-text-disabled: #cbd5e1;
+    --tz-action-primary: #0f172a;
+    --tz-action-primary-hover: #1e293b;
+    --tz-action-primary-active: #020617;
+    --tz-action-primary-foreground: #ffffff;
+    --tz-site-accent: #059669;
+    --tz-site-accent-hover: #047857;
+    --tz-site-accent-soft-surface: #ecfdf5;
+    --tz-site-accent-selected-surface: #d1fae5;
+    --tz-text-accent: #047857;
+    --tz-text-accent-hover: #065f46;
+    --tz-surface-page: #f1f5f9;
+    --tz-surface-card: #ffffff;
+    --tz-surface-inset: #f8fafc;
+    --tz-card-surface: var(--tz-surface-card);
+    --tz-input-surface: var(--tz-surface-inset);
+    --tz-form-panel-surface: var(--tz-surface-inset);
+    --tz-form-control-surface: var(--tz-surface-inset);
+    --tz-image-loading-surface: var(--tz-surface-inset);
+    --tz-surface-subtle: var(--tz-surface-page);
+    --tz-surface-raised: var(--tz-surface-card);
+    --tz-surface-muted: var(--tz-surface-inset);
+    --tz-border-subtle: #e2e8f0;
+    --tz-border-strong: #cbd5e1;
+    --tz-form-control-border: #cbd5e1;
+    --tz-form-control-focus-border: rgba(4, 120, 87, 0.72);
+    --tz-form-control-focus-ring: rgba(5, 150, 105, 0.28);
+    --tz-status-success-bg: #ecfdf5;
+    --tz-status-success-text: #047857;
+    --tz-status-warning-bg: #fffbeb;
+    --tz-status-warning-text: #b45309;
+    --tz-status-danger-bg: #fef2f2;
+    --tz-status-danger-text: #b91c1c;
+    --tz-status-info-bg: #eff6ff;
+    --tz-status-info-text: #1d4ed8;
   }
 
   html {
     @apply overflow-x-hidden overscroll-x-none;
   }
 
-  @media (min-width: 768px) {
+  @media (min-width: 1280px) {
     :root {
       --tz-site-header-spacer-height: var(--tz-site-header-desktop-stack-height);
     }
   }
 
   body {
-    @apply overflow-x-hidden overscroll-x-none bg-black;
+    @apply overflow-x-hidden overscroll-x-none;
+    background-color: var(--tz-surface-subtle);
     font-family: var(--tz-font-ui);
     color: var(--tz-text-primary);
   }
@@ -217,10 +241,10 @@
     box-sizing: border-box;
     place-items: center;
     padding: 0;
-    border: 1px solid rgba(0, 0, 0, 0.14);
+    border: 1px solid var(--tz-border-strong);
     border-radius: 999px;
-    background: #ffffff;
-    color: #050505;
+    background: var(--tz-card-surface);
+    color: var(--tz-text-primary);
     cursor: pointer;
     line-height: 1;
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
@@ -245,13 +269,13 @@
   }
 
   .tz-directional-arrow:hover:not(:disabled) {
-    border-color: rgba(0, 0, 0, 0.24);
-    background: #f2f2f2;
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.34);
+    border-color: var(--tz-site-accent-hover);
+    background: var(--tz-input-surface);
+    box-shadow: 0 6px 18px rgb(15 23 42 / 0.14);
   }
 
   .tz-directional-arrow:focus-visible {
-    outline: 2px solid rgba(255, 255, 255, 0.9);
+    outline: 2px solid var(--tz-form-control-focus-border);
     outline-offset: 2px;
   }
 
@@ -329,7 +353,7 @@
 
   /*
    * Shared image-carousel pagination. Keep the hit area and gap stable while
-   * marking the active slide with a brand-colored ring.
+   * marking the active slide with the site accent ring.
    */
   .tz-carousel-pagination {
     display: flex;
@@ -345,9 +369,9 @@
   .tz-carousel-pagination__dot {
     --tz-carousel-pagination-dot-width: 0.62rem;
     --tz-carousel-pagination-dot-height: 0.62rem;
-    --tz-carousel-pagination-dot-bg: rgba(255, 255, 255, 0.28);
-    --tz-carousel-pagination-dot-hover-bg: rgba(255, 255, 255, 0.72);
-    --tz-carousel-pagination-dot-active-bg: var(--tz-brand-primary, #b5ff6d);
+    --tz-carousel-pagination-dot-bg: color-mix(in srgb, var(--tz-text-primary) 32%, transparent);
+    --tz-carousel-pagination-dot-hover-bg: color-mix(in srgb, var(--tz-text-primary) 72%, transparent);
+    --tz-carousel-pagination-dot-active-bg: var(--tz-site-accent, #059669);
 
     display: inline-flex;
     width: 3rem;
@@ -392,12 +416,12 @@
 
   .tz-carousel-pagination__dot.is-active::before {
     background: var(--tz-carousel-pagination-dot-active-bg);
-    box-shadow: 0 0 0 4px rgba(181, 255, 109, 0.15);
+    box-shadow: 0 0 0 4px rgba(5, 150, 105, 0.15);
     transform: translate(-50%, -50%) scale(1.45);
   }
 
   .tz-carousel-pagination__dot:focus-visible {
-    outline: 2px solid #ffffff;
+    outline: 2px solid var(--tz-form-control-focus-border);
     outline-offset: 3px;
   }
 
@@ -408,9 +432,9 @@
   .tz-segmented-tabs {
     display: inline-flex;
     padding: 0.375rem;
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid var(--tz-border-strong);
     border-radius: 999px;
-    background: rgba(0, 0, 0, 0.7);
+    background: var(--tz-input-surface);
   }
 
   .tz-segmented-tabs__button {
@@ -418,7 +442,7 @@
     border-radius: 999px;
     padding: 0.5rem 1.5rem;
     background: transparent;
-    color: rgba(255, 255, 255, 0.72);
+    color: var(--tz-text-secondary);
     font-size: 0.875rem;
     font-weight: 500;
     line-height: 1.25rem;
@@ -429,17 +453,17 @@
   }
 
   .tz-segmented-tabs__button:hover:not(.is-active) {
-    background: rgba(255, 255, 255, 0.1);
-    color: #ffffff;
+    background: var(--tz-site-accent-soft-surface);
+    color: var(--tz-text-primary);
   }
 
   .tz-segmented-tabs__button.is-active {
-    background: #ffffff;
-    color: #000000;
+    background: var(--tz-site-accent);
+    color: #ffffff;
   }
 
   .tz-segmented-tabs__button:focus-visible {
-    outline: 2px solid #ffffff;
+    outline: 2px solid var(--tz-site-accent);
     outline-offset: 3px;
   }
 
@@ -459,7 +483,7 @@
   }
 
   .tz-selectable-list-item:hover:not(.is-active) {
-    background: #ffffff;
+    background: var(--tz-card-surface);
   }
 
   .tz-selectable-list-item__indicator {
@@ -467,20 +491,20 @@
     height: 0.5rem;
     flex: 0 0 auto;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.38);
+    background: rgba(20, 32, 43, 0.22);
     transition:
       background-color 0.2s ease,
       box-shadow 0.2s ease;
   }
 
   .tz-selectable-list-item:hover:not(.is-active) .tz-selectable-list-item__indicator {
-    background: var(--tz-brand-primary);
-    box-shadow: 0 0 8px rgba(181, 255, 109, 0.55);
+    background: var(--tz-site-accent);
+    box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.22);
   }
 
   .tz-selectable-list-item.is-active .tz-selectable-list-item__indicator {
-    background: var(--tz-brand-primary);
-    box-shadow: 0 0 8px rgba(181, 255, 109, 0.55);
+    background: var(--tz-site-accent);
+    box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.22);
   }
 
   .tz-selectable-list-item__label {
@@ -489,15 +513,15 @@
   }
 
   .tz-selectable-list-item:hover:not(.is-active) .tz-selectable-list-item__label {
-    color: #000000;
+    color: var(--tz-text-primary);
   }
 
   .tz-selectable-list-item.is-active {
-    background: #ffffff;
+    background: var(--tz-site-accent-selected-surface);
   }
 
   .tz-selectable-list-item.is-active .tz-selectable-list-item__label {
-    color: #000000;
+    color: var(--tz-text-primary);
   }
 
   /*
@@ -513,10 +537,10 @@
     align-items: center;
     justify-content: center;
     box-sizing: border-box;
-    border: 1px solid rgba(0, 0, 0, 0.12) !important;
+    border: 1px solid var(--tz-border-strong) !important;
     border-radius: 0.75rem !important;
-    background: #ffffff !important;
-    color: #050505 !important;
+    background: var(--tz-card-surface) !important;
+    color: var(--tz-text-primary) !important;
     padding: 0 !important;
     font-size: 0.875rem;
     font-weight: 800;
@@ -532,15 +556,15 @@
   }
 
   .tz-global-close-btn:hover {
-    border-color: rgba(0, 0, 0, 0.2) !important;
-    background: #f3f3f3 !important;
-    color: #000000 !important;
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.28);
+    border-color: var(--tz-site-accent-hover) !important;
+    background: var(--tz-input-surface) !important;
+    color: var(--tz-text-primary) !important;
+    box-shadow: 0 6px 16px rgb(15 23 42 / 0.14);
     transform: scale(1.05);
   }
 
   .tz-global-close-btn:focus-visible {
-    outline: 2px solid rgba(255, 255, 255, 0.9);
+    outline: 2px solid rgba(5, 150, 105, 0.9);
     outline-offset: 2px;
   }
 
@@ -551,15 +575,16 @@
 
   .tz-standard-modal-mask,
   .tz-standard-modal-backdrop {
-    background: rgba(0, 0, 0, 0.78);
+    background: rgba(20, 32, 43, 0.46);
     -webkit-backdrop-filter: blur(5px);
     backdrop-filter: blur(5px);
   }
 
   .tz-standard-modal-surface {
-    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    border: 1px solid var(--tz-border-strong) !important;
+    background: var(--tz-card-surface) !important;
     border-radius: 1rem !important;
-    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.72) !important;
+    box-shadow: 0 18px 44px rgb(15 23 42 / 0.16) !important;
   }
 
   .page-content-shell {
@@ -720,33 +745,79 @@
   }
 
   .tz-faq-answer :where(a:hover) {
-    color: var(--tz-brand-primary-hover);
+    color: var(--tz-text-accent-hover);
   }
 
   .premium-card {
-    @apply border-none bg-[var(--tz-card-surface)];
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+    @apply border bg-[var(--tz-card-surface)];
+    border-color: var(--tz-border-strong);
+    border-style: dashed;
+    box-shadow: 0 10px 26px rgb(15 23 42 / 0.06);
   }
 
   /* 全局统一的高级按钮样式 (Pill Button) */
   /* 用于 Read More, View All, Tabs 等 */
   .premium-button {
     @apply border-none rounded-full px-5 py-2 text-[0.8rem] font-semibold cursor-pointer transition-all duration-200 inline-flex items-center no-underline;
-    background: rgba(17, 17, 22, 0.96);
+    background: var(--tz-surface-card);
     color: var(--tz-text-secondary);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--tz-border-strong);
+    box-shadow: 0 6px 16px rgb(15 23 42 / 0.06);
   }
 
   .premium-button:hover {
-    background: rgba(255, 255, 255, 0.06);
-    color: #ffffff;
+    background: var(--tz-input-surface);
+    color: var(--tz-text-primary);
     transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+    box-shadow: 0 9px 20px rgb(15 23 42 / 0.1);
   }
 
   .premium-button--active {
-    @apply bg-white text-slate-900 font-semibold;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+    @apply font-semibold;
+    background: var(--tz-action-primary);
+    color: var(--tz-action-primary-foreground);
+    border: 1px solid var(--tz-action-primary);
+    box-shadow: 0 8px 18px rgb(15 23 42 / 0.16);
+  }
+
+  .premium-button--active:hover {
+    background: var(--tz-action-primary-hover);
+    border-color: var(--tz-action-primary-hover);
+  }
+
+  .premium-button--active:active {
+    background: var(--tz-action-primary-active);
+    border-color: var(--tz-action-primary-active);
+  }
+
+  .tz-action-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--tz-action-primary);
+    background: var(--tz-action-primary);
+    color: var(--tz-action-primary-foreground);
+    transition:
+      background-color 0.18s ease,
+      border-color 0.18s ease,
+      box-shadow 0.18s ease,
+      transform 0.18s ease;
+  }
+
+  .tz-action-primary:hover:not(:disabled) {
+    border-color: var(--tz-action-primary-hover);
+    background: var(--tz-action-primary-hover);
+  }
+
+  .tz-action-primary:active:not(:disabled) {
+    border-color: var(--tz-action-primary-active);
+    background: var(--tz-action-primary-active);
+    transform: translateY(1px);
+  }
+
+  .tz-action-primary:focus-visible {
+    outline: 2px solid var(--tz-site-accent);
+    outline-offset: 2px;
   }
 }
 
@@ -776,17 +847,82 @@
     color: var(--tz-text-accent);
   }
 
+  .tz-surface-card {
+    background-color: var(--tz-card-surface);
+  }
+
+  .tz-surface-panel {
+    background-color: var(--tz-form-panel-surface);
+  }
+
+  .tz-surface-input {
+    background-color: var(--tz-input-surface);
+  }
+
+  .tz-surface-subtle {
+    background-color: var(--tz-surface-subtle);
+  }
+
+  .tz-surface-muted {
+    background-color: var(--tz-surface-muted);
+  }
+
+  .tz-border-subtle {
+    border-color: var(--tz-border-subtle);
+  }
+
+  .tz-border-strong {
+    border-color: var(--tz-border-strong);
+  }
+
+  /* Semantic opacity utilities are first-class classes, not legacy selectors. */
+  .tz-text-primary\/20 { color: color-mix(in srgb, var(--tz-text-primary) 20%, transparent); }
+  .tz-text-primary\/24 { color: color-mix(in srgb, var(--tz-text-primary) 24%, transparent); }
+  .tz-text-primary\/35 { color: color-mix(in srgb, var(--tz-text-primary) 35%, transparent); }
+  .tz-text-primary\/45 { color: color-mix(in srgb, var(--tz-text-primary) 45%, transparent); }
+  .tz-text-primary\/50 { color: color-mix(in srgb, var(--tz-text-primary) 50%, transparent); }
+  .tz-text-primary\/55 { color: color-mix(in srgb, var(--tz-text-primary) 55%, transparent); }
+  .tz-text-primary\/58 { color: color-mix(in srgb, var(--tz-text-primary) 58%, transparent); }
+  .tz-text-primary\/75 { color: color-mix(in srgb, var(--tz-text-primary) 75%, transparent); }
+  .tz-text-primary\/85 { color: color-mix(in srgb, var(--tz-text-primary) 85%, transparent); }
+  .tz-border-strong\/5 { border-color: color-mix(in srgb, var(--tz-border-strong) 5%, transparent); }
+  .tz-border-strong\/14 { border-color: color-mix(in srgb, var(--tz-border-strong) 14%, transparent); }
+  .tz-border-strong\/25 { border-color: color-mix(in srgb, var(--tz-border-strong) 25%, transparent); }
+  .tz-border-strong\/30 { border-color: color-mix(in srgb, var(--tz-border-strong) 30%, transparent); }
+  .tz-border-strong\/35 { border-color: color-mix(in srgb, var(--tz-border-strong) 35%, transparent); }
+  .tz-border-strong\/40 { border-color: color-mix(in srgb, var(--tz-border-strong) 40%, transparent); }
+  .tz-border-strong\/50 { border-color: color-mix(in srgb, var(--tz-border-strong) 50%, transparent); }
+  .tz-border-strong\/60 { border-color: color-mix(in srgb, var(--tz-border-strong) 60%, transparent); }
+  .tz-border-strong\/70 { border-color: color-mix(in srgb, var(--tz-border-strong) 70%, transparent); }
+  .tz-border-strong\/\[0\.07\] { border-color: color-mix(in srgb, var(--tz-border-strong) 7%, transparent); }
+  .tz-border-strong\/\[0\.08\] { border-color: color-mix(in srgb, var(--tz-border-strong) 8%, transparent); }
+
+  /* Semantic state variants are global utilities used directly by components. */
+  .hover\:tz-surface-subtle:hover { background-color: var(--tz-surface-subtle); }
+  .hover\:tz-surface-panel:hover { background-color: var(--tz-form-panel-surface); }
+  .hover\:tz-surface-muted:hover { background-color: var(--tz-surface-muted); }
+  .focus\:tz-surface-card:focus { background-color: var(--tz-card-surface); }
+  .hover\:tz-text-primary:hover { color: var(--tz-text-primary); }
+  .hover\:tz-border-subtle:hover { border-color: var(--tz-border-subtle); }
+  .hover\:tz-border-strong:hover { border-color: var(--tz-border-strong); }
+  .hover\:tz-border-strong\/14:hover { border-color: color-mix(in srgb, var(--tz-border-strong) 14%, transparent); }
+  .hover\:tz-border-strong\/30:hover { border-color: color-mix(in srgb, var(--tz-border-strong) 30%, transparent); }
+  .hover\:tz-border-strong\/35:hover { border-color: color-mix(in srgb, var(--tz-border-strong) 35%, transparent); }
+  .hover\:tz-border-strong\/40:hover { border-color: color-mix(in srgb, var(--tz-border-strong) 40%, transparent); }
+  .hover\:tz-border-strong\/50:hover { border-color: color-mix(in srgb, var(--tz-border-strong) 50%, transparent); }
+
   .tz-mobile-chrome-top {
-    background: var(--tz-mobile-top-chrome-gradient) !important;
+    background: var(--tz-mobile-top-chrome-surface);
   }
 
   .tz-mobile-chrome-bottom {
-    background: var(--tz-mobile-bottom-chrome-gradient) !important;
+    background: var(--tz-mobile-bottom-chrome-surface);
   }
 
   /*
-   * Neutral form controls keep blue surfaces from breaking the dark card
-   * system. Checkboxes, radios, and range inputs retain their native styling.
+   * Neutral form controls keep legacy page-level colors from breaking the
+   * light card system. Checkboxes, radios, and range inputs retain native
+   * styling.
    */
   input:not([type='checkbox']):not([type='radio']):not([type='range']),
   textarea,
@@ -910,8 +1046,4 @@
     padding-inline: 1rem;
   }
 
-  .premium-card[class~='p-6'],
-  .premium-card[class~='p-8'] {
-    padding-inline: 1.25rem !important;
-  }
 }

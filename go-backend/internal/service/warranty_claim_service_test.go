@@ -12,22 +12,22 @@ import (
 	"gorm.io/gorm/logger"
 
 	orderdomain "commerce-platform/internal/domain/order"
-	"commerce-platform/internal/domain/registration"
+	"commerce-platform/internal/domain/warranty"
 	"commerce-platform/internal/domain/verification"
 	"commerce-platform/internal/repository"
 )
 
 func TestWarrantyServiceRecordValidationAndCreation(t *testing.T) {
-	db, registrationService := newTestWarrantyRegistrationService(t)
+	db, warrantyService := newTestWarrantyService(t)
 	claim := seedWarrantyClaim(t, db, "TZ-WARRANTY-1", 7)
 
-	_, err := registrationService.CreateWarrantyServiceRecord(claim.ID, WarrantyServiceRecordInput{
+	_, err := warrantyService.CreateWarrantyServiceRecord(claim.ID, WarrantyServiceRecordInput{
 		Summary: " ",
 	}, 42)
 	require.Error(t, err)
 	assert.EqualError(t, err, "service summary is required")
 
-	_, err = registrationService.CreateWarrantyServiceRecord(claim.ID, WarrantyServiceRecordInput{
+	_, err = warrantyService.CreateWarrantyServiceRecord(claim.ID, WarrantyServiceRecordInput{
 		ServiceType: "random",
 		Status:      "open",
 		Summary:     "checked",
@@ -35,7 +35,7 @@ func TestWarrantyServiceRecordValidationAndCreation(t *testing.T) {
 	require.Error(t, err)
 	assert.EqualError(t, err, "invalid service record type")
 
-	_, err = registrationService.CreateWarrantyServiceRecord(claim.ID, WarrantyServiceRecordInput{
+	_, err = warrantyService.CreateWarrantyServiceRecord(claim.ID, WarrantyServiceRecordInput{
 		ServiceType: "inspection",
 		Status:      "random",
 		Summary:     "checked",
@@ -43,7 +43,7 @@ func TestWarrantyServiceRecordValidationAndCreation(t *testing.T) {
 	require.Error(t, err)
 	assert.EqualError(t, err, "invalid service record status")
 
-	_, err = registrationService.CreateWarrantyServiceRecord(claim.ID, WarrantyServiceRecordInput{
+	_, err = warrantyService.CreateWarrantyServiceRecord(claim.ID, WarrantyServiceRecordInput{
 		ServiceType: "inspection",
 		Status:      "open",
 		Summary:     "checked",
@@ -52,7 +52,7 @@ func TestWarrantyServiceRecordValidationAndCreation(t *testing.T) {
 	require.Error(t, err)
 	assert.EqualError(t, err, "service cost amount cannot be negative")
 
-	record, err := registrationService.CreateWarrantyServiceRecord(claim.ID, WarrantyServiceRecordInput{
+	record, err := warrantyService.CreateWarrantyServiceRecord(claim.ID, WarrantyServiceRecordInput{
 		ServiceType: "Repair",
 		Status:      "Processing",
 		Summary:     " replaced bearing ",
@@ -69,38 +69,38 @@ func TestWarrantyServiceRecordValidationAndCreation(t *testing.T) {
 }
 
 func TestBindWarrantyClaimOrderItemRequiresMatchingOrderAndUser(t *testing.T) {
-	db, registrationService := newTestWarrantyRegistrationService(t)
+	db, warrantyService := newTestWarrantyService(t)
 	orderMismatchClaim := seedWarrantyClaim(t, db, "TZ-WARRANTY-2", 7)
 	otherOrderItem := seedWarrantyOrderItem(t, db, "TZ-WARRANTY-OTHER", 7, 1002)
 
-	err := registrationService.BindWarrantyClaimOrderItem(orderMismatchClaim.ID, &otherOrderItem.ID)
+	err := warrantyService.BindWarrantyClaimOrderItem(orderMismatchClaim.ID, &otherOrderItem.ID)
 	require.ErrorIs(t, err, ErrWarrantyOrderItemMismatch)
 
 	userMismatchClaim := seedWarrantyClaim(t, db, "TZ-WARRANTY-USER", 7)
 	otherUserItem := seedWarrantyOrderItem(t, db, "TZ-WARRANTY-USER", 8, 1003)
-	err = registrationService.BindWarrantyClaimOrderItem(userMismatchClaim.ID, &otherUserItem.ID)
+	err = warrantyService.BindWarrantyClaimOrderItem(userMismatchClaim.ID, &otherUserItem.ID)
 	require.ErrorIs(t, err, ErrWarrantyOrderItemMismatch)
 
 	matchingClaim := seedWarrantyClaim(t, db, "TZ-WARRANTY-MATCH", 7)
 	matchingItem := seedWarrantyOrderItem(t, db, "TZ-WARRANTY-MATCH", 7, 1001)
-	err = registrationService.BindWarrantyClaimOrderItem(matchingClaim.ID, &matchingItem.ID)
+	err = warrantyService.BindWarrantyClaimOrderItem(matchingClaim.ID, &matchingItem.ID)
 	require.NoError(t, err)
 
-	refreshed, err := repository.NewRegistrationRepository(db).FindWarrantyClaimByID(matchingClaim.ID)
+	refreshed, err := repository.NewWarrantyRepository(db).FindWarrantyClaimByID(matchingClaim.ID)
 	require.NoError(t, err)
 	require.NotNil(t, refreshed.OrderItemID)
 	assert.Equal(t, matchingItem.ID, *refreshed.OrderItemID)
 }
 
 func TestWarrantyOrderClaimRequiresVerifiedEmailChallenge(t *testing.T) {
-	db, registrationService := newTestWarrantyRegistrationService(t)
+	db, warrantyService := newTestWarrantyService(t)
 	emailSender := &recordingEmailSender{}
-	registrationService.ConfigureEmailChallenges(
+	warrantyService.ConfigureEmailChallenges(
 		repository.NewEmailChallengeRepository(db),
 		"test-email-secret",
 		emailSender,
 	)
-	registrationService.ConfigureEmailBaseURL("https://api.example.test")
+	warrantyService.ConfigureEmailBaseURL("https://api.example.test")
 
 	order := orderdomain.Order{
 		OrderNumber:   "TZ-WARRANTY-VERIFIED",
@@ -113,13 +113,13 @@ func TestWarrantyOrderClaimRequiresVerifiedEmailChallenge(t *testing.T) {
 	order.ShippingAddress.Email = "rider@example.test"
 	require.NoError(t, db.Create(&order).Error)
 
-	_, err := registrationService.CreateWarrantyClaimForOrder(WarrantyClaimByOrderInput{
+	_, err := warrantyService.CreateWarrantyClaimForOrder(WarrantyClaimByOrderInput{
 		OrderNumber: "TZ-WARRANTY-VERIFIED",
 		Email:       "rider@example.test",
 	})
 	require.ErrorIs(t, err, ErrWarrantyVerificationRequired)
 
-	require.NoError(t, registrationService.RequestWarrantyOrderVerification(order.OrderNumber, order.ShippingAddress.Email))
+	require.NoError(t, warrantyService.RequestWarrantyOrderVerification(order.OrderNumber, order.ShippingAddress.Email))
 	require.Len(t, emailSender.bodies, 1)
 	verificationURL := strings.TrimSpace(strings.Split(emailSender.bodies[0], "\n\n")[1])
 	parsedVerificationURL, err := url.Parse(verificationURL)
@@ -127,8 +127,8 @@ func TestWarrantyOrderClaimRequiresVerifiedEmailChallenge(t *testing.T) {
 	verificationToken := parsedVerificationURL.Query().Get("verification_token")
 	require.NotEmpty(t, verificationToken)
 
-	require.NoError(t, registrationService.ValidateWarrantyOrderToken(verificationToken))
-	claim, err := registrationService.CreateWarrantyClaimForOrder(WarrantyClaimByOrderInput{
+	require.NoError(t, warrantyService.ValidateWarrantyOrderToken(verificationToken))
+	claim, err := warrantyService.CreateWarrantyClaimForOrder(WarrantyClaimByOrderInput{
 		OrderNumber:       order.OrderNumber,
 		Email:             order.ShippingAddress.Email,
 		VerificationToken: verificationToken,
@@ -137,7 +137,7 @@ func TestWarrantyOrderClaimRequiresVerifiedEmailChallenge(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, order.OrderNumber, claim.OrderNumber)
 
-	_, err = registrationService.CreateWarrantyClaimForOrder(WarrantyClaimByOrderInput{
+	_, err = warrantyService.CreateWarrantyClaimForOrder(WarrantyClaimByOrderInput{
 		OrderNumber:       order.OrderNumber,
 		Email:             order.ShippingAddress.Email,
 		VerificationToken: verificationToken,
@@ -146,7 +146,7 @@ func TestWarrantyOrderClaimRequiresVerifiedEmailChallenge(t *testing.T) {
 	require.ErrorIs(t, err, ErrWarrantyVerificationRequired)
 }
 
-func newTestWarrantyRegistrationService(t *testing.T) (*gorm.DB, *RegistrationService) {
+func newTestWarrantyService(t *testing.T) (*gorm.DB, *WarrantyService) {
 	t.Helper()
 
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
@@ -164,23 +164,21 @@ func newTestWarrantyRegistrationService(t *testing.T) (*gorm.DB, *RegistrationSe
 	require.NoError(t, db.AutoMigrate(
 		&orderdomain.Order{},
 		&orderdomain.OrderItem{},
-		&registration.ProductRegistration{},
-		&registration.WarrantyClaim{},
-		&registration.WarrantyServiceRecord{},
+		&warranty.WarrantyClaim{},
+		&warranty.WarrantyServiceRecord{},
 		&verification.EmailChallenge{},
 	))
 
-	return db, NewRegistrationService(
-		repository.NewRegistrationRepository(db),
-		nil,
+	return db, NewWarrantyService(
+		repository.NewWarrantyRepository(db),
 		repository.NewOrderRepository(db),
 	)
 }
 
-func seedWarrantyClaim(t *testing.T, db *gorm.DB, orderNumber string, userID uint) registration.WarrantyClaim {
+func seedWarrantyClaim(t *testing.T, db *gorm.DB, orderNumber string, userID uint) warranty.WarrantyClaim {
 	t.Helper()
 
-	claim := registration.WarrantyClaim{
+	claim := warranty.WarrantyClaim{
 		UserID:      userID,
 		IssueType:   "warranty",
 		Description: "wheel issue",

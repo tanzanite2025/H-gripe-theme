@@ -148,7 +148,7 @@ Cookie: locale=de; display_currency=EUR
 **Resolution rules:**
 - Country resolves from explicit `country`, then trusted proxy headers such as `CF-IPCountry`, then `ZZ`.
 - Locale resolves from request, cookie, `Accept-Language`, market default, then English.
-- Display currency resolves from request, cookie, market default, configured display currencies, then the primary pricing currency.
+- Display currency resolves from request, cookie, market default, market display currencies, then the backend entry currency.
 - Display currency is only for browsing and conversion labels. Product, shipping, checkout, payment, refund, and callbacks use backend product/variant/order pricing data.
 - The currency `base` is the backend primary pricing currency used for admin-entered product, SKU, and shipping amounts. The examples below use `CNY`.
 
@@ -266,23 +266,55 @@ The response shape is `{ "code": 0, "data": <product>, "context": <storefront_co
 GET /api/v1/settings/currency-policy
 ```
 
-`primary_currency` is the backend pricing currency for admin-entered product,
-SKU, shipping, coupon-threshold, and order-threshold amounts.
-`display_currencies` are secondary display currencies filled from cached backend
-exchange rates. They are not payment-method or gateway capability settings.
-The admin pricing-currency page is the source of truth for both values: it
-defines one primary base currency and the explicit secondary display currencies
-that the backend exchange-rate sync reads as runtime targets. The API management
-page only stores the provider enable flag/API key and can trigger cache sync.
+`primary_currency` is the backend entry currency for admin-entered product,
+SKU, shipping, coupon-threshold, and order-threshold amounts. Product and SKU
+`currency`, `price`, and `sale_price` stay in this original currency and are not
+rewritten by exchange-rate sync.
+
+`display_currencies` remains in this response as a backward-compatible field,
+but global currency policy no longer owns storefront display currencies. The
+source of truth for storefront display currencies is the admin "市场与本地化语种"
+market TAB: each enabled market defines its `default_currency` and
+`display_currencies`.
+
+Changing `primary_currency` does not silently convert existing product amounts.
+Admins should use the backend currency audit on the currency page to find
+products or SKUs whose saved currency no longer matches the backend entry
+currency and then correct those records deliberately.
 
 **Response:**
 ```json
 {
   "data": {
     "primary_currency": "CNY",
-    "display_currencies": ["USD", "EUR", "GBP"],
+    "display_currencies": [],
     "available_currencies": [
       {"code": "CNY", "name": "Chinese Yuan", "minor_units": 2}
+    ]
+  }
+}
+```
+
+### Admin Backend Entry Currency Audit
+```http
+GET /api/admin/settings/currency-policy/audit
+```
+
+Returns products and SKUs whose saved `currency` differs from the current
+backend entry currency. This is the required safety check after changing
+`primary_currency`; the endpoint reports mismatches but does not convert or
+rewrite amounts.
+
+**Response:**
+```json
+{
+  "audit": {
+    "expected_currency": "USD",
+    "product_mismatch_count": 12,
+    "variant_mismatch_count": 12,
+    "total_mismatch_count": 24,
+    "samples": [
+      {"kind": "product", "id": 101, "sku": "RIM-CNY", "name": "Old RMB Product", "currency": "CNY"}
     ]
   }
 }
@@ -296,7 +328,9 @@ GET /api/v1/currency/exchange-rates?base=CNY
 Nuxt and other clients may read cached backend rates for metadata or tooling
 screens only. Normal product browsing should consume display prices returned by
 product/shipping APIs. Clients must not call the third-party exchange-rate
-provider or receive its API key.
+provider or receive its API key. The exchange-rate API base is the backend entry
+currency; quote targets are the unique `default_currency` and
+`display_currencies` from enabled storefront markets, excluding the base.
 
 **Response:**
 ```json
@@ -328,8 +362,8 @@ Content-Type: application/json
 This admin helper reads backend cached rates and returns secondary display price
 values for product, SKU, and shipping pricing forms. It is a pricing helper, not
 a payment-method or gateway-currency endpoint. If `quote_currencies` is omitted,
-the secondary display currencies saved by the admin pricing-currency page are
-used through the ExchangeRate-API quote currency setting.
+the enabled storefront market display currencies are used through the
+ExchangeRate-API quote target resolver.
 
 Product and SKU forms persist converted values as `display_prices` lists.
 Shipping templates and rules persist converted values as
@@ -471,8 +505,7 @@ Accept-Language: en
 **Response:**
 ```json
 {
-  "brand_title": "Example Brand",
-  "site_name": "Example Brand",
+  "site_name": "Example Site",
   "site_description": "Premium products",
   "site_logo": "https://...",
   "contact_email": "info@example.com",
@@ -480,7 +513,15 @@ Accept-Language: en
 }
 ```
 
-`site_name` is retained as a legacy alias. New admin and storefront branding should use `brand_title`.
+`site_name` is the single storefront site name used by the admin settings panel and public storefront.
+
+### Get Why This Name Page Settings
+```http
+GET /api/v1/settings/website-name?locale=en
+```
+
+Returns the localized content for the Nuxt `Why This Name` page. The public API
+falls back to English for a supported locale without saved content.
 
 ## i18n Endpoints
 
@@ -695,6 +736,55 @@ GET /sitemap-{locale}.xml
   </url>
 </urlset>
 ```
+
+---
+
+## Warranty Endpoints
+
+Warranty status is based on a user's shipped order. Product registration,
+barcode, serial-number, and product-code lookup endpoints do not exist.
+
+### Get Warranty Status for a Shipped Order
+```http
+GET /api/v1/warranty/orders/:order_number
+Cookie: auth_token=<http_only_cookie>
+```
+
+Returns the shipped items, ship date, warranty period, expiry date, remaining
+time, and service records for the authenticated user's order.
+
+### Request Warranty Claim Verification
+```http
+POST /api/v1/warranty/verify-order
+Content-Type: application/json
+
+{
+  "order_number": "TZ202608230001",
+  "email": "user@example.com",
+  "captcha_token": ""
+}
+```
+
+The endpoint returns a generic accepted response and sends a one-time email
+verification link only when the order and email match.
+
+### Verify Warranty Claim Token
+```http
+GET /api/v1/warranty/verify/:token
+```
+
+### Submit Warranty Claim
+```http
+POST /api/v1/warranty/claim
+Content-Type: multipart/form-data
+```
+
+The multipart request contains `order_number`, `email`,
+`verification_token`, `issue_description`, and optional image/video fields.
+
+Admin processing is under `/api/admin/warranty/...`. The admin shipped-order
+view reads `orders` and only writes optional after-sales evidence to
+`shipment_records`.
 
 ---
 

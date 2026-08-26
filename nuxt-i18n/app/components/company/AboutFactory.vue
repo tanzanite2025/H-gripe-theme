@@ -5,7 +5,7 @@
       <div v-for="item in factoryIntro" :key="item.title" class="premium-card p-6 flex flex-col gap-3">
 
         <div>
-          <h3 class="text-lg font-bold text-white mb-2">{{ item.title }}</h3>
+          <h3 class="text-lg font-bold tz-text-primary mb-2">{{ item.title }}</h3>
           <p class="text-sm tz-text-secondary leading-relaxed">{{ item.desc }}</p>
         </div>
       </div>
@@ -13,8 +13,8 @@
 
     <!-- Process Section Header -->
     <div class="text-center mb-8 lg:mb-12 relative">
-        <div class="inline-flex items-center justify-center w-12 h-1 mb-4 rounded-full bg-gradient-to-r from-teal-500 to-blue-500"></div>
-        <h2 class="text-2xl sm:text-3xl font-bold text-white mb-2">Manufacturing Process</h2>
+        <div class="inline-flex items-center justify-center w-12 h-1 mb-4 rounded-full bg-emerald-500"></div>
+        <h2 class="text-2xl sm:text-3xl font-bold tz-text-primary mb-2">Manufacturing Process</h2>
         <p class="tz-text-secondary max-w-2xl mx-auto">From raw material to final packing—precision at every step.</p>
     </div>
 
@@ -26,7 +26,7 @@
         class="premium-card overflow-hidden group flex flex-col h-full"
       >
           <!-- Image -->
-          <div class="relative aspect-[4/3] overflow-hidden bg-slate-800 shrink-0">
+          <div class="relative aspect-[4/3] overflow-hidden tz-surface-panel shrink-0">
             <img 
               :src="step.img" 
               :alt="step.fullTitle" 
@@ -34,16 +34,16 @@
               loading="lazy"
               decoding="async"
             >
-            <div class="absolute inset-0 bg-gradient-to-t from-slate-900/40 to-transparent"></div>
+            <div class="absolute inset-0 bg-black/20"></div>
             <!-- Step Badge -->
-            <div class="absolute top-3 left-3 bg-slate-900/80 backdrop-blur border border-white/10 text-white text-xs font-mono font-bold px-2 py-1 rounded">
+            <div class="absolute top-3 left-3 tz-surface-panel backdrop-blur border tz-border-subtle tz-text-primary text-xs font-mono font-bold px-2 py-1 rounded">
               Step {{ step.step }}
             </div>
           </div>
           
           <!-- Content -->
           <div class="p-5 flex flex-col flex-1">
-            <h3 class="text-base font-bold text-white mb-2 group-hover:text-teal-400 transition-colors">
+            <h3 class="text-base font-bold tz-text-primary mb-2 group-hover:text-emerald-700 transition-colors">
               {{ step.fullTitle }}
             </h3>
             <p class="text-sm tz-text-secondary leading-relaxed">

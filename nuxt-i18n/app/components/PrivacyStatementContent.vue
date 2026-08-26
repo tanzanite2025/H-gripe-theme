@@ -1,20 +1,20 @@
 <template>
   <div class="text-sm tz-text-secondary leading-relaxed space-y-4">
-    <p class="font-semibold text-white">
+    <p class="font-semibold tz-text-primary">
       {{ $t('privacy.policyHeading', 'Privacy Policy for E-Commerce Website') }}
     </p>
     <p class="tz-text-muted text-xs">
       {{ $t('privacy.effectiveDate', 'Effective Date: [2025/11/11]') }}
     </p>
 
-    <p class="font-semibold text-white mt-4">
+    <p class="font-semibold tz-text-primary mt-4">
       {{ $t('privacy.section1Title', '1. Introduction') }}
     </p>
     <p>
       {{ introductionText }}
     </p>
 
-    <p class="font-semibold text-white mt-4">
+    <p class="font-semibold tz-text-primary mt-4">
       {{ $t('privacy.section2Title', '2. Information We Collect') }}
     </p>
     <p>
@@ -73,7 +73,7 @@
       </li>
     </ul>
 
-    <p class="font-semibold text-white mt-4">
+    <p class="font-semibold tz-text-primary mt-4">
       {{ $t('privacy.section3Title', '3. How We Use Your Information') }}
     </p>
     <p>
@@ -112,7 +112,7 @@
       </li>
     </ul>
 
-    <p class="font-semibold text-white mt-4">
+    <p class="font-semibold tz-text-primary mt-4">
       {{ $t('privacy.section4Title', '4. Sharing Your Information') }}
     </p>
     <p>
@@ -153,7 +153,7 @@
       }}
     </p>
 
-    <p class="font-semibold text-white mt-4">
+    <p class="font-semibold tz-text-primary mt-4">
       {{ $t('privacy.section5Title', '5. Cookies and Tracking Technologies') }}
     </p>
     <p>
@@ -184,7 +184,7 @@
       }}
     </p>
 
-    <p class="font-semibold text-white mt-4">
+    <p class="font-semibold tz-text-primary mt-4">
       {{ $t('privacy.section6Title', '6. Data Security') }}
     </p>
     <p>
@@ -196,7 +196,7 @@
       }}
     </p>
 
-    <p class="font-semibold text-white mt-4">
+    <p class="font-semibold tz-text-primary mt-4">
       {{ $t('privacy.section7Title', '7. Your Rights') }}
     </p>
     <p>
@@ -250,7 +250,7 @@
       }}
     </p>
 
-    <p class="font-semibold text-white mt-4">
+    <p class="font-semibold tz-text-primary mt-4">
       {{ $t('privacy.section8Title', '8. International Transfers') }}
     </p>
     <p>
@@ -262,7 +262,7 @@
       }}
     </p>
 
-    <p class="font-semibold text-white mt-4">
+    <p class="font-semibold tz-text-primary mt-4">
       {{ $t('privacy.section9Title', '9. Changes to This Policy') }}
     </p>
     <p>

@@ -316,7 +316,8 @@ func (s *CheckoutService) resolveOrderFXSnapshot(
 	}
 
 	if exchangeRates != nil {
-		if record, err := exchangeRates.Find(baseCurrency, orderCurrency); err == nil && record.Rate > 0 {
+		now := time.Now().UTC()
+		if record, err := exchangeRates.FindFresh(baseCurrency, orderCurrency, now); err == nil && record.Rate > 0 {
 			return currency.OrderFXSnapshot{
 				Version:         currency.OrderFXSnapshotVersion,
 				BaseCurrency:    baseCurrency,
@@ -327,7 +328,7 @@ func (s *CheckoutService) resolveOrderFXSnapshot(
 				RateFetchedAt:   snapshotTimePtr(record.FetchedAt),
 			}, nil
 		}
-		if record, err := exchangeRates.Find(orderCurrency, baseCurrency); err == nil && record.Rate > 0 {
+		if record, err := exchangeRates.FindFresh(orderCurrency, baseCurrency, now); err == nil && record.Rate > 0 {
 			return currency.OrderFXSnapshot{
 				Version:         currency.OrderFXSnapshotVersion,
 				BaseCurrency:    baseCurrency,

@@ -7,14 +7,14 @@
         @click.self="handleClose"
       >
         <div
-          class="absolute inset-0 bg-[#030406]/82 backdrop-blur-sm"
+          class="absolute inset-0 bg-[rgba(20,32,43,0.22)] backdrop-blur-sm"
           aria-hidden="true"
           @click="handleClose"
         />
 
         <section
           ref="modalElement"
-          class="quickbuy-contact-service-modal-shell tz-mobile-dialog-surface relative flex max-h-[calc(100dvh-1rem)] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-[#101116] text-white shadow-[0_30px_90px_rgba(0,0,0,0.66)]"
+          class="quickbuy-contact-service-modal-shell tz-mobile-dialog-surface tz-surface-card relative flex max-h-[calc(100dvh-1rem)] w-full max-w-6xl flex-col overflow-hidden rounded-2xl tz-text-primary shadow-[0_30px_90px_rgba(20,32,43,0.16)]"
           role="dialog"
           aria-modal="true"
           :aria-labelledby="modalTitleId"
@@ -110,12 +110,12 @@ onBeforeUnmount(() => {
 }
 
 .quickbuy-contact-service-modal__header {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.085);
-  background: linear-gradient(180deg, #24262e, #1d1f26);
+  border-bottom: 1px solid var(--tz-border-subtle);
+  background: var(--tz-surface-subtle);
 }
 
 .quickbuy-contact-service-modal__eyebrow {
-  color: rgba(181, 255, 109, 0.82);
+  color: rgba(5, 150, 105, 0.82);
   font-size: 0.625rem;
   font-weight: 800;
   letter-spacing: 0.18em;
@@ -125,7 +125,7 @@ onBeforeUnmount(() => {
 
 .quickbuy-contact-service-modal__title {
   margin: 0.25rem 0 0;
-  color: #f8fafc;
+  color: var(--tz-text-primary);
   font-size: 1rem;
   font-weight: 750;
   letter-spacing: 0;
@@ -133,7 +133,7 @@ onBeforeUnmount(() => {
 }
 
 .quickbuy-contact-service-modal__body {
-  background: #0b0b0e;
+  background: var(--tz-form-panel-surface);
 }
 
 .quickbuy-contact-service-modal__body :deep(.contact-service-entry) {

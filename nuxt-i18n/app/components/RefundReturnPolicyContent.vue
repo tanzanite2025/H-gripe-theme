@@ -205,7 +205,7 @@ const retryPolicy = () => {
 
 .refund-return-policy-content__title {
   margin: 0 0 0.8rem;
-  color: #ffffff;
+  color: var(--tz-text-primary);
   font-size: clamp(1.35rem, 2vw, 2rem);
   font-weight: 700;
   line-height: 1.2;
@@ -232,7 +232,7 @@ const retryPolicy = () => {
 
 .refund-return-policy-content__section-title {
   margin: 0 0 0.75rem;
-  color: #ffffff;
+  color: var(--tz-text-primary);
   font-size: 1.15rem;
   font-weight: 700;
   line-height: 1.3;
@@ -256,7 +256,7 @@ const retryPolicy = () => {
   overflow: hidden;
   border: 1px solid rgba(148, 163, 184, 0.18);
   border-radius: 0.75rem;
-  background: rgba(15, 23, 42, 0.45);
+  background: var(--tz-image-loading-surface);
 }
 
 .refund-return-policy-content__image {
@@ -293,7 +293,7 @@ const retryPolicy = () => {
 }
 
 .refund-return-policy-content__link {
-  color: #5eead4;
+  color: var(--tz-site-accent);
   text-decoration: underline;
   text-underline-offset: 0.18em;
 }

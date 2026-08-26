@@ -14,6 +14,14 @@ var ErrSettingInvalid = errors.New("setting value is invalid")
 
 const maskedSettingValue = "********"
 
+var supportedSocialSettingKeys = map[string]struct{}{
+	"facebook":  {},
+	"instagram": {},
+	"x":         {},
+	"youtube":   {},
+	"reddit":    {},
+}
+
 type AdminSettingsService struct {
 	settings *SettingService
 }
@@ -35,7 +43,9 @@ func (s *AdminSettingsService) ListSettings(locale, group string) ([]setting.Set
 	if err != nil {
 		return nil, err
 	}
-	return maskSensitiveSettings(FilterDomainManagedSettings(settings)), nil
+	settings = FilterDomainManagedSettings(settings)
+	settings = filterSupportedSocialSettings(settings)
+	return maskSensitiveSettings(settings), nil
 }
 
 func (s *AdminSettingsService) GetSetting(key, locale string) (*setting.Setting, error) {
@@ -129,6 +139,9 @@ func (s *AdminSettingsService) GetByGroup(group, locale string) ([]setting.Setti
 	if err != nil {
 		return nil, err
 	}
+	if strings.EqualFold(strings.TrimSpace(group), "social") {
+		items = filterSupportedSocialSettings(items)
+	}
 	return maskSensitiveSettings(items), nil
 }
 
@@ -150,6 +163,13 @@ func (s *AdminSettingsService) normalizeRequest(req setting.UpdateSettingRequest
 }
 
 func validateSettingRequest(req setting.UpdateSettingRequest) error {
+	if strings.EqualFold(strings.TrimSpace(req.Group), "social") {
+		key := strings.ToLower(strings.TrimSpace(req.Key))
+		if _, ok := supportedSocialSettingKeys[key]; !ok {
+			return fmt.Errorf("%w: unsupported social setting %q", ErrSettingInvalid, req.Key)
+		}
+	}
+
 	if !strings.HasSuffix(strings.TrimSpace(req.Key), "_endpoint") {
 		return nil
 	}
@@ -161,6 +181,20 @@ func validateSettingRequest(req setting.UpdateSettingRequest) error {
 		return fmt.Errorf("%w: %v", ErrSettingInvalid, err)
 	}
 	return nil
+}
+
+func filterSupportedSocialSettings(items []setting.Setting) []setting.Setting {
+	filtered := make([]setting.Setting, 0, len(items))
+	for _, item := range items {
+		if !strings.EqualFold(strings.TrimSpace(item.Group), "social") {
+			filtered = append(filtered, item)
+			continue
+		}
+		if _, ok := supportedSocialSettingKeys[strings.ToLower(strings.TrimSpace(item.Key))]; ok {
+			filtered = append(filtered, item)
+		}
+	}
+	return filtered
 }
 
 func validateCustomsLookupEndpoint(value string) error {

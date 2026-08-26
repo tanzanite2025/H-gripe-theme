@@ -48,7 +48,9 @@ The new hub must route into these same facts. It must not create a second chat t
 - Mobile: bottom action sheet inside the chat modal shell, above the input bar.
 - Desktop: compact popover anchored above the `+` button.
 - Both layouts must render the same four actions in the same order.
-- The visual style should follow the current chat theme: black surface, white text, theme green selected/hover state, no blue gradient.
+- The visual style should follow the storefront light-theme palette: white card surface,
+  Slate-100 inset regions, Slate-900 primary text, and Emerald-600/Emerald-700
+  selected/hover states. No blue gradient is introduced.
 - Each action should use an icon plus a short label. Do not use long explanatory copy inside the hub.
 
 ### 3.3 Action Labels
@@ -232,6 +234,8 @@ The Products tab can keep its richer commerce workflow and existing product resu
 
 Recommended `product` metadata should include more than a URL:
 
+The example uses the storefront's only product permalink: `/products/:slug`.
+
 ```json
 {
   "kind": "product_reference",
@@ -240,7 +244,7 @@ Recommended `product` metadata should include more than a URL:
   "title": "Product title",
   "slug": "product-slug",
   "sku": "SKU-001",
-  "url": "/shop/product-slug",
+  "url": "/products/product-slug",
   "thumbnail": "/uploads/...",
   "price": "$199.00",
   "price_value": 199
@@ -298,7 +302,9 @@ Technical:
 
 Visual:
 
-- The hub uses black/card surfaces and theme green state.
+- The hub uses the storefront light-theme palette: white card surfaces, Slate-100
+  inset regions, Slate-900 primary text, and Emerald-600/Emerald-700 interaction
+  states.
 - No blue gradient is introduced.
 - Mobile action sheet does not cover the text input in a way that prevents closing or typing.
 - Desktop popover remains visually subordinate to the chat header and message body.

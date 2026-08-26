@@ -54,16 +54,23 @@ function collectStaticTranslationRefs(): Map<string, string[]> {
   const refs = new Map<string, string[]>()
   const appDir = path.resolve(process.cwd(), 'app')
   const callPattern = /(?:\$t|\bt|\btm)\(\s*(['"`])([^'"`]+)\1/g
+  const routeMetaPattern = /\bfooterLabelKey\s*:\s*(['"`])([^'"`]+)\1/g
+
+  const addRef = (key: string, filePath: string, text: string, offset: number) => {
+    if (!/^[A-Za-z0-9_.-]+$/.test(key)) return
+    if (!refs.has(key)) refs.set(key, [])
+    const line = text.slice(0, offset).split(/\r?\n/).length
+    refs.get(key)?.push(`${path.relative(process.cwd(), filePath)}:${line}`)
+  }
 
   for (const filePath of walkAppFiles(appDir)) {
     const text = fs.readFileSync(filePath, 'utf8')
     let match: RegExpExecArray | null
     while ((match = callPattern.exec(text))) {
-      const key = match[2]
-      if (!/^[A-Za-z0-9_.-]+$/.test(key)) continue
-      if (!refs.has(key)) refs.set(key, [])
-      const line = text.slice(0, match.index).split(/\r?\n/).length
-      refs.get(key)?.push(`${path.relative(process.cwd(), filePath)}:${line}`)
+      addRef(match[2], filePath, text, match.index)
+    }
+    while ((match = routeMetaPattern.exec(text))) {
+      addRef(match[2], filePath, text, match.index)
     }
   }
 

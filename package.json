@@ -4,6 +4,8 @@
   "scripts": {
     "dev": "powershell -ExecutionPolicy Bypass -File ./start-dev.ps1",
     "dev:stop": "powershell -ExecutionPolicy Bypass -File ./start-dev.ps1 -StopOnly",
-    "dev:ports": "powershell -ExecutionPolicy Bypass -File ./start-dev.ps1 -PortsOnly"
+    "dev:ports": "powershell -ExecutionPolicy Bypass -File ./start-dev.ps1 -PortsOnly",
+    "generate:website-name-defaults": "node scripts/generate-website-name-defaults.mjs",
+    "check:website-name-defaults": "node scripts/generate-website-name-defaults.mjs --check"
   }
 }

@@ -1,11 +1,11 @@
 <template>
   <div class="space-y-8">
     <!-- 1. Intro Card: Basics & Definitions -->
-    <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 text-center">
+    <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6 text-center">
       <div class="mb-6 flex justify-center">
          <button
           type="button"
-          class="inline-flex items-center justify-center rounded-full bg-[var(--tz-brand-primary)] px-6 py-2 text-xs font-bold uppercase tracking-wider text-slate-950 shadow-[0_4px_14px_rgba(181,255,109,0.22)] hover:shadow-[0_8px_22px_-6px_rgba(181,255,109,0.45)] hover:-translate-y-0.5 transition-all"
+          class="inline-flex items-center justify-center rounded-full bg-[var(--tz-action-primary)] px-6 py-2 text-xs font-bold uppercase tracking-wider text-white shadow-[0_4px_14px_rgba(15,23,42,0.16)] hover:bg-[var(--tz-action-primary-hover)] hover:shadow-[0_8px_22px_-6px_rgba(15,23,42,0.24)] hover:-translate-y-0.5 transition-all"
           @click="emit('openTireProducts')"
         >
           Check out tires
@@ -17,12 +17,12 @@
           src="/public/tiresizecharts/tiresize/schwalbe-tiresize.webp"
           alt="Carbon and Schwalbe tire size chart overview"
           :zoomOnClick="true"
-          class="rounded-xl overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.5)]"
+          class="rounded-xl overflow-hidden shadow-md"
         />
       </div>
 
       <div class="mb-8">
-         <h3 class="text-xl font-bold text-slate-100 mb-4 flex items-center justify-center gap-2">
+         <h3 class="text-xl font-bold tz-text-secondary mb-4 flex items-center justify-center gap-2">
            Tire Size Standards
          </h3>
          <p class="tz-text-secondary text-sm leading-relaxed mb-6 max-w-2xl mx-auto">
@@ -32,27 +32,27 @@
          <!-- Definitions Grid -->
          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-left md:text-center">
             <!-- ETRTO -->
-            <div class="bg-slate-800/40 p-4 rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.5)] flex flex-col items-center">
-               <strong class="block text-[var(--tz-brand-primary)] text-sm font-bold uppercase tracking-wider mb-2">ETRTO (ISO)</strong>
-               <div class="text-xs tz-text-primary font-mono bg-slate-900/50 px-2 py-1 rounded mb-3">e.g. 37-622</div>
+            <div class="tz-surface-panel p-4 rounded-xl shadow-md flex flex-col items-center">
+               <strong class="block text-[var(--tz-site-accent)] text-sm font-bold uppercase tracking-wider mb-2">ETRTO (ISO)</strong>
+               <div class="text-xs tz-text-primary font-mono tz-surface-panel px-2 py-1 rounded mb-3">e.g. 37-622</div>
                <p class="text-xs tz-text-secondary leading-relaxed">
                  The modern European standard. Indicates <strong>Width (37mm)</strong> and <strong>Inner Diameter (622mm)</strong>. This is the most unambiguous and recommended method.
                </p>
             </div>
 
             <!-- Inch -->
-            <div class="bg-slate-800/40 p-4 rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.5)] flex flex-col items-center">
+            <div class="tz-surface-panel p-4 rounded-xl shadow-md flex flex-col items-center">
                <strong class="block text-amber-400 text-sm font-bold uppercase tracking-wider mb-2">Inch (Imperial)</strong>
-               <div class="text-xs tz-text-primary font-mono bg-slate-900/50 px-2 py-1 rounded mb-3">e.g. 28 x 1.40</div>
+               <div class="text-xs tz-text-primary font-mono tz-surface-panel px-2 py-1 rounded mb-3">e.g. 28 x 1.40</div>
                <p class="text-xs tz-text-secondary leading-relaxed">
                  Traditional notation. Indicates approx. <strong>Outer Diameter (28")</strong> and <strong>Width (1.40")</strong>. Often imprecise (e.g., 26" can refer to multiple different diameters).
                </p>
             </div>
 
             <!-- French -->
-            <div class="bg-slate-800/40 p-4 rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.5)] flex flex-col items-center">
-               <strong class="block text-emerald-300 text-sm font-bold uppercase tracking-wider mb-2">French</strong>
-               <div class="text-xs tz-text-primary font-mono bg-slate-900/50 px-2 py-1 rounded mb-3">e.g. 700 x 35C</div>
+            <div class="tz-surface-panel p-4 rounded-xl shadow-md flex flex-col items-center">
+               <strong class="block text-emerald-700 text-sm font-bold uppercase tracking-wider mb-2">French</strong>
+               <div class="text-xs tz-text-primary font-mono tz-surface-panel px-2 py-1 rounded mb-3">e.g. 700 x 35C</div>
                <p class="text-xs tz-text-secondary leading-relaxed">
                  Indicates approx. <strong>Outer Diameter (700mm)</strong> and <strong>Width (35mm)</strong>. The letter (C) hints at the inner diameter (622mm). Common in Road/Gravel.
                </p>
@@ -62,22 +62,22 @@
     </div>
 
     <!-- 2. Comparison Table Card -->
-    <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 text-center">
-       <h3 class="text-lg font-bold text-slate-100 mb-6 flex items-center justify-center gap-2">
+    <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6 text-center">
+       <h3 class="text-lg font-bold tz-text-secondary mb-6 flex items-center justify-center gap-2">
          Notation Comparison Table
        </h3>
-       <div class="overflow-x-auto rounded-xl bg-slate-950/40 shadow-[0_4px_16px_rgba(0,0,0,0.5)] inline-block w-full max-w-4xl">
+       <div class="overflow-x-auto rounded-xl tz-surface-panel shadow-md inline-block w-full max-w-4xl">
         <table class="min-w-full text-left text-xs sm:text-sm tz-text-secondary">
-          <thead class="bg-slate-900/80">
+          <thead class="tz-surface-panel">
             <tr>
               <th class="px-4 py-3 font-bold tz-text-primary text-center">Dimension</th>
-              <th class="px-4 py-3 font-bold text-[var(--tz-brand-primary)] text-center">ETRTO</th>
+              <th class="px-4 py-3 font-bold text-[var(--tz-site-accent)] text-center">ETRTO</th>
               <th class="px-4 py-3 font-bold text-amber-400 text-center">Inch</th>
-              <th class="px-4 py-3 font-bold text-emerald-300 text-center">French</th>
+              <th class="px-4 py-3 font-bold text-emerald-700 text-center">French</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-800 bg-slate-800/20">
-            <tr class="hover:bg-slate-800/40 transition-colors">
+          <tbody class="divide-y divide-slate-200 tz-surface-panel">
+            <tr class="hover:tz-surface-panel transition-colors">
               <td class="px-4 py-3 font-semibold tz-text-primary text-center">Example Size</td>
               <td class="px-4 py-3 text-center font-mono tz-text-secondary">37-622</td>
               <td class="px-4 py-3 text-center font-mono tz-text-secondary">
@@ -86,19 +86,19 @@
               </td>
               <td class="px-4 py-3 text-center font-mono tz-text-secondary">700 x 35C</td>
             </tr>
-            <tr class="hover:bg-slate-800/40 transition-colors">
+            <tr class="hover:tz-surface-panel transition-colors">
               <td class="px-4 py-3 font-semibold tz-text-primary text-center">Outer Diameter</td>
               <td class="px-4 py-3 text-center tz-text-muted">-</td>
               <td class="px-4 py-3 text-center font-mono tz-text-secondary">~ 28 Inch</td>
               <td class="px-4 py-3 text-center font-mono tz-text-secondary">~ 700 mm</td>
             </tr>
-            <tr class="hover:bg-slate-800/40 transition-colors">
+            <tr class="hover:tz-surface-panel transition-colors">
               <td class="px-4 py-3 font-semibold tz-text-primary text-center">Inner Diameter</td>
               <td class="px-4 py-3 text-center font-mono tz-text-secondary">622 mm</td>
               <td class="px-4 py-3 text-center tz-text-muted">-</td>
               <td class="px-4 py-3 text-center tz-text-muted">-</td>
             </tr>
-            <tr class="hover:bg-slate-800/40 transition-colors">
+            <tr class="hover:tz-surface-panel transition-colors">
               <td class="px-4 py-3 font-semibold tz-text-primary text-center">Tire Width</td>
               <td class="px-4 py-3 text-center font-mono tz-text-secondary">~ 37 mm</td>
               <td class="px-4 py-3 text-center font-mono tz-text-secondary">
@@ -107,7 +107,7 @@
               </td>
               <td class="px-4 py-3 text-center font-mono tz-text-secondary">~ 35 mm</td>
             </tr>
-            <tr class="hover:bg-slate-800/40 transition-colors">
+            <tr class="hover:tz-surface-panel transition-colors">
               <td class="px-4 py-3 font-semibold tz-text-primary text-center">Tire Height</td>
               <td class="px-4 py-3 text-center tz-text-muted">-</td>
               <td class="px-4 py-3 text-center font-mono tz-text-secondary">~ 1 5/8 Inch</td>
@@ -119,11 +119,11 @@
     </div>
 
     <!-- 3. Market Sizes Card -->
-    <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 text-center">
+    <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6 text-center">
        <div class="flex items-center justify-center gap-2 mb-4">
-         <div class="h-px w-8 bg-slate-700"></div>
-         <h3 class="text-lg font-bold text-slate-100 uppercase tracking-wider">WHAT TIRE SIZES ARE AVAILABLE</h3>
-         <div class="h-px w-8 bg-slate-700"></div>
+         <div class="h-px w-8 tz-surface-panel"></div>
+         <h3 class="text-lg font-bold tz-text-secondary uppercase tracking-wider">WHAT TIRE SIZES ARE AVAILABLE</h3>
+         <div class="h-px w-8 tz-surface-panel"></div>
       </div>
 
       <div class="tire-size-availability-grid">
@@ -169,14 +169,14 @@
     </div>
 
     <!-- 4. 28 vs 29 Comparison Card -->
-    <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 text-center border-t-4 border-[var(--tz-brand-primary)]">
-       <h3 class="text-xl font-bold text-slate-100 mb-6">
+    <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6 text-center border-t-4 border-[var(--tz-site-accent)]">
+       <h3 class="text-xl font-bold tz-text-secondary mb-6">
          The "28 Inch" vs "29 Inch" Mystery
        </h3>
 
        <div class="grid md:grid-cols-2 gap-8 items-center max-w-4xl mx-auto">
-          <div class="bg-slate-900/55 rounded-xl p-5 shadow-[0_4px_16px_rgba(0,0,0,0.5)] h-full flex flex-col justify-center">
-             <strong class="block text-[var(--tz-brand-primary)] text-3xl font-bold mb-2">SAME</strong>
+          <div class="tz-surface-panel rounded-xl p-5 shadow-md h-full flex flex-col justify-center">
+             <strong class="block text-[var(--tz-site-accent)] text-3xl font-bold mb-2">SAME</strong>
              <span class="text-xs uppercase tracking-widest tz-text-muted mb-3">Inner Diameter</span>
              <p class="tz-text-primary font-mono text-lg">622 mm</p>
              <p class="text-xs tz-text-muted mt-2 leading-relaxed">
@@ -186,7 +186,7 @@
 
           <div class="text-left space-y-4">
              <div class="space-y-2">
-                <strong class="text-[var(--tz-brand-primary)] text-sm font-bold uppercase tracking-wider block">History & Context</strong>
+                <strong class="text-[var(--tz-site-accent)] text-sm font-bold uppercase tracking-wider block">History & Context</strong>
                 <p class="text-sm tz-text-secondary leading-relaxed">
                    <strong>28 Inches:</strong> The traditional European size for touring bikes.
                    <br>
@@ -562,7 +562,7 @@ const tireSizeAvailabilityColumns = [
 
 .tire-size-availability-card__header h4 {
   margin: 0;
-  color: var(--tz-brand-primary);
+  color: var(--tz-site-accent);
   font-size: 0.82rem;
   font-weight: 800;
   letter-spacing: 0;
@@ -582,8 +582,8 @@ const tireSizeAvailabilityColumns = [
 .tire-size-availability-card__chevron {
   width: 0.48rem;
   height: 0.48rem;
-  border-right: 2px solid var(--tz-brand-primary);
-  border-bottom: 2px solid var(--tz-brand-primary);
+  border-right: 2px solid var(--tz-site-accent);
+  border-bottom: 2px solid var(--tz-site-accent);
   transform: rotate(45deg) translateY(-0.08rem);
   transition: transform 0.2s ease;
 }

@@ -1,5 +1,5 @@
 <template>
-  <div class="support-rim-test-report rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-3 md:p-6">
+  <div class="support-rim-test-report rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-3 md:p-6">
     <h3 class="support-section__title text-center">Rim Test Report</h3>
 
     <p class="support-section__body mt-4 text-center">
@@ -16,7 +16,7 @@
 
     <!-- Test descriptions with global blue subtitles -->
     <div class="rim-test-card mt-6">
-      <h4 class="sizecharts-section__subheading text-sky-300 font-semibold">
+      <h4 class="sizecharts-section__subheading text-emerald-700 font-semibold">
         Strength Test
       </h4>
       <p class="support-section__body">
@@ -27,7 +27,7 @@
       <p class="support-section__body mt-2">
         <strong>Test Method:</strong>
           <span class="support-rim-test-report__method-badge inline-flex items-center gap-1.5 ml-2 px-2.5 py-0.5 rounded-md text-xs font-medium tz-text-secondary align-middle">
-          <svg class="w-3.5 h-3.5 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
           </svg>
           ISO 4210-7:2023
@@ -58,7 +58,7 @@
     </div>
 
     <div class="rim-test-card mt-4">
-      <h4 class="sizecharts-section__subheading text-sky-300 font-semibold">
+      <h4 class="sizecharts-section__subheading text-emerald-700 font-semibold">
         Impact Test
       </h4>
       <p class="support-section__body">
@@ -68,7 +68,7 @@
       <p class="support-section__body mt-2">
         <strong>Test Method:</strong>
           <span class="support-rim-test-report__method-badge inline-flex items-center gap-1.5 ml-2 px-2.5 py-0.5 rounded-md text-xs font-medium tz-text-secondary align-middle">
-          <svg class="w-3.5 h-3.5 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
           </svg>
           ISO 4210-7:2023
@@ -95,7 +95,7 @@
     </div>
 
     <div class="rim-test-card mt-4">
-      <h4 class="sizecharts-section__subheading text-sky-300 font-semibold">
+      <h4 class="sizecharts-section__subheading text-emerald-700 font-semibold">
         Radial Load Test
       </h4>
       <p class="support-section__body">
@@ -105,7 +105,7 @@
       <p class="support-section__body mt-2">
         <strong>Test Method:</strong>
           <span class="support-rim-test-report__method-badge inline-flex items-center gap-1.5 ml-2 px-2.5 py-0.5 rounded-md text-xs font-medium tz-text-secondary align-middle">
-          <svg class="w-3.5 h-3.5 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
           </svg>
           ISO 4210-7:2023
@@ -135,7 +135,7 @@
     </div>
 
     <div class="rim-test-card mt-4">
-      <h4 class="sizecharts-section__subheading text-sky-300 font-semibold">
+      <h4 class="sizecharts-section__subheading text-emerald-700 font-semibold">
         Hole Tension Test
       </h4>
       <p class="support-section__body">
@@ -146,7 +146,7 @@
       <p class="support-section__body mt-2">
         <strong>Test Method:</strong>
           <span class="support-rim-test-report__method-badge inline-flex items-center gap-1.5 ml-2 px-2.5 py-0.5 rounded-md text-xs font-medium tz-text-secondary align-middle">
-          <svg class="w-3.5 h-3.5 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
           </svg>
           ISO 4210-7:2023
@@ -179,7 +179,7 @@
     </div>
 
     <div class="rim-test-card mt-4">
-      <h4 class="sizecharts-section__subheading text-sky-300 font-semibold">
+      <h4 class="sizecharts-section__subheading text-emerald-700 font-semibold">
         Rim Cutting Pieces Test
       </h4>
       <p class="support-section__body">
@@ -217,7 +217,7 @@
     </div>
 
     <div class="rim-test-card mt-4">
-      <h4 class="sizecharts-section__subheading text-sky-300 font-semibold">
+      <h4 class="sizecharts-section__subheading text-emerald-700 font-semibold">
         X-ray Flatness Inspection
       </h4>
       <p class="support-section__body">
@@ -344,7 +344,7 @@ const cards = [
 
 <style scoped>
 .support-rim-test-report {
-  --rim-report-accent: var(--tz-brand-primary);
+  --rim-report-accent: var(--tz-site-accent);
   --rim-report-border: rgba(255, 255, 255, 0.08);
   --rim-report-soft-surface: rgba(255, 255, 255, 0.035);
 }
@@ -364,11 +364,11 @@ const cards = [
   color: var(--tz-text-secondary);
 }
 
-.support-rim-test-report .text-sky-300 {
+.support-rim-test-report .text-emerald-700 {
   color: var(--rim-report-accent) !important;
 }
 
-.support-rim-test-report .text-sky-400 {
+.support-rim-test-report .text-emerald-600 {
   color: var(--rim-report-accent) !important;
 }
 
@@ -381,13 +381,13 @@ const cards = [
 }
 
 .support-rim-test-report__method-badge {
-  border: 1px solid rgba(181, 255, 109, 0.18);
+  border: 1px solid rgba(5, 150, 105, 0.18);
   background: var(--rim-report-soft-surface);
 }
 
 .support-rim-test-report__disclaimer {
-  border: 1px solid rgba(181, 255, 109, 0.22);
-  background: rgba(181, 255, 109, 0.04);
+  border: 1px solid rgba(5, 150, 105, 0.22);
+  background: rgba(5, 150, 105, 0.04);
   color: var(--tz-text-secondary);
 }
 
@@ -395,7 +395,7 @@ const cards = [
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  border: 1px solid rgba(181, 255, 109, 0.34);
+  border: 1px solid rgba(5, 150, 105, 0.34);
   border-radius: 9999px;
   padding: 0.22rem 0.7rem;
   background: rgba(0, 0, 0, 0.22);
@@ -411,7 +411,7 @@ const cards = [
   height: 0.38rem;
   border-radius: 9999px;
   background: var(--rim-report-accent);
-  box-shadow: 0 0 10px rgba(181, 255, 109, 0.7);
+  box-shadow: 0 0 10px rgba(5, 150, 105, 0.7);
   content: '';
 }
 

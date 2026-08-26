@@ -126,14 +126,6 @@ var (
 	ErrInvalidUnsubscribeToken = errors.New("invalid unsubscribe token")
 )
 
-// Registration errors
-var (
-	ErrRegistrationNotFound = errors.New("registration not found")
-	ErrInvalidSerialNumber  = errors.New("invalid serial number")
-	ErrSerialNumberUsed     = errors.New("serial number already used")
-	ErrWarrantyExpired      = errors.New("warranty has expired")
-)
-
 // Auth/Permission errors
 var (
 	ErrUnauthorized            = errors.New("unauthorized")

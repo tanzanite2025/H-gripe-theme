@@ -8,7 +8,7 @@ export const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: 'bg-admin-selected text-admin-selected-foreground hover:bg-admin-selected/90 shadow-[var(--admin-control-selected-shadow)] [&_svg]:text-admin-selected-icon',
+        default: 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-[var(--admin-action-primary-shadow)]',
         outline: 'border-border/80 border-dashed bg-background hover:bg-muted hover:text-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 aria-expanded:bg-admin-selected aria-expanded:text-admin-selected-foreground aria-expanded:[&_svg]:text-admin-selected-icon',
         secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80 aria-expanded:bg-secondary aria-expanded:text-secondary-foreground',
         ghost: 'hover:bg-muted hover:text-foreground dark:hover:bg-muted/50 aria-expanded:bg-admin-selected aria-expanded:text-admin-selected-foreground aria-expanded:[&_svg]:text-admin-selected-icon',

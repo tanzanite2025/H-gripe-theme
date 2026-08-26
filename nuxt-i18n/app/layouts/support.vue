@@ -62,7 +62,7 @@ useHead(() => ({
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #000000;
+  background: var(--tz-surface-page);
 }
 
 .layout-main {
@@ -89,7 +89,7 @@ useHead(() => ({
   font-size: 2rem;
   font-weight: 700;
   letter-spacing: 0.02em;
-  color: #f9fafb;
+  color: var(--tz-text-primary);
   display: none !important;
 }
 

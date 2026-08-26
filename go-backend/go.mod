@@ -4,6 +4,7 @@ go 1.25.1
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
+	github.com/alicebob/miniredis/v2 v2.38.0
 	github.com/aliyun/aliyun-oss-go-sdk v3.0.2+incompatible
 	github.com/aws/aws-sdk-go-v2 v1.42.0
 	github.com/aws/aws-sdk-go-v2/config v1.32.25
@@ -36,12 +37,13 @@ require (
 	gorm.io/datatypes v1.2.7
 	gorm.io/driver/mysql v1.5.7
 	gorm.io/driver/postgres v1.5.4
+	gorm.io/driver/sqlite v1.4.3
 	gorm.io/gorm v1.30.0
 	gorm.io/plugin/dbresolver v1.6.2
 )
 
 require (
-	github.com/alicebob/miniredis/v2 v2.38.0 // indirect
+	github.com/mattn/go-sqlite3 v1.14.22 // indirect
 	github.com/richardlehane/mscfb v1.0.7 // indirect
 	github.com/richardlehane/msoleps v1.0.6 // indirect
 	github.com/tiendc/go-deepcopy v1.7.2 // indirect

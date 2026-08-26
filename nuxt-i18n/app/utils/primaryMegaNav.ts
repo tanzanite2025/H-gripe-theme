@@ -1,14 +1,9 @@
-export type PrimaryMegaNavId = 'products' | 'support' | 'company' | 'guides'
+export type PrimaryMegaNavId = 'products' | 'resources' | 'support' | 'company' | 'guides'
 
 export type PrimaryMegaNavCardSize = 'feature' | 'wide' | 'standard' | 'compact'
 
 export type PrimaryMegaNavAccent =
-  | 'mint'
-  | 'blue'
-  | 'violet'
-  | 'amber'
-  | 'rose'
-  | 'slate'
+  | 'emerald'
 
 export interface PrimaryMegaNavCard {
   /** stable id for rendering and analytics */
@@ -19,6 +14,10 @@ export interface PrimaryMegaNavCard {
   labelFallback: string
   /** display title; defaults to the translated label when omitted */
   title?: string
+  /** discover direct child index pages under this card route automatically */
+  discoverChildPages?: boolean
+  /** optional translation namespace for automatically discovered children */
+  childLabelNamespace?: string
   /** short card description for the desktop mega menu */
   description: string
   /** route path; query is supported and localized by the component */
@@ -37,8 +36,9 @@ export interface PrimaryMegaNavSection {
   labelFallback: string
   /**
    * Canonical path prefixes that make a route belong to this top-level section.
-   * Keep explicit route families in their own section: /guides stays in Guides,
-   * /support stays in Support, and /company stays in Company.
+   * Keep explicit route families in their own section: /resources stays in
+   * Resources, /guides stays in Guides, /support stays in Support, and
+   * /company stays in Company.
    */
   routePrefixes: string[]
   cards: PrimaryMegaNavCard[]
@@ -87,16 +87,16 @@ export const findPrimaryMegaNavSectionByPath = (
  * Desktop header mega-menu data.
  *
  * This is the single source of truth for top-level header navigation.
- * Legacy hub routes redirect; header panels only list concrete child routes.
- * Do not cross-list routes with another section prefix here; the current route
- * ownership and the sticky section tab bar both derive from this file.
+ * Header panels only list concrete canonical child routes. Do not cross-list
+ * routes with another section prefix here; the current route ownership and the
+ * sticky section tab bar both derive from this file.
  */
 export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
   {
     id: 'products',
-    labelKey: 'footer.menus.products',
-    labelFallback: 'Products',
-    routePrefixes: ['/shop', '/products', '/spoke-calculator', '/membershipandpoints', '/picture-warehouse', '/blog'],
+    labelKey: 'products.nav.shop',
+    labelFallback: 'Shop',
+    routePrefixes: ['/shop', '/products'],
     cards: [
       {
         id: 'shop',
@@ -107,48 +107,57 @@ export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
         to: '/shop',
         icon: 'lucide:shopping-bag',
         size: 'feature',
-        accent: 'blue',
+        accent: 'emerald',
       },
+    ],
+  },
+  {
+    id: 'resources',
+    labelKey: 'footer.menus.resources',
+    labelFallback: 'Resources',
+    routePrefixes: ['/resources'],
+    cards: [
       {
         id: 'membership-and-points',
         labelKey: 'company.nav.membershipPoints',
         labelFallback: 'Membership & Points',
         description: 'Membership, rewards, and points information.',
-        to: '/membershipandpoints',
+        to: '/resources/membershipandpoints',
         icon: 'lucide:gem',
-        size: 'compact',
-        accent: 'violet',
+        size: 'standard',
+        accent: 'emerald',
       },
       {
         id: 'picture-warehouse',
         labelKey: 'company.nav.pictureWarehouse',
         labelFallback: 'Picture Warehouse',
         description: 'Visual assets, product photos, and useful reference images.',
-        to: '/picture-warehouse',
+        to: '/resources/picture-warehouse',
         icon: 'lucide:images',
-        size: 'compact',
-        accent: 'rose',
+        size: 'standard',
+        accent: 'emerald',
       },
       {
         id: 'spoke-calculator',
         labelKey: 'support.nav.spokeCalculator',
         labelFallback: 'Spoke Calculator',
         description: 'Calculate spoke length using hub, rim, lacing, and ERD parameters.',
-        to: '/spoke-calculator',
+        to: '/resources/spoke-calculator',
         icon: 'lucide:calculator',
-        size: 'compact',
-        accent: 'mint',
+        size: 'standard',
+        accent: 'emerald',
       },
       {
         id: 'blog',
-        labelKey: 'blog.nav.all',
+        labelKey: 'footer.links.blog',
         labelFallback: 'Blog',
         title: 'Blog',
+        childLabelNamespace: 'blog.nav',
         description: 'Articles, updates, and long-form content.',
-        to: '/blog',
+        to: '/resources/blog',
         icon: 'lucide:newspaper',
-        size: 'compact',
-        accent: 'blue',
+        size: 'standard',
+        accent: 'emerald',
       },
     ],
   },
@@ -166,7 +175,7 @@ export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
         to: '/support/faqs',
         icon: 'lucide:circle-help',
         size: 'wide',
-        accent: 'mint',
+        accent: 'emerald',
       },
       {
         id: 'payment',
@@ -176,7 +185,7 @@ export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
         to: '/support/payment',
         icon: 'lucide:credit-card',
         size: 'standard',
-        accent: 'violet',
+        accent: 'emerald',
       },
       {
         id: 'shipping',
@@ -186,7 +195,7 @@ export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
         to: '/support/shipping',
         icon: 'lucide:truck',
         size: 'standard',
-        accent: 'amber',
+        accent: 'emerald',
       },
       {
         id: 'warranty',
@@ -196,7 +205,7 @@ export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
         to: '/support/warranty',
         icon: 'lucide:shield-check',
         size: 'standard',
-        accent: 'mint',
+        accent: 'emerald',
       },
       {
         id: 'warranty-check',
@@ -206,7 +215,7 @@ export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
         to: '/support/warranty-check',
         icon: 'lucide:badge-check',
         size: 'standard',
-        accent: 'blue',
+        accent: 'emerald',
       },
       {
         id: 'test-report',
@@ -216,7 +225,7 @@ export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
         to: '/support/test-report',
         icon: 'lucide:file-check-2',
         size: 'compact',
-        accent: 'slate',
+        accent: 'emerald',
       },
     ],
   },
@@ -234,7 +243,7 @@ export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
         to: '/company/ourstory',
         icon: 'lucide:sparkles',
         size: 'feature',
-        accent: 'mint',
+        accent: 'emerald',
       },
       {
         id: 'about',
@@ -244,7 +253,7 @@ export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
         to: '/company/about',
         icon: 'lucide:landmark',
         size: 'wide',
-        accent: 'blue',
+        accent: 'emerald',
       },
       {
         id: 'global-partners',
@@ -254,7 +263,7 @@ export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
         to: '/company/global-partners',
         icon: 'lucide:globe-2',
         size: 'wide',
-        accent: 'amber',
+        accent: 'emerald',
       },
       {
         id: 'oem-odm',
@@ -264,7 +273,7 @@ export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
         to: '/company/oem-odm',
         icon: 'lucide:factory',
         size: 'feature',
-        accent: 'rose',
+        accent: 'emerald',
       },
       {
         id: 'certificates',
@@ -274,7 +283,7 @@ export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
         to: '/company/certificates',
         icon: 'lucide:award',
         size: 'standard',
-        accent: 'blue',
+        accent: 'emerald',
       },
       {
         id: 'contact',
@@ -284,17 +293,7 @@ export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
         to: '/company/contact',
         icon: 'lucide:mail',
         size: 'wide',
-        accent: 'mint',
-      },
-      {
-        id: 'about-website',
-        labelKey: 'company.nav.aboutWebsite',
-        labelFallback: 'Me & This Website',
-        description: 'The website manager’s perspective on our factory and the work behind this site.',
-        to: '/company/website',
-        icon: 'lucide:user-round',
-        size: 'wide',
-        accent: 'slate',
+        accent: 'emerald',
       },
     ],
   },
@@ -312,7 +311,7 @@ export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
         to: '/guides/tireguides',
         icon: 'lucide:ruler',
         size: 'feature',
-        accent: 'blue',
+        accent: 'emerald',
       },
       {
         id: 'wheelset-buyers',
@@ -322,7 +321,7 @@ export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
         to: '/guides/wheelset-buyers',
         icon: 'lucide:map',
         size: 'wide',
-        accent: 'violet',
+        accent: 'emerald',
       },
     ],
   },

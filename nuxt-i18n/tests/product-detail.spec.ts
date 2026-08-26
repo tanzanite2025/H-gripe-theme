@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 
 const productDetailUrl = process.env.PRODUCT_DETAIL_URL
-  || '/shop/g35-carbon-rim'
+  || '/products/g35-carbon-rim'
 
 test('product detail keeps readable text and persistent information tabs', async ({ page }) => {
   const consoleErrors: string[] = []

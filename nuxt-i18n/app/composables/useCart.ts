@@ -301,8 +301,21 @@ export const useCart = () => {
     const itemId = cartItemKey(productId, variantId)
     const existingItem = cartItems.value.find(item => item.id === itemId)
     const quantityToAdd = Math.max(1, Math.floor(Number(quantity) || 1))
+    const itemCurrency = normalizeCurrencyCode(product.currency) || normalizeCurrencyCode(baseCurrency.value) || 'USD'
+    const cartCurrencies = new Set(
+      cartItems.value
+        .map(item => normalizeCurrencyCode(item.currency))
+        .filter(Boolean),
+    )
+    if (cartCurrencies.size > 0 && [...cartCurrencies].some(currency => currency !== itemCurrency)) {
+      return {
+        success: false,
+        message: `购物车已有 ${[...cartCurrencies].join(', ')} 商品，不能加入 ${itemCurrency} 商品。请先清空购物车或分开结算。`,
+      }
+    }
     const normalizedProduct = {
       ...product,
+      currency: itemCurrency,
       weight: product.weight ?? (product.weight_grams ? product.weight_grams / 1000 : undefined),
     }
     let syncPromise: Promise<void>

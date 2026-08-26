@@ -72,7 +72,7 @@
                 placeholder="#8F2028"
               />
               <label class="flex cursor-pointer items-center justify-center gap-1.5 rounded-md border border-dashed px-2 py-1.5 text-xs text-muted-foreground transition hover:border-primary/50 hover:text-foreground">
-                <input class="sr-only" type="file" accept="image/jpeg,image/png,image/webp" :disabled="swatchUploadingKey === optionKey(option)" @change="uploadSwatch($event, option)" />
+                <input class="sr-only" type="file" :accept="uploadSpecAccept('product_variant_swatch')" :disabled="swatchUploadingKey === optionKey(option)" @change="uploadSwatch($event, option)" />
                 <LoaderCircle v-if="swatchUploadingKey === optionKey(option)" class="size-3.5 animate-spin" />
                 <ImageUp v-else class="size-3.5" />
                 {{ option.swatch_url ? '更换展示图片' : '上传展示图片' }}
@@ -88,6 +88,7 @@
             </div>
           </div>
         </div>
+        <UploadSpecHint code="product_variant_swatch" />
         <p v-else class="rounded-md border border-dashed px-3 py-3 text-center text-xs text-muted-foreground">
           还没有配置展示选项；先添加颜色或图片选项，再在下方 SKU 表中选择。
         </p>
@@ -268,6 +269,8 @@ import { Switch } from '@/components/ui/switch'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import mediaApi from '@/api/media'
+import UploadSpecHint from '@/components/admin/UploadSpecHint.vue'
+import { uploadSpecAccept, validateUploadFile } from '@/lib/uploadSpecs'
 import type {
   ProductDisplayPriceResult,
   ProductSpecDefinition,
@@ -364,9 +367,16 @@ const uploadSwatch = async (event: Event, option: ProductVariantOptionValueForm)
   const key = optionKey(option)
   swatchUploadingKey.value = key
   try {
+    const validation = await validateUploadFile(file, 'product_variant_swatch')
+    if (!validation.ok) {
+      toast.error(validation.error || 'SKU 展示图片不符合上传规范')
+      return
+    }
+    if (validation.warning) toast.warning(validation.warning)
     const formData = new FormData()
     formData.append('file', file)
     formData.append('media_type', 'image')
+    formData.append('image_purpose', 'product_variant_swatch')
     const asset = await mediaApi.uploadAsset(formData)
     option.swatch_media_asset_id = asset?.id || null
     option.swatch_url = String(asset?.url || asset?.access_url || '')

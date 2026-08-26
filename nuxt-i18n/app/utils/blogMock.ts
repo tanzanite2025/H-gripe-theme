@@ -83,7 +83,7 @@ const posts: BlogPostDetail[] = [
     ],
     contentHtml:
       '<h2>What this covers</h2><p>This article explains our baseline workflow from rim inspection to final truing.</p><h3>Key steps</h3><ul><li>Rim QC before build</li><li>Spoke prep and lacing</li><li>Tension targets</li><li>Final inspection</li></ul>',
-    canonicalUrl: 'https://example.com/blog/wheelsbuild/wheelbuild-process-overview',
+    canonicalUrl: 'https://example.com/resources/blog/wheelsbuild/wheelbuild-process-overview',
   }),
   makePost({
     id: 102,
@@ -101,7 +101,7 @@ const posts: BlogPostDetail[] = [
     ],
     contentHtml:
       '<h2>Checklist</h2><ol><li>Confirm tire is hookless-rated</li><li>Verify rim internal width</li><li>Follow pressure limits</li><li>Use correct tape & valves</li></ol>',
-    canonicalUrl: 'https://example.com/blog/news/hookless-tire-compatibility-quick-guide',
+    canonicalUrl: 'https://example.com/resources/blog/news/hookless-tire-compatibility-quick-guide',
   }),
   makePost({
     id: 103,
@@ -116,7 +116,7 @@ const posts: BlogPostDetail[] = [
     translationEntries: [{ lang: 'en', id: 103, slug: 'spoke-tension-basics-for-carbon-rims' }],
     contentHtml:
       '<h2>Targets</h2><p>Always start with the rim manufacturer target range and validate with a calibrated gauge.</p>',
-    canonicalUrl: 'https://example.com/blog/wheelsbuild/spoke-tension-basics-for-carbon-rims',
+    canonicalUrl: 'https://example.com/resources/blog/wheelsbuild/spoke-tension-basics-for-carbon-rims',
   }),
   makePost({
     id: 104,
@@ -131,7 +131,7 @@ const posts: BlogPostDetail[] = [
     translationEntries: [{ lang: 'en', id: 104, slug: 'new-matte-finish-now-available' }],
     contentHtml:
       '<p>The matte finish is designed to reduce glare and fingerprints while keeping a clean look.</p>',
-    canonicalUrl: 'https://example.com/blog/news/new-matte-finish-now-available',
+    canonicalUrl: 'https://example.com/resources/blog/news/new-matte-finish-now-available',
   }),
   makePost({
     id: 105,
@@ -146,7 +146,7 @@ const posts: BlogPostDetail[] = [
     translationEntries: [{ lang: 'en', id: 105, slug: 'hub-engagement-explained' }],
     contentHtml:
       '<h2>Engagement angle</h2><p>Smaller engagement angles can feel more immediate under load.</p>',
-    canonicalUrl: 'https://example.com/blog/news/hub-engagement-explained',
+    canonicalUrl: 'https://example.com/resources/blog/news/hub-engagement-explained',
   }),
   makePost({
     id: 106,
@@ -161,7 +161,7 @@ const posts: BlogPostDetail[] = [
     translationEntries: [{ lang: 'en', id: 106, slug: 'truing-after-first-ride' }],
     contentHtml:
       '<p>After your first ride, re-check tension balance and verify no nipples have backed off.</p>',
-    canonicalUrl: 'https://example.com/blog/wheelsbuild/truing-after-first-ride',
+    canonicalUrl: 'https://example.com/resources/blog/wheelsbuild/truing-after-first-ride',
   }),
   makePost({
     id: 107,
@@ -176,7 +176,7 @@ const posts: BlogPostDetail[] = [
     translationEntries: [{ lang: 'en', id: 107, slug: 'warranty-policy-update-2025' }],
     contentHtml:
       '<p>We have clarified claim timelines and improved the documentation checklist.</p>',
-    canonicalUrl: 'https://example.com/blog/news/warranty-policy-update-2025',
+    canonicalUrl: 'https://example.com/resources/blog/news/warranty-policy-update-2025',
   }),
   makePost({
     id: 108,
@@ -191,7 +191,7 @@ const posts: BlogPostDetail[] = [
     translationEntries: [{ lang: 'en', id: 108, slug: 'nipple-prep-compound-or-oil' }],
     contentHtml:
       '<p>Use a consistent approach so tension changes are predictable and repeatable.</p>',
-    canonicalUrl: 'https://example.com/blog/wheelsbuild/nipple-prep-compound-or-oil',
+    canonicalUrl: 'https://example.com/resources/blog/wheelsbuild/nipple-prep-compound-or-oil',
   }),
   makePost({
     id: 201,
@@ -210,7 +210,7 @@ const posts: BlogPostDetail[] = [
     ],
     contentHtml:
       '<h2>Ce que vous allez apprendre</h2><p>Du contrôle de la jante au dévoilage final.</p>',
-    canonicalUrl: 'https://example.com/fr/blog/wheelsbuild/processus-montage-roues',
+    canonicalUrl: 'https://example.com/fr/resources/blog/wheelsbuild/processus-montage-roues',
   }),
   makePost({
     id: 202,
@@ -228,7 +228,7 @@ const posts: BlogPostDetail[] = [
     ],
     contentHtml:
       '<h2>Checklist</h2><ol><li>Pneu compatible hookless</li><li>Largeur interne</li><li>Pression max</li></ol>',
-    canonicalUrl: 'https://example.com/fr/blog/news/compatibilite-pneu-hookless-guide',
+    canonicalUrl: 'https://example.com/fr/resources/blog/news/compatibilite-pneu-hookless-guide',
   }),
   makePost({
     id: 301,
@@ -247,7 +247,7 @@ const posts: BlogPostDetail[] = [
     ],
     contentHtml:
       '<h2>Worum es geht</h2><p>Von der Felgenprüfung bis zur Endkontrolle.</p>',
-    canonicalUrl: 'https://example.com/de/blog/wheelsbuild/laufradbau-prozess-ueberblick',
+    canonicalUrl: 'https://example.com/de/resources/blog/wheelsbuild/laufradbau-prozess-ueberblick',
   }),
 ]
 

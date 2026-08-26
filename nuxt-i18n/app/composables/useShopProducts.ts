@@ -180,7 +180,7 @@ const normalizeAvailability = (value: unknown): ShopProductAvailability => {
   return value === 'out_of_stock' ? 'out_of_stock' : 'in_stock'
 }
 
-const productDetailPathPattern = /(?:^|\/)(?:[a-z]{2}(?:[_-][a-z]{2})?\/)?shop\/([^/?#]+)$/i
+const productDetailPathPattern = /(?:^|\/)(?:[a-z]{2}(?:[_-][a-z]{2})?\/)?products\/([^/?#]+)$/i
 
 const extractProductDetailSlug = (value: unknown): string => {
   const raw = String(value || '').trim()

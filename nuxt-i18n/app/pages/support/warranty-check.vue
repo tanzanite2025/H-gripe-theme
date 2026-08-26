@@ -24,6 +24,8 @@ import AuthModal from '~/components/AuthModal.vue'
 
 definePageMeta({
   layout: 'support',
+  footerLabelKey: 'support.nav.warrantyCheck',
+  footerLabelFallback: 'Warranty Check',
 })
 
 const { t, locale } = useI18n()

@@ -136,6 +136,12 @@
                 <p class="mt-1 max-w-48 truncate font-mono text-[10px] text-muted-foreground" :title="sourceLabel(issue)">
                   {{ sourceLabel(issue) }}
                 </p>
+                <p class="mt-1 truncate font-mono text-[10px] text-muted-foreground" :title="issue.rule_id">
+                  rule={{ issue.rule_id }}
+                </p>
+                <p v-if="issue.provider_audit_id" class="truncate font-mono text-[10px] text-muted-foreground" :title="issue.provider_audit_id">
+                  provider={{ issue.provider_audit_id }}
+                </p>
               </td>
               <td class="px-4 py-3">
                 <AdminStatusBadge :tone="stateTone(issue.state)">{{ stateLabel(issue.state) }}</AdminStatusBadge>
@@ -192,6 +198,7 @@ import preflightApi, {
   type PreflightContentLinkIssueStateFilter,
   type PreflightContentLinkStats,
   type PreflightContentLinkTargetOption,
+  SITE_QUALITY_RULE_ID_DESCRIPTIVE_LINK_TEXT,
 } from '@/api/preflight'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import AdminPagination from '@/components/admin/AdminPagination.vue'
@@ -255,6 +262,7 @@ const loadIssues = async (page = pagination.value.page): Promise<void> => {
       page,
       pageSize: pagination.value.page_size,
       state: stateFilter.value,
+      ruleID: SITE_QUALITY_RULE_ID_DESCRIPTIVE_LINK_TEXT,
       search: search.value.trim() || undefined,
       fixable: fixableFilter.value === 'all' ? undefined : fixableFilter.value === 'fixable',
     })

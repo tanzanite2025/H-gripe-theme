@@ -20,7 +20,7 @@
         ></div>
         <div
           v-else
-          class="absolute inset-0 bg-black/80 backdrop-blur-sm"
+          class="absolute inset-0 bg-[rgba(20,32,43,0.22)] backdrop-blur-sm"
           @click="close"
         ></div>
 
@@ -30,11 +30,11 @@
           :class="[
             props.embedded 
               ? 'wa-drawer-shell auth-modal-shell--drawer'
-              : 'auth-modal__panel auth-modal-shell tz-mobile-dialog-surface auth-modal-shell--standalone relative w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[80vh] md:max-h-[85vh] rounded-2xl backdrop-blur-xl border text-white flex flex-col pointer-events-auto overflow-hidden'
+              : 'auth-modal__panel auth-modal-shell tz-mobile-dialog-surface tz-surface-card auth-modal-shell--standalone relative w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[80vh] md:max-h-[85vh] rounded-2xl backdrop-blur-xl border tz-text-primary flex flex-col pointer-events-auto overflow-hidden'
           ]"
         >
           <!-- Background Decoration matches other drawers if embedded, or keep original if standalone -->
-          <div v-if="props.embedded" class="absolute inset-x-0 top-0 h-[200px] bg-[radial-gradient(circle_at_top,rgba(181,255,109,0.06),transparent_66%)] blur-3xl pointer-events-none z-0"></div>
+          <div v-if="props.embedded" class="absolute inset-x-0 top-0 h-[200px] bg-[radial-gradient(circle_at_top,rgba(5, 150, 105,0.06),transparent_66%)] blur-3xl pointer-events-none z-0"></div>
 
           <!-- Close Button -->
           <button
@@ -68,8 +68,8 @@
                     type="button"
                     class="px-5 py-2 rounded-full text-sm font-semibold transition-all"
                     :class="mode === 'login'
-                      ? 'bg-[#B5FF6D] text-[#050505] shadow-[0_12px_26px_-14px_rgba(0,0,0,1)]'
-                      : 'bg-white/10 text-white/70 shadow-[0_8px_20px_-12px_rgba(0,0,0,1)]'"
+                      ? 'bg-[var(--tz-site-accent)] tz-text-primary shadow-[0_12px_26px_-14px_rgba(20,32,43,0.12)]'
+                      : 'tz-surface-subtle tz-text-muted shadow-md'"
                     @click="setMode('login')"
                   >
                     {{ t('authModal.actions.signIn') }}
@@ -78,8 +78,8 @@
                     type="button"
                     class="px-5 py-2 rounded-full text-sm font-semibold transition-all"
                     :class="mode === 'register'
-                      ? 'bg-[#B5FF6D] text-[#050505] shadow-[0_12px_26px_-14px_rgba(0,0,0,1)]'
-                      : 'bg-white/10 text-white/70 shadow-[0_8px_20px_-12px_rgba(0,0,0,1)]'"
+                      ? 'bg-[var(--tz-site-accent)] tz-text-primary shadow-[0_12px_26px_-14px_rgba(20,32,43,0.12)]'
+                      : 'tz-surface-subtle tz-text-muted shadow-md'"
                     @click="setMode('register')"
                   >
                     {{ t('authModal.actions.signUp') }}
@@ -87,9 +87,9 @@
                 </div>
 
                 <!-- Privacy Notice -->
-                <div class="mt-3 px-4 py-3 rounded-xl bg-white/[0.055] backdrop-blur-sm shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
+                <div class="mt-3 px-4 py-3 rounded-xl tz-surface-subtle backdrop-blur-sm shadow-[0_4px_16px_rgba(20,32,43,0.08)]">
                   <p class="text-center text-xs tz-text-secondary leading-relaxed">
-                    <Icon name="lucide:shield-check" class="inline-block mr-1 h-3.5 w-3.5 text-[#B5FF6D]" />
+                    <Icon name="lucide:shield-check" class="inline-block mr-1 h-3.5 w-3.5 text-[#059669]" />
                     {{ t('authModal.privacyNotice') }}
                   </p>
                 </div>
@@ -123,9 +123,9 @@
                   </div>
 
                   <div class="flex items-center gap-2 tz-text-muted text-xs uppercase tracking-[0.2em] justify-center">
-                    <span class="flex-1 h-px bg-white/10"></span>
+                    <span class="flex-1 h-px tz-surface-subtle"></span>
                     <span>{{ t('authModal.divider.email') }}</span>
-                    <span class="flex-1 h-px bg-white/10"></span>
+                    <span class="flex-1 h-px tz-surface-subtle"></span>
                   </div>
 
                   <!-- 登录表单 -->
@@ -195,7 +195,7 @@
 
                 <div v-if="completionState" class="space-y-6 text-center">
                   <div class="flex justify-center">
-                    <div class="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center text-3xl text-[#B5FF6D]">
+                    <div class="w-16 h-16 rounded-full tz-surface-subtle flex items-center justify-center text-3xl text-[#059669]">
                       &#10003;
                     </div>
                   </div>
@@ -470,10 +470,10 @@ const handleCompletionCta = async () => {
 
 .auth-modal-shell--standalone,
 .auth-modal-shell--drawer {
-  background: linear-gradient(135deg, #141416 0%, #050505 100%) !important;
-  background-image: linear-gradient(135deg, #141416 0%, #050505 100%) !important;
-  border-color: rgba(255, 255, 255, 0.14) !important;
-  box-shadow: 0 22px 70px -36px rgba(0, 0, 0, 1) !important;
+  background: var(--tz-card-surface) !important;
+  background-image: none !important;
+  border-color: var(--tz-border-subtle) !important;
+  box-shadow: 0 22px 70px -36px rgba(20, 32, 43, 0.16) !important;
 }
 
 .auth-modal-shell--drawer::before,
@@ -518,7 +518,7 @@ const handleCompletionCta = async () => {
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: rgba(255, 255, 255, 0.2);
+  background-color: var(--tz-border-strong);
   border-radius: 99px;
 }
 
@@ -530,49 +530,50 @@ const handleCompletionCta = async () => {
   border-radius: 0.75rem;
   background-color: transparent !important;
   background-image: none !important;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-color: rgba(255, 255, 255, 0.18) !important;
+  border: 1px solid var(--tz-border-subtle);
+  border-color: var(--tz-border-subtle) !important;
   box-shadow: none;
-  color: #f5f5f5 !important;
+  color: var(--tz-text-primary) !important;
 }
 
 .auth-modal-shell--standalone .form-input::placeholder,
 .auth-modal-shell--drawer .form-input::placeholder {
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--tz-text-muted);
 }
 
 .auth-modal-shell--standalone .form-input:focus,
 .auth-modal-shell--drawer .form-input:focus {
   outline: none;
-  border-color: rgba(255, 255, 255, 0.78) !important;
+  border-color: var(--tz-form-control-focus-border) !important;
   background-color: transparent !important;
   box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.28);
+    0 0 0 1px var(--tz-form-control-focus-ring);
 }
 
 :global(#auth-modal-shell input.form-input) {
   background-color: transparent !important;
   background-image: none !important;
-  border-color: rgba(255, 255, 255, 0.34) !important;
-  color: #f5f5f5 !important;
+  border-color: var(--tz-border-strong) !important;
+  color: var(--tz-text-primary) !important;
 }
 
 :global(#auth-modal-shell input.form-input:focus) {
-  border-color: rgba(255, 255, 255, 0.78) !important;
+  border-color: var(--tz-form-control-focus-border) !important;
   background-color: transparent !important;
   box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.28) !important;
+    0 0 0 1px var(--tz-form-control-focus-ring) !important;
 }
 
 .primary-btn {
   height: 2.75rem;
   border-radius: 9999px;
-  background: #ffffff;
-  color: #050505;
+  border: 1px solid var(--tz-action-primary);
+  background: var(--tz-action-primary);
+  color: var(--tz-action-primary-foreground);
   font-weight: 600;
   box-shadow:
-    0 12px 30px -18px rgba(0, 0, 0, 1),
-    0 0 18px rgba(255, 255, 255, 0.12);
+    0 12px 30px -18px rgb(15 23 42 / 0.48),
+    0 8px 20px -14px rgb(15 23 42 / 0.18);
   transition:
     filter 0.2s ease,
     box-shadow 0.2s ease,
@@ -585,20 +586,27 @@ const handleCompletionCta = async () => {
 }
 
 .primary-btn:not(:disabled):hover {
-  filter: brightness(0.96);
+  background: var(--tz-action-primary-hover);
+  border-color: var(--tz-action-primary-hover);
   box-shadow:
-    0 10px 26px -18px rgba(0, 0, 0, 1),
-    0 0 20px rgba(255, 255, 255, 0.16);
+    0 10px 26px -18px rgb(15 23 42 / 0.5),
+    0 8px 20px -14px rgb(15 23 42 / 0.22);
   transform: translateY(-1px);
+}
+
+.primary-btn:not(:disabled):active {
+  background: var(--tz-action-primary-active);
+  border-color: var(--tz-action-primary-active);
+  transform: translateY(0);
 }
 
 .social-btn {
   width: 3rem;
   height: 3rem;
   border-radius: 9999px;
-  background: linear-gradient(135deg, rgba(18, 18, 20, 0.98), rgba(7, 7, 8, 0.96));
-  border: none;
-  color: #e5e7eb;
+  background: var(--tz-surface-subtle);
+  border: 1px solid var(--tz-border-subtle);
+  color: var(--tz-text-secondary);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -612,10 +620,10 @@ const handleCompletionCta = async () => {
 }
 
 .social-btn:hover {
-  background: linear-gradient(135deg, rgba(28, 28, 30, 0.98), rgba(10, 10, 11, 0.98));
+  background: var(--tz-surface-muted);
   box-shadow:
     0 8px 20px -12px rgba(0, 0, 0, 1),
-    0 0 14px rgba(181, 255, 109, 0.12);
+    0 0 14px rgba(5, 150, 105, 0.12);
   transform: translateY(-1px);
 }
 

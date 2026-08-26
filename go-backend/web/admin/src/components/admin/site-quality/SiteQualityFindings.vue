@@ -29,7 +29,7 @@
             <AdminStatusBadge :tone="issueTone(finding.severity)">{{ issueSeverityLabel(finding.severity) }}</AdminStatusBadge>
             <AdminStatusBadge :tone="findingStateTone(finding.state)">{{ findingStateLabel(finding.state) }}</AdminStatusBadge>
           </div>
- <p class="mt-1 truncate font-mono text-[10px] text-muted-foreground">{{ finding.target_url }} · {{ strategyLabel(finding.strategy) }} · {{ finding.audit_id }}</p>
+ <p class="mt-1 truncate font-mono text-[10px] text-muted-foreground">{{ finding.target_url }} · {{ strategyLabel(finding.strategy) }} · {{ finding.rule_id || finding.audit_id }}</p>
         </div>
  <span class="text-xs font-bold text-muted-foreground">{{ findingSavings(finding) || '-'}}</span>
  <span class="text-xs text-muted-foreground">{{ finding.resource_count }} 个资源</span>

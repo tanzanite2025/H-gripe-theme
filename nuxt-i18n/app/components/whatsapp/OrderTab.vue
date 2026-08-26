@@ -7,13 +7,13 @@
       <div
         v-for="order in ordersList"
         :key="order.order_number"
-        class="border border-white/15 md:border-white/10 rounded-2xl md:rounded-lg p-3 bg-black/35 transition-colors"
+        class="border tz-border-subtle md:tz-border-subtle rounded-2xl md:rounded-lg p-3 tz-surface-card transition-colors"
       >
         <div class="flex items-center justify-between mb-1 md:mb-2">
-          <span class="text-white text-sm font-semibold md:font-medium">
+          <span class="tz-text-primary text-sm font-semibold md:font-medium">
             {{ order.order_number ? `Order #${order.order_number}` : 'Order' }}
           </span>
-          <span class="tz-micro-label md:text-xs px-2 py-0.5 rounded-full bg-white/15 md:bg-white/10 tz-text-secondary">
+          <span class="tz-micro-label md:text-xs px-2 py-0.5 rounded-full tz-surface-subtle md:tz-surface-subtle tz-text-secondary">
             {{ order.status || 'Processing' }}
           </span>
         </div>
@@ -25,7 +25,7 @@
           <div
             v-for="item in order.items.slice(0, 2)"
             :key="item.id || `${item.product_id}-${item.sku}`"
-            class="flex items-center justify-between gap-2 rounded-xl bg-white/[0.04] px-2 py-1 tz-caption tz-text-secondary"
+            class="flex items-center justify-between gap-2 rounded-xl tz-surface-subtle px-2 py-1 tz-caption tz-text-secondary"
           >
             <span class="truncate">{{ item.product_name || item.title || 'Product' }}</span>
             <span class="shrink-0">x{{ item.quantity || 1 }}</span>
@@ -37,7 +37,7 @@
         <p class="tz-text-muted tz-caption md:text-xs mt-1">{{ order.date }}</p>
         <button
           type="button"
-          class="mt-3 w-full rounded-full border border-white/40 bg-white px-3 py-2 tz-caption font-semibold text-slate-950 transition-colors hover:bg-white/90"
+          class="mt-3 w-full rounded-full border tz-border-strong/40 bg-white px-3 py-2 tz-caption font-semibold text-slate-950 transition-colors hover:bg-white/90"
           @click="$emit('shareOrder', order)"
         >
           和客服确认订单

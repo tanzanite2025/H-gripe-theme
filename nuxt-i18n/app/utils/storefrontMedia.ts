@@ -61,6 +61,21 @@ const normalizeMediaRecord = (
   return record
 }
 
+const normalizeMediaVariants = (
+  value: unknown,
+  context: StorefrontMediaContext,
+): Record<string, unknown> => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
+
+  return Object.entries(value).reduce<Record<string, unknown>>((result, [preset, raw]) => {
+    if (!preset) return result
+    const variant = normalizeMediaRecord(raw, ['url'], context)
+    if (!variant || !String(variant.url || '').trim()) return result
+    result[preset] = variant
+    return result
+  }, {})
+}
+
 export const createStorefrontMediaContext = (
   runtimeConfig: StorefrontMediaRuntimeConfig,
   browserOrigin = '',
@@ -139,7 +154,17 @@ export const normalizeStorefrontProductMedia = <T extends object>(
 
   if (Array.isArray(record.media)) {
     record.media = record.media
-      .map(item => normalizeMediaRecord(item, ['url', 'thumbnail_url', 'poster_url'], context))
+      .map(item => {
+        const normalized = normalizeMediaRecord(item, ['url', 'thumbnail_url', 'poster_url'], context)
+        if (!normalized) return null
+
+        const imageVariants = normalizeMediaVariants(normalized.image_variants, context)
+        if (Object.keys(imageVariants).length > 0) {
+          normalized.image_variants = imageVariants
+        }
+
+        return normalized
+      })
       .filter((item): item is Record<string, unknown> => Boolean(item))
   }
 

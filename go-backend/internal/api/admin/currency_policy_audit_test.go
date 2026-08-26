@@ -56,19 +56,19 @@ func TestCurrencyPolicyUpdateAuditRecordsOldAndNewPolicy(t *testing.T) {
 	var changes map[string]interface{}
 	require.NoError(t, json.Unmarshal([]byte(log.Changes), &changes))
 	require.Equal(t, "CNY", changes["primary_currency"])
-	require.Equal(t, []interface{}{"GBP", "USD"}, changes["display_currencies"])
-	require.Equal(t, float64(2), changes["display_currency_count"])
+	require.Equal(t, "CNY", changes["backend_entry_currency"])
+	require.Equal(t, "storefront_markets", changes["display_currencies_source"])
 	require.Greater(t, changes["available_currency_count"].(float64), float64(0))
 
 	var oldValue map[string]interface{}
 	require.NoError(t, json.Unmarshal([]byte(log.OldValue), &oldValue))
 	require.Equal(t, "CNY", oldValue["primary_currency"])
-	require.Equal(t, []interface{}{"USD", "EUR"}, oldValue["display_currencies"])
+	require.Equal(t, "CNY", oldValue["backend_entry_currency"])
 
 	var newValue map[string]interface{}
 	require.NoError(t, json.Unmarshal([]byte(log.NewValue), &newValue))
 	require.Equal(t, "CNY", newValue["primary_currency"])
-	require.Equal(t, []interface{}{"GBP", "USD"}, newValue["display_currencies"])
+	require.Equal(t, "CNY", newValue["backend_entry_currency"])
 }
 
 func TestCurrencyPolicyUpdateValidationFailureIsAuditLogged(t *testing.T) {
@@ -81,7 +81,7 @@ func TestCurrencyPolicyUpdateValidationFailureIsAuditLogged(t *testing.T) {
 	context.Request = httptest.NewRequest(
 		http.MethodPut,
 		"/api/admin/settings/currency-policy",
-		strings.NewReader(`{"primary_currency":"CNY","display_currencies":["BTC","USD"]}`),
+		strings.NewReader(`{"primary_currency":"BTC","display_currencies":["USD"]}`),
 	)
 	context.Request.Header.Set("Content-Type", "application/json")
 
@@ -93,12 +93,12 @@ func TestCurrencyPolicyUpdateValidationFailureIsAuditLogged(t *testing.T) {
 	require.Equal(t, adminAuditActionUpdate, log.Action)
 	require.Equal(t, adminAuditResourceCurrencyPolicy, log.Resource)
 	require.Equal(t, adminAuditStatusFailed, log.Status)
-	require.Contains(t, log.ErrorMessage, "unsupported display currency")
+	require.Contains(t, log.ErrorMessage, "unsupported primary currency")
 
 	var changes map[string]interface{}
 	require.NoError(t, json.Unmarshal([]byte(log.Changes), &changes))
-	require.Equal(t, "CNY", changes["primary_currency"])
-	require.Equal(t, []interface{}{"BTC", "USD"}, changes["display_currencies"])
+	require.Equal(t, "BTC", changes["primary_currency"])
+	require.Equal(t, "BTC", changes["backend_entry_currency"])
 }
 
 func newCurrencyPolicyAuditTestHandler(t *testing.T, auditRecorder *fakePaymentAuditRecorder) (*CurrencyPolicyHandler, *service.CurrencyPolicyService) {

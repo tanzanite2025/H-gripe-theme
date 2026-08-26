@@ -19,6 +19,8 @@ import { useHead, definePageMeta } from '#imports'
 
 definePageMeta({
   layout: 'products',
+  footerLabelKey: 'policyTabs.privacy',
+  footerLabelFallback: 'Privacy',
 })
 
 useHead({

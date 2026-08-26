@@ -22,10 +22,15 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 	services := deps.Services
 	authService := services.Auth
 	showcaseService := services.Showcase
-	registrationService := services.Registration
+	warrantyService := services.Warranty
 	userService := services.User
 	postService := services.Post
 	productService := services.Product
+	productProcurementService := services.ProductProcurement
+	frameFitmentEntryService := services.FrameFitmentEntry
+	forkFitmentEntryService := services.ForkFitmentEntry
+	fitmentHubSpecificationService := services.FitmentHubSpecification
+	productProfitabilityService := services.ProductProfitability
 	orderService := services.Order
 	afterSalesService := services.AfterSales
 	paymentService := services.Payment
@@ -44,6 +49,11 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 	userHandler := NewUserHandler(userService)
 	customerHandler := NewCustomerHandler(userService)
 	productHandler := NewProductHandler(productService)
+	productProcurementHandler := NewProductProcurementHandler(productProcurementService)
+	frameFitmentEntryHandler := NewFrameFitmentEntryHandler(frameFitmentEntryService)
+	forkFitmentEntryHandler := NewForkFitmentEntryHandler(forkFitmentEntryService)
+	fitmentHubSpecificationHandler := NewFitmentHubSpecificationHandler(fitmentHubSpecificationService)
+	productProfitabilityHandler := NewProductProfitabilityHandler(productProfitabilityService)
 	productCategoryHandler := NewProductCategoryHandler(services.ProductCategory)
 	productBrandHandler := NewProductBrandHandler(services.ProductBrand)
 	productInformationTemplateHandler := NewProductInformationTemplateHandler(services.ProductInformationTemplate)
@@ -95,31 +105,41 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 	siteLogoHandler := NewSiteLogoHandler(services.SiteLogo, services.AdminSettings)
 	visualShowcaseHandler := NewVisualShowcaseHandler(services.VisualShowcase)
 	websiteProfileHandler := NewWebsiteProfileHandler(services.WebsiteProfile)
+	websiteNameHandler := NewWebsiteNameHandler(services.WebsiteName)
 	seoHomeHandler := seoapi.NewHomeHandler(services.SEO)
 	seoArticlesHandler := seoapi.NewArticlesHandler(services.SEOResources)
 	seoProductsHandler := seoapi.NewProductsHandler(services.SEOResources)
+	seoCategoriesHandler := seoapi.NewCategoriesHandler(services.SEOResources)
 	urlRoutesHandler := urlapi.NewRoutesHandler(services.StorefrontRouteCatalog)
 	urlRedirectsHandler := urlapi.NewRedirectsHandler(services.StorefrontRedirectRules)
 	urlIssuesHandler := urlapi.NewIssuesHandler(services.StorefrontURLIssues, services.StorefrontRouteCatalog)
 	seoHomeHandler.ConfigureAuditService(services.Audit)
 	seoArticlesHandler.ConfigureAuditService(services.Audit)
 	seoProductsHandler.ConfigureAuditService(services.Audit)
+	seoCategoriesHandler.ConfigureAuditService(services.Audit)
+	if services.GoogleIndexing != nil {
+		services.GoogleIndexing.ConfigureRedisClient(deps.RedisClient)
+	}
+	seoProductsHandler.ConfigureGoogleIndexingService(services.GoogleIndexing)
 	urlIssuesHandler.ConfigureAuditService(services.Audit)
 	analyticsHandler := NewAnalyticsHandler(services.Analytics)
 	commercialCrawlerHandler := NewCommercialCrawlerProtectionHandler(orderService)
 	currencyPolicyHandler := NewCurrencyPolicyHandler(services.CurrencyPolicy)
 	currencyPolicyHandler.ConfigureAuditService(services.Audit)
+	currencyPolicyHandler.ConfigureProductService(services.Product)
 	exchangeRateHandler := NewExchangeRateHandler(services.ExchangeRate)
 	exchangeRateHandler.ConfigureAuditService(services.Audit)
 	storefrontMarketHandler := NewStorefrontMarketHandler(services.StorefrontMarket)
 	storefrontMarketHandler.ConfigureAuditService(services.Audit)
 	googleMerchantHandler := NewGoogleMerchantHandler(services.GoogleMerchant, cfg.GoogleMerchant.PostConnectURL)
+	socialOAuthHandler := NewSocialOAuthHandler(services.SocialOAuth, cfg.SocialOAuth.PostConnectURL)
 	publicChatAgentHandler := NewPublicChatAgentHandler(services.AdminPublicChat)
 	customerServiceAvatarHandler := NewCustomerServiceAvatarHandler(services.CustomerServiceAvatar)
 	auditHandler := NewAuditHandler(services.Audit)
 	showcaseHandler := NewShowcaseHandler(showcaseService)
 	showcaseHandler.ConfigureAuditService(services.Audit)
-	registrationHandler := NewRegistrationHandler(registrationService)
+	warrantyHandler := NewWarrantyHandler(warrantyService)
+	shipmentRecordHandler := NewShipmentRecordHandler(services.ShipmentRecord, deps.Storage)
 	shippingHandler := NewShippingHandler(services.Shipping)
 	opsDomainBindingHandler := NewOpsDomainBindingHandler(
 		services.OpsDomainBinding,
@@ -179,6 +199,7 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 
 		admin.GET("/google-merchant/oauth/callback", googleMerchantHandler.CompleteOAuth)
 		admin.GET("/ops/connectors/oauth/callback", opsConnectorHandler.CompleteOAuth)
+		admin.GET("/social/oauth/callback", socialOAuthHandler.CompleteOAuth)
 
 		// 需要认证的路由
 		authenticated := admin.Group("")
@@ -237,6 +258,65 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 			}
 
 			// 商品管理（需要商品管理权限）
+			// 采购资料是独立附加域，只读写自身产品编码/名称快照。
+			productProcurementGroup := authenticated.Group("/procurement/records")
+			productProcurementGroup.Use(middleware.RequirePermission(auth.PermProcurementView))
+			{
+				productProcurementGroup.GET("", productProcurementHandler.List)
+				productProcurementGroup.GET("/by-codes", productProcurementHandler.ListByCodes)
+				productProcurementGroup.GET("/:id", productProcurementHandler.Get)
+				productProcurementGroup.POST("", middleware.RequirePermission(auth.PermProcurementCreate), productProcurementHandler.Create)
+				productProcurementGroup.PUT("/:id", middleware.RequirePermission(auth.PermProcurementEdit), productProcurementHandler.Update)
+				productProcurementGroup.DELETE("/:id", middleware.RequirePermission(auth.PermProcurementDelete), productProcurementHandler.Delete)
+			}
+
+			productProcurementOptionsGroup := authenticated.Group("/procurement/product-options")
+			productProcurementOptionsGroup.Use(middleware.RequirePermission(auth.PermProcurementView))
+			{
+				productProcurementOptionsGroup.GET("", productProcurementHandler.ProductOptions)
+			}
+
+			frameFitmentEntriesGroup := authenticated.Group("/fitment-catalog/frame-entries")
+			frameFitmentEntriesGroup.Use(middleware.RequirePermission(auth.PermFitmentCatalogView))
+			{
+				frameFitmentEntriesGroup.GET("", frameFitmentEntryHandler.List)
+				frameFitmentEntriesGroup.GET("/:id", frameFitmentEntryHandler.Get)
+				frameFitmentEntriesGroup.POST("", middleware.RequirePermission(auth.PermFitmentCatalogCreate), frameFitmentEntryHandler.Create)
+				frameFitmentEntriesGroup.PUT("/:id", middleware.RequirePermission(auth.PermFitmentCatalogEdit), frameFitmentEntryHandler.Update)
+				frameFitmentEntriesGroup.PATCH("/:id/status", middleware.RequirePermission(auth.PermFitmentCatalogEdit), frameFitmentEntryHandler.UpdateStatus)
+				frameFitmentEntriesGroup.DELETE("/:id", middleware.RequirePermission(auth.PermFitmentCatalogDelete), frameFitmentEntryHandler.Delete)
+			}
+
+			forkFitmentEntriesGroup := authenticated.Group("/fitment-catalog/fork-entries")
+			forkFitmentEntriesGroup.Use(middleware.RequirePermission(auth.PermFitmentCatalogView))
+			{
+				forkFitmentEntriesGroup.GET("", forkFitmentEntryHandler.List)
+				forkFitmentEntriesGroup.GET("/:id", forkFitmentEntryHandler.Get)
+				forkFitmentEntriesGroup.POST("", middleware.RequirePermission(auth.PermFitmentCatalogCreate), forkFitmentEntryHandler.Create)
+				forkFitmentEntriesGroup.PUT("/:id", middleware.RequirePermission(auth.PermFitmentCatalogEdit), forkFitmentEntryHandler.Update)
+				forkFitmentEntriesGroup.PATCH("/:id/status", middleware.RequirePermission(auth.PermFitmentCatalogEdit), forkFitmentEntryHandler.UpdateStatus)
+				forkFitmentEntriesGroup.DELETE("/:id", middleware.RequirePermission(auth.PermFitmentCatalogDelete), forkFitmentEntryHandler.Delete)
+			}
+
+			fitmentHubSpecificationsGroup := authenticated.Group("/fitment-catalog/hub-specifications")
+			fitmentHubSpecificationsGroup.Use(middleware.RequirePermission(auth.PermFitmentCatalogView))
+			{
+				fitmentHubSpecificationsGroup.GET("", fitmentHubSpecificationHandler.List)
+				fitmentHubSpecificationsGroup.GET("/:id", fitmentHubSpecificationHandler.Get)
+				fitmentHubSpecificationsGroup.POST("", middleware.RequirePermission(auth.PermFitmentCatalogCreate), fitmentHubSpecificationHandler.Create)
+				fitmentHubSpecificationsGroup.PUT("/:id", middleware.RequirePermission(auth.PermFitmentCatalogEdit), fitmentHubSpecificationHandler.Update)
+				fitmentHubSpecificationsGroup.PATCH("/:id/status", middleware.RequirePermission(auth.PermFitmentCatalogEdit), fitmentHubSpecificationHandler.UpdateStatus)
+				fitmentHubSpecificationsGroup.DELETE("/:id", middleware.RequirePermission(auth.PermFitmentCatalogDelete), fitmentHubSpecificationHandler.Delete)
+			}
+
+			productProfitabilityGroup := authenticated.Group("/procurement/profitability")
+			productProfitabilityGroup.Use(middleware.RequirePermission(auth.PermProcurementView))
+			{
+				productProfitabilityGroup.GET("/by-codes", productProfitabilityHandler.ListByCodes)
+				productProfitabilityGroup.POST("/preview", productProfitabilityHandler.Preview)
+				productProfitabilityGroup.POST("/bulk-upsert", middleware.RequirePermission(auth.PermProcurementEdit), productProfitabilityHandler.BulkUpsert)
+			}
+
 			productSpecificationTemplatesGroup := authenticated.Group("/product-specification-templates")
 			productSpecificationTemplatesGroup.Use(middleware.RequirePermission(auth.PermProductView))
 			{
@@ -382,6 +462,22 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 				googleMerchantGroup.POST("/offers/:id/sync", middleware.RequirePermission(auth.PermMerchantSync), googleMerchantHandler.SyncOffer)
 				googleMerchantGroup.POST("/offers/:id/remove-remote", middleware.RequirePermission(auth.PermMerchantSync), googleMerchantHandler.RemoveRemoteOffer)
 				googleMerchantGroup.DELETE("/offers/:id", middleware.RequirePermission(auth.PermMerchantEdit), googleMerchantHandler.DeleteOffer)
+			}
+
+			socialOAuthGroup := authenticated.Group("/social/oauth")
+			socialOAuthGroup.Use(middleware.RequirePermission(auth.PermSettingsView))
+			{
+				socialOAuthGroup.GET("", socialOAuthHandler.ListConnections)
+				socialOAuthGroup.POST(
+					"/:provider/start",
+					middleware.RequirePermission(auth.PermSettingsEdit),
+					socialOAuthHandler.Start,
+				)
+				socialOAuthGroup.DELETE(
+					"/:provider",
+					middleware.RequirePermission(auth.PermSettingsEdit),
+					socialOAuthHandler.Disconnect,
+				)
 			}
 
 			mediaGroup := authenticated.Group("/media")
@@ -625,22 +721,23 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 				showcaseGroup.PUT("/:id/reject", middleware.RequirePermission(auth.PermGalleryEdit), showcaseHandler.Reject)
 			}
 
-			// 产品注册与保修管理（需要商品管理权限）
-			registrationsGroup := authenticated.Group("/registrations")
-			registrationsGroup.Use(middleware.RequirePermission(auth.PermProductView))
+			// 保修与已发货订单附加凭据（需要商品管理权限）
+			warrantyGroup := authenticated.Group("/warranty")
+			warrantyGroup.Use(middleware.RequirePermission(auth.PermProductView))
 			{
-				registrationsGroup.GET("", registrationHandler.ListAllRegistrations)
-				registrationsGroup.PUT("/:id/status", middleware.RequirePermission(auth.PermProductEdit), registrationHandler.UpdateRegistrationStatus)
-				registrationsGroup.GET("/expiring", registrationHandler.GetExpiringWarranties)
-				registrationsGroup.GET("/stats", registrationHandler.GetRegistrationStats)
-				registrationsGroup.GET("/warranty-claims", registrationHandler.ListAllWarrantyClaims)
-				registrationsGroup.GET("/warranty-claims/:id", registrationHandler.GetWarrantyClaim)
-				registrationsGroup.GET("/warranty-claims/:id/order-items", registrationHandler.ListWarrantyClaimOrderItems)
-				registrationsGroup.PUT("/warranty-claims/:id/order-item", middleware.RequirePermission(auth.PermProductEdit), registrationHandler.BindWarrantyClaimOrderItem)
-				registrationsGroup.GET("/warranty-claims/:id/service-records", registrationHandler.ListWarrantyServiceRecords)
-				registrationsGroup.POST("/warranty-claims/:id/service-records", middleware.RequirePermission(auth.PermProductEdit), registrationHandler.CreateWarrantyServiceRecord)
-				registrationsGroup.PUT("/warranty-claims/:id/status", middleware.RequirePermission(auth.PermProductEdit), registrationHandler.UpdateWarrantyClaimStatus)
-				registrationsGroup.PUT("/warranty-claims/:id/resolution", middleware.RequirePermission(auth.PermProductEdit), registrationHandler.UpdateWarrantyClaimResolution)
+				warrantyGroup.GET("/shipment-records", shipmentRecordHandler.List)
+				warrantyGroup.GET("/shipment-records/stats", shipmentRecordHandler.Stats)
+				warrantyGroup.GET("/shipment-records/:id", shipmentRecordHandler.Get)
+				warrantyGroup.PUT("/shipment-records/:id", middleware.RequirePermission(auth.PermProductEdit), shipmentRecordHandler.Update)
+				warrantyGroup.POST("/shipment-records/:id/images", middleware.RequirePermission(auth.PermProductEdit), shipmentRecordHandler.UploadImages)
+				warrantyGroup.GET("/claims", warrantyHandler.ListAllWarrantyClaims)
+				warrantyGroup.GET("/claims/:id", warrantyHandler.GetWarrantyClaim)
+				warrantyGroup.GET("/claims/:id/order-items", warrantyHandler.ListWarrantyClaimOrderItems)
+				warrantyGroup.PUT("/claims/:id/order-item", middleware.RequirePermission(auth.PermProductEdit), warrantyHandler.BindWarrantyClaimOrderItem)
+				warrantyGroup.GET("/claims/:id/service-records", warrantyHandler.ListWarrantyServiceRecords)
+				warrantyGroup.POST("/claims/:id/service-records", middleware.RequirePermission(auth.PermProductEdit), warrantyHandler.CreateWarrantyServiceRecord)
+				warrantyGroup.PUT("/claims/:id/status", middleware.RequirePermission(auth.PermProductEdit), warrantyHandler.UpdateWarrantyClaimStatus)
+				warrantyGroup.PUT("/claims/:id/resolution", middleware.RequirePermission(auth.PermProductEdit), warrantyHandler.UpdateWarrantyClaimResolution)
 			}
 
 			// 订阅管理（需要订阅管理权限）
@@ -746,12 +843,22 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 			seoGroup := authenticated.Group("/seo")
 			seoGroup.Use(middleware.RequirePermission(auth.PermSEOView))
 			{
+				seoGroup.GET("/indexing/status", seoProductsHandler.IndexingStatus)
 				seoGroup.GET("/home", seoHomeHandler.Get)
 				seoGroup.PUT("/home", middleware.RequirePermission(auth.PermSEOEdit), seoHomeHandler.Update)
 				seoGroup.GET("/articles", seoArticlesHandler.Get)
 				seoGroup.PUT("/articles/:id", middleware.RequirePermission(auth.PermSEOEdit), seoArticlesHandler.Update)
 				seoGroup.GET("/products", seoProductsHandler.Get)
 				seoGroup.PUT("/products/:id", middleware.RequirePermission(auth.PermSEOEdit), seoProductsHandler.Update)
+				seoGroup.GET("/categories", seoCategoriesHandler.Get)
+				seoGroup.PUT("/categories/:id", middleware.RequirePermission(auth.PermSEOEdit), seoCategoriesHandler.Update)
+				seoGroup.POST(
+					"/products/:id/indexing",
+					middleware.RequirePermission(auth.PermSEOEdit),
+					middleware.Idempotency(deps.RedisClient),
+					middleware.RateLimitByUserPerMinuteRedis(deps.RedisClient),
+					seoProductsHandler.PushIndexing,
+				)
 			}
 
 			urlGroup := authenticated.Group("/urls")
@@ -837,6 +944,7 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 				settingsGroup.PUT("/paypal-invoice-seller-profile", middleware.RequirePermission(auth.PermSettingsEdit), paymentHandler.UpdatePayPalDisputeInvoiceSellerProfile)
 				settingsGroup.POST("/payment-runtime/:provider/callback-check", middleware.RequirePermission(auth.PermSettingsEdit), paymentHandler.CheckGatewayCallback)
 				settingsGroup.GET("/currency-policy", currencyPolicyHandler.GetPolicy)
+				settingsGroup.GET("/currency-policy/audit", currencyPolicyHandler.GetBackendEntryCurrencyAudit)
 				settingsGroup.PUT("/currency-policy", middleware.RequirePermission(auth.PermSettingsEdit), currencyPolicyHandler.UpdatePolicy)
 				settingsGroup.POST(
 					"/site-logo",
@@ -874,6 +982,8 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 				settingsGroup.GET("/social", settingsHandler.GetSocialSettings)
 				settingsGroup.GET("/website-profile", websiteProfileHandler.Get)
 				settingsGroup.PUT("/website-profile", middleware.RequirePermission(auth.PermSettingsEdit), websiteProfileHandler.Update)
+				settingsGroup.GET("/website-name", websiteNameHandler.Get)
+				settingsGroup.PUT("/website-name", middleware.RequirePermission(auth.PermSettingsEdit), websiteNameHandler.Update)
 				settingsGroup.GET("/payment", settingsHandler.GetPaymentSettings)
 				settingsGroup.GET("/api", settingsHandler.GetAPISettings)
 				settingsGroup.GET("/loyalty", settingsHandler.GetLoyaltySettings)

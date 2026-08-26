@@ -244,9 +244,9 @@ watch(
 .product-reviews {
   display: grid;
   gap: 1rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.14);
+  border-top: 1px solid var(--tz-border-subtle);
   padding-top: 1.75rem;
-  color: #f8fafc;
+  color: var(--tz-text-primary);
 }
 
 .product-reviews--compact {
@@ -263,7 +263,7 @@ watch(
 
 .product-reviews__eyebrow {
   margin: 0 0 0.25rem;
-  color: rgba(226, 232, 240, 0.56);
+  color: var(--tz-text-muted);
   font-size: 0.7rem;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -284,7 +284,7 @@ watch(
 }
 
 .product-reviews__average {
-  color: #b5ff6d;
+  color: #059669;
   font-size: 1.45rem;
   line-height: 1;
 }
@@ -293,7 +293,7 @@ watch(
 .product-reviews__item-stars {
   display: inline-flex;
   gap: 0.12rem;
-  color: rgba(255, 255, 255, 0.3);
+  color: var(--tz-text-disabled);
 }
 
 .product-reviews__stars :deep(svg),
@@ -315,7 +315,7 @@ watch(
 .product-reviews__count,
 .product-reviews__item-date,
 .product-reviews__helpful {
-  color: rgba(226, 232, 240, 0.58);
+  color: var(--tz-text-secondary);
   font-size: 0.75rem;
 }
 
@@ -334,7 +334,7 @@ watch(
   grid-template-columns: 0.75rem 0.85rem minmax(0, 1fr) 2rem;
   align-items: center;
   gap: 0.35rem;
-  color: rgba(226, 232, 240, 0.64);
+  color: var(--tz-text-secondary);
   font-size: 0.72rem;
 }
 
@@ -350,14 +350,14 @@ watch(
   height: 0.35rem;
   overflow: hidden;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--tz-border-subtle);
 }
 
 .product-reviews__distribution-fill {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: #b5ff6d;
+  background: #059669;
 }
 
 .product-reviews__distribution-count {
@@ -370,12 +370,12 @@ watch(
   place-items: center;
   align-content: center;
   gap: 0.55rem;
-  color: rgba(226, 232, 240, 0.6);
+  color: var(--tz-text-secondary);
   text-align: center;
 }
 
 .product-reviews__state--error {
-  color: #fecaca;
+  color: var(--tz-status-danger-text);
 }
 
 .product-reviews__spinner {
@@ -389,10 +389,10 @@ watch(
   justify-content: center;
   gap: 0.4rem;
   min-height: 2.25rem;
-  border: 1px solid rgba(255, 255, 255, 0.22);
+  border: 1px solid var(--tz-border-strong);
   border-radius: 0.5rem;
-  color: #fff;
-  background: rgba(255, 255, 255, 0.06);
+  color: var(--tz-text-primary);
+  background: var(--tz-surface-muted);
   padding: 0.45rem 0.75rem;
   font-size: 0.78rem;
   font-weight: 700;
@@ -412,9 +412,9 @@ watch(
 .product-reviews__item {
   display: grid;
   gap: 0.65rem;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--tz-border-subtle);
   border-radius: 0.7rem;
-  background: rgba(255, 255, 255, 0.035);
+  background: var(--tz-card-surface);
   padding: 0.9rem;
 }
 
@@ -426,19 +426,19 @@ watch(
 }
 
 .product-reviews__item-stars {
-  color: rgba(255, 255, 255, 0.26);
+  color: var(--tz-text-disabled);
 }
 
 .product-reviews__item-title {
   margin: 0.4rem 0 0;
-  color: #fff;
+  color: var(--tz-text-primary);
   font-size: 0.95rem;
   font-weight: 700;
 }
 
 .product-reviews__item-content {
   margin: 0;
-  color: rgba(226, 232, 240, 0.78);
+  color: var(--tz-text-secondary);
   font-size: 0.88rem;
   line-height: 1.6;
   white-space: pre-wrap;
@@ -469,7 +469,7 @@ watch(
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  color: #b5ff6d;
+  color: #059669;
   font-size: 0.75rem;
   font-weight: 700;
 }
@@ -482,15 +482,15 @@ watch(
 .product-reviews__reply {
   display: grid;
   gap: 0.25rem;
-  border-left: 2px solid rgba(181, 255, 109, 0.68);
-  color: rgba(226, 232, 240, 0.7);
+  border-left: 2px solid rgba(5, 150, 105, 0.68);
+  color: var(--tz-text-secondary);
   padding-left: 0.7rem;
   font-size: 0.78rem;
   line-height: 1.5;
 }
 
 .product-reviews__reply strong {
-  color: #b5ff6d;
+  color: #059669;
 }
 
 .product-reviews__reply p {
@@ -503,14 +503,14 @@ watch(
 
 .product-reviews__retry:focus-visible,
 .product-reviews__load-more:focus-visible {
-  outline: 2px solid #b5ff6d;
+  outline: 2px solid #059669;
   outline-offset: 3px;
 }
 
 .product-reviews__retry:hover,
 .product-reviews__load-more:hover:not(:disabled) {
-  border-color: rgba(181, 255, 109, 0.62);
-  background: rgba(181, 255, 109, 0.12);
+  border-color: rgba(5, 150, 105, 0.62);
+  background: rgba(5, 150, 105, 0.12);
 }
 
 .product-reviews__load-more:disabled {

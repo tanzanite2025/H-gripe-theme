@@ -34,9 +34,7 @@
                 v-if="item.src"
                 :src="item.src"
                 :alt="item.alt || ''"
-                :width="item.width"
-                :height="item.height"
-                class="h-full w-full object-cover rounded-2xl bg-[var(--tz-image-loading-surface)] shadow-2xl"
+                class="h-full w-full object-cover rounded-2xl bg-[var(--tz-image-loading-surface)] shadow-lg"
                 preset="gallery"
                 :sizes="item.sizes || 'xs:100vw sm:100vw md:768px lg:1024px'"
                 :densities="item.densities || '1x 2x'"
@@ -46,9 +44,9 @@
               <!-- Caption Overlay -->
               <div
                 v-if="item.caption"
-                class="absolute bottom-0 inset-x-0 p-6 pt-12 bg-gradient-to-t from-black/90 via-black/60 to-transparent text-white text-center rounded-b-2xl"
+                class="absolute bottom-0 inset-x-0 p-6 pt-12 bg-gradient-to-t from-black/90 via-black/60 to-transparent tz-text-primary text-center rounded-b-2xl"
               >
-                <p class="text-sm sm:text-base font-medium text-slate-100 drop-shadow-md">
+                <p class="text-sm sm:text-base font-medium tz-text-secondary drop-shadow-md">
                   {{ item.caption }}
                 </p>
               </div>

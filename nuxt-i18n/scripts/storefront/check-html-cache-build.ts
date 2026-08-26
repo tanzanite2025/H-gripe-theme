@@ -139,16 +139,16 @@ if (runtimeConfig) {
   assertNoStore(routeRules, '/_internal/**')
   assertNoStore(routeRules, '/shop')
 
-  assertHtmlCache(routeRules, '/shop/**', 300, 3600)
+  assertHtmlCache(routeRules, '/products/**', 300, 3600)
 
   for (const locale of locales) {
     const code = String(locale.code || '')
     if (!code || code === 'en') continue
-    assertHtmlCache(routeRules, `/${code}/shop/**`, 300, 3600)
+    assertHtmlCache(routeRules, `/${code}/products/**`, 300, 3600)
   }
 
   assertHtmlCache(routeRules, '/support/shipping', 86400, 604800)
-  assertHtmlCache(routeRules, '/blog/**', 3600, 86400)
+    assertHtmlCache(routeRules, '/resources/blog/**', 3600, 86400)
 }
 
 if (purgeRouteSource) {

@@ -46,7 +46,7 @@ export function useStripePayment() {
       appearance: {
         theme: 'night',
         variables: {
-          colorPrimary: '#b5ff6d',
+          colorPrimary: '#059669',
           colorBackground: '#080a0c',
           colorText: '#f5f7f8',
           colorDanger: '#fb7185',
@@ -59,8 +59,8 @@ export function useStripePayment() {
             boxShadow: 'none',
           },
           '.Input:focus': {
-            border: '1px solid rgba(181,255,109,0.75)',
-            boxShadow: '0 0 0 1px rgba(181,255,109,0.18)',
+            border: '1px solid rgba(5, 150, 105,0.75)',
+            boxShadow: '0 0 0 1px rgba(5, 150, 105,0.18)',
           },
           '.Label': {
             color: 'rgba(245,247,248,0.72)',

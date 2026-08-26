@@ -55,9 +55,9 @@ const iconName = computed(() => {
   align-items: flex-start;
   gap: 0.7rem;
   padding: 0.75rem 0.85rem;
-  border: 1px solid rgba(255, 255, 255, 0.13);
+  border: 1px solid var(--tz-border-subtle);
   border-radius: 0.75rem;
-  background: rgba(255, 255, 255, 0.045);
+  background: var(--tz-card-surface);
   color: var(--tz-text-secondary);
 }
 
@@ -66,13 +66,13 @@ const iconName = computed(() => {
 }
 
 .storefront-data-notice--fallback {
-  border-color: rgba(181, 255, 109, 0.28);
-  background: rgba(181, 255, 109, 0.06);
+  border-color: var(--tz-site-accent);
+  background: var(--tz-site-accent-soft-surface);
 }
 
 .storefront-data-notice--error {
-  border-color: rgba(248, 113, 113, 0.38);
-  background: rgba(127, 29, 29, 0.18);
+  border-color: var(--tz-status-danger-text);
+  background: var(--tz-status-danger-bg);
 }
 
 .storefront-data-notice--empty {
@@ -86,20 +86,20 @@ const iconName = computed(() => {
   height: 1.65rem;
   flex: 0 0 auto;
   place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid var(--tz-border-subtle);
   border-radius: 999px;
   color: var(--tz-text-secondary);
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--tz-surface-muted);
 }
 
 .storefront-data-notice--fallback .storefront-data-notice__icon {
-  border-color: rgba(181, 255, 109, 0.32);
-  color: var(--tz-brand-primary);
+  border-color: rgba(5, 150, 105, 0.32);
+  color: var(--tz-site-accent);
 }
 
 .storefront-data-notice--error .storefront-data-notice__icon {
-  border-color: rgba(248, 113, 113, 0.42);
-  color: #fca5a5;
+  border-color: var(--tz-status-danger-text);
+  color: var(--tz-status-danger-text);
 }
 
 .storefront-data-notice__copy {
@@ -140,9 +140,9 @@ const iconName = computed(() => {
   justify-content: center;
   gap: 0.35rem;
   padding: 0.35rem 0.7rem;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 1px solid var(--tz-border-strong);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--tz-surface-muted);
   color: var(--tz-text-primary);
   font-size: 0.72rem;
   font-weight: 750;
@@ -157,9 +157,9 @@ const iconName = computed(() => {
 }
 
 .storefront-data-notice :deep(.storefront-data-notice-action:hover:not(:disabled)) {
-  border-color: rgba(181, 255, 109, 0.38);
-  background: rgba(181, 255, 109, 0.12);
-  color: var(--tz-brand-primary);
+  border-color: var(--tz-site-accent-hover);
+  background: var(--tz-site-accent-soft-surface);
+  color: var(--tz-site-accent);
 }
 
 .storefront-data-notice :deep(.storefront-data-notice-action:disabled) {

@@ -53,6 +53,7 @@ export interface ProductVariantForm {
   sku?: string
   title?: string
   option_values: Record<string, any>
+  currency?: string
   price?: number | string
   sale_price?: number | string
   weight_grams?: number | string

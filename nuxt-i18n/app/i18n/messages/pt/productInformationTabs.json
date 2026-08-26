@@ -5,12 +5,12 @@
     "details": "Detalhes",
     "afterSales": "Pós-venda",
     "packaging": "Embalagem",
-    "shipping": "Envio"
+    "productShippingInfo": "Envio"
   },
   "empty": {
     "details": "Os detalhes do produto ainda não foram adicionados.",
     "afterSales": "As informações de pós-venda ainda não foram adicionadas.",
     "packaging": "As informações de embalagem ainda não foram adicionadas.",
-    "shipping": "As informações de envio ainda não foram adicionadas."
+    "productShippingInfo": "As informações de envio ainda não foram adicionadas."
   }
 }

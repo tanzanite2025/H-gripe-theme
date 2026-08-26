@@ -1,12 +1,15 @@
 package middleware
 
 import (
+	"context"
 	"fmt"
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 	"golang.org/x/time/rate"
 )
 
@@ -140,6 +143,63 @@ func RateLimitByUserPerMinute(requestsPerMinute, burst int) gin.HandlerFunc {
 		}
 
 		c.Next()
+	}
+}
+
+// RateLimitByUserPerMinuteRedis allows one request per authenticated user in a
+// shared Redis-backed minute window. It fails closed when Redis is unavailable
+// because the protected endpoint has an external side effect.
+func RateLimitByUserPerMinuteRedis(redisClient redis.UniversalClient) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if redisClient == nil {
+			c.JSON(http.StatusServiceUnavailable, gin.H{
+				"error":   "rate_limit_service_unavailable",
+				"message": "Rate limit service is temporarily unavailable",
+			})
+			c.Abort()
+			return
+		}
+
+		identity := "ip:" + c.ClientIP()
+		if userID, exists := c.Get("user_id"); exists {
+			identity = fmt.Sprintf("user:%v", userID)
+		}
+		key := "commerce_platform:rate_limit:google_indexing:" + identity
+
+		ctx := context.Background()
+		if c.Request != nil {
+			ctx = c.Request.Context()
+		}
+		operationCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+		defer cancel()
+
+		allowed, err := redisClient.SetNX(operationCtx, key, "1", time.Minute).Result()
+		if err != nil {
+			c.JSON(http.StatusServiceUnavailable, gin.H{
+				"error":   "rate_limit_service_unavailable",
+				"message": "Rate limit service is temporarily unavailable",
+			})
+			c.Abort()
+			return
+		}
+		if allowed {
+			c.Next()
+			return
+		}
+
+		retryAfter := 60
+		if ttl, ttlErr := redisClient.TTL(operationCtx, key).Result(); ttlErr == nil && ttl > 0 {
+			retryAfter = int((ttl + time.Second - 1) / time.Second)
+			if retryAfter < 1 {
+				retryAfter = 1
+			}
+		}
+		c.Header("Retry-After", strconv.Itoa(retryAfter))
+		c.JSON(http.StatusTooManyRequests, gin.H{
+			"error":   "rate_limit_exceeded",
+			"message": "Google Indexing notification rate limit exceeded",
+		})
+		c.Abort()
 	}
 }
 

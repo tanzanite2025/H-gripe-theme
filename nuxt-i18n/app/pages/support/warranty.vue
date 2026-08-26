@@ -56,6 +56,8 @@ import { useSiteSettings } from '~/composables/usePublicSettings'
 
 definePageMeta({
   layout: 'support',
+  footerLabelKey: 'support.nav.warranty',
+  footerLabelFallback: 'Warranty',
 })
 
 useHead({
@@ -83,7 +85,7 @@ const supportEmail = computed(() => siteSettings.value.contactEmail?.trim() || '
   font-size: var(--tz-type-page-title);
   line-height: 1.18;
   font-weight: 600;
-  color: #f9fafb;
+  color: var(--tz-text-primary);
 }
 
 .support-page__title--sr-only {

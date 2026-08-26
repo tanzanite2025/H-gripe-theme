@@ -82,6 +82,10 @@ func (h *ExchangeRateHandler) SyncExchangeRates(c *gin.Context) {
 			apierror.RespondBadRequest(c, err.Error())
 			return
 		}
+		if errors.Is(err, service.ErrExchangeRateSyncInProgress) {
+			apierror.RespondConflict(c, err.Error())
+			return
+		}
 		apierror.RespondInternalError(c, err)
 		return
 	}

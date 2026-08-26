@@ -80,9 +80,9 @@
 
               <div
                 v-if="isConfigConfirmMessage(message)"
-                class="mt-3 rounded-2xl border border-indigo-200 bg-indigo-50/70 p-3"
+                class="mt-3 rounded-2xl border border-blue-200 bg-blue-50/70 p-3"
               >
-                <div class="mb-2 text-[11px] font-black uppercase tracking-widest text-indigo-600">
+                <div class="mb-2 text-[11px] font-black uppercase tracking-widest text-blue-600">
                   配置确认请求
                 </div>
                 <div class="flex gap-3">
@@ -123,9 +123,9 @@
                     <div
                       v-for="option in configOptionRows(message)"
                       :key="option.key"
-                      class="rounded-xl border border-indigo-100 bg-indigo-50/50 px-2.5 py-2"
+                      class="rounded-xl border border-blue-100 bg-blue-50/50 px-2.5 py-2"
                     >
-                      <span class="block text-[10px] font-black uppercase tracking-wider text-indigo-500">
+                      <span class="block text-[10px] font-black uppercase tracking-wider text-blue-500">
                         {{ option.label }}
                       </span>
                       <span class="mt-0.5 block font-bold text-foreground">

@@ -1,6 +1,5 @@
 <template>
   <Card class="gap-0 py-0 shadow-none rounded-[24px] border-dashed border-border/80">
-    <div class="uds-glow-bg" />
     <Tabs :model-value="activeActivity" class="relative z-10" @update:model-value="updateActiveActivity">
       <CardHeader class="flex flex-col gap-3 border-b border-dashed border-border/70 py-3.5 sm:flex-row sm:items-center sm:justify-between">
         <div>

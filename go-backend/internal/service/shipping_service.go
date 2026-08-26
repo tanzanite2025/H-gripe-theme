@@ -21,6 +21,7 @@ import (
 type ShippingService struct {
 	shippingRepo    *repository.ShippingRepository
 	productRepo     *repository.ProductRepository
+	currencyPolicy  *CurrencyPolicyService
 	trackingRun     TrackingPollingRunState
 	webhookRun      TrackingWebhookRunState
 	trackingMu      sync.RWMutex
@@ -290,6 +291,13 @@ func NewShippingService(shippingRepo *repository.ShippingRepository, productRepo
 	return service
 }
 
+func (s *ShippingService) ConfigureCurrencyPolicy(policy *CurrencyPolicyService) {
+	if s == nil {
+		return
+	}
+	s.currencyPolicy = policy
+}
+
 func (s *ShippingService) ConfigureOutboundTrackingResilience(
 	retry resilience.HTTPRetryPolicy,
 	breaker resilience.CircuitController,
@@ -411,10 +419,29 @@ func (s *ShippingService) GetTemplate(id uint) (*shipping.ShippingTemplate, erro
 }
 
 func (s *ShippingService) CreateTemplate(template *shipping.ShippingTemplate) error {
+	if err := s.prepareShippingTemplateCurrencies(template); err != nil {
+		return err
+	}
 	return s.shippingRepo.CreateTemplateWithRules(template, template.Rules)
 }
 
 func (s *ShippingService) UpdateTemplate(template *shipping.ShippingTemplate) error {
+	if template == nil {
+		return errors.New("shipping template is required")
+	}
+	existing, err := s.GetTemplate(template.ID)
+	if err != nil {
+		return err
+	}
+	if currency.NormalizeCode(template.Currency) == "" {
+		template.Currency = existing.Currency
+	}
+	if len(template.DisplayPriceData) == 0 {
+		template.DisplayPriceData = existing.DisplayPriceData
+	}
+	if err := s.prepareShippingTemplateCurrencies(template); err != nil {
+		return err
+	}
 	return s.shippingRepo.UpdateTemplateWithRules(template, template.Rules)
 }
 
@@ -424,11 +451,17 @@ func (s *ShippingService) DeleteTemplate(id uint) error {
 
 func (s *ShippingService) CreateTemplateRule(templateID uint, rule *shipping.ShippingRule) error {
 	rule.TemplateID = templateID
+	if err := s.prepareShippingRuleCurrency(templateID, rule); err != nil {
+		return err
+	}
 	return s.shippingRepo.CreateRule(rule)
 }
 
 func (s *ShippingService) UpdateTemplateRule(templateID uint, rule *shipping.ShippingRule) error {
 	rule.TemplateID = templateID
+	if err := s.prepareShippingRuleCurrency(templateID, rule); err != nil {
+		return err
+	}
 	return s.shippingRepo.UpdateRuleForTemplate(rule)
 }
 
@@ -520,6 +553,10 @@ func (s *ShippingService) QuoteResolvedItems(input ShippingQuoteInput) (*Shippin
 	if country == "" {
 		return nil, errors.New("shipping country is required")
 	}
+	quoteCurrency := currency.NormalizeCode(input.Currency)
+	if !currency.IsCatalogCode(quoteCurrency) {
+		return nil, errors.New("shipping quote currency is required")
+	}
 	if len(input.Items) == 0 {
 		return nil, errors.New("shipping quote requires at least one item")
 	}
@@ -560,6 +597,22 @@ func (s *ShippingService) QuoteResolvedItems(input ShippingQuoteInput) (*Shippin
 		}
 		if !template.Enabled {
 			return nil, fmt.Errorf("shipping template ID %d is disabled", template.ID)
+		}
+		templateCurrency := currency.NormalizeCode(template.Currency)
+		if !currency.IsCatalogCode(templateCurrency) {
+			return nil, fmt.Errorf("shipping template ID %d has invalid source currency", template.ID)
+		}
+		if templateCurrency != quoteCurrency {
+			return nil, fmt.Errorf("shipping template %s currency %s does not match quote currency %s", template.Name, templateCurrency, quoteCurrency)
+		}
+		for _, rule := range template.Rules {
+			ruleCurrency := currency.NormalizeCode(rule.Currency)
+			if !currency.IsCatalogCode(ruleCurrency) {
+				return nil, fmt.Errorf("shipping rule ID %d has invalid source currency", rule.ID)
+			}
+			if ruleCurrency != templateCurrency {
+				return nil, fmt.Errorf("shipping rule ID %d currency %s does not match template currency %s", rule.ID, ruleCurrency, templateCurrency)
+			}
 		}
 
 		amount := item.UnitPrice * float64(item.Quantity)
@@ -649,13 +702,7 @@ func (s *ShippingService) QuoteResolvedItems(input ShippingQuoteInput) (*Shippin
 	}
 	displayPrices := combineDisplayPriceSets(groupDisplayPriceSets)
 
-	currency := strings.TrimSpace(input.Currency)
-	if currency == "" {
-		return nil, errors.New("shipping quote currency is required")
-	}
-	currency = strings.ToUpper(currency)
-
-	options, err := s.quoteCarrierServiceOptions(country, currency, displayCurrency, resolvedItems, groups, cartAmount)
+	options, err := s.quoteCarrierServiceOptions(country, quoteCurrency, displayCurrency, resolvedItems, groups, cartAmount)
 	if err != nil {
 		return nil, err
 	}
@@ -676,7 +723,7 @@ func (s *ShippingService) QuoteResolvedItems(input ShippingQuoteInput) (*Shippin
 	return &ShippingQuote{
 		ShippingFee:     shippingFee,
 		FreeShipping:    freeShipping,
-		Currency:        currency,
+		Currency:        quoteCurrency,
 		DisplayPrice:    displayPriceForCurrency(displayCurrency, displayPrices),
 		DisplayPrices:   displayPrices,
 		DisplayCurrency: displayCurrency,
@@ -685,6 +732,75 @@ func (s *ShippingService) QuoteResolvedItems(input ShippingQuoteInput) (*Shippin
 		Options:         options,
 		SelectedOption:  selectedOption,
 	}, nil
+}
+
+func (s *ShippingService) prepareShippingTemplateCurrencies(template *shipping.ShippingTemplate) error {
+	if template == nil {
+		return errors.New("shipping template is required")
+	}
+	templateCurrency, err := s.normalizeShippingSourceCurrency(template.Currency)
+	if err != nil {
+		return err
+	}
+	template.Currency = templateCurrency
+	for i := range template.Rules {
+		ruleCurrency := currency.NormalizeCode(template.Rules[i].Currency)
+		if ruleCurrency == "" {
+			template.Rules[i].Currency = templateCurrency
+			continue
+		}
+		ruleCurrency, err = s.normalizeShippingSourceCurrency(ruleCurrency)
+		if err != nil {
+			return err
+		}
+		if ruleCurrency != templateCurrency {
+			return fmt.Errorf("shipping rule currency %s does not match template currency %s", ruleCurrency, templateCurrency)
+		}
+		template.Rules[i].Currency = ruleCurrency
+	}
+	return nil
+}
+
+func (s *ShippingService) prepareShippingRuleCurrency(templateID uint, rule *shipping.ShippingRule) error {
+	if rule == nil {
+		return errors.New("shipping rule is required")
+	}
+	template, err := s.GetTemplate(templateID)
+	if err != nil {
+		return err
+	}
+	templateCurrency := currency.NormalizeCode(template.Currency)
+	ruleCurrency := currency.NormalizeCode(rule.Currency)
+	if ruleCurrency == "" {
+		ruleCurrency = templateCurrency
+	}
+	normalized, err := s.normalizeShippingSourceCurrency(ruleCurrency)
+	if err != nil {
+		return err
+	}
+	if templateCurrency != "" && normalized != templateCurrency {
+		return fmt.Errorf("shipping rule currency %s does not match template currency %s", normalized, templateCurrency)
+	}
+	rule.Currency = normalized
+	return nil
+}
+
+func (s *ShippingService) normalizeShippingSourceCurrency(value string) (string, error) {
+	code := currency.NormalizeCode(value)
+	if code == "" {
+		code = currency.DefaultPrimaryCurrency
+		if s != nil && s.currencyPolicy != nil {
+			primaryCurrency, err := s.currencyPolicy.BackendEntryCurrency()
+			if err != nil {
+				return "", fmt.Errorf("resolve backend entry currency: %w", err)
+			}
+			code = currency.NormalizeCode(primaryCurrency)
+		}
+	}
+	if !currency.IsCatalogCode(code) {
+		return "", ErrShippingCurrencyInvalid
+	}
+	return code, nil
 }
 
 func (s *ShippingService) ListCarriers(enabledOnly bool) ([]shipping.Carrier, error) {
@@ -1147,11 +1263,36 @@ func (s *ShippingService) GetCarrierService(id uint) (*shipping.CarrierService, 
 }
 
 func (s *ShippingService) CreateCarrierService(service *shipping.CarrierService) error {
+	if err := s.prepareCarrierServiceCurrency(service); err != nil {
+		return err
+	}
 	return s.shippingRepo.CreateCarrierService(service)
 }
 
 func (s *ShippingService) UpdateCarrierService(service *shipping.CarrierService) error {
+	if err := s.prepareCarrierServiceCurrency(service); err != nil {
+		return err
+	}
 	return s.shippingRepo.UpdateCarrierService(service)
+}
+
+func (s *ShippingService) prepareCarrierServiceCurrency(carrierService *shipping.CarrierService) error {
+	if carrierService == nil {
+		return errors.New("carrier service is required")
+	}
+	if strings.TrimSpace(carrierService.Currency) == "" && carrierService.ID > 0 {
+		existing, err := s.GetCarrierService(carrierService.ID)
+		if err != nil {
+			return err
+		}
+		carrierService.Currency = existing.Currency
+	}
+	normalized, err := s.normalizeShippingSourceCurrency(carrierService.Currency)
+	if err != nil {
+		return err
+	}
+	carrierService.Currency = normalized
+	return nil
 }
 
 func (s *ShippingService) DeleteCarrierService(id uint) error {

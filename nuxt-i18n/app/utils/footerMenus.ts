@@ -1,79 +1,198 @@
+import type { RouteRecordNormalized } from 'vue-router'
+import localeManifest from '~/i18n/locales.manifest'
+
 export interface FooterLink {
-  /** i18n key for the link label, e.g. 'footer.links.about' */
-  labelKey: string
-  /** route path or named route key; will be passed to localePath() */
+  /** Optional i18n key declared by the route page metadata. */
+  labelKey?: string
+  /** Fallback label used when the route has no translation metadata yet. */
+  fallback?: string
+  /** Canonical route path passed to localePath(). */
   to: string
-  /** render as external <a> instead of NuxtLink when true */
+  /** Render as external <a> instead of NuxtLink when true. */
   external?: boolean
 }
 
 export interface FooterSection {
-  /** stable id for this column, e.g. 'company', 'support' */
+  /** Stable id for this column, e.g. 'resources' or 'siteOverview'. */
   id: string
-  /** i18n key for the column title, e.g. 'footer.menus.company' */
+  /** i18n key for the column title. */
   titleKey: string
+  /** Fallback title used when a locale has not translated the key yet. */
+  fallback?: string
   links: FooterLink[]
 }
 
-/**
- * Pure-i18n footer menu definition.
- *
- * - Structure (columns, links, targets) is owned by Nuxt.
- * - All visible text comes from nuxt-i18n via the labelKey/titleKey keys.
- * - There is no runtime dependency on WordPress menus.
- *
- * You can safely extend this array later with more columns / links without
- * changing the rendering component.
- */
-export const footerMenus: FooterSection[] = [
-  {
-    id: 'products',
-    titleKey: 'footer.menus.products',
-    links: [
-      // Products column: product- and guide-related links
-      { labelKey: 'footer.links.shop', to: '/shop' },
+interface FooterRouteSectionDefinition {
+  id: string
+  path: string
+  titleKey: string
+  titleFallback: string
+  includeRoot?: boolean
+}
 
-      { labelKey: 'footer.links.tireSizeCharts', to: '/guides/tireguides' },
-      { labelKey: 'footer.links.blog', to: '/blog' },
-      { labelKey: 'products.nav.technicalDocs', to: '/guides/wheelset-buyers/wheel-components' }, { labelKey: 'footer.links.wheelsetBuyersGuide', to: '/guides/wheelset-buyers' },
-      { labelKey: 'footer.links.membershipPoints', to: '/membershipandpoints' },
-      { labelKey: 'footer.links.pictureWarehouse', to: '/picture-warehouse' },
-    ],
-  },
+type FooterRouteMeta = {
+  footer?: boolean
+  footerLabelKey?: string
+  footerLabelFallback?: string
+}
+
+const footerRouteSections: readonly FooterRouteSectionDefinition[] = [
   {
-    id: 'support',
-    titleKey: 'footer.menus.support',
-    links: [
-      { labelKey: 'footer.links.helpCenter', to: '/help-center' },
-      { labelKey: 'footer.links.faq', to: '/support/faqs' },
-    ],
-  },
-  {
-    id: 'company',
-    titleKey: 'footer.menus.company',
-    links: [
-      { labelKey: 'footer.links.aboutUs', to: '/company/about' },
-      { labelKey: 'footer.links.ourStory', to: '/company/ourstory' },
-      { labelKey: 'footer.links.globalPartners', to: '/company/global-partners' },
-      { labelKey: 'footer.links.oemOdm', to: '/company/oem-odm' },
-      { labelKey: 'footer.links.certificates', to: '/company/certificates' },
-      { labelKey: 'footer.links.contactUs', to: '/company/contact' },
-    ],
+    id: 'shop',
+    path: '/shop',
+    titleKey: 'products.nav.shop',
+    titleFallback: 'Shop',
   },
   {
     id: 'resources',
+    path: '/resources',
     titleKey: 'footer.menus.resources',
-    // You can fill links for this column later
-    links: [],
+    titleFallback: 'Resources',
+  },
+  {
+    id: 'support',
+    path: '/support',
+    titleKey: 'footer.menus.support',
+    titleFallback: 'Support',
+  },
+  {
+    id: 'company',
+    path: '/company',
+    titleKey: 'footer.menus.company',
+    titleFallback: 'Company',
+  },
+  {
+    id: 'guides',
+    path: '/guides',
+    titleKey: 'breadcrumbs.guides',
+    titleFallback: 'Guides',
   },
   {
     id: 'policies',
+    path: '/policies',
     titleKey: 'footer.menus.policies',
-    links: [
-      { labelKey: 'policyTabs.privacy', to: '/policies/privacy' },
-      { labelKey: 'policyTabs.cookie', to: '/policies/cookie' },
-      { labelKey: 'policyTabs.refundReturn', to: '/policies/refund-return' },
-      { labelKey: 'policyTabs.terms', to: '/policies/terms' },
-    ],
+    titleFallback: 'Policies',
+  },
+  {
+    id: 'siteOverview',
+    path: '/website',
+    titleKey: 'footer.menus.siteOverview',
+    titleFallback: 'Site Overview',
   },
 ]
+
+const localeCodes = localeManifest.map(locale => locale.code)
+
+const normalizeRoutePath = (path: string) => {
+  const pathWithoutQuery = (path || '/').split(/[?#]/)[0] || '/'
+  const absolutePath = pathWithoutQuery.startsWith('/')
+    ? pathWithoutQuery
+    : `/${pathWithoutQuery}`
+  const segments = absolutePath.split('/').filter(Boolean)
+  const firstSegment = segments[0] || ''
+
+  if (
+    localeCodes.includes(firstSegment) ||
+    firstSegment === ':locale' ||
+    firstSegment.startsWith(':locale')
+  ) {
+    segments.shift()
+  }
+
+  return `/${segments.join('/')}`.replace(/\/+$/, '') || '/'
+}
+
+const isDynamicRouteSegment = (segment: string) => {
+  return (
+    segment.startsWith(':') ||
+    segment.startsWith('[') ||
+    segment.includes('*') ||
+    segment.includes('(')
+  )
+}
+
+const humanizeRouteSegment = (segment: string) => {
+  let decodedSegment = segment
+  try {
+    decodedSegment = decodeURIComponent(segment)
+  } catch {
+    // Keep the route segment when decoding is not possible.
+  }
+
+  return decodedSegment
+    .replace(/[-_]+/g, ' ')
+    .replace(/\b\w/g, character => character.toUpperCase())
+}
+
+const routeLabel = (route: RouteRecordNormalized, path: string): FooterLink => {
+  const meta = (route.meta || {}) as FooterRouteMeta
+  const segment = path.split('/').filter(Boolean).at(-1) || ''
+
+  return {
+    ...(meta.footerLabelKey ? { labelKey: meta.footerLabelKey } : {}),
+    fallback: meta.footerLabelFallback || humanizeRouteSegment(segment),
+    to: path,
+  }
+}
+
+const directStaticChildRoutes = (
+  routes: readonly RouteRecordNormalized[],
+  section: FooterRouteSectionDefinition
+) => {
+  const normalizedSectionPath = normalizeRoutePath(section.path)
+  const sectionSegments = normalizedSectionPath.split('/').filter(Boolean)
+  const seenPaths = new Set<string>()
+
+  return routes
+    .map((route, order) => ({
+      route,
+      order,
+      path: normalizeRoutePath(route.path),
+    }))
+    .filter(({ route, path }) => {
+      const meta = (route.meta || {}) as FooterRouteMeta
+      const segments = path.split('/').filter(Boolean)
+
+      return (
+        meta.footer !== false &&
+        Boolean(route.name) &&
+        !route.redirect &&
+        (section.includeRoot
+          ? path === normalizedSectionPath || segments.length === sectionSegments.length + 1
+          : path !== normalizedSectionPath && segments.length === sectionSegments.length + 1) &&
+        segments.slice(0, sectionSegments.length).every(
+          (segment, index) => segment === sectionSegments[index]
+        ) &&
+        !segments.some(isDynamicRouteSegment)
+      )
+    })
+    .filter(({ path }) => {
+      if (seenPaths.has(path)) return false
+      seenPaths.add(path)
+      return true
+    })
+    .sort((left, right) => left.order - right.order)
+    .map(({ route, path }) => routeLabel(route, path))
+}
+
+/**
+ * Build footer columns from the router's direct child pages.
+ *
+ * The header owns presentation cards; the footer owns route discovery. Keeping
+ * these sources separate prevents a root page such as /shop from becoming a
+ * duplicate "Shop" child link under the SHOP column.
+ */
+export const createFooterMenusFromRoutes = (
+  routes: readonly RouteRecordNormalized[]
+): FooterSection[] => {
+  const routeSections = footerRouteSections
+    .map(section => ({
+      id: section.id,
+      titleKey: section.titleKey,
+      fallback: section.titleFallback,
+      links: directStaticChildRoutes(routes, section),
+    }))
+    .filter(section => section.links.length > 0)
+
+  return routeSections
+}

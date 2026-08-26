@@ -57,7 +57,7 @@ func (s *CustomerServiceAvatarService) Upload(ctx context.Context, userID uint, 
 	if s == nil || s.storage == nil {
 		return "", ErrCustomerServiceAvatarStorageUnavailable
 	}
-	if err := upload.ValidateFile(file, upload.CustomerServiceAvatarRule); err != nil {
+	if err := upload.ValidateSpecFile(file, string(upload.SpecCustomerServiceAvatar)); err != nil {
 		return "", err
 	}
 	profileID, err := s.requireProfile(userID)

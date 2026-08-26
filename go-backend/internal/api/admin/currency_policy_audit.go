@@ -18,11 +18,12 @@ func (h *CurrencyPolicyHandler) recordCurrencyPolicyAudit(c *gin.Context, event 
 }
 
 func currencyPolicyAuditDetails(policy currency.Policy) map[string]interface{} {
+	backendEntryCurrency := currency.NormalizeCode(policy.PrimaryCurrency)
 	details := map[string]interface{}{
-		"primary_currency":         currency.NormalizeCode(policy.PrimaryCurrency),
-		"display_currencies":       currency.NormalizeCodes(policy.DisplayCurrencies),
-		"display_currency_count":   len(currency.NormalizeCodes(policy.DisplayCurrencies)),
-		"available_currency_count": len(policy.AvailableCurrencies),
+		"primary_currency":          backendEntryCurrency,
+		"backend_entry_currency":    backendEntryCurrency,
+		"available_currency_count":  len(policy.AvailableCurrencies),
+		"display_currencies_source": "storefront_markets",
 	}
 	if len(policy.AvailableCurrencies) > 0 {
 		minorUnits := make(map[string]int, len(policy.AvailableCurrencies))

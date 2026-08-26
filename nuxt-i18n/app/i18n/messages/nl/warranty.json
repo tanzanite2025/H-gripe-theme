@@ -3,19 +3,19 @@
   "subtitle": "Check your product warranty status",
   "login_required": "Please log in to check your product warranty.",
   "login_button": "Log In",
-  "input_label": "Enter your product code:",
-  "input_placeholder": "e.g. ABC123",
+  "input_label": "Enter your order number:",
+  "input_placeholder": "e.g. TZ202608230001",
   "check_button": "Check",
-  "help_text": "Your product code can be found on the product packaging or warranty card.",
+  "help_text": "After shipment, use your order number to check the shipped items and remaining warranty.",
   "months": "months",
   "days": "days",
   "result": {
     "valid": "Warranty Valid",
     "expired": "Warranty Expired",
-    "not_found": "Product Not Found"
+    "not_found": "Shipment Not Found"
   },
   "fields": {
-    "product_code": "Product Code",
+    "order_number": "Order Number",
     "product_type": "Product Type",
     "product_name": "Product Name",
     "ship_date": "Ship Date",
@@ -33,13 +33,13 @@
     "contact_support": "Contact Support"
   },
   "errors": {
-    "not_found_message": "We couldn't find a product with code: {code}",
+    "not_found_message": "We couldn't find a shipment record for order number: {code}",
     "check_tips": {
-      "0": "Check that the product code was entered exactly as printed.",
-      "1": "Contact support if your product code still cannot be found."
+      "0": "Check that the order number was entered exactly as shown on your order.",
+      "1": "Contact support if the shipped order still cannot be found."
     },
     "error_contact": "If you believe this is an error, please contact us."
   },
-  "cardDesc": "Enter your product code to check warranty status and history.",
+  "cardDesc": "Enter your order number to check shipped items, warranty time, and service history.",
   "checkNow": "Check Now"
 }

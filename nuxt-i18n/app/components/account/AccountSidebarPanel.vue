@@ -209,7 +209,7 @@ watch(
   gap: 0.9rem;
   overflow: hidden;
   padding: 0.35rem 0.15rem 0.75rem;
-  color: #ffffff;
+  color: var(--tz-text-primary);
 }
 
 .account-sidebar__hero {
@@ -219,10 +219,9 @@ watch(
   justify-content: space-between;
   gap: 0.85rem;
   border-radius: 1.55rem;
-  background:
-    radial-gradient(circle at top left, rgba(181, 255, 109, 0.06), transparent 42%),
-    linear-gradient(135deg, rgba(20, 20, 22, 0.98), rgba(5, 5, 5, 0.94));
-  box-shadow: 0 18px 44px -26px rgba(0, 0, 0, 1);
+  border: 1px solid var(--tz-border-subtle);
+  background: var(--tz-card-surface);
+  box-shadow: 0 18px 44px -26px rgb(15 23 42 / 0.14);
   padding: 1rem;
 }
 
@@ -232,7 +231,7 @@ watch(
 
 .account-sidebar__kicker {
   margin: 0 0 0.35rem;
-  color: #B5FF6D;
+  color: #059669;
   font-size: var(--tz-type-micro-label);
   font-weight: 900;
   letter-spacing: 0.18em;
@@ -242,7 +241,7 @@ watch(
 .account-sidebar__hero h2 {
   margin: 0;
   overflow: hidden;
-  color: #ffffff;
+  color: var(--tz-text-primary);
   font-size: clamp(1.12rem, 3.5vw, 1.55rem);
   font-weight: 900;
   line-height: 1.08;
@@ -251,7 +250,7 @@ watch(
 
 .account-sidebar__hero p:last-child {
   margin: 0.45rem 0 0;
-  color: rgba(232, 232, 232, 0.82);
+  color: var(--tz-text-secondary);
   font-size: 0.8rem;
   line-height: 1.45;
 }
@@ -263,8 +262,9 @@ watch(
   align-items: center;
   gap: 0.35rem;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(232, 232, 232, 0.88);
+  border: 1px solid var(--tz-border-subtle);
+  background: var(--tz-surface-subtle);
+  color: var(--tz-text-secondary);
   padding: 0 0.7rem;
   font-size: var(--tz-type-micro-label);
   font-weight: 800;
@@ -285,7 +285,8 @@ watch(
 .account-sidebar__stats div {
   min-height: 4.1rem;
   border-radius: 1.05rem;
-  background: rgba(255, 255, 255, 0.055);
+  border: 1px solid var(--tz-border-subtle);
+  background: var(--tz-input-surface);
   padding: 0.75rem;
 }
 
@@ -295,14 +296,14 @@ watch(
 }
 
 .account-sidebar__stats span {
-  color: rgba(212, 212, 212, 0.8);
+  color: var(--tz-text-muted);
   font-size: var(--tz-type-micro-label);
   font-weight: 750;
 }
 
 .account-sidebar__stats strong {
   margin-top: 0.35rem;
-  color: #ffffff;
+  color: var(--tz-text-primary);
   font-size: 1.15rem;
   font-weight: 900;
 }
@@ -313,7 +314,8 @@ watch(
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.42rem;
   border-radius: 1.25rem;
-  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid var(--tz-border-subtle);
+  background: var(--tz-input-surface);
   padding: 0.35rem;
 }
 
@@ -325,7 +327,7 @@ watch(
   justify-content: center;
   gap: 0.35rem;
   border-radius: 0.95rem;
-  color: rgba(232, 232, 232, 0.78);
+  color: var(--tz-text-secondary);
   font-size: var(--tz-type-micro-label);
   font-weight: 850;
   transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease;
@@ -344,8 +346,8 @@ watch(
 }
 
 .account-sidebar__tab--active {
-  background: #B5FF6D;
-  color: #050505;
+  background: var(--tz-site-accent);
+  color: #ffffff;
   transform: translateY(-1px);
 }
 

@@ -181,8 +181,8 @@ const handleSearchInput = (event: Event) => {
   overflow: hidden;
   border: 0;
   border-radius: 0.9rem;
-  background: #050505;
-  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.8);
+  background: var(--tz-card-surface, #ffffff);
+  box-shadow: 0 24px 70px rgba(20, 32, 43, 0.18);
 }
 
 .global-all-faqs-desktop-search-overlay-panel__header {
@@ -191,13 +191,13 @@ const handleSearchInput = (event: Event) => {
   justify-content: space-between;
   gap: 1rem;
   padding: 1rem 1.2rem 0.85rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  background: linear-gradient(180deg, #17171b 0%, #0d0d10 100%);
+  border-bottom: 1px solid rgba(20, 32, 43, 0.12);
+    background: var(--tz-card-surface);
 }
 
 .global-all-faqs-desktop-search-overlay-panel__eyebrow {
   margin-bottom: 0.3rem;
-  color: #B5FF6D;
+  color: var(--tz-text-accent);
   font-size: 0.6rem;
   font-weight: 900;
   letter-spacing: 0.14em;
@@ -206,7 +206,7 @@ const handleSearchInput = (event: Event) => {
 
 .global-all-faqs-desktop-search-overlay-panel__title {
   margin: 0;
-  color: #ffffff;
+  color: var(--tz-text-primary);
   font-size: 1.15rem;
   font-weight: 900;
   line-height: 1.2;
@@ -215,7 +215,7 @@ const handleSearchInput = (event: Event) => {
 .global-all-faqs-desktop-search-overlay-panel__intro {
   max-width: 48rem;
   margin: 0.35rem 0 0;
-  color: #94a3b8;
+  color: var(--tz-text-secondary);
   font-size: 0.72rem;
   line-height: 1.45;
 }
@@ -225,9 +225,9 @@ const handleSearchInput = (event: Event) => {
   display: inline-grid;
   flex: 0 0 auto;
   place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.04);
-  color: #cbd5e1;
+  border: 1px solid rgba(20, 32, 43, 0.14);
+  background: #f3f6f8;
+  color: var(--tz-text-secondary);
   cursor: pointer;
 }
 
@@ -247,8 +247,8 @@ const handleSearchInput = (event: Event) => {
 .global-all-faqs-desktop-search-overlay-panel__close:focus-visible,
 .global-all-faqs-desktop-search-overlay-panel__topic-reset:hover,
 .global-all-faqs-desktop-search-overlay-panel__topic-reset:focus-visible {
-  border-color: rgba(255, 255, 255, 0.4);
-  color: #ffffff;
+  border-color: rgba(20, 32, 43, 0.3);
+  color: var(--tz-text-primary);
 }
 
 .global-all-faqs-desktop-search-overlay-panel__close :deep(svg) {
@@ -268,10 +268,10 @@ const handleSearchInput = (event: Event) => {
   gap: 0.6rem;
   margin: 0.8rem 1.2rem 0.75rem;
   padding: 0 0.8rem;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(20, 32, 43, 0.18);
   border-radius: 0.7rem;
-  background: var(--tz-input-surface, #0b0b0e);
-  color: #94a3b8;
+  background: var(--tz-input-surface, #ffffff);
+  color: var(--tz-text-secondary);
 }
 
 .global-all-faqs-desktop-search-overlay-panel__search > :deep(svg) {
@@ -286,12 +286,12 @@ const handleSearchInput = (event: Event) => {
   border: 0;
   outline: 0;
   background: transparent;
-  color: #ffffff;
+  color: var(--tz-text-primary);
   font-size: 0.8rem;
 }
 
 .global-all-faqs-desktop-search-overlay-panel__search input::placeholder {
-  color: #64748b;
+  color: var(--tz-text-muted);
 }
 
 .global-all-faqs-desktop-search-overlay-panel__clear {
@@ -302,8 +302,8 @@ const handleSearchInput = (event: Event) => {
   place-items: center;
   border: 0;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
-  color: #94a3b8;
+  background: #e4eaee;
+  color: var(--tz-text-secondary);
   cursor: pointer;
 }
 
@@ -369,7 +369,7 @@ const handleSearchInput = (event: Event) => {
 .global-all-faqs-desktop-search-overlay-panel__section-kicker {
   display: block;
   margin-bottom: 0.18rem;
-  color: #64748b;
+  color: var(--tz-text-muted);
   font-size: 0.55rem;
   font-weight: 900;
   letter-spacing: 0.13em;
@@ -379,7 +379,7 @@ const handleSearchInput = (event: Event) => {
 
 .global-all-faqs-desktop-search-overlay-panel__section-heading h3 {
   margin: 0;
-  color: #ffffff;
+  color: var(--tz-text-primary);
   font-size: 0.82rem;
   font-weight: 900;
   line-height: 1.25;
@@ -390,9 +390,9 @@ const handleSearchInput = (event: Event) => {
   min-width: 1.7rem;
   height: 1.7rem;
   place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(20, 32, 43, 0.16);
   border-radius: 999px;
-  color: #B5FF6D;
+  color: var(--tz-text-accent);
   font-size: 0.62rem;
   font-weight: 900;
 }
@@ -411,8 +411,8 @@ const handleSearchInput = (event: Event) => {
   padding: 0.75rem;
   border: 1px solid transparent;
   border-radius: 0.7rem;
-  background: var(--tz-card-surface, #111116);
-  color: #ffffff;
+  background: var(--tz-card-surface, #ffffff);
+  color: var(--tz-text-primary);
   text-align: left;
   cursor: pointer;
   transition: border-color 0.2s ease, background 0.2s ease;
@@ -420,10 +420,10 @@ const handleSearchInput = (event: Event) => {
 
 .global-all-faqs-desktop-search-overlay-panel__topic:hover,
 .global-all-faqs-desktop-search-overlay-panel__topic.is-active {
-  border-color: rgba(181, 255, 109, 0.48);
+  border-color: rgba(5, 150, 105, 0.48);
   background:
-    linear-gradient(0deg, rgba(181, 255, 109, 0.075), rgba(181, 255, 109, 0.075)),
-    var(--tz-card-surface, #111116);
+    linear-gradient(0deg, rgba(5, 150, 105, 0.075), rgba(5, 150, 105, 0.075)),
+    var(--tz-card-surface, #ffffff);
 }
 
 .global-all-faqs-desktop-search-overlay-panel__topic-label {
@@ -440,7 +440,7 @@ const handleSearchInput = (event: Event) => {
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
-  color: #64748b;
+  color: var(--tz-text-muted);
   font-size: 0.58rem;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -450,7 +450,7 @@ const handleSearchInput = (event: Event) => {
 .global-all-faqs-desktop-search-overlay-panel__topic-footer :deep(svg) {
   width: 0.85rem;
   height: 0.85rem;
-  color: #B5FF6D;
+  color: var(--tz-text-accent);
 }
 
 .global-all-faqs-desktop-search-overlay-panel__empty,
@@ -458,16 +458,16 @@ const handleSearchInput = (event: Event) => {
   display: grid;
   min-height: 10rem;
   place-items: center;
-  border: 1px dashed rgba(255, 255, 255, 0.18);
+  border: 1px dashed rgba(20, 32, 43, 0.18);
   border-radius: 0.75rem;
-  color: #94a3b8;
+  color: var(--tz-text-secondary);
   font-size: 0.78rem;
   line-height: 1.5;
   text-align: center;
 }
 
 .global-all-faqs-desktop-search-overlay-panel__loading {
-  color: #B5FF6D;
+  color: var(--tz-text-accent);
 }
 
 @media (min-width: 768px) {

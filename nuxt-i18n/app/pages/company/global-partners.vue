@@ -84,7 +84,7 @@
               class="premium-card rounded-2xl p-4 text-center"
             >
               <div
-                class="mb-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/30 text-xs font-semibold tz-text-accent"
+                class="mb-3 inline-flex h-8 w-8 items-center justify-center rounded-full tz-surface-muted text-xs font-semibold tz-text-accent"
               >
                 01
               </div>
@@ -101,7 +101,7 @@
               class="premium-card rounded-2xl p-4"
             >
               <div
-                class="mb-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/30 text-xs font-semibold tz-text-accent"
+                class="mb-3 inline-flex h-8 w-8 items-center justify-center rounded-full tz-surface-muted text-xs font-semibold tz-text-accent"
               >
                 02
               </div>
@@ -118,7 +118,7 @@
               class="premium-card rounded-2xl p-4"
             >
               <div
-                class="mb-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/30 text-xs font-semibold tz-text-accent"
+                class="mb-3 inline-flex h-8 w-8 items-center justify-center rounded-full tz-surface-muted text-xs font-semibold tz-text-accent"
               >
                 03
               </div>
@@ -153,6 +153,8 @@ const { t } = useI18n()
 
 definePageMeta({
   layout: 'products',
+  footerLabelKey: 'company.nav.globalPartners',
+  footerLabelFallback: 'Global Partners',
 })
 
 useHead({

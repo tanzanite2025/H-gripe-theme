@@ -1,5 +1,6 @@
 {
   "ariaLabel": "Winkelcategorieën",
+  "children": "Subcategorieën",
   "loading": "Categorieën laden...",
   "all": "Alles",
   "empty": "No shop categories are available yet."

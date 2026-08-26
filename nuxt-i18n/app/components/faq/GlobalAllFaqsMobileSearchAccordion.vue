@@ -88,11 +88,11 @@ const answerId = (itemId: string) => (
   overflow: hidden;
   border: 1px solid transparent;
   border-radius: 0.7rem;
-  background: var(--tz-card-surface, #111116);
+  background: var(--tz-card-surface, #ffffff);
 }
 
 .global-all-faqs-mobile-search-accordion__item.is-expanded {
-  border-color: rgba(181, 255, 109, 0.48);
+  border-color: rgba(5, 150, 105, 0.48);
 }
 
 .global-all-faqs-mobile-search-accordion__button {
@@ -104,7 +104,7 @@ const answerId = (itemId: string) => (
   padding: 0.9rem 1rem;
   border: 0;
   background: transparent;
-  color: #ffffff;
+  color: var(--tz-text-primary);
   text-align: left;
   cursor: pointer;
 }
@@ -119,7 +119,7 @@ const answerId = (itemId: string) => (
 .global-all-faqs-mobile-search-accordion__category {
   min-width: 0;
   overflow: hidden;
-  color: #B5FF6D;
+  color: var(--tz-text-accent);
   font-size: 0.56rem;
   font-weight: 900;
   letter-spacing: 0.08em;
@@ -131,7 +131,7 @@ const answerId = (itemId: string) => (
 
 .global-all-faqs-mobile-search-accordion__question {
   min-width: 0;
-  color: #ffffff;
+  color: var(--tz-text-primary);
   font-size: 1rem;
   line-height: 1.45;
 }
@@ -140,12 +140,12 @@ const answerId = (itemId: string) => (
   width: 0.9rem;
   height: 0.9rem;
   flex: 0 0 auto;
-  color: #94a3b8;
+  color: var(--tz-text-muted);
   transition: transform 0.25s ease, color 0.25s ease;
 }
 
 .global-all-faqs-mobile-search-accordion__icon.is-expanded {
-  color: #B5FF6D;
+  color: var(--tz-text-accent);
   transform: rotate(180deg);
 }
 
@@ -153,13 +153,13 @@ const answerId = (itemId: string) => (
   max-height: 60rem;
   overflow: hidden;
   background:
-    linear-gradient(0deg, rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0.025)),
-    var(--tz-card-surface, #111116);
+    linear-gradient(0deg, rgba(20, 32, 43, 0.025), rgba(20, 32, 43, 0.025)),
+    var(--tz-card-surface, #ffffff);
 }
 
 .global-all-faqs-mobile-search-accordion__answer {
   padding: 0.25rem 0.7rem 0.8rem;
-  color: #cbd5e1;
+  color: var(--tz-text-secondary);
   font-size: 0.73rem;
   line-height: 1.65;
 }

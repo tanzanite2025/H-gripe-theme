@@ -111,6 +111,31 @@ func TestAdminSettingsFiltersDomainManagedSettingsFromGenericLists(t *testing.T)
 	require.Equal(t, []string{"site"}, groups)
 }
 
+func TestAdminSettingsSocialGroupOnlyExposesSupportedPlatforms(t *testing.T) {
+	_, settingService := newTestSettingService(t)
+	adminSettings := NewAdminSettingsService(settingService)
+
+	require.NoError(t, settingService.BatchSet([]settingdomain.Setting{
+		{Key: "facebook", Value: "https://facebook.example", Locale: "en", Group: "social", IsPublic: true},
+		{Key: "x", Value: "https://x.example", Locale: "en", Group: "social", IsPublic: true},
+		{Key: "twitter", Value: "https://old.example", Locale: "en", Group: "social", IsPublic: true},
+		{Key: "linkedin", Value: "https://linkedin.example", Locale: "en", Group: "social", IsPublic: true},
+		{Key: "wechat", Value: "wechat-id", Locale: "en", Group: "social", IsPublic: true},
+	}))
+
+	settings, err := adminSettings.GetByGroup("social", "en")
+	require.NoError(t, err)
+	require.ElementsMatch(t, []string{"facebook", "x"}, settingKeys(settings))
+
+	_, err = adminSettings.UpdateSetting(settingdomain.UpdateSettingRequest{
+		Key:    "twitter",
+		Value:  "https://old.example",
+		Group:  "social",
+		Locale: "en",
+	})
+	require.ErrorIs(t, err, ErrSettingInvalid)
+}
+
 func TestAdminSettingsMasksSecretsAndPreservesMaskedUpdates(t *testing.T) {
 	_, settingService := newTestSettingService(t)
 	adminSettings := NewAdminSettingsService(settingService)
@@ -146,6 +171,14 @@ func TestAdminSettingsMasksSecretsAndPreservesMaskedUpdates(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "real-secret", stored.Value)
 	require.False(t, stored.IsPublic)
+}
+
+func settingKeys(items []settingdomain.Setting) []string {
+	keys := make([]string, 0, len(items))
+	for _, item := range items {
+		keys = append(keys, item.Key)
+	}
+	return keys
 }
 
 func TestAdminSettingsRejectsUnsafeCustomsEndpoints(t *testing.T) {

@@ -258,6 +258,14 @@ func main() {
 		logger.Info("payment risk monitoring scheduler disabled")
 	}
 
+	var exchangeRateSyncScheduler *scheduler.ExchangeRateSyncScheduler
+	if cfg.Worker.ExchangeRateSyncEnabled {
+		exchangeRateSyncScheduler = scheduler.NewExchangeRateSyncScheduler(deps.Services.ExchangeRate, cfg.Worker)
+		exchangeRateSyncScheduler.Start(context.Background())
+	} else {
+		logger.Info("exchange rate sync scheduler disabled")
+	}
+
 	var siteQualityWorker *scheduler.SiteQualityWorker
 	if cfg.Worker.SiteQualityEnabled {
 		siteQualityWorker = scheduler.NewSiteQualityWorker(
@@ -342,6 +350,9 @@ func main() {
 	}
 	if paymentRiskMonitoringScheduler != nil {
 		paymentRiskMonitoringScheduler.Stop()
+	}
+	if exchangeRateSyncScheduler != nil {
+		exchangeRateSyncScheduler.Stop()
 	}
 	if siteQualityWorker != nil {
 		siteQualityWorker.Stop()

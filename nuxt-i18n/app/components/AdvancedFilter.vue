@@ -600,8 +600,8 @@ watch(() => props.initialFilters, (newFilters) => {
   min-height: 46px;
   padding: 0 0.75rem;
   border-radius: 8px;
-  background: #020202;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--tz-form-panel-surface);
+  border: 1px solid var(--tz-border-subtle);
 }
 
 .price-range-inline .filter-label {
@@ -625,7 +625,7 @@ watch(() => props.initialFilters, (newFilters) => {
 
 /* 浅色主题 */
 .theme-light .filter-label {
-  color: rgba(0, 0, 0, 0.9);
+  color: var(--tz-text-primary);
 }
 
 /* 价格范围 */
@@ -646,14 +646,14 @@ watch(() => props.initialFilters, (newFilters) => {
   padding: 0 0.55rem;
   height: 2rem;
   border-radius: 8px;
-  background: #050505;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--tz-input-surface);
+  border: 1px solid var(--tz-border-subtle);
   box-shadow: none;
 }
 
 .price-prefix {
   font-size: 0.75rem;
-  color: #ffffff;
+  color: var(--tz-text-secondary);
   margin-right: 0.15rem;
 }
 
@@ -663,11 +663,11 @@ watch(() => props.initialFilters, (newFilters) => {
   border: none;
   outline: none;
   font-size: 0.8125rem;
-  color: #ffffff;
+  color: var(--tz-text-primary);
 }
 
 .price-separator {
-  color: #ffffff;
+  color: var(--tz-text-muted);
 }
 
 /* Brake / Color / Diameter 组：标题 + 选项一行显示 */
@@ -692,9 +692,9 @@ watch(() => props.initialFilters, (newFilters) => {
 .attribute-toggle {
   min-width: 0;
   min-height: 46px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: #020202;
-  color: #ffffff;
+  border: 1px solid var(--tz-border-subtle);
+  background: var(--tz-input-surface);
+  color: var(--tz-text-primary);
   cursor: pointer;
   padding: 0 0.75rem;
   width: 100%;
@@ -713,7 +713,7 @@ watch(() => props.initialFilters, (newFilters) => {
   display: inline-block;
   flex-shrink: 0;
   font-size: 0.68rem;
-  color: #B5FF6D;
+  color: #059669;
   transition: transform 0.15s ease;
 }
 
@@ -726,9 +726,9 @@ watch(() => props.initialFilters, (newFilters) => {
 }
 
 .attribute-toggle:hover {
-  background: #070707;
-  border-color: rgba(181, 255, 109, 0.35);
-  color: #ffffff;
+  background: var(--tz-surface-subtle);
+  border-color: rgba(5, 150, 105, 0.35);
+  color: var(--tz-text-primary);
 }
 
 .attribute-toggle-icon.open {
@@ -747,10 +747,10 @@ watch(() => props.initialFilters, (newFilters) => {
   width: min(360px, calc(100vw - 48px));
   max-height: 260px;
   overflow-y: auto;
-  background: #030303;
-  border: 1px solid rgba(181, 255, 109, 0.42);
+  background: var(--tz-card-surface);
+  border: 1px solid rgba(5, 150, 105, 0.42);
   border-radius: 8px;
-  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.72);
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.16);
 }
 
 .attribute-accordion-item:nth-last-child(-n + 2) .attribute-dropdown {
@@ -782,7 +782,7 @@ watch(() => props.initialFilters, (newFilters) => {
   position: absolute;
   width: 100%;
   height: 4px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--tz-border-subtle);
   border-radius: 2px;
   pointer-events: none;
   cursor: pointer;
@@ -803,14 +803,14 @@ watch(() => props.initialFilters, (newFilters) => {
   cursor: pointer;
   padding: 0.32rem 0.58rem;
   border-radius: 9999px;
-  background: #070707;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--tz-surface-subtle);
+  border: 1px solid var(--tz-border-subtle);
   box-shadow: none;
   transition: background-color 0.2s, color 0.2s, border-color 0.2s, transform 0.08s ease;
 }
 
 .advanced-filter .checkbox-item:hover {
-  background: #101010;
+  background: var(--tz-surface-muted);
 }
 
 .advanced-filter .checkbox-input {
@@ -825,22 +825,22 @@ watch(() => props.initialFilters, (newFilters) => {
   display: inline-flex;
   align-items: center;
   font-size: 0.82rem;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--tz-text-secondary);
   user-select: none;
 }
 
 .advanced-filter .checkbox-item.is-selected {
-  background: #070707;
-  border-color: rgba(181, 255, 109, 0.58);
+  background: var(--tz-surface-subtle);
+  border-color: rgba(5, 150, 105, 0.58);
   box-shadow: none;
 }
 
 .advanced-filter .checkbox-item.is-selected .checkbox-label {
-  color: #ffffff;
+  color: var(--tz-text-primary);
 }
 
 .advanced-filter .checkbox-input:focus-visible + .checkbox-label {
-  outline: 2px solid rgba(255, 255, 255, 0.65);
+  outline: 2px solid var(--tz-form-control-focus-border);
   outline-offset: 2px;
   border-radius: 9999px;
 }
@@ -850,7 +850,7 @@ watch(() => props.initialFilters, (newFilters) => {
   height: 1rem;
   border-radius: 9999px;
   margin-right: 0.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  border: 1px solid var(--tz-border-strong);
 }
 
 .advanced-filter .checkbox-item.is-selected .color-swatch {
@@ -862,9 +862,9 @@ watch(() => props.initialFilters, (newFilters) => {
 }
 
 .reset-button:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.3);
-  color: rgba(255, 255, 255, 0.9);
+  background-color: var(--tz-surface-subtle);
+  border-color: var(--tz-border-strong);
+  color: var(--tz-text-primary);
 }
 
 .reset-button:active {
@@ -930,8 +930,8 @@ watch(() => props.initialFilters, (newFilters) => {
   .attribute-accordion-item {
     flex: 0 1 auto;
     border-radius: 8px;
-    background: #020202;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+     background: var(--tz-form-panel-surface);
+     border: 1px solid var(--tz-border-subtle);
     overflow: hidden;
   }
 

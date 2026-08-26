@@ -102,7 +102,7 @@ func TestCurrencyPolicyRouteUsesDomainHandler(t *testing.T) {
 
 	require.Equal(t, http.StatusOK, w.Code, w.Body.String())
 	require.Contains(t, w.Body.String(), `"primary_currency":"CNY"`)
-	require.Contains(t, w.Body.String(), `"display_currencies":["USD","EUR"]`)
+	require.Contains(t, w.Body.String(), `"display_currencies":[]`)
 	require.Contains(t, w.Body.String(), `"available_currencies"`)
 	require.NotContains(t, w.Body.String(), `"accounting_currency"`)
 	require.NotContains(t, w.Body.String(), `"default_order_currency"`)

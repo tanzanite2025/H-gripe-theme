@@ -17,7 +17,6 @@ func (r *MediaRepository) assetReferenceScanners() []mediaAssetReferenceScanner 
 		r.postReferences,
 		r.showcaseReferences,
 		r.reviewReferences,
-		r.registrationReferences,
 		r.warrantyClaimReferences,
 		r.suggestionFeedbackReferences,
 		r.ticketAutoReplyReferences,

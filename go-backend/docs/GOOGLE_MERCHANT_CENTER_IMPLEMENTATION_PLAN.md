@@ -86,9 +86,10 @@ The catalog already provides much of the basic data needed for a product offer:
 - Variant SKU, title, option values, price, sale price, stock, active status,
   and weight.
 - Product or variant shipping-template assignment.
-- Storefront product pages with canonical URLs, variant-specific landing query
-  support, and Product JSON-LD containing an offer, price currency, and
-  availability.
+- Storefront product pages with canonical URLs, Product JSON-LD containing an
+  offer, price currency, and availability. The target URL architecture uses
+  the flat `/products/:slug` permalink; variant query support is UI state unless
+  a separately approved variant landing-page strategy makes it canonical.
 - Currency settings, shipping templates, shipping rules, shipping zones, and
   public refund/return, terms, privacy, and contact pages.
 

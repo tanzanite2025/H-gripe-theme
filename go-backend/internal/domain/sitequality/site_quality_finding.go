@@ -23,6 +23,8 @@ type SiteQualityFinding struct {
 	TargetURL          string     `gorm:"type:text;not null;index" json:"target_url"`
 	Strategy           string     `gorm:"size:16;not null;uniqueIndex:uq_site_quality_findings_target_strategy_audit;index" json:"strategy"`
 	AuditID            string     `gorm:"size:128;not null;uniqueIndex:uq_site_quality_findings_target_strategy_audit;index" json:"audit_id"`
+	RuleID             string     `gorm:"size:128;not null;default:'';index" json:"rule_id"`
+	ProviderAuditID    string     `gorm:"size:128;not null;default:''" json:"provider_audit_id,omitempty"`
 	FindingKind        string     `gorm:"size:32;not null;default:'opportunity';index" json:"finding_kind"`
 	RuleVersion        string     `gorm:"size:64;not null;default:''" json:"rule_version"`
 	Confidence         float64    `gorm:"not null;default:0" json:"confidence"`
@@ -73,23 +75,34 @@ func (SiteQualityFindingEvent) TableName() string {
 // a finding. It deliberately contains only details needed to diagnose the
 // work item; the full SiteQuality response stays on the run.
 type SiteQualityFindingEvidence struct {
-	AuditID        string                              `json:"audit_id"`
-	Title          string                              `json:"title"`
-	Description    string                              `json:"description,omitempty"`
-	Score          *float64                            `json:"score,omitempty"`
-	DisplayValue   string                              `json:"display_value,omitempty"`
-	NumericValue   *float64                            `json:"numeric_value,omitempty"`
-	SavingsMS      *float64                            `json:"savings_ms,omitempty"`
-	SavingsBytes   *int64                              `json:"savings_bytes,omitempty"`
-	Resources      []SiteQualityFindingResource        `json:"resources,omitempty"`
-	Headings       []SiteQualityHeadingEvidence        `json:"headings,omitempty"`
-	StructuredData []SiteQualityStructuredDataEvidence `json:"structured_data,omitempty"`
+	AuditID         string                              `json:"audit_id"`
+	RuleID          string                              `json:"rule_id"`
+	ProviderAuditID string                              `json:"provider_audit_id,omitempty"`
+	Title           string                              `json:"title"`
+	Description     string                              `json:"description,omitempty"`
+	Score           *float64                            `json:"score,omitempty"`
+	DisplayValue    string                              `json:"display_value,omitempty"`
+	NumericValue    *float64                            `json:"numeric_value,omitempty"`
+	SavingsMS       *float64                            `json:"savings_ms,omitempty"`
+	SavingsBytes    *int64                              `json:"savings_bytes,omitempty"`
+	Resources       []SiteQualityFindingResource        `json:"resources,omitempty"`
+	Links           []SiteQualityLinkEvidence           `json:"links,omitempty"`
+	Headings        []SiteQualityHeadingEvidence        `json:"headings,omitempty"`
+	StructuredData  []SiteQualityStructuredDataEvidence `json:"structured_data,omitempty"`
 }
 
 type SiteQualityFindingResource struct {
 	URL        string   `json:"url"`
 	TotalBytes *int64   `json:"total_bytes,omitempty"`
 	WastedMS   *float64 `json:"wasted_ms,omitempty"`
+}
+
+// SiteQualityLinkEvidence mirrors Lighthouse's link-text table details.
+// Lighthouse intentionally exposes only the destination and rendered text.
+type SiteQualityLinkEvidence struct {
+	Href     string `json:"href"`
+	Text     string `json:"text"`
+	TextLang string `json:"text_lang,omitempty"`
 }
 
 // SiteQualityHeadingEvidence identifies a heading node reported by the
@@ -121,6 +134,8 @@ type SiteQualityFindingDetection struct {
 	TargetURL          string
 	Strategy           string
 	AuditID            string
+	RuleID             string
+	ProviderAuditID    string
 	FindingKind        string
 	RuleVersion        string
 	Confidence         float64

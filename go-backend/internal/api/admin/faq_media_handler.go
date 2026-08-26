@@ -26,14 +26,7 @@ func (h *FAQHandler) UploadAnswerImage(c *gin.Context) {
 	if c.Request.MultipartForm != nil {
 		defer func() { _ = c.Request.MultipartForm.RemoveAll() }()
 	}
-	if err := upload.ValidateFile(file, upload.FAQAnswerImageRule); err != nil {
-		c.JSON(upload.HTTPStatus(err), gin.H{
-			"error": err.Error(),
-			"code":  upload.ErrorCode(err),
-		})
-		return
-	}
-	if err := upload.ValidateWebPDimensions(file, 800, 800); err != nil {
+	if err := upload.ValidateSpecFile(file, string(upload.SpecFAQAnswerImage)); err != nil {
 		c.JSON(upload.HTTPStatus(err), gin.H{
 			"error": err.Error(),
 			"code":  upload.ErrorCode(err),

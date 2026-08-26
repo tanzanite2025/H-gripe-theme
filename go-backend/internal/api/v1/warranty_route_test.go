@@ -12,7 +12,7 @@ import (
 
 	"commerce-platform/internal/app"
 	domainorder "commerce-platform/internal/domain/order"
-	"commerce-platform/internal/domain/registration"
+	"commerce-platform/internal/domain/warranty"
 	"commerce-platform/internal/domain/verification"
 	"commerce-platform/internal/pkg/config"
 	"commerce-platform/internal/repository"
@@ -28,11 +28,11 @@ import (
 func TestWarrantyRoutesCompleteEmailVerificationAndClaimSubmission(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	db, registrationService, emailSender := newWarrantyRouteFixture(t)
+	db, warrantyService, emailSender := newWarrantyRouteFixture(t)
 	router := gin.New()
 	RegisterRoutes(router, &app.Dependencies{
 		Services: app.Services{
-			Registration: registrationService,
+			Warranty: warrantyService,
 		},
 	}, &config.Config{
 		CORS: config.CORSConfig{},
@@ -54,7 +54,7 @@ func TestWarrantyRoutesCompleteEmailVerificationAndClaimSubmission(t *testing.T)
 		t,
 		router,
 		http.MethodPost,
-		"/api/v1/registrations/warranty/verify-order",
+		"/api/v1/warranty/verify-order",
 		`{"order_number":"TZ-WARRANTY-ROUTE","email":"rider@example.test"}`,
 	)
 	require.Equal(t, http.StatusAccepted, verifyResponse.Code, verifyResponse.Body.String())
@@ -71,7 +71,7 @@ func TestWarrantyRoutesCompleteEmailVerificationAndClaimSubmission(t *testing.T)
 	verifyTokenResponse := warrantyLinkRequest(
 		t,
 		router,
-		"/api/v1/registrations/warranty/verify/"+url.PathEscape(verificationToken),
+		"/api/v1/warranty/verify/"+url.PathEscape(verificationToken),
 	)
 	require.Equal(t, http.StatusOK, verifyTokenResponse.Code, verifyTokenResponse.Body.String())
 	require.Contains(t, verifyTokenResponse.Body.String(), `"verified":true`)
@@ -87,7 +87,7 @@ func TestWarrantyRoutesCompleteEmailVerificationAndClaimSubmission(t *testing.T)
 	require.Equal(t, http.StatusCreated, claimResponse.Code, claimResponse.Body.String())
 	require.Contains(t, claimResponse.Body.String(), `"success":true`)
 
-	var claims []registration.WarrantyClaim
+	var claims []warranty.WarrantyClaim
 	require.NoError(t, db.Find(&claims).Error)
 	require.Len(t, claims, 1)
 	require.Equal(t, order.OrderNumber, claims[0].OrderNumber)
@@ -107,18 +107,18 @@ func TestWarrantyRoutesCompleteEmailVerificationAndClaimSubmission(t *testing.T)
 	require.Equal(t, http.StatusUnauthorized, replayResponse.Code, replayResponse.Body.String())
 
 	var claimCount int64
-	require.NoError(t, db.Model(&registration.WarrantyClaim{}).Count(&claimCount).Error)
+	require.NoError(t, db.Model(&warranty.WarrantyClaim{}).Count(&claimCount).Error)
 	require.Equal(t, int64(1), claimCount)
 }
 
 func TestWarrantyOrderVerificationDoesNotEnumerateUnknownOrders(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	_, registrationService, emailSender := newWarrantyRouteFixture(t)
+	_, warrantyService, emailSender := newWarrantyRouteFixture(t)
 	router := gin.New()
 	RegisterRoutes(router, &app.Dependencies{
 		Services: app.Services{
-			Registration: registrationService,
+			Warranty: warrantyService,
 		},
 	}, &config.Config{
 		CORS: config.CORSConfig{},
@@ -129,7 +129,7 @@ func TestWarrantyOrderVerificationDoesNotEnumerateUnknownOrders(t *testing.T) {
 		t,
 		router,
 		http.MethodPost,
-		"/api/v1/registrations/warranty/verify-order",
+		"/api/v1/warranty/verify-order",
 		`{"order_number":"TZ-WARRANTY-MISSING","email":"rider@example.test"}`,
 	)
 	require.Equal(t, http.StatusAccepted, response.Code, response.Body.String())
@@ -166,7 +166,7 @@ func (s *recordingWarrantyEmailSender) LastLink(t *testing.T) *url.URL {
 	return nil
 }
 
-func newWarrantyRouteFixture(t *testing.T) (*gorm.DB, *service.RegistrationService, *recordingWarrantyEmailSender) {
+func newWarrantyRouteFixture(t *testing.T) (*gorm.DB, *service.WarrantyService, *recordingWarrantyEmailSender) {
 	t.Helper()
 
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
@@ -184,24 +184,23 @@ func newWarrantyRouteFixture(t *testing.T) (*gorm.DB, *service.RegistrationServi
 	require.NoError(t, db.AutoMigrate(
 		&domainorder.Order{},
 		&domainorder.OrderItem{},
-		&registration.WarrantyClaim{},
+		&warranty.WarrantyClaim{},
 		&verification.EmailChallenge{},
 	))
 
 	emailSender := &recordingWarrantyEmailSender{}
-	registrationService := service.NewRegistrationService(
-		repository.NewRegistrationRepository(db),
-		nil,
+	warrantyService := service.NewWarrantyService(
+		repository.NewWarrantyRepository(db),
 		repository.NewOrderRepository(db),
 	)
-	registrationService.ConfigureEmailChallenges(
+	warrantyService.ConfigureEmailChallenges(
 		repository.NewEmailChallengeRepository(db),
 		"test-email-secret",
 		emailSender,
 	)
-	registrationService.ConfigureEmailBaseURL("https://storefront.example.test")
+	warrantyService.ConfigureEmailBaseURL("https://storefront.example.test")
 
-	return db, registrationService, emailSender
+	return db, warrantyService, emailSender
 }
 
 func warrantyJSONRequest(t *testing.T, router *gin.Engine, method, path, body string) *httptest.ResponseRecorder {
@@ -233,7 +232,7 @@ func warrantyClaimRequest(t *testing.T, router *gin.Engine, fields map[string]st
 	}
 	require.NoError(t, writer.Close())
 
-	req := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/api/v1/registrations/warranty/claim", &body)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/api/v1/warranty/claim", &body)
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 	recorder := httptest.NewRecorder()
 	router.ServeHTTP(recorder, req)

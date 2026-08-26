@@ -5,12 +5,12 @@
     "details": "Tiedot",
     "afterSales": "Jälkipalvelu",
     "packaging": "Pakkaus",
-    "shipping": "Toimitus"
+    "productShippingInfo": "Toimitus"
   },
   "empty": {
     "details": "Tuotetietoja ei ole vielä lisätty.",
     "afterSales": "Jälkipalvelutietoja ei ole vielä lisätty.",
     "packaging": "Pakkaustietoja ei ole vielä lisätty.",
-    "shipping": "Toimitustietoja ei ole vielä lisätty."
+    "productShippingInfo": "Toimitustietoja ei ole vielä lisätty."
   }
 }

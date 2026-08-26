@@ -1,0 +1,61 @@
+{
+  "trigger": {
+    "label": "Uyumluluğu kontrol et"
+  },
+  "dialog": {
+    "eyebrow": "Uyumluluk kataloğu",
+    "title": "Kadro veya maşa bul",
+    "description": "Bağımsız uyumluluk kataloğunda marka, model veya yıla göre arama yapın. Sonuçlar, her kayıt için girilmiş göbek özelliklerini içerir.",
+    "close": "Kapat",
+    "tabListLabel": "Uyumluluk kataloğu bölümleri"
+  },
+  "tabs": {
+    "frame": "Kadro uyumluluğu",
+    "fork": "Maşa uyumluluğu"
+  },
+  "search": {
+    "label": "Ara",
+    "placeholder": "Marka veya modele göre ara",
+    "yearLabel": "Model yılı",
+    "yearPlaceholder": "örn. 2024",
+    "submit": "Ara",
+    "clear": "Temizle",
+    "searching": "Aranıyor..."
+  },
+  "states": {
+    "initial": "Katalogda arama yapmak için marka, model veya yıl girin.",
+    "empty": "Eşleşen kayıt bulunamadı.",
+    "unavailable": "Uyumluluk verileri geçici olarak kullanılamıyor. Lütfen tekrar deneyin.",
+    "noHubSpecifications": "Göbek özelliği kaydedilmemiş."
+  },
+  "entry": {
+    "series": "Seri",
+    "generation": "Nesil",
+    "market": "Pazar",
+    "hubSpecifications": "Göbek özellikleri",
+    "unknownYear": "Yıl belirtilmemiş",
+    "allYears": "Tüm yıllar"
+  },
+  "pagination": {
+    "label": "Uyumluluk sonuçları",
+    "previous": "Önceki sayfa",
+    "next": "Sonraki sayfa",
+    "page": "{totalPages} sayfadan {page}. sayfa"
+  },
+  "hub": {
+    "position": "Konum",
+    "axleType": "Aks tipi",
+    "axleSpacing": "Aks aralığı",
+    "millimetres": "mm",
+    "positions": {
+      "front": "Ön",
+      "rear": "Arka"
+    },
+    "axleTypes": {
+      "quickRelease": "Hızlı bırakma",
+      "thruAxle": "Thru axle",
+      "boltOn": "Cıvatalı",
+      "other": "Diğer"
+    }
+  }
+}

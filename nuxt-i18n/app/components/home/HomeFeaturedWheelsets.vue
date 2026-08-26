@@ -197,7 +197,7 @@ watch(mobilePageCount, (pageCount) => {
   align-items: center;
   gap: 0.375rem;
   margin-top: 0.75rem;
-  color: #b5ff6d;
+  color: #059669;
   font-size: 0.8125rem;
   font-weight: 600;
   line-height: 1.25;

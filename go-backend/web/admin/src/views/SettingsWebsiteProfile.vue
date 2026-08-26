@@ -105,10 +105,11 @@
                       ref="avatarInput"
                       type="file"
                       class="hidden"
-                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      :accept="uploadSpecAccept('website_profile_avatar')"
                       :disabled="!canEdit || uploading === 'avatar'"
                       @change="handleUpload('avatar', $event)"
                     />
+                    <UploadSpecHint code="website_profile_avatar" />
                   </AdminFormField>
                   <AdminFormField label="头像占位文字">
                     <Input v-model="form.avatar_mark" maxlength="8" :disabled="!canEdit" />
@@ -201,10 +202,11 @@
                       ref="factoryInput"
                       type="file"
                       class="hidden"
-                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      :accept="uploadSpecAccept('website_profile_image')"
                       :disabled="!canEdit || uploading === 'factory'"
                       @change="handleUpload('factory', $event)"
                     />
+                    <UploadSpecHint code="website_profile_image" />
                   </AdminFormField>
                   <AdminFormField label="图片替代文字">
                     <Input v-model="form.factory_image_alt" :disabled="!canEdit" />
@@ -264,8 +266,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import mediaApi from '@/api/media'
+import UploadSpecHint from '@/components/admin/UploadSpecHint.vue'
 import { assetAccessURL } from '@/lib/mediaPresentation'
 import { buildLanguageOptions, STOREFRONT_SUPPORTED_LANGUAGES } from '@/lib/languages'
+import { uploadSpecAccept, validateUploadFile } from '@/lib/uploadSpecs'
 import { useAuthStore } from '@/stores/auth'
 import axios from '@/utils/axios'
 
@@ -376,16 +380,20 @@ const handleUpload = async (target: UploadTarget, event: Event): Promise<void> =
   const file = input?.files?.[0] || null
   if (input) input.value = ''
   if (!file) return
-  if (!file.type.startsWith('image/')) {
-    toast.error('这里只能上传图片文件')
+  const purpose = target === 'avatar' ? 'website_profile_avatar' : 'website_profile_image'
+  const validation = await validateUploadFile(file, purpose)
+  if (!validation.ok) {
+    toast.error(validation.error || '图片不符合上传规范')
     return
   }
+  if (validation.warning) toast.warning(validation.warning)
 
   uploading.value = target
   try {
     const formData = new FormData()
     formData.append('file', file)
     formData.append('media_type', 'image')
+    formData.append('image_purpose', purpose)
     const asset = await mediaApi.uploadAsset(formData)
     const url = String(assetAccessURL(asset) || '').trim()
     if (!url) {

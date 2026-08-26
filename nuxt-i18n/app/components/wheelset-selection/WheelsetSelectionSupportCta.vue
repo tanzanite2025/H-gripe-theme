@@ -59,7 +59,7 @@ const emit = defineEmits<{
   gap: 0.75rem;
   margin-top: 0;
   border-radius: 0.75rem;
-  background: var(--quickbuy-panel-surface-soft, #16171d);
+  background: var(--quickbuy-panel-surface-soft, var(--tz-surface-subtle));
   padding: 0.875rem;
 }
 
@@ -71,13 +71,13 @@ const emit = defineEmits<{
 }
 
 .wheelset-selection-support-cta__copy strong {
-  color: var(--tz-text-primary, #f8fafc);
+  color: var(--tz-text-primary);
   font-size: 0.875rem;
   font-weight: 800;
 }
 
 .wheelset-selection-support-cta__copy p {
-  color: var(--tz-text-muted, #94a3b8);
+  color: var(--tz-text-muted);
   font-size: 0.78rem;
   line-height: 1.45;
 }
@@ -92,7 +92,7 @@ const emit = defineEmits<{
   border-radius: 0.75rem;
   background: #ffffff;
   padding: 0 0.875rem;
-  color: #101014;
+  color: var(--tz-text-primary);
   font-size: 0.875rem;
   font-weight: 800;
   white-space: nowrap;
@@ -100,7 +100,7 @@ const emit = defineEmits<{
 }
 
 .wheelset-selection-support-cta__button:hover {
-  background: #f1f5f9;
+  background: var(--tz-surface-page);
 }
 
 @media (max-width: 767px) {

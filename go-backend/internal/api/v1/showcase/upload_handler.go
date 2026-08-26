@@ -88,7 +88,7 @@ func (h *ShowcaseHandler) Upload(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "No files provided", "message": "No files provided", "code": "tpg_missing_files"})
 		return
 	}
-	if err := upload.ValidateFiles(files, upload.ShowcaseImageRule); err != nil {
+	if err := upload.ValidateSpecFiles(files, string(upload.SpecUserShowcaseImage)); err != nil {
 		recordFailure()
 		c.JSON(upload.HTTPStatus(err), gin.H{"error": err.Error(), "message": err.Error(), "code": upload.ErrorCode(err)})
 		return

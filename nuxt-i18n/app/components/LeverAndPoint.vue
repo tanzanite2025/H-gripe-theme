@@ -1,6 +1,6 @@
 <template>
   <div class="flex justify-center pt-0 pb-0 w-full">
-    <div class="membership-and-points-modal-card sidebar-panel leverandpoint-shell tz-mobile-dialog-surface w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[85vh] rounded-2xl border border-white/10 backdrop-blur-xl shadow-[0_18px_44px_rgba(0,0,0,0.92)] relative overflow-hidden flex flex-col" role="region" aria-label="Membership Levels and Points">
+    <div class="membership-and-points-modal-card sidebar-panel leverandpoint-shell tz-mobile-dialog-surface tz-surface-card w-full max-w-[1400px] h-[90vh] md:h-[700px] max-h-[85vh] rounded-2xl border tz-border-subtle backdrop-blur-xl shadow-[0_18px_44px_rgb(15_23_42_/_0.16)] relative overflow-hidden flex flex-col" role="region" aria-label="Membership Levels and Points">
       <button class="tz-global-close-btn absolute right-2 top-2 z-50 pointer-events-auto" type="button" @click="emit('close')">×</button>
       <div class="flex-1 flex py-4 px-0 md:p-4 md:px-5 pointer-events-auto overflow-hidden box-border">
         <div class="w-full h-full overflow-hidden pt-6">
@@ -10,14 +10,14 @@
       <div class="membership-and-points-modal-actions flex flex-col items-center justify-center py-3 pb-4 pointer-events-auto gap-3">
         <div class="flex flex-wrap gap-2 md:gap-3 items-center justify-center">
           <button
-            class="membership-and-points-view-full-button h-10 px-[18px] rounded-full inline-flex items-center justify-center bg-white text-black text-sm pointer-events-auto hover:bg-white/90 transition-all shadow-[0_4px_12px_-4px_rgba(0,0,0,0.95)]"
+            class="membership-and-points-view-full-button h-10 px-[18px] rounded-full inline-flex items-center justify-center tz-surface-subtle tz-text-primary border tz-border-strong text-sm pointer-events-auto hover:tz-surface-muted transition-all shadow-[0_4px_12px_-4px_rgb(15_23_42_/_0.12)]"
             type="button"
             @click="handleMemberCenter"
           >
             {{ $t('member.viewAll', 'View Full') }}
           </button>
           <button
-            class="h-10 px-[18px] rounded-full inline-flex items-center justify-center bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] text-white text-sm pointer-events-auto shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(0,0,0,0.7)] hover:bg-[linear-gradient(135deg,rgba(31,41,55,0.98),rgba(15,23,42,0.98))] hover:shadow-[0_4px_12px_-4px_rgba(0,0,0,0.95),0_0_8px_rgba(0,0,0,0.9)] transition-all"
+            class="h-10 px-[18px] rounded-full inline-flex items-center justify-center tz-surface-card tz-text-secondary border tz-border-strong text-sm pointer-events-auto shadow-[0_2px_6px_-3px_rgb(15_23_42_/_0.1)] hover:tz-surface-subtle hover:shadow-[0_4px_12px_-4px_rgb(15_23_42_/_0.14)] transition-all"
             type="button"
             @click="handlePrivacy"
           >
@@ -92,7 +92,7 @@ const closePrivacy = (): void => {
 
 // Member Center - 跳转到会员中心页面
 const handleMemberCenter = (): void => {
-  const target = localePath('/membershipandpoints')
+const target = localePath('/resources/membershipandpoints')
   if (typeof window !== 'undefined' && target) {
     window.location.href = String(target)
   }
@@ -112,23 +112,23 @@ const handleMemberCenter = (): void => {
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--tz-surface-muted);
   border-radius: 3px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(107, 115, 255, 0.5);
+  background: var(--tz-border-strong);
   border-radius: 3px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(107, 115, 255, 0.7);
+  background: var(--tz-site-accent);
 }
 
 /* Firefox 滚动条样式 */
 .custom-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: rgba(107, 115, 255, 0.5) rgba(255, 255, 255, 0.05);
+  scrollbar-color: var(--tz-border-strong) var(--tz-surface-muted);
 }
 
 @media (max-width: 767px) {

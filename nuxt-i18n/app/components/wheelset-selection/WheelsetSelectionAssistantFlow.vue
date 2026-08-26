@@ -1,6 +1,32 @@
 <template>
   <WheelsetSelectionAssistantTwoColumnLayout>
     <template #question>
+      <nav
+        v-if="hasQuestionPagination"
+        class="wheelset-selection-assistant-flow__question-pagination"
+      >
+        <div
+          class="wheelset-selection-assistant-flow__question-pagination-dots tz-carousel-pagination"
+          :aria-label="t('wheelsetSelectionAssistant.questionPagination.label', 'Question cards')"
+        >
+          <button
+            v-for="questionNumber in questionPagination?.total.value || 0"
+            :key="questionNumber"
+            type="button"
+            class="tz-carousel-pagination__dot wheelset-selection-assistant-flow__question-pagination-dot"
+            :class="{
+              'is-active': questionNumber - 1 === questionPagination?.activeIndex.value,
+              'is-future': questionNumber - 1 > (questionPagination?.reachableIndex.value ?? 0),
+            }"
+            :aria-current="questionNumber - 1 === questionPagination?.activeIndex.value ? 'step' : undefined"
+            :aria-label="t('wheelsetSelectionAssistant.questionPagination.goToQuestion', `Show question ${questionNumber}`)"
+            :title="t('wheelsetSelectionAssistant.questionPagination.goToQuestion', `Show question ${questionNumber}`)"
+            :disabled="questionNumber - 1 > (questionPagination?.reachableIndex.value ?? 0)"
+            @click="handleQuestionPaginationClick(questionNumber - 1)"
+          />
+        </div>
+      </nav>
+
       <div v-if="assistant.loading.value" class="wheelset-selection-assistant-flow__state">
         <Icon name="lucide:loader-circle" class="h-5 w-5 animate-spin" />
         <span>{{ t('wheelsetSelectionAssistant.states.loading') }}</span>
@@ -95,6 +121,9 @@ const questionPagination = useWheelsetSelectionAssistantQuestionPagination()
 const selectedQuestionOptionKey = ref<string | undefined>()
 const isQuestionTransitioning = ref(false)
 let pendingQuestionSelectionTimer: ReturnType<typeof setTimeout> | null = null
+const hasQuestionPagination = computed(() => Boolean(
+  questionPagination && questionPagination.total.value > 1,
+))
 
 const selectedAnswerLabel = computed(() => (
   assistant.path.value.map(entry => entry.label).join(' / ')
@@ -171,6 +200,11 @@ const jumpToQuestionIndex = (questionIndex: number) => {
   assistant.jumpToPathIndex(normalizedQuestionIndex)
 }
 
+const handleQuestionPaginationClick = (questionIndex: number) => {
+  if (!questionPagination || questionIndex > questionPagination.reachableIndex.value) return
+  jumpToQuestionIndex(questionIndex)
+}
+
 watchEffect(() => {
   if (assistantHelp) {
     const question = assistant.currentQuestion.value
@@ -185,7 +219,6 @@ watchEffect(() => {
   questionPagination.total.value = orderedQuestionNodeKeys.value.length
   questionPagination.activeIndex.value = activeQuestionIndex.value
   questionPagination.reachableIndex.value = reachableQuestionIndex.value
-  questionPagination.registerJumpToIndexHandler(jumpToQuestionIndex)
 })
 
 onBeforeUnmount(() => {
@@ -201,7 +234,6 @@ onBeforeUnmount(() => {
   questionPagination.total.value = 0
   questionPagination.activeIndex.value = 0
   questionPagination.reachableIndex.value = 0
-  questionPagination.registerJumpToIndexHandler(null)
 })
 
 const handleContactSupport = () => {
@@ -229,6 +261,36 @@ const handleContactSupport = () => {
   text-align: center;
 }
 
+.wheelset-selection-assistant-flow__question-pagination {
+  display: flex;
+  flex: 0 0 auto;
+  justify-content: center;
+  padding: 0.1rem 0 0;
+}
+
+.wheelset-selection-assistant-flow__question-pagination-dots {
+  display: inline-flex;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.wheelset-selection-assistant-flow__question-pagination-dot {
+  width: 2rem;
+  height: 2rem;
+  min-width: 2rem;
+  min-height: 2rem;
+  --tz-carousel-pagination-dot-width: 0.5rem;
+  --tz-carousel-pagination-dot-height: 0.5rem;
+}
+
+.wheelset-selection-assistant-flow__question-pagination-dot.is-future {
+  opacity: 0.7;
+}
+
+.wheelset-selection-assistant-flow__question-pagination-dot.is-future::before {
+  background: var(--tz-border-strong);
+}
+
 .wheelset-selection-assistant-flow__state--error {
   align-content: center;
   color: #fca5a5;
@@ -241,9 +303,9 @@ const handleContactSupport = () => {
 .wheelset-selection-assistant-flow__retry {
   min-height: 2.25rem;
   border-radius: 0.65rem;
-  background: var(--tz-brand-primary, #b5ff6d);
+  background: var(--tz-site-accent, #059669);
   padding: 0 0.9rem;
-  color: #101014;
+  color: #ffffff;
   font-size: 0.8rem;
   font-weight: 800;
 }

@@ -115,7 +115,7 @@ watch(
 .global-all-faqs-search-overlay__backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.78);
+  background: rgba(20, 32, 43, 0.46);
   backdrop-filter: blur(5px);
 }
 

@@ -1,5 +1,5 @@
 <template>
-  <div class="text-slate-100">
+  <div class="tz-text-secondary">
     <h2 class="sizecharts-section__title">Tire Size</h2>
     <div class="mt-1">
       <TireSizeSection @openTireProducts="$emit('openTireProducts')" />

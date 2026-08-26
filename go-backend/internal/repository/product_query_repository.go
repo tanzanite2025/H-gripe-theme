@@ -936,6 +936,65 @@ func (r *ProductRepository) FindAllWithFilters(page, pageSize int, status, local
 	return products, total, err
 }
 
+type ProductCurrencyMismatchSample struct {
+	ID       uint   `json:"id"`
+	SKU      string `json:"sku"`
+	Name     string `json:"name"`
+	Currency string `json:"currency"`
+}
+
+type ProductVariantCurrencyMismatchSample struct {
+	ID        uint   `json:"id"`
+	ProductID uint   `json:"product_id"`
+	SKU       string `json:"sku"`
+	Title     string `json:"title"`
+	Currency  string `json:"currency"`
+}
+
+func (r *ProductRepository) CountProductsWithCurrencyMismatch(expectedCurrency string) (int64, error) {
+	var total int64
+	err := r.db.Model(&product.Product{}).
+		Where("UPPER(COALESCE(currency, '')) <> ?", strings.ToUpper(strings.TrimSpace(expectedCurrency))).
+		Count(&total).Error
+	return total, err
+}
+
+func (r *ProductRepository) CountProductVariantsWithCurrencyMismatch(expectedCurrency string) (int64, error) {
+	var total int64
+	err := r.db.Model(&product.ProductVariant{}).
+		Where("UPPER(COALESCE(currency, '')) <> ?", strings.ToUpper(strings.TrimSpace(expectedCurrency))).
+		Count(&total).Error
+	return total, err
+}
+
+func (r *ProductRepository) ListProductsWithCurrencyMismatch(expectedCurrency string, limit int) ([]ProductCurrencyMismatchSample, error) {
+	if limit <= 0 || limit > 100 {
+		limit = 10
+	}
+	var samples []ProductCurrencyMismatchSample
+	err := r.db.Model(&product.Product{}).
+		Select("id", "sku", "name", "currency").
+		Where("UPPER(COALESCE(currency, '')) <> ?", strings.ToUpper(strings.TrimSpace(expectedCurrency))).
+		Order("updated_at DESC").
+		Limit(limit).
+		Scan(&samples).Error
+	return samples, err
+}
+
+func (r *ProductRepository) ListProductVariantsWithCurrencyMismatch(expectedCurrency string, limit int) ([]ProductVariantCurrencyMismatchSample, error) {
+	if limit <= 0 || limit > 100 {
+		limit = 10
+	}
+	var samples []ProductVariantCurrencyMismatchSample
+	err := r.db.Model(&product.ProductVariant{}).
+		Select("id", "product_id", "sku", "title", "currency").
+		Where("UPPER(COALESCE(currency, '')) <> ?", strings.ToUpper(strings.TrimSpace(expectedCurrency))).
+		Order("updated_at DESC").
+		Limit(limit).
+		Scan(&samples).Error
+	return samples, err
+}
+
 func (r *ProductRepository) GetCustomsSummary(locale string) (ProductCustomsSummary, error) {
 	var summary ProductCustomsSummary
 	query := r.db.Model(&product.Product{}).Select(`

@@ -9,14 +9,14 @@
       >
         <!-- 半透明背景遮罩 -->
         <div
-          class="absolute inset-0 bg-[#030406]/76 backdrop-blur-sm"
+          class="absolute inset-0 bg-slate-900/20 backdrop-blur-sm"
           aria-hidden="true"
           @click="handleClose"
         ></div>
         <!-- 弹窗内容 -->
         <Transition name="slide-up" appear>
           <div
-            class="sidebar-panel quickbuy-modal-shell tz-mobile-dialog-surface relative w-[90vw] max-w-none h-[80vh] max-h-[80vh] bg-[#101116] backdrop-blur-xl rounded-2xl shadow-[0_18px_44px_rgba(0,0,0,0.72)] box-border flex flex-col overflow-hidden"
+            class="sidebar-panel quickbuy-modal-shell tz-mobile-dialog-surface tz-surface-card relative w-[90vw] max-w-none h-[80vh] max-h-[80vh] backdrop-blur-xl rounded-2xl shadow-[0_18px_44px_rgba(20,32,43,0.16)] box-border flex flex-col overflow-hidden"
             role="dialog"
             aria-modal="true"
             @click.stop
@@ -41,8 +41,8 @@
                       :title="steps[n - 1]?.name || t('quickBuy.placeholder.stepTitle', { step: n })"
                       :class="[
                         n === currentStepIndex ? 'bg-white text-black shadow-[0_0_0_3px_rgba(255,255,255,0.16)]' :
-                        n < currentStepIndex ? 'bg-[#3c4454] text-white' :
-                        'bg-[#2c2f35] text-white/90'
+                        n < currentStepIndex ? 'bg-[var(--tz-surface-muted)] tz-text-primary' :
+                        'bg-[var(--tz-surface-subtle)] tz-text-secondary'
                       ]"
                       @click="goToStep(n)"
                     >{{ n }}</button>
@@ -653,8 +653,7 @@ onBeforeUnmount(() => {
 .quickbuy-modal-body {
   display: flex;
   min-height: 0;
-  background:
-    linear-gradient(180deg, #1d1f26 0%, var(--quickbuy-shell-surface) 54%, var(--quickbuy-shell-surface-soft) 100%);
+  background: var(--quickbuy-shell-surface-soft);
 }
 
 .quickbuy-mobile-header-title {
@@ -699,32 +698,30 @@ onBeforeUnmount(() => {
 }
 
 .quickbuy-modal-shell {
-  --quickbuy-shell-surface: #17181f;
-  --quickbuy-shell-surface-soft: #111218;
-  --quickbuy-panel-surface: #1b1c23;
-  --quickbuy-panel-surface-soft: #16171d;
-  --quickbuy-panel-surface-raised: #22242c;
-  --quickbuy-control-surface: #111219;
-  --quickbuy-control-surface-raised: #1a1c24;
-  --quickbuy-divider: rgba(255, 255, 255, 0.085);
-  --quickbuy-divider-strong: rgba(255, 255, 255, 0.12);
-  --quickbuy-dark-edge: rgba(0, 0, 0, 0.42);
-  --quickbuy-focus-ring: rgba(181, 255, 109, 0.12);
-  --quickbuy-shadow: 0 18px 54px rgba(0, 0, 0, 0.5);
+  --quickbuy-shell-surface: var(--tz-card-surface);
+  --quickbuy-shell-surface-soft: var(--tz-form-panel-surface);
+  --quickbuy-panel-surface: var(--tz-card-surface);
+  --quickbuy-panel-surface-soft: var(--tz-surface-subtle);
+  --quickbuy-panel-surface-raised: var(--tz-surface-muted);
+  --quickbuy-control-surface: var(--tz-input-surface);
+  --quickbuy-control-surface-raised: var(--tz-surface-subtle);
+  --quickbuy-divider: var(--tz-border-subtle);
+  --quickbuy-divider-strong: var(--tz-border-strong);
+  --quickbuy-dark-edge: rgba(20, 32, 43, 0.12);
+  --quickbuy-focus-ring: var(--tz-form-control-focus-ring);
+  --quickbuy-shadow: 0 18px 54px rgba(20, 32, 43, 0.12);
   border: 0 !important;
-  background:
-    linear-gradient(180deg, #24262e 0%, #1d1f26 34%, var(--quickbuy-shell-surface) 68%, var(--quickbuy-shell-surface-soft) 100%) !important;
+  background: var(--quickbuy-shell-surface) !important;
   box-shadow:
-    0 30px 90px rgba(0, 0, 0, 0.66),
-    inset 0 1px 0 rgba(255, 255, 255, 0.075),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.045) !important;
+    0 30px 90px rgba(20, 32, 43, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    inset 0 0 0 1px var(--tz-border-subtle) !important;
 }
 
 .quickbuy-modal-shell > header {
-  background:
-    linear-gradient(180deg, #272a32 0%, #1f2128 100%);
+  background: var(--quickbuy-surface-header, var(--tz-surface-subtle));
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
     inset 0 -1px 0 var(--quickbuy-divider);
 }
 
@@ -769,9 +766,9 @@ onBeforeUnmount(() => {
   height: 1.9rem;
   flex: 0 0 auto;
   place-items: center;
-  color: #b5ff6d;
+  color: #059669;
   pointer-events: none;
-  filter: drop-shadow(0 0 0.55rem rgba(181, 255, 109, 0.44));
+  filter: drop-shadow(0 0 0.55rem rgba(5, 150, 105, 0.44));
   animation: quickbuy-step-hint-tap 1.8s ease-in-out infinite;
 }
 
@@ -827,8 +824,8 @@ onBeforeUnmount(() => {
 
 .quickbuy-step-button:focus-visible {
   box-shadow:
-    0 0 0 3px rgba(181, 255, 109, 0.22),
-    0 0 0 5px rgba(181, 255, 109, 0.08);
+    0 0 0 3px rgba(5, 150, 105, 0.22),
+    0 0 0 5px rgba(5, 150, 105, 0.08);
 }
 
 @media (max-width: 767px) {
@@ -886,7 +883,7 @@ onBeforeUnmount(() => {
   .quickbuy-mobile-header-title {
     display: block;
     grid-column: 1;
-    color: rgba(181, 255, 109, 0.88);
+    color: rgba(5, 150, 105, 0.88);
     font-size: 0.7rem;
     font-weight: 850;
     letter-spacing: 0.08em;
@@ -966,14 +963,13 @@ onBeforeUnmount(() => {
     min-height: 0;
     flex-direction: column;
     overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.07);
+    border: 1px solid var(--tz-border-subtle);
     border-bottom: 0;
     border-radius: 1rem 1rem 0 0;
-    background:
-      linear-gradient(180deg, #24262e 0%, #1d1f26 34%, #17181f 68%, #111218 100%);
+    background: var(--quickbuy-shell-surface);
     box-shadow:
       0 -18px 54px rgba(0, 0, 0, 0.58),
-      inset 0 1px 0 rgba(255, 255, 255, 0.075);
+      inset 0 1px 0 rgba(255, 255, 255, 0.8);
   }
 
   .quickbuy-mobile-picker-handle {
@@ -982,7 +978,7 @@ onBeforeUnmount(() => {
     flex: 0 0 auto;
     margin: 0.45rem auto 0;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.28);
+    background: var(--tz-border-strong);
   }
 
   .quickbuy-mobile-picker-header {
@@ -1001,7 +997,7 @@ onBeforeUnmount(() => {
   .quickbuy-mobile-picker-heading h2 {
     margin: 0;
     overflow: hidden;
-    color: #fff;
+    color: var(--tz-text-primary);
     font-size: 1rem;
     font-weight: 850;
     line-height: 1.2;

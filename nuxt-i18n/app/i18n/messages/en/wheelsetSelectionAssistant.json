@@ -22,7 +22,8 @@
   "states": {
     "loading": "Loading fit questions...",
     "retry": "Try again",
-    "empty": "No fit question is available yet."
+    "empty": "No fit question is available yet.",
+    "unavailable": "The fit service is temporarily unavailable. Please try again."
   },
   "outcome": {
     "eyebrow": "Fit profile",
@@ -34,6 +35,7 @@
     "title": "Wheelset products",
     "loading": "Matching wheelsets...",
     "empty": "No wheelsets match these answers yet.",
+    "unavailable": "Matching products are temporarily unavailable. Please try again.",
     "pagination": "Wheelset product result pages",
     "previousPage": "Previous page",
     "nextPage": "Next page"

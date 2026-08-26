@@ -332,6 +332,20 @@
             <p v-if="errors.variants" class="mt-2 text-xs font-medium text-destructive">{{ errors.variants }}</p>
           </AdminFormSection>
 
+          <ProductProfitabilitySection
+            v-if="procurementVisible"
+            :variants="form.variants"
+            :drafts="procurementDrafts"
+            :currency="form.currency"
+            :can-edit="procurementCanEdit"
+            :loading="procurementLoading"
+            :saving="procurementSaving"
+            :pending="procurementPending"
+            :error="procurementError"
+            :last-saved-at="procurementLastSavedAt"
+            @retry="emit('retry-procurement')"
+          />
+
           <ProductMediaSection
             :media-items="form.media"
             :variants="form.variants"
@@ -409,9 +423,9 @@
 
         <DialogFooter class="mx-0 mb-0 shrink-0 rounded-b-[32px] border-t bg-background/95 px-5 py-4 backdrop-blur">
           <Button type="button" variant="outline" @click="emit('update:open', false)">取消</Button>
-          <Button type="submit" :disabled="submitting">
+          <Button type="submit" :disabled="submitting || procurementPending">
             <LoaderCircle v-if="submitting" class="size-4 animate-spin" />
-            {{ submitting ? '保存中' : '保存商品' }}
+            {{ procurementPending ? '请先处理成本资料' : submitting ? '保存中' : '保存商品' }}
           </Button>
         </DialogFooter>
       </form>
@@ -429,7 +443,9 @@ import AdminFormSection from '@/components/admin/AdminFormSection.vue'
 import StorefrontLocaleSelect from '@/components/admin/StorefrontLocaleSelect.vue'
 import ProductDescriptionEditor from '@/components/admin/product/ProductDescriptionEditor.vue'
 import ProductMediaSection from '@/components/admin/product/ProductMediaSection.vue'
+import ProductProfitabilitySection from '@/components/admin/product/ProductProfitabilitySection.vue'
 import ProductVariantEditor from '@/components/admin/product/ProductVariantEditor.vue'
+import type { ProcurementProfitDraft } from '@/composables/product/useProcurementProfitDraft'
 import type { ProductFormRecord } from '@/components/admin/product/productEditorTypes'
 import { Button } from '@/components/ui/button'
 import {
@@ -451,6 +467,7 @@ const editorSteps = [
   { no: '02', label: '绑定模板' },
   { no: '03', label: '填写参数' },
   { no: '04', label: '维护 SKU' },
+  { no: '05', label: '商品成本' },
 ]
 
 interface ProductSpecDefinition {
@@ -554,6 +571,14 @@ defineProps({
   customsClassificationSelectValue: { type: String, default: '__none__' },
   templateScopedValuesTouched: { type: Boolean, default: false },
   uploadingMedia: { type: Boolean, default: false },
+  procurementVisible: { type: Boolean, default: false },
+  procurementCanEdit: { type: Boolean, default: false },
+  procurementLoading: { type: Boolean, default: false },
+  procurementSaving: { type: Boolean, default: false },
+  procurementPending: { type: Boolean, default: false },
+  procurementError: { type: String, default: '' },
+  procurementLastSavedAt: { type: String, default: '' },
+  procurementDrafts: { type: Array as PropType<ProcurementProfitDraft[]>, default: () => [] },
   parseSpecOptions: { type: Function as PropType<(spec: ProductSpecDefinition) => ProductFormValue[]>, required: true },
   formatSpecOption: { type: Function as PropType<(option: ProductFormValue) => string>, required: true },
   getSpecLabel: { type: Function as PropType<(spec: ProductSpecDefinition) => string>, required: true },
@@ -582,6 +607,7 @@ const emit = defineEmits([
   'set-primary-media',
   'move-media',
   'remove-media',
+  'retry-procurement',
 ])
 </script>
 

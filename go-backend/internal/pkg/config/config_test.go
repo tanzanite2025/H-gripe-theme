@@ -111,6 +111,29 @@ func TestValidateConfigRejectsInvalidOutboundHTTPResilienceConfig(t *testing.T) 
 	}
 }
 
+func TestValidateConfigRejectsEnabledGoogleIndexingWithoutCredentials(t *testing.T) {
+	cfg := validTestConfig()
+	cfg.GoogleIndexing = GoogleIndexingConfig{
+		Enabled: true,
+	}
+
+	if err := validateConfig(cfg); err == nil {
+		t.Fatal("validateConfig should require Google Indexing credentials when enabled")
+	}
+}
+
+func TestValidateConfigRejectsBothGoogleIndexingCredentialSources(t *testing.T) {
+	cfg := validTestConfig()
+	cfg.GoogleIndexing = GoogleIndexingConfig{
+		ServiceAccountJSON: "json",
+		ServiceAccountFile: "service-account.json",
+	}
+
+	if err := validateConfig(cfg); err == nil {
+		t.Fatal("validateConfig should reject both Google Indexing credential sources")
+	}
+}
+
 func TestValidateConfigRejectsPaymentProbeLeaseShorterThanProviderBudget(t *testing.T) {
 	cfg := validTestConfig()
 	cfg.PaymentGatewayCircuitBreaker = PaymentGatewayCircuitBreakerConfig{

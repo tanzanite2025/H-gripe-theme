@@ -623,7 +623,8 @@
       "certificates": "Certificates",
       "membershipPoints": "Membership and Points",
       "pictureWarehouse": "Picture warehouse",
-      "contact": "Contact Us"
+      "contact": "Contact Us",
+      "aboutWebsite": "Me & This Website"
     },
     "index": {
       "title": "Company",
@@ -866,12 +867,74 @@
     "to": "To",
     "currency": "Currency"
   },
+  "fitmentCatalog": {
+    "trigger": {
+      "label": "Проверить совместимость"
+    },
+    "dialog": {
+      "eyebrow": "Каталог совместимости",
+      "title": "Найти раму или вилку",
+      "description": "Ищите в независимом каталоге совместимости по бренду, модели или году. В результатах указаны характеристики втулки, сохранённые для каждой записи.",
+      "close": "Закрыть",
+      "tabListLabel": "Разделы каталога совместимости"
+    },
+    "tabs": {
+      "frame": "Совместимость рамы",
+      "fork": "Совместимость вилки"
+    },
+    "search": {
+      "label": "Поиск",
+      "placeholder": "Поиск по бренду или модели",
+      "yearLabel": "Год модели",
+      "yearPlaceholder": "например, 2024",
+      "submit": "Найти",
+      "clear": "Очистить",
+      "searching": "Поиск..."
+    },
+    "states": {
+      "initial": "Введите бренд, модель или год для поиска в каталоге.",
+      "empty": "Подходящие записи не найдены.",
+      "unavailable": "Данные о совместимости временно недоступны. Повторите попытку.",
+      "noHubSpecifications": "Характеристики втулки не указаны."
+    },
+    "entry": {
+      "series": "Серия",
+      "generation": "Поколение",
+      "market": "Рынок",
+      "hubSpecifications": "Характеристики втулки",
+      "unknownYear": "Год не указан",
+      "allYears": "Все годы"
+    },
+    "pagination": {
+      "label": "Результаты совместимости",
+      "previous": "Предыдущая страница",
+      "next": "Следующая страница",
+      "page": "Страница {page} из {totalPages}"
+    },
+    "hub": {
+      "position": "Положение",
+      "axleType": "Тип оси",
+      "axleSpacing": "Монтажная ширина",
+      "millimetres": "мм",
+      "positions": {
+        "front": "Передняя",
+        "rear": "Задняя"
+      },
+      "axleTypes": {
+        "quickRelease": "Эксцентрик",
+        "thruAxle": "Сквозная ось",
+        "boltOn": "Болтовое крепление",
+        "other": "Другое"
+      }
+    }
+  },
   "footer": {
     "menus": {
       "products": "Products",
       "support": "Support",
       "company": "Company",
       "resources": "RESOURCES",
+      "siteOverview": "Site Overview",
       "policies": "Policies"
     },
     "links": {
@@ -890,7 +953,9 @@
       "oemOdm": "OEM & ODM",
       "certificates": "Certificates",
       "membershipPoints": "Membership and Points",
-      "pictureWarehouse": "Picture warehouse"
+      "pictureWarehouse": "Picture warehouse",
+      "meThisWebsite": "Me & This Website",
+      "whyThisName": "Why This Name"
     },
     "brand": {
       "line1": "A brand of Top Sports Co., Limited.",
@@ -1053,44 +1118,6 @@
       "title": "Shop with Confidence"
     },
     "shopWithConfidence": {
-      "items": {
-        "0": {
-          "title": "Secure Payment",
-          "description": "All transactions are protected by industry-standard HTTPS encryption.",
-          "bullets": {
-            "0": "Verified SSL Security",
-            "1": "Major Cards via Stripe",
-            "2": "PayPal, WeChat & Alipay"
-          }
-        },
-        "1": {
-          "title": "Worldwide Shipping",
-          "description": "Placeholder copy. Add delivery, tracking, and packaging details here.",
-          "bullets": {
-            "0": "Placeholder bullet",
-            "1": "Placeholder bullet",
-            "2": "Placeholder bullet"
-          }
-        },
-        "2": {
-          "title": "Warranty Coverage",
-          "description": "Placeholder copy. Add warranty terms and verification details here.",
-          "bullets": {
-            "0": "Placeholder bullet",
-            "1": "Placeholder bullet",
-            "2": "Placeholder bullet"
-          }
-        },
-        "3": {
-          "title": "After‑Sales Support",
-          "description": "Placeholder copy. Add support response and service coverage details here.",
-          "bullets": {
-            "0": "Placeholder bullet",
-            "1": "Placeholder bullet",
-            "2": "Placeholder bullet"
-          }
-        }
-      },
       "eyebrow": "Payment protection",
       "subtitle": "Pay through providers you recognize. Your payment is verified against your order, and every purchase has a clear support path.",
       "paymentMethodsLabel": "Supported payment methods",
@@ -1489,7 +1516,7 @@
         "title": "My Membership Info",
         "intro": "View your profile, membership level, points balance, coupons, gift cards, and warranty tools.",
         "seoTitle": "My Membership Info - Points and Benefits",
-        "seoDescription": "View your TANZANITE member profile, loyalty level, points balance, coupons, gift cards, and warranty tools.",
+        "seoDescription": "View your member profile, loyalty level, points balance, coupons, gift cards, and warranty tools.",
         "feedbackTitle": "Share your feedback about your membership info",
         "feedbackSubtitle": "Tell us whether account details, benefits, coupons, gift cards, or warranty tools are clear."
       },
@@ -1497,7 +1524,7 @@
         "title": "Membership Levels and Point Rules",
         "intro": "Review member tiers, discount levels, earning rules, redemption rates, referral rewards, and check-in rules.",
         "seoTitle": "Membership Levels and Point Rules",
-        "seoDescription": "Review TANZANITE membership levels, points earning rules, redemption rates, referral rewards, and daily check-in rewards.",
+        "seoDescription": "Review membership levels, points earning rules, redemption rates, referral rewards, and daily check-in rewards.",
         "feedbackTitle": "Share your feedback about membership levels and points",
         "feedbackSubtitle": "Tell us whether tier rules, earning rules, redemption, referral rewards, or check-in details are clear."
       },
@@ -1505,7 +1532,7 @@
         "title": "Gift Card Exchange",
         "intro": "Redeem eligible loyalty points for gift cards and track redeemed cards from your member center.",
         "seoTitle": "Gift Card Exchange - Redeem Loyalty Points",
-        "seoDescription": "Redeem TANZANITE loyalty points for available gift card rewards and manage redeemed gift cards from the member center.",
+        "seoDescription": "Redeem loyalty points for available gift card rewards and manage redeemed gift cards from the member center.",
         "feedbackTitle": "Share your feedback about gift card exchange",
         "feedbackSubtitle": "Tell us whether point redemption, available gift cards, or redeemed card records are easy to understand."
       }
@@ -1646,13 +1673,13 @@
       "details": "Описание",
       "afterSales": "Послепродажное обслуживание",
       "packaging": "Упаковка",
-      "shipping": "Доставка"
+      "productShippingInfo": "Доставка"
     },
     "empty": {
       "details": "Описание товара пока не добавлено.",
       "afterSales": "Информация о послепродажном обслуживании пока не добавлена.",
       "packaging": "Информация об упаковке пока не добавлена.",
-      "shipping": "Информация о доставке пока не добавлена."
+      "productShippingInfo": "Информация о доставке пока не добавлена."
     }
   },
   "productReviews": {
@@ -1750,10 +1777,6 @@
         "title": "Match ready wheelsets",
         "description": "Coming next."
       },
-      "specFinder": {
-        "title": "Find my bike specs",
-        "description": "Coming next."
-      },
       "eyebrow": "QUICKBUY",
       "title": "Choose how to start",
       "wheelsetSelectionAssistant": {
@@ -1810,6 +1833,7 @@
   },
   "shopCategoryMenu": {
     "ariaLabel": "Категории магазина",
+    "children": "Подкатегории",
     "loading": "Загрузка категорий...",
     "all": "Все",
     "empty": "No shop categories are available yet."
@@ -1986,19 +2010,19 @@
     "subtitle": "Check your product warranty status",
     "login_required": "Please log in to check your product warranty.",
     "login_button": "Log In",
-    "input_label": "Enter your product code:",
-    "input_placeholder": "e.g. ABC123",
+    "input_label": "Enter your order number:",
+    "input_placeholder": "e.g. TZ202608230001",
     "check_button": "Check",
-    "help_text": "Your product code can be found on the product packaging or warranty card.",
+    "help_text": "After shipment, use your order number to check the shipped items and remaining warranty.",
     "months": "months",
     "days": "days",
     "result": {
       "valid": "Warranty Valid",
       "expired": "Warranty Expired",
-      "not_found": "Product Not Found"
+      "not_found": "Shipment Not Found"
     },
     "fields": {
-      "product_code": "Product Code",
+      "order_number": "Order Number",
       "product_type": "Product Type",
       "product_name": "Product Name",
       "ship_date": "Ship Date",
@@ -2016,14 +2040,14 @@
       "contact_support": "Contact Support"
     },
     "errors": {
-      "not_found_message": "We couldn't find a product with code: {code}",
+      "not_found_message": "We couldn't find a shipment record for order number: {code}",
       "check_tips": {
-        "0": "Check that the product code was entered exactly as printed.",
-        "1": "Contact support if your product code still cannot be found."
+        "0": "Check that the order number was entered exactly as shown on your order.",
+        "1": "Contact support if the shipped order still cannot be found."
       },
       "error_contact": "If you believe this is an error, please contact us."
     },
-    "cardDesc": "Enter your product code to check warranty status and history.",
+    "cardDesc": "Enter your order number to check shipped items, warranty time, and service history.",
     "checkNow": "Check Now"
   },
   "wheelsetSelectionAssistant": {
@@ -2046,7 +2070,8 @@
     "states": {
       "loading": "Loading fit questions...",
       "retry": "Try again",
-      "empty": "No fit question is available yet."
+      "empty": "No fit question is available yet.",
+      "unavailable": "The fit service is temporarily unavailable. Please try again."
     },
     "outcome": {
       "eyebrow": "Fit profile",
@@ -2058,9 +2083,14 @@
       "title": "Wheelset products",
       "loading": "Matching wheelsets...",
       "empty": "No wheelsets match these answers yet.",
+      "unavailable": "Matching products are temporarily unavailable. Please try again.",
       "pagination": "Wheelset product result pages",
       "previousPage": "Previous page",
       "nextPage": "Next page"
+    },
+    "questionPagination": {
+      "label": "Question cards",
+      "goToQuestion": "Show question"
     }
   },
   "wishlistDrawer": {

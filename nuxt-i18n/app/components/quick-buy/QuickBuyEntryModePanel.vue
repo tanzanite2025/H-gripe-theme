@@ -120,7 +120,7 @@ const handleEntryModeClick = (key: string, enabled: boolean) => {
 }
 
 .quickbuy-entry-mode-panel__eyebrow {
-  color: rgba(181, 255, 109, 0.86);
+  color: rgba(5, 150, 105, 0.86);
   font-size: 0.68rem;
   font-weight: 800;
   letter-spacing: 0.14em;
@@ -129,7 +129,7 @@ const handleEntryModeClick = (key: string, enabled: boolean) => {
 
 .quickbuy-entry-mode-panel__title {
   margin: 0;
-  color: #ffffff;
+  color: var(--tz-text-primary);
   font-size: 1.08rem;
   font-weight: 850;
   letter-spacing: 0;
@@ -153,20 +153,18 @@ const handleEntryModeClick = (key: string, enabled: boolean) => {
   padding: 0.75rem;
   border: 0;
   border-radius: 0.75rem;
-  color: white;
-  background:
-    linear-gradient(180deg, var(--quickbuy-panel-surface-raised, #17171b), #101014);
+  color: var(--tz-text-primary);
+  background: var(--quickbuy-panel-surface-raised, var(--tz-surface-muted));
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.03),
-    inset 0 0 0 1px rgba(0, 0, 0, 0.56),
-    0 12px 28px rgba(0, 0, 0, 0.26);
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    inset 0 0 0 1px var(--tz-border-subtle),
+    0 12px 28px rgba(20, 32, 43, 0.08);
   text-align: left;
   transition: background 160ms ease, opacity 160ms ease, transform 160ms ease;
 }
 
 .quickbuy-entry-mode-card:hover:not(:disabled) {
-  background:
-    linear-gradient(180deg, #202026, var(--quickbuy-panel-surface-raised, #17171b));
+  background: var(--tz-surface-muted);
   transform: translateY(-1px);
 }
 
@@ -182,15 +180,15 @@ const handleEntryModeClick = (key: string, enabled: boolean) => {
   flex: 0 0 auto;
   place-items: center;
   border-radius: 999px;
-  color: #050505;
+  color: var(--tz-text-primary);
   background: #ffffff;
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.28);
 }
 
 .quickbuy-entry-mode-card--disabled .quickbuy-entry-mode-card__icon {
-  color: rgba(255, 255, 255, 0.74);
-  background: var(--quickbuy-control-surface-raised, #151519);
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.68);
+  color: var(--tz-text-muted);
+  background: var(--quickbuy-control-surface-raised, var(--tz-surface-subtle));
+  box-shadow: inset 0 0 0 1px var(--tz-border-subtle);
 }
 
 .quickbuy-entry-mode-card__content {
@@ -200,7 +198,7 @@ const handleEntryModeClick = (key: string, enabled: boolean) => {
 }
 
 .quickbuy-entry-mode-card__title {
-  color: #ffffff;
+  color: var(--tz-text-primary);
   font-size: 0.88rem;
   font-weight: 800;
   letter-spacing: 0;
@@ -208,7 +206,7 @@ const handleEntryModeClick = (key: string, enabled: boolean) => {
 }
 
 .quickbuy-entry-mode-card__description {
-  color: rgba(255, 255, 255, 0.68);
+  color: var(--tz-text-secondary);
   font-size: 0.75rem;
   line-height: 1.35;
 }
@@ -223,7 +221,7 @@ const handleEntryModeClick = (key: string, enabled: boolean) => {
   overflow-wrap: anywhere;
   padding: 0.42rem 0.72rem;
   border-radius: 999px;
-  color: #050505;
+  color: var(--tz-text-primary);
   background: #ffffff;
   font-size: 0.75rem;
   font-weight: 800;
@@ -235,8 +233,8 @@ const handleEntryModeClick = (key: string, enabled: boolean) => {
   width: 2rem;
   min-width: 2rem;
   padding: 0;
-  color: rgba(255, 255, 255, 0.78);
-  background: var(--quickbuy-control-surface-raised, #151519);
+  color: var(--tz-text-muted);
+  background: var(--quickbuy-control-surface-raised, var(--tz-surface-subtle));
 }
 
 @media (max-width: 767px) {

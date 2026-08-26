@@ -23,6 +23,31 @@
       </div>
 
       <template v-else>
+        <section class="rounded-2xl border border-primary/20 bg-primary/5 p-3">
+          <div class="mb-3 flex items-center justify-between gap-2">
+            <h3 class="flex items-center gap-2 text-xs font-black uppercase tracking-wider">
+              <Clock3 class="size-3.5 text-primary" />
+              客户当地时间
+            </h3>
+            <AdminStatusBadge :tone="customerTimezoneValid ? 'green' : 'amber'">
+              {{ customerTimezoneValid ? customerLocalTimePhase : '未采集' }}
+            </AdminStatusBadge>
+          </div>
+          <div class="flex items-end justify-between gap-3">
+            <div class="min-w-0">
+              <p class="font-mono text-3xl font-black tracking-normal text-foreground">{{ customerLocalTime }}</p>
+              <p v-if="customerLocalDate" class="mt-1 text-[11px] text-muted-foreground">{{ customerLocalDate }}</p>
+            </div>
+            <div class="min-w-0 text-right text-[11px]">
+              <p class="truncate font-mono font-bold text-foreground">{{ customerTimezoneValid ? customerContact.timezone : '未采集时区' }}</p>
+              <p class="mt-1 truncate text-muted-foreground">{{ customerTimezoneSourceLabel }}</p>
+            </div>
+          </div>
+          <p class="mt-3 rounded-xl bg-background/70 px-3 py-2 text-xs leading-5 text-muted-foreground">
+            {{ customerLocalTimeHint }}
+          </p>
+        </section>
+
         <section class="rounded-2xl border bg-card p-3">
           <div class="mb-3 flex items-center justify-between gap-2">
             <h3 class="flex items-center gap-2 text-xs font-black uppercase tracking-wider">
@@ -245,14 +270,20 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { Heart, History, Info, LoaderCircle, Mail, MapPin, PackageCheck, ShoppingCart, UserCheck, UserRound } from '@lucide/vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { Clock3, Heart, History, Info, LoaderCircle, Mail, MapPin, PackageCheck, ShoppingCart, UserCheck, UserRound } from '@lucide/vue'
 import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   formatDate,
+  formatCustomerLocalDate,
+  formatCustomerLocalTime,
   formatMoney,
   formatShortDate,
+  customerLocalTimeHint as getCustomerLocalTimeHint,
+  customerLocalTimePhase as getCustomerLocalTimePhase,
+  customerTimezoneSourceLabel as getCustomerTimezoneSourceLabel,
+  isValidCustomerTimezone,
   signalTone,
   tierStyle,
 } from '@/lib/customerServicePresentation'
@@ -282,10 +313,17 @@ const props = withDefaults(defineProps<{
 const customerAccount = computed<CustomerAccount | null>(() => props.customerContext?.customer?.account || null)
 const customerAnonymous = computed<CustomerAnonymous | null>(() => props.customerContext?.customer?.anonymous || null)
 const customerContact = computed<CustomerContact>(() => props.customerContext?.contact || {})
+const customerClockNow = ref(new Date())
 const customerCart = computed<CustomerCart>(() => props.customerContext?.cart || { available: false, items: [] })
 const customerWishlist = computed<CustomerWishlist>(() => props.customerContext?.wishlist || { available: false, items: [] })
 const customerOrders = computed<CustomerOrders>(() => props.customerContext?.orders || { available: false, items: [] })
 const customerBrowsing = computed<CustomerBrowsing>(() => props.customerContext?.browsing || { available: false, items: [] })
+const customerTimezoneValid = computed(() => isValidCustomerTimezone(customerContact.value.timezone))
+const customerLocalTime = computed(() => formatCustomerLocalTime(customerClockNow.value, customerContact.value.timezone))
+const customerLocalDate = computed(() => formatCustomerLocalDate(customerClockNow.value, customerContact.value.timezone))
+const customerLocalTimePhase = computed(() => getCustomerLocalTimePhase(customerClockNow.value, customerContact.value.timezone))
+const customerLocalTimeHint = computed(() => getCustomerLocalTimeHint(customerClockNow.value, customerContact.value.timezone))
+const customerTimezoneSourceLabel = computed(() => getCustomerTimezoneSourceLabel(customerContact.value.timezone_source))
 interface SignalItem extends CustomerSignal {
   key: string
   label: string
@@ -299,5 +337,20 @@ const signalItems = computed<SignalItem[]>(() => {
     { key: 'email_capture', label: '邮箱采集', ...(signals.email_capture || {}) },
     { key: 'visitor_profile', label: '访客档案', ...(signals.visitor_profile || {}) },
   ]
+})
+
+let customerClockTimer: number | null = null
+
+onMounted(() => {
+  customerClockTimer = window.setInterval(() => {
+    customerClockNow.value = new Date()
+  }, 30_000)
+})
+
+onBeforeUnmount(() => {
+  if (customerClockTimer) {
+    window.clearInterval(customerClockTimer)
+    customerClockTimer = null
+  }
 })
 </script>

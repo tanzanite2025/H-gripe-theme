@@ -41,7 +41,7 @@
         <Icon name="lucide:refresh-cw" :class="{ 'points-actions__spin': loading }" />
         {{ loading ? t('common.loading', 'Loading...') : t('accountSidebar.actions.refresh', 'Refresh') }}
       </button>
-      <NuxtLink :to="localePath('/membershipandpoints')" @click="$emit('close')">
+<NuxtLink :to="localePath('/resources/membershipandpoints')" @click="$emit('close')">
         {{ t('accountSidebar.points.viewFull', 'Full membership center') }}
       </NuxtLink>
     </div>
@@ -101,15 +101,14 @@ const discountText = computed(() => `${formatBenefitNumber(Number(props.levelDis
   justify-content: space-between;
   gap: 0.8rem;
   border-radius: 1.35rem;
-  background:
-    radial-gradient(circle at top left, rgba(181, 255, 109, 0.06), transparent 52%),
-    rgba(255, 255, 255, 0.055);
+  border: 1px solid var(--tz-border-subtle);
+  background: var(--tz-card-surface);
   padding: 1rem;
 }
 
 .points-hero p {
   margin: 0;
-  color: rgba(212, 212, 212, 0.78);
+  color: var(--tz-text-muted);
   font-size: var(--tz-type-micro-label);
   font-weight: 700;
   text-transform: uppercase;
@@ -118,7 +117,7 @@ const discountText = computed(() => `${formatBenefitNumber(Number(props.levelDis
 
 .points-hero h3 {
   margin: 0.25rem 0 0;
-  color: #ffffff;
+  color: var(--tz-text-primary);
   font-size: 1.25rem;
   font-weight: 850;
 }
@@ -132,7 +131,7 @@ const discountText = computed(() => `${formatBenefitNumber(Number(props.levelDis
 }
 
 .points-hero__score strong {
-  color: #B5FF6D;
+  color: #059669;
   font-size: 1.7rem;
   font-weight: 900;
   line-height: 1;
@@ -140,14 +139,15 @@ const discountText = computed(() => `${formatBenefitNumber(Number(props.levelDis
 
 .points-hero__score span {
   margin-top: 0.25rem;
-  color: rgba(232, 232, 232, 0.75);
+  color: var(--tz-text-secondary);
   font-size: var(--tz-type-micro-label);
   font-weight: 700;
 }
 
 .points-progress {
   border-radius: 1rem;
-  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid var(--tz-border-subtle);
+  background: var(--tz-input-surface);
   padding: 0.85rem;
 }
 
@@ -155,26 +155,26 @@ const discountText = computed(() => `${formatBenefitNumber(Number(props.levelDis
   height: 0.52rem;
   overflow: hidden;
   border-radius: 999px;
-  background: rgba(160, 160, 160, 0.22);
+  background: var(--tz-border-subtle);
 }
 
 .points-progress__bar span {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: #B5FF6D;
+  background: #059669;
 }
 
 .points-progress__meta {
   display: flex;
   justify-content: space-between;
   margin-top: 0.5rem;
-  color: rgba(232, 232, 232, 0.78);
+  color: var(--tz-text-secondary);
   font-size: 0.75rem;
 }
 
 .points-progress__meta strong {
-  color: #ffffff;
+  color: var(--tz-text-primary);
 }
 
 .points-grid {
@@ -186,7 +186,8 @@ const discountText = computed(() => `${formatBenefitNumber(Number(props.levelDis
 .points-card {
   min-height: 4.2rem;
   border-radius: 1rem;
-  background: rgba(255, 255, 255, 0.055);
+  border: 1px solid var(--tz-border-subtle);
+  background: var(--tz-input-surface);
   padding: 0.8rem;
 }
 
@@ -196,14 +197,14 @@ const discountText = computed(() => `${formatBenefitNumber(Number(props.levelDis
 }
 
 .points-card span {
-  color: rgba(212, 212, 212, 0.82);
+  color: var(--tz-text-secondary);
   font-size: var(--tz-type-micro-label);
   line-height: 1.35;
 }
 
 .points-card strong {
   margin-top: 0.4rem;
-  color: #ffffff;
+  color: var(--tz-text-primary);
   font-size: 1.05rem;
   font-weight: 850;
 }
@@ -228,8 +229,9 @@ const discountText = computed(() => `${formatBenefitNumber(Number(props.levelDis
 }
 
 .points-actions button {
-  background: rgba(255, 255, 255, 0.075);
-  color: #ffffff;
+  border: 1px solid var(--tz-border-strong);
+  background: var(--tz-surface-subtle);
+  color: var(--tz-text-primary);
 }
 
 .points-actions button:disabled {
@@ -237,8 +239,8 @@ const discountText = computed(() => `${formatBenefitNumber(Number(props.levelDis
 }
 
 .points-actions a {
-  background: #B5FF6D;
-  color: #050505;
+  background: var(--tz-site-accent);
+  color: #ffffff;
 }
 
 .points-actions svg {

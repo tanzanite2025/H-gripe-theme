@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -11,6 +12,91 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
+
+func TestSiteQualityRunListAlignsHotAndArchiveColumns(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
+	require.NoError(t, err)
+
+	const columns = `
+		id INTEGER PRIMARY KEY,
+		target_id INTEGER,
+		job_id INTEGER,
+		target_url TEXT NOT NULL,
+		canonical_url TEXT NOT NULL DEFAULT '',
+		final_url TEXT NOT NULL DEFAULT '',
+		strategy TEXT NOT NULL,
+		status TEXT NOT NULL,
+		initiated_by_user_id INTEGER NOT NULL DEFAULT 0,
+		provider TEXT NOT NULL DEFAULT '',
+		lighthouse_version TEXT NOT NULL DEFAULT '',
+		environment_json TEXT NOT NULL DEFAULT '{}',
+		release_id TEXT NOT NULL DEFAULT '',
+		performance_score INTEGER,
+		accessibility_score INTEGER,
+		best_practices_score INTEGER,
+		seo_score INTEGER,
+		first_contentful_paint_ms REAL,
+		largest_contentful_paint_ms REAL,
+		interaction_to_next_paint_ms REAL,
+		cumulative_layout_shift REAL,
+		total_blocking_time_ms REAL,
+		speed_index_ms REAL,
+		issues_json TEXT NOT NULL DEFAULT '[]',
+		raw_response_json TEXT NOT NULL DEFAULT '{}',
+		error_message TEXT NOT NULL DEFAULT '',
+		created_at DATETIME NOT NULL,
+		updated_at DATETIME NOT NULL
+	`
+	require.NoError(t, db.Exec("CREATE TABLE site_quality_runs ("+
+		"id INTEGER PRIMARY KEY, target_url TEXT NOT NULL, final_url TEXT NOT NULL, strategy TEXT NOT NULL, "+
+		"status TEXT NOT NULL, initiated_by_user_id INTEGER NOT NULL DEFAULT 0, performance_score INTEGER, "+
+		"accessibility_score INTEGER, best_practices_score INTEGER, seo_score INTEGER, "+
+		"first_contentful_paint_ms REAL, largest_contentful_paint_ms REAL, interaction_to_next_paint_ms REAL, "+
+		"cumulative_layout_shift REAL, total_blocking_time_ms REAL, speed_index_ms REAL, issues_json TEXT NOT NULL, "+
+		"raw_response_json TEXT NOT NULL, error_message TEXT NOT NULL, created_at DATETIME NOT NULL, "+
+		"updated_at DATETIME NOT NULL, target_id INTEGER, job_id INTEGER, canonical_url TEXT NOT NULL, "+
+		"provider TEXT NOT NULL, lighthouse_version TEXT NOT NULL, environment_json TEXT NOT NULL, release_id TEXT NOT NULL"+
+		")").Error)
+	require.NoError(t, db.Exec("CREATE TABLE site_quality_runs_archive ("+columns+")").Error)
+
+	now := time.Date(2026, time.August, 23, 12, 0, 0, 0, time.UTC)
+	require.NoError(t, db.Exec(`
+		INSERT INTO site_quality_runs (
+			id, target_url, final_url, strategy, status, initiated_by_user_id,
+			performance_score, accessibility_score, best_practices_score, seo_score,
+			first_contentful_paint_ms, largest_contentful_paint_ms, interaction_to_next_paint_ms,
+			cumulative_layout_shift, total_blocking_time_ms, speed_index_ms, issues_json,
+			raw_response_json, error_message, created_at, updated_at, target_id, job_id,
+			canonical_url, provider, lighthouse_version, environment_json, release_id
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, 1, "https://example.com/hot", "https://example.com/hot", "mobile", "success", 0,
+		90, 90, 90, 90, 100, 200, 20, 0.1, 30, 300, "[]", "{}", "", now, now, nil, nil,
+		"https://example.com/hot", "lighthouse_runner", "", "{}", "").Error)
+	require.NoError(t, db.Exec(`
+		INSERT INTO site_quality_runs_archive (
+			id, target_id, job_id, target_url, canonical_url, final_url, strategy, status,
+			initiated_by_user_id, provider, lighthouse_version, environment_json, release_id,
+			performance_score, accessibility_score, best_practices_score, seo_score,
+			first_contentful_paint_ms, largest_contentful_paint_ms, interaction_to_next_paint_ms,
+			cumulative_layout_shift, total_blocking_time_ms, speed_index_ms, issues_json,
+			raw_response_json, error_message, created_at, updated_at
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, 2, nil, nil, "https://example.com/archive", "https://example.com/archive",
+		"https://example.com/archive", "desktop", "success", 0, "lighthouse_runner", "", "{}", "",
+		80, 80, 80, 80, 110, 210, 30, 0.2, 40, 310, "[]", "{}", "", now.Add(-time.Hour), now.Add(-time.Hour)).Error)
+
+	runs, total, err := NewSiteQualityRunRepository(db).List(SiteQualityRunListFilter{
+		Page:     1,
+		PageSize: 10,
+	})
+	require.NoError(t, err)
+	require.Equal(t, int64(2), total)
+	require.Len(t, runs, 2)
+	require.Equal(t, "https://example.com/hot", runs[0].TargetURL)
+	require.Equal(t, "https://example.com/archive", runs[1].TargetURL)
+}
 
 func TestSiteQualityJobClaimIsSingleConsumerAndRecoversStaleLease(t *testing.T) {
 	db := newSiteQualityRepositoryTestDB(t)
@@ -404,6 +490,38 @@ func TestSiteQualityEvaluationScopesRecheckToBoundFinding(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 1, updatedFirst.ConsecutiveClean)
 	require.Equal(t, 0, updatedSecond.ConsecutiveClean)
+}
+
+func TestSiteQualityFindingReadNormalizesHistoricalRuleIdentity(t *testing.T) {
+	db := newSiteQualityRepositoryTestDB(t)
+	now := time.Date(2026, time.August, 23, 12, 0, 0, 0, time.UTC)
+	finding := sitequalitydomain.SiteQualityFinding{
+		TargetURL:       "https://example.com/blog",
+		Strategy:        sitequalitydomain.SiteQualityStrategyMobile,
+		AuditID:         "link-text",
+		RuleID:          "",
+		ProviderAuditID: "",
+		FindingKind:     "links",
+		Title:           "Links do not have descriptive text",
+		Severity:        "medium",
+		State:           sitequalitydomain.SiteQualityFindingStateOpen,
+		FirstDetectedAt: now,
+		LastDetectedAt:  now,
+		LatestRunID:     1,
+		LatestEvidence:  `{"title":"legacy evidence","rule_id":"link-text","provider_audit_id":"link_descriptive_text"}`,
+	}
+	require.NoError(t, db.Create(&finding).Error)
+
+	normalized, err := NewSiteQualityFindingRepository(db).FindByID(finding.ID)
+	require.NoError(t, err)
+	require.Equal(t, sitequalitydomain.SiteQualityRuleIDDescriptiveLinkText, normalized.RuleID)
+	require.Equal(t, sitequalitydomain.SiteQualityProviderAuditIDLinkText, normalized.ProviderAuditID)
+
+	var evidence map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(normalized.LatestEvidence), &evidence))
+	require.Equal(t, sitequalitydomain.SiteQualityRuleIDDescriptiveLinkText, evidence["rule_id"])
+	require.Equal(t, sitequalitydomain.SiteQualityProviderAuditIDLinkText, evidence["provider_audit_id"])
+	require.Equal(t, "legacy evidence", evidence["title"])
 }
 
 func TestSiteQualityLeaseCompareAndSetRejectsPreviousWorker(t *testing.T) {

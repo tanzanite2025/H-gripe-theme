@@ -5,6 +5,8 @@ import { toast } from 'vue-sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import axios from '@/utils/axios'
+import UploadSpecHint from '@/components/admin/UploadSpecHint.vue'
+import { uploadSpecAccept, validateUploadFile } from '@/lib/uploadSpecs'
 
 const props = withDefaults(defineProps<{
   modelValue: string
@@ -63,44 +65,19 @@ const insertLink = () => {
   linkURL.value = ''
 }
 
-const validateImage = (file: File) => new Promise<boolean>((resolve) => {
-  if (file.type !== 'image/webp' || !file.name.toLowerCase().endsWith('.webp')) {
-    toast.error('FAQ 图片必须是 WebP 格式')
-    resolve(false)
-    return
-  }
-  if (file.size > 3 * 1024 * 1024) {
-    toast.error('FAQ 图片不能超过 3MB')
-    resolve(false)
-    return
-  }
-  const url = URL.createObjectURL(file)
-  const image = new Image()
-  image.onload = () => {
-    URL.revokeObjectURL(url)
-    if (image.width !== 800 || image.height !== 800) {
-      toast.error(`FAQ 图片必须是 800×800 像素，当前为 ${image.width}×${image.height}`)
-      resolve(false)
-      return
-    }
-    resolve(true)
-  }
-  image.onerror = () => {
-    URL.revokeObjectURL(url)
-    toast.error('无法读取图片尺寸')
-    resolve(false)
-  }
-  image.src = url
-})
-
 const uploadImage = async (event: Event) => {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
   input.value = ''
-  if (!file || !(await validateImage(file))) return
+  if (!file) return
 
   uploading.value = true
   try {
+    const validation = await validateUploadFile(file, 'faq_answer_image')
+    if (!validation.ok) {
+      toast.error(validation.error || 'FAQ 图片不符合上传规范')
+      return
+    }
     const formData = new FormData()
     formData.append('file', file)
     const response = await axios.post('/api/admin/faqs/answer-image', formData, {
@@ -164,14 +141,14 @@ const removeImage = () => {
       <div class="flex flex-wrap items-center justify-between gap-2">
         <div>
           <p class="text-xs font-black">FAQ 答案图片</p>
-          <p class="mt-0.5 text-[11px] text-muted-foreground">固定 800×800 px · WebP · 最大 3MB · 每条 FAQ 最多一张</p>
+        <UploadSpecHint code="faq_answer_image" />
         </div>
         <Button type="button" variant="outline" size="sm" class="h-8 px-3" :disabled="uploading" @click="chooseImage">
           <LoaderCircle v-if="uploading" class="size-3.5 animate-spin" />
           <ImagePlus v-else class="size-3.5" />
           {{ uploading ? '上传中' : imageUrl ? '更换图片' : '上传图片' }}
         </Button>
-        <input ref="fileInput" type="file" class="sr-only" accept=".webp,image/webp" :disabled="uploading" @change="uploadImage" />
+        <input ref="fileInput" type="file" class="sr-only" :accept="uploadSpecAccept('faq_answer_image')" :disabled="uploading" @change="uploadImage" />
       </div>
 
       <div v-if="imageUrl" class="mt-3 grid gap-3 sm:grid-cols-[7rem_minmax(0,1fr)_auto] sm:items-center">

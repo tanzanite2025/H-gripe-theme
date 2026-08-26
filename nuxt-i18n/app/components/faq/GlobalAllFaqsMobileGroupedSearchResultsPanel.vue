@@ -102,7 +102,7 @@ const emit = defineEmits<{
   padding: 1rem;
   border-radius: 1.25rem;
   background: var(--tz-card-surface);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 8px 30px rgba(20, 32, 43, 0.1);
 }
 
 .global-all-faqs-mobile-grouped-search-results-panel__group-header {
@@ -111,7 +111,7 @@ const emit = defineEmits<{
   justify-content: center;
   margin-bottom: 1rem;
   padding-bottom: 0.75rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(20, 32, 43, 0.12);
 }
 
 .global-all-faqs-mobile-grouped-search-results-panel__group-header h3 {
@@ -121,14 +121,14 @@ const emit = defineEmits<{
 
 .global-all-faqs-mobile-grouped-search-results-panel__list {
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(20, 32, 43, 0.12);
   border-radius: 1rem;
   background: var(--tz-card-surface);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 4px 16px rgba(20, 32, 43, 0.08);
 }
 
 .global-all-faqs-mobile-grouped-search-results-panel__item {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(20, 32, 43, 0.1);
 }
 
 .global-all-faqs-mobile-grouped-search-results-panel__item:last-child {
@@ -153,7 +153,7 @@ const emit = defineEmits<{
 
 .global-all-faqs-mobile-grouped-search-results-panel__item-button:hover,
 .global-all-faqs-mobile-grouped-search-results-panel__item-button.is-expanded {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(20, 32, 43, 0.04);
 }
 
 .global-all-faqs-mobile-grouped-search-results-panel__question {
@@ -176,7 +176,7 @@ const emit = defineEmits<{
 }
 
 .global-all-faqs-mobile-grouped-search-results-panel__icon.is-expanded {
-  color: #B5FF6D;
+  color: var(--tz-text-accent);
   transform: rotate(180deg);
 }
 
@@ -188,7 +188,7 @@ const emit = defineEmits<{
 .global-all-faqs-mobile-grouped-search-results-panel__answer-wrap {
   overflow: hidden;
   background:
-    linear-gradient(0deg, rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0.025)),
+    linear-gradient(0deg, rgba(20, 32, 43, 0.025), rgba(20, 32, 43, 0.025)),
     var(--tz-card-surface);
 }
 

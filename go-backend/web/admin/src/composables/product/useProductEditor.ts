@@ -10,9 +10,23 @@ import type {
   ProductVariantOptionValueForm
 } from '@/components/admin/product/productEditorTypes'
 
+type ProductEditorMode = 'create' | 'edit'
+
+interface ProductEditorCallbackResult {
+  keepDialogOpen?: boolean
+}
+
 export const useProductEditor = (options: Record<string, any> = {}) => {
   const refreshProducts = options.refreshProducts || (() => Promise.resolve())
   const resolveDefaultLocale = () => options.defaultLocale?.value || options.defaultLocale || ''
+  const afterProductLoaded = options.afterProductLoaded as (
+    product: any | null,
+    mode: ProductEditorMode,
+  ) => Promise<void> | void
+  const afterProductSaved = options.afterProductSaved as (
+    product: any,
+    mode: ProductEditorMode,
+  ) => Promise<ProductEditorCallbackResult | void> | ProductEditorCallbackResult | void
   const defaultPrimaryCurrency = 'USD'
   const normalizeCurrencyCode = (value: any) => String(value || '').trim().toUpperCase()
   const validCurrencyCodeOrDefault = (value: any) => {
@@ -291,7 +305,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
       sku: variant.sku || '',
       title: variant.title || '',
       option_values: parseVariantOptions(variant),
-      currency: primaryPriceCurrency(),
+      currency: validCurrencyCodeOrDefault(variant.currency || product.currency),
       price: Number(variant.price || 0),
       sale_price: variant.sale_price ?? null,
       display_prices: normalizeDisplayPrices(variant.display_prices),
@@ -357,7 +371,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
         sku: String(variant.sku || '').trim(),
         title: String(variant.title || '').trim(),
         option_values: optionValues,
-        currency: primaryPriceCurrency(),
+        currency: validCurrencyCodeOrDefault(variant.currency || productForm.currency),
         price: Number(variant.price || 0),
         sale_price: variant.sale_price === '' || variant.sale_price == null ? null : Number(variant.sale_price),
         display_prices: normalizeDisplayPrices(variant.display_prices),
@@ -387,7 +401,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     slug: productForm.slug.trim(),
     description: productForm.description,
     short_description: productForm.short_description,
-    currency: primaryPriceCurrency(),
+    currency: validCurrencyCodeOrDefault(productForm.currency),
     status: productForm.status,
     locale: productForm.locale,
     featured: productForm.featured,
@@ -487,10 +501,32 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     }
   }
 
+  const notifyProductLoaded = async (product: any | null, mode: ProductEditorMode) => {
+    if (!afterProductLoaded) return
+    try {
+      await afterProductLoaded(product, mode)
+    } catch (error) {
+      console.error('Failed to load independent product add-on data:', error)
+    }
+  }
+
+  const notifyProductSaved = async (product: any, mode: ProductEditorMode): Promise<ProductEditorCallbackResult> => {
+    if (!afterProductSaved) return {}
+    try {
+      return (await afterProductSaved(product, mode)) || {}
+    } catch (error) {
+      // Product persistence has already succeeded. Keep the dialog open so an
+      // independent add-on failure can be retried without submitting again.
+      console.error('Failed to save independent product add-on data:', error)
+      return { keepDialogOpen: true }
+    }
+  }
+
   const showCreateDialog = async () => {
     await fetchPrimaryPricingCurrency()
     dialogMode.value = 'create'
     resetForm()
+    await notifyProductLoaded(null, 'create')
     dialogVisible.value = true
   }
 
@@ -524,7 +560,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
       slug: detail.slug || '',
       description: detail.description || '',
       short_description: detail.short_description || detail.short_desc || '',
-      currency: primaryPriceCurrency(),
+      currency: validCurrencyCodeOrDefault(detail.currency),
       status: detail.status || 'active',
       locale: detail.locale || resolveDefaultLocale(),
       featured: Boolean(detail.featured),
@@ -534,6 +570,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
       media: buildProductMediaFormValues(detail)
     })
     clearFormErrors()
+    await notifyProductLoaded(detail, 'edit')
     dialogVisible.value = true
   }
 
@@ -542,21 +579,27 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     if (!validateForm(payload)) return
     submitting.value = true
     try {
+      let savedProduct: any
       if (dialogMode.value === 'create') {
-        await productApi.create(payload)
+        savedProduct = await productApi.create(payload)
         toast.success('商品创建成功')
       } else {
         const { id, ...data } = payload
-        await productApi.update(id, data)
+        savedProduct = await productApi.update(id, data)
         toast.success('商品更新成功')
       }
-      dialogVisible.value = false
+      const afterSaveResult = await notifyProductSaved(savedProduct, dialogMode.value)
+      if (!afterSaveResult.keepDialogOpen) dialogVisible.value = false
       await refreshProducts()
     } catch (error) {
       console.error('Failed to save product:', error)
     } finally {
       submitting.value = false
     }
+  }
+
+  const closeDialog = () => {
+    dialogVisible.value = false
   }
 
   return {
@@ -605,7 +648,8 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     fetchProductSpecTemplates,
     showCreateDialog,
     showEditDialog,
-    submitForm
+    submitForm,
+    closeDialog
   }
 }
 

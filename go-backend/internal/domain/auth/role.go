@@ -59,6 +59,16 @@ const (
 	PermProductEdit   Permission = "product:edit"
 	PermProductDelete Permission = "product:delete"
 
+	PermProcurementView   Permission = "procurement:view"
+	PermProcurementCreate Permission = "procurement:create"
+	PermProcurementEdit   Permission = "procurement:edit"
+	PermProcurementDelete Permission = "procurement:delete"
+
+	PermFitmentCatalogView   Permission = "fitment_catalog:view"
+	PermFitmentCatalogCreate Permission = "fitment_catalog:create"
+	PermFitmentCatalogEdit   Permission = "fitment_catalog:edit"
+	PermFitmentCatalogDelete Permission = "fitment_catalog:delete"
+
 	PermOrderView   Permission = "order:view"
 	PermOrderEdit   Permission = "order:edit"
 	PermOrderRefund Permission = "order:refund"
@@ -159,6 +169,8 @@ const (
 var RolePermissions = map[Role][]Permission{
 	RoleAdmin: {
 		PermProductView, PermProductCreate, PermProductEdit, PermProductDelete,
+		PermProcurementView, PermProcurementCreate, PermProcurementEdit, PermProcurementDelete,
+		PermFitmentCatalogView, PermFitmentCatalogCreate, PermFitmentCatalogEdit, PermFitmentCatalogDelete,
 		PermOrderView, PermOrderEdit, PermOrderRefund, PermOrderDelete,
 		PermUserView, PermUserCreate, PermUserEdit, PermUserDelete,
 		PermContentView, PermContentCreate, PermContentEdit, PermContentDelete,
@@ -184,6 +196,8 @@ var RolePermissions = map[Role][]Permission{
 	},
 	RoleManager: {
 		PermProductView, PermProductCreate, PermProductEdit, PermProductDelete,
+		PermProcurementView, PermProcurementCreate, PermProcurementEdit, PermProcurementDelete,
+		PermFitmentCatalogView, PermFitmentCatalogCreate, PermFitmentCatalogEdit, PermFitmentCatalogDelete,
 		PermOrderView, PermOrderEdit, PermOrderRefund,
 		PermUserView, PermUserCreate, PermUserEdit,
 		PermContentView, PermContentCreate, PermContentEdit, PermContentDelete,
@@ -208,6 +222,8 @@ var RolePermissions = map[Role][]Permission{
 	},
 	RoleEditor: {
 		PermProductView, PermProductCreate, PermProductEdit,
+		PermProcurementView, PermProcurementCreate, PermProcurementEdit,
+		PermFitmentCatalogView, PermFitmentCatalogCreate, PermFitmentCatalogEdit,
 		PermShippingView,
 		PermContentView, PermContentCreate, PermContentEdit,
 		PermReviewView, PermReviewModerate,
@@ -228,6 +244,7 @@ var RolePermissions = map[Role][]Permission{
 	},
 	RoleViewer: {
 		PermProductView,
+		PermFitmentCatalogView,
 		PermOrderView,
 		PermUserView,
 		PermContentView,

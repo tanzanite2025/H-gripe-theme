@@ -11,7 +11,7 @@ info:
     - 支付和物流管理
     - 营销系统 (优惠券、积分、会员)
     - 评价和客服系统
-    - 产品注册和保修
+    - 订单保修和发货售后凭据
     - 审计日志
     
     ## 认证
@@ -59,8 +59,8 @@ tags:
     description: 评价系统
   - name: Gallery
     description: 图片库管理
-  - name: Registration
-    description: 产品注册和保修
+  - name: Warranty
+    description: 订单保修和已发货订单售后凭据
   - name: Audit
     description: 审计日志
   - name: Settings

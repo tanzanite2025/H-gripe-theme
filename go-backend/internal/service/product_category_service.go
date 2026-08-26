@@ -8,7 +8,9 @@ import (
 	"time"
 
 	"commerce-platform/internal/domain/product"
+	seodomain "commerce-platform/internal/domain/seo"
 	"commerce-platform/internal/pkg/locales"
+	"commerce-platform/internal/pkg/safehtml"
 	"commerce-platform/internal/repository"
 
 	"gorm.io/gorm"
@@ -27,6 +29,7 @@ var (
 	ErrProductCategoryImageInvalid       = errors.New("product category image invalid")
 	ErrProductCategoryTranslationInvalid = errors.New("product category translation invalid")
 	ErrProductCategorySystemProtected    = errors.New("system product category cannot be changed")
+	ErrProductCategorySEOInvalid         = errors.New("product category SEO invalid")
 )
 
 type ProductCategoryInput struct {
@@ -45,6 +48,10 @@ type ProductCategoryView struct {
 	Name                      string                `json:"name"`
 	Slug                      string                `json:"slug"`
 	Description               string                `json:"description"`
+	MetaTitle                 string                `json:"meta_title"`
+	MetaDescription           string                `json:"meta_description"`
+	Intro                     string                `json:"intro"`
+	RoutePath                 string                `json:"route_path"`
 	ImageMediaAssetID         *uint                 `json:"image_media_asset_id,omitempty"`
 	ImageURL                  string                `json:"image_url,omitempty"`
 	Depth                     int                   `json:"depth"`
@@ -71,6 +78,9 @@ type ProductCategoryTranslationView struct {
 	Locale            string    `json:"locale"`
 	Name              string    `json:"name"`
 	Description       string    `json:"description"`
+	MetaTitle         string    `json:"meta_title"`
+	MetaDescription   string    `json:"meta_description"`
+	Intro             string    `json:"intro"`
 	CreatedAt         time.Time `json:"created_at"`
 	UpdatedAt         time.Time `json:"updated_at"`
 }
@@ -79,6 +89,32 @@ type ProductCategoryListView struct {
 	Tree     []ProductCategoryView `json:"tree"`
 	Flat     []ProductCategoryView `json:"flat"`
 	MaxDepth int                   `json:"max_depth"`
+}
+
+type ProductCategorySEOView struct {
+	ID              uint   `json:"id"`
+	Name            string `json:"name"`
+	Slug            string `json:"slug"`
+	RoutePath       string `json:"route_path"`
+	Locale          string `json:"locale"`
+	Status          string `json:"status"`
+	MetaTitle       string `json:"meta_title"`
+	MetaDescription string `json:"meta_description"`
+	Intro           string `json:"intro"`
+}
+
+type ProductBreadcrumbItemView struct {
+	Type string `json:"type"`
+	ID   uint   `json:"id,omitempty"`
+	Name string `json:"name"`
+	Slug string `json:"slug,omitempty"`
+	Path string `json:"path"`
+}
+
+type ProductBreadcrumbView struct {
+	Status string                      `json:"status"`
+	Reason string                      `json:"reason,omitempty"`
+	Items  []ProductBreadcrumbItemView `json:"items"`
 }
 
 type ProductCategoryService struct {
@@ -111,6 +147,206 @@ func (s *ProductCategoryService) ListPublic(locale string) (*ProductCategoryList
 	}
 	view := buildLocalizedProductCategoryListView(categories, requestedLocale)
 	return &view, nil
+}
+
+func (s *ProductCategoryService) GetPublicBySlug(slug, locale string) (*ProductCategoryView, error) {
+	slug = strings.TrimSpace(slug)
+	if slug == "" {
+		return nil, ErrProductCategoryNotFound
+	}
+
+	view, err := s.ListPublic(locale)
+	if err != nil {
+		return nil, err
+	}
+	for index := range view.Flat {
+		if view.Flat[index].Slug == slug {
+			result := view.Flat[index]
+			return &result, nil
+		}
+	}
+	return nil, ErrProductCategoryNotFound
+}
+
+func (s *ProductCategoryService) BuildProductBreadcrumb(item product.Product, locale string) (*ProductBreadcrumbView, error) {
+	normalizedLocale := locales.Normalize(locale)
+	result := fallbackProductBreadcrumb(item, normalizedLocale)
+	if s == nil || s.repo == nil {
+		result.Status = "unavailable"
+		result.Reason = "category_service_unavailable"
+		return result, nil
+	}
+	if item.ProductCategoryID == nil || *item.ProductCategoryID == 0 {
+		result.Status = "unavailable"
+		result.Reason = "missing_category"
+		return result, nil
+	}
+
+	categories, err := s.repo.ListWithTranslations(false, []string{normalizedLocale})
+	if err != nil {
+		return nil, err
+	}
+
+	byID := productCategoriesByID(categories)
+	categoryID := *item.ProductCategoryID
+	chain := make([]product.ProductCategory, 0, ProductCategoryMaxDepth)
+	visited := make(map[uint]struct{}, len(byID))
+	for currentID := categoryID; currentID > 0; {
+		if _, seen := visited[currentID]; seen {
+			result.Status = "unavailable"
+			result.Reason = "category_cycle"
+			return result, nil
+		}
+		visited[currentID] = struct{}{}
+
+		category, ok := byID[currentID]
+		if !ok || !category.IsEnabled || strings.TrimSpace(category.Slug) == "" {
+			result.Status = "unavailable"
+			result.Reason = "category_path_incomplete"
+			return result, nil
+		}
+		chain = append(chain, category)
+		if category.ParentID == nil {
+			break
+		}
+		currentID = *category.ParentID
+	}
+
+	for left, right := 0, len(chain)-1; left < right; left, right = left+1, right-1 {
+		chain[left], chain[right] = chain[right], chain[left]
+	}
+
+	categorySlugs := make([]string, 0, len(chain))
+	for _, category := range chain {
+		categorySlugs = append(categorySlugs, category.Slug)
+	}
+
+	items := make([]ProductBreadcrumbItemView, 0, len(chain)+3)
+	items = append(items, result.Items[:2]...)
+	for index, category := range chain {
+		items = append(items, ProductBreadcrumbItemView{
+			Type: "category",
+			ID:   category.ID,
+			Name: productCategoryToLocalizedView(category, normalizedLocale).Name,
+			Slug: category.Slug,
+			Path: seodomain.BuildCategoryRoute(normalizedLocale, categorySlugs[:index+1]...).Path,
+		})
+	}
+	items = append(items, ProductBreadcrumbItemView{
+		Type: "product",
+		ID:   item.ID,
+		Name: item.Name,
+		Slug: item.Slug,
+		Path: seodomain.BuildProductRoute(normalizedLocale, item.Slug).Path,
+	})
+	result.Items = items
+	result.Status = "ready"
+	result.Reason = ""
+	return result, nil
+}
+
+func (s *ProductCategoryService) ListSEO(includeDisabled bool, locale, search string) ([]ProductCategorySEOView, error) {
+	categories, err := s.repo.ListWithTranslations(includeDisabled, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	normalizedLocale := strings.TrimSpace(locale)
+	if normalizedLocale != "" {
+		normalizedLocale, err = requireSupportedLocale(normalizedLocale)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	byID := productCategoriesByID(categories)
+	views := make([]ProductCategorySEOView, 0, len(categories))
+	for _, category := range categories {
+		localesForCategory := []string{"en"}
+		if normalizedLocale != "" {
+			localesForCategory = []string{normalizedLocale}
+		} else {
+			seenLocales := map[string]struct{}{"en": {}}
+			for _, translation := range category.Translations {
+				translationLocale := locales.Normalize(translation.Locale)
+				if _, exists := seenLocales[translationLocale]; exists {
+					continue
+				}
+				seenLocales[translationLocale] = struct{}{}
+				localesForCategory = append(localesForCategory, translationLocale)
+			}
+		}
+
+		for _, categoryLocale := range localesForCategory {
+			view := productCategorySEOView(category, categoryLocale, byID)
+			if !matchesProductCategorySEOSearch(view, search) {
+				continue
+			}
+			views = append(views, view)
+		}
+	}
+	return views, nil
+}
+
+func (s *ProductCategoryService) GetSEO(id uint, locale string) (*ProductCategorySEOView, error) {
+	normalizedLocale := locales.Normalize(locale)
+	if normalizedLocale == "" {
+		normalizedLocale = "en"
+	}
+	views, err := s.ListSEO(true, normalizedLocale, "")
+	if err != nil {
+		return nil, err
+	}
+	for index := range views {
+		if views[index].ID == id {
+			result := views[index]
+			return &result, nil
+		}
+	}
+	return nil, ErrProductCategoryNotFound
+}
+
+func (s *ProductCategoryService) UpdateSEO(id uint, locale string, metaTitle, metaDescription, intro *string) (*ProductCategorySEOView, error) {
+	normalizedLocale := locales.Normalize(locale)
+	if normalizedLocale == "" {
+		normalizedLocale = "en"
+	}
+	if _, err := requireSupportedLocale(normalizedLocale); err != nil {
+		return nil, err
+	}
+
+	current, err := s.GetSEO(id, normalizedLocale)
+	if err != nil {
+		return nil, err
+	}
+
+	nextMetaTitle := current.MetaTitle
+	if metaTitle != nil {
+		nextMetaTitle = strings.TrimSpace(*metaTitle)
+	}
+	nextMetaDescription := current.MetaDescription
+	if metaDescription != nil {
+		nextMetaDescription = strings.TrimSpace(*metaDescription)
+	}
+	nextIntro := current.Intro
+	if intro != nil {
+		nextIntro, err = safehtml.Sanitize(*intro)
+		if err != nil {
+			return nil, fmt.Errorf("%w: invalid intro: %v", ErrProductCategorySEOInvalid, err)
+		}
+	}
+
+	if len([]rune(nextMetaTitle)) > seoMetaTitleLimit {
+		return nil, fmt.Errorf("%w: meta_title exceeds %d characters", ErrInvalidSEOSettings, seoMetaTitleLimit)
+	}
+	if len([]rune(nextMetaDescription)) > seoMetaDescriptionLimit {
+		return nil, fmt.Errorf("%w: meta_description exceeds %d characters", ErrInvalidSEOSettings, seoMetaDescriptionLimit)
+	}
+
+	if err := s.repo.UpdateSEO(id, normalizedLocale, nextMetaTitle, nextMetaDescription, nextIntro); err != nil {
+		return nil, err
+	}
+	return s.GetSEO(id, normalizedLocale)
 }
 
 func (s *ProductCategoryService) Get(id uint) (*ProductCategoryView, error) {
@@ -147,6 +383,15 @@ func (s *ProductCategoryService) UpdateTranslations(id uint, inputs []ProductCat
 		return nil, err
 	}
 
+	existingTranslations, err := s.repo.ListTranslations(id)
+	if err != nil {
+		return nil, err
+	}
+	existingByLocale := make(map[string]product.ProductCategoryTranslation, len(existingTranslations))
+	for _, translation := range existingTranslations {
+		existingByLocale[locales.Normalize(translation.Locale)] = translation
+	}
+
 	translations := make([]product.ProductCategoryTranslation, 0, len(inputs))
 	seenLocales := make(map[string]struct{}, len(inputs))
 	for _, input := range inputs {
@@ -173,6 +418,9 @@ func (s *ProductCategoryService) UpdateTranslations(id uint, inputs []ProductCat
 			Locale:            locale,
 			Name:              name,
 			Description:       description,
+			MetaTitle:         existingByLocale[locale].MetaTitle,
+			MetaDesc:          existingByLocale[locale].MetaDesc,
+			SEOIntro:          existingByLocale[locale].SEOIntro,
 		})
 	}
 
@@ -491,7 +739,9 @@ func buildProductCategoryListView(categories []product.ProductCategory) ProductC
 	}
 
 	tree := build(0, 1)
-	return ProductCategoryListView{Tree: tree, Flat: flat, MaxDepth: ProductCategoryMaxDepth}
+	view := ProductCategoryListView{Tree: tree, Flat: flat, MaxDepth: ProductCategoryMaxDepth}
+	applyProductCategoryRoutePaths(&view, categories, "en")
+	return view
 }
 
 func productCategoryToAdminView(category product.ProductCategory) ProductCategoryView {
@@ -557,7 +807,9 @@ func buildLocalizedProductCategoryListView(categories []product.ProductCategory,
 	}
 
 	tree := build(0, 1)
-	return ProductCategoryListView{Tree: tree, Flat: flat, MaxDepth: ProductCategoryMaxDepth}
+	view := ProductCategoryListView{Tree: tree, Flat: flat, MaxDepth: ProductCategoryMaxDepth}
+	applyProductCategoryRoutePaths(&view, categories, locale)
+	return view
 }
 
 func productCategoryToView(category product.ProductCategory) ProductCategoryView {
@@ -567,6 +819,9 @@ func productCategoryToView(category product.ProductCategory) ProductCategoryView
 		Name:              category.Name,
 		Slug:              category.Slug,
 		Description:       category.Description,
+		MetaTitle:         category.MetaTitle,
+		MetaDescription:   category.MetaDesc,
+		Intro:             firstNonEmptyCategoryValue(category.SEOIntro, category.Description),
 		ImageMediaAssetID: category.ImageMediaAssetID,
 		ImageURL:          category.ImageURL,
 		Depth:             category.Depth,
@@ -590,9 +845,71 @@ func productCategoryToLocalizedView(category product.ProductCategory, locale str
 		if description := strings.TrimSpace(translation.Description); description != "" {
 			view.Description = description
 		}
+		if locale != "en" {
+			if metaTitle := strings.TrimSpace(translation.MetaTitle); metaTitle != "" {
+				view.MetaTitle = metaTitle
+			}
+			if metaDescription := strings.TrimSpace(translation.MetaDesc); metaDescription != "" {
+				view.MetaDescription = metaDescription
+			}
+			if intro := strings.TrimSpace(translation.SEOIntro); intro != "" {
+				view.Intro = intro
+			} else if description := strings.TrimSpace(translation.Description); description != "" {
+				view.Intro = description
+			}
+		}
 		break
 	}
 	return view
+}
+
+func productCategorySEOView(
+	category product.ProductCategory,
+	locale string,
+	byID map[uint]product.ProductCategory,
+) ProductCategorySEOView {
+	localized := productCategoryToLocalizedView(category, locale)
+	metaTitle := strings.TrimSpace(category.MetaTitle)
+	metaDescription := strings.TrimSpace(category.MetaDesc)
+	intro := strings.TrimSpace(category.SEOIntro)
+	if locale != "en" {
+		metaTitle = ""
+		metaDescription = ""
+		intro = ""
+		for _, translation := range category.Translations {
+			if locales.Normalize(translation.Locale) != locale {
+				continue
+			}
+			metaTitle = strings.TrimSpace(translation.MetaTitle)
+			metaDescription = strings.TrimSpace(translation.MetaDesc)
+			intro = strings.TrimSpace(translation.SEOIntro)
+			break
+		}
+	}
+	return ProductCategorySEOView{
+		ID:              category.ID,
+		Name:            localized.Name,
+		Slug:            category.Slug,
+		RoutePath:       productCategoryRoutePath(category.ID, locale, byID),
+		Locale:          locale,
+		Status:          map[bool]string{true: "active", false: "inactive"}[category.IsEnabled],
+		MetaTitle:       metaTitle,
+		MetaDescription: metaDescription,
+		Intro:           intro,
+	}
+}
+
+func matchesProductCategorySEOSearch(view ProductCategorySEOView, search string) bool {
+	search = strings.ToLower(strings.TrimSpace(search))
+	if search == "" {
+		return true
+	}
+	for _, value := range []string{view.Name, view.Slug, view.RoutePath} {
+		if strings.Contains(strings.ToLower(value), search) {
+			return true
+		}
+	}
+	return false
 }
 
 func productCategoryTranslationToView(translation product.ProductCategoryTranslation) ProductCategoryTranslationView {
@@ -602,7 +919,98 @@ func productCategoryTranslationToView(translation product.ProductCategoryTransla
 		Locale:            locales.Normalize(translation.Locale),
 		Name:              translation.Name,
 		Description:       translation.Description,
+		MetaTitle:         translation.MetaTitle,
+		MetaDescription:   translation.MetaDesc,
+		Intro:             translation.SEOIntro,
 		CreatedAt:         translation.CreatedAt,
 		UpdatedAt:         translation.UpdatedAt,
 	}
+}
+
+func applyProductCategoryRoutePaths(
+	view *ProductCategoryListView,
+	categories []product.ProductCategory,
+	locale string,
+) {
+	if view == nil {
+		return
+	}
+	byID := productCategoriesByID(categories)
+	paths := make(map[uint]string, len(categories))
+	for _, category := range categories {
+		paths[category.ID] = productCategoryRoutePath(category.ID, locale, byID)
+	}
+
+	for index := range view.Flat {
+		view.Flat[index].RoutePath = paths[view.Flat[index].ID]
+	}
+	var applyTree func([]ProductCategoryView)
+	applyTree = func(items []ProductCategoryView) {
+		for index := range items {
+			items[index].RoutePath = paths[items[index].ID]
+			applyTree(items[index].Children)
+		}
+	}
+	applyTree(view.Tree)
+}
+
+func productCategoryRoutePath(id uint, locale string, byID map[uint]product.ProductCategory) string {
+	segments := make([]string, 0, ProductCategoryMaxDepth)
+	visited := make(map[uint]struct{}, len(byID))
+	currentID := id
+	for currentID > 0 {
+		if _, seen := visited[currentID]; seen {
+			return ""
+		}
+		visited[currentID] = struct{}{}
+
+		category, ok := byID[currentID]
+		if !ok || strings.TrimSpace(category.Slug) == "" {
+			return ""
+		}
+		segments = append(segments, category.Slug)
+		if category.ParentID == nil {
+			break
+		}
+		currentID = *category.ParentID
+	}
+
+	for left, right := 0, len(segments)-1; left < right; left, right = left+1, right-1 {
+		segments[left], segments[right] = segments[right], segments[left]
+	}
+	return seodomain.BuildCategoryRoute(locale, segments...).Path
+}
+
+func fallbackProductBreadcrumb(item product.Product, locale string) *ProductBreadcrumbView {
+	return &ProductBreadcrumbView{
+		Status: "ready",
+		Items: []ProductBreadcrumbItemView{
+			{
+				Type: "home",
+				Name: "Home",
+				Path: seodomain.BuildStaticRoute(locale, "/").Path,
+			},
+			{
+				Type: "shop",
+				Name: "Shop",
+				Path: seodomain.BuildStaticRoute(locale, "/shop").Path,
+			},
+			{
+				Type: "product",
+				ID:   item.ID,
+				Name: item.Name,
+				Slug: item.Slug,
+				Path: seodomain.BuildProductRoute(locale, item.Slug).Path,
+			},
+		},
+	}
+}
+
+func firstNonEmptyCategoryValue(values ...string) string {
+	for _, value := range values {
+		if trimmed := strings.TrimSpace(value); trimmed != "" {
+			return trimmed
+		}
+	}
+	return ""
 }

@@ -1,14 +1,14 @@
 <template>
   <div
     ref="rootElement"
-    class="chat-modal-shell tz-mobile-dialog-surface relative w-full md:w-[560px] max-w-full md:max-w-[calc(100vw-3rem)] tz-mobile-safe-full-height rounded-none md:rounded-2xl overflow-hidden flex flex-col bg-black shadow-[-12px_0_28px_rgba(0,0,0,0.45)] pointer-events-auto"
+    class="chat-modal-shell tz-mobile-dialog-surface relative w-full md:w-[560px] max-w-full md:max-w-[calc(100vw-3rem)] tz-mobile-safe-full-height rounded-none md:rounded-2xl overflow-hidden flex flex-col tz-surface-card shadow-[-12px_0_28px_rgba(15,23,42,0.16)] pointer-events-auto"
   >
     <div
-      class="chat-modal-drag-handle tz-mobile-chrome-top border-b border-white/[0.08] backdrop-blur-md"
+      class="chat-modal-drag-handle tz-mobile-chrome-top border-b tz-border-strong/[0.08] backdrop-blur-md"
       @pointerdown="emit('dragStart', $event)"
     >
       <div class="px-3 py-2 flex items-center justify-between gap-3">
-        <div class="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/45 select-none">Chat</div>
+        <div class="text-[11px] font-semibold uppercase tracking-[0.18em] tz-text-primary/45 select-none">Chat</div>
         <button
           type="button"
           class="tz-global-close-btn pointer-events-auto"
@@ -26,7 +26,7 @@
       <div class="w-full">
         <div class="mb-2 md:mb-3 welcome-header">
           <div class="flex items-center gap-3 mb-2 welcome-logo-row">
-            <h1 class="text-2xl md:text-3xl font-bold text-white welcome-title">
+            <h1 class="text-2xl md:text-3xl font-bold tz-text-primary welcome-title">
               {{ t('chatModal.welcome.title') }} <span class="inline-block animate-wave">👋</span>
             </h1>
           </div>
@@ -38,8 +38,8 @@
 
         <div class="space-y-2 mb-0">
           <div class="flex items-center gap-2 mb-2 pl-1">
-            <div class="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(181,255,109,0.8)] animate-pulse"></div>
-            <div class="text-xs font-bold text-emerald-400 uppercase tracking-wider">
+            <div class="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(5, 150, 105,0.8)] animate-pulse"></div>
+            <div class="text-xs font-bold text-emerald-600 uppercase tracking-wider">
               {{ t('chatModal.welcome.onlineTeam') }}
             </div>
           </div>
@@ -57,7 +57,7 @@
       </div>
     </div>
 
-    <div class="chat-welcome-footer tz-mobile-chrome-bottom p-2 md:px-5 md:pt-4 md:pb-5 shrink-0 z-20 border-t border-white/[0.08]">
+    <div class="chat-welcome-footer tz-mobile-chrome-bottom p-2 md:px-5 md:pt-4 md:pb-5 shrink-0 z-20 border-t tz-border-strong/[0.08]">
       <ChatStartButton
         class="w-full text-sm"
         :label="startButtonLabel"
@@ -70,7 +70,7 @@
           v-if="selectedAgent?.whatsapp"
           :href="`https://wa.me/${selectedAgent.whatsapp.replace('+', '')}`"
           target="_blank"
-          class="flex-1 py-2.5 rounded-full bg-[#B5FF6D] text-black text-sm font-medium flex items-center justify-center gap-1.5 shadow-[0_4px_12px_rgba(0,0,0,0.9)] hover:bg-[#a8f45f] hover:-translate-y-0.5 transition-all"
+          class="flex-1 py-2.5 rounded-full bg-[#059669] text-white text-sm font-medium flex items-center justify-center gap-1.5 shadow-[0_4px_12px_rgba(20,32,43,0.14)] hover:bg-[#047857] hover:-translate-y-0.5 transition-all"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
             <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347"/>
@@ -80,7 +80,7 @@
         <a
           v-if="selectedAgentEmail"
           :href="`mailto:${selectedAgentEmail}`"
-          class="flex-1 py-2.5 rounded-full bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.96))] text-white text-sm font-medium flex items-center justify-center gap-1.5 shadow-[0_2px_6px_-3px_rgba(0,0,0,0.9),0_0_6px_rgba(15,23,42,0.7)] hover:-translate-y-0.5 transition-transform"
+          class="flex-1 py-2.5 rounded-full tz-surface-muted tz-text-primary text-sm font-medium flex items-center justify-center gap-1.5 shadow-[0_2px_6px_rgba(20,32,43,0.1)] hover:tz-surface-subtle hover:-translate-y-0.5 transition-transform"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
@@ -137,11 +137,11 @@ const selectedAgentEmail = computed(() => {
 .chat-modal-shell {
   height: var(--tz-mobile-safe-viewport-height, 100vh);
   max-height: var(--tz-mobile-safe-viewport-height, 100vh);
-  background: #000 !important;
+  background: var(--tz-card-surface) !important;
   box-shadow:
-    0 0 1px rgba(255, 255, 255, 0.42),
-    0 0 8px rgba(255, 255, 255, 0.12),
-    0 0 18px rgba(255, 255, 255, 0.055);
+  0 0 1px rgba(15, 23, 42, 0.16),
+  0 0 8px rgba(15, 23, 42, 0.08),
+  0 0 18px rgba(15, 23, 42, 0.04);
 }
 
 @supports (height: 100dvh) {

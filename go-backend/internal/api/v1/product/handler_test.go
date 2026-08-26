@@ -259,6 +259,9 @@ func TestListCategoriesUsesRequestedLocaleAndFallsBackToDefaultName(t *testing.T
 	if !strings.Contains(response.Body.String(), `"name":"轮组部件"`) {
 		t.Fatalf("expected translated category name, got %s", response.Body.String())
 	}
+	if !strings.Contains(response.Body.String(), `"route_path":"/zh_cn/shop/wheel-parts"`) {
+		t.Fatalf("expected category route_path, got %s", response.Body.String())
+	}
 	if !strings.Contains(response.Body.String(), `"locale":"zh_cn"`) {
 		t.Fatalf("expected response locale, got %s", response.Body.String())
 	}

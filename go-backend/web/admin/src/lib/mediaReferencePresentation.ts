@@ -33,8 +33,6 @@ export const mediaReferenceTypeLabel = (type?: string | null): string => {
       return '买家秀'
     case 'review':
       return '商品评价'
-    case 'product_registration':
-      return '产品注册'
     case 'warranty_claim':
       return '保修申请'
     case 'suggestion_feedback':

@@ -5,7 +5,7 @@
         <div class="flex flex-col">
           <component
             :is="titleTag"
-            class="font-bold text-white leading-tight"
+            class="font-bold tz-text-primary leading-tight"
             :class="variant === 'compact' ? 'text-2xl sm:text-3xl' : 'text-lg'"
           >
             {{ t('contactLocation.title') }}
@@ -33,7 +33,7 @@
             :href="googleMapsUrl"
             target="_blank"
             rel="noopener noreferrer"
-            class="flex min-h-10 w-full items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white/85 transition-colors hover:bg-white/10 hover:text-white"
+            class="flex min-h-10 w-full items-center justify-center rounded-full border tz-border-subtle tz-surface-subtle px-4 py-2 text-sm font-semibold tz-text-primary/85 transition-colors hover:tz-surface-subtle hover:tz-text-primary"
           >
             {{ t('contactLocation.openGoogle') }}
           </a>
@@ -42,14 +42,14 @@
             :href="appleMapsUrl"
             target="_blank"
             rel="noopener noreferrer"
-            class="flex min-h-10 w-full items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white/85 transition-colors hover:bg-white/10 hover:text-white"
+            class="flex min-h-10 w-full items-center justify-center rounded-full border tz-border-subtle tz-surface-subtle px-4 py-2 text-sm font-semibold tz-text-primary/85 transition-colors hover:tz-surface-subtle hover:tz-text-primary"
           >
             {{ t('contactLocation.openApple') }}
           </a>
         </div>
       </div>
 
-      <div class="relative overflow-hidden rounded-2xl border border-white/10 bg-black shadow-[0_4px_14px_-10px_rgba(0,0,0,0.9)]">
+      <div class="relative overflow-hidden rounded-2xl border tz-border-subtle tz-surface-subtle shadow-[0_4px_14px_-10px_rgba(20,32,43,0.12)]">
         <button
           v-if="!showInteractive"
           type="button"
@@ -65,11 +65,11 @@
             preset="content"
             @error="previewImageFailed = true"
           />
-          <div v-else class="w-full bg-black" :class="mapHeightClass"></div>
+          <div v-else class="w-full tz-surface-muted" :class="mapHeightClass"></div>
 
-          <div class="absolute inset-0 bg-black/20"></div>
+          <div class="absolute inset-0 bg-slate-900/10"></div>
           <div class="absolute inset-0 flex items-center justify-center px-4">
-            <span class="px-5 py-2.5 rounded-full text-sm font-semibold bg-black/60 text-white backdrop-blur-sm border border-white/15">
+            <span class="px-5 py-2.5 rounded-full text-sm font-semibold tz-surface-card tz-text-primary backdrop-blur-sm border tz-border-subtle">
               {{ t('contactLocation.loadMap') }}
             </span>
           </div>

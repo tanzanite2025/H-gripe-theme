@@ -1,219 +1,23 @@
-import type { PrimaryMegaNavCard, PrimaryMegaNavSection } from '~/utils/primaryMegaNav'
+import type {
+  PageSubNavigationChild,
+  PageSubNavigationEntry,
+  PageSubNavigationPathMatchMode,
+  PageSubNavigationTab,
+  PageSubNavigationTabFromPathOptions,
+} from './pageSubNavigationData'
+import {
+  virtualPageSubNavigationEntries,
+} from './pageSubNavigationData'
 import {
   normalizePrimaryMegaNavPath,
   primaryMegaNavPathMatches,
+  primaryMegaNavSections,
+  type PrimaryMegaNavCard,
+  type PrimaryMegaNavSection,
 } from '~/utils/primaryMegaNav'
 import localeManifest from '~/i18n/locales.manifest'
 
-export interface PageSubNavigationTab {
-  id: string
-  label?: string
-  labelKey?: string
-  fallback?: string
-  description?: string
-  descriptionKey?: string
-  pageTitle?: string
-  pageTitleKey?: string
-  pageIntro?: string
-  pageIntroKey?: string
-  seoTitle?: string
-  seoTitleKey?: string
-  seoDescription?: string
-  seoDescriptionKey?: string
-  feedbackThreadKey?: string
-  feedbackTitle?: string
-  feedbackTitleKey?: string
-  feedbackSubtitle?: string
-  feedbackSubtitleKey?: string
-  to?: string
-}
-
-export interface PageSubNavigationEntry {
-  /**
-   * Canonical page route that owns the tabs.
-   * Child route paths are generated from tab ids unless a tab provides its own `to`.
-   */
-  path: string
-  tabs: readonly PageSubNavigationTab[]
-}
-
-export type PageSubNavigationChild = PageSubNavigationTab & {
-  to: string
-}
-
-export type PageSubNavigationPathMatchMode = 'exact' | 'nested'
-
-export interface PageSubNavigationTabFromPathOptions {
-  localeCodes?: string[]
-  match?: PageSubNavigationPathMatchMode
-}
-
-export const tireGuideTabs = [
-  { id: 'size', label: 'Tire size', description: 'Size charts by tire width, rim range, and fit reference.' },
-  { id: 'match', label: 'Match', description: 'Match tires with rim profiles and riding conditions.' },
-  { id: 'tubeless', label: 'Tubeless tires', description: 'Tubeless setup notes, sealant basics, and compatibility.' },
-  { id: 'installation', label: 'Installation', description: 'Mounting steps and practical installation checks.' },
-  { id: 'choose', label: 'How to choose', description: 'Selection tips for terrain, clearance, and use case.' },
-  { id: 'rims', label: 'Tire pressure', description: 'Recommended pressure ranges and adjustment cues.' },
-  { id: 'tube', label: 'Inner tube', description: 'Tube selection notes, valve types, and sizing basics.' },
-] as const satisfies readonly PageSubNavigationTab[]
-
-export type TireGuideTabId = (typeof tireGuideTabs)[number]['id']
-
-export const wheelsetBuyerTabs = [
-  { id: 'overview', label: 'Buying overview', description: 'Start here for the wheelset buying path and key checks.' },
-  { id: 'safety-instructions', label: 'Safety instructions', description: 'Core safety checks before riding and servicing.' },
-  { id: 'sample-assembly', label: 'Sample assembly', description: 'Assembly example with parts and setup references.' },
-  { id: 'special-order', label: 'Special order', description: 'Custom order options and request details.' },
-  { id: 'appearance-logo', label: 'Appearance Logo', description: 'Decal, finish, and logo customization notes.' },
-  { id: 'choose-freehub', label: 'Choose freehub', description: 'Freehub choices and drivetrain compatibility.' },
-  { id: 'wheel-components', label: 'Wheel Components', description: 'Hubs, rims, spokes, nipples, and build parts.' },
-  { id: 'optional', label: 'Optional', description: 'Optional upgrades and configuration add-ons.' },
-] as const satisfies readonly PageSubNavigationTab[]
-
-export type WheelsetBuyerTabId = (typeof wheelsetBuyerTabs)[number]['id']
-
-export const companyAboutTabs = [
-  { id: 'factory', label: 'Factory', description: 'Production scale, workshop flow, and factory context.' },
-  { id: 'appearance', label: 'Appearance', description: 'Brand visuals, finishes, decals, and surface details.' },
-  { id: 'hole-patterns', label: 'Hole Patterns', description: 'Drilling layouts for rim, spoke, and hub matching.' },
-  { id: 'facility', label: 'Facility', description: 'Equipment, work areas, and production capacity.' },
-  { id: 'manufacture', label: 'Manufacture', description: 'Manufacturing process, build steps, and workflow.' },
-  { id: 'qualitycontrol', label: 'Quality control', description: 'Inspection standards, testing, and QC checkpoints.' },
-] as const satisfies readonly PageSubNavigationTab[]
-
-export type CompanyAboutTabId = (typeof companyAboutTabs)[number]['id']
-
-export const warrantyTabs = [
-  { id: 'change-cancel', label: 'Change / Cancel', description: 'How to update, pause, or cancel an order.' },
-  { id: 'damaged-lost', label: 'Damaged or Lost Goods', description: 'What to do when goods arrive damaged or missing.' },
-  { id: 'returns', label: 'Returns', description: 'Return conditions, timing, and handling process.' },
-  { id: 'warranty', label: 'Warranty', description: 'Coverage scope, duration, and claim basics.' },
-  { id: 'accidental-damage', label: 'Accidental Damage', description: 'Support for accidental riding or handling damage.' },
-  { id: 'protection', label: 'Protection', description: 'Protection options and service expectations.' },
-  { id: 'submit-warranty', label: 'Submit Warranty', description: 'Submit documents and start a warranty request.' },
-] as const satisfies readonly PageSubNavigationTab[]
-
-export type WarrantyTabId = (typeof warrantyTabs)[number]['id']
-
-export const testReportTabs = [
-  { id: 'rim-test-report', label: 'Rim Test Report', description: 'Rim testing documents and compliance references.' },
-  { id: 'wheelset-test-report', label: 'Wheelset Test Report', description: 'Wheelset testing reports and validation data.' },
-  { id: 'tension', label: 'Tension', description: 'Spoke tension targets, ranges, and build checks.' },
-  { id: 'wheelset-assembly', label: 'Wheelset Assembly', description: 'Assembly records, process notes, and final checks.' },
-] as const satisfies readonly PageSubNavigationTab[]
-
-export type TestReportTabId = (typeof testReportTabs)[number]['id']
-
-export const spokeCalculatorTabs = [
-  {
-    id: 'calculator',
-    labelKey: 'spokeCalculator.tabs.calculator',
-    fallback: 'Calculator',
-    description: 'Enter wheel data and calculate spoke length.',
-  },
-  {
-    id: 'parameter',
-    labelKey: 'spokeCalculator.tabs.parameter',
-    fallback: 'Parameter',
-    description: 'Rim, hub, lacing, and offset reference data.',
-  },
-] as const satisfies readonly PageSubNavigationTab[]
-
-export type SpokeCalculatorTabId = (typeof spokeCalculatorTabs)[number]['id']
-
-export const membershipAndPointsTabs = [
-  {
-    id: 'myinfo',
-    labelKey: 'member.tabs.myInfo',
-    fallback: 'My info',
-    description: 'Account profile, benefits, and member details.',
-    pageTitleKey: 'member.pages.myInfo.title',
-    pageTitle: 'My Membership Info',
-    pageIntroKey: 'member.pages.myInfo.intro',
-    pageIntro: 'View your profile, membership level, points balance, coupons, gift cards, and warranty tools.',
-    seoTitleKey: 'member.pages.myInfo.seoTitle',
-    seoTitle: 'My Membership Info - Points and Benefits',
-    seoDescriptionKey: 'member.pages.myInfo.seoDescription',
-    seoDescription: 'View your TANZANITE member profile, loyalty level, points balance, coupons, gift cards, and warranty tools.',
-    feedbackThreadKey: 'membership-myinfo',
-    feedbackTitleKey: 'member.pages.myInfo.feedbackTitle',
-    feedbackTitle: 'Share your feedback about your membership info',
-    feedbackSubtitleKey: 'member.pages.myInfo.feedbackSubtitle',
-    feedbackSubtitle: 'Tell us whether account details, benefits, coupons, gift cards, or warranty tools are clear.',
-  },
-  {
-    id: 'levers',
-    labelKey: 'member.tabs.levers',
-    fallback: 'Levers',
-    description: 'Reward levels, points rules, and upgrade status.',
-    pageTitleKey: 'member.pages.levers.title',
-    pageTitle: 'Membership Levels and Point Rules',
-    pageIntroKey: 'member.pages.levers.intro',
-    pageIntro: 'Review member tiers, discount levels, earning rules, redemption rates, referral rewards, and check-in rules.',
-    seoTitleKey: 'member.pages.levers.seoTitle',
-    seoTitle: 'Membership Levels and Point Rules',
-    seoDescriptionKey: 'member.pages.levers.seoDescription',
-    seoDescription: 'Review TANZANITE membership levels, points earning rules, redemption rates, referral rewards, and daily check-in rewards.',
-    feedbackThreadKey: 'membership-levers',
-    feedbackTitleKey: 'member.pages.levers.feedbackTitle',
-    feedbackTitle: 'Share your feedback about membership levels and points',
-    feedbackSubtitleKey: 'member.pages.levers.feedbackSubtitle',
-    feedbackSubtitle: 'Tell us whether tier rules, earning rules, redemption, referral rewards, or check-in details are clear.',
-  },
-  {
-    id: 'exchange',
-    labelKey: 'member.tabs.exchange',
-    fallback: 'Exchange',
-    description: 'Points redemption, exchange options, and records.',
-    pageTitleKey: 'member.pages.exchange.title',
-    pageTitle: 'Gift Card Exchange',
-    pageIntroKey: 'member.pages.exchange.intro',
-    pageIntro: 'Redeem eligible loyalty points for gift cards and track redeemed cards from your member center.',
-    seoTitleKey: 'member.pages.exchange.seoTitle',
-    seoTitle: 'Gift Card Exchange - Redeem Loyalty Points',
-    seoDescriptionKey: 'member.pages.exchange.seoDescription',
-    seoDescription: 'Redeem TANZANITE loyalty points for available gift card rewards and manage redeemed gift cards from the member center.',
-    feedbackThreadKey: 'membership-exchange',
-    feedbackTitleKey: 'member.pages.exchange.feedbackTitle',
-    feedbackTitle: 'Share your feedback about gift card exchange',
-    feedbackSubtitleKey: 'member.pages.exchange.feedbackSubtitle',
-    feedbackSubtitle: 'Tell us whether point redemption, available gift cards, or redeemed card records are easy to understand.',
-  },
-] as const satisfies readonly PageSubNavigationTab[]
-
-export type MembershipTabId = (typeof membershipAndPointsTabs)[number]['id']
-
-export const pictureWarehouseTabs = [
-  { id: 'riders', label: 'Riders photos', description: 'Customer and rider photo references.' },
-  { id: 'brand', label: 'Brand photos', description: 'Product and brand image library.' },
-] as const satisfies readonly PageSubNavigationTab[]
-
-export type PictureWarehouseTabId = (typeof pictureWarehouseTabs)[number]['id']
-
-/**
- * Third-level page navigation registry.
- *
- * Header/mobile mega menus derive card children from this list by matching
- * `entry.path` to a second-level card `to`. When a tabbed page gains another
- * tab, update the page by importing the matching exported tab array here; the
- * mega menu will pick it up automatically without editing menu components.
- */
-export const pageSubNavigationEntries = [
-  { path: '/guides/tireguides', tabs: tireGuideTabs },
-  { path: '/guides/wheelset-buyers', tabs: wheelsetBuyerTabs },
-  { path: '/company/about', tabs: companyAboutTabs },
-  { path: '/support/warranty', tabs: warrantyTabs },
-  { path: '/support/test-report', tabs: testReportTabs },
-  { path: '/spoke-calculator', tabs: spokeCalculatorTabs },
-  { path: '/membershipandpoints', tabs: membershipAndPointsTabs },
-  { path: '/picture-warehouse', tabs: pictureWarehouseTabs },
-] as const satisfies readonly PageSubNavigationEntry[]
-
-export const isPageSubNavigationTabId = <Tabs extends readonly PageSubNavigationTab[]>(
-  tabs: Tabs,
-  id: string
-): id is Tabs[number]['id'] => tabs.some((tab) => tab.id === id)
+export * from './pageSubNavigationData'
 
 const defaultPageSubNavigationLocaleCodes = localeManifest.map(locale => locale.code)
 
@@ -226,6 +30,147 @@ export const pageSubNavigationChildPath = (basePath: string, tabId: string) => {
   return normalizedBasePath === '/' ? `/${tabId}` : `${normalizedBasePath}/${tabId}`
 }
 
+/**
+ * Vite exposes page files as a static module map. The map keeps the build
+ * aware of new page routes without importing page components at runtime.
+ */
+const pageModulePaths = Object.keys(
+  import.meta.glob('../pages/**/*.vue')
+)
+
+const pagePathFromModule = (modulePath: string) => {
+  const normalizedModulePath = modulePath.replace(/\\/g, '/')
+  const pagesMarker = '/pages/'
+  const markerIndex = normalizedModulePath.indexOf(pagesMarker)
+  if (markerIndex < 0) return null
+
+  const relativePagePath = normalizedModulePath.slice(markerIndex + pagesMarker.length)
+  const withoutExtension = relativePagePath.replace(/\.vue$/, '')
+  const routePath = withoutExtension === 'index'
+    ? ''
+    : withoutExtension.replace(/\/index$/, '')
+
+  if (!routePath) return '/'
+
+  const segments = routePath.split('/').filter(Boolean)
+  if (segments.some(segment => segment.startsWith('['))) {
+    return null
+  }
+
+  return `/${segments.join('/')}`
+}
+
+const discoveredPagePaths = [...new Set(
+  pageModulePaths
+    .map(pagePathFromModule)
+    .filter((path): path is string => Boolean(path))
+)]
+
+const humanizeRouteSegment = (segment: string) => {
+  let decodedSegment = segment
+  try {
+    decodedSegment = decodeURIComponent(segment)
+  } catch {
+    // Keep the route segment when decoding is not possible.
+  }
+
+  return decodedSegment
+    .replace(/[-_]+/g, ' ')
+    .replace(/\b\w/g, character => character.toUpperCase())
+}
+
+const getDiscoveredChildTabs = (card: PrimaryMegaNavCard): PageSubNavigationTab[] => {
+  if (card.discoverChildPages === false) return []
+
+  const cardPath = normalizePrimaryMegaNavPath(routePathFromTo(card.to))
+  const cardSegments = cardPath.split('/').filter(Boolean)
+
+  return discoveredPagePaths
+    .filter((pagePath) => {
+      const pageSegments = pagePath.split('/').filter(Boolean)
+      return (
+        pageSegments.length === cardSegments.length + 1 &&
+        primaryMegaNavPathMatches(pagePath, cardPath)
+      )
+    })
+    .sort((left, right) => left.localeCompare(right))
+    .map((pagePath) => {
+      const segment = pagePath.split('/').filter(Boolean).at(-1) || ''
+      const labelKey = card.childLabelNamespace
+        ? `${card.childLabelNamespace}.${segment}`
+        : undefined
+
+      return {
+        id: segment,
+        ...(labelKey ? { labelKey } : {}),
+        fallback: humanizeRouteSegment(segment),
+        to: pagePath,
+      }
+    })
+}
+
+const discoveredPageSubNavigationEntries: PageSubNavigationEntry[] =
+  primaryMegaNavSections.flatMap((section) =>
+    section.cards.flatMap((card) => {
+      const tabs = getDiscoveredChildTabs(card)
+      return tabs.length > 0
+        ? [{ path: routePathFromTo(card.to), tabs }]
+        : []
+    })
+  )
+
+const tabTargetPath = (entry: PageSubNavigationEntry, tab: PageSubNavigationTab) => {
+  return normalizePrimaryMegaNavPath(
+    routePathFromTo(tab.to || pageSubNavigationChildPath(entry.path, tab.id))
+  )
+}
+
+const mergePageSubNavigationEntries = (
+  entries: readonly PageSubNavigationEntry[]
+): PageSubNavigationEntry[] => {
+  const mergedByPath = new Map<string, PageSubNavigationEntry>()
+
+  for (const entry of entries) {
+    const entryPath = normalizePrimaryMegaNavPath(routePathFromTo(entry.path))
+    const current = mergedByPath.get(entryPath)
+
+    if (!current) {
+      mergedByPath.set(entryPath, {
+        path: entry.path,
+        tabs: [...entry.tabs],
+      })
+      continue
+    }
+
+    const tabs = [...current.tabs]
+    for (const tab of entry.tabs) {
+      const targetPath = tabTargetPath(entry, tab)
+      if (!tabs.some(existingTab => tabTargetPath(current, existingTab) === targetPath)) {
+        tabs.push(tab)
+      }
+    }
+
+    mergedByPath.set(entryPath, { ...current, tabs })
+  }
+
+  return [...mergedByPath.values()]
+}
+
+/**
+ * The shared page-navigation registry contains both:
+ * - virtual tabs generated from a base page by Nuxt's pages:extend hook
+ * - real child index pages discovered from app/pages at build time
+ */
+export const pageSubNavigationEntries = mergePageSubNavigationEntries([
+  ...virtualPageSubNavigationEntries,
+  ...discoveredPageSubNavigationEntries,
+])
+
+export const isPageSubNavigationTabId = <Tabs extends readonly PageSubNavigationTab[]>(
+  tabs: Tabs,
+  id: string
+): id is Tabs[number]['id'] => tabs.some((tab) => tab.id === id)
+
 export const getPageSubNavigationTabFromPath = <Tabs extends readonly PageSubNavigationTab[]>(
   tabs: Tabs,
   basePath: string,
@@ -234,11 +179,17 @@ export const getPageSubNavigationTabFromPath = <Tabs extends readonly PageSubNav
 ): Tabs[number]['id'] | null => {
   const localeCodes = options.localeCodes || defaultPageSubNavigationLocaleCodes
   const match = options.match || 'nested'
-  const normalizedPath = normalizePrimaryMegaNavPath(routePathFromTo(String(path || '/')), localeCodes)
+  const normalizedPath = normalizePrimaryMegaNavPath(
+    routePathFromTo(String(path || '/')),
+    localeCodes
+  )
 
   for (const tab of tabs) {
     const tabPath = tab.to || pageSubNavigationChildPath(basePath, tab.id)
-    const normalizedTabPath = normalizePrimaryMegaNavPath(routePathFromTo(tabPath), localeCodes)
+    const normalizedTabPath = normalizePrimaryMegaNavPath(
+      routePathFromTo(tabPath),
+      localeCodes
+    )
     const matches = match === 'exact'
       ? normalizedPath === normalizedTabPath
       : primaryMegaNavPathMatches(normalizedPath, normalizedTabPath, localeCodes)
@@ -247,10 +198,6 @@ export const getPageSubNavigationTabFromPath = <Tabs extends readonly PageSubNav
   }
 
   return null
-}
-
-const childTargetForTab = (entry: PageSubNavigationEntry, tab: PageSubNavigationTab) => {
-  return tab.to || pageSubNavigationChildPath(entry.path, tab.id)
 }
 
 const belongsToSection = (
@@ -313,13 +260,17 @@ export const getPrimaryMegaNavCardChildren = (
     if (!pageSubNavigationBelongsToCard(section, card, entry, localeCodes)) continue
 
     for (const tab of entry.tabs) {
-      const to = childTargetForTab(entry, tab)
-      const childPath = normalizePrimaryMegaNavPath(routePathFromTo(to), localeCodes)
+      const childPath = normalizePrimaryMegaNavPath(
+        routePathFromTo(tab.to || pageSubNavigationChildPath(entry.path, tab.id)),
+        localeCodes
+      )
       if (!belongsToSection(section, childPath, localeCodes) || !belongsToCard(card, childPath, localeCodes)) {
         continue
       }
 
-      children.push({ ...tab, to })
+      if (!children.some(child => child.to === childPath)) {
+        children.push({ ...tab, to: childPath })
+      }
     }
   }
 

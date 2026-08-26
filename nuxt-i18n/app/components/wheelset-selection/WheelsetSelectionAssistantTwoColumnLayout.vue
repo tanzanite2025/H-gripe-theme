@@ -37,7 +37,7 @@ const isResultsExpanded = accordion.isExpanded('results')
   height: 100%;
   min-height: 100%;
   gap: 1rem;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 3fr) minmax(0, 7fr);
   overflow: hidden;
 }
 
@@ -48,7 +48,7 @@ const isResultsExpanded = accordion.isExpanded('results')
   flex-direction: column;
   overflow: hidden;
   border-radius: 1rem;
-  background: var(--quickbuy-panel-surface-soft, #16171d);
+  background: var(--quickbuy-panel-surface-soft, var(--tz-surface-subtle));
 }
 
 @media (max-width: 767px) {

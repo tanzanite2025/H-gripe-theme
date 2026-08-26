@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-6">
     <!-- Intro / Recommendation Card -->
-    <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 text-center border-t-4 border-sky-500">
+    <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6 text-center border-t-4 border-emerald-500">
        <h3 class="text-lg font-bold tz-text-primary mb-3">
          Why we recommend laser-engraved logos
        </h3>
@@ -12,7 +12,7 @@
        
        <button
         type="button"
-        class="inline-flex items-center gap-2 px-6 py-2 rounded-full bg-slate-800 hover:bg-slate-700 text-sky-400 text-xs font-bold uppercase tracking-wider transition-all shadow-lg hover:shadow-sky-500/20"
+        class="inline-flex items-center gap-2 px-6 py-2 rounded-full tz-surface-panel hover:tz-surface-panel text-emerald-600 text-xs font-bold uppercase tracking-wider transition-all shadow-lg hover:shadow-emerald-500/20"
         @click="goToAboutAppearance"
       >
         <span>Explore Weave & Finish Options</span>
@@ -23,8 +23,8 @@
     <!-- Options Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
        <!-- Option 1: Custom Decals (Violet) -->
-       <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300 group">
-          <div class="flex items-center gap-3 mb-4 pb-3 border-b border-violet-500/10">
+       <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300 group">
+          <div class="flex items-center gap-3 mb-4 pb-3 border-b border-emerald-200">
              <h3 class="text-base font-bold tz-text-primary">Customized Decals</h3>
           </div>
           
@@ -33,13 +33,13 @@
           </p>
           <ul class="space-y-2 mb-4">
               <li class="flex items-center gap-2 text-xs tz-text-secondary">
-                <span class="w-1.5 h-1.5 rounded-full bg-violet-500"></span> Waterslide Decals (complex colors)
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Waterslide Decals (complex colors)
              </li>
               <li class="flex items-center gap-2 text-xs tz-text-secondary">
-                <span class="w-1.5 h-1.5 rounded-full bg-violet-500"></span> Removable Vinyl Stickers
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Removable Vinyl Stickers
              </li>
               <li class="flex items-center gap-2 text-xs tz-text-secondary">
-                <span class="w-1.5 h-1.5 rounded-full bg-violet-500"></span> Custom Fonts & Locations
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Custom Fonts & Locations
              </li>
           </ul>
           <p class="text-xs tz-text-muted italic">
@@ -48,13 +48,13 @@
        </div>
 
        <!-- Option 2: Laser Engraving (Teal) -->
-       <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300 group">
-          <div class="flex items-center gap-3 mb-4 pb-3 border-b border-teal-500/10">
+       <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300 group">
+          <div class="flex items-center gap-3 mb-4 pb-3 border-b border-emerald-200">
              <h3 class="text-base font-bold tz-text-primary">Laser Engraving</h3>
           </div>
           
           <div class="absolute top-5 right-5">
-             <span class="inline-flex items-center gap-1 px-2 py-1 rounded tz-micro-label font-bold uppercase tracking-wider bg-teal-500/10 text-teal-400 border border-teal-500/20">
+             <span class="inline-flex items-center gap-1 px-2 py-1 rounded tz-micro-label font-bold uppercase tracking-wider bg-emerald-50 text-emerald-600 border border-emerald-200">
                 <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
                 Eco-Friendly
              </span>
@@ -65,13 +65,13 @@
           </p>
           <ul class="space-y-2 mb-4">
               <li class="flex items-center gap-2 text-xs tz-text-secondary">
-                <span class="w-1.5 h-1.5 rounded-full bg-teal-500"></span> Preserves structural integrity
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Preserves structural integrity
              </li>
               <li class="flex items-center gap-2 text-xs tz-text-secondary">
-                <span class="w-1.5 h-1.5 rounded-full bg-teal-500"></span> No plastic/vinyl waste
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> No plastic/vinyl waste
              </li>
               <li class="flex items-center gap-2 text-xs tz-text-secondary">
-                <span class="w-1.5 h-1.5 rounded-full bg-teal-500"></span> Fastest production time
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Fastest production time
              </li>
           </ul>
           <p class="text-xs tz-text-muted italic">
@@ -109,10 +109,10 @@
     </div>
 
     <!-- Advanced Finishes Card -->
-    <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] p-5 md:p-6 mt-6">
-       <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-700/50">
+    <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6 mt-6">
+       <div class="flex items-center justify-between mb-4 pb-3 border-b tz-border-subtle">
            <h3 class="text-base font-bold tz-text-primary">Pro Options: Weave & Finish</h3>
-           <span class="tz-micro-label bg-slate-800 tz-text-muted px-2 py-1 rounded border border-slate-700">For OEM / Teams</span>
+           <span class="tz-micro-label tz-surface-panel tz-text-muted px-2 py-1 rounded border tz-border-subtle">For OEM / Teams</span>
        </div>
        
         <p class="text-sm tz-text-secondary mb-6">
@@ -125,14 +125,14 @@
             alt="Carbon rim surface finish detail 1"
             :zoomOnClick="true"
             caption="Matte Finish"
-            class="rounded-xl overflow-hidden border border-slate-700/50"
+            class="rounded-xl overflow-hidden border tz-border-subtle"
           />
           <GuideImage
             src="/company/aboutus/appearance/carbonrims-finish2.webp"
             alt="Carbon rim surface finish detail 2"
             :zoomOnClick="true"
             caption="Glossy Finish"
-            class="rounded-xl overflow-hidden border border-slate-700/50"
+            class="rounded-xl overflow-hidden border tz-border-subtle"
           />
        </div>
     </div>

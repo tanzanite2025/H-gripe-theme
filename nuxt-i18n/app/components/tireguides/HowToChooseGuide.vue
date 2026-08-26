@@ -1,8 +1,8 @@
 <template>
   <div class="how-to-choose-guide">
     <!-- Main Premium Card -->
-    <div class="rounded-2xl bg-[var(--tz-card-surface)] p-5 text-center shadow-[0_8px_30px_rgba(0,0,0,0.6)] md:p-6">
-      <h2 class="mb-6 flex items-center justify-center gap-2 text-xl font-bold text-slate-100">
+    <div class="rounded-2xl bg-[var(--tz-card-surface)] p-5 text-center shadow-md md:p-6">
+      <h2 class="mb-6 flex items-center justify-center gap-2 text-xl font-bold tz-text-secondary">
         How to Choose the Right Size
       </h2>
 
@@ -11,11 +11,11 @@
         <TireRimHelper />
       </div>
 
-      <div class="mt-8 border-t border-slate-800 pt-8">
+      <div class="mt-8 border-t tz-border-subtle pt-8">
         <div class="mb-6 flex items-center justify-center gap-2">
-          <span class="h-px w-8 bg-slate-700"></span>
+          <span class="h-px w-8 tz-surface-panel"></span>
           <h3 class="text-lg font-bold uppercase tracking-wider tz-text-primary">Manufacturer Standards</h3>
-          <span class="h-px w-8 bg-slate-700"></span>
+          <span class="h-px w-8 tz-surface-panel"></span>
         </div>
 
         <p class="mx-auto mb-3 max-w-3xl text-sm tz-text-secondary">
@@ -114,25 +114,25 @@
           Source chart images
         </h4>
         <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <figure class="overflow-hidden rounded-xl border border-slate-800/50 shadow-[0_4px_16px_rgba(0,0,0,0.5)] transition-colors hover:border-slate-700">
+          <figure class="overflow-hidden rounded-xl border tz-border-subtle shadow-md transition-colors hover:tz-border-subtle">
             <img
               src="/public/tiresizecharts/howtochoose/dtswiss-hookless-tss-rim-table.webp"
               alt="DT Swiss hookless TSS rim inner width recommendation chart"
               class="block h-auto w-full"
               loading="lazy"
             />
-            <figcaption class="bg-slate-900/50 py-2 text-xs tracking-wider tz-text-muted">
+            <figcaption class="tz-surface-panel py-2 text-xs tracking-wider tz-text-muted">
               HOOKLESS (TSS)
             </figcaption>
           </figure>
-          <figure class="overflow-hidden rounded-xl border border-slate-800/50 shadow-[0_4px_16px_rgba(0,0,0,0.5)] transition-colors hover:border-slate-700">
+          <figure class="overflow-hidden rounded-xl border tz-border-subtle shadow-md transition-colors hover:tz-border-subtle">
             <img
               src="/public/tiresizecharts/howtochoose/dtswiss-hooked-tc-rim-table.webp"
               alt="DT Swiss hooked TC rim inner width recommendation chart"
               class="block h-auto w-full"
               loading="lazy"
             />
-            <figcaption class="bg-slate-900/50 py-2 text-xs tracking-wider tz-text-muted">
+            <figcaption class="tz-surface-panel py-2 text-xs tracking-wider tz-text-muted">
               HOOKED (TC)
             </figcaption>
           </figure>

@@ -168,6 +168,11 @@ func (h *Handler) GetProduct(c *gin.Context) {
 	}
 
 	publicProduct := PublicProductFromDomainWithLocaleAndRoutes(*product, publicContext.DisplayCurrency, publicContext.Locale, translationRoutes, h.mediaService)
+	if h.productCategoryService != nil {
+		if breadcrumb, breadcrumbErr := h.productCategoryService.BuildProductBreadcrumb(*product, publicContext.Locale); breadcrumbErr == nil {
+			publicProduct.Breadcrumb = breadcrumb
+		}
+	}
 	if h.reviewService != nil {
 		if summary, summaryErr := h.reviewService.GetReviewSummary(product.ID); summaryErr == nil {
 			publicProduct.ReviewSummary = PublicProductReviewSummaryFromDomain(summary)
@@ -285,6 +290,28 @@ func (h *Handler) ListCategories(c *gin.Context) {
 		"code":   0,
 		"data":   PublicProductCategoryListWithMedia(categories, h.mediaService),
 		"locale": locale,
+	})
+}
+
+func (h *Handler) GetCategory(c *gin.Context) {
+	if h == nil || h.productCategoryService == nil {
+		c.JSON(500, gin.H{
+			"code":    apierror.ErrCodeInternal,
+			"message": "product category service is unavailable",
+		})
+		return
+	}
+
+	slug := strings.TrimSpace(c.Param("slug"))
+	category, err := h.productCategoryService.GetPublicBySlug(slug, middleware.GetLocale(c))
+	if err != nil {
+		apierror.RespondNotFound(c, "Product category")
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"code": 0,
+		"data": PublicProductCategoryViewWithMedia(*category, h.mediaService),
 	})
 }
 

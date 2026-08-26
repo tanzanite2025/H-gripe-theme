@@ -1,21 +1,21 @@
 <template>
-  <section class="home-hero bg-transparent text-white">
+  <section class="home-hero bg-transparent tz-text-primary">
     <div class="page-content-shell px-0 md:px-4 pb-6 pt-1 sm:pt-2 lg:pb-8 lg:pt-3">
       <div class="flex flex-col items-center text-center">
         <div class="home-hero__content mt-3 grid w-full gap-7 sm:mt-5 lg:mt-2 lg:grid-cols-[minmax(0,3fr)_minmax(0,7fr)] lg:items-center lg:gap-12">
           <div class="home-hero__copy flex flex-col items-center px-2 text-center lg:h-full lg:justify-center lg:items-start lg:px-0 lg:text-left">
-            <div class="mb-4 flex items-center justify-center gap-2.5 text-base font-medium leading-tight text-white sm:gap-3 sm:text-lg lg:justify-start">
+            <div class="mb-4 flex items-center justify-center gap-2.5 text-base font-medium leading-tight tz-text-primary sm:gap-3 sm:text-lg lg:justify-start">
               <span class="welcome-hand-wave inline-flex shrink-0" aria-hidden="true">
                 <Icon
                   name="lucide:hand"
-                  class="h-7 w-7 text-[#B5FF6D] sm:h-8 sm:w-8"
+                  class="h-7 w-7 text-[#059669] sm:h-8 sm:w-8"
                 />
               </span>
               <span>{{ welcomeText }}</span>
             </div>
             <h1 class="text-xl font-semibold leading-[1.05] tracking-tight sm:text-3xl lg:text-4xl">
               <template v-if="heroTitle.accent">
-                {{ heroTitle.before }}<span class="text-[#B5FF6D]">{{ heroTitle.accent }}</span>{{ heroTitle.after }}
+                {{ heroTitle.before }}<span class="text-[#059669]">{{ heroTitle.accent }}</span>{{ heroTitle.after }}
               </template>
               <template v-else>
                 {{ heroTitle.full }}

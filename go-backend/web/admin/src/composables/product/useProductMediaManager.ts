@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import { toast } from 'vue-sonner'
 import mediaApi from '@/api/media'
+import { validateUploadFile } from '@/lib/uploadSpecs'
 import {
   createProductMediaItem,
   getProductMediaRoleOptions,
@@ -76,9 +77,18 @@ export const useProductMediaManager = (productForm: any, options: Record<string,
     uploadingMedia.value = true
     try {
       for (const file of files) {
+        if (type === 'image') {
+          const validation = await validateUploadFile(file, 'product_image')
+          if (!validation.ok) {
+            toast.error(validation.error || '商品图片不符合上传规范')
+            continue
+          }
+          if (validation.warning) toast.warning(validation.warning)
+        }
         const formData = new FormData()
         formData.append('file', file)
         formData.append('media_type', type)
+        if (type === 'image') formData.append('image_purpose', 'product_image')
         const asset = await mediaApi.uploadAsset(formData)
         appendUploadedMedia(asset, type)
       }

@@ -1,5 +1,6 @@
 {
   "ariaLabel": "Butikskategorier",
+  "children": "Underkategorier",
   "loading": "Läser in kategorier...",
   "all": "Alla",
   "empty": "No shop categories are available yet."

@@ -169,15 +169,13 @@ watch(isScrolling, (scrolling) => {
   border: 0;
   border-radius: 9999px;
   padding: 0.72rem clamp(0.72rem, 1.08vw, 1.25rem);
-  background: rgba(15, 23, 42, 0.82);
-  color: rgba(226, 232, 240, 0.88);
+  background: var(--tz-surface-muted);
+  color: var(--tz-text-secondary);
   font-size: clamp(0.72rem, 0.73vw, 0.88rem);
   font-weight: 700;
   line-height: 1;
   cursor: pointer;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.04),
-    0 10px 22px rgba(0, 0, 0, 0.24);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
   transition:
     background-color 0.18s ease,
     color 0.18s ease,
@@ -186,17 +184,15 @@ watch(isScrolling, (scrolling) => {
 }
 
 .page-tab-bar__item:hover {
-  color: #ffffff;
-  background: rgba(30, 41, 59, 0.94);
+  color: var(--tz-site-accent-hover);
+  background: var(--tz-site-accent-soft-surface);
   transform: translateY(-1px);
 }
 
 .page-tab-bar__item--active {
-  color: #0f172a;
-  background: #ffffff;
-  box-shadow:
-    0 14px 28px rgba(255, 255, 255, 0.12),
-    0 10px 24px rgba(0, 0, 0, 0.28);
+  color: #ffffff;
+  background: var(--tz-site-accent);
+  box-shadow: 0 8px 18px rgba(5, 150, 105, 0.16);
 }
 
 @media (min-width: 901px) {
@@ -218,8 +214,8 @@ watch(isScrolling, (scrolling) => {
     border: 0;
     border-radius: 0.9rem;
     padding: 0.82rem 0.95rem;
-    background: rgba(15, 23, 42, 0.88);
-    color: #f8fafc;
+    background: var(--tz-surface-muted);
+    color: var(--tz-text-primary);
     font-size: 0.92rem;
     font-weight: 800;
     cursor: pointer;

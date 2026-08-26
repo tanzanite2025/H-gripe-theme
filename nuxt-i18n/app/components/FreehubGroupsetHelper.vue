@@ -1,6 +1,6 @@
 <template>
-  <div class="freehub-groupset-helper mt-5 rounded-2xl bg-slate-900/70 p-4 shadow-[3px_3px_10px_rgba(0,0,0,0.9)]">
-    <h3 class="mb-2 text-sm font-semibold text-slate-100">
+  <div class="freehub-groupset-helper mt-5 rounded-2xl tz-surface-panel p-4 shadow-md">
+    <h3 class="mb-2 text-sm font-semibold tz-text-secondary">
       {{ title }}
     </h3>
     <p class="mb-3 text-xs tz-text-secondary">
@@ -15,7 +15,7 @@
         <select
           :id="brandSelectId"
           v-model="selectedBrand"
-          class="freehub-groupset-helper__select mt-1 w-full rounded-md border border-slate-600/80 bg-slate-950/80 px-2 py-1.5 text-xs text-slate-100 shadow-[2px_2px_6px_rgba(0,0,0,0.85)] outline-none focus:border-sky-400 focus:ring-0"
+          class="freehub-groupset-helper__select mt-1 w-full rounded-md border tz-border-strong tz-surface-panel px-2 py-1.5 text-xs tz-text-secondary shadow-md outline-none focus:border-emerald-600 focus:ring-0"
         >
           <option disabled value="">
             Select brand
@@ -38,7 +38,7 @@
           :id="groupsetSelectId"
           v-model="selectedGroupsetId"
           :disabled="!selectedBrand"
-          class="freehub-groupset-helper__select mt-1 w-full rounded-md border border-slate-600/80 bg-slate-950/80 px-2 py-1.5 text-xs text-slate-100 shadow-[2px_2px_6px_rgba(0,0,0,0.85)] outline-none focus:border-sky-400 focus:ring-0 disabled:cursor-not-allowed disabled:border-slate-700 disabled:text-slate-500"
+          class="freehub-groupset-helper__select mt-1 w-full rounded-md border tz-border-strong tz-surface-panel px-2 py-1.5 text-xs tz-text-secondary shadow-md outline-none focus:border-emerald-600 focus:ring-0 disabled:cursor-not-allowed disabled:border-[var(--tz-border-subtle)] disabled:tz-text-muted"
         >
           <option disabled value="">
             {{ selectedBrand ? 'Select groupset' : 'Choose brand first' }}
@@ -66,7 +66,7 @@
         v-else
         class="text-xs tz-text-secondary"
       >
-        <p class="font-semibold text-sky-300">
+        <p class="font-semibold text-emerald-700">
           Recommended freehub body:
           <span class="ml-1">{{ activeOption.freehub }}</span>
         </p>
@@ -241,16 +241,16 @@ const activeOption = computed(() => {
 }
 
 .freehub-groupset-helper select {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 .freehub-groupset-helper select option {
-  background-color: #151515;
-  color: #f8fafc;
+  background-color: var(--tz-form-control-surface);
+  color: var(--tz-text-primary);
 }
 
 .freehub-groupset-helper select option:disabled {
-  color: #a1a1aa;
+  color: var(--tz-text-muted);
 }
 
 </style>

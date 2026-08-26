@@ -2,7 +2,7 @@ package service
 
 import (
 	orderdomain "commerce-platform/internal/domain/order"
-	"commerce-platform/internal/domain/registration"
+	"commerce-platform/internal/domain/warranty"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -55,7 +55,7 @@ type WarrantyServiceRecordInput struct {
 	PerformedAt *time.Time
 }
 
-func (s *RegistrationService) VerifyWarrantyOrder(orderNumber, email string) (*orderdomain.Order, error) {
+func (s *WarrantyService) VerifyWarrantyOrder(orderNumber, email string) (*orderdomain.Order, error) {
 	if s.orderRepo == nil {
 		return nil, errors.New("order verification is unavailable")
 	}
@@ -76,7 +76,7 @@ func (s *RegistrationService) VerifyWarrantyOrder(orderNumber, email string) (*o
 	return order, nil
 }
 
-func (s *RegistrationService) RequestWarrantyOrderVerification(orderNumber, email string) error {
+func (s *WarrantyService) RequestWarrantyOrderVerification(orderNumber, email string) error {
 	orderNumber = strings.TrimSpace(orderNumber)
 	email = normalizeWarrantyEmail(email)
 	if _, err := s.VerifyWarrantyOrder(orderNumber, email); err != nil {
@@ -109,14 +109,14 @@ func (s *RegistrationService) RequestWarrantyOrderVerification(orderNumber, emai
 	return s.emailSender.SendEmail([]string{email}, "Verify your warranty request", body)
 }
 
-func (s *RegistrationService) ValidateWarrantyOrderToken(token string) error {
+func (s *WarrantyService) ValidateWarrantyOrderToken(token string) error {
 	if _, err := validateEmailChallenge(s.challengeRepo, s.challengeSecret, token, warrantyOrderChallengePurpose); err != nil {
 		return ErrWarrantyVerificationRequired
 	}
 	return nil
 }
 
-func (s *RegistrationService) CreateWarrantyClaimForOrder(input WarrantyClaimByOrderInput) (*registration.WarrantyClaim, error) {
+func (s *WarrantyService) CreateWarrantyClaimForOrder(input WarrantyClaimByOrderInput) (*warranty.WarrantyClaim, error) {
 	orderNumber := strings.TrimSpace(input.OrderNumber)
 	email := normalizeWarrantyEmail(input.Email)
 	claims, err := consumeEmailChallenge(
@@ -139,7 +139,7 @@ func (s *RegistrationService) CreateWarrantyClaimForOrder(input WarrantyClaimByO
 		return nil, err
 	}
 
-	claim := &registration.WarrantyClaim{
+	claim := &warranty.WarrantyClaim{
 		UserID:       order.UserID,
 		IssueType:    "warranty",
 		Description:  strings.TrimSpace(input.Description),
@@ -152,7 +152,7 @@ func (s *RegistrationService) CreateWarrantyClaimForOrder(input WarrantyClaimByO
 		Status:       "submitted",
 	}
 
-	if err := s.registrationRepo.CreateWarrantyClaim(claim); err != nil {
+	if err := s.warrantyRepo.CreateWarrantyClaim(claim); err != nil {
 		return nil, err
 	}
 
@@ -167,44 +167,9 @@ func normalizeWarrantyEmail(email string) string {
 	return strings.ToLower(strings.TrimSpace(email))
 }
 
-// CreateWarrantyClaim 创建保修申请
-func (s *RegistrationService) CreateWarrantyClaim(claim *registration.WarrantyClaim, userID uint) error {
-	if claim.RegistrationID == nil || *claim.RegistrationID == 0 {
-		return errors.New("registration is required")
-	}
-
-	// 验证注册记录
-	reg, err := s.registrationRepo.FindRegistrationByID(*claim.RegistrationID)
-	if err != nil {
-		return errors.New("registration not found")
-	}
-
-	// 验证权限
-	if reg.UserID != userID {
-		return errors.New("unauthorized")
-	}
-
-	// 验证保修是否有效
-	if reg.Status != "active" {
-		return errors.New("warranty is not active")
-	}
-
-	if time.Now().After(reg.WarrantyExpires) {
-		return errors.New("warranty has expired")
-	}
-
-	// 设置默认值
-	claim.UserID = userID
-	claim.Status = "submitted"
-	claim.ProcessedBy = 0
-	claim.ProcessedAt = nil
-
-	return s.registrationRepo.CreateWarrantyClaim(claim)
-}
-
 // GetWarrantyClaim 获取保修申请
-func (s *RegistrationService) GetWarrantyClaim(id uint, userID uint, isAdmin bool) (*registration.WarrantyClaim, error) {
-	claim, err := s.registrationRepo.FindWarrantyClaimByID(id)
+func (s *WarrantyService) GetWarrantyClaim(id uint, userID uint, isAdmin bool) (*warranty.WarrantyClaim, error) {
+	claim, err := s.warrantyRepo.FindWarrantyClaimByID(id)
 	if err != nil {
 		return nil, err
 	}
@@ -217,29 +182,14 @@ func (s *RegistrationService) GetWarrantyClaim(id uint, userID uint, isAdmin boo
 	return claim, nil
 }
 
-// GetRegistrationClaims 获取注册记录的保修申请
-func (s *RegistrationService) GetRegistrationClaims(registrationID uint, userID uint, isAdmin bool) ([]registration.WarrantyClaim, error) {
-	// 验证注册记录权限
-	reg, err := s.registrationRepo.FindRegistrationByID(registrationID)
-	if err != nil {
-		return nil, err
-	}
-
-	if !isAdmin && reg.UserID != userID {
-		return nil, errors.New("unauthorized")
-	}
-
-	return s.registrationRepo.FindWarrantyClaimsByRegistrationID(registrationID)
-}
-
 // GetAllWarrantyClaims 获取所有保修申请（管理员）
-func (s *RegistrationService) GetAllWarrantyClaims(page, pageSize int, status string) ([]registration.WarrantyClaim, int64, error) {
-	return s.registrationRepo.FindAllWarrantyClaims(page, pageSize, status)
+func (s *WarrantyService) GetAllWarrantyClaims(page, pageSize int, status string) ([]warranty.WarrantyClaim, int64, error) {
+	return s.warrantyRepo.FindAllWarrantyClaims(page, pageSize, status)
 }
 
 // UpdateWarrantyClaim 更新保修申请
-func (s *RegistrationService) UpdateWarrantyClaim(claim *registration.WarrantyClaim, userID uint, isAdmin bool) error {
-	existing, err := s.registrationRepo.FindWarrantyClaimByID(claim.ID)
+func (s *WarrantyService) UpdateWarrantyClaim(claim *warranty.WarrantyClaim, userID uint, isAdmin bool) error {
+	existing, err := s.warrantyRepo.FindWarrantyClaimByID(claim.ID)
 	if err != nil {
 		return err
 	}
@@ -249,11 +199,11 @@ func (s *RegistrationService) UpdateWarrantyClaim(claim *registration.WarrantyCl
 		return errors.New("unauthorized")
 	}
 
-	return s.registrationRepo.UpdateWarrantyClaim(claim)
+	return s.warrantyRepo.UpdateWarrantyClaim(claim)
 }
 
 // UpdateWarrantyClaimStatus 更新保修申请状态
-func (s *RegistrationService) UpdateWarrantyClaimStatus(id uint, status string, processedBy uint) error {
+func (s *WarrantyService) UpdateWarrantyClaimStatus(id uint, status string, processedBy uint) error {
 	// 验证状态
 	validStatuses := []string{"submitted", "reviewing", "approved", "rejected", "completed"}
 	isValid := false
@@ -269,7 +219,7 @@ func (s *RegistrationService) UpdateWarrantyClaimStatus(id uint, status string, 
 	}
 
 	// 获取申请
-	claim, err := s.registrationRepo.FindWarrantyClaimByID(id)
+	claim, err := s.warrantyRepo.FindWarrantyClaimByID(id)
 	if err != nil {
 		return err
 	}
@@ -280,25 +230,25 @@ func (s *RegistrationService) UpdateWarrantyClaimStatus(id uint, status string, 
 	now := time.Now()
 	claim.ProcessedAt = &now
 
-	return s.registrationRepo.UpdateWarrantyClaim(claim)
+	return s.warrantyRepo.UpdateWarrantyClaim(claim)
 }
 
 // UpdateWarrantyClaimResolution 更新保修申请处理备注
-func (s *RegistrationService) UpdateWarrantyClaimResolution(id uint, resolution string, processedBy uint) error {
-	if _, err := s.registrationRepo.FindWarrantyClaimByID(id); err != nil {
+func (s *WarrantyService) UpdateWarrantyClaimResolution(id uint, resolution string, processedBy uint) error {
+	if _, err := s.warrantyRepo.FindWarrantyClaimByID(id); err != nil {
 		return err
 	}
 
-	return s.registrationRepo.UpdateWarrantyClaimResolution(id, strings.TrimSpace(resolution), processedBy)
+	return s.warrantyRepo.UpdateWarrantyClaimResolution(id, strings.TrimSpace(resolution), processedBy)
 }
 
 // ListWarrantyClaimOrderItems 获取保修申请可绑定订单行
-func (s *RegistrationService) ListWarrantyClaimOrderItems(id uint) ([]orderdomain.OrderItem, error) {
+func (s *WarrantyService) ListWarrantyClaimOrderItems(id uint) ([]orderdomain.OrderItem, error) {
 	if s.orderRepo == nil {
 		return nil, ErrWarrantyOrderItemUnavailable
 	}
 
-	claim, err := s.registrationRepo.FindWarrantyClaimByID(id)
+	claim, err := s.warrantyRepo.FindWarrantyClaimByID(id)
 	if err != nil {
 		return nil, err
 	}
@@ -317,16 +267,16 @@ func (s *RegistrationService) ListWarrantyClaimOrderItems(id uint) ([]orderdomai
 }
 
 // BindWarrantyClaimOrderItem 绑定或解绑保修申请订单行
-func (s *RegistrationService) BindWarrantyClaimOrderItem(id uint, orderItemID *uint) error {
+func (s *WarrantyService) BindWarrantyClaimOrderItem(id uint, orderItemID *uint) error {
 	if orderItemID == nil || *orderItemID == 0 {
-		return s.registrationRepo.UpdateWarrantyClaimOrderItem(id, nil)
+		return s.warrantyRepo.UpdateWarrantyClaimOrderItem(id, nil)
 	}
 
 	if s.orderRepo == nil {
 		return ErrWarrantyOrderItemUnavailable
 	}
 
-	claim, err := s.registrationRepo.FindWarrantyClaimByID(id)
+	claim, err := s.warrantyRepo.FindWarrantyClaimByID(id)
 	if err != nil {
 		return err
 	}
@@ -351,24 +301,20 @@ func (s *RegistrationService) BindWarrantyClaimOrderItem(id uint, orderItemID *u
 	if order.UserID != 0 && claim.UserID != 0 && order.UserID != claim.UserID {
 		return ErrWarrantyOrderItemMismatch
 	}
-	if claim.Registration != nil && claim.Registration.ProductID != 0 && claim.Registration.ProductID != item.ProductID {
-		return ErrWarrantyOrderItemMismatch
-	}
-
-	return s.registrationRepo.UpdateWarrantyClaimOrderItem(id, orderItemID)
+	return s.warrantyRepo.UpdateWarrantyClaimOrderItem(id, orderItemID)
 }
 
 // ListWarrantyServiceRecords 获取保修申请服务记录
-func (s *RegistrationService) ListWarrantyServiceRecords(claimID uint) ([]registration.WarrantyServiceRecord, error) {
-	if _, err := s.registrationRepo.FindWarrantyClaimByID(claimID); err != nil {
+func (s *WarrantyService) ListWarrantyServiceRecords(claimID uint) ([]warranty.WarrantyServiceRecord, error) {
+	if _, err := s.warrantyRepo.FindWarrantyClaimByID(claimID); err != nil {
 		return nil, err
 	}
-	return s.registrationRepo.FindWarrantyServiceRecords(claimID)
+	return s.warrantyRepo.FindWarrantyServiceRecords(claimID)
 }
 
 // CreateWarrantyServiceRecord 创建保修服务记录
-func (s *RegistrationService) CreateWarrantyServiceRecord(claimID uint, input WarrantyServiceRecordInput, createdBy uint) (*registration.WarrantyServiceRecord, error) {
-	claim, err := s.registrationRepo.FindWarrantyClaimByID(claimID)
+func (s *WarrantyService) CreateWarrantyServiceRecord(claimID uint, input WarrantyServiceRecordInput, createdBy uint) (*warranty.WarrantyServiceRecord, error) {
+	claim, err := s.warrantyRepo.FindWarrantyClaimByID(claimID)
 	if err != nil {
 		return nil, err
 	}
@@ -402,9 +348,8 @@ func (s *RegistrationService) CreateWarrantyServiceRecord(claimID uint, input Wa
 		return nil, errors.New("service record currency is required")
 	}
 
-	record := &registration.WarrantyServiceRecord{
+	record := &warranty.WarrantyServiceRecord{
 		ClaimID:        claim.ID,
-		RegistrationID: claim.RegistrationID,
 		ServiceType:    serviceType,
 		Status:         status,
 		Summary:        summary,
@@ -415,7 +360,7 @@ func (s *RegistrationService) CreateWarrantyServiceRecord(claimID uint, input Wa
 		PerformedAt:    input.PerformedAt,
 	}
 
-	if err := s.registrationRepo.CreateWarrantyServiceRecord(record); err != nil {
+	if err := s.warrantyRepo.CreateWarrantyServiceRecord(record); err != nil {
 		return nil, err
 	}
 
@@ -423,8 +368,8 @@ func (s *RegistrationService) CreateWarrantyServiceRecord(claimID uint, input Wa
 }
 
 // DeleteWarrantyClaim 删除保修申请
-func (s *RegistrationService) DeleteWarrantyClaim(id uint, userID uint, isAdmin bool) error {
-	claim, err := s.registrationRepo.FindWarrantyClaimByID(id)
+func (s *WarrantyService) DeleteWarrantyClaim(id uint, userID uint, isAdmin bool) error {
+	claim, err := s.warrantyRepo.FindWarrantyClaimByID(id)
 	if err != nil {
 		return err
 	}
@@ -434,5 +379,5 @@ func (s *RegistrationService) DeleteWarrantyClaim(id uint, userID uint, isAdmin 
 		return errors.New("unauthorized")
 	}
 
-	return s.registrationRepo.DeleteWarrantyClaim(id)
+	return s.warrantyRepo.DeleteWarrantyClaim(id)
 }

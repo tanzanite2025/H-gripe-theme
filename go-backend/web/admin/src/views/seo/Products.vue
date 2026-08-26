@@ -15,6 +15,19 @@
       </template>
     </AdminPageHeader>
 
+    <section class="rounded-2xl border border-amber-500/25 bg-amber-500/5 p-4">
+      <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div class="flex min-w-0 items-start gap-3">
+          <Info class="mt-0.5 size-5 shrink-0 text-amber-600" />
+          <div class="min-w-0">
+            <p class="text-sm font-black">Google Indexing API</p>
+            <p class="mt-1 text-xs leading-5 text-muted-foreground">{{ indexingStatusMessage }}</p>
+          </div>
+        </div>
+        <AdminStatusBadge :tone="indexingStatusTone">{{ indexingStatusLabel }}</AdminStatusBadge>
+      </div>
+    </section>
+
     <section class="rounded-2xl border bg-muted/20 p-4">
       <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
@@ -50,7 +63,12 @@
       :pagination="pagination"
       :loading="loading"
       :can-edit="canEdit"
+      :show-indexing="canEdit"
+      :indexing-ready="indexingStatus.ready"
+      :indexing-loading-id="indexingLoadingId"
+      :indexing-disabled-reason="indexingStatus.message"
       @edit="openEditor"
+      @push-indexing="pushIndexing"
       @update-page="updatePage"
       @update-page-size="updatePageSize"
     />
@@ -69,8 +87,9 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { toast } from 'vue-sonner'
-import { ExternalLink, RefreshCw, Search } from '@lucide/vue'
+import { ExternalLink, Info, RefreshCw, Search } from '@lucide/vue'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
+import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
 import SEOResourceEditorDialog from '@/components/admin/seo/SEOResourceEditorDialog.vue'
 import SEOResourceTable from '@/components/admin/seo/SEOResourceTable.vue'
 import { Button } from '@/components/ui/button'
@@ -85,6 +104,7 @@ import type {
   SEOResourceEditorValues,
   SEOResourceItem,
   SEOResourcePagination,
+  GoogleIndexingStatus,
 } from '@/modules/seo/types'
 
 const authStore = useAuthStore()
@@ -98,6 +118,13 @@ const selectedResource = ref<SEOResourceItem | null>(null)
 const dialogOpen = ref(false)
 const loading = ref(false)
 const saving = ref(false)
+const indexingLoadingId = ref<number | string | null>(null)
+const indexingStatus = ref<GoogleIndexingStatus>({
+  enabled: false,
+  configured: false,
+  ready: false,
+  message: 'Google Indexing 状态加载中',
+})
 const filters = reactive({ search: '', locale: 'all' })
 const pagination = reactive<SEOResourcePagination>({
   page: 1,
@@ -120,6 +147,25 @@ const normalizeProduct = (product: SEOProductResource): SEOResourceItem => {
     productDiagnostics: product.diagnostics || null,
   }
 }
+
+const indexingStatusTone = computed<'green' | 'amber' | 'gray'>(() => {
+  if (indexingStatus.value.ready) return 'green'
+  if (indexingStatus.value.enabled) return 'amber'
+  return 'gray'
+})
+
+const indexingStatusLabel = computed(() => {
+  if (indexingStatus.value.ready) return '已就绪'
+  if (indexingStatus.value.enabled) return '待配置'
+  return '未启用'
+})
+
+const indexingStatusMessage = computed(() => {
+  if (indexingStatus.value.ready) {
+    return '可发送当前商品公开 URL 的 URL_UPDATED 通知。'
+  }
+  return indexingStatus.value.message
+})
 
 const load = async (): Promise<void> => {
   loading.value = true
@@ -156,6 +202,34 @@ const updatePageSize = (pageSize: number): void => {
   void load()
 }
 
+const loadIndexingStatus = async (): Promise<void> => {
+  try {
+    indexingStatus.value = await seoProductsApi.indexingStatus()
+  } catch (error) {
+    console.error('Failed to load Google Indexing status:', error)
+    indexingStatus.value = {
+      enabled: false,
+      configured: false,
+      ready: false,
+      message: 'Google Indexing 状态加载失败',
+    }
+  }
+}
+
+const pushIndexing = async (resource: SEOResourceItem): Promise<void> => {
+  if (!canEdit || !indexingStatus.value.ready || indexingLoadingId.value !== null) return
+  indexingLoadingId.value = resource.id
+  try {
+    await seoProductsApi.pushIndexing(resource.id)
+    toast.success('Google URL_UPDATED 通知已发送')
+  } catch (error) {
+    console.error('Failed to push Google Indexing notification:', error)
+    toast.error('Google Indexing 通知发送失败')
+  } finally {
+    indexingLoadingId.value = null
+  }
+}
+
 const openEditor = (resource: SEOResourceItem): void => {
   selectedResource.value = resource
   dialogOpen.value = true
@@ -181,6 +255,6 @@ const saveSeo = async (values: SEOResourceEditorValues): Promise<void> => {
 
 onMounted(async () => {
   await supportedLanguages.fetchLanguages()
-  await load()
+  await Promise.all([load(), loadIndexingStatus()])
 })
 </script>

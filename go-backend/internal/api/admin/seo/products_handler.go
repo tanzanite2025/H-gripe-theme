@@ -1,6 +1,8 @@
 package seo
 
 import (
+	"context"
+	"errors"
 	"net/http"
 	"strconv"
 	"time"
@@ -12,13 +14,30 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type googleIndexingService interface {
+	Status() service.GoogleIndexingStatus
+	PushProduct(ctx context.Context, productID uint) (*service.GoogleIndexingPushResult, error)
+}
+
 type ProductsHandler struct {
-	seoResources *service.SEOResourceService
-	audit        seoAuditRecorder
+	seoResources   *service.SEOResourceService
+	googleIndexing googleIndexingService
+	audit          seoAuditRecorder
 }
 
 func NewProductsHandler(seoResources *service.SEOResourceService) *ProductsHandler {
 	return &ProductsHandler{seoResources: seoResources}
+}
+
+func (h *ProductsHandler) ConfigureGoogleIndexingService(indexing *service.GoogleIndexingService) {
+	if h == nil {
+		return
+	}
+	if indexing == nil {
+		h.googleIndexing = nil
+		return
+	}
+	h.googleIndexing = indexing
 }
 
 func (h *ProductsHandler) ConfigureAuditService(recorder seoAuditRecorder) {
@@ -139,6 +158,125 @@ func (h *ProductsHandler) Update(c *gin.Context) {
 			"diagnostics":      diagnostics,
 		},
 	})
+}
+
+func (h *ProductsHandler) IndexingStatus(c *gin.Context) {
+	if h.googleIndexing == nil {
+		c.JSON(http.StatusOK, gin.H{
+			"status": service.GoogleIndexingStatus{
+				Enabled: false,
+				Ready:   false,
+				Message: "Google Indexing service is unavailable",
+			},
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"status": h.googleIndexing.Status()})
+}
+
+func (h *ProductsHandler) PushIndexing(c *gin.Context) {
+	startedAt := time.Now().UTC()
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		recordSEOAudit(h.audit, c, seoAuditEvent{
+			StartedAt:    startedAt,
+			Action:       seoAuditActionIndexing,
+			Resource:     seoAuditResourceProduct,
+			Status:       seoAuditStatusFailed,
+			ErrorMessage: err.Error(),
+		})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid product ID"})
+		return
+	}
+	if h.googleIndexing == nil {
+		recordSEOAudit(h.audit, c, seoAuditEvent{
+			StartedAt:    startedAt,
+			Action:       seoAuditActionIndexing,
+			Resource:     seoAuditResourceProduct,
+			ResourceID:   uint(id),
+			Status:       seoAuditStatusFailed,
+			ErrorMessage: service.ErrGoogleIndexingNotConfigured.Error(),
+			NewValue:     googleIndexingAuditValue(uint(id), nil),
+		})
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": service.ErrGoogleIndexingNotConfigured.Error()})
+		return
+	}
+
+	result, err := h.googleIndexing.PushProduct(c.Request.Context(), uint(id))
+	if err != nil {
+		recordSEOAudit(h.audit, c, seoAuditEvent{
+			StartedAt:    startedAt,
+			Action:       seoAuditActionIndexing,
+			Resource:     seoAuditResourceProduct,
+			ResourceID:   uint(id),
+			Status:       seoAuditStatusFailed,
+			ErrorMessage: err.Error(),
+			NewValue:     googleIndexingAuditValue(uint(id), result),
+		})
+		switch {
+		case errors.Is(err, service.ErrGoogleIndexingProductNotFound):
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		case errors.Is(err, service.ErrGoogleIndexingProductNotPublic):
+			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+		case errors.Is(err, service.ErrGoogleIndexingRecentlyNotified):
+			retryAfter := 60
+			var cooldownErr *service.GoogleIndexingCooldownError
+			if errors.As(err, &cooldownErr) && cooldownErr.RetryAfter > 0 {
+				retryAfter = int((cooldownErr.RetryAfter + time.Second - 1) / time.Second)
+				if retryAfter < 1 {
+					retryAfter = 1
+				}
+			}
+			c.Header("Retry-After", strconv.Itoa(retryAfter))
+			c.JSON(http.StatusConflict, gin.H{
+				"error":   "google_indexing_recently_notified",
+				"message": err.Error(),
+			})
+		case errors.Is(err, service.ErrGoogleIndexingDisabled),
+			errors.Is(err, service.ErrGoogleIndexingNotConfigured):
+			c.JSON(http.StatusServiceUnavailable, gin.H{"error": err.Error()})
+		case errors.Is(err, service.ErrGoogleIndexingProtection):
+			c.JSON(http.StatusServiceUnavailable, gin.H{
+				"error":   "google_indexing_protection_unavailable",
+				"message": "Google Indexing duplicate protection is temporarily unavailable",
+			})
+		case errors.Is(err, service.ErrGoogleIndexingInvalidURL):
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		case errors.Is(err, service.ErrGoogleIndexingUpstream):
+			c.JSON(http.StatusBadGateway, gin.H{"error": err.Error()})
+		default:
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
+		return
+	}
+
+	recordSEOAudit(h.audit, c, seoAuditEvent{
+		StartedAt:  startedAt,
+		Action:     seoAuditActionIndexing,
+		Resource:   seoAuditResourceProduct,
+		ResourceID: uint(id),
+		Status:     seoAuditStatusOK,
+		NewValue:   googleIndexingAuditValue(uint(id), result),
+	})
+	c.JSON(http.StatusOK, gin.H{"data": result})
+}
+
+func googleIndexingAuditValue(productID uint, result *service.GoogleIndexingPushResult) map[string]interface{} {
+	value := map[string]interface{}{
+		"product_id":        productID,
+		"notification_type": "URL_UPDATED",
+	}
+	if result == nil {
+		return value
+	}
+	value["url"] = result.URL
+	value["notification_type"] = result.NotificationType
+	value["http_status"] = result.HTTPStatus
+	value["accepted"] = result.Accepted
+	if !result.SubmittedAt.IsZero() {
+		value["submitted_at"] = result.SubmittedAt
+	}
+	return value
 }
 
 func productAuditValue(product *productdomain.Product) map[string]string {

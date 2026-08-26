@@ -3,23 +3,23 @@
   "subtitle": "查询您的产品保修状态",
   "login_required": "请登录后查询产品保修信息。",
   "login_button": "登录",
-  "input_label": "请输入产品编码：",
-  "input_placeholder": "例如：ABC123",
+  "input_label": "请输入订单号：",
+  "input_placeholder": "例如：TZ202608230001",
   "check_button": "查询",
-  "help_text": "产品编码可在产品包装或保修卡上找到。",
+  "help_text": "订单发货后可按订单号查询发货商品和剩余保修时间。",
   "months": "个月",
   "days": "天",
   "result": {
     "valid": "保修有效",
     "expired": "保修已过期",
-    "not_found": "未找到产品"
+    "not_found": "未找到发货记录"
   },
   "actions": {
     "check_another": "查询其他产品",
     "contact_support": "联系客服"
   },
   "fields": {
-    "product_code": "产品编码",
+    "order_number": "订单号",
     "product_type": "产品类型",
     "product_name": "产品名称",
     "ship_date": "出货日期",
@@ -33,13 +33,13 @@
     "no_records": "暂无服务记录"
   },
   "errors": {
-    "not_found_message": "未找到编码为 {code} 的产品",
+    "not_found_message": "未找到订单号为 {code} 的发货记录",
     "check_tips": {
-      "0": "Check that the product code was entered exactly as printed.",
-      "1": "Contact support if your product code still cannot be found."
+      "0": "请确认订单号与订单中显示的内容一致。",
+      "1": "如果仍找不到已发货订单，请联系客服。"
     },
     "error_contact": "如有疑问，请联系我们。"
   },
-  "cardDesc": "Enter your product code to check warranty status and history.",
-  "checkNow": "Check Now"
+  "cardDesc": "输入订单号查询发货商品、保修期限和售后记录。",
+  "checkNow": "立即查询"
 }

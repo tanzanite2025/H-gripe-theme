@@ -1,0 +1,61 @@
+{
+  "trigger": {
+    "label": "Kompatibilität prüfen"
+  },
+  "dialog": {
+    "eyebrow": "Kompatibilitätskatalog",
+    "title": "Rahmen oder Gabel finden",
+    "description": "Durchsuche den unabhängigen Kompatibilitätskatalog nach Marke, Modell oder Jahr. Die Ergebnisse enthalten die für jeden Eintrag erfassten Nabenspezifikationen.",
+    "close": "Schließen",
+    "tabListLabel": "Bereiche des Kompatibilitätskatalogs"
+  },
+  "tabs": {
+    "frame": "Rahmen-Kompatibilität",
+    "fork": "Gabel-Kompatibilität"
+  },
+  "search": {
+    "label": "Suche",
+    "placeholder": "Nach Marke oder Modell suchen",
+    "yearLabel": "Modelljahr",
+    "yearPlaceholder": "z. B. 2024",
+    "submit": "Suchen",
+    "clear": "Löschen",
+    "searching": "Suche läuft..."
+  },
+  "states": {
+    "initial": "Gib eine Marke, ein Modell oder ein Jahr ein, um den Katalog zu durchsuchen.",
+    "empty": "Keine passenden Einträge gefunden.",
+    "unavailable": "Die Kompatibilitätsdaten sind vorübergehend nicht verfügbar. Bitte versuche es erneut.",
+    "noHubSpecifications": "Es wurden keine Nabenspezifikationen erfasst."
+  },
+  "entry": {
+    "series": "Serie",
+    "generation": "Generation",
+    "market": "Markt",
+    "hubSpecifications": "Nabenspezifikationen",
+    "unknownYear": "Jahr nicht angegeben",
+    "allYears": "Alle Jahre"
+  },
+  "pagination": {
+    "label": "Kompatibilitätsergebnisse",
+    "previous": "Vorherige Seite",
+    "next": "Nächste Seite",
+    "page": "Seite {page} von {totalPages}"
+  },
+  "hub": {
+    "position": "Position",
+    "axleType": "Achstyp",
+    "axleSpacing": "Achsbreite",
+    "millimetres": "mm",
+    "positions": {
+      "front": "Vorne",
+      "rear": "Hinten"
+    },
+    "axleTypes": {
+      "quickRelease": "Schnellspanner",
+      "thruAxle": "Steckachse",
+      "boltOn": "Bolzenbefestigung",
+      "other": "Andere"
+    }
+  }
+}

@@ -23,8 +23,8 @@
     <!-- Tab: Basic Concepts -->
     <div v-show="activeTab === 'basic-concepts'">
     <!-- Intro Card -->
-    <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 text-center mb-8">
-      <h3 class="text-xl font-bold text-slate-100 mb-4 flex items-center justify-center gap-2">
+    <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6 text-center mb-8">
+      <h3 class="text-xl font-bold tz-text-secondary mb-4 flex items-center justify-center gap-2">
         Basic Concepts
       </h3>
       
@@ -40,14 +40,14 @@
             alt="Comparison of J-bend and straight-pull bicycle spokes"
             :zoomOnClick="true"
             caption="J-bend (Classic) vs Straight-pull"
-            class="rounded-xl overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.5)]"
+            class="rounded-xl overflow-hidden shadow-md"
           />
           <GuideImage
             src="/public/technical/Sapim-black-stainless-steel-straight-gauge-2.0mm-spoke-double-butted-2.0-1.8-2.0mm-spoke-aero-flat-bladed-spoke.webp"
             alt="Examples of Sapim stainless steel spokes in different shapes and profiles"
             :zoomOnClick="true"
             caption="Straight Gauge vs Double-Butted vs Aero"
-            class="rounded-xl overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.5)]"
+            class="rounded-xl overflow-hidden shadow-md"
           />
         </div>
       </div>
@@ -55,40 +55,40 @@
       <!-- New Content: Major Brands -->
       <div class="w-full mb-8 text-center">
          <div class="flex items-center gap-3 mb-4 justify-center">
-            <span class="h-px w-8 bg-slate-700"></span>
+            <span class="h-px w-8 tz-surface-panel"></span>
         <h4 class="tz-text-primary font-bold text-base uppercase tracking-wider">Major Brands & Positioning</h4>
-            <span class="h-px w-8 bg-slate-700"></span>
+            <span class="h-px w-8 tz-surface-panel"></span>
          </div>
          <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-             <div class="bg-slate-800/40 p-3 rounded-lg shadow-[0_4px_16px_rgba(0,0,0,0.5)] flex flex-col items-center text-center">
-                <strong class="block text-sky-400 text-sm mb-1">DT Swiss (Switzerland)</strong>
+             <div class="tz-surface-panel p-3 rounded-lg shadow-md flex flex-col items-center text-center">
+                <strong class="block text-emerald-600 text-sm mb-1">DT Swiss (Switzerland)</strong>
           <p class="text-xs tz-text-secondary leading-relaxed mb-3">Renowned for stable craftsmanship and a comprehensive product matrix (straight, butted, aero), with complete engineering support.</p>
-                <button class="mt-auto px-4 py-1.5 rounded-full border border-sky-500/30 tz-caption font-bold uppercase tracking-wider text-sky-400 hover:bg-sky-500/10 transition-colors">
+                <button class="mt-auto px-4 py-1.5 rounded-full border border-emerald-300 tz-caption font-bold uppercase tracking-wider text-emerald-600 hover:bg-emerald-50 transition-colors">
                   View DT Swiss Spoke
                 </button>
              </div>
-              <div class="bg-slate-800/40 p-3 rounded-lg shadow-[0_4px_16px_rgba(0,0,0,0.5)] flex flex-col items-center text-center">
-                <strong class="block text-sky-400 text-sm mb-1">Sapim (Belgium)</strong>
+              <div class="tz-surface-panel p-3 rounded-lg shadow-md flex flex-col items-center text-center">
+                <strong class="block text-emerald-600 text-sm mb-1">Sapim (Belgium)</strong>
           <p class="text-xs tz-text-secondary leading-relaxed mb-3">Leading in high-end aero spokes (e.g. CX-Ray). Known for lightweight performance and excellent fatigue life.</p>
-                <button class="mt-auto px-4 py-1.5 rounded-full border border-sky-500/30 tz-caption font-bold uppercase tracking-wider text-sky-400 hover:bg-sky-500/10 transition-colors">
+                <button class="mt-auto px-4 py-1.5 rounded-full border border-emerald-300 tz-caption font-bold uppercase tracking-wider text-emerald-600 hover:bg-emerald-50 transition-colors">
                   View Sapim Spoke
                 </button>
              </div>
-             <div class="bg-slate-800/40 p-3 rounded-lg shadow-[0_4px_16px_rgba(0,0,0,0.5)] flex flex-col items-center text-center">
+             <div class="tz-surface-panel p-3 rounded-lg shadow-md flex flex-col items-center text-center">
                 <strong class="block text-amber-400 text-sm mb-1">Pillar (Taiwan)</strong>
           <p class="text-xs tz-text-secondary leading-relaxed mb-3">Strong cost-performance with a wide range including reinforced (PSR) designs. Suitable for custom and mass production.</p>
                 <button class="mt-auto px-4 py-1.5 rounded-full border border-amber-500/30 tz-caption font-bold uppercase tracking-wider text-amber-400 hover:bg-amber-500/10 transition-colors">
                   View Pillar Spoke
                 </button>
              </div>
-             <div class="bg-slate-800/40 p-3 rounded-lg shadow-[0_4px_16px_rgba(0,0,0,0.5)] flex flex-col items-center text-center">
+             <div class="tz-surface-panel p-3 rounded-lg shadow-md flex flex-col items-center text-center">
           <strong class="block tz-text-primary text-sm mb-1">Mac / CNSpoke</strong>
           <p class="text-xs tz-text-secondary leading-relaxed mb-3">Fast supply chain response. Covers all types balancing cost and performance for diverse applications.</p>
                 <button class="mt-auto px-4 py-1.5 rounded-full border border-slate-500/30 tz-caption font-bold uppercase tracking-wider tz-text-secondary hover:bg-slate-500/10 transition-colors">
                   View Mac / CNSpoke Spoke
                 </button>
              </div>
-             <div class="bg-slate-800/40 p-3 rounded-lg shadow-[0_4px_16px_rgba(0,0,0,0.5)] flex flex-col items-center text-center">
+             <div class="tz-surface-panel p-3 rounded-lg shadow-md flex flex-col items-center text-center">
           <strong class="block tz-text-primary text-sm mb-1">YT Spokes (China)</strong>
           <p class="text-xs tz-text-secondary leading-relaxed mb-3">Fast supply chain response, suitable for cost and performance balance.</p>
                 <button class="mt-auto px-4 py-1.5 rounded-full border border-slate-500/30 tz-caption font-bold uppercase tracking-wider tz-text-secondary hover:bg-slate-500/10 transition-colors">
@@ -96,10 +96,10 @@
                 </button>
              </div>
               <!-- Carbon spoke option -->
-             <div class="bg-slate-800/40 p-3 rounded-lg shadow-[0_4px_16px_rgba(0,0,0,0.5)] flex flex-col items-center text-center ring-1 ring-indigo-500/20">
-                <strong class="block text-indigo-400 text-sm mb-1">CARBON SPOKE</strong>
+             <div class="tz-surface-panel p-3 rounded-lg shadow-md flex flex-col items-center text-center ring-1 ring-emerald-500/20">
+                <strong class="block text-emerald-600 text-sm mb-1">CARBON SPOKE</strong>
           <p class="text-xs tz-text-secondary leading-relaxed mb-3">The pinnacle of lightweight performance. Designed for ultimate responsiveness and rigidity, drastically reducing rotational weight.</p>
-                <button class="mt-auto px-4 py-1.5 rounded-full border border-indigo-500/30 tz-caption font-bold uppercase tracking-wider text-indigo-400 hover:bg-indigo-500/10 transition-colors">
+                <button class="mt-auto px-4 py-1.5 rounded-full border border-emerald-300 tz-caption font-bold uppercase tracking-wider text-emerald-600 hover:bg-emerald-50 transition-colors">
                   View Carbon Spoke
                 </button>
              </div>
@@ -109,15 +109,15 @@
       <!-- New Content: Spoke Types -->
       <div class="w-full mb-8 text-center">
           <div class="flex items-center gap-3 mb-4 justify-center">
-            <span class="h-px w-8 bg-slate-700"></span>
+            <span class="h-px w-8 tz-surface-panel"></span>
             <h4 class="tz-text-primary font-bold text-base uppercase tracking-wider">Spoke Types</h4>
-            <span class="h-px w-8 bg-slate-700"></span>
+            <span class="h-px w-8 tz-surface-panel"></span>
          </div>
 
          <div class="space-y-4">
              <!-- Straight Gauge -->
-              <div class="bg-slate-800/30 rounded-xl p-4 shadow-[0_4px_16px_rgba(0,0,0,0.5)] flex flex-col items-center text-center">
-                 <h5 class="text-slate-100 font-bold mb-2 flex items-center justify-center gap-2">
+              <div class="tz-surface-panel rounded-xl p-4 shadow-md flex flex-col items-center text-center">
+                 <h5 class="tz-text-secondary font-bold mb-2 flex items-center justify-center gap-2">
                     <span class="w-2 h-2 rounded-full bg-slate-500"></span> Straight Gauge Spokes
                  </h5>
                  <div class="grid md:grid-cols-2 gap-x-6 gap-y-2 text-sm tz-text-secondary w-full">
@@ -129,9 +129,9 @@
              </div>
 
              <!-- Butted -->
-               <div class="bg-slate-800/30 rounded-xl p-4 shadow-[0_4px_16px_rgba(0,0,0,0.5)] flex flex-col items-center text-center">
-                 <h5 class="text-slate-100 font-bold mb-2 flex items-center justify-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-sky-500"></span> Double/Triple Butted
+               <div class="tz-surface-panel rounded-xl p-4 shadow-md flex flex-col items-center text-center">
+                 <h5 class="tz-text-secondary font-bold mb-2 flex items-center justify-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Double/Triple Butted
                  </h5>
                  <div class="grid md:grid-cols-2 gap-x-6 gap-y-2 text-sm tz-text-secondary w-full">
                     <p><span class="tz-text-muted font-mono text-xs uppercase mr-1">Specs:</span> e.g. 2.0-1.8-2.0mm, 2.0-1.5-2.0mm.</p>
@@ -142,9 +142,9 @@
              </div>
 
               <!-- Aero -->
-               <div class="bg-slate-800/30 rounded-xl p-4 shadow-[0_4px_16px_rgba(0,0,0,0.5)] flex flex-col items-center text-center">
-                 <h5 class="text-slate-100 font-bold mb-2 flex items-center justify-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-indigo-500"></span> Bladed / Aero
+               <div class="tz-surface-panel rounded-xl p-4 shadow-md flex flex-col items-center text-center">
+                 <h5 class="tz-text-secondary font-bold mb-2 flex items-center justify-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Bladed / Aero
                  </h5>
                  <div class="grid md:grid-cols-2 gap-x-6 gap-y-2 text-sm tz-text-secondary w-full">
                     <p><span class="tz-text-muted font-mono text-xs uppercase mr-1">Specs:</span> Flat ~0.9-1.0mm, width 2.0-2.3mm (or wider for TT).</p>
@@ -159,20 +159,20 @@
        <!-- New Content: Head Types -->
       <div class="w-full text-center">
           <div class="flex items-center gap-3 mb-4 justify-center">
-            <span class="h-px w-8 bg-slate-700"></span>
+            <span class="h-px w-8 tz-surface-panel"></span>
             <h4 class="tz-text-primary font-bold text-base uppercase tracking-wider">Interfaces</h4>
-             <span class="h-px w-8 bg-slate-700"></span>
+             <span class="h-px w-8 tz-surface-panel"></span>
          </div>
          <div class="grid gap-3 sm:grid-cols-3">
-            <div class="bg-slate-800/20 p-3 rounded-lg border border-slate-700/20 text-center">
+            <div class="tz-surface-panel p-3 rounded-lg border tz-border-subtle text-center">
                  <strong class="block tz-text-primary text-sm mb-1">J-bend</strong>
                  <p class="text-xs tz-text-muted">Highly versatile, standard, easy sourcing.</p>
             </div>
-             <div class="bg-slate-800/20 p-3 rounded-lg shadow-[0_4px_16px_rgba(0,0,0,0.5)] text-center">
+             <div class="tz-surface-panel p-3 rounded-lg shadow-md text-center">
                  <strong class="block tz-text-primary text-sm mb-1">Straight-pull</strong>
                  <p class="text-xs tz-text-muted">No elbow stress, fast building, specific hubs.</p>
             </div>
-             <div class="bg-slate-800/20 p-3 rounded-lg shadow-[0_4px_16px_rgba(0,0,0,0.5)] text-center">
+             <div class="tz-surface-panel p-3 rounded-lg shadow-md text-center">
                  <strong class="block tz-text-primary text-sm mb-1">Nipples</strong>
                  <p class="text-xs tz-text-muted">Brass (durable) vs Aluminum (light). Washer recommended.</p>
             </div>
@@ -182,9 +182,9 @@
 
     <div class="mt-4">
       <div class="flex items-center justify-center gap-2 mb-4">
-         <div class="h-px w-12 bg-slate-800"></div>
+         <div class="h-px w-12 tz-surface-panel"></div>
          <p class="text-xs font-bold uppercase tracking-widest tz-text-muted">Material Comparison</p>
-         <div class="h-px w-12 bg-slate-800"></div>
+         <div class="h-px w-12 tz-surface-panel"></div>
       </div>
 
       <!-- Disclaimer Note -->
@@ -201,10 +201,10 @@
 
     <ul class="technical-spokes-list mt-8 space-y-8 w-full">
         <!-- 1. Stainless Steel -->
-        <li class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 transition-transform hover:-translate-y-1 duration-300 text-center">
+        <li class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6 transition-transform hover:-translate-y-1 duration-300 text-center">
           <div class="flex items-center justify-center gap-3 mb-4">
             <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-500 text-lg font-bold">1</span>
-            <strong class="text-xl text-slate-100">Stainless Steel</strong>
+            <strong class="text-xl tz-text-secondary">Stainless Steel</strong>
           </div>
           
           <div class="w-full max-w-none tz-text-secondary text-sm leading-relaxed flex flex-col items-center">
@@ -221,25 +221,25 @@
             </div>
 
             <div class="grid gap-4 md:grid-cols-2 w-full">
-              <div class="bg-emerald-500/5 rounded-lg p-3 shadow-[0_4px_16px_rgba(0,0,0,0.5)] w-full">
-                <strong class="block text-xs uppercase tracking-wider text-emerald-400 mb-2 text-center">Pros</strong>
+              <div class="bg-emerald-50 rounded-lg p-3 shadow-md w-full">
+                <strong class="block text-xs uppercase tracking-wider text-emerald-600 mb-2 text-center">Pros</strong>
                 <ul class="space-y-1.5 text-sm list-none pl-0 my-0 flex flex-col items-center">
                   <li class="flex items-center justify-center gap-2 pl-0 before:content-none w-full">
-                    <span class="text-emerald-500 shrink-0 text-center w-4">✓</span> <span class="text-center">High strength & durability</span>
+                    <span class="text-emerald-600 shrink-0 text-center w-4">✓</span> <span class="text-center">High strength & durability</span>
                   </li>
                   <li class="flex items-center justify-center gap-2 pl-0 before:content-none w-full">
-                    <span class="text-emerald-500 shrink-0 text-center w-4">✓</span> <span class="text-center">Excellent corrosion resistance</span>
+                    <span class="text-emerald-600 shrink-0 text-center w-4">✓</span> <span class="text-center">Excellent corrosion resistance</span>
                   </li>
                   <li class="flex items-center justify-center gap-2 pl-0 before:content-none w-full">
-                    <span class="text-emerald-500 shrink-0 text-center w-4">✓</span> <span class="text-center">Cost-effective</span>
+                    <span class="text-emerald-600 shrink-0 text-center w-4">✓</span> <span class="text-center">Cost-effective</span>
                   </li>
                    <li class="flex items-center justify-center gap-2 pl-0 before:content-none w-full">
-                    <span class="text-emerald-500 shrink-0 text-center w-4">✓</span> <span class="text-center">Good toughness (gradual deformation)</span>
+                    <span class="text-emerald-600 shrink-0 text-center w-4">✓</span> <span class="text-center">Good toughness (gradual deformation)</span>
                   </li>
                 </ul>
               </div>
 
-              <div class="bg-rose-500/5 rounded-lg p-3 shadow-[0_4px_16px_rgba(0,0,0,0.5)] w-full">
+              <div class="bg-rose-500/5 rounded-lg p-3 shadow-md w-full">
                 <strong class="block text-xs uppercase tracking-wider text-rose-400 mb-2 text-center">Cons</strong>
                  <ul class="space-y-1.5 text-sm list-none pl-0 my-0 flex flex-col items-center">
                   <li class="flex items-center justify-center gap-2 pl-0 before:content-none w-full">
@@ -255,11 +255,11 @@
         </li>
 
         <!-- 2. Carbon Fiber -->
-        <li class="mt-6 rounded-2xl bg-[#0b0e14] shadow-[0_8px_30px_rgba(0,0,0,0.8)] border-l-4 border-indigo-500 p-5 md:p-6 transition-transform hover:-translate-y-1 duration-300 text-center">
+        <li class="mt-6 rounded-2xl tz-surface-card shadow-[0_8px_30px_rgba(20,32,43,0.1)] border-l-4 border-emerald-500 p-5 md:p-6 transition-transform hover:-translate-y-1 duration-300 text-center">
            <div class="flex items-center justify-center gap-3 mb-4">
-            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-400 text-lg font-bold">2</span>
-            <strong class="text-xl text-slate-100">Carbon Fiber</strong>
-                    <span class="tz-micro-label font-bold uppercase tracking-wider bg-indigo-500 text-white px-2 py-1 rounded-full">Elite</span>
+            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 text-lg font-bold">2</span>
+            <strong class="text-xl tz-text-secondary">Carbon Fiber</strong>
+                    <span class="tz-micro-label font-bold uppercase tracking-wider bg-emerald-500 tz-text-primary px-2 py-1 rounded-full">Elite</span>
           </div>
 
            <div class="w-full max-w-none tz-text-secondary text-sm leading-relaxed flex flex-col items-center">
@@ -268,22 +268,22 @@
             </p>
 
              <div class="grid gap-4 md:grid-cols-2 w-full">
-              <div class="bg-indigo-500/5 rounded-lg p-3 shadow-[0_4px_16px_rgba(0,0,0,0.5)] w-full">
-                <strong class="block text-xs uppercase tracking-wider text-indigo-400 mb-2 text-center">Pros</strong>
+              <div class="bg-emerald-50 rounded-lg p-3 shadow-md w-full">
+                <strong class="block text-xs uppercase tracking-wider text-emerald-600 mb-2 text-center">Pros</strong>
                 <ul class="space-y-1.5 text-sm list-none pl-0 my-0 flex flex-col items-center">
                   <li class="flex items-center justify-center gap-2 pl-0 before:content-none w-full">
-                    <span class="text-indigo-400 shrink-0 text-center w-4">✓</span> <span class="text-center">Ultra-lightweight (-100g+)</span>
+                    <span class="text-emerald-600 shrink-0 text-center w-4">✓</span> <span class="text-center">Ultra-lightweight (-100g+)</span>
                   </li>
                   <li class="flex items-center justify-center gap-2 pl-0 before:content-none w-full">
-                    <span class="text-indigo-400 shrink-0 text-center w-4">✓</span>  <span class="text-center">Excellent rigidity & acceleration</span>
+                    <span class="text-emerald-600 shrink-0 text-center w-4">✓</span>  <span class="text-center">Excellent rigidity & acceleration</span>
                   </li>
                    <li class="flex items-center justify-center gap-2 pl-0 before:content-none w-full">
-                    <span class="text-indigo-400 shrink-0 text-center w-4">✓</span>  <span class="text-center">Vibration absorption</span>
+                    <span class="text-emerald-600 shrink-0 text-center w-4">✓</span>  <span class="text-center">Vibration absorption</span>
                   </li>
                 </ul>
               </div>
 
-               <div class="bg-rose-500/5 rounded-lg p-3 shadow-[0_4px_16px_rgba(0,0,0,0.5)] w-full">
+               <div class="bg-rose-500/5 rounded-lg p-3 shadow-md w-full">
                 <strong class="block text-xs uppercase tracking-wider text-rose-400 mb-2 text-center">Cons</strong>
                  <ul class="space-y-1.5 text-sm list-none pl-0 my-0 flex flex-col items-center">
                   <li class="flex items-center justify-center gap-2 pl-0 before:content-none w-full">
@@ -306,11 +306,11 @@
 
         <!-- 3. Titanium Alloy (Compact) -->
         <!-- 3. Titanium Alloy -->
-        <li class="mt-6 rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 transition-transform hover:-translate-y-1 duration-300 opacity-90 text-center">
+        <li class="mt-6 rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6 transition-transform hover:-translate-y-1 duration-300 opacity-90 text-center">
            <div class="flex items-center justify-center gap-3 mb-4">
-            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-700/30 tz-text-secondary text-lg font-bold">3</span>
+            <span class="flex h-8 w-8 items-center justify-center rounded-lg tz-surface-panel tz-text-secondary text-lg font-bold">3</span>
             <strong class="text-xl tz-text-primary">Titanium Alloy</strong>
-                <span class="tz-micro-label border border-slate-700 tz-text-muted px-2 py-0.5 rounded">Rare</span>
+                <span class="tz-micro-label border tz-border-subtle tz-text-muted px-2 py-0.5 rounded">Rare</span>
           </div>
 
            <div class="w-full max-w-none tz-text-secondary text-sm leading-relaxed flex flex-col items-center">
@@ -320,23 +320,23 @@
 
             <div class="grid gap-4 md:grid-cols-2 w-full">
               <!-- Pros -->
-              <div class="bg-emerald-500/5 rounded-lg p-3 shadow-[0_4px_16px_rgba(0,0,0,0.5)] w-full">
-                <strong class="block text-xs uppercase tracking-wider text-emerald-400 mb-2 text-center">Pros</strong>
+              <div class="bg-emerald-50 rounded-lg p-3 shadow-md w-full">
+                <strong class="block text-xs uppercase tracking-wider text-emerald-600 mb-2 text-center">Pros</strong>
                 <ul class="space-y-1.5 text-sm list-none pl-0 my-0 flex flex-col items-center">
                   <li class="flex items-center justify-center gap-2 pl-0 before:content-none w-full">
-                    <span class="text-emerald-500 shrink-0 text-center w-4">✓</span> <span class="text-center">Lightweight</span>
+                    <span class="text-emerald-600 shrink-0 text-center w-4">✓</span> <span class="text-center">Lightweight</span>
                   </li>
                   <li class="flex items-center justify-center gap-2 pl-0 before:content-none w-full">
-                    <span class="text-emerald-500 shrink-0 text-center w-4">✓</span> <span class="text-center">Smooth Ride Quality</span>
+                    <span class="text-emerald-600 shrink-0 text-center w-4">✓</span> <span class="text-center">Smooth Ride Quality</span>
                   </li>
                    <li class="flex items-center justify-center gap-2 pl-0 before:content-none w-full">
-                    <span class="text-emerald-500 shrink-0 text-center w-4">✓</span> <span class="text-center">No Rust (Corrosion Free)</span>
+                    <span class="text-emerald-600 shrink-0 text-center w-4">✓</span> <span class="text-center">No Rust (Corrosion Free)</span>
                   </li>
                 </ul>
               </div>
 
               <!-- Cons -->
-              <div class="bg-rose-500/5 rounded-lg p-3 shadow-[0_4px_16px_rgba(0,0,0,0.5)] w-full">
+              <div class="bg-rose-500/5 rounded-lg p-3 shadow-md w-full">
                 <strong class="block text-xs uppercase tracking-wider text-rose-400 mb-2 text-center">Cons</strong>
                  <ul class="space-y-1.5 text-sm list-none pl-0 my-0 flex flex-col items-center">
                   <li class="flex items-center justify-center gap-2 pl-0 before:content-none w-full">
@@ -355,11 +355,11 @@
         </li>
 
          <!-- 4. Aluminum Alloy -->
-        <li class="mt-4 rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 transition-transform hover:-translate-y-1 duration-300 opacity-90 text-center">
+        <li class="mt-4 rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6 transition-transform hover:-translate-y-1 duration-300 opacity-90 text-center">
            <div class="flex items-center justify-center gap-3 mb-4">
-            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-700/30 tz-text-secondary text-lg font-bold">4</span>
+            <span class="flex h-8 w-8 items-center justify-center rounded-lg tz-surface-panel tz-text-secondary text-lg font-bold">4</span>
             <strong class="text-xl tz-text-primary">Aluminum Alloy</strong>
-                <span class="tz-micro-label border border-slate-700 tz-text-muted px-2 py-0.5 rounded">Rare</span>
+                <span class="tz-micro-label border tz-border-subtle tz-text-muted px-2 py-0.5 rounded">Rare</span>
           </div>
 
            <div class="w-full max-w-none tz-text-secondary text-sm leading-relaxed flex flex-col items-center">
@@ -369,20 +369,20 @@
 
              <div class="grid gap-4 md:grid-cols-2 w-full">
               <!-- Pros -->
-              <div class="bg-emerald-500/5 rounded-lg p-3 shadow-[0_4px_16px_rgba(0,0,0,0.5)] w-full">
-                <strong class="block text-xs uppercase tracking-wider text-emerald-400 mb-2 text-center">Pros</strong>
+              <div class="bg-emerald-50 rounded-lg p-3 shadow-md w-full">
+                <strong class="block text-xs uppercase tracking-wider text-emerald-600 mb-2 text-center">Pros</strong>
                 <ul class="space-y-1.5 text-sm list-none pl-0 my-0 flex flex-col items-center">
                   <li class="flex items-center justify-center gap-2 pl-0 before:content-none w-full">
-                    <span class="text-emerald-500 shrink-0 text-center w-4">✓</span> <span class="text-center">Very Light</span>
+                    <span class="text-emerald-600 shrink-0 text-center w-4">✓</span> <span class="text-center">Very Light</span>
                   </li>
                   <li class="flex items-center justify-center gap-2 pl-0 before:content-none w-full">
-                    <span class="text-emerald-500 shrink-0 text-center w-4">✓</span> <span class="text-center">Stiff</span>
+                    <span class="text-emerald-600 shrink-0 text-center w-4">✓</span> <span class="text-center">Stiff</span>
                   </li>
                 </ul>
               </div>
 
               <!-- Cons -->
-              <div class="bg-rose-500/5 rounded-lg p-3 shadow-[0_4px_16px_rgba(0,0,0,0.5)] w-full">
+              <div class="bg-rose-500/5 rounded-lg p-3 shadow-md w-full">
                 <strong class="block text-xs uppercase tracking-wider text-rose-400 mb-2 text-center">Cons</strong>
                  <ul class="space-y-1.5 text-sm list-none pl-0 my-0 flex flex-col items-center">
                    <li class="flex items-center justify-center gap-2 pl-0 before:content-none w-full">
@@ -413,16 +413,16 @@
     <!-- Tab: Choose spoke -->
     <div v-show="activeTab === 'choose-spoke'">
        <div class="space-y-8">
-         <div class="bg-[var(--tz-card-surface)] rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.6)] border-t-4 border-emerald-500 p-6 text-center">
-            <h3 class="text-xl font-bold text-slate-100 mb-2">Spoke Selection Matrix</h3>
+         <div class="bg-[var(--tz-card-surface)] rounded-2xl shadow-md border-t-4 border-emerald-500 p-6 text-center">
+            <h3 class="text-xl font-bold tz-text-secondary mb-2">Spoke Selection Matrix</h3>
             <p class="tz-text-secondary text-sm max-w-2xl mx-auto">
                Compare our supported spoke models to find the perfect match for your building goals—whether it's maximum durability, lightweight performance, or aerodynamic efficiency.
             </p>
          </div>
 
-         <div class="overflow-x-auto rounded-lg shadow-[0_4px_16px_rgba(0,0,0,0.5)] border border-slate-800">
+         <div class="overflow-x-auto rounded-lg shadow-md border tz-border-subtle">
             <table class="w-full text-sm text-left tz-text-secondary">
-               <thead class="text-xs tz-text-primary uppercase bg-slate-800/80">
+               <thead class="text-xs tz-text-primary uppercase tz-surface-panel">
                   <tr>
                      <th scope="col" class="px-6 py-4 font-bold">Brand / Model</th>
                      <th scope="col" class="px-6 py-4 font-bold text-center">Type</th>
@@ -431,16 +431,16 @@
                      <th scope="col" class="px-6 py-4 font-bold">Details</th>
                   </tr>
                </thead>
-               <tbody class="divide-y divide-slate-800">
+               <tbody class="divide-y divide-slate-200">
                   
                   <!-- SAPIM Models -->
                    <!-- 1. Leader -->
-                  <tr class="bg-[var(--tz-card-surface)] hover:bg-slate-800/30 transition-colors">
+                  <tr class="bg-[var(--tz-card-surface)] hover:tz-surface-panel transition-colors">
                      <td class="px-6 py-4">
                         <strong class="block tz-text-primary text-base">SAPIM Leader</strong>
                      </td>
                      <td class="px-6 py-4 text-center">
-                        <span class="inline-flex px-2 py-1 rounded bg-slate-800 tz-text-secondary text-xs font-bold border border-slate-700">Straight</span>
+                        <span class="inline-flex px-2 py-1 rounded tz-surface-panel tz-text-secondary text-xs font-bold border tz-border-subtle">Straight</span>
                      </td>
                      <td class="px-6 py-4 text-center font-mono tz-text-primary">6.8g</td>
                      <td class="px-6 py-4 text-center font-mono text-xs">2.0</td>
@@ -450,12 +450,12 @@
                   </tr>
 
                   <!-- 2. Race -->
-                  <tr class="bg-[var(--tz-card-surface)] hover:bg-slate-800/30 transition-colors">
+                  <tr class="bg-[var(--tz-card-surface)] hover:tz-surface-panel transition-colors">
                      <td class="px-6 py-4">
                         <strong class="block tz-text-primary text-base">SAPIM Race</strong>
                      </td>
                      <td class="px-6 py-4 text-center">
-                        <span class="inline-flex px-2 py-1 rounded bg-sky-500/10 text-sky-400 text-xs font-bold border border-sky-500/20">Butted</span>
+                        <span class="inline-flex px-2 py-1 rounded bg-emerald-50 text-emerald-600 text-xs font-bold border border-emerald-200">Butted</span>
                      </td>
                      <td class="px-6 py-4 text-center font-mono tz-text-primary">5.7g</td>
                      <td class="px-6 py-4 text-center font-mono text-xs">2.0 - 1.8 - 2.0</td>
@@ -465,12 +465,12 @@
                   </tr>
 
                    <!-- 3. D-Light -->
-                  <tr class="bg-[var(--tz-card-surface)] hover:bg-slate-800/30 transition-colors">
+                  <tr class="bg-[var(--tz-card-surface)] hover:tz-surface-panel transition-colors">
                      <td class="px-6 py-4">
                         <strong class="block tz-text-primary text-base">SAPIM D-Light</strong>
                      </td>
                      <td class="px-6 py-4 text-center">
-                        <span class="inline-flex px-2 py-1 rounded bg-sky-500/10 text-sky-400 text-xs font-bold border border-sky-500/20">Butted</span>
+                        <span class="inline-flex px-2 py-1 rounded bg-emerald-50 text-emerald-600 text-xs font-bold border border-emerald-200">Butted</span>
                      </td>
                      <td class="px-6 py-4 text-center font-mono tz-text-primary">4.8g</td>
                      <td class="px-6 py-4 text-center font-mono text-xs">2.0 - 1.65 - 2.0</td>
@@ -480,12 +480,12 @@
                   </tr>
 
                    <!-- 4. CX-Sprint -->
-                  <tr class="bg-[var(--tz-card-surface)] hover:bg-slate-800/30 transition-colors">
+                  <tr class="bg-[var(--tz-card-surface)] hover:tz-surface-panel transition-colors">
                      <td class="px-6 py-4">
                         <strong class="block tz-text-primary text-base">SAPIM CX-Sprint</strong>
                      </td>
                      <td class="px-6 py-4 text-center">
-                        <span class="inline-flex px-2 py-1 rounded bg-indigo-500/10 text-indigo-400 text-xs font-bold border border-indigo-500/20">Aero</span>
+                        <span class="inline-flex px-2 py-1 rounded bg-emerald-50 text-emerald-600 text-xs font-bold border border-emerald-200">Aero</span>
                      </td>
                      <td class="px-6 py-4 text-center font-mono tz-text-primary">5.2g</td>
                      <td class="px-6 py-4 text-center font-mono text-xs">2.25 x 1.25</td>
@@ -495,7 +495,7 @@
                   </tr>
 
                    <!-- 5. CX-Ray -->
-                  <tr class="bg-[var(--tz-card-surface)] hover:bg-slate-800/30 transition-colors">
+                  <tr class="bg-[var(--tz-card-surface)] hover:tz-surface-panel transition-colors">
                      <td class="px-6 py-4">
                         <div class="flex items-center gap-2">
                             <strong class="block tz-text-primary text-base">SAPIM CX-Ray</strong>
@@ -503,9 +503,9 @@
                         </div>
                      </td>
                      <td class="px-6 py-4 text-center">
-                        <span class="inline-flex px-2 py-1 rounded bg-indigo-500/10 text-indigo-400 text-xs font-bold border border-indigo-500/20">Aero</span>
+                        <span class="inline-flex px-2 py-1 rounded bg-emerald-50 text-emerald-600 text-xs font-bold border border-emerald-200">Aero</span>
                      </td>
-                     <td class="px-6 py-4 text-center font-mono text-emerald-400 font-bold">4.4g</td>
+                     <td class="px-6 py-4 text-center font-mono text-emerald-600 font-bold">4.4g</td>
                      <td class="px-6 py-4 text-center font-mono text-xs">0.9 x 2.2</td>
                      <td class="px-6 py-4 text-xs leading-relaxed min-w-[200px]">
                         <strong>Strength: 1600 N/mm²</strong>. The gold standard. Light as titanium, strong as steel. Highest fatigue life.
@@ -513,14 +513,14 @@
                   </tr>
 
                    <!-- 6. Super-CX -->
-                  <tr class="bg-[var(--tz-card-surface)] hover:bg-slate-800/30 transition-colors opacity-75">
+                  <tr class="bg-[var(--tz-card-surface)] hover:tz-surface-panel transition-colors opacity-75">
                      <td class="px-6 py-4">
                         <strong class="block tz-text-primary text-base">SAPIM Super-CX</strong>
                      </td>
                      <td class="px-6 py-4 text-center">
-                        <span class="inline-flex px-2 py-1 rounded bg-indigo-500/10 text-indigo-400 text-xs font-bold border border-indigo-500/20">Aero</span>
+                        <span class="inline-flex px-2 py-1 rounded bg-emerald-50 text-emerald-600 text-xs font-bold border border-emerald-200">Aero</span>
                      </td>
-                     <td class="px-6 py-4 text-center font-mono text-emerald-400 font-bold">3.6g</td>
+                     <td class="px-6 py-4 text-center font-mono text-emerald-600 font-bold">3.6g</td>
                      <td class="px-6 py-4 text-center font-mono text-xs">0.9 x 2.0</td>
                      <td class="px-6 py-4 text-xs leading-relaxed min-w-[200px]">
                          <strong>Strength: 1430 N/mm²</strong>. Lightest stainless spoke ever. Extra light wheels.
@@ -528,12 +528,12 @@
                   </tr>
 
                   <!-- DT Swiss Comp Race -->
-                  <tr class="bg-[var(--tz-card-surface)] hover:bg-slate-800/30 transition-colors border-t-4 border-slate-800">
+                  <tr class="bg-[var(--tz-card-surface)] hover:tz-surface-panel transition-colors border-t-4 tz-border-subtle">
                      <td class="px-6 py-4">
                         <strong class="block tz-text-primary text-base">DT Swiss Comp Race</strong>
                      </td>
                      <td class="px-6 py-4 text-center">
-                        <span class="inline-flex px-2 py-1 rounded bg-sky-500/10 text-sky-400 text-xs font-bold border border-sky-500/20">Butted</span>
+                        <span class="inline-flex px-2 py-1 rounded bg-emerald-50 text-emerald-600 text-xs font-bold border border-emerald-200">Butted</span>
                      </td>
                      <td class="px-6 py-4 text-center font-mono tz-text-primary">5.7g</td>
                      <td class="px-6 py-4 text-center font-mono text-xs">2.0 - 1.6 - 2.0</td>
@@ -543,7 +543,7 @@
                   </tr>
 
                   <!-- YT Aero -->
-                  <tr class="bg-[var(--tz-card-surface)] hover:bg-slate-800/30 transition-colors">
+                  <tr class="bg-[var(--tz-card-surface)] hover:tz-surface-panel transition-colors">
                      <td class="px-6 py-4">
                         <strong class="block tz-text-primary text-base">YT Aero</strong>
                      </td>
@@ -558,27 +558,27 @@
                   </tr>
 
                   <!-- Carbon spoke -->
-                  <tr class="bg-[#0b0e14] hover:bg-slate-900 transition-colors relative overflow-hidden group border-t border-indigo-900/50">
+                  <tr class="tz-surface-card hover:tz-surface-panel transition-colors relative overflow-hidden group border-t border-emerald-200">
                      <td class="px-6 py-4 relative z-10">
                         <div class="flex items-center gap-3">
-                           <div class="w-1 h-8 bg-indigo-500 rounded-full shadow-[0_0_10px_rgba(99,102,241,0.5)]"></div>
+        <div class="w-1 h-8 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(5,150,105,0.5)]"></div>
                            <div>
-                              <strong class="flex items-center gap-2 text-indigo-400 text-base uppercase tracking-wide">
+                              <strong class="flex items-center gap-2 text-emerald-600 text-base uppercase tracking-wide">
                                   Carbon Spoke
                               </strong>
                            </div>
                         </div>
                      </td>
                      <td class="px-6 py-4 text-center relative z-10">
-                        <span class="inline-flex px-2 py-1 rounded bg-indigo-500 text-white text-xs font-bold shadow-lg shadow-indigo-500/30">Aero</span>
+                        <span class="inline-flex px-2 py-1 rounded bg-emerald-500 tz-text-primary text-xs font-bold shadow-lg shadow-emerald-500/30">Aero</span>
                      </td>
-                     <td class="px-6 py-4 text-center text-indigo-300 font-mono font-bold relative z-10">Coming Soon</td>
-                     <td class="px-6 py-4 text-center font-mono text-xs text-indigo-300 relative z-10">Coming Soon</td>
-                     <td class="px-6 py-4 text-xs leading-relaxed max-w-xs text-indigo-200/80 relative z-10 italic">
+                     <td class="px-6 py-4 text-center text-emerald-700 font-mono font-bold relative z-10">Coming Soon</td>
+                     <td class="px-6 py-4 text-center font-mono text-xs text-emerald-700 relative z-10">Coming Soon</td>
+                     <td class="px-6 py-4 text-xs leading-relaxed max-w-xs text-emerald-200/80 relative z-10 italic">
                         Proprietary carbon manufacturing process. Provides 3x specificity stiffness of steel.
                      </td>
                      <!-- Shine effect -->
-                     <td class="absolute inset-0 bg-indigo-500/5 group-hover:bg-indigo-500/10 transition-colors pointer-events-none"></td>
+                     <td class="absolute inset-0 bg-emerald-50 group-hover:bg-emerald-50 transition-colors pointer-events-none"></td>
                   </tr>
                </tbody>
             </table>
@@ -586,8 +586,8 @@
 
          <!-- Additional Info Cards -->
          <div class="grid md:grid-cols-2 gap-4">
-             <div class="bg-slate-800/40 border border-slate-700/50 p-4 rounded-xl flex gap-4 items-start">
-                <span class="bg-slate-700/50 p-2 rounded-lg tz-text-secondary shrink-0">
+             <div class="tz-surface-panel border tz-border-subtle p-4 rounded-xl flex gap-4 items-start">
+                <span class="tz-surface-panel p-2 rounded-lg tz-text-secondary shrink-0">
                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
                 </span>
                 <div>
@@ -595,22 +595,22 @@
                    <p class="text-xs tz-text-secondary">Weights listed are approximations for typical 64pcs (2 wheels, 32H) lengths (260mm-270mm).</p>
                 </div>
              </div>
-             <div class="bg-indigo-500/10 border border-indigo-500/20 p-4 rounded-xl flex gap-4 items-start">
-                 <span class="bg-indigo-500/20 p-2 rounded-lg text-indigo-400 shrink-0">
+             <div class="bg-emerald-50 border border-emerald-200 p-4 rounded-xl flex gap-4 items-start">
+                 <span class="bg-emerald-100 p-2 rounded-lg text-emerald-600 shrink-0">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
                  </span>
                 <div>
-                   <h5 class="text-indigo-300 font-bold text-sm mb-1">Custom Requests</h5>
-                   <p class="text-xs text-indigo-300/70">Need a specific spoke not listed here? We can source Sapim CX-Ray or other premium options upon request.</p>
+                   <h5 class="text-emerald-700 font-bold text-sm mb-1">Custom Requests</h5>
+                   <p class="text-xs text-emerald-600/70">Need a specific spoke not listed here? We can source Sapim CX-Ray or other premium options upon request.</p>
                 </div>
              </div>
          </div>
 
          <!-- Need Help Section -->
-         <div class="mt-8 rounded-2xl bg-gradient-to-r from-slate-900 to-slate-800 p-6 shadow-[0_4px_16px_rgba(0,0,0,0.5)] border border-slate-700/50">
+         <div class="mt-8 rounded-2xl tz-surface-card p-6 shadow-md border tz-border-subtle">
             <div class="flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
                <div class="space-y-2">
-                  <h4 class="text-lg font-bold text-slate-100">Need Spoke Length Help?</h4>
+                  <h4 class="text-lg font-bold tz-text-secondary">Need Spoke Length Help?</h4>
                   <p class="text-sm tz-text-secondary max-w-xl leading-relaxed">
                       If you are looking to purchase individual replacement spokes or rebuild a previous wheelset, you may require assistance with spoke length calculations.
                   </p>
@@ -618,7 +618,7 @@
                <div class="flex flex-col sm:flex-row gap-3 shrink-0">
                   <button
                      type="button"
-                     class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-bold shadow-lg shadow-emerald-500/20 transition-all group"
+                     class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-[var(--tz-action-primary)] hover:bg-[var(--tz-action-primary-hover)] text-white text-sm font-bold shadow-lg shadow-slate-900/20 transition-all group"
                      @click="goToSpokeCalculator"
                   >
                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="group-hover:scale-110 transition-transform"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line><line x1="8" y1="18" x2="8.01" y2="18"></line><line x1="16" y1="18" x2="16.01" y2="18"></line><line x1="12" y1="14" x2="12.01" y2="14"></line><line x1="8" y1="14" x2="8.01" y2="14"></line><line x1="16" y1="14" x2="16.01" y2="14"></line><line x1="12" y1="10" x2="12.01" y2="10"></line><line x1="8" y1="10" x2="8.01" y2="10"></line><line x1="16" y1="10" x2="16.01" y2="10"></line></svg>
@@ -627,7 +627,7 @@
 
                   <button
                      type="button"
-                     class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-sky-500 hover:bg-sky-400 text-white text-sm font-bold shadow-lg shadow-sky-500/20 transition-all group"
+                     class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-emerald-500 hover:bg-emerald-400 tz-text-primary text-sm font-bold shadow-lg shadow-emerald-500/20 transition-all group"
                      @click="openSupportChat"
                   >
                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="group-hover:scale-110 transition-transform"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
@@ -654,7 +654,7 @@ const { openChat } = useChatWidget()
 const activeTab = ref<'basic-concepts' | 'choose-spoke'>('basic-concepts')
 
 const goToSpokeCalculator = async () => {
-  await router.push(localePath('/spoke-calculator'))
+await router.push(localePath('/resources/spoke-calculator'))
 }
 
 const openSupportChat = () => {

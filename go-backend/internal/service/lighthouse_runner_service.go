@@ -66,21 +66,24 @@ type LighthouseRunnerCaptureInput struct {
 }
 
 type LighthouseRunnerIssue struct {
-	ID             string                                                `json:"id"`
-	Kind           string                                                `json:"kind"`
-	RuleVersion    string                                                `json:"rule_version"`
-	Title          string                                                `json:"title"`
-	Description    string                                                `json:"description,omitempty"`
-	Score          *float64                                              `json:"score,omitempty"`
-	DisplayValue   string                                                `json:"display_value,omitempty"`
-	NumericValue   *float64                                              `json:"numeric_value,omitempty"`
-	SavingsMS      *float64                                              `json:"savings_ms,omitempty"`
-	SavingsBytes   *int64                                                `json:"savings_bytes,omitempty"`
-	Severity       string                                                `json:"severity"`
-	Resources      []LighthouseRunnerResource                            `json:"resources,omitempty"`
-	Headings       []sitequalitydomain.SiteQualityHeadingEvidence        `json:"headings,omitempty"`
-	StructuredData []sitequalitydomain.SiteQualityStructuredDataEvidence `json:"structured_data,omitempty"`
-	Remediation    *LighthouseRunnerRemediation                          `json:"remediation,omitempty"`
+	ID              string                                                `json:"id"`
+	RuleID          string                                                `json:"rule_id"`
+	ProviderAuditID string                                                `json:"provider_audit_id,omitempty"`
+	Kind            string                                                `json:"kind"`
+	RuleVersion     string                                                `json:"rule_version"`
+	Title           string                                                `json:"title"`
+	Description     string                                                `json:"description,omitempty"`
+	Score           *float64                                              `json:"score,omitempty"`
+	DisplayValue    string                                                `json:"display_value,omitempty"`
+	NumericValue    *float64                                              `json:"numeric_value,omitempty"`
+	SavingsMS       *float64                                              `json:"savings_ms,omitempty"`
+	SavingsBytes    *int64                                                `json:"savings_bytes,omitempty"`
+	Severity        string                                                `json:"severity"`
+	Resources       []LighthouseRunnerResource                            `json:"resources,omitempty"`
+	Links           []sitequalitydomain.SiteQualityLinkEvidence           `json:"links,omitempty"`
+	Headings        []sitequalitydomain.SiteQualityHeadingEvidence        `json:"headings,omitempty"`
+	StructuredData  []sitequalitydomain.SiteQualityStructuredDataEvidence `json:"structured_data,omitempty"`
+	Remediation     *LighthouseRunnerRemediation                          `json:"remediation,omitempty"`
 }
 
 type LighthouseRunnerResource struct {
@@ -682,6 +685,7 @@ func applySiteQualityResult(
 		intents...,
 	)
 	issues = append(issues, structuredDataIssues...)
+	decorateSiteQualityIssueIDs(issues)
 	sortSiteQualityIssues(issues)
 	encoded, err := json.Marshal(issues)
 	if err != nil {
@@ -762,19 +766,22 @@ func normalizeSiteQualityIssues(audits map[string]siteQualityAPIAudit) ([]Lighth
 			continue
 		}
 		issue := LighthouseRunnerIssue{
-			ID:           id,
-			Kind:         rule.Kind,
-			RuleVersion:  siteQualityAuditRuleVersion,
-			Title:        strings.TrimSpace(audit.Title),
-			Description:  strings.TrimSpace(audit.Description),
-			Score:        copyFloat64(audit.Score),
-			DisplayValue: strings.TrimSpace(audit.DisplayValue),
-			SavingsMS:    copyFloat64(audit.Details.OverallSavingsMS),
-			SavingsBytes: copyInt64(audit.Details.OverallSavingsBytes),
-			Severity:     siteQualityAuditSeverity(audit),
-			Resources:    siteQualityAuditResources(audit),
-			Headings:     siteQualityAuditHeadingEvidence(id, audit),
-			Remediation:  siteQualityIssueRemediation(id),
+			ID:              id,
+			RuleID:          siteQualityRuleIDForAudit(id),
+			ProviderAuditID: siteQualityProviderAuditIDForAudit(id),
+			Kind:            rule.Kind,
+			RuleVersion:     siteQualityAuditRuleVersion,
+			Title:           strings.TrimSpace(audit.Title),
+			Description:     strings.TrimSpace(audit.Description),
+			Score:           copyFloat64(audit.Score),
+			DisplayValue:    strings.TrimSpace(audit.DisplayValue),
+			SavingsMS:       copyFloat64(audit.Details.OverallSavingsMS),
+			SavingsBytes:    copyInt64(audit.Details.OverallSavingsBytes),
+			Severity:        siteQualityAuditSeverity(audit),
+			Resources:       siteQualityAuditResources(audit),
+			Links:           siteQualityAuditLinkEvidence(id, audit),
+			Headings:        siteQualityAuditHeadingEvidence(id, audit),
+			Remediation:     siteQualityIssueRemediation(id),
 		}
 		if rule.DefaultSeverity != "" {
 			issue.Severity = rule.DefaultSeverity
@@ -789,6 +796,21 @@ func normalizeSiteQualityIssues(audits map[string]siteQualityAPIAudit) ([]Lighth
 	}
 	sortSiteQualityIssues(issues)
 	return issues, nil
+}
+
+func decorateSiteQualityIssueIDs(issues []LighthouseRunnerIssue) {
+	for index := range issues {
+		issue := &issues[index]
+		auditID := strings.TrimSpace(issue.ID)
+		if auditID == "" {
+			auditID = strings.TrimSpace(issue.RuleID)
+		}
+		issue.RuleID, issue.ProviderAuditID = sitequalitydomain.NormalizeRuleIdentity(
+			issue.RuleID,
+			auditID,
+			issue.ProviderAuditID,
+		)
+	}
 }
 
 func siteQualityAuditResources(audit siteQualityAPIAudit) []LighthouseRunnerResource {
@@ -824,6 +846,51 @@ func siteQualityAuditResources(audit siteQualityAPIAudit) []LighthouseRunnerReso
 		return resources[i].URL < resources[j].URL
 	})
 	return resources
+}
+
+func siteQualityAuditLinkEvidence(
+	auditID string,
+	audit siteQualityAPIAudit,
+) []sitequalitydomain.SiteQualityLinkEvidence {
+	if auditID != siteQualityLinkTextAuditID {
+		return nil
+	}
+	links := make([]sitequalitydomain.SiteQualityLinkEvidence, 0, len(audit.Details.Items))
+	seen := make(map[string]struct{}, len(audit.Details.Items))
+	for _, rawItem := range audit.Details.Items {
+		var item struct {
+			Href     string `json:"href"`
+			Text     string `json:"text"`
+			TextLang string `json:"textLang"`
+		}
+		if err := json.Unmarshal(rawItem, &item); err != nil {
+			continue
+		}
+		link := sitequalitydomain.SiteQualityLinkEvidence{
+			Href:     strings.TrimSpace(item.Href),
+			Text:     strings.TrimSpace(item.Text),
+			TextLang: strings.TrimSpace(item.TextLang),
+		}
+		if link.Href == "" && link.Text == "" {
+			continue
+		}
+		key := strings.Join([]string{link.Href, link.Text, link.TextLang}, "\x00")
+		if _, exists := seen[key]; exists {
+			continue
+		}
+		seen[key] = struct{}{}
+		links = append(links, link)
+	}
+	sort.SliceStable(links, func(i, j int) bool {
+		if links[i].Href != links[j].Href {
+			return links[i].Href < links[j].Href
+		}
+		if links[i].Text != links[j].Text {
+			return links[i].Text < links[j].Text
+		}
+		return links[i].TextLang < links[j].TextLang
+	})
+	return links
 }
 
 func siteQualityAuditHeadingEvidence(
@@ -989,6 +1056,7 @@ func siteQualityRunView(run sitequalitydomain.SiteQualityRun) LighthouseRunnerRu
 	if strings.TrimSpace(run.IssuesJSON) != "" {
 		_ = json.Unmarshal([]byte(run.IssuesJSON), &issues)
 	}
+	decorateSiteQualityIssueIDs(issues)
 	return LighthouseRunnerRunView{
 		ID:                       run.ID,
 		TargetID:                 run.TargetID,

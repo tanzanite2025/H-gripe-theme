@@ -81,6 +81,8 @@ export const useShippingTemplateManager = (options: Record<string, any> = {}) =>
   const ruleDisplayPriceFieldsForType = (templateType: string) =>
     templateType === 'price' ? RULE_DISPLAY_PRICE_FIELDS : ['fee', 'additional']
 
+  const normalizedTemplateCurrency = () => normalizeCurrencyCode(templateForm.currency) || 'USD'
+
   const showCreateTemplateDialog = () => {
     templateDialogMode.value = 'create'
     resetReactive(templateForm, defaultShippingTemplateForm())
@@ -93,6 +95,7 @@ export const useShippingTemplateManager = (options: Record<string, any> = {}) =>
     resetReactive(templateForm, {
       ...defaultShippingTemplateForm(),
       ...template,
+      currency: normalizeCurrencyCode(template.currency) || 'USD',
       free_threshold: Number(template.free_threshold || 0),
       default_fee: Number(template.default_fee || 0),
       display_price_snapshots: normalizeDisplayPriceSnapshotMap(template.display_price_snapshots, TEMPLATE_DISPLAY_PRICE_FIELDS),
@@ -100,6 +103,7 @@ export const useShippingTemplateManager = (options: Record<string, any> = {}) =>
       rules: Array.isArray(template.rules) ? template.rules.map((rule: any) => ({
         id: rule.id,
         region: rule.region || '',
+        currency: normalizeCurrencyCode(rule.currency) || normalizeCurrencyCode(template.currency) || 'USD',
         min_value: Number(rule.min_value || 0),
         max_value: Number(rule.max_value || 0),
         fee: Number(rule.fee || 0),
@@ -114,6 +118,7 @@ export const useShippingTemplateManager = (options: Record<string, any> = {}) =>
   const normalizeTemplateRules = () => (Array.isArray(templateForm.rules) ? templateForm.rules : [])
     .map((rule: any) => ({
       region: String(rule.region || '').trim().toUpperCase(),
+      currency: normalizeCurrencyCode(rule.currency) || normalizedTemplateCurrency(),
       min_value: Number(rule.min_value || 0),
       max_value: Number(rule.max_value || 0),
       fee: Number(rule.fee || 0),
@@ -125,6 +130,7 @@ export const useShippingTemplateManager = (options: Record<string, any> = {}) =>
     clearErrors(templateErrors)
     if (!templateForm.name?.trim()) templateErrors.name = '请输入模板名称'
     if (!['weight', 'quantity', 'price'].includes(templateForm.type)) templateErrors.type = '请选择计费类型'
+    if (!normalizeCurrencyCode(templateForm.currency)) templateErrors.currency = '请输入运费录入币种'
     if (Number(templateForm.default_fee) < 0) templateErrors.default_fee = '默认运费不能小于 0'
 
     const invalidRule = normalizeTemplateRules().find((rule: any) =>
@@ -146,6 +152,7 @@ export const useShippingTemplateManager = (options: Record<string, any> = {}) =>
       const payload = {
         name: templateForm.name.trim(),
         type: templateForm.type,
+        currency: normalizedTemplateCurrency(),
         free_shipping: Boolean(templateForm.free_shipping),
         free_threshold: Number(templateForm.free_threshold || 0),
         default_fee: Number(templateForm.default_fee || 0),

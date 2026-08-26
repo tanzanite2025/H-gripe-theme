@@ -12,6 +12,8 @@ import TestReportContent from '~/components/TestReportContent.vue'
 
 definePageMeta({
   layout: 'support',
+  footerLabelKey: 'support.nav.testReport',
+  footerLabelFallback: 'Test Report',
 })
 
 useHead({
@@ -25,7 +27,7 @@ useHead({
   font-size: var(--tz-type-page-title);
   line-height: 1.18;
   font-weight: 600;
-  color: #f9fafb;
+  color: var(--tz-text-primary);
 }
 
 .support-page__title--sr-only {

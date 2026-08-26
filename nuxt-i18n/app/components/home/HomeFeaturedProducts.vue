@@ -1,17 +1,17 @@
 <template>
-  <section id="featured-products" class="bg-transparent py-8 text-white sm:py-12 lg:py-20">
+  <section id="featured-products" class="bg-transparent py-8 tz-text-primary sm:py-12 lg:py-20">
     <div class="page-content-shell px-0 md:px-6">
       <div class="grid items-start gap-5 sm:gap-10 lg:grid-cols-12 lg:gap-16">
         <div class="self-start space-y-3 sm:space-y-6 lg:sticky lg:top-32 lg:col-span-3">
           <div
-            class="inline-flex items-center gap-2 rounded-full border border-[#B5FF6D]/30 bg-[#B5FF6D]/10 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-[#B5FF6D]"
+            class="inline-flex items-center gap-2 rounded-full border border-[#059669]/30 bg-[#059669]/10 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-[#059669]"
           >
             <Icon name="lucide:star" class="h-3.5 w-3.5" aria-hidden="true" />
             {{ t('home.featuredProducts.eyebrow') }}
           </div>
 
           <div>
-            <h2 class="text-2xl font-bold leading-tight text-white sm:text-3xl">
+            <h2 class="text-2xl font-bold leading-tight tz-text-primary sm:text-3xl">
               {{ t('home.featuredProducts.heading') }}
             </h2>
           </div>

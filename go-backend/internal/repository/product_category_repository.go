@@ -2,6 +2,7 @@ package repository
 
 import (
 	"commerce-platform/internal/domain/product"
+	"errors"
 
 	"gorm.io/gorm"
 )
@@ -49,6 +50,22 @@ func (r *ProductCategoryRepository) ListWithTranslations(includeDisabled bool, l
 func (r *ProductCategoryRepository) FindByID(id uint) (*product.ProductCategory, error) {
 	var category product.ProductCategory
 	if err := r.db.First(&category, id).Error; err != nil {
+		return nil, err
+	}
+	return &category, nil
+}
+
+func (r *ProductCategoryRepository) FindBySlug(slug string, includeDisabled bool) (*product.ProductCategory, error) {
+	var category product.ProductCategory
+	query := r.db.Model(&product.ProductCategory{}).
+		Preload("Translations", func(db *gorm.DB) *gorm.DB {
+			return db.Order("locale ASC, id ASC")
+		}).
+		Where("slug = ?", slug)
+	if !includeDisabled {
+		query = query.Where("is_enabled = ?", true)
+	}
+	if err := query.First(&category).Error; err != nil {
 		return nil, err
 	}
 	return &category, nil
@@ -105,6 +122,40 @@ func (r *ProductCategoryRepository) Update(category *product.ProductCategory, de
 		}
 		return nil
 	})
+}
+
+func (r *ProductCategoryRepository) UpdateSEO(categoryID uint, locale, metaTitle, metaDescription, intro string) error {
+	if locale == "en" {
+		return r.db.Model(&product.ProductCategory{}).
+			Where("id = ?", categoryID).
+			Updates(map[string]interface{}{
+				"meta_title":       metaTitle,
+				"meta_description": metaDescription,
+				"seo_intro":        intro,
+			}).Error
+	}
+
+	var translation product.ProductCategoryTranslation
+	err := r.db.Where("product_category_id = ? AND locale = ?", categoryID, locale).
+		First(&translation).Error
+	if err != nil {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return err
+		}
+		return r.db.Create(&product.ProductCategoryTranslation{
+			ProductCategoryID: categoryID,
+			Locale:            locale,
+			MetaTitle:         metaTitle,
+			MetaDesc:          metaDescription,
+			SEOIntro:          intro,
+		}).Error
+	}
+
+	return r.db.Model(&translation).Updates(map[string]interface{}{
+		"meta_title":       metaTitle,
+		"meta_description": metaDescription,
+		"seo_intro":        intro,
+	}).Error
 }
 
 func (r *ProductCategoryRepository) Delete(id uint) error {

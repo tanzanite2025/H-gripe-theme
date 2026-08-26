@@ -21,10 +21,13 @@ func NewSitemapHandler(catalog *service.StorefrontRouteCatalogService) *SitemapH
 }
 
 type SitemapRoute struct {
-	Loc        string  `json:"loc"`
-	LastMod    string  `json:"lastmod,omitempty"`
-	ChangeFreq string  `json:"changefreq"`
-	Priority   float64 `json:"priority"`
+	Loc           string  `json:"loc"`
+	LastMod       string  `json:"lastmod,omitempty"`
+	ChangeFreq    string  `json:"changefreq"`
+	Priority      float64 `json:"priority"`
+	Locale        string  `json:"locale,omitempty"`
+	SourceType    string  `json:"source_type,omitempty"`
+	CanonicalPath string  `json:"canonical_path,omitempty"`
 }
 
 func (h *SitemapHandler) List(c *gin.Context) {
@@ -66,9 +69,12 @@ func sitemapRouteForEntry(entry seo.StorefrontRouteCatalogEntry) SitemapRoute {
 	}
 
 	route := SitemapRoute{
-		Loc:        entry.Path,
-		ChangeFreq: "monthly",
-		Priority:   0.6,
+		Loc:           entry.Path,
+		ChangeFreq:    "monthly",
+		Priority:      0.6,
+		Locale:        entry.Locale,
+		SourceType:    entry.SourceType,
+		CanonicalPath: entry.CanonicalPath,
 	}
 	switch entry.SourceType {
 	case seo.RouteSourceProduct:

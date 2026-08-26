@@ -33,62 +33,77 @@ func TestSettingServicePublicAccessFiltersPrivateSettings(t *testing.T) {
 	assert.Equal(t, []string{"site"}, groups)
 }
 
-func TestGetSiteSettingsUsesBrandTitleAsPublicSiteName(t *testing.T) {
+func TestGetSiteSettingsUsesSiteNameAndIgnoresLegacyBrandTitle(t *testing.T) {
 	_, settingService := newTestSettingService(t)
 
 	require.NoError(t, settingService.BatchSet([]settingdomain.Setting{
-		{Key: "site_name", Value: "Legacy Name", Type: "string", Locale: "en", Group: "site", IsPublic: true},
-		{Key: "brand_title", Value: "Current Brand", Type: "string", Locale: "en", Group: "site", IsPublic: true},
+		{Key: "site_name", Value: "Current Site", Type: "string", Locale: "en", Group: "site", IsPublic: true},
+		{Key: "brand_title", Value: "Old Brand", Type: "string", Locale: "en", Group: "site", IsPublic: true},
 	}))
 
 	settings, err := settingService.GetSiteSettings("en")
 	require.NoError(t, err)
-	assert.Equal(t, "Current Brand", settings.BrandTitle)
-	assert.Equal(t, "Current Brand", settings.SiteName)
+	assert.Equal(t, "Current Site", settings.SiteName)
 }
 
-func TestGetSiteSettingsFallsBackToLegacySiteName(t *testing.T) {
+func TestGetSiteSettingsKeepsEmptySiteNameEmpty(t *testing.T) {
 	_, settingService := newTestSettingService(t)
 
 	require.NoError(t, settingService.BatchSet([]settingdomain.Setting{
-		{Key: "site_name", Value: "Legacy Name", Type: "string", Locale: "en", Group: "site", IsPublic: true},
+		{Key: "site_name", Value: "", Type: "string", Locale: "en", Group: "site", IsPublic: true},
 	}))
 
 	settings, err := settingService.GetSiteSettings("en")
 	require.NoError(t, err)
-	assert.Equal(t, "Legacy Name", settings.BrandTitle)
-	assert.Equal(t, "Legacy Name", settings.SiteName)
+	assert.Empty(t, settings.SiteName)
 }
 
 func TestGetSiteSettingsFallsBackToEnglishForUnconfiguredLocale(t *testing.T) {
 	_, settingService := newTestSettingService(t)
 
 	require.NoError(t, settingService.BatchSet([]settingdomain.Setting{
-		{Key: "brand_title", Value: "Global Brand", Type: "string", Locale: "en", Group: "site", IsPublic: true},
-		{Key: "contact_email", Value: "brand@example.test", Type: "string", Locale: "en", Group: "site", IsPublic: true},
+		{Key: "site_name", Value: "Global Site", Type: "string", Locale: "en", Group: "site", IsPublic: true},
+		{Key: "contact_email", Value: "site@example.test", Type: "string", Locale: "en", Group: "site", IsPublic: true},
 	}))
 
 	settings, err := settingService.GetSiteSettings("zh_cn")
 	require.NoError(t, err)
-	assert.Equal(t, "Global Brand", settings.BrandTitle)
-	assert.Equal(t, "Global Brand", settings.SiteName)
-	assert.Equal(t, "brand@example.test", settings.ContactEmail)
+	assert.Equal(t, "Global Site", settings.SiteName)
+	assert.Equal(t, "site@example.test", settings.ContactEmail)
 }
 
 func TestGetSiteSettingsUsesLocaleValueBeforeEnglishFallback(t *testing.T) {
 	_, settingService := newTestSettingService(t)
 
 	require.NoError(t, settingService.BatchSet([]settingdomain.Setting{
-		{Key: "brand_title", Value: "Global Brand", Type: "string", Locale: "en", Group: "site", IsPublic: true},
-		{Key: "contact_email", Value: "brand@example.test", Type: "string", Locale: "en", Group: "site", IsPublic: true},
-		{Key: "brand_title", Value: "中文品牌", Type: "string", Locale: "zh_cn", Group: "site", IsPublic: true},
+		{Key: "site_name", Value: "Global Site", Type: "string", Locale: "en", Group: "site", IsPublic: true},
+		{Key: "contact_email", Value: "site@example.test", Type: "string", Locale: "en", Group: "site", IsPublic: true},
+		{Key: "site_name", Value: "中文站点", Type: "string", Locale: "zh_cn", Group: "site", IsPublic: true},
 	}))
 
 	settings, err := settingService.GetSiteSettings("zh-CN")
 	require.NoError(t, err)
-	assert.Equal(t, "中文品牌", settings.BrandTitle)
-	assert.Equal(t, "中文品牌", settings.SiteName)
-	assert.Equal(t, "brand@example.test", settings.ContactEmail)
+	assert.Equal(t, "中文站点", settings.SiteName)
+	assert.Equal(t, "site@example.test", settings.ContactEmail)
+}
+
+func TestGetSiteSettingsRemovesSocialLinkSizeAndUnsupportedPlatforms(t *testing.T) {
+	_, settingService := newTestSettingService(t)
+
+	require.NoError(t, settingService.BatchSet([]settingdomain.Setting{
+		{
+			Key:      "social_links",
+			Value:    `[{"network":"facebook","url":"https://facebook.example","label":"Facebook","size":28},{"network":"linkedin","url":"https://linkedin.example"}]`,
+			Type:     "string",
+			Locale:   "en",
+			Group:    "site",
+			IsPublic: true,
+		},
+	}))
+
+	settings, err := settingService.GetSiteSettings("en")
+	require.NoError(t, err)
+	assert.JSONEq(t, `[{"network":"facebook","url":"https://facebook.example","label":"Facebook"}]`, settings.SocialLinks)
 }
 
 func newTestSettingService(t *testing.T) (*gorm.DB, *SettingService) {

@@ -6,9 +6,14 @@ import (
 
 	"commerce-platform/internal/domain/product"
 	"commerce-platform/internal/domain/ticket"
+	"commerce-platform/internal/domain/visitor"
+	"commerce-platform/internal/repository"
 
+	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 func TestCustomerServiceReplyMetricsPairsLatestCustomerTurn(t *testing.T) {
@@ -57,4 +62,78 @@ func TestCustomerServiceContextProductImageUsesCanonicalPublicURL(t *testing.T) 
 
 	require.Equal(t, "https://shop.example.test/uploads/products/wheel.jpg", firstProductImage(item, resolver))
 	require.Equal(t, "http://media.internal:8080/uploads/products/wheel.jpg", item.Media[0].URL)
+}
+
+func TestCustomerServiceContextAppliesVisitorTimezoneBeforeAccountTimezone(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
+	require.NoError(t, err)
+
+	sqlDB, err := db.DB()
+	require.NoError(t, err)
+	sqlDB.SetMaxOpenConns(1)
+	t.Cleanup(func() {
+		_ = sqlDB.Close()
+	})
+	require.NoError(t, db.AutoMigrate(&visitor.Profile{}))
+
+	userID := uint(42)
+	require.NoError(t, db.Create(&visitor.Profile{
+		UserID:     &userID,
+		Timezone:   "Europe/Berlin",
+		LastSeenAt: time.Now().UTC(),
+	}).Error)
+	require.NoError(t, db.Create(&visitor.Profile{
+		CustomerServiceVisitorHash: "visitor-hash",
+		UserID:                     &userID,
+		Timezone:                   "America/Los_Angeles",
+		LastSeenAt:                 time.Now().UTC(),
+	}).Error)
+
+	contextService := &CustomerServiceContextService{
+		visitorProfileService: NewVisitorProfileService(repository.NewVisitorProfileRepository(db)),
+	}
+	context := &CustomerServiceContext{
+		Contact: CustomerServiceContextContact{TimezoneSource: "not_captured"},
+	}
+
+	contextService.applyVisitorTimezone(context, "visitor-hash", userID)
+
+	assert.Equal(t, "America/Los_Angeles", context.Contact.Timezone)
+	assert.Equal(t, "visitor_profile", context.Contact.TimezoneSource)
+}
+
+func TestCustomerServiceContextFallsBackToAccountTimezoneWhenVisitorProfileMissing(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
+	require.NoError(t, err)
+
+	sqlDB, err := db.DB()
+	require.NoError(t, err)
+	sqlDB.SetMaxOpenConns(1)
+	t.Cleanup(func() {
+		_ = sqlDB.Close()
+	})
+	require.NoError(t, db.AutoMigrate(&visitor.Profile{}))
+
+	userID := uint(84)
+	require.NoError(t, db.Create(&visitor.Profile{
+		UserID:     &userID,
+		Timezone:   "Asia/Tokyo",
+		LastSeenAt: time.Now().UTC(),
+	}).Error)
+
+	contextService := &CustomerServiceContextService{
+		visitorProfileService: NewVisitorProfileService(repository.NewVisitorProfileRepository(db)),
+	}
+	context := &CustomerServiceContext{
+		Contact: CustomerServiceContextContact{TimezoneSource: "not_captured"},
+	}
+
+	contextService.applyVisitorTimezone(context, "missing-visitor-profile", userID)
+
+	assert.Equal(t, "Asia/Tokyo", context.Contact.Timezone)
+	assert.Equal(t, "visitor_profile", context.Contact.TimezoneSource)
 }

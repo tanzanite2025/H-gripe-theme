@@ -3,8 +3,8 @@
     
     <!-- Hero Section -->
     <section class="relative text-center">
-      <h2 class="text-2xl md:text-3xl font-bold text-white mb-4 tracking-tight">
-        Certified <span class="text-teal-400">Quality & Safety</span>
+      <h2 class="text-2xl md:text-3xl font-bold tz-text-primary mb-4 tracking-tight">
+        Certified <span class="text-emerald-600">Quality & Safety</span>
       </h2>
       <p class="tz-text-secondary max-w-3xl mx-auto text-base md:text-lg leading-relaxed font-light">
         Our products are UCI approved and exceed ISO 4210 international standards, ensuring ultimate safety for every ride.
@@ -13,41 +13,41 @@
 
     <!-- UCI Accreditation (Highlight) -->
     <section class="max-w-none w-full">
-      <div class="relative bg-[var(--tz-card-surface)] rounded-3xl overflow-hidden border border-slate-700/50 shadow-2xl">
+      <div class="relative bg-[var(--tz-card-surface)] rounded-3xl overflow-hidden border tz-border-subtle shadow-lg">
         <div class="grid grid-cols-1 md:grid-cols-2">
             <!-- Content -->
             <div class="p-4 md:p-12 flex flex-col justify-center">
-                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 w-fit mb-6">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full tz-surface-subtle border tz-border-subtle w-fit mb-6">
                    <div class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
                    <span class="text-xs font-semibold tz-text-secondary tracking-wider uppercase">Official Certification</span>
                 </div>
-                <h3 class="text-2xl md:text-3xl font-bold text-white mb-4">UCI Approved Wheels</h3>
+                <h3 class="text-2xl md:text-3xl font-bold tz-text-primary mb-4">UCI Approved Wheels</h3>
                 <p class="tz-text-secondary mb-6 leading-relaxed text-sm md:text-base">
                     Our wheels have passed the stringent impact tests required by the Union Cycliste Internationale (UCI). They are fully approved for use in all UCI-sanctioned road, track, and cyclo-cross races.
                 </p>
                  <ul class="space-y-3 mb-8">
                     <li v-for="item in uciModels" :key="item" class="flex items-center gap-3">
-                        <svg class="w-5 h-5 text-teal-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                        <svg class="w-5 h-5 text-emerald-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
                         <span class="tz-text-primary text-sm">{{ item }}</span>
                     </li>
                  </ul>
-                 <a href="https://www.uci.org" target="_blank" rel="noopener" class="inline-flex items-center gap-2 text-teal-400 hover:text-teal-300 font-semibold transition-colors text-sm group w-fit">
+                 <a href="https://www.uci.org" target="_blank" rel="noopener" class="inline-flex items-center gap-2 text-emerald-600 hover:text-emerald-700 font-semibold transition-colors text-sm group w-fit">
                     <span>View on UCI Website</span>
                     <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
                  </a>
             </div>
             <!-- Visual -->
-            <div class="relative min-h-[300px] md:min-h-full bg-[var(--tz-card-surface)] border-t border-slate-800/50 flex items-center justify-center p-8 overflow-hidden group md:border-l md:border-t-0">
+            <div class="relative min-h-[300px] md:min-h-full bg-[var(--tz-card-surface)] border-t tz-border-subtle flex items-center justify-center p-8 overflow-hidden group md:border-l md:border-t-0">
                <!-- Decorative elements -->
-               <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-teal-500/10 via-transparent to-transparent opacity-50"></div>
+               <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-emerald-500/10 via-transparent to-transparent opacity-50"></div>
                
                <!-- Placeholder for UCI Logo/Wheel Image -->
                <div class="relative z-10 text-center">
                    <!-- UCI Logo Simulation -->
-                    <div class="w-48 h-16 mx-auto mb-6 bg-white/5 backdrop-blur rounded-lg border border-white/10 flex items-center justify-center">
+                    <div class="w-48 h-16 mx-auto mb-6 tz-surface-subtle backdrop-blur rounded-lg border tz-border-subtle flex items-center justify-center">
                         <span class="text-2xl font-black tracking-widest tz-text-muted">UCI</span>
                     </div>
-                    <div class="w-48 h-48 mx-auto rounded-full border-4 border-white/10 bg-black/20 shadow-2xl relative group-hover:scale-105 transition-transform duration-700 flex items-center justify-center">
+                    <div class="w-48 h-48 mx-auto rounded-full border-4 tz-border-subtle bg-black/20 shadow-lg relative group-hover:scale-105 transition-transform duration-700 flex items-center justify-center">
                         <div class="tz-text-muted tz-micro-label uppercase tracking-widest">
                            UCI Approved<br>Sticker
                         </div>
@@ -61,19 +61,19 @@
     <!-- Standards & Certificates Grid -->
     <section class="max-w-none w-full">
         <div class="text-center mb-6">
-            <h3 class="text-xl md:text-2xl font-bold text-white mb-3">Global Standards Compliance</h3>
+            <h3 class="text-xl md:text-2xl font-bold tz-text-primary mb-3">Global Standards Compliance</h3>
             <p class="tz-text-secondary text-sm max-w-2xl mx-auto">Verified by leading third-party testing laboratories including SGS and Intertek.</p>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div v-for="(cert, index) in certificates" :key="index" class="group relative bg-[var(--tz-card-surface)] rounded-2xl p-4 md:p-6 border border-slate-700/50 hover:border-teal-500/30 transition-all duration-300 hover:shadow-xl hover:shadow-teal-500/5 hover:-translate-y-1">
+            <div v-for="(cert, index) in certificates" :key="index" class="group relative bg-[var(--tz-card-surface)] rounded-2xl p-4 md:p-6 border tz-border-subtle hover:border-emerald-300 transition-all duration-300 hover:shadow-lg hover:shadow-emerald-500/5 hover:-translate-y-1">
                 
-                <h4 class="text-lg font-bold text-white mb-2">{{ cert.title }}</h4>
+                <h4 class="text-lg font-bold tz-text-primary mb-2">{{ cert.title }}</h4>
                 <p class="text-xs tz-text-secondary mb-4 h-10 line-clamp-2">{{ cert.description }}</p>
                 
-                <div class="flex items-center justify-between mt-auto pt-4 border-t border-slate-800">
+                <div class="flex items-center justify-between mt-auto pt-4 border-t tz-border-subtle">
                     <span class="text-xs font-mono tz-text-muted">{{ cert.code }}</span>
-                    <button class="text-xs font-semibold text-white bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-lg transition-colors cursor-not-allowed opacity-50">
+                    <button class="text-xs font-semibold tz-text-primary tz-surface-panel hover:tz-surface-panel px-3 py-1.5 rounded-lg transition-colors cursor-not-allowed opacity-50">
                         View Report
                     </button>
                 </div>
@@ -83,30 +83,30 @@
 
     <!-- Internal Standards -->
     <section class="max-w-none w-full">
-        <div class="bg-[var(--tz-card-surface)] backdrop-blur rounded-2xl border border-slate-800 p-4 md:p-8 text-center relative overflow-hidden">
+        <div class="bg-[var(--tz-card-surface)] backdrop-blur rounded-2xl border tz-border-subtle p-4 md:p-8 text-center relative overflow-hidden">
              <!-- Background Glow -->
-             <div class="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-lg bg-teal-500/5 blur-[80px] pointer-events-none"></div>
+             <div class="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-lg bg-emerald-50 blur-[80px] pointer-events-none"></div>
              
              <div class="relative z-10">
-                 <h3 class="text-xl font-bold text-white mb-4">In-House Standard</h3>
+                 <h3 class="text-xl font-bold tz-text-primary mb-4">In-House Standard</h3>
                  <p class="tz-text-secondary text-sm leading-relaxed mb-6">
-                     We don't just meet standards; we set them. Our internal testing protocols are rigorous, subjecting simulated road conditions to forces <span class="text-teal-400 font-bold">120% - 150%</span> higher than ISO 4210 requirements.
+                     We don't just meet standards; we set them. Our internal testing protocols are rigorous, subjecting simulated road conditions to forces <span class="text-emerald-600 font-bold">120% - 150%</span> higher than ISO 4210 requirements.
                  </p>
                  <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                     <div class="p-3 rounded-xl bg-black/20 border border-white/5">
-                         <div class="text-2xl font-bold text-white mb-1">100+</div>
+                     <div class="p-3 rounded-xl bg-black/20 border tz-border-strong/5">
+                         <div class="text-2xl font-bold tz-text-primary mb-1">100+</div>
                          <div class="tz-micro-label tz-text-secondary uppercase tracking-wider">Test Cycles</div>
                      </div>
-                     <div class="p-3 rounded-xl bg-black/20 border border-white/5">
-                         <div class="text-2xl font-bold text-white mb-1">100%</div>
+                     <div class="p-3 rounded-xl bg-black/20 border tz-border-strong/5">
+                         <div class="text-2xl font-bold tz-text-primary mb-1">100%</div>
                          <div class="tz-micro-label tz-text-secondary uppercase tracking-wider">QC Inspection</div>
                      </div>
-                      <div class="p-3 rounded-xl bg-black/20 border border-white/5">
-                         <div class="text-2xl font-bold text-white mb-1">3 Year</div>
+                      <div class="p-3 rounded-xl bg-black/20 border tz-border-strong/5">
+                         <div class="text-2xl font-bold tz-text-primary mb-1">3 Year</div>
                          <div class="tz-micro-label tz-text-muted uppercase tracking-wider">Warranty</div>
                      </div>
-                      <div class="p-3 rounded-xl bg-black/20 border border-white/5">
-                         <div class="text-2xl font-bold text-white mb-1">24/7</div>
+                      <div class="p-3 rounded-xl bg-black/20 border tz-border-strong/5">
+                         <div class="text-2xl font-bold tz-text-primary mb-1">24/7</div>
                          <div class="tz-micro-label tz-text-secondary uppercase tracking-wider">Support</div>
                      </div>
                  </div>

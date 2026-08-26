@@ -19,13 +19,13 @@
     <div v-else class="warranty-check__content">
       <!-- 查询表单 -->
       <div class="warranty-check__form">
-        <label for="product-code" class="warranty-check__label">
+        <label for="order-number" class="warranty-check__label">
           {{ $t('warranty.input_label') }}
         </label>
         <div class="warranty-check__input-group">
           <input
-            id="product-code"
-            v-model="productCode"
+            id="order-number"
+            v-model="orderNumber"
             type="text"
             class="warranty-check__input"
             :placeholder="$t('warranty.input_placeholder')"
@@ -34,7 +34,7 @@
           <button
             type="button"
             class="warranty-check__submit-btn"
-            :disabled="loading || !productCode.trim()"
+            :disabled="loading || !orderNumber.trim()"
             @click="checkWarranty"
           >
             <span v-if="loading" class="warranty-check__spinner"></span>
@@ -48,7 +48,7 @@
       <div v-if="error" class="warranty-check__error">
         <div class="warranty-check__error-icon">❌</div>
         <h3>{{ $t('warranty.result.not_found') }}</h3>
-        <p>{{ $t('warranty.errors.not_found_message', { code: searchedCode }) }}</p>
+        <p>{{ $t('warranty.errors.not_found_message', { code: searchedOrderNumber }) }}</p>
         <ul class="warranty-check__tips">
           <li>{{ $t('warranty.errors.check_tips.0') }}</li>
           <li>{{ $t('warranty.errors.check_tips.1') }}</li>
@@ -75,8 +75,8 @@
         <!-- 产品信息 -->
         <div class="warranty-check__info">
           <div class="warranty-check__info-row">
-            <span class="warranty-check__info-label">{{ $t('warranty.fields.product_code') }}</span>
-            <span class="warranty-check__info-value">{{ result.product_code }}</span>
+            <span class="warranty-check__info-label">{{ $t('warranty.fields.order_number') }}</span>
+            <span class="warranty-check__info-value">{{ result.order_number || '-' }}</span>
           </div>
           <div class="warranty-check__info-row">
             <span class="warranty-check__info-label">{{ $t('warranty.fields.product_type') }}</span>
@@ -176,8 +176,8 @@ const localePath = useLocalePath()
 const useChineseWarrantyLabels = computed(() => isSimplifiedChineseStorefrontLocale(locale.value))
 
 const {
-  productCode,
-  searchedCode,
+  orderNumber,
+  searchedOrderNumber,
   loading,
   error,
   result,
@@ -211,7 +211,7 @@ const resetForm = () => {
   font-size: var(--tz-type-page-title);
   line-height: 1.18;
   font-weight: 600;
-  color: #f9fafb;
+  color: var(--tz-text-primary);
   margin: 0 0 0.5rem;
 }
 
@@ -225,12 +225,12 @@ const resetForm = () => {
 .warranty-check__login-required {
   text-align: center;
   padding: 3rem 2rem;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--tz-surface-subtle);
   border-radius: 1rem;
   border: none;
   box-shadow:
-    0 6px 20px rgba(0, 0, 0, 0.45),
-    0 14px 40px rgba(0, 0, 0, 0.35);
+    0 6px 20px rgba(20, 32, 43, 0.08),
+    0 14px 40px rgba(20, 32, 43, 0.08);
 }
 
 .warranty-check__lock-icon {
@@ -245,20 +245,21 @@ const resetForm = () => {
 
 .warranty-check__login-btn {
   padding: 0.75rem 2rem;
-  background: var(--tz-brand-primary);
-  border: none;
+  background: var(--tz-action-primary);
+  border: 1px solid var(--tz-action-primary);
   border-radius: 9999px;
-  color: #020617;
+  color: var(--tz-action-primary-foreground);
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(181, 255, 109, 0.3);
+  box-shadow: 0 4px 12px rgb(15 23 42 / 0.16);
   transition: transform 0.18s ease, box-shadow 0.18s ease;
 }
 
 .warranty-check__login-btn:hover {
-  background: var(--tz-brand-primary-hover);
+  background: var(--tz-action-primary-hover);
+  border-color: var(--tz-action-primary-hover);
   transform: translateY(-2px);
-  box-shadow: 0 6px 18px rgba(181, 255, 109, 0.4);
+  box-shadow: 0 6px 18px rgb(15 23 42 / 0.22);
 }
 
 /* 查询表单 */
@@ -281,21 +282,20 @@ const resetForm = () => {
 .warranty-check__input {
   flex: 1;
   padding: 0.75rem 1rem;
-  background: linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(15, 23, 42, 0.96));
-  border: none;
+  background: var(--tz-form-control-surface);
+  border: 1px solid var(--tz-form-control-border);
   border-radius: 9999px;
   color: var(--tz-text-primary);
   font-size: 1rem;
   box-shadow:
-    0 2px 6px -3px rgba(0, 0, 0, 0.9),
-    0 0 6px rgba(15, 23, 42, 0.7);
+    0 2px 6px rgba(20, 32, 43, 0.08);
 }
 
 .warranty-check__input:focus {
   outline: none;
   box-shadow:
-    0 0 0 1px rgba(181, 255, 109, 0.75),
-    0 0 14px rgba(181, 255, 109, 0.35);
+    0 0 0 1px rgba(5, 150, 105, 0.75),
+    0 0 14px rgba(5, 150, 105, 0.35);
 }
 
 .warranty-check__input::placeholder {
@@ -304,14 +304,14 @@ const resetForm = () => {
 
 .warranty-check__submit-btn {
   padding: 0.75rem 1.5rem;
-  background: linear-gradient(135deg, #B5FF6D 0%, #3b82f6 100%);
-  border: none;
+  background: var(--tz-action-primary);
+  border: 1px solid var(--tz-action-primary);
   border-radius: 9999px;
-  color: #020617;
+  color: var(--tz-action-primary-foreground);
   font-weight: 600;
   cursor: pointer;
   min-width: 100px;
-  box-shadow: 0 4px 12px rgba(181, 255, 109, 0.3);
+  box-shadow: 0 4px 12px rgb(15 23 42 / 0.16);
   transition: opacity 0.2s, transform 0.18s ease, box-shadow 0.18s ease;
 }
 
@@ -321,8 +321,10 @@ const resetForm = () => {
 }
 
 .warranty-check__submit-btn:not(:disabled):hover {
+  background: var(--tz-action-primary-hover);
+  border-color: var(--tz-action-primary-hover);
   transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(181, 255, 109, 0.4);
+  box-shadow: 0 6px 18px rgb(15 23 42 / 0.22);
 }
 
 .warranty-check__spinner {
@@ -391,25 +393,25 @@ const resetForm = () => {
 .warranty-check__contact-btn {
   display: inline-block;
   padding: 0.5rem 1.5rem;
-  background: radial-gradient(circle at top left, rgba(31, 41, 55, 0.96), rgba(15, 23, 42, 0.98));
+  background: var(--tz-surface-subtle);
   border: none;
   border-radius: 9999px;
   color: var(--tz-text-primary);
   text-decoration: none;
   font-size: 0.85rem;
-  box-shadow: 0 3px 9px rgba(0, 0, 0, 0.9);
+  box-shadow: 0 6px 16px rgba(20, 32, 43, 0.08);
   transition: all 0.18s ease;
 }
 
 .warranty-check__contact-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 1);
+  box-shadow: 0 8px 18px rgba(20, 32, 43, 0.12);
 }
 
 /* 查询结果 */
 .warranty-check__result {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--tz-card-surface);
+  border: 1px solid var(--tz-border-subtle);
   border-radius: 1rem;
   overflow: hidden;
 }
@@ -425,8 +427,8 @@ const resetForm = () => {
 }
 
 .warranty-check__status--valid {
-  background: rgba(181, 255, 109, 0.15);
-  color: #D3FFA8;
+  background: rgba(5, 150, 105, 0.15);
+  color: var(--tz-site-accent);
 }
 
 .warranty-check__status--expired {
@@ -440,14 +442,14 @@ const resetForm = () => {
 
 .warranty-check__info {
   padding: 1rem 1.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--tz-border-subtle);
 }
 
 .warranty-check__info-row {
   display: flex;
   justify-content: space-between;
   padding: 0.5rem 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--tz-border-subtle);
 }
 
 .warranty-check__info-row:last-child {
@@ -460,7 +462,7 @@ const resetForm = () => {
 }
 
 .warranty-check__info-value {
-  color: #e5e7eb;
+  color: var(--tz-text-primary);
   font-weight: 500;
 }
 
@@ -474,8 +476,8 @@ const resetForm = () => {
 }
 
 .warranty-check__remaining--valid {
-  background: rgba(181, 255, 109, 0.1);
-  color: #D3FFA8;
+  background: rgba(5, 150, 105, 0.1);
+  color: var(--tz-site-accent);
 }
 
 .warranty-check__remaining--expired {
@@ -490,12 +492,12 @@ const resetForm = () => {
 /* 服务记录 */
 .warranty-check__records {
   padding: 1rem 1.5rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid var(--tz-border-subtle);
 }
 
 .warranty-check__records h4 {
   font-size: 0.9rem;
-  color: #e5e7eb;
+  color: var(--tz-text-primary);
   margin: 0 0 0.75rem;
 }
 
@@ -510,7 +512,7 @@ const resetForm = () => {
   flex-wrap: wrap;
   gap: 0.5rem;
   padding: 0.5rem 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--tz-border-subtle);
   font-size: 0.85rem;
 }
 
@@ -520,8 +522,8 @@ const resetForm = () => {
 
 .warranty-check__record-type {
   padding: 0.15rem 0.5rem;
-  background: rgba(107, 115, 255, 0.2);
-  color: #a5b4fc;
+  background: var(--tz-site-accent-soft-surface);
+  color: var(--tz-site-accent);
   border-radius: 9999px;
   font-size: 0.75rem;
 }
@@ -537,7 +539,7 @@ const resetForm = () => {
 
 .warranty-check__no-records {
   padding: 1rem 1.5rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid var(--tz-border-subtle);
 }
 
 .warranty-check__no-records p {
@@ -551,7 +553,7 @@ const resetForm = () => {
   display: flex;
   gap: 0.75rem;
   padding: 1rem 1.5rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid var(--tz-border-subtle);
 }
 
 .warranty-check__action-btn {
@@ -567,22 +569,27 @@ const resetForm = () => {
 }
 
 .warranty-check__action-btn:not(.warranty-check__action-btn--secondary) {
-  background: linear-gradient(135deg, #B5FF6D 0%, #3b82f6 100%);
-  border: none;
-  color: #020617;
-  box-shadow: 0 4px 12px rgba(181, 255, 109, 0.3);
+  background: var(--tz-action-primary);
+  border: 1px solid var(--tz-action-primary);
+  color: var(--tz-action-primary-foreground);
+  box-shadow: 0 4px 12px rgb(15 23 42 / 0.16);
+}
+
+.warranty-check__action-btn:not(.warranty-check__action-btn--secondary):hover {
+  background: var(--tz-action-primary-hover);
+  border-color: var(--tz-action-primary-hover);
 }
 
 .warranty-check__action-btn--secondary {
-  background: radial-gradient(circle at top left, rgba(31, 41, 55, 0.96), rgba(15, 23, 42, 0.98));
+  background: var(--tz-surface-subtle);
   border: none;
-  color: #e5e7eb;
-  box-shadow: 0 3px 9px rgba(0, 0, 0, 0.9);
+  color: var(--tz-text-primary);
+  box-shadow: 0 6px 16px rgba(20, 32, 43, 0.08);
 }
 
 .warranty-check__action-btn--secondary:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 1);
+  box-shadow: 0 8px 18px rgba(20, 32, 43, 0.12);
 }
 
 /* 响应式 */

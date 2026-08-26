@@ -1,5 +1,5 @@
 <template>
-  <section id="home-shop-with-confidence" class="home-shop-with-confidence bg-transparent py-8 text-white sm:py-10 lg:py-12">
+  <section id="home-shop-with-confidence" class="home-shop-with-confidence bg-transparent py-8 tz-text-primary sm:py-10 lg:py-12">
     <div class="page-content-shell px-0 md:px-4">
       <header class="home-shop-with-confidence__header">
         <span class="home-shop-with-confidence__eyebrow">
@@ -131,7 +131,7 @@ const paymentAssuranceKeys = [
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  color: var(--tz-brand-primary);
+  color: var(--tz-site-accent);
   font-size: 0.6875rem;
   font-weight: 800;
   letter-spacing: 0.14em;
@@ -183,7 +183,7 @@ const paymentAssuranceKeys = [
   height: 2rem;
   flex: 0 0 auto;
   place-items: center;
-  color: var(--tz-brand-primary);
+  color: var(--tz-site-accent);
 }
 
 .home-shop-with-confidence__card-heading h3 {
@@ -234,7 +234,7 @@ const paymentAssuranceKeys = [
 .home-shop-with-confidence__assurances svg {
   flex: 0 0 auto;
   margin-top: 0.1rem;
-  color: var(--tz-brand-primary);
+  color: var(--tz-site-accent);
 }
 
 .home-shop-with-confidence__action {

@@ -74,7 +74,7 @@
                     <div
                       v-for="product in results"
                       :key="product.id"
-                      class="border border-white/10 rounded-xl bg-white/[0.04] hover:bg-white/[0.08]
+                      class="border tz-border-subtle rounded-xl tz-surface-subtle hover:tz-surface-subtle
                              transition-colors overflow-hidden text-left flex flex-col"
                     >
                       <StorefrontImage
@@ -85,10 +85,10 @@
                         preset="card"
                       />
                       <div class="px-3 pt-2 pb-3 flex-1 flex flex-col">
-                        <div class="text-sm font-semibold text-white truncate">
+                        <div class="text-sm font-semibold tz-text-primary truncate">
                           {{ product.title }}
                         </div>
-                        <div v-if="product.price" class="text-xs text-[#B5FF6D] mt-1">
+                        <div v-if="product.price" class="text-xs text-[#059669] mt-1">
                           {{ product.price }}
                         </div>
                         <div v-if="product.variants?.length" class="mt-1 tz-caption tz-text-muted">
@@ -97,21 +97,21 @@
                         <div class="mt-3 flex flex-wrap gap-2">
                           <button
                             type="button"
-                            class="flex-1 min-w-[120px] px-3 py-1.5 rounded-full bg-[#B5FF6D]/90 tz-caption text-[#07120b] border border-[#D3FFA8]/70 hover:bg-[#D3FFA8] transition-colors"
+                            class="flex-1 min-w-[120px] px-3 py-1.5 rounded-full bg-[#059669]/90 tz-caption text-[#07120b] border border-[#047857]/70 hover:bg-[#047857] transition-colors"
                             @click="handleAddToCart(product)"
                           >
                             加入购物车
                           </button>
                           <button
                             type="button"
-                            class="flex-1 min-w-[120px] px-3 py-1.5 rounded-full bg-white/10 tz-caption tz-text-primary border border-white/30 hover:bg-white/20 transition-colors"
+                            class="flex-1 min-w-[120px] px-3 py-1.5 rounded-full tz-surface-subtle tz-caption tz-text-primary border tz-border-strong/30 hover:tz-surface-subtle transition-colors"
                             @click="handleShareToChat(product)"
                           >
                             分享到聊天
                           </button>
                           <button
                             type="button"
-                            class="flex-1 min-w-[140px] px-3 py-1.5 rounded-full bg-white tz-caption text-slate-950 border border-white/70 hover:bg-white/90 transition-colors"
+                            class="flex-1 min-w-[140px] px-3 py-1.5 rounded-full bg-white tz-caption text-slate-950 border tz-border-strong/70 hover:bg-white/90 transition-colors"
                             @click="openConfigConfirm(product)"
                           >
                             和客服确认配置
@@ -131,7 +131,7 @@
               <div class="flex items-center justify-between">
                 <button
                   type="button"
-                  class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full border border-white/30 tz-caption tz-text-secondary hover:bg-white/10 transition-colors"
+                  class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full border tz-border-strong/30 tz-caption tz-text-secondary hover:tz-surface-subtle transition-colors"
                   @click="backToList"
                 >
                   <span class="text-xs">←</span>
@@ -145,7 +145,7 @@
 
               <div class="grid grid-cols-1 md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] gap-4 md:gap-6">
                 <div class="space-y-4">
-                  <div class="border border-white/10 rounded-xl bg-white/[0.04] p-3 md:p-4 flex gap-3">
+                  <div class="border tz-border-subtle rounded-xl tz-surface-subtle p-3 md:p-4 flex gap-3">
                     <StorefrontImage
                       v-if="selectedConfigProduct.thumbnail"
                       :src="selectedConfigProduct.thumbnail"
@@ -154,12 +154,12 @@
                       preset="thumbnail"
                     />
                     <div class="flex-1 min-w-0">
-                      <div class="text-sm font-semibold text-white truncate">
+                      <div class="text-sm font-semibold tz-text-primary truncate">
                         {{ selectedConfigProduct.title }}
                       </div>
                       <div
                         v-if="selectedConfigPriceLabel"
-                        class="text-xs text-[#B5FF6D] mt-1"
+                        class="text-xs text-[#059669] mt-1"
                       >
                         {{ selectedConfigPriceLabel }}
                       </div>
@@ -176,7 +176,7 @@
                   </div>
 
                   <div
-                    class="border border-dashed border-white/20 rounded-xl bg-white/[0.02] p-3 md:p-4"
+                    class="border border-dashed tz-border-subtle rounded-xl bg-white/[0.02] p-3 md:p-4"
                   >
                     <label
                       v-if="configVariants.length > 1"
@@ -189,7 +189,7 @@
                       v-if="configVariants.length > 1"
                       id="wa-config-variant"
                       v-model.number="selectedConfigVariantId"
-                      class="mt-2 w-full rounded-xl border border-white/20 bg-slate-950/90 px-3 py-2 text-xs text-white focus:border-[#6b73ff] focus:outline-none"
+                      class="mt-2 w-full rounded-xl border tz-border-subtle tz-surface-panel px-3 py-2 text-xs tz-text-primary focus:border-emerald-600 focus:outline-none"
                     >
                       <option
                         v-for="variant in configVariants"
@@ -208,30 +208,30 @@
                         <div
                           v-for="option in selectedConfigOptionRows"
                           :key="option.key"
-                          class="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2"
+                          class="rounded-xl border tz-border-subtle tz-surface-subtle px-3 py-2"
                         >
                           <dt class="tz-compact-label tz-text-muted">
                             {{ option.label }}
                           </dt>
-                          <dd class="mt-1 text-xs font-semibold text-white">
+                          <dd class="mt-1 text-xs font-semibold tz-text-primary">
                             {{ option.value }}<span v-if="option.unit"> {{ option.unit }}</span>
                           </dd>
                         </div>
                       </dl>
-                      <p v-else class="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 tz-caption">
+                      <p v-else class="rounded-xl border tz-border-subtle tz-surface-subtle px-3 py-2 tz-caption">
                         This product currently has no variant option fields. The selected SKU will still be sent as the configuration fact.
                       </p>
                     </div>
                   </div>
                 </div>
 
-                <div class="border border-white/10 rounded-xl bg-white/[0.04] p-3 md:p-4 flex flex-col gap-3">
+                <div class="border tz-border-subtle rounded-xl tz-surface-subtle p-3 md:p-4 flex flex-col gap-3">
                   <div class="tz-caption tz-text-secondary">
                     The selected product and SKU facts will be sent as a structured card. Staff can read them in Admin without editing or duplicating product data.
                   </div>
                   <button
                     type="button"
-                    class="mt-1 inline-flex items-center justify-center px-4 py-2.5 rounded-full bg-white text-xs font-medium text-slate-950 border border-white/70 hover:bg-white/90 transition-colors"
+                    class="mt-1 inline-flex items-center justify-center px-4 py-2.5 rounded-full bg-white text-xs font-medium text-slate-950 border tz-border-strong/70 hover:bg-white/90 transition-colors"
                     @click="handleConfirmConfig"
                   >
                     发送配置给客服

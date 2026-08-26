@@ -5,8 +5,8 @@
     <div class="w-full max-w-none space-y-8">
       <!-- Location introduction -->
       <div class="text-center">
-        <h2 class="text-xl font-bold text-white md:text-2xl">
-          Global <span class="text-teal-400">Connectivity</span>
+        <h2 class="text-xl font-bold tz-text-primary md:text-2xl">
+          Global <span class="text-emerald-600">Connectivity</span>
         </h2>
         <p class="mx-auto max-w-2xl text-sm leading-relaxed tz-text-secondary">
           From our manufacturing base in Xiamen to our global headquarters in Hong Kong, we are positioned to serve partners worldwide with efficiency and precision.
@@ -19,12 +19,12 @@
       <div class="grid w-full grid-cols-1 gap-6 md:grid-cols-2 md:gap-8">
         <!-- HK HQ -->
         <div class="premium-card group flex flex-col rounded-2xl p-6 transition-all duration-300 hover:-translate-y-0.5 md:p-8">
-            <h3 class="text-lg font-bold text-white mb-1">Global Headquarters</h3>
-            <div class="text-xs uppercase tracking-wider text-indigo-400 font-semibold mb-2">Hong Kong</div>
+            <h3 class="text-lg font-bold tz-text-primary mb-1">Global Headquarters</h3>
+            <div class="text-xs uppercase tracking-wider text-emerald-600 font-semibold mb-2">Hong Kong</div>
             <p class="tz-text-secondary mb-4 flex-grow leading-relaxed text-sm">
                 Strategic hub for international trade, logistics, and global customer support.
             </p>
-            <div class="rounded-lg border border-white/10 bg-[var(--tz-form-panel-surface)] p-3 text-sm tz-text-secondary">
+            <div class="rounded-lg border tz-border-subtle bg-[var(--tz-form-panel-surface)] p-3 text-sm tz-text-secondary">
                 Flat 1602, 16/F, Lucky Centre,<br>
                 No.165-171 Wan Chai Road, Wan Chai,<br>
                 Hong Kong
@@ -33,12 +33,12 @@
 
         <!-- China Factory -->
          <div class="premium-card group flex flex-col rounded-2xl p-6 transition-all duration-300 hover:-translate-y-0.5 md:p-8">
-            <h3 class="text-lg font-bold text-white mb-1">Manufacturing & R&D Base</h3>
-            <div class="text-xs uppercase tracking-wider text-teal-400 font-semibold mb-2">Xiamen, China</div>
+            <h3 class="text-lg font-bold tz-text-primary mb-1">Manufacturing & R&D Base</h3>
+            <div class="text-xs uppercase tracking-wider text-emerald-600 font-semibold mb-2">Xiamen, China</div>
             <p class="tz-text-secondary mb-4 flex-grow leading-relaxed text-sm">
                 State-of-the-art facility for carbon fiber layup, precision molding, and rigorous testing.
             </p>
-            <div class="rounded-lg border border-white/10 bg-[var(--tz-form-panel-surface)] p-3 text-sm tz-text-secondary">
+            <div class="rounded-lg border tz-border-subtle bg-[var(--tz-form-panel-surface)] p-3 text-sm tz-text-secondary">
                 Building 6, No. 639 Tongji South Road,<br>
                 Industrial Concentration Zone, Tong'an Dist,<br>
                 Xiamen, Fujian, China
@@ -51,7 +51,7 @@
         <div class="p-4 md:p-8">
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                 <div>
-                     <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                     <h3 class="text-lg font-bold tz-text-primary flex items-center gap-2">
         <svg class="w-5 h-5 tz-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
                         Wire Transfer Details (B2B/Wholesale)
                      </h3>
@@ -63,10 +63,10 @@
                  </div>
             </div>
 
-            <div class="grid grid-cols-1 gap-x-8 gap-y-4 border-t border-white/10 pt-6 text-sm md:grid-cols-2">
+            <div class="grid grid-cols-1 gap-x-8 gap-y-4 border-t tz-border-subtle pt-6 text-sm md:grid-cols-2">
                 <div>
                     <span class="block tz-text-muted text-xs uppercase tracking-wider mb-1">Beneficiary Name</span>
-        <span class="inline-block rounded border border-white/10 bg-[var(--tz-form-panel-surface)] px-2 py-1 tz-text-primary">Top Sports Co., Limited</span>
+        <span class="inline-block rounded border tz-border-subtle bg-[var(--tz-form-panel-surface)] px-2 py-1 tz-text-primary">Top Sports Co., Limited</span>
                 </div>
                 <div>
                     <span class="block tz-text-muted text-xs uppercase tracking-wider mb-1">Bank Name</span>
@@ -74,7 +74,7 @@
                 </div>
                  <div class="md:col-span-2">
                     <span class="block tz-text-muted text-xs uppercase tracking-wider mb-1">Account & SWIFT Details</span>
-                    <div class="flex items-center gap-2 rounded-lg border border-dashed border-white/10 bg-[var(--tz-form-control-surface)] p-3 italic tz-text-secondary">
+                    <div class="flex items-center gap-2 rounded-lg border border-dashed tz-border-subtle bg-[var(--tz-form-control-surface)] p-3 italic tz-text-secondary">
                         <svg class="w-5 h-5 tz-text-muted shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                         <span>For security reasons, full wire transfer details (Account No. & SWIFT) will be provided exclusively in your official <strong>Proforma Invoice (PI)</strong>.</span>
                     </div>
@@ -112,6 +112,8 @@ const { t } = useI18n()
 
 definePageMeta({
   layout: 'products',
+  footerLabelKey: 'company.nav.contact',
+  footerLabelFallback: 'Contact Us',
 })
 
 useHead({

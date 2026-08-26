@@ -10,6 +10,7 @@ import (
 type shippingTemplateRequest struct {
 	Name                  string                                     `json:"name" binding:"required"`
 	Type                  string                                     `json:"type" binding:"required"`
+	Currency              string                                     `json:"currency"`
 	FreeShipping          bool                                       `json:"free_shipping"`
 	FreeThreshold         float64                                    `json:"free_threshold"`
 	DefaultFee            float64                                    `json:"default_fee"`
@@ -22,6 +23,7 @@ type shippingTemplateRequest struct {
 type shippingRuleRequest struct {
 	ID                    uint                                       `json:"id"`
 	Region                string                                     `json:"region"`
+	Currency              string                                     `json:"currency"`
 	MinValue              float64                                    `json:"min_value"`
 	MaxValue              float64                                    `json:"max_value"`
 	Fee                   float64                                    `json:"fee"`
@@ -115,9 +117,11 @@ func (r shippingTemplateRequest) toDomain() shippingdomain.ShippingTemplate {
 	}
 
 	templateType := strings.TrimSpace(r.Type)
+	templateCurrency := currency.NormalizeCode(r.Currency)
 	template := shippingdomain.ShippingTemplate{
 		Name:             strings.TrimSpace(r.Name),
 		Type:             templateType,
+		Currency:         templateCurrency,
 		FreeShipping:     r.FreeShipping,
 		FreeThreshold:    r.FreeThreshold,
 		DefaultFee:       r.DefaultFee,
@@ -127,7 +131,11 @@ func (r shippingTemplateRequest) toDomain() shippingdomain.ShippingTemplate {
 	}
 
 	for _, rule := range r.Rules {
-		template.Rules = append(template.Rules, rule.toDomainForTemplateType(templateType))
+		domainRule := rule.toDomainForTemplateType(templateType)
+		if currency.NormalizeCode(domainRule.Currency) == "" {
+			domainRule.Currency = templateCurrency
+		}
+		template.Rules = append(template.Rules, domainRule)
 	}
 
 	return template
@@ -151,6 +159,7 @@ func (r shippingRuleRequest) toDomainWithDisplayPriceFields(fields []string) shi
 	return shippingdomain.ShippingRule{
 		ID:               r.ID,
 		Region:           strings.ToUpper(strings.TrimSpace(r.Region)),
+		Currency:         currency.NormalizeCode(r.Currency),
 		MinValue:         r.MinValue,
 		MaxValue:         r.MaxValue,
 		Fee:              r.Fee,

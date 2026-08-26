@@ -1,0 +1,61 @@
+{
+  "trigger": {
+    "label": "Vérifier la compatibilité"
+  },
+  "dialog": {
+    "eyebrow": "Catalogue de compatibilité",
+    "title": "Trouver votre cadre ou votre fourche",
+    "description": "Recherchez dans le catalogue indépendant de compatibilité par marque, modèle ou année. Les résultats incluent les spécifications de moyeu enregistrées pour chaque entrée.",
+    "close": "Fermer",
+    "tabListLabel": "Sections du catalogue de compatibilité"
+  },
+  "tabs": {
+    "frame": "Compatibilité du cadre",
+    "fork": "Compatibilité de la fourche"
+  },
+  "search": {
+    "label": "Rechercher",
+    "placeholder": "Rechercher une marque ou un modèle",
+    "yearLabel": "Année du modèle",
+    "yearPlaceholder": "ex. 2024",
+    "submit": "Rechercher",
+    "clear": "Effacer",
+    "searching": "Recherche en cours..."
+  },
+  "states": {
+    "initial": "Saisissez une marque, un modèle ou une année pour rechercher dans le catalogue.",
+    "empty": "Aucun résultat correspondant n'a été trouvé.",
+    "unavailable": "Les données de compatibilité sont temporairement indisponibles. Réessayez.",
+    "noHubSpecifications": "Aucune spécification de moyeu n'a été enregistrée."
+  },
+  "entry": {
+    "series": "Série",
+    "generation": "Génération",
+    "market": "Marché",
+    "hubSpecifications": "Spécifications du moyeu",
+    "unknownYear": "Année non précisée",
+    "allYears": "Toutes les années"
+  },
+  "pagination": {
+    "label": "Résultats de compatibilité",
+    "previous": "Page précédente",
+    "next": "Page suivante",
+    "page": "Page {page} sur {totalPages}"
+  },
+  "hub": {
+    "position": "Position",
+    "axleType": "Type d'axe",
+    "axleSpacing": "Entraxe",
+    "millimetres": "mm",
+    "positions": {
+      "front": "Avant",
+      "rear": "Arrière"
+    },
+    "axleTypes": {
+      "quickRelease": "Serrage rapide",
+      "thruAxle": "Axe traversant",
+      "boltOn": "Fixation par boulons",
+      "other": "Autre"
+    }
+  }
+}

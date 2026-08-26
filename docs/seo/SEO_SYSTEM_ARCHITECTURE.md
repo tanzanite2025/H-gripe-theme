@@ -20,6 +20,11 @@ This document covers the website and administration architecture. Google
 Merchant synchronization details remain in
 [GOOGLE_MERCHANT_CENTER_IMPLEMENTATION_PLAN.md](../../go-backend/docs/GOOGLE_MERCHANT_CENTER_IMPLEMENTATION_PLAN.md).
 
+The product URL and breadcrumb decision is documented in
+[ECOMMERCE_URL_ARCHITECTURE.md](./ECOMMERCE_URL_ARCHITECTURE.md). This document
+uses that formal contract for both the storefront runtime and administration
+diagnostics.
+
 ## 2. Google Model
 
 The project must distinguish the following concepts:
@@ -99,7 +104,7 @@ Current implementation references:
 
 - `go-backend/internal/domain/product/product.go`
 - `go-backend/internal/api/v1/product/public_response.go`
-- `nuxt-i18n/app/pages/shop/[slug].vue`
+- `nuxt-i18n/app/pages/products/[slug].vue`
 
 ### 4.2 Content and Blog Domain
 
@@ -333,11 +338,16 @@ resource routes from tags, slugs, or locale prefixes.
 
 | Resource | Route family | SEO source |
 | --- | --- | --- |
-| Product | `/shop/:slug` with locale prefix when applicable | Product record through SEO facade |
+| Product | `/products/:slug` with locale prefix when applicable | Product record through SEO facade |
 
 The product canonical URL must be generated from the localized public route.
 The normal product workflow should not require a manually entered canonical
 URL.
+
+The target architecture keeps the product permalink flat and independent from
+category membership. Category hierarchy is represented by `/shop/...` landing
+pages and by visible breadcrumbs plus `BreadcrumbList` JSON-LD. A `/shop/:slug`
+path that is not a real category is a 404; it is never resolved as a product.
 
 Product translations use the existing Product-domain relationship with one
 root row and direct translated children:
@@ -364,10 +374,10 @@ Only active localized products are included. The storefront must not infer
 missing translated slugs from the current slug or emit hreflang links to
 languages that have no public product row.
 
-A product page with `/zh-cn/shop/example` should normally canonicalize to the
-same localized URL, not silently canonicalize to `/shop/example`, unless the
-business has explicitly chosen a single-language canonical strategy and has
-documented the consequences for hreflang.
+A product page with `/zh_cn/products/example` should normally
+canonicalize to the same localized URL, not silently canonicalize to
+`/products/example`, unless the business has explicitly chosen a single-language
+canonical strategy and has documented the consequences for hreflang.
 
 ## 7. Field Ownership and Data Flow
 
@@ -537,8 +547,8 @@ For Product pages specifically:
   actually exists; otherwise the first real localized route is used.
 
 The current storefront layout already has a general alternate-link mechanism.
-Product pages must use the same locale-aware canonical strategy rather than
-replacing it with a hard-coded `/shop/:slug` path.
+The target Product route must use the same locale-aware canonical strategy
+rather than replacing it with a hard-coded category-bearing product path.
 
 ## 10. Change Propagation
 
@@ -726,7 +736,7 @@ Merchant implementation plan. It must validate:
 Status: complete for the current pre-launch architecture.
 
 - Keep SEO as a top-level administration domain.
-- Keep Home, Articles, and Products as child routes.
+- Keep Home, Articles, Products, and Categories as child routes.
 - Keep Google Merchant as a separate top-level channel.
 - Keep Product and Article resource fields in their source aggregates.
 - Keep media metadata in the media/content domain.
@@ -734,7 +744,7 @@ Status: complete for the current pre-launch architecture.
 
 ### Phase B: Storefront SEO Contract
 
-Status: complete for the current storefront contract.
+Status: complete for the pre-launch route contract.
 
 Initial implementation started in the dedicated storefront SEO utility
 boundary:
@@ -751,8 +761,7 @@ The first slice now:
 - includes the selected variant SKU or product SKU when available;
 - uses the page's display price and currency for the Offer;
 - keeps Product JSON-LD free of unverified brand, GTIN, MPN, and review claims.
-- uses the approved public site `brandTitle` as the Product JSON-LD brand when
-  configured;
+  - uses only the product's configured brand for the Product JSON-LD brand;
 - resolves Product detail data by requested locale;
 - exposes active Product translation routes through a typed public projection;
 - validates Product translation parent relationships at the Product write
@@ -760,6 +769,12 @@ The first slice now:
 - centralizes canonical and hreflang generation for the default and products
   layouts;
 - emits JSON-LD with an SSR-safe Unhead `textContent` script contract.
+
+These implementation notes describe the formal `/products/:slug` storefront
+runtime. BreadcrumbList category projection is read-only product data assembled
+from the category service. The storefront does not synthesize product
+redirects; URL Management handles only explicitly configured rules for URLs
+that actually existed after launch.
 
 Verification is provided by:
 
@@ -783,8 +798,11 @@ Status: complete for the current variant landing model.
 - Do not emit variant claims that cannot be reproduced from a public URL.
 
 The current implementation emits `Product` for one purchasable configuration
-and `ProductGroup` with `hasVariant` for two or more active variants. Variant
-landing URLs use the stable `/shop/:slug?variant=:id` contract.
+and `ProductGroup` with `hasVariant` for two or more active variants. The
+storefront uses `/products/:slug?variant=:id` for variant state. The base
+product permalink is `/products/:slug`; variant query parameters are not new
+product permalinks and must not change the base
+canonical URL without a separately approved landing-page strategy.
 
 ### Phase D: SEO Quality and Diagnostics
 
@@ -799,10 +817,11 @@ Status: complete for the current resource model.
 
 The current route model derives canonical paths from database-backed resource
 routes. A separate duplicate-canonical scanner is intentionally not introduced:
-Home, Blog, and Shop occupy distinct route namespaces, while resource route
-projections and locale/slug constraints prevent the current classes of
-duplicates. If arbitrary canonical overrides or additional page types are
-introduced, a dedicated scanner becomes a required follow-up.
+Home, Blog, Shop categories, and Products occupy distinct target route
+namespaces, while resource route projections and locale/slug constraints
+prevent the current classes of duplicates. If arbitrary canonical overrides or
+additional page types are introduced, a dedicated scanner becomes a required
+follow-up.
 
 ### Phase E: Merchant Automation
 
@@ -874,7 +893,7 @@ For every case, verify both:
 | Product translation route contract | `go-backend/internal/domain/product/translation.go` |
 | Product translation query | `go-backend/internal/repository/product_translation_repository.go` |
 | Product translation validation | `go-backend/internal/service/product_translation_validation.go` |
-| Product storefront renderer | `nuxt-i18n/app/pages/shop/[slug].vue` |
+| Product storefront renderer | `nuxt-i18n/app/pages/products/[slug].vue` |
 | Product SEO output types | `nuxt-i18n/app/utils/seo/types.ts` |
 | Product SEO output builder | `nuxt-i18n/app/utils/seo/product.ts` |
 | Storefront SEO URL helpers | `nuxt-i18n/app/utils/seo/urls.ts` |

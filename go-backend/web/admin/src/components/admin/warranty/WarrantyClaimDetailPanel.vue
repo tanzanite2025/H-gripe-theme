@@ -27,9 +27,8 @@
           </div>
           <dl class="grid grid-cols-2 gap-2 text-xs">
             <DetailItem label="Claim ID">#{{ selectedClaim.id }}</DetailItem>
-            <DetailItem label="Registration">{{ selectedClaim.registration_id || '未绑定' }}</DetailItem>
- <DetailItem label="Order" class="col-span-2">{{ selectedClaim.order_number || '-'}}</DetailItem>
- <DetailItem label="Email" class="col-span-2">{{ selectedClaim.email || selectedClaim.registration?.user?.email || '-'}}</DetailItem>
+            <DetailItem label="Order" class="col-span-2">{{ selectedClaim.order_number || '-'}}</DetailItem>
+            <DetailItem label="Email" class="col-span-2">{{ selectedClaim.email || '-'}}</DetailItem>
           </dl>
         </section>
 

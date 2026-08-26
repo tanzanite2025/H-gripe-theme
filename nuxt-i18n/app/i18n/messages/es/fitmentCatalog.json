@@ -1,0 +1,61 @@
+{
+  "trigger": {
+    "label": "Comprobar compatibilidad"
+  },
+  "dialog": {
+    "eyebrow": "Catálogo de compatibilidad",
+    "title": "Busca tu cuadro o tu horquilla",
+    "description": "Busca en el catálogo independiente de compatibilidad por marca, modelo o año. Los resultados incluyen las especificaciones del buje registradas para cada entrada.",
+    "close": "Cerrar",
+    "tabListLabel": "Secciones del catálogo de compatibilidad"
+  },
+  "tabs": {
+    "frame": "Compatibilidad del cuadro",
+    "fork": "Compatibilidad de la horquilla"
+  },
+  "search": {
+    "label": "Buscar",
+    "placeholder": "Buscar por marca o modelo",
+    "yearLabel": "Año del modelo",
+    "yearPlaceholder": "p. ej., 2024",
+    "submit": "Buscar",
+    "clear": "Borrar",
+    "searching": "Buscando..."
+  },
+  "states": {
+    "initial": "Introduce una marca, un modelo o un año para buscar en el catálogo.",
+    "empty": "No se encontraron registros coincidentes.",
+    "unavailable": "Los datos de compatibilidad no están disponibles temporalmente. Inténtalo de nuevo.",
+    "noHubSpecifications": "No se han registrado especificaciones del buje."
+  },
+  "entry": {
+    "series": "Serie",
+    "generation": "Generación",
+    "market": "Mercado",
+    "hubSpecifications": "Especificaciones del buje",
+    "unknownYear": "Año no especificado",
+    "allYears": "Todos los años"
+  },
+  "pagination": {
+    "label": "Resultados de compatibilidad",
+    "previous": "Página anterior",
+    "next": "Página siguiente",
+    "page": "Página {page} de {totalPages}"
+  },
+  "hub": {
+    "position": "Posición",
+    "axleType": "Tipo de eje",
+    "axleSpacing": "Separación del eje",
+    "millimetres": "mm",
+    "positions": {
+      "front": "Delantera",
+      "rear": "Trasera"
+    },
+    "axleTypes": {
+      "quickRelease": "Cierre rápido",
+      "thruAxle": "Eje pasante",
+      "boltOn": "Atornillado",
+      "other": "Otro"
+    }
+  }
+}

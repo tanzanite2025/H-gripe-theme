@@ -12,6 +12,7 @@ import (
 type Handler struct {
 	settingService            *service.SettingService
 	websiteProfileService     *service.WebsiteProfileService
+	websiteNameService        *service.WebsiteNameService
 	mediaService              *service.MediaService
 	siteLogoService           *service.SiteLogoService
 	refundReturnPolicyService *service.RefundReturnPolicyService
@@ -41,6 +42,13 @@ func (h *Handler) ConfigureSiteLogoService(siteLogoService *service.SiteLogoServ
 		return
 	}
 	h.siteLogoService = siteLogoService
+}
+
+func (h *Handler) ConfigureWebsiteNameService(websiteNameService *service.WebsiteNameService) {
+	if h == nil {
+		return
+	}
+	h.websiteNameService = websiteNameService
 }
 
 func (h *Handler) ConfigureRefundReturnPolicyService(policyService *service.RefundReturnPolicyService) {
@@ -176,6 +184,14 @@ func (h *Handler) publicWebsiteProfile(settings *settingdomain.WebsiteProfileSet
 	return &publicSettings
 }
 
+func (h *Handler) publicWebsiteName(settings *settingdomain.WebsiteNameSettings) *settingdomain.WebsiteNameSettings {
+	if settings == nil {
+		return nil
+	}
+	publicSettings := *settings
+	return &publicSettings
+}
+
 func (h *Handler) publicSettings(settings []settingdomain.Setting) []settingdomain.Setting {
 	if len(settings) == 0 {
 		return settings
@@ -256,4 +272,20 @@ func (h *Handler) GetWebsiteProfile(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, h.publicWebsiteProfile(settings))
+}
+
+func (h *Handler) GetWebsiteName(c *gin.Context) {
+	if h.websiteNameService == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "website name service unavailable"})
+		return
+	}
+
+	locale := c.DefaultQuery("locale", middleware.GetLocale(c))
+	settings, err := h.websiteNameService.Get(locale)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, h.publicWebsiteName(settings))
 }

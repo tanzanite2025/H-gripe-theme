@@ -38,18 +38,18 @@ const orderNumber = computed(() => firstQueryValue(route.query.order_number).tri
   display: grid;
   place-items: center;
   padding: 8rem 1.25rem 4rem;
-  background: #000;
-  color: #fff;
+   background: var(--tz-surface-page);
+   color: var(--tz-text-primary);
 }
 
 .paypal-cancel-panel {
   width: min(100%, 520px);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+   border: 1px solid var(--tz-border-subtle);
   border-radius: 8px;
-  background: rgba(15, 23, 42, 0.86);
+   background: var(--tz-card-surface);
   padding: 2rem;
   text-align: center;
-  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.42);
+   box-shadow: 0 18px 44px rgba(15, 23, 42, 0.14);
 }
 
 .paypal-cancel-icon {
@@ -67,12 +67,12 @@ const orderNumber = computed(() => firstQueryValue(route.query.order_number).tri
 
 .paypal-cancel-panel p {
   margin: 0.75rem 0 0;
-  color: rgba(255, 255, 255, 0.72);
+   color: var(--tz-text-secondary);
 }
 
 .paypal-cancel-order {
   font-family: var(--tz-font-ui);
-  color: #fff !important;
+   color: var(--tz-text-primary) !important;
 }
 
 .paypal-cancel-actions {
@@ -88,10 +88,10 @@ const orderNumber = computed(() => firstQueryValue(route.query.order_number).tri
   align-items: center;
   justify-content: center;
   gap: 0.45rem;
-  border: 1px solid rgba(255, 255, 255, 0.22);
+   border: 1px solid var(--tz-border-strong);
   border-radius: 8px;
   padding: 0.7rem 1rem;
-  color: #fff;
+   color: var(--tz-text-primary);
   font-size: 0.875rem;
   font-weight: 700;
 }

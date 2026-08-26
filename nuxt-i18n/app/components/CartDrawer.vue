@@ -47,10 +47,10 @@
             <div
               v-for="item in cartItems"
               :key="item.id"
-              class="cart-drawer-item-card bg-white/[0.06] border border-white rounded-2xl"
+              class="cart-drawer-item-card tz-surface-subtle border tz-border-strong rounded-2xl"
             >
               <!-- 商品图片 -->
-              <div class="w-20 h-20 flex-shrink-0 bg-white/[0.06] rounded-lg overflow-hidden border border-white">
+              <div class="w-20 h-20 flex-shrink-0 tz-surface-subtle rounded-lg overflow-hidden border tz-border-strong">
                 <StorefrontImage
                   v-if="item.thumbnail"
                   :src="item.thumbnail"
@@ -65,10 +65,10 @@
 
               <!-- 商品信息 -->
               <div class="flex-1 min-w-0">
-                <h3 class="text-sm font-medium text-white truncate">
+                <h3 class="text-sm font-medium tz-text-primary truncate">
                   {{ item.title }}
                 </h3>
-                <p class="text-sm font-semibold text-white mt-2">
+                <p class="text-sm font-semibold tz-text-primary mt-2">
                   {{ formatPrice(item.price, item.currency) }}
                 </p>
 
@@ -76,7 +76,7 @@
                 <div class="flex items-center gap-2 mt-3">
                   <button
                     @click="decrementQuantity(item.id)"
-                    class="w-7 h-7 flex items-center justify-center rounded border border-white/[0.18] hover:bg-white/10 transition-colors text-white"
+                    class="w-7 h-7 flex items-center justify-center rounded border tz-border-subtle hover:tz-surface-subtle transition-colors tz-text-primary"
                     :disabled="item.quantity <= 1"
                   >
                     <Icon name="lucide:minus" class="w-4 h-4" />
@@ -86,20 +86,20 @@
                     type="number"
                     :value="item.quantity"
                     @input="onQuantityInput(item.id, $event)"
-                    class="w-12 h-7 text-center border border-white rounded bg-white/[0.06] text-white focus:outline-none focus:ring-2 focus:ring-white/35"
+                    class="w-12 h-7 text-center border tz-border-strong rounded tz-surface-subtle tz-text-primary focus:outline-none focus:ring-2 focus:ring-white/35"
                     min="1"
                   />
                   
                   <button
                     @click="incrementQuantity(item.id)"
-                    class="w-7 h-7 flex items-center justify-center rounded border border-white hover:bg-white/10 transition-colors text-white"
+                    class="w-7 h-7 flex items-center justify-center rounded border tz-border-strong hover:tz-surface-subtle transition-colors tz-text-primary"
                   >
                     <Icon name="lucide:plus" class="w-4 h-4" />
                   </button>
 
                   <button
                     @click="handleAddToWishlist(item)"
-                    class="w-7 h-7 flex items-center justify-center rounded border border-white/[0.18] hover:bg-white/10 transition-colors text-white"
+                    class="w-7 h-7 flex items-center justify-center rounded border tz-border-subtle hover:tz-surface-subtle transition-colors tz-text-primary"
                     :title="t('cartDrawer.actions.addToWishlist')"
                     :aria-label="t('cartDrawer.actions.addToWishlist')"
                   >
@@ -145,27 +145,27 @@
         </div>
 
         <!-- 底部汇总 -->
-        <div v-if="cartItems.length > 0" class="cart-drawer-summary border-t border-white/10 px-6 py-4 bg-white/[0.03] relative z-10">
+        <div v-if="cartItems.length > 0" class="cart-drawer-summary border-t tz-border-subtle px-6 py-4 tz-surface-subtle relative z-10">
           <div class="space-y-2 mb-4">
             <div class="flex justify-between text-sm">
               <span class="tz-text-secondary">{{ t('cartDrawer.summary.subtotal') }}</span>
-              <span class="font-medium text-white">{{ formatPrice(subtotal) }}</span>
+              <span class="font-medium tz-text-primary">{{ formatPrice(subtotal) }}</span>
             </div>
             <div class="flex justify-between text-sm">
               <span class="tz-text-secondary">{{ t('cartDrawer.summary.shipping') }}</span>
-              <span class="font-medium text-white text-right">
+              <span class="font-medium tz-text-primary text-right">
                 {{ t('cartDrawer.summary.calculatedAtCheckout') }}
               </span>
             </div>
             <div class="flex justify-between text-sm">
               <span class="tz-text-secondary">{{ t('cartDrawer.summary.tax') }}</span>
-              <span class="font-medium text-white text-right">
+              <span class="font-medium tz-text-primary text-right">
                 {{ t('cartDrawer.summary.calculatedAtCheckout') }}
               </span>
             </div>
-            <div class="flex justify-between text-base font-semibold pt-2 border-t border-white/10">
-              <span class="text-white">{{ t('cartDrawer.summary.estimatedTotal') }}</span>
-              <span class="text-white text-right">
+            <div class="flex justify-between text-base font-semibold pt-2 border-t tz-border-subtle">
+              <span class="tz-text-primary">{{ t('cartDrawer.summary.estimatedTotal') }}</span>
+              <span class="tz-text-primary text-right">
                 {{ t('cartDrawer.summary.calculatedAtCheckout') }}
               </span>
             </div>
@@ -205,7 +205,7 @@
           <div class="grid gap-3 sm:grid-cols-2">
             <button
               type="button"
-              class="w-full px-4 py-3 border border-white text-white rounded-lg hover:bg-white/10 transition-colors font-medium"
+              class="w-full px-4 py-3 border tz-border-strong tz-text-primary rounded-lg hover:tz-surface-subtle transition-colors font-medium"
               @click="closeCart"
             >
               {{ t('cartDrawer.actions.continueShopping') }}
@@ -495,7 +495,7 @@ const onQuantityInput = (id: number, event: Event) => {
 .cart-drawer-shell {
   height: min(92vh, var(--tz-mobile-safe-viewport-height, 92vh));
   max-height: min(92vh, var(--tz-mobile-safe-viewport-height, 92vh));
-  background: #000 !important;
+  background: var(--tz-card-surface) !important;
   background-image: none !important;
 }
 

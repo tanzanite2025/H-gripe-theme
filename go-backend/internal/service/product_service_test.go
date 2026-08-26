@@ -726,6 +726,52 @@ func TestProductServiceCreateAdminProductPersistsDisplayPriceSnapshots(t *testin
 	assert.Equal(t, variantSnapshots[0], productSnapshots[0])
 }
 
+func TestProductServiceAuditsBackendEntryCurrencyMismatches(t *testing.T) {
+	db, productService := newTestProductService(t)
+	matchingProduct := product.Product{
+		SKU:      "MATCH-USD",
+		Name:     "Matching USD Product",
+		Slug:     "matching-usd-product",
+		Currency: "USD",
+		Price:    100,
+		Status:   "active",
+		Locale:   "en",
+	}
+	require.NoError(t, db.Create(&matchingProduct).Error)
+	mismatchProduct := product.Product{
+		SKU:      "OLD-CNY",
+		Name:     "Old CNY Product",
+		Slug:     "old-cny-product",
+		Currency: "CNY",
+		Price:    699,
+		Status:   "active",
+		Locale:   "en",
+	}
+	require.NoError(t, db.Create(&mismatchProduct).Error)
+	require.NoError(t, db.Create(&product.ProductVariant{
+		ProductID: mismatchProduct.ID,
+		SKU:       "OLD-CNY-SKU",
+		Title:     "Old CNY SKU",
+		Currency:  "CNY",
+		Price:     699,
+		IsDefault: true,
+		IsActive:  true,
+	}).Error)
+
+	audit, err := productService.AuditBackendEntryCurrencyConsistency("USD", 10)
+
+	require.NoError(t, err)
+	require.Equal(t, "USD", audit.ExpectedCurrency)
+	require.Equal(t, int64(1), audit.ProductMismatchCount)
+	require.Equal(t, int64(1), audit.VariantMismatchCount)
+	require.Equal(t, int64(2), audit.TotalMismatchCount)
+	require.Len(t, audit.Samples, 2)
+	require.Equal(t, "product", audit.Samples[0].Kind)
+	require.Equal(t, "CNY", audit.Samples[0].Currency)
+	require.Equal(t, "variant", audit.Samples[1].Kind)
+	require.Equal(t, "CNY", audit.Samples[1].Currency)
+}
+
 func TestProductServiceCreateAdminProductRejectsInvalidTemplateSpec(t *testing.T) {
 	db, productService := newTestProductService(t)
 	productSpecificationTemplate := seedCarbonRimType(t, db)
@@ -1445,10 +1491,10 @@ func seedProductCategoryForProductServiceTest(t *testing.T, db *gorm.DB, name, s
 	t.Helper()
 
 	category := product.ProductCategory{
-		Name:     name,
-		Slug:     slug,
-		ParentID: parentID,
-		Depth:    1,
+		Name:      name,
+		Slug:      slug,
+		ParentID:  parentID,
+		Depth:     1,
 		IsEnabled: true,
 	}
 	if parentID != nil {

@@ -3,21 +3,21 @@
     <Transition name="fade">
       <div
         v-if="isCheckoutOpen"
-        class="fixed inset-0 z-[12000] flex items-center justify-center bg-black/80 p-0 backdrop-blur-sm md:p-5 tz-mobile-dialog-mask"
+        class="fixed inset-0 z-[12000] flex items-center justify-center bg-slate-900/20 p-0 backdrop-blur-sm md:p-5 tz-mobile-dialog-mask"
         role="dialog"
         aria-modal="true"
         @click.self="closeCheckout"
       >
-        <section class="checkout-shell tz-mobile-dialog-surface relative flex h-full w-full max-w-6xl flex-col overflow-hidden border border-white/10 bg-[#090a0b] text-white shadow-2xl md:h-[min(92vh,900px)] md:rounded-2xl">
-          <header class="flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-3 md:px-6">
+        <section class="checkout-shell tz-mobile-dialog-surface relative flex h-full w-full max-w-6xl flex-col overflow-hidden border tz-border-subtle tz-surface-card tz-text-primary shadow-lg md:h-[min(92vh,900px)] md:rounded-2xl">
+          <header class="flex shrink-0 items-center justify-between border-b tz-border-subtle px-4 py-3 md:px-6">
             <div>
-              <p class="text-[10px] uppercase tracking-[0.24em] text-white/45">{{ t('checkout.modal.title', 'Checkout') }}</p>
+              <p class="text-[10px] uppercase tracking-[0.24em] tz-text-primary/45">{{ t('checkout.modal.title', 'Checkout') }}</p>
               <h2 class="mt-1 text-base font-semibold">{{ t('checkout.stepper.review.continueToCheckout', 'Complete your order') }}</h2>
             </div>
             <div class="flex items-center gap-2">
               <button
                 type="button"
-                class="inline-flex items-center gap-1.5 rounded-lg border border-white/15 px-3 py-2 text-xs text-white/75 transition hover:bg-white/10"
+                class="inline-flex items-center gap-1.5 rounded-lg border tz-border-subtle px-3 py-2 text-xs tz-text-primary/75 transition hover:tz-surface-subtle"
                 @click="backToCart"
               >
                 <Icon name="lucide:shopping-cart" class="h-3.5 w-3.5" />
@@ -37,15 +37,15 @@
           <div class="min-h-0 flex-1 overflow-y-auto">
             <div class="grid gap-5 p-4 md:grid-cols-[minmax(0,1fr)_300px] md:p-6">
               <main class="space-y-5">
-                <section class="border-b border-white/10 pb-5">
+                <section class="border-b tz-border-subtle pb-5">
                   <div class="mb-3 flex items-center justify-between gap-3">
                     <div>
                       <h3 class="text-sm font-semibold">{{ t('checkout.steps.payment', 'Choose payment method') }}</h3>
-                      <p class="mt-1 text-xs text-white/55">
+                      <p class="mt-1 text-xs tz-text-primary/55">
                         {{ t('checkout.stepper.payment.pickProvider', 'Choose a configured payment provider') }}
                       </p>
                     </div>
-                    <span v-if="paymentMethodsLoading" class="text-xs text-white/45">
+                    <span v-if="paymentMethodsLoading" class="text-xs tz-text-primary/45">
                       {{ t('common.loading', 'Loading...') }}
                     </span>
                   </div>
@@ -78,25 +78,25 @@
                           {{ paymentTitle(option) }}
                           <span
                             v-if="!isPaymentOptionAvailable(option)"
-                            class="rounded-full bg-amber-300/10 px-2 py-0.5 text-[10px] font-medium text-amber-200"
+                            class="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700"
                           >
                             {{ unavailableLabel(option) }}
                           </span>
                         </span>
-                        <span class="mt-1 block text-xs text-white/50">{{ paymentDescription(option) }}</span>
+                        <span class="mt-1 block text-xs tz-text-primary/50">{{ paymentDescription(option) }}</span>
                       </span>
                       <Icon
                         v-if="selectedMethod === option.id"
                         name="lucide:check"
-                        class="h-4 w-4 shrink-0 text-white"
+                        class="h-4 w-4 shrink-0 tz-text-primary"
                       />
                     </button>
                   </div>
 
-                  <p v-if="paymentMethodsError" class="mt-3 rounded-lg border border-amber-300/20 bg-amber-300/10 px-3 py-2 text-xs text-amber-100">
+                  <p v-if="paymentMethodsError" class="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
                     {{ paymentMethodsError }}
                   </p>
-                  <p v-if="selectedOption && !selectedPaymentAvailable" class="mt-3 rounded-lg border border-amber-300/20 bg-amber-300/10 px-3 py-2 text-xs text-amber-100">
+                  <p v-if="selectedOption && !selectedPaymentAvailable" class="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
                     {{ unavailableLabel(selectedOption) }}
                   </p>
                 </section>
@@ -104,7 +104,7 @@
                 <section class="space-y-3">
                   <div>
                     <h3 class="text-sm font-semibold">{{ t('checkout.stepper.shipping.addressTitle', 'Shipping address') }}</h3>
-                    <p class="mt-1 text-xs text-white/55">
+                    <p class="mt-1 text-xs tz-text-primary/55">
                       {{ t('checkout.stepper.shipping.addressHelp', 'Use the address where this order should be delivered.') }}
                     </p>
                   </div>
@@ -151,16 +151,16 @@
                     </label>
                   </div>
 
-                  <p v-if="zipHint" class="text-xs text-white/45">{{ zipHint }}</p>
-                  <p v-if="shippingValidation.reason && form.country" class="rounded-lg border border-rose-300/20 bg-rose-300/10 px-3 py-2 text-xs text-rose-100">
+                  <p v-if="zipHint" class="text-xs tz-text-primary/45">{{ zipHint }}</p>
+                  <p v-if="shippingValidation.reason && form.country" class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
                     {{ shippingValidation.reason }}
                   </p>
                 </section>
 
-                <section v-if="stripePaymentSession" class="border-t border-white/10 pt-5">
+                <section v-if="stripePaymentSession" class="border-t tz-border-subtle pt-5">
                   <div class="mb-3">
                     <h3 class="text-sm font-semibold">{{ t('checkout.payment.stripe.title', 'Secure card payment') }}</h3>
-                    <p class="mt-1 text-xs text-white/55">
+                    <p class="mt-1 text-xs tz-text-primary/55">
                       {{ t('checkout.payment.stripe.description', 'Your card details are handled by Stripe.') }}
                     </p>
                   </div>
@@ -174,19 +174,19 @@
                   />
                 </section>
 
-                <p v-if="checkoutError" class="rounded-lg border border-rose-300/20 bg-rose-300/10 px-3 py-2 text-xs text-rose-100">
+                 <p v-if="checkoutError" class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
                   {{ checkoutError }}
                 </p>
 
                 <section
                   v-if="gatewayFallbackOptions.length"
-                  class="rounded-xl border border-amber-300/20 bg-amber-300/[0.07] p-3"
+                   class="rounded-xl border border-amber-200 bg-amber-50 p-3"
                   aria-live="polite"
                 >
-                  <p class="text-xs font-medium text-amber-100">
+                   <p class="text-xs font-medium text-amber-800">
                     {{ t('checkout.payment.gatewayFallback.title', 'This payment provider is having trouble') }}
                   </p>
-                  <p class="mt-1 text-xs text-amber-100/70">
+                   <p class="mt-1 text-xs text-amber-700">
                     {{ t('checkout.payment.gatewayFallback.description', 'The previous attempt may still be processing. Choose another available method only if you did not complete it.') }}
                   </p>
                   <div class="mt-3 flex flex-wrap gap-2">
@@ -194,7 +194,7 @@
                       v-for="option in gatewayFallbackOptions"
                       :key="`fallback-${option.id}`"
                       type="button"
-                      class="inline-flex items-center gap-2 rounded-lg border border-amber-200/25 bg-black/20 px-3 py-2 text-xs font-medium text-amber-50 transition hover:bg-amber-200/10"
+                       class="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-white px-3 py-2 text-xs font-medium text-amber-800 transition hover:bg-amber-100"
                       @click="selectGatewayFallbackPaymentOption(option)"
                     >
                       <span class="checkout-payment-logos" aria-hidden="true">
@@ -215,40 +215,40 @@
                 </section>
               </main>
 
-              <aside class="h-fit space-y-4 border-t border-white/10 pt-5 md:sticky md:top-0 md:border-t-0 md:border-l md:pl-5 md:pt-0">
+              <aside class="h-fit space-y-4 border-t tz-border-subtle pt-5 md:sticky md:top-0 md:border-t-0 md:border-l md:pl-5 md:pt-0">
                 <div>
                   <h3 class="text-sm font-semibold">{{ t('checkout.stepper.summary.title', 'Order summary') }}</h3>
                   <div class="mt-3 space-y-3">
                     <article v-for="item in cartItems" :key="item.id" class="flex gap-3">
-                      <div class="h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-white/10 bg-white/[0.04]">
+                      <div class="h-12 w-12 shrink-0 overflow-hidden rounded-lg border tz-border-subtle tz-surface-subtle">
                         <StorefrontImage v-if="item.thumbnail" :src="item.thumbnail" :alt="item.title" class="h-full w-full object-cover" preset="thumbnail" />
-                        <div v-else class="flex h-full items-center justify-center text-white/35">
+                        <div v-else class="flex h-full items-center justify-center tz-text-primary/35">
                           <Icon name="lucide:image" class="h-4 w-4" />
                         </div>
                       </div>
                       <div class="min-w-0 flex-1">
                         <p class="truncate text-xs font-medium">{{ item.title }}</p>
-                        <p class="mt-1 text-xs text-white/50">× {{ item.quantity }}</p>
+                        <p class="mt-1 text-xs tz-text-primary/50">× {{ item.quantity }}</p>
                       </div>
                       <span class="text-xs font-medium">{{ formatPrice(item.price * item.quantity, item.currency) }}</span>
                     </article>
                   </div>
                 </div>
 
-                <div class="space-y-2 border-t border-white/10 pt-4 text-sm">
-                  <div class="flex justify-between gap-3 text-white/60">
+                <div class="space-y-2 border-t tz-border-subtle pt-4 text-sm">
+                  <div class="flex justify-between gap-3 tz-text-muted">
                     <span>{{ t('checkout.stepper.summary.subtotal', 'Subtotal') }}</span>
                     <span>{{ formatPrice(orderTotals.subtotal, cartCurrency) }}</span>
                   </div>
-                  <div class="flex justify-between gap-3 text-white/60">
+                  <div class="flex justify-between gap-3 tz-text-muted">
                     <span>{{ t('checkout.stepper.summary.shipping', 'Shipping') }}</span>
                     <span>{{ shippingLabel }}</span>
                   </div>
-                  <div class="flex justify-between gap-3 text-white/60">
+                  <div class="flex justify-between gap-3 tz-text-muted">
                     <span>{{ t('checkout.stepper.summary.tax', 'Tax') }}</span>
                     <span>{{ checkoutAmountLabel(orderTotals.tax) }}</span>
                   </div>
-                  <div class="flex justify-between gap-3 border-t border-white/10 pt-3 text-base font-semibold">
+                  <div class="flex justify-between gap-3 border-t tz-border-subtle pt-3 text-base font-semibold">
                     <span>{{ t('checkout.stepper.summary.total', 'Total') }}</span>
                     <span>{{ checkoutAmountLabel(orderTotals.total) }}</span>
                   </div>
@@ -264,7 +264,7 @@
                   <Icon v-if="isSubmitting" name="lucide:loader-circle" class="h-4 w-4 animate-spin" />
                   {{ isSubmitting ? t('checkout.common.processing', 'Processing...') : paymentCtaLabel }}
                 </button>
-                <p v-if="!selectedPaymentAvailable" class="text-center text-xs text-white/45">
+                <p v-if="!selectedPaymentAvailable" class="text-center text-xs tz-text-primary/45">
                   {{ t('checkout.modal.messages.paymentUnavailable', 'This payment method is temporarily unavailable.') }}
                 </p>
               </aside>
@@ -499,11 +499,11 @@ const unavailableLabel = (option: CheckoutPaymentOption) => {
 
 const paymentOptionClass = (option: CheckoutPaymentOption) => {
   if (!isPaymentOptionAvailable(option)) {
-    return 'cursor-not-allowed border-white/10 bg-white/[0.025] opacity-60'
+    return 'cursor-not-allowed tz-border-subtle tz-surface-subtle opacity-60'
   }
   return selectedMethod.value === option.id
-    ? 'border-white/60 bg-white/[0.10]'
-    : 'border-white/10 bg-white/[0.04] hover:border-white/30 hover:bg-white/[0.07]'
+    ? 'tz-border-strong/60 bg-white/[0.10]'
+    : 'tz-border-subtle tz-surface-subtle hover:tz-border-strong/30 hover:tz-surface-subtle'
 }
 
 const countryLabel = (country: { code: string; name: string }) =>
@@ -863,30 +863,30 @@ onBeforeUnmount(() => {
 .checkout-label {
   display: block;
   margin-bottom: 0.35rem;
-  color: rgba(255, 255, 255, 0.62);
+  color: var(--tz-text-secondary);
   font-size: 0.75rem;
 }
 
 .checkout-input {
   width: 100%;
   min-height: 2.65rem;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 1px solid var(--tz-form-control-border);
   border-radius: 0.7rem;
-  background: rgba(255, 255, 255, 0.035);
+  background: var(--tz-form-control-surface);
   padding: 0.65rem 0.8rem;
-  color: #f8fafc;
+  color: var(--tz-text-primary);
   font-size: 0.8rem;
   outline: none;
 }
 
 .checkout-input:focus {
-  border-color: rgba(255, 255, 255, 0.55);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18);
+  border-color: var(--tz-form-control-focus-border);
+  box-shadow: 0 0 0 1px var(--tz-form-control-focus-ring);
 }
 
 .checkout-input option {
-  background: #151719;
-  color: #f8fafc;
+  background: var(--tz-form-control-surface);
+  color: var(--tz-text-primary);
 }
 
 .checkout-payment-logos {

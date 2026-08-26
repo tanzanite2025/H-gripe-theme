@@ -499,7 +499,7 @@ func googleMerchantProductURL(baseURL string, item *product.Product, variant *pr
 	if strings.TrimSpace(slug) == "" {
 		return "", errors.New("product slug is required for storefront URL")
 	}
-	path := "/shop/" + url.PathEscape(strings.Trim(slug, "/"))
+	path := "/products/" + url.PathEscape(strings.Trim(slug, "/"))
 	if locale := strings.ToLower(strings.TrimSpace(item.Locale)); locale != "" && locale != "en" {
 		path = "/" + url.PathEscape(locale) + path
 	}

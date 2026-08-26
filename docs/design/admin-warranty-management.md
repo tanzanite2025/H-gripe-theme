@@ -1,63 +1,59 @@
 # Admin Warranty Management
 
-Last updated: 2026-07-25
+Last updated: 2026-08-23
 
 ## Boundary
 
-Warranty management is an admin surface over the Go backend facts:
+Warranty management is an admin surface over order-backed facts in the Go backend:
 
-- `product_registrations`
-- `warranty_claims`
-- `warranty_service_records`
+- `orders`: shipment status, customer data, tracking data, and purchased items.
+- `shipment_records`: optional after-sales evidence attached to an already shipped order.
+- `warranty_claims`: customer warranty requests identified by order number.
+- `warranty_service_records`: operational service history for a claim.
 
-The Nuxt storefront may submit or display warranty data, but it must not own warranty-processing state. Status changes, processing notes, service records, and future order-line bindings belong in the Go backend and the admin warranty modules.
+There is no product registration, barcode, serial-number, or registration-status workflow. An order may have no `shipment_records` row until an operator adds a note, image, optional product identifier, or warranty override. This table is not part of the shipping write path and does not control shipping idempotency.
 
-## Frontend file responsibilities
+The Nuxt storefront may query warranty status by authenticated order number and submit an order-number/email claim. It must not own warranty-processing state.
 
-| File | Responsibility |
-| --- | --- |
-| `go-backend/web/admin/src/views/Warranty.vue` | Page composition only: header, stats, tabs, and wiring events from the warranty composable to tab components. |
-| `go-backend/web/admin/src/composables/warranty/useWarrantyAdmin.js` | Admin data flow: fetching stats/registrations/claims/expiring records, pagination, active tab, selected claim detail, and save actions. |
-| `go-backend/web/admin/src/components/admin/warranty/WarrantyRegistrationsTab.vue` | Registration list UI and registration status controls. |
-| `go-backend/web/admin/src/components/admin/warranty/WarrantyClaimsTab.vue` | Claim list UI and event forwarding to the selected-claim detail panel. |
-| `go-backend/web/admin/src/components/admin/warranty/WarrantyClaimDetailPanel.vue` | Selected claim detail UI: claim facts, order-line binding, processing note editor, and service-record form. |
-| `go-backend/web/admin/src/components/admin/warranty/WarrantyExpiringTab.vue` | Expiring warranty list UI. |
-| `go-backend/web/admin/src/components/admin/warranty/WarrantyBoundaryTab.vue` | Operational boundary notes shown in the admin UI. |
-| `go-backend/web/admin/src/lib/warrantyPresentation.js` | Display-only helpers: labels, tones, date formatting, product/user labels, and claim media parsing. |
-| `go-backend/web/admin/src/api/registrations.js` | HTTP contract for admin registration and warranty endpoints. |
-
-Do not put table markup, status label maps, detail editors, or API orchestration back into `Warranty.vue`.
-
-## Backend file responsibilities
+## Frontend Responsibilities
 
 | File | Responsibility |
 | --- | --- |
-| `go-backend/internal/domain/registration/product_registration.go` | GORM fact for product registrations. |
-| `go-backend/internal/domain/registration/warranty_claim.go` | GORM fact for warranty claims, including selected order-item relation. |
-| `go-backend/internal/domain/registration/warranty_service_record.go` | GORM fact for warranty service history. |
-| `go-backend/internal/repository/registration_repository.go` | Persistence queries and narrow updates for registration and warranty claim facts. |
-| `go-backend/internal/repository/order_repository.go` | Order and order-item lookups used when an admin binds a claim to a concrete purchased item. |
-| `go-backend/internal/service/registration_service.go` | Product registration business rules. |
-| `go-backend/internal/service/warranty_claim_service.go` | Warranty claim business rules, including order-verified claims, admin processing updates, order-item binding, and service-record validation. |
-| `go-backend/internal/api/admin/registration_handler.go` | Admin HTTP handlers for warranty management. |
-| `go-backend/internal/api/admin/router.go` | Admin route registration and permission boundaries. |
+| `go-backend/web/admin/src/views/Warranty.vue` | Page composition: header, stats, tabs, and event wiring. |
+| `go-backend/web/admin/src/composables/warranty/useWarrantyAdmin.ts` | Fetching shipped orders and claims, pagination, selection, and save actions. |
+| `go-backend/web/admin/src/components/admin/warranty/WarrantyShipmentsTab.vue` | Lists shipped orders and edits optional after-sales evidence. |
+| `go-backend/web/admin/src/components/admin/warranty/WarrantyClaimsTab.vue` | Lists claims and forwards events to claim details. |
+| `go-backend/web/admin/src/components/admin/warranty/WarrantyClaimDetailPanel.vue` | Claim facts, order-line binding, processing notes, and service records. |
+| `go-backend/web/admin/src/components/admin/warranty/WarrantyBoundaryTab.vue` | Displays source-of-truth and ownership boundaries. |
+| `go-backend/web/admin/src/lib/warrantyPresentation.ts` | Display-only labels, tones, date formatting, and order-line/media helpers. |
+| `go-backend/web/admin/src/api/warranty.ts` | HTTP contract for `/api/admin/warranty/...`. |
 
-## Current next-stage scope
+The warranty page must not reintroduce registration tabs, expiring-registration lists, serial-number lookup, or a second shipment workflow.
 
-Completed in this pass:
+## Backend Responsibilities
 
-- The admin warranty page was split into page/composable/tab/presentation layers.
-- Admin claim detail lookup is available at `GET /api/admin/registrations/warranty-claims/:id`.
-- Admin processing notes are saved to `warranty_claims.resolution` through `PUT /api/admin/registrations/warranty-claims/:id/resolution`.
-- The UI now lets admins select a claim and save a processing note from the claim detail panel.
-- Registration status `claimed` is accepted by the backend to match the existing admin UI.
-- Order-line binding is stored as `warranty_claims.order_item_id`, with admin routes for listing valid order items and binding/unbinding the selected item.
-- Service history is stored in `warranty_service_records`, with admin routes for listing records and adding constrained service records.
-- The selected-claim detail panel was split out of the claim list tab so future rich-text/media work does not bloat the table component.
+| File | Responsibility |
+| --- | --- |
+| `go-backend/internal/domain/shipping/shipment_record.go` | Optional order-backed after-sales evidence fact. |
+| `go-backend/internal/domain/warranty/warranty_claim.go` | Warranty claim fact with order number and optional order-line relation. |
+| `go-backend/internal/domain/warranty/warranty_service_record.go` | Service history fact owned by a claim. |
+| `go-backend/internal/repository/shipment_record_repository.go` | Reads shipped orders and left-joins optional evidence; writes only explicit evidence updates. |
+| `go-backend/internal/repository/warranty_repository.go` | Claim and service-record persistence. |
+| `go-backend/internal/service/shipment_record_service.go` | Validates optional evidence and warranty window updates. |
+| `go-backend/internal/service/warranty_claim_service.go` | Order verification, claim creation, order-line binding, and service-record validation. |
+| `go-backend/internal/api/admin/warranty_handler.go` | Admin claim and service-record handlers. |
+| `go-backend/internal/api/admin/shipment_record_handler.go` | Admin shipped-order evidence handlers. |
+| `go-backend/internal/api/admin/router.go` | `/admin/warranty/...` route and permission boundary. |
 
-Still separate future work:
+## Public Flow
 
-- Rich text and media in processing notes need a constrained editor contract before HTML or images are accepted. Plain text is the current safe fact source.
-- Product registration still needs a clearer automatic link to order item/product variant/serial-number source if the storefront later collects serial numbers during checkout or delivery.
-- Service record attachments are not implemented yet. If added, store them as their own constrained media facts, not inside `warranty_claims.resolution`.
-- Public order-number/email warranty claim flows now require a matching signed, expiring, single-use email challenge before claim creation. Production still needs `SMTP_*`, `STOREFRONT_BASE_URL`, and the storefront token flow; the release gate is tracked in `go-backend/docs/SECURITY_FOLLOW_UPS.md`.
+- `GET /api/v1/warranty/orders/:order_number` reads the authenticated user's shipped order and computes the warranty window from the order plus optional `shipment_records` evidence.
+- `POST /api/v1/warranty/verify-order` verifies order number and email before sending the claim email challenge.
+- `GET /api/v1/warranty/verify/:token` validates the signed, expiring challenge.
+- `POST /api/v1/warranty/claim` creates a claim bound to the order number; a later admin action may bind an exact `order_item_id`.
+
+The customer needs the order number to see remaining warranty time. Product codes and images are evidence for staff, not customer-facing warranty keys.
+
+## Data Removal
+
+Migrations `212` and `213` permanently remove the retired product-registration schema, its warranty-table links, and its deployed FAQ wording. Their down migrations are intentionally irreversible so a rollback cannot recreate a second warranty domain.

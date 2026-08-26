@@ -1,10 +1,14 @@
 package service
 
 import (
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
 	"commerce-platform/internal/domain/currency"
+	marketdomain "commerce-platform/internal/domain/market"
 	settingdomain "commerce-platform/internal/domain/setting"
 	"commerce-platform/internal/repository"
 
@@ -72,14 +76,89 @@ func TestExchangeRateConvertFallsBackToCatalogCurrencyWhenRateMissing(t *testing
 	require.InDelta(t, 100, converted.Amount, 0.0001)
 }
 
-func TestExchangeRateConfigDefaultsBaseToPrimaryPricingCurrency(t *testing.T) {
+func TestExchangeRateConvertIgnoresExpiredRate(t *testing.T) {
+	service, repo := newExchangeRateTestService(t)
+	record := exchangeRateRecord("USD", "EUR", 0.9)
+	expiredAt := time.Now().UTC().Add(-time.Minute)
+	record.ExpiresAt = &expiredAt
+	require.NoError(t, repo.UpsertRates([]currency.ExchangeRate{record}))
+
+	converted := service.Convert(100, "USD", "EUR")
+
+	require.False(t, converted.Converted)
+	require.Equal(t, ErrExchangeRateMissing.Error(), converted.FallbackReason)
+	require.InDelta(t, 100, converted.Amount, 0.0001)
+}
+
+func TestExchangeRateSyncRejectsConcurrentCallsWithinService(t *testing.T) {
+	started := make(chan struct{})
+	release := make(chan struct{})
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		close(started)
+		<-release
+		writer.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(writer).Encode(map[string]interface{}{
+			"result":           "success",
+			"base_code":        "USD",
+			"conversion_rates": map[string]float64{"EUR": 0.9},
+		})
+	}))
+	t.Cleanup(server.Close)
+
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
 	require.NoError(t, err)
 	sqlDB, err := db.DB()
 	require.NoError(t, err)
 	sqlDB.SetMaxOpenConns(1)
 	t.Cleanup(func() { _ = sqlDB.Close() })
-	require.NoError(t, db.AutoMigrate(&settingdomain.Setting{}, &currency.ExchangeRate{}))
+	require.NoError(t, db.AutoMigrate(
+		&settingdomain.Setting{},
+		&currency.ExchangeRate{},
+		&currency.ExchangeRateSyncLease{},
+	))
+
+	settingRepo := repository.NewSettingRepository(db)
+	require.NoError(t, settingRepo.BatchSet([]settingdomain.Setting{
+		{Key: "exchange_rate_enabled", Value: "true", Type: "bool", Locale: "en", Group: "api"},
+		{Key: "exchange_rate_api_key", Value: "test-key", Type: "string", Locale: "en", Group: "api"},
+		{Key: "exchange_rate_endpoint", Value: server.URL + "/latest/{base}", Type: "string", Locale: "en", Group: "api"},
+	}))
+
+	service := NewExchangeRateService(repository.NewExchangeRateRepository(db), settingRepo)
+	service.client = server.Client()
+
+	firstResult := make(chan error, 1)
+	go func() {
+		_, syncErr := service.Sync()
+		firstResult <- syncErr
+	}()
+
+	<-started
+	secondResult := make(chan error, 1)
+	go func() {
+		_, syncErr := service.Sync()
+		secondResult <- syncErr
+	}()
+
+	select {
+	case syncErr := <-secondResult:
+		require.ErrorIs(t, syncErr, ErrExchangeRateSyncInProgress)
+	case <-time.After(time.Second):
+		t.Fatal("concurrent exchange-rate sync did not return promptly")
+	}
+
+	close(release)
+	require.NoError(t, <-firstResult)
+}
+
+func TestExchangeRateConfigUsesBackendEntryCurrencyAndEnabledMarketTargets(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
+	require.NoError(t, err)
+	sqlDB, err := db.DB()
+	require.NoError(t, err)
+	sqlDB.SetMaxOpenConns(1)
+	t.Cleanup(func() { _ = sqlDB.Close() })
+	require.NoError(t, db.AutoMigrate(&settingdomain.Setting{}, &currency.ExchangeRate{}, &marketdomain.StorefrontMarket{}, &marketdomain.MarketCountry{}))
 
 	settingRepo := repository.NewSettingRepository(db)
 	policy := NewCurrencyPolicyService(settingRepo)
@@ -88,18 +167,38 @@ func TestExchangeRateConfigDefaultsBaseToPrimaryPricingCurrency(t *testing.T) {
 		DisplayCurrencies: []string{"USD", "EUR"},
 	})
 	require.NoError(t, err)
+	marketService := NewStorefrontMarketService(repository.NewStorefrontMarketRepository(db))
+	_, err = marketService.Create(StorefrontMarketInput{
+		Code:              "US",
+		Name:              "United States",
+		DefaultLocale:     "en",
+		SupportedLocales:  []string{"en"},
+		DefaultCurrency:   "USD",
+		DisplayCurrencies: []string{"USD", "EUR", "CNY"},
+	})
+	require.NoError(t, err)
+	_, err = marketService.Create(StorefrontMarketInput{
+		Code:              "EU",
+		Name:              "Europe",
+		DefaultLocale:     "en",
+		SupportedLocales:  []string{"en"},
+		DefaultCurrency:   "EUR",
+		DisplayCurrencies: []string{"EUR", "USD"},
+	})
+	require.NoError(t, err)
 	service := NewExchangeRateService(repository.NewExchangeRateRepository(db), settingRepo)
 	service.ConfigureCurrencyPolicy(policy)
+	service.ConfigureStorefrontMarkets(marketService)
 
 	config, err := service.GetConfig()
 
 	require.NoError(t, err)
 	require.Equal(t, "CNY", config.BaseCurrency)
-	require.Equal(t, []string{"USD", "EUR"}, config.QuoteCurrencies)
+	require.ElementsMatch(t, []string{"USD", "EUR"}, config.QuoteCurrencies)
 	require.NotContains(t, config.QuoteCurrencies, "CNY")
 }
 
-func TestExchangeRateConfigLeavesQuoteCurrenciesEmptyWhenPricingPolicyHasNoSecondaryDisplays(t *testing.T) {
+func TestExchangeRateConfigUsesDefaultStorefrontMarketTargetsWhenNoMarketsConfigured(t *testing.T) {
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
 	require.NoError(t, err)
 	sqlDB, err := db.DB()
@@ -117,7 +216,8 @@ func TestExchangeRateConfigLeavesQuoteCurrenciesEmptyWhenPricingPolicyHasNoSecon
 
 	require.NoError(t, err)
 	require.Equal(t, currency.DefaultPrimaryCurrency, config.BaseCurrency)
-	require.Empty(t, config.QuoteCurrencies)
+	require.ElementsMatch(t, []string{"EUR", "GBP", "CAD", "CNY"}, config.QuoteCurrencies)
+	require.NotContains(t, config.QuoteCurrencies, currency.DefaultPrimaryCurrency)
 }
 
 func newExchangeRateTestService(t *testing.T) (*ExchangeRateService, *repository.ExchangeRateRepository) {
@@ -134,8 +234,8 @@ func newExchangeRateTestService(t *testing.T) (*ExchangeRateService, *repository
 }
 
 func exchangeRateRecord(base string, quote string, rate float64) currency.ExchangeRate {
-	fetchedAt := time.Date(2026, 8, 6, 10, 0, 0, 0, time.UTC)
-	expiresAt := fetchedAt.Add(24 * time.Hour)
+	fetchedAt := time.Now().UTC().Add(-time.Minute)
+	expiresAt := time.Now().UTC().Add(24 * time.Hour)
 	return currency.ExchangeRate{
 		BaseCurrency:  base,
 		QuoteCurrency: quote,

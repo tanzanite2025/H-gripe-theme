@@ -1,3 +1,4 @@
+import { buildProductPath } from '~/utils/seo/urls'
 import type {
   ShopProduct,
   ShopProductSpecDefinition,
@@ -173,7 +174,7 @@ export const buildProductConfigConfirmMetadata = (
       || product?.featured_image
       || ''
   )
-  const url = String(product?.url || (slug ? `/shop/${slug}` : '')).trim()
+  const url = String(product?.url || buildProductPath(slug)).trim()
   const optionRows = variantOptionRows(product, selectedVariant)
   const availability = selectedVariant?.availability === 'in_stock'
     || product?.availability === 'in_stock'

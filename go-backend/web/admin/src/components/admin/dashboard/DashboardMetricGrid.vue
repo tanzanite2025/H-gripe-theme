@@ -7,7 +7,6 @@
       class="group relative flex min-h-31 flex-col justify-between rounded-[24px] border border-dashed border-border/80 bg-card p-4 text-left text-card-foreground overflow-hidden shadow-xs transition-all hover:-translate-y-px hover:border-primary/40 focus-visible:outline-none"
       @click="emit('navigate', metric.path)"
     >
-      <div class="uds-glow-bg opacity-40 group-hover:opacity-100 transition-opacity" />
       <div class="relative z-10 flex items-start justify-between gap-3">
         <div class="min-w-0">
           <span class="block text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">{{ metric.label }}</span>

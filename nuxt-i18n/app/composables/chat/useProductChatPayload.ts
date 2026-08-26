@@ -1,3 +1,5 @@
+import { buildProductPath } from '~/utils/seo/urls'
+
 export interface ProductChatMetadata {
   kind: 'product_reference'
   product_id: number | null
@@ -34,7 +36,7 @@ export const buildProductChatMetadata = (product: Record<string, any>): ProductC
   const title = String(product?.title || product?.name || 'Product').trim()
   const slug = String(product?.slug || '').trim()
   const sku = String(product?.sku || '').trim()
-  const url = String(product?.url || (slug ? `/shop/${slug}` : '')).trim()
+  const url = String(product?.url || buildProductPath(slug)).trim()
   const thumbnail = String(product?.thumbnail || product?.image || product?.featured_image || '').trim()
   const priceValue = toFiniteNumber(
     product?.priceValue

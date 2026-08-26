@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import type { ComputedRef, Ref, WritableComputedRef } from 'vue'
+import { validateStorefrontUploadFile } from '~/utils/uploadSpecs'
 
 type AuthRequest = <T = any>(path: string, options?: any, errorMessage?: string) => Promise<T>
 
@@ -40,6 +41,16 @@ export const useCustomerServiceChatSync = ({
   let realtimeReconnectAttempt = 0
   let browserRecoveryListenersAttached = false
   const seenRealtimeEventIds = new Set<string>()
+
+  const customerServiceTimezoneHeaders = (): Record<string, string> => {
+    if (!import.meta.client) return {}
+    try {
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+      return timezone ? { 'X-Timezone': timezone } : {}
+    } catch {
+      return {}
+    }
+  }
 
   const getHttpStatus = (error: unknown): number | null => {
     if (!error || typeof error !== 'object') return null
@@ -85,7 +96,8 @@ export const useCustomerServiceChatSync = ({
         method: 'POST',
         headers: {
           accept: 'application/json',
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          ...customerServiceTimezoneHeaders()
         },
         body: JSON.stringify({
           conversation_id: currentConversationId,
@@ -258,6 +270,7 @@ export const useCustomerServiceChatSync = ({
     const response = await $fetch<any>(`${publicApiBase.value}/customer-service/conversations`, {
       method: 'POST',
       credentials: 'include',
+      headers: customerServiceTimezoneHeaders(),
       body: {
         agent_id: selectedAgent.value?.id ? String(selectedAgent.value.id) : '',
         locale: locale.value
@@ -275,6 +288,7 @@ export const useCustomerServiceChatSync = ({
     try {
       const response = await $fetch<any>(`${publicApiBase.value}/customer-service/messages/${encodeURIComponent(conversationId.value)}`, {
         credentials: 'include',
+        headers: customerServiceTimezoneHeaders(),
         params: {
           limit: 100,
           offset: 0
@@ -317,6 +331,10 @@ export const useCustomerServiceChatSync = ({
     file: File,
     source: 'library' | 'camera' = 'library'
   ) => {
+    const validation = await validateStorefrontUploadFile(file, 'customer_service_attachment')
+    if (!validation.ok) {
+      throw new Error(validation.error || 'Customer service image does not meet the upload requirements.')
+    }
     const currentConversationId = await ensureCustomerServiceConversation()
     const formData = new FormData()
     formData.append('conversation_id', currentConversationId)
@@ -326,6 +344,7 @@ export const useCustomerServiceChatSync = ({
     const response = await $fetch<any>(`${publicApiBase.value}/customer-service/attachments`, {
       method: 'POST',
       credentials: 'include',
+      headers: customerServiceTimezoneHeaders(),
       body: formData
     })
 

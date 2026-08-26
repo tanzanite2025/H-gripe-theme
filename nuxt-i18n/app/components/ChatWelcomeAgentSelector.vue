@@ -5,15 +5,15 @@
         v-for="agent in displayAgents"
         :key="agent.id"
         type="button"
-        class="agent-row group absolute left-1/2 -translate-x-1/2 text-left rounded-full shadow-[0_10px_18px_-14px_rgba(0,0,0,1)] transition-[transform,width,background-color,filter] duration-300 ease-out will-change-transform"
+        class="agent-row group absolute left-1/2 -translate-x-1/2 text-left rounded-full shadow-md transition-[transform,width,background-color,filter] duration-300 ease-out will-change-transform"
         :class="getRowClass(agent)"
         @click="handleSelect(agent)"
       >
         <div class="h-full flex items-center gap-3 px-3" :class="getInnerClass(agent)">
           <span class="relative shrink-0 w-14 h-14">
             <span
-              class="w-full h-full rounded-full bg-white/[0.16] flex items-center justify-center text-xs font-semibold overflow-hidden"
-              :class="isSelected(agent) ? 'text-black/80' : 'tz-text-primary'"
+              class="w-full h-full rounded-full tz-surface-muted flex items-center justify-center text-xs font-semibold overflow-hidden"
+                :class="isSelected(agent) ? 'text-white/80' : 'tz-text-primary'"
             >
               <template v-if="getAvatarSrc(agent)">
                 <StorefrontImage :src="getAvatarSrc(agent)" :alt="agent.name" class="w-full h-full rounded-full object-cover" preset="avatar" />
@@ -32,20 +32,20 @@
             <span class="flex items-center gap-2">
               <span
                 class="text-sm font-semibold truncate"
-                :class="isSelected(agent) ? 'text-black' : 'tz-text-primary'"
+                :class="isSelected(agent) ? 'text-white' : 'tz-text-primary'"
               >
                 {{ agent.name }}
               </span>
             </span>
             <span
               class="mt-0.5 block text-xs truncate"
-              :class="isSelected(agent) ? 'text-black/70' : 'tz-text-secondary'"
+              :class="isSelected(agent) ? 'text-white/70' : 'tz-text-secondary'"
             >
               {{ getAgentDescription(agent) }}
             </span>
           </span>
 
-          <span class="shrink-0" :class="isSelected(agent) ? 'text-black/70' : 'tz-text-muted'">→</span>
+          <span class="shrink-0" :class="isSelected(agent) ? 'text-white/70' : 'tz-text-muted'">→</span>
         </div>
       </button>
     </div>
@@ -55,12 +55,12 @@
         v-for="agent in displayAgents"
         :key="agent.id"
         type="button"
-        class="w-full text-left rounded-full bg-white/[0.10] hover:bg-white/[0.14] shadow-[0_10px_18px_-14px_rgba(0,0,0,1)] transition-colors"
+        class="w-full text-left rounded-full tz-surface-subtle hover:tz-surface-muted shadow-[0_10px_18px_-14px_rgba(20,32,43,0.14)] transition-colors"
         @click="handleSelect(agent)"
       >
         <div class="flex items-center gap-3 px-3 py-2">
           <span class="relative shrink-0 w-14 h-14">
-            <span class="w-full h-full rounded-full bg-white/[0.16] flex items-center justify-center text-xs font-semibold overflow-hidden tz-text-primary">
+            <span class="w-full h-full rounded-full tz-surface-muted flex items-center justify-center text-xs font-semibold overflow-hidden tz-text-primary">
               <template v-if="getAvatarSrc(agent)">
                 <StorefrontImage :src="getAvatarSrc(agent)" :alt="agent.name" class="w-full h-full rounded-full object-cover" preset="avatar" />
               </template>
@@ -144,8 +144,8 @@ const getRowClass = (agent: any) => {
     translate,
     selected ? 'w-full h-[76px]' : 'w-[92%] h-[66px]',
     selected
-      ? 'bg-[linear-gradient(135deg,rgba(203,213,225,0.95),rgba(148,163,184,0.95))] hover:brightness-95'
-      : 'bg-white/[0.10] hover:bg-white/[0.14]',
+       ? 'tz-surface-muted tz-text-primary hover:tz-surface-subtle'
+      : 'tz-surface-subtle hover:tz-surface-muted',
   ]
 }
 
@@ -165,13 +165,13 @@ const getAgentStatus = (agent: any): string => {
 const getStatusDotClass = (agent: any): string => {
   switch (getAgentStatus(agent)) {
     case 'online':
-      return 'bg-[#B5FF6D] shadow-[0_0_0_2px_rgba(181,255,109,0.25),0_0_10px_rgba(181,255,109,0.7)]'
+      return 'bg-[#059669] shadow-[0_0_0_2px_rgba(5, 150, 105,0.25),0_0_10px_rgba(5, 150, 105,0.7)]'
     case 'busy':
       return 'bg-amber-300 shadow-[0_0_0_2px_rgba(252,211,77,0.22),0_0_10px_rgba(252,211,77,0.5)]'
     case 'away':
       return 'bg-yellow-500 shadow-[0_0_0_2px_rgba(234,179,8,0.2),0_0_10px_rgba(234,179,8,0.42)]'
     default:
-      return 'bg-white/35 shadow-[0_0_0_2px_rgba(255,255,255,0.12)]'
+      return 'bg-slate-400 shadow-[0_0_0_2px_rgba(100,116,139,0.18)]'
   }
 }
 

@@ -2,6 +2,7 @@
 import { defineNuxtConfig } from 'nuxt/config'
 import locales from './app/i18n/locales.manifest'
 import { buildStorefrontRouteRules } from './config/storefront/route-rules'
+import { virtualPageSubNavigationEntries } from './app/utils/pageSubNavigationData'
 
 const env = ((globalThis as unknown as { process?: { env?: Record<string, string | undefined> } }).process?.env) || {}
 const trimTrailingSlash = (value: string) => value.replace(/\/$/, '')
@@ -25,9 +26,13 @@ const internalApiOrigin = trimTrailingSlash(env.API_INTERNAL_ORIGIN || 'http://l
 const imageProvider = env.NUXT_IMAGE_PROVIDER || 'ipx'
 const imageInternalOrigin = trimTrailingSlash(env.NUXT_IMAGE_INTERNAL_ORIGIN || '')
 const imageMaxInputPixels = Number(env.NUXT_IMAGE_MAX_INPUT_PIXELS || '24000000')
-const imageOptimizeUploads = isTruthyEnv(
-  env.NUXT_IMAGE_OPTIMIZE_UPLOADS || env.NUXT_PUBLIC_IMAGE_UPLOAD_OPTIMIZATION_ENABLED
+const configuredImageOptimization = (
+  env.NUXT_IMAGE_OPTIMIZE_UPLOADS
+  ?? env.NUXT_PUBLIC_IMAGE_UPLOAD_OPTIMIZATION_ENABLED
 )
+const imageOptimizeUploads = configuredImageOptimization === undefined
+  ? env.NODE_ENV === 'production'
+  : isTruthyEnv(configuredImageOptimization)
 const siteImageDomain = hostFromUrl(publicSiteUrl)
 const apiImageDomain = hostFromUrl(publicApiBase)
 const internalImageDomain = hostFromUrl(imageInternalOrigin)
@@ -45,40 +50,10 @@ const imageDomains = [...new Set([
 const htmlCacheDefault = env.NODE_ENV === 'production' ? 'true' : 'false'
 const htmlCacheEnabled = String(env.NUXT_HTML_CACHE_ENABLED ?? htmlCacheDefault).toLowerCase() !== 'false'
 
-const tabbedPageRoutes = [
-  {
-    basePath: '/guides/tireguides',
-    tabs: ['size', 'match', 'tubeless', 'installation', 'choose', 'rims', 'tube'],
-  },
-  {
-    basePath: '/guides/wheelset-buyers',
-    tabs: ['overview', 'safety-instructions', 'sample-assembly', 'special-order', 'appearance-logo', 'choose-freehub', 'wheel-components', 'optional'],
-  },
-  {
-    basePath: '/company/about',
-    tabs: ['factory', 'appearance', 'hole-patterns', 'facility', 'manufacture', 'qualitycontrol'],
-  },
-  {
-    basePath: '/support/warranty',
-    tabs: ['change-cancel', 'damaged-lost', 'returns', 'warranty', 'accidental-damage', 'protection', 'submit-warranty'],
-  },
-  {
-    basePath: '/support/test-report',
-    tabs: ['rim-test-report', 'wheelset-test-report', 'tension', 'wheelset-assembly'],
-  },
-  {
-    basePath: '/spoke-calculator',
-    tabs: ['calculator', 'parameter'],
-  },
-  {
-    basePath: '/membershipandpoints',
-    tabs: ['myinfo', 'levers', 'exchange'],
-  },
-  {
-    basePath: '/picture-warehouse',
-    tabs: ['riders', 'brand'],
-  },
-]
+const tabbedPageRoutes = virtualPageSubNavigationEntries.map((entry) => ({
+  basePath: entry.path,
+  tabs: entry.tabs.map((tab) => tab.id),
+}))
 
 const normalizePagePath = (path: string) => `/${path.replace(/^\/+/, '')}`.replace(/\/+$/, '') || '/'
 
@@ -125,6 +100,10 @@ const normalizeModuleId = (id: string) => id.replace(/\\/g, '/')
 const getManualChunkName = (id: string) => {
   const moduleId = normalizeModuleId(id)
   if (!moduleId.includes('/node_modules/')) return undefined
+
+  if (moduleId.includes('/parse5/')) {
+    return 'vendor-html-parser'
+  }
 
   if (
     moduleId.includes('/vue/') ||
@@ -256,6 +235,17 @@ export default defineNuxtConfig({
           '/uploads/': `${imageInternalOrigin}/uploads/`,
         }
       : {},
+    // Keep the responsive image breakpoints explicit. StorefrontImage uses
+    // an xs slot for narrow phones, while @nuxt/image does not define xs by
+    // default.
+    screens: {
+      xs: 480,
+      sm: 640,
+      md: 768,
+      lg: 1024,
+      xl: 1280,
+      '2xl': 1536,
+    },
     densities: [1, 2],
     ipx: {
       fs: {

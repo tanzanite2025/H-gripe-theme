@@ -74,7 +74,7 @@ func (s *MediaService) buildCopyrightClaim(input MediaUploadInput, contentSHA256
 	}
 
 	if s.settings != nil {
-		claim.SiteName = firstNonEmptyString(settingValue(s.settings, "brand_title"), settingValue(s.settings, "site_name"))
+		claim.SiteName = settingValue(s.settings, "site_name")
 		claim.RightsHolder = settingValue(s.settings, "copyright_holder")
 		claim.CopyrightNotice = settingValue(s.settings, "copyright_notice")
 		claim.CopyrightPolicyURL = settingValue(s.settings, "copyright_url")

@@ -1,7 +1,10 @@
 import type { Component } from 'vue'
 import {
+  BookOpen,
+  ClipboardList,
   CreditCard,
   Cloud,
+  Coins,
   FileSearch,
   FileText,
   Fingerprint,
@@ -67,6 +70,28 @@ export const adminNavigationItems: AdminNavigationItem[] = [
     ],
   },
   {
+    id: 'procurement',
+    code: 'PROCUREMENT',
+    label: '商品成本',
+    icon: ClipboardList,
+    permission: 'procurement:view',
+    children: [
+      { id: 'procurement-records', path: '/procurement/records', routeName: 'ProcurementRecords', label: '商品成本' },
+    ],
+  },
+  {
+    id: 'fitment-catalog',
+    code: 'FITMENT_CATALOG',
+    label: '车型适配资料库',
+    icon: Waypoints,
+    permission: 'fitment_catalog:view',
+    children: [
+      { id: 'fitment-frame-entries', path: '/fitment-catalog/frame-entries', routeName: 'FitmentFrameEntries', label: '车架 / 车型' },
+      { id: 'fitment-fork-entries', path: '/fitment-catalog/fork-entries', routeName: 'FitmentForkEntries', label: '前叉' },
+      { id: 'fitment-hub-specifications', path: '/fitment-catalog/hub-specifications', routeName: 'FitmentHubSpecifications', label: '花鼓规格' },
+    ],
+  },
+  {
     id: 'selection',
     code: 'SELECTION',
     label: '选型配置',
@@ -98,6 +123,7 @@ export const adminNavigationItems: AdminNavigationItem[] = [
       { id: 'seo-home', path: '/seo/home', routeName: 'SEOHome', label: '首页' },
       { id: 'seo-articles', path: '/seo/articles', routeName: 'SEOArticles', label: '文章' },
       { id: 'seo-products', path: '/seo/products', routeName: 'SEOProducts', label: '产品' },
+      { id: 'seo-categories', path: '/seo/categories', routeName: 'SEOCategories', label: '分类' },
     ],
   },
   {
@@ -195,6 +221,17 @@ export const adminNavigationItems: AdminNavigationItem[] = [
     ],
   },
   {
+    id: 'currency-exchange',
+    code: 'CURRENCY_EXCHANGE',
+    label: '币种与汇率',
+    icon: Coins,
+    permission: 'settings:view',
+    children: [
+      { id: 'currency-exchange-overview', path: '/currency-exchange/overview', routeName: 'CurrencyExchangeOverview', label: '币种总览' },
+      { id: 'currency-exchange-api', path: '/currency-exchange/api', routeName: 'CurrencyExchangeApi', label: '汇率 API' },
+    ],
+  },
+  {
     id: 'risk-strategy',
     code: 'RISK_STRATEGY',
     label: '风控策略',
@@ -214,11 +251,10 @@ export const adminNavigationItems: AdminNavigationItem[] = [
     label: '保修管理',
     icon: ShieldCheck,
     permission: 'product:view',
-    children: [
-      { id: 'warranty-registrations', path: '/warranty/registrations', routeName: 'WarrantyRegistrations', label: '注册记录' },
-      { id: 'warranty-claims', path: '/warranty/claims', routeName: 'WarrantyClaims', label: '保修申请' },
-      { id: 'warranty-expiring', path: '/warranty/expiring', routeName: 'WarrantyExpiring', label: '即将到期' },
-      { id: 'warranty-boundary', path: '/warranty/boundary', routeName: 'WarrantyBoundary', label: '数据边界' },
+      children: [
+        { id: 'warranty-shipments', path: '/warranty/shipments', routeName: 'WarrantyShipments', label: '已发货' },
+        { id: 'warranty-claims', path: '/warranty/claims', routeName: 'WarrantyClaims', label: '保修申请' },
+        { id: 'warranty-boundary', path: '/warranty/boundary', routeName: 'WarrantyBoundary', label: '数据边界' },
     ],
   },
   {
@@ -250,6 +286,28 @@ export const adminNavigationItems: AdminNavigationItem[] = [
     ],
   },
   {
+    id: 'media-center',
+    code: 'MEDIA_CENTER',
+    label: '媒体中心',
+    icon: Images,
+    children: [
+      { id: 'media-library', path: '/media/library', routeName: 'MediaLibrary', label: '媒体库', permission: 'media:view' },
+      { id: 'media-derivatives', path: '/media/derivatives', routeName: 'MediaDerivatives', label: '图片尺寸转换', permission: 'media:configure' },
+      { id: 'media-copyright', path: '/media/copyright', routeName: 'MediaCopyright', label: '图片版权', permission: 'settings:view' },
+    ],
+  },
+  {
+    id: 'site-introduction',
+    code: 'SITE_INTRODUCTION',
+    label: '站点介绍',
+    icon: BookOpen,
+    children: [
+      { id: 'settings-site', path: '/site-introduction/site', routeName: 'SettingsSite', label: '站点', permission: 'settings:view' },
+      { id: 'site-introduction-profile', path: '/site-introduction/website-profile', routeName: 'SiteIntroductionWebsiteProfile', label: '我与这个网站', permission: 'settings:view' },
+      { id: 'site-introduction-name', path: '/site-introduction/why-this-name', routeName: 'SiteIntroductionWhyThisName', label: '为什么叫这个名字', permission: 'settings:view' },
+    ],
+  },
+  {
     id: 'content',
     code: 'CONTENT',
     label: '网站内容',
@@ -261,12 +319,9 @@ export const adminNavigationItems: AdminNavigationItem[] = [
       { id: 'content-reviews', path: '/content/reviews', routeName: 'ContentReviews', label: '评价审核', icon: Star, permission: 'review:view' },
       { id: 'content-page-feedback', path: '/content/feedback', routeName: 'ContentPageFeedback', label: '页面留言', icon: MessageSquareText, permission: 'content:view' },
       { id: 'content-faqs', path: '/content/faqs', routeName: 'ContentFAQs', label: 'FAQ 内容', permission: 'faq:view' },
-      { id: 'content-media-library', path: '/content/media-library', routeName: 'ContentMediaLibrary', label: '媒体库', permission: 'media:view' },
       { id: 'content-visual-showcase', path: '/content/visual-showcase', routeName: 'ContentVisualShowcase', label: '首页视觉目录', icon: Images, permission: 'content:view' },
       { id: 'content-home-main-products', path: '/content/home-main-products', routeName: 'ContentHomeMainProducts', label: '首页主力产品', icon: Package, permission: 'content:view' },
-      { id: 'content-media-derivatives', path: '/content/media-derivatives', routeName: 'ContentMediaDerivatives', label: '图片尺寸转换', permission: 'media:configure' },
       { id: 'content-spoke-calculator', path: '/content/spoke-calculator', routeName: 'ContentSpokeCalculator', label: '辐条计算器数据', permission: 'product:view' },
-      { id: 'content-website-profile', path: '/content/website-profile', routeName: 'ContentWebsiteProfile', label: '我与这个网站', permission: 'settings:view' },
     ],
   },
   {
@@ -280,10 +335,8 @@ export const adminNavigationItems: AdminNavigationItem[] = [
       { id: 'social-profiles', path: '/social/profiles', routeName: 'SocialProfiles', label: '前台展示' },
       { id: 'social-youtube', path: '/social/youtube', routeName: 'SocialYouTube', label: 'YouTube' },
       { id: 'social-meta', path: '/social/meta', routeName: 'SocialMeta', label: 'Facebook / Instagram' },
-      { id: 'social-tiktok', path: '/social/tiktok', routeName: 'SocialTikTok', label: 'TikTok' },
-      { id: 'social-linkedin', path: '/social/linkedin', routeName: 'SocialLinkedIn', label: 'LinkedIn' },
       { id: 'social-x', path: '/social/x', routeName: 'SocialX', label: 'X' },
-      { id: 'social-wechat', path: '/social/wechat', routeName: 'SocialWeChat', label: '微信' },
+      { id: 'social-reddit', path: '/social/reddit', routeName: 'SocialReddit', label: 'Reddit' },
       { id: 'social-publications', path: '/social/publications', routeName: 'SocialPublications', label: '发布记录' },
     ],
   },
@@ -356,9 +409,7 @@ export const adminNavigationItems: AdminNavigationItem[] = [
     icon: Settings,
     permission: 'settings:view',
     children: [
-      { id: 'settings-site', path: '/settings/site', routeName: 'SettingsSite', label: '站点' },
       { id: 'settings-email', path: '/settings/email', routeName: 'SettingsEmail', label: '邮件' },
-      { id: 'settings-currency', path: '/settings/currency', routeName: 'SettingsCurrency', label: '价格币种' },
       { id: 'settings-markets', path: '/settings/markets', routeName: 'SettingsMarkets', label: '市场与本地化语种' },
       { id: 'settings-api', path: '/settings/api', routeName: 'SettingsApi', label: 'API 管理' },
       { id: 'settings-commercial-crawler', path: '/settings/commercial-crawler', routeName: 'SettingsCommercialCrawler', label: '商业爬虫防护' },

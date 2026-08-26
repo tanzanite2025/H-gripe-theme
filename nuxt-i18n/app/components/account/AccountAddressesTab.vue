@@ -125,7 +125,7 @@ watch(
 }
 
 .tab-head p {
-  color: rgba(181, 255, 109, 0.9);
+  color: rgba(5, 150, 105, 0.9);
   font-size: var(--tz-type-micro-label);
   font-weight: 800;
   letter-spacing: 0.15em;
@@ -144,14 +144,14 @@ watch(
   grid-template-columns: auto 1fr;
   gap: 0.6rem;
   border-radius: 1rem;
-  background: rgba(181, 255, 109, 0.1);
+  background: rgba(5, 150, 105, 0.1);
   padding: 0.75rem;
 }
 
 .address-boundary :deep(svg) {
   width: 1rem;
   height: 1rem;
-  color: #B5FF6D;
+  color: #059669;
   margin-top: 0.1rem;
 }
 
@@ -193,8 +193,8 @@ watch(
 }
 
 .address-form input:focus {
-  border-color: rgba(181, 255, 109, 0.7);
-  box-shadow: 0 0 0 3px rgba(181, 255, 109, 0.12);
+  border-color: rgba(5, 150, 105, 0.7);
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.12);
 }
 
 .address-form__wide,
@@ -212,8 +212,8 @@ watch(
 .address-form__actions button {
   min-height: 2.55rem;
   border-radius: 999px;
-  background: #B5FF6D;
-  color: #050505;
+  background: var(--tz-action-primary);
+  color: var(--tz-action-primary-foreground);
   font-size: 0.8rem;
   font-weight: 900;
 }
@@ -227,7 +227,7 @@ watch(
 .account-toast {
   margin: 0;
   border-radius: 999px;
-  background: rgba(181, 255, 109, 0.12);
+  background: rgba(5, 150, 105, 0.12);
   color: #e7ffd1;
   padding: 0.6rem 0.8rem;
   text-align: center;

@@ -149,7 +149,7 @@ const openWheelsetVideo = () => {
   font-size: var(--tz-type-section-title);
   line-height: 1.35;
   font-weight: 600;
-  color: #e5e7eb;
+  color: var(--tz-text-primary);
 }
 
 .support-section__body {
@@ -185,9 +185,9 @@ const openWheelsetVideo = () => {
   width: 100%;
   max-width: 960px;
   margin: 0 1rem;
-  background: #020617;
+  background: var(--tz-card-surface);
   border-radius: 0.75rem;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.85);
+  box-shadow: 0 20px 40px rgba(20, 32, 43, 0.16);
   overflow: hidden;
 }
 

@@ -42,6 +42,8 @@ type FileRule struct {
 	AllowedContentTypes []string
 	ExactWidth          int
 	ExactHeight         int
+	AspectRatioWidth    int
+	AspectRatioHeight   int
 	MaxWidth            int
 	MaxHeight           int
 	MaxPixels           int64
@@ -78,6 +80,8 @@ var (
 		MaxSize:             3 << 20,
 		AllowedExtensions:   []string{".webp"},
 		AllowedContentTypes: []string{"image/webp"},
+		ExactWidth:          800,
+		ExactHeight:         800,
 		MaxWidth:            800,
 		MaxHeight:           800,
 		MaxPixels:           800 * 800,
@@ -106,6 +110,30 @@ var (
 		MaxWidth:            8000,
 		MaxHeight:           8000,
 		MaxPixels:           24_000_000,
+	}
+	ProductDescriptionImageRule = FileRule{
+		MaxSize:             12 << 20,
+		AllowedExtensions:   []string{".jpg", ".jpeg", ".png", ".webp"},
+		AllowedContentTypes: []string{"image/jpeg", "image/png", "image/webp"},
+		MaxWidth:            8000,
+		MaxHeight:           8000,
+		MaxPixels:           24_000_000,
+	}
+	ProductVariantSwatchRule = FileRule{
+		MaxSize:             2 << 20,
+		AllowedExtensions:   []string{".jpg", ".jpeg", ".png", ".webp"},
+		AllowedContentTypes: []string{"image/jpeg", "image/png", "image/webp"},
+		MaxWidth:            2048,
+		MaxHeight:           2048,
+		MaxPixels:           4_194_304,
+	}
+	FaviconImageRule = FileRule{
+		MaxSize:             1 << 20,
+		AllowedExtensions:   []string{".jpg", ".jpeg", ".png", ".webp"},
+		AllowedContentTypes: []string{"image/jpeg", "image/png", "image/webp"},
+		MaxWidth:            1024,
+		MaxHeight:           1024,
+		MaxPixels:           1_048_576,
 	}
 	CustomerServiceAvatarRule = FileRule{
 		MaxSize:             2 << 20,
@@ -193,6 +221,18 @@ func validateImageDimensions(file *multipart.FileHeader, rule FileRule, contentT
 			file.Filename,
 			rule.ExactWidth,
 			rule.ExactHeight,
+			width,
+			height,
+		)
+	}
+	if rule.AspectRatioWidth > 0 && rule.AspectRatioHeight > 0 &&
+		int64(width)*int64(rule.AspectRatioHeight) != int64(height)*int64(rule.AspectRatioWidth) {
+		return validationError(
+			CodeInvalidDimensions,
+			"invalid_dimensions: %s must keep a %d:%d aspect ratio (received %dx%d)",
+			file.Filename,
+			rule.AspectRatioWidth,
+			rule.AspectRatioHeight,
 			width,
 			height,
 		)

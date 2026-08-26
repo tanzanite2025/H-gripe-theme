@@ -67,7 +67,7 @@
                       :src="selectedMedia.url"
                       :alt="selectedMedia.alt"
                       class="global-product-detail-bottom-sheet-media-image"
-                      preset="gallery"
+                      preset="detail"
                       loading="eager"
                       fetchpriority="high"
                     />
@@ -338,6 +338,7 @@ interface RawProductMedia {
   media_type?: string
   thumbnail_url?: string
   poster_url?: string
+  image_variants?: Record<string, { url?: string }>
   alt?: string
   title?: string
   is_primary?: boolean
@@ -545,11 +546,15 @@ const productMediaItems = computed<ProductMediaItem[]>(() => {
     .filter(item => item.url && item.is_visible !== false)
     .map((item, index) => {
       const kind: ProductMediaItem['kind'] = item.media_type === 'video' ? 'video' : 'image'
+      const sourceUrl = String(item.url)
+      const largeVariantUrl = kind === 'image'
+        ? String(item.image_variants?.large?.url || '').trim()
+        : ''
       return {
         id: item.id !== undefined ? String(item.id) : `${kind}-${index}`,
         kind,
-        url: String(item.url),
-        thumbnailUrl: String(item.thumbnail_url || (kind === 'image' ? item.url : '')),
+        url: largeVariantUrl || sourceUrl,
+        thumbnailUrl: String(item.thumbnail_url || item.image_variants?.thumbnail?.url || (kind === 'image' ? sourceUrl : '')),
         poster: item.poster_url ? String(item.poster_url) : undefined,
         alt: String(item.alt || item.title || product.value?.title || ''),
         index,
@@ -657,6 +662,14 @@ const selectedProductDisplayPrice = computed(() => {
   }
 })
 
+const selectedProductSourcePrice = computed(() => {
+  const variant = selectedVariant.value
+  return {
+    amount: variant?.priceNumber ?? product.value?.priceNumber ?? 0,
+    currency: variant?.currency || product.value?.currency || 'USD',
+  }
+})
+
 const formattedSelectedProductPrice = computed(() => {
   const { amount, currency } = selectedProductDisplayPrice.value
   try {
@@ -693,10 +706,11 @@ const increaseGlobalProductDetailBottomSheetQuantity = () => {
 const createGlobalProductDetailBottomSheetCartItem = () => {
   if (!product.value) return null
   const variant = selectedVariant.value
+  const sourcePrice = selectedProductSourcePrice.value
   return toCartItem(product.value, {
     variantId: variant?.id || null,
-    price: selectedProductDisplayPrice.value.amount,
-    currency: selectedProductDisplayPrice.value.currency,
+    price: sourcePrice.amount,
+    currency: sourcePrice.currency,
     title: product.value.title,
     thumbnail: product.value.thumbnail,
     weightGrams: variant?.weightGrams || null,
@@ -781,7 +795,7 @@ watch(selectedVariantId, () => {
 .global-product-detail-bottom-sheet-backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.78);
+  background: rgba(15, 23, 42, 0.2);
   -webkit-backdrop-filter: blur(5px);
   backdrop-filter: blur(5px);
 }
@@ -796,10 +810,10 @@ watch(selectedVariantId, () => {
   flex-direction: column;
   overflow: hidden;
   box-sizing: border-box;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  border: 1px solid var(--tz-border-subtle);
   border-radius: 1rem 1rem 0 0;
-  background: #050505;
-  box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.56);
+  background: var(--tz-card-surface);
+  box-shadow: 0 -20px 60px rgba(15, 23, 42, 0.16);
 }
 
 .global-product-detail-bottom-sheet-header {
@@ -809,7 +823,7 @@ watch(selectedVariantId, () => {
   justify-content: space-between;
   gap: 1rem;
   padding: 0.85rem 1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  border-bottom: 1px solid var(--tz-border-subtle);
 }
 
 .global-product-detail-bottom-sheet-header-copy {
@@ -818,7 +832,7 @@ watch(selectedVariantId, () => {
 
 .global-product-detail-bottom-sheet-eyebrow {
   display: block;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--tz-text-muted);
   font-size: 0.68rem;
   font-weight: 800;
   letter-spacing: 0.06em;
@@ -829,7 +843,7 @@ watch(selectedVariantId, () => {
 .global-product-detail-bottom-sheet-product-title {
   overflow: hidden;
   margin: 0;
-  color: #fff;
+  color: var(--tz-text-primary);
   font-size: 1rem;
   font-weight: 800;
   line-height: 1.25;
@@ -843,10 +857,10 @@ watch(selectedVariantId, () => {
   height: 2.25rem;
   flex: 0 0 auto;
   place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.22);
+  border: 1px solid var(--tz-border-strong);
   border-radius: 999px;
-  color: #fff;
-  background: rgba(255, 255, 255, 0.08);
+  color: var(--tz-text-primary);
+  background: var(--tz-surface-subtle);
 }
 
 .global-product-detail-bottom-sheet-content {
@@ -862,12 +876,12 @@ watch(selectedVariantId, () => {
   place-items: center;
   align-content: center;
   gap: 0.75rem;
-  color: rgba(255, 255, 255, 0.68);
+  color: var(--tz-text-secondary);
   text-align: center;
 }
 
 .global-product-detail-bottom-sheet-state--error {
-  color: #fecaca;
+  color: var(--tz-status-danger-text);
 }
 
 .global-product-detail-bottom-sheet-inline-action {
@@ -876,10 +890,10 @@ watch(selectedVariantId, () => {
   gap: 0.4rem;
   min-height: 2.25rem;
   padding: 0.45rem 0.7rem;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid var(--tz-border-strong);
   border-radius: 0.5rem;
-  color: #fff;
-  background: rgba(255, 255, 255, 0.08);
+  color: var(--tz-text-primary);
+  background: var(--tz-surface-subtle);
 }
 
 .global-product-detail-bottom-sheet-layout {
@@ -907,9 +921,9 @@ watch(selectedVariantId, () => {
   aspect-ratio: 1 / 1;
   place-items: center;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  border: 1px solid var(--tz-border-subtle);
   border-radius: 0.75rem;
-  background: #111;
+  background: var(--tz-surface-subtle);
 }
 
 .global-product-detail-bottom-sheet-media-image,
@@ -921,13 +935,13 @@ watch(selectedVariantId, () => {
 }
 
 .global-product-detail-bottom-sheet-media-video {
-  background: #000;
+  background: var(--tz-surface-subtle);
 }
 
 .global-product-detail-bottom-sheet-media-empty {
   display: grid;
   place-items: center;
-  color: rgba(255, 255, 255, 0.45);
+  color: var(--tz-text-muted);
 }
 
 .global-product-detail-bottom-sheet-media-nav {
@@ -960,14 +974,14 @@ watch(selectedVariantId, () => {
   place-items: center;
   overflow: hidden;
   padding: 0;
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  border: 1px solid var(--tz-border-subtle);
   border-radius: 0.5rem;
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--tz-surface-subtle);
 }
 
 .global-product-detail-bottom-sheet-media-thumbnail--active {
-  border-color: #b5ff6d;
-  box-shadow: 0 0 0 2px rgba(181, 255, 109, 0.16);
+  border-color: #059669;
+  box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.16);
 }
 
 .global-product-detail-bottom-sheet-media-thumbnail img {
@@ -977,7 +991,7 @@ watch(selectedVariantId, () => {
 }
 
 .global-product-detail-bottom-sheet-media-thumbnail-placeholder {
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--tz-text-muted);
 }
 
 .global-product-detail-bottom-sheet-media-thumbnail-badge {
@@ -989,8 +1003,8 @@ watch(selectedVariantId, () => {
   height: 1.1rem;
   place-items: center;
   border-radius: 999px;
-  color: #fff;
-  background: rgba(0, 0, 0, 0.72);
+  color: var(--tz-text-primary);
+  background: var(--tz-surface-muted);
 }
 
 .global-product-detail-bottom-sheet-information {
@@ -1013,18 +1027,18 @@ watch(selectedVariantId, () => {
 
 .global-product-detail-bottom-sheet-product-specification-template {
   margin: 0.35rem 0 0;
-  color: rgba(255, 255, 255, 0.55);
+  color: var(--tz-text-secondary);
   font-size: 0.78rem;
 }
 
 .global-product-detail-bottom-sheet-price {
   flex: 0 0 auto;
-  color: #b5ff6d;
+  color: #059669;
   font-size: 1.15rem;
 }
 
 .global-product-detail-bottom-sheet-description {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--tz-text-secondary);
   font-size: 0.86rem;
   line-height: 1.55;
 }
@@ -1054,7 +1068,7 @@ watch(selectedVariantId, () => {
 .global-product-detail-bottom-sheet-quantity-control > span {
   display: block;
   margin-bottom: 0.4rem;
-  color: rgba(255, 255, 255, 0.58);
+  color: var(--tz-text-secondary);
   font-size: 0.72rem;
   font-weight: 800;
   text-transform: uppercase;
@@ -1070,16 +1084,16 @@ watch(selectedVariantId, () => {
   min-width: 4rem;
   min-height: 2.1rem;
   padding: 0.35rem 0.65rem;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid var(--tz-border-strong);
   border-radius: 0.45rem;
-  color: #fff;
-  background: rgba(255, 255, 255, 0.06);
+  color: var(--tz-text-primary);
+  background: var(--tz-surface-subtle);
 }
 
 .global-product-detail-bottom-sheet-variant-option--selected {
-  border-color: #b5ff6d;
+  border-color: #059669;
   color: #06111f;
-  background: #b5ff6d;
+  background: #059669;
 }
 
 .global-product-detail-bottom-sheet-variant-select {
@@ -1089,10 +1103,10 @@ watch(selectedVariantId, () => {
 .global-product-detail-bottom-sheet-variant-select select {
   min-height: 2.4rem;
   padding: 0.45rem 0.65rem;
-  border: 1px solid rgba(255, 255, 255, 0.22);
+  border: 1px solid var(--tz-border-strong);
   border-radius: 0.5rem;
-  color: #fff;
-  background: #161616;
+  color: var(--tz-text-primary);
+  background: var(--tz-form-control-surface);
 }
 
 .global-product-detail-bottom-sheet-facts {
@@ -1107,29 +1121,29 @@ watch(selectedVariantId, () => {
   gap: 0.35rem;
   min-height: 2rem;
   padding: 0.35rem 0.6rem;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 1px solid var(--tz-border-subtle);
   border-radius: 0.45rem;
-  color: rgba(255, 255, 255, 0.74);
-  background: rgba(255, 255, 255, 0.05);
+  color: var(--tz-text-secondary);
+  background: var(--tz-surface-subtle);
   font-size: 0.74rem;
 }
 
 .global-product-detail-bottom-sheet-fact--unavailable {
-  color: #fecaca;
-  border-color: rgba(248, 113, 113, 0.3);
+  color: var(--tz-status-danger-text);
+  border-color: rgba(220, 38, 38, 0.3);
 }
 
 .global-product-detail-bottom-sheet-specifications {
   display: grid;
   gap: 0.6rem;
   padding-top: 0.85rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  border-top: 1px solid var(--tz-border-subtle);
 }
 
 .global-product-detail-bottom-sheet-specifications h4,
 .global-product-detail-bottom-sheet-specification-group h5 {
   margin: 0;
-  color: #fff;
+  color: var(--tz-text-primary);
   font-size: 0.82rem;
   font-weight: 800;
 }
@@ -1140,7 +1154,7 @@ watch(selectedVariantId, () => {
 }
 
 .global-product-detail-bottom-sheet-specification-group h5 {
-  color: rgba(255, 255, 255, 0.55);
+  color: var(--tz-text-secondary);
   font-size: 0.7rem;
   text-transform: uppercase;
 }
@@ -1159,22 +1173,22 @@ watch(selectedVariantId, () => {
   gap: 0.5rem;
   min-width: 0;
   padding: 0.45rem 0.55rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--tz-border-subtle);
   border-radius: 0.4rem;
-  background: rgba(255, 255, 255, 0.035);
+  background: var(--tz-surface-subtle);
   font-size: 0.72rem;
 }
 
 .global-product-detail-bottom-sheet-specification-item dt {
   overflow: hidden;
-  color: rgba(255, 255, 255, 0.52);
+  color: var(--tz-text-muted);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .global-product-detail-bottom-sheet-specification-item dd {
   margin: 0;
-  color: #fff;
+  color: var(--tz-text-primary);
   font-weight: 700;
   text-align: right;
 }
@@ -1184,7 +1198,7 @@ watch(selectedVariantId, () => {
   gap: 0.75rem;
   margin-top: auto;
   padding-top: 0.85rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  border-top: 1px solid var(--tz-border-subtle);
 }
 
 .global-product-detail-bottom-sheet-quantity-control {
@@ -1203,9 +1217,9 @@ watch(selectedVariantId, () => {
   grid-template-columns: 2.1rem 3rem 2.1rem;
   height: 2.1rem;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid var(--tz-border-strong);
   border-radius: 0.45rem;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--tz-surface-subtle);
 }
 
 .global-product-detail-bottom-sheet-quantity-stepper button,
@@ -1214,24 +1228,24 @@ watch(selectedVariantId, () => {
   min-width: 0;
   place-items: center;
   border: 0;
-  color: #fff;
+  color: var(--tz-text-primary);
   background: transparent;
   font: inherit;
   text-align: center;
 }
 
 .global-product-detail-bottom-sheet-quantity-stepper button:hover:not(:disabled) {
-  background: rgba(181, 255, 109, 0.14);
-  color: #b5ff6d;
+  background: rgba(5, 150, 105, 0.14);
+  color: #059669;
 }
 
 .global-product-detail-bottom-sheet-quantity-stepper button:disabled {
-  color: rgba(255, 255, 255, 0.3);
+  color: var(--tz-text-disabled);
 }
 
 .global-product-detail-bottom-sheet-quantity-stepper input {
   width: 100%;
-  border-inline: 1px solid rgba(255, 255, 255, 0.12);
+  border-inline: 1px solid var(--tz-border-subtle);
   -moz-appearance: textfield;
 }
 
@@ -1254,21 +1268,26 @@ watch(selectedVariantId, () => {
   justify-content: center;
   gap: 0.4rem;
   padding: 0.5rem 0.65rem;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid var(--tz-border-strong);
   border-radius: 0.5rem;
-  color: #fff;
+  color: var(--tz-text-primary);
   font-size: 0.78rem;
   font-weight: 800;
 }
 
 .global-product-detail-bottom-sheet-purchase-action--secondary {
-  background: rgba(255, 255, 255, 0.07);
+  background: var(--tz-surface-subtle);
 }
 
 .global-product-detail-bottom-sheet-purchase-action--primary {
-  border-color: #b5ff6d;
-  color: #06111f;
-  background: #b5ff6d;
+  border-color: var(--tz-action-primary);
+  color: var(--tz-action-primary-foreground);
+  background: var(--tz-action-primary);
+}
+
+.global-product-detail-bottom-sheet-purchase-action--primary:hover:not(:disabled) {
+  border-color: var(--tz-action-primary-hover);
+  background: var(--tz-action-primary-hover);
 }
 
 .global-product-detail-bottom-sheet-purchase-action:disabled {
@@ -1278,7 +1297,7 @@ watch(selectedVariantId, () => {
 
 .global-product-detail-bottom-sheet-feedback {
   margin: 0;
-  color: #b5ff6d;
+  color: #059669;
   font-size: 0.78rem;
 }
 

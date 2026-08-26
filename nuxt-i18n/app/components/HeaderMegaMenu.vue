@@ -10,7 +10,28 @@
     >
       <div class="header-mega__shell">
         <div class="header-mega__content">
+          <div v-if="section.id === 'products'" class="header-mega__products-grid">
+            <div class="header-mega__products-column header-mega__products-column--categories">
+              <ProductCategoryNavigationCards
+                class="header-mega__products-category-navigation"
+                density="compact"
+                :product-category-display-limit="4"
+                @navigate="scheduleNavigateClose"
+              />
+            </div>
+
+            <div class="header-mega__products-column header-mega__products-column--main-products">
+              <HomeMainProductCategories class="header-mega__products-main-categories" />
+            </div>
+
+            <div
+              class="header-mega__products-column header-mega__products-column--empty"
+              aria-hidden="true"
+            >
+            </div>
+          </div>
           <div
+            v-else
             class="header-mega__grid"
             :class="[
               `header-mega__grid--${section.id}`,
@@ -53,7 +74,7 @@
                   </span>
 
                   <span
-                    v-if="!children.length && !shouldShowProductCategoryNavigationCardsInsideCard(card)"
+                    v-if="!children.length"
                     class="header-mega-card__arrow"
                     aria-hidden="true"
                   >
@@ -80,14 +101,6 @@
                     </span>
                   </NuxtLink>
                 </div>
-
-                <ProductCategoryNavigationCards
-                  v-if="shouldShowProductCategoryNavigationCardsInsideCard(card)"
-                  class="header-mega__product-category-navigation"
-                  density="compact"
-                  :product-category-display-limit="4"
-                  @navigate="scheduleNavigateClose"
-                />
               </article>
             </div>
           </div>
@@ -109,6 +122,7 @@
 <script setup lang="ts">
 import { computed, unref } from 'vue'
 import { useI18n, useLocalePath } from '#imports'
+import HomeMainProductCategories from '~/components/home/HomeMainProductCategories.vue'
 import ProductCategoryNavigationCards from '~/components/shop/ProductCategoryNavigationCards.vue'
 import type {
   PrimaryMegaNavCard,
@@ -142,6 +156,7 @@ type MegaMenuColumn = {
 }
 
 const separatedColumnSectionIds = new Set<PrimaryMegaNavSection['id']>([
+  'resources',
   'support',
   'company',
   'guides',
@@ -213,10 +228,6 @@ const cardsWithChildren = computed<MegaMenuCardItem[]>(() => {
   })
 })
 
-const shouldShowProductCategoryNavigationCardsInsideCard = (card: PrimaryMegaNavCard) => {
-  return props.section?.id === 'products' && card.id === 'shop'
-}
-
 const shouldUseSeparatedColumns = computed(() => {
   const sectionId = props.section?.id
   return sectionId ? separatedColumnSectionIds.has(sectionId) : false
@@ -229,22 +240,18 @@ const menuColumns = computed<MegaMenuColumn[]>(() => {
     return [{ id: 'flat', kind: 'flat', cards }]
   }
 
-  const standaloneCards = cards.filter(({ card, children }) => {
-    return !children.length && !shouldShowProductCategoryNavigationCardsInsideCard(card)
+  const standaloneCards = cards.filter(({ children }) => {
+    return !children.length
   })
   const nestedColumns: [MegaMenuCardItem[], MegaMenuCardItem[]] = [[], []]
 
   cards
-    .filter(({ card, children }) => {
-      return children.length > 0 || shouldShowProductCategoryNavigationCardsInsideCard(card)
+    .filter(({ children }) => {
+      return children.length > 0
     })
     .forEach((item, index) => {
-      if (index % 2 === 0) {
-        nestedColumns[0].push(item)
-        return
-      }
-
-      nestedColumns[1].push(item)
+      const targetColumn = index % 2 === 0 ? nestedColumns[0] : nestedColumns[1]
+      targetColumn.push(item)
     })
 
   const columns: MegaMenuColumn[] = []
@@ -314,22 +321,20 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
 
 .header-mega__shell {
   position: relative;
+  --header-mega-edge: var(--tz-text-accent, #059669);
   --header-mega-max-height: min(560px, calc(var(--tz-mobile-safe-viewport-height, 100vh) - var(--site-header-overlay-offset, 92px) - 18px));
 
   height: auto;
   max-height: var(--header-mega-max-height);
   overflow: hidden;
   border-radius: 0;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-right: 0;
-  border-left: 0;
-  border-top-color: rgba(255, 255, 255, 0.26);
-  border-bottom-color: rgba(255, 255, 255, 0.24);
-  background: linear-gradient(180deg, #19191d 0%, #111116 100%);
+  border: 1px solid var(--header-mega-edge);
+  background: var(--tz-card-surface);
   box-shadow:
-    0 30px 80px -28px rgba(0, 0, 0, 1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.12);
+    0 30px 80px -28px rgba(20, 32, 43, 0.2),
+    0 0 0 1px color-mix(in srgb, var(--header-mega-edge) 18%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    inset 0 -1px 0 color-mix(in srgb, var(--header-mega-edge) 28%, transparent);
 }
 
 .header-mega__shell::before {
@@ -364,11 +369,11 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
   align-items: center;
   justify-content: center;
   transform: translateX(50%);
-  border: 1px solid rgba(255, 255, 255, 0.32);
+  border: 1px solid var(--tz-border-strong);
   border-radius: 999px;
   background: #ffffff;
-  color: #050505;
-  box-shadow: 0 14px 34px -24px rgba(0, 0, 0, 1);
+  color: var(--tz-text-primary);
+  box-shadow: 0 14px 34px -24px rgba(20, 32, 43, 0.18);
   transition:
     border-color 0.18s ease,
     transform 0.18s ease;
@@ -376,12 +381,12 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
 
 .header-mega__collapse:hover,
 .header-mega__collapse:focus-visible {
-  border-color: rgba(255, 255, 255, 0.72);
+  border-color: var(--tz-text-accent-hover);
   transform: translateX(50%) translateY(-1px);
 }
 
 .header-mega__collapse:focus-visible {
-  outline: 2px solid rgba(255, 255, 255, 0.42);
+  outline: 2px solid rgba(4, 120, 87, 0.42);
   outline-offset: 2px;
 }
 
@@ -413,12 +418,11 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
   display: contents;
 }
 
-.header-mega__grid--products {
+.header-mega__products-grid {
   display: grid;
   height: auto;
   min-height: 0;
-  grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 0.92fr);
-  grid-template-rows: repeat(4, minmax(0, auto));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: start;
   align-content: start;
   column-count: initial;
@@ -426,26 +430,77 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
   gap: 14px;
 }
 
-.header-mega__grid--products .header-mega-card {
+.header-mega__products-column {
+  min-width: 0;
+}
+
+.header-mega__products-column--empty {
+  min-height: 1px;
+}
+
+.header-mega__products-main-categories {
+  min-width: 0;
+}
+
+.header-mega__products-main-categories :deep(#home-main-product-categories) {
+  padding: 0;
+}
+
+.header-mega__products-main-categories :deep(#home-main-product-categories > .page-content-shell) {
+  padding: 0;
+}
+
+.header-mega__products-main-categories :deep(#home-main-product-categories > .page-content-shell > .flex) {
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.header-mega__products-main-categories :deep(#home-main-product-categories h2) {
+  margin-top: 0;
+}
+
+.header-mega__products-main-categories :deep(#home-main-product-categories .premium-button) {
+  flex: 0 0 auto;
+  width: auto;
+  white-space: nowrap;
+}
+
+.header-mega__products-main-categories :deep(#home-main-product-categories .mt-5) {
+  margin-top: 12px;
+}
+
+.header-mega__products-main-categories :deep(#home-main-product-categories .grid) {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+
+.header-mega__products-main-categories :deep(#home-main-product-categories .home-main-product-categories__card) {
+  min-width: 0;
+}
+
+.header-mega__products-main-categories :deep(#home-main-product-categories .home-main-product-categories__image-wrap) {
+  aspect-ratio: 16 / 7;
+}
+
+.header-mega__products-main-categories :deep(#home-main-product-categories .home-main-product-categories__content) {
+  gap: 8px;
+  padding: 10px 0 0;
+}
+
+.header-mega__products-main-categories :deep(#home-main-product-categories .home-main-product-categories__title) {
+  font-size: 15px;
+}
+
+.header-mega__grid--resources {
+  display: grid;
   height: auto;
   min-height: 0;
-  margin: 0;
-  break-inside: avoid;
-  overflow: visible;
-}
-
-.header-mega__grid--products .header-mega-card--card-shop {
-  grid-column: 1 / 4;
-  grid-row: 1 / -1;
-  height: auto;
-  overflow: hidden;
-}
-
-.header-mega__grid--products .header-mega-card--card-membership-and-points,
-.header-mega__grid--products .header-mega-card--card-picture-warehouse,
-.header-mega__grid--products .header-mega-card--card-spoke-calculator,
-.header-mega__grid--products .header-mega-card--card-blog {
-  grid-column: 4;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  align-content: start;
+  column-count: initial;
+  column-gap: normal;
+  gap: 14px;
 }
 
 .header-mega__grid--support,
@@ -475,11 +530,15 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
 }
 
 .header-mega__grid--separated-columns .header-mega__column--standalone {
-  gap: 22px;
+  gap: 10px;
 }
 
 .header-mega__grid--separated-columns .header-mega__column--nested {
   gap: 28px;
+}
+
+.header-mega__grid--resources .header-mega__column--nested {
+  gap: 8px;
 }
 
 .header-mega__grid--separated-columns .header-mega-card {
@@ -492,14 +551,25 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
 
 .header-mega__grid--separated-columns .header-mega-card--has-children .header-mega-card__children {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, var(--mega-child-width)));
+  box-sizing: border-box;
+  width: 100%;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   justify-content: start;
   align-items: start;
   column-gap: 12px;
   row-gap: 8px;
 }
 
-.header-mega__product-category-navigation {
+.header-mega__grid--resources .header-mega-card--has-children .header-mega-card__children {
+  padding-bottom: 0;
+}
+
+.header-mega__grid--separated-columns .header-mega-card__child-label {
+  white-space: nowrap;
+  overflow-wrap: normal;
+}
+
+.header-mega__products-category-navigation {
   width: 100%;
   min-width: 0;
   flex: 1 1 auto;
@@ -508,42 +578,39 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
   padding: 0 var(--mega-card-padding) var(--mega-card-padding);
 }
 
-.header-mega__product-category-navigation :deep(.product-category-navigation-cards__all-link) {
-  border-color: rgba(181, 255, 109, 0.62);
-  background: rgba(181, 255, 109, 0.14);
+.header-mega__products-category-navigation :deep(.product-category-navigation-cards__all-link) {
+  border-color: rgba(5, 150, 105, 0.62);
+  background: rgba(5, 150, 105, 0.14);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
-.header-mega__product-category-navigation :deep(.product-category-navigation-cards__item) {
-  border-color: rgba(181, 255, 109, 0);
-  background: var(--tz-card-surface, #111116);
+.header-mega__products-category-navigation :deep(.product-category-navigation-cards__item) {
+  border-color: rgba(5, 150, 105, 0);
+  background: var(--tz-card-surface);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    0 12px 28px -24px rgba(0, 0, 0, 1);
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    0 12px 28px -24px rgba(20, 32, 43, 0.14);
 }
 
-.header-mega__product-category-navigation :deep(.product-category-navigation-cards__media) {
-  border-bottom-color: rgba(181, 255, 109, 0.08);
-  background: rgba(255, 255, 255, 0.04);
+.header-mega__products-category-navigation :deep(.product-category-navigation-cards__media) {
+  border-bottom-color: rgba(5, 150, 105, 0.08);
+  background: var(--tz-surface-subtle);
 }
 
-.header-mega__product-category-navigation :deep(.product-category-navigation-cards__footer) {
-  background: var(--tz-card-surface, #111116);
-}
-
-.header-mega-card--card-shop .header-mega-card__main {
-  flex: 0 0 auto;
-  min-height: 0;
-  padding-bottom: 10px;
+.header-mega__products-category-navigation :deep(.product-category-navigation-cards__footer) {
+  background: var(--tz-card-surface);
 }
 
 .header-mega-card {
-  --mega-accent: #B5FF6D;
-  --mega-accent-soft: rgba(181, 255, 109, 0.14);
-  --mega-accent-shadow: rgba(181, 255, 109, 0.35);
+  --mega-accent: #059669;
+  --mega-accent-soft: rgba(5, 150, 105, 0.14);
+  --mega-accent-shadow: rgba(5, 150, 105, 0.35);
   --mega-card-padding: 16px;
   --mega-card-child-offset: 74px;
-  --mega-card-title-size: 16px;
+  --mega-card-title-size: 18px;
+  --mega-card-title-line-height: 1;
+  --mega-card-child-title-size: 16px;
+  --mega-card-child-line-height: 1;
   --mega-main-link-width: 260px;
   --mega-child-width: 184px;
 
@@ -590,11 +657,11 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
 
 .header-mega-card__main:hover,
 .header-mega-card__main:focus-visible {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--tz-surface-subtle);
 }
 
 .header-mega-card__main:focus-visible {
-  outline: 1px solid rgba(181, 255, 109, 0.58);
+  outline: 1px solid rgba(5, 150, 105, 0.58);
   outline-offset: 2px;
 }
 
@@ -643,10 +710,10 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
 
 .header-mega-card__title {
   margin-top: 6px;
-  color: #f8fafc;
+  color: var(--tz-text-primary);
   font-size: var(--mega-card-title-size);
   font-weight: 800;
-  line-height: 1.15;
+  line-height: var(--mega-card-title-line-height);
   letter-spacing: 0;
 }
 
@@ -664,7 +731,7 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
   height: 28px;
   margin-left: auto;
   border-radius: 999px;
-  color: rgba(226, 232, 240, 0.68);
+  color: var(--tz-text-muted);
   transition: all 0.22s ease;
 }
 
@@ -675,7 +742,7 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
 
 .header-mega-card__main:hover .header-mega-card__arrow,
 .header-mega-card__main:focus-visible .header-mega-card__arrow {
-  color: #ffffff;
+  color: var(--tz-text-primary);
   transform: translate(3px, -3px);
 }
 
@@ -706,10 +773,10 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
   border: 0;
   background: transparent;
   padding: 0.45rem 0.52rem;
-  color: rgba(241, 245, 249, 0.86);
-  font-size: 14px;
+  color: var(--tz-text-secondary);
+  font-size: var(--mega-card-child-title-size);
   font-weight: 800;
-  line-height: 1.2;
+  line-height: var(--mega-card-child-line-height);
   text-decoration: none;
   transform-origin: left center;
   transition:
@@ -719,8 +786,8 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
 }
 
 .header-mega-card__child:hover {
-  background: rgba(255, 255, 255, 0.03);
-  color: #ffffff;
+  background: var(--tz-surface-subtle);
+  color: var(--tz-text-primary);
   transform: translateX(2px);
 }
 
@@ -733,8 +800,9 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
   display: block;
   min-width: 0;
   max-width: 100%;
-  color: rgba(248, 250, 252, 0.92);
-  font-size: 14px;
+  color: var(--tz-text-secondary);
+  font-size: var(--mega-card-child-title-size);
+  line-height: var(--mega-card-child-line-height);
   overflow: visible;
   overflow-wrap: anywhere;
   text-overflow: clip;
@@ -751,7 +819,7 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
   height: 2px;
   border-radius: 999px;
   background: var(--mega-accent);
-  box-shadow: 0 0 8px rgba(181, 255, 109, 0.58);
+  box-shadow: 0 0 8px rgba(5, 150, 105, 0.58);
   content: '';
   opacity: 0;
   transition:
@@ -761,7 +829,7 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
 
 .header-mega-card__child:hover .header-mega-card__child-label,
 .header-mega-card__child:focus-visible .header-mega-card__child-label {
-  color: #ffffff;
+  color: var(--tz-text-primary);
 }
 
 .header-mega-card__child:hover .header-mega-card__child-label::after,
@@ -775,7 +843,7 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
 }
 
 .header-mega-card__child:hover .header-mega-card__child-description {
-  color: rgba(248, 250, 252, 0.72);
+  color: var(--tz-text-muted);
 }
 
 .header-mega-card__child-arrow {
@@ -785,7 +853,7 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
   justify-content: center;
   justify-self: end;
   margin-left: 0;
-  color: rgba(226, 232, 240, 0.58);
+  color: var(--tz-text-muted);
   transition:
     color 0.18s ease,
     transform 0.18s ease;
@@ -798,7 +866,7 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
 
 .header-mega-card__child:hover .header-mega-card__child-arrow,
 .header-mega-card__child:focus-visible .header-mega-card__child-arrow {
-  color: #ffffff;
+  color: var(--tz-text-primary);
 }
 
 .header-mega-card--feature {
@@ -814,40 +882,24 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
   align-items: center;
 }
 
-.header-mega-card--mint {
-  --mega-accent: #B5FF6D;
-  --mega-accent-soft: rgba(181, 255, 109, 0.13);
-  --mega-accent-shadow: rgba(181, 255, 109, 0.36);
+.header-mega-card--emerald {
+  --mega-accent: #059669;
+  --mega-accent-soft: rgba(5, 150, 105, 0.13);
+  --mega-accent-shadow: rgba(5, 150, 105, 0.36);
 }
 
-.header-mega-card--blue {
-  --mega-accent: #B5FF6D;
-  --mega-accent-soft: rgba(181, 255, 109, 0.13);
-  --mega-accent-shadow: rgba(181, 255, 109, 0.34);
-}
+@media (min-width: 1280px) {
+  .header-mega__grid--separated-columns .header-mega__column--standalone {
+    gap: 0;
+  }
 
-.header-mega-card--violet {
-  --mega-accent: #B5FF6D;
-  --mega-accent-soft: rgba(181, 255, 109, 0.13);
-  --mega-accent-shadow: rgba(181, 255, 109, 0.34);
-}
+  .header-mega__grid--separated-columns .header-mega__column--standalone .header-mega-card {
+    margin: 0;
+  }
 
-.header-mega-card--amber {
-  --mega-accent: #B5FF6D;
-  --mega-accent-soft: rgba(181, 255, 109, 0.13);
-  --mega-accent-shadow: rgba(181, 255, 109, 0.34);
-}
-
-.header-mega-card--rose {
-  --mega-accent: #B5FF6D;
-  --mega-accent-soft: rgba(181, 255, 109, 0.13);
-  --mega-accent-shadow: rgba(181, 255, 109, 0.34);
-}
-
-.header-mega-card--slate {
-  --mega-accent: #B5FF6D;
-  --mega-accent-soft: rgba(181, 255, 109, 0.13);
-  --mega-accent-shadow: rgba(181, 255, 109, 0.34);
+  .header-mega__grid--separated-columns .header-mega__column--standalone .header-mega-card__main {
+    padding: 8px 16px;
+  }
 }
 
 .header-mega-enter-active,
@@ -877,31 +929,9 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
     column-count: 2;
   }
 
-  .header-mega__grid--products {
-    height: auto;
-    min-height: 0;
-    grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 0.92fr);
-    grid-template-rows: repeat(4, minmax(0, auto));
-    align-items: start;
-    align-content: start;
-    gap: 14px;
-  }
-
-  .header-mega__grid--products .header-mega-card--card-shop {
-    grid-column: 1 / 4;
-    grid-row: 1 / -1;
-  }
-
-  .header-mega__grid--products .header-mega-card--card-membership-and-points,
-  .header-mega__grid--products .header-mega-card--card-picture-warehouse,
-  .header-mega__grid--products .header-mega-card--card-spoke-calculator,
-  .header-mega__grid--products .header-mega-card--card-blog {
-    grid-column: 4;
-  }
-
-  .header-mega__grid--products .header-mega-card {
-    height: auto;
-    overflow: visible;
+  .header-mega__grid--resources {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
   }
 
   .header-mega__grid--separated-columns {
@@ -910,7 +940,7 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
   }
 
   .header-mega__grid--separated-columns .header-mega__column--standalone {
-    gap: 20px;
+    gap: 8px;
   }
 
   .header-mega__grid--separated-columns .header-mega__column--nested {
@@ -918,7 +948,8 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
   }
 
   .header-mega__grid--separated-columns .header-mega-card--has-children .header-mega-card__children {
-    grid-template-columns: repeat(2, minmax(0, var(--mega-child-width)));
+    width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     column-gap: 10px;
     row-gap: 6px;
   }
@@ -947,7 +978,7 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
   }
 }
 
-@media (max-width: 767px) {
+@media (max-width: 1279px) {
   .header-mega {
     position: fixed;
     inset: calc(var(--header-mega-mobile-top, var(--site-header-overlay-offset, 7rem)) + 2px) 2px 2px;
@@ -959,12 +990,12 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
   .header-mega__shell {
     height: auto;
     max-height: var(--header-mega-max-height);
-    border: 1px solid rgba(172, 172, 172, 0.32);
+    border: 1px solid var(--header-mega-edge);
     border-radius: 14px;
     box-sizing: border-box;
     box-shadow:
-      0 24px 64px -28px #000000,
-      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      0 24px 64px -28px rgba(20, 32, 43, 0.18),
+      inset 0 1px 0 rgba(255, 255, 255, 0.8);
   }
 
   .header-mega__content {
@@ -982,7 +1013,19 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
     column-gap: 0;
   }
 
-  .header-mega__grid--products {
+  .header-mega__products-grid {
+    display: block;
+  }
+
+  .header-mega__products-column--empty {
+    display: none;
+  }
+
+  .header-mega__products-column + .header-mega__products-column {
+    margin-top: 14px;
+  }
+
+  .header-mega__grid--resources {
     display: block;
     column-count: 1;
     column-gap: 0;
@@ -1007,19 +1050,14 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
     gap: 0;
   }
 
-  .header-mega__grid--products .header-mega-card--card-shop {
-    column-span: all;
-  }
-
-  .header-mega__grid--products .header-mega-card,
   .header-mega__grid--support .header-mega-card,
   .header-mega__grid--company .header-mega-card,
   .header-mega__grid--guides .header-mega-card {
     margin: 0 0 5px;
   }
 
-  .header-mega__product-category-navigation {
-    padding: 0 var(--mega-card-padding) var(--mega-card-padding);
+  .header-mega__products-category-navigation {
+    padding: 0;
     overflow: visible;
   }
 
@@ -1027,6 +1065,7 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
     --mega-card-padding: 8px;
     --mega-card-child-offset: 12px;
     --mega-card-title-size: 13px;
+    --mega-card-child-title-size: var(--mega-card-title-size);
     min-height: 0;
     width: 100%;
     margin: 0 0 5px;
@@ -1067,14 +1106,16 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
     gap: 6px;
     padding: 0.2rem 0.3rem;
     background: transparent;
-    font-size: 12px;
+    font-size: var(--mega-card-child-title-size);
+    font-weight: 600;
     line-height: 1.1;
   }
 
   .header-mega-card__child-label {
     min-width: 0;
     max-width: 100%;
-    font-size: 12px;
+    font-size: var(--mega-card-child-title-size);
+    font-weight: 600;
     line-height: 1.1;
     white-space: normal;
     overflow-wrap: anywhere;
@@ -1083,7 +1124,8 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
   .header-mega-card__title {
     white-space: normal;
     overflow-wrap: anywhere;
-    line-height: 1.2;
+    font-weight: 600;
+    line-height: 1;
   }
 
   .header-mega-card__child-arrow {
@@ -1091,7 +1133,7 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
     flex: 0 0 12px;
     justify-self: end;
     margin-left: 0;
-    color: rgba(226, 232, 240, 0.72);
+    color: var(--tz-text-muted);
   }
 
   .header-mega-card__child-arrow :deep(svg) {

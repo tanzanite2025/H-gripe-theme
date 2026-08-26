@@ -62,10 +62,10 @@ const handleSelect = (category: ShopCategory | null) => {
 .shop-category-chips {
   width: 100%;
   padding: 0.65rem 0.55rem 0.75rem;
-  border: 1px solid rgba(148, 163, 184, 0.12);
+  border: 1px solid var(--tz-border-subtle);
   border-radius: 1rem;
-  background: rgba(15, 23, 42, 0.62);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  background: var(--tz-card-surface);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
 }
 
 .shop-category-chips__list {
@@ -79,7 +79,7 @@ const handleSelect = (category: ShopCategory | null) => {
 
 .shop-category-chips__state {
   width: 100%;
-  color: rgba(226, 232, 240, 0.76);
+  color: var(--tz-text-secondary);
   font-size: 0.86rem;
   line-height: 1.45;
   text-align: center;
@@ -96,10 +96,10 @@ const handleSelect = (category: ShopCategory | null) => {
   min-height: 2.35rem;
   max-width: 100%;
   padding: 0.48rem 0.9rem;
-  border: 1px solid rgba(148, 163, 184, 0.32);
+  border: 1px solid var(--tz-border-strong);
   border-radius: 9999px;
-  background: rgba(15, 23, 42, 0.5);
-  color: rgba(226, 232, 240, 0.9);
+  background: var(--tz-surface-muted);
+  color: var(--tz-text-secondary);
   font-size: clamp(0.85rem, 2.8vw, 1rem);
   font-weight: 600;
   line-height: 1.1;
@@ -113,27 +113,27 @@ const handleSelect = (category: ShopCategory | null) => {
 
 .shop-category-chips__item:hover,
 .shop-category-chips__item:focus-visible {
-  border-color: rgba(255, 255, 255, 0.58);
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
+  border-color: var(--tz-site-accent);
+  background: var(--tz-site-accent-soft-surface);
+  color: var(--tz-site-accent-hover);
   transform: translateY(-1px);
 }
 
 .shop-category-chips__item:focus-visible {
-  outline: 2px solid rgba(181, 255, 109, 0.78);
+  outline: 2px solid rgba(5, 150, 105, 0.78);
   outline-offset: 0.2rem;
 }
 
 .shop-category-chips__item--active {
-  border-color: transparent;
-  background: #ffffff;
-  color: #020617;
+  border-color: var(--tz-site-accent);
+  background: var(--tz-site-accent);
+  color: #ffffff;
 }
 
 .shop-category-chips__item--active:hover,
 .shop-category-chips__item--active:focus-visible {
-  border-color: transparent;
-  background: #ffffff;
-  color: #020617;
+  border-color: var(--tz-site-accent-hover);
+  background: var(--tz-site-accent-hover);
+  color: #ffffff;
 }
 </style>

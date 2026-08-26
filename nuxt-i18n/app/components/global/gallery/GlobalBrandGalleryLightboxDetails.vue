@@ -26,7 +26,7 @@
           <span class="block truncate font-semibold">
             {{ product.name || product.slug }}
           </span>
-          <span class="mt-0.5 block truncate font-mono text-[10px] text-slate-500">
+          <span class="mt-0.5 block truncate font-mono text-[10px] tz-text-muted">
             {{ product.slug }}
           </span>
         </NuxtLink>
@@ -46,6 +46,7 @@ import type {
   PictureWarehouseProductLink,
 } from '~/types/brandGalleryPhotos'
 import type { GalleryLightboxLabels } from '~/types/brandGalleryLightbox'
+import { buildProductPath } from '~/utils/seo/urls'
 
 const props = defineProps<{
   gallery: BrandGalleryPhoto
@@ -59,7 +60,7 @@ const productLinks = computed<PictureWarehouseProductLink[]>(() =>
 
 const productLinkPath = (product: PictureWarehouseProductLink): string => {
   const slug = String(product.slug || '').trim()
-  return slug ? localePath(`/shop/${slug}`) : localePath('/shop')
+  return slug ? localePath(buildProductPath(slug)) : localePath('/shop')
 }
 </script>
 
@@ -80,7 +81,7 @@ const productLinkPath = (product: PictureWarehouseProductLink): string => {
 
 .brand-gallery-lightbox__loading {
   margin: 0.75rem 0 0;
-  color: rgba(181, 255, 109, 0.76);
+  color: rgba(5, 150, 105, 0.76);
   font-size: 0.6875rem;
 }
 
@@ -110,9 +111,9 @@ const productLinkPath = (product: PictureWarehouseProductLink): string => {
 
 .brand-gallery-lightbox__product:hover,
 .brand-gallery-lightbox__product:focus-visible {
-  border-color: rgba(181, 255, 109, 0.45);
-  background: rgba(181, 255, 109, 0.08);
-  color: #b5ff6d;
+  border-color: rgba(5, 150, 105, 0.45);
+  background: rgba(5, 150, 105, 0.08);
+  color: #059669;
 }
 
 .brand-gallery-lightbox__muted {

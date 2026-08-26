@@ -274,12 +274,12 @@ const updateActiveSlide = () => {
   justify-content: space-between;
   gap: 1rem;
   padding-bottom: 0.875rem;
-  border-bottom: 1px solid rgba(181, 255, 109, 0.22);
+  border-bottom: 1px solid rgba(5, 150, 105, 0.22);
 }
 
 .global-media-rail-carousel__eyebrow {
   margin: 0;
-  color: #b5ff6d;
+  color: #059669;
   font-size: 0.6875rem;
   font-weight: 600;
   letter-spacing: 0;
@@ -315,10 +315,10 @@ const updateActiveSlide = () => {
   align-items: center;
   gap: 0.35rem;
   padding: 0.35rem 0.65rem;
-  border: 1px solid rgba(181, 255, 109, 0.34);
+  border: 1px solid rgba(5, 150, 105, 0.34);
   border-radius: 999px;
-  background: rgba(181, 255, 109, 0.08);
-  color: #b5ff6d;
+  background: rgba(5, 150, 105, 0.08);
+  color: #059669;
   font-size: 0.6875rem;
   font-weight: 700;
   line-height: 1;
@@ -328,8 +328,8 @@ const updateActiveSlide = () => {
 
 .global-media-rail-carousel__more:hover,
 .global-media-rail-carousel__more:focus-visible {
-  border-color: rgba(181, 255, 109, 0.78);
-  background: rgba(181, 255, 109, 0.16);
+  border-color: rgba(5, 150, 105, 0.78);
+  background: rgba(5, 150, 105, 0.16);
   color: #fff;
 }
 
@@ -347,9 +347,9 @@ const updateActiveSlide = () => {
 
 .global-media-rail-carousel__arrow:hover,
 .global-media-rail-carousel__arrow:focus-visible {
-  border-color: rgba(181, 255, 109, 0.75);
-  background: rgba(181, 255, 109, 0.12);
-  color: #b5ff6d;
+  border-color: rgba(5, 150, 105, 0.75);
+  background: rgba(5, 150, 105, 0.12);
+  color: #059669;
 }
 
 .global-media-rail-carousel__rail {
@@ -408,7 +408,7 @@ const updateActiveSlide = () => {
 }
 
 .global-media-rail-carousel__slide-button:focus-visible {
-  outline: 2px solid #b5ff6d;
+  outline: 2px solid #059669;
   outline-offset: -2px;
 }
 

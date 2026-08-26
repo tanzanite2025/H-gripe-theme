@@ -11,13 +11,15 @@ import (
 )
 
 const (
-	seoAuditActionUpdate = "update"
-	seoAuditStatusOK     = "success"
-	seoAuditStatusFailed = "failed"
+	seoAuditActionUpdate   = "update"
+	seoAuditActionIndexing = "indexing_notify"
+	seoAuditStatusOK       = "success"
+	seoAuditStatusFailed   = "failed"
 
-	seoAuditResourceHome    = "seo_home"
-	seoAuditResourceArticle = "seo_article"
-	seoAuditResourceProduct = "seo_product"
+	seoAuditResourceHome     = "seo_home"
+	seoAuditResourceArticle  = "seo_article"
+	seoAuditResourceProduct  = "seo_product"
+	seoAuditResourceCategory = "seo_category"
 )
 
 type seoAuditRecorder interface {
@@ -26,6 +28,7 @@ type seoAuditRecorder interface {
 
 type seoAuditEvent struct {
 	StartedAt    time.Time
+	Action       string
 	Resource     string
 	ResourceID   uint
 	Status       string
@@ -51,10 +54,15 @@ func recordSEOAudit(recorder seoAuditRecorder, c *gin.Context, event seoAuditEve
 		username = strings.TrimSpace(c.GetString("email"))
 	}
 
+	action := strings.TrimSpace(event.Action)
+	if action == "" {
+		action = seoAuditActionUpdate
+	}
+
 	log := audit.AuditLog{
 		UserID:       c.GetUint("user_id"),
 		Username:     username,
-		Action:       seoAuditActionUpdate,
+		Action:       action,
 		Resource:     event.Resource,
 		ResourceID:   event.ResourceID,
 		IPAddress:    c.ClientIP(),

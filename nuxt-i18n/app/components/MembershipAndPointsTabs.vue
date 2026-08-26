@@ -21,7 +21,7 @@
         <Icon name="lucide:shield-check" class="warranty-card__icon" aria-hidden="true" />
         <div class="warranty-card__content">
           <h3 class="warranty-card__title">{{ $t('warranty.title', 'Warranty Check') }}</h3>
-          <p class="warranty-card__desc">{{ $t('warranty.cardDesc', 'Enter your product code to check warranty status and history.') }}</p>
+          <p class="warranty-card__desc">{{ $t('warranty.cardDesc', 'Enter your order number to check shipped items, warranty time, and service history.') }}</p>
         </div>
         <NuxtLink :to="localePath('/support/warranty-check')" class="warranty-card__btn">
           {{ $t('warranty.checkNow', 'Check Now') }}
@@ -228,7 +228,7 @@ const isMembershipTabId = (id: string): id is MembershipTabId => {
 
 const { activeTab, setActiveTab: setPageActiveTab } = usePageSubNavigationTab({
   tabs,
-  basePath: '/membershipandpoints',
+  basePath: '/resources/membershipandpoints',
   defaultValue: 'myinfo',
   syncWithUrl: () => !isModal.value,
 })
@@ -432,11 +432,11 @@ onMounted(() => {
 
 <style scoped>
  .membership-tabs {
-   --membership-card-surface: var(--tz-card-surface, #111116);
-   --membership-card-subtle: rgba(255, 255, 255, 0.035);
-   --membership-card-border: rgba(181, 255, 109, 0.14);
-   --membership-card-shadow: 0 16px 34px rgba(0, 0, 0, 0.34);
-   --membership-accent: var(--tz-brand-primary, #b5ff6d);
+   --membership-card-surface: var(--tz-card-surface);
+   --membership-card-subtle: var(--tz-surface-subtle);
+   --membership-card-border: rgba(5, 150, 105, 0.22);
+   --membership-card-shadow: 0 16px 34px rgba(15, 23, 42, 0.12);
+   --membership-accent: var(--tz-site-accent, #059669);
  }
 
  .membership-tabs--modal {
@@ -460,17 +460,17 @@ onMounted(() => {
    gap: 1rem;
    padding: 1rem 1.25rem;
    margin-bottom: 1.5rem;
-   background: rgba(255, 255, 255, 0.035);
-   border: none;
+    background: var(--membership-card-subtle);
+    border: 1px solid var(--tz-border-subtle);
    border-radius: 12px;
-   box-shadow: 0 3px 9px rgba(0, 0, 0, 0.9);
+    box-shadow: 0 3px 9px rgba(15, 23, 42, 0.1);
    backdrop-filter: blur(14px);
    -webkit-backdrop-filter: blur(14px);
    transition: all 0.2s;
  }
 
  .warranty-card:hover {
-   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.9);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
  }
 
  .warranty-card__icon {
@@ -487,13 +487,13 @@ onMounted(() => {
    margin: 0 0 0.25rem;
    font-size: 16px;
    font-weight: 600;
-   color: #fff;
+    color: var(--tz-text-primary);
  }
 
  .warranty-card__desc {
    margin: 0;
    font-size: 13px;
-   color: rgba(255, 255, 255, 0.6);
+    color: var(--tz-text-secondary);
    line-height: 1.4;
  }
 
@@ -502,11 +502,11 @@ onMounted(() => {
    align-items: center;
    gap: 0.5rem;
    padding: 0.5rem 1rem;
-   background: var(--tz-brand-primary);
+   background: var(--tz-site-accent);
    border-radius: 999px;
    font-size: 13px;
    font-weight: 600;
-   color: #000;
+    color: #ffffff;
    text-decoration: none;
    white-space: nowrap;
    transition: all 0.2s;
@@ -580,16 +580,16 @@ onMounted(() => {
  	grid-column: 1 / -1;
  }
 
- .member-header {
+  .member-header {
    display: flex;
    flex-direction: column;
    align-items: center;
    justify-content: center;
    gap: 0.75rem;
    padding: 1.5rem 1rem;
-   background: radial-gradient(circle at top left, rgba(31, 41, 55, 0.96), rgba(15, 23, 42, 0.98));
+    background: var(--membership-card-surface);
    border-radius: 12px;
-   box-shadow: 0 3px 9px rgba(0, 0, 0, 0.9);
+    box-shadow: var(--membership-card-shadow);
    backdrop-filter: blur(14px);
    -webkit-backdrop-filter: blur(14px);
    text-align: center;
@@ -608,10 +608,10 @@ onMounted(() => {
    height: 96px;
  }
 
- .member-name {
+  .member-name {
    font-size: 18px;
    font-weight: 600;
-   color: #fff;
+    color: var(--tz-text-primary);
  }
 
  .member-level {
@@ -622,7 +622,7 @@ onMounted(() => {
 
  .level-badge {
    padding: 4px 12px;
-   background: var(--tz-brand-primary);
+   background: var(--tz-site-accent);
    border-radius: 999px;
    font-size: 12px;
    font-weight: 700;
@@ -630,9 +630,9 @@ onMounted(() => {
    text-transform: uppercase;
  }
 
- .level-points {
+  .level-points {
    font-size: 14px;
-   color: rgba(255, 255, 255, 0.7);
+    color: var(--tz-text-secondary);
  }
 
  .member-actions {
@@ -643,12 +643,12 @@ onMounted(() => {
  }
 
  /* 按钮样式 */
- .btn-primary {
+  .btn-primary {
    height: 40px;
    padding: 0 20px;
    border-radius: 999px;
-   background: var(--tz-brand-primary);
-   color: #000;
+   background: var(--tz-site-accent);
+    color: #ffffff;
    font-size: 14px;
    font-weight: 600;
    border: none;
@@ -660,27 +660,27 @@ onMounted(() => {
    filter: brightness(1.1);
  }
 
- .btn-secondary {
+  .btn-secondary {
    height: 40px;
    padding: 0 20px;
    border-radius: 999px;
-   background: linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(15, 23, 42, 0.96));
-   color: #fff;
+    background: var(--membership-card-subtle);
+    color: var(--tz-text-primary);
    font-size: 14px;
    font-weight: 600;
    border: none;
    cursor: pointer;
    box-shadow:
-     0 2px 6px -3px rgba(0, 0, 0, 0.9),
-     0 0 6px rgba(0, 0, 0, 0.7);
+      0 2px 6px -3px rgba(20, 32, 43, 0.12),
+      0 0 6px rgba(20, 32, 43, 0.06);
    transition: all 0.2s;
  }
 
- .btn-secondary:hover {
-   background: linear-gradient(135deg, rgba(31, 41, 55, 0.98), rgba(15, 23, 42, 0.98));
+  .btn-secondary:hover {
+    background: var(--tz-surface-muted);
    box-shadow:
-     0 4px 12px -4px rgba(0, 0, 0, 0.95),
-     0 0 8px rgba(0, 0, 0, 0.9);
+      0 4px 12px -4px rgba(20, 32, 43, 0.16),
+      0 0 8px rgba(20, 32, 43, 0.08);
  }
 
  .btn-danger {
@@ -700,54 +700,32 @@ onMounted(() => {
    background: #b91c1c;
  }
 
- .btn-gradient {
-   height: 40px;
-   padding: 0 18px;
-   border-radius: 999px;
-   background: var(--tz-brand-primary);
-   color: #fff;
-   font-size: 14px;
-   font-weight: 700;
-   border: none;
-   cursor: pointer;
-   transition: all 0.2s;
- }
-
- .btn-gradient:hover {
-   filter: brightness(1.1);
- }
-
- .btn-gradient:disabled {
-   opacity: 0.5;
-   cursor: not-allowed;
- }
-
  /* 会员卡片 */
  .member-card {
-   background: radial-gradient(circle at top left, rgba(31, 41, 55, 0.96), rgba(15, 23, 42, 0.98));
+   background: var(--membership-card-surface);
    border-radius: 12px;
    padding: 1rem;
-   box-shadow: 0 3px 9px rgba(0, 0, 0, 0.9);
+   box-shadow: var(--membership-card-shadow);
    backdrop-filter: blur(14px);
    -webkit-backdrop-filter: blur(14px);
  }
 
  .member-benefits-card {
-   color: #fff;
+   color: var(--tz-text-primary);
  }
 
- .card-title {
+  .card-title {
    margin: 0 0 0.75rem;
    font-size: 14px;
    font-weight: 600;
-   color: rgba(255, 255, 255, 0.9);
+    color: var(--tz-text-primary);
    padding-bottom: 0.75rem;
-   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid var(--tz-border-subtle);
  }
 
- .member-benefits-card .card-title {
+  .member-benefits-card .card-title {
    font-size: 16px;
-   color: #fff;
+    color: var(--tz-text-primary);
  }
 
  .member-stats {
@@ -761,14 +739,14 @@ onMounted(() => {
    grid-template-columns: 1fr 1fr;
  }
 
- .stat-item {
+  .stat-item {
    display: flex;
    align-items: center;
    gap: 0.75rem;
    padding: 0.75rem;
-   background: radial-gradient(circle at top left, rgba(31, 41, 55, 0.96), rgba(15, 23, 42, 0.98));
+    background: var(--membership-card-subtle);
    border-radius: 8px;
-   box-shadow: 0 3px 9px rgba(0, 0, 0, 0.9);
+    box-shadow: 0 6px 16px rgba(20, 32, 43, 0.08);
    backdrop-filter: blur(12px);
    -webkit-backdrop-filter: blur(12px);
  }
@@ -788,12 +766,12 @@ onMounted(() => {
 
  .stat-label {
    font-size: 13px;
-   color: rgba(255, 255, 255, 0.7);
+   color: var(--tz-text-secondary);
  }
 
- .member-benefits-card .stat-label {
-   font-size: 15px;
-   color: #fff;
+  .member-benefits-card .stat-label {
+    font-size: 15px;
+    color: var(--tz-text-primary);
  }
 
  .stat-copy {
@@ -803,47 +781,47 @@ onMounted(() => {
    gap: 0.2rem;
  }
 
- .stat-desc {
+  .stat-desc {
    max-width: 36rem;
    font-size: 11px;
    line-height: 1.38;
-   color: rgba(255, 255, 255, 0.52);
+    color: var(--tz-text-muted);
  }
 
- .member-benefits-card .stat-desc {
+  .member-benefits-card .stat-desc {
    font-size: 13px;
    line-height: 1.48;
-   color: #fff;
+    color: var(--tz-text-secondary);
  }
 
- .stat-value {
+  .stat-value {
    font-size: 14px;
    font-weight: 600;
-   color: rgba(255, 255, 255, 0.9);
+    color: var(--tz-text-primary);
    flex: none;
  }
 
- .member-benefits-card .stat-value {
+  .member-benefits-card .stat-value {
    font-size: 16px;
-   color: #fff;
+    color: var(--tz-text-primary);
  }
 
  .stat-value.highlight {
-   color: #B5FF6D;
+   color: #059669;
  }
 
- .member-benefits-card .stat-value.highlight {
-   color: #fff;
+  .member-benefits-card .stat-value.highlight {
+    color: var(--tz-text-primary);
  }
 
  /* 资产 */
- .member-assets {
+  .member-assets {
    display: flex;
    flex-direction: column;
    gap: 0.5rem;
    margin-top: 0.75rem;
    padding-top: 0.75rem;
-   border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid var(--tz-border-subtle);
  }
 
  .membership-tabs--modal .member-assets {
@@ -859,14 +837,14 @@ onMounted(() => {
    }
  }
 
- .asset-item {
+  .asset-item {
    display: flex;
    align-items: center;
    gap: 0.75rem;
    padding: 0.75rem;
-   background: radial-gradient(circle at top left, rgba(31, 41, 55, 0.96), rgba(15, 23, 42, 0.98));
+    background: var(--membership-card-subtle);
    border-radius: 8px;
-   box-shadow: 0 3px 9px rgba(0, 0, 0, 0.9);
+    box-shadow: 0 6px 16px rgba(20, 32, 43, 0.08);
    backdrop-filter: blur(12px);
    -webkit-backdrop-filter: blur(12px);
  }
@@ -883,26 +861,26 @@ onMounted(() => {
    flex: 1;
  }
 
- .asset-label {
+  .asset-label {
    font-size: 13px;
-   color: rgba(255, 255, 255, 0.7);
+    color: var(--tz-text-secondary);
  }
 
- .member-benefits-card .asset-label {
+  .member-benefits-card .asset-label {
    font-size: 15px;
-   color: #fff;
+    color: var(--tz-text-primary);
  }
 
  .asset-value {
    font-size: 14px;
    font-weight: 700;
-   color: var(--tz-brand-primary);
+   color: var(--tz-site-accent);
    background: none;
  }
 
- .member-benefits-card .asset-value {
+  .member-benefits-card .asset-value {
    font-size: 16px;
-   color: #fff;
+    color: var(--tz-text-primary);
  }
 
  /* 进度条 */
@@ -910,75 +888,75 @@ onMounted(() => {
    margin-top: 1rem;
  }
 
- .progress-bar {
+  .progress-bar {
    height: 8px;
-   background: rgba(255, 255, 255, 0.1);
+    background: var(--tz-border-subtle);
    border-radius: 999px;
    overflow: hidden;
  }
 
  .progress-fill {
    height: 100%;
-   background: var(--tz-brand-primary);
+   background: var(--tz-site-accent);
    transition: width 0.3s;
  }
 
- .progress-labels {
+  .progress-labels {
    display: flex;
    justify-content: space-between;
    margin-top: 4px;
    font-size: 12px;
-   color: rgba(255, 255, 255, 0.7);
+    color: var(--tz-text-secondary);
  }
 
- .progress-pct {
+  .progress-pct {
    font-weight: 600;
-   color: rgba(255, 255, 255, 0.9);
+    color: var(--tz-text-primary);
  }
 
- .member-benefits-card .progress-labels {
+  .member-benefits-card .progress-labels {
    font-size: 14px;
-   color: #fff;
+    color: var(--tz-text-primary);
  }
 
- .member-benefits-card .progress-pct {
-   color: #fff;
+  .member-benefits-card .progress-pct {
+    color: var(--tz-text-primary);
  }
 
  /* 个人资料 */
- .profile-info {
-   background: radial-gradient(circle at top left, rgba(31, 41, 55, 0.96), rgba(15, 23, 42, 0.98));
+  .profile-info {
+    background: var(--membership-card-surface);
    border-radius: 12px;
    padding: 1rem;
-   box-shadow: 0 3px 9px rgba(0, 0, 0, 0.9);
+    box-shadow: var(--membership-card-shadow);
    backdrop-filter: blur(14px);
    -webkit-backdrop-filter: blur(14px);
  }
 
- .profile-info h4 {
+  .profile-info h4 {
    margin: 0 0 0.75rem;
    font-size: 14px;
    font-weight: 600;
-   color: rgba(255, 255, 255, 0.9);
+    color: var(--tz-text-primary);
  }
 
- .profile-item {
+  .profile-item {
    display: flex;
    justify-content: space-between;
    padding: 0.5rem 0.75rem;
-   background: rgba(255, 255, 255, 0.05);
+    background: var(--membership-card-subtle);
    border-radius: 8px;
    margin-bottom: 0.5rem;
  }
 
- .profile-label {
+  .profile-label {
    font-size: 14px;
-   color: rgba(255, 255, 255, 0.7);
+    color: var(--tz-text-secondary);
  }
 
- .profile-value {
+  .profile-value {
    font-size: 14px;
-   color: rgba(255, 255, 255, 0.9);
+    color: var(--tz-text-primary);
  }
 
  /* 右侧详情 */
@@ -1016,20 +994,20 @@ onMounted(() => {
  }
 
  /* 等级表格 */
- .tier-table {
-   background: radial-gradient(circle at top left, rgba(31, 41, 55, 0.96), rgba(15, 23, 42, 0.98));
+  .tier-table {
+    background: var(--membership-card-surface);
    border-radius: 12px;
    padding: 1rem;
-   box-shadow: 0 3px 9px rgba(0, 0, 0, 0.9);
+    box-shadow: var(--membership-card-shadow);
    backdrop-filter: blur(14px);
    -webkit-backdrop-filter: blur(14px);
  }
 
- .tier-table h4 {
+  .tier-table h4 {
    margin: 0 0 0.75rem;
    font-size: 14px;
    font-weight: 600;
-   color: rgba(255, 255, 255, 0.9);
+    color: var(--tz-text-primary);
  }
 
  .table-wrapper {
@@ -1049,21 +1027,21 @@ onMounted(() => {
    font-size: 13px;
  }
 
- .tier-table th {
-   color: rgba(255, 255, 255, 0.7);
+  .tier-table th {
+    color: var(--tz-text-secondary);
    font-weight: 600;
-   background: rgba(181, 255, 109, 0.08);
+   background: rgba(5, 150, 105, 0.08);
  }
 
- .tier-table td {
-   color: rgba(255, 255, 255, 0.9);
+  .tier-table td {
+    color: var(--tz-text-primary);
  }
 
- .tier-table thead tr,
- .tier-table tbody tr {
-   background: radial-gradient(circle at top left, rgba(31, 41, 55, 0.98), rgba(15, 23, 42, 0.98));
+  .tier-table thead tr,
+  .tier-table tbody tr {
+    background: var(--membership-card-subtle);
    border-radius: 999px;
-   box-shadow: 0 3px 9px rgba(0, 0, 0, 0.9);
+    box-shadow: 0 6px 16px rgba(20, 32, 43, 0.08);
    backdrop-filter: blur(12px);
    -webkit-backdrop-filter: blur(12px);
  }
@@ -1081,20 +1059,20 @@ onMounted(() => {
  }
 
  /* 积分规则 */
- .points-rules {
-   background: radial-gradient(circle at top left, rgba(31, 41, 55, 0.96), rgba(15, 23, 42, 0.98));
+  .points-rules {
+    background: var(--membership-card-surface);
    border-radius: 12px;
    padding: 1rem;
-   box-shadow: 0 3px 9px rgba(0, 0, 0, 0.9);
+    box-shadow: var(--membership-card-shadow);
    backdrop-filter: blur(14px);
    -webkit-backdrop-filter: blur(14px);
  }
 
- .points-rules h4 {
+  .points-rules h4 {
    margin: 0 0 0.75rem;
    font-size: 14px;
    font-weight: 600;
-   color: rgba(255, 255, 255, 0.9);
+    color: var(--tz-text-primary);
  }
 
  .rule-list {
@@ -1103,25 +1081,25 @@ onMounted(() => {
    gap: 0.75rem;
  }
 
- .rule-item {
+  .rule-item {
    padding: 0.75rem;
-   background: radial-gradient(circle at top left, rgba(31, 41, 55, 0.96), rgba(15, 23, 42, 0.98));
+    background: var(--membership-card-subtle);
    border-radius: 8px;
-   box-shadow: 0 3px 9px rgba(0, 0, 0, 0.9);
+    box-shadow: 0 6px 16px rgba(20, 32, 43, 0.08);
    backdrop-filter: blur(12px);
    -webkit-backdrop-filter: blur(12px);
  }
 
- .rule-title {
+  .rule-title {
    font-size: 13px;
    font-weight: 600;
-   color: rgba(255, 255, 255, 0.85);
+    color: var(--tz-text-primary);
    margin-bottom: 4px;
  }
 
- .rule-desc {
-   font-size: 13px;
-   color: rgba(255, 255, 255, 0.7);
+  .rule-desc {
+    font-size: 13px;
+    color: var(--tz-text-secondary);
  }
 
  .warranty-card,
@@ -1150,14 +1128,14 @@ onMounted(() => {
  .warranty-card__btn,
  .btn-primary {
    background: var(--membership-accent);
-   color: #050505;
+  color: var(--tz-text-primary);
  }
 
- .level-badge {
-   background: #f8fafc;
-   color: #050505;
-   border: 1px solid rgba(255, 255, 255, 0.72);
- }
+  .level-badge {
+    background: var(--tz-surface-inset);
+  color: var(--tz-text-primary);
+    border: 1px solid var(--tz-border-subtle);
+  }
 
  .btn-secondary {
    background: var(--membership-card-subtle);
@@ -1165,7 +1143,7 @@ onMounted(() => {
  }
 
  .tier-table th {
-   background: rgba(181, 255, 109, 0.08);
+   background: rgba(5, 150, 105, 0.08);
    color: var(--tz-text-secondary);
  }
 

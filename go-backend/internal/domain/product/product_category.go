@@ -11,6 +11,9 @@ type ProductCategory struct {
 	Name              string                       `gorm:"type:varchar(120);not null" json:"name"`
 	Slug              string                       `gorm:"type:varchar(120);uniqueIndex;not null" json:"slug"`
 	Description       string                       `gorm:"type:text" json:"description"`
+	MetaTitle         string                       `gorm:"type:varchar(160);not null;default:''" json:"meta_title"`
+	MetaDesc          string                       `gorm:"column:meta_description;type:text;not null;default:''" json:"meta_description"`
+	SEOIntro          string                       `gorm:"column:seo_intro;type:text;not null;default:''" json:"intro"`
 	ImageMediaAssetID *uint                        `gorm:"index" json:"image_media_asset_id,omitempty"`
 	ImageURL          string                       `gorm:"type:text;not null;default:''" json:"image_url,omitempty"`
 	Depth             int                          `gorm:"not null;default:1;index" json:"depth"`

@@ -159,6 +159,7 @@ func TestRecommendationProductCanonicalizesThumbnailURL(t *testing.T) {
 	}
 
 	got := recommendationService.makeRecommendationProduct(item, "slot", "reason")
+	require.Equal(t, "/products/recommended-wheel", got.URL)
 	require.Equal(t, "https://shop.example.test/uploads/recommendations/wheel.webp", got.Thumbnail)
 }
 

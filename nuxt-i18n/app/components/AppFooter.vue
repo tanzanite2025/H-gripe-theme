@@ -2,10 +2,9 @@
   <footer class="app-footer app-footer-background-surface">
     <div class="footer-content">
       
-      <!-- Desktop: Side-by-Side Layout Wrapper -->
-      <div class="footer-main-row">
-        
-        <!-- Left: Subscription -->
+      <div class="footer-feature-row">
+        <FooterSiteOverview :links="siteOverviewLinks" />
+
         <div class="footer-subscription">
           <SubscriptionOptIn
             label="Subscribe for new products & blog updates"
@@ -15,11 +14,10 @@
           </div>
         </div>
 
-        <!-- Right: Menus -->
-        <div class="footer-menus-wrapper">
-          <FooterMenus />
-        </div>
+      </div>
 
+      <div class="footer-menus-wrapper">
+        <FooterMenus :menus="routeMenuSections" />
       </div>
 
       <div v-if="$slots.widgets" class="footer-widgets">
@@ -33,8 +31,8 @@
               &copy; {{ currentYear }}. All pages use HTTPS with SSL encryption. Payments are securely processed; no card data stored.
             </p>
             <svg class="footer-secure-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" title="SSL Secure">
-              <path d="M12 2L3 5V11C3 16.55 6.84 21.74 12 23C17.16 21.74 21 16.55 21 11V5L12 2Z" fill="#B5FF6D" stroke="#B5FF6D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M12 2L3 5V11C3 16.55 6.84 21.74 12 23" fill="#B5FF6D" stroke="#B5FF6D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M12 2L3 5V11C3 16.55 6.84 21.74 12 23C17.16 21.74 21 16.55 21 11V5L12 2Z" fill="#059669" stroke="#059669" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M12 2L3 5V11C3 16.55 6.84 21.74 12 23" fill="#059669" stroke="#059669" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               <text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" fill="white" font-size="6" font-weight="bold" font-family="MapleUILatin">SSL</text>
               <rect x="10.5" y="14" width="3" height="2" rx="0.5" fill="#F59E0B" />
               <path d="M10.5 14V13C10.5 12.4477 10.9477 12 11.5 12C12.0523 12 12.5 12.4477 12.5 13V14" stroke="#F59E0B" stroke-width="0.5"/>
@@ -64,11 +62,25 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useRouter } from '#imports'
 import SocialIcons from '~/components/SocialIcons.vue'
+import FooterSiteOverview from '~/components/FooterSiteOverview.vue'
 import FooterMenus from '~/components/FooterMenus.vue'
 import SubscriptionOptIn from '~/components/SubscriptionOptIn.vue'
+import type { FooterSection } from '~/utils/footerMenus'
+import { createFooterMenusFromRoutes } from '~/utils/footerMenus'
 
 const currentYear = computed(() => new Date().getFullYear())
+const router = useRouter()
+const footerSections = computed<FooterSection[]>(() => (
+  createFooterMenusFromRoutes(router.getRoutes())
+))
+const siteOverviewLinks = computed(() => (
+  footerSections.value.find(section => section.id === 'siteOverview')?.links || []
+))
+const routeMenuSections = computed<FooterSection[]>(() => (
+  footerSections.value.filter(section => section.id !== 'siteOverview')
+))
 
 interface PaymentIcon {
   src: string
@@ -99,7 +111,7 @@ const paymentIcons: PaymentIcon[] = [
 .app-footer {
   /* Keep the final footer row clear of the fixed bottom dock. */
   padding: 1rem 1.5rem var(--tz-bottom-dock-content-clearance, 6.5rem);
-  color: #f5f6fa;
+  color: var(--tz-text-primary);
 }
 
  .app-footer-background-surface {
@@ -117,15 +129,16 @@ const paymentIcons: PaymentIcon[] = [
   text-align: center;
 }
 
-.footer-main-row {
+.footer-feature-row {
   width: 100%;
   box-sizing: border-box;
-  padding-inline: clamp(0.5rem, 1.8vw, 2rem);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1.5rem;
-  margin-bottom: 0.5rem;
+  padding: 1.5rem clamp(0.5rem, 1.8vw, 2rem);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: start;
+  gap: clamp(1.5rem, 4vw, 5rem);
+  background: var(--tz-surface-subtle);
+  border-block: 1px solid var(--tz-border-subtle);
 }
 
 .footer-subscription {
@@ -163,7 +176,7 @@ const paymentIcons: PaymentIcon[] = [
 
 .footer-subscription__social {
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   margin-top: 0.85rem;
 }
 
@@ -200,7 +213,7 @@ const paymentIcons: PaymentIcon[] = [
 
 .footer-bottom__info {
   font-size: 0.875rem;
-  color: rgba(245, 246, 250, 0.78);
+  color: var(--tz-text-secondary);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -246,22 +259,19 @@ const paymentIcons: PaymentIcon[] = [
   font-weight: 600;
 }
 
-/* 平板断点 (768px - 1024px): 保持移动端布局 */
+/* Tablet */
 @media (min-width: 768px) and (max-width: 1023px) {
   .footer-content {
-    text-align: center;
+    text-align: left;
   }
 
-  .footer-main-row {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+  .footer-feature-row {
     gap: 2rem;
   }
 
   .footer-subscription {
-    max-width: 480px;
-    text-align: center;
+    max-width: none;
+    text-align: left;
   }
   
   .footer-bottom__info {
@@ -271,24 +281,13 @@ const paymentIcons: PaymentIcon[] = [
   }
 }
 
-/* 桌面端 (1024px+): 并排布局 */
 @media (min-width: 1024px) {
   .footer-content {
     text-align: left;
     align-items: stretch;
   }
 
-  .footer-main-row {
-    display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    align-items: start;
-    gap: clamp(1rem, 2vw, 2.5rem);
-    margin-bottom: 0;
-  }
-
   .footer-subscription {
-    grid-column: 6;
-    grid-row: 1;
     max-width: 100%;
     text-align: left;
   }
@@ -296,18 +295,12 @@ const paymentIcons: PaymentIcon[] = [
   .footer-subscription :deep(label) {
     text-align: left;
   }
-  
-  .footer-menus-wrapper {
-    grid-column: 1 / span 5;
-    grid-row: 1;
-    margin-top: 0;
-  }
 
   .footer-bottom {
     display: flex;
     margin-top: 0;
     padding-top: 0.5rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    border-top: 1px solid rgba(20, 32, 43, 0.1);
   }
 
   .footer-bottom__info {
@@ -328,12 +321,12 @@ const paymentIcons: PaymentIcon[] = [
     background: var(--tz-card-surface);
   }
   
-  .footer-main-row {
+  .footer-feature-row {
     display: flex;
     flex-direction: column;
     align-items: stretch; /* Ensure children take full width */
     gap: 2rem; /* Increase gap */
-    margin-bottom: 2rem;
+    padding-bottom: 2rem;
   }
   
   .footer-content {

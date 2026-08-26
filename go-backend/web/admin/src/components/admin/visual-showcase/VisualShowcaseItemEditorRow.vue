@@ -34,10 +34,11 @@
           ref="fileInput"
           type="file"
           class="hidden"
-          accept="image/jpeg,image/png,image/webp"
+          :accept="uploadSpecAccept('visual_showcase_editorial')"
           :disabled="!canEdit || uploading"
           @change="handleUploadFile"
         />
+        <UploadSpecHint code="visual_showcase_editorial" />
       </div>
       <p class="truncate text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">
         {{ item.storage_key || '未上传到专用目录' }}
@@ -143,6 +144,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { toast } from 'vue-sonner'
 import { ImagePlus, LoaderCircle } from '@lucide/vue'
 import AdminFormField from '@/components/admin/AdminFormField.vue'
 import { Badge } from '@/components/ui/badge'
@@ -151,6 +153,8 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
+import UploadSpecHint from '@/components/admin/UploadSpecHint.vue'
+import { uploadSpecAccept, validateUploadFile } from '@/lib/uploadSpecs'
 import type {
   VisualShowcaseAdministrationItemFormState,
   VisualShowcaseAdministrationUploadRequest,
@@ -208,11 +212,17 @@ const updatePublished = (value: boolean): void => {
   patchItem({ is_published: Boolean(value) })
 }
 
-const handleUploadFile = (event: Event): void => {
+const handleUploadFile = async (event: Event): Promise<void> => {
   const input = event.target instanceof HTMLInputElement ? event.target : null
   const file = input?.files?.[0] || null
   if (input) input.value = ''
   if (!file) return
+  const validation = await validateUploadFile(file, 'visual_showcase_editorial')
+  if (!validation.ok) {
+    toast.error(validation.error || '竖版视觉图片不符合上传规范')
+    return
+  }
+  if (validation.warning) toast.warning(validation.warning)
   emit('upload-image', { index: props.index, file })
 }
 </script>

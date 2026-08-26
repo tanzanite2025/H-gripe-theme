@@ -25,8 +25,6 @@
 
         <div class="wa-drawer-shell">
           <!-- Background Decoration -->
-          <div class="absolute inset-x-0 top-0 h-[200px] bg-gradient-to-br from-indigo-600/20 to-teal-600/20 blur-3xl pointer-events-none z-0"></div>
-
           <!-- Header -->
           <div class="wa-drawer-header relative z-10">
             <div class="flex flex-col gap-1 min-w-0">
@@ -91,7 +89,7 @@
               <div
                 v-for="item in items"
                 :key="item.id"
-                class="border border-white/10 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] transition-colors overflow-hidden flex flex-col"
+                class="border tz-border-subtle rounded-xl tz-surface-subtle hover:tz-surface-subtle transition-colors overflow-hidden flex flex-col"
               >
                 <StorefrontImage
                   v-if="item.product?.thumbnail"
@@ -101,23 +99,23 @@
                   preset="card"
                 />
                 <div class="px-3 pt-2 pb-3 flex-1 flex flex-col">
-                  <div class="text-sm font-semibold text-white truncate">
+                  <div class="text-sm font-semibold tz-text-primary truncate">
                     {{ item.product?.name || t('wishlistDrawer.productFallback') }}
                   </div>
-                  <div v-if="displayPrice(item)" class="text-xs text-[#B5FF6D] mt-1">
+                  <div v-if="displayPrice(item)" class="text-xs text-[#059669] mt-1">
                     {{ displayPrice(item) }}
                   </div>
                   <div class="mt-3 flex justify-end gap-2">
                     <button
                       type="button"
-                      class="text-xs px-2 py-1 rounded-full bg-gradient-to-r from-[#B5FF6D] to-[#6b73ff] text-white hover:from-[#A6F05F] hover:to-[#5a62ee] transition-colors shadow-sm"
+                      class="text-xs px-2 py-1 rounded-full bg-[var(--tz-action-primary)] text-white hover:bg-[var(--tz-action-primary-hover)] transition-colors shadow-sm"
                       @click="handleShare(item)"
                     >
                       {{ t('wishlistDrawer.actions.shareToChat') }}
                     </button>
                     <button
                       type="button"
-                      class="text-xs px-2 py-1 rounded-full border border-white/30 tz-text-secondary hover:bg-white/10 transition-colors"
+                      class="text-xs px-2 py-1 rounded-full border tz-border-strong/30 tz-text-secondary hover:tz-surface-subtle transition-colors"
                       @click="handleRemove(item.id)"
                     >
                       {{ t('wishlistDrawer.actions.remove') }}
@@ -137,6 +135,7 @@
 <script setup lang="ts">
 import { watch } from 'vue'
 import { useWishlist } from '~/composables/useWishlist'
+import { buildProductPath } from '~/utils/seo/urls'
 
 const props = defineProps<{
   variant?: 'default' | 'bottom'
@@ -181,7 +180,7 @@ const handleShare = (item: any) => {
   const payload = {
     id: product.id ?? item.product_id,
     title: product.name,
-    url: `/shop/${product.slug || product.id}`,
+    url: buildProductPath(String(product.slug || product.id || '')),
     thumbnail: product.thumbnail,
     price,
   }

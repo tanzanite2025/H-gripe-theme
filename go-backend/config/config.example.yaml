@@ -53,6 +53,41 @@ google_merchant:
   token_encryption_key: ""  # Set via GOOGLE_MERCHANT_TOKEN_ENCRYPTION_KEY
   state_ttl_seconds: 600
 
+google_indexing:
+  # Google Indexing API is disabled by default. Keep service account material
+  # outside source control and provide either JSON or a file path, not both.
+  enabled: false
+  service_account_json: ""
+  service_account_file: ""
+  request_timeout_seconds: 15
+
+social_oauth:
+  # Set provider credentials with SOCIAL_OAUTH_* environment variables.
+  meta:
+    client_id: ""
+    client_secret: ""
+    redirect_url: "http://localhost:9200/api/admin/social/oauth/callback"
+    scopes: ""
+  x:
+    client_id: ""
+    client_secret: ""
+    redirect_url: "http://localhost:9200/api/admin/social/oauth/callback"
+    scopes: ""
+  youtube:
+    client_id: ""
+    client_secret: ""
+    redirect_url: "http://localhost:9200/api/admin/social/oauth/callback"
+    scopes: ""
+  reddit:
+    client_id: ""
+    client_secret: ""
+    redirect_url: "http://localhost:9200/api/admin/social/oauth/callback"
+    scopes: ""
+  post_connect_url: "http://localhost:9300/social"
+  token_encryption_key: ""
+  state_ttl_seconds: 600
+  meta_graph_api_version: "v23.0"
+
 i18n:
   default_locale: "en"
   supported_locales:
@@ -178,6 +213,10 @@ worker:
   payment_expiration_batch_limit: 100
   payment_risk_monitoring_enabled: false
   payment_risk_monitoring_interval_seconds: 3600
+  # Independent from worker.enabled. Reads ExchangeRate-API once at startup and then daily.
+  # Base currency comes from backend entry currency; targets come from enabled market display currencies.
+  exchange_rate_sync_enabled: true
+  exchange_rate_sync_interval_seconds: 86400
   media_derivative_rebuild_enabled: true
   media_derivative_rebuild_interval_seconds: 5
   media_derivative_rebuild_batch_limit: 10

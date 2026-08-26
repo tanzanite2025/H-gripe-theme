@@ -105,9 +105,9 @@ func (s *ProductService) buildVariants(productSpecificationTemplateID *uint, inp
 	defaultIndex := -1
 	seenSKU := make(map[string]struct{}, len(inputs))
 	seenOptions := make(map[string]struct{}, len(inputs))
-	productCurrency, err = s.normalizeAdminProductPriceCurrency(productCurrency)
-	if err != nil {
-		return nil, err
+	productCurrency = normalizeStoredProductPriceCurrency(productCurrency)
+	if !currency.IsCatalogCode(productCurrency) {
+		return nil, fmt.Errorf("%w: unsupported product currency", ErrProductVariantInvalid)
 	}
 
 	for i, input := range inputs {

@@ -34,13 +34,14 @@
       <p class="mt-1 text-[10px] font-bold text-muted-foreground">
         {{ profileReady ? (avatar ? '头像已保存' : '未设置头像') : '先保存 Profile 后上传头像' }}
       </p>
+      <UploadSpecHint code="customer_service_avatar" />
     </div>
 
     <input
       ref="fileInput"
       class="sr-only"
       type="file"
-      accept="image/jpeg,image/png,image/webp"
+      :accept="uploadSpecAccept('customer_service_avatar')"
       tabindex="-1"
       @change="uploadSelectedFile"
     />
@@ -54,9 +55,8 @@ import { LoaderCircle, Trash2, Upload, UserRound } from '@lucide/vue'
 import customerServiceAvatarApi from '@/api/customerServiceAvatar'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
-
-const maxAvatarBytes = 2 * 1024 * 1024
-const acceptedAvatarTypes = new Set(['image/jpeg', 'image/png', 'image/webp'])
+import UploadSpecHint from '@/components/admin/UploadSpecHint.vue'
+import { uploadSpecAccept, validateUploadFile } from '@/lib/uploadSpecs'
 
 const props = withDefaults(defineProps<{
   userId: string | number | null
@@ -90,14 +90,12 @@ const uploadSelectedFile = async (event: Event) => {
   input.value = ''
   if (!file || !canManage.value || !props.userId) return
 
-  if (!acceptedAvatarTypes.has(file.type)) {
-    toast.error('头像仅支持 JPG、PNG 或 WebP 图片')
+  const validation = await validateUploadFile(file, 'customer_service_avatar')
+  if (!validation.ok) {
+    toast.error(validation.error || '头像不符合上传规范')
     return
   }
-  if (file.size > maxAvatarBytes) {
-    toast.error('头像文件不能超过 2 MB')
-    return
-  }
+  if (validation.warning) toast.warning(validation.warning)
 
   uploading.value = true
   try {

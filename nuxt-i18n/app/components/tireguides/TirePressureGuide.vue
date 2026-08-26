@@ -1,7 +1,7 @@
 <template>
   <div class="tire-pressure-guide">
     <h2 class="sizecharts-section__title">Tire Pressure</h2>
-    <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-[0_8px_30px_rgba(0,0,0,0.6)] p-5 md:p-6 text-center">
+    <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6 text-center">
       <TirePressureSection @openTireProducts="$emit('openTireProducts')" />
     </div>
   </div>

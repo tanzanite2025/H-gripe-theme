@@ -193,6 +193,7 @@ func (h *SiteQualityHandler) ListSiteQualityFindings(c *gin.Context) {
 		PageSize:    pageSize,
 		State:       strings.TrimSpace(c.DefaultQuery("state", "active")),
 		Severity:    strings.TrimSpace(c.Query("severity")),
+		RuleID:      strings.TrimSpace(c.Query("rule_id")),
 		TargetURL:   strings.TrimSpace(c.Query("url")),
 		Strategy:    strings.TrimSpace(c.Query("strategy")),
 		FindingKind: strings.TrimSpace(c.Query("kind")),

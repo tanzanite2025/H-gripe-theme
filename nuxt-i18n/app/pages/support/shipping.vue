@@ -49,6 +49,8 @@
 <script setup lang="ts">
 definePageMeta({
   layout: 'support',
+  footerLabelKey: 'support.nav.shipping',
+  footerLabelFallback: 'Shipping',
 })
 
 useHead({
@@ -62,7 +64,7 @@ useHead({
   font-size: var(--tz-type-page-title);
   line-height: 1.18;
   font-weight: 600;
-  color: #f9fafb;
+  color: var(--tz-text-primary);
 }
 
 .support-page__intro {
@@ -80,7 +82,7 @@ useHead({
   font-size: var(--tz-type-section-title);
   line-height: 1.35;
   font-weight: 600;
-  color: #e5e7eb;
+  color: var(--tz-text-primary);
 }
 
 .support-section__body {
