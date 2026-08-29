@@ -35,9 +35,6 @@ func NewStorefrontRouteCatalogService(
 ) *StorefrontRouteCatalogService {
 	publicOrigin := strings.TrimRight(strings.TrimSpace(baseURL), "/")
 	privateOrigin := strings.TrimRight(strings.TrimSpace(internalBaseURL), "/")
-	if privateOrigin == "" {
-		privateOrigin = publicOrigin
-	}
 
 	return &StorefrontRouteCatalogService{
 		repository:      routeRepository,

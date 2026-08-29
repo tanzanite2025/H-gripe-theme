@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"strings"
 
+	"commerce-platform/internal/service"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -34,9 +36,6 @@ var commercialCrawlerRules = []CommercialCrawlerRule{
 }
 
 // commercialIntelligenceSeeds is the starting threat-intelligence catalog.
-// Only the known user-agent seed is actively enforced today. The remaining
-// seeds are deliberately visible as pending behavior profiles, rather than
-// being presented as protections that have already been implemented.
 var commercialIntelligenceSeeds = []CommercialIntelligenceSeed{
 	{
 		ID:             "known-commercial-crawlers",
@@ -97,18 +96,31 @@ var commercialIntelligenceSeeds = []CommercialIntelligenceSeed{
 	},
 }
 
-// CommercialCrawlerBlocker rejects known commercial intelligence crawlers.
+// CommercialCrawlerBlocker rejects known commercial intelligence crawlers and,
+// when a block service is supplied, persists a short-lived global IP rule for
+// the public client address. The variadic form keeps lightweight callers and
+// unit tests compatible while production supplies the shared block service.
 // The matching is deliberately case-insensitive because user-agent tokens vary
 // between product versions while retaining the provider identifier.
-func CommercialCrawlerBlocker() gin.HandlerFunc {
+func CommercialCrawlerBlocker(blockServices ...*service.GlobalIPBlockService) gin.HandlerFunc {
+	var blockService *service.GlobalIPBlockService
+	if len(blockServices) > 0 {
+		blockService = blockServices[0]
+	}
+
 	return func(c *gin.Context) {
-		if commercialCrawlerRuleForUserAgent(c.GetHeader("User-Agent")) == nil {
+		rule := commercialCrawlerRuleForUserAgent(c.GetHeader("User-Agent"))
+		if rule == nil {
 			c.Next()
 			return
 		}
 
+		if blockService != nil {
+			persistCommercialCrawlerIPBlock(c, blockService, *rule)
+		}
 		c.Header("Cache-Control", "no-store, max-age=0")
 		c.Header("X-Robots-Tag", "noindex, nofollow, noarchive")
+		c.Header("X-Access-Block", "commercial-crawler")
 		c.AbortWithStatus(commercialCrawlerBlockStatus)
 	}
 }
@@ -121,6 +133,7 @@ func CommercialCrawlerProtectionSnapshot() gin.H {
 		"rules":              rules,
 		"intelligence_seeds": CommercialIntelligenceSeeds(),
 		"robots_txt":         CommercialCrawlerRobotsPolicy(),
+		"automatic_ip_block": CommercialCrawlerAutoBlockPolicy(),
 		"enforcement": []gin.H{
 			{"layer": "Go API middleware", "status": "enabled"},
 			{"layer": "Public Nginx edge", "status": "enabled"},

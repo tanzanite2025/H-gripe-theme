@@ -207,11 +207,32 @@ func (r *FitmentHubSpecificationRepository) Update(specification *fitmentcatalog
 			"position":        specification.Position,
 			"axle_type":       specification.AxleType,
 			"axle_spacing_mm": specification.AxleSpacingMM,
+			"wr_mm":           specification.WRMM,
+			"wl_mm":           specification.WLMM,
+			"pcdr_mm":         specification.PCDRMM,
+			"pcdl_mm":         specification.PCDLMM,
 			"notes":           specification.Notes,
 			"is_enabled":      specification.IsEnabled,
 			"sort_order":      specification.SortOrder,
 			"updated_at":      time.Now(),
 		}).Error
+}
+
+func (r *FitmentHubSpecificationRepository) ListEnabledForSpokeCatalog() ([]fitmentcatalogdomain.HubSpecification, error) {
+	if r == nil || r.db == nil {
+		return nil, errors.New("fitment hub specification repository is unavailable")
+	}
+
+	specifications := make([]fitmentcatalogdomain.HubSpecification, 0)
+	if err := r.db.
+		Where("is_enabled = ?", true).
+		Order("sort_order ASC").
+		Order("display_name ASC").
+		Order("id ASC").
+		Find(&specifications).Error; err != nil {
+		return nil, err
+	}
+	return specifications, nil
 }
 
 func (r *FitmentHubSpecificationRepository) UpdateStatus(id uint, enabled bool) error {

@@ -533,14 +533,14 @@ const tireSizeAvailabilityColumns = [
 .tire-size-availability-card {
   min-width: 0;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--tz-border-subtle);
   border-radius: 0.75rem;
-  background: rgba(13, 15, 20, 0.86);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  background: var(--tz-card-surface);
+  box-shadow: 0 4px 16px rgb(15 23 42 / 0.06);
 }
 
 .tire-size-availability-card[open] {
-  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 8px 22px rgb(15 23 42 / 0.1);
 }
 
 .tire-size-availability-card__header {
@@ -549,8 +549,8 @@ const tireSizeAvailabilityColumns = [
   justify-content: space-between;
   gap: 0.75rem;
   padding: 0.85rem 1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.035);
+  border-bottom: 1px solid var(--tz-border-subtle);
+  background: var(--tz-surface-muted);
   cursor: pointer;
   list-style: none;
   user-select: none;
@@ -562,7 +562,7 @@ const tireSizeAvailabilityColumns = [
 
 .tire-size-availability-card__header h4 {
   margin: 0;
-  color: var(--tz-site-accent);
+  color: var(--tz-text-accent);
   font-size: 0.82rem;
   font-weight: 800;
   letter-spacing: 0;
@@ -602,13 +602,13 @@ const tireSizeAvailabilityColumns = [
 }
 
 .tire-size-availability-table thead {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--tz-surface-muted);
 }
 
 .tire-size-availability-table th,
 .tire-size-availability-table td {
   padding: 0.55rem 0.7rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--tz-border-subtle);
   vertical-align: top;
 }
 
@@ -637,7 +637,7 @@ const tireSizeAvailabilityColumns = [
 }
 
 .tire-size-availability-table tbody tr:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--tz-surface-subtle);
 }
 
 @media (max-width: 767px) {

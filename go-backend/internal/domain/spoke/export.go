@@ -44,10 +44,11 @@ type HubBrand struct {
 }
 
 type HubModel struct {
-	ID    string       `json:"id"`
-	Name  string       `json:"name"`
-	Front *HubGeometry `json:"front,omitempty"`
-	Rear  *HubGeometry `json:"rear,omitempty"`
+	ID                        string       `json:"id"`
+	Name                      string       `json:"name"`
+	FitmentHubSpecificationID *uint        `json:"-"`
+	Front                     *HubGeometry `json:"front,omitempty"`
+	Rear                      *HubGeometry `json:"rear,omitempty"`
 }
 
 type HubGeometry struct {

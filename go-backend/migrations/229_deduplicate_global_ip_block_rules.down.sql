@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS uq_global_ip_block_rules_active_identity;

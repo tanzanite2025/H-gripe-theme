@@ -52,7 +52,7 @@
                 <button
                   type="button"
                   class="global-product-detail-bottom-sheet-inline-action"
-                  @click="fetchGlobalProductDetailBottomSheetProduct"
+                  @click="loadGlobalProductDetailBottomSheetProduct"
                 >
                   <Icon name="lucide:refresh-cw" class="h-4 w-4" aria-hidden="true" />
                   <span>{{ t('common.retry', 'Retry') }}</span>
@@ -238,12 +238,6 @@
                     </div>
                   </section>
 
-                  <ProductReviewsSection
-                    :product-id="product.id"
-                    :initial-summary="product.reviewSummary"
-                    compact
-                  />
-
                   <div class="global-product-detail-bottom-sheet-purchase">
                     <div class="global-product-detail-bottom-sheet-quantity-control">
                       <span>{{ t('products.detail.quantity', 'Quantity') }}</span>
@@ -315,87 +309,15 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { useI18n, useRuntimeConfig } from '#imports'
+import { useI18n } from '#imports'
 import {
   useGlobalProductDetailBottomSheet,
 } from '~/composables/useGlobalProductDetailBottomSheet'
-import {
-  normalizeShopProduct,
-  useShopProducts,
-  type ShopProduct,
-  type ShopProductVariant,
-} from '~/composables/useShopProducts'
+import { useProductDetailLookup } from '~/composables/useProductDetailLookup'
 import { useCart } from '~/composables/useCart'
-import ProductReviewsSection from '~/components/shop/ProductReviewsSection.vue'
-import {
-  createStorefrontMediaContext,
-  normalizeStorefrontProductMedia,
-} from '~/utils/storefrontMedia'
-
-interface RawProductMedia {
-  id?: number | string
-  url?: string
-  media_type?: string
-  thumbnail_url?: string
-  poster_url?: string
-  image_variants?: Record<string, { url?: string }>
-  alt?: string
-  title?: string
-  is_primary?: boolean
-  is_visible?: boolean
-}
-
-interface RawProductSpecValue {
-  value?: unknown
-  definition?: {
-    name?: string
-    slug?: string
-    group?: string
-    is_visible?: boolean
-    field_type?: string
-    unit?: string
-    sort_order?: number
-  }
-}
-
-interface RawProductReviewSummary {
-  product_id?: number
-  total_reviews?: number
-  average_rating?: number
-  rating_5_count?: number
-  rating_4_count?: number
-  rating_3_count?: number
-  rating_2_count?: number
-  rating_1_count?: number
-}
-
-interface RawProductDetail {
-  id?: number
-  name?: string
-  title?: string
-  slug?: string
-  sku?: string
-  short_description?: string
-  description?: string
-  thumbnail?: string
-  featured_image?: string
-  product_specification_template?: {
-    name?: string
-    spec_definitions?: Array<{
-      name?: string
-      slug?: string
-      group?: string
-      presentation?: string
-      is_variant_option?: boolean
-      sort_order?: number
-    }>
-  }
-  media?: RawProductMedia[]
-  spec_values?: RawProductSpecValue[]
-  variants?: unknown[]
-  variant_option_values?: unknown[]
-  review_summary?: RawProductReviewSummary | null
-}
+import { useShopProducts, type ShopProduct, type ShopProductVariant } from '~/composables/useShopProducts'
+import { useStorefrontContext } from '~/composables/useStorefrontContext'
+import type { GoProduct } from '~/types/productDetail'
 
 interface ProductMediaItem {
   id: string
@@ -429,11 +351,10 @@ interface VariantOptionGroup {
 }
 
 const { t, locale } = useI18n()
-const config = useRuntimeConfig()
-const mediaContext = createStorefrontMediaContext(config)
 const { displayCurrency, countryCode } = useStorefrontContext()
 const { addToCart, openCart, openCheckout } = useCart()
 const { toCartItem } = useShopProducts()
+const { fetchProductDetailSnapshot } = useProductDetailLookup()
 const {
   isGlobalProductDetailBottomSheetOpen,
   globalProductDetailBottomSheetProductReference: productReference,
@@ -441,7 +362,7 @@ const {
   closeGlobalProductDetailBottomSheet,
 } = useGlobalProductDetailBottomSheet()
 
-const rawProduct = ref<RawProductDetail | null>(null)
+const rawProduct = ref<GoProduct | null>(null)
 const product = ref<ShopProduct | null>(null)
 const isLoadingProduct = ref(false)
 const productLoadError = ref('')
@@ -457,7 +378,7 @@ const globalProductDetailBottomSheetAriaLabel = computed(() =>
     || t('products.detail.viewDetails', 'Product details'),
 )
 
-const fetchGlobalProductDetailBottomSheetProduct = async () => {
+const loadGlobalProductDetailBottomSheetProduct = async () => {
   const slug = productSlug.value
   if (!slug) return
 
@@ -468,33 +389,17 @@ const fetchGlobalProductDetailBottomSheetProduct = async () => {
   purchaseFeedbackMessage.value = ''
 
   try {
-    const baseURL = ((config.public as { apiBase?: string }).apiBase || '/api/v1').replace(/\/$/, '')
-    const response = await $fetch<any>(`${baseURL}/products/${encodeURIComponent(slug)}`, {
-      headers: {
-        accept: 'application/json',
-        ...(locale.value ? { 'Accept-Language': String(locale.value) } : {}),
-        ...(displayCurrency.value ? { 'X-Display-Currency': displayCurrency.value } : {}),
-        ...(countryCode.value && countryCode.value !== 'ZZ' ? { 'X-Market-Country': countryCode.value } : {}),
-      },
-      params: {
-        locale: locale.value || undefined,
-        currency: displayCurrency.value || undefined,
-        country: countryCode.value !== 'ZZ' ? countryCode.value : undefined,
-      },
-    })
+    const snapshot = await fetchProductDetailSnapshot(slug)
     if (requestSequence !== fetchRequestSequence) return
-
-    const data = (response?.data || response) as RawProductDetail
-    if (!data || typeof data !== 'object') {
+    if (!snapshot) {
       throw new Error(t('products.detail.notFound', 'Product not found'))
     }
 
-    const normalizedData = normalizeStorefrontProductMedia(data, mediaContext)
-    rawProduct.value = normalizedData
-    product.value = normalizeShopProduct(normalizedData, 'USD', mediaContext)
+    rawProduct.value = snapshot.rawProduct
+    product.value = snapshot.shopProduct
     selectedQuantity.value = 1
     selectedVariantId.value = resolveInitialGlobalProductDetailBottomSheetVariantId(product.value)
-    selectedMediaId.value = resolveInitialGlobalProductDetailBottomSheetMediaId(data)
+    selectedMediaId.value = resolveInitialGlobalProductDetailBottomSheetMediaId(snapshot.rawProduct)
   } catch (error) {
     if (requestSequence !== fetchRequestSequence) return
     rawProduct.value = null
@@ -515,7 +420,7 @@ const resolveInitialGlobalProductDetailBottomSheetVariantId = (shopProduct: Shop
   return defaultVariant?.id || null
 }
 
-const resolveInitialGlobalProductDetailBottomSheetMediaId = (detail: RawProductDetail) => {
+const resolveInitialGlobalProductDetailBottomSheetMediaId = (detail: GoProduct) => {
   const media = Array.isArray(detail.media) ? detail.media : []
   const visibleMedia = media.filter(item => item.url && item.is_visible !== false)
   const primaryMedia = visibleMedia.find(item => item.is_primary) || visibleMedia[0]
@@ -736,7 +641,9 @@ const buyGlobalProductDetailNow = () => {
   openCheckout()
 }
 
-const formatGlobalProductDetailBottomSheetSpecificationValue = (item: RawProductSpecValue) => {
+type ProductSpecValueItem = NonNullable<GoProduct['spec_values']>[number]
+
+const formatGlobalProductDetailBottomSheetSpecificationValue = (item: ProductSpecValueItem) => {
   const definition = item.definition
   const value = String(item.value ?? '').trim()
   if (!value) return ''
@@ -770,7 +677,7 @@ const productSpecificationGroups = computed<ProductSpecificationGroup[]>(() => {
 watch(
   [isGlobalProductDetailBottomSheetOpen, productSlug, locale, displayCurrency, countryCode],
   ([isOpen]) => {
-    if (isOpen) void fetchGlobalProductDetailBottomSheetProduct()
+    if (isOpen) void loadGlobalProductDetailBottomSheetProduct()
   },
   { immediate: true },
 )

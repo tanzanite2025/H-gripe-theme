@@ -137,9 +137,27 @@
                 </div>
               </div>
 
+            <!-- Rim center offset -->
+              <div class="space-y-1.5">
+                <label for="front-rim-offset" class="block text-xs font-medium tz-text-secondary">Rim center offset (+ right; applied to hub-center distances)</label>
+                <div class="spoke-calculator__unit-field">
+                  <input
+                    id="front-rim-offset"
+                    v-model.number="frontConfig.rimOffsetMm"
+                    type="number"
+                    min="-20"
+                    max="20"
+                    step="0.1"
+                    placeholder="0"
+                    class="spoke-calculator__control spoke-calculator__control--with-unit"
+                  />
+                  <span class="spoke-calculator__unit">mm</span>
+                </div>
+              </div>
+
             <!-- Left flange distance -->
               <div class="space-y-1.5">
-                <label for="front-left-flange" class="block text-xs font-medium tz-text-secondary">Left flange distance</label>
+                <label for="front-left-flange" class="block text-xs font-medium tz-text-secondary">Left flange distance from hub center</label>
                 <div class="spoke-calculator__unit-field">
                   <input
                     id="front-left-flange"
@@ -155,7 +173,7 @@
 
             <!-- Right flange distance -->
               <div class="space-y-1.5">
-                <label for="front-right-flange" class="block text-xs font-medium tz-text-secondary">Right flange distance</label>
+                <label for="front-right-flange" class="block text-xs font-medium tz-text-secondary">Right flange distance from hub center</label>
                 <div class="spoke-calculator__unit-field">
                   <input
                     id="front-right-flange"
@@ -331,9 +349,27 @@
                 </div>
               </div>
 
+            <!-- Rim center offset -->
+              <div class="space-y-1.5">
+                <label for="rear-rim-offset" class="block text-xs font-medium tz-text-secondary">Rim center offset (+ right; applied to hub-center distances)</label>
+                <div class="spoke-calculator__unit-field">
+                  <input
+                    id="rear-rim-offset"
+                    v-model.number="rearConfig.rimOffsetMm"
+                    type="number"
+                    min="-20"
+                    max="20"
+                    step="0.1"
+                    placeholder="0"
+                    class="spoke-calculator__control spoke-calculator__control--with-unit"
+                  />
+                  <span class="spoke-calculator__unit">mm</span>
+                </div>
+              </div>
+
             <!-- Left flange distance -->
               <div class="space-y-1.5">
-                <label for="rear-left-flange" class="block text-xs font-medium tz-text-secondary">Left flange distance</label>
+                <label for="rear-left-flange" class="block text-xs font-medium tz-text-secondary">Left flange distance from hub center</label>
                 <div class="spoke-calculator__unit-field">
                   <input
                     id="rear-left-flange"
@@ -349,7 +385,7 @@
 
             <!-- Right flange distance -->
               <div class="space-y-1.5">
-                <label for="rear-right-flange" class="block text-xs font-medium tz-text-secondary">Right flange distance</label>
+                <label for="rear-right-flange" class="block text-xs font-medium tz-text-secondary">Right flange distance from hub center</label>
                 <div class="spoke-calculator__unit-field">
                   <input
                     id="rear-right-flange"
@@ -400,7 +436,7 @@
         <!-- Action row -->
         <div class="mt-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between border-t tz-border-subtle pt-4">
           <p class="tz-description tz-text-muted max-w-md">
-            This is only a visual prototype. Replace the mock formula in the script section with your own calculation logic.
+            Spoke lengths and the predicted per-spoke tension ratio are derived from the selected wheel geometry. Use measured rim and hub dimensions for a production build.
           </p>
           <div class="flex items-center gap-3">
             <button
@@ -430,7 +466,7 @@
             <!-- Front Wheel Results -->
             <div class="space-y-3">
               <div class="text-xs font-semibold tz-text-accent uppercase tracking-wide mb-2">Front Wheel</div>
-              <div class="grid gap-3 grid-cols-2">
+                <div class="grid gap-3 grid-cols-2">
                 <div class="spoke-calculator__result-card px-4 py-3">
                   <div class="mb-1 flex items-center justify-between gap-2">
                     <span class="tz-compact-label tz-text-muted">Left side</span>
@@ -452,12 +488,21 @@
                   </div>
                 </div>
               </div>
+              <div class="spoke-calculator__tension-summary">
+                <div class="flex items-baseline justify-between gap-3">
+                  <span class="tz-compact-label tz-text-muted">Predicted tension ratio</span>
+                  <span class="text-lg font-semibold text-[var(--tz-site-accent)]">{{ formatTensionRatio(frontResult?.tensionRatio) }}</span>
+                </div>
+                <div class="mt-1 tz-caption tz-text-muted">
+                  Left : Right {{ formatDirectionalTensionRatio(frontResult?.tensionRatio) }} · lower side {{ lowerTensionSideLabel(frontResult?.tensionRatio) }}
+                </div>
+              </div>
             </div>
 
             <!-- Rear Wheel Results -->
             <div class="space-y-3">
               <div class="text-xs font-semibold tz-text-accent uppercase tracking-wide mb-2">Rear Wheel</div>
-              <div class="grid gap-3 grid-cols-2">
+                <div class="grid gap-3 grid-cols-2">
                 <div class="spoke-calculator__result-card px-4 py-3">
                   <div class="mb-1 flex items-center justify-between gap-2">
                     <span class="tz-compact-label tz-text-muted">Left side</span>
@@ -477,6 +522,15 @@
                     <span class="text-2xl font-semibold text-[var(--tz-site-accent)]">{{ rearRightDisplay }}</span>
                     <span v-if="rearRightDisplay !== '--'" class="text-xs tz-text-muted">mm</span>
                   </div>
+                </div>
+              </div>
+              <div class="spoke-calculator__tension-summary">
+                <div class="flex items-baseline justify-between gap-3">
+                  <span class="tz-compact-label tz-text-muted">Predicted tension ratio</span>
+                  <span class="text-lg font-semibold text-[var(--tz-site-accent)]">{{ formatTensionRatio(rearResult?.tensionRatio) }}</span>
+                </div>
+                <div class="mt-1 tz-caption tz-text-muted">
+                  Left : Right {{ formatDirectionalTensionRatio(rearResult?.tensionRatio) }} · lower side {{ lowerTensionSideLabel(rearResult?.tensionRatio) }}
                 </div>
               </div>
             </div>
@@ -523,7 +577,12 @@
 import { computed, reactive, ref, watch } from 'vue'
 import SpokeCalculatorSelect from '~/components/SpokeCalculatorSelect.vue'
 import type { HubGeometry, HubModel, RimModel, WheelBuildPreset } from '~/data/spoke-calculator/database'
-import { computeSpokeLength } from '~/utils/spokeMath'
+import {
+  computeSpokeLength,
+  computeSpokeTensionRatio,
+  effectiveSpokeFlangeDistance,
+  type SpokeTensionRatio,
+} from '~/utils/spokeMath'
 import { useBehaviorEvents } from '~/composables/useBehaviorEvents'
 import { useSpokeCalculatorCatalog } from '~/composables/useSpokeCalculatorCatalog'
 
@@ -541,6 +600,7 @@ interface WheelConfig {
 
   // Geometry Data
   erd: number | null
+  rimOffsetMm: number
   leftFlange: number | null
   rightFlange: number | null
   leftFlangePcd: number | null
@@ -558,6 +618,7 @@ const frontConfig = reactive<WheelConfig>({
   hubBrandId: null,
   hubModelId: null,
   erd: 622,
+  rimOffsetMm: 0,
   leftFlange: 35,
   rightFlange: 35,
   leftFlangePcd: 50,
@@ -575,6 +636,7 @@ const rearConfig = reactive<WheelConfig>({
   hubBrandId: null,
   hubModelId: null,
   erd: 622,
+  rimOffsetMm: 0,
   leftFlange: 35,
   rightFlange: 20,
   leftFlangePcd: 55,
@@ -725,6 +787,7 @@ type ResultSource = 'verified' | 'calculated'
 interface SpokeResult {
   leftLengthMm: number | null
   rightLengthMm: number | null
+  tensionRatio: SpokeTensionRatio | null
   leftSource: ResultSource | null
   rightSource: ResultSource | null
 }
@@ -742,6 +805,23 @@ const { track: trackBehaviorEvent } = useBehaviorEvents()
 const formatResultLength = (value: number | null | undefined) => (
   value == null ? '--' : value.toFixed(1)
 )
+
+const formatTensionRatio = (value: SpokeTensionRatio | null | undefined) => (
+  value == null ? '--' : `${Math.round(value.lowerToHigher * 100)}%`
+)
+
+const formatDirectionalTensionRatio = (value: SpokeTensionRatio | null | undefined) => {
+  if (!value) return '--'
+  if (value.leftToRight <= 1) {
+    return `${Math.round(value.leftToRight * 100)}% : 100%`
+  }
+  return `100% : ${Math.round(value.rightToLeft * 100)}%`
+}
+
+const lowerTensionSideLabel = (value: SpokeTensionRatio | null | undefined) => {
+  if (!value || value.lowerSide === 'balanced') return 'balanced'
+  return value.lowerSide
+}
 
 const resultSourceLabel = (source: ResultSource | null | undefined) => {
   if (source === 'verified') return 'Verified'
@@ -783,6 +863,8 @@ const onCalculate = () => {
             rear_spoke_count: rearConfig.spokeCount,
             front_crossing: frontConfig.crossing,
             rear_crossing: rearConfig.crossing,
+            front_rim_offset_mm: frontConfig.rimOffsetMm,
+            rear_rim_offset_mm: rearConfig.rimOffsetMm,
             front_rim_selected: Boolean(frontConfig.rimModelId),
             rear_rim_selected: Boolean(rearConfig.rimModelId),
             front_hub_selected: Boolean(frontConfig.hubModelId),
@@ -819,6 +901,12 @@ const buildWheelResult = (config: WheelConfig, wheel: WheelPosition): SpokeResul
   return {
     leftLengthMm,
     rightLengthMm,
+    tensionRatio: computeSpokeTensionRatio(
+      effectiveSpokeFlangeDistance(config.leftFlange ?? 0, config.rimOffsetMm, 'left'),
+      effectiveSpokeFlangeDistance(config.rightFlange ?? 0, config.rimOffsetMm, 'right'),
+      leftLengthMm ?? 0,
+      rightLengthMm ?? 0
+    ),
     leftSource: verified?.leftLengthMm != null ? 'verified' : calculated?.leftLengthMm != null ? 'calculated' : null,
     rightSource: verified?.rightLengthMm != null ? 'verified' : calculated?.rightLengthMm != null ? 'calculated' : null,
   }
@@ -841,6 +929,7 @@ const findVerifiedWheelLengths = (config: WheelConfig, wheel: WheelPosition): Ca
 
 const presetMatchesWheelConfig = (preset: WheelBuildPreset, config: WheelConfig, wheel: WheelPosition) => {
   if (!config.rimBrandId || !config.rimModelId || !config.hubBrandId || !config.hubModelId) return false
+  if (Math.abs(config.rimOffsetMm) > 0.001) return false
   if (preset.wheelPosition && preset.wheelPosition !== 'auto' && preset.wheelPosition !== wheel) return false
   if (!preset.actualLengths) return false
   if (wheel === 'front' && preset.actualLengths.frontLeft == null && preset.actualLengths.frontRight == null) return false
@@ -868,11 +957,15 @@ const calculateWheel = (config: WheelConfig): CalculatedWheelResult | null => {
     return null
   }
 
+  const leftFlange = effectiveSpokeFlangeDistance(config.leftFlange, config.rimOffsetMm, 'left')
+  const rightFlange = effectiveSpokeFlangeDistance(config.rightFlange, config.rimOffsetMm, 'right')
+  if (leftFlange <= 0 || rightFlange <= 0) return null
+
   return {
     leftLengthMm: computeSpokeLength(
       config.erd,
       config.leftFlangePcd,
-      config.leftFlange,
+      leftFlange,
       config.spokeCount,
       config.crossing,
       config.nippleType,
@@ -881,7 +974,7 @@ const calculateWheel = (config: WheelConfig): CalculatedWheelResult | null => {
     rightLengthMm: computeSpokeLength(
       config.erd,
       config.rightFlangePcd,
-      config.rightFlange,
+      rightFlange,
       config.spokeCount,
       config.crossing,
       config.nippleType,
@@ -1021,6 +1114,13 @@ watch(
   border: 1px solid var(--spoke-border);
   border-radius: 0.5rem;
   background: var(--spoke-result-surface);
+}
+
+.spoke-calculator__tension-summary {
+  border: 1px solid var(--spoke-border);
+  border-radius: 0.5rem;
+  background: var(--spoke-result-surface);
+  padding: 0.75rem 1rem;
 }
 
 .spoke-calculator__source-badge {

@@ -22,6 +22,7 @@ type FitmentHubSpecificationService struct {
 	repo                *repository.FitmentHubSpecificationRepository
 	associationRepo     *repository.FitmentFrameHubSpecificationRepository
 	forkAssociationRepo *repository.FitmentForkHubSpecificationRepository
+	spokeRepo           *repository.SpokeRepository
 }
 
 type FitmentHubSpecificationListInput struct {
@@ -39,6 +40,10 @@ type FitmentHubSpecificationInput struct {
 	Position      fitmentcatalogdomain.HubPosition
 	AxleType      fitmentcatalogdomain.HubAxleType
 	AxleSpacingMM int
+	WRMM          *float64
+	WLMM          *float64
+	PCDRMM        *float64
+	PCDLMM        *float64
 	Notes         string
 	IsEnabled     bool
 	SortOrder     int
@@ -68,6 +73,15 @@ func (s *FitmentHubSpecificationService) ConfigureForkHubSpecificationRepository
 		return
 	}
 	s.forkAssociationRepo = associationRepo
+}
+
+func (s *FitmentHubSpecificationService) ConfigureSpokeRepository(
+	spokeRepo *repository.SpokeRepository,
+) {
+	if s == nil {
+		return
+	}
+	s.spokeRepo = spokeRepo
 }
 
 func (s *FitmentHubSpecificationService) List(
@@ -205,7 +219,8 @@ func (s *FitmentHubSpecificationService) Delete(id uint) error {
 	if s == nil || s.repo == nil {
 		return errors.New("fitment hub specification service is unavailable")
 	}
-	if _, err := s.Get(id); err != nil {
+	specification, err := s.Get(id)
+	if err != nil {
 		return err
 	}
 
@@ -228,6 +243,15 @@ func (s *FitmentHubSpecificationService) Delete(id uint) error {
 			return ErrFitmentHubSpecificationInUse
 		}
 	}
+	if s.spokeRepo != nil {
+		count, err := s.spokeRepo.CountFitmentHubSpecificationReferences(id, specification.SpecCode)
+		if err != nil {
+			return err
+		}
+		if count > 0 {
+			return ErrFitmentHubSpecificationInUse
+		}
+	}
 	return s.repo.Delete(id)
 }
 
@@ -240,6 +264,10 @@ func fitmentHubSpecificationFromInput(
 		Position:      input.Position,
 		AxleType:      input.AxleType,
 		AxleSpacingMM: input.AxleSpacingMM,
+		WRMM:          input.WRMM,
+		WLMM:          input.WLMM,
+		PCDRMM:        input.PCDRMM,
+		PCDLMM:        input.PCDLMM,
 		Notes:         input.Notes,
 		IsEnabled:     input.IsEnabled,
 		SortOrder:     input.SortOrder,

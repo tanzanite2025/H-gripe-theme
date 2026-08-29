@@ -9,6 +9,10 @@ export interface HubSpecification {
   position: HubSpecificationPosition
   axle_type: HubSpecificationAxleType
   axle_spacing_mm: number
+  wr_mm: number | null
+  wl_mm: number | null
+  pcdr_mm: number | null
+  pcdl_mm: number | null
   notes: string
   is_enabled: boolean
   sort_order: number
@@ -92,6 +96,10 @@ export interface HubSpecificationPayload {
   position: HubSpecificationPosition
   axle_type: HubSpecificationAxleType
   axle_spacing_mm: number
+  wr_mm: number | null
+  wl_mm: number | null
+  pcdr_mm: number | null
+  pcdl_mm: number | null
   notes: string
   is_enabled: boolean
   sort_order: number

@@ -25,6 +25,7 @@ func NewVisitorProfileCleanupScheduler(visitorProfileService *service.VisitorPro
 	if intervalSeconds <= 0 {
 		intervalSeconds = 86400
 	}
+	visitorProfileService.ConfigureIPAddressRetentionDays(cfg.VisitorProfileIPAddressRetentionDays)
 
 	return &VisitorProfileCleanupScheduler{
 		visitorProfileService: visitorProfileService,
@@ -89,6 +90,7 @@ func (s *VisitorProfileCleanupScheduler) cleanupOnce() {
 		logger.Info("visitor profile cleanup completed",
 			zap.Int64("deleted_candidates", result.DeletedCandidates),
 			zap.Int64("archived_anonymous", result.ArchivedAnonymous),
+			zap.Int64("cleared_ip_addresses", result.ClearedIPAddresses),
 			zap.Int64("total_changed", result.TotalChanged),
 		)
 	}

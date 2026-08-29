@@ -94,11 +94,79 @@ func (r *SiteQualityJobRepository) FindByID(id uint) (*sitequalitydomain.SiteQua
 	return &job, nil
 }
 
+func (r *SiteQualityJobRepository) DeleteTerminalJobs() (SiteQualityJobCleanupResult, error) {
+	var result SiteQualityJobCleanupResult
+	if r == nil || r.db == nil {
+		return result, errors.New("SiteQuality quality job repository is unavailable")
+	}
+
+	err := r.db.Transaction(func(tx *gorm.DB) error {
+		failed := tx.
+			Where("status = ?", sitequalitydomain.SiteQualityJobStatusFailed).
+			Delete(&sitequalitydomain.SiteQualityJob{})
+		if failed.Error != nil {
+			return failed.Error
+		}
+		result.Failed = failed.RowsAffected
+
+		deadLetter := tx.
+			Where("status = ?", sitequalitydomain.SiteQualityJobStatusDeadLetter).
+			Delete(&sitequalitydomain.SiteQualityJob{})
+		if deadLetter.Error != nil {
+			return deadLetter.Error
+		}
+		result.DeadLetter = deadLetter.RowsAffected
+		result.Deleted = result.Failed + result.DeadLetter
+		return nil
+	})
+	return result, err
+}
+
 func (r *SiteQualityJobRepository) ClaimReady(
 	now time.Time,
 	workerID string,
 	limit int,
 	leaseTimeout time.Duration,
+) ([]sitequalitydomain.SiteQualityJob, error) {
+	return r.claimReady(
+		now,
+		workerID,
+		limit,
+		leaseTimeout,
+		[]string{
+			sitequalitydomain.SiteQualityJobKindScheduled,
+			sitequalitydomain.SiteQualityJobKindManual,
+			sitequalitydomain.SiteQualityJobKindRecheck,
+		},
+	)
+}
+
+// ClaimReadyInteractive claims only user-triggered inspections. Scheduled
+// inspections stay queued while automatic scanning is disabled.
+func (r *SiteQualityJobRepository) ClaimReadyInteractive(
+	now time.Time,
+	workerID string,
+	limit int,
+	leaseTimeout time.Duration,
+) ([]sitequalitydomain.SiteQualityJob, error) {
+	return r.claimReady(
+		now,
+		workerID,
+		limit,
+		leaseTimeout,
+		[]string{
+			sitequalitydomain.SiteQualityJobKindManual,
+			sitequalitydomain.SiteQualityJobKindRecheck,
+		},
+	)
+}
+
+func (r *SiteQualityJobRepository) claimReady(
+	now time.Time,
+	workerID string,
+	limit int,
+	leaseTimeout time.Duration,
+	kinds []string,
 ) ([]sitequalitydomain.SiteQualityJob, error) {
 	if r == nil || r.db == nil {
 		return nil, errors.New("SiteQuality quality job repository is unavailable")
@@ -123,11 +191,7 @@ func (r *SiteQualityJobRepository) ClaimReady(
 		query := tx.Model(&sitequalitydomain.SiteQualityJob{}).
 			Where(
 				"kind IN ? AND EXISTS (SELECT 1 FROM site_quality_targets WHERE site_quality_targets.id = site_quality_jobs.target_id AND site_quality_targets.enabled = ?) AND ((status IN ? AND available_at <= ? AND attempts < max_attempts) OR (status = ? AND ((lease_expires_at IS NOT NULL AND lease_expires_at <= ?) OR (lease_expires_at IS NULL AND locked_at IS NOT NULL AND locked_at <= ?)) AND attempts < max_attempts))",
-				[]string{
-					sitequalitydomain.SiteQualityJobKindScheduled,
-					sitequalitydomain.SiteQualityJobKindManual,
-					sitequalitydomain.SiteQualityJobKindRecheck,
-				},
+				kinds,
 				true,
 				[]string{sitequalitydomain.SiteQualityJobStatusQueued, sitequalitydomain.SiteQualityJobStatusFailed},
 				now,

@@ -1,22 +1,58 @@
 package service
 
 import (
+	"context"
 	"crypto/sha256"
+	"encoding/binary"
 	"encoding/hex"
+	"errors"
+	"fmt"
 	"net"
 	"strings"
 	"time"
 
+	"commerce-platform/internal/domain/security"
 	"commerce-platform/internal/domain/visitor"
 	"commerce-platform/internal/repository"
 )
 
 type VisitorProfileService struct {
-	visitorRepo *repository.VisitorProfileRepository
+	visitorRepo            *repository.VisitorProfileRepository
+	globalIPBlockService   *GlobalIPBlockService
+	ipAddressRetentionDays int
 }
 
 func NewVisitorProfileService(visitorRepo *repository.VisitorProfileRepository) *VisitorProfileService {
-	return &VisitorProfileService{visitorRepo: visitorRepo}
+	return &VisitorProfileService{
+		visitorRepo:            visitorRepo,
+		ipAddressRetentionDays: 30,
+	}
+}
+
+var (
+	ErrVisitorProfileNotFound      = errors.New("visitor profile not found")
+	ErrVisitorProfileIPUnavailable = errors.New("visitor profile has no retained IP address")
+)
+
+func (s *VisitorProfileService) ConfigureGlobalIPBlockService(blockService *GlobalIPBlockService) {
+	if s == nil {
+		return
+	}
+	s.globalIPBlockService = blockService
+}
+
+func (s *VisitorProfileService) ConfigureIPAddressRetentionDays(retentionDays int) {
+	if s == nil || retentionDays <= 0 {
+		return
+	}
+	s.ipAddressRetentionDays = retentionDays
+}
+
+func (s *VisitorProfileService) ConfigureIPBlockAuditRecorderFactory(factory IPBlockAuditRecorderFactory) {
+	if s == nil || s.globalIPBlockService == nil {
+		return
+	}
+	s.globalIPBlockService.ConfigureAuditRecorderFactory(factory)
 }
 
 const (
@@ -68,34 +104,38 @@ type VisitorProfileListInput struct {
 }
 
 type VisitorProfileSnapshot struct {
-	ID                                uint       `json:"id"`
-	UserID                            *uint      `json:"user_id,omitempty"`
-	Identity                          string     `json:"identity"`
-	CustomerServiceVisitorHashPreview string     `json:"customer_service_visitor_hash_preview,omitempty"`
-	HasCustomerServiceVisitor         bool       `json:"has_customer_service_visitor"`
-	CartSessionID                     string     `json:"cart_session_id,omitempty"`
-	HasCartSession                    bool       `json:"has_cart_session"`
-	Email                             string     `json:"email,omitempty"`
-	EmailSource                       string     `json:"email_source,omitempty"`
-	HasEmail                          bool       `json:"has_email"`
-	Locale                            string     `json:"locale,omitempty"`
-	LocaleSource                      string     `json:"locale_source,omitempty"`
-	CountryCode                       string     `json:"country_code,omitempty"`
-	Region                            string     `json:"region,omitempty"`
-	City                              string     `json:"city,omitempty"`
-	Timezone                          string     `json:"timezone,omitempty"`
-	RegionLabel                       string     `json:"region_label,omitempty"`
-	HasIPFingerprint                  bool       `json:"has_ip_fingerprint"`
-	HasUserAgentFingerprint           bool       `json:"has_user_agent_fingerprint"`
-	ProfileQualityScore               int        `json:"profile_quality_score"`
-	ProfileStatus                     string     `json:"profile_status"`
-	LastMeaningfulAction              string     `json:"last_meaningful_action,omitempty"`
-	FirstMeaningfulSeenAt             *time.Time `json:"first_meaningful_seen_at,omitempty"`
-	LastMeaningfulSeenAt              *time.Time `json:"last_meaningful_seen_at,omitempty"`
-	RetentionUntil                    *time.Time `json:"retention_until,omitempty"`
-	LastSeenAt                        time.Time  `json:"last_seen_at"`
-	CreatedAt                         time.Time  `json:"created_at"`
-	UpdatedAt                         time.Time  `json:"updated_at"`
+	ID                                uint                  `json:"id"`
+	UserID                            *uint                 `json:"user_id,omitempty"`
+	Identity                          string                `json:"identity"`
+	CustomerServiceVisitorHashPreview string                `json:"customer_service_visitor_hash_preview,omitempty"`
+	HasCustomerServiceVisitor         bool                  `json:"has_customer_service_visitor"`
+	CartSessionID                     string                `json:"cart_session_id,omitempty"`
+	HasCartSession                    bool                  `json:"has_cart_session"`
+	Email                             string                `json:"email,omitempty"`
+	EmailSource                       string                `json:"email_source,omitempty"`
+	HasEmail                          bool                  `json:"has_email"`
+	Locale                            string                `json:"locale,omitempty"`
+	LocaleSource                      string                `json:"locale_source,omitempty"`
+	CountryCode                       string                `json:"country_code,omitempty"`
+	Region                            string                `json:"region,omitempty"`
+	City                              string                `json:"city,omitempty"`
+	Timezone                          string                `json:"timezone,omitempty"`
+	IPAddress                         string                `json:"ip_address,omitempty"`
+	RegionLabel                       string                `json:"region_label,omitempty"`
+	HasIPFingerprint                  bool                  `json:"has_ip_fingerprint"`
+	HasUserAgentFingerprint           bool                  `json:"has_user_agent_fingerprint"`
+	IPBlock                           *IPBlockRuleSnapshot  `json:"ip_block,omitempty"`
+	IPBlockRules                      []IPBlockRuleSnapshot `json:"ip_block_rules,omitempty"`
+	IPBlockMatch                      *IPBlockRuleSnapshot  `json:"ip_block_match,omitempty"`
+	ProfileQualityScore               int                   `json:"profile_quality_score"`
+	ProfileStatus                     string                `json:"profile_status"`
+	LastMeaningfulAction              string                `json:"last_meaningful_action,omitempty"`
+	FirstMeaningfulSeenAt             *time.Time            `json:"first_meaningful_seen_at,omitempty"`
+	LastMeaningfulSeenAt              *time.Time            `json:"last_meaningful_seen_at,omitempty"`
+	RetentionUntil                    *time.Time            `json:"retention_until,omitempty"`
+	LastSeenAt                        time.Time             `json:"last_seen_at"`
+	CreatedAt                         time.Time             `json:"created_at"`
+	UpdatedAt                         time.Time             `json:"updated_at"`
 }
 
 type VisitorProfileStats struct {
@@ -116,8 +156,151 @@ type VisitorProfileStats struct {
 type VisitorProfileRetentionCleanupResult struct {
 	DeletedCandidates         int64     `json:"deleted_candidates"`
 	ArchivedAnonymous         int64     `json:"archived_anonymous"`
+	ClearedIPAddresses        int64     `json:"cleared_ip_addresses"`
 	TotalChanged              int64     `json:"total_changed"`
 	CleanupReferenceTimestamp time.Time `json:"cleanup_reference_timestamp"`
+}
+
+func (s *VisitorProfileService) BlockProfileIP(ctx context.Context, profileID uint, input IPBlockRuleInput, createdBy uint) (IPBlockRuleSnapshot, error) {
+	_, snapshot, err := s.BlockProfileIPWithPrevious(ctx, profileID, input, createdBy)
+	return snapshot, err
+}
+
+func (s *VisitorProfileService) BlockProfileIPWithPrevious(
+	ctx context.Context,
+	profileID uint,
+	input IPBlockRuleInput,
+	createdBy uint,
+) (*IPBlockRuleSnapshot, IPBlockRuleSnapshot, error) {
+	if s == nil || s.visitorRepo == nil {
+		return nil, IPBlockRuleSnapshot{}, ErrVisitorProfileNotFound
+	}
+	if s.globalIPBlockService == nil {
+		return nil, IPBlockRuleSnapshot{}, ErrIPBlockRuleInvalid
+	}
+
+	profile, err := s.visitorRepo.FindByID(profileID)
+	if err != nil {
+		if repository.IsRecordNotFound(err) {
+			return nil, IPBlockRuleSnapshot{}, ErrVisitorProfileNotFound
+		}
+		return nil, IPBlockRuleSnapshot{}, err
+	}
+	ipAddress := strings.TrimSpace(profile.IPAddress)
+	if ipAddress == "" {
+		return nil, IPBlockRuleSnapshot{}, ErrVisitorProfileIPUnavailable
+	}
+
+	input.CIDR = ipAddress
+	input.Source = security.IPBlockRuleSourceVisitorProfile
+	input.SourceReference = profileIPBlockSourceReference(profileID)
+	input.CreatedBy = createdBy
+	return s.globalIPBlockService.BlockWithPrevious(ctx, input)
+}
+
+func (s *VisitorProfileService) BlockProfileIPWithPreviousAndAudit(
+	ctx context.Context,
+	profileID uint,
+	input IPBlockRuleInput,
+	createdBy uint,
+	auditFactory IPBlockAuditLogFactory,
+) (*IPBlockRuleSnapshot, IPBlockRuleSnapshot, error) {
+	if s == nil || s.visitorRepo == nil {
+		return nil, IPBlockRuleSnapshot{}, ErrVisitorProfileNotFound
+	}
+	if s.globalIPBlockService == nil {
+		return nil, IPBlockRuleSnapshot{}, ErrIPBlockRuleInvalid
+	}
+
+	profile, err := s.visitorRepo.FindByID(profileID)
+	if err != nil {
+		if repository.IsRecordNotFound(err) {
+			return nil, IPBlockRuleSnapshot{}, ErrVisitorProfileNotFound
+		}
+		return nil, IPBlockRuleSnapshot{}, err
+	}
+	ipAddress := strings.TrimSpace(profile.IPAddress)
+	if ipAddress == "" {
+		return nil, IPBlockRuleSnapshot{}, ErrVisitorProfileIPUnavailable
+	}
+
+	input.CIDR = ipAddress
+	input.Source = security.IPBlockRuleSourceVisitorProfile
+	input.SourceReference = profileIPBlockSourceReference(profileID)
+	input.CreatedBy = createdBy
+	return s.globalIPBlockService.BlockWithPreviousAndAudit(ctx, input, auditFactory)
+}
+
+func (s *VisitorProfileService) UnblockProfileIP(ctx context.Context, profileID, disabledBy uint) (IPBlockRuleSnapshot, error) {
+	rules, err := s.UnblockProfileIPs(ctx, profileID, disabledBy)
+	if err != nil {
+		return IPBlockRuleSnapshot{}, err
+	}
+	if len(rules) == 0 {
+		return IPBlockRuleSnapshot{}, ErrIPBlockRuleNotFound
+	}
+	return rules[0], nil
+}
+
+func (s *VisitorProfileService) UnblockProfileIPs(ctx context.Context, profileID, disabledBy uint) ([]IPBlockRuleSnapshot, error) {
+	_, rules, err := s.UnblockProfileIPsWithPrevious(ctx, profileID, disabledBy)
+	return rules, err
+}
+
+func (s *VisitorProfileService) UnblockProfileIPsWithPrevious(
+	ctx context.Context,
+	profileID,
+	disabledBy uint,
+) ([]IPBlockRuleSnapshot, []IPBlockRuleSnapshot, error) {
+	if s == nil || s.globalIPBlockService == nil {
+		return nil, nil, ErrIPBlockRuleNotFound
+	}
+	return s.globalIPBlockService.DisableBySourceReferenceAllWithPrevious(
+		ctx,
+		security.IPBlockRuleSourceVisitorProfile,
+		profileIPBlockSourceReference(profileID),
+		disabledBy,
+	)
+}
+
+func (s *VisitorProfileService) UnblockProfileIPsWithPreviousAndAudit(
+	ctx context.Context,
+	profileID,
+	disabledBy uint,
+	auditFactory IPBlockCollectionAuditLogFactory,
+) ([]IPBlockRuleSnapshot, []IPBlockRuleSnapshot, error) {
+	if s == nil || s.globalIPBlockService == nil {
+		return nil, nil, ErrIPBlockRuleNotFound
+	}
+	return s.globalIPBlockService.DisableBySourceReferenceAllWithPreviousAndAudit(
+		ctx,
+		security.IPBlockRuleSourceVisitorProfile,
+		profileIPBlockSourceReference(profileID),
+		disabledBy,
+		auditFactory,
+	)
+}
+
+func (s *VisitorProfileService) ActiveProfileIPBlocks(ctx context.Context, profileID uint) ([]IPBlockRuleSnapshot, error) {
+	if s == nil || s.globalIPBlockService == nil {
+		return nil, ErrIPBlockRuleNotFound
+	}
+	return s.globalIPBlockService.ListActiveBySourceReference(
+		ctx,
+		security.IPBlockRuleSourceVisitorProfile,
+		profileIPBlockSourceReference(profileID),
+	)
+}
+
+func (s *VisitorProfileService) ActiveProfileIPBlock(ctx context.Context, profileID uint) (IPBlockRuleSnapshot, error) {
+	rules, err := s.ActiveProfileIPBlocks(ctx, profileID)
+	if err != nil {
+		return IPBlockRuleSnapshot{}, err
+	}
+	if len(rules) == 0 {
+		return IPBlockRuleSnapshot{}, ErrIPBlockRuleNotFound
+	}
+	return rules[0], nil
 }
 
 func (s *VisitorProfileService) Touch(input VisitorProfileTouchInput) (*visitor.Profile, error) {
@@ -195,8 +378,23 @@ func (s *VisitorProfileService) FindByUserID(userID uint) (*visitor.Profile, err
 }
 
 func (s *VisitorProfileService) ListProfiles(page, pageSize int, input VisitorProfileListInput) ([]VisitorProfileSnapshot, int64, error) {
+	return s.ListProfilesContext(context.Background(), page, pageSize, input)
+}
+
+func (s *VisitorProfileService) ListProfilesContext(
+	ctx context.Context,
+	page,
+	pageSize int,
+	input VisitorProfileListInput,
+) ([]VisitorProfileSnapshot, int64, error) {
 	if s == nil || s.visitorRepo == nil {
 		return nil, 0, nil
+	}
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, 0, err
 	}
 
 	if page < 1 {
@@ -219,14 +417,36 @@ func (s *VisitorProfileService) ListProfiles(page, pageSize int, input VisitorPr
 		Status:                    normalizeVisitorProfileStatusFilter(input.Status),
 	}
 
-	profiles, total, err := s.visitorRepo.List(page, pageSize, filters)
+	profiles, total, err := s.visitorRepo.ListContext(ctx, page, pageSize, filters)
 	if err != nil {
 		return nil, 0, err
 	}
 
 	items := make([]VisitorProfileSnapshot, 0, len(profiles))
+	blockLookupAt := time.Now().UTC()
 	for _, profile := range profiles {
-		items = append(items, visitorProfileSnapshot(profile))
+		snapshot := visitorProfileSnapshot(profile)
+		if s.globalIPBlockService != nil {
+			snapshot.IPBlockRules, err = s.globalIPBlockService.FindActiveRulesBySourceReference(
+				ctx,
+				security.IPBlockRuleSourceVisitorProfile,
+				profileIPBlockSourceReference(profile.ID),
+				blockLookupAt,
+			)
+			if err != nil {
+				return nil, 0, err
+			}
+			if len(snapshot.IPBlockRules) > 0 {
+				snapshot.IPBlock = &snapshot.IPBlockRules[0]
+			}
+			if rawIPAddress := strings.TrimSpace(profile.IPAddress); rawIPAddress != "" {
+				snapshot.IPBlockMatch, err = s.globalIPBlockService.FindMatch(ctx, rawIPAddress, blockLookupAt)
+				if err != nil {
+					return nil, 0, err
+				}
+			}
+		}
+		items = append(items, snapshot)
 	}
 	return items, total, nil
 }
@@ -277,10 +497,20 @@ func (s *VisitorProfileService) CleanupExpiredProfiles(now time.Time) (VisitorPr
 		return VisitorProfileRetentionCleanupResult{}, err
 	}
 
+	retentionDays := s.ipAddressRetentionDays
+	if retentionDays <= 0 {
+		retentionDays = 30
+	}
+	clearedIPAddresses, err := s.visitorRepo.ClearExpiredRetainedIPAddresses(now, retentionDays)
+	if err != nil {
+		return VisitorProfileRetentionCleanupResult{}, err
+	}
+
 	return VisitorProfileRetentionCleanupResult{
 		DeletedCandidates:         deletedCandidates,
 		ArchivedAnonymous:         archivedAnonymous,
-		TotalChanged:              deletedCandidates + archivedAnonymous,
+		ClearedIPAddresses:        clearedIPAddresses,
+		TotalChanged:              deletedCandidates + archivedAnonymous + clearedIPAddresses,
 		CleanupReferenceTimestamp: now,
 	}, nil
 }
@@ -397,6 +627,7 @@ func applyVisitorProfileTouch(profile *visitor.Profile, input VisitorProfileTouc
 		profile.Timezone = input.Timezone
 	}
 	if input.IPAddress != "" {
+		profile.IPAddress = input.IPAddress
 		profile.IPHash = stableVisitorHash(input.IPAddress)
 	}
 	if input.UserAgent != "" {
@@ -616,6 +847,7 @@ func visitorProfileSnapshot(profile visitor.Profile) VisitorProfileSnapshot {
 		Region:                            strings.TrimSpace(profile.Region),
 		City:                              strings.TrimSpace(profile.City),
 		Timezone:                          strings.TrimSpace(profile.Timezone),
+		IPAddress:                         maskVisitorProfileIPAddress(profile.IPAddress),
 		RegionLabel:                       visitorProfileRegionLabel(profile),
 		HasIPFingerprint:                  strings.TrimSpace(profile.IPHash) != "",
 		HasUserAgentFingerprint:           strings.TrimSpace(profile.UserAgentHash) != "",
@@ -629,6 +861,28 @@ func visitorProfileSnapshot(profile visitor.Profile) VisitorProfileSnapshot {
 		CreatedAt:                         profile.CreatedAt,
 		UpdatedAt:                         profile.UpdatedAt,
 	}
+}
+
+func maskVisitorProfileIPAddress(value string) string {
+	ip := net.ParseIP(strings.TrimSpace(value))
+	if ip == nil {
+		return ""
+	}
+	if ipv4 := ip.To4(); ipv4 != nil {
+		return fmt.Sprintf("%d.%d.%d.xxx", ipv4[0], ipv4[1], ipv4[2])
+	}
+
+	ipv6 := ip.To16()
+	if ipv6 == nil {
+		return ""
+	}
+	return fmt.Sprintf(
+		"%x:%x:%x:%x:xxxx:xxxx:xxxx:xxxx",
+		binary.BigEndian.Uint16(ipv6[0:2]),
+		binary.BigEndian.Uint16(ipv6[2:4]),
+		binary.BigEndian.Uint16(ipv6[4:6]),
+		binary.BigEndian.Uint16(ipv6[6:8]),
+	)
 }
 
 func visitorProfileStatusOrActive(value string) string {

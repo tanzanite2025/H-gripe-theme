@@ -61,9 +61,12 @@
           v-for="product in products"
           :key="product.id"
           :product="product"
+          body-click-action="details"
+          show-details-action
           show-wishlist-action
           show-share-action
-          show-view-action
+          :show-view-action="false"
+          @details="openWheelsetSelectionProductDetails"
           @wishlist="handleAddToWishlist"
         />
       </div>
@@ -101,6 +104,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from '#imports'
+import { useGlobalProductDetailBottomSheet } from '~/composables/useGlobalProductDetailBottomSheet'
 import ShopProductDisplayCard from '~/components/shop/ShopProductDisplayCard.vue'
 import { useWheelsetSelectionAccordion } from '~/composables/useWheelsetSelectionAccordion'
 import { useWishlist } from '~/composables/useWishlist'
@@ -126,12 +130,24 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const accordion = useWheelsetSelectionAccordion()
 const { addToWishlist } = useWishlist()
+const { openGlobalProductDetailBottomSheet } = useGlobalProductDetailBottomSheet()
 const localMobileResultsExpanded = ref(false)
 const isMobileResultsExpanded = computed(() => (
   accordion?.isExpanded('results').value ?? localMobileResultsExpanded.value
 ))
 const mobileResultsContentId = 'wheelset-selection-results-content'
 const matchingProductCount = computed(() => Math.max(0, Number(props.total ?? props.products.length)))
+
+const openWheelsetSelectionProductDetails = (product: ShopProduct) => {
+  if (!product?.slug) return
+
+  openGlobalProductDetailBottomSheet({
+    id: product.id,
+    slug: product.slug,
+    title: product.title,
+    thumbnail: product.thumbnail,
+  })
+}
 
 const handleAddToWishlist = async (product: ShopProduct) => {
   if (!product?.id) return

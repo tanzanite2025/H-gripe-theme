@@ -26,6 +26,7 @@ type Profile struct {
 	Region                     string         `gorm:"type:varchar(80)" json:"region,omitempty"`
 	City                       string         `gorm:"type:varchar(80)" json:"city,omitempty"`
 	Timezone                   string         `gorm:"type:varchar(80)" json:"timezone,omitempty"`
+	IPAddress                  string         `gorm:"type:varchar(45);index" json:"-"`
 	IPHash                     string         `gorm:"type:varchar(64);index" json:"-"`
 	UserAgentHash              string         `gorm:"type:varchar(64)" json:"-"`
 	LastSeenAt                 time.Time      `gorm:"index" json:"last_seen_at"`

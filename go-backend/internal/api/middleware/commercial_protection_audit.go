@@ -15,6 +15,7 @@ const commercialProtectionRuleVersion = "commercial-behavior-v1"
 
 type commercialProtectionAuditInput struct {
 	SeedID      string
+	Provider    string
 	Outcome     string
 	Action      string
 	Reason      string
@@ -25,6 +26,7 @@ type commercialProtectionAuditInput struct {
 type commercialProtectionAuditContext struct {
 	RuleVersion   string
 	SeedID        string
+	Provider      string
 	Outcome       string
 	Action        string
 	Reason        string
@@ -50,6 +52,9 @@ func logCommercialProtectionAction(c *gin.Context, input commercialProtectionAud
 		zap.Strings("identity_keys", context.IdentityKeys),
 		zap.String("user_agent_hash", context.UserAgentHash),
 	}
+	if context.Provider != "" {
+		fields = append(fields, zap.String("provider", context.Provider))
+	}
 	if context.ExpiresAt != nil {
 		fields = append(fields, zap.Time("expires_at", *context.ExpiresAt))
 	}
@@ -60,6 +65,7 @@ func buildCommercialProtectionAuditContext(c *gin.Context, input commercialProte
 	context := commercialProtectionAuditContext{
 		RuleVersion: commercialProtectionRuleVersion,
 		SeedID:      input.SeedID,
+		Provider:    input.Provider,
 		Outcome:     input.Outcome,
 		Action:      input.Action,
 		Reason:      input.Reason,

@@ -71,6 +71,9 @@
             <div class="flex flex-wrap gap-1.5">
               <AdminStatusBadge :tone="profile.has_ip_fingerprint ? 'green' : 'gray'">IP hash</AdminStatusBadge>
               <AdminStatusBadge :tone="profile.has_user_agent_fingerprint ? 'green' : 'gray'">UA hash</AdminStatusBadge>
+              <AdminStatusBadge :tone="profile.ip_block_match ? 'coral' : 'gray'">
+                {{ profile.ip_block_match ? 'IP blocked' : 'IP clear' }}
+              </AdminStatusBadge>
             </div>
           </TableCell>
           <TableCell class="text-xs text-muted-foreground">{{ formatDate(profile.last_seen_at) }}</TableCell>

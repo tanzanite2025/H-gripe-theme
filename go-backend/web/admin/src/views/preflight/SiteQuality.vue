@@ -1,8 +1,20 @@
 <template>
  <div class="space-y-4">
-    <AdminPageHeader title="上线前检查 / 页面质量" description="H1 层级与 Schema 独立检查">
+    <AdminPageHeader title="上线前检查 / 页面质量" description="H1 层级与 Schema 独立检查，仅手动触发">
       <template #actions>
-        <Button size="icon" variant="outline" title="刷新页面质量检查" :disabled="loading || targetOptionsLoading" @click="refreshSiteQualityData">
+        <Button
+          v-if="canManage && terminalJobCount > 0"
+          size="icon"
+          variant="outline"
+          title="清理失败和历史死信任务"
+          aria-label="清理失败和历史死信任务"
+          :disabled="loading || targetOptionsLoading || cleaningJobs"
+          @click="cleanupTerminalJobs"
+        >
+          <LoaderCircle v-if="cleaningJobs" class="size-4 animate-spin" />
+          <Trash2 v-else class="size-4 text-destructive" />
+        </Button>
+        <Button size="icon" variant="outline" title="刷新页面质量检查" :disabled="loading || targetOptionsLoading || cleaningJobs" @click="refreshSiteQualityData">
  <RefreshCw :class="['size-4', loading || targetOptionsLoading ? 'animate-spin': '']" />
         </Button>
       </template>
@@ -123,7 +135,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import { Braces, Heading2, Link2, LoaderCircle, Play, RefreshCw } from '@lucide/vue'
+import { Braces, Heading2, Link2, LoaderCircle, Play, RefreshCw, Trash2 } from '@lucide/vue'
 import { toast } from 'vue-sonner'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import type { AdminStatusTone } from '@/components/admin/AdminStatusBadge.vue'
@@ -133,6 +145,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import preflightApi, {
   SITE_QUALITY_RULE_ID_DESCRIPTIVE_LINK_TEXT,
   type SiteQualityOperationalSummary,
+  type SiteQualityJobCleanupResult,
   type SiteQualityFinding,
   type SiteQualityFindingEvidence,
   type SiteQualityFindingEvent,
@@ -169,6 +182,7 @@ const targetOptions = ref<SiteQualityTargetOption[]>([])
 const strategy = ref<SiteQualityStrategy>('mobile')
 const runnerConfigured = ref(false)
 const operationalSummary = ref<SiteQualityOperationalSummary | null>(null)
+const cleaningJobs = ref(false)
 const headingsLoading = ref(false)
 const headingFindings = ref<SiteQualityFinding[]>([])
 const headingStateFilter = ref<SiteQualityFindingStateFilter>('active')
@@ -206,12 +220,20 @@ const summaryItems = computed(() => [
   },
   {
     label: '调度',
-    value: operationalSummary.value?.worker_enabled ? '运行中' : '已暂停',
+    value: operationalSummary.value?.worker_enabled
+      ? operationalSummary.value.auto_scan_enabled ? '自动扫描' : '手动模式'
+      : '已暂停',
     tone: operationalSummary.value?.worker_enabled ? 'text-emerald-600' : 'text-amber-600',
-    badge: operationalSummary.value ? `${operationalSummary.value.worker_interval_seconds}s` : undefined,
+    badge: operationalSummary.value?.worker_enabled
+      ? operationalSummary.value.auto_scan_enabled
+        ? `${operationalSummary.value.worker_interval_seconds}s`
+        : '仅手动'
+      : undefined,
     badgeTone: operationalSummary.value?.worker_enabled ? 'green' as const : 'amber' as const,
     hint: operationalSummary.value?.worker_enabled
-      ? '到期目标、运营检测和复检都进入任务队列'
+      ? operationalSummary.value.auto_scan_enabled
+        ? '到期目标、运营检测和复检都进入任务队列'
+        : '不会按 30 秒自动扫描，仅执行手动检测和问题复检'
       : '任务会保留在队列中等待 worker 恢复',
   },
   {
@@ -255,6 +277,11 @@ const summaryItems = computed(() => [
 ])
 
 const summaryWarnings = computed(() => operationalSummary.value?.warnings || [])
+
+const terminalJobCount = computed(() => {
+  const jobs = operationalSummary.value?.jobs
+  return (jobs?.failed || 0) + (jobs?.dead_letter || 0)
+})
 
 const selectedFindingEvidence = computed<SiteQualityFindingEvidence | null>(() => {
   const raw = selectedFinding.value?.latest_evidence
@@ -334,6 +361,25 @@ const runInspection = async (): Promise<void> => {
     await loadRuns()
   } finally {
     running.value = false
+  }
+}
+
+const cleanupTerminalJobs = async (): Promise<void> => {
+  if (!canManage.value || cleaningJobs.value || terminalJobCount.value <= 0) return
+  const jobs = operationalSummary.value?.jobs
+  const failed = jobs?.failed || 0
+  const deadLetter = jobs?.dead_letter || 0
+  if (!window.confirm(`确定清理 ${failed} 个重试任务和 ${deadLetter} 个历史死信任务吗？历史 Run、Findings 和成功任务会保留。`)) return
+
+  cleaningJobs.value = true
+  try {
+    const result: SiteQualityJobCleanupResult = await preflightApi.cleanupSiteQualityJobs()
+    toast.success(`已清理 ${result.deleted} 个旧任务（重试 ${result.failed}，死信 ${result.dead_letter}）`)
+    await loadRuns()
+  } catch (error: any) {
+    toast.error(error?.response?.data?.message || error?.response?.data?.error || '旧任务清理失败')
+  } finally {
+    cleaningJobs.value = false
   }
 }
 

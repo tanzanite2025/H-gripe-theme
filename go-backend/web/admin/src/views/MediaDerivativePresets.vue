@@ -30,6 +30,33 @@
 
     <section class="overflow-hidden border bg-card">
       <div class="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3">
+        <div>
+          <h2 class="text-sm font-black">资源转换工具</h2>
+          <p class="mt-1 text-xs text-muted-foreground">独立本地工具，不写入媒体库派生尺寸。</p>
+        </div>
+        <span class="font-mono text-xs font-bold text-muted-foreground">{{ conversionTools.length }} 个工具</span>
+      </div>
+      <div class="grid divide-y md:grid-cols-3 md:divide-x md:divide-y-0">
+        <RouterLink
+          v-for="tool in conversionTools"
+          :key="tool.path"
+          :to="tool.path"
+          class="group flex items-center gap-3 px-4 py-4 transition-colors hover:bg-muted/40 focus-visible:bg-muted/40 focus-visible:outline-none"
+        >
+          <span class="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <component :is="tool.icon" class="size-4" />
+          </span>
+          <span class="min-w-0 flex-1">
+            <span class="block text-sm font-bold">{{ tool.label }}</span>
+            <span class="mt-1 block text-[10px] font-bold text-muted-foreground">{{ tool.description }}</span>
+          </span>
+          <ArrowUpRight class="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+        </RouterLink>
+      </div>
+    </section>
+
+    <section class="overflow-hidden border bg-card">
+      <div class="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3">
         <h2 class="text-sm font-black">转换定义</h2>
         <span class="font-mono text-xs font-bold text-muted-foreground">{{ presets.length }} 项</span>
       </div>
@@ -184,7 +211,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
-import { LoaderCircle, Pencil, Plus, RefreshCw, RotateCw, Trash2 } from '@lucide/vue'
+import { ArrowUpRight, FileVideo, Image as ImageIcon, ImageDown, LoaderCircle, Pencil, Plus, RefreshCw, RotateCw, Trash2 } from '@lucide/vue'
 import { toast } from 'vue-sonner'
 import { mediaApi, type MediaDerivativePreset, type MediaDerivativePresetInput, type MediaDerivativeRebuildJob } from '@/api/media'
 import AdminFormField from '@/components/admin/AdminFormField.vue'
@@ -227,6 +254,27 @@ const form = reactive<DerivativePresetForm>({
 })
 
 const canConfigure = computed(() => authStore.hasPermission('media:configure'))
+
+const conversionTools = [
+  {
+    path: '/tools/image-to-webp',
+    label: '图片转 WebP',
+    description: '本地格式与尺寸转换',
+    icon: ImageDown,
+  },
+  {
+    path: '/tools/image-vectorizer',
+    label: '图片转 SVG',
+    description: '本地图片矢量化',
+    icon: ImageIcon,
+  },
+  {
+    path: '/tools/mp4-to-webm',
+    label: 'MP4 转 WebM',
+    description: '本地视频转码',
+    icon: FileVideo,
+  },
+] as const
 
 const resetForm = (): void => {
   Object.assign(form, {

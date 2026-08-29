@@ -12,12 +12,6 @@
       </template>
     </AdminPageHeader>
 
-    <AdminTabBar
-      :tabs="fitmentTabs"
-      :active-path="route.path"
-      :label="t('fitmentCatalog.tabsLabel')"
-    />
-
     <AdminFilterPanel>
       <form class="grid gap-3 md:grid-cols-[minmax(260px,1.5fr)_minmax(150px,0.55fr)_auto]" @submit.prevent="applyFilters">
         <label class="block space-y-1">
@@ -274,7 +268,6 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
-import { useRoute } from 'vue-router'
 import { toast } from 'vue-sonner'
 import {
   LoaderCircle,
@@ -290,7 +283,6 @@ import {
 import { type FitmentYearMode, type ForkFitmentEntry, type ForkFitmentEntryPayload, type HubSpecification } from '@/api/fitmentCatalog'
 import { forkFitmentEntriesApi } from '@/api/fitmentCatalog/forkEntries'
 import { fitmentHubSpecificationsApi } from '@/api/fitmentCatalog/hubSpecifications'
-import AdminTabBar from '@/components/admin/AdminTabBar.vue'
 import AdminFilterPanel from '@/components/admin/AdminFilterPanel.vue'
 import AdminFormField from '@/components/admin/AdminFormField.vue'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
@@ -313,7 +305,6 @@ import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableR
 import { Textarea } from '@/components/ui/textarea'
 import { useAuthStore } from '@/stores/auth'
 import { useAdminI18n } from '@/i18n'
-import { buildFitmentCatalogTabs } from '@/lib/fitmentCatalogTabs'
 
 type StatusFilter = 'all' | 'enabled' | 'disabled'
 
@@ -334,9 +325,7 @@ interface ForkForm {
 }
 
 const authStore = useAuthStore()
-const route = useRoute()
 const { t, locale } = useAdminI18n()
-const fitmentTabs = computed(() => buildFitmentCatalogTabs(t))
 const canCreate = computed(() => authStore.hasPermission('fitment_catalog:create'))
 const canEdit = computed(() => authStore.hasPermission('fitment_catalog:edit'))
 const canDelete = computed(() => authStore.hasPermission('fitment_catalog:delete'))

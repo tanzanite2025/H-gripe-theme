@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"commerce-platform/internal/api/admin"
+	"commerce-platform/internal/api/edge"
 	"commerce-platform/internal/api/middleware"
 	v1 "commerce-platform/internal/api/v1"
 	"commerce-platform/internal/api/v1/health"
@@ -166,6 +167,7 @@ func main() {
 	if err != nil {
 		logger.Fatal("dependency initialization failed", zap.Error(err))
 	}
+	deps.Services.GlobalIPBlock.StartCacheInvalidationListener(context.Background())
 	if deps.CustomerServiceRealtimeRelay != nil {
 		if err := deps.CustomerServiceRealtimeRelay.Start(context.Background()); err != nil {
 			logger.Fatal("customer-service realtime relay failed to start", zap.Error(err))
@@ -369,6 +371,7 @@ func main() {
 	if deps.CustomerServiceRealtimeRelay != nil {
 		deps.CustomerServiceRealtimeRelay.Stop()
 	}
+	deps.Services.GlobalIPBlock.StopCacheInvalidationListener()
 
 	logger.Info("server stopped")
 }
@@ -412,7 +415,8 @@ func setupRouter(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Config, 
 	router.Use(middleware.SecurityHeaders())
 	router.Use(middleware.PrometheusMetrics())
 	router.Use(trustedEdgeMetadata)
-	router.Use(middleware.CommercialCrawlerBlocker())
+	router.Use(middleware.GlobalIPBlocker(deps.Services.GlobalIPBlock))
+	router.Use(middleware.CommercialCrawlerBlocker(deps.Services.GlobalIPBlock))
 	router.Use(middleware.RequestSignature(cfg.RequestSigning, redisCache.Client()))
 	router.Use(middleware.GlobalRateLimit(1000))
 
@@ -427,6 +431,7 @@ func setupRouter(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Config, 
 		})
 	})
 
+	edge.RegisterRoutes(router, deps.Services.GlobalIPBlock)
 	health.RegisterRoutes(router.Group(""), db, redisCache.Client(), Version, BuildTime)
 	registerLocalUploadsRoute(router, deps)
 

@@ -80,3 +80,17 @@ func TestStorefrontRouteCatalogCheckUsesInternalOrigin(t *testing.T) {
 		t.Fatalf("public origin was contacted %d times", publicHits.Load())
 	}
 }
+
+func TestNewStorefrontRouteCatalogServiceDoesNotFallbackToPublicOrigin(t *testing.T) {
+	catalog := NewStorefrontRouteCatalogService(
+		nil,
+		nil,
+		nil,
+		"https://public.example.com",
+		"",
+	)
+
+	if catalog.internalBaseURL != "" {
+		t.Fatalf("internal origin = %q, want empty when it is not configured", catalog.internalBaseURL)
+	}
+}

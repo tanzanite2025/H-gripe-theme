@@ -24,6 +24,7 @@ import (
 	"commerce-platform/internal/domain/product"
 	recommendationdomain "commerce-platform/internal/domain/recommendation"
 	"commerce-platform/internal/domain/review"
+	securitydomain "commerce-platform/internal/domain/security"
 	selectionconfigurationdomain "commerce-platform/internal/domain/selectionconfiguration"
 	seodomain "commerce-platform/internal/domain/seo"
 	"commerce-platform/internal/domain/setting"
@@ -170,6 +171,7 @@ func AutoMigrate(db *gorm.DB, serverMode string) error {
 		&visitor.Profile{},
 		&visitor.RiskDailyFact{},
 		&visitor.RiskDecision{},
+		&securitydomain.IPBlockRule{},
 		&subscription.Subscription{},
 		&verification.EmailChallenge{},
 		&showcase.Showcase{},

@@ -63,11 +63,12 @@ func (h *Handler) ListHistory(c *gin.Context) {
 }
 
 type CalcRequest struct {
-	RimID         string `json:"rimId" binding:"required"`
-	HubID         string `json:"hubId" binding:"required"`
-	WheelPosition string `json:"wheelPosition" binding:"required"`
-	SpokeCount    int    `json:"spokeCount" binding:"required"`
-	Crossing      int    `json:"crossing"`
+	RimID         string  `json:"rimId" binding:"required"`
+	HubID         string  `json:"hubId" binding:"required"`
+	WheelPosition string  `json:"wheelPosition" binding:"required"`
+	SpokeCount    int     `json:"spokeCount" binding:"required"`
+	Crossing      int     `json:"crossing"`
+	RimOffsetMM   float64 `json:"rimOffsetMm"`
 }
 
 func (h *Handler) Calculate(c *gin.Context) {
@@ -83,6 +84,7 @@ func (h *Handler) Calculate(c *gin.Context) {
 		WheelPosition: req.WheelPosition,
 		SpokeCount:    req.SpokeCount,
 		Crossing:      req.Crossing,
+		RimOffsetMM:   req.RimOffsetMM,
 	})
 	if err != nil {
 		switch {

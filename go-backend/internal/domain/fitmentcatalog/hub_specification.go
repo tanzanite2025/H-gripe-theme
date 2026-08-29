@@ -2,11 +2,15 @@ package fitmentcatalog
 
 import (
 	"fmt"
+	"math"
+	"regexp"
 	"strings"
 	"time"
 
 	"gorm.io/gorm"
 )
+
+var spokeCatalogSpecCodePattern = regexp.MustCompile(`^[A-Z0-9][A-Z0-9_-]{1,79}$`)
 
 type HubPosition string
 
@@ -31,6 +35,10 @@ type HubSpecification struct {
 	Position      HubPosition    `gorm:"size:16;not null" json:"position"`
 	AxleType      HubAxleType    `gorm:"size:32;not null" json:"axle_type"`
 	AxleSpacingMM int            `gorm:"not null" json:"axle_spacing_mm"`
+	WRMM          *float64       `gorm:"column:wr_mm" json:"wr_mm"`
+	WLMM          *float64       `gorm:"column:wl_mm" json:"wl_mm"`
+	PCDRMM        *float64       `gorm:"column:pcdr_mm" json:"pcdr_mm"`
+	PCDLMM        *float64       `gorm:"column:pcdl_mm" json:"pcdl_mm"`
 	Notes         string         `gorm:"type:text" json:"notes"`
 	IsEnabled     bool           `gorm:"not null;default:false;index" json:"is_enabled"`
 	SortOrder     int            `gorm:"not null;default:0;index" json:"sort_order"`
@@ -84,6 +92,9 @@ func (specification *HubSpecification) Validate() error {
 	if len(specification.SpecCode) > 80 {
 		return fmt.Errorf("spec_code is too long")
 	}
+	if !IsValidSpokeCatalogSpecCode(specification.SpecCode) {
+		return fmt.Errorf("spec_code must use 2-80 letters, numbers, underscores or hyphens and start with a letter or number")
+	}
 	if len(specification.DisplayName) > 160 {
 		return fmt.Errorf("display_name is too long")
 	}
@@ -96,11 +107,19 @@ func (specification *HubSpecification) Validate() error {
 	if specification.AxleSpacingMM <= 0 {
 		return fmt.Errorf("axle_spacing_mm must be positive")
 	}
+	if err := validateSpokeGeometry(specification); err != nil {
+		return err
+	}
 	if specification.SortOrder < 0 {
 		return fmt.Errorf("sort_order must be non-negative")
 	}
 
 	return nil
+}
+
+func IsValidSpokeCatalogSpecCode(value string) bool {
+	normalized := strings.ToUpper(strings.TrimSpace(value))
+	return spokeCatalogSpecCodePattern.MatchString(normalized)
 }
 
 func isSupportedHubPosition(position HubPosition) bool {
@@ -110,6 +129,54 @@ func isSupportedHubPosition(position HubPosition) bool {
 	default:
 		return false
 	}
+}
+
+func validateSpokeGeometry(specification *HubSpecification) error {
+	values := []*float64{
+		specification.WRMM,
+		specification.WLMM,
+		specification.PCDRMM,
+		specification.PCDLMM,
+	}
+
+	filled := 0
+	for _, value := range values {
+		if value != nil {
+			filled++
+		}
+	}
+	if filled != 0 && filled != len(values) {
+		return fmt.Errorf("wr_mm, wl_mm, pcdr_mm and pcdl_mm must be provided together")
+	}
+
+	for _, field := range []struct {
+		name         string
+		value        *float64
+		min          float64
+		max          float64
+		minExclusive bool
+	}{
+		{name: "wr_mm", value: specification.WRMM, min: 0, max: 100, minExclusive: true},
+		{name: "wl_mm", value: specification.WLMM, min: 0, max: 100, minExclusive: true},
+		{name: "pcdr_mm", value: specification.PCDRMM, min: 10, max: 150},
+		{name: "pcdl_mm", value: specification.PCDLMM, min: 10, max: 150},
+	} {
+		if field.value == nil {
+			continue
+		}
+		minInvalid := *field.value < field.min
+		if field.minExclusive {
+			minInvalid = *field.value <= field.min
+		}
+		if math.IsNaN(*field.value) || math.IsInf(*field.value, 0) || minInvalid || *field.value > field.max {
+			if field.minExclusive {
+				return fmt.Errorf("%s must be greater than %.0f and no greater than %.0f", field.name, field.min, field.max)
+			}
+			return fmt.Errorf("%s must be at least %.0f and no greater than %.0f", field.name, field.min, field.max)
+		}
+	}
+
+	return nil
 }
 
 func isSupportedHubAxleType(axleType HubAxleType) bool {

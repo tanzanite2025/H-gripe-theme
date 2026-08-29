@@ -18,7 +18,7 @@ func TestPreflightBoundaryChecksRequireProductionServicesAndNetworks(t *testing.
 	project := &ops.ProjectBindingView{
 		ProjectBinding: ops.ProjectBinding{
 			Services: "db, redis, migrate, edge-config, api, storefront, admin, web",
-			Networks: "db, cache, app, shared-edge",
+			Networks: "db, cache, app, api_ingress, shared-edge",
 		},
 	}
 
@@ -631,7 +631,7 @@ func TestDeploymentPreflightServiceUsesEffectiveVPSConnector(t *testing.T) {
 		GatewayNetwork:         "shared-edge",
 		GatewayAlias:           "theme-web",
 		Services:               "db, redis, migrate, edge-config, api, storefront, admin, web",
-		Networks:               "db, cache, app, shared-edge",
+		Networks:               "db, cache, app, api_ingress, shared-edge",
 		Volumes:                "commerce-platform-postgres-data, commerce-platform-redis-data, uploads, site_logo_uploads",
 		CurrentImageTag:        "sha-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		CurrentCommitSHA:       "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -923,7 +923,7 @@ func newPreflightFixtureProject(name string, vpsID uint, now time.Time) *ops.Pro
 		GatewayNetwork:         "shared-edge",
 		GatewayAlias:           "theme-web",
 		Services:               "db, redis, migrate, edge-config, api, storefront, admin, web",
-		Networks:               "db, cache, app, shared-edge",
+		Networks:               "db, cache, app, api_ingress, shared-edge",
 		Volumes:                name + "-postgres-data, " + name + "-redis-data, uploads, site_logo_uploads",
 		CurrentImageTag:        "sha-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
 		CurrentCommitSHA:       "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",

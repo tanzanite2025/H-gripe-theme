@@ -289,7 +289,7 @@ const updateActiveSlide = () => {
 
 .global-media-rail-carousel__title {
   margin: 0.375rem 0 0;
-  color: #fff;
+  color: var(--tz-text-primary);
   font-size: 1.125rem;
   font-weight: 700;
   letter-spacing: 0;
@@ -315,10 +315,10 @@ const updateActiveSlide = () => {
   align-items: center;
   gap: 0.35rem;
   padding: 0.35rem 0.65rem;
-  border: 1px solid rgba(5, 150, 105, 0.34);
+  border: 1px solid var(--tz-border-strong);
   border-radius: 999px;
-  background: rgba(5, 150, 105, 0.08);
-  color: #059669;
+  background: var(--tz-surface-card);
+  color: var(--tz-text-accent);
   font-size: 0.6875rem;
   font-weight: 700;
   line-height: 1;
@@ -328,9 +328,9 @@ const updateActiveSlide = () => {
 
 .global-media-rail-carousel__more:hover,
 .global-media-rail-carousel__more:focus-visible {
-  border-color: rgba(5, 150, 105, 0.78);
-  background: rgba(5, 150, 105, 0.16);
-  color: #fff;
+  border-color: rgba(5, 150, 105, 0.72);
+  background: rgba(5, 150, 105, 0.08);
+  color: var(--tz-text-accent-hover);
 }
 
 .global-media-rail-carousel__arrow {
@@ -338,10 +338,10 @@ const updateActiveSlide = () => {
   width: 2rem;
   height: 2rem;
   place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  border: 1px solid var(--tz-border-strong);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.04);
-  color: #fff;
+  background: var(--tz-surface-card);
+  color: var(--tz-text-primary);
   transition: border-color 160ms ease, background-color 160ms ease, color 160ms ease;
 }
 
@@ -349,7 +349,7 @@ const updateActiveSlide = () => {
 .global-media-rail-carousel__arrow:focus-visible {
   border-color: rgba(5, 150, 105, 0.75);
   background: rgba(5, 150, 105, 0.12);
-  color: #059669;
+  color: var(--tz-text-accent);
 }
 
 .global-media-rail-carousel__rail {
@@ -376,9 +376,9 @@ const updateActiveSlide = () => {
   flex: 0 0 clamp(18rem, 29vw, 25rem);
   overflow: hidden;
   scroll-snap-align: start;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 1px solid var(--tz-border-subtle);
   border-radius: 0.5rem;
-  background: var(--tz-image-loading-surface, rgba(255, 255, 255, 0.05));
+  background: var(--tz-image-loading-surface, var(--tz-surface-card));
 }
 
 .global-media-rail-carousel__slide,
@@ -431,7 +431,7 @@ const updateActiveSlide = () => {
 
 .global-media-rail-carousel__caption-title {
   overflow: hidden;
-  color: #fff;
+  color: var(--tz-text-primary);
   font-size: 0.75rem;
   font-weight: 700;
   line-height: 1.35;
@@ -442,7 +442,7 @@ const updateActiveSlide = () => {
 .global-media-rail-carousel__caption-description {
   display: -webkit-box;
   overflow: hidden;
-  color: rgba(226, 232, 240, 0.62);
+  color: var(--tz-text-secondary);
   font-size: 0.625rem;
   line-height: 1.45;
   -webkit-box-orient: vertical;

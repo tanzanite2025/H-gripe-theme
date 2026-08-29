@@ -57,6 +57,7 @@ func TestNewSiteQualityEngineServiceDefaultsToSingleRunnerBatch(t *testing.T) {
 
 	require.Equal(t, 1, engine.cfg.WorkerBatchLimit)
 	require.Equal(t, 1, engine.cfg.ProviderConcurrency)
+	require.False(t, engine.cfg.AutoScanEnabled)
 }
 
 func TestSiteQualityRecheckDecisionKeepsOnlyBoundFinding(t *testing.T) {

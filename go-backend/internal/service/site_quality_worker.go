@@ -109,7 +109,15 @@ func (s *SiteQualityEngineService) ProcessReady(ctx context.Context, now time.Ti
 		limit = s.cfg.WorkerBatchLimit
 	}
 
-	jobs, err := s.jobs.ClaimReady(now, s.workerID, limit, s.cfg.LeaseTimeout)
+	var (
+		jobs []sitequalitydomain.SiteQualityJob
+		err  error
+	)
+	if s.cfg.AutoScanEnabled {
+		jobs, err = s.jobs.ClaimReady(now, s.workerID, limit, s.cfg.LeaseTimeout)
+	} else {
+		jobs, err = s.jobs.ClaimReadyInteractive(now, s.workerID, limit, s.cfg.LeaseTimeout)
+	}
 	if err != nil {
 		return result, err
 	}

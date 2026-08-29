@@ -92,6 +92,17 @@ func TestValidateConfigRejectsInvalidPaymentExpirationConfig(t *testing.T) {
 	}
 }
 
+func TestValidateConfigRejectsNonPositiveVisitorProfileIPAddressRetentionWhenCleanupEnabled(t *testing.T) {
+	cfg := validTestConfig()
+	cfg.Worker.VisitorProfileCleanupEnabled = true
+	cfg.Worker.VisitorProfileCleanupIntervalSeconds = 86400
+	cfg.Worker.VisitorProfileIPAddressRetentionDays = 0
+
+	if err := validateConfig(cfg); err == nil {
+		t.Fatal("validateConfig should reject a non-positive visitor profile IP address retention period")
+	}
+}
+
 func TestValidateConfigRejectsInvalidOutboundHTTPResilienceConfig(t *testing.T) {
 	cfg := validTestConfig()
 	cfg.OutboundHTTPResilience = OutboundHTTPResilienceConfig{
@@ -497,6 +508,50 @@ func TestValidateConfigRejectsReleaseWithoutTrustedProxies(t *testing.T) {
 	}
 }
 
+func TestValidateConfigRejectsDefaultTrustedProxyRoutes(t *testing.T) {
+	for _, value := range []string{"0.0.0.0/0", "::/0"} {
+		t.Run(value, func(t *testing.T) {
+			cfg := validTestConfig()
+			cfg.Server.TrustedProxies = []string{value}
+
+			if err := validateConfig(cfg); err == nil {
+				t.Fatalf("validateConfig should reject default trusted proxy route %q", value)
+			}
+		})
+	}
+}
+
+func TestValidateConfigRejectsBroadRFC1918TrustedProxyInRelease(t *testing.T) {
+	cfg := validTestConfig()
+	cfg.Server.Mode = "release"
+	cfg.JWT.Secret = "test-production-secret-at-least-32-chars"
+	cfg.Server.TrustedProxies = []string{"10.0.0.0/8"}
+
+	if err := validateConfig(cfg); err == nil {
+		t.Fatal("validateConfig should reject a broad RFC1918 trusted proxy network in release mode")
+	}
+}
+
+func TestValidateConfigAllowsSpecificTrustedProxyInRelease(t *testing.T) {
+	cfg := validTestConfig()
+	cfg.Server.Mode = "release"
+	cfg.JWT.Secret = "test-production-secret-at-least-32-chars"
+	cfg.Server.TrustedProxies = []string{"172.30.0.10/32"}
+
+	if err := validateConfig(cfg); err != nil {
+		t.Fatalf("validateConfig should allow a specific trusted proxy address in release mode: %v", err)
+	}
+}
+
+func TestValidateConfigRejectsMalformedTrustedProxy(t *testing.T) {
+	cfg := validTestConfig()
+	cfg.Server.TrustedProxies = []string{"not-a-network"}
+
+	if err := validateConfig(cfg); err == nil {
+		t.Fatal("validateConfig should reject malformed trusted proxy values")
+	}
+}
+
 func TestSplitEnvListTrimsAndDropsEmptyValues(t *testing.T) {
 	got := splitEnvList("https://example.com, https://admin.example.com, ,")
 	want := []string{"https://example.com", "https://admin.example.com"}
@@ -525,12 +580,13 @@ func TestLoadProductionConfigUsesEnvironmentOverrides(t *testing.T) {
 	t.Setenv("JWT_SECRET", "test-production-secret-at-least-32-chars")
 	t.Setenv("GOOGLE_CLIENT_ID", "test-google-client")
 	t.Setenv("CORS_ORIGINS", "https://example.com,https://admin.example.com")
-	t.Setenv("TRUSTED_PROXIES", "10.0.0.0/8, 172.16.0.0/12")
+	t.Setenv("TRUSTED_PROXIES", "172.30.0.10/32, 172.30.0.11/32")
 	t.Setenv("QUICK_BUY_RATE_LIMIT_IP_REQUESTS_PER_MINUTE", "88")
 	t.Setenv("QUICK_BUY_RATE_LIMIT_SESSION_BURST", "9")
 	t.Setenv("FEEDBACK_RATE_LIMIT_WRITE_USER_REQUESTS_PER_MINUTE", "4")
 	t.Setenv("FEEDBACK_RATE_LIMIT_WRITE_USER_BURST", "1")
 	t.Setenv("OUTBOUND_HTTP_RESILIENCE_FAILURE_THRESHOLD", "7")
+	t.Setenv("VISITOR_PROFILE_IP_ADDRESS_RETENTION_DAYS", "45")
 
 	cfg, err := Load("../../../config/config.production.yaml")
 	if err != nil {
@@ -546,7 +602,7 @@ func TestLoadProductionConfigUsesEnvironmentOverrides(t *testing.T) {
 	if len(cfg.CORS.AllowedOrigins) != 2 || cfg.CORS.AllowedOrigins[1] != "https://admin.example.com" {
 		t.Fatalf("CORS_ORIGINS override not applied: %v", cfg.CORS.AllowedOrigins)
 	}
-	if len(cfg.Server.TrustedProxies) != 2 || cfg.Server.TrustedProxies[1] != "172.16.0.0/12" {
+	if len(cfg.Server.TrustedProxies) != 2 || cfg.Server.TrustedProxies[1] != "172.30.0.11/32" {
 		t.Fatalf("TRUSTED_PROXIES override not applied: %v", cfg.Server.TrustedProxies)
 	}
 	if cfg.QuickBuyRateLimit.IPRequestsPerMinute != 88 || cfg.QuickBuyRateLimit.SessionBurst != 9 {
@@ -563,6 +619,9 @@ func TestLoadProductionConfigUsesEnvironmentOverrides(t *testing.T) {
 	}
 	if !cfg.OutboundHTTPResilience.Enabled || cfg.OutboundHTTPResilience.FailureThreshold != 7 {
 		t.Fatalf("outbound HTTP resilience environment override not applied: %+v", cfg.OutboundHTTPResilience)
+	}
+	if cfg.Worker.VisitorProfileIPAddressRetentionDays != 45 {
+		t.Fatalf("visitor profile IP address retention environment override not applied: %d", cfg.Worker.VisitorProfileIPAddressRetentionDays)
 	}
 }
 

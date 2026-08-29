@@ -1,5 +1,6 @@
 <template>
   <figure
+    v-bind="$attrs"
     class="guide-image"
     :class="{ 'guide-image--clickable': props.zoomOnClick }"
     @click="handleClick"
@@ -39,6 +40,10 @@
 </template>
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+
+defineOptions({
+  inheritAttrs: false,
+})
 
 interface Props {
   src: string

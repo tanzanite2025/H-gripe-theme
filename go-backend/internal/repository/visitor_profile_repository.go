@@ -2,6 +2,8 @@ package repository
 
 import (
 	"commerce-platform/internal/domain/visitor"
+	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -56,6 +58,15 @@ func (r *VisitorProfileRepository) FindByUserID(userID uint) (*visitor.Profile, 
 	return &profile, nil
 }
 
+func (r *VisitorProfileRepository) FindByID(id uint) (*visitor.Profile, error) {
+	var profile visitor.Profile
+	err := r.db.First(&profile, id).Error
+	if err != nil {
+		return nil, err
+	}
+	return &profile, nil
+}
+
 func (r *VisitorProfileRepository) Create(profile *visitor.Profile) error {
 	return r.db.Create(profile).Error
 }
@@ -83,11 +94,42 @@ func (r *VisitorProfileRepository) ArchiveExpiredAnonymousProfiles(now time.Time
 	return result.RowsAffected, result.Error
 }
 
+func (r *VisitorProfileRepository) ClearExpiredRetainedIPAddresses(now time.Time, retentionDays int) (int64, error) {
+	if retentionDays <= 0 {
+		return 0, fmt.Errorf("visitor profile IP address retention days must be positive")
+	}
+
+	cutoff := now.UTC().Add(-time.Duration(retentionDays) * 24 * time.Hour)
+	result := r.db.Model(&visitor.Profile{}).
+		Where("ip_address IS NOT NULL AND ip_address <> ''").
+		Where("last_seen_at <= ?", cutoff).
+		Updates(map[string]interface{}{
+			"ip_address": "",
+		})
+	return result.RowsAffected, result.Error
+}
+
 func (r *VisitorProfileRepository) List(page, pageSize int, filters VisitorProfileListFilters) ([]visitor.Profile, int64, error) {
+	return r.ListContext(context.Background(), page, pageSize, filters)
+}
+
+func (r *VisitorProfileRepository) ListContext(
+	ctx context.Context,
+	page,
+	pageSize int,
+	filters VisitorProfileListFilters,
+) ([]visitor.Profile, int64, error) {
+	if r == nil || r.db == nil {
+		return nil, 0, gorm.ErrInvalidDB
+	}
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
 	var profiles []visitor.Profile
 	var total int64
 
-	query := r.applyListFilters(r.db.Model(&visitor.Profile{}), filters)
+	query := r.applyListFilters(r.db.WithContext(ctx).Model(&visitor.Profile{}), filters)
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}

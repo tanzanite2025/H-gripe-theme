@@ -16,7 +16,7 @@ var (
 	ErrSpokeHubGeometryMissing  = errors.New("hub geometry not available for requested position")
 	ErrInvalidSpokeCalculation  = errors.New("invalid spoke calculation input")
 	ErrInvalidSpokeCatalog      = errors.New("invalid spoke catalog")
-	spokeCalculationFormulaName = "v1.0-go-backend"
+	spokeCalculationFormulaName = "v1.1-go-backend"
 	spokeCatalogIDPattern       = regexp.MustCompile(`^[a-z0-9][a-z0-9_-]{1,139}$`)
 )
 
@@ -30,18 +30,38 @@ type SpokeCalculationInput struct {
 	WheelPosition string
 	SpokeCount    int
 	Crossing      int
+	// RimOffsetMM is positive when the rim center moves toward the right
+	// flange. The value changes both the spoke length geometry and bracing
+	// angles used for the tension-ratio estimate.
+	RimOffsetMM float64
 }
 
 type SpokeCalculationResult struct {
 	LeftLengthMM  float64               `json:"leftLengthMm"`
 	RightLengthMM float64               `json:"rightLengthMm"`
+	TensionRatio  *SpokeTensionRatio    `json:"tensionRatio,omitempty"`
 	Debug         SpokeCalculationDebug `json:"debug"`
 }
 
 type SpokeCalculationDebug struct {
 	Rim            *domainspoke.RimModel    `json:"rim"`
 	Hub            *domainspoke.HubGeometry `json:"hub"`
+	RimOffsetMM    float64                  `json:"rimOffsetMm"`
 	FormulaVersion string                   `json:"formulaVersion"`
+}
+
+type SpokeTensionRatio struct {
+	// LeftToRight is the estimated per-spoke tension ratio T_left / T_right.
+	LeftToRight float64 `json:"leftToRight"`
+	// RightToLeft is the reciprocal ratio T_right / T_left.
+	RightToLeft float64 `json:"rightToLeft"`
+	// LowerToHigher is always <= 1 and is the most useful wheel-builder
+	// summary, for example 0.78 means 78% on the lower-tension side.
+	LowerToHigher float64 `json:"lowerToHigher"`
+	LowerSide     string  `json:"lowerSide"`
+
+	LeftBracingAngleDeg  float64 `json:"leftBracingAngleDeg"`
+	RightBracingAngleDeg float64 `json:"rightBracingAngleDeg"`
 }
 
 func NewSpokeService(spokeRepo *repository.SpokeRepository) *SpokeService {
@@ -60,6 +80,16 @@ func (s *SpokeService) GetExport() (domainspoke.ExportResponse, error) {
 }
 
 func (s *SpokeService) ReplaceCatalog(export domainspoke.ExportResponse) (domainspoke.ExportResponse, error) {
+	if s.spokeRepo.UsesFitmentHubSpecifications() {
+		authoritativeHubs, configured, err := s.spokeRepo.GetAuthoritativeHubBrands()
+		if err != nil {
+			return domainspoke.ExportResponse{}, err
+		}
+		if configured {
+			export.Hubs = authoritativeHubs
+		}
+	}
+
 	normalized, err := normalizeSpokeCatalog(export)
 	if err != nil {
 		return domainspoke.ExportResponse{}, err
@@ -90,6 +120,9 @@ func (s *SpokeService) Calculate(input SpokeCalculationInput) (*SpokeCalculation
 	if _, exists := intOptionSet(options.Crossings)[input.Crossing]; !exists {
 		return nil, ErrInvalidSpokeCalculation
 	}
+	if math.Abs(input.RimOffsetMM) > 20 {
+		return nil, ErrInvalidSpokeCalculation
+	}
 
 	export, err := s.GetExport()
 	if err != nil {
@@ -112,8 +145,11 @@ func (s *SpokeService) Calculate(input SpokeCalculationInput) (*SpokeCalculation
 		return nil, ErrSpokeHubGeometryMissing
 	}
 
-	leftFlange := *hubGeo.LeftFlange
-	rightFlange := *hubGeo.RightFlange
+	leftFlange := effectiveSpokeFlangeDistance(*hubGeo.LeftFlange, input.RimOffsetMM, "left")
+	rightFlange := effectiveSpokeFlangeDistance(*hubGeo.RightFlange, input.RimOffsetMM, "right")
+	if leftFlange <= 0 || rightFlange <= 0 {
+		return nil, ErrInvalidSpokeCalculation
+	}
 	leftFlangeRadius := *hubGeo.LeftFlangePCD / 2.0
 	rightFlangeRadius := *hubGeo.RightFlangePCD / 2.0
 	radius := *rim.ERD / 2.0
@@ -121,16 +157,63 @@ func (s *SpokeService) Calculate(input SpokeCalculationInput) (*SpokeCalculation
 
 	left := math.Sqrt(radius*radius + leftFlangeRadius*leftFlangeRadius + leftFlange*leftFlange - 2*radius*leftFlangeRadius*math.Cos(angleRad))
 	right := math.Sqrt(radius*radius + rightFlangeRadius*rightFlangeRadius + rightFlange*rightFlange - 2*radius*rightFlangeRadius*math.Cos(angleRad))
+	tensionRatio := computeSpokeTensionRatio(leftFlange, rightFlange, left, right)
 
 	return &SpokeCalculationResult{
 		LeftLengthMM:  math.Round(left*10) / 10,
 		RightLengthMM: math.Round(right*10) / 10,
+		TensionRatio:  tensionRatio,
 		Debug: SpokeCalculationDebug{
 			Rim:            rim,
 			Hub:            hubGeo,
+			RimOffsetMM:    input.RimOffsetMM,
 			FormulaVersion: spokeCalculationFormulaName,
 		},
 	}, nil
+}
+
+func effectiveSpokeFlangeDistance(flangeDistance, rimOffset float64, side string) float64 {
+	if side == "left" {
+		return flangeDistance + rimOffset
+	}
+	return flangeDistance - rimOffset
+}
+
+func computeSpokeTensionRatio(leftBracingDistance, rightBracingDistance, leftLength, rightLength float64) *SpokeTensionRatio {
+	if leftBracingDistance <= 0 || rightBracingDistance <= 0 || leftLength <= 0 || rightLength <= 0 {
+		return nil
+	}
+
+	leftSin := math.Min(1, leftBracingDistance/leftLength)
+	rightSin := math.Min(1, rightBracingDistance/rightLength)
+	if leftSin <= 0 || rightSin <= 0 {
+		return nil
+	}
+
+	leftToRight := rightSin / leftSin
+	rightToLeft := leftSin / rightSin
+	lowerToHigher := math.Min(leftToRight, rightToLeft)
+
+	lowerSide := "balanced"
+	switch {
+	case leftToRight < 0.995:
+		lowerSide = "left"
+	case leftToRight > 1.005:
+		lowerSide = "right"
+	}
+
+	return &SpokeTensionRatio{
+		LeftToRight:          roundSpokeRatio(leftToRight),
+		RightToLeft:          roundSpokeRatio(rightToLeft),
+		LowerToHigher:        roundSpokeRatio(lowerToHigher),
+		LowerSide:            lowerSide,
+		LeftBracingAngleDeg:  roundSpokeRatio(math.Asin(leftSin) * 180 / math.Pi),
+		RightBracingAngleDeg: roundSpokeRatio(math.Asin(rightSin) * 180 / math.Pi),
+	}
+}
+
+func roundSpokeRatio(value float64) float64 {
+	return math.Round(value*10000) / 10000
 }
 
 func normalizeSpokeCatalog(export domainspoke.ExportResponse) (domainspoke.ExportResponse, error) {
