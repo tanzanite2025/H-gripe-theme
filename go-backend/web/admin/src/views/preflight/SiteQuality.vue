@@ -20,6 +20,28 @@
       </template>
     </AdminPageHeader>
 
+    <Alert v-if="activeJob" :variant="activeJob.status === 'failed' || activeJob.status === 'dead_letter' ? 'destructive' : 'default'" class="rounded-[20px] border-dashed">
+      <component :is="activeJobIcon" class="size-4" />
+      <div class="min-w-0 space-y-1">
+        <div class="flex flex-wrap items-center gap-2">
+          <p class="text-xs font-black">{{ activeJobTitle }}</p>
+          <AdminStatusBadge :tone="activeJobTone">
+            {{ activeJobStatusLabel }}
+          </AdminStatusBadge>
+          <span class="font-mono text-[10px] text-muted-foreground">#{{ activeJob.id }}</span>
+        </div>
+        <p class="text-xs leading-5 text-foreground">
+          {{ activeJobSummary }}
+        </p>
+        <p class="text-[11px] leading-5 text-muted-foreground">
+          {{ activeJobDetail }}
+        </p>
+        <p v-if="activeJob.last_error" class="text-xs leading-5 text-destructive">
+          {{ activeJob.last_error }}
+        </p>
+      </div>
+    </Alert>
+
     <SiteQualitySummary :items="summaryItems" :warnings="summaryWarnings" />
 
     <section class="border bg-card p-4">
@@ -134,16 +156,18 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
-import { Braces, Heading2, Link2, LoaderCircle, Play, RefreshCw, Trash2 } from '@lucide/vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { AlertTriangle, Braces, CheckCircle2, Clock3, Heading2, Link2, LoaderCircle, Play, RefreshCw, Trash2 } from '@lucide/vue'
 import { toast } from 'vue-sonner'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
-import type { AdminStatusTone } from '@/components/admin/AdminStatusBadge.vue'
+import AdminStatusBadge, { type AdminStatusTone } from '@/components/admin/AdminStatusBadge.vue'
+import { Alert } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import preflightApi, {
   SITE_QUALITY_RULE_ID_DESCRIPTIVE_LINK_TEXT,
+  type SiteQualityJob,
   type SiteQualityOperationalSummary,
   type SiteQualityJobCleanupResult,
   type SiteQualityFinding,
@@ -182,6 +206,10 @@ const targetOptions = ref<SiteQualityTargetOption[]>([])
 const strategy = ref<SiteQualityStrategy>('mobile')
 const runnerConfigured = ref(false)
 const operationalSummary = ref<SiteQualityOperationalSummary | null>(null)
+const activeJob = ref<SiteQualityJob | null>(null)
+const activeJobContext = ref<{ title: string; target: string } | null>(null)
+const activeJobClock = ref(Date.now())
+let activeJobClockTimer: number | null = null
 const cleaningJobs = ref(false)
 const headingsLoading = ref(false)
 const headingFindings = ref<SiteQualityFinding[]>([])
@@ -283,6 +311,81 @@ const terminalJobCount = computed(() => {
   return (jobs?.failed || 0) + (jobs?.dead_letter || 0)
 })
 
+const activeJobIsLive = computed(() => activeJob.value !== null && (activeJob.value.status === 'queued' || activeJob.value.status === 'processing'))
+const activeJobTone = computed<AdminStatusTone>(() => ({
+  queued: 'amber',
+  processing: 'blue',
+  succeeded: 'green',
+  failed: 'coral',
+  dead_letter: 'coral',
+}[activeJob.value?.status || 'queued'] as AdminStatusTone))
+const activeJobStatusLabel = computed(() => ({
+  queued: '排队中',
+  processing: '处理中',
+  succeeded: '已完成',
+  failed: '失败',
+  dead_letter: '死信',
+}[activeJob.value?.status || 'queued']))
+const activeJobTitle = computed(() => activeJobContext.value?.title || '页面质量任务')
+const activeJobTarget = computed(() => activeJobContext.value?.target || targetURL.value || '未指定目标')
+const activeJobIcon = computed(() => ({
+  queued: Clock3,
+  processing: LoaderCircle,
+  succeeded: CheckCircle2,
+  failed: AlertTriangle,
+  dead_letter: AlertTriangle,
+}[activeJob.value?.status || 'queued']))
+const activeJobSummary = computed(() => {
+  const job = activeJob.value
+  if (!job) return ''
+  const jobLabel = `任务 #${job.id}`
+  switch (job.status) {
+    case 'queued':
+      return `${jobLabel} 已进入队列，worker 取到后会继续执行。`
+    case 'processing':
+      return `${jobLabel} 正在执行采样，关闭页面不会中断后台任务。`
+    case 'succeeded':
+      return `${jobLabel} 已完成，下面的检查结果已经刷新。`
+    case 'failed':
+      return `${jobLabel} 本次执行失败，请查看最后错误。`
+    case 'dead_letter':
+      return `${jobLabel} 已达到最大重试次数，进入死信状态。`
+    default:
+      return `${jobLabel} 正在执行。`
+  }
+})
+const activeJobDetail = computed(() => {
+  const job = activeJob.value
+  if (!job) return ''
+  const parts: string[] = [`目标 ${activeJobTarget.value}`, `策略 ${strategyLabel(job.strategy)}`, `采样 ${job.sample_count} 次 · 确认 ${job.required_confirmations} 次`]
+  const startedAt = job.started_at || job.available_at || job.created_at
+  if (job.status === 'queued') {
+    parts.unshift(`已排队 ${formatElapsed(startedAt)}`)
+  } else if (job.status === 'processing') {
+    parts.unshift(`已运行 ${formatElapsed(startedAt)}`)
+  } else if (job.status === 'succeeded') {
+    parts.unshift(`完成于 ${formatDate(job.finished_at || job.updated_at)}`)
+  } else {
+    parts.unshift(`更新于 ${formatDate(job.updated_at)}`)
+  }
+  if (job.heartbeat_at) {
+    parts.push(`最近心跳 ${formatRelativeTime(job.heartbeat_at)}`)
+  }
+  if (job.lease_expires_at && job.status === 'processing') {
+    parts.push(`租约到期 ${formatRelativeTime(job.lease_expires_at)}`)
+  }
+  if (job.status === 'failed' || job.status === 'dead_letter') {
+    parts.push(`重试 ${job.attempts}/${job.max_attempts}`)
+  }
+  if (job.status === 'queued' || job.status === 'processing') {
+    parts.push('当前列表仍显示上一次完成后的结果，任务结束后会自动刷新。')
+  }
+  if (job.status === 'succeeded') {
+    parts.push('结果已经同步到下方列表。')
+  }
+  return parts.join(' · ')
+})
+
 const selectedFindingEvidence = computed<SiteQualityFindingEvidence | null>(() => {
   const raw = selectedFinding.value?.latest_evidence
   if (!raw) return null
@@ -349,8 +452,14 @@ const refreshSiteQualityData = async (): Promise<void> => {
 const runInspection = async (): Promise<void> => {
   if (!canManage.value || !targetURL.value) return
   running.value = true
+  activeJobContext.value = { title: '页面质量检测', target: targetURL.value }
   try {
-    const job = await enqueueInspection(targetURL.value, strategy.value)
+    const jobPromise = enqueueInspection(targetURL.value, strategy.value, (job) => {
+      activeJob.value = job
+    })
+    void loadRuns()
+    const job = await jobPromise
+    activeJob.value = job
     if (job.status !== 'succeeded') {
       throw new Error(job.last_error || `页面质量任务 ${job.status}`)
     }
@@ -551,8 +660,17 @@ const resolveFinding = async (): Promise<void> => {
 const recheckFinding = async (): Promise<void> => {
   if (!selectedFinding.value || !canManage.value || findingActionKey.value) return
   findingActionKey.value = 'recheck'
+  activeJobContext.value = {
+    title: '页面质量复检',
+    target: selectedFinding.value.target_url,
+  }
   try {
-    const job = await enqueueFindingRecheck(selectedFinding.value.id)
+    const jobPromise = enqueueFindingRecheck(selectedFinding.value.id, (job) => {
+      activeJob.value = job
+    })
+    void loadRuns()
+    const job = await jobPromise
+    activeJob.value = job
     if (job.status !== 'succeeded') {
       throw new Error(job.last_error || `页面质量任务 ${job.status}`)
     }
@@ -574,6 +692,28 @@ const recheckFinding = async (): Promise<void> => {
 }
 
 const formatDate = (value: string): string => new Date(value).toLocaleString('zh-CN')
+const formatElapsed = (value: string): string => {
+  const start = new Date(value).getTime()
+  if (!Number.isFinite(start)) return '-'
+  const diffSeconds = Math.max(0, Math.floor((activeJobClock.value - start) / 1000))
+  if (diffSeconds < 60) return `${diffSeconds}s`
+  const minutes = Math.floor(diffSeconds / 60)
+  const seconds = diffSeconds % 60
+  if (minutes < 60) return `${minutes}m${seconds.toString().padStart(2, '0')}s`
+  const hours = Math.floor(minutes / 60)
+  return `${hours}h${(minutes % 60).toString().padStart(2, '0')}m`
+}
+const formatRelativeTime = (value: string): string => {
+  const timestamp = new Date(value).getTime()
+  if (!Number.isFinite(timestamp)) return '-'
+  const diffSeconds = Math.round((activeJobClock.value - timestamp) / 1000)
+  const absSeconds = Math.abs(diffSeconds)
+  if (absSeconds < 60) return diffSeconds >= 0 ? `${absSeconds}s前` : `${absSeconds}s后`
+  const minutes = Math.round(absSeconds / 60)
+  if (minutes < 60) return diffSeconds >= 0 ? `${minutes} 分钟前` : `${minutes} 分钟后`
+  const hours = Math.round(absSeconds / 3600)
+  return diffSeconds >= 0 ? `${hours} 小时前` : `${hours} 小时后`
+}
 const operationalStatusLabel = (status?: SiteQualityOperationalSummary['status']): string => ({
   healthy: '健康',
   degraded: '降级',
@@ -599,6 +739,8 @@ const operationalStatusBadgeTone = (status?: SiteQualityOperationalSummary['stat
   unavailable: 'coral',
 } as const)[status || 'not_configured']
 
+const strategyLabel = (value: SiteQualityStrategy): string => (value === 'mobile' ? '移动端' : '桌面端')
+
 const targetOptionLabel = (option: SiteQualityTargetOption): string => {
   const parts: string[] = []
   const title = option.title.trim()
@@ -608,6 +750,28 @@ const targetOptionLabel = (option: SiteQualityTargetOption): string => {
   if (option.locale.trim()) parts.push(option.locale.trim())
   return parts.join(' · ') || option.url
 }
+
+const startActiveJobClock = (): void => {
+  if (activeJobClockTimer !== null) return
+  activeJobClock.value = Date.now()
+  activeJobClockTimer = window.setInterval(() => {
+    activeJobClock.value = Date.now()
+  }, 1000)
+}
+
+const stopActiveJobClock = (): void => {
+  if (activeJobClockTimer === null) return
+  window.clearInterval(activeJobClockTimer)
+  activeJobClockTimer = null
+}
+
+watch(activeJobIsLive, (isLive) => {
+  if (isLive) {
+    startActiveJobClock()
+  } else {
+    stopActiveJobClock()
+  }
+}, { immediate: true })
 
 onMounted(() => {
   void (async () => {
@@ -619,5 +783,9 @@ onMounted(() => {
 
 watch(activeQualityTab, () => {
   void loadActiveFindings(1)
+})
+
+onBeforeUnmount(() => {
+  stopActiveJobClock()
 })
 </script>
