@@ -773,12 +773,20 @@ export const preflightApi = {
     return readSiteQualityJobPayload(await axios.get(endpoint), endpoint)
   },
 
-  async waitForSiteQualityJob(id: number, options?: { intervalMs?: number; timeoutMs?: number }): Promise<SiteQualityJob> {
+  async waitForSiteQualityJob(
+    id: number,
+    options?: {
+      intervalMs?: number
+      timeoutMs?: number
+      onUpdate?: (job: SiteQualityJob) => void
+    },
+  ): Promise<SiteQualityJob> {
     const intervalMs = options?.intervalMs ?? 1500
     const timeoutMs = options?.timeoutMs ?? 10 * 60 * 1000
     const startedAt = Date.now()
     while (true) {
       const job = await this.getSiteQualityJob(id)
+      options?.onUpdate?.(job)
       if (
         job.status === 'succeeded'
         || job.status === 'failed'
