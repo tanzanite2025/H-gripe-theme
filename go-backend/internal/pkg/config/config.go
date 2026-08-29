@@ -3,6 +3,7 @@ package config
 import (
 	"commerce-platform/internal/pkg/locales"
 	"fmt"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -56,6 +57,8 @@ const MinimumPaymentGatewayHalfOpenProbeTimeoutSeconds = 60
 // MinimumOutboundHTTPHalfOpenProbeTimeoutSeconds leaves enough time for the
 // longest configured non-payment HTTP client plus a small Redis/network margin.
 const MinimumOutboundHTTPHalfOpenProbeTimeoutSeconds = 30
+
+const DefaultVisitorProfileIPAddressRetentionDays = 30
 
 type ServerConfig struct {
 	Port              string   `mapstructure:"port"`
@@ -182,6 +185,7 @@ type WorkerConfig struct {
 	TrackingPollingBatchLimit             int  `mapstructure:"tracking_polling_batch_limit"`
 	VisitorProfileCleanupEnabled          bool `mapstructure:"visitor_profile_cleanup_enabled"`
 	VisitorProfileCleanupIntervalSeconds  int  `mapstructure:"visitor_profile_cleanup_interval_seconds"`
+	VisitorProfileIPAddressRetentionDays  int  `mapstructure:"visitor_profile_ip_address_retention_days"`
 	BehaviorEventCleanupEnabled           bool `mapstructure:"behavior_event_cleanup_enabled"`
 	BehaviorEventCleanupIntervalSeconds   int  `mapstructure:"behavior_event_cleanup_interval_seconds"`
 	OutboxDispatchEnabled                 bool `mapstructure:"outbox_dispatch_enabled"`
@@ -197,6 +201,7 @@ type WorkerConfig struct {
 	ExchangeRateSyncEnabled               bool `mapstructure:"exchange_rate_sync_enabled"`
 	ExchangeRateSyncIntervalSeconds       int  `mapstructure:"exchange_rate_sync_interval_seconds"`
 	SiteQualityEnabled                    bool `mapstructure:"site_quality_enabled"`
+	SiteQualityAutoScanEnabled            bool `mapstructure:"site_quality_auto_scan_enabled"`
 	SiteQualityDispatchIntervalSeconds    int  `mapstructure:"site_quality_dispatch_interval_seconds"`
 	SiteQualityBatchLimit                 int  `mapstructure:"site_quality_batch_limit"`
 	SiteQualityLeaseTimeoutSeconds        int  `mapstructure:"site_quality_lease_timeout_seconds"`
@@ -583,6 +588,7 @@ func setDefaults() {
 	viper.SetDefault("worker.tracking_polling_batch_limit", 20)
 	viper.SetDefault("worker.visitor_profile_cleanup_enabled", false)
 	viper.SetDefault("worker.visitor_profile_cleanup_interval_seconds", 86400)
+	viper.SetDefault("worker.visitor_profile_ip_address_retention_days", DefaultVisitorProfileIPAddressRetentionDays)
 	viper.SetDefault("worker.behavior_event_cleanup_enabled", false)
 	viper.SetDefault("worker.behavior_event_cleanup_interval_seconds", 86400)
 	viper.SetDefault("worker.outbox_dispatch_enabled", false)
@@ -598,6 +604,7 @@ func setDefaults() {
 	viper.SetDefault("worker.exchange_rate_sync_enabled", true)
 	viper.SetDefault("worker.exchange_rate_sync_interval_seconds", 86400)
 	viper.SetDefault("worker.site_quality_enabled", false)
+	viper.SetDefault("worker.site_quality_auto_scan_enabled", false)
 	viper.SetDefault("worker.site_quality_dispatch_interval_seconds", 30)
 	viper.SetDefault("worker.site_quality_batch_limit", 1)
 	viper.SetDefault("worker.site_quality_lease_timeout_seconds", 900)
@@ -840,6 +847,7 @@ func bindEnvironment() {
 	_ = viper.BindEnv("worker.tracking_polling_batch_limit", "WORKER_TRACKING_POLLING_BATCH_LIMIT", "TRACKING_POLLING_BATCH_LIMIT")
 	_ = viper.BindEnv("worker.visitor_profile_cleanup_enabled", "WORKER_VISITOR_PROFILE_CLEANUP_ENABLED", "VISITOR_PROFILE_CLEANUP_ENABLED")
 	_ = viper.BindEnv("worker.visitor_profile_cleanup_interval_seconds", "WORKER_VISITOR_PROFILE_CLEANUP_INTERVAL_SECONDS", "VISITOR_PROFILE_CLEANUP_INTERVAL_SECONDS")
+	_ = viper.BindEnv("worker.visitor_profile_ip_address_retention_days", "WORKER_VISITOR_PROFILE_IP_ADDRESS_RETENTION_DAYS", "VISITOR_PROFILE_IP_ADDRESS_RETENTION_DAYS")
 	_ = viper.BindEnv("worker.behavior_event_cleanup_enabled", "WORKER_BEHAVIOR_EVENT_CLEANUP_ENABLED", "BEHAVIOR_EVENT_CLEANUP_ENABLED")
 	_ = viper.BindEnv("worker.behavior_event_cleanup_interval_seconds", "WORKER_BEHAVIOR_EVENT_CLEANUP_INTERVAL_SECONDS", "BEHAVIOR_EVENT_CLEANUP_INTERVAL_SECONDS")
 	_ = viper.BindEnv("worker.outbox_dispatch_enabled", "WORKER_OUTBOX_DISPATCH_ENABLED", "OUTBOX_DISPATCH_ENABLED")
@@ -855,6 +863,7 @@ func bindEnvironment() {
 	_ = viper.BindEnv("worker.exchange_rate_sync_enabled", "WORKER_EXCHANGE_RATE_SYNC_ENABLED", "EXCHANGE_RATE_SYNC_ENABLED")
 	_ = viper.BindEnv("worker.exchange_rate_sync_interval_seconds", "WORKER_EXCHANGE_RATE_SYNC_INTERVAL_SECONDS", "EXCHANGE_RATE_SYNC_INTERVAL_SECONDS")
 	_ = viper.BindEnv("worker.site_quality_enabled", "WORKER_SITE_QUALITY_ENABLED")
+	_ = viper.BindEnv("worker.site_quality_auto_scan_enabled", "WORKER_SITE_QUALITY_AUTO_SCAN_ENABLED")
 	_ = viper.BindEnv("worker.site_quality_dispatch_interval_seconds", "WORKER_SITE_QUALITY_DISPATCH_INTERVAL_SECONDS")
 	_ = viper.BindEnv("worker.site_quality_batch_limit", "WORKER_SITE_QUALITY_BATCH_LIMIT")
 	_ = viper.BindEnv("worker.site_quality_lease_timeout_seconds", "WORKER_SITE_QUALITY_LEASE_TIMEOUT_SECONDS")
@@ -1128,6 +1137,94 @@ func validateRedisConfig(cfg RedisConfig) error {
 	return nil
 }
 
+const minimumTrustedProxyIPv4PrefixRelease = 24
+
+func validateTrustedProxies(values []string, releaseMode bool) error {
+	hasProxy := false
+	for _, raw := range values {
+		value := strings.TrimSpace(raw)
+		if value == "" {
+			continue
+		}
+		hasProxy = true
+
+		var (
+			ip           net.IP
+			network      *net.IPNet
+			prefixLength int
+			addressBits  int
+		)
+		if strings.Contains(value, "/") {
+			parsedIP, parsedNetwork, err := net.ParseCIDR(value)
+			if err != nil {
+				return fmt.Errorf("invalid trusted proxy network %q: %w", value, err)
+			}
+			ip = parsedIP
+			network = parsedNetwork
+			prefixLength, addressBits = parsedNetwork.Mask.Size()
+			if prefixLength < 0 {
+				return fmt.Errorf("invalid trusted proxy network %q", value)
+			}
+		} else {
+			ip = net.ParseIP(value)
+			if ip == nil {
+				return fmt.Errorf("invalid trusted proxy address %q", value)
+			}
+			if ip4 := ip.To4(); ip4 != nil {
+				ip = ip4
+				addressBits = 32
+				prefixLength = 32
+			} else {
+				addressBits = 128
+				prefixLength = 128
+			}
+			network = &net.IPNet{
+				IP:   ip,
+				Mask: net.CIDRMask(addressBits, addressBits),
+			}
+		}
+
+		if ip.IsUnspecified() || prefixLength == 0 {
+			return fmt.Errorf("trusted proxy %q must not be an unspecified or default route", value)
+		}
+		if releaseMode &&
+			addressBits == 32 &&
+			prefixLength < minimumTrustedProxyIPv4PrefixRelease &&
+			trustedProxyNetworkOverlapsRFC1918(network) {
+			return fmt.Errorf(
+				"trusted proxy network %q is too broad in release mode; use a specific proxy address or a subnet no broader than /%d",
+				value,
+				minimumTrustedProxyIPv4PrefixRelease,
+			)
+		}
+	}
+
+	if releaseMode && !hasProxy {
+		return fmt.Errorf("trusted proxies are required in release mode")
+	}
+	return nil
+}
+
+func trustedProxyNetworkOverlapsRFC1918(network *net.IPNet) bool {
+	if network == nil || network.IP.To4() == nil {
+		return false
+	}
+	for _, privateCIDR := range []string{
+		"10.0.0.0/8",
+		"172.16.0.0/12",
+		"192.168.0.0/16",
+	} {
+		_, privateNetwork, err := net.ParseCIDR(privateCIDR)
+		if err != nil {
+			continue
+		}
+		if network.Contains(privateNetwork.IP) || privateNetwork.Contains(network.IP) {
+			return true
+		}
+	}
+	return false
+}
+
 // validateConfig 验证配置是否完整
 func validateConfig(cfg *Config) error {
 	if cfg.JWT.Secret == "" {
@@ -1143,6 +1240,9 @@ func validateConfig(cfg *Config) error {
 		cfg.Server.IdleTimeout <= 0 ||
 		cfg.Server.MaxHeaderBytes <= 0 {
 		return fmt.Errorf("server timeout and header size limits must be positive")
+	}
+	if err := validateTrustedProxies(cfg.Server.TrustedProxies, strings.EqualFold(cfg.Server.Mode, "release")); err != nil {
+		return err
 	}
 	if err := validateRedisConfig(cfg.Redis); err != nil {
 		return err
@@ -1263,6 +1363,10 @@ func validateConfig(cfg *Config) error {
 	}
 	if cfg.Worker.VisitorProfileCleanupEnabled && cfg.Worker.VisitorProfileCleanupIntervalSeconds <= 0 {
 		return fmt.Errorf("visitor profile cleanup interval must be positive when cleanup is enabled")
+	}
+	if cfg.Worker.VisitorProfileIPAddressRetentionDays < 0 ||
+		(cfg.Worker.VisitorProfileCleanupEnabled && cfg.Worker.VisitorProfileIPAddressRetentionDays <= 0) {
+		return fmt.Errorf("visitor profile IP address retention days must be positive when cleanup is enabled")
 	}
 	if cfg.Worker.BehaviorEventCleanupEnabled && cfg.Worker.BehaviorEventCleanupIntervalSeconds <= 0 {
 		return fmt.Errorf("behavior event cleanup interval must be positive when cleanup is enabled")
@@ -1444,10 +1548,6 @@ func validateConfig(cfg *Config) error {
 	if err := validateSocialOAuthConfig(cfg.SocialOAuth); err != nil {
 		return err
 	}
-	if strings.EqualFold(cfg.Server.Mode, "release") && len(cfg.Server.TrustedProxies) == 0 {
-		return fmt.Errorf("trusted proxies are required in release mode")
-	}
-
 	if cfg.Database.Host == "" {
 		return fmt.Errorf("database host is required")
 	}

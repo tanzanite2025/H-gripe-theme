@@ -203,6 +203,7 @@ worker:
   tracking_polling_enabled: false  # Tracking polling scheduler can run without Asynq worker
   tracking_polling_interval_seconds: 300
   tracking_polling_batch_limit: 20
+  visitor_profile_ip_address_retention_days: 30
   outbox_dispatch_enabled: false
   outbox_dispatch_interval_seconds: 10
   outbox_dispatch_batch_limit: 100
@@ -213,6 +214,16 @@ worker:
   payment_expiration_batch_limit: 100
   payment_risk_monitoring_enabled: false
   payment_risk_monitoring_interval_seconds: 3600
+  # Manual inspections and finding rechecks remain available when the job worker is enabled.
+  site_quality_auto_scan_enabled: false
+  site_quality_dispatch_interval_seconds: 30
+  site_quality_batch_limit: 1
+  site_quality_lease_timeout_seconds: 900
+  site_quality_sample_count: 3
+  site_quality_confirmations: 2
+  site_quality_clean_evaluations: 2
+  site_quality_provider_concurrency: 1
+  site_quality_provider_spacing_seconds: 5
   # Independent from worker.enabled. Reads ExchangeRate-API once at startup and then daily.
   # Base currency comes from backend entry currency; targets come from enabled market display currencies.
   exchange_rate_sync_enabled: true

@@ -1,14 +1,25 @@
 package middleware
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
+
+	"commerce-platform/internal/domain/audit"
+	"commerce-platform/internal/domain/security"
+	"commerce-platform/internal/repository"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
+	"github.com/glebarez/sqlite"
+	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 func TestCommercialCrawlerBlockerRejectsKnownCommercialCrawlers(t *testing.T) {
@@ -71,6 +82,108 @@ func TestCommercialCrawlerBlockerAllowsRegularVisitors(t *testing.T) {
 			t.Fatalf("user-agent %q status = %d, want %d", userAgent, recorder.Code, http.StatusOK)
 		}
 	}
+}
+
+func TestCommercialCrawlerBlockerPersistsShortLivedGlobalIPRule(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
+	require.NoError(t, err)
+	sqlDB, err := db.DB()
+	require.NoError(t, err)
+	sqlDB.SetMaxOpenConns(1)
+	t.Cleanup(func() {
+		_ = sqlDB.Close()
+	})
+	require.NoError(t, db.AutoMigrate(&security.IPBlockRule{}))
+
+	blockService := service.NewGlobalIPBlockService(repository.NewGlobalIPBlockRuleRepository(db))
+	auditRecorder := &recordingCommercialCrawlerAuditRecorder{}
+	blockService.ConfigureAuditRecorderFactory(func(_ *gorm.DB) service.IPBlockAuditRecorder {
+		return auditRecorder
+	})
+
+	router := gin.New()
+	require.NoError(t, router.SetTrustedProxies(nil))
+	router.Use(GlobalIPBlocker(blockService))
+	router.Use(CommercialCrawlerBlocker(blockService))
+	router.GET("/products", func(c *gin.Context) {
+		c.Status(http.StatusOK)
+	})
+
+	firstRequest := httptest.NewRequest(http.MethodGet, "/products", nil)
+	firstRequest.RemoteAddr = "203.0.113.41:1234"
+	firstRequest.Header.Set("User-Agent", "AhrefsBot/7.0")
+	firstResponse := httptest.NewRecorder()
+	router.ServeHTTP(firstResponse, firstRequest)
+
+	require.Equal(t, http.StatusForbidden, firstResponse.Code)
+	require.Equal(t, "commercial-crawler", firstResponse.Header().Get("X-Access-Block"))
+	require.Len(t, auditRecorder.logs, 1)
+
+	var rule security.IPBlockRule
+	require.NoError(t, db.Where("source = ? AND cidr = ?", security.IPBlockRuleSourceCommercialBot, "203.0.113.41/32").First(&rule).Error)
+	require.Equal(t, commercialCrawlerAutoBlockSourceReference("Ahrefs"), rule.SourceReference)
+	require.True(t, rule.Enabled)
+	require.NotNil(t, rule.ExpiresAt)
+	require.True(t, rule.ExpiresAt.After(time.Now().UTC()))
+
+	secondRequest := httptest.NewRequest(http.MethodGet, "/products", nil)
+	secondRequest.RemoteAddr = "203.0.113.41:1234"
+	secondRequest.Header.Set("User-Agent", "Mozilla/5.0")
+	secondResponse := httptest.NewRecorder()
+	router.ServeHTTP(secondResponse, secondRequest)
+
+	require.Equal(t, http.StatusForbidden, secondResponse.Code)
+	require.Contains(t, secondResponse.Body.String(), "ip_blocked")
+	require.Len(t, auditRecorder.logs, 1)
+
+	blocked, match, err := blockService.IsBlocked(context.Background(), "203.0.113.41", time.Now().UTC())
+	require.NoError(t, err)
+	require.True(t, blocked)
+	require.NotNil(t, match)
+	require.Equal(t, rule.ID, match.ID)
+}
+
+func TestCommercialCrawlerBlockerDoesNotPersistPrivateClientIP(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
+	require.NoError(t, err)
+	sqlDB, err := db.DB()
+	require.NoError(t, err)
+	sqlDB.SetMaxOpenConns(1)
+	t.Cleanup(func() {
+		_ = sqlDB.Close()
+	})
+	require.NoError(t, db.AutoMigrate(&security.IPBlockRule{}))
+
+	blockService := service.NewGlobalIPBlockService(repository.NewGlobalIPBlockRuleRepository(db))
+	auditRecorder := &recordingCommercialCrawlerAuditRecorder{}
+	blockService.ConfigureAuditRecorderFactory(func(_ *gorm.DB) service.IPBlockAuditRecorder {
+		return auditRecorder
+	})
+
+	router := gin.New()
+	require.NoError(t, router.SetTrustedProxies(nil))
+	router.Use(CommercialCrawlerBlocker(blockService))
+	router.GET("/products", func(c *gin.Context) {
+		c.Status(http.StatusOK)
+	})
+
+	request := httptest.NewRequest(http.MethodGet, "/products", nil)
+	request.RemoteAddr = "10.0.0.5:1234"
+	request.Header.Set("User-Agent", "SemrushBot/7.0")
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, request)
+
+	require.Equal(t, http.StatusForbidden, response.Code)
+	require.Empty(t, auditRecorder.logs)
+	var count int64
+	require.NoError(t, db.Model(&security.IPBlockRule{}).Count(&count).Error)
+	require.Zero(t, count)
 }
 
 func TestCommercialCrawlerProtectionSnapshotIncludesBuiltInIntelligenceSeeds(t *testing.T) {
@@ -179,4 +292,15 @@ func findRepoRoot(t *testing.T) string {
 		}
 		dir = parent
 	}
+}
+
+type recordingCommercialCrawlerAuditRecorder struct {
+	logs []audit.AuditLog
+}
+
+func (r *recordingCommercialCrawlerAuditRecorder) CreateAuditLog(log *audit.AuditLog) error {
+	if log != nil {
+		r.logs = append(r.logs, *log)
+	}
+	return nil
 }

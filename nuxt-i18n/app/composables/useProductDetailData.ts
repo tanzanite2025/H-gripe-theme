@@ -4,82 +4,45 @@ import {
   useAsyncData,
   useI18n,
   useRoute,
-  useRuntimeConfig,
 } from '#imports'
-import {
-  normalizeShopProduct,
-  useShopProducts,
-} from '~/composables/useShopProducts'
+import { useProductDetailLookup, type ProductDetailSnapshot } from '~/composables/useProductDetailLookup'
 import { useStorefrontContext } from '~/composables/useStorefrontContext'
-import {
-  createStorefrontMediaContext,
-  normalizeStorefrontProductMedia,
-} from '~/utils/storefrontMedia'
 import {
   resolveProductMetaDescription,
   resolveProductMetaTitle,
 } from '~/utils/seo/product'
 import {
-  extractProductDetailPayload,
   stripProductHtml,
 } from '~/utils/productDetail'
 import type {
-  GoProduct,
   ProductMedia,
   ProductMediaImage,
 } from '~/types/productDetail'
 
 export async function useProductDetailData() {
   const route = useRoute()
-  const config = useRuntimeConfig()
   const { locale } = useI18n()
-  const { displayCurrency, countryCode, baseCurrency } = useStorefrontContext()
-  const mediaContext = createStorefrontMediaContext(config)
-  const { baseURL } = useShopProducts()
+  const { displayCurrency, countryCode } = useStorefrontContext()
+  const { fetchProductDetailSnapshot } = useProductDetailLookup()
 
   const slug = computed(() => String(route.params.slug || ''))
   // Keep the SSR identity tied to the route. Market context resolves asynchronously
   // and belongs in the refresh watchers, not in a key that can change mid-render.
-  const { data: product, pending } = await useAsyncData<GoProduct>(
+  const { data: detailSnapshot, pending } = await useAsyncData<ProductDetailSnapshot>(
     () => [
       'go-product',
       locale.value || 'default',
       slug.value,
     ].map((part) => encodeURIComponent(String(part))).join(':'),
     async () => {
-      if (!slug.value) {
+      const snapshot = await fetchProductDetailSnapshot(slug.value)
+      if (!snapshot?.rawProduct) {
         throw createError({
           statusCode: 404,
           statusMessage: 'Product not found',
         })
       }
-
-      const response = await $fetch<any>(
-        `${baseURL}/products/${encodeURIComponent(slug.value)}`,
-        {
-          headers: {
-            accept: 'application/json',
-            ...(locale.value ? { 'Accept-Language': String(locale.value) } : {}),
-            ...(displayCurrency.value ? { 'X-Display-Currency': displayCurrency.value } : {}),
-            ...(countryCode.value && countryCode.value !== 'ZZ'
-              ? { 'X-Market-Country': countryCode.value }
-              : {}),
-          },
-          params: {
-            locale: locale.value || undefined,
-            currency: displayCurrency.value || undefined,
-            country: countryCode.value !== 'ZZ' ? countryCode.value : undefined,
-          },
-        },
-      )
-      const data = extractProductDetailPayload(response, slug.value)
-      if (!data) {
-        throw createError({
-          statusCode: 404,
-          statusMessage: 'Product not found',
-        })
-      }
-      return normalizeStorefrontProductMedia(data as GoProduct, mediaContext)
+      return snapshot
     },
     {
       server: true,
@@ -91,6 +54,9 @@ export async function useProductDetailData() {
       ],
     },
   )
+
+  const product = computed(() => detailSnapshot.value?.rawProduct || null)
+  const shopProduct = computed(() => detailSnapshot.value?.shopProduct || null)
 
   if (!pending.value && !product.value) {
     throw createError({
@@ -130,12 +96,6 @@ export async function useProductDetailData() {
       url: item.url,
       alt: item.alt || item.title,
     }))
-  })
-
-  const shopProduct = computed(() => {
-    return product.value
-      ? normalizeShopProduct(product.value, baseCurrency.value, mediaContext)
-      : null
   })
 
   return {

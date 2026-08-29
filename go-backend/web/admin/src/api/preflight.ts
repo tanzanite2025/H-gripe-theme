@@ -173,6 +173,12 @@ export interface SiteQualityJobStats {
   latest_dead_letter_at?: string
 }
 
+export interface SiteQualityJobCleanupResult {
+  deleted: number
+  failed: number
+  dead_letter: number
+}
+
 export interface SiteQualityProviderSlotStats {
   provider: string
   configured: number
@@ -188,6 +194,7 @@ export interface SiteQualityOperationalSummary {
   status: 'healthy' | 'degraded' | 'not_configured' | 'unavailable'
   warnings?: string[]
   worker_enabled: boolean
+  auto_scan_enabled: boolean
   worker_interval_seconds: number
   runner_configured: boolean
   default_url?: string
@@ -629,6 +636,17 @@ const readSiteQualityJobPayload = (response: unknown, endpoint: string): SiteQua
   return payload as SiteQualityJob
 }
 
+const readSiteQualityJobCleanupPayload = (
+  response: unknown,
+  endpoint: string,
+): SiteQualityJobCleanupResult => {
+  const payload = readObjectPayload(response, endpoint)
+  requireApiNumberField(payload, 'deleted', endpoint)
+  requireApiNumberField(payload, 'failed', endpoint)
+  requireApiNumberField(payload, 'dead_letter', endpoint)
+  return payload as SiteQualityJobCleanupResult
+}
+
 const readFontPreflightPayload = (response: unknown, endpoint: string): FontPreflightReport => {
   const payload = readObjectPayload(response, endpoint)
   requireApiNumberField(payload, 'schema_version', endpoint)
@@ -743,6 +761,11 @@ export const preflightApi = {
       job_id: payload.job_id as number,
       job: readSiteQualityJobPayload({ data: payload.job }, `${endpoint}.job`),
     }
+  },
+
+  async cleanupSiteQualityJobs(): Promise<SiteQualityJobCleanupResult> {
+    const endpoint = '/api/admin/preflight/site-quality/jobs/cleanup'
+    return readSiteQualityJobCleanupPayload(await axios.post(endpoint), endpoint)
   },
 
   async getSiteQualityJob(id: number): Promise<SiteQualityJob> {

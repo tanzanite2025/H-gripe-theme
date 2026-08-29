@@ -13,11 +13,14 @@ low-frequency full reconciliation remains as repair coverage. Reconciliation
 never performs provider work. Planning only creates jobs for already-enabled,
 already-due targets, and dispatch only claims jobs that already exist.
 
-Local development defaults the storefront target to `9199`, matching
-`start-dev.ps1`. When an already-running storefront uses another port, set both
-`STOREFRONT_BASE_URL` for the API and `SITE_QUALITY_ALLOWED_ORIGIN` for the
-runner to the same `http://host.docker.internal:<port>` origin before enabling
-`WORKER_SITE_QUALITY_ENABLED`.
+Local development defaults the public storefront target to `9199`, matching
+`start-dev.ps1`. Keep `STOREFRONT_BASE_URL` on the public/canonical origin
+(`http://localhost:<port>` for the host-run DEV API). When the runner is in
+Docker and the storefront is on the host, set both
+`SITE_QUALITY_TARGET_ORIGIN` for the API and `SITE_QUALITY_ALLOWED_ORIGIN` for
+the runner to `http://host.docker.internal:<port>`. The API validates the
+public URL first, then maps only the origin sent to the runner while retaining
+the path and query.
 
 ## Purpose
 

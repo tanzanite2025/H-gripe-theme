@@ -20,6 +20,7 @@ type SiteQualityWorker struct {
 	engine           *service.SiteQualityEngineService
 	interval         time.Duration
 	batch            int
+	autoScan         bool
 	lastReconciledAt time.Time
 	cancel           context.CancelFunc
 	done             chan struct{}
@@ -43,6 +44,7 @@ func NewSiteQualityWorker(
 		engine:   engine,
 		interval: time.Duration(interval) * time.Second,
 		batch:    batch,
+		autoScan: cfg.SiteQualityAutoScanEnabled,
 		done:     make(chan struct{}),
 	}
 }
@@ -63,6 +65,7 @@ func (s *SiteQualityWorker) Start(ctx context.Context) {
 			logger.Info("site quality job worker started",
 				zap.Duration("interval", s.interval),
 				zap.Int("batch_limit", s.batch),
+				zap.Bool("auto_scan_enabled", s.autoScan),
 			)
 			s.runOnce(runCtx)
 			ticker := time.NewTicker(s.interval)
@@ -112,14 +115,16 @@ func (s *SiteQualityWorker) runOnce(ctx context.Context) {
 			)
 		}
 	}
-	plan, err := s.engine.PlanDueWork(now, s.batch*10)
-	if err != nil {
-		logger.Error("site quality due-job planning failed", zap.Error(err))
-	} else if plan.EnqueuedJobs > 0 || plan.SkippedJobs > 0 {
-		logger.Info("site quality due-job planning completed",
-			zap.Int("enqueued", plan.EnqueuedJobs),
-			zap.Int("skipped", plan.SkippedJobs),
-		)
+	if s.autoScan {
+		plan, err := s.engine.PlanDueWork(now, s.batch*10)
+		if err != nil {
+			logger.Error("site quality due-job planning failed", zap.Error(err))
+		} else if plan.EnqueuedJobs > 0 || plan.SkippedJobs > 0 {
+			logger.Info("site quality due-job planning completed",
+				zap.Int("enqueued", plan.EnqueuedJobs),
+				zap.Int("skipped", plan.SkippedJobs),
+			)
+		}
 	}
 	result, err := s.engine.ProcessReady(ctx, now, s.batch)
 	if err != nil {

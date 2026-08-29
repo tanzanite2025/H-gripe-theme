@@ -1293,7 +1293,13 @@ const getBreadcrumbPageSubNavigationTab = (
 const getPageSubNavigationBreadcrumbSubNavigation = (
   targetPath: string
 ): BreadcrumbSubNavigation | undefined => {
-  const match = getBreadcrumbPageSubNavigationTab(targetPath)
+  const normalizedTargetPath = normalizeBreadcrumbPath(targetPath)
+  const baseEntry = pageSubNavigationEntries.find(entry => (
+    normalizeBreadcrumbPath(entry.path) === normalizedTargetPath
+  ))
+  const match = baseEntry
+    ? { entry: baseEntry }
+    : getBreadcrumbPageSubNavigationTab(normalizedTargetPath)
   if (!match) return undefined
 
   const currentPath = normalizeBreadcrumbPath(route.path || '/')

@@ -23,6 +23,7 @@ func (s *SiteQualityEngineService) Summary(now time.Time) (*SiteQualityOperation
 		GeneratedAt:                    now,
 		Status:                         "healthy",
 		WorkerEnabled:                  s.cfg.WorkerEnabled,
+		AutoScanEnabled:                s.cfg.AutoScanEnabled,
 		WorkerIntervalSeconds:          int(s.cfg.WorkerInterval.Seconds()),
 		ReleaseID:                      s.cfg.ReleaseID,
 		SampleCount:                    s.cfg.SampleCount,

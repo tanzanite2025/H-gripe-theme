@@ -37,6 +37,8 @@ type Dependencies struct {
 	CustomerServiceRealtimeRelay *service.CustomerServiceRealtimeRelay
 }
 
+const defaultDevStorefrontOrigin = "http://localhost:9199"
+
 type Repositories struct {
 	User                         *repository.UserRepository
 	Post                         *repository.PostRepository
@@ -96,6 +98,7 @@ type Repositories struct {
 	OpsVPSBinding                *repository.OpsVPSBindingRepository
 	OpsProjectBinding            *repository.OpsProjectBindingRepository
 	OpsNetworkRule               *repository.OpsNetworkRuleRepository
+	GlobalIPBlockRule            *repository.GlobalIPBlockRuleRepository
 	OpsDeploymentWorkflow        *repository.OpsDeploymentWorkflowRepository
 	GoogleMerchant               *repository.GoogleMerchantRepository
 	SocialOAuth                  *repository.SocialOAuthRepository
@@ -188,6 +191,7 @@ type Services struct {
 	SelectionConfigurationKey         *service.SelectionConfigurationKeyService
 	WheelsetFitQuestionnaire          *service.WheelsetFitQuestionnaireService
 	VisitorProfile                    *service.VisitorProfileService
+	GlobalIPBlock                     *service.GlobalIPBlockService
 	BehaviorEvents                    *service.BehaviorEventService
 	Recommendations                   *service.RecommendationService
 	VisitorRisk                       *service.VisitorRiskService
@@ -287,6 +291,7 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		OpsVPSBinding:                repository.NewOpsVPSBindingRepository(db),
 		OpsProjectBinding:            repository.NewOpsProjectBindingRepository(db),
 		OpsNetworkRule:               repository.NewOpsNetworkRuleRepository(db),
+		GlobalIPBlockRule:            repository.NewGlobalIPBlockRuleRepository(db),
 		OpsDeploymentWorkflow:        repository.NewOpsDeploymentWorkflowRepository(db),
 		GoogleMerchant:               repository.NewGoogleMerchantRepository(db),
 		SocialOAuth:                  repository.NewSocialOAuthRepository(db),
@@ -298,7 +303,7 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		Wishlist:                     repository.NewWishlistRepository(db),
 		Feedback:                     repository.NewFeedbackRepository(db),
 		SuggestionFeedback:           repository.NewSuggestionFeedbackRepository(db),
-		Spoke:                        repository.NewSpokeRepository(db),
+		Spoke:                        repository.NewSpokeRepository(db, fitmentHubSpecificationRepository),
 		QuickBuy:                     repository.NewQuickBuyRepository(db),
 		SelectionAssistant:           repository.NewSelectionAssistantRepository(db),
 		SelectionConfigurationKey:    repository.NewSelectionConfigurationKeyRepository(db),
@@ -383,6 +388,7 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		repos.FitmentFrameHubSpecification,
 	)
 	fitmentHubSpecificationService.ConfigureForkHubSpecificationRepository(repos.FitmentForkHubSpecification)
+	fitmentHubSpecificationService.ConfigureSpokeRepository(repos.Spoke)
 	frameFitmentEntryService := service.NewFrameFitmentEntryService(
 		repos.FrameFitmentEntry,
 		repos.FitmentHubSpecification,
@@ -459,18 +465,16 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		opsHostingerSyncService,
 		opsDeploymentHealthCheckService,
 	)
-	storefrontBaseURL := strings.TrimRight(strings.TrimSpace(os.Getenv("STOREFRONT_BASE_URL")), "/")
-	if storefrontBaseURL == "" {
-		storefrontBaseURL = strings.TrimRight(strings.TrimSpace(cfg.Server.BaseURL), "/")
-	}
-	storefrontInternalOrigin := strings.TrimRight(strings.TrimSpace(os.Getenv("STOREFRONT_INTERNAL_ORIGIN")), "/")
+	storefrontBaseURL, storefrontInternalOrigin := resolveStorefrontOrigins(cfg)
+	siteQualityTargetOrigin := resolveSiteQualityTargetOrigin(storefrontBaseURL)
 	lighthouseRunnerService := service.NewLighthouseRunnerService(
 		repos.SiteQualityRuns,
 		repos.SiteQualityFindings,
 		service.LighthouseRunnerConfig{
-			RunnerURL:         cfg.SiteQuality.RunnerURL,
-			RunnerToken:       cfg.SiteQuality.RunnerToken,
-			StorefrontBaseURL: storefrontBaseURL,
+			RunnerURL:           cfg.SiteQuality.RunnerURL,
+			RunnerToken:         cfg.SiteQuality.RunnerToken,
+			StorefrontBaseURL:   storefrontBaseURL,
+			StorefrontTargetURL: siteQualityTargetOrigin,
 		},
 	)
 	lighthouseRunnerService.ConfigureJobRepository(repos.SiteQualityJobs)
@@ -484,6 +488,7 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		service.SiteQualityEngineConfig{
 			BaseURL:                  storefrontBaseURL,
 			WorkerEnabled:            cfg.Worker.SiteQualityEnabled,
+			AutoScanEnabled:          cfg.Worker.SiteQualityAutoScanEnabled,
 			WorkerInterval:           time.Duration(cfg.Worker.SiteQualityDispatchIntervalSeconds) * time.Second,
 			SampleCount:              cfg.Worker.SiteQualitySampleCount,
 			RequiredConfirmations:    cfg.Worker.SiteQualityConfirmations,
@@ -572,6 +577,13 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		outboundHTTPResilience.retry,
 		outboundHTTPResilience.breaker,
 	)
+
+	globalIPBlockService := service.NewGlobalIPBlockService(repos.GlobalIPBlockRule)
+	globalIPBlockService.ConfigureAuditRepository(repos.Audit)
+	globalIPBlockService.ConfigureCacheInvalidation(redisCache.Client())
+	visitorProfileService := service.NewVisitorProfileService(repos.VisitorProfile)
+	visitorProfileService.ConfigureIPAddressRetentionDays(cfg.Worker.VisitorProfileIPAddressRetentionDays)
+	visitorProfileService.ConfigureGlobalIPBlockService(globalIPBlockService)
 
 	services := Services{
 		Auth:                              authService,
@@ -668,9 +680,8 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 			repos.WheelsetFitQuestionnaire,
 			repos.SelectionConfigurationKey,
 		),
-		VisitorProfile: service.NewVisitorProfileService(
-			repos.VisitorProfile,
-		),
+		VisitorProfile: visitorProfileService,
+		GlobalIPBlock:  globalIPBlockService,
 		BehaviorEvents: service.NewBehaviorEventService(
 			repos.RecommendationEvent,
 			cfg.BehaviorEvents,

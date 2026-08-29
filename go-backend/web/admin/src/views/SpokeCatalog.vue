@@ -102,19 +102,13 @@
       <TabsContent value="hubs">
         <AdminTablePanel :loading="loading">
           <template #header>
-            <div class="flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <h2 class="text-sm font-black uppercase tracking-tight">花鼓几何</h2>
-                <p class="text-[11px] font-bold text-muted-foreground">前/后几何可部分为空，完整四项才会参与自动计算。</p>
-              </div>
-              <Button size="sm" variant="outline" @click="addHubBrand">
-                <Plus class="size-3.5" />
-                品牌
-              </Button>
+            <div>
+              <h2 class="text-sm font-black uppercase tracking-tight">花鼓几何</h2>
+              <p class="text-[11px] font-bold text-muted-foreground">花鼓数据来自“花鼓规格”页面；当前页只读，新增、编辑和启停请在那里完成。</p>
             </div>
           </template>
 
-          <table class="w-full min-w-[1360px] text-xs">
+          <table class="w-full min-w-[1280px] text-xs">
             <thead class="border-b border-dashed border-border/70 text-[10px] uppercase tracking-widest text-muted-foreground">
               <tr>
                 <th class="px-3 py-2 text-left">Code</th>
@@ -127,50 +121,20 @@
                 <th class="px-3 py-2 text-left">R R flange</th>
                 <th class="px-3 py-2 text-left">R L PCD</th>
                 <th class="px-3 py-2 text-left">R R PCD</th>
-                <th class="w-28 px-3 py-2 text-right">Action</th>
               </tr>
             </thead>
             <tbody>
-              <template v-for="(brand, brandIndex) in catalog.hubs" :key="brand.id || brandIndex">
+              <template v-for="brand in catalog.hubs" :key="brand.id">
                 <tr class="border-b border-dashed border-border/60 bg-muted/20">
-                  <td class="px-3 py-2">
-                    <input v-model="brand.id" :class="inputClass" placeholder="dt_swiss">
-                  </td>
-                  <td class="px-3 py-2">
-                    <input v-model="brand.name" :class="inputClass" placeholder="DT Swiss">
-                  </td>
+                  <td class="px-3 py-2 font-mono font-bold">{{ brand.id }}</td>
+                  <td class="px-3 py-2 font-bold">{{ brand.name }}</td>
                   <td class="px-3 py-2 text-muted-foreground" colspan="8">{{ brand.items.length }} models</td>
-                  <td class="px-3 py-2">
-                    <div class="flex justify-end gap-1">
-                      <Button size="icon-xs" variant="ghost" @click="addHubModel(brand)">
-                        <Plus class="size-3" />
-                      </Button>
-                      <Button size="icon-xs" variant="destructive" @click="removeItem(catalog.hubs, brandIndex)">
-                        <Trash2 class="size-3" />
-                      </Button>
-                    </div>
-                  </td>
                 </tr>
-                <tr v-for="(model, modelIndex) in brand.items" :key="`${brand.id}-${model.id}-${modelIndex}`" class="border-b border-dashed border-border/40">
-                  <td class="px-3 py-2 pl-8">
-                    <input v-model="model.id" :class="inputClass" placeholder="350_road_db_cl">
-                  </td>
-                  <td class="px-3 py-2">
-                    <input v-model="model.name" :class="inputClass" placeholder="350 Road db CL">
-                  </td>
+                <tr v-for="model in brand.items" :key="`${brand.id}-${model.id}`" class="border-b border-dashed border-border/40">
+                  <td class="px-3 py-2 pl-8 font-mono font-bold">{{ model.id }}</td>
+                  <td class="px-3 py-2 font-bold">{{ model.name }}</td>
                   <td v-for="field in hubNumberFields" :key="field.key" class="px-3 py-2">
-                    <input
-                      :value="numberInputValue(geometryValue(model, field.side, field.prop))"
-                      :class="inputClass"
-                      inputmode="decimal"
-                      placeholder="-"
-                      @input="setGeometryValue(model, field.side, field.prop, nullableNumberFromEvent($event))"
-                    >
-                  </td>
-                  <td class="px-3 py-2 text-right">
-                    <Button size="icon-xs" variant="destructive" @click="removeItem(brand.items, modelIndex)">
-                      <Trash2 class="size-3" />
-                    </Button>
+                    <span class="font-mono font-bold">{{ formatHubMeasurement(hubGeometryValue(model, field.side, field.prop)) }}</span>
                   </td>
                 </tr>
               </template>
@@ -331,13 +295,13 @@
               <div>
                 <div class="text-xs font-black">标准预设模板</div>
                 <p class="mt-1 text-[11px] font-bold leading-relaxed text-muted-foreground">
-                  表头已锁定；轮圈、花鼓、轮位、辐条数、交叉数和辐条帽类型只能从系统字典下拉选择。
+                  表头已锁定；轮圈、轮位、辐条数、交叉数和辐条帽类型只能从系统字典下拉选择，花鼓只读取已启用的花鼓规格。
                 </p>
               </div>
               <div>
                 <div class="text-xs font-black">导入范围</div>
                 <p class="mt-1 text-[11px] font-bold leading-relaxed text-muted-foreground">
-                  只新增或更新装配预设，不覆盖轮圈、花鼓和计算器选项基础数据。
+                  只新增或更新装配预设，不覆盖轮圈、花鼓规格和计算器选项基础数据。
                 </p>
               </div>
               <div>
@@ -387,7 +351,6 @@ import spokeCatalogApi, {
   type SpokeBuildPreset,
   type SpokeCatalog,
   type SpokeCatalogOptions,
-  type SpokeHubGeometry,
   type SpokeHubModel,
   type SpokeRimModel,
 } from '@/api/spokeCatalog'
@@ -456,13 +419,6 @@ const statItems = computed(() => [
   { key: 'hub-models', label: 'Hub models', value: catalog.value.hubs.reduce((total, brand) => total + brand.items.length, 0), icon: Database, tone: 'amber' },
   { key: 'presets', label: 'Search builds', value: catalog.value.presets.length, icon: Search, tone: 'gray' },
 ])
-
-const emptyGeometry = (): SpokeHubGeometry => ({
-  leftFlange: null,
-  rightFlange: null,
-  leftFlangePcd: null,
-  rightFlangePcd: null,
-})
 
 const emptyActualLengths = (): SpokeBuildActualLengths => ({
   frontLeft: null,
@@ -644,26 +600,11 @@ const addRimModel = (brand: SpokeBrand<SpokeRimModel>) => {
   brand.items.push({ id: `rim_model_${brand.items.length + 1}`, name: 'New rim model', erd: null, weight: null })
 }
 
-const addHubBrand = () => {
-  catalog.value.hubs.push({ id: `hub_brand_${catalog.value.hubs.length + 1}`, name: 'New hub brand', items: [] })
-}
-
-const addHubModel = (brand: SpokeBrand<SpokeHubModel>) => {
-  brand.items.push({ id: `hub_model_${brand.items.length + 1}`, name: 'New hub model', front: emptyGeometry(), rear: emptyGeometry() })
-}
-
-const ensureGeometry = (model: SpokeHubModel, side: HubSide): SpokeHubGeometry => {
-  if (!model[side]) model[side] = emptyGeometry()
-  return model[side]!
-}
-
-const geometryValue = (model: SpokeHubModel, side: HubSide, prop: HubGeometryProp): number | null => (
-  ensureGeometry(model, side)[prop]
+const hubGeometryValue = (model: SpokeHubModel, side: HubSide, prop: HubGeometryProp): number | null | undefined => (
+  model[side]?.[prop]
 )
 
-const setGeometryValue = (model: SpokeHubModel, side: HubSide, prop: HubGeometryProp, value: number | null) => {
-  ensureGeometry(model, side)[prop] = value
-}
+const formatHubMeasurement = (value: number | null | undefined) => value == null ? '—' : `${value} mm`
 
 const addPreset = () => {
   presetDialogMode.value = 'create'

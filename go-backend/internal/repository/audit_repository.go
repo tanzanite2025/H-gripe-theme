@@ -15,8 +15,18 @@ func NewAuditRepository(db *gorm.DB) *AuditRepository {
 	return &AuditRepository{db: db}
 }
 
+func (r *AuditRepository) WithTx(tx *gorm.DB) *AuditRepository {
+	if tx == nil {
+		return r
+	}
+	return &AuditRepository{db: tx}
+}
+
 // CreateAuditLog 创建审计日志
 func (r *AuditRepository) CreateAuditLog(log *audit.AuditLog) error {
+	if r == nil || r.db == nil {
+		return gorm.ErrInvalidDB
+	}
 	return r.db.Create(log).Error
 }
 

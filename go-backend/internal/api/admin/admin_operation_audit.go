@@ -6,8 +6,10 @@ import (
 	"time"
 
 	"commerce-platform/internal/domain/audit"
+	appLogger "commerce-platform/internal/pkg/logger"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 const (
@@ -47,27 +49,54 @@ func adminAuditStartedAt() time.Time {
 	return time.Now().UTC()
 }
 
-func recordAdminAudit(recorder adminAuditRecorder, c *gin.Context, event adminAuditEvent) {
+func recordAdminAudit(recorder adminAuditRecorder, c *gin.Context, event adminAuditEvent) error {
 	if recorder == nil || c == nil {
-		return
+		return nil
 	}
+	log := newAdminAuditLog(c, event)
+	if err := recorder.CreateAuditLog(log); err != nil {
+		fields := []zap.Field{
+			zap.String("action", event.Action),
+			zap.String("resource", event.Resource),
+			zap.Uint("resource_id", event.ResourceID),
+			zap.String("path", log.Path),
+			zap.String("method", log.Method),
+			zap.Error(err),
+		}
+		if log.UserID > 0 {
+			fields = append(fields, zap.Uint("user_id", log.UserID))
+		}
+		appLogger.Error("admin audit log write failed", fields...)
+		return err
+	}
+	return nil
+}
+
+func newAdminAuditLog(c *gin.Context, event adminAuditEvent) *audit.AuditLog {
 	createdAt := time.Now().UTC()
 	startedAt := event.StartedAt
 	if startedAt.IsZero() {
 		startedAt = createdAt
 	}
-	username := strings.TrimSpace(c.GetString("username"))
-	if username == "" {
-		username = strings.TrimSpace(c.GetString("email"))
+	var userID uint
+	var username string
+	var ipAddress string
+	if c != nil {
+		userID = c.GetUint("user_id")
+		username = strings.TrimSpace(c.GetString("username"))
+		if username == "" {
+			username = strings.TrimSpace(c.GetString("email"))
+		}
+		ipAddress = c.ClientIP()
 	}
 
 	log := audit.AuditLog{
-		UserID:       c.GetUint("user_id"),
+		UserID:       userID,
 		Username:     username,
 		Action:       event.Action,
 		Resource:     event.Resource,
 		ResourceID:   event.ResourceID,
-		IPAddress:    c.ClientIP(),
+		IPAddress:    ipAddress,
 		Changes:      adminAuditJSON(event.Changes),
 		OldValue:     adminAuditJSON(event.OldValue),
 		NewValue:     adminAuditJSON(event.NewValue),
@@ -76,7 +105,7 @@ func recordAdminAudit(recorder adminAuditRecorder, c *gin.Context, event adminAu
 		Duration:     int(createdAt.Sub(startedAt).Milliseconds()),
 		CreatedAt:    createdAt,
 	}
-	if c.Request != nil {
+	if c != nil && c.Request != nil {
 		log.Method = c.Request.Method
 		log.UserAgent = c.Request.UserAgent()
 		if c.Request.URL != nil {
@@ -84,7 +113,7 @@ func recordAdminAudit(recorder adminAuditRecorder, c *gin.Context, event adminAu
 		}
 	}
 
-	_ = recorder.CreateAuditLog(&log)
+	return &log
 }
 
 func adminAuditJSON(value interface{}) string {

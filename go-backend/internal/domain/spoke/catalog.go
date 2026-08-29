@@ -66,16 +66,17 @@ type CatalogHubModel struct {
 	IsEnabled bool            `gorm:"not null;default:true;index"`
 	Brand     CatalogHubBrand `gorm:"foreignKey:BrandID"`
 
-	FrontLeftFlange        *float64 `gorm:"column:front_left_flange_mm"`
-	FrontRightFlange       *float64 `gorm:"column:front_right_flange_mm"`
-	FrontLeftFlangePCD     *float64 `gorm:"column:front_left_flange_pcd_mm"`
-	FrontRightFlangePCD    *float64 `gorm:"column:front_right_flange_pcd_mm"`
-	FrontSpokeHoleDiameter *float64 `gorm:"column:front_spoke_hole_diameter_mm"`
-	RearLeftFlange         *float64 `gorm:"column:rear_left_flange_mm"`
-	RearRightFlange        *float64 `gorm:"column:rear_right_flange_mm"`
-	RearLeftFlangePCD      *float64 `gorm:"column:rear_left_flange_pcd_mm"`
-	RearRightFlangePCD     *float64 `gorm:"column:rear_right_flange_pcd_mm"`
-	RearSpokeHoleDiameter  *float64 `gorm:"column:rear_spoke_hole_diameter_mm"`
+	FitmentHubSpecificationID *uint    `gorm:"column:fitment_hub_specification_id;index" json:"-"`
+	FrontLeftFlange           *float64 `gorm:"column:front_left_flange_mm"`
+	FrontRightFlange          *float64 `gorm:"column:front_right_flange_mm"`
+	FrontLeftFlangePCD        *float64 `gorm:"column:front_left_flange_pcd_mm"`
+	FrontRightFlangePCD       *float64 `gorm:"column:front_right_flange_pcd_mm"`
+	FrontSpokeHoleDiameter    *float64 `gorm:"column:front_spoke_hole_diameter_mm"`
+	RearLeftFlange            *float64 `gorm:"column:rear_left_flange_mm"`
+	RearRightFlange           *float64 `gorm:"column:rear_right_flange_mm"`
+	RearLeftFlangePCD         *float64 `gorm:"column:rear_left_flange_pcd_mm"`
+	RearRightFlangePCD        *float64 `gorm:"column:rear_right_flange_pcd_mm"`
+	RearSpokeHoleDiameter     *float64 `gorm:"column:rear_spoke_hole_diameter_mm"`
 
 	CreatedAt time.Time
 	UpdatedAt time.Time

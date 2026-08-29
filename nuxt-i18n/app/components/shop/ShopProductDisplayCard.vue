@@ -13,6 +13,7 @@ const props = withDefaults(defineProps<{
   density?: ShopProductDisplayCardDensity
   selectable?: boolean
   selected?: boolean
+  bodyClickAction?: 'none' | 'select' | 'details' | 'view'
   showDetailsAction?: boolean
   showRating?: boolean
   showShareAction?: boolean
@@ -22,6 +23,7 @@ const props = withDefaults(defineProps<{
   density: 'catalog',
   selectable: false,
   selected: false,
+  bodyClickAction: 'none',
   showDetailsAction: false,
   showRating: true,
   showShareAction: true,
@@ -36,16 +38,34 @@ const emit = defineEmits<{
   view: [product: ShopProduct]
 }>()
 
+const isBodyInteractive = computed(() => props.selectable || props.bodyClickAction !== 'none')
+
 const handleProductBodyClick = () => {
   if (props.selectable) {
+    emit('select', props.product)
+    return
+  }
+
+  if (props.bodyClickAction === 'details') {
+    emit('details', props.product)
+    return
+  }
+
+  if (props.bodyClickAction === 'view') {
+    emit('view', props.product)
+    return
+  }
+
+  if (props.bodyClickAction === 'select') {
     emit('select', props.product)
   }
 }
 
 const handleProductBodyKeydown = (event: KeyboardEvent) => {
-  if (!props.selectable || (event.key !== 'Enter' && event.key !== ' ')) return
+  if ((event.key !== 'Enter' && event.key !== ' ')) return
+  if (event.target !== event.currentTarget) return
   event.preventDefault()
-  emit('select', props.product)
+  handleProductBodyClick()
 }
 
 const handleDetailsClick = () => {
@@ -122,9 +142,12 @@ const productDetailUrl = computed(() => {
   >
     <div
       class="shop-product-display-card__body"
-      :class="{ 'shop-product-display-card__body--selectable': selectable }"
-      :role="selectable ? 'button' : undefined"
-      :tabindex="selectable ? 0 : undefined"
+      :class="{
+        'shop-product-display-card__body--selectable': selectable,
+        'shop-product-display-card__body--clickable': isBodyInteractive,
+      }"
+      :role="isBodyInteractive ? 'button' : undefined"
+      :tabindex="isBodyInteractive ? 0 : undefined"
       :aria-pressed="selectable ? selected : undefined"
       @click="handleProductBodyClick"
       @keydown="handleProductBodyKeydown"
@@ -227,7 +250,7 @@ const productDetailUrl = computed(() => {
         class="shop-product-display-card__wishlist-action"
         :title="$t('shopPage.actions.addToWishlist', 'Add to wishlist')"
         :aria-label="$t('shopPage.actions.addToWishlist', 'Add to wishlist')"
-        @click="handleWishlistClick"
+        @click.stop="handleWishlistClick"
       >
         <Icon name="lucide:heart" class="h-3.5 w-3.5" aria-hidden="true" />
       </button>
@@ -239,7 +262,7 @@ const productDetailUrl = computed(() => {
         class="shop-product-display-card__view-action"
         :aria-label="`${$t('products.detail.viewDetails', 'View product details')}: ${product.title}`"
         :title="`${$t('products.detail.viewDetails', 'View product details')}: ${product.title}`"
-        @click="handleViewClick"
+        @click.stop="handleViewClick"
       >
         <Icon name="lucide:eye" class="h-4 w-4" aria-hidden="true" />
       </NuxtLink>
@@ -342,12 +365,14 @@ const productDetailUrl = computed(() => {
   flex-direction: column;
 }
 
-.shop-product-display-card__body--selectable {
+.shop-product-display-card__body--selectable,
+.shop-product-display-card__body--clickable {
   cursor: pointer;
   outline: none;
 }
 
-.shop-product-display-card__body--selectable:focus-visible {
+.shop-product-display-card__body--selectable:focus-visible,
+.shop-product-display-card__body--clickable:focus-visible {
   box-shadow: inset 0 0 0 2px rgba(5, 150, 105, 0.82);
 }
 

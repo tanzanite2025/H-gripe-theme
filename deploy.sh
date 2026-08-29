@@ -104,6 +104,7 @@ for required_env_key in \
   STOREFRONT_BASE_URL \
   NUXT_PUBLIC_SITE_URL \
   CORS_ORIGINS \
+  TRUSTED_PROXIES \
   TURNSTILE_REQUIRED \
   TURNSTILE_SECRET_KEY \
   TURNSTILE_SITE_KEY \
@@ -136,6 +137,12 @@ for required_env_key in \
   STOREFRONT_HTML_CACHE_PURGE_DEBOUNCE_MS; do
   require_env_key "${required_env_key}"
 done
+
+trusted_proxies="$(env_value TRUSTED_PROXIES)"
+if [[ "${trusted_proxies}" != "172.30.0.10/32" ]]; then
+  echo "ERR: TRUSTED_PROXIES must be exactly 172.30.0.10/32 for the production api_ingress boundary." >&2
+  exit 1
+fi
 
 for required_secret in JWT_SECRET PAYMENT_CONFIG_MASTER_KEY OPS_CONNECTOR_MASTER_KEY TURNSTILE_SECRET_KEY REQUEST_SIGNING_KEY NUXT_HTML_CACHE_PURGE_TOKEN; do
   secret_value="$(env_value "${required_secret}")"

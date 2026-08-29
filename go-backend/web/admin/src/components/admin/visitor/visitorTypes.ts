@@ -14,6 +14,10 @@ export interface VisitorProfile {
   email?: string
   email_source?: string
   region_label?: string
+  ip_address?: string
+  ip_block?: VisitorIPBlockRule | null
+  ip_block_rules?: VisitorIPBlockRule[]
+  ip_block_match?: VisitorIPBlockRule | null
   locale?: string
   has_customer_service_visitor?: boolean
   has_cart_session?: boolean
@@ -33,6 +37,31 @@ export interface VisitorProfile {
   retention_until?: string | number | Date | null
   created_at?: string | number | Date | null
   updated_at?: string | number | Date | null
+}
+
+export interface VisitorIPBlockRule {
+  id: number | string
+  cidr?: string
+  source?: string
+  source_reference?: string
+  reason?: string
+  expires_at?: string | number | Date | null
+  enabled?: boolean
+  status?: string
+  created_by?: number | string | null
+  disabled_by?: number | string | null
+  disabled_at?: string | number | Date | null
+  created_at?: string | number | Date | null
+  updated_at?: string | number | Date | null
+}
+
+export interface VisitorIPBlockPayload {
+  reason: string
+  expires_at: string | null
+}
+
+export interface VisitorGlobalIPBlockPayload extends VisitorIPBlockPayload {
+  cidr: string
 }
 
 export interface VisitorRiskDecision {

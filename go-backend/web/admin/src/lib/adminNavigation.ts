@@ -7,11 +7,14 @@ import {
   Coins,
   FileSearch,
   FileText,
+  FileVideo,
   Fingerprint,
   Headset,
   Images,
   Link2,
   Globe2,
+  Image as ImageIcon,
+  ImageDown,
   LayoutDashboard,
   ListChecks,
   MessageSquareText,
@@ -54,6 +57,17 @@ type PermissionChecker = (permission: string) => boolean
 
 export const adminNavigationItems: AdminNavigationItem[] = [
   { id: 'dashboard', path: '/', routeName: 'Dashboard', code: 'DASHBOARD', label: '仪表板', icon: LayoutDashboard },
+  {
+    id: 'resource-conversion',
+    code: 'RESOURCE_CONVERSION',
+    label: '资源转换',
+    icon: ImageDown,
+    children: [
+      { id: 'image-to-webp', path: '/tools/image-to-webp', routeName: 'ImageToWebp', label: '图片转 WebP' },
+      { id: 'image-vectorizer', path: '/tools/image-vectorizer', routeName: 'ImageVectorizer', label: '图片转 SVG', icon: ImageIcon },
+      { id: 'mp4-to-webm', path: '/tools/mp4-to-webm', routeName: 'Mp4ToWebm', label: 'MP4 转 WebM', icon: FileVideo },
+    ],
+  },
   {
     id: 'catalog',
     code: 'CATALOG',

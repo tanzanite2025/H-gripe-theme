@@ -201,6 +201,95 @@ func TestLighthouseRunnerServiceCaptureNormalizesAndPersistsLeasedResult(t *test
 	require.Empty(t, findings)
 }
 
+func TestLighthouseRunnerServiceCaptureMapsPublicTargetToRunnerOrigin(t *testing.T) {
+	db := newLighthouseRunnerTestDB(t)
+	const (
+		publicOrigin = "http://localhost:9199"
+		runnerOrigin = "http://runner.internal:9199"
+	)
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		var payload struct {
+			URL string `json:"url"`
+		}
+		require.NoError(t, json.NewDecoder(request.Body).Decode(&payload))
+		require.Equal(t, runnerOrigin+"/products/wheel", payload.URL)
+		writer.Header().Set("Content-Type", "application/json")
+		_, _ = writer.Write([]byte(siteQualityRunnerTestResponseWithCleanHeadings(t, `{
+			"lighthouseResult": {
+				"finalUrl": "http://runner.internal:9199/products/wheel",
+				"categories": {"performance": {"score": 1}},
+				"audits": {
+					"first-contentful-paint": {
+						"id": "first-contentful-paint",
+						"score": 1,
+						"scoreDisplayMode": "metric",
+						"numericValue": 900
+					}
+				}
+			}
+		}`)))
+	}))
+	t.Cleanup(server.Close)
+
+	service := NewLighthouseRunnerService(
+		repository.NewSiteQualityRunRepository(db),
+		repository.NewSiteQualityFindingRepository(db),
+		LighthouseRunnerConfig{
+			RunnerURL:           server.URL,
+			RunnerToken:         testLighthouseRunnerToken,
+			StorefrontBaseURL:   publicOrigin,
+			StorefrontTargetURL: runnerOrigin,
+		},
+	)
+	service.ConfigureHTTPClient(server.Client(), server.URL)
+	job := createLeasedSiteQualityJob(
+		t,
+		db,
+		publicOrigin+"/products/wheel",
+		sitequalitydomain.SiteQualityStrategyMobile,
+		"runner-origin-mapping-job",
+	)
+	service.ConfigureJobRepository(repository.NewSiteQualityJobRepository(db))
+
+	result, err := service.Capture(context.Background(), LighthouseRunnerCaptureInput{
+		LighthouseRunnerRunInput: LighthouseRunnerRunInput{
+			URL:      publicOrigin + "/products/wheel",
+			Strategy: sitequalitydomain.SiteQualityStrategyMobile,
+		},
+		TargetID:        &job.TargetID,
+		JobID:           &job.ID,
+		LeaseWorkerID:   job.LockedBy,
+		LeaseGeneration: job.LeaseGeneration,
+		CanonicalURL:    publicOrigin + "/products/wheel",
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	require.Equal(t, runnerOrigin+"/products/wheel", result.TargetURL)
+	require.Equal(t, publicOrigin+"/products/wheel", result.CanonicalURL)
+	require.Equal(t, sitequalitydomain.SiteQualityRunStatusSuccess, result.Status)
+}
+
+func TestLighthouseRunnerTargetURLMappingPreservesEscapedPathAndQuery(t *testing.T) {
+	db := newLighthouseRunnerTestDB(t)
+	service := NewLighthouseRunnerService(
+		repository.NewSiteQualityRunRepository(db),
+		repository.NewSiteQualityFindingRepository(db),
+		LighthouseRunnerConfig{
+			RunnerToken:         testLighthouseRunnerToken,
+			StorefrontBaseURL:   "http://localhost:9199",
+			StorefrontTargetURL: "http://runner.internal:9199/",
+		},
+	)
+
+	targetURL, err := service.runnerTargetURLFor(
+		"http://localhost:9199/products/wheel%2Fsize?locale=zh-CN#overview",
+	)
+
+	require.NoError(t, err)
+	require.Equal(t, "http://runner.internal:9199/products/wheel%2Fsize?locale=zh-CN", targetURL)
+}
+
 func TestLighthouseRunnerCaptureAppliesTargetSourceTypeToSchemaChecks(t *testing.T) {
 	db := newLighthouseRunnerTestDB(t)
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {

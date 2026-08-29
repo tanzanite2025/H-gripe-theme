@@ -326,6 +326,7 @@ foreach ($port in $AppPorts) {
 }
 
 Write-Section 'Starting PostgreSQL / Redis / Site Quality runner'
+$env:SITE_QUALITY_ALLOWED_ORIGIN = "http://host.docker.internal:$($Ports.Storefront)"
 Push-Location $Root
 try {
   docker compose up -d postgres redis site-quality-runner | Out-Host
@@ -376,6 +377,7 @@ $backendCommand = @"
 `$env:REDIS_PORT='$($Ports.Redis)'
 `$env:STOREFRONT_BASE_URL='http://localhost:$($Ports.Storefront)'
 `$env:STOREFRONT_INTERNAL_ORIGIN='http://localhost:$($Ports.Storefront)'
+`$env:SITE_QUALITY_TARGET_ORIGIN='http://host.docker.internal:$($Ports.Storefront)'
 `$env:SITE_QUALITY_RUNNER_URL='http://localhost:$($Ports.SiteQualityRunner)'
 `$env:SITE_QUALITY_RUNNER_TOKEN='dev-site-quality-runner-token-0123456789'
 `$env:WORKER_SITE_QUALITY_ENABLED='true'

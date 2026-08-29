@@ -326,9 +326,12 @@ services:
       - uploads:/app/uploads
       - site_logo_uploads:/app/site-logo-uploads
     networks:
-      - db
-      - cache
-      - app
+      db: {}
+      cache: {}
+      app: {}
+      api_ingress:
+        aliases:
+          - api-ingress
     read_only: true
     tmpfs:
       - /tmp
@@ -494,6 +497,8 @@ services:
       - ${OPS_EDGE_CONFIG_DIR:?OPS_EDGE_CONFIG_DIR is required}:/etc/nginx/generated-edge:ro
     networks:
       app: {}
+      api_ingress:
+        ipv4_address: 172.30.0.10
       edge:
         aliases:
           - theme-web
@@ -523,6 +528,11 @@ networks:
   cache:
     internal: true
   app: {}
+  api_ingress:
+    internal: true
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24
   edge:
     external: true
     name: shared-edge

@@ -21,6 +21,10 @@ type hubSpecificationRequest struct {
 	Position      fitmentcatalogdomain.HubPosition `json:"position"`
 	AxleType      fitmentcatalogdomain.HubAxleType `json:"axle_type"`
 	AxleSpacingMM int                              `json:"axle_spacing_mm"`
+	WRMM          *float64                         `json:"wr_mm"`
+	WLMM          *float64                         `json:"wl_mm"`
+	PCDRMM        *float64                         `json:"pcdr_mm"`
+	PCDLMM        *float64                         `json:"pcdl_mm"`
 	Notes         string                           `json:"notes"`
 	IsEnabled     bool                             `json:"is_enabled"`
 	SortOrder     int                              `json:"sort_order"`
@@ -152,6 +156,10 @@ func toFitmentHubSpecificationInput(request hubSpecificationRequest) service.Fit
 		Position:      request.Position,
 		AxleType:      request.AxleType,
 		AxleSpacingMM: request.AxleSpacingMM,
+		WRMM:          request.WRMM,
+		WLMM:          request.WLMM,
+		PCDRMM:        request.PCDRMM,
+		PCDLMM:        request.PCDLMM,
 		Notes:         request.Notes,
 		IsEnabled:     request.IsEnabled,
 		SortOrder:     request.SortOrder,
@@ -165,7 +173,7 @@ func respondFitmentHubSpecificationError(c *gin.Context, err error) {
 	case errors.Is(err, service.ErrFitmentHubSpecificationDuplicate):
 		c.JSON(http.StatusConflict, gin.H{"error": "fitment hub specification already exists"})
 	case errors.Is(err, service.ErrFitmentHubSpecificationInUse):
-		c.JSON(http.StatusConflict, gin.H{"error": "fitment hub specification is in use; disable it instead"})
+		c.JSON(http.StatusConflict, gin.H{"error": "fitment hub specification is in use; remove references or disable it instead"})
 	case errors.Is(err, service.ErrFitmentHubSpecificationInvalid):
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	default:

@@ -56,6 +56,24 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '仪表板' }
       },
       {
+        path: 'tools/image-vectorizer',
+        name: 'ImageVectorizer',
+        component: () => import('@/views/ImageVectorizer.vue'),
+        meta: { title: '图片转 SVG', standaloneTool: true }
+      },
+      {
+        path: 'tools/image-to-webp',
+        name: 'ImageToWebp',
+        component: () => import('@/views/ImageToWebp.vue'),
+        meta: { title: '图片转 WebP', standaloneTool: true }
+      },
+      {
+        path: 'tools/mp4-to-webm',
+        name: 'Mp4ToWebm',
+        component: () => import('@/views/Mp4ToWebm.vue'),
+        meta: { title: 'MP4 转 WebM', standaloneTool: true }
+      },
+      {
         path: 'catalog/products',
         name: 'CatalogProducts',
         component: () => import('@/views/Products.vue'),

@@ -152,6 +152,7 @@ PY
 db_network_name="$(resolve_network_name db)"
 cache_network_name="$(resolve_network_name cache)"
 app_network_name="$(resolve_network_name app)"
+api_ingress_network_name="$(resolve_network_name api_ingress)"
 edge_network_name="$(resolve_network_name edge)"
 
 "${PYTHON_CMD[@]}" - "${REPORT_DIR}/compose-config.json" <<'PY'
@@ -172,10 +173,10 @@ expected_service_networks = {
     "migrate": {"db"},
     "media-derivatives-backfill": {"db"},
     "edge-config": {"db"},
-    "api": {"db", "cache", "app"},
+    "api": {"db", "cache", "app", "api_ingress"},
     "storefront": {"app", "cache"},
     "admin": {"app"},
-    "web": {"app", "edge"},
+    "web": {"app", "api_ingress", "edge"},
 }
 
 for service_name, expected_networks in expected_service_networks.items():
@@ -255,12 +256,55 @@ generated_edge_mounts = [
 if not generated_edge_mounts or any(volume.get("read_only") is not True for volume in generated_edge_mounts):
     errors.append("web must mount generated Nginx files read-only")
 
-for network_name in ("db", "cache"):
+def service_network_endpoint(service, network_name):
+    service_networks = service.get("networks") or {}
+    if not isinstance(service_networks, dict):
+        return {}
+    endpoint = service_networks.get(network_name)
+    return endpoint if isinstance(endpoint, dict) else {}
+
+
+def environment_value(service, key):
+    environment = service.get("environment") or {}
+    if isinstance(environment, dict):
+        return environment.get(key)
+    prefix = f"{key}="
+    for item in environment:
+        if isinstance(item, str) and item.startswith(prefix):
+            return item[len(prefix):]
+    return None
+
+
+api = services.get("api") or {}
+web_ingress = service_network_endpoint(web, "api_ingress")
+if web_ingress.get("ipv4_address") != "172.30.0.10":
+    errors.append("web api_ingress address must be pinned to 172.30.0.10")
+
+api_ingress_endpoint = service_network_endpoint(api, "api_ingress")
+if "api-ingress" not in (api_ingress_endpoint.get("aliases") or []):
+    errors.append("api must publish the api-ingress alias on api_ingress")
+
+for service_name in ("api", "edge-config"):
+    if environment_value(services.get(service_name) or {}, "TRUSTED_PROXIES") != "172.30.0.10/32":
+        errors.append(f"{service_name} TRUSTED_PROXIES must be exactly 172.30.0.10/32")
+
+for network_name in ("db", "cache", "api_ingress"):
     network = networks.get(network_name) or {}
     if not network.get("name"):
         errors.append(f"{network_name} network must have a resolved name")
-    if network.get("internal") is not True:
+    if network_name != "api_ingress" and network.get("internal") is not True:
         errors.append(f"{network_name} network must be internal")
+
+api_ingress_network = networks.get("api_ingress") or {}
+if api_ingress_network.get("internal") is not True:
+    errors.append("api_ingress network must be internal")
+api_ingress_subnets = {
+    config.get("subnet")
+    for config in ((api_ingress_network.get("ipam") or {}).get("config") or [])
+    if isinstance(config, dict) and config.get("subnet")
+}
+if "172.30.0.0/24" not in api_ingress_subnets:
+    errors.append("api_ingress network must use subnet 172.30.0.0/24")
 
 edge = networks.get("edge") or {}
 if not edge.get("name"):
@@ -278,6 +322,14 @@ edge_members = [
 if edge_members != ["web"]:
     errors.append(f"only web may join edge network, got {edge_members}")
 
+api_ingress_members = [
+    name
+    for name, service in services.items()
+    if "api_ingress" in ((service.get("networks") or {}).keys() if isinstance(service.get("networks") or {}, dict) else service.get("networks") or [])
+]
+if set(api_ingress_members) != {"api", "web"}:
+    errors.append(f"only api and web may join api_ingress network, got {api_ingress_members}")
+
 if errors:
     for error in errors:
         print(f"FAIL: {error}", file=sys.stderr)
@@ -286,11 +338,13 @@ if errors:
 print("OK: production Compose network boundary is statically valid")
 print("OK: no business service publishes host ports in Compose config")
 print("OK: db/cache are internal and only web joins the external edge network")
+print("OK: api_ingress is an internal api-only ingress with a pinned web proxy address")
 print(
     "OK: resolved Docker networks: "
     f"db={networks['db']['name']} "
     f"cache={networks['cache']['name']} "
     f"app={networks['app']['name']} "
+    f"api_ingress={networks['api_ingress']['name']} "
     f"edge={networks['edge']['name']}"
 )
 PY
@@ -303,7 +357,7 @@ fi
 log "collecting runtime Compose and Docker network evidence"
 "${compose[@]}" ps --format json > "${REPORT_DIR}/compose-ps.json"
 
-for network in "${db_network_name}" "${cache_network_name}" "${app_network_name}" "${edge_network_name}"; do
+for network in "${db_network_name}" "${cache_network_name}" "${app_network_name}" "${api_ingress_network_name}" "${edge_network_name}"; do
   docker network inspect "${network}" > "${REPORT_DIR}/network-${network}.json"
 done
 
@@ -372,6 +426,7 @@ run_diagnostic() {
 
 run_diagnostic "api network reaches PostgreSQL" "${db_network_name}" "db" 5432 true
 run_diagnostic "api network reaches Redis" "${cache_network_name}" "redis" 6379 true
+run_diagnostic "api_ingress network reaches Go API through api-ingress alias" "${api_ingress_network_name}" "api-ingress" 9000 true
 run_diagnostic "app network cannot reach PostgreSQL from storefront side" "${app_network_name}" "db" 5432 false
 
 log "runtime connectivity checks complete; evidence written to ${REPORT_DIR}"

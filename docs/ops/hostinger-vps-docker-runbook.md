@@ -26,7 +26,8 @@ Cloudflare
 commerce-platform project
   -> web -> storefront
          -> admin
-         -> api -> PostgreSQL
+         -> api (dedicated api_ingress path)
+                -> PostgreSQL
                 -> Redis
                 -> uploads volume
 ```
@@ -71,11 +72,12 @@ The production project must keep these boundaries:
 3. Volumes: `commerce-platform-postgres-data`, `commerce-platform-redis-data`, and `commerce-platform-uploads`.
 4. Data networks: project-owned internal `db` and `cache` networks.
 5. Application network: project-owned `app` network for service-to-service traffic and required outbound integrations.
-6. Shared network: external `shared-edge`, joined only by `web`.
-7. Edge alias: `theme-web`.
-8. No `container_name` and no host `ports` in the business stack.
-9. No ERP environment variables, volumes, image tags, or database credentials.
-10. `TRUSTED_PROXIES` contains only private Docker CIDRs. The shared Caddy gateway remains responsible for strict Cloudflare proxy trust.
+6. API ingress network: project-owned internal `api_ingress`, joined only by `api` and `web`.
+7. Shared network: external `shared-edge`, joined only by `web`.
+8. Edge alias: `theme-web`.
+9. No `container_name` and no host `ports` in the business stack.
+10. No ERP environment variables, volumes, image tags, or database credentials.
+11. `web` is pinned to `172.30.0.10` on `api_ingress`; `TRUSTED_PROXIES` is exactly `172.30.0.10/32`. The shared Caddy gateway remains responsible for strict Cloudflare proxy trust.
 
 The Compose file now defaults to the `commerce-platform` project and volume names. Existing
 VPS resources named `commerce-platform-*` are not renamed automatically. During a
@@ -89,6 +91,7 @@ Database and cache reachability is intentional:
 - `db` is internal and contains only `db`, `api`, and the one-shot `migrate` and `edge-config` services. `storefront`, `admin`, and `web` cannot resolve or connect to PostgreSQL through Docker networking.
 - `cache` is internal and contains `redis`, `api`, and `storefront` because the SSR HTML cache is Redis-backed. Redis has a password and is never published to the host.
 - `app` is not marked `internal` because the API and storefront need outbound SMTP, Turnstile, payment, and registry-related traffic. No service in the business stack publishes a host port.
+- `api_ingress` is internal and contains only `api` and `web`. Nginx resolves API upstream traffic through the `api-ingress` alias, and the Go API trusts only the pinned `web` address for forwarded client metadata. Storefront SSR traffic still reaches `api:9000` over `app` and is not treated as a trusted proxy.
 - `edge` is the only public gateway path. Only `web` joins it; the API, database, Redis, storefront, and admin are not directly reachable from Cloudflare or the VPS interface.
 
 ## Publish Images
@@ -135,7 +138,9 @@ Hostinger Docker Manager cannot derive the Git commit tag itself. When using the
 
 Before deployment, confirm the external Docker network `shared-edge` exists.
 
-Keep `TRUSTED_PROXIES` at the private Docker ranges from the example unless the Docker network design is intentionally changed. Do not add `0.0.0.0/0` or `::/0`.
+Keep `TRUSTED_PROXIES=172.30.0.10/32`. The production Compose file pins the
+`web` container to that address on `api_ingress`; do not add RFC1918 supernets,
+`0.0.0.0/0`, or `::/0`.
 
 Expected services:
 

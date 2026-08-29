@@ -200,6 +200,182 @@ func TestSiteQualityJobClaimConsumesScheduledManualAndRecheckJobs(t *testing.T) 
 	require.Equal(t, sitequalitydomain.SiteQualityJobKindScheduled, claimed[2].Kind)
 }
 
+func TestSiteQualityInteractiveJobClaimSkipsScheduledJobs(t *testing.T) {
+	db := newSiteQualityRepositoryTestDB(t)
+	targetRepo := NewSiteQualityTargetRepository(db)
+	jobRepo := NewSiteQualityJobRepository(db)
+	now := time.Now().UTC()
+	target, err := targetRepo.Upsert(sitequalitydomain.SiteQualityTargetInput{
+		CanonicalURL:            "https://example.com/interactive-only",
+		SamplingTier:            sitequalitydomain.SiteQualityTargetTierStandard,
+		SamplingIntervalSeconds: 604800,
+		Enabled:                 true,
+	}, now)
+	require.NoError(t, err)
+
+	var scheduledID uint
+	for _, job := range []sitequalitydomain.SiteQualityJob{
+		{
+			TargetID:              target.ID,
+			Strategy:              sitequalitydomain.SiteQualityStrategyMobile,
+			Kind:                  sitequalitydomain.SiteQualityJobKindScheduled,
+			Status:                sitequalitydomain.SiteQualityJobStatusQueued,
+			IdempotencyKey:        "interactive-scheduled",
+			SampleCount:           3,
+			RequiredConfirmations: 2,
+			MaxAttempts:           4,
+			AvailableAt:           now,
+		},
+		{
+			TargetID:              target.ID,
+			Strategy:              sitequalitydomain.SiteQualityStrategyDesktop,
+			Kind:                  sitequalitydomain.SiteQualityJobKindManual,
+			Status:                sitequalitydomain.SiteQualityJobStatusQueued,
+			IdempotencyKey:        "interactive-manual",
+			SampleCount:           3,
+			RequiredConfirmations: 2,
+			MaxAttempts:           4,
+			AvailableAt:           now,
+		},
+		{
+			TargetID:              target.ID,
+			Strategy:              sitequalitydomain.SiteQualityStrategyMobile,
+			Kind:                  sitequalitydomain.SiteQualityJobKindRecheck,
+			Status:                sitequalitydomain.SiteQualityJobStatusQueued,
+			IdempotencyKey:        "interactive-recheck",
+			SampleCount:           3,
+			RequiredConfirmations: 2,
+			MaxAttempts:           4,
+			AvailableAt:           now,
+		},
+	} {
+		require.NoError(t, db.Create(&job).Error)
+		if job.Kind == sitequalitydomain.SiteQualityJobKindScheduled {
+			scheduledID = job.ID
+		}
+	}
+
+	claimed, err := jobRepo.ClaimReadyInteractive(now, "worker-interactive", 10, time.Minute)
+	require.NoError(t, err)
+	require.Len(t, claimed, 2)
+	require.Equal(t, sitequalitydomain.SiteQualityJobKindRecheck, claimed[0].Kind)
+	require.Equal(t, sitequalitydomain.SiteQualityJobKindManual, claimed[1].Kind)
+
+	scheduled, err := jobRepo.FindByID(scheduledID)
+	require.NoError(t, err)
+	require.Equal(t, sitequalitydomain.SiteQualityJobStatusQueued, scheduled.Status)
+}
+
+func TestSiteQualityJobCleanupDeletesOnlyTerminalJobs(t *testing.T) {
+	db := newSiteQualityRepositoryTestDB(t)
+	targetRepo := NewSiteQualityTargetRepository(db)
+	jobRepo := NewSiteQualityJobRepository(db)
+	now := time.Now().UTC()
+	target, err := targetRepo.Upsert(sitequalitydomain.SiteQualityTargetInput{
+		CanonicalURL:            "https://example.com/cleanup",
+		SamplingTier:            sitequalitydomain.SiteQualityTargetTierStandard,
+		SamplingIntervalSeconds: 604800,
+		Enabled:                 true,
+	}, now)
+	require.NoError(t, err)
+
+	jobs := []sitequalitydomain.SiteQualityJob{
+		{
+			TargetID:              target.ID,
+			Strategy:              sitequalitydomain.SiteQualityStrategyMobile,
+			Kind:                  sitequalitydomain.SiteQualityJobKindManual,
+			Status:                sitequalitydomain.SiteQualityJobStatusFailed,
+			IdempotencyKey:        "cleanup-failed",
+			SampleCount:           3,
+			RequiredConfirmations: 2,
+			MaxAttempts:           4,
+			AvailableAt:           now,
+		},
+		{
+			TargetID:              target.ID,
+			Strategy:              sitequalitydomain.SiteQualityStrategyDesktop,
+			Kind:                  sitequalitydomain.SiteQualityJobKindManual,
+			Status:                sitequalitydomain.SiteQualityJobStatusDeadLetter,
+			IdempotencyKey:        "cleanup-dead-letter-a",
+			SampleCount:           3,
+			RequiredConfirmations: 2,
+			MaxAttempts:           4,
+			AvailableAt:           now,
+		},
+		{
+			TargetID:              target.ID,
+			Strategy:              sitequalitydomain.SiteQualityStrategyMobile,
+			Kind:                  sitequalitydomain.SiteQualityJobKindRecheck,
+			Status:                sitequalitydomain.SiteQualityJobStatusDeadLetter,
+			IdempotencyKey:        "cleanup-dead-letter-b",
+			SampleCount:           3,
+			RequiredConfirmations: 2,
+			MaxAttempts:           4,
+			AvailableAt:           now,
+		},
+		{
+			TargetID:              target.ID,
+			Strategy:              sitequalitydomain.SiteQualityStrategyMobile,
+			Kind:                  sitequalitydomain.SiteQualityJobKindManual,
+			Status:                sitequalitydomain.SiteQualityJobStatusQueued,
+			IdempotencyKey:        "cleanup-queued",
+			SampleCount:           3,
+			RequiredConfirmations: 2,
+			MaxAttempts:           4,
+			AvailableAt:           now,
+		},
+		{
+			TargetID:              target.ID,
+			Strategy:              sitequalitydomain.SiteQualityStrategyDesktop,
+			Kind:                  sitequalitydomain.SiteQualityJobKindManual,
+			Status:                sitequalitydomain.SiteQualityJobStatusProcessing,
+			IdempotencyKey:        "cleanup-processing",
+			SampleCount:           3,
+			RequiredConfirmations: 2,
+			MaxAttempts:           4,
+			AvailableAt:           now,
+		},
+		{
+			TargetID:              target.ID,
+			Strategy:              sitequalitydomain.SiteQualityStrategyMobile,
+			Kind:                  sitequalitydomain.SiteQualityJobKindManual,
+			Status:                sitequalitydomain.SiteQualityJobStatusSucceeded,
+			IdempotencyKey:        "cleanup-succeeded",
+			SampleCount:           3,
+			RequiredConfirmations: 2,
+			MaxAttempts:           4,
+			AvailableAt:           now,
+		},
+	}
+	for index := range jobs {
+		require.NoError(t, db.Create(&jobs[index]).Error)
+	}
+
+	result, err := jobRepo.DeleteTerminalJobs()
+	require.NoError(t, err)
+	require.Equal(t, int64(3), result.Deleted)
+	require.Equal(t, int64(1), result.Failed)
+	require.Equal(t, int64(2), result.DeadLetter)
+
+	var remaining []sitequalitydomain.SiteQualityJob
+	require.NoError(t, db.Order("id ASC").Find(&remaining).Error)
+	require.Len(t, remaining, 3)
+	require.Equal(t,
+		[]string{
+			sitequalitydomain.SiteQualityJobStatusQueued,
+			sitequalitydomain.SiteQualityJobStatusProcessing,
+			sitequalitydomain.SiteQualityJobStatusSucceeded,
+		},
+		[]string{remaining[0].Status, remaining[1].Status, remaining[2].Status},
+	)
+
+	stats, err := jobRepo.Stats(now, time.Minute)
+	require.NoError(t, err)
+	require.Equal(t, int64(0), stats.Failed)
+	require.Equal(t, int64(0), stats.DeadLetter)
+	require.Equal(t, int64(3), stats.Total)
+}
+
 func TestSiteQualityJobClaimSkipsJobsForDisabledTargets(t *testing.T) {
 	db := newSiteQualityRepositoryTestDB(t)
 	targetRepo := NewSiteQualityTargetRepository(db)

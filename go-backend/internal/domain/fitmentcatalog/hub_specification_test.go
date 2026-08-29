@@ -68,3 +68,57 @@ func TestHubSpecificationValidateRejectsInvalidBaseFields(t *testing.T) {
 		})
 	}
 }
+
+func TestHubSpecificationValidateAcceptsCompleteSpokeGeometryAtPcdLowerBound(t *testing.T) {
+	specification := HubSpecification{
+		SpecCode:      "HUB-F-100",
+		DisplayName:   "Front hub",
+		Position:      HubPositionFront,
+		AxleType:      HubAxleTypeQuickRelease,
+		AxleSpacingMM: 100,
+		WRMM:          floatPointer(35),
+		WLMM:          floatPointer(22),
+		PCDRMM:        floatPointer(10),
+		PCDLMM:        floatPointer(10),
+	}
+
+	if err := specification.Validate(); err != nil {
+		t.Fatalf("Validate() error = %v", err)
+	}
+}
+
+func TestHubSpecificationValidateRejectsPartialSpokeGeometry(t *testing.T) {
+	specification := HubSpecification{
+		SpecCode:      "HUB-R-142",
+		DisplayName:   "Rear hub",
+		Position:      HubPositionRear,
+		AxleType:      HubAxleTypeThruAxle,
+		AxleSpacingMM: 142,
+		WRMM:          floatPointer(20),
+	}
+
+	if err := specification.Validate(); err == nil {
+		t.Fatal("Validate() error = nil, want partial spoke geometry to be rejected")
+	}
+}
+
+func TestHubSpecificationValidateRejectsCodesUnsafeForSpokeCatalog(t *testing.T) {
+	for _, code := range []string{"A", "HUB/142", "HUB 142", "HUB.142"} {
+		t.Run(code, func(t *testing.T) {
+			specification := HubSpecification{
+				SpecCode:      code,
+				DisplayName:   "Rear hub",
+				Position:      HubPositionRear,
+				AxleType:      HubAxleTypeThruAxle,
+				AxleSpacingMM: 142,
+			}
+			if err := specification.Validate(); err == nil {
+				t.Fatalf("Validate() error = nil, want unsafe spoke catalog code %q to be rejected", code)
+			}
+		})
+	}
+}
+
+func floatPointer(value float64) *float64 {
+	return &value
+}

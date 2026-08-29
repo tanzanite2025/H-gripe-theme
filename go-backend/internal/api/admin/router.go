@@ -97,8 +97,11 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 	ticketHandler.ConfigureAllowedOrigins(cfg.CORS.AllowedOrigins)
 	autoReplyHandler := NewAutoReplyHandler(services.Ticket, services.FAQ)
 	visitorProfileHandler := NewVisitorProfileHandler(services.VisitorProfile)
+	visitorProfileHandler.ConfigureAuditService(services.Audit)
 	visitorRiskHandler := NewVisitorRiskHandler(services.VisitorRisk)
 	visitorRiskHandler.ConfigureAuditService(services.Audit)
+	globalIPBlockHandler := NewGlobalIPBlockHandler(services.GlobalIPBlock)
+	globalIPBlockHandler.ConfigureAuditService(services.Audit)
 	marketingHandler := NewMarketingHandler(marketingService, services.LoyaltyProgram)
 	settingsHandler := NewSettingsHandler(services.AdminSettings)
 	refundReturnPolicyHandler := NewRefundReturnPolicyHandler(services.RefundReturnPolicy)
@@ -770,6 +773,8 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 				customerServiceGroup.GET("/ws", ticketHandler.StreamCustomerServiceWebSocket)
 				customerServiceGroup.GET("/visitor-profiles", visitorProfileHandler.ListVisitorProfiles)
 				customerServiceGroup.GET("/visitor-profiles/stats", visitorProfileHandler.GetVisitorProfileStats)
+				customerServiceGroup.POST("/visitor-profiles/:id/ip-block", middleware.AdminOnly(), visitorProfileHandler.BlockVisitorProfileIP)
+				customerServiceGroup.DELETE("/visitor-profiles/:id/ip-block", middleware.AdminOnly(), visitorProfileHandler.UnblockVisitorProfileIP)
 				customerServiceGroup.POST("/visitor-profiles/cleanup", middleware.AdminOnly(), visitorProfileHandler.CleanupExpiredVisitorProfiles)
 				customerServiceGroup.GET("/visitor-risk-facts", visitorRiskHandler.ListVisitorRiskFacts)
 				customerServiceGroup.GET("/visitor-risk-facts/stats", visitorRiskHandler.GetVisitorRiskStats)
@@ -781,6 +786,15 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 				customerServiceGroup.POST("/conversations/:id/messages", middleware.RequirePermission(auth.PermTicketEdit), ticketHandler.CreateCustomerServiceConversationMessage)
 				customerServiceGroup.POST("/conversations/:id/messages/mark-read", ticketHandler.MarkCustomerServiceConversationMessagesRead)
 				customerServiceGroup.PATCH("/conversations/:id/transfer", middleware.RequirePermission(auth.PermTicketEdit), ticketHandler.TransferCustomerServiceConversation)
+			}
+
+			// 全局 IP/CIDR 封禁规则（访客画像或设置查看权限可查看，变更仅限管理员）
+			securityGroup := authenticated.Group("/security")
+			securityGroup.Use(middleware.RequireAnyPermission(auth.PermSettingsView, auth.PermTicketView))
+			{
+				securityGroup.GET("/ip-blocks", globalIPBlockHandler.List)
+				securityGroup.POST("/ip-blocks", middleware.AdminOnly(), globalIPBlockHandler.Create)
+				securityGroup.DELETE("/ip-blocks/:id", middleware.AdminOnly(), globalIPBlockHandler.Disable)
 			}
 
 			// 营销管理（需要营销管理权限）
@@ -1164,6 +1178,7 @@ func registerSiteQualityRoutes(group *gin.RouterGroup, handler *SiteQualityHandl
 	group.GET("", handler.ListSiteQualityRuns)
 	group.GET("/targets", handler.ListSiteQualityTargets)
 	group.POST("/jobs", middleware.RequirePermission(managePermission), handler.CreateSiteQualityJob)
+	group.POST("/jobs/cleanup", middleware.RequirePermission(managePermission), handler.CleanupSiteQualityJobs)
 	group.GET("/jobs/:id", handler.GetSiteQualityJob)
 	group.GET("/findings", handler.ListSiteQualityFindings)
 	group.GET("/findings/:id", handler.GetSiteQualityFinding)

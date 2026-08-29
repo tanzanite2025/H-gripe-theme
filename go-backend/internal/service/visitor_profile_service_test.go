@@ -1,9 +1,11 @@
 package service
 
 import (
+	"context"
 	"testing"
 	"time"
 
+	"commerce-platform/internal/domain/security"
 	"commerce-platform/internal/domain/visitor"
 	"commerce-platform/internal/repository"
 
@@ -71,6 +73,325 @@ func TestVisitorProfileTouchBindsCartAndCustomerServiceVisitor(t *testing.T) {
 	var count int64
 	require.NoError(t, db.Model(&visitor.Profile{}).Count(&count).Error)
 	assert.EqualValues(t, 1, count)
+}
+
+func TestVisitorProfileIPBlockUsesRetainedIPAndProfileScopedSource(t *testing.T) {
+	db, visitorProfileService, globalIPBlockService := newTestVisitorProfileIPBlockService(t)
+	profile := &visitor.Profile{
+		CustomerServiceVisitorHash: "visitor-with-ip",
+		IPAddress:                  "203.0.113.44",
+		IPHash:                     "retained-ip-hash",
+		ProfileStatus:              visitor.ProfileStatusActive,
+		LastSeenAt:                 time.Now().UTC(),
+	}
+	require.NoError(t, db.Create(profile).Error)
+
+	commercialRule, err := globalIPBlockService.Block(context.Background(), IPBlockRuleInput{
+		CIDR:            "203.0.113.44",
+		Source:          security.IPBlockRuleSourceCommercialBot,
+		SourceReference: "crawler-1",
+		Reason:          "commercial crawler detection",
+	})
+	require.NoError(t, err)
+
+	profileRule, err := visitorProfileService.BlockProfileIP(
+		context.Background(),
+		profile.ID,
+		IPBlockRuleInput{Reason: "manual visitor review"},
+		7,
+	)
+	require.NoError(t, err)
+	assert.Equal(t, "203.0.113.44/32", profileRule.CIDR)
+	assert.Equal(t, security.IPBlockRuleSourceVisitorProfile, profileRule.Source)
+	assert.Equal(t, "1", profileRule.SourceReference)
+	assert.Equal(t, uint(7), *profileRule.CreatedBy)
+
+	blocked, match, err := globalIPBlockService.IsBlocked(context.Background(), "203.0.113.44", time.Now())
+	require.NoError(t, err)
+	require.True(t, blocked)
+	require.NotNil(t, match)
+	assert.Equal(t, profileRule.ID, match.ID)
+
+	_, err = visitorProfileService.UnblockProfileIP(context.Background(), profile.ID, 8)
+	require.NoError(t, err)
+
+	blocked, match, err = globalIPBlockService.IsBlocked(context.Background(), "203.0.113.44", time.Now())
+	require.NoError(t, err)
+	require.True(t, blocked)
+	require.NotNil(t, match)
+	assert.Equal(t, commercialRule.ID, match.ID)
+}
+
+func TestVisitorProfileIPBlockRequiresRetainedIP(t *testing.T) {
+	db, visitorProfileService, _ := newTestVisitorProfileIPBlockService(t)
+	profile := &visitor.Profile{
+		CustomerServiceVisitorHash: "visitor-without-ip",
+		ProfileStatus:              visitor.ProfileStatusActive,
+		LastSeenAt:                 time.Now().UTC(),
+	}
+	require.NoError(t, db.Create(profile).Error)
+
+	_, err := visitorProfileService.BlockProfileIP(
+		context.Background(),
+		profile.ID,
+		IPBlockRuleInput{Reason: "manual visitor review"},
+		7,
+	)
+	require.ErrorIs(t, err, ErrVisitorProfileIPUnavailable)
+
+	var ruleCount int64
+	require.NoError(t, db.Model(&security.IPBlockRule{}).Count(&ruleCount).Error)
+	assert.Zero(t, ruleCount)
+}
+
+func TestVisitorProfileIPBlockKeepsHistoricalTargetsAndBatchUnblocksAfterIPDrift(t *testing.T) {
+	db, visitorProfileService, globalIPBlockService := newTestVisitorProfileIPBlockService(t)
+	profile := &visitor.Profile{
+		CustomerServiceVisitorHash: "visitor-ip-drift",
+		IPAddress:                  "198.51.100.10",
+		IPHash:                     "first-ip-hash",
+		ProfileStatus:              visitor.ProfileStatusActive,
+		LastSeenAt:                 time.Now().UTC(),
+	}
+	require.NoError(t, db.Create(profile).Error)
+
+	firstRule, err := visitorProfileService.BlockProfileIP(
+		context.Background(),
+		profile.ID,
+		IPBlockRuleInput{Reason: "first retained IP"},
+		7,
+	)
+	require.NoError(t, err)
+
+	profile.IPAddress = "198.51.100.11"
+	profile.IPHash = "second-ip-hash"
+	require.NoError(t, db.Save(profile).Error)
+
+	secondRule, err := visitorProfileService.BlockProfileIP(
+		context.Background(),
+		profile.ID,
+		IPBlockRuleInput{Reason: "second retained IP"},
+		7,
+	)
+	require.NoError(t, err)
+	require.NotEqual(t, firstRule.ID, secondRule.ID)
+
+	activeRules, err := visitorProfileService.ActiveProfileIPBlocks(context.Background(), profile.ID)
+	require.NoError(t, err)
+	require.Len(t, activeRules, 2)
+	assert.Equal(t, secondRule.ID, activeRules[0].ID)
+
+	profiles, total, err := visitorProfileService.ListProfiles(1, 20, VisitorProfileListInput{
+		Status: visitor.ProfileStatusActive,
+	})
+	require.NoError(t, err)
+	require.EqualValues(t, 1, total)
+	require.Len(t, profiles, 1)
+	assert.Equal(t, "198.51.100.xxx", profiles[0].IPAddress)
+	require.NotNil(t, profiles[0].IPBlock)
+	assert.Equal(t, secondRule.ID, profiles[0].IPBlock.ID)
+	require.Len(t, profiles[0].IPBlockRules, 2)
+	assert.Equal(t, secondRule.ID, profiles[0].IPBlockRules[0].ID)
+	require.NotNil(t, profiles[0].IPBlockMatch)
+	assert.Equal(t, secondRule.ID, profiles[0].IPBlockMatch.ID)
+
+	profile.IPAddress = "198.51.100.10"
+	require.NoError(t, db.Save(profile).Error)
+	profiles, _, err = visitorProfileService.ListProfiles(1, 20, VisitorProfileListInput{
+		Status: visitor.ProfileStatusActive,
+	})
+	require.NoError(t, err)
+	require.Len(t, profiles, 1)
+	require.NotNil(t, profiles[0].IPBlockMatch)
+	assert.Equal(t, firstRule.ID, profiles[0].IPBlockMatch.ID)
+
+	disabledRules, err := visitorProfileService.UnblockProfileIPs(context.Background(), profile.ID, 8)
+	require.NoError(t, err)
+	require.Len(t, disabledRules, 2)
+
+	for _, ip := range []string{"198.51.100.10", "198.51.100.11"} {
+		blocked, match, err := globalIPBlockService.IsBlocked(context.Background(), ip, time.Now())
+		require.NoError(t, err)
+		assert.False(t, blocked, ip)
+		assert.Nil(t, match, ip)
+	}
+}
+
+func TestVisitorProfileListMasksIPAddressButUsesRetainedAddressForMatch(t *testing.T) {
+	db, visitorProfileService, _ := newTestVisitorProfileIPBlockService(t)
+	profile := &visitor.Profile{
+		CustomerServiceVisitorHash: "visitor-masked-ip",
+		IPAddress:                  "203.0.113.44",
+		IPHash:                     "retained-ip-hash",
+		ProfileStatus:              visitor.ProfileStatusActive,
+		LastSeenAt:                 time.Now().UTC(),
+	}
+	require.NoError(t, db.Create(profile).Error)
+
+	rule, err := visitorProfileService.BlockProfileIP(
+		context.Background(),
+		profile.ID,
+		IPBlockRuleInput{Reason: "verify raw lookup remains internal"},
+		7,
+	)
+	require.NoError(t, err)
+
+	profiles, _, err := visitorProfileService.ListProfiles(1, 20, VisitorProfileListInput{
+		Status: visitor.ProfileStatusActive,
+	})
+	require.NoError(t, err)
+	require.Len(t, profiles, 1)
+	assert.Equal(t, "203.0.113.xxx", profiles[0].IPAddress)
+	assert.NotContains(t, profiles[0].IPAddress, "203.0.113.44")
+	require.NotNil(t, profiles[0].IPBlockMatch)
+	assert.Equal(t, rule.ID, profiles[0].IPBlockMatch.ID)
+}
+
+func TestVisitorProfileSearchDoesNotUseRawIPAddress(t *testing.T) {
+	db, visitorProfileService := newTestVisitorProfileService(t)
+	require.NoError(t, db.Create(&visitor.Profile{
+		CustomerServiceVisitorHash: "visitor-search-ip",
+		IPAddress:                  "203.0.113.55",
+		IPHash:                     "search-ip-hash",
+		ProfileStatus:              visitor.ProfileStatusActive,
+		LastSeenAt:                 time.Now().UTC(),
+	}).Error)
+
+	profiles, total, err := visitorProfileService.ListProfiles(1, 20, VisitorProfileListInput{
+		Search: "203.0.113.55",
+		Status: "all",
+	})
+	require.NoError(t, err)
+	assert.Zero(t, total)
+	assert.Empty(t, profiles)
+}
+
+func TestVisitorProfileIPAddressRetentionCleanupClearsAddressAndKeepsHash(t *testing.T) {
+	db, visitorProfileService := newTestVisitorProfileService(t)
+	visitorProfileService.ConfigureIPAddressRetentionDays(30)
+	now := time.Date(2026, 7, 29, 12, 0, 0, 0, time.UTC)
+
+	oldProfile := &visitor.Profile{
+		CustomerServiceVisitorHash: "old-ip-profile",
+		IPAddress:                  "198.51.100.24",
+		IPHash:                     "old-ip-hash",
+		ProfileStatus:              visitor.ProfileStatusActive,
+		LastSeenAt:                 now.Add(-31 * 24 * time.Hour),
+	}
+	freshProfile := &visitor.Profile{
+		CustomerServiceVisitorHash: "fresh-ip-profile",
+		IPAddress:                  "203.0.113.10",
+		IPHash:                     "fresh-ip-hash",
+		ProfileStatus:              visitor.ProfileStatusActive,
+		LastSeenAt:                 now.Add(-29 * 24 * time.Hour),
+	}
+	require.NoError(t, db.Create([]*visitor.Profile{oldProfile, freshProfile}).Error)
+
+	result, err := visitorProfileService.CleanupExpiredProfiles(now)
+	require.NoError(t, err)
+	assert.EqualValues(t, 1, result.ClearedIPAddresses)
+	assert.EqualValues(t, 1, result.TotalChanged)
+
+	var storedOld visitor.Profile
+	require.NoError(t, db.First(&storedOld, oldProfile.ID).Error)
+	assert.Empty(t, storedOld.IPAddress)
+	assert.Equal(t, "old-ip-hash", storedOld.IPHash)
+
+	var storedFresh visitor.Profile
+	require.NoError(t, db.First(&storedFresh, freshProfile.ID).Error)
+	assert.Equal(t, "203.0.113.10", storedFresh.IPAddress)
+	assert.Equal(t, "fresh-ip-hash", storedFresh.IPHash)
+}
+
+func TestMaskVisitorProfileIPAddress(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{name: "ipv4", input: "203.0.113.44", want: "203.0.113.xxx"},
+		{name: "ipv6", input: "2001:db8:1234:5678:90ab:cdef:1111:2222", want: "2001:db8:1234:5678:xxxx:xxxx:xxxx:xxxx"},
+		{name: "invalid", input: "not-an-ip", want: ""},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			assert.Equal(t, test.want, maskVisitorProfileIPAddress(test.input))
+		})
+	}
+}
+
+func TestVisitorProfileListRetainsProfileRuleWhenCurrentIPIsCleared(t *testing.T) {
+	db, visitorProfileService, _ := newTestVisitorProfileIPBlockService(t)
+	profile := &visitor.Profile{
+		CustomerServiceVisitorHash: "visitor-cleared-ip",
+		IPAddress:                  "203.0.113.77",
+		IPHash:                     "retained-ip-hash",
+		ProfileStatus:              visitor.ProfileStatusActive,
+		LastSeenAt:                 time.Now().UTC(),
+	}
+	require.NoError(t, db.Create(profile).Error)
+
+	rule, err := visitorProfileService.BlockProfileIP(
+		context.Background(),
+		profile.ID,
+		IPBlockRuleInput{Reason: "rule must remain addressable"},
+		7,
+	)
+	require.NoError(t, err)
+
+	profile.IPAddress = ""
+	require.NoError(t, db.Save(profile).Error)
+
+	profiles, _, err := visitorProfileService.ListProfiles(1, 20, VisitorProfileListInput{
+		Status: visitor.ProfileStatusActive,
+	})
+	require.NoError(t, err)
+	require.Len(t, profiles, 1)
+	assert.Empty(t, profiles[0].IPAddress)
+	require.NotNil(t, profiles[0].IPBlock)
+	assert.Equal(t, rule.ID, profiles[0].IPBlock.ID)
+	assert.Nil(t, profiles[0].IPBlockMatch)
+
+	_, err = visitorProfileService.UnblockProfileIP(context.Background(), profile.ID, 8)
+	require.NoError(t, err)
+}
+
+func TestVisitorProfileListSeparatesProfileRuleFromActualSourceMatch(t *testing.T) {
+	db, visitorProfileService, globalIPBlockService := newTestVisitorProfileIPBlockService(t)
+	profile := &visitor.Profile{
+		CustomerServiceVisitorHash: "visitor-multiple-sources",
+		IPAddress:                  "192.0.2.44",
+		IPHash:                     "retained-ip-hash",
+		ProfileStatus:              visitor.ProfileStatusActive,
+		LastSeenAt:                 time.Now().UTC(),
+	}
+	require.NoError(t, db.Create(profile).Error)
+
+	profileRule, err := visitorProfileService.BlockProfileIP(
+		context.Background(),
+		profile.ID,
+		IPBlockRuleInput{Reason: "profile source"},
+		7,
+	)
+	require.NoError(t, err)
+	commercialRule, err := globalIPBlockService.Block(context.Background(), IPBlockRuleInput{
+		CIDR:            "192.0.2.44",
+		Source:          security.IPBlockRuleSourceCommercialBot,
+		SourceReference: "crawler-after-profile",
+		Reason:          "commercial source",
+	})
+	require.NoError(t, err)
+
+	profiles, _, err := visitorProfileService.ListProfiles(1, 20, VisitorProfileListInput{
+		Status: visitor.ProfileStatusActive,
+	})
+	require.NoError(t, err)
+	require.Len(t, profiles, 1)
+	require.NotNil(t, profiles[0].IPBlock)
+	require.NotNil(t, profiles[0].IPBlockMatch)
+	assert.Equal(t, profileRule.ID, profiles[0].IPBlock.ID)
+	assert.Equal(t, commercialRule.ID, profiles[0].IPBlockMatch.ID)
 }
 
 func TestVisitorProfilePassiveSeenDoesNotCreateAndDoesNotIncreaseQuality(t *testing.T) {
@@ -274,6 +595,29 @@ func newTestVisitorProfileService(t *testing.T) (*gorm.DB, *VisitorProfileServic
 	require.NoError(t, db.AutoMigrate(&visitor.Profile{}))
 
 	return db, NewVisitorProfileService(repository.NewVisitorProfileRepository(db))
+}
+
+func newTestVisitorProfileIPBlockService(t *testing.T) (*gorm.DB, *VisitorProfileService, *GlobalIPBlockService) {
+	t.Helper()
+
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
+	require.NoError(t, err)
+
+	sqlDB, err := db.DB()
+	require.NoError(t, err)
+	sqlDB.SetMaxOpenConns(1)
+	t.Cleanup(func() {
+		_ = sqlDB.Close()
+	})
+
+	require.NoError(t, db.AutoMigrate(&visitor.Profile{}, &security.IPBlockRule{}))
+
+	globalIPBlockService := NewGlobalIPBlockService(repository.NewGlobalIPBlockRuleRepository(db))
+	visitorProfileService := NewVisitorProfileService(repository.NewVisitorProfileRepository(db))
+	visitorProfileService.ConfigureGlobalIPBlockService(globalIPBlockService)
+	return db, visitorProfileService, globalIPBlockService
 }
 
 func assertTableCount(t *testing.T, db *gorm.DB, model any, expected int64) {

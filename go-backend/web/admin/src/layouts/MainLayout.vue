@@ -118,7 +118,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch, watchEffect } from 'vue'
+import { computed, defineAsyncComponent, onMounted, ref, watch, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   Menu,
@@ -128,7 +128,6 @@ import {
 import AdminSidebar from '@/components/admin/AdminSidebar.vue'
 import AdminLanguageSwitcher from '@/components/admin/AdminLanguageSwitcher.vue'
 import AdminTabBar from '@/components/admin/AdminTabBar.vue'
-import CustomerServiceFloatingInbox from '@/components/admin/customer-service/CustomerServiceFloatingInbox.vue'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -151,13 +150,18 @@ const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
 const { t } = useAdminI18n()
+const CustomerServiceFloatingInbox = defineAsyncComponent(
+  () => import('@/components/admin/customer-service/CustomerServiceFloatingInbox.vue'),
+)
 
 const isCollapse = ref(false)
 const mobileSidebarOpen = ref(false)
 const logoutDialogOpen = ref(false)
 const logoutLoading = ref(false)
 const user = computed(() => authStore.user)
-const canViewCustomerService = computed(() => authStore.hasPermission('ticket:view'))
+const canViewCustomerService = computed(() => (
+  !route.meta.standaloneTool && authStore.hasPermission('ticket:view')
+))
 const { brandInitial, brandName, panelLabel, loadAdminBranding, setAdminDocumentTitle } = useAdminBranding()
 
 const translatedNavigationItems = computed(() => translateAdminNavigation(adminNavigationItems, t))

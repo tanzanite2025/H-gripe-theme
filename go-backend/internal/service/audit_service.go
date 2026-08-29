@@ -6,6 +6,8 @@ import (
 	"errors"
 	"strings"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 var (
@@ -32,6 +34,13 @@ type AuditListInput struct {
 
 func NewAuditService(auditRepo *repository.AuditRepository) *AuditService {
 	return &AuditService{auditRepo: auditRepo}
+}
+
+func (s *AuditService) NewIPBlockAuditRecorderForTx(tx *gorm.DB) IPBlockAuditRecorder {
+	if s == nil || s.auditRepo == nil || tx == nil {
+		return nil
+	}
+	return s.auditRepo.WithTx(tx)
 }
 
 func (s *AuditService) CreateAuditLog(log *audit.AuditLog) error {

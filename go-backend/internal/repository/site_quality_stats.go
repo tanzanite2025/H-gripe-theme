@@ -27,6 +27,12 @@ type SiteQualityJobStats struct {
 	LatestDeadLetterAt *time.Time `json:"latest_dead_letter_at,omitempty"`
 }
 
+type SiteQualityJobCleanupResult struct {
+	Deleted    int64 `json:"deleted"`
+	Failed     int64 `json:"failed"`
+	DeadLetter int64 `json:"dead_letter"`
+}
+
 type SiteQualityProviderSlotStats struct {
 	Provider        string     `json:"provider"`
 	Configured      int        `json:"configured"`

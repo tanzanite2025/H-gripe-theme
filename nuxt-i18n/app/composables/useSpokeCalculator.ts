@@ -1,10 +1,11 @@
 import { ref } from 'vue'
-import type { SpokeCalcInput, SpokeCalcResult } from '~~/types/spoke'
+import type { SpokeCalcInput, SpokeCalcResult, SpokeTensionRatio } from '~~/types/spoke'
 
 // Define the response shape from Go backend
 interface SpokeCalcApiResponse {
   leftLengthMm: number
   rightLengthMm: number
+  tensionRatio?: SpokeTensionRatio | null
   debug: any
 }
 export const useSpokeCalculator = () => {
@@ -28,6 +29,7 @@ export const useSpokeCalculator = () => {
         result.value = {
           leftLengthMm: data.leftLengthMm,
           rightLengthMm: data.rightLengthMm,
+          tensionRatio: data.tensionRatio || null,
         }
       } else {
         result.value = null

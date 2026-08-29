@@ -90,7 +90,7 @@
             <AdminFormField label="说明图片 URL" description="也可以使用右侧按钮上传到媒体库。" class="min-w-0">
               <Input v-model="section.image.url" type="url" :disabled="!canEdit || saving" placeholder="https://..." />
             </AdminFormField>
-            <div class="flex h-full items-end">
+            <div class="min-w-0 self-end">
               <Button
                 v-if="canEdit"
                 type="button"

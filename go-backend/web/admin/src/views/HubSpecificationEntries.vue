@@ -12,12 +12,6 @@
       </template>
     </AdminPageHeader>
 
-    <AdminTabBar
-      :tabs="fitmentTabs"
-      :active-path="route.path"
-      :label="t('fitmentCatalog.tabsLabel')"
-    />
-
     <AdminFilterPanel>
       <form class="grid gap-3 md:grid-cols-[minmax(220px,1.35fr)_minmax(140px,0.55fr)_minmax(140px,0.55fr)_auto]" @submit.prevent="applyFilters">
         <label class="block space-y-1">
@@ -72,13 +66,17 @@
     </AdminFilterPanel>
 
     <AdminTablePanel :loading="loading">
-      <Table class="min-w-[1180px]">
+      <Table class="min-w-[1560px]">
         <TableHeader>
           <TableRow>
             <TableHead class="w-64">{{ t('fitmentCatalog.columns.hubNameCode') }}</TableHead>
             <TableHead class="w-28">{{ t('fitmentCatalog.columns.position') }}</TableHead>
             <TableHead class="w-36">{{ t('fitmentCatalog.columns.axleType') }}</TableHead>
             <TableHead class="w-28">{{ t('fitmentCatalog.columns.axleSpacing') }}</TableHead>
+            <TableHead class="w-24">{{ t('fitmentCatalog.columns.wr') }}</TableHead>
+            <TableHead class="w-24">{{ t('fitmentCatalog.columns.wl') }}</TableHead>
+            <TableHead class="w-24">{{ t('fitmentCatalog.columns.pcdr') }}</TableHead>
+            <TableHead class="w-24">{{ t('fitmentCatalog.columns.pcdl') }}</TableHead>
             <TableHead class="w-28">{{ t('fitmentCatalog.columns.fitmentReferences') }}</TableHead>
             <TableHead class="w-24">{{ t('fitmentCatalog.columns.status') }}</TableHead>
             <TableHead class="w-36">{{ t('fitmentCatalog.columns.updatedAt') }}</TableHead>
@@ -86,7 +84,7 @@
           </TableRow>
         </TableHeader>
         <TableBody>
-          <TableEmpty v-if="specifications.length === 0" :colspan="8">
+          <TableEmpty v-if="specifications.length === 0" :colspan="12">
             <div class="flex flex-col items-center text-muted-foreground">
               <Database class="mb-2 size-7 opacity-55" />
               <span class="text-xs">{{ filters.search ? t('fitmentCatalog.hub.emptySearch') : t('fitmentCatalog.hub.empty') }}</span>
@@ -111,6 +109,10 @@
             <TableCell class="font-mono text-xs font-bold">
               {{ specification.axle_spacing_mm }} mm
             </TableCell>
+            <TableCell class="font-mono text-xs font-bold">{{ formatMeasurement(specification.wr_mm) }}</TableCell>
+            <TableCell class="font-mono text-xs font-bold">{{ formatMeasurement(specification.wl_mm) }}</TableCell>
+            <TableCell class="font-mono text-xs font-bold">{{ formatMeasurement(specification.pcdr_mm) }}</TableCell>
+            <TableCell class="font-mono text-xs font-bold">{{ formatMeasurement(specification.pcdl_mm) }}</TableCell>
             <TableCell class="font-mono text-xs text-muted-foreground">
               {{ referenceCount(specification) }}
             </TableCell>
@@ -178,7 +180,7 @@
         <form class="space-y-5" @submit.prevent="save">
           <div class="grid gap-3 md:grid-cols-2">
             <AdminFormField :label="t('fitmentCatalog.fields.specCode')" required :error="formErrors.spec_code" :description="t('fitmentCatalog.hub.specCodeDescription')">
-              <Input v-model="form.spec_code" :disabled="saving" :placeholder="t('fitmentCatalog.placeholders.specCode')" />
+              <Input v-model="form.spec_code" :disabled="saving" maxlength="80" :placeholder="t('fitmentCatalog.placeholders.specCode')" />
             </AdminFormField>
             <AdminFormField :label="t('fitmentCatalog.fields.displayName')" required :error="formErrors.display_name">
               <Input v-model="form.display_name" :disabled="saving" :placeholder="t('fitmentCatalog.placeholders.displayName')" />
@@ -209,6 +211,27 @@
             <AdminFormField :label="t('fitmentCatalog.fields.axleSpacing')" required :error="formErrors.axle_spacing_mm">
               <Input v-model="form.axle_spacing_mm" :disabled="saving" type="number" min="1" step="1" :placeholder="t('fitmentCatalog.placeholders.axleSpacing')" />
             </AdminFormField>
+          </div>
+
+          <div class="space-y-3 rounded-lg border bg-muted/20 p-3">
+            <div>
+              <p class="text-xs font-black">{{ t('fitmentCatalog.hub.spokeGeometryTitle') }}</p>
+              <p class="mt-1 text-[10px] text-muted-foreground">{{ t('fitmentCatalog.hub.spokeGeometryDescription') }}</p>
+            </div>
+            <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <AdminFormField :label="t('fitmentCatalog.fields.wr')" :error="formErrors.wr_mm">
+                <Input v-model="form.wr_mm" :disabled="saving" type="number" min="0.1" max="100" step="0.1" placeholder="20.3" />
+              </AdminFormField>
+              <AdminFormField :label="t('fitmentCatalog.fields.wl')" :error="formErrors.wl_mm">
+                <Input v-model="form.wl_mm" :disabled="saving" type="number" min="0.1" max="100" step="0.1" placeholder="26.2" />
+              </AdminFormField>
+              <AdminFormField :label="t('fitmentCatalog.fields.pcdr')" :error="formErrors.pcdr_mm">
+                <Input v-model="form.pcdr_mm" :disabled="saving" type="number" min="10" max="150" step="0.1" placeholder="46" />
+              </AdminFormField>
+              <AdminFormField :label="t('fitmentCatalog.fields.pcdl')" :error="formErrors.pcdl_mm">
+                <Input v-model="form.pcdl_mm" :disabled="saving" type="number" min="10" max="150" step="0.1" placeholder="46" />
+              </AdminFormField>
+            </div>
           </div>
 
           <div class="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
@@ -243,7 +266,6 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
-import { useRoute } from 'vue-router'
 import { toast } from 'vue-sonner'
 import {
   Database,
@@ -259,13 +281,11 @@ import {
 import { type HubSpecification, type HubSpecificationAxleType, type HubSpecificationPayload, type HubSpecificationPosition } from '@/api/fitmentCatalog'
 import { fitmentHubSpecificationsApi } from '@/api/fitmentCatalog/hubSpecifications'
 import { useAdminI18n } from '@/i18n'
-import { buildFitmentCatalogTabs } from '@/lib/fitmentCatalogTabs'
 import AdminFilterPanel from '@/components/admin/AdminFilterPanel.vue'
 import AdminFormField from '@/components/admin/AdminFormField.vue'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import AdminPagination from '@/components/admin/AdminPagination.vue'
 import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
-import AdminTabBar from '@/components/admin/AdminTabBar.vue'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import {
@@ -292,15 +312,17 @@ interface HubSpecificationForm {
   position: HubSpecificationPosition
   axle_type: HubSpecificationAxleType
   axle_spacing_mm: string | number
+  wr_mm: string | number | null
+  wl_mm: string | number | null
+  pcdr_mm: string | number | null
+  pcdl_mm: string | number | null
   notes: string
   is_enabled: boolean
   sort_order: string | number
 }
 
 const authStore = useAuthStore()
-const route = useRoute()
 const { t, locale } = useAdminI18n()
-const fitmentTabs = computed(() => buildFitmentCatalogTabs(t))
 const canCreate = computed(() => authStore.hasPermission('fitment_catalog:create'))
 const canEdit = computed(() => authStore.hasPermission('fitment_catalog:edit'))
 const canDelete = computed(() => authStore.hasPermission('fitment_catalog:delete'))
@@ -322,6 +344,7 @@ const pagination = reactive({
 })
 const form = reactive<HubSpecificationForm>(emptyForm())
 const formErrors = reactive<Record<string, string>>({})
+const spokeCatalogSpecCodePattern = /^[A-Z0-9][A-Z0-9_-]{1,79}$/
 
 function emptyForm(): HubSpecificationForm {
   return {
@@ -330,6 +353,10 @@ function emptyForm(): HubSpecificationForm {
     position: 'rear',
     axle_type: 'thru_axle',
     axle_spacing_mm: 142,
+    wr_mm: null,
+    wl_mm: null,
+    pcdr_mm: null,
+    pcdl_mm: null,
     notes: '',
     is_enabled: false,
     sort_order: 0,
@@ -349,6 +376,10 @@ const assignForm = (specification?: HubSpecification) => {
         position: specification.position,
         axle_type: specification.axle_type,
         axle_spacing_mm: specification.axle_spacing_mm,
+        wr_mm: specification.wr_mm,
+        wl_mm: specification.wl_mm,
+        pcdr_mm: specification.pcdr_mm,
+        pcdl_mm: specification.pcdl_mm,
         notes: specification.notes,
         is_enabled: specification.is_enabled,
         sort_order: specification.sort_order,
@@ -418,6 +449,10 @@ const toPayload = (): HubSpecificationPayload => ({
   position: form.position,
   axle_type: form.axle_type,
   axle_spacing_mm: Math.floor(Number(form.axle_spacing_mm) || 0),
+  wr_mm: nullableNumber(form.wr_mm),
+  wl_mm: nullableNumber(form.wl_mm),
+  pcdr_mm: nullableNumber(form.pcdr_mm),
+  pcdl_mm: nullableNumber(form.pcdl_mm),
   notes: form.notes.trim(),
   is_enabled: form.is_enabled,
   sort_order: Math.max(0, Math.floor(Number(form.sort_order) || 0)),
@@ -426,11 +461,33 @@ const toPayload = (): HubSpecificationPayload => ({
 const validateForm = (payload: HubSpecificationPayload): boolean => {
   clearFormErrors()
   if (!payload.spec_code) formErrors.spec_code = t('fitmentCatalog.hub.validation.specCode')
+  else if (!spokeCatalogSpecCodePattern.test(payload.spec_code)) formErrors.spec_code = t('fitmentCatalog.hub.validation.specCodeFormat')
   if (!payload.display_name) formErrors.display_name = t('fitmentCatalog.hub.validation.displayName')
   if (!payload.position) formErrors.position = t('fitmentCatalog.hub.validation.position')
   if (!payload.axle_type) formErrors.axle_type = t('fitmentCatalog.hub.validation.axleType')
   if (!Number.isInteger(payload.axle_spacing_mm) || payload.axle_spacing_mm <= 0) {
     formErrors.axle_spacing_mm = t('fitmentCatalog.hub.validation.axleSpacing')
+  }
+  const geometry = [payload.wr_mm, payload.wl_mm, payload.pcdr_mm, payload.pcdl_mm]
+  const geometryFilled = geometry.filter((value) => value !== null).length
+  if (geometryFilled > 0 && geometryFilled < geometry.length) {
+    const message = t('fitmentCatalog.hub.validation.spokeGeometryComplete')
+    if (payload.wr_mm === null) formErrors.wr_mm = message
+    if (payload.wl_mm === null) formErrors.wl_mm = message
+    if (payload.pcdr_mm === null) formErrors.pcdr_mm = message
+    if (payload.pcdl_mm === null) formErrors.pcdl_mm = message
+  }
+  if (payload.wr_mm !== null && (payload.wr_mm <= 0 || payload.wr_mm > 100)) {
+    formErrors.wr_mm = t('fitmentCatalog.hub.validation.wr')
+  }
+  if (payload.wl_mm !== null && (payload.wl_mm <= 0 || payload.wl_mm > 100)) {
+    formErrors.wl_mm = t('fitmentCatalog.hub.validation.wl')
+  }
+  if (payload.pcdr_mm !== null && (payload.pcdr_mm < 10 || payload.pcdr_mm > 150)) {
+    formErrors.pcdr_mm = t('fitmentCatalog.hub.validation.pcd')
+  }
+  if (payload.pcdl_mm !== null && (payload.pcdl_mm < 10 || payload.pcdl_mm > 150)) {
+    formErrors.pcdl_mm = t('fitmentCatalog.hub.validation.pcd')
   }
   return Object.keys(formErrors).length === 0
 }
@@ -499,6 +556,16 @@ const formatDate = (value?: string): string => {
   const date = new Date(value)
   return Number.isNaN(date.getTime()) ? '—' : date.toLocaleString(locale.value, { dateStyle: 'medium', timeStyle: 'short' })
 }
+
+const nullableNumber = (value: string | number | null): number | null => {
+  if (value === null || String(value).trim() === '') return null
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
+const formatMeasurement = (value: number | null): string => (
+  value === null ? '—' : `${value} mm`
+)
 
 onMounted(() => {
   void loadSpecifications()

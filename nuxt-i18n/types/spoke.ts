@@ -45,10 +45,21 @@ export interface SpokeCalcInput {
   wheelPosition: 'front' | 'rear'
   spokeCount: number
   crossing: number
+  rimOffsetMm?: number
+}
+
+export interface SpokeTensionRatio {
+  leftToRight: number
+  rightToLeft: number
+  lowerToHigher: number
+  lowerSide: 'left' | 'right' | 'balanced'
+  leftBracingAngleDeg: number
+  rightBracingAngleDeg: number
 }
 
 // Minimal response the UI needs from the API.
 export interface SpokeCalcResult {
   leftLengthMm: number
   rightLengthMm: number
+  tensionRatio: SpokeTensionRatio | null
 }

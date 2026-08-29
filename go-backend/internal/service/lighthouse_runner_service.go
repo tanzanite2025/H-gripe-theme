@@ -28,9 +28,10 @@ var (
 const siteQualityRunnerMaxResponseBytes = 16 << 20
 
 type LighthouseRunnerConfig struct {
-	RunnerURL         string
-	RunnerToken       string
-	StorefrontBaseURL string
+	RunnerURL           string
+	RunnerToken         string
+	StorefrontBaseURL   string
+	StorefrontTargetURL string
 }
 
 type LighthouseRunnerService struct {
@@ -41,6 +42,7 @@ type LighthouseRunnerService struct {
 	runnerURL        string
 	runnerToken      string
 	defaultTargetURL string
+	runnerTargetURL  string
 }
 
 type LighthouseRunnerRunInput struct {
@@ -185,6 +187,15 @@ func NewLighthouseRunnerService(
 	} else {
 		defaultTargetURL = strings.TrimRight(defaultTargetURL, "/")
 	}
+	runnerTargetURL := strings.TrimSpace(cfg.StorefrontTargetURL)
+	if runnerTargetURL == "" {
+		runnerTargetURL = defaultTargetURL
+	}
+	if normalized, err := canonicalizeAbsoluteSiteQualityURL(runnerTargetURL); err == nil {
+		runnerTargetURL = normalized
+	} else {
+		runnerTargetURL = strings.TrimRight(runnerTargetURL, "/")
+	}
 	return &LighthouseRunnerService{
 		runs:             runs,
 		findings:         findings,
@@ -192,6 +203,7 @@ func NewLighthouseRunnerService(
 		runnerURL:        strings.TrimRight(strings.TrimSpace(cfg.RunnerURL), "/"),
 		runnerToken:      strings.TrimSpace(cfg.RunnerToken),
 		defaultTargetURL: defaultTargetURL,
+		runnerTargetURL:  runnerTargetURL,
 	}
 }
 
@@ -242,10 +254,15 @@ func (s *LighthouseRunnerService) Capture(
 		return nil, ErrSiteQualityJobRequired
 	}
 
+	publicTargetURL := targetURL
+	targetURL, err = s.runnerTargetURLFor(publicTargetURL)
+	if err != nil {
+		return nil, err
+	}
 	rawResponse, result, requestErr := s.request(ctx, targetURL, strategy, input.ReleaseID)
 	canonicalURL := strings.TrimSpace(input.CanonicalURL)
 	if canonicalURL == "" {
-		canonicalURL = targetURL
+		canonicalURL = publicTargetURL
 	}
 	run := sitequalitydomain.SiteQualityRun{
 		TargetID:          input.TargetID,
@@ -576,9 +593,28 @@ func (s *LighthouseRunnerService) normalizeRunInput(input LighthouseRunnerRunInp
 	return targetURL, strategy, nil
 }
 
+func (s *LighthouseRunnerService) runnerTargetURLFor(publicTargetURL string) (string, error) {
+	if s == nil {
+		return "", errors.New("Lighthouse runner service is unavailable")
+	}
+	target, err := url.Parse(strings.TrimSpace(publicTargetURL))
+	if err != nil || target == nil || target.Scheme == "" || target.Host == "" {
+		return "", fmt.Errorf("%w: public target URL is invalid", ErrInvalidSiteQualityRun)
+	}
+	runnerOrigin, err := url.Parse(strings.TrimSpace(s.runnerTargetURL))
+	if err != nil || runnerOrigin == nil || runnerOrigin.Scheme == "" || runnerOrigin.Host == "" {
+		return "", errors.New("internal Lighthouse runner storefront target URL is invalid")
+	}
+	target.Scheme = runnerOrigin.Scheme
+	target.Host = runnerOrigin.Host
+	target.User = nil
+	target.Fragment = ""
+	return target.String(), nil
+}
+
 func (s *LighthouseRunnerService) validateFinalURL(rawURL string) error {
 	parsed, err := url.Parse(strings.TrimSpace(rawURL))
-	if err != nil || !sameSiteQualityOrigin(parsed, s.defaultTargetURL) {
+	if err != nil || !sameSiteQualityOrigin(parsed, s.runnerTargetURL) {
 		return errors.New("internal Lighthouse runner reached a URL outside the configured storefront origin")
 	}
 	return nil

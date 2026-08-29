@@ -4,12 +4,10 @@ server:
   base_url: ""
   read_timeout: 120
   write_timeout: 120
-  # Keep this aligned with the private network(s) that can reach the API.
-  # The deployment environment may override it with TRUSTED_PROXIES.
+  # Nginx web is pinned to this address on the dedicated api_ingress network.
+  # The deployment environment may override it with the same exact address.
   trusted_proxies:
-    - "10.0.0.0/8"
-    - "172.16.0.0/12"
-    - "192.168.0.0/16"
+    - "172.30.0.10/32"
 
 database:
   driver: postgres
@@ -178,6 +176,7 @@ worker:
   tracking_polling_enabled: false
   tracking_polling_interval_seconds: 300
   tracking_polling_batch_limit: 20
+  visitor_profile_ip_address_retention_days: 30
   # This scheduler is independent from worker.enabled and is required by the
   # durable customer-service Relay as well as the other Outbox consumers.
   outbox_dispatch_enabled: true
@@ -190,6 +189,16 @@ worker:
   payment_expiration_batch_limit: 100
   payment_risk_monitoring_enabled: true
   payment_risk_monitoring_interval_seconds: 3600
+  # Automatic scheduled scans are disabled; operators trigger inspections manually.
+  site_quality_auto_scan_enabled: false
+  site_quality_dispatch_interval_seconds: 30
+  site_quality_batch_limit: 1
+  site_quality_lease_timeout_seconds: 900
+  site_quality_sample_count: 3
+  site_quality_confirmations: 2
+  site_quality_clean_evaluations: 2
+  site_quality_provider_concurrency: 1
+  site_quality_provider_spacing_seconds: 5
   # Independent from worker.enabled. Keeps cached display exchange rates fresh once per day.
   exchange_rate_sync_enabled: true
   exchange_rate_sync_interval_seconds: 86400

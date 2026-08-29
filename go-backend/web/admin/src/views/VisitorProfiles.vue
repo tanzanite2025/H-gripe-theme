@@ -1,11 +1,21 @@
 <template>
-  <div class="flex h-full min-h-0 flex-col gap-3 overflow-hidden">
+  <div class="flex min-h-full flex-col gap-3">
     <AdminPageHeader
       class="shrink-0"
       title="访客画像"
       description="只读查看 Public Chat、购物车会话、邮箱、语言和粗粒度地区的统一事实源"
     >
       <template #actions>
+        <Button
+          v-if="canViewGlobalIPBlocks"
+          variant="outline"
+          size="sm"
+          class="font-black uppercase tracking-wider"
+          @click="openGlobalIPBlockDialog"
+        >
+          <ShieldAlert class="size-3.5" />
+          IP 封禁规则
+        </Button>
         <Button variant="outline" size="sm" class="rounded-full font-black uppercase tracking-wider" :disabled="currentLoading" @click="cleanupCurrent">
           <Trash2 class="size-3.5" />
           {{ cleanupLabel }}
@@ -17,8 +27,8 @@
       </template>
     </AdminPageHeader>
 
-    <Tabs :model-value="activeTab" class="min-h-0 flex-1 overflow-hidden">
-      <TabsContent value="profiles" class="min-h-0 flex flex-col gap-3 overflow-hidden">
+    <Tabs :model-value="activeTab" class="min-h-0 flex-1">
+      <TabsContent value="profiles" class="flex flex-none flex-col gap-3 overflow-visible">
         <AdminStatsGrid class="shrink-0" :items="statItems" />
 
         <div class="shrink-0">
@@ -30,7 +40,7 @@
           />
         </div>
 
-        <section class="grid min-h-0 flex-1 grid-rows-[minmax(0,1.15fr)_minmax(0,0.85fr)] gap-4 overflow-hidden 2xl:grid-cols-[minmax(0,1fr)_380px] 2xl:grid-rows-[minmax(0,1fr)]">
+        <section class="grid min-h-[520px] flex-none grid-rows-[minmax(0,1.15fr)_minmax(0,0.85fr)] gap-4 overflow-visible 2xl:grid-cols-[minmax(0,1fr)_380px] 2xl:grid-rows-[minmax(0,1fr)]">
           <VisitorProfileTablePanel
             :loading="loading"
             :profiles="profiles"
@@ -45,6 +55,8 @@
           <VisitorProfileDetailPanel
             :selected-profile="selectedProfile"
             :format-date="formatDate"
+            :block-ip="canManageGlobalIPBlocks ? blockProfileIP : undefined"
+            :unblock-ip="canManageGlobalIPBlocks ? unblockProfileIP : undefined"
           />
         </section>
       </TabsContent>
@@ -97,12 +109,30 @@
           @update-page-size="updateRiskPageSize"
         />
       </TabsContent>
+
     </Tabs>
+
+    <VisitorIPBlockRulesDialog
+      v-model:open="globalIPBlockDialogOpen"
+      :rules="globalIPBlockRules"
+      :pagination="globalIPBlockPagination"
+      :loading="globalIPBlockLoading"
+      :saving="globalIPBlockSaving"
+      :error="globalIPBlockError"
+      :can-create="canManageGlobalIPBlocks"
+      :can-manage="canManageGlobalIPBlocks"
+      :format-date="formatDate"
+      @create="createGlobalIPBlock"
+      @disable="disableGlobalIPBlock"
+      @update:page="updateGlobalIPBlockPage"
+      @update:page-size="updateGlobalIPBlockPageSize"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { toast } from 'vue-sonner'
 import {
   Activity,
   AlertTriangle,
@@ -123,6 +153,7 @@ import AdminFilterPanel from '@/components/admin/AdminFilterPanel.vue'
 import AdminFilterSelect from '@/components/admin/AdminFilterSelect.vue'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import AdminStatsGrid from '@/components/admin/AdminStatsGrid.vue'
+import VisitorIPBlockRulesDialog from '@/components/admin/visitor/VisitorIPBlockRulesDialog.vue'
 import VisitorProfileDetailPanel from '@/components/admin/visitor/VisitorProfileDetailPanel.vue'
 import VisitorProfileFilterPanel from '@/components/admin/visitor/VisitorProfileFilterPanel.vue'
 import VisitorProfileTablePanel from '@/components/admin/visitor/VisitorProfileTablePanel.vue'
@@ -132,7 +163,11 @@ import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent } from '@/components/ui/tabs'
 import { useRouteTab } from '@/composables/useRouteTab'
 import axios from '@/utils/axios'
+import { useAuthStore } from '@/stores/auth'
 import type {
+  VisitorGlobalIPBlockPayload,
+  VisitorIPBlockPayload,
+  VisitorIPBlockRule,
   VisitorRiskDecisionPayload,
   VisitorRiskFact,
   VisitorProfile,
@@ -168,9 +203,16 @@ const activeTab = useRouteTab({
     risk: 'VisitorProfilesRisk',
   },
 })
+const authStore = useAuthStore()
 const loading = ref(false)
 const riskLoading = ref(false)
+const globalIPBlockDialogOpen = ref(false)
+const globalIPBlockLoading = ref(false)
+const globalIPBlockSaving = ref(false)
+const globalIPBlockError = ref('')
 const profiles = ref<VisitorProfile[]>([])
+const globalIPBlockRules = ref<VisitorIPBlockRule[]>([])
+const globalIPBlockPagination = reactive({ page: 1, pageSize: 20, total: 0 })
 const riskFacts = ref<VisitorRiskFact[]>([])
 const selectedProfile = ref<VisitorProfile | null>(null)
 const stats = ref<VisitorProfileStats>({})
@@ -200,6 +242,16 @@ const apiData = (response: any) => response.data?.data ?? response.data ?? {}
 const formatDate = (dateString?: string | number | Date | null) => dateString ? new Date(dateString).toLocaleString('zh-CN') : '-'
 const currentLoading = computed(() => activeTab.value === 'risk' ? riskLoading.value : loading.value)
 const cleanupLabel = computed(() => activeTab.value === 'risk' ? '清理风险数据' : '清理过期画像')
+const canViewGlobalIPBlocks = computed(() => (
+  authStore.hasRole('admin') ||
+  String(authStore.user?.role || '').trim().toLowerCase() === 'admin' ||
+  authStore.hasPermission('ticket:view') ||
+  authStore.hasPermission('settings:view')
+))
+const canManageGlobalIPBlocks = computed(() => (
+  authStore.hasRole('admin') ||
+  String(authStore.user?.role || '').trim().toLowerCase() === 'admin'
+))
 
 const statItems = computed(() => [
   { key: 'total', label: '画像总数', value: stats.value.total || 0, icon: Fingerprint, tone: 'gray' },
@@ -282,6 +334,93 @@ const fetchStats = async () => {
   }
 }
 
+const fetchGlobalIPBlockRules = async () => {
+  if (!canViewGlobalIPBlocks.value) return
+  globalIPBlockLoading.value = true
+  globalIPBlockError.value = ''
+  try {
+    const response = await axios.get('/api/admin/security/ip-blocks', {
+      params: {
+        page: globalIPBlockPagination.page,
+        page_size: globalIPBlockPagination.pageSize,
+        status: 'all',
+      },
+    })
+    const data = apiData(response)
+    globalIPBlockRules.value = data.rules || []
+    const responsePagination = data.pagination || {}
+    globalIPBlockPagination.page = Number(responsePagination.page || globalIPBlockPagination.page)
+    globalIPBlockPagination.pageSize = Number(responsePagination.page_size || globalIPBlockPagination.pageSize)
+    globalIPBlockPagination.total = Number(responsePagination.total ?? globalIPBlockRules.value.length)
+
+    const totalPages = Math.max(1, Math.ceil(globalIPBlockPagination.total / globalIPBlockPagination.pageSize))
+    if (globalIPBlockRules.value.length === 0 && globalIPBlockPagination.total > 0 && globalIPBlockPagination.page > totalPages) {
+      globalIPBlockPagination.page = totalPages
+      await fetchGlobalIPBlockRules()
+    }
+  } catch (error) {
+    globalIPBlockError.value = extractVisitorError(error, '全局 IP 封禁规则读取失败')
+  } finally {
+    globalIPBlockLoading.value = false
+  }
+}
+
+const openGlobalIPBlockDialog = async () => {
+  globalIPBlockDialogOpen.value = true
+  globalIPBlockPagination.page = 1
+  await fetchGlobalIPBlockRules()
+}
+
+const createGlobalIPBlock = async (payload: VisitorGlobalIPBlockPayload) => {
+  if (!canManageGlobalIPBlocks.value) {
+    globalIPBlockError.value = '当前账号没有管理员权限。'
+    return
+  }
+  globalIPBlockSaving.value = true
+  globalIPBlockError.value = ''
+  try {
+    const response = await axios.post('/api/admin/security/ip-blocks', payload)
+    globalIPBlockPagination.page = 1
+    await fetchGlobalIPBlockRules()
+    globalIPBlockDialogOpen.value = false
+    if (response.status === 202) {
+      toast.warning(response.data?.message || '规则已落库，但当前实例的封禁缓存仍在刷新，暂不可视为已生效')
+    } else {
+      toast.success('全局 IP 封禁规则已创建')
+    }
+  } catch (error) {
+    globalIPBlockError.value = extractVisitorError(error, '全局 IP 封禁失败')
+    toast.error(globalIPBlockError.value)
+  } finally {
+    globalIPBlockSaving.value = false
+  }
+}
+
+const disableGlobalIPBlock = async (rule: VisitorIPBlockRule) => {
+  if (!canManageGlobalIPBlocks.value) {
+    globalIPBlockError.value = '当前账号没有管理员权限。'
+    return
+  }
+  if (!window.confirm(`确定解除全局 IP/CIDR 规则“${rule.cidr || rule.id}”吗？这会改变所有 API 请求的拦截范围。`)) return
+
+  globalIPBlockSaving.value = true
+  globalIPBlockError.value = ''
+  try {
+    const response = await axios.delete(`/api/admin/security/ip-blocks/${rule.id}`)
+    await fetchGlobalIPBlockRules()
+    if (response.status === 202) {
+      toast.warning(response.data?.message || '规则已解除，但当前实例的封禁缓存仍在刷新')
+    } else {
+      toast.success('全局 IP 封禁规则已解除')
+    }
+  } catch (error) {
+    globalIPBlockError.value = extractVisitorError(error, '全局 IP 封禁解除失败')
+    toast.error(globalIPBlockError.value)
+  } finally {
+    globalIPBlockSaving.value = false
+  }
+}
+
 const fetchRiskFacts = async () => {
   riskLoading.value = true
   try {
@@ -322,6 +461,22 @@ const fetchRiskStats = async () => {
 const submitRiskDecision = async (fact: VisitorRiskFact, payload: VisitorRiskDecisionPayload) => {
   await axios.post(`/api/admin/customer-service/visitor-risk-facts/${fact.id}/decision`, payload)
   await refreshRiskFacts()
+}
+
+const blockProfileIP = async (profile: VisitorProfile, payload: VisitorIPBlockPayload) => {
+  const response = await axios.post(`/api/admin/customer-service/visitor-profiles/${profile.id}/ip-block`, payload)
+  await refreshProfiles()
+  if (response.status === 202) {
+    toast.warning(response.data?.message || '画像规则已落库，但当前实例的封禁缓存仍在刷新，暂不可视为已生效')
+  }
+}
+
+const unblockProfileIP = async (profile: VisitorProfile) => {
+  const response = await axios.delete(`/api/admin/customer-service/visitor-profiles/${profile.id}/ip-block`)
+  await refreshProfiles()
+  if (response.status === 202) {
+    toast.warning(response.data?.message || '画像规则已解除，但当前实例的封禁缓存仍在刷新')
+  }
 }
 
 const refreshProfiles = () => Promise.all([fetchProfiles(), fetchStats()])
@@ -379,6 +534,15 @@ const updatePageSize = (pageSize: number) => {
   pagination.page = 1
   fetchProfiles()
 }
+const updateGlobalIPBlockPage = (page: number) => {
+  globalIPBlockPagination.page = page
+  fetchGlobalIPBlockRules()
+}
+const updateGlobalIPBlockPageSize = (pageSize: number) => {
+  globalIPBlockPagination.pageSize = pageSize
+  globalIPBlockPagination.page = 1
+  fetchGlobalIPBlockRules()
+}
 const applyRiskFilters = () => {
   riskPagination.page = 1
   refreshRiskFacts()
@@ -401,6 +565,21 @@ const updateRiskPageSize = (pageSize: number) => {
   riskPagination.pageSize = pageSize
   riskPagination.page = 1
   fetchRiskFacts()
+}
+
+interface VisitorErrorLike {
+  message?: string
+  response?: {
+    data?: {
+      error?: string
+      message?: string
+    }
+  }
+}
+
+const extractVisitorError = (error: unknown, fallback: string): string => {
+  const details = error as VisitorErrorLike
+  return details.response?.data?.error || details.response?.data?.message || details.message || fallback
 }
 
 onMounted(() => {

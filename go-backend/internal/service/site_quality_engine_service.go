@@ -22,6 +22,7 @@ const (
 type SiteQualityEngineConfig struct {
 	BaseURL                  string
 	WorkerEnabled            bool
+	AutoScanEnabled          bool
 	WorkerInterval           time.Duration
 	SampleCount              int
 	RequiredConfirmations    int
@@ -58,6 +59,7 @@ type SiteQualityOperationalSummary struct {
 	Status                         string                                    `json:"status"`
 	Warnings                       []string                                  `json:"warnings,omitempty"`
 	WorkerEnabled                  bool                                      `json:"worker_enabled"`
+	AutoScanEnabled                bool                                      `json:"auto_scan_enabled"`
 	WorkerIntervalSeconds          int                                       `json:"worker_interval_seconds"`
 	RunnerConfigured               bool                                      `json:"runner_configured"`
 	DefaultURL                     string                                    `json:"default_url,omitempty"`

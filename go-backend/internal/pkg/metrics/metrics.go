@@ -61,6 +61,30 @@ var (
 		},
 		[]string{"seed_id", "outcome"},
 	)
+	GlobalIPBlockChecks = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: "commerce_platform",
+			Name:      "global_ip_block_checks_total",
+			Help:      "Application-wide IP block checks by outcome.",
+		},
+		[]string{"outcome"},
+	)
+	GlobalIPBlockCacheRefreshes = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: "commerce_platform",
+			Name:      "global_ip_block_cache_refreshes_total",
+			Help:      "Application-wide IP block cache refresh attempts by result.",
+		},
+		[]string{"result"},
+	)
+	GlobalIPBlockCacheInvalidations = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: "commerce_platform",
+			Name:      "global_ip_block_cache_invalidations_total",
+			Help:      "Application-wide IP block cache invalidation notifications by direction and result.",
+		},
+		[]string{"direction", "result"},
+	)
 	ProductCacheInvalidations = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: "commerce_platform",
@@ -200,6 +224,21 @@ func init() {
 	register(CommercialIntelligenceActions, func(collector prometheus.Collector) {
 		if existing, ok := collector.(*prometheus.CounterVec); ok {
 			CommercialIntelligenceActions = existing
+		}
+	})
+	register(GlobalIPBlockChecks, func(collector prometheus.Collector) {
+		if existing, ok := collector.(*prometheus.CounterVec); ok {
+			GlobalIPBlockChecks = existing
+		}
+	})
+	register(GlobalIPBlockCacheRefreshes, func(collector prometheus.Collector) {
+		if existing, ok := collector.(*prometheus.CounterVec); ok {
+			GlobalIPBlockCacheRefreshes = existing
+		}
+	})
+	register(GlobalIPBlockCacheInvalidations, func(collector prometheus.Collector) {
+		if existing, ok := collector.(*prometheus.CounterVec); ok {
+			GlobalIPBlockCacheInvalidations = existing
 		}
 	})
 	register(ProductCacheInvalidations, func(collector prometheus.Collector) {
