@@ -2,8 +2,8 @@
   <Dialog :open="open" @update:open="emit('update:open', $event)">
     <DialogContent size="xl" class="gap-0 p-0" @open-auto-focus.prevent>
       <DialogHeader class="border-b px-5 py-4 pr-12">
-        <DialogTitle>选择媒体库图片</DialogTitle>
-        <DialogDescription>从通用媒体库选择图片资源，图库不再作为附件仓库。</DialogDescription>
+        <DialogTitle>选择媒体库{{ dialogMediaTypeLabel }}</DialogTitle>
+        <DialogDescription>从通用媒体库选择{{ dialogMediaTypeLabel }}资源，图库不再作为附件仓库。</DialogDescription>
       </DialogHeader>
 
       <div class="flex min-h-[30rem] max-h-[74dvh] min-w-0 flex-col overflow-hidden">
@@ -32,8 +32,9 @@
           正在加载媒体库
         </div>
         <div v-else-if="assets.length === 0" class="flex min-h-0 flex-1 flex-col items-center justify-center gap-2 text-muted-foreground">
-          <ImageOff class="size-8 opacity-50" />
-          <span class="text-xs font-bold">暂无可选图片</span>
+          <Video v-if="mediaType === 'video'" class="size-8 opacity-50" />
+          <ImageOff v-else class="size-8 opacity-50" />
+          <span class="text-xs font-bold">暂无可选{{ dialogMediaTypeLabel }}</span>
         </div>
         <div v-else class="grid min-h-0 flex-1 auto-rows-min grid-cols-2 gap-3 overflow-y-auto p-4 md:grid-cols-3 xl:grid-cols-5">
           <button
@@ -41,30 +42,40 @@
             :key="asset.id"
             type="button"
             class="group min-w-0 overflow-hidden rounded-2xl border bg-background text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
- :class="isSelected(asset.url) ? 'border-[var(--admin-selected)]': 'border-border'"
+            :class="isSelected(assetURL(asset)) ? 'border-[var(--admin-selected)]' : 'border-border'"
             @click="selectAsset(asset)"
           >
             <span class="block aspect-[4/3] overflow-hidden bg-muted">
               <img
-                v-if="assetAccessURL(asset)"
+                v-if="asset.media_type !== 'video' && assetAccessURL(asset)"
                 :src="assetAccessURL(asset)"
                 :alt="asset.alt || asset.original_filename || asset.filename || ''"
                 class="size-full object-cover transition duration-200 group-hover:scale-[1.03]"
-                @load="handleImageLoad($event, asset)"
+                @load="handleMediaLoad($event, asset)"
+              />
+              <video
+                v-else-if="asset.media_type === 'video' && assetAccessURL(asset)"
+                :src="assetAccessURL(asset)"
+                class="size-full object-cover"
+                muted
+                playsinline
+                preload="metadata"
+                @loadedmetadata="handleMediaLoad($event, asset)"
               />
               <span v-else class="flex size-full items-center justify-center text-muted-foreground">
-                <Images class="size-6 opacity-50" />
+                <Video v-if="asset.media_type === 'video'" class="size-6 opacity-50" />
+                <Images v-else class="size-6 opacity-50" />
               </span>
             </span>
             <span class="block min-w-0 space-y-1 px-3 py-2">
               <span class="block truncate text-xs font-black">{{ assetTitle(asset) }}</span>
               <span class="flex items-center justify-between gap-2 text-[10px] font-bold text-muted-foreground">
-                <span>{{ assetDimensionLabel(asset) }}</span>
+                <span>{{ mediaTypeLabel(asset.media_type) }} · {{ assetDimensionLabel(asset) }}</span>
                 <span>{{ formatMediaSize(asset.size) }}</span>
               </span>
               <span class="flex justify-end text-[10px] font-bold text-muted-foreground">
- <span :class="isSelected(asset.url) ? 'text-[var(--admin-selected)]': ''">
-                  {{ isSelected(asset.url) ? '已加入' : '选择' }}
+                <span :class="isSelected(assetURL(asset)) ? 'text-[var(--admin-selected)]' : ''">
+                  {{ isSelected(assetURL(asset)) ? '已加入' : '选择' }}
                 </span>
               </span>
             </span>
@@ -87,15 +98,15 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, toRef } from 'vue'
-import { ImageOff, Images, RefreshCw, Search } from '@lucide/vue'
+import { computed, reactive, toRef } from 'vue'
+import { ImageOff, Images, RefreshCw, Search, Video } from '@lucide/vue'
 import AdminPagination from '@/components/admin/AdminPagination.vue'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useMediaAssetPicker } from '@/composables/media/useMediaAssetPicker'
-import { assetAccessURL, assetTitle, formatMediaDimensions, formatMediaSize } from '@/lib/mediaPresentation'
+import { assetAccessURL, assetTitle, formatMediaDimensions, formatMediaSize, mediaTypeLabel } from '@/lib/mediaPresentation'
 import type { MediaAsset } from '@/api/media'
 
 interface MediaAssetSelection {
@@ -107,9 +118,11 @@ interface MediaAssetSelection {
 const props = withDefaults(defineProps<{
   open?: boolean
   selectedUrls?: string[]
+  mediaType?: 'image' | 'video' | 'all'
 }>(), {
   open: false,
   selectedUrls: () => [],
+  mediaType: 'image',
 })
 
 const emit = defineEmits<{
@@ -117,6 +130,8 @@ const emit = defineEmits<{
   (event: 'select', selection: MediaAssetSelection): void
 }>()
 
+const mediaType = toRef(props, 'mediaType')
+const dialogMediaTypeLabel = computed(() => mediaTypeLabel(mediaType.value))
 const isSelected = (url?: string | null): boolean => Boolean(url) && props.selectedUrls.includes(String(url))
 const {
   loading,
@@ -126,9 +141,11 @@ const {
   reload,
   updatePage,
   updatePageSize,
-} = useMediaAssetPicker(toRef(props, 'open'))
+} = useMediaAssetPicker(toRef(props, 'open'), mediaType)
 
 const loadedDimensions = reactive<Record<string, { width: number; height: number }>>({})
+
+const assetURL = (asset: MediaAsset): string => assetAccessURL(asset)
 
 const assetDimensionLabel = (asset: MediaAsset): string => {
   const storedWidth = Number(asset.width || 0)
@@ -143,18 +160,24 @@ const assetDimensionLabel = (asset: MediaAsset): string => {
     : '读取尺寸中'
 }
 
-const handleImageLoad = (event: Event, asset: MediaAsset): void => {
-  const image = event.currentTarget as HTMLImageElement | null
-  if (!image || image.naturalWidth <= 0 || image.naturalHeight <= 0) return
+const handleMediaLoad = (event: Event, asset: MediaAsset): void => {
+  const media = event.currentTarget as HTMLImageElement | HTMLVideoElement | null
+  if (!media) return
+
+  const width = 'naturalWidth' in media ? media.naturalWidth : media.videoWidth
+  const height = 'naturalHeight' in media ? media.naturalHeight : media.videoHeight
+  if (width <= 0 || height <= 0) return
+
   loadedDimensions[String(asset.id)] = {
-    width: image.naturalWidth,
-    height: image.naturalHeight,
+    width,
+    height,
   }
 }
 
 const selectAsset = (asset: MediaAsset): void => {
-  if (!asset?.url) return
-  emit('select', { url: asset.url, image: asset, asset })
+  const url = assetURL(asset)
+  if (!url) return
+  emit('select', { url, image: asset, asset })
 }
 
 </script>

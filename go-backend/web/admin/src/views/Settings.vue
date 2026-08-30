@@ -562,12 +562,12 @@ const savePublicChatAgent = async () => {
     return
   }
 
-   const publicEmail = publicChatAgentForm.email.trim() || selectedPublicChatAgentCandidate.value?.email?.trim() || ''
-   const publicWhatsApp = publicChatAgentForm.whatsapp.trim()
-   if (publicChatAgentForm.status === 'active' && (!publicEmail || !publicWhatsApp)) {
-     toast.error('公开客服启用前必须填写公开邮箱和 WhatsApp，前台聊天头像选择弹层会使用这两个联系方式')
-     return
-   }
+  const publicEmail = publicChatAgentForm.email.trim() || selectedPublicChatAgentCandidate.value?.email?.trim() || ''
+  const publicWhatsApp = publicChatAgentForm.whatsapp.trim()
+  if (publicChatAgentForm.status === 'active' && !publicEmail && !publicWhatsApp) {
+    toast.error('公开客服启用前至少填写邮箱或 WhatsApp 其中一个，前台会展示可用的联系方式')
+    return
+  }
 
   publicChatAgentSaving.value = true
   try {

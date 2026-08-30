@@ -1,0 +1,1134 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>公路碳纤维轮组主流竞品与行业调研分析报告</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif;
+            background-color: #f1f5f9;
+            color: #0f172a;
+            line-height: 1.5;
+            padding: 24px 16px;
+        }
+
+        .container {
+            max-width: 1440px;
+            margin: 0 auto;
+        }
+
+        /* 顶部 Header */
+        .header {
+            background: #fff;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 16px 20px;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+        }
+
+        .header h1 {
+            font-size: 20px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            color: #0f172a;
+        }
+
+        .header p {
+            color: #64748b;
+            font-size: 12px;
+            margin-top: 2px;
+        }
+
+        /* 顶部快速锚点导航 */
+        .nav-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            background: #fff;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 10px 14px;
+            margin-bottom: 20px;
+            align-items: center;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+        }
+
+        .nav-label {
+            font-size: 11px;
+            font-weight: 800;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-right: 4px;
+        }
+
+        .nav-chip {
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #1e293b;
+            text-decoration: none;
+            transition: all 0.15s ease;
+        }
+
+        .nav-chip:hover {
+            background: #0f172a;
+            color: #fff;
+            border-color: #0f172a;
+        }
+
+        /* 两列网格布局 */
+        .two-column-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px;
+        }
+
+        @media (max-width: 1024px) {
+            .two-column-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* 竞品完整卡片 */
+        .brand-full-card {
+            background: #fff;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 18px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            scroll-margin-top: 16px;
+        }
+
+        .brand-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #0f172a;
+        }
+
+        .brand-name-group h2 {
+            font-size: 18px;
+            font-weight: 800;
+            color: #0f172a;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .role-badge {
+            font-size: 10.5px;
+            font-weight: 700;
+            padding: 2px 7px;
+            background: #e0f2fe;
+            color: #0369a1;
+            border-radius: 3px;
+            border: 1px solid #bae6fd;
+        }
+
+        .weight-badge {
+            font-size: 11px;
+            font-family: SFMono-Regular, Consolas, monospace;
+            font-weight: 700;
+            background: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            color: #0f172a;
+            padding: 3px 8px;
+            border-radius: 4px;
+        }
+
+        .price-badge {
+            font-size: 11px;
+            font-weight: 700;
+            color: #0f172a;
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            padding: 2px 6px;
+            border-radius: 3px;
+            margin-top: 2px;
+            display: inline-block;
+        }
+
+        /* 调研 5 大维度区块 */
+        .analysis-section {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 10px 12px;
+        }
+
+        .analysis-section.marketing { border-left: 3px solid #6366f1; }
+        .analysis-section.industry { border-left: 3px solid #0284c7; }
+        .analysis-section.core { border-left: 3px solid #0f172a; }
+        .analysis-section.pros { border-left: 3px solid #16a34a; }
+        .analysis-section.cons { border-left: 3px solid #dc2626; }
+
+        .sec-title {
+            font-size: 11.5px;
+            font-weight: 800;
+            color: #0f172a;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .sec-content {
+            font-size: 12.5px;
+            color: #334155;
+            line-height: 1.55;
+        }
+
+        .sec-content ul {
+            padding-left: 15px;
+        }
+
+        .sec-content li {
+            margin-bottom: 4px;
+        }
+
+        .sec-content strong {
+            color: #0f172a;
+        }
+
+        /* 型号规格表 */
+        .model-table-wrap {
+            margin-top: 4px;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11.5px;
+            text-align: left;
+            background: #fff;
+            min-width: 500px;
+        }
+
+        th {
+            background: #f1f5f9;
+            color: #475569;
+            font-weight: 700;
+            padding: 6px 8px;
+            border-bottom: 1px solid #cbd5e1;
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+
+        td {
+            padding: 6px 8px;
+            border-bottom: 1px solid #f1f5f9;
+            color: #1e293b;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background: #f8fafc;
+        }
+
+        .mono {
+            font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+        }
+
+        .tag-pill {
+            font-weight: 700;
+            color: #0f172a;
+            background: #e2e8f0;
+            padding: 1px 5px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- 页头 -->
+    <div class="header">
+        <div>
+            <h1>公路碳纤维轮组主流竞品与行业调研分析报告</h1>
+            <p>融合推广营销渠道（YouTube/Facebook/AliExpress/B站/赞助）、商业模式与硬核技术指标的竞品剖析</p>
+        </div>
+        <div>
+            <span style="font-size: 11px; font-weight: 700; background: #0f172a; color: #fff; padding: 4px 8px; border-radius: 4px;">营销渠道与技术调研</span>
+        </div>
+    </div>
+
+    <!-- 顶部快速定位锚点 -->
+    <div class="nav-bar">
+        <span class="nav-label">快速跳转：</span>
+        <a href="#brand-0011" class="nav-chip">0011CYCLE</a>
+        <a href="#brand-elite" class="nav-chip">ELITE (依诺特)</a>
+        <a href="#brand-lb" class="nav-chip">Lightbicycle</a>
+        <a href="#brand-magene" class="nav-chip">迈金 (EXAR)</a>
+        <a href="#brand-jingteng" class="nav-chip">静藤 (PRO PLUS)</a>
+        <a href="#brand-winspace" class="nav-chip">银贝斯 (HYPER)</a>
+        <a href="#brand-soom" class="nav-chip">鸿基碳条 (SOOM)</a>
+        <a href="#brand-superteam" class="nav-chip">Superteam</a>
+    </div>
+
+    <!-- 两列并排网格：8 大竞品完整展开 -->
+    <div class="two-column-grid">
+
+        <!-- 1. 0011CYCLE -->
+        <div class="brand-full-card" id="brand-0011">
+            <div class="brand-card-header">
+                <div class="brand-name-group">
+                    <h2>0011CYCLE <span class="role-badge">国产超轻开山鼻祖</span></h2>
+                    <span class="price-badge">价格区间：¥4,xxx ~ ¥6,xxx</span>
+                </div>
+                <div class="weight-badge">自重：1190~1290g</div>
+            </div>
+
+            <!-- 网络推广与营销渠道 -->
+            <div class="analysis-section marketing">
+                <div class="sec-title">🌐 网络推广渠道与流量获取模式</div>
+                <div class="sec-content">
+                    <ul>
+                        <li><strong>抖音官方直播带货与现场拆解</strong>：官方常态化开启抖音直播，现场拆解 THRindustries 花鼓、实机展示 52T 棘轮与钛塔基咬合，直面车友答疑互动，直接沉淀抖音小店销量。</li>
+                        <li><strong>B站极客向机械视频传播</strong>：发布自研花鼓内部结构拆解、轴承预压间隙微调、自编轮组张力标定等技术教程，精准抓取高动手能力车友。</li>
+                        <li><strong>淘宝/天猫直营 + 微信发烧车友群</strong>：以“自编轮/客制化修补件”深耕改车交流群与贴吧（公路车吧/自行车吧），靠轻量化发烧友口碑裂变。</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="analysis-section industry">
+                <div class="sec-title">🏢 商业模式与行业生态位</div>
+                <div class="sec-content">
+                    <ul>
+                        <li><strong>超轻赛道品类开创者</strong>：在国内普遍做 1500g 轮组时期，最早将碳轮自重压入 <strong>1100g~1200g 极限区间</strong>，抢占“超轻爬坡”核心心智。</li>
+                        <li><strong>东莞精密加工供应链与自研专利结合</strong>：依托东莞花鼓 CNC 加工产能，将 52T 锥形齿盘等核心机械结构申报自主专利。</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="analysis-section core">
+                <div class="sec-title">⚙️ 核心技术路径与专利壁垒</div>
+                <div class="sec-content">
+                    <ul>
+                        <li><strong>TC4 钛合金塔基（抗屈服防咬合）</strong>：表面硬度远超 7075 铝合金，极限承受扭矩提高 200% 以上，消除大飞轮齿片咬入塔基形成的深槽咬痕。</li>
+                        <li><strong>52T 锥形齿面棘轮专利（参照 ZIPP Axial Clutch 轴向离合）</strong>：360° 全圆周齿面同时啮合，<strong>咬合角缩小至 6.9°</strong>，动力死角极小。</li>
+                        <li><strong>极低转动惯量指标</strong>：38mm 仅 1190g，降低角加速度阻力 $\alpha = \tau / I$。</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="analysis-section pros">
+                <div class="sec-title">📈 硬核产品力指标与工程优势</div>
+                <div class="sec-content">
+                    <ul>
+                        <li><strong>抗咬伤寿命</strong>：飞轮拆装无卡死阻滞，塔基表面无压溃沟槽。</li>
+                        <li><strong>咬合响应延迟极低</strong>：6.9° 小咬合角在急停再加速、攻陡坡踏频间隙时动力咬合极快。</li>
+                        <li><strong>自重与功重比优势</strong>：在 4k~6k 价格区间具备第一梯队的重量指标。</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="analysis-section cons">
+                <div class="sec-title">📉 产品短板与商业局限性</div>
+                <div class="sec-content">
+                    <ul>
+                        <li>极轻圈体在超高速（>60km/h）下坡时的陀螺稳定效应较弱，抗突发侧风的惯性自稳力较低。</li>
+                        <li>偏小规模作坊/工作室运作，网络上有车友反映交付周期与售后退换响应存在波动。</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="model-table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>型号</th>
+                            <th>前/后框高</th>
+                            <th>外宽</th>
+                            <th>花鼓/棘轮系统</th>
+                            <th>辐条规格</th>
+                            <th>标配重量</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>RX 38</strong></td>
+                            <td class="mono">38 / 38mm</td>
+                            <td class="mono">28mm</td>
+                            <td>52T锥形齿盘 (TC4钛合金塔基)</td>
+                            <td>3.2mm碳辐条</td>
+                            <td><span class="tag-pill mono">1190g</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>RX 45</strong></td>
+                            <td class="mono">45 / 45mm</td>
+                            <td class="mono">28mm</td>
+                            <td>52T锥形齿盘 (TC4钛合金塔基)</td>
+                            <td>3.2mm碳辐条</td>
+                            <td><span class="tag-pill mono">1240g</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>RX 50</strong></td>
+                            <td class="mono">50 / 50mm</td>
+                            <td class="mono">28mm</td>
+                            <td>52T锥形齿盘 (TC4钛合金塔基)</td>
+                            <td>3.2mm碳辐条</td>
+                            <td><span class="tag-pill mono">1290g</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 2. ELITE (依诺特) -->
+        <div class="brand-full-card" id="brand-elite">
+            <div class="brand-card-header">
+                <div class="brand-name-group">
+                    <h2>ELITE (依诺特) <span class="role-badge">速卖通销量第一霸主</span></h2>
+                    <span class="price-badge">平台售价：¥11,193.00 (Helix旗舰)</span>
+                </div>
+                <div class="weight-badge">自重：1295~1495g</div>
+            </div>
+
+            <!-- 网络推广与营销渠道 -->
+            <div class="analysis-section marketing">
+                <div class="sec-title">🌐 网络推广渠道与流量获取模式</div>
+                <div class="sec-content">
+                    <ul>
+                        <li><strong>YouTube 头部创作者矩阵 + Affiliate 返利分销体系</strong>：深度合作包括 GCN (Global Cycling Network)、Cam Nicholls 及数十位欧美中腰部博主进行产品送测；在视频简介中植入专属折扣码与速卖通/独立站 Affiliate 佣金链接，形成带货飞轮。</li>
+                        <li><strong>速卖通 (AliExpress) 官方旗舰店出海主阵地</strong>：作为全球走量核心，配合平台超级大促、直通车关键词广告投放与全球免税直邮体系。</li>
+                        <li><strong>Facebook / Instagram 官方社群与赞助计划</strong>：在官网开辟常态化“Sponsorship Program（车手/车队赞助申请页面）”，通过免费提供装备换取海外骑行红人的社交媒体内容曝光。</li>
+                        <li><strong>双轨渠道价格带区隔</strong>：官网 D2C 主推万元级高端定制（Drive Helix 系列），速卖通店铺主打 2000~4000 元大众性价比走量款。</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="analysis-section industry">
+                <div class="sec-title">🏢 商业模式与行业生态位</div>
+                <div class="sec-content">
+                    <ul>
+                        <li><strong>速卖通平台销量第一霸主</strong>：出海跨境电商出货量统治级品牌。</li>
+                        <li><strong>高端气动波浪圈平民化策略</strong>：将数万元级（如 Princeton/ZIPP NSW）的波浪圈设计下放至万元内，整合碳辐条与 SS 陶瓷轴承输出。</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="analysis-section core">
+                <div class="sec-title">⚙️ 核心技术路径与专利壁垒</div>
+                <div class="sec-content">
+                    <ul>
+                        <li><strong>仿生双重波浪变截面（Drive Helix 39/43, 47/52, 60/68mm）</strong>：作为涡流发生器（Turbulator），在偏航角 10°~20° 下延缓背风面气流分离，降低侧风扰动力矩 15%~25%。</li>
+                        <li><strong>5.2mm 宽截面气动碳辐条 + SS 陶瓷轴承</strong>：保障侧向刚度与低阻滑行。</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="analysis-section pros">
+                <div class="sec-title">📈 硬核产品力指标与工程优势</div>
+                <div class="sec-content">
+                    <ul>
+                        <li><strong>大偏航角侧风稳定性</strong>：在高侧风环境下，作用在车把上的侧向力矩波动方差显著降低。</li>
+                        <li><strong>高侧向支撑刚度</strong>：5.2mm 宽碳条横向抗弯截面模量大。</li>
+                        <li><strong>出海跨境渠道网络完善</strong>：直邮与外销售后链路成熟。</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="analysis-section cons">
+                <div class="sec-title">📉 产品短板与商业局限性</div>
+                <div class="sec-content">
+                    <ul>
+                        <li>波浪圈复杂模具成型导致动平衡控制难度高于对称平圈。</li>
+                        <li>外观偏欧美外销风格，国内线下实体车店覆盖与本土社群运营相对薄弱。</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="model-table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>型号</th>
+                            <th>前/后框高</th>
+                            <th>外宽</th>
+                            <th>花鼓/棘轮系统</th>
+                            <th>辐条规格</th>
+                            <th>标配重量</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Helix 46D</strong></td>
+                            <td class="mono">39/43 / 42/46mm</td>
+                            <td class="mono">31.8mm</td>
+                            <td>36T (21/24孔 2:1)</td>
+                            <td>5.2mm碳条+SS陶瓷</td>
+                            <td><span class="tag-pill mono">1295g</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Helix 57D</strong></td>
+                            <td class="mono">47/52 / 52/57mm</td>
+                            <td class="mono">31.8mm</td>
+                            <td>36T (21/24孔 2:1)</td>
+                            <td>5.2mm碳条+SS陶瓷</td>
+                            <td><span class="tag-pill mono">1420g</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Helix 68D</strong></td>
+                            <td class="mono">60 / 68mm波浪</td>
+                            <td class="mono">31.8mm</td>
+                            <td>36T (21/24孔 2:1)</td>
+                            <td>5.2mm碳条+SS陶瓷</td>
+                            <td><span class="tag-pill mono">1495g</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 3. Lightbicycle (简骑) -->
+        <div class="brand-full-card" id="brand-lb">
+            <div class="brand-card-header">
+                <div class="brand-name-group">
+                    <h2>Lightbicycle (简骑) <span class="role-badge">海外论坛封神老牌 · 340g轻圈</span></h2>
+                    <span class="price-badge">价格区间：¥5,xxx ~ ¥8,xxx (高阶定制)</span>
+                </div>
+                <div class="weight-badge">自重：1100~1230g</div>
+            </div>
+
+            <!-- 网络推广与营销渠道 -->
+            <div class="analysis-section marketing">
+                <div class="sec-title">🌐 网络推广渠道与流量获取模式</div>
+                <div class="sec-content">
+                    <ul>
+                        <li><strong>海外极客论坛十余年深耕（WeightWeenies / Chinertown / BikeForums）</strong>：早期官方技术团队直接在海外论坛开帖，公开模具公差、碳布排叠图纸、实测重量与不同花鼓编法张力曲线，以“技术透明度”建立深厚信任。</li>
+                        <li><strong>Reddit 垂直版块真实车友口碑沉淀 (r/gravelcycling, r/cycling, r/Velo)</strong>：在全地形越野与轻量化圈层被视为“非贴牌、拥有自主制造能力”的标杆老厂，依靠极高 UGC（用户自发推荐）驱动转化。</li>
+                        <li><strong>建立北美本地化仓储与装配服务中心</strong>：在北美设立官方服务点，提供本土组装与保修，彻底消除欧美车友对中国碳轮售后维保的信任障碍。</li>
+                        <li><strong>零流量投放策略</strong>：几乎不投放泛娱乐广告，纯依靠 D2C 独立站强大的“模块化定制器”与老鸟口碑维系。</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="analysis-section industry">
+                <div class="sec-title">🏢 商业模式与行业生态位</div>
+                <div class="sec-content">
+                    <ul>
+                        <li><strong>海外发烧论坛公认的技术型老牌代工厂</strong>：专精碳圈底层排叠与模压成型。</li>
+                        <li><strong>超宽 Gravel 轮圈先行者</strong>：极早在海外推行 32mm~40mm 宽外宽规格。</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="analysis-section core">
+                <div class="sec-title">⚙️ 核心技术路径与专利壁垒</div>
+                <div class="sec-content">
+                    <ul>
+                        <li><strong>Paintless 原生免涂装成型工艺</strong>：超高精度镜面温控模具直接出模，省去 <strong>30~50g 漆面死重</strong>；原生碳纤维外层抗刮擦冲击，消除漆面磕伤暗裂隐患。</li>
+                        <li><strong>单圈仅 340g 极致外周减重</strong>：52mm/55mm 高框单圈压至 340g，外周质量占旋转惯量 80% 以上，角加速度提升显著。</li>
+                        <li><strong>40mm 极致超宽气动外宽 (WG55)</strong>：满足 105% 气动法则，消除宽胎过渡涡流台阶，整轮低至 1100g。</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="analysis-section pros">
+                <div class="sec-title">📈 硬核产品力指标与工程优势</div>
+                <div class="sec-content">
+                    <ul>
+                        <li><strong>极致动态角加速度</strong>：55mm 高框外周惯量与 38mm 低框相当。</li>
+                        <li><strong>耐磨蚀无爆漆风险</strong>：免涂装裸碳表面耐碎石冲击。</li>
+                        <li><strong>高抗疲劳配置</strong>：标配 SAPIM CX-RAY 冷锻破风钢条 + 陶瓷轴承。</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="analysis-section cons">
+                <div class="sec-title">📉 产品短板与物理局限性</div>
+                <div class="sec-content">
+                    <ul>
+                        <li>40mm 极端外宽对部分旧款公路车架后下叉间隙存在兼容限制。</li>
+                        <li>海外按需定制模式导致生产与物流交付周期较长。</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="model-table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>型号</th>
+                            <th>前/后框高</th>
+                            <th>外宽</th>
+                            <th>花鼓/棘轮系统</th>
+                            <th>辐条规格</th>
+                            <th>标配重量</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>ARIA 52</strong></td>
+                            <td class="mono">52 / 52mm</td>
+                            <td class="mono">32.5mm</td>
+                            <td>36T (24孔 1:1)</td>
+                            <td>SAPIM CX-RAY+陶瓷</td>
+                            <td><span class="tag-pill mono">1230g</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>FALCON PRO WG55</strong></td>
+                            <td class="mono">55 / 55mm</td>
+                            <td class="mono">40.0mm</td>
+                            <td>36T (24孔 1:1)</td>
+                            <td>SAPIM CX-RAY+陶瓷</td>
+                            <td><span class="tag-pill mono">1100g</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 4. 迈金 EXAR -->
+        <div class="brand-full-card" id="brand-magene">
+            <div class="brand-card-header">
+                <div class="brand-name-group">
+                    <h2>迈金 EXAR <span class="role-badge">自动化碳纱缠绕 · 售后兜底</span></h2>
+                    <span class="price-badge">价格区间：¥4,999 (PRO) ~ ¥7,299 (ULTRA)</span>
+                </div>
+                <div class="weight-badge">自重：1290~1500g</div>
+            </div>
+
+            <!-- 网络推广与营销渠道 -->
+            <div class="analysis-section marketing">
+                <div class="sec-title">🌐 网络推广渠道与流量获取模式</div>
+                <div class="sec-content">
+                    <ul>
+                        <li><strong>世巡赛 (WorldTour) 顶级车队职业赞助背书</strong>：正式签约成为 **喜德盛-阿斯塔纳车队（Astana Qazaqstan Team）** 官方合作伙伴（供应码表/骑行台/雷达/传感器），以世巡赛竞技形象完成品牌向上赋能。</li>
+                        <li><strong>B站头部骑行 KOL 深度测评矩阵</strong>：深度合作骑行头部 UP 主（如“可利呼”等），通过“开箱实测 + 对比国际一线 Zipp/ENVE + 性价比剖析”在视频社区形成高转化声量。</li>
+                        <li><strong>全国 400+ 捷安特体验店与 1000+ 功率体验店网络</strong>：国内最强实体门店渗透与经销商分销渠道，解决安装与现场质保体验。</li>
+                        <li><strong>“顽鹿竞技 (Onelap)” 软件生态引流</strong>：依托庞大的室内线上骑行软件与码表 App 用户池，实现硬件生态内部精准导流与交叉复购。</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="analysis-section industry">
+                <div class="sec-title">🏢 商业模式与行业生态位</div>
+                <div class="sec-content">
+                    <ul>
+                        <li><strong>国内最强生态与渠道协同</strong>：依托软硬件全场景生态与强大车店网络。</li>
+                        <li><strong>标准化售后兜底策略</strong>：通过官方车圈置换服务，解决用户摔车顾虑。</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="analysis-section core">
+                <div class="sec-title">⚙️ 核心技术路径与专利壁垒</div>
+                <div class="sec-content">
+                    <ul>
+                        <li><strong>数控自动化碳纱连续缠绕技术（Filament Winding）</strong>：连续缠绕替代手工裁片拼接，大幅降低手工搭接缺陷与气孔率，提升车圈壁厚均一性。</li>
+                        <li><strong>30mm 现代宽外宽</strong>：匹配 28C/30C 真空胎，兼顾滚阻与气动。</li>
+                        <li><strong>官方车圈置换售后保障</strong>：提供明确的坏圈换新支持。</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="analysis-section pros">
+                <div class="sec-title">📈 硬核产品力指标与工程优势</div>
+                <div class="sec-content">
+                    <ul>
+                        <li><strong>工业制造均一性高</strong>：降低批次间动平衡离散度，水贴与漆面做工公差小。</li>
+                        <li><strong>PRO 系列 4999 元精准卡位</strong>：标准工业化走量标杆。</li>
+                        <li><strong>售后修补成本可控</strong>：官方置换网络解决后顾之忧。</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="analysis-section cons">
+                <div class="sec-title">📉 产品短板与物理局限性</div>
+                <div class="sec-content">
+                    <ul>
+                        <li>缠绕工艺导致车圈整体自重偏保守（508 重量在 1390g~1500g 左右）。</li>
+                        <li>ULTRA 系列 7299 元价位面临各路超轻碳条竞品的参数挤压。</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="model-table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>型号</th>
+                            <th>前/后框高</th>
+                            <th>外宽</th>
+                            <th>花鼓/棘轮系统</th>
+                            <th>辐条规格</th>
+                            <th>标配重量</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>ULTRA DB405</strong></td>
+                            <td class="mono">40 / 45mm</td>
+                            <td class="mono">30mm</td>
+                            <td>36T (21孔 2:1)</td>
+                            <td>2.8G碳辐条</td>
+                            <td><span class="tag-pill mono">1305g</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>ULTRA DB508</strong></td>
+                            <td class="mono">50 / 58mm</td>
+                            <td class="mono">30mm</td>
+                            <td>36T (21孔 2:1)</td>
+                            <td>2.8G碳辐条</td>
+                            <td><span class="tag-pill mono">1375g</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>PRO DB405</strong></td>
+                            <td class="mono">40 / 45mm</td>
+                            <td class="mono">27mm</td>
+                            <td>36T (21/24孔)</td>
+                            <td>WING21破风条</td>
+                            <td><span class="tag-pill mono">1410g</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>PRO DB508</strong></td>
+                            <td class="mono">50 / 58mm</td>
+                            <td class="mono">27mm</td>
+                            <td>36T (21/24孔)</td>
+                            <td>WING21破风条</td>
+                            <td><span class="tag-pill mono">1500g</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 5. 静藤 (PRO PLUS) -->
+        <div class="brand-full-card" id="brand-jingteng">
+            <div class="brand-card-header">
+                <div class="brand-name-group">
+                    <h2>静藤 (PRO PLUS) <span class="role-badge">PBO高分子柔性纤维 · 高阻尼防脆断</span></h2>
+                    <span class="price-badge">价格区间：¥5,xxx ~ ¥7,xxx</span>
+                </div>
+                <div class="weight-badge">自重：1260~1390g</div>
+            </div>
+
+            <!-- 网络推广与营销渠道 -->
+            <div class="analysis-section marketing">
+                <div class="sec-title">🌐 网络推广渠道与流量获取模式</div>
+                <div class="sec-content">
+                    <ul>
+                        <li><strong>国内高水平业余/职业车队深度冠名赞助</strong>：赞助 MBH 银行车队、福瑞诺瓦-静藤车队等，征战环赛里木湖等全国高水平公路自行车赛，通过领奖台战绩直接做性能背书。</li>
+                        <li><strong>行业大型展会高规格发布（中国国际自行车展/上海展）</strong>：与美骑网等自行车行业权威媒体合作，发布技术深度专访与实测报告。</li>
+                        <li><strong>小红书与微信社群精细化种草</strong>：配合线下高阶自行车 Fitting 精品车店，主打整车装车美学展示与进阶骑行圈层传播。</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="analysis-section industry">
+                <div class="sec-title">🏢 商业模式与行业生态位</div>
+                <div class="sec-content">
+                    <ul>
+                        <li><strong>复合材料级差异化探索者</strong>：开辟“PBO 高分子柔性纤维”细分技术路径，主攻高韧性与振动阻尼衰减。</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="analysis-section core">
+                <div class="sec-title">⚙️ 核心技术路径与专利壁垒</div>
+                <div class="sec-content">
+                    <ul>
+                        <li><strong>PBO 聚苯并双恶唑（Zylon）高分子纤维辐条</strong>：拉伸强度达 <strong>5.8 GPa</strong>（为芳纶的 2 倍以上），具备极高的断裂韧性。</li>
+                        <li><strong>固有高阻尼特性衰减高频振动</strong>：实测对路面输入的 <strong>20~50Hz 高频机械振动传递函数衰减达 30% 以上</strong>。</li>
+                        <li><strong>彻底杜绝侧向冲击脆断</strong>：受飞石撞击轴向变形吸能，不会发生横向剪切脆断。</li>
+                        <li><strong>ULTRA-D 规格搭载 60T 钛合金棘轮</strong>：1260g 超轻自重 + 3.0mm 碳条。</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="analysis-section pros">
+                <div class="sec-title">📈 硬核产品力指标与工程优势</div>
+                <div class="sec-content">
+                    <ul>
+                        <li><strong>抗冲击安全容限极高</strong>：杜绝碳辐条受碎石硬物撞击脆断的行业痛点。</li>
+                        <li><strong>高频机械振动物理衰减</strong>：降低车身共振峰值加速度，提升轮胎接地附着率。</li>
+                        <li><strong>张力衰减率低</strong>：高分子取向纤维疲劳寿命优异。</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="analysis-section cons">
+                <div class="sec-title">📉 产品短板与物理局限性</div>
+                <div class="sec-content">
+                    <ul>
+                        <li>在 >1000W 瞬间极限冲刺工况下，驱动扭转刚度滞后量微大于超高模量宽碳条。</li>
+                        <li>PBO 纤维需专门的锚固结构与防紫外线老化防护涂层工艺。</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="model-table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>型号</th>
+                            <th>前/后框高</th>
+                            <th>外宽</th>
+                            <th>花鼓/棘轮系统</th>
+                            <th>辐条规格</th>
+                            <th>标配重量</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>PRO PLUS PBO</strong></td>
+                            <td class="mono">50 / 50mm</td>
+                            <td class="mono">28mm</td>
+                            <td>36T (前21后24孔)</td>
+                            <td>2.0-2.5mm PBO纤维条</td>
+                            <td><span class="tag-pill mono">1390g</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>ULTRA-D</strong></td>
+                            <td class="mono">50 / 50mm</td>
+                            <td class="mono">28mm</td>
+                            <td>60T 钛合金棘轮</td>
+                            <td>3.0mm碳辐条</td>
+                            <td><span class="tag-pill mono">1260g</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>PRO+ 60</strong></td>
+                            <td class="mono">60 / 60mm</td>
+                            <td class="mono">30mm</td>
+                            <td>36/52T (前21后24孔)</td>
+                            <td>3.2mm碳辐条</td>
+                            <td><span class="tag-pill mono">1450g</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 6. 银贝斯 (HYPER) -->
+        <div class="brand-full-card" id="brand-winspace">
+            <div class="brand-card-header">
+                <div class="brand-name-group">
+                    <h2>银贝斯 (HYPER) <span class="role-badge">对穿法兰 · 驱动扭转刚度标杆</span></h2>
+                    <span class="price-badge">价格区间：¥8,400 ~ ¥9,400</span>
+                </div>
+                <div class="weight-badge">自重：1291~1500g</div>
+            </div>
+
+            <!-- 网络推广与营销渠道 -->
+            <div class="analysis-section marketing">
+                <div class="sec-title">🌐 网络推广渠道与流量获取模式</div>
+                <div class="sec-content">
+                    <ul>
+                        <li><strong>YouTube 硬核技术流博主深度合作</strong>：深度绑定以严苛机械公差拆解著称的工程师博主 <strong>Hambini</strong> 以及澳洲知名骑行博主 <strong>Cam Nicholls</strong>，通过硬核实测建立与欧美一线大厂同台竞技的工程可信度。</li>
+                        <li><strong>Facebook 官方车主社群 (Winspace Owners Group) & Reddit (r/Velo)</strong>：建立数万名海外核心车主社区，进行技术答疑、装车方案交流与自发口碑发酵。</li>
+                        <li><strong>高管出镜与工程故事化传播</strong>：CEO（Stephen Cai）在官方 YouTube 进行工厂实地走访与技术拆解访谈，强化“工程驱动”品牌人设。</li>
+                        <li><strong>全球线下授权经销商网络</strong>：在欧美日韩建立线下授权合作店，提供实体试骑与售后备件支持。</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="analysis-section industry">
+                <div class="sec-title">🏢 商业模式与行业生态位</div>
+                <div class="sec-content">
+                    <ul>
+                        <li><strong>国内最早打入欧美职业赛事的硬派标杆</strong>：经历全球 UCI 赛事验证，稳居高端竞技市场。</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="analysis-section core">
+                <div class="sec-title">⚙️ 核心技术路径与专利壁垒</div>
+                <div class="sec-content">
+                    <ul>
+                        <li><strong>对穿法兰 2:1 编法（Through-Flange Lacing）</strong>：平衡辐条张力比（由 100:50 提升至 100:85 以上），驱动扭转刚度高达 <strong>150+ N·m/°</strong>。</li>
+                        <li><strong>5.2mm 高模量破风碳辐条 + 钛合金行星棘轮</strong>：横向抗弯模量大，站立摇车轮圈横向挠度 $<1.5\text{mm}$，千瓦冲刺不蹭碟。</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="analysis-section pros">
+                <div class="sec-title">📈 硬核产品力指标与工程优势</div>
+                <div class="sec-content">
+                    <ul>
+                        <li><strong>极限冲刺传动效率极高</strong>：大扭矩踩踏力传导直接无迟滞。</li>
+                        <li><strong>横向抗侧弯刚性突出</strong>：高速变向压弯支撑力扎实。</li>
+                        <li><strong>职业级赛事验证</strong>：结构疲劳寿命经过世巡赛与洲际赛验证。</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="analysis-section cons">
+                <div class="sec-title">📉 产品短板与物理局限性</div>
+                <div class="sec-content">
+                    <ul>
+                        <li>极高结构刚性导致粗糙路面垂直震动传递率高，对车手核心力量与体能要求苛刻。</li>
+                        <li>定价逼近万元级，价格门槛较高。</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="model-table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>型号</th>
+                            <th>前/后框高</th>
+                            <th>外宽</th>
+                            <th>花鼓/棘轮系统</th>
+                            <th>辐条规格</th>
+                            <th>标配重量</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>HYPER D33</strong></td>
+                            <td class="mono">35 / 35mm</td>
+                            <td class="mono">28.4mm</td>
+                            <td>钛合金行星棘轮 (对穿法兰)</td>
+                            <td>5.2破风碳条+陶瓷</td>
+                            <td><span class="tag-pill mono">1291g</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>HYPER D45</strong></td>
+                            <td class="mono">46 / 54mm</td>
+                            <td class="mono">28.4mm</td>
+                            <td>钛合金行星棘轮 (对穿法兰)</td>
+                            <td>5.2破风碳条+陶瓷</td>
+                            <td><span class="tag-pill mono">1333g</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>HYPER D67</strong></td>
+                            <td class="mono">60 / 68mm波浪</td>
+                            <td class="mono">28.4mm</td>
+                            <td>钛合金行星棘轮 (对穿法兰)</td>
+                            <td>5.2破风碳条+陶瓷</td>
+                            <td><span class="tag-pill mono">1500g</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 7. 鸿基碳条 (SOOM) -->
+        <div class="brand-full-card" id="brand-soom">
+            <div class="brand-card-header">
+                <div class="brand-name-group">
+                    <h2>鸿基碳条 (SOOM) <span class="role-badge">碳辐条源头供应链</span></h2>
+                    <span class="price-badge">价格区间：¥4,099 ~ ¥8,999</span>
+                </div>
+                <div class="weight-badge">自重：1275~1500g</div>
+            </div>
+
+            <!-- 网络推广与营销渠道 -->
+            <div class="analysis-section marketing">
+                <div class="sec-title">🌐 网络推广渠道与流量获取模式</div>
+                <div class="sec-content">
+                    <ul>
+                        <li><strong>B2B 工业展会与供应链源头代工（1688 / 行业展）</strong>：自身作为国内碳辐条生产厂家，早期主要以 OEM/ODM 供应链供货为主，具备源头成本优势。</li>
+                        <li><strong>淘系电商（淘宝/天猫）搜索直通车 + 抖音短视频切片</strong>：以“碳条轮组进入 4000 元时代”为主要卖点，通过搜索广告与短视频切片承接预算有限车友的搜索流量。</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="analysis-section industry">
+                <div class="sec-title">🏢 商业模式与行业生态位</div>
+                <div class="sec-content">
+                    <ul>
+                        <li><strong>源头供应链垂直整合策略</strong>：依托自主碳辐条拉挤成型产能，将碳条轮组直接打入 4000 元主流价格带。</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="analysis-section core">
+                <div class="sec-title">⚙️ 核心技术路径与专利壁垒</div>
+                <div class="sec-content">
+                    <ul>
+                        <li><strong>自研 3.2mm / 5.2mm 高模量碳辐条</strong>：具备自主碳条生产与张力测试标定能力。</li>
+                        <li><strong>合理重量控制</strong>：VOSO 50mm 做到 1275g，在 4000 元价位实现合理的重量/刚性比。</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="analysis-section pros">
+                <div class="sec-title">📈 硬核产品力指标与工程优势</div>
+                <div class="sec-content">
+                    <ul>
+                        <li><strong>碳条成本结构优势</strong>：自主供应碳条降低 BOM 成本，提供低门槛碳条方案。</li>
+                        <li><strong>重量指标达标</strong>：1275g 自重在同价位具备竞争力。</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="analysis-section cons">
+                <div class="sec-title">📉 产品短板与物理局限性</div>
+                <div class="sec-content">
+                    <ul>
+                        <li>除碳条自产外，花鼓与车圈结构缺乏类似钛塔基、免涂装、PBO 材料等独家专利技术壁垒。</li>
+                        <li>品牌溢价与行业技术声量相对平淡。</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="model-table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>型号</th>
+                            <th>前/后框高</th>
+                            <th>外宽</th>
+                            <th>花鼓/棘轮系统</th>
+                            <th>辐条规格</th>
+                            <th>标配重量</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>VOSO ULTIMATE 50</strong></td>
+                            <td class="mono">50 / 50mm</td>
+                            <td class="mono">28mm</td>
+                            <td>36T (21孔 2:1)</td>
+                            <td>5.2mm碳辐条</td>
+                            <td><span class="tag-pill mono">1275g</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>ULTRA 50</strong></td>
+                            <td class="mono">50 / 50mm</td>
+                            <td class="mono">30mm</td>
+                            <td>36T (前21后24孔)</td>
+                            <td>3.2mm碳辐条</td>
+                            <td><span class="tag-pill mono">1395g</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 8. Superteam -->
+        <div class="brand-full-card" id="brand-superteam">
+            <div class="brand-card-header">
+                <div class="brand-name-group">
+                    <h2>Superteam <span class="role-badge">外贸电商普及者</span></h2>
+                    <span class="price-badge">价格区间：¥3,xxx ~ ¥5,xxx</span>
+                </div>
+                <div class="weight-badge">自重：1290~1350g</div>
+            </div>
+
+            <!-- 网络推广与营销渠道 -->
+            <div class="analysis-section marketing">
+                <div class="sec-title">🌐 网络推广渠道与流量获取模式</div>
+                <div class="sec-content">
+                    <ul>
+                        <li><strong>Amazon (亚马逊) 碳轮类目搜索霸榜</strong>：深耕亚马逊平台十余年，积累了数万条真实海外买家 Review，形成强大的自然搜索权重与转化飞轮。</li>
+                        <li><strong>GCN (Global Cycling Network) 多语言分部官方战略合作</strong>：连续多年与 GCN 法语、西语、意大利语等欧洲分部深度联合共创产品评测与真实骑行内容，打破“廉价地摊货”质疑。</li>
+                        <li><strong>Shopify 官方自建站 + 自动化 Affiliate 联盟返佣系统</strong>：建立全球创作者分销网络，激励中小网红带货抽成。</li>
+                        <li><strong>AliExpress 官方直营店</strong>：承接非亚马逊覆盖区域的发展中国家与小众市场订单。</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="analysis-section industry">
+                <div class="sec-title">🏢 商业模式与行业生态位</div>
+                <div class="sec-content">
+                    <ul>
+                        <li><strong>大众入门碳轮出货量普及者</strong>：凭借极低门槛、多规格碳条组合与电商渠道承接全球初级升级用户。</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="analysis-section core">
+                <div class="sec-title">⚙️ 核心技术路径与专利壁垒</div>
+                <div class="sec-content">
+                    <ul>
+                        <li><strong>蝴蝶框局部变厚结构</strong>：在辐条孔受力区增加碳布层数，非受力区局部削薄，兼顾外观辨识度与减重。</li>
+                        <li><strong>提供 3.2 / 4.0 / 5.2mm 多碳条规格组合</strong>。</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="analysis-section pros">
+                <div class="sec-title">📈 硬核产品力指标与工程优势</div>
+                <div class="sec-content">
+                    <ul>
+                        <li><strong>极致价格门槛</strong>：将碳辐条轮组价格压入 3000~4000 元普及区间。</li>
+                        <li><strong>全球出货基数大</strong>：模具摊薄成本极低。</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="analysis-section cons">
+                <div class="sec-title">📉 产品短板与物理局限性</div>
+                <div class="sec-content">
+                    <ul>
+                        <li>花鼓多采用公模代工方案，在高扭矩极限工况下的轴承公差控制弱于高阶专业竞技轮组。</li>
+                        <li>定位偏大众休闲与初级改装，缺乏高阶竞技技术话语权。</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="model-table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>型号</th>
+                            <th>前/后框高</th>
+                            <th>外宽</th>
+                            <th>花鼓/棘轮系统</th>
+                            <th>辐条规格</th>
+                            <th>标配重量</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>S-All Carbon Ultra</strong></td>
+                            <td class="mono">50 / 50mm</td>
+                            <td class="mono">28mm</td>
+                            <td>36T (21孔 2:1)</td>
+                            <td>5.2mm碳辐条</td>
+                            <td><span class="tag-pill mono">1305g</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>S-All Carbon ULTRA G58</strong></td>
+                            <td class="mono">50 / 50mm</td>
+                            <td class="mono">30mm</td>
+                            <td>36T (21孔 2:1)</td>
+                            <td>3.2mm碳条+陶瓷</td>
+                            <td><span class="tag-pill mono">1290g</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+</body>
+</html>

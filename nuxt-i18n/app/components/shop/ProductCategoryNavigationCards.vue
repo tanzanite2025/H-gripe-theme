@@ -268,10 +268,6 @@ const emitProductCategoryNavigation = (productCategory?: ProductCategoryNavigati
   emit('navigate')
 }
 
-if (import.meta.server && !hasExternallyProvidedProductCategories.value) {
-  await loadProductCategories().catch(() => [])
-}
-
 onMounted(() => {
   if (!hasExternallyProvidedProductCategories.value) {
     void loadProductCategories()

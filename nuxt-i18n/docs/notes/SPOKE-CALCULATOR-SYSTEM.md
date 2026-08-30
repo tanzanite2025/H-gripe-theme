@@ -1,6 +1,6 @@
 # Spoke Calculator System / 辐条计算器系统手册
 
-Last updated: 2026-07-25
+Last updated: 2026-08-29
 
 Status: Active reference, not an open backlog by itself. Re-audit this note when the spoke data sync workflow, Go `/spoke/export` contract, or frontend calculator data model changes.
 
@@ -11,7 +11,7 @@ Status: Active reference, not an open backlog by itself. Re-audit this note when
 - **核心数据源**: `app/data/spoke-calculator/database.ts`
 - **优势**: 0ms 延迟加载，强类型校验，无后端运行风险。
 - **组成部分**:
-  - `SpokeCalculatorCore.vue`: 主计算器组件 (Brand -> Model 级联选择)。
+  - `SpokeCalculatorBlueprint.vue`: 主计算器组件 (蓝图式布局，保留 Brand -> Model 级联选择)。
   - `SpokeSmartSearch.vue`: 智能搜索组件 (关键词模糊匹配)。
   - `spokeMath.ts`: 公共计算算法库。
 

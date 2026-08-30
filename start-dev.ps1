@@ -14,7 +14,7 @@ $Ports = [ordered]@{
   Admin      = 9300
   SiteQualityRunner = 9240
   Postgres   = 9400
-  Redis      = 9510
+  Redis      = 9562
 }
 
 $AppPorts = @($Ports.Storefront, $Ports.Api, $Ports.Admin)

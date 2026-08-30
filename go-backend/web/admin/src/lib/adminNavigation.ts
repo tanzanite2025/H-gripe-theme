@@ -25,6 +25,7 @@ import {
   Share2,
   ScrollText,
   Settings,
+  Search,
   ShieldAlert,
   ShieldCheck,
   ShoppingCart,
@@ -149,6 +150,7 @@ export const adminNavigationItems: AdminNavigationItem[] = [
     children: [
       { id: 'urls-overview', path: '/urls/overview', routeName: 'URLOverview', label: '概览' },
       { id: 'urls-catalog', path: '/urls/catalog', routeName: 'URLCatalog', label: '路由台账' },
+      { id: 'urls-search', path: '/urls/search', routeName: 'URLSearch', label: '搜索管理', icon: Search },
       { id: 'urls-issues', path: '/urls/issues', routeName: 'URLIssues', label: '问题队列' },
       { id: 'urls-redirects', path: '/urls/redirects', routeName: 'URLRedirects', label: '重定向' },
       { id: 'urls-canonical', path: '/urls/canonical', routeName: 'URLCanonical', label: 'Canonical 与冲突' },

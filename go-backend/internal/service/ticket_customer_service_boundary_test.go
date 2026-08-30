@@ -52,6 +52,29 @@ func TestCustomerServiceDedicatedPathStillHandlesConversationMessages(t *testing
 	assert.True(t, messages[1].IsStaff)
 }
 
+func TestCustomerServiceAgentMessagePreservesVideoType(t *testing.T) {
+	db, ticketService := newTestTicketBoundaryService(t)
+	agent := createTicketBoundaryUser(t, db, "agent-video@example.test", "agent-video", "support")
+	owner := CustomerServiceOwner{VisitorSessionHash: "video-visitor-hash"}
+
+	conversation, err := ticketService.GetOrCreatePublicCustomerServiceConversation(owner, agent.ID)
+	require.NoError(t, err)
+
+	videoMessage := &ticket.TicketMessage{
+		TicketID:    conversation.ID,
+		Content:     "Product demo video",
+		MessageType: "video",
+		Metadata:    `{"url":"https://example.test/uploads/demo.mp4"}`,
+	}
+	require.NoError(t, ticketService.AddCustomerServiceAgentMessage(videoMessage, agent.ID, false))
+	assert.Equal(t, "video", videoMessage.MessageType)
+
+	messages, err := ticketService.GetPublicCustomerServiceMessages(ticketConversationID(conversation), owner, 50, 0)
+	require.NoError(t, err)
+	require.Len(t, messages, 1)
+	assert.Equal(t, "video", messages[0].MessageType)
+}
+
 func TestCustomerServiceConversationFallsBackToActiveSupportUserWithoutProfile(t *testing.T) {
 	db, ticketService := newTestTicketBoundaryService(t)
 	fallbackAgent := createTicketBoundaryUser(t, db, "fallback@example.test", "fallback", "support")

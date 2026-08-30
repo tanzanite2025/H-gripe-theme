@@ -2,7 +2,6 @@ import { computed, reactive, ref } from 'vue'
 import customerServiceApi from '@/api/customerService'
 import type {
   AssignableAgent,
-  AssignableGroup,
   CustomerContext,
   CustomerConversation,
   CustomerConversationMessage,
@@ -20,14 +19,11 @@ export const useCustomerServiceInbox = () => {
   const replyMessage = ref('')
   const transferTo = ref('')
   const assignableAgents = ref<AssignableAgent[]>([])
-  const assignableGroups = ref<AssignableGroup[]>([])
   const pagination = reactive({ page: 1, pageSize: 20, total: 0 })
   const filters = reactive<CustomerServiceFiltersState>({
     search: '',
     status: 'all',
     identity: 'all',
-    assignedTo: 'all',
-    groupId: 'all',
     unread: 'all',
   })
 
@@ -44,8 +40,6 @@ export const useCustomerServiceInbox = () => {
         search: filters.search.trim() || undefined,
         status: filters.status !== 'all' ? filters.status : undefined,
         identity: filters.identity !== 'all' ? filters.identity : undefined,
-        assigned_to: filters.assignedTo !== 'all' ? filters.assignedTo : undefined,
-        group_id: filters.groupId !== 'all' ? filters.groupId : undefined,
         unread: filters.unread === 'unread' ? 'true' : undefined,
       })
       conversations.value = data.conversations || []
@@ -87,13 +81,10 @@ export const useCustomerServiceInbox = () => {
 
   const fetchAgents = async () => {
     try {
-      const directory = await customerServiceApi.listAgentDirectory()
-      assignableAgents.value = directory.agents || []
-      assignableGroups.value = directory.groups || await customerServiceApi.listGroups()
+      assignableAgents.value = await customerServiceApi.listAgents()
     } catch (error) {
       console.error('Failed to fetch public chat agents:', error)
       assignableAgents.value = []
-      assignableGroups.value = []
     }
   }
 
@@ -146,8 +137,6 @@ export const useCustomerServiceInbox = () => {
     filters.search = ''
     filters.status = 'all'
     filters.identity = 'all'
-    filters.assignedTo = 'all'
-    filters.groupId = 'all'
     filters.unread = 'all'
     pagination.page = 1
     await fetchConversations()
@@ -164,7 +153,6 @@ export const useCustomerServiceInbox = () => {
     replyMessage,
     transferTo,
     assignableAgents,
-    assignableGroups,
     pagination,
     filters,
     totalPages,

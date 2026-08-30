@@ -5,7 +5,7 @@
         <DialogHeader>
           <DialogTitle>{{ form.id ? '编辑客服组' : '添加客服组' }}</DialogTitle>
           <DialogDescription>
-            客服组用于前台客服目录、后台会话筛选和自动回复作用域。
+            客服组只作为前台客服列表的展示标签，帮助客户识别要选哪位客服。
           </DialogDescription>
         </DialogHeader>
 

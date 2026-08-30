@@ -52,8 +52,8 @@ export const useWhatsAppState = (
     return base.replace(/\/$/, '')
   })
   
-  // 欢迎页状态。Nuxt 前台只承接客户侧聊天，不承接客服工作台。
-  const showWelcomeScreen = ref(false)
+  // 客服选择面板状态。Nuxt 前台只承接客户侧聊天，不承接客服工作台。
+  const showAgentSelectionPanel = ref(false)
   
   // 是否有历史对话（用于显示 "Continue" 或 "Start"）
   const hasHistoryChat = ref(false)
@@ -102,27 +102,12 @@ export const useWhatsAppState = (
   
   // 客服列表和选中状态
   const agents = ref<any[]>([])
-  const agentGroups = ref<any[]>([])
   const selectedAgent = ref<any>(null)
   const isLoadingAgents = ref(false)
 
-  const welcomeAgents = computed(() => {
+  const agentSelectionAgents = computed(() => {
     const result: any[] = []
     const usedAgentIDs = new Set<string>()
-    const groups = Array.isArray(agentGroups.value) ? agentGroups.value : []
-
-    for (const group of groups) {
-      const groupAgent = agents.value.find((agent) => {
-        const memberships = Array.isArray(agent?.groups) ? agent.groups : []
-        return memberships.some((membership: any) => Number(membership?.id) === Number(group?.id))
-      })
-      if (!groupAgent) continue
-      const agentID = String(groupAgent?.id ?? '')
-      if (!agentID || usedAgentIDs.has(agentID)) continue
-      usedAgentIDs.add(agentID)
-      result.push(groupAgent)
-      if (result.length === 3) return result
-    }
 
     for (const agent of agents.value) {
       const agentID = String(agent?.id ?? '')
@@ -139,14 +124,14 @@ export const useWhatsAppState = (
     return agents.value.filter(agent => normalizeChatAgentOnlineStatus(agent) === 'online').length
   })
   
-  watch([showWelcomeScreen, welcomeAgents], () => {
-    if (!showWelcomeScreen.value) return
-    if (!welcomeAgents.value.length) return
-  
-    const ids = welcomeAgents.value.map(agent => String(agent?.id ?? ''))
+  watch([showAgentSelectionPanel, agentSelectionAgents], () => {
+    if (!showAgentSelectionPanel.value) return
+    if (!agentSelectionAgents.value.length) return
+
+    const ids = agentSelectionAgents.value.map(agent => String(agent?.id ?? ''))
     const currentId = selectedAgent.value?.id != null ? String(selectedAgent.value.id) : ''
     if (!currentId || !ids.includes(currentId)) {
-      selectedAgent.value = welcomeAgents.value[1] || welcomeAgents.value[0]
+      selectedAgent.value = agentSelectionAgents.value[1] || agentSelectionAgents.value[0]
     }
   }, { immediate: true })
   
@@ -358,16 +343,16 @@ export const useWhatsAppState = (
     emit('close')
   }
   
-  // 进入聊天（从欢迎页）
+  // 进入聊天（从客服选择面板）
   const enterChat = () => {
     if (selectedAgent.value) {
-      showWelcomeScreen.value = false
+      showAgentSelectionPanel.value = false
       void sendPendingSelectionRequest()
     }
   }
   
-  // 在欢迎页选择客服
-  const selectAgentFromWelcome = (agent: any) => {
+  // 在客服选择面板选择客服
+  const selectAgentFromAgentSelectionPanel = (agent: any) => {
     selectedAgent.value = agent
     ensureChatRoom(agent.id)
     loadMessagesFromStorage()
@@ -812,7 +797,6 @@ export const useWhatsAppState = (
         emailSettings.value = directory.emailSettings
       }
 
-      agentGroups.value = Array.isArray(directory.groups) ? directory.groups : []
       if (directory.agents.length > 0) {
         agents.value = directory.agents
         await initializeSelectedAgent()
@@ -949,12 +933,11 @@ export const useWhatsAppState = (
   
   return {
     user,
-    showWelcomeScreen,
+    showAgentSelectionPanel,
     hasHistoryChat,
     agents,
-    agentGroups,
     selectedAgent,
-    welcomeAgents,
+    agentSelectionAgents,
     onlineAgentsCount,
     emailSettings,
     visitorEmail,
@@ -1000,7 +983,7 @@ export const useWhatsAppState = (
     handleClose,
     enterChat,
     selectAgent,
-    selectAgentFromWelcome,
+    selectAgentFromAgentSelectionPanel,
     handleMessageContextMenu,
     handleSendMessage,
     searchProducts,

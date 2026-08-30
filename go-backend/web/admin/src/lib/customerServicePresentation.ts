@@ -146,6 +146,8 @@ export const messageMetadata = (message: any) => {
 
 export const isConfigConfirmMessage = (message: any) => message?.message_type === 'config_confirm'
 export const isOrderMessage = (message: any) => message?.message_type === 'order'
+export const isProductMessage = (message: any) => message?.message_type === 'product'
+export const isVideoMessage = (message: any) => message?.message_type === 'video'
 
 export const configProduct = (message: any) => {
   const metadata = messageMetadata(message)
@@ -164,6 +166,10 @@ export const configOptionRows = (message: any) => {
 
 export const orderPayload = (message: any) => messageMetadata(message) || {}
 
+export const productPayload = (message: any) => messageMetadata(message) || {}
+
+export const videoPayload = (message: any) => messageMetadata(message) || {}
+
 export const orderItems = (message: any) => {
   const items = orderPayload(message)?.items
   return Array.isArray(items) ? items : []
@@ -172,8 +178,24 @@ export const orderItems = (message: any) => {
 export const formatOrderTotal = (order: any) => {
   const total = Number(order?.total || 0)
   const currency = String(order?.currency || '').trim().toUpperCase()
-  if (!Number.isFinite(total) || total <= 0) return currency
-  return `${currency || '币种缺失'} ${total.toFixed(2)}`
+  if (!Number.isFinite(total) || total <= 0) return currency || '-'
+  return currency ? `${currency} ${total.toFixed(2)}` : total.toFixed(2)
+}
+
+export const formatProductPrice = (product: any) => {
+  const priceText = String(product?.price || '').trim()
+  const currency = String(product?.currency || '').trim().toUpperCase()
+  if (priceText) {
+    if (currency && !priceText.toUpperCase().startsWith(currency)) {
+      return `${currency} ${priceText}`
+    }
+    return priceText
+  }
+
+  const priceValue = Number(product?.price_value ?? product?.priceValue ?? 0)
+  if (!Number.isFinite(priceValue) || priceValue <= 0) return ''
+
+  return currency ? `${currency} ${priceValue.toFixed(2)}` : priceValue.toFixed(2)
 }
 
 export const statusDisplayValue = (status: any) => {
@@ -207,8 +229,37 @@ export const signalTone = (status: any): AdminStatusTone => {
   return 'gray'
 }
 
-export const assigneeName = (assignedTo: any, agents: any[] = []) => {
-  if (!assignedTo) return '未分配'
-  const agent = agents.find((item) => Number(item.user_id || item.id) === Number(assignedTo))
-  return agent?.name || agent?.email || `用户 ${assignedTo}`
+export const agentDisplayName = (agent: any, fallbackPrefix = '客服') => {
+  const name = String(agent?.name || '').trim()
+  if (name) return name
+
+  const email = String(agent?.email || '').trim()
+  if (email) return email
+
+  const agentID = agent?.user_id || agent?.id
+  if (agentID !== undefined && agentID !== null && String(agentID).trim()) {
+    return `${fallbackPrefix} #${agentID}`
+  }
+
+  return fallbackPrefix
+}
+
+export const assigneeName = (assignedTo: any, agents: any[] = [], currentUser: any = null) => {
+  const assignedToID = Number(assignedTo)
+  if (!Number.isFinite(assignedToID) || assignedToID <= 0) return '未分配'
+
+  const agent = agents.find((item) => Number(item.user_id || item.id) === assignedToID)
+  if (agent) return agentDisplayName(agent)
+
+  if (currentUser && Number(currentUser.id) === assignedToID) {
+    const currentUserName = [
+      currentUser.first_name,
+      currentUser.last_name,
+    ].filter(Boolean).map((item) => String(item).trim()).filter(Boolean).join(' ')
+
+    const fallbackName = String(currentUser.display_name || currentUser.name || '').trim()
+    return currentUserName || fallbackName || '当前客服'
+  }
+
+  return '未知客服'
 }

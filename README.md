@@ -66,7 +66,7 @@ The root development command starts local infrastructure and the three app serve
 - Go API: `http://localhost:9200`
 - Admin console: `http://localhost:9300`
 - PostgreSQL host port: `localhost:9400`
-- Redis host port: `localhost:9510`
+- Redis host port: `localhost:9562`
 
 It also clears the app ports before starting and writes logs under `output/dev/`.
 
@@ -144,7 +144,7 @@ Compose ports:
 - Storefront: `http://localhost:9100`
 - API: `http://localhost:9200`
 - PostgreSQL: `localhost:9400`
-- Redis: `localhost:9510`
+- Redis: `localhost:9562`
 
 The admin console is not a service in the root Compose file; run it manually from `go-backend/web/admin/`.
 

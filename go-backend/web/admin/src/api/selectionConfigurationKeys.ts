@@ -1,8 +1,7 @@
 import axios from '@/utils/axios'
 import {
-  requireApiArrayField,
+  requireApiArray,
   requireApiObject,
-  requireApiObjectField,
   requireApiNumberField,
   requireApiStringField,
   unwrapApiPayload,
@@ -41,20 +40,15 @@ export interface SelectionConfigurationKeyPayload {
 const baseEndpoint = '/api/admin/selection-configuration/keys'
 
 const readKeyList = (response: unknown, endpoint: string): SelectionConfigurationKeyRecord[] => {
-  const envelope = requireApiObject(unwrapApiPayload(response, endpoint), endpoint, 'response payload')
-  const keys = requireApiArrayField(envelope, 'data', endpoint)
-  return keys as SelectionConfigurationKeyRecord[]
+  return requireApiArray(unwrapApiPayload(response, endpoint), endpoint, 'data') as SelectionConfigurationKeyRecord[]
 }
 
 const readKeyOptions = (response: unknown, endpoint: string): SelectionConfigurationKeyOption[] => {
-  const envelope = requireApiObject(unwrapApiPayload(response, endpoint), endpoint, 'response payload')
-  const options = requireApiArrayField(envelope, 'data', endpoint)
-  return options as SelectionConfigurationKeyOption[]
+  return requireApiArray(unwrapApiPayload(response, endpoint), endpoint, 'data') as SelectionConfigurationKeyOption[]
 }
 
 const readKeyRecord = (response: unknown, endpoint: string): SelectionConfigurationKeyRecord => {
-  const envelope = requireApiObject(unwrapApiPayload(response, endpoint), endpoint, 'response payload')
-  const key = requireApiObjectField(envelope, 'data', endpoint)
+  const key = requireApiObject(unwrapApiPayload(response, endpoint), endpoint, 'data')
   requireApiNumberField(key, 'id', endpoint)
   requireApiStringField(key, 'kind', endpoint)
   requireApiStringField(key, 'code', endpoint)

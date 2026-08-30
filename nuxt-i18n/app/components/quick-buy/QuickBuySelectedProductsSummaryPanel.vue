@@ -1125,7 +1125,7 @@ const handleStepSlotKeydown = (event: KeyboardEvent, stepIndex: number) => {
     padding-bottom: max(0.25rem, var(--tz-safe-area-bottom, 0px));
     margin-top: auto;
     border-top: 1px solid var(--quickbuy-divider, rgba(255, 255, 255, 0.045));
-    background: rgba(11, 13, 18, 0.96);
+    background: var(--quickbuy-panel-surface, var(--tz-card-surface));
     backdrop-filter: blur(10px);
   }
 

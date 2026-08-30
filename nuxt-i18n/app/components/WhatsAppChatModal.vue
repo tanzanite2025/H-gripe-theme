@@ -11,22 +11,22 @@
         
         <!-- 客户侧聊天：前台只负责访客/会员与客服 Profile 建立会话 -->
         <Transition name="fade-scale" mode="out-in">
-          <!-- 访客模式：欢迎页 -->
-          <ChatWelcomePanel
-            v-if="showWelcomeScreen"
-            key="welcome"
+          <!-- 初始客服选择面板 -->
+          <ChatAgentSelectionPanel
+            v-if="showAgentSelectionPanel"
+            key="agent-selection"
             ref="chatModalRef"
             class="chat-modal-draggable-shell"
             :class="{ 'chat-modal-shell--dragging': isDraggingChatModal }"
             :style="chatModalDragStyle"
-            :welcome-agents="welcomeAgents"
+            :agents="agentSelectionAgents"
             :selected-agent="selectedAgent"
             :online-agents-count="onlineAgentsCount"
             :has-history-chat="hasHistoryChat"
             :email-settings="emailSettings"
             @drag-start="handleChatModalDragStart"
             @close="handleClose"
-            @select-agent="selectAgentFromWelcome"
+            @select-agent="selectAgentFromAgentSelectionPanel"
             @enter-chat="enterChat"
           />
 
@@ -35,7 +35,7 @@
             v-else
             key="chat"
             ref="chatModalRef"
-            class="chat-modal-draggable-shell chat-modal-shell tz-mobile-dialog-surface relative w-full md:w-[560px] max-w-full md:max-w-[calc(100vw-3rem)] tz-mobile-safe-full-height rounded-none md:rounded-2xl overflow-hidden flex flex-col tz-surface-card shadow-[-12px_0_28px_rgba(15,23,42,0.16)] transition-colors duration-300 pointer-events-auto"
+            class="chat-modal-draggable-shell chat-modal-shell tz-mobile-dialog-surface relative w-full md:w-[520px] max-w-full md:max-w-[calc(100vw-4rem)] tz-mobile-safe-full-height rounded-none md:rounded-2xl overflow-hidden flex flex-col tz-surface-card shadow-[-12px_0_28px_rgba(15,23,42,0.16)] transition-colors duration-300 pointer-events-auto"
             :class="{ 'chat-modal-shell--dragging': isDraggingChatModal }"
             :style="chatModalDragStyle"
           >
@@ -83,11 +83,19 @@
                           class="w-full h-full rounded-full object-cover"
                           preset="avatar"
                         />
-                        <span v-else>{{ selectedAgentInitials }}</span>
+                        <span v-else>{{ selectedAgentPresentation.initials }}</span>
                       </span>
 
                       <span class="flex-1 min-w-0">
-                        <span class="block tz-text-primary font-medium text-sm truncate">{{ selectedAgent?.name || t('chatModal.fallback.agent') }}</span>
+                        <span class="flex min-w-0 items-center gap-2">
+                          <span class="block min-w-0 tz-text-primary font-medium text-sm truncate">{{ selectedAgent?.name || t('chatModal.fallback.agent') }}</span>
+                          <span
+                            class="inline-flex max-w-[8.5rem] shrink-0 items-center rounded-full border border-border/60 bg-white/70 px-2 py-0.5 text-[10px] font-semibold leading-none tz-text-secondary truncate"
+                            :title="selectedAgentPresentation.groupLabel"
+                          >
+                            {{ selectedAgentPresentation.groupLabel }}
+                          </span>
+                        </span>
                         <span class="block tz-text-muted text-xs truncate">{{ selectedAgentContactLabel }}</span>
                       </span>
 
@@ -162,34 +170,42 @@
                 >
                   <div class="max-h-[min(380px,55vh)] overflow-y-auto tz-surface-card p-2" role="listbox">
                     <div
-                      v-for="agent in agents"
-                      :key="agent.id"
+                      v-for="agentEntry in agentEntries"
+                      :key="agentEntry.agent.id"
                       class="w-full rounded-full border transition-colors"
-                      :class="isSelectedAgent(agent) ? 'border-[#059669]/70 tz-surface-subtle' : 'border-transparent tz-surface-card hover:tz-border-strong/14 hover:tz-surface-muted'"
+                      :class="isSelectedAgent(agentEntry.agent) ? 'border-[#059669]/70 tz-surface-subtle' : 'border-transparent tz-surface-card hover:tz-border-strong/14 hover:tz-surface-muted'"
                       role="option"
-                      :aria-selected="isSelectedAgent(agent)"
+                      :aria-selected="isSelectedAgent(agentEntry.agent)"
                     >
                       <div class="flex items-center gap-2 px-3 py-2.5">
                         <button
                           type="button"
                           class="flex min-w-0 flex-1 items-center gap-3 text-left"
-                          @click="handleAgentPickerSelect(agent)"
+                          @click="handleAgentPickerSelect(agentEntry.agent)"
                         >
                           <span class="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-full bg-slate-100 text-xs font-semibold tz-text-primary flex items-center justify-center">
-                          <StorefrontImage v-if="agent.avatar" :src="agent.avatar" :alt="agent.name" class="h-full w-full object-cover" preset="avatar" />
-                          <span v-else>{{ getAgentInitials(agent) }}</span>
-                          <span class="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border border-black" :class="getAgentStatusDotClass(agent)"></span>
+                          <StorefrontImage v-if="agentEntry.agent.avatar" :src="agentEntry.agent.avatar" :alt="agentEntry.agent.name" class="h-full w-full object-cover" preset="avatar" />
+                          <span v-else>{{ agentEntry.presentation.initials }}</span>
+                          <span class="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border border-black" :class="getAgentStatusDotClass(agentEntry.agent)"></span>
                           </span>
                           <span class="min-w-0 flex-1">
-                            <span class="block truncate text-sm font-semibold tz-text-primary">{{ agent.name || t('chatModal.fallback.agent') }}</span>
-                            <span class="block truncate text-xs tz-text-primary/58">{{ getAgentContactLabel(agent) }}</span>
+                            <span class="flex min-w-0 items-center gap-2">
+                              <span class="block min-w-0 truncate text-sm font-semibold tz-text-primary">{{ agentEntry.agent.name || t('chatModal.fallback.agent') }}</span>
+                              <span
+                                class="inline-flex max-w-[8.5rem] shrink-0 items-center rounded-full border border-border/60 bg-white/70 px-2 py-0.5 text-[10px] font-semibold leading-none tz-text-secondary truncate"
+                                :title="agentEntry.presentation.groupLabel"
+                              >
+                                {{ agentEntry.presentation.groupLabel }}
+                              </span>
+                            </span>
+                            <span class="block truncate text-xs tz-text-primary/58">{{ agentEntry.presentation.contactLabel || t('chatModal.agentSelector.descriptions.default') }}</span>
                           </span>
                         </button>
-                        <span v-if="isSelectedAgent(agent)" class="h-2 w-2 rounded-full bg-[#059669]"></span>
+                        <span v-if="isSelectedAgent(agentEntry.agent)" class="h-2 w-2 rounded-full bg-[#059669]"></span>
                         <span class="flex shrink-0 items-center gap-1">
                           <a
-                            v-if="getAgentEmailHref(agent)"
-                            :href="getAgentEmailHref(agent)"
+                            v-if="getAgentEmailHref(agentEntry.agent)"
+                            :href="getAgentEmailHref(agentEntry.agent)"
                             class="flex h-8 w-8 items-center justify-center rounded-full border tz-border-subtle tz-surface-card tz-text-primary transition-colors hover:tz-border-strong/35 hover:tz-surface-muted"
                             :title="t('chatModal.actions.email')"
                             :aria-label="t('chatModal.actions.email')"
@@ -208,8 +224,8 @@
                           </span>
 
                           <a
-                            v-if="getAgentWhatsAppHref(agent)"
-                            :href="getAgentWhatsAppHref(agent)"
+                            v-if="getAgentWhatsAppHref(agentEntry.agent)"
+                            :href="getAgentWhatsAppHref(agentEntry.agent)"
                             target="_blank"
                             rel="noopener noreferrer"
                             class="flex h-8 w-8 items-center justify-center rounded-full border tz-border-subtle tz-surface-card tz-text-primary transition-colors hover:tz-border-strong/35 hover:tz-surface-muted"
@@ -363,10 +379,11 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from '#imports'
 import { useWhatsAppState } from '~/composables/chat/useWhatsAppState'
+import { buildChatAgentPresentation, buildChatAgentPresentationList } from '~/lib/chatAgentPresentation'
 import CustomerServiceProductSearchModal from '~/components/CustomerServiceProductSearchModal.vue'
 import WhatsAppProductSearchResultDrawer from '~/components/WhatsAppProductSearchResultDrawer.vue'
 import WishlistDrawer from '~/components/WishlistDrawer.vue'
-import ChatWelcomePanel from '~/components/whatsapp/ChatWelcomePanel.vue'
+import ChatAgentSelectionPanel from '~/components/whatsapp/ChatAgentSelectionPanel.vue'
 import UserChatBody from '~/components/whatsapp/UserChatBody.vue'
 
 // Props - 现在不需要预先传入conversation
@@ -533,11 +550,11 @@ onBeforeUnmount(() => {
 
 const {
   user,
-  showWelcomeScreen,
+  showAgentSelectionPanel,
   hasHistoryChat,
   agents,
   selectedAgent,
-  welcomeAgents,
+  agentSelectionAgents,
   onlineAgentsCount,
   emailSettings,
   visitorEmail,
@@ -582,7 +599,7 @@ const {
   handleClose,
   enterChat,
   selectAgent,
-  selectAgentFromWelcome,
+  selectAgentFromAgentSelectionPanel,
   handleMessageContextMenu,
   handleSendMessage,
   handleAddProductToCart,
@@ -626,13 +643,6 @@ watch(
   { flush: 'post' }
 )
 
-const getAgentInitials = (agent: any) => {
-  const name = String(agent?.name || agent?.display_name || agent?.email || '').trim()
-  if (!name) return 'CS'
-  const words = name.split(/[\s._-]+/).filter(Boolean)
-  return words.slice(0, 2).map((word) => word.charAt(0).toUpperCase()).join('') || 'CS'
-}
-
 const normalizeWhatsAppNumber = (value: unknown) => {
   const digits = String(value || '').replace(/[^0-9]/g, '')
   return digits.length >= 6 ? digits : ''
@@ -648,13 +658,6 @@ const getAgentEmailHref = (agent: any) => {
   return email ? `mailto:${email}` : ''
 }
 
-const getAgentContactLabel = (agent: any) => {
-  const email = String(agent?.email || '').trim()
-  const whatsapp = String(agent?.whatsapp || '').trim()
-  if (email && whatsapp) return `${email} / ${whatsapp}`
-  return email || whatsapp || t('chatModal.agentSelector.descriptions.default')
-}
-
 const getAgentStatusDotClass = (agent: any) => {
   const status = String(agent?.online_status || agent?.status || '').trim().toLowerCase()
   if (status === 'online') return 'bg-[#059669]'
@@ -665,8 +668,10 @@ const getAgentStatusDotClass = (agent: any) => {
 
 const isSelectedAgent = (agent: any) => String(selectedAgent.value?.id ?? '') === String(agent?.id ?? '')
 
-const selectedAgentInitials = computed(() => getAgentInitials(selectedAgent.value))
-const selectedAgentContactLabel = computed(() => getAgentContactLabel(selectedAgent.value))
+const agentEntries = computed(() => buildChatAgentPresentationList(agents.value))
+
+const selectedAgentPresentation = computed(() => buildChatAgentPresentation(selectedAgent.value))
+const selectedAgentContactLabel = computed(() => selectedAgentPresentation.value.contactLabel || t('chatModal.agentSelector.descriptions.default'))
 
 const toggleAgentPicker = () => {
   agentPickerOpen.value = !agentPickerOpen.value
@@ -674,7 +679,7 @@ const toggleAgentPicker = () => {
 
 const handleAgentPickerSelect = (agent: any) => {
   selectAgent(agent)
-  showWelcomeScreen.value = false
+  showAgentSelectionPanel.value = false
   agentPickerOpen.value = false
 }
 </script>
@@ -715,7 +720,7 @@ const handleAgentPickerSelect = (agent: any) => {
   animation: wave 1.5s ease-in-out infinite;
 }
 
-/* 欢迎页/聊天窗口切换动画 */
+/* 面板/聊天窗口切换动画 */
 .fade-scale-enter-active,
 .fade-scale-leave-active {
   transition: opacity 0.2s ease, transform 0.2s ease;
@@ -801,7 +806,7 @@ const handleAgentPickerSelect = (agent: any) => {
 
 @media (min-width: 768px) {
   .chat-modal-shell {
-    height: min(900px, calc(100vh - 56px));
+    height: min(840px, calc(100vh - 56px));
     max-height: calc(100vh - 56px);
   }
 
@@ -829,7 +834,7 @@ const handleAgentPickerSelect = (agent: any) => {
 
   @supports (height: 100dvh) {
     .chat-modal-shell {
-      height: min(900px, calc(100dvh - 56px));
+      height: min(840px, calc(100dvh - 56px));
       max-height: calc(100dvh - 56px);
     }
 

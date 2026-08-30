@@ -43,6 +43,7 @@ type Repositories struct {
 	User                         *repository.UserRepository
 	Post                         *repository.PostRepository
 	StorefrontRouteCatalog       *repository.StorefrontRouteCatalogRepository
+	StorefrontURLSearchProfiles  *repository.StorefrontURLSearchProfileRepository
 	StorefrontRedirectRules      *repository.StorefrontRedirectRuleRepository
 	StorefrontURLIssues          *repository.StorefrontURLIssueRepository
 	PreflightContentLinks        *repository.PreflightContentLinkRepository
@@ -171,6 +172,7 @@ type Services struct {
 	Subscription                      *service.SubscriptionService
 	Sitemap                           *service.SitemapService
 	StorefrontRouteCatalog            *service.StorefrontRouteCatalogService
+	StorefrontURLSearchProfiles        *service.StorefrontURLSearchProfileService
 	StorefrontRedirectRules           *service.StorefrontRedirectRuleService
 	StorefrontURLIssues               *service.StorefrontURLIssueService
 	PreflightContentLinks             *service.PreflightContentLinkService
@@ -236,6 +238,7 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		User:                         repository.NewUserRepository(db),
 		Post:                         repository.NewPostRepository(db),
 		StorefrontRouteCatalog:       repository.NewStorefrontRouteCatalogRepository(db),
+		StorefrontURLSearchProfiles:  repository.NewStorefrontURLSearchProfileRepository(db),
 		StorefrontRedirectRules:      repository.NewStorefrontRedirectRuleRepository(db),
 		StorefrontURLIssues:          repository.NewStorefrontURLIssueRepository(db),
 		PreflightContentLinks:        repository.NewPreflightContentLinkRepository(db),
@@ -522,6 +525,10 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		repos.StorefrontRouteCatalog,
 		repos.StorefrontRedirectRules,
 	)
+	storefrontURLSearchProfileService := service.NewStorefrontURLSearchProfileService(
+		repos.StorefrontURLSearchProfiles,
+		repos.StorefrontRouteCatalog,
+	)
 	preflightContentLinkService := service.NewPreflightContentLinkService(
 		repos.PreflightContentLinks,
 		repos.StorefrontRouteCatalog,
@@ -646,6 +653,7 @@ func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Conf
 		Subscription:                      service.NewSubscriptionService(repos.Subscription),
 		Sitemap:                           service.NewSitemapService(repos.Post, cfg.Server.BaseURL),
 		StorefrontRouteCatalog:            storefrontRouteCatalogService,
+		StorefrontURLSearchProfiles:        storefrontURLSearchProfileService,
 		StorefrontRedirectRules:           storefrontRedirectRuleService,
 		StorefrontURLIssues:               storefrontURLIssueService,
 		PreflightContentLinks:             preflightContentLinkService,

@@ -178,10 +178,6 @@ watch(pageCount, (count) => {
   }
 })
 
-if (import.meta.server) {
-  await loadCategories().catch(() => [])
-}
-
 onMounted(() => {
   updateViewportMode()
   window.addEventListener('resize', updateViewportMode)

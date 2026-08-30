@@ -1,7 +1,7 @@
 <template>
   <div
     ref="rootElement"
-    class="chat-modal-shell tz-mobile-dialog-surface relative w-full md:w-[560px] max-w-full md:max-w-[calc(100vw-3rem)] tz-mobile-safe-full-height rounded-none md:rounded-2xl overflow-hidden flex flex-col tz-surface-card shadow-[-12px_0_28px_rgba(15,23,42,0.16)] pointer-events-auto"
+    class="chat-modal-shell tz-mobile-dialog-surface relative w-full md:w-[520px] max-w-full md:max-w-[calc(100vw-4rem)] tz-mobile-safe-full-height rounded-none md:rounded-2xl overflow-hidden flex flex-col tz-surface-card shadow-[-12px_0_28px_rgba(15,23,42,0.16)] pointer-events-auto"
   >
     <div
       class="chat-modal-drag-handle tz-mobile-chrome-top border-b tz-border-strong/[0.08] backdrop-blur-md"
@@ -22,16 +22,16 @@
       </div>
     </div>
 
-    <div class="flex-1 overflow-y-auto p-3 md:px-5 md:py-6 relative z-10 welcome-scroll-area">
+    <div class="flex-1 overflow-y-auto p-3 md:px-5 md:py-6 relative z-10 agent-selection-scroll-area">
       <div class="w-full">
-        <div class="mb-2 md:mb-3 welcome-header">
-          <div class="flex items-center gap-3 mb-2 welcome-logo-row">
-            <h1 class="text-2xl md:text-3xl font-bold tz-text-primary welcome-title">
+        <div class="mb-2 md:mb-3 agent-selection-header">
+          <div class="flex items-center gap-3 mb-2 agent-selection-logo-row">
+            <h1 class="text-2xl md:text-3xl font-bold tz-text-primary agent-selection-title">
               {{ t('chatModal.welcome.title') }} <span class="inline-block animate-wave">👋</span>
             </h1>
           </div>
 
-          <p class="text-sm md:text-base tz-text-secondary leading-relaxed welcome-desc">
+          <p class="text-sm md:text-base tz-text-secondary leading-relaxed agent-selection-desc">
             {{ t('chatModal.welcome.description') }}
           </p>
         </div>
@@ -44,8 +44,8 @@
             </div>
           </div>
 
-          <ChatWelcomeAgentSelector
-            :agents="welcomeAgents"
+          <ChatAgentSelector
+            :agents="agents"
             :selected-agent="selectedAgent"
             @select="emit('selectAgent', $event)"
           />
@@ -57,7 +57,7 @@
       </div>
     </div>
 
-    <div class="chat-welcome-footer tz-mobile-chrome-bottom p-2 md:px-5 md:pt-4 md:pb-5 shrink-0 z-20 border-t tz-border-strong/[0.08]">
+    <div class="chat-agent-selection-footer tz-mobile-chrome-bottom p-2 md:px-5 md:pt-4 md:pb-5 shrink-0 z-20 border-t tz-border-strong/[0.08]">
       <ChatStartButton
         class="w-full text-sm"
         :label="startButtonLabel"
@@ -97,7 +97,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from '#imports'
 
 const props = defineProps<{
-  welcomeAgents: any[]
+  agents: any[]
   selectedAgent: any | null
   onlineAgentsCount: number
   hasHistoryChat: boolean
@@ -157,7 +157,7 @@ const selectedAgentEmail = computed(() => {
     max-height: calc(var(--tz-mobile-safe-viewport-height, 100dvh) - var(--tz-mobile-dialog-inset, 2px) * 2);
   }
 
-  .chat-welcome-footer {
+  .chat-agent-selection-footer {
     border-top-color: var(--tz-mobile-chrome-edge-border);
     padding-bottom: var(--tz-mobile-modal-safe-padding-bottom, 0.75rem);
   }
@@ -165,7 +165,7 @@ const selectedAgentEmail = computed(() => {
 
 @media (min-width: 768px) {
   .chat-modal-shell {
-    height: min(900px, calc(100vh - 56px));
+    height: min(840px, calc(100vh - 56px));
     max-height: calc(100vh - 56px);
   }
 
@@ -177,7 +177,7 @@ const selectedAgentEmail = computed(() => {
 
   @supports (height: 100dvh) {
     .chat-modal-shell {
-      height: min(900px, calc(100dvh - 56px));
+      height: min(840px, calc(100dvh - 56px));
       max-height: calc(100dvh - 56px);
     }
   }

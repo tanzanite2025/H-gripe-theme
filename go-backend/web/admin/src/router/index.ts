@@ -680,6 +680,7 @@ const routes: RouteRecordRaw[] = [
         redirect: domainRedirect('URLOverview', {
           overview: 'URLOverview',
           catalog: 'URLCatalog',
+          search: 'URLSearch',
           issues: 'URLIssues',
           redirects: 'URLRedirects',
           canonical: 'URLCanonical',
@@ -699,6 +700,12 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/url-management/RouteCatalog.vue'),
         props: { mode: 'catalog' },
         meta: { title: 'URL 管理 / 路由台账', permission: 'url:view' }
+      },
+      {
+        path: 'urls/search',
+        name: 'URLSearch',
+        component: () => import('@/views/url-management/SearchManagement.vue'),
+        meta: { title: 'URL 管理 / 搜索管理', permission: 'url:view' }
       },
       {
         path: 'urls/issues',

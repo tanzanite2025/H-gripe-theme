@@ -33,11 +33,13 @@ export async function useGlobalAllFaqsSearchAndGroupedResults(
   const syncDeepLink = options.syncDeepLink ?? !isSearchOverlay
   const route = useRoute()
 
+  const faqCatalogPromise = useFaqCatalog()
+
   const {
     allPages,
-    pending,
+    pending: faqPending,
     refreshFaqCatalog,
-  } = await useFaqCatalog()
+  } = await faqCatalogPromise
   const activePageId = ref('all')
   const {
     expandedItems,
@@ -129,6 +131,8 @@ export async function useGlobalAllFaqsSearchAndGroupedResults(
     selectTopicState(topicId)
     resetExpandedItems()
   }
+
+  const pending = computed(() => faqPending.value)
 
   return {
     allPages,

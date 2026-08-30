@@ -1,5 +1,5 @@
-import { reactive, ref, watch } from 'vue'
-import type { WatchSource } from 'vue'
+import { computed, reactive, ref, unref, watch } from 'vue'
+import type { MaybeRefOrGetter, WatchSource } from 'vue'
 import mediaApi from '@/api/media'
 import type { MediaAsset } from '@/api/media'
 
@@ -14,27 +14,35 @@ interface MediaPickerPagination {
   total: number
 }
 
-export const useMediaAssetPicker = (open: WatchSource<boolean>) => {
+export const useMediaAssetPicker = (
+  open: WatchSource<boolean>,
+  mediaType: MaybeRefOrGetter<'image' | 'video' | 'all' | string> = 'image',
+) => {
   const loading = ref(false)
   const assets = ref<MediaAsset[]>([])
-  const loadedOnce = ref(false)
+  const loadedMediaType = ref('')
   const filters = reactive<MediaPickerFilters>({ search: '', status: 'active' })
   const pagination = reactive<MediaPickerPagination>({ page: 1, pageSize: 40, total: 0 })
+  const resolvedMediaType = computed(() => {
+    const value = String(unref(mediaType) || 'image').trim().toLowerCase()
+    return ['image', 'video', 'all'].includes(value) ? value : 'image'
+  })
 
   const loadAssets = async (): Promise<void> => {
     loading.value = true
     try {
+      const mediaTypeValue = resolvedMediaType.value
       const result = await mediaApi.listAssets({
         page: pagination.page,
         page_size: pagination.pageSize,
-        media_type: 'image',
+        media_type: mediaTypeValue === 'all' ? undefined : mediaTypeValue,
         status: filters.status !== 'all' ? filters.status : undefined,
         visibility: 'public',
         search: filters.search || undefined,
       })
       assets.value = result.assets || []
       pagination.total = result.pagination?.total ?? 0
-      loadedOnce.value = true
+      loadedMediaType.value = mediaTypeValue
     } catch (error) {
       console.error('Failed to load media assets:', error)
       assets.value = []
@@ -60,8 +68,8 @@ export const useMediaAssetPicker = (open: WatchSource<boolean>) => {
     loadAssets()
   }
 
-  watch(open, (isOpen) => {
-    if (isOpen && !loadedOnce.value) {
+  watch([open, resolvedMediaType], ([isOpen]) => {
+    if (isOpen && loadedMediaType.value !== resolvedMediaType.value) {
       loadAssets()
     }
   })

@@ -5,17 +5,10 @@ export interface AssignableAgent {
   email?: string
 }
 
-export interface AssignableGroup {
-  id: string | number
-  name: string
-}
-
 export interface CustomerServiceFiltersState {
   search: string
-  groupId: string
   status: string
   identity: string
-  assignedTo: string
   unread: string
   [key: string]: string
 }
@@ -74,6 +67,16 @@ export interface CustomerConversationMessage {
   metadata?: MessageMetadata | null
   attachments?: unknown[]
   attachment_url?: string | null
+}
+
+export interface CustomerServiceSendMessagePayload {
+  message: string
+  messageType?: string
+  metadata?: unknown
+  attachmentUrl?: string
+  attachments?: string[]
+  toastLabel?: string
+  clearReplyMessage?: boolean
 }
 
 export interface CustomerPagination {
@@ -148,6 +151,11 @@ export interface CustomerOrderItem {
   payment_status?: string
   shipping_status?: string
   created_at?: string | number | Date | null
+  currency?: string
+  url?: string
+  thumbnail?: string
+  item_count?: number | string
+  items?: unknown[]
 }
 
 export interface CustomerOrders {

@@ -34,7 +34,7 @@ services:
     image: redis:7-alpine
     container_name: commerce-platform-redis
     ports:
-      - "${REDIS_HOST_PORT:-9510}:6379"
+      - "${REDIS_HOST_PORT:-9562}:6379"
     volumes:
       - redis-data:/data
     networks:

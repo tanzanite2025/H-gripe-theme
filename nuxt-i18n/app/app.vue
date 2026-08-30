@@ -31,6 +31,7 @@ import { useHead, useI18n, useRuntimeConfig } from '#imports'
 import SidePanel from './components/SidePanel.vue'
 import SiteHeader from '~/components/SiteHeader.vue'
 import { useAuth } from '~/composables/useAuth'
+import { useProductCategories } from '~/composables/useProductCategories'
 import { useSiteSettings } from '~/composables/usePublicSettings'
 import { useShopCategories } from '~/composables/useShopCategories'
 import localeManifest from '~/i18n/locales.manifest'
@@ -39,6 +40,7 @@ const auth = useAuth()
 const runtimeConfig = useRuntimeConfig()
 const { siteSettings } = useSiteSettings()
 const { loadCategories: prefetchShopCategories } = useShopCategories()
+const { loadCategories: prefetchProductCategories } = useProductCategories()
 const { locale } = useI18n()
 
 const siteHeaderRef = ref<InstanceType<typeof SiteHeader> | null>(null)
@@ -91,12 +93,12 @@ useHead(() => ({
   ],
 }))
 
-if (import.meta.server) {
-  await prefetchShopCategories().catch(() => [])
+if (import.meta.client) {
+  void prefetchShopCategories().catch(() => {})
+  void prefetchProductCategories().catch(() => {})
 }
 
 onMounted(() => {
   void auth.ensureSession().catch(() => {})
-  void prefetchShopCategories().catch(() => {})
 })
 </script>

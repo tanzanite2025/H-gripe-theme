@@ -36,6 +36,7 @@ export interface StorefrontRouteCatalogListParams {
   check_status?: string
   search?: string
   searchable?: string
+  search_profile_status?: string
   include_aliases?: boolean
   needs_attention?: boolean
   problem_scope?: 'canonical'

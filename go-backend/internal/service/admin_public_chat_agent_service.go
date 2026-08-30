@@ -16,21 +16,20 @@ type AdminPublicChatAgentService struct {
 }
 
 var (
-	ErrPublicChatAgentUserRequired     = errors.New("public chat agent user_id is required")
-	ErrPublicChatAgentUserNotFound     = errors.New("public chat agent user not found")
-	ErrPublicChatAgentUserInvalid      = errors.New("public chat agent user must be active admin, manager or support")
-	ErrPublicChatAgentIDInvalid        = errors.New("public chat agent_id must be 50 characters or fewer")
-	ErrPublicChatAgentIDTaken          = errors.New("public chat agent_id is already used")
-	ErrPublicChatAgentStatusInvalid    = errors.New("public chat agent status must be active or inactive")
-	ErrPublicChatAgentOnlineInvalid    = errors.New("public chat agent online_status must be online, busy, away or offline")
-	ErrPublicChatAgentEmailRequired    = errors.New("public chat agent email is required for active profiles")
-	ErrPublicChatAgentWhatsAppRequired = errors.New("public chat agent whatsapp is required for active profiles")
-	ErrPublicChatAgentGroupInvalid     = errors.New("public chat agent group is invalid")
-	ErrPublicChatGroupNameRequired     = errors.New("public chat group name is required")
-	ErrPublicChatGroupCodeInvalid      = errors.New("public chat group code is invalid")
-	ErrPublicChatGroupCodeTaken        = errors.New("public chat group code is already used")
-	ErrPublicChatGroupStatusInvalid    = errors.New("public chat group status must be active or inactive")
-	ErrPublicChatGroupNotFound         = errors.New("public chat group not found")
+	ErrPublicChatAgentUserRequired    = errors.New("public chat agent user_id is required")
+	ErrPublicChatAgentUserNotFound    = errors.New("public chat agent user not found")
+	ErrPublicChatAgentUserInvalid     = errors.New("public chat agent user must be active admin, manager or support")
+	ErrPublicChatAgentIDInvalid       = errors.New("public chat agent_id must be 50 characters or fewer")
+	ErrPublicChatAgentIDTaken         = errors.New("public chat agent_id is already used")
+	ErrPublicChatAgentStatusInvalid   = errors.New("public chat agent status must be active or inactive")
+	ErrPublicChatAgentOnlineInvalid   = errors.New("public chat agent online_status must be online, busy, away or offline")
+	ErrPublicChatAgentContactRequired = errors.New("public chat agent email or whatsapp is required for active profiles")
+	ErrPublicChatAgentGroupInvalid    = errors.New("public chat agent group is invalid")
+	ErrPublicChatGroupNameRequired    = errors.New("public chat group name is required")
+	ErrPublicChatGroupCodeInvalid     = errors.New("public chat group code is invalid")
+	ErrPublicChatGroupCodeTaken       = errors.New("public chat group code is already used")
+	ErrPublicChatGroupStatusInvalid   = errors.New("public chat group status must be active or inactive")
+	ErrPublicChatGroupNotFound        = errors.New("public chat group not found")
 )
 
 type AdminPublicChatAgentsOverview struct {
@@ -150,11 +149,8 @@ func (s *AdminPublicChatAgentService) ListPublicChatAgents(limit int) (*AdminPub
 		if name == "" {
 			name = fmt.Sprintf("Profile #%d", item.ID)
 		}
-		if strings.TrimSpace(item.Email) == "" {
-			warnings = append(warnings, fmt.Sprintf("%s 缺少公开邮箱，前台客服选择弹层无法显示邮箱入口", name))
-		}
-		if strings.TrimSpace(item.WhatsApp) == "" {
-			warnings = append(warnings, fmt.Sprintf("%s 缺少 WhatsApp，前台客服选择弹层无法显示 WhatsApp 入口", name))
+		if strings.TrimSpace(item.Email) == "" && strings.TrimSpace(item.WhatsApp) == "" {
+			warnings = append(warnings, fmt.Sprintf("%s 未填写邮箱或 WhatsApp，前台将无法显示联系方式", name))
 		}
 	}
 
@@ -300,11 +296,9 @@ func (s *AdminPublicChatAgentService) UpsertPublicChatAgentProfile(input AdminPu
 	}
 	whatsApp := strings.TrimSpace(input.WhatsApp)
 	if status == "active" {
-		if email == "" {
-			return nil, false, ErrPublicChatAgentEmailRequired
-		}
-		if whatsApp == "" {
-			return nil, false, ErrPublicChatAgentWhatsAppRequired
+		// 公开客服只要求能被联系到一次即可，展示标签与分组不参与这个判断。
+		if !hasPublicChatAgentContact(email, whatsApp) {
+			return nil, false, ErrPublicChatAgentContactRequired
 		}
 	}
 
@@ -571,6 +565,10 @@ func normalizePublicChatGroupCode(value string) string {
 	value = strings.ReplaceAll(value, " ", "_")
 	value = strings.ReplaceAll(value, "-", "_")
 	return value
+}
+
+func hasPublicChatAgentContact(email, whatsApp string) bool {
+	return strings.TrimSpace(email) != "" || strings.TrimSpace(whatsApp) != ""
 }
 
 func validPublicChatGroupCode(value string) bool {

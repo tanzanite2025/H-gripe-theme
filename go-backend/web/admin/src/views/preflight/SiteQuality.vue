@@ -312,29 +312,33 @@ const terminalJobCount = computed(() => {
 })
 
 const activeJobIsLive = computed(() => activeJob.value !== null && (activeJob.value.status === 'queued' || activeJob.value.status === 'processing'))
-const activeJobTone = computed<AdminStatusTone>(() => ({
+const activeJobStatus = computed<SiteQualityJob['status']>(() => activeJob.value?.status || 'queued')
+const activeJobToneByStatus: Record<SiteQualityJob['status'], AdminStatusTone> = {
   queued: 'amber',
   processing: 'blue',
   succeeded: 'green',
   failed: 'coral',
   dead_letter: 'coral',
-}[activeJob.value?.status || 'queued'] as AdminStatusTone))
-const activeJobStatusLabel = computed(() => ({
+}
+const activeJobTone = computed<AdminStatusTone>(() => activeJobToneByStatus[activeJobStatus.value])
+const activeJobStatusLabelByStatus: Record<SiteQualityJob['status'], string> = {
   queued: '排队中',
   processing: '处理中',
   succeeded: '已完成',
   failed: '失败',
   dead_letter: '死信',
-}[activeJob.value?.status || 'queued']))
+}
+const activeJobStatusLabel = computed(() => activeJobStatusLabelByStatus[activeJobStatus.value])
 const activeJobTitle = computed(() => activeJobContext.value?.title || '页面质量任务')
 const activeJobTarget = computed(() => activeJobContext.value?.target || targetURL.value || '未指定目标')
-const activeJobIcon = computed(() => ({
+const activeJobIconByStatus = {
   queued: Clock3,
   processing: LoaderCircle,
   succeeded: CheckCircle2,
   failed: AlertTriangle,
   dead_letter: AlertTriangle,
-}[activeJob.value?.status || 'queued']))
+} as const
+const activeJobIcon = computed(() => activeJobIconByStatus[activeJobStatus.value])
 const activeJobSummary = computed(() => {
   const job = activeJob.value
   if (!job) return ''
