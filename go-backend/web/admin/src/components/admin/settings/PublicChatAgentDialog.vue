@@ -6,6 +6,7 @@
           <DialogTitle>添加 Public Chat 客服 Profile</DialogTitle>
           <DialogDescription>
             选择已存在的后台用户，保存后该用户会作为公开客服出现在 Public Chat 的客服列表里。
+            客服组只作为前台展示标签，不参与会话分配。
           </DialogDescription>
         </DialogHeader>
 
@@ -63,11 +64,11 @@
             <Input v-model="form.name" :disabled="saving" placeholder="客服名称" />
           </AdminFormField>
 
-          <AdminFormField label="公开邮箱" description="active 状态必须有邮箱；前台聊天头像选择弹层会显示这个邮箱。">
+          <AdminFormField label="公开邮箱" description="邮箱和 WhatsApp 至少填一个，前台会展示可用的联系方式。">
             <Input v-model="form.email" :disabled="saving" type="email" placeholder="support@example.com" />
           </AdminFormField>
 
-          <AdminFormField label="WhatsApp" description="active 状态必须填写；前台聊天头像选择弹层和快捷联系按钮会使用它。">
+          <AdminFormField label="WhatsApp" description="邮箱和 WhatsApp 至少填一个，前台会展示可用的联系方式。">
             <Input v-model="form.whatsapp" :disabled="saving" placeholder="+1 000 000 0000" />
           </AdminFormField>
 
@@ -82,7 +83,7 @@
             />
           </AdminFormField>
 
-          <AdminFormField label="客服分组" class="md:col-span-2" description="一个客服可以同时属于多个组。">
+          <AdminFormField label="展示标签" class="md:col-span-2" description="只用于前台客服卡片显示，方便客户识别，不参与会话分配。">
             <div v-if="groups.length" class="grid gap-2 sm:grid-cols-2">
               <label
                 v-for="group in groups"
@@ -96,7 +97,7 @@
                 </span>
               </label>
             </div>
-            <p v-else class="text-xs text-muted-foreground">暂无 active 客服组，请先创建客服组。</p>
+            <p v-else class="text-xs text-muted-foreground">暂无 active 展示标签，请先创建客服组。</p>
           </AdminFormField>
         </div>
 

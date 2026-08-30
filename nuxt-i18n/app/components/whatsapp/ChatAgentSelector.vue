@@ -2,82 +2,101 @@
   <div>
     <div v-if="displayAgents.length === 3" class="relative h-[230px]">
       <button
-        v-for="agent in displayAgents"
-        :key="agent.id"
+        v-for="agentEntry in displayAgentEntries"
+        :key="agentEntry.agent.id"
         type="button"
         class="agent-row group absolute left-1/2 -translate-x-1/2 text-left rounded-full shadow-md transition-[transform,width,background-color,filter] duration-300 ease-out will-change-transform"
-        :class="getRowClass(agent)"
-        @click="handleSelect(agent)"
+        :class="getRowClass(agentEntry.agent)"
+        @click="handleSelect(agentEntry.agent)"
       >
-        <div class="h-full flex items-center gap-3 px-3" :class="getInnerClass(agent)">
+        <div class="h-full flex items-center gap-3 px-3" :class="getInnerClass(agentEntry.agent)">
           <span class="relative shrink-0 w-14 h-14">
             <span
               class="w-full h-full rounded-full tz-surface-muted flex items-center justify-center text-xs font-semibold overflow-hidden"
-                :class="isSelected(agent) ? 'text-white/80' : 'tz-text-primary'"
+                :class="isSelected(agentEntry.agent) ? 'text-white/80' : 'tz-text-primary'"
             >
-              <template v-if="getAvatarSrc(agent)">
-                <StorefrontImage :src="getAvatarSrc(agent)" :alt="agent.name" class="w-full h-full rounded-full object-cover" preset="avatar" />
+              <template v-if="getAvatarSrc(agentEntry.agent)">
+                <StorefrontImage :src="getAvatarSrc(agentEntry.agent)" :alt="agentEntry.agent.name" class="w-full h-full rounded-full object-cover" preset="avatar" />
+              </template>
+              <template v-else>
+                {{ agentEntry.presentation.initials }}
               </template>
             </span>
 
             <span
               class="absolute -right-0.5 -bottom-0.5 w-3.5 h-3.5 rounded-full"
-              :class="getStatusDotClass(agent)"
-              :title="getStatusLabel(agent)"
+              :class="getStatusDotClass(agentEntry.agent)"
+              :title="getStatusLabel(agentEntry.agent)"
               aria-hidden="true"
             ></span>
           </span>
 
           <span class="min-w-0 flex-1">
-            <span class="flex items-center gap-2">
+            <span class="flex min-w-0 items-center gap-2">
               <span
                 class="text-sm font-semibold truncate"
-                :class="isSelected(agent) ? 'text-white' : 'tz-text-primary'"
+                :class="isSelected(agentEntry.agent) ? 'text-white' : 'tz-text-primary'"
               >
-                {{ agent.name }}
+                {{ agentEntry.agent.name }}
+              </span>
+              <span
+                class="inline-flex max-w-[8.5rem] shrink-0 items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold leading-none truncate"
+                :class="getGroupBadgeClass(agentEntry.agent)"
+                :title="agentEntry.presentation.groupLabel"
+              >
+                {{ agentEntry.presentation.groupLabel }}
               </span>
             </span>
             <span
               class="mt-0.5 block text-xs truncate"
-              :class="isSelected(agent) ? 'text-white/70' : 'tz-text-secondary'"
+              :class="isSelected(agentEntry.agent) ? 'text-white/70' : 'tz-text-secondary'"
             >
-              {{ getAgentDescription(agent) }}
+              {{ agentEntry.presentation.contactLabel || t('chatModal.agentSelector.descriptions.default') }}
             </span>
           </span>
 
-          <span class="shrink-0" :class="isSelected(agent) ? 'text-white/70' : 'tz-text-muted'">→</span>
+          <span class="shrink-0" :class="isSelected(agentEntry.agent) ? 'text-white/70' : 'tz-text-muted'">→</span>
         </div>
       </button>
     </div>
 
     <div v-else class="space-y-3">
       <button
-        v-for="agent in displayAgents"
-        :key="agent.id"
+        v-for="agentEntry in displayAgentEntries"
+        :key="agentEntry.agent.id"
         type="button"
         class="w-full text-left rounded-full tz-surface-subtle hover:tz-surface-muted shadow-[0_10px_18px_-14px_rgba(20,32,43,0.14)] transition-colors"
-        @click="handleSelect(agent)"
+        @click="handleSelect(agentEntry.agent)"
       >
         <div class="flex items-center gap-3 px-3 py-2">
           <span class="relative shrink-0 w-14 h-14">
             <span class="w-full h-full rounded-full tz-surface-muted flex items-center justify-center text-xs font-semibold overflow-hidden tz-text-primary">
-              <template v-if="getAvatarSrc(agent)">
-                <StorefrontImage :src="getAvatarSrc(agent)" :alt="agent.name" class="w-full h-full rounded-full object-cover" preset="avatar" />
+              <template v-if="getAvatarSrc(agentEntry.agent)">
+                <StorefrontImage :src="getAvatarSrc(agentEntry.agent)" :alt="agentEntry.agent.name" class="w-full h-full rounded-full object-cover" preset="avatar" />
+              </template>
+              <template v-else>
+                {{ agentEntry.presentation.initials }}
               </template>
             </span>
             <span
               class="absolute -right-0.5 -bottom-0.5 w-3.5 h-3.5 rounded-full"
-              :class="getStatusDotClass(agent)"
-              :title="getStatusLabel(agent)"
+              :class="getStatusDotClass(agentEntry.agent)"
+              :title="getStatusLabel(agentEntry.agent)"
               aria-hidden="true"
             ></span>
           </span>
 
           <span class="min-w-0 flex-1">
-            <span class="flex items-center gap-2">
-              <span class="text-sm font-semibold tz-text-primary truncate">{{ agent.name }}</span>
+            <span class="flex min-w-0 items-center gap-2">
+              <span class="text-sm font-semibold tz-text-primary truncate">{{ agentEntry.agent.name }}</span>
+              <span
+                class="inline-flex max-w-[8.5rem] shrink-0 items-center rounded-full border border-border/60 bg-white/70 px-2 py-0.5 text-[10px] font-semibold leading-none tz-text-secondary truncate"
+                :title="agentEntry.presentation.groupLabel"
+              >
+                {{ agentEntry.presentation.groupLabel }}
+              </span>
             </span>
-            <span class="mt-0.5 block text-xs tz-text-secondary truncate">{{ getAgentDescription(agent) }}</span>
+            <span class="mt-0.5 block text-xs tz-text-secondary truncate">{{ agentEntry.presentation.contactLabel || t('chatModal.agentSelector.descriptions.default') }}</span>
           </span>
 
           <span class="shrink-0 tz-text-muted">→</span>
@@ -90,6 +109,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from '#imports'
+import { buildChatAgentPresentationList } from '~/lib/chatAgentPresentation'
 
 const { t } = useI18n()
 
@@ -105,6 +125,8 @@ const emit = defineEmits<{
 const displayAgents = computed(() => {
   return Array.isArray(props.agents) ? props.agents.slice(0, 3) : []
 })
+
+const displayAgentEntries = computed(() => buildChatAgentPresentationList(displayAgents.value))
 
 const selectedId = computed(() => {
   const ids = displayAgents.value.map(agent => String(agent?.id ?? ''))
@@ -179,13 +201,10 @@ const getStatusLabel = (agent: any): string => {
   return t(`chatModal.agentPanel.status.${getAgentStatus(agent)}`)
 }
 
-const getAgentDescription = (agent: any) => {
-  const group = agent?.primary_group || (Array.isArray(agent?.groups) ? agent.groups[0] : null)
-  const code = String(group?.code || '').toLowerCase()
-  if (code === 'technical_support' || code === 'technical') return t('chatModal.agentSelector.descriptions.tech')
-  if (code === 'after_sales' || code === 'after-sales') return t('chatModal.agentSelector.descriptions.afterSales')
-  if (code === 'sales') return t('chatModal.agentSelector.descriptions.sales')
-  return String(group?.description || group?.name || '').trim() || t('chatModal.agentSelector.descriptions.default')
+const getGroupBadgeClass = (agent: any) => {
+  return isSelected(agent)
+    ? 'border-white/20 bg-white/10 text-white/90'
+    : 'border-border/60 bg-white/70 tz-text-secondary'
 }
 </script>
 

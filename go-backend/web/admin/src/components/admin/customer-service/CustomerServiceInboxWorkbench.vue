@@ -30,7 +30,6 @@
       :messages-loading="messagesLoading"
       :selected-customer-typing="selectedCustomerTyping"
       :assignable-agents="assignableAgents"
-      :assignable-groups="assignableGroups"
       :transferring="transferring"
       :replying="replying"
       :can-edit="hasPermission('ticket:edit')"
@@ -42,6 +41,7 @@
       @change-page="changePage"
       @transfer="transferConversation"
       @send-reply="sendReply"
+      @send-message="sendCustomerServiceMessage"
       @typing-input="handleReplyTypingInput"
     />
   </div>
@@ -67,7 +67,7 @@ import { useCustomerServiceRealtime } from '@/composables/customerService/useCus
 import { useCustomerServiceTyping } from '@/composables/customerService/useCustomerServiceTyping'
 import { useAuthStore } from '@/stores/auth'
 import { statusDisplayValue } from '@/lib/customerServicePresentation'
-import type { CustomerConversation } from './customerServiceTypes'
+import type { CustomerConversation, CustomerServiceSendMessagePayload } from './customerServiceTypes'
 
 withDefaults(defineProps<{
   showHeader?: boolean
@@ -98,7 +98,6 @@ const {
   replyMessage,
   transferTo,
   assignableAgents,
-  assignableGroups,
   pagination,
   filters,
   totalPages,
@@ -190,6 +189,55 @@ const {
   }
 })
 
+const getCustomerServiceMessageToastLabel = (messageType?: string): string => {
+  switch (String(messageType || '').trim().toLowerCase()) {
+    case 'image':
+      return '图片已发送'
+    case 'order':
+      return '订单已发送'
+    case 'product':
+      return '产品链接已发送'
+    case 'video':
+      return '视频已发送'
+    default:
+      return '回复已发送'
+  }
+}
+
+const sendCustomerServiceMessage = async (payload: CustomerServiceSendMessagePayload) => {
+  if (!selectedConversation.value || replying.value) return
+
+  const message = String(payload.message || '').trim()
+  if (!message) return
+  const conversationID = selectedConversation.value.id
+
+  replying.value = true
+  try {
+    await notifyAgentTyping(false)
+    await customerServiceApi.sendMessage(conversationID, message, {
+      messageType: payload.messageType,
+      metadata: payload.metadata,
+      attachmentUrl: payload.attachmentUrl,
+      attachments: payload.attachments,
+    })
+
+    if (payload.clearReplyMessage) {
+      replyMessage.value = ''
+    }
+
+    toast.success(payload.toastLabel || getCustomerServiceMessageToastLabel(payload.messageType))
+    await Promise.all([
+      fetchMessages(conversationID),
+      fetchConversations(),
+      fetchContext(conversationID),
+    ])
+  } catch (error) {
+    console.error('Failed to send customer-service message:', error)
+  } finally {
+    replying.value = false
+  }
+}
+
 const selectConversation = async (conversation: CustomerConversation): Promise<void> => {
   resetAgentTypingState()
   await selectInboxConversation(conversation)
@@ -206,24 +254,12 @@ watch(
 )
 
 const sendReply = async () => {
-  if (!selectedConversation.value || !replyMessage.value.trim()) return
-  const message = replyMessage.value.trim()
-  replying.value = true
-  try {
-    await notifyAgentTyping(false)
-    await customerServiceApi.sendMessage(selectedConversation.value.id, message)
-    replyMessage.value = ''
-    toast.success('回复已发送')
-    await Promise.all([
-      fetchMessages(selectedConversation.value.id),
-      fetchConversations(),
-      fetchContext(selectedConversation.value.id)
-    ])
-  } catch (error) {
-    console.error('Failed to send customer-service reply:', error)
-  } finally {
-    replying.value = false
-  }
+  await sendCustomerServiceMessage({
+    message: replyMessage.value,
+    messageType: 'text',
+    clearReplyMessage: true,
+    toastLabel: '回复已发送',
+  })
 }
 
 const transferConversation = async () => {

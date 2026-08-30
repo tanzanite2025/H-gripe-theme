@@ -1,28 +1,15 @@
 <template>
   <AdminFilterPanel>
-    <form class="grid gap-3 lg:grid-cols-[minmax(220px,1.2fr)_140px_140px_180px_180px_130px_auto_auto]" @submit.prevent="emit('apply')">
-      <label class="space-y-1 block">
+    <form class="grid gap-3 lg:grid-cols-4 lg:gap-2 xl:grid-cols-[minmax(240px,1.4fr)_repeat(4,minmax(120px,1fr))_auto_auto] xl:gap-3" @submit.prevent="emit('apply')">
+      <label class="block min-w-0 space-y-1 lg:col-span-2">
         <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block">SEARCH / 搜索</span>
         <div class="relative">
           <Search class="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground/60" />
-          <Input v-model="filters.search" class="h-9 pl-9" placeholder="客户、邮箱、会话 ID、消息内容" />
+          <Input v-model="filters.search" class="h-9 w-full pl-9" placeholder="客户、邮箱、会话 ID、消息内容" />
         </div>
       </label>
 
-      <label class="space-y-1 block">
-        <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block">GROUP / 客服组</span>
-        <Select v-model="filters.groupId">
-          <SelectTrigger class="h-9 w-full"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">全部客服组</SelectItem>
-            <SelectItem v-for="group in assignableGroups" :key="group.id" :value="String(group.id)">
-              {{ group.name }}
-            </SelectItem>
-          </SelectContent>
-        </Select>
-      </label>
-
-      <label class="space-y-1 block">
+      <label class="block space-y-1 min-w-0">
         <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block">STATUS / 状态</span>
         <Select v-model="filters.status">
           <SelectTrigger class="h-9 w-full"><SelectValue /></SelectTrigger>
@@ -35,7 +22,7 @@
         </Select>
       </label>
 
-      <label class="space-y-1 block">
+      <label class="block space-y-1 min-w-0">
         <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block">IDENTITY / 身份</span>
         <Select v-model="filters.identity">
           <SelectTrigger class="h-9 w-full"><SelectValue /></SelectTrigger>
@@ -47,20 +34,7 @@
         </Select>
       </label>
 
-      <label class="space-y-1 block">
-        <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block">ASSIGNEE / 负责人</span>
-        <Select v-model="filters.assignedTo">
-          <SelectTrigger class="h-9 w-full"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">全部客服</SelectItem>
-            <SelectItem v-for="agent in assignableAgents" :key="agent.user_id || agent.id" :value="String(agent.user_id || agent.id)">
-              {{ agent.name || agent.email || `用户 ${agent.user_id || agent.id}` }}
-            </SelectItem>
-          </SelectContent>
-        </Select>
-      </label>
-
-      <label class="space-y-1 block">
+      <label class="block space-y-1 min-w-0">
         <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block">UNREAD / 未读</span>
         <Select v-model="filters.unread">
           <SelectTrigger class="h-9 w-full"><SelectValue /></SelectTrigger>
@@ -71,17 +45,17 @@
         </Select>
       </label>
 
-      <label class="space-y-1 block">
+      <label class="block space-y-1 min-w-0">
         <span class="block text-[10px] font-black uppercase tracking-widest text-transparent select-none">QUERY</span>
-        <Button type="submit" class="h-9 rounded-full px-3 font-black text-xs uppercase tracking-wider" :disabled="loading">
+        <Button type="submit" class="h-9 w-full justify-center rounded-full px-3 font-black text-xs uppercase tracking-wider" :disabled="loading">
           <Search class="size-3.5" />
           查询
         </Button>
       </label>
 
-      <label class="space-y-1 block">
+      <label class="block space-y-1 min-w-0">
         <span class="block text-[10px] font-black uppercase tracking-widest text-transparent select-none">ACTION</span>
-        <Button type="button" variant="outline" class="h-9 rounded-full px-3 font-black text-xs uppercase tracking-wider" @click="emit('reset')">
+        <Button type="button" variant="outline" class="h-9 w-full justify-center rounded-full px-3 font-black text-xs uppercase tracking-wider" @click="emit('reset')">
           <RotateCcw class="size-3.5" />
           重置
         </Button>
@@ -99,34 +73,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 interface CustomerServiceFiltersState {
   search: string
-  groupId: string
   status: string
   identity: string
-  assignedTo: string
   unread: string
   [key: string]: string
 }
 
-interface AssignableAgent {
-  id?: string | number
-  user_id?: string | number
-  name?: string
-  email?: string
-}
-
-interface AssignableGroup {
-  id: string | number
-  name: string
-}
-
-const props = withDefaults(defineProps<{
+withDefaults(defineProps<{
   filters: CustomerServiceFiltersState
-  assignableAgents?: AssignableAgent[]
-  assignableGroups?: AssignableGroup[]
   loading?: boolean
 }>(), {
-  assignableAgents: () => [],
-  assignableGroups: () => [],
   loading: false,
 })
 

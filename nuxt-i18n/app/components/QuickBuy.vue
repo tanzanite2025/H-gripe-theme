@@ -874,15 +874,23 @@ onBeforeUnmount(() => {
 
   .quickbuy-modal-header {
     grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "title actions"
+      "steps steps";
+    align-items: start;
+    row-gap: 0.2rem;
   }
 
   .quickbuy-modal-header-actions {
+    grid-area: actions;
     gap: 0.35rem;
+    align-self: start;
+    justify-self: end;
   }
 
   .quickbuy-mobile-header-title {
+    grid-area: title;
     display: block;
-    grid-column: 1;
     color: rgba(5, 150, 105, 0.88);
     font-size: 0.7rem;
     font-weight: 850;
@@ -891,9 +899,10 @@ onBeforeUnmount(() => {
   }
 
   .quickbuy-step-header-rail {
+    grid-area: steps;
     grid-column: 1 / -1;
-    margin-top: 0.15rem;
-    padding-bottom: 0.15rem;
+    margin-top: 0.05rem;
+    padding-bottom: 0;
     justify-content: center;
   }
 

@@ -15,9 +15,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// ListCustomerServiceConversations returns the admin chat inbox conversation list.
-// Admin/manager users can see every public chat conversation; support users only
-// see conversations assigned to their own backend user id.
+// ListCustomerServiceConversations returns the backoffice chat inbox conversation list.
+// The inbox is scoped to the current backend account so transferred conversations
+// move cleanly between agents instead of pooling every support record together.
 func (h *TicketHandler) ListCustomerServiceConversations(c *gin.Context) {
 	params := pagination.ParsePagination(c)
 	agentUserID, canViewAll := adminCustomerServiceScope(c)
@@ -25,6 +25,9 @@ func (h *TicketHandler) ListCustomerServiceConversations(c *gin.Context) {
 	filters, ok := parseAdminCustomerServiceConversationFilters(c)
 	if !ok {
 		return
+	}
+	if agentUserID > 0 {
+		filters.AssignedTo = &agentUserID
 	}
 
 	tickets, total, err := h.ticketService.ListCustomerServiceConversationsForAgent(params.Page, params.PageSize, agentUserID, canViewAll, filters)
@@ -163,9 +166,11 @@ func (h *TicketHandler) CreateCustomerServiceConversationMessage(c *gin.Context)
 	}
 
 	var req struct {
-		Message       string   `json:"message" binding:"required"`
-		AttachmentURL string   `json:"attachment_url"`
-		Attachments   []string `json:"attachments"`
+		Message       string      `json:"message" binding:"required"`
+		MessageType   string      `json:"message_type"`
+		Metadata      interface{} `json:"metadata"`
+		AttachmentURL string      `json:"attachment_url"`
+		Attachments   []string    `json:"attachments"`
 	}
 	limitAdminCustomerServiceJSONBody(c)
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -174,6 +179,11 @@ func (h *TicketHandler) CreateCustomerServiceConversationMessage(c *gin.Context)
 	}
 
 	agentUserID, canViewAll := adminCustomerServiceScope(c)
+	metadata, err := marshalAdminCustomerServiceMessageMetadata(req.Metadata)
+	if err != nil {
+		respondAdminJSONBindError(c, err)
+		return
+	}
 	attachments, err := h.sanitizeAdminCustomerServiceAttachments(req.AttachmentURL, req.Attachments)
 	if err != nil {
 		respondAdminAttachmentError(c, err)
@@ -186,7 +196,8 @@ func (h *TicketHandler) CreateCustomerServiceConversationMessage(c *gin.Context)
 		UserID:      agentUserID,
 		IsStaff:     true,
 		Content:     strings.TrimSpace(req.Message),
-		MessageType: "text",
+		MessageType: normalizeAdminCustomerServiceMessageType(req.MessageType),
+		Metadata:    metadata,
 		Attachments: string(attachmentsJSON),
 		IsRead:      false,
 		IsInternal:  false,
@@ -285,30 +296,6 @@ func parseAdminCustomerServiceConversationFilters(c *gin.Context) (service.Custo
 		return input, false
 	}
 
-	assignedToRaw := normalizeAdminCustomerServiceFilterValue(c.Query("assigned_to"))
-	if assignedToRaw != "" {
-		assignedTo, err := strconv.ParseUint(assignedToRaw, 10, 32)
-		if err != nil {
-			apierror.RespondBadRequest(c, "Invalid assigned customer-service agent filter")
-			return input, false
-		}
-		if assignedTo > 0 {
-			assignedToValue := uint(assignedTo)
-			input.AssignedTo = &assignedToValue
-		}
-	}
-
-	groupIDRaw := normalizeAdminCustomerServiceFilterValue(c.Query("group_id"))
-	if groupIDRaw != "" {
-		groupID, err := strconv.ParseUint(groupIDRaw, 10, 32)
-		if err != nil || groupID == 0 {
-			apierror.RespondBadRequest(c, "Invalid customer-service group filter")
-			return input, false
-		}
-		groupIDValue := uint(groupID)
-		input.GroupID = &groupIDValue
-	}
-
 	return input, true
 }
 
@@ -348,14 +335,6 @@ func validAdminCustomerServiceIdentityFilter(identity string) bool {
 }
 
 func adminCustomerServiceConversationFilterResponse(input service.CustomerServiceConversationListInput) gin.H {
-	assignedTo := "all"
-	if input.AssignedTo != nil && *input.AssignedTo > 0 {
-		assignedTo = strconv.FormatUint(uint64(*input.AssignedTo), 10)
-	}
-	groupID := "all"
-	if input.GroupID != nil && *input.GroupID > 0 {
-		groupID = strconv.FormatUint(uint64(*input.GroupID), 10)
-	}
 	status := input.Status
 	if status == "" {
 		status = "all"
@@ -366,12 +345,10 @@ func adminCustomerServiceConversationFilterResponse(input service.CustomerServic
 	}
 
 	return gin.H{
-		"search":      input.Search,
-		"status":      status,
-		"identity":    identity,
-		"assigned_to": assignedTo,
-		"group_id":    groupID,
-		"unread":      input.UnreadOnly,
+		"search":   input.Search,
+		"status":   status,
+		"identity": identity,
+		"unread":   input.UnreadOnly,
 	}
 }
 
@@ -531,11 +508,25 @@ func adminCustomerServiceMessageResponse(item ticket.TicketMessage) gin.H {
 func normalizeAdminCustomerServiceMessageType(value string) string {
 	value = strings.ToLower(strings.TrimSpace(value))
 	switch value {
-	case "product", "order", "image", "link", "faq", "config_confirm", "wheelset_selection_request":
+	case "product", "order", "image", "link", "video", "faq", "config_confirm", "wheelset_selection_request":
 		return value
 	default:
 		return "text"
 	}
+}
+
+func marshalAdminCustomerServiceMessageMetadata(value interface{}) (string, error) {
+	if value == nil {
+		return "", nil
+	}
+	payload, err := json.Marshal(value)
+	if err != nil {
+		return "", err
+	}
+	if string(payload) == "null" {
+		return "", nil
+	}
+	return string(payload), nil
 }
 
 func parseAdminCustomerServiceMessageMetadata(value string) interface{} {
@@ -570,10 +561,7 @@ func adminCustomerDisplayName(item ticket.Ticket) string {
 }
 
 func adminCustomerServiceAssigneeName(userID uint) string {
-	if userID == 0 {
-		return "未分配"
-	}
-	return "用户 " + strconv.FormatUint(uint64(userID), 10)
+	return "客服"
 }
 
 func adminMessageSenderName(item ticket.TicketMessage) string {

@@ -6,6 +6,7 @@
     "dev": "vite --host 127.0.0.1 --port 9300 --strictPort",
     "build": "npm run check:admin-font-policy && vite build && npm run check:admin-font-policy -- --dist",
     "preview": "vite preview",
+    "test": "vitest run --environment node",
     "check:storefront-locale-ui": "node scripts/check-storefront-locale-ui.ts",
     "check:admin-font-policy": "node scripts/check-admin-font-policy.ts",
     "typecheck": "npm run check:admin-font-policy && npm run check:storefront-locale-ui && vue-tsc --noEmit"
@@ -42,6 +43,7 @@
     "tw-animate-css": "^1.4.0",
     "typescript": "^5.9.3",
     "vite": "^8.1.5",
+    "vitest": "^4.1.11",
     "vue-tsc": "^3.3.9"
   }
 }

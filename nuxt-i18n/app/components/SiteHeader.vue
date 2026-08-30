@@ -469,6 +469,7 @@ import { useThrottleFn } from '@vueuse/core'
 import { useI18n, useLocalePath, useRoute, useRouter, useState } from '#imports'
 import { useSiteSettings } from '~/composables/usePublicSettings'
 import { useOverlayBackStack } from '~/composables/useOverlayBackStack'
+import { usePagesSearchOverlayState } from '~/composables/usePagesSearchOverlayState'
 import GlobalContentNavigationTransitionOverlay from '~/components/GlobalContentNavigationTransitionOverlay.vue'
 import GlobalAllFaqsSearchOverlay from '~/components/faq/GlobalAllFaqsSearchOverlay.vue'
 import {
@@ -522,6 +523,7 @@ const breadcrumbSubNavMobileTop = ref('8.5rem')
 const contentNavigationTransitionOpen = ref(false)
 const globalFaqSearchMounted = ref(false)
 const globalFaqSearchOpen = ref(false)
+const { openPagesSearch } = usePagesSearchOverlayState()
 const overlayBackStack = useOverlayBackStack()
 const breadcrumbSubNavMenuStyle = computed(() => ({
   '--breadcrumb-subnav-mobile-top': breadcrumbSubNavMobileTop.value,
@@ -707,6 +709,12 @@ const handleContentNavigationOption = (option: ContentNavigationOptionId) => {
 	if (option === 'faq') {
 		closeContentNavigationTransition('navigate')
 		openGlobalFaqSearch()
+		return
+	}
+
+	if (option === 'pages') {
+		closeContentNavigationTransition('navigate')
+		openPagesSearch()
 		return
 	}
 

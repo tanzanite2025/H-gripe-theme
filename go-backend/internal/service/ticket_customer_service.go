@@ -101,9 +101,7 @@ func (s *TicketService) AddCustomerServiceAgentMessage(m *ticket.TicketMessage, 
 
 	m.UserID = agentUserID
 	m.IsStaff = true
-	if strings.TrimSpace(m.MessageType) == "" {
-		m.MessageType = "text"
-	}
+	m.MessageType = normalizeCustomerServiceMessageType(m.MessageType)
 	actorUserID := agentUserID
 	return s.persistCustomerServiceMessage(
 		t,
@@ -664,7 +662,7 @@ func customerServiceConversationTag(conversationID string) string {
 func normalizeCustomerServiceMessageType(value string) string {
 	value = strings.ToLower(strings.TrimSpace(value))
 	switch value {
-	case "product", "order", "image", "link", "faq", "config_confirm", "wheelset_selection_request":
+	case "product", "order", "image", "link", "video", "faq", "config_confirm", "wheelset_selection_request":
 		return value
 	default:
 		return "text"

@@ -111,6 +111,7 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 	storefrontContextHandler := storefront.NewContextHandler(services.StorefrontContext)
 	storefrontRedirectsHandler := storefront.NewRedirectsHandler(services.StorefrontRedirectRules)
 	storefrontSitemapHandler := storefront.NewSitemapHandler(services.StorefrontRouteCatalog)
+	storefrontURLSearchHandler := storefront.NewURLSearchHandler(services.StorefrontURLSearchProfiles)
 	currencyHandler := currencyapi.NewHandler(services.CurrencyPolicy, services.ExchangeRate)
 	orderHandler := order.NewHandler(orderService, cartService, deps.AntiFraud)
 	orderHandler.ConfigureOrderAbuse(deps.OrderAbuse)
@@ -194,6 +195,7 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 			storefrontGroup.GET("/context", storefrontContextHandler.GetContext)
 			storefrontGroup.GET("/redirects", storefrontRedirectsHandler.ListPublished)
 			storefrontGroup.GET("/sitemap-routes", storefrontSitemapHandler.List)
+			storefrontGroup.GET("/url-search-index", storefrontURLSearchHandler.List)
 		}
 
 		// 认证路由（公开）

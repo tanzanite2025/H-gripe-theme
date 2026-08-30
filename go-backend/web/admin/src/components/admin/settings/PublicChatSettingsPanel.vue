@@ -33,7 +33,7 @@
       <div class="flex items-center justify-between gap-3 border-b px-4 py-3">
         <div>
           <h3 class="text-sm font-black">客服分组</h3>
-          <p class="mt-1 text-xs text-muted-foreground">分组是客服职责和自动回复的统一数据源。</p>
+          <p class="mt-1 text-xs text-muted-foreground">分组只作为前台客服卡片的展示标签，不参与会话筛选或转接目标选择。</p>
         </div>
         <span class="text-xs font-bold text-muted-foreground">{{ groups.length }} 个组</span>
       </div>
@@ -109,7 +109,7 @@
             <TableHead class="w-28">用户状态</TableHead>
             <TableHead class="w-28">Profile</TableHead>
             <TableHead class="w-24">在线状态</TableHead>
-            <TableHead class="w-52">客服分组</TableHead>
+            <TableHead class="w-52">展示标签</TableHead>
             <TableHead class="w-24">公开</TableHead>
           </TableRow>
         </TableHeader>

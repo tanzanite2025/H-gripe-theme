@@ -241,11 +241,6 @@ const replaceProductCategoryRoute = async (category: ProductCategory | null) => 
   return true
 }
 
-if (import.meta.server) {
-  await loadCategories().catch(() => [])
-  syncSelectedCategoryFromRoute()
-}
-
 const openCategorySidebar = () => {
   categorySidebarOpen.value = true
   overlayBackStack.open('shop-category-sidebar', () => {
@@ -291,8 +286,9 @@ const buildProductQueryParams = (payload?: ProductSearchPayload) => {
     status: 'active',
   }
 
-  if (selectedCategory.value?.slug) {
-    params.product_category = selectedCategory.value.slug
+  const activeCategorySlug = String(selectedCategorySlug.value || '').trim()
+  if (activeCategorySlug) {
+    params.product_category = activeCategorySlug
   }
 
   if (payload) {
@@ -426,7 +422,7 @@ const onMobileCategorySelect = async (category: ProductCategory | null) => {
   closeCategorySidebar()
 }
 
-onMounted(async () => {
+onMounted(() => {
   if (typeof window !== 'undefined') {
     window.addEventListener(
       'ui:product-category-sidebar-open',
@@ -434,8 +430,8 @@ onMounted(async () => {
     )
   }
 
-  await loadCategories()
   syncSelectedCategoryFromRoute()
+  void loadCategories()
 
   const initialPending = pendingSearch.value
   if (initialPending) {
@@ -456,16 +452,11 @@ onBeforeUnmount(() => {
   }
 })
 
-watch(pendingSearch, async (payload) => {
+watch(pendingSearch, (payload) => {
   if (!payload) return
   pendingSearch.value = null
 
-  // 确保分类已加载，再根据 slug 预设分类
-  if (!categories.value.length) {
-    await loadCategories()
-  }
   syncSelectedCategoryFromRoute()
-
   handleSearch(payload as unknown as ProductSearchPayload)
 })
 

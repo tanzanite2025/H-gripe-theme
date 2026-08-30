@@ -4,55 +4,61 @@
       <CardHeader class="shrink-0 border-b bg-muted/30 px-4 py-3">
         <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div class="min-w-0">
- <CardTitle class="truncate">{{ selectedConversation.customer_name || '匿名客户'}}</CardTitle>
+            <div class="flex min-w-0 items-center gap-2">
+              <CardTitle class="truncate">{{ selectedConversation.customer_name || '匿名客户' }}</CardTitle>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon-sm"
+                class="shrink-0"
+                aria-label="查看客户上下文"
+                @click="emit('open-context')"
+              >
+                <Info class="size-3.5" />
+              </Button>
+            </div>
             <CardDescription class="break-all">
               {{ selectedConversation.conversation_id || selectedConversation.ticket_number || selectedConversation.id }}
             </CardDescription>
           </div>
-          <div class="flex flex-wrap items-center gap-2">
-            <AdminStatusBadge :tone="statusTone(selectedConversation.display_status)">
-              {{ statusLabel(selectedConversation.display_status) }}
-            </AdminStatusBadge>
-            <AdminStatusBadge :tone="conversationIsMember(selectedConversation) ? 'green' : 'amber'">
-              {{ customerIdentityLabel(selectedConversation) }}
-            </AdminStatusBadge>
-            <span
-              v-if="memberTier(selectedConversation)"
-              class="inline-flex h-5 items-center gap-1 rounded-full border border-amber-500/20 bg-amber-500/10 px-2 text-[10px] font-black text-amber-700"
-              :style="memberTierStyle(selectedConversation)"
-            >
-              <span v-if="memberTierIcon(selectedConversation)" class="leading-none">{{ memberTierIcon(selectedConversation) }}</span>
-              {{ memberTierName(selectedConversation) }}
-            </span>
-            <AdminStatusBadge tone="gray">{{ customerRegionLabel(selectedConversation) }}</AdminStatusBadge>
+
+          <div v-if="canEdit" class="flex min-w-0 flex-col gap-1 lg:items-end">
+            <div class="flex min-w-0 flex-wrap items-center justify-end gap-2">
+              <span class="shrink-0 text-xs text-muted-foreground">当前接待客服：</span>
+              <strong class="min-w-0 truncate text-xs font-black text-foreground">
+                {{ assigneeName(selectedConversation.assigned_to, assignableAgents, authStore.user) }}
+              </strong>
+              <Select v-model="transferModel" :disabled="!hasAssignableAgents">
+                <SelectTrigger class="h-8 w-40">
+                  <SelectValue :placeholder="hasAssignableAgents ? '选择客服' : '暂无可转接客服'" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem v-for="agent in assignableAgents" :key="agent.user_id || agent.id" :value="String(agent.user_id || agent.id)">
+                    {{ agentDisplayName(agent) }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                variant="outline"
+                size="sm"
+                class="rounded-full"
+                :disabled="transferring || !transferModel || !hasAssignableAgents"
+                @click="emit('transfer')"
+              >
+                <ArrowRightLeft v-if="!transferring" class="size-3.5" />
+                <LoaderCircle v-else class="size-3.5 animate-spin" />
+                转接
+              </Button>
+            </div>
+          </div>
+          <div v-else class="text-xs text-muted-foreground lg:text-right">
+            当前接待客服：
+            <strong class="text-foreground">{{ assigneeName(selectedConversation.assigned_to, assignableAgents, authStore.user) }}</strong>
           </div>
         </div>
       </CardHeader>
 
-      <CardContent class="grid min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)_auto] gap-0 p-0">
-        <div class="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3">
-          <div class="text-xs text-muted-foreground">
-            当前负责人：
-            <strong class="text-foreground">{{ assigneeName(selectedConversation.assigned_to, assignableAgents) }}</strong>
-          </div>
-
-          <div v-if="canEdit" class="flex flex-wrap items-center gap-2">
-            <Select v-model="transferModel">
-              <SelectTrigger class="h-9 w-44"><SelectValue placeholder="选择客服" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem v-for="agent in assignableAgents" :key="agent.user_id || agent.id" :value="String(agent.user_id || agent.id)">
-                  {{ agent.name || agent.email || `用户 ${agent.user_id || agent.id}` }}
-                </SelectItem>
-              </SelectContent>
-            </Select>
-            <Button variant="outline" size="sm" class="rounded-full" :disabled="transferring || !transferModel" @click="emit('transfer')">
-              <ArrowRightLeft v-if="!transferring" class="size-3.5" />
-              <LoaderCircle v-else class="size-3.5 animate-spin" />
-              转接
-            </Button>
-          </div>
-        </div>
-
+      <CardContent class="grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)_auto] gap-0 p-0">
         <div class="relative min-h-0 overflow-y-auto px-4 py-4">
           <div v-if="messagesLoading" class="absolute inset-0 z-10 flex items-center justify-center bg-card/75">
             <LoaderCircle class="size-5 animate-spin text-primary" />
@@ -196,6 +202,80 @@
                 </div>
               </div>
 
+              <div
+                v-else-if="isProductMessage(message)"
+                class="mt-3 rounded-2xl border border-violet-200 bg-violet-50/70 p-3"
+              >
+                <div class="mb-2 text-[11px] font-black uppercase tracking-widest text-violet-600">
+                  产品链接
+                </div>
+                <div class="flex gap-3">
+                  <div class="size-16 shrink-0 overflow-hidden rounded-xl bg-muted">
+                    <img
+                      v-if="productPayload(message).thumbnail"
+                      :src="productPayload(message).thumbnail"
+                      :alt="productPayload(message).title || 'Product'"
+                      class="size-full object-cover"
+                    />
+                    <div v-else class="flex size-full items-center justify-center text-muted-foreground">
+                      <Package class="size-5 opacity-50" />
+                    </div>
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <a
+                      v-if="productPayload(message).url"
+                      :href="productPayload(message).url"
+                      target="_blank"
+                      rel="noreferrer"
+                      class="block truncate text-sm font-black text-foreground underline-offset-4 hover:underline"
+                    >
+                      {{ productPayload(message).title || message.content || message.message }}
+                    </a>
+                    <p v-else class="truncate text-sm font-black text-foreground">
+                      {{ productPayload(message).title || message.content || message.message }}
+                    </p>
+                    <p v-if="formatProductPrice(productPayload(message))" class="mt-1 text-xs font-bold text-emerald-600">
+                      {{ formatProductPrice(productPayload(message)) }}
+                    </p>
+                    <p v-if="productPayload(message).sku" class="mt-1 text-[11px] text-muted-foreground">
+                      SKU：{{ productPayload(message).sku }}
+                    </p>
+                    <p v-if="productPayload(message).url" class="mt-1 truncate text-[11px] text-muted-foreground">
+                      {{ productPayload(message).url }}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                v-else-if="isVideoMessage(message)"
+                class="mt-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-3"
+              >
+                <div class="mb-2 text-[11px] font-black uppercase tracking-widest text-slate-600">
+                  视频
+                </div>
+                <div class="space-y-3">
+                  <video
+                    v-if="videoPayload(message).url"
+                    class="max-h-72 w-full rounded-xl bg-black"
+                    controls
+                    playsinline
+                    preload="metadata"
+                    :poster="videoPayload(message).thumbnail || ''"
+                  >
+                    <source :src="videoPayload(message).url" />
+                  </video>
+                  <div class="min-w-0">
+                    <p class="truncate text-sm font-black text-foreground">
+                      {{ videoPayload(message).title || message.content || message.message }}
+                    </p>
+                    <p v-if="videoPayload(message).url" class="mt-1 truncate text-[11px] text-muted-foreground">
+                      {{ videoPayload(message).url }}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               <p v-else class="mt-2 whitespace-pre-wrap break-words leading-6">{{ message.content || message.message }}</p>
  <div v-if="message.message_type === 'image'&& messageAttachments(message).length" class="mt-2 grid gap-2">
                 <img
@@ -248,14 +328,81 @@
             placeholder="输入回复内容，发送后客户侧可在原会话中看到"
             @input="emit('typing-input')"
           />
-          <div class="mt-3 flex justify-end">
-            <Button type="submit" class="rounded-full" :disabled="replying || !replyModel.trim()">
+          <div class="mt-3 flex flex-wrap items-center gap-2">
+            <div class="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                class="rounded-full"
+                :disabled="replying"
+                @click="imagePickerOpen = true"
+              >
+                <ImagePlus class="size-3.5" />
+                图片
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                class="rounded-full"
+                :disabled="replying"
+                @click="videoPickerOpen = true"
+              >
+                <Video class="size-3.5" />
+                视频
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                class="rounded-full"
+                :disabled="replying || !customerOrders.length"
+                :title="customerOrders.length ? '从最近订单中选择' : '当前会话暂无可发送订单'"
+                @click="orderPickerOpen = true"
+              >
+                <ShoppingCart class="size-3.5" />
+                订单
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                class="rounded-full"
+                :disabled="replying"
+                @click="productPickerOpen = true"
+              >
+                <Link2 class="size-3.5" />
+                产品链接
+              </Button>
+            </div>
+            <Button type="submit" class="ml-auto rounded-full" :disabled="replying || !replyModel.trim()">
               <LoaderCircle v-if="replying" class="size-4 animate-spin" />
               <Send v-else class="size-4" />
               发送回复
             </Button>
           </div>
         </form>
+
+        <MediaAssetPickerDialog
+          v-model:open="imagePickerOpen"
+          media-type="image"
+          @select="handleImageSelect"
+        />
+        <MediaAssetPickerDialog
+          v-model:open="videoPickerOpen"
+          media-type="video"
+          @select="handleVideoSelect"
+        />
+        <GalleryProductPickerDialog
+          v-model:open="productPickerOpen"
+          @select="handleProductSelect"
+        />
+        <CustomerServiceOrderPickerDialog
+          v-model:open="orderPickerOpen"
+          :orders="customerOrders"
+          @select="handleOrderSelect"
+        />
       </CardContent>
     </template>
 
@@ -270,43 +417,70 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { ArrowRightLeft, Headset, LoaderCircle, MessageCircleOff, Send } from '@lucide/vue'
+import { computed, ref } from 'vue'
+import {
+  ArrowRightLeft,
+  Headset,
+  Info,
+  ImagePlus,
+  Link2,
+  LoaderCircle,
+  MessageCircleOff,
+  Package,
+  Send,
+  ShoppingCart,
+  Video,
+} from '@lucide/vue'
 import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
+import GalleryProductPickerDialog from '@/components/admin/gallery/GalleryProductPickerDialog.vue'
+import MediaAssetPickerDialog from '@/components/admin/media/MediaAssetPickerDialog.vue'
+import CustomerServiceOrderPickerDialog from '@/components/admin/customer-service/CustomerServiceOrderPickerDialog.vue'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import { useAuthStore } from '@/stores/auth'
+import { assetTitle } from '@/lib/mediaPresentation'
+import { getProductThumbnail } from '@/lib/productMedia'
 import {
+  agentDisplayName,
   assigneeName,
   configOptionRows,
   configProduct,
   configSelection,
-  conversationIsMember,
-  customerIdentityLabel,
-  customerRegionLabel,
   formatDate,
   formatOrderTotal,
+  formatProductPrice,
   isConfigConfirmMessage,
   isOrderMessage,
-  memberTier,
-  memberTierIcon,
-  memberTierName,
-  memberTierStyle,
+  isProductMessage,
+  isVideoMessage,
   orderItems,
   orderPayload,
-  statusLabel,
-  statusTone,
+  productPayload,
+  videoPayload,
 } from '@/lib/customerServicePresentation'
+import type { MediaAsset } from '@/api/media'
+import type { ProductRecord } from '@/components/admin/product/productEditorTypes'
 import type {
   AssignableAgent,
+  CustomerContext,
   CustomerConversation,
   CustomerConversationMessage,
+  CustomerOrderItem,
+  CustomerServiceSendMessagePayload,
   CustomerTypingState,
 } from './customerServiceTypes'
 
+interface MediaAssetSelection {
+  url: string
+  image: MediaAsset
+  asset: MediaAsset
+}
+
 const props = withDefaults(defineProps<{
   selectedConversation?: CustomerConversation | null
+  customerContext?: CustomerContext | null
   messages?: CustomerConversationMessage[]
   messagesLoading?: boolean
   selectedCustomerTyping?: CustomerTypingState | null
@@ -318,6 +492,7 @@ const props = withDefaults(defineProps<{
   canEdit?: boolean
 }>(), {
   selectedConversation: null,
+  customerContext: null,
   messages: () => [],
   messagesLoading: false,
   selectedCustomerTyping: null,
@@ -334,13 +509,29 @@ const emit = defineEmits<{
   (event: 'update:replyMessage', value: string): void
   (event: 'transfer'): void
   (event: 'send-reply'): void
+  (event: 'send-message', payload: CustomerServiceSendMessagePayload): void
+  (event: 'open-context'): void
   (event: 'typing-input'): void
 }>()
+
+const imagePickerOpen = ref(false)
+const videoPickerOpen = ref(false)
+const productPickerOpen = ref(false)
+const orderPickerOpen = ref(false)
+const authStore = useAuthStore()
+
+const customerOrders = computed<CustomerOrderItem[]>(() => (
+  Array.isArray(props.customerContext?.orders?.items)
+    ? props.customerContext?.orders?.items
+    : []
+))
 
 const transferModel = computed<string>({
   get: () => props.transferTo,
   set: (value: string) => emit('update:transferTo', value),
 })
+
+const hasAssignableAgents = computed(() => props.assignableAgents.length > 0)
 
 const replyModel = computed<string>({
   get: () => props.replyMessage,
@@ -357,5 +548,116 @@ const messageAttachments = (message: CustomerConversationMessage): string[] => {
     if (attachment) unique.add(attachment)
   })
   return Array.from(unique)
+}
+
+const toPositiveNumber = (value: unknown): number | null => {
+  const parsed = Number(value || 0)
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null
+}
+
+const buildProductPath = (slug: string): string => {
+  const normalized = String(slug || '').trim()
+  return normalized ? `/products/${encodeURIComponent(normalized)}` : ''
+}
+
+const buildProductMessageMetadata = (product: ProductRecord) => {
+  const thumbnail = getProductThumbnail(product)
+  const slug = String(product?.slug || '').trim()
+  const priceValue = Number(product?.sale_price ?? product?.price ?? 0)
+  const normalizedPriceValue = Number.isFinite(priceValue) ? priceValue : 0
+  const currency = String(product?.currency || '').trim().toUpperCase()
+
+  return {
+    kind: 'product_reference',
+    product_id: toPositiveNumber(product?.id),
+    title: String(product?.name || 'Product').trim(),
+    slug,
+    sku: String(product?.sku || '').trim(),
+    url: String(product?.url || buildProductPath(slug)).trim(),
+    thumbnail: String(thumbnail?.src || '').trim(),
+    price: currency ? `${currency} ${normalizedPriceValue.toFixed(2)}` : (normalizedPriceValue > 0 ? normalizedPriceValue.toFixed(2) : ''),
+    price_value: normalizedPriceValue,
+  }
+}
+
+const buildOrderMessageMetadata = (order: CustomerOrderItem) => {
+  const total = Number(order?.total_amount || 0)
+  const normalizedTotal = Number.isFinite(total) ? total : 0
+  const orderNumber = String(order?.order_number || order?.id || '').trim()
+  const items = Array.isArray(order?.items) ? order.items : []
+  const normalizedItemCount = Number.isFinite(Number(order?.item_count || items.length || 0))
+    ? Number(order?.item_count || items.length || 0)
+    : items.length
+
+  return {
+    order_number: orderNumber,
+    title: orderNumber ? `Order #${orderNumber}` : 'Order',
+    status: String(order?.status || '').trim(),
+    payment_status: String(order?.payment_status || '').trim(),
+    shipping_status: String(order?.shipping_status || '').trim(),
+    total: normalizedTotal,
+    currency: String(order?.currency || '').trim().toUpperCase(),
+    url: String(order?.url || '').trim(),
+    thumbnail: String(order?.thumbnail || '').trim(),
+    item_count: normalizedItemCount,
+    items,
+    note: 'Customer asked staff to confirm this order and its purchased configuration.',
+  }
+}
+
+const buildMediaMessageMetadata = (selection: MediaAssetSelection, mediaType: 'image' | 'video') => ({
+  kind: `${mediaType}_reference`,
+  title: assetTitle(selection.asset),
+  url: selection.url,
+  media_type: mediaType,
+})
+
+const sendStructuredMessage = (payload: CustomerServiceSendMessagePayload): void => {
+  if (!props.selectedConversation || props.replying) return
+  emit('send-message', payload)
+}
+
+const handleImageSelect = (selection: MediaAssetSelection): void => {
+  imagePickerOpen.value = false
+  sendStructuredMessage({
+    message: '[图片]',
+    messageType: 'image',
+    metadata: buildMediaMessageMetadata(selection, 'image'),
+    attachmentUrl: selection.url,
+    attachments: [selection.url],
+    toastLabel: '图片已发送',
+  })
+}
+
+const handleVideoSelect = (selection: MediaAssetSelection): void => {
+  videoPickerOpen.value = false
+  sendStructuredMessage({
+    message: '[视频]',
+    messageType: 'video',
+    metadata: buildMediaMessageMetadata(selection, 'video'),
+    toastLabel: '视频已发送',
+  })
+}
+
+const handleProductSelect = (product: ProductRecord): void => {
+  productPickerOpen.value = false
+  const metadata = buildProductMessageMetadata(product)
+  sendStructuredMessage({
+    message: metadata.title || 'Product',
+    messageType: 'product',
+    metadata,
+    toastLabel: '产品链接已发送',
+  })
+}
+
+const handleOrderSelect = (order: CustomerOrderItem): void => {
+  orderPickerOpen.value = false
+  const metadata = buildOrderMessageMetadata(order)
+  sendStructuredMessage({
+    message: metadata.title || 'Order',
+    messageType: 'order',
+    metadata,
+    toastLabel: '订单已发送',
+  })
 }
 </script>

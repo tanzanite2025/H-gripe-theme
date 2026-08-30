@@ -5,7 +5,7 @@
     <div class="spoke-page">
       <section v-show="activeTab === 'calculator'">
         <div class="support-page__calculator-wrapper">
-          <SpokeCalculatorCore />
+          <SpokeCalculatorBlueprint />
 
           <div class="spoke-smart-search-section mt-16 pt-10">
              <div class="text-center mb-8">
@@ -178,7 +178,7 @@
 </template>
 
 <script setup lang="ts">
-import SpokeCalculatorCore from '~/components/SpokeCalculatorCore.vue'
+import SpokeCalculatorBlueprint from '~/components/SpokeCalculatorBlueprint.vue'
 import SpokeSmartSearch from '~/components/SpokeSmartSearch.vue'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
 

@@ -113,9 +113,28 @@ export const customerServiceApi = {
     return requireApiAcknowledgement(await axios.post(path), path)
   },
 
-  async sendMessage(conversationId: number | string, message: string, attachments: string[] = []) {
+  async sendMessage(
+    conversationId: number | string,
+    message: string,
+    options: {
+      messageType?: string
+      metadata?: unknown
+      attachmentUrl?: string
+      attachments?: string[]
+    } = {},
+  ) {
     const path = `/api/admin/customer-service/conversations/${conversationId}/messages`
-    const payload = readObjectPayload(await axios.post(path, { message, attachments }), path)
+    const attachments = Array.isArray(options.attachments)
+      ? options.attachments.map((item) => String(item || '').trim()).filter(Boolean)
+      : []
+    const attachmentUrl = String(options.attachmentUrl || attachments[0] || '').trim()
+    const payload = readObjectPayload(await axios.post(path, {
+      message,
+      message_type: options.messageType,
+      metadata: options.metadata ?? null,
+      attachment_url: attachmentUrl,
+      attachments,
+    }), path)
     return requireApiObjectField(payload, 'message', path)
   },
 

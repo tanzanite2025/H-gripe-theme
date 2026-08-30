@@ -19,6 +19,7 @@ export interface StorefrontRouteCatalogFilters {
   entry_status: string
   check_status: string
   searchable: string
+  search_profile_status: string
   includeAliases: boolean
 }
 
@@ -89,6 +90,7 @@ export function useStorefrontRouteCatalog(canEdit: boolean) {
     entry_status: 'all',
     check_status: 'all',
     searchable: 'all',
+    search_profile_status: 'all',
     includeAliases: false,
   })
   const mode = ref<RouteCatalogMode>('catalog')
@@ -106,6 +108,7 @@ export function useStorefrontRouteCatalog(canEdit: boolean) {
     ...(filters.entry_status !== 'all' ? { entry_status: filters.entry_status } : {}),
     ...(filters.check_status !== 'all' ? { check_status: filters.check_status } : {}),
     ...(filters.searchable !== 'all' ? { searchable: filters.searchable } : {}),
+    ...(filters.search_profile_status !== 'all' ? { search_profile_status: filters.search_profile_status } : {}),
     ...(mode.value === 'canonical' ? { problem_scope: 'canonical' as const } : {}),
     include_aliases: filters.includeAliases,
   })
@@ -152,6 +155,7 @@ export function useStorefrontRouteCatalog(canEdit: boolean) {
     filters.entry_status = 'all'
     filters.check_status = 'all'
     filters.searchable = 'all'
+    filters.search_profile_status = 'all'
     filters.includeAliases = false
     applyPreset(mode.value, false)
     pagination.page = 1

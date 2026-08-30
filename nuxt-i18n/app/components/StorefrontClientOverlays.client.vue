@@ -12,6 +12,10 @@
     v-if="isShopSearchSheetOpen && shopSearchSheetComponent"
   />
   <component
+    :is="pagesSearchOverlayComponent"
+    v-if="isPagesSearchOpen && pagesSearchOverlayComponent"
+  />
+  <component
     :is="globalProductDetailBottomSheetComponent"
     v-if="isGlobalProductDetailBottomSheetOpen && globalProductDetailBottomSheetComponent"
   />
@@ -34,11 +38,13 @@ import {
 import { useChatWidget } from '~/composables/useChatWidget'
 import { useCart } from '~/composables/useCart'
 import { useGlobalProductDetailBottomSheet } from '~/composables/useGlobalProductDetailBottomSheet'
+import { usePagesSearchOverlayState } from '~/composables/usePagesSearchOverlayState'
 import { useShopSearchSheet } from '~/composables/useShopSearchSheet'
 
 const { currentConversation, closeChat } = useChatWidget()
 const { isCartOpen, isCheckoutOpen } = useCart()
 const { isGlobalProductDetailBottomSheetOpen } = useGlobalProductDetailBottomSheet()
+const { isPagesSearchOpen } = usePagesSearchOverlayState()
 const { isOpen: isShopSearchSheetOpen } = useShopSearchSheet()
 
 const createDeferredOverlay = (
@@ -67,6 +73,10 @@ const {
   load: loadShopSearchSheet,
 } = createDeferredOverlay(() => import('./ShopSearchSheet.vue'))
 const {
+  component: pagesSearchOverlayComponent,
+  load: loadPagesSearchOverlay,
+} = createDeferredOverlay(() => import('./search/GlobalPagesSearchOverlay.vue'))
+const {
   component: globalProductDetailBottomSheetComponent,
   load: loadGlobalProductDetailBottomSheet,
 } = createDeferredOverlay(() => import('./global/product-detail/GlobalProductDetailBottomSheet.vue'))
@@ -85,6 +95,10 @@ watch(isCheckoutOpen, (open) => {
 
 watch(isShopSearchSheetOpen, (open) => {
   if (open) loadShopSearchSheet()
+}, { immediate: true })
+
+watch(isPagesSearchOpen, (open) => {
+  if (open) loadPagesSearchOverlay()
 }, { immediate: true })
 
 watch(isGlobalProductDetailBottomSheetOpen, (open) => {

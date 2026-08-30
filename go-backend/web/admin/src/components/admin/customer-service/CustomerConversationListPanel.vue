@@ -59,7 +59,7 @@
               <div class="mt-2 flex flex-wrap items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70">
                 <span>#{{ conversation.ticket_number || conversation.id }}</span>
                 <span>·</span>
-                <span>{{ assigneeName(conversation.assigned_to, assignableAgents) }}</span>
+                <span class="max-w-28 truncate normal-case">{{ assigneeName(conversation.assigned_to, assignableAgents, authStore.user) }}</span>
                 <span v-if="conversation.unread_count > 0" class="rounded-full bg-rose-500/10 px-2 py-0.5 text-rose-600">
                   {{ conversation.unread_count }} 未读
                 </span>
@@ -89,6 +89,7 @@ import { LoaderCircle, MapPin, MessageCircleOff, UserCheck, UserRound } from '@l
 import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
 import { Button } from '@/components/ui/button'
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { useAuthStore } from '@/stores/auth'
 import {
   assigneeName,
   conversationDisplayName,
@@ -132,4 +133,6 @@ const emit = defineEmits<{
   (event: 'select', conversation: CustomerConversation): void
   (event: 'change-page', page: number): void
 }>()
+
+const authStore = useAuthStore()
 </script>

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"commerce-platform/internal/repository"
 	"commerce-platform/internal/service"
@@ -165,16 +166,24 @@ func (h *RoutesHandler) Check(c *gin.Context) {
 }
 
 func routeCatalogFilter(c *gin.Context) repository.StorefrontRouteCatalogListFilter {
+	searchProfileStatus := strings.ToLower(strings.TrimSpace(c.Query("search_profile_status")))
+	switch searchProfileStatus {
+	case "configured", "unconfigured":
+	default:
+		searchProfileStatus = ""
+	}
+
 	return repository.StorefrontRouteCatalogListFilter{
-		Locale:         c.Query("locale"),
-		SourceType:     c.Query("source_type"),
-		EntryStatus:    c.Query("entry_status"),
-		CheckStatus:    c.Query("check_status"),
-		Search:         c.Query("search"),
-		Searchable:     parseOptionalBool(c.Query("searchable")),
-		NeedsAttention: parseOptionalBool(c.Query("needs_attention")),
-		ProblemScope:   c.Query("problem_scope"),
-		ExcludeAlias:   c.Query("include_aliases") != "true",
+		Locale:              c.Query("locale"),
+		SourceType:          c.Query("source_type"),
+		EntryStatus:         c.Query("entry_status"),
+		CheckStatus:         c.Query("check_status"),
+		Search:              c.Query("search"),
+		Searchable:          parseOptionalBool(c.Query("searchable")),
+		SearchProfileStatus: searchProfileStatus,
+		NeedsAttention:      parseOptionalBool(c.Query("needs_attention")),
+		ProblemScope:        c.Query("problem_scope"),
+		ExcludeAlias:        c.Query("include_aliases") != "true",
 	}
 }
 

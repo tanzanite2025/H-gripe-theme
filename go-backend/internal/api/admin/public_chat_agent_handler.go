@@ -175,8 +175,7 @@ func respondPublicChatAgentError(c *gin.Context, err error) {
 		errors.Is(err, service.ErrPublicChatAgentIDTaken),
 		errors.Is(err, service.ErrPublicChatAgentStatusInvalid),
 		errors.Is(err, service.ErrPublicChatAgentOnlineInvalid),
-		errors.Is(err, service.ErrPublicChatAgentEmailRequired),
-		errors.Is(err, service.ErrPublicChatAgentWhatsAppRequired),
+		errors.Is(err, service.ErrPublicChatAgentContactRequired),
 		errors.Is(err, service.ErrPublicChatAgentGroupInvalid):
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	default:

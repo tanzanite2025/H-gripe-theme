@@ -142,18 +142,19 @@ func (r *StorefrontRouteCatalogRepository) publishRouteCatalogChanged(
 }
 
 type StorefrontRouteCatalogListFilter struct {
-	Page           int
-	PageSize       int
-	Locale         string
-	SourceType     string
-	EntryStatus    string
-	CheckStatus    string
-	Search         string
-	Searchable     *bool
-	Indexable      *bool
-	NeedsAttention *bool
-	ProblemScope   string
-	ExcludeAlias   bool
+	Page                int
+	PageSize            int
+	Locale              string
+	SourceType          string
+	EntryStatus         string
+	CheckStatus         string
+	Search              string
+	Searchable          *bool
+	SearchProfileStatus string
+	Indexable           *bool
+	NeedsAttention      *bool
+	ProblemScope        string
+	ExcludeAlias        bool
 }
 
 func (r *StorefrontRouteCatalogRepository) List(filter StorefrontRouteCatalogListFilter) ([]seodomain.StorefrontRouteCatalogEntry, int64, error) {
@@ -182,6 +183,18 @@ func (r *StorefrontRouteCatalogRepository) List(filter StorefrontRouteCatalogLis
 	}
 	if filter.Searchable != nil {
 		query = query.Where("is_searchable = ?", *filter.Searchable)
+	}
+	if filter.SearchProfileStatus != "" {
+		switch filter.SearchProfileStatus {
+		case "configured":
+			query = query.Where(
+				"EXISTS (SELECT 1 FROM storefront_url_search_profiles sp WHERE sp.route_entry_id = storefront_route_catalog_entries.id)",
+			)
+		case "unconfigured":
+			query = query.Where(
+				"NOT EXISTS (SELECT 1 FROM storefront_url_search_profiles sp WHERE sp.route_entry_id = storefront_route_catalog_entries.id)",
+			)
+		}
 	}
 	if filter.Indexable != nil {
 		query = query.Where("is_indexable = ?", *filter.Indexable)

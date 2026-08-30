@@ -6,7 +6,7 @@
           variant="ghost"
           size="sm"
           class="min-w-0 flex-1 rounded-md text-xs"
- :class="{ 'bg-background shadow-sm': mobileView === 'conversations'}"
+          :class="{ 'bg-background shadow-sm': mobileView === 'conversations' }"
           @click="mobileView = 'conversations'"
         >
           <List class="size-3.5" />
@@ -23,17 +23,6 @@
           <MessageSquare class="size-3.5" />
           对话
         </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          class="min-w-0 flex-1 rounded-md text-xs"
- :class="{ 'bg-background shadow-sm': mobileView === 'context'}"
-          :disabled="!selectedConversation"
-          @click="mobileView = 'context'"
-        >
-          <UserRound class="size-3.5" />
-          上下文
-        </Button>
       </div>
       <Button
         variant="outline"
@@ -49,15 +38,13 @@
     <div class="hidden shrink-0 lg:block">
       <CustomerServiceFilters
         :filters="filters"
-        :assignable-agents="assignableAgents"
-        :assignable-groups="assignableGroups"
         :loading="loading"
         @apply="emit('apply')"
         @reset="emit('reset')"
       />
     </div>
 
-    <section class="hidden min-h-0 flex-1 grid-rows-[minmax(0,0.85fr)_minmax(0,1.2fr)_minmax(0,0.95fr)] gap-4 overflow-hidden lg:grid xl:grid-cols-[320px_minmax(0,1fr)_320px] xl:grid-rows-[minmax(0,1fr)] 2xl:grid-cols-[360px_minmax(0,1fr)_360px]">
+    <section class="hidden min-h-0 flex-1 gap-4 overflow-hidden lg:grid lg:grid-cols-[minmax(300px,320px)_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)] xl:grid-cols-[320px_minmax(0,1fr)] 2xl:grid-cols-[360px_minmax(0,1fr)]">
       <CustomerConversationListPanel
         :conversations="conversations"
         :selected-conversation="selectedConversation"
@@ -74,6 +61,7 @@
         :transfer-to="transferTo"
         :reply-message="replyMessage"
         :selected-conversation="selectedConversation"
+        :customer-context="customerContext"
         :messages="messages"
         :messages-loading="messagesLoading"
         :selected-customer-typing="selectedCustomerTyping"
@@ -85,13 +73,9 @@
         @update:reply-message="emit('update:replyMessage', $event)"
         @transfer="emit('transfer')"
         @send-reply="emit('send-reply')"
+        @send-message="emit('send-message', $event)"
+        @open-context="openContextDialog"
         @typing-input="emit('typing-input')"
-      />
-
-      <CustomerContextPanel
-        :selected-conversation="selectedConversation"
-        :customer-context="customerContext"
-        :loading="contextLoading"
       />
     </section>
 
@@ -114,6 +98,7 @@
         :transfer-to="transferTo"
         :reply-message="replyMessage"
         :selected-conversation="selectedConversation"
+        :customer-context="customerContext"
         :messages="messages"
         :messages-loading="messagesLoading"
         :selected-customer-typing="selectedCustomerTyping"
@@ -125,14 +110,9 @@
         @update:reply-message="emit('update:replyMessage', $event)"
         @transfer="emit('transfer')"
         @send-reply="emit('send-reply')"
+        @send-message="emit('send-message', $event)"
+        @open-context="openContextDialog"
         @typing-input="emit('typing-input')"
-      />
-
-      <CustomerContextPanel
-        v-else
-        :selected-conversation="selectedConversation"
-        :customer-context="customerContext"
-        :loading="contextLoading"
       />
     </section>
   </div>
@@ -141,13 +121,11 @@
     <SheetContent side="bottom" class="max-h-[86dvh] rounded-t-2xl p-0" @open-auto-focus.prevent>
       <SheetHeader class="border-b pr-12">
         <SheetTitle>筛选客服会话</SheetTitle>
-        <SheetDescription>按客户、负责人、状态和未读消息筛选。</SheetDescription>
+        <SheetDescription>按客户、状态和未读消息筛选。</SheetDescription>
       </SheetHeader>
       <div class="overflow-y-auto p-4">
         <CustomerServiceFilters
           :filters="filters"
-          :assignable-agents="assignableAgents"
-          :assignable-groups="assignableGroups"
           :loading="loading"
           @apply="applyMobileFilters"
           @reset="resetMobileFilters"
@@ -155,12 +133,19 @@
       </div>
     </SheetContent>
   </Sheet>
+
+  <CustomerServiceContextDialog
+    v-model:open="contextDialogOpen"
+    :selected-conversation="selectedConversation"
+    :customer-context="customerContext"
+    :loading="contextLoading"
+  />
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { List, MessageSquare, SlidersHorizontal, UserRound } from '@lucide/vue'
-import CustomerContextPanel from '@/components/admin/customer-service/CustomerContextPanel.vue'
+import { List, MessageSquare, SlidersHorizontal } from '@lucide/vue'
+import CustomerServiceContextDialog from '@/components/admin/customer-service/CustomerServiceContextDialog.vue'
 import CustomerConversationDetailPanel from '@/components/admin/customer-service/CustomerConversationDetailPanel.vue'
 import CustomerConversationListPanel from '@/components/admin/customer-service/CustomerConversationListPanel.vue'
 import CustomerServiceFilters from '@/components/admin/customer-service/CustomerServiceFilters.vue'
@@ -168,17 +153,17 @@ import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import type {
   AssignableAgent,
-  AssignableGroup,
   CustomerContext,
   CustomerConversation,
   CustomerConversationMessage,
   CustomerPagination,
   CustomerServiceFiltersState,
+  CustomerServiceSendMessagePayload,
   CustomerTypingByConversation,
   CustomerTypingState,
 } from './customerServiceTypes'
 
-withDefaults(defineProps<{
+const props = withDefaults(defineProps<{
   filters: CustomerServiceFiltersState
   conversations?: CustomerConversation[]
   selectedConversation?: CustomerConversation | null
@@ -192,7 +177,6 @@ withDefaults(defineProps<{
   messagesLoading?: boolean
   selectedCustomerTyping?: CustomerTypingState | null
   assignableAgents?: AssignableAgent[]
-  assignableGroups?: AssignableGroup[]
   transferring?: boolean
   replying?: boolean
   canEdit?: boolean
@@ -210,7 +194,6 @@ withDefaults(defineProps<{
   messagesLoading: false,
   selectedCustomerTyping: null,
   assignableAgents: () => [],
-  assignableGroups: () => [],
   transferring: false,
   replying: false,
   canEdit: false,
@@ -227,17 +210,24 @@ const emit = defineEmits<{
   (event: 'update:replyMessage', value: string): void
   (event: 'transfer'): void
   (event: 'send-reply'): void
+  (event: 'send-message', payload: CustomerServiceSendMessagePayload): void
   (event: 'typing-input'): void
 }>()
 
-type MobileInboxView = 'conversations' | 'messages' | 'context'
+type MobileInboxView = 'conversations' | 'messages'
 
 const mobileView = ref<MobileInboxView>('conversations')
 const mobileFiltersOpen = ref(false)
+const contextDialogOpen = ref(false)
 
 const selectMobileConversation = (conversation: CustomerConversation) => {
   mobileView.value = 'messages'
   emit('select', conversation)
+}
+
+const openContextDialog = () => {
+  if (!props.selectedConversation) return
+  contextDialogOpen.value = true
 }
 
 const applyMobileFilters = () => {
