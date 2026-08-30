@@ -30,6 +30,9 @@ RUN npm run build
 
 FROM node:24-alpine
 WORKDIR /app
+ARG VERSION=dev
+# Refresh Alpine packages on every release so runtime scans see patched OpenSSL libs.
+RUN echo "$VERSION" >/dev/null && apk upgrade --no-cache
 COPY --from=build /app/.output ./.output
 RUN find .output -type f -name '*.map' -delete \
     && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx

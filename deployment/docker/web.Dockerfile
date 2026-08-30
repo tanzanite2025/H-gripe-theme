@@ -1,6 +1,9 @@
 FROM nginx:1.30.4-alpine3.24
 
-RUN apk upgrade --no-cache \
+ARG VERSION=dev
+
+# Refresh Alpine packages on every release so runtime scans see patched OpenSSL libs.
+RUN echo "$VERSION" >/dev/null && apk upgrade --no-cache \
     && for pkg in nginx-module-image-filter gd libgd tiff curl libcurl; do if apk info -e "$pkg" >/dev/null 2>&1; then apk del --no-network "$pkg"; fi; done \
     && rm -f /etc/nginx/conf.d/default.conf \
     && mkdir -p /etc/nginx/snippets \
