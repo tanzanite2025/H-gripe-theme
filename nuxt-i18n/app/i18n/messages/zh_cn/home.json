@@ -74,7 +74,7 @@
   },
   "shopWithConfidence": {
     "eyebrow": "付款保障",
-    "subtitle": "使用你熟悉的支付服务商完成付款。我们会核验付款结果，并为每笔订单提供清晰的支持入口。",
+    "subtitle": "使用你熟悉的支付服务商完成付款。支持直接付款、企业对公付款和发票支持，需要时也有清晰的服务入口。",
     "paymentMethodsLabel": "支持的支付方式",
     "paymentAssurances": {
       "0": "支付信息由支付服务商安全处理。",
@@ -87,9 +87,9 @@
         "action": "查看支付安全"
       },
       "paymentVerification": {
-        "title": "付款结果核验",
-        "description": "付款结果、金额和币种均会在服务器端核对，订单才会标记为已付款。",
-        "action": "获取付款帮助"
+        "title": "付款方式与发票",
+        "description": "支持直接付款、企业对公付款和发票开具，方便采购与结算。",
+        "action": "查看付款与发票"
       },
       "deliverySupport": {
         "title": "订单与配送支持",

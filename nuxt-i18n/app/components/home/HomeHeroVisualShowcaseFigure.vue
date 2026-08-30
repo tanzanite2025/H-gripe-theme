@@ -1,8 +1,5 @@
 <template>
-  <figure
-    class="home-hero-visual-showcase-figure"
-    :class="`home-hero-visual-showcase-figure--${item.layoutVariant}`"
-  >
+  <figure class="home-hero-visual-showcase-figure">
     <StorefrontImage
       :src="item.src"
       :alt="item.altText"

@@ -335,29 +335,57 @@
                 variant="outline"
                 size="sm"
                 class="rounded-full"
-                :disabled="replying"
+                :disabled="replying || attachmentUploading"
                 @click="imagePickerOpen = true"
+                title="从媒体库选择图片"
               >
                 <ImagePlus class="size-3.5" />
-                图片
+                媒体库图片
               </Button>
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 class="rounded-full"
-                :disabled="replying"
+                :disabled="replying || attachmentUploading"
+                @click="openLocalImagePicker"
+                title="拍照或从本地选择图片并直接发送"
+              >
+                <Camera v-if="!attachmentUploading" class="size-3.5" />
+                <LoaderCircle v-else class="size-3.5 animate-spin" />
+                拍照
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                class="rounded-full"
+                :disabled="replying || attachmentUploading"
                 @click="videoPickerOpen = true"
+                title="从媒体库选择视频"
               >
                 <Video class="size-3.5" />
-                视频
+                媒体库视频
               </Button>
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 class="rounded-full"
-                :disabled="replying || !customerOrders.length"
+                :disabled="replying || attachmentUploading"
+                @click="openLocalVideoPicker"
+                title="拍视频或从本地选择视频并直接发送"
+              >
+                <LoaderCircle v-if="attachmentUploading" class="size-3.5 animate-spin" />
+                <Video v-else class="size-3.5" />
+                拍视频
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                class="rounded-full"
+                :disabled="replying || attachmentUploading || !customerOrders.length"
                 :title="customerOrders.length ? '从最近订单中选择' : '当前会话暂无可发送订单'"
                 @click="orderPickerOpen = true"
               >
@@ -403,6 +431,9 @@
           :orders="customerOrders"
           @select="handleOrderSelect"
         />
+
+        <input ref="imageFileInput" class="hidden" type="file" accept="image/*" capture="environment" @change="handleLocalImageUpload" />
+        <input ref="videoFileInput" class="hidden" type="file" accept="video/*" capture="environment" @change="handleLocalVideoUpload" />
       </CardContent>
     </template>
 
@@ -420,6 +451,7 @@
 import { computed, ref } from 'vue'
 import {
   ArrowRightLeft,
+  Camera,
   Headset,
   Info,
   ImagePlus,
@@ -439,9 +471,11 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import mediaApi from '@/api/media'
 import { useAuthStore } from '@/stores/auth'
 import { assetTitle } from '@/lib/mediaPresentation'
 import { getProductThumbnail } from '@/lib/productMedia'
+import { toast } from 'vue-sonner'
 import {
   agentDisplayName,
   assigneeName,
@@ -518,6 +552,9 @@ const imagePickerOpen = ref(false)
 const videoPickerOpen = ref(false)
 const productPickerOpen = ref(false)
 const orderPickerOpen = ref(false)
+const imageFileInput = ref<HTMLInputElement | null>(null)
+const videoFileInput = ref<HTMLInputElement | null>(null)
+const attachmentUploading = ref(false)
 const authStore = useAuthStore()
 
 const customerOrders = computed<CustomerOrderItem[]>(() => (
@@ -612,31 +649,42 @@ const buildMediaMessageMetadata = (selection: MediaAssetSelection, mediaType: 'i
   media_type: mediaType,
 })
 
+const createMediaSelection = (asset: MediaAsset, url: string): MediaAssetSelection => ({
+  url,
+  image: asset,
+  asset,
+})
+
 const sendStructuredMessage = (payload: CustomerServiceSendMessagePayload): void => {
   if (!props.selectedConversation || props.replying) return
   emit('send-message', payload)
 }
 
+const sendMediaSelection = (selection: MediaAssetSelection, mediaType: 'image' | 'video'): void => {
+  const url = String(selection.url || selection.asset?.url || selection.asset?.access_url || '').trim()
+  if (!url) {
+    toast.error('附件缺少可用地址，无法发送')
+    return
+  }
+
+  sendStructuredMessage({
+    message: mediaType === 'image' ? '[图片]' : '[视频]',
+    messageType: mediaType,
+    metadata: buildMediaMessageMetadata(createMediaSelection(selection.asset, url), mediaType),
+    attachmentUrl: url,
+    attachments: [url],
+    toastLabel: mediaType === 'image' ? '图片已发送' : '视频已发送',
+  })
+}
+
 const handleImageSelect = (selection: MediaAssetSelection): void => {
   imagePickerOpen.value = false
-  sendStructuredMessage({
-    message: '[图片]',
-    messageType: 'image',
-    metadata: buildMediaMessageMetadata(selection, 'image'),
-    attachmentUrl: selection.url,
-    attachments: [selection.url],
-    toastLabel: '图片已发送',
-  })
+  sendMediaSelection(selection, 'image')
 }
 
 const handleVideoSelect = (selection: MediaAssetSelection): void => {
   videoPickerOpen.value = false
-  sendStructuredMessage({
-    message: '[视频]',
-    messageType: 'video',
-    metadata: buildMediaMessageMetadata(selection, 'video'),
-    toastLabel: '视频已发送',
-  })
+  sendMediaSelection(selection, 'video')
 }
 
 const handleProductSelect = (product: ProductRecord): void => {
@@ -659,5 +707,58 @@ const handleOrderSelect = (order: CustomerOrderItem): void => {
     metadata,
     toastLabel: '订单已发送',
   })
+}
+
+const openLocalImagePicker = (): void => {
+  if (props.replying || attachmentUploading.value) return
+  imageFileInput.value?.click()
+}
+
+const openLocalVideoPicker = (): void => {
+  if (props.replying || attachmentUploading.value) return
+  videoFileInput.value?.click()
+}
+
+const sendUploadedAttachment = async (file: File, mediaType: 'image' | 'video'): Promise<void> => {
+  if (!props.selectedConversation || props.replying || attachmentUploading.value) return
+  attachmentUploading.value = true
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('media_type', mediaType)
+    if (mediaType === 'image') {
+      formData.append('image_purpose', 'customer_service_attachment')
+    }
+
+    const asset = await mediaApi.uploadAsset(formData)
+    const url = String(asset.url || asset.access_url || '').trim()
+    if (!url) {
+      toast.error('上传成功，但附件地址不可用')
+      return
+    }
+
+    sendMediaSelection(createMediaSelection(asset, url), mediaType)
+  } catch (error) {
+    console.error('Failed to upload customer-service attachment:', error)
+    toast.error(mediaType === 'image' ? '图片上传失败' : '视频上传失败')
+  } finally {
+    attachmentUploading.value = false
+  }
+}
+
+const handleLocalImageUpload = async (event: Event): Promise<void> => {
+  const input = event.currentTarget as HTMLInputElement | null
+  const file = input?.files?.[0]
+  if (input) input.value = ''
+  if (!file) return
+  await sendUploadedAttachment(file, 'image')
+}
+
+const handleLocalVideoUpload = async (event: Event): Promise<void> => {
+  const input = event.currentTarget as HTMLInputElement | null
+  const file = input?.files?.[0]
+  if (input) input.value = ''
+  if (!file) return
+  await sendUploadedAttachment(file, 'video')
 }
 </script>

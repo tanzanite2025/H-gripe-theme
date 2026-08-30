@@ -21,6 +21,8 @@ const protectedMediaURLPrefix = "/api/admin/media/assets"
 
 const protectedMediaSignedURLTTL = 10 * time.Minute
 
+var publicMediaAttachmentExtensions = []string{".jpg", ".jpeg", ".png", ".webp", ".gif", ".mp4", ".mov", ".webm"}
+
 type MediaAssetFile struct {
 	ReadCloser  io.ReadCloser
 	RedirectURL string
@@ -161,6 +163,10 @@ func (s *MediaService) CanonicalPublicMediaURL(reference string) string {
 }
 
 func (s *MediaService) CanonicalPublicImageUploadURL(reference string) (string, error) {
+	if s == nil || s.repo == nil {
+		return "", ErrMediaAssetURLUnavailable
+	}
+
 	refs, err := ugc.NormalizeUploadImageAttachmentReferences([]string{reference}, 1)
 	if err != nil {
 		return "", err
@@ -179,7 +185,51 @@ func (s *MediaService) CanonicalPublicImageUploadURL(reference string) (string, 
 	if asset.DeletedAt.Valid || asset.Status != "active" || asset.Visibility != "public" {
 		return "", ErrMediaAssetForbidden
 	}
-	if asset.MediaType != "image" || !allowedPublicImageAttachmentMimeType(asset.MimeType) {
+	if strings.ToLower(strings.TrimSpace(asset.MediaType)) != "image" || !allowedPublicImageAttachmentMimeType(asset.MimeType) {
+		return "", ErrUnsupportedMediaType
+	}
+	if strings.TrimSpace(asset.URL) == "" {
+		return "", ErrMediaAssetURLUnavailable
+	}
+	if refs[0].SourceHost != "" && !sameAttachmentReferenceHost(refs[0].SourceHost, asset.URL) {
+		return "", ugc.ErrAttachmentInvalidURL
+	}
+	return s.CanonicalPublicMediaURL(asset.URL), nil
+}
+
+func (s *MediaService) CanonicalPublicMediaAttachmentURL(reference string) (string, error) {
+	if s == nil || s.repo == nil {
+		return "", ErrMediaAssetURLUnavailable
+	}
+
+	refs, err := ugc.NormalizeUploadAttachmentReferences([]string{reference}, 1, publicMediaAttachmentExtensions)
+	if err != nil {
+		return "", err
+	}
+	if len(refs) == 0 {
+		return "", ErrMediaAssetURLUnavailable
+	}
+
+	asset, err := s.repo.FindAssetByStorageKey(refs[0].StorageKey)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return "", ErrMediaAssetNotFound
+		}
+		return "", err
+	}
+	if asset.DeletedAt.Valid || asset.Status != "active" || asset.Visibility != "public" {
+		return "", ErrMediaAssetForbidden
+	}
+	switch strings.ToLower(strings.TrimSpace(asset.MediaType)) {
+	case "image":
+		if !allowedPublicImageAttachmentMimeType(asset.MimeType) {
+			return "", ErrUnsupportedMediaType
+		}
+	case "video":
+		if !allowedPublicVideoAttachmentMimeType(asset.MimeType) {
+			return "", ErrUnsupportedMediaType
+		}
+	default:
 		return "", ErrUnsupportedMediaType
 	}
 	if strings.TrimSpace(asset.URL) == "" {
@@ -284,6 +334,19 @@ func allowedPublicImageAttachmentMimeType(value string) bool {
 	}
 	switch value {
 	case "image/jpeg", "image/png", "image/webp", "image/gif":
+		return true
+	default:
+		return false
+	}
+}
+
+func allowedPublicVideoAttachmentMimeType(value string) bool {
+	value = strings.ToLower(strings.TrimSpace(strings.SplitN(value, ";", 2)[0]))
+	if value == "" {
+		return true
+	}
+	switch value {
+	case "video/mp4", "video/quicktime", "video/webm":
 		return true
 	default:
 		return false

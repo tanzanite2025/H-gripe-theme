@@ -1,14 +1,12 @@
 package cart
 
 import (
-	"commerce-platform/internal/api/middleware"
+	"commerce-platform/internal/api/v1/visitorcapture"
 	"commerce-platform/internal/pkg/apierror"
 	"commerce-platform/internal/pkg/response"
-	"commerce-platform/internal/pkg/visitorcookie"
 	"commerce-platform/internal/service"
 	"errors"
 	"strconv"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -44,7 +42,7 @@ func NewHandler(cartService *service.CartService, opts ...Options) *Handler {
 func (h *Handler) getUserIDAndSession(c *gin.Context) (*uint, string) {
 	userID := currentUserID(c)
 
-	sessionID := existingCartSessionID(c)
+	sessionID := visitorcapture.ExistingCartSessionID(c)
 	if sessionID == "" {
 		sessionID = uuid.New().String()
 		c.SetCookie("session_id", sessionID, 86400*30, "/", "", false, true)
@@ -63,21 +61,11 @@ func currentUserID(c *gin.Context) *uint {
 	return userID
 }
 
-func existingCartSessionID(c *gin.Context) string {
-	sessionID, err := c.Cookie("session_id")
-	if err != nil {
-		return ""
-	}
-	return strings.TrimSpace(sessionID)
-}
-
 func (h *Handler) touchVisitorProfile(c *gin.Context, userID *uint, sessionID string) {
 	if h.visitorProfileService == nil {
 		return
 	}
 	input := h.visitorProfileTouchInput(c, userID, sessionID)
-	input.MeaningfulAction = service.VisitorProfileActionCart
-	input.QualityScoreDelta = service.VisitorProfileQualityCartAction
 	if _, err := h.visitorProfileService.TouchMeaningfulAction(input); err != nil {
 		return
 	}
@@ -87,35 +75,23 @@ func (h *Handler) touchPassiveVisitorProfile(c *gin.Context, userID *uint, sessi
 	if h.visitorProfileService == nil {
 		return
 	}
-	if _, err := h.visitorProfileService.TouchPassiveSeen(h.visitorProfileTouchInput(c, userID, sessionID)); err != nil {
+	if _, err := h.visitorProfileService.TouchPassiveSeen(visitorcapture.BuildVisitorProfileTouchInput(c, visitorcapture.TouchOptions{
+		UserID:                     userID,
+		CustomerServiceVisitorHash: visitorcapture.ExistingCustomerServiceVisitorHash(c, h.visitorSecret),
+		CartSessionID:              sessionID,
+	})); err != nil {
 		return
 	}
 }
 
 func (h *Handler) visitorProfileTouchInput(c *gin.Context, userID *uint, sessionID string) service.VisitorProfileTouchInput {
-	visitorHash, _ := visitorcookie.ExistingCustomerServiceVisitorHash(c, h.visitorSecret)
-	return service.VisitorProfileTouchInput{
+	return visitorcapture.BuildVisitorProfileTouchInput(c, visitorcapture.TouchOptions{
 		UserID:                     userID,
-		CustomerServiceVisitorHash: visitorHash,
+		CustomerServiceVisitorHash: visitorcapture.ExistingCustomerServiceVisitorHash(c, h.visitorSecret),
 		CartSessionID:              sessionID,
-		Locale:                     firstNonEmptyHeader(c, "X-Locale", "Accept-Language"),
-		LocaleSource:               "accept_language",
-		CountryCode:                middleware.TrustedEdgeCountry(c),
-		Region:                     firstNonEmptyHeader(c, "CF-Region", "X-Region"),
-		City:                       firstNonEmptyHeader(c, "CF-IPCity", "X-City"),
-		Timezone:                   firstNonEmptyHeader(c, "CF-Timezone", "X-Timezone"),
-		IPAddress:                  c.ClientIP(),
-		UserAgent:                  c.GetHeader("User-Agent"),
-	}
-}
-
-func firstNonEmptyHeader(c *gin.Context, keys ...string) string {
-	for _, key := range keys {
-		if value := c.GetHeader(key); value != "" {
-			return value
-		}
-	}
-	return ""
+		MeaningfulAction:           service.VisitorProfileActionCart,
+		QualityScoreDelta:          service.VisitorProfileQualityCartAction,
+	})
 }
 
 // AddToCartRequest 添加到购物车请求
@@ -147,7 +123,7 @@ type UpdateCartItemRequest struct {
 // GetCartSummary 获取购物车摘要
 func (h *Handler) GetCartSummary(c *gin.Context) {
 	userID := currentUserID(c)
-	sessionID := existingCartSessionID(c)
+	sessionID := visitorcapture.ExistingCartSessionID(c)
 
 	summary, err := h.cartService.GetCartSummary(userID, sessionID)
 	if err != nil {
@@ -199,7 +175,7 @@ func (h *Handler) UpdateCartItem(c *gin.Context) {
 	}
 
 	userID := currentUserID(c)
-	sessionID := existingCartSessionID(c)
+	sessionID := visitorcapture.ExistingCartSessionID(c)
 
 	cart, err := h.cartService.FindCart(userID, sessionID)
 	if err != nil {
@@ -231,7 +207,7 @@ func (h *Handler) UpdateCartItem(c *gin.Context) {
 // RemoveFromCart 从购物车移除商品
 func (h *Handler) RemoveFromCart(c *gin.Context) {
 	userID := currentUserID(c)
-	sessionID := existingCartSessionID(c)
+	sessionID := visitorcapture.ExistingCartSessionID(c)
 
 	cart, err := h.cartService.FindCart(userID, sessionID)
 	if err != nil {
@@ -272,7 +248,7 @@ func (h *Handler) SyncCart(c *gin.Context) {
 	}
 	if !h.cartService.HasPurchasableSyncItems(items) {
 		userID := currentUserID(c)
-		sessionID := existingCartSessionID(c)
+		sessionID := visitorcapture.ExistingCartSessionID(c)
 		summary, err := h.cartService.GetCartSummary(userID, sessionID)
 		if err != nil {
 			apierror.RespondInternalError(c, err)
@@ -311,7 +287,7 @@ func (h *Handler) SyncCart(c *gin.Context) {
 // ClearCart 清空购物车
 func (h *Handler) ClearCart(c *gin.Context) {
 	userID := currentUserID(c)
-	sessionID := existingCartSessionID(c)
+	sessionID := visitorcapture.ExistingCartSessionID(c)
 
 	cart, err := h.cartService.FindCart(userID, sessionID)
 	if err != nil {

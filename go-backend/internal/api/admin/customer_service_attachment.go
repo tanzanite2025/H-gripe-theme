@@ -14,12 +14,14 @@ import (
 const adminCustomerServiceAttachmentMaxCount = 4
 const adminCustomerServiceMessageJSONMaxBytes = 128 << 10
 
+var adminCustomerServiceAttachmentExtensions = []string{".jpg", ".jpeg", ".png", ".webp", ".gif", ".mp4", ".mov", ".webm"}
+
 func limitAdminCustomerServiceJSONBody(c *gin.Context) {
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, adminCustomerServiceMessageJSONMaxBytes)
 }
 
 func (h *TicketHandler) sanitizeAdminCustomerServiceAttachments(primary string, values []string) ([]string, error) {
-	refs, err := ugc.NormalizeUploadImageAttachmentReferences(mergeAdminAttachmentInputs(primary, values), adminCustomerServiceAttachmentMaxCount)
+	refs, err := ugc.NormalizeUploadAttachmentReferences(mergeAdminAttachmentInputs(primary, values), adminCustomerServiceAttachmentMaxCount, adminCustomerServiceAttachmentExtensions)
 	if err != nil {
 		return nil, err
 	}
@@ -31,7 +33,7 @@ func (h *TicketHandler) sanitizeAdminCustomerServiceAttachments(primary string, 
 	for _, ref := range refs {
 		value := ref.Value
 		if h.mediaService != nil {
-			canonicalURL, err := h.mediaService.CanonicalPublicImageUploadURL(ref.RawValue)
+			canonicalURL, err := h.mediaService.CanonicalPublicMediaAttachmentURL(ref.RawValue)
 			if err != nil {
 				return nil, err
 			}

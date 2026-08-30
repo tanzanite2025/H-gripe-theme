@@ -32,6 +32,24 @@ func TestCanonicalPublicImageUploadURLAcceptsMatchingPublicImageAsset(t *testing
 	require.Equal(t, "/uploads/2026/08/02/photo.jpg", got)
 }
 
+func TestCanonicalPublicMediaAttachmentURLAcceptsMatchingPublicVideoAsset(t *testing.T) {
+	service := newMediaAssetAccessTestService(t, media.MediaAsset{
+		Filename:         "clip.mp4",
+		URL:              "https://media.example.test/uploads/2026/08/02/clip.mp4",
+		StorageKey:       "2026/08/02/clip.mp4",
+		MimeType:         "video/mp4",
+		MediaType:        "video",
+		UploaderID:       42,
+		Status:           "active",
+		Visibility:       "public",
+		OriginalFilename: "clip.mp4",
+	})
+
+	got, err := service.CanonicalPublicMediaAttachmentURL("https://media.example.test/uploads/2026/08/02/clip.mp4?cache=1")
+	require.NoError(t, err)
+	require.Equal(t, "/uploads/2026/08/02/clip.mp4", got)
+}
+
 func TestCanonicalPublicMediaURLRebuildsFirstPartyUploadURLOnStorefrontOrigin(t *testing.T) {
 	service := NewMediaService(nil, nil, nil, "https://shop.example.test/", 20<<30)
 

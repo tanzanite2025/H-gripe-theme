@@ -53,7 +53,10 @@
                   <span class="truncate">{{ customerRegionLabel(conversation) }}</span>
                 </span>
               </div>
-              <p class="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">
+              <p
+                class="mt-1 truncate text-xs leading-5 text-muted-foreground"
+                :title="conversation.last_message || '暂无消息'"
+              >
                 {{ conversation.last_message || '暂无消息' }}
               </p>
               <div class="mt-2 flex flex-wrap items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70">

@@ -58,11 +58,17 @@
           图片沿用 visual-showcase 专用上传目录，必须使用 16:9 横图；链接可指向商品详情、全部商品页或外部地址。
         </CardDescription>
       </CardHeader>
-      <CardContent class="space-y-3 p-3 sm:p-4">
+      <CardContent class="space-y-2.5 p-2.5 sm:p-3">
+        <div class="rounded-xl border border-dashed border-border bg-muted/30 px-2.5 py-1.5">
+          <p class="text-[10px] font-black uppercase tracking-wider text-muted-foreground/70">
+            统一上传规范
+          </p>
+          <UploadSpecHint code="visual_showcase_home_categories" compact />
+        </div>
         <div v-if="loading" class="flex min-h-64 items-center justify-center text-xs font-bold text-muted-foreground">
           正在加载首页主力产品配置
         </div>
-        <div v-else class="space-y-3">
+        <div v-else class="space-y-2.5">
           <HomeMainProductCategoryEditorRow
             v-for="(item, index) in items"
             :key="item.client_id"
@@ -85,6 +91,7 @@ import { toast } from 'vue-sonner'
 import { LoaderCircle, RefreshCw, Save } from '@lucide/vue'
 import AdminFormField from '@/components/admin/AdminFormField.vue'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
+import UploadSpecHint from '@/components/admin/UploadSpecHint.vue'
 import StorefrontLocaleSelect from '@/components/admin/StorefrontLocaleSelect.vue'
 import HomeMainProductCategoryEditorRow from '@/components/admin/visual-showcase/HomeMainProductCategoryEditorRow.vue'
 import {

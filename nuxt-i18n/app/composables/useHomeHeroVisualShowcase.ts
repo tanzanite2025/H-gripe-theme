@@ -35,10 +35,8 @@ const normalizeShowcaseItem = (
     width: Math.max(1, numericValue(raw.width, 900)),
     height: Math.max(1, numericValue(raw.height, 1200)),
     desktopOrder: Math.max(1, numericValue(raw.desktop_order, index + 1)),
-    mobilePairIndex: Math.max(0, numericValue(raw.mobile_pair_index, Math.floor(index / 2))),
     targetUrl: String(raw.target_url || '').trim() || undefined,
     targetLabel: String(raw.target_label || '').trim() || undefined,
-    layoutVariant: raw.layout_variant || 'standard',
   }
 }
 
