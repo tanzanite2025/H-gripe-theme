@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"errors"
+	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -20,6 +21,7 @@ func TestCommercialBehaviorTrackerDetectsCatalogBurst(t *testing.T) {
 
 	for index := 0; index < commercialInventoryTargetThreshold; index++ {
 		_, unique, _, _ := tracker.observe(
+			context.Background(),
 			"203.0.113.10",
 			"product:"+itoa(index+1),
 			nil,
@@ -30,7 +32,7 @@ func TestCommercialBehaviorTrackerDetectsCatalogBurst(t *testing.T) {
 		}
 	}
 
-	requests, unique, _, _ := tracker.observe("203.0.113.10", "product:next", nil, now)
+	requests, unique, _, _ := tracker.observe(context.Background(), "203.0.113.10", "product:next", nil, now)
 	if requests != commercialInventoryTargetThreshold+1 || unique != commercialInventoryTargetThreshold+1 {
 		t.Fatalf("tracker counts = (%d, %d), want (%d, %d)", requests, unique, commercialInventoryTargetThreshold+1, commercialInventoryTargetThreshold+1)
 	}
@@ -48,6 +50,7 @@ func TestCommercialBehaviorTrackerFallsBackWhenRedisUnavailable(t *testing.T) {
 
 	tracker := newCommercialBehaviorTrackerWithRedis(redisClient)
 	requests, unique, _, _ := tracker.observe(
+		context.Background(),
 		"203.0.113.18",
 		"product:18",
 		nil,
@@ -55,6 +58,48 @@ func TestCommercialBehaviorTrackerFallsBackWhenRedisUnavailable(t *testing.T) {
 	)
 	if requests != 1 || unique != 1 {
 		t.Fatalf("fallback tracker counts = (%d, %d), want (1, 1)", requests, unique)
+	}
+}
+
+func TestCommercialInventoryProbeGuardFallsBackWhenRedisIsSlow(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	clientConn, serverConn := net.Pipe()
+	go func() {
+		_, _ = io.Copy(io.Discard, serverConn)
+	}()
+
+	redisClient := redis.NewClient(&redis.Options{
+		Dialer: func(_ context.Context, _, _ string) (net.Conn, error) {
+			return clientConn, nil
+		},
+		MaxRetries:            0,
+		ContextTimeoutEnabled: true,
+	})
+	t.Cleanup(func() {
+		_ = clientConn.Close()
+		_ = serverConn.Close()
+		_ = redisClient.Close()
+	})
+
+	router := gin.New()
+	router.Use(CommercialInventoryProbeGuard(redisClient))
+	router.GET("/api/v1/products/:id", func(c *gin.Context) {
+		c.Status(http.StatusOK)
+	})
+
+	request := httptest.NewRequest(http.MethodGet, "/api/v1/products/1", nil)
+	request.Header.Set("X-Forwarded-For", "203.0.113.21")
+	recorder := httptest.NewRecorder()
+	start := time.Now()
+	router.ServeHTTP(recorder, request)
+	elapsed := time.Since(start)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusOK)
+	}
+	if elapsed > 500*time.Millisecond {
+		t.Fatalf("request took %s, want < 500ms", elapsed)
 	}
 }
 

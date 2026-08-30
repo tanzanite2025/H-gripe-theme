@@ -11,6 +11,7 @@ import (
 )
 
 const commercialBehaviorRedisPrefix = "commerce:commercial-behavior:v1"
+const commercialBehaviorRedisOpTimeout = 100 * time.Millisecond
 
 var commercialBehaviorObserveScript = redis.NewScript(`
 local request_count = redis.call("INCR", KEYS[1])
@@ -44,7 +45,15 @@ func newCommercialBehaviorTrackerWithRedis(redisClient redis.UniversalClient) *c
 	}
 }
 
+func commercialBehaviorRedisOperationContext(parent context.Context) (context.Context, context.CancelFunc) {
+	if parent == nil {
+		parent = context.Background()
+	}
+	return context.WithTimeout(parent, commercialBehaviorRedisOpTimeout)
+}
+
 func (t *commercialBehaviorTracker) observeRedis(
+	ctx context.Context,
 	key string,
 	target string,
 	numericTarget *uint64,
@@ -64,8 +73,11 @@ func (t *commercialBehaviorTracker) observeRedis(
 		ttlSeconds = 1
 	}
 
+	operationCtx, cancel := commercialBehaviorRedisOperationContext(ctx)
+	defer cancel()
+
 	result, err := commercialBehaviorObserveScript.Run(
-		context.Background(),
+		operationCtx,
 		t.redisClient,
 		[]string{countKey, targetsKey},
 		ttlSeconds,
@@ -73,7 +85,7 @@ func (t *commercialBehaviorTracker) observeRedis(
 	).Result()
 	if err != nil {
 		if t.fallback != nil {
-			return t.fallback.observe(key, target, numericTarget, now)
+			return t.fallback.observe(ctx, key, target, numericTarget, now)
 		}
 		return 0, 0, 0, false
 	}
@@ -81,7 +93,7 @@ func (t *commercialBehaviorTracker) observeRedis(
 	values, ok := result.([]interface{})
 	if !ok || len(values) != 2 {
 		if t.fallback != nil {
-			return t.fallback.observe(key, target, numericTarget, now)
+			return t.fallback.observe(ctx, key, target, numericTarget, now)
 		}
 		return 0, 0, 0, false
 	}

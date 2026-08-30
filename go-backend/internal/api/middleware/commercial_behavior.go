@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"context"
 	"net"
 	"net/http"
 	"strconv"
@@ -45,6 +46,7 @@ func newCommercialBehaviorTracker() *commercialBehaviorTracker {
 }
 
 func (t *commercialBehaviorTracker) observe(
+	ctx context.Context,
 	key string,
 	target string,
 	numericTarget *uint64,
@@ -54,7 +56,7 @@ func (t *commercialBehaviorTracker) observe(
 		return 0, 0, 0, false
 	}
 	if t.redisClient != nil {
-		return t.observeRedis(key, target, numericTarget, now)
+		return t.observeRedis(ctx, key, target, numericTarget, now)
 	}
 	if now.IsZero() {
 		now = time.Now().UTC()
@@ -99,6 +101,16 @@ func (t *commercialBehaviorTracker) observe(
 	return requestCount, uniqueTargetCount, sequenceStreak, false
 }
 
+func commercialRequestContext(c *gin.Context) context.Context {
+	if c == nil || c.Request == nil {
+		return context.Background()
+	}
+	if ctx := c.Request.Context(); ctx != nil {
+		return ctx
+	}
+	return context.Background()
+}
+
 func commercialNumericTargetsAreAdjacent(first, second uint64) bool {
 	return (first > second && first-second == 1) ||
 		(second > first && second-first == 1)
@@ -132,6 +144,7 @@ func CommercialInventoryProbeGuard(redisClients ...redis.UniversalClient) gin.Ha
 
 		target := commercialProductTarget(c.Request.URL.Path)
 		requestCount, uniqueTargetCount, _, _ := tracker.observe(
+			commercialRequestContext(c),
 			identity,
 			target,
 			nil,
@@ -170,6 +183,7 @@ func CommercialOrderEnumerationGuard(redisClients ...redis.UniversalClient) gin.
 		}
 
 		requestCount, _, _, _ := tracker.observe(
+			commercialRequestContext(c),
 			identity,
 			orderNumber,
 			nil,
@@ -222,13 +236,14 @@ func CommercialCartProbeGuard(redisClients ...redis.UniversalClient) gin.Handler
 		now := time.Now().UTC()
 		pathTarget := "cart:" + strings.Trim(strings.TrimSpace(c.Request.URL.Path), "/")
 		for _, identityKey := range identities {
-			requestCount, _, _, _ := tracker.observe(identityKey, pathTarget, nil, now)
+			requestCount, _, _, _ := tracker.observe(commercialRequestContext(c), identityKey, pathTarget, nil, now)
 			if requestCount > threshold {
 				abortCommercialIntelligenceRateLimit(c, "inventory-crawlers")
 				return
 			}
 			for _, itemTarget := range inspection.targets {
 				targetCount, _, _, _ := tracker.observe(
+					commercialRequestContext(c),
 					identityKey+"|target:"+itemTarget,
 					"",
 					nil,

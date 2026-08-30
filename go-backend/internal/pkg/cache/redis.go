@@ -50,14 +50,15 @@ func (r *RedisCache) Client() redis.UniversalClient {
 // Init 初始化Redis连接
 func Init(cfg config.RedisConfig) (*RedisCache, error) {
 	options := &redis.UniversalOptions{
-		Addrs:            cfg.GetRedisAddrs(),
-		Username:         cfg.Username,
-		Password:         cfg.Password,
-		DB:               cfg.DB,
-		PoolSize:         cfg.PoolSize,
-		MasterName:       cfg.MasterName,
-		SentinelUsername: cfg.SentinelUsername,
-		SentinelPassword: cfg.SentinelPassword,
+		Addrs:                 cfg.GetRedisAddrs(),
+		Username:              cfg.Username,
+		Password:              cfg.Password,
+		DB:                    cfg.DB,
+		PoolSize:              cfg.PoolSize,
+		MasterName:            cfg.MasterName,
+		SentinelUsername:      cfg.SentinelUsername,
+		SentinelPassword:      cfg.SentinelPassword,
+		ContextTimeoutEnabled: true,
 	}
 	if cfg.NormalizedMode() != "sentinel" {
 		options.MasterName = ""
