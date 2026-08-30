@@ -242,6 +242,30 @@ test('the English storefront home page only requests the default Latin shard', a
   expect(loadedFontPaths.filter(path => nonDefaultEnglishHomepageFontPaths.includes(path))).toEqual([])
 })
 
+test('the homepage preloads the active first-paint shard', async ({ page }) => {
+  await page.goto(storefrontUrl, { waitUntil: 'domcontentloaded' })
+
+  const fontPreloads = await page.evaluate(() => (
+    [...document.querySelectorAll<HTMLLinkElement>('link[rel="preload"][as="font"]')].map(link => ({
+      pathname: new URL(link.href).pathname,
+      rel: link.rel,
+      as: link.getAttribute('as'),
+      type: link.getAttribute('type'),
+      crossOrigin: link.getAttribute('crossorigin'),
+    }))
+  ))
+
+  expect(fontPreloads).toEqual([
+    {
+      pathname: latinFontPath,
+      rel: 'preload',
+      as: 'font',
+      type: 'font/woff2',
+      crossOrigin: 'anonymous',
+    },
+  ])
+})
+
 test('the Latin subset cannot shift layout against the complete Maple UI face', async ({ page }) => {
   await page.goto(storefrontUrl)
 

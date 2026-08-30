@@ -42,7 +42,7 @@
             :key="asset.id"
             type="button"
             class="group min-w-0 overflow-hidden rounded-2xl border bg-background text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            :class="isSelected(assetURL(asset)) ? 'border-[var(--admin-selected)]' : 'border-border'"
+            :class="isAssetSelected(asset) ? 'border-[var(--admin-selected)]' : 'border-border'"
             @click="selectAsset(asset)"
           >
             <span class="block aspect-[4/3] overflow-hidden bg-muted">
@@ -74,8 +74,8 @@
                 <span>{{ formatMediaSize(asset.size) }}</span>
               </span>
               <span class="flex justify-end text-[10px] font-bold text-muted-foreground">
-                <span :class="isSelected(assetURL(asset)) ? 'text-[var(--admin-selected)]' : ''">
-                  {{ isSelected(assetURL(asset)) ? '已加入' : '选择' }}
+                <span :class="isAssetSelected(asset) ? 'text-[var(--admin-selected)]' : ''">
+                  {{ isAssetSelected(asset) ? '已加入' : '选择' }}
                 </span>
               </span>
             </span>
@@ -132,7 +132,6 @@ const emit = defineEmits<{
 
 const mediaType = toRef(props, 'mediaType')
 const dialogMediaTypeLabel = computed(() => mediaTypeLabel(mediaType.value))
-const isSelected = (url?: string | null): boolean => Boolean(url) && props.selectedUrls.includes(String(url))
 const {
   loading,
   assets,
@@ -145,7 +144,12 @@ const {
 
 const loadedDimensions = reactive<Record<string, { width: number; height: number }>>({})
 
-const assetURL = (asset: MediaAsset): string => assetAccessURL(asset)
+const assetURL = (asset: MediaAsset): string => String(asset.url || asset.access_url || '').trim()
+const isAssetSelected = (asset: MediaAsset): boolean => {
+  const urls = [String(asset.url || '').trim(), String(asset.access_url || '').trim(), String(assetAccessURL(asset) || '').trim()]
+    .filter(Boolean)
+  return urls.some((url) => props.selectedUrls.includes(url))
+}
 
 const assetDimensionLabel = (asset: MediaAsset): string => {
   const storedWidth = Number(asset.width || 0)

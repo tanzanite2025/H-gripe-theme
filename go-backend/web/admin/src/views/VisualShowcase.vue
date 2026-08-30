@@ -59,6 +59,12 @@
         </CardDescription>
       </CardHeader>
       <CardContent class="space-y-3 p-3 sm:p-4">
+        <div class="rounded-xl border border-dashed border-border bg-muted/30 px-3 py-2">
+          <p class="text-[10px] font-black uppercase tracking-wider text-muted-foreground/70">
+            统一上传规范
+          </p>
+          <UploadSpecHint code="visual_showcase_editorial" compact />
+        </div>
         <div v-if="loading" class="flex min-h-64 items-center justify-center text-xs font-bold text-muted-foreground">
           正在加载首页视觉目录
         </div>
@@ -85,6 +91,7 @@ import { toast } from 'vue-sonner'
 import { LoaderCircle, RefreshCw, Save } from '@lucide/vue'
 import AdminFormField from '@/components/admin/AdminFormField.vue'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
+import UploadSpecHint from '@/components/admin/UploadSpecHint.vue'
 import StorefrontLocaleSelect from '@/components/admin/StorefrontLocaleSelect.vue'
 import VisualShowcaseItemEditorRow from '@/components/admin/visual-showcase/VisualShowcaseItemEditorRow.vue'
 import {

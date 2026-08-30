@@ -7,7 +7,7 @@
 - 桌面端占首页右侧约 70% 宽度，使用 9 张 3:4 图片组成自由 collage，不固定三列。
 - 移动端使用 8 张图片，4 组双图切换，每次切换两张，顶部保留分页点。
 - 每张图片底部显示白色文字条，文字使用真实的 `figcaption`，同时维护 `altText`。
-- 图片、标题、备注、排序和移动端分组不再硬编码在 `HomeHero.vue`。
+- 图片、标题、备注和排序不再硬编码在 `HomeHero.vue`；当前 storefront 不再消费单独的布局/分组编辑值。
 - 后台提供独立的 `Visual Showcase` 管理入口，直接上传到专用对象目录并整组保存。
 - 展示图不创建媒体库记录；成功替换并保存后，不再引用的旧对象会被直接删除。
 - 后端接口无数据或不可用时，首页使用前端 fallback，不让首屏空白。
@@ -70,10 +70,10 @@ title              白色条主标题
 caption            白色条补充说明
 alt_text           图片 alt 属性
 desktop_order      桌面排序
-mobile_pair_index  移动端双图分组，0 到 3
+mobile_pair_index  兼容字段，当前 storefront 不再用于编辑控制
 target_url         可选跳转地址
 target_label       可选跳转文本
-layout_variant     standard、offset、wide 等布局提示
+layout_variant     兼容字段，当前 storefront 使用固定样式
 is_published       是否发布
 published_from     可选开始时间
 published_until    可选结束时间
@@ -82,7 +82,7 @@ published_until    可选结束时间
 ## 前台行为
 
 1. `useHomeHeroVisualShowcase` 在 SSR 阶段读取公开接口。
-2. 返回有效条目时，按照 `desktop_order` 渲染桌面端，前 8 条按 `mobile_pair_index` 渲染移动端。
+2. 返回有效条目时，按照 `desktop_order` 渲染桌面端，前 8 条按顺序两两渲染移动端。
 3. 接口失败、没有条目或条目不完整时，使用 `homeHeroVisualShowcaseFallback.ts`。
 4. 所有图片使用 `HomeHeroVisualShowcaseFigure`，图片比例固定为 `3 / 4`。
 5. `figcaption` 使用可见的标题和备注；`alt` 使用 `alt_text`。
@@ -92,7 +92,7 @@ published_until    可选结束时间
 1. 进入 `网站内容 -> 首页视觉目录`。
 2. 选择语种，加载 `home-hero` 当前配置。
 3. 为每条 item 直接上传 3:4 图片；上传结果只写入 `visual-showcase/<showcase>/<locale>/`。
-4. 编辑标题、备注、alt、桌面顺序、移动端 pair 和发布状态。
+4. 编辑标题、备注、alt、桌面顺序、发布状态和跳转文案。
 5. 点击保存时使用整组替换接口，避免前台读到半组新旧混合数据。
 6. 保存成功后，数据库中不再引用的旧 `visual-showcase` 对象会被删除；该流程不会写入媒体库。
 

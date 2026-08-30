@@ -1,6 +1,6 @@
 <template>
-  <div class="grid gap-3 rounded-xl border border-border/80 bg-background p-3 lg:grid-cols-[8rem_minmax(0,1fr)]">
-    <div class="min-w-0 space-y-2">
+  <div class="grid gap-2.5 rounded-xl border border-border/80 bg-background p-2.5 lg:grid-cols-[7.5rem_minmax(0,1fr)]">
+    <div class="min-w-0 space-y-1.5">
       <div class="aspect-video overflow-hidden rounded-lg bg-muted">
         <img
           v-if="item.image_url"
@@ -38,13 +38,12 @@
         :disabled="!canEdit || uploading"
         @change="handleUploadFile"
       />
-      <UploadSpecHint code="visual_showcase_home_categories" />
       <p class="truncate text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">
         {{ item.storage_key || '未上传到专用目录' }}
       </p>
     </div>
 
-    <div class="grid min-w-0 gap-3 md:grid-cols-2 xl:grid-cols-4">
+    <div class="grid min-w-0 gap-2.5 md:grid-cols-2 xl:grid-cols-4">
       <AdminFormField label="精选标题" required>
         <Input
           :model-value="item.title"
@@ -61,9 +60,10 @@
         />
       </AdminFormField>
 
-      <AdminFormField label="跳转链接" description="例如 /shop 或 /shop/category-slug">
+      <AdminFormField label="跳转链接">
         <Input
           :model-value="item.target_url"
+          placeholder="/shop"
           :disabled="!canEdit"
           @update:model-value="updateText('target_url', $event)"
         />
@@ -80,7 +80,7 @@
       <AdminFormField label="说明" class="md:col-span-2 xl:col-span-2">
         <Textarea
           :model-value="item.caption"
-          class="min-h-20"
+          class="min-h-16"
           :disabled="!canEdit"
           @update:model-value="updateText('caption', $event)"
         />
@@ -119,7 +119,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
-import UploadSpecHint from '@/components/admin/UploadSpecHint.vue'
 import { uploadSpecAccept, validateUploadFile } from '@/lib/uploadSpecs'
 import type {
   VisualShowcaseAdministrationItemFormState,

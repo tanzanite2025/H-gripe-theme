@@ -1,7 +1,7 @@
 package ticket
 
 import (
-	"commerce-platform/internal/api/middleware"
+	"commerce-platform/internal/api/v1/visitorcapture"
 	"commerce-platform/internal/domain/ticket"
 	"commerce-platform/internal/pkg/visitorcookie"
 	"commerce-platform/internal/service"
@@ -78,58 +78,18 @@ func (h *Handler) touchCustomerServiceVisitorProfile(c *gin.Context, owner servi
 		qualityScore = service.VisitorProfileQualityEmailCapture
 	}
 
-	input := service.VisitorProfileTouchInput{
+	input := visitorcapture.BuildVisitorProfileTouchInput(c, visitorcapture.TouchOptions{
 		UserID:                     owner.UserID,
 		CustomerServiceVisitorHash: owner.VisitorSessionHash,
-		CartSessionID:              existingCartSessionID(c),
+		CartSessionID:              visitorcapture.ExistingCartSessionID(c),
 		Email:                      email,
 		EmailSource:                emailSource,
-		Locale:                     requestLocale(c),
-		LocaleSource:               "accept_language",
-		CountryCode:                requestCountryCode(c),
-		Region:                     firstNonEmptyHeader(c, "CF-Region", "X-Region"),
-		City:                       firstNonEmptyHeader(c, "CF-IPCity", "X-City"),
-		Timezone:                   firstNonEmptyHeader(c, "CF-Timezone", "X-Timezone"),
-		IPAddress:                  requestIP(c),
-		UserAgent:                  c.GetHeader("User-Agent"),
 		MeaningfulAction:           meaningfulAction,
 		QualityScoreDelta:          qualityScore,
-	}
+	})
 	if _, err := h.visitorProfileService.TouchMeaningfulAction(input); err != nil {
 		return
 	}
-}
-
-func existingCartSessionID(c *gin.Context) string {
-	sessionID, err := c.Cookie("session_id")
-	if err != nil {
-		return ""
-	}
-	return strings.TrimSpace(sessionID)
-}
-
-func requestLocale(c *gin.Context) string {
-	return firstNonEmptyHeader(c, "X-Locale", "Accept-Language")
-}
-
-func requestCountryCode(c *gin.Context) string {
-	return middleware.TrustedEdgeCountry(c)
-}
-
-func requestIP(c *gin.Context) string {
-	if c.Request == nil {
-		return ""
-	}
-	return c.ClientIP()
-}
-
-func firstNonEmptyHeader(c *gin.Context, keys ...string) string {
-	for _, key := range keys {
-		if value := strings.TrimSpace(c.GetHeader(key)); value != "" {
-			return value
-		}
-	}
-	return ""
 }
 
 func parseCustomerServiceAgentID(value string) uint {

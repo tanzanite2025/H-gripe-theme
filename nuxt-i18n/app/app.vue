@@ -35,6 +35,7 @@ import { useProductCategories } from '~/composables/useProductCategories'
 import { useSiteSettings } from '~/composables/usePublicSettings'
 import { useShopCategories } from '~/composables/useShopCategories'
 import localeManifest from '~/i18n/locales.manifest'
+import { storefrontFontPreloadLinkForLocale } from '~/utils/storefrontFonts'
 
 const auth = useAuth()
 const runtimeConfig = useRuntimeConfig()
@@ -60,6 +61,7 @@ const htmlLanguage = computed(() => (
 ))
 const htmlDirection = computed(() => activeLocaleEntry.value?.dir || 'ltr')
 const htmlFontFamily = computed(() => activeLocaleEntry.value?.fontFamily || 'latin')
+const htmlFontPreloadLink = computed(() => storefrontFontPreloadLinkForLocale(locale.value))
 const resolveConfiguredAsset = (value: string) => {
   if (!/^\/uploads\//i.test(value)) return value
 
@@ -88,6 +90,8 @@ useHead(() => ({
     'data-storefront-font-family': htmlFontFamily.value,
   },
   link: [
+    // Preload the active first-paint shard so font-display:block can resolve sooner.
+    htmlFontPreloadLink.value,
     { rel: 'icon', href: siteFavicon.value },
     { rel: 'shortcut icon', href: siteFavicon.value },
   ],

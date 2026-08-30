@@ -38,6 +38,7 @@ func (h *Handler) EnsurePublicCustomerServiceConversation(c *gin.Context) {
 	}
 
 	conversationID := publicConversationID(t)
+	h.touchCustomerServiceVisitorProfile(c, owner, "", "public_chat")
 	responseData := gin.H{
 		"conversation_id": conversationID,
 		"lastAgentId":     zeroToNil(t.AssignedTo),

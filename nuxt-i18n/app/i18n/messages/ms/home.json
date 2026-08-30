@@ -31,7 +31,7 @@
   },
   "shopWithConfidence": {
     "eyebrow": "Payment protection",
-    "subtitle": "Pay through providers you recognize. Your payment is verified against your order, and every purchase has a clear support path.",
+    "subtitle": "Pay through providers you recognize. Choose direct payment or business billing with invoice support when needed.",
     "paymentMethodsLabel": "Supported payment methods",
     "paymentAssurances": {
       "0": "Payment details are handled securely by the payment provider.",
@@ -44,9 +44,9 @@
         "action": "View payment security"
       },
       "paymentVerification": {
-        "title": "Payment verified before completion",
-        "description": "We verify the payment result, amount, and currency on the server before an order is marked as paid.",
-        "action": "Get payment help"
+        "title": "Payment methods and invoicing",
+        "description": "Direct payment, business billing, and invoice support are available for this checkout.",
+        "action": "View payment and invoicing"
       },
       "deliverySupport": {
         "title": "Order and delivery support",

@@ -27,7 +27,7 @@ type AttachmentReference struct {
 	SourceHost string
 }
 
-func NormalizeUploadImageAttachmentReferences(values []string, maxAttachments int) ([]AttachmentReference, error) {
+func NormalizeUploadAttachmentReferences(values []string, maxAttachments int, allowedExtensions []string) ([]AttachmentReference, error) {
 	refs := make([]AttachmentReference, 0, len(values))
 	seen := make(map[string]struct{}, len(values))
 
@@ -37,7 +37,7 @@ func NormalizeUploadImageAttachmentReferences(values []string, maxAttachments in
 			continue
 		}
 
-		key, sourceHost, err := uploadStorageKeyFromReference(value)
+		key, sourceHost, err := uploadStorageKeyFromReference(value, allowedExtensions)
 		if err != nil {
 			return nil, err
 		}
@@ -60,7 +60,11 @@ func NormalizeUploadImageAttachmentReferences(values []string, maxAttachments in
 	return refs, nil
 }
 
-func uploadStorageKeyFromReference(value string) (string, string, error) {
+func NormalizeUploadImageAttachmentReferences(values []string, maxAttachments int) ([]AttachmentReference, error) {
+	return NormalizeUploadAttachmentReferences(values, maxAttachments, DefaultImageAttachmentExtensions)
+}
+
+func uploadStorageKeyFromReference(value string, allowedExtensions []string) (string, string, error) {
 	if len(value) > DefaultAttachmentReferenceMaxBytes {
 		return "", "", ErrAttachmentTooLong
 	}
@@ -81,7 +85,7 @@ func uploadStorageKeyFromReference(value string) (string, string, error) {
 		if parsed.Host == "" || parsed.User != nil {
 			return "", "", ErrAttachmentInvalidURL
 		}
-		key, err := uploadStorageKeyFromPath(parsed.EscapedPath())
+		key, err := uploadStorageKeyFromPath(parsed.EscapedPath(), allowedExtensions)
 		return key, strings.ToLower(parsed.Host), err
 	}
 	if parsed.Host != "" || strings.HasPrefix(value, "//") {
@@ -95,11 +99,11 @@ func uploadStorageKeyFromReference(value string) (string, string, error) {
 	if parsed.RawQuery != "" || parsed.Fragment != "" {
 		pathValue = parsed.EscapedPath()
 	}
-	key, err := uploadStorageKeyFromPath(pathValue)
+	key, err := uploadStorageKeyFromPath(pathValue, allowedExtensions)
 	return key, "", err
 }
 
-func uploadStorageKeyFromPath(pathValue string) (string, error) {
+func uploadStorageKeyFromPath(pathValue string, allowedExtensions []string) (string, error) {
 	unescaped, err := url.PathUnescape(pathValue)
 	if err != nil {
 		return "", ErrAttachmentInvalidURL
@@ -116,10 +120,10 @@ func uploadStorageKeyFromPath(pathValue string) (string, error) {
 		return "", ErrAttachmentInvalidURL
 	}
 
-	return cleanUploadStorageKey(candidate)
+	return cleanUploadStorageKey(candidate, allowedExtensions)
 }
 
-func cleanUploadStorageKey(key string) (string, error) {
+func cleanUploadStorageKey(key string, allowedExtensions []string) (string, error) {
 	key = strings.Trim(key, "/")
 	if key == "" {
 		return "", ErrAttachmentInvalidURL
@@ -136,15 +140,18 @@ func cleanUploadStorageKey(key string) (string, error) {
 		return "", ErrAttachmentInvalidURL
 	}
 
-	if !allowedImageAttachmentExtension(path.Ext(clean)) {
+	if !allowedAttachmentExtension(path.Ext(clean), allowedExtensions) {
 		return "", ErrAttachmentInvalidType
 	}
 	return clean, nil
 }
 
-func allowedImageAttachmentExtension(ext string) bool {
+func allowedAttachmentExtension(ext string, allowedExtensions []string) bool {
 	ext = strings.ToLower(strings.TrimSpace(ext))
-	for _, allowed := range DefaultImageAttachmentExtensions {
+	if ext == "" || len(allowedExtensions) == 0 {
+		return false
+	}
+	for _, allowed := range allowedExtensions {
 		if ext == allowed {
 			return true
 		}

@@ -1,5 +1,3 @@
-export type HomeHeroVisualShowcaseLayoutVariant = 'standard' | 'offset' | 'wide'
-
 export interface HomeHeroVisualShowcaseItem {
   id: string
   showcaseKey: string
@@ -11,10 +9,8 @@ export interface HomeHeroVisualShowcaseItem {
   width: number
   height: number
   desktopOrder: number
-  mobilePairIndex: number
   targetUrl?: string
   targetLabel?: string
-  layoutVariant: HomeHeroVisualShowcaseLayoutVariant
 }
 
 export interface HomeHeroVisualShowcaseApiItem {
@@ -32,7 +28,7 @@ export interface HomeHeroVisualShowcaseApiItem {
   mobile_pair_index?: number | string
   target_url?: string
   target_label?: string
-  layout_variant?: HomeHeroVisualShowcaseLayoutVariant
+  layout_variant?: string
 }
 
 export interface HomeHeroVisualShowcaseApiEnvelope {

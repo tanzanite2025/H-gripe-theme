@@ -28,6 +28,28 @@ func TestNormalizeUploadImageAttachmentReferencesAcceptsUploadReferences(t *test
 	}
 }
 
+func TestNormalizeUploadAttachmentReferencesAcceptsImagesAndVideos(t *testing.T) {
+	input := []string{
+		"https://example.com/uploads/2026/08/02/photo.JPG?cache=1",
+		"/uploads/2026/08/02/clip.webm",
+		"2026/08/02/clip.webm",
+	}
+
+	got, err := NormalizeUploadAttachmentReferences(input, 4, []string{".jpg", ".jpeg", ".png", ".webp", ".gif", ".mp4", ".mov", ".webm"})
+	if err != nil {
+		t.Fatalf("NormalizeUploadAttachmentReferences() error = %v", err)
+	}
+	if len(got) != 2 {
+		t.Fatalf("expected 2 deduplicated attachments, got %d: %#v", len(got), got)
+	}
+	if got[0].StorageKey != "2026/08/02/photo.JPG" || got[0].Value != "/uploads/2026/08/02/photo.JPG" {
+		t.Fatalf("unexpected first attachment: %#v", got[0])
+	}
+	if got[1].StorageKey != "2026/08/02/clip.webm" || got[1].Value != "/uploads/2026/08/02/clip.webm" {
+		t.Fatalf("unexpected second attachment: %#v", got[1])
+	}
+}
+
 func TestNormalizeUploadImageAttachmentReferencesRejectsDangerousReferences(t *testing.T) {
 	tests := []struct {
 		name string
