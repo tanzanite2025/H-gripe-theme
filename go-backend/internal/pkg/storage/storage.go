@@ -390,7 +390,7 @@ func ensureLocalDirectory(root, dir string) error {
 	}
 
 	current := rootAbs
-	if err := os.Chmod(current, localDirPerm); err != nil {
+	if err := bestEffortChmod(current, localDirPerm); err != nil {
 		return err
 	}
 	if rel == "." {
@@ -401,7 +401,7 @@ func ensureLocalDirectory(root, dir string) error {
 			continue
 		}
 		current = filepath.Join(current, part)
-		if err := os.Chmod(current, localDirPerm); err != nil {
+		if err := bestEffortChmod(current, localDirPerm); err != nil {
 			return err
 		}
 	}
@@ -413,11 +413,27 @@ func createLocalUploadFile(destPath string) (*os.File, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := file.Chmod(localFilePerm); err != nil {
+	if err := bestEffortChmodFile(file, localFilePerm); err != nil {
 		_ = file.Close()
 		return nil, err
 	}
 	return file, nil
+}
+
+// Some managed volumes accept writes but reject chmod on mounted paths.
+// Treat permission-denied chmods as best-effort so storage startup keeps moving.
+func bestEffortChmod(path string, mode os.FileMode) error {
+	if err := os.Chmod(path, mode); err != nil && !os.IsPermission(err) {
+		return err
+	}
+	return nil
+}
+
+func bestEffortChmodFile(file *os.File, mode os.FileMode) error {
+	if err := file.Chmod(mode); err != nil && !os.IsPermission(err) {
+		return err
+	}
+	return nil
 }
 
 func newS3Storage(config *Config) (StorageService, error) {
