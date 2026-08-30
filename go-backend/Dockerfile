@@ -33,8 +33,10 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
 # Runtime image is pinned to avoid an unreviewed latest tag.
 FROM alpine:3.22
 
-# 安装ca证书和时区数据
-RUN apk --no-cache add ca-certificates tzdata
+ARG VERSION=dev
+
+# Refresh Alpine packages on every release so runtime scans see patched OpenSSL libs.
+RUN echo "$VERSION" >/dev/null && apk upgrade --no-cache && apk add --no-cache ca-certificates tzdata
 
 # 创建非root用户
 RUN addgroup -g 1000 app && \
