@@ -7,6 +7,9 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -127,43 +130,23 @@ func TestValidateFileAcceptsFixedDimensionWebP(t *testing.T) {
 	}
 }
 
-func TestValidateSVGFileAccepts48By48SiteLogo(t *testing.T) {
-	file := testFileHeader(t, "site-logo.svg", []byte(`<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48"><path d="M0 0h48v48H0z"/></svg>`))
+func TestValidateFileAcceptsSiteLogoWebP(t *testing.T) {
+	file := testFileHeader(t, "site-logo.webp", siteLogoWebPFixture(t))
 
-	if err := ValidateSVGFile(file, SiteLogoSVGRule); err != nil {
-		t.Fatalf("expected 48x48 SVG to be accepted, got %v", err)
+	if err := ValidateFile(file, SiteLogoImageRule); err != nil {
+		t.Fatalf("expected 512x512 WebP to be accepted, got %v", err)
 	}
 }
 
-func TestValidateSVGFileAccepts48By48ViewBox(t *testing.T) {
-	file := testFileHeader(t, "site-logo.svg", []byte(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path d="M0 0h48v48H0z"/></svg>`))
+func TestValidateFileRejectsSiteLogoWebPWithWrongDimensions(t *testing.T) {
+	file := testFileHeader(t, "site-logo.webp", validWebPFixture(t))
 
-	if err := ValidateSVGFile(file, SiteLogoSVGRule); err != nil {
-		t.Fatalf("expected 48x48 viewBox SVG to be accepted, got %v", err)
-	}
-}
-
-func TestValidateSVGFileRejectsNon48By48SiteLogo(t *testing.T) {
-	file := testFileHeader(t, "site-logo.svg", []byte(`<svg xmlns="http://www.w3.org/2000/svg" width="500" height="500"><path d="M0 0h500v500H0z"/></svg>`))
-
-	err := ValidateSVGFile(file, SiteLogoSVGRule)
+	err := ValidateFile(file, SiteLogoImageRule)
 	if err == nil {
-		t.Fatal("expected non-48x48 SVG to be rejected")
+		t.Fatal("expected non-512x512 WebP to be rejected")
 	}
 	if ErrorCode(err) != CodeInvalidDimensions {
 		t.Fatalf("expected %q, got %q", CodeInvalidDimensions, ErrorCode(err))
-	}
-}
-
-func TestValidateSVGFileRejectsActiveContent(t *testing.T) {
-	file := testFileHeader(t, "site-logo.svg", []byte(`<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48"><script>alert(1)</script></svg>`))
-
-	err := ValidateSVGFile(file, SiteLogoSVGRule)
-	if err == nil {
-		t.Fatal("expected active SVG content to be rejected")
-	}
-	if ErrorCode(err) != CodeInvalidType {
-		t.Fatalf("expected %q, got %q", CodeInvalidType, ErrorCode(err))
 	}
 }
 
@@ -203,6 +186,22 @@ func validWebPFixture(t *testing.T) []byte {
 	data, err := base64.StdEncoding.DecodeString(encoded)
 	if err != nil {
 		t.Fatalf("decode WebP fixture: %v", err)
+	}
+	return data
+}
+
+func siteLogoWebPFixture(t *testing.T) []byte {
+	t.Helper()
+
+	_, currentFile, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatal("resolve validator test file path")
+	}
+
+	fixturePath := filepath.Join(filepath.Dir(currentFile), "..", "..", "..", "..", "nuxt-i18n", "public", "images", "chat-logo.webp")
+	data, err := os.ReadFile(fixturePath)
+	if err != nil {
+		t.Fatalf("read site logo WebP fixture: %v", err)
 	}
 	return data
 }

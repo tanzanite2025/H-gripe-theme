@@ -77,6 +77,13 @@ func TestUploadSpecRegistryContainsCriticalImageContracts(t *testing.T) {
 			recommendedLongEdge: 1600,
 			maxFiles:            10,
 		},
+		{
+			code:              SpecSiteLogo,
+			recommendedWidth:  512,
+			recommendedHeight: 512,
+			exactWidth:        512,
+			exactHeight:       512,
+		},
 	}
 
 	for _, tt := range tests {
@@ -107,6 +114,28 @@ func TestUploadSpecRegistryContainsCriticalImageContracts(t *testing.T) {
 				t.Fatalf("max files = %d, want %d", spec.MaxFiles, tt.maxFiles)
 			}
 		})
+	}
+}
+
+func TestSiteLogoUploadSpecUsesWebPContract(t *testing.T) {
+	spec, ok := GetUploadSpec(string(SpecSiteLogo))
+	if !ok {
+		t.Fatal("missing site logo upload spec")
+	}
+	if spec.Kind != "image" {
+		t.Fatalf("site logo kind = %q, want image", spec.Kind)
+	}
+	if len(spec.AcceptedExtensions) != 1 || spec.AcceptedExtensions[0] != ".webp" {
+		t.Fatalf("site logo accepted extensions = %v, want [.webp]", spec.AcceptedExtensions)
+	}
+	if len(spec.AcceptedContentTypes) != 1 || spec.AcceptedContentTypes[0] != "image/webp" {
+		t.Fatalf("site logo accepted content types = %v, want [image/webp]", spec.AcceptedContentTypes)
+	}
+	if spec.ExactWidth != 512 || spec.ExactHeight != 512 {
+		t.Fatalf("site logo exact dimensions = %dx%d, want 512x512", spec.ExactWidth, spec.ExactHeight)
+	}
+	if spec.RecommendedWidth != 512 || spec.RecommendedHeight != 512 {
+		t.Fatalf("site logo recommended dimensions = %dx%d, want 512x512", spec.RecommendedWidth, spec.RecommendedHeight)
 	}
 }
 

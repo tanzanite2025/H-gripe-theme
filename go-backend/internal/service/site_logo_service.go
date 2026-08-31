@@ -81,11 +81,11 @@ func (s *SiteLogoService) UploadCurrent(ctx context.Context, file *multipart.Fil
 		OriginalFilename: file.Filename,
 		URL:              url,
 		StorageKey:       storageKey,
-		MimeType:         "image/svg+xml",
+		MimeType:         upload.SiteLogoImageContentType,
 		Size:             file.Size,
 		ContentSHA256:    contentSHA256,
-		Width:            upload.SiteLogoSVGDimension,
-		Height:           upload.SiteLogoSVGDimension,
+		Width:            upload.SiteLogoImageDimension,
+		Height:           upload.SiteLogoImageDimension,
 		UploaderID:       uploaderID,
 	}
 

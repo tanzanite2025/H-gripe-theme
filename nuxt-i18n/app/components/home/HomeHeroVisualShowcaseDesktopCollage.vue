@@ -32,7 +32,7 @@
         :aria-label="activeItem.title"
       >
         <div class="home-hero-visual-showcase-desktop__detail-copy">
-          <h3 class="home-hero-visual-showcase-desktop__detail-title">{{ activeItem.title }}</h3>
+          <p class="home-hero-visual-showcase-desktop__detail-title">{{ activeItem.title }}</p>
           <p v-if="activeItem.caption" class="home-hero-visual-showcase-desktop__detail-description">
             {{ activeItem.caption }}
           </p>

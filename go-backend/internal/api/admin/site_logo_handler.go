@@ -7,7 +7,6 @@ import (
 	"commerce-platform/internal/service"
 	"errors"
 	"net/http"
-	"net/textproto"
 
 	"github.com/gin-gonic/gin"
 )
@@ -48,10 +47,6 @@ func (h *SiteLogoHandler) Upload(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "file is required", "code": upload.CodeEmptyFile})
 		return
 	}
-	if file.Header == nil {
-		file.Header = make(textproto.MIMEHeader)
-	}
-	file.Header.Set("Content-Type", "image/svg+xml")
 
 	logo, err := h.siteLogoService.UploadCurrent(c.Request.Context(), file, currentUserID(c))
 	if err != nil {
