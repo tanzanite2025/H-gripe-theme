@@ -61,7 +61,6 @@ type uploadSpecDefinition struct {
 	FileRule     FileRule
 	FilesRule    FilesRule
 	HasFilesRule bool
-	IsSVG        bool
 }
 
 var uploadSpecDefinitions = map[SpecCode]uploadSpecDefinition{
@@ -136,21 +135,26 @@ var uploadSpecDefinitions = map[SpecCode]uploadSpecDefinition{
 		4,
 	),
 	SpecSiteLogo: {
+		FileRule: SiteLogoImageRule,
 		UploadSpec: UploadSpec{
 			Code:                 string(SpecSiteLogo),
-			Kind:                 "svg",
+			Kind:                 "image",
 			Label:                "Site logo",
 			Description:          "The small site mark used by the storefront header and browser metadata.",
-			AcceptedExtensions:   []string{".svg"},
-			AcceptedContentTypes: []string{"image/svg+xml"},
-			MaxFileSizeBytes:     SiteLogoSVGRule.MaxSize,
-			ExactWidth:           SiteLogoSVGRule.ExactWidth,
-			ExactHeight:          SiteLogoSVGRule.ExactHeight,
-			RecommendedWidth:     SiteLogoSVGDimension,
-			RecommendedHeight:    SiteLogoSVGDimension,
-			QualityNote:          "Must define a 48x48 px SVG viewport without external resources or active content.",
+			AcceptedExtensions:   []string{".webp"},
+			AcceptedContentTypes: []string{SiteLogoImageContentType},
+			MaxFileSizeBytes:     SiteLogoImageRule.MaxSize,
+			ExactWidth:           SiteLogoImageRule.ExactWidth,
+			ExactHeight:          SiteLogoImageRule.ExactHeight,
+			RecommendedWidth:     SiteLogoImageRule.ExactWidth,
+			RecommendedHeight:    SiteLogoImageRule.ExactHeight,
+			MaxWidth:             SiteLogoImageRule.MaxWidth,
+			MaxHeight:            SiteLogoImageRule.MaxHeight,
+			MaxPixels:            SiteLogoImageRule.MaxPixels,
+			AspectRatioWidth:     SiteLogoImageRule.AspectRatioWidth,
+			AspectRatioHeight:    SiteLogoImageRule.AspectRatioHeight,
+			QualityNote:          "Use a 512x512 px square WebP; the storefront scales it to the header slot.",
 		},
-		IsSVG: true,
 	},
 	SpecSiteFavicon: makeImageSpec(
 		SpecSiteFavicon,
@@ -390,9 +394,6 @@ func ValidateSpecFile(file *multipart.FileHeader, code string) error {
 	if !ok {
 		return validationError(CodeInvalidType, "invalid_type: unknown upload specification %q", strings.TrimSpace(code))
 	}
-	if definition.IsSVG {
-		return ValidateSVGFile(file, SiteLogoSVGRule)
-	}
 	return ValidateFile(file, definition.FileRule)
 }
 
@@ -416,7 +417,7 @@ func ValidateSpecFiles(files []*multipart.FileHeader, code string) error {
 // RuleForSpec returns the single-file rule used by an upload purpose.
 func RuleForSpec(code string) (FileRule, bool) {
 	definition, ok := uploadSpecDefinitions[normalizeSpecCode(code)]
-	if !ok || definition.IsSVG || definition.HasFilesRule {
+	if !ok || definition.HasFilesRule {
 		return FileRule{}, false
 	}
 	return definition.FileRule, true

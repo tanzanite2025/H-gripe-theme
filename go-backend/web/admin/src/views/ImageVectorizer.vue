@@ -161,6 +161,24 @@
 
         <CardContent class="p-4">
           <form class="space-y-5" @submit.prevent="convertCurrent">
+            <div class="grid gap-1.5">
+              <span class="text-[10px] font-black uppercase tracking-wider">{{ t('imageVectorizer.traceMode') }}</span>
+              <RadioGroup v-model="traceMode" class="grid grid-cols-3 gap-2">
+                <label class="flex h-9 cursor-pointer items-center justify-center rounded-md border border-border/80 px-3 text-[10px] font-black uppercase tracking-wider text-muted-foreground transition-colors has-data-[state=checked]:border-primary has-data-[state=checked]:bg-accent has-data-[state=checked]:text-foreground">
+                  <RadioGroupItem class="sr-only" value="professional" />
+                  {{ t('imageVectorizer.traceModeProfessional') }}
+                </label>
+                <label class="flex h-9 cursor-pointer items-center justify-center rounded-md border border-border/80 px-3 text-[10px] font-black uppercase tracking-wider text-muted-foreground transition-colors has-data-[state=checked]:border-primary has-data-[state=checked]:bg-accent has-data-[state=checked]:text-foreground">
+                  <RadioGroupItem class="sr-only" value="balanced" />
+                  {{ t('imageVectorizer.traceModeBalanced') }}
+                </label>
+                <label class="flex h-9 cursor-pointer items-center justify-center rounded-md border border-border/80 px-3 text-[10px] font-black uppercase tracking-wider text-muted-foreground transition-colors has-data-[state=checked]:border-primary has-data-[state=checked]:bg-accent has-data-[state=checked]:text-foreground">
+                  <RadioGroupItem class="sr-only" value="photo" />
+                  {{ t('imageVectorizer.traceModePhoto') }}
+                </label>
+              </RadioGroup>
+            </div>
+
             <label class="grid gap-1.5">
               <span class="flex items-center justify-between gap-3 text-[10px] font-black uppercase tracking-wider">
                 <span>{{ t('imageVectorizer.colors') }}</span>
@@ -191,10 +209,10 @@
                   type="range"
                   min="0.1"
                   max="10"
-                  step="0.1"
+                  step="0.05"
                   class="h-2 w-full cursor-pointer accent-primary"
                 />
-                <Input v-model.number="settings.ltres" type="number" min="0.1" max="10" step="0.1" class="text-right" />
+                <Input v-model.number="settings.ltres" type="number" min="0.1" max="10" step="0.05" class="text-right" />
               </div>
               <span class="text-[10px] font-bold leading-4 text-muted-foreground">{{ t('imageVectorizer.linePrecisionHelp') }}</span>
             </label>
@@ -210,10 +228,10 @@
                   type="range"
                   min="0.1"
                   max="10"
-                  step="0.1"
+                  step="0.05"
                   class="h-2 w-full cursor-pointer accent-primary"
                 />
-                <Input v-model.number="settings.qtres" type="number" min="0.1" max="10" step="0.1" class="text-right" />
+                <Input v-model.number="settings.qtres" type="number" min="0.1" max="10" step="0.05" class="text-right" />
               </div>
               <span class="text-[10px] font-bold leading-4 text-muted-foreground">{{ t('imageVectorizer.curvePrecisionHelp') }}</span>
             </label>
@@ -311,13 +329,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, reactive, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { Download, Image as ImageIcon, ImagePlus, LoaderCircle, RotateCcw, ShieldCheck, TriangleAlert, WandSparkles } from '@lucide/vue'
 import ImageTracer, { type ImageTracerOptions } from 'imagetracerjs'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { useAdminI18n } from '@/i18n'
 
 interface VectorizerSettings {
@@ -329,6 +348,53 @@ interface VectorizerSettings {
   maxDimension: number
   outputWidth: number
   outputHeight: number
+}
+
+type TraceMode = 'professional' | 'balanced' | 'photo'
+
+interface PaletteColor {
+  r: number
+  g: number
+  b: number
+  a: number
+}
+
+interface ColorBucket {
+  r: number
+  g: number
+  b: number
+  count: number
+}
+
+interface PaletteCandidate extends PaletteColor {
+  count: number
+  brightness: number
+  saturation: number
+  familyKey: string
+}
+
+interface Tracedata {
+  layers: Array<unknown>
+  palette: PaletteColor[]
+  width: number
+  height: number
+}
+
+interface TraceProfile {
+  numberofcolors: number
+  ltres: number
+  qtres: number
+  pathomit: number
+  blurradius: number
+  colorsampling: NonNullable<ImageTracerOptions['colorsampling']>
+  colorquantcycles: number
+  linefilter: boolean
+  rightangleenhance: boolean
+  strokewidth: number
+  roundcoords: number
+  imageSmoothing: boolean
+  paletteBucketSize: number
+  solidOpaqueColors: boolean
 }
 
 const { t } = useAdminI18n()
@@ -345,12 +411,65 @@ const isDragging = ref(false)
 const converting = ref(false)
 const errorMessage = ref('')
 const conversionRunID = ref(0)
+const traceMode = ref<TraceMode>('professional')
+
+const traceProfiles: Record<TraceMode, TraceProfile> = {
+  professional: {
+    numberofcolors: 4,
+    ltres: 0.2,
+    qtres: 0.2,
+    pathomit: 0,
+    blurradius: 0,
+    colorsampling: 0,
+    colorquantcycles: 1,
+    linefilter: true,
+    rightangleenhance: true,
+    strokewidth: 0,
+    roundcoords: 1,
+    imageSmoothing: false,
+    paletteBucketSize: 32,
+    solidOpaqueColors: true,
+  },
+  balanced: {
+    numberofcolors: 8,
+    ltres: 0.6,
+    qtres: 0.6,
+    pathomit: 4,
+    blurradius: 0,
+    colorsampling: 0,
+    colorquantcycles: 1,
+    linefilter: true,
+    rightangleenhance: true,
+    strokewidth: 0,
+    roundcoords: 1,
+    imageSmoothing: true,
+    paletteBucketSize: 24,
+    solidOpaqueColors: true,
+  },
+  photo: {
+    numberofcolors: 24,
+    ltres: 1.2,
+    qtres: 1.2,
+    pathomit: 8,
+    blurradius: 1,
+    colorsampling: 0,
+    colorquantcycles: 1,
+    linefilter: true,
+    rightangleenhance: false,
+    strokewidth: 0,
+    roundcoords: 1,
+    imageSmoothing: true,
+    paletteBucketSize: 16,
+    solidOpaqueColors: true,
+  },
+}
+
 const settings = reactive<VectorizerSettings>({
-  numberofcolors: 16,
-  ltres: 0.5,
-  qtres: 0.5,
-  pathomit: 8,
-  blurradius: 0,
+  numberofcolors: traceProfiles.professional.numberofcolors,
+  ltres: traceProfiles.professional.ltres,
+  qtres: traceProfiles.professional.qtres,
+  pathomit: traceProfiles.professional.pathomit,
+  blurradius: traceProfiles.professional.blurradius,
   maxDimension: 1600,
   outputWidth: 44,
   outputHeight: 44,
@@ -396,12 +515,27 @@ const clampInteger = (value: number, min: number, max: number, fallback: number)
   Math.round(clampNumber(value, min, max, fallback))
 )
 
+const applyTraceProfile = (mode: TraceMode): void => {
+  const profile = traceProfiles[mode]
+  Object.assign(settings, {
+    numberofcolors: profile.numberofcolors,
+    ltres: profile.ltres,
+    qtres: profile.qtres,
+    pathomit: profile.pathomit,
+    blurradius: profile.blurradius,
+  })
+}
+
+watch(traceMode, (mode) => {
+  applyTraceProfile(mode)
+}, { immediate: true })
+
 const normalizedSettings = (): VectorizerSettings => {
   const normalized = {
-    numberofcolors: clampInteger(settings.numberofcolors, 2, 64, 16),
-    ltres: clampNumber(settings.ltres, 0.1, 10, 0.5),
-    qtres: clampNumber(settings.qtres, 0.1, 10, 0.5),
-    pathomit: clampInteger(settings.pathomit, 0, 32, 8),
+    numberofcolors: clampInteger(settings.numberofcolors, 2, 64, 4),
+    ltres: clampNumber(settings.ltres, 0.1, 10, 0.2),
+    qtres: clampNumber(settings.qtres, 0.1, 10, 0.2),
+    pathomit: clampInteger(settings.pathomit, 0, 32, 0),
     blurradius: clampInteger(settings.blurradius, 0, 5, 0),
     maxDimension: clampInteger(settings.maxDimension, 256, 4096, 1600),
     outputWidth: clampInteger(settings.outputWidth, 1, 8192, 44),
@@ -418,7 +552,7 @@ const loadImage = (url: string): Promise<HTMLImageElement> => new Promise((resol
   image.src = url
 })
 
-const rasterizeImage = (image: HTMLImageElement, maxDimension: number): ImageData => {
+const rasterizeImage = (image: HTMLImageElement, maxDimension: number, imageSmoothing: boolean): ImageData => {
   const naturalWidth = image.naturalWidth || image.width
   const naturalHeight = image.naturalHeight || image.height
   if (!naturalWidth || !naturalHeight) throw new Error('image-load-failed')
@@ -433,12 +567,222 @@ const rasterizeImage = (image: HTMLImageElement, maxDimension: number): ImageDat
   const context = canvas.getContext('2d', { willReadFrequently: true })
   if (!context) throw new Error('canvas-unavailable')
 
-  context.imageSmoothingEnabled = true
-  context.imageSmoothingQuality = 'high'
+  context.imageSmoothingEnabled = imageSmoothing
+  if (imageSmoothing) context.imageSmoothingQuality = 'high'
   context.clearRect(0, 0, width, height)
   context.drawImage(image, 0, 0, width, height)
 
   return context.getImageData(0, 0, width, height)
+}
+
+const quantizeColorChannel = (value: number, bucketSize: number): number => {
+  const clamped = clampInteger(value, 0, 255, 0)
+  if (clamped === 0) return 0
+  return Math.min(255, Math.floor(clamped / bucketSize) * bucketSize + Math.floor(bucketSize / 2))
+}
+
+const TRACE_ALPHA_THRESHOLD = 8
+
+const buildEmptySvg = (width: number, height: number): string => (
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" version="1.1" width="${width}" height="${height}"></svg>`
+)
+
+const normalizeTraceImageData = (imageData: ImageData, solidOpaqueColors: boolean): ImageData => {
+  const normalized = new ImageData(new Uint8ClampedArray(imageData.data), imageData.width, imageData.height)
+  const { data } = normalized
+
+  for (let index = 0; index < data.length; index += 4) {
+    const alpha = data[index + 3]
+    if (alpha < TRACE_ALPHA_THRESHOLD) {
+      data[index] = 0
+      data[index + 1] = 0
+      data[index + 2] = 0
+      data[index + 3] = 0
+      continue
+    }
+
+    if (solidOpaqueColors) {
+      data[index + 3] = 255
+    }
+  }
+
+  return normalized
+}
+
+const calculateColorSaturation = (r: number, g: number, b: number): number => {
+  const maxChannel = Math.max(r, g, b)
+  const minChannel = Math.min(r, g, b)
+  if (maxChannel <= 0) return 0
+  return (maxChannel - minChannel) / maxChannel
+}
+
+const calculateColorHue = (r: number, g: number, b: number): number => {
+  const maxChannel = Math.max(r, g, b)
+  const minChannel = Math.min(r, g, b)
+  const delta = maxChannel - minChannel
+  if (delta === 0) return 0
+
+  let hue = 0
+  if (maxChannel === r) {
+    hue = ((g - b) / delta) % 6
+  } else if (maxChannel === g) {
+    hue = (b - r) / delta + 2
+  } else {
+    hue = (r - g) / delta + 4
+  }
+
+  return ((hue * 60) + 360) % 360
+}
+
+const calculatePaletteFamilyKey = (r: number, g: number, b: number, saturation: number): string => {
+  const brightnessBucket = Math.floor(Math.max(r, g, b) / 32)
+  if (saturation < 0.16) return `gray:${brightnessBucket}`
+  return `hue:${Math.floor(calculateColorHue(r, g, b) / 30)}`
+}
+
+const calculateColorDistance = (left: PaletteColor, right: PaletteColor): number => (
+  Math.abs(left.r - right.r) + Math.abs(left.g - right.g) + Math.abs(left.b - right.b)
+)
+
+const selectPaletteCandidates = (candidates: PaletteCandidate[], visibleColorLimit: number): PaletteCandidate[] => {
+  if (candidates.length <= visibleColorLimit) {
+    return candidates.slice().sort((left, right) => right.count - left.count)
+  }
+
+  const remaining = candidates.slice().sort((left, right) => right.count - left.count)
+  const selected: PaletteCandidate[] = []
+  const familyCounts = new Map<string, number>()
+
+  const firstCandidate = remaining.shift()
+  if (firstCandidate) {
+    selected.push(firstCandidate)
+    familyCounts.set(firstCandidate.familyKey, 1)
+  }
+
+  while (selected.length < visibleColorLimit && remaining.length > 0) {
+    let bestIndex = 0
+    let bestScore = -Infinity
+
+    for (let index = 0; index < remaining.length; index += 1) {
+      const candidate = remaining[index]
+      const nearestDistance = selected.reduce(
+        (nearest, selectedCandidate) => Math.min(nearest, calculateColorDistance(candidate, selectedCandidate)),
+        Number.POSITIVE_INFINITY,
+      )
+      const familyCount = familyCounts.get(candidate.familyKey) || 0
+      const countScore = Math.log1p(candidate.count)
+      const saturationBoost = 1 + candidate.saturation * 3.25
+      const diversityBoost = 0.35 + Math.min(1, nearestDistance / 96) * 1.65
+      const familyMultiplier = Math.pow(0.45, familyCount)
+      const score = countScore * saturationBoost * diversityBoost * familyMultiplier
+
+      if (score > bestScore) {
+        bestScore = score
+        bestIndex = index
+      }
+    }
+
+    const [nextCandidate] = remaining.splice(bestIndex, 1)
+    if (nextCandidate) {
+      selected.push(nextCandidate)
+      familyCounts.set(nextCandidate.familyKey, (familyCounts.get(nextCandidate.familyKey) || 0) + 1)
+    }
+  }
+
+  return selected.sort((left, right) => right.count - left.count)
+}
+
+const buildHistogramPalette = (
+  imageData: ImageData,
+  visibleColorLimit: number,
+  bucketSize: number,
+  solidOpaqueColors: boolean,
+): PaletteColor[] => {
+  const buckets = new Map<string, ColorBucket & { a: number }>()
+  const { data, width, height } = imageData
+  const sampleStep = Math.max(1, Math.floor(Math.max(width, height) / 768))
+  const weight = sampleStep * sampleStep
+  let hasTransparentPixels = false
+
+  for (let y = 0; y < height; y += sampleStep) {
+    for (let x = 0; x < width; x += sampleStep) {
+      const index = (y * width + x) * 4
+      const alpha = data[index + 3]
+      if (alpha < TRACE_ALPHA_THRESHOLD) {
+        hasTransparentPixels = true
+        continue
+      }
+
+      const r = data[index]
+      const g = data[index + 1]
+      const b = data[index + 2]
+      const key = [
+        quantizeColorChannel(r, bucketSize),
+        quantizeColorChannel(g, bucketSize),
+        quantizeColorChannel(b, bucketSize),
+        solidOpaqueColors ? 255 : quantizeColorChannel(alpha, 32),
+      ].join(':')
+      const bucket = buckets.get(key) || { r: 0, g: 0, b: 0, a: 0, count: 0 }
+      bucket.r += r * weight
+      bucket.g += g * weight
+      bucket.b += b * weight
+      bucket.a += alpha * weight
+      bucket.count += weight
+      buckets.set(key, bucket)
+    }
+  }
+
+  const visibleCandidates: PaletteCandidate[] = [...buckets.values()]
+    .filter((bucket) => bucket.count > 0)
+    .map((bucket) => {
+      const r = Math.round(bucket.r / bucket.count)
+      const g = Math.round(bucket.g / bucket.count)
+      const b = Math.round(bucket.b / bucket.count)
+      const saturation = calculateColorSaturation(r, g, b)
+      return {
+        r,
+        g,
+        b,
+        a: solidOpaqueColors ? 255 : Math.round(bucket.a / bucket.count),
+        count: bucket.count,
+        brightness: Math.max(r, g, b) / 255,
+        saturation,
+        familyKey: calculatePaletteFamilyKey(r, g, b, saturation),
+      }
+    })
+
+  const palette: PaletteColor[] = []
+  if (hasTransparentPixels) {
+    palette.push({ r: 0, g: 0, b: 0, a: 0 })
+  }
+
+  for (const candidate of selectPaletteCandidates(visibleCandidates, visibleColorLimit)) {
+    palette.push({
+      r: candidate.r,
+      g: candidate.g,
+      b: candidate.b,
+      a: candidate.a,
+    })
+  }
+
+  return palette.length > 0 ? palette : [{ r: 0, g: 0, b: 0, a: 0 }]
+}
+
+const pruneTransparentLayers = (tracedata: Tracedata): Tracedata => {
+  const palette: PaletteColor[] = []
+  const layers: Array<unknown> = []
+
+  tracedata.palette.forEach((color, index) => {
+    if (color.a <= 0) return
+    palette.push(color)
+    layers.push(tracedata.layers[index])
+  })
+
+  return {
+    ...tracedata,
+    palette,
+    layers,
+  }
 }
 
 const setSvgDimensions = (svg: string, width: number, height: number): string => {
@@ -456,26 +800,37 @@ const traceImage = async (image: HTMLImageElement, runID: number): Promise<void>
   if (runID !== conversionRunID.value) return
 
   const normalized = normalizedSettings()
-  const imageData = rasterizeImage(image, normalized.maxDimension)
+  const profile = traceProfiles[traceMode.value]
+  const imageData = normalizeTraceImageData(rasterizeImage(image, normalized.maxDimension, profile.imageSmoothing), profile.solidOpaqueColors)
+  const palette = buildHistogramPalette(imageData, normalized.numberofcolors, profile.paletteBucketSize, profile.solidOpaqueColors)
+  const imageTracer = ImageTracer as typeof ImageTracer & {
+    imagedataToTracedata: (data: ImageData, options?: ImageTracerOptions | string) => Tracedata
+    getsvgstring: (tracedata: Tracedata, options?: ImageTracerOptions | string) => string
+  }
   const options: ImageTracerOptions = {
     blurradius: normalized.blurradius,
-    colorsampling: 2,
-    colorquantcycles: 3,
+    colorsampling: profile.colorsampling,
+    colorquantcycles: profile.colorquantcycles,
     desc: false,
     layering: 0,
-    linefilter: true,
+    linefilter: profile.linefilter,
     ltres: normalized.ltres,
     numberofcolors: normalized.numberofcolors,
     pathomit: normalized.pathomit,
-    rightangleenhance: true,
-    roundcoords: 2,
+    rightangleenhance: profile.rightangleenhance,
+    roundcoords: profile.roundcoords,
     scale: 1,
-    strokewidth: 0,
+    strokewidth: profile.strokewidth,
     viewbox: true,
     qtres: normalized.qtres,
   }
+  options.pal = palette
+
+  const tracedata = pruneTransparentLayers(imageTracer.imagedataToTracedata(imageData, options))
   const svg = setSvgDimensions(
-    ImageTracer.imagedataToSVG(imageData, options),
+    tracedata.layers.length > 0
+      ? imageTracer.getsvgstring(tracedata, options)
+      : buildEmptySvg(normalized.outputWidth, normalized.outputHeight),
     normalized.outputWidth,
     normalized.outputHeight,
   )

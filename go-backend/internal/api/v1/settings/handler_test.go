@@ -73,12 +73,12 @@ func TestPublicSiteSettingsUsesCurrentDedicatedSiteLogo(t *testing.T) {
 	}
 	if err := db.Create(&sitelogodomain.Asset{
 		ID:         sitelogodomain.CurrentAssetID,
-		Filename:   "current.svg",
-		URL:        "http://media.internal:8080/uploads/site-logo/current.svg",
-		StorageKey: "site-logo/current.svg",
-		MimeType:   "image/svg+xml",
-		Width:      48,
-		Height:     48,
+		Filename:   "current.webp",
+		URL:        "http://media.internal:8080/uploads/site-logo/current.webp",
+		StorageKey: "site-logo/current.webp",
+		MimeType:   "image/webp",
+		Width:      512,
+		Height:     512,
 	}).Error; err != nil {
 		t.Fatalf("seed current site logo: %v", err)
 	}
@@ -92,13 +92,13 @@ func TestPublicSiteSettingsUsesCurrentDedicatedSiteLogo(t *testing.T) {
 	))
 
 	settings := handler.publicSiteSettings(&settingdomain.SiteSettings{
-		SiteLogo: "https://shop.example.test/uploads/site-logo/old.svg",
+		SiteLogo: "https://shop.example.test/uploads/site-logo/old.webp",
 	})
 
-	if settings.SiteLogo != "https://shop.example.test/uploads/site-logo/current.svg" {
+	if settings.SiteLogo != "https://shop.example.test/uploads/site-logo/current.webp" {
 		t.Fatalf("unexpected site logo URL: %s", settings.SiteLogo)
 	}
-	if settings.SiteLogoWidth != 48 || settings.SiteLogoHeight != 48 {
+	if settings.SiteLogoWidth != 512 || settings.SiteLogoHeight != 512 {
 		t.Fatalf("unexpected site logo dimensions: %dx%d", settings.SiteLogoWidth, settings.SiteLogoHeight)
 	}
 }

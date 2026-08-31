@@ -23,6 +23,8 @@ const (
 	CodeInvalidType            = "invalid_type"
 	CodeInvalidDimensions      = "invalid_dimensions"
 	CodeTooManyFiles           = "too_many_files"
+	SiteLogoImageContentType   = "image/webp"
+	SiteLogoImageDimension     = 512
 	imageHeaderInspectionBytes = 1 << 20
 	webPHeaderInspectionBytes  = 64
 )
@@ -142,6 +144,18 @@ var (
 		MaxWidth:            2048,
 		MaxHeight:           2048,
 		MaxPixels:           4_194_304,
+	}
+	SiteLogoImageRule = FileRule{
+		MaxSize:             1 << 20,
+		AllowedExtensions:   []string{".webp"},
+		AllowedContentTypes: []string{SiteLogoImageContentType},
+		ExactWidth:          SiteLogoImageDimension,
+		ExactHeight:         SiteLogoImageDimension,
+		MaxWidth:            SiteLogoImageDimension,
+		MaxHeight:           SiteLogoImageDimension,
+		AspectRatioWidth:    1,
+		AspectRatioHeight:   1,
+		MaxPixels:           SiteLogoImageDimension * SiteLogoImageDimension,
 	}
 	ProductVideoRule = FileRule{
 		MaxSize:             80 << 20,

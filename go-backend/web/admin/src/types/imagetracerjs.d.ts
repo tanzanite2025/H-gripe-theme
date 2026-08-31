@@ -17,6 +17,7 @@ declare module 'imagetracerjs' {
     scale?: number
     strokewidth?: number
     viewbox?: boolean
+    pal?: Array<{ r: number; g: number; b: number; a: number }>
   }
 
   interface ImageTracerApi {

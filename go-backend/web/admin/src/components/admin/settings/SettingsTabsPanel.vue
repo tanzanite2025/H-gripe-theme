@@ -12,7 +12,7 @@
           <AdminFormField :label="t('settings.contactPhone')">
             <Input v-model="siteSettings.contact_phone" type="tel" />
           </AdminFormField>
-          <AdminFormField :label="t('settings.siteLogo')" description="仅支持上传 48×48 SVG；更换时自动删除旧 Logo。">
+          <AdminFormField :label="t('settings.siteLogo')" description="仅支持上传 512×512 WebP；更换时自动删除旧 Logo。">
             <div class="flex min-w-0 items-center gap-2">
               <Input :model-value="siteSettings.site_logo" type="text" placeholder="尚未上传站点 Logo" readonly :disabled="uploadingSiteLogo" />
               <Button type="button" variant="outline" size="icon" :disabled="!canEdit || uploadingSiteLogo" :title="t('settings.uploadLogo')" @click="chooseSiteLogo">

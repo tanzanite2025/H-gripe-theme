@@ -53,4 +53,18 @@ func TestUploadSpecsRouteReturnsStablePublicContract(t *testing.T) {
 	require.Equal(t, "16:9", homeVisual.AspectRatioLabel)
 	require.Equal(t, 1920, homeVisual.RecommendedWidth)
 	require.Equal(t, 1080, homeVisual.RecommendedHeight)
+
+	var siteLogo *upload.UploadSpec
+	for index := range payload.Specs {
+		if payload.Specs[index].Code == string(upload.SpecSiteLogo) {
+			siteLogo = &payload.Specs[index]
+			break
+		}
+	}
+	require.NotNil(t, siteLogo)
+	require.Equal(t, "image", siteLogo.Kind)
+	require.Equal(t, []string{".webp"}, siteLogo.AcceptedExtensions)
+	require.Equal(t, []string{"image/webp"}, siteLogo.AcceptedContentTypes)
+	require.Equal(t, 512, siteLogo.ExactWidth)
+	require.Equal(t, 512, siteLogo.ExactHeight)
 }

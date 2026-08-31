@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	sitelogodomain "commerce-platform/internal/domain/site_logo"
@@ -32,7 +33,7 @@ func TestSiteLogoUploadCurrentReplacesAndDestroysPrevious(t *testing.T) {
 	}
 
 	logos := NewSiteLogoService(repository.NewSiteLogoRepository(db), storageService, "https://shop.example.test")
-	first, err := logos.UploadCurrent(context.Background(), siteLogoTestFileHeader(t, "first.svg"), 11)
+	first, err := logos.UploadCurrent(context.Background(), siteLogoTestFileHeader(t, "first.webp"), 11)
 	if err != nil {
 		t.Fatalf("upload first logo: %v", err)
 	}
@@ -41,7 +42,7 @@ func TestSiteLogoUploadCurrentReplacesAndDestroysPrevious(t *testing.T) {
 		t.Fatalf("expected first logo object to exist: %v", err)
 	}
 
-	second, err := logos.UploadCurrent(context.Background(), siteLogoTestFileHeader(t, "second.svg"), 12)
+	second, err := logos.UploadCurrent(context.Background(), siteLogoTestFileHeader(t, "second.webp"), 12)
 	if err != nil {
 		t.Fatalf("upload replacement logo: %v", err)
 	}
@@ -85,7 +86,7 @@ func TestSiteLogoDeleteCurrentDestroysObjectAndRow(t *testing.T) {
 	}
 
 	logos := NewSiteLogoService(repository.NewSiteLogoRepository(db), storageService, "https://shop.example.test")
-	current, err := logos.UploadCurrent(context.Background(), siteLogoTestFileHeader(t, "current.svg"), 11)
+	current, err := logos.UploadCurrent(context.Background(), siteLogoTestFileHeader(t, "current.webp"), 11)
 	if err != nil {
 		t.Fatalf("upload current logo: %v", err)
 	}
@@ -112,10 +113,11 @@ func TestPublicUploadAccessAllowsOnlyCurrentSiteLogo(t *testing.T) {
 	repo := repository.NewSiteLogoRepository(db)
 	logos := NewSiteLogoService(repo, nil, "https://shop.example.test")
 	_, err := repo.ReplaceCurrent(&sitelogodomain.Asset{
-		StorageKey: "site-logo/current.svg",
-		URL:        "https://shop.example.test/uploads/site-logo/current.svg",
-		Width:      48,
-		Height:     48,
+		StorageKey: "site-logo/current.webp",
+		URL:        "https://shop.example.test/uploads/site-logo/current.webp",
+		MimeType:   "image/webp",
+		Width:      512,
+		Height:     512,
 	})
 	if err != nil {
 		t.Fatalf("seed current logo: %v", err)
@@ -124,12 +126,12 @@ func TestPublicUploadAccessAllowsOnlyCurrentSiteLogo(t *testing.T) {
 	access := NewPublicUploadAccessService(nil, nil)
 	access.ConfigureSiteLogoService(logos)
 
-	allowed, err := access.CanServePublicUpload(context.Background(), "site-logo/current.svg")
+	allowed, err := access.CanServePublicUpload(context.Background(), "site-logo/current.webp")
 	if err != nil || !allowed {
 		t.Fatalf("expected current logo to be allowed, allowed=%v err=%v", allowed, err)
 	}
 
-	allowed, err = access.CanServePublicUpload(context.Background(), "site-logo/old.svg")
+	allowed, err = access.CanServePublicUpload(context.Background(), "site-logo/old.webp")
 	if err != nil {
 		t.Fatalf("old logo access returned error: %v", err)
 	}
@@ -165,13 +167,23 @@ func newSiteLogoTestDB(t *testing.T) *gorm.DB {
 func siteLogoTestFileHeader(t *testing.T, filename string) *multipart.FileHeader {
 	t.Helper()
 
+	_, currentFile, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatal("resolve site logo service test file path")
+	}
+	fixturePath := filepath.Join(filepath.Dir(currentFile), "..", "..", "..", "nuxt-i18n", "public", "images", "chat-logo.webp")
+	contents, err := os.ReadFile(fixturePath)
+	if err != nil {
+		t.Fatalf("read site logo WebP fixture: %v", err)
+	}
+
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 	part, err := writer.CreateFormFile("file", filename)
 	if err != nil {
 		t.Fatalf("create form file: %v", err)
 	}
-	if _, err := part.Write([]byte(`<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48"><path d="M0 0h48v48H0z"/></svg>`)); err != nil {
+	if _, err := part.Write(contents); err != nil {
 		t.Fatalf("write form file: %v", err)
 	}
 	if err := writer.Close(); err != nil {

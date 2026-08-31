@@ -14,7 +14,7 @@
               class="tz-text-accent hover:text-[var(--tz-text-accent-hover)] hover:underline underline decoration-[var(--tz-site-accent)] underline-offset-4 transition-colors"
               @click="hideBanner"
             >
-              {{ t('cookieConsent.banner.learnMore') }}
+              {{ t('cookieConsent.modal.policyLink') }}
             </NuxtLink>
           </p>
           <div class="flex items-center gap-3">
