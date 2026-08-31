@@ -87,11 +87,6 @@ import { useLocalePath } from '#imports'
 import StorefrontImage from '~/components/StorefrontImage.vue'
 import { useProductCategories, type ProductCategory } from '~/composables/useProductCategories'
 
-type ProductCategoryRoute = {
-  path: string
-  query: Record<string, string>
-}
-
 const localePath = useLocalePath()
 const {
   tree,
@@ -133,14 +128,7 @@ const categoryPages = computed(() => chunkCategories(visibleCategories.value, pa
 const pageCount = computed(() => Math.max(1, categoryPages.value.length))
 const activePageItems = computed(() => categoryPages.value[activePage.value] || [])
 
-const targetFor = (category: ProductCategory): ProductCategoryRoute => {
-  return {
-    path: localePath('/shop'),
-    query: {
-      product_category: category.slug,
-    },
-  }
-}
+const targetFor = (category: ProductCategory): string => category.routePath || localePath('/shop')
 
 const paginationLabel = 'Product category pages'
 const paginationButtonLabel = (page: number) => `Go to category group ${page}`

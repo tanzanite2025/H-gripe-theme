@@ -59,10 +59,7 @@ const { fetchFeaturedShopProducts } = useShopProducts()
 const WHEELSET_PRODUCT_CATEGORY_SLUG = 'wheelset'
 const HOME_FEATURED_WHEELSETS_PAGE_SIZE = 12
 
-const wheelsetShopPath = localePath({
-  path: '/shop',
-  query: { product_category: WHEELSET_PRODUCT_CATEGORY_SLUG },
-})
+const wheelsetShopPath = localePath('/shop/wheelset')
 
 const {
   data: featuredProductsData,

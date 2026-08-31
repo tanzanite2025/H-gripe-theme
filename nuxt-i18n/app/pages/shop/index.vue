@@ -212,14 +212,24 @@ const syncSelectedCategoryFromRoute = () => {
   selectedCategorySlug.value = readRouteProductCategorySlug()
 }
 
+const normalizePath = (value: unknown) => {
+  const path = (String(value || '').split(/[?#]/, 1)[0] || '').trim()
+  if (!path) return '/'
+  const normalized = `/${path.replace(/^\/+|\/+$/g, '')}`
+  return normalized === '//' ? '/' : normalized
+}
+
 const replaceProductCategoryRoute = async (category: ProductCategory | null) => {
   const nextSlug = category?.slug || ''
   if (category?.routePath) {
+    const nextPath = category.routePath
+    if (normalizePath(route.path) === normalizePath(nextPath)) return false
+
     const nextQuery: Record<string, any> = { ...route.query }
     delete nextQuery.product_category
 
     await router.replace({
-      path: category.routePath,
+      path: nextPath,
       query: nextQuery,
     })
     return true
