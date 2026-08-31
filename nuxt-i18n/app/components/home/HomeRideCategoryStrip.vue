@@ -82,7 +82,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, onServerPrefetch, ref, watch } from 'vue'
 import { useLocalePath } from '#imports'
 import StorefrontImage from '~/components/StorefrontImage.vue'
 import { useProductCategories, type ProductCategory } from '~/composables/useProductCategories'
@@ -177,6 +177,8 @@ watch(pageCount, (count) => {
     activePage.value = Math.max(0, count - 1)
   }
 })
+
+onServerPrefetch(() => loadCategories())
 
 onMounted(() => {
   updateViewportMode()
