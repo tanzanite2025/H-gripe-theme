@@ -1,90 +1,110 @@
 <template>
-  <main v-if="category" class="product-category-page">
-    <nav
-      v-if="breadcrumbItems.length"
-      class="product-category-breadcrumb"
-      aria-label="Breadcrumb"
-    >
-      <ol class="product-category-breadcrumb__list">
-        <li
-          v-for="(item, index) in breadcrumbItems"
-          :key="item.id"
-          class="product-category-breadcrumb__item"
-        >
-          <span v-if="index > 0" class="product-category-breadcrumb__separator" aria-hidden="true">/</span>
-          <NuxtLink
-            v-if="item.path && index < breadcrumbItems.length - 1"
-            :to="item.path"
-            class="product-category-breadcrumb__link"
-          >
-            {{ item.name }}
-          </NuxtLink>
-          <span v-else class="product-category-breadcrumb__current">{{ item.name }}</span>
-        </li>
-      </ol>
-    </nav>
-
-    <header class="product-category-page__header">
-      <p class="product-category-page__eyebrow">{{ t('filter.categories', 'Categories') }}</p>
-      <h1>{{ category.name }}</h1>
-      <SafeRichText
-        v-if="categoryIntro"
-        class="product-category-page__description tz-rich-text"
-        :html="categoryIntro"
+  <section v-if="category" class="shop-page w-full pt-0 pb-16 space-y-6">
+    <section class="rounded-xl tz-surface-card p-4 text-sm tz-text-secondary shadow-[8px_8px_22px_rgb(15_23_42_/_0.08)]">
+      <ShopProductQuickSearchForm
+        density="page"
+        show-filter-button
+        :initial-query="currentSearch?.query || ''"
+        :initial-price-range="currentSearch?.filters?.priceRange || defaultSearchPriceRange"
+        @submit="handleSearch"
+        @filter-click="openCategorySidebar"
       />
-    </header>
+    </section>
 
-    <nav
-      v-if="category.children.length"
-      class="product-category-page__children"
-      :aria-label="t('shopCategoryMenu.children', 'Subcategories')"
-    >
-      <NuxtLink
-        v-for="child in category.children"
-        :key="child.id"
-        :to="categoryPath(child)"
-        class="product-category-page__child-link"
-      >
-        <span>{{ child.name }}</span>
-        <Icon name="lucide:arrow-up-right" aria-hidden="true" />
-      </NuxtLink>
-    </nav>
+    <teleport to="body">
+      <transition name="shop-category-sidebar">
+        <div
+          v-if="categorySidebarOpen"
+          class="shop-category-sidebar"
+          role="dialog"
+          aria-modal="true"
+          :aria-label="$t('filter.categories', 'Categories')"
+          @click.self="closeCategorySidebar"
+        >
+          <section class="shop-category-sidebar__panel">
+            <header class="shop-category-sidebar__header">
+              <span>{{ $t('filter.categories', 'Categories') }}</span>
+              <button
+                type="button"
+                class="shop-category-sidebar__close"
+                aria-label="Close categories"
+                @click="closeCategorySidebar"
+              >
+                <Icon name="lucide:x" />
+              </button>
+            </header>
 
-    <section class="product-category-page__products" aria-live="polite">
-      <div v-if="pending" class="product-category-page__state">
-        {{ t('shopPage.products.loading', 'Loading products...') }}
-      </div>
-      <div v-else-if="error" class="product-category-page__state product-category-page__state--error">
-        {{ error }}
-      </div>
-      <div v-else-if="products.length === 0" class="product-category-page__state">
-        {{ t('shopPage.products.empty.categoryTitle', 'No products found in this category.') }}
-      </div>
-      <div v-else class="tz-product-card-grid">
-        <ShopProductDisplayCard
-          v-for="product in products"
-          :key="product.id"
-          :product="product"
-          show-wishlist-action
-          show-view-action
+            <ShopCategoryVerticalMenu
+              :categories="categories"
+              :selected="category"
+              :loading="loadingCategories"
+              :error="categoriesError"
+              @select="onMobileCategorySelect"
+            />
+          </section>
+        </div>
+      </transition>
+    </teleport>
+
+    <section class="shop-catalog-layout">
+      <aside class="shop-category-rail" :aria-label="$t('shopPage.categoryRailLabel', 'Shop category navigation')">
+        <ShopCategoryVerticalMenu
+          :categories="categories"
+          :selected="category"
+          :loading="loadingCategories"
+          :error="categoriesError"
+          @select="onCategorySelect"
         />
+      </aside>
+
+      <div class="shop-catalog-main">
+        <section class="shop-page-product-collection-display-card shop-products-panel rounded-xl p-2 text-sm tz-text-secondary shadow-[8px_8px_22px_rgb(15_23_42_/_0.08)] md:p-6">
+          <section class="product-category-page__products" aria-live="polite">
+            <div v-if="pending" class="shop-products-state py-12">
+              <p class="tz-text-secondary text-sm">{{ t('shopPage.products.loading', 'Loading products...') }}</p>
+            </div>
+            <div v-else-if="error" class="shop-products-state py-8 text-center text-red-300 text-sm">
+              {{ error }}
+            </div>
+            <div v-else-if="products.length === 0" class="shop-products-state py-10 text-center space-y-2">
+              <p class="tz-text-primary">
+                {{ t('shopPage.products.empty.categoryTitle', 'No products found in this category.') }}
+              </p>
+              <p class="tz-text-secondary text-xs">
+                {{ t('shopPage.products.empty.categoryDescription', 'Products will appear here automatically once they are published.') }}
+              </p>
+            </div>
+            <div v-else class="tz-product-card-grid content-start">
+              <ShopProductDisplayCard
+                v-for="product in products"
+                :key="product.id"
+                :product="product"
+                show-wishlist-action
+                show-view-action
+              />
+            </div>
+          </section>
+        </section>
       </div>
     </section>
-  </main>
+  </section>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import {
   createError,
   useAsyncData,
   useHead,
   useI18n,
   useLocalePath,
+  useRouter,
   useRoute,
   useRequestURL,
   useRuntimeConfig,
 } from '#imports'
+import ShopProductQuickSearchForm from '~/components/shop/ShopProductQuickSearchForm.vue'
+import ShopCategoryVerticalMenu from '~/components/shop/ShopCategoryVerticalMenu.vue'
 import {
   useProductCategories,
   type ProductCategory,
@@ -94,6 +114,8 @@ import {
   type ShopProduct,
   type ShopProductsResult,
 } from '~/composables/useShopProducts'
+import { useOverlayBackStack } from '~/composables/useOverlayBackStack'
+import { useShopSearchSheet, type ShopSearchFiltersPayload, type ShopSearchPayload } from '~/composables/useShopSearchSheet'
 import { createSeoJsonLdScript } from '~/utils/seo/jsonLd'
 import { toAbsoluteSeoUrl } from '~/utils/seo/urls'
 
@@ -104,17 +126,26 @@ const props = withDefaults(defineProps<{
 })
 
 const route = useRoute()
+const router = useRouter()
 const { t } = useI18n()
 const localePath = useLocalePath()
 const requestUrl = useRequestURL()
 const config = useRuntimeConfig()
+const overlayBackStack = useOverlayBackStack()
 const {
   categories,
   loadCategories,
+  loading: loadingCategories,
+  error: categoriesError,
 } = useProductCategories()
 const {
   fetchPublicShopProducts,
 } = useShopProducts()
+const { pendingSearch } = useShopSearchSheet()
+
+const defaultSearchPriceRange: [number, number] = [0, 5000]
+const currentSearch = ref<ShopSearchPayload | null>(null)
+const categorySidebarOpen = ref(false)
 
 const normalizePath = (value: unknown) => {
   const path = (String(value || '').split(/[?#]/, 1)[0] || '').trim()
@@ -140,47 +171,111 @@ if (!category.value) {
   })
 }
 
-const categoryMap = computed(() => new Map(
-  categories.value.map((item) => [item.id, item]),
-))
-
-const ancestorCategories = computed<ProductCategory[]>(() => {
-  const current = category.value
-  if (!current) return []
-
-  const result: ProductCategory[] = []
-  const visited = new Set<number>()
-  let parent: ProductCategory | undefined = current
-  while (parent && !visited.has(parent.id)) {
-    visited.add(parent.id)
-    result.unshift(parent)
-    parent = parent.parentId ? categoryMap.value.get(parent.parentId) : undefined
-  }
-  return result
-})
-
-const breadcrumbItems = computed(() => [
-  {
-    id: 'home',
-    name: t('breadcrumbs.home', 'Home'),
-    path: '/',
-  },
-  {
-    id: 'shop',
-    name: t('products.nav.shop', 'Shop'),
-    path: '/shop',
-  },
-  ...ancestorCategories.value.map((item) => ({
-    id: `category:${item.id}`,
-    name: item.name,
-    path: item.routePath,
-  })),
-])
-
 const categoryPath = (item: ProductCategory) => {
   if (item.routePath) return item.routePath
   const base = category.value?.routePath || '/shop'
   return `${base.replace(/\/+$/, '')}/${encodeURIComponent(item.slug)}`
+}
+
+const createDefaultSearchFilters = (): ShopSearchFiltersPayload => ({
+  priceRange: [...defaultSearchPriceRange] as [number, number],
+  attributes: {},
+})
+
+const cloneSearchFilters = (filters?: ShopSearchFiltersPayload): ShopSearchFiltersPayload => ({
+  priceRange: Array.isArray(filters?.priceRange)
+    ? [...filters!.priceRange] as [number, number]
+    : [...defaultSearchPriceRange] as [number, number],
+  currency: filters?.currency,
+  attributes: { ...(filters?.attributes || {}) },
+})
+
+const joinUniqueSearchParts = (parts: Array<string | null | undefined>) => {
+  const seen = new Set<string>()
+  const normalized: string[] = []
+
+  for (const part of parts) {
+    const value = String(part || '').trim()
+    if (!value) continue
+
+    const key = value.toLowerCase()
+    if (seen.has(key)) continue
+
+    seen.add(key)
+    normalized.push(value)
+  }
+
+  return normalized.join(' ')
+}
+
+const buildProductKeyword = (payload?: ShopSearchPayload) => joinUniqueSearchParts([payload?.query])
+
+const buildProductQueryParams = (payload?: ShopSearchPayload) => {
+  const params: Record<string, any> = {
+    page: 1,
+    page_size: 24,
+    status: 'active',
+    product_category: categorySlug.value,
+  }
+
+  if (payload) {
+    const keyword = buildProductKeyword(payload)
+    if (keyword) params.keyword = keyword
+
+    const priceRange = payload.filters?.priceRange
+    if (Array.isArray(priceRange) && priceRange.length === 2) {
+      const [min, max] = priceRange
+      params.price_min = min
+      params.price_max = max
+    }
+
+    const attrs = payload.filters?.attributes
+    if (attrs && typeof attrs === 'object') {
+      params.attributes = JSON.stringify(attrs)
+    }
+  }
+
+  return params
+}
+
+const onCategorySelect = async (nextCategory: ProductCategory | null) => {
+  const targetPath = nextCategory ? categoryPath(nextCategory) : localePath('/shop')
+  if (normalizePath(targetPath) === requestedRoutePath.value) return
+
+  await router.replace(targetPath)
+}
+
+const openCategorySidebar = () => {
+  categorySidebarOpen.value = true
+  overlayBackStack.open('shop-category-sidebar', () => {
+    categorySidebarOpen.value = false
+  })
+}
+
+const closeCategorySidebar = () => {
+  void overlayBackStack.close('shop-category-sidebar')
+  categorySidebarOpen.value = false
+}
+
+const handleExternalCategorySidebarOpen = () => {
+  openCategorySidebar()
+}
+
+const onMobileCategorySelect = async (nextCategory: ProductCategory | null) => {
+  await onCategorySelect(nextCategory)
+  closeCategorySidebar()
+}
+
+const loadProducts = async () => {
+  await refresh()
+}
+
+const handleSearch = (payload: ShopSearchPayload) => {
+  currentSearch.value = {
+    ...payload,
+    filters: cloneSearchFilters(payload.filters),
+  }
+  loadProducts()
 }
 
 const categorySlug = computed(() => category.value?.slug || '')
@@ -198,28 +293,19 @@ const canonicalUrl = computed(() => toAbsoluteSeoUrl(
   category.value?.routePath || requestedRoutePath.value,
 ))
 
-const categoryIntro = computed(() => (
-  String(category.value?.intro || category.value?.description || '').trim()
-))
-
-const fallbackMetaDescription = computed(() => {
-  const text = categoryIntro.value.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
-  if (text.length <= 320) return text
-  return `${text.slice(0, 317)}...`
-})
-
-const { data: productData, pending, error: asyncError } = await useAsyncData<ShopProductsResult>(
+const { data: productData, pending, error: asyncError, refresh } = await useAsyncData<ShopProductsResult>(
   productDataKey,
-  () => fetchPublicShopProducts({
-    page: 1,
-    page_size: 24,
-    status: 'active',
-    product_category: categorySlug.value,
-  }),
+  () => fetchPublicShopProducts(buildProductQueryParams(currentSearch.value || undefined)),
   {
     watch: [requestedRoutePath, categorySlug],
   },
 )
+
+const fallbackMetaDescription = computed(() => {
+  const text = String(category.value?.intro || category.value?.description || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+  if (text.length <= 320) return text
+  return `${text.slice(0, 317)}...`
+})
 
 const products = computed<ShopProduct[]>(() => productData.value?.items || [])
 const error = computed(() => asyncError.value?.message || '')
@@ -268,137 +354,273 @@ useHead(() => {
     script: [createSeoJsonLdScript(categorySchema.value)],
   }
 })
+
+onMounted(() => {
+  if (typeof window !== 'undefined') {
+    window.addEventListener(
+      'ui:product-category-sidebar-open',
+      handleExternalCategorySidebarOpen,
+    )
+  }
+
+  const initialPending = pendingSearch.value
+  if (initialPending) {
+    pendingSearch.value = null
+    handleSearch(initialPending as unknown as ShopSearchPayload)
+    return
+  }
+
+  loadProducts()
+})
+
+onBeforeUnmount(() => {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener(
+      'ui:product-category-sidebar-open',
+      handleExternalCategorySidebarOpen,
+    )
+  }
+})
+
+watch(pendingSearch, (payload) => {
+  if (!payload) return
+  pendingSearch.value = null
+  handleSearch(payload as unknown as ShopSearchPayload)
+})
 </script>
 
 <style scoped>
-.product-category-page {
+.shop-page {
+  --shop-catalog-left-gutter: clamp(0.5rem, 1.2vw, 1.5rem);
+  --shop-category-rail-width: clamp(16rem, 20vw, 21rem);
+  --shop-catalog-gap: clamp(1rem, 2vw, 2.5rem);
+  padding-inline: 1.5rem;
+}
+
+.shop-page-product-collection-display-card {
+  background-color: var(--tz-card-surface);
+}
+
+.shop-category-sidebar {
+  display: none;
+}
+
+.shop-catalog-layout {
+  width: 100vw;
+  margin-inline: calc(50% - 50vw);
+  display: grid;
+  grid-template-columns: var(--shop-category-rail-width) minmax(0, 1fr);
+  gap: var(--shop-catalog-gap);
+  align-items: stretch;
+  padding-inline: var(--shop-catalog-left-gutter) clamp(1rem, 2.5vw, 3rem);
+  box-sizing: border-box;
+}
+
+.shop-category-rail {
+  display: flex;
+  align-items: center;
+  align-self: stretch;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.shop-category-rail::-webkit-scrollbar {
+  display: none;
+}
+
+.shop-catalog-main {
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
-  padding: 1.5rem 1rem 4rem;
-  color: var(--tz-text-primary);
+  gap: 1rem;
 }
 
-.product-category-breadcrumb {
-  overflow-x: auto;
-}
-
-.product-category-breadcrumb__list {
+.shop-products-panel {
   display: flex;
-  min-width: max-content;
-  align-items: center;
-  gap: 0.45rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  color: var(--tz-text-secondary);
-  font-size: 0.82rem;
+  flex-direction: column;
 }
 
-.product-category-breadcrumb__item {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  white-space: nowrap;
-}
-
-.product-category-breadcrumb__separator {
-  color: var(--tz-text-muted);
-}
-
-.product-category-breadcrumb__link {
-  color: inherit;
-  text-decoration: none;
-}
-
-.product-category-breadcrumb__link:hover,
-.product-category-breadcrumb__link:focus-visible {
-  color: var(--tz-site-accent);
-}
-
-.product-category-breadcrumb__current {
-  color: var(--tz-text-primary);
-  font-weight: 700;
-}
-
-.product-category-page__header {
-  max-width: 56rem;
-}
-
-.product-category-page__eyebrow {
-  margin: 0 0 0.4rem;
-  color: var(--tz-site-accent);
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.product-category-page__header h1 {
-  margin: 0;
-  font-size: clamp(1.8rem, 3vw, 3rem);
-  font-weight: 700;
-}
-
-.product-category-page__description {
-  max-width: 48rem;
-  margin: 0.8rem 0 0;
-  color: var(--tz-text-secondary);
-  line-height: 1.65;
-}
-
-.product-category-page__children {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
-  gap: 0.75rem;
-}
-
-.product-category-page__child-link {
+.shop-products-state {
+  flex: 1;
   display: flex;
-  min-height: 3.25rem;
+  min-height: 14rem;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  border: 1px solid var(--tz-border-subtle);
-  border-radius: 0.5rem;
-  padding: 0.75rem 0.9rem;
-  color: var(--tz-text-primary);
-  text-decoration: none;
-  transition: border-color 0.18s ease, color 0.18s ease, transform 0.18s ease;
-}
-
-.product-category-page__child-link:hover,
-.product-category-page__child-link:focus-visible {
-  border-color: var(--tz-site-accent);
-  color: var(--tz-site-accent);
-  transform: translateY(-1px);
-}
-
-.product-category-page__child-link :deep(svg) {
-  width: 1rem;
-  height: 1rem;
-  flex: 0 0 auto;
+  justify-content: center;
 }
 
 .product-category-page__products {
   min-width: 0;
 }
 
-.product-category-page__state {
-  min-height: 14rem;
-  display: grid;
-  place-items: center;
-  color: var(--tz-text-secondary);
-  text-align: center;
-}
-
-.product-category-page__state--error {
-  color: #b91c1c;
-}
-
 @media (min-width: 768px) {
-  .product-category-page {
-    padding-inline: 1.5rem;
+  .shop-catalog-layout {
+    width: 100%;
+    margin-inline: 0;
+    padding-inline: 0;
+  }
+
+  .shop-catalog-main {
+    grid-column: 2;
+  }
+
+  .shop-category-rail {
+    align-items: flex-start;
+    box-sizing: border-box;
+    padding: 1.5rem 0;
+  }
+
+  .shop-category-rail :deep(.shop-category-menu) {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+  }
+
+  .shop-category-rail :deep(.shop-category-menu__state) {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    padding: 0 0.75rem;
+    text-align: center;
+  }
+}
+
+@media (min-width: 1024px) {
+  .shop-page {
+    --shop-category-rail-width: clamp(16rem, 24vw, 22rem);
+    --shop-catalog-gap: clamp(1.25rem, 2vw, 2.5rem);
+  }
+
+  .shop-category-rail {
+    align-items: stretch;
+    overflow: hidden;
+    padding: 1.25rem 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .shop-page {
+    padding-inline: 0;
+  }
+
+  .shop-category-sidebar {
+    position: fixed;
+    inset: 0;
+    z-index: 1700;
+    display: flex;
+    background: rgb(15 23 42 / 0.2);
+  }
+
+  .shop-category-sidebar__panel {
+    display: flex;
+    width: min(86vw, 22rem);
+    min-width: 17rem;
+    height: 100%;
+    flex-direction: column;
+    overflow: hidden;
+    border-right: 1px solid var(--tz-border-strong);
+    background: var(--tz-card-surface);
+    box-shadow: 24px 0 60px -28px rgb(15 23 42 / 0.16);
+  }
+
+  .shop-category-sidebar__header {
+    display: flex;
+    min-height: 3.5rem;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--tz-border-subtle);
+    color: var(--tz-text-primary);
+    font-size: 14px;
+    font-weight: 850;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .shop-category-sidebar__close {
+    display: inline-flex;
+    width: 34px;
+    height: 34px;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--tz-border-strong);
+    border-radius: 999px;
+    background: var(--tz-surface-subtle);
+    color: var(--tz-text-primary);
+  }
+
+  .shop-category-sidebar__close:hover,
+  .shop-category-sidebar__close:focus-visible {
+    border-color: rgba(5, 150, 105, 0.64);
+    background: var(--tz-site-accent-soft-surface);
+  }
+
+  .shop-category-sidebar__close:focus-visible {
+    outline: 2px solid rgba(5, 150, 105, 0.72);
+    outline-offset: 2px;
+  }
+
+  .shop-category-sidebar__close :deep(svg) {
+    width: 18px;
+    height: 18px;
+  }
+
+  .shop-category-sidebar__panel :deep(.shop-category-menu) {
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    padding: 0.75rem 0.75rem calc(1rem + env(safe-area-inset-bottom));
+    scrollbar-width: thin;
+    scrollbar-color: rgba(5, 150, 105, 0.46) transparent;
+  }
+
+  .shop-category-sidebar__panel :deep(.shop-category-menu__list) {
+    gap: 0.45rem;
+  }
+
+  .shop-category-sidebar-enter-active,
+  .shop-category-sidebar-leave-active {
+    transition: opacity 0.2s ease;
+  }
+
+  .shop-category-sidebar-enter-active .shop-category-sidebar__panel,
+  .shop-category-sidebar-leave-active .shop-category-sidebar__panel {
+    transition: transform 0.22s ease;
+  }
+
+  .shop-category-sidebar-enter-from,
+  .shop-category-sidebar-leave-to {
+    opacity: 0;
+  }
+
+  .shop-category-sidebar-enter-from .shop-category-sidebar__panel,
+  .shop-category-sidebar-leave-to .shop-category-sidebar__panel {
+    transform: translateX(-100%);
+  }
+
+  .shop-catalog-layout {
+    width: auto;
+    margin-inline: 0;
+    display: block;
+    padding-inline: 0;
+  }
+
+  .shop-category-rail {
+    display: none;
+  }
+
+  .shop-products-panel {
+    min-height: 18rem;
+  }
+}
+
+@media (max-width: 400px) {
+  .shop-page {
+    padding-inline: 0;
   }
 }
 </style>

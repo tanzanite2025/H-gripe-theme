@@ -154,7 +154,7 @@
 
 				<!-- 面包屑：点击当前层级箭头弹出该层级的同级路由 -->
 				<nav
-					v-if="breadcrumbs.length && !isStorefrontCatalogDetailBreadcrumbRoute"
+					v-if="breadcrumbs.length && !isStorefrontProductDetailBreadcrumbRoute"
 					aria-label="Breadcrumb"
 					class="site-header-breadcrumb-row"
 				>
@@ -336,7 +336,7 @@
 
 				<!-- 第三行：面包屑 -->
 				<nav
-					v-if="breadcrumbs.length && !isStorefrontCatalogDetailBreadcrumbRoute"
+					v-if="breadcrumbs.length && !isStorefrontProductDetailBreadcrumbRoute"
 					aria-label="Breadcrumb"
 					class="site-header-breadcrumb-row site-header-breadcrumb-row--mobile"
 				>
@@ -1387,12 +1387,12 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => {
   return items
 })
 
-const isStorefrontCatalogDetailBreadcrumbRoute = computed(() => {
+const isStorefrontProductDetailBreadcrumbRoute = computed(() => {
   const segments = getBreadcrumbPathSegments(route.path || '/')
   if (segments[0] === 'products') {
     return segments.length === 2
   }
-  return segments[0] === 'shop' && segments.length >= 2
+  return false
 })
 
 const lastExpandableBreadcrumbId = computed(() => {
