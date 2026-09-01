@@ -18,11 +18,11 @@ import (
 
 type UGCShowcaseHandler struct {
 	UGCShowcaseService *service.UGCShowcaseService
-	auditService    adminAuditRecorder
+	auditService       adminAuditRecorder
 }
 
-func NewUGCShowcaseHandler(UGCShowcaseService *service.UGCShowcaseService) *UGCShowcaseHandler {
-	return &UGCShowcaseHandler{UGCShowcaseService: UGCShowcaseService}
+func NewUGCShowcaseHandler(ugcShowcaseService *service.UGCShowcaseService) *UGCShowcaseHandler {
+	return &UGCShowcaseHandler{UGCShowcaseService: ugcShowcaseService}
 }
 
 func (h *UGCShowcaseHandler) ConfigureAuditService(recorder adminAuditRecorder) {

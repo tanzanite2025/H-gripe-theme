@@ -235,7 +235,9 @@ func (s *OpsConnectorService) Test(ctx context.Context, id uint) (*ops.Connector
 		result.Message = fmt.Sprintf("connector request failed: %v", err)
 		return s.saveTestResult(result, record, false)
 	}
-	defer response.Body.Close()
+	defer func() {
+		_ = response.Body.Close()
+	}()
 	result.StatusCode = response.StatusCode
 
 	success := response.StatusCode >= 200 && response.StatusCode < 300

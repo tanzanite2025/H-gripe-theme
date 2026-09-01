@@ -15,13 +15,13 @@ type Handler struct {
 	mediaResolver         publicmedia.Resolver
 }
 
-func NewHandler(HomeVisualTileService *service.HomeVisualTileService, mediaResolvers ...publicmedia.Resolver) *Handler {
+func NewHandler(homeVisualTileService *service.HomeVisualTileService, mediaResolvers ...publicmedia.Resolver) *Handler {
 	var mediaResolver publicmedia.Resolver
 	if len(mediaResolvers) > 0 {
 		mediaResolver = mediaResolvers[0]
 	}
 	return &Handler{
-		HomeVisualTileService: HomeVisualTileService,
+		HomeVisualTileService: homeVisualTileService,
 		mediaResolver:         mediaResolver,
 	}
 }

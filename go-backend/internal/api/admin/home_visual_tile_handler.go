@@ -20,8 +20,8 @@ type HomeVisualTileHandler struct {
 	HomeVisualTileService *service.HomeVisualTileService
 }
 
-func NewHomeVisualTileHandler(HomeVisualTileService *service.HomeVisualTileService) *HomeVisualTileHandler {
-	return &HomeVisualTileHandler{HomeVisualTileService: HomeVisualTileService}
+func NewHomeVisualTileHandler(homeVisualTileService *service.HomeVisualTileService) *HomeVisualTileHandler {
+	return &HomeVisualTileHandler{HomeVisualTileService: homeVisualTileService}
 }
 
 type visualShowcaseItemRequest struct {

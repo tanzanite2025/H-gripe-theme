@@ -14,15 +14,15 @@ import (
 
 type UGCShowcaseCleanupScheduler struct {
 	UGCShowcaseService *service.UGCShowcaseService
-	interval        time.Duration
-	pendingTTL      time.Duration
-	batchLimit      int
-	cancel          context.CancelFunc
-	done            chan struct{}
-	once            sync.Once
+	interval           time.Duration
+	pendingTTL         time.Duration
+	batchLimit         int
+	cancel             context.CancelFunc
+	done               chan struct{}
+	once               sync.Once
 }
 
-func NewUGCShowcaseCleanupScheduler(UGCShowcaseService *service.UGCShowcaseService, cfg config.WorkerConfig) *UGCShowcaseCleanupScheduler {
+func NewUGCShowcaseCleanupScheduler(ugcShowcaseService *service.UGCShowcaseService, cfg config.WorkerConfig) *UGCShowcaseCleanupScheduler {
 	intervalSeconds := cfg.ShowcaseCleanupIntervalSeconds
 	if intervalSeconds <= 0 {
 		intervalSeconds = 86400
@@ -37,11 +37,11 @@ func NewUGCShowcaseCleanupScheduler(UGCShowcaseService *service.UGCShowcaseServi
 	}
 
 	return &UGCShowcaseCleanupScheduler{
-		UGCShowcaseService: UGCShowcaseService,
-		interval:        time.Duration(intervalSeconds) * time.Second,
-		pendingTTL:      time.Duration(pendingTTLSeconds) * time.Second,
-		batchLimit:      batchLimit,
-		done:            make(chan struct{}),
+		UGCShowcaseService: ugcShowcaseService,
+		interval:           time.Duration(intervalSeconds) * time.Second,
+		pendingTTL:         time.Duration(pendingTTLSeconds) * time.Second,
+		batchLimit:         batchLimit,
+		done:               make(chan struct{}),
 	}
 }
 

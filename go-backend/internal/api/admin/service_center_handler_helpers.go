@@ -378,5 +378,5 @@ func (h *ServiceCenterHandler) recordCloudflareCacheRuleAudit(c *gin.Context, ev
 	if h == nil {
 		return
 	}
-	recordAdminAudit(h.auditService, c, event)
+	_ = recordAdminAudit(h.auditService, c, event)
 }

@@ -30,9 +30,9 @@ var (
 
 const (
 	HomeMainProductCategoriesTileSetKey = "home-main-product-categories"
-	maxHomeVisualTileItems               = 100
-	HomeVisualTileStoragePrefix          = "visual-showcase"
-	homeVisualTileImageCacheControl      = "public, max-age=31536000, immutable"
+	maxHomeVisualTileItems              = 100
+	HomeVisualTileStoragePrefix         = "visual-showcase"
+	homeVisualTileImageCacheControl     = "public, max-age=31536000, immutable"
 )
 
 type HomeVisualTileInput struct {
@@ -271,7 +271,7 @@ func (s *HomeVisualTileService) ReplaceAdminItems(
 		}
 
 		items = append(items, homevisualtile.Tile{
-			TileSetKey:     key,
+			TileSetKey:      key,
 			Locale:          normalizedLocale,
 			ImageURL:        imageURL,
 			ThumbnailURL:    thumbnailURL,

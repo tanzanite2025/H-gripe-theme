@@ -3,6 +3,7 @@ package visitorcapture
 import (
 	"commerce-platform/internal/api/middleware"
 	"commerce-platform/internal/service"
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -66,7 +67,7 @@ func TestBuildVisitorProfileTouchInputUsesLocationHeaders(t *testing.T) {
 func newVisitorCaptureTestContext() *gin.Context {
 	recorder := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(recorder)
-	c.Request = httptest.NewRequest(http.MethodGet, "/", nil)
+	c.Request = httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/", nil)
 	return c
 }
 
@@ -85,7 +86,7 @@ func buildVisitorCaptureInputThroughTrustedEdge(t *testing.T, trustedProxies []s
 	})
 
 	recorder := httptest.NewRecorder()
-	request := httptest.NewRequest(http.MethodGet, "/", nil)
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/", nil)
 	request.RemoteAddr = remoteAddr
 	for key, value := range headers {
 		request.Header.Set(key, value)

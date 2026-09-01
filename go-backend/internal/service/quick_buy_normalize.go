@@ -123,19 +123,6 @@ func normalizeQuickBuySurface(value string) string {
 	return value
 }
 
-func normalizeQuickBuySelectionMode(value string) string {
-	switch strings.ToLower(strings.TrimSpace(value)) {
-	case quickbuy.SelectionModeMultiple:
-		return quickbuy.SelectionModeMultiple
-	case quickbuy.SelectionModeQuantity:
-		return quickbuy.SelectionModeQuantity
-	case quickbuy.SelectionModeAuto:
-		return quickbuy.SelectionModeAuto
-	default:
-		return quickbuy.SelectionModeSingle
-	}
-}
-
 func quickBuySelectionModeIsValid(value string) bool {
 	switch value {
 	case quickbuy.SelectionModeSingle, quickbuy.SelectionModeMultiple, quickbuy.SelectionModeQuantity, quickbuy.SelectionModeAuto:

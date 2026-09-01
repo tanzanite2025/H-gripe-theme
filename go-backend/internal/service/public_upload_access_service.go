@@ -15,7 +15,7 @@ type PublicUploadAccessService struct {
 
 func NewPublicUploadAccessService(
 	mediaService *MediaService,
-	UGCShowcaseService *UGCShowcaseService,
+	ugcShowcaseService *UGCShowcaseService,
 	customerServiceAvatarService ...*CustomerServiceAvatarService,
 ) *PublicUploadAccessService {
 	var avatarService *CustomerServiceAvatarService
@@ -24,7 +24,7 @@ func NewPublicUploadAccessService(
 	}
 	return &PublicUploadAccessService{
 		media:                 mediaService,
-		showcase:              UGCShowcaseService,
+		showcase:              ugcShowcaseService,
 		customerServiceAvatar: avatarService,
 	}
 }
