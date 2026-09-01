@@ -24,7 +24,7 @@
 import { computed } from 'vue'
 import CustomerContextPanel from '@/components/admin/customer-service/CustomerContextPanel.vue'
 import { Dialog, DialogDescription, DialogHeader, DialogSecondaryContent, DialogTitle } from '@/components/ui/dialog'
-import type { CustomerContext, CustomerConversation } from './customerServiceTypes'
+import type { CustomerContext, CustomerConversation } from '@/modules/customer-service/customerServiceTypes'
 
 const props = withDefaults(defineProps<{
   open?: boolean
@@ -48,3 +48,4 @@ const conversationDescription = computed(() => {
   return value ? String(value) : '客户上下文'
 })
 </script>
+

@@ -64,7 +64,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import type { OrderDisputeEmailForm } from './orderTypes'
+import type { OrderDisputeEmailForm } from '@/modules/order/orderTypes'
 
 withDefaults(defineProps<{
   open?: boolean
@@ -84,3 +84,4 @@ const emit = defineEmits<{
   (event: 'submit'): void
 }>()
 </script>
+

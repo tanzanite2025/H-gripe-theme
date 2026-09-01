@@ -1,5 +1,6 @@
 import { computed } from 'vue'
-import { useRuntimeConfig, useState } from '#imports'
+import { useState } from '#imports'
+import { useApiRequest } from '~/composables/useApiRequest'
 import {
   DEFAULT_SPOKE_CATALOG,
   SPOKE_CALCULATOR_OPTIONS,
@@ -33,8 +34,7 @@ const createEmptyState = (): SpokeCatalogState => ({
 const inFlightLoads: Record<string, Promise<SpokeCatalog> | undefined> = {}
 
 export const useSpokeCalculatorCatalog = () => {
-  const config = useRuntimeConfig()
-  const baseURL = ((config.public as { apiBase?: string }).apiBase || '/api/v1').replace(/\/$/, '')
+  const { baseURL, request: apiRequest } = useApiRequest()
   const state = useState<SpokeCatalogState>(`spoke-calculator-catalog:${baseURL}`, createEmptyState)
 
   const applyDevFallback = (reason: string): SpokeCatalog => {
@@ -61,7 +61,7 @@ export const useSpokeCalculatorCatalog = () => {
     state.value.loading = true
     state.value.error = null
 
-    const request = $fetch<unknown>(`${baseURL}/spoke/export`)
+    const loadRequest = apiRequest<unknown>('/spoke/export', {}, 'Failed to load spoke calculator data')
       .then((payload) => {
         const catalog = normalizeSpokeCatalogPayload(payload)
         state.value.catalog = catalog
@@ -77,8 +77,8 @@ export const useSpokeCalculatorCatalog = () => {
         inFlightLoads[baseURL] = undefined
       })
 
-    inFlightLoads[baseURL] = request
-    return request
+    inFlightLoads[baseURL] = loadRequest
+    return loadRequest
   }
 
   if (!state.value.loading && state.value.source === 'empty') {

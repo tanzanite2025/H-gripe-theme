@@ -46,7 +46,7 @@ import AdminFormField from '@/components/admin/AdminFormField.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import type { GalleryFormErrors, GalleryImageForm } from './galleryTypes'
+import type { GalleryFormErrors, GalleryImageForm } from '@/modules/gallery/galleryTypes'
 
 withDefaults(defineProps<{
   form: GalleryImageForm
@@ -63,3 +63,4 @@ const emit = defineEmits<{
   (event: 'remove'): void
 }>()
 </script>
+

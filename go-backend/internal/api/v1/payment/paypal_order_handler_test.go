@@ -55,14 +55,16 @@ func TestCreatePayPalOrderRecordsPendingAttempt(t *testing.T) {
 }
 
 func TestCapturePayPalOrderMarksMatchingOrderPaid(t *testing.T) {
+	notShifted := false
 	db, handler := newPayPalHandlerTestHarness(t, &fakePaymentGateway{
 		captureResponse: &pgateway.PaymentResponse{
-			ID:            "PAYPAL-ORDER-2",
-			Status:        "COMPLETED",
-			Amount:        92,
-			Currency:      "USD",
-			TransactionID: "PAYPAL-CAPTURE-2",
-			Metadata:      map[string]string{"order_id": "ORD-PAYPAL-2", "paypal_order_id": "PAYPAL-ORDER-2"},
+			ID:               "PAYPAL-ORDER-2",
+			Status:           "COMPLETED",
+			Amount:           92,
+			Currency:         "USD",
+			TransactionID:    "PAYPAL-CAPTURE-2",
+			LiabilityShifted: &notShifted,
+			Metadata:         map[string]string{"order_id": "ORD-PAYPAL-2", "paypal_order_id": "PAYPAL-ORDER-2"},
 		},
 	})
 	orderRecord := seedPayPalOrder(t, db, "ORD-PAYPAL-2", 7, 92, "pending", "unpaid")
@@ -90,6 +92,8 @@ func TestCapturePayPalOrderMarksMatchingOrderPaid(t *testing.T) {
 	require.NoError(t, db.Where("transaction_id = ?", "PAYPAL-CAPTURE-2").First(&transaction).Error)
 	require.Equal(t, "completed", transaction.Status)
 	require.NotNil(t, transaction.CompletedAt)
+	require.NotNil(t, transaction.LiabilityShifted)
+	require.False(t, *transaction.LiabilityShifted)
 }
 
 func TestCapturePayPalOrderRejectsMismatchedProviderOrderMetadata(t *testing.T) {

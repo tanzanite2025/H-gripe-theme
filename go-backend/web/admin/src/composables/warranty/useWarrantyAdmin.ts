@@ -14,7 +14,7 @@ import type {
   WarrantyServiceRecord,
   WarrantyServiceRecordForm,
   WarrantyStatusUpdating
-} from '@/components/admin/warranty/warrantyTypes'
+} from '@/modules/warranty/warrantyTypes'
 import { useRouteTab } from '@/composables/useRouteTab'
 import { useAuthStore } from '@/stores/auth'
 import {
@@ -582,3 +582,4 @@ export function useWarrantyAdmin() {
     updateClaimPageSize
   }
 }
+

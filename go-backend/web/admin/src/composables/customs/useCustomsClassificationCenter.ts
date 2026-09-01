@@ -2,7 +2,7 @@ import { reactive, ref } from 'vue'
 import { toast } from 'vue-sonner'
 import productApi from '@/api/products'
 import { customsSummaryApi } from '@/api/customsClassifications'
-import type { CustomsProductFilters } from '@/components/admin/customs/customsClassificationTypes'
+import type { CustomsProductFilters } from '@/modules/customs/customsClassificationTypes'
 import { useCustomsEditorResources } from './useCustomsEditorResources'
 import { useCustomsLookup } from './useCustomsLookup'
 import { useCustomsTemplates } from './useCustomsTemplates'
@@ -159,3 +159,4 @@ export const useCustomsClassificationCenter = (options: Record<string, any> = {}
 }
 
 export default useCustomsClassificationCenter
+

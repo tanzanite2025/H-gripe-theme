@@ -1,6 +1,6 @@
 import { computed } from 'vue'
 import { useAsyncData, useRuntimeConfig } from '#imports'
-import { usePublicApiBase } from '~/composables/usePublicApiBase'
+import { useApiRequest } from '~/composables/useApiRequest'
 import {
   createStorefrontMediaContext,
   normalizeStorefrontMediaUrl,
@@ -96,17 +96,16 @@ const normalizeSiteSettings = (
 
 export function useSiteSettings() {
   const runtimeConfig = useRuntimeConfig()
-  const apiBase = usePublicApiBase()
+  const { request } = useApiRequest()
   const mediaContext = createStorefrontMediaContext(runtimeConfig)
 
   const { data } = useAsyncData<SiteSettingsResponse | null>(
     'mytheme-site-settings',
     async () => {
-      if (!apiBase.value) return null
       try {
-        const result = await $fetch<RawSettings>(`${apiBase.value}/settings/site`, {
+        const result = await request<RawSettings>('/settings/site', {
           headers: { accept: 'application/json' }
-        })
+        }, 'Failed to load site settings')
         return result ? normalizeSiteSettings(result, mediaContext) : null
       } catch (error) {
         console.warn('Failed to load site settings:', error)

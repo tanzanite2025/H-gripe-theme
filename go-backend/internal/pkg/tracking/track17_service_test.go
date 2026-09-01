@@ -67,7 +67,9 @@ func TestTrack17BatchTrackUsesV24GetTrackInfoAndParsesEvents(t *testing.T) {
 												"description": "Delivered to recipient",
 												"location": "Los Angeles, CA",
 												"stage": "Delivered",
-												"sub_status": "Delivered"
+												"sub_status": "Delivered",
+												"recipient_signature_name": "Test Rider",
+												"proof_of_delivery_url": "https://carrier.example.test/pod/YT123456789CN.pdf"
 											}
 										]
 									}
@@ -106,6 +108,8 @@ func TestTrack17BatchTrackUsesV24GetTrackInfoAndParsesEvents(t *testing.T) {
 	require.Len(t, results[0].Events, 1)
 	assert.Equal(t, "Delivered to recipient", results[0].Events[0].Description)
 	assert.Equal(t, "Los Angeles, CA", results[0].Events[0].Location.City)
+	assert.Equal(t, "Test Rider", results[0].Events[0].RecipientSignatureName)
+	assert.Equal(t, "https://carrier.example.test/pod/YT123456789CN.pdf", results[0].Events[0].ProofOfDeliveryURL)
 	assert.Equal(t, time.Date(2026, 7, 22, 10, 20, 30, 0, time.UTC), results[0].Events[0].Time)
 	require.NotNil(t, results[0].Origin)
 	assert.Equal(t, "SHENZHEN", results[0].Origin.City)

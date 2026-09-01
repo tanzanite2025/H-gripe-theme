@@ -6,7 +6,7 @@ import {
   type DraftCategoryRow,
   type ProductCategoryParentOption,
   type ProductCategoryStats,
-} from '@/components/admin/product/productCategoryTypes'
+} from '@/modules/product/productCategoryTypes'
 
 export const rootProductCategoryParentValue = '__root__'
 
@@ -322,3 +322,4 @@ export const useProductCategoryTreeEditor = () => {
     subtreeKeys,
   }
 }
+

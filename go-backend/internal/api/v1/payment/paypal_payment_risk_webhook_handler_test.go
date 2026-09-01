@@ -101,7 +101,7 @@ func TestRecordPayPalDisputeRiskEventAutoSubmitsEvidence(t *testing.T) {
 	require.Len(t, submitter.params.Evidences.EvidenceInfo.TrackingInfo, 1)
 	require.Equal(t, "DHL999", submitter.params.Evidences.EvidenceInfo.TrackingInfo[0].TrackingNumber)
 	require.Contains(t, submitter.params.Evidences.Notes, "Invoice summary:")
-	require.Contains(t, submitter.params.Evidences.Notes, "Proof of delivery / signature event")
+	require.Contains(t, submitter.params.Evidences.Notes, "Proof of delivery summary")
 
 	submitted, exists := context.Get("paypal_dispute_evidence_submitted")
 	require.True(t, exists)

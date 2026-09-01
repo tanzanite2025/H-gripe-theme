@@ -425,7 +425,7 @@ import type {
   RiskStrategyGatewayRuntime,
   RiskStrategyGatewayRuntimeStatus,
   RiskStrategyConfiguration,
-} from './riskStrategyTypes'
+} from '@/modules/payment/riskStrategyTypes'
 
 const props = withDefaults(defineProps<{
   configuration?: RiskStrategyConfiguration | null
@@ -543,4 +543,5 @@ const runtimeSourceLabel = (source?: string): string => ({
   mixed: '混合来源',
 }[source || ''] || source || '未知')
 </script>
+
 

@@ -192,7 +192,7 @@ import {
   opsConnectorProviderOptions,
   opsConnectorStatusOptions,
   type OpsConnectorForm,
-} from '@/components/admin/ops/opsConnectorBindingForm'
+} from '@/modules/ops/opsConnectorBindingForm'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import opsApi, {
@@ -470,3 +470,4 @@ onMounted(async () => {
   await loadConnectors()
 })
 </script>
+

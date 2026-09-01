@@ -340,7 +340,7 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Textarea } from '@/components/ui/textarea'
-import { formatRouteCatalogDate, checkLabel } from '@/components/admin/url-management/route-catalog/routeCatalogPresentation'
+import { formatRouteCatalogDate, checkLabel } from '@/modules/url-management/routeCatalogPresentation'
 import {
   storefrontURLIssuesApi,
   type StorefrontURLIssue,

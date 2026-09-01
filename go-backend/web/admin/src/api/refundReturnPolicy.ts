@@ -1,4 +1,10 @@
 import axios from '@/utils/axios'
+import type { MediaAsset } from '@/api/media'
+import {
+  requireApiObject,
+  requireApiObjectField,
+  unwrapApiPayload,
+} from '@/utils/apiResponse'
 
 export interface RefundReturnPolicyImage {
   url: string
@@ -39,7 +45,7 @@ export interface RefundReturnPolicyResponse {
   fallback: boolean
 }
 
-const endpoint = '/api/admin/settings/refund-return-policy'
+const endpoint = '/api/admin/content/refund-return-policy'
 
 export const refundReturnPolicyApi = {
   async get(locale: string): Promise<RefundReturnPolicyResponse> {
@@ -50,6 +56,12 @@ export const refundReturnPolicyApi = {
   async update(locale: string, policy: RefundReturnPolicy): Promise<RefundReturnPolicyResponse> {
     const response = await axios.put<RefundReturnPolicyResponse>(endpoint, { locale, policy })
     return response.data
+  },
+
+  async uploadImage(formData: FormData): Promise<MediaAsset> {
+    const path = `${endpoint}/assets`
+    const payload = requireApiObject(unwrapApiPayload(await axios.post(path, formData), path), path)
+    return requireApiObjectField<MediaAsset>(payload, 'asset', path)
   },
 }
 

@@ -57,7 +57,7 @@ import type {
   CustomerPagination,
   CustomerStatusNameResolver,
   CustomerStatusToneResolver
-} from './customerTypes'
+} from '@/modules/customer/customerTypes'
 
 withDefaults(defineProps<{
   loading?: boolean
@@ -77,3 +77,4 @@ const emit = defineEmits<{
   (event: 'update-page-size', pageSize: number): void
 }>()
 </script>
+

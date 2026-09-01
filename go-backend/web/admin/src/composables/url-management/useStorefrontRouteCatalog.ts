@@ -8,7 +8,7 @@ import type {
   StorefrontRouteCatalogStats,
   StorefrontRouteCheckResult,
 } from '@/modules/url-management/routeCatalogTypes'
-import { checkLabel } from '@/components/admin/url-management/route-catalog/routeCatalogPresentation'
+import { checkLabel } from '@/modules/url-management/routeCatalogPresentation'
 
 export type RouteCatalogMode = 'catalog' | 'canonical'
 

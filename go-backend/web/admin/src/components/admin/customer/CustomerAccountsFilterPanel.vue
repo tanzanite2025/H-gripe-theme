@@ -34,7 +34,7 @@ import AdminFilterPanel from '@/components/admin/AdminFilterPanel.vue'
 import AdminFilterSelect from '@/components/admin/AdminFilterSelect.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import type { CustomerFilters } from './customerTypes'
+import type { CustomerFilters } from '@/modules/customer/customerTypes'
 
 interface CustomerFilterOption {
   label: string
@@ -57,3 +57,4 @@ const statusOptions: CustomerFilterOption[] = [
   { label: '已停用', value: 'suspended' }
 ]
 </script>
+

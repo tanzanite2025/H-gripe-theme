@@ -243,7 +243,7 @@ import type {
   WarrantyServiceRecord,
   WarrantyServiceRecordForm,
   WarrantyStatusOption
-} from './warrantyTypes'
+} from '@/modules/warranty/warrantyTypes'
 
 const DetailItem = defineComponent({
   inheritAttrs: false,
@@ -302,3 +302,4 @@ const updateServiceRecordField = (field: keyof WarrantyServiceRecordForm, value:
   emit('update-service-record-form', { [field]: String(value ?? '') } as Partial<WarrantyServiceRecordForm>)
 }
 </script>
+

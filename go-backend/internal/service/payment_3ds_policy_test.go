@@ -9,8 +9,11 @@ import (
 	"commerce-platform/internal/domain/visitor"
 	"commerce-platform/internal/pkg/antifraud"
 	"commerce-platform/internal/pkg/config"
+	appLogger "commerce-platform/internal/pkg/logger"
 
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 func TestPaymentThreeDSPolicyMarksLowAmountAsExemptionCandidate(t *testing.T) {
@@ -283,6 +286,13 @@ func TestPaymentThreeDSPolicyChallengesVisitorBlockCandidate(t *testing.T) {
 }
 
 func TestPaymentThreeDSPolicyStepsUpWhenRiskServiceUnavailable(t *testing.T) {
+	core, observedLogs := observer.New(zap.ErrorLevel)
+	previousLogger := appLogger.Log
+	appLogger.Log = zap.New(core)
+	t.Cleanup(func() {
+		appLogger.Log = previousLogger
+	})
+
 	policy := newTestPaymentThreeDSPolicy(
 		config.PaymentThreeDSConfig{
 			AdaptiveEnabled:     true,
@@ -293,9 +303,12 @@ func TestPaymentThreeDSPolicyStepsUpWhenRiskServiceUnavailable(t *testing.T) {
 			ChallengeRiskScore:  60,
 		},
 	)
+	alerts := &fakeThreeDSFailOpenAlerts{}
+	policy.ConfigureFailOpenAlertPublisher(alerts)
 	policy.paymentRisk.(*fakeThreeDSPaymentRisk).err = errors.New("redis unavailable")
 
 	decision := policy.Decide(context.Background(), PaymentThreeDSDecisionInput{
+		Provider:  "Stripe",
 		UserID:    10,
 		OrderID:   99,
 		Amount:    80,
@@ -309,6 +322,21 @@ func TestPaymentThreeDSPolicyStepsUpWhenRiskServiceUnavailable(t *testing.T) {
 	require.False(t, decision.ExemptionCandidate)
 	require.Equal(t, "adaptive_step_up", decision.Strategy)
 	require.Contains(t, decision.Reasons, "payment_risk_unavailable")
+
+	require.Len(t, alerts.inputs, 1)
+	require.Equal(t, "stripe", alerts.inputs[0].Provider)
+	require.Equal(t, "antifraud", alerts.inputs[0].Component)
+	require.Equal(t, "payment_3ds_policy_evaluate", alerts.inputs[0].Operation)
+	require.Equal(t, "payment_risk_unavailable", alerts.inputs[0].Reason)
+	require.Equal(t, "step_up_3ds_any", alerts.inputs[0].FallbackAction)
+
+	entries := observedLogs.FilterMessage("payment risk protection fail-open; Redis-backed antifraud unavailable").All()
+	require.Len(t, entries, 1)
+	fields := entries[0].ContextMap()
+	require.Equal(t, "critical", fields["severity"])
+	require.Equal(t, true, fields["fail_open"])
+	require.Equal(t, true, fields["redis_unavailable"])
+	require.Equal(t, "stripe", fields["provider"])
 }
 
 func TestPaymentThreeDSPolicyStepsUpForProviderPortfolioRisk(t *testing.T) {
@@ -509,4 +537,14 @@ type fakeThreeDSPaymentProtection struct {
 func (f *fakeThreeDSPaymentProtection) Evaluate(input paymentdomain.PaymentProtectionEvaluationInput) (paymentdomain.PaymentProtectionDecision, error) {
 	f.input = input
 	return f.decision, f.err
+}
+
+type fakeThreeDSFailOpenAlerts struct {
+	inputs []PaymentRiskFailOpenAlertInput
+	err    error
+}
+
+func (f *fakeThreeDSFailOpenAlerts) PublishPaymentRiskFailOpenAlert(ctx context.Context, input PaymentRiskFailOpenAlertInput) error {
+	f.inputs = append(f.inputs, input)
+	return f.err
 }

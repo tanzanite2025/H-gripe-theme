@@ -111,7 +111,7 @@
 
 <script setup lang="ts">
 import { CornerDownRight, Folder, ImagePlus, Languages, ListPlus, PlusSquare, Trash2, X } from '@lucide/vue'
-import type { DraftCategoryRow, ProductCategoryParentOption } from '@/components/admin/product/productCategoryTypes'
+import type { DraftCategoryRow, ProductCategoryParentOption } from '@/modules/product/productCategoryTypes'
 import { rootProductCategoryParentValue } from '@/composables/product/useProductCategoryTreeEditor'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -210,3 +210,4 @@ const translationStatusTitle = (row: DraftCategoryRow): string => {
 }
 
 </style>
+

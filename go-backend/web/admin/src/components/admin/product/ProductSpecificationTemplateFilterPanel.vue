@@ -27,7 +27,7 @@ import AdminFilterPanel from '@/components/admin/AdminFilterPanel.vue'
 import AdminFilterSelect from '@/components/admin/AdminFilterSelect.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import type { ProductSpecTemplateFilters } from './productSpecificationTemplateTypes'
+import type { ProductSpecTemplateFilters } from '@/modules/product/productSpecificationTemplateTypes'
 
 interface ProductSpecTemplateFilterOption {
   label: string
@@ -48,3 +48,4 @@ const statusOptions: ProductSpecTemplateFilterOption[] = [
   { label: '已停用', value: 'disabled' },
 ]
 </script>
+

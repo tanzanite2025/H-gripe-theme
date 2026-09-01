@@ -39,7 +39,7 @@ import type {
   CustomerListResponse,
   CustomerPagination,
   CustomerStatusTone
-} from '@/components/admin/customer/customerTypes'
+} from '@/modules/customer/customerTypes'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import { Button } from '@/components/ui/button'
 import axios from '@/utils/axios'
@@ -129,3 +129,4 @@ onMounted(() => {
   void fetchCustomers()
 })
 </script>
+

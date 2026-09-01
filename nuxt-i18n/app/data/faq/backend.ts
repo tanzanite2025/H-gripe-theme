@@ -1,5 +1,6 @@
 import type { PageFaqData } from './types'
 import { normalizeFaqRoutePath } from './routing'
+import { useApiRequest } from '~/composables/useApiRequest'
 import { normalizeStorefrontLocaleCode } from '~/utils/storefrontLocales'
 import {
   createStorefrontMediaContext,
@@ -21,25 +22,6 @@ function getBackendFaqLocale() {
   } catch {
     return 'en'
   }
-}
-
-function getFaqApiBase() {
-  const config = useRuntimeConfig()
-  const publicApiBase = (config.public as { apiBase?: string }).apiBase || '/api/v1'
-
-  // In DEV, browser requests stay same-origin and use Nuxt's API proxy.
-  // This avoids localhost/127.0.0.1 CORS differences between browser sessions.
-  if (import.meta.dev && import.meta.client) {
-    return '/api/v1'
-  }
-
-  if (import.meta.dev && import.meta.server) {
-    const internalApiOrigin = (config as { apiInternalOrigin?: string }).apiInternalOrigin
-      ?.replace(/\/$/, '')
-    if (internalApiOrigin) return `${internalApiOrigin}/api/v1`
-  }
-
-  return publicApiBase
 }
 
 function normalizeFaqPageMedia(
@@ -84,10 +66,16 @@ function logFaqFetchError(message: string, error: unknown) {
  */
 export async function fetchFaqData(pageId: string): Promise<PageFaqData | null> {
   try {
+    const { request } = useApiRequest()
     const mediaContext = createStorefrontMediaContext(useRuntimeConfig())
-    const structured = await $fetch<{ page?: PageFaqData }>(`${getFaqApiBase()}/content/faq-pages/${pageId}`, {
-      query: { locale: getBackendFaqLocale() }
-    })
+    const structured = await request<{ page?: PageFaqData }>(
+      `/content/faq-pages/${pageId}`,
+      {
+        query: { locale: getBackendFaqLocale() },
+        headers: { accept: 'application/json' },
+      },
+      'Failed to fetch structured FAQs',
+    )
     const page = structured.page
       ? normalizeFaqPageMedia(structured.page, mediaContext)
       : undefined
@@ -103,10 +91,16 @@ export async function fetchFaqDataByRoutePath(routePath: string): Promise<PageFa
   const normalizedPath = normalizeFaqRoutePath(routePath)
 
   try {
+    const { request } = useApiRequest()
     const mediaContext = createStorefrontMediaContext(useRuntimeConfig())
-    const structured = await $fetch<{ page?: PageFaqData }>(`${getFaqApiBase()}/content/faq-pages/by-route`, {
-      query: { route_path: normalizedPath, locale: getBackendFaqLocale() }
-    })
+    const structured = await request<{ page?: PageFaqData }>(
+      '/content/faq-pages/by-route',
+      {
+        query: { route_path: normalizedPath, locale: getBackendFaqLocale() },
+        headers: { accept: 'application/json' },
+      },
+      'Failed to fetch structured FAQ by route',
+    )
     const page = structured.page
       ? normalizeFaqPageMedia(structured.page, mediaContext)
       : undefined
@@ -123,10 +117,16 @@ export async function fetchFaqDataByRoutePath(routePath: string): Promise<PageFa
  */
 export async function fetchAllFaqData(): Promise<PageFaqData[]> {
   try {
+    const { request } = useApiRequest()
     const mediaContext = createStorefrontMediaContext(useRuntimeConfig())
-    const structured = await $fetch<{ pages?: PageFaqData[] }>(`${getFaqApiBase()}/content/faq-pages`, {
-      query: { locale: getBackendFaqLocale() }
-    })
+    const structured = await request<{ pages?: PageFaqData[] }>(
+      '/content/faq-pages',
+      {
+        query: { locale: getBackendFaqLocale() },
+        headers: { accept: 'application/json' },
+      },
+      'Failed to fetch structured FAQ pages',
+    )
     const pages = (structured.pages || []).map(page => normalizeFaqPageMedia(page, mediaContext))
     if (hasAnyFaqContent(pages)) return pages
   } catch (error) {

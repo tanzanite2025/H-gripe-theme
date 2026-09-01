@@ -335,6 +335,7 @@ func finalizeStripeDisputeEvidencePackage(pkg *StripeDisputeEvidencePackage) {
 		pkg.Authentication,
 		pkg.PolicyDisclosure,
 		pkg.Refunds,
+		DisputeEvidenceChecklistOptions{},
 	)
 	pkg.SubmissionCheck = buildDisputeEvidenceSubmissionCheck(pkg.CanSubmit, pkg.EvidenceChecklist)
 }

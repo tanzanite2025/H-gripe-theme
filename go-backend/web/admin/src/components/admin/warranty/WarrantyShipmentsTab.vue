@@ -320,7 +320,7 @@ import type {
   WarrantyPagination,
   WarrantyShipmentDraft,
   WarrantyShipmentRecord
-} from './warrantyTypes'
+} from '@/modules/warranty/warrantyTypes'
 
 const DetailItem = defineComponent({
   inheritAttrs: false,
@@ -417,3 +417,4 @@ const itemCountLabel = (shipment: WarrantyShipmentRecord): string => {
 }
 
 </script>
+

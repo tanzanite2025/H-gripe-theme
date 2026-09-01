@@ -5,7 +5,7 @@ import procurementProfitabilityApi, {
   type ProfitabilityItemPayload,
   type ProfitabilityProcurementPayload,
 } from '@/api/procurementProfitability'
-import type { ProductVariantForm } from '@/components/admin/product/productEditorTypes'
+import type { ProductVariantForm } from '@/modules/product/productEditorTypes'
 
 export interface ProcurementProfitDraft {
   productCode: string
@@ -351,3 +351,4 @@ export const useProcurementProfitDraft = () => {
 }
 
 export default useProcurementProfitDraft
+

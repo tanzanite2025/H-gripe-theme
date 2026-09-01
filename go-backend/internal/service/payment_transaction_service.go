@@ -21,13 +21,14 @@ const (
 )
 
 type VerifiedGatewayPaymentInput struct {
-	Provider        string
-	OrderNumber     string
-	TransactionID   string
-	PaymentMethod   string
-	Amount          float64
-	Currency        string
-	GatewayResponse string
+	Provider         string
+	OrderNumber      string
+	TransactionID    string
+	PaymentMethod    string
+	Amount           float64
+	Currency         string
+	GatewayResponse  string
+	LiabilityShifted *bool
 }
 
 func (s *PaymentService) GetTransaction(id uint) (*payment.Transaction, error) {
@@ -95,14 +96,15 @@ func (s *PaymentService) RecordVerifiedGatewayPayment(input VerifiedGatewayPayme
 
 		completedAt := time.Now().UTC()
 		if err := saveCompletedGatewayTransaction(repos.Payment, existingTransaction, completedAt, payment.Transaction{
-			OrderID:         o.ID,
-			TransactionID:   input.TransactionID,
-			PaymentMethod:   input.PaymentMethod,
-			Amount:          input.Amount,
-			Currency:        input.Currency,
-			Status:          "completed",
-			GatewayResponse: input.GatewayResponse,
-			CompletedAt:     &completedAt,
+			OrderID:          o.ID,
+			TransactionID:    input.TransactionID,
+			PaymentMethod:    input.PaymentMethod,
+			Amount:           input.Amount,
+			Currency:         input.Currency,
+			Status:           "completed",
+			GatewayResponse:  input.GatewayResponse,
+			LiabilityShifted: input.LiabilityShifted,
+			CompletedAt:      &completedAt,
 		}); err != nil {
 			return err
 		}
@@ -218,6 +220,7 @@ func saveCompletedGatewayTransaction(repo *repository.PaymentRepository, existin
 	existing.Currency = next.Currency
 	existing.Status = "completed"
 	existing.GatewayResponse = next.GatewayResponse
+	existing.LiabilityShifted = next.LiabilityShifted
 	existing.ErrorMessage = ""
 	existing.CompletedAt = &completedAt
 	return repo.UpdateTransaction(existing)

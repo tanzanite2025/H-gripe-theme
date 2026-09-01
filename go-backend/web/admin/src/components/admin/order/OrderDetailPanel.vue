@@ -382,7 +382,7 @@ import type {
   OrderStatusToneResolver,
   TrackingEvent,
   TrackingShipment
-} from './orderTypes'
+} from '@/modules/order/orderTypes'
 
 const OrderDetailSection = defineComponent({
   props: { title: { type: String, required: true } },
@@ -560,3 +560,4 @@ const disputeDeadline = (dispute: OrderDisputeCase): string => {
   return '-'
 }
 </script>
+

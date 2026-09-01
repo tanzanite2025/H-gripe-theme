@@ -1,3 +1,61 @@
+export function normalizeStructuredDataType(value) {
+  const raw = String(value || '').replace(/\s+/g, ' ').trim()
+  if (!raw) {
+    return ''
+  }
+  const trimmed = raw.replace(/[\/#]+$/g, '')
+  const hashIndex = trimmed.lastIndexOf('#')
+  const slashIndex = trimmed.lastIndexOf('/')
+  const start = Math.max(hashIndex, slashIndex)
+  return start >= 0 ? trimmed.slice(start + 1) : trimmed
+}
+
+export function normalizeStructuredDataTypes(value) {
+  const values = Array.isArray(value)
+    ? value
+    : String(value || '')
+      .split(/\s+/)
+      .filter(Boolean)
+  const result = []
+  const seen = new Set()
+  for (const item of values) {
+    const normalized = normalizeStructuredDataType(item)
+    if (!normalized) {
+      continue
+    }
+    const key = normalized.toLowerCase()
+    if (seen.has(key)) {
+      continue
+    }
+    seen.add(key)
+    result.push(normalized)
+  }
+  return result
+}
+
+export function normalizeStructuredDataURL(value, baseURL = typeof document !== 'undefined' ? document.baseURI : '') {
+  const raw = String(value || '').trim()
+  if (!raw) {
+    return ''
+  }
+  try {
+    const resolved = baseURL ? new URL(raw, baseURL) : new URL(raw)
+    if (resolved.protocol !== 'http:' && resolved.protocol !== 'https:') {
+      return raw
+    }
+    resolved.hash = ''
+    resolved.search = ''
+    if (!resolved.pathname) {
+      resolved.pathname = '/'
+    } else if (resolved.pathname !== '/') {
+      resolved.pathname = resolved.pathname.replace(/\/+$/, '') || '/'
+    }
+    return resolved.href
+  } catch {
+    return raw
+  }
+}
+
 export function snapshotRenderedStructuredData() {
   const maxJsonLdScripts = 80
   const maxJsonLdNodes = 240
@@ -76,14 +134,14 @@ export function snapshotRenderedStructuredData() {
     }
     seen.add(value)
 
-    const types = normalizeTypes(value['@type'])
+    const types = normalizeStructuredDataTypes(value['@type'])
     if (types.length > 0) {
       nodes.push({
         types,
         type: types[0],
         id: stringValue(value['@id']),
         name: stringValue(value.name),
-        url: stringValue(value.url),
+        url: normalizeStructuredDataURL(value.url),
         graphPath: path,
         data: compactJSONValue(value, 0),
       })
@@ -107,14 +165,14 @@ export function snapshotRenderedStructuredData() {
       .filter((element) => !element.parentElement?.closest('[itemscope]'))
       .slice(0, maxSurfaceRecords)
       .map((element) => {
-        const types = normalizeTypes(element.getAttribute('itemtype'))
+        const types = normalizeStructuredDataTypes(element.getAttribute('itemtype'))
         return {
           format: 'microdata',
           types,
           type: types[0] || '',
           id: element.getAttribute('itemid') || element.id || '',
           name: itemPropText(element, 'name'),
-          url: itemPropText(element, 'url') || element.getAttribute('itemid') || '',
+          url: normalizeStructuredDataURL(itemPropText(element, 'url') || element.getAttribute('itemid') || ''),
           selector: domSelector(element),
           snippet: elementSnippet(element),
         }
@@ -126,14 +184,14 @@ export function snapshotRenderedStructuredData() {
     return Array.from(document.querySelectorAll('[typeof]'))
       .slice(0, maxSurfaceRecords)
       .map((element) => {
-        const types = normalizeTypes(element.getAttribute('typeof'))
+        const types = normalizeStructuredDataTypes(element.getAttribute('typeof'))
         return {
           format: 'rdfa',
           types,
           type: types[0] || '',
           id: element.getAttribute('about') || element.id || '',
           name: propertyText(element, 'name'),
-          url: element.getAttribute('resource') || element.getAttribute('href') || '',
+          url: normalizeStructuredDataURL(element.getAttribute('resource') || element.getAttribute('href') || ''),
           selector: domSelector(element),
           snippet: elementSnippet(element),
         }
@@ -218,29 +276,15 @@ export function snapshotRenderedStructuredData() {
 
   function canonicalURL() {
     const link = document.querySelector('link[rel~="canonical"]')
-    return link?.href || ''
+    return normalizeStructuredDataURL(link?.href || '')
   }
 
   function normalizeTypes(value) {
-    const values = Array.isArray(value)
-      ? value
-      : String(value || '')
-        .split(/\s+/)
-        .filter(Boolean)
-    return [...new Set(values
-      .map((item) => normalizeSchemaType(item))
-      .filter(Boolean))]
+    return normalizeStructuredDataTypes(value)
   }
 
   function normalizeSchemaType(value) {
-    const raw = stringValue(value)
-    if (!raw) {
-      return ''
-    }
-    const hashIndex = raw.lastIndexOf('#')
-    const slashIndex = raw.lastIndexOf('/')
-    const start = Math.max(hashIndex, slashIndex)
-    return start >= 0 ? raw.slice(start + 1) : raw
+    return normalizeStructuredDataType(value)
   }
 
   function compactJSONValue(value, depth) {

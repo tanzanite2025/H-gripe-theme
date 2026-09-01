@@ -17,3 +17,13 @@ export const selectionConfigurationKeyKindDescriptions: Record<SelectionConfigur
   [selectionConfigurationKeyKindQuestionKey]: '问卷中的问题主键，只允许从注册表里选。',
   [selectionConfigurationKeyKindAnswerKey]: '问卷中的回答主键，只允许从注册表里选。',
 }
+
+export interface SelectionConfigurationKeyEditorForm {
+  id?: number
+  kind: SelectionConfigurationKeyKind
+  code: string
+  display_label: string
+  description: string
+  is_enabled: boolean
+  sort_order: number
+}

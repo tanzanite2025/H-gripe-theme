@@ -38,7 +38,7 @@ func (h *Handler) EnsurePublicCustomerServiceConversation(c *gin.Context) {
 	}
 
 	conversationID := publicConversationID(t)
-	h.touchCustomerServiceVisitorProfile(c, owner, "", "public_chat")
+	h.touchCustomerServiceVisitorProfile(c, owner, "", "public_chat", req.Locale)
 	responseData := gin.H{
 		"conversation_id": conversationID,
 		"lastAgentId":     zeroToNil(t.AssignedTo),
@@ -154,7 +154,7 @@ func (h *Handler) SendPublicCustomerServiceMessage(c *gin.Context) {
 	}
 
 	conversationID = publicConversationID(t)
-	h.touchCustomerServiceVisitorProfile(c, owner, req.SenderEmail, "public_chat")
+	h.touchCustomerServiceVisitorProfile(c, owner, req.SenderEmail, "public_chat", req.Locale)
 	response := publicCustomerServiceMessageResponse(*msg, conversationID, senderName, "", nil, h.mediaService)
 	h.publishPublicCustomerServiceMessageCreated(
 		t,

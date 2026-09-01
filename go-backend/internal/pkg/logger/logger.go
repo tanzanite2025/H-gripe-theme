@@ -60,6 +60,11 @@ func Warn(msg string, fields ...zap.Field) {
 	activeLogger().Warn(msg, fields...)
 }
 
+// Critical records a high-priority operational warning without terminating the process.
+func Critical(msg string, fields ...zap.Field) {
+	activeLogger().Error(msg, append([]zap.Field{zap.String("severity", "critical")}, fields...)...)
+}
+
 // Fatal 记录致命错误并退出
 func Fatal(msg string, fields ...zap.Field) {
 	if Log == nil {

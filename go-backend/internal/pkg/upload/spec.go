@@ -117,7 +117,7 @@ var uploadSpecDefinitions = map[SpecCode]uploadSpecDefinition{
 	SpecVisualShowcaseHomeCategories: makeAspectImageSpec(
 		SpecVisualShowcaseHomeCategories,
 		"Home visual showcase image",
-		"Image used by the home product-category visual showcase.",
+		"Image used by the home product-category visual ugcshowcase.",
 		ProductImageRule,
 		1920,
 		1080,
@@ -127,7 +127,7 @@ var uploadSpecDefinitions = map[SpecCode]uploadSpecDefinition{
 	SpecVisualShowcaseEditorial: makeAspectImageSpec(
 		SpecVisualShowcaseEditorial,
 		"Editorial visual showcase image",
-		"Portrait image used by the editorial visual showcase.",
+		"Portrait image used by the editorial visual ugcshowcase.",
 		ProductImageRule,
 		1200,
 		1600,

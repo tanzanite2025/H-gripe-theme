@@ -25,17 +25,18 @@ type paymentMethodResponse struct {
 }
 
 type transactionResponse struct {
-	ID            uint       `json:"id"`
-	OrderID       uint       `json:"order_id"`
-	TransactionID string     `json:"transaction_id"`
-	PaymentMethod string     `json:"payment_method"`
-	Amount        float64    `json:"amount"`
-	Currency      string     `json:"currency"`
-	Status        string     `json:"status"`
-	ErrorMessage  string     `json:"error_message,omitempty"`
-	CreatedAt     time.Time  `json:"created_at"`
-	UpdatedAt     time.Time  `json:"updated_at"`
-	CompletedAt   *time.Time `json:"completed_at"`
+	ID               uint       `json:"id"`
+	OrderID          uint       `json:"order_id"`
+	TransactionID    string     `json:"transaction_id"`
+	PaymentMethod    string     `json:"payment_method"`
+	Amount           float64    `json:"amount"`
+	Currency         string     `json:"currency"`
+	Status           string     `json:"status"`
+	LiabilityShifted *bool      `json:"liability_shifted,omitempty"`
+	ErrorMessage     string     `json:"error_message,omitempty"`
+	CreatedAt        time.Time  `json:"created_at"`
+	UpdatedAt        time.Time  `json:"updated_at"`
+	CompletedAt      *time.Time `json:"completed_at"`
 }
 
 type refundResponse struct {
@@ -100,17 +101,18 @@ func paymentMethodsToResponse(methods []paymentdomain.PaymentMethod) []paymentMe
 
 func transactionToResponse(transaction paymentdomain.Transaction) transactionResponse {
 	return transactionResponse{
-		ID:            transaction.ID,
-		OrderID:       transaction.OrderID,
-		TransactionID: transaction.TransactionID,
-		PaymentMethod: transaction.PaymentMethod,
-		Amount:        transaction.Amount,
-		Currency:      transaction.Currency,
-		Status:        transaction.Status,
-		ErrorMessage:  transaction.ErrorMessage,
-		CreatedAt:     transaction.CreatedAt,
-		UpdatedAt:     transaction.UpdatedAt,
-		CompletedAt:   transaction.CompletedAt,
+		ID:               transaction.ID,
+		OrderID:          transaction.OrderID,
+		TransactionID:    transaction.TransactionID,
+		PaymentMethod:    transaction.PaymentMethod,
+		Amount:           transaction.Amount,
+		Currency:         transaction.Currency,
+		Status:           transaction.Status,
+		LiabilityShifted: transaction.LiabilityShifted,
+		ErrorMessage:     transaction.ErrorMessage,
+		CreatedAt:        transaction.CreatedAt,
+		UpdatedAt:        transaction.UpdatedAt,
+		CompletedAt:      transaction.CompletedAt,
 	}
 }
 

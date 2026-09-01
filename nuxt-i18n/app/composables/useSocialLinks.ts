@@ -1,7 +1,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useAsyncData } from '#imports'
 import { useSiteSettings } from '~/composables/usePublicSettings'
-import { usePublicApiBase } from '~/composables/usePublicApiBase'
+import { useApiRequest } from '~/composables/useApiRequest'
 import {
   normalizeSocialLinkItems,
   socialSettingDefinitions,
@@ -15,16 +15,15 @@ type RawSocialSettings = Partial<Record<SocialNetwork, unknown>>
 export function useSocialLinks() {
   const previewLinks = ref<SocialLinkViewModel[] | null>(null)
   const { siteSettings } = useSiteSettings()
-  const apiBase = usePublicApiBase()
+  const { request } = useApiRequest()
   const { data: configuredSocialSettings } = useAsyncData<RawSocialSettings | null>(
     'mytheme-social-settings',
     async () => {
-      if (!apiBase.value) return null
       try {
-        return await $fetch<RawSocialSettings>(`${apiBase.value}/settings/social`, {
+        return await request<RawSocialSettings>('/settings/social', {
           query: { locale: 'en' },
           headers: { accept: 'application/json' }
-        })
+        }, 'Failed to load social settings')
       } catch (error) {
         console.warn('Failed to load social settings:', error)
         return null

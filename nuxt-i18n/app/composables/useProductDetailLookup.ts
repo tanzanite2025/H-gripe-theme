@@ -1,6 +1,7 @@
 import { useI18n, useRuntimeConfig } from '#imports'
 import { computed } from 'vue'
-import { normalizeShopProduct, useShopProducts, type ShopProduct } from '~/composables/useShopProducts'
+import { useApiRequest } from '~/composables/useApiRequest'
+import { normalizeShopProduct, type ShopProduct } from '~/composables/useShopProducts'
 import { useStorefrontContext } from '~/composables/useStorefrontContext'
 import {
   createStorefrontMediaContext,
@@ -41,7 +42,7 @@ export function useProductDetailLookup() {
   const config = useRuntimeConfig()
   const { locale } = useI18n()
   const { displayCurrency, countryCode, baseCurrency } = useStorefrontContext()
-  const { baseURL } = useShopProducts()
+  const { request } = useApiRequest()
   const mediaContext = createStorefrontMediaContext(config)
   const currentLocale = computed(() => String(locale.value || '').trim())
 
@@ -53,7 +54,7 @@ export function useProductDetailLookup() {
     const requestedCurrency = String(displayCurrency.value || '').trim()
     const requestedCountry = String(countryCode.value || '').trim()
 
-    const response = await $fetch<any>(`${baseURL}/products/${encodeURIComponent(normalizedSlug)}`, {
+    const response = await request<any>(`/products/${encodeURIComponent(normalizedSlug)}`, {
       headers: createProductDetailRequestHeaders(
         requestedLocale,
         requestedCurrency,
@@ -64,7 +65,7 @@ export function useProductDetailLookup() {
         requestedCurrency,
         requestedCountry,
       ),
-    })
+    }, 'Failed to load product details')
 
     const data = extractProductDetailPayload(response, normalizedSlug)
     if (!data) return null

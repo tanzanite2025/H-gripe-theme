@@ -21,6 +21,7 @@ type Transaction struct {
 	Currency           string         `gorm:"not null" json:"currency"`
 	Status             string         `gorm:"index" json:"status"`               // pending, processing, requires_action, completed, failed, expired, refunded
 	GatewayResponse    string         `gorm:"type:text" json:"gateway_response"` // JSON格式
+	LiabilityShifted   *bool          `gorm:"column:liability_shifted" json:"liability_shifted,omitempty"`
 	ErrorMessage       string         `gorm:"type:text" json:"error_message"`
 	CreatedAt          time.Time      `json:"created_at"`
 	UpdatedAt          time.Time      `json:"updated_at"`

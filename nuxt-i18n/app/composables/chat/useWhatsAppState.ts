@@ -29,7 +29,7 @@ export const useWhatsAppState = (
   options: { initialSelectionRequest?: WheelsetSelectionRequestDraft | null } = {},
 ) => {
     const { t, locale } = useI18n()
-  const { user, request: authRequest } = useAuth()
+  const { user, baseURL: apiBaseURL, request: authRequest } = useAuth()
   const { addToCart, openCartFromChat } = useCart()
   const overlayBackStack = useOverlayBackStack()
   const productDrawerOverlayId = createOverlayInstanceId('chat-product-search')
@@ -47,10 +47,7 @@ export const useWhatsAppState = (
   } = useMembership()
   const config = useRuntimeConfig()
   const mediaContext = createStorefrontMediaContext(config)
-  const publicApiBase = computed(() => {
-    const base = (config.public as { apiBase?: string }).apiBase || '/api/v1'
-    return base.replace(/\/$/, '')
-  })
+  const apiBase = computed(() => apiBaseURL)
   
   // 客服选择面板状态。Nuxt 前台只承接客户侧聊天，不承接客服工作台。
   const showAgentSelectionPanel = ref(false)
@@ -73,9 +70,9 @@ export const useWhatsAppState = (
   const checkApiHistoryChat = async (): Promise<boolean> => {
     try {
       // 获取访客ID
-      const response = await $fetch<{ hasConversation: boolean; conversation_id?: string }>(`${publicApiBase.value}/customer-service/has-conversation`, {
+      const response = await authRequest<{ hasConversation: boolean; conversation_id?: string }>('/customer-service/has-conversation', {
         credentials: 'include'
-      })
+      }, 'Failed to check customer-service conversation history')
       if (response?.conversation_id) {
         conversationId.value = response.conversation_id
       }
@@ -517,7 +514,7 @@ export const useWhatsAppState = (
     agentTyping,
     clearAgentTyping
   } = useCustomerServiceChatSync({
-    publicApiBase,
+    apiBase,
     locale,
     conversationId,
     selectedAgent,
@@ -676,12 +673,12 @@ export const useWhatsAppState = (
   
     isSearching.value = true
     try {
-      const response = await $fetch<any>(`${publicApiBase.value}/customer-service/products`, {
+      const response = await authRequest<any>('/customer-service/products', {
         params: {
           keyword: trimmedQuery,
           per_page: 20
         }
-      })
+      }, 'Failed to search customer-service products')
       
       // 转换数据格式以适配前端显示
       if (!response || !Array.isArray(response.items)) { throw new Error('[CRITICAL] Invalid response format for products API'); }
@@ -813,7 +810,7 @@ export const useWhatsAppState = (
     isLoadingAgents.value = true
     try {
       const directory = await loadChatAgentDirectory({
-        apiBase: publicApiBase.value,
+        request: authRequest,
         currentUserId: user.value?.id,
         allowDevFallback: false
       })

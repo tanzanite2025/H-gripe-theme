@@ -69,17 +69,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { Save } from '@lucide/vue'
-import type { SelectionConfigurationKeyKind } from '@/modules/selection-configuration/selectionConfigurationKeys'
-
-export interface SelectionConfigurationKeyEditorForm {
-  id?: number
-  kind: SelectionConfigurationKeyKind
-  code: string
-  display_label: string
-  description: string
-  is_enabled: boolean
-  sort_order: number
-}
+import type {
+  SelectionConfigurationKeyEditorForm,
+  SelectionConfigurationKeyKind,
+} from '@/modules/selection-configuration/selectionConfigurationKeys'
 
 interface KindOption {
   label: string

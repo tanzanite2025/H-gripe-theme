@@ -1,16 +1,34 @@
 <template>
-  <section class="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-[repeat(auto-fit,minmax(170px,1fr))]" aria-label="页面统计">
+  <section
+    :class="[
+      'grid grid-cols-1 gap-2 sm:grid-cols-2',
+      compact
+        ? 'xl:grid-cols-[repeat(8,minmax(0,1fr))]'
+        : 'xl:grid-cols-[repeat(auto-fit,minmax(170px,1fr))]'
+    ]"
+    aria-label="页面统计"
+  >
     <div
       v-for="item in items"
       :key="item.key || item.label"
-      class="group relative flex min-h-14 items-center justify-between gap-3 overflow-hidden rounded-lg border border-dashed border-border/80 bg-card px-3 py-2.5 text-card-foreground shadow-xs transition-all hover:border-primary/40"
+      :class="[
+        'group relative flex min-h-14 items-center justify-between overflow-hidden rounded-lg border border-dashed border-border/80 bg-card text-card-foreground shadow-xs transition-all hover:border-primary/40',
+        compact ? 'gap-2 px-2.5 py-2' : 'gap-3 px-3 py-2.5'
+      ]"
     >
-      <div class="relative z-10 flex min-w-0 flex-1 items-baseline gap-2">
-        <span class="min-w-0 truncate text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">{{ item.label }}</span>
-        <strong class="shrink-0 truncate text-xl font-black tabular-nums text-foreground">{{ item.value }}</strong>
+      <div :class="['relative z-10 flex min-w-0 flex-1 items-baseline', compact ? 'gap-1.5' : 'gap-2']">
+        <span :class="['min-w-0 truncate font-black uppercase tracking-widest text-muted-foreground/60', compact ? 'text-[9px]' : 'text-[10px]']">{{ item.label }}</span>
+        <strong :class="['shrink-0 truncate font-black tabular-nums text-foreground', compact ? 'text-lg' : 'text-xl']">{{ item.value }}</strong>
       </div>
-      <span v-if="item.icon" class="relative z-10 flex size-8 shrink-0 items-center justify-center rounded-full" :class="toneClass(item.tone)">
-        <component :is="item.icon" class="size-4" />
+      <span
+        v-if="item.icon"
+        :class="[
+          'relative z-10 flex shrink-0 items-center justify-center rounded-full',
+          compact ? 'size-7' : 'size-8',
+          toneClass(item.tone)
+        ]"
+      >
+        <component :is="item.icon" :class="compact ? 'size-3.5' : 'size-4'" />
       </span>
     </div>
   </section>
@@ -31,6 +49,7 @@ interface AdminStatItem {
 
 defineProps<{
   items: AdminStatItem[]
+  compact?: boolean
 }>()
 
 const toneClass = (tone?: string) => {

@@ -24,7 +24,7 @@ func TestMediaDeleteAssetPermanentlyRemovesUnreferencedAsset(t *testing.T) {
 	service := newMediaDeleteTestService(t, db, uploadRoot)
 
 	asset, err := service.UploadAsset(context.Background(), MediaUploadInput{
-		File:       multipartFileHeader(t, "unused.jpg", "image/jpeg", []byte("unused media bytes")),
+		File:       multipartFileHeader(t, "unused.png", "image/png", mediaUploadTestPNG(t)),
 		MediaType:  "image",
 		UploaderID: 42,
 	})
@@ -58,7 +58,7 @@ func TestMediaDeleteAssetBlocksReferencedProductMedia(t *testing.T) {
 	service := newMediaDeleteTestService(t, db, uploadRoot)
 
 	asset, err := service.UploadAsset(context.Background(), MediaUploadInput{
-		File:       multipartFileHeader(t, "product.jpg", "image/jpeg", []byte("product media bytes")),
+		File:       multipartFileHeader(t, "product.png", "image/png", mediaUploadTestPNG(t)),
 		MediaType:  "image",
 		UploaderID: 42,
 	})

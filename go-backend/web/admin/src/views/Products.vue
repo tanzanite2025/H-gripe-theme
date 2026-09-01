@@ -178,7 +178,7 @@ import { useProcurementProfitDraft } from '@/composables/product/useProcurementP
 import { useSupportedLanguages } from '@/composables/useSupportedLanguages'
 import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/stores/auth'
-import type { ProductTranslation, ProductTranslationGroup } from '@/components/admin/product/productEditorTypes'
+import type { ProductTranslation, ProductTranslationGroup } from '@/modules/product/productEditorTypes'
 
 const authStore = useAuthStore()
 const router = useRouter()
@@ -576,3 +576,4 @@ onMounted(() => Promise.all([
   fetchProducts()
 ]))
 </script>
+

@@ -1,6 +1,7 @@
 import { useRuntimeConfig, useState } from '#imports'
 import { useI18n } from 'vue-i18n'
 import { computed, watch } from 'vue'
+import { useApiRequest } from '~/composables/useApiRequest'
 import {
   createStorefrontMediaContext,
   normalizeStorefrontMediaUrl,
@@ -77,16 +78,10 @@ export const useShopCategories = () => {
   const config = useRuntimeConfig()
   const mediaContext = createStorefrontMediaContext(config)
   const { locale } = useI18n()
+  const { request } = useApiRequest()
   // Every storefront surface reads this store so category names, slugs, and images stay aligned.
   const stateStore = useState<ShopCategoryStateStore>('shop-categories-by-locale', () => ({}))
   const publicBaseURL = computed(() => ((config.public as { apiBase?: string }).apiBase || '/api/v1').replace(/\/$/, ''))
-  const internalApiOrigin = import.meta.server
-    ? String((config as { apiInternalOrigin?: string }).apiInternalOrigin || '').replace(/\/$/, '')
-    : ''
-  const requestBaseURL = computed(() => {
-    if (internalApiOrigin) return `${internalApiOrigin}/api/v1`
-    return publicBaseURL.value
-  })
   const localeCode = computed(() => String(locale.value || '').trim() || 'en')
   const stateKey = computed(() => `${publicBaseURL.value}|${localeCode.value}`)
   const emptyCategoryState = createEmptyCategoryState()
@@ -108,7 +103,7 @@ export const useShopCategories = () => {
 
   const requestCategories = async (requestLocale: string): Promise<ShopCategory[]> => {
     const headers = requestLocale ? { 'Accept-Language': requestLocale } : undefined
-    const response = await $fetch<unknown>(`${requestBaseURL.value}/products/specification-templates`, { headers })
+    const response = await request<unknown>('/products/specification-templates', { headers }, 'Failed to load shop categories')
     return extractProductSpecificationTemplates(response, mediaContext)
   }
 

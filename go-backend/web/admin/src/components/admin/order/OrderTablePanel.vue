@@ -143,7 +143,7 @@ import type {
   OrderShippingNameResolver,
   OrderStatusNameResolver,
   OrderStatusToneResolver
-} from './orderTypes'
+} from '@/modules/order/orderTypes'
 
 const props = withDefaults(defineProps<{
   loading?: boolean
@@ -185,3 +185,4 @@ const emit = defineEmits<{
 
 const isOrderSelected = (orderId: OrderID): boolean => props.selectedOrders.some((order) => order.id === orderId)
 </script>
+

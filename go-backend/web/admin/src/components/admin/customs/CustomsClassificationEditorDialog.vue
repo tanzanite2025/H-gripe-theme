@@ -86,7 +86,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import type { CustomsClassificationForm } from './customsClassificationTypes'
+import type { CustomsClassificationForm } from '@/modules/customs/customsClassificationTypes'
 
 const props = withDefaults(defineProps<{
   open: boolean
@@ -112,3 +112,4 @@ const setProductSpecTemplate = (value: string) => {
   emit('update:product-spec-template', value)
 }
 </script>
+

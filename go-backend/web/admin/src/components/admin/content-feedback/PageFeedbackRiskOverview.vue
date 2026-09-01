@@ -93,7 +93,7 @@ import {
   displaySourceHashPreview,
   pageFeedbackRiskLabel,
   pageFeedbackRiskTone,
-} from './pageFeedbackTypes'
+} from '@/modules/content-feedback/pageFeedbackTypes'
 
 const props = defineProps<{
   overview: PageFeedbackRiskOverview | null
@@ -126,3 +126,4 @@ const displayRiskPagePath = (page: PageFeedbackRiskPage): string => (
   page.page_path || `thread:${page.thread_key}`
 )
 </script>
+

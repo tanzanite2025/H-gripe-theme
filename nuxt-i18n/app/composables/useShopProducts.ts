@@ -1,5 +1,6 @@
 import { useRuntimeConfig } from '#imports'
 import { useI18n } from 'vue-i18n'
+import { useApiRequest } from '~/composables/useApiRequest'
 import type { CartItem } from '~~/types/cart'
 import {
   createStorefrontMediaContext,
@@ -477,7 +478,7 @@ export function useShopProducts() {
   const mediaContext = createStorefrontMediaContext(config)
   const { locale } = useI18n()
   const { displayCurrency, countryCode, baseCurrency } = useStorefrontContext()
-  const baseURL = ((config.public as { apiBase?: string }).apiBase || '/api/v1').replace(/\/$/, '')
+  const { baseURL, request } = useApiRequest()
   const productRequestHeaders = () => {
     const currentLocale = String(locale.value || '').trim()
     const headers: Record<string, string> = {}
@@ -490,10 +491,10 @@ export function useShopProducts() {
   // Legacy search source kept for existing shop and customer-service flows.
   // Recommendation baseline data must use fetchPublicShopProducts instead.
   const fetchShopProducts = async (params: ShopProductQueryParams): Promise<ShopProductsResult> => {
-    const response = await $fetch<any>(`${baseURL}/customer-service/products`, {
+    const response = await request<any>('/customer-service/products', {
       params,
       headers: productRequestHeaders(),
-    })
+    }, 'Failed to load shop products')
     const items = extractProductItems(response).map((item: any) => (
       normalizeShopProduct(item, baseCurrency.value, mediaContext)
     ))
@@ -506,7 +507,7 @@ export function useShopProducts() {
   }
 
   const fetchPublicShopProducts = async (params: ShopProductQueryParams): Promise<ShopProductsResult> => {
-    const response = await $fetch<any>(`${baseURL}/products`, {
+    const response = await request<any>('/products', {
       headers: productRequestHeaders(),
       params: {
         status: 'active',
@@ -515,7 +516,7 @@ export function useShopProducts() {
         country: countryCode.value !== 'ZZ' ? countryCode.value : undefined,
         ...params,
       },
-    })
+    }, 'Failed to load public shop products')
     const items = extractProductItems(response).map((item: any) => (
       normalizeShopProduct(item, baseCurrency.value, mediaContext)
     ))

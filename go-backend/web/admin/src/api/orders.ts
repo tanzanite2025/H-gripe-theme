@@ -9,7 +9,7 @@ import type {
   OrderDisputeAnalysis,
   OrderDisputeCase,
   OrderDisputeEmailForm,
-} from '@/components/admin/order/orderTypes'
+} from '@/modules/order/orderTypes'
 
 const readObjectPayload = <T = Record<string, any>>(response: unknown, path: string): T => (
   requireApiObject(unwrapApiPayload(response, path), path) as T
@@ -49,3 +49,4 @@ export const ordersApi = {
 }
 
 export default ordersApi
+

@@ -114,7 +114,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import type { ContentDialogMode, ContentFormErrors, ContentPostForm } from './contentTypes'
+import type { ContentDialogMode, ContentFormErrors, ContentPostForm } from '@/modules/content/contentTypes'
 
 withDefaults(defineProps<{
   open?: boolean
@@ -137,3 +137,4 @@ const emit = defineEmits<{
   (event: 'clear-error', key: string): void
 }>()
 </script>
+

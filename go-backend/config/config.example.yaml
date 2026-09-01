@@ -135,6 +135,7 @@ cors:
     - "Idempotency-Key"
     - "X-CSRF-Token"
     - "X-Locale"
+    - "X-Timezone"
     - "X-Display-Currency"
     - "X-Market-Country"
     - "X-Country-Code"

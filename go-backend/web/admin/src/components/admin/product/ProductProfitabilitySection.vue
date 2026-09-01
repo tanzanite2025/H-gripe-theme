@@ -170,7 +170,7 @@ import AdminFormField from '@/components/admin/AdminFormField.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import type { ProcurementProfitDraft } from '@/composables/product/useProcurementProfitDraft'
-import type { ProductVariantForm } from './productEditorTypes'
+import type { ProductVariantForm } from '@/modules/product/productEditorTypes'
 
 const props = withDefaults(defineProps<{
   variants: ProductVariantForm[]
@@ -375,3 +375,4 @@ const Metric = defineComponent({
   },
 })
 </script>
+

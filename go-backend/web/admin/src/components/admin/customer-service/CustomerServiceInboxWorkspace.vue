@@ -161,7 +161,7 @@ import type {
   CustomerServiceSendMessagePayload,
   CustomerTypingByConversation,
   CustomerTypingState,
-} from './customerServiceTypes'
+} from '@/modules/customer-service/customerServiceTypes'
 
 const props = withDefaults(defineProps<{
   filters: CustomerServiceFiltersState
@@ -240,3 +240,4 @@ const resetMobileFilters = () => {
   emit('reset')
 }
 </script>
+

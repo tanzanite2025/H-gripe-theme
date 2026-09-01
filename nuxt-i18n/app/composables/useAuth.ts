@@ -217,6 +217,7 @@ export function useAuth() {
   const agentId = computed(() => user.value?.agent_id || null)
 
   return {
+    baseURL,
     user,
     loading,
     error,

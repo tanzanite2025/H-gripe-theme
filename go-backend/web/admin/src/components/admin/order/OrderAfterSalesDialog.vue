@@ -109,7 +109,7 @@ import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Textarea } from '@/components/ui/textarea'
 import type { CreateAfterSalesCaseInput } from '@/api/afterSales'
-import type { OrderItem, OrderRecord } from './orderTypes'
+import type { OrderItem, OrderRecord } from '@/modules/order/orderTypes'
 
 const typeOptions: Array<{ value: CreateAfterSalesCaseInput['type']; label: string }> = [
   { value: 'return_refund', label: '退货退款' },
@@ -226,3 +226,4 @@ watch(
   font-size: 0.875rem;
 }
 </style>
+

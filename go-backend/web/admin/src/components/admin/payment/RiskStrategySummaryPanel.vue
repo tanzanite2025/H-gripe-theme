@@ -121,7 +121,7 @@ import type {
   RiskStrategyProviderReport,
   RiskStrategyReports,
   RiskStrategySnapshot,
-} from './riskStrategyTypes'
+} from '@/modules/payment/riskStrategyTypes'
 
 const props = withDefaults(defineProps<{
   reports?: RiskStrategyReports
@@ -224,3 +224,4 @@ const actionLabel = (action?: string): string => ({
   force_3ds_for_high_risk_and_operator_review: '高风险支付升级 3DS，并要求人工复核',
 }[action || ''] || action || '未指定')
 </script>
+

@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-4">
-    <AdminPageHeader title="QUICK 配置" description="配置统一弹层说明、步骤名称和每步产品分类，入口与选择行为由系统固定">
+    <AdminPageHeader title="QUICK 配置" description="配置统一弹层说明和每步产品分类，入口与选择行为由系统固定">
       <template #actions>
         <Button variant="outline" :disabled="loading" @click="reload">
           <RefreshCw class="size-4" />
@@ -23,61 +23,24 @@
 
     <AdminStatsGrid :items="statItems" />
 
-    <div class="grid gap-4 xl:grid-cols-[320px_minmax(0,1fr)]">
-      <AdminTablePanel :loading="loading">
-        <template #header>
-          <div class="flex items-center justify-between gap-3">
-            <div>
-              <h2 class="text-sm font-black uppercase tracking-tight">流程列表</h2>
-              <p class="text-[11px] font-bold text-muted-foreground">{{ flows.length }} flows</p>
-            </div>
+    <AdminTablePanel :loading="loading || loadingFlow">
+      <template #header>
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 class="text-sm font-black uppercase tracking-tight">{{ editorTitle }}</h2>
+            <p class="text-[11px] font-bold text-muted-foreground">{{ editorSubtitle }}</p>
           </div>
-        </template>
-
-        <div v-if="flows.length" class="divide-y divide-dashed divide-border/70">
-          <button
-            v-for="flow in flows"
-            :key="flow.id"
-            type="button"
-            class="flex w-full items-start justify-between gap-3 px-4 py-3 text-left transition hover:bg-muted/50"
- :class="activeFlowId === flow.id ? 'bg-muted/60': ''"
-            @click="selectFlow(flow.id)"
-          >
-            <span class="min-w-0">
-              <span class="block truncate text-sm font-black">{{ flow.name }}</span>
-              <span class="mt-1 block truncate font-mono text-[11px] font-bold text-muted-foreground">{{ flow.slug }}</span>
-              <span class="mt-2 flex flex-wrap gap-1">
-                <Badge :variant="flow.is_enabled ? 'default' : 'outline'">{{ flow.is_enabled ? 'enabled' : 'disabled' }}</Badge>
-                <Badge v-if="publishedVersion(flow)" variant="secondary">published</Badge>
-                <Badge v-if="draftVersion(flow)" variant="outline">draft</Badge>
-              </span>
-            </span>
-            <ChevronRight class="mt-1 size-4 shrink-0 text-muted-foreground" />
-          </button>
-        </div>
-        <div v-else class="px-4 py-10 text-center text-sm font-bold text-muted-foreground">
-          暂无 QUICK flow
-        </div>
-      </AdminTablePanel>
-
-      <AdminTablePanel :loading="loadingFlow">
-        <template #header>
-          <div class="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h2 class="text-sm font-black uppercase tracking-tight">{{ editorTitle }}</h2>
-              <p class="text-[11px] font-bold text-muted-foreground">{{ editorSubtitle }}</p>
-            </div>
-            <div class="flex flex-wrap items-center gap-2">
-              <Badge :variant="statusBadgeVariant">{{ versionStatusLabel }}</Badge>
-              <Button size="sm" variant="outline" :disabled="formDisabled" @click="addStep">
-                <Plus class="size-3.5" />
-                新增步骤
-              </Button>
-            </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <Badge :variant="statusBadgeVariant">{{ versionStatusLabel }}</Badge>
+            <Button size="sm" variant="outline" :disabled="formDisabled" @click="addStep">
+              <Plus class="size-3.5" />
+              新增步骤
+            </Button>
           </div>
-        </template>
+        </div>
+      </template>
 
-        <div class="space-y-5 p-4">
+      <div class="space-y-5 p-4">
           <section class="grid gap-3 sm:grid-cols-3">
             <div class="rounded-lg border border-dashed border-border/80 px-3 py-2">
               <span class="field-label">功能</span>
@@ -99,13 +62,7 @@
             <AlertDescription>当前账号只有 product:view 权限，可以查看和校验 QUICK 流程，但不能修改或发布。</AlertDescription>
           </Alert>
 
-          <Alert v-if="selectedFlow?.version?.status === 'published'" class="rounded-lg">
-            <Info class="size-4" />
-            <AlertTitle>已发布版本不会原地修改</AlertTitle>
-            <AlertDescription>保存时会基于当前发布版本创建新的 draft，确认无误后再发布，已开始的前台选配会话仍绑定旧版本。</AlertDescription>
-          </Alert>
-
- <Alert v-if="validationResult" :variant="validationResult.valid ? 'default': 'destructive'" class="rounded-lg">
+          <Alert v-if="validationResult" :variant="validationResult.valid ? 'default': 'destructive'" class="rounded-lg">
             <ShieldCheck v-if="validationResult.valid" class="size-4" />
             <CircleAlert v-else class="size-4" />
             <AlertTitle>{{ validationTitle }}</AlertTitle>
@@ -127,29 +84,22 @@
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h3 class="text-sm font-black uppercase tracking-tight">步骤配置</h3>
-                <p class="text-[11px] font-bold text-muted-foreground">每一步配置名称和产品分类，统一说明在下方单独维护。</p>
+                <p class="text-[11px] font-bold text-muted-foreground">每一步只绑定产品分类，名称由系统按顺序生成。</p>
               </div>
             </div>
 
-            <div v-if="stepForms.length" class="space-y-3">
+            <div v-if="stepForms.length" class="grid gap-3 lg:grid-cols-3">
               <div
                 v-for="(step, index) in stepForms"
                 :key="step.client_id"
-                class="rounded-lg border border-dashed border-border/80 bg-muted/20 p-3"
+                class="flex min-h-36 min-w-0 flex-col rounded-lg border border-dashed border-border/80 bg-muted/20 p-3"
               >
                 <div class="flex items-center justify-between gap-3">
-                  <div>
-                    <p class="text-sm font-black">第 {{ index + 1 }} 步 · {{ step.name }}</p>
-                  </div>
+                  <p class="min-w-0 truncate text-sm font-black">第 {{ index + 1 }} 步</p>
                   <Badge v-if="index < 3" variant="secondary">基础步骤</Badge>
                 </div>
 
-                <label class="mt-3 block space-y-1.5">
-                  <span class="field-label">步骤名称</span>
-                  <Input v-model="step.name" placeholder="请输入步骤名称" :disabled="formDisabled" />
-                </label>
-
-                <label class="mt-3 block space-y-1.5">
+                <label class="mt-3 block min-w-0 space-y-1.5">
                   <span class="field-label">产品分类</span>
                   <select
                     v-model.number="step.product_category_id"
@@ -167,7 +117,7 @@
                   </select>
                 </label>
 
-                <div class="mt-3 flex items-center justify-between gap-2">
+                <div class="mt-auto flex items-center justify-between gap-2 pt-3">
                   <p class="font-mono text-[10px] font-bold text-muted-foreground">
                     {{ normalizeKey(step.step_key) }}
                   </p>
@@ -236,8 +186,8 @@
                 <label class="min-w-40 space-y-1.5">
                   <span class="field-label">Step</span>
                   <select v-model="previewStepKey" :class="nativeSelectClass" :disabled="previewing || !selectedFlow?.version?.id">
-                    <option v-for="step in previewableSteps" :key="step.client_id" :value="normalizeKey(step.step_key)">
-                      {{ step.name || step.step_key }}
+                    <option v-for="(step, index) in previewableSteps" :key="step.client_id" :value="normalizeKey(step.step_key)">
+                      第 {{ index + 1 }} 步
                     </option>
                   </select>
                 </label>
@@ -259,7 +209,7 @@
 
             <div v-if="previewResult" class="rounded-lg border border-dashed border-border/80 bg-background/70 p-3">
               <div class="mb-3 flex flex-wrap items-center justify-between gap-2 text-xs font-bold text-muted-foreground">
-                <span>{{ previewResult.step?.name || previewStepKey }} / {{ previewResult.total }} products</span>
+                <span>{{ previewStepLabel }} / {{ previewResult.total }} products</span>
                 <span class="font-mono">v{{ previewResult.flow_version_id || selectedFlow?.version?.id }}</span>
               </div>
               <div v-if="previewProducts.length" class="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
@@ -294,8 +244,7 @@
             </div>
           </section>
         </div>
-      </AdminTablePanel>
-    </div>
+    </AdminTablePanel>
   </div>
 </template>
 
@@ -303,9 +252,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { toast } from 'vue-sonner'
 import {
-  ChevronRight,
   CircleAlert,
-  Info,
   Layers3,
   ListChecks,
   Lock,
@@ -351,7 +298,6 @@ interface FlowTranslationForm {
 interface StepForm {
   client_id: number
   step_key: string
-  name: string
   product_category_id: number
 }
 
@@ -405,6 +351,11 @@ const previewProductScopeLabel = computed(() => {
   const category = previewResult.value?.step?.product_categories?.[0]
   return category?.name || category?.slug || '产品分类'
 })
+const previewStepLabel = computed(() => {
+  const key = normalizeKey(previewStepKey.value)
+  const index = previewableSteps.value.findIndex((step) => normalizeKey(step.step_key) === key)
+  return index >= 0 ? `第 ${index + 1} 步` : key
+})
 const validationTitle = computed(() => {
   if (!validationResult.value) return ''
   const errorCount = validationIssues.value.filter((issue) => issue.severity === 'error').length
@@ -440,6 +391,8 @@ const productCategoryOptionLabel = (category: ProductCategoryRecord) => {
   return `${indent}${category.name || category.slug}${status}`
 }
 
+const defaultStepName = (index: number) => defaultQuickBuyStepNames[index] || `Step ${index + 1}`
+
 const defaultProductCategoryID = () => {
   const enabled = productCategoryOptions.value.find((category) => category.is_enabled !== false)
   return Number(enabled?.id || 0)
@@ -450,8 +403,6 @@ const firstProductCategoryID = (categories: QuickBuyProductCategoryRef[] = []) =
 )
 
 const draftVersion = (flow: QuickBuyFlowSummary) => (flow.versions || []).find((version) => version.status === 'draft')
-const publishedVersion = (flow: QuickBuyFlowSummary) => (flow.versions || []).find((version) => version.status === 'published')
-
 const syncPreviewStepKey = () => {
   const firstStep = previewableSteps.value[0]
   if (!firstStep) {
@@ -496,7 +447,6 @@ const flowTranslationRowsFor = (source: QuickBuyFlowTranslation[] = []): FlowTra
 const emptyStep = (index = stepForms.value.length, overrides: Partial<StepForm> = {}): StepForm => ({
   client_id: nextStepClientID++,
   step_key: `step-${index + 1}`,
-  name: `Step ${index + 1}`,
   product_category_id: defaultProductCategoryID(),
   ...overrides,
 })
@@ -504,15 +454,12 @@ const emptyStep = (index = stepForms.value.length, overrides: Partial<StepForm> 
 const defaultStepForms = (): StepForm[] => [
   emptyStep(0, {
     step_key: 'product-search',
-    name: 'Step 1',
   }),
   emptyStep(1, {
     step_key: 'specifications',
-    name: 'Step 2',
   }),
   emptyStep(2, {
     step_key: 'quantity',
-    name: 'Step 3',
   }),
 ]
 
@@ -540,7 +487,6 @@ const hydrateFlowForm = (flow: QuickBuyFlow) => {
 const stepToForm = (step: QuickBuyStep, index: number): StepForm => ({
   client_id: nextStepClientID++,
   step_key: normalizeKey(step.step_key || step.slug || defaultQuickBuyStepKeys[index] || `step-${index + 1}`),
-  name: step.name || defaultQuickBuyStepNames[index] || `Step ${index + 1}`,
   product_category_id: firstProductCategoryID(step.product_categories || []) || defaultProductCategoryID(),
 })
 
@@ -549,7 +495,7 @@ const buildVersionPayload = (): QuickBuyVersionPayload => ({
   ends_at: null,
   steps: stepForms.value.map((step, index) => ({
     step_key: normalizeKey(step.step_key) || defaultQuickBuyStepKeys[index] || `step-${index + 1}`,
-    name: step.name.trim() || defaultQuickBuyStepNames[index] || `Step ${index + 1}`,
+    name: defaultStepName(index),
     product_category_ids: Number(step.product_category_id || 0) > 0 ? [Number(step.product_category_id)] : [],
   })),
 })

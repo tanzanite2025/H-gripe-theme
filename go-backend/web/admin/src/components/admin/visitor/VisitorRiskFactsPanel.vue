@@ -197,7 +197,7 @@ import type {
   VisitorPagination,
   VisitorRiskDecisionPayload,
   VisitorRiskFact,
-} from './visitorTypes'
+} from '@/modules/visitor/visitorTypes'
 
 const props = withDefaults(defineProps<{
   loading?: boolean
@@ -305,3 +305,4 @@ const formatDay = (day: unknown): string => {
   return new Date(day as string | number | Date).toLocaleDateString('zh-CN')
 }
 </script>
+

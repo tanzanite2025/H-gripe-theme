@@ -138,7 +138,7 @@ import type {
   ContentSelectionState,
   ContentStatus,
   ContentToneResolver
-} from './contentTypes'
+} from '@/modules/content/contentTypes'
 
 const props = withDefaults(defineProps<{
   loading?: boolean
@@ -176,3 +176,4 @@ const emit = defineEmits<{
 
 const isPostSelected = (postId: ContentPostId): boolean => props.selectedPosts.some((post) => post.id === postId)
 </script>
+

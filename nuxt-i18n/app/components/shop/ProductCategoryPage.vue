@@ -11,40 +11,18 @@
       />
     </section>
 
-    <teleport to="body">
-      <transition name="shop-category-sidebar">
-        <div
-          v-if="categorySidebarOpen"
-          class="shop-category-sidebar"
-          role="dialog"
-          aria-modal="true"
-          :aria-label="$t('filter.categories', 'Categories')"
-          @click.self="closeCategorySidebar"
-        >
-          <section class="shop-category-sidebar__panel">
-            <header class="shop-category-sidebar__header">
-              <span>{{ $t('filter.categories', 'Categories') }}</span>
-              <button
-                type="button"
-                class="shop-category-sidebar__close"
-                aria-label="Close categories"
-                @click="closeCategorySidebar"
-              >
-                <Icon name="lucide:x" />
-              </button>
-            </header>
-
-            <ShopCategoryVerticalMenu
-              :categories="categories"
-              :selected="category"
-              :loading="loadingCategories"
-              :error="categoriesError"
-              @select="onMobileCategorySelect"
-            />
-          </section>
-        </div>
-      </transition>
-    </teleport>
+    <ShopCatalogFilterDrawer
+      :open="categorySidebarOpen"
+      :categories="categories"
+      :selected="category"
+      :loading="loadingCategories"
+      :error="categoriesError"
+      :initial-query="currentSearch?.query || ''"
+      :initial-price-range="currentSearch?.filters?.priceRange || defaultSearchPriceRange"
+      @close="closeCategorySidebar"
+      @search-submit="handleMobileSearch"
+      @category-select="onMobileCategorySelect"
+    />
 
     <section class="shop-catalog-layout">
       <aside class="shop-category-rail" :aria-label="$t('shopPage.categoryRailLabel', 'Shop category navigation')">
@@ -104,6 +82,7 @@ import {
   useRuntimeConfig,
 } from '#imports'
 import ShopProductQuickSearchForm from '~/components/shop/ShopProductQuickSearchForm.vue'
+import ShopCatalogFilterDrawer from '~/components/shop/ShopCatalogFilterDrawer.vue'
 import ShopCategoryVerticalMenu from '~/components/shop/ShopCategoryVerticalMenu.vue'
 import {
   useProductCategories,
@@ -278,6 +257,11 @@ const handleSearch = (payload: ShopSearchPayload) => {
   loadProducts()
 }
 
+const handleMobileSearch = (payload: ShopSearchPayload) => {
+  handleSearch(payload)
+  closeCategorySidebar()
+}
+
 const categorySlug = computed(() => category.value?.slug || '')
 const productDataKey = computed(() => (
   `product-category:${requestedRoutePath.value}:${categorySlug.value}`
@@ -401,10 +385,6 @@ watch(pendingSearch, (payload) => {
   background-color: var(--tz-card-surface);
 }
 
-.shop-category-sidebar {
-  display: none;
-}
-
 .shop-catalog-layout {
   width: 100vw;
   margin-inline: calc(50% - 50vw);
@@ -502,104 +482,6 @@ watch(pendingSearch, (payload) => {
 @media (max-width: 768px) {
   .shop-page {
     padding-inline: 0;
-  }
-
-  .shop-category-sidebar {
-    position: fixed;
-    inset: 0;
-    z-index: 1700;
-    display: flex;
-    background: rgb(15 23 42 / 0.2);
-  }
-
-  .shop-category-sidebar__panel {
-    display: flex;
-    width: min(86vw, 22rem);
-    min-width: 17rem;
-    height: 100%;
-    flex-direction: column;
-    overflow: hidden;
-    border-right: 1px solid var(--tz-border-strong);
-    background: var(--tz-card-surface);
-    box-shadow: 24px 0 60px -28px rgb(15 23 42 / 0.16);
-  }
-
-  .shop-category-sidebar__header {
-    display: flex;
-    min-height: 3.5rem;
-    flex: 0 0 auto;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 0.75rem 1rem;
-    border-bottom: 1px solid var(--tz-border-subtle);
-    color: var(--tz-text-primary);
-    font-size: 14px;
-    font-weight: 850;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-
-  .shop-category-sidebar__close {
-    display: inline-flex;
-    width: 34px;
-    height: 34px;
-    flex: 0 0 auto;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid var(--tz-border-strong);
-    border-radius: 999px;
-    background: var(--tz-surface-subtle);
-    color: var(--tz-text-primary);
-  }
-
-  .shop-category-sidebar__close:hover,
-  .shop-category-sidebar__close:focus-visible {
-    border-color: rgba(5, 150, 105, 0.64);
-    background: var(--tz-site-accent-soft-surface);
-  }
-
-  .shop-category-sidebar__close:focus-visible {
-    outline: 2px solid rgba(5, 150, 105, 0.72);
-    outline-offset: 2px;
-  }
-
-  .shop-category-sidebar__close :deep(svg) {
-    width: 18px;
-    height: 18px;
-  }
-
-  .shop-category-sidebar__panel :deep(.shop-category-menu) {
-    width: 100%;
-    height: 100%;
-    overflow-y: auto;
-    padding: 0.75rem 0.75rem calc(1rem + env(safe-area-inset-bottom));
-    scrollbar-width: thin;
-    scrollbar-color: rgba(5, 150, 105, 0.46) transparent;
-  }
-
-  .shop-category-sidebar__panel :deep(.shop-category-menu__list) {
-    gap: 0.45rem;
-  }
-
-  .shop-category-sidebar-enter-active,
-  .shop-category-sidebar-leave-active {
-    transition: opacity 0.2s ease;
-  }
-
-  .shop-category-sidebar-enter-active .shop-category-sidebar__panel,
-  .shop-category-sidebar-leave-active .shop-category-sidebar__panel {
-    transition: transform 0.22s ease;
-  }
-
-  .shop-category-sidebar-enter-from,
-  .shop-category-sidebar-leave-to {
-    opacity: 0;
-  }
-
-  .shop-category-sidebar-enter-from .shop-category-sidebar__panel,
-  .shop-category-sidebar-leave-to .shop-category-sidebar__panel {
-    transform: translateX(-100%);
   }
 
   .shop-catalog-layout {

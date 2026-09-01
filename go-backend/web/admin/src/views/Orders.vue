@@ -254,7 +254,7 @@ import type {
   TrackingEvent,
   TrackingProvider,
   TrackingShipment
-} from '@/components/admin/order/orderTypes'
+} from '@/modules/order/orderTypes'
 
 interface OrderListResponse {
   orders?: OrderRecord[]
@@ -979,3 +979,4 @@ watch(activeOrderTab, () => {
   refreshActiveOrderTab()
 })
 </script>
+

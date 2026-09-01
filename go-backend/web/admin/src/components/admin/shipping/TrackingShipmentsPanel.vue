@@ -417,7 +417,7 @@ import type {
   TrackingShipment,
   TrackingShipmentFilters,
   TrackingWebhookState
-} from './shippingTypes'
+} from '@/modules/shipping/shippingTypes'
 
 interface TrackingShipmentLoadingState {
   trackingShipments: boolean
@@ -791,3 +791,4 @@ defineExpose({ refresh, refreshShipments: fetchTrackingShipments })
 
 onMounted(() => refresh())
 </script>
+

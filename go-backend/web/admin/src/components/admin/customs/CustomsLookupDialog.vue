@@ -67,7 +67,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import type { LookupCandidate } from './customsClassificationTypes'
+import type { LookupCandidate } from '@/modules/customs/customsClassificationTypes'
 
 withDefaults(defineProps<{
   open: boolean
@@ -92,3 +92,4 @@ const emit = defineEmits<{
   (event: 'create-template', candidate: LookupCandidate): void
 }>()
 </script>
+

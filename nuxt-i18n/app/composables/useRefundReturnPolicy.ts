@@ -1,6 +1,6 @@
 import { computed, type Ref } from 'vue'
 import { useAsyncData, useI18n } from '#imports'
-import { usePublicApiBase } from '~/composables/usePublicApiBase'
+import { useApiRequest } from '~/composables/useApiRequest'
 import { refundReturnPolicyFallback } from '~/data/refundReturnPolicyFallback'
 import type {
   RefundReturnPolicy,
@@ -68,7 +68,7 @@ export const normalizeRefundReturnPolicy = (value: unknown): RefundReturnPolicy 
 }
 
 export function useRefundReturnPolicy(localeInput?: LocaleInput) {
-  const apiBase = usePublicApiBase()
+  const { request } = useApiRequest()
   const { locale } = useI18n()
   const requestedLocale = computed(() => normalizeLocale(
     typeof localeInput === 'string'
@@ -78,12 +78,13 @@ export function useRefundReturnPolicy(localeInput?: LocaleInput) {
 
   const { data, pending, error, refresh } = useAsyncData<RefundReturnPolicyResponse | null>(
     () => `refund-return-policy-${requestedLocale.value}`,
-    () => $fetch<RefundReturnPolicyResponse>(
-      `${apiBase.value}/settings/refund-return-policy`,
+    () => request<RefundReturnPolicyResponse>(
+      '/content/refund-return-policy',
       {
         headers: { accept: 'application/json' },
         query: { locale: requestedLocale.value },
       },
+      'Failed to load refund return policy',
     ),
     {
       default: () => null,

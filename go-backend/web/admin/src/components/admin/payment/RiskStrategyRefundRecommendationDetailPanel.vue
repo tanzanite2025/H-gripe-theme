@@ -185,7 +185,7 @@ import type {
   PaymentRefundDraftPayload,
   PaymentRefundExecutionPayload,
   PaymentRefundRecommendation,
-} from './riskStrategyTypes'
+} from '@/modules/payment/riskStrategyTypes'
 
 const StatusPill = defineComponent({
   props: { status: { type: String, default: '' } },
@@ -327,3 +327,4 @@ watch(() => props.executionSaving, (saving, previous) => {
   }
 })
 </script>
+

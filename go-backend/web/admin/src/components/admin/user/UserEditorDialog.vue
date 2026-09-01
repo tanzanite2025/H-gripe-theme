@@ -156,7 +156,7 @@ import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/comp
 import { Input } from '@/components/ui/input'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import type { UserDialogMode } from './userTypes'
+import type { UserDialogMode } from '@/modules/user/userTypes'
 
 withDefaults(defineProps<{
   open?: boolean
@@ -178,3 +178,4 @@ const emit = defineEmits<{
   (event: 'submit', value: Event): void
 }>()
 </script>
+

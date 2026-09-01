@@ -138,7 +138,7 @@ import type {
   OrderMoneyFormatter,
   OrderPagination,
   OrderStatusTone,
-} from './orderTypes'
+} from '@/modules/order/orderTypes'
 
 const props = withDefaults(defineProps<{
   loading?: boolean
@@ -210,3 +210,4 @@ const deadlineLabel = (dispute: OrderDisputeCase): string => {
   return '-'
 }
 </script>
+

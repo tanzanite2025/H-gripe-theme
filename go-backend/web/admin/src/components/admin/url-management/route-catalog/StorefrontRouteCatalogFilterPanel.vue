@@ -123,7 +123,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch'
 import type { StorefrontRouteCatalogFilters } from '@/composables/url-management/useStorefrontRouteCatalog'
 import type { StorefrontRouteCatalogStats } from '@/modules/url-management/routeCatalogTypes'
-import { formatRouteCatalogDate } from './routeCatalogPresentation'
+import { formatRouteCatalogDate } from '@/modules/url-management/routeCatalogPresentation'
 
 defineProps<{
   filters: StorefrontRouteCatalogFilters

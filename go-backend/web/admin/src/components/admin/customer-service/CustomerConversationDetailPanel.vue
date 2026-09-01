@@ -495,7 +495,7 @@ import {
   videoPayload,
 } from '@/lib/customerServicePresentation'
 import type { MediaAsset } from '@/api/media'
-import type { ProductRecord } from '@/components/admin/product/productEditorTypes'
+import type { ProductRecord } from '@/modules/product/productEditorTypes'
 import type {
   AssignableAgent,
   CustomerContext,
@@ -504,7 +504,7 @@ import type {
   CustomerOrderItem,
   CustomerServiceSendMessagePayload,
   CustomerTypingState,
-} from './customerServiceTypes'
+} from '@/modules/customer-service/customerServiceTypes'
 
 interface MediaAssetSelection {
   url: string
@@ -762,3 +762,4 @@ const handleLocalVideoUpload = async (event: Event): Promise<void> => {
   await sendUploadedAttachment(file, 'video')
 }
 </script>
+

@@ -116,7 +116,7 @@ import {
   parseAddressRegionCodes,
   serializeAddressRegionCodes,
 } from '@/lib/addressRegions'
-import type { ShippingDialogMode, ShippingErrorMap, ShippingZoneForm } from './shippingTypes'
+import type { ShippingDialogMode, ShippingErrorMap, ShippingZoneForm } from '@/modules/shipping/shippingTypes'
 
 const props = withDefaults(defineProps<{
   open?: boolean
@@ -180,3 +180,4 @@ watch(() => props.open, (isOpen) => {
   }
 })
 </script>
+

@@ -14,7 +14,7 @@
 
 <script setup lang="ts">
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import type { GalleryPreviewImage } from './galleryTypes'
+import type { GalleryPreviewImage } from '@/modules/gallery/galleryTypes'
 
 withDefaults(defineProps<{
   open?: boolean
@@ -27,3 +27,4 @@ const emit = defineEmits<{
   (event: 'update:open', value: boolean): void
 }>()
 </script>
+

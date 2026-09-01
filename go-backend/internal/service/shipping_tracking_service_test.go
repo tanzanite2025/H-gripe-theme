@@ -395,10 +395,12 @@ func TestApplyTrackingWebhookReplacesEventsForExistingShipment(t *testing.T) {
 		ProviderCarrierCode: "DHL",
 		Events: []TrackingWebhookEventInput{
 			{
-				Status:      "Delivered",
-				Location:    "Los Angeles, US",
-				Description: "Delivered to recipient",
-				EventTime:   eventTime,
+				Status:                 "Delivered",
+				Location:               "Los Angeles, US",
+				Description:            "Delivered to recipient",
+				RecipientSignatureName: "Test Rider",
+				ProofOfDeliveryURL:     "https://carrier.example.test/pod/TRACK-WEBHOOK-100.pdf",
+				EventTime:              eventTime,
 			},
 		},
 	})
@@ -410,12 +412,16 @@ func TestApplyTrackingWebhookReplacesEventsForExistingShipment(t *testing.T) {
 	assert.Equal(t, 1, result.Shipment.EventCount)
 	require.Len(t, result.Events, 1)
 	assert.Equal(t, "Delivered", result.Events[0].Status)
+	assert.Equal(t, "Test Rider", result.Events[0].RecipientSignatureName)
+	assert.Equal(t, "https://carrier.example.test/pod/TRACK-WEBHOOK-100.pdf", result.Events[0].ProofOfDeliveryURL)
 
 	events, err := shippingService.GetTrackingEventsByOrderID(100)
 	require.NoError(t, err)
 	require.Len(t, events, 1)
 	assert.Equal(t, "Delivered", events[0].Status)
 	assert.Equal(t, "Los Angeles, US", events[0].Location)
+	assert.Equal(t, "Test Rider", events[0].RecipientSignatureName)
+	assert.Equal(t, "https://carrier.example.test/pod/TRACK-WEBHOOK-100.pdf", events[0].ProofOfDeliveryURL)
 }
 
 func TestApplyTrackingWebhookFallsBackToUniqueTrackingNumberWhenCarrierCodeDiffers(t *testing.T) {

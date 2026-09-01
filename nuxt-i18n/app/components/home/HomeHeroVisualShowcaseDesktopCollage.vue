@@ -15,8 +15,9 @@
         >
           <HomeHeroVisualShowcaseFigure
             :item="item"
-            :loading="'eager'"
+            :loading="index === activeIndex ? 'eager' : 'lazy'"
             :fetchpriority="index === activeIndex ? 'high' : 'low'"
+            :preload="index === activeIndex ? { fetchPriority: 'high', media: '(min-width: 1024px)' } : false"
             sizes="xs:100vw sm:50vw lg:22vw xl:22vw"
             caption-visibility="sr-only"
             class="home-hero-visual-showcase-desktop__figure"

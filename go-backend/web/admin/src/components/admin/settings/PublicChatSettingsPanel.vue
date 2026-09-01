@@ -177,7 +177,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import type { PublicChatAgent, PublicChatGroup, PublicChatSummary } from './settingsTypes'
+import type { PublicChatAgent, PublicChatGroup, PublicChatSummary } from '@/modules/settings/types'
 
 withDefaults(defineProps<{
   loadingAgents?: boolean

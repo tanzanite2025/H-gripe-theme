@@ -85,20 +85,11 @@ import { toast } from 'vue-sonner'
 import AdminFormField from '@/components/admin/AdminFormField.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { apiSettingPayload, postApiSettingsBatch } from '@/components/admin/settings/apiSettingsPersistence'
-
-interface TimeAPISettings {
-  time_api_enabled: boolean | string | number
-  time_api_provider: string
-  time_api_endpoint: string
-  time_api_query_template: string
-  time_api_default_timezone: string
-  time_api_refresh_minutes: number
-  time_api_key_ref: string
-}
+import { apiSettingPayload, postApiSettingsBatch } from '@/modules/settings/apiSettingsPersistence'
+import type { ApiManagementSettings } from '@/modules/settings/types'
 
 const props = withDefaults(defineProps<{
-  apiSettings: TimeAPISettings
+  apiSettings: ApiManagementSettings
   canEdit?: boolean
   saving?: boolean
 }>(), {

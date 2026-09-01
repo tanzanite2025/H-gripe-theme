@@ -4,45 +4,25 @@
       <ShopProductQuickSearchForm
         density="page"
         show-filter-button
+        :initial-query="currentSearch?.query || ''"
+        :initial-price-range="currentSearch?.filters?.priceRange || defaultSearchPriceRange"
         @submit="handleSearch"
         @filter-click="openCategorySidebar"
       />
     </section>
 
-    <teleport to="body">
-      <transition name="shop-category-sidebar">
-        <div
-          v-if="categorySidebarOpen"
-          class="shop-category-sidebar"
-          role="dialog"
-          aria-modal="true"
-          :aria-label="$t('filter.categories', 'Categories')"
-          @click.self="closeCategorySidebar"
-        >
-          <section class="shop-category-sidebar__panel">
-            <header class="shop-category-sidebar__header">
-              <span>{{ $t('filter.categories', 'Categories') }}</span>
-              <button
-                type="button"
-                class="shop-category-sidebar__close"
-                aria-label="Close categories"
-                @click="closeCategorySidebar"
-              >
-                <Icon name="lucide:x" />
-              </button>
-            </header>
-
-            <ShopCategoryVerticalMenu
-              :categories="categories"
-              :selected="selectedCategory"
-              :loading="categoriesLoading"
-              :error="categoriesError"
-              @select="onMobileCategorySelect"
-            />
-          </section>
-        </div>
-      </transition>
-    </teleport>
+    <ShopCatalogFilterDrawer
+      :open="categorySidebarOpen"
+      :categories="categories"
+      :selected="selectedCategory"
+      :loading="categoriesLoading"
+      :error="categoriesError"
+      :initial-query="currentSearch?.query || ''"
+      :initial-price-range="currentSearch?.filters?.priceRange || defaultSearchPriceRange"
+      @close="closeCategorySidebar"
+      @search-submit="handleMobileSearch"
+      @category-select="onMobileCategorySelect"
+    />
 
     <section class="shop-catalog-layout">
       <!-- Desktop category rail: local component, no external dependency. -->
@@ -134,16 +114,17 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, watch, computed } from 'vue'
-import { useRoute, useRouter, useAsyncData } from '#imports'
+import { useRoute, useRouter, useAsyncData, useI18n, useLocalePath } from '#imports'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
 import ShopProductQuickSearchForm from '~/components/shop/ShopProductQuickSearchForm.vue'
+import ShopCatalogFilterDrawer from '~/components/shop/ShopCatalogFilterDrawer.vue'
 import ShopCategoryVerticalMenu from '~/components/shop/ShopCategoryVerticalMenu.vue'
 import ShopProductDisplayCard from '~/components/shop/ShopProductDisplayCard.vue'
 import ProductRecommendations from '~/components/shop/ProductRecommendations.vue'
 import { useWishlist } from '~/composables/useWishlist'
 import { useProductCategories } from '~/composables/useProductCategories'
 import type { ProductCategory } from '~/composables/useProductCategories'
-import { useShopSearchSheet } from '~/composables/useShopSearchSheet'
+import { useShopSearchSheet, type ShopSearchFiltersPayload, type ShopSearchPayload } from '~/composables/useShopSearchSheet'
 import { useShopProducts } from '~/composables/useShopProducts'
 import { useOverlayBackStack } from '~/composables/useOverlayBackStack'
 import type { ShopProduct } from '~/composables/useShopProducts'
@@ -154,10 +135,12 @@ definePageMeta({
 
 const route = useRoute()
 const router = useRouter()
+const localePath = useLocalePath()
 const { t } = useI18n()
 const { fetchShopProducts } = useShopProducts()
 
 const SHOP_PRODUCTS_PAGE_SIZE = 24
+const defaultSearchPriceRange: [number, number] = [0, 5000]
 const categorySidebarOpen = ref(false)
 const currentProductPage = ref(1)
 const overlayBackStack = useOverlayBackStack()
@@ -174,22 +157,10 @@ const {
   loadCategories,
 } = useProductCategories()
 
-interface ProductSearchFiltersPayload {
-  priceRange: [number, number]
-  currency?: string
-  attributes?: Record<string, string[]>
-}
+const currentSearch = ref<ShopSearchPayload | null>(null)
 
-interface ProductSearchPayload {
-  query: string
-  filters: ProductSearchFiltersPayload
-  chipCategorySlug?: string
-}
-
-const currentSearch = ref<ProductSearchPayload | null>(null)
-
-const createDefaultSearchFilters = (): ProductSearchFiltersPayload => ({
-  priceRange: [0, 5000],
+const createDefaultSearchFilters = (): ShopSearchFiltersPayload => ({
+  priceRange: [...defaultSearchPriceRange] as [number, number],
   attributes: {},
 })
 
@@ -219,33 +190,25 @@ const normalizePath = (value: unknown) => {
   return normalized === '//' ? '/' : normalized
 }
 
+const categoryPath = (item: ProductCategory) => {
+  if (item.routePath) return item.routePath
+  const base = localePath('/shop').replace(/\/+$/, '') || '/'
+  return `${base}/${encodeURIComponent(item.slug)}`
+}
+
 const replaceProductCategoryRoute = async (category: ProductCategory | null) => {
-  const nextSlug = category?.slug || ''
-  if (category?.routePath) {
-    const nextPath = category.routePath
-    if (normalizePath(route.path) === normalizePath(nextPath)) return false
+  const nextPath = category ? categoryPath(category) : localePath('/shop')
+  const currentCategorySlug = readRouteProductCategorySlug()
+  const currentRoutePath = normalizePath(route.path)
+  const targetRoutePath = normalizePath(nextPath)
 
-    const nextQuery: Record<string, any> = { ...route.query }
-    delete nextQuery.product_category
-
-    await router.replace({
-      path: nextPath,
-      query: nextQuery,
-    })
-    return true
-  }
-
-  if (readRouteProductCategorySlug() === nextSlug) return false
+  if (currentRoutePath === targetRoutePath && !currentCategorySlug) return false
 
   const nextQuery: Record<string, any> = { ...route.query }
-  if (nextSlug) {
-    nextQuery.product_category = nextSlug
-  } else {
-    delete nextQuery.product_category
-  }
+  delete nextQuery.product_category
 
   await router.replace({
-    path: route.path,
+    path: nextPath,
     query: nextQuery,
   })
   return true
@@ -285,11 +248,11 @@ const joinUniqueSearchParts = (parts: Array<string | null | undefined>) => {
   return normalized.join(' ')
 }
 
-const buildProductKeyword = (payload?: ProductSearchPayload) => joinUniqueSearchParts([
+const buildProductKeyword = (payload?: ShopSearchPayload) => joinUniqueSearchParts([
   payload?.query,
 ])
 
-const buildProductQueryParams = (payload?: ProductSearchPayload) => {
+const buildProductQueryParams = (payload?: ShopSearchPayload) => {
   const params: Record<string, any> = {
     page: currentProductPage.value,
     per_page: SHOP_PRODUCTS_PAGE_SIZE,
@@ -385,12 +348,12 @@ const emptyProductsDescription = computed(() => {
   return t('shopPage.products.empty.description')
 })
 
-const loadProducts = async (payload?: ProductSearchPayload) => {
+const loadProducts = async (payload?: ShopSearchPayload) => {
   await refresh()
 }
 
-const handleSearch = (payload: ProductSearchPayload) => {
-  const next: ProductSearchPayload = {
+const handleSearch = (payload: ShopSearchPayload) => {
+  const next: ShopSearchPayload = {
     ...payload,
   }
 
@@ -399,14 +362,19 @@ const handleSearch = (payload: ProductSearchPayload) => {
   loadProducts(next)
 }
 
+const handleMobileSearch = (payload: ShopSearchPayload) => {
+  handleSearch(payload)
+  closeCategorySidebar()
+}
+
 const onCategorySelect = async (category: ProductCategory | null) => {
-  const base: ProductSearchPayload =
+  const base: ShopSearchPayload =
     currentSearch.value || ({
       query: '',
       filters: createDefaultSearchFilters(),
-    } as ProductSearchPayload)
+    } as ShopSearchPayload)
 
-  const next: ProductSearchPayload = {
+  const next: ShopSearchPayload = {
     ...base,
   }
 
@@ -440,17 +408,36 @@ onMounted(() => {
     )
   }
 
-  syncSelectedCategoryFromRoute()
-  void loadCategories()
+  const bootstrap = async () => {
+    syncSelectedCategoryFromRoute()
+    await loadCategories()
 
-  const initialPending = pendingSearch.value
-  if (initialPending) {
-    pendingSearch.value = null
-    handleSearch(initialPending as unknown as ProductSearchPayload)
-    return
+    const legacyCategorySlug = readRouteProductCategorySlug()
+    if (legacyCategorySlug) {
+      const legacyCategory = flatCategories.value.find(category => category.slug === legacyCategorySlug) || null
+      if (legacyCategory) {
+        const nextQuery: Record<string, any> = { ...route.query }
+        delete nextQuery.product_category
+
+        await router.replace({
+          path: categoryPath(legacyCategory),
+          query: nextQuery,
+        })
+        return
+      }
+    }
+
+    const initialPending = pendingSearch.value
+    if (initialPending) {
+      pendingSearch.value = null
+      handleSearch(initialPending as unknown as ShopSearchPayload)
+      return
+    }
+
+    loadProducts()
   }
 
-  loadProducts()
+  void bootstrap()
 })
 
 onBeforeUnmount(() => {
@@ -467,7 +454,7 @@ watch(pendingSearch, (payload) => {
   pendingSearch.value = null
 
   syncSelectedCategoryFromRoute()
-  handleSearch(payload as unknown as ProductSearchPayload)
+  handleSearch(payload as unknown as ShopSearchPayload)
 })
 
 const handleAddToWishlist = async (product: ShopProduct) => {
@@ -651,110 +638,6 @@ const handleAddToWishlist = async (product: ShopProduct) => {
   font-size: var(--tz-type-caption);
   font-weight: 850;
   color: rgba(226, 232, 240, 0.82);
-}
-
-.shop-category-sidebar {
-  display: none;
-}
-
-@media (max-width: 768px) {
-  .shop-category-sidebar {
-    position: fixed;
-    inset: 0;
-    z-index: 1700;
-    display: flex;
-    background: rgb(15 23 42 / 0.2);
-  }
-
-  .shop-category-sidebar__panel {
-    display: flex;
-    width: min(86vw, 22rem);
-    min-width: 17rem;
-    height: 100%;
-    flex-direction: column;
-    overflow: hidden;
-    border-right: 1px solid var(--tz-border-strong);
-    background: var(--tz-card-surface);
-    box-shadow: 24px 0 60px -28px rgb(15 23 42 / 0.16);
-  }
-
-  .shop-category-sidebar__header {
-    display: flex;
-    min-height: 3.5rem;
-    flex: 0 0 auto;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 0.75rem 1rem;
-    border-bottom: 1px solid var(--tz-border-subtle);
-    color: var(--tz-text-primary);
-    font-size: 14px;
-    font-weight: 850;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-
-  .shop-category-sidebar__close {
-    display: inline-flex;
-    width: 34px;
-    height: 34px;
-    flex: 0 0 auto;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid var(--tz-border-strong);
-    border-radius: 999px;
-    background: var(--tz-surface-subtle);
-    color: var(--tz-text-primary);
-  }
-
-  .shop-category-sidebar__close:hover,
-  .shop-category-sidebar__close:focus-visible {
-    border-color: rgba(5, 150, 105, 0.64);
-    background: var(--tz-site-accent-soft-surface);
-  }
-
-  .shop-category-sidebar__close:focus-visible {
-    outline: 2px solid rgba(5, 150, 105, 0.72);
-    outline-offset: 2px;
-  }
-
-  .shop-category-sidebar__close :deep(svg) {
-    width: 18px;
-    height: 18px;
-  }
-
-  .shop-category-sidebar__panel :deep(.shop-category-menu) {
-    width: 100%;
-    height: 100%;
-    overflow-y: auto;
-    padding: 0.75rem 0.75rem calc(1rem + env(safe-area-inset-bottom));
-    scrollbar-width: thin;
-    scrollbar-color: rgba(5, 150, 105, 0.46) transparent;
-  }
-
-  .shop-category-sidebar__panel :deep(.shop-category-menu__list) {
-    gap: 0.45rem;
-  }
-
-  .shop-category-sidebar-enter-active,
-  .shop-category-sidebar-leave-active {
-    transition: opacity 0.2s ease;
-  }
-
-  .shop-category-sidebar-enter-active .shop-category-sidebar__panel,
-  .shop-category-sidebar-leave-active .shop-category-sidebar__panel {
-    transition: transform 0.22s ease;
-  }
-
-  .shop-category-sidebar-enter-from,
-  .shop-category-sidebar-leave-to {
-    opacity: 0;
-  }
-
-  .shop-category-sidebar-enter-from .shop-category-sidebar__panel,
-  .shop-category-sidebar-leave-to .shop-category-sidebar__panel {
-    transform: translateX(-100%);
-  }
 }
 
 @media (max-width: 400px) {

@@ -60,6 +60,11 @@ const MinimumOutboundHTTPHalfOpenProbeTimeoutSeconds = 30
 
 const DefaultVisitorProfileIPAddressRetentionDays = 30
 
+const (
+	developmentSiteQualityRunnerToken = "dev-site-quality-runner-token-0123456789"
+	placeholderSiteQualityRunnerToken = "change_me_site_quality_runner_token"
+)
+
 type ServerConfig struct {
 	Port              string   `mapstructure:"port"`
 	Mode              string   `mapstructure:"mode"`
@@ -550,6 +555,7 @@ func setDefaults() {
 		"Idempotency-Key",
 		"X-CSRF-Token",
 		"X-Locale",
+		"X-Timezone",
 		"X-Display-Currency",
 		"X-Market-Country",
 		"X-Country-Code",
@@ -760,7 +766,7 @@ func setDefaults() {
 
 func bindEnvironment() {
 	_ = viper.BindEnv("server.port", "SERVER_PORT")
-	_ = viper.BindEnv("server.mode", "SERVER_MODE")
+	_ = viper.BindEnv("server.mode", "SERVER_MODE", "GIN_MODE")
 	_ = viper.BindEnv("server.base_url", "SERVER_BASE_URL")
 	_ = viper.BindEnv("server.read_timeout", "SERVER_READ_TIMEOUT")
 	_ = viper.BindEnv("server.read_header_timeout", "SERVER_READ_HEADER_TIMEOUT")
@@ -1225,13 +1231,24 @@ func trustedProxyNetworkOverlapsRFC1918(network *net.IPNet) bool {
 	return false
 }
 
+func isDefaultSiteQualityRunnerToken(token string) bool {
+	switch strings.ToLower(strings.TrimSpace(token)) {
+	case developmentSiteQualityRunnerToken,
+		placeholderSiteQualityRunnerToken:
+		return true
+	default:
+		return false
+	}
+}
+
 // validateConfig 验证配置是否完整
 func validateConfig(cfg *Config) error {
+	releaseMode := strings.EqualFold(cfg.Server.Mode, "release")
 	if cfg.JWT.Secret == "" {
 		return fmt.Errorf("JWT secret is required. Please set JWT_SECRET environment variable or jwt.secret in config file")
 	}
 
-	if strings.EqualFold(cfg.Server.Mode, "release") && len(cfg.JWT.Secret) < 32 {
+	if releaseMode && len(cfg.JWT.Secret) < 32 {
 		return fmt.Errorf("JWT secret must be at least 32 characters in release mode")
 	}
 	if cfg.Server.ReadTimeout <= 0 ||
@@ -1241,7 +1258,7 @@ func validateConfig(cfg *Config) error {
 		cfg.Server.MaxHeaderBytes <= 0 {
 		return fmt.Errorf("server timeout and header size limits must be positive")
 	}
-	if err := validateTrustedProxies(cfg.Server.TrustedProxies, strings.EqualFold(cfg.Server.Mode, "release")); err != nil {
+	if err := validateTrustedProxies(cfg.Server.TrustedProxies, releaseMode); err != nil {
 		return err
 	}
 	if err := validateRedisConfig(cfg.Redis); err != nil {
@@ -1274,10 +1291,10 @@ func validateConfig(cfg *Config) error {
 	if cfg.OrderNumber.NodeID > 1023 {
 		return fmt.Errorf("ORDER_NUMBER_NODE_ID must be between 0 and 1023")
 	}
-	if strings.EqualFold(cfg.Server.Mode, "release") && len(cfg.OrderNumber.EffectiveSecret(cfg.JWT.Secret)) < 32 {
+	if releaseMode && len(cfg.OrderNumber.EffectiveSecret(cfg.JWT.Secret)) < 32 {
 		return fmt.Errorf("ORDER_NUMBER_SECRET or JWT_SECRET must be at least 32 characters in release mode")
 	}
-	if strings.EqualFold(cfg.Server.Mode, "release") &&
+	if releaseMode &&
 		cfg.OrderNumber.EffectivePreviousSecret() != "" &&
 		len(cfg.OrderNumber.EffectivePreviousSecret()) < 32 {
 		return fmt.Errorf("ORDER_NUMBER_PREVIOUS_SECRET must be at least 32 characters in release mode when configured")
@@ -1429,6 +1446,16 @@ func validateConfig(cfg *Config) error {
 		}
 		if len(strings.TrimSpace(cfg.SiteQuality.RunnerToken)) < 32 {
 			return fmt.Errorf("SITE_QUALITY_RUNNER_TOKEN must be at least 32 characters when the Site Quality job worker is enabled")
+		}
+		if releaseMode && isDefaultSiteQualityRunnerToken(cfg.SiteQuality.RunnerToken) {
+			return fmt.Errorf("SITE_QUALITY_RUNNER_TOKEN must not use a development/default value in release mode")
+		}
+	} else if releaseMode {
+		if strings.TrimSpace(cfg.SiteQuality.RunnerURL) != "" && strings.TrimSpace(cfg.SiteQuality.RunnerToken) == "" {
+			return fmt.Errorf("SITE_QUALITY_RUNNER_TOKEN is required in release mode when the Site Quality runner is configured")
+		}
+		if isDefaultSiteQualityRunnerToken(cfg.SiteQuality.RunnerToken) {
+			return fmt.Errorf("SITE_QUALITY_RUNNER_TOKEN must not use a development/default value in release mode")
 		}
 	}
 	if cfg.Worker.MediaDerivativeRebuildEnabled {

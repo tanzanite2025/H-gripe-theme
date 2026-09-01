@@ -1,4 +1,5 @@
-import { computed, useAsyncData, useI18n, usePublicApiBase, useRuntimeConfig } from '#imports'
+import { computed, useAsyncData, useI18n, useRuntimeConfig } from '#imports'
+import { useApiRequest } from '~/composables/useApiRequest'
 import { homeHeroVisualShowcaseFallback } from '~/data/homeHeroVisualShowcaseFallback'
 import type {
   HomeHeroVisualShowcaseApiEnvelope,
@@ -42,7 +43,7 @@ const normalizeShowcaseItem = (
 
 export async function useHomeHeroVisualShowcase() {
   const { locale } = useI18n()
-  const apiBase = usePublicApiBase()
+  const { request } = useApiRequest()
   const runtimeConfig = useRuntimeConfig()
   const mediaContext = createStorefrontMediaContext(runtimeConfig)
   const requestKey = computed(() => `home-hero-visual-showcase-${locale.value}`)
@@ -54,12 +55,13 @@ export async function useHomeHeroVisualShowcase() {
     refresh,
   } = await useAsyncData<HomeHeroVisualShowcaseApiEnvelope | null>(
     requestKey,
-    () => $fetch<HomeHeroVisualShowcaseApiEnvelope>(
-      `${apiBase.value}/visual-showcases/home-hero`,
+    () => request<HomeHeroVisualShowcaseApiEnvelope>(
+      '/visual-showcases/home-hero',
       {
         query: { locale: locale.value },
         headers: { accept: 'application/json' },
       },
+      'Failed to load home hero visual showcase',
     ),
     { default: () => null },
   )

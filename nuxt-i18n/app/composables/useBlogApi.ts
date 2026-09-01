@@ -1,5 +1,6 @@
 import { computed } from 'vue'
 import { useRuntimeConfig } from '#imports'
+import { useApiRequest } from '~/composables/useApiRequest'
 import {
   getBlogPostBySlug,
   getBlogTranslationsByGroup,
@@ -31,26 +32,13 @@ type BlogTranslationsResponse = {
   translations: Record<string, { id: number; slug: string }>
 }
 
-const trimTrailingSlash = (value: string) => value.replace(/\/$/, '')
-
-const resolveApiV1Base = (apiBase: string, internalOrigin: string, isServer: boolean) => {
-  const normalized = trimTrailingSlash(apiBase || '/api/v1')
-  if (isServer && normalized.startsWith('/')) {
-    return `${trimTrailingSlash(internalOrigin || 'http://localhost:9200')}${normalized}`
-  }
-  if (normalized === '/') return '/api/v1'
-  return normalized.endsWith('/api/v1') ? normalized : `${normalized}/api/v1`
-}
-
 export const useBlogApi = () => {
   const config = useRuntimeConfig()
+  const { baseURL, request } = useApiRequest()
   const mediaContext = createStorefrontMediaContext(config)
-  const internalApiOrigin = import.meta.server
-    ? String((config as { apiInternalOrigin?: string }).apiInternalOrigin || '')
-    : ''
 
   const apiBase = computed(() => {
-    return (config.public as { apiBase?: string }).apiBase || '/api/v1'
+    return baseURL
   })
 
   const blogApiMode = computed(() => {
@@ -72,12 +60,6 @@ export const useBlogApi = () => {
       },
     }
   }
-
-  const apiRoot = computed(() => resolveApiV1Base(
-    apiBase.value,
-    internalApiOrigin,
-    import.meta.server,
-  ))
 
   const mapPost = (item: any, fallbackLocale: string): BlogPostSummary => {
     const categories = item.tags
@@ -133,8 +115,8 @@ export const useBlogApi = () => {
       }
     }
 
-    const response = await $fetch<{ data: BlogPostSummary[], total: number }>(
-      `${apiRoot.value}/content/posts`,
+    const response = await request<{ data: BlogPostSummary[], total: number }>(
+      '/content/posts',
       {
         params: {
           locale: params.lang,
@@ -144,6 +126,7 @@ export const useBlogApi = () => {
           status: 'published',
         },
       },
+      'Failed to load blog posts',
     )
 
     if (!Array.isArray(response.data)) {
@@ -166,13 +149,14 @@ export const useBlogApi = () => {
       throw new Error('Blog post not found')
     }
 
-    const response = await $fetch<{ data: BlogPostDetail } | BlogPostDetail>(
-      `${apiRoot.value}/content/posts/${encodeURIComponent(params.slug)}`,
+    const response = await request<{ data: BlogPostDetail } | BlogPostDetail>(
+      `/content/posts/${encodeURIComponent(params.slug)}`,
       {
         params: {
           locale: params.lang,
         },
       },
+      'Failed to load blog post',
     )
     const post = (response as any).data || response
     if (!post || typeof post !== 'object') {
@@ -197,8 +181,10 @@ export const useBlogApi = () => {
   }
 
   const getPostTranslations = async (postId: number): Promise<Record<string, any>> => {
-    const response = await $fetch<{ translations: Record<string, any> }>(
-      `${apiRoot.value}/i18n/translations/${postId}`,
+    const response = await request<{ translations: Record<string, any> }>(
+      `/i18n/translations/${postId}`,
+      {},
+      'Failed to load blog translations',
     )
     if (!response || !response.translations) {
       throw new Error(`Post translations response invalid for postId ${postId}`)

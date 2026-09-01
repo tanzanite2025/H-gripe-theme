@@ -1,4 +1,5 @@
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
+import { useApiRequest } from '~/composables/useApiRequest'
 
 export interface AttributeValue {
   id: number
@@ -43,11 +44,7 @@ interface ProductSpecificationTemplateSchema {
 }
 
 export const useProductAttributes = () => {
-  const config = useRuntimeConfig()
-  const apiBase = computed(() => {
-    const base = (config.public as { apiBase?: string }).apiBase || '/api/v1'
-    return base.replace(/\/$/, '')
-  })
+  const { request } = useApiRequest()
 
   const filterableAttributes = ref<AttributeWithValues[]>([])
   const loading = ref(false)
@@ -123,11 +120,12 @@ export const useProductAttributes = () => {
     error.value = null
 
     try {
-      const response = await $fetch<{ data: ProductSpecificationTemplateSchema[] }>(
-        `${apiBase.value}/products/specification-templates`,
+      const response = await request<{ data: ProductSpecificationTemplateSchema[] }>(
+        '/products/specification-templates',
         {
           headers: { accept: 'application/json' },
         },
+        'Failed to load product specification template filters',
       )
 
       const items = Array.isArray(response?.data) ? response.data : []

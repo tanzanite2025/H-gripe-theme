@@ -67,7 +67,7 @@ import { useCustomerServiceRealtime } from '@/composables/customerService/useCus
 import { useCustomerServiceTyping } from '@/composables/customerService/useCustomerServiceTyping'
 import { useAuthStore } from '@/stores/auth'
 import { statusDisplayValue } from '@/lib/customerServicePresentation'
-import type { CustomerConversation, CustomerServiceSendMessagePayload } from './customerServiceTypes'
+import type { CustomerConversation, CustomerServiceSendMessagePayload } from '@/modules/customer-service/customerServiceTypes'
 
 withDefaults(defineProps<{
   showHeader?: boolean
@@ -294,3 +294,4 @@ onBeforeUnmount(() => {
   clearTypingTimers()
 })
 </script>
+

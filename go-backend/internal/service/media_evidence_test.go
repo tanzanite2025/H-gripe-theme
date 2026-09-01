@@ -57,9 +57,9 @@ func TestMediaEvidencePreservesOriginalAndDetectsStorageChanges(t *testing.T) {
 	}))
 
 	service := NewMediaService(repository.NewMediaRepository(db), storageService, settingService, "https://shop.northstar.example", 20<<30)
-	original := []byte("original image bytes for copyright evidence")
+	original := mediaUploadTestPNG(t)
 	asset, err := service.UploadAsset(context.Background(), MediaUploadInput{
-		File:       multipartFileHeader(t, "wheelset.jpg", "image/jpeg", original),
+		File:       multipartFileHeader(t, "wheelset.png", "image/png", original),
 		MediaType:  "image",
 		UploaderID: 42,
 	})
@@ -76,7 +76,7 @@ func TestMediaEvidencePreservesOriginalAndDetectsStorageChanges(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, archive.File, 4)
 
-	originalEntry := zipEntry(t, archive, "original/wheelset.jpg")
+	originalEntry := zipEntry(t, archive, "original/wheelset.png")
 	originalContents := zipEntryContents(t, originalEntry)
 	require.Equal(t, original, originalContents)
 

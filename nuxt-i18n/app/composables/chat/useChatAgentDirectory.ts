@@ -1,3 +1,5 @@
+import { useApiRequest, type ApiRequestFunction } from '~/composables/useApiRequest'
+
 export interface ChatEmailSettings {
   preSalesEmail: string
   afterSalesEmail: string
@@ -10,7 +12,7 @@ export interface ChatAgentCacheData {
 }
 
 interface LoadChatAgentDirectoryOptions {
-  apiBase: string
+  request?: ApiRequestFunction
   currentUserId?: number | string | null
   allowDevFallback?: boolean
 }
@@ -95,8 +97,14 @@ export const getDevFallbackAgentDirectory = (): ChatAgentCacheData => ({
   }
 })
 
-export const fetchChatAgentDirectory = async (apiBase: string): Promise<ChatAgentCacheData> => {
-  const response = await $fetch<any>(`${apiBase}/customer-service/agents`)
+export const fetchChatAgentDirectory = async (
+  apiRequest: ApiRequestFunction = useApiRequest().request,
+): Promise<ChatAgentCacheData> => {
+  const response = await apiRequest<any>(
+    '/customer-service/agents',
+    { headers: { accept: 'application/json' } },
+    'Failed to fetch customer-service agents',
+  )
   return {
     agents: response?.success && Array.isArray(response.data) ? response.data.map(normalizeChatAgent) : [],
     groups: response?.success && Array.isArray(response.groups) ? response.groups : [],
@@ -105,7 +113,7 @@ export const fetchChatAgentDirectory = async (apiBase: string): Promise<ChatAgen
 }
 
 export const loadChatAgentDirectory = async ({
-  apiBase,
+  request,
   currentUserId,
   allowDevFallback = false
 }: LoadChatAgentDirectoryOptions) => {
@@ -123,7 +131,7 @@ export const loadChatAgentDirectory = async ({
   }
 
   try {
-    directory = await fetchChatAgentDirectory(apiBase)
+    directory = await fetchChatAgentDirectory(request)
   } catch (error) {
     console.warn('Failed to fetch agents from API', error)
   }

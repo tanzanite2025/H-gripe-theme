@@ -86,7 +86,7 @@ import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { TabsContent } from '@/components/ui/tabs'
 import { serviceAreaLabel } from '@/lib/shippingPresentation'
-import type { ShippingCarrier } from './shippingTypes'
+import type { ShippingCarrier } from '@/modules/shipping/shippingTypes'
 
 withDefaults(defineProps<{
   carriers?: ShippingCarrier[]
@@ -108,3 +108,4 @@ const emit = defineEmits<{
   (event: 'delete', carrier: ShippingCarrier): void
 }>()
 </script>
+

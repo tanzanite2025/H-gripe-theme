@@ -89,7 +89,7 @@ import type {
   ProductSpecTemplateRecord,
   ProductSpecTemplateSpecDefinition,
   ProductSpecTemplateSpecForm
-} from '@/components/admin/product/productSpecificationTemplateTypes'
+} from '@/modules/product/productSpecificationTemplateTypes'
 import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/stores/auth'
 import productSpecTemplateApi from '@/api/productSpecificationTemplates'
@@ -390,3 +390,4 @@ onMounted(() => {
   void fetchProductSpecificationTemplates()
 })
 </script>
+

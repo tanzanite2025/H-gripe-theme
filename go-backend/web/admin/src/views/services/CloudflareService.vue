@@ -289,7 +289,7 @@ import AdminStatusBadge, { type AdminStatusTone } from '@/components/admin/Admin
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { opsConnectorEnvironmentOptions } from '@/components/admin/ops/opsConnectorBindingForm'
+import { opsConnectorEnvironmentOptions } from '@/modules/ops/opsConnectorBindingForm'
 import AdminConfirmDialog from '@/components/admin/AdminConfirmDialog.vue'
 import servicesApi, {
   type CloudflareCacheRule,
@@ -577,3 +577,4 @@ onMounted(() => {
   void loadCloudflare()
 })
 </script>
+

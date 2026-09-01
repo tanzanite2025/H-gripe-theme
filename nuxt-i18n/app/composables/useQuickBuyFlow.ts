@@ -1,7 +1,7 @@
 import { computed } from 'vue'
 import { useAsyncData, useRuntimeConfig } from '#imports'
 import { useI18n } from 'vue-i18n'
-import { usePublicApiBase } from '~/composables/usePublicApiBase'
+import { useApiRequest } from '~/composables/useApiRequest'
 import { extractQuickBuyPayload, normalizeQuickBuyFlow } from '~/utils/quickBuy/normalize'
 import { createStorefrontMediaContext } from '~/utils/storefrontMedia'
 import type {
@@ -12,22 +12,21 @@ import type {
 export function useQuickBuyFlow(surface = 'dock') {
   const runtimeConfig = useRuntimeConfig()
   const mediaContext = createStorefrontMediaContext(runtimeConfig)
-  const apiBase = usePublicApiBase()
+  const { request } = useApiRequest()
   const { locale } = useI18n()
   let refreshPromise: Promise<void> | null = null
 
   const { data, pending, error, refresh } = useAsyncData<QuickBuyFlow | null>(
     `mytheme-quick-buy-flow:${surface}`,
     async () => {
-      if (!apiBase.value) return null
       try {
-        const response = await $fetch<unknown>(`${apiBase.value}/quick-buy/flows/current`, {
+        const response = await request<unknown>('/quick-buy/flows/current', {
           headers: locale.value ? { 'Accept-Language': String(locale.value), accept: 'application/json' } : { accept: 'application/json' },
           params: {
             surface,
             locale: locale.value,
           }
-        })
+        }, 'Failed to load quick buy flow')
         return normalizeQuickBuyFlow(extractQuickBuyPayload(response), mediaContext)
       } catch (fetchError) {
         console.warn('Failed to load quick buy flow:', fetchError)
@@ -37,7 +36,7 @@ export function useQuickBuyFlow(surface = 'dock') {
     {
       server: false,
       default: () => null,
-      watch: [apiBase, locale],
+      watch: [locale],
       dedupe: 'defer',
     }
   )

@@ -224,7 +224,7 @@ import type {
   CommercialCrawlerProtection,
   CommercialCrawlerRule,
   OrderNumberProtection,
-} from './settingsTypes'
+} from '@/modules/settings/types'
 
 const props = withDefaults(defineProps<{
   protection?: CommercialCrawlerProtection | null

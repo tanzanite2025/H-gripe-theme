@@ -100,11 +100,11 @@ import {
   visualShowcaseHomeHeroAdministrationRowsFromApiItems,
   visualShowcaseHomeHeroAdministrationSavePayloadFromFormRow,
   visualShowcaseHomeHeroAdministrationValidationMessage,
-} from '@/components/admin/visual-showcase/visualShowcaseFormState'
+} from '@/modules/visual-showcase/visualShowcaseFormState'
 import type {
   VisualShowcaseAdministrationItemFormState,
   VisualShowcaseAdministrationUploadRequest,
-} from '@/components/admin/visual-showcase/visualShowcaseTypes'
+} from '@/modules/visual-showcase/visualShowcaseTypes'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useAuthStore } from '@/stores/auth'
@@ -194,3 +194,4 @@ onMounted(() => {
   void loadItems()
 })
 </script>
+

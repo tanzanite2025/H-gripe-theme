@@ -123,7 +123,7 @@ import { uploadSpecAccept, validateUploadFile } from '@/lib/uploadSpecs'
 import type {
   VisualShowcaseAdministrationItemFormState,
   VisualShowcaseAdministrationUploadRequest,
-} from './visualShowcaseTypes'
+} from '@/modules/visual-showcase/visualShowcaseTypes'
 
 const props = withDefaults(defineProps<{
   item: VisualShowcaseAdministrationItemFormState
@@ -179,3 +179,4 @@ const handleUploadFile = async (event: Event): Promise<void> => {
   emit('upload-image', { index: props.index, file })
 }
 </script>
+

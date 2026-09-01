@@ -24,6 +24,7 @@ const OpsConnectorMasterKeyEnv = "OPS_CONNECTOR_MASTER_KEY"
 
 const (
 	cloudflareAPIBaseURL = "https://api.cloudflare.com/client/v4"
+	githubAPIBaseURL     = "https://api.github.com"
 	hostingerAPIBaseURL  = "https://developers.hostinger.com"
 )
 
@@ -419,6 +420,80 @@ func (s *OpsConnectorService) HostingerRead(ctx context.Context, id uint, path s
 	}
 	if err := json.Unmarshal(body, target); err != nil {
 		return response.StatusCode, fmt.Errorf("decode Hostinger response: %w", err)
+	}
+	return response.StatusCode, nil
+}
+
+func (s *OpsConnectorService) GitHubRead(ctx context.Context, id uint, path string, query url.Values, target interface{}) (int, error) {
+	if s == nil || s.repo == nil {
+		return 0, errors.New("operations connector service is not configured")
+	}
+	if path != "/user/repos" {
+		return 0, fmt.Errorf("%w: GitHub read path is not allowed", ErrInvalidOpsConnector)
+	}
+
+	record, err := s.repo.FindByID(id)
+	if err != nil {
+		return 0, err
+	}
+	if record.Provider != ops.ConnectorProviderGitHub {
+		return 0, fmt.Errorf("%w: connector is not a GitHub connector", ErrInvalidOpsConnector)
+	}
+	if !record.Enabled {
+		return 0, errors.New("GitHub connector is disabled")
+	}
+
+	credentials, err := s.readCredentialsForRequest(ctx, *record)
+	if err != nil {
+		return 0, err
+	}
+	if len(credentials) == 0 {
+		return 0, errors.New("GitHub connector credentials are not configured")
+	}
+
+	endpoint, err := url.Parse(githubAPIBaseURL + path)
+	if err != nil {
+		return 0, fmt.Errorf("build GitHub request: %w", err)
+	}
+	endpoint.RawQuery = query.Encode()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint.String(), nil)
+	if err != nil {
+		return 0, fmt.Errorf("build GitHub request: %w", err)
+	}
+	req.Header.Set("Accept", "application/vnd.github+json")
+	req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
+	req.Header.Set("User-Agent", "tanzanite-ops-github-read/1.0")
+	applyConnectorAuth(req, record.AuthType, credentials)
+
+	if err := ensureConnectorEndpointSafe(ctx, req.URL, record.Environment); err != nil {
+		return 0, err
+	}
+	client := s.httpClient
+	if client == nil {
+		client = &http.Client{Timeout: 12 * time.Second}
+	}
+	clientCopy := *client
+	clientCopy.CheckRedirect = func(redirectRequest *http.Request, _ []*http.Request) error {
+		return ensureConnectorEndpointSafe(redirectRequest.Context(), redirectRequest.URL, record.Environment)
+	}
+
+	response, err := clientCopy.Do(req)
+	if err != nil {
+		return 0, fmt.Errorf("GitHub request failed: %w", err)
+	}
+	defer response.Body.Close()
+	body, err := io.ReadAll(io.LimitReader(response.Body, 4<<20))
+	if err != nil {
+		return response.StatusCode, fmt.Errorf("read GitHub response: %w", err)
+	}
+	if response.StatusCode < 200 || response.StatusCode >= 300 {
+		return response.StatusCode, fmt.Errorf("GitHub API returned HTTP %d", response.StatusCode)
+	}
+	if target == nil || len(body) == 0 {
+		return response.StatusCode, nil
+	}
+	if err := json.Unmarshal(body, target); err != nil {
+		return response.StatusCode, fmt.Errorf("decode GitHub response: %w", err)
 	}
 	return response.StatusCode, nil
 }

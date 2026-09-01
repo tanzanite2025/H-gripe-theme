@@ -281,7 +281,7 @@ import type {
   ProductVariantForm,
   ProductVariantOptionValueForm,
   ShippingTemplateRecord,
-} from './productEditorTypes'
+} from '@/modules/product/productEditorTypes'
 
 const defaultRadioName = `product-variant-default-${Math.random().toString(36).slice(2)}`
 
@@ -487,3 +487,4 @@ const setShippingTemplateValue = (variant: ProductVariantForm, value: unknown): 
 }
 
 </script>
+

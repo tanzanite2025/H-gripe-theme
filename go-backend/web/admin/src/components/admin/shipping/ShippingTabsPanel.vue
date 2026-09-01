@@ -116,7 +116,7 @@ import type {
   ShippingZone,
   TrackingCarrierMapping,
   TrackingProvider
-} from './shippingTypes'
+} from '@/modules/shipping/shippingTypes'
 
 withDefaults(defineProps<{
   activeTab?: string
@@ -181,3 +181,4 @@ const refresh = () => trackingShipmentsPanelRef.value?.refresh?.()
 
 defineExpose({ refresh })
 </script>
+

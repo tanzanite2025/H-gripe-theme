@@ -113,7 +113,7 @@ import type {
   ShippingCarrier,
   ShippingCarrierService,
   TrackingProvider
-} from './orderTypes'
+} from '@/modules/order/orderTypes'
 
 withDefaults(defineProps<{
   open?: boolean
@@ -145,3 +145,4 @@ const emit = defineEmits<{
   (event: 'carrier-service-change', value: string): void
 }>()
 </script>
+

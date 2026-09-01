@@ -202,7 +202,6 @@ const runtimeSharpTraceDeps = (() => {
 })()
 
 export default defineNuxtConfig({
-  extends: ['./layers/admin', './layers/shop'],
   compatibilityDate: '2025-07-15',
   // 使用 app 作为源码目录，启用 app/pages 与 app/components
   srcDir: 'app',

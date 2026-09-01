@@ -43,7 +43,7 @@
         :loading-refund-return-policy="loadingRefundReturnPolicy"
         :saving-refund-return-policy="savingRefundReturnPolicy"
         :uploading-refund-return-section="uploadingRefundReturnSection"
-        :can-edit="hasPermission('settings:edit')"
+        :can-edit="canEditActiveTab"
         @open-agent-dialog="openPublicChatAgentDialog"
         @open-group-dialog="openPublicChatGroupDialog"
         @edit-group="editPublicChatGroup"
@@ -104,6 +104,7 @@ import { assetAccessURL } from '@/lib/mediaPresentation'
 import { validateUploadFile } from '@/lib/uploadSpecs'
 import { useAuthStore } from '@/stores/auth'
 import axios from '@/utils/axios'
+import type { ApiManagementSettings } from '@/modules/settings/types'
 
 const authStore = useAuthStore()
 const { t } = useAdminI18n()
@@ -120,7 +121,7 @@ const activeTab = useRouteTab({
     api: 'SettingsApi',
     commercial_crawler: 'SettingsCommercialCrawler',
     public_chat: 'SupportPublicChat',
-    refund_return: 'SettingsRefundReturn',
+    refund_return: 'ContentRefundReturn',
   },
 })
 
@@ -137,11 +138,11 @@ interface SettingsGroupDefinition {
   fields: Record<string, SettingFieldDefinition>
 }
 
-const pageTitle = computed(() => (
-  activeTab.value === 'public_chat'
-    ? t('settings.publicChatTitle')
-    : t('settings.systemTitle')
-))
+const pageTitle = computed(() => {
+  if (activeTab.value === 'public_chat') return t('settings.publicChatTitle')
+  if (activeTab.value === 'refund_return') return '退货退款'
+  return t('settings.systemTitle')
+})
 const pageDescription = computed(() => {
   if (activeTab.value === 'markets') return t('settings.marketsDescription')
   if (activeTab.value === 'public_chat') return t('settings.publicChatDescription')
@@ -171,7 +172,7 @@ const siteSettings = reactive({
   admin_html_title: ''
 })
 const emailSettings = reactive({ smtp_host: '', smtp_port: 587, smtp_username: '', smtp_password: '', from_email: '', from_name: '' })
-const apiSettings = reactive({
+const apiSettings = reactive<ApiManagementSettings>({
   time_api_enabled: false,
   time_api_provider: 'built-in',
   time_api_endpoint: '',
@@ -306,6 +307,11 @@ const groupDefinitions: Record<string, SettingsGroupDefinition> = {
 }
 
 const hasPermission = (permission) => authStore.hasPermission(permission)
+const canEditActiveTab = computed(() => (
+  activeTab.value === 'refund_return'
+    ? hasPermission('content:edit')
+    : hasPermission('settings:edit')
+))
 const coerceSettingValue = (value, type) => {
   if (type === 'number') {
     const parsed = Number(value)
@@ -454,7 +460,7 @@ const normalizePolicyForSave = (): RefundReturnPolicy => ({
 })
 
 const saveRefundReturnPolicy = async () => {
-  if (!hasPermission('settings:edit')) return
+  if (!hasPermission('content:edit')) return
   savingRefundReturnPolicy.value = true
   try {
     const response = await refundReturnPolicyApi.update(refundReturnPolicyLocale.value, normalizePolicyForSave())
@@ -477,6 +483,7 @@ const changeRefundReturnPolicyLocale = async (locale) => {
 }
 
 const uploadRefundReturnImage = async ({ index, file }) => {
+  if (!hasPermission('content:edit')) return
   if (!file || !refundReturnPolicy.sections[index]) return
   const validation = await validateUploadFile(file, 'refund_return_image')
   if (!validation.ok) {
@@ -491,7 +498,7 @@ const uploadRefundReturnImage = async ({ index, file }) => {
     formData.append('media_type', 'image')
     formData.append('image_purpose', 'refund_return_image')
     formData.append('alt', refundReturnPolicy.sections[index].image.alt || refundReturnPolicy.sections[index].title || 'Refund return policy image')
-    const asset = await mediaApi.uploadAsset(formData)
+    const asset = await refundReturnPolicyApi.uploadImage(formData)
     const imageURL = String(assetAccessURL(asset) || asset?.url || '').trim()
     if (!imageURL) {
       toast.error('上传成功但没有返回图片地址')

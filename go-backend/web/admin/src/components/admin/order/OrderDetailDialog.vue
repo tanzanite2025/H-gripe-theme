@@ -55,7 +55,7 @@ import type {
   OrderStatusToneResolver,
   TrackingEvent,
   TrackingShipment
-} from './orderTypes'
+} from '@/modules/order/orderTypes'
 
 withDefaults(defineProps<{
   open?: boolean
@@ -118,3 +118,4 @@ const forwardCustomsUpdate = (
   emit('update-customs', orderItemId, declaredValue, declaredValueConfirmed)
 }
 </script>
+

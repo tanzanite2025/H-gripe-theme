@@ -967,7 +967,7 @@ func siteQualityStructuredDataPrimaryEntityKey(node siteQualityStructuredDataNod
 		siteQualityStructuredDataPrimaryEntityURL(node),
 		node.URL,
 	} {
-		normalized := strings.ToLower(strings.TrimSpace(value))
+		normalized := strings.ToLower(siteQualityStructuredDataNormalizeURL(value))
 		if normalized != "" {
 			return nodeType + "\x00" + normalized
 		}
@@ -1130,7 +1130,7 @@ func siteQualityStructuredDataPrimaryType(node siteQualityStructuredDataNodeView
 
 func siteQualityStructuredDataPrimaryEntityURL(node siteQualityStructuredDataNodeView) string {
 	if node.URL != "" {
-		return strings.TrimSpace(node.URL)
+		return siteQualityStructuredDataNormalizeURL(node.URL)
 	}
 	for _, key := range []string{"url", "@id", "mainEntityOfPage"} {
 		if value := siteQualityStructuredDataURLValue(node.DataMap[key]); value != "" {
@@ -1170,7 +1170,7 @@ func siteQualityStructuredDataEvidenceFromNode(
 		Type:        siteQualityStructuredDataPrimaryType(node),
 		ID:          strings.TrimSpace(node.ID),
 		Name:        strings.TrimSpace(node.Name),
-		URL:         strings.TrimSpace(node.URL),
+		URL:         siteQualityStructuredDataNormalizeURL(node.URL),
 		Selector:    strings.TrimSpace(node.Selector),
 		Property:    strings.TrimSpace(property),
 		Explanation: strings.TrimSpace(explanation),
@@ -1202,7 +1202,7 @@ func siteQualityStructuredDataStringValue(value interface{}) string {
 func siteQualityStructuredDataURLValue(value interface{}) string {
 	switch typed := value.(type) {
 	case string:
-		return strings.TrimSpace(typed)
+		return siteQualityStructuredDataNormalizeURL(typed)
 	case map[string]interface{}:
 		for _, key := range []string{"url", "@id", "contentUrl", "image"} {
 			if nested := siteQualityStructuredDataURLValue(typed[key]); nested != "" {
@@ -1217,6 +1217,17 @@ func siteQualityStructuredDataURLValue(value interface{}) string {
 		}
 	}
 	return ""
+}
+
+func siteQualityStructuredDataNormalizeURL(value string) string {
+	normalized := strings.TrimSpace(value)
+	if normalized == "" {
+		return ""
+	}
+	if canonical, err := canonicalizeAbsoluteSiteQualityURL(normalized); err == nil {
+		return canonical
+	}
+	return normalized
 }
 
 func siteQualityStructuredDataImageValid(value interface{}) bool {

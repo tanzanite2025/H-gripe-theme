@@ -243,7 +243,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import type { VisitorIPBlockPayload, VisitorProfile } from './visitorTypes'
+import type { VisitorIPBlockPayload, VisitorProfile } from '@/modules/visitor/visitorTypes'
 
 const props = withDefaults(defineProps<{
   selectedProfile?: VisitorProfile | null
@@ -401,3 +401,4 @@ const FactRow = defineComponent({
   }
 })
 </script>
+

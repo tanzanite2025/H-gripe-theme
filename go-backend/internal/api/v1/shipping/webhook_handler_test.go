@@ -76,7 +76,9 @@ func TestParseTrackingWebhookInputSupportsTrack17TrackingUpdatedPayload(t *testi
 									"description": "Delivered to recipient",
 									"location": "Los Angeles, CA",
 									"stage": "Delivered",
-									"sub_status": "Delivered"
+									"sub_status": "Delivered",
+									"recipient_signature_name": "Test Rider",
+									"proof_of_delivery_url": "https://carrier.example.test/pod/YT123456789CN.pdf"
 								},
 								{
 									"time_utc": "2026-07-21 08:10:00",
@@ -103,9 +105,39 @@ func TestParseTrackingWebhookInputSupportsTrack17TrackingUpdatedPayload(t *testi
 	assert.Equal(t, "Delivered", input.Events[0].Status)
 	assert.Equal(t, "Delivered to recipient", input.Events[0].Description)
 	assert.Equal(t, "Los Angeles, CA", input.Events[0].Location)
+	assert.Equal(t, "Test Rider", input.Events[0].RecipientSignatureName)
+	assert.Equal(t, "https://carrier.example.test/pod/YT123456789CN.pdf", input.Events[0].ProofOfDeliveryURL)
 	assert.Equal(t, time.Date(2026, 7, 22, 10, 20, 30, 0, time.UTC), input.Events[0].EventTime)
 	assert.Equal(t, "InTransit", input.Events[1].Status)
 	assert.Equal(t, time.Date(2026, 7, 21, 8, 10, 0, 0, time.UTC), input.Events[1].EventTime)
+}
+
+func TestParseTrackingWebhookInputPreservesSignaturePODAliases(t *testing.T) {
+	payload := []byte(`{
+		"tracking_number": "1Z999999999",
+		"provider_carrier_code": "UPS",
+		"status": "Delivered",
+		"events": [
+			{
+				"status": "Delivered",
+				"description": "Delivered to recipient",
+				"location": "Austin, TX",
+				"event_time": "2026-07-23T11:22:33Z",
+				"signed_by": "Ada Lovelace",
+				"pod_url": "https://carrier.example.test/pod/1Z999999999.pdf"
+			}
+		]
+	}`)
+
+	input, err := parseTrackingWebhookInput(payload)
+
+	require.NoError(t, err)
+	assert.Equal(t, "1Z999999999", input.TrackingNumber)
+	assert.Equal(t, "UPS", input.ProviderCarrierCode)
+	require.Len(t, input.Events, 1)
+	assert.Equal(t, "Ada Lovelace", input.Events[0].RecipientSignatureName)
+	assert.Equal(t, "https://carrier.example.test/pod/1Z999999999.pdf", input.Events[0].ProofOfDeliveryURL)
+	assert.Equal(t, time.Date(2026, 7, 23, 11, 22, 33, 0, time.UTC), input.Events[0].EventTime)
 }
 
 func TestParseTrackingWebhookInputFallsBackToTrack17LatestEvent(t *testing.T) {

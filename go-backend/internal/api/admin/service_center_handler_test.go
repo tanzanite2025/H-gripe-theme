@@ -50,6 +50,50 @@ func TestServiceCenterHandlerCloudflareFiltersResources(t *testing.T) {
 	require.Equal(t, "www.example.com", body.Data.Domains[0].Domain)
 }
 
+func TestServiceCenterHandlerGitHubFiltersResources(t *testing.T) {
+	handler := newServiceCenterTestHandler(t)
+
+	recorder := httptest.NewRecorder()
+	context, _ := gin.CreateTestContext(recorder)
+	context.Request = httptest.NewRequest(http.MethodGet, "/api/admin/services/github?environment=production", nil)
+
+	handler.GitHub(context)
+
+	require.Equal(t, http.StatusOK, recorder.Code)
+	var body struct {
+		Code int `json:"code"`
+		Data struct {
+			ConnectionCount      int      `json:"connection_count"`
+			ProjectCount         int      `json:"project_count"`
+			RepositoryCount      int      `json:"repository_count"`
+			RepositoryReadErrors []string `json:"repository_read_errors"`
+			Connections          []struct {
+				Name     string `json:"name"`
+				Provider string `json:"provider"`
+			} `json:"connections"`
+			Projects []struct {
+				Name string `json:"name"`
+			} `json:"projects"`
+			Repositories []struct {
+				FullName string `json:"full_name"`
+			} `json:"repositories"`
+		} `json:"data"`
+	}
+	require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &body))
+	require.Equal(t, 0, body.Code)
+	require.Equal(t, 2, body.Data.ConnectionCount)
+	require.Equal(t, 1, body.Data.ProjectCount)
+	require.Equal(t, 0, body.Data.RepositoryCount)
+	require.Empty(t, body.Data.RepositoryReadErrors)
+	require.Len(t, body.Data.Connections, 2)
+	require.Equal(t, "GitHub Production", body.Data.Connections[0].Name)
+	require.Equal(t, ops.ConnectorProviderGitHub, body.Data.Connections[0].Provider)
+	require.Equal(t, "GHCR Production", body.Data.Connections[1].Name)
+	require.Equal(t, ops.ConnectorProviderGHCR, body.Data.Connections[1].Provider)
+	require.Equal(t, "commerce-platform", body.Data.Projects[0].Name)
+	require.Empty(t, body.Data.Repositories)
+}
+
 func TestServiceCenterHandlerOverviewIncludesProviders(t *testing.T) {
 	handler := newServiceCenterTestHandler(t)
 
@@ -65,6 +109,7 @@ func TestServiceCenterHandlerOverviewIncludesProviders(t *testing.T) {
 		Data struct {
 			Providers []struct {
 				ID            string `json:"id"`
+				Route         string `json:"route"`
 				ResourceCount int    `json:"resource_count"`
 			} `json:"providers"`
 			Network struct {
@@ -81,8 +126,11 @@ func TestServiceCenterHandlerOverviewIncludesProviders(t *testing.T) {
 	require.Len(t, body.Data.Providers, 4)
 	require.Equal(t, serviceProviderCloudflare, body.Data.Providers[0].ID)
 	require.Equal(t, 2, body.Data.Providers[0].ResourceCount)
-	require.Equal(t, "github", body.Data.Providers[2].ID)
+	require.Equal(t, serviceProviderGitHub, body.Data.Providers[2].ID)
+	require.Equal(t, "/services/github", body.Data.Providers[2].Route)
 	require.Equal(t, 1, body.Data.Providers[2].ResourceCount)
+	require.Equal(t, serviceProviderGHCR, body.Data.Providers[3].ID)
+	require.Equal(t, "/services/github", body.Data.Providers[3].Route)
 	require.Equal(t, 1, body.Data.Network.Summary.ExplicitRuleCount)
 	require.Equal(t, 2, body.Data.Network.Summary.InferredItemCount)
 	require.Equal(t, 1, body.Data.Network.Summary.VPSCount)

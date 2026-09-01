@@ -311,7 +311,7 @@ import {
   opsDomainStatusOptions,
   opsDomainTLSOptions,
   type OpsDomainForm,
-} from '@/components/admin/ops/opsDomainBindingForm'
+} from '@/modules/ops/opsDomainBindingForm'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -670,3 +670,4 @@ watch(() => route.query.environment, (value) => {
 
 onMounted(refreshDomainsPage)
 </script>
+

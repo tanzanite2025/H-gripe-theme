@@ -46,7 +46,7 @@ import AdminFilterPanel from '@/components/admin/AdminFilterPanel.vue'
 import AdminFilterSelect from '@/components/admin/AdminFilterSelect.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import type { OrderFilters, OrderStatusOption } from './orderTypes'
+import type { OrderFilters, OrderStatusOption } from '@/modules/order/orderTypes'
 
 withDefaults(defineProps<{
   filters: OrderFilters
@@ -64,3 +64,4 @@ const emit = defineEmits<{
   (event: 'reset'): void
 }>()
 </script>
+

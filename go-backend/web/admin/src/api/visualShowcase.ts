@@ -11,7 +11,7 @@ import type {
   VisualShowcaseAdministrationItemApiRecord,
   VisualShowcaseAdministrationItemSavePayload,
   VisualShowcaseAdministrationResponse,
-} from '@/components/admin/visual-showcase/visualShowcaseTypes'
+} from '@/modules/visual-showcase/visualShowcaseTypes'
 
 const visualShowcaseAdministrationEndpoint = (showcaseKey: string): string => (
   `/api/admin/content/visual-showcases/${encodeURIComponent(showcaseKey)}`
@@ -79,3 +79,4 @@ export const visualShowcaseApi = {
 }
 
 export default visualShowcaseApi
+

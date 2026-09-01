@@ -31,7 +31,7 @@ import { LoaderCircle } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import GalleryImageFields from './GalleryImageFields.vue'
-import type { GalleryDialogMode, GalleryFormErrors, GalleryImageForm } from './galleryTypes'
+import type { GalleryDialogMode, GalleryFormErrors, GalleryImageForm } from '@/modules/gallery/galleryTypes'
 
 withDefaults(defineProps<{
   open?: boolean
@@ -53,3 +53,4 @@ const emit = defineEmits<{
   (event: 'pick-media'): void
 }>()
 </script>
+

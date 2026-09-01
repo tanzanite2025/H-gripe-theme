@@ -49,7 +49,7 @@ import AdminFilterPanel from '@/components/admin/AdminFilterPanel.vue'
 import AdminFilterSelect from '@/components/admin/AdminFilterSelect.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import type { AuditLogFilters } from './auditLogTypes'
+import type { AuditLogFilters } from '@/modules/audit-log/auditLogTypes'
 
 interface AuditLogFilterOption {
   label: string
@@ -86,3 +86,4 @@ const resourceFilterOptions: AuditLogFilterOption[] = [
   { label: '设置', value: 'setting' }
 ]
 </script>
+

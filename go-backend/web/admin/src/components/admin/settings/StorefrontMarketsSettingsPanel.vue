@@ -207,7 +207,7 @@ import type {
   MarketLanguageOption,
   StorefrontMarket,
   StorefrontMarketForm,
-} from './settingsTypes'
+} from '@/modules/settings/types'
 
 const props = withDefaults(defineProps<{
   canEdit?: boolean

@@ -249,7 +249,7 @@ import type {
   ShippingQuoteItemInput,
   ShippingQuoteOption,
   ShippingQuoteResult
-} from './shippingTypes'
+} from '@/modules/shipping/shippingTypes'
 
 const form = reactive<ShippingQuoteForm>({
   country: 'US',
@@ -359,3 +359,4 @@ const formatEta = (option?: ShippingQuoteOption | null) => {
 const isSelectedOption = (option?: ShippingQuoteOption | null) =>
   Number(option?.carrier_service_id || 0) === Number(quote.value?.selected_option?.carrier_service_id || 0)
 </script>
+

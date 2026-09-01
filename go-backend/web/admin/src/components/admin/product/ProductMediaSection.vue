@@ -227,7 +227,7 @@ import type {
   ProductSpecDefinition,
   ProductVariantForm,
   ProductVariantOptionValueForm,
-} from './productEditorTypes'
+} from '@/modules/product/productEditorTypes'
 
 const props = withDefaults(defineProps<{
   mediaItems?: ProductMediaForm[]
@@ -282,3 +282,4 @@ const chooseUpload = (type: ProductMediaType): void => {
   videoInput.value?.click()
 }
 </script>
+

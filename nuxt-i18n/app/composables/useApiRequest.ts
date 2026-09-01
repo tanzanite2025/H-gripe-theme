@@ -2,6 +2,16 @@ import { useRuntimeConfig } from 'nuxt/app'
 import { attachDeviceFingerprintHeader } from '~/utils/deviceFingerprint'
 
 export type MaybeJson = Record<string, unknown> | string | null
+export type ApiRequestQueryPrimitive = string | number | boolean | Date
+export type ApiRequestQueryValue = ApiRequestQueryPrimitive | ApiRequestQueryPrimitive[] | Record<string, unknown> | null | undefined
+export type ApiRequestQuery = Record<string, ApiRequestQueryValue> | URLSearchParams
+
+export interface ApiRequestInit extends RequestInit {
+  params?: ApiRequestQuery
+  query?: ApiRequestQuery
+}
+
+export type ApiRequestFunction = <T = MaybeJson>(path: string, init?: ApiRequestInit, fallbackMessage?: string) => Promise<T>
 
 export class ApiRequestError extends Error {
   status: number
@@ -34,7 +44,61 @@ const readCookie = (name: string) => {
     .split(';')
     .map((item) => item.trim())
     .find((item) => item.startsWith(prefix))
-  return cookie ? decodeURIComponent(cookie.slice(prefix.length)) : ''
+  if (!cookie) {
+    return ''
+  }
+  try {
+    return decodeURIComponent(cookie.slice(prefix.length))
+  } catch {
+    return ''
+  }
+}
+
+const firstHeaderValue = (...values: Array<string | undefined>) => {
+  for (const value of values) {
+    const trimmed = String(value || '').trim()
+    if (trimmed) return trimmed
+  }
+  return ''
+}
+
+const clientLocaleHeader = () => {
+  if (!import.meta.client) return ''
+  return firstHeaderValue(
+    readCookie('locale'),
+    readCookie('i18n_redirected'),
+    typeof navigator !== 'undefined' ? navigator.language : '',
+  )
+}
+
+const clientTimezoneHeader = () => {
+  if (!import.meta.client) return ''
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || ''
+  } catch {
+    return ''
+  }
+}
+
+const attachClientContextHeaders = (headers: Headers) => {
+  if (!import.meta.client) return headers
+
+  const locale = clientLocaleHeader()
+  if (locale) {
+    if (!headers.has('X-Locale')) {
+      headers.set('X-Locale', locale)
+    }
+    if (!headers.has('Accept-Language')) {
+      headers.set('Accept-Language', locale)
+    }
+  }
+
+  const timezone = clientTimezoneHeader()
+  if (timezone && !headers.has('X-Timezone')) {
+    headers.set('X-Timezone', timezone)
+  }
+
+  return headers
 }
 
 const toBase64Url = (bytes: ArrayBuffer) => {
@@ -45,16 +109,80 @@ const toBase64Url = (bytes: ArrayBuffer) => {
 const toHex = (bytes: ArrayBuffer) =>
   Array.from(new Uint8Array(bytes), byte => byte.toString(16).padStart(2, '0')).join('')
 
+const normalizeBaseURL = (value?: string) => {
+  const normalized = String(value || '').trim().replace(/\/+$/, '')
+  if (!normalized) return '/api/v1'
+  if (/^https?:\/\//i.test(normalized) || normalized.startsWith('/')) return normalized
+  return `/${normalized}`
+}
+
+const resolveApiBases = (config: ReturnType<typeof useRuntimeConfig>) => {
+  const baseURL = normalizeBaseURL((config.public as { apiBase?: string })?.apiBase)
+  const internalOrigin = String((config as { apiInternalOrigin?: string }).apiInternalOrigin || '').trim().replace(/\/+$/, '')
+  const requestBaseURL = import.meta.server && internalOrigin && baseURL.startsWith('/')
+    ? `${internalOrigin}${baseURL === '/' ? '' : baseURL}`
+    : baseURL
+
+  return {
+    baseURL,
+    requestBaseURL,
+  }
+}
+
 const apiRequestURL = (baseURL: string, path: string) => {
   const normalizedBase = baseURL.replace(/\/+$/, '')
   const normalizedPath = path.startsWith('/') ? path : `/${path}`
-  return `${normalizedBase}${normalizedPath}`
+  return normalizedBase ? `${normalizedBase}${normalizedPath}` : normalizedPath
 }
 
 const requestTarget = (baseURL: string, path: string) => {
   const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost'
   const url = new URL(apiRequestURL(baseURL || '/', path), origin)
   return `${url.pathname}${url.search}`
+}
+
+const appendQueryValue = (params: URLSearchParams, key: string, value: ApiRequestQueryValue) => {
+  if (value === undefined || value === null || value === '') {
+    return
+  }
+  if (Array.isArray(value)) {
+    value.forEach(item => appendQueryValue(params, key, item))
+    return
+  }
+  if (value instanceof Date) {
+    params.append(key, value.toISOString())
+    return
+  }
+  if (typeof value === 'object') {
+    params.append(key, JSON.stringify(value))
+    return
+  }
+  params.append(key, String(value))
+}
+
+const queryString = (query?: ApiRequestQuery) => {
+  if (!query) {
+    return ''
+  }
+  if (query instanceof URLSearchParams) {
+    return query.toString()
+  }
+
+  const params = new URLSearchParams()
+  Object.entries(query).forEach(([key, value]) => appendQueryValue(params, key, value))
+  return params.toString()
+}
+
+const appendQuery = (path: string, ...queries: Array<ApiRequestQuery | undefined>) => {
+  const additions = queries.map(queryString).filter(Boolean)
+  if (additions.length === 0) {
+    return path
+  }
+
+  const [pathWithoutHash = '', hash = ''] = path.split('#', 2)
+  const separator = pathWithoutHash.includes('?') ? '&' : '?'
+  const nextPath = `${pathWithoutHash}${separator}${additions.join('&')}`
+  return hash ? `${nextPath}#${hash}` : nextPath
 }
 
 const canSignRequestBody = (body: BodyInit | null | undefined) => {
@@ -134,28 +262,30 @@ const extractDetails = (payload: MaybeJson) => {
 
 export function useApiRequest() {
   const config = useRuntimeConfig()
-  const baseURL = config.public?.apiBase || '/api/v1'
+  const { baseURL, requestBaseURL } = resolveApiBases(config)
   const requestSigningKey = config.public?.requestSigningKey || ''
 
-  const request = async <T = MaybeJson>(path: string, init: RequestInit = {}, fallbackMessage = 'Request failed'): Promise<T> => {
-    if (!baseURL) {
+  const request: ApiRequestFunction = async <T = MaybeJson>(path: string, init: ApiRequestInit = {}, fallbackMessage = 'Request failed'): Promise<T> => {
+    if (!requestBaseURL) {
       throw new Error('Missing runtimeConfig.public.apiBase for API requests')
     }
 
-    const headers = new Headers(init.headers || undefined)
-    if (isUnsafeMethod(init.method)) {
+    const { params, query, ...fetchInit } = init
+    const requestPath = appendQuery(path, params, query)
+    const headers = new Headers(fetchInit.headers || undefined)
+    if (isUnsafeMethod(fetchInit.method)) {
       const csrfToken = readCookie(csrfCookieName)
       if (csrfToken) {
         headers.set(csrfHeaderName, csrfToken)
       }
     }
-    const requestHeaders = await attachDeviceFingerprintHeader(headers)
-    await signRequest(requestHeaders, (init.method || 'GET').toUpperCase(), baseURL, path, init.body, requestSigningKey)
-    const requestURL = apiRequestURL(baseURL, path)
+    const requestHeaders = await attachDeviceFingerprintHeader(attachClientContextHeaders(headers))
+    await signRequest(requestHeaders, (fetchInit.method || 'GET').toUpperCase(), requestBaseURL, requestPath, fetchInit.body, requestSigningKey)
+    const requestURL = apiRequestURL(requestBaseURL, requestPath)
 
     const finalInit: RequestInit = {
       credentials: defaultCredentials,
-      ...init,
+      ...fetchInit,
       headers: requestHeaders,
     }
 
@@ -176,6 +306,7 @@ export function useApiRequest() {
 
   return {
     baseURL,
+    requestBaseURL,
     request,
   }
 }

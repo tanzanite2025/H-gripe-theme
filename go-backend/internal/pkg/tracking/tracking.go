@@ -39,10 +39,12 @@ type TrackingInfo struct {
 
 // TrackingEvent 物流事件
 type TrackingEvent struct {
-	Time        time.Time `json:"time"`
-	Status      string    `json:"status"`
-	Description string    `json:"description"`
-	Location    *Location `json:"location,omitempty"`
+	Time                   time.Time `json:"time"`
+	Status                 string    `json:"status"`
+	Description            string    `json:"description"`
+	Location               *Location `json:"location,omitempty"`
+	RecipientSignatureName string    `json:"recipient_signature_name,omitempty"`
+	ProofOfDeliveryURL     string    `json:"proof_of_delivery_url,omitempty"`
 }
 
 // Location 位置信息

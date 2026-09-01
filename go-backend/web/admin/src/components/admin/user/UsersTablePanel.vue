@@ -137,7 +137,7 @@ import type {
   UserRecord,
   UserSelectionState,
   UserToneResolver
-} from './userTypes'
+} from '@/modules/user/userTypes'
 
 const props = withDefaults(defineProps<{
   loading?: boolean
@@ -177,3 +177,4 @@ const emit = defineEmits<{
 
 const isUserSelected = (userId: UserId): boolean => props.selectedUsers.some((user) => user.id === userId)
 </script>
+

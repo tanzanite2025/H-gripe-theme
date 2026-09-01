@@ -113,7 +113,7 @@ import type {
   ShippingCarrier,
   ShippingCarrierService,
   ShippingTemplate
-} from './shippingTypes'
+} from '@/modules/shipping/shippingTypes'
 
 withDefaults(defineProps<{
   carrierServices?: ShippingCarrierService[]
@@ -139,3 +139,4 @@ const emit = defineEmits<{
   (event: 'delete', service: ShippingCarrierService): void
 }>()
 </script>
+

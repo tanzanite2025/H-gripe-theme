@@ -6,10 +6,6 @@
           <RefreshCw class="size-4" />
           刷新
         </Button>
-        <Button variant="outline" @click="downloadJson">
-          <Download class="size-4" />
-          导出
-        </Button>
         <Button :disabled="saving || loading" @click="saveCatalog">
           <Save class="size-4" />
           保存
@@ -19,15 +15,7 @@
 
     <AdminStatsGrid :items="statItems" />
 
-    <Tabs v-model="activeTab" class="space-y-4">
-      <TabsList>
-        <TabsTrigger value="rims">Rims</TabsTrigger>
-        <TabsTrigger value="hubs">Hubs</TabsTrigger>
-        <TabsTrigger value="builds">Builds</TabsTrigger>
-        <TabsTrigger value="json">Import</TabsTrigger>
-      </TabsList>
-
-      <TabsContent value="rims">
+    <section v-if="activeTab === 'rims'">
         <AdminTablePanel :loading="loading">
           <template #header>
             <div class="flex flex-wrap items-center justify-between gap-2">
@@ -97,9 +85,9 @@
             </tbody>
           </table>
         </AdminTablePanel>
-      </TabsContent>
+    </section>
 
-      <TabsContent value="hubs">
+    <section v-else-if="activeTab === 'hubs'">
         <AdminTablePanel :loading="loading">
           <template #header>
             <div>
@@ -141,9 +129,9 @@
             </tbody>
           </table>
         </AdminTablePanel>
-      </TabsContent>
+    </section>
 
-      <TabsContent value="builds">
+    <section v-else-if="activeTab === 'builds'">
         <AdminTablePanel :loading="loading">
           <template #header>
             <div class="flex flex-wrap items-center justify-between gap-2">
@@ -253,15 +241,15 @@
             </div>
           </div>
         </AdminTablePanel>
-      </TabsContent>
+    </section>
 
-      <TabsContent value="json">
+    <section v-else>
         <AdminTablePanel :loading="loading">
           <template #header>
             <div class="flex flex-wrap items-center justify-between gap-2">
               <div>
-                <h2 class="text-sm font-black uppercase tracking-tight">模板导入 / JSON 高级</h2>
-                <p class="text-[11px] font-bold text-muted-foreground">优先使用系统模板；JSON 仅保留给维护人员做完整 catalog 导入。</p>
+                <h2 class="text-sm font-black uppercase tracking-tight">模板导入</h2>
+                <p class="text-[11px] font-bold text-muted-foreground">通过系统模板批量导入装配预设。</p>
               </div>
               <div class="flex flex-wrap gap-2">
                 <Button size="sm" variant="outline" :disabled="saving" @click="downloadPresetTemplate">
@@ -272,24 +260,11 @@
                   <Upload class="size-3.5" />
                   导入预设模板
                 </Button>
-                <Button size="sm" variant="outline" @click="refreshJsonText">
-                  <RefreshCw class="size-3.5" />
-                  同步 JSON
-                </Button>
-                <Button size="sm" variant="outline" @click="triggerFileInput">
-                  <Upload class="size-3.5" />
-                  上传 JSON
-                </Button>
-                <Button size="sm" :disabled="saving" @click="saveJsonText">
-                  <Save class="size-3.5" />
-                  保存 JSON
-                </Button>
               </div>
             </div>
           </template>
 
           <input ref="presetTemplateFileInputRef" class="hidden" type="file" accept=".xlsx,.xlsm,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" @change="handlePresetTemplateFileChange">
-          <input ref="fileInputRef" class="hidden" type="file" accept="application/json,.json" @change="handleFileChange">
           <div class="border-b border-dashed border-border/70 p-4">
             <div class="grid gap-3 lg:grid-cols-3">
               <div>
@@ -312,16 +287,8 @@
               </div>
             </div>
           </div>
-          <div class="p-4">
-            <textarea
-              v-model="jsonText"
-              class="min-h-[460px] w-full rounded-2xl border border-dashed border-border/80 bg-muted/40 p-4 font-mono text-[11px] leading-relaxed outline-none focus:ring-2 focus:ring-ring/40"
-              spellcheck="false"
-            />
-          </div>
         </AdminTablePanel>
-      </TabsContent>
-    </Tabs>
+    </section>
 
     <SpokeBuildPresetDialog
       v-model:open="presetDialogOpen"
@@ -337,6 +304,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { toast } from 'vue-sonner'
 import { Calculator, ChevronLeft, ChevronRight, Database, Download, Pencil, Plus, RefreshCw, Save, Search, Trash2, Upload } from '@lucide/vue'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
@@ -344,7 +312,6 @@ import AdminStatsGrid from '@/components/admin/AdminStatsGrid.vue'
 import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
 import SpokeBuildPresetDialog from '@/components/admin/spoke/SpokeBuildPresetDialog.vue'
 import { Button } from '@/components/ui/button'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import spokeCatalogApi, {
   type SpokeBrand,
   type SpokeBuildActualLengths,
@@ -357,6 +324,14 @@ import spokeCatalogApi, {
 
 type HubSide = 'front' | 'rear'
 type HubGeometryProp = 'leftFlange' | 'rightFlange' | 'leftFlangePcd' | 'rightFlangePcd'
+type SpokeCatalogTab = 'rims' | 'hubs' | 'builds' | 'import'
+
+const spokeCatalogRouteTabs: Record<string, SpokeCatalogTab> = {
+  SpokeCalculatorRims: 'rims',
+  SpokeCalculatorHubs: 'hubs',
+  SpokeCalculatorBuilds: 'builds',
+  SpokeCalculatorImport: 'import',
+}
 
 const defaultOptions: SpokeCatalogOptions = {
   spokeCounts: [16, 18, 20, 24, 28, 32, 36].map((value) => ({ value, label: String(value) })),
@@ -385,12 +360,11 @@ const createEmptyCatalog = (): SpokeCatalog => ({
   presets: [],
 })
 
+const route = useRoute()
 const catalog = ref<SpokeCatalog>(createEmptyCatalog())
-const activeTab = ref('rims')
+const activeTab = computed<SpokeCatalogTab>(() => spokeCatalogRouteTabs[String(route.name || '')] || 'rims')
 const loading = ref(false)
 const saving = ref(false)
-const jsonText = ref('')
-const fileInputRef = ref<HTMLInputElement | null>(null)
 const presetTemplateFileInputRef = ref<HTMLInputElement | null>(null)
 const presetSearch = ref('')
 const presetPage = ref(1)
@@ -474,7 +448,6 @@ const loadCatalog = async () => {
   loading.value = true
   try {
     catalog.value = normalizeLoadedCatalog(await spokeCatalogApi.get())
-    refreshJsonText()
   } finally {
     loading.value = false
   }
@@ -484,48 +457,10 @@ const saveCatalog = async () => {
   saving.value = true
   try {
     catalog.value = normalizeLoadedCatalog(await spokeCatalogApi.save(catalog.value))
-    refreshJsonText()
     toast.success('辐条计算器数据已保存')
   } finally {
     saving.value = false
   }
-}
-
-const saveJsonText = async () => {
-  let parsed: SpokeCatalog
-  try {
-    parsed = JSON.parse(jsonText.value)
-  } catch (error: any) {
-    toast.error(error?.message || 'JSON 格式错误')
-    return
-  }
-
-  saving.value = true
-  try {
-    catalog.value = normalizeLoadedCatalog(await spokeCatalogApi.save(parsed))
-    refreshJsonText()
-    toast.success('JSON 已保存')
-  } finally {
-    saving.value = false
-  }
-}
-
-const refreshJsonText = () => {
-  jsonText.value = JSON.stringify(catalog.value, null, 2)
-}
-
-const downloadJson = () => {
-  const blob = new Blob([JSON.stringify(catalog.value, null, 2)], { type: 'application/json' })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = 'spoke-calculator-catalog.json'
-  link.click()
-  URL.revokeObjectURL(url)
-}
-
-const triggerFileInput = () => {
-  fileInputRef.value?.click()
 }
 
 const triggerPresetTemplateFileInput = () => {
@@ -557,24 +492,7 @@ const handlePresetTemplateFileChange = async (event: Event) => {
   saving.value = true
   try {
     catalog.value = normalizeLoadedCatalog(await spokeCatalogApi.importPresetTemplate(file))
-    refreshJsonText()
     toast.success('预设模板已导入')
-  } finally {
-    saving.value = false
-  }
-}
-
-const handleFileChange = async (event: Event) => {
-  const input = event.target as HTMLInputElement
-  const file = input.files?.[0]
-  input.value = ''
-  if (!file) return
-
-  saving.value = true
-  try {
-    catalog.value = normalizeLoadedCatalog(await spokeCatalogApi.importFile(file))
-    refreshJsonText()
-    toast.success('JSON 文件已导入')
   } finally {
     saving.value = false
   }

@@ -50,7 +50,7 @@ import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import type { ContentLabelResolver, ContentPost, ContentToneResolver } from './contentTypes'
+import type { ContentLabelResolver, ContentPost, ContentToneResolver } from '@/modules/content/contentTypes'
 
 withDefaults(defineProps<{
   open?: boolean
@@ -72,3 +72,4 @@ const emit = defineEmits<{
   (event: 'edit', translation: ContentPost): void
 }>()
 </script>
+

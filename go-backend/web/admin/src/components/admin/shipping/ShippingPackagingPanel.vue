@@ -92,7 +92,7 @@ import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { TabsContent } from '@/components/ui/tabs'
 import { appliesCount, formatDimensions, formatWeight } from '@/lib/shippingPresentation'
-import type { PackagingRule } from './shippingTypes'
+import type { PackagingRule } from '@/modules/shipping/shippingTypes'
 
 withDefaults(defineProps<{
   packagingRules?: PackagingRule[]
@@ -115,3 +115,4 @@ const emit = defineEmits<{
   (event: 'show-applies', rule: PackagingRule): void
 }>()
 </script>
+

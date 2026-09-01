@@ -29,7 +29,7 @@ import (
 	seodomain "commerce-platform/internal/domain/seo"
 	"commerce-platform/internal/domain/setting"
 	"commerce-platform/internal/domain/shipping"
-	"commerce-platform/internal/domain/showcase"
+	"commerce-platform/internal/domain/ugcshowcase"
 	sitequalitydomain "commerce-platform/internal/domain/sitequality"
 	"commerce-platform/internal/domain/social"
 	"commerce-platform/internal/domain/spoke"
@@ -40,7 +40,7 @@ import (
 	"commerce-platform/internal/domain/user"
 	"commerce-platform/internal/domain/verification"
 	"commerce-platform/internal/domain/visitor"
-	visualshowcasedomain "commerce-platform/internal/domain/visualshowcase"
+	homevisualtiledomain "commerce-platform/internal/domain/homevisualtile"
 	"commerce-platform/internal/domain/warranty"
 	"commerce-platform/internal/domain/wishlist"
 	"commerce-platform/internal/pkg/config"
@@ -174,9 +174,8 @@ func AutoMigrate(db *gorm.DB, serverMode string) error {
 		&securitydomain.IPBlockRule{},
 		&subscription.Subscription{},
 		&verification.EmailChallenge{},
-		&showcase.Showcase{},
-		&showcase.Comment{},
-		&media.Media{},
+		&ugcshowcase.UGCShowcase{},
+		&ugcshowcase.UGCShowcaseComment{},
 		&media.MediaAsset{},
 		&media.MediaAssetDerivative{},
 		&media.MediaDerivativePreset{},
@@ -200,7 +199,7 @@ func AutoMigrate(db *gorm.DB, serverMode string) error {
 		&preflightdomain.ContentLinkRun{},
 		&preflightdomain.ContentLinkIssue{},
 		&preflightdomain.ContentLinkIssueEvent{},
-		&visualshowcasedomain.Item{},
+		&homevisualtiledomain.Tile{},
 		&sitequalitydomain.SiteQualityTarget{},
 		&sitequalitydomain.SiteQualityJob{},
 		&sitequalitydomain.SiteQualityProviderSlot{},

@@ -90,7 +90,7 @@ import {
   opsVPSProviderOptions,
   opsVPSStatusOptions,
   type OpsVPSForm,
-} from './opsVPSBindingForm'
+} from '@/modules/ops/opsVPSBindingForm'
 
 const props = withDefaults(defineProps<{
   open?: boolean
@@ -128,3 +128,4 @@ watch(
   { immediate: true },
 )
 </script>
+

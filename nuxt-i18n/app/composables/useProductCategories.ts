@@ -1,5 +1,6 @@
 import { computed, watch } from 'vue'
 import { useI18n, useRuntimeConfig, useState } from '#imports'
+import { useApiRequest } from '~/composables/useApiRequest'
 import {
   createStorefrontMediaContext,
   normalizeStorefrontMediaUrl,
@@ -147,17 +148,11 @@ export const useProductCategories = () => {
   const config = useRuntimeConfig()
   const mediaContext = createStorefrontMediaContext(config)
   const { locale } = useI18n()
+  const { request } = useApiRequest()
   const stateStore = useState<ProductCategoryStateStore>('product-categories-by-locale', () => ({}))
   const publicBaseURL = computed(() => (
     ((config.public as { apiBase?: string }).apiBase || '/api/v1').replace(/\/$/, '')
   ))
-  const internalApiOrigin = import.meta.server
-    ? String((config as { apiInternalOrigin?: string }).apiInternalOrigin || '').replace(/\/$/, '')
-    : ''
-  const requestBaseURL = computed(() => {
-    if (internalApiOrigin) return `${internalApiOrigin}/api/v1`
-    return publicBaseURL.value
-  })
   const localeCode = computed(() => String(locale.value || '').trim() || 'en')
   const stateKey = computed(() => `${publicBaseURL.value}|${localeCode.value}`)
   const emptyState = createEmptyState()
@@ -180,7 +175,7 @@ export const useProductCategories = () => {
 
   const requestCategories = async (requestLocale: string): Promise<ProductCategoryList> => {
     const headers = requestLocale ? { 'Accept-Language': requestLocale } : undefined
-    const response = await $fetch<unknown>(`${requestBaseURL.value}/products/categories`, { headers })
+    const response = await request<unknown>('/products/categories', { headers }, 'Failed to load product categories')
     return extractProductCategoryList(response, mediaContext)
   }
 
@@ -200,9 +195,10 @@ export const useProductCategories = () => {
 
     const headers = localeCode.value ? { 'Accept-Language': localeCode.value } : undefined
     try {
-      const response = await $fetch<unknown>(
-        `${requestBaseURL.value}/products/categories/${encodeURIComponent(categorySlug)}`,
+      const response = await request<unknown>(
+        `/products/categories/${encodeURIComponent(categorySlug)}`,
         { headers },
+        'Failed to load product category',
       )
       let current: any = response
       for (let depth = 0; depth < 3; depth += 1) {

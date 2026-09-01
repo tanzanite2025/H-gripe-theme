@@ -233,7 +233,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import axios from '@/utils/axios'
 import { useAdminI18n } from '@/i18n'
-import type { PaymentGatewayCredentialField, PaymentGatewayRuntimeStatus } from './settingsTypes'
+import type { PaymentGatewayCredentialField, PaymentGatewayRuntimeStatus } from '@/modules/settings/types'
 
 const props = withDefaults(defineProps<{
   selectedGateway?: string

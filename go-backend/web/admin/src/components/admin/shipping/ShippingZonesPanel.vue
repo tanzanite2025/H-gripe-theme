@@ -74,7 +74,7 @@ import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { TabsContent } from '@/components/ui/tabs'
 import { addressRegionSummary } from '@/lib/addressRegions'
-import type { ShippingZone } from './shippingTypes'
+import type { ShippingZone } from '@/modules/shipping/shippingTypes'
 
 withDefaults(defineProps<{
   zones?: ShippingZone[]
@@ -96,3 +96,4 @@ const emit = defineEmits<{
   (event: 'delete', zone: ShippingZone): void
 }>()
 </script>
+

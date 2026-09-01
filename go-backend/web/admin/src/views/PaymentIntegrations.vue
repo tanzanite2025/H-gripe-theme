@@ -29,7 +29,7 @@ import { useAdminI18n } from '@/i18n'
 import { getPaymentChannelLabel, normalizePaymentChannelKey } from '@/lib/paymentChannels'
 import { useAuthStore } from '@/stores/auth'
 import axios from '@/utils/axios'
-import type { PaymentGatewayRuntime } from '@/components/admin/settings/settingsTypes'
+import type { PaymentGatewayRuntime } from '@/modules/settings/types'
 
 const props = withDefaults(defineProps<{
   provider?: string

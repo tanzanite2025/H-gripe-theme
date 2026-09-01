@@ -76,7 +76,7 @@ import type {
   DashboardRecentOrder,
   DashboardRecentUser,
   DashboardToneResolver
-} from './dashboardTypes'
+} from '@/modules/dashboard/dashboardTypes'
 
 const EmptyActivity = defineComponent({
   props: {
@@ -119,3 +119,4 @@ const updateActiveActivity = (value: unknown): void => {
   if (isDashboardActivity(value)) emit('update:active-activity', value)
 }
 </script>
+

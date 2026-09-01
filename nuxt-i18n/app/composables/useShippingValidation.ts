@@ -1,4 +1,5 @@
 import { ref } from 'vue'
+import { useApiRequest } from '~/composables/useApiRequest'
 import { COUNTRIES, getCountryByCode, getZipFormatHint, validateZipFormat } from '~/data/countries'
 
 export interface ShippingRule {
@@ -186,6 +187,7 @@ function findMatchingRule(
 }
 
 export function useShippingValidation() {
+  const { request } = useApiRequest()
   const shippingTemplates = ref<ShippingTemplate[]>([])
   const isLoading = ref(false)
   const error = ref<string | null>(null)
@@ -199,9 +201,11 @@ export function useShippingValidation() {
     error.value = null
 
     try {
-      const config = useRuntimeConfig()
-      const base = ((config.public as { apiBase?: string }).apiBase || '/api/v1').replace(/\/$/, '')
-      const response = await $fetch<ApiResponse<ShippingTemplate[]>>(`${base}/shipping/templates`)
+      const response = await request<ApiResponse<ShippingTemplate[]>>(
+        '/shipping/templates',
+        {},
+        'Failed to load shipping templates',
+      )
       shippingTemplates.value = unwrapTemplateList(response)
     } catch (e) {
       console.error('Failed to load shipping templates:', e)

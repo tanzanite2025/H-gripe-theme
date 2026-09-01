@@ -11,7 +11,10 @@ import (
 	"commerce-platform/internal/domain/visitor"
 	"commerce-platform/internal/pkg/antifraud"
 	"commerce-platform/internal/pkg/config"
+	appLogger "commerce-platform/internal/pkg/logger"
 	pgateway "commerce-platform/internal/pkg/payment"
+
+	"go.uber.org/zap"
 )
 
 const (
@@ -46,12 +49,13 @@ type paymentThreeDSOrderHistory interface {
 }
 
 type PaymentThreeDSPolicyService struct {
-	cfg           config.PaymentThreeDSConfig
-	visitorRisk   paymentThreeDSVisitorAssessor
-	paymentRisk   paymentThreeDSRiskEvaluator
-	portfolioRisk paymentThreeDSPortfolioRiskProvider
-	protection    paymentThreeDSPaymentProtectionProvider
-	orderHistory  paymentThreeDSOrderHistory
+	cfg            config.PaymentThreeDSConfig
+	visitorRisk    paymentThreeDSVisitorAssessor
+	paymentRisk    paymentThreeDSRiskEvaluator
+	portfolioRisk  paymentThreeDSPortfolioRiskProvider
+	protection     paymentThreeDSPaymentProtectionProvider
+	orderHistory   paymentThreeDSOrderHistory
+	failOpenAlerts PaymentRiskFailOpenAlertPublisher
 }
 
 type PaymentThreeDSDecisionInput struct {
@@ -117,6 +121,13 @@ func (s *PaymentThreeDSPolicyService) ConfigurePaymentProtection(provider paymen
 		return
 	}
 	s.protection = provider
+}
+
+func (s *PaymentThreeDSPolicyService) ConfigureFailOpenAlertPublisher(publisher PaymentRiskFailOpenAlertPublisher) {
+	if s == nil {
+		return
+	}
+	s.failOpenAlerts = publisher
 }
 
 func (s *PaymentThreeDSPolicyService) PolicyView() PaymentThreeDSConfigurationView {
@@ -190,6 +201,7 @@ func (s *PaymentThreeDSPolicyService) Decide(ctx context.Context, input PaymentT
 		decision.Mode = strongerThreeDSMode(decision.Mode, PaymentThreeDSModeAny)
 		decision.Strategy = strongerPaymentThreeDSStrategy(decision.Strategy, "adaptive_step_up")
 		decision.Reasons = append(decision.Reasons, "payment_risk_unavailable")
+		s.alertPaymentRiskFailOpen(ctx, input, paymentRiskErr)
 	} else {
 		decision.RiskScore = paymentThreeDSMaxInt(decision.RiskScore, paymentRiskDecision.Score)
 		s.applyPaymentRiskDecision(&decision, paymentRiskDecision)
@@ -284,6 +296,53 @@ func (s *PaymentThreeDSPolicyService) evaluatePaymentRisk(ctx context.Context, i
 		BillingCountry: paymentThreeDSBillingCountry(input),
 		UserAgent:      input.UserAgent,
 	})
+}
+
+func (s *PaymentThreeDSPolicyService) alertPaymentRiskFailOpen(ctx context.Context, input PaymentThreeDSDecisionInput, riskErr error) {
+	provider := strings.ToLower(strings.TrimSpace(input.Provider))
+	if provider == "" {
+		provider = "unknown"
+	}
+	const (
+		component      = "antifraud"
+		operation      = "payment_3ds_policy_evaluate"
+		reason         = "payment_risk_unavailable"
+		fallbackAction = "step_up_3ds_any"
+	)
+
+	appLogger.Critical("payment risk protection fail-open; Redis-backed antifraud unavailable",
+		zap.Error(riskErr),
+		zap.Bool("fail_open", true),
+		zap.Bool("redis_unavailable", true),
+		zap.String("provider", provider),
+		zap.String("component", component),
+		zap.String("operation", operation),
+		zap.String("path", "checkout_3ds_policy"),
+		zap.String("reason", reason),
+		zap.String("fallback_action", fallbackAction),
+		zap.Uint("order_id", input.OrderID),
+		zap.Uint("user_id", input.UserID),
+		zap.Float64("amount", input.Amount),
+		zap.String("currency", strings.ToUpper(strings.TrimSpace(input.Currency))),
+	)
+	if s == nil || s.failOpenAlerts == nil {
+		return
+	}
+	if err := s.failOpenAlerts.PublishPaymentRiskFailOpenAlert(ctx, PaymentRiskFailOpenAlertInput{
+		Provider:       provider,
+		Component:      component,
+		Operation:      operation,
+		Reason:         reason,
+		FallbackAction: fallbackAction,
+		Err:            riskErr,
+	}); err != nil {
+		appLogger.Warn("payment risk fail-open alert enqueue failed",
+			zap.Error(err),
+			zap.String("provider", provider),
+			zap.String("component", component),
+			zap.String("operation", operation),
+		)
+	}
 }
 
 func (s *PaymentThreeDSPolicyService) evaluateVisitorRisk(ctx context.Context, input PaymentThreeDSDecisionInput) (VisitorRiskIdentityAssessment, error) {

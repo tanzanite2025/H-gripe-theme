@@ -298,7 +298,7 @@ import type {
   CustomerOrders,
   CustomerSignal,
   CustomerWishlist,
-} from './customerServiceTypes'
+} from '@/modules/customer-service/customerServiceTypes'
 
 const props = withDefaults(defineProps<{
   selectedConversation?: CustomerConversation | null
@@ -354,3 +354,4 @@ onBeforeUnmount(() => {
   }
 })
 </script>
+

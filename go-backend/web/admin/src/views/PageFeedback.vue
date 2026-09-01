@@ -63,7 +63,7 @@ import {
   createDefaultPageFeedbackFilters,
   type PageFeedbackFiltersState,
   type PageFeedbackPagination,
-} from '@/components/admin/content-feedback/pageFeedbackTypes'
+} from '@/modules/content-feedback/pageFeedbackTypes'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/stores/auth'
@@ -188,3 +188,4 @@ onMounted(() => {
   void refreshAll()
 })
 </script>
+

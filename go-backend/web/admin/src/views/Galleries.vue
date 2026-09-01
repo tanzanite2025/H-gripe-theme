@@ -132,9 +132,9 @@ import type {
   GalleryProductLink,
   GalleryRecord,
   GallerySelectionState
-} from '@/components/admin/gallery/galleryTypes'
+} from '@/modules/gallery/galleryTypes'
 import type { MediaAsset } from '@/api/media'
-import type { ProductRecord } from '@/components/admin/product/productEditorTypes'
+import type { ProductRecord } from '@/modules/product/productEditorTypes'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/stores/auth'
@@ -626,3 +626,4 @@ onMounted(() => {
   void fetchGalleries()
 })
 </script>
+

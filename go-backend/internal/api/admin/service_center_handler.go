@@ -3,8 +3,6 @@ package admin
 import (
 	"errors"
 	"net/http"
-	"sort"
-	"strconv"
 	"strings"
 	"time"
 
@@ -18,6 +16,8 @@ import (
 
 const (
 	serviceProviderCloudflare = "cloudflare"
+	serviceProviderGitHub     = "github"
+	serviceProviderGHCR       = "ghcr"
 	serviceProviderHostinger  = "hostinger"
 
 	adminAuditResourceServiceCloudflareCacheRule = "service_cloudflare_cache_rule"
@@ -92,6 +92,20 @@ type serviceCenterCloudflareZone struct {
 	Domains       []ops.DomainBinding `json:"domains"`
 }
 
+type serviceCenterGitHubRepository struct {
+	ID            int64      `json:"id"`
+	Name          string     `json:"name"`
+	FullName      string     `json:"full_name"`
+	Private       bool       `json:"private"`
+	Visibility    string     `json:"visibility"`
+	HTMLURL       string     `json:"html_url"`
+	DefaultBranch string     `json:"default_branch"`
+	UpdatedAt     *time.Time `json:"updated_at,omitempty"`
+	PushedAt      *time.Time `json:"pushed_at,omitempty"`
+	ConnectorID   uint       `json:"connector_id"`
+	ConnectorName string     `json:"connector_name"`
+}
+
 type serviceCenterAssetOverview struct {
 	VPS      []ops.VPSBinding         `json:"vps"`
 	Projects []ops.ProjectBindingView `json:"projects"`
@@ -141,16 +155,16 @@ func (h *ServiceCenterHandler) Overview(c *gin.Context) {
 				hostingerVPSCount,
 			),
 			newServiceCenterProviderSummary(
-				"github",
+				serviceProviderGitHub,
 				"GitHub",
-				"/ops/deployments",
+				"/services/github",
 				githubConnectors,
 				countServiceProjectsForConnector(assets.Projects, githubConnectors),
 			),
 			newServiceCenterProviderSummary(
-				"ghcr",
+				serviceProviderGHCR,
 				"GHCR",
-				"/ops/deployments",
+				"/services/github",
 				ghcrConnectors,
 				countServiceProjectsForConnector(assets.Projects, ghcrConnectors),
 			),
@@ -158,6 +172,44 @@ func (h *ServiceCenterHandler) Overview(c *gin.Context) {
 		"environment": environment,
 		"assets":      assets,
 		"network":     network,
+	})
+}
+
+func (h *ServiceCenterHandler) GitHub(c *gin.Context) {
+	environment := strings.TrimSpace(c.Query("environment"))
+	connectors, _, err := h.loadResources(environment)
+	if err != nil {
+		h.respondResourceError(c, err)
+		return
+	}
+	assets, err := h.loadAssets(environment)
+	if err != nil {
+		h.respondResourceError(c, err)
+		return
+	}
+
+	githubConnectors := filterServiceConnectors(connectors, ops.ConnectorProviderGitHub)
+	ghcrConnectors := filterServiceConnectors(connectors, ops.ConnectorProviderGHCR)
+	serviceConnectors := append([]ops.ConnectorView{}, githubConnectors...)
+	serviceConnectors = append(serviceConnectors, ghcrConnectors...)
+	linkedProjects := filterServiceProjectsForConnectors(assets.Projects, serviceConnectors)
+	repositories, repositoryReadErrors := h.readGitHubRepositories(c.Request.Context(), githubConnectors)
+
+	response.Success(c, gin.H{
+		"environment":                 environment,
+		"generated_at":                time.Now().UTC(),
+		"connections":                 serviceConnectors,
+		"projects":                    linkedProjects,
+		"repositories":                repositories,
+		"repository_read_errors":      repositoryReadErrors,
+		"connection_count":            len(serviceConnectors),
+		"active_connection_count":     countActiveServiceConnections(serviceConnectors),
+		"credential_configured_count": countCredentialConfiguredServiceConnections(serviceConnectors),
+		"project_count":               len(linkedProjects),
+		"repository_count":            len(repositories),
+		"attention_count": countServiceConnectionAttention(serviceConnectors) +
+			countServiceProjectAttention(linkedProjects) +
+			len(repositoryReadErrors),
 	})
 }
 
@@ -203,6 +255,60 @@ func (h *ServiceCenterHandler) Cloudflare(c *gin.Context) {
 		"zone_count":                  len(zones),
 		"attention_count":             attentionCount,
 	})
+}
+
+func (h *ServiceCenterHandler) StartGitHubOAuth(c *gin.Context) {
+	if h == nil || h.connectorHandler == nil || h.connectorHandler.oauthService == nil {
+		apierror.RespondInternalError(c, errors.New("GitHub OAuth service is not configured"))
+		return
+	}
+	userID, ok := currentOpsConnectorUserID(c)
+	if !ok {
+		return
+	}
+
+	var req struct {
+		ConnectorID *uint  `json:"connector_id"`
+		Environment string `json:"environment"`
+		ReturnPath  string `json:"return_path"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		apierror.RespondBadRequest(c, err.Error())
+		return
+	}
+
+	result, err := h.connectorHandler.oauthService.Start(c.Request.Context(), userID, service.OpsConnectorOAuthStartInput{
+		Provider:    ops.ConnectorProviderGitHub,
+		ConnectorID: req.ConnectorID,
+		Environment: req.Environment,
+		ReturnPath:  req.ReturnPath,
+	})
+	if err != nil {
+		respondOpsConnectorOAuthError(c, err)
+		return
+	}
+	response.Success(c, result)
+}
+
+func (h *ServiceCenterHandler) TestGitHubConnection(c *gin.Context) {
+	if h == nil || h.connectorService == nil || h.connectorHandler == nil {
+		apierror.RespondInternalError(c, errors.New("GitHub connector service is not configured"))
+		return
+	}
+	id, err := parseUintParam(c, "id", "invalid connector id")
+	if err != nil {
+		return
+	}
+	connector, err := h.connectorService.Get(id)
+	if err != nil {
+		respondOpsConnectorError(c, err)
+		return
+	}
+	if connector.Provider != ops.ConnectorProviderGitHub && connector.Provider != ops.ConnectorProviderGHCR {
+		apierror.RespondError(c, http.StatusNotFound, "service_not_found", "GitHub connection was not found")
+		return
+	}
+	h.connectorHandler.Test(c)
 }
 
 func (h *ServiceCenterHandler) StartCloudflareOAuth(c *gin.Context) {
@@ -337,258 +443,4 @@ func (h *ServiceCenterHandler) UpdateCloudflareCacheRuleEnabled(c *gin.Context) 
 		NewValue:   result,
 	})
 	response.Success(c, result)
-}
-
-func (h *ServiceCenterHandler) loadResources(environment string) ([]ops.ConnectorView, []ops.DomainBinding, error) {
-	if h == nil || h.connectorService == nil || h.domainService == nil {
-		return nil, nil, errors.New("service center is not configured")
-	}
-	connectors, err := h.connectorService.ListForEnvironment(environment)
-	if err != nil {
-		return nil, nil, err
-	}
-	domains, err := h.domainService.ListForEnvironment(environment)
-	if err != nil {
-		return nil, nil, err
-	}
-	return connectors, domains, nil
-}
-
-func (h *ServiceCenterHandler) loadAssets(environment string) (*serviceCenterAssetOverview, error) {
-	result := &serviceCenterAssetOverview{
-		VPS:      []ops.VPSBinding{},
-		Projects: []ops.ProjectBindingView{},
-		Domains:  []ops.DomainBinding{},
-	}
-	if h == nil || h.opsOverview == nil {
-		return result, nil
-	}
-
-	environments := []string{environment}
-	if strings.TrimSpace(environment) == "" {
-		environments = []string{
-			ops.DomainEnvironmentProduction,
-			ops.DomainEnvironmentStaging,
-			ops.DomainEnvironmentTest,
-			ops.DomainEnvironmentLocal,
-		}
-	}
-
-	for _, currentEnvironment := range environments {
-		overview, err := h.opsOverview.GetForEnvironment(currentEnvironment)
-		if err != nil {
-			return nil, err
-		}
-		result.VPS = append(result.VPS, overview.Topology.VPS...)
-		result.Projects = append(result.Projects, overview.Topology.Projects...)
-		result.Domains = append(result.Domains, overview.Topology.Domains...)
-	}
-	return result, nil
-}
-
-func (h *ServiceCenterHandler) loadNetworkSummary(environment string) (*ops.NetworkSummary, error) {
-	if h == nil || h.opsNetworkSummary == nil {
-		return &ops.NetworkSummary{
-			Environment: strings.TrimSpace(environment),
-			GeneratedAt: time.Now().UTC(),
-			Summary: ops.NetworkSummaryCounts{
-				ManagedBy: map[string]int{},
-				Scopes:    map[string]int{},
-			},
-			Items: []ops.NetworkSummaryItem{},
-		}, nil
-	}
-	return h.opsNetworkSummary.Get(environment)
-}
-
-func (h *ServiceCenterHandler) respondResourceError(c *gin.Context, err error) {
-	if errors.Is(err, service.ErrInvalidOpsConnectorEnvironment) ||
-		errors.Is(err, service.ErrInvalidOpsDomainEnvironment) ||
-		errors.Is(err, service.ErrInvalidOpsOverviewEnvironment) ||
-		errors.Is(err, service.ErrInvalidOpsNetworkEnvironment) {
-		apierror.RespondBadRequest(c, err.Error())
-		return
-	}
-	apierror.RespondInternalError(c, err)
-}
-
-func (h *ServiceCenterHandler) respondCacheRulesError(c *gin.Context, err error) {
-	switch {
-	case errors.Is(err, service.ErrInvalidCloudflareCacheRule):
-		apierror.RespondBadRequest(c, err.Error())
-	case errors.Is(err, service.ErrCloudflareCacheRuleNotFound):
-		apierror.RespondNotFound(c, "Cloudflare cache rule")
-	default:
-		apierror.RespondError(c, http.StatusBadGateway, "cloudflare_cache_rules_failed", err.Error())
-	}
-}
-
-func (h *ServiceCenterHandler) recordCloudflareCacheRuleAudit(c *gin.Context, event adminAuditEvent) {
-	if h == nil {
-		return
-	}
-	recordAdminAudit(h.auditService, c, event)
-}
-
-func serviceCenterCacheRuleTarget(c *gin.Context) (uint, string, bool) {
-	rawConnectorID := strings.TrimSpace(c.Query("connector_id"))
-	connectorID64, err := strconv.ParseUint(rawConnectorID, 10, 32)
-	if err != nil || connectorID64 == 0 {
-		apierror.RespondBadRequest(c, "connector_id is required")
-		return 0, "", false
-	}
-	zone := strings.TrimSpace(c.Query("zone"))
-	if zone == "" {
-		apierror.RespondBadRequest(c, "zone is required")
-		return 0, "", false
-	}
-	return uint(connectorID64), zone, true
-}
-
-func newServiceCenterProviderSummary(
-	id string,
-	label string,
-	route string,
-	connectors []ops.ConnectorView,
-	resourceCount int,
-) serviceCenterProviderSummary {
-	return serviceCenterProviderSummary{
-		ID:                    id,
-		Label:                 label,
-		Route:                 route,
-		ConnectionCount:       len(connectors),
-		ActiveConnectionCount: countActiveServiceConnections(connectors),
-		ResourceCount:         resourceCount,
-		Status:                serviceCenterProviderStatus(connectors),
-	}
-}
-
-func serviceCenterProviderStatus(connectors []ops.ConnectorView) string {
-	if len(connectors) == 0 {
-		return "not_connected"
-	}
-	for _, connector := range connectors {
-		if connector.Enabled && connector.Status == ops.ConnectorStatusActive {
-			return "active"
-		}
-	}
-	for _, connector := range connectors {
-		if connector.Status == ops.ConnectorStatusError {
-			return "attention"
-		}
-	}
-	return "pending"
-}
-
-func filterServiceConnectors(connectors []ops.ConnectorView, provider string) []ops.ConnectorView {
-	filtered := make([]ops.ConnectorView, 0)
-	for _, connector := range connectors {
-		if connector.Provider == provider {
-			filtered = append(filtered, connector)
-		}
-	}
-	return filtered
-}
-
-func filterServiceDomains(domains []ops.DomainBinding, provider string) []ops.DomainBinding {
-	filtered := make([]ops.DomainBinding, 0)
-	for _, domain := range domains {
-		if domain.Provider == provider {
-			filtered = append(filtered, domain)
-		}
-	}
-	return filtered
-}
-
-func countActiveServiceConnections(connectors []ops.ConnectorView) int {
-	count := 0
-	for _, connector := range connectors {
-		if connector.Enabled && connector.Status == ops.ConnectorStatusActive {
-			count++
-		}
-	}
-	return count
-}
-
-func countServiceVPS(records []ops.VPSBinding, provider string) int {
-	count := 0
-	for _, record := range records {
-		if record.Provider == provider {
-			count++
-		}
-	}
-	return count
-}
-
-func countServiceProjectsForConnector(
-	projects []ops.ProjectBindingView,
-	connectors []ops.ConnectorView,
-) int {
-	connectorIDs := make(map[uint]struct{}, len(connectors))
-	for _, connector := range connectors {
-		connectorIDs[connector.ID] = struct{}{}
-	}
-
-	count := 0
-	for _, project := range projects {
-		if project.ConnectorID == nil {
-			continue
-		}
-		if _, ok := connectorIDs[*project.ConnectorID]; ok {
-			count++
-		}
-	}
-	return count
-}
-
-func buildServiceCenterCloudflareZones(
-	domains []ops.DomainBinding,
-	connectors []ops.ConnectorView,
-) []serviceCenterCloudflareZone {
-	connectorNames := make(map[uint]string, len(connectors))
-	for _, connector := range connectors {
-		connectorNames[connector.ID] = connector.Name
-	}
-
-	zones := make(map[string]*serviceCenterCloudflareZone)
-	for _, domain := range domains {
-		name := strings.TrimSpace(domain.Zone)
-		if name == "" {
-			name = domain.Domain
-		}
-		key := domain.Environment + ":" + name
-		if domain.ConnectorID != nil {
-			key += ":" + strconv.FormatUint(uint64(*domain.ConnectorID), 10)
-		}
-		zone := zones[key]
-		if zone == nil {
-			zone = &serviceCenterCloudflareZone{
-				Name:        name,
-				Environment: domain.Environment,
-				ConnectorID: domain.ConnectorID,
-				Domains:     []ops.DomainBinding{},
-			}
-			if domain.ConnectorID != nil {
-				zone.ConnectorName = connectorNames[*domain.ConnectorID]
-			}
-			zones[key] = zone
-		}
-		zone.Domains = append(zone.Domains, domain)
-		zone.DomainCount++
-	}
-
-	result := make([]serviceCenterCloudflareZone, 0, len(zones))
-	for _, zone := range zones {
-		sort.Slice(zone.Domains, func(i, j int) bool {
-			return zone.Domains[i].Domain < zone.Domains[j].Domain
-		})
-		result = append(result, *zone)
-	}
-	sort.Slice(result, func(i, j int) bool {
-		if result[i].Environment == result[j].Environment {
-			return result[i].Name < result[j].Name
-		}
-		return result[i].Environment < result[j].Environment
-	})
-	return result
 }

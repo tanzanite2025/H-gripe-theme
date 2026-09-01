@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { toast } from 'vue-sonner'
 import { customsClassificationApi } from '@/api/customsClassifications'
-import type { LookupCandidate } from '@/components/admin/customs/customsClassificationTypes'
+import type { LookupCandidate } from '@/modules/customs/customsClassificationTypes'
 
 export const useCustomsLookup = () => {
   const lookupProvider = ref('us_hts')
@@ -42,3 +42,4 @@ export const useCustomsLookup = () => {
 }
 
 export default useCustomsLookup
+

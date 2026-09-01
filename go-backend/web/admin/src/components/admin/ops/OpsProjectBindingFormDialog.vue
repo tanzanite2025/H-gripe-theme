@@ -152,7 +152,7 @@ import {
   opsProjectStatusOptions,
   projectVPSLabel,
   type OpsProjectForm,
-} from './opsProjectBindingForm'
+} from '@/modules/ops/opsProjectBindingForm'
 
 const props = withDefaults(defineProps<{
   open?: boolean
@@ -194,3 +194,4 @@ watch(compatibleConnectors, (connectors) => {
   }
 }, { immediate: true })
 </script>
+

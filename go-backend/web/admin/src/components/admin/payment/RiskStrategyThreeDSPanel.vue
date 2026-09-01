@@ -261,7 +261,7 @@ import type {
   RiskStrategyProviderReport,
   RiskStrategyReports,
   RiskStrategySnapshot,
-} from './riskStrategyTypes'
+} from '@/modules/payment/riskStrategyTypes'
 
 const props = withDefaults(defineProps<{
   configuration?: RiskStrategyConfiguration | null
@@ -378,3 +378,4 @@ const goToPaymentSettings = (): void => {
   router.push({ name: 'PaymentSettings' })
 }
 </script>
+

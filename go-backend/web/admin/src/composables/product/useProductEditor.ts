@@ -8,7 +8,7 @@ import axios from '@/utils/axios'
 import type {
   ProductFormRecord,
   ProductVariantOptionValueForm
-} from '@/components/admin/product/productEditorTypes'
+} from '@/modules/product/productEditorTypes'
 
 type ProductEditorMode = 'create' | 'edit'
 
@@ -654,3 +654,4 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
 }
 
 export default useProductEditor
+

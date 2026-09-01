@@ -8,14 +8,14 @@ import (
 
 type PublicUploadAccessService struct {
 	media                 *MediaService
-	showcase              *ShowcaseService
+	showcase              *UGCShowcaseService
 	customerServiceAvatar *CustomerServiceAvatarService
 	siteLogo              *SiteLogoService
 }
 
 func NewPublicUploadAccessService(
 	mediaService *MediaService,
-	showcaseService *ShowcaseService,
+	UGCShowcaseService *UGCShowcaseService,
 	customerServiceAvatarService ...*CustomerServiceAvatarService,
 ) *PublicUploadAccessService {
 	var avatarService *CustomerServiceAvatarService
@@ -24,7 +24,7 @@ func NewPublicUploadAccessService(
 	}
 	return &PublicUploadAccessService{
 		media:                 mediaService,
-		showcase:              showcaseService,
+		showcase:              UGCShowcaseService,
 		customerServiceAvatar: avatarService,
 	}
 }

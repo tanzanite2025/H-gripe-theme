@@ -30,6 +30,8 @@ var (
 	ErrPayPalDisputeInvoiceUnavailable     = errors.New("paypal dispute commercial invoice is unavailable")
 )
 
+const paypalSignaturePODThresholdUSD = 750
+
 type PayPalDisputeEvidenceSubmitter interface {
 	ProvideEvidence(ctx context.Context, disputeID string, params *paypalapi.DisputeProvideEvidenceParams) error
 }
@@ -214,10 +216,15 @@ func (s *PaymentService) BuildPayPalDisputeEvidencePackage(disputeID uint) (*Pay
 	} else if deliveredTrackingEvent(pkg.TrackingEvents) == nil {
 		pkg.Warnings = append(pkg.Warnings, "Tracking events do not contain a clear delivered or signed event.")
 	}
+	if paypalDisputeRequiresSignaturePOD(record, orderRecord) && trackingSignaturePODEvent(pkg.TrackingEvents) == nil {
+		pkg.Warnings = append(pkg.Warnings, "PayPal high-value USD INR disputes (>= 750 USD) require recipient signature/POD; delivered tracking status alone is not sufficient.")
+	}
 	if len(pkg.Communications) == 0 {
 		pkg.Warnings = append(pkg.Warnings, "No linked customer communication was found by order number, customer account, or order email.")
 	}
-	pkg.Warnings = append(pkg.Warnings, "Carrier official proof-of-delivery PDF attachment is not configured yet. PayPal will receive structured tracking, signature-event, invoice, and communication notes.")
+	if trackingSignaturePODEvent(pkg.TrackingEvents) == nil {
+		pkg.Warnings = append(pkg.Warnings, "Carrier official proof-of-delivery PDF attachment is not configured yet. PayPal will receive structured tracking, invoice, and communication notes.")
+	}
 
 	finalizePayPalDisputeEvidencePackage(pkg)
 	return pkg, nil
@@ -343,9 +350,13 @@ func (s *PaymentService) paypalDisputeEvidenceDocuments(ctx context.Context, pkg
 		warnings = append(warnings, "Commercial invoice PDF was not generated: "+err.Error())
 		return documents, warnings
 	}
-	pdfBytes, err := invoice.RenderCommercialInvoicePDF(document, options.FontPath)
+	pdfBytes, pdfWarnings, err := s.paypalDisputeCommercialInvoiceAttachmentPDF(document, options)
 	if err != nil {
 		warnings = append(warnings, "Commercial invoice PDF was not rendered: "+err.Error())
+		return documents, warnings
+	}
+	warnings = append(warnings, pdfWarnings...)
+	if len(pdfBytes) == 0 {
 		return documents, warnings
 	}
 
@@ -436,7 +447,7 @@ func buildPayPalDisputeEvidenceDraft(pkg *PayPalDisputeEvidencePackage) PayPalDi
 	}
 	if delivered := deliveredTrackingEvent(pkg.TrackingEvents); delivered != nil {
 		draft.DeliveredAt = delivered.EventTime.UTC().Format(time.RFC3339)
-		draft.ProofOfDeliverySummary = fmt.Sprintf("%s | %s | %s | %s", draft.DeliveredAt, delivered.Status, delivered.Location, delivered.Description)
+		draft.ProofOfDeliverySummary = paypalProofOfDeliverySummary(delivered)
 	}
 	draft.Notes = paypalDisputeEvidenceNotes(pkg, draft, "")
 	return draft
@@ -456,6 +467,9 @@ func finalizePayPalDisputeEvidencePackage(pkg *PayPalDisputeEvidencePackage) {
 		pkg.Authentication,
 		pkg.PolicyDisclosure,
 		pkg.Refunds,
+		DisputeEvidenceChecklistOptions{
+			RequireSignatureProofOfDelivery: paypalDisputeRequiresSignaturePOD(pkg.Dispute, pkg.Order),
+		},
 	)
 	pkg.SubmissionCheck = buildDisputeEvidenceSubmissionCheck(pkg.CanSubmit, pkg.EvidenceChecklist)
 }
@@ -476,12 +490,23 @@ func paypalDisputeEvidenceNotes(pkg *PayPalDisputeEvidencePackage, draft PayPalD
 		fmt.Sprintf("Fulfillment: carrier=%s; tracking_number=%s; shipping_date=%s.", draft.ShippingCarrier, draft.ShippingTrackingNumber, draft.ShippingDate),
 	}
 	if draft.ProofOfDeliverySummary != "" {
-		lines = append(lines, "Proof of delivery / signature event: "+draft.ProofOfDeliverySummary)
+		lines = append(lines, "Proof of delivery summary: "+draft.ProofOfDeliverySummary)
+	}
+	if paypalDisputeRequiresSignaturePOD(pkg.Dispute, pkg.Order) {
+		if signaturePOD := trackingSignaturePODEvent(pkg.TrackingEvents); signaturePOD != nil {
+			lines = append(lines, "PayPal high-value INR Signature POD: "+trackingEventPODSummary(signaturePOD))
+		} else {
+			lines = append(lines, "PayPal high-value INR Signature POD: missing recipient signature/POD; delivered tracking status alone is insufficient for this threshold.")
+		}
 	}
 	if len(pkg.TrackingEvents) > 0 {
 		lines = append(lines, "Tracking timeline:")
 		for _, event := range limitTrackingEvents(pkg.TrackingEvents, 12) {
-			lines = append(lines, fmt.Sprintf("- %s | %s | %s | %s", event.EventTime.UTC().Format(time.RFC3339), event.Status, event.Location, event.Description))
+			line := fmt.Sprintf("- %s | %s | %s | %s", event.EventTime.UTC().Format(time.RFC3339), event.Status, event.Location, event.Description)
+			if signaturePOD := trackingEventPODSummary(&event); signaturePOD != "" {
+				line += " | " + signaturePOD
+			}
+			lines = append(lines, line)
 		}
 	}
 	if draft.CommunicationSummary != "" {
@@ -572,4 +597,61 @@ func paypalDisputeNeedsSellerEvidence(record *paymentdomain.PayPalDispute) bool 
 	default:
 		return status == ""
 	}
+}
+
+func paypalDisputeRequiresSignaturePOD(record *paymentdomain.PayPalDispute, orderRecord *orderdomain.Order) bool {
+	if record == nil || !paypalDisputeReasonIsINR(record.Reason) {
+		return false
+	}
+	if paypalHighValueUSD(record.Amount, record.Currency) {
+		return true
+	}
+	if orderRecord != nil {
+		return paypalHighValueUSD(orderRecord.TotalAmount, orderRecord.Currency)
+	}
+	return false
+}
+
+func paypalDisputeReasonIsINR(reason string) bool {
+	normalized := strings.ToUpper(strings.TrimSpace(reason))
+	normalized = strings.NewReplacer("-", "_", " ", "_").Replace(normalized)
+	return normalized == "INR" ||
+		normalized == "ITEM_NOT_RECEIVED" ||
+		normalized == "MERCHANDISE_OR_SERVICE_NOT_RECEIVED" ||
+		strings.Contains(normalized, "NOT_RECEIVED")
+}
+
+func paypalHighValueUSD(amount float64, currency string) bool {
+	return amount >= paypalSignaturePODThresholdUSD &&
+		strings.EqualFold(strings.TrimSpace(currency), "USD")
+}
+
+func paypalProofOfDeliverySummary(event *shippingdomain.TrackingEvent) string {
+	if event == nil {
+		return ""
+	}
+	parts := []string{}
+	if !event.EventTime.IsZero() {
+		parts = append(parts, "delivered_at="+event.EventTime.UTC().Format(time.RFC3339))
+	}
+	if status := strings.TrimSpace(event.Status); status != "" {
+		parts = append(parts, "status="+status)
+	}
+	if location := strings.TrimSpace(event.Location); location != "" {
+		parts = append(parts, "location="+location)
+	}
+	if description := strings.TrimSpace(event.Description); description != "" {
+		parts = append(parts, "description="+description)
+	}
+	if signaturePOD := trackingEventPODSummary(event); signaturePOD != "" {
+		parts = append(parts, signaturePOD)
+	}
+	if len(parts) == 0 {
+		return ""
+	}
+	prefix := "Delivery scan"
+	if trackingEventHasSignaturePOD(event) {
+		prefix = "Signature POD"
+	}
+	return prefix + ": " + strings.Join(parts, "; ")
 }
