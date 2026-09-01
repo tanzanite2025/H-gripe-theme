@@ -178,7 +178,7 @@ import {
   entryTone,
   formatRouteCatalogDate,
   sourceLabel,
-} from './routeCatalogPresentation'
+} from '@/modules/url-management/routeCatalogPresentation'
 
 const props = defineProps<{
   open: boolean

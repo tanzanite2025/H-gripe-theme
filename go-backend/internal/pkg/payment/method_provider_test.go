@@ -1,6 +1,9 @@
 package payment
 
-import "testing"
+import (
+	"math"
+	"testing"
+)
 
 func TestProviderForPaymentMethod(t *testing.T) {
 	tests := []struct {
@@ -77,5 +80,25 @@ func TestFormatMajorAmountUsesCurrencyMinorUnits(t *testing.T) {
 				t.Fatalf("FormatMajorAmount(%s) = %q, want %q", tt.currency, value, tt.want)
 			}
 		})
+	}
+}
+
+func TestAmountHelpersRoundFloatingPointNoise(t *testing.T) {
+	amount := math.Nextafter(199.99, 200)
+
+	minor, err := MajorToMinorAmount(amount, "USD")
+	if err != nil {
+		t.Fatalf("MajorToMinorAmount() error = %v", err)
+	}
+	if minor != 19999 {
+		t.Fatalf("MajorToMinorAmount() = %d, want %d", minor, 19999)
+	}
+
+	formatted, err := FormatMajorAmount(amount, "USD")
+	if err != nil {
+		t.Fatalf("FormatMajorAmount() error = %v", err)
+	}
+	if formatted != "199.99" {
+		t.Fatalf("FormatMajorAmount() = %q, want %q", formatted, "199.99")
 	}
 }

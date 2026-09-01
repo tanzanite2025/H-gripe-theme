@@ -89,7 +89,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRuntimeConfig } from '#imports'
+import { useApiRequest } from '~/composables/useApiRequest'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
 import GuideImage from '~/components/GuideImage.vue'
 import TireSizeSection from '~/components/TireSizeSection.vue'
@@ -122,7 +122,7 @@ const { activeTab, setActiveTab } = usePageSubNavigationTab({
   defaultValue: 'tubeless',
   redirectBasePathToDefaultTab: true,
 })
-const config = useRuntimeConfig()
+const { request } = useApiRequest()
 
 // Tire products drawer
 const tireProductsDrawerVisible = ref(false)
@@ -140,15 +140,14 @@ const openTireProductsDrawer = async () => {
   tireProductsLoading.value = true
 
   try {
-    const apiBase = String((config.public as { apiBase?: string }).apiBase || '/api/v1').replace(/\/$/, '')
-    const response = await $fetch<any>(`${apiBase}/customer-service/products`, {
+    const response = await request<any>('/customer-service/products', {
       params: {
         keyword,
         per_page: 20,
         status: 'active',
       },
       credentials: 'include',
-    })
+    }, 'Failed to load tire products')
 
     const products = Array.isArray(response?.items) ? response.items : []
     if (products.length > 0) {

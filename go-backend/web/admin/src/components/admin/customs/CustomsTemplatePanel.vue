@@ -64,7 +64,7 @@
 import { Pencil, Plus, Trash2 } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import type { CustomsClassificationRecord } from './customsClassificationTypes'
+import type { CustomsClassificationRecord } from '@/modules/customs/customsClassificationTypes'
 
 withDefaults(defineProps<{
   templates?: CustomsClassificationRecord[]
@@ -86,3 +86,4 @@ const emit = defineEmits<{
   (event: 'delete', template: CustomsClassificationRecord): void
 }>()
 </script>
+

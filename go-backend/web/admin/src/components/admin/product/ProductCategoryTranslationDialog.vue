@@ -73,7 +73,7 @@ import { Input } from '@/components/ui/input'
 import type {
   ProductCategoryTranslationForm,
   ProductCategoryTranslationPayload,
-} from './productCategoryTypes'
+} from '@/modules/product/productCategoryTypes'
 import type { ProductCategoryTranslationRecord } from '@/api/productCategories'
 
 const props = withDefaults(defineProps<{
@@ -145,3 +145,4 @@ watch(
   { immediate: true, deep: true },
 )
 </script>
+

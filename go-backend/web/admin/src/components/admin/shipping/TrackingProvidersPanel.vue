@@ -121,7 +121,7 @@ import {
   trackingProviderHasWebhookSecret,
   trackingWebhookUrl,
 } from '@/lib/shippingPresentation'
-import type { TrackingProvider } from './shippingTypes'
+import type { TrackingProvider } from '@/modules/shipping/shippingTypes'
 
 withDefaults(defineProps<{
   trackingProviders?: TrackingProvider[]
@@ -144,3 +144,4 @@ const emit = defineEmits<{
   (event: 'copy-webhook', provider: TrackingProvider): void
 }>()
 </script>
+

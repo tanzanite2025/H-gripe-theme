@@ -1,6 +1,6 @@
 import { computed, ref } from 'vue'
 import { useI18n } from '#imports'
-import { usePublicApiBase } from '~/composables/usePublicApiBase'
+import { useApiRequest } from '~/composables/useApiRequest'
 import type { ShopProductReviewSummary } from '~/composables/useShopProducts'
 
 export interface ProductReview {
@@ -91,7 +91,7 @@ const normalizeReview = (value: any): ProductReview | null => {
 
 export function useProductReviews() {
   const { locale } = useI18n()
-  const publicApiBase = usePublicApiBase()
+  const { request } = useApiRequest()
   const summary = ref<ShopProductReviewSummary | null>(null)
   const reviews = ref<ProductReview[]>([])
   const pagination = ref<ProductReviewPagination>({
@@ -115,23 +115,24 @@ export function useProductReviews() {
   const extractData = (response: any) => response?.data ?? response
 
   const fetchSummary = async (targetProductId: number) => {
-    const response = await $fetch<any>(
-      `${publicApiBase.value}/reviews/summary/${encodeURIComponent(String(targetProductId))}`,
+    const response = await request<any>(
+      `/reviews/summary/${encodeURIComponent(String(targetProductId))}`,
       { headers: requestHeaders.value },
+      'Unable to load rating summary',
     )
     const normalized = normalizeReviewSummary(extractData(response))
     if (normalized) summary.value = normalized
   }
 
   const fetchPage = async (targetProductId: number, page: number, pageSize: number) => {
-    const response = await $fetch<any>(`${publicApiBase.value}/reviews`, {
+    const response = await request<any>('/reviews', {
       headers: requestHeaders.value,
       params: {
         product_id: targetProductId,
         page,
         page_size: pageSize,
       },
-    })
+    }, 'Unable to load reviews')
     const data = response && typeof response === 'object' ? response : {}
     const nextReviews = Array.isArray(data?.data)
       ? data.data.map(normalizeReview).filter(Boolean) as ProductReview[]

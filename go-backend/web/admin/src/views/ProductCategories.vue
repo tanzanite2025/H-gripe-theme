@@ -129,7 +129,7 @@ import ProductCategoryTranslationDialog from '@/components/admin/product/Product
 import type {
   DraftCategoryRow,
   ProductCategoryTranslationPayload,
-} from '@/components/admin/product/productCategoryTypes'
+} from '@/modules/product/productCategoryTypes'
 import { useProductCategoryTreeEditor } from '@/composables/product/useProductCategoryTreeEditor'
 import productCategoryApi, { type ProductCategoryTranslationRecord } from '@/api/productCategories'
 import type { MediaAsset } from '@/api/media'
@@ -303,3 +303,4 @@ onMounted(() => {
   gap: 0.75rem;
 }
 </style>
+

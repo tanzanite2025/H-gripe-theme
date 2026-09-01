@@ -175,7 +175,7 @@ clean: ## 清理构建产物
 	@echo "Cleaning..."
 	rm -rf $(BIN_DIR)
 	rm -rf $(COVERAGE_DIR)
-	rm -f server
+	rm -f server server.exe commerce-platform-api commerce-platform-api.exe
 	$(GO) clean -cache -testcache
 
 clean-docker: ## 清理Docker镜像

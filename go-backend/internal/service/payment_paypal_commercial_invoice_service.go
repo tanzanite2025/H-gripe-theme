@@ -9,11 +9,18 @@ import (
 	"commerce-platform/internal/pkg/invoice"
 )
 
+const (
+	paypalDisputeCommercialInvoiceMaxBytes         = 5 << 20
+	paypalDisputeCommercialInvoiceCompactItemLimit = 4
+)
+
 type PayPalDisputeInvoiceOptions struct {
 	Seller        invoice.SellerProfile
 	FontPath      string
 	AutoAttachPDF bool
 }
+
+type paypalDisputeCommercialInvoiceRendererFunc func(document invoice.CommercialInvoice, fontPath string) ([]byte, error)
 
 type PayPalDisputeCommercialInvoicePDF struct {
 	DisputeID       uint
@@ -89,6 +96,9 @@ func (s *PaymentService) RenderPayPalCommercialInvoicePreview(document invoice.C
 }
 
 func (s *PaymentService) renderPayPalCommercialInvoicePDF(document invoice.CommercialInvoice, options PayPalDisputeInvoiceOptions) ([]byte, error) {
+	if s != nil && s.paypalDisputeCommercialInvoiceRenderer != nil {
+		return s.paypalDisputeCommercialInvoiceRenderer(document, options.FontPath)
+	}
 	return invoice.RenderCommercialInvoicePDF(document, options.FontPath)
 }
 
@@ -97,6 +107,36 @@ func (s *PaymentService) paypalDisputeInvoiceAutoAttachEnabled() bool {
 		return false
 	}
 	return s.paypalDisputeInvoiceOptions.AutoAttachPDF
+}
+
+func (s *PaymentService) paypalDisputeCommercialInvoiceAttachmentPDF(document invoice.CommercialInvoice, options PayPalDisputeInvoiceOptions) ([]byte, []string, error) {
+	warnings := []string{}
+	pdfBytes, err := s.renderPayPalCommercialInvoicePDF(document, options)
+	if err != nil {
+		return nil, warnings, err
+	}
+	if len(pdfBytes) <= paypalDisputeCommercialInvoiceMaxBytes {
+		return pdfBytes, warnings, nil
+	}
+
+	compactDocument := compactPayPalDisputeCommercialInvoice(document)
+	compactBytes, compactErr := s.renderPayPalCommercialInvoicePDF(compactDocument, options)
+	if compactErr != nil {
+		return nil, warnings, compactErr
+	}
+	if len(compactBytes) <= paypalDisputeCommercialInvoiceMaxBytes {
+		warnings = append(warnings, fmt.Sprintf(
+			"Commercial invoice PDF exceeded the %d MiB evidence budget; a compact fallback was used before upload.",
+			paypalDisputeCommercialInvoiceMaxBytes>>20,
+		))
+		return compactBytes, warnings, nil
+	}
+
+	warnings = append(warnings, fmt.Sprintf(
+		"Commercial invoice PDF exceeded the %d MiB evidence budget even after compact fallback; the invoice attachment was skipped.",
+		paypalDisputeCommercialInvoiceMaxBytes>>20,
+	))
+	return nil, warnings, nil
 }
 
 func (s *PaymentService) paypalDisputeCommercialInvoice(pkg *PayPalDisputeEvidencePackage, generatedAt time.Time) (invoice.CommercialInvoice, PayPalDisputeInvoiceOptions, error) {
@@ -122,6 +162,28 @@ func (s *PaymentService) paypalDisputeCommercialInvoice(pkg *PayPalDisputeEviden
 	}
 	document, err := invoice.BuildFromOrder(pkg.Order, options.Seller, paymentReference, generatedAt)
 	return document, options, err
+}
+
+func compactPayPalDisputeCommercialInvoice(document invoice.CommercialInvoice) invoice.CommercialInvoice {
+	compact := document
+	if len(document.Items) > paypalDisputeCommercialInvoiceCompactItemLimit {
+		compact.Items = append([]invoice.LineItem(nil), document.Items[:paypalDisputeCommercialInvoiceCompactItemLimit]...)
+		omitted := len(document.Items) - paypalDisputeCommercialInvoiceCompactItemLimit
+		compact.Disclaimer = fmt.Sprintf("Commercial invoice prepared for payment dispute evidence. Additional %d line items omitted from compact evidence copy.", omitted)
+	}
+	compact.PaymentReference = ""
+	compact.Seller.Email = ""
+	compact.Seller.Phone = ""
+	compact.Seller.Website = ""
+	compact.BillTo.Company = ""
+	compact.BillTo.Line2 = ""
+	compact.BillTo.Phone = ""
+	compact.BillTo.Email = ""
+	compact.ShipTo.Company = ""
+	compact.ShipTo.Line2 = ""
+	compact.ShipTo.Phone = ""
+	compact.ShipTo.Email = ""
+	return compact
 }
 
 func (s *PaymentService) paypalDisputeInvoiceSellerProfile() (invoice.SellerProfile, error) {

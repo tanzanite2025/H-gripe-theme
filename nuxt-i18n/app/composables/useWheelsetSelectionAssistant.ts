@@ -1,5 +1,6 @@
 import { computed, ref, watch } from 'vue'
-import { useI18n, useRuntimeConfig } from '#imports'
+import { useI18n } from '#imports'
+import { useApiRequest } from '~/composables/useApiRequest'
 import type {
   WheelsetSelectionAnswers,
   WheelsetSelectionAssistantConfig,
@@ -59,9 +60,8 @@ const mergeQueryEffects = (
 export const useWheelsetSelectionAssistant = (
   flowSlug = WHEELSET_SELECTION_ASSISTANT_SLUG,
 ) => {
-  const config = useRuntimeConfig()
   const { locale, t } = useI18n()
-  const publicBaseURL = ((config.public as { apiBase?: string }).apiBase || '/api/v1').replace(/\/$/, '')
+  const { request } = useApiRequest()
   const flow = ref<WheelsetSelectionAssistantFlow | null>(null)
   const loading = ref(false)
   const error = ref<string | null>(null)
@@ -197,10 +197,12 @@ export const useWheelsetSelectionAssistant = (
     error.value = null
     try {
       const endpoint = flowSlug === WHEELSET_SELECTION_ASSISTANT_SLUG
-        ? `${publicBaseURL}/wheelset-fit-questionnaire/current`
-        : `${publicBaseURL}/selection-assistant/flows/${encodeURIComponent(flowSlug)}`
-      const response = await $fetch<{ data: WheelsetSelectionAssistantFlow }>(
+        ? '/wheelset-fit-questionnaire/current'
+        : `/selection-assistant/flows/${encodeURIComponent(flowSlug)}`
+      const response = await request<{ data: WheelsetSelectionAssistantFlow }>(
         endpoint,
+        {},
+        'Failed to load wheelset selection assistant',
       )
       const nextFlow = response?.data
       if (!nextFlow?.version?.config?.nodes?.length) {

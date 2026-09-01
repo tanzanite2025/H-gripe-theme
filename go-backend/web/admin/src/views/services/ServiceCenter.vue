@@ -2,7 +2,7 @@
   <div class="space-y-4">
     <AdminPageHeader
       title="服务中心 / 服务总览"
-      description="统一查看服务连接、服务器、项目、域名和网络关系；具体配置与发布操作在运维中心完成。"
+      description="统一查看服务连接、服务器、项目、域名和网络关系；服务授权留在服务中心，发布动作留在部署中心。"
     >
       <template #actions>
         <select
@@ -29,7 +29,7 @@
         <div>
           <p class="text-sm font-black">当前总览：{{ environmentLabel(serviceOverview?.environment) }}</p>
           <p class="mt-1 text-xs text-muted-foreground">
-            这里是服务和线上资源的唯一总览入口；运维中心只保留 VPS、项目、域名维护，以及检查、同步和发布动作。
+            这里是服务能力和线上资源的总览入口；运维中心只保留 VPS、项目、域名维护，以及检查、同步和发布动作。
           </p>
         </div>
       </div>
@@ -270,6 +270,22 @@
       </Button>
     </section>
 
+    <section class="flex flex-col gap-3 border border-dashed border-primary/30 bg-primary/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex items-start gap-3">
+        <GitBranch class="mt-0.5 size-5 shrink-0 text-primary" />
+        <div>
+          <p class="text-sm font-black">GitHub / GHCR 能力详情</p>
+          <p class="mt-1 text-xs text-muted-foreground">
+            {{ githubSummary }}
+          </p>
+        </div>
+      </div>
+      <Button variant="outline" @click="navigateTo('/services/github')">
+        查看 GitHub
+        <ChevronRight class="size-4" />
+      </Button>
+    </section>
+
     <section class="border bg-card">
       <div class="flex flex-wrap items-center justify-between gap-3 border-b border-dashed px-4 py-3">
         <div class="flex items-start gap-3">
@@ -409,6 +425,8 @@ const connectorAttentionCount = computed(() => providers.value
   .reduce((total, provider) => total + provider.connection_count, 0))
 const cloudflareDomains = computed(() => domainList.value.filter((domain) => domain.provider === 'cloudflare'))
 const cloudflareProvider = computed(() => providers.value.find((provider) => provider.id === 'cloudflare'))
+const githubProvider = computed(() => providers.value.find((provider) => provider.id === 'github'))
+const ghcrProvider = computed(() => providers.value.find((provider) => provider.id === 'ghcr'))
 const generatedLabel = computed(() => serviceOverview.value?.generated_at ? formatDate(serviceOverview.value.generated_at) : '尚未生成')
 const cloudflareSummary = computed(() => {
   const provider = cloudflareProvider.value
@@ -419,6 +437,17 @@ const cloudflareSummary = computed(() => {
     return `Cloudflare 已有 ${provider.active_connection_count} 个可用连接，但当前没有关联 Zone 或域名。`
   }
   return `当前关联 ${cloudflareDomains.value.length} 个域名；DNS、代理/TLS 和 Cache Rules 的实际能力在 Cloudflare 详情页按 Zone 查看。`
+})
+const githubSummary = computed(() => {
+  const github = githubProvider.value
+  const ghcr = ghcrProvider.value
+  const connectionCount = (github?.connection_count || 0) + (ghcr?.connection_count || 0)
+  const activeCount = (github?.active_connection_count || 0) + (ghcr?.active_connection_count || 0)
+  const projectCount = (github?.resource_count || 0) + (ghcr?.resource_count || 0)
+  if (!connectionCount) {
+    return '当前没有 GitHub / GHCR 连接；仓库读取和镜像读取在 GitHub 详情页授权。'
+  }
+  return `当前 ${activeCount} / ${connectionCount} 个连接可用，关联 ${projectCount} 个项目发布引用。`
 })
 
 const loadOverview = async (): Promise<void> => {
@@ -445,7 +474,7 @@ const navigateTo = (path: string, extraQuery: Record<string, string> = {}): void
 
 const openProvider = (provider: ServiceCenterProvider): void => {
   if (provider.id === 'github' || provider.id === 'ghcr') {
-    navigateTo('/ops/deployments', { tab: 'github' })
+    navigateTo('/services/github')
     return
   }
   if (provider.route) navigateTo(provider.route)
@@ -466,8 +495,8 @@ const providerIcon = (provider: string) => ({
 const providerRouteLabel = (provider: ServiceCenterProvider): string => ({
   cloudflare: '进入 Cloudflare 能力详情',
   hostinger: '进入 VPS 中心查看资源',
-  github: '进入发布中心查看 GitHub / GHCR',
-  ghcr: '进入发布中心查看 GitHub / GHCR',
+  github: '进入 GitHub / GHCR 能力详情',
+  ghcr: '进入 GitHub / GHCR 能力详情',
 }[provider.id] || (provider.route ? '查看详情' : '暂未提供详情页'))
 
 const statusLabel = (status: ServiceCenterProvider['status']): string => ({

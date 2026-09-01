@@ -8,6 +8,7 @@ import (
 	"commerce-platform/internal/domain/currency"
 )
 
+// MajorToMinorAmount rounds first so float64 noise does not truncate away a cent.
 func MajorToMinorAmount(amount float64, code string) (int64, error) {
 	minorUnits, ok := currency.MinorUnits(code)
 	if !ok {

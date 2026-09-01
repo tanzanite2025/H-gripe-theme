@@ -314,7 +314,7 @@ import type {
   PaymentGatewayOption,
   PaymentGatewayRuntime,
   PaymentGatewayRuntimeStatus,
-} from './settingsTypes'
+} from '@/modules/settings/types'
 
 const props = withDefaults(defineProps<{
   selectedGateway?: string

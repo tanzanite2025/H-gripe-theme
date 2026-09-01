@@ -175,7 +175,7 @@ func ValidateFile(file *multipart.FileHeader, rule FileRule) error {
 		return validationError(CodeInvalidType, "invalid_type: %s has an unsupported file extension", file.Filename)
 	}
 
-	contentType, err := detectContentType(file)
+	contentType, err := DetectContentType(file)
 	if err != nil {
 		return err
 	}
@@ -205,7 +205,7 @@ func ReadImageDimensions(file *multipart.FileHeader) (int, int, error) {
 		return 0, 0, validationError(CodeEmptyFile, "empty_file: uploaded file is empty")
 	}
 
-	contentType, err := detectContentType(file)
+	contentType, err := DetectContentType(file)
 	if err != nil {
 		return 0, 0, err
 	}
@@ -411,7 +411,10 @@ func HTTPStatus(err error) int {
 	}
 }
 
-func detectContentType(file *multipart.FileHeader) (string, error) {
+// DetectContentType returns the server-sniffed MIME type for an uploaded file.
+// It inspects the first 512 bytes and supplements net/http sniffing for video
+// formats that are otherwise returned as application/octet-stream.
+func DetectContentType(file *multipart.FileHeader) (string, error) {
 	src, err := file.Open()
 	if err != nil {
 		return "", fmt.Errorf("failed to inspect uploaded file: %w", err)

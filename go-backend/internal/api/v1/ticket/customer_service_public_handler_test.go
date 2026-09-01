@@ -31,7 +31,7 @@ func TestEnsurePublicCustomerServiceConversationTouchesVisitorTimezone(t *testin
 	router.POST("/conversations", handler.EnsurePublicCustomerServiceConversation)
 
 	recorder := httptest.NewRecorder()
-	body := []byte(`{"agent_id":"` + itoaUint(supportUser.ID) + `"}`)
+	body := []byte(`{"agent_id":"` + itoaUint(supportUser.ID) + `","locale":"fr"}`)
 	request := httptest.NewRequest(http.MethodPost, "/conversations", bytes.NewReader(body))
 	request.Header.Set("X-Timezone", "America/Los_Angeles")
 	request.Header.Set("Accept-Language", "en-US,en;q=0.9")
@@ -54,6 +54,8 @@ func TestEnsurePublicCustomerServiceConversationTouchesVisitorTimezone(t *testin
 
 	var profile visitor.Profile
 	require.NoError(t, db.First(&profile).Error)
+	assert.Equal(t, "fr", profile.Locale)
+	assert.Equal(t, "request", profile.LocaleSource)
 	assert.Equal(t, "America/Los_Angeles", profile.Timezone)
 	assert.Equal(t, service.VisitorProfileActionCustomerService, profile.LastMeaningfulAction)
 	assert.Equal(t, service.VisitorProfileQualityCustomerService, profile.ProfileQualityScore)

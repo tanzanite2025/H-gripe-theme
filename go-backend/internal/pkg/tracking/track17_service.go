@@ -99,14 +99,22 @@ type track17ProviderInfo struct {
 }
 
 type track17TrackingEvent struct {
-	TimeISO     string          `json:"time_iso"`
-	TimeUTC     string          `json:"time_utc"`
-	TimeRaw     json.RawMessage `json:"time_raw"`
-	Status      string          `json:"status"`
-	Stage       string          `json:"stage"`
-	SubStatus   string          `json:"sub_status"`
-	Location    string          `json:"location"`
-	Description string          `json:"description"`
+	TimeISO                 string          `json:"time_iso"`
+	TimeUTC                 string          `json:"time_utc"`
+	TimeRaw                 json.RawMessage `json:"time_raw"`
+	Status                  string          `json:"status"`
+	Stage                   string          `json:"stage"`
+	SubStatus               string          `json:"sub_status"`
+	Location                string          `json:"location"`
+	Description             string          `json:"description"`
+	RecipientSignatureName  string          `json:"recipient_signature_name"`
+	SignatureName           string          `json:"signature_name"`
+	SignedBy                string          `json:"signed_by"`
+	ReceivedBy              string          `json:"received_by"`
+	ProofOfDeliveryURL      string          `json:"proof_of_delivery_url"`
+	PODURL                  string          `json:"pod_url"`
+	SignatureImageURL       string          `json:"signature_image_url"`
+	ProofOfDeliveryImageURL string          `json:"proof_of_delivery_image_url"`
 }
 
 // NewTrackingService 创建物流追踪服务。
@@ -369,10 +377,12 @@ func track17AcceptedToTrackingInfo(item track17AcceptedItem) *TrackingInfo {
 func track17EventToTrackingEvent(event track17TrackingEvent, fallbackStatus string) TrackingEvent {
 	eventTime, _ := parseTrack17EventTime(event)
 	return TrackingEvent{
-		Time:        eventTime,
-		Status:      firstNonEmpty(event.SubStatus, event.Stage, event.Status, fallbackStatus),
-		Description: strings.TrimSpace(event.Description),
-		Location:    parseLocation(event.Location),
+		Time:                   eventTime,
+		Status:                 firstNonEmpty(event.SubStatus, event.Stage, event.Status, fallbackStatus),
+		Description:            strings.TrimSpace(event.Description),
+		Location:               parseLocation(event.Location),
+		RecipientSignatureName: track17EventRecipientSignatureName(event),
+		ProofOfDeliveryURL:     track17EventProofOfDeliveryURL(event),
 	}
 }
 
@@ -501,7 +511,27 @@ func track17EventHasContent(event track17TrackingEvent) bool {
 		event.SubStatus,
 		event.Location,
 		event.Description,
+		track17EventRecipientSignatureName(event),
+		track17EventProofOfDeliveryURL(event),
 	) != ""
+}
+
+func track17EventRecipientSignatureName(event track17TrackingEvent) string {
+	return firstNonEmpty(
+		event.RecipientSignatureName,
+		event.SignatureName,
+		event.SignedBy,
+		event.ReceivedBy,
+	)
+}
+
+func track17EventProofOfDeliveryURL(event track17TrackingEvent) string {
+	return firstNonEmpty(
+		event.ProofOfDeliveryURL,
+		event.PODURL,
+		event.SignatureImageURL,
+		event.ProofOfDeliveryImageURL,
+	)
 }
 
 func firstNonEmpty(values ...string) string {

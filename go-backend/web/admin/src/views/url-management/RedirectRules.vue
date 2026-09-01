@@ -134,7 +134,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { formatRouteCatalogDate } from '@/components/admin/url-management/route-catalog/routeCatalogPresentation'
+import { formatRouteCatalogDate } from '@/modules/url-management/routeCatalogPresentation'
 import {
   storefrontRedirectRulesApi,
   type StorefrontRedirectRule,

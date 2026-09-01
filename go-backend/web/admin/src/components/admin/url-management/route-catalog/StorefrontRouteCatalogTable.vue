@@ -132,7 +132,7 @@ import {
   formatRouteCatalogDate,
   sourceLabel,
   sourceTone,
-} from './routeCatalogPresentation'
+} from '@/modules/url-management/routeCatalogPresentation'
 
 defineProps<{
   items: StorefrontRouteCatalogEntry[]

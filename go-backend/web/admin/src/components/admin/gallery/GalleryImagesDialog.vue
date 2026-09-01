@@ -44,7 +44,7 @@ import type {
   GalleryRecord,
   GallerySelectionState,
   GalleryTitleResolver
-} from './galleryTypes'
+} from '@/modules/gallery/galleryTypes'
 
 withDefaults(defineProps<{
   open?: boolean
@@ -88,3 +88,4 @@ const forwardPreview = (url?: string | null, title?: string | null): void => {
   emit('preview', url, title)
 }
 </script>
+

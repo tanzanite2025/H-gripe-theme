@@ -92,7 +92,7 @@ import type {
   LoyaltyFilters,
   LoyaltyTransaction,
   MarketingPagination,
-} from './marketingTypes'
+} from '@/modules/marketing/marketingTypes'
 
 withDefaults(defineProps<{
   loading?: boolean
@@ -120,3 +120,4 @@ const emit = defineEmits<{
   (event: 'clear-error', field: keyof LoyaltyAdjustmentForm): void
 }>()
 </script>
+

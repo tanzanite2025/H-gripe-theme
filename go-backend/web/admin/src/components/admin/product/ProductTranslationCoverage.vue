@@ -23,7 +23,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { CircleAlert, CircleCheck, Languages } from '@lucide/vue'
-import type { ProductTranslationGroup } from './productEditorTypes'
+import type { ProductTranslationGroup } from '@/modules/product/productEditorTypes'
 
 const props = withDefaults(defineProps<{
   group?: ProductTranslationGroup | null
@@ -39,3 +39,4 @@ const missingTitle = computed(() => {
   return `缺少语言：${props.group.missing_locales.map((locale) => props.localeName(locale)).join('、')}`
 })
 </script>
+

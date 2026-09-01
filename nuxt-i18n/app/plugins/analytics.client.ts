@@ -3,7 +3,6 @@ import {
   fetchAnalyticsSettings,
   type AnalyticsSettings,
 } from '~/composables/useAnalyticsSettings'
-import { usePublicApiBase } from '~/composables/usePublicApiBase'
 import {
   COOKIE_CONSENT_UPDATED_EVENT,
   readCookieConsent,
@@ -91,12 +90,11 @@ const trackPageView = () => {
 }
 
 export default defineNuxtPlugin(async () => {
-  const apiBase = usePublicApiBase().value
   const router = useRouter()
 
   let settings: AnalyticsSettings
   try {
-    settings = await fetchAnalyticsSettings(apiBase)
+    settings = await fetchAnalyticsSettings()
   } catch (error) {
     console.warn('Failed to initialize analytics settings:', error)
     return

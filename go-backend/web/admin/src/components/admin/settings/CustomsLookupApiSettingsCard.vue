@@ -112,21 +112,11 @@ import AdminFormField from '@/components/admin/AdminFormField.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
-import { apiSettingPayload, postApiSettingsBatch } from '@/components/admin/settings/apiSettingsPersistence'
-
-interface CustomsLookupAPISettings {
-  customs_lookup_us_hts_enabled: boolean | string | number
-  customs_lookup_us_hts_endpoint: string
-  customs_lookup_us_hts_api_key: string
-  customs_lookup_us_hts_api_key_header: string
-  customs_lookup_uk_trade_tariff_enabled: boolean | string | number
-  customs_lookup_uk_trade_tariff_endpoint: string
-  customs_lookup_uk_trade_tariff_api_key: string
-  customs_lookup_uk_trade_tariff_api_key_header: string
-}
+import { apiSettingPayload, postApiSettingsBatch } from '@/modules/settings/apiSettingsPersistence'
+import type { ApiManagementSettings } from '@/modules/settings/types'
 
 const props = withDefaults(defineProps<{
-  apiSettings: CustomsLookupAPISettings
+  apiSettings: ApiManagementSettings
   canEdit?: boolean
   saving?: boolean
 }>(), {

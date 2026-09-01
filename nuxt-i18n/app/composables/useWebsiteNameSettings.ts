@@ -1,6 +1,6 @@
 import { computed, useAsyncData } from '#imports'
 import type { Ref } from 'vue'
-import { usePublicApiBase } from '~/composables/usePublicApiBase'
+import { useApiRequest } from '~/composables/useApiRequest'
 import { WEBSITE_NAME_DEFAULTS } from '~/data/websiteNameDefaults.generated'
 import { normalizeStorefrontLocaleCode } from '~/utils/storefrontLocales'
 
@@ -49,22 +49,22 @@ const normalizeWebsiteNameSettings = (
 }
 
 export function useWebsiteNameSettings(locale: Ref<string> | string) {
-  const apiBase = usePublicApiBase()
+  const { request } = useApiRequest()
   const localeValue = computed(() => String(typeof locale === 'string' ? locale : locale.value || 'en'))
 
   const { data, pending, error } = useAsyncData<WebsiteNameSettings>(
     () => `mytheme-website-name-${localeValue.value}`,
     async () => {
       const fallback = defaultWebsiteNameSettings(localeValue.value)
-      if (!apiBase.value) return fallback
 
       try {
-        const raw = await $fetch<RawWebsiteNameSettings>(
-          `${apiBase.value}/settings/website-name`,
+        const raw = await request<RawWebsiteNameSettings>(
+          '/settings/website-name',
           {
             query: { locale: localeValue.value },
             headers: { accept: 'application/json' },
           },
+          'Failed to load website name settings',
         )
         return normalizeWebsiteNameSettings(raw, localeValue.value)
       } catch (fetchError) {

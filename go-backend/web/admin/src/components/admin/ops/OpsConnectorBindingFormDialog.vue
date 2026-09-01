@@ -101,7 +101,7 @@ import {
   opsConnectorProviderOptions,
   opsConnectorStatusOptions,
   type OpsConnectorForm,
-} from './opsConnectorBindingForm'
+} from '@/modules/ops/opsConnectorBindingForm'
 
 const props = withDefaults(defineProps<{
   open?: boolean
@@ -127,3 +127,4 @@ watch(() => props.form.auth_type, (authType) => {
   }
 })
 </script>
+

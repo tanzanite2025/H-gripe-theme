@@ -5,7 +5,7 @@ import type {
   CustomsClassificationForm,
   CustomsClassificationRecord,
   LookupCandidate,
-} from '@/components/admin/customs/customsClassificationTypes'
+} from '@/modules/customs/customsClassificationTypes'
 
 const createEmptyTemplateForm = (): CustomsClassificationForm => ({
   id: undefined,
@@ -174,3 +174,4 @@ export const useCustomsTemplates = () => {
 }
 
 export default useCustomsTemplates
+

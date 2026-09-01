@@ -44,27 +44,10 @@
 import { KeyRound, RefreshCw, ShieldCheck } from '@lucide/vue'
 import CustomsLookupApiSettingsCard from '@/components/admin/settings/CustomsLookupApiSettingsCard.vue'
 import TimeApiSettingsCard from '@/components/admin/settings/TimeApiSettingsCard.vue'
-
-interface APISettings {
-  time_api_enabled: boolean | string | number
-  time_api_provider: string
-  time_api_endpoint: string
-  time_api_query_template: string
-  time_api_default_timezone: string
-  time_api_refresh_minutes: number
-  time_api_key_ref: string
-  customs_lookup_us_hts_enabled: boolean | string | number
-  customs_lookup_us_hts_endpoint: string
-  customs_lookup_us_hts_api_key: string
-  customs_lookup_us_hts_api_key_header: string
-  customs_lookup_uk_trade_tariff_enabled: boolean | string | number
-  customs_lookup_uk_trade_tariff_endpoint: string
-  customs_lookup_uk_trade_tariff_api_key: string
-  customs_lookup_uk_trade_tariff_api_key_header: string
-}
+import type { ApiManagementSettings } from '@/modules/settings/types'
 
 withDefaults(defineProps<{
-  apiSettings: APISettings
+  apiSettings: ApiManagementSettings
   canEdit?: boolean
   savingApiSettings?: boolean
 }>(), {

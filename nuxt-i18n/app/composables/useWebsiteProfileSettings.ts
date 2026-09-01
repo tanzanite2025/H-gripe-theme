@@ -1,7 +1,7 @@
 import { computed, useAsyncData, useRuntimeConfig } from '#imports'
 import type { Ref } from 'vue'
 import { isSimplifiedChineseStorefrontLocale } from '~/utils/storefrontLocales'
-import { usePublicApiBase } from '~/composables/usePublicApiBase'
+import { useApiRequest } from '~/composables/useApiRequest'
 import {
   createStorefrontMediaContext,
   normalizeStorefrontMediaUrl,
@@ -146,7 +146,7 @@ const normalizeWebsiteProfileSettings = (
 
 export function useWebsiteProfileSettings(locale: Ref<string> | string) {
   const runtimeConfig = useRuntimeConfig()
-  const apiBase = usePublicApiBase()
+  const { request } = useApiRequest()
   const mediaContext = createStorefrontMediaContext(runtimeConfig)
   const localeValue = computed(() => String(typeof locale === 'string' ? locale : locale.value || 'en'))
   const key = computed(() => `mytheme-website-profile-${localeValue.value}`)
@@ -155,15 +155,15 @@ export function useWebsiteProfileSettings(locale: Ref<string> | string) {
     key,
     async () => {
       const fallback = defaultWebsiteProfileSettings(localeValue.value)
-      if (!apiBase.value) return fallback
 
       try {
-        const raw = await $fetch<RawWebsiteProfileSettings>(
-          `${apiBase.value}/settings/website-profile`,
+        const raw = await request<RawWebsiteProfileSettings>(
+          '/settings/website-profile',
           {
             query: { locale: localeValue.value },
             headers: { accept: 'application/json' },
           },
+          'Failed to load website profile settings',
         )
         return normalizeWebsiteProfileSettings(raw, localeValue.value, mediaContext)
       } catch (fetchError) {

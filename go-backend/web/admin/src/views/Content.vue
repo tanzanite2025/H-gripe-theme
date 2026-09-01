@@ -101,7 +101,7 @@ import type {
   ContentStats,
   ContentStatus,
   ContentTranslationsResponse
-} from '@/components/admin/content/contentTypes'
+} from '@/modules/content/contentTypes'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import AdminStatsGrid from '@/components/admin/AdminStatsGrid.vue'
 import { Button } from '@/components/ui/button'
@@ -408,3 +408,4 @@ onMounted(() => {
   void Promise.all([supportedLanguages.fetchLanguages(), fetchStats(), fetchPosts()])
 })
 </script>
+

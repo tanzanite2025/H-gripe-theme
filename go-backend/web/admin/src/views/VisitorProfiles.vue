@@ -29,7 +29,7 @@
 
     <Tabs :model-value="activeTab" class="min-h-0 flex-1">
       <TabsContent value="profiles" class="flex flex-none flex-col gap-3 overflow-visible">
-        <AdminStatsGrid class="shrink-0" :items="statItems" />
+        <AdminStatsGrid class="shrink-0" :items="statItems" compact />
 
         <div class="shrink-0">
           <VisitorProfileFilterPanel
@@ -40,29 +40,21 @@
           />
         </div>
 
-        <section class="grid min-h-[520px] flex-none grid-rows-[minmax(0,1.15fr)_minmax(0,0.85fr)] gap-4 overflow-visible 2xl:grid-cols-[minmax(0,1fr)_380px] 2xl:grid-rows-[minmax(0,1fr)]">
+        <section class="grid min-h-[520px] flex-none overflow-visible">
           <VisitorProfileTablePanel
             :loading="loading"
             :profiles="profiles"
-            :selected-profile="selectedProfile"
             :pagination="pagination"
             :format-date="formatDate"
-            @select-profile="selectedProfile = $event"
+            @preview-profile="openProfileDetail"
             @update-page="updatePage"
             @update-page-size="updatePageSize"
-          />
-
-          <VisitorProfileDetailPanel
-            :selected-profile="selectedProfile"
-            :format-date="formatDate"
-            :block-ip="canManageGlobalIPBlocks ? blockProfileIP : undefined"
-            :unblock-ip="canManageGlobalIPBlocks ? unblockProfileIP : undefined"
           />
         </section>
       </TabsContent>
 
       <TabsContent value="risk" class="min-h-0 flex flex-col gap-3 overflow-hidden">
-        <AdminStatsGrid class="shrink-0" :items="riskStatItems" />
+        <AdminStatsGrid class="shrink-0" :items="riskStatItems" compact />
 
         <AdminFilterPanel class="shrink-0">
           <form class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[minmax(260px,1fr)_140px_140px_140px_auto]" @submit.prevent="applyRiskFilters">
@@ -112,6 +104,18 @@
 
     </Tabs>
 
+    <Dialog :open="profileDetailDialogOpen" @update:open="updateProfileDetailDialogOpen">
+      <DialogContent size="lg" class="max-h-[90dvh] overflow-hidden p-0" @open-auto-focus.prevent>
+        <VisitorProfileDetailPanel
+          class="max-h-[90dvh] border-0 shadow-none"
+          :selected-profile="selectedProfile"
+          :format-date="formatDate"
+          :block-ip="canManageGlobalIPBlocks ? blockProfileIP : undefined"
+          :unblock-ip="canManageGlobalIPBlocks ? unblockProfileIP : undefined"
+        />
+      </DialogContent>
+    </Dialog>
+
     <VisitorIPBlockRulesDialog
       v-model:open="globalIPBlockDialogOpen"
       :rules="globalIPBlockRules"
@@ -159,6 +163,7 @@ import VisitorProfileFilterPanel from '@/components/admin/visitor/VisitorProfile
 import VisitorProfileTablePanel from '@/components/admin/visitor/VisitorProfileTablePanel.vue'
 import VisitorRiskFactsPanel from '@/components/admin/visitor/VisitorRiskFactsPanel.vue'
 import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent } from '@/components/ui/tabs'
 import { useRouteTab } from '@/composables/useRouteTab'
@@ -171,7 +176,7 @@ import type {
   VisitorRiskDecisionPayload,
   VisitorRiskFact,
   VisitorProfile,
-} from '@/components/admin/visitor/visitorTypes'
+} from '@/modules/visitor/visitorTypes'
 
 interface VisitorProfileStats {
   total?: number
@@ -215,6 +220,7 @@ const globalIPBlockRules = ref<VisitorIPBlockRule[]>([])
 const globalIPBlockPagination = reactive({ page: 1, pageSize: 20, total: 0 })
 const riskFacts = ref<VisitorRiskFact[]>([])
 const selectedProfile = ref<VisitorProfile | null>(null)
+const profileDetailDialogOpen = ref(false)
 const stats = ref<VisitorProfileStats>({})
 const riskStats = ref<VisitorRiskStats>({})
 const filters = reactive({
@@ -242,6 +248,14 @@ const apiData = (response: any) => response.data?.data ?? response.data ?? {}
 const formatDate = (dateString?: string | number | Date | null) => dateString ? new Date(dateString).toLocaleString('zh-CN') : '-'
 const currentLoading = computed(() => activeTab.value === 'risk' ? riskLoading.value : loading.value)
 const cleanupLabel = computed(() => activeTab.value === 'risk' ? '清理风险数据' : '清理过期画像')
+const openProfileDetail = (profile: VisitorProfile): void => {
+  selectedProfile.value = profile
+  profileDetailDialogOpen.value = true
+}
+const updateProfileDetailDialogOpen = (open: boolean): void => {
+  profileDetailDialogOpen.value = open
+  if (!open) selectedProfile.value = null
+}
 const canViewGlobalIPBlocks = computed(() => (
   authStore.hasRole('admin') ||
   String(authStore.user?.role || '').trim().toLowerCase() === 'admin' ||
@@ -316,6 +330,7 @@ const fetchProfiles = async () => {
     if (selectedProfile.value) {
       const refreshed = profiles.value.find((item) => Number(item.id) === Number(selectedProfile.value.id))
       selectedProfile.value = refreshed || null
+      if (!refreshed) profileDetailDialogOpen.value = false
     }
   } catch (error) {
     console.error('Failed to fetch visitor profiles:', error)
@@ -592,3 +607,4 @@ watch(activeTab, (tab) => {
   }
 })
 </script>
+

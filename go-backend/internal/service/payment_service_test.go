@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strings"
 	"testing"
 	"time"
 	"unicode/utf8"
@@ -90,6 +91,42 @@ func TestRecordVerifiedGatewayPaymentCreatesLedgerAndMarksOrderPaid(t *testing.T
 	var conversion outboxdomain.Event
 	require.NoError(t, db.Where("event_key = ?", fmt.Sprintf("%s:%d:%s", outboxdomain.EventTypeVerifiedConversion, orderRecord.ID, "txn_123")).First(&conversion).Error)
 	assert.Equal(t, outboxdomain.EventTypeVerifiedConversion, conversion.EventType)
+}
+
+func TestRecordVerifiedGatewayPaymentPersistsLiabilityShifted(t *testing.T) {
+	db, paymentService := newTestPaymentService(t)
+	shifted := true
+	notShifted := false
+
+	shiftedOrder := seedPaymentOrder(t, db, "ORD-PAY-LIABILITY-SHIFTED", 84, "pending", "unpaid")
+	require.NoError(t, paymentService.RecordVerifiedGatewayPayment(VerifiedGatewayPaymentInput{
+		Provider:         "stripe",
+		OrderNumber:      shiftedOrder.OrderNumber,
+		TransactionID:    "txn_liability_shifted",
+		Amount:           84,
+		Currency:         "USD",
+		LiabilityShifted: &shifted,
+	}))
+
+	var shiftedTransaction paymentdomain.Transaction
+	require.NoError(t, db.Where("transaction_id = ?", "txn_liability_shifted").First(&shiftedTransaction).Error)
+	require.NotNil(t, shiftedTransaction.LiabilityShifted)
+	assert.True(t, *shiftedTransaction.LiabilityShifted)
+
+	notShiftedOrder := seedPaymentOrder(t, db, "ORD-PAY-LIABILITY-NOT-SHIFTED", 92, "pending", "unpaid")
+	require.NoError(t, paymentService.RecordVerifiedGatewayPayment(VerifiedGatewayPaymentInput{
+		Provider:         "stripe",
+		OrderNumber:      notShiftedOrder.OrderNumber,
+		TransactionID:    "txn_liability_not_shifted",
+		Amount:           92,
+		Currency:         "USD",
+		LiabilityShifted: &notShifted,
+	}))
+
+	var notShiftedTransaction paymentdomain.Transaction
+	require.NoError(t, db.Where("transaction_id = ?", "txn_liability_not_shifted").First(&notShiftedTransaction).Error)
+	require.NotNil(t, notShiftedTransaction.LiabilityShifted)
+	assert.False(t, *notShiftedTransaction.LiabilityShifted)
 }
 
 func TestRecordVerifiedGatewayPaymentEmitsOneVerifiedConversionWithOrderAttribution(t *testing.T) {
@@ -1191,9 +1228,33 @@ func TestBuildPayPalDisputeEvidencePackageCollectsTrackingInvoiceAndCommunicatio
 	assert.Equal(t, "DHL", pkg.Evidence.ShippingCarrier)
 	assert.Contains(t, pkg.Evidence.InvoiceSummary, orderRecord.OrderNumber)
 	assert.Contains(t, pkg.Evidence.ProofOfDeliverySummary, "Delivered and signed by recipient")
+	assert.Contains(t, pkg.Evidence.ProofOfDeliverySummary, "recipient_signature_name=Test Rider")
+	assert.Contains(t, pkg.Evidence.ProofOfDeliverySummary, "proof_of_delivery_url=https://carrier.example.test/pod/DHL777.pdf")
 	assert.Contains(t, pkg.Evidence.Notes, "Invoice summary:")
-	assert.Contains(t, pkg.Evidence.Notes, "Proof of delivery / signature event")
+	assert.Contains(t, pkg.Evidence.Notes, "Proof of delivery summary")
+	assert.Contains(t, pkg.Evidence.Notes, "PayPal high-value INR Signature POD")
 	assert.Contains(t, pkg.Evidence.Notes, "Customer communication summary")
+}
+
+func TestBuildPayPalDisputeEvidencePackageBlocksHighValueINRWithoutSignaturePOD(t *testing.T) {
+	db, paymentService := newTestPaymentService(t)
+	customer := seedPaymentUser(t, db, 53, "paypal-signature-pod@example.test")
+	orderRecord := seedDisputeEvidenceOrder(t, db, "ORD-PAYPAL-SIGNATURE-POD-1", customer.ID)
+	disputeRecord := seedPayPalDispute(t, db, "PP-D-SIGNATURE-POD-1", orderRecord.ID, "WAITING_FOR_SELLER_RESPONSE", "REQUIRED_ACTION")
+	seedTrackingEvidenceWithPOD(t, db, orderRecord.ID, "DHL778", "", "")
+
+	pkg, err := paymentService.BuildPayPalDisputeEvidencePackage(disputeRecord.ID)
+
+	require.NoError(t, err)
+	require.True(t, pkg.CanSubmit)
+	require.False(t, pkg.SubmissionCheck.Ready)
+	require.NotEmpty(t, pkg.SubmissionCheck.Blockers)
+	assert.Contains(t, strings.Join(pkg.SubmissionCheck.Blockers, "\n"), "收件人签名或官方 POD")
+	assert.Contains(t, strings.Join(pkg.Warnings, "\n"), "high-value USD INR")
+	assert.Contains(t, pkg.Evidence.ProofOfDeliverySummary, "Delivery scan")
+	assert.NotContains(t, pkg.Evidence.ProofOfDeliverySummary, "Signature POD")
+	assert.NotContains(t, pkg.Evidence.ProofOfDeliverySummary, "recipient_signature_name=")
+	assert.Contains(t, pkg.Evidence.Notes, "Signature POD: missing")
 }
 
 func TestBuildPayPalDisputeCommercialInvoicePDFReturnsPDF(t *testing.T) {
@@ -1333,6 +1394,53 @@ func TestSubmitPayPalDisputeEvidenceAttachesCommercialInvoicePDF(t *testing.T) {
 	require.NoError(t, db.First(&saved, disputeRecord.ID).Error)
 	assert.Contains(t, saved.EvidenceSubmissionPayload, "commercial_invoice")
 	assert.Contains(t, saved.EvidenceSubmissionPayload, "https://cdn.example.test/evidence/commercial-invoice.pdf")
+}
+
+func TestSubmitPayPalDisputeEvidenceUsesCompactInvoiceWhenCommercialInvoiceExceedsBudget(t *testing.T) {
+	db, paymentService := newTestPaymentService(t)
+	customer := seedPaymentUser(t, db, 50, "paypal-invoice-budget@example.test")
+	orderRecord := seedDisputeEvidenceOrder(t, db, "ORD-PAYPAL-INVOICE-BUDGET-1", customer.ID)
+	seedPayPalDisputeEvidenceOrderItems(t, db, orderRecord.ID, 4)
+	disputeRecord := seedPayPalDispute(t, db, "PP-D-INVOICE-BUDGET-1", orderRecord.ID, "WAITING_FOR_SELLER_RESPONSE", "REQUIRED_ACTION")
+	seedTrackingEvidence(t, db, orderRecord.ID, "DHL991")
+	fakeSubmitter := &fakePayPalDisputeEvidenceSubmitter{}
+	fakeStorage := &fakePayPalDisputeDocumentStorage{url: "https://cdn.example.test/evidence/commercial-invoice-budget.pdf"}
+	paymentService.ConfigurePayPalDisputeEvidenceSubmitter(fakeSubmitter)
+	paymentService.ConfigurePayPalDisputeEvidenceDocumentStorage(fakeStorage)
+	paymentService.ConfigurePayPalDisputeInvoiceOptions(PayPalDisputeInvoiceOptions{
+		Seller: invoice.SellerProfile{
+			Name:    "Commerce Platform Factory",
+			Address: "100 Factory Road\nAustin, TX 78701\nUS",
+			Email:   "support@example.test",
+		},
+		AutoAttachPDF: true,
+	})
+	paymentService.paypalDisputeCommercialInvoiceRenderer = func(document invoice.CommercialInvoice, _ string) ([]byte, error) {
+		if strings.TrimSpace(document.PaymentReference) == "" {
+			return []byte("%PDF-compact"), nil
+		}
+		return bytes.Repeat([]byte("x"), paypalDisputeCommercialInvoiceMaxBytes+1), nil
+	}
+
+	result, err := paymentService.SubmitPayPalDisputeEvidence(context.Background(), SubmitPayPalDisputeEvidenceInput{
+		DisputeID:   disputeRecord.ID,
+		ClientID:    "paypal-client",
+		SecretKey:   "paypal-secret",
+		Environment: "sandbox",
+	})
+
+	require.NoError(t, err)
+	require.Len(t, result.Documents, 1)
+	assert.Equal(t, "commercial_invoice", result.Documents[0].Type)
+	require.NotNil(t, fakeSubmitter.params)
+	require.NotNil(t, fakeSubmitter.params.Evidences)
+	require.Len(t, fakeSubmitter.params.Evidences.Documents, 1)
+	assert.Equal(t, "https://cdn.example.test/evidence/commercial-invoice-budget.pdf", fakeSubmitter.params.Evidences.Documents[0].URL)
+	require.Equal(t, []byte("%PDF-compact"), fakeStorage.data)
+
+	var saved paymentdomain.PayPalDispute
+	require.NoError(t, db.First(&saved, disputeRecord.ID).Error)
+	assert.Contains(t, saved.EvidenceSubmissionPayload, "compact fallback was used before upload")
 }
 
 func TestSubmitPayPalDisputeEvidenceRequiresTracking(t *testing.T) {
@@ -1498,6 +1606,19 @@ func seedPayPalDispute(t *testing.T, db *gorm.DB, paypalID string, orderID uint,
 func seedTrackingEvidence(t *testing.T, db *gorm.DB, orderID uint, trackingNumber string) {
 	t.Helper()
 
+	seedTrackingEvidenceWithPOD(
+		t,
+		db,
+		orderID,
+		trackingNumber,
+		"Test Rider",
+		"https://carrier.example.test/pod/"+trackingNumber+".pdf",
+	)
+}
+
+func seedTrackingEvidenceWithPOD(t *testing.T, db *gorm.DB, orderID uint, trackingNumber string, recipientSignatureName string, proofOfDeliveryURL string) {
+	t.Helper()
+
 	provider := shippingdomain.TrackingProviderConfig{
 		ProviderCode: "mock",
 		ProviderName: "Mock Tracking",
@@ -1521,6 +1642,8 @@ func seedTrackingEvidence(t *testing.T, db *gorm.DB, orderID uint, trackingNumbe
 		Status:              "Delivered",
 		Location:            "Los Angeles, US",
 		Description:         "Delivered and signed by recipient",
+		RecipientSignatureName: recipientSignatureName,
+		ProofOfDeliveryURL:     proofOfDeliveryURL,
 		EventTime:           time.Now().Add(-24 * time.Hour),
 	}).Error)
 }
@@ -1546,4 +1669,23 @@ func seedCustomerCommunication(t *testing.T, db *gorm.DB, orderID, userID uint, 
 		CreatedAt:   time.Now().Add(-48 * time.Hour),
 	}).Error)
 	_ = orderID
+}
+
+func seedPayPalDisputeEvidenceOrderItems(t *testing.T, db *gorm.DB, orderID uint, count int) {
+	t.Helper()
+
+	variantID := uint(1)
+	for i := 0; i < count; i++ {
+		require.NoError(t, db.Create(&order.OrderItem{
+			OrderID:     orderID,
+			ProductID:   uint(100 + i),
+			VariantID:   &variantID,
+			ProductName: fmt.Sprintf("Accessory %d", i+1),
+			SKU:         fmt.Sprintf("ACC-%d", i+1),
+			Quantity:    1,
+			Price:       1,
+			Subtotal:    1,
+			Total:       1,
+		}).Error)
+	}
 }

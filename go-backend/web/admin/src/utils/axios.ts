@@ -3,6 +3,12 @@ import type { AxiosError, InternalAxiosRequestConfig } from 'axios'
 import { toast } from 'vue-sonner'
 import { deviceFingerprintHeaderName, resolveDeviceFingerprint } from './deviceFingerprint'
 
+declare module 'axios' {
+  export interface AxiosRequestConfig {
+    suppressGlobalErrorToast?: boolean
+  }
+}
+
 interface ApiErrorPayload {
   error?: string
   message?: string
@@ -145,6 +151,7 @@ instance.interceptors.response.use(
   async (error: AxiosError<ApiErrorPayload>) => {
     endRequest()
     const requestConfig = error.config as RetryableRequestConfig | undefined
+    const suppressGlobalErrorToast = Boolean(requestConfig?.suppressGlobalErrorToast)
 
     if (error.response) {
       const { status, data } = error.response
@@ -173,21 +180,33 @@ instance.interceptors.response.use(
           redirectToLoginOnce()
           return silenceAuthFailure()
         case 403:
-          toast.error(data.message || '没有权限访问', { id: 'api-forbidden' })
+          if (!suppressGlobalErrorToast) {
+            toast.error(data.message || '没有权限访问', { id: 'api-forbidden' })
+          }
           break
         case 404:
-          toast.error('请求的资源不存在', { id: 'api-not-found' })
+          if (!suppressGlobalErrorToast) {
+            toast.error('请求的资源不存在', { id: 'api-not-found' })
+          }
           break
         case 500:
-          toast.error('服务器错误', { id: 'api-server-error' })
+          if (!suppressGlobalErrorToast) {
+            toast.error('服务器错误', { id: 'api-server-error' })
+          }
           break
         default:
-          toast.error(data.error || data.message || '请求失败', { id: 'api-request-error' })
+          if (!suppressGlobalErrorToast) {
+            toast.error(data.error || data.message || '请求失败', { id: 'api-request-error' })
+          }
       }
     } else if (error.request) {
-      toast.error('网络错误，请检查网络连接', { id: 'api-network-error' })
+      if (!suppressGlobalErrorToast) {
+        toast.error('网络错误，请检查网络连接', { id: 'api-network-error' })
+      }
     } else {
-      toast.error('请求配置错误', { id: 'api-config-error' })
+      if (!suppressGlobalErrorToast) {
+        toast.error('请求配置错误', { id: 'api-config-error' })
+      }
     }
 
     return Promise.reject(error)

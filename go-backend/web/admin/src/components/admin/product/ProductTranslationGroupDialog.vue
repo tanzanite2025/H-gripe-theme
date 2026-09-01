@@ -134,7 +134,7 @@ import {
   DialogTitle
 } from '@/components/ui/dialog'
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import type { ProductRecord, ProductTranslation, ProductTranslationGroup } from './productEditorTypes'
+import type { ProductRecord, ProductTranslation, ProductTranslationGroup } from '@/modules/product/productEditorTypes'
 
 withDefaults(defineProps<{
   open?: boolean
@@ -176,3 +176,4 @@ const statusTones: Record<string, AdminStatusTone> = {
 const statusName = (status?: string | null): string => statusNames[status || ''] || status || '-'
 const statusTone = (status?: string | null): AdminStatusTone => statusTones[status || ''] || 'gray'
 </script>
+

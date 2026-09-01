@@ -25,13 +25,13 @@ import (
 	seohomeapi "commerce-platform/internal/api/v1/seo/home"
 	"commerce-platform/internal/api/v1/settings"
 	"commerce-platform/internal/api/v1/shipping"
-	"commerce-platform/internal/api/v1/showcase"
+	"commerce-platform/internal/api/v1/ugcshowcase"
 	"commerce-platform/internal/api/v1/spoke"
 	"commerce-platform/internal/api/v1/storefront"
 	"commerce-platform/internal/api/v1/subscription"
 	"commerce-platform/internal/api/v1/suggestionfeedback"
 	"commerce-platform/internal/api/v1/ticket"
-	visualshowcaseapi "commerce-platform/internal/api/v1/visualshowcase"
+	homevisualtileapi "commerce-platform/internal/api/v1/homevisualtile"
 	"commerce-platform/internal/api/v1/warranty"
 	wheelsetfitapi "commerce-platform/internal/api/v1/wheelsetfit"
 	"commerce-platform/internal/api/v1/wishlist"
@@ -67,7 +67,7 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 	subscriptionService := services.Subscription
 	sitemapService := services.Sitemap
 	storageSvc := deps.Storage
-	showcaseService := services.Showcase
+	ugcShowcaseService := services.UGCShowcase
 	wishlistService := services.Wishlist
 	feedbackService := services.Feedback
 	suggestionFeedbackService := services.SuggestionFeedback
@@ -81,6 +81,7 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 	authHandler := auth.NewHandler(authService, cookieOptions)
 	browsingHistoryHandler := auth.NewBrowsingHistoryHandler(services.User)
 	contentHandler := content.NewHandler(postService, faqService, services.Media)
+	contentHandler.ConfigureRefundReturnPolicyService(services.RefundReturnPolicy)
 	faqHandler := faq.NewHandler(faqService)
 	productHandler := product.NewHandler(productService)
 	productHandler.ConfigureProductCategoryService(services.ProductCategory)
@@ -105,7 +106,6 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 	settingsHandler.ConfigureMediaService(services.Media)
 	settingsHandler.ConfigureSiteLogoService(services.SiteLogo)
 	settingsHandler.ConfigureWebsiteNameService(services.WebsiteName)
-	settingsHandler.ConfigureRefundReturnPolicyService(services.RefundReturnPolicy)
 	seoHomeHandler := seohomeapi.NewHandler(services.SEO)
 	analyticsHandler := analyticsapi.NewHandler(services.Analytics)
 	storefrontContextHandler := storefront.NewContextHandler(services.StorefrontContext)
@@ -150,10 +150,10 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 	warrantyHandler.ConfigureShipmentRecordService(services.ShipmentRecord)
 	subscriptionHandler := subscription.NewHandler(subscriptionService, deps.AntiBot)
 	i18nHandler := i18n.NewHandler(postService, sitemapService)
-	showcaseHandler := showcase.NewShowcaseHandler(showcaseService)
-	showcaseHandler.ConfigureUploadProtection(services.ShowcaseUploadProtection)
-	showcaseHandler.ConfigureUploadEligibility(services.ShowcaseUploadEligibility)
-	visualShowcaseHandler := visualshowcaseapi.NewHandler(services.VisualShowcase, services.Media)
+	ugcShowcaseHandler := ugcshowcase.NewUGCShowcaseHandler(ugcShowcaseService)
+	ugcShowcaseHandler.ConfigureUploadProtection(services.UGCShowcaseUploadProtection)
+	ugcShowcaseHandler.ConfigureUploadEligibility(services.UGCShowcaseUploadEligibility)
+	homeVisualTileHandler := homevisualtileapi.NewHandler(services.HomeVisualTiles, services.Media)
 	wishlistHandler := wishlist.NewHandler(wishlistService, services.Media)
 	feedbackHandler := feedback.NewHandler(feedbackService)
 	feedbackHandler.ConfigureSourceHashSecret(cfg.JWT.Secret)
@@ -224,6 +224,7 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 			contentGroup.GET("/faqs/category/:category", contentHandler.GetFAQsByCategory)
 			contentGroup.GET("/faqs/popular", contentHandler.GetPopularFAQs)
 			contentGroup.POST("/faqs/:id/view", faqHandler.IncrementFAQView)
+			contentGroup.GET("/refund-return-policy", contentHandler.GetRefundReturnPolicy)
 		}
 
 		// 推荐行为事件路由（公开，可选认证）
@@ -285,9 +286,9 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 			fitmentCatalogHandler.RegisterRoutes(fitmentCatalogGroup)
 		}
 
-		visualShowcaseGroup := v1.Group("/visual-showcases")
+		homeVisualTileGroup := v1.Group("/visual-showcases")
 		{
-			visualShowcaseGroup.GET("/:showcase_key", visualShowcaseHandler.Get)
+			homeVisualTileGroup.GET("/:showcase_key", homeVisualTileHandler.Get)
 		}
 
 		// 购物车路由（可选认证）
@@ -444,12 +445,12 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 		// Showcase (Picture Warehouse)
 		showcaseGroup := v1.Group("/showcase")
 		{
-			showcaseGroup.GET("/gallery", showcaseHandler.List)
-			showcaseGroup.GET("/comments", showcaseHandler.ListComments)
-			showcaseGroup.GET("/upload-orders", middleware.AuthMiddleware(authService), middleware.RateLimitByUser(10), showcaseHandler.ListUploadOrders)
-			showcaseGroup.GET("/:id/images/:image_index/file", showcaseHandler.ServePublicImageFile)
-			showcaseGroup.POST("/upload", middleware.AuthMiddleware(authService), middleware.RateLimitByUserPerMinute(3, 1), showcaseHandler.Upload)
-			showcaseGroup.POST("/comments", middleware.AuthMiddleware(authService), middleware.RateLimitByUser(2), showcaseHandler.AddComment)
+			showcaseGroup.GET("/gallery", ugcShowcaseHandler.List)
+			showcaseGroup.GET("/comments", ugcShowcaseHandler.ListComments)
+			showcaseGroup.GET("/upload-orders", middleware.AuthMiddleware(authService), middleware.RateLimitByUser(10), ugcShowcaseHandler.ListUploadOrders)
+			showcaseGroup.GET("/:id/images/:image_index/file", ugcShowcaseHandler.ServePublicImageFile)
+			showcaseGroup.POST("/upload", middleware.AuthMiddleware(authService), middleware.RateLimitByUserPerMinute(3, 1), ugcShowcaseHandler.Upload)
+			showcaseGroup.POST("/comments", middleware.AuthMiddleware(authService), middleware.RateLimitByUser(2), ugcShowcaseHandler.AddComment)
 		}
 
 		seoGroup := v1.Group("/seo")
@@ -471,7 +472,6 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 			settingsGroup.GET("/social", settingsHandler.GetSocialSettings)
 			settingsGroup.GET("/website-profile", settingsHandler.GetWebsiteProfile)
 			settingsGroup.GET("/website-name", settingsHandler.GetWebsiteName)
-			settingsGroup.GET("/refund-return-policy", settingsHandler.GetRefundReturnPolicy)
 			settingsGroup.GET("/public", settingsHandler.GetAllPublicSettings)
 			settingsGroup.GET("/groups", settingsHandler.GetGroups)
 			settingsGroup.GET("/group/:group", settingsHandler.GetSettingsByGroup)

@@ -131,7 +131,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { missingCustomsFields, type CustomsProductFilters } from './customsClassificationTypes'
+import { missingCustomsFields, type CustomsProductFilters } from '@/modules/customs/customsClassificationTypes'
 
 withDefaults(defineProps<{
   productRows?: Record<string, any>[]
@@ -160,3 +160,4 @@ const emit = defineEmits<{
 
 const missingFields = missingCustomsFields
 </script>
+

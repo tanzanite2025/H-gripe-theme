@@ -49,7 +49,7 @@ import { Search } from '@lucide/vue'
 import AdminFilterPanel from '@/components/admin/AdminFilterPanel.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import type { PageFeedbackFiltersState } from './pageFeedbackTypes'
+import type { PageFeedbackFiltersState } from '@/modules/content-feedback/pageFeedbackTypes'
 
 const props = defineProps<{
   filters: PageFeedbackFiltersState
@@ -82,3 +82,4 @@ const reset = (): void => {
   emit('reset')
 }
 </script>
+

@@ -227,7 +227,7 @@ import type {
   PaymentProtectionPolicy,
   PaymentProtectionScopeType,
   RiskStrategyConfiguration,
-} from './riskStrategyTypes'
+} from '@/modules/payment/riskStrategyTypes'
 
 const StatusPill = defineComponent({
   props: { status: { type: String, default: '' } },
@@ -466,3 +466,4 @@ watch(currentMaxDurationHours, () => {
 
 onMounted(refresh)
 </script>
+

@@ -1,5 +1,5 @@
 import { computed, useAsyncData, useI18n } from '#imports'
-import { usePublicApiBase } from '~/composables/usePublicApiBase'
+import { useApiRequest } from '~/composables/useApiRequest'
 
 export interface SeoSettings {
   metaTitle: string
@@ -20,18 +20,16 @@ const normalizeSeoSettings = (raw: RawSeoSettings | null | undefined): SeoSettin
 
 export function useSeoSettings() {
   const { locale } = useI18n()
-  const apiBase = usePublicApiBase()
+  const { request } = useApiRequest()
 
   const { data, pending, error } = useAsyncData<SeoSettings | null>(
     () => `mytheme-seo-home-${locale.value || 'en'}`,
     async () => {
-      if (!apiBase.value) return null
-
       try {
-        const result = await $fetch<RawSeoSettings>(`${apiBase.value}/seo/home`, {
+        const result = await request<RawSeoSettings>('/seo/home', {
           params: { locale: locale.value || 'en' },
           headers: { accept: 'application/json' },
-        })
+        }, 'Failed to load home SEO settings')
         return normalizeSeoSettings(result)
       } catch (fetchError) {
         console.warn('Failed to load home SEO settings:', fetchError)

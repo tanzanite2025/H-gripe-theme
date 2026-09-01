@@ -19,6 +19,7 @@ const (
 	EventTypeOrderPaid                        = "order.paid"
 	EventTypeVerifiedConversion               = "conversion.verified"
 	EventTypePaymentRiskLevelChanged          = "payment.risk_level_changed"
+	EventTypePaymentRiskFailOpen              = "payment.risk_fail_open"
 	EventTypeMerchantProductUpsert            = "merchant.product_upsert"
 	EventTypeMerchantProductWithdraw          = "merchant.product_withdraw"
 	EventTypeMerchantOfferRevalidate          = "merchant.offer_revalidate"

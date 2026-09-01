@@ -1,102 +1,103 @@
 <template>
-  <section class="max-w-none space-y-3">
-    <div class="max-w-3xl">
-      <h2 class="text-sm font-black tracking-tighter uppercase text-foreground">{{ t('settings.paymentMethods') }}</h2>
-      <p class="mt-1 text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">
-        {{ t('settings.paymentMethodsDescription') }}
-      </p>
-    </div>
+  <div class="flex h-full min-h-0 flex-col gap-4 overflow-hidden">
+    <AdminPageHeader
+      class="shrink-0"
+      title="收款方式"
+      description="管理前台可用的收款方式、费用规则和展示顺序。"
+    />
 
-    <div class="min-w-0 space-y-3">
-      <div class="flex flex-wrap items-center justify-between gap-2">
-        <div class="text-xs text-muted-foreground">
-          {{ t('payment.paymentMethodsHelp') }}
-        </div>
-        <div class="flex items-center gap-2">
-          <Button type="button" variant="outline" size="sm" :disabled="loading" @click="fetchPaymentMethods">
-            <RefreshCw :class="['size-3.5', { 'animate-spin': loading }]" />
-            {{ t('common.refresh') }}
-          </Button>
-          <Button v-if="canEdit" type="button" size="sm" @click="openCreateDialog">
-            <Plus class="size-3.5" />
-            {{ t('payment.addPaymentMethod') }}
-          </Button>
-        </div>
-      </div>
-
-      <div class="flex gap-2 border-l-2 border-primary/40 px-3 py-2 text-xs text-muted-foreground">
-        <Info class="mt-0.5 size-4 shrink-0 text-primary" />
-        <p>
-          {{ t('payment.paymentMethodCurrencyHelp') }}
-        </p>
-      </div>
-
-      <div class="overflow-hidden rounded-lg border">
-        <div v-if="loading" class="flex h-32 items-center justify-center text-xs text-muted-foreground">
-          <LoaderCircle class="mr-2 size-4 animate-spin" />
-          {{ t('payment.loadingPaymentMethods') }}
+    <div class="min-h-0 flex-1 overflow-auto">
+      <section class="max-w-none space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="text-xs text-muted-foreground">
+            {{ t('payment.paymentMethodsHelp') }}
+          </div>
+          <div class="flex items-center gap-2">
+            <Button type="button" variant="outline" size="sm" :disabled="loading" @click="fetchPaymentMethods">
+              <RefreshCw :class="['size-3.5', { 'animate-spin': loading }]" />
+              {{ t('common.refresh') }}
+            </Button>
+            <Button v-if="canEdit" type="button" size="sm" @click="openCreateDialog">
+              <Plus class="size-3.5" />
+              {{ t('payment.addPaymentMethod') }}
+            </Button>
+          </div>
         </div>
 
-        <Table v-else>
-          <TableHeader>
-            <TableRow>
-              <TableHead class="w-[90px]">{{ t('payment.status') }}</TableHead>
-              <TableHead>{{ t('settings.paymentMethods') }}</TableHead>
-              <TableHead class="hidden w-[90px] text-right md:table-cell">{{ t('payment.sortOrder') }}</TableHead>
-              <TableHead v-if="canEdit" class="w-[120px] text-right">{{ t('payment.actions') }}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            <TableRow v-if="paymentMethods.length === 0">
-              <TableCell :colspan="canEdit ? 4 : 3" class="h-28 text-center text-xs text-muted-foreground">
-                {{ t('payment.noPaymentMethods') }}
-              </TableCell>
-            </TableRow>
-            <TableRow v-for="method in paymentMethods" :key="method.id">
-              <TableCell>
-                <Badge :variant="method.enabled ? 'default' : 'secondary'">
-                  {{ method.enabled ? t('common.enabled') : t('common.disabled') }}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                <div class="min-w-0">
-                  <div class="truncate text-sm font-bold text-foreground">{{ method.name }}</div>
-                  <div class="mt-0.5 font-mono text-[11px] text-muted-foreground">{{ method.code }}</div>
-                </div>
-              </TableCell>
-              <TableCell class="hidden text-right font-mono text-xs text-muted-foreground md:table-cell">
-                {{ method.sort_order ?? 0 }}
-              </TableCell>
-              <TableCell v-if="canEdit" class="text-right">
-                <div class="flex justify-end gap-1">
-                  <Button type="button" variant="ghost" size="icon" :aria-label="t('payment.editPaymentMethod')" @click="openEditDialog(method)">
-                    <Pencil class="size-3.5" />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    :aria-label="t('payment.deletePaymentMethod')"
-                    :disabled="deletingID === method.id"
-                    @click="deletePaymentMethod(method)"
-                  >
-                    <LoaderCircle v-if="deletingID === method.id" class="size-3.5 animate-spin" />
-                    <Trash2 v-else class="size-3.5" />
-                  </Button>
-                </div>
-              </TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
-      </div>
+        <div class="flex gap-2 border-l-2 border-primary/40 px-3 py-2 text-xs text-muted-foreground">
+          <Info class="mt-0.5 size-4 shrink-0 text-primary" />
+          <p>
+            {{ t('payment.paymentMethodCurrencyHelp') }}
+          </p>
+        </div>
+
+        <div class="overflow-hidden rounded-lg border">
+          <div v-if="loading" class="flex h-32 items-center justify-center text-xs text-muted-foreground">
+            <LoaderCircle class="mr-2 size-4 animate-spin" />
+            {{ t('payment.loadingPaymentMethods') }}
+          </div>
+
+          <Table v-else>
+            <TableHeader>
+              <TableRow>
+                <TableHead class="w-[90px]">{{ t('payment.status') }}</TableHead>
+                <TableHead>{{ t('settings.paymentMethods') }}</TableHead>
+                <TableHead class="hidden w-[90px] text-right md:table-cell">{{ t('payment.sortOrder') }}</TableHead>
+                <TableHead v-if="canEdit" class="w-[120px] text-right">{{ t('payment.actions') }}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow v-if="paymentMethods.length === 0">
+                <TableCell :colspan="canEdit ? 4 : 3" class="h-28 text-center text-xs text-muted-foreground">
+                  {{ t('payment.noPaymentMethods') }}
+                </TableCell>
+              </TableRow>
+              <TableRow v-for="method in paymentMethods" :key="method.id">
+                <TableCell>
+                  <Badge :variant="method.enabled ? 'default' : 'secondary'">
+                    {{ method.enabled ? t('common.enabled') : t('common.disabled') }}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <div class="min-w-0">
+                    <div class="truncate text-sm font-bold text-foreground">{{ method.name }}</div>
+                    <div class="mt-0.5 font-mono text-[11px] text-muted-foreground">{{ method.code }}</div>
+                  </div>
+                </TableCell>
+                <TableCell class="hidden text-right font-mono text-xs text-muted-foreground md:table-cell">
+                  {{ method.sort_order ?? 0 }}
+                </TableCell>
+                <TableCell v-if="canEdit" class="text-right">
+                  <div class="flex justify-end gap-1">
+                    <Button type="button" variant="ghost" size="icon" :aria-label="t('payment.editPaymentMethod')" @click="openEditDialog(method)">
+                      <Pencil class="size-3.5" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      :aria-label="t('payment.deletePaymentMethod')"
+                      :disabled="deletingID === method.id"
+                      @click="deletePaymentMethod(method)"
+                    >
+                      <LoaderCircle v-if="deletingID === method.id" class="size-3.5 animate-spin" />
+                      <Trash2 v-else class="size-3.5" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </div>
+      </section>
     </div>
 
     <Dialog v-model:open="dialogOpen">
       <DialogContent size="lg" class="max-h-[92dvh] overflow-y-auto" @open-auto-focus.prevent>
         <form class="space-y-5" @submit.prevent="savePaymentMethod">
           <DialogHeader>
-          <DialogTitle>{{ dialogMode === 'create' ? t('payment.addPaymentMethod') : t('payment.editPaymentMethod') }}</DialogTitle>
-          <DialogDescription>{{ t('payment.paymentMethodDialogDescription') }}</DialogDescription>
+            <DialogTitle>{{ dialogMode === 'create' ? t('payment.addPaymentMethod') : t('payment.editPaymentMethod') }}</DialogTitle>
+            <DialogDescription>{{ t('payment.paymentMethodDialogDescription') }}</DialogDescription>
           </DialogHeader>
 
           <div class="grid gap-4 md:grid-cols-2">
@@ -165,14 +166,15 @@
         </form>
       </DialogContent>
     </Dialog>
-  </section>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { toast } from 'vue-sonner'
 import { Info, LoaderCircle, Pencil, Plus, RefreshCw, Trash2 } from '@lucide/vue'
 import AdminFormField from '@/components/admin/AdminFormField.vue'
+import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -190,13 +192,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Textarea } from '@/components/ui/textarea'
 import axios from '@/utils/axios'
 import { useAdminI18n } from '@/i18n'
-import type { PaymentMethodForm, PaymentMethodRecord } from './settingsTypes'
+import { useAuthStore } from '@/stores/auth'
+import type { PaymentMethodForm, PaymentMethodRecord } from '@/modules/settings/types'
 
-withDefaults(defineProps<{
+const props = defineProps<{
   canEdit?: boolean
-}>(), {
-  canEdit: false,
-})
+}>()
+const authStore = useAuthStore()
+const canEdit = computed(() => props.canEdit ?? authStore.hasPermission('settings:edit'))
 const { t } = useAdminI18n()
 
 const emptyForm = (): PaymentMethodForm => ({

@@ -216,15 +216,8 @@ const buildProductCategoryNavigationRoute = (
 ): ProductCategoryNavigationRouteLocation => {
   if (productCategory.routePath) return productCategory.routePath
 
-  const queryParameterName = props.productCategoryQueryParameterName
-  if (!queryParameterName) return localizedProductCategoryBasePath.value
-
-  return {
-    path: localizedProductCategoryBasePath.value,
-    query: {
-      [queryParameterName]: productCategory.slug,
-    },
-  }
+  const basePath = localizedProductCategoryBasePath.value.replace(/\/+$/, '') || '/'
+  return `${basePath}/${encodeURIComponent(productCategory.slug)}`
 }
 
 const formatProductCategoryProductCount = (productCategory: ProductCategoryNavigationCardCategory) => {

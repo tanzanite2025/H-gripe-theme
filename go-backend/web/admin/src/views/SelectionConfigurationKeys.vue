@@ -100,7 +100,7 @@ import { onMounted, reactive, ref } from 'vue'
 import { toast } from 'vue-sonner'
 import { ListChecks, LoaderCircle, Plus, RefreshCcw } from '@lucide/vue'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
-import SelectionConfigurationKeyEditorDialog, { type SelectionConfigurationKeyEditorForm } from '@/components/admin/selection-configuration/SelectionConfigurationKeyEditorDialog.vue'
+import SelectionConfigurationKeyEditorDialog from '@/components/admin/selection-configuration/SelectionConfigurationKeyEditorDialog.vue'
 import selectionConfigurationKeyApi, { type SelectionConfigurationKeyRecord } from '@/api/selectionConfigurationKeys'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -111,6 +111,7 @@ import {
   selectionConfigurationKeyKindDescriptions,
   selectionConfigurationKeyKindOptions,
   selectionConfigurationKeyKindQuestionKey,
+  type SelectionConfigurationKeyEditorForm,
   type SelectionConfigurationKeyKind,
 } from '@/modules/selection-configuration/selectionConfigurationKeys'
 

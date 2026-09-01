@@ -224,6 +224,12 @@ if [[ "${site_quality_enabled}" == "true" ]]; then
     echo "ERR: SITE_QUALITY_RUNNER_TOKEN must be at least 32 characters." >&2
     exit 1
   fi
+  case "${site_quality_runner_token}" in
+    dev-site-quality-runner-token-0123456789|CHANGE_ME_SITE_QUALITY_RUNNER_TOKEN|change_me_site_quality_runner_token)
+      echo "ERR: SITE_QUALITY_RUNNER_TOKEN must not use a development/default value." >&2
+      exit 1
+      ;;
+  esac
   require_positive_int_env WORKER_SITE_QUALITY_DISPATCH_INTERVAL_SECONDS
   require_positive_int_env WORKER_SITE_QUALITY_BATCH_LIMIT
   require_positive_int_env WORKER_SITE_QUALITY_LEASE_TIMEOUT_SECONDS

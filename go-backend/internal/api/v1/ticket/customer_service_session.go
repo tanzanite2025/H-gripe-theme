@@ -66,7 +66,7 @@ func (h *Handler) validVisitorSignature(sessionID string, signature string) bool
 	return visitorcookie.ValidCustomerServiceVisitorSignature(sessionID, signature, h.visitorSecret)
 }
 
-func (h *Handler) touchCustomerServiceVisitorProfile(c *gin.Context, owner service.CustomerServiceOwner, email string, emailSource string) {
+func (h *Handler) touchCustomerServiceVisitorProfile(c *gin.Context, owner service.CustomerServiceOwner, email string, emailSource string, explicitLocale ...string) {
 	if h.visitorProfileService == nil {
 		return
 	}
@@ -84,12 +84,22 @@ func (h *Handler) touchCustomerServiceVisitorProfile(c *gin.Context, owner servi
 		CartSessionID:              visitorcapture.ExistingCartSessionID(c),
 		Email:                      email,
 		EmailSource:                emailSource,
+		Locale:                     firstNonEmptyCustomerServiceValue(explicitLocale...),
 		MeaningfulAction:           meaningfulAction,
 		QualityScoreDelta:          qualityScore,
 	})
 	if _, err := h.visitorProfileService.TouchMeaningfulAction(input); err != nil {
 		return
 	}
+}
+
+func firstNonEmptyCustomerServiceValue(values ...string) string {
+	for _, value := range values {
+		if trimmed := strings.TrimSpace(value); trimmed != "" {
+			return trimmed
+		}
+	}
+	return ""
 }
 
 func parseCustomerServiceAgentID(value string) uint {

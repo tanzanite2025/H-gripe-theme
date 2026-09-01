@@ -111,7 +111,7 @@ import type {
   GalleryPagination,
   GalleryRecord,
   GalleryTitleResolver
-} from './galleryTypes'
+} from '@/modules/gallery/galleryTypes'
 
 withDefaults(defineProps<{
   loading?: boolean
@@ -139,3 +139,4 @@ const emit = defineEmits<{
   (event: 'update-page-size', pageSize: number): void
 }>()
 </script>
+

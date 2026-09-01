@@ -33,7 +33,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { useRuntimeConfig } from '#imports'
+import { useHead, useImage, useRuntimeConfig } from '#imports'
 import {
   createStorefrontMediaContext,
   normalizeStorefrontMediaUrl,
@@ -42,6 +42,12 @@ import {
   STOREFRONT_IMAGE_SPECS,
   type StorefrontImagePreset,
 } from '~/utils/storefrontImageSpecs'
+
+type StorefrontImageFetchPriority = 'high' | 'low' | 'auto'
+type StorefrontImagePreload = boolean | {
+  fetchPriority?: StorefrontImageFetchPriority
+  media?: string
+}
 
 defineOptions({
   inheritAttrs: false,
@@ -59,8 +65,9 @@ const props = withDefaults(defineProps<{
   quality?: number | string
   optimize?: boolean
   loading?: 'eager' | 'lazy'
-  fetchpriority?: 'high' | 'low' | 'auto'
+  fetchpriority?: StorefrontImageFetchPriority
   decoding?: 'async' | 'sync' | 'auto'
+  preload?: StorefrontImagePreload
   // Only pass these for intentional intrinsic dimensions. API media metadata must stay out of this prop.
   width?: number | string
   height?: number | string
@@ -75,9 +82,11 @@ const props = withDefaults(defineProps<{
   loading: 'lazy',
   fetchpriority: 'auto',
   decoding: 'async',
+  preload: false,
 })
 
 const runtimeConfig = useRuntimeConfig()
+const image = useImage()
 
 const mediaContext = computed(() => createStorefrontMediaContext(
   runtimeConfig,
@@ -200,6 +209,65 @@ const canOptimize = computed(() => {
 
 const resolvedSizes = computed(() => props.sizes || resolvedImageSpec.value.sizes)
 const resolvedDensities = computed(() => props.densities || resolvedImageSpec.value.densities)
+const imageModifiers = computed(() => ({
+  width: props.width,
+  height: props.height,
+  format: props.format,
+  quality: props.quality,
+}))
+
+const preloadOptions = computed(() => {
+  if (!props.preload) return null
+  return typeof props.preload === 'boolean' ? {} : props.preload
+})
+
+const preloadLink = computed(() => {
+  const options = preloadOptions.value
+  if (!options) return null
+
+  const fetchpriority = options.fetchPriority || props.fetchpriority
+  const media = options.media?.trim()
+  const baseLink: Record<string, string> = {
+    key: `storefront-image-preload:${media || 'all'}:${transformSource.value || fallbackSource.value}`,
+    rel: 'preload',
+    as: 'image',
+    ...(fetchpriority ? { fetchpriority } : {}),
+    ...(media ? { media } : {}),
+  }
+
+  if (props.optimize && canOptimize.value) {
+    const source = transformSource.value
+    if (!source) return null
+
+    const imageSizes = image.getSizes(source, {
+      sizes: resolvedSizes.value,
+      densities: resolvedDensities.value,
+      modifiers: imageModifiers.value,
+    })
+
+    return {
+      ...baseLink,
+      href: imageSizes.src || source,
+      ...(imageSizes.srcset ? { imagesrcset: imageSizes.srcset } : {}),
+      ...(imageSizes.sizes ? { imagesizes: imageSizes.sizes } : {}),
+    }
+  }
+
+  const source = fallbackSource.value
+  if (!source || /^(?:data|blob):/i.test(source)) return null
+
+  return {
+    ...baseLink,
+    href: source,
+  }
+})
+
+if (import.meta.server) {
+  useHead(() => {
+    const link = preloadLink.value
+    return link ? { link: [link] } : {}
+  })
+}
 
 const handleOptimizationError = (event: unknown) => {
   optimizationFailed.value = true

@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-import { snapshotRenderedStructuredData } from '../src/structured_data.mjs'
+import {
+  normalizeStructuredDataType,
+  normalizeStructuredDataTypes,
+  normalizeStructuredDataURL,
+  snapshotRenderedStructuredData,
+} from '../src/structured_data.mjs'
 
 const originalDocument = globalThis.document
 const originalWindow = globalThis.window
@@ -60,6 +65,34 @@ test('ignores generic headings without FAQ signals', () => {
   const snapshot = snapshotRenderedStructuredData()
 
   assert.equal(snapshot.page.faqQuestionCount, 0)
+})
+
+test('normalizes structured data types', () => {
+  assert.equal(normalizeStructuredDataType('https://schema.org/Product/'), 'Product')
+  assert.equal(normalizeStructuredDataType('https://schema.org/Thing#'), 'Thing')
+  assert.deepEqual(
+    normalizeStructuredDataTypes([
+      'https://schema.org/Product/',
+      'product',
+      'HTTP://schema.org/Thing#',
+      'thing',
+    ]),
+    ['Product', 'Thing'],
+  )
+})
+
+test('normalizes structured data urls', () => {
+  assert.equal(
+    normalizeStructuredDataURL(
+      'HTTPS://Example.com:443/products/carbon-rim/?utm_source=nav#hero',
+      'https://example.com/shop/',
+    ),
+    'https://example.com/products/carbon-rim',
+  )
+  assert.equal(
+    normalizeStructuredDataURL('/products/carbon-rim/?utm_source=nav#hero', 'https://example.com/shop/'),
+    'https://example.com/products/carbon-rim',
+  )
 })
 
 function setDocument(candidates) {

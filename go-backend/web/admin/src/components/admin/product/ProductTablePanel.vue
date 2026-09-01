@@ -189,7 +189,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import type { ProductPagination, ProductRecord } from './productEditorTypes'
+import type { ProductPagination, ProductRecord } from '@/modules/product/productEditorTypes'
 
 type SelectionState = boolean | 'indeterminate'
 type ProductStatusAction = 'active' | 'inactive'
@@ -277,3 +277,4 @@ const formatMoney = (amount: unknown, currency = 'USD'): string => {
   }
 }
 </script>
+

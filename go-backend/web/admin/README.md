@@ -42,18 +42,26 @@ web/admin/
 |   |-- api/          # API clients
 |   |-- assets/       # static assets
 |   |-- components/
-|   |   |-- admin/    # admin-specific composed components
+|   |   |-- admin/    # reusable admin composition components
 |   |   `-- ui/       # shadcn-vue registry components
+|   |-- modules/      # feature/domain logic, API wrappers, types, pure helpers
 |   |-- router/       # route definitions and guards
 |   |-- stores/       # Pinia stores
 |   |-- styles/       # Tailwind theme and design tokens
 |   |-- utils/        # HTTP/client helpers
-|   `-- views/        # page-level views
+|   `-- views/        # route entry pages and page-level orchestration
 |-- public/
 |-- index.html
 |-- vite.config.js
 `-- package.json
 ```
+
+## Layer Boundaries
+
+- `src/modules/<feature>/` owns reusable domain logic: types, enums, API wrappers, route builders, pure helpers, and feature constants.
+- `src/views/` owns route-level pages. It can keep page-local state, loading, filters, and submit handlers, but should not duplicate reusable domain logic.
+- `src/components/admin/` owns reusable admin composition components such as tables, dialogs, editors, and panels.
+- Use `selection-configuration` as the canonical feature name. Do not introduce new `selection-config` folders.
 
 ## API Rules
 

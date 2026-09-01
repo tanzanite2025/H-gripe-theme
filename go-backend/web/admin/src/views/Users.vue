@@ -83,7 +83,7 @@ import type {
   UserPagination,
   UserRecord,
   UserSelectionState
-} from '@/components/admin/user/userTypes'
+} from '@/modules/user/userTypes'
 import { Button } from '@/components/ui/button'
 import { useSupportedLanguages } from '@/composables/useSupportedLanguages'
 import { useAuthStore } from '@/stores/auth'
@@ -399,3 +399,4 @@ onMounted(() => {
   void Promise.all([supportedLanguages.fetchLanguages(), fetchUsers()])
 })
 </script>
+

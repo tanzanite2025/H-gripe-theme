@@ -201,36 +201,19 @@ import { Tabs, TabsContent } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { useAdminI18n } from '@/i18n'
 import type {
+  ApiManagementSettings,
   CommercialCrawlerProtection,
   PublicChatAgent,
   PublicChatGroup,
   PublicChatSummary,
-} from './settingsTypes'
+} from '@/modules/settings/types'
 import type { RefundReturnPolicyEditor } from '@/api/refundReturnPolicy'
-
-interface APISettings {
-  time_api_enabled: boolean | string | number
-  time_api_provider: string
-  time_api_endpoint: string
-  time_api_query_template: string
-  time_api_default_timezone: string
-  time_api_refresh_minutes: number
-  time_api_key_ref: string
-  customs_lookup_us_hts_enabled: boolean | string | number
-  customs_lookup_us_hts_endpoint: string
-  customs_lookup_us_hts_api_key: string
-  customs_lookup_us_hts_api_key_header: string
-  customs_lookup_uk_trade_tariff_enabled: boolean | string | number
-  customs_lookup_uk_trade_tariff_endpoint: string
-  customs_lookup_uk_trade_tariff_api_key: string
-  customs_lookup_uk_trade_tariff_api_key_header: string
-}
 
 const props = defineProps({
   activeTab: { type: String, default: 'site' },
   siteSettings: { type: Object, required: true },
   emailSettings: { type: Object, required: true },
-  apiSettings: { type: Object as PropType<APISettings>, required: true },
+  apiSettings: { type: Object as PropType<ApiManagementSettings>, required: true },
   commercialCrawlerProtection: { type: Object as PropType<CommercialCrawlerProtection | null>, default: null },
   loadingCommercialCrawlerProtection: { type: Boolean, default: false },
   uploadingSiteLogo: { type: Boolean, default: false },

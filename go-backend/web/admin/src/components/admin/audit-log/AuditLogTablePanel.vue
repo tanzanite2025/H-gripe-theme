@@ -73,7 +73,7 @@ import type {
   AuditLogPagination,
   AuditLogRecord,
   AuditLogToneResolver
-} from './auditLogTypes'
+} from '@/modules/audit-log/auditLogTypes'
 
 withDefaults(defineProps<{
   loading?: boolean
@@ -96,3 +96,4 @@ const emit = defineEmits<{
   (event: 'update-page-size', pageSize: number): void
 }>()
 </script>
+

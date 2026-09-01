@@ -132,7 +132,7 @@ import CustomerServiceRegionAnalytics from '@/components/admin/customer-service/
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import customerServiceApi from '@/api/customerService'
-import type { CustomerServiceAnalytics } from '@/components/admin/customer-service/customerServiceTypes'
+import type { CustomerServiceAnalytics } from '@/modules/customer-service/customerServiceTypes'
 
 const todayLocalDate = () => {
   const now = new Date()
@@ -218,3 +218,4 @@ const loadAnalytics = async () => {
 
 onMounted(loadAnalytics)
 </script>
+

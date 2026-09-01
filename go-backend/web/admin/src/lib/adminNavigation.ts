@@ -1,6 +1,7 @@
 import type { Component } from 'vue'
 import {
   BookOpen,
+  Calculator,
   ClipboardList,
   CreditCard,
   Cloud,
@@ -9,6 +10,7 @@ import {
   FileText,
   FileVideo,
   Fingerprint,
+  GitBranch,
   Headset,
   Images,
   Link2,
@@ -82,6 +84,7 @@ export const adminNavigationItems: AdminNavigationItem[] = [
       { id: 'catalog-templates', path: '/catalog/templates', routeName: 'CatalogProductTemplates', label: '商品规格模板' },
       { id: 'catalog-information-templates', path: '/catalog/information-templates', routeName: 'CatalogProductInformationTemplates', label: '产品信息模板' },
       { id: 'catalog-customs-classifications', path: '/catalog/customs-classifications', routeName: 'CatalogCustomsClassifications', label: '清关资料中心', icon: FileSearch },
+      { id: 'catalog-home-main-products', path: '/catalog/home-main-products', routeName: 'CatalogHomeMainProducts', label: '首页主力产品', icon: Package, permission: 'content:view' },
     ],
   },
   {
@@ -104,6 +107,19 @@ export const adminNavigationItems: AdminNavigationItem[] = [
       { id: 'fitment-frame-entries', path: '/fitment-catalog/frame-entries', routeName: 'FitmentFrameEntries', label: '车架 / 车型' },
       { id: 'fitment-fork-entries', path: '/fitment-catalog/fork-entries', routeName: 'FitmentForkEntries', label: '前叉' },
       { id: 'fitment-hub-specifications', path: '/fitment-catalog/hub-specifications', routeName: 'FitmentHubSpecifications', label: '花鼓规格' },
+    ],
+  },
+  {
+    id: 'spoke-calculator',
+    code: 'SPOKE_CALCULATOR',
+    label: '辐条计算器',
+    icon: Calculator,
+    permission: 'product:view',
+    children: [
+      { id: 'spoke-calculator-rims', path: '/spoke-calculator/rims', routeName: 'SpokeCalculatorRims', label: '轮圈' },
+      { id: 'spoke-calculator-hubs', path: '/spoke-calculator/hubs', routeName: 'SpokeCalculatorHubs', label: '花鼓' },
+      { id: 'spoke-calculator-builds', path: '/spoke-calculator/builds', routeName: 'SpokeCalculatorBuilds', label: '装配' },
+      { id: 'spoke-calculator-import', path: '/spoke-calculator/import', routeName: 'SpokeCalculatorImport', label: '导入' },
     ],
   },
   {
@@ -336,8 +352,7 @@ export const adminNavigationItems: AdminNavigationItem[] = [
       { id: 'content-page-feedback', path: '/content/feedback', routeName: 'ContentPageFeedback', label: '页面留言', icon: MessageSquareText, permission: 'content:view' },
       { id: 'content-faqs', path: '/content/faqs', routeName: 'ContentFAQs', label: 'FAQ 内容', permission: 'faq:view' },
       { id: 'content-visual-showcase', path: '/content/visual-showcase', routeName: 'ContentVisualShowcase', label: '首页视觉目录', icon: Images, permission: 'content:view' },
-      { id: 'content-home-main-products', path: '/content/home-main-products', routeName: 'ContentHomeMainProducts', label: '首页主力产品', icon: Package, permission: 'content:view' },
-      { id: 'content-spoke-calculator', path: '/content/spoke-calculator', routeName: 'ContentSpokeCalculator', label: '辐条计算器数据', permission: 'product:view' },
+      { id: 'content-refund-return', path: '/content/refund-return', routeName: 'ContentRefundReturn', label: '退货退款', permission: 'content:view' },
     ],
   },
   {
@@ -401,6 +416,7 @@ export const adminNavigationItems: AdminNavigationItem[] = [
     children: [
       { id: 'services-overview', path: '/services/overview', routeName: 'ServicesOverview', label: '服务总览' },
       { id: 'services-cloudflare', path: '/services/cloudflare', routeName: 'ServicesCloudflare', label: 'Cloudflare' },
+      { id: 'services-github', path: '/services/github', routeName: 'ServicesGitHub', label: 'GitHub / GHCR', icon: GitBranch },
       { id: 'services-connectors', path: '/services/connectors', routeName: 'ServicesConnectors', label: '连接器配置' },
     ],
   },
@@ -429,7 +445,6 @@ export const adminNavigationItems: AdminNavigationItem[] = [
       { id: 'settings-markets', path: '/settings/markets', routeName: 'SettingsMarkets', label: '市场与本地化语种' },
       { id: 'settings-api', path: '/settings/api', routeName: 'SettingsApi', label: 'API 管理' },
       { id: 'settings-commercial-crawler', path: '/settings/commercial-crawler', routeName: 'SettingsCommercialCrawler', label: '商业爬虫防护' },
-      { id: 'settings-refund-return', path: '/settings/refund-return', routeName: 'SettingsRefundReturn', label: '退货退款' },
     ],
   },
   { id: 'audit-logs', path: '/audit-logs', routeName: 'AuditLogs', code: 'AUDIT', label: '审计日志', icon: ScrollText, permission: 'logs:view' },

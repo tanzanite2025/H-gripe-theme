@@ -8,7 +8,17 @@ import (
 	"strings"
 
 	"commerce-platform/internal/domain/media"
+	"commerce-platform/internal/pkg/upload"
 )
+
+var trustedMediaUploadImageRule = upload.FileRule{
+	MaxSize:             12 << 20,
+	AllowedExtensions:   []string{".jpg", ".jpeg", ".png", ".webp", ".gif"},
+	AllowedContentTypes: []string{"image/jpeg", "image/png", "image/webp", "image/gif"},
+	MaxWidth:            8000,
+	MaxHeight:           8000,
+	MaxPixels:           24_000_000,
+}
 
 type MediaUploadInput struct {
 	File       *multipart.FileHeader
@@ -36,6 +46,11 @@ func (s *MediaService) UploadAsset(ctx context.Context, input MediaUploadInput) 
 		return nil, err
 	}
 
+	trustedMimeType, err := trustedMediaUploadMimeType(input.File, mediaType)
+	if err != nil {
+		return nil, err
+	}
+
 	contentSHA256, err := contentSHA256FromMultipartFile(input.File)
 	if err != nil {
 		return nil, err
@@ -60,7 +75,7 @@ func (s *MediaService) UploadAsset(ctx context.Context, input MediaUploadInput) 
 		OriginalFilename:   input.File.Filename,
 		URL:                url,
 		StorageKey:         storageObjectKey(s.storage, url),
-		MimeType:           input.File.Header.Get("Content-Type"),
+		MimeType:           trustedMimeType,
 		MediaType:          mediaType,
 		Size:               input.File.Size,
 		Width:              input.Width,
@@ -119,4 +134,29 @@ func (s *MediaService) ensureUploaderStorageQuota(uploaderID uint, incomingSize 
 		return ErrMediaAccountStorageQuotaExceeded
 	}
 	return nil
+}
+
+func trustedMediaUploadMimeType(file *multipart.FileHeader, mediaType string) (string, error) {
+	var rule upload.FileRule
+	switch mediaType {
+	case "image":
+		rule = trustedMediaUploadImageRule
+	case "video":
+		rule = upload.ProductVideoRule
+	default:
+		return "", ErrUnsupportedMediaType
+	}
+
+	if err := upload.ValidateFile(file, rule); err != nil {
+		return "", fmt.Errorf("%w: %v", ErrUnsupportedMediaType, err)
+	}
+
+	mimeType, err := upload.DetectContentType(file)
+	if err != nil {
+		return "", fmt.Errorf("%w: %v", ErrUnsupportedMediaType, err)
+	}
+	if !strings.HasPrefix(strings.ToLower(strings.TrimSpace(mimeType)), mediaType+"/") {
+		return "", fmt.Errorf("%w: detected %s for %s upload", ErrUnsupportedMediaType, mimeType, mediaType)
+	}
+	return mimeType, nil
 }

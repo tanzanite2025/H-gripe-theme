@@ -92,14 +92,15 @@ func TestMediaUploadQuotaAllowsUsageAtExactLimit(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	service := NewMediaService(repository.NewMediaRepository(db), storageService, nil, "", 10)
+	payload := mediaUploadTestPNG(t)
+	service := NewMediaService(repository.NewMediaRepository(db), storageService, nil, "", 6+int64(len(payload)))
 	asset, err := service.UploadAsset(context.Background(), MediaUploadInput{
-		File:       multipartFileHeader(t, "next.jpg", "image/jpeg", []byte("1234")),
+		File:       multipartFileHeader(t, "next.png", "image/png", payload),
 		MediaType:  "image",
 		UploaderID: 42,
 	})
 	require.NoError(t, err)
-	require.EqualValues(t, 4, asset.Size)
+	require.EqualValues(t, len(payload), asset.Size)
 
 	_, err = service.UploadAsset(context.Background(), MediaUploadInput{
 		File:       multipartFileHeader(t, "overflow.jpg", "image/jpeg", []byte("1")),

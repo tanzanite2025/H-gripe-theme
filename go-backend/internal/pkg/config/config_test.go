@@ -231,17 +231,7 @@ func TestValidateConfigRejectsInvalidSiteQualityWorkerPollInterval(t *testing.T)
 
 func TestValidateConfigRequiresInternalRunnerForEnabledQualityWorker(t *testing.T) {
 	cfg := validTestConfig()
-	cfg.Worker = WorkerConfig{
-		SiteQualityEnabled:                 true,
-		SiteQualityDispatchIntervalSeconds: 30,
-		SiteQualityBatchLimit:              2,
-		SiteQualityLeaseTimeoutSeconds:     900,
-		SiteQualitySampleCount:             3,
-		SiteQualityConfirmations:           2,
-		SiteQualityCleanEvaluations:        2,
-		SiteQualityProviderConcurrency:     1,
-		SiteQualityProviderSpacingSeconds:  5,
-	}
+	cfg.Worker = validSiteQualityWorkerConfig()
 
 	if err := validateConfig(cfg); err == nil {
 		t.Fatal("validateConfig should require an internal Site Quality runner when monitoring is enabled")
@@ -253,6 +243,50 @@ func TestValidateConfigRequiresInternalRunnerForEnabledQualityWorker(t *testing.
 	}
 	if err := validateConfig(cfg); err != nil {
 		t.Fatalf("validateConfig should allow enabled quality monitoring with an internal runner: %v", err)
+	}
+}
+
+func TestValidateConfigRejectsDefaultSiteQualityRunnerTokenInRelease(t *testing.T) {
+	for _, token := range []string{
+		"dev-site-quality-runner-token-0123456789",
+		"CHANGE_ME_SITE_QUALITY_RUNNER_TOKEN",
+	} {
+		t.Run(token, func(t *testing.T) {
+			cfg := validReleaseConfig()
+			cfg.Worker = validSiteQualityWorkerConfig()
+			cfg.SiteQuality = SiteQualityConfig{
+				RunnerURL:   "http://site-quality-runner:8080",
+				RunnerToken: token,
+			}
+
+			if err := validateConfig(cfg); err == nil {
+				t.Fatalf("validateConfig should reject default Site Quality runner token %q in release mode", token)
+			}
+		})
+	}
+}
+
+func TestValidateConfigAllowsStrongSiteQualityRunnerTokenInRelease(t *testing.T) {
+	cfg := validReleaseConfig()
+	cfg.Worker = validSiteQualityWorkerConfig()
+	cfg.SiteQuality = SiteQualityConfig{
+		RunnerURL:   "http://site-quality-runner:8080",
+		RunnerToken: "production-site-quality-runner-token-2026-rotation-a",
+	}
+
+	if err := validateConfig(cfg); err != nil {
+		t.Fatalf("validateConfig should allow a non-default Site Quality runner token in release mode: %v", err)
+	}
+}
+
+func TestValidateConfigRejectsReleaseRunnerURLWithoutToken(t *testing.T) {
+	cfg := validReleaseConfig()
+	cfg.SiteQuality = SiteQualityConfig{
+		RunnerURL: "http://site-quality-runner:8080",
+	}
+
+	if err := validateConfig(cfg); err == nil {
+		t.Fatal("validateConfig should reject a release Site Quality runner URL without a token")
 	}
 }
 
@@ -566,6 +600,21 @@ func TestSplitEnvListTrimsAndDropsEmptyValues(t *testing.T) {
 	}
 }
 
+func TestLoadUsesGinModeAsServerModeFallback(t *testing.T) {
+	t.Setenv("SERVER_MODE", "")
+	t.Setenv("GIN_MODE", "release")
+	t.Setenv("JWT_SECRET", "test-production-secret-at-least-32-chars")
+	t.Setenv("TRUSTED_PROXIES", "172.30.0.10/32")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load with GIN_MODE fallback: %v", err)
+	}
+	if cfg.Server.Mode != "release" {
+		t.Fatalf("server mode = %q, want release", cfg.Server.Mode)
+	}
+}
+
 func TestLoadProductionConfigUsesEnvironmentOverrides(t *testing.T) {
 	t.Setenv("SERVER_BASE_URL", "https://example.com")
 	t.Setenv("DB_HOST", "db")
@@ -622,6 +671,28 @@ func TestLoadProductionConfigUsesEnvironmentOverrides(t *testing.T) {
 	}
 	if cfg.Worker.VisitorProfileIPAddressRetentionDays != 45 {
 		t.Fatalf("visitor profile IP address retention environment override not applied: %d", cfg.Worker.VisitorProfileIPAddressRetentionDays)
+	}
+}
+
+func validReleaseConfig() *Config {
+	cfg := validTestConfig()
+	cfg.Server.Mode = "release"
+	cfg.Server.TrustedProxies = []string{"172.30.0.10/32"}
+	cfg.JWT.Secret = "test-production-secret-at-least-32-chars"
+	return cfg
+}
+
+func validSiteQualityWorkerConfig() WorkerConfig {
+	return WorkerConfig{
+		SiteQualityEnabled:                 true,
+		SiteQualityDispatchIntervalSeconds: 30,
+		SiteQualityBatchLimit:              2,
+		SiteQualityLeaseTimeoutSeconds:     900,
+		SiteQualitySampleCount:             3,
+		SiteQualityConfirmations:           2,
+		SiteQualityCleanEvaluations:        2,
+		SiteQualityProviderConcurrency:     1,
+		SiteQualityProviderSpacingSeconds:  5,
 	}
 }
 

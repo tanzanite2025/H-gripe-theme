@@ -10,8 +10,9 @@
           </p>
         </div>
       </div>
-      <div class="flex items-center gap-2">
+      <div v-if="showActions !== false" class="flex items-center gap-2">
         <Button
+          v-if="canManage !== false"
           size="sm"
           :disabled="githubLoading || githubOAuthLoading"
           @click="emit('connect')"
@@ -111,6 +112,7 @@
                   {{ scopeLabel(connector, provider.value) }}
                 </AdminStatusBadge>
                 <Button
+                  v-if="canManage !== false"
                   size="icon"
                   variant="ghost"
                   :title="`测试 ${connector.name}`"
@@ -190,6 +192,8 @@ const props = defineProps<{
   githubLoading: boolean
   githubOAuthLoading: boolean
   testingConnectorId: number
+  canManage?: boolean
+  showActions?: boolean
 }>()
 
 const emit = defineEmits<{

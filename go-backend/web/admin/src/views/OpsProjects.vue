@@ -173,7 +173,7 @@ import {
   serializeQuickBuyRateLimitPolicy,
   toOptionalISOTime,
   type OpsProjectForm,
-} from '@/components/admin/ops/opsProjectBindingForm'
+} from '@/modules/ops/opsProjectBindingForm'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import opsApi, {
@@ -429,3 +429,4 @@ watch(() => route.query.environment, (value) => {
 
 onMounted(refreshProjectsPage)
 </script>
+

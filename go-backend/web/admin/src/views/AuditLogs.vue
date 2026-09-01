@@ -59,7 +59,7 @@ import type {
   AuditLogsResponse,
   AuditLogStats,
   AuditLogTone
-} from '@/components/admin/audit-log/auditLogTypes'
+} from '@/modules/audit-log/auditLogTypes'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import AdminStatsGrid from '@/components/admin/AdminStatsGrid.vue'
 import { Button } from '@/components/ui/button'
@@ -172,3 +172,4 @@ onMounted(() => {
   void refreshLogs()
 })
 </script>
+

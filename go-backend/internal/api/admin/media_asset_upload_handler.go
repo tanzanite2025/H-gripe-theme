@@ -22,6 +22,14 @@ const (
 )
 
 func (h *MediaHandler) UploadAsset(c *gin.Context) {
+	h.uploadAsset(c, "")
+}
+
+func (h *MediaHandler) UploadRefundReturnPolicyImage(c *gin.Context) {
+	h.uploadAsset(c, string(upload.SpecRefundReturnImage))
+}
+
+func (h *MediaHandler) uploadAsset(c *gin.Context, forcedPurpose string) {
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, mediaMaxRequestBytes)
 	if err := c.Request.ParseMultipartForm(mediaMultipartMemory); err != nil {
 		if isRequestBodyTooLarge(err) {
@@ -41,10 +49,16 @@ func (h *MediaHandler) UploadAsset(c *gin.Context) {
 		return
 	}
 
+	requestedType := c.PostForm("media_type")
+	requestedPurpose := c.PostForm("image_purpose")
+	if forcedPurpose != "" {
+		requestedType = "image"
+		requestedPurpose = forcedPurpose
+	}
 	mediaType, err := validateMediaUpload(
 		file,
-		c.PostForm("media_type"),
-		c.PostForm("image_purpose"),
+		requestedType,
+		requestedPurpose,
 	)
 	if err != nil {
 		c.JSON(upload.HTTPStatus(err), gin.H{

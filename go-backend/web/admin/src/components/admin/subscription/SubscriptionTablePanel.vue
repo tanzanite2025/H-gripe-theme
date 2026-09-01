@@ -133,7 +133,7 @@ import type {
   SubscriptionRecord,
   SubscriptionSelectionState,
   SubscriptionToneResolver
-} from './subscriptionTypes'
+} from '@/modules/subscription/subscriptionTypes'
 
 withDefaults(defineProps<{
   loading?: boolean
@@ -168,3 +168,4 @@ const emit = defineEmits<{
   (event: 'update-page-size', pageSize: number): void
 }>()
 </script>
+

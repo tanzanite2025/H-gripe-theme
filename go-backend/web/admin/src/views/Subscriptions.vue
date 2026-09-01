@@ -77,7 +77,7 @@ import type {
   SubscriptionSelectionState,
   SubscriptionStats,
   SubscriptionStatusTone
-} from '@/components/admin/subscription/subscriptionTypes'
+} from '@/modules/subscription/subscriptionTypes'
 import { Button } from '@/components/ui/button'
 import { useSupportedLanguages } from '@/composables/useSupportedLanguages'
 import { useAuthStore } from '@/stores/auth'
@@ -299,3 +299,4 @@ onMounted(() => {
   ])
 })
 </script>
+

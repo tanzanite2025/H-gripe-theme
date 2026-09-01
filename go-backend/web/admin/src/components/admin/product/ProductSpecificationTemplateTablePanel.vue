@@ -92,7 +92,7 @@ import type {
   ProductSpecTemplateDateFormatter,
   ProductSpecTemplateRecord,
   ProductSpecTemplateVariantSpecCounter
-} from './productSpecificationTemplateTypes'
+} from '@/modules/product/productSpecificationTemplateTypes'
 
 withDefaults(defineProps<{
   loading?: boolean
@@ -114,3 +114,4 @@ const emit = defineEmits<{
   (event: 'delete', template: ProductSpecTemplateRecord): void
 }>()
 </script>
+

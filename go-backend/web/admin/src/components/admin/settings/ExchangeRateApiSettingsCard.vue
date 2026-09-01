@@ -112,24 +112,16 @@ import AdminFormField from '@/components/admin/AdminFormField.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
-import { apiSettingPayload, postApiSettingsBatch } from '@/components/admin/settings/apiSettingsPersistence'
+import { apiSettingPayload, postApiSettingsBatch } from '@/modules/settings/apiSettingsPersistence'
+import type { ExchangeRateSettings } from '@/modules/settings/types'
 
 const EXCHANGE_RATE_PROVIDER = 'ExchangeRate-API'
 const DEFAULT_PRICING_CURRENCY = 'USD'
 const EXCHANGE_RATE_ENDPOINT = 'https://v6.exchangerate-api.com/v6/{apiKey}/latest/{base}'
 const DAILY_API_REFRESH_MINUTES = 1440
 
-interface ExchangeRateAPISettings {
-  exchange_rate_enabled: boolean | string | number
-  exchange_rate_provider: string
-  exchange_rate_endpoint: string
-  exchange_rate_query_template: string
-  exchange_rate_refresh_minutes: number
-  exchange_rate_api_key: string
-}
-
 const props = withDefaults(defineProps<{
-  apiSettings: ExchangeRateAPISettings
+  apiSettings: ExchangeRateSettings
   primaryPricingCurrency?: string
   canEdit?: boolean
   syncing?: boolean

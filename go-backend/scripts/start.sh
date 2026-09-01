@@ -2,9 +2,16 @@
 
 # Storefront Go Backend Startup Script
 
-set -e
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+BIN_DIR="$ROOT_DIR/bin"
+BIN_BASE="$BIN_DIR/server"
 
 echo "🚀 Starting Storefront Go Backend..."
+
+cd "$ROOT_DIR"
 
 # Check if config file exists
 if [ ! -f "config/config.yaml" ]; then
@@ -24,10 +31,14 @@ fi
 echo "📦 Downloading dependencies..."
 go mod download
 
-# Build the application
+# Build the application into the shared bin directory
 echo "🔨 Building application..."
-go build -o commerce-platform-api ./cmd/server
+mkdir -p "$BIN_DIR"
+go build -o "$BIN_BASE" ./cmd/server
 
 # Run the application
 echo "✅ Starting server..."
-./commerce-platform-api
+if [ -f "${BIN_BASE}.exe" ]; then
+    exec "${BIN_BASE}.exe"
+fi
+exec "$BIN_BASE"

@@ -135,7 +135,7 @@ import type {
   LoyaltyErrors,
   LoyaltyTransaction,
   MemberLevel,
-} from '@/components/admin/marketing/marketingTypes'
+} from '@/modules/marketing/marketingTypes'
 import {
   couponStatus,
   couponValue,
@@ -825,3 +825,4 @@ onMounted(() => Promise.all([
   ensureActiveTabLoaded()
 ]))
 </script>
+

@@ -103,7 +103,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import GalleryImageFields from './GalleryImageFields.vue'
-import type { GalleryDialogMode, GalleryForm, GalleryFormErrors } from './galleryTypes'
+import type { GalleryDialogMode, GalleryForm, GalleryFormErrors } from '@/modules/gallery/galleryTypes'
 
 withDefaults(defineProps<{
   open?: boolean
@@ -132,3 +132,4 @@ const emit = defineEmits<{
   (event: 'remove-image', index: number): void
 }>()
 </script>
+

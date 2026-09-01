@@ -10,6 +10,7 @@ import {
 import type {
   OpsConnector,
   OpsConnectorOAuthStartResult,
+  OpsConnectorTestResult,
   OpsDomain,
   OpsEnvironment,
   OpsNetworkSummary,
@@ -60,6 +61,35 @@ export interface ServiceCenterCloudflare {
   connections: OpsConnector[]
   domains: OpsDomain[]
   zones: ServiceCenterCloudflareZone[]
+}
+
+export interface ServiceCenterGitHubRepository {
+  id: number
+  name: string
+  full_name: string
+  private: boolean
+  visibility: string
+  html_url: string
+  default_branch: string
+  updated_at?: string
+  pushed_at?: string
+  connector_id: number
+  connector_name: string
+}
+
+export interface ServiceCenterGitHub {
+  environment: string
+  generated_at: string
+  connection_count: number
+  active_connection_count: number
+  credential_configured_count: number
+  project_count: number
+  repository_count: number
+  attention_count: number
+  connections: OpsConnector[]
+  projects: OpsProject[]
+  repositories: ServiceCenterGitHubRepository[]
+  repository_read_errors: string[]
 }
 
 export interface CloudflareCacheRule {
@@ -124,6 +154,23 @@ const readCloudflarePayload = (response: unknown, endpoint: string): ServiceCent
   return payload as ServiceCenterCloudflare
 }
 
+const readGitHubPayload = (response: unknown, endpoint: string): ServiceCenterGitHub => {
+  const payload = readObjectPayload(response, endpoint)
+  requireApiStringField(payload, 'environment', endpoint)
+  requireApiStringField(payload, 'generated_at', endpoint)
+  requireApiNumberField(payload, 'connection_count', endpoint)
+  requireApiNumberField(payload, 'active_connection_count', endpoint)
+  requireApiNumberField(payload, 'credential_configured_count', endpoint)
+  requireApiNumberField(payload, 'project_count', endpoint)
+  requireApiNumberField(payload, 'repository_count', endpoint)
+  requireApiNumberField(payload, 'attention_count', endpoint)
+  requireApiArrayField(payload, 'connections', endpoint)
+  requireApiArrayField(payload, 'projects', endpoint)
+  requireApiArrayField(payload, 'repositories', endpoint)
+  requireApiArrayField(payload, 'repository_read_errors', endpoint)
+  return payload as ServiceCenterGitHub
+}
+
 const readOAuthStartPayload = (response: unknown, endpoint: string): OpsConnectorOAuthStartResult => {
   const payload = readObjectPayload(response, endpoint)
   requireApiStringField(payload, 'authorization_url', endpoint)
@@ -158,6 +205,35 @@ export default {
       await axios.get(endpoint, { params: environment ? { environment } : undefined }),
       endpoint,
     )
+  },
+  async getGitHub(environment?: OpsEnvironment): Promise<ServiceCenterGitHub> {
+    const endpoint = '/api/admin/services/github'
+    return readGitHubPayload(
+      await axios.get(endpoint, {
+        params: environment ? { environment } : undefined,
+        suppressGlobalErrorToast: true,
+      }),
+      endpoint,
+    )
+  },
+  async startGitHubOAuth(
+    connectorID?: number,
+    returnPath = '/services/github',
+    environment?: OpsEnvironment,
+  ): Promise<OpsConnectorOAuthStartResult> {
+    const endpoint = '/api/admin/services/github/oauth/start'
+    const payload: Record<string, unknown> = { return_path: returnPath }
+    if (connectorID) payload.connector_id = connectorID
+    if (environment) payload.environment = environment
+    return readOAuthStartPayload(await axios.post(endpoint, payload), endpoint)
+  },
+  async testGitHubConnection(id: number): Promise<OpsConnectorTestResult> {
+    const endpoint = `/api/admin/services/github/connectors/${id}/test`
+    const payload = readObjectPayload(await axios.post(endpoint), endpoint)
+    requireApiNumberField(payload, 'connector_id', endpoint)
+    requireApiBooleanField(payload, 'success', endpoint)
+    requireApiStringField(payload, 'message', endpoint)
+    return payload as OpsConnectorTestResult
   },
   async startCloudflareOAuth(
     connectorID?: number,

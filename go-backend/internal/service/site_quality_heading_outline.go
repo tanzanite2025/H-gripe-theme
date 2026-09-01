@@ -78,7 +78,7 @@ func fetchSiteQualityHeadingOutline(
 	}
 
 	var headings []siteQualityHeadingNode
-	walkSiteQualityHeadingHTML(root, nil, &headings)
+	walkSiteQualityHeadingHTML(root, nil, &headings, false)
 	return headings, nil
 }
 
@@ -325,13 +325,14 @@ func walkSiteQualityHeadingHTML(
 	node *html.Node,
 	path []string,
 	headings *[]siteQualityHeadingNode,
+	hidden bool,
 ) {
-	if node == nil {
+	if node == nil || hidden {
 		return
 	}
 	if node.Type == html.ElementNode {
 		tag := strings.ToLower(node.Data)
-		if tag == "script" || tag == "style" || tag == "noscript" || siteQualityHeadingNodeHidden(node) {
+		if tag == "script" || tag == "style" || tag == "noscript" || tag == "template" || siteQualityHeadingNodeHidden(node) {
 			return
 		}
 		nextPath := append(path, siteQualityNodeSelectorPart(node))
@@ -346,24 +347,65 @@ func walkSiteQualityHeadingHTML(
 				})
 			}
 		}
+		if tag == "details" && !siteQualityHeadingNodeHasAttr(node, "open") {
+			summary := siteQualityHeadingSummaryChild(node)
+			if summary != nil {
+				walkSiteQualityHeadingHTML(summary, nextPath, headings, false)
+			}
+			for child := node.FirstChild; child != nil; child = child.NextSibling {
+				if child == summary {
+					continue
+				}
+				walkSiteQualityHeadingHTML(child, nextPath, headings, true)
+			}
+			return
+		}
 		path = nextPath
 	}
 	for child := node.FirstChild; child != nil; child = child.NextSibling {
-		walkSiteQualityHeadingHTML(child, path, headings)
+		walkSiteQualityHeadingHTML(child, path, headings, false)
 	}
+}
+
+func siteQualityHeadingNodeHasAttr(node *html.Node, key string) bool {
+	if node == nil {
+		return false
+	}
+	for _, attr := range node.Attr {
+		if strings.EqualFold(strings.TrimSpace(attr.Key), key) {
+			return true
+		}
+	}
+	return false
+}
+
+func siteQualityHeadingSummaryChild(node *html.Node) *html.Node {
+	if node == nil {
+		return nil
+	}
+	for child := node.FirstChild; child != nil; child = child.NextSibling {
+		if child.Type == html.ElementNode && strings.EqualFold(child.Data, "summary") {
+			return child
+		}
+	}
+	return nil
 }
 
 func siteQualityHeadingNodeHidden(node *html.Node) bool {
 	for _, attr := range node.Attr {
 		key := strings.ToLower(strings.TrimSpace(attr.Key))
 		value := strings.ToLower(strings.TrimSpace(attr.Val))
-		if key == "hidden" || (key == "aria-hidden" && value == "true") {
+		if key == "hidden" || key == "inert" || (key == "aria-hidden" && value == "true") {
 			return true
 		}
 		if key == "style" && (strings.Contains(value, "display:none") ||
 			strings.Contains(value, "display: none") ||
 			strings.Contains(value, "visibility:hidden") ||
-			strings.Contains(value, "visibility: hidden")) {
+			strings.Contains(value, "visibility: hidden") ||
+			strings.Contains(value, "visibility:collapse") ||
+			strings.Contains(value, "visibility: collapse") ||
+			strings.Contains(value, "content-visibility:hidden") ||
+			strings.Contains(value, "content-visibility: hidden")) {
 			return true
 		}
 	}

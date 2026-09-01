@@ -1,5 +1,6 @@
 import { computed } from 'vue'
 import { useAsyncData, useCookie, useRequestHeaders } from '#imports'
+import { useApiRequest } from '~/composables/useApiRequest'
 import { normalizeStorefrontLocaleCode } from '~/utils/storefrontLocales'
 
 export interface StorefrontContextPayload {
@@ -23,7 +24,7 @@ const normalizeCurrencyCode = (value: unknown) => {
 }
 
 export function useStorefrontContext() {
-  const apiBase = useApiBase()
+  const { request } = useApiRequest()
   const displayCurrencyCookie = useCookie<string | null>('display_currency', {
     sameSite: 'lax',
     maxAge: 60 * 60 * 24 * 365,
@@ -34,12 +35,12 @@ export function useStorefrontContext() {
     'storefront-market-context',
     async () => {
       try {
-        const response = await $fetch<StorefrontContextResponse>(`${apiBase.value}/storefront/context`, {
+        const response = await request<StorefrontContextResponse>('/storefront/context', {
           headers: {
             accept: 'application/json',
             ...requestHeaders,
           },
-        })
+        }, 'Failed to load storefront context')
         const context = 'data' in Object(response) ? (response as { data?: StorefrontContextPayload }).data : response as StorefrontContextPayload
         // SSR HTML may be cached by URL. Do not emit a Set-Cookie while rendering
         // a cached page; the client can persist the resolved preference instead.

@@ -159,7 +159,7 @@ import type {
   VisitorGlobalIPBlockPayload,
   VisitorPagination,
   VisitorIPBlockRule,
-} from './visitorTypes'
+} from '@/modules/visitor/visitorTypes'
 
 const props = withDefaults(defineProps<{
   open: boolean
@@ -249,3 +249,4 @@ const sourceLabel = (source?: string): string => ({
   risk_automation: '风险自动化',
 } as Record<string, string>)[source || ''] || source || '未知'
 </script>
+

@@ -36,7 +36,7 @@ import AdminFilterPanel from '@/components/admin/AdminFilterPanel.vue'
 import AdminFilterSelect from '@/components/admin/AdminFilterSelect.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import type { ContentFilters } from './contentTypes'
+import type { ContentFilters } from '@/modules/content/contentTypes'
 
 withDefaults(defineProps<{
   filters: ContentFilters
@@ -52,3 +52,4 @@ const emit = defineEmits<{
   (event: 'reset'): void
 }>()
 </script>
+

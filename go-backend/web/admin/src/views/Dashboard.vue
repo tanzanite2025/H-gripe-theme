@@ -62,7 +62,7 @@ import type {
   DashboardRecentUser,
   DashboardSalesChartResponse,
   DashboardStats
-} from '@/components/admin/dashboard/dashboardTypes'
+} from '@/modules/dashboard/dashboardTypes'
 import {
   buildSalesChartOption,
   currentDashboardDate,
@@ -199,3 +199,4 @@ onMounted(() => {
   void fetchRecentUsers()
 })
 </script>
+

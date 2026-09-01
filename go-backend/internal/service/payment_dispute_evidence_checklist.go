@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -54,6 +55,7 @@ type DisputeEvidenceSubmissionCheck struct {
 type DisputePaymentAuthenticationEvidence struct {
 	PaymentIntentID    string     `json:"payment_intent_id,omitempty"`
 	TransactionID      string     `json:"transaction_id,omitempty"`
+	LiabilityShifted   *bool      `json:"liability_shifted,omitempty"`
 	ThreeDSecureResult string     `json:"three_ds_secure_result,omitempty"`
 	CVCCheck           string     `json:"cvc_check,omitempty"`
 	AVSLine1Check      string     `json:"avs_line1_check,omitempty"`
@@ -61,6 +63,10 @@ type DisputePaymentAuthenticationEvidence struct {
 	AVSMatch           string     `json:"avs_match,omitempty"`
 	Source             string     `json:"source,omitempty"`
 	ObservedAt         *time.Time `json:"observed_at,omitempty"`
+}
+
+type DisputeEvidenceChecklistOptions struct {
+	RequireSignatureProofOfDelivery bool
 }
 
 func (s *PaymentService) findDisputeEvidenceTransaction(provider string, transactionID *uint, providerPaymentID string, orderID uint) (*paymentdomain.Transaction, error) {
@@ -109,10 +115,11 @@ func buildStripeAuthenticationEvidence(transaction *paymentdomain.Transaction, p
 	}
 
 	result := &DisputePaymentAuthenticationEvidence{
-		PaymentIntentID: paymentIntentID,
-		TransactionID:   strings.TrimSpace(transaction.TransactionID),
-		Source:          "transactions.gateway_response",
-		ObservedAt:      disputeTransactionObservedAt(transaction),
+		PaymentIntentID:  paymentIntentID,
+		TransactionID:    strings.TrimSpace(transaction.TransactionID),
+		LiabilityShifted: transaction.LiabilityShifted,
+		Source:           "transactions.liability_shifted + transactions.gateway_response",
+		ObservedAt:       disputeTransactionObservedAt(transaction),
 	}
 	if result.PaymentIntentID == "" {
 		result.PaymentIntentID = result.TransactionID
@@ -130,7 +137,7 @@ func buildStripeAuthenticationEvidence(transaction *paymentdomain.Transaction, p
 		result.AVSMatch = summarizeAVSChecks(result.AVSLine1Check, result.AVSPostalCodeCheck)
 	}
 
-	if result.ThreeDSecureResult == "" && result.CVCCheck == "" && result.AVSMatch == "" {
+	if result.LiabilityShifted == nil && result.ThreeDSecureResult == "" && result.CVCCheck == "" && result.AVSMatch == "" {
 		return result
 	}
 	return result
@@ -164,6 +171,7 @@ func buildDisputeEvidenceChecklist(
 	authentication *DisputePaymentAuthenticationEvidence,
 	policyDisclosure *DisputePolicyDisclosureEvidence,
 	refunds []DisputeRefundEvidence,
+	options DisputeEvidenceChecklistOptions,
 ) DisputeEvidenceChecklist {
 	provider = strings.ToLower(strings.TrimSpace(provider))
 	items := make([]DisputeEvidenceChecklistItem, 0, 7)
@@ -202,19 +210,36 @@ func buildDisputeEvidenceChecklist(
 
 	trackingNumber := disputeTrackingNumber(orderRecord, shipment)
 	delivered := deliveredTrackingEvent(events)
-	fulfillmentReady := trackingNumber != "" && delivered != nil
+	signaturePOD := trackingSignaturePODEvent(events)
+	deliveryScanReady := trackingNumber != "" && delivered != nil
+	signaturePODReady := deliveryScanReady && signaturePOD != nil
+	fulfillmentReady := deliveryScanReady
+	if options.RequireSignatureProofOfDelivery {
+		fulfillmentReady = deliveryScanReady && signaturePODReady
+	}
 	fulfillmentStatus := DisputeEvidenceStatusMissing
 	fulfillmentReason := "订单没有物流单号，也没有本地妥投事件。"
 	fulfillmentSummary := "没有可用于核验履约的物流记录。"
 	var fulfillmentObservedAt *time.Time
-	if trackingNumber != "" && delivered != nil {
+	if trackingNumber != "" && delivered != nil && signaturePODReady {
+		fulfillmentStatus = DisputeEvidenceStatusReady
+		fulfillmentReason = ""
+		fulfillmentSummary = fmt.Sprintf("物流单号 %s 已归档妥投签名/POD：%s。", trackingNumber, trackingEventPODSummary(signaturePOD))
+		fulfillmentObservedAt = disputeTimePointer(delivered.EventTime)
+	} else if trackingNumber != "" && delivered != nil {
 		fulfillmentStatus = DisputeEvidenceStatusManualRequired
 		fulfillmentReason = "本地已有妥投事件，但官方承运商签名/POD 文件尚未在系统内归档。"
+		if options.RequireSignatureProofOfDelivery {
+			fulfillmentReason = "PayPal 高额 USD INR 争议必须提供收件人签名或官方 POD；仅有 Delivered 状态不足以提交。"
+		}
 		fulfillmentSummary = fmt.Sprintf("物流单号 %s 已出现妥投事件：%s。", trackingNumber, delivered.Description)
 		fulfillmentObservedAt = disputeTimePointer(delivered.EventTime)
 	} else if trackingNumber != "" {
 		fulfillmentStatus = DisputeEvidenceStatusManualRequired
 		fulfillmentReason = "已有物流单号，但本地追踪记录没有明确 delivered/signed 事件。"
+		if options.RequireSignatureProofOfDelivery {
+			fulfillmentReason = "PayPal 高额 USD INR 争议必须先同步妥投事件，并提供收件人签名或官方 POD。"
+		}
 		fulfillmentSummary = fmt.Sprintf("物流单号 %s 已保存，等待同步妥投轨迹。", trackingNumber)
 	}
 	items = append(items, DisputeEvidenceChecklistItem{
@@ -243,7 +268,8 @@ func buildDisputeEvidenceChecklist(
 		MissingReason:  "尚未接入订单级 IP、User-Agent、设备指纹和下单时间关联；系统不会伪造这项证据。",
 	})
 
-	authReady := authentication != nil && (strings.TrimSpace(authentication.ThreeDSecureResult) != "" ||
+	authReady := authentication != nil && (authentication.LiabilityShifted != nil ||
+		strings.TrimSpace(authentication.ThreeDSecureResult) != "" ||
 		strings.TrimSpace(authentication.CVCCheck) != "" ||
 		strings.TrimSpace(authentication.AVSMatch) != "")
 	authStatus := DisputeEvidenceStatusUnavailable
@@ -251,11 +277,11 @@ func buildDisputeEvidenceChecklist(
 	authReason := ""
 	if provider == "stripe" {
 		authStatus = DisputeEvidenceStatusMissing
-		authSummary = "没有从保存的 Stripe 网关回执中解析到 3DS、CVC 或 AVS 结果。"
-		authReason = "需要保留包含 payment_method_details.card.checks / three_d_secure.result 的 Stripe 回执，当前数据不足。"
+		authSummary = "没有从保存的 Stripe 交易中解析到责任转移、3DS、CVC 或 AVS 结果。"
+		authReason = "需要保留 transactions.liability_shifted，或包含 payment_method_details.card.checks / three_d_secure.result 的 Stripe 回执，当前数据不足。"
 		if authentication != nil {
 			authSummary = formatStripeAuthenticationSummary(authentication)
-			authReason = "已找到交易回执，但其中没有可核验的 3DS、CVC 或 AVS 结果。"
+			authReason = "已找到交易记录，但其中没有可核验的责任转移、3DS、CVC 或 AVS 结果。"
 		}
 		if authReady {
 			authStatus = DisputeEvidenceStatusReady
@@ -269,7 +295,7 @@ func buildDisputeEvidenceChecklist(
 		Status:         authStatus,
 		Required:       provider == "stripe",
 		ManualRequired: provider == "stripe" && !authReady,
-		Source:         "transactions.gateway_response",
+		Source:         "transactions.liability_shifted + transactions.gateway_response",
 		ObservedAt:     authenticationObservedAt(authentication),
 		Summary:        authSummary,
 		MissingReason:  authReason,
@@ -478,6 +504,9 @@ func formatStripeAuthenticationSummary(authentication *DisputePaymentAuthenticat
 		return ""
 	}
 	parts := []string{}
+	if authentication.LiabilityShifted != nil {
+		parts = append(parts, "liability_shifted="+strconv.FormatBool(*authentication.LiabilityShifted))
+	}
 	if value := strings.TrimSpace(authentication.ThreeDSecureResult); value != "" {
 		parts = append(parts, "3DS result="+value)
 	}
@@ -488,7 +517,7 @@ func formatStripeAuthenticationSummary(authentication *DisputePaymentAuthenticat
 		parts = append(parts, "AVS="+value)
 	}
 	if len(parts) == 0 {
-		return "已找到 Stripe 交易回执，但没有可展示的鉴权结果。"
+		return "已找到 Stripe 交易记录，但没有可展示的责任转移或鉴权结果。"
 	}
 	return strings.Join(parts, "; ") + "。"
 }
@@ -624,4 +653,38 @@ func firstDisputeNonEmpty(values ...string) string {
 		}
 	}
 	return ""
+}
+
+func trackingSignaturePODEvent(events []shippingdomain.TrackingEvent) *shippingdomain.TrackingEvent {
+	for i := range events {
+		if trackingEventHasSignaturePOD(&events[i]) {
+			return &events[i]
+		}
+	}
+	return nil
+}
+
+func trackingEventHasSignaturePOD(event *shippingdomain.TrackingEvent) bool {
+	if event == nil {
+		return false
+	}
+	return strings.TrimSpace(event.RecipientSignatureName) != "" ||
+		strings.TrimSpace(event.ProofOfDeliveryURL) != ""
+}
+
+func trackingEventPODSummary(event *shippingdomain.TrackingEvent) string {
+	if event == nil {
+		return ""
+	}
+	parts := []string{}
+	if signatureName := strings.TrimSpace(event.RecipientSignatureName); signatureName != "" {
+		parts = append(parts, "recipient_signature_name="+signatureName)
+	}
+	if proofURL := strings.TrimSpace(event.ProofOfDeliveryURL); proofURL != "" {
+		parts = append(parts, "proof_of_delivery_url="+proofURL)
+	}
+	if len(parts) == 0 {
+		return ""
+	}
+	return strings.Join(parts, "; ")
 }

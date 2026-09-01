@@ -10,6 +10,7 @@
       quality="82"
       :loading="loading"
       :fetchpriority="fetchpriority"
+      :preload="preload"
       decoding="async"
     />
     <figcaption
@@ -27,16 +28,23 @@
 import StorefrontImage from '~/components/StorefrontImage.vue'
 import type { HomeHeroVisualShowcaseItem } from '~/types/homeHeroVisualShowcase'
 
+type HeroImagePreload = boolean | {
+  fetchPriority?: 'high' | 'low' | 'auto'
+  media?: string
+}
+
 withDefaults(defineProps<{
   item: HomeHeroVisualShowcaseItem
   sizes?: string
   loading?: 'eager' | 'lazy'
   fetchpriority?: 'high' | 'low' | 'auto'
+  preload?: HeroImagePreload
   captionVisibility?: 'inline' | 'sr-only' | 'hidden'
 }>(), {
   sizes: 'xs:100vw sm:50vw lg:22vw',
   loading: 'lazy',
   fetchpriority: 'low',
+  preload: false,
   captionVisibility: 'inline',
 })
 </script>

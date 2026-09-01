@@ -6,7 +6,7 @@ import type {
   CustomerConversation,
   CustomerConversationMessage,
   CustomerServiceFiltersState,
-} from '@/components/admin/customer-service/customerServiceTypes'
+} from '@/modules/customer-service/customerServiceTypes'
 
 export const useCustomerServiceInbox = () => {
   const loading = ref(false)
@@ -170,3 +170,4 @@ export const useCustomerServiceInbox = () => {
 }
 
 export default useCustomerServiceInbox
+

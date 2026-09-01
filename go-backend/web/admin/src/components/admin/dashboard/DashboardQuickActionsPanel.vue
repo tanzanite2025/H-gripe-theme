@@ -26,7 +26,7 @@
 import { ArrowRight } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import type { DashboardMetricToneClass, DashboardQuickAction } from './dashboardTypes'
+import type { DashboardMetricToneClass, DashboardQuickAction } from '@/modules/dashboard/dashboardTypes'
 
 withDefaults(defineProps<{
   actions?: DashboardQuickAction[]
@@ -39,3 +39,4 @@ const emit = defineEmits<{
   (event: 'navigate', path: string): void
 }>()
 </script>
+

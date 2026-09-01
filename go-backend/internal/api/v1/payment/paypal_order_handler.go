@@ -251,13 +251,14 @@ func (h *Handler) CapturePayPalOrder(c *gin.Context) {
 	}
 
 	if err := h.paymentService.RecordVerifiedGatewayPayment(service.VerifiedGatewayPaymentInput{
-		Provider:        string(pgateway.GatewayPayPal),
-		OrderNumber:     orderRecord.OrderNumber,
-		TransactionID:   transactionID,
-		PaymentMethod:   "paypal",
-		Amount:          paymentResponse.Amount,
-		Currency:        paymentResponse.Currency,
-		GatewayResponse: string(gatewayResponse),
+		Provider:         string(pgateway.GatewayPayPal),
+		OrderNumber:      orderRecord.OrderNumber,
+		TransactionID:    transactionID,
+		PaymentMethod:    "paypal",
+		Amount:           paymentResponse.Amount,
+		Currency:         paymentResponse.Currency,
+		GatewayResponse:  string(gatewayResponse),
+		LiabilityShifted: paymentResponseLiabilityShifted(paymentResponse, gatewayResponse),
 	}); err != nil {
 		if errors.Is(err, service.ErrOrderNotFound) {
 			apierror.RespondNotFound(c, "Order")

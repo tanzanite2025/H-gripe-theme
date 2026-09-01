@@ -57,7 +57,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { BarChart3, LoaderCircle } from '@lucide/vue'
-import type { CustomerServiceAnalytics, CustomerServiceAnalyticsRegion } from './customerServiceTypes'
+import type { CustomerServiceAnalytics, CustomerServiceAnalyticsRegion } from '@/modules/customer-service/customerServiceTypes'
 
 const props = withDefaults(defineProps<{
   analytics?: CustomerServiceAnalytics | null
@@ -69,3 +69,4 @@ const props = withDefaults(defineProps<{
 
 const regionRows = computed<CustomerServiceAnalyticsRegion[]>(() => props.analytics?.regions || [])
 </script>
+

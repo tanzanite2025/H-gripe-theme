@@ -72,8 +72,8 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { productApi } from '@/api/products'
-import type { ProductRecord } from '@/components/admin/product/productEditorTypes'
-import type { GalleryId } from './galleryTypes'
+import type { ProductRecord } from '@/modules/product/productEditorTypes'
+import type { GalleryId } from '@/modules/gallery/galleryTypes'
 
 const props = withDefaults(defineProps<{
   open?: boolean
@@ -149,3 +149,4 @@ watch(() => props.open, (isOpen) => {
   }
 })
 </script>
+

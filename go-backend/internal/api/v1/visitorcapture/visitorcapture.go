@@ -15,7 +15,12 @@ type TouchOptions struct {
 	CartSessionID              string
 	Email                      string
 	EmailSource                string
+	Locale                     string
 	LocaleSource               string
+	CountryCode                string
+	Region                     string
+	City                       string
+	Timezone                   string
 	MeaningfulAction           string
 	QualityScoreDelta          int
 }
@@ -25,9 +30,15 @@ func BuildVisitorProfileTouchInput(c *gin.Context, opts TouchOptions) service.Vi
 		return service.VisitorProfileTouchInput{}
 	}
 
+	locale := firstNonEmpty(strings.TrimSpace(opts.Locale), requestLocale(c))
+	countryCode := firstNonEmpty(requestCountryCode(c), opts.CountryCode, c.GetHeader("X-Market-Country"), c.GetHeader("X-Country-Code"))
 	localeSource := strings.TrimSpace(opts.LocaleSource)
 	if localeSource == "" {
-		localeSource = "accept_language"
+		if strings.TrimSpace(opts.Locale) != "" {
+			localeSource = "request"
+		} else {
+			localeSource = "accept_language"
+		}
 	}
 
 	return service.VisitorProfileTouchInput{
@@ -36,12 +47,12 @@ func BuildVisitorProfileTouchInput(c *gin.Context, opts TouchOptions) service.Vi
 		CartSessionID:              strings.TrimSpace(opts.CartSessionID),
 		Email:                      strings.TrimSpace(opts.Email),
 		EmailSource:                strings.TrimSpace(opts.EmailSource),
-		Locale:                     requestLocale(c),
+		Locale:                     locale,
 		LocaleSource:               localeSource,
-		CountryCode:                requestCountryCode(c),
-		Region:                     firstNonEmptyHeader(c, "CF-Region", "X-Region"),
-		City:                       firstNonEmptyHeader(c, "CF-IPCity", "X-City"),
-		Timezone:                   firstNonEmptyHeader(c, "CF-Timezone", "X-Timezone"),
+		CountryCode:                countryCode,
+		Region:                     firstNonEmpty(opts.Region, firstNonEmptyHeader(c, "CF-Region", "X-Region")),
+		City:                       firstNonEmpty(opts.City, firstNonEmptyHeader(c, "CF-IPCity", "X-City")),
+		Timezone:                   firstNonEmpty(opts.Timezone, firstNonEmptyHeader(c, "CF-Timezone", "X-Timezone")),
 		IPAddress:                  requestIP(c),
 		UserAgent:                  c.GetHeader("User-Agent"),
 		MeaningfulAction:           strings.TrimSpace(opts.MeaningfulAction),
@@ -90,6 +101,15 @@ func firstNonEmptyHeader(c *gin.Context, keys ...string) string {
 	for _, key := range keys {
 		if value := strings.TrimSpace(c.GetHeader(key)); value != "" {
 			return value
+		}
+	}
+	return ""
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		if trimmed := strings.TrimSpace(value); trimmed != "" {
+			return trimmed
 		}
 	}
 	return ""

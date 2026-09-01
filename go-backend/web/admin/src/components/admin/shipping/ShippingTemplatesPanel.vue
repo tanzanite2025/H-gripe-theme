@@ -186,7 +186,7 @@ import type {
   ShippingTemplate,
   TrackingCarrierMapping,
   TrackingProvider
-} from './shippingTypes'
+} from '@/modules/shipping/shippingTypes'
 
 withDefaults(defineProps<{
   templates?: ShippingTemplate[]
@@ -221,3 +221,4 @@ const emit = defineEmits<{
   (event: 'delete-mapping', mapping: TrackingCarrierMapping): void
 }>()
 </script>
+

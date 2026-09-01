@@ -58,7 +58,7 @@ import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
 import { ShoppingCart } from '@lucide/vue'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { formatMoney, formatShortDate } from '@/lib/customerServicePresentation'
-import type { CustomerOrderItem } from './customerServiceTypes'
+import type { CustomerOrderItem } from '@/modules/customer-service/customerServiceTypes'
 
 const props = withDefaults(defineProps<{
   open?: boolean
@@ -77,3 +77,4 @@ const select = (order: CustomerOrderItem): void => {
   emit('select', order)
 }
 </script>
+

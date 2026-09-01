@@ -91,6 +91,7 @@ import CurrencyPolicySettingsCard from '@/components/admin/settings/CurrencyPoli
 import ExchangeRateApiSettingsCard from '@/components/admin/settings/ExchangeRateApiSettingsCard.vue'
 import { useRouteTab } from '@/composables/useRouteTab'
 import { useAdminI18n } from '@/i18n'
+import type { ExchangeRateSettings } from '@/modules/settings/types'
 import { useAuthStore } from '@/stores/auth'
 import axios from '@/utils/axios'
 
@@ -110,7 +111,7 @@ const activeTab = useRouteTab({
   },
 })
 
-const apiSettings = reactive({
+const apiSettings = reactive<ExchangeRateSettings>({
   exchange_rate_enabled: false as boolean | string | number,
   exchange_rate_provider: EXCHANGE_RATE_PROVIDER,
   exchange_rate_endpoint: EXCHANGE_RATE_ENDPOINT,

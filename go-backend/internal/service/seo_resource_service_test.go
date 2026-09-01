@@ -6,8 +6,8 @@ import (
 	"commerce-platform/internal/domain/product"
 	"commerce-platform/internal/repository"
 
+	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/require"
-	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 

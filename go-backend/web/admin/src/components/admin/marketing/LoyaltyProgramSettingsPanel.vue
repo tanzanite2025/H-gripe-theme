@@ -112,7 +112,7 @@ import { LoaderCircle, RefreshCw, Save } from '@lucide/vue'
 import AdminFormField from '@/components/admin/AdminFormField.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import type { LoyaltySettings } from './marketingTypes'
+import type { LoyaltySettings } from '@/modules/marketing/marketingTypes'
 
 const props = withDefaults(defineProps<{
   loyaltySettings: LoyaltySettings
@@ -152,3 +152,4 @@ const ProgramSection = defineComponent({
   },
 })
 </script>
+

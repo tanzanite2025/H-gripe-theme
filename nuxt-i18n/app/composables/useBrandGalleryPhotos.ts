@@ -1,5 +1,5 @@
 import { useRuntimeConfig, useState } from '#imports'
-import { usePublicApiBase } from '~/composables/usePublicApiBase'
+import { useApiRequest } from '~/composables/useApiRequest'
 import type { BrandGalleryPhoto } from '~/types/brandGalleryPhotos'
 import {
   extractPublicGalleries,
@@ -15,7 +15,7 @@ import {
 export function useBrandGalleryPhotos() {
   const runtimeConfig = useRuntimeConfig()
   const mediaContext = createStorefrontMediaContext(runtimeConfig)
-  const apiBase = usePublicApiBase()
+  const { request } = useApiRequest()
   const brandPhotos = useState<BrandGalleryPhoto[]>('brand-gallery-photos', () => [])
   const brandLoading = useState<boolean>('brand-gallery-photos-loading', () => true)
   const brandError = useState<string | null>('brand-gallery-photos-error', () => null)
@@ -26,12 +26,13 @@ export function useBrandGalleryPhotos() {
       brandLoading.value = true
       brandError.value = null
 
-      const response = await $fetch<GalleryListEnvelope | PublicGallery[]>(
-        `${apiBase.value}/galleries`,
+      const response = await request<GalleryListEnvelope | PublicGallery[]>(
+        '/galleries',
         {
           headers: { accept: 'application/json' },
           query: { page: 1, page_size: 100 },
         },
+        'Failed to load brand galleries',
       )
       const galleries = extractPublicGalleries(response)
 
@@ -65,9 +66,10 @@ export function useBrandGalleryPhotos() {
     detailLoads.add(photo.galleryId)
     updateGalleryDetailState(index, photo, { galleryDetailsLoading: true })
     try {
-      const response = await $fetch<GalleryDetailEnvelope>(
-        `${apiBase.value}/galleries/${encodeURIComponent(photo.galleryId)}`,
+      const response = await request<GalleryDetailEnvelope>(
+        `/galleries/${encodeURIComponent(photo.galleryId)}`,
         { headers: { accept: 'application/json' } },
+        'Failed to load brand gallery details',
       )
       const detail = response?.data
       if (!detail) {

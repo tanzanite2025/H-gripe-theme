@@ -1,21 +1,34 @@
 <template>
   <AdminTablePanel class="h-full min-h-0" :loading="loading" scroll-body>
-    <Table class="min-w-[1440px]">
+    <Table class="min-w-[1360px] table-fixed">
+      <colgroup>
+        <col class="w-16" />
+        <col class="w-20" />
+        <col class="w-32" />
+        <col class="w-40" />
+        <col class="w-36" />
+        <col class="w-60" />
+        <col class="w-40" />
+        <col class="w-40" />
+        <col class="w-40" />
+        <col class="w-16" />
+      </colgroup>
       <TableHeader>
         <TableRow>
-          <TableHead class="w-20">ID</TableHead>
-          <TableHead class="w-24">身份</TableHead>
-          <TableHead class="w-40">质量/状态</TableHead>
+          <TableHead>ID</TableHead>
+          <TableHead>身份</TableHead>
+          <TableHead>质量/状态</TableHead>
           <TableHead>联系信息</TableHead>
-          <TableHead class="w-56">地区/语言</TableHead>
-          <TableHead class="w-72">绑定事实</TableHead>
-          <TableHead class="w-44">指纹状态</TableHead>
-          <TableHead class="w-44">最后活跃</TableHead>
-          <TableHead class="w-44">创建时间</TableHead>
+          <TableHead>地区/语言</TableHead>
+          <TableHead>绑定事实</TableHead>
+          <TableHead>指纹状态</TableHead>
+          <TableHead>最后活跃</TableHead>
+          <TableHead>创建时间</TableHead>
+          <TableHead class="sticky right-0 z-20 border-l border-dashed border-border/60 bg-card text-right">详情</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
-        <TableEmpty v-if="profiles.length === 0" :colspan="9">
+        <TableEmpty v-if="profiles.length === 0" :colspan="10">
           <div class="flex flex-col items-center text-muted-foreground">
             <Fingerprint class="mb-2 size-7 opacity-55" />
             <span class="text-xs">暂无访客画像</span>
@@ -25,9 +38,6 @@
         <TableRow
           v-for="profile in profiles"
           :key="profile.id"
-          class="cursor-pointer"
- :class="selectedProfile?.id === profile.id ? 'bg-admin-selected-soft': ''"
-          @click="emit('select-profile', profile)"
         >
           <TableCell class="font-mono text-xs text-muted-foreground">#{{ profile.id }}</TableCell>
           <TableCell>
@@ -78,6 +88,22 @@
           </TableCell>
           <TableCell class="text-xs text-muted-foreground">{{ formatDate(profile.last_seen_at) }}</TableCell>
           <TableCell class="text-xs text-muted-foreground">{{ formatDate(profile.created_at) }}</TableCell>
+          <TableCell class="sticky right-0 z-10 border-l border-dashed border-border/60 bg-card text-right">
+            <Tooltip>
+              <TooltipTrigger as-child>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  :aria-label="`查看画像 #${profile.id} 详情`"
+                  @click="emit('preview-profile', profile)"
+                >
+                  <Eye class="size-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>查看画像详情</TooltipContent>
+            </Tooltip>
+          </TableCell>
         </TableRow>
       </TableBody>
     </Table>
@@ -95,27 +121,27 @@
 </template>
 
 <script setup lang="ts">
-import { Fingerprint } from '@lucide/vue'
+import { Eye, Fingerprint } from '@lucide/vue'
 import AdminPagination from '@/components/admin/AdminPagination.vue'
 import AdminStatusBadge, { type AdminStatusTone } from '@/components/admin/AdminStatusBadge.vue'
 import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
+import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import type { VisitorPagination, VisitorProfile } from './visitorTypes'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import type { VisitorPagination, VisitorProfile } from '@/modules/visitor/visitorTypes'
 
 withDefaults(defineProps<{
   loading?: boolean
   profiles?: VisitorProfile[]
-  selectedProfile?: VisitorProfile | null
   pagination: VisitorPagination
   formatDate: (value: unknown) => string
 }>(), {
   loading: false,
   profiles: () => [],
-  selectedProfile: null,
 })
 
 const emit = defineEmits<{
-  (event: 'select-profile', profile: VisitorProfile): void
+  (event: 'preview-profile', profile: VisitorProfile): void
   (event: 'update-page', page: number): void
   (event: 'update-page-size', pageSize: number): void
 }>()
@@ -142,3 +168,4 @@ const actionLabel = (action?: string): string => ({
   identity_bind: '身份绑定',
 } as Record<string, string>)[action || ''] || '无有效动作'
 </script>
+

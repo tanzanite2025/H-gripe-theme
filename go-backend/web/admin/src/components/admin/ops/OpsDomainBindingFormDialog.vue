@@ -129,7 +129,7 @@ import {
   opsDomainStatusOptions,
   opsDomainTLSOptions,
   type OpsDomainForm,
-} from './opsDomainBindingForm'
+} from '@/modules/ops/opsDomainBindingForm'
 
 const props = withDefaults(defineProps<{
   open?: boolean
@@ -186,3 +186,4 @@ watch(cloudflareConnectors, (connectors) => {
   }
 }, { immediate: true })
 </script>
+

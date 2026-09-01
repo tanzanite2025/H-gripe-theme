@@ -6,7 +6,7 @@ import { validateStorefrontUploadFile } from '~/utils/uploadSpecs'
 type AuthRequest = <T = any>(path: string, options?: any, errorMessage?: string) => Promise<T>
 
 interface CustomerServiceChatSyncOptions {
-  publicApiBase: ComputedRef<string>
+  apiBase: ComputedRef<string>
   locale: Ref<string>
   conversationId: Ref<string>
   selectedAgent: Ref<any>
@@ -19,7 +19,7 @@ interface CustomerServiceChatSyncOptions {
 }
 
 export const useCustomerServiceChatSync = ({
-  publicApiBase,
+  apiBase,
   locale,
   conversationId,
   selectedAgent,
@@ -297,14 +297,14 @@ export const useCustomerServiceChatSync = ({
   const loadMessagesFromAPI = async () => {
     if (!conversationId.value) return
     try {
-      const response = await $fetch<any>(`${publicApiBase.value}/customer-service/messages/${encodeURIComponent(conversationId.value)}`, {
+      const response = await authRequest<any>(`/customer-service/messages/${encodeURIComponent(conversationId.value)}`, {
         credentials: 'include',
         headers: customerServiceTimezoneHeaders(),
         params: {
           limit: 100,
           offset: 0
         }
-      })
+      }, 'Failed to sync customer-service messages')
       mergePersistedMessages(extractMessageItems(response))
       scrollToBottom()
     } catch (error) {
@@ -375,7 +375,7 @@ export const useCustomerServiceChatSync = ({
       query.set('last_event_id', lastEventId)
     }
 
-    const baseURL = new URL(publicApiBase.value || '/api/v1', window.location.origin)
+    const baseURL = new URL(apiBase.value || '/api/v1', window.location.origin)
     baseURL.pathname = `${baseURL.pathname.replace(/\/$/, '')}/customer-service/ws`
     baseURL.search = query.toString()
     baseURL.hash = ''

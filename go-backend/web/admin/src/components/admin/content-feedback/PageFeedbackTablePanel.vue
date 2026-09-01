@@ -93,7 +93,7 @@ import {
   pageFeedbackStatusLabel,
   type PageFeedbackItem,
   type PageFeedbackPagination,
-} from './pageFeedbackTypes'
+} from '@/modules/content-feedback/pageFeedbackTypes'
 
 defineProps<{
   items: PageFeedbackItem[]
@@ -108,3 +108,4 @@ const emit = defineEmits<{
   'update:page-size': [pageSize: number]
 }>()
 </script>
+

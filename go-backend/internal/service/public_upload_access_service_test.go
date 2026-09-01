@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"commerce-platform/internal/domain/media"
-	showcasedomain "commerce-platform/internal/domain/showcase"
+	ugcshowcasedomain "commerce-platform/internal/domain/ugcshowcase"
 	"commerce-platform/internal/repository"
 
 	"github.com/glebarez/sqlite"
@@ -28,7 +28,7 @@ func TestPublicUploadAccessShowcaseNamespaceCannotBeOverriddenByMediaAsset(t *te
 		_ = sqlDB.Close()
 	})
 
-	require.NoError(t, db.AutoMigrate(&media.MediaAsset{}, &showcasedomain.Showcase{}, &showcasedomain.Comment{}))
+	require.NoError(t, db.AutoMigrate(&media.MediaAsset{}, &ugcshowcasedomain.UGCShowcase{}, &ugcshowcasedomain.UGCShowcaseComment{}))
 
 	const key = "showcase/pending/2026/08/13/colliding.webp"
 	imageReferences, err := json.Marshal([]string{key})
@@ -43,16 +43,16 @@ func TestPublicUploadAccessShowcaseNamespaceCannotBeOverriddenByMediaAsset(t *te
 		Status:     "active",
 		Visibility: "public",
 	}).Error)
-	require.NoError(t, db.Create(&showcasedomain.Showcase{
+	require.NoError(t, db.Create(&ugcshowcasedomain.UGCShowcase{
 		UserID: 1,
-		Kind:   showcasedomain.KindUser,
-		Status: showcasedomain.StatusPending,
+		Kind:   ugcshowcasedomain.KindUser,
+		Status: ugcshowcasedomain.StatusPending,
 		Images: imageReferences,
 	}).Error)
 
 	mediaService := NewMediaService(repository.NewMediaRepository(db), nil, nil, "", 20<<30)
-	showcaseService := NewShowcaseService(repository.NewShowcaseRepository(db), &fakeShowcaseStorage{})
-	accessService := NewPublicUploadAccessService(mediaService, showcaseService)
+	ugcShowcaseService := NewUGCShowcaseService(repository.NewUGCShowcaseRepository(db), &fakeShowcaseStorage{})
+	accessService := NewPublicUploadAccessService(mediaService, ugcShowcaseService)
 
 	allowed, err := accessService.CanServePublicUpload(context.Background(), key)
 	require.NoError(t, err)

@@ -4,6 +4,7 @@
  */
 
 import { ref } from 'vue'
+import { useApiRequest } from '~/composables/useApiRequest'
 import type { CartItem } from '~~/types/cart'
 
 /**
@@ -53,6 +54,7 @@ export interface PackagingResult {
  * 包装计算 Composable
  */
 export function usePackagingCalculation() {
+  const { request } = useApiRequest()
   const packagingRules = ref<PackagingRule[]>([])
   const isLoading = ref(false)
   const error = ref<string | null>(null)
@@ -69,10 +71,10 @@ export function usePackagingCalculation() {
     error.value = null
 
     try {
-      const config = useRuntimeConfig()
-      const base = ((config.public as { apiBase?: string }).apiBase || '/api/v1').replace(/\/$/, '')
-      const response = await $fetch<{ data: PackagingRule[] }>(
-        `${base}/shipping/packaging-rules`
+      const response = await request<{ data: PackagingRule[] }>(
+        '/shipping/packaging-rules',
+        {},
+        'Failed to load packaging rules',
       )
 
       if (Array.isArray(response?.data)) {

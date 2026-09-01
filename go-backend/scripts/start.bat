@@ -1,7 +1,15 @@
 @echo off
+setlocal EnableExtensions
 REM Storefront Go Backend Startup Script for Windows
 
+for %%I in ("%~dp0..") do set "ROOT_DIR=%%~fI"
+set "BIN_DIR=%ROOT_DIR%\bin"
+set "BIN_BASE=%BIN_DIR%\server"
+set "BINARY=%BIN_BASE%"
+
 echo Starting Storefront Go Backend...
+
+pushd "%ROOT_DIR%" >nul
 
 REM Check if config file exists
 if not exist "config\config.yaml" (
@@ -20,11 +28,26 @@ if not exist ".env" (
 REM Download dependencies
 echo Downloading dependencies...
 go mod download
+if errorlevel 1 goto :error
 
-REM Build the application
+REM Build the application into the shared bin directory
 echo Building application...
-go build -o commerce-platform-api.exe .\cmd\server
+if not exist "%BIN_DIR%" mkdir "%BIN_DIR%"
+go build -o "%BIN_BASE%" .\cmd\server
+if errorlevel 1 goto :error
+
+if exist "%BIN_BASE%.exe" set "BINARY=%BIN_BASE%.exe"
 
 REM Run the application
 echo Starting server...
-commerce-platform-api.exe
+"%BINARY%"
+set "EXIT_CODE=%ERRORLEVEL%"
+goto :cleanup
+
+:error
+set "EXIT_CODE=%ERRORLEVEL%"
+echo Failed to start Storefront Go Backend.
+
+:cleanup
+popd >nul
+exit /b %EXIT_CODE%

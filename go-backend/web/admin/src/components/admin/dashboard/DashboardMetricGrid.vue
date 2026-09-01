@@ -25,7 +25,7 @@
 </template>
 
 <script setup lang="ts">
-import type { DashboardMetricCard, DashboardMetricToneClass } from './dashboardTypes'
+import type { DashboardMetricCard, DashboardMetricToneClass } from '@/modules/dashboard/dashboardTypes'
 
 withDefaults(defineProps<{
   metricCards?: DashboardMetricCard[]
@@ -38,3 +38,4 @@ const emit = defineEmits<{
   (event: 'navigate', path: string): void
 }>()
 </script>
+

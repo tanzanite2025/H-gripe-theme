@@ -31,11 +31,19 @@ type trackingWebhookEnvelope struct {
 }
 
 type trackingWebhookEventEnvelope struct {
-	Status      string `json:"status"`
-	Location    string `json:"location"`
-	Description string `json:"description"`
-	EventTime   string `json:"event_time"`
-	Time        string `json:"time"`
+	Status                  string `json:"status"`
+	Location                string `json:"location"`
+	Description             string `json:"description"`
+	RecipientSignatureName  string `json:"recipient_signature_name"`
+	SignatureName           string `json:"signature_name"`
+	SignedBy                string `json:"signed_by"`
+	ReceivedBy              string `json:"received_by"`
+	ProofOfDeliveryURL      string `json:"proof_of_delivery_url"`
+	PODURL                  string `json:"pod_url"`
+	SignatureImageURL       string `json:"signature_image_url"`
+	ProofOfDeliveryImageURL string `json:"proof_of_delivery_image_url"`
+	EventTime               string `json:"event_time"`
+	Time                    string `json:"time"`
 }
 
 type track17WebhookEnvelope struct {
@@ -75,14 +83,22 @@ type track17ProviderInfo struct {
 }
 
 type track17Event struct {
-	TimeISO     string `json:"time_iso"`
-	TimeUTC     string `json:"time_utc"`
-	TimeRaw     string `json:"time_raw"`
-	Status      string `json:"status"`
-	Stage       string `json:"stage"`
-	SubStatus   string `json:"sub_status"`
-	Location    string `json:"location"`
-	Description string `json:"description"`
+	TimeISO                 string `json:"time_iso"`
+	TimeUTC                 string `json:"time_utc"`
+	TimeRaw                 string `json:"time_raw"`
+	Status                  string `json:"status"`
+	Stage                   string `json:"stage"`
+	SubStatus               string `json:"sub_status"`
+	Location                string `json:"location"`
+	Description             string `json:"description"`
+	RecipientSignatureName  string `json:"recipient_signature_name"`
+	SignatureName           string `json:"signature_name"`
+	SignedBy                string `json:"signed_by"`
+	ReceivedBy              string `json:"received_by"`
+	ProofOfDeliveryURL      string `json:"proof_of_delivery_url"`
+	PODURL                  string `json:"pod_url"`
+	SignatureImageURL       string `json:"signature_image_url"`
+	ProofOfDeliveryImageURL string `json:"proof_of_delivery_image_url"`
 }
 
 func (h *Handler) HandleTrackingWebhook(c *gin.Context) {
@@ -232,10 +248,12 @@ func parseTrackingWebhookInput(payload []byte) (service.TrackingWebhookInput, er
 	for _, event := range normalized.Events {
 		eventTime, _ := parseWebhookTime(firstNonEmpty(event.EventTime, event.Time))
 		input.Events = append(input.Events, service.TrackingWebhookEventInput{
-			Status:      strings.TrimSpace(event.Status),
-			Location:    strings.TrimSpace(event.Location),
-			Description: strings.TrimSpace(event.Description),
-			EventTime:   eventTime,
+			Status:                 strings.TrimSpace(event.Status),
+			Location:               strings.TrimSpace(event.Location),
+			Description:            strings.TrimSpace(event.Description),
+			RecipientSignatureName: trackingWebhookRecipientSignatureName(event),
+			ProofOfDeliveryURL:     trackingWebhookProofOfDeliveryURL(event),
+			EventTime:              eventTime,
 		})
 	}
 
@@ -285,10 +303,12 @@ func parseTrack17WebhookInput(payload []byte) (service.TrackingWebhookInput, boo
 		for _, event := range provider.Events {
 			eventTime, _ := parseWebhookTime(firstNonEmpty(event.TimeISO, event.TimeUTC, event.TimeRaw))
 			input.Events = append(input.Events, service.TrackingWebhookEventInput{
-				Status:      firstNonEmpty(event.SubStatus, event.Stage, event.Status, latestStatus),
-				Location:    strings.TrimSpace(event.Location),
-				Description: strings.TrimSpace(event.Description),
-				EventTime:   eventTime,
+				Status:                 firstNonEmpty(event.SubStatus, event.Stage, event.Status, latestStatus),
+				Location:               strings.TrimSpace(event.Location),
+				Description:            strings.TrimSpace(event.Description),
+				RecipientSignatureName: track17EventRecipientSignatureName(event),
+				ProofOfDeliveryURL:     track17EventProofOfDeliveryURL(event),
+				EventTime:              eventTime,
 			})
 		}
 	}
@@ -298,10 +318,12 @@ func parseTrack17WebhookInput(payload []byte) (service.TrackingWebhookInput, boo
 		eventTime, _ := parseWebhookTime(firstNonEmpty(latestEvent.TimeISO, latestEvent.TimeUTC, latestEvent.TimeRaw))
 		description := firstNonEmpty(latestEvent.Description, latestStatus)
 		input.Events = append(input.Events, service.TrackingWebhookEventInput{
-			Status:      latestStatus,
-			Location:    strings.TrimSpace(latestEvent.Location),
-			Description: description,
-			EventTime:   eventTime,
+			Status:                 latestStatus,
+			Location:               strings.TrimSpace(latestEvent.Location),
+			Description:            description,
+			RecipientSignatureName: track17EventRecipientSignatureName(latestEvent),
+			ProofOfDeliveryURL:     track17EventProofOfDeliveryURL(latestEvent),
+			EventTime:              eventTime,
 		})
 	}
 
@@ -355,7 +377,45 @@ func track17EventHasContent(event track17Event) bool {
 		event.SubStatus,
 		event.Location,
 		event.Description,
+		track17EventRecipientSignatureName(event),
+		track17EventProofOfDeliveryURL(event),
 	) != ""
+}
+
+func trackingWebhookRecipientSignatureName(event trackingWebhookEventEnvelope) string {
+	return firstNonEmpty(
+		event.RecipientSignatureName,
+		event.SignatureName,
+		event.SignedBy,
+		event.ReceivedBy,
+	)
+}
+
+func trackingWebhookProofOfDeliveryURL(event trackingWebhookEventEnvelope) string {
+	return firstNonEmpty(
+		event.ProofOfDeliveryURL,
+		event.PODURL,
+		event.SignatureImageURL,
+		event.ProofOfDeliveryImageURL,
+	)
+}
+
+func track17EventRecipientSignatureName(event track17Event) string {
+	return firstNonEmpty(
+		event.RecipientSignatureName,
+		event.SignatureName,
+		event.SignedBy,
+		event.ReceivedBy,
+	)
+}
+
+func track17EventProofOfDeliveryURL(event track17Event) string {
+	return firstNonEmpty(
+		event.ProofOfDeliveryURL,
+		event.PODURL,
+		event.SignatureImageURL,
+		event.ProofOfDeliveryImageURL,
+	)
 }
 
 func parseWebhookTime(value string) (time.Time, error) {

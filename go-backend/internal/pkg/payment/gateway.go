@@ -42,16 +42,17 @@ type PaymentRequest struct {
 
 // PaymentResponse 支付响应
 type PaymentResponse struct {
-	ID             string            `json:"id"`
-	Status         string            `json:"status"`
-	Amount         float64           `json:"amount"`
-	Currency       string            `json:"currency"`
-	ClientSecret   string            `json:"client_secret,omitempty"`
-	PublishableKey string            `json:"publishable_key,omitempty"`
-	PaymentURL     string            `json:"payment_url,omitempty"`
-	TransactionID  string            `json:"transaction_id,omitempty"`
-	CreatedAt      time.Time         `json:"created_at"`
-	Metadata       map[string]string `json:"metadata,omitempty"`
+	ID               string            `json:"id"`
+	Status           string            `json:"status"`
+	Amount           float64           `json:"amount"`
+	Currency         string            `json:"currency"`
+	ClientSecret     string            `json:"client_secret,omitempty"`
+	PublishableKey   string            `json:"publishable_key,omitempty"`
+	PaymentURL       string            `json:"payment_url,omitempty"`
+	TransactionID    string            `json:"transaction_id,omitempty"`
+	LiabilityShifted *bool             `json:"liability_shifted,omitempty"`
+	CreatedAt        time.Time         `json:"created_at"`
+	Metadata         map[string]string `json:"metadata,omitempty"`
 }
 
 // RefundResponse 退款响应

@@ -174,7 +174,7 @@ import type {
   WarrantyServiceRecordForm,
   WarrantyStatusOption,
   WarrantyStatusUpdating
-} from './warrantyTypes'
+} from '@/modules/warranty/warrantyTypes'
 
 withDefaults(defineProps<{
   claims?: WarrantyClaim[]
@@ -228,3 +228,4 @@ defineEmits<{
   (event: 'update-page-size', pageSize: number): void
 }>()
 </script>
+

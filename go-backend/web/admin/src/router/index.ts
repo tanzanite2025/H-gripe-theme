@@ -110,6 +110,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '清关资料中心', permission: 'product:view' }
       },
       {
+        path: 'catalog/home-main-products',
+        name: 'CatalogHomeMainProducts',
+        component: () => import('@/views/HomeMainProductCategories.vue'),
+        meta: { title: '首页主力产品', permission: 'content:view' }
+      },
+      {
         path: 'procurement/records',
         name: 'ProcurementRecords',
         component: () => import('@/views/ProcurementRecords.vue'),
@@ -134,10 +140,51 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '花鼓规格', permission: 'fitment_catalog:view' }
       },
       {
+        path: 'spoke-calculator',
+        redirect: domainRedirect('SpokeCalculatorRims', {
+          rims: 'SpokeCalculatorRims',
+          hubs: 'SpokeCalculatorHubs',
+          builds: 'SpokeCalculatorBuilds',
+          import: 'SpokeCalculatorImport',
+          json: 'SpokeCalculatorImport',
+        }),
+        meta: { permission: 'product:view' }
+      },
+      {
+        path: 'spoke-calculator/rims',
+        name: 'SpokeCalculatorRims',
+        component: () => import('@/views/SpokeCatalog.vue'),
+        meta: { title: '辐条计算器 / 轮圈', permission: 'product:view' }
+      },
+      {
+        path: 'spoke-calculator/hubs',
+        name: 'SpokeCalculatorHubs',
+        component: () => import('@/views/SpokeCatalog.vue'),
+        meta: { title: '辐条计算器 / 花鼓', permission: 'product:view' }
+      },
+      {
+        path: 'spoke-calculator/builds',
+        name: 'SpokeCalculatorBuilds',
+        component: () => import('@/views/SpokeCatalog.vue'),
+        meta: { title: '辐条计算器 / 装配', permission: 'product:view' }
+      },
+      {
+        path: 'spoke-calculator/import',
+        name: 'SpokeCalculatorImport',
+        component: () => import('@/views/SpokeCatalog.vue'),
+        meta: { title: '辐条计算器 / 导入', permission: 'product:view' }
+      },
+      {
         path: 'content/spoke-calculator',
         name: 'ContentSpokeCalculator',
-        component: () => import('@/views/SpokeCatalog.vue'),
-        meta: { title: '辐条计算器数据', permission: 'product:view' }
+        redirect: domainRedirect('SpokeCalculatorRims', {
+          rims: 'SpokeCalculatorRims',
+          hubs: 'SpokeCalculatorHubs',
+          builds: 'SpokeCalculatorBuilds',
+          import: 'SpokeCalculatorImport',
+          json: 'SpokeCalculatorImport',
+        }),
+        meta: { permission: 'product:view' }
       },
       {
         path: 'selection',
@@ -208,7 +255,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'payment/methods',
         name: 'PaymentCollectionMethods',
-        component: () => import('@/views/PaymentCollectionMethods.vue'),
+        component: () => import('@/components/admin/settings/PaymentMethodsSettingsPanel.vue'),
         meta: { title: '收款方式', permission: 'settings:view' }
       },
       {
@@ -506,6 +553,8 @@ const routes: RouteRecordRaw[] = [
         redirect: domainRedirect('ContentBlog', {
           blog: 'ContentBlog',
           feedback: 'ContentPageFeedback',
+          'spoke-calculator': 'SpokeCalculatorRims',
+          spoke_calculator: 'SpokeCalculatorRims',
         }),
         meta: { permission: 'content:view' }
       },
@@ -553,18 +602,16 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '首页视觉目录', permission: 'content:view' }
       },
       {
-        path: 'content/home-main-products',
-        name: 'ContentHomeMainProducts',
-        component: () => import('@/views/HomeMainProductCategories.vue'),
-        meta: { title: '首页主力产品', permission: 'content:view' }
+        path: 'content/refund-return',
+        name: 'ContentRefundReturn',
+        component: () => import('@/views/Settings.vue'),
+        meta: { title: '退货退款', permission: 'content:view' }
       },
       {
         path: 'support/conversations',
         name: 'SupportConversations',
-        redirect: (to) => ({
-          name: 'Dashboard',
-          query: { ...to.query, inbox: 'customer-service' },
-        }),
+        component: () => import('@/components/admin/customer-service/CustomerServiceInboxWorkbench.vue'),
+        props: { showHeader: true, showStats: true },
         meta: { title: '客服对话', permission: 'ticket:view' }
       },
       {
@@ -849,6 +896,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '服务中心 / Cloudflare', permission: 'services:view' }
       },
       {
+        path: 'services/github',
+        name: 'ServicesGitHub',
+        component: () => import('@/views/services/GitHubService.vue'),
+        meta: { title: '服务中心 / GitHub', permission: 'services:view' }
+      },
+      {
         path: 'services/connectors',
         name: 'ServicesConnectors',
         component: () => import('@/views/services/ServiceConnectors.vue'),
@@ -935,12 +988,6 @@ const routes: RouteRecordRaw[] = [
         name: 'SettingsCommercialCrawler',
         component: () => import('@/views/Settings.vue'),
         meta: { title: '商业爬虫防护', permission: 'settings:view' }
-      },
-      {
-        path: 'settings/refund-return',
-        name: 'SettingsRefundReturn',
-        component: () => import('@/views/Settings.vue'),
-        meta: { title: '退货退款', permission: 'settings:view' }
       },
       {
         path: 'audit-logs',

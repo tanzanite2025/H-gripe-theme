@@ -24,13 +24,14 @@ const (
 )
 
 type verifiedProviderPayment struct {
-	Provider        pgateway.GatewayType
-	OrderNumber     string
-	TransactionID   string
-	PaymentMethod   string
-	Amount          float64
-	Currency        string
-	GatewayResponse string
+	Provider         pgateway.GatewayType
+	OrderNumber      string
+	TransactionID    string
+	PaymentMethod    string
+	Amount           float64
+	Currency         string
+	GatewayResponse  string
+	LiabilityShifted *bool
 }
 
 func (h *Handler) handlePayPalWebhook(c *gin.Context, payload []byte) {
@@ -212,13 +213,14 @@ func (h *Handler) recordVerifiedProviderPaymentResult(payment verifiedProviderPa
 		return errors.New("transaction_id is required")
 	}
 	if err := h.paymentService.RecordVerifiedGatewayPayment(service.VerifiedGatewayPaymentInput{
-		Provider:        string(payment.Provider),
-		OrderNumber:     payment.OrderNumber,
-		TransactionID:   payment.TransactionID,
-		PaymentMethod:   payment.PaymentMethod,
-		Amount:          payment.Amount,
-		Currency:        payment.Currency,
-		GatewayResponse: payment.GatewayResponse,
+		Provider:         string(payment.Provider),
+		OrderNumber:      payment.OrderNumber,
+		TransactionID:    payment.TransactionID,
+		PaymentMethod:    payment.PaymentMethod,
+		Amount:           payment.Amount,
+		Currency:         payment.Currency,
+		GatewayResponse:  payment.GatewayResponse,
+		LiabilityShifted: payment.LiabilityShifted,
 	}); err != nil {
 		return err
 	}
@@ -279,9 +281,10 @@ func paypalVerifiedPaymentFromEvent(event pgateway.PayPalWebhookEvent, rawPayloa
 	}
 
 	payment := verifiedProviderPayment{
-		Provider:        pgateway.GatewayPayPal,
-		PaymentMethod:   "paypal",
-		GatewayResponse: string(rawPayload),
+		Provider:         pgateway.GatewayPayPal,
+		PaymentMethod:    "paypal",
+		GatewayResponse:  string(rawPayload),
+		LiabilityShifted: paypalLiabilityShiftedFromWebhookPayload(event.Resource, rawPayload),
 	}
 	foundCompletedCapture := false
 	for _, unit := range order.PurchaseUnits {

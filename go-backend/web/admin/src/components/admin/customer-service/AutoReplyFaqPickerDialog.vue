@@ -117,7 +117,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import customerServiceApi from '@/api/customerService'
-import type { FAQCategory, FAQItem, FAQPage, FAQSelection } from './customerServiceTypes'
+import type { FAQCategory, FAQItem, FAQPage, FAQSelection } from '@/modules/customer-service/customerServiceTypes'
 
 const props = withDefaults(defineProps<{
   open?: boolean
@@ -220,3 +220,4 @@ watch(normalizedLocale, () => {
   if (props.open) loadFAQs()
 })
 </script>
+

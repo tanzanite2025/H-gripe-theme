@@ -225,13 +225,14 @@ func (h *Handler) handleStripePaymentIntentSucceeded(c *gin.Context, event strip
 	}
 
 	if err := h.paymentService.RecordVerifiedGatewayPayment(service.VerifiedGatewayPaymentInput{
-		Provider:        string(pgateway.GatewayStripe),
-		OrderNumber:     orderNumber,
-		TransactionID:   intent.ID,
-		PaymentMethod:   "stripe",
-		Amount:          majorAmount,
-		Currency:        string(intent.Currency),
-		GatewayResponse: string(payload),
+		Provider:         string(pgateway.GatewayStripe),
+		OrderNumber:      orderNumber,
+		TransactionID:    intent.ID,
+		PaymentMethod:    "stripe",
+		Amount:           majorAmount,
+		Currency:         string(intent.Currency),
+		GatewayResponse:  string(payload),
+		LiabilityShifted: stripeLiabilityShiftedFromPaymentIntentSucceeded(event.Data.Raw, payload),
 	}); err != nil {
 		if errors.Is(err, service.ErrOrderNotFound) {
 			apierror.RespondNotFound(c, "Order")

@@ -125,7 +125,7 @@ import {
   pageFeedbackStatusLabel,
   type PageFeedbackItem,
   type PageFeedbackStatus,
-} from './pageFeedbackTypes'
+} from '@/modules/content-feedback/pageFeedbackTypes'
 
 const props = defineProps<{
   selected: PageFeedbackItem | null
@@ -161,3 +161,4 @@ const quickUpdate = (status: PageFeedbackStatus): void => {
   save()
 }
 </script>
+

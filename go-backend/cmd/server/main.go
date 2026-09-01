@@ -221,10 +221,10 @@ func main() {
 		logger.Info("behavior event cleanup scheduler disabled")
 	}
 
-	var showcaseCleanupScheduler *scheduler.ShowcaseCleanupScheduler
+	var ugcShowcaseCleanupScheduler *scheduler.UGCShowcaseCleanupScheduler
 	if cfg.Worker.ShowcaseCleanupEnabled {
-		showcaseCleanupScheduler = scheduler.NewShowcaseCleanupScheduler(deps.Services.Showcase, cfg.Worker)
-		showcaseCleanupScheduler.Start(context.Background())
+		ugcShowcaseCleanupScheduler = scheduler.NewUGCShowcaseCleanupScheduler(deps.Services.UGCShowcase, cfg.Worker)
+		ugcShowcaseCleanupScheduler.Start(context.Background())
 	} else {
 		logger.Info("showcase cleanup scheduler disabled")
 	}
@@ -341,8 +341,8 @@ func main() {
 	if behaviorEventCleanupScheduler != nil {
 		behaviorEventCleanupScheduler.Stop()
 	}
-	if showcaseCleanupScheduler != nil {
-		showcaseCleanupScheduler.Stop()
+	if ugcShowcaseCleanupScheduler != nil {
+		ugcShowcaseCleanupScheduler.Stop()
 	}
 	if outboxDispatchScheduler != nil {
 		outboxDispatchScheduler.Stop()

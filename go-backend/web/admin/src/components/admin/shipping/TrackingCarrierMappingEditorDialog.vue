@@ -119,7 +119,7 @@ import type {
   TrackingCarrierMappingForm,
   TrackingProvider,
   ShippingCarrierService
-} from './shippingTypes'
+} from '@/modules/shipping/shippingTypes'
 
 withDefaults(defineProps<{
   open?: boolean
@@ -145,3 +145,4 @@ const emit = defineEmits<{
   (event: 'clear-error', field: string): void
 }>()
 </script>
+

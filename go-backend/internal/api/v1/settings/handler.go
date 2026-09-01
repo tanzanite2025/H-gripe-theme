@@ -10,12 +10,11 @@ import (
 )
 
 type Handler struct {
-	settingService            *service.SettingService
-	websiteProfileService     *service.WebsiteProfileService
-	websiteNameService        *service.WebsiteNameService
-	mediaService              *service.MediaService
-	siteLogoService           *service.SiteLogoService
-	refundReturnPolicyService *service.RefundReturnPolicyService
+	settingService        *service.SettingService
+	websiteProfileService *service.WebsiteProfileService
+	websiteNameService    *service.WebsiteNameService
+	mediaService          *service.MediaService
+	siteLogoService       *service.SiteLogoService
 }
 
 func NewHandler(settingService *service.SettingService, websiteProfileServices ...*service.WebsiteProfileService) *Handler {
@@ -49,13 +48,6 @@ func (h *Handler) ConfigureWebsiteNameService(websiteNameService *service.Websit
 		return
 	}
 	h.websiteNameService = websiteNameService
-}
-
-func (h *Handler) ConfigureRefundReturnPolicyService(policyService *service.RefundReturnPolicyService) {
-	if h == nil {
-		return
-	}
-	h.refundReturnPolicyService = policyService
 }
 
 func (h *Handler) GetSiteSettings(c *gin.Context) {

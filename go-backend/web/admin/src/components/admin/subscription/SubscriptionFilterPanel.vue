@@ -34,7 +34,7 @@ import AdminFilterPanel from '@/components/admin/AdminFilterPanel.vue'
 import AdminFilterSelect from '@/components/admin/AdminFilterSelect.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import type { SubscriptionFilters } from './subscriptionTypes'
+import type { SubscriptionFilters } from '@/modules/subscription/subscriptionTypes'
 
 interface SubscriptionFilterOption {
   label: string
@@ -55,3 +55,4 @@ const statusOptions: SubscriptionFilterOption[] = [
   { label: '已订阅', value: 'active' }
 ]
 </script>
+

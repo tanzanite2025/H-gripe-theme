@@ -446,7 +446,7 @@ import ProductMediaSection from '@/components/admin/product/ProductMediaSection.
 import ProductProfitabilitySection from '@/components/admin/product/ProductProfitabilitySection.vue'
 import ProductVariantEditor from '@/components/admin/product/ProductVariantEditor.vue'
 import type { ProcurementProfitDraft } from '@/composables/product/useProcurementProfitDraft'
-import type { ProductFormRecord } from '@/components/admin/product/productEditorTypes'
+import type { ProductFormRecord } from '@/modules/product/productEditorTypes'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -625,3 +625,4 @@ const emit = defineEmits([
   max-height: 100%;
 }
 </style>
+

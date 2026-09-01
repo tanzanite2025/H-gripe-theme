@@ -52,7 +52,7 @@ import type {
   AuditLogLabelResolver,
   AuditLogRecord,
   AuditLogToneResolver
-} from './auditLogTypes'
+} from '@/modules/audit-log/auditLogTypes'
 
 withDefaults(defineProps<{
   open?: boolean
@@ -104,3 +104,4 @@ const formatJSON = (value: AuditLogJsonValue): string => {
   try { return JSON.stringify(JSON.parse(value), null, 2) } catch { return value }
 }
 </script>
+

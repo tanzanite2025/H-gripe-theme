@@ -153,7 +153,7 @@ import type {
   ShippingDialogMode,
   ShippingErrorMap,
   ShippingTemplate
-} from './shippingTypes'
+} from '@/modules/shipping/shippingTypes'
 
 withDefaults(defineProps<{
   open?: boolean
@@ -177,3 +177,4 @@ const emit = defineEmits<{
   (event: 'clear-error', field: string): void
 }>()
 </script>
+

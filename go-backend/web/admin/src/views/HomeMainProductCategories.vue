@@ -100,15 +100,15 @@ import {
   visualShowcaseHomeMainProductCategoriesAdministrationRowsFromApiItems,
   visualShowcaseHomeMainProductCategoriesAdministrationSavePayloadFromFormRow,
   visualShowcaseHomeMainProductCategoriesAdministrationValidationMessage,
-} from '@/components/admin/visual-showcase/visualShowcaseFormState'
+} from '@/modules/visual-showcase/visualShowcaseFormState'
 import {
   HOME_MAIN_PRODUCT_CATEGORIES_REQUIRED_ITEM_COUNT,
   HOME_MAIN_PRODUCT_CATEGORIES_SHOWCASE_KEY,
-} from '@/components/admin/visual-showcase/visualShowcaseTypes'
+} from '@/modules/visual-showcase/visualShowcaseTypes'
 import type {
   VisualShowcaseAdministrationItemFormState,
   VisualShowcaseAdministrationUploadRequest,
-} from '@/components/admin/visual-showcase/visualShowcaseTypes'
+} from '@/modules/visual-showcase/visualShowcaseTypes'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useAuthStore } from '@/stores/auth'
@@ -199,3 +199,4 @@ onMounted(() => {
   void loadItems()
 })
 </script>
+

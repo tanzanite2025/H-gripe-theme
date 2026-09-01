@@ -209,7 +209,7 @@ import type {
   ProductSpecTemplateForm,
   ProductSpecTemplateFormErrors,
   ProductSpecTemplateSpecForm
-} from './productSpecificationTemplateTypes'
+} from '@/modules/product/productSpecificationTemplateTypes'
 
 const props = withDefaults(defineProps<{
   open?: boolean
@@ -238,3 +238,4 @@ const emit = defineEmits<{
   (event: 'remove-spec', index: number): void
 }>()
 </script>
+

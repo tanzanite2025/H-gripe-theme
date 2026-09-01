@@ -130,7 +130,7 @@ import type {
   MarketingPagination,
   MarketingStatusDisplay,
   MemberLevel,
-} from './marketingTypes'
+} from '@/modules/marketing/marketingTypes'
 
 withDefaults(defineProps<{
   activeTab?: string
@@ -220,3 +220,4 @@ const emit = defineEmits<{
   (event: 'delete-level', level: MemberLevel): void
 }>()
 </script>
+

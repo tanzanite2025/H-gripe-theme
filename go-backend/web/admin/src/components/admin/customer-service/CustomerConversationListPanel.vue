@@ -113,7 +113,7 @@ import type {
   CustomerConversation,
   CustomerPagination,
   CustomerTypingByConversation,
-} from './customerServiceTypes'
+} from '@/modules/customer-service/customerServiceTypes'
 
 withDefaults(defineProps<{
   conversations?: CustomerConversation[]
@@ -139,3 +139,4 @@ const emit = defineEmits<{
 
 const authStore = useAuthStore()
 </script>
+

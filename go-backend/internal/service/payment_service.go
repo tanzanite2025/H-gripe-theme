@@ -28,6 +28,7 @@ type PaymentService struct {
 	paypalDisputeDocumentStorage              PayPalDisputeEvidenceDocumentStorage
 	paypalDisputeInvoiceOptions               PayPalDisputeInvoiceOptions
 	paypalDisputeInvoiceSellerProfileProvider PayPalDisputeInvoiceSellerProfileProvider
+	paypalDisputeCommercialInvoiceRenderer    paypalDisputeCommercialInvoiceRendererFunc
 	productCache                              ProductCacheInvalidator
 	productCacheEvents                        ProductCacheEventPublisher
 }

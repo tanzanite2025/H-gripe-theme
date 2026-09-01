@@ -59,6 +59,10 @@ await useAsyncData(
     await fetchBrandPhotos()
     return true
   },
+  {
+    server: false,
+    lazy: true,
+  },
 )
 
 const slides = computed<BrandPhotoSlide[]>(() => {

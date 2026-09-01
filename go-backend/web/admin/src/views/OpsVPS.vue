@@ -152,7 +152,7 @@ import {
   opsVPSProviderOptions,
   opsVPSStatusOptions,
   type OpsVPSForm,
-} from '@/components/admin/ops/opsVPSBindingForm'
+} from '@/modules/ops/opsVPSBindingForm'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import opsApi, { type OpsConnector, type OpsEnvironment, type OpsVPS, type OpsVPSPayload } from '@/api/ops'
@@ -351,3 +351,4 @@ watch(() => route.query.environment, (value) => {
 
 onMounted(refreshVPSPage)
 </script>
+

@@ -101,7 +101,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import type { GalleryId, GalleryImage, GallerySelectionState } from './galleryTypes'
+import type { GalleryId, GalleryImage, GallerySelectionState } from '@/modules/gallery/galleryTypes'
 
 const props = withDefaults(defineProps<{
   loading?: boolean
@@ -129,3 +129,4 @@ const emit = defineEmits<{
 }>()
 const isImageSelected = (imageId: GalleryId): boolean => props.selectedImages.some((image) => image.id === imageId)
 </script>
+
