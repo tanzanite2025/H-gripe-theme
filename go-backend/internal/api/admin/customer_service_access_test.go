@@ -3,6 +3,8 @@ package admin
 import (
 	"testing"
 
+	"commerce-platform/internal/service"
+
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 )
@@ -47,4 +49,43 @@ func TestAdminCustomerServiceAccessDeniesNilContext(t *testing.T) {
 	assert.Zero(t, userID)
 	assert.False(t, canViewAll)
 	assert.False(t, adminCustomerServiceCanEdit(nil))
+}
+
+func TestScopeAdminCustomerServiceConversationFiltersKeepsAdminInboxGlobal(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	tests := []struct {
+		name           string
+		role           string
+		wantAssignedTo *uint
+	}{
+		{name: "admin sees all conversations", role: "admin"},
+		{name: "manager sees all conversations", role: "manager"},
+		{name: "support sees assigned conversations", role: "support", wantAssignedTo: uintPtr(12)},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			context, _ := gin.CreateTestContext(nil)
+			context.Set("user_id", uint(12))
+			context.Set("role", test.role)
+
+			filters, agentUserID, canViewAll := scopeAdminCustomerServiceConversationFilters(
+				context,
+				service.CustomerServiceConversationListInput{},
+			)
+
+			assert.Equal(t, uint(12), agentUserID)
+			assert.Equal(t, test.role == "admin" || test.role == "manager", canViewAll)
+			if test.wantAssignedTo == nil {
+				assert.Nil(t, filters.AssignedTo)
+			} else if assert.NotNil(t, filters.AssignedTo) {
+				assert.Equal(t, *test.wantAssignedTo, *filters.AssignedTo)
+			}
+		})
+	}
+}
+
+func uintPtr(value uint) *uint {
+	return &value
 }

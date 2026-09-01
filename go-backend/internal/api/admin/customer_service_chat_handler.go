@@ -20,15 +20,12 @@ import (
 // move cleanly between agents instead of pooling every support record together.
 func (h *TicketHandler) ListCustomerServiceConversations(c *gin.Context) {
 	params := pagination.ParsePagination(c)
-	agentUserID, canViewAll := adminCustomerServiceScope(c)
 
 	filters, ok := parseAdminCustomerServiceConversationFilters(c)
 	if !ok {
 		return
 	}
-	if agentUserID > 0 {
-		filters.AssignedTo = &agentUserID
-	}
+	filters, agentUserID, canViewAll := scopeAdminCustomerServiceConversationFilters(c, filters)
 
 	tickets, total, err := h.ticketService.ListCustomerServiceConversationsForAgent(params.Page, params.PageSize, agentUserID, canViewAll, filters)
 	if err != nil {
@@ -57,6 +54,14 @@ func (h *TicketHandler) ListCustomerServiceConversations(c *gin.Context) {
 		},
 		"filters": adminCustomerServiceConversationFilterResponse(filters),
 	})
+}
+
+func scopeAdminCustomerServiceConversationFilters(c *gin.Context, filters service.CustomerServiceConversationListInput) (service.CustomerServiceConversationListInput, uint, bool) {
+	agentUserID, canViewAll := adminCustomerServiceScope(c)
+	if agentUserID > 0 && !canViewAll {
+		filters.AssignedTo = &agentUserID
+	}
+	return filters, agentUserID, canViewAll
 }
 
 // ListCustomerServiceAgents returns assignable public chat staff profiles for the admin inbox.
