@@ -267,15 +267,22 @@ export const useCustomerServiceChatSync = ({
 
   const ensureCustomerServiceConversation = async () => {
     if (conversationId.value) return conversationId.value
-    const response = await $fetch<any>(`${publicApiBase.value}/customer-service/conversations`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: customerServiceTimezoneHeaders(),
-      body: {
-        agent_id: selectedAgent.value?.id ? String(selectedAgent.value.id) : '',
-        locale: locale.value
-      }
-    })
+    const response = await authRequest<any>(
+      '/customer-service/conversations',
+      {
+        method: 'POST',
+        headers: {
+          accept: 'application/json',
+          'Content-Type': 'application/json',
+          ...customerServiceTimezoneHeaders()
+        },
+        body: JSON.stringify({
+          agent_id: selectedAgent.value?.id ? String(selectedAgent.value.id) : '',
+          locale: locale.value
+        })
+      },
+      'Failed to start customer-service conversation'
+    )
     const id = rememberConversationId(response)
     if (!id) {
       throw new Error('[CRITICAL] conversation_id missing in customer-service conversation response')
@@ -341,12 +348,15 @@ export const useCustomerServiceChatSync = ({
     formData.append('source', source)
     formData.append('file', file)
 
-    const response = await $fetch<any>(`${publicApiBase.value}/customer-service/attachments`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: customerServiceTimezoneHeaders(),
-      body: formData
-    })
+    const response = await authRequest<any>(
+      '/customer-service/attachments',
+      {
+        method: 'POST',
+        headers: customerServiceTimezoneHeaders(),
+        body: formData
+      },
+      'Failed to upload customer-service attachment'
+    )
 
     const asset = response?.asset || response?.data?.asset || response?.data || null
     if (!asset?.url) {
