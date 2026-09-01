@@ -562,6 +562,31 @@ export const useWhatsAppState = (
     }
   }
 
+  const retryMessage = async (message: any) => {
+    if (!message || message.is_agent || message.sync_state !== 'failed' || isSending.value) return
+
+    const localId = message.id
+    const localMessage = messages.value.find((item) => String(item.id) === String(localId))
+    if (!localMessage) return
+
+    isSending.value = true
+    localMessage.sync_state = 'sending'
+    localMessage.sync_error = ''
+    saveMessagesToStorage()
+
+    try {
+      const response = await sendMessageToAPI(localMessage)
+      replaceLocalMessageWithServerMessage(localId, response)
+      displayToast('Message sent', 1800)
+    } catch (error) {
+      markLocalMessageFailed(localId)
+      displayToast('Message was not delivered', 2400)
+      console.error('重试发送消息失败:', error)
+    } finally {
+      isSending.value = false
+    }
+  }
+
   const customerTypingSignalGapMs = 2500
   let lastCustomerTypingSignalAt = 0
   let customerTypingIdleTimer: number | null = null
@@ -985,6 +1010,7 @@ export const useWhatsAppState = (
     selectAgent,
     selectAgentFromAgentSelectionPanel,
     handleMessageContextMenu,
+    retryMessage,
     handleSendMessage,
     searchProducts,
     handleAddProductToCart,

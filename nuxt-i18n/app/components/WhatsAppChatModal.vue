@@ -285,6 +285,7 @@
                 @openCustomerServiceProductSearchModal="openCustomerServiceProductSearchModal"
                 @clearPendingProductReference="clearPendingProductReference"
                 @deleteMessage="handleMessageContextMenu"
+                @retryMessage="retryMessage"
                 @shareOrder="shareOrderToChat"
                 @openAuth="openMemberAuth"
                 @loginRequest="handleWarrantyLoginRequest"
@@ -601,6 +602,7 @@ const {
   selectAgent,
   selectAgentFromAgentSelectionPanel,
   handleMessageContextMenu,
+  retryMessage,
   handleSendMessage,
   handleAddProductToCart,
   handleProductDrawerClose,

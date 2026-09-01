@@ -277,6 +277,25 @@
               {{ messageMetadata(message).url }}
             </span>
           </a>
+
+          <div
+            v-if="isMessageSending(message) || isMessageFailed(message)"
+            class="mt-2 flex items-center gap-2 text-[11px] font-semibold leading-4"
+            :class="isMessageFailed(message) ? 'text-red-600' : 'tz-text-primary/45'"
+          >
+            <span>{{ isMessageFailed(message) ? 'Not delivered' : 'Sending...' }}</span>
+            <button
+              v-if="isMessageFailed(message)"
+              type="button"
+              class="rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-700 transition-colors hover:bg-red-100 disabled:opacity-50"
+              :disabled="isSending"
+              @click.stop.prevent="$emit('retryMessage', message)"
+              @mousedown.stop
+              @touchstart.stop
+            >
+              Retry
+            </button>
+          </div>
         </div>
       </div>
 
@@ -462,6 +481,7 @@ const emit = defineEmits<{
   'openCustomerServiceProductSearchModal': []
   'clearPendingProductReference': []
   'deleteMessage': [message: any]
+  'retryMessage': [message: any]
 }>()
 
 const { t, locale } = useI18n()
@@ -601,6 +621,14 @@ const isOrderMessage = (message: any) => {
 
 const isFaqMessage = (message: any) => {
   return message?.message_type === 'faq' || message?.type === 'faq'
+}
+
+const isMessageSending = (message: any) => {
+  return message?.sync_state === 'sending'
+}
+
+const isMessageFailed = (message: any) => {
+  return message?.sync_state === 'failed'
 }
 
 const configProduct = (message: any) => {
