@@ -96,8 +96,6 @@ func buildCarrierServiceQuoteOption(
 			return ShippingQuoteOption{}, false
 		}
 		chargeWeightGrams = maxInt(actualWeightGrams, volumetricWeightGrams)
-	default:
-		chargeWeightGrams = actualWeightGrams
 	}
 
 	billableWeightGrams := carrierServiceBillableWeightGrams(chargeWeightGrams, service)
@@ -112,7 +110,7 @@ func buildCarrierServiceQuoteOption(
 
 	fuelSurcharge := 0.0
 	remoteSurcharge := 0.0
-	shippingFee := baseFee
+	var shippingFee float64
 	if freeShipping {
 		shippingFee = 0
 	} else {
@@ -307,25 +305,6 @@ func packagingRuleWeightGrams(rule *shipping.PackagingRule) int {
 		return 0
 	}
 	return int(math.Round(rule.BoxWeight * 1000))
-}
-
-func calculateTemplateShippingFee(
-	template *shipping.ShippingTemplate,
-	country string,
-	totalWeightGrams int,
-	quantity int,
-	amount float64,
-	cartAmount float64,
-) (float64, bool) {
-	shippingFee, freeShipping, _ := calculateTemplateShippingFeeWithDisplayPrices(
-		template,
-		country,
-		totalWeightGrams,
-		quantity,
-		amount,
-		cartAmount,
-	)
-	return shippingFee, freeShipping
 }
 
 func calculateTemplateShippingFeeWithDisplayPrices(

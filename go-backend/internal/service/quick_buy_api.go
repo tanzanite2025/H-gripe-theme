@@ -490,4 +490,3 @@ func (s *QuickBuyService) ValidateVersion(versionID uint) (*QuickBuyValidationRe
 	result := validateQuickBuyVersion(*version)
 	return &result, nil
 }
-

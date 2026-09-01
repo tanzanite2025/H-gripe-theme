@@ -6,7 +6,7 @@ import (
 )
 
 func TestTransactionsLiabilityShiftedMigrationContract(t *testing.T) {
-	upSQL := strings.ToLower(readMigrationFile(t, "233_transactions_liability_shifted.up.sql"))
+	upSQL := strings.ToLower(readMigrationFile(t, "234_transactions_liability_shifted.up.sql"))
 	for _, fragment := range []string{
 		"add column if not exists liability_shifted boolean null",
 		"idx_transactions_liability_shifted",
@@ -17,7 +17,7 @@ func TestTransactionsLiabilityShiftedMigrationContract(t *testing.T) {
 		}
 	}
 
-	downSQL := strings.ToLower(readMigrationFile(t, "233_transactions_liability_shifted.down.sql"))
+	downSQL := strings.ToLower(readMigrationFile(t, "234_transactions_liability_shifted.down.sql"))
 	for _, fragment := range []string{
 		"drop index if exists idx_transactions_liability_shifted",
 		"drop column if exists liability_shifted",
