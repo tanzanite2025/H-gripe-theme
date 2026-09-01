@@ -46,6 +46,7 @@
           @open-customer-service-product-search-modal="$emit('openCustomerServiceProductSearchModal')"
           @clear-pending-product-reference="$emit('clearPendingProductReference')"
           @delete-message="$emit('deleteMessage', $event)"
+          @retry-message="$emit('retryMessage', $event)"
         />
 
         <!-- 订单 Tab -->
@@ -134,6 +135,7 @@ const emit = defineEmits<{
   'openCustomerServiceProductSearchModal': []
   'clearPendingProductReference': []
   'deleteMessage': [message: any]
+  'retryMessage': [message: any]
   // Order Emits
   'shareOrder': [order: any]
   // Member Emits

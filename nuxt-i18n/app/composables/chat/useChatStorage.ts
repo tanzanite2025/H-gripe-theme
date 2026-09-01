@@ -18,6 +18,7 @@ interface StoredChatRoomState extends Partial<ChatRoomState> {
 
 export const CHAT_STORAGE_EXPIRY_DAYS = 5
 export const LAST_AGENT_STORAGE_KEY = 'tz_last_selected_agent'
+export const CHAT_SENDING_MESSAGE_STALE_MS = 2 * 60 * 1000
 
 const chatTabs: readonly ChatTab[] = ['chat', 'orders', 'faq', 'warranty', 'member', 'tire', 'calculator']
 
@@ -40,6 +41,30 @@ export const createEmptyChatRoom = (): ChatRoomState => ({
 
 export const getChatStorageKey = (conversationId: string, agentId: number | string | undefined) => {
   return `tz_chat_${conversationId || 'pending'}_agent_${agentId || 'default'}`
+}
+
+const messageCreatedAtMs = (message: any) => {
+  const value = new Date(message?.created_at || 0).getTime()
+  return Number.isFinite(value) ? value : 0
+}
+
+export const isStaleSendingChatMessage = (message: any, now = Date.now()) => {
+  return message?.sync_state === 'sending' && (now - messageCreatedAtMs(message)) > CHAT_SENDING_MESSAGE_STALE_MS
+}
+
+export const normalizeStoredChatMessage = (message: any, now = Date.now()) => {
+  if (!message || typeof message !== 'object') return null
+
+  const normalized = { ...message }
+  const id = String(normalized.id || '')
+  if (!normalized.sync_state && id.startsWith('local-')) {
+    normalized.sync_state = 'failed'
+  }
+  if (isStaleSendingChatMessage(normalized, now)) {
+    normalized.sync_state = 'failed'
+    normalized.sync_error = normalized.sync_error || 'Message was not confirmed by the server.'
+  }
+  return normalized
 }
 
 export const hasLocalChatHistory = () => {
@@ -69,10 +94,12 @@ export const loadChatRoomFromStorage = (storageKey: string, expiryDays = CHAT_ST
   const storedMessages = Array.isArray(data.messages) ? data.messages : []
   const expiryTime = expiryDays * 24 * 60 * 60 * 1000
   const now = Date.now()
-  const messages = storedMessages.filter((message: any) => {
-    const messageTime = new Date(message.created_at).getTime()
-    return (now - messageTime) < expiryTime
-  })
+  const messages = storedMessages
+    .map((message: any) => normalizeStoredChatMessage(message, now))
+    .filter((message: any) => {
+      const messageTime = messageCreatedAtMs(message)
+      return messageTime > 0 && (now - messageTime) < expiryTime
+    })
 
   return {
     room: {
@@ -92,9 +119,12 @@ export const loadChatRoomFromStorage = (storageKey: string, expiryDays = CHAT_ST
 
 export const saveChatRoomToStorage = (storageKey: string, room: ChatRoomState) => {
   if (typeof window === 'undefined') return
+  const now = Date.now()
 
   localStorage.setItem(storageKey, JSON.stringify({
-    messages: room.messages,
+    messages: room.messages
+      .map((message: any) => normalizeStoredChatMessage(message, now))
+      .filter(Boolean),
     activeTab: room.activeTab,
     newMessage: room.newMessage,
     pendingProductReference: room.pendingProductReference || null,

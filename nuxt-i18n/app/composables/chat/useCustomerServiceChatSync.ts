@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import type { ComputedRef, Ref, WritableComputedRef } from 'vue'
+import { normalizeStoredChatMessage } from '~/composables/chat/useChatStorage'
 import { validateStorefrontUploadFile } from '~/utils/uploadSpecs'
 
 type AuthRequest = <T = any>(path: string, options?: any, errorMessage?: string) => Promise<T>
@@ -222,7 +223,10 @@ export const useCustomerServiceChatSync = ({
       })
       .filter(Boolean)
 
-    const localOnly = messages.value.filter((message) => ['sending', 'failed'].includes(message.sync_state))
+    const now = Date.now()
+    const localOnly = messages.value
+      .map((message) => normalizeStoredChatMessage(message, now))
+      .filter((message) => message && ['sending', 'failed'].includes(message.sync_state))
     const merged = [...persisted, ...localOnly]
     const uniqueById = new Map<string, any>()
     merged.forEach((message) => {
