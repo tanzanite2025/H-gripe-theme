@@ -45,14 +45,27 @@ const toBase64Url = (bytes: ArrayBuffer) => {
 const toHex = (bytes: ArrayBuffer) =>
   Array.from(new Uint8Array(bytes), byte => byte.toString(16).padStart(2, '0')).join('')
 
+const apiRequestURL = (baseURL: string, path: string) => {
+  const normalizedBase = baseURL.replace(/\/+$/, '')
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`
+  return `${normalizedBase}${normalizedPath}`
+}
+
 const requestTarget = (baseURL: string, path: string) => {
   const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost'
-  const url = new URL(path, new URL(baseURL || '/', origin))
+  const url = new URL(apiRequestURL(baseURL || '/', path), origin)
   return `${url.pathname}${url.search}`
+}
+
+const canSignRequestBody = (body: BodyInit | null | undefined) => {
+  return body === undefined || body === null || typeof body === 'string' || body instanceof URLSearchParams
 }
 
 const signRequest = async (headers: Headers, method: string, baseURL: string, path: string, body: BodyInit | null | undefined, key: string) => {
   if (!import.meta.client || !key || !globalThis.crypto?.subtle) {
+    return
+  }
+  if (!canSignRequestBody(body)) {
     return
   }
 
@@ -138,6 +151,7 @@ export function useApiRequest() {
     }
     const requestHeaders = await attachDeviceFingerprintHeader(headers)
     await signRequest(requestHeaders, (init.method || 'GET').toUpperCase(), baseURL, path, init.body, requestSigningKey)
+    const requestURL = apiRequestURL(baseURL, path)
 
     const finalInit: RequestInit = {
       credentials: defaultCredentials,
@@ -145,7 +159,7 @@ export function useApiRequest() {
       headers: requestHeaders,
     }
 
-    const response = await fetch(`${baseURL}${path}`, finalInit)
+    const response = await fetch(requestURL, finalInit)
     const payload = await readResponse(response)
 
     if (!response.ok) {
