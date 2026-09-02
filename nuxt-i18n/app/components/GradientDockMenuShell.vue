@@ -1,15 +1,25 @@
 <template>
-  <div class="dock-shell fixed inset-x-0 bottom-0 w-full z-[101]" aria-hidden="true">
+  <div class="dock-shell fixed inset-x-0 bottom-0 w-full z-[101]">
     <div class="dock-shell__surface mx-auto w-full md:max-w-[500px] rounded-none px-1 py-2.5 md:px-4 md:py-3">
-      <span class="dock-shell__icon-button">
+      <button
+        class="dock-shell__icon-button"
+        type="button"
+        aria-label="Open sidebar"
+        @click="emit('intent', 'sidebar')"
+      >
         <svg class="dock-shell__icon" viewBox="0 0 24 24" fill="none">
           <path d="M18 20a6 6 0 0 0-12 0" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
           <circle cx="12" cy="10" r="4" stroke="currentColor" stroke-width="2" />
           <path d="m17 8 2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
-      </span>
+      </button>
 
-      <span class="dock-shell__icon-button">
+      <button
+        class="dock-shell__icon-button"
+        type="button"
+        aria-label="Open chat"
+        @click="emit('intent', 'chat')"
+      >
         <svg class="dock-shell__icon" viewBox="0 0 48 48" fill="none">
           <g transform="translate(24 24) scale(1.2) translate(-24 -24)">
             <path
@@ -28,22 +38,40 @@
             />
           </g>
         </svg>
-      </span>
+      </button>
 
-      <span class="dock-shell__icon-button">
+      <button
+        class="dock-shell__icon-button"
+        type="button"
+        aria-label="Open quick buy"
+        @click="emit('intent', 'quick-buy')"
+      >
         <svg class="dock-shell__icon" viewBox="0 0 24 24" fill="none">
           <path d="m13 2-9 11h7l-1 9 9-11h-7l1-9Z" fill="currentColor" />
         </svg>
-      </span>
+      </button>
 
-      <span class="dock-shell__cart">
+      <button
+        class="dock-shell__cart"
+        type="button"
+        aria-label="Open cart"
+        @click="emit('intent', 'cart')"
+      >
         <span class="dock-shell__currency">$</span>
         <span class="dock-shell__total">0.00</span>
         <span class="dock-shell__count">0</span>
-      </span>
+      </button>
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+type GradientDockMenuShellIntent = 'sidebar' | 'chat' | 'quick-buy' | 'cart'
+
+const emit = defineEmits<{
+  intent: [value: GradientDockMenuShellIntent]
+}>()
+</script>
 
 <style scoped>
 .dock-shell {
@@ -54,7 +82,6 @@
     0 -12px 32px rgba(20, 32, 43, 0.12),
     inset 0 1px 0 rgba(255, 255, 255, 0.9);
   color: var(--tz-text-secondary);
-  pointer-events: none;
 }
 
 .dock-shell__surface {
@@ -71,6 +98,11 @@
   height: 2.75rem;
   align-items: center;
   justify-content: center;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
 }
 
 .dock-shell__icon {
@@ -98,6 +130,7 @@
   box-shadow:
     0 10px 24px rgba(0, 0, 0, 0.18),
     inset 0 1px 0 rgba(255, 255, 255, 0.82);
+  cursor: pointer;
 }
 
 .dock-shell__currency {

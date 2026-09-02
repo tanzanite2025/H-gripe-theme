@@ -7,35 +7,36 @@
     />
     <SiteHeader ref="siteHeaderRef" />
     <NuxtLayout>
-      <SidePanel>
-        <template #left>
-          <LazyAccountSidebarPanel />
-        </template>
-      </SidePanel>
       <!-- Render the current page inside the active layout -->
       <NuxtPage />
     </NuxtLayout>
     
-    <ClientOnly>
-      <StorefrontClientOverlays />
-    </ClientOnly>
+    <StorefrontClientOverlaysDeferred />
     
     <!-- Cookie 同意弹窗 -->
-    <CookieConsent />
+    <CookieConsentDeferred />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useHead, useI18n, useRequestURL, useRuntimeConfig } from '#imports'
-import SidePanel from './components/SidePanel.vue'
 import SiteHeader from '~/components/SiteHeader.vue'
 import { useAuth } from '~/composables/useAuth'
 import { useProductCategories } from '~/composables/useProductCategories'
 import { useSiteSettings } from '~/composables/usePublicSettings'
 import { useShopCategories } from '~/composables/useShopCategories'
 import localeManifest from '~/i18n/locales.manifest'
+import CookieConsentDeferred from '~/components/CookieConsentDeferred.vue'
+import StorefrontClientOverlaysDeferred from '~/components/StorefrontClientOverlaysDeferred.vue'
 import { scheduleDeferredClientWork } from '~/utils/clientDeferredWork'
+import {
+  createStorefrontPreconnectLinks,
+  MAX_STOREFRONT_PRECONNECT_ORIGINS,
+  STOREFRONT_CATEGORY_PREFETCH_WARMUP,
+  STOREFRONT_SESSION_WARMUP,
+  splitStorefrontConfiguredOrigins,
+} from '~/utils/storefrontLoadingPolicy'
 import { storefrontFontPreloadLinkForLocale } from '~/utils/storefrontFonts'
 
 const auth = useAuth()
@@ -64,37 +65,8 @@ const htmlLanguage = computed(() => (
 const htmlDirection = computed(() => activeLocaleEntry.value?.dir || 'ltr')
 const htmlFontFamily = computed(() => activeLocaleEntry.value?.fontFamily || 'latin')
 const htmlFontPreloadLink = computed(() => storefrontFontPreloadLinkForLocale(locale.value))
-const MAX_PRECONNECT_ORIGINS = 4
 
-type PreconnectLink = {
-  key: string
-  rel: 'preconnect'
-  href: string
-  crossorigin?: 'anonymous'
-}
-
-const resolveOrigin = (value: unknown, baseOrigin: string): string => {
-  const candidate = String(value || '').trim()
-  if (!candidate) return ''
-
-  try {
-    const url = candidate.includes('://')
-      ? new URL(candidate)
-      : new URL(candidate.startsWith('/') ? candidate : `https://${candidate}`, baseOrigin)
-    return ['http:', 'https:'].includes(url.protocol) ? url.origin : ''
-  } catch {
-    return ''
-  }
-}
-
-const splitConfiguredOrigins = (value: unknown): string[] => (
-  String(value || '')
-    .split(',')
-    .map(item => item.trim())
-    .filter(Boolean)
-)
-
-const preconnectLinks = computed<PreconnectLink[]>(() => {
+const preconnectLinks = computed(() => {
   const currentOrigin = requestUrl.origin
   const publicConfig = runtimeConfig.public as {
     apiBase?: string
@@ -106,21 +78,13 @@ const preconnectLinks = computed<PreconnectLink[]>(() => {
     publicConfig.apiBase,
     publicConfig.siteUrl,
     appConfig.cdnURL,
-    ...splitConfiguredOrigins(publicConfig.imageDomains),
+    ...splitStorefrontConfiguredOrigins(publicConfig.imageDomains),
   ]
 
-  return Array.from(new Set(
-    candidates
-      .map(candidate => resolveOrigin(candidate, currentOrigin))
-      .filter(origin => origin && origin !== currentOrigin)
-  ))
-    .slice(0, MAX_PRECONNECT_ORIGINS)
-    .map(origin => ({
-      key: `storefront-preconnect:${origin}`,
-      rel: 'preconnect',
-      href: origin,
-      crossorigin: 'anonymous',
-    }))
+  return createStorefrontPreconnectLinks(candidates, currentOrigin, {
+    siteOrigin: publicConfig.siteUrl,
+    maxOrigins: MAX_STOREFRONT_PRECONNECT_ORIGINS,
+  })
 })
 
 const resolveConfiguredAsset = (value: string) => {
@@ -162,13 +126,13 @@ useHead(() => ({
 onMounted(() => {
   scheduleDeferredClientWork(() => {
     void auth.ensureSession().catch(() => {})
-  }, { delayMs: 6500, idleTimeoutMs: 3000 })
+  }, STOREFRONT_SESSION_WARMUP)
 
   scheduleDeferredClientWork(() => {
     void Promise.allSettled([
       prefetchShopCategories(),
       prefetchProductCategories(),
     ])
-  }, { delayMs: 7500, idleTimeoutMs: 5000 })
+  }, STOREFRONT_CATEGORY_PREFETCH_WARMUP)
 })
 </script>

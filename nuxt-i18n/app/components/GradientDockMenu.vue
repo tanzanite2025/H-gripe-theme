@@ -129,10 +129,14 @@
 import { ref, computed, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { useI18n } from '#imports'
 import { useChatWidget } from '~/composables/useChatWidget'
+import { useSidePanelState } from '~/composables/useSidePanelState'
+import { scheduleDeferredClientWork } from '~/utils/clientDeferredWork'
+import { STOREFRONT_READ_COUNT_WARMUP } from '~/utils/storefrontLoadingPolicy'
 
 const isOpen = ref(false)
 const quickBuyDockMounted = ref(false)
 const { isChatOpen, openChat, closeChat } = useChatWidget()
+const { openLeft } = useSidePanelState()
 const { t: $t } = useI18n()
 const totalUnreadCount = ref(0)
 
@@ -161,10 +165,17 @@ const toggleChatFromDock = () => {
   }
 }
 
+const openChatFromGlobalEvent = () => {
+  closeAll()
+  openChat({ showAgentList: true })
+}
+
+const openQuickBuyFromGlobalEvent = () => {
+  void openDeferredQuickBuyDock()
+}
+
 const openSidebarLeft = () => {
-  if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('ui:sidebar-open', { detail: { side: 'left' } }))
-  }
+  openLeft()
 }
 
 const calculateUnreadCount = () => {
@@ -188,11 +199,7 @@ const calculateUnreadCount = () => {
 }
 
 let unreadInterval: ReturnType<typeof setInterval> | null = null
-
-onMounted(() => {
-  calculateUnreadCount()
-  unreadInterval = setInterval(calculateUnreadCount, 30000)
-})
+let cancelUnreadWarmup: (() => void) | null = null
 
 const { cartCount, total, cartCurrency, openCart } = useCart()
 const itemsCount = computed(() => cartCount.value)
@@ -251,10 +258,23 @@ const openCartDrawer = () => {
   openCart()
 }
 
+onMounted(() => {
+  cancelUnreadWarmup = scheduleDeferredClientWork(calculateUnreadCount, STOREFRONT_READ_COUNT_WARMUP)
+  unreadInterval = setInterval(calculateUnreadCount, 30000)
+  window.addEventListener('dock:open-chat', openChatFromGlobalEvent)
+  window.addEventListener('dock:open-quick-buy', openQuickBuyFromGlobalEvent)
+  window.addEventListener('dock:open-cart', openCartDrawer)
+})
+
 onBeforeUnmount(() => {
+  cancelUnreadWarmup?.()
+  cancelUnreadWarmup = null
   if (unreadInterval) {
     clearInterval(unreadInterval)
   }
+  window.removeEventListener('dock:open-chat', openChatFromGlobalEvent)
+  window.removeEventListener('dock:open-quick-buy', openQuickBuyFromGlobalEvent)
+  window.removeEventListener('dock:open-cart', openCartDrawer)
 })
 </script>
 

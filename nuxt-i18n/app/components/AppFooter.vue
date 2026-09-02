@@ -112,6 +112,8 @@ const paymentIcons: PaymentIcon[] = [
   /* Keep the final footer row clear of the fixed bottom dock. */
   padding: 1rem 1.5rem var(--tz-bottom-dock-content-clearance, 6.5rem);
   color: var(--tz-text-primary);
+  content-visibility: auto;
+  contain-intrinsic-size: 32rem;
 }
 
  .app-footer-background-surface {

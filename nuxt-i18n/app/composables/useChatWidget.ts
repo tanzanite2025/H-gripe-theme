@@ -1,5 +1,6 @@
 import { ref, computed } from 'vue'
 import { useOverlayBackStack } from '~/composables/useOverlayBackStack'
+import { activateStorefrontClientOverlays } from '~/utils/clientOverlays'
 
 // 对话对象目前只在前端控制聊天窗口展示用，保持为 any 以兼容现有调用
 export type ChatWidgetConversation = any
@@ -19,6 +20,7 @@ const closeChatState = () => {
  * @param conversation 用于传递给 WhatsAppChatModal 的会话配置，默认展示客服列表
  */
 const openChat = (conversation: ChatWidgetConversation = { showAgentList: true }) => {
+  activateStorefrontClientOverlays()
   currentConversation.value = conversation
   overlayBackStack.open('whatsapp-chat', closeChatState)
 }

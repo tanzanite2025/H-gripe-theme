@@ -4,14 +4,9 @@
       <slot />
     </main>
 
-    <AppFooter />
-    <ClientOnly>
-      <LazyGradientDockMenu />
-      <template #fallback>
-        <GradientDockMenuShell />
-      </template>
-    </ClientOnly>
-    <BehaviorAttributionBootstrap />
+    <LazyAppFooter :hydrate-on-visible="footerHydrationOptions" />
+    <GradientDockMenuDeferred />
+    <BehaviorAttributionBootstrapDeferred />
   </div>
 </template>
 
@@ -22,9 +17,8 @@ import {
   useHead,
   useRequestURL
 } from '#imports'
-import AppFooter from '~/components/AppFooter.vue'
-import BehaviorAttributionBootstrap from '~/components/BehaviorAttributionBootstrap.vue'
-import GradientDockMenuShell from '~/components/GradientDockMenuShell.vue'
+import BehaviorAttributionBootstrapDeferred from '~/components/BehaviorAttributionBootstrapDeferred.vue'
+import GradientDockMenuDeferred from '~/components/GradientDockMenuDeferred.vue'
 import { useAuth } from '~/composables/useAuth'
 import { useSiteTitle } from '~/composables/useSiteTitle'
 import { useSiteSettings } from '~/composables/usePublicSettings'
@@ -32,11 +26,13 @@ import { useSeoSettings } from '~/composables/useSeoSettings'
 import { useStorefrontSeoLinks } from '~/composables/seo/useStorefrontSeoLinks'
 import { createSeoJsonLdScript } from '~/utils/seo/jsonLd'
 import { normalizeSocialLinkItems, type SocialLinkViewModel } from '~/utils/socialLinks'
+import { STOREFRONT_FOOTER_HYDRATION_OPTIONS } from '~/utils/storefrontLoadingPolicy'
 
 const config = useRuntimeConfig()
 const requestUrl = useRequestURL()
 const auth = useAuth()
 const authUser = computed<Record<string, unknown> | null>(() => (auth.user.value as Record<string, unknown> | null) ?? null)
+const footerHydrationOptions = STOREFRONT_FOOTER_HYDRATION_OPTIONS
 
 const { siteSettings: resolvedSettings } = useSiteSettings()
 

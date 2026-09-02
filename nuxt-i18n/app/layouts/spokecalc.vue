@@ -8,17 +8,17 @@
       <slot />
     </main>
 
-    <!-- Reuse the same global footer and dock menu so the overall
-         site chrome stays consistent, but keep the layout itself
-         as light as possible. -->
-    <AppFooter />
-    <GradientDockMenu />
+    <!-- Reuse the same deferred chrome as the storefront layouts. -->
+    <LazyAppFooter :hydrate-on-visible="footerHydrationOptions" />
+    <GradientDockMenuDeferred />
   </div>
 </template>
 
 <script setup lang="ts">
-import AppFooter from '~/components/AppFooter.vue'
-import GradientDockMenu from '~/components/GradientDockMenu.vue'
+import GradientDockMenuDeferred from '~/components/GradientDockMenuDeferred.vue'
+import { STOREFRONT_FOOTER_HYDRATION_OPTIONS } from '~/utils/storefrontLoadingPolicy'
+
+const footerHydrationOptions = STOREFRONT_FOOTER_HYDRATION_OPTIONS
 </script>
 
 <style scoped>

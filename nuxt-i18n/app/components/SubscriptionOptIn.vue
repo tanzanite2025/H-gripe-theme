@@ -1,6 +1,6 @@
 <template>
   <form class="subscription-opt-in space-y-2" @submit.prevent="handleSubmit">
-    <TurnstileChallenge ref="turnstileChallenge" action="newsletter" />
+    <div ref="turnstileContainer" class="sr-only" aria-hidden="true"></div>
     <label v-if="label" class="block text-xs font-medium tz-text-secondary mb-2 tracking-wide uppercase text-center">
       {{ label }}
     </label>
@@ -47,11 +47,33 @@
 </template>
 
 <script setup lang="ts">
+import { loadTurnstileScript } from '~/utils/security/trustedScriptUrl'
+
 interface SubscriptionSubmitResponse {
   message?: string
   data?: unknown
   error?: string
   success?: boolean
+}
+
+type TurnstileApi = {
+  render: (
+    element: HTMLElement,
+    options: {
+      sitekey: string
+      size?: 'invisible'
+      action?: string
+      callback?: (token: string) => void
+      'error-callback'?: () => void
+      'expired-callback'?: () => void
+    },
+  ) => string | number
+  execute: (widgetId: string | number) => void
+  reset: (widgetId: string | number) => void
+}
+
+type WindowWithTurnstile = Window & {
+  turnstile?: TurnstileApi
 }
 
 const props = withDefaults(
@@ -77,14 +99,88 @@ const emit = defineEmits<{
 
 const { locale } = useI18n()
 const { request } = useApiRequest()
+const runtimeConfig = useRuntimeConfig()
 
 const email = ref('')
 const loading = ref(false)
 const successMessage = ref('')
 const errorMessage = ref('')
-const turnstileChallenge = ref<{ execute: () => Promise<string> } | null>(null)
+const turnstileContainer = ref<HTMLElement | null>(null)
+let turnstileWidgetId: string | number | null = null
+let turnstileLoadPromise: Promise<void> | null = null
+let pendingTurnstile: { resolve: (token: string) => void; reject: (error: Error) => void } | null = null
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+const loadTurnstile = () => {
+  if (!import.meta.client || typeof window === 'undefined') return Promise.resolve()
+
+  const browserWindow = window as WindowWithTurnstile
+  if (browserWindow.turnstile) return Promise.resolve()
+  if (turnstileLoadPromise) return turnstileLoadPromise
+
+  turnstileLoadPromise = loadTurnstileScript().then(() => undefined)
+  return turnstileLoadPromise
+}
+
+const ensureTurnstileWidget = async () => {
+  const siteKey = String(runtimeConfig.public?.turnstileSiteKey || '').trim()
+  if (!siteKey) {
+    throw new Error('Verification challenge is not configured')
+  }
+  if (!import.meta.client || typeof window === 'undefined') return null
+  if (!turnstileContainer.value) {
+    throw new Error('Verification challenge is not ready')
+  }
+
+  await loadTurnstile()
+
+  const browserWindow = window as WindowWithTurnstile
+  if (!browserWindow.turnstile) {
+    throw new Error('Verification challenge is unavailable')
+  }
+
+  if (turnstileWidgetId === null) {
+    turnstileWidgetId = browserWindow.turnstile.render(turnstileContainer.value, {
+      sitekey: siteKey,
+      size: 'invisible',
+      action: 'newsletter',
+      callback: token => {
+        pendingTurnstile?.resolve(token)
+        pendingTurnstile = null
+      },
+      'error-callback': () => {
+        pendingTurnstile?.reject(new Error('Verification challenge failed'))
+        pendingTurnstile = null
+      },
+      'expired-callback': () => {
+        pendingTurnstile?.reject(new Error('Verification challenge expired'))
+        pendingTurnstile = null
+      },
+    })
+  }
+
+  return turnstileWidgetId
+}
+
+const executeTurnstileChallenge = async (): Promise<string> => {
+  if (!import.meta.client || typeof window === 'undefined') return ''
+
+  const id = await ensureTurnstileWidget()
+  if (id === null) return ''
+
+  return new Promise<string>((resolve, reject) => {
+    const browserWindow = window as WindowWithTurnstile
+    if (!browserWindow.turnstile) {
+      reject(new Error('Verification challenge is unavailable'))
+      return
+    }
+
+    pendingTurnstile = { resolve, reject }
+    browserWindow.turnstile.reset(id)
+    browserWindow.turnstile.execute(id)
+  })
+}
 
 async function handleSubmit() {
   successMessage.value = ''
@@ -99,7 +195,7 @@ async function handleSubmit() {
   loading.value = true
 
   try {
-    const captchaToken = await turnstileChallenge.value?.execute()
+    const captchaToken = await executeTurnstileChallenge()
     const data = await request<SubscriptionSubmitResponse>(props.endpointPath, {
       method: 'POST',
       headers: {

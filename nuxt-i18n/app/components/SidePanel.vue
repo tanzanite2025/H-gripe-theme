@@ -58,50 +58,23 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, provide, onMounted, onBeforeUnmount } from 'vue'
-import { useOverlayBackStack } from '~/composables/useOverlayBackStack'
+import { computed, provide } from 'vue'
+import { useSidePanelState } from '~/composables/useSidePanelState'
 
-interface SidebarEventDetail {
-  side?: string
-}
-
-// 左侧 Sidebar 打开状态
-const leftOpen = ref<boolean>(false)
-const leftEverOpened = ref<boolean>(false)
-const overlayBackStack = useOverlayBackStack()
+const {
+  leftOpen,
+  leftEverOpened,
+  openLeft,
+  closeLeft,
+  toggleLeft,
+} = useSidePanelState()
 
 // 左侧箭头：关闭时向右，打开时向左
 const leftArrow = computed(() => (leftOpen.value ? '◀' : '▶'))
 
-// 切换左侧面板
-const toggleLeft = () => {
-  if (leftOpen.value) {
-    closeLeft()
-  } else {
-    openLeft()
-  }
-}
-
-const closeLeftState = () => {
-  leftOpen.value = false
-}
-
-// 关闭左侧
-const closeLeft = () => {
-  void overlayBackStack.close('account-sidebar')
-  closeLeftState()
-}
-
 // 点击蒙版关闭侧边栏
 const handleBackdropClick = () => {
   closeLeft()
-}
-
-// 暴露方法供外部调用
-const openLeft = () => {
-  leftEverOpened.value = true
-  leftOpen.value = true
-  overlayBackStack.open('account-sidebar', closeLeftState)
 }
 
 // 提供给子组件使用（仅左侧）
@@ -116,29 +89,6 @@ defineExpose({
   openLeft,
   closeLeft,
   toggleLeft,
-})
-
-// 监听全局事件，允许外部通过 CustomEvent 打开左侧侧边栏
-const handleGlobalSidebarEvent = (event: Event): void => {
-  try {
-    const detail = (event as CustomEvent<SidebarEventDetail>).detail ?? {}
-    const side = detail.side || 'left'
-    if (side === 'left') {
-      openLeft()
-    }
-  } catch {}
-}
-
-onMounted(() => {
-  if (typeof window !== 'undefined') {
-    window.addEventListener('ui:sidebar-open', handleGlobalSidebarEvent)
-  }
-})
-
-onBeforeUnmount(() => {
-  if (typeof window !== 'undefined') {
-    window.removeEventListener('ui:sidebar-open', handleGlobalSidebarEvent)
-  }
 })
 </script>
 

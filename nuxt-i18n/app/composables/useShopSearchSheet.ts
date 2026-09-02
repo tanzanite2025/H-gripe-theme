@@ -1,5 +1,6 @@
 import { useLocalePath, useRoute, useRouter, useState } from '#imports'
 import { useOverlayBackStack } from '~/composables/useOverlayBackStack'
+import { activateStorefrontClientOverlays } from '~/utils/clientOverlays'
 
 export type ShopSearchFiltersPayload = Record<string, any> & {
   priceRange?: [number, number]
@@ -39,6 +40,7 @@ export const useShopSearchSheet = () => {
   }
 
   const open = (options?: ShopSearchOpenOptions) => {
+    activateStorefrontClientOverlays()
     if (options && typeof options.presetCategorySlug !== 'undefined') {
       presetCategorySlug.value = options.presetCategorySlug || null
     } else {

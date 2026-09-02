@@ -45,36 +45,14 @@
             </div>
           </div>
 
-          <div class="home-hero__media relative hidden w-full lg:block lg:justify-self-stretch">
+          <div class="home-hero__media relative w-full lg:justify-self-stretch">
             <HomeHeroVisualShowcaseDesktopCollage
+              v-if="showDesktopHero"
               :items="homeHeroVisualShowcaseItems"
               :ariaLabel="t('home.hero.stackAriaLabel')"
             />
-            <StorefrontDataNotice
-              v-if="heroVisualNotice"
-              class="home-hero__visual-notice"
-              :tone="heroVisualNotice.tone"
-              :title="heroVisualNotice.title"
-              :description="heroVisualNotice.description"
-              :role="heroVisualNotice.role"
-              compact
-            >
-              <template v-if="showHeroVisualRetry" #actions>
-                <button
-                  type="button"
-                  class="storefront-data-notice-action"
-                  :disabled="homeHeroVisualShowcasePending"
-                  @click="retryHomeHeroVisualShowcase"
-                >
-                  <Icon name="lucide:refresh-cw" aria-hidden="true" />
-                  {{ t('common.retry') }}
-                </button>
-              </template>
-            </StorefrontDataNotice>
-          </div>
-
-          <div class="home-hero__mobile-media relative mx-auto w-full lg:hidden">
             <HomeHeroVisualShowcaseMobilePairGallery
+              v-else
               :items="homeHeroVisualShowcaseItems"
               :ariaLabel="t('home.hero.stackAriaLabel')"
             />
@@ -108,11 +86,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, useI18n } from '#imports'
+import { computed, useI18n, useRequestHeaders, useState } from '#imports'
 import StorefrontDataNotice from '~/components/StorefrontDataNotice.vue'
 import HomeHeroVisualShowcaseDesktopCollage from '~/components/home/HomeHeroVisualShowcaseDesktopCollage.vue'
 import HomeHeroVisualShowcaseMobilePairGallery from '~/components/home/HomeHeroVisualShowcaseMobilePairGallery.vue'
 import { useHomeHeroVisualShowcase } from '~/composables/useHomeHeroVisualShowcase'
+import { isStorefrontMobileUserAgent } from '~/utils/storefrontLoadingPolicy'
 
 const { t } = useI18n()
 const {
@@ -121,6 +100,10 @@ const {
   homeHeroVisualShowcasePending,
   refreshHomeHeroVisualShowcase,
 } = await useHomeHeroVisualShowcase()
+const showDesktopHero = useState(
+  'home-hero-show-desktop',
+  () => !isStorefrontMobileUserAgent(useRequestHeaders(['user-agent'])['user-agent']),
+)
 
 const welcomeText = computed(() => {
   const translated = t('home.hero.welcome')

@@ -1,5 +1,6 @@
 import { computed, ref } from 'vue'
 import { useOverlayBackStack } from '~/composables/useOverlayBackStack'
+import { activateStorefrontClientOverlays } from '~/utils/clientOverlays'
 
 export interface GlobalProductDetailBottomSheetProductReference {
   id?: number | null
@@ -31,6 +32,7 @@ export const useGlobalProductDetailBottomSheet = () => {
     const slug = String(reference.slug || '').trim()
     if (!slug) return
 
+    activateStorefrontClientOverlays()
     globalProductDetailBottomSheetProductReference.value = {
       id: reference.id ?? null,
       slug,

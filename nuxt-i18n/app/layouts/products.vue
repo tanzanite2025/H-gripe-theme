@@ -13,17 +13,21 @@
       </section>
     </main>
 
-    <AppFooter />
-    <GradientDockMenu />
-    <BehaviorAttributionBootstrap />
+    <LazyAppFooter :hydrate-on-visible="footerHydrationOptions" />
+    <GradientDockMenuDeferred />
+    <BehaviorAttributionBootstrapDeferred />
   </div>
 </template>
 
 <script setup lang="ts">
 import { useHead } from '#imports'
+import BehaviorAttributionBootstrapDeferred from '~/components/BehaviorAttributionBootstrapDeferred.vue'
+import GradientDockMenuDeferred from '~/components/GradientDockMenuDeferred.vue'
 import { useStorefrontSeoLinks } from '~/composables/seo/useStorefrontSeoLinks'
+import { STOREFRONT_FOOTER_HYDRATION_OPTIONS } from '~/utils/storefrontLoadingPolicy'
 
 const { canonicalUrl, alternateLinks, xDefaultLink } = useStorefrontSeoLinks()
+const footerHydrationOptions = STOREFRONT_FOOTER_HYDRATION_OPTIONS
 
 useHead(() => ({
   link: [

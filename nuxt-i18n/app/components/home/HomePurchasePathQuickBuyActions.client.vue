@@ -56,14 +56,36 @@ defineProps<{
 const contactServiceOpen = ref(false)
 const quickBuyDirectSelectOpen = ref(false)
 const quickBuyWheelsetSelectionAssistantOpen = ref(false)
-const { quickBuyFlowConfig } = useQuickBuyFlow('dock')
+const { quickBuyFlowConfig, refresh: refreshQuickBuyFlow } = useQuickBuyFlow('dock', { immediate: false })
 const quickBuyConfig = computed(() => quickBuyFlowConfig.value)
 const { openChat } = useChatWidget()
+let quickBuyFlowWarmup: Promise<void> | null = null
 
-const handleQuickBuyAction = (actionId: HomePurchasePathQuickBuyAction['id']) => {
+const warmQuickBuyFlow = async () => {
+  if (quickBuyConfig.value) return
+  if (!quickBuyFlowWarmup) {
+    quickBuyFlowWarmup = refreshQuickBuyFlow().finally(() => {
+      quickBuyFlowWarmup = null
+    })
+  }
+  await quickBuyFlowWarmup
+}
+
+const handleQuickBuyAction = async (actionId: HomePurchasePathQuickBuyAction['id']) => {
   contactServiceOpen.value = false
-  quickBuyDirectSelectOpen.value = actionId === 'direct-select'
-  quickBuyWheelsetSelectionAssistantOpen.value = actionId === 'wheelset-selection-assistant'
+  quickBuyDirectSelectOpen.value = false
+  quickBuyWheelsetSelectionAssistantOpen.value = false
+
+  if (actionId === 'direct-select') {
+    await warmQuickBuyFlow()
+    quickBuyDirectSelectOpen.value = true
+    return
+  }
+
+  if (actionId === 'wheelset-selection-assistant') {
+    await warmQuickBuyFlow()
+    quickBuyWheelsetSelectionAssistantOpen.value = true
+  }
 }
 
 const handleQuickBuyAssistantModelUpdate = (value: boolean) => {

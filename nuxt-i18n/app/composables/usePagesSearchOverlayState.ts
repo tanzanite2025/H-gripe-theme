@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import { useOverlayBackStack } from '~/composables/useOverlayBackStack'
+import { activateStorefrontClientOverlays } from '~/utils/clientOverlays'
 
 const isPagesSearchOpen = ref(false)
 const pagesSearchQuery = ref('')
@@ -12,6 +13,7 @@ const closePagesSearchState = () => {
 
 export const usePagesSearchOverlayState = () => {
   const openPagesSearch = (initialQuery = '') => {
+    activateStorefrontClientOverlays()
     pagesSearchQuery.value = initialQuery.trim()
     isPagesSearchOpen.value = true
     overlayBackStack.open('pages-search', closePagesSearchState)
