@@ -11,6 +11,14 @@ import {
   normalizeStorefrontMediaUrl,
 } from '~/utils/storefrontMedia'
 
+const HOME_HERO_SHOWCASE_SSR_TIMEOUT_MS = 900
+
+const isAbortError = (error: unknown) => (
+  error instanceof DOMException && error.name === 'AbortError'
+) || (
+  error instanceof Error && error.name === 'AbortError'
+)
+
 const numericValue = (value: unknown, fallback: number): number => {
   const parsed = Number(value)
   return Number.isFinite(parsed) ? parsed : fallback
@@ -55,14 +63,35 @@ export async function useHomeHeroVisualShowcase() {
     refresh,
   } = await useAsyncData<HomeHeroVisualShowcaseApiEnvelope | null>(
     requestKey,
-    () => request<HomeHeroVisualShowcaseApiEnvelope>(
-      '/visual-showcases/home-hero',
-      {
-        query: { locale: locale.value },
-        headers: { accept: 'application/json' },
-      },
-      'Failed to load home hero visual showcase',
-    ),
+    async () => {
+      const abortController = import.meta.server && typeof AbortController !== 'undefined'
+        ? new AbortController()
+        : null
+      const timeoutHandle = abortController
+        ? setTimeout(() => abortController.abort(), HOME_HERO_SHOWCASE_SSR_TIMEOUT_MS)
+        : null
+
+      try {
+        return await request<HomeHeroVisualShowcaseApiEnvelope>(
+          '/visual-showcases/home-hero',
+          {
+            query: { locale: locale.value },
+            headers: { accept: 'application/json' },
+            ...(abortController ? { signal: abortController.signal } : {}),
+          },
+          'Failed to load home hero visual showcase',
+        )
+      } catch (fetchError) {
+        if (abortController && isAbortError(fetchError)) {
+          return null
+        }
+        throw fetchError
+      } finally {
+        if (timeoutHandle) {
+          clearTimeout(timeoutHandle)
+        }
+      }
+    },
     { default: () => null },
   )
 

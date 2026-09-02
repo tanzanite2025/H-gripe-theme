@@ -1,5 +1,5 @@
 import { ref, computed, watch } from 'vue'
-import { useRuntimeConfig } from '#imports'
+import { useCookie, useRuntimeConfig } from '#imports'
 import type { CartItem } from '~~/types/cart'
 import { useAuth } from '~/composables/useAuth'
 import { useCartCalculation } from '~/composables/useCartCalculation'
@@ -118,7 +118,8 @@ export const useCart = () => {
   const auth = useAuth()
   const calculation = useCartCalculation()
   const { track: trackBehaviorEvent } = useBehaviorEvents()
-  const { baseCurrency } = useStorefrontContext()
+  const displayCurrencyCookie = useCookie<string | null>('display_currency')
+  const baseCurrency = computed(() => normalizeCurrencyCode(displayCurrencyCookie.value) || 'USD')
   const overlayBackStack = useOverlayBackStack()
 
   const loadCartFromBackend = async () => {

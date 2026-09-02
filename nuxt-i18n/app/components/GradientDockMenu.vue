@@ -55,7 +55,32 @@
 
       <!-- 3. Quick Buy -->
       <ClientOnly>
-        <LazyGradientDockQuickBuy @open="isOpen = false" />
+        <LazyGradientDockQuickBuy
+          v-if="quickBuyDockMounted"
+          @open="isOpen = false"
+        />
+        <button
+          v-else
+          class="dock-icon-button dock-quick-buy-button h-11 md:h-12 tz-text-secondary hover:text-[#059669] transition-colors"
+          type="button"
+          :aria-label="$t('dockMenu.quickBuy')"
+          @click="openDeferredQuickBuyDock"
+        >
+          <span class="dock-icon-slot dock-quick-buy-frame">
+            <svg
+              class="w-full h-full transition-all"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+              aria-hidden="true"
+            >
+              <title>Honeybadger</title>
+              <path
+                d="M11.999 0c-.346 0-.691.131-.955.395L.394 11.045a1.35 1.35 0 0 0 0 1.91l6.243 6.24.915-1.95L2.306 12l9.693-9.693 1.158 1.157 1.432-1.432L12.954.395A1.346 1.346 0 0 0 11.999 0Zm5.54 1.106a.331.331 0 0 0-.218.102l-1.777 1.778-1.432 1.432-8.393 8.392h4.726l-3.76 9.26c-.139.34.29.626.55.366l1.321-1.32v-.001l1.432-1.432h.001l8.56-8.561h-4.727l2.083-4.91v.001l.854-2.012 1.112-2.623c.108-.256-.108-.485-.333-.472Zm.25 4.125-.853 2.012 4.756 4.756L12 21.693l-1.056-1.055-1.432 1.432 1.533 1.534a1.35 1.35 0 0 0 1.91 0l10.65-10.65a1.35 1.35 0 0 0 0-1.91z"
+                fill="currentColor"
+              />
+            </svg>
+          </span>
+        </button>
         <template #fallback>
           <button
             class="dock-icon-button dock-quick-buy-button h-11 md:h-12 tz-text-secondary hover:text-[#059669] transition-colors"
@@ -101,11 +126,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { useI18n } from '#imports'
 import { useChatWidget } from '~/composables/useChatWidget'
 
 const isOpen = ref(false)
+const quickBuyDockMounted = ref(false)
 const { isChatOpen, openChat, closeChat } = useChatWidget()
 const { t: $t } = useI18n()
 const totalUnreadCount = ref(0)
@@ -114,6 +140,15 @@ const closeAll = () => {
   isOpen.value = false
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new Event('quickbuy:close-all'))
+  }
+}
+
+const openDeferredQuickBuyDock = async () => {
+  quickBuyDockMounted.value = true
+  await nextTick()
+
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('quickbuy:open-entry'))
   }
 }
 

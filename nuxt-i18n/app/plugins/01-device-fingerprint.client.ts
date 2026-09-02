@@ -1,8 +1,11 @@
 import { defineNuxtPlugin } from '#imports'
 import { attachDeviceFingerprintHeader, resolveDeviceFingerprint } from '~/utils/deviceFingerprint'
+import { scheduleDeferredClientWork } from '~/utils/clientDeferredWork'
 
 export default defineNuxtPlugin(() => {
-  void resolveDeviceFingerprint()
+  scheduleDeferredClientWork(() => {
+    void resolveDeviceFingerprint()
+  }, { delayMs: 7000, idleTimeoutMs: 3000 })
 
   const currentFetch = (globalThis as { $fetch?: any }).$fetch
   if (!currentFetch?.create) {

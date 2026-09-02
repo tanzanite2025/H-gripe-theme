@@ -2,6 +2,7 @@ import { onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { useApiRequest } from '~/composables/useApiRequest'
+import { scheduleDeferredClientWork } from '~/utils/clientDeferredWork'
 import type {
   BehaviorEventMetadata,
   BehaviorEventType,
@@ -231,9 +232,11 @@ export const useBehaviorEvents = () => {
   }
 
   onMounted(() => {
-    ensureIdentity()
-    captureAttribution()
-    registerLifecycle()
+    scheduleDeferredClientWork(() => {
+      ensureIdentity()
+      captureAttribution()
+      registerLifecycle()
+    }, { delayMs: 6500, idleTimeoutMs: 3000 })
   })
 
   return {

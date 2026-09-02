@@ -7,6 +7,9 @@
     <AppFooter />
     <ClientOnly>
       <LazyGradientDockMenu />
+      <template #fallback>
+        <GradientDockMenuShell />
+      </template>
     </ClientOnly>
     <BehaviorAttributionBootstrap />
   </div>
@@ -21,6 +24,7 @@ import {
 } from '#imports'
 import AppFooter from '~/components/AppFooter.vue'
 import BehaviorAttributionBootstrap from '~/components/BehaviorAttributionBootstrap.vue'
+import GradientDockMenuShell from '~/components/GradientDockMenuShell.vue'
 import { useAuth } from '~/composables/useAuth'
 import { useSiteTitle } from '~/composables/useSiteTitle'
 import { useSiteSettings } from '~/composables/usePublicSettings'

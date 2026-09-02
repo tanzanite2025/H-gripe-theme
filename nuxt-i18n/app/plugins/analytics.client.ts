@@ -12,6 +12,7 @@ import {
   loadGoogleAnalyticsScript,
   loadGoogleTagManagerScript,
 } from '~/utils/security/trustedScriptUrl'
+import { scheduleDeferredClientWork } from '~/utils/clientDeferredWork'
 
 type Gtag = (...args: unknown[]) => void
 
@@ -89,25 +90,42 @@ const trackPageView = () => {
   analyticsWindow.dataLayer?.push({ event: 'page_view', ...page })
 }
 
-export default defineNuxtPlugin(async () => {
+export default defineNuxtPlugin(() => {
   const router = useRouter()
 
-  let settings: AnalyticsSettings
-  try {
-    settings = await fetchAnalyticsSettings()
-  } catch (error) {
-    console.warn('Failed to initialize analytics settings:', error)
-    return
+  let settings: AnalyticsSettings | null = null
+  let settingsPromise: Promise<AnalyticsSettings | null> | null = null
+
+  const loadSettings = async () => {
+    if (settings) return settings
+    if (!settingsPromise) {
+      settingsPromise = fetchAnalyticsSettings()
+        .then((result) => {
+          settings = result
+          return result
+        })
+        .catch((error) => {
+          console.warn('Failed to initialize analytics settings:', error)
+          return null
+        })
+        .finally(() => {
+          settingsPromise = null
+        })
+    }
+    return settingsPromise
   }
 
-  const applyConsent = (consent: CookieConsentPreferences | null) => {
+  const applyConsent = async (consent: CookieConsentPreferences | null) => {
     if (!consent) return
 
-    if (settings.googleAnalytics && consent.performance) {
-      ensureGoogleAnalytics(settings.googleAnalytics, consent)
+    const resolvedSettings = await loadSettings()
+    if (!resolvedSettings) return
+
+    if (resolvedSettings.googleAnalytics && consent.performance) {
+      ensureGoogleAnalytics(resolvedSettings.googleAnalytics, consent)
     }
-    if (settings.googleTagManager && canLoadGoogleTagManager(consent)) {
-      ensureGoogleTagManager(settings.googleTagManager)
+    if (resolvedSettings.googleTagManager && canLoadGoogleTagManager(consent)) {
+      ensureGoogleTagManager(resolvedSettings.googleTagManager)
     }
 
     updateGoogleConsent(consent)
@@ -116,11 +134,16 @@ export default defineNuxtPlugin(async () => {
     }
   }
 
-  applyConsent(readCookieConsent())
+  const existingConsent = readCookieConsent()
+  if (existingConsent) {
+    scheduleDeferredClientWork(() => {
+      void applyConsent(existingConsent)
+    }, { delayMs: 7000, idleTimeoutMs: 4000 })
+  }
 
   const handleConsentUpdate = (event: Event) => {
     const detail = (event as CustomEvent<CookieConsentPreferences>).detail
-    applyConsent(detail || readCookieConsent())
+    void applyConsent(detail || readCookieConsent())
   }
 
   window.addEventListener(COOKIE_CONSENT_UPDATED_EVENT, handleConsentUpdate)
@@ -128,6 +151,10 @@ export default defineNuxtPlugin(async () => {
   router.afterEach(() => {
     const consent = readCookieConsent()
     if (!consent) return
+    if (!settings) {
+      void applyConsent(consent)
+      return
+    }
     if (settings.googleAnalytics && consent.performance) {
       trackPageView()
       return

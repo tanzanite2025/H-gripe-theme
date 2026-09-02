@@ -77,12 +77,23 @@ const quickContactServiceOpen = ref(false)
 const quickWheelsetSelectionAssistantOpen = ref(false)
 const quickBuyAnchorRef = ref<HTMLElement | null>(null)
 const { openChat } = useChatWidget()
-const { quickBuyFlowConfig } = useQuickBuyFlow('dock')
+const { quickBuyFlowConfig, refresh: refreshQuickBuyFlow } = useQuickBuyFlow('dock', { immediate: false })
 const quickBuyConfig = computed(() => quickBuyFlowConfig.value)
 const { t: $t } = useI18n()
 const emit = defineEmits<{
   open: []
 }>()
+let quickBuyFlowWarmup: Promise<void> | null = null
+
+const warmQuickBuyFlow = async () => {
+  if (quickBuyConfig.value) return
+  if (!quickBuyFlowWarmup) {
+    quickBuyFlowWarmup = refreshQuickBuyFlow().finally(() => {
+      quickBuyFlowWarmup = null
+    })
+  }
+  await quickBuyFlowWarmup
+}
 
 const quickActive = computed(() =>
   quickOpen.value || quickDirectSelectOpen.value || quickContactServiceOpen.value || quickWheelsetSelectionAssistantOpen.value,
@@ -99,6 +110,7 @@ const openQuickEntry = () => {
   emit('open')
   closeAll()
   quickOpen.value = true
+  void warmQuickBuyFlow()
 }
 
 const openQuick = () => {
@@ -122,10 +134,11 @@ const closeQuickEntry = () => {
   quickOpen.value = false
 }
 
-const openQuickDirectSelect = () => {
+const openQuickDirectSelect = async () => {
   quickOpen.value = false
   quickContactServiceOpen.value = false
   quickWheelsetSelectionAssistantOpen.value = false
+  await warmQuickBuyFlow()
   quickDirectSelectOpen.value = true
 }
 
