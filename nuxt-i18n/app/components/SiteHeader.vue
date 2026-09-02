@@ -7,7 +7,7 @@
 			class="site-header-surface relative w-full rounded-none px-4 py-2 md:px-0 md:py-0"
 		>
 			<!-- 桌面端：全宽单层横向导航（1280px+） -->
-			<div class="hidden xl:flex flex-col items-stretch">
+			<div v-if="!isMobileViewport" class="hidden xl:flex flex-col items-stretch">
 				<div class="site-header-mainbar desktop-header-grid w-full grid grid-cols-[220px_1fr_220px] xl:grid-cols-[280px_1fr_280px] items-center gap-4 px-4 lg:px-8 py-0 min-h-[64px]">
 
 					<!-- Logo -->
@@ -231,7 +231,7 @@
 			</div>
 
 			<!-- 移动端和平板：品牌工具栏、主导航、面包屑三行独立布局 -->
-			<div class="xl:hidden flex flex-col gap-0">
+			<div v-else class="xl:hidden flex flex-col gap-0">
 				<div class="site-header-mobile-surface -mx-4 -mt-2 flex flex-col px-4 pt-2 pb-0">
 
 				<!-- 第一行：左侧 Shop 图标、居中 Logo、右侧工具图标区 -->
@@ -414,13 +414,14 @@
 			</div>
 		</div>
 
-		<GlobalContentNavigationTransitionOverlay
+		<LazyGlobalContentNavigationTransitionOverlay
+			v-if="contentNavigationTransitionMounted"
 			:open="contentNavigationTransitionOpen"
 			:desktop-anchor="desktopContentNavigationTriggerRef"
 			:mobile-anchor="mobileContentNavigationTriggerRef"
 			@select="handleContentNavigationOption"
 		/>
-		<GlobalAllFaqsSearchOverlay
+		<LazyGlobalAllFaqsSearchOverlay
 			v-if="globalFaqSearchMounted"
 			:open="globalFaqSearchOpen"
 			@close="closeGlobalFaqSearch"
@@ -466,12 +467,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, nextTick, unref, watch, type ComponentPublicInstance } from 'vue'
 import { useThrottleFn } from '@vueuse/core'
-import { useI18n, useLocalePath, useRoute, useRouter, useState } from '#imports'
+import { useI18n, useLocalePath, useRequestHeaders, useRoute, useRouter, useState } from '#imports'
 import { useSiteSettings } from '~/composables/usePublicSettings'
 import { useOverlayBackStack } from '~/composables/useOverlayBackStack'
 import { usePagesSearchOverlayState } from '~/composables/usePagesSearchOverlayState'
-import GlobalContentNavigationTransitionOverlay from '~/components/GlobalContentNavigationTransitionOverlay.vue'
-import GlobalAllFaqsSearchOverlay from '~/components/faq/GlobalAllFaqsSearchOverlay.vue'
 import {
   findPrimaryMegaNavSectionByPath,
   normalizePrimaryMegaNavPath,
@@ -487,6 +486,7 @@ import {
   type PageSubNavigationEntry,
   type PageSubNavigationTab,
 } from '~/utils/pageSubNavigation'
+import { isStorefrontMobileUserAgent } from '~/utils/storefrontLoadingPolicy'
 import localeManifest from '~/i18n/locales.manifest'
 
 // Header brand logo is controlled only by the public site settings API.
@@ -509,7 +509,10 @@ const mobileTopbarRef = ref<HTMLElement | null>(null)
 const mobilePrimaryNavRef = ref<HTMLElement | null>(null)
 const desktopContentNavigationTriggerRef = ref<HTMLElement | null>(null)
 const mobileContentNavigationTriggerRef = ref<HTMLElement | null>(null)
-const isMobileViewport = ref(false)
+const isMobileViewport = useState(
+  'site-header-is-mobile-viewport',
+  () => isStorefrontMobileUserAgent(useRequestHeaders(['user-agent'])['user-agent']),
+)
 let headerResizeObserver: ResizeObserver | null = null
 let headerMetricsFrame: number | null = null
 const appliedHeaderMetrics = new Map<string, string>()
@@ -520,6 +523,7 @@ const mobileShopSection = primaryMegaNavSections.find((section) => section.id ==
 const mobileSecondaryNavSections = primaryMegaNavSections.filter((section) => section.id !== 'products')
 const activeBreadcrumbSubNavId = ref<string | null>(null)
 const breadcrumbSubNavMobileTop = ref('8.5rem')
+const contentNavigationTransitionMounted = ref(false)
 const contentNavigationTransitionOpen = ref(false)
 const globalFaqSearchMounted = ref(false)
 const globalFaqSearchOpen = ref(false)
@@ -650,6 +654,7 @@ const closeContentNavigationTransition = (
 
 const openContentNavigationTransition = () => {
 	isOpen.value = false
+	contentNavigationTransitionMounted.value = true
 	contentNavigationTransitionOpen.value = true
 	overlayBackStack.open(
 		'global-content-navigation-transition',

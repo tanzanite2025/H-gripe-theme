@@ -13,6 +13,7 @@ import {
   loadGoogleTagManagerScript,
 } from '~/utils/security/trustedScriptUrl'
 import { scheduleDeferredClientWork } from '~/utils/clientDeferredWork'
+import { STOREFRONT_ANALYTICS_WARMUP } from '~/utils/storefrontLoadingPolicy'
 
 type Gtag = (...args: unknown[]) => void
 
@@ -138,7 +139,7 @@ export default defineNuxtPlugin(() => {
   if (existingConsent) {
     scheduleDeferredClientWork(() => {
       void applyConsent(existingConsent)
-    }, { delayMs: 7000, idleTimeoutMs: 4000 })
+    }, STOREFRONT_ANALYTICS_WARMUP)
   }
 
   const handleConsentUpdate = (event: Event) => {

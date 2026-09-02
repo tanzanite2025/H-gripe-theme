@@ -36,13 +36,6 @@ export const storefrontHtmlCachePolicies: StorefrontHtmlCachePolicy[] = [
     ...storefrontHtmlCacheDurations.productDetail,
   },
   {
-    name: 'localized-home',
-    description: 'Localized home pages only; the root path stays no-store for i18n redirects.',
-    paths: ['/'],
-    maxAge: storefrontHtmlCacheDurations.productDetail.maxAge,
-    staleMaxAge: storefrontHtmlCacheDurations.productDetail.staleMaxAge,
-  },
-  {
     name: 'content',
     description: 'Editorial and guide pages that change less frequently than product data.',
     paths: ['/resources/blog/**', '/guides/**', '/resources/picture-warehouse/**', '/faq'],
@@ -64,6 +57,9 @@ export const storefrontHtmlCachePolicies: StorefrontHtmlCachePolicy[] = [
 ]
 
 export const storefrontNoStorePagePaths = [
+  // Home HTML carries build-specific modulepreload links. Keep localized home pages
+  // out of stale HTML cache so deploys cannot reference retired _nuxt assets.
+  '/',
   // Query/search/filter state lives in the URL, but the list is data-heavy and
   // changes frequently. Keep it uncached until a query-aware cache strategy is added.
   '/shop',

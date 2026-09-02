@@ -12,27 +12,28 @@
       </section>
     </main>
 
-    <AppFooter />
-    <GradientDockMenu />
-    <BehaviorAttributionBootstrap />
+    <LazyAppFooter :hydrate-on-visible="footerHydrationOptions" />
+    <GradientDockMenuDeferred />
+    <BehaviorAttributionBootstrapDeferred />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useHead, useRequestURL, useRuntimeConfig } from '#imports'
-import AppFooter from '~/components/AppFooter.vue'
-import BehaviorAttributionBootstrap from '~/components/BehaviorAttributionBootstrap.vue'
-import GradientDockMenu from '~/components/GradientDockMenu.vue'
+import BehaviorAttributionBootstrapDeferred from '~/components/BehaviorAttributionBootstrapDeferred.vue'
+import GradientDockMenuDeferred from '~/components/GradientDockMenuDeferred.vue'
 import PageFaqSlot from '~/components/PageFaqSlot.vue'
 import { useSiteSettings } from '~/composables/usePublicSettings'
 import { useSiteTitle } from '~/composables/useSiteTitle'
 import { createSeoJsonLdScript } from '~/utils/seo/jsonLd'
+import { STOREFRONT_FOOTER_HYDRATION_OPTIONS } from '~/utils/storefrontLoadingPolicy'
 
 const config = useRuntimeConfig()
 const requestUrl = useRequestURL()
 const { siteSettings } = useSiteSettings()
 const { siteTitle } = useSiteTitle()
+const footerHydrationOptions = STOREFRONT_FOOTER_HYDRATION_OPTIONS
 
 const siteUrl = computed(() => {
   const configured = String((config.public as { siteUrl?: string }).siteUrl || '').trim()

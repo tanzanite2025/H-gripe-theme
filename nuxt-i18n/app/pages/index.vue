@@ -3,51 +3,43 @@
     <div class="site-header-layout-spacer" aria-hidden="true"></div>
     <HomeHero />
 
-    <HomeRideCategoryStrip />
+    <LazyHomeRideCategoryStrip :hydrate-on-visible="sectionHydrationOptions" />
 
-    <HomeMainProductCategories />
+    <LazyHomeMainProductCategories :hydrate-on-visible="sectionHydrationOptions" />
 
-    <HomeStorePicksGuide />
+    <LazyHomeStorePicksGuide :hydrate-on-visible="sectionHydrationOptions" />
 
-    <LazyHomePurchasePath />
+    <LazyHomePurchasePath :hydrate-on-visible="sectionHydrationOptions" />
 
-    <Suspense>
-      <AsyncHomeFeaturedProducts />
-      <template #fallback>
-        <HomeFeaturedProductsSkeleton />
-      </template>
-    </Suspense>
+    <LazyHomeFeaturedProducts :hydrate-on-visible="sectionHydrationOptions" />
 
-    <HomeShopWithConfidence />
+    <LazyHomeShopWithConfidence :hydrate-on-visible="sectionHydrationOptions" />
 
-    <HomeFeaturesTabs />
+    <LazyHomeFeaturesTabs :hydrate-on-visible="sectionHydrationOptions" />
 
     <!-- FAQ Preview Section -->
     <div class="pt-[21px] pb-0">
       <div class="page-content-shell">
-        <HomeFaqPreview :max-categories="4" :max-items-per-category="3" wide fluid />
+        <LazyHomeFaqPreview
+          :hydrate-on-visible="sectionHydrationOptions"
+          :max-categories="4"
+          :max-items-per-category="3"
+          wide
+          fluid
+        />
       </div>
     </div>
 
-    <HomeFinalCta />
+    <LazyHomeFinalCta :hydrate-on-visible="sectionHydrationOptions" />
   </main>
 </template>
 
 <script setup lang="ts">
-import { defineAsyncComponent, onMounted } from 'vue'
+import { onMounted } from 'vue'
 import HomeHero from '~/components/home/HomeHero.vue'
-import HomeRideCategoryStrip from '~/components/home/HomeRideCategoryStrip.vue'
-import HomeMainProductCategories from '~/components/home/HomeMainProductCategories.vue'
-import HomeStorePicksGuide from '~/components/home/HomeStorePicksGuide.vue'
-import HomeShopWithConfidence from '~/components/home/HomeShopWithConfidence.vue'
-import HomeFeaturesTabs from '~/components/home/HomeFeaturesTabs.vue'
-import HomeFeaturedProductsSkeleton from '~/components/home/HomeFeaturedProductsSkeleton.vue'
-import HomeFaqPreview from '~/components/HomeFaqPreview.vue'
-import HomeFinalCta from '~/components/home/HomeFinalCta.vue'
+import { STOREFRONT_NEAR_FOLD_HYDRATION_OPTIONS } from '~/utils/storefrontLoadingPolicy'
 
-const AsyncHomeFeaturedProducts = defineAsyncComponent(
-  () => import('~/components/home/HomeFeaturedProducts.vue'),
-)
+const sectionHydrationOptions = STOREFRONT_NEAR_FOLD_HYDRATION_OPTIONS
 
 const homepageLegacySectionHashes = new Set(['#home-buying-path', '#featured-products'])
 

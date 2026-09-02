@@ -5,6 +5,7 @@ import { useAuth } from '~/composables/useAuth'
 import { useCartCalculation } from '~/composables/useCartCalculation'
 import { useBehaviorEvents } from '~/composables/useBehaviorEvents'
 import { useOverlayBackStack } from '~/composables/useOverlayBackStack'
+import { activateStorefrontClientOverlays } from '~/utils/clientOverlays'
 import { isExpectedAnonymousApiMiss, logUnexpectedApiError } from '~/utils/storefrontApiFailures'
 import {
   createStorefrontMediaContext,
@@ -397,6 +398,7 @@ export const useCart = () => {
   }
 
   const openCart = () => {
+    activateStorefrontClientOverlays()
     cartVariant.value = 'default'
     isCartOpen.value = true
     void loadCartForInteraction()
@@ -416,6 +418,7 @@ export const useCart = () => {
     }
   }
   const openCheckout = (paymentMethod?: string) => {
+    activateStorefrontClientOverlays()
     preferredCheckoutPaymentMethod.value = normalizeCheckoutPaymentMethod(paymentMethod)
     void loadCartForInteraction()
 
@@ -446,18 +449,21 @@ export const useCart = () => {
     openCartFromCheckout()
   }
   const openCartFromCheckout = () => {
+    activateStorefrontClientOverlays()
     cartVariant.value = 'checkout-bottom'
     isCartOpen.value = true
     void loadCartForInteraction()
     overlayBackStack.open('cart-drawer', closeCartState)
   }
   const openCartFromLever = () => {
+    activateStorefrontClientOverlays()
     cartVariant.value = 'lever-bottom'
     isCartOpen.value = true
     void loadCartForInteraction()
     overlayBackStack.open('cart-drawer', closeCartState, { mode: 'push' })
   }
   const openCartFromChat = () => {
+    activateStorefrontClientOverlays()
     cartVariant.value = 'chat-bottom'
     isCartOpen.value = true
     void loadCartForInteraction()

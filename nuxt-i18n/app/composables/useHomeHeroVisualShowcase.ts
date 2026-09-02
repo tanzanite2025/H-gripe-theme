@@ -10,8 +10,7 @@ import {
   createStorefrontMediaContext,
   normalizeStorefrontMediaUrl,
 } from '~/utils/storefrontMedia'
-
-const HOME_HERO_SHOWCASE_SSR_TIMEOUT_MS = 900
+import { HOME_HERO_SHOWCASE_SSR_TIMEOUT_MS } from '~/utils/storefrontLoadingPolicy'
 
 const isAbortError = (error: unknown) => (
   error instanceof DOMException && error.name === 'AbortError'

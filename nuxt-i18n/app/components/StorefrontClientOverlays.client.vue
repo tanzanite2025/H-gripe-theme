@@ -1,4 +1,9 @@
 <template>
+  <SidePanel>
+    <template #left>
+      <LazyAccountSidebarPanel />
+    </template>
+  </SidePanel>
   <component
     :is="cartDrawerComponent"
     v-if="isCartOpen && cartDrawerComponent"
@@ -40,6 +45,7 @@ import { useCart } from '~/composables/useCart'
 import { useGlobalProductDetailBottomSheet } from '~/composables/useGlobalProductDetailBottomSheet'
 import { usePagesSearchOverlayState } from '~/composables/usePagesSearchOverlayState'
 import { useShopSearchSheet } from '~/composables/useShopSearchSheet'
+import SidePanel from '~/components/SidePanel.vue'
 
 const { currentConversation, closeChat } = useChatWidget()
 const { isCartOpen, isCheckoutOpen } = useCart()
