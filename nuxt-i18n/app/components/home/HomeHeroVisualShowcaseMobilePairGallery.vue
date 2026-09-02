@@ -28,9 +28,9 @@
         <HomeHeroVisualShowcaseFigure
           :item="item"
           sizes="xs:50vw sm:50vw md:50vw"
-          :loading="activePairIndex === 0 && index === 0 ? 'eager' : 'lazy'"
-          :fetchpriority="activePairIndex === 0 && index === 0 ? 'high' : 'low'"
-          :preload="activePairIndex === 0 && index === 0 ? { fetchPriority: 'high', media: '(max-width: 1023px)' } : false"
+          :loading="activePairIndex === 0 ? 'eager' : 'lazy'"
+          :fetchpriority="activePairIndex === 0 ? 'high' : 'low'"
+          :preload="activePairIndex === 0 ? { fetchPriority: 'high', media: '(max-width: 1023px)' } : false"
           caption-visibility="sr-only"
         />
       </button>

@@ -161,7 +161,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from '#imports'
 import {
   COOKIE_CONSENT_KEY,
@@ -175,6 +175,26 @@ const overlayBackStack = useOverlayBackStack()
 
 const showBanner = ref(false)
 const showModal = ref(false)
+const COOKIE_BANNER_REVEAL_DELAY_MS = 60_000
+let bannerRevealTimer: number | null = null
+
+const clearBannerRevealTimer = () => {
+  if (bannerRevealTimer === null || typeof window === 'undefined') return
+
+  window.clearTimeout(bannerRevealTimer)
+  bannerRevealTimer = null
+}
+
+const revealBannerAfterDelay = () => {
+  bannerRevealTimer = null
+  showBanner.value = true
+}
+
+const scheduleBannerReveal = () => {
+  if (bannerRevealTimer !== null || typeof window === 'undefined') return
+
+  bannerRevealTimer = window.setTimeout(revealBannerAfterDelay, COOKIE_BANNER_REVEAL_DELAY_MS)
+}
 
 const closeCookieModalState = () => {
   showModal.value = false
@@ -198,11 +218,13 @@ const preferences = ref({
 
 // 隐藏横条
 const hideBanner = () => {
+  clearBannerRevealTimer()
   showBanner.value = false
 }
 
 // 隐藏全部（横条和弹窗）
 const hideAll = () => {
+  clearBannerRevealTimer()
   showBanner.value = false
   closeCookieModal()
 }
@@ -216,6 +238,7 @@ const saveConsent = (prefs: Omit<CookieConsentPreferences, 'essential' | 'timest
     timestamp: Date.now()
   }
   localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(consent))
+  clearBannerRevealTimer()
   showBanner.value = false
   closeCookieModal()
   
@@ -253,8 +276,8 @@ const handleSavePreferences = () => {
 onMounted(() => {
   const existing = readCookieConsent()
   if (!existing) {
-    // 没有保存的偏好，显示弹窗
-    showBanner.value = true
+    // 首屏不插入提示，延迟显示，避免影响 LCP 候选元素。
+    scheduleBannerReveal()
   } else {
     // 恢复已保存的偏好
     preferences.value = {
@@ -267,10 +290,20 @@ onMounted(() => {
   // The banner is fixed and must never change document geometry.
 })
 
+onBeforeUnmount(() => {
+  clearBannerRevealTimer()
+})
+
 // 暴露方法供外部调用（如用户想重新设置偏好）
 defineExpose({
-  show: () => { showBanner.value = true },
-  hide: () => { showBanner.value = false }
+  show: () => {
+    clearBannerRevealTimer()
+    showBanner.value = true
+  },
+  hide: () => {
+    clearBannerRevealTimer()
+    showBanner.value = false
+  }
 })
 </script>
 

@@ -9,11 +9,16 @@ import type {
   QuickBuyFlow,
 } from '~/utils/quickBuy/types'
 
-export function useQuickBuyFlow(surface = 'dock') {
+interface QuickBuyFlowOptions {
+  immediate?: boolean
+}
+
+export function useQuickBuyFlow(surface = 'dock', options: QuickBuyFlowOptions = {}) {
   const runtimeConfig = useRuntimeConfig()
   const mediaContext = createStorefrontMediaContext(runtimeConfig)
   const { request } = useApiRequest()
   const { locale } = useI18n()
+  const immediate = options.immediate ?? true
   let refreshPromise: Promise<void> | null = null
 
   const { data, pending, error, refresh } = useAsyncData<QuickBuyFlow | null>(
@@ -36,12 +41,13 @@ export function useQuickBuyFlow(surface = 'dock') {
     {
       server: false,
       default: () => null,
-      watch: [locale],
+      immediate,
+      watch: immediate ? [locale] : undefined,
       dedupe: 'defer',
     }
   )
 
-  const quickBuyFlow = computed<QuickBuyFlow | null>(() => data.value)
+  const quickBuyFlow = computed<QuickBuyFlow | null>(() => data.value ?? null)
   const quickBuyFlowConfig = computed<QuickBuyConfig | null>(() => {
     if (!quickBuyFlow.value || quickBuyFlow.value.steps.length === 0) return null
     return {
