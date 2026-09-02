@@ -62,7 +62,11 @@ func ProviderAuditIDForAuditID(value string) string {
 		return SiteQualityProviderAuditIDLinkText
 	default:
 		if strings.HasPrefix(normalized, "site-heading-") ||
-			strings.HasPrefix(normalized, "site-schema-") {
+			strings.HasPrefix(normalized, "site-schema-") ||
+			strings.HasPrefix(normalized, "site-resource-") ||
+			strings.HasPrefix(normalized, "site-link-") ||
+			strings.HasPrefix(normalized, "site-interaction-") ||
+			strings.HasPrefix(normalized, "site-soft-navigation-") {
 			return ""
 		}
 		return normalized

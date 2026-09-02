@@ -1,5 +1,8 @@
 <template>
-  <div class="dock-shell fixed inset-x-0 bottom-0 w-full z-[101]">
+  <div
+    v-show="!isWheelsetSelectionAssistantOpen"
+    class="dock-shell fixed inset-x-0 bottom-0 w-full z-[101]"
+  >
     <div class="dock-shell__surface mx-auto w-full md:max-w-[500px] rounded-none px-1 py-2.5 md:px-4 md:py-3">
       <button
         class="dock-shell__icon-button"
@@ -66,7 +69,11 @@
 </template>
 
 <script setup lang="ts">
+import { useWheelsetSelectionAssistantModalState } from '~/composables/useWheelsetSelectionAssistantModalState'
+
 type GradientDockMenuShellIntent = 'sidebar' | 'chat' | 'quick-buy' | 'cart'
+
+const { isOpen: isWheelsetSelectionAssistantOpen } = useWheelsetSelectionAssistantModalState()
 
 const emit = defineEmits<{
   intent: [value: GradientDockMenuShellIntent]

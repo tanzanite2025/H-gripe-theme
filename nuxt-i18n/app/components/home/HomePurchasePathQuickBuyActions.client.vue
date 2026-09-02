@@ -35,9 +35,6 @@
       source="quick-buy/wheelset-selection-assistant"
       @contact-support="openWheelsetSelectionSupportChat"
     />
-    <template #footer>
-      <WheelsetSelectionSupportCta @contact-support="openWheelsetSelectionSupportChat" />
-    </template>
   </LazyWheelsetSelectionAssistantModal>
 </template>
 
@@ -45,7 +42,6 @@
 import { computed, nextTick, ref } from 'vue'
 import { useChatWidget } from '~/composables/useChatWidget'
 import { useQuickBuyFlow } from '~/composables/useQuickBuyFlow'
-import WheelsetSelectionSupportCta from '~/components/wheelset-selection/WheelsetSelectionSupportCta.vue'
 import type { HomePurchasePathQuickBuyAction } from '~/utils/homePurchasePath'
 import type { WheelsetSelectionRequestDraft } from '~/types/wheelsetSelectionAssistant'
 
@@ -83,7 +79,6 @@ const handleQuickBuyAction = async (actionId: HomePurchasePathQuickBuyAction['id
   }
 
   if (actionId === 'wheelset-selection-assistant') {
-    await warmQuickBuyFlow()
     quickBuyWheelsetSelectionAssistantOpen.value = true
   }
 }
@@ -95,7 +90,6 @@ const handleQuickBuyAssistantModelUpdate = (value: boolean) => {
 }
 
 const openWheelsetSelectionSupportChat = async (draft?: WheelsetSelectionRequestDraft) => {
-  quickBuyWheelsetSelectionAssistantOpen.value = false
   openChat({
     showAgentList: true,
     source: 'wheelset-selection-assistant',

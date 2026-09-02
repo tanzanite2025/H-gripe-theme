@@ -25,13 +25,38 @@ var (
 	ErrSiteQualityJobRequired = errors.New("SiteQuality run requires a leased job")
 )
 
-const siteQualityRunnerMaxResponseBytes = 16 << 20
+const (
+	siteQualityRunnerMaxResponseBytes       = 16 << 20
+	defaultSiteQualityRunnerBudget          = 90 * time.Second
+	defaultSiteQualityRunnerRequestOverhead = 15 * time.Second
+	defaultSiteQualityRunnerHTTPOverhead    = 5 * time.Second
+)
 
 type LighthouseRunnerConfig struct {
-	RunnerURL           string
-	RunnerToken         string
-	StorefrontBaseURL   string
-	StorefrontTargetURL string
+	RunnerURL                   string
+	RunnerToken                 string
+	RunnerTimeout               time.Duration
+	StorefrontBaseURL           string
+	StorefrontTargetURL         string
+	ThrottlingMethod            string
+	LighthouseRunCount          int
+	RenderWaitSelector          string
+	RenderWaitTimeout           time.Duration
+	HeadingSettleTimeout        time.Duration
+	StructuredDataSettleTimeout time.Duration
+	InteractionProbes           string
+	InteractionMaxResponse      time.Duration
+	SoftNavigationSelectors     string
+	SoftNavigationMaxLinks      int
+	SoftNavigationMaxDuration   time.Duration
+	SoftNavigationMaxHeapGrowth int
+	JSBudgetBytes               int
+	ImageBudgetBytes            int
+	LinkCheckEnabled            bool
+	LinkCheckMaxLinks           int
+	LinkCheckTimeout            time.Duration
+	LinkCheckExternal           bool
+	LinkCheckMaxRedirects       int
 }
 
 type LighthouseRunnerService struct {
@@ -41,8 +66,32 @@ type LighthouseRunnerService struct {
 	httpClient       *http.Client
 	runnerURL        string
 	runnerToken      string
+	runnerTimeout    time.Duration
 	defaultTargetURL string
 	runnerTargetURL  string
+	accuracy         siteQualityRunnerAccuracyConfig
+}
+
+type siteQualityRunnerAccuracyConfig struct {
+	ThrottlingMethod            string
+	LighthouseRunCount          int
+	RenderWaitSelector          string
+	RenderWaitTimeout           time.Duration
+	HeadingSettleTimeout        time.Duration
+	StructuredDataSettleTimeout time.Duration
+	InteractionProbes           string
+	InteractionMaxResponse      time.Duration
+	SoftNavigationSelectors     string
+	SoftNavigationMaxLinks      int
+	SoftNavigationMaxDuration   time.Duration
+	SoftNavigationMaxHeapGrowth int
+	JSBudgetBytes               int
+	ImageBudgetBytes            int
+	LinkCheckEnabled            bool
+	LinkCheckMaxLinks           int
+	LinkCheckTimeout            time.Duration
+	LinkCheckExternal           bool
+	LinkCheckMaxRedirects       int
 }
 
 type LighthouseRunnerRunInput struct {
@@ -85,13 +134,16 @@ type LighthouseRunnerIssue struct {
 	Links           []sitequalitydomain.SiteQualityLinkEvidence           `json:"links,omitempty"`
 	Headings        []sitequalitydomain.SiteQualityHeadingEvidence        `json:"headings,omitempty"`
 	StructuredData  []sitequalitydomain.SiteQualityStructuredDataEvidence `json:"structured_data,omitempty"`
+	Runtime         []sitequalitydomain.SiteQualityRuntimeEvidence        `json:"runtime,omitempty"`
 	Remediation     *LighthouseRunnerRemediation                          `json:"remediation,omitempty"`
 }
 
 type LighthouseRunnerResource struct {
-	URL        string   `json:"url"`
-	TotalBytes *int64   `json:"total_bytes,omitempty"`
-	WastedMS   *float64 `json:"wasted_ms,omitempty"`
+	URL             string   `json:"url"`
+	TotalBytes      *int64   `json:"total_bytes,omitempty"`
+	BudgetBytes     *int64   `json:"budget_bytes,omitempty"`
+	OverBudgetBytes *int64   `json:"over_budget_bytes,omitempty"`
+	WastedMS        *float64 `json:"wasted_ms,omitempty"`
 }
 
 type LighthouseRunnerRemediation struct {
@@ -146,6 +198,9 @@ type siteQualityAPIResponse struct {
 		Audits                 map[string]json.RawMessage              `json:"audits"`
 		RenderedHeadings       *siteQualityRenderedHeadingAudit        `json:"renderedHeadings"`
 		RenderedStructuredData *siteQualityRenderedStructuredDataAudit `json:"renderedStructuredData"`
+		RenderedLinks          *siteQualityRenderedLinkAudit           `json:"renderedLinks"`
+		InteractionAudit       *siteQualityInteractionAudit            `json:"interactionAudit"`
+		SoftNavigationAudit    *siteQualitySoftNavigationAudit         `json:"softNavigationAudit"`
 	} `json:"lighthouseResult"`
 }
 
@@ -155,6 +210,76 @@ type siteQualityRenderedHeadingAudit struct {
 	FinalURL string                                         `json:"finalUrl"`
 	Error    string                                         `json:"error"`
 	Headings []sitequalitydomain.SiteQualityHeadingEvidence `json:"headings"`
+}
+
+type siteQualityRenderedLinkAudit struct {
+	Status     string                    `json:"status"`
+	Source     string                    `json:"source"`
+	Configured bool                      `json:"configured"`
+	FinalURL   string                    `json:"finalUrl"`
+	Error      string                    `json:"error"`
+	Links      []siteQualityRenderedLink `json:"links"`
+}
+
+type siteQualityRenderedLink struct {
+	Href          string `json:"href"`
+	Text          string `json:"text"`
+	TextLang      string `json:"textLang"`
+	Selector      string `json:"selector"`
+	StatusCode    int    `json:"statusCode"`
+	FinalURL      string `json:"finalUrl"`
+	Redirected    bool   `json:"redirected"`
+	RedirectCount int    `json:"redirectCount"`
+	OK            bool   `json:"ok"`
+	Error         string `json:"error"`
+}
+
+type siteQualityInteractionAudit struct {
+	Status       string                       `json:"status"`
+	Source       string                       `json:"source"`
+	Configured   bool                         `json:"configured"`
+	FinalURL     string                       `json:"finalUrl"`
+	Error        string                       `json:"error"`
+	Interactions []siteQualityInteractionProbe `json:"interactions"`
+}
+
+type siteQualityInteractionProbe struct {
+	Name                  string   `json:"name"`
+	Selector              string   `json:"selector"`
+	Action                string   `json:"action"`
+	Status                string   `json:"status"`
+	ResponseMilliseconds  *float64 `json:"responseMilliseconds"`
+	ThresholdMilliseconds *float64 `json:"thresholdMilliseconds"`
+	MetricSource          string   `json:"metricSource"`
+	EventName             string   `json:"eventName"`
+	InteractionID         int64    `json:"interactionId"`
+	Exceeded              bool     `json:"exceeded"`
+	Error                 string   `json:"error"`
+}
+
+type siteQualitySoftNavigationAudit struct {
+	Status      string                            `json:"status"`
+	Source      string                            `json:"source"`
+	Configured  bool                              `json:"configured"`
+	FinalURL    string                            `json:"finalUrl"`
+	Error       string                            `json:"error"`
+	Navigations []siteQualitySoftNavigationResult `json:"navigations"`
+}
+
+type siteQualitySoftNavigationResult struct {
+	FromURL                   string   `json:"fromUrl"`
+	ToURL                     string   `json:"toUrl"`
+	ExpectedURL               string   `json:"expectedUrl"`
+	Selector                  string   `json:"selector"`
+	Text                      string   `json:"text"`
+	Status                    string   `json:"status"`
+	Mode                      string   `json:"mode"`
+	DurationMilliseconds      *float64 `json:"durationMilliseconds"`
+	ThresholdMilliseconds     *float64 `json:"thresholdMilliseconds"`
+	JSHeapDeltaBytes          *int64   `json:"jsHeapDeltaBytes"`
+	JSHeapDeltaThresholdBytes *int64   `json:"jsHeapDeltaThresholdBytes"`
+	Exceeded                  bool     `json:"exceeded"`
+	Error                     string   `json:"error"`
 }
 
 type siteQualityAPICategory struct {
@@ -199,12 +324,126 @@ func NewLighthouseRunnerService(
 	return &LighthouseRunnerService{
 		runs:             runs,
 		findings:         findings,
-		httpClient:       &http.Client{Timeout: 110 * time.Second},
+		httpClient:       &http.Client{Timeout: siteQualityRunnerHTTPTimeout(cfg.RunnerTimeout)},
 		runnerURL:        strings.TrimRight(strings.TrimSpace(cfg.RunnerURL), "/"),
 		runnerToken:      strings.TrimSpace(cfg.RunnerToken),
+		runnerTimeout:    siteQualityRunnerRequestTimeout(cfg.RunnerTimeout),
 		defaultTargetURL: defaultTargetURL,
 		runnerTargetURL:  runnerTargetURL,
+		accuracy:         normalizeSiteQualityRunnerAccuracyConfig(cfg),
 	}
+}
+
+func normalizeSiteQualityRunnerAccuracyConfig(cfg LighthouseRunnerConfig) siteQualityRunnerAccuracyConfig {
+	return siteQualityRunnerAccuracyConfig{
+		ThrottlingMethod:            normalizeSiteQualityRunnerThrottlingMethod(cfg.ThrottlingMethod),
+		LighthouseRunCount:          normalizeSiteQualityRunnerCount(cfg.LighthouseRunCount),
+		RenderWaitSelector:          truncateSiteQualityRunnerSelector(cfg.RenderWaitSelector),
+		RenderWaitTimeout:           normalizeSiteQualityRunnerDuration(cfg.RenderWaitTimeout, 500*time.Millisecond, 25*time.Second),
+		HeadingSettleTimeout:        normalizeSiteQualityRunnerDuration(cfg.HeadingSettleTimeout, 250*time.Millisecond, 10*time.Second),
+		StructuredDataSettleTimeout: normalizeSiteQualityRunnerDuration(cfg.StructuredDataSettleTimeout, 250*time.Millisecond, 10*time.Second),
+		InteractionProbes:           truncateSiteQualityRunnerText(cfg.InteractionProbes, 4096),
+		InteractionMaxResponse:      normalizeSiteQualityRunnerDuration(cfg.InteractionMaxResponse, 50*time.Millisecond, 2*time.Second),
+		SoftNavigationSelectors:     truncateSiteQualityRunnerText(cfg.SoftNavigationSelectors, 2048),
+		SoftNavigationMaxLinks:      normalizeSiteQualityRunnerNonNegativeMaximum(cfg.SoftNavigationMaxLinks, 8),
+		SoftNavigationMaxDuration:   normalizeSiteQualityRunnerDuration(cfg.SoftNavigationMaxDuration, 250*time.Millisecond, 10*time.Second),
+		SoftNavigationMaxHeapGrowth: normalizeSiteQualityRunnerCountWithMaximum(cfg.SoftNavigationMaxHeapGrowth, 32, 256),
+		JSBudgetBytes:               normalizeSiteQualityRunnerNonNegativeMaximum(cfg.JSBudgetBytes, 5*1024*1024),
+		ImageBudgetBytes:            normalizeSiteQualityRunnerNonNegativeMaximum(cfg.ImageBudgetBytes, 10*1024*1024),
+		LinkCheckEnabled:            cfg.LinkCheckEnabled,
+		LinkCheckMaxLinks:           normalizeSiteQualityRunnerNonNegativeMaximum(cfg.LinkCheckMaxLinks, 250),
+		LinkCheckTimeout:            normalizeSiteQualityRunnerDuration(cfg.LinkCheckTimeout, 500*time.Millisecond, 15*time.Second),
+		LinkCheckExternal:           cfg.LinkCheckExternal,
+		LinkCheckMaxRedirects:       normalizeSiteQualityRunnerNonNegativeMaximum(cfg.LinkCheckMaxRedirects, 10),
+	}
+}
+
+func truncateSiteQualityRunnerSelector(value string) string {
+	return truncateSiteQualityRunnerText(value, 256)
+}
+
+func truncateSiteQualityRunnerText(value string, maxLength int) string {
+	text := strings.TrimSpace(value)
+	if maxLength > 0 && len(text) > maxLength {
+		return text[:maxLength]
+	}
+	return text
+}
+
+func normalizeSiteQualityRunnerThrottlingMethod(value string) string {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "devtools":
+		return "devtools"
+	case "simulate", "":
+		return "simulate"
+	default:
+		return "simulate"
+	}
+}
+
+func normalizeSiteQualityRunnerCount(value int) int {
+	if value <= 0 {
+		return 1
+	}
+	if value > 5 {
+		return 5
+	}
+	return value
+}
+
+func normalizeSiteQualityRunnerCountWithMaximum(value int, fallback int, maximum int) int {
+	if value <= 0 {
+		return fallback
+	}
+	if value > maximum {
+		return maximum
+	}
+	return value
+}
+
+func normalizeSiteQualityRunnerNonNegativeMaximum(value int, maximum int) int {
+	if value <= 0 {
+		return 0
+	}
+	if value > maximum {
+		return maximum
+	}
+	return value
+}
+
+func normalizeSiteQualityRunnerDuration(value time.Duration, minimum time.Duration, maximum time.Duration) time.Duration {
+	if value <= 0 {
+		return 0
+	}
+	if value < minimum {
+		return minimum
+	}
+	if value > maximum {
+		return maximum
+	}
+	return value
+}
+
+func normalizeSiteQualityRunnerBudget(runnerBudget time.Duration) time.Duration {
+	if runnerBudget <= 0 {
+		runnerBudget = defaultSiteQualityRunnerBudget
+	}
+	return runnerBudget
+}
+
+func siteQualityRunnerRequestTimeout(runnerBudget time.Duration) time.Duration {
+	return normalizeSiteQualityRunnerBudget(runnerBudget) + defaultSiteQualityRunnerRequestOverhead
+}
+
+func siteQualityRunnerHTTPTimeout(runnerBudget time.Duration) time.Duration {
+	return siteQualityRunnerRequestTimeout(runnerBudget) + defaultSiteQualityRunnerHTTPOverhead
+}
+
+func durationMilliseconds(value time.Duration) int {
+	if value <= 0 {
+		return 0
+	}
+	return int(value / time.Millisecond)
 }
 
 func (s *LighthouseRunnerService) ConfigureJobRepository(jobs *repository.SiteQualityJobRepository) {
@@ -503,19 +742,61 @@ func (s *LighthouseRunnerService) request(
 		return nil, nil, errors.New("internal Lighthouse runner URL is invalid")
 	}
 	payload, err := json.Marshal(struct {
-		URL       string `json:"url"`
-		Strategy  string `json:"strategy"`
-		ReleaseID string `json:"release_id,omitempty"`
+		URL                                string `json:"url"`
+		Strategy                           string `json:"strategy"`
+		ReleaseID                          string `json:"release_id,omitempty"`
+		ThrottlingMethod                   string `json:"throttling_method,omitempty"`
+		LighthouseRunCount                 int    `json:"lighthouse_run_count,omitempty"`
+		RenderWaitSelector                 string `json:"render_wait_selector,omitempty"`
+		RenderWaitTimeoutMS                int    `json:"render_wait_timeout_ms,omitempty"`
+		HeadingSettleMS                    int    `json:"heading_settle_ms,omitempty"`
+		StructuredDataSettleMS             int    `json:"structured_data_settle_ms,omitempty"`
+		InteractionProbes                  string `json:"interaction_probes,omitempty"`
+		InteractionMaxResponseMS           int    `json:"interaction_max_response_ms,omitempty"`
+		SoftNavigationSelectors            string `json:"soft_navigation_selectors,omitempty"`
+		SoftNavigationMaxLinks             int    `json:"soft_navigation_max_links,omitempty"`
+		SoftNavigationMaxDurationMS        int    `json:"soft_navigation_max_duration_ms,omitempty"`
+		SoftNavigationMaxHeapGrowthMB      int    `json:"soft_navigation_max_heap_growth_mb,omitempty"`
+		JSBudgetBytes                      int    `json:"js_budget_bytes,omitempty"`
+		ImageBudgetBytes                   int    `json:"image_budget_bytes,omitempty"`
+		LinkCheckEnabled                   bool   `json:"link_check_enabled"`
+		LinkCheckMaxLinks                  int    `json:"link_check_max_links,omitempty"`
+		LinkCheckTimeoutMS                 int    `json:"link_check_timeout_ms,omitempty"`
+		LinkCheckExternal                  bool   `json:"link_check_external,omitempty"`
+		LinkCheckMaxRedirects              int    `json:"link_check_max_redirects,omitempty"`
 	}{
-		URL:       targetURL,
-		Strategy:  strategy,
-		ReleaseID: strings.TrimSpace(releaseID),
+		URL:                           targetURL,
+		Strategy:                      strategy,
+		ReleaseID:                     strings.TrimSpace(releaseID),
+		ThrottlingMethod:              s.accuracy.ThrottlingMethod,
+		LighthouseRunCount:            s.accuracy.LighthouseRunCount,
+		RenderWaitSelector:            s.accuracy.RenderWaitSelector,
+		RenderWaitTimeoutMS:           durationMilliseconds(s.accuracy.RenderWaitTimeout),
+		HeadingSettleMS:               durationMilliseconds(s.accuracy.HeadingSettleTimeout),
+		StructuredDataSettleMS:        durationMilliseconds(s.accuracy.StructuredDataSettleTimeout),
+		InteractionProbes:             s.accuracy.InteractionProbes,
+		InteractionMaxResponseMS:      durationMilliseconds(s.accuracy.InteractionMaxResponse),
+		SoftNavigationSelectors:       s.accuracy.SoftNavigationSelectors,
+		SoftNavigationMaxLinks:        s.accuracy.SoftNavigationMaxLinks,
+		SoftNavigationMaxDurationMS:   durationMilliseconds(s.accuracy.SoftNavigationMaxDuration),
+		SoftNavigationMaxHeapGrowthMB: s.accuracy.SoftNavigationMaxHeapGrowth,
+		JSBudgetBytes:                 s.accuracy.JSBudgetBytes,
+		ImageBudgetBytes:              s.accuracy.ImageBudgetBytes,
+		LinkCheckEnabled:              s.accuracy.LinkCheckEnabled,
+		LinkCheckMaxLinks:             s.accuracy.LinkCheckMaxLinks,
+		LinkCheckTimeoutMS:            durationMilliseconds(s.accuracy.LinkCheckTimeout),
+		LinkCheckExternal:             s.accuracy.LinkCheckExternal,
+		LinkCheckMaxRedirects:         s.accuracy.LinkCheckMaxRedirects,
 	})
 	if err != nil {
 		return nil, nil, fmt.Errorf("encode Lighthouse runner request: %w", err)
 	}
 
-	ctx, cancel := context.WithTimeout(parent, 105*time.Second)
+	requestTimeout := s.runnerTimeout
+	if requestTimeout <= 0 {
+		requestTimeout = siteQualityRunnerRequestTimeout(0)
+	}
+	ctx, cancel := context.WithTimeout(parent, requestTimeout)
 	defer cancel()
 	request, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint.String(), bytes.NewReader(payload))
 	if err != nil {
@@ -527,7 +808,7 @@ func (s *LighthouseRunnerService) request(
 	request.Header.Set("User-Agent", "tanzanite-site-quality/1.0")
 	client := s.httpClient
 	if client == nil {
-		client = &http.Client{Timeout: 110 * time.Second}
+		client = &http.Client{Timeout: requestTimeout + defaultSiteQualityRunnerHTTPOverhead}
 	}
 	response, err := client.Do(request)
 	if err != nil {
@@ -721,6 +1002,9 @@ func applySiteQualityResult(
 		intents...,
 	)
 	issues = append(issues, structuredDataIssues...)
+	issues = append(issues, siteQualityRenderedLinkAuditIssues(result.LighthouseResult.RenderedLinks)...)
+	issues = append(issues, siteQualityInteractionAuditIssues(result.LighthouseResult.InteractionAudit)...)
+	issues = append(issues, siteQualitySoftNavigationAuditIssues(result.LighthouseResult.SoftNavigationAudit)...)
 	decorateSiteQualityIssueIDs(issues)
 	sortSiteQualityIssues(issues)
 	encoded, err := json.Marshal(issues)
@@ -853,9 +1137,11 @@ func siteQualityAuditResources(audit siteQualityAPIAudit) []LighthouseRunnerReso
 	resources := make([]LighthouseRunnerResource, 0, len(audit.Details.Items))
 	for _, rawItem := range audit.Details.Items {
 		var item struct {
-			URL        string   `json:"url"`
-			TotalBytes *int64   `json:"totalBytes"`
-			WastedMS   *float64 `json:"wastedMs"`
+			URL             string   `json:"url"`
+			TotalBytes      *int64   `json:"totalBytes"`
+			BudgetBytes     *int64   `json:"budgetBytes"`
+			OverBudgetBytes *int64   `json:"overBudgetBytes"`
+			WastedMS        *float64 `json:"wastedMs"`
 		}
 		if err := json.Unmarshal(rawItem, &item); err != nil {
 			continue
@@ -865,12 +1151,18 @@ func siteQualityAuditResources(audit siteQualityAPIAudit) []LighthouseRunnerReso
 			continue
 		}
 		resources = append(resources, LighthouseRunnerResource{
-			URL:        resourceURL,
-			TotalBytes: copyInt64(item.TotalBytes),
-			WastedMS:   copyFloat64(item.WastedMS),
+			URL:             resourceURL,
+			TotalBytes:      copyInt64(item.TotalBytes),
+			BudgetBytes:     copyInt64(item.BudgetBytes),
+			OverBudgetBytes: copyInt64(item.OverBudgetBytes),
+			WastedMS:        copyFloat64(item.WastedMS),
 		})
 	}
 	sort.Slice(resources, func(i, j int) bool {
+		iOverBudget, jOverBudget := siteQualityResourceOverBudgetBytes(resources[i]), siteQualityResourceOverBudgetBytes(resources[j])
+		if iOverBudget != jOverBudget {
+			return iOverBudget > jOverBudget
+		}
 		iWastedMS, jWastedMS := siteQualityResourceWastedMS(resources[i]), siteQualityResourceWastedMS(resources[j])
 		if iWastedMS != jWastedMS {
 			return iWastedMS > jWastedMS
@@ -882,6 +1174,13 @@ func siteQualityAuditResources(audit siteQualityAPIAudit) []LighthouseRunnerReso
 		return resources[i].URL < resources[j].URL
 	})
 	return resources
+}
+
+func siteQualityResourceOverBudgetBytes(resource LighthouseRunnerResource) int64 {
+	if resource.OverBudgetBytes == nil {
+		return 0
+	}
+	return *resource.OverBudgetBytes
 }
 
 func siteQualityAuditLinkEvidence(

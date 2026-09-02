@@ -230,8 +230,28 @@ type WorkerConfig struct {
 // SiteQualityConfig describes the internal-only Lighthouse runner endpoint.
 // It is deployment wiring, never an operator-managed integration credential.
 type SiteQualityConfig struct {
-	RunnerURL   string `mapstructure:"runner_url"`
-	RunnerToken string `mapstructure:"runner_token"`
+	RunnerURL                        string `mapstructure:"runner_url"`
+	RunnerToken                      string `mapstructure:"runner_token"`
+	RunnerTimeoutSeconds             int    `mapstructure:"runner_timeout_seconds"`
+	ThrottlingMethod                 string `mapstructure:"throttling_method"`
+	LighthouseRunCount               int    `mapstructure:"lighthouse_run_count"`
+	RenderWaitSelector               string `mapstructure:"render_wait_selector"`
+	RenderWaitTimeoutMilliseconds    int    `mapstructure:"render_wait_timeout_ms"`
+	HeadingSettleMilliseconds        int    `mapstructure:"heading_settle_ms"`
+	StructuredDataSettleMilliseconds int    `mapstructure:"structured_data_settle_ms"`
+	InteractionProbes                string `mapstructure:"interaction_probes"`
+	InteractionMaxResponseMillis     int    `mapstructure:"interaction_max_response_ms"`
+	SoftNavigationSelectors          string `mapstructure:"soft_navigation_selectors"`
+	SoftNavigationMaxLinks           int    `mapstructure:"soft_navigation_max_links"`
+	SoftNavigationMaxDurationMillis  int    `mapstructure:"soft_navigation_max_duration_ms"`
+	SoftNavigationMaxHeapGrowthMB    int    `mapstructure:"soft_navigation_max_heap_growth_mb"`
+	JSBudgetBytes                    int    `mapstructure:"js_budget_bytes"`
+	ImageBudgetBytes                 int    `mapstructure:"image_budget_bytes"`
+	LinkCheckEnabled                 bool   `mapstructure:"link_check_enabled"`
+	LinkCheckMaxLinks                int    `mapstructure:"link_check_max_links"`
+	LinkCheckTimeoutMillis           int    `mapstructure:"link_check_timeout_ms"`
+	LinkCheckExternal                bool   `mapstructure:"link_check_external"`
+	LinkCheckMaxRedirects            int    `mapstructure:"link_check_max_redirects"`
 }
 
 // CustomerServiceRealtimeConfig controls the optional Redis Stream relay for
@@ -624,6 +644,26 @@ func setDefaults() {
 	viper.SetDefault("worker.media_derivative_rebuild_batch_limit", 10)
 	viper.SetDefault("site_quality.runner_url", "")
 	viper.SetDefault("site_quality.runner_token", "")
+	viper.SetDefault("site_quality.runner_timeout_seconds", 90)
+	viper.SetDefault("site_quality.throttling_method", "simulate")
+	viper.SetDefault("site_quality.lighthouse_run_count", 1)
+	viper.SetDefault("site_quality.render_wait_selector", "")
+	viper.SetDefault("site_quality.render_wait_timeout_ms", 3000)
+	viper.SetDefault("site_quality.heading_settle_ms", 1500)
+	viper.SetDefault("site_quality.structured_data_settle_ms", 1500)
+	viper.SetDefault("site_quality.interaction_probes", "")
+	viper.SetDefault("site_quality.interaction_max_response_ms", 200)
+	viper.SetDefault("site_quality.soft_navigation_selectors", "")
+	viper.SetDefault("site_quality.soft_navigation_max_links", 0)
+	viper.SetDefault("site_quality.soft_navigation_max_duration_ms", 2000)
+	viper.SetDefault("site_quality.soft_navigation_max_heap_growth_mb", 32)
+	viper.SetDefault("site_quality.js_budget_bytes", 256000)
+	viper.SetDefault("site_quality.image_budget_bytes", 307200)
+	viper.SetDefault("site_quality.link_check_enabled", true)
+	viper.SetDefault("site_quality.link_check_max_links", 80)
+	viper.SetDefault("site_quality.link_check_timeout_ms", 2500)
+	viper.SetDefault("site_quality.link_check_external", false)
+	viper.SetDefault("site_quality.link_check_max_redirects", 5)
 	viper.SetDefault("worker.showcase_cleanup_enabled", true)
 	viper.SetDefault("worker.showcase_cleanup_interval_seconds", 86400)
 	viper.SetDefault("worker.showcase_pending_ttl_seconds", 2592000)
@@ -883,6 +923,26 @@ func bindEnvironment() {
 	_ = viper.BindEnv("worker.media_derivative_rebuild_batch_limit", "WORKER_MEDIA_DERIVATIVE_REBUILD_BATCH_LIMIT")
 	_ = viper.BindEnv("site_quality.runner_url", "SITE_QUALITY_RUNNER_URL")
 	_ = viper.BindEnv("site_quality.runner_token", "SITE_QUALITY_RUNNER_TOKEN")
+	_ = viper.BindEnv("site_quality.runner_timeout_seconds", "SITE_QUALITY_RUNNER_TIMEOUT_SECONDS")
+	_ = viper.BindEnv("site_quality.throttling_method", "SITE_QUALITY_THROTTLING_METHOD")
+	_ = viper.BindEnv("site_quality.lighthouse_run_count", "SITE_QUALITY_LIGHTHOUSE_RUN_COUNT")
+	_ = viper.BindEnv("site_quality.render_wait_selector", "SITE_QUALITY_RENDER_WAIT_SELECTOR")
+	_ = viper.BindEnv("site_quality.render_wait_timeout_ms", "SITE_QUALITY_RENDER_WAIT_TIMEOUT_MS")
+	_ = viper.BindEnv("site_quality.heading_settle_ms", "SITE_QUALITY_HEADING_SETTLE_MS")
+	_ = viper.BindEnv("site_quality.structured_data_settle_ms", "SITE_QUALITY_STRUCTURED_DATA_SETTLE_MS")
+	_ = viper.BindEnv("site_quality.interaction_probes", "SITE_QUALITY_INTERACTION_PROBES")
+	_ = viper.BindEnv("site_quality.interaction_max_response_ms", "SITE_QUALITY_INTERACTION_MAX_RESPONSE_MS")
+	_ = viper.BindEnv("site_quality.soft_navigation_selectors", "SITE_QUALITY_SOFT_NAVIGATION_SELECTORS")
+	_ = viper.BindEnv("site_quality.soft_navigation_max_links", "SITE_QUALITY_SOFT_NAVIGATION_MAX_LINKS")
+	_ = viper.BindEnv("site_quality.soft_navigation_max_duration_ms", "SITE_QUALITY_SOFT_NAVIGATION_MAX_DURATION_MS")
+	_ = viper.BindEnv("site_quality.soft_navigation_max_heap_growth_mb", "SITE_QUALITY_SOFT_NAVIGATION_MAX_HEAP_GROWTH_MB")
+	_ = viper.BindEnv("site_quality.js_budget_bytes", "SITE_QUALITY_JS_BUDGET_BYTES")
+	_ = viper.BindEnv("site_quality.image_budget_bytes", "SITE_QUALITY_IMAGE_BUDGET_BYTES")
+	_ = viper.BindEnv("site_quality.link_check_enabled", "SITE_QUALITY_LINK_CHECK_ENABLED")
+	_ = viper.BindEnv("site_quality.link_check_max_links", "SITE_QUALITY_LINK_CHECK_MAX_LINKS")
+	_ = viper.BindEnv("site_quality.link_check_timeout_ms", "SITE_QUALITY_LINK_CHECK_TIMEOUT_MS")
+	_ = viper.BindEnv("site_quality.link_check_external", "SITE_QUALITY_LINK_CHECK_EXTERNAL")
+	_ = viper.BindEnv("site_quality.link_check_max_redirects", "SITE_QUALITY_LINK_CHECK_MAX_REDIRECTS")
 	_ = viper.BindEnv("worker.showcase_cleanup_enabled", "WORKER_SHOWCASE_CLEANUP_ENABLED", "SHOWCASE_CLEANUP_ENABLED")
 	_ = viper.BindEnv("worker.showcase_cleanup_interval_seconds", "WORKER_SHOWCASE_CLEANUP_INTERVAL_SECONDS", "SHOWCASE_CLEANUP_INTERVAL_SECONDS")
 	_ = viper.BindEnv("worker.showcase_pending_ttl_seconds", "WORKER_SHOWCASE_PENDING_TTL_SECONDS", "SHOWCASE_PENDING_TTL_SECONDS")
@@ -1458,6 +1518,9 @@ func validateConfig(cfg *Config) error {
 			return fmt.Errorf("SITE_QUALITY_RUNNER_TOKEN must not use a development/default value in release mode")
 		}
 	}
+	if err := validateSiteQualityRunnerAccuracyConfig(cfg.SiteQuality); err != nil {
+		return err
+	}
 	if cfg.Worker.MediaDerivativeRebuildEnabled {
 		if cfg.Worker.MediaDerivativeRebuildIntervalSeconds <= 0 ||
 			cfg.Worker.MediaDerivativeRebuildBatchLimit <= 0 ||
@@ -1609,6 +1672,63 @@ func validateGoogleIndexingConfig(cfg GoogleIndexingConfig) error {
 	}
 	if cfg.Enabled && !jsonConfigured && !fileConfigured {
 		return fmt.Errorf("Google Indexing requires GOOGLE_INDEXING_SERVICE_ACCOUNT_JSON or GOOGLE_INDEXING_SERVICE_ACCOUNT_FILE when enabled")
+	}
+	return nil
+}
+
+func validateSiteQualityRunnerAccuracyConfig(cfg SiteQualityConfig) error {
+	if cfg.RunnerTimeoutSeconds < 15 || cfg.RunnerTimeoutSeconds > 300 {
+		return fmt.Errorf("SITE_QUALITY_RUNNER_TIMEOUT_SECONDS must be between 15 and 300")
+	}
+	switch strings.ToLower(strings.TrimSpace(cfg.ThrottlingMethod)) {
+	case "", "simulate", "devtools":
+	default:
+		return fmt.Errorf("SITE_QUALITY_THROTTLING_METHOD must be simulate or devtools")
+	}
+	if cfg.LighthouseRunCount <= 0 || cfg.LighthouseRunCount > 5 {
+		return fmt.Errorf("SITE_QUALITY_LIGHTHOUSE_RUN_COUNT must be between 1 and 5")
+	}
+	if cfg.RenderWaitTimeoutMilliseconds < 500 || cfg.RenderWaitTimeoutMilliseconds > 25000 {
+		return fmt.Errorf("SITE_QUALITY_RENDER_WAIT_TIMEOUT_MS must be between 500 and 25000")
+	}
+	if cfg.HeadingSettleMilliseconds < 250 || cfg.HeadingSettleMilliseconds > 10000 {
+		return fmt.Errorf("SITE_QUALITY_HEADING_SETTLE_MS must be between 250 and 10000")
+	}
+	if cfg.StructuredDataSettleMilliseconds < 250 || cfg.StructuredDataSettleMilliseconds > 10000 {
+		return fmt.Errorf("SITE_QUALITY_STRUCTURED_DATA_SETTLE_MS must be between 250 and 10000")
+	}
+	if len(strings.TrimSpace(cfg.InteractionProbes)) > 4096 {
+		return fmt.Errorf("SITE_QUALITY_INTERACTION_PROBES must be at most 4096 characters")
+	}
+	if cfg.InteractionMaxResponseMillis < 50 || cfg.InteractionMaxResponseMillis > 2000 {
+		return fmt.Errorf("SITE_QUALITY_INTERACTION_MAX_RESPONSE_MS must be between 50 and 2000")
+	}
+	if len(strings.TrimSpace(cfg.SoftNavigationSelectors)) > 2048 {
+		return fmt.Errorf("SITE_QUALITY_SOFT_NAVIGATION_SELECTORS must be at most 2048 characters")
+	}
+	if cfg.SoftNavigationMaxLinks < 0 || cfg.SoftNavigationMaxLinks > 8 {
+		return fmt.Errorf("SITE_QUALITY_SOFT_NAVIGATION_MAX_LINKS must be between 0 and 8")
+	}
+	if cfg.SoftNavigationMaxDurationMillis < 250 || cfg.SoftNavigationMaxDurationMillis > 10000 {
+		return fmt.Errorf("SITE_QUALITY_SOFT_NAVIGATION_MAX_DURATION_MS must be between 250 and 10000")
+	}
+	if cfg.SoftNavigationMaxHeapGrowthMB <= 0 || cfg.SoftNavigationMaxHeapGrowthMB > 256 {
+		return fmt.Errorf("SITE_QUALITY_SOFT_NAVIGATION_MAX_HEAP_GROWTH_MB must be between 1 and 256")
+	}
+	if cfg.JSBudgetBytes < 0 || cfg.JSBudgetBytes > 5*1024*1024 {
+		return fmt.Errorf("SITE_QUALITY_JS_BUDGET_BYTES must be between 0 and 5242880")
+	}
+	if cfg.ImageBudgetBytes < 0 || cfg.ImageBudgetBytes > 10*1024*1024 {
+		return fmt.Errorf("SITE_QUALITY_IMAGE_BUDGET_BYTES must be between 0 and 10485760")
+	}
+	if cfg.LinkCheckMaxLinks < 0 || cfg.LinkCheckMaxLinks > 250 {
+		return fmt.Errorf("SITE_QUALITY_LINK_CHECK_MAX_LINKS must be between 0 and 250")
+	}
+	if cfg.LinkCheckTimeoutMillis < 500 || cfg.LinkCheckTimeoutMillis > 15000 {
+		return fmt.Errorf("SITE_QUALITY_LINK_CHECK_TIMEOUT_MS must be between 500 and 15000")
+	}
+	if cfg.LinkCheckMaxRedirects < 0 || cfg.LinkCheckMaxRedirects > 10 {
+		return fmt.Errorf("SITE_QUALITY_LINK_CHECK_MAX_REDIRECTS must be between 0 and 10")
 	}
 	return nil
 }

@@ -554,6 +554,36 @@ func (s *ProductService) SearchPublic(input ProductSearchInput) ([]product.Produ
 	return sanitizeProductSliceHTML(products), total, err
 }
 
+// SearchPublicCompact is used by small storefront result cards. It skips the
+// full result count and detail-only relations while still accepting a
+// lookahead limit so the caller can calculate has_more.
+func (s *ProductService) SearchPublicCompact(input ProductSearchInput) ([]product.Product, error) {
+	page := input.Page
+	pageSize := input.PageSize
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 {
+		pageSize = 20
+	}
+
+	products, err := s.productRepo.SearchPublicCompact(repository.ProductSearchQuery{
+		Locale:                           input.Locale,
+		Status:                           "active",
+		Featured:                         input.Featured,
+		Keyword:                          input.Keyword,
+		ProductSpecificationTemplateSlug: input.ProductSpecificationTemplateSlug,
+		CategorySlug:                     input.CategorySlug,
+		BrandSlug:                        input.BrandSlug,
+		PriceMin:                         input.PriceMin,
+		PriceMax:                         input.PriceMax,
+		SpecFilters:                      input.SpecFilters,
+		Offset:                           (page - 1) * pageSize,
+		Limit:                            pageSize,
+	})
+	return sanitizeProductSliceHTML(products), err
+}
+
 func (s *ProductService) Create(p *product.Product) error {
 	if s.txManager != nil {
 		var created *product.Product

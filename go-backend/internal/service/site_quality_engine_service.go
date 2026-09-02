@@ -99,6 +99,7 @@ type siteQualityDecision struct {
 	Links           []sitequalitydomain.SiteQualityLinkEvidence           `json:"links,omitempty"`
 	Headings        []sitequalitydomain.SiteQualityHeadingEvidence        `json:"headings,omitempty"`
 	StructuredData  []sitequalitydomain.SiteQualityStructuredDataEvidence `json:"structured_data,omitempty"`
+	Runtime         []sitequalitydomain.SiteQualityRuntimeEvidence        `json:"runtime,omitempty"`
 	DisplayValue    string                                                `json:"display_value,omitempty"`
 	NumericValue    *float64                                              `json:"numeric_value,omitempty"`
 }

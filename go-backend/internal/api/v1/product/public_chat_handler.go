@@ -26,6 +26,7 @@ func (h *Handler) ListPublicChatProducts(c *gin.Context) {
 	specFilters := parseSpecFilterQuery(c)
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("per_page", c.DefaultQuery("page_size", "20")))
+	compact := c.Query("compact") == "true" || c.Query("compact") == "1"
 
 	if page < 1 {
 		page = 1
@@ -37,7 +38,7 @@ func (h *Handler) ListPublicChatProducts(c *gin.Context) {
 		pageSize = publicCatalogMaxPageSize
 	}
 
-	products, _, err := h.productService.SearchPublic(service.ProductSearchInput{
+	searchInput := service.ProductSearchInput{
 		Locale:                           locale,
 		Keyword:                          keyword,
 		ProductSpecificationTemplateSlug: productSpecificationTemplateSlug,
@@ -48,7 +49,14 @@ func (h *Handler) ListPublicChatProducts(c *gin.Context) {
 		SpecFilters:                      specFilters,
 		Page:                             page,
 		PageSize:                         pageSize + 1,
-	})
+	}
+	var products []productdomain.Product
+	var err error
+	if compact {
+		products, err = h.productService.SearchPublicCompact(searchInput)
+	} else {
+		products, _, err = h.productService.SearchPublic(searchInput)
+	}
 	if err != nil {
 		apierror.RespondInternalError(c, err)
 		return
@@ -56,7 +64,9 @@ func (h *Handler) ListPublicChatProducts(c *gin.Context) {
 
 	publicProducts, hasMore := trimPublicProductPage(products, pageSize)
 	publicProductResponses := PublicProductsFromDomainWithLocale(publicProducts, locale, h.mediaService)
-	h.attachReviewSummaries(publicProductResponses)
+	if !compact {
+		h.attachReviewSummaries(publicProductResponses)
+	}
 	c.JSON(200, gin.H{
 		"code":      0,
 		"data":      publicProductResponses,

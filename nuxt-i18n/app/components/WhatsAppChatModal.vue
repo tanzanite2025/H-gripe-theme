@@ -4,7 +4,7 @@
     <Transition name="fade">
       <div
         v-if="conversation"
-        class="fixed inset-0 z-[10000] flex items-center justify-center md:items-end md:justify-end p-0 md:pr-6 md:pb-8 pointer-events-none tz-mobile-safe-modal-mask tz-mobile-dialog-mask"
+        class="fixed inset-0 z-[10050] flex items-center justify-center md:items-end md:justify-end p-0 md:pr-6 md:pb-8 pointer-events-none tz-mobile-safe-modal-mask tz-mobile-dialog-mask"
       >
         <div class="absolute inset-0 bg-slate-900/20 backdrop-blur-sm md:hidden pointer-events-auto"></div>
         <!-- 聊天窗口容器 - 右下角定位 -->
@@ -300,7 +300,7 @@
     <Transition name="fade">
       <div
         v-if="showToast"
-        class="chat-toast fixed bottom-20 left-1/2 -translate-x-1/2 z-[10001] px-4 py-2 tz-surface-card tz-text-primary text-sm rounded-lg shadow-lg backdrop-blur-sm"
+        class="chat-toast fixed bottom-20 left-1/2 -translate-x-1/2 z-[10051] px-4 py-2 tz-surface-card tz-text-primary text-sm rounded-lg shadow-lg backdrop-blur-sm"
       >
         {{ toastMessage }}
       </div>

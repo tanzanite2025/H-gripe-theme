@@ -882,6 +882,96 @@ func (r *ProductRepository) SearchPublic(input ProductSearchQuery) ([]product.Pr
 	return products, total, err
 }
 
+// SearchPublicCompact loads only the relations needed to render a product
+// card. The caller supplies a lookahead limit instead of paying for a full
+// COUNT query and the detail-only product relations.
+func (r *ProductRepository) SearchPublicCompact(input ProductSearchQuery) ([]product.Product, error) {
+	var products []product.Product
+
+	query := r.db.Model(&product.Product{}).
+		Preload("Brand").
+		Preload("Media", func(db *gorm.DB) *gorm.DB {
+			return orderProductMedia(db).
+				Where("product_media.media_type = ? AND product_media.is_visible = ?", "image", true)
+		}).
+		Preload("Variants", func(db *gorm.DB) *gorm.DB {
+			return orderProductVariants(db).Where("product_variants.is_active = ?", true)
+		}).
+		Where(activeVariantExistsSQL("pv_public_compact"))
+
+	var err error
+	query, err = applyPublicProductSearchFilters(query, input, r.db.Dialector.Name())
+	if err != nil {
+		return nil, err
+	}
+
+	err = query.Distinct("products.*").
+		Order("products.updated_at DESC").
+		Offset(input.Offset).
+		Limit(input.Limit).
+		Find(&products).Error
+	return products, err
+}
+
+func applyPublicProductSearchFilters(query *gorm.DB, input ProductSearchQuery, dialect string) (*gorm.DB, error) {
+	if input.Locale != "" {
+		query = query.Where("products.locale = ?", input.Locale)
+	}
+	if input.Status != "" {
+		query = query.Where("products.status = ?", input.Status)
+	}
+	if input.Featured != nil {
+		query = query.Where("products.featured = ?", *input.Featured)
+	}
+	if input.ProductSpecificationTemplateSlug != "" {
+		query = query.Joins("JOIN product_specification_templates ON product_specification_templates.id = products.product_specification_template_id AND product_specification_templates.slug = ?", input.ProductSpecificationTemplateSlug)
+	}
+	if input.CategorySlug != "" {
+		query = query.Where(`products.product_category_id IN (
+			WITH RECURSIVE category_tree AS (
+				SELECT id
+				FROM product_categories
+				WHERE slug = ? AND is_enabled = TRUE
+
+				UNION ALL
+
+				SELECT child.id
+				FROM product_categories child
+				JOIN category_tree parent ON child.parent_id = parent.id
+				WHERE child.is_enabled = TRUE
+			)
+			SELECT id FROM category_tree
+		)`, input.CategorySlug)
+	}
+	if input.BrandSlug != "" {
+		query = query.Joins("JOIN product_brands ON product_brands.id = products.brand_id AND product_brands.slug = ? AND product_brands.is_enabled = TRUE", input.BrandSlug)
+	}
+	if input.PriceMin != nil {
+		query = query.Where(`EXISTS (
+			SELECT 1 FROM product_variants pv_price_min
+			WHERE pv_price_min.product_id = products.id
+			  AND pv_price_min.deleted_at IS NULL
+			  AND pv_price_min.is_active = TRUE
+			  AND COALESCE(pv_price_min.sale_price, pv_price_min.price) >= ?
+		)`, *input.PriceMin)
+	}
+	if input.PriceMax != nil {
+		query = query.Where(`EXISTS (
+			SELECT 1 FROM product_variants pv_price_max
+			WHERE pv_price_max.product_id = products.id
+			  AND pv_price_max.deleted_at IS NULL
+			  AND pv_price_max.is_active = TRUE
+			  AND COALESCE(pv_price_max.sale_price, pv_price_max.price) <= ?
+		)`, *input.PriceMax)
+	}
+	if input.Keyword != "" {
+		pattern := "%" + strings.ToLower(input.Keyword) + "%"
+		query = query.Where("LOWER(products.name) LIKE ? OR LOWER(products.sku) LIKE ? OR LOWER(products.short_desc) LIKE ? OR LOWER(products.description) LIKE ?", pattern, pattern, pattern, pattern)
+	}
+
+	return applyProductSpecFilters(query, input.SpecFilters, dialect)
+}
+
 func (r *ProductRepository) FindAllWithFilters(page, pageSize int, status, locale, search, featured, customsStatus, productSpecificationTemplateID string) ([]product.Product, int64, error) {
 	var products []product.Product
 	var total int64

@@ -21,11 +21,13 @@ import { activateStorefrontClientOverlays } from '~/utils/clientOverlays'
 import { scheduleDeferredClientWork } from '~/utils/clientDeferredWork'
 import { STOREFRONT_IDLE_CLIENT_WORK } from '~/utils/storefrontLoadingPolicy'
 import { useSidePanelState } from '~/composables/useSidePanelState'
+import { useQuickBuyOpenRequestState } from '~/composables/useQuickBuyOpenRequestState'
 
 type GradientDockMenuShellIntent = 'sidebar' | 'chat' | 'quick-buy' | 'cart'
 
 const mounted = ref(false)
 const { openLeft } = useSidePanelState()
+const { requestOpen: requestQuickBuyOpen } = useQuickBuyOpenRequestState()
 let cancelDeferredMount: (() => void) | null = null
 let dockModulePromise: Promise<{ default: Component }> | null = null
 
@@ -37,8 +39,6 @@ const loadGradientDockMenu = () => {
 const gradientDockMenuComponent = defineAsyncComponent(loadGradientDockMenu)
 
 const activateDock = async () => {
-  await loadGradientDockMenu()
-
   if (!mounted.value) {
     mounted.value = true
   }
@@ -47,6 +47,7 @@ const activateDock = async () => {
 
   activateStorefrontClientOverlays()
 
+  await loadGradientDockMenu()
   await nextTick()
 }
 
@@ -66,9 +67,20 @@ const dispatchDockIntent = (intent: GradientDockMenuShellIntent) => {
   window.dispatchEvent(new Event(eventName))
 }
 
+const openQuickBuyFromGlobalEvent = () => {
+  requestQuickBuyOpen()
+  void activateDock()
+}
+
 const handleShellIntent = async (intent: GradientDockMenuShellIntent) => {
   if (intent === 'sidebar') {
     openLeft()
+    return
+  }
+
+  if (intent === 'quick-buy') {
+    requestQuickBuyOpen()
+    await activateDock()
     return
   }
 
@@ -78,12 +90,14 @@ const handleShellIntent = async (intent: GradientDockMenuShellIntent) => {
 }
 
 onMounted(() => {
+  window.addEventListener('quickbuy:open-entry', openQuickBuyFromGlobalEvent)
   cancelDeferredMount = scheduleDeferredClientWork(() => {
     void activateDock()
   }, STOREFRONT_IDLE_CLIENT_WORK)
 })
 
 onBeforeUnmount(() => {
+  window.removeEventListener('quickbuy:open-entry', openQuickBuyFromGlobalEvent)
   cancelDeferredMount?.()
   cancelDeferredMount = null
 })
