@@ -7,6 +7,7 @@ import { launch } from 'chrome-launcher'
 import lighthouse from 'lighthouse'
 
 import { captureRenderedDocumentAudit } from './rendered_document.mjs'
+import { applyResourceBudgetAudit } from './rendered_runtime_audits.mjs'
 
 const workerScript = fileURLToPath(new URL('./lighthouse_worker.mjs', import.meta.url))
 const defaultWorkerHeapLimitMB = 1024
@@ -79,6 +80,24 @@ export function runLighthouseInWorker(input, config) {
       config: {
         timeoutMilliseconds: config?.timeoutMilliseconds,
         headingSettleMilliseconds: config?.headingSettleMilliseconds,
+        structuredDataSettleMilliseconds: config?.structuredDataSettleMilliseconds,
+        renderWaitSelector: config?.renderWaitSelector,
+        renderWaitTimeoutMilliseconds: config?.renderWaitTimeoutMilliseconds,
+        throttlingMethod: config?.throttlingMethod,
+        lighthouseRunCount: config?.lighthouseRunCount,
+        interactionProbes: config?.interactionProbes,
+        interactionMaxResponseMilliseconds: config?.interactionMaxResponseMilliseconds,
+        softNavigationSelectors: config?.softNavigationSelectors,
+        softNavigationMaxLinks: config?.softNavigationMaxLinks,
+        softNavigationMaxDurationMilliseconds: config?.softNavigationMaxDurationMilliseconds,
+        softNavigationMaxHeapGrowthMB: config?.softNavigationMaxHeapGrowthMB,
+        jsBudgetBytes: config?.jsBudgetBytes,
+        imageBudgetBytes: config?.imageBudgetBytes,
+        linkCheckEnabled: config?.linkCheckEnabled,
+        linkCheckMaxLinks: config?.linkCheckMaxLinks,
+        linkCheckTimeoutMilliseconds: config?.linkCheckTimeoutMilliseconds,
+        linkCheckExternal: config?.linkCheckExternal,
+        linkCheckMaxRedirects: config?.linkCheckMaxRedirects,
       },
     }, (error) => {
       if (error) {
@@ -111,6 +130,7 @@ export async function runLighthouse(input, config) {
   let timeoutHandle
   try {
     const startedAt = Date.now()
+    const runCount = normalizeLighthouseRunCount(input?.lighthouseRunCount ?? config?.lighthouseRunCount)
     const renderedAuditBudgetMilliseconds = Math.min(
       15_000,
       Math.max(5_000, Math.round(config.timeoutMilliseconds * 0.2)),
@@ -129,10 +149,10 @@ export async function runLighthouse(input, config) {
       screenEmulation: input.strategy === 'mobile'
         ? { mobile: true, width: 412, height: 823, deviceScaleFactor: 1.75, disabled: false }
         : { mobile: false, width: 1350, height: 940, deviceScaleFactor: 1, disabled: false },
-      throttlingMethod: 'simulate',
+      throttlingMethod: input.throttlingMethod || config.throttlingMethod || 'simulate',
     }
-    const result = await Promise.race([
-      lighthouse(input.url, flags),
+    const lighthouseResults = await Promise.race([
+      runLighthouseSamples(input.url, flags, runCount),
       new Promise((_, reject) => {
         timeoutHandle = setTimeout(() => {
           void chrome.kill()
@@ -140,9 +160,35 @@ export async function runLighthouse(input, config) {
         }, lighthouseTimeoutMilliseconds)
       }),
     ])
+    const result = selectMedianLighthouseResult(lighthouseResults)
     if (!result?.lhr) {
       throw new LighthouseExecutionError('Lighthouse returned no report')
     }
+    applyResourceBudgetAudit(result.lhr, {
+      jsBudgetBytes: input.jsBudgetBytes ?? config.jsBudgetBytes,
+      imageBudgetBytes: input.imageBudgetBytes ?? config.imageBudgetBytes,
+    })
+    annotateLighthouseConfigSettings(result.lhr, {
+      lighthouseRunCount: runCount,
+      selectedSampleIndex: result.sampleIndex,
+      sampleSummaries: summarizeLighthouseSamples(lighthouseResults),
+      throttlingMethod: flags.throttlingMethod,
+      renderWaitSelector: input.renderWaitSelector || config.renderWaitSelector || '',
+      renderWaitTimeoutMilliseconds: input.renderWaitTimeoutMilliseconds || config.renderWaitTimeoutMilliseconds,
+      headingSettleMilliseconds: input.headingSettleMilliseconds || config.headingSettleMilliseconds,
+      structuredDataSettleMilliseconds: input.structuredDataSettleMilliseconds || config.structuredDataSettleMilliseconds,
+      interactionProbeCount: Array.isArray(input.interactionProbes) ? input.interactionProbes.length : 0,
+      interactionMaxResponseMilliseconds: input.interactionMaxResponseMilliseconds || config.interactionMaxResponseMilliseconds,
+      softNavigationMaxLinks: input.softNavigationMaxLinks || config.softNavigationMaxLinks || 0,
+      softNavigationMaxDurationMilliseconds: input.softNavigationMaxDurationMilliseconds || config.softNavigationMaxDurationMilliseconds,
+      softNavigationMaxHeapGrowthMB: input.softNavigationMaxHeapGrowthMB || config.softNavigationMaxHeapGrowthMB,
+      jsBudgetBytes: input.jsBudgetBytes ?? config.jsBudgetBytes,
+      imageBudgetBytes: input.imageBudgetBytes ?? config.imageBudgetBytes,
+      linkCheckEnabled: input.linkCheckEnabled ?? config.linkCheckEnabled,
+      linkCheckMaxLinks: input.linkCheckMaxLinks ?? config.linkCheckMaxLinks,
+      linkCheckTimeoutMilliseconds: input.linkCheckTimeoutMilliseconds ?? config.linkCheckTimeoutMilliseconds,
+      linkCheckExternal: input.linkCheckExternal ?? config.linkCheckExternal,
+    })
     const remainingTimeoutMilliseconds = Math.max(
       1_000,
       config.timeoutMilliseconds - (Date.now() - startedAt),
@@ -151,13 +197,19 @@ export async function runLighthouse(input, config) {
       debuggingPort: chrome.port,
       input,
       timeoutMilliseconds: remainingTimeoutMilliseconds,
-      settleMilliseconds: config.headingSettleMilliseconds,
+      settleMilliseconds: Math.max(
+        input.headingSettleMilliseconds || config.headingSettleMilliseconds || 0,
+        input.structuredDataSettleMilliseconds || config.structuredDataSettleMilliseconds || 0,
+      ),
       userAgent: String(result.lhr.configSettings?.emulatedUserAgent || '').trim(),
     })
     return normalizeLighthouseReport(
       result.lhr,
       renderedDocument.renderedHeadings,
       renderedDocument.renderedStructuredData,
+      renderedDocument.renderedLinks,
+      renderedDocument.interactionAudit,
+      renderedDocument.softNavigationAudit,
     )
   } catch (error) {
     if (error instanceof LighthouseExecutionError) {
@@ -174,6 +226,104 @@ export async function runLighthouse(input, config) {
       // A timed-out or failed Chrome process may already be gone.
     }
   }
+}
+
+function summarizeLighthouseSamples(results) {
+  return (Array.isArray(results) ? results : [])
+    .filter((item) => item?.lhr)
+    .map((item) => ({
+      sampleIndex: item.sampleIndex,
+      performanceScore: finiteOrNull(item.lhr.categories?.performance?.score),
+      largestContentfulPaintMilliseconds: finiteOrNull(item.lhr.audits?.['largest-contentful-paint']?.numericValue),
+    }))
+}
+
+function finiteOrNull(value) {
+  const numeric = Number(value)
+  return Number.isFinite(numeric) ? numeric : null
+}
+
+async function runLighthouseSamples(url, flags, runCount) {
+  const results = []
+  for (let index = 0; index < runCount; index++) {
+    const result = await lighthouse(url, flags)
+    if (result && typeof result === 'object') {
+      result.sampleIndex = index
+    }
+    results.push(result)
+  }
+  return results
+}
+
+export function selectMedianLighthouseResult(results) {
+  const samples = Array.isArray(results) ? results.filter((item) => item?.lhr) : []
+  if (samples.length === 0) {
+    return null
+  }
+  const scored = samples.map((sample) => ({
+    sample,
+    score: lighthouseResultMedianRankScore(sample.lhr),
+  }))
+  const rankedScores = scored.map((item) => item.score).sort((a, b) => a - b)
+  const index = Math.floor(rankedScores.length / 2)
+  const medianScore = rankedScores.length % 2 === 0
+    ? (rankedScores[index - 1] + rankedScores[index]) / 2
+    : rankedScores[index]
+  scored.sort((a, b) => {
+    const distanceA = Math.abs(a.score - medianScore)
+    const distanceB = Math.abs(b.score - medianScore)
+    if (distanceA !== distanceB) {
+      return distanceA - distanceB
+    }
+    if (a.score !== b.score) {
+      return a.score - b.score
+    }
+    return (a.sample.sampleIndex || 0) - (b.sample.sampleIndex || 0)
+  })
+  return scored[0].sample
+}
+
+function lighthouseResultMedianRankScore(lhr) {
+  const performanceScore = Number(lhr?.categories?.performance?.score)
+  if (Number.isFinite(performanceScore)) {
+    return performanceScore
+  }
+  const lcp = Number(lhr?.audits?.['largest-contentful-paint']?.numericValue)
+  if (Number.isFinite(lcp)) {
+    return -lcp
+  }
+  return 0
+}
+
+function annotateLighthouseConfigSettings(lhr, settings) {
+  if (!lhr || typeof lhr !== 'object') {
+    return
+  }
+  const configSettings = lhr.configSettings && typeof lhr.configSettings === 'object'
+    ? lhr.configSettings
+    : {}
+  configSettings.siteQuality = {
+    lighthouseRunCount: settings.lighthouseRunCount,
+    selectedSampleIndex: settings.selectedSampleIndex,
+    sampleSummaries: Array.isArray(settings.sampleSummaries) ? settings.sampleSummaries : [],
+    throttlingMethod: settings.throttlingMethod,
+    renderWaitSelector: String(settings.renderWaitSelector || ''),
+    renderWaitTimeoutMilliseconds: settings.renderWaitTimeoutMilliseconds,
+    headingSettleMilliseconds: settings.headingSettleMilliseconds,
+    structuredDataSettleMilliseconds: settings.structuredDataSettleMilliseconds,
+    interactionProbeCount: settings.interactionProbeCount,
+    interactionMaxResponseMilliseconds: settings.interactionMaxResponseMilliseconds,
+    softNavigationMaxLinks: settings.softNavigationMaxLinks,
+    softNavigationMaxDurationMilliseconds: settings.softNavigationMaxDurationMilliseconds,
+    softNavigationMaxHeapGrowthMB: settings.softNavigationMaxHeapGrowthMB,
+    jsBudgetBytes: settings.jsBudgetBytes,
+    imageBudgetBytes: settings.imageBudgetBytes,
+    linkCheckEnabled: settings.linkCheckEnabled,
+    linkCheckMaxLinks: settings.linkCheckMaxLinks,
+    linkCheckTimeoutMilliseconds: settings.linkCheckTimeoutMilliseconds,
+    linkCheckExternal: settings.linkCheckExternal,
+  }
+  lhr.configSettings = configSettings
 }
 
 export async function cleanupOrphanLighthouseBrowsers() {
@@ -214,6 +364,14 @@ function normalizeWorkerHeapLimitMB(value) {
   return Math.min(Math.max(parsed, 384), 1536)
 }
 
+function normalizeLighthouseRunCount(value) {
+  const parsed = Number.parseInt(String(value || ''), 10)
+  if (!Number.isInteger(parsed)) {
+    return 1
+  }
+  return Math.min(Math.max(parsed, 1), 5)
+}
+
 function isLighthouseBrowserCommand(command) {
   const normalized = String(command || '').replace(/\0/g, ' ')
   if (!normalized) {
@@ -239,6 +397,7 @@ async function captureRenderedDocumentAuditResult(options) {
     return await captureRenderedDocumentAudit(options)
   } catch (error) {
     const normalized = normalizeRenderedDocumentAuditError(error)
+    const input = options?.input || {}
     return {
       renderedHeadings: {
         status: 'failed',
@@ -250,6 +409,28 @@ async function captureRenderedDocumentAuditResult(options) {
         source: 'chrome-rendered-dom',
         error: normalized,
       },
+      renderedLinks: {
+        status: 'failed',
+        source: 'chrome-rendered-dom',
+        error: normalized,
+        configured: Boolean(input.linkCheckEnabled),
+        links: [],
+      },
+      interactionAudit: {
+        status: 'failed',
+        source: 'chrome-rendered-dom',
+        error: normalized,
+        configured: Array.isArray(input.interactionProbes) && input.interactionProbes.length > 0,
+        interactions: [],
+      },
+      softNavigationAudit: {
+        status: 'failed',
+        source: 'chrome-rendered-dom',
+        error: normalized,
+        configured: (Array.isArray(input.softNavigationSelectors) && input.softNavigationSelectors.length > 0) ||
+          Number(input.softNavigationMaxLinks || 0) > 0,
+        navigations: [],
+      },
     }
   }
 }
@@ -259,7 +440,14 @@ function normalizeRenderedDocumentAuditError(error) {
   return message.replace(/\s+/g, ' ').trim().slice(0, 500) || 'rendered document audit failed'
 }
 
-function normalizeLighthouseReport(lhr, renderedHeadings, renderedStructuredData) {
+function normalizeLighthouseReport(
+  lhr,
+  renderedHeadings,
+  renderedStructuredData,
+  renderedLinks,
+  interactionAudit,
+  softNavigationAudit,
+) {
   return {
     lighthouseResult: {
       finalUrl: String(lhr.finalUrl || ''),
@@ -269,6 +457,9 @@ function normalizeLighthouseReport(lhr, renderedHeadings, renderedStructuredData
       audits: lhr.audits || {},
       renderedHeadings,
       renderedStructuredData,
+      renderedLinks,
+      interactionAudit,
+      softNavigationAudit,
     },
   }
 }

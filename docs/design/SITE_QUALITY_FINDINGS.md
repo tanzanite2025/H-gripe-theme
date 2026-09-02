@@ -204,3 +204,11 @@ deployment token, accepts only the configured storefront origin, rejects
 credential-bearing URLs and private DNS answers in production, and is capped
 by timeout, process, CPU, memory, and concurrency limits. The Go API applies
 the same storefront-origin constraint before scheduling or capturing a run.
+
+Runner accuracy is configurable without changing the persistence model. Keep
+`SITE_QUALITY_THROTTLING_METHOD=simulate` and `SITE_QUALITY_LIGHTHOUSE_RUN_COUNT=1`
+for routine monitoring; use `devtools` and a higher run count, normally `3`,
+when establishing a baseline and raise `SITE_QUALITY_RUNNER_TIMEOUT_SECONDS`
+accordingly. DOM-derived heading and schema audits may also require
+`SITE_QUALITY_RENDER_WAIT_SELECTOR` plus larger settle/wait budgets for pages
+with heavy client-side hydration.

@@ -270,6 +270,7 @@ func siteQualityDecisionFromIssues(
 		Links:           best.Links,
 		Headings:        best.Headings,
 		StructuredData:  best.StructuredData,
+		Runtime:         best.Runtime,
 		DisplayValue:    best.DisplayValue,
 		NumericValue:    copyFloat64(best.NumericValue),
 	}
@@ -281,6 +282,9 @@ func siteQualityDecisionEvidenceCount(decision siteQualityDecision) int {
 	}
 	if len(decision.StructuredData) > 0 {
 		return len(decision.StructuredData)
+	}
+	if len(decision.Runtime) > 0 {
+		return len(decision.Runtime)
 	}
 	if len(decision.Links) > 0 {
 		return len(decision.Links)
@@ -374,6 +378,7 @@ func mustEncodeSiteQualityFindingEvidence(decision siteQualityDecision) string {
 		Links:           decision.Links,
 		Headings:        decision.Headings,
 		StructuredData:  decision.StructuredData,
+		Runtime:         decision.Runtime,
 	}
 	encoded, err := json.Marshal(evidence)
 	if err != nil {
@@ -388,9 +393,11 @@ func siteQualityFindingResourcesFromLighthouse(
 	result := make([]sitequalitydomain.SiteQualityFindingResource, 0, len(resources))
 	for _, resource := range resources {
 		result = append(result, sitequalitydomain.SiteQualityFindingResource{
-			URL:        resource.URL,
-			TotalBytes: copyInt64(resource.TotalBytes),
-			WastedMS:   copyFloat64(resource.WastedMS),
+			URL:             resource.URL,
+			TotalBytes:      copyInt64(resource.TotalBytes),
+			BudgetBytes:     copyInt64(resource.BudgetBytes),
+			OverBudgetBytes: copyInt64(resource.OverBudgetBytes),
+			WastedMS:        copyFloat64(resource.WastedMS),
 		})
 	}
 	return result

@@ -62,6 +62,7 @@
           :key="product.id"
           :product="product"
           body-click-action="details"
+          :show-rating="false"
           show-details-action
           show-wishlist-action
           show-share-action

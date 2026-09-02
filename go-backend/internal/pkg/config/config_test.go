@@ -237,12 +237,54 @@ func TestValidateConfigRequiresInternalRunnerForEnabledQualityWorker(t *testing.
 		t.Fatal("validateConfig should require an internal Site Quality runner when monitoring is enabled")
 	}
 
-	cfg.SiteQuality = SiteQualityConfig{
-		RunnerURL:   "http://site-quality-runner:8080",
-		RunnerToken: "01234567890123456789012345678901",
-	}
+	cfg.SiteQuality = validSiteQualityRunnerConfig(
+		"http://site-quality-runner:8080",
+		"01234567890123456789012345678901",
+	)
 	if err := validateConfig(cfg); err != nil {
 		t.Fatalf("validateConfig should allow enabled quality monitoring with an internal runner: %v", err)
+	}
+}
+
+func TestValidateConfigAllowsSiteQualityRunnerAccuracyControls(t *testing.T) {
+	cfg := validTestConfig()
+	cfg.Worker = validSiteQualityWorkerConfig()
+	cfg.SiteQuality = validSiteQualityRunnerConfig(
+		"http://site-quality-runner:8080",
+		"01234567890123456789012345678901",
+	)
+	cfg.SiteQuality.RunnerTimeoutSeconds = 180
+	cfg.SiteQuality.ThrottlingMethod = "devtools"
+	cfg.SiteQuality.LighthouseRunCount = 3
+	cfg.SiteQuality.RenderWaitSelector = "#custom-wheelset-builder"
+	cfg.SiteQuality.RenderWaitTimeoutMilliseconds = 12000
+	cfg.SiteQuality.HeadingSettleMilliseconds = 5500
+	cfg.SiteQuality.StructuredDataSettleMilliseconds = 6000
+
+	if err := validateConfig(cfg); err != nil {
+		t.Fatalf("validateConfig should allow bounded Site Quality runner accuracy controls: %v", err)
+	}
+}
+
+func TestValidateConfigRejectsInvalidSiteQualityRunnerAccuracyControls(t *testing.T) {
+	for name, mutate := range map[string]func(*Config){
+		"throttling": func(cfg *Config) { cfg.SiteQuality.ThrottlingMethod = "magic" },
+		"run count":  func(cfg *Config) { cfg.SiteQuality.LighthouseRunCount = 6 },
+		"wait":       func(cfg *Config) { cfg.SiteQuality.RenderWaitTimeoutMilliseconds = 30000 },
+	} {
+		t.Run(name, func(t *testing.T) {
+			cfg := validTestConfig()
+			cfg.Worker = validSiteQualityWorkerConfig()
+			cfg.SiteQuality = validSiteQualityRunnerConfig(
+				"http://site-quality-runner:8080",
+				"01234567890123456789012345678901",
+			)
+			mutate(cfg)
+
+			if err := validateConfig(cfg); err == nil {
+				t.Fatal("validateConfig should reject invalid Site Quality runner accuracy controls")
+			}
+		})
 	}
 }
 
@@ -254,10 +296,7 @@ func TestValidateConfigRejectsDefaultSiteQualityRunnerTokenInRelease(t *testing.
 		t.Run(token, func(t *testing.T) {
 			cfg := validReleaseConfig()
 			cfg.Worker = validSiteQualityWorkerConfig()
-			cfg.SiteQuality = SiteQualityConfig{
-				RunnerURL:   "http://site-quality-runner:8080",
-				RunnerToken: token,
-			}
+			cfg.SiteQuality = validSiteQualityRunnerConfig("http://site-quality-runner:8080", token)
 
 			if err := validateConfig(cfg); err == nil {
 				t.Fatalf("validateConfig should reject default Site Quality runner token %q in release mode", token)
@@ -269,10 +308,10 @@ func TestValidateConfigRejectsDefaultSiteQualityRunnerTokenInRelease(t *testing.
 func TestValidateConfigAllowsStrongSiteQualityRunnerTokenInRelease(t *testing.T) {
 	cfg := validReleaseConfig()
 	cfg.Worker = validSiteQualityWorkerConfig()
-	cfg.SiteQuality = SiteQualityConfig{
-		RunnerURL:   "http://site-quality-runner:8080",
-		RunnerToken: "production-site-quality-runner-token-2026-rotation-a",
-	}
+	cfg.SiteQuality = validSiteQualityRunnerConfig(
+		"http://site-quality-runner:8080",
+		"production-site-quality-runner-token-2026-rotation-a",
+	)
 
 	if err := validateConfig(cfg); err != nil {
 		t.Fatalf("validateConfig should allow a non-default Site Quality runner token in release mode: %v", err)
@@ -281,9 +320,7 @@ func TestValidateConfigAllowsStrongSiteQualityRunnerTokenInRelease(t *testing.T)
 
 func TestValidateConfigRejectsReleaseRunnerURLWithoutToken(t *testing.T) {
 	cfg := validReleaseConfig()
-	cfg.SiteQuality = SiteQualityConfig{
-		RunnerURL: "http://site-quality-runner:8080",
-	}
+	cfg.SiteQuality = validSiteQualityRunnerConfig("http://site-quality-runner:8080", "")
 
 	if err := validateConfig(cfg); err == nil {
 		t.Fatal("validateConfig should reject a release Site Quality runner URL without a token")
@@ -727,5 +764,23 @@ func validTestConfig() *Config {
 		PaymentThreeDS: PaymentThreeDSConfig{
 			AVSBillingShippingMismatchHighValueThresholdUSD: 800,
 		},
+		SiteQuality: validSiteQualityRunnerConfig("", ""),
+	}
+}
+
+func validSiteQualityRunnerConfig(runnerURL string, runnerToken string) SiteQualityConfig {
+	return SiteQualityConfig{
+		RunnerURL:                        runnerURL,
+		RunnerToken:                      runnerToken,
+		RunnerTimeoutSeconds:             90,
+		ThrottlingMethod:                 "simulate",
+		LighthouseRunCount:               1,
+		RenderWaitTimeoutMilliseconds:    3000,
+		HeadingSettleMilliseconds:        1500,
+		StructuredDataSettleMilliseconds: 1500,
+		InteractionMaxResponseMillis:     200,
+		SoftNavigationMaxDurationMillis:  2000,
+		SoftNavigationMaxHeapGrowthMB:    32,
+		LinkCheckTimeoutMillis:           2500,
 	}
 }

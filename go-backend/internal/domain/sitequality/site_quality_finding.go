@@ -89,12 +89,15 @@ type SiteQualityFindingEvidence struct {
 	Links           []SiteQualityLinkEvidence           `json:"links,omitempty"`
 	Headings        []SiteQualityHeadingEvidence        `json:"headings,omitempty"`
 	StructuredData  []SiteQualityStructuredDataEvidence `json:"structured_data,omitempty"`
+	Runtime         []SiteQualityRuntimeEvidence        `json:"runtime,omitempty"`
 }
 
 type SiteQualityFindingResource struct {
-	URL        string   `json:"url"`
-	TotalBytes *int64   `json:"total_bytes,omitempty"`
-	WastedMS   *float64 `json:"wasted_ms,omitempty"`
+	URL             string   `json:"url"`
+	TotalBytes      *int64   `json:"total_bytes,omitempty"`
+	BudgetBytes     *int64   `json:"budget_bytes,omitempty"`
+	OverBudgetBytes *int64   `json:"over_budget_bytes,omitempty"`
+	WastedMS        *float64 `json:"wasted_ms,omitempty"`
 }
 
 // SiteQualityLinkEvidence mirrors Lighthouse's link-text table details.
@@ -127,6 +130,30 @@ type SiteQualityStructuredDataEvidence struct {
 	Snippet     string `json:"snippet,omitempty"`
 	Property    string `json:"property,omitempty"`
 	Explanation string `json:"explanation,omitempty"`
+}
+
+// SiteQualityRuntimeEvidence captures browser-rendered checks that are not
+// native Lighthouse table rows, such as interaction latency, SPA navigation,
+// and rendered-link reachability.
+type SiteQualityRuntimeEvidence struct {
+	Name                 string   `json:"name,omitempty"`
+	Selector             string   `json:"selector,omitempty"`
+	Action               string   `json:"action,omitempty"`
+	Text                 string   `json:"text,omitempty"`
+	URL                  string   `json:"url,omitempty"`
+	FinalURL             string   `json:"final_url,omitempty"`
+	ExpectedURL          string   `json:"expected_url,omitempty"`
+	Status               string   `json:"status,omitempty"`
+	Mode                 string   `json:"mode,omitempty"`
+	Source               string   `json:"source,omitempty"`
+	Error                string   `json:"error,omitempty"`
+	StatusCode           int      `json:"status_code,omitempty"`
+	RedirectCount        int      `json:"redirect_count,omitempty"`
+	DurationMS           *float64 `json:"duration_ms,omitempty"`
+	ResponseMS           *float64 `json:"response_ms,omitempty"`
+	ThresholdMS          *float64 `json:"threshold_ms,omitempty"`
+	JSHeapDeltaBytes     *int64   `json:"js_heap_delta_bytes,omitempty"`
+	JSHeapThresholdBytes *int64   `json:"js_heap_threshold_bytes,omitempty"`
 }
 
 type SiteQualityFindingDetection struct {

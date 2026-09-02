@@ -115,7 +115,10 @@ const emit = defineEmits<{
 
 const { t, locale } = useI18n()
 const assistant = useWheelsetSelectionAssistant()
-const products = useWheelsetSelectionProducts(assistant.productQuery)
+const products = useWheelsetSelectionProducts(
+  assistant.productQuery,
+  computed(() => Boolean(assistant.config.value)),
+)
 const assistantHelp = useWheelsetSelectionAssistantHelp()
 const questionPagination = useWheelsetSelectionAssistantQuestionPagination()
 const selectedQuestionOptionKey = ref<string | undefined>()

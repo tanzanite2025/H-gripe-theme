@@ -6,6 +6,7 @@ import { toUserFacingApiError } from '~/utils/storefrontApiFailures'
 
 export const useWheelsetSelectionProducts = (
   query: ComputedRef<WheelsetSelectionProductQuery>,
+  enabled?: ComputedRef<boolean>,
 ) => {
   const { t } = useI18n()
   const { fetchShopProducts } = useShopProducts()
@@ -16,9 +17,15 @@ export const useWheelsetSelectionProducts = (
   const total = ref(0)
   const hasMore = ref(false)
   let requestSequence = 0
+  let activeRequestController: AbortController | null = null
 
   const load = async () => {
+    if (enabled && !enabled.value) return
+
     const requestId = ++requestSequence
+    activeRequestController?.abort()
+    const requestController = new AbortController()
+    activeRequestController = requestController
     loading.value = true
     error.value = null
     try {
@@ -31,6 +38,9 @@ export const useWheelsetSelectionProducts = (
           : undefined,
         page: page.value,
         per_page: 6,
+        compact: true,
+      }, {
+        signal: requestController.signal,
       })
       if (requestId !== requestSequence) return
       products.value = result.items
@@ -39,6 +49,7 @@ export const useWheelsetSelectionProducts = (
       hasMore.value = Boolean(result.hasMore)
     } catch (cause: any) {
       if (requestId !== requestSequence) return
+      if (cause?.name === 'AbortError') return
       products.value = []
       total.value = 0
       hasMore.value = false
@@ -51,6 +62,9 @@ export const useWheelsetSelectionProducts = (
       )
     } finally {
       if (requestId === requestSequence) loading.value = false
+      if (activeRequestController === requestController) {
+        activeRequestController = null
+      }
     }
   }
 
@@ -58,7 +72,8 @@ export const useWheelsetSelectionProducts = (
     page.value = Math.max(1, nextPage)
   }
 
-  watch(query, () => {
+  watch([query, enabled || (() => true)], () => {
+    if (enabled && !enabled.value) return
     page.value = 1
     void load()
   }, { deep: true, immediate: true })

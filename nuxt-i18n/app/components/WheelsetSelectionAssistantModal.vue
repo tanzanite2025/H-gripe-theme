@@ -86,6 +86,7 @@ import { useI18n } from '#imports'
 import QuickBuyLocalizedHelpQuestionMarkDialog from '~/components/quick-buy/QuickBuyLocalizedHelpQuestionMarkDialog.vue'
 import { provideWheelsetSelectionAssistantHelp } from '~/composables/useWheelsetSelectionAssistantHelp'
 import { wheelsetSelectionAssistantQuestionPaginationKey } from '~/composables/useWheelsetSelectionAssistantQuestionPagination'
+import { useWheelsetSelectionAssistantModalState } from '~/composables/useWheelsetSelectionAssistantModalState'
 import type {
   WheelsetSelectionAssistantSource,
 } from '~/types/wheelsetSelectionAssistant'
@@ -113,9 +114,11 @@ const modalElement = ref<HTMLElement | null>(null)
 const modalTitleId = 'wheelset-selection-assistant-modal-title'
 const hasFooterSlot = computed(() => Boolean(slots.footer))
 const assistantHelp = provideWheelsetSelectionAssistantHelp()
+const assistantModalState = useWheelsetSelectionAssistantModalState()
 const questionPaginationTotal = ref(0)
 const questionPaginationActiveIndex = ref(0)
 const questionPaginationReachableIndex = ref(0)
+let registeredOpenState = false
 
 const isQuickBuyWheelsetSelectionAssistantSource = computed(() => props.source === 'quick-buy/wheelset-selection-assistant')
 const titleLabel = computed(() => props.title || (
@@ -157,19 +160,35 @@ const handleKeydown = (event: KeyboardEvent) => {
   }
 }
 
+const syncOpenState = (isOpen: boolean) => {
+  if (isOpen && !registeredOpenState) {
+    assistantModalState.register()
+    registeredOpenState = true
+    return
+  }
+
+  if (!isOpen && registeredOpenState) {
+    assistantModalState.unregister()
+    registeredOpenState = false
+  }
+}
+
 watch(
   () => props.modelValue,
   value => {
+    syncOpenState(value)
     if (!value) return
     nextTick(() => modalElement.value?.focus())
   },
 )
 
 onMounted(() => {
+  syncOpenState(props.modelValue)
   document.addEventListener('keydown', handleKeydown)
 })
 
 onBeforeUnmount(() => {
+  syncOpenState(false)
   document.removeEventListener('keydown', handleKeydown)
 })
 </script>

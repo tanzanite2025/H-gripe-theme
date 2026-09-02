@@ -129,7 +129,8 @@
                   v-if="outputPreviewUrl"
                   :src="outputPreviewUrl"
                   :alt="t('imageToWebp.outputTitle')"
-                  class="h-auto max-h-64 w-full max-w-full object-contain"
+                  class="h-auto object-contain"
+                  :style="outputPreviewStyle"
                 />
                 <div v-else class="flex flex-col items-center justify-center gap-3 px-5 text-center text-muted-foreground">
                   <LoaderCircle v-if="converting" class="size-7 animate-spin text-primary" />
@@ -238,7 +239,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, reactive, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { Download, ImageDown, ImagePlus, LoaderCircle, RotateCcw, ShieldCheck, TriangleAlert } from '@lucide/vue'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import { Button } from '@/components/ui/button'
@@ -274,6 +275,30 @@ const settings = reactive<WebpSettings>({
 })
 
 const outputBytes = computed(() => outputBlob.value?.size || 0)
+const outputPreviewStyle = computed<Record<string, string>>(() => {
+  if (!outputWidth.value || !outputHeight.value) return {}
+  return {
+    aspectRatio: `${outputWidth.value} / ${outputHeight.value}`,
+    maxHeight: '16rem',
+    maxWidth: '100%',
+    width: `${outputWidth.value}px`,
+  }
+})
+
+let scheduledConversionTimer: number | null = null
+let syncingSettings = false
+
+const clearScheduledConversion = (): void => {
+  if (scheduledConversionTimer === null) return
+  window.clearTimeout(scheduledConversionTimer)
+  scheduledConversionTimer = null
+}
+
+const syncSettings = (updates: Partial<WebpSettings>): void => {
+  syncingSettings = true
+  Object.assign(settings, updates)
+  syncingSettings = false
+}
 
 const revokeObjectURL = (url: string): void => {
   if (url) URL.revokeObjectURL(url)
@@ -367,14 +392,17 @@ const convertImage = async (image: HTMLImageElement, runID: number): Promise<voi
   await nextTick()
   if (runID !== conversionRunID.value) return
 
-  settings.quality = clampQuality(settings.quality)
+  const quality = clampQuality(settings.quality)
   const naturalWidth = image.naturalWidth || image.width
   const naturalHeight = image.naturalHeight || image.height
   const targetWidth = normalizeDimension(settings.targetWidth, naturalWidth)
   const targetHeight = normalizeDimension(settings.targetHeight, naturalHeight)
-  settings.targetWidth = targetWidth
-  settings.targetHeight = targetHeight
-  const blob = await imageToWebp(image, settings.quality, targetWidth, targetHeight)
+  syncSettings({
+    quality,
+    targetWidth,
+    targetHeight,
+  })
+  const blob = await imageToWebp(image, quality, targetWidth, targetHeight)
   if (runID !== conversionRunID.value) return
 
   releaseOutput()
@@ -408,8 +436,10 @@ const chooseFile = async (file: File | null): Promise<void> => {
     if (runID !== conversionRunID.value) return
     sourceWidth.value = image.naturalWidth || image.width
     sourceHeight.value = image.naturalHeight || image.height
-    settings.targetWidth = normalizeDimension(null, sourceWidth.value)
-    settings.targetHeight = normalizeDimension(null, sourceHeight.value)
+    syncSettings({
+      targetWidth: normalizeDimension(null, sourceWidth.value),
+      targetHeight: normalizeDimension(null, sourceHeight.value),
+    })
     await convertImage(image, runID)
   } catch (error) {
     if (runID === conversionRunID.value) {
@@ -453,6 +483,19 @@ const convertCurrent = async (): Promise<void> => {
   }
 }
 
+const scheduleConvertCurrent = (): void => {
+  clearScheduledConversion()
+  scheduledConversionTimer = window.setTimeout(() => {
+    scheduledConversionTimer = null
+    if (!sourceFile.value || !sourcePreviewUrl.value) return
+    if (converting.value) {
+      scheduleConvertCurrent()
+      return
+    }
+    void convertCurrent()
+  }, 260)
+}
+
 const triggerFilePicker = (): void => {
   if (!converting.value) fileInput.value?.click()
 }
@@ -489,12 +532,15 @@ const downloadWebp = (): void => {
 
 const resetTool = (): void => {
   ++conversionRunID.value
+  clearScheduledConversion()
   converting.value = false
   sourceFile.value = null
   releaseSourcePreview()
   releaseOutput()
-  settings.targetWidth = null
-  settings.targetHeight = null
+  syncSettings({
+    targetWidth: null,
+    targetHeight: null,
+  })
   sourceWidth.value = 0
   sourceHeight.value = 0
   outputWidth.value = 0
@@ -504,8 +550,18 @@ const resetTool = (): void => {
   if (fileInput.value) fileInput.value.value = ''
 }
 
+watch(
+  () => [settings.quality, settings.targetWidth, settings.targetHeight],
+  () => {
+    if (syncingSettings || !sourceFile.value || !sourcePreviewUrl.value) return
+    scheduleConvertCurrent()
+  },
+  { flush: 'sync' },
+)
+
 onBeforeUnmount(() => {
   ++conversionRunID.value
+  clearScheduledConversion()
   releaseSourcePreview()
   releaseOutput()
 })

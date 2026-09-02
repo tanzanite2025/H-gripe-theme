@@ -5,6 +5,11 @@ import {
   settleRenderedDocument,
   snapshotRenderedHeadings,
 } from './headings.mjs'
+import {
+  captureInteractionAudit,
+  captureRenderedLinkAudit,
+  captureSoftNavigationAudit,
+} from './rendered_runtime_audits.mjs'
 import { snapshotRenderedStructuredData } from './structured_data.mjs'
 
 export async function captureRenderedDocumentAudit({
@@ -37,12 +42,30 @@ export async function captureRenderedDocumentAudit({
     if (remaining < 1_000) {
       throw new Error('rendered document capture timed out before the document settled')
     }
-    await settleRenderedDocument(page, Math.min(remaining, settleMilliseconds))
+    await settleRenderedDocument(page, Math.min(remaining, settleMilliseconds), {
+      waitSelector: input.renderWaitSelector,
+      waitTimeoutMilliseconds: input.renderWaitTimeoutMilliseconds,
+      timeoutMilliseconds: remaining,
+    })
     const [headings, structuredData] = await Promise.all([
       page.evaluate(snapshotRenderedHeadings),
       page.evaluate(snapshotRenderedStructuredData),
     ])
     const finalUrl = page.url()
+    const renderedLinks = await captureRenderedLinkAudit(page, input)
+    const interactionAudit = await captureInteractionAudit(page, input)
+    if (shouldResetBeforeSoftNavigation(input)) {
+      await page.goto(input.url, {
+        waitUntil: 'domcontentloaded',
+        timeout: navigationTimeout,
+      })
+      await settleRenderedDocument(page, Math.min(remaining, settleMilliseconds), {
+        waitSelector: input.renderWaitSelector,
+        waitTimeoutMilliseconds: input.renderWaitTimeoutMilliseconds,
+        timeoutMilliseconds: remaining,
+      }).catch(() => {})
+    }
+    const softNavigationAudit = await captureSoftNavigationAudit(page, input)
 
     return {
       renderedHeadings: {
@@ -57,6 +80,9 @@ export async function captureRenderedDocumentAudit({
         finalUrl,
         ...structuredData,
       },
+      renderedLinks,
+      interactionAudit,
+      softNavigationAudit,
     }
   } finally {
     if (page) {
@@ -64,4 +90,11 @@ export async function captureRenderedDocumentAudit({
     }
     browser.disconnect()
   }
+}
+
+function shouldResetBeforeSoftNavigation(input) {
+  const hasSoftNavigationTargets = (Array.isArray(input.softNavigationSelectors) && input.softNavigationSelectors.length > 0) ||
+    Number(input.softNavigationMaxLinks || 0) > 0
+  const hasInteractionProbes = Array.isArray(input.interactionProbes) && input.interactionProbes.length > 0
+  return hasSoftNavigationTargets && hasInteractionProbes
 }

@@ -50,11 +50,16 @@ const emit = defineEmits<{
 <style scoped>
 .wheelset-selection-outcome-panel {
   display: flex;
-  min-height: 100%;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  box-sizing: border-box;
+  flex: 1 1 0;
   flex-direction: column;
   justify-content: space-between;
   gap: 1.5rem;
   padding: 1rem;
+  overflow-y: auto;
 }
 
 .wheelset-selection-outcome-panel__copy {

@@ -127,7 +127,8 @@
                   v-if="svgPreviewUrl"
                   :src="svgPreviewUrl"
                   :alt="t('imageVectorizer.outputTitle')"
-                  class="h-auto max-h-64 w-full max-w-full object-contain"
+                  class="h-auto object-contain"
+                  :style="svgPreviewStyle"
                 />
                 <div v-else class="flex flex-col items-center justify-center gap-3 px-5 text-center text-muted-foreground">
                   <LoaderCircle v-if="converting" class="size-7 animate-spin text-primary" />
@@ -476,6 +477,30 @@ const settings = reactive<VectorizerSettings>({
 })
 
 const outputBytes = computed(() => svgText.value ? new Blob([svgText.value]).size : 0)
+const svgPreviewStyle = computed<Record<string, string>>(() => {
+  if (!outputWidth.value || !outputHeight.value) return {}
+  return {
+    aspectRatio: `${outputWidth.value} / ${outputHeight.value}`,
+    maxHeight: '16rem',
+    maxWidth: '100%',
+    width: `${outputWidth.value}px`,
+  }
+})
+
+let scheduledConversionTimer: number | null = null
+let syncingSettings = false
+
+const clearScheduledConversion = (): void => {
+  if (scheduledConversionTimer === null) return
+  window.clearTimeout(scheduledConversionTimer)
+  scheduledConversionTimer = null
+}
+
+const syncSettings = (updates: Partial<VectorizerSettings>): void => {
+  syncingSettings = true
+  Object.assign(settings, updates)
+  syncingSettings = false
+}
 
 const revokeObjectURL = (url: string): void => {
   if (url) URL.revokeObjectURL(url)
@@ -541,7 +566,7 @@ const normalizedSettings = (): VectorizerSettings => {
     outputWidth: clampInteger(settings.outputWidth, 1, 8192, 44),
     outputHeight: clampInteger(settings.outputHeight, 1, 8192, 44),
   }
-  Object.assign(settings, normalized)
+  syncSettings(normalized)
   return normalized
 }
 
@@ -908,6 +933,19 @@ const convertCurrent = async (): Promise<void> => {
   }
 }
 
+const scheduleConvertCurrent = (): void => {
+  clearScheduledConversion()
+  scheduledConversionTimer = window.setTimeout(() => {
+    scheduledConversionTimer = null
+    if (!sourceFile.value || !sourcePreviewUrl.value) return
+    if (converting.value) {
+      scheduleConvertCurrent()
+      return
+    }
+    void convertCurrent()
+  }, 320)
+}
+
 const triggerFilePicker = (): void => {
   if (!converting.value) fileInput.value?.click()
 }
@@ -944,6 +982,7 @@ const downloadSvg = (): void => {
 
 const resetTool = (): void => {
   ++conversionRunID.value
+  clearScheduledConversion()
   converting.value = false
   sourceFile.value = null
   releaseSourcePreview()
@@ -958,8 +997,28 @@ const resetTool = (): void => {
   if (fileInput.value) fileInput.value.value = ''
 }
 
+watch(
+  () => [
+    traceMode.value,
+    settings.numberofcolors,
+    settings.ltres,
+    settings.qtres,
+    settings.pathomit,
+    settings.blurradius,
+    settings.maxDimension,
+    settings.outputWidth,
+    settings.outputHeight,
+  ],
+  () => {
+    if (syncingSettings || !sourceFile.value || !sourcePreviewUrl.value) return
+    scheduleConvertCurrent()
+  },
+  { flush: 'sync' },
+)
+
 onBeforeUnmount(() => {
   ++conversionRunID.value
+  clearScheduledConversion()
   releaseSourcePreview()
   releaseSvgPreview()
 })

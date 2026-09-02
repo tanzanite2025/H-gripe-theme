@@ -1,5 +1,8 @@
 <template>
-  <div class="dock-bar fixed inset-x-0 bottom-0 w-full z-[101] pointer-events-auto transition-all duration-300">
+  <div
+    v-show="!isWheelsetSelectionAssistantOpen"
+    class="dock-bar fixed inset-x-0 bottom-0 w-full z-[101] pointer-events-auto transition-all duration-300"
+  >
     <div class="dock-surface mx-auto w-full md:max-w-[500px] rounded-none px-1 py-2.5 md:px-4 md:py-3 items-center transition-all duration-300">
       <!-- 1. Menu (Sidebar) -->
       <button
@@ -126,17 +129,21 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, nextTick, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useI18n } from '#imports'
 import { useChatWidget } from '~/composables/useChatWidget'
 import { useSidePanelState } from '~/composables/useSidePanelState'
+import { useQuickBuyOpenRequestState } from '~/composables/useQuickBuyOpenRequestState'
+import { useWheelsetSelectionAssistantModalState } from '~/composables/useWheelsetSelectionAssistantModalState'
 import { scheduleDeferredClientWork } from '~/utils/clientDeferredWork'
 import { STOREFRONT_READ_COUNT_WARMUP } from '~/utils/storefrontLoadingPolicy'
 
 const isOpen = ref(false)
 const quickBuyDockMounted = ref(false)
+const { openRequestCount, requestOpen: requestQuickBuyOpen } = useQuickBuyOpenRequestState()
 const { isChatOpen, openChat, closeChat } = useChatWidget()
 const { openLeft } = useSidePanelState()
+const { isOpen: isWheelsetSelectionAssistantOpen } = useWheelsetSelectionAssistantModalState()
 const { t: $t } = useI18n()
 const totalUnreadCount = ref(0)
 
@@ -148,12 +155,9 @@ const closeAll = () => {
 }
 
 const openDeferredQuickBuyDock = async () => {
+  requestQuickBuyOpen()
   quickBuyDockMounted.value = true
   await nextTick()
-
-  if (typeof window !== 'undefined') {
-    window.dispatchEvent(new Event('quickbuy:open-entry'))
-  }
 }
 
 const toggleChatFromDock = () => {
@@ -171,7 +175,8 @@ const openChatFromGlobalEvent = () => {
 }
 
 const openQuickBuyFromGlobalEvent = () => {
-  void openDeferredQuickBuyDock()
+  requestQuickBuyOpen()
+  quickBuyDockMounted.value = true
 }
 
 const openSidebarLeft = () => {
@@ -257,6 +262,16 @@ const cartActionAriaLabel = computed(() => {
 const openCartDrawer = () => {
   openCart()
 }
+
+watch(
+  openRequestCount,
+  count => {
+    if (count > 0) {
+      quickBuyDockMounted.value = true
+    }
+  },
+  { immediate: true },
+)
 
 onMounted(() => {
   cancelUnreadWarmup = scheduleDeferredClientWork(calculateUnreadCount, STOREFRONT_READ_COUNT_WARMUP)

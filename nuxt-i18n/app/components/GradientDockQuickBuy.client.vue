@@ -57,18 +57,15 @@
       source="quick-buy/wheelset-selection-assistant"
       @contact-support="openWheelsetSelectionSupportChat"
     />
-    <template #footer>
-      <WheelsetSelectionSupportCta @contact-support="openWheelsetSelectionSupportChat" />
-    </template>
   </LazyWheelsetSelectionAssistantModal>
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from '#imports'
 import { useChatWidget } from '~/composables/useChatWidget'
 import { useQuickBuyFlow } from '~/composables/useQuickBuyFlow'
-import WheelsetSelectionSupportCta from '~/components/wheelset-selection/WheelsetSelectionSupportCta.vue'
+import { useQuickBuyOpenRequestState } from '~/composables/useQuickBuyOpenRequestState'
 import type { WheelsetSelectionRequestDraft } from '~/types/wheelsetSelectionAssistant'
 
 const quickOpen = ref(false)
@@ -79,6 +76,7 @@ const quickBuyAnchorRef = ref<HTMLElement | null>(null)
 const { openChat } = useChatWidget()
 const { quickBuyFlowConfig, refresh: refreshQuickBuyFlow } = useQuickBuyFlow('dock', { immediate: false })
 const quickBuyConfig = computed(() => quickBuyFlowConfig.value)
+const { openRequestCount, consumeOpenRequest } = useQuickBuyOpenRequestState()
 const { t: $t } = useI18n()
 const emit = defineEmits<{
   open: []
@@ -110,7 +108,6 @@ const openQuickEntry = () => {
   emit('open')
   closeAll()
   quickOpen.value = true
-  void warmQuickBuyFlow()
 }
 
 const openQuick = () => {
@@ -119,10 +116,6 @@ const openQuick = () => {
     return
   }
 
-  openQuickEntry()
-}
-
-const openQuickFromGlobalEvent = () => {
   openQuickEntry()
 }
 
@@ -175,7 +168,6 @@ const handleQuickWheelsetSelectionAssistantModelUpdate = (value: boolean) => {
 }
 
 const openWheelsetSelectionSupportChat = async (draft?: WheelsetSelectionRequestDraft) => {
-  closeQuickWheelsetSelectionAssistant()
   openChat({
     showAgentList: true,
     source: 'wheelset-selection-assistant',
@@ -184,13 +176,21 @@ const openWheelsetSelectionSupportChat = async (draft?: WheelsetSelectionRequest
   await nextTick()
 }
 
+watch(
+  openRequestCount,
+  (signal) => {
+    if (!signal) return
+    openQuickEntry()
+    consumeOpenRequest()
+  },
+  { immediate: true },
+)
+
 onMounted(() => {
-  window.addEventListener('quickbuy:open-entry', openQuickFromGlobalEvent)
   window.addEventListener('quickbuy:close-all', closeQuickFromGlobalEvent)
 })
 
 onBeforeUnmount(() => {
-  window.removeEventListener('quickbuy:open-entry', openQuickFromGlobalEvent)
   window.removeEventListener('quickbuy:close-all', closeQuickFromGlobalEvent)
 })
 </script>

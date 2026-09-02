@@ -290,6 +290,127 @@ func TestLighthouseRunnerTargetURLMappingPreservesEscapedPathAndQuery(t *testing
 	require.Equal(t, "http://runner.internal:9199/products/wheel%2Fsize?locale=zh-CN", targetURL)
 }
 
+func TestLighthouseRunnerServiceCapturePassesRunnerAccuracyOptions(t *testing.T) {
+	db := newLighthouseRunnerTestDB(t)
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		var payload struct {
+			URL                           string `json:"url"`
+			Strategy                      string `json:"strategy"`
+			ThrottlingMethod              string `json:"throttling_method"`
+			LighthouseRunCount            int    `json:"lighthouse_run_count"`
+			RenderWaitSelector            string `json:"render_wait_selector"`
+			RenderWaitTimeoutMS           int    `json:"render_wait_timeout_ms"`
+			HeadingSettleMS               int    `json:"heading_settle_ms"`
+			StructuredDataSettleMS        int    `json:"structured_data_settle_ms"`
+			InteractionProbes             string `json:"interaction_probes"`
+			InteractionMaxResponseMS      int    `json:"interaction_max_response_ms"`
+			SoftNavigationSelectors       string `json:"soft_navigation_selectors"`
+			SoftNavigationMaxLinks        int    `json:"soft_navigation_max_links"`
+			SoftNavigationMaxDurationMS   int    `json:"soft_navigation_max_duration_ms"`
+			SoftNavigationMaxHeapGrowthMB int    `json:"soft_navigation_max_heap_growth_mb"`
+			JSBudgetBytes                 int    `json:"js_budget_bytes"`
+			ImageBudgetBytes              int    `json:"image_budget_bytes"`
+			LinkCheckEnabled              bool   `json:"link_check_enabled"`
+			LinkCheckMaxLinks             int    `json:"link_check_max_links"`
+			LinkCheckTimeoutMS            int    `json:"link_check_timeout_ms"`
+			LinkCheckExternal             bool   `json:"link_check_external"`
+			LinkCheckMaxRedirects         int    `json:"link_check_max_redirects"`
+		}
+		require.NoError(t, json.NewDecoder(request.Body).Decode(&payload))
+		require.Equal(t, "https://example.com/products/wheel", payload.URL)
+		require.Equal(t, sitequalitydomain.SiteQualityStrategyDesktop, payload.Strategy)
+		require.Equal(t, "devtools", payload.ThrottlingMethod)
+		require.Equal(t, 3, payload.LighthouseRunCount)
+		require.Equal(t, "#custom-wheelset-builder", payload.RenderWaitSelector)
+		require.Equal(t, 12000, payload.RenderWaitTimeoutMS)
+		require.Equal(t, 5500, payload.HeadingSettleMS)
+		require.Equal(t, 6000, payload.StructuredDataSettleMS)
+		require.JSONEq(t, `[{"name":"add-cart","selector":"[data-site-quality='add-cart']","action":"click","max_response_ms":180}]`, payload.InteractionProbes)
+		require.Equal(t, 180, payload.InteractionMaxResponseMS)
+		require.Equal(t, `["nav a[href='/products']"]`, payload.SoftNavigationSelectors)
+		require.Equal(t, 2, payload.SoftNavigationMaxLinks)
+		require.Equal(t, 1500, payload.SoftNavigationMaxDurationMS)
+		require.Equal(t, 24, payload.SoftNavigationMaxHeapGrowthMB)
+		require.Equal(t, 200000, payload.JSBudgetBytes)
+		require.Equal(t, 280000, payload.ImageBudgetBytes)
+		require.True(t, payload.LinkCheckEnabled)
+		require.Equal(t, 40, payload.LinkCheckMaxLinks)
+		require.Equal(t, 1800, payload.LinkCheckTimeoutMS)
+		require.False(t, payload.LinkCheckExternal)
+		require.Equal(t, 3, payload.LinkCheckMaxRedirects)
+		writer.Header().Set("Content-Type", "application/json")
+		_, _ = writer.Write([]byte(siteQualityRunnerTestResponseWithCleanHeadings(t, `{
+			"lighthouseResult": {
+				"finalUrl": "https://example.com/products/wheel",
+				"categories": {"performance": {"score": 1}},
+				"audits": {
+					"first-contentful-paint": {
+						"id": "first-contentful-paint",
+						"score": 1,
+						"scoreDisplayMode": "metric",
+						"numericValue": 900
+					}
+				}
+			}
+		}`)))
+	}))
+	t.Cleanup(server.Close)
+
+	service := NewLighthouseRunnerService(
+		repository.NewSiteQualityRunRepository(db),
+		repository.NewSiteQualityFindingRepository(db),
+		LighthouseRunnerConfig{
+			RunnerURL:                   server.URL,
+			RunnerToken:                 testLighthouseRunnerToken,
+			RunnerTimeout:               180 * time.Second,
+			StorefrontBaseURL:           "https://example.com",
+			ThrottlingMethod:            "devtools",
+			LighthouseRunCount:          3,
+			RenderWaitSelector:          "#custom-wheelset-builder",
+			RenderWaitTimeout:           12 * time.Second,
+			HeadingSettleTimeout:        5500 * time.Millisecond,
+			StructuredDataSettleTimeout: 6 * time.Second,
+			InteractionProbes:           `[{"name":"add-cart","selector":"[data-site-quality='add-cart']","action":"click","max_response_ms":180}]`,
+			InteractionMaxResponse:      180 * time.Millisecond,
+			SoftNavigationSelectors:     `["nav a[href='/products']"]`,
+			SoftNavigationMaxLinks:      2,
+			SoftNavigationMaxDuration:   1500 * time.Millisecond,
+			SoftNavigationMaxHeapGrowth: 24,
+			JSBudgetBytes:               200000,
+			ImageBudgetBytes:            280000,
+			LinkCheckEnabled:            true,
+			LinkCheckMaxLinks:           40,
+			LinkCheckTimeout:            1800 * time.Millisecond,
+			LinkCheckExternal:           false,
+			LinkCheckMaxRedirects:       3,
+		},
+	)
+	service.ConfigureHTTPClient(server.Client(), server.URL)
+	job := createLeasedSiteQualityJob(
+		t,
+		db,
+		"https://example.com/products/wheel",
+		sitequalitydomain.SiteQualityStrategyDesktop,
+		"runner-accuracy-options-job",
+	)
+	service.ConfigureJobRepository(repository.NewSiteQualityJobRepository(db))
+
+	result, err := service.Capture(context.Background(), LighthouseRunnerCaptureInput{
+		LighthouseRunnerRunInput: LighthouseRunnerRunInput{
+			URL:      "https://example.com/products/wheel",
+			Strategy: sitequalitydomain.SiteQualityStrategyDesktop,
+		},
+		TargetID:        &job.TargetID,
+		JobID:           &job.ID,
+		LeaseWorkerID:   job.LockedBy,
+		LeaseGeneration: job.LeaseGeneration,
+		CanonicalURL:    "https://example.com/products/wheel",
+	})
+
+	require.NoError(t, err)
+	require.Equal(t, sitequalitydomain.SiteQualityRunStatusSuccess, result.Status)
+}
+
 func TestLighthouseRunnerCaptureAppliesTargetSourceTypeToSchemaChecks(t *testing.T) {
 	db := newLighthouseRunnerTestDB(t)
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
@@ -646,6 +767,168 @@ func TestSiteQualityEngineConfirmsAndVerifiesFindingLifecycle(t *testing.T) {
 		events[2].EventType,
 		events[3].EventType,
 	})
+}
+
+func TestSiteQualityEngineAggregatesRuntimeAuditsIntoFourFindings(t *testing.T) {
+	db := newLighthouseRunnerTestDB(t)
+	requests := 0
+	response := siteQualityRunnerTestResponseWithCleanHeadings(t, `{
+		"lighthouseResult": {
+			"finalUrl": "https://example.com/products/wheel",
+			"categories": {"performance": {"score": 0.91}},
+			"audits": {
+				"site-resource-budget": {
+					"id": "site-resource-budget",
+					"title": "Resource exceeds configured performance budget",
+					"description": "Static resource budget exceeded.",
+					"score": 0,
+					"scoreDisplayMode": "numeric",
+					"displayValue": "1 resource over budget",
+					"details": {
+						"overallSavingsBytes": 123456,
+						"items": [
+							{
+								"url": "https://example.com/_nuxt/oversized.js",
+								"totalBytes": 380000,
+								"budgetBytes": 256000,
+								"overBudgetBytes": 124000
+							}
+						]
+					}
+				}
+			},
+			"renderedLinks": {
+				"status": "complete",
+				"configured": true,
+				"source": "chrome-rendered-dom",
+				"finalUrl": "https://example.com/products/wheel",
+				"links": [
+					{
+						"href": "https://example.com/de/missing",
+						"text": "Missing DE alias",
+						"selector": "main > a:nth-of-type(1)",
+						"statusCode": 404,
+						"finalUrl": "https://example.com/de/missing",
+						"ok": false
+					}
+				]
+			},
+			"interactionAudit": {
+				"status": "complete",
+				"configured": true,
+				"source": "chrome-rendered-dom",
+				"finalUrl": "https://example.com/products/wheel",
+				"interactions": [
+					{
+						"name": "add cart",
+						"selector": "[data-site-quality='add-cart']",
+						"action": "click",
+						"status": "complete",
+						"responseMilliseconds": 360,
+						"thresholdMilliseconds": 200,
+						"metricSource": "event-timing",
+						"exceeded": true
+					}
+				]
+			},
+			"softNavigationAudit": {
+				"status": "complete",
+				"configured": true,
+				"source": "chrome-rendered-dom",
+				"finalUrl": "https://example.com/products/wheel",
+				"navigations": [
+					{
+						"fromUrl": "https://example.com/",
+						"toUrl": "https://example.com/products/wheel",
+						"expectedUrl": "https://example.com/products/wheel",
+						"selector": "nav > a:nth-of-type(1)",
+						"text": "Wheel",
+						"status": "complete",
+						"mode": "hard-navigation",
+						"durationMilliseconds": 920,
+						"thresholdMilliseconds": 500,
+						"jsHeapDeltaBytes": 41943040,
+						"jsHeapDeltaThresholdBytes": 33554432,
+						"exceeded": true
+					}
+				]
+			}
+		}
+	}`)
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
+		requests++
+		writer.Header().Set("Content-Type", "application/json")
+		_, _ = writer.Write([]byte(response))
+	}))
+	t.Cleanup(server.Close)
+
+	runner := NewLighthouseRunnerService(
+		repository.NewSiteQualityRunRepository(db),
+		repository.NewSiteQualityFindingRepository(db),
+		LighthouseRunnerConfig{
+			RunnerURL:         server.URL,
+			RunnerToken:       testLighthouseRunnerToken,
+			StorefrontBaseURL: "https://example.com",
+		},
+	)
+	runner.ConfigureHTTPClient(server.Client(), server.URL)
+	runner.ConfigureJobRepository(repository.NewSiteQualityJobRepository(db))
+
+	engine := NewSiteQualityEngineService(
+		repository.NewSiteQualityTargetRepository(db),
+		repository.NewSiteQualityJobRepository(db),
+		repository.NewSiteQualityRunRepository(db),
+		repository.NewSiteQualityFindingRepository(db),
+		nil,
+		runner,
+		SiteQualityEngineConfig{
+			BaseURL:                  "https://example.com",
+			SampleCount:              3,
+			RequiredConfirmations:    2,
+			RequiredCleanEvaluations: 2,
+			WorkerBatchLimit:         1,
+			ProviderRequestInterval:  time.Nanosecond,
+		},
+	)
+
+	_, err := engine.EnqueueManualTarget(context.Background(),
+		"https://example.com/products/wheel",
+		sitequalitydomain.SiteQualityStrategyDesktop,
+		42,
+		sitequalitydomain.SiteQualityJobKindManual,
+	)
+	require.NoError(t, err)
+
+	result, err := engine.ProcessReady(context.Background(), time.Now().UTC(), 1)
+	require.NoError(t, err)
+	require.Equal(t, 1, result.Succeeded)
+	require.Equal(t, 3, requests)
+
+	findings, total, err := runner.ListFindings(repository.SiteQualityFindingListFilter{
+		Page:     1,
+		PageSize: 20,
+		State:    "all",
+	})
+	require.NoError(t, err)
+	require.EqualValues(t, 4, total)
+	require.Len(t, findings, 4)
+
+	byAudit := make(map[string]sitequalitydomain.SiteQualityFinding, len(findings))
+	for _, finding := range findings {
+		byAudit[finding.AuditID] = finding
+	}
+	require.Contains(t, byAudit, siteQualityResourceBudgetAuditID)
+	require.Contains(t, byAudit, siteQualityBrokenLinkAuditID)
+	require.Contains(t, byAudit, siteQualityInteractionLatencyAuditID)
+	require.Contains(t, byAudit, siteQualitySoftNavigationRegressionID)
+	require.Equal(t, "budget", byAudit[siteQualityResourceBudgetAuditID].FindingKind)
+	require.Equal(t, "links", byAudit[siteQualityBrokenLinkAuditID].FindingKind)
+	require.Equal(t, "interaction", byAudit[siteQualityInteractionLatencyAuditID].FindingKind)
+	require.Equal(t, "navigation", byAudit[siteQualitySoftNavigationRegressionID].FindingKind)
+	require.Contains(t, byAudit[siteQualityResourceBudgetAuditID].LatestEvidence, `"budget_bytes":256000`)
+	require.Contains(t, byAudit[siteQualityBrokenLinkAuditID].LatestEvidence, `"status_code":404`)
+	require.Contains(t, byAudit[siteQualityInteractionLatencyAuditID].LatestEvidence, `"response_ms":360`)
+	require.Contains(t, byAudit[siteQualitySoftNavigationRegressionID].LatestEvidence, `"mode":"hard-navigation"`)
 }
 
 func TestSiteQualityEvaluationCleanRequiresAuditAbsentFromAllSamples(t *testing.T) {
@@ -1361,6 +1644,115 @@ func TestApplySiteQualityResultReplacesLighthouseHeadingOrderWithRenderedDOM(t *
 	var issues []LighthouseRunnerIssue
 	require.NoError(t, json.Unmarshal([]byte(run.IssuesJSON), &issues))
 	require.Empty(t, issues)
+}
+
+func TestApplySiteQualityResultIncludesRuntimeAuditsAndBudgets(t *testing.T) {
+	var result siteQualityAPIResponse
+	require.NoError(t, json.Unmarshal([]byte(siteQualityRunnerTestResponseWithCleanHeadings(t, `{
+		"lighthouseResult": {
+			"finalUrl": "https://example.com/products/wheel",
+			"categories": {"performance": {"score": 1}},
+			"audits": {
+				"site-resource-budget": {
+					"id": "site-resource-budget",
+					"title": "Resource exceeds configured performance budget",
+					"description": "Static resource budget exceeded.",
+					"score": 0,
+					"scoreDisplayMode": "numeric",
+					"displayValue": "1 resource over budget",
+					"details": {
+						"overallSavingsBytes": 123456,
+						"items": [
+							{
+								"url": "https://example.com/_nuxt/oversized.js",
+								"totalBytes": 380000,
+								"budgetBytes": 256000,
+								"overBudgetBytes": 124000
+							}
+						]
+					}
+				}
+			},
+			"renderedLinks": {
+				"status": "complete",
+				"configured": true,
+				"source": "chrome-rendered-dom",
+				"finalUrl": "https://example.com/products/wheel",
+				"links": [
+					{
+						"href": "https://example.com/de/missing",
+						"text": "Missing DE alias",
+						"selector": "main > a:nth-of-type(1)",
+						"statusCode": 404,
+						"finalUrl": "https://example.com/de/missing",
+						"ok": false
+					}
+				]
+			},
+			"interactionAudit": {
+				"status": "complete",
+				"configured": true,
+				"source": "chrome-rendered-dom",
+				"finalUrl": "https://example.com/products/wheel",
+				"interactions": [
+					{
+						"name": "add cart",
+						"selector": "[data-site-quality='add-cart']",
+						"action": "click",
+						"status": "complete",
+						"responseMilliseconds": 360,
+						"thresholdMilliseconds": 200,
+						"metricSource": "event-timing",
+						"exceeded": true
+					}
+				]
+			},
+			"softNavigationAudit": {
+				"status": "complete",
+				"configured": true,
+				"source": "chrome-rendered-dom",
+				"finalUrl": "https://example.com/products/wheel",
+				"navigations": [
+					{
+						"fromUrl": "https://example.com/",
+						"toUrl": "https://example.com/products/wheel",
+						"expectedUrl": "https://example.com/products/wheel",
+						"selector": "nav > a:nth-of-type(1)",
+						"text": "Wheel",
+						"status": "complete",
+						"mode": "hard-navigation",
+						"durationMilliseconds": 920,
+						"thresholdMilliseconds": 500,
+						"jsHeapDeltaBytes": 41943040,
+						"jsHeapDeltaThresholdBytes": 33554432,
+						"exceeded": true
+					}
+				]
+			}
+		}
+	}`)), &result))
+
+	run := sitequalitydomain.SiteQualityRun{
+		TargetURL: "https://example.com/products/wheel",
+		Strategy:  sitequalitydomain.SiteQualityStrategyDesktop,
+		Status:    sitequalitydomain.SiteQualityRunStatusSuccess,
+	}
+	applySiteQualityResult(&run, &result)
+
+	var issues []LighthouseRunnerIssue
+	require.NoError(t, json.Unmarshal([]byte(run.IssuesJSON), &issues))
+	byID := make(map[string]LighthouseRunnerIssue)
+	for _, issue := range issues {
+		byID[issue.ID] = issue
+	}
+	require.Contains(t, byID, siteQualityResourceBudgetAuditID)
+	require.Contains(t, byID, siteQualityBrokenLinkAuditID)
+	require.Contains(t, byID, siteQualityInteractionLatencyAuditID)
+	require.Contains(t, byID, siteQualitySoftNavigationRegressionID)
+	require.Equal(t, int64(256000), *byID[siteQualityResourceBudgetAuditID].Resources[0].BudgetBytes)
+	require.Equal(t, 404, byID[siteQualityBrokenLinkAuditID].Runtime[0].StatusCode)
+	require.Equal(t, 360.0, *byID[siteQualityInteractionLatencyAuditID].Runtime[0].ResponseMS)
+	require.Equal(t, "hard-navigation", byID[siteQualitySoftNavigationRegressionID].Runtime[0].Mode)
 }
 
 func TestFetchSiteQualityHeadingOutlineParsesHTMLHeadings(t *testing.T) {

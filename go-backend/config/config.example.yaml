@@ -237,6 +237,17 @@ worker:
   showcase_pending_ttl_seconds: 2592000
   showcase_cleanup_batch_limit: 100
 
+site_quality:
+  runner_url: ""  # SITE_QUALITY_RUNNER_URL
+  runner_token: ""  # SITE_QUALITY_RUNNER_TOKEN
+  runner_timeout_seconds: 90
+  throttling_method: "simulate"  # simulate or devtools
+  lighthouse_run_count: 1  # Increase to 3 for baseline median filtering.
+  render_wait_selector: ""  # Optional CSS selector required before rendered DOM capture.
+  render_wait_timeout_ms: 3000
+  heading_settle_ms: 1500
+  structured_data_settle_ms: 1500
+
 order_abuse:
   enabled: false
   order_create_window_seconds: 600

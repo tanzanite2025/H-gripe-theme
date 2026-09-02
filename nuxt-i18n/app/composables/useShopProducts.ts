@@ -124,6 +124,7 @@ export interface ShopProductsResult {
 }
 
 export type ShopProductQueryParams = Record<string, string | number | boolean | undefined>
+export type ShopProductRequestOptions = Pick<RequestInit, 'signal'>
 
 export interface ShopProductCartOptions {
   variantId?: number | null
@@ -490,10 +491,14 @@ export function useShopProducts() {
 
   // Legacy search source kept for existing shop and customer-service flows.
   // Recommendation baseline data must use fetchPublicShopProducts instead.
-  const fetchShopProducts = async (params: ShopProductQueryParams): Promise<ShopProductsResult> => {
+  const fetchShopProducts = async (
+    params: ShopProductQueryParams,
+    options: ShopProductRequestOptions = {},
+  ): Promise<ShopProductsResult> => {
     const response = await request<any>('/customer-service/products', {
       params,
       headers: productRequestHeaders(),
+      signal: options.signal,
     }, 'Failed to load shop products')
     const items = extractProductItems(response).map((item: any) => (
       normalizeShopProduct(item, baseCurrency.value, mediaContext)

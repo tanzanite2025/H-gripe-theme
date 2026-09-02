@@ -8,6 +8,16 @@ import (
 
 const siteQualityAuditRuleVersion = "2026-08-23"
 
+const (
+	siteQualityResourceBudgetAuditID        = "site-resource-budget"
+	siteQualityBrokenLinkAuditID            = "site-link-broken"
+	siteQualityLinkAuditFailedAuditID       = "site-link-audit-failed"
+	siteQualityInteractionLatencyAuditID    = "site-interaction-latency"
+	siteQualityInteractionAuditFailedID     = "site-interaction-audit-failed"
+	siteQualitySoftNavigationRegressionID   = "site-soft-navigation-regression"
+	siteQualitySoftNavigationAuditFailedID  = "site-soft-navigation-audit-failed"
+)
+
 type siteQualityAuditRule struct {
 	ID                    string
 	RuleID                string
@@ -40,7 +50,14 @@ var siteQualityActionableAuditRules = map[string]siteQualityAuditRule{
 	"uses-rel-preconnect":                                 {ID: "uses-rel-preconnect", ProviderAuditID: "uses-rel-preconnect", Kind: "opportunity", MinSavingsMS: 100},
 	"font-display":                                        {ID: "font-display", ProviderAuditID: "font-display", Kind: "opportunity", MinSavingsMS: 100},
 	"uses-rel-preload":                                    {ID: "uses-rel-preload", ProviderAuditID: "uses-rel-preload", Kind: "opportunity", MinSavingsMS: 100},
+	siteQualityResourceBudgetAuditID:                      {ID: siteQualityResourceBudgetAuditID, Kind: "budget", DefaultSeverity: "high", MinSavingsBytes: 1},
 	siteQualityLinkTextAuditID:                            {ID: siteQualityLinkTextAuditID, RuleID: siteQualityLinkDescriptiveTextRuleID, ProviderAuditID: siteQualityLinkTextAuditID, Kind: "links", DefaultSeverity: "medium", FailWhenScoreBelowOne: true},
+	siteQualityBrokenLinkAuditID:                          {ID: siteQualityBrokenLinkAuditID, Kind: "links", DefaultSeverity: "high", FailWhenScoreBelowOne: true},
+	siteQualityLinkAuditFailedAuditID:                     {ID: siteQualityLinkAuditFailedAuditID, Kind: "links", DefaultSeverity: "medium", FailWhenScoreBelowOne: true},
+	siteQualityInteractionLatencyAuditID:                  {ID: siteQualityInteractionLatencyAuditID, Kind: "interaction", DefaultSeverity: "high", FailWhenScoreBelowOne: true},
+	siteQualityInteractionAuditFailedID:                   {ID: siteQualityInteractionAuditFailedID, Kind: "interaction", DefaultSeverity: "medium", FailWhenScoreBelowOne: true},
+	siteQualitySoftNavigationRegressionID:                 {ID: siteQualitySoftNavigationRegressionID, Kind: "navigation", DefaultSeverity: "high", FailWhenScoreBelowOne: true},
+	siteQualitySoftNavigationAuditFailedID:                {ID: siteQualitySoftNavigationAuditFailedID, Kind: "navigation", DefaultSeverity: "medium", FailWhenScoreBelowOne: true},
 	"heading-order":                                       {ID: "heading-order", ProviderAuditID: "heading-order", Kind: "headings", DefaultSeverity: "high", FailWhenScoreBelowOne: true},
 	siteQualityHeadingMissingH1AuditID:                    {ID: siteQualityHeadingMissingH1AuditID, Kind: "headings", DefaultSeverity: "critical", FailWhenScoreBelowOne: true},
 	siteQualityHeadingMultipleH1AuditID:                   {ID: siteQualityHeadingMultipleH1AuditID, Kind: "headings", DefaultSeverity: "medium", FailWhenScoreBelowOne: true},

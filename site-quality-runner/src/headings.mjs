@@ -48,7 +48,11 @@ export async function captureRenderedHeadingAudit({
     if (remaining < 1_000) {
       throw new Error('rendered heading capture timed out before the document settled')
     }
-    await settleRenderedDocument(page, Math.min(remaining, settleMilliseconds))
+    await settleRenderedDocument(page, Math.min(remaining, settleMilliseconds), {
+      waitSelector: input.renderWaitSelector,
+      waitTimeoutMilliseconds: input.renderWaitTimeoutMilliseconds,
+      timeoutMilliseconds: remaining,
+    })
     const headings = await page.evaluate(snapshotRenderedHeadings)
 
     return {
@@ -65,8 +69,10 @@ export async function captureRenderedHeadingAudit({
   }
 }
 
-export async function settleRenderedDocument(page, settleMilliseconds) {
-  const idleBudget = Math.max(500, Math.min(settleMilliseconds, 3_000))
+export async function settleRenderedDocument(page, settleMilliseconds, options = {}) {
+  const startedAt = Date.now()
+  const settleBudget = Number.isFinite(settleMilliseconds) ? settleMilliseconds : 1_500
+  const idleBudget = Math.max(500, Math.min(settleBudget, 3_000))
   await page.waitForNetworkIdle({
     idleTime: Math.min(750, idleBudget),
     concurrency: 2,
@@ -81,7 +87,24 @@ export async function settleRenderedDocument(page, settleMilliseconds) {
     if (delay > 0) {
       await new Promise((resolve) => window.setTimeout(resolve, delay))
     }
-  }, Math.max(0, settleMilliseconds - idleBudget))
+  }, Math.max(0, settleBudget - idleBudget))
+
+  const selector = String(options.waitSelector || '').trim()
+  if (selector) {
+    let timeout = Number.isInteger(options.waitTimeoutMilliseconds)
+      ? Math.max(500, Math.min(options.waitTimeoutMilliseconds, 25_000))
+      : 3_000
+    if (Number.isFinite(options.timeoutMilliseconds)) {
+      const remaining = Math.max(0, options.timeoutMilliseconds - (Date.now() - startedAt))
+      if (remaining < 250) {
+        throw new Error(`render wait selector ${selector} could not run before the document capture timed out`)
+      }
+      timeout = Math.min(timeout, remaining)
+    }
+    await page.waitForSelector(selector, { timeout }).catch((error) => {
+      throw new Error(`render wait selector ${selector} was not found within ${timeout}ms: ${error.message}`)
+    })
+  }
 }
 
 export function snapshotRenderedHeadings() {

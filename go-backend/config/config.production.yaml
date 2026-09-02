@@ -207,6 +207,17 @@ worker:
   media_derivative_rebuild_interval_seconds: 5
   media_derivative_rebuild_batch_limit: 10
 
+site_quality:
+  runner_url: ${SITE_QUALITY_RUNNER_URL}
+  runner_token: ${SITE_QUALITY_RUNNER_TOKEN}
+  runner_timeout_seconds: 90
+  throttling_method: simulate
+  lighthouse_run_count: 1
+  render_wait_selector: ""
+  render_wait_timeout_ms: 3000
+  heading_settle_ms: 1500
+  structured_data_settle_ms: 1500
+
 log:
   level: info
   format: json
