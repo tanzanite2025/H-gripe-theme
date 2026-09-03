@@ -192,7 +192,7 @@ func (h *Handler) CreateOrder(c *gin.Context) {
 		attributionContext,
 		service.OrderCreationOptions{
 			PolicyLocale:                 middleware.GetLocale(c),
-			PolicyURL:                    "/policies/refund-return",
+			PolicyURL:                    "/policies/refund-cancellation",
 			PolicyDisclosureAcknowledged: req.PolicyDisclosureAcknowledged,
 			PolicySource:                 "checkout_order_creation",
 			IdempotencyKey:               middleware.GetIdempotencyKey(c),
@@ -364,6 +364,7 @@ func (h *Handler) ListOrders(c *gin.Context) {
 // @Produce json
 // @Param order_number path string true "公开订单号"
 // @Success 200 {object} map[string]interface{}
+// @Failure 409 {object} map[string]interface{}
 // @Router /api/v1/orders/{order_number}/cancel [post]
 func (h *Handler) CancelOrder(c *gin.Context) {
 	userID, exists := c.Get("user_id")
@@ -379,6 +380,14 @@ func (h *Handler) CancelOrder(c *gin.Context) {
 	}
 
 	if err := h.orderService.CancelOrderByNumber(orderNumber, userID.(uint)); err != nil {
+		if errors.Is(err, service.ErrPaidOrderCancellationNotAllowed) {
+			apierror.RespondError(c, http.StatusConflict, "paid_order_cancellation_not_allowed", err.Error())
+			return
+		}
+		if errors.Is(err, service.ErrOrderCancellationConflict) {
+			apierror.RespondError(c, http.StatusConflict, "order_cancellation_conflict", err.Error())
+			return
+		}
 		apierror.RespondBadRequest(c, err.Error())
 		return
 	}

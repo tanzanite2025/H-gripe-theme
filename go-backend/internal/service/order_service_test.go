@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"strconv"
 	"strings"
@@ -117,6 +118,102 @@ func TestOrderServiceCreateOrderPersistsPricingAndAdjustments(t *testing.T) {
 	var usage coupon.CouponUsage
 	require.NoError(t, db.Where("coupon_id = ? AND order_id = ?", savedCoupon.ID, createdOrder.ID).First(&usage).Error)
 	assert.InDelta(t, 10, usage.Discount, 0.001)
+}
+
+func TestOrderServiceCreateOrderSettlesZeroTotalDiscountOrder(t *testing.T) {
+	db, orderService := newTestOrderService(t)
+	userID := uint(42)
+	productRecord := seedProduct(t, db, 100, 5)
+	seedCoupon(t, db, "FREE100", "fixed", 100, 1)
+
+	createdOrder, err := orderService.CreateOrder(
+		context.Background(),
+		userID,
+		[]order.OrderItem{{ProductID: productRecord.ID, Quantity: 1}},
+		testAddress(),
+		testAddress(),
+		"card",
+		"standard",
+		"FREE100",
+		0,
+	)
+
+	require.NoError(t, err)
+	require.NotNil(t, createdOrder)
+	require.NotZero(t, createdOrder.ID)
+	assert.InDelta(t, 100, createdOrder.SubtotalAmount, 0.001)
+	assert.InDelta(t, 100, createdOrder.DiscountAmount, 0.001)
+	assert.InDelta(t, 0, createdOrder.TotalAmount, 0.001)
+	assert.Equal(t, "paid", createdOrder.PaymentStatus)
+	assert.Equal(t, "processing", createdOrder.Status)
+	require.NotNil(t, createdOrder.PaidAt)
+
+	var savedOrder order.Order
+	require.NoError(t, db.First(&savedOrder, createdOrder.ID).Error)
+	assert.Equal(t, "paid", savedOrder.PaymentStatus)
+	assert.Equal(t, "processing", savedOrder.Status)
+	require.NotNil(t, savedOrder.PaidAt)
+
+	var transaction paymentdomain.Transaction
+	require.NoError(t, db.Where("order_id = ? AND transaction_id = ?", createdOrder.ID, zeroTotalOrderTransactionID(createdOrder.ID)).First(&transaction).Error)
+	assert.Equal(t, zeroTotalSettlementPaymentMethod, transaction.PaymentMethod)
+	assert.Equal(t, "completed", transaction.Status)
+	assert.InDelta(t, 0, transaction.Amount, 0.001)
+	require.NotNil(t, transaction.CompletedAt)
+
+	var event outboxdomain.Event
+	require.NoError(t, db.Where("event_key = ?", fmt.Sprintf("%s:%d:%s", outboxdomain.EventTypeOrderPaid, createdOrder.ID, transaction.TransactionID)).First(&event).Error)
+	assert.Equal(t, outboxdomain.EventTypeOrderPaid, event.EventType)
+
+	var conversionCount int64
+	require.NoError(t, db.Model(&outboxdomain.Event{}).Where("event_type = ? AND aggregate_id = ?", outboxdomain.EventTypeVerifiedConversion, fmt.Sprint(createdOrder.ID)).Count(&conversionCount).Error)
+	assert.Zero(t, conversionCount)
+}
+
+func TestOrderServiceCreateOrderRejectsCouponPerUserUsageLimit(t *testing.T) {
+	db, orderService := newTestOrderService(t)
+	userID := uint(42)
+	productRecord := seedProduct(t, db, 50, 5)
+	now := time.Now()
+	cp := coupon.Coupon{
+		Code:              "WELCOME20",
+		Type:              "fixed",
+		Value:             20,
+		UsageLimitPerUser: 1,
+		StartDate:         now.Add(-time.Hour),
+		EndDate:           now.Add(time.Hour),
+		Enabled:           true,
+	}
+	require.NoError(t, db.Create(&cp).Error)
+	require.NoError(t, db.Create(&coupon.CouponUsage{
+		CouponID: cp.ID,
+		UserID:   userID,
+		OrderID:  1001,
+		Discount: 20,
+	}).Error)
+
+	createdOrder, err := orderService.CreateOrder(
+		context.Background(),
+		userID,
+		[]order.OrderItem{{ProductID: productRecord.ID, Quantity: 1}},
+		testAddress(),
+		testAddress(),
+		"card",
+		"standard",
+		"WELCOME20",
+		0,
+	)
+
+	require.ErrorIs(t, err, ErrCouponPerUserUsageLimitReached)
+	assert.Nil(t, createdOrder)
+
+	var orderCount int64
+	require.NoError(t, db.Model(&order.Order{}).Count(&orderCount).Error)
+	assert.Equal(t, int64(0), orderCount)
+
+	var savedCoupon coupon.Coupon
+	require.NoError(t, db.First(&savedCoupon, cp.ID).Error)
+	assert.Equal(t, 0, savedCoupon.UsedCount)
 }
 
 func TestOrderServiceUpdateOrderItemCustoms(t *testing.T) {
@@ -491,9 +588,11 @@ func TestOrderServiceExpireStalePendingPaymentsReleasesReservations(t *testing.T
 	require.NoError(t, db.Where("code = ?", "EXPIRE10").First(&savedCoupon).Error)
 	assert.Equal(t, 0, savedCoupon.UsedCount)
 
-	var usageCount int64
-	require.NoError(t, db.Model(&coupon.CouponUsage{}).Where("order_id = ?", createdOrder.ID).Count(&usageCount).Error)
-	assert.Equal(t, int64(0), usageCount)
+	var usage coupon.CouponUsage
+	require.NoError(t, db.Where("order_id = ?", createdOrder.ID).First(&usage).Error)
+	assert.Equal(t, coupon.CouponUsageStatusReversed, usage.Status)
+	assert.Equal(t, "payment expired", usage.ReversalReason)
+	assert.NotNil(t, usage.ReversedAt)
 	assert.Equal(t, []uint{productRecord.ID, productRecord.ID}, cacheInvalidator.productIDs)
 }
 

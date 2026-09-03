@@ -617,7 +617,6 @@ const createGlobalProductDetailBottomSheetCartItem = () => {
     price: sourcePrice.amount,
     currency: sourcePrice.currency,
     title: product.value.title,
-    thumbnail: product.value.thumbnail,
     weightGrams: variant?.weightGrams || null,
   })
 }

@@ -100,6 +100,7 @@ func newDependencyRepositories(db *gorm.DB) (Repositories, error) {
 		Outbox:                       repository.NewOutboxRepository(db),
 	}
 
+	repos.Spoke.ConfigureProductBrandRepository(repos.ProductBrand)
 	repos.StorefrontRouteCatalog.ConfigureOutbox(repos.Outbox)
 	if err := service.SeedDefaultMediaDerivativePresets(repos.MediaDerivativePresets); err != nil {
 		return Repositories{}, fmt.Errorf("seed media derivative presets: %w", err)

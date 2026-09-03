@@ -20,7 +20,7 @@
            <h3 class="tz-text-secondary font-bold text-lg mb-2 pt-0.5">Cancellation After Shipment</h3>
            <p class="tz-text-secondary text-sm leading-relaxed">
              If the product has already shipped, any cancellation request will be treated as a "return" and subject to the return process and applicable fees. Please refer to our
-             <a href="#" @click.prevent="$emit('change-tab', 'returns')" class="text-emerald-600 hover:text-emerald-700 transition-colors border-b border-emerald-400/30 hover:border-emerald-300 pb-0.5">Product Return Policy</a>
+             <a href="#" @click.prevent="$emit('change-tab', 'returns')" class="text-emerald-600 hover:text-emerald-700 transition-colors border-b border-emerald-400/30 hover:border-emerald-300 pb-0.5">Refund & Cancellation Policy</a>
              for details.
            </p>
          </div>

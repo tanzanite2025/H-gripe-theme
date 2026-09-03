@@ -1,10 +1,10 @@
 INSERT INTO settings (key, value, type, locale, "group", is_public, description, created_at, updated_at)
 VALUES (
-    'refund_return_policy',
+    'refund_cancellation_policy',
     $json$
     {
-      "title": "Refund & Return Policy",
-      "intro": "How we handle returns, refunds, and exchanges to keep your experience predictable and fair.",
+      "title": "Refund & Cancellation Policy",
+      "intro": "How we handle cancellations, refunds, returns, and exchanges to keep your experience predictable and fair.",
       "sections": [
         {
           "id": "eligibility",
@@ -56,16 +56,16 @@ VALUES (
           "body": "For exchanges, please initiate a return first, then place a new order once the return is approved. This ensures availability and faster processing."
         }
       ],
-      "contact_label": "For refund or return questions, contact our support team through the contact page.",
+      "contact_label": "For refund, cancellation, or return questions, contact our support team through the contact page.",
       "contact_url": "/company/contact",
       "updated_at": "2024-12-01T00:00:00Z"
     }
     $json$,
     'json',
     'en',
-    'refund_return',
+    'refund_cancellation',
     true,
-    'Editable refund and return policy content',
+    'Editable refund and cancellation policy content',
     NOW(),
     NOW()
 )

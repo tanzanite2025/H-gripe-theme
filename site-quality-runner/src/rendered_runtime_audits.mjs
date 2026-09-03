@@ -8,6 +8,7 @@ const linkProbeUserAgent = 'TANZANITE-SiteQualityLinks/1.0'
 const maxRenderedLinks = 250
 const maxInteractionProbes = 8
 const maxSoftNavigationTargets = 8
+export const runtimeAuditDeadlineReserveMilliseconds = 5_000
 
 export function applyResourceBudgetAudit(lhr, options = {}) {
   if (!lhr || typeof lhr !== 'object') {
@@ -56,7 +57,7 @@ export function resourceBudgetViolationsFromLighthouse(lhr, options = {}) {
     if (!url || url.startsWith('data:') || url.startsWith('blob:')) {
       continue
     }
-    const totalBytes = firstFiniteNumber(request?.resourceSize, request?.transferSize, request?.encodedDataLength)
+    const totalBytes = firstFiniteNumber(request?.transferSize, request?.encodedDataLength, request?.resourceSize)
     if (!Number.isFinite(totalBytes) || totalBytes <= 0) {
       continue
     }
@@ -81,7 +82,7 @@ export function resourceBudgetViolationsFromLighthouse(lhr, options = {}) {
   return violations.slice(0, 25)
 }
 
-export async function captureRenderedLinkAudit(page, input = {}) {
+export async function captureRenderedLinkAudit(page, input = {}, options = {}) {
   if (!input.linkCheckEnabled || normalizeCount(input.linkCheckMaxLinks, 0, maxRenderedLinks) <= 0) {
     return {
       status: 'skipped',
@@ -91,12 +92,29 @@ export async function captureRenderedLinkAudit(page, input = {}) {
       links: [],
     }
   }
+  if (runtimeAuditDeadlineReached(options)) {
+    return timeoutSkippedAudit(page, {
+      configured: true,
+      collectionKey: 'links',
+      error: 'link checking skipped because the rendered audit deadline was reached',
+    })
+  }
   try {
     const links = await page.evaluate(snapshotRenderedLinks, {
       baseURL: input.url,
       includeExternal: Boolean(input.linkCheckExternal),
       maxLinks: normalizeCount(input.linkCheckMaxLinks, 80, maxRenderedLinks),
     })
+    if (runtimeAuditDeadlineReached(options)) {
+      return timeoutSkippedAudit(page, {
+        configured: true,
+        collectionKey: 'links',
+        error: 'link checking skipped after DOM link discovery because the rendered audit deadline was reached',
+        linkCount: links.length,
+        checkedLinkCount: 0,
+        skippedLinkCount: links.length,
+      })
+    }
     const checked = await mapLimited(
       links,
       4,
@@ -105,14 +123,21 @@ export async function captureRenderedLinkAudit(page, input = {}) {
         allowExternal: Boolean(input.linkCheckExternal),
         timeoutMilliseconds: input.linkCheckTimeoutMilliseconds,
         maxRedirects: input.linkCheckMaxRedirects,
+        deadlineAt: options.deadlineAt,
       }),
+      options,
     )
+    const timeoutSkipped = checked.timedOut || checked.results.some((link) => link?.timeoutSkipped)
     return {
-      status: 'complete',
+      status: timeoutSkipped ? 'timeout_skipped' : 'complete',
       source: 'chrome-rendered-dom',
       configured: true,
       finalUrl: page.url(),
-      links: checked,
+      ...(timeoutSkipped ? { error: 'link checking stopped early because the rendered audit deadline was reached' } : {}),
+      linkCount: links.length,
+      checkedLinkCount: checked.results.length,
+      skippedLinkCount: checked.skippedCount,
+      links: checked.results,
     }
   } catch (error) {
     return {
@@ -126,7 +151,7 @@ export async function captureRenderedLinkAudit(page, input = {}) {
   }
 }
 
-export async function captureInteractionAudit(page, input = {}) {
+export async function captureInteractionAudit(page, input = {}, options = {}) {
   const probes = Array.isArray(input.interactionProbes) ? input.interactionProbes.slice(0, maxInteractionProbes) : []
   if (probes.length === 0) {
     return {
@@ -137,19 +162,41 @@ export async function captureInteractionAudit(page, input = {}) {
       interactions: [],
     }
   }
+  if (runtimeAuditDeadlineReached(options)) {
+    return timeoutSkippedAudit(page, {
+      configured: true,
+      collectionKey: 'interactions',
+      error: 'interaction audit skipped because the rendered audit deadline was reached',
+    })
+  }
   try {
     await installInteractionObserver(page)
     const interactions = []
+    let timeoutSkipped = runtimeAuditDeadlineReached(options)
     for (const probe of probes) {
-      interactions.push(await runInteractionProbe(page, probe, {
+      if (runtimeAuditDeadlineReached(options)) {
+        timeoutSkipped = true
+        break
+      }
+      const result = await runInteractionProbe(page, probe, {
         defaultThresholdMilliseconds: input.interactionMaxResponseMilliseconds,
-      }))
+        deadlineAt: options.deadlineAt,
+      })
+      interactions.push(result)
+      if (result.status === 'timeout_skipped') {
+        timeoutSkipped = true
+        break
+      }
     }
     return {
-      status: 'complete',
+      status: timeoutSkipped ? 'timeout_skipped' : 'complete',
       source: 'chrome-rendered-dom',
       configured: true,
       finalUrl: page.url(),
+      ...(timeoutSkipped ? { error: 'interaction audit stopped early because the rendered audit deadline was reached' } : {}),
+      probeCount: probes.length,
+      checkedProbeCount: interactions.length,
+      skippedProbeCount: Math.max(0, probes.length - interactions.length),
       interactions,
     }
   } catch (error) {
@@ -164,7 +211,7 @@ export async function captureInteractionAudit(page, input = {}) {
   }
 }
 
-export async function captureSoftNavigationAudit(page, input = {}) {
+export async function captureSoftNavigationAudit(page, input = {}, options = {}) {
   const selectors = Array.isArray(input.softNavigationSelectors) ? input.softNavigationSelectors : []
   const maxLinks = normalizeCount(input.softNavigationMaxLinks, selectors.length > 0 ? selectors.length : 0, maxSoftNavigationTargets)
   if (maxLinks <= 0 && selectors.length === 0) {
@@ -176,6 +223,13 @@ export async function captureSoftNavigationAudit(page, input = {}) {
       navigations: [],
     }
   }
+  if (runtimeAuditDeadlineReached(options)) {
+    return timeoutSkippedAudit(page, {
+      configured: true,
+      collectionKey: 'navigations',
+      error: 'soft navigation audit skipped because the rendered audit deadline was reached',
+    })
+  }
   try {
     const originURL = page.url()
     const targets = await page.evaluate(snapshotSoftNavigationTargets, {
@@ -183,18 +237,45 @@ export async function captureSoftNavigationAudit(page, input = {}) {
       maxLinks: Math.max(maxLinks, selectors.length),
     })
     const navigations = []
+    let timeoutSkipped = runtimeAuditDeadlineReached(options)
     for (const target of targets.slice(0, maxSoftNavigationTargets)) {
-      if (page.url() !== originURL) {
-        await page.goto(originURL, { waitUntil: 'domcontentloaded', timeout: 10_000 })
-        await settleRenderedDocument(page, 1_000).catch(() => {})
+      if (runtimeAuditDeadlineReached(options)) {
+        timeoutSkipped = true
+        break
       }
-      navigations.push(await runSoftNavigationProbe(page, target, input))
+      if (page.url() !== originURL) {
+        const resetTimeout = Math.min(10_000, runtimeAuditBudgetRemaining(options))
+        if (resetTimeout < 500) {
+          timeoutSkipped = true
+          break
+        }
+        await page.goto(originURL, { waitUntil: 'domcontentloaded', timeout: resetTimeout })
+          .catch(() => {})
+        const settleBudget = runtimeAuditBudgetRemaining(options)
+        if (settleBudget <= 0) {
+          timeoutSkipped = true
+          break
+        }
+        await settleRenderedDocument(page, Math.min(1_000, settleBudget), {
+          timeoutMilliseconds: settleBudget,
+        }).catch(() => {})
+      }
+      const result = await runSoftNavigationProbe(page, target, input, options)
+      navigations.push(result)
+      if (result.status === 'timeout_skipped') {
+        timeoutSkipped = true
+        break
+      }
     }
     return {
-      status: 'complete',
+      status: timeoutSkipped ? 'timeout_skipped' : 'complete',
       source: 'chrome-rendered-dom',
       configured: true,
       finalUrl: page.url(),
+      ...(timeoutSkipped ? { error: 'soft navigation audit stopped early because the rendered audit deadline was reached' } : {}),
+      targetCount: targets.length,
+      checkedTargetCount: navigations.length,
+      skippedTargetCount: Math.max(0, Math.min(targets.length, maxSoftNavigationTargets) - navigations.length),
       navigations,
     }
   } catch (error) {
@@ -210,14 +291,27 @@ export async function captureSoftNavigationAudit(page, input = {}) {
 }
 
 async function probeRenderedLink(link, options) {
+  if (runtimeAuditDeadlineReached(options)) {
+    return timeoutSkippedLinkResult(link, 'link probe skipped because the rendered audit deadline was reached')
+  }
   const probe = await fetchWithRedirects(link.href, {
     method: 'HEAD',
     allowedOrigin: options.allowedOrigin,
     allowExternal: options.allowExternal,
     timeoutMilliseconds: options.timeoutMilliseconds,
     maxRedirects: options.maxRedirects,
+    deadlineAt: options.deadlineAt,
   })
   const fallbackNeeded = probe.statusCode === 405 || probe.statusCode === 501
+  if (fallbackNeeded && runtimeAuditDeadlineReached(options)) {
+    return {
+      ...link,
+      ...probe,
+      ok: false,
+      timeoutSkipped: true,
+      error: 'GET fallback skipped because the rendered audit deadline was reached',
+    }
+  }
   const result = fallbackNeeded
     ? await fetchWithRedirects(link.href, {
       method: 'GET',
@@ -226,6 +320,7 @@ async function probeRenderedLink(link, options) {
       timeoutMilliseconds: options.timeoutMilliseconds,
       maxRedirects: options.maxRedirects,
       rangeRequest: true,
+      deadlineAt: options.deadlineAt,
     })
     : probe
   return {
@@ -242,59 +337,98 @@ async function fetchWithRedirects(url, options) {
   let redirectCount = 0
   try {
     for (;;) {
+      const availableTimeoutMilliseconds = runtimeAuditBudgetRemaining(options)
+      if (availableTimeoutMilliseconds <= 0) {
+        return {
+          statusCode: 0,
+          finalUrl: currentURL,
+          redirected: redirectCount > 0,
+          redirectCount,
+          ok: false,
+          timeoutSkipped: true,
+          error: 'link probe stopped because the rendered audit deadline was reached',
+        }
+      }
       const controller = new AbortController()
-      const timeoutHandle = setTimeout(() => controller.abort(), timeoutMilliseconds)
+      const requestTimeoutMilliseconds = Math.max(1, Math.min(timeoutMilliseconds, availableTimeoutMilliseconds))
+      const timeoutHandle = setTimeout(() => controller.abort(), requestTimeoutMilliseconds)
       let response
       try {
-        response = await fetch(currentURL, {
-          method: options.method,
-          redirect: 'manual',
-          signal: controller.signal,
-          headers: {
-            Accept: 'text/html,application/xhtml+xml,application/json,*/*;q=0.8',
-            'User-Agent': linkProbeUserAgent,
-            ...(options.rangeRequest ? { Range: 'bytes=0-0' } : {}),
-          },
-        })
+        try {
+          try {
+            response = await fetch(currentURL, {
+              method: options.method,
+              redirect: 'manual',
+              signal: controller.signal,
+              headers: {
+                Accept: 'text/html,application/xhtml+xml,application/json,*/*;q=0.8',
+                'User-Agent': linkProbeUserAgent,
+                ...(options.rangeRequest ? { Range: 'bytes=0-0' } : {}),
+              },
+            })
+          } catch (error) {
+            if (isAbortError(error) && (requestTimeoutMilliseconds < timeoutMilliseconds || runtimeAuditDeadlineReached(options))) {
+              return linkDeadlineSkippedResult(currentURL, redirectCount)
+            }
+            throw error
+          }
+        } finally {
+          clearTimeout(timeoutHandle)
+        }
+        const statusCode = response.status
+        const location = response.headers.get('location')
+        if (statusCode >= 300 && statusCode < 400 && location) {
+          redirectCount++
+          const nextURL = new URL(location, currentURL)
+          if (!options.allowExternal && options.allowedOrigin && nextURL.origin !== options.allowedOrigin) {
+            return {
+              statusCode,
+              finalUrl: nextURL.toString(),
+              redirected: true,
+              redirectCount,
+              ok: false,
+              error: 'redirected outside the configured storefront origin',
+            }
+          }
+          if (redirectCount > maxRedirects) {
+            return {
+              statusCode,
+              finalUrl: currentURL,
+              redirected: true,
+              redirectCount,
+              ok: false,
+              error: `redirect chain exceeded ${maxRedirects}`,
+            }
+          }
+          if (runtimeAuditDeadlineReached(options)) {
+            return {
+              statusCode,
+              finalUrl: currentURL,
+              redirected: true,
+              redirectCount,
+              ok: false,
+              timeoutSkipped: true,
+              error: 'redirect follow-up skipped because the rendered audit deadline was reached',
+            }
+          }
+          currentURL = nextURL.toString()
+          continue
+        }
+        return {
+          statusCode,
+          finalUrl: currentURL,
+          redirected: redirectCount > 0,
+          redirectCount,
+          ok: statusCode < 400,
+        }
       } finally {
-        clearTimeout(timeoutHandle)
-      }
-      const location = response.headers.get('location')
-      if (response.status >= 300 && response.status < 400 && location) {
-        redirectCount++
-        const nextURL = new URL(location, currentURL)
-        if (!options.allowExternal && options.allowedOrigin && nextURL.origin !== options.allowedOrigin) {
-          return {
-            statusCode: response.status,
-            finalUrl: nextURL.toString(),
-            redirected: true,
-            redirectCount,
-            ok: false,
-            error: 'redirected outside the configured storefront origin',
-          }
-        }
-        if (redirectCount > maxRedirects) {
-          return {
-            statusCode: response.status,
-            finalUrl: currentURL,
-            redirected: true,
-            redirectCount,
-            ok: false,
-            error: `redirect chain exceeded ${maxRedirects}`,
-          }
-        }
-        currentURL = nextURL.toString()
-        continue
-      }
-      return {
-        statusCode: response.status,
-        finalUrl: currentURL,
-        redirected: redirectCount > 0,
-        redirectCount,
-        ok: response.status < 400,
+        await discardResponseBody(response)
       }
     }
   } catch (error) {
+    if (isAbortError(error) && runtimeAuditDeadlineReached(options)) {
+      return linkDeadlineSkippedResult(currentURL, redirectCount)
+    }
     return {
       statusCode: 0,
       finalUrl: currentURL,
@@ -303,6 +437,33 @@ async function fetchWithRedirects(url, options) {
       ok: false,
       error: normalizeAuditError(error),
     }
+  }
+}
+
+function linkDeadlineSkippedResult(currentURL, redirectCount) {
+  return {
+    statusCode: 0,
+    finalUrl: currentURL,
+    redirected: redirectCount > 0,
+    redirectCount,
+    ok: false,
+    timeoutSkipped: true,
+    error: 'link probe stopped because the rendered audit deadline was reached',
+  }
+}
+
+function isAbortError(error) {
+  return error?.name === 'AbortError'
+}
+
+async function discardResponseBody(response) {
+  if (!response?.body || typeof response.body.cancel !== 'function') {
+    return
+  }
+  try {
+    await response.body.cancel()
+  } catch {
+    // Link probes only need status and headers, so body cleanup must not mask the probe result.
   }
 }
 
@@ -352,6 +513,15 @@ async function runInteractionProbe(page, probe, options) {
       error: 'interaction selector is required',
     }
   }
+  if (runtimeAuditDeadlineReached(options)) {
+    return timeoutSkippedInteractionResult({
+      name,
+      selector,
+      action,
+      thresholdMilliseconds,
+      error: 'interaction probe skipped because the rendered audit deadline was reached',
+    })
+  }
   const handle = await page.$(selector)
   if (!handle) {
     return {
@@ -370,7 +540,7 @@ async function runInteractionProbe(page, probe, options) {
     const marker = await page.evaluate(() => performance.now())
     const startedAt = Date.now()
     await performInteractionAction(page, handle, selector, probe, action)
-    await settleAfterInteraction(page)
+    await settleAfterInteraction(page, options)
     const elapsedMilliseconds = Date.now() - startedAt
     const eventTiming = await page.evaluate((startTime) => {
       const events = (window.__siteQualityInteractionEvents || [])
@@ -441,18 +611,33 @@ async function performInteractionAction(page, handle, selector, probe, action) {
   await page.click(selector, { delay: 20 })
 }
 
-async function settleAfterInteraction(page) {
+async function settleAfterInteraction(page, options = {}) {
+  if (runtimeAuditDeadlineReached(options)) {
+    return
+  }
   await page.evaluate(() => new Promise((resolve) => {
     requestAnimationFrame(() => requestAnimationFrame(() => window.setTimeout(resolve, 0)))
   })).catch(() => {})
-  await delay(100)
+  const remaining = runtimeAuditBudgetRemaining(options)
+  if (remaining > 0) {
+    await delay(Math.min(100, remaining))
+  }
 }
 
-async function runSoftNavigationProbe(page, target, input) {
+async function runSoftNavigationProbe(page, target, input, options = {}) {
   const thresholdMilliseconds = normalizeThreshold(input.softNavigationMaxDurationMilliseconds, undefined, 2_000)
   const heapThresholdMB = normalizeThreshold(input.softNavigationMaxHeapGrowthMB, undefined, 32)
   const startedURL = page.url()
   const marker = `site-quality-soft-nav-${Date.now()}-${Math.random()}`
+  if (runtimeAuditDeadlineReached(options)) {
+    return timeoutSkippedSoftNavigationResult({
+      target,
+      fromUrl: startedURL,
+      toUrl: startedURL,
+      thresholdMilliseconds,
+      error: 'soft navigation probe skipped because the rendered audit deadline was reached',
+    })
+  }
   try {
     await page.evaluate((value) => {
       window.__siteQualitySoftNavigationMarker = value
@@ -460,11 +645,31 @@ async function runSoftNavigationProbe(page, target, input) {
     const beforeHeap = await page.evaluate(() => performance.memory?.usedJSHeapSize || 0).catch(() => 0)
     const startedAt = Date.now()
     await page.click(target.selector, { delay: 20 })
+    const waitBudgetMilliseconds = runtimeAuditBudgetRemaining(options)
+    if (waitBudgetMilliseconds <= 0) {
+      return timeoutSkippedSoftNavigationResult({
+        target,
+        fromUrl: startedURL,
+        toUrl: page.url(),
+        thresholdMilliseconds,
+        error: 'soft navigation wait skipped because the rendered audit deadline was reached',
+      })
+    }
     await Promise.race([
-      page.waitForFunction((previousURL) => location.href !== previousURL, { timeout: Math.max(500, thresholdMilliseconds + 2_000) }, startedURL),
-      delay(thresholdMilliseconds + 2_000),
+      page.waitForFunction(
+        (previousURL) => location.href !== previousURL,
+        { timeout: Math.max(500, Math.min(thresholdMilliseconds + 2_000, waitBudgetMilliseconds)) },
+        startedURL,
+      )
+        .catch(() => null),
+      delay(Math.min(thresholdMilliseconds + 2_000, waitBudgetMilliseconds)),
     ])
-    await settleRenderedDocument(page, 1_000).catch(() => {})
+    const settleBudget = runtimeAuditBudgetRemaining(options)
+    if (settleBudget > 0) {
+      await settleRenderedDocument(page, Math.min(1_000, settleBudget), {
+        timeoutMilliseconds: settleBudget,
+      }).catch(() => {})
+    }
     const durationMilliseconds = Date.now() - startedAt
     const afterHeap = await page.evaluate(() => performance.memory?.usedJSHeapSize || 0).catch(() => 0)
     const markerStillPresent = await page.evaluate((value) => window.__siteQualitySoftNavigationMarker === value, marker).catch(() => false)
@@ -628,20 +833,99 @@ function cssIdentifier(value) {
   return String(value || '').trim().replace(/[^a-zA-Z0-9_-]/g, '-') || 'unknown'
 }
 
-async function mapLimited(items, limit, mapper) {
+export async function mapLimited(items, limit, mapper, options = {}) {
   const results = new Array(items.length)
   let next = 0
+  let timedOut = false
   const workers = Array.from({ length: Math.max(1, Math.min(limit, items.length)) }, async () => {
     for (;;) {
+      if (runtimeAuditDeadlineReached(options)) {
+        timedOut = true
+        return
+      }
       const index = next++
       if (index >= items.length) {
+        return
+      }
+      if (runtimeAuditDeadlineReached(options)) {
+        timedOut = true
         return
       }
       results[index] = await mapper(items[index], index)
     }
   })
   await Promise.all(workers)
-  return results
+  const completed = results.filter((item) => item !== undefined)
+  return {
+    results: completed,
+    skippedCount: Math.max(0, items.length - completed.length),
+    timedOut,
+  }
+}
+
+export function runtimeAuditBudgetRemaining(options = {}, reserveMilliseconds = runtimeAuditDeadlineReserveMilliseconds) {
+  const deadlineAt = Number(options?.deadlineAt || 0)
+  if (!Number.isFinite(deadlineAt) || deadlineAt <= 0) {
+    return Number.POSITIVE_INFINITY
+  }
+  const reserve = Math.max(0, Number(reserveMilliseconds || 0))
+  return Math.max(0, Math.floor(deadlineAt - Date.now() - reserve))
+}
+
+export function runtimeAuditDeadlineReached(options = {}, reserveMilliseconds = runtimeAuditDeadlineReserveMilliseconds) {
+  return runtimeAuditBudgetRemaining(options, reserveMilliseconds) <= 0
+}
+
+function timeoutSkippedAudit(page, options) {
+  const collectionKey = options.collectionKey
+  return {
+    status: 'timeout_skipped',
+    source: 'chrome-rendered-dom',
+    configured: Boolean(options.configured),
+    finalUrl: page.url(),
+    error: options.error || 'runtime audit skipped because the rendered audit deadline was reached',
+    ...(collectionKey ? { [collectionKey]: [] } : {}),
+    ...Object.fromEntries(
+      Object.entries(options).filter(([key]) => !['collectionKey', 'configured', 'error'].includes(key)),
+    ),
+  }
+}
+
+function timeoutSkippedLinkResult(link, error) {
+  return {
+    ...link,
+    statusCode: 0,
+    finalUrl: String(link?.href || ''),
+    redirected: false,
+    redirectCount: 0,
+    ok: false,
+    timeoutSkipped: true,
+    error,
+  }
+}
+
+function timeoutSkippedInteractionResult({ name, selector, action, thresholdMilliseconds, error }) {
+  return {
+    name,
+    selector,
+    action,
+    status: 'timeout_skipped',
+    thresholdMilliseconds,
+    error,
+  }
+}
+
+function timeoutSkippedSoftNavigationResult({ target, fromUrl, toUrl, thresholdMilliseconds, error }) {
+  return {
+    fromUrl,
+    toUrl,
+    expectedUrl: target.href,
+    selector: target.selector,
+    text: target.text,
+    status: 'timeout_skipped',
+    thresholdMilliseconds,
+    error,
+  }
 }
 
 function classifyBudgetResource(request) {

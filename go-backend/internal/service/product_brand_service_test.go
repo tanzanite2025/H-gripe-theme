@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"commerce-platform/internal/domain/product"
+	spokedomain "commerce-platform/internal/domain/spoke"
 	"commerce-platform/internal/repository"
 
 	"github.com/glebarez/sqlite"
@@ -103,6 +104,32 @@ func TestProductBrandServiceUpdateSortOrderDoesNotInvalidateProductPayload(t *te
 	require.Empty(t, merchantEvents.events)
 }
 
+func TestProductBrandServiceDeleteRejectsSpokeRimBrandReference(t *testing.T) {
+	db := newProductBrandServiceTestDB(t)
+	brand := product.ProductBrand{
+		Name:      "DT Swiss",
+		Slug:      "dt-swiss",
+		IsEnabled: true,
+	}
+	require.NoError(t, db.Create(&brand).Error)
+	require.NoError(t, db.Create(&spokedomain.CatalogRimBrand{
+		Code:           "dt-swiss",
+		Name:           "DT Swiss",
+		ProductBrandID: &brand.ID,
+		IsEnabled:      true,
+	}).Error)
+
+	service := NewProductBrandService(repository.NewProductBrandRepository(db))
+
+	err := service.Delete(brand.ID)
+
+	require.ErrorIs(t, err, ErrProductBrandInSpokeRimCatalog)
+	require.Contains(t, err.Error(), "1 spoke rim brands still reference this brand")
+
+	var existing product.ProductBrand
+	require.NoError(t, db.First(&existing, brand.ID).Error)
+}
+
 type recordingProductCacheEventPublisher struct {
 	brandIDs []uint
 	reasons  []string
@@ -169,6 +196,10 @@ func newProductBrandServiceTestDB(t *testing.T) *gorm.DB {
 		_ = sqlDB.Close()
 	})
 
-	require.NoError(t, db.AutoMigrate(&product.ProductBrand{}, &product.Product{}))
+	require.NoError(t, db.AutoMigrate(
+		&product.ProductBrand{},
+		&product.Product{},
+		&spokedomain.CatalogRimBrand{},
+	))
 	return db
 }

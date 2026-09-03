@@ -1,0 +1,24 @@
+<!doctype html>
+<html>
+  <body style="margin:0;background:#f6f7fb;color:#1f2937;font-family:Arial,Helvetica,sans-serif;">
+    <div style="max-width:640px;margin:0 auto;padding:32px 20px;">
+      <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:8px;padding:28px;">
+        <p style="margin:0 0 16px;font-size:14px;color:#6b7280;">Order confirmation</p>
+        <h1 style="margin:0 0 18px;font-size:24px;line-height:1.25;color:#111827;">Thanks for your order</h1>
+        {{$customerName := field . "CustomerName" "Name" "customer_name"}}
+        {{$orderNumber := field . "OrderNumber" "OrderNo" "Number" "order_number"}}
+        {{$total := field . "Total" "TotalAmount" "Amount" "total" "total_amount"}}
+        <p style="margin:0 0 16px;font-size:16px;line-height:1.6;">
+          {{if $customerName}}Hi {{$customerName}},{{else}}Hi,{{end}} we have received your order and are preparing it for processing.
+        </p>
+        {{if $orderNumber}}
+        <p style="margin:0 0 8px;font-size:15px;line-height:1.6;"><strong>Order:</strong> {{$orderNumber}}</p>
+        {{end}}
+        {{if $total}}
+        <p style="margin:0 0 8px;font-size:15px;line-height:1.6;"><strong>Total:</strong> {{$total}}</p>
+        {{end}}
+        <p style="margin:18px 0 0;font-size:15px;line-height:1.6;color:#4b5563;">We will send another update as soon as the order ships.</p>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,13 +1,13 @@
 import { computed, type Ref } from 'vue'
 import { useAsyncData, useI18n } from '#imports'
 import { useApiRequest } from '~/composables/useApiRequest'
-import { refundReturnPolicyFallback } from '~/data/refundReturnPolicyFallback'
+import { refundCancellationPolicyFallback } from '~/data/refundCancellationPolicyFallback'
 import type {
-  RefundReturnPolicy,
-  RefundReturnPolicyImage,
-  RefundReturnPolicyResponse,
-  RefundReturnPolicySection,
-} from '~/types/refundReturnPolicy'
+  RefundCancellationPolicy,
+  RefundCancellationPolicyImage,
+  RefundCancellationPolicyResponse,
+  RefundCancellationPolicySection,
+} from '~/types/refundCancellationPolicy'
 import { normalizeStorefrontLocaleCode } from '~/utils/storefrontLocales'
 
 type LocaleInput = Ref<string> | string | undefined
@@ -18,7 +18,7 @@ const normalizeLocale = (value: unknown): string => {
 
 const asString = (value: unknown): string => typeof value === 'string' ? value.trim() : ''
 
-const normalizeImage = (value: unknown): RefundReturnPolicyImage | undefined => {
+const normalizeImage = (value: unknown): RefundCancellationPolicyImage | undefined => {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined
   const record = value as Record<string, unknown>
   const url = asString(record.url)
@@ -30,7 +30,7 @@ const normalizeImage = (value: unknown): RefundReturnPolicyImage | undefined => 
   }
 }
 
-const normalizeSection = (value: unknown, index: number): RefundReturnPolicySection | null => {
+const normalizeSection = (value: unknown, index: number): RefundCancellationPolicySection | null => {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null
   const record = value as Record<string, unknown>
   const title = asString(record.title)
@@ -47,18 +47,18 @@ const normalizeSection = (value: unknown, index: number): RefundReturnPolicySect
   }
 }
 
-export const normalizeRefundReturnPolicy = (value: unknown): RefundReturnPolicy => {
+export const normalizeRefundCancellationPolicy = (value: unknown): RefundCancellationPolicy => {
   const source = value && typeof value === 'object' && !Array.isArray(value)
     ? value as Record<string, unknown>
     : {}
   const sections = Array.isArray(source.sections)
     ? source.sections
       .map(normalizeSection)
-      .filter((section): section is RefundReturnPolicySection => Boolean(section))
+      .filter((section): section is RefundCancellationPolicySection => Boolean(section))
     : []
 
   return {
-    title: asString(source.title) || refundReturnPolicyFallback.title,
+    title: asString(source.title) || refundCancellationPolicyFallback.title,
     intro: asString(source.intro),
     sections,
     contact_label: asString(source.contact_label),
@@ -67,7 +67,7 @@ export const normalizeRefundReturnPolicy = (value: unknown): RefundReturnPolicy 
   }
 }
 
-export function useRefundReturnPolicy(localeInput?: LocaleInput) {
+export function useRefundCancellationPolicy(localeInput?: LocaleInput) {
   const { request } = useApiRequest()
   const { locale } = useI18n()
   const requestedLocale = computed(() => normalizeLocale(
@@ -76,15 +76,15 @@ export function useRefundReturnPolicy(localeInput?: LocaleInput) {
       : localeInput?.value ?? locale.value,
   ))
 
-  const { data, pending, error, refresh } = useAsyncData<RefundReturnPolicyResponse | null>(
-    () => `refund-return-policy-${requestedLocale.value}`,
-    () => request<RefundReturnPolicyResponse>(
-      '/content/refund-return-policy',
+  const { data, pending, error, refresh } = useAsyncData<RefundCancellationPolicyResponse | null>(
+    () => `refund-cancellation-policy-${requestedLocale.value}`,
+    () => request<RefundCancellationPolicyResponse>(
+      '/content/refund-cancellation-policy',
       {
         headers: { accept: 'application/json' },
         query: { locale: requestedLocale.value },
       },
-      'Failed to load refund return policy',
+      'Failed to load refund cancellation policy',
     ),
     {
       default: () => null,
@@ -92,13 +92,13 @@ export function useRefundReturnPolicy(localeInput?: LocaleInput) {
     },
   )
 
-  const remotePolicy = computed<RefundReturnPolicy | null>(() => (
+  const remotePolicy = computed<RefundCancellationPolicy | null>(() => (
     data.value?.policy
-      ? normalizeRefundReturnPolicy(data.value.policy)
+      ? normalizeRefundCancellationPolicy(data.value.policy)
       : null
   ))
 
-  const policy = computed<RefundReturnPolicy>(() => remotePolicy.value || refundReturnPolicyFallback)
+  const policy = computed<RefundCancellationPolicy>(() => remotePolicy.value || refundCancellationPolicyFallback)
   const hasRemotePolicy = computed(() => Boolean(remotePolicy.value))
   const isFallbackPolicy = computed(() => Boolean(data.value?.fallback))
 

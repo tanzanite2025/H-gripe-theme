@@ -35,6 +35,16 @@ func (r *PaymentRepository) FindPendingPaymentReviewByPaymentIntentID(paymentInt
 	return &review, nil
 }
 
+func (r *PaymentRepository) FindPendingPaymentReviewByPaymentIntentIDAndReason(paymentIntentID, reason string) (*payment.PaymentReview, error) {
+	var review payment.PaymentReview
+	err := r.db.Where("payment_intent_id = ? AND reason = ? AND status = ?", paymentIntentID, reason, "pending").
+		Order("created_at DESC").First(&review).Error
+	if err != nil {
+		return nil, err
+	}
+	return &review, nil
+}
+
 func (r *PaymentRepository) FindPaymentReviewByStripeReviewID(stripeReviewID string) (*payment.PaymentReview, error) {
 	var review payment.PaymentReview
 	err := r.db.Where("stripe_review_id = ?", stripeReviewID).First(&review).Error

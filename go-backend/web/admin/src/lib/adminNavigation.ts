@@ -352,7 +352,7 @@ export const adminNavigationItems: AdminNavigationItem[] = [
       { id: 'content-page-feedback', path: '/content/feedback', routeName: 'ContentPageFeedback', label: '页面留言', icon: MessageSquareText, permission: 'content:view' },
       { id: 'content-faqs', path: '/content/faqs', routeName: 'ContentFAQs', label: 'FAQ 内容', permission: 'faq:view' },
       { id: 'content-visual-showcase', path: '/content/visual-showcase', routeName: 'ContentVisualShowcase', label: '首页视觉目录', icon: Images, permission: 'content:view' },
-      { id: 'content-refund-return', path: '/content/refund-return', routeName: 'ContentRefundReturn', label: '退货退款', permission: 'content:view' },
+      { id: 'content-refund-cancellation', path: '/content/refund-cancellation', routeName: 'ContentRefundCancellation', label: '退款取消政策', permission: 'content:view' },
     ],
   },
   {
@@ -404,6 +404,7 @@ export const adminNavigationItems: AdminNavigationItem[] = [
       { id: 'marketing-loyalty-transactions', path: '/marketing/loyalty/transactions', routeName: 'MarketingLoyaltyTransactions', label: '积分流水', permission: 'marketing:view' },
       { id: 'marketing-loyalty-rules', path: '/marketing/loyalty/rules', routeName: 'MarketingLoyaltyRules', label: '积分规则', permission: 'marketing:view' },
       { id: 'marketing-levels', path: '/marketing/levels', routeName: 'MarketingLevels', label: '会员等级', permission: 'marketing:view' },
+      { id: 'marketing-promotion-risk', path: '/marketing/risk', routeName: 'MarketingPromotionRisk', label: '优惠风险', icon: ShieldAlert, permission: 'marketing:view' },
       { id: 'marketing-subscriptions', path: '/marketing/subscriptions', routeName: 'MarketingSubscriptions', label: '邮件订阅', permission: 'subscription:view' },
     ],
   },

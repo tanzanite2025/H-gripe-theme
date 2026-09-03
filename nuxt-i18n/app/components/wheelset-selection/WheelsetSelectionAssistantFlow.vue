@@ -74,6 +74,7 @@
         :selected-label="selectedAnswerLabel"
         :products="products.products.value"
         :total="products.total.value"
+        :total-is-exact="products.totalIsExact.value"
         :loading="products.loading.value"
         :error="products.error.value"
         :page="products.page.value"

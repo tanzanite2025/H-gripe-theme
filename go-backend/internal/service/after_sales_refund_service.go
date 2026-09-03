@@ -388,6 +388,7 @@ func refundReviewLimit(
 		return 0, ""
 	}
 
+	currencyCode := currency.NormalizeCode(orderRecord.Currency)
 	quantitiesByOrderItemID := make(map[uint]int, len(caseRecord.Items))
 	for _, item := range caseRecord.Items {
 		quantitiesByOrderItemID[item.OrderItemID] += item.Quantity
@@ -402,8 +403,32 @@ func refundReviewLimit(
 		amount += item.Total * float64(quantity) / float64(item.Quantity)
 	}
 
-	currencyCode := currency.NormalizeCode(orderRecord.Currency)
-	return roundRefundReviewMoney(amount, currencyCode), currencyCode
+	// Order-level discounts are not stored on order items, so allocate them
+	// across selected merchandise by the original order subtotal.
+	orderSubtotal := orderRecord.SubtotalAmount
+	if orderSubtotal <= 0 {
+		for _, item := range orderRecord.Items {
+			if item.Subtotal > 0 {
+				orderSubtotal += item.Subtotal
+				continue
+			}
+			if item.Total > 0 {
+				orderSubtotal += item.Total
+			}
+		}
+	}
+	if amount > 0 && orderSubtotal > 0 && orderRecord.DiscountAmount > 0 {
+		discountAmount := math.Min(orderRecord.DiscountAmount, orderSubtotal)
+		amount *= (orderSubtotal - discountAmount) / orderSubtotal
+	}
+
+	amount = roundRefundReviewMoney(amount, currencyCode)
+	if orderRecord.TotalAmount <= 0 {
+		amount = 0
+	} else if paidAmount := roundRefundReviewMoney(orderRecord.TotalAmount, currencyCode); amount > paidAmount {
+		amount = paidAmount
+	}
+	return amount, currencyCode
 }
 
 func normalizeRefundReviewAmount(amount float64, currencyCode string) (float64, error) {

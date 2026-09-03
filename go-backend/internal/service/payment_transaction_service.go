@@ -73,15 +73,22 @@ func (s *PaymentService) RecordVerifiedGatewayPayment(input VerifiedGatewayPayme
 			return normalizeOrderError(err)
 		}
 		if existingTransaction != nil && existingTransaction.Status == "completed" {
-			if o.PaymentStatus == "paid" || o.Status == "payment_expired" {
+			if o.PaymentStatus == "paid" {
 				return nil
+			}
+			if reason, ok := latePaymentReviewReason(o.Status); ok {
+				return createLatePaymentReview(
+					repos.Payment,
+					o.ID,
+					existingTransaction.ID,
+					existingTransaction.TransactionID,
+					o.OrderNumber,
+					reason,
+				)
 			}
 		}
 		if o.PaymentStatus == "paid" {
-			return errors.New("order is already paid")
-		}
-		if o.Status == "cancelled" || o.Status == "refunded" {
-			return fmt.Errorf("cannot mark %s order as paid", o.Status)
+			return ErrOrderAlreadyPaid
 		}
 		expectedCurrency, err := orderPaymentCurrency(o)
 		if err != nil {
@@ -95,7 +102,7 @@ func (s *PaymentService) RecordVerifiedGatewayPayment(input VerifiedGatewayPayme
 		}
 
 		completedAt := time.Now().UTC()
-		if err := saveCompletedGatewayTransaction(repos.Payment, existingTransaction, completedAt, payment.Transaction{
+		completedTransaction, err := saveCompletedGatewayTransaction(repos.Payment, existingTransaction, completedAt, payment.Transaction{
 			OrderID:          o.ID,
 			TransactionID:    input.TransactionID,
 			PaymentMethod:    input.PaymentMethod,
@@ -105,11 +112,19 @@ func (s *PaymentService) RecordVerifiedGatewayPayment(input VerifiedGatewayPayme
 			GatewayResponse:  input.GatewayResponse,
 			LiabilityShifted: input.LiabilityShifted,
 			CompletedAt:      &completedAt,
-		}); err != nil {
+		})
+		if err != nil {
 			return err
 		}
-		if o.Status == "payment_expired" {
-			return createLatePaymentReview(repos.Payment, o.ID, input.TransactionID, o.OrderNumber)
+		if reason, ok := latePaymentReviewReason(o.Status); ok {
+			return createLatePaymentReview(
+				repos.Payment,
+				o.ID,
+				completedTransaction.ID,
+				input.TransactionID,
+				o.OrderNumber,
+				reason,
+			)
 		}
 		if err := repos.Order.UpdatePaymentStatus(o.ID, "paid"); err != nil {
 			return err
@@ -210,9 +225,12 @@ func enqueueOrderPaidOutboxEvent(repo *repository.OutboxRepository, o *order.Ord
 	})
 }
 
-func saveCompletedGatewayTransaction(repo *repository.PaymentRepository, existing *payment.Transaction, completedAt time.Time, next payment.Transaction) error {
+func saveCompletedGatewayTransaction(repo *repository.PaymentRepository, existing *payment.Transaction, completedAt time.Time, next payment.Transaction) (*payment.Transaction, error) {
 	if existing == nil {
-		return repo.CreateTransaction(&next)
+		if err := repo.CreateTransaction(&next); err != nil {
+			return nil, err
+		}
+		return &next, nil
 	}
 	existing.OrderID = next.OrderID
 	existing.PaymentMethod = next.PaymentMethod
@@ -223,18 +241,68 @@ func saveCompletedGatewayTransaction(repo *repository.PaymentRepository, existin
 	existing.LiabilityShifted = next.LiabilityShifted
 	existing.ErrorMessage = ""
 	existing.CompletedAt = &completedAt
-	return repo.UpdateTransaction(existing)
+	if err := repo.UpdateTransaction(existing); err != nil {
+		return nil, err
+	}
+	return existing, nil
 }
 
-func createLatePaymentReview(repo *repository.PaymentRepository, orderID uint, paymentIntentID, orderNumber string) error {
+func createLatePaymentReview(repo *repository.PaymentRepository, orderID, transactionID uint, paymentIntentID, orderNumber, reason string) error {
+	review, err := repo.FindPendingPaymentReviewByPaymentIntentIDAndReason(paymentIntentID, reason)
+	if err == nil {
+		changed := false
+		if review.OrderID == nil {
+			review.OrderID = &orderID
+			changed = true
+		}
+		if review.TransactionID == nil {
+			review.TransactionID = &transactionID
+			changed = true
+		}
+		if changed {
+			return repo.UpdatePaymentReview(review)
+		}
+		return nil
+	}
+	if !repository.IsRecordNotFound(err) {
+		return err
+	}
+
 	return repo.CreatePaymentReview(&payment.PaymentReview{
 		OrderID:         &orderID,
+		TransactionID:   &transactionID,
 		PaymentIntentID: paymentIntentID,
 		Status:          "pending",
-		Reason:          "payment_succeeded_after_expiration",
+		Reason:          reason,
 		Source:          "webhook",
-		Notes:           fmt.Sprintf("Payment succeeded after order %s was marked payment_expired. Review inventory and refund/manual fulfillment.", orderNumber),
+		Notes:           fmt.Sprintf("Payment succeeded after order %s was marked %s. Review payment and refund before fulfillment.", orderNumber, latePaymentOrderStatus(reason)),
 	})
+}
+
+func latePaymentReviewReason(orderStatus string) (string, bool) {
+	switch strings.ToLower(strings.TrimSpace(orderStatus)) {
+	case "payment_expired":
+		return "payment_succeeded_after_expiration", true
+	case "cancelled":
+		return "payment_succeeded_after_cancellation", true
+	case "refunded":
+		return "payment_succeeded_after_refund", true
+	default:
+		return "", false
+	}
+}
+
+func latePaymentOrderStatus(reason string) string {
+	switch reason {
+	case "payment_succeeded_after_expiration":
+		return "payment_expired"
+	case "payment_succeeded_after_cancellation":
+		return "cancelled"
+	case "payment_succeeded_after_refund":
+		return "refunded"
+	default:
+		return "a terminal state"
+	}
 }
 
 func normalizePaymentCurrency(value string) string {

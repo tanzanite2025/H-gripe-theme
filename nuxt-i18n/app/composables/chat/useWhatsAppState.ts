@@ -704,15 +704,20 @@ export const useWhatsAppState = (
   }
   
   const handleAddProductToCart = (product: any) => {
+    const variants = Array.isArray(product?.variants) ? product.variants : []
+    const selectedVariant = product.defaultVariantId
+      ? variants.find((variant: any) => Number(variant.id) === Number(product.defaultVariantId)) || null
+      : variants.find((variant: any) => variant.isDefault) || variants[0] || null
+    const thumbnail = selectedVariant?.thumbnail || selectedVariant?.image || product.thumbnail
     const result = addToCart({
       id: product.id,
       product_id: product.id,
-      variant_id: product.defaultVariantId || null,
+      variant_id: selectedVariant?.id || product.defaultVariantId || null,
       title: product.title || product.name || 'Product',
       name: product.name || product.title || 'Product',
       slug: product.slug,
-      sku: product.sku,
-      thumbnail: product.thumbnail,
+      sku: selectedVariant?.sku || product.sku,
+      thumbnail,
       price: Number(product.priceValue || 0),
       currency: product.currency,
     })

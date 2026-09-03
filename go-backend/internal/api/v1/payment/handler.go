@@ -176,6 +176,9 @@ func (h *Handler) CreateStripePaymentIntent(c *gin.Context) {
 		apierror.RespondBadRequest(c, "Order is not payable")
 		return
 	}
+	if !ensureOrderHasPayableAmount(c, orderRecord) {
+		return
+	}
 
 	if !h.authorizePaymentStart(c, paymentStartProtectionInput{
 		Provider: string(pgateway.GatewayStripe),

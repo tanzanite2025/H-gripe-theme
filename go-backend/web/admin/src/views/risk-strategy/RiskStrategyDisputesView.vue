@@ -192,16 +192,19 @@
               <div
                 v-if="disputeEvidence.submission_check"
                 class="mt-3 rounded-xl border p-3 text-xs"
-                :class="disputeEvidence.submission_check.ready ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-800' : 'border-rose-500/30 bg-rose-500/10 text-rose-800'"
+                :class="disputeEvidence.submission_check.ready && !disputeEvidence.submission_check.override_required ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-800' : disputeEvidence.submission_check.ready ? 'border-amber-500/30 bg-amber-500/10 text-amber-800' : 'border-rose-500/30 bg-rose-500/10 text-rose-800'"
               >
                 <div class="font-black">
-                  {{ disputeEvidence.submission_check.ready ? '渠道硬性提交条件已满足' : '当前不能提交：存在渠道硬性阻断' }}
+                  {{ !disputeEvidence.submission_check.ready ? '当前不能提交：存在渠道硬性阻断' : disputeEvidence.submission_check.override_required ? '可以提交，但需要免责确认' : '渠道硬性提交条件已满足' }}
                 </div>
                 <p v-if="disputeEvidence.submission_check.ready" class="mt-1 leading-5">
                   这不代表发卡行或支付渠道必然支持申诉结果；仍需确认下方人工补充项和证据文本。
                 </p>
                 <div v-else class="mt-1 space-y-1">
                   <p v-for="blocker in disputeEvidence.submission_check.blockers || []" :key="blocker">• {{ blocker }}</p>
+                </div>
+                <div v-if="disputeEvidence.submission_check.ready && disputeEvidence.submission_check.warnings?.length" class="mt-2 space-y-1 opacity-80">
+                  <p v-for="warning in disputeEvidence.submission_check.warnings" :key="warning">• {{ warning }}</p>
                 </div>
                 <p v-if="disputeEvidence.submission_check.warnings?.length" class="mt-2 leading-5 opacity-80">
                   尚未完整的非阻断项：{{ disputeEvidence.submission_check.warnings.length }} 项
@@ -288,7 +291,11 @@
                 <input v-model="evidenceForm.confirm" type="checkbox" class="mt-0.5 size-4 accent-primary" />
                 我已检查 7 项证据链和 PayPal 证据说明，确认提交。
               </label>
-              <Button class="w-full rounded-full font-black uppercase tracking-wider" :disabled="!disputeEvidence.submission_check?.ready || !evidenceForm.confirm || evidenceSubmitting" @click="submitEvidence">
+              <label v-if="disputeEvidence.submission_check?.override_required" class="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs font-bold text-amber-900">
+                <input v-model="evidenceForm.override_warnings" type="checkbox" class="mt-0.5 size-4 accent-primary" />
+                证据链存在缺失项；我已复核现有材料，知悉可能影响 PayPal 判定，并授权继续提交。
+              </label>
+              <Button class="w-full rounded-full font-black uppercase tracking-wider" :disabled="!disputeEvidence.submission_check?.ready || (disputeEvidence.submission_check?.override_required && !evidenceForm.override_warnings) || !evidenceForm.confirm || evidenceSubmitting" @click="submitEvidence">
                 <Send class="size-4" />
                 手动提交证据到 PayPal
               </Button>
@@ -353,6 +360,7 @@ const evidenceForm = reactive({
   receipt_file_id: '',
   uncategorized_file_id: '',
   additional_statement: '',
+  override_warnings: false,
   confirm: false,
 })
 
@@ -494,6 +502,7 @@ const resetEvidenceForm = (): void => {
     receipt_file_id: '',
     uncategorized_file_id: '',
     additional_statement: '',
+    override_warnings: false,
     confirm: false,
   })
 }
@@ -529,6 +538,7 @@ const submitEvidence = async (): Promise<void> => {
     if (disputeProvider.value === 'paypal') {
       await riskStrategyApi.submitPayPalDisputeEvidence(selectedDispute.value.id, {
         confirm: evidenceForm.confirm,
+        override_warnings: evidenceForm.override_warnings,
         additional_statement: evidenceForm.additional_statement.trim(),
       })
       toast.success('PayPal 拒付证据已提交')

@@ -190,6 +190,8 @@ func (r *AfterSalesCaseRepository) List(
 	return records, total, err
 }
 
+// SumActiveQuantity counts quantity already consuming after-sales eligibility.
+// Completed cases are included; rejected and cancelled cases are released.
 func (r *AfterSalesCaseRepository) SumActiveQuantity(orderItemID uint) (int, error) {
 	var quantity int64
 	err := r.db.

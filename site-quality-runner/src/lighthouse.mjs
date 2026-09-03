@@ -12,6 +12,14 @@ import { applyResourceBudgetAudit } from './rendered_runtime_audits.mjs'
 const workerScript = fileURLToPath(new URL('./lighthouse_worker.mjs', import.meta.url))
 const defaultWorkerHeapLimitMB = 1024
 const workerGraceMilliseconds = 5_000
+const minimumLighthouseTimeoutMilliseconds = 15_000
+const minimumRenderedAuditBudgetMilliseconds = 25_000
+const renderedAuditBudgetRatio = 0.4
+const maxRenderedAuditBudgetRatio = 0.5
+const renderedAuditLinkProbeConcurrency = 4
+const maxRenderedAuditLinkBudgetMilliseconds = 20_000
+const maxRenderedAuditInteractionBudgetMilliseconds = 8_000
+const maxRenderedAuditSoftNavigationBudgetMilliseconds = 25_000
 
 export class LighthouseExecutionError extends Error {
   constructor(message, statusCode = 502) {
@@ -131,12 +139,9 @@ export async function runLighthouse(input, config) {
   try {
     const startedAt = Date.now()
     const runCount = normalizeLighthouseRunCount(input?.lighthouseRunCount ?? config?.lighthouseRunCount)
-    const renderedAuditBudgetMilliseconds = Math.min(
-      15_000,
-      Math.max(5_000, Math.round(config.timeoutMilliseconds * 0.2)),
-    )
+    const renderedAuditBudgetMilliseconds = calculateRenderedAuditBudgetMilliseconds(input, config)
     const lighthouseTimeoutMilliseconds = Math.max(
-      15_000,
+      minimumLighthouseTimeoutMilliseconds,
       config.timeoutMilliseconds - renderedAuditBudgetMilliseconds,
     )
     const flags = {
@@ -243,16 +248,34 @@ function finiteOrNull(value) {
   return Number.isFinite(numeric) ? numeric : null
 }
 
-async function runLighthouseSamples(url, flags, runCount) {
+export async function runLighthouseSamples(url, flags, runCount, lighthouseRunner = lighthouse) {
   const results = []
+  const failures = []
   for (let index = 0; index < runCount; index++) {
-    const result = await lighthouse(url, flags)
-    if (result && typeof result === 'object') {
-      result.sampleIndex = index
+    try {
+      const result = await lighthouseRunner(url, flags)
+      if (result?.lhr) {
+        result.sampleIndex = index
+        results.push(result)
+        continue
+      }
+      failures.push({ sampleIndex: index, error: 'Lighthouse returned no report' })
+    } catch (error) {
+      failures.push({ sampleIndex: index, error: normalizeLighthouseSampleError(error) })
     }
-    results.push(result)
+  }
+  if (results.length === 0) {
+    const details = failures
+      .map((failure) => `sample ${failure.sampleIndex + 1}: ${failure.error}`)
+      .join('; ')
+    throw new LighthouseExecutionError(`All Lighthouse samples failed${details ? `: ${details}` : ''}`)
   }
   return results
+}
+
+function normalizeLighthouseSampleError(error) {
+  const message = error instanceof Error ? error.message : String(error)
+  return message.replace(/\s+/g, ' ').trim().slice(0, 500) || 'Lighthouse sample failed'
 }
 
 export function selectMedianLighthouseResult(results) {
@@ -281,6 +304,128 @@ export function selectMedianLighthouseResult(results) {
     return (a.sample.sampleIndex || 0) - (b.sample.sampleIndex || 0)
   })
   return scored[0].sample
+}
+
+export function calculateRenderedAuditBudgetMilliseconds(input = {}, config = {}) {
+  const totalTimeoutMilliseconds = Math.max(0, Number(config?.timeoutMilliseconds || 0))
+  const maxReservableMilliseconds = Math.max(
+    5_000,
+    totalTimeoutMilliseconds - minimumLighthouseTimeoutMilliseconds,
+  )
+  const proportionalBudgetMilliseconds = Math.round(totalTimeoutMilliseconds * renderedAuditBudgetRatio)
+  const balancedMaximumBudgetMilliseconds = Math.max(
+    minimumRenderedAuditBudgetMilliseconds,
+    Math.round(totalTimeoutMilliseconds * maxRenderedAuditBudgetRatio),
+  )
+  const desiredBudgetMilliseconds = Math.max(
+    minimumRenderedAuditBudgetMilliseconds,
+    proportionalBudgetMilliseconds,
+    estimateRenderedAuditFeatureBudgetMilliseconds(input, config),
+  )
+  return Math.min(maxReservableMilliseconds, balancedMaximumBudgetMilliseconds, desiredBudgetMilliseconds)
+}
+
+function estimateRenderedAuditFeatureBudgetMilliseconds(input = {}, config = {}) {
+  const settleMilliseconds = Math.max(
+    positiveNumber(input.headingSettleMilliseconds ?? config.headingSettleMilliseconds, 1_500),
+    positiveNumber(input.structuredDataSettleMilliseconds ?? config.structuredDataSettleMilliseconds, 1_500),
+  )
+  const renderWaitMilliseconds = String(input.renderWaitSelector || config.renderWaitSelector || '').trim()
+    ? positiveNumber(input.renderWaitTimeoutMilliseconds ?? config.renderWaitTimeoutMilliseconds, 3_000)
+    : 0
+  const baseBudgetMilliseconds = Math.max(10_000, 7_000 + settleMilliseconds + renderWaitMilliseconds)
+
+  return baseBudgetMilliseconds +
+    estimateRenderedLinkAuditBudgetMilliseconds(input, config) +
+    estimateInteractionAuditBudgetMilliseconds(input, config) +
+    estimateSoftNavigationAuditBudgetMilliseconds(input, config)
+}
+
+function estimateRenderedLinkAuditBudgetMilliseconds(input = {}, config = {}) {
+  const linkCheckEnabled = input.linkCheckEnabled ?? config.linkCheckEnabled
+  const linkCount = boundedInteger(input.linkCheckMaxLinks ?? config.linkCheckMaxLinks, 80, 0, 250)
+  if (!linkCheckEnabled || linkCount <= 0) {
+    return 0
+  }
+  const linkTimeoutMilliseconds = boundedInteger(
+    input.linkCheckTimeoutMilliseconds ?? config.linkCheckTimeoutMilliseconds,
+    2_500,
+    500,
+    15_000,
+  )
+  const batches = Math.ceil(linkCount / renderedAuditLinkProbeConcurrency)
+  const estimatedBatchMilliseconds = Math.min(1_000, linkTimeoutMilliseconds)
+  return Math.min(
+    maxRenderedAuditLinkBudgetMilliseconds,
+    Math.max(5_000, batches * estimatedBatchMilliseconds),
+  )
+}
+
+function estimateInteractionAuditBudgetMilliseconds(input = {}, config = {}) {
+  const probes = Array.isArray(input.interactionProbes)
+    ? input.interactionProbes
+    : Array.isArray(config.interactionProbes)
+      ? config.interactionProbes
+      : []
+  if (probes.length === 0) {
+    return 0
+  }
+  const probeCount = Math.min(probes.length, 8)
+  const thresholdMilliseconds = boundedInteger(
+    input.interactionMaxResponseMilliseconds ?? config.interactionMaxResponseMilliseconds,
+    200,
+    50,
+    2_000,
+  )
+  return Math.min(
+    maxRenderedAuditInteractionBudgetMilliseconds,
+    probeCount * Math.max(1_000, thresholdMilliseconds + 500),
+  )
+}
+
+function estimateSoftNavigationAuditBudgetMilliseconds(input = {}, config = {}) {
+  const selectors = Array.isArray(input.softNavigationSelectors)
+    ? input.softNavigationSelectors
+    : Array.isArray(config.softNavigationSelectors)
+      ? config.softNavigationSelectors
+      : []
+  const targetCount = boundedInteger(
+    input.softNavigationMaxLinks ?? config.softNavigationMaxLinks,
+    selectors.length > 0 ? selectors.length : 0,
+    0,
+    8,
+  )
+  if (targetCount <= 0 && selectors.length === 0) {
+    return 0
+  }
+  const thresholdMilliseconds = boundedInteger(
+    input.softNavigationMaxDurationMilliseconds ?? config.softNavigationMaxDurationMilliseconds,
+    2_000,
+    250,
+    10_000,
+  )
+  const checkedTargetCount = Math.max(targetCount, selectors.length)
+  const estimatedTargetMilliseconds = Math.min(4_000, thresholdMilliseconds + 1_500)
+  return Math.min(
+    maxRenderedAuditSoftNavigationBudgetMilliseconds,
+    Math.max(5_000, checkedTargetCount * estimatedTargetMilliseconds),
+  )
+}
+
+function boundedInteger(value, fallback, minimum, maximum) {
+  const parsed = Number.parseInt(String(value ?? ''), 10)
+  if (!Number.isInteger(parsed)) {
+    return fallback
+  }
+  return Math.max(minimum, Math.min(parsed, maximum))
+}
+
+function positiveNumber(value, fallback) {
+  const parsed = Number(value)
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return fallback
+  }
+  return parsed
 }
 
 function lighthouseResultMedianRankScore(lhr) {

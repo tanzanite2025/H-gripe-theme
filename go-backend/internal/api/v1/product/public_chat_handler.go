@@ -4,7 +4,6 @@ import (
 	"strconv"
 	"strings"
 
-	"commerce-platform/internal/api/middleware"
 	productdomain "commerce-platform/internal/domain/product"
 	"commerce-platform/internal/pkg/apierror"
 	"commerce-platform/internal/service"
@@ -16,7 +15,8 @@ import (
 // selection. It shares the hardened catalog response contract so this legacy
 // search path cannot become a more verbose data-extraction side channel.
 func (h *Handler) ListPublicChatProducts(c *gin.Context) {
-	locale := middleware.GetLocale(c)
+	publicContext := h.resolvePublicContext(c)
+	locale := publicContext.Locale
 	keyword := strings.TrimSpace(c.Query("keyword"))
 	productSpecificationTemplateSlug := strings.TrimSpace(c.Query("product_specification_template"))
 	categorySlug := strings.TrimSpace(c.Query("product_category"))
@@ -48,31 +48,46 @@ func (h *Handler) ListPublicChatProducts(c *gin.Context) {
 		PriceMax:                         priceMax,
 		SpecFilters:                      specFilters,
 		Page:                             page,
-		PageSize:                         pageSize + 1,
+		PageSize:                         pageSize,
 	}
 	var products []productdomain.Product
+	var total int64
+	var hasMore bool
 	var err error
 	if compact {
+		searchInput.PageSize = pageSize + 1
+		searchInput.OffsetPageSize = pageSize
 		products, err = h.productService.SearchPublicCompact(searchInput)
 	} else {
-		products, _, err = h.productService.SearchPublic(searchInput)
+		products, total, err = h.productService.SearchPublic(searchInput)
 	}
 	if err != nil {
 		apierror.RespondInternalError(c, err)
 		return
 	}
 
-	publicProducts, hasMore := trimPublicProductPage(products, pageSize)
-	publicProductResponses := PublicProductsFromDomainWithLocale(publicProducts, locale, h.mediaService)
+	publicProducts := products
+	if compact {
+		publicProducts, hasMore = trimPublicProductPage(products, pageSize)
+	} else {
+		hasMore = hasMorePublicProductPage(total, page, pageSize)
+	}
+	publicProductResponses := PublicProductsFromDomainWithLocaleAndDisplayCurrency(publicProducts, publicContext.DisplayCurrency, locale, h.mediaService)
 	if !compact {
 		h.attachReviewSummaries(publicProductResponses)
 	}
-	c.JSON(200, gin.H{
+	payload := gin.H{
 		"code":      0,
 		"data":      publicProductResponses,
+		"context":   publicContext.Response,
+		"page":      page,
 		"page_size": pageSize,
 		"has_more":  hasMore,
-	})
+	}
+	if !compact {
+		payload["total"] = total
+	}
+	c.JSON(200, payload)
 }
 
 func makePublicChatProduct(item productdomain.Product) PublicProduct {

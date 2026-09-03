@@ -23,7 +23,7 @@
                 <h2 class="text-sm font-black uppercase tracking-tight">轮圈数据库</h2>
                 <p class="text-[11px] font-bold text-muted-foreground">ERD 允许为空，前台会保留型号但不自动计算。</p>
               </div>
-              <Button size="sm" variant="outline" @click="addRimBrand">
+              <Button size="sm" variant="outline" :disabled="loading" @click="openRimBrandPicker">
                 <Plus class="size-3.5" />
                 品牌
               </Button>
@@ -43,12 +43,8 @@
             <tbody>
               <template v-for="(brand, brandIndex) in catalog.rims" :key="brand.id || brandIndex">
                 <tr class="border-b border-dashed border-border/60 bg-muted/20">
-                  <td class="px-3 py-2">
-                    <input v-model="brand.id" :class="inputClass" placeholder="dt_swiss">
-                  </td>
-                  <td class="px-3 py-2">
-                    <input v-model="brand.name" :class="inputClass" placeholder="DT Swiss">
-                  </td>
+                  <td class="px-3 py-2 font-mono font-bold">{{ brand.id }}</td>
+                  <td class="px-3 py-2 font-bold">{{ rimBrandDisplayName(brand) }}</td>
                   <td class="px-3 py-2 text-muted-foreground" colspan="2">{{ brand.items.length }} models</td>
                   <td class="px-3 py-2">
                     <div class="flex justify-end gap-1">
@@ -290,6 +286,14 @@
         </AdminTablePanel>
     </section>
 
+    <ProductBrandManager
+      mode="picker"
+      v-model:open="rimBrandPickerOpen"
+      :excluded-slugs="configuredRimBrandSlugs"
+      @select="handleRimBrandSelection"
+      @brands-loaded="handleProductBrandsLoaded"
+    />
+
     <SpokeBuildPresetDialog
       v-model:open="presetDialogOpen"
       :mode="presetDialogMode"
@@ -310,7 +314,9 @@ import { Calculator, ChevronLeft, ChevronRight, Database, Download, Pencil, Plus
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import AdminStatsGrid from '@/components/admin/AdminStatsGrid.vue'
 import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
+import ProductBrandManager from '@/components/admin/product/ProductBrandManager.vue'
 import SpokeBuildPresetDialog from '@/components/admin/spoke/SpokeBuildPresetDialog.vue'
+import type { ProductBrandRecord } from '@/api/products'
 import { Button } from '@/components/ui/button'
 import spokeCatalogApi, {
   type SpokeBrand,
@@ -372,6 +378,8 @@ const presetPageSize = ref(25)
 const presetDialogOpen = ref(false)
 const presetDialogMode = ref<'create' | 'edit'>('create')
 const presetDialogIndex = ref(-1)
+const productBrands = ref<ProductBrandRecord[]>([])
+const rimBrandPickerOpen = ref(false)
 
 const inputClass = 'h-8 w-full min-w-0 rounded-xl border-none bg-muted/50 px-2.5 text-xs font-bold outline-none transition focus:ring-2 focus:ring-ring/40'
 const selectClass = 'h-8 w-full min-w-0 rounded-xl border-none bg-muted/50 px-2.5 text-xs font-bold outline-none transition focus:ring-2 focus:ring-ring/40'
@@ -393,6 +401,19 @@ const statItems = computed(() => [
   { key: 'hub-models', label: 'Hub models', value: catalog.value.hubs.reduce((total, brand) => total + brand.items.length, 0), icon: Database, tone: 'amber' },
   { key: 'presets', label: 'Search builds', value: catalog.value.presets.length, icon: Search, tone: 'gray' },
 ])
+
+const normalizedBrandSlug = (value: string) => value.trim().toLowerCase()
+
+const configuredRimBrandSlugs = computed(() => (
+  catalog.value.rims.map((brand) => normalizedBrandSlug(brand.id))
+))
+
+const rimBrandDisplayName = (brand: SpokeBrand<SpokeRimModel>) => {
+  const globalBrand = productBrands.value.find((item) => (
+    normalizedBrandSlug(item.slug) === normalizedBrandSlug(brand.id)
+  ))
+  return globalBrand?.name || brand.name || brand.id
+}
 
 const emptyActualLengths = (): SpokeBuildActualLengths => ({
   frontLeft: null,
@@ -439,15 +460,38 @@ const presetDialogForm = ref<SpokeBuildPreset>(createEmptyPreset())
 
 const normalizeLoadedCatalog = (payload: SpokeCatalog): SpokeCatalog => ({
   options: payload.options || defaultOptions,
-  rims: Array.isArray(payload.rims) ? payload.rims : [],
+  rims: Array.isArray(payload.rims) ? payload.rims.map((brand) => {
+    const slug = normalizedBrandSlug(brand.id)
+    const globalBrand = productBrands.value.find((item) => normalizedBrandSlug(item.slug) === slug)
+    return {
+      ...brand,
+      id: slug,
+      name: globalBrand?.name || brand.name,
+    }
+  }) : [],
   hubs: Array.isArray(payload.hubs) ? payload.hubs : [],
   presets: Array.isArray(payload.presets) ? payload.presets.map(clonePreset) : [],
 })
+
+const syncRimBrandNames = () => {
+  catalog.value.rims.forEach((brand) => {
+    const globalBrand = productBrands.value.find((item) => (
+      normalizedBrandSlug(item.slug) === normalizedBrandSlug(brand.id)
+    ))
+    if (globalBrand) brand.name = globalBrand.name
+  })
+}
+
+const handleProductBrandsLoaded = (brands: ProductBrandRecord[]) => {
+  productBrands.value = brands
+  syncRimBrandNames()
+}
 
 const loadCatalog = async () => {
   loading.value = true
   try {
     catalog.value = normalizeLoadedCatalog(await spokeCatalogApi.get())
+    syncRimBrandNames()
   } finally {
     loading.value = false
   }
@@ -510,8 +554,24 @@ const removeItem = <T>(items: T[], index: number) => {
   items.splice(index, 1)
 }
 
-const addRimBrand = () => {
-  catalog.value.rims.push({ id: `rim_brand_${catalog.value.rims.length + 1}`, name: 'New rim brand', items: [] })
+const openRimBrandPicker = () => {
+  rimBrandPickerOpen.value = true
+}
+
+const handleRimBrandSelection = (productBrand: ProductBrandRecord) => {
+  const slug = normalizedBrandSlug(productBrand.slug)
+  if (configuredRimBrandSlugs.value.includes(slug)) {
+    toast.error('该商品品牌已经配置为轮圈品牌')
+    return
+  }
+
+  catalog.value.rims.push({
+    id: slug,
+    name: productBrand.name,
+    items: [],
+  })
+  rimBrandPickerOpen.value = false
+  toast.success(`已添加 ${productBrand.name}，请继续录入轮圈型号`)
 }
 
 const addRimModel = (brand: SpokeBrand<SpokeRimModel>) => {

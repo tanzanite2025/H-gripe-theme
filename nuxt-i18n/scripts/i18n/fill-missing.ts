@@ -16,7 +16,7 @@ const baseLocale = 'en'
 const manualFallbacks: Record<string, string> = {
   'policyTabs.cookie': 'Cookie',
   'policyTabs.privacy': 'Privacy',
-  'policyTabs.refundReturn': 'Refund & Return',
+  'policyTabs.refundCancellation': 'Refund & Cancellation Policy',
   'policyTabs.terms': 'Terms',
   'warranty.errors.check_tips.0': 'Check that the order number was entered exactly as shown on your order.',
   'warranty.errors.check_tips.1': 'Contact support if the shipped order still cannot be found.',

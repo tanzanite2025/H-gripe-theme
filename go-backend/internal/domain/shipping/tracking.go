@@ -91,15 +91,15 @@ func (TrackingShipment) TableName() string {
 // TrackingEvent 物流追踪事件
 type TrackingEvent struct {
 	ID                     uint      `gorm:"primarykey" json:"id"`
-	OrderID                uint      `gorm:"not null;index" json:"order_id"`
-	TrackingNumber         string    `gorm:"index" json:"tracking_number"`
+	OrderID                uint      `gorm:"not null;index;uniqueIndex:idx_tracking_events_identity,priority:1" json:"order_id"`
+	TrackingNumber         string    `gorm:"index;uniqueIndex:idx_tracking_events_identity,priority:2" json:"tracking_number"`
 	ProviderCarrierCode    string    `json:"provider_carrier_code"`
-	Status                 string    `json:"status"`
+	Status                 string    `gorm:"uniqueIndex:idx_tracking_events_identity,priority:4" json:"status"`
 	Location               string    `json:"location"`
 	Description            string    `gorm:"type:text" json:"description"`
 	RecipientSignatureName string    `gorm:"type:varchar(160)" json:"recipient_signature_name,omitempty"`
 	ProofOfDeliveryURL     string    `gorm:"type:text" json:"proof_of_delivery_url,omitempty"`
-	EventTime              time.Time `json:"event_time"`
+	EventTime              time.Time `gorm:"uniqueIndex:idx_tracking_events_identity,priority:3" json:"event_time"`
 	CreatedAt              time.Time `json:"created_at"`
 }
 

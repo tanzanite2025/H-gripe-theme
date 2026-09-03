@@ -114,6 +114,37 @@ func TestAfterSalesServiceEnforcesTransitionsAndRemainingQuantity(t *testing.T) 
 	require.ErrorIs(t, err, ErrAfterSalesQuantityExceeded)
 }
 
+func TestAfterSalesServiceCustomerRequestUsesRemainingQuantityAfterCompletedCase(t *testing.T) {
+	db, service := newAfterSalesService(t)
+	orderRecord := seedAfterSalesOrder(t, db, 2)
+
+	completedCase, err := service.CreateCase(CreateAfterSalesCaseInput{
+		OrderID: orderRecord.ID,
+		Type:    aftersales.TypeReturnRefund,
+		Reason:  "First wheelset returned",
+		Items: []AfterSalesCaseItemInput{{
+			OrderItemID: orderRecord.Items[0].ID,
+			Quantity:    1,
+		}},
+		CreatedBy: 7,
+	})
+	require.NoError(t, err)
+	moveAfterSalesCaseToResolving(t, service, completedCase.ID)
+	_, err = service.UpdateStatus(completedCase.ID, aftersales.StatusCompleted, "One wheelset returned", 7)
+	require.NoError(t, err)
+
+	request, err := service.CreateCustomerRequest(CreateCustomerAfterSalesRequestInput{
+		OrderID:     orderRecord.ID,
+		Reason:      "Second wheelset support request",
+		Description: "The second wheelset now needs after-sales support.",
+		CreatedBy:   1,
+	})
+	require.NoError(t, err)
+	require.Len(t, request.Items, 1)
+	assert.Equal(t, orderRecord.Items[0].ID, request.Items[0].OrderItemID)
+	assert.Equal(t, 1, request.Items[0].Quantity)
+}
+
 func TestAfterSalesServiceListsAdminCasesWithOrderNumberAndFilters(t *testing.T) {
 	db, service := newAfterSalesService(t)
 	orderRecord := seedAfterSalesOrder(t, db, 1)
@@ -286,6 +317,52 @@ func TestAfterSalesServiceRefundReviewValidatesAvailabilityAndAmount(t *testing.
 		UpdatedBy:      7,
 	})
 	require.ErrorIs(t, err, ErrAfterSalesRefundReviewAmountExceeded)
+}
+
+func TestRefundReviewLimitAllocatesOrderDiscountAcrossSelectedItems(t *testing.T) {
+	orderRecord := &order.Order{
+		SubtotalAmount: 200,
+		DiscountAmount: 100,
+		TotalAmount:    100,
+		Currency:       "USD",
+		Items: []order.OrderItem{
+			{ID: 1, Quantity: 1, Subtotal: 100, Total: 100},
+			{ID: 2, Quantity: 1, Subtotal: 100, Total: 100},
+		},
+	}
+	caseRecord := &aftersales.AfterSalesCase{
+		Type: aftersales.TypeRefundOnly,
+		Items: []aftersales.AfterSalesCaseItem{
+			{OrderItemID: 1, Quantity: 1},
+		},
+	}
+
+	amount, currencyCode := refundReviewLimit(caseRecord, orderRecord)
+
+	assert.Equal(t, "USD", currencyCode)
+	assert.Equal(t, 50.0, amount)
+}
+
+func TestRefundReviewLimitKeepsUndiscountedAmountAndCapsAtOrderTotal(t *testing.T) {
+	orderRecord := &order.Order{
+		SubtotalAmount: 200,
+		TotalAmount:    30,
+		Currency:       "USD",
+		Items: []order.OrderItem{
+			{ID: 1, Quantity: 1, Subtotal: 100, Total: 100},
+			{ID: 2, Quantity: 1, Subtotal: 100, Total: 100},
+		},
+	}
+	caseRecord := &aftersales.AfterSalesCase{
+		Type: aftersales.TypeRefundOnly,
+		Items: []aftersales.AfterSalesCaseItem{
+			{OrderItemID: 1, Quantity: 1},
+		},
+	}
+
+	amount, _ := refundReviewLimit(caseRecord, orderRecord)
+
+	assert.Equal(t, 30.0, amount)
 }
 
 func TestAfterSalesServiceCreatesIdempotentPendingRefundFromApprovedReview(t *testing.T) {

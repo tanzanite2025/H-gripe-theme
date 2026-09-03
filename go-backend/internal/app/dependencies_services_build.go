@@ -20,7 +20,7 @@ func (b *dependencyServicesBuilder) build() error {
 	siteQualityTargetOrigin := b.support.SiteQualityTargetOrigin
 
 	settingService := service.NewSettingService(b.repos.Setting, b.redisCache, b.cfg.Cache.SettingsTTL)
-	refundReturnPolicyService := service.NewRefundReturnPolicyService(b.repos.Setting)
+	refundCancellationPolicyService := service.NewRefundCancellationPolicyService(b.repos.Setting)
 	seoService := service.NewSEOService(settingService)
 	postService := service.NewPostService(b.repos.Post, b.redisCache, b.cfg.Cache.PostTTL)
 	productService := service.NewProductServiceWithCacheOptions(b.repos.Product, b.redisCache, b.cfg.Cache.ProductTTL, b.cfg.Cache.ProductLockTTL)
@@ -265,7 +265,7 @@ func (b *dependencyServicesBuilder) build() error {
 		Setting:                           settingService,
 		WebsiteProfile:                    service.NewWebsiteProfileService(settingService),
 		WebsiteName:                       service.NewWebsiteNameService(settingService),
-		RefundReturnPolicy:                refundReturnPolicyService,
+		RefundCancellationPolicy:          refundCancellationPolicyService,
 		PayPalDisputeInvoiceSellerProfile: service.NewPayPalDisputeInvoiceSellerProfileService(settingService),
 		SEO:                               seoService,
 		SEOResources:                      seoResourceService,

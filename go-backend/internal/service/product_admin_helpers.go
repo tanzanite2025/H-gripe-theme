@@ -6,10 +6,20 @@ import (
 	"commerce-platform/internal/repository"
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"gorm.io/gorm"
 )
+
+var productSlugPattern = regexp.MustCompile(`^[a-z0-9]+(?:[_-][a-z0-9]+)*$`)
+
+var reservedProductSlugs = map[string]struct{}{
+	"attributes":              {},
+	"categories":              {},
+	"chat":                    {},
+	"specification-templates": {},
+}
 
 func mapProductRepositoryMutationError(err error) error {
 	switch {
@@ -20,6 +30,23 @@ func mapProductRepositoryMutationError(err error) error {
 	default:
 		return err
 	}
+}
+
+func normalizeAdminProductSlug(value string) (string, error) {
+	slug := strings.ToLower(strings.TrimSpace(value))
+	if slug == "" {
+		return "", fmt.Errorf("%w: slug is required", ErrProductSlugInvalid)
+	}
+	if _, reserved := reservedProductSlugs[slug]; reserved {
+		return "", fmt.Errorf("%w: slug %q is reserved", ErrProductSlugInvalid, slug)
+	}
+	if strings.ContainsAny(slug, " /?#%") {
+		return "", fmt.Errorf("%w: slug contains unsupported URL characters", ErrProductSlugInvalid)
+	}
+	if !productSlugPattern.MatchString(slug) {
+		return "", fmt.Errorf("%w: slug must use lowercase letters, numbers, dashes, or underscores", ErrProductSlugInvalid)
+	}
+	return slug, nil
 }
 
 func sameProductInformationTemplateID(current, previous *uint) bool {

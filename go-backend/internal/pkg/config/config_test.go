@@ -260,9 +260,32 @@ func TestValidateConfigAllowsSiteQualityRunnerAccuracyControls(t *testing.T) {
 	cfg.SiteQuality.RenderWaitTimeoutMilliseconds = 12000
 	cfg.SiteQuality.HeadingSettleMilliseconds = 5500
 	cfg.SiteQuality.StructuredDataSettleMilliseconds = 6000
+	cfg.SiteQuality.InteractionProbes = `[{"selector":"#buy-button","action":"click"}]`
 
 	if err := validateConfig(cfg); err != nil {
 		t.Fatalf("validateConfig should allow bounded Site Quality runner accuracy controls: %v", err)
+	}
+}
+
+func TestValidateConfigRejectsMalformedSiteQualityInteractionProbes(t *testing.T) {
+	for name, value := range map[string]string{
+		"selector": "#buy-button",
+		"object":   `{"selector":"#buy-button"}`,
+		"null":     "null",
+	} {
+		t.Run(name, func(t *testing.T) {
+			cfg := validTestConfig()
+			cfg.Worker = validSiteQualityWorkerConfig()
+			cfg.SiteQuality = validSiteQualityRunnerConfig(
+				"http://site-quality-runner:8080",
+				"01234567890123456789012345678901",
+			)
+			cfg.SiteQuality.InteractionProbes = value
+
+			if err := validateConfig(cfg); err == nil {
+				t.Fatal("validateConfig should reject malformed Site Quality interaction probes")
+			}
+		})
 	}
 }
 

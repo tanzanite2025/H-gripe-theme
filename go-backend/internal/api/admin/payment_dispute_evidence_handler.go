@@ -207,6 +207,7 @@ func (h *PaymentHandler) SubmitPayPalDisputeEvidence(c *gin.Context) {
 
 	var req struct {
 		Confirm             bool   `json:"confirm"`
+		OverrideWarnings    bool   `json:"override_warnings"`
 		AdditionalStatement string `json:"additional_statement"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -229,6 +230,7 @@ func (h *PaymentHandler) SubmitPayPalDisputeEvidence(c *gin.Context) {
 		SecretKey:           config.SecretKey,
 		Environment:         config.Environment,
 		AdditionalStatement: req.AdditionalStatement,
+		OverrideWarnings:    req.OverrideWarnings,
 	})
 	if err != nil {
 		apierror.RespondBadRequest(c, err.Error())

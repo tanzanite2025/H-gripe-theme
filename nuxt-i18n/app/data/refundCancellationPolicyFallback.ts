@@ -1,8 +1,8 @@
-import type { RefundReturnPolicy } from '~/types/refundReturnPolicy'
+import type { RefundCancellationPolicy } from '~/types/refundCancellationPolicy'
 
-export const refundReturnPolicyFallback: RefundReturnPolicy = {
-  title: 'Refund & Return Policy',
-  intro: 'How we handle returns, refunds, and exchanges to keep your experience predictable and fair.',
+export const refundCancellationPolicyFallback: RefundCancellationPolicy = {
+  title: 'Refund & Cancellation Policy',
+  intro: 'How we handle cancellations, refunds, returns, and exchanges to keep your experience predictable and fair.',
   sections: [
     {
       id: 'eligibility',
@@ -54,7 +54,7 @@ export const refundReturnPolicyFallback: RefundReturnPolicy = {
       body: 'For exchanges, please initiate a return first, then place a new order once the return is approved. This ensures availability and faster processing.',
     },
   ],
-  contact_label: 'For refund or return questions, contact our support team through the contact page.',
+  contact_label: 'For refund, cancellation, or return questions, contact our support team through the contact page.',
   contact_url: '/company/contact',
   updated_at: '2024-12-01T00:00:00Z',
 }

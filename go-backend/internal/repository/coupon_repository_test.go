@@ -49,6 +49,48 @@ func TestIncrementUsedCountRequiresAvailableUsageSlot(t *testing.T) {
 	}
 }
 
+func TestFindCouponByCodeForUpdateUsesRowLock(t *testing.T) {
+	repo, mock, cleanup := newMockCouponRepository(t)
+	defer cleanup()
+
+	mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "coupons" WHERE code = $1 AND "coupons"."deleted_at" IS NULL ORDER BY "coupons"."id" LIMIT $2 FOR UPDATE`)).
+		WithArgs("WELCOME20", 1).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "code", "type", "value", "enabled"}).
+			AddRow(42, "WELCOME20", "fixed", 20, true))
+
+	coupon, err := repo.FindCouponByCodeForUpdate("WELCOME20")
+	if err != nil {
+		t.Fatalf("expected locked coupon lookup to succeed, got %v", err)
+	}
+	if coupon.ID != 42 {
+		t.Fatalf("expected coupon ID 42, got %d", coupon.ID)
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("unmet sql expectations: %v", err)
+	}
+}
+
+func TestFindCouponByIDForUpdateUsesRowLock(t *testing.T) {
+	repo, mock, cleanup := newMockCouponRepository(t)
+	defer cleanup()
+
+	mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "coupons" WHERE "coupons"."id" = $1 AND "coupons"."deleted_at" IS NULL ORDER BY "coupons"."id" LIMIT $2 FOR UPDATE`)).
+		WithArgs(42, 1).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "code", "type", "value", "enabled"}).
+			AddRow(42, "WELCOME20", "fixed", 20, true))
+
+	coupon, err := repo.FindCouponByIDForUpdate(42)
+	if err != nil {
+		t.Fatalf("expected locked coupon lookup to succeed, got %v", err)
+	}
+	if coupon.ID != 42 {
+		t.Fatalf("expected coupon ID 42, got %d", coupon.ID)
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("unmet sql expectations: %v", err)
+	}
+}
+
 func TestUpdateGiftCardBalanceRequiresSufficientBalanceForDebit(t *testing.T) {
 	repo, mock, cleanup := newMockCouponRepository(t)
 	defer cleanup()

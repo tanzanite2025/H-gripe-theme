@@ -250,7 +250,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { createDialogStackId, useDialogStack } from '~/composables/useDialogStack'
 import type { ShopProductSpecDefinition, ShopProductVariant } from '~/composables/useShopProducts'
 
 const props = defineProps<{
@@ -270,9 +271,12 @@ const emit = defineEmits<{
   (e: 'confirm-config', product: any): void
 }>()
 
+const dialogStack = useDialogStack()
+const dialogStackId = createDialogStackId('whatsapp-product-search-result-drawer')
 const viewMode = ref<'list' | 'configConfirm'>('list')
 const selectedConfigProduct = ref<any | null>(null)
 const selectedConfigVariantId = ref<number | null>(null)
+let unregisterDialogStack: (() => void) | null = null
 
 const configVariants = computed<ShopProductVariant[]>(() => {
   return Array.isArray(selectedConfigProduct.value?.variants)
@@ -337,6 +341,12 @@ const handleClose = () => {
   emit('close')
 }
 
+const resetDrawerView = () => {
+  viewMode.value = 'list'
+  selectedConfigProduct.value = null
+  selectedConfigVariantId.value = null
+}
+
 const handleShareToChat = (product: any) => {
   emit('select', product)
 }
@@ -365,21 +375,46 @@ const handleConfirmConfig = () => {
 }
 
 const backToList = () => {
-  viewMode.value = 'list'
-  selectedConfigProduct.value = null
-  selectedConfigVariantId.value = null
+  resetDrawerView()
+}
+
+const handleEscape = () => {
+  if (viewMode.value === 'configConfirm') {
+    resetDrawerView()
+    return
+  }
+
+  handleClose()
+}
+
+const syncDialogStack = (isOpen: boolean) => {
+  if (isOpen && !unregisterDialogStack) {
+    unregisterDialogStack = dialogStack.register(dialogStackId, handleEscape, {
+      priority: 10060,
+    })
+    return
+  }
+
+  if (!isOpen && unregisterDialogStack) {
+    unregisterDialogStack()
+    unregisterDialogStack = null
+  }
 }
 
 watch(
   () => props.modelValue,
   value => {
+    syncDialogStack(value)
     if (!value) {
-      viewMode.value = 'list'
-      selectedConfigProduct.value = null
-      selectedConfigVariantId.value = null
+      resetDrawerView()
     }
-  }
+  },
+  { immediate: true }
 )
+
+onBeforeUnmount(() => {
+  syncDialogStack(false)
+})
 </script>
 
 <style src="~/assets/css/components/whatsapp-mobile-drawer.css"></style>

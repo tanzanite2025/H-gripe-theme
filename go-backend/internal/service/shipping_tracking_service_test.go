@@ -2,9 +2,12 @@ package service
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
+	orderdomain "commerce-platform/internal/domain/order"
 	shippingdomain "commerce-platform/internal/domain/shipping"
 	"commerce-platform/internal/repository"
 
@@ -62,6 +65,14 @@ func TestSyncTrackingPersistsEventsFromProvider(t *testing.T) {
 		Enabled:      true,
 	}
 	require.NoError(t, db.Create(&provider).Error)
+	require.NoError(t, db.Create(&shippingdomain.TrackingEvent{
+		OrderID:             88,
+		TrackingNumber:      "MOCK123456",
+		ProviderCarrierCode: "DHL",
+		Status:              "Label Created",
+		Description:         "Shipping label created",
+		EventTime:           time.Now().Add(-72 * time.Hour).UTC(),
+	}).Error)
 
 	result, err := shippingService.SyncTracking(context.Background(), TrackingSyncInput{
 		OrderID:             88,
@@ -77,15 +88,81 @@ func TestSyncTrackingPersistsEventsFromProvider(t *testing.T) {
 	assert.Equal(t, "DHL", result.Carrier)
 	require.NotNil(t, result.Shipment)
 	assert.Equal(t, "synced", result.Shipment.SyncStatus)
-	assert.Equal(t, 2, result.Shipment.EventCount)
+	assert.Equal(t, 3, result.Shipment.EventCount)
 	assert.NotNil(t, result.Shipment.LastEventAt)
 	assert.NotNil(t, result.Shipment.LastSyncedAt)
 
 	events, err := shippingService.GetTrackingEventsByOrderID(88)
 	require.NoError(t, err)
-	require.Len(t, events, 2)
+	require.Len(t, events, 3)
 	assert.Equal(t, "MOCK123456", events[0].TrackingNumber)
 	assert.Equal(t, "DHL", events[0].ProviderCarrierCode)
+	assert.Contains(t, []string{"Picked Up", "In Transit"}, events[0].Status)
+}
+
+func TestSyncTrackingMarksOrderDeliveredFromProviderStatus(t *testing.T) {
+	db, shippingService := newTestShippingTrackingService(t)
+	providerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{
+			"code": 0,
+			"data": {
+				"accepted": [{
+					"number": "DELIVERED-SYNC-1",
+					"carrier": "190271",
+					"track_info": {
+						"latest_status": {
+							"status": "Delivered"
+						},
+						"tracking": {
+							"providers": [{
+								"provider": {"key": "190271"},
+								"events": [{
+									"time_iso": "2026-07-22T10:20:30Z",
+									"stage": "Delivered",
+									"description": "Delivered to recipient"
+								}]
+							}]
+						}
+					}
+				}],
+				"rejected": []
+			}
+		}`))
+	}))
+	defer providerServer.Close()
+
+	provider := shippingdomain.TrackingProviderConfig{
+		ProviderCode:          "17track",
+		ProviderName:          "17TRACK",
+		BaseURL:               providerServer.URL,
+		APIKey:                "test-api-key",
+		Enabled:               true,
+		RequestTimeoutSeconds: 1,
+	}
+	require.NoError(t, db.Create(&provider).Error)
+	require.NoError(t, db.Create(&orderdomain.Order{
+		ID:             104,
+		OrderNumber:    "ORDER-DELIVERED-SYNC-1",
+		ShippingStatus: "shipped",
+		Currency:       "USD",
+	}).Error)
+
+	result, err := shippingService.SyncTracking(context.Background(), TrackingSyncInput{
+		OrderID:             104,
+		ProviderID:          provider.ID,
+		TrackingNumber:      "DELIVERED-SYNC-1",
+		ProviderCarrierCode: "190271",
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	assert.Equal(t, "Delivered", result.Status)
+	assert.Equal(t, 4, result.StatusCode)
+
+	var order orderdomain.Order
+	require.NoError(t, db.First(&order, 104).Error)
+	assert.Equal(t, "delivered", order.ShippingStatus)
 }
 
 func TestSyncTrackingAutoRegistersProviderBeforeSync(t *testing.T) {
@@ -370,7 +447,7 @@ func TestTrackingWebhookStateCapturesLatestWebhookWithoutPayload(t *testing.T) {
 	assert.Empty(t, state.LastError)
 }
 
-func TestApplyTrackingWebhookReplacesEventsForExistingShipment(t *testing.T) {
+func TestApplyTrackingWebhookAppendsEventsAndDeduplicatesRepeatedPushes(t *testing.T) {
 	db, shippingService := newTestShippingTrackingService(t)
 	provider := shippingdomain.TrackingProviderConfig{
 		ProviderCode: "17TRACK",
@@ -378,6 +455,12 @@ func TestApplyTrackingWebhookReplacesEventsForExistingShipment(t *testing.T) {
 		Enabled:      true,
 	}
 	require.NoError(t, db.Create(&provider).Error)
+	require.NoError(t, db.Create(&orderdomain.Order{
+		ID:             100,
+		OrderNumber:    "ORDER-WEBHOOK-100",
+		ShippingStatus: "shipped",
+		Currency:       "USD",
+	}).Error)
 	require.NoError(t, db.Create(&shippingdomain.TrackingShipment{
 		OrderID:             100,
 		TrackingProviderID:  provider.ID,
@@ -389,6 +472,27 @@ func TestApplyTrackingWebhookReplacesEventsForExistingShipment(t *testing.T) {
 	}).Error)
 
 	eventTime := time.Now().Add(-time.Hour).UTC()
+	require.NoError(t, db.Create(&[]shippingdomain.TrackingEvent{
+		{
+			OrderID:             100,
+			TrackingNumber:      "TRACK-WEBHOOK-100",
+			ProviderCarrierCode: "DHL",
+			Status:              "Picked Up",
+			Location:            "Shenzhen, CN",
+			Description:         "Package picked up",
+			EventTime:           eventTime.Add(-48 * time.Hour),
+		},
+		{
+			OrderID:             100,
+			TrackingNumber:      "TRACK-WEBHOOK-100",
+			ProviderCarrierCode: "DHL",
+			Status:              "In Transit",
+			Location:            "Hong Kong, CN",
+			Description:         "Package in transit",
+			EventTime:           eventTime.Add(-24 * time.Hour),
+		},
+	}).Error)
+
 	result, err := shippingService.ApplyTrackingWebhook(TrackingWebhookInput{
 		ProviderID:          provider.ID,
 		TrackingNumber:      "TRACK-WEBHOOK-100",
@@ -409,7 +513,7 @@ func TestApplyTrackingWebhookReplacesEventsForExistingShipment(t *testing.T) {
 	require.NotNil(t, result)
 	require.NotNil(t, result.Shipment)
 	assert.Equal(t, "synced", result.Shipment.SyncStatus)
-	assert.Equal(t, 1, result.Shipment.EventCount)
+	assert.Equal(t, 3, result.Shipment.EventCount)
 	require.Len(t, result.Events, 1)
 	assert.Equal(t, "Delivered", result.Events[0].Status)
 	assert.Equal(t, "Test Rider", result.Events[0].RecipientSignatureName)
@@ -417,11 +521,38 @@ func TestApplyTrackingWebhookReplacesEventsForExistingShipment(t *testing.T) {
 
 	events, err := shippingService.GetTrackingEventsByOrderID(100)
 	require.NoError(t, err)
-	require.Len(t, events, 1)
+	require.Len(t, events, 3)
 	assert.Equal(t, "Delivered", events[0].Status)
 	assert.Equal(t, "Los Angeles, US", events[0].Location)
 	assert.Equal(t, "Test Rider", events[0].RecipientSignatureName)
 	assert.Equal(t, "https://carrier.example.test/pod/TRACK-WEBHOOK-100.pdf", events[0].ProofOfDeliveryURL)
+
+	repeatedResult, err := shippingService.ApplyTrackingWebhook(TrackingWebhookInput{
+		ProviderID:          provider.ID,
+		TrackingNumber:      "TRACK-WEBHOOK-100",
+		ProviderCarrierCode: "DHL",
+		Events: []TrackingWebhookEventInput{
+			{
+				Status:                 "Delivered",
+				Location:               "Los Angeles, US",
+				Description:            "Delivered to recipient",
+				RecipientSignatureName: "Test Rider",
+				ProofOfDeliveryURL:     "https://carrier.example.test/pod/TRACK-WEBHOOK-100.pdf",
+				EventTime:              eventTime,
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.NotNil(t, repeatedResult)
+	assert.Equal(t, 3, repeatedResult.Shipment.EventCount)
+
+	events, err = shippingService.GetTrackingEventsByOrderID(100)
+	require.NoError(t, err)
+	require.Len(t, events, 3)
+
+	var order orderdomain.Order
+	require.NoError(t, db.First(&order, 100).Error)
+	assert.Equal(t, "delivered", order.ShippingStatus)
 }
 
 func TestApplyTrackingWebhookFallsBackToUniqueTrackingNumberWhenCarrierCodeDiffers(t *testing.T) {
@@ -527,6 +658,7 @@ func newTestShippingTrackingService(t *testing.T) (*gorm.DB, *ShippingService) {
 	})
 
 	require.NoError(t, db.AutoMigrate(
+		&orderdomain.Order{},
 		&shippingdomain.ShippingTemplate{},
 		&shippingdomain.Carrier{},
 		&shippingdomain.CarrierService{},
@@ -537,7 +669,9 @@ func newTestShippingTrackingService(t *testing.T) (*gorm.DB, *ShippingService) {
 	))
 
 	shippingRepo := repository.NewShippingRepository(db)
-	return db, NewShippingService(shippingRepo)
+	shippingService := NewShippingService(shippingRepo)
+	shippingService.ConfigureOrderRepository(repository.NewOrderRepository(db))
+	return db, shippingService
 }
 
 func seedTrackingProviderCarrierAndService(t *testing.T, db *gorm.DB) (shippingdomain.TrackingProviderConfig, shippingdomain.Carrier, shippingdomain.CarrierService) {

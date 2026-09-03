@@ -59,6 +59,40 @@ func latestTrackingEventTime(events []shipping.TrackingEvent) *time.Time {
 	return &latest
 }
 
+func (s *ShippingService) updateOrderShippingStatusIfDelivered(
+	orderID uint,
+	status string,
+	statusCode int,
+	events []shipping.TrackingEvent,
+) error {
+	if s == nil || s.orderRepo == nil || !trackingStatusIndicatesDelivery(status, statusCode, events) {
+		return nil
+	}
+
+	return s.orderRepo.UpdateShippingStatus(orderID, "delivered")
+}
+
+func trackingStatusIndicatesDelivery(status string, statusCode int, events []shipping.TrackingEvent) bool {
+	if statusCode == 4 || trackingStatusTextIndicatesDelivery(status) {
+		return true
+	}
+
+	for _, event := range events {
+		if trackingStatusTextIndicatesDelivery(event.Status) {
+			return true
+		}
+	}
+	return false
+}
+
+func trackingStatusTextIndicatesDelivery(status string) bool {
+	normalized := strings.ToLower(strings.TrimSpace(status))
+	return strings.Contains(normalized, "delivered") ||
+		strings.Contains(normalized, "signed") ||
+		strings.Contains(normalized, "签收") ||
+		strings.Contains(normalized, "妥投")
+}
+
 func nextTrackingSyncAt(provider *shipping.TrackingProviderConfig, now time.Time) *time.Time {
 	if provider == nil || !provider.PollingEnabled {
 		return nil

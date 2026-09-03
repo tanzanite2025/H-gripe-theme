@@ -118,6 +118,8 @@ func respondProductServiceError(c *gin.Context, err error, fallbackMessage strin
 		c.JSON(http.StatusNotFound, gin.H{"error": "Product not found"})
 	case errors.Is(err, service.ErrProductSKUExists):
 		c.JSON(http.StatusConflict, gin.H{"error": "SKU already exists"})
+	case errors.Is(err, service.ErrProductSlugInvalid):
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	case errors.Is(err, service.ErrProductTranslationExists):
 		c.JSON(http.StatusConflict, gin.H{"error": "Translation already exists for this locale"})
 	case errors.Is(err, service.ErrProductSpecificationTemplateNotFound):

@@ -55,6 +55,18 @@ const tabbedPageRoutes = virtualPageSubNavigationEntries.map((entry) => ({
   tabs: entry.tabs.map((tab) => tab.id),
 }))
 
+const deferredHomeModuleIds = new Set([
+  'components/home/HomeRideCategoryStrip.vue',
+  'components/home/HomeMainProductCategories.vue',
+  'components/home/HomeStorePicksGuide.vue',
+  'components/home/HomePurchasePath.vue',
+  'components/home/HomeFeaturedProducts.vue',
+  'components/home/HomeShopWithConfidence.vue',
+  'components/home/HomeFeaturesTabs.vue',
+  'components/HomeFaqPreview.vue',
+  'components/home/HomeFinalCta.vue',
+])
+
 const normalizePagePath = (path: string) => `/${path.replace(/^\/+/, '')}`.replace(/\/+$/, '') || '/'
 
 const addTabbedPageRoutes = (pages: any[]) => {
@@ -151,6 +163,10 @@ const shouldIgnoreBuildWarning = (warning: RollupBuildWarning) => {
       message.includes('Sourcemap is likely to be incorrect')
     ) ||
     (
+      warning.plugin === 'nuxt:components-loader-pre' &&
+      message.includes('Sourcemap is likely to be incorrect')
+    ) ||
+    (
       warning.code === 'INVALID_ANNOTATION' &&
       message.includes('#__PURE__') &&
       (id.includes('/node_modules/@vueuse/core/dist/index.js') || message.includes('@vueuse/core'))
@@ -205,6 +221,13 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   // 使用 app 作为源码目录，启用 app/pages 与 app/components
   srcDir: 'app',
+
+  features: {
+    // Keep Nuxt SSR style inlining scoped to Vue SFC chunks. The storefront
+    // critical CSS plugin handles the large global entry stylesheet with a
+    // gzip budget and an async full-CSS loader.
+    inlineStyles: (id?: string) => Boolean(id && id.includes('.vue')),
+  },
 
   // Centralized route policy: API proxy, immutable assets, public HTML cache, and no-store pages.
   routeRules: {
@@ -267,6 +290,14 @@ export default defineNuxtConfig({
   hooks: {
     'pages:extend'(pages) {
       addTabbedPageRoutes(pages)
+    },
+    'build:manifest'(manifest) {
+      for (const moduleId of deferredHomeModuleIds) {
+        const entry = manifest[moduleId]
+        if (!entry) continue
+        entry.preload = false
+        entry.prefetch = false
+      }
     },
   },
 

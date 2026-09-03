@@ -12,21 +12,21 @@ import (
 )
 
 var (
-	ErrAfterSalesCaseNotFound      = errors.New("after-sales case not found")
-	ErrAfterSalesOrderNotFound     = errors.New("order not found")
-	ErrAfterSalesOrderNotEligible  = errors.New("order is not eligible for after-sales processing")
-	ErrAfterSalesTypeInvalid       = errors.New("invalid after-sales case type")
-	ErrAfterSalesStatusInvalid     = errors.New("invalid after-sales case status")
-	ErrAfterSalesTransitionInvalid = errors.New("invalid after-sales case status transition")
-	ErrAfterSalesItemsRequired     = errors.New("at least one after-sales item is required")
-	ErrAfterSalesItemNotFound      = errors.New("after-sales order item not found")
-	ErrAfterSalesItemOrderMismatch = errors.New("after-sales item does not belong to the order")
-	ErrAfterSalesQuantityInvalid   = errors.New("after-sales item quantity must be positive")
-	ErrAfterSalesQuantityExceeded  = errors.New("after-sales item quantity exceeds the remaining eligible quantity")
-	ErrAfterSalesDescriptionRequired = errors.New("after-sales case description is required")
-	ErrAfterSalesRequestAlreadyExists = errors.New("an active after-sales request already exists for this order")
-	ErrAfterSalesAttachmentKindInvalid = errors.New("invalid after-sales attachment kind")
-	ErrAfterSalesAttachmentNotFound = errors.New("after-sales attachment not found")
+	ErrAfterSalesCaseNotFound                 = errors.New("after-sales case not found")
+	ErrAfterSalesOrderNotFound                = errors.New("order not found")
+	ErrAfterSalesOrderNotEligible             = errors.New("order is not eligible for after-sales processing")
+	ErrAfterSalesTypeInvalid                  = errors.New("invalid after-sales case type")
+	ErrAfterSalesStatusInvalid                = errors.New("invalid after-sales case status")
+	ErrAfterSalesTransitionInvalid            = errors.New("invalid after-sales case status transition")
+	ErrAfterSalesItemsRequired                = errors.New("at least one after-sales item is required")
+	ErrAfterSalesItemNotFound                 = errors.New("after-sales order item not found")
+	ErrAfterSalesItemOrderMismatch            = errors.New("after-sales item does not belong to the order")
+	ErrAfterSalesQuantityInvalid              = errors.New("after-sales item quantity must be positive")
+	ErrAfterSalesQuantityExceeded             = errors.New("after-sales item quantity exceeds the remaining eligible quantity")
+	ErrAfterSalesDescriptionRequired          = errors.New("after-sales case description is required")
+	ErrAfterSalesRequestAlreadyExists         = errors.New("an active after-sales request already exists for this order")
+	ErrAfterSalesAttachmentKindInvalid        = errors.New("invalid after-sales attachment kind")
+	ErrAfterSalesAttachmentNotFound           = errors.New("after-sales attachment not found")
 	ErrAfterSalesAttachmentStorageUnavailable = errors.New("after-sales attachment storage is unavailable")
 )
 
@@ -64,11 +64,11 @@ type ListAfterSalesCasesInput struct {
 }
 
 type AfterSalesService struct {
-	caseRepo         *repository.AfterSalesCaseRepository
-	orderRepo        *repository.OrderRepository
-	refundReviewRepo *repository.AfterSalesRefundReviewRepository
-	txManager        *repository.TxManager
-	userRepo         *repository.UserRepository
+	caseRepo          *repository.AfterSalesCaseRepository
+	orderRepo         *repository.OrderRepository
+	refundReviewRepo  *repository.AfterSalesRefundReviewRepository
+	txManager         *repository.TxManager
+	userRepo          *repository.UserRepository
 	attachmentStorage storage.StorageService
 }
 
@@ -255,6 +255,14 @@ func (s *AfterSalesService) CreateCustomerRequest(input CreateCustomerAfterSales
 		if orderItem.Quantity <= 0 {
 			continue
 		}
+		usedQuantity, err := s.caseRepo.SumActiveQuantity(orderItem.ID)
+		if err != nil {
+			return nil, err
+		}
+		remainingQuantity := orderItem.Quantity - usedQuantity
+		if remainingQuantity <= 0 {
+			continue
+		}
 		caseItems = append(caseItems, aftersales.AfterSalesCaseItem{
 			OrderID:     orderRecord.ID,
 			OrderItemID: orderItem.ID,
@@ -262,7 +270,7 @@ func (s *AfterSalesService) CreateCustomerRequest(input CreateCustomerAfterSales
 			VariantID:   orderItem.VariantID,
 			ProductName: orderItem.ProductName,
 			SKU:         orderItem.SKU,
-			Quantity:    orderItem.Quantity,
+			Quantity:    remainingQuantity,
 		})
 	}
 	if len(caseItems) == 0 {

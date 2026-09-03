@@ -128,6 +128,8 @@ func respondProductBrandError(c *gin.Context, err error) {
 		c.JSON(http.StatusConflict, gin.H{"error": "Product brand slug already exists"})
 	case errors.Is(err, service.ErrProductBrandInUse):
 		c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+	case errors.Is(err, service.ErrProductBrandInSpokeRimCatalog):
+		c.JSON(http.StatusConflict, gin.H{"error": "Product brand is referenced by the spoke rim catalog and cannot be deleted"})
 	case errors.Is(err, service.ErrProductBrandInvalid):
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	default:

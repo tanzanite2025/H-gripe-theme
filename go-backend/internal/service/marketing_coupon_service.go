@@ -57,30 +57,32 @@ func (s *MarketingService) ValidateCoupon(code string, userID uint, amount float
 		return nil, 0, errors.New("coupon is expired")
 	}
 
-	if c.UsageLimit > 0 && c.UsedCount >= c.UsageLimit {
-		return nil, 0, errors.New("coupon usage limit reached")
+	if err := validateCouponUsageLimit(c); err != nil {
+		return nil, 0, err
+	}
+	if err := validateCouponPerUserUsageLimit(s.couponRepo, c, userID); err != nil {
+		return nil, 0, err
 	}
 
 	if amount < c.MinAmount {
 		return nil, 0, fmt.Errorf("minimum amount %.2f required", c.MinAmount)
 	}
 
-	var discount float64
-	switch c.Type {
-	case "fixed":
-		discount = c.Value
-	case "percentage":
-		discount = amount * c.Value / 100
-		if c.MaxDiscount > 0 && discount > c.MaxDiscount {
-			discount = c.MaxDiscount
-		}
-	}
-
-	return c, discount, nil
+	return c, c.CalculateDiscount(amount), nil
 }
 
 func (s *MarketingService) UseCoupon(couponID, userID, orderID uint, discountAmount float64) error {
 	return s.txManager.WithinTx(func(repos repository.TxRepositories) error {
+		c, err := repos.Coupon.FindCouponByIDForUpdate(couponID)
+		if err != nil {
+			return err
+		}
+		if err := validateCouponUsageLimit(c); err != nil {
+			return err
+		}
+		if err := validateCouponPerUserUsageLimit(repos.Coupon, c, userID); err != nil {
+			return err
+		}
 		if err := repos.Coupon.IncrementUsedCount(couponID); err != nil {
 			return err
 		}
@@ -94,6 +96,27 @@ func (s *MarketingService) UseCoupon(couponID, userID, orderID uint, discountAmo
 
 		return repos.Coupon.CreateCouponUsage(usage)
 	})
+}
+
+func validateCouponUsageLimit(c *coupon.Coupon) error {
+	if c.UsageLimit > 0 && c.UsedCount >= c.UsageLimit {
+		return repository.ErrCouponUsageLimitReached
+	}
+	return nil
+}
+
+func validateCouponPerUserUsageLimit(couponRepo *repository.CouponRepository, c *coupon.Coupon, userID uint) error {
+	if c.UsageLimitPerUser <= 0 || userID == 0 {
+		return nil
+	}
+	usedCount, err := couponRepo.CountUserCouponUsage(userID, c.ID)
+	if err != nil {
+		return err
+	}
+	if int(usedCount) >= c.UsageLimitPerUser {
+		return ErrCouponPerUserUsageLimitReached
+	}
+	return nil
 }
 
 func (s *MarketingService) GetActiveCoupons() ([]coupon.Coupon, error) {

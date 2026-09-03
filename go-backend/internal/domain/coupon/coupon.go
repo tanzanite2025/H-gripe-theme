@@ -65,18 +65,29 @@ func (c *Coupon) CalculateDiscount(amount float64) float64 {
 	if c.MaxDiscount > 0 && discount > c.MaxDiscount {
 		discount = c.MaxDiscount
 	}
+	if discount > amount {
+		discount = amount
+	}
 
 	return discount
 }
 
 // CouponUsage 优惠券使用记录
+const (
+	CouponUsageStatusApplied  = "applied"
+	CouponUsageStatusReversed = "reversed"
+)
+
 type CouponUsage struct {
-	ID        uint      `gorm:"primarykey" json:"id"`
-	CouponID  uint      `gorm:"not null;index" json:"coupon_id"`
-	UserID    uint      `gorm:"not null;index" json:"user_id"`
-	OrderID   uint      `gorm:"not null;index" json:"order_id"`
-	Discount  float64   `gorm:"not null" json:"discount"`
-	CreatedAt time.Time `json:"created_at"`
+	ID             uint       `gorm:"primarykey" json:"id"`
+	CouponID       uint       `gorm:"not null;index;index:idx_coupon_usage_coupon_user" json:"coupon_id"`
+	UserID         uint       `gorm:"not null;index;index:idx_coupon_usage_coupon_user" json:"user_id"`
+	OrderID        uint       `gorm:"not null;index" json:"order_id"`
+	Discount       float64    `gorm:"not null" json:"discount"`
+	Status         string     `gorm:"not null;default:applied;index" json:"status"`
+	CreatedAt      time.Time  `json:"created_at"`
+	ReversedAt     *time.Time `json:"reversed_at"`
+	ReversalReason string     `gorm:"type:text" json:"reversal_reason"`
 }
 
 // TableName 指定表名

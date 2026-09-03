@@ -119,7 +119,7 @@ export function snapshotRenderedHeadings() {
       return
     }
     const level = Number.parseInt(element.tagName.slice(1), 10)
-    const text = normalizeText(element.textContent)
+    const text = headingText(element)
     if (!Number.isInteger(level) || level < 1 || level > 6 || !text) {
       return
     }
@@ -196,6 +196,19 @@ export function snapshotRenderedHeadings() {
       return normalized
     }
     return `${normalized.slice(0, maxHeadingTextLength - 3)}...`
+  }
+
+  function headingText(element) {
+    const candidates = [
+      element.getAttribute('aria-label'),
+      element.querySelector('img[alt]')?.getAttribute('alt'),
+      element.textContent,
+    ]
+    for (const candidate of candidates) {
+      const text = normalizeText(candidate)
+      if (text) return text
+    }
+    return ''
   }
 
   function headingSnippet(element, text) {

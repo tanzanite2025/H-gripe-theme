@@ -27,9 +27,10 @@ func isDefaultMemberLevelName(name string) bool {
 }
 
 var (
-	ErrMarketingNotFound  = errors.New("marketing resource not found")
-	ErrCouponCodeExists   = errors.New("coupon code already exists")
-	ErrInvalidMemberLevel = errors.New("invalid member level")
+	ErrMarketingNotFound              = errors.New("marketing resource not found")
+	ErrCouponCodeExists               = errors.New("coupon code already exists")
+	ErrCouponPerUserUsageLimitReached = errors.New("coupon per-user usage limit reached")
+	ErrInvalidMemberLevel             = errors.New("invalid member level")
 )
 
 type MemberLevelCreateInput struct {

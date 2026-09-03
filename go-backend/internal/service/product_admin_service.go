@@ -148,6 +148,10 @@ func (s *ProductService) CreateAdminProduct(input ProductCreateInput) (*product.
 	if err != nil {
 		return nil, err
 	}
+	slug, err := normalizeAdminProductSlug(input.Slug)
+	if err != nil {
+		return nil, err
+	}
 	description, err := safehtml.Sanitize(input.Description)
 	if err != nil {
 		return nil, err
@@ -223,7 +227,7 @@ func (s *ProductService) CreateAdminProduct(input ProductCreateInput) (*product.
 		CustomsDescription:             customsInfo.CustomsDescription,
 		SKU:                            defaultVariantSKU(variants),
 		Name:                           input.Name,
-		Slug:                           input.Slug,
+		Slug:                           slug,
 		Description:                    description,
 		ShortDesc:                      shortDesc,
 		Currency:                       priceCurrency,
@@ -376,7 +380,11 @@ func (s *ProductService) UpdateAdminProduct(id uint, input ProductUpdateInput) (
 		existingProduct.Name = *input.Name
 	}
 	if input.Slug != nil {
-		existingProduct.Slug = *input.Slug
+		slug, err := normalizeAdminProductSlug(*input.Slug)
+		if err != nil {
+			return nil, err
+		}
+		existingProduct.Slug = slug
 	}
 	if input.Description != nil {
 		description, err := safehtml.Sanitize(*input.Description)

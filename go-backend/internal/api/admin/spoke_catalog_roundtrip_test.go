@@ -14,6 +14,7 @@ import (
 
 	adminapi "commerce-platform/internal/api/admin"
 	spokeapi "commerce-platform/internal/api/v1/spoke"
+	productdomain "commerce-platform/internal/domain/product"
 	spokedomain "commerce-platform/internal/domain/spoke"
 	"commerce-platform/internal/repository"
 	"commerce-platform/internal/service"
@@ -79,6 +80,7 @@ func newSpokeCatalogRoundTripRouter(t *testing.T) *gin.Engine {
 	})
 
 	require.NoError(t, db.AutoMigrate(
+		&productdomain.ProductBrand{},
 		&spokedomain.CatalogRimBrand{},
 		&spokedomain.CatalogRimModel{},
 		&spokedomain.CatalogHubBrand{},
@@ -86,7 +88,19 @@ func newSpokeCatalogRoundTripRouter(t *testing.T) *gin.Engine {
 		&spokedomain.CatalogBuildPreset{},
 	))
 
-	spokeService := service.NewSpokeService(repository.NewSpokeRepository(db))
+	require.NoError(t, db.Create(&productdomain.ProductBrand{
+		Name:      "DT Swiss",
+		Slug:      "dt_swiss",
+		IsEnabled: true,
+		SortOrder: 0,
+	}).Error)
+
+	spokeRepo := repository.NewSpokeRepository(db)
+	spokeRepo.ConfigureProductBrandRepository(repository.NewProductBrandRepository(db))
+	spokeService := service.NewSpokeService(spokeRepo)
+	_, err = spokeService.ReplaceCatalog(spokeCatalogRoundTripSeed())
+	require.NoError(t, err)
+
 	router := gin.New()
 	router.PUT("/api/admin/spoke-catalog", adminapi.NewSpokeCatalogHandler(spokeService).Replace)
 	router.POST("/api/admin/spoke-catalog/import", adminapi.NewSpokeCatalogHandler(spokeService).Import)
@@ -100,6 +114,9 @@ func runSpokePresetTemplateHTTPRoundTrip(t *testing.T) {
 	t.Helper()
 
 	router := newSpokeCatalogRoundTripRouter(t)
+	publicRequest := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/api/v1/spoke/export", nil)
+	publicExport := executeSpokeCatalogRequest(t, router, publicRequest)
+
 	templateRequest := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/api/admin/spoke-catalog/preset-template", nil)
 	templateRecorder := httptest.NewRecorder()
 	router.ServeHTTP(templateRecorder, templateRequest)
@@ -144,7 +161,7 @@ func runSpokePresetTemplateHTTPRoundTrip(t *testing.T) {
 	require.Contains(t, string(presetSheetXML), "dataValidations")
 	require.GreaterOrEqual(t, protectedSheetCount, 3)
 
-	input := spokedomain.DefaultExport()
+	input := publicExport
 	rimBrand := input.Rims[0]
 	rimModel := rimBrand.Items[0]
 	hubBrand := input.Hubs[0]
@@ -191,8 +208,8 @@ func runSpokePresetTemplateHTTPRoundTrip(t *testing.T) {
 	require.Equal(t, []string{"DT Swiss 350", "350"}, importedPreset.Keywords)
 	require.Equal(t, "auto", importedPreset.WheelPosition)
 
-	publicRequest := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/api/v1/spoke/export", nil)
-	publicExport := executeSpokeCatalogRequest(t, router, publicRequest)
+	publicRequest = httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/api/v1/spoke/export", nil)
+	publicExport = executeSpokeCatalogRequest(t, router, publicRequest)
 	require.Equal(t, importedExport, publicExport)
 
 	require.NoError(t, workbook.SetCellValue(spokedomain.PresetTemplateSheet, "A1", "wrong-header"))
@@ -280,7 +297,7 @@ func newMultipartFileRequest(method, path, filename string, raw []byte) (*http.R
 }
 
 func spokeCatalogRoundTripFixture() (spokedomain.ExportResponse, spokedomain.ExportResponse) {
-	input := spokedomain.DefaultExport()
+	input := spokeCatalogRoundTripSeed()
 	frontLeft := 282.0
 	rearRight := 284.0
 
@@ -306,4 +323,59 @@ func spokeCatalogRoundTripFixture() (spokedomain.ExportResponse, spokedomain.Exp
 	}
 
 	return input, expected
+}
+
+func spokeCatalogRoundTripSeed() spokedomain.ExportResponse {
+	erd := 598.0
+	left := 22.5
+	right := 35.6
+	pcd := 44.0
+	nippleLength := 14.0
+
+	return spokedomain.ExportResponse{
+		Options: spokedomain.DefaultOptions(),
+		Rims: []spokedomain.RimBrand{
+			{
+				ID:   "dt_swiss",
+				Name: "DT Swiss",
+				Items: []spokedomain.RimModel{
+					{ID: "rr411_db", Name: "RR 411 db", ERD: &erd},
+				},
+			},
+		},
+		Hubs: []spokedomain.HubBrand{
+			{
+				ID:   "dt_swiss",
+				Name: "DT Swiss",
+				Items: []spokedomain.HubModel{
+					{
+						ID:   "350_road_db_cl",
+						Name: "350 Road db CL",
+						Front: &spokedomain.HubGeometry{
+							LeftFlange:     &left,
+							RightFlange:    &right,
+							LeftFlangePCD:  &pcd,
+							RightFlangePCD: &pcd,
+						},
+					},
+				},
+			},
+		},
+		Presets: []spokedomain.WheelBuildPreset{
+			{
+				ID:           "dt350_rr411",
+				Name:         "DT Swiss RR 411 + 350",
+				Description:  "Reference bench build.",
+				Keywords:     []string{"350", "DT Swiss"},
+				RimBrandID:   "dt_swiss",
+				RimModelID:   "rr411_db",
+				HubBrandID:   "dt_swiss",
+				HubModelID:   "350_road_db_cl",
+				SpokeCount:   24,
+				Crossing:     2,
+				NippleType:   "standard",
+				NippleLength: &nippleLength,
+			},
+		},
+	}
 }

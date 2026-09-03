@@ -54,6 +54,15 @@ func (r *CouponRepository) FindCouponByID(id uint) (*coupon.Coupon, error) {
 	return &c, nil
 }
 
+func (r *CouponRepository) FindCouponByIDForUpdate(id uint) (*coupon.Coupon, error) {
+	var c coupon.Coupon
+	err := r.db.Clauses(clause.Locking{Strength: "UPDATE"}).First(&c, id).Error
+	if err != nil {
+		return nil, err
+	}
+	return &c, nil
+}
+
 func (r *CouponRepository) FindCouponByIDIncludingDeleted(id uint) (*coupon.Coupon, error) {
 	var c coupon.Coupon
 	err := r.db.Unscoped().First(&c, id).Error
@@ -67,6 +76,15 @@ func (r *CouponRepository) FindCouponByIDIncludingDeleted(id uint) (*coupon.Coup
 func (r *CouponRepository) FindCouponByCode(code string) (*coupon.Coupon, error) {
 	var c coupon.Coupon
 	err := r.db.Where("code = ?", code).First(&c).Error
+	if err != nil {
+		return nil, err
+	}
+	return &c, nil
+}
+
+func (r *CouponRepository) FindCouponByCodeForUpdate(code string) (*coupon.Coupon, error) {
+	var c coupon.Coupon
+	err := r.db.Clauses(clause.Locking{Strength: "UPDATE"}).Where("code = ?", code).First(&c).Error
 	if err != nil {
 		return nil, err
 	}
@@ -95,6 +113,22 @@ func (r *CouponRepository) FindActiveCoupons() ([]coupon.Coupon, error) {
 
 	err := r.db.Where("enabled = ? AND start_date <= ? AND end_date >= ?", true, now, now).
 		Where("used_count < usage_limit OR usage_limit = 0").
+		Find(&coupons).Error
+
+	return coupons, err
+}
+
+func (r *CouponRepository) FindCouponsForRiskAnalysis(limit int) ([]coupon.Coupon, error) {
+	var coupons []coupon.Coupon
+	now := time.Now()
+	if limit <= 0 {
+		limit = 1000
+	}
+
+	err := r.db.Where("enabled = ? AND end_date >= ?", true, now).
+		Where("used_count < usage_limit OR usage_limit = 0").
+		Order("start_date ASC, id ASC").
+		Limit(limit).
 		Find(&coupons).Error
 
 	return coupons, err
@@ -133,6 +167,9 @@ func (r *CouponRepository) DeleteCoupon(id uint) error {
 
 // CreateCouponUsage 创建优惠券使用记录
 func (r *CouponRepository) CreateCouponUsage(u *coupon.CouponUsage) error {
+	if u.Status == "" {
+		u.Status = coupon.CouponUsageStatusApplied
+	}
 	return r.db.Create(u).Error
 }
 
@@ -153,15 +190,25 @@ func (r *CouponRepository) FindCouponUsageByOrderID(orderID uint) (*coupon.Coupo
 	return &usage, nil
 }
 
-func (r *CouponRepository) DeleteCouponUsageByOrderID(orderID uint) error {
-	return r.db.Where("order_id = ?", orderID).Delete(&coupon.CouponUsage{}).Error
+func (r *CouponRepository) ReverseCouponUsageByOrderID(orderID uint, reversedAt time.Time, reason string) error {
+	if reversedAt.IsZero() {
+		reversedAt = time.Now().UTC()
+	}
+
+	return r.db.Model(&coupon.CouponUsage{}).
+		Where("order_id = ? AND status = ?", orderID, coupon.CouponUsageStatusApplied).
+		Updates(map[string]interface{}{
+			"status":          coupon.CouponUsageStatusReversed,
+			"reversed_at":     reversedAt,
+			"reversal_reason": reason,
+		}).Error
 }
 
 // CountUserCouponUsage 统计用户使用某优惠券的次数
 func (r *CouponRepository) CountUserCouponUsage(userID, couponID uint) (int64, error) {
 	var count int64
 	err := r.db.Model(&coupon.CouponUsage{}).
-		Where("user_id = ? AND coupon_id = ?", userID, couponID).
+		Where("user_id = ? AND coupon_id = ? AND status = ?", userID, couponID, coupon.CouponUsageStatusApplied).
 		Count(&count).Error
 	return count, err
 }

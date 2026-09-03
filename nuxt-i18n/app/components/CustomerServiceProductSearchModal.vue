@@ -165,8 +165,9 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from '#imports'
+import { createDialogStackId, useDialogStack } from '~/composables/useDialogStack'
 import { useShopProducts, type ShopProduct } from '~/composables/useShopProducts'
 
 const props = defineProps<{
@@ -181,6 +182,8 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const { fetchShopProducts } = useShopProducts()
+const dialogStack = useDialogStack()
+const dialogStackId = createDialogStackId('customer-service-product-search-modal')
 const modalElement = ref<HTMLElement | null>(null)
 const searchInputElement = ref<HTMLInputElement | null>(null)
 const searchQuery = ref('')
@@ -189,6 +192,7 @@ const searchError = ref('')
 const isSearching = ref(false)
 const hasSearched = ref(false)
 const modalTitleId = 'customer-service-product-search-modal-title'
+let unregisterDialogStack: (() => void) | null = null
 
 const resetCustomerServiceProductSearchState = () => {
   searchQuery.value = ''
@@ -201,6 +205,22 @@ const resetCustomerServiceProductSearchState = () => {
 const handleCloseCustomerServiceProductSearchModal = () => {
   emit('update:modelValue', false)
   emit('close')
+}
+
+const syncDialogStack = (isOpen: boolean) => {
+  if (isOpen && !unregisterDialogStack) {
+    unregisterDialogStack = dialogStack.register(dialogStackId, () => {
+      handleCloseCustomerServiceProductSearchModal()
+    }, {
+      priority: 10060,
+    })
+    return
+  }
+
+  if (!isOpen && unregisterDialogStack) {
+    unregisterDialogStack()
+    unregisterDialogStack = null
+  }
 }
 
 const handleClearCustomerServiceProductSearchQuery = () => {
@@ -239,28 +259,20 @@ const handleSelectCustomerServiceProductForChat = (product: ShopProduct) => {
   handleCloseCustomerServiceProductSearchModal()
 }
 
-const handleCustomerServiceProductSearchModalKeydown = (event: KeyboardEvent) => {
-  if (props.modelValue && event.key === 'Escape') {
-    handleCloseCustomerServiceProductSearchModal()
-  }
-}
-
 watch(
   () => props.modelValue,
   value => {
+    syncDialogStack(value)
     if (value) {
       resetCustomerServiceProductSearchState()
       nextTick(() => searchInputElement.value?.focus())
     }
-  }
+  },
+  { immediate: true }
 )
 
-onMounted(() => {
-  document.addEventListener('keydown', handleCustomerServiceProductSearchModalKeydown)
-})
-
 onBeforeUnmount(() => {
-  document.removeEventListener('keydown', handleCustomerServiceProductSearchModalKeydown)
+  syncDialogStack(false)
 })
 </script>
 

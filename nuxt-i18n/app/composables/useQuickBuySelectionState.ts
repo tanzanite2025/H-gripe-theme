@@ -158,7 +158,7 @@ export function useQuickBuySelectionState(
       title: product.title,
       slug: product.slug,
       sku: selectedVariant?.sku || product.sku,
-      thumbnail: product.thumbnail || '',
+      thumbnail: selectedVariant?.thumbnail || selectedVariant?.image || product.thumbnail || '',
       quantity: 1,
       weightGrams: selectedVariant?.weightGrams || 0,
       // QUICK selections are later submitted as cart lines. Keep the

@@ -18,13 +18,13 @@ func TestDisputeEvidenceUsesOrderPolicySnapshotAndRefundFacts(t *testing.T) {
 	consentedAt := disclosedAt.Add(2 * time.Minute)
 	require.NoError(t, db.Create(&order.PolicyDisclosure{
 		OrderID:         orderRecord.ID,
-		PolicyKey:       "refund_return_policy",
+		PolicyKey:       "refund_cancellation_policy",
 		Locale:          "en",
 		RequestedLocale: "en",
 		PolicyVersion:   "sha256:historical-v1",
 		PolicyHash:      "historical-v1",
 		PolicyJSON:      `{"title":"Historical refund policy"}`,
-		PolicyURL:       "/policies/refund-return",
+		PolicyURL:       "/policies/refund-cancellation",
 		DisclosedAt:     disclosedAt,
 		ConsentedAt:     &consentedAt,
 		Source:          "checkout_test",

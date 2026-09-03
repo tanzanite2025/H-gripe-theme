@@ -11,21 +11,23 @@ import (
 )
 
 type OrderService struct {
-	txManager          *repository.TxManager
-	orderRepo          *repository.OrderRepository
-	checkout           *CheckoutService
-	shipping           *ShippingService
-	payment            *PaymentService
-	emailSender        email.EmailService
-	numberGenerator    *ordernumber.Generator
-	productCache       ProductCacheInvalidator
-	productCacheEvents ProductCacheEventPublisher
-	refundReturnPolicy *RefundReturnPolicyService
+	txManager                *repository.TxManager
+	orderRepo                *repository.OrderRepository
+	checkout                 *CheckoutService
+	shipping                 *ShippingService
+	payment                  *PaymentService
+	emailSender              email.EmailService
+	numberGenerator          *ordernumber.Generator
+	productCache             ProductCacheInvalidator
+	productCacheEvents       ProductCacheEventPublisher
+	refundCancellationPolicy *RefundCancellationPolicyService
 }
 
 var (
 	ErrOrderNotFound                     = errors.New("order not found")
 	ErrOrderDeleteNotAllowed             = errors.New("only cancelled, payment expired, or refunded orders can be deleted")
+	ErrPaidOrderCancellationNotAllowed   = errors.New("paid orders cannot be cancelled directly; please submit an after-sales refund request or contact support")
+	ErrOrderCancellationConflict         = errors.New("order was already cancelled or is no longer eligible for cancellation")
 	ErrSystemManagedOrderStatus          = errors.New("order status is managed by payment workflow")
 	ErrOrderFulfillmentNotAllowed        = errors.New("only paid, processing, or already shipped orders can be fulfilled")
 	ErrOrderFulfillmentPaymentRequired   = errors.New("only paid orders can be fulfilled")
@@ -63,11 +65,11 @@ func NewOrderService(
 	return service
 }
 
-func (s *OrderService) ConfigureRefundReturnPolicy(policy *RefundReturnPolicyService) {
+func (s *OrderService) ConfigureRefundCancellationPolicy(policy *RefundCancellationPolicyService) {
 	if s == nil {
 		return
 	}
-	s.refundReturnPolicy = policy
+	s.refundCancellationPolicy = policy
 }
 
 func (s *OrderService) ConfigureProductCacheInvalidator(invalidator ProductCacheInvalidator) {

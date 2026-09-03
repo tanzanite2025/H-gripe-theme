@@ -11,7 +11,7 @@ export type UploadSpecCode =
   | 'customer_service_avatar'
   | 'website_profile_avatar'
   | 'website_profile_image'
-  | 'refund_return_image'
+  | 'refund_cancellation_image'
   | 'warranty_evidence'
   | 'after_sales_evidence'
   | 'suggestion_attachment'
@@ -218,11 +218,11 @@ export const UPLOAD_SPECS: Record<UploadSpecCode, UploadSpec> = {
     recommendedLongEdge: 1600,
     qualityNote: '建议长边至少 1600 px。',
   },
-  refund_return_image: {
-    code: 'refund_return_image',
+  refund_cancellation_image: {
+    code: 'refund_cancellation_image',
     kind: 'image',
-    label: '退货退款说明图片',
-    description: '退货退款政策中的说明图片',
+    label: '退款取消说明图片',
+    description: '退款取消政策中的说明图片',
     acceptedExtensions: imageExtensions,
     acceptedContentTypes: imageTypes,
     ...productLimits,

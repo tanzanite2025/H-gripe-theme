@@ -104,7 +104,7 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 	globalIPBlockHandler.ConfigureAuditService(services.Audit)
 	marketingHandler := NewMarketingHandler(marketingService, services.LoyaltyProgram)
 	settingsHandler := NewSettingsHandler(services.AdminSettings)
-	refundReturnPolicyHandler := NewRefundReturnPolicyHandler(services.RefundReturnPolicy)
+	refundCancellationPolicyHandler := NewRefundCancellationPolicyHandler(services.RefundCancellationPolicy)
 	siteLogoHandler := NewSiteLogoHandler(services.SiteLogo, services.AdminSettings)
 	homeVisualTileHandler := NewHomeVisualTileHandler(services.HomeVisualTiles)
 	websiteProfileHandler := NewWebsiteProfileHandler(services.WebsiteProfile)
@@ -254,7 +254,7 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 		contentHandler,
 		pageFeedbackHandler,
 		homeVisualTileHandler,
-		refundReturnPolicyHandler,
+		refundCancellationPolicyHandler,
 		mediaHandler,
 		reviewModerationHandler,
 		faqHandler,

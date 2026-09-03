@@ -13,6 +13,17 @@ const readObjectPayload = (response: unknown, path: string) => (
   requireApiObject(unwrapApiPayload(response, path), path)
 )
 
+export interface ProductBrandRecord {
+  id: number
+  name: string
+  slug: string
+  description: string
+  logo_url: string
+  website_url: string
+  is_enabled: boolean
+  sort_order: number
+}
+
 export const productApi = {
   async list(params: Record<string, any> = {}) {
     const path = '/api/admin/products'

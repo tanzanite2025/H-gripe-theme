@@ -75,8 +75,8 @@ const {
     })
   },
   {
-    server: false,
-    lazy: true,
+    server: true,
+    lazy: false,
     default: () => ({
       items: [],
       raw: null,

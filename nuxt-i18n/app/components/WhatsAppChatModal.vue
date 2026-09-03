@@ -386,6 +386,7 @@ import WhatsAppProductSearchResultDrawer from '~/components/WhatsAppProductSearc
 import WishlistDrawer from '~/components/WishlistDrawer.vue'
 import ChatAgentSelectionPanel from '~/components/whatsapp/ChatAgentSelectionPanel.vue'
 import UserChatBody from '~/components/whatsapp/UserChatBody.vue'
+import { createDialogStackId, useDialogStack } from '~/composables/useDialogStack'
 
 // Props - 现在不需要预先传入conversation
 const props = defineProps<{
@@ -402,6 +403,8 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const dialogStack = useDialogStack()
+const dialogStackId = createDialogStackId('whatsapp-chat-modal')
 
 type ChatModalElementRef = HTMLElement | { rootElement?: HTMLElement | { value?: HTMLElement | null } | null }
 
@@ -421,6 +424,7 @@ let chatModalDragState: {
   pointerId: number
   handleElement: HTMLElement | null
 } | null = null
+let unregisterDialogStack: (() => void) | null = null
 
 const getChatModalElement = () => {
   const rawRef = chatModalRef.value
@@ -615,6 +619,39 @@ const {
   handleImageUpload
 } = useWhatsAppState(emit, {
   initialSelectionRequest: props.conversation?.pendingSelectionRequest || null,
+})
+
+const handleWhatsAppEscape = () => {
+  if (agentPickerOpen.value) {
+    agentPickerOpen.value = false
+    return
+  }
+
+  handleClose()
+}
+
+const syncDialogStack = (isOpen: boolean) => {
+  if (isOpen && !unregisterDialogStack) {
+    unregisterDialogStack = dialogStack.register(dialogStackId, handleWhatsAppEscape, {
+      priority: 10050,
+    })
+    return
+  }
+
+  if (!isOpen && unregisterDialogStack) {
+    unregisterDialogStack()
+    unregisterDialogStack = null
+  }
+}
+
+watch(
+  () => Boolean(props.conversation),
+  value => syncDialogStack(value),
+  { immediate: true }
+)
+
+onBeforeUnmount(() => {
+  syncDialogStack(false)
 })
 
 const queuedConversationProductReference = ref<Record<string, any> | null>(

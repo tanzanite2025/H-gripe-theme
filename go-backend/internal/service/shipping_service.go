@@ -13,6 +13,7 @@ import (
 type ShippingService struct {
 	shippingRepo    *repository.ShippingRepository
 	productRepo     *repository.ProductRepository
+	orderRepo       *repository.OrderRepository
 	currencyPolicy  *CurrencyPolicyService
 	trackingRun     TrackingPollingRunState
 	webhookRun      TrackingWebhookRunState
@@ -290,6 +291,13 @@ func (s *ShippingService) ConfigureCurrencyPolicy(policy *CurrencyPolicyService)
 		return
 	}
 	s.currencyPolicy = policy
+}
+
+func (s *ShippingService) ConfigureOrderRepository(orderRepo *repository.OrderRepository) {
+	if s == nil {
+		return
+	}
+	s.orderRepo = orderRepo
 }
 
 func (s *ShippingService) ConfigureOutboundTrackingResilience(

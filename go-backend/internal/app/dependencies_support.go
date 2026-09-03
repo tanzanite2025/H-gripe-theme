@@ -79,6 +79,7 @@ func newDependencySupport(
 	txManager.ConfigureAfterSalesRefundReviewRepository(repos.AfterSalesRefundReview)
 
 	shippingService := service.NewShippingService(repos.Shipping, repos.Product)
+	shippingService.ConfigureOrderRepository(repos.Order)
 	outboundHTTPResilience := newOutboundHTTPResilience(
 		redisCache.Client(),
 		cfg.OutboundHTTPResilience,

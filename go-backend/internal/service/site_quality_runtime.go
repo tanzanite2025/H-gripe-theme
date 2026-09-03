@@ -13,10 +13,11 @@ func siteQualityRenderedLinkAuditIssues(audit *siteQualityRenderedLinkAudit) []L
 	if audit == nil || (!audit.Configured && strings.TrimSpace(audit.Status) == "") {
 		return nil
 	}
-	if !audit.Configured || strings.TrimSpace(audit.Status) == "skipped" {
+	status := strings.TrimSpace(audit.Status)
+	if !audit.Configured || siteQualityRuntimeAuditSkipped(status) {
 		return nil
 	}
-	if strings.TrimSpace(audit.Status) != "complete" {
+	if status != "complete" && !siteQualityRuntimeAuditTimeoutSkipped(status) {
 		return []LighthouseRunnerIssue{
 			siteQualityRuntimeScanFailureIssue(
 				siteQualityLinkAuditFailedAuditID,
@@ -29,6 +30,9 @@ func siteQualityRenderedLinkAuditIssues(audit *siteQualityRenderedLinkAudit) []L
 
 	offenders := make([]siteQualityRenderedLink, 0)
 	for _, link := range audit.Links {
+		if link.TimeoutSkipped {
+			continue
+		}
 		if siteQualityRenderedLinkBroken(link) {
 			offenders = append(offenders, link)
 		}
@@ -42,10 +46,13 @@ func siteQualityRenderedLinkAuditIssues(audit *siteQualityRenderedLinkAudit) []L
 		}
 		return offenders[i].Href < offenders[j].Href
 	})
-	if len(offenders) > 12 {
-		offenders = offenders[:12]
+	totalBrokenCount := len(offenders)
+	severity := siteQualityBrokenLinkSeverity(offenders)
+	evidenceLinks := offenders
+	if len(evidenceLinks) > 12 {
+		evidenceLinks = evidenceLinks[:12]
 	}
-	count := float64(len(offenders))
+	count := float64(totalBrokenCount)
 	return []LighthouseRunnerIssue{
 		{
 			ID:           siteQualityBrokenLinkAuditID,
@@ -53,11 +60,11 @@ func siteQualityRenderedLinkAuditIssues(audit *siteQualityRenderedLinkAudit) []L
 			RuleVersion:  siteQualityAuditRuleVersion,
 			Title:        "Rendered page contains broken links",
 			Description:  "The final browser-rendered DOM includes links that return HTTP errors, fail to respond, or redirect outside the configured storefront origin.",
-			Severity:     siteQualityBrokenLinkSeverity(offenders),
-			DisplayValue: fmt.Sprintf("%d broken link(s)", len(offenders)),
+			Severity:     severity,
+			DisplayValue: fmt.Sprintf("%d broken link(s)", totalBrokenCount),
 			NumericValue: &count,
-			Links:        siteQualityBrokenLinkEvidence(offenders),
-			Runtime:      siteQualityBrokenLinkRuntimeEvidence(offenders),
+			Links:        siteQualityBrokenLinkEvidence(evidenceLinks),
+			Runtime:      siteQualityBrokenLinkRuntimeEvidence(evidenceLinks),
 		},
 	}
 }
@@ -111,10 +118,14 @@ func siteQualityBrokenLinkRuntimeEvidence(links []siteQualityRenderedLink) []sit
 }
 
 func siteQualityInteractionAuditIssues(audit *siteQualityInteractionAudit) []LighthouseRunnerIssue {
-	if audit == nil || !audit.Configured || strings.TrimSpace(audit.Status) == "skipped" {
+	if audit == nil {
 		return nil
 	}
-	if strings.TrimSpace(audit.Status) != "complete" {
+	status := strings.TrimSpace(audit.Status)
+	if !audit.Configured || siteQualityRuntimeAuditSkipped(status) {
+		return nil
+	}
+	if status != "complete" && !siteQualityRuntimeAuditTimeoutSkipped(status) {
 		return []LighthouseRunnerIssue{
 			siteQualityRuntimeScanFailureIssue(
 				siteQualityInteractionAuditFailedID,
@@ -125,33 +136,62 @@ func siteQualityInteractionAuditIssues(audit *siteQualityInteractionAudit) []Lig
 		}
 	}
 
-	offenders := make([]siteQualityInteractionProbe, 0)
+	failures := make([]siteQualityInteractionProbe, 0)
+	slowInteractions := make([]siteQualityInteractionProbe, 0)
 	for _, interaction := range audit.Interactions {
-		if strings.TrimSpace(interaction.Status) != "complete" || interaction.Exceeded {
-			offenders = append(offenders, interaction)
+		interactionStatus := strings.TrimSpace(interaction.Status)
+		if siteQualityRuntimeAuditTimeoutSkipped(interactionStatus) {
+			continue
+		}
+		if interactionStatus != "complete" {
+			failures = append(failures, interaction)
+			continue
+		}
+		if interaction.Exceeded {
+			slowInteractions = append(slowInteractions, interaction)
 		}
 	}
-	if len(offenders) == 0 {
+	if len(failures) == 0 && len(slowInteractions) == 0 {
 		return nil
 	}
-	sort.SliceStable(offenders, func(i, j int) bool {
-		return siteQualityRuntimeFloatValue(offenders[i].ResponseMilliseconds) >
-			siteQualityRuntimeFloatValue(offenders[j].ResponseMilliseconds)
-	})
-	maxResponse := siteQualityRuntimeFloatValue(offenders[0].ResponseMilliseconds)
-	return []LighthouseRunnerIssue{
-		{
+	issues := make([]LighthouseRunnerIssue, 0, 2)
+	if len(failures) > 0 {
+		issues = append(issues, siteQualityInteractionProbeFailureIssue(failures))
+	}
+	if len(slowInteractions) > 0 {
+		sort.SliceStable(slowInteractions, func(i, j int) bool {
+			return siteQualityRuntimeFloatValue(slowInteractions[i].ResponseMilliseconds) >
+				siteQualityRuntimeFloatValue(slowInteractions[j].ResponseMilliseconds)
+		})
+		maxResponse := siteQualityRuntimeFloatValue(slowInteractions[0].ResponseMilliseconds)
+		issues = append(issues, LighthouseRunnerIssue{
 			ID:           siteQualityInteractionLatencyAuditID,
 			Kind:         "interaction",
 			RuleVersion:  siteQualityAuditRuleVersion,
 			Title:        "Configured user interaction is too slow",
-			Description:  "A configured browser interaction exceeded its response budget or failed to complete after the page hydrated.",
+			Description:  "A configured browser interaction exceeded its response budget after the page hydrated.",
 			Severity:     siteQualityLatencySeverity(maxResponse),
 			DisplayValue: fmt.Sprintf("Slowest interaction %.0f ms", maxResponse),
 			NumericValue: &maxResponse,
 			SavingsMS:    &maxResponse,
-			Runtime:      siteQualityInteractionRuntimeEvidence(offenders),
-		},
+			Runtime:      siteQualityInteractionRuntimeEvidence(slowInteractions),
+		})
+	}
+	return issues
+}
+
+func siteQualityInteractionProbeFailureIssue(interactions []siteQualityInteractionProbe) LighthouseRunnerIssue {
+	count := float64(len(interactions))
+	return LighthouseRunnerIssue{
+		ID:           siteQualityInteractionAuditFailedID,
+		Kind:         "interaction",
+		RuleVersion:  siteQualityAuditRuleVersion,
+		Title:        "Configured user interaction probe failed",
+		Description:  "A configured browser interaction probe failed before response latency could be measured.",
+		Severity:     "medium",
+		DisplayValue: fmt.Sprintf("%d interaction probe(s) failed", len(interactions)),
+		NumericValue: &count,
+		Runtime:      siteQualityInteractionRuntimeEvidence(interactions),
 	}
 }
 
@@ -173,10 +213,14 @@ func siteQualityInteractionRuntimeEvidence(interactions []siteQualityInteraction
 }
 
 func siteQualitySoftNavigationAuditIssues(audit *siteQualitySoftNavigationAudit) []LighthouseRunnerIssue {
-	if audit == nil || !audit.Configured || strings.TrimSpace(audit.Status) == "skipped" {
+	if audit == nil {
 		return nil
 	}
-	if strings.TrimSpace(audit.Status) != "complete" {
+	status := strings.TrimSpace(audit.Status)
+	if !audit.Configured || siteQualityRuntimeAuditSkipped(status) {
+		return nil
+	}
+	if status != "complete" && !siteQualityRuntimeAuditTimeoutSkipped(status) {
 		return []LighthouseRunnerIssue{
 			siteQualityRuntimeScanFailureIssue(
 				siteQualitySoftNavigationAuditFailedID,
@@ -187,35 +231,62 @@ func siteQualitySoftNavigationAuditIssues(audit *siteQualitySoftNavigationAudit)
 		}
 	}
 
-	offenders := make([]siteQualitySoftNavigationResult, 0)
+	failures := make([]siteQualitySoftNavigationResult, 0)
+	regressions := make([]siteQualitySoftNavigationResult, 0)
 	for _, navigation := range audit.Navigations {
-		if strings.TrimSpace(navigation.Status) != "complete" ||
-			navigation.Exceeded ||
-			strings.TrimSpace(navigation.Mode) == "hard-navigation" {
-			offenders = append(offenders, navigation)
+		navigationStatus := strings.TrimSpace(navigation.Status)
+		if siteQualityRuntimeAuditTimeoutSkipped(navigationStatus) {
+			continue
+		}
+		if navigationStatus != "complete" {
+			failures = append(failures, navigation)
+			continue
+		}
+		if navigation.Exceeded || strings.TrimSpace(navigation.Mode) == "hard-navigation" {
+			regressions = append(regressions, navigation)
 		}
 	}
-	if len(offenders) == 0 {
+	if len(failures) == 0 && len(regressions) == 0 {
 		return nil
 	}
-	sort.SliceStable(offenders, func(i, j int) bool {
-		return siteQualityRuntimeFloatValue(offenders[i].DurationMilliseconds) >
-			siteQualityRuntimeFloatValue(offenders[j].DurationMilliseconds)
-	})
-	maxDuration := siteQualityRuntimeFloatValue(offenders[0].DurationMilliseconds)
-	return []LighthouseRunnerIssue{
-		{
+	issues := make([]LighthouseRunnerIssue, 0, 2)
+	if len(failures) > 0 {
+		issues = append(issues, siteQualitySoftNavigationProbeFailureIssue(failures))
+	}
+	if len(regressions) > 0 {
+		sort.SliceStable(regressions, func(i, j int) bool {
+			return siteQualityRuntimeFloatValue(regressions[i].DurationMilliseconds) >
+				siteQualityRuntimeFloatValue(regressions[j].DurationMilliseconds)
+		})
+		maxDuration := siteQualityRuntimeFloatValue(regressions[0].DurationMilliseconds)
+		issues = append(issues, LighthouseRunnerIssue{
 			ID:           siteQualitySoftNavigationRegressionID,
 			Kind:         "navigation",
 			RuleVersion:  siteQualityAuditRuleVersion,
 			Title:        "Client-side route transition regressed",
-			Description:  "A configured NuxtLink route transition was slow, leaked too much heap, fell back to hard navigation, or failed to change route.",
+			Description:  "A configured NuxtLink route transition was slow, leaked too much heap, or fell back to hard navigation.",
 			Severity:     siteQualityLatencySeverity(maxDuration),
 			DisplayValue: fmt.Sprintf("Slowest route transition %.0f ms", maxDuration),
 			NumericValue: &maxDuration,
 			SavingsMS:    &maxDuration,
-			Runtime:      siteQualitySoftNavigationRuntimeEvidence(offenders),
-		},
+			Runtime:      siteQualitySoftNavigationRuntimeEvidence(regressions),
+		})
+	}
+	return issues
+}
+
+func siteQualitySoftNavigationProbeFailureIssue(navigations []siteQualitySoftNavigationResult) LighthouseRunnerIssue {
+	count := float64(len(navigations))
+	return LighthouseRunnerIssue{
+		ID:           siteQualitySoftNavigationAuditFailedID,
+		Kind:         "navigation",
+		RuleVersion:  siteQualityAuditRuleVersion,
+		Title:        "Configured soft navigation probe failed",
+		Description:  "A configured NuxtLink route probe failed before route transition performance could be evaluated.",
+		Severity:     "medium",
+		DisplayValue: fmt.Sprintf("%d soft navigation probe(s) failed", len(navigations)),
+		NumericValue: &count,
+		Runtime:      siteQualitySoftNavigationRuntimeEvidence(navigations),
 	}
 }
 
@@ -256,6 +327,14 @@ func siteQualityRuntimeScanFailureIssue(id string, kind string, title string, re
 			{Status: "failed", Error: description},
 		},
 	}
+}
+
+func siteQualityRuntimeAuditSkipped(status string) bool {
+	return status == "skipped"
+}
+
+func siteQualityRuntimeAuditTimeoutSkipped(status string) bool {
+	return status == "timeout_skipped"
 }
 
 func siteQualityLatencySeverity(milliseconds float64) string {

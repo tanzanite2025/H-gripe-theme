@@ -1,12 +1,14 @@
 package service
 
 import (
+	productdomain "commerce-platform/internal/domain/product"
 	domainspoke "commerce-platform/internal/domain/spoke"
 	"commerce-platform/internal/repository"
 	"errors"
 	"fmt"
 	"math"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -17,7 +19,7 @@ var (
 	ErrInvalidSpokeCalculation  = errors.New("invalid spoke calculation input")
 	ErrInvalidSpokeCatalog      = errors.New("invalid spoke catalog")
 	spokeCalculationFormulaName = "v1.1-go-backend"
-	spokeCatalogIDPattern       = regexp.MustCompile(`^[a-z0-9][a-z0-9_-]{1,139}$`)
+	spokeCatalogIDPattern       = regexp.MustCompile(`^[a-z0-9][a-z0-9_-]{0,139}$`)
 )
 
 type SpokeService struct {
@@ -90,7 +92,12 @@ func (s *SpokeService) ReplaceCatalog(export domainspoke.ExportResponse) (domain
 		}
 	}
 
-	normalized, err := normalizeSpokeCatalog(export)
+	productBrands, err := s.spokeRepo.ListProductBrands(true)
+	if err != nil {
+		return domainspoke.ExportResponse{}, err
+	}
+
+	normalized, err := normalizeSpokeCatalog(export, productBrands)
 	if err != nil {
 		return domainspoke.ExportResponse{}, err
 	}
@@ -216,7 +223,7 @@ func roundSpokeRatio(value float64) float64 {
 	return math.Round(value*10000) / 10000
 }
 
-func normalizeSpokeCatalog(export domainspoke.ExportResponse) (domainspoke.ExportResponse, error) {
+func normalizeSpokeCatalog(export domainspoke.ExportResponse, productBrands []productdomain.ProductBrand) (domainspoke.ExportResponse, error) {
 	normalized := domainspoke.ExportResponse{
 		Options: domainspoke.DefaultOptions(),
 		Rims:    make([]domainspoke.RimBrand, 0, len(export.Rims)),
@@ -230,19 +237,26 @@ func normalizeSpokeCatalog(export domainspoke.ExportResponse) (domainspoke.Expor
 	hubBrandIDs := make(map[string]struct{})
 	hubModelIDs := make(map[string]struct{})
 	hubModelBrandIDs := make(map[string]string)
+	productBrandIDs := make(map[string]productdomain.ProductBrand, len(productBrands)*2)
 	allowedSpokeCounts := intOptionSet(normalized.Options.SpokeCounts)
 	allowedCrossings := intOptionSet(normalized.Options.Crossings)
 	allowedNippleTypes := stringOptionSet(normalized.Options.NippleTypes)
 	allowedWheelPositions := stringOptionSet(normalized.Options.WheelPositions)
+	for _, brand := range productBrands {
+		brandID := strconv.FormatUint(uint64(brand.ID), 10)
+		productBrandIDs[brandID] = brand
+		productBrandIDs[normalizeCatalogID(brand.Slug)] = brand
+	}
 
 	for _, brand := range export.Rims {
-		brand.ID = normalizeCatalogID(brand.ID)
-		brand.Name = strings.TrimSpace(brand.Name)
+		brandID, productBrand, exists := resolveProductBrandReference(brand.ID, productBrandIDs)
+		if !exists {
+			return domainspoke.ExportResponse{}, fmt.Errorf("%w: rim brand %q references an unknown product brand", ErrInvalidSpokeCatalog, brand.ID)
+		}
+		brand.ID = brandID
+		brand.Name = productBrand.Name
 		if err := validateCatalogID("rim brand id", brand.ID); err != nil {
 			return domainspoke.ExportResponse{}, err
-		}
-		if brand.Name == "" {
-			return domainspoke.ExportResponse{}, fmt.Errorf("%w: rim brand %q is missing name", ErrInvalidSpokeCatalog, brand.ID)
 		}
 		if _, exists := rimBrandIDs[brand.ID]; exists {
 			return domainspoke.ExportResponse{}, fmt.Errorf("%w: duplicate rim brand id %q", ErrInvalidSpokeCatalog, brand.ID)
@@ -336,6 +350,9 @@ func normalizeSpokeCatalog(export domainspoke.ExportResponse) (domainspoke.Expor
 		if preset.Name == "" {
 			return domainspoke.ExportResponse{}, fmt.Errorf("%w: preset %q is missing name", ErrInvalidSpokeCatalog, preset.ID)
 		}
+		if resolvedRimBrandID, _, exists := resolveProductBrandReference(preset.RimBrandID, productBrandIDs); exists {
+			preset.RimBrandID = resolvedRimBrandID
+		}
 		if _, exists := rimBrandIDs[preset.RimBrandID]; !exists {
 			return domainspoke.ExportResponse{}, fmt.Errorf("%w: preset %q references unknown rim brand %q", ErrInvalidSpokeCatalog, preset.ID, preset.RimBrandID)
 		}
@@ -415,6 +432,17 @@ func floatInRange(value *float64, minValue, maxValue float64) bool {
 
 func normalizeCatalogID(value string) string {
 	return strings.ToLower(strings.TrimSpace(value))
+}
+
+func resolveProductBrandReference(reference string, brands map[string]productdomain.ProductBrand) (string, productdomain.ProductBrand, bool) {
+	normalized := normalizeCatalogID(reference)
+	if normalized == "" {
+		return "", productdomain.ProductBrand{}, false
+	}
+	if brand, exists := brands[normalized]; exists {
+		return normalizeCatalogID(brand.Slug), brand, true
+	}
+	return "", productdomain.ProductBrand{}, false
 }
 
 func normalizeWheelPosition(value string) string {

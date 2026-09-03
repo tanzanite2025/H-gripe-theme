@@ -182,10 +182,10 @@
       "is_indexable": true
     },
     {
-      "key": "policies-refund-return",
-      "path": "/policies/refund-return",
-      "label": "Refund and Return",
-      "description": "Refund and return policy",
+      "key": "policies-refund-cancellation",
+      "path": "/policies/refund-cancellation",
+      "label": "Refund & Cancellation Policy",
+      "description": "Refund & Cancellation Policy",
       "is_searchable": true,
       "is_checkable": true,
       "is_indexable": true

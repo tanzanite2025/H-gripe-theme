@@ -104,6 +104,18 @@
         @edit="emit('edit-level', $event)"
       />
     </TabsContent>
+
+    <TabsContent value="risk" class="space-y-3">
+      <PromotionRiskAnalysisPanel
+        :loading="promotionRiskLoading"
+        :analysis="promotionRiskAnalysis"
+        :error="promotionRiskError"
+        :format-currency="formatCurrency"
+        :format-date="formatDate"
+        :format-rate="formatRate"
+        @refresh="emit('refresh-promotion-risk-analysis')"
+      />
+    </TabsContent>
   </Tabs>
 </template>
 
@@ -114,6 +126,7 @@ import GiftCardTablePanel from '@/components/admin/marketing/GiftCardTablePanel.
 import LoyaltyPanel from '@/components/admin/marketing/LoyaltyPanel.vue'
 import LoyaltyProgramSettingsPanel from '@/components/admin/marketing/LoyaltyProgramSettingsPanel.vue'
 import MemberLevelTablePanel from '@/components/admin/marketing/MemberLevelTablePanel.vue'
+import PromotionRiskAnalysisPanel from '@/components/admin/marketing/PromotionRiskAnalysisPanel.vue'
 import type { AdminStatusTone } from '@/components/admin/AdminStatusBadge.vue'
 import { Tabs, TabsContent } from '@/components/ui/tabs'
 import type {
@@ -130,6 +143,7 @@ import type {
   MarketingPagination,
   MarketingStatusDisplay,
   MemberLevel,
+  PromotionRiskAnalysis,
 } from '@/modules/marketing/marketingTypes'
 
 withDefaults(defineProps<{
@@ -172,6 +186,9 @@ withDefaults(defineProps<{
   levelsLoading?: boolean
   levels?: MemberLevel[]
   levelsUsingFallback?: boolean
+  promotionRiskLoading?: boolean
+  promotionRiskAnalysis?: PromotionRiskAnalysis | null
+  promotionRiskError?: string | null
   formatRate: (value: unknown) => string
 }>(), {
   activeTab: 'coupons',
@@ -195,6 +212,9 @@ withDefaults(defineProps<{
   levelsLoading: false,
   levels: () => [],
   levelsUsingFallback: false,
+  promotionRiskLoading: false,
+  promotionRiskAnalysis: null,
+  promotionRiskError: null,
 })
 
 const emit = defineEmits<{
@@ -218,6 +238,7 @@ const emit = defineEmits<{
   (event: 'create-level'): void
   (event: 'edit-level', level: MemberLevel): void
   (event: 'delete-level', level: MemberLevel): void
+  (event: 'refresh-promotion-risk-analysis'): void
 }>()
 </script>
 

@@ -93,7 +93,8 @@ func buildCarrierServiceQuoteOption(
 		chargeWeightGrams = volumetricWeightGrams
 	case "greater_of_actual_and_volumetric":
 		if !hasVolumetricWeight {
-			return ShippingQuoteOption{}, false
+			chargeWeightGrams = actualWeightGrams
+			break
 		}
 		chargeWeightGrams = maxInt(actualWeightGrams, volumetricWeightGrams)
 	}
@@ -354,10 +355,23 @@ func shippingRuleMatchesValue(rule shipping.ShippingRule, value float64) bool {
 
 func calculateRuleFee(rule shipping.ShippingRule, value float64) float64 {
 	fee := rule.Fee
-	if rule.Additional > 0 && value > rule.MinValue {
-		fee += math.Ceil(value-rule.MinValue) * rule.Additional
+	additionalUnits := calculateRuleAdditionalUnits(rule, value)
+	if additionalUnits > 0 {
+		fee += float64(additionalUnits) * rule.Additional
 	}
 	return fee
+}
+
+func calculateRuleAdditionalUnits(rule shipping.ShippingRule, value float64) int {
+	if rule.Additional <= 0 || value <= rule.MinValue {
+		return 0
+	}
+
+	additionalUnits := int(math.Ceil(value-rule.MinValue)) - 1
+	if additionalUnits < 0 {
+		return 0
+	}
+	return additionalUnits
 }
 
 func templateFeeDisplayPrices(template *shipping.ShippingTemplate) []currency.DisplayPriceSnapshot {
@@ -370,10 +384,7 @@ func templateFeeDisplayPrices(template *shipping.ShippingTemplate) []currency.Di
 
 func ruleFeeDisplayPrices(rule shipping.ShippingRule, value float64) []currency.DisplayPriceSnapshot {
 	snapshots := currency.ParseDisplayPriceSnapshotMap(rule.DisplayPriceData, shipping.ShippingRuleDisplayPriceFields...)
-	additionalUnits := 0
-	if rule.Additional > 0 && value > rule.MinValue {
-		additionalUnits = int(math.Ceil(value - rule.MinValue))
-	}
+	additionalUnits := calculateRuleAdditionalUnits(rule, value)
 
 	needsFee := rule.Fee > 0
 	needsAdditional := additionalUnits > 0 && rule.Additional > 0
@@ -591,6 +602,80 @@ func sortedDisplayPriceCurrencyCodes(values map[string]struct{}) []string {
 	return codes
 }
 
+var shippingEUCountryCodes = map[string]struct{}{
+	"AT": {},
+	"BE": {},
+	"BG": {},
+	"HR": {},
+	"CY": {},
+	"CZ": {},
+	"DE": {},
+	"DK": {},
+	"EE": {},
+	"ES": {},
+	"FI": {},
+	"FR": {},
+	"GR": {},
+	"HU": {},
+	"IE": {},
+	"IT": {},
+	"LT": {},
+	"LU": {},
+	"LV": {},
+	"MT": {},
+	"NL": {},
+	"PL": {},
+	"PT": {},
+	"RO": {},
+	"SE": {},
+	"SI": {},
+	"SK": {},
+}
+
+var shippingEEACountryCodes = map[string]struct{}{
+	"AT": {},
+	"BE": {},
+	"BG": {},
+	"CY": {},
+	"CZ": {},
+	"DE": {},
+	"DK": {},
+	"EE": {},
+	"ES": {},
+	"FI": {},
+	"FR": {},
+	"GR": {},
+	"HR": {},
+	"HU": {},
+	"IS": {},
+	"IE": {},
+	"IT": {},
+	"LI": {},
+	"LT": {},
+	"LU": {},
+	"LV": {},
+	"MT": {},
+	"NL": {},
+	"NO": {},
+	"PL": {},
+	"PT": {},
+	"RO": {},
+	"SE": {},
+	"SI": {},
+	"SK": {},
+}
+
+// shippingRegionCountryCodes maps supported shipping region macros to ISO alpha-2 country codes.
+var shippingRegionCountryCodes = map[string]map[string]struct{}{
+	"EU":                     shippingEUCountryCodes,
+	"EU27":                   shippingEUCountryCodes,
+	"EUROPEAN_UNION":         shippingEUCountryCodes,
+	"EUROPEAN UNION":         shippingEUCountryCodes,
+	"EEA":                    shippingEEACountryCodes,
+	"EUROPEAN_ECONOMIC_AREA": shippingEEACountryCodes,
+	"EUROPEAN ECONOMIC AREA": shippingEEACountryCodes,
+}
+
 func shippingRuleMatchesCountry(region string, country string) bool {
 	normalizedCountry := strings.ToUpper(strings.TrimSpace(country))
 	if normalizedCountry == "" {
@@ -607,12 +692,21 @@ func shippingRuleMatchesCountry(region string, country string) bool {
 		case "*", "ALL", "GLOBAL", "WORLDWIDE":
 			return true
 		default:
-			if candidate == normalizedCountry {
+			if candidate == normalizedCountry || shippingRegionMatchesCountry(candidate, normalizedCountry) {
 				return true
 			}
 		}
 	}
 	return false
+}
+
+func shippingRegionMatchesCountry(region string, country string) bool {
+	countries, ok := shippingRegionCountryCodes[region]
+	if !ok {
+		return false
+	}
+	_, ok = countries[country]
+	return ok
 }
 
 func normalizeShippingRegions(region string) []string {

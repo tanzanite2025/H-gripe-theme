@@ -2,6 +2,7 @@ package config
 
 import (
 	"commerce-platform/internal/pkg/locales"
+	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
@@ -1699,6 +1700,12 @@ func validateSiteQualityRunnerAccuracyConfig(cfg SiteQualityConfig) error {
 	}
 	if len(strings.TrimSpace(cfg.InteractionProbes)) > 4096 {
 		return fmt.Errorf("SITE_QUALITY_INTERACTION_PROBES must be at most 4096 characters")
+	}
+	if text := strings.TrimSpace(cfg.InteractionProbes); text != "" {
+		var raw []json.RawMessage
+		if !strings.HasPrefix(text, "[") || json.Unmarshal([]byte(text), &raw) != nil {
+			return fmt.Errorf("SITE_QUALITY_INTERACTION_PROBES must be a valid JSON array string")
+		}
 	}
 	if cfg.InteractionMaxResponseMillis < 50 || cfg.InteractionMaxResponseMillis > 2000 {
 		return fmt.Errorf("SITE_QUALITY_INTERACTION_MAX_RESPONSE_MS must be between 50 and 2000")

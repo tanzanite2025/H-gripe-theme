@@ -5,6 +5,7 @@ import (
 	"commerce-platform/internal/repository"
 	"errors"
 	"fmt"
+	"time"
 )
 
 func (s *OrderService) CancelOrder(id uint, userID uint) error {
@@ -17,8 +18,8 @@ func (s *OrderService) CancelOrder(id uint, userID uint) error {
 		return errors.New("unauthorized")
 	}
 
-	if o.Status != "pending" && o.Status != "paid" {
-		return errors.New("order cannot be cancelled")
+	if err := validateOrderCancellation(o); err != nil {
+		return err
 	}
 
 	return s.cancelOrderWithRollback(o)
@@ -36,8 +37,8 @@ func (s *OrderService) CancelOrderByNumber(orderNumber string, userID uint) erro
 	if o.UserID != userID {
 		return errors.New("unauthorized")
 	}
-	if o.Status != "pending" && o.Status != "paid" {
-		return errors.New("order cannot be cancelled")
+	if err := validateOrderCancellation(o); err != nil {
+		return err
 	}
 
 	return s.cancelOrderWithRollback(o)
@@ -46,11 +47,23 @@ func (s *OrderService) CancelOrderByNumber(orderNumber string, userID uint) erro
 func (s *OrderService) cancelOrderWithRollback(o *order.Order) error {
 	var affectedProductIDs []uint
 	err := s.txManager.WithinTx(func(repos repository.TxRepositories) error {
-		if err := repos.Order.UpdateStatus(o.ID, "cancelled"); err != nil {
+		lockedOrder, err := repos.Order.FindByIDForUpdateWithItems(o.ID)
+		if err != nil {
+			return normalizeOrderError(err)
+		}
+		if err := validateOrderCancellation(lockedOrder); err != nil {
 			return err
 		}
 
-		productIDs, err := rollbackOrderReservationsInTx(repos, o, "cancelled")
+		cancelled, err := repos.Order.MarkCancelledIfPendingUnpaid(lockedOrder.ID, time.Now().UTC())
+		if err != nil {
+			return err
+		}
+		if !cancelled {
+			return ErrOrderCancellationConflict
+		}
+
+		productIDs, err := rollbackOrderReservationsInTx(repos, lockedOrder, "cancelled")
 		if err != nil {
 			return err
 		}
@@ -64,6 +77,22 @@ func (s *OrderService) cancelOrderWithRollback(o *order.Order) error {
 		return err
 	}
 	s.invalidateProductCacheAfterStockCommit(affectedProductIDs)
+	return nil
+}
+
+func validateOrderCancellation(o *order.Order) error {
+	if o == nil {
+		return ErrOrderNotFound
+	}
+	if o.Status == "paid" || o.PaymentStatus == "paid" {
+		return ErrPaidOrderCancellationNotAllowed
+	}
+	if o.Status == "cancelled" {
+		return ErrOrderCancellationConflict
+	}
+	if o.Status != "pending" || o.PaymentStatus != "unpaid" {
+		return errors.New("order cannot be cancelled")
+	}
 	return nil
 }
 
@@ -104,8 +133,8 @@ func rollbackOrderReservationsInTx(repos repository.TxRepositories, o *order.Ord
 				return nil, fmt.Errorf("[CRITICAL] Failed to restore coupon usage limit: %w", err)
 			}
 
-			if err := repos.Coupon.DeleteCouponUsageByOrderID(o.ID); err != nil {
-				return nil, fmt.Errorf("[CRITICAL] Failed to delete coupon usage log: %w", err)
+			if err := repos.Coupon.ReverseCouponUsageByOrderID(o.ID, time.Now().UTC(), reason); err != nil {
+				return nil, fmt.Errorf("[CRITICAL] Failed to reverse coupon usage log: %w", err)
 			}
 		}
 	}

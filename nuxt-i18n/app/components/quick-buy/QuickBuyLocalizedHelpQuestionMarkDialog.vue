@@ -53,6 +53,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { createDialogStackId, useDialogStack } from '~/composables/useDialogStack'
 
 const props = withDefaults(defineProps<{
   title: string
@@ -68,6 +69,9 @@ const isQuickBuyLocalizedHelpDialogOpen = ref(false)
 const quickBuyLocalizedHelpDialogRoot = ref<HTMLElement | null>(null)
 const quickBuyLocalizedHelpDialogRef = ref<HTMLElement | null>(null)
 const quickBuyLocalizedHelpDialogStyle = ref<Record<string, string>>({})
+const dialogStack = useDialogStack()
+const dialogStackId = createDialogStackId('quickbuy-localized-help-dialog')
+let unregisterDialogStack: (() => void) | null = null
 
 const normalizedLocalizedHelpContent = computed(() => String(props.content || '').trim())
 const hasLocalizedHelpContent = computed(() => normalizedLocalizedHelpContent.value.length > 0)
@@ -135,12 +139,6 @@ const updateQuickBuyLocalizedHelpDialogPosition = async () => {
   }
 }
 
-const closeQuickBuyLocalizedHelpDialogWhenEscapeIsPressed = (event: KeyboardEvent) => {
-  if (event.key === 'Escape') {
-    closeQuickBuyLocalizedHelpDialog()
-  }
-}
-
 const closeQuickBuyLocalizedHelpDialogWhenClickingOutside = (event: PointerEvent) => {
   const target = event.target
   if (
@@ -152,16 +150,31 @@ const closeQuickBuyLocalizedHelpDialogWhenClickingOutside = (event: PointerEvent
   }
 }
 
+const syncDialogStack = (isOpen: boolean) => {
+  if (isOpen && !unregisterDialogStack) {
+    unregisterDialogStack = dialogStack.register(dialogStackId, () => {
+      closeQuickBuyLocalizedHelpDialog()
+    }, {
+      priority: 10045,
+    })
+    return
+  }
+
+  if (!isOpen && unregisterDialogStack) {
+    unregisterDialogStack()
+    unregisterDialogStack = null
+  }
+}
+
 watch(isQuickBuyLocalizedHelpDialogOpen, (isOpen) => {
   if (typeof window === 'undefined') return
+  syncDialogStack(isOpen)
   if (isOpen) {
-    window.addEventListener('keydown', closeQuickBuyLocalizedHelpDialogWhenEscapeIsPressed)
     document.addEventListener('pointerdown', closeQuickBuyLocalizedHelpDialogWhenClickingOutside, true)
     window.addEventListener('resize', updateQuickBuyLocalizedHelpDialogPosition)
     window.addEventListener('scroll', updateQuickBuyLocalizedHelpDialogPosition, true)
     void updateQuickBuyLocalizedHelpDialogPosition()
   } else {
-    window.removeEventListener('keydown', closeQuickBuyLocalizedHelpDialogWhenEscapeIsPressed)
     document.removeEventListener('pointerdown', closeQuickBuyLocalizedHelpDialogWhenClickingOutside, true)
     window.removeEventListener('resize', updateQuickBuyLocalizedHelpDialogPosition)
     window.removeEventListener('scroll', updateQuickBuyLocalizedHelpDialogPosition, true)
@@ -170,8 +183,8 @@ watch(isQuickBuyLocalizedHelpDialogOpen, (isOpen) => {
 })
 
 onBeforeUnmount(() => {
+  syncDialogStack(false)
   if (typeof window !== 'undefined') {
-    window.removeEventListener('keydown', closeQuickBuyLocalizedHelpDialogWhenEscapeIsPressed)
     document.removeEventListener('pointerdown', closeQuickBuyLocalizedHelpDialogWhenClickingOutside, true)
     window.removeEventListener('resize', updateQuickBuyLocalizedHelpDialogPosition)
     window.removeEventListener('scroll', updateQuickBuyLocalizedHelpDialogPosition, true)

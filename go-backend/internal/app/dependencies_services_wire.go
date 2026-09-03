@@ -89,7 +89,7 @@ func (b *dependencyServicesBuilder) wire() error {
 	)
 	services.Order.ConfigureProductCacheInvalidator(services.Product)
 	services.Order.ConfigureProductCacheEventPublisher(b.productCacheOutboxPublisher)
-	services.Order.ConfigureRefundReturnPolicy(services.RefundReturnPolicy)
+	services.Order.ConfigureRefundCancellationPolicy(services.RefundCancellationPolicy)
 	services.Payment = service.NewPaymentService(support.TxManager, repos.Payment)
 	services.Payment.ConfigureProductCacheInvalidator(services.Product)
 	services.Payment.ConfigureProductCacheEventPublisher(b.productCacheOutboxPublisher)

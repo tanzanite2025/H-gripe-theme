@@ -421,7 +421,7 @@
 			:mobile-anchor="mobileContentNavigationTriggerRef"
 			@select="handleContentNavigationOption"
 		/>
-		<LazyGlobalAllFaqsSearchOverlay
+		<LazyFaqGlobalAllFaqsSearchOverlay
 			v-if="globalFaqSearchMounted"
 			:open="globalFaqSearchOpen"
 			@close="closeGlobalFaqSearch"
@@ -509,10 +509,13 @@ const mobileTopbarRef = ref<HTMLElement | null>(null)
 const mobilePrimaryNavRef = ref<HTMLElement | null>(null)
 const desktopContentNavigationTriggerRef = ref<HTMLElement | null>(null)
 const mobileContentNavigationTriggerRef = ref<HTMLElement | null>(null)
+// Keep the SSR layout branch stable after hydration so the header DOM does not
+// swap once the client knows the real viewport width.
 const isMobileViewport = useState(
   'site-header-is-mobile-viewport',
   () => isStorefrontMobileUserAgent(useRequestHeaders(['user-agent'])['user-agent']),
 )
+const isCompactViewport = ref(isMobileViewport.value)
 let headerResizeObserver: ResizeObserver | null = null
 let headerMetricsFrame: number | null = null
 const appliedHeaderMetrics = new Map<string, string>()
@@ -589,7 +592,7 @@ const updateHeaderOffset = () => {
   const mobileNavRect = mobilePrimaryNavRef.value?.getBoundingClientRect()
   const mobileMegaTop = Math.max(0, Math.ceil((mobileNavRect?.bottom ?? rect.bottom) + 2))
 
-  isMobileViewport.value = window.innerWidth < 1280
+  isCompactViewport.value = window.innerWidth < 1280
 
   const metrics = [
     // Overlay geometry may be measured after mount; document-flow spacers must not use it.
@@ -723,16 +726,16 @@ const handleContentNavigationOption = (option: ContentNavigationOptionId) => {
 		return
 	}
 
-	if (option !== 'products') return
+  if (option !== 'products') return
 
-	closeContentNavigationTransition('navigate')
+  closeContentNavigationTransition('navigate')
 
-	if (isMobileViewport.value) {
-		if (typeof window !== 'undefined') {
-			window.dispatchEvent(new CustomEvent('ui:product-category-sidebar-open'))
-		}
-		return
-	}
+  if (isCompactViewport.value) {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('ui:product-category-sidebar-open'))
+    }
+    return
+  }
 
 	void router.push(localePath('/shop'))
 }
@@ -859,7 +862,7 @@ const breadcrumbLabelDefinitions: Record<string, BreadcrumbLabelDefinition> = {
   '/policies': { labelKey: 'footer.menus.policies', fallback: 'Policies' },
   '/policies/cookie': { fallback: 'Cookie Policy' },
   '/policies/privacy': { fallback: 'Privacy Policy' },
-  '/policies/refund-return': { fallback: 'Refund & Return Policy' },
+  '/policies/refund-cancellation': { fallback: 'Refund & Cancellation Policy' },
   '/policies/terms': { fallback: 'Terms of Service' },
   '/shop': { labelKey: 'products.nav.shop', fallback: 'Shop' },
   '/resources/spoke-calculator': { labelKey: 'support.nav.spokeCalculator', fallback: 'Spoke Calculator' },

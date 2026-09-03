@@ -32,6 +32,7 @@ func registerBusinessRoutes(
 	{
 		// 营销统计
 		marketingGroup.GET("/stats", marketingHandler.GetMarketingStats)
+		marketingGroup.GET("/risk-analysis", marketingHandler.GetPromotionRiskAnalysis)
 
 		// 优惠券管理
 		couponsGroup := marketingGroup.Group("/coupons")

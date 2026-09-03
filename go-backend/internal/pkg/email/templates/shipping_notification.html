@@ -1,0 +1,31 @@
+<!doctype html>
+<html>
+  <body style="margin:0;background:#f6f7fb;color:#1f2937;font-family:Arial,Helvetica,sans-serif;">
+    <div style="max-width:640px;margin:0 auto;padding:32px 20px;">
+      <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:8px;padding:28px;">
+        <p style="margin:0 0 16px;font-size:14px;color:#6b7280;">Shipping update</p>
+        <h1 style="margin:0 0 18px;font-size:24px;line-height:1.25;color:#111827;">Your order is on the way</h1>
+        {{$customerName := field . "CustomerName" "Name" "customer_name"}}
+        {{$orderNumber := field . "OrderNumber" "OrderNo" "Number" "order_number"}}
+        {{$carrier := field . "Carrier" "CarrierName" "Provider" "carrier" "carrier_name"}}
+        {{$trackingNumber := field . "TrackingNumber" "TrackingNo" "tracking_number" "tracking_no"}}
+        {{$trackingURL := field . "TrackingURL" "TrackingLink" "URL" "tracking_url" "tracking_link"}}
+        <p style="margin:0 0 16px;font-size:16px;line-height:1.6;">
+          {{if $customerName}}Hi {{$customerName}},{{else}}Hi,{{end}} your package has shipped.
+        </p>
+        {{if $orderNumber}}
+        <p style="margin:0 0 8px;font-size:15px;line-height:1.6;"><strong>Order:</strong> {{$orderNumber}}</p>
+        {{end}}
+        {{if $carrier}}
+        <p style="margin:0 0 8px;font-size:15px;line-height:1.6;"><strong>Carrier:</strong> {{$carrier}}</p>
+        {{end}}
+        {{if $trackingNumber}}
+        <p style="margin:0 0 8px;font-size:15px;line-height:1.6;"><strong>Tracking:</strong> {{$trackingNumber}}</p>
+        {{end}}
+        {{if $trackingURL}}
+        <p style="margin:18px 0 0;font-size:15px;line-height:1.6;"><a href="{{$trackingURL}}" style="color:#2563eb;">View tracking details</a></p>
+        {{end}}
+      </div>
+    </div>
+  </body>
+</html>

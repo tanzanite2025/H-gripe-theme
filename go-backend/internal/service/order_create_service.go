@@ -4,6 +4,7 @@ import (
 	"commerce-platform/internal/domain/coupon"
 	"commerce-platform/internal/domain/currency"
 	"commerce-platform/internal/domain/order"
+	paymentdomain "commerce-platform/internal/domain/payment"
 	attributionpkg "commerce-platform/internal/pkg/attribution"
 	"commerce-platform/internal/pkg/logger"
 	paymentpkg "commerce-platform/internal/pkg/payment"
@@ -30,6 +31,7 @@ type OrderCreationOptions struct {
 var ErrOrderPolicyDisclosureFailure = errors.New("order policy disclosure capture failed")
 
 const orderCreateIdempotencyScope = "order_create"
+const zeroTotalSettlementPaymentMethod = "zero_total"
 
 func (s *OrderService) CreateOrder(
 	ctx context.Context,
@@ -183,7 +185,7 @@ func (s *OrderService) CreateOrderWithAttributionAndOptions(
 			return err
 		}
 		orderCurrency := quote.Currency
-		if provider := paymentpkg.ProviderForPaymentMethod(paymentMethod); provider != "" {
+		if provider := paymentpkg.ProviderForPaymentMethod(paymentMethod); provider != "" && quote.TotalAmount > 0 {
 			if err := paymentpkg.ValidateGatewayCurrency(paymentpkg.GatewayType(provider), orderCurrency); err != nil {
 				return fmt.Errorf(
 					"payment method %s cannot process order currency %s: %w",
@@ -212,6 +214,16 @@ func (s *OrderService) CreateOrderWithAttributionAndOptions(
 		if shippingMethodSnapshot == "" {
 			shippingMethodSnapshot = "standard"
 		}
+		isZeroTotalOrder := quote.TotalAmount <= 0
+		orderStatus := "pending"
+		paymentStatus := "unpaid"
+		var paidAt *time.Time
+		if isZeroTotalOrder {
+			paidAtValue := time.Now().UTC()
+			orderStatus = "processing"
+			paymentStatus = "paid"
+			paidAt = &paidAtValue
+		}
 
 		orderNumber, err := s.generateOrderNumber()
 		if err != nil {
@@ -221,9 +233,9 @@ func (s *OrderService) CreateOrderWithAttributionAndOptions(
 		o := &order.Order{
 			OrderNumber:      orderNumber,
 			UserID:           userID,
-			Status:           "pending",
+			Status:           orderStatus,
 			PaymentMethod:    paymentMethod,
-			PaymentStatus:    "unpaid",
+			PaymentStatus:    paymentStatus,
 			ShippingMethod:   shippingMethodSnapshot,
 			ShippingStatus:   "pending",
 			CarrierID:        carrierID,
@@ -241,6 +253,7 @@ func (s *OrderService) CreateOrderWithAttributionAndOptions(
 			Items:            quote.Items,
 			ShippingAddress:  shippingAddress,
 			BillingAddress:   billingAddress,
+			PaidAt:           paidAt,
 		}
 
 		variantItemsMap := make(map[uint]int)
@@ -262,13 +275,18 @@ func (s *OrderService) CreateOrderWithAttributionAndOptions(
 		if err := repos.Order.Create(o); err != nil {
 			return fmt.Errorf("[CRITICAL] Failed to create order in database: %w", err)
 		}
+		if isZeroTotalOrder {
+			if err := settleZeroTotalOrderInTx(repos, o, orderCurrency, paidAt); err != nil {
+				return fmt.Errorf("[CRITICAL] Failed to settle zero-total order ID %d: %w", o.ID, err)
+			}
+		}
 		if idempotencyRecord != nil {
 			if err := repos.OrderIdempotency.BindOrderID(idempotencyRecord.ID, o.ID); err != nil {
 				return fmt.Errorf("[CRITICAL] Failed to bind order idempotency record: %w", err)
 			}
 		}
 		createdOrder = o
-		if s.refundReturnPolicy != nil {
+		if s.refundCancellationPolicy != nil {
 			if repos.PolicyDisclosure == nil || repos.Setting == nil {
 				return fmt.Errorf("%w: repositories are not configured", ErrOrderPolicyDisclosureFailure)
 			}
@@ -277,7 +295,7 @@ func (s *OrderService) CreateOrderWithAttributionAndOptions(
 				value := time.Now().UTC()
 				consentedAt = &value
 			}
-			disclosure, err := s.refundReturnPolicy.BuildOrderDisclosure(
+			disclosure, err := s.refundCancellationPolicy.BuildOrderDisclosure(
 				repos.Setting,
 				o.ID,
 				options.PolicyLocale,
@@ -286,10 +304,10 @@ func (s *OrderService) CreateOrderWithAttributionAndOptions(
 				consentedAt,
 			)
 			if err != nil {
-				return fmt.Errorf("[CRITICAL] %w: capture refund and return policy disclosure: %w", ErrOrderPolicyDisclosureFailure, err)
+				return fmt.Errorf("[CRITICAL] %w: capture refund and cancellation policy disclosure: %w", ErrOrderPolicyDisclosureFailure, err)
 			}
 			if err := repos.PolicyDisclosure.Create(disclosure); err != nil {
-				return fmt.Errorf("[CRITICAL] %w: save refund and return policy disclosure: %w", ErrOrderPolicyDisclosureFailure, err)
+				return fmt.Errorf("[CRITICAL] %w: save refund and cancellation policy disclosure: %w", ErrOrderPolicyDisclosureFailure, err)
 			}
 		}
 		if err := persistOrderAttribution(repos.OrderAttribution, o.ID, attributionContext); err != nil {
@@ -336,6 +354,45 @@ func (s *OrderService) CreateOrderWithAttributionAndOptions(
 	s.invalidateProductCacheAfterStockCommit(affectedProductIDs)
 
 	return createdOrder, nil
+}
+
+func settleZeroTotalOrderInTx(repos repository.TxRepositories, o *order.Order, orderCurrency string, paidAt *time.Time) error {
+	if repos.Payment == nil {
+		return errors.New("payment transaction repository is not configured")
+	}
+	if o == nil {
+		return errors.New("order is required")
+	}
+	settledAt := time.Now().UTC()
+	if paidAt != nil && !paidAt.IsZero() {
+		settledAt = paidAt.UTC()
+	}
+	transactionID := zeroTotalOrderTransactionID(o.ID)
+	transaction := &paymentdomain.Transaction{
+		OrderID:         o.ID,
+		TransactionID:   transactionID,
+		PaymentMethod:   zeroTotalSettlementPaymentMethod,
+		Amount:          0,
+		Currency:        orderCurrency,
+		Status:          "completed",
+		GatewayResponse: `{"settlement":"zero_total","reason":"discounts_cover_total"}`,
+		CompletedAt:     &settledAt,
+	}
+	if _, err := repos.Payment.CreateTransactionIfAbsent(transaction); err != nil {
+		return err
+	}
+	return enqueueOrderPaidOutboxEvent(repos.Outbox, o, VerifiedGatewayPaymentInput{
+		Provider:      zeroTotalSettlementPaymentMethod,
+		OrderNumber:   o.OrderNumber,
+		TransactionID: transactionID,
+		PaymentMethod: zeroTotalSettlementPaymentMethod,
+		Amount:        0,
+		Currency:      orderCurrency,
+	}, settledAt)
+}
+
+func zeroTotalOrderTransactionID(orderID uint) string {
+	return fmt.Sprintf("zero-total-%d", orderID)
 }
 
 func shippingQuoteOptionSnapshot(option ShippingQuoteOption) string {

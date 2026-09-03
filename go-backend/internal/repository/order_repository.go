@@ -128,6 +128,23 @@ func (r *OrderRepository) UpdateStatus(id uint, status string) error {
 	return r.db.Model(&order.Order{}).Where("id = ?", id).Updates(updates).Error
 }
 
+// MarkCancelledIfPendingUnpaid atomically claims cancellation for an unpaid
+// pending order. The affected-row check prevents duplicate rollback work when
+// cancellation requests race.
+func (r *OrderRepository) MarkCancelledIfPendingUnpaid(id uint, cancelledAt time.Time) (bool, error) {
+	if cancelledAt.IsZero() {
+		cancelledAt = time.Now().UTC()
+	}
+	result := r.db.Model(&order.Order{}).
+		Where("id = ? AND status = ? AND payment_status = ?", id, "pending", "unpaid").
+		Updates(map[string]interface{}{
+			"status":       "cancelled",
+			"cancelled_at": cancelledAt,
+			"updated_at":   cancelledAt,
+		})
+	return result.RowsAffected == 1, result.Error
+}
+
 func (r *OrderRepository) MarkPaymentExpired(id uint, expiredAt time.Time) error {
 	if expiredAt.IsZero() {
 		expiredAt = time.Now()

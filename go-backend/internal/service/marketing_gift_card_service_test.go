@@ -96,6 +96,8 @@ func newTestMarketingService(t *testing.T) (*gorm.DB, *MarketingService) {
 		&coupon.GiftCard{},
 		&coupon.GiftCardTransaction{},
 		&loyalty.LoyaltyTransaction{},
+		&loyalty.ProgramConfig{},
+		&loyalty.ProgramRedeemOption{},
 		&loyalty.MemberLevel{},
 		&loyalty.UserLoyalty{},
 		&product.Product{},

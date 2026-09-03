@@ -1,4 +1,4 @@
-package refundreturn
+package refundcancellation
 
 import (
 	"errors"
@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	Group = "refund_return"
-	Key   = "refund_return_policy"
+	Group = "refund_cancellation"
+	Key   = "refund_cancellation_policy"
 )
 
 var nonAnchorIDChars = regexp.MustCompile(`[^a-z0-9_-]+`)
@@ -42,8 +42,8 @@ type Policy struct {
 
 func DefaultPolicy() Policy {
 	return Policy{
-		Title: "Refund & Return Policy",
-		Intro: "How we handle returns, refunds, and exchanges to keep your experience predictable and fair.",
+		Title: "Refund & Cancellation Policy",
+		Intro: "How we handle cancellations, refunds, returns, and exchanges to keep your experience predictable and fair.",
 		Sections: []Section{
 			{
 				ID:    "eligibility",
@@ -95,7 +95,7 @@ func DefaultPolicy() Policy {
 				Body:  "For exchanges, please initiate a return first, then place a new order once the return is approved. This ensures availability and faster processing.",
 			},
 		},
-		ContactLabel: "For refund or return questions, contact our support team through the contact page.",
+		ContactLabel: "For refund, cancellation, or return questions, contact our support team through the contact page.",
 		ContactURL:   "/company/contact",
 		UpdatedAt:    time.Date(2024, time.December, 1, 0, 0, 0, 0, time.UTC).Format(time.RFC3339),
 	}
@@ -184,7 +184,7 @@ func sectionAnchorID(value string, index int) string {
 	if normalized == "" {
 		normalized = "section-" + strconv.Itoa(index+1)
 	}
-	return "refund-return-" + normalized
+	return "refund-cancellation-" + normalized
 }
 
 func normalizeLines(lines []string) []string {

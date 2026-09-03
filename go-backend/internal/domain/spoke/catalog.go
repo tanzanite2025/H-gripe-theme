@@ -3,19 +3,23 @@ package spoke
 import (
 	"time"
 
+	productdomain "commerce-platform/internal/domain/product"
+
 	"gorm.io/gorm"
 )
 
 type CatalogRimBrand struct {
-	ID        uint              `gorm:"primarykey"`
-	Code      string            `gorm:"size:80;not null;uniqueIndex:idx_spoke_rim_brands_code"`
-	Name      string            `gorm:"size:160;not null"`
-	SortOrder int               `gorm:"not null;default:0;index"`
-	IsEnabled bool              `gorm:"not null;default:true;index"`
-	Models    []CatalogRimModel `gorm:"foreignKey:BrandID"`
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	DeletedAt gorm.DeletedAt `gorm:"index"`
+	ID             uint                       `gorm:"primarykey"`
+	Code           string                     `gorm:"size:80;not null;uniqueIndex:idx_spoke_rim_brands_code"`
+	Name           string                     `gorm:"size:160;not null"`
+	ProductBrandID *uint                      `gorm:"column:product_brand_id;uniqueIndex:idx_spoke_rim_brands_product_brand_id;index" json:"-"`
+	ProductBrand   productdomain.ProductBrand `gorm:"foreignKey:ProductBrandID;references:ID" json:"-"`
+	SortOrder      int                        `gorm:"not null;default:0;index"`
+	IsEnabled      bool                       `gorm:"not null;default:true;index"`
+	Models         []CatalogRimModel          `gorm:"foreignKey:BrandID"`
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+	DeletedAt      gorm.DeletedAt `gorm:"index"`
 }
 
 func (CatalogRimBrand) TableName() string {

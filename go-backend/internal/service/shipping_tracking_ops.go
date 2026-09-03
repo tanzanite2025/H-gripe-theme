@@ -118,10 +118,22 @@ func (s *ShippingService) ApplyTrackingWebhook(input TrackingWebhookInput) (*Tra
 	}
 
 	events := trackingWebhookEventsToDomainEvents(shipment.OrderID, trackingNumber, providerCarrierCode, input)
-	if err := s.shippingRepo.ReplaceTrackingEvents(shipment.OrderID, trackingNumber, events); err != nil {
+	if err := s.shippingRepo.UpsertTrackingEvents(shipment.OrderID, trackingNumber, events); err != nil {
 		return nil, err
 	}
-	if err := s.shippingRepo.UpdateTrackingShipmentSyncSuccess(shipment.OrderID, len(events), latestTrackingEventTime(events), nil); err != nil {
+	persistedEvents, err := s.shippingRepo.FindTrackingEventsByOrderID(shipment.OrderID)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.shippingRepo.UpdateTrackingShipmentSyncSuccess(shipment.OrderID, len(persistedEvents), latestTrackingEventTime(persistedEvents), nil); err != nil {
+		return nil, err
+	}
+	if err := s.updateOrderShippingStatusIfDelivered(
+		shipment.OrderID,
+		input.Status,
+		input.StatusCode,
+		events,
+	); err != nil {
 		return nil, err
 	}
 
@@ -294,12 +306,27 @@ func (s *ShippingService) SyncTracking(ctx context.Context, input TrackingSyncIn
 	}
 
 	events := trackingInfoToDomainEvents(input.OrderID, trackingNumber, providerCarrierCode, info)
-	if err := s.shippingRepo.ReplaceTrackingEvents(input.OrderID, trackingNumber, events); err != nil {
+	if err := s.shippingRepo.UpsertTrackingEvents(input.OrderID, trackingNumber, events); err != nil {
 		_ = s.shippingRepo.UpdateTrackingShipmentSyncFailure(input.OrderID, err.Error(), nextTrackingSyncAt(provider, time.Now()))
 		return nil, err
 	}
-	if err := s.shippingRepo.UpdateTrackingShipmentSyncSuccess(input.OrderID, len(events), latestTrackingEventTime(events), nextTrackingSyncAt(provider, time.Now())); err != nil {
+	persistedEvents, err := s.shippingRepo.FindTrackingEventsByOrderID(input.OrderID)
+	if err != nil {
+		_ = s.shippingRepo.UpdateTrackingShipmentSyncFailure(input.OrderID, err.Error(), nextTrackingSyncAt(provider, time.Now()))
 		return nil, err
+	}
+	if err := s.shippingRepo.UpdateTrackingShipmentSyncSuccess(input.OrderID, len(persistedEvents), latestTrackingEventTime(persistedEvents), nextTrackingSyncAt(provider, time.Now())); err != nil {
+		return nil, err
+	}
+	if info != nil {
+		if err := s.updateOrderShippingStatusIfDelivered(
+			input.OrderID,
+			info.Status,
+			info.StatusCode,
+			events,
+		); err != nil {
+			return nil, err
+		}
 	}
 	shipment, err := s.GetTrackingShipmentByOrderID(input.OrderID)
 	if err != nil {

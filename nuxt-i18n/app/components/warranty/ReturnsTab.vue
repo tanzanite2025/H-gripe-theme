@@ -1,6 +1,6 @@
 <template>
   <section id="returns" class="support-section">
-    <RefundReturnPolicyContent
+    <RefundCancellationPolicyContent
       :contact-email="contactEmail"
       compact
     />
@@ -8,7 +8,7 @@
 </template>
 
 <script setup lang="ts">
-import RefundReturnPolicyContent from '~/components/RefundReturnPolicyContent.vue'
+import RefundCancellationPolicyContent from '~/components/RefundCancellationPolicyContent.vue'
 
 defineProps<{
   contactEmail?: string

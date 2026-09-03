@@ -53,23 +53,23 @@
       "description": "You can browse all products for now."
     }
   },
-  "refundReturnPolicy": {
+  "refundCancellationPolicy": {
     "error": {
-      "title": "The refund and return policy is unavailable",
-      "description": "Please contact support for help with a return or refund."
+      "title": "The refund and cancellation policy is unavailable",
+      "description": "Please contact support for help with a cancellation, return, or refund."
     },
     "loading": {
-      "title": "Loading the refund and return policy",
+      "title": "Loading the refund and cancellation policy",
       "description": "Preparing the current policy details."
     },
     "empty": {
-      "title": "The refund and return policy is not available",
-      "description": "Please contact support for help with a return or refund."
+      "title": "The refund and cancellation policy is not available",
+      "description": "Please contact support for help with a cancellation, return, or refund."
     },
     "contactSupport": "Contact Support",
     "lastUpdated": "Last Updated",
     "fallbackNotice": {
-      "title": "Showing the standard refund and return policy",
+      "title": "Showing the standard refund and cancellation policy",
       "description": "The current policy could not be loaded, so we are showing the standard version."
     }
   }

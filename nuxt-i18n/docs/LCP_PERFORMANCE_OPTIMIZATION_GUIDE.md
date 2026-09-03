@@ -10,6 +10,7 @@
 3. [第三层面：排除规则与计算终止边界](#3-第三层面排除规则与计算终止边界)
 4. [第四层面：浏览器底层持续监听与事件机制](#4-第四层面浏览器底层持续监听与事件机制)
 5. [第五层面：Nuxt/Vue 实战陷阱与深度调优攻略](#5-第五层面nuxtvue-实战陷阱与深度调优攻略)
+   * [5.3 当前项目：首页 Critical CSS 管线](#53-当前项目首页-critical-css-管线)
 6. [LCP 四阶段耗时拆解与优化速查表](#6-lcp-四阶段耗时拆解与优化速查表)
 
 ---
@@ -171,6 +172,18 @@ observer.observe({ type: 'largest-contentful-paint', buffered: true });
      ```
   3. **千万不要给首屏 LCP 图片加懒加载**：
      首屏可视区域内的关键图片如果设置了 `loading="lazy"`，浏览器会推迟其请求直至布局完成，严重拖慢 LCP！必须设置 `loading="eager"` 并赋予 `fetchpriority="high"`。
+
+### 5.3 当前项目：首页 Critical CSS 管线
+
+本项目采用“Nuxt SFC 样式内联 + 首页 entry critical CSS 抽取”的组合策略，而不是把完整全局 CSS 直接塞进 HTML。
+
+1. `nuxt.config.ts` 中 `features.inlineStyles` 显式限制为 Vue SFC 样式，避免 Nuxt SSR 内联策略未来变化时把全局入口 CSS 一并放大进首屏 HTML。
+2. `scripts/storefront/generate-critical-css.ts` 在 `nuxt build` 后启动生产 SSR 服务，抓取 `/` 首页 HTML，根据首屏 DOM 的 class/id/tag inventory 从 `.output/public/_nuxt/entry.*.css` 中抽取首页需要的规则。
+3. 抽取结果写入 `.output/server/critical-css/home-entry.css`，并默认受 `CRITICAL_CSS_MAX_GZIP_BYTES=16384` 的 gzip 体积预算约束。
+4. `server/plugins/15-critical-css.server.ts` 在 Nitro `render:response` 阶段只改写首页 HTML：把阻塞型 `entry.*.css` 替换为内联 critical CSS、`preload as=style`、`noscript` fallback，以及一个异步完整 CSS loader。
+5. `scripts/storefront/check-critical-css.ts` 校验首页不再阻塞加载 `entry.*.css`，确保弹窗、抽屉、搜索、购物车、复杂商品模块等二级 CSS 不会作为首页阻塞样式出现。
+
+维护准则：不要直接开启无边界的全局 CSS 内联；新增首屏类名或结构后运行 `npm run build`，让 `generate:critical-css` 和 `check:critical-css` 一起验证预算与覆盖范围。
 
 ---
 
