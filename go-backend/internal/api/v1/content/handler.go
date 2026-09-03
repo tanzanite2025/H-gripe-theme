@@ -3,10 +3,10 @@ package content
 import "commerce-platform/internal/service"
 
 type Handler struct {
-	postService               *service.PostService
-	faqService                *service.FAQService
-	mediaService              *service.MediaService
-	refundReturnPolicyService *service.RefundReturnPolicyService
+	postService                     *service.PostService
+	faqService                      *service.FAQService
+	mediaService                    *service.MediaService
+	refundCancellationPolicyService *service.RefundCancellationPolicyService
 }
 
 func NewHandler(postService *service.PostService, faqService *service.FAQService, mediaServices ...*service.MediaService) *Handler {
@@ -21,9 +21,9 @@ func NewHandler(postService *service.PostService, faqService *service.FAQService
 	}
 }
 
-func (h *Handler) ConfigureRefundReturnPolicyService(policyService *service.RefundReturnPolicyService) {
+func (h *Handler) ConfigureRefundCancellationPolicyService(policyService *service.RefundCancellationPolicyService) {
 	if h == nil {
 		return
 	}
-	h.refundReturnPolicyService = policyService
+	h.refundCancellationPolicyService = policyService
 }

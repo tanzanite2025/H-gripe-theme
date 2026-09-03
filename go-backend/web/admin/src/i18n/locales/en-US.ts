@@ -172,7 +172,7 @@ const enUS = {
     'content-page-feedback': 'Page Feedback',
     'content-faqs': 'FAQ Content',
     'content-visual-showcase': 'Homepage Visual Showcase',
-    'content-refund-return': 'Refund & Returns',
+  'content-refund-cancellation': 'Refund & Cancellation Policy',
     'media-center': 'Media Center',
     'media-library': 'Media Library',
     'media-derivatives': 'Image Size Conversion',

@@ -222,24 +222,25 @@ type siteQualityRenderedLinkAudit struct {
 }
 
 type siteQualityRenderedLink struct {
-	Href          string `json:"href"`
-	Text          string `json:"text"`
-	TextLang      string `json:"textLang"`
-	Selector      string `json:"selector"`
-	StatusCode    int    `json:"statusCode"`
-	FinalURL      string `json:"finalUrl"`
-	Redirected    bool   `json:"redirected"`
-	RedirectCount int    `json:"redirectCount"`
-	OK            bool   `json:"ok"`
-	Error         string `json:"error"`
+	Href           string `json:"href"`
+	Text           string `json:"text"`
+	TextLang       string `json:"textLang"`
+	Selector       string `json:"selector"`
+	StatusCode     int    `json:"statusCode"`
+	FinalURL       string `json:"finalUrl"`
+	Redirected     bool   `json:"redirected"`
+	RedirectCount  int    `json:"redirectCount"`
+	OK             bool   `json:"ok"`
+	TimeoutSkipped bool   `json:"timeoutSkipped"`
+	Error          string `json:"error"`
 }
 
 type siteQualityInteractionAudit struct {
-	Status       string                       `json:"status"`
-	Source       string                       `json:"source"`
-	Configured   bool                         `json:"configured"`
-	FinalURL     string                       `json:"finalUrl"`
-	Error        string                       `json:"error"`
+	Status       string                        `json:"status"`
+	Source       string                        `json:"source"`
+	Configured   bool                          `json:"configured"`
+	FinalURL     string                        `json:"finalUrl"`
+	Error        string                        `json:"error"`
 	Interactions []siteQualityInteractionProbe `json:"interactions"`
 }
 
@@ -742,28 +743,28 @@ func (s *LighthouseRunnerService) request(
 		return nil, nil, errors.New("internal Lighthouse runner URL is invalid")
 	}
 	payload, err := json.Marshal(struct {
-		URL                                string `json:"url"`
-		Strategy                           string `json:"strategy"`
-		ReleaseID                          string `json:"release_id,omitempty"`
-		ThrottlingMethod                   string `json:"throttling_method,omitempty"`
-		LighthouseRunCount                 int    `json:"lighthouse_run_count,omitempty"`
-		RenderWaitSelector                 string `json:"render_wait_selector,omitempty"`
-		RenderWaitTimeoutMS                int    `json:"render_wait_timeout_ms,omitempty"`
-		HeadingSettleMS                    int    `json:"heading_settle_ms,omitempty"`
-		StructuredDataSettleMS             int    `json:"structured_data_settle_ms,omitempty"`
-		InteractionProbes                  string `json:"interaction_probes,omitempty"`
-		InteractionMaxResponseMS           int    `json:"interaction_max_response_ms,omitempty"`
-		SoftNavigationSelectors            string `json:"soft_navigation_selectors,omitempty"`
-		SoftNavigationMaxLinks             int    `json:"soft_navigation_max_links,omitempty"`
-		SoftNavigationMaxDurationMS        int    `json:"soft_navigation_max_duration_ms,omitempty"`
-		SoftNavigationMaxHeapGrowthMB      int    `json:"soft_navigation_max_heap_growth_mb,omitempty"`
-		JSBudgetBytes                      int    `json:"js_budget_bytes,omitempty"`
-		ImageBudgetBytes                   int    `json:"image_budget_bytes,omitempty"`
-		LinkCheckEnabled                   bool   `json:"link_check_enabled"`
-		LinkCheckMaxLinks                  int    `json:"link_check_max_links,omitempty"`
-		LinkCheckTimeoutMS                 int    `json:"link_check_timeout_ms,omitempty"`
-		LinkCheckExternal                  bool   `json:"link_check_external,omitempty"`
-		LinkCheckMaxRedirects              int    `json:"link_check_max_redirects,omitempty"`
+		URL                           string `json:"url"`
+		Strategy                      string `json:"strategy"`
+		ReleaseID                     string `json:"release_id,omitempty"`
+		ThrottlingMethod              string `json:"throttling_method,omitempty"`
+		LighthouseRunCount            int    `json:"lighthouse_run_count,omitempty"`
+		RenderWaitSelector            string `json:"render_wait_selector,omitempty"`
+		RenderWaitTimeoutMS           int    `json:"render_wait_timeout_ms,omitempty"`
+		HeadingSettleMS               int    `json:"heading_settle_ms,omitempty"`
+		StructuredDataSettleMS        int    `json:"structured_data_settle_ms,omitempty"`
+		InteractionProbes             string `json:"interaction_probes,omitempty"`
+		InteractionMaxResponseMS      int    `json:"interaction_max_response_ms,omitempty"`
+		SoftNavigationSelectors       string `json:"soft_navigation_selectors,omitempty"`
+		SoftNavigationMaxLinks        int    `json:"soft_navigation_max_links,omitempty"`
+		SoftNavigationMaxDurationMS   int    `json:"soft_navigation_max_duration_ms,omitempty"`
+		SoftNavigationMaxHeapGrowthMB int    `json:"soft_navigation_max_heap_growth_mb,omitempty"`
+		JSBudgetBytes                 int    `json:"js_budget_bytes,omitempty"`
+		ImageBudgetBytes              int    `json:"image_budget_bytes,omitempty"`
+		LinkCheckEnabled              bool   `json:"link_check_enabled"`
+		LinkCheckMaxLinks             int    `json:"link_check_max_links,omitempty"`
+		LinkCheckTimeoutMS            int    `json:"link_check_timeout_ms,omitempty"`
+		LinkCheckExternal             bool   `json:"link_check_external,omitempty"`
+		LinkCheckMaxRedirects         int    `json:"link_check_max_redirects,omitempty"`
 	}{
 		URL:                           targetURL,
 		Strategy:                      strategy,

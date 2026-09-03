@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"sync"
 	"testing"
+	"time"
 
 	"commerce-platform/internal/domain/currency"
 	"commerce-platform/internal/domain/product"
@@ -19,6 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	"gorm.io/gorm/logger"
 )
 
@@ -59,6 +61,112 @@ func TestProductServiceCreateAdminProductPersistsTemplateSpecs(t *testing.T) {
 	assert.Equal(t, "30.5", findSavedSpecValue(t, createdProduct, "outer_width_mm"))
 	assert.Equal(t, "RIM-001-24H-DISC", createdProduct.Variants[0].SKU)
 	assert.JSONEq(t, `{"brake_type":"disc"}`, createdProduct.Variants[0].OptionValues)
+}
+
+func TestProductServiceNormalizesAdminProductSlugOnCreateAndUpdate(t *testing.T) {
+	_, productService := newTestProductService(t)
+
+	createdProduct, err := productService.CreateAdminProduct(ProductCreateInput{
+		Name:   "Carbon Rim",
+		Slug:   " Carbon_Rim ",
+		Status: "active",
+		Locale: "en",
+		Variants: []ProductVariantInput{
+			{
+				SKU:       "SLUG-NORMALIZE-001",
+				Price:     399,
+				Stock:     5,
+				IsDefault: true,
+				IsActive:  boolPtr(true),
+			},
+		},
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, createdProduct)
+	assert.Equal(t, "carbon_rim", createdProduct.Slug)
+
+	updatedSlug := " Road-Rim_2026 "
+	updatedProduct, err := productService.UpdateAdminProduct(createdProduct.ID, ProductUpdateInput{
+		Slug: &updatedSlug,
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, updatedProduct)
+	assert.Equal(t, "road-rim_2026", updatedProduct.Slug)
+}
+
+func TestProductServiceRejectsUnsafeAdminProductSlugs(t *testing.T) {
+	_, productService := newTestProductService(t)
+
+	tests := []struct {
+		name string
+		slug string
+	}{
+		{name: "reserved categories", slug: "categories"},
+		{name: "reserved specification templates", slug: "specification-templates"},
+		{name: "reserved attributes", slug: "attributes"},
+		{name: "reserved chat", slug: "chat"},
+		{name: "slash segment", slug: "disc/rim-carbon"},
+		{name: "query marker", slug: "disc?rim"},
+		{name: "fragment marker", slug: "disc#rim"},
+		{name: "encoded delimiter", slug: "disc%2Frim"},
+		{name: "internal whitespace", slug: "disc rim"},
+		{name: "unsupported punctuation", slug: "disc.rim"},
+	}
+
+	for index, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := productService.CreateAdminProduct(ProductCreateInput{
+				Name:   "Unsafe Slug Product",
+				Slug:   tt.slug,
+				Status: "active",
+				Locale: "en",
+				Variants: []ProductVariantInput{
+					{
+						SKU:       "UNSAFE-SLUG-" + strconv.Itoa(index),
+						Price:     100,
+						Stock:     1,
+						IsDefault: true,
+						IsActive:  boolPtr(true),
+					},
+				},
+			})
+
+			require.ErrorIs(t, err, ErrProductSlugInvalid)
+		})
+	}
+}
+
+func TestProductServiceRejectsUnsafeAdminProductSlugUpdate(t *testing.T) {
+	_, productService := newTestProductService(t)
+
+	createdProduct, err := productService.CreateAdminProduct(ProductCreateInput{
+		Name:   "Safe Product",
+		Slug:   "safe-product",
+		Status: "active",
+		Locale: "en",
+		Variants: []ProductVariantInput{
+			{
+				SKU:       "SAFE-SLUG-001",
+				Price:     100,
+				Stock:     1,
+				IsDefault: true,
+				IsActive:  boolPtr(true),
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	unsafeSlug := "disc/rim-carbon"
+	_, err = productService.UpdateAdminProduct(createdProduct.ID, ProductUpdateInput{
+		Slug: &unsafeSlug,
+	})
+	require.ErrorIs(t, err, ErrProductSlugInvalid)
+
+	currentProduct, err := productService.GetAdminProduct(createdProduct.ID)
+	require.NoError(t, err)
+	assert.Equal(t, "safe-product", currentProduct.Slug)
 }
 
 func TestProductServiceListsOnlyWheelsetDynamicValuesForCategoryTree(t *testing.T) {
@@ -1049,6 +1157,100 @@ func TestProductServiceSearchPublicFiltersByTemplateSpec(t *testing.T) {
 	assert.Equal(t, int64(1), total)
 	require.Len(t, results, 1)
 	assert.Equal(t, discRim.ID, results[0].ID)
+}
+
+func TestProductServiceSearchPublicLookaheadUsesNominalPageSizeForOffset(t *testing.T) {
+	db, productService := newTestProductService(t)
+	productSpecificationTemplate := seedCarbonRimType(t, db)
+	baseTime := time.Date(2026, 9, 3, 9, 0, 0, 0, time.UTC)
+	orderedIDs := make([]uint, 0, 8)
+
+	for index := 0; index < 8; index++ {
+		item := createProductWithSpecs(
+			t,
+			productService,
+			productSpecificationTemplate.ID,
+			"LOOKAHEAD-"+strconv.Itoa(index),
+			"lookahead-"+strconv.Itoa(index),
+			map[string]string{"outer_width_mm": "30"},
+			map[string]string{"brake_type": "disc"},
+		)
+		stamp := baseTime.Add(-time.Duration(index) * time.Minute)
+		require.NoError(t, db.Model(&product.Product{}).
+			Where("id = ?", item.ID).
+			UpdateColumns(map[string]interface{}{"created_at": stamp, "updated_at": stamp}).Error)
+		orderedIDs = append(orderedIDs, item.ID)
+	}
+
+	firstPage, total, err := productService.SearchPublic(ProductSearchInput{
+		Locale:         "en",
+		Page:           1,
+		PageSize:       7,
+		OffsetPageSize: 6,
+	})
+	require.NoError(t, err)
+	assert.Equal(t, int64(8), total)
+	require.Len(t, firstPage, 7)
+	assert.Equal(t, orderedIDs[6], firstPage[6].ID)
+
+	secondPage, total, err := productService.SearchPublic(ProductSearchInput{
+		Locale:         "en",
+		Page:           2,
+		PageSize:       7,
+		OffsetPageSize: 6,
+	})
+	require.NoError(t, err)
+	assert.Equal(t, int64(8), total)
+	require.Len(t, secondPage, 2)
+	assert.Equal(t, orderedIDs[6], secondPage[0].ID)
+	assert.Equal(t, orderedIDs[7], secondPage[1].ID)
+
+	compactSecondPage, err := productService.SearchPublicCompact(ProductSearchInput{
+		Locale:         "en",
+		Page:           2,
+		PageSize:       7,
+		OffsetPageSize: 6,
+	})
+	require.NoError(t, err)
+	require.Len(t, compactSecondPage, 2)
+	assert.Equal(t, orderedIDs[6], compactSecondPage[0].ID)
+	assert.Equal(t, orderedIDs[7], compactSecondPage[1].ID)
+}
+
+func TestProductServiceListNormalizesInvalidPagination(t *testing.T) {
+	db, productService := newTestProductService(t)
+	productSpecificationTemplate := seedCarbonRimType(t, db)
+	createdProduct := createProductWithSpecs(t, productService, productSpecificationTemplate.ID, "RIM-LIST-PAGINATION", "list-pagination", map[string]string{
+		"outer_width_mm": "30",
+	}, map[string]string{"brake_type": "disc"})
+
+	type capturedPagination struct {
+		offset int
+		limit  int
+	}
+	var captured []capturedPagination
+	db.Callback().Query().Before("gorm:query").Register("test_capture_product_list_pagination", func(tx *gorm.DB) {
+		if tx.Statement.Table != "products" {
+			return
+		}
+		limitClause, ok := tx.Statement.Clauses["LIMIT"].Expression.(clause.Limit)
+		if !ok || limitClause.Limit == nil {
+			return
+		}
+		captured = append(captured, capturedPagination{
+			offset: limitClause.Offset,
+			limit:  *limitClause.Limit,
+		})
+	})
+
+	products, total, err := productService.ListPublic("en", false, 0, 0)
+
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), total)
+	require.Len(t, products, 1)
+	assert.Equal(t, createdProduct.ID, products[0].ID)
+	require.NotEmpty(t, captured)
+	assert.Equal(t, capturedPagination{offset: 0, limit: 20}, captured[0])
 }
 
 func TestProductServicePublicAccessOnlyReturnsActiveProducts(t *testing.T) {

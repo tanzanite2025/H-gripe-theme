@@ -105,6 +105,9 @@ func (h *Handler) autoSubmitPayPalDisputeEvidence(c *gin.Context, dispute *payme
 		ClientID:    config.APIKey,
 		SecretKey:   config.SecretKey,
 		Environment: config.Environment,
+		// Webhook submissions are the system's automatic best-effort path;
+		// warnings must not turn an open PayPal response into a missed response.
+		OverrideWarnings: true,
 	})
 	if err != nil {
 		return nil, err

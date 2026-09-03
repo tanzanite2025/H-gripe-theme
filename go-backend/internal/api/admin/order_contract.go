@@ -85,6 +85,9 @@ func respondOrderServiceError(c *gin.Context, err error, fallbackMessage string,
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	case errors.Is(err, service.ErrOrderDisputeEmailNotConfigured):
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Order dispute contact email is not configured"})
+	case errors.Is(err, service.ErrPaidOrderCancellationNotAllowed),
+		errors.Is(err, service.ErrOrderCancellationConflict):
+		c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
 	case errors.Is(err, service.ErrSystemManagedOrderStatus):
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	case errors.Is(err, service.ErrOrderFulfillmentNotAllowed),

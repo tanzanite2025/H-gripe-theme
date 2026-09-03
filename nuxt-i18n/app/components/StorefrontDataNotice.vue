@@ -1,5 +1,5 @@
 <template>
-  <aside
+  <div
     class="storefront-data-notice"
     :class="[
       `storefront-data-notice--${tone}`,
@@ -20,7 +20,7 @@
     <div v-if="$slots.actions" class="storefront-data-notice__actions">
       <slot name="actions" />
     </div>
-  </aside>
+  </div>
 </template>
 
 <script setup lang="ts">

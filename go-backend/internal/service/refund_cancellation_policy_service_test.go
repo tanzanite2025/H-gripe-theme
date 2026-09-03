@@ -3,7 +3,7 @@ package service
 import (
 	"testing"
 
-	refundreturndomain "commerce-platform/internal/domain/refundreturn"
+	refundcancellationdomain "commerce-platform/internal/domain/refundcancellation"
 	settingdomain "commerce-platform/internal/domain/setting"
 	"commerce-platform/internal/repository"
 
@@ -13,7 +13,7 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-func TestRefundReturnPolicyServiceFallsBackAndPersistsLocaleContent(t *testing.T) {
+func TestRefundCancellationPolicyServiceFallsBackAndPersistsLocaleContent(t *testing.T) {
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
@@ -24,20 +24,20 @@ func TestRefundReturnPolicyServiceFallsBackAndPersistsLocaleContent(t *testing.T
 	t.Cleanup(func() { _ = sqlDB.Close() })
 	require.NoError(t, db.AutoMigrate(&settingdomain.Setting{}))
 
-	policyService := NewRefundReturnPolicyService(repository.NewSettingRepository(db))
+	policyService := NewRefundCancellationPolicyService(repository.NewSettingRepository(db))
 	defaultResult, err := policyService.GetPublic("fr")
 	require.NoError(t, err)
 	require.True(t, defaultResult.Fallback)
 	require.Equal(t, "en", defaultResult.Locale)
 	require.NotEmpty(t, defaultResult.Policy.Sections)
 
-	policy := refundreturndomain.DefaultPolicy()
+	policy := refundcancellationdomain.DefaultPolicy()
 	policy.Title = "Politique de retour"
-	policy.Sections = []refundreturndomain.Section{{
+	policy.Sections = []refundcancellationdomain.Section{{
 		ID:    "image-proof",
 		Title: "Photo evidence",
 		Body:  "Attach a clear photo when the package arrives damaged.",
-		Image: &refundreturndomain.Image{
+		Image: &refundcancellationdomain.Image{
 			URL:     "/uploads/policy/damaged-package.webp",
 			Alt:     "Damaged package",
 			Caption: "Example of visible package damage.",
@@ -54,7 +54,7 @@ func TestRefundReturnPolicyServiceFallsBackAndPersistsLocaleContent(t *testing.T
 	require.Equal(t, "/uploads/policy/damaged-package.webp", savedResult.Policy.Sections[0].Image.URL)
 }
 
-func TestRefundReturnPolicyServiceDoesNotFallbackOnDatabaseError(t *testing.T) {
+func TestRefundCancellationPolicyServiceDoesNotFallbackOnDatabaseError(t *testing.T) {
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
@@ -66,10 +66,10 @@ func TestRefundReturnPolicyServiceDoesNotFallbackOnDatabaseError(t *testing.T) {
 	require.NoError(t, db.AutoMigrate(&settingdomain.Setting{}))
 	require.NoError(t, db.Migrator().DropTable(&settingdomain.Setting{}))
 
-	policyService := NewRefundReturnPolicyService(repository.NewSettingRepository(db))
+	policyService := NewRefundCancellationPolicyService(repository.NewSettingRepository(db))
 	result, err := policyService.GetPublic("fr")
 
 	require.Error(t, err)
 	require.Empty(t, result.Policy.Title)
-	require.NotContains(t, err.Error(), "Refund & Return Policy")
+	require.NotContains(t, err.Error(), "Refund & Cancellation Policy")
 }

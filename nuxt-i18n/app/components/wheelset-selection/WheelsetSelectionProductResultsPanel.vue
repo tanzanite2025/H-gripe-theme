@@ -24,7 +24,7 @@
       </span>
       <span class="wheelset-selection-product-results-panel__mobile-toggle-meta">
         <span class="wheelset-selection-product-results-panel__count">
-          {{ matchingProductCount }}
+          {{ matchingProductCountLabel }}
         </span>
         <Icon
           name="lucide:chevron-down"
@@ -116,6 +116,7 @@ const props = defineProps<{
   selectedLabel?: string
   products: ShopProduct[]
   total?: number
+  totalIsExact?: boolean
   loading: boolean
   error?: string | null
   page: number
@@ -138,6 +139,11 @@ const isMobileResultsExpanded = computed(() => (
 ))
 const mobileResultsContentId = 'wheelset-selection-results-content'
 const matchingProductCount = computed(() => Math.max(0, Number(props.total ?? props.products.length)))
+const matchingProductCountLabel = computed(() => (
+  props.hasMore && props.totalIsExact === false
+    ? `${matchingProductCount.value}+`
+    : String(matchingProductCount.value)
+))
 
 const openWheelsetSelectionProductDetails = (product: ShopProduct) => {
   if (!product?.slug) return
@@ -377,6 +383,7 @@ const toggleMobileResults = () => {
     justify-content: center;
     border-radius: 999px;
     background: var(--tz-site-accent, #059669);
+    padding-inline: 0.45rem;
     color: #ffffff;
     font-size: 0.75rem;
     font-weight: 850;

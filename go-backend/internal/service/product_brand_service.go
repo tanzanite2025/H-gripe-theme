@@ -23,10 +23,11 @@ type ProductBrandInput struct {
 }
 
 var (
-	ErrProductBrandNotFound   = errors.New("product brand not found")
-	ErrProductBrandInvalid    = errors.New("product brand invalid")
-	ErrProductBrandSlugExists = errors.New("product brand slug already exists")
-	ErrProductBrandInUse      = errors.New("product brand is used by products")
+	ErrProductBrandNotFound          = errors.New("product brand not found")
+	ErrProductBrandInvalid           = errors.New("product brand invalid")
+	ErrProductBrandSlugExists        = errors.New("product brand slug already exists")
+	ErrProductBrandInUse             = errors.New("product brand is used by products")
+	ErrProductBrandInSpokeRimCatalog = errors.New("product brand is used by the spoke rim catalog")
 )
 
 type ProductBrandService struct {
@@ -186,6 +187,13 @@ func (s *ProductBrandService) Delete(id uint) error {
 	if count > 0 {
 		return fmt.Errorf("%w: %d products still reference this brand", ErrProductBrandInUse, count)
 	}
+	spokeRimBrandCount, err := s.repo.CountSpokeRimBrands(id)
+	if err != nil {
+		return err
+	}
+	if spokeRimBrandCount > 0 {
+		return fmt.Errorf("%w: %d spoke rim brands still reference this brand", ErrProductBrandInSpokeRimCatalog, spokeRimBrandCount)
+	}
 	if s.txManager != nil {
 		err := s.txManager.WithinTx(func(tx repository.TxRepositories) error {
 			if tx.ProductBrand == nil {
@@ -197,6 +205,13 @@ func (s *ProductBrandService) Delete(id uint) error {
 			}
 			if count > 0 {
 				return fmt.Errorf("%w: %d products still reference this brand", ErrProductBrandInUse, count)
+			}
+			spokeRimBrandCount, err := tx.ProductBrand.CountSpokeRimBrands(id)
+			if err != nil {
+				return err
+			}
+			if spokeRimBrandCount > 0 {
+				return fmt.Errorf("%w: %d spoke rim brands still reference this brand", ErrProductBrandInSpokeRimCatalog, spokeRimBrandCount)
 			}
 			return tx.ProductBrand.Delete(id)
 		})

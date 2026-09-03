@@ -122,7 +122,7 @@
                 </span>
               </div>
 
-              <div class="image-vectorizer-preview-surface flex min-h-72 items-center justify-center overflow-hidden border border-border/70 p-4">
+              <div class="image-vectorizer-preview-surface relative flex min-h-72 items-center justify-center overflow-hidden border border-border/70 p-4">
                 <img
                   v-if="svgPreviewUrl"
                   :src="svgPreviewUrl"
@@ -130,7 +130,16 @@
                   class="h-auto object-contain"
                   :style="svgPreviewStyle"
                 />
-                <div v-else class="flex flex-col items-center justify-center gap-3 px-5 text-center text-muted-foreground">
+                <div
+                  v-if="svgPreviewUrl && converting"
+                  class="absolute inset-0 flex items-center justify-center bg-white/55 backdrop-blur-sm"
+                >
+                  <div class="flex flex-col items-center justify-center gap-3 px-5 text-center text-primary">
+                    <LoaderCircle class="size-7 animate-spin" />
+                    <p class="text-xs font-black">{{ t('imageVectorizer.processing') }}</p>
+                  </div>
+                </div>
+                <div v-if="!svgPreviewUrl" class="flex flex-col items-center justify-center gap-3 px-5 text-center text-muted-foreground">
                   <LoaderCircle v-if="converting" class="size-7 animate-spin text-primary" />
                   <WandSparkles v-else class="size-7 opacity-50" />
                   <p class="text-xs font-black">
@@ -511,6 +520,18 @@ const releaseSvgPreview = (): void => {
   svgPreviewUrl.value = ''
 }
 
+const replaceSvgPreview = (svg: string, width: number, height: number): void => {
+  const previousUrl = svgPreviewUrl.value
+  const nextUrl = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml;charset=utf-8' }))
+  svgText.value = svg
+  outputWidth.value = width
+  outputHeight.value = height
+  svgPreviewUrl.value = nextUrl
+  if (previousUrl) {
+    void nextTick(() => revokeObjectURL(previousUrl))
+  }
+}
+
 const releaseSourcePreview = (): void => {
   revokeObjectURL(sourcePreviewUrl.value)
   sourcePreviewUrl.value = ''
@@ -861,11 +882,7 @@ const traceImage = async (image: HTMLImageElement, runID: number): Promise<void>
   )
   if (runID !== conversionRunID.value) return
 
-  releaseSvgPreview()
-  svgText.value = svg
-  outputWidth.value = normalized.outputWidth
-  outputHeight.value = normalized.outputHeight
-  svgPreviewUrl.value = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml;charset=utf-8' }))
+  replaceSvgPreview(svg, normalized.outputWidth, normalized.outputHeight)
 }
 
 const chooseFile = async (file: File | null): Promise<void> => {
@@ -913,10 +930,6 @@ const convertCurrent = async (): Promise<void> => {
   const runID = ++conversionRunID.value
   converting.value = true
   errorMessage.value = ''
-  releaseSvgPreview()
-  svgText.value = ''
-  outputWidth.value = 0
-  outputHeight.value = 0
 
   try {
     const image = await loadImage(sourcePreviewUrl.value)

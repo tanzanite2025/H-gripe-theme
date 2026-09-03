@@ -59,29 +59,32 @@
 import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from '#imports'
 import ContactServiceEntry from '~/components/company/ContactServiceEntry.vue'
+import { createDialogStackId, useDialogStack } from '~/composables/useDialogStack'
 
 const emit = defineEmits<{ close: [] }>()
 const { t } = useI18n()
+const dialogStack = useDialogStack()
+const dialogStackId = createDialogStackId('quickbuy-contact-service-modal')
 const modalElement = ref<HTMLElement | null>(null)
 const modalTitleId = 'quickbuy-contact-service-modal-title'
+let unregisterDialogStack: (() => void) | null = null
 
 const handleClose = () => {
   emit('close')
 }
 
-const handleKeydown = (event: KeyboardEvent) => {
-  if (event.key === 'Escape') {
-    handleClose()
-  }
-}
-
 onMounted(() => {
-  document.addEventListener('keydown', handleKeydown)
+  unregisterDialogStack = dialogStack.register(dialogStackId, () => {
+    handleClose()
+  }, {
+    priority: 10040,
+  })
   void nextTick(() => modalElement.value?.focus())
 })
 
 onBeforeUnmount(() => {
-  document.removeEventListener('keydown', handleKeydown)
+  unregisterDialogStack?.()
+  unregisterDialogStack = null
 })
 </script>
 

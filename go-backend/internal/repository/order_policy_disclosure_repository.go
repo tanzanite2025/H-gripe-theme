@@ -25,7 +25,7 @@ func (r *OrderPolicyDisclosureRepository) Create(disclosure *order.PolicyDisclos
 func (r *OrderPolicyDisclosureRepository) FindByOrderID(orderID uint) (*order.PolicyDisclosure, error) {
 	var disclosure order.PolicyDisclosure
 	err := r.db.
-		Where("order_id = ? AND policy_key = ?", orderID, "refund_return_policy").
+		Where("order_id = ? AND policy_key = ?", orderID, "refund_cancellation_policy").
 		First(&disclosure).Error
 	if err != nil {
 		return nil, err

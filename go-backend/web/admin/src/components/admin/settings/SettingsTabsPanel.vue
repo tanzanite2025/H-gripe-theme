@@ -160,18 +160,18 @@
       />
     </TabsContent>
 
-    <TabsContent value="refund_return" class="space-y-4">
-      <RefundReturnPolicySettingsPanel
-        :policy="refundReturnPolicy"
-        :locale="refundReturnPolicyLocale"
-        :fallback="refundReturnPolicyFallback"
-        :loading="loadingRefundReturnPolicy"
-        :saving="savingRefundReturnPolicy"
+    <TabsContent value="refund_cancellation" class="space-y-4">
+      <RefundCancellationPolicySettingsPanel
+        :policy="refundCancellationPolicy"
+        :locale="refundCancellationPolicyLocale"
+        :fallback="refundCancellationPolicyFallback"
+        :loading="loadingRefundCancellationPolicy"
+        :saving="savingRefundCancellationPolicy"
         :can-edit="canEdit"
-        :uploading-section="uploadingRefundReturnSection"
-        @locale-change="emit('refund-return-locale-change', $event)"
-        @save="emit('save-refund-return-policy')"
-        @upload-image="emit('upload-refund-return-image', $event)"
+        :uploading-section="uploadingRefundCancellationSection"
+        @locale-change="emit('refund-cancellation-locale-change', $event)"
+        @save="emit('save-refund-cancellation-policy')"
+        @upload-image="emit('upload-refund-cancellation-image', $event)"
       />
     </TabsContent>
   </Tabs>
@@ -190,7 +190,7 @@ import {
 import AdminFormField from '@/components/admin/AdminFormField.vue'
 import ApiManagementSettingsPanel from '@/components/admin/settings/ApiManagementSettingsPanel.vue'
 import PublicChatSettingsPanel from '@/components/admin/settings/PublicChatSettingsPanel.vue'
-import RefundReturnPolicySettingsPanel from '@/components/admin/settings/RefundReturnPolicySettingsPanel.vue'
+import RefundCancellationPolicySettingsPanel from '@/components/admin/settings/RefundCancellationPolicySettingsPanel.vue'
 import StorefrontMarketsSettingsPanel from '@/components/admin/settings/StorefrontMarketsSettingsPanel.vue'
 import UploadSpecHint from '@/components/admin/UploadSpecHint.vue'
 import { uploadSpecAccept } from '@/lib/uploadSpecs'
@@ -207,7 +207,7 @@ import type {
   PublicChatGroup,
   PublicChatSummary,
 } from '@/modules/settings/types'
-import type { RefundReturnPolicyEditor } from '@/api/refundReturnPolicy'
+import type { RefundCancellationPolicyEditor } from '@/api/refundCancellationPolicy'
 
 const props = defineProps({
   activeTab: { type: String, default: 'site' },
@@ -227,12 +227,12 @@ const props = defineProps({
   publicChatAgents: { type: Array as PropType<PublicChatAgent[]>, default: () => [] },
   publicChatGroups: { type: Array as PropType<PublicChatGroup[]>, default: () => [] },
   publicChatAgentWarnings: { type: Array as PropType<string[]>, default: () => [] },
-  refundReturnPolicy: { type: Object as PropType<RefundReturnPolicyEditor>, required: true },
-  refundReturnPolicyLocale: { type: String, default: 'en' },
-  refundReturnPolicyFallback: { type: Boolean, default: false },
-  loadingRefundReturnPolicy: { type: Boolean, default: false },
-  savingRefundReturnPolicy: { type: Boolean, default: false },
-  uploadingRefundReturnSection: { type: Number as PropType<number | null>, default: null },
+  refundCancellationPolicy: { type: Object as PropType<RefundCancellationPolicyEditor>, required: true },
+  refundCancellationPolicyLocale: { type: String, default: 'en' },
+  refundCancellationPolicyFallback: { type: Boolean, default: false },
+  loadingRefundCancellationPolicy: { type: Boolean, default: false },
+  savingRefundCancellationPolicy: { type: Boolean, default: false },
+  uploadingRefundCancellationSection: { type: Number as PropType<number | null>, default: null },
   canEdit: { type: Boolean, default: false },
 })
 
@@ -247,9 +247,9 @@ const emit = defineEmits([
   'delete-group',
   'refresh-public-chat',
   'refresh-commercial-crawler-protection',
-  'refund-return-locale-change',
-  'save-refund-return-policy',
-  'upload-refund-return-image',
+  'refund-cancellation-locale-change',
+  'save-refund-cancellation-policy',
+  'upload-refund-cancellation-image',
 ])
 
 const siteLogoInput = ref<HTMLInputElement | null>(null)

@@ -12,7 +12,7 @@ func registerContentRoutes(
 	contentHandler *ContentHandler,
 	pageFeedbackHandler *PageFeedbackHandler,
 	homeVisualTileHandler *HomeVisualTileHandler,
-	refundReturnPolicyHandler *RefundReturnPolicyHandler,
+	refundCancellationPolicyHandler *RefundCancellationPolicyHandler,
 	mediaHandler *MediaHandler,
 	reviewModerationHandler *ReviewModerationHandler,
 	faqHandler *FAQHandler,
@@ -69,13 +69,13 @@ func registerContentRoutes(
 			homeVisualTileGroup.PUT("/:showcase_key", middleware.RequirePermission(auth.PermContentEdit), homeVisualTileHandler.ReplaceItems)
 		}
 
-		contentGroup.GET("/refund-return-policy", refundReturnPolicyHandler.Get)
-		contentGroup.PUT("/refund-return-policy", middleware.RequirePermission(auth.PermContentEdit), refundReturnPolicyHandler.Update)
+		contentGroup.GET("/refund-cancellation-policy", refundCancellationPolicyHandler.Get)
+		contentGroup.PUT("/refund-cancellation-policy", middleware.RequirePermission(auth.PermContentEdit), refundCancellationPolicyHandler.Update)
 		contentGroup.POST(
-			"/refund-return-policy/assets",
+			"/refund-cancellation-policy/assets",
 			middleware.RequirePermission(auth.PermContentEdit),
 			middleware.RateLimitByUserPerMinute(3, 2),
-			mediaHandler.UploadRefundReturnPolicyImage,
+			mediaHandler.UploadRefundCancellationPolicyImage,
 		)
 	}
 

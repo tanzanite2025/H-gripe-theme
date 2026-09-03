@@ -3,6 +3,7 @@ package service
 import (
 	"testing"
 
+	productdomain "commerce-platform/internal/domain/product"
 	spokedomain "commerce-platform/internal/domain/spoke"
 	"commerce-platform/internal/repository"
 
@@ -46,8 +47,8 @@ func TestSpokeServiceReplaceCatalogAllowsMissingGeometry(t *testing.T) {
 	export, err := spokeService.ReplaceCatalog(spokedomain.ExportResponse{
 		Rims: []spokedomain.RimBrand{
 			{
-				ID:   "custom_rims",
-				Name: "Custom Rims",
+				ID:   "dt_swiss",
+				Name: "DT Swiss",
 				Items: []spokedomain.RimModel{
 					{ID: "unknown_erd", Name: "Unknown ERD", ERD: nil},
 				},
@@ -66,7 +67,7 @@ func TestSpokeServiceReplaceCatalogAllowsMissingGeometry(t *testing.T) {
 			{
 				ID:            "partial_build",
 				Name:          "Partial Build",
-				RimBrandID:    "custom_rims",
+				RimBrandID:    "dt_swiss",
 				RimModelID:    "unknown_erd",
 				HubBrandID:    "custom_hubs",
 				HubModelID:    "partial_hub",
@@ -95,6 +96,33 @@ func TestSpokeServiceReplaceCatalogAllowsMissingGeometry(t *testing.T) {
 	assert.Equal(t, "verified bench build", export.Presets[0].ActualLengths.Notes)
 }
 
+func TestSpokeServiceUsesGlobalProductBrandIdentityForRims(t *testing.T) {
+	_, spokeService := newTestSpokeService(t)
+	erd := 598.0
+
+	export, err := spokeService.ReplaceCatalog(spokedomain.ExportResponse{
+		Rims: []spokedomain.RimBrand{{
+			ID:   "dt_swiss",
+			Name: "Local name must be ignored",
+			Items: []spokedomain.RimModel{{
+				ID:   "rr411_db",
+				Name: "RR 411 db",
+				ERD:  &erd,
+			}},
+		}},
+	})
+	require.NoError(t, err)
+	require.Len(t, export.Rims, 1)
+	assert.Equal(t, "dt_swiss", export.Rims[0].ID)
+	assert.Equal(t, "DT Swiss", export.Rims[0].Name)
+
+	reloaded, err := spokeService.GetExport()
+	require.NoError(t, err)
+	require.Len(t, reloaded.Rims, 1)
+	assert.Equal(t, "dt_swiss", reloaded.Rims[0].ID)
+	assert.Equal(t, "DT Swiss", reloaded.Rims[0].Name)
+}
+
 func TestSpokeServiceReplaceCatalogRejectsPresetOptionsOutsideCalculatorOptions(t *testing.T) {
 	_, spokeService := newTestSpokeService(t)
 	erd := 598.0
@@ -105,8 +133,8 @@ func TestSpokeServiceReplaceCatalogRejectsPresetOptionsOutsideCalculatorOptions(
 	_, err := spokeService.ReplaceCatalog(spokedomain.ExportResponse{
 		Rims: []spokedomain.RimBrand{
 			{
-				ID:   "custom_rims",
-				Name: "Custom Rims",
+				ID:   "dt_swiss",
+				Name: "DT Swiss",
 				Items: []spokedomain.RimModel{
 					{ID: "rr", Name: "RR", ERD: &erd},
 				},
@@ -134,7 +162,7 @@ func TestSpokeServiceReplaceCatalogRejectsPresetOptionsOutsideCalculatorOptions(
 			{
 				ID:            "bad_build",
 				Name:          "Bad Build",
-				RimBrandID:    "custom_rims",
+				RimBrandID:    "dt_swiss",
 				RimModelID:    "rr",
 				HubBrandID:    "custom_hubs",
 				HubModelID:    "hub",
@@ -159,8 +187,8 @@ func TestSpokeServiceReplaceCatalogRejectsInvalidActualLengths(t *testing.T) {
 	_, err := spokeService.ReplaceCatalog(spokedomain.ExportResponse{
 		Rims: []spokedomain.RimBrand{
 			{
-				ID:   "custom_rims",
-				Name: "Custom Rims",
+				ID:   "dt_swiss",
+				Name: "DT Swiss",
 				Items: []spokedomain.RimModel{
 					{ID: "rr", Name: "RR", ERD: &erd},
 				},
@@ -188,7 +216,7 @@ func TestSpokeServiceReplaceCatalogRejectsInvalidActualLengths(t *testing.T) {
 			{
 				ID:            "bad_actual_length",
 				Name:          "Bad Actual Length",
-				RimBrandID:    "custom_rims",
+				RimBrandID:    "dt_swiss",
 				RimModelID:    "rr",
 				HubBrandID:    "custom_hubs",
 				HubModelID:    "hub",
@@ -221,6 +249,7 @@ func newTestSpokeService(t *testing.T) (*gorm.DB, *SpokeService) {
 	})
 
 	require.NoError(t, db.AutoMigrate(
+		&productdomain.ProductBrand{},
 		&spokedomain.CatalogRimBrand{},
 		&spokedomain.CatalogRimModel{},
 		&spokedomain.CatalogHubBrand{},
@@ -229,5 +258,31 @@ func newTestSpokeService(t *testing.T) (*gorm.DB, *SpokeService) {
 		&spokedomain.History{},
 	))
 
-	return db, NewSpokeService(repository.NewSpokeRepository(db))
+	seedSpokeProductBrands(t, db)
+	spokeRepo := repository.NewSpokeRepository(db)
+	spokeRepo.ConfigureProductBrandRepository(repository.NewProductBrandRepository(db))
+	return db, NewSpokeService(spokeRepo)
+}
+
+func seedSpokeProductBrands(t *testing.T, db *gorm.DB) {
+	t.Helper()
+
+	require.NoError(t, db.Create(&productdomain.ProductBrand{
+		Name:      "DT Swiss",
+		Slug:      "dt_swiss",
+		IsEnabled: true,
+		SortOrder: 0,
+	}).Error)
+	require.NoError(t, db.Create(&productdomain.ProductBrand{
+		Name:      "Mavic",
+		Slug:      "mavic",
+		IsEnabled: true,
+		SortOrder: 1,
+	}).Error)
+	require.NoError(t, db.Create(&productdomain.ProductBrand{
+		Name:      "Kinlin",
+		Slug:      "kinlin",
+		IsEnabled: true,
+		SortOrder: 2,
+	}).Error)
 }

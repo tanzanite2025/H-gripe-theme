@@ -44,6 +44,9 @@
       :levels-loading="levelsLoading"
       :levels="levels"
       :levels-using-fallback="levelsUsingFallback"
+      :promotion-risk-loading="promotionRiskLoading"
+      :promotion-risk-analysis="promotionRiskAnalysis"
+      :promotion-risk-error="promotionRiskError"
       :format-rate="formatRate"
       @coupon-filter-change="applyCouponFilter"
       @create-coupon="showCreateCouponDialog"
@@ -65,6 +68,7 @@
       @create-level="showCreateLevelDialog"
       @edit-level="showEditLevelDialog"
       @delete-level="requestDeleteLevel"
+      @refresh-promotion-risk-analysis="fetchPromotionRiskAnalysis(true)"
     />
 
     <MarketingEditorDialogs
@@ -115,7 +119,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
-import { BadgePercent, Coins, Crown, Gift } from '@lucide/vue'
+import { BadgePercent, Coins, Crown, Gift, ShieldAlert } from '@lucide/vue'
 import AdminConfirmDialog from '@/components/admin/AdminConfirmDialog.vue'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import AdminStatsGrid from '@/components/admin/AdminStatsGrid.vue'
@@ -135,6 +139,7 @@ import type {
   LoyaltyErrors,
   LoyaltyTransaction,
   MemberLevel,
+  PromotionRiskAnalysis,
 } from '@/modules/marketing/marketingTypes'
 import {
   couponStatus,
@@ -206,12 +211,13 @@ interface LoyaltyProgramConfig {
 const authStore = useAuthStore()
 const activeTab = useRouteTab({
   defaultValue: 'coupons',
-  values: ['coupons', 'giftcards', 'loyalty', 'levels'],
+  values: ['coupons', 'giftcards', 'loyalty', 'levels', 'risk'],
   routes: {
     coupons: 'MarketingCoupons',
     giftcards: 'MarketingGiftCards',
     loyalty: ['MarketingLoyaltyTransactions', 'MarketingLoyaltyRules'],
     levels: 'MarketingLevels',
+    risk: 'MarketingPromotionRisk',
   },
 })
 const activeSubTab = useRouteTab({
@@ -298,6 +304,10 @@ const levelForm = reactive<MemberLevelEditorForm>({
   id: null, name: '', min_points: 0, max_points: 0, discount_rate: 0,
   sort_order: 0, benefits: '', icon: '', color: '#059669'
 })
+const promotionRiskLoading = ref(false)
+const promotionRiskAnalysis = ref<PromotionRiskAnalysis | null>(null)
+const promotionRiskError = ref<string | null>(null)
+const promotionRiskLoaded = ref(false)
 
 const DEFAULT_MEMBER_LEVELS = [
   { name: 'Ordinary', min_points: 0, max_points: 499, discount_rate: 0, benefits: '[]', color: '#f8fafc', sort_order: 0 },
@@ -324,12 +334,28 @@ const loyaltyProgramVersionLabel = computed(() => {
   return loyaltyProgramVersion.value > 0 ? `v${loyaltyProgramVersion.value}` : '未发布'
 })
 const memberLevelRuleCount = computed(() => levels.value.length || DEFAULT_MEMBER_LEVELS.length)
+const promotionRiskSeverity = computed(() => promotionRiskAnalysis.value?.summary?.severity || 'info')
+const promotionRiskSummaryLabel = computed(() => {
+  if (!promotionRiskLoaded.value) return promotionRiskLoading.value ? '加载中' : '未加载'
+  const summary = promotionRiskAnalysis.value?.summary
+  if (!summary) return '未加载'
+  if (Number(summary.zero_total_risk_count || 0) > 0) return `${summary.zero_total_risk_count} 高危`
+  if (Number(summary.gateway_minimum_risk_count || 0) > 0) return `${summary.gateway_minimum_risk_count} 预警`
+  return '正常'
+})
+
+const promotionRiskTone = (severity?: string) => {
+  if (severity === 'critical') return 'coral'
+  if (severity === 'warning') return 'amber'
+  return 'green'
+}
 
 const statItems = computed(() => [
   { key: 'coupon-rules', label: '优惠券规则', value: statCount(couponRuleCount.value, '条'), icon: BadgePercent, tone: 'gray' },
   { key: 'gift-card-redeem', label: '礼品卡兑换', value: giftCardRedeemStatus.value, icon: Gift, tone: loyaltyProgramLoaded.value && redeemSettings.tz_redeem_enabled ? 'green' : 'gray' },
   { key: 'loyalty-program', label: '积分规则版本', value: loyaltyProgramVersionLabel.value, icon: Coins, tone: 'amber' },
-  { key: 'member-level-rules', label: '会员等级规则', value: statCount(memberLevelRuleCount.value, '级'), icon: Crown, tone: 'green' }
+  { key: 'member-level-rules', label: '会员等级规则', value: statCount(memberLevelRuleCount.value, '级'), icon: Crown, tone: 'green' },
+  { key: 'promotion-risk', label: '优惠叠加风险', value: promotionRiskSummaryLabel.value, icon: ShieldAlert, tone: promotionRiskTone(promotionRiskSeverity.value) }
 ])
 
 const apiData = (response: any) => response.data?.data ?? response.data ?? {}
@@ -376,6 +402,34 @@ const fetchStats = async () => {
     stats.value = apiData(response) || {}
   } catch (error) {
     console.error('Failed to fetch marketing stats:', error)
+  }
+}
+
+const fetchPromotionRiskAnalysis = async (force = false) => {
+  if (!force && promotionRiskLoaded.value) return
+  if (!force && promotionRiskLoading.value) return
+
+  promotionRiskLoading.value = true
+  promotionRiskError.value = null
+  try {
+    const response = await axios.get('/api/admin/marketing/risk-analysis')
+    const data = apiData(response)
+    const analysis = data?.analysis
+    if (!analysis || typeof analysis !== 'object') {
+      throw new Error('优惠风险分析接口返回了无效数据')
+    }
+    promotionRiskAnalysis.value = analysis
+    promotionRiskLoaded.value = true
+  } catch (error) {
+    console.error('Failed to fetch promotion risk analysis:', error)
+    promotionRiskAnalysis.value = null
+    promotionRiskLoaded.value = false
+    promotionRiskError.value = error instanceof Error && error.message
+      ? error.message
+      : '优惠风险分析接口返回异常，请重试'
+    toast.error('优惠风险分析加载失败')
+  } finally {
+    promotionRiskLoading.value = false
   }
 }
 
@@ -456,7 +510,7 @@ const submitCouponForm = async () => {
       toast.success('优惠券更新成功')
     }
     couponDialogVisible.value = false
-    await Promise.all([fetchCoupons(), fetchStats()])
+    await Promise.all([fetchCoupons(), fetchStats(), fetchPromotionRiskAnalysis(true)])
   } catch (error) {
     console.error('Failed to save coupon:', error)
   } finally {
@@ -673,6 +727,7 @@ const saveLoyaltyProgramConfig = async () => {
     })
     applyLoyaltyProgramConfig(apiData(response).config)
     loyaltyProgramLoaded.value = true
+    await fetchPromotionRiskAnalysis(true)
     toast.success('积分与兑换规则已生成新版本')
   } catch (error) {
     console.error('Failed to save loyalty program config:', error)
@@ -762,7 +817,7 @@ const submitLevelForm = async () => {
       toast.success('会员等级更新成功')
     }
     levelDialogVisible.value = false
-    await fetchLevels()
+    await Promise.all([fetchLevels(), fetchPromotionRiskAnalysis(true)])
   } catch (error) {
     console.error('Failed to save member level:', error)
   } finally {
@@ -786,11 +841,11 @@ const executeDelete = async () => {
     if (type === 'coupon') {
       await axios.delete(`/api/admin/marketing/coupons/${target.id}`)
       toast.success('优惠券已删除')
-      await Promise.all([fetchCoupons(), fetchStats()])
+      await Promise.all([fetchCoupons(), fetchStats(), fetchPromotionRiskAnalysis(true)])
     } else if (type === 'level') {
       await axios.delete(`/api/admin/marketing/levels/${target.id}`)
       toast.success('会员等级已删除')
-      await fetchLevels()
+      await Promise.all([fetchLevels(), fetchPromotionRiskAnalysis(true)])
     }
   } catch (error) {
     console.error('Failed to delete marketing item:', error)
@@ -813,6 +868,7 @@ const ensureActiveTabLoaded = () => {
     ])
   }
   if (activeTab.value === 'levels' && !levelsLoaded.value) return fetchLevels()
+  if (activeTab.value === 'risk' && !promotionRiskLoaded.value) return fetchPromotionRiskAnalysis()
   return Promise.resolve()
 }
 
@@ -822,6 +878,7 @@ onMounted(() => Promise.all([
   fetchStats(),
   fetchLoyaltyProgramConfig(),
   fetchLevels(),
+  fetchPromotionRiskAnalysis(),
   ensureActiveTabLoaded()
 ]))
 </script>

@@ -81,7 +81,7 @@ func TestSetReturnsLookupErrorInsteadOfSaving(t *testing.T) {
 		WillReturnError(dbErr)
 
 	err := repo.Set(&setting.Setting{
-		Key:    "refund_return_policy",
+		Key:    "refund_cancellation_policy",
 		Locale: "en",
 		Value:  "{}",
 	})
@@ -104,7 +104,7 @@ func TestBatchSetReturnsLookupErrorInsteadOfSaving(t *testing.T) {
 	mock.ExpectRollback()
 
 	err := repo.BatchSet([]setting.Setting{{
-		Key:    "refund_return_policy",
+		Key:    "refund_cancellation_policy",
 		Locale: "en",
 		Value:  "{}",
 	}})

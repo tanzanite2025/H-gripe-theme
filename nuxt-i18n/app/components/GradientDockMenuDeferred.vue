@@ -17,7 +17,6 @@
 <script setup lang="ts">
 import { defineAsyncComponent, nextTick, onBeforeUnmount, onMounted, ref, type Component } from 'vue'
 import GradientDockMenuShell from '~/components/GradientDockMenuShell.vue'
-import { activateStorefrontClientOverlays } from '~/utils/clientOverlays'
 import { scheduleDeferredClientWork } from '~/utils/clientDeferredWork'
 import { STOREFRONT_IDLE_CLIENT_WORK } from '~/utils/storefrontLoadingPolicy'
 import { useSidePanelState } from '~/composables/useSidePanelState'
@@ -44,8 +43,6 @@ const activateDock = async () => {
   }
   cancelDeferredMount?.()
   cancelDeferredMount = null
-
-  activateStorefrontClientOverlays()
 
   await loadGradientDockMenu()
   await nextTick()

@@ -17,6 +17,7 @@
     "i18n:check": "tsx scripts/i18n/check-messages.ts",
     "test:seo": "tsx scripts/seo/test-product-output.ts",
     "check:seo-ssr": "tsx scripts/seo/check-product-ssr.ts",
+    "check:home-ssr": "tsx scripts/seo/check-homepage-ssr.ts",
     "check:seo-sitemap": "tsx scripts/seo/check-sitemap-xml.ts",
     "check:html-cache": "tsx scripts/storefront/check-html-cache-build.ts",
     "check:route-manifest": "tsx scripts/storefront/check-route-manifest.ts",

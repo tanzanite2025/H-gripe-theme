@@ -37,12 +37,12 @@
         :public-chat-agents="publicChatAgents"
         :public-chat-groups="publicChatGroups"
         :public-chat-agent-warnings="publicChatAgentWarnings"
-        :refund-return-policy="refundReturnPolicy"
-        :refund-return-policy-locale="refundReturnPolicyLocale"
-        :refund-return-policy-fallback="refundReturnPolicyFallback"
-        :loading-refund-return-policy="loadingRefundReturnPolicy"
-        :saving-refund-return-policy="savingRefundReturnPolicy"
-        :uploading-refund-return-section="uploadingRefundReturnSection"
+        :refund-cancellation-policy="refundCancellationPolicy"
+        :refund-cancellation-policy-locale="refundCancellationPolicyLocale"
+        :refund-cancellation-policy-fallback="refundCancellationPolicyFallback"
+        :loading-refund-cancellation-policy="loadingRefundCancellationPolicy"
+        :saving-refund-cancellation-policy="savingRefundCancellationPolicy"
+        :uploading-refund-cancellation-section="uploadingRefundCancellationSection"
         :can-edit="canEditActiveTab"
         @open-agent-dialog="openPublicChatAgentDialog"
         @open-group-dialog="openPublicChatGroupDialog"
@@ -53,9 +53,9 @@
         @upload-site-logo="uploadSiteLogo"
         @clear-site-logo="clearSiteLogo"
         @upload-site-favicon="uploadSiteFavicon"
-        @refund-return-locale-change="changeRefundReturnPolicyLocale"
-        @save-refund-return-policy="saveRefundReturnPolicy"
-        @upload-refund-return-image="uploadRefundReturnImage"
+        @refund-cancellation-locale-change="changeRefundCancellationPolicyLocale"
+        @save-refund-cancellation-policy="saveRefundCancellationPolicy"
+        @upload-refund-cancellation-image="uploadRefundCancellationImage"
       />
     </div>
 
@@ -92,13 +92,13 @@ import SettingsTabsPanel from '@/components/admin/settings/SettingsTabsPanel.vue
 import { Button } from '@/components/ui/button'
 import { useRouteTab } from '@/composables/useRouteTab'
 import { useAdminI18n } from '@/i18n'
-import refundReturnPolicyApi from '@/api/refundReturnPolicy'
+import refundCancellationPolicyApi from '@/api/refundCancellationPolicy'
 import type {
-  RefundReturnPolicy,
-  RefundReturnPolicyEditor,
-  RefundReturnPolicyEditorSection,
-  RefundReturnPolicySection,
-} from '@/api/refundReturnPolicy'
+  RefundCancellationPolicy,
+  RefundCancellationPolicyEditor,
+  RefundCancellationPolicyEditorSection,
+  RefundCancellationPolicySection,
+} from '@/api/refundCancellationPolicy'
 import mediaApi from '@/api/media'
 import { assetAccessURL } from '@/lib/mediaPresentation'
 import { validateUploadFile } from '@/lib/uploadSpecs'
@@ -113,7 +113,7 @@ const CUSTOMS_LOOKUP_US_HTS_ENDPOINT = 'https://hts.usitc.gov/reststop/search'
 const CUSTOMS_LOOKUP_UK_TRADE_TARIFF_ENDPOINT = 'https://www.trade-tariff.service.gov.uk/api/v2/commodities'
 const activeTab = useRouteTab({
   defaultValue: 'site',
-  values: ['site', 'email', 'markets', 'api', 'commercial_crawler', 'public_chat', 'refund_return'],
+  values: ['site', 'email', 'markets', 'api', 'commercial_crawler', 'public_chat', 'refund_cancellation'],
   routes: {
     site: 'SettingsSite',
     email: 'SettingsEmail',
@@ -121,7 +121,7 @@ const activeTab = useRouteTab({
     api: 'SettingsApi',
     commercial_crawler: 'SettingsCommercialCrawler',
     public_chat: 'SupportPublicChat',
-    refund_return: 'ContentRefundReturn',
+    refund_cancellation: 'ContentRefundCancellation',
   },
 })
 
@@ -140,13 +140,13 @@ interface SettingsGroupDefinition {
 
 const pageTitle = computed(() => {
   if (activeTab.value === 'public_chat') return t('settings.publicChatTitle')
-  if (activeTab.value === 'refund_return') return '退货退款'
+  if (activeTab.value === 'refund_cancellation') return '退款取消政策'
   return t('settings.systemTitle')
 })
 const pageDescription = computed(() => {
   if (activeTab.value === 'markets') return t('settings.marketsDescription')
   if (activeTab.value === 'public_chat') return t('settings.publicChatDescription')
-  if (activeTab.value === 'refund_return') return '集中维护前台退货退款政策，支持图片说明并可在页面或弹窗复用。'
+  if (activeTab.value === 'refund_cancellation') return '集中维护前台退款取消政策，支持图片说明并可在页面或弹窗复用。'
   return t('settings.systemDescription')
 })
 const saving = ref(false)
@@ -155,7 +155,7 @@ const uploadingSiteLogo = ref(false)
 const uploadingSiteFavicon = ref(false)
 const showSmtpPassword = ref(false)
 const loadedGroups = new Set()
-const selfSavingTabs = new Set(['markets', 'api', 'commercial_crawler', 'public_chat', 'refund_return'])
+const selfSavingTabs = new Set(['markets', 'api', 'commercial_crawler', 'public_chat', 'refund_cancellation'])
 
 const siteSettings = reactive({
   site_name: '',
@@ -191,11 +191,11 @@ const apiSettings = reactive<ApiManagementSettings>({
 })
 const commercialCrawlerProtection = ref(null)
 const loadingCommercialCrawlerProtection = ref(false)
-const refundReturnPolicyLocale = ref('en')
-const refundReturnPolicyFallback = ref(false)
-const loadingRefundReturnPolicy = ref(false)
-const savingRefundReturnPolicy = ref(false)
-const uploadingRefundReturnSection = ref<number | null>(null)
+const refundCancellationPolicyLocale = ref('en')
+const refundCancellationPolicyFallback = ref(false)
+const loadingRefundCancellationPolicy = ref(false)
+const savingRefundCancellationPolicy = ref(false)
+const uploadingRefundCancellationSection = ref<number | null>(null)
 
 const loadingPublicChatAgents = ref(false)
 const publicChatAgentsOverview = ref(null)
@@ -233,7 +233,7 @@ const selectedPublicChatAgentCandidate = computed(() =>
   publicChatAgentCandidates.value.find((candidate) => String(candidate.user_id) === String(publicChatAgentForm.user_id))
 )
 
-const createRefundReturnPolicyForm = (): RefundReturnPolicyEditor => ({
+const createRefundCancellationPolicyForm = (): RefundCancellationPolicyEditor => ({
   title: '',
   intro: '',
   sections: [],
@@ -242,7 +242,7 @@ const createRefundReturnPolicyForm = (): RefundReturnPolicyEditor => ({
   updated_at: '',
 })
 
-const refundReturnPolicy = reactive<RefundReturnPolicyEditor>(createRefundReturnPolicyForm())
+const refundCancellationPolicy = reactive<RefundCancellationPolicyEditor>(createRefundCancellationPolicyForm())
 
 const applyTimezoneDefaults = (clearExternalConfig = false) => {
   apiSettings.time_api_default_timezone = String(apiSettings.time_api_default_timezone || '').trim() || 'Asia/Shanghai'
@@ -308,7 +308,7 @@ const groupDefinitions: Record<string, SettingsGroupDefinition> = {
 
 const hasPermission = (permission) => authStore.hasPermission(permission)
 const canEditActiveTab = computed(() => (
-  activeTab.value === 'refund_return'
+  activeTab.value === 'refund_cancellation'
     ? hasPermission('content:edit')
     : hasPermission('settings:edit')
 ))
@@ -395,7 +395,7 @@ const fetchCommercialCrawlerProtection = async () => {
   }
 }
 
-const normalizePolicySection = (section: Partial<RefundReturnPolicySection>, index: number): RefundReturnPolicyEditorSection => ({
+const normalizePolicySection = (section: Partial<RefundCancellationPolicySection>, index: number): RefundCancellationPolicyEditorSection => ({
   id: String(section?.id || `section-${index + 1}`).trim(),
   title: String(section?.title || '').trim(),
   body: String(section?.body || '').trim(),
@@ -408,8 +408,8 @@ const normalizePolicySection = (section: Partial<RefundReturnPolicySection>, ind
   },
 })
 
-const applyRefundReturnPolicy = (policy: Partial<RefundReturnPolicy> = {}) => {
-  Object.assign(refundReturnPolicy, {
+const applyRefundCancellationPolicy = (policy: Partial<RefundCancellationPolicy> = {}) => {
+  Object.assign(refundCancellationPolicy, {
     title: String(policy.title || '').trim(),
     intro: String(policy.intro || '').trim(),
     sections: Array.isArray(policy.sections)
@@ -421,24 +421,24 @@ const applyRefundReturnPolicy = (policy: Partial<RefundReturnPolicy> = {}) => {
   })
 }
 
-const fetchRefundReturnPolicy = async () => {
-  loadingRefundReturnPolicy.value = true
+const fetchRefundCancellationPolicy = async () => {
+  loadingRefundCancellationPolicy.value = true
   try {
-    const response = await refundReturnPolicyApi.get(refundReturnPolicyLocale.value)
-    applyRefundReturnPolicy(response.policy || {})
-    refundReturnPolicyFallback.value = Boolean(response.fallback)
+    const response = await refundCancellationPolicyApi.get(refundCancellationPolicyLocale.value)
+    applyRefundCancellationPolicy(response.policy || {})
+    refundCancellationPolicyFallback.value = Boolean(response.fallback)
   } catch (error) {
-    console.error('Failed to fetch refund return policy:', error)
-    toast.error('退货退款内容加载失败')
+    console.error('Failed to fetch refund cancellation policy:', error)
+    toast.error('退款取消政策内容加载失败')
   } finally {
-    loadingRefundReturnPolicy.value = false
+    loadingRefundCancellationPolicy.value = false
   }
 }
 
-const normalizePolicyForSave = (): RefundReturnPolicy => ({
-  title: refundReturnPolicy.title.trim(),
-  intro: refundReturnPolicy.intro.trim(),
-  sections: refundReturnPolicy.sections.map((section, index) => ({
+const normalizePolicyForSave = (): RefundCancellationPolicy => ({
+  title: refundCancellationPolicy.title.trim(),
+  intro: refundCancellationPolicy.intro.trim(),
+  sections: refundCancellationPolicy.sections.map((section, index) => ({
     id: section.id.trim() || `section-${index + 1}`,
     title: section.title.trim(),
     body: section.body.trim(),
@@ -454,66 +454,66 @@ const normalizePolicyForSave = (): RefundReturnPolicy => ({
         }
       : undefined,
   })),
-  contact_label: refundReturnPolicy.contact_label.trim(),
-  contact_url: refundReturnPolicy.contact_url.trim(),
-  updated_at: refundReturnPolicy.updated_at,
+  contact_label: refundCancellationPolicy.contact_label.trim(),
+  contact_url: refundCancellationPolicy.contact_url.trim(),
+  updated_at: refundCancellationPolicy.updated_at,
 })
 
-const saveRefundReturnPolicy = async () => {
+const saveRefundCancellationPolicy = async () => {
   if (!hasPermission('content:edit')) return
-  savingRefundReturnPolicy.value = true
+  savingRefundCancellationPolicy.value = true
   try {
-    const response = await refundReturnPolicyApi.update(refundReturnPolicyLocale.value, normalizePolicyForSave())
-    applyRefundReturnPolicy(response.policy || {})
-    refundReturnPolicyFallback.value = Boolean(response.fallback)
-    toast.success('退货退款内容已保存')
+    const response = await refundCancellationPolicyApi.update(refundCancellationPolicyLocale.value, normalizePolicyForSave())
+    applyRefundCancellationPolicy(response.policy || {})
+    refundCancellationPolicyFallback.value = Boolean(response.fallback)
+    toast.success('退款取消政策内容已保存')
   } catch (error) {
-    console.error('Failed to save refund return policy:', error)
-    toast.error(error?.response?.data?.error || '退货退款内容保存失败')
+    console.error('Failed to save refund cancellation policy:', error)
+    toast.error(error?.response?.data?.error || '退款取消政策内容保存失败')
   } finally {
-    savingRefundReturnPolicy.value = false
+    savingRefundCancellationPolicy.value = false
   }
 }
 
-const changeRefundReturnPolicyLocale = async (locale) => {
+const changeRefundCancellationPolicyLocale = async (locale) => {
   const nextLocale = String(locale || '').trim()
-  if (!nextLocale || nextLocale === refundReturnPolicyLocale.value) return
-  refundReturnPolicyLocale.value = nextLocale
-  await fetchRefundReturnPolicy()
+  if (!nextLocale || nextLocale === refundCancellationPolicyLocale.value) return
+  refundCancellationPolicyLocale.value = nextLocale
+  await fetchRefundCancellationPolicy()
 }
 
-const uploadRefundReturnImage = async ({ index, file }) => {
+const uploadRefundCancellationImage = async ({ index, file }) => {
   if (!hasPermission('content:edit')) return
-  if (!file || !refundReturnPolicy.sections[index]) return
-  const validation = await validateUploadFile(file, 'refund_return_image')
+  if (!file || !refundCancellationPolicy.sections[index]) return
+  const validation = await validateUploadFile(file, 'refund_cancellation_image')
   if (!validation.ok) {
-    toast.error(validation.error || '退货退款图片不符合上传规范')
+    toast.error(validation.error || '退款取消政策图片不符合上传规范')
     return
   }
   if (validation.warning) toast.warning(validation.warning)
-  uploadingRefundReturnSection.value = index
+  uploadingRefundCancellationSection.value = index
   try {
     const formData = new FormData()
     formData.append('file', file)
     formData.append('media_type', 'image')
-    formData.append('image_purpose', 'refund_return_image')
-    formData.append('alt', refundReturnPolicy.sections[index].image.alt || refundReturnPolicy.sections[index].title || 'Refund return policy image')
-    const asset = await refundReturnPolicyApi.uploadImage(formData)
+    formData.append('image_purpose', 'refund_cancellation_image')
+    formData.append('alt', refundCancellationPolicy.sections[index].image.alt || refundCancellationPolicy.sections[index].title || 'Refund cancellation policy image')
+    const asset = await refundCancellationPolicyApi.uploadImage(formData)
     const imageURL = String(assetAccessURL(asset) || asset?.url || '').trim()
     if (!imageURL) {
       toast.error('上传成功但没有返回图片地址')
       return
     }
-    refundReturnPolicy.sections[index].image.url = imageURL
-    if (!refundReturnPolicy.sections[index].image.alt && asset.alt) {
-      refundReturnPolicy.sections[index].image.alt = String(asset.alt)
+    refundCancellationPolicy.sections[index].image.url = imageURL
+    if (!refundCancellationPolicy.sections[index].image.alt && asset.alt) {
+      refundCancellationPolicy.sections[index].image.alt = String(asset.alt)
     }
     toast.success('图片已上传，保存后前台生效')
   } catch (error) {
-    console.error('Failed to upload refund return image:', error)
-    toast.error(error?.response?.data?.error || '退货退款图片上传失败')
+    console.error('Failed to upload refund cancellation image:', error)
+    toast.error(error?.response?.data?.error || '退款取消政策图片上传失败')
   } finally {
-    uploadingRefundReturnSection.value = null
+    uploadingRefundCancellationSection.value = null
   }
 }
 
@@ -798,8 +798,8 @@ watch(activeTab, (tab) => {
   else if (tab === 'commercial_crawler') {
     fetchCommercialCrawlerProtection()
   }
-  else if (tab === 'refund_return') {
-    fetchRefundReturnPolicy()
+  else if (tab === 'refund_cancellation') {
+    fetchRefundCancellationPolicy()
   }
   else {
     fetchSettings(tab)

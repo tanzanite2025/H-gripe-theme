@@ -137,7 +137,7 @@ type Services struct {
 	Setting                           *service.SettingService
 	WebsiteProfile                    *service.WebsiteProfileService
 	WebsiteName                       *service.WebsiteNameService
-	RefundReturnPolicy                *service.RefundReturnPolicyService
+	RefundCancellationPolicy          *service.RefundCancellationPolicyService
 	PayPalDisputeInvoiceSellerProfile *service.PayPalDisputeInvoiceSellerProfileService
 	AdminSettings                     *service.AdminSettingsService
 	SEO                               *service.SEOService

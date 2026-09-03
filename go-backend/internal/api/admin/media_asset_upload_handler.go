@@ -25,8 +25,8 @@ func (h *MediaHandler) UploadAsset(c *gin.Context) {
 	h.uploadAsset(c, "")
 }
 
-func (h *MediaHandler) UploadRefundReturnPolicyImage(c *gin.Context) {
-	h.uploadAsset(c, string(upload.SpecRefundReturnImage))
+func (h *MediaHandler) UploadRefundCancellationPolicyImage(c *gin.Context) {
+	h.uploadAsset(c, string(upload.SpecRefundCancellationImage))
 }
 
 func (h *MediaHandler) uploadAsset(c *gin.Context, forcedPurpose string) {

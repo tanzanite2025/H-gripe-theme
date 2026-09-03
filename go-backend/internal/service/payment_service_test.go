@@ -93,6 +93,31 @@ func TestRecordVerifiedGatewayPaymentCreatesLedgerAndMarksOrderPaid(t *testing.T
 	assert.Equal(t, outboxdomain.EventTypeVerifiedConversion, conversion.EventType)
 }
 
+func TestRecordVerifiedGatewayPaymentReturnsOrderAlreadyPaidForDifferentTransaction(t *testing.T) {
+	db, paymentService := newTestPaymentService(t)
+	orderRecord := seedPaymentOrder(t, db, "ORD-PAY-ALREADY-PAID", 84, "processing", "paid")
+	seedCompletedTransaction(t, db, orderRecord.ID, "txn_original_paid", 84, "USD")
+
+	err := paymentService.RecordVerifiedGatewayPayment(VerifiedGatewayPaymentInput{
+		Provider:      "paypal",
+		OrderNumber:   orderRecord.OrderNumber,
+		TransactionID: "txn_provider_later_event",
+		PaymentMethod: "paypal",
+		Amount:        84,
+		Currency:      "USD",
+	})
+
+	require.ErrorIs(t, err, ErrOrderAlreadyPaid)
+
+	var transactionCount int64
+	require.NoError(t, db.Model(&paymentdomain.Transaction{}).Where("transaction_id = ?", "txn_provider_later_event").Count(&transactionCount).Error)
+	assert.Equal(t, int64(0), transactionCount)
+
+	var outboxCount int64
+	require.NoError(t, db.Model(&outboxdomain.Event{}).Count(&outboxCount).Error)
+	assert.Equal(t, int64(0), outboxCount)
+}
+
 func TestRecordVerifiedGatewayPaymentPersistsLiabilityShifted(t *testing.T) {
 	db, paymentService := newTestPaymentService(t)
 	shifted := true
@@ -331,6 +356,65 @@ func TestRecordVerifiedGatewayPaymentCreatesReviewForExpiredOrderLateSuccess(t *
 
 	var review paymentdomain.PaymentReview
 	require.NoError(t, db.Where("payment_intent_id = ? AND reason = ?", "pi_late_success", "payment_succeeded_after_expiration").First(&review).Error)
+	assert.Equal(t, "pending", review.Status)
+}
+
+func TestRecordVerifiedGatewayPaymentCreatesReviewForCancelledOrderLateSuccess(t *testing.T) {
+	db, paymentService := newTestPaymentService(t)
+	orderRecord := seedPaymentOrder(t, db, "ORD-PAY-CANCELLED-LATE-SUCCESS", 84, "cancelled", "unpaid")
+
+	input := VerifiedGatewayPaymentInput{
+		Provider:      "paypal",
+		OrderNumber:   orderRecord.OrderNumber,
+		TransactionID: "capture_cancelled_late",
+		PaymentMethod: "paypal",
+		Amount:        84,
+		Currency:      "USD",
+	}
+	require.NoError(t, paymentService.RecordVerifiedGatewayPayment(input))
+	require.NoError(t, paymentService.RecordVerifiedGatewayPayment(input))
+
+	var savedOrder order.Order
+	require.NoError(t, db.First(&savedOrder, orderRecord.ID).Error)
+	assert.Equal(t, "cancelled", savedOrder.Status)
+	assert.Equal(t, "unpaid", savedOrder.PaymentStatus)
+
+	var savedTransaction paymentdomain.Transaction
+	require.NoError(t, db.Where("transaction_id = ?", input.TransactionID).First(&savedTransaction).Error)
+	assert.Equal(t, "completed", savedTransaction.Status)
+	assert.Equal(t, "paypal", savedTransaction.PaymentMethod)
+
+	var review paymentdomain.PaymentReview
+	require.NoError(t, db.Where("payment_intent_id = ? AND reason = ?", input.TransactionID, "payment_succeeded_after_cancellation").First(&review).Error)
+	assert.Equal(t, "pending", review.Status)
+	require.NotNil(t, review.TransactionID)
+	assert.Equal(t, savedTransaction.ID, *review.TransactionID)
+
+	var reviewCount int64
+	require.NoError(t, db.Model(&paymentdomain.PaymentReview{}).
+		Where("payment_intent_id = ? AND reason = ?", input.TransactionID, "payment_succeeded_after_cancellation").
+		Count(&reviewCount).Error)
+	assert.Equal(t, int64(1), reviewCount)
+}
+
+func TestRecordVerifiedGatewayPaymentCreatesReviewForRefundedOrderLateSuccess(t *testing.T) {
+	db, paymentService := newTestPaymentService(t)
+	orderRecord := seedPaymentOrder(t, db, "ORD-PAY-REFUNDED-LATE-SUCCESS", 84, "refunded", "refunded")
+
+	require.NoError(t, paymentService.RecordVerifiedGatewayPayment(VerifiedGatewayPaymentInput{
+		Provider:      "stripe",
+		OrderNumber:   orderRecord.OrderNumber,
+		TransactionID: "pi_refunded_late",
+		Amount:        84,
+		Currency:      "USD",
+	}))
+
+	var savedTransaction paymentdomain.Transaction
+	require.NoError(t, db.Where("transaction_id = ?", "pi_refunded_late").First(&savedTransaction).Error)
+	assert.Equal(t, "completed", savedTransaction.Status)
+
+	var review paymentdomain.PaymentReview
+	require.NoError(t, db.Where("payment_intent_id = ? AND reason = ?", "pi_refunded_late", "payment_succeeded_after_refund").First(&review).Error)
 	assert.Equal(t, "pending", review.Status)
 }
 
@@ -1236,7 +1320,7 @@ func TestBuildPayPalDisputeEvidencePackageCollectsTrackingInvoiceAndCommunicatio
 	assert.Contains(t, pkg.Evidence.Notes, "Customer communication summary")
 }
 
-func TestBuildPayPalDisputeEvidencePackageBlocksHighValueINRWithoutSignaturePOD(t *testing.T) {
+func TestBuildPayPalDisputeEvidencePackageWarnsHighValueINRWithoutSignaturePOD(t *testing.T) {
 	db, paymentService := newTestPaymentService(t)
 	customer := seedPaymentUser(t, db, 53, "paypal-signature-pod@example.test")
 	orderRecord := seedDisputeEvidenceOrder(t, db, "ORD-PAYPAL-SIGNATURE-POD-1", customer.ID)
@@ -1247,9 +1331,10 @@ func TestBuildPayPalDisputeEvidencePackageBlocksHighValueINRWithoutSignaturePOD(
 
 	require.NoError(t, err)
 	require.True(t, pkg.CanSubmit)
-	require.False(t, pkg.SubmissionCheck.Ready)
-	require.NotEmpty(t, pkg.SubmissionCheck.Blockers)
-	assert.Contains(t, strings.Join(pkg.SubmissionCheck.Blockers, "\n"), "收件人签名或官方 POD")
+	require.True(t, pkg.SubmissionCheck.Ready)
+	require.True(t, pkg.SubmissionCheck.OverrideRequired)
+	assert.Empty(t, pkg.SubmissionCheck.Blockers)
+	assert.Contains(t, strings.Join(pkg.SubmissionCheck.Warnings, "\n"), "收件人签名或官方 POD")
 	assert.Contains(t, strings.Join(pkg.Warnings, "\n"), "high-value USD INR")
 	assert.Contains(t, pkg.Evidence.ProofOfDeliverySummary, "Delivery scan")
 	assert.NotContains(t, pkg.Evidence.ProofOfDeliverySummary, "Signature POD")
@@ -1443,7 +1528,7 @@ func TestSubmitPayPalDisputeEvidenceUsesCompactInvoiceWhenCommercialInvoiceExcee
 	assert.Contains(t, saved.EvidenceSubmissionPayload, "compact fallback was used before upload")
 }
 
-func TestSubmitPayPalDisputeEvidenceRequiresTracking(t *testing.T) {
+func TestSubmitPayPalDisputeEvidenceAllowsMissingTrackingAfterWarningOverride(t *testing.T) {
 	db, paymentService := newTestPaymentService(t)
 	customer := seedPaymentUser(t, db, 46, "paypal-no-track@example.test")
 	orderRecord := seedDisputeEvidenceOrder(t, db, "ORD-PAYPAL-EVIDENCE-3", customer.ID)
@@ -1452,6 +1537,8 @@ func TestSubmitPayPalDisputeEvidenceRequiresTracking(t *testing.T) {
 	orderRecord.ProviderCarrierName = ""
 	require.NoError(t, db.Save(&orderRecord).Error)
 	disputeRecord := seedPayPalDispute(t, db, "PP-D-NO-TRACK-1", orderRecord.ID, "WAITING_FOR_SELLER_RESPONSE", "REQUIRED_ACTION")
+	fakeSubmitter := &fakePayPalDisputeEvidenceSubmitter{}
+	paymentService.ConfigurePayPalDisputeEvidenceSubmitter(fakeSubmitter)
 
 	_, err := paymentService.SubmitPayPalDisputeEvidence(nil, SubmitPayPalDisputeEvidenceInput{
 		DisputeID: disputeRecord.ID,
@@ -1459,10 +1546,29 @@ func TestSubmitPayPalDisputeEvidenceRequiresTracking(t *testing.T) {
 		SecretKey: "paypal-secret",
 	})
 
-	require.ErrorIs(t, err, ErrPayPalDisputeEvidenceTrackingNeeded)
+	require.ErrorIs(t, err, ErrPayPalDisputeEvidenceWarningConfirmationRequired)
+	var rejected paymentdomain.PayPalDispute
+	require.NoError(t, db.First(&rejected, disputeRecord.ID).Error)
+	assert.Contains(t, rejected.EvidenceSubmissionError, ErrPayPalDisputeEvidenceWarningConfirmationRequired.Error())
+	assert.Contains(t, rejected.EvidenceSubmissionPayload, "订单没有物流单号")
+
+	result, err := paymentService.SubmitPayPalDisputeEvidence(nil, SubmitPayPalDisputeEvidenceInput{
+		DisputeID:        disputeRecord.ID,
+		ClientID:         "paypal-client",
+		SecretKey:        "paypal-secret",
+		OverrideWarnings: true,
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	require.NotNil(t, fakeSubmitter.params)
+	require.NotNil(t, fakeSubmitter.params.Evidences)
+	require.Empty(t, fakeSubmitter.params.Evidences.EvidenceInfo.TrackingInfo)
 	var saved paymentdomain.PayPalDispute
 	require.NoError(t, db.First(&saved, disputeRecord.ID).Error)
-	assert.Contains(t, saved.EvidenceSubmissionError, ErrPayPalDisputeEvidenceTrackingNeeded.Error())
+	assert.Empty(t, saved.EvidenceSubmissionError)
+	assert.Contains(t, saved.EvidenceSubmissionPayload, "submission_warnings")
+	assert.Contains(t, saved.EvidenceSubmissionPayload, "override_warnings")
 }
 
 type fakePayPalDisputeEvidenceSubmitter struct {
@@ -1636,15 +1742,15 @@ func seedTrackingEvidenceWithPOD(t *testing.T, db *gorm.DB, orderID uint, tracki
 		Enabled:             true,
 	}).Error)
 	require.NoError(t, db.Create(&shippingdomain.TrackingEvent{
-		OrderID:             orderID,
-		TrackingNumber:      trackingNumber,
-		ProviderCarrierCode: "DHL",
-		Status:              "Delivered",
-		Location:            "Los Angeles, US",
-		Description:         "Delivered and signed by recipient",
+		OrderID:                orderID,
+		TrackingNumber:         trackingNumber,
+		ProviderCarrierCode:    "DHL",
+		Status:                 "Delivered",
+		Location:               "Los Angeles, US",
+		Description:            "Delivered and signed by recipient",
 		RecipientSignatureName: recipientSignatureName,
 		ProofOfDeliveryURL:     proofOfDeliveryURL,
-		EventTime:           time.Now().Add(-24 * time.Hour),
+		EventTime:              time.Now().Add(-24 * time.Hour),
 	}).Error)
 }
 

@@ -81,7 +81,7 @@ type ShippingRule struct {
 	MinValue         float64        `gorm:"default:0" json:"min_value"`
 	MaxValue         float64        `gorm:"default:0" json:"max_value"`
 	Fee              float64        `gorm:"not null" json:"fee"`
-	Additional       float64        `gorm:"default:0" json:"additional"` // 续重/续件费用
+	Additional       float64        `gorm:"default:0" json:"additional"` // 续重/续件费用，首个计费单位包含在 Fee 中
 	DisplayPriceData datatypes.JSON `gorm:"column:display_price_snapshots;type:json;not null;default:'{}'" json:"display_price_snapshots,omitempty"`
 	CreatedAt        time.Time      `json:"created_at"`
 }

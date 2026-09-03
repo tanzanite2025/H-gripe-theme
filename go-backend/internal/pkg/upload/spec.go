@@ -24,7 +24,7 @@ const (
 	SpecCustomerServiceAvatar        SpecCode = "customer_service_avatar"
 	SpecWebsiteProfileAvatar         SpecCode = "website_profile_avatar"
 	SpecWebsiteProfileImage          SpecCode = "website_profile_image"
-	SpecRefundReturnImage            SpecCode = "refund_return_image"
+	SpecRefundCancellationImage      SpecCode = "refund_cancellation_image"
 	SpecWarrantyEvidence             SpecCode = "warranty_evidence"
 	SpecAfterSalesEvidence           SpecCode = "after_sales_evidence"
 	SpecSuggestionAttachment         SpecCode = "suggestion_attachment"
@@ -196,10 +196,10 @@ var uploadSpecDefinitions = map[SpecCode]uploadSpecDefinition{
 		1600,
 		"Use at least 1600 px on the long edge.",
 	),
-	SpecRefundReturnImage: makeImageSpec(
-		SpecRefundReturnImage,
-		"Refund and return policy image",
-		"Illustration or evidence image shown inside the refund and return policy.",
+	SpecRefundCancellationImage: makeImageSpec(
+		SpecRefundCancellationImage,
+		"Refund & Cancellation Policy image",
+		"Illustration or evidence image shown inside the Refund & Cancellation Policy.",
 		ProductDescriptionImageRule,
 		0,
 		0,

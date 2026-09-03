@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	fitmentcatalogdomain "commerce-platform/internal/domain/fitmentcatalog"
+	productdomain "commerce-platform/internal/domain/product"
 	spokedomain "commerce-platform/internal/domain/spoke"
 	"commerce-platform/internal/repository"
 
@@ -28,6 +29,7 @@ func TestSpokeServiceUsesFitmentHubSpecificationsAsOnlyHubSource(t *testing.T) {
 
 	require.NoError(t, db.AutoMigrate(
 		&fitmentcatalogdomain.HubSpecification{},
+		&productdomain.ProductBrand{},
 		&spokedomain.CatalogRimBrand{},
 		&spokedomain.CatalogRimModel{},
 		&spokedomain.CatalogHubBrand{},
@@ -71,11 +73,20 @@ func TestSpokeServiceUsesFitmentHubSpecificationsAsOnlyHubSource(t *testing.T) {
 		SortOrder:     2,
 	}).Error)
 
+	require.NoError(t, db.Create(&productdomain.ProductBrand{
+		Name:      "Test rims",
+		Slug:      "test-rims",
+		IsEnabled: true,
+		SortOrder: 0,
+	}).Error)
+
 	erd := 598.0
-	spokeService := NewSpokeService(repository.NewSpokeRepository(
+	spokeRepo := repository.NewSpokeRepository(
 		db,
 		repository.NewFitmentHubSpecificationRepository(db),
-	))
+	)
+	spokeRepo.ConfigureProductBrandRepository(repository.NewProductBrandRepository(db))
+	spokeService := NewSpokeService(spokeRepo)
 
 	export, err := spokeService.ReplaceCatalog(spokedomain.ExportResponse{
 		Rims: []spokedomain.RimBrand{
@@ -165,6 +176,7 @@ func TestSpokeServiceKeepsPresetAfterFitmentHubCodeChange(t *testing.T) {
 		&fitmentcatalogdomain.FrameFitmentEntry{},
 		&fitmentcatalogdomain.FrameHubSpecification{},
 		&fitmentcatalogdomain.HubSpecification{},
+		&productdomain.ProductBrand{},
 		&spokedomain.CatalogRimBrand{},
 		&spokedomain.CatalogRimModel{},
 		&spokedomain.CatalogHubBrand{},
@@ -174,6 +186,7 @@ func TestSpokeServiceKeepsPresetAfterFitmentHubCodeChange(t *testing.T) {
 
 	hubRepository := repository.NewFitmentHubSpecificationRepository(db)
 	spokeRepository := repository.NewSpokeRepository(db, hubRepository)
+	spokeRepository.ConfigureProductBrandRepository(repository.NewProductBrandRepository(db))
 	spokeService := NewSpokeService(spokeRepository)
 
 	require.NoError(t, db.Create(&fitmentcatalogdomain.HubSpecification{
@@ -187,6 +200,12 @@ func TestSpokeServiceKeepsPresetAfterFitmentHubCodeChange(t *testing.T) {
 		PCDRMM:        spokeTestFloatPointer(46),
 		PCDLMM:        spokeTestFloatPointer(46),
 		IsEnabled:     true,
+	}).Error)
+
+	require.NoError(t, db.Create(&productdomain.ProductBrand{
+		Name:      "Test rims",
+		Slug:      "test-rims",
+		IsEnabled: true,
 	}).Error)
 
 	var specification fitmentcatalogdomain.HubSpecification

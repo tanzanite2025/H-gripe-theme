@@ -81,7 +81,7 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 	authHandler := auth.NewHandler(authService, cookieOptions)
 	browsingHistoryHandler := auth.NewBrowsingHistoryHandler(services.User)
 	contentHandler := content.NewHandler(postService, faqService, services.Media)
-	contentHandler.ConfigureRefundReturnPolicyService(services.RefundReturnPolicy)
+	contentHandler.ConfigureRefundCancellationPolicyService(services.RefundCancellationPolicy)
 	faqHandler := faq.NewHandler(faqService)
 	productHandler := product.NewHandler(productService)
 	productHandler.ConfigureProductCategoryService(services.ProductCategory)
@@ -224,7 +224,7 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 			contentGroup.GET("/faqs/category/:category", contentHandler.GetFAQsByCategory)
 			contentGroup.GET("/faqs/popular", contentHandler.GetPopularFAQs)
 			contentGroup.POST("/faqs/:id/view", faqHandler.IncrementFAQView)
-			contentGroup.GET("/refund-return-policy", contentHandler.GetRefundReturnPolicy)
+			contentGroup.GET("/refund-cancellation-policy", contentHandler.GetRefundCancellationPolicy)
 		}
 
 		// 推荐行为事件路由（公开，可选认证）

@@ -165,7 +165,7 @@ const zhCN = {
     'content-page-feedback': '页面留言',
     'content-faqs': 'FAQ 内容',
     'content-visual-showcase': '首页视觉目录',
-    'content-refund-return': '退货退款',
+  'content-refund-cancellation': '退款取消政策',
     'media-center': '媒体中心',
     'media-library': '媒体库',
     'media-derivatives': '图片尺寸转换',

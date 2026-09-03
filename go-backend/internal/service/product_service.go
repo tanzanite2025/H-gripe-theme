@@ -169,6 +169,7 @@ func (s *ProductService) ConfigureTxManager(manager *repository.TxManager) {
 var (
 	ErrProductNotFound                           = errors.New("product not found")
 	ErrProductSKUExists                          = errors.New("product sku already exists")
+	ErrProductSlugInvalid                        = errors.New("product slug invalid")
 	ErrProductSpecificationTemplateNotFound      = errors.New("product specification template not found")
 	ErrProductSpecificationTemplateInvalid       = errors.New("product specification template invalid")
 	ErrProductSpecificationTemplateSlugExists    = errors.New("product specification template slug already exists")
@@ -196,6 +197,9 @@ type ProductSearchInput struct {
 	SpecFilters                      map[string][]string
 	Page                             int
 	PageSize                         int
+	// OffsetPageSize lets lookahead callers fetch PageSize rows while keeping
+	// the page offset based on the nominal user-visible page size.
+	OffsetPageSize int
 }
 
 type ProductRecommendationCandidateInput struct {
@@ -482,6 +486,13 @@ func (s *ProductService) validateInformationTemplate(id *uint, expectedKind, loc
 }
 
 func (s *ProductService) List(locale, status string, featured bool, page, pageSize int) ([]product.Product, int64, error) {
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 {
+		pageSize = 20
+	}
+
 	offset := (page - 1) * pageSize
 	products, total, err := s.productRepo.List(locale, status, featured, offset, pageSize)
 	return sanitizeProductSliceHTML(products), total, err
@@ -527,15 +538,7 @@ func (s *ProductService) ListRecommendationCandidates(input ProductRecommendatio
 }
 
 func (s *ProductService) SearchPublic(input ProductSearchInput) ([]product.Product, int64, error) {
-	page := input.Page
-	pageSize := input.PageSize
-	if page < 1 {
-		page = 1
-	}
-	if pageSize < 1 {
-		pageSize = 20
-	}
-	offset := (page - 1) * pageSize
+	offset, limit := resolveProductSearchPagination(input)
 	query := repository.ProductSearchQuery{
 		Locale:                           input.Locale,
 		Status:                           "active",
@@ -548,7 +551,7 @@ func (s *ProductService) SearchPublic(input ProductSearchInput) ([]product.Produ
 		PriceMax:                         input.PriceMax,
 		SpecFilters:                      input.SpecFilters,
 		Offset:                           offset,
-		Limit:                            pageSize,
+		Limit:                            limit,
 	}
 	products, total, err := s.productRepo.SearchPublic(query)
 	return sanitizeProductSliceHTML(products), total, err
@@ -558,14 +561,7 @@ func (s *ProductService) SearchPublic(input ProductSearchInput) ([]product.Produ
 // full result count and detail-only relations while still accepting a
 // lookahead limit so the caller can calculate has_more.
 func (s *ProductService) SearchPublicCompact(input ProductSearchInput) ([]product.Product, error) {
-	page := input.Page
-	pageSize := input.PageSize
-	if page < 1 {
-		page = 1
-	}
-	if pageSize < 1 {
-		pageSize = 20
-	}
+	offset, limit := resolveProductSearchPagination(input)
 
 	products, err := s.productRepo.SearchPublicCompact(repository.ProductSearchQuery{
 		Locale:                           input.Locale,
@@ -578,10 +574,26 @@ func (s *ProductService) SearchPublicCompact(input ProductSearchInput) ([]produc
 		PriceMin:                         input.PriceMin,
 		PriceMax:                         input.PriceMax,
 		SpecFilters:                      input.SpecFilters,
-		Offset:                           (page - 1) * pageSize,
-		Limit:                            pageSize,
+		Offset:                           offset,
+		Limit:                            limit,
 	})
 	return sanitizeProductSliceHTML(products), err
+}
+
+func resolveProductSearchPagination(input ProductSearchInput) (offset int, limit int) {
+	page := input.Page
+	if page < 1 {
+		page = 1
+	}
+	limit = input.PageSize
+	if limit < 1 {
+		limit = 20
+	}
+	offsetPageSize := input.OffsetPageSize
+	if offsetPageSize < 1 {
+		offsetPageSize = limit
+	}
+	return (page - 1) * offsetPageSize, limit
 }
 
 func (s *ProductService) Create(p *product.Product) error {

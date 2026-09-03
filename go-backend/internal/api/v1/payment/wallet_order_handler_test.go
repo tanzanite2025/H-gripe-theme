@@ -15,6 +15,32 @@ import (
 	"gorm.io/gorm"
 )
 
+func TestCreateStripePaymentIntentRejectsZeroTotalBeforeGateway(t *testing.T) {
+	gateway := &fakePaymentGateway{}
+	db, handler := newPayPalHandlerTestHarness(t, gateway)
+	orderRecord := seedWalletOrder(t, db, "ORD-STRIPE-ZERO", 7, "stripe", 0, "USD", "pending", "unpaid")
+
+	recorder := httptest.NewRecorder()
+	context, _ := gin.CreateTestContext(recorder)
+	context.Set("user_id", uint(7))
+	context.Request = httptest.NewRequest(
+		http.MethodPost,
+		"/api/v1/payment/stripe/payment-intent",
+		bytes.NewBufferString(`{"order_number":"ORD-STRIPE-ZERO"}`),
+	)
+	context.Request.Header.Set("Content-Type", "application/json")
+
+	handler.CreateStripePaymentIntent(context)
+
+	require.Equal(t, http.StatusBadRequest, recorder.Code)
+	require.Contains(t, recorder.Body.String(), "order_has_no_payable_amount")
+	require.Nil(t, gateway.createRequest)
+
+	var transactionCount int64
+	require.NoError(t, db.Model(&paymentdomain.Transaction{}).Where("order_id = ?", orderRecord.ID).Count(&transactionCount).Error)
+	require.Zero(t, transactionCount)
+}
+
 func TestCreateAlipayOrderRecordsPendingAttempt(t *testing.T) {
 	db, handler := newPayPalHandlerTestHarness(t, &fakePaymentGateway{
 		createResponse: &pgateway.PaymentResponse{

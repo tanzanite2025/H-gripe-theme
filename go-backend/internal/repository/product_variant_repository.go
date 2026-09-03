@@ -3,6 +3,7 @@ package repository
 import (
 	"commerce-platform/internal/domain/product"
 	"fmt"
+	"sort"
 
 	"gorm.io/gorm"
 )
@@ -142,7 +143,8 @@ func (r *ProductRepository) DecrementVariantStocks(items map[uint]int) ([]uint, 
 		return nil, nil
 	}
 
-	for variantID, quantity := range items {
+	for _, variantID := range uintMapKeys(items) {
+		quantity := items[variantID]
 		res := r.db.Model(&product.ProductVariant{}).
 			Where("id = ? AND is_active = ? AND stock >= ?", variantID, true, quantity).
 			UpdateColumn("stock", gorm.Expr("stock - ?", quantity))
@@ -182,6 +184,7 @@ func (r *ProductRepository) refreshProductStockForVariants(items map[uint]int) (
 		return nil, err
 	}
 
+	sortUintIDs(productIDs)
 	for _, productID := range productIDs {
 		var totalStock int64
 		if err := r.db.Model(&product.ProductVariant{}).
@@ -205,5 +208,12 @@ func uintMapKeys(items map[uint]int) []uint {
 	for key := range items {
 		keys = append(keys, key)
 	}
+	sortUintIDs(keys)
 	return keys
+}
+
+func sortUintIDs(ids []uint) {
+	sort.Slice(ids, func(i, j int) bool {
+		return ids[i] < ids[j]
+	})
 }

@@ -2,6 +2,7 @@ package repository
 
 import (
 	"commerce-platform/internal/domain/product"
+	spokedomain "commerce-platform/internal/domain/spoke"
 
 	"gorm.io/gorm"
 )
@@ -54,6 +55,14 @@ func (r *ProductBrandRepository) ExistsBySlug(slug string, excludeID uint) (bool
 func (r *ProductBrandRepository) CountProducts(id uint) (int64, error) {
 	var count int64
 	if err := r.db.Unscoped().Model(&product.Product{}).Where("brand_id = ?", id).Count(&count).Error; err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
+func (r *ProductBrandRepository) CountSpokeRimBrands(id uint) (int64, error) {
+	var count int64
+	if err := r.db.Unscoped().Model(&spokedomain.CatalogRimBrand{}).Where("product_brand_id = ?", id).Count(&count).Error; err != nil {
 		return 0, err
 	}
 	return count, nil

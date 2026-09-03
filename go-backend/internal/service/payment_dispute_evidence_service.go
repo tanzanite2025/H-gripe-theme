@@ -158,7 +158,7 @@ func (s *PaymentService) BuildStripeDisputeEvidencePackage(disputeID uint) (*Str
 		}
 	}
 	if pkg.PolicyDisclosure == nil {
-		pkg.Warnings = append(pkg.Warnings, "No order-level refund and return policy disclosure snapshot was found; the current policy page will not be used as historical evidence.")
+		pkg.Warnings = append(pkg.Warnings, "No order-level refund and cancellation policy disclosure snapshot was found; the current policy page will not be used as historical evidence.")
 	}
 
 	if s.shippingRepo != nil {
@@ -384,7 +384,7 @@ func disputeUncategorizedText(orderRecord *orderdomain.Order, disputeRecord *pay
 	}
 	if policyDisclosure != nil {
 		lines = append(lines, fmt.Sprintf(
-			"Refund and return policy disclosure: version=%s; hash=%s; locale=%s; URL=%s; disclosed_at=%s; consented_at=%s; source=%s.",
+			"Refund & Cancellation Policy disclosure: version=%s; hash=%s; locale=%s; URL=%s; disclosed_at=%s; consented_at=%s; source=%s.",
 			policyDisclosure.PolicyVersion,
 			policyDisclosure.PolicyHash,
 			policyDisclosure.Locale,

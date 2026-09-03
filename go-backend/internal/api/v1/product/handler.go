@@ -1,6 +1,7 @@
 package product
 
 import (
+	"errors"
 	"strings"
 
 	"commerce-platform/internal/api/middleware"
@@ -8,6 +9,7 @@ import (
 	"commerce-platform/internal/pkg/apierror"
 	"commerce-platform/internal/pkg/pagination"
 	"commerce-platform/internal/pkg/response"
+	"commerce-platform/internal/repository"
 	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -90,7 +92,7 @@ func (h *Handler) ListProducts(c *gin.Context) {
 			locale,
 			featured,
 			params.Page,
-			params.PageSize+1,
+			params.PageSize,
 		)
 	} else {
 		var featuredFilter *bool
@@ -102,7 +104,7 @@ func (h *Handler) ListProducts(c *gin.Context) {
 			Featured:     featuredFilter,
 			CategorySlug: categorySlug,
 			Page:         params.Page,
-			PageSize:     params.PageSize + 1,
+			PageSize:     params.PageSize,
 		})
 	}
 	if err != nil {
@@ -110,8 +112,8 @@ func (h *Handler) ListProducts(c *gin.Context) {
 		return
 	}
 
-	publicProducts, hasMore := trimPublicProductPage(products, params.PageSize)
-	publicProductResponses := PublicProductsFromDomainWithLocaleAndDisplayCurrency(publicProducts, publicContext.DisplayCurrency, locale, h.mediaService)
+	hasMore := hasMorePublicProductPage(total, params.Page, params.PageSize)
+	publicProductResponses := PublicProductsFromDomainWithLocaleAndDisplayCurrency(products, publicContext.DisplayCurrency, locale, h.mediaService)
 	h.attachReviewSummaries(publicProductResponses)
 	c.JSON(200, gin.H{
 		"code":      0,
@@ -163,7 +165,11 @@ func (h *Handler) GetProduct(c *gin.Context) {
 
 	product, translationRoutes, err := h.productService.GetPublicBySlugWithRoutesContext(c.Request.Context(), slug, locale)
 	if err != nil {
-		apierror.RespondNotFound(c, "Product")
+		if errors.Is(err, service.ErrProductNotFound) || repository.IsRecordNotFound(err) {
+			apierror.RespondNotFound(c, "Product")
+			return
+		}
+		apierror.RespondInternalError(c, err)
 		return
 	}
 
@@ -320,4 +326,11 @@ func trimPublicProductPage(products []productdomain.Product, pageSize int) ([]pr
 		return products, false
 	}
 	return products[:pageSize], true
+}
+
+func hasMorePublicProductPage(total int64, page, pageSize int) bool {
+	if total <= 0 || page < 1 || pageSize < 1 {
+		return false
+	}
+	return total > int64(page)*int64(pageSize)
 }

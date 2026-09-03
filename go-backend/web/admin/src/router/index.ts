@@ -29,6 +29,7 @@ const marketingRedirect = (to: RouteLocationNormalized): RouteLocationRaw => {
         coupons: 'MarketingCoupons',
         giftcards: 'MarketingGiftCards',
         levels: 'MarketingLevels',
+        risk: 'MarketingPromotionRisk',
       }[tab] || 'MarketingCoupons'
 
   return {
@@ -602,10 +603,10 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '首页视觉目录', permission: 'content:view' }
       },
       {
-        path: 'content/refund-return',
-        name: 'ContentRefundReturn',
+        path: 'content/refund-cancellation',
+        name: 'ContentRefundCancellation',
         component: () => import('@/views/Settings.vue'),
-        meta: { title: '退货退款', permission: 'content:view' }
+        meta: { title: '退款取消政策', permission: 'content:view' }
       },
       {
         path: 'support/conversations',
@@ -686,6 +687,12 @@ const routes: RouteRecordRaw[] = [
         name: 'MarketingLevels',
         component: () => import('@/views/Marketing.vue'),
         meta: { title: '会员等级', permission: 'marketing:view' }
+      },
+      {
+        path: 'marketing/risk',
+        name: 'MarketingPromotionRisk',
+        component: () => import('@/views/Marketing.vue'),
+        meta: { title: '优惠风险', permission: 'marketing:view' }
       },
       {
         path: 'marketing/subscriptions',

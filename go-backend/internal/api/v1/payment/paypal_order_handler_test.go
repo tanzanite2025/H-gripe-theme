@@ -3,6 +3,7 @@ package payment
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -54,6 +55,32 @@ func TestCreatePayPalOrderRecordsPendingAttempt(t *testing.T) {
 	require.InDelta(t, 84, transaction.Amount, 0.001)
 }
 
+func TestCreatePayPalOrderRejectsZeroTotalBeforeGateway(t *testing.T) {
+	gateway := &fakePaymentGateway{}
+	db, handler := newPayPalHandlerTestHarness(t, gateway)
+	orderRecord := seedPayPalOrder(t, db, "ORD-PAYPAL-ZERO", 7, 0, "pending", "unpaid")
+
+	recorder := httptest.NewRecorder()
+	context, _ := gin.CreateTestContext(recorder)
+	context.Set("user_id", uint(7))
+	context.Request = httptest.NewRequest(
+		http.MethodPost,
+		"/api/v1/payment/paypal/orders",
+		bytes.NewBufferString(`{"order_number":"ORD-PAYPAL-ZERO","return_url":"https://shop.example/paypal/return"}`),
+	)
+	context.Request.Header.Set("Content-Type", "application/json")
+
+	handler.CreatePayPalOrder(context)
+
+	require.Equal(t, http.StatusBadRequest, recorder.Code)
+	require.Contains(t, recorder.Body.String(), "order_has_no_payable_amount")
+	require.Nil(t, gateway.createRequest)
+
+	var transactionCount int64
+	require.NoError(t, db.Model(&paymentdomain.Transaction{}).Where("order_id = ?", orderRecord.ID).Count(&transactionCount).Error)
+	require.Zero(t, transactionCount)
+}
+
 func TestCapturePayPalOrderMarksMatchingOrderPaid(t *testing.T) {
 	notShifted := false
 	db, handler := newPayPalHandlerTestHarness(t, &fakePaymentGateway{
@@ -96,6 +123,80 @@ func TestCapturePayPalOrderMarksMatchingOrderPaid(t *testing.T) {
 	require.False(t, *transaction.LiabilityShifted)
 }
 
+func TestCapturePayPalOrderAcknowledgesWebhookPaidOrder(t *testing.T) {
+	gateway := &fakePaymentGateway{}
+	db, handler := newPayPalHandlerTestHarness(t, gateway)
+	orderRecord := seedPayPalOrder(t, db, "ORD-PAYPAL-WEBHOOK-PAID", 7, 1500, "processing", "paid")
+
+	recorder := httptest.NewRecorder()
+	context, _ := gin.CreateTestContext(recorder)
+	context.Set("user_id", uint(7))
+	context.Params = gin.Params{{Key: "paypal_order_id", Value: "PAYPAL-ORDER-WEBHOOK-PAID"}}
+	context.Request = httptest.NewRequest(
+		http.MethodPost,
+		"/api/v1/payment/paypal/orders/PAYPAL-ORDER-WEBHOOK-PAID/capture",
+		bytes.NewBufferString(`{"order_number":"ORD-PAYPAL-WEBHOOK-PAID"}`),
+	)
+	context.Request.Header.Set("Content-Type", "application/json")
+
+	handler.CapturePayPalOrder(context)
+
+	require.Equal(t, http.StatusOK, recorder.Code)
+	var payload struct {
+		Data pgateway.PaymentResponse `json:"data"`
+	}
+	require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &payload))
+	require.Equal(t, "PAYPAL-ORDER-WEBHOOK-PAID", payload.Data.ID)
+	require.Equal(t, "COMPLETED", payload.Data.Status)
+	require.Equal(t, orderRecord.TotalAmount, payload.Data.Amount)
+	require.Equal(t, orderRecord.Currency, payload.Data.Currency)
+	require.Zero(t, gateway.captureCalls)
+}
+
+func TestCapturePayPalOrderAcknowledgesWebhookRaceDuringCapture(t *testing.T) {
+	var db *gorm.DB
+	db, handler := newPayPalHandlerTestHarness(t, &fakePaymentGateway{
+		captureResponse: &pgateway.PaymentResponse{
+			ID:            "PAYPAL-ORDER-WEBHOOK-RACE",
+			Status:        "COMPLETED",
+			Amount:        1500,
+			Currency:      "USD",
+			TransactionID: "PAYPAL-CAPTURE-WEBHOOK-RACE",
+			Metadata:      map[string]string{"order_id": "ORD-PAYPAL-WEBHOOK-RACE"},
+		},
+		onCapture: func() {
+			require.NoError(t, db.Model(&orderdomain.Order{}).
+				Where("order_number = ?", "ORD-PAYPAL-WEBHOOK-RACE").
+				Updates(map[string]interface{}{
+					"status":         "processing",
+					"payment_status": "paid",
+				}).Error)
+		},
+	})
+	seedPayPalOrder(t, db, "ORD-PAYPAL-WEBHOOK-RACE", 7, 1500, "pending", "unpaid")
+
+	recorder := httptest.NewRecorder()
+	context, _ := gin.CreateTestContext(recorder)
+	context.Set("user_id", uint(7))
+	context.Params = gin.Params{{Key: "paypal_order_id", Value: "PAYPAL-ORDER-WEBHOOK-RACE"}}
+	context.Request = httptest.NewRequest(
+		http.MethodPost,
+		"/api/v1/payment/paypal/orders/PAYPAL-ORDER-WEBHOOK-RACE/capture",
+		bytes.NewBufferString(`{"order_number":"ORD-PAYPAL-WEBHOOK-RACE"}`),
+	)
+	context.Request.Header.Set("Content-Type", "application/json")
+
+	handler.CapturePayPalOrder(context)
+
+	require.Equal(t, http.StatusOK, recorder.Code)
+	var payload struct {
+		Data pgateway.PaymentResponse `json:"data"`
+	}
+	require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &payload))
+	require.Equal(t, "COMPLETED", payload.Data.Status)
+	require.Equal(t, "PAYPAL-ORDER-WEBHOOK-RACE", payload.Data.ID)
+}
+
 func TestCapturePayPalOrderRejectsMismatchedProviderOrderMetadata(t *testing.T) {
 	db, handler := newPayPalHandlerTestHarness(t, &fakePaymentGateway{
 		captureResponse: &pgateway.PaymentResponse{
@@ -133,6 +234,8 @@ type fakePaymentGateway struct {
 	captureResponse *pgateway.PaymentResponse
 	getResponse     *pgateway.PaymentResponse
 	createRequest   *pgateway.PaymentRequest
+	captureCalls    int
+	onCapture       func()
 }
 
 func (g *fakePaymentGateway) CreatePayment(_ context.Context, req *pgateway.PaymentRequest) (*pgateway.PaymentResponse, error) {
@@ -141,6 +244,10 @@ func (g *fakePaymentGateway) CreatePayment(_ context.Context, req *pgateway.Paym
 }
 
 func (g *fakePaymentGateway) CapturePayment(context.Context, string) (*pgateway.PaymentResponse, error) {
+	g.captureCalls++
+	if g.onCapture != nil {
+		g.onCapture()
+	}
 	return g.captureResponse, nil
 }
 

@@ -15,6 +15,7 @@ export const useWheelsetSelectionProducts = (
   const error = ref<string | null>(null)
   const page = ref(1)
   const total = ref(0)
+  const totalIsExact = ref(false)
   const hasMore = ref(false)
   let requestSequence = 0
   let activeRequestController: AbortController | null = null
@@ -45,13 +46,20 @@ export const useWheelsetSelectionProducts = (
       if (requestId !== requestSequence) return
       products.value = result.items
       const reportedTotal = Number(result.total)
-      total.value = reportedTotal > 0 ? reportedTotal : result.items.length
-      hasMore.value = Boolean(result.hasMore)
+      const reportedPage = Math.max(1, Number(result.page) || page.value)
+      const reportedPageSize = Math.max(1, Number(result.pageSize) || 6)
+      const knownResultCount = Math.max(0, (reportedPage - 1) * reportedPageSize + result.items.length)
+      const hasReportedTotal = reportedTotal > 0
+      const nextPageAvailable = Boolean(result.hasMore)
+      total.value = hasReportedTotal ? reportedTotal : knownResultCount
+      totalIsExact.value = hasReportedTotal || !nextPageAvailable
+      hasMore.value = nextPageAvailable
     } catch (cause: any) {
       if (requestId !== requestSequence) return
       if (cause?.name === 'AbortError') return
       products.value = []
       total.value = 0
+      totalIsExact.value = false
       hasMore.value = false
       error.value = toUserFacingApiError(
         cause,
@@ -74,7 +82,10 @@ export const useWheelsetSelectionProducts = (
 
   watch([query, enabled || (() => true)], () => {
     if (enabled && !enabled.value) return
-    page.value = 1
+    if (page.value !== 1) {
+      page.value = 1
+      return
+    }
     void load()
   }, { deep: true, immediate: true })
   watch(page, () => {
@@ -87,6 +98,7 @@ export const useWheelsetSelectionProducts = (
     error,
     page,
     total,
+    totalIsExact,
     hasMore,
     setPage,
     reload: load,

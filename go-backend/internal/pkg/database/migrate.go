@@ -296,6 +296,12 @@ func PrepareSchema(ctx context.Context, db *gorm.DB, cfg *config.DatabaseConfig,
 	if err := RunSQLMigrations(sqlDB, cfg); err != nil {
 		return fmt.Errorf("run SQL migrations: %w", err)
 	}
+	if err := VerifyRequiredTables(ctx, sqlDB,
+		"product_procurement_records",
+		"product_profit_calculations",
+	); err != nil {
+		return fmt.Errorf("verify required schema: %w", err)
+	}
 	return nil
 }
 
@@ -322,5 +328,31 @@ func RunSQLMigrations(sqlDB *sql.DB, cfg *config.DatabaseConfig) error {
 	}
 
 	logger.Info("SQL migrations completed successfully")
+	return nil
+}
+
+// VerifyRequiredTables makes the migration command fail closed when the
+// migration ledger says the schema is current but a required table is absent.
+func VerifyRequiredTables(ctx context.Context, sqlDB *sql.DB, tableNames ...string) error {
+	if sqlDB == nil {
+		return fmt.Errorf("sql database is nil")
+	}
+	for _, tableName := range tableNames {
+		var exists bool
+		if err := sqlDB.QueryRowContext(ctx, `
+			SELECT EXISTS (
+				SELECT 1
+				FROM information_schema.tables
+				WHERE table_schema = 'public'
+				  AND table_type = 'BASE TABLE'
+				  AND table_name = $1
+			)
+		`, tableName).Scan(&exists); err != nil {
+			return fmt.Errorf("check table %q: %w", tableName, err)
+		}
+		if !exists {
+			return fmt.Errorf("required table %q does not exist", tableName)
+		}
+	}
 	return nil
 }

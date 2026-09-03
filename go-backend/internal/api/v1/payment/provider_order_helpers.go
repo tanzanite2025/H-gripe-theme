@@ -36,6 +36,9 @@ func (h *Handler) loadPayableProviderOrder(
 		apierror.RespondBadRequest(c, "Order is not payable")
 		return nil, false
 	}
+	if !ensureOrderHasPayableAmount(c, orderRecord) {
+		return nil, false
+	}
 	return orderRecord, true
 }
 
@@ -59,7 +62,18 @@ func (h *Handler) loadProviderOrderForConfirmation(
 		apierror.RespondBadRequest(c, "Order is not payable")
 		return nil, false
 	}
+	if !ensureOrderHasPayableAmount(c, orderRecord) {
+		return nil, false
+	}
 	return orderRecord, true
+}
+
+func ensureOrderHasPayableAmount(c *gin.Context, orderRecord *orderdomain.Order) bool {
+	if orderRecord == nil || orderRecord.TotalAmount > 0 {
+		return true
+	}
+	apierror.RespondError(c, http.StatusBadRequest, "order_has_no_payable_amount", "Order has no payable amount")
+	return false
 }
 
 func paymentCustomerFromOrder(orderRecord *orderdomain.Order) *pgateway.Customer {

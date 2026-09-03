@@ -47,9 +47,10 @@ type DisputeEvidenceChecklistItem struct {
 }
 
 type DisputeEvidenceSubmissionCheck struct {
-	Ready    bool     `json:"ready"`
-	Blockers []string `json:"blockers"`
-	Warnings []string `json:"warnings"`
+	Ready            bool     `json:"ready"`
+	OverrideRequired bool     `json:"override_required"`
+	Blockers         []string `json:"blockers"`
+	Warnings         []string `json:"warnings"`
 }
 
 type DisputePaymentAuthenticationEvidence struct {
@@ -213,10 +214,6 @@ func buildDisputeEvidenceChecklist(
 	signaturePOD := trackingSignaturePODEvent(events)
 	deliveryScanReady := trackingNumber != "" && delivered != nil
 	signaturePODReady := deliveryScanReady && signaturePOD != nil
-	fulfillmentReady := deliveryScanReady
-	if options.RequireSignatureProofOfDelivery {
-		fulfillmentReady = deliveryScanReady && signaturePODReady
-	}
 	fulfillmentStatus := DisputeEvidenceStatusMissing
 	fulfillmentReason := "订单没有物流单号，也没有本地妥投事件。"
 	fulfillmentSummary := "没有可用于核验履约的物流记录。"
@@ -248,7 +245,7 @@ func buildDisputeEvidenceChecklist(
 		ProviderField:  disputeProviderField(provider, "shipping_documentation", "proof_of_fulfillment"),
 		Status:         fulfillmentStatus,
 		Required:       true,
-		Blocker:        provider == "paypal" && !fulfillmentReady,
+		Blocker:        false,
 		ManualRequired: fulfillmentStatus == DisputeEvidenceStatusManualRequired,
 		Source:         "orders + shipping_tracking_shipments + tracking_events",
 		ObservedAt:     fulfillmentObservedAt,
@@ -442,9 +439,10 @@ func finalizeDisputeEvidenceChecklist(items []DisputeEvidenceChecklistItem) Disp
 
 func buildDisputeEvidenceSubmissionCheck(canSubmit bool, checklist DisputeEvidenceChecklist) DisputeEvidenceSubmissionCheck {
 	check := DisputeEvidenceSubmissionCheck{
-		Ready:    canSubmit && checklist.BlockerCount == 0,
-		Blockers: []string{},
-		Warnings: []string{},
+		Ready:            canSubmit && checklist.BlockerCount == 0,
+		OverrideRequired: false,
+		Blockers:         []string{},
+		Warnings:         []string{},
 	}
 	if !canSubmit {
 		check.Blockers = append(check.Blockers, "当前渠道状态不允许提交卖方证据。")
@@ -458,6 +456,15 @@ func buildDisputeEvidenceSubmissionCheck(canSubmit bool, checklist DisputeEviden
 		}
 	}
 	return check
+}
+
+func disputeEvidenceChecklistItemStatus(checklist DisputeEvidenceChecklist, key string) string {
+	for _, item := range checklist.Items {
+		if item.Key == key {
+			return item.Status
+		}
+	}
+	return ""
 }
 
 func checklistStatus(ready bool, missingStatus string) string {

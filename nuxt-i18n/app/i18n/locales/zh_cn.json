@@ -1605,7 +1605,7 @@
   "policyTabs": {
     "cookie": "Cookie",
     "privacy": "Privacy",
-    "refundReturn": "Refund & Return",
+    "refundCancellation": "退款与取消政策",
     "terms": "Terms"
   },
   "privacy": {
@@ -1963,23 +1963,23 @@
         "description": "你可以先浏览全部商品。"
       }
     },
-    "refundReturnPolicy": {
+    "refundCancellationPolicy": {
       "error": {
-        "title": "退款与退货政策暂时无法显示",
-        "description": "如需退货或退款帮助，请联系客户服务。"
+        "title": "退款与取消政策暂时无法显示",
+        "description": "如需取消、退货或退款帮助，请联系客户服务。"
       },
       "loading": {
-        "title": "正在加载退款与退货政策",
+        "title": "正在加载退款与取消政策",
         "description": "正在准备当前政策详情。"
       },
       "empty": {
-        "title": "退款与退货政策暂时不可用",
-        "description": "如需退货或退款帮助，请联系客户服务。"
+        "title": "退款与取消政策暂时不可用",
+        "description": "如需取消、退货或退款帮助，请联系客户服务。"
       },
       "contactSupport": "Contact Support",
       "lastUpdated": "Last Updated",
       "fallbackNotice": {
-        "title": "正在显示标准退款与退货政策",
+        "title": "正在显示标准退款与取消政策",
         "description": "当前政策暂时无法加载，因此正在显示标准版本。"
       }
     }

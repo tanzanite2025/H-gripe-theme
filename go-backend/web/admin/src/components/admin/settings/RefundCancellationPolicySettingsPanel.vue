@@ -1,7 +1,7 @@
 <template>
   <section class="w-full max-w-none space-y-3">
     <div class="max-w-3xl">
-      <h2 class="text-sm font-black uppercase text-foreground">退货退款内容</h2>
+      <h2 class="text-sm font-black uppercase text-foreground">退款取消政策内容</h2>
       <p class="mt-1 text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">前台政策页与 Warranty / Returns TAB 共用这份内容。</p>
     </div>
     <div class="space-y-5">
@@ -107,11 +107,11 @@
                 :ref="(element) => setImageInputRef(index, element)"
                 type="file"
                 class="sr-only"
-                :accept="uploadSpecAccept('refund_return_image')"
+                :accept="uploadSpecAccept('refund_cancellation_image')"
                 :disabled="!canEdit || saving"
                 @change="handleImageChange($event, index)"
               />
-              <UploadSpecHint code="refund_return_image" />
+              <UploadSpecHint code="refund_cancellation_image" />
             </div>
             <AdminFormField label="图片替代文字" class="min-w-0">
               <Input v-model="section.image.alt" :disabled="!canEdit || saving" />
@@ -139,7 +139,7 @@
         <Button type="button" :disabled="!canEdit || saving || loading" @click="emit('save')">
           <LoaderCircle v-if="saving" class="size-4 animate-spin" />
           <Save v-else class="size-4" />
-          {{ saving ? '保存中' : '保存退货退款内容' }}
+          {{ saving ? '保存中' : '保存退款取消内容' }}
         </Button>
       </div>
     </div>
@@ -166,10 +166,10 @@ import { Textarea } from '@/components/ui/textarea'
 import { STOREFRONT_SUPPORTED_LANGUAGES, buildLanguageOptions } from '@/lib/languages'
 import UploadSpecHint from '@/components/admin/UploadSpecHint.vue'
 import { uploadSpecAccept } from '@/lib/uploadSpecs'
-import type { RefundReturnPolicyEditor, RefundReturnPolicyEditorSection } from '@/api/refundReturnPolicy'
+import type { RefundCancellationPolicyEditor, RefundCancellationPolicyEditorSection } from '@/api/refundCancellationPolicy'
 
 const props = withDefaults(defineProps<{
-  policy: RefundReturnPolicyEditor
+  policy: RefundCancellationPolicyEditor
   locale: string
   fallback?: boolean
   loading?: boolean
@@ -193,7 +193,7 @@ const emit = defineEmits<{
 const languageOptions = buildLanguageOptions(STOREFRONT_SUPPORTED_LANGUAGES)
 const imageInputs = ref<Record<number, HTMLInputElement | null>>({})
 
-const createSection = (): RefundReturnPolicyEditorSection => ({
+const createSection = (): RefundCancellationPolicyEditorSection => ({
   id: `section-${props.policy.sections.length + 1}`,
   title: '',
   body: '',

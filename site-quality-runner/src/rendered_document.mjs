@@ -9,6 +9,8 @@ import {
   captureInteractionAudit,
   captureRenderedLinkAudit,
   captureSoftNavigationAudit,
+  runtimeAuditBudgetRemaining,
+  runtimeAuditDeadlineReached,
 } from './rendered_runtime_audits.mjs'
 import { snapshotRenderedStructuredData } from './structured_data.mjs'
 
@@ -32,13 +34,19 @@ export async function captureRenderedDocumentAudit({
     }
 
     const startedAt = Date.now()
-    const navigationTimeout = Math.max(3_000, Math.min(timeoutMilliseconds, 25_000))
+    const deadlineAt = startedAt + Math.max(0, Number(timeoutMilliseconds || 0))
+    const remainingTimeoutMilliseconds = () => Math.max(0, deadlineAt - Date.now())
+    const initialNavigationBudget = remainingTimeoutMilliseconds()
+    if (initialNavigationBudget < 500) {
+      throw new Error('rendered document capture timed out before navigation started')
+    }
+    const navigationTimeout = Math.min(initialNavigationBudget, 25_000)
     await page.goto(input.url, {
       waitUntil: 'domcontentloaded',
       timeout: navigationTimeout,
     })
 
-    const remaining = Math.max(0, timeoutMilliseconds - (Date.now() - startedAt))
+    const remaining = remainingTimeoutMilliseconds()
     if (remaining < 1_000) {
       throw new Error('rendered document capture timed out before the document settled')
     }
@@ -52,20 +60,29 @@ export async function captureRenderedDocumentAudit({
       page.evaluate(snapshotRenderedStructuredData),
     ])
     const finalUrl = page.url()
-    const renderedLinks = await captureRenderedLinkAudit(page, input)
-    const interactionAudit = await captureInteractionAudit(page, input)
+    const runtimeAuditOptions = { deadlineAt }
+    const renderedLinks = await captureRenderedLinkAudit(page, input, runtimeAuditOptions)
+    const interactionAudit = await captureInteractionAudit(page, input, runtimeAuditOptions)
     if (shouldResetBeforeSoftNavigation(input)) {
-      await page.goto(input.url, {
-        waitUntil: 'domcontentloaded',
-        timeout: navigationTimeout,
-      })
-      await settleRenderedDocument(page, Math.min(remaining, settleMilliseconds), {
-        waitSelector: input.renderWaitSelector,
-        waitTimeoutMilliseconds: input.renderWaitTimeoutMilliseconds,
-        timeoutMilliseconds: remaining,
-      }).catch(() => {})
+      if (!runtimeAuditDeadlineReached(runtimeAuditOptions)) {
+        const resetTimeout = Math.min(navigationTimeout, runtimeAuditBudgetRemaining(runtimeAuditOptions))
+        if (resetTimeout >= 500) {
+          await page.goto(input.url, {
+            waitUntil: 'domcontentloaded',
+            timeout: resetTimeout,
+          }).catch(() => {})
+          const settleBudget = runtimeAuditBudgetRemaining(runtimeAuditOptions)
+          if (settleBudget > 0) {
+            await settleRenderedDocument(page, Math.min(settleBudget, settleMilliseconds), {
+              waitSelector: input.renderWaitSelector,
+              waitTimeoutMilliseconds: input.renderWaitTimeoutMilliseconds,
+              timeoutMilliseconds: settleBudget,
+            }).catch(() => {})
+          }
+        }
+      }
     }
-    const softNavigationAudit = await captureSoftNavigationAudit(page, input)
+    const softNavigationAudit = await captureSoftNavigationAudit(page, input, runtimeAuditOptions)
 
     return {
       renderedHeadings: {

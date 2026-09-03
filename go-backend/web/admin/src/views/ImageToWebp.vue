@@ -124,7 +124,7 @@
                 </span>
               </div>
 
-              <div class="image-webp-preview-surface flex min-h-72 items-center justify-center overflow-hidden border border-border/70 p-4">
+              <div class="image-webp-preview-surface relative flex min-h-72 items-center justify-center overflow-hidden border border-border/70 p-4">
                 <img
                   v-if="outputPreviewUrl"
                   :src="outputPreviewUrl"
@@ -132,7 +132,16 @@
                   class="h-auto object-contain"
                   :style="outputPreviewStyle"
                 />
-                <div v-else class="flex flex-col items-center justify-center gap-3 px-5 text-center text-muted-foreground">
+                <div
+                  v-if="outputPreviewUrl && converting"
+                  class="absolute inset-0 flex items-center justify-center bg-white/55 backdrop-blur-sm"
+                >
+                  <div class="flex flex-col items-center justify-center gap-3 px-5 text-center text-primary">
+                    <LoaderCircle class="size-7 animate-spin" />
+                    <p class="text-xs font-black">{{ t('imageToWebp.processing') }}</p>
+                  </div>
+                </div>
+                <div v-if="!outputPreviewUrl" class="flex flex-col items-center justify-center gap-3 px-5 text-center text-muted-foreground">
                   <LoaderCircle v-if="converting" class="size-7 animate-spin text-primary" />
                   <ImageDown v-else class="size-7 opacity-50" />
                   <p class="text-xs font-black">
@@ -310,6 +319,18 @@ const releaseOutput = (): void => {
   outputBlob.value = null
 }
 
+const replaceOutput = (blob: Blob, width: number, height: number): void => {
+  const previousUrl = outputPreviewUrl.value
+  const nextUrl = URL.createObjectURL(blob)
+  outputBlob.value = blob
+  outputWidth.value = width
+  outputHeight.value = height
+  outputPreviewUrl.value = nextUrl
+  if (previousUrl) {
+    void nextTick(() => revokeObjectURL(previousUrl))
+  }
+}
+
 const releaseSourcePreview = (): void => {
   revokeObjectURL(sourcePreviewUrl.value)
   sourcePreviewUrl.value = ''
@@ -405,11 +426,7 @@ const convertImage = async (image: HTMLImageElement, runID: number): Promise<voi
   const blob = await imageToWebp(image, quality, targetWidth, targetHeight)
   if (runID !== conversionRunID.value) return
 
-  releaseOutput()
-  outputBlob.value = blob
-  outputWidth.value = targetWidth
-  outputHeight.value = targetHeight
-  outputPreviewUrl.value = URL.createObjectURL(blob)
+  replaceOutput(blob, targetWidth, targetHeight)
 }
 
 const chooseFile = async (file: File | null): Promise<void> => {
@@ -462,9 +479,6 @@ const convertCurrent = async (): Promise<void> => {
   const runID = ++conversionRunID.value
   converting.value = true
   errorMessage.value = ''
-  releaseOutput()
-  outputWidth.value = 0
-  outputHeight.value = 0
 
   try {
     const image = await loadImage(sourcePreviewUrl.value)

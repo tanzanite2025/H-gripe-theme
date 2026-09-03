@@ -9,6 +9,7 @@ import (
 
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type ShippingRepository struct {
@@ -843,16 +844,27 @@ func (r *ShippingRepository) FindTrackingEventsByTrackingNumber(trackingNumber s
 	return events, err
 }
 
-func (r *ShippingRepository) ReplaceTrackingEvents(orderID uint, trackingNumber string, events []shipping.TrackingEvent) error {
+func (r *ShippingRepository) UpsertTrackingEvents(orderID uint, trackingNumber string, events []shipping.TrackingEvent) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Where("order_id = ? AND tracking_number = ?", orderID, trackingNumber).Delete(&shipping.TrackingEvent{}).Error; err != nil {
-			return err
-		}
 		if len(events) == 0 {
 			return nil
 		}
-		return tx.Create(&events).Error
+		return tx.Clauses(clause.OnConflict{
+			Columns: []clause.Column{
+				{Name: "order_id"},
+				{Name: "tracking_number"},
+				{Name: "event_time"},
+				{Name: "status"},
+			},
+			DoNothing: true,
+		}).Create(&events).Error
 	})
+}
+
+// ReplaceTrackingEvents is kept for callers compiled against the old method name.
+// Tracking events are append-only by identity; no existing rows are deleted.
+func (r *ShippingRepository) ReplaceTrackingEvents(orderID uint, trackingNumber string, events []shipping.TrackingEvent) error {
+	return r.UpsertTrackingEvents(orderID, trackingNumber, events)
 }
 
 // ShippingZone 閻╃鍙ч弬瑙勭《

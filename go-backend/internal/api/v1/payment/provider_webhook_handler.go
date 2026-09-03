@@ -138,6 +138,9 @@ func (h *Handler) handleAlipayWebhook(c *gin.Context, payload []byte) {
 		GatewayResponse: string(payload),
 	}
 	if err := h.recordVerifiedProviderPaymentResult(payment); err != nil {
+		if acknowledgeAlreadyPaidProviderWebhook(c, payment, err) {
+			return
+		}
 		respondAlipayWebhookFailure(c, verifiedProviderPaymentWebhookStatus(err))
 		return
 	}
@@ -191,6 +194,9 @@ func (h *Handler) handleWechatWebhook(c *gin.Context, payload []byte) {
 		payment.GatewayResponse = verified.Plaintext
 	}
 	if err := h.recordVerifiedProviderPaymentResult(payment); err != nil {
+		if acknowledgeAlreadyPaidProviderWebhook(c, payment, err) {
+			return
+		}
 		respondWechatWebhookFailure(c, verifiedProviderPaymentWebhookStatus(err), err.Error())
 		return
 	}
@@ -199,6 +205,9 @@ func (h *Handler) handleWechatWebhook(c *gin.Context, payload []byte) {
 
 func (h *Handler) recordVerifiedProviderPayment(c *gin.Context, payment verifiedProviderPayment) bool {
 	if err := h.recordVerifiedProviderPaymentResult(payment); err != nil {
+		if acknowledgeAlreadyPaidProviderWebhook(c, payment, err) {
+			return false
+		}
 		respondVerifiedProviderPaymentError(c, err)
 		return false
 	}
@@ -225,6 +234,26 @@ func (h *Handler) recordVerifiedProviderPaymentResult(payment verifiedProviderPa
 		return err
 	}
 	return nil
+}
+
+func acknowledgeAlreadyPaidProviderWebhook(c *gin.Context, payment verifiedProviderPayment, err error) bool {
+	if !errors.Is(err, service.ErrOrderAlreadyPaid) {
+		return false
+	}
+	// Providers retry non-2xx webhooks, so a terminal paid order is acknowledged.
+	switch payment.Provider {
+	case pgateway.GatewayAlipay:
+		respondAlipayWebhookSuccess(c)
+	case pgateway.GatewayWechat:
+		respondWechatWebhookSuccess(c)
+	default:
+		response.SuccessWithMessage(c, "Order already paid, webhook acknowledged", gin.H{
+			"provider":       string(payment.Provider),
+			"order_number":   payment.OrderNumber,
+			"transaction_id": payment.TransactionID,
+		})
+	}
+	return true
 }
 
 func respondVerifiedProviderPaymentError(c *gin.Context, err error) {

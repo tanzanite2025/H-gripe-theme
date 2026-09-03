@@ -102,6 +102,8 @@ export interface ShopProductVariant {
   sku?: string
   title: string
   optionValues: Record<string, string>
+  thumbnail?: string
+  image?: string
   priceNumber: number
   currency: string
   price?: number
@@ -334,6 +336,81 @@ const normalizeImageVariants = (
   }, {})
 }
 
+const pickPreferredImageMedia = (items: any[]) => (
+  items.find((item: any) => item?.is_primary || item?.role === 'primary') || items[0] || null
+)
+
+const normalizeVariantMediaFields = (
+  value: any,
+  mediaContext: StorefrontMediaContext,
+): Pick<ShopProductVariant, 'thumbnail' | 'image'> => {
+  const imageVariants = normalizeImageVariants(value?.image_variants, mediaContext)
+  const image = normalizeStorefrontMediaUrl(
+    value?.image ||
+      value?.image_url ||
+      value?.featured_image ||
+      imageVariants.card?.url ||
+      imageVariants.large?.url ||
+      value?.url,
+    mediaContext,
+  ) || undefined
+  const thumbnail = normalizeStorefrontMediaUrl(
+    value?.thumbnail ||
+      value?.thumbnail_url ||
+      imageVariants.thumbnail?.url ||
+      imageVariants.card?.url ||
+      image,
+    mediaContext,
+  ) || undefined
+
+  return {
+    ...(thumbnail ? { thumbnail } : {}),
+    ...(image ? { image } : {}),
+  }
+}
+
+const variantOptionValueIds = (
+  variant: ShopProductVariant,
+  rawOptionValues: any[],
+): Set<number> => {
+  const ids = new Set<number>()
+  rawOptionValues.forEach((optionValue: any) => {
+    const id = toOptionalPositiveNumber(optionValue?.id)
+    const specSlug = String(optionValue?.spec_slug || '').trim()
+    const valueKey = String(optionValue?.value_key || '').trim()
+    if (!id || !specSlug || !valueKey) return
+    if (variant.optionValues[specSlug] !== valueKey) return
+    ids.add(id)
+  })
+  return ids
+}
+
+const attachVariantMedia = (
+  variants: ShopProductVariant[],
+  imageMedia: any[],
+  rawOptionValues: any[],
+  mediaContext: StorefrontMediaContext,
+): ShopProductVariant[] => variants.map((variant) => {
+  const exactVariantMedia = imageMedia.filter((item: any) => (
+    Number(item?.variant_id || 0) === Number(variant.id)
+  ))
+  const optionValueIds = variantOptionValueIds(variant, rawOptionValues)
+  const optionMedia = optionValueIds.size
+    ? imageMedia.filter((item: any) => optionValueIds.has(Number(item?.variant_option_value_id || 0)))
+    : []
+  const scopedMedia = pickPreferredImageMedia(exactVariantMedia) || pickPreferredImageMedia(optionMedia)
+  if (!scopedMedia) return variant
+
+  const media = normalizeVariantMediaFields(scopedMedia, mediaContext)
+  if (!media.thumbnail && !media.image) return variant
+
+  return {
+    ...variant,
+    ...(variant.thumbnail ? {} : media.thumbnail ? { thumbnail: media.thumbnail } : {}),
+    ...(variant.image ? {} : media.image ? { image: media.image } : {}),
+  }
+})
+
 export const resolveShopProductImage = (
   product: Pick<ShopProduct, 'thumbnail' | 'imageVariants'>,
   preset: 'thumbnail' | 'card' | 'large' = 'card',
@@ -342,7 +419,11 @@ export const resolveShopProductImage = (
   return variants[preset]?.url || variants.card?.url || variants.thumbnail?.url || variants.large?.url || product.thumbnail || ''
 }
 
-const normalizeVariant = (variant: any, fallbackCurrency = 'USD'): ShopProductVariant | null => {
+const normalizeVariant = (
+  variant: any,
+  fallbackCurrency = 'USD',
+  mediaContext: StorefrontMediaContext = { knownOrigins: new Set<string>() },
+): ShopProductVariant | null => {
   const id = toFiniteNumber(variant?.id)
   const sku = String(variant?.sku || '').trim()
   if (!id) return null
@@ -356,12 +437,14 @@ const normalizeVariant = (variant: any, fallbackCurrency = 'USD'): ShopProductVa
   const optionValues = parseOptionValues(variant?.option_values)
   const title = String(variant?.title || Object.values(optionValues).join(' / ') || sku || `Option ${id}`).trim()
   const weightGrams = toOptionalPositiveNumber(variant?.weight_grams)
+  const media = normalizeVariantMediaFields(variant, mediaContext)
 
   return {
     id,
     ...(sku ? { sku } : {}),
     title,
     optionValues,
+    ...media,
     priceNumber,
     currency: variantCurrency,
     price: regular,
@@ -381,7 +464,7 @@ export const normalizeShopProduct = (
 ): ShopProduct => {
   const id = toFiniteNumber(item?.id)
   const variants = Array.isArray(item?.variants)
-    ? item.variants.map((variant: any) => normalizeVariant(variant, fallbackCurrency)).filter(Boolean) as ShopProductVariant[]
+    ? item.variants.map((variant: any) => normalizeVariant(variant, fallbackCurrency, mediaContext)).filter(Boolean) as ShopProductVariant[]
     : []
   const defaultVariant = variants.find((variant) => variant.isDefault) || variants[0] || null
   const regular = toFiniteNumber(
@@ -411,6 +494,12 @@ export const normalizeShopProduct = (
     imageMedia.find((mediaItem: any) => mediaItem?.is_primary || mediaItem?.role === 'primary') ||
     imageMedia[0]
   const imageVariants = normalizeImageVariants(primaryMediaImage?.image_variants, mediaContext)
+  const variantsWithMedia = attachVariantMedia(
+    variants,
+    imageMedia,
+    Array.isArray(item?.variant_option_values) ? item.variant_option_values : [],
+    mediaContext,
+  )
   const thumbnail = normalizeStorefrontMediaUrl(
     item?.thumbnail ||
       item?.featured_image ||
@@ -456,7 +545,7 @@ export const normalizeShopProduct = (
       : null,
     productSpecificationTemplate: normalizeProductSpecificationTemplate(item),
     reviewSummary: normalizeReviewSummary(item?.review_summary, id),
-    variants,
+    variants: variantsWithMedia,
   }
 }
 
@@ -557,8 +646,9 @@ export function useShopProducts() {
       options.salePrice === undefined
         ? product.prices.sale > 0 ? product.prices.sale : null
         : options.salePrice
+    const variantThumbnail = selectedVariant?.thumbnail || selectedVariant?.image
     const thumbnail = normalizeStorefrontMediaUrl(
-      options.thumbnail ?? product.thumbnail,
+      options.thumbnail ?? variantThumbnail ?? product.thumbnail,
       mediaContext,
     ) || undefined
     const title = options.title ?? product.title

@@ -206,6 +206,8 @@ func TestPrepareSchemaAgainstFreshPostgres(t *testing.T) {
 		"transactions",
 		"refunds",
 		"refund_line_items",
+		"product_procurement_records",
+		"product_profit_calculations",
 		"order_policy_disclosures",
 		"product_attributes",
 		"product_variants",
@@ -467,13 +469,13 @@ func assertRefundAndPolicyMigrationState(ctx context.Context, t *testing.T, db *
 	if err := db.QueryRowContext(ctx, `
 		SELECT value, type, "group", is_public
 		FROM settings
-		WHERE key = 'refund_return_policy' AND locale = 'en'
+		WHERE key = 'refund_cancellation_policy' AND locale = 'en'
 	`).Scan(&policyValue, &policyType, &policyGroup, &isPublic); err != nil {
-		t.Fatalf("load default refund and return policy setting: %v", err)
+		t.Fatalf("load default refund and cancellation policy setting: %v", err)
 	}
-	if policyType != "json" || policyGroup != "refund_return" || !isPublic {
+	if policyType != "json" || policyGroup != "refund_cancellation" || !isPublic {
 		t.Fatalf(
-			"unexpected refund and return policy metadata: type=%q group=%q is_public=%t",
+			"unexpected refund and cancellation policy metadata: type=%q group=%q is_public=%t",
 			policyType,
 			policyGroup,
 			isPublic,
@@ -484,10 +486,10 @@ func assertRefundAndPolicyMigrationState(ctx context.Context, t *testing.T, db *
 		Sections []json.RawMessage `json:"sections"`
 	}
 	if err := json.Unmarshal([]byte(policyValue), &policy); err != nil {
-		t.Fatalf("decode default refund and return policy setting: %v", err)
+		t.Fatalf("decode default refund and cancellation policy setting: %v", err)
 	}
-	if policy.Title != "Refund & Return Policy" || len(policy.Sections) == 0 {
-		t.Fatalf("default refund and return policy payload is incomplete")
+	if policy.Title != "Refund & Cancellation Policy" || len(policy.Sections) == 0 {
+		t.Fatalf("default refund and cancellation policy payload is incomplete")
 	}
 
 	var hasUniqueConstraint bool

@@ -39,6 +39,48 @@ func TestShippingServicePublicCatalogFiltersDisabledResources(t *testing.T) {
 	require.ErrorIs(t, err, ErrShippingNotFound)
 }
 
+func TestCalculateShippingIncludesFirstUnitBeforeAdditionalCharge(t *testing.T) {
+	_, shippingService := newTestShippingQuoteService(t)
+
+	template := shippingdomain.ShippingTemplate{
+		Name:       "First unit shipping",
+		Type:       "weight",
+		DefaultFee: 99,
+		Enabled:    true,
+		Rules: []shippingdomain.ShippingRule{
+			{
+				Region:     "US",
+				MinValue:   0,
+				MaxValue:   10,
+				Fee:        15,
+				Additional: 5,
+			},
+		},
+	}
+	require.NoError(t, shippingService.CreateTemplate(&template))
+
+	tests := []struct {
+		name   string
+		weight float64
+		want   float64
+	}{
+		{name: "below first unit", weight: 0.5, want: 15},
+		{name: "at first unit", weight: 1, want: 15},
+		{name: "after first unit", weight: 1.01, want: 20},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			quote, err := shippingService.CalculateShipping(ShippingCalculationInput{
+				TemplateID: template.ID,
+				Weight:     tt.weight,
+				Country:    "US",
+			})
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, quote.ShippingFee)
+		})
+	}
+}
+
 func TestShippingServicePublicCarrierServicesRequireVisibleAssociations(t *testing.T) {
 	_, shippingService := newTestShippingQuoteService(t)
 
@@ -211,12 +253,12 @@ func TestQuoteCartReturnsDisplayPriceFromStoredShippingSnapshots(t *testing.T) {
 	})
 
 	require.NoError(t, err)
-	assert.Equal(t, 11.0, quote.ShippingFee)
+	assert.Equal(t, 9.0, quote.ShippingFee)
 	require.NotNil(t, quote.DisplayPrice)
 	assert.Equal(t, "USD", quote.DisplayPrice.Currency)
-	assert.InDelta(t, 1.54, quote.DisplayPrice.Amount, 0.001)
+	assert.InDelta(t, 1.26, quote.DisplayPrice.Amount, 0.001)
 	require.Len(t, quote.DisplayPrices, 1)
-	assert.InDelta(t, 1.54, quote.DisplayPrices[0].Amount, 0.001)
+	assert.InDelta(t, 1.26, quote.DisplayPrices[0].Amount, 0.001)
 }
 
 func TestQuoteCartOmitsIncompleteShippingDisplayPrice(t *testing.T) {
@@ -257,7 +299,7 @@ func TestQuoteCartOmitsIncompleteShippingDisplayPrice(t *testing.T) {
 	})
 
 	require.NoError(t, err)
-	assert.Equal(t, 11.0, quote.ShippingFee)
+	assert.Equal(t, 9.0, quote.ShippingFee)
 	assert.Nil(t, quote.DisplayPrice)
 	assert.Empty(t, quote.DisplayPrices)
 }
@@ -419,6 +461,40 @@ func TestQuoteCartUsesPackagingDimensionsForVolumetricCarrierService(t *testing.
 	assert.Equal(t, 12000, quote.SelectedOption.BillableWeightGrams)
 	assert.Equal(t, 99.0, quote.SelectedOption.ShippingFee)
 	assert.Equal(t, 99.0, quote.ShippingFee)
+}
+
+func TestQuoteCartFallsBackToActualWeightWhenGreaterOfLacksVolumetricWeight(t *testing.T) {
+	db, shippingService := newTestShippingQuoteService(t)
+	template := seedWeightQuoteTemplate(t, db)
+	record, variant := seedQuoteProduct(t, db, 50, 900, template.ID)
+	carrier := seedQuoteCarrier(t, db, "DHL", "DHL")
+
+	service := seedQuoteCarrierService(t, db, carrier.ID, template.ID, shippingdomain.CarrierService{
+		ServiceCode:       "DHL-GREATER-OF",
+		ServiceName:       "DHL Greater Of",
+		Countries:         `["US"]`,
+		BillingMode:       "greater_of_actual_and_volumetric",
+		VolumetricDivisor: 6000,
+	})
+
+	quote, err := shippingService.QuoteCart(ShippingQuoteInput{
+		Country:  "US",
+		Currency: "USD",
+		Items: []ShippingQuoteItemInput{
+			{ProductID: record.ID, VariantID: &variant.ID, Quantity: 1},
+		},
+	})
+
+	require.NoError(t, err)
+	require.Len(t, quote.Options, 1)
+	require.NotNil(t, quote.SelectedOption)
+	assert.Equal(t, service.ID, quote.SelectedOption.CarrierServiceID)
+	assert.Equal(t, 900, quote.SelectedOption.ActualWeightGrams)
+	assert.Equal(t, 0, quote.SelectedOption.VolumetricWeightGrams)
+	assert.Equal(t, 900, quote.SelectedOption.ChargeWeightGrams)
+	assert.Equal(t, 900, quote.SelectedOption.BillableWeightGrams)
+	assert.Equal(t, 5.0, quote.SelectedOption.ShippingFee)
+	assert.Equal(t, 5.0, quote.ShippingFee)
 }
 
 func TestCreatePackagingRuleApplyRejectsSecondRuleForProduct(t *testing.T) {

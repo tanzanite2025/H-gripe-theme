@@ -404,6 +404,7 @@ const selectedPaymentAvailable = computed(() =>
 const shippingValidation = computed(() =>
   validateShipping(form.value.country, form.value.zip),
 )
+const checkoutEmail = computed(() => String(auth.user.value?.email || '').trim())
 const zipHint = computed(() => {
   if (!form.value.country) return ''
   return getShippingZipFormatHint(form.value.country)?.hint || ''
@@ -446,6 +447,7 @@ const canSubmit = computed(() =>
   cartItems.value.length > 0 &&
   selectedPaymentAvailable.value &&
   Boolean(
+    checkoutEmail.value &&
     form.value.country &&
     form.value.name.trim() &&
     form.value.phone.trim() &&
@@ -535,7 +537,7 @@ const buildShippingAddressPayload = () => {
     postal_code: form.value.zip.trim(),
     country: form.value.country.trim().toUpperCase(),
     phone: form.value.phone.trim(),
-    email: String(auth.user.value?.email || '').trim() || 'customer@example.com',
+    email: checkoutEmail.value,
   }
 }
 
@@ -737,6 +739,13 @@ const submitOrder = async () => {
     return
   }
   if (!(await requireAuthenticatedUser())) return
+  if (!checkoutEmail.value) {
+    checkoutError.value = t(
+      'checkout.modal.messages.emailRequired',
+      'Add an email address to your account before checkout.',
+    )
+    return
+  }
   if (!canSubmit.value) {
     checkoutError.value = t('checkout.modal.messages.completeShipping', 'Please complete your shipping address and contact details.')
     return

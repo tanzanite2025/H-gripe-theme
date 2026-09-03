@@ -2,10 +2,12 @@ package repository
 
 import (
 	fitmentcatalogdomain "commerce-platform/internal/domain/fitmentcatalog"
+	productdomain "commerce-platform/internal/domain/product"
 	"commerce-platform/internal/domain/spoke"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"gorm.io/gorm"
@@ -14,6 +16,7 @@ import (
 type SpokeRepository struct {
 	db                      *gorm.DB
 	fitmentHubSpecification *FitmentHubSpecificationRepository
+	productBrand            *ProductBrandRepository
 }
 
 const (
@@ -44,8 +47,26 @@ func (r *SpokeRepository) ConfigureFitmentHubSpecificationRepository(
 	r.fitmentHubSpecification = fitmentHubRepository
 }
 
+func (r *SpokeRepository) ConfigureProductBrandRepository(productBrandRepository *ProductBrandRepository) {
+	if r == nil {
+		return
+	}
+	r.productBrand = productBrandRepository
+}
+
 func (r *SpokeRepository) UsesFitmentHubSpecifications() bool {
 	return r != nil && r.fitmentHubSpecification != nil
+}
+
+func (r *SpokeRepository) UsesProductBrands() bool {
+	return r != nil && r.productBrand != nil
+}
+
+func (r *SpokeRepository) ListProductBrands(includeDisabled bool) ([]productdomain.ProductBrand, error) {
+	if r == nil || r.productBrand == nil {
+		return nil, errors.New("product brand repository is unavailable")
+	}
+	return r.productBrand.List(includeDisabled)
 }
 
 func (r *SpokeRepository) CountFitmentHubSpecificationReferences(
@@ -99,9 +120,12 @@ func (r *SpokeRepository) GetCatalogExport() (spoke.ExportResponse, bool, error)
 	if r == nil || r.db == nil {
 		return spoke.ExportResponse{}, false, errors.New("spoke repository is unavailable")
 	}
+	if !r.UsesProductBrands() {
+		return spoke.ExportResponse{}, false, errors.New("product brand repository is unavailable")
+	}
 
 	var rimBrandCount int64
-	if err := r.db.Model(&spoke.CatalogRimBrand{}).Count(&rimBrandCount).Error; err != nil {
+	if err := r.db.Model(&spoke.CatalogRimBrand{}).Where("product_brand_id IS NOT NULL").Count(&rimBrandCount).Error; err != nil {
 		return spoke.ExportResponse{}, false, err
 	}
 	var presetCount int64
@@ -139,8 +163,10 @@ func (r *SpokeRepository) GetCatalogExport() (spoke.ExportResponse, bool, error)
 
 	var rimBrands []spoke.CatalogRimBrand
 	if err := r.db.
+		Where("product_brand_id IS NOT NULL").
 		Where("is_enabled = ?", true).
 		Order("sort_order ASC, name ASC, id ASC").
+		Preload("ProductBrand").
 		Preload("Models", func(db *gorm.DB) *gorm.DB {
 			return db.Where("is_enabled = ?", true).Order("sort_order ASC, name ASC, id ASC")
 		}).
@@ -173,7 +199,14 @@ func (r *SpokeRepository) GetCatalogExport() (spoke.ExportResponse, bool, error)
 	legacyHubModelsByID := make(map[uint]spoke.CatalogHubModel)
 
 	for _, brand := range rimBrands {
-		rimBrandCodesByID[brand.ID] = brand.Code
+		if brand.ProductBrandID == nil || brand.ProductBrand.ID == 0 {
+			continue
+		}
+		brandID := normalizeSpokeCatalogID(brand.ProductBrand.Slug)
+		if brandID == "" {
+			continue
+		}
+		rimBrandCodesByID[brand.ID] = brandID
 		items := make([]spoke.RimModel, 0, len(brand.Models))
 		for _, model := range brand.Models {
 			rimModelCodesByID[model.ID] = model.Code
@@ -185,8 +218,8 @@ func (r *SpokeRepository) GetCatalogExport() (spoke.ExportResponse, bool, error)
 			})
 		}
 		export.Rims = append(export.Rims, spoke.RimBrand{
-			ID:    brand.Code,
-			Name:  brand.Name,
+			ID:    brandID,
+			Name:  brand.ProductBrand.Name,
 			Items: items,
 		})
 	}
@@ -283,6 +316,9 @@ func (r *SpokeRepository) ReplaceCatalog(export spoke.ExportResponse) error {
 	if r == nil || r.db == nil {
 		return errors.New("spoke repository is unavailable")
 	}
+	if !r.UsesProductBrands() {
+		return errors.New("product brand repository is unavailable")
+	}
 
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		effectiveExport := export
@@ -314,22 +350,38 @@ func (r *SpokeRepository) ReplaceCatalog(export spoke.ExportResponse) error {
 			return err
 		}
 
+		productBrandRepo := r.productBrand.WithTx(tx)
+		productBrands, err := productBrandRepo.List(true)
+		if err != nil {
+			return err
+		}
+		productBrandsByRef := make(map[string]productdomain.ProductBrand, len(productBrands)*2)
+		for _, brand := range productBrands {
+			productBrandsByRef[strconv.FormatUint(uint64(brand.ID), 10)] = brand
+			productBrandsByRef[normalizeSpokeCatalogID(brand.Slug)] = brand
+		}
+
 		rimBrandIDs := make(map[string]uint)
 		rimModelIDs := make(map[string]uint)
 		hubBrandIDs := make(map[string]uint)
 		hubModelIDs := make(map[string]uint)
 
 		for brandIndex, brand := range effectiveExport.Rims {
+			productBrand, exists := lookupProductBrandReference(brand.ID, productBrandsByRef)
+			if !exists {
+				return fmt.Errorf("spoke rim brand %q references an unavailable product brand", brand.ID)
+			}
 			record := spoke.CatalogRimBrand{
-				Code:      brand.ID,
-				Name:      brand.Name,
-				SortOrder: brandIndex,
-				IsEnabled: true,
+				Code:           normalizeSpokeCatalogID(productBrand.Slug),
+				Name:           productBrand.Name,
+				ProductBrandID: &productBrand.ID,
+				SortOrder:      brandIndex,
+				IsEnabled:      true,
 			}
 			if err := tx.Create(&record).Error; err != nil {
 				return err
 			}
-			rimBrandIDs[brand.ID] = record.ID
+			rimBrandIDs[record.Code] = record.ID
 
 			for modelIndex, model := range brand.Items {
 				modelRecord := spoke.CatalogRimModel{
@@ -383,7 +435,11 @@ func (r *SpokeRepository) ReplaceCatalog(export spoke.ExportResponse) error {
 			if err != nil {
 				return err
 			}
-			rimBrandID, hasRimBrand := rimBrandIDs[preset.RimBrandID]
+			normalizedRimBrandID := normalizeSpokeCatalogID(preset.RimBrandID)
+			if productBrand, exists := lookupProductBrandReference(normalizedRimBrandID, productBrandsByRef); exists {
+				normalizedRimBrandID = normalizeSpokeCatalogID(productBrand.Slug)
+			}
+			rimBrandID, hasRimBrand := rimBrandIDs[normalizedRimBrandID]
 			rimModelID, hasRimModel := rimModelIDs[preset.RimModelID]
 			hubBrandID, hasHubBrand := hubBrandIDs[preset.HubBrandID]
 			hubModelID, hasHubModel := hubModelIDs[preset.HubModelID]
@@ -579,6 +635,17 @@ func fitmentHubBrandsForSpokeCatalog(
 
 func normalizeSpokeCatalogID(value string) string {
 	return strings.ToLower(strings.TrimSpace(value))
+}
+
+func lookupProductBrandReference(reference string, brands map[string]productdomain.ProductBrand) (productdomain.ProductBrand, bool) {
+	normalized := normalizeSpokeCatalogID(reference)
+	if normalized == "" {
+		return productdomain.ProductBrand{}, false
+	}
+	if brand, exists := brands[normalized]; exists {
+		return brand, true
+	}
+	return productdomain.ProductBrand{}, false
 }
 
 func fitmentHubGeometry(specification fitmentcatalogdomain.HubSpecification) *spoke.HubGeometry {

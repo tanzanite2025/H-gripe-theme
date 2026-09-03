@@ -84,6 +84,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref, useSlots, watch } from 'vue'
 import { useI18n } from '#imports'
 import QuickBuyLocalizedHelpQuestionMarkDialog from '~/components/quick-buy/QuickBuyLocalizedHelpQuestionMarkDialog.vue'
+import { createDialogStackId, useDialogStack } from '~/composables/useDialogStack'
 import { provideWheelsetSelectionAssistantHelp } from '~/composables/useWheelsetSelectionAssistantHelp'
 import { wheelsetSelectionAssistantQuestionPaginationKey } from '~/composables/useWheelsetSelectionAssistantQuestionPagination'
 import { useWheelsetSelectionAssistantModalState } from '~/composables/useWheelsetSelectionAssistantModalState'
@@ -115,10 +116,13 @@ const modalTitleId = 'wheelset-selection-assistant-modal-title'
 const hasFooterSlot = computed(() => Boolean(slots.footer))
 const assistantHelp = provideWheelsetSelectionAssistantHelp()
 const assistantModalState = useWheelsetSelectionAssistantModalState()
+const dialogStack = useDialogStack()
+const dialogStackId = createDialogStackId('wheelset-selection-assistant-modal')
 const questionPaginationTotal = ref(0)
 const questionPaginationActiveIndex = ref(0)
 const questionPaginationReachableIndex = ref(0)
 let registeredOpenState = false
+let unregisterDialogStack: (() => void) | null = null
 
 const isQuickBuyWheelsetSelectionAssistantSource = computed(() => props.source === 'quick-buy/wheelset-selection-assistant')
 const titleLabel = computed(() => props.title || (
@@ -154,21 +158,22 @@ const handleClose = () => {
   emit('close')
 }
 
-const handleKeydown = (event: KeyboardEvent) => {
-  if (props.modelValue && event.key === 'Escape') {
-    handleClose()
-  }
-}
-
 const syncOpenState = (isOpen: boolean) => {
   if (isOpen && !registeredOpenState) {
     assistantModalState.register()
+    unregisterDialogStack = dialogStack.register(dialogStackId, () => {
+      handleClose()
+    }, {
+      priority: 10040,
+    })
     registeredOpenState = true
     return
   }
 
   if (!isOpen && registeredOpenState) {
     assistantModalState.unregister()
+    unregisterDialogStack?.()
+    unregisterDialogStack = null
     registeredOpenState = false
   }
 }
@@ -184,12 +189,10 @@ watch(
 
 onMounted(() => {
   syncOpenState(props.modelValue)
-  document.addEventListener('keydown', handleKeydown)
 })
 
 onBeforeUnmount(() => {
   syncOpenState(false)
-  document.removeEventListener('keydown', handleKeydown)
 })
 </script>
 

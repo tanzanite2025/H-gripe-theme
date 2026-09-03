@@ -176,8 +176,12 @@ func (h *Handler) CapturePayPalOrder(c *gin.Context) {
 		return
 	}
 
-	orderRecord, ok := h.loadPayablePayPalOrder(c, strings.TrimSpace(req.OrderNumber), userIDValue.(uint))
+	orderRecord, ok := h.loadPayPalOrderForCapture(c, strings.TrimSpace(req.OrderNumber), userIDValue.(uint))
 	if !ok {
+		return
+	}
+	if orderRecord.PaymentStatus == "paid" {
+		response.Success(c, completedPayPalPaymentResponse(paypalOrderID, orderRecord))
 		return
 	}
 
@@ -264,6 +268,10 @@ func (h *Handler) CapturePayPalOrder(c *gin.Context) {
 			apierror.RespondNotFound(c, "Order")
 			return
 		}
+		if errors.Is(err, service.ErrOrderAlreadyPaid) {
+			response.Success(c, completedPayPalPaymentResponse(paypalOrderID, orderRecord))
+			return
+		}
 		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
@@ -303,7 +311,48 @@ func (h *Handler) loadPayablePayPalOrder(c *gin.Context, orderNumber string, use
 		apierror.RespondBadRequest(c, "Order is not payable")
 		return nil, false
 	}
+	if !ensureOrderHasPayableAmount(c, orderRecord) {
+		return nil, false
+	}
 	return orderRecord, true
+}
+
+func (h *Handler) loadPayPalOrderForCapture(c *gin.Context, orderNumber string, userID uint) (*orderdomain.Order, bool) {
+	orderRecord, err := h.orderService.GetOrderByNumber(orderNumber, userID)
+	if err != nil {
+		apierror.RespondNotFound(c, "Order")
+		return nil, false
+	}
+	if pgateway.ProviderForPaymentMethod(orderRecord.PaymentMethod) != string(pgateway.GatewayPayPal) {
+		apierror.RespondBadRequest(c, "Order payment method is not PayPal")
+		return nil, false
+	}
+	if orderRecord.PaymentStatus == "paid" {
+		return orderRecord, true
+	}
+	if orderRecord.Status == "cancelled" || orderRecord.Status == "refunded" || orderRecord.Status == "payment_expired" {
+		apierror.RespondBadRequest(c, "Order is not payable")
+		return nil, false
+	}
+	if !ensureOrderHasPayableAmount(c, orderRecord) {
+		return nil, false
+	}
+	return orderRecord, true
+}
+
+func completedPayPalPaymentResponse(paypalOrderID string, orderRecord *orderdomain.Order) *pgateway.PaymentResponse {
+	paypalOrderID = strings.TrimSpace(paypalOrderID)
+	return &pgateway.PaymentResponse{
+		ID:            paypalOrderID,
+		Status:        "COMPLETED",
+		Amount:        orderRecord.TotalAmount,
+		Currency:      orderRecord.Currency,
+		TransactionID: paypalOrderID,
+		Metadata: map[string]string{
+			"order_number":    orderRecord.OrderNumber,
+			"paypal_order_id": paypalOrderID,
+		},
+	}
 }
 
 func sanitizedPayPalRedirectURL(value string) string {

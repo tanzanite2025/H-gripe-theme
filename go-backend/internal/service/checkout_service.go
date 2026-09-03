@@ -54,6 +54,8 @@ type CheckoutQuote struct {
 	FXSnapshot      currency.OrderFXSnapshot `json:"-"`
 }
 
+const checkoutMaxPointsDiscountSubtotalRate = 0.5
+
 type checkoutRepositories struct {
 	productRepo     *repository.ProductRepository
 	couponRepo      *repository.CouponRepository
@@ -62,6 +64,7 @@ type checkoutRepositories struct {
 	shippingService *ShippingService
 	currencyPolicy  *CurrencyPolicyService
 	exchangeRates   *repository.ExchangeRateRepository
+	lockCoupon      bool
 }
 
 func NewCheckoutService(
@@ -127,6 +130,7 @@ func (s *CheckoutService) QuoteWithRepositories(input CheckoutQuoteInput, repos 
 		shippingService: shippingService,
 		currencyPolicy:  NewCurrencyPolicyService(repos.Setting),
 		exchangeRates:   repos.ExchangeRate,
+		lockCoupon:      true,
 	})
 }
 
@@ -246,7 +250,7 @@ func (s *CheckoutService) quote(input CheckoutQuoteInput, repos checkoutReposito
 	var targetCoupon *coupon.Coupon
 	couponDiscount := 0.0
 	if input.CouponCode != "" {
-		targetCoupon, couponDiscount, err = s.validateCoupon(repos.couponRepo, input.CouponCode, subtotal)
+		targetCoupon, couponDiscount, err = s.validateCoupon(repos.couponRepo, input.CouponCode, input.UserID, subtotal, repos.lockCoupon)
 		if err != nil {
 			return nil, fmt.Errorf("failed to apply coupon %s: %w", input.CouponCode, err)
 		}
@@ -409,7 +413,7 @@ func (s *CheckoutService) calculatePointsDiscount(
 
 	pointsDiscount := float64(requestedPoints) / float64(config.ExchangeRatePoints)
 	pointsToUse := requestedPoints
-	if maxPointsDiscount := subtotal * 0.5; pointsDiscount > maxPointsDiscount {
+	if maxPointsDiscount := subtotal * checkoutMaxPointsDiscountSubtotalRate; pointsDiscount > maxPointsDiscount {
 		pointsToUse = int(math.Floor(maxPointsDiscount * float64(config.ExchangeRatePoints)))
 		pointsDiscount = float64(pointsToUse) / float64(config.ExchangeRatePoints)
 	}
@@ -424,8 +428,14 @@ func (s *CheckoutService) currentLoyaltyProgramConfig() (*loyalty.ProgramConfig,
 	return nil, ErrLoyaltyProgramConfigNotFound
 }
 
-func (s *CheckoutService) validateCoupon(couponRepo *repository.CouponRepository, code string, amount float64) (*coupon.Coupon, float64, error) {
-	c, err := couponRepo.FindCouponByCode(code)
+func (s *CheckoutService) validateCoupon(couponRepo *repository.CouponRepository, code string, userID uint, amount float64, lockForUpdate bool) (*coupon.Coupon, float64, error) {
+	var c *coupon.Coupon
+	var err error
+	if lockForUpdate {
+		c, err = couponRepo.FindCouponByCodeForUpdate(code)
+	} else {
+		c, err = couponRepo.FindCouponByCode(code)
+	}
 	if err != nil {
 		return nil, 0, errors.New("coupon not found")
 	}
@@ -439,6 +449,9 @@ func (s *CheckoutService) validateCoupon(couponRepo *repository.CouponRepository
 	}
 	if c.UsageLimit > 0 && c.UsedCount >= c.UsageLimit {
 		return nil, 0, errors.New("coupon usage limit reached")
+	}
+	if err := validateCouponPerUserUsageLimit(couponRepo, c, userID); err != nil {
+		return nil, 0, err
 	}
 	if amount < c.MinAmount {
 		return nil, 0, fmt.Errorf("minimum amount %.2f required", c.MinAmount)

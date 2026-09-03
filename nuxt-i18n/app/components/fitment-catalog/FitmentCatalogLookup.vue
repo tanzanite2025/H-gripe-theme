@@ -85,10 +85,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, useId, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, useId, watch } from 'vue'
 import { useI18n } from '#imports'
 import FitmentForkLookupPanel from '~/components/fitment-catalog/FitmentForkLookupPanel.vue'
 import FitmentFrameLookupPanel from '~/components/fitment-catalog/FitmentFrameLookupPanel.vue'
+import { createDialogStackId, useDialogStack } from '~/composables/useDialogStack'
 import type { FitmentCatalogResourceType } from '~/types/fitmentCatalog'
 
 const props = withDefaults(defineProps<{
@@ -105,10 +106,13 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const instanceId = useId()
+const dialogStack = useDialogStack()
+const dialogStackId = createDialogStackId('fitment-catalog-lookup')
 const activeTab = ref<FitmentCatalogResourceType>(props.defaultTab)
 const dialogId = `fitment-catalog-dialog-${instanceId}`
 const titleId = `fitment-catalog-title-${instanceId}`
 const descriptionId = `fitment-catalog-description-${instanceId}`
+let unregisterDialogStack: (() => void) | null = null
 
 const tabs = computed(() => [
   {
@@ -127,12 +131,6 @@ const panelId = (tab: FitmentCatalogResourceType) => `${dialogId}-panel-${tab}`
 const close = () => {
   emit('update:modelValue', false)
   emit('close')
-}
-
-const handleKeydown = (event: KeyboardEvent) => {
-  if (props.modelValue && event.key === 'Escape') {
-    close()
-  }
 }
 
 const handleTabKeydown = (event: KeyboardEvent, currentIndex: number) => {
@@ -157,9 +155,26 @@ const handleTabKeydown = (event: KeyboardEvent, currentIndex: number) => {
   document.getElementById(tabId(tab.id))?.focus()
 }
 
+const syncDialogStack = (isOpen: boolean) => {
+  if (isOpen && !unregisterDialogStack) {
+    unregisterDialogStack = dialogStack.register(dialogStackId, () => {
+      close()
+    }, {
+      priority: 12000,
+    })
+    return
+  }
+
+  if (!isOpen && unregisterDialogStack) {
+    unregisterDialogStack()
+    unregisterDialogStack = null
+  }
+}
+
 watch(
   () => [props.modelValue, props.defaultTab] as const,
   ([isOpen, defaultTab]) => {
+    syncDialogStack(isOpen)
     if (defaultTab) activeTab.value = defaultTab
     if (!isOpen) return
     activeTab.value = defaultTab || 'frame'
@@ -167,12 +182,8 @@ watch(
   { immediate: true },
 )
 
-onMounted(() => {
-  document.addEventListener('keydown', handleKeydown)
-})
-
 onBeforeUnmount(() => {
-  document.removeEventListener('keydown', handleKeydown)
+  syncDialogStack(false)
 })
 </script>
 

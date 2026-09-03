@@ -133,7 +133,8 @@
 </template>
 
 <script setup lang="ts">
-import { watch } from 'vue'
+import { onBeforeUnmount, watch } from 'vue'
+import { createDialogStackId, useDialogStack } from '~/composables/useDialogStack'
 import { useWishlist } from '~/composables/useWishlist'
 import { buildProductPath } from '~/utils/seo/urls'
 
@@ -150,20 +151,45 @@ const emit = defineEmits<{
 
 const { items, loading, error, loadWishlist, removeFromWishlist } = useWishlist()
 const { t } = useI18n()
-
-watch(
-  () => modelValue.value,
-  (val) => {
-    if (val) {
-      loadWishlist()
-    }
-  },
-)
+const dialogStack = useDialogStack()
+const dialogStackId = createDialogStackId('wishlist-drawer')
+let unregisterDialogStack: (() => void) | null = null
 
 const handleClose = () => {
   modelValue.value = false
   emit('close')
 }
+
+const syncDialogStack = (isOpen: boolean) => {
+  if (isOpen && !unregisterDialogStack) {
+    unregisterDialogStack = dialogStack.register(dialogStackId, () => {
+      handleClose()
+    }, {
+      priority: 10060,
+    })
+    return
+  }
+
+  if (!isOpen && unregisterDialogStack) {
+    unregisterDialogStack()
+    unregisterDialogStack = null
+  }
+}
+
+watch(
+  () => modelValue.value,
+  (val) => {
+    syncDialogStack(val)
+    if (val) {
+      loadWishlist()
+    }
+  },
+  { immediate: true }
+)
+
+onBeforeUnmount(() => {
+  syncDialogStack(false)
+})
 
 const displayPrice = (item: any) => {
   const product = item?.product
