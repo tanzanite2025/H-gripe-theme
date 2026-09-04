@@ -4,11 +4,6 @@
     <h1 class="support-page__title support-page__title--sr-only">Warranty</h1>
 
     <!-- Tab Components -->
-    <WarrantyChangeCancelTab 
-      v-show="activeTab === 'change-cancel'" 
-      @change-tab="setActiveTab" 
-    />
-    
     <WarrantyDamagedLostTab 
       v-show="activeTab === 'damaged-lost'" 
       :contact-email="supportEmail"
@@ -43,7 +38,6 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import WarrantyChangeCancelTab from '~/components/warranty/ChangeCancelTab.vue'
 import WarrantyDamagedLostTab from '~/components/warranty/DamagedLostTab.vue'
 import WarrantyReturnsTab from '~/components/warranty/ReturnsTab.vue'
 import WarrantyWarrantyPolicyTab from '~/components/warranty/WarrantyPolicyTab.vue'

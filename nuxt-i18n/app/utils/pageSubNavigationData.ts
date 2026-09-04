@@ -78,7 +78,6 @@ export const companyAboutTabs = [
 export type CompanyAboutTabId = (typeof companyAboutTabs)[number]['id']
 
 export const warrantyTabs = [
-  { id: 'change-cancel', label: 'Change / Cancel', description: 'How to update, pause, or cancel an order.' },
   { id: 'damaged-lost', label: 'Damaged or Lost Goods', description: 'What to do when goods arrive damaged or missing.' },
   { id: 'returns', label: 'Returns', description: 'Return conditions, timing, and handling process.' },
   { id: 'warranty', label: 'Warranty', description: 'Coverage scope, duration, and claim basics.' },
