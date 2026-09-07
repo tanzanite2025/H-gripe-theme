@@ -1,0 +1,20 @@
+{
+  "title": "Useful Add-ons",
+  "body": "Optional upgrades should solve a real fit, service, or riding problem. Use the list below as a quick check before adding parts to a custom wheelset order.",
+  "tubeless": {
+    "title": "Tubeless setup",
+    "body": "Rim tape, valves, and sealant for riders who want lower pressure and puncture resistance."
+  },
+  "spareSpokes": {
+    "title": "Spare spokes",
+    "body": "Helpful for travel, racing, or less common spoke lengths that may be hard to source locally."
+  },
+  "freehub": {
+    "title": "Freehub body",
+    "body": "Only add a spare or alternate freehub body after confirming cassette compatibility."
+  },
+  "logo": {
+    "title": "Logo finish",
+    "body": "Laser engraving is the fastest low-maintenance choice; decals suit custom team colors."
+  }
+}

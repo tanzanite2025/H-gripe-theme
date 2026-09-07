@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	currencydomain "commerce-platform/internal/domain/currency"
 	"commerce-platform/internal/domain/order"
 	paymentdomain "commerce-platform/internal/domain/payment"
 
@@ -63,6 +64,32 @@ func TestDisputeEvidenceUsesOrderPolicySnapshotAndRefundFacts(t *testing.T) {
 	require.Contains(t, paypalPackage.Evidence.Notes, "re_after_sales_1")
 	require.Equal(t, DisputeEvidenceStatusReady, checklistItem(paypalPackage.EvidenceChecklist, "policy_disclosure").Status)
 	require.Equal(t, DisputeEvidenceStatusReady, checklistItem(paypalPackage.EvidenceChecklist, "refund_activity").Status)
+}
+
+func TestPayPalSignatureRequirementPrefersOrderSnapshot(t *testing.T) {
+	dispute := &paymentdomain.PayPalDispute{
+		Reason:   "INR",
+		Amount:   1000,
+		Currency: "USD",
+	}
+	snapshot := currencydomain.OrderFXSnapshot{
+		Version:         currencydomain.OrderFXSnapshotVersion,
+		BaseCurrency:    "USD",
+		OrderCurrency:   "USD",
+		BaseToOrderRate: 1,
+		Source:          "test",
+		CapturedAt:      time.Now().UTC(),
+	}
+	orderRecord := &order.Order{
+		TotalAmount:    1000,
+		Currency:       "USD",
+		FXSnapshotData: currencydomain.OrderFXSnapshotJSON(snapshot),
+	}
+
+	require.False(t, paypalDisputeRequiresSignaturePOD(dispute, orderRecord))
+
+	orderRecord.SignatureRequired = true
+	require.True(t, paypalDisputeRequiresSignaturePOD(dispute, orderRecord))
 }
 
 func checklistItem(checklist DisputeEvidenceChecklist, key string) DisputeEvidenceChecklistItem {

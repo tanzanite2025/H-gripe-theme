@@ -61,15 +61,75 @@ func latestTrackingEventTime(events []shipping.TrackingEvent) *time.Time {
 
 func (s *ShippingService) updateOrderShippingStatusIfDelivered(
 	orderID uint,
+	trackingNumber string,
+	providerCarrierCode string,
 	status string,
 	statusCode int,
 	events []shipping.TrackingEvent,
+	source string,
 ) error {
 	if s == nil || s.orderRepo == nil || !trackingStatusIndicatesDelivery(status, statusCode, events) {
 		return nil
 	}
 
-	return s.orderRepo.UpdateShippingStatus(orderID, "delivered")
+	currentOrder, err := s.orderRepo.FindByIDBasic(orderID)
+	if err != nil {
+		return err
+	}
+	oldShippingStatus := strings.TrimSpace(currentOrder.ShippingStatus)
+	updated, err := s.orderRepo.UpdateShippingStatusIfDifferent(orderID, "delivered")
+	if err != nil {
+		return err
+	}
+	if !updated {
+		return nil
+	}
+
+	recordServiceAudit(s.auditRecorder, serviceAuditEvent{
+		Action:     "execute",
+		Resource:   "order_delivery",
+		ResourceID: orderID,
+		Status:     "success",
+		Changes: map[string]interface{}{
+			"tracking_number":       strings.TrimSpace(trackingNumber),
+			"provider_carrier_code": strings.TrimSpace(providerCarrierCode),
+			"tracking_status":       deliveryTrackingStatusForAudit(status, statusCode, events),
+			"status_code":           statusCode,
+			"source":                strings.TrimSpace(source),
+		},
+		OldValue: map[string]interface{}{
+			"order_number":    strings.TrimSpace(currentOrder.OrderNumber),
+			"shipping_status": oldShippingStatus,
+		},
+		NewValue: map[string]interface{}{
+			"order_number":    strings.TrimSpace(currentOrder.OrderNumber),
+			"shipping_status": "delivered",
+		},
+	})
+	return nil
+}
+
+func deliveryTrackingStatusForAudit(status string, statusCode int, events []shipping.TrackingEvent) string {
+	if normalized := strings.TrimSpace(status); normalized != "" {
+		return normalized
+	}
+
+	for _, event := range events {
+		if trackingStatusTextIndicatesDelivery(event.Status) {
+			return strings.TrimSpace(event.Status)
+		}
+	}
+
+	if statusCode == 4 {
+		return "delivered"
+	}
+
+	for _, event := range events {
+		if normalized := strings.TrimSpace(event.Status); normalized != "" {
+			return normalized
+		}
+	}
+	return ""
 }
 
 func trackingStatusIndicatesDelivery(status string, statusCode int, events []shipping.TrackingEvent) bool {

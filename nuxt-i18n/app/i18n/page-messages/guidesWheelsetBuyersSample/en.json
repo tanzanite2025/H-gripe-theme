@@ -1,0 +1,48 @@
+{
+  "professional": {
+    "title": "Professional Wheel Building Service",
+    "body": "We provide professional assembly services, supporting customers who wish to send in hubs or rims. Our skilled technicians will complete the assembly to the highest standards.",
+    "feeTitle": "Assembly fee",
+    "feeBody": "USD 30 / set for standard wheel building service.",
+    "bestForTitle": "Best for",
+    "bestForBody": "Customers sending compatible hubs, rims, or full component kits for professional assembly.",
+    "button": "Get Wheel Building Quote via Chat"
+  },
+  "process": {
+    "title": "Service Process",
+    "shipping": {
+      "title": "Shipping",
+      "body": "Send components to our designated address."
+    },
+    "confirmation": {
+      "title": "Confirmation",
+      "body": "We inspect and confirm receipt of all listed items."
+    },
+    "assembly": {
+      "title": "Assembly & testing",
+      "body": "Professional build plus tension and safety analysis."
+    },
+    "delivery": {
+      "title": "Delivery",
+      "body": "Finished wheelset shipped back or prepared for pickup."
+    }
+  },
+  "scope": {
+    "title": "Scope & Notes",
+    "acceptedTitle": "Accepted items",
+    "acceptedBody": "Wheelsets, rims, hubs, spokes, or related components. Please confirm compatibility with us first.",
+    "importantTitle": "Important",
+    "items": [
+      "Components must be new or in good condition.",
+      "Include a detailed packing list.",
+      "Typical turnaround is 3-7 business days.",
+      "Shipping costs are the customer's responsibility."
+    ]
+  },
+  "ownBuild": {
+    "title": "Building Your Own Wheels?",
+    "body": "If you prefer to assemble yourself using these parts, we support you. Access our technical guides and customization options below.",
+    "spokeButton": "Open Wheel Component Spoke Patterns",
+    "holeButton": "Open Rim Hole Pattern Options"
+  }
+}

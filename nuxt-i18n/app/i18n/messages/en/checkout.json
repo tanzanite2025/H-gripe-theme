@@ -23,11 +23,20 @@
       "paymentUnavailable": "This payment method is temporarily unavailable.",
       "paymentPending": "Payment is not complete yet. Please check your order status later.",
       "orderSuccess": "Order submitted successfully!",
-      "orderFailed": "Order submission failed, please try again"
+      "orderFailed": "Order submission failed, please try again",
+      "emailRequired": "Add an email address to your account before checkout."
     }
   },
   "order": {
     "itemFallback": "Item"
+  },
+  "fulfillment": {
+    "title": "Fulfillment and delivery",
+    "madeToOrder": "This cart includes made-to-order items. Production begins after payment confirmation, and the production schedule is added to the shipping time.",
+    "cancellation": "Cancellation is available only before production or material cutting begins. After production starts, cancellation may be restricted and a custom handling fee may apply.",
+    "signature": "Orders totaling $750 USD or more require a signature at delivery.",
+    "confirmation": "I understand the production, cancellation, delivery, and signature requirements for this order.",
+    "confirmRequired": "Please confirm the custom-order and delivery requirements before continuing."
   },
   "payment": {
     "card": {

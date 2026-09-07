@@ -435,6 +435,7 @@ const eventLabel = (value: string): string => ({
   redirect_linked: '关联重定向',
   resolution_recorded: '记录解决方案',
   suppressed: '暂时抑制',
+  snapshot_invalidated: '快照使旧观测失效',
   verification_passed: '验证通过',
   verification_failed: '验证未通过',
 }[value] || value)

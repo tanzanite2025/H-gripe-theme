@@ -2,10 +2,7 @@
   "title": "Ofte stillede spørgsmål",
   "subtitle": "Find svar på almindelige spørgsmål om vores produkter og tjenester",
   "ui": {
-    "categorizedSupport": "Kategoriseret support",
     "quickAnswers": "Hurtige svar på almindelige spørgsmål",
-    "categoriesAriaLabel": "FAQ-kategorier",
-    "categoriesLabel": "FAQ-kategorier",
     "all": "Alle",
     "viewAll": "Se alle FAQ",
     "emptySection": "Der er ingen FAQ til denne sektion.",
@@ -13,7 +10,6 @@
     "searchPlaceholder": "Søg i FAQ...",
     "viewMoreContent": "Vis mere indhold",
     "noResults": "Ingen FAQ fundet for \"{query}\"",
-    "allFaqsMetaTitle": "Alle FAQ",
     "loadingAnswers": "Indlæser svar",
     "illustrationAlt": "FAQ-illustration",
     "selectQuestion": "Select a question to view the answer."

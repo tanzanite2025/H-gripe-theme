@@ -1,94 +1,17 @@
 {
-  "brief": {
-    "level": "Level",
-    "stackable": "Stackable",
-    "levelDesc": "Your membership tier reflects accumulated activity and unlocks the benefit rules connected to that tier.",
-    "discountRate": "Discount Rate",
-    "discountRateDesc": "The member-level price discount configured in the backend.",
-    "stackableDesc": "Shows whether this tier benefit can combine with other eligible promotions during checkout."
-  },
-  "levels": {
-    "title": "Üyelik seviyeleri",
-    "header": {
-      "level": "Seviye",
-      "pointsRequired": "Gerekli puanlar",
-      "discountRate": "Discount Rate"
-    },
-    "rows": {
-      "ordinary": "Standart",
-      "bronze": "Bronz",
-      "silver": "Gümüş",
-      "gold": "Altın",
-      "platinum": "Platinum",
-      "diamond": "Diamond"
-    }
-  },
-  "points": {
-    "title": "Puan nasıl kazanılır?",
-    "invite": "Yeni kullanıcıları davet et",
-    "inviteDesc": "50 puan (davet edilen 30 puan alır)",
-    "consume": "Para birimi",
-    "consumeDesc": "1 Dolar = 1 Puan",
-    "daily": "Günlük giriş",
-    "dailyDesc": "1 puan (30 gün geçerli)",
-    "unit": "pts",
-    "redeem": "Redemption rate",
-    "redemptionRule": "{points} Points = {currency}{amount}",
-    "checkin": "Daily check-in",
-    "checkinRule": "{base} Points (up to {max}; +{bonus} every {interval} consecutive days)",
-    "referralRule": "{referrer} Points (invitee gets {referee} Points)",
-    "pointValueSingular": "{points} Point",
-    "pointsValue": "{points} Points",
-    "notConfigured": "Not configured",
-    "purchaseEarn": "Order completion",
-    "purchaseEarnRule": "{points} per 1 {currency} of product amount after discounts, awarded after order completion",
-    "purchaseEarnDisabled": "Purchase earning is not enabled",
-    "redemptionDisplayRule": "{points} = {currency} {amount}",
-    "redemptionDisabled": "Points redemption is not enabled",
-    "checkinBaseRule": "{base} per check-in",
-    "checkinMaxRule": "up to {max}",
-    "checkinStreakRule": "+{bonus} every {interval} consecutive days",
-    "checkinDisabled": "Daily check-in points are not enabled",
-    "referralDisplayRule": "Inviter gets {referrer}; invitee gets {referee}",
-    "referralDisabled": "Referral points are not enabled"
-  },
   "tabs": {
+    "ariaLabel": "Membership sections",
     "myInfo": "My info",
     "levers": "Levers",
-    "exchange": "Exchange",
-    "ariaLabel": "Membership sections"
+    "exchange": "Exchange"
   },
-  "viewAll": "View Full",
-  "myBenefits": "My Benefits",
+  "points": {
+    "unit": "pts"
+  },
+  "brief": {
+    "discountRate": "Discount Rate"
+  },
   "coupons": "Coupons",
   "pointCards": "Point Cards",
-  "copyLink": "Copy Invite Link",
-  "pageTitle": "Membership and Points",
-  "giftCards": "Gift Cards",
-  "pages": {
-    "myInfo": {
-      "title": "My Membership Info",
-      "intro": "View your profile, membership level, points balance, coupons, gift cards, and warranty tools.",
-      "seoTitle": "My Membership Info - Points and Benefits",
-      "seoDescription": "View your member profile, loyalty level, points balance, coupons, gift cards, and warranty tools.",
-      "feedbackTitle": "Share your feedback about your membership info",
-      "feedbackSubtitle": "Tell us whether account details, benefits, coupons, gift cards, or warranty tools are clear."
-    },
-    "levers": {
-      "title": "Membership Levels and Point Rules",
-      "intro": "Review member tiers, discount levels, earning rules, redemption rates, referral rewards, and check-in rules.",
-      "seoTitle": "Membership Levels and Point Rules",
-      "seoDescription": "Review membership levels, points earning rules, redemption rates, referral rewards, and daily check-in rewards.",
-      "feedbackTitle": "Share your feedback about membership levels and points",
-      "feedbackSubtitle": "Tell us whether tier rules, earning rules, redemption, referral rewards, or check-in details are clear."
-    },
-    "exchange": {
-      "title": "Gift Card Exchange",
-      "intro": "Redeem eligible loyalty points for gift cards and track redeemed cards from your member center.",
-      "seoTitle": "Gift Card Exchange - Redeem Loyalty Points",
-      "seoDescription": "Redeem loyalty points for available gift card rewards and manage redeemed gift cards from the member center.",
-      "feedbackTitle": "Share your feedback about gift card exchange",
-      "feedbackSubtitle": "Tell us whether point redemption, available gift cards, or redeemed card records are easy to understand."
-    }
-  }
+  "viewAll": "View Full"
 }

@@ -106,7 +106,7 @@ const cards: ShopWithConfidenceCard[] = [
     titleKey: 'home.shopWithConfidence.cards.afterSalesSupport.title',
     descriptionKey: 'home.shopWithConfidence.cards.afterSalesSupport.description',
     actionKey: 'home.shopWithConfidence.cards.afterSalesSupport.action',
-    to: '/support/warranty',
+    to: '/support/after-sales',
   },
 ]
 

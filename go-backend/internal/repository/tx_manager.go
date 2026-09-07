@@ -3,46 +3,54 @@ package repository
 import "gorm.io/gorm"
 
 type TxManager struct {
-	db                   *gorm.DB
-	orderRepo            *OrderRepository
-	orderIdempotencyRepo *OrderIdempotencyRepository
-	attributionRepo      *OrderAttributionRepository
-	productRepo          *ProductRepository
-	couponRepo           *CouponRepository
-	loyaltyRepo          *LoyaltyRepository
-	programRepo          *LoyaltyProgramRepository
-	redemptionRepo       *GiftCardRedemptionRepository
-	paymentRepo          *PaymentRepository
-	refundReviewRepo     *PaymentRefundRecommendationRepository
-	refundExecRepo       *PaymentRefundExecutionRepository
-	afterSalesRefundRepo *AfterSalesRefundReviewRepository
-	shippingRepo         *ShippingRepository
-	settingRepo          *SettingRepository
-	exchangeRateRepo     *ExchangeRateRepository
-	policyDisclosureRepo *OrderPolicyDisclosureRepository
-	outboxRepo           *OutboxRepository
-	productBrandRepo     *ProductBrandRepository
+	db                            *gorm.DB
+	orderRepo                     *OrderRepository
+	orderIdempotencyRepo          *OrderIdempotencyRepository
+	attributionRepo               *OrderAttributionRepository
+	productRepo                   *ProductRepository
+	couponRepo                    *CouponRepository
+	loyaltyRepo                   *LoyaltyRepository
+	programRepo                   *LoyaltyProgramRepository
+	redemptionRepo                *GiftCardRedemptionRepository
+	paymentRepo                   *PaymentRepository
+	refundReviewRepo              *PaymentRefundRecommendationRepository
+	refundExecRepo                *PaymentRefundExecutionRepository
+	afterSalesRefundRepo          *AfterSalesRefundReviewRepository
+	shippingRepo                  *ShippingRepository
+	settingRepo                   *SettingRepository
+	exchangeRateRepo              *ExchangeRateRepository
+	policyDisclosureRepo          *OrderPolicyDisclosureRepository
+	productQualityRequirementRepo *ProductQualityRequirementRepository
+	orderEvidenceSnapshotRepo     *OrderEvidenceSnapshotRepository
+	orderEvidenceRepo             *OrderEvidenceRepository
+	orderEvidenceSubmissionRepo   *OrderEvidenceSubmissionSnapshotRepository
+	outboxRepo                    *OutboxRepository
+	productBrandRepo              *ProductBrandRepository
 }
 
 type TxRepositories struct {
-	Order            *OrderRepository
-	OrderIdempotency *OrderIdempotencyRepository
-	OrderAttribution *OrderAttributionRepository
-	Product          *ProductRepository
-	Coupon           *CouponRepository
-	Loyalty          *LoyaltyRepository
-	Program          *LoyaltyProgramRepository
-	Redemption       *GiftCardRedemptionRepository
-	Payment          *PaymentRepository
-	RefundReview     *PaymentRefundRecommendationRepository
-	RefundExecution  *PaymentRefundExecutionRepository
-	AfterSalesRefund *AfterSalesRefundReviewRepository
-	Shipping         *ShippingRepository
-	Setting          *SettingRepository
-	ExchangeRate     *ExchangeRateRepository
-	PolicyDisclosure *OrderPolicyDisclosureRepository
-	Outbox           *OutboxRepository
-	ProductBrand     *ProductBrandRepository
+	Order                     *OrderRepository
+	OrderIdempotency          *OrderIdempotencyRepository
+	OrderAttribution          *OrderAttributionRepository
+	Product                   *ProductRepository
+	Coupon                    *CouponRepository
+	Loyalty                   *LoyaltyRepository
+	Program                   *LoyaltyProgramRepository
+	Redemption                *GiftCardRedemptionRepository
+	Payment                   *PaymentRepository
+	RefundReview              *PaymentRefundRecommendationRepository
+	RefundExecution           *PaymentRefundExecutionRepository
+	AfterSalesRefund          *AfterSalesRefundReviewRepository
+	Shipping                  *ShippingRepository
+	Setting                   *SettingRepository
+	ExchangeRate              *ExchangeRateRepository
+	PolicyDisclosure          *OrderPolicyDisclosureRepository
+	ProductQualityRequirement *ProductQualityRequirementRepository
+	OrderEvidenceSnapshot     *OrderEvidenceSnapshotRepository
+	OrderEvidence             *OrderEvidenceRepository
+	OrderEvidenceSubmission   *OrderEvidenceSubmissionSnapshotRepository
+	Outbox                    *OutboxRepository
+	ProductBrand              *ProductBrandRepository
 }
 
 func NewTxManager(
@@ -116,6 +124,22 @@ func (m *TxManager) ConfigureOrderPolicyDisclosureRepository(repo *OrderPolicyDi
 	m.policyDisclosureRepo = repo
 }
 
+func (m *TxManager) ConfigureProductQualityRequirementRepository(repo *ProductQualityRequirementRepository) {
+	m.productQualityRequirementRepo = repo
+}
+
+func (m *TxManager) ConfigureOrderEvidenceSnapshotRepository(repo *OrderEvidenceSnapshotRepository) {
+	m.orderEvidenceSnapshotRepo = repo
+}
+
+func (m *TxManager) ConfigureOrderEvidenceRepository(repo *OrderEvidenceRepository) {
+	m.orderEvidenceRepo = repo
+}
+
+func (m *TxManager) ConfigureOrderEvidenceSubmissionSnapshotRepository(repo *OrderEvidenceSubmissionSnapshotRepository) {
+	m.orderEvidenceSubmissionRepo = repo
+}
+
 func (m *TxManager) WithinTx(fn func(TxRepositories) error) error {
 	return m.db.Transaction(func(tx *gorm.DB) error {
 		var shippingRepo *ShippingRepository
@@ -166,29 +190,49 @@ func (m *TxManager) WithinTx(fn func(TxRepositories) error) error {
 		if m.policyDisclosureRepo != nil {
 			policyDisclosureRepo = m.policyDisclosureRepo.WithTx(tx)
 		}
+		var productQualityRequirementRepo *ProductQualityRequirementRepository
+		if m.productQualityRequirementRepo != nil {
+			productQualityRequirementRepo = m.productQualityRequirementRepo.WithTx(tx)
+		}
+		var orderEvidenceSnapshotRepo *OrderEvidenceSnapshotRepository
+		if m.orderEvidenceSnapshotRepo != nil {
+			orderEvidenceSnapshotRepo = m.orderEvidenceSnapshotRepo.WithTx(tx)
+		}
+		var orderEvidenceRepo *OrderEvidenceRepository
+		if m.orderEvidenceRepo != nil {
+			orderEvidenceRepo = m.orderEvidenceRepo.WithTx(tx)
+		}
+		var orderEvidenceSubmissionRepo *OrderEvidenceSubmissionSnapshotRepository
+		if m.orderEvidenceSubmissionRepo != nil {
+			orderEvidenceSubmissionRepo = m.orderEvidenceSubmissionRepo.WithTx(tx)
+		}
 		var productBrandRepo *ProductBrandRepository
 		if m.productBrandRepo != nil {
 			productBrandRepo = m.productBrandRepo.WithTx(tx)
 		}
 		return fn(TxRepositories{
-			Order:            m.orderRepo.WithTx(tx),
-			OrderIdempotency: orderIdempotencyRepo,
-			OrderAttribution: attributionRepo,
-			Product:          m.productRepo.WithTx(tx),
-			Coupon:           m.couponRepo.WithTx(tx),
-			Loyalty:          m.loyaltyRepo.WithTx(tx),
-			Program:          programRepo,
-			Redemption:       redemptionRepo,
-			Payment:          m.paymentRepo.WithTx(tx),
-			RefundReview:     refundReviewRepo,
-			RefundExecution:  refundExecRepo,
-			AfterSalesRefund: afterSalesRefundRepo,
-			Shipping:         shippingRepo,
-			Setting:          settingRepo,
-			ExchangeRate:     exchangeRateRepo,
-			PolicyDisclosure: policyDisclosureRepo,
-			Outbox:           outboxRepo,
-			ProductBrand:     productBrandRepo,
+			Order:                     m.orderRepo.WithTx(tx),
+			OrderIdempotency:          orderIdempotencyRepo,
+			OrderAttribution:          attributionRepo,
+			Product:                   m.productRepo.WithTx(tx),
+			Coupon:                    m.couponRepo.WithTx(tx),
+			Loyalty:                   m.loyaltyRepo.WithTx(tx),
+			Program:                   programRepo,
+			Redemption:                redemptionRepo,
+			Payment:                   m.paymentRepo.WithTx(tx),
+			RefundReview:              refundReviewRepo,
+			RefundExecution:           refundExecRepo,
+			AfterSalesRefund:          afterSalesRefundRepo,
+			Shipping:                  shippingRepo,
+			Setting:                   settingRepo,
+			ExchangeRate:              exchangeRateRepo,
+			PolicyDisclosure:          policyDisclosureRepo,
+			ProductQualityRequirement: productQualityRequirementRepo,
+			OrderEvidenceSnapshot:     orderEvidenceSnapshotRepo,
+			OrderEvidence:             orderEvidenceRepo,
+			OrderEvidenceSubmission:   orderEvidenceSubmissionRepo,
+			Outbox:                    outboxRepo,
+			ProductBrand:              productBrandRepo,
 		})
 	})
 }

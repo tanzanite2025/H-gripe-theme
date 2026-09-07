@@ -19,13 +19,20 @@ type StorefrontFontPreloadLink = {
   crossorigin: 'anonymous'
 }
 
+const storefrontLatinFontPreloadPath = '/fonts/MapleUI-Latin.00af3fec5b34.woff2'
 const storefrontFontPreloadPathByShard: Record<LocaleFontFamily, string> = {
-  latin: '/fonts/MapleUI-Latin.00af3fec5b34.woff2',
+  latin: storefrontLatinFontPreloadPath,
   'latin-accent': '/fonts/MapleUI-Coverage-NotoSans-Latin-Accents.e645edc952b6.woff2',
-  'maple-ui': '/fonts/MapleUI-Latin.00af3fec5b34.woff2',
+  'maple-ui': storefrontLatinFontPreloadPath,
   arabic: '/fonts/MapleUI-Coverage-NotoSans-Arabic.ce85091f0209.woff2',
   devanagari: '/fonts/MapleUI-Coverage-NotoSans-Devanagari.3b3cae4d2600.woff2',
   thai: '/fonts/MapleUI-Coverage-NotoSans-Thai.1f5a173641bb.woff2',
+}
+const storefrontAdditionalFontPreloadPathByShard: Partial<Record<LocaleFontFamily, string>> = {
+  'latin-accent': storefrontFontPreloadPathByShard['latin-accent'],
+  arabic: storefrontFontPreloadPathByShard.arabic,
+  devanagari: storefrontFontPreloadPathByShard.devanagari,
+  thai: storefrontFontPreloadPathByShard.thai,
 }
 
 export const storefrontFontFamilyByShard: Record<LocaleFontFamily, string> = {
@@ -42,9 +49,10 @@ export const storefrontFontFamilyForLocale = (locale: unknown) => {
   return storefrontFontFamilyByShard[fontFamily] || storefrontFontFamily
 }
 
-export const storefrontFontPreloadLinkForLocale = (locale: unknown): StorefrontFontPreloadLink => {
+export const storefrontAdditionalFontPreloadLinkForLocale = (locale: unknown): StorefrontFontPreloadLink | null => {
   const fontFamily = getStorefrontLocaleEntry(locale)?.fontFamily || 'latin'
-  const href = storefrontFontPreloadPathByShard[fontFamily] || storefrontFontPreloadPathByShard.latin
+  const href = storefrontAdditionalFontPreloadPathByShard[fontFamily]
+  if (!href) return null
 
   return {
     key: `storefront-font-preload-${fontFamily}`,

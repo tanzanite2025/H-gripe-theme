@@ -861,12 +861,6 @@ func (r *ShippingRepository) UpsertTrackingEvents(orderID uint, trackingNumber s
 	})
 }
 
-// ReplaceTrackingEvents is kept for callers compiled against the old method name.
-// Tracking events are append-only by identity; no existing rows are deleted.
-func (r *ShippingRepository) ReplaceTrackingEvents(orderID uint, trackingNumber string, events []shipping.TrackingEvent) error {
-	return r.UpsertTrackingEvents(orderID, trackingNumber, events)
-}
-
 // ShippingZone 閻╃鍙ч弬瑙勭《
 
 // FindZoneByID 閺嶈宓両D閺屻儲澹橀崠鍝勭厵

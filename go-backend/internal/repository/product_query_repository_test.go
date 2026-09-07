@@ -69,6 +69,37 @@ func TestSearchPublicCompactUsesStableIDTieBreakerForPagination(t *testing.T) {
 	requireProductIDs(t, secondPage, products[0].ID)
 }
 
+func TestListQuickBuyCandidatesIncludesMadeToOrderProductsWithoutStock(t *testing.T) {
+	db := newProductQueryTestDB(t)
+	repo := NewProductRepository(db)
+
+	item := product.Product{
+		SKU:             "MTO-QUICK-BUY",
+		Name:            "Made To Order Quick Buy",
+		Slug:            "mto-quick-buy",
+		Status:          "active",
+		Locale:          "en",
+		FulfillmentMode: product.FulfillmentModeMadeToOrder,
+	}
+	require.NoError(t, db.Create(&item).Error)
+	require.NoError(t, db.Create(&product.ProductVariant{
+		ProductID: item.ID,
+		SKU:       "MTO-QUICK-BUY-VAR",
+		IsActive:  true,
+		IsDefault: true,
+		Stock:     0,
+	}).Error)
+
+	results, total, err := repo.ListQuickBuyCandidates(ProductQuickBuyCandidateQuery{
+		Locale: "en",
+		Offset: 0,
+		Limit:  10,
+	})
+	require.NoError(t, err)
+	require.Equal(t, int64(1), total)
+	requireProductIDs(t, results, item.ID)
+}
+
 func newProductQueryTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
 

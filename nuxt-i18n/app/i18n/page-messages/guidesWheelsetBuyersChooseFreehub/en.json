@@ -1,0 +1,223 @@
+{
+  "intro": {
+    "title": "Select Your Freehub Body",
+    "body": "A comprehensive guide to matching your freehub with your drivetrain cassettes (Shimano, SRAM, Campagnolo)."
+  },
+  "ecosystems": {
+    "shimano": {
+      "title": "Shimano Ecosystem",
+      "cards": {
+        "microSpline": {
+          "caption": "For MTB 12-Speed",
+          "name": "Micro Spline (MS)",
+          "body": "Deore M6100, XT M8100, XTR M9100"
+        },
+        "hgRoad": {
+          "caption": "For Road 11/12-Speed",
+          "name": "HG Road (HG-11)",
+          "body": "105, Ultegra, Dura-Ace (8-12sp)"
+        },
+        "hgMountain": {
+          "caption": "For MTB 8-11 Speed",
+          "name": "HG Mountain",
+          "body": "Older MTB & Entry Road setups"
+        }
+      },
+      "cheatsheetTitle": "Compatibility Cheatsheet",
+      "cheatsheet": {
+        "microSpline": "MS (Micro Spline): Necessary for Shimano 12-speed MTB cassettes (10T start). Not backward compatible.",
+        "hyperglide": "HG (HyperGlide): The gold standard for decades. Fits 8-11sp MTB and 8-12sp Road cassettes. Note: Road 11sp HG freehubs are longer; require a 1.85mm spacer for MTB cassettes."
+      }
+    },
+    "sram": {
+      "title": "SRAM Ecosystem",
+      "cards": {
+        "xd": {
+          "caption": "For MTB 11/12-Speed",
+          "name": "XD Driver",
+          "body": "GX Eagle, X01, XX1 (10T start)"
+        },
+        "xdr": {
+          "caption": "For Road 12-Speed",
+          "name": "XDR Driver",
+          "body": "Rival, Force, Red eTap AXS"
+        }
+      },
+      "cheatsheetTitle": "Compatibility Cheatsheet",
+      "cheatsheet": {
+        "xd": "XD: Compact design for MTB cassettes with a 10T small cog.",
+        "xdr": "XDR: Road version of XD, 1.85mm longer. Can run XD cassettes with a 1.85mm spacer. Designed for 12-speed AXS road groups."
+      }
+    },
+    "campagnolo": {
+      "title": "Campagnolo Ecosystem",
+      "cards": {
+        "n3w": {
+          "caption": "For 13-Speed / Gravel",
+          "name": "N3W",
+          "body": "Ekar 13sp (Backward compatible with adapter)"
+        },
+        "classic": {
+          "caption": "Classic Road",
+          "name": "Classic (ED/CP)",
+          "body": "9/10/11/12 Speed Road"
+        }
+      },
+      "cheatsheetTitle": "Compatibility Cheatsheet",
+      "cheatsheet": {
+        "n3w": "N3W: The future standard. Native for Ekar 13sp. Fits older 10-12sp cassettes with an adapter.",
+        "classic": "Classic: The traditional spline for Super Record, Record, Chorus (11/12sp)."
+      }
+    }
+  },
+  "reference": {
+    "standardsTitle": "Technical Reference: Freehub Standards & Groupsets",
+    "standardsHeaders": {
+      "type": "Type",
+      "groupsets": "Example Groupsets",
+      "features": "Features"
+    },
+    "standardsRows": [
+      {
+        "type": "MS (Micro Spline 12s)",
+        "groupsets": "Shimano Deore M6100, SLX M7100, XT M8100, XTR M9100",
+        "features": "MTB 12-speed specific; supports 10T cog."
+      },
+      {
+        "type": "HG 8s",
+        "groupsets": "Claris R2000, Altus M310, Acera M360",
+        "features": "Entry-level Road/MTB (11-32T)."
+      },
+      {
+        "type": "HG 9-11s",
+        "groupsets": "Sora, Tiagra, 105, Ultegra, Dura-Ace; MTB Deore/SLX/XT",
+        "features": "Most common standard. Strong cross-compatibility."
+      },
+      {
+        "type": "XD",
+        "groupsets": "SRAM GX Eagle, X01 Eagle, XX1 Eagle",
+        "features": "MTB 11/12s, supports 10T cog, lightweight."
+      },
+      {
+        "type": "XDR",
+        "groupsets": "SRAM Force/Red eTap AXS",
+        "features": "Road 12s specific, 1.85mm longer than XD."
+      },
+      {
+        "type": "N3W",
+        "groupsets": "Campagnolo Ekar 13s",
+        "features": "Native 13s. Fits 10-12s with adapter."
+      },
+      {
+        "type": "CP (Classic)",
+        "groupsets": "Super Record 11, Record 11, Chorus 11",
+        "features": "Traditional 11s Road only. No 12/13s support."
+      }
+    ],
+    "matrixTitle": "Technical Reference: Compatibility & Spacer Matrix",
+    "matrixHeaders": {
+      "brand": "Brand",
+      "freehub": "Freehub Body",
+      "cassette": "Cassette",
+      "spacer": "Spacer Needed?"
+    },
+    "matrixRows": [
+      {
+        "brand": "Shimano",
+        "freehub": "HG 8-11s MTB",
+        "cassette": "8/9/11s MTB",
+        "spacer": "No",
+        "tone": "shimano",
+        "spacerTone": "ok"
+      },
+      {
+        "brand": "Shimano",
+        "freehub": "HG 8-11s MTB",
+        "cassette": "10s Cassette",
+        "spacer": "1mm",
+        "tone": "shimano",
+        "spacerTone": "warning"
+      },
+      {
+        "brand": "Shimano",
+        "freehub": "HG 11/12s Road",
+        "cassette": "8/9/11s MTB",
+        "spacer": "1.85mm",
+        "tone": "shimano",
+        "spacerTone": "warning"
+      },
+      {
+        "brand": "Shimano",
+        "freehub": "HG 11/12s Road",
+        "cassette": "11/12s Road",
+        "spacer": "No",
+        "tone": "shimano",
+        "spacerTone": "ok"
+      },
+      {
+        "brand": "Shimano",
+        "freehub": "MS 12s MTB",
+        "cassette": "11/12s MS Cassette",
+        "spacer": "No",
+        "tone": "shimano",
+        "spacerTone": "ok"
+      },
+      {
+        "brand": "SRAM",
+        "freehub": "HG-Style 9/10s",
+        "cassette": "SRAM 9/10s / NX Eagle",
+        "spacer": "No",
+        "tone": "sram",
+        "spacerTone": "ok"
+      },
+      {
+        "brand": "SRAM",
+        "freehub": "XD 11/12s",
+        "cassette": "SRAM PhD/Eagle (GX+)",
+        "spacer": "No",
+        "tone": "sram",
+        "spacerTone": "ok"
+      },
+      {
+        "brand": "SRAM",
+        "freehub": "XDR 12s Road",
+        "cassette": "SRAM AXS Road",
+        "spacer": "No",
+        "tone": "sram",
+        "spacerTone": "ok"
+      },
+      {
+        "brand": "SRAM",
+        "freehub": "XDR 12s Road",
+        "cassette": "SRAM XD Cassette",
+        "spacer": "1.85mm",
+        "tone": "sram",
+        "spacerTone": "warning"
+      },
+      {
+        "brand": "Campagnolo",
+        "freehub": "N3W 13s",
+        "cassette": "Ekar 13s (9/10t start)",
+        "spacer": "No",
+        "tone": "campagnolo",
+        "spacerTone": "ok"
+      },
+      {
+        "brand": "Campagnolo",
+        "freehub": "N3W 13s",
+        "cassette": "Classic 10-12s",
+        "spacer": "AC21-N3W Adapter",
+        "tone": "campagnolo",
+        "spacerTone": "warning"
+      },
+      {
+        "brand": "Mavic",
+        "freehub": "HG-Style 8-11s",
+        "cassette": "Shimano/SRAM 9s",
+        "spacer": "1.75mm Mavic",
+        "tone": "mavic",
+        "spacerTone": "warning"
+      }
+    ]
+  }
+}

@@ -18,6 +18,7 @@ type postCreateRequest struct {
 	FeaturedImg        string `json:"featured_image"`
 	Tags               string `json:"tags"`
 	TranslationGroupID *uint  `json:"translation_group_id"`
+	CategoryIDs        []uint `json:"category_ids"`
 }
 
 type postUpdateRequest struct {
@@ -30,6 +31,7 @@ type postUpdateRequest struct {
 	FeaturedImg        *string `json:"featured_image"`
 	Tags               *string `json:"tags"`
 	TranslationGroupID *uint   `json:"translation_group_id"`
+	CategoryIDs        []uint  `json:"category_ids"`
 }
 
 func respondPostServiceError(c *gin.Context, err error, fallbackMessage string) {

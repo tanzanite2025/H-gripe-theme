@@ -3,10 +3,19 @@
     "title": "ابحث عن المنتجات والأسئلة الشائعة",
     "body": "انقر للبحث عن المنتجات والأسئلة الشائعة والمزيد."
   },
+  "languagePicker": {
+    "title": "اللغة",
+    "trigger": "تبديل اللغة",
+    "close": "إغلاق محدد اللغة",
+    "optionsLabel": "اختر لغة"
+  },
   "globalNavigationTransition": {
     "ariaLabel": "Global content navigation",
     "optionsLabel": "Choose a destination",
     "trigger": "Open content navigation",
-    "triggerBody": "Choose Products, FAQ, Pages, or Blog."
+    "triggerBody": "Choose Products, FAQ, Pages, or Blog.",
+    "options": {
+      "pages": "Pages"
+    }
   }
 }

@@ -1,292 +1,188 @@
 <template>
   <div class="text-sm tz-text-secondary leading-relaxed space-y-4">
     <p class="font-semibold tz-text-primary">
-      {{ $t('privacy.policyHeading', 'Privacy Policy for E-Commerce Website') }}
+      {{ t('privacy.policyHeading') }}
     </p>
     <p class="tz-text-muted text-xs">
-      {{ $t('privacy.effectiveDate', 'Effective Date: [2025/11/11]') }}
+      {{ t('privacy.effectiveDate') }}
     </p>
 
     <p class="font-semibold tz-text-primary mt-4">
-      {{ $t('privacy.section1Title', '1. Introduction') }}
+      {{ t('privacy.section1Title') }}
     </p>
     <p>
       {{ introductionText }}
     </p>
 
     <p class="font-semibold tz-text-primary mt-4">
-      {{ $t('privacy.section2Title', '2. Information We Collect') }}
+      {{ t('privacy.section2Title') }}
     </p>
     <p>
-      {{
-        $t(
-          'privacy.section2Intro',
-          'We may collect the following types of personal information:'
-        )
-      }}
+      {{ t('privacy.section2Intro') }}
     </p>
     <ul class="list-disc list-inside space-y-1">
       <li>
         <span class="font-semibold">
-          {{ $t('privacy.identityLabel', 'Identity Data') }}:
+          {{ t('privacy.identityLabel') }}:
         </span>
-        {{ $t('privacy.identityDesc', 'Full name, username, password') }}
+        {{ t('privacy.identityDesc') }}
       </li>
       <li>
         <span class="font-semibold">
-          {{ $t('privacy.contactLabel', 'Contact Data') }}:
+          {{ t('privacy.contactLabel') }}:
         </span>
-        {{
-          $t(
-            'privacy.contactDesc',
-            'Email address, phone number, shipping/billing address'
-          )
-        }}
+        {{ t('privacy.contactDesc') }}
       </li>
       <li>
         <span class="font-semibold">
-          {{ $t('privacy.transactionLabel', 'Transaction Data') }}:
+          {{ t('privacy.transactionLabel') }}:
         </span>
-        {{
-          $t(
-            'privacy.transactionDesc',
-            'Purchase history, payment details (processed via secure third-party gateways)'
-          )
-        }}
+        {{ t('privacy.transactionDesc') }}
       </li>
       <li>
         <span class="font-semibold">
-          {{ $t('privacy.technicalLabel', 'Technical Data') }}:
+          {{ t('privacy.technicalLabel') }}:
         </span>
-        {{
-          $t(
-            'privacy.technicalDesc',
-            'IP address, browser type, device information, cookies'
-          )
-        }}
+        {{ t('privacy.technicalDesc') }}
       </li>
       <li>
         <span class="font-semibold">
-          {{ $t('privacy.marketingLabel', 'Marketing Data') }}:
+          {{ t('privacy.marketingLabel') }}:
         </span>
-        {{ $t('privacy.marketingDesc', 'Preferences, feedback, survey responses') }}
+        {{ t('privacy.marketingDesc') }}
       </li>
     </ul>
 
     <p class="font-semibold tz-text-primary mt-4">
-      {{ $t('privacy.section3Title', '3. How We Use Your Information') }}
+      {{ t('privacy.section3Title') }}
     </p>
     <p>
-      {{ $t('privacy.section3Intro', 'We use your data to:') }}
+      {{ t('privacy.section3Intro') }}
     </p>
     <ul class="list-disc list-inside space-y-1">
       <li>
-        {{ $t('privacy.useProcessOrders', 'Process orders and deliver products') }}
+        {{ t('privacy.useProcessOrders') }}
       </li>
       <li>
-        {{
-          $t(
-            'privacy.useManageAccount',
-            'Manage your account and provide customer support'
-          )
-        }}
+        {{ t('privacy.useManageAccount') }}
       </li>
       <li>
-        {{
-          $t(
-            'privacy.useImproveSite',
-            'Improve website functionality and user experience'
-          )
-        }}
+        {{ t('privacy.useImproveSite') }}
       </li>
       <li>
-        {{
-          $t(
-            'privacy.usePromotions',
-            'Send promotional offers (with your consent)'
-          )
-        }}
+        {{ t('privacy.usePromotions') }}
       </li>
       <li>
-        {{ $t('privacy.useLegal', 'Comply with legal obligations') }}
+        {{ t('privacy.useLegal') }}
       </li>
     </ul>
 
     <p class="font-semibold tz-text-primary mt-4">
-      {{ $t('privacy.section4Title', '4. Sharing Your Information') }}
+      {{ t('privacy.section4Title') }}
     </p>
     <p>
-      {{ $t('privacy.section4Intro', 'We may share your information with:') }}
+      {{ t('privacy.section4Intro') }}
     </p>
     <ul class="list-disc list-inside space-y-1">
       <li>
-        {{
-          $t(
-            'privacy.shareServiceProviders',
-            'Service Providers: Payment processors, logistics partners, analytics tools'
-          )
-        }}
+        {{ t('privacy.shareServiceProviders') }}
       </li>
       <li>
-        {{
-          $t(
-            'privacy.shareLegalAuthorities',
-            'Legal Authorities: When required by law or to protect our rights'
-          )
-        }}
+        {{ t('privacy.shareLegalAuthorities') }}
       </li>
       <li>
-        {{
-          $t(
-            'privacy.shareBusinessTransfers',
-            'Business Transfers: In case of merger, acquisition, or asset sale'
-          )
-        }}
+        {{ t('privacy.shareBusinessTransfers') }}
       </li>
     </ul>
     <p>
-      {{
-        $t(
-          'privacy.shareNoSale',
-          'We do not sell your personal data to third parties.'
-        )
-      }}
+      {{ t('privacy.shareNoSale') }}
     </p>
 
     <p class="font-semibold tz-text-primary mt-4">
-      {{ $t('privacy.section5Title', '5. Cookies and Tracking Technologies') }}
+      {{ t('privacy.section5Title') }}
     </p>
     <p>
-      {{
-        $t(
-          'privacy.section5Intro',
-          'We use cookies and similar technologies to:'
-        )
-      }}
+      {{ t('privacy.section5Intro') }}
     </p>
     <ul class="list-disc list-inside space-y-1">
       <li>
-        {{ $t('privacy.cookiesRemember', 'Remember your preferences') }}
+        {{ t('privacy.cookiesRemember') }}
       </li>
       <li>
-        {{ $t('privacy.cookiesAnalytics', 'Analyze site traffic and usage') }}
+        {{ t('privacy.cookiesAnalytics') }}
       </li>
       <li>
-        {{ $t('privacy.cookiesPersonalize', 'Personalize content and ads') }}
+        {{ t('privacy.cookiesPersonalize') }}
       </li>
     </ul>
     <p>
-      {{
-        $t(
-          'privacy.cookiesSettings',
-          'You can manage cookie settings in your browser.'
-        )
-      }}
+      {{ t('privacy.cookiesSettings') }}
     </p>
 
     <p class="font-semibold tz-text-primary mt-4">
-      {{ $t('privacy.section6Title', '6. Data Security') }}
+      {{ t('privacy.section6Title') }}
     </p>
     <p>
-      {{
-        $t(
-          'privacy.section6Body',
-          'We implement appropriate technical and organizational measures to protect your data from unauthorized access, alteration, disclosure, or destruction.'
-        )
-      }}
+      {{ t('privacy.section6Body') }}
     </p>
 
     <p class="font-semibold tz-text-primary mt-4">
-      {{ $t('privacy.section7Title', '7. Your Rights') }}
+      {{ t('privacy.section7Title') }}
     </p>
     <p>
-      {{
-        $t(
-          'privacy.section7Intro',
-          'Depending on your jurisdiction, you may have the right to:'
-        )
-      }}
+      {{ t('privacy.section7Intro') }}
     </p>
     <ul class="list-disc list-inside space-y-1">
       <li>
-        {{
-          $t(
-            'privacy.rightsAccess',
-            'Access, correct, or delete your personal data'
-          )
-        }}
+        {{ t('privacy.rightsAccess') }}
       </li>
       <li>
-        {{
-          $t(
-            'privacy.rightsWithdrawConsent',
-            'Withdraw consent at any time'
-          )
-        }}
+        {{ t('privacy.rightsWithdrawConsent') }}
       </li>
       <li>
-        {{
-          $t(
-            'privacy.rightsObjectProcessing',
-            'Object to certain data processing'
-          )
-        }}
+        {{ t('privacy.rightsObjectProcessing') }}
       </li>
       <li>
-        {{
-          $t(
-            'privacy.rightsPortability',
-            'Request data portability'
-          )
-        }}
+        {{ t('privacy.rightsPortability') }}
       </li>
     </ul>
     <p>
-      {{
-        $t(
-          'privacy.rightsContact',
-          'To exercise these rights, please contact us.'
-        )
-      }}
+      {{ t('privacy.rightsContact') }}
     </p>
 
     <p class="font-semibold tz-text-primary mt-4">
-      {{ $t('privacy.section8Title', '8. International Transfers') }}
+      {{ t('privacy.section8Title') }}
     </p>
     <p>
-      {{
-        $t(
-          'privacy.section8Body',
-          'If you are located outside [Your Country], your data may be transferred to and processed in [Your Country], where data protection laws may differ.'
-        )
-      }}
+      {{ t('privacy.section8Body') }}
     </p>
 
     <p class="font-semibold tz-text-primary mt-4">
-      {{ $t('privacy.section9Title', '9. Changes to This Policy') }}
+      {{ t('privacy.section9Title') }}
     </p>
     <p>
-      {{
-        $t(
-          'privacy.section9Body',
-          'We may update this Privacy Policy from time to time. Changes will be posted on this page with an updated effective date.'
-        )
-      }}
+      {{ t('privacy.section9Body') }}
     </p>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { useI18n, useRequestURL } from '#imports'
+import { usePageMessages } from '~/composables/usePageMessages'
 
-const { t } = useI18n()
+const { locale, t } = useI18n()
+const { loadPageMessages } = usePageMessages('privacy')
 const requestUrl = useRequestURL()
 const siteLabel = computed(() => requestUrl.hostname || requestUrl.host || 'this website')
 
-const introductionText = computed(() => {
-  const value = t('privacy.section1Body', { site: siteLabel.value })
-  if (value && value !== 'privacy.section1Body') return value
-  return `Welcome to ${siteLabel.value}. We value your privacy and are committed to protecting your personal information. This Privacy Policy explains how we collect, use, disclose, and safeguard your data when you visit ${siteLabel.value} and use our services.`
+await loadPageMessages(locale.value)
+
+watch(locale, (nextLocale) => {
+  void loadPageMessages(nextLocale)
 })
+
+const introductionText = computed(() => (
+  t('privacy.section1Body', { site: siteLabel.value })
+))
 </script>

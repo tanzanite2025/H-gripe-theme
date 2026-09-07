@@ -1,0 +1,58 @@
+{
+  "title": "OEM & ODM",
+  "hero": {
+    "title": "Global OEM & ODM Solutions",
+    "description": "Empowering your brand. We transform your concepts into world-class carbon fiber wheelsets using our advanced automated manufacturing technology."
+  },
+  "services": {
+    "oem": {
+      "title": "OEM Manufacturing",
+      "description": "Your brand, our manufacturing. Leveraging our fully automated production lines, we ensure every rim meets ISO/UCI standards with micron-level consistency in mass production.",
+      "features": {
+        "consistency": "Micron-level consistency",
+        "capacity": "Scalable production capacity",
+        "confidentiality": "Strict confidentiality"
+      }
+    },
+    "odm": {
+      "title": "ODM Development",
+      "description": "From concept to reality. Our 20+ member R&D team provides full-process support, including 3D modeling, mold design, layup scheduling, and aerodynamic analysis.",
+      "features": {
+        "modeling": "3D Modeling & Mold Design",
+        "layup": "Custom Layup Schedules",
+        "aerodynamics": "Aerodynamic Analysis"
+      }
+    }
+  },
+  "advantages": {
+    "title": "Why Partner With Us",
+    "drilling": {
+      "title": "Automated Drilling",
+      "description": "Proprietary machinery supporting custom hole counts and angles for any hub geometry."
+    },
+    "molds": {
+      "title": "Exclusive Molds",
+      "description": "Private mold customization for unique aesthetics, branding, and aerodynamic performance."
+    },
+    "quality": {
+      "title": "Strict QC",
+      "description": "100% full inspection on every rim. Standards that exceed ISO 4210 requirements."
+    }
+  },
+  "process": {
+    "title": "Cooperation Process",
+    "steps": {
+      "consultation": "Consultation",
+      "engineering": "Engineering",
+      "prototyping": "Prototyping",
+      "testing": "Testing",
+      "production": "Production"
+    }
+  },
+  "cta": {
+    "title": "Ready to Build Your Brand?",
+    "description": "Get in touch with our engineering team to discuss your project requirements.",
+    "button": "Start Your Project"
+  },
+  "feedbackTitle": "Share your feedback about our OEM/ODM Services"
+}

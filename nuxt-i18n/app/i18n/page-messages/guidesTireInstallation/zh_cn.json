@@ -1,0 +1,64 @@
+{
+  "title": "无内胎安装指南",
+  "intro": "无内胎系统依靠轮胎、车圈和气嘴之间的气密连接，取代传统内胎。整个过程主要包括三个阶段：安装、注入补胎液和充气。",
+  "actions": {
+    "viewAccessories": "查看所需配件"
+  },
+  "essential": {
+    "title": "必要组件",
+    "images": {
+      "tirePadAlt": "自行车无内胎垫带",
+      "tirePadLabel": "垫带",
+      "sealantAlt": "自行车补胎液",
+      "sealantLabel": "补胎液",
+      "valveAlt": "自行车无内胎气嘴",
+      "valveLabel": "无内胎气嘴"
+    }
+  },
+  "steps": {
+    "preparation": {
+      "title": "准备与车圈贴带",
+      "items": {
+        "0": "彻底清洁车圈底部。",
+        "1": "拉紧并贴好无内胎垫带，覆盖所有辐条孔。",
+        "2": "在气嘴孔处让垫带重叠约 10 厘米。",
+        "3": "为气嘴刺出小孔，只用手拧紧气嘴螺母。"
+      },
+      "images": {
+        "tapingAlt": "为车圈贴无内胎垫带",
+        "valveHoleAlt": "准备气嘴孔",
+        "overlapAlt": "垫带重叠"
+      }
+    },
+    "install": {
+      "title": "安装轮胎",
+      "body": "像安装普通开口胎一样安装轮胎。将胎唇推入车圈中间的凹槽，也就是 drop center，以便更容易装胎；再揉匀轮胎，确保胎唇均匀就位。",
+      "proTipTitle": "专业提示",
+      "proTip": "在胎唇上使用肥皂水或装胎液，可以帮助轮胎顺利滑入位置。",
+      "images": {
+        "beadAlt": "安装轮胎胎唇",
+        "seatingAlt": "让轮胎就位",
+        "valveCheckAlt": "检查气嘴"
+      }
+    },
+    "sealant": {
+      "title": "注入补胎液",
+      "items": {
+        "0": "拆下气嘴芯。",
+        "1": "通过气嘴注入约 30-60 ml 公路车补胎液。",
+        "2": "重新安装气嘴芯。"
+      },
+      "images": {
+        "removeCoreAlt": "拆下气嘴芯",
+        "injectAlt": "注入补胎液",
+        "toolAlt": "气嘴工具"
+      }
+    },
+    "inflate": {
+      "title": "充气并摇匀",
+      "inflate": "快速充气。带储气罐的打气筒或 CO2 充气器可以帮助胎唇快速就位，通常会听到清脆的“砰”声。",
+      "shake": "摇动车轮，让补胎液均匀分布。",
+      "ready": "可以出发！"
+    }
+  }
+}

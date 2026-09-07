@@ -164,6 +164,7 @@ export interface SiteQualityJobStats {
   succeeded: number
   failed: number
   dead_letter: number
+  cancelled: number
   claimable: number
   stale_leases: number
   oldest_queued_at?: string
@@ -288,7 +289,7 @@ export interface SiteQualityTargetList {
   items: SiteQualityTargetOption[]
 }
 
-export type SiteQualityJobStatus = 'queued' | 'processing' | 'succeeded' | 'failed' | 'dead_letter'
+export type SiteQualityJobStatus = 'queued' | 'processing' | 'succeeded' | 'failed' | 'dead_letter' | 'cancelled'
 
 export interface SiteQualityJob {
   id: number
@@ -302,6 +303,9 @@ export interface SiteQualityJob {
   required_confirmations: number
   attempts: number
   max_attempts: number
+  progress_total: number
+  completed_samples: number
+  progress_stage: string
   available_at: string
   locked_at?: string
   locked_by?: string
@@ -313,6 +317,7 @@ export interface SiteQualityJob {
   initiated_by_user_id: number
   release_id?: string
   last_error?: string
+  latest_run_id?: number
   created_at: string
   updated_at: string
 }
@@ -773,6 +778,11 @@ export const preflightApi = {
     return readSiteQualityJobPayload(await axios.get(endpoint), endpoint)
   },
 
+  async cancelSiteQualityJob(id: number): Promise<SiteQualityJob> {
+    const endpoint = `/api/admin/preflight/site-quality/jobs/${id}/cancel`
+    return readSiteQualityJobPayload(await axios.post(endpoint), endpoint)
+  },
+
   async waitForSiteQualityJob(
     id: number,
     options?: {
@@ -791,6 +801,7 @@ export const preflightApi = {
         job.status === 'succeeded'
         || job.status === 'failed'
         || job.status === 'dead_letter'
+        || job.status === 'cancelled'
       ) {
         return job
       }
@@ -822,6 +833,7 @@ export const preflightApi = {
     url?: string
     strategy?: SiteQualityStrategy
     kind?: SiteQualityFindingKind
+    runID?: number
   }): Promise<SiteQualityFindingList> {
     const endpoint = '/api/admin/preflight/site-quality/findings'
     const query: Record<string, string | number> = {}
@@ -833,6 +845,7 @@ export const preflightApi = {
     if (params?.url) query.url = params.url
     if (params?.strategy) query.strategy = params.strategy
     if (params?.kind) query.kind = params.kind
+    if (params?.runID) query.run_id = params.runID
     return readSiteQualityFindingsPayload(await axios.get(endpoint, { params: query }), endpoint)
   },
 

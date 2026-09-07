@@ -3,10 +3,19 @@
     "title": "Cari produk dan FAQ",
     "body": "Klik untuk mencari produk, FAQ, dan lainnya."
   },
+  "languagePicker": {
+    "title": "Bahasa",
+    "trigger": "Ganti bahasa",
+    "close": "Tutup pemilih bahasa",
+    "optionsLabel": "Pilih bahasa"
+  },
   "globalNavigationTransition": {
     "ariaLabel": "Global content navigation",
     "optionsLabel": "Choose a destination",
     "trigger": "Open content navigation",
-    "triggerBody": "Choose Products, FAQ, Pages, or Blog."
+    "triggerBody": "Choose Products, FAQ, Pages, or Blog.",
+    "options": {
+      "pages": "Pages"
+    }
   }
 }

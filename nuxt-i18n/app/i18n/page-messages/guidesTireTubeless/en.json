@@ -1,0 +1,57 @@
+{
+  "title": "Tubeless Tires Overview",
+  "images": {
+    "constructionAlt": "Comparison of tubeless, inner tube and tubular road bike tires",
+    "constructionCaption": "Construction differences: tube vs tubeless vs tubular",
+    "performanceAlt": "Pros and cons chart comparing tubeless, inner tube and tubular tires",
+    "performanceCaption": "Performance matrix: resistance, protection and comfort"
+  },
+  "definitions": {
+    "title": "System Definitions",
+    "innerTube": {
+      "title": "Inner Tube System",
+      "description": "The classic standard: a tire paired with an inner tube. The pneumatic tube sits inside the outer tire.",
+      "label": "Universal Compatibility"
+    },
+    "tubeless": {
+      "title": "Tubeless System",
+      "description": "No inner tube is required. The tire, specialized rim, and valve create a sealed air chamber similar to an automotive tire.",
+      "label": "Performance Standard"
+    },
+    "button": "Check Specifications"
+  },
+  "suitability": {
+    "title": "Is Tubeless For Me?",
+    "innerTube": "If you ride for daily commuting or casual leisure, inner tubes are sufficient and low maintenance.",
+    "tubeless": "If you ride on rough terrain, want lower rolling resistance, or need advanced puncture protection, tubeless is the stronger choice.",
+    "noteTitle": "Note",
+    "note": "If you previously used an aluminum rim with a traditional inner tube and tire setup and now plan to upgrade to tubeless, first check the rim cross-section diagram above. Rims designed for tubeless compatibility can support both inner tube setups and tubeless tires. If your rim matches the first example, designed only for standard inner tube use, it is not compatible with tubeless tires and must be replaced."
+  },
+  "advantages": {
+    "title": "Key Advantages Overview",
+    "selfSealing": {
+      "title": "Self-Sealing",
+      "description": "Sealant can fill small punctures automatically. No pinch flats from an inner tube."
+    },
+    "lowerPressure": {
+      "title": "Lower Pressure",
+      "description": "Road setups can run around 80 psi or lower for better grip and comfort without pinch flats."
+    },
+    "rollingResistance": {
+      "title": "Rolling Resistance",
+      "description": "Removing friction between tube and tire can improve rolling speed."
+    }
+  },
+  "navigation": {
+    "installation": {
+      "title": "Installation Guide",
+      "description": "Step-by-step visual instructions",
+      "button": "Go to Installation"
+    },
+    "pressure": {
+      "title": "Pressure Check",
+      "description": "Find optimal PSI for tubeless",
+      "button": "Check Pressure"
+    }
+  }
+}

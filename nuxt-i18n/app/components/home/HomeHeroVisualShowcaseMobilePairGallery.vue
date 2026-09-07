@@ -49,14 +49,6 @@
           {{ activeItem.caption }}
         </p>
       </div>
-      <NuxtLink
-        v-if="activeItem.targetUrl && activeItem.targetLabel"
-        :to="activeItem.targetUrl"
-        class="home-hero-visual-showcase-mobile__detail-link"
-      >
-        {{ activeItem.targetLabel }}
-        <Icon name="lucide:arrow-up-right" aria-hidden="true" />
-      </NuxtLink>
     </div>
   </div>
 </template>
@@ -164,20 +156,4 @@ const setActiveItem = (index: number) => {
   line-height: 1.4;
 }
 
-.home-hero-visual-showcase-mobile__detail-link {
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-items: center;
-  gap: 0.25rem;
-  color: #111318;
-  font-size: 0.68rem;
-  font-weight: 800;
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-.home-hero-visual-showcase-mobile__detail-link :deep(svg) {
-  width: 0.8rem;
-  height: 0.8rem;
-}
 </style>

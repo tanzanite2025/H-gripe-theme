@@ -114,7 +114,7 @@ func newPayPalDisputeInvoicePreviewHandler(t *testing.T, configureSeller bool) (
 	))
 
 	paymentService := service.NewPaymentService(nil, repository.NewPaymentRepository(db))
-	paymentService.ConfigureEvidenceSources(repository.NewOrderRepository(db), nil, nil)
+	paymentService.ConfigureEvidenceSources(repository.NewOrderRepository(db), nil)
 	if configureSeller {
 		paymentService.ConfigurePayPalDisputeInvoiceOptions(service.PayPalDisputeInvoiceOptions{
 			Seller: invoice.SellerProfile{

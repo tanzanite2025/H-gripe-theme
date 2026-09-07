@@ -7,7 +7,7 @@
 			class="site-header-surface relative w-full rounded-none px-4 py-2 md:px-0 md:py-0"
 		>
 			<!-- 桌面端：全宽单层横向导航（1280px+） -->
-			<div v-if="!isMobileViewport" class="hidden xl:flex flex-col items-stretch">
+			<div v-if="!isMobileViewport" class="flex flex-col items-stretch">
 				<div class="site-header-mainbar desktop-header-grid w-full grid grid-cols-[220px_1fr_220px] xl:grid-cols-[280px_1fr_280px] items-center gap-4 px-4 lg:px-8 py-0 min-h-[64px]">
 
 					<!-- Logo -->
@@ -65,7 +65,7 @@
 							<button
 								ref="desktopContentNavigationTriggerRef"
 								class="site-header-action-button site-header-search-trigger"
-								@click="toggleContentNavigationTransition"
+								@click.stop="toggleContentNavigationTransition"
 								:aria-label="contentNavigationTriggerLabel"
 							>
 								<Icon name="lucide:search" class="site-header-search-trigger__icon" />
@@ -83,13 +83,15 @@
 						<!-- Language -->
 						<div class="site-header-action-cell site-header-language-wrapper relative" data-lang-wrapper>
 							<button
+								ref="desktopLanguageTriggerRef"
 								class="site-header-action-button site-header-language-trigger tz-text-secondary transition-colors"
 								@click.stop="toggleDropdown"
 								@keydown="onButtonKeydown"
 								:id="buttonId"
-								aria-haspopup="listbox"
+								:aria-controls="dropdownId"
+								aria-haspopup="dialog"
 								:aria-expanded="isOpen"
-								:aria-label="'Switch language'"
+								:aria-label="languagePickerTriggerLabel"
 							>
 								<span v-if="currentLocaleFlagSrc" class="inline-flex h-5 w-5 items-center justify-center" aria-hidden="true">
 										<img :src="currentLocaleFlagSrc" alt="" width="20" height="20" class="block h-5 w-5" />
@@ -98,58 +100,10 @@
 								<span class="text-[13px] font-bold uppercase leading-none">{{ currentLocaleLabel }}</span>
 							</button>
 
-							<!-- Dropdown Teleport Logic (Reused) -->
-							<teleport to="body">
-								<transition
-									enter-active-class="transition-all duration-200 ease-in-out"
-									leave-active-class="transition-all duration-200 ease-in-out"
-									enter-from-class="opacity-0 -translate-y-2.5"
-									leave-to-class="opacity-0 -translate-y-2.5"
-								>
-									<div
-										v-if="isOpen"
-										class="language-dropdown-layer fixed z-[1200] flex items-stretch justify-center md:inset-0 md:items-start md:pt-[calc(var(--site-header-overlay-offset,80px)+18px)]"
-									>
-										<div
-											class="language-dropdown-surface tz-mobile-dialog-surface relative w-full md:w-[88vw] md:max-w-[1500px] backdrop-blur-xl border tz-border-subtle rounded-2xl overflow-auto h-[90vh] max-h-[90vh] md:h-auto md:max-h-[70vh] py-3 md:py-3.5 shadow-md grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-1.5 justify-items-center"
-											role="listbox"
-											:id="dropdownId"
-											:aria-labelledby="buttonId"
-											tabindex="0"
-											@keydown="onListKeydown"
-										>
-											<button
-												v-for="(locale, index) in availableLocales"
-												:key="locale.code"
-												class="w-full py-2.5 px-3 bg-transparent border-none tz-text-primary text-sm text-center cursor-pointer transition-all duration-200 inline-flex items-center justify-center gap-2 hover:tz-surface-subtle"
-												:class="{ 'tz-surface-subtle font-medium': locale.code === currentLocale.code }"
-												role="option"
-												:aria-selected="locale.code === currentLocale.code"
-												:tabindex="-1"
-												:ref="setOptionRefAt(index)"
-												@click="switchLanguage(locale.code)"
-											>
-												<span class="w-[1.2em] inline-block" aria-hidden="true">
-																	<img :src="flagSrc(locale)" alt="" width="20" height="20" class="w-[1.2em] h-[1.2em] block" />
-												</span>
-												<span :lang="locale.iso || locale.code.replace('_', '-')">{{ locale.name }}</span>
-											</button>
-										</div>
-									</div>
-								</transition>
-							</teleport>
 						</div>
 
 					</div>
 
-					<teleport to="body" :disabled="!isMobileViewport">
-						<LazyHeaderMegaMenu
-							v-if="activeMegaNavSection"
-							:section="activeMegaNavSection"
-							:panel-id="megaPanelId"
-							@navigate="handleMegaNavNavigate"
-						/>
-					</teleport>
 				</div>
 
 				<!-- 面包屑：点击当前层级箭头弹出该层级的同级路由 -->
@@ -231,7 +185,7 @@
 			</div>
 
 			<!-- 移动端和平板：品牌工具栏、主导航、面包屑三行独立布局 -->
-			<div v-else class="xl:hidden flex flex-col gap-0">
+			<div v-else class="flex flex-col gap-0">
 				<div class="site-header-mobile-surface -mx-4 -mt-2 flex flex-col px-4 pt-2 pb-0">
 
 				<!-- 第一行：左侧 Shop 图标、居中 Logo、右侧工具图标区 -->
@@ -279,7 +233,7 @@
 							<button
 								ref="mobileContentNavigationTriggerRef"
 								class="site-header-action-button site-header-search-trigger site-header-search-trigger--mobile"
-								@click="toggleContentNavigationTransition"
+								@click.stop="toggleContentNavigationTransition"
 								:aria-label="contentNavigationTriggerLabel"
 							>
 								<Icon name="lucide:search" class="site-header-search-trigger__icon" />
@@ -289,13 +243,15 @@
 						<!-- Language Switcher (Text + Icon) -->
 						<div class="site-header-action-cell site-header-language-wrapper relative" data-lang-wrapper>
 							<button
+								ref="mobileLanguageTriggerRef"
 								class="site-header-action-button site-header-language-trigger tz-text-secondary transition-colors"
 								@click.stop="toggleDropdown"
 								@keydown="onButtonKeydown"
 								:id="buttonId"
-								aria-haspopup="listbox"
+								:aria-controls="dropdownId"
+								aria-haspopup="dialog"
 								:aria-expanded="isOpen"
-								:aria-label="'Switch language'"
+								:aria-label="languagePickerTriggerLabel"
 							>
 								<span v-if="currentLocaleFlagSrc" class="inline-flex h-5 w-5 items-center justify-center" aria-hidden="true">
 										<img :src="currentLocaleFlagSrc" alt="" width="20" height="20" class="block h-5 w-5" />
@@ -414,8 +370,80 @@
 			</div>
 		</div>
 
-		<LazyGlobalContentNavigationTransitionOverlay
-			v-if="contentNavigationTransitionMounted"
+		<teleport to="body" :disabled="!isMobileViewport">
+			<LazyHeaderMegaMenu
+				v-if="activeMegaNavSection"
+				:section="activeMegaNavSection"
+				:panel-id="megaPanelId"
+				@navigate="handleMegaNavNavigate"
+			/>
+		</teleport>
+
+		<!-- One shared language picker serves both header layouts. -->
+		<teleport to="body">
+			<div
+				v-if="isOpen"
+				class="language-dropdown-layer"
+				:style="isDesktopLanguageLayout ? languageDropdownStyle : undefined"
+			>
+					<section
+						ref="languageDropdownSurfaceRef"
+						class="language-dropdown-surface tz-mobile-dialog-surface"
+						role="dialog"
+						:aria-modal="isDesktopLanguageLayout ? undefined : 'true'"
+						:id="dropdownId"
+						:aria-label="languagePickerTitle"
+						:aria-labelledby="languagePickerTitleId"
+						@click.stop
+					>
+						<header class="language-dropdown-header">
+							<h2
+								:id="languagePickerTitleId"
+								class="language-dropdown-header__title"
+							>
+								{{ languagePickerTitle }}
+							</h2>
+							<button
+								type="button"
+								class="language-dropdown-header__close tz-global-close-btn"
+								:aria-label="languagePickerCloseLabel"
+								@click.stop="closeLanguage('user')"
+							>
+								<Icon name="lucide:x" aria-hidden="true" />
+							</button>
+						</header>
+
+						<div
+							class="language-dropdown-options"
+							role="listbox"
+							:id="languagePickerOptionsId"
+							:aria-labelledby="languagePickerTitleId"
+							:aria-label="languagePickerOptionsLabel"
+							tabindex="0"
+							@keydown="onListKeydown"
+						>
+							<button
+								v-for="(locale, index) in availableLocales"
+								:key="locale.code"
+								class="w-full py-2.5 px-3 bg-transparent border-none tz-text-primary text-sm text-center cursor-pointer transition-all duration-200 inline-flex items-center justify-center gap-2 hover:tz-surface-subtle"
+								:class="{ 'tz-surface-subtle font-medium': locale.code === currentLocale.code }"
+								role="option"
+								:aria-selected="locale.code === currentLocale.code"
+								:tabindex="-1"
+								:ref="setOptionRefAt(index)"
+								@click="switchLanguage(locale.code)"
+							>
+								<span class="w-[1.2em] inline-block" aria-hidden="true">
+									<img :src="flagSrc(locale)" alt="" width="20" height="20" class="w-[1.2em] h-[1.2em] block" />
+								</span>
+								<span :lang="locale.iso || locale.code.replace('_', '-')">{{ locale.name }}</span>
+							</button>
+						</div>
+					</section>
+				</div>
+		</teleport>
+
+		<GlobalContentNavigationTransitionOverlay
 			:open="contentNavigationTransitionOpen"
 			:desktop-anchor="desktopContentNavigationTriggerRef"
 			:mobile-anchor="mobileContentNavigationTriggerRef"
@@ -469,8 +497,9 @@ import { ref, computed, onMounted, onBeforeUnmount, nextTick, unref, watch, type
 import { useThrottleFn } from '@vueuse/core'
 import { useI18n, useLocalePath, useRequestHeaders, useRoute, useRouter, useState } from '#imports'
 import { useSiteSettings } from '~/composables/usePublicSettings'
-import { useOverlayBackStack } from '~/composables/useOverlayBackStack'
+import { useOverlayBackStack, type OverlayCloseReason } from '~/composables/useOverlayBackStack'
 import { usePagesSearchOverlayState } from '~/composables/usePagesSearchOverlayState'
+import GlobalContentNavigationTransitionOverlay from '~/components/GlobalContentNavigationTransitionOverlay.vue'
 import {
   findPrimaryMegaNavSectionByPath,
   normalizePrimaryMegaNavPath,
@@ -480,12 +509,14 @@ import {
   type PrimaryMegaNavSection,
 } from '~/utils/primaryMegaNav'
 import {
+  getPageSubNavigationForPath,
   getPageSubNavigationTabFromPath,
   pageSubNavigationChildPath,
   pageSubNavigationEntries,
   type PageSubNavigationEntry,
   type PageSubNavigationTab,
 } from '~/utils/pageSubNavigation'
+import { pageMessageNamespaces, usePageMessages } from '~/composables/usePageMessages'
 import { isStorefrontMobileUserAgent } from '~/utils/storefrontLoadingPolicy'
 import localeManifest from '~/i18n/locales.manifest'
 
@@ -509,12 +540,19 @@ const mobileTopbarRef = ref<HTMLElement | null>(null)
 const mobilePrimaryNavRef = ref<HTMLElement | null>(null)
 const desktopContentNavigationTriggerRef = ref<HTMLElement | null>(null)
 const mobileContentNavigationTriggerRef = ref<HTMLElement | null>(null)
+const desktopLanguageTriggerRef = ref<HTMLElement | null>(null)
+const mobileLanguageTriggerRef = ref<HTMLElement | null>(null)
+const languageDropdownSurfaceRef = ref<HTMLElement | null>(null)
 // Keep the SSR layout branch stable after hydration so the header DOM does not
 // swap once the client knows the real viewport width.
 const isMobileViewport = useState(
   'site-header-is-mobile-viewport',
   () => isStorefrontMobileUserAgent(useRequestHeaders(['user-agent'])['user-agent']),
 )
+// Preserve a mobile device layout while keeping desktop browser windows
+// responsive when they are resized below the header breakpoint.
+const isMobileDevice = isMobileViewport.value
+const isDesktopLanguageLayout = computed(() => !isMobileViewport.value)
 const isCompactViewport = ref(isMobileViewport.value)
 let headerResizeObserver: ResizeObserver | null = null
 let headerMetricsFrame: number | null = null
@@ -526,7 +564,6 @@ const mobileShopSection = primaryMegaNavSections.find((section) => section.id ==
 const mobileSecondaryNavSections = primaryMegaNavSections.filter((section) => section.id !== 'products')
 const activeBreadcrumbSubNavId = ref<string | null>(null)
 const breadcrumbSubNavMobileTop = ref('8.5rem')
-const contentNavigationTransitionMounted = ref(false)
 const contentNavigationTransitionOpen = ref(false)
 const globalFaqSearchMounted = ref(false)
 const globalFaqSearchOpen = ref(false)
@@ -564,6 +601,7 @@ const mobileShopLabel = computed(() => (
 const openMegaNav = (id: PrimaryMegaNavId) => {
   scheduleHeaderOffsetUpdate()
   activeMegaNavId.value = id
+  void loadPageNavigationMessages(getPageNavigationMessageNamespacesForSection(id))
   isOpen.value = false
   nextTick(scheduleHeaderOffsetUpdate)
   overlayBackStack.open('header-mega-nav', closeMegaNavState)
@@ -657,7 +695,6 @@ const closeContentNavigationTransition = (
 
 const openContentNavigationTransition = () => {
 	isOpen.value = false
-	contentNavigationTransitionMounted.value = true
 	contentNavigationTransitionOpen.value = true
 	overlayBackStack.open(
 		'global-content-navigation-transition',
@@ -699,6 +736,17 @@ const { locale, locales, setLocale, t } = useI18n() as any
 const localePath = useLocalePath()
 const router = useRouter()
 const route = useRoute()
+
+const pageNavigationMessageNamespaces = Array.from(new Set(
+  pageSubNavigationEntries
+    .flatMap(entry => entry.tabs)
+    .map(tab => tab.labelKey?.split('.')[0] || '')
+    .filter(namespace => pageMessageNamespaces.includes(namespace)),
+))
+const pageNavigationMessageHandles = new Map(
+  pageNavigationMessageNamespaces.map(namespace => [namespace, usePageMessages(namespace)]),
+)
+const pageNavigationMessagesVersion = ref(0)
 
 const contentNavigationTriggerLabel = computed(() => (
 	t(
@@ -753,6 +801,58 @@ const getAllLocaleCodes = () => {
   ]))
 }
 
+const getPageNavigationMessageNamespacesForEntry = (
+  entry: PageSubNavigationEntry | null,
+) => {
+  if (!entry) return []
+
+  return Array.from(new Set(
+    entry.tabs
+      .map(tab => tab.labelKey?.split('.')[0] || '')
+      .filter(namespace => pageNavigationMessageHandles.has(namespace)),
+  ))
+}
+
+const getPageNavigationMessageNamespacesForSection = (
+  sectionId: PrimaryMegaNavId,
+) => {
+  const section = primaryMegaNavSections.find(item => item.id === sectionId)
+  if (!section) return []
+
+  return Array.from(new Set(
+    pageSubNavigationEntries
+      .filter(entry => section.routePrefixes.some(prefix => (
+        normalizeNavPath(entry.path) === normalizeNavPath(prefix) ||
+        normalizeNavPath(entry.path).startsWith(`${normalizeNavPath(prefix)}/`)
+      )))
+      .flatMap(entry => getPageNavigationMessageNamespacesForEntry(entry)),
+  ))
+}
+
+const loadPageNavigationMessages = async (namespaces: string[]) => {
+  const requestedLocale = String(unref(locale) || 'en')
+  await Promise.all(
+    namespaces.map(namespace => (
+      pageNavigationMessageHandles.get(namespace)?.loadPageMessages(requestedLocale)
+    )),
+  )
+  pageNavigationMessagesVersion.value += 1
+}
+
+const loadCurrentPageNavigationMessages = async () => {
+  const entry = getPageSubNavigationForPath(route.path || '/', getAllLocaleCodes())
+  await loadPageNavigationMessages(getPageNavigationMessageNamespacesForEntry(entry))
+}
+
+await loadCurrentPageNavigationMessages()
+
+watch(
+  [() => route.path, locale],
+  () => {
+    void loadCurrentPageNavigationMessages()
+  },
+)
+
 const normalizeNavPath = (path: string) => normalizePrimaryMegaNavPath(path, getAllLocaleCodes())
 
 const currentMegaNavId = computed<PrimaryMegaNavId | null>(() => {
@@ -790,7 +890,7 @@ const routePathFromTo = (to: string) => {
 }
 
 const cardDisplayLabel = (card: PrimaryMegaNavCard) => {
-  return card.title || card.labelFallback
+  return t(card.labelKey, card.labelFallback) as string
 }
 
 const localizedNavTarget = (to: string) => {
@@ -853,8 +953,6 @@ interface BreadcrumbRouteLevelGroup {
 const breadcrumbLabelDefinitions: Record<string, BreadcrumbLabelDefinition> = {
   '/resources': { labelKey: 'footer.menus.resources', fallback: 'Resources' },
   '/resources/blog': { labelKey: 'breadcrumbs.blog', fallback: 'Blog' },
-  '/resources/blog/news': { labelKey: 'blog.nav.news', fallback: 'News' },
-  '/resources/blog/wheelsbuild': { labelKey: 'blog.nav.wheelsbuild', fallback: 'Wheelbuild' },
   '/company': { labelKey: 'footer.menus.company', fallback: 'Company' },
   '/guides': { labelKey: 'breadcrumbs.guides', fallback: 'Guides' },
   '/resources/membershipandpoints': { labelKey: 'company.nav.membershipPoints', fallback: 'Membership & Points' },
@@ -951,7 +1049,9 @@ const fallbackBreadcrumbRouteFamilyLabel = (segment: string) => {
 }
 
 const resolveBreadcrumbLabelDefinition = (definition: BreadcrumbLabelDefinition) => {
-  return definition.fallback
+  return definition.labelKey
+    ? t(definition.labelKey, definition.fallback) as string
+    : definition.fallback
 }
 
 const getBreadcrumbMetaLabel = (meta: Record<string, unknown> | undefined) => {
@@ -967,7 +1067,10 @@ const getBreadcrumbMetaLabel = (meta: Record<string, unknown> | undefined) => {
     meta.footerLabelFallback
 
   if (typeof labelKey === 'string') {
-    return typeof labelFallback === 'string' ? labelFallback.trim() : ''
+    return t(
+      labelKey,
+      typeof labelFallback === 'string' ? labelFallback.trim() : '',
+    ) as string
   }
 
   const rawLabel =
@@ -1284,6 +1387,9 @@ const getRouteFamilyBreadcrumbSubNavigation = (
 }
 
 const pageSubNavigationTabLabel = (tab: PageSubNavigationTab) => {
+  if (tab.labelKey) {
+    return t(tab.labelKey, tab.fallback || tab.label || fallbackBreadcrumbRouteFamilyLabel(tab.id)) as string
+  }
   return tab.label || tab.fallback || fallbackBreadcrumbRouteFamilyLabel(tab.id)
 }
 
@@ -1368,6 +1474,8 @@ const getBreadcrumbSiblingSubNavigation = (
 }
 
 const breadcrumbs = computed<BreadcrumbItem[]>(() => {
+  pageNavigationMessagesVersion.value
+
   const items: BreadcrumbItem[] = [{
     id: 'home',
     label: 'Home',
@@ -1476,14 +1584,29 @@ const switchLocalePath = (targetLocale: string) => {
 }
 
 const isOpen = ref(false)
-const closeLanguageState = () => {
-  isOpen.value = false
+const languageDropdownStyle = ref<Record<string, string>>({
+  left: 'max(12px, calc(100vw - min(24rem, calc(100vw - 1.5rem)) - 12px))',
+  top: 'calc(var(--site-header-overlay-offset, 0px) + 0.75rem)',
+  '--language-dropdown-arrow-left': 'calc(100% - 24px)',
+})
+let languageDropdownPositionFrame: number | null = null
+
+const cleanupLanguageDropdownPosition = () => {
+  if (languageDropdownPositionFrame !== null && typeof window !== 'undefined') {
+    window.cancelAnimationFrame(languageDropdownPositionFrame)
+    languageDropdownPositionFrame = null
+  }
 }
 
-const closeLanguage = async () => {
-  const closePromise = overlayBackStack.close('language')
+const closeLanguageState = (_reason?: OverlayCloseReason) => {
+  isOpen.value = false
+  cleanupLanguageDropdownPosition()
+}
+
+const closeLanguage = (reason: OverlayCloseReason = 'user') => {
+  // Hide the popover immediately; browser history cleanup can finish afterward.
   closeLanguageState()
-  await closePromise
+  void overlayBackStack.close('language', reason)
 }
 
 type LocaleOption = { code: string; name?: string; iso?: string }
@@ -1520,11 +1643,17 @@ const currentLocaleLabel = computed(() => {
 })
 
 const availableLocales = computed<LocaleOption[]>(() => {
-  return normalizedLocales.value.filter((l: LocaleOption) => l.code !== locale.value)
+  return normalizedLocales.value
 })
 
 const buttonId = 'lang-switcher-button'
 const dropdownId = 'lang-switcher-dropdown'
+const languagePickerTitleId = 'lang-switcher-title'
+const languagePickerOptionsId = 'lang-switcher-options'
+const languagePickerTitle = computed(() => t('header.languagePicker.title', 'Language'))
+const languagePickerTriggerLabel = computed(() => t('header.languagePicker.trigger', 'Switch language'))
+const languagePickerCloseLabel = computed(() => t('header.languagePicker.close', 'Close language picker'))
+const languagePickerOptionsLabel = computed(() => t('header.languagePicker.optionsLabel', 'Choose a language'))
 
 const optionRefs = ref<HTMLElement[]>([])
 const setOptionRef = (el: Element | ComponentPublicInstance | null, index: number) => {
@@ -1539,14 +1668,155 @@ const setOptionRefAt = (index: number) => {
   return (el: Element | ComponentPublicInstance | null) => setOptionRef(el, index)
 }
 
+const isVisibleLanguageAnchor = (element: HTMLElement | null) => {
+  if (!element) return false
+
+  const rect = element.getBoundingClientRect()
+  const styles = getComputedStyle(element)
+  return (
+    rect.width > 0
+    && rect.height > 0
+    && styles.display !== 'none'
+    && styles.visibility !== 'hidden'
+  )
+}
+
+const getActiveLanguageAnchor = () => {
+  if (typeof window === 'undefined') return null
+
+  const domAnchor = document.getElementById(buttonId)
+  if (domAnchor instanceof HTMLElement && isVisibleLanguageAnchor(domAnchor)) {
+    return domAnchor
+  }
+
+  const preferredAnchor = isDesktopLanguageLayout.value
+    ? desktopLanguageTriggerRef.value
+    : mobileLanguageTriggerRef.value
+  const fallbackAnchor = preferredAnchor === desktopLanguageTriggerRef.value
+    ? mobileLanguageTriggerRef.value
+    : desktopLanguageTriggerRef.value
+
+  if (isVisibleLanguageAnchor(preferredAnchor)) return preferredAnchor
+  if (isVisibleLanguageAnchor(fallbackAnchor)) return fallbackAnchor
+  return null
+}
+
+const updateLanguageDropdownPosition = () => {
+  if (typeof window === 'undefined' || !isOpen.value) return
+
+  const isDesktopLayout = isDesktopLanguageLayout.value
+  if (!isDesktopLayout) {
+    languageDropdownStyle.value = {
+      '--language-dropdown-arrow-left': '50%',
+    }
+    return
+  }
+
+  const anchor = getActiveLanguageAnchor()
+  const panel = languageDropdownSurfaceRef.value
+  const viewportWidth = document.documentElement.clientWidth || window.innerWidth
+  const viewportPadding = 12
+  const gap = 12
+  const panelRect = panel?.getBoundingClientRect()
+  const panelWidth = panelRect?.width || Math.min(352, viewportWidth - viewportPadding * 2)
+  const panelHeight = panelRect?.height || 0
+
+  if (!anchor) {
+    const fallbackLeft = Math.max(
+      viewportPadding,
+      viewportWidth - panelWidth - viewportPadding,
+    )
+    const fallbackTop = Number.parseFloat(
+      getComputedStyle(document.documentElement)
+        .getPropertyValue('--site-header-overlay-offset'),
+    ) || 0
+
+    languageDropdownStyle.value = {
+      left: `${fallbackLeft}px`,
+      top: `${fallbackTop + gap}px`,
+      '--language-dropdown-arrow-left': `${Math.max(24, panelWidth - 24)}px`,
+    }
+    return
+  }
+
+  const anchorRect = anchor.getBoundingClientRect()
+  const maxLeft = Math.max(viewportPadding, viewportWidth - panelWidth - viewportPadding)
+  const left = Math.min(
+    Math.max(anchorRect.left + anchorRect.width / 2 - panelWidth / 2, viewportPadding),
+    maxLeft,
+  )
+  const maxTop = window.innerHeight - panelHeight - viewportPadding
+  const top = Math.min(
+    Math.max(anchorRect.bottom + gap, viewportPadding),
+    Math.max(viewportPadding, maxTop),
+  )
+  const arrowLeft = Math.min(
+    Math.max(anchorRect.left + anchorRect.width / 2 - left, 24),
+    Math.max(24, panelWidth - 24),
+  )
+
+  languageDropdownStyle.value = {
+    left: `${left}px`,
+    top: `${top}px`,
+    '--language-dropdown-arrow-left': `${arrowLeft}px`,
+  }
+}
+
+const setInitialLanguageDropdownPosition = () => {
+  if (typeof window === 'undefined' || !isDesktopLanguageLayout.value) return
+
+  const anchor = getActiveLanguageAnchor()
+  if (!anchor) return
+
+  const viewportWidth = document.documentElement.clientWidth || window.innerWidth
+  const viewportPadding = 12
+  const gap = 12
+  const panelWidth = Math.min(384, viewportWidth - viewportPadding * 2)
+  const anchorRect = anchor.getBoundingClientRect()
+  const maxLeft = Math.max(viewportPadding, viewportWidth - panelWidth - viewportPadding)
+  const left = Math.min(
+    Math.max(anchorRect.left + anchorRect.width / 2 - panelWidth / 2, viewportPadding),
+    maxLeft,
+  )
+  const arrowLeft = Math.min(
+    Math.max(anchorRect.left + anchorRect.width / 2 - left, 24),
+    Math.max(24, panelWidth - 24),
+  )
+
+  languageDropdownStyle.value = {
+    left: `${left}px`,
+    top: `${Math.max(viewportPadding, anchorRect.bottom + gap)}px`,
+    '--language-dropdown-arrow-left': `${arrowLeft}px`,
+  }
+}
+
+const scheduleLanguageDropdownPosition = () => {
+  if (typeof window === 'undefined') return
+
+  if (languageDropdownPositionFrame !== null) {
+    window.cancelAnimationFrame(languageDropdownPositionFrame)
+  }
+
+  languageDropdownPositionFrame = window.requestAnimationFrame(() => {
+    languageDropdownPositionFrame = null
+    updateLanguageDropdownPosition()
+  })
+}
+
+const handleLanguageDropdownViewportChange = () => {
+  scheduleLanguageDropdownPosition()
+}
+
 const toggleDropdown = () => {
   if (isOpen.value) {
-    closeLanguage()
+    closeLanguage('user')
     return
   }
 
   isOpen.value = true
+  setInitialLanguageDropdownPosition()
   overlayBackStack.open('language', closeLanguageState)
+  nextTick(updateLanguageDropdownPosition)
 }
 
 const onButtonKeydown = (e: KeyboardEvent) => {
@@ -1556,14 +1826,31 @@ const onButtonKeydown = (e: KeyboardEvent) => {
     if (isOpen.value) {
       nextTick(() => optionRefs.value[0]?.focus())
     }
+  } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    e.preventDefault()
+    if (!isOpen.value) toggleDropdown()
+    nextTick(() => {
+      const refs = optionRefs.value.filter(Boolean)
+      const index = e.key === 'ArrowUp' ? refs.length - 1 : 0
+      refs[index]?.focus()
+    })
   } else if (e.key === 'Escape') {
-    void closeLanguage()
+    closeLanguage('user')
     closeMegaNav()
     closeBreadcrumbSubNav()
   }
 }
 
 const onListKeydown = (e: KeyboardEvent) => {
+  if (e.key === 'Escape') {
+    e.preventDefault()
+    closeLanguage('user')
+    closeMegaNav()
+    closeBreadcrumbSubNav()
+    document.getElementById(buttonId)?.focus()
+    return
+  }
+
   const refs = optionRefs.value
   if (!Array.isArray(refs) || !refs.length) return
   const idx = refs.findIndex(el => el === document.activeElement)
@@ -1575,18 +1862,19 @@ const onListKeydown = (e: KeyboardEvent) => {
     e.preventDefault()
     const prevIndex = idx >= 0 ? (idx - 1 + refs.length) % refs.length : refs.length - 1
     refs[prevIndex]?.focus()
-  } else if (e.key === 'Escape') {
-    void closeLanguage()
-    closeMegaNav()
-    closeBreadcrumbSubNav()
-    document.getElementById(buttonId)?.focus()
+  } else if (e.key === 'Home') {
+    e.preventDefault()
+    refs[0]?.focus()
+  } else if (e.key === 'End') {
+    e.preventDefault()
+    refs[refs.length - 1]?.focus()
   }
 }
 
 const switchLanguage = async (code: string) => {
   try {
     if (!code || !isLocaleCode(code) || code === locale.value) {
-      await closeLanguage()
+      closeLanguage('user')
       return
     }
 
@@ -1606,33 +1894,57 @@ const switchLanguage = async (code: string) => {
       }
     }
   } finally {
-    await closeLanguage()
+    closeLanguage('navigate')
     closeMegaNav()
     closeBreadcrumbSubNav()
   }
 }
 
+const isLanguageInteractionTarget = (target: EventTarget | null) => {
+  return (
+    target instanceof Element
+    && (
+      Boolean(target.closest('[data-lang-wrapper]'))
+      || Boolean(target.closest('#' + dropdownId))
+    )
+  )
+}
+
+const handlePointerDownOutside = (event: PointerEvent) => {
+  if (!isOpen.value || isLanguageInteractionTarget(event.target)) return
+  closeLanguage('user')
+}
+
 const handleClickOutside = (event: MouseEvent) => {
   const target = event.target
   if (!(target instanceof Element)) return
-  if (!target.closest('[data-lang-wrapper]') && !target.closest('#' + dropdownId)) {
-    void closeLanguage()
+  if (isOpen.value && !isLanguageInteractionTarget(target)) {
+    closeLanguage('user')
   }
   if (!target.closest('[data-breadcrumb-subnav]')) {
     closeBreadcrumbSubNav()
   }
-  if (!target.closest('.site-header-root')) {
+  if (!target.closest('.site-header-root') && !target.closest('.header-mega')) {
     closeMegaNav()
   }
 }
 
 const handleHeaderKeydown = (event: KeyboardEvent) => {
 	if (event.key !== 'Escape') return
-	void closeLanguage()
+	closeLanguage('user')
 	closeContentNavigationTransition()
 	closeGlobalFaqSearch()
 	closeMegaNav()
 	closeBreadcrumbSubNav()
+}
+
+const syncHeaderViewportMode = () => {
+	if (typeof window === 'undefined') return
+
+	const nextIsMobileViewport =
+		isMobileDevice || window.matchMedia('(max-width: 1279px)').matches
+	isMobileViewport.value = nextIsMobileViewport
+	isCompactViewport.value = nextIsMobileViewport
 }
 
 watch(
@@ -1645,8 +1957,13 @@ watch(
 )
 
 onMounted(() => {
-  document.addEventListener('click', handleClickOutside)
+  document.addEventListener('pointerdown', handlePointerDownOutside, true)
+  document.addEventListener('click', handleClickOutside, true)
   document.addEventListener('keydown', handleHeaderKeydown)
+  syncHeaderViewportMode()
+  window.addEventListener('resize', syncHeaderViewportMode)
+  window.addEventListener('resize', handleLanguageDropdownViewportChange)
+  window.addEventListener('scroll', handleLanguageDropdownViewportChange, true)
 
   nextTick(() => {
     scheduleHeaderOffsetUpdate()
@@ -1662,14 +1979,22 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-  document.removeEventListener('click', handleClickOutside)
+  document.removeEventListener('pointerdown', handlePointerDownOutside, true)
+  document.removeEventListener('click', handleClickOutside, true)
   document.removeEventListener('keydown', handleHeaderKeydown)
 
   if (typeof window !== 'undefined') {
+    window.removeEventListener('resize', syncHeaderViewportMode)
+    window.removeEventListener('resize', handleLanguageDropdownViewportChange)
+    window.removeEventListener('scroll', handleLanguageDropdownViewportChange, true)
     window.removeEventListener('resize', throttledUpdateHeaderOffset)
     if (headerMetricsFrame !== null) {
       window.cancelAnimationFrame(headerMetricsFrame)
       headerMetricsFrame = null
+    }
+    if (languageDropdownPositionFrame !== null) {
+      window.cancelAnimationFrame(languageDropdownPositionFrame)
+      languageDropdownPositionFrame = null
     }
   }
 
@@ -2124,14 +2449,23 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 	align-items: center;
 	justify-content: flex-end;
 	margin-left: 0;
-	gap: 0.625rem !important;
+	gap: 0.75rem !important;
+	box-sizing: border-box;
+	padding-inline-end: max(0.25rem, env(safe-area-inset-right));
 }
 
 .site-header-actions--mobile .site-header-action-cell,
 .site-header-actions--mobile .site-header-language-wrapper {
-	width: auto;
-	min-width: 0;
-	flex: 0 0 auto;
+	width: var(--site-header-action-height);
+	min-width: var(--site-header-action-height);
+	flex: 0 0 var(--site-header-action-height);
+}
+
+.site-header-actions--mobile .site-header-action-button {
+	width: 100% !important;
+	min-width: 100% !important;
+	max-width: 100%;
+	padding-inline: 0 !important;
 }
 
 .site-header-actions--mobile .site-header-search-trigger--mobile {
@@ -2367,17 +2701,104 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 	font-weight: 800;
 }
 
+.language-dropdown-layer {
+	position: fixed;
+	z-index: 1200;
+	width: min(24rem, calc(100vw - 1.5rem));
+	pointer-events: none;
+}
+
 .language-dropdown-surface {
+	--language-dropdown-accent-edge: color-mix(
+		in srgb,
+		var(--tz-site-accent, #059669) 74%,
+		transparent
+	);
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	max-height: min(70vh, 34rem);
+	overflow: hidden;
+	padding: 0.75rem;
+	border: 1px solid var(--language-dropdown-accent-edge);
+	border-radius: 0.9rem;
 	background: #ffffff !important;
+	box-shadow:
+		0 20px 54px rgba(20, 32, 43, 0.16),
+		0 0 0 4px rgba(5, 150, 105, 0.08);
+	pointer-events: auto;
+}
+
+.language-dropdown-header {
+	display: none;
+}
+
+.language-dropdown-header__title {
+	margin: 0;
+	color: var(--tz-text-primary);
+	font-size: 1rem;
+	font-weight: 800;
+	line-height: 1.2;
+}
+
+.language-dropdown-header__close {
+	flex: 0 0 auto;
+}
+
+.language-dropdown-options {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 0.5rem;
+	min-height: 0;
+	overflow-y: auto;
+	scrollbar-width: thin;
+}
+
+.language-dropdown-surface::after {
+	position: absolute;
+	top: -0.5rem;
+	left: var(--language-dropdown-arrow-left, 50%);
+	width: 1rem;
+	height: 1rem;
+	border-top: 1px solid var(--language-dropdown-accent-edge);
+	border-left: 1px solid var(--language-dropdown-accent-edge);
+	background: #ffffff;
+	content: "";
+	transform: translateX(-50%) rotate(45deg);
+}
+
+.language-dropdown-options > [role='option'] {
+	position: relative;
+	z-index: 1;
+	min-height: 2.75rem;
+	border: 0 !important;
+	border-radius: 0.75rem;
+	background: #f4f7f8;
+	color: var(--tz-text-primary);
+	font-size: 0.78rem;
+	font-weight: 700;
+	line-height: 1.25;
+	padding: 0.6rem 0.65rem !important;
+}
+
+.language-dropdown-options > [role='option']:hover,
+.language-dropdown-options > [role='option']:focus-visible,
+.language-dropdown-options > [role='option'][aria-selected='true'] {
+	background: var(--tz-surface-muted, #e7edef);
+	color: var(--tz-text-primary);
 }
 
 @media (max-width: 1279px) {
 	.language-dropdown-layer {
 		top: calc(var(--site-header-mobile-topbar-bottom, 3.5rem) + 1px);
 		right: 1px;
-		bottom: 1px;
+		bottom: max(1px, var(--tz-safe-area-bottom, 0px));
 		left: 1px;
+		width: auto;
 		background: transparent;
+		display: flex;
+		align-items: stretch;
 		pointer-events: none;
 	}
 
@@ -2385,17 +2806,36 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 		width: 100% !important;
 		height: 100% !important;
 		max-height: none !important;
-		row-gap: 0.25rem;
-		column-gap: 0.375rem;
-		align-content: start;
-		padding: 0.5rem !important;
+		padding: 0.75rem !important;
 		border-radius: 1rem !important;
 		background: #ffffff !important;
 		box-shadow: 0 18px 42px rgba(20, 32, 43, 0.16);
 		pointer-events: auto;
 	}
 
-	.language-dropdown-surface > [role='option'] {
+	.language-dropdown-header {
+		display: flex;
+		min-height: 2.75rem;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.75rem;
+		padding: 0 0.25rem 0.75rem;
+	}
+
+	.language-dropdown-options {
+		flex: 1 1 auto;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		row-gap: 0.375rem;
+		column-gap: 0.5rem;
+		align-content: start;
+		padding: 0.125rem;
+	}
+
+	.language-dropdown-surface::after {
+		display: none;
+	}
+
+	.language-dropdown-options > [role='option'] {
 		min-height: 2.5rem;
 		padding-block: 0.5rem !important;
 	}

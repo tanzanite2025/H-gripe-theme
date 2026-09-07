@@ -3,12 +3,10 @@
     <!-- Intro / Overview Card -->
     <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6 text-center">
       <h2 class="text-xl font-bold tz-text-secondary mb-4 flex items-center justify-center gap-2">
-        Tubeless Installation Guide
+        {{ t('guidesTireInstallation.title') }}
       </h2>
       <p class="tz-text-secondary text-sm leading-relaxed mb-6 max-w-3xl mx-auto">
-         The tubeless system relies on an airtight seal between the tire, rim, and valve, replacing the traditional inner tube.
-         <br>
-         The process involves 3 main steps: <strong>Installation</strong>, <strong>Sealant Filling</strong>, and <strong>Inflation</strong>.
+         {{ t('guidesTireInstallation.intro') }}
       </p>
       
       <div class="flex justify-center mb-4">
@@ -17,33 +15,33 @@
             class="inline-flex items-center justify-center rounded-full tz-surface-panel border tz-border-subtle px-6 py-2 text-xs font-bold uppercase tracking-wider tz-text-secondary hover:tz-surface-subtle transition-colors"
             @click="$emit('changeTab', 'tubeless')"
           >
-            View Required Accessories
+            {{ t('guidesTireInstallation.actions.viewAccessories') }}
           </button>
       </div>
 
        <div class="mt-8">
-        <h4 class="text-xs font-bold uppercase tracking-wider tz-text-muted mb-4">Essential Components</h4>
+        <h4 class="text-xs font-bold uppercase tracking-wider tz-text-muted mb-4">{{ t('guidesTireInstallation.essential.title') }}</h4>
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <GuideImage
             class="rounded-xl overflow-hidden shadow-md"
             src="/public/tiresizecharts/installation/Bicycle tubeless tire pad.webp"
-            alt="Bicycle tubeless tire pad"
+            :alt="t('guidesTireInstallation.essential.images.tirePadAlt')"
             :zoomOnClick="true"
-            caption="Tire Pad"
+            :caption="t('guidesTireInstallation.essential.images.tirePadLabel')"
           />
           <GuideImage
             class="rounded-xl overflow-hidden shadow-md"
             src="/public/tiresizecharts/installation/Bicycle vacuum self-replenishing fluid.webp"
-            alt="Bicycle cycling sealant"
+            :alt="t('guidesTireInstallation.essential.images.sealantAlt')"
             :zoomOnClick="true"
-            caption="Sealant"
+            :caption="t('guidesTireInstallation.essential.images.sealantLabel')"
           />
           <GuideImage
             class="rounded-xl overflow-hidden shadow-md"
             src="/public/tiresizecharts/installation/Bicycle vacuum valve.webp"
-            alt="Bicycle tubeless valve"
+            :alt="t('guidesTireInstallation.essential.images.valveAlt')"
             :zoomOnClick="true"
-             caption="Tubeless Valve"
+             :caption="t('guidesTireInstallation.essential.images.valveLabel')"
           />
         </div>
       </div>
@@ -60,32 +58,32 @@
          </div>
          <!-- Card -->
          <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6 p-6">
-            <h3 class="text-lg font-bold tz-text-secondary mb-3">Preparation & Rim Taping</h3>
+            <h3 class="text-lg font-bold tz-text-secondary mb-3">{{ t('guidesTireInstallation.steps.preparation.title') }}</h3>
           <div class="tz-text-secondary text-sm leading-relaxed space-y-4">
                <ul class="space-y-2 list-none pl-0">
-                 <li class="flex gap-2"><span class="text-emerald-600">1.</span> Clean the rim bed thoroughly.</li>
-                 <li class="flex gap-2"><span class="text-emerald-600">2.</span> Apply tubeless tape tightly, covering spoke holes.</li>
-                 <li class="flex gap-2"><span class="text-emerald-600">3.</span> Overlap tape by ~10cm at the valve hole.</li>
-                 <li class="flex gap-2"><span class="text-emerald-600">4.</span> Pierce a small hole for the valve and tighten the nut by hand only.</li>
+                 <li class="flex gap-2"><span class="text-emerald-600">1.</span> {{ t('guidesTireInstallation.steps.preparation.items.0') }}</li>
+                 <li class="flex gap-2"><span class="text-emerald-600">2.</span> {{ t('guidesTireInstallation.steps.preparation.items.1') }}</li>
+                 <li class="flex gap-2"><span class="text-emerald-600">3.</span> {{ t('guidesTireInstallation.steps.preparation.items.2') }}</li>
+                 <li class="flex gap-2"><span class="text-emerald-600">4.</span> {{ t('guidesTireInstallation.steps.preparation.items.3') }}</li>
                </ul>
 
                <div class="grid grid-cols-2 lg:grid-cols-3 gap-3 mt-4">
                   <GuideImage
                     class="rounded-lg overflow-hidden shadow-md aspect-square object-cover"
                     src="/public/tiresizecharts/installation/Bicycle-tubeless-tire-pads.webp"
-                    alt="Taping the rim"
+                    :alt="t('guidesTireInstallation.steps.preparation.images.tapingAlt')"
                     :zoomOnClick="true"
                   />
                   <GuideImage
                     class="rounded-lg overflow-hidden shadow-md aspect-square object-cover"
                     src="/public/tiresizecharts/installation/howtoopenthe vacuumnozzle.webp"
-                    alt="Valve hole preparation"
+                    :alt="t('guidesTireInstallation.steps.preparation.images.valveHoleAlt')"
                     :zoomOnClick="true"
                   />
                   <GuideImage
                     class="rounded-lg overflow-hidden shadow-md aspect-square object-cover"
                     src="/public/tiresizecharts/installation/tubeless-tirepad-interface-overlaps.webp"
-                    alt="Tape overlap"
+                    :alt="t('guidesTireInstallation.steps.preparation.images.overlapAlt')"
                     :zoomOnClick="true"
                   />
                </div>
@@ -101,30 +99,30 @@
          </div>
          <!-- Card -->
          <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6 p-6">
-            <h3 class="text-lg font-bold tz-text-secondary mb-3">Install the Tire</h3>
+            <h3 class="text-lg font-bold tz-text-secondary mb-3">{{ t('guidesTireInstallation.steps.install.title') }}</h3>
           <div class="tz-text-secondary text-sm leading-relaxed space-y-4">
-               <p>Install the tire like a standard clincher. Push the bead into the center channel (drop center) of the rim to make mounting easier. "Massage" the tire to ensure even seating.</p>
+               <p>{{ t('guidesTireInstallation.steps.install.body') }}</p>
                <div class="bg-emerald-50 p-3 rounded-lg border border-emerald-200 text-xs">
-                  <strong>Pro Tip:</strong> Use soapy water or mounting fluid on the bead to help it slip into place.
+                  <strong>{{ t('guidesTireInstallation.steps.install.proTipTitle') }}:</strong> {{ t('guidesTireInstallation.steps.install.proTip') }}
                </div>
 
                 <div class="grid grid-cols-2 lg:grid-cols-3 gap-3 mt-4">
                   <GuideImage
                     class="rounded-lg overflow-hidden shadow-md aspect-square object-cover"
                     src="/public/tiresizecharts/installation/3/first-step-to-install-tubelesstires.webp"
-                    alt="Installing tire bead"
+                    :alt="t('guidesTireInstallation.steps.install.images.beadAlt')"
                     :zoomOnClick="true"
                   />
                   <GuideImage
                     class="rounded-lg overflow-hidden shadow-md aspect-square object-cover"
                     src="/public/tiresizecharts/installation/3/Tubelesstire-installation-diagram-2.webp"
-                    alt="Seating the tire"
+                    :alt="t('guidesTireInstallation.steps.install.images.seatingAlt')"
                     :zoomOnClick="true"
                   />
                   <GuideImage
                     class="rounded-lg overflow-hidden shadow-md aspect-square object-cover"
                     src="/public/tiresizecharts/installation/3/Picture-of-whether-the-vacuum-nozzle-is-installed-properly.webp"
-                    alt="Valve check"
+                    :alt="t('guidesTireInstallation.steps.install.images.valveCheckAlt')"
                     :zoomOnClick="true"
                   />
                </div>
@@ -140,31 +138,31 @@
          </div>
          <!-- Card -->
          <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6 p-6">
-            <h3 class="text-lg font-bold tz-text-secondary mb-3">Inject Sealant</h3>
+            <h3 class="text-lg font-bold tz-text-secondary mb-3">{{ t('guidesTireInstallation.steps.sealant.title') }}</h3>
           <div class="tz-text-secondary text-sm leading-relaxed space-y-4">
                <ul class="space-y-2 list-none pl-0">
-                 <li class="flex gap-2"><span class="text-emerald-600">1.</span> Remove the valve core.</li>
-                 <li class="flex gap-2"><span class="text-emerald-600">2.</span> Inject ~30-60ml (Road) of sealant through the valve.</li>
-                 <li class="flex gap-2"><span class="text-emerald-600">3.</span> Re-install the valve core.</li>
+                 <li class="flex gap-2"><span class="text-emerald-600">1.</span> {{ t('guidesTireInstallation.steps.sealant.items.0') }}</li>
+                 <li class="flex gap-2"><span class="text-emerald-600">2.</span> {{ t('guidesTireInstallation.steps.sealant.items.1') }}</li>
+                 <li class="flex gap-2"><span class="text-emerald-600">3.</span> {{ t('guidesTireInstallation.steps.sealant.items.2') }}</li>
                </ul>
 
                 <div class="grid grid-cols-2 lg:grid-cols-3 gap-3 mt-4">
                   <GuideImage
                     class="rounded-lg overflow-hidden shadow-md aspect-square object-cover"
                     src="/public/tiresizecharts/installation/4/Pour-vacuum-tire-sealant1.webp"
-                    alt="Remove valve core"
+                    :alt="t('guidesTireInstallation.steps.sealant.images.removeCoreAlt')"
                     :zoomOnClick="true"
                   />
                   <GuideImage
                     class="rounded-lg overflow-hidden shadow-md aspect-square object-cover"
                     src="/public/tiresizecharts/installation/4/Pour-vacuum-tire-sealant2.webp"
-                    alt="Inject sealant"
+                    :alt="t('guidesTireInstallation.steps.sealant.images.injectAlt')"
                     :zoomOnClick="true"
                   />
                   <GuideImage
                     class="rounded-lg overflow-hidden shadow-md aspect-square object-cover"
                     src="/public/tiresizecharts/installation/4/Separate-vacuum-nozzle-tool.webp"
-                    alt="Valve tool"
+                    :alt="t('guidesTireInstallation.steps.sealant.images.toolAlt')"
                     :zoomOnClick="true"
                   />
                </div>
@@ -180,12 +178,12 @@
          </div>
          <!-- Card -->
          <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6 p-6">
-            <h3 class="text-lg font-bold tz-text-secondary mb-3">Inflate & Shake</h3>
+            <h3 class="text-lg font-bold tz-text-secondary mb-3">{{ t('guidesTireInstallation.steps.inflate.title') }}</h3>
           <div class="tz-text-secondary text-sm leading-relaxed space-y-4">
-               <p>Inflate quickly (using a pump with a reservoir or CO2 helps) to snap the beads into place. You should hear a satisfying "pop".</p>
-               <p>Shake the wheel to distribute sealant evenly.</p>
+               <p>{{ t('guidesTireInstallation.steps.inflate.inflate') }}</p>
+               <p>{{ t('guidesTireInstallation.steps.inflate.shake') }}</p>
                <div class="flex items-center justify-center gap-2 text-emerald-600 font-bold mt-2">
-                  <span>✓</span> <span>Ready to Roll!</span>
+                  <span>✓</span> <span>{{ t('guidesTireInstallation.steps.inflate.ready') }}</span>
                </div>
             </div>
          </div>
@@ -196,7 +194,19 @@
 </template>
 
 <script setup lang="ts">
+import { watch } from 'vue'
+import { useI18n } from '#imports'
 import GuideImage from '~/components/GuideImage.vue'
+import { usePageMessages } from '~/composables/usePageMessages'
+
+const { locale, t } = useI18n()
+const { loadPageMessages } = usePageMessages('guidesTireInstallation')
+
+await loadPageMessages(locale.value)
+
+watch(locale, (nextLocale) => {
+  void loadPageMessages(nextLocale)
+})
 
 // Match SizeChartsTabId from parent
 type GuideTabId = 'size' | 'match' | 'tubeless' | 'installation' | 'choose' | 'rims' | 'tube'

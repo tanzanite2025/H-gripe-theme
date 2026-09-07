@@ -105,6 +105,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '产品信息模板', permission: 'product:view' }
       },
       {
+        path: 'catalog/fulfillment-requirements',
+        name: 'CatalogProductFulfillmentRequirements',
+        component: () => import('@/views/ProductFulfillmentRequirements.vue'),
+        meta: { title: '产品履约要求', permission: 'product:view' }
+      },
+      {
         path: 'catalog/customs-classifications',
         name: 'CatalogCustomsClassifications',
         component: () => import('@/views/CustomsClassifications.vue'),
@@ -246,6 +252,12 @@ const routes: RouteRecordRaw[] = [
         name: 'OrdersDisputes',
         component: () => import('@/views/Orders.vue'),
         meta: { title: '拒付订单', permission: 'order:view' }
+      },
+      {
+        path: 'orders/evidence',
+        name: 'OrdersEvidence',
+        component: () => import('@/views/OrderEvidence.vue'),
+        meta: { title: '履约证据', permission: 'order:view' }
       },
       {
         path: 'orders/after-sales',

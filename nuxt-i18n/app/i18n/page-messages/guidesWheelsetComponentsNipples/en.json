@@ -1,0 +1,108 @@
+{
+  "tabs": {
+    "comparison": "Brass vs Alloy",
+    "choose": "Choose nipple"
+  },
+  "comparison": {
+    "title": "Brass vs. Alloy Nipples: How to Choose",
+    "intro": "When configuring a wheelset, the choice between brass and alloy affects weight, durability, and aesthetics. Here is a breakdown to help you decide.",
+    "weight": {
+      "title": "Weight",
+      "brass": "Brass",
+      "brassValue": "~1.0g / pc",
+      "alloy": "Alloy",
+      "alloyValue": "~0.33g / pc",
+      "impact": "Impact: Significant rotational weight savings across 44-72 nipples positioned at the rim perimeter."
+    },
+    "color": {
+      "title": "Color Options",
+      "brass": "Brass",
+      "brassBody": "Limited (Black/Silver). Black coating may fade over time.",
+      "alloy": "Alloy",
+      "alloyBody": "Anodized in vibrant colors (Red, Blue, Gold, Purple, etc.)."
+    },
+    "strength": {
+      "title": "Strength & Engagement",
+      "standardLabel": "Standard Brass (12mm)",
+      "standardBody": "Strong overall, traditional choice.",
+      "extendedLabel": "Extended Alloy (16mm+)",
+      "extendedBody": "Double Square/Hex heads allow full thread engagement, offering higher shear strength than standard 12mm nipples, which often only engage two-thirds."
+    },
+    "assembly": {
+      "title": "Assembly",
+      "items": [
+        "Alloy has less threading friction (less wind-up).",
+        "Alloy requires precise tools (4-sided/Squorx) to prevent rounding.",
+        "High-end Alloy (Sapim Polyax) uses 7075-T6 heat treatment.",
+        "Locking tech (Secure Lock) prevents loosening."
+      ]
+    },
+    "corrosion": {
+      "title": "Corrosion Resistance",
+      "brass": "Brass",
+      "brassBody": "Naturally robust against corrosion. Best for coastal/winter riding.",
+      "alloy": "High-End Alloy",
+      "alloyBody": "Cheap alloy corrodes easily. Premium alloy (Sapim) has special treatments outperforming basic plated brass."
+    },
+    "summary": {
+      "title": "Summary Recommendations",
+      "lightweight": "Lightweight & Color",
+      "lightweightChoice": "Choose Alloy",
+      "durability": "Max Durability",
+      "durabilityChoice": "Choose Brass",
+      "carbon": "Carbon Rims",
+      "carbonChoice": "High-Quality Alloy or Brass"
+    }
+  },
+  "choose": {
+    "depth": {
+      "title": "Rim Depth & Spoke Entry Angles",
+      "body": "As rims get deeper (≥40-50mm), the angle at which spokes enter the rim becomes sharper. Standard nipples may bind against the rim bed, causing spoke bending. Using Polyax (rounded head) nipples and appropriate internal/extended designs helps align the spoke line.",
+      "challengeTitle": "The Deep Rim Challenge",
+      "challengeBody": "On deep rims, nipples have less room to tilt. If the nipple cannot align with the spoke hub flange, the spoke bends at the threaded section, leading to fatigue failures.",
+      "matchedTitle": "Matched Drilling",
+      "matchedBody": "We recommend rims with matched drilling (angled holes) or using Polyax nipples plus washers to strictly minimize spoke bending.",
+      "doubleSquareAlt": "Sapim Double Square Nipple",
+      "doubleSquareCaption": "Double Square (High Engagement)",
+      "upsideDownAlt": "Sapim Upside Down Internal Nipple",
+      "upsideDownCaption": "Upside Down (Internal)"
+    },
+    "advanced": {
+      "title": "Advanced Nipple Options",
+      "doubleSquare": {
+        "title": "Double Square",
+        "body": "Extended head with a square tool interface. Allows tightening from inside the rim.",
+        "items": [
+          "Max thread engagement",
+          "Reduced head stripping",
+          "Best for most builds"
+        ]
+      },
+      "internal": {
+        "title": "Internal (Upside Down)",
+        "body": "Hidden inside the rim. Clean aero look.",
+        "items": [
+          "Aerodynamic advantage",
+          "Requires tire removal to true",
+          "Avoid on >50mm deep rims (tool access issues)"
+        ]
+      },
+      "secureLock": {
+        "title": "Secure Lock",
+        "body": "Mechanical locking mechanism stamped into the nipple. Prevents loosening without messy glue.",
+        "alt": "Sapim Secure Lock Nipple"
+      }
+    },
+    "washers": {
+      "title": "Why Washers Matter",
+      "body": "Washers increase the contact area between the nipple and rim bed. They act like a micro spherical seat, allowing the nipple to better align with the spoke angle, reducing bending stress and preventing rim bed damage.",
+      "load": "Load Spreading",
+      "angle": "Angle Adaptation",
+      "protection": "Rim Protection",
+      "hmAlt": "Sapim HM Washer",
+      "hmCaption": "HM Washer",
+      "nippleAlt": "Nipple Washer",
+      "nippleCaption": "Nipple + Washer"
+    }
+  }
+}

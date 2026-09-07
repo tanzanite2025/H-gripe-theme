@@ -24,6 +24,7 @@ type PublicPost struct {
 	MetaDescription    string                       `json:"meta_description"`
 	CanonicalURL       string                       `json:"canonical_url"`
 	Tags               string                       `json:"tags"`
+	Categories         []postdomain.Category        `json:"categories,omitempty"`
 	CreatedAt          time.Time                    `json:"created_at"`
 	UpdatedAt          time.Time                    `json:"updated_at"`
 	PublishedAt        *time.Time                   `json:"published_at"`
@@ -58,6 +59,7 @@ func PublicPostFromDomainWithRoutes(item postdomain.Post, translationRoutes []po
 		MetaDescription:    item.MetaDesc,
 		CanonicalURL:       item.CanonicalURL,
 		Tags:               item.Tags,
+		Categories:         item.Categories,
 		CreatedAt:          item.CreatedAt,
 		UpdatedAt:          item.UpdatedAt,
 		PublishedAt:        item.PublishedAt,

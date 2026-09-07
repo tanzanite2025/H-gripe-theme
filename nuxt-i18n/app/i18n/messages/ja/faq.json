@@ -2,10 +2,7 @@
   "title": "よくある質問",
   "subtitle": "製品とサービスに関するよくある質問への回答を確認できます",
   "ui": {
-    "categorizedSupport": "カテゴリ別サポート",
     "quickAnswers": "よくある質問へのクイック回答",
-    "categoriesAriaLabel": "FAQカテゴリ",
-    "categoriesLabel": "FAQカテゴリ",
     "all": "すべて",
     "viewAll": "すべてのFAQを見る",
     "emptySection": "このセクションに表示できるFAQはありません。",
@@ -13,7 +10,6 @@
     "searchPlaceholder": "FAQを検索...",
     "viewMoreContent": "さらに表示",
     "noResults": "「{query}」に一致するFAQは見つかりません",
-    "allFaqsMetaTitle": "すべてのFAQ",
     "loadingAnswers": "回答を読み込み中",
     "illustrationAlt": "FAQ画像",
     "selectQuestion": "Select a question to view the answer."

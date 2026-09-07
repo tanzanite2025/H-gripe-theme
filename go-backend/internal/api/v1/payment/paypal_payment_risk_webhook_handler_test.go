@@ -9,6 +9,7 @@ import (
 	"time"
 
 	orderdomain "commerce-platform/internal/domain/order"
+	"commerce-platform/internal/domain/orderevidence"
 	paymentdomain "commerce-platform/internal/domain/payment"
 	shippingdomain "commerce-platform/internal/domain/shipping"
 	pgateway "commerce-platform/internal/pkg/payment"
@@ -51,7 +52,7 @@ func TestPayPalDisputeHelpersReadTransactionAmountAndTimestamp(t *testing.T) {
 	)
 }
 
-func TestRecordPayPalDisputeRiskEventAutoSubmitsEvidence(t *testing.T) {
+func TestRecordPayPalDisputeRiskEventOnlyRecordsAndQueuesManualEvidenceReview(t *testing.T) {
 	db, handler, submitter := newPayPalDisputeWebhookHarness(t)
 	orderRecord := seedPayPalDisputeWebhookOrder(t, db, "ORD-PAYPAL-WEBHOOK-1", 249.90, "DHL999")
 	seedPayPalDisputeWebhookTransaction(t, db, orderRecord.ID, "PAYPAL-CAPTURE-WEBHOOK-1", 249.90)
@@ -93,31 +94,33 @@ func TestRecordPayPalDisputeRiskEventAutoSubmitsEvidence(t *testing.T) {
 
 	require.NoError(t, err)
 	require.True(t, handled)
-	require.Equal(t, "PP-D-WEBHOOK-1", submitter.disputeID)
-	require.NotNil(t, submitter.params)
-	require.NotNil(t, submitter.params.Evidences)
-	require.Equal(t, paypalapi.EvidenceTypeProofOfFulfillment, submitter.params.Evidences.EvidenceType)
-	require.NotNil(t, submitter.params.Evidences.EvidenceInfo)
-	require.Len(t, submitter.params.Evidences.EvidenceInfo.TrackingInfo, 1)
-	require.Equal(t, "DHL999", submitter.params.Evidences.EvidenceInfo.TrackingInfo[0].TrackingNumber)
-	require.Contains(t, submitter.params.Evidences.Notes, "Invoice summary:")
-	require.Contains(t, submitter.params.Evidences.Notes, "Proof of delivery summary")
+	require.Empty(t, submitter.disputeID)
+	require.Nil(t, submitter.params)
 
 	submitted, exists := context.Get("paypal_dispute_evidence_submitted")
 	require.True(t, exists)
-	require.Equal(t, true, submitted)
-	trackingNumber, exists := context.Get("paypal_dispute_evidence_tracking_number")
+	require.Equal(t, false, submitted)
+	pendingReview, exists := context.Get("paypal_dispute_evidence_pending_review")
 	require.True(t, exists)
-	require.Equal(t, "DHL999", trackingNumber)
+	require.Equal(t, true, pendingReview)
+	orderID, exists := context.Get("paypal_dispute_order_id")
+	require.True(t, exists)
+	require.Equal(t, orderRecord.ID, orderID)
 
 	var dispute paymentdomain.PayPalDispute
 	require.NoError(t, db.Where("paypal_dispute_id = ?", "PP-D-WEBHOOK-1").First(&dispute).Error)
 	require.NotNil(t, dispute.OrderID)
 	require.Equal(t, orderRecord.ID, *dispute.OrderID)
 	require.NotNil(t, dispute.TransactionID)
-	require.NotNil(t, dispute.EvidenceSubmittedAt)
+	require.Nil(t, dispute.EvidenceSubmittedAt)
 	require.Empty(t, dispute.EvidenceSubmissionError)
-	require.Contains(t, dispute.EvidenceSubmissionPayload, "Delivered and signed by recipient")
+	require.Empty(t, dispute.EvidenceSubmissionPayload)
+
+	var snapshotCount int64
+	require.NoError(t, db.Model(&orderevidence.OrderEvidenceSubmissionSnapshot{}).
+		Where("provider = ? AND dispute_id = ?", "paypal", dispute.ID).
+		Count(&snapshotCount).Error)
+	require.Equal(t, int64(0), snapshotCount)
 }
 
 type fakePayPalWebhookDisputeEvidenceSubmitter struct {
@@ -152,6 +155,7 @@ func newPayPalDisputeWebhookHarness(t *testing.T) (*gorm.DB, *Handler, *fakePayP
 		&paymentdomain.Refund{},
 		&paymentdomain.RefundLineItem{},
 		&paymentdomain.PayPalDispute{},
+		&orderevidence.OrderEvidenceSubmissionSnapshot{},
 		&shippingdomain.TrackingProviderConfig{},
 		&shippingdomain.TrackingShipment{},
 		&shippingdomain.TrackingEvent{},
@@ -160,8 +164,13 @@ func newPayPalDisputeWebhookHarness(t *testing.T) (*gorm.DB, *Handler, *fakePayP
 	orderRepo := repository.NewOrderRepository(db)
 	paymentRepo := repository.NewPaymentRepository(db)
 	shippingRepo := repository.NewShippingRepository(db)
+	orderEvidenceSubmissionRepo := repository.NewOrderEvidenceSubmissionSnapshotRepository(db)
 	paymentService := service.NewPaymentService(nil, paymentRepo)
-	paymentService.ConfigureEvidenceSources(orderRepo, shippingRepo, nil)
+	paymentService.ConfigureEvidenceSources(orderRepo, nil)
+	paymentService.ConfigureOrderEvidenceSubmissionSnapshotRepository(orderEvidenceSubmissionRepo)
+	paymentService.ConfigureOrderEvidenceAssembler(
+		service.NewOrderEvidencePackageAssembler(orderRepo, nil, shippingRepo),
+	)
 	submitter := &fakePayPalWebhookDisputeEvidenceSubmitter{}
 	paymentService.ConfigurePayPalDisputeEvidenceSubmitter(submitter)
 	handler := NewHandler(paymentService, nil, nil, nil, nil, nil, nil, nil, nil)

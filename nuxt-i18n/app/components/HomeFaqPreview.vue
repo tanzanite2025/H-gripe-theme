@@ -5,17 +5,13 @@
       <div class="home-faq__header">
         <div class="home-faq__header-main">
           <h2 class="home-faq__title tz-faq-title">{{ t('faq.title') }}</h2>
-          <span class="home-faq__status-badge" aria-hidden="true">
-            <span class="home-faq__status-dot"></span>
-            {{ t('faq.ui.categorizedSupport') }}
-          </span>
         </div>
         <p class="home-faq__subtitle tz-faq-subtitle">{{ t('faq.ui.quickAnswers') }}</p>
       </div>
 
       <div class="home-faq__desktop-layout">
-        <aside class="home-faq__sidebar" :aria-label="t('faq.ui.categoriesAriaLabel')">
-          <div class="home-faq__sidebar-label">{{ t('faq.ui.categoriesLabel') }}</div>
+        <aside class="home-faq__sidebar" :aria-label="t('faq.ui.pagesAriaLabel', 'FAQ pages')">
+          <div class="home-faq__sidebar-label">{{ t('faq.ui.pagesLabel', 'FAQ pages') }}</div>
           <div class="home-faq__sidebar-tabs">
             <button
               v-for="(page, index) in previewPages"
@@ -81,7 +77,7 @@
         </div>
 
         <div class="home-faq__mobile-card-header">
-          <h3 class="home-faq__mobile-card-title tz-faq-category-title">
+          <h3 class="home-faq__mobile-card-title tz-faq-page-title">
             {{ mobileGroupTitle }}
           </h3>
         </div>
@@ -146,24 +142,24 @@ import { useFaqAccordionState } from '~/composables/useFaqAccordionState'
 import { useFaqCatalog } from '~/composables/useFaqCatalog'
 
 interface Props {
-  maxItemsPerCategory?: number
-  maxCategories?: number
+  maxItems?: number
+  maxPages?: number
   preferredPageIds?: string[]
-  defaultCategory?: string
+  defaultPageId?: string
   wide?: boolean
   fluid?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  maxItemsPerCategory: 3,
-  maxCategories: 4,
+  maxItems: 3,
+  maxPages: 4,
   preferredPageIds: () => [
     'support-payment',
     'company-ourstory',
     'company-oem-odm',
     'guides-wheelset-buyers',
   ],
-  defaultCategory: '',
+  defaultPageId: '',
   wide: false,
   fluid: false,
 })
@@ -183,10 +179,10 @@ const previewPages = computed(() => {
   const selectedIds = new Set(curatedPages.map(page => page.pageId))
   const fallbackPages = allPages.value.filter(page => !selectedIds.has(page.pageId))
 
-  return [...curatedPages, ...fallbackPages].slice(0, props.maxCategories)
+  return [...curatedPages, ...fallbackPages].slice(0, props.maxPages)
 })
 
-// 当前选中的分类
+// Current page selection.
 const activePageId = ref<string>('all')
 
 // 展开的条目
@@ -196,10 +192,10 @@ const {
   resetExpandedItems,
 } = useFaqAccordionState()
 
-// 初始化默认分类
+// Initialize the default page selection.
 watch(allPages, (pages) => {
-  if (props.defaultCategory) {
-    activePageId.value = props.defaultCategory
+  if (props.defaultPageId) {
+    activePageId.value = props.defaultPageId
   } else if (activePageId.value !== 'all' && !pages.some((page) => page.pageId === activePageId.value)) {
     activePageId.value = 'all'
   }
@@ -209,10 +205,9 @@ watch(activePageId, () => {
   resetExpandedItems()
 })
 
-// 扁平化并限制条目数量
+// Keep backend order and limit the preview length.
 interface FlatItem {
   id: string
-  category: string
   pageTitle: string
   question: string
   answer: string
@@ -222,50 +217,17 @@ interface FlatItem {
   answerImageHeight?: number
 }
 
-const categoryPriorityByPageId: Record<string, string[]> = {
-  'support-payment': ['security', 'payment-methods', 'billing', 'troubleshooting'],
-}
-
 const pageItems = (page: typeof allPages.value[number]): FlatItem[] => {
-  const items: FlatItem[] = []
-  const categoryPriority = categoryPriorityByPageId[page.pageId] || []
-  const categories = [...page.categories]
-    .filter(category => category.items.length > 0)
-    .sort((a, b) => {
-      const aIndex = categoryPriority.indexOf(a.id)
-      const bIndex = categoryPriority.indexOf(b.id)
-
-      if (aIndex === -1 && bIndex === -1) return 0
-      if (aIndex === -1) return 1
-      if (bIndex === -1) return -1
-      return aIndex - bIndex
-    })
-
-  let itemIndex = 0
-
-  while (items.length < props.maxItemsPerCategory && categories.some(category => category.items[itemIndex])) {
-    for (const category of categories) {
-      const item = category.items[itemIndex]
-      if (!item) continue
-      if (items.length >= props.maxItemsPerCategory) return items
-
-      items.push({
-        id: `${page.pageId}-${category.id}-${item.id}`,
-        category: category.name,
-        pageTitle: page.title || page.pageId,
-        question: item.question,
-        answer: item.answer,
-        answerImageUrl: item.answerImageUrl,
-        answerImageAlt: item.answerImageAlt,
-        answerImageWidth: item.answerImageWidth,
-        answerImageHeight: item.answerImageHeight,
-      })
-    }
-
-    itemIndex++
-  }
-
-  return items
+  return page.items.slice(0, props.maxItems).map(item => ({
+    id: `${page.pageId}-${item.id}`,
+    pageTitle: page.title || page.pageId,
+    question: item.question,
+    answer: item.answer,
+    answerImageUrl: item.answerImageUrl,
+    answerImageAlt: item.answerImageAlt,
+    answerImageWidth: item.answerImageWidth,
+    answerImageHeight: item.answerImageHeight,
+  }))
 }
 
 const desktopGroup = computed(() => {
@@ -348,7 +310,6 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
 .home-faq__desktop-layout,
 .home-faq__status-badge,
 .home-faq__group-title,
-.home-faq__category,
 .home-faq__plus {
   display: none;
 }
@@ -552,31 +513,6 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
     color: var(--tz-text-secondary);
     font-size: 0.9rem;
     text-align: left;
-  }
-
-  .home-faq__status-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    flex-shrink: 0;
-    padding: 0.18rem 0.65rem;
-    border: 1px solid rgba(4, 120, 87, 0.28);
-    border-radius: 999px;
-    background: rgba(5, 150, 105, 0.2);
-    color: var(--tz-text-accent);
-    font-size: 0.68rem;
-    font-weight: 900;
-    line-height: 1.2;
-    text-transform: uppercase;
-  }
-
-  .home-faq__status-dot {
-    width: 0.38rem;
-    height: 0.38rem;
-    border-radius: 999px;
-    background: #059669;
-    box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.22);
-    animation: home-faq-status-pulse 1s ease-in-out infinite alternate;
   }
 
   .home-faq__desktop-layout {
@@ -787,7 +723,7 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
   .home-faq__question {
     position: relative;
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
     justify-content: stretch;
     padding: 1.05rem 1rem !important;
@@ -797,25 +733,6 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
 
   .home-faq__question:hover {
     background: rgba(20, 32, 43, 0.025) !important;
-  }
-
-  .home-faq__category {
-    display: block;
-    max-width: 10rem;
-    overflow: hidden;
-    flex-shrink: 0;
-    padding: 0.25rem 0.65rem;
-    border: 1px solid rgba(20, 32, 43, 0.12);
-    border-radius: 999px;
-    background: #f3f6f8;
-    color: var(--tz-text-secondary);
-    font-size: 0.72rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    line-height: 1.2;
-    text-overflow: ellipsis;
-    text-transform: uppercase;
-    white-space: nowrap;
   }
 
   .home-faq__question-text {
@@ -846,21 +763,6 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
 
     .home-faq__question {
       grid-template-columns: minmax(0, 1fr) auto;
-      row-gap: 0.55rem;
-    }
-
-    .home-faq__category {
-      grid-column: 1 / -1;
-      max-width: 100%;
-      justify-self: start;
-    }
-
-    .home-faq__question-text {
-      grid-column: 1;
-    }
-
-    .home-faq__icon {
-      grid-column: 2;
     }
   }
 

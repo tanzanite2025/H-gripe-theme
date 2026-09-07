@@ -2,14 +2,10 @@
   <div class="match-guide space-y-8">
     <section class="rounded-2xl bg-[var(--tz-card-surface)] p-5 text-center shadow-md md:p-6">
       <h2 class="mb-4 flex items-center justify-center gap-2 text-xl font-bold tz-text-secondary">
-        Tire and Frame Clearance Guide
+        {{ t('guidesTireMatch.title') }}
       </h2>
       <p class="mx-auto mb-6 max-w-3xl text-sm leading-relaxed tz-text-secondary">
-        With our particularly wide tires, the question often arises as to whether the tires will still fit in the frame.
-        Please understand that due to the large number of bicycle models, we cannot check all frames for compatibility with
-        the various tires. The tables below provide reference tire widths and diameters shown in the Schwalbe charts.
-        Compare these measurements with the available clearance in your frame, fork and stays before installation.
-        Actual dimensions can vary with rim inner width, tire pressure, load and the tire/rim combination.
+        {{ t('guidesTireMatch.intro') }}
       </p>
 
       <section class="match-guide__measurement-reference" aria-labelledby="measurement-reference-title">
@@ -17,57 +13,47 @@
           <GuideImage
             class="overflow-hidden rounded-xl shadow-md"
             src="/public/tiresizecharts/match/schwalbe-tire-fit-frame3.webp"
-            alt="Diagram showing tire frame clearance measurements A maximum width, B maximum diameter and C shoulder diameter"
-            caption="Measurement diagram for dimensions A, B and C"
+            :alt="t('guidesTireMatch.images.measurementAlt')"
+            :caption="t('guidesTireMatch.images.measurementCaption')"
             :zoomOnClick="true"
           />
         </div>
         <div class="mt-5">
           <h3 id="measurement-reference-title" class="match-guide__measurement-title">
-            Understand dimensions A, B and C before checking frame clearance
+            {{ t('guidesTireMatch.measurement.title') }}
           </h3>
           <p class="mx-auto mt-2 max-w-3xl text-sm leading-relaxed tz-text-secondary">
-            A is the horizontal maximum width. Schwalbe reports B and C as diameter values: maximum diameter and shoulder
-            diameter at maximum width. The diagram uses vertical arrows to show the corresponding upper measurement
-            points from the rim shoulder reference.
+            {{ t('guidesTireMatch.measurement.intro') }}
           </p>
           <p class="mx-auto mt-3 max-w-3xl text-sm leading-relaxed tz-text-secondary">
-            Important: B and C are not the one-sided height from the rim edge. To estimate that height above the rim
-            shoulder, subtract the rim bead seat diameter from the reported diameter and divide the result by two.
+            {{ t('guidesTireMatch.measurement.important') }}
           </p>
         </div>
         <div class="match-guide__measurement-grid">
           <div class="match-guide__measurement-item">
             <span class="match-guide__measurement-badge">A</span>
             <div>
-              <h4>Maximum tire width</h4>
+              <h4>{{ t('guidesTireMatch.measurement.items.width.title') }}</h4>
               <p>
-                The widest outside-to-outside measurement across the mounted tire, measured from outside lug to outside lug
-                at maximum air pressure. Use A to check side-to-side clearance between the tire and the frame, fork or stays.
+                {{ t('guidesTireMatch.measurement.items.width.body') }}
               </p>
             </div>
           </div>
           <div class="match-guide__measurement-item">
             <span class="match-guide__measurement-badge">B</span>
             <div>
-              <h4>Maximum outer diameter</h4>
+              <h4>{{ t('guidesTireMatch.measurement.items.diameter.title') }}</h4>
               <p>
-                Schwalbe's maximum-diameter value for the mounted tire and wheel. It is the full outside diameter across
-                the highest point of the inflated tread or tread lug. In the diagram, the upper arrow endpoint identifies
-                that highest point. Use B to check the largest overall radial envelope. For the one-sided height above
-                the rim shoulder, use (B - bead seat diameter) / 2.
+                {{ t('guidesTireMatch.measurement.items.diameter.body') }}
               </p>
             </div>
           </div>
           <div class="match-guide__measurement-item">
             <span class="match-guide__measurement-badge">C</span>
             <div>
-              <h4>Shoulder diameter at maximum width</h4>
+              <h4>{{ t('guidesTireMatch.measurement.items.shoulder.title') }}</h4>
               <p>
-                Schwalbe's shoulder diameter measured at the point where the tire reaches its maximum width. It is the
-                full diameter across that shoulder level, usually near the outer shoulder lugs on a knobby tire, not the
-                height to the lug's starting edge. For the one-sided height above the rim shoulder, use (C - bead seat
-                diameter) / 2.
+                {{ t('guidesTireMatch.measurement.items.shoulder.body') }}
               </p>
             </div>
           </div>
@@ -82,22 +68,22 @@
           :aria-labelledby="`${chart.key}-title`"
         >
           <h3 :id="`${chart.key}-title`" class="match-guide__table-title">
-            {{ chart.title }}
+            {{ t(`guidesTireMatch.clearance.tables.${chart.key}`) }}
           </h3>
           <div class="match-guide__table-scroll">
             <table class="match-guide__table">
               <caption>
-                {{ chart.title }} with maximum tire width, maximum tire diameter and shoulder diameter at maximum width,
-                measured in millimeters
+                {{ t(`guidesTireMatch.clearance.tables.${chart.key}`) }}
+                {{ t('guidesTireMatch.clearance.captionSuffix') }}
               </caption>
               <thead>
                 <tr>
-                  <th scope="col">Wheel size</th>
-                  <th scope="col">ETRTO size</th>
-                  <th scope="col">Tire model</th>
-                  <th scope="col">Maximum width (A)</th>
-                  <th scope="col">Maximum diameter (B)</th>
-                  <th scope="col">Shoulder diameter at maximum width (C)</th>
+                  <th scope="col">{{ t('guidesTireMatch.clearance.headers.wheelSize') }}</th>
+                  <th scope="col">{{ t('guidesTireMatch.clearance.headers.etrto') }}</th>
+                  <th scope="col">{{ t('guidesTireMatch.clearance.headers.tire') }}</th>
+                  <th scope="col">{{ t('guidesTireMatch.clearance.headers.maxWidth') }}</th>
+                  <th scope="col">{{ t('guidesTireMatch.clearance.headers.maxDiameter') }}</th>
+                  <th scope="col">{{ t('guidesTireMatch.clearance.headers.shoulderDiameter') }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -116,20 +102,20 @@
       </div>
 
       <div class="mt-8 border-t tz-border-subtle pt-6">
-        <h3 class="match-guide__table-title">Source chart images</h3>
+        <h3 class="match-guide__table-title">{{ t('guidesTireMatch.sourceChartsTitle') }}</h3>
         <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
           <GuideImage
             class="overflow-hidden rounded-xl shadow-md"
             src="/public/tiresizecharts/match/schwalbe-tire-fit-frame1.webp"
-            alt="Schwalbe tire and frame clearance chart for 27.5, 28 and 29 inch tires"
-            caption="Reference chart: 27.5, 28 and 29 inch tires"
+            :alt="t('guidesTireMatch.images.chart2729Alt')"
+            :caption="t('guidesTireMatch.images.chart2729Caption')"
             :zoomOnClick="true"
           />
           <GuideImage
             class="overflow-hidden rounded-xl shadow-md"
             src="/public/tiresizecharts/match/schwalbe-tire-fit-frame2.webp"
-            alt="Schwalbe tire and frame clearance chart for 24 and 26 inch tires"
-            caption="Reference chart: 24 and 26 inch tires"
+            :alt="t('guidesTireMatch.images.chart2426Alt')"
+            :caption="t('guidesTireMatch.images.chart2426Caption')"
             :zoomOnClick="true"
           />
         </div>
@@ -138,30 +124,25 @@
 
     <section class="rounded-2xl bg-[var(--tz-card-surface)] p-5 text-center shadow-md md:p-6">
       <h2 class="mb-4 flex items-center justify-center gap-2 text-lg font-bold uppercase tracking-wide tz-text-secondary">
-        Exact Circumference Guide
+        {{ t('guidesTireMatch.circumference.title') }}
       </h2>
       <p class="mx-auto mb-6 max-w-3xl text-sm leading-relaxed tz-text-secondary">
-        Exact tire circumferences are often required for precise programming of the bike computer. The wheel circumference
-        varies depending on the inner rim width, puncture protection in the tire, air pressure and weight load. The values
-        below are approximate reference values, not a substitute for measuring the mounted tire.
+        {{ t('guidesTireMatch.circumference.intro') }}
       </p>
       <p class="mx-auto mb-8 max-w-3xl text-sm leading-relaxed tz-text-secondary">
-        For precise programming of a wheel computer, we recommend a simple rolling test with the rider in the saddle:
-        align the valve from the front wheel at the bottom 6 o'clock position, mark the floor, roll the bike forward in
-        as straight a line as possible until the valve returns to the 6 o'clock position, and measure the distance between
-        the two marks.
+        {{ t('guidesTireMatch.circumference.test') }}
       </p>
 
       <div class="match-guide__table-scroll text-left">
         <table class="match-guide__table match-guide__table--circumference">
           <caption>
-            Approximate bicycle tire wheel circumference by inch size and ETRTO size, measured in millimeters
+            {{ t('guidesTireMatch.circumference.caption') }}
           </caption>
           <thead>
             <tr>
-              <th scope="col">Wheel size</th>
-              <th scope="col">ETRTO size</th>
-              <th scope="col">Approximate wheel circumference</th>
+              <th scope="col">{{ t('guidesTireMatch.circumference.headers.wheelSize') }}</th>
+              <th scope="col">{{ t('guidesTireMatch.circumference.headers.etrto') }}</th>
+              <th scope="col">{{ t('guidesTireMatch.circumference.headers.circumference') }}</th>
             </tr>
           </thead>
           <tbody>
@@ -175,12 +156,12 @@
       </div>
 
       <div class="mx-auto mt-8 w-full max-w-4xl">
-        <h3 class="match-guide__table-title">Visual reference chart</h3>
+        <h3 class="match-guide__table-title">{{ t('guidesTireMatch.circumference.visualTitle') }}</h3>
         <GuideImage
           class="mt-4 overflow-hidden rounded-xl shadow-md"
           src="/public/tiresizecharts/match/exact-circumference-of-tire.webp"
-          alt="Schwalbe approximate bicycle tire wheel circumference chart by inch and ETRTO size"
-          caption="Reference chart for approximate tire circumferences"
+          :alt="t('guidesTireMatch.images.circumferenceAlt')"
+          :caption="t('guidesTireMatch.images.circumferenceCaption')"
           :zoomOnClick="true"
         />
       </div>
@@ -189,11 +170,23 @@
 </template>
 
 <script setup lang="ts">
+import { watch } from 'vue'
+import { useI18n } from '#imports'
 import GuideImage from '~/components/GuideImage.vue'
+import { usePageMessages } from '~/composables/usePageMessages'
 import {
   tireCircumferenceRows,
   tireFrameClearanceTables,
 } from '~/data/tireguides/match'
+
+const { locale, t } = useI18n()
+const { loadPageMessages } = usePageMessages('guidesTireMatch')
+
+await loadPageMessages(locale.value)
+
+watch(locale, (nextLocale) => {
+  void loadPageMessages(nextLocale)
+})
 </script>
 
 <style scoped>

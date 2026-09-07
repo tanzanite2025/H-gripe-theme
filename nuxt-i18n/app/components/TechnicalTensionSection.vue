@@ -1,158 +1,126 @@
 <template>
   <div class="tension-section space-y-8">
-    <!-- Intro Card -->
     <div class="tension-panel tension-panel--intro p-5 md:p-6 text-center">
-      <h3 class="tension-title mb-2">Wheel Spoke Tension Standard</h3>
+      <h3 class="tension-title mb-2">{{ t('testReportTension.title') }}</h3>
       <p class="tension-copy max-w-2xl mx-auto mb-6">
-        Tension is the soul of a wheel. We customize tension based on
-        <strong>Rider Weight</strong>, <strong>Usage</strong>, and <strong>Rim Material</strong>
-        to balance stiffness, durability, and comfort.
-       </p>
+        {{ t('testReportTension.intro.before') }}
+        <strong>{{ t('testReportTension.intro.riderWeight') }}</strong>{{ t('testReportTension.intro.betweenRiderAndUsage') }}
+        <strong>{{ t('testReportTension.intro.usage') }}</strong>{{ t('testReportTension.intro.betweenUsageAndRim') }}
+        <strong>{{ t('testReportTension.intro.rimMaterial') }}</strong>
+        {{ t('testReportTension.intro.after') }}
+      </p>
       <div class="flex justify-center flex-col items-center gap-4">
         <GuideImage
           src="/public/technical/tension/wheel-spoke-tension.webp"
-          alt="Wheel Spoke Tension Distribution"
+          :alt="t('testReportTension.image.alt')"
           :zoomOnClick="true"
-          caption="Workshop: Tension Distribution Reference"
+          :caption="t('testReportTension.image.caption')"
           class="tension-image rounded-xl max-w-lg w-full"
         />
         <NuxtLink
           :to="localePath('/support/test-report/wheelset-assembly')"
           class="premium-button tension-link"
         >
-          Check the wheelset assembly guide
+          {{ t('testReportTension.assemblyLink') }}
         </NuxtLink>
       </div>
     </div>
 
-    <!-- 1. Key Factors Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <!-- Rider Weight -->
       <div class="tension-panel tension-panel--compact p-5 md:p-6">
         <h3 class="tension-title tension-title--section">
-          Effect of Rider Weight
+          {{ t('testReportTension.weight.title') }}
         </h3>
         <ul class="tension-list space-y-3 text-sm">
-          <li class="tension-list__item flex items-start gap-3">
+          <li
+            v-for="index in 2"
+            :key="`weight-${index}`"
+            class="tension-list__item flex items-start gap-3"
+          >
             <span class="tension-list__marker mt-1 shrink-0" />
-            <span><strong>Static Load:</strong> A 75kg rider increases upper spoke tension by ~15%, while lower spokes lose tension. (De-tensioning cycle).</span>
-          </li>
-          <li class="tension-list__item flex items-start gap-3">
-            <span class="tension-list__marker mt-1 shrink-0" />
-            <span><strong>Heavy Riders:</strong> Need higher base tension and thicker spokes (14G) to prevent spokes from going slack, which causes fatigue failure.</span>
+            <span>
+              <strong>{{ t(`testReportTension.weight.items.${index - 1}.label`) }}</strong>
+              {{ t(`testReportTension.weight.items.${index - 1}.body`) }}
+            </span>
           </li>
         </ul>
       </div>
 
-      <!-- Usage Scenarios -->
       <div class="tension-panel tension-panel--compact p-5 md:p-6">
         <h3 class="tension-title tension-title--section">
-          Standard by Usage
+          {{ t('testReportTension.usage.title') }}
         </h3>
         <div class="tension-options space-y-3 text-sm">
-          <div class="tension-option p-2 rounded-lg">
-            <strong class="tension-option__label block">Road Racing</strong>
-            <span class="tension-option__copy text-xs">High stiffness focus. 120-130kgf (Drive Side).</span>
-          </div>
-          <div class="tension-option p-2 rounded-lg">
-            <strong class="tension-option__label block">MTB / Gravel</strong>
-            <span class="tension-option__copy text-xs">Durability focus. Slightly lower tension for compliance and impact absorption.</span>
-          </div>
-          <div class="tension-option p-2 rounded-lg">
-            <strong class="tension-option__label block">Touring / Commuting</strong>
-            <span class="tension-option__copy text-xs">Reliability focus. Moderate tension, thicker spokes.</span>
+          <div
+            v-for="index in 3"
+            :key="`usage-${index}`"
+            class="tension-option p-2 rounded-lg"
+          >
+            <strong class="tension-option__label block">
+              {{ t(`testReportTension.usage.items.${index - 1}.label`) }}
+            </strong>
+            <span class="tension-option__copy text-xs">
+              {{ t(`testReportTension.usage.items.${index - 1}.body`) }}
+            </span>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- 2. Tension Chart -->
     <div class="tension-panel tension-table-panel overflow-hidden">
       <div class="tension-table-header p-4 flex items-center justify-between">
-        <h3 class="font-bold tz-text-primary">Recommended Drive-Side Tension (kgf)</h3>
-        <span class="tension-unit text-xs font-mono">Unit: kgf</span>
+        <h3 class="font-bold tz-text-primary">{{ t('testReportTension.table.title') }}</h3>
+        <span class="tension-unit text-xs font-mono">{{ t('testReportTension.table.unit') }}</span>
       </div>
       <div class="overflow-x-auto">
         <table class="tension-table min-w-full text-left text-sm">
           <thead>
             <tr>
-              <th>Rider Weight</th>
-              <th>Road Racing</th>
-              <th>MTB</th>
-              <th>Touring</th>
+              <th>{{ t('testReportTension.table.headers.riderWeight') }}</th>
+              <th>{{ t('testReportTension.table.headers.road') }}</th>
+              <th>{{ t('testReportTension.table.headers.mtb') }}</th>
+              <th>{{ t('testReportTension.table.headers.touring') }}</th>
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td class="tension-table__row-label">≤ 60 kg</td>
-              <td>115–120</td>
-              <td>95–105</td>
-              <td>90–100</td>
-            </tr>
-            <tr>
-              <td class="tension-table__row-label">60–80 kg</td>
-              <td>120–125</td>
-              <td>100–115</td>
-              <td>95–105</td>
-            </tr>
-            <tr>
-              <td class="tension-table__row-label">80–100 kg</td>
-              <td>125–130</td>
-              <td>110–120</td>
-              <td>100–110</td>
-            </tr>
-            <tr>
-              <td class="tension-table__row-label">≥ 100 kg</td>
-              <td>130–135</td>
-              <td>115–125</td>
-              <td>105–115</td>
+            <tr v-for="index in 4" :key="`row-${index}`">
+              <td class="tension-table__row-label">
+                {{ t(`testReportTension.table.rows.${index - 1}.weight`) }}
+              </td>
+              <td>{{ t(`testReportTension.table.rows.${index - 1}.road`) }}</td>
+              <td>{{ t(`testReportTension.table.rows.${index - 1}.mtb`) }}</td>
+              <td>{{ t(`testReportTension.table.rows.${index - 1}.touring`) }}</td>
             </tr>
           </tbody>
         </table>
       </div>
       <div class="tension-note text-xs">
-        <strong>Note:</strong> These are baseline values for Drive-Side spokes. Non-Drive Side tension is typically 60-70% of Drive Side, determined by hub geometry. Max tension for Carbon rims is usually ~135kgf; Alloy rims ~125kgf.
+        <strong>{{ t('testReportTension.table.noteLabel') }}</strong>
+        {{ t('testReportTension.table.note') }}
       </div>
     </div>
 
-    <!-- 3. Workshop Process (Timeline) -->
     <div class="tension-panel tension-panel--process p-5 md:p-6">
       <h3 class="tension-title tension-title--section mb-6">
-        Our Workshop Building Process
+        {{ t('testReportTension.process.title') }}
       </h3>
 
       <div class="tension-timeline relative pl-6 space-y-8">
-        <!-- Step 1 -->
-        <div class="tension-step tension-step--one relative">
+        <div
+          v-for="index in 4"
+          :key="`process-${index}`"
+          class="tension-step relative"
+          :class="`tension-step--${['one', 'two', 'three', 'four'][index - 1]}`"
+        >
           <span class="tension-step__marker absolute">
             <span class="tension-step__dot block" />
           </span>
-          <h4 class="text-sm font-bold tz-text-primary">1. Baseline Calculation</h4>
-          <p class="text-xs tz-text-secondary mt-1">Determine base tension range based on Rider Weight classification.</p>
-        </div>
-        <!-- Step 2 -->
-        <div class="tension-step tension-step--two relative">
-          <span class="tension-step__marker absolute">
-            <span class="tension-step__dot block" />
-          </span>
-          <h4 class="text-sm font-bold tz-text-primary">2. Usage Adjustment</h4>
-          <p class="text-xs tz-text-secondary mt-1">Adjust for stiffness (Road) or compliance (MTB).</p>
-        </div>
-        <!-- Step 3 -->
-        <div class="tension-step tension-step--three relative">
-          <span class="tension-step__marker absolute">
-            <span class="tension-step__dot block" />
-          </span>
-          <h4 class="text-sm font-bold tz-text-primary">3. Safety Cap Check</h4>
-          <p class="text-xs tz-text-secondary mt-1">Ensure target does not exceed Rim Limits (Carbon 135kgf / Alloy 125kgf).</p>
-        </div>
-        <!-- Step 4 -->
-        <div class="tension-step tension-step--four relative">
-          <span class="tension-step__marker absolute">
-            <span class="tension-step__dot block" />
-          </span>
-          <h4 class="text-sm font-bold tz-text-primary">4. Stress Relief & Balancing</h4>
-          <p class="text-xs tz-text-secondary mt-1">Repeated de-stressing cycles to ensure tension does not drop after first ride.</p>
+          <h4 class="text-sm font-bold tz-text-primary">
+            {{ t(`testReportTension.process.steps.${index - 1}.title`) }}
+          </h4>
+          <p class="text-xs tz-text-secondary mt-1">
+            {{ t(`testReportTension.process.steps.${index - 1}.body`) }}
+          </p>
         </div>
       </div>
     </div>
@@ -160,10 +128,20 @@
 </template>
 
 <script setup lang="ts">
-import { useLocalePath } from '#imports'
+import { watch } from 'vue'
+import { useI18n, useLocalePath } from '#imports'
 import GuideImage from '~/components/GuideImage.vue'
+import { usePageMessages } from '~/composables/usePageMessages'
 
 const localePath = useLocalePath()
+const { locale, t } = useI18n()
+const { loadPageMessages } = usePageMessages('testReportTension')
+
+await loadPageMessages(locale.value)
+
+watch(locale, (nextLocale) => {
+  void loadPageMessages(nextLocale)
+})
 </script>
 
 <style scoped>

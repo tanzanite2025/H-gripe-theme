@@ -3,29 +3,49 @@
     <DialogContent size="lg">
       <form @submit.prevent="emit('submit')">
         <DialogHeader>
-          <DialogTitle>{{ fulfillmentMode ? '确认发货' : '状态管理' }}</DialogTitle>
+          <DialogTitle>{{ trackingCorrection ? '纠正物流' : fulfillmentMode ? '确认发货' : '状态管理' }}</DialogTitle>
           <DialogDescription>
-            {{ fulfillmentMode ? `为订单 ${statusForm.order_number} 填写发货信息。` : `更新订单 ${statusForm.order_number} 的履约状态。` }}
+            {{
+              trackingCorrection
+                ? `修正订单 ${statusForm.order_number} 的物流信息，不会重新发货或追加发货证据。`
+                : fulfillmentMode
+                  ? `为订单 ${statusForm.order_number} 填写发货信息。`
+                  : `更新订单 ${statusForm.order_number} 的履约状态。`
+            }}
           </DialogDescription>
         </DialogHeader>
 
         <div class="space-y-4 py-5">
-          <label v-if="!fulfillmentMode" class="block space-y-1">
+          <label v-if="!fulfillmentMode && !trackingCorrection" class="block space-y-1">
             <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block">STATUS / 订单状态</span>
             <Select v-model="statusForm.status">
               <SelectTrigger class="w-full"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem v-for="option in editableOrderStatusOptions" :key="option.value" :value="option.value">{{ option.label }}</SelectItem>
+                <SelectItem
+                  v-for="option in editableOrderStatusOptions"
+                  :key="option.value"
+                  :value="option.value"
+                  :disabled="option.value === 'shipped'"
+                >
+                  {{ option.label }}
+                </SelectItem>
               </SelectContent>
             </Select>
           </label>
 
-          <label v-if="!fulfillmentMode" class="block space-y-1">
+          <label v-if="!fulfillmentMode && !trackingCorrection" class="block space-y-1">
             <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block">SHIPPING / 物流状态</span>
             <Select v-model="statusForm.shipping_status">
               <SelectTrigger class="w-full"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem v-for="option in editableShippingStatusOptions" :key="option.value" :value="option.value">{{ option.label }}</SelectItem>
+                <SelectItem
+                  v-for="option in editableShippingStatusOptions"
+                  :key="option.value"
+                  :value="option.value"
+                  :disabled="option.value === 'shipped'"
+                >
+                  {{ option.label }}
+                </SelectItem>
               </SelectContent>
             </Select>
           </label>
@@ -76,9 +96,12 @@
             </label>
           </div>
 
-          <div class="rounded-lg border bg-muted/35 p-3 text-xs text-muted-foreground">
+          <div v-if="!trackingCorrection" class="rounded-lg border bg-muted/35 p-3 text-xs text-muted-foreground">
             保存时系统会按“线路服务映射优先、承运商映射其次”解析 Provider Carrier Code。
             当前可预览：<span class="font-mono font-bold text-foreground">{{ resolvedProviderCarrierCodeLabel }}</span>
+          </div>
+          <div v-else class="rounded-lg border border-amber-500/25 bg-amber-500/10 p-3 text-xs leading-5 text-amber-900">
+            这是已发货订单的物流纠正入口。保存只更新订单与追踪任务，不会再次调用发货取证，也不会把错误物流号写入发货证据。
           </div>
         </div>
 
@@ -86,7 +109,11 @@
           <Button type="button" variant="outline" @click="emit('update:open', false)">取消</Button>
           <Button type="submit" :disabled="submitting">
             <LoaderCircle v-if="submitting" class="size-4 animate-spin" />
-            {{ submitting ? (fulfillmentMode ? '正在发货' : '正在保存') : (fulfillmentMode ? '确认发货' : '保存') }}
+            {{
+              submitting
+                ? (trackingCorrection ? '正在纠正物流' : fulfillmentMode ? '正在发货' : '正在保存')
+                : (trackingCorrection ? '保存物流纠正' : fulfillmentMode ? '确认发货' : '保存')
+            }}
           </Button>
         </DialogFooter>
       </form>
@@ -125,6 +152,7 @@ withDefaults(defineProps<{
   filteredStatusCarrierServices?: ShippingCarrierService[]
   resolvedProviderCarrierCodeLabel?: string
   fulfillmentMode?: boolean
+  trackingCorrection?: boolean
   submitting?: boolean
 }>(), {
   open: false,
@@ -135,6 +163,7 @@ withDefaults(defineProps<{
   filteredStatusCarrierServices: () => [],
   resolvedProviderCarrierCodeLabel: '未匹配映射',
   fulfillmentMode: false,
+  trackingCorrection: false,
   submitting: false
 })
 

@@ -10,7 +10,6 @@ import { useFaqDeepLink } from '~/composables/useFaqDeepLink'
 import { useFaqGroupedResults } from '~/composables/useFaqGroupedResults'
 import { useFaqSearch } from '~/composables/useFaqSearch'
 import { useFaqSearchOverlayState } from '~/composables/useFaqSearchOverlayState'
-import { useFaqTopics } from '~/composables/useFaqTopics'
 
 export type GlobalAllFaqsViewMode = 'page' | 'search-overlay'
 
@@ -21,7 +20,6 @@ export interface GlobalAllFaqsSearchAndGroupedResultsOptions {
 
 export type {
   GlobalAllFaqFlatItem,
-  GlobalAllFaqSearchTopic,
   GlobalAllFaqsDisplayGroup,
 } from '~/data/faq'
 
@@ -53,20 +51,12 @@ export async function useGlobalAllFaqsSearchAndGroupedResults(
   })
 
   const {
-    activeTopicId,
-    featuredItems,
-    featuredTopics,
-    activeTopic,
-    topicItems,
-    selectTopic: selectTopicState,
-    resetTopic,
-  } = useFaqTopics(allItems)
-  const {
     searchQuery,
     filteredItems,
     searchResults,
     searchResultCount,
   } = useFaqSearch(allItems, activePageId)
+  const featuredItems = computed(() => allItems.value.slice(0, 6))
   const {
     displayedGroups,
     hasMoreGroups,
@@ -96,7 +86,6 @@ export async function useGlobalAllFaqsSearchAndGroupedResults(
     enabled: isSearchOverlay,
     searchQuery,
     searchResults,
-    resetTopic,
     resetExpandedItems,
     expandItem,
   })
@@ -127,11 +116,6 @@ export async function useGlobalAllFaqsSearchAndGroupedResults(
     }
   })
 
-  const selectTopic = (topicId: string) => {
-    selectTopicState(topicId)
-    resetExpandedItems()
-  }
-
   const pending = computed(() => faqPending.value)
 
   return {
@@ -139,10 +123,6 @@ export async function useGlobalAllFaqsSearchAndGroupedResults(
     pending,
     refreshAllFaqData: refreshFaqCatalog,
     featuredItems,
-    featuredTopics,
-    activeTopicId,
-    activeTopic,
-    topicItems,
     searchQuery,
     activePageId,
     expandedItems,
@@ -152,7 +132,6 @@ export async function useGlobalAllFaqsSearchAndGroupedResults(
     displayedGroups,
     hasMoreGroups,
     toggleItem,
-    selectTopic,
     resetSearchOverlayState,
     loadMoreGroups,
   }

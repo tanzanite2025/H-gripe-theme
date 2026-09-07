@@ -2,7 +2,7 @@
   <section class="w-full max-w-none space-y-3">
     <div class="max-w-3xl">
       <h2 class="text-sm font-black uppercase text-foreground">退款取消政策内容</h2>
-      <p class="mt-1 text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">前台政策页与 Warranty / Returns TAB 共用这份内容。</p>
+      <p class="mt-1 text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">前台 Refund &amp; Cancellation Policy 页面使用这份内容。</p>
     </div>
     <div class="space-y-5">
       <div class="flex flex-wrap items-end gap-3 border-b border-dashed border-border pb-4">
@@ -37,6 +37,7 @@
           <div>
             <h3 class="text-sm font-black">政策段落</h3>
             <p class="mt-1 text-xs text-muted-foreground">每段可以有正文、要点和一张说明图片。</p>
+            <UploadSpecHint code="refund_cancellation_image" />
           </div>
           <Button v-if="canEdit" type="button" variant="outline" size="sm" :disabled="saving" @click="addSection">
             <Plus class="size-4" />
@@ -111,7 +112,6 @@
                 :disabled="!canEdit || saving"
                 @change="handleImageChange($event, index)"
               />
-              <UploadSpecHint code="refund_cancellation_image" />
             </div>
             <AdminFormField label="图片替代文字" class="min-w-0">
               <Input v-model="section.image.alt" :disabled="!canEdit || saving" />

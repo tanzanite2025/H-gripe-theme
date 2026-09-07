@@ -59,6 +59,7 @@ export interface OrderRecord {
   payment_status?: string | null
   shipping_status?: string | null
   payment_method?: string | null
+  signature_required?: boolean | null
   shipping_method?: string | null
   tracking_number?: string | null
   tracking_provider_id?: OrderID | null

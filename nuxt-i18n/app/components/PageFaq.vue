@@ -1,108 +1,127 @@
 <template>
-  <section 
+  <section
     class="page-faq w-full"
     :class="[
       theme === 'dark' ? 'bg-transparent' : 'bg-white',
-      'py-4 md:py-6'
+      'py-4 md:py-6',
     ]"
   >
     <div class="page-faq__shell w-full max-w-none mx-auto">
-      <!-- Main Page Header (Optional, if page title not sufficient) -->
-      <div v-if="displayTitle || faqData?.subtitle" class="page-faq__header text-center">
-        <div class="page-faq__header-main">
-        <h3 
+      <header
+        v-if="displayTitle || faqData?.subtitle"
+        class="page-faq__header text-center"
+      >
+        <h3
           v-if="displayTitle"
           class="page-faq__title tz-faq-title"
           :class="theme === 'dark' ? 'tz-text-primary' : 'text-gray-800'"
         >
           {{ displayTitle }}
         </h3>
-          <span class="page-faq__status-badge" aria-hidden="true">
-            <span class="page-faq__status-dot" />
-            {{ t('faq.ui.categorizedSupport') }}
-          </span>
-        </div>
-        <p 
+        <p
           v-if="faqData?.subtitle"
           class="page-faq__subtitle tz-faq-subtitle max-w-2xl mx-auto"
           :class="theme === 'dark' ? 'tz-text-secondary' : 'tz-text-muted'"
         >
           {{ faqData.subtitle }}
         </p>
-      </div>
+      </header>
 
-      <!-- FAQ Content -->
-      <div v-if="faqData && displayCategories.length > 0">
-        <div class="page-faq__desktop-layout">
-          <aside class="page-faq__sidebar" :aria-label="t('faq.ui.categoriesAriaLabel')">
-            <div class="page-faq__sidebar-label">{{ t('faq.ui.categoriesLabel') }}</div>
+      <div v-if="faqData && displayItems.length > 0" class="page-faq__content">
+        <DesktopFaqMasterDetail
+          class="page-faq__desktop-list"
+          :items="displayItems"
+          :expanded-items="expandedItems"
+          id-prefix="page-faq-answer"
+          @toggle-item="toggleItem"
+        />
+
+        <div class="page-faq__mobile-list">
+          <div
+            v-for="item in displayItems"
+            :key="item.id"
+            class="page-faq__item"
+            :class="{ 'is-expanded': expandedItems.has(item.id) }"
+          >
             <button
-              v-for="(category, index) in displayCategories"
-              :key="category.id"
               type="button"
-              class="page-faq__sidebar-button"
-              :class="{ 'page-faq__sidebar-button--active': activeCategoryId === category.id }"
-              @click="selectCategory(category.id)"
+              class="page-faq__question group"
+              :aria-expanded="expandedItems.has(item.id)"
+              :aria-controls="answerId(item.id)"
+              @click="toggleItem(item.id)"
             >
-              <span class="page-faq__sidebar-text">
-                {{ formatCategoryIndex(index) }}. {{ category.name }}
+              <span
+                class="page-faq__question-text tz-faq-question"
+                :class="[
+                  theme === 'dark' ? 'tz-text-secondary' : 'text-gray-800',
+                  expandedItems.has(item.id)
+                    ? 'text-[var(--tz-text-accent)]'
+                    : 'group-hover:text-[var(--tz-text-accent)]',
+                ]"
+              >
+                {{ item.question }}
               </span>
-              <span class="page-faq__sidebar-dot" aria-hidden="true" />
+              <Icon
+                name="lucide:chevron-down"
+                class="page-faq__chevron"
+                :class="{ 'is-expanded': expandedItems.has(item.id) }"
+                aria-hidden="true"
+              />
             </button>
-          </aside>
 
-          <main class="page-faq__desktop-panel">
-            <FaqCategoryAccordion
-              v-if="activeCategory"
-              :category="activeCategory"
-              :page-title="displayTitle"
-              :theme="theme"
-              :show-categories="showCategories"
-              :expanded-items="expandedItems"
-              @toggle-item="toggleItem"
-            />
-          </main>
-        </div>
-
-        <div class="page-faq__mobile-list space-y-6 md:space-y-7">
-          <FaqCategoryAccordion
-            v-for="category in displayCategories"
-            :key="category.id"
-            :category="category"
-            :page-title="displayTitle"
-            :theme="theme"
-            :show-categories="showCategories"
-            :expanded-items="expandedItems"
-            @toggle-item="toggleItem"
-          />
+            <Transition
+              enter-active-class="transition-all duration-200 ease-out"
+              leave-active-class="transition-all duration-150 ease-in"
+              enter-from-class="opacity-0 max-h-0"
+              enter-to-class="opacity-100 max-h-[60rem]"
+              leave-from-class="opacity-100 max-h-[60rem]"
+              leave-to-class="opacity-0 max-h-0"
+            >
+              <div
+                v-if="expandedItems.has(item.id)"
+                :id="answerId(item.id)"
+                class="page-faq__answer-wrap"
+                role="region"
+                :aria-label="item.question"
+              >
+                <div class="page-faq__answer tz-faq-answer">
+                  <FaqAnswerContent
+                    :answer="item.answer"
+                    :image-url="item.answerImageUrl"
+                    :image-alt="item.answerImageAlt"
+                    :image-width="item.answerImageWidth"
+                    :image-height="item.answerImageHeight"
+                  />
+                </div>
+              </div>
+            </Transition>
+          </div>
         </div>
       </div>
 
-      <!-- Empty State -->
-      <div 
+      <div
         v-else
-        class="text-center py-12 rounded-2xl border-2 border-dashed"
-            :class="theme === 'dark' ? 'tz-border-subtle tz-text-muted' : 'border-[var(--tz-form-control-border)] tz-text-muted'"
+        class="page-faq__empty text-center py-12 rounded-2xl border-2 border-dashed"
+        :class="theme === 'dark'
+          ? 'tz-border-subtle tz-text-muted'
+          : 'border-[var(--tz-form-control-border)] tz-text-muted'"
       >
         <p class="text-sm">{{ t('faq.ui.emptySection') }}</p>
       </div>
 
-      <!-- View All Link -->
-      <div 
+      <div
         v-if="showViewAllLink && hasMoreItems"
-        class="text-center mt-8"
+        class="page-faq__footer text-center mt-8"
       >
         <NuxtLink
           :to="localePath('/support/faqs')"
           class="inline-flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-bold transition-all shadow-lg hover:-translate-y-0.5"
-          :class="theme === 'dark' 
+          :class="theme === 'dark'
             ? 'tz-surface-panel tz-text-secondary hover:tz-surface-panel hover:tz-text-primary hover:shadow-md'
             : 'bg-[var(--tz-action-primary)] text-white hover:bg-[var(--tz-action-primary-hover)] hover:shadow-[0_8px_18px_rgba(15,23,42,0.16)]'"
         >
           {{ t('faq.ui.viewAll') }}
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-          </svg>
+          <Icon name="lucide:arrow-right" class="w-4 h-4" aria-hidden="true" />
         </NuxtLink>
       </div>
     </div>
@@ -110,15 +129,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
 import { useLocalePath } from '#imports'
-import FaqCategoryAccordion from '~/components/faq/FaqCategoryAccordion.vue'
+import FaqAnswerContent from '~/components/FaqAnswerContent.vue'
+import DesktopFaqMasterDetail from '~/components/faq/DesktopFaqMasterDetail.vue'
 import { usePageFaq } from '~/composables/usePageFaq'
 import type { PageFaqProps } from '../data/faq/types'
 
 const props = withDefaults(defineProps<PageFaqProps>(), {
   theme: 'light',
-  showCategories: true,
   showViewAllLink: false,
 })
 
@@ -127,55 +145,114 @@ const localePath = useLocalePath()
 const {
   faqData,
   displayTitle,
-  displayCategories,
+  displayItems,
   expandedItems,
   toggleItem,
-  resetExpandedItems,
-  hasMoreItems
+  hasMoreItems,
 } = await usePageFaq(props)
 
-const activeCategoryId = ref('')
-
-watch(
-  displayCategories,
-  (categories) => {
-    if (!categories.some((category) => category.id === activeCategoryId.value)) {
-      activeCategoryId.value = categories[0]?.id || ''
-      resetExpandedItems()
-    }
-  },
-  { immediate: true }
+const answerId = (itemId: string) => (
+  `page-faq-answer-${itemId.replace(/[^a-zA-Z0-9_-]/g, '-')}`
 )
-
-const activeCategory = computed(() => {
-  return displayCategories.value.find((category) => category.id === activeCategoryId.value) || displayCategories.value[0] || null
-})
-
-const selectCategory = (categoryId: string) => {
-  if (activeCategoryId.value === categoryId) return
-
-  activeCategoryId.value = categoryId
-  resetExpandedItems()
-}
-
-const formatCategoryIndex = (index: number) => String(index + 1).padStart(2, '0')
 </script>
 
 <style scoped>
 .page-faq {
-  /* Smooth scrolling for anchor links */
   scroll-margin-top: calc(var(--tz-site-header-spacer-height) + 1rem);
   color: var(--tz-text-primary);
+}
+
+.page-faq__shell {
+  width: 100%;
 }
 
 .page-faq__header {
   margin-bottom: 1.25rem;
 }
 
-.page-faq__title,
-.page-faq__status-badge,
-.page-faq__desktop-layout {
-  display: none;
+.page-faq__title {
+  margin: 0;
+}
+
+.page-faq__subtitle {
+  margin: 0.35rem auto 0;
+}
+
+.page-faq__desktop-list {
+  display: none !important;
+}
+
+.page-faq__mobile-list {
+  overflow: hidden;
+  border: 1px solid rgba(20, 32, 43, 0.12);
+  border-radius: 1rem;
+  background: var(--tz-card-surface);
+  box-shadow: 0 4px 16px rgba(20, 32, 43, 0.08);
+}
+
+.page-faq__item {
+  border-bottom: 1px solid rgba(20, 32, 43, 0.1);
+}
+
+.page-faq__item:last-child {
+  border-bottom: 0;
+}
+
+.page-faq__question {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.95rem 1rem;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.page-faq__question:hover,
+.page-faq__item.is-expanded .page-faq__question {
+  background: rgba(20, 32, 43, 0.04);
+}
+
+.page-faq__question-text {
+  min-width: 0;
+  flex: 1;
+  font-size: 1rem;
+  line-height: 1.45;
+}
+
+.page-faq__chevron {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+  color: var(--tz-text-muted);
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.page-faq__chevron.is-expanded {
+  color: var(--tz-text-accent);
+  transform: rotate(180deg);
+}
+
+.page-faq__answer-wrap {
+  max-height: 60rem;
+  overflow: hidden;
+  background:
+    linear-gradient(0deg, rgba(20, 32, 43, 0.025), rgba(20, 32, 43, 0.025)),
+    var(--tz-card-surface);
+}
+
+.page-faq__answer {
+  padding: 0.25rem 1rem 1rem;
+  color: var(--tz-text-secondary);
+  line-height: 1.7;
+}
+
+.page-faq__empty {
+  margin-top: 1rem;
 }
 
 @media (min-width: 768px) {
@@ -197,46 +274,13 @@ const formatCategoryIndex = (index: number) => String(index + 1).padStart(2, '0'
     text-align: left;
   }
 
-  .page-faq__header-main {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-  }
-
   .page-faq__title {
-    display: block;
     color: var(--tz-text-primary) !important;
     font-size: 1.25rem;
     font-style: italic;
     font-weight: 900;
     line-height: 1.2;
     text-transform: uppercase;
-  }
-
-  .page-faq__status-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    flex-shrink: 0;
-    padding: 0.18rem 0.65rem;
-    border-radius: 999px;
-    border: 1px solid rgba(4, 120, 87, 0.28);
-    background: rgba(5, 150, 105, 0.2);
-    color: var(--tz-text-accent);
-    font-size: 0.58rem;
-    font-weight: 900;
-    line-height: 1.2;
-    text-transform: uppercase;
-  }
-
-  .page-faq__status-dot {
-    width: 0.38rem;
-    height: 0.38rem;
-    border-radius: 999px;
-    background: #059669;
-    box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.22);
-    animation: page-faq-status-pulse 1s ease-in-out infinite alternate;
   }
 
   .page-faq__subtitle {
@@ -247,112 +291,13 @@ const formatCategoryIndex = (index: number) => String(index + 1).padStart(2, '0'
     text-align: left;
   }
 
-  .page-faq__desktop-layout {
-    display: grid;
-    grid-template-columns: minmax(11rem, 0.2fr) minmax(0, 0.8fr);
-    gap: 1.5rem;
-    align-items: start;
-  }
-
   .page-faq__mobile-list {
     display: none;
   }
 
-  .page-faq__sidebar {
-    position: sticky;
-    top: calc(112px + 1rem);
-    display: grid;
-    align-content: start;
-    min-width: 0;
-    max-width: 100%;
-    gap: 0.25rem;
-    box-sizing: border-box;
-    padding: 0.75rem;
-    border: 1px solid rgba(20, 32, 43, 0.14);
-    border-radius: 1rem;
-    background: var(--tz-card-surface);
-  }
-
-  .page-faq__sidebar-label {
-    padding: 0.25rem 0.75rem 0.35rem;
-    color: var(--tz-text-muted);
-    font-size: 0.58rem;
-    font-weight: 900;
-    line-height: 1.2;
-    text-transform: uppercase;
-  }
-
-  .page-faq__sidebar-button {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.75rem;
-    width: 100%;
-    min-width: 0;
-    max-width: 100%;
-    min-height: 2.35rem;
-    box-sizing: border-box;
-    padding: 0.68rem 0.85rem;
-    border: 0;
-    border-radius: 0.75rem;
-    background: transparent;
-    color: var(--tz-text-secondary);
-    text-align: left;
-    font-size: 0.74rem;
-    font-weight: 900;
-    line-height: 1.25;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
-  }
-
-  .page-faq__sidebar-button:hover {
-    color: var(--tz-text-primary);
-    background: rgba(20, 32, 43, 0.04);
-  }
-
-  .page-faq__sidebar-button--active {
-    color: #ffffff;
-    background: var(--tz-text-primary);
-    box-shadow: 0 8px 18px rgba(20, 32, 43, 0.16);
-  }
-
-  .page-faq__sidebar-text {
-    flex: 1 1 auto;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .page-faq__sidebar-dot {
-    width: 0.42rem;
-    height: 0.42rem;
-    flex-shrink: 0;
-    border-radius: 999px;
-    background: #cbd5e1;
-  }
-
-  .page-faq__sidebar-button--active .page-faq__sidebar-dot {
-    background: #059669;
-    box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.2);
-  }
-
-  .page-faq__desktop-panel {
-    min-width: 0;
+  .page-faq__desktop-list {
+    display: grid !important;
     min-height: 26rem;
-  }
-}
-
-@keyframes page-faq-status-pulse {
-  from {
-    opacity: 0.45;
-    transform: scale(0.86);
-  }
-
-  to {
-    opacity: 1;
-    transform: scale(1);
   }
 }
 </style>

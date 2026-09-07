@@ -3,15 +3,13 @@ import type { ComputedRef, Ref } from 'vue'
 import { toast } from 'vue-sonner'
 import { faqAdminApi } from '@/api/faq'
 import { buildStructurePageOptions } from '@/lib/faqAdminPresentation'
-import type { AdminLanguage, FAQCategory, FAQID, FAQStructureMap, FAQStructurePage } from '@/lib/faqAdminPresentation'
+import type { AdminLanguage, FAQStructureMap, FAQStructurePage } from '@/lib/faqAdminPresentation'
 
 interface UseFaqStructureOptions {
   languages?: Ref<AdminLanguage[]> | ComputedRef<AdminLanguage[]>
   defaultLocale?: Ref<string> | ComputedRef<string>
   onChanged: () => Promise<unknown> | unknown
 }
-
-export type FAQCategoryDialogMode = 'create' | 'edit'
 
 export interface FAQPageForm {
   page_id: string
@@ -20,17 +18,6 @@ export interface FAQPageForm {
   locale: string
   title: string
   subtitle: string
-  status: string
-  sort_order: number
-}
-
-export interface FAQCategoryForm {
-  id: FAQID | null
-  page_id: string
-  category_key: string
-  name: string
-  icon: string
-  locale: string
   status: string
   sort_order: number
 }
@@ -50,9 +37,6 @@ export function useFaqStructure({ languages, defaultLocale, onChanged }: UseFaqS
   const pageDialogVisible = ref(false)
   const pageSubmitting = ref(false)
   const lockedPageRoutePath = ref('')
-  const categoryDialogVisible = ref(false)
-  const categoryDialogMode = ref<FAQCategoryDialogMode>('create')
-  const categorySubmitting = ref(false)
 
   const pageForm = reactive<FAQPageForm>({
     page_id: '',
@@ -62,17 +46,7 @@ export function useFaqStructure({ languages, defaultLocale, onChanged }: UseFaqS
     title: '',
     subtitle: '',
     status: 'active',
-    sort_order: 0
-  })
-  const categoryForm = reactive<FAQCategoryForm>({
-    id: null,
-    page_id: '',
-    category_key: '',
-    name: '',
-    icon: '',
-    locale: '',
-    status: 'active',
-    sort_order: 0
+    sort_order: 0,
   })
 
   const faqStructure = computed(() => faqStructures[activeStructureLocale.value] || [])
@@ -95,7 +69,10 @@ export function useFaqStructure({ languages, defaultLocale, onChanged }: UseFaqS
     }
   }
 
-  const fetchFAQStructure = async (locale = activeStructureLocale.value, { setLoading = true }: { setLoading?: boolean } = {}): Promise<void> => {
+  const fetchFAQStructure = async (
+    locale = activeStructureLocale.value,
+    { setLoading = true }: { setLoading?: boolean } = {},
+  ): Promise<void> => {
     if (!locale) return
     if (setLoading) structureLoading.value = true
     try {
@@ -136,7 +113,7 @@ export function useFaqStructure({ languages, defaultLocale, onChanged }: UseFaqS
       title: page.title || '',
       subtitle: page.subtitle || '',
       status: page.status || 'active',
-      sort_order: Number(page.sort_order || 0)
+      sort_order: Number(page.sort_order || 0),
     })
     pageDialogVisible.value = true
   }
@@ -156,7 +133,7 @@ export function useFaqStructure({ languages, defaultLocale, onChanged }: UseFaqS
         title: pageForm.title.trim(),
         subtitle: pageForm.subtitle.trim(),
         status: pageForm.status,
-        sort_order: Math.max(0, Number(pageForm.sort_order || 0))
+        sort_order: Math.max(0, Number(pageForm.sort_order || 0)),
       })
       toast.success('FAQ 页面已保存')
       pageDialogVisible.value = false
@@ -165,80 +142,6 @@ export function useFaqStructure({ languages, defaultLocale, onChanged }: UseFaqS
       console.error('Failed to save FAQ page:', error)
     } finally {
       pageSubmitting.value = false
-    }
-  }
-
-  const slugifyKey = (value?: string | null): string => String(value || '')
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-
-  const showCategoryDialog = (mode: FAQCategoryDialogMode, page: FAQStructurePage, category: FAQCategory | null = null): void => {
-    categoryDialogMode.value = mode
-
-    if (mode === 'edit' && category) {
-      Object.assign(categoryForm, {
-        id: category.id,
-        page_id: category.page_id,
-        category_key: category.category_key || '',
-        name: category.name || '',
-        icon: category.icon || '',
-        locale: category.locale || page.locale || activeStructureLocale.value,
-        status: category.status || 'active',
-        sort_order: Number(category.sort_order || 0)
-      })
-    } else {
-      Object.assign(categoryForm, {
-        id: null,
-        page_id: page.page_id,
-        category_key: '',
-        name: '',
-        icon: '',
-        locale: page.locale || activeStructureLocale.value,
-        status: 'active',
-        sort_order: ((page.categories || []).length + 1) * 10
-      })
-    }
-
-    categoryDialogVisible.value = true
-  }
-
-  const submitCategoryForm = async (): Promise<void> => {
-    const payload = {
-      page_id: categoryForm.page_id,
-      category_key: (categoryForm.category_key || slugifyKey(categoryForm.name)).trim(),
-      name: categoryForm.name.trim(),
-      icon: categoryForm.icon.trim(),
-      locale: categoryForm.locale,
-      status: categoryForm.status,
-      sort_order: Math.max(0, Number(categoryForm.sort_order || 0))
-    }
-
-    if (!payload.page_id || !payload.category_key || !payload.name) {
-      toast.error('页面、分类标识和分类名称不能为空')
-      return
-    }
-    if (!payload.locale) {
-      toast.error('分类语言不能为空')
-      return
-    }
-
-    categorySubmitting.value = true
-    try {
-      if (categoryDialogMode.value === 'create') {
-        await faqAdminApi.createCategory(payload)
-        toast.success('FAQ 分类已创建')
-      } else {
-        await faqAdminApi.updateCategory(categoryForm.id as FAQID, payload)
-        toast.success('FAQ 分类已保存')
-      }
-      categoryDialogVisible.value = false
-      await onChanged()
-    } catch (error) {
-      console.error('Failed to save FAQ category:', error)
-    } finally {
-      categorySubmitting.value = false
     }
   }
 
@@ -256,16 +159,10 @@ export function useFaqStructure({ languages, defaultLocale, onChanged }: UseFaqS
     pageDialogVisible,
     pageSubmitting,
     pageForm,
-    categoryDialogVisible,
-    categoryDialogMode,
-    categorySubmitting,
-    categoryForm,
     fetchFAQStructure,
     refreshFAQStructure,
     switchStructureLocale,
     showPageDialog,
     submitPageForm,
-    showCategoryDialog,
-    submitCategoryForm
   }
 }

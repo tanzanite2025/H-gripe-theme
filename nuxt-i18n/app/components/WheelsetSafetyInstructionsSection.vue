@@ -5,13 +5,14 @@
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
       </div>
       <div class="wheelset-guide-step__content">
-        <h3 class="wheelset-guide-step__title wheelset-safety-notice__title">Important Safety Notice</h3>
+        <h3 class="wheelset-guide-step__title wheelset-safety-notice__title">
+          {{ t('guidesWheelsetBuyersSafety.notice.title') }}
+        </h3>
         <p class="wheelset-guide-step__body">
-            Improper installation, use, or maintenance may cause serious damage to the wheels and pose a danger to the rider.
-             To ensure a reliable riding experience, please read and follow the instructions below.
+          {{ t('guidesWheelsetBuyersSafety.notice.body') }}
         </p>
         <div class="wheelset-guide-panel">
-          <p>Even if you have years of cycling or wheelset assembly experience, these instructions still apply to these carbon fiber products.</p>
+          <p>{{ t('guidesWheelsetBuyersSafety.notice.experienceNote') }}</p>
         </div>
       </div>
     </article>
@@ -19,28 +20,30 @@
     <article class="wheelset-guide-step">
       <div class="wheelset-guide-step__number">1</div>
       <div class="wheelset-guide-step__content">
-        <h3 class="wheelset-guide-step__title">Installation & Inspection</h3>
+        <h3 class="wheelset-guide-step__title">
+          {{ t('guidesWheelsetBuyersSafety.installation.title') }}
+        </h3>
         <div class="wheelset-guide-panel-grid">
           <div class="wheelset-guide-panel">
-            <strong>Professional installation</strong>
-            <p>Have the wheelset installed by a qualified mechanic. Incompatibility with brakes or drivetrain can damage wheels or frame.</p>
+            <strong>{{ t('guidesWheelsetBuyersSafety.installation.professional.title') }}</strong>
+            <p>{{ t('guidesWheelsetBuyersSafety.installation.professional.body') }}</p>
           </div>
           <div class="wheelset-guide-panel">
-            <strong>Tire installation</strong>
-            <p>Use provided plastic tire levers only. Metal levers will permanently damage the rim.</p>
+            <strong>{{ t('guidesWheelsetBuyersSafety.installation.tire.title') }}</strong>
+            <p>{{ t('guidesWheelsetBuyersSafety.installation.tire.body') }}</p>
             <div class="wheelset-guide-actions">
               <button type="button" class="wheelset-guide-button" @click="goToTubelessInstallation">
-                  Open Tubeless Tire Installation Guide
+                  {{ t('guidesWheelsetBuyersSafety.installation.tire.button') }}
               </button>
             </div>
           </div>
           <div class="wheelset-guide-panel">
-            <strong>Torque specs</strong>
-            <p>Follow manufacturer recommended torque for all bolts and axles.</p>
+            <strong>{{ t('guidesWheelsetBuyersSafety.installation.torque.title') }}</strong>
+            <p>{{ t('guidesWheelsetBuyersSafety.installation.torque.body') }}</p>
           </div>
           <div class="wheelset-guide-panel">
-            <strong>Brake pads</strong>
-            <p>Use carbon-specific pads only to prevent rim damage.</p>
+            <strong>{{ t('guidesWheelsetBuyersSafety.installation.brakePads.title') }}</strong>
+            <p>{{ t('guidesWheelsetBuyersSafety.installation.brakePads.body') }}</p>
           </div>
         </div>
       </div>
@@ -49,23 +52,25 @@
     <article class="wheelset-guide-step">
       <div class="wheelset-guide-step__number">2</div>
       <div class="wheelset-guide-step__content">
-        <h3 class="wheelset-guide-step__title">Usage & Riding</h3>
+        <h3 class="wheelset-guide-step__title">
+          {{ t('guidesWheelsetBuyersSafety.riding.title') }}
+        </h3>
         <div class="wheelset-guide-panel-grid">
           <div class="wheelset-guide-panel">
-            <strong>Weight limits</strong>
-            <p>Strictly follow max rider weight/load limits. Overloading causes rim cracking and injury risk.</p>
+            <strong>{{ t('guidesWheelsetBuyersSafety.riding.weight.title') }}</strong>
+            <p>{{ t('guidesWheelsetBuyersSafety.riding.weight.body') }}</p>
           </div>
           <div class="wheelset-guide-panel">
-            <strong>Road conditions</strong>
-            <p>Avoid severe potholes and gravel. Impact damage may not be immediately visible.</p>
+            <strong>{{ t('guidesWheelsetBuyersSafety.riding.road.title') }}</strong>
+            <p>{{ t('guidesWheelsetBuyersSafety.riding.road.body') }}</p>
             <div class="wheelset-guide-note">
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-              <span>After impact: clean the rim, remove the tire, and inspect carefully.</span>
+              <span>{{ t('guidesWheelsetBuyersSafety.riding.road.note') }}</span>
             </div>
           </div>
           <div class="wheelset-guide-panel">
-            <strong>Braking technique</strong>
-            <p>Avoid continuous drag braking on long descents. Use intermittent braking to prevent carbon overheating.</p>
+            <strong>{{ t('guidesWheelsetBuyersSafety.riding.braking.title') }}</strong>
+            <p>{{ t('guidesWheelsetBuyersSafety.riding.braking.body') }}</p>
           </div>
         </div>
       </div>
@@ -74,27 +79,30 @@
     <article class="wheelset-guide-step">
       <div class="wheelset-guide-step__number">3</div>
       <div class="wheelset-guide-step__content">
-        <h3 class="wheelset-guide-step__title">Regular Maintenance</h3>
+        <h3 class="wheelset-guide-step__title">
+          {{ t('guidesWheelsetBuyersSafety.maintenance.title') }}
+        </h3>
         <div class="wheelset-guide-panel-grid">
           <div class="wheelset-guide-panel">
-            <strong>Pre-ride inspection</strong>
+            <strong>{{ t('guidesWheelsetBuyersSafety.maintenance.inspection.title') }}</strong>
             <ul>
-              <li>Check rims for cracks, bulges, or delamination.</li>
-              <li>Inspect brake pads and remove metal shavings or stones.</li>
+              <li v-for="(item, index) in inspectionItems" :key="index">
+                {{ rt(item) }}
+              </li>
             </ul>
           </div>
           <div class="wheelset-guide-panel">
-            <strong>Spoke tension</strong>
-            <p>Regularly check for even tension distribution.</p>
+            <strong>{{ t('guidesWheelsetBuyersSafety.maintenance.tension.title') }}</strong>
+            <p>{{ t('guidesWheelsetBuyersSafety.maintenance.tension.body') }}</p>
             <div class="wheelset-guide-actions">
               <button type="button" class="wheelset-guide-button" @click="goToTechnicalTension">
-                      Open Spoke Tension Settings
+                      {{ t('guidesWheelsetBuyersSafety.maintenance.tension.button') }}
               </button>
             </div>
           </div>
           <div class="wheelset-guide-panel">
-            <strong>Cleaning</strong>
-            <p>Use neutral detergent and soft cloth only. Do not use strong acids, alkalis, or high-pressure water.</p>
+            <strong>{{ t('guidesWheelsetBuyersSafety.maintenance.cleaning.title') }}</strong>
+            <p>{{ t('guidesWheelsetBuyersSafety.maintenance.cleaning.body') }}</p>
           </div>
         </div>
       </div>
@@ -103,20 +111,25 @@
     <article class="wheelset-guide-step">
       <div class="wheelset-guide-step__number">4</div>
       <div class="wheelset-guide-step__content">
-        <h3 class="wheelset-guide-step__title">Prohibited & Emergency</h3>
+        <h3 class="wheelset-guide-step__title">
+          {{ t('guidesWheelsetBuyersSafety.emergency.title') }}
+        </h3>
         <div class="wheelset-guide-panel-grid">
           <div class="wheelset-guide-panel">
-            <strong>Strictly prohibited</strong>
+            <strong>{{ t('guidesWheelsetBuyersSafety.emergency.prohibited.title') }}</strong>
             <ul>
-              <li>No non-original parts modification.</li>
-              <li>No sanding or grinding with metal tools.</li>
-              <li>No extreme-temperature storage such as ovens or freezing environments.</li>
+              <li v-for="(item, index) in prohibitedItems" :key="index">
+                {{ rt(item) }}
+              </li>
             </ul>
           </div>
           <div class="wheelset-guide-panel">
-            <strong>Emergency protocol</strong>
-            <p>If cracks or abnormal noises occur: <strong>stop riding immediately</strong>.</p>
-            <p class="mt-2">After any crash, perform thorough inspection even if no damage is visible.</p>
+            <strong>{{ t('guidesWheelsetBuyersSafety.emergency.protocol.title') }}</strong>
+            <p>
+              {{ t('guidesWheelsetBuyersSafety.emergency.protocol.bodyBefore') }}
+              <strong>{{ t('guidesWheelsetBuyersSafety.emergency.protocol.stop') }}</strong>
+            </p>
+            <p class="mt-2">{{ t('guidesWheelsetBuyersSafety.emergency.protocol.bodyAfter') }}</p>
           </div>
         </div>
 
@@ -126,7 +139,7 @@
             class="wheelset-guide-button"
             @click="goToWarranty"
           >
-                    Open Advanced Warranty Policy
+                    {{ t('guidesWheelsetBuyersSafety.emergency.protocol.button') }}
           </button>
         </div>
       </div>
@@ -135,6 +148,24 @@
 </template>
 
 <script setup lang="ts">
+import { computed, watch } from 'vue'
+import { useI18n } from '#imports'
+import { usePageMessages } from '~/composables/usePageMessages'
+
+const { locale, t, tm, rt } = useI18n()
+const { loadPageMessages } = usePageMessages('guidesWheelsetBuyersSafety')
+await loadPageMessages(locale.value)
+watch(locale, (nextLocale) => {
+  void loadPageMessages(nextLocale)
+})
+
+const inspectionItems = computed<string[]>(() => (
+  tm('guidesWheelsetBuyersSafety.maintenance.inspection.items') as string[]
+))
+const prohibitedItems = computed<string[]>(() => (
+  tm('guidesWheelsetBuyersSafety.emergency.prohibited.items') as string[]
+))
+
 const { goToTubelessInstallation, goToTechnicalTension, goToWarranty } = defineProps<{
   goToTubelessInstallation: () => void | Promise<void>
   goToTechnicalTension: () => void | Promise<void>

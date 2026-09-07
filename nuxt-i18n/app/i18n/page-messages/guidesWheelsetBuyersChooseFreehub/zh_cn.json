@@ -1,0 +1,223 @@
+{
+  "intro": {
+    "title": "选择塔基",
+    "body": "这是一份用于匹配塔基与传动系统飞轮的综合指南（Shimano、SRAM、Campagnolo）。"
+  },
+  "ecosystems": {
+    "shimano": {
+      "title": "Shimano 生态",
+      "cards": {
+        "microSpline": {
+          "caption": "适用于山地 12 速",
+          "name": "Micro Spline（MS）",
+          "body": "Deore M6100、XT M8100、XTR M9100"
+        },
+        "hgRoad": {
+          "caption": "适用于公路 11/12 速",
+          "name": "公路 HG（HG-11）",
+          "body": "105、Ultegra、Dura-Ace（8-12 速）"
+        },
+        "hgMountain": {
+          "caption": "适用于山地 8-11 速",
+          "name": "山地 HG",
+          "body": "旧款山地车和入门级公路车配置"
+        }
+      },
+      "cheatsheetTitle": "兼容性速查",
+      "cheatsheet": {
+        "microSpline": "MS（Micro Spline）：Shimano 12 速山地飞轮必须使用，起始齿片为 10T；不向下兼容。",
+        "hyperglide": "HG（HyperGlide）：沿用多年的主流标准，适用于 8-11 速山地和 8-12 速公路飞轮。注意：公路 11 速 HG 塔基更长，安装山地飞轮时需要 1.85mm 垫圈。"
+      }
+    },
+    "sram": {
+      "title": "SRAM 生态",
+      "cards": {
+        "xd": {
+          "caption": "适用于山地 11/12 速",
+          "name": "XD 塔基",
+          "body": "GX Eagle、X01、XX1（起始齿片 10T）"
+        },
+        "xdr": {
+          "caption": "适用于公路 12 速",
+          "name": "XDR 塔基",
+          "body": "Rival、Force、Red eTap AXS"
+        }
+      },
+      "cheatsheetTitle": "兼容性速查",
+      "cheatsheet": {
+        "xd": "XD：适用于最小齿片为 10T 的山地飞轮，结构紧凑。",
+        "xdr": "XDR：XD 的公路版本，比 XD 长 1.85mm。加装 1.85mm 垫圈后可安装 XD 飞轮，主要用于 12 速 AXS 公路套件。"
+      }
+    },
+    "campagnolo": {
+      "title": "Campagnolo 生态",
+      "cards": {
+        "n3w": {
+          "caption": "适用于 13 速 / Gravel",
+          "name": "N3W",
+          "body": "Ekar 13 速（加转接环后向下兼容）"
+        },
+        "classic": {
+          "caption": "经典公路",
+          "name": "Classic（ED/CP）",
+          "body": "9/10/11/12 速公路"
+        }
+      },
+      "cheatsheetTitle": "兼容性速查",
+      "cheatsheet": {
+        "n3w": "N3W：面向未来的标准，原生适用于 Ekar 13 速；加转接环后可安装旧款 10-12 速飞轮。",
+        "classic": "Classic：适用于 Super Record、Record、Chorus（11/12 速）的传统花键标准。"
+      }
+    }
+  },
+  "reference": {
+    "standardsTitle": "技术参考：塔基标准与套件",
+    "standardsHeaders": {
+      "type": "类型",
+      "groupsets": "套件示例",
+      "features": "特性"
+    },
+    "standardsRows": [
+      {
+        "type": "MS（Micro Spline 12 速）",
+        "groupsets": "Shimano Deore M6100、SLX M7100、XT M8100、XTR M9100",
+        "features": "专用于山地 12 速；支持 10T 齿片。"
+      },
+      {
+        "type": "HG 8 速",
+        "groupsets": "Claris R2000、Altus M310、Acera M360",
+        "features": "入门级公路/山地（11-32T）。"
+      },
+      {
+        "type": "HG 9-11 速",
+        "groupsets": "Sora、Tiagra、105、Ultegra、Dura-Ace；山地 Deore/SLX/XT",
+        "features": "最常见的标准，跨系统兼容性强。"
+      },
+      {
+        "type": "XD",
+        "groupsets": "SRAM GX Eagle、X01 Eagle、XX1 Eagle",
+        "features": "山地 11/12 速，支持 10T 齿片，重量较轻。"
+      },
+      {
+        "type": "XDR",
+        "groupsets": "SRAM Force/Red eTap AXS",
+        "features": "专用于公路 12 速，比 XD 长 1.85mm。"
+      },
+      {
+        "type": "N3W",
+        "groupsets": "Campagnolo Ekar 13 速",
+        "features": "原生 13 速；加转接环后适用于 10-12 速。"
+      },
+      {
+        "type": "CP（Classic）",
+        "groupsets": "Super Record 11、Record 11、Chorus 11",
+        "features": "传统公路 11 速标准，不支持 12/13 速。"
+      }
+    ],
+    "matrixTitle": "技术参考：兼容性与垫圈矩阵",
+    "matrixHeaders": {
+      "brand": "品牌",
+      "freehub": "塔基",
+      "cassette": "飞轮",
+      "spacer": "是否需要垫圈？"
+    },
+    "matrixRows": [
+      {
+        "brand": "Shimano",
+        "freehub": "HG 8-11 速山地",
+        "cassette": "8/9/11 速山地",
+        "spacer": "否",
+        "tone": "shimano",
+        "spacerTone": "ok"
+      },
+      {
+        "brand": "Shimano",
+        "freehub": "HG 8-11 速山地",
+        "cassette": "10 速飞轮",
+        "spacer": "1mm",
+        "tone": "shimano",
+        "spacerTone": "warning"
+      },
+      {
+        "brand": "Shimano",
+        "freehub": "HG 11/12 速公路",
+        "cassette": "8/9/11 速山地",
+        "spacer": "1.85mm",
+        "tone": "shimano",
+        "spacerTone": "warning"
+      },
+      {
+        "brand": "Shimano",
+        "freehub": "HG 11/12 速公路",
+        "cassette": "11/12 速公路",
+        "spacer": "否",
+        "tone": "shimano",
+        "spacerTone": "ok"
+      },
+      {
+        "brand": "Shimano",
+        "freehub": "MS 12 速山地",
+        "cassette": "11/12 速 MS 飞轮",
+        "spacer": "否",
+        "tone": "shimano",
+        "spacerTone": "ok"
+      },
+      {
+        "brand": "SRAM",
+        "freehub": "HG 风格 9/10 速",
+        "cassette": "SRAM 9/10 速 / NX Eagle",
+        "spacer": "否",
+        "tone": "sram",
+        "spacerTone": "ok"
+      },
+      {
+        "brand": "SRAM",
+        "freehub": "XD 11/12 速",
+        "cassette": "SRAM PhD/Eagle（GX+）",
+        "spacer": "否",
+        "tone": "sram",
+        "spacerTone": "ok"
+      },
+      {
+        "brand": "SRAM",
+        "freehub": "XDR 12 速公路",
+        "cassette": "SRAM AXS 公路",
+        "spacer": "否",
+        "tone": "sram",
+        "spacerTone": "ok"
+      },
+      {
+        "brand": "SRAM",
+        "freehub": "XDR 12 速公路",
+        "cassette": "SRAM XD 飞轮",
+        "spacer": "1.85mm",
+        "tone": "sram",
+        "spacerTone": "warning"
+      },
+      {
+        "brand": "Campagnolo",
+        "freehub": "N3W 13 速",
+        "cassette": "Ekar 13 速（起始 9/10T）",
+        "spacer": "否",
+        "tone": "campagnolo",
+        "spacerTone": "ok"
+      },
+      {
+        "brand": "Campagnolo",
+        "freehub": "N3W 13 速",
+        "cassette": "Classic 10-12 速",
+        "spacer": "AC21-N3W 转接环",
+        "tone": "campagnolo",
+        "spacerTone": "warning"
+      },
+      {
+        "brand": "Mavic",
+        "freehub": "HG 风格 8-11 速",
+        "cassette": "Shimano/SRAM 9 速",
+        "spacer": "1.75mm Mavic",
+        "tone": "mavic",
+        "spacerTone": "warning"
+      }
+    ]
+  }
+}

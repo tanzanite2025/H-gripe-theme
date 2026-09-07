@@ -61,15 +61,6 @@
           @update:model-value="updateText('alt_text', $event)"
         />
       </AdminFormField>
-      <AdminFormField label="桌面顺序">
-        <Input
-          type="number"
-          min="1"
-          :model-value="item.desktop_order"
-          :disabled="!canEdit"
-          @update:model-value="updateNumber('desktop_order', $event)"
-        />
-      </AdminFormField>
       <AdminFormField label="发布">
         <div class="flex h-9 items-center">
           <Switch
@@ -78,20 +69,6 @@
             @update:checked="updatePublished"
           />
         </div>
-      </AdminFormField>
-      <AdminFormField label="跳转链接" class="md:col-span-2">
-        <Input
-          :model-value="item.target_url"
-          :disabled="!canEdit"
-          @update:model-value="updateText('target_url', $event)"
-        />
-      </AdminFormField>
-      <AdminFormField label="跳转文字" class="md:col-span-2">
-        <Input
-          :model-value="item.target_label"
-          :disabled="!canEdit"
-          @update:model-value="updateText('target_label', $event)"
-        />
       </AdminFormField>
       <AdminFormField label="备注" class="md:col-span-2">
         <Textarea
@@ -143,18 +120,10 @@ const patchItem = (patch: Partial<VisualShowcaseAdministrationItemFormState>): v
 }
 
 const updateText = (
-  key: 'title' | 'caption' | 'alt_text' | 'target_url' | 'target_label',
+  key: 'title' | 'caption' | 'alt_text',
   value: string | number,
 ): void => {
   patchItem({ [key]: String(value ?? '') })
-}
-
-const updateNumber = (
-  key: 'desktop_order',
-  value: string | number,
-): void => {
-  const parsed = Number(value)
-  patchItem({ [key]: Number.isFinite(parsed) ? Math.max(1, Math.trunc(parsed)) : 1 })
 }
 
 const updatePublished = (value: boolean): void => {

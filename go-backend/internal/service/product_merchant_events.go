@@ -66,6 +66,8 @@ func merchantProductSourceChangeReason(input ProductUpdateInput) string {
 		return "product_brand_changed"
 	case input.UpdateCurrency:
 		return "product_currency_changed"
+	case input.UpdateFulfillmentMode:
+		return "product_fulfillment_mode_changed"
 	default:
 		return "product_source_changed"
 	}
@@ -79,6 +81,7 @@ func merchantProductUpdateAffectsChannel(input ProductUpdateInput) bool {
 		input.ShortDesc != nil ||
 		input.UpdateBrandID ||
 		input.UpdateCurrency ||
+		input.UpdateFulfillmentMode ||
 		input.UpdateVariants ||
 		input.UpdateMedia ||
 		input.UpdateShippingTemplateID ||
@@ -97,6 +100,7 @@ func merchantProductCoreChanged(previous, next *product.Product) bool {
 		previous.Description != next.Description ||
 		previous.ShortDesc != next.ShortDesc ||
 		previous.Currency != next.Currency ||
+		previous.FulfillmentMode != next.FulfillmentMode ||
 		previous.Price != next.Price ||
 		!floatPointerEqual(previous.SalePrice, next.SalePrice) ||
 		previous.Stock != next.Stock ||

@@ -92,6 +92,7 @@
     </template>
 
     <LazyAuthModal
+      v-if="showAuthModal"
       v-model="showAuthModal"
       :default-mode="authMode"
       embedded

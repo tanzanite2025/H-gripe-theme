@@ -6,12 +6,11 @@ import {
   useRuntimeConfig,
 } from '#imports'
 import { useSiteTitle } from '~/composables/useSiteTitle'
-import type { BlogCategory, BlogPostSummary } from '~/utils/blog/types'
+import type { BlogPostSummary } from '~/utils/blog/types'
 import { createSeoJsonLdScript } from '~/utils/seo/jsonLd'
 import { toAbsoluteSeoUrl } from '~/utils/seo/urls'
 
 interface UseBlogListingSeoOptions {
-  category: BlogCategory
   title: MaybeRefOrGetter<string>
   description: MaybeRefOrGetter<string>
   posts: MaybeRefOrGetter<BlogPostSummary[]>
@@ -32,7 +31,7 @@ export const useBlogListingSeo = (options: UseBlogListingSeoOptions) => {
     return trimTrailingSlash(configured || requestUrl.origin)
   })
 
-  const listingPath = computed(() => `/resources/blog/${options.category}`)
+  const listingPath = computed(() => '/resources/blog')
   const listingUrl = computed(() => {
     return toAbsoluteSeoUrl(siteOrigin.value, localePath(listingPath.value))
   })
@@ -51,7 +50,7 @@ export const useBlogListingSeo = (options: UseBlogListingSeoOptions) => {
 
       const articleUrl = toAbsoluteSeoUrl(
         siteOrigin.value,
-        localePath(`/resources/blog/${options.category}/${slug}`),
+        localePath(`/resources/blog/${slug}`),
       )
       const imageUrl = cleanText(post.featuredImage?.url)
       const article = {

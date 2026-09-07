@@ -2,6 +2,7 @@ package order
 
 import (
 	"errors"
+	"strings"
 	"time"
 
 	"commerce-platform/internal/domain/currency"
@@ -9,6 +10,97 @@ import (
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
+
+const (
+	FulfillmentModeStock       = "stock"
+	FulfillmentModeMadeToOrder = "made_to_order"
+	FulfillmentModeMixed       = "mixed"
+
+	HighValueSignatureThresholdUSD = 750
+
+	ProductionStatusNotApplicable = "not_applicable"
+	ProductionStatusNotStarted    = "not_started"
+	ProductionStatusStarted       = "started"
+	ProductionStatusCompleted     = "completed"
+	ProductionStatusCancelled     = "cancelled"
+)
+
+func NormalizeFulfillmentMode(value string) string {
+	value = strings.ToLower(strings.TrimSpace(value))
+	if value == "" {
+		return FulfillmentModeStock
+	}
+	return value
+}
+
+func IsValidFulfillmentMode(value string) bool {
+	switch NormalizeFulfillmentMode(value) {
+	case FulfillmentModeStock, FulfillmentModeMadeToOrder, FulfillmentModeMixed:
+		return true
+	default:
+		return false
+	}
+}
+
+func NormalizeProductionStatus(value string) string {
+	value = strings.ToLower(strings.TrimSpace(value))
+	if value == "" {
+		return ProductionStatusNotApplicable
+	}
+	return value
+}
+
+func IsValidProductionStatus(value string) bool {
+	switch NormalizeProductionStatus(value) {
+	case ProductionStatusNotApplicable,
+		ProductionStatusNotStarted,
+		ProductionStatusStarted,
+		ProductionStatusCompleted,
+		ProductionStatusCancelled:
+		return true
+	default:
+		return false
+	}
+}
+
+func ResolveFulfillmentMode(items []OrderItem) string {
+	hasStock := false
+	hasMadeToOrder := false
+	for _, item := range items {
+		switch NormalizeFulfillmentMode(item.FulfillmentMode) {
+		case FulfillmentModeMadeToOrder:
+			hasMadeToOrder = true
+		default:
+			hasStock = true
+		}
+	}
+
+	switch {
+	case hasStock && hasMadeToOrder:
+		return FulfillmentModeMixed
+	case hasMadeToOrder:
+		return FulfillmentModeMadeToOrder
+	default:
+		return FulfillmentModeStock
+	}
+}
+
+func DefaultProductionStatus(fulfillmentMode string) string {
+	mode := NormalizeFulfillmentMode(fulfillmentMode)
+	if mode == FulfillmentModeMadeToOrder || mode == FulfillmentModeMixed {
+		return ProductionStatusNotStarted
+	}
+	return ProductionStatusNotApplicable
+}
+
+// ResolveSignatureRequired evaluates the high-value shipping policy against
+// the immutable FX snapshot captured during checkout. The policy is defined
+// in USD, so an order whose snapshot uses another base currency is left
+// unmarked until a USD-based order policy is available.
+func ResolveSignatureRequired(totalAmount float64, fxSnapshot currency.OrderFXSnapshot) bool {
+	evaluation, err := EvaluateHighValueOrder(totalAmount, fxSnapshot)
+	return err == nil && evaluation.IsHighValue
+}
 
 // Order 订单模型
 type Order struct {
@@ -20,6 +112,9 @@ type Order struct {
 	PaymentStatus            string `gorm:"index;default:'unpaid'" json:"payment_status"` // unpaid, paid, expired, refunded
 	ShippingMethod           string `json:"shipping_method"`
 	ShippingStatus           string `gorm:"index;default:'pending'" json:"shipping_status"` // pending, processing, shipped, delivered
+	FulfillmentMode          string `gorm:"size:20;not null;default:'stock';index" json:"fulfillment_mode"`
+	ProductionStatus         string `gorm:"size:20;not null;default:'not_applicable';index" json:"production_status"`
+	SignatureRequired        bool   `gorm:"not null;default:false;index" json:"signature_required"`
 	TrackingNumber           string `json:"tracking_number"`
 	TrackingProviderID       *uint  `gorm:"index" json:"tracking_provider_id"`
 	CarrierID                *uint  `gorm:"index" json:"carrier_id"`
@@ -54,13 +149,15 @@ type Order struct {
 	Items []OrderItem `gorm:"foreignKey:OrderID" json:"items"`
 
 	// 时间戳
-	CreatedAt   time.Time      `json:"created_at"`
-	UpdatedAt   time.Time      `json:"updated_at"`
-	PaidAt      *time.Time     `json:"paid_at"`
-	ShippedAt   *time.Time     `json:"shipped_at"`
-	CompletedAt *time.Time     `json:"completed_at"`
-	CancelledAt *time.Time     `json:"cancelled_at"`
-	DeletedAt   gorm.DeletedAt `gorm:"index" json:"-"`
+	CreatedAt             time.Time      `json:"created_at"`
+	UpdatedAt             time.Time      `json:"updated_at"`
+	PaidAt                *time.Time     `json:"paid_at"`
+	ShippedAt             *time.Time     `json:"shipped_at"`
+	CompletedAt           *time.Time     `json:"completed_at"`
+	CancelledAt           *time.Time     `json:"cancelled_at"`
+	ProductionStartedAt   *time.Time     `json:"production_started_at"`
+	ProductionCompletedAt *time.Time     `json:"production_completed_at"`
+	DeletedAt             gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
 // Address 地址结构
@@ -108,6 +205,18 @@ func (o *Order) BeforeCreate(tx *gorm.DB) error {
 	}
 	if o.ShippingStatus == "" {
 		o.ShippingStatus = "pending"
+	}
+	o.FulfillmentMode = NormalizeFulfillmentMode(o.FulfillmentMode)
+	if !IsValidFulfillmentMode(o.FulfillmentMode) {
+		return errors.New("order fulfillment mode is invalid")
+	}
+	if o.ProductionStatus == "" {
+		o.ProductionStatus = DefaultProductionStatus(o.FulfillmentMode)
+	} else {
+		o.ProductionStatus = NormalizeProductionStatus(o.ProductionStatus)
+	}
+	if !IsValidProductionStatus(o.ProductionStatus) {
+		return errors.New("order production status is invalid")
 	}
 	o.Currency = currency.NormalizeCode(o.Currency)
 	if !currency.IsValidCode(o.Currency) || !currency.IsCatalogCode(o.Currency) {

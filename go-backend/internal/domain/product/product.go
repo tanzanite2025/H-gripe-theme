@@ -1,6 +1,7 @@
 package product
 
 import (
+	"strings"
 	"time"
 
 	"commerce-platform/internal/domain/currency"
@@ -10,6 +11,28 @@ import (
 )
 
 const DefaultPriceCurrency = "USD"
+
+const (
+	FulfillmentModeStock       = "stock"
+	FulfillmentModeMadeToOrder = "made_to_order"
+)
+
+func NormalizeFulfillmentMode(value string) string {
+	value = strings.ToLower(strings.TrimSpace(value))
+	if value == "" {
+		return FulfillmentModeStock
+	}
+	return value
+}
+
+func IsValidFulfillmentMode(value string) bool {
+	switch NormalizeFulfillmentMode(value) {
+	case FulfillmentModeStock, FulfillmentModeMadeToOrder:
+		return true
+	default:
+		return false
+	}
+}
 
 type Product struct {
 	ID                             uint                          `gorm:"primarykey" json:"id"`
@@ -33,6 +56,7 @@ type Product struct {
 	Price                          float64                       `gorm:"not null" json:"price"`
 	SalePrice                      *float64                      `json:"sale_price"`
 	DisplayPriceData               datatypes.JSON                `gorm:"column:display_prices;type:json;not null;default:'[]'" json:"display_prices,omitempty"`
+	FulfillmentMode                string                        `gorm:"size:20;not null;default:'stock';index" json:"fulfillment_mode"`
 	Stock                          int                           `gorm:"default:0" json:"stock"`
 	Status                         string                        `gorm:"default:'active';index" json:"status"` // active, inactive, out_of_stock
 	Locale                         string                        `gorm:"uniqueIndex:idx_product_slug_locale;default:'en';index" json:"locale"`
@@ -70,11 +94,25 @@ func (p *Product) BeforeCreate(tx *gorm.DB) error {
 	if p.Status == "" {
 		p.Status = "active"
 	}
+	if err := p.normalizeFulfillmentMode(); err != nil {
+		return err
+	}
 	return p.normalizeCurrency()
 }
 
 func (p *Product) BeforeSave(tx *gorm.DB) error {
+	if err := p.normalizeFulfillmentMode(); err != nil {
+		return err
+	}
 	return p.normalizeCurrency()
+}
+
+func (p *Product) normalizeFulfillmentMode() error {
+	p.FulfillmentMode = NormalizeFulfillmentMode(p.FulfillmentMode)
+	if !IsValidFulfillmentMode(p.FulfillmentMode) {
+		return gorm.ErrInvalidData
+	}
+	return nil
 }
 
 func (p *Product) normalizeCurrency() error {

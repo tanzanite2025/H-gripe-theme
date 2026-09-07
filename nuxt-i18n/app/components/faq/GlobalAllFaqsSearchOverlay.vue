@@ -23,30 +23,22 @@
           <GlobalAllFaqsDesktopSearchOverlayPanel
             :pending="pending"
             :search-query="searchQuery"
-            :featured-topics="featuredTopics"
-            :active-topic-id="activeTopicId"
-            :active-topic="activeTopic"
-            :topic-items="topicItems"
+            :featured-items="featuredItems"
             :search-results="searchResults"
             :search-result-count="searchResultCount"
             :expanded-items="expandedItems"
             @update:search-query="searchQuery = $event"
-            @select-topic="selectTopic"
             @toggle-item="toggleItem"
             @close="emit('close')"
           />
           <GlobalAllFaqsMobileSearchOverlayPanel
             :pending="pending"
             :search-query="searchQuery"
-            :featured-topics="featuredTopics"
-            :active-topic-id="activeTopicId"
-            :active-topic="activeTopic"
-            :topic-items="topicItems"
+            :featured-items="featuredItems"
             :search-results="searchResults"
             :search-result-count="searchResultCount"
             :expanded-items="expandedItems"
             @update:search-query="searchQuery = $event"
-            @select-topic="selectTopic"
             @toggle-item="toggleItem"
             @close="emit('close')"
           />
@@ -76,16 +68,11 @@ const {
   pending,
   refreshAllFaqData,
   featuredItems,
-  featuredTopics,
-  activeTopicId,
-  activeTopic,
-  topicItems,
   searchQuery,
   searchResults,
   searchResultCount,
   expandedItems,
   toggleItem,
-  selectTopic,
   resetSearchOverlayState,
 } = await useGlobalAllFaqsSearchAndGroupedResults({
   mode: 'search-overlay',

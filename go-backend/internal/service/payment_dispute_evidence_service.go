@@ -9,6 +9,7 @@ import (
 	"time"
 
 	orderdomain "commerce-platform/internal/domain/order"
+	"commerce-platform/internal/domain/orderevidence"
 	paymentdomain "commerce-platform/internal/domain/payment"
 	shippingdomain "commerce-platform/internal/domain/shipping"
 	ticketdomain "commerce-platform/internal/domain/ticket"
@@ -40,19 +41,22 @@ func (s liveStripeDisputeEvidenceSubmitter) Update(id string, params *stripe.Dis
 }
 
 type StripeDisputeEvidencePackage struct {
-	Dispute           *paymentdomain.StripeDispute          `json:"dispute"`
-	Order             *orderdomain.Order                    `json:"order,omitempty"`
-	PolicyDisclosure  *DisputePolicyDisclosureEvidence      `json:"policy_disclosure,omitempty"`
-	Refunds           []DisputeRefundEvidence               `json:"refunds"`
-	Shipment          *shippingdomain.TrackingShipment      `json:"shipment,omitempty"`
-	TrackingEvents    []shippingdomain.TrackingEvent        `json:"tracking_events"`
-	Communications    []StripeDisputeCommunicationEvidence  `json:"communications"`
-	Authentication    *DisputePaymentAuthenticationEvidence `json:"authentication,omitempty"`
-	Evidence          StripeDisputeEvidenceDraft            `json:"evidence"`
-	EvidenceChecklist DisputeEvidenceChecklist              `json:"evidence_checklist"`
-	SubmissionCheck   DisputeEvidenceSubmissionCheck        `json:"submission_check"`
-	Warnings          []string                              `json:"warnings"`
-	CanSubmit         bool                                  `json:"can_submit"`
+	Dispute               *paymentdomain.StripeDispute          `json:"dispute"`
+	Order                 *orderdomain.Order                    `json:"order,omitempty"`
+	FulfillmentEvidence   *OrderEvidencePackageAssembly         `json:"fulfillment_evidence,omitempty"`
+	PolicyDisclosure      *DisputePolicyDisclosureEvidence      `json:"policy_disclosure,omitempty"`
+	Refunds               []DisputeRefundEvidence               `json:"refunds"`
+	Shipment              *shippingdomain.TrackingShipment      `json:"-"`
+	TrackingEvents        []shippingdomain.TrackingEvent        `json:"-"`
+	TrackingContext       *OrderEvidenceTrackingContext         `json:"tracking_context,omitempty"`
+	TrackingEventEvidence []OrderEvidenceDeliveryEvent          `json:"tracking_events"`
+	Communications        []StripeDisputeCommunicationEvidence  `json:"communications"`
+	Authentication        *DisputePaymentAuthenticationEvidence `json:"authentication,omitempty"`
+	Evidence              StripeDisputeEvidenceDraft            `json:"evidence"`
+	EvidenceChecklist     DisputeEvidenceChecklist              `json:"evidence_checklist"`
+	SubmissionCheck       DisputeEvidenceSubmissionCheck        `json:"submission_check"`
+	Warnings              []string                              `json:"warnings"`
+	CanSubmit             bool                                  `json:"can_submit"`
 }
 
 type StripeDisputeCommunicationEvidence struct {
@@ -92,11 +96,14 @@ type SubmitStripeDisputeEvidenceInput struct {
 }
 
 type SubmitStripeDisputeEvidenceResult struct {
-	DisputeID       uint       `json:"dispute_id"`
-	StripeDisputeID string     `json:"stripe_dispute_id"`
-	StripeStatus    string     `json:"stripe_status"`
-	SubmittedAt     *time.Time `json:"submitted_at,omitempty"`
-	Staged          bool       `json:"staged"`
+	DisputeID               uint       `json:"dispute_id"`
+	StripeDisputeID         string     `json:"stripe_dispute_id"`
+	StripeStatus            string     `json:"stripe_status"`
+	SubmittedAt             *time.Time `json:"submitted_at,omitempty"`
+	Staged                  bool       `json:"staged"`
+	EvidenceSnapshotID      uint       `json:"evidence_snapshot_id"`
+	EvidenceSnapshotVersion int        `json:"evidence_snapshot_version"`
+	EvidenceSnapshotSHA256  string     `json:"evidence_snapshot_sha256"`
 }
 
 type stripeDisputeEvidenceSubmissionAudit struct {
@@ -109,6 +116,9 @@ type stripeDisputeEvidenceSubmissionAudit struct {
 	UncategorizedFileID          string                     `json:"uncategorized_file_id,omitempty"`
 	Evidence                     StripeDisputeEvidenceDraft `json:"evidence"`
 	SubmittedAt                  time.Time                  `json:"submitted_at"`
+	EvidenceSnapshotID           uint                       `json:"evidence_snapshot_id"`
+	EvidenceSnapshotVersion      int                        `json:"evidence_snapshot_version"`
+	EvidenceSnapshotSHA256       string                     `json:"evidence_snapshot_sha256"`
 }
 
 func (s *PaymentService) BuildStripeDisputeEvidencePackage(disputeID uint) (*StripeDisputeEvidencePackage, error) {
@@ -118,12 +128,13 @@ func (s *PaymentService) BuildStripeDisputeEvidencePackage(disputeID uint) (*Str
 	}
 
 	pkg := &StripeDisputeEvidencePackage{
-		Dispute:        record,
-		Refunds:        []DisputeRefundEvidence{},
-		TrackingEvents: []shippingdomain.TrackingEvent{},
-		Communications: []StripeDisputeCommunicationEvidence{},
-		Warnings:       []string{},
-		CanSubmit:      disputeNeedsResponse(record.Status),
+		Dispute:               record,
+		Refunds:               []DisputeRefundEvidence{},
+		TrackingEvents:        []shippingdomain.TrackingEvent{},
+		TrackingEventEvidence: []OrderEvidenceDeliveryEvent{},
+		Communications:        []StripeDisputeCommunicationEvidence{},
+		Warnings:              []string{},
+		CanSubmit:             disputeNeedsResponse(record.Status),
 	}
 	transaction, err := s.findDisputeEvidenceTransaction("stripe", record.TransactionID, record.PaymentIntentID, disputeOrderID(record.OrderID))
 	if err != nil {
@@ -161,17 +172,19 @@ func (s *PaymentService) BuildStripeDisputeEvidencePackage(disputeID uint) (*Str
 		pkg.Warnings = append(pkg.Warnings, "No order-level refund and cancellation policy disclosure snapshot was found; the current policy page will not be used as historical evidence.")
 	}
 
-	if s.shippingRepo != nil {
-		if shipment, err := s.shippingRepo.FindTrackingShipmentByOrderID(orderRecord.ID); err == nil {
-			pkg.Shipment = shipment
-		} else if !repository.IsRecordNotFound(err) {
-			return nil, err
-		}
-		events, err := s.shippingRepo.FindTrackingEventsByOrderID(orderRecord.ID)
-		if err != nil {
-			return nil, err
-		}
-		pkg.TrackingEvents = events
+	fulfillmentEvidence, err := s.assembleOrderEvidencePackage(orderRecord.ID)
+	if err != nil {
+		return nil, err
+	}
+	if fulfillmentEvidence == nil {
+		pkg.Warnings = append(pkg.Warnings, "Order evidence package assembler is not configured; fulfillment evidence was not loaded.")
+	} else {
+		pkg.FulfillmentEvidence = fulfillmentEvidence
+		pkg.Shipment = fulfillmentEvidence.Shipment
+		pkg.TrackingEvents = fulfillmentEvidence.TrackingEvents
+		pkg.TrackingContext = fulfillmentEvidence.TrackingContext
+		pkg.TrackingEventEvidence = projectOrderEvidenceDeliveryEvents(fulfillmentEvidence.TrackingEvents)
+		pkg.Warnings = append(pkg.Warnings, fulfillmentEvidence.Warnings...)
 	}
 
 	if s.ticketRepo != nil {
@@ -211,94 +224,133 @@ func (s *PaymentService) SubmitStripeDisputeEvidence(ctx context.Context, input 
 	if strings.TrimSpace(input.APIKey) == "" {
 		return nil, errors.New("stripe api key is required")
 	}
-	pkg, err := s.BuildStripeDisputeEvidencePackage(input.DisputeID)
+	record, err := s.GetStripeDispute(input.DisputeID)
 	if err != nil {
 		return nil, err
 	}
-	if !pkg.SubmissionCheck.Ready {
-		return nil, ErrStripeDisputeEvidenceNotSubmittable
-	}
 
 	now := time.Now().UTC()
-	params := stripeDisputeEvidenceParams(pkg, input)
+	snapshot, payload, err := s.loadStripeEvidenceSubmissionSnapshot(record, input, now)
+	if err != nil {
+		return nil, err
+	}
+	params := stripeDisputeEvidenceParamsFromSnapshot(payload)
 	params.Context = ctx
 	params.Submit = stripe.Bool(input.Submit)
 	params.Metadata = map[string]string{
-		"commerce_platform_dispute_id": fmt.Sprint(pkg.Dispute.ID),
-		"commerce_platform_order_id":   stripeDisputeEvidenceOrderID(pkg.Order),
+		"commerce_platform_dispute_id": fmt.Sprint(record.ID),
+		"commerce_platform_order_id":   stripeDisputeEvidenceOrderIDFromOrderID(record.OrderID),
 	}
 
-	audit := stripeDisputeEvidenceSubmissionAudit{
-		Submit:                       input.Submit,
-		IncludeCustomerCommunication: input.IncludeCustomerCommunication,
-		AdditionalStatement:          strings.TrimSpace(input.AdditionalStatement),
-		ShippingDocumentationFileID:  strings.TrimSpace(input.ShippingDocumentationFileID),
-		CustomerCommunicationFileID:  strings.TrimSpace(input.CustomerCommunicationFileID),
-		ReceiptFileID:                strings.TrimSpace(input.ReceiptFileID),
-		UncategorizedFileID:          strings.TrimSpace(input.UncategorizedFileID),
-		Evidence:                     pkg.Evidence,
-		SubmittedAt:                  now,
-	}
+	audit := stripeDisputeEvidenceSubmissionAuditFromSnapshot(payload, now)
+	audit.Submit = input.Submit
+	audit.EvidenceSnapshotID = snapshot.ID
+	audit.EvidenceSnapshotVersion = snapshot.Version
+	audit.EvidenceSnapshotSHA256 = snapshot.SnapshotSHA256
 	payloadBytes, _ := json.Marshal(audit)
-	payload := string(payloadBytes)
+	auditPayload := string(payloadBytes)
 
 	submitter := s.stripeDisputeEvidenceSubmitter
 	if submitter == nil {
 		submitter = liveStripeDisputeEvidenceSubmitter{apiKey: strings.TrimSpace(input.APIKey)}
 	}
 
-	updated, err := submitter.Update(pkg.Dispute.StripeDisputeID, params)
+	updated, err := submitter.Update(record.StripeDisputeID, params)
 	if err != nil {
-		_ = s.paymentRepo.UpdateStripeDisputeEvidenceSubmission(pkg.Dispute.ID, nil, payload, err.Error(), "")
+		_ = s.paymentRepo.UpdateStripeDisputeEvidenceSubmission(record.ID, nil, auditPayload, err.Error(), "")
 		return nil, err
 	}
 
-	status := pkg.Dispute.Status
-	if updated != nil && updated.Status != "" {
+	status := record.Status
+	if input.Submit && updated != nil && updated.Status != "" {
 		status = string(updated.Status)
 	}
 	var submittedAt *time.Time
 	if input.Submit {
 		submittedAt = &now
 	}
-	if err := s.paymentRepo.UpdateStripeDisputeEvidenceSubmission(pkg.Dispute.ID, submittedAt, payload, "", status); err != nil {
+	if err := s.paymentRepo.UpdateStripeDisputeEvidenceSubmission(record.ID, submittedAt, auditPayload, "", status); err != nil {
 		return nil, err
 	}
 
 	return &SubmitStripeDisputeEvidenceResult{
-		DisputeID:       pkg.Dispute.ID,
-		StripeDisputeID: pkg.Dispute.StripeDisputeID,
-		StripeStatus:    status,
-		SubmittedAt:     submittedAt,
-		Staged:          !input.Submit,
+		DisputeID:               record.ID,
+		StripeDisputeID:         record.StripeDisputeID,
+		StripeStatus:            status,
+		SubmittedAt:             submittedAt,
+		Staged:                  !input.Submit,
+		EvidenceSnapshotID:      snapshot.ID,
+		EvidenceSnapshotVersion: snapshot.Version,
+		EvidenceSnapshotSHA256:  snapshot.SnapshotSHA256,
 	}, nil
 }
 
-func stripeDisputeEvidenceParams(pkg *StripeDisputeEvidencePackage, input SubmitStripeDisputeEvidenceInput) *stripe.DisputeParams {
-	draft := pkg.Evidence
-	if input.IncludeCustomerCommunication && strings.TrimSpace(draft.CommunicationSummary) != "" {
-		draft.UncategorizedText = joinEvidenceSections(draft.UncategorizedText, "Customer communication summary:\n"+draft.CommunicationSummary)
-	}
-	if strings.TrimSpace(input.AdditionalStatement) != "" {
-		draft.UncategorizedText = joinEvidenceSections(draft.UncategorizedText, "Operator statement:\n"+strings.TrimSpace(input.AdditionalStatement))
+func (s *PaymentService) loadStripeEvidenceSubmissionSnapshot(
+	record *paymentdomain.StripeDispute,
+	input SubmitStripeDisputeEvidenceInput,
+	lockedAt time.Time,
+) (*orderevidence.OrderEvidenceSubmissionSnapshot, *stripeDisputeEvidenceSnapshotPayload, error) {
+	if record == nil || record.OrderID == nil || *record.OrderID == 0 {
+		return nil, nil, ErrStripeDisputeEvidenceNotSubmittable
 	}
 
-	evidence := &stripe.DisputeEvidenceParams{}
-	setStripeString(&evidence.CustomerName, draft.CustomerName)
-	setStripeString(&evidence.CustomerEmailAddress, draft.CustomerEmailAddress)
-	setStripeString(&evidence.BillingAddress, draft.BillingAddress)
-	setStripeString(&evidence.ShippingAddress, draft.ShippingAddress)
-	setStripeString(&evidence.ProductDescription, draft.ProductDescription)
-	setStripeString(&evidence.ShippingCarrier, draft.ShippingCarrier)
-	setStripeString(&evidence.ShippingDate, draft.ShippingDate)
-	setStripeString(&evidence.ShippingTrackingNumber, draft.ShippingTrackingNumber)
-	setStripeString(&evidence.UncategorizedText, truncateEvidenceText(draft.UncategorizedText, 20000))
-	setStripeString(&evidence.ShippingDocumentation, input.ShippingDocumentationFileID)
-	setStripeString(&evidence.CustomerCommunication, input.CustomerCommunicationFileID)
-	setStripeString(&evidence.Receipt, input.ReceiptFileID)
-	setStripeString(&evidence.UncategorizedFile, input.UncategorizedFileID)
+	var (
+		snapshot *orderevidence.OrderEvidenceSubmissionSnapshot
+		err      error
+	)
+	// A persisted snapshot belongs to a final submission attempt. A non-final
+	// Stripe draft must always reflect the current order evidence package.
+	if input.Submit {
+		snapshot, err = s.findLatestEvidenceSubmissionSnapshot("stripe", record.ID)
+		switch {
+		case err == nil:
+			payload, parseErr := parseStripeDisputeEvidenceSnapshot(
+				snapshot,
+				record.ID,
+				record.StripeDisputeID,
+				*record.OrderID,
+			)
+			return snapshot, payload, parseErr
+		case !repository.IsRecordNotFound(err):
+			return nil, nil, err
+		}
+	}
 
-	return &stripe.DisputeParams{Evidence: evidence}
+	pkg, err := s.BuildStripeDisputeEvidencePackage(record.ID)
+	if err != nil {
+		return nil, nil, err
+	}
+	if !pkg.CanSubmit || pkg.Order == nil {
+		return nil, nil, ErrStripeDisputeEvidenceNotSubmittable
+	}
+	request := stripeDisputeEvidenceSnapshotRequestFromPackage(pkg, input)
+	snapshot, err = buildLockedEvidenceSubmissionSnapshot(
+		"stripe",
+		record.ID,
+		record.StripeDisputeID,
+		*record.OrderID,
+		pkg.FulfillmentEvidence,
+		pkg.EvidenceChecklist,
+		pkg.Warnings,
+		request,
+		lockedAt,
+	)
+	if err != nil {
+		return nil, nil, err
+	}
+	if input.Submit {
+		snapshot, err = s.createOrGetEvidenceSubmissionSnapshot(snapshot)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+	payload, err := parseStripeDisputeEvidenceSnapshot(
+		snapshot,
+		record.ID,
+		record.StripeDisputeID,
+		*record.OrderID,
+	)
+	return snapshot, payload, err
 }
 
 func buildStripeDisputeEvidenceDraft(pkg *StripeDisputeEvidencePackage) StripeDisputeEvidenceDraft {
@@ -614,11 +666,11 @@ func truncateEvidenceText(value string, limit int) string {
 	return string(runes[:limit-14]) + "\n[truncated]"
 }
 
-func stripeDisputeEvidenceOrderID(orderRecord *orderdomain.Order) string {
-	if orderRecord == nil {
+func stripeDisputeEvidenceOrderIDFromOrderID(orderID *uint) string {
+	if orderID == nil {
 		return ""
 	}
-	return fmt.Sprint(orderRecord.ID)
+	return fmt.Sprint(*orderID)
 }
 
 func disputeOrderID(orderID *uint) uint {

@@ -3,10 +3,19 @@
     "title": "उत्पाद और FAQ खोजें",
     "body": "उत्पाद, FAQ और अधिक खोजने के लिए क्लिक करें।"
   },
+  "languagePicker": {
+    "title": "भाषा",
+    "trigger": "भाषा बदलें",
+    "close": "भाषा चयन बंद करें",
+    "optionsLabel": "भाषा चुनें"
+  },
   "globalNavigationTransition": {
     "ariaLabel": "Global content navigation",
     "optionsLabel": "Choose a destination",
     "trigger": "Open content navigation",
-    "triggerBody": "Choose Products, FAQ, Pages, or Blog."
+    "triggerBody": "Choose Products, FAQ, Pages, or Blog.",
+    "options": {
+      "pages": "Pages"
+    }
   }
 }

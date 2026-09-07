@@ -11,6 +11,7 @@ import { basename, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { gzipSync } from 'node:zlib'
 import { parse } from 'parse5'
+import { resolvePreviewPort } from './preview-port.js'
 
 interface ParsedHtmlNode {
   tagName?: string
@@ -50,7 +51,7 @@ const serverLauncher = resolve(projectRoot, 'scripts/storefront/run-production-s
 const outputDirectory = resolve(projectRoot, '.output/server/critical-css')
 const outputCssPath = resolve(outputDirectory, 'home-entry.css')
 const outputManifestPath = resolve(outputDirectory, 'manifest.json')
-const port = Number.parseInt(process.env.CRITICAL_CSS_GENERATE_PORT || '4023', 10)
+const port = await resolvePreviewPort(process.env.CRITICAL_CSS_GENERATE_PORT, 4023)
 const targetPath = process.env.CRITICAL_CSS_TARGET_PATH || '/'
 const origin = `http://127.0.0.1:${port}`
 const maxCriticalCssGzipBytes = Number.parseInt(

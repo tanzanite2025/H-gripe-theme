@@ -154,6 +154,19 @@
       @submit="submitDisputeContactEmail"
     />
 
+    <OrderFulfillmentDialog
+      v-model:open="fulfillmentDialogVisible"
+      :order="fulfillmentOrder"
+      :result="fulfillmentEvidenceResult"
+      :loading="fulfillmentEvidenceLoading"
+      :submitting="fulfillmentSubmitting"
+      :tracking-providers="trackingProviders"
+      :carriers="carriers"
+      :carrier-services="carrierServices"
+      :tracking-carrier-mappings="trackingCarrierMappings"
+      @submit="submitFulfillment"
+    />
+
     <OrderStatusDialog
       v-model:open="statusDialogVisible"
       :status-form="statusForm"
@@ -164,6 +177,7 @@
       :filtered-status-carrier-services="filteredStatusCarrierServices"
       :resolved-provider-carrier-code-label="resolvedProviderCarrierCodeLabel"
       :fulfillment-mode="fulfillmentMode"
+      :tracking-correction="trackingCorrectionMode"
       :submitting="submitting"
       @submit="submitStatus"
       @carrier-change="handleStatusCarrierChange"
@@ -203,6 +217,7 @@ import OrderDisputeContactEmailDialog from '@/components/admin/order/OrderDisput
 import OrderDisputeTablePanel from '@/components/admin/order/OrderDisputeTablePanel.vue'
 import OrderDetailDialog from '@/components/admin/order/OrderDetailDialog.vue'
 import OrderFilterPanel from '@/components/admin/order/OrderFilterPanel.vue'
+import OrderFulfillmentDialog from '@/components/admin/order/OrderFulfillmentDialog.vue'
 import OrderStatusDialog from '@/components/admin/order/OrderStatusDialog.vue'
 import OrderTablePanel from '@/components/admin/order/OrderTablePanel.vue'
 import { Button } from '@/components/ui/button'
@@ -255,6 +270,11 @@ import type {
   TrackingProvider,
   TrackingShipment
 } from '@/modules/order/orderTypes'
+import { orderEvidenceApi } from '@/api/orderEvidence'
+import type {
+  OrderEvidencePackageResult,
+  OrderFulfillmentSubmitInput,
+} from '@/modules/order/orderEvidenceTypes'
 
 interface OrderListResponse {
   orders?: OrderRecord[]
@@ -281,9 +301,14 @@ const selectedOrders = ref<OrderRecord[]>([])
 const detailDialogVisible = ref(false)
 const afterSalesDialogVisible = ref(false)
 const disputeEmailDialogVisible = ref(false)
+const fulfillmentDialogVisible = ref(false)
 const statusDialogVisible = ref(false)
 const fulfillmentMode = ref(false)
+const trackingCorrectionMode = ref(false)
 const submitting = ref(false)
+const fulfillmentEvidenceLoading = ref(false)
+const fulfillmentSubmitting = ref(false)
+const fulfillmentUploadedFileKeys = new Set<string>()
 const afterSalesSubmitting = ref(false)
 const disputeLoading = ref(false)
 const disputeAnalysisLoading = ref(false)
@@ -292,6 +317,8 @@ const syncingTracking = ref(false)
 const savingCustomsItemID = ref<OrderID | null>(null)
 const exportingCustoms = ref(false)
 const currentOrder = ref<OrderRecord | null>(null)
+const fulfillmentOrder = ref<OrderRecord | null>(null)
+const fulfillmentEvidenceResult = ref<OrderEvidencePackageResult | null>(null)
 const disputeEmailOrderID = ref<OrderID | null>(null)
 const currentDisputeAnalysis = ref<OrderDisputeAnalysis | null>(null)
 const currentTrackingEvents = ref<TrackingEvent[]>([])
@@ -690,8 +717,13 @@ const submitDisputeContactEmail = async (): Promise<void> => {
   }
 }
 
-const initializeStatusForm = (order: OrderRecord, isFulfillment = false): void => {
+const initializeStatusForm = (
+  order: OrderRecord,
+  isFulfillment = false,
+  isTrackingCorrection = false,
+): void => {
   fulfillmentMode.value = isFulfillment
+  trackingCorrectionMode.value = isTrackingCorrection
   Object.assign(statusForm, {
     id: order.id,
     order_number: order.order_number,
@@ -706,15 +738,40 @@ const initializeStatusForm = (order: OrderRecord, isFulfillment = false): void =
 
 const showStatusDialog = async (order: OrderRecord): Promise<void> => {
   await fetchShippingLookups()
-  initializeStatusForm(order)
+  const isTrackingCorrection = (
+    order.status === 'shipped' ||
+    order.shipping_status === 'shipped' ||
+    order.shipping_status === 'delivered'
+  )
+  initializeStatusForm(order, false, isTrackingCorrection)
   statusDialogVisible.value = true
 }
 
 const showFulfillmentDialog = async (order: OrderRecord): Promise<void> => {
-  await fetchShippingLookups()
-  initializeStatusForm(order, true)
-  statusDialogVisible.value = true
+  fulfillmentOrder.value = order
+  fulfillmentEvidenceResult.value = null
+  fulfillmentUploadedFileKeys.clear()
+  fulfillmentDialogVisible.value = true
+  fulfillmentEvidenceLoading.value = true
+  try {
+    const [detailResponse, evidenceResult] = await Promise.all([
+      axios.get<OrderDetailResponse>(`/api/admin/orders/${order.id}`),
+      orderEvidenceApi.getPackage(order.id),
+      fetchShippingLookups()
+    ])
+    fulfillmentOrder.value = detailResponse.data.order || order
+    fulfillmentEvidenceResult.value = evidenceResult
+  } catch (error) {
+    console.error('Failed to prepare order fulfillment:', error)
+    toast.error(error?.response?.data?.error || '发货取证信息加载失败')
+  } finally {
+    fulfillmentEvidenceLoading.value = false
+  }
 }
+
+const fulfillmentFileKey = (itemID: OrderID, file: File): string => (
+  `${String(itemID)}:${file.name}:${file.size}:${file.lastModified}`
+)
 
 const handleStatusCarrierChange = (value: string): void => {
   const carrierID = numericSelectID(value)
@@ -744,6 +801,59 @@ const handleStatusCarrierServiceChange = (value: string): void => {
   statusForm.tracking_provider_id = providerValueForLocalShippingSource(statusForm.carrier_id, serviceID)
 }
 
+const submitFulfillment = async (input: OrderFulfillmentSubmitInput): Promise<void> => {
+  const orderID = fulfillmentOrder.value?.id
+  if (!orderID) return
+
+  fulfillmentSubmitting.value = true
+  try {
+    for (const evidence of input.evidence) {
+      for (const file of evidence.files) {
+        const fileKey = fulfillmentFileKey(evidence.item_id, file)
+        if (fulfillmentUploadedFileKeys.has(fileKey)) continue
+        await orderEvidenceApi.uploadAttachment(orderID, evidence.item_id, file)
+        fulfillmentUploadedFileKeys.add(fileKey)
+      }
+      fulfillmentEvidenceResult.value = await orderEvidenceApi.updateItem(
+        orderID,
+        evidence.item_id,
+        {
+          status: 'complete',
+          data_json: evidence.data_json,
+          captured_at: evidence.captured_at,
+        },
+      )
+    }
+
+    const response = await axios.post(`/api/admin/orders/${orderID}/fulfillment`, {
+      tracking_number: input.tracking_number,
+      tracking_provider_id: input.tracking_provider_id,
+      carrier_id: input.carrier_id,
+      carrier_service_id: input.carrier_service_id,
+      signature_confirmed: input.signature_confirmed,
+    })
+    const registrationError = response.data?.tracking_registration_error
+    if (registrationError) {
+      toast.warning(`订单已发货，17TRACK 登记失败：${registrationError}`)
+    } else {
+      toast.success('订单已完成发货取证并建立追踪任务')
+    }
+    fulfillmentDialogVisible.value = false
+    fulfillmentUploadedFileKeys.clear()
+    await refreshOrders()
+  } catch (error) {
+    console.error('Failed to save fulfillment evidence and fulfill order:', error)
+    try {
+      fulfillmentEvidenceResult.value = await orderEvidenceApi.getPackage(orderID)
+    } catch {
+      // Preserve the original error when the refresh also fails.
+    }
+    toast.error(error?.response?.data?.error || '发货取证或发货失败，订单仍未发货')
+  } finally {
+    fulfillmentSubmitting.value = false
+  }
+}
+
 const submitStatus = async (): Promise<void> => {
   submitting.value = true
   try {
@@ -751,6 +861,37 @@ const submitStatus = async (): Promise<void> => {
     const trackingProviderID = numericSelectID(statusForm.tracking_provider_id)
     const carrierID = numericSelectID(statusForm.carrier_id)
     const carrierServiceID = numericSelectID(statusForm.carrier_service_id)
+
+    if (trackingCorrectionMode.value) {
+      if (!trackingNumber) {
+        toast.error('请填写正确的物流单号')
+        return
+      }
+      if (!trackingProviderID) {
+        toast.error('请选择追踪 Provider')
+        return
+      }
+      if (!carrierID && !carrierServiceID) {
+        toast.error('请选择本地承运商或线路服务')
+        return
+      }
+
+      await axios.patch(`/api/admin/orders/${statusForm.id}/tracking`, {
+        tracking_number: trackingNumber,
+        tracking_provider_id: trackingProviderID,
+        carrier_id: carrierID,
+        carrier_service_id: carrierServiceID
+      })
+      toast.success('物流纠正已保存，原发货证据未被改写')
+      statusDialogVisible.value = false
+      await refreshOrders()
+      return
+    }
+
+    if (!fulfillmentMode.value && (statusForm.status === 'shipped' || statusForm.shipping_status === 'shipped')) {
+      toast.error('发货必须通过“发货取证”流程完成')
+      return
+    }
 
     if (fulfillmentMode.value) {
       if (!trackingNumber) {

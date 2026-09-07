@@ -128,6 +128,7 @@ func (h *ContentHandler) CreatePost(c *gin.Context) {
 		FeaturedImg:        req.FeaturedImg,
 		Tags:               req.Tags,
 		TranslationGroupID: req.TranslationGroupID,
+		CategoryIDs:        req.CategoryIDs,
 	})
 	if err != nil {
 		respondPostServiceError(c, err, "Failed to create post")
@@ -166,6 +167,7 @@ func (h *ContentHandler) UpdatePost(c *gin.Context) {
 	}
 
 	_, updateTranslationGroupID := raw["translation_group_id"]
+	_, updateCategoryIDs := raw["category_ids"]
 
 	updatedPost, err := h.postService.UpdateAdminPost(uint(id), service.PostUpdateInput{
 		Title:                    req.Title,
@@ -178,6 +180,8 @@ func (h *ContentHandler) UpdatePost(c *gin.Context) {
 		Tags:                     req.Tags,
 		TranslationGroupID:       req.TranslationGroupID,
 		UpdateTranslationGroupID: updateTranslationGroupID,
+		CategoryIDs:              req.CategoryIDs,
+		UpdateCategoryIDs:        updateCategoryIDs,
 	})
 	if err != nil {
 		respondPostServiceError(c, err, "Failed to update post")

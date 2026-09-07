@@ -3,10 +3,19 @@
     "title": "搜索产品和 FAQ",
     "body": "点击搜索产品、FAQ 等内容。"
   },
+  "languagePicker": {
+    "title": "语言",
+    "trigger": "切换语言",
+    "close": "关闭语言选择器",
+    "optionsLabel": "选择语言"
+  },
   "globalNavigationTransition": {
     "ariaLabel": "Global content navigation",
     "optionsLabel": "Choose a destination",
     "trigger": "Open content navigation",
-    "triggerBody": "Choose Products, FAQ, Pages, or Blog."
+    "triggerBody": "Choose Products, FAQ, Pages, or Blog.",
+    "options": {
+      "pages": "Pages"
+    }
   }
 }

@@ -45,6 +45,17 @@ func (r *OrderRepository) FindByID(id uint) (*order.Order, error) {
 	return &o, nil
 }
 
+// FindByIDBasic reads the order record without loading order items. It is
+// useful for cross-cutting operational paths that only need order metadata.
+func (r *OrderRepository) FindByIDBasic(id uint) (*order.Order, error) {
+	var o order.Order
+	err := r.db.First(&o, id).Error
+	if err != nil {
+		return nil, err
+	}
+	return &o, nil
+}
+
 func (r *OrderRepository) FindByIDForUpdate(id uint) (*order.Order, error) {
 	var o order.Order
 	err := r.lockForUpdate(r.db).First(&o, id).Error
@@ -188,6 +199,65 @@ func (r *OrderRepository) UpdateShippingStatus(id uint, shippingStatus string) e
 	}
 
 	return r.db.Model(&order.Order{}).Where("id = ?", id).Updates(updates).Error
+}
+
+// UpdateShippingStatusIfDifferent changes the shipping status only when the
+// stored value is different. The affected-row result makes one-way events
+// such as delivery auditable without duplicate records under concurrent syncs.
+func (r *OrderRepository) UpdateShippingStatusIfDifferent(id uint, shippingStatus string) (bool, error) {
+	updates := map[string]interface{}{
+		"shipping_status": shippingStatus,
+	}
+	if shippingStatus == "shipped" {
+		updates["shipped_at"] = time.Now()
+	}
+
+	result := r.db.Model(&order.Order{}).
+		Where("id = ? AND (shipping_status IS NULL OR shipping_status <> ?)", id, shippingStatus).
+		Updates(updates)
+	return result.RowsAffected > 0, result.Error
+}
+
+func (r *OrderRepository) MarkProductionStarted(id uint, startedAt time.Time) (bool, error) {
+	if startedAt.IsZero() {
+		startedAt = time.Now().UTC()
+	}
+	result := r.db.Model(&order.Order{}).
+		Where(
+			"id = ? AND fulfillment_mode IN ? AND payment_status = ? AND status IN ? AND production_status = ?",
+			id,
+			[]string{order.FulfillmentModeMadeToOrder, order.FulfillmentModeMixed},
+			"paid",
+			[]string{"paid", "processing"},
+			order.ProductionStatusNotStarted,
+		).
+		Updates(map[string]interface{}{
+			"production_status":     order.ProductionStatusStarted,
+			"production_started_at": startedAt,
+			"updated_at":            startedAt,
+		})
+	return result.RowsAffected == 1, result.Error
+}
+
+func (r *OrderRepository) MarkProductionCompleted(id uint, completedAt time.Time) (bool, error) {
+	if completedAt.IsZero() {
+		completedAt = time.Now().UTC()
+	}
+	result := r.db.Model(&order.Order{}).
+		Where(
+			"id = ? AND fulfillment_mode IN ? AND payment_status = ? AND status IN ? AND production_status = ?",
+			id,
+			[]string{order.FulfillmentModeMadeToOrder, order.FulfillmentModeMixed},
+			"paid",
+			[]string{"paid", "processing"},
+			order.ProductionStatusStarted,
+		).
+		Updates(map[string]interface{}{
+			"production_status":       order.ProductionStatusCompleted,
+			"production_completed_at": completedAt,
+			"updated_at":              completedAt,
+		})
+	return result.RowsAffected == 1, result.Error
 }
 
 // UpdateTrackingInfo 更新物流追踪信息

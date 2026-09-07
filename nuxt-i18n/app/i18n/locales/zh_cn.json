@@ -20,6 +20,24 @@
       "title": "Sign in before managing personal data",
       "description": "Points, wishlist, cart checkout and shipping address tools live here after login."
     },
+    "features": {
+      "points": {
+        "title": "积分",
+        "desc": "会员等级与积分余额"
+      },
+      "wishlist": {
+        "title": "心愿单",
+        "desc": "已保存的商品，可快速加入购物车"
+      },
+      "cart": {
+        "title": "购物车",
+        "desc": "查看商品并更快完成结账"
+      },
+      "addresses": {
+        "title": "收货地址",
+        "desc": "为结账提前准备配送信息"
+      }
+    },
     "points": {
       "currentLevel": "Current level",
       "progress": "Progress",
@@ -292,6 +310,27 @@
       "member": "会员",
       "calculator": "计算器"
     },
+    "orders": {
+      "madeToOrder": "定制生产",
+      "stock": "现货",
+      "mixed": "混合履约",
+      "production": "生产状态",
+      "productionStatus": {
+        "notApplicable": "不适用",
+        "notStarted": "等待生产",
+        "started": "生产中",
+        "completed": "生产已完成",
+        "cancelled": "生产已取消"
+      },
+      "productionStartedAt": "生产开始",
+      "productionCompletedAt": "生产完成",
+      "signatureRequired": "配送需要签名收货",
+      "items": "件",
+      "item": "件",
+      "loading": "订单加载中...",
+      "empty": "暂无订单",
+      "confirm": "和客服确认订单"
+    },
     "transfer": {
       "title": "转接会话",
       "targetAgentLabel": "目标客服 *",
@@ -334,11 +373,20 @@
         "paymentUnavailable": "此支付方式暂时不可用。",
         "paymentPending": "支付暂未完成，请稍后查看订单状态。",
         "orderSuccess": "订单提交成功！",
-        "orderFailed": "订单提交失败，请重试"
+        "orderFailed": "订单提交失败，请重试",
+        "emailRequired": "Add an email address to your account before checkout."
       }
     },
     "order": {
       "itemFallback": "商品"
+    },
+    "fulfillment": {
+      "title": "履约与配送",
+      "madeToOrder": "购物车中包含定制生产商品。支付确认后开始排产，生产时间会叠加到物流时间。",
+      "cancellation": "仅可在生产或材料下料开始前申请取消。生产开始后，取消可能受限，并可能产生定制处理费用。",
+      "signature": "订单总额达到 750 美元或以上时，配送需要签名收货。",
+      "confirmation": "我已了解本订单的生产、取消、配送和签名收货要求。",
+      "confirmRequired": "请先确认定制订单和配送要求，再继续。"
     },
     "payment": {
       "card": {
@@ -616,15 +664,15 @@
   },
   "company": {
     "nav": {
-      "about": "About Us",
-      "ourStory": "Our Story",
-      "globalPartners": "Global Partners",
+      "about": "关于我们",
+      "ourStory": "我们的故事",
+      "globalPartners": "全球合作伙伴",
       "oemOdm": "OEM & ODM",
-      "certificates": "Certificates",
-      "membershipPoints": "Membership and Points",
-      "pictureWarehouse": "Picture warehouse",
-      "contact": "Contact Us",
-      "aboutWebsite": "Me & This Website"
+      "certificates": "资质证书",
+      "membershipPoints": "会员与积分",
+      "pictureWarehouse": "图片仓库",
+      "contact": "联系我们",
+      "aboutWebsite": "我与这个网站"
     },
     "index": {
       "title": "Company",
@@ -658,13 +706,6 @@
     },
     "pages": {
       "placeholder": "Content coming soon."
-    },
-    "ourStory": {
-      "story": {
-        "title": "Story",
-        "factoryButton": "Factory",
-        "body": "Our story began with a clear belief:\nhigh-performance carbon components require more than good materials —\nthey require full control.\n\nAs engineers and riders, we saw too many products built through fragmented processes,\nwhere design, manufacturing, and quality control were separated.\nThe result was inconsistency, delayed communication, and avoidable risk.\n\nWe started with carbon rims, one of the most technically demanding components in cycling.\nFrom layup structure and resin control to impact resistance,\nevery decision was made with performance and safety in mind.\n\nAs our capabilities expanded, we naturally moved into complete wheelsets\nand carbon handlebars.\nNot to chase a broader product range,\nbut to ensure that every component works together as a complete system.\n\nToday, our OEM and ODM solutions are trusted by partners around the world.\nFrom design and engineering to manufacturing and testing,\neverything is built in-house.\nThis allows us to deliver consistent quality, reliable lead times,\nand products that meet the expectations of global markets.\n\nWe believe long-term partnerships are built on transparency,\nstable quality, and accountability.\nThat principle continues to guide how we work with brands,\ndistributors, and riders worldwide.  Whether developing a new product or scaling an existing design,\nwe work as an extension of our partners’ teams."
-      }
     }
   },
   "contactLocation": {
@@ -729,10 +770,7 @@
     "title": "常见问题",
     "subtitle": "查找有关产品与服务的常见问题解答",
     "ui": {
-      "categorizedSupport": "分类支持",
       "quickAnswers": "快速查看常见问题答案",
-      "categoriesAriaLabel": "FAQ 分类",
-      "categoriesLabel": "FAQ 分类",
       "all": "全部",
       "viewAll": "查看全部 FAQ",
       "emptySection": "此部分暂无 FAQ。",
@@ -740,7 +778,6 @@
       "searchPlaceholder": "搜索 FAQ...",
       "viewMoreContent": "查看更多内容",
       "noResults": "没有找到与“{query}”匹配的 FAQ",
-      "allFaqsMetaTitle": "全部 FAQ",
       "loadingAnswers": "正在加载答案",
       "illustrationAlt": "FAQ 配图",
       "selectQuestion": "Select a question to view the answer."
@@ -974,116 +1011,25 @@
       "spokecalculator": "Spokecalculator"
     }
   },
-  "giftcards": {
-    "eyebrow": "礼品卡",
-    "title": "使用积分兑换礼品卡",
-    "exchangeIntro": "将会员积分兑换为已发布的礼品卡奖励，并在会员中心查看已兑换礼品卡。",
-    "balance": "余额",
-    "pointsRequired": "所需积分",
-    "redeeming": "兑换中...",
-    "redeem": "兑换",
-    "signInToRedeem": "登录后兑换",
-    "noCards": "暂无可兑换礼品卡",
-    "noCardsTitle": "当前暂无可兑换礼品卡",
-    "noCardsBody": "新的奖励选项发布后，会在这里提供积分兑换。",
-    "viewPointRules": "查看积分规则",
-    "backToMemberInfo": "会员信息",
-    "myCards": "我的礼品卡",
-    "remaining": "剩余",
-    "stats": {
-      "points": "积分余额",
-      "redemption": "兑换规则",
-      "owned": "已拥有礼品卡"
-    },
-    "signInNotice": "登录后可使用积分兑换，并查看已兑换礼品卡。",
-    "loadingCopy": "正在获取可兑换礼品卡选项。",
-    "loadErrorTitle": "无法加载礼品卡"
-  },
-  "guidesTireguides": {
-    "innerTube": {
-      "steps": {
-        "size": {
-          "title": "选择尺寸",
-          "description": "所需的尺寸信息（ETRTO 或英寸）通常可以在外胎胎侧找到。"
-        },
-        "valve": {
-          "title": "选择气嘴类型"
-        },
-        "model": {
-          "title": "选择内胎型号"
-        }
-      },
-      "actions": {
-        "findTube": "查找内胎"
-      },
-      "valves": {
-        "av": {
-          "type": "美嘴 / Schrader",
-          "description": "标准汽车气嘴，常见长度约 40mm。"
-        },
-        "dv": {
-          "type": "英嘴 / Dunlop / Woods",
-          "description": "经典自行车气嘴，常见长度 32/40mm。"
-        },
-        "sv": {
-          "type": "法嘴 / Presta",
-          "description": "运动自行车常用气嘴，提供 40/50/60/80mm 等长度。"
-        }
-      },
-      "images": {
-        "valveOverviewAlt": "Schwalbe 内胎气嘴类型与长度示意图"
-      },
-      "compatibility": {
-        "title": "打气筒与车圈兼容性",
-        "headers": {
-          "rimHeight": "车圈高度",
-          "recommendedValve": "推荐气嘴",
-          "notes": "说明"
-        },
-        "valves": {
-          "extender": "延长杆"
-        },
-        "notes": {
-          "standard": "标准",
-          "deepRim": "高框车圈",
-          "aeroRim": "气动车圈",
-          "extenderNeeded": "需要气嘴延长杆"
-        }
-      },
-      "models": {
-        "standard": {
-          "title": "标准款",
-          "description": "保气稳定，橡胶纯度高，管壁厚度均匀。"
-        },
-        "airPlus": {
-          "title": "Air Plus",
-          "description": "管壁更厚，保气时间更长，抗刺穿能力更好。"
-        },
-        "extralight": {
-          "title": "轻量款 / XXLight",
-          "description": "面向竞赛减重，部分尺寸可选。"
-        },
-        "freeride": {
-          "title": "Freeride",
-          "description": "大容量，同时保持较低重量。"
-        },
-        "downhill": {
-          "title": "Downhill",
-          "description": "结构极其坚固，底部加强，并提供气嘴防剪切保护。"
-        }
-      }
-    }
-  },
   "header": {
     "searchHint": {
       "title": "搜索产品和 FAQ",
       "body": "点击搜索产品、FAQ 等内容。"
     },
+    "languagePicker": {
+      "title": "语言",
+      "trigger": "切换语言",
+      "close": "关闭语言选择器",
+      "optionsLabel": "选择语言"
+    },
     "globalNavigationTransition": {
       "ariaLabel": "Global content navigation",
       "optionsLabel": "Choose a destination",
       "trigger": "Open content navigation",
-      "triggerBody": "Choose Products, FAQ, Pages, or Blog."
+      "triggerBody": "Choose Products, FAQ, Pages, or Blog.",
+      "options": {
+        "pages": "Pages"
+      }
     }
   },
   "home": {
@@ -1445,98 +1391,21 @@
     }
   },
   "member": {
-    "brief": {
-      "level": "会员等级",
-      "levelDesc": "会员等级用于表示账号累计成长状态，并决定该等级对应的权益规则。",
-      "discountRate": "折扣率",
-      "discountRateDesc": "后台会员等级配置的价格折扣率。",
-      "stackable": "可叠加",
-      "stackableDesc": "用于表示当前等级权益是否可以和其他符合条件的优惠一起使用。"
-    },
-    "levels": {
-      "title": "会员等级",
-      "header": {
-        "level": "等级",
-        "pointsRequired": "所需积分",
-        "discountRate": "折扣率"
-      },
-      "rows": {
-        "ordinary": "普通",
-        "bronze": "铜牌",
-        "silver": "银牌",
-        "gold": "金牌",
-        "platinum": "铂金",
-        "diamond": "钻石"
-      }
-    },
-    "points": {
-      "title": "积分规则",
-      "pointValueSingular": "{points} 积分",
-      "pointsValue": "{points} 积分",
-      "notConfigured": "未配置",
-      "purchaseEarn": "订单完成返积分",
-      "purchaseEarnRule": "订单完成后，按优惠后的商品成交金额每 1 {currency} 返 {points}",
-      "purchaseEarnDisabled": "消费返积分未开启",
-      "invite": "邀请新用户",
-      "inviteDesc": "邀请成功奖励 50 积分（被邀请者 30 积分）",
-      "consume": "消费换积分",
-      "consumeDesc": "1 美元 = 1 积分",
-      "daily": "每日登录",
-      "dailyDesc": "每日登录奖励 1 积分（有效期 30 天）",
-      "unit": "pts",
-      "redeem": "兑换比例",
-      "redemptionDisplayRule": "{points} = {currency} {amount}",
-      "redemptionDisabled": "积分兑换未开启",
-      "redemptionRule": "{points} 积分 = {currency}{amount}",
-      "checkin": "每日签到",
-      "checkinBaseRule": "每次签到 {base}",
-      "checkinMaxRule": "最高 {max}",
-      "checkinStreakRule": "连续签到每 {interval} 天额外 +{bonus}",
-      "checkinDisabled": "每日签到积分未开启",
-      "checkinRule": "{base} 积分（最高 {max}；连续签到每 {interval} 天额外 +{bonus}）",
-      "referralDisplayRule": "邀请人获得 {referrer}；被邀请人获得 {referee}",
-      "referralDisabled": "邀请奖励未开启",
-      "referralRule": "{referrer} 积分（被邀请人获得 {referee} 积分）"
-    },
     "tabs": {
       "myInfo": "我的信息",
       "levers": "等级权益",
       "exchange": "积分兑换",
-      "ariaLabel": "Membership sections"
+      "ariaLabel": "会员内容分区"
     },
-    "pages": {
-      "myInfo": {
-        "title": "我的会员信息",
-        "intro": "查看个人资料、会员等级、积分余额、优惠券、礼品卡和保修入口。",
-        "seoTitle": "我的会员信息 - 积分与权益",
-        "seoDescription": "查看 会员资料、会员等级、积分余额、优惠券、礼品卡和保修工具。",
-        "feedbackTitle": "分享您对会员信息页面的反馈",
-        "feedbackSubtitle": "告诉我们个人资料、权益、优惠券、礼品卡或保修入口是否清楚。"
-      },
-      "levers": {
-        "title": "会员等级与积分规则",
-        "intro": "查看会员等级、折扣权益、积分获取、积分兑换、邀请奖励和签到规则。",
-        "seoTitle": "会员等级与积分规则",
-        "seoDescription": "查看 会员等级、积分获取规则、兑换比例、邀请奖励和每日签到奖励。",
-        "feedbackTitle": "分享您对会员等级和积分规则的反馈",
-        "feedbackSubtitle": "告诉我们等级权益、积分获取、兑换比例、邀请奖励或签到规则是否清楚。"
-      },
-      "exchange": {
-        "title": "礼品卡兑换",
-        "intro": "使用符合条件的会员积分兑换礼品卡，并在会员中心查看已兑换记录。",
-        "seoTitle": "礼品卡兑换 - 会员积分兑换",
-        "seoDescription": "使用 会员积分兑换可用礼品卡奖励，并在会员中心管理已兑换礼品卡。",
-        "feedbackTitle": "分享您对礼品卡兑换的反馈",
-        "feedbackSubtitle": "告诉我们积分兑换、可用礼品卡或兑换记录是否容易理解。"
-      }
+    "points": {
+      "unit": "积分"
     },
-    "viewAll": "查看全部",
-    "myBenefits": "我的权益",
+    "brief": {
+      "discountRate": "折扣率"
+    },
     "coupons": "优惠券",
     "pointCards": "积分卡",
-    "copyLink": "复制邀请链接",
-    "pageTitle": "Membership and Points",
-    "giftCards": "礼品卡"
+    "viewAll": "查看全部"
   },
   "menu": {
     "shop": {
@@ -1610,55 +1479,7 @@
   },
   "privacy": {
     "button": "隐私声明",
-    "title": "隐私声明",
-    "policyHeading": "电子商务网站隐私政策",
-    "effectiveDate": "生效日期：[2025/11/11]",
-    "section1Title": "1. 简介",
-    "section1Body": "欢迎访问 {site}。我们非常重视您的隐私，并致力于保护您的个人信息。本隐私政策说明了当您访问我们的网站 {site} 并使用我们的服务时，我们如何收集、使用、披露和保护您的数据。",
-    "section2Title": "2. 我们收集的信息",
-    "section2Intro": "我们可能会收集以下类型的个人信息：",
-    "identityLabel": "身份数据",
-    "identityDesc": "姓名、用户名、密码",
-    "contactLabel": "联系数据",
-    "contactDesc": "电子邮箱、电话号码、收货/账单地址",
-    "transactionLabel": "交易数据",
-    "transactionDesc": "购买记录、支付详情（通过安全的第三方支付网关处理）",
-    "technicalLabel": "技术数据",
-    "technicalDesc": "IP 地址、浏览器类型、设备信息、Cookies 等",
-    "marketingLabel": "营销数据",
-    "marketingDesc": "偏好设置、反馈信息、问卷调查回复",
-    "section3Title": "3. 我们如何使用您的信息",
-    "section3Intro": "我们会将您的数据用于：",
-    "useProcessOrders": "处理订单并交付商品",
-    "useManageAccount": "管理您的账户并提供客户支持",
-    "useImproveSite": "改进网站功能和用户体验",
-    "usePromotions": "在获得您同意的前提下发送促销优惠信息",
-    "useLegal": "履行法律义务",
-    "section4Title": "4. 我们如何共享您的信息",
-    "section4Intro": "我们可能会在以下情形下共享您的信息：",
-    "shareServiceProviders": "服务提供方：包括支付处理方、物流合作伙伴、数据分析工具等",
-    "shareLegalAuthorities": "法律机构：在法律要求或为维护我们合法权益时",
-    "shareBusinessTransfers": "业务转移：如发生合并、收购或资产转让时",
-    "shareNoSale": "我们不会将您的个人数据出售给任何第三方。",
-    "section5Title": "5. Cookies 和跟踪技术",
-    "section5Intro": "我们使用 Cookies 及类似技术，用于：",
-    "cookiesRemember": "记住您的偏好设置",
-    "cookiesAnalytics": "分析网站流量和使用情况",
-    "cookiesPersonalize": "个性化展示内容与广告",
-    "cookiesSettings": "您可以在浏览器中管理 Cookie 设置。",
-    "section6Title": "6. 数据安全",
-    "section6Body": "我们采用适当的技术和组织措施，保护您的数据免遭未授权访问、篡改、披露或毁损。",
-    "section7Title": "7. 您的权利",
-    "section7Intro": "根据您所在司法辖区的不同，您可能享有以下权利：",
-    "rightsAccess": "访问、更正或删除您的个人数据",
-    "rightsWithdrawConsent": "随时撤回您的同意",
-    "rightsObjectProcessing": "反对某些类型的数据处理活动",
-    "rightsPortability": "请求数据可携带",
-    "rightsContact": "若要行使上述权利，请与我们联系。",
-    "section8Title": "8. 国际数据传输",
-    "section8Body": "如果您位于[您的国家/地区]之外，您的数据可能会被传输至并在[您的国家/地区]进行处理，当地的数据保护法律可能与您所在地区不同。",
-    "section9Title": "9. 本政策的变更",
-    "section9Body": "我们可能会不时更新本隐私政策。任何变更都会在本页面公布，并更新生效日期。"
+    "title": "隐私声明"
   },
   "productCategoryNavigationCards": {
     "heading": "Product categories",
@@ -1734,7 +1555,13 @@
       "quantity": "Quantity",
       "decreaseQuantity": "Decrease quantity",
       "increaseQuantity": "Increase quantity",
-      "notFound": "Product not found"
+      "notFound": "Product not found",
+      "signatureNote": "订单总额达到 750 美元或以上时，配送需要收件人签名。",
+      "madeToOrder": {
+        "title": "定制生产",
+        "description": "该商品会在订单确认后开始生产，生产时间会叠加到物流时间，预计排期将随订单确认。",
+        "cancellation": "仅可在生产或材料下料开始前申请取消。生产开始后，取消可能受限，并可能产生定制处理费用。"
+      }
     }
   },
   "profile": {
@@ -1879,33 +1706,6 @@
     "tabs": {
       "calculator": "Calculator",
       "parameter": "Parameter"
-    },
-    "parameter": {
-      "title": "Parameter definitions",
-      "intro": "Use these definitions to double-check your rim and hub data before calculating. Small measurement differences can change the spoke length.",
-      "items": {
-        "erd": {
-          "title": "ERD (Effective Rim Diameter)",
-          "desc": "The diameter at the spoke nipple seats inside the rim. Use the rim brand's ERD spec or measure it with two nipples and a caliper."
-        },
-        "flangeDiameter": {
-          "title": "Flange diameter",
-          "desc": "The circle diameter through the spoke hole centers on the hub flange (left and right can be different)."
-        },
-        "centerToFlange": {
-          "title": "Center-to-flange",
-          "desc": "The distance from the hub centerline to each flange (left and right). This affects dish and spoke length asymmetry."
-        },
-        "holeCount": {
-          "title": "Spoke hole count",
-          "desc": "Must match both rim and hub (e.g. 24/28/32). Make sure you select the same count for front and rear."
-        },
-        "crossPattern": {
-          "title": "Cross pattern",
-          "desc": "How many times each spoke crosses other spokes (2x/3x/4x). Higher cross typically increases spoke length."
-        }
-      },
-      "note": "Tip: If you are unsure, use the manufacturer's published specs. If you measure yourself, measure twice and enter values to the same unit (mm)."
     }
   },
   "storefrontDataNotice": {
@@ -2006,49 +1806,12 @@
     "points": "{count} 积分"
   },
   "warranty": {
-    "title": "保修查询",
-    "subtitle": "查询您的产品保修状态",
-    "login_required": "请登录后查询产品保修信息。",
-    "login_button": "登录",
-    "input_label": "请输入订单号：",
-    "input_placeholder": "例如：TZ202608230001",
-    "check_button": "查询",
-    "help_text": "订单发货后可按订单号查询发货商品和剩余保修时间。",
-    "months": "个月",
-    "days": "天",
-    "result": {
-      "valid": "保修有效",
-      "expired": "保修已过期",
-      "not_found": "未找到发货记录"
-    },
-    "actions": {
-      "check_another": "查询其他产品",
-      "contact_support": "联系客服"
-    },
-    "fields": {
-      "order_number": "订单号",
-      "product_type": "产品类型",
-      "product_name": "产品名称",
-      "ship_date": "出货日期",
-      "warranty_period": "保修期限",
-      "warranty_until": "保修至",
-      "remaining": "剩余时间",
-      "expired_ago": "已过期 {days} 天"
-    },
-    "records": {
-      "title": "服务记录",
-      "no_records": "暂无服务记录"
-    },
     "errors": {
-      "not_found_message": "未找到订单号为 {code} 的发货记录",
       "check_tips": {
-        "0": "请确认订单号与订单中显示的内容一致。",
-        "1": "如果仍找不到已发货订单，请联系客服。"
-      },
-      "error_contact": "如有疑问，请联系我们。"
-    },
-    "cardDesc": "输入订单号查询发货商品、保修期限和售后记录。",
-    "checkNow": "立即查询"
+        "0": "Check that the order number was entered exactly as shown on your order.",
+        "1": "Contact support if the shipped order still cannot be found."
+      }
+    }
   },
   "wheelsetSelectionAssistant": {
     "title": "轮组适配助手",

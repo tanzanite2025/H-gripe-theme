@@ -47,8 +47,17 @@ func (r *StorefrontRouteCatalogRepository) UpsertSnapshot(entries []seodomain.St
 		if err := tx.Model(&seodomain.StorefrontRouteCatalogEntry{}).
 			Where("last_seen_at < ?", seenAt).
 			Updates(map[string]interface{}{
-				"entry_status": "stale",
-				"updated_at":   time.Now().UTC(),
+				"entry_status":        "stale",
+				"updated_at":          time.Now().UTC(),
+				"last_check_status":   "",
+				"last_http_status":    0,
+				"last_final_url":      "",
+				"last_canonical_url":  "",
+				"last_response_ms":    0,
+				"last_redirect_count": 0,
+				"last_content_hash":   "",
+				"last_check_error":    "",
+				"last_checked_at":     nil,
 			}).Error; err != nil {
 			return err
 		}
@@ -89,6 +98,15 @@ func (r *StorefrontRouteCatalogRepository) UpsertSnapshot(entries []seodomain.St
 				"duplicate_group_key": entry.DuplicateGroupKey,
 				"manifest_version":    entry.ManifestVersion,
 				"last_seen_at":        entry.LastSeenAt,
+				"last_check_status":   "",
+				"last_http_status":    0,
+				"last_final_url":      "",
+				"last_canonical_url":  "",
+				"last_response_ms":    0,
+				"last_redirect_count": 0,
+				"last_content_hash":   "",
+				"last_check_error":    "",
+				"last_checked_at":     nil,
 				"updated_at":          time.Now().UTC(),
 			}).Error; err != nil {
 				return err
@@ -155,6 +173,7 @@ type StorefrontRouteCatalogListFilter struct {
 	NeedsAttention      *bool
 	ProblemScope        string
 	ExcludeAlias        bool
+	CheckableOnly       bool
 }
 
 func (r *StorefrontRouteCatalogRepository) List(filter StorefrontRouteCatalogListFilter) ([]seodomain.StorefrontRouteCatalogEntry, int64, error) {
@@ -216,6 +235,13 @@ func (r *StorefrontRouteCatalogRepository) List(filter StorefrontRouteCatalogLis
 	}
 	if filter.ExcludeAlias {
 		query = query.Where("is_alias = ?", false)
+	}
+	if filter.CheckableOnly {
+		query = query.Where(
+			"is_checkable = ? AND entry_status <> ?",
+			true,
+			seodomain.RouteEntryStatusStale,
+		)
 	}
 	if search := filter.Search; search != "" {
 		like := "%" + search + "%"

@@ -1,0 +1,44 @@
+{
+  "title": "Membership Levels and Point Rules",
+  "intro": "Review member tiers, discount levels, earning rules, redemption rates, referral rewards, and check-in rules.",
+  "seoTitle": "Membership Levels and Point Rules",
+  "seoDescription": "Review membership levels, points earning rules, redemption rates, referral rewards, and daily check-in rewards.",
+  "feedbackTitle": "Share your feedback about membership levels and points",
+  "feedbackSubtitle": "Tell us whether tier rules, earning rules, redemption, referral rewards, or check-in details are clear.",
+  "levels": {
+    "title": "Membership Levels",
+    "header": {
+      "level": "Level",
+      "pointsRequired": "Points Required",
+      "discountRate": "Discount Rate"
+    },
+    "rows": {
+      "ordinary": "Ordinary",
+      "bronze": "Bronze",
+      "silver": "Silver",
+      "gold": "Gold",
+      "platinum": "Platinum",
+      "diamond": "Diamond"
+    }
+  },
+  "points": {
+    "title": "Points Rules",
+    "pointValueSingular": "{points} Point",
+    "pointsValue": "{points} Points",
+    "notConfigured": "Not configured",
+    "purchaseEarn": "Order completion",
+    "purchaseEarnRule": "{points} per 1 {currency} of product amount after discounts, awarded after order completion",
+    "purchaseEarnDisabled": "Purchase earning is not enabled",
+    "invite": "Invite new users",
+    "redemptionDisplayRule": "{points} = {currency} {amount}",
+    "redemptionDisabled": "Points redemption is not enabled",
+    "checkin": "Daily check-in",
+    "checkinBaseRule": "{base} per check-in",
+    "checkinMaxRule": "up to {max}",
+    "checkinStreakRule": "+{bonus} every {interval} consecutive days",
+    "checkinDisabled": "Daily check-in points are not enabled",
+    "referralDisplayRule": "Inviter gets {referrer}; invitee gets {referee}",
+    "referralDisabled": "Referral points are not enabled",
+    "redeem": "Redemption rate"
+  }
+}

@@ -10,13 +10,12 @@ import {
   type StorefrontSeoAlternateLinkEntry,
   useStorefrontSeoRouteOverride,
 } from '~/composables/seo/useStorefrontSeoLinks'
-import type { BlogCategory, BlogPostDetail } from '~/utils/blog/types'
+import type { BlogPostDetail } from '~/utils/blog/types'
 import { buildBlogPath } from '~/utils/seo/blog'
 import { toAbsoluteSeoUrl } from '~/utils/seo/urls'
 
 interface UseBlogPostSeoOptions {
   post: MaybeRefOrGetter<BlogPostDetail | null | undefined>
-  category: MaybeRefOrGetter<BlogCategory | null>
 }
 
 const trimTrailingSlash = (value: string): string => value.replace(/\/+$/, '')
@@ -39,9 +38,8 @@ export const useBlogPostSeo = (options: UseBlogPostSeoOptions) => {
   })
 
   const post = computed(() => toValue(options.post) || null)
-  const category = computed(() => toValue(options.category))
   const currentSlug = computed(() => post.value?.slug || '')
-  const currentPath = computed(() => localePath(buildBlogPath(category.value, currentSlug.value)))
+  const currentPath = computed(() => localePath(buildBlogPath(currentSlug.value)))
   const canonicalUrl = computed(() => {
     const explicitCanonical = cleanText(post.value?.canonicalUrl)
     return explicitCanonical

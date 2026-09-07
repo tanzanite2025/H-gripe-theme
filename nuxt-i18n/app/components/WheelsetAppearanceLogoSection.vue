@@ -3,11 +3,10 @@
     <!-- Intro / Recommendation Card -->
     <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6 text-center border-t-4 border-emerald-500">
        <h3 class="text-lg font-bold tz-text-primary mb-3">
-         Why we recommend laser-engraved logos
+         {{ t('guidesWheelsetBuyersAppearance.recommendation.title') }}
        </h3>
        <p class="text-sm tz-text-secondary leading-relaxed max-w-2xl mx-auto mb-4">
-          For most standard orders, <strong>Laser Engraving</strong> is our top recommendation. 
-          It's eco-friendly, permanent, and significantly faster to produce—shortening lead times by <strong>5–7 days</strong> compared to custom paint or water decals.
+          {{ t('guidesWheelsetBuyersAppearance.recommendation.body') }}
        </p>
        
        <button
@@ -15,7 +14,7 @@
         class="inline-flex items-center gap-2 px-6 py-2 rounded-full tz-surface-panel hover:tz-surface-panel text-emerald-600 text-xs font-bold uppercase tracking-wider transition-all shadow-lg hover:shadow-emerald-500/20"
         @click="goToAboutAppearance"
       >
-        <span>Explore Weave & Finish Options</span>
+        <span>{{ t('guidesWheelsetBuyersAppearance.recommendation.button') }}</span>
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
       </button>
     </div>
@@ -25,84 +24,86 @@
        <!-- Option 1: Custom Decals (Violet) -->
        <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300 group">
           <div class="flex items-center gap-3 mb-4 pb-3 border-b border-emerald-200">
-             <h3 class="text-base font-bold tz-text-primary">Customized Decals</h3>
+             <h3 class="text-base font-bold tz-text-primary">
+               {{ t('guidesWheelsetBuyersAppearance.decals.title') }}
+             </h3>
           </div>
           
            <p class="text-sm tz-text-secondary leading-relaxed mb-4">
-             Our graphics department can execute any vision using:
+             {{ t('guidesWheelsetBuyersAppearance.decals.body') }}
           </p>
           <ul class="space-y-2 mb-4">
-              <li class="flex items-center gap-2 text-xs tz-text-secondary">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Waterslide Decals (complex colors)
-             </li>
-              <li class="flex items-center gap-2 text-xs tz-text-secondary">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Removable Vinyl Stickers
-             </li>
-              <li class="flex items-center gap-2 text-xs tz-text-secondary">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Custom Fonts & Locations
+              <li
+                v-for="(item, index) in decalsItems"
+                :key="index"
+                class="flex items-center gap-2 text-xs tz-text-secondary"
+              >
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> {{ rt(item) }}
              </li>
           </ul>
           <p class="text-xs tz-text-muted italic">
-             Ideal for bold statements and specific team colors.
+             {{ t('guidesWheelsetBuyersAppearance.decals.note') }}
           </p>
        </div>
 
        <!-- Option 2: Laser Engraving (Teal) -->
        <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300 group">
           <div class="flex items-center gap-3 mb-4 pb-3 border-b border-emerald-200">
-             <h3 class="text-base font-bold tz-text-primary">Laser Engraving</h3>
+             <h3 class="text-base font-bold tz-text-primary">
+               {{ t('guidesWheelsetBuyersAppearance.laser.title') }}
+             </h3>
           </div>
           
           <div class="absolute top-5 right-5">
              <span class="inline-flex items-center gap-1 px-2 py-1 rounded tz-micro-label font-bold uppercase tracking-wider bg-emerald-50 text-emerald-600 border border-emerald-200">
                 <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
-                Eco-Friendly
+                {{ t('guidesWheelsetBuyersAppearance.laser.badge') }}
              </span>
           </div>
 
            <p class="text-sm tz-text-secondary leading-relaxed mb-4">
-              Our sustainability choice. Precision etching in a sleek <span class="tz-text-primary">light gray</span> tone.
+              {{ t('guidesWheelsetBuyersAppearance.laser.body') }}
           </p>
           <ul class="space-y-2 mb-4">
-              <li class="flex items-center gap-2 text-xs tz-text-secondary">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Preserves structural integrity
-             </li>
-              <li class="flex items-center gap-2 text-xs tz-text-secondary">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> No plastic/vinyl waste
-             </li>
-              <li class="flex items-center gap-2 text-xs tz-text-secondary">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Fastest production time
+              <li
+                v-for="(item, index) in laserItems"
+                :key="index"
+                class="flex items-center gap-2 text-xs tz-text-secondary"
+              >
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> {{ rt(item) }}
              </li>
           </ul>
           <p class="text-xs tz-text-muted italic">
-             Subtle, premium, and permanent.
+             {{ t('guidesWheelsetBuyersAppearance.laser.note') }}
           </p>
        </div>
     </div>
 
     <!-- Gallery 1: Laser Examples -->
     <div>
-        <h4 class="text-xs font-bold tz-text-muted uppercase tracking-widest mb-3 pl-1">Laser Engraving Gallery</h4>
+        <h4 class="text-xs font-bold tz-text-muted uppercase tracking-widest mb-3 pl-1">
+          {{ t('guidesWheelsetBuyersAppearance.gallery.title') }}
+        </h4>
         <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <GuideImage
             src="/public/wheelsetbuyersguide/appearancelogo/Carbon-rim-laser-engraving-LOGO.webp"
-            alt="Carbon rim with customized laser engraved logo detail"
+            :alt="t('guidesWheelsetBuyersAppearance.gallery.detailAlt')"
             :zoomOnClick="true"
-            caption="Detail View"
+            :caption="t('guidesWheelsetBuyersAppearance.gallery.detailCaption')"
             class="rounded-xl overflow-hidden shadow-lg"
           />
           <GuideImage
             src="/public/wheelsetbuyersguide/appearancelogo/Carbon-rim-laser-engraving-LOGO1.webp"
-            alt="Close-up of carbon rim laser engraving process"
+            :alt="t('guidesWheelsetBuyersAppearance.gallery.processAlt')"
             :zoomOnClick="true"
-            caption="Process Close-up"
+            :caption="t('guidesWheelsetBuyersAppearance.gallery.processCaption')"
             class="rounded-xl overflow-hidden shadow-lg"
           />
           <GuideImage
             src="/public/wheelsetbuyersguide/appearancelogo/Carbon-rim-laser-engraving-LOGO2.webp"
-            alt="Different examples of carbon rim laser engraved graphics"
+            :alt="t('guidesWheelsetBuyersAppearance.gallery.finishedAlt')"
             :zoomOnClick="true"
-            caption="Finished Effect"
+            :caption="t('guidesWheelsetBuyersAppearance.gallery.finishedCaption')"
             class="rounded-xl overflow-hidden shadow-lg"
           />
         </div>
@@ -111,27 +112,31 @@
     <!-- Advanced Finishes Card -->
     <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6 mt-6">
        <div class="flex items-center justify-between mb-4 pb-3 border-b tz-border-subtle">
-           <h3 class="text-base font-bold tz-text-primary">Pro Options: Weave & Finish</h3>
-           <span class="tz-micro-label tz-surface-panel tz-text-muted px-2 py-1 rounded border tz-border-subtle">For OEM / Teams</span>
+           <h3 class="text-base font-bold tz-text-primary">
+             {{ t('guidesWheelsetBuyersAppearance.advanced.title') }}
+           </h3>
+           <span class="tz-micro-label tz-surface-panel tz-text-muted px-2 py-1 rounded border tz-border-subtle">
+             {{ t('guidesWheelsetBuyersAppearance.advanced.badge') }}
+           </span>
        </div>
        
         <p class="text-sm tz-text-secondary mb-6">
-          Planning a long-term build or team fleet? Go beyond standard logos with custom carbon weaves and surface treatments.
+          {{ t('guidesWheelsetBuyersAppearance.advanced.body') }}
        </p>
 
        <div class="grid gap-4 sm:grid-cols-2">
           <GuideImage
             src="/company/aboutus/appearance/carbon-rim-finish1.webp"
-            alt="Carbon rim surface finish detail 1"
+            :alt="t('guidesWheelsetBuyersAppearance.advanced.matteAlt')"
             :zoomOnClick="true"
-            caption="Matte Finish"
+            :caption="t('guidesWheelsetBuyersAppearance.advanced.matteCaption')"
             class="rounded-xl overflow-hidden border tz-border-subtle"
           />
           <GuideImage
             src="/company/aboutus/appearance/carbonrims-finish2.webp"
-            alt="Carbon rim surface finish detail 2"
+            :alt="t('guidesWheelsetBuyersAppearance.advanced.glossyAlt')"
             :zoomOnClick="true"
-            caption="Glossy Finish"
+            :caption="t('guidesWheelsetBuyersAppearance.advanced.glossyCaption')"
             class="rounded-xl overflow-hidden border tz-border-subtle"
           />
        </div>
@@ -141,7 +146,24 @@
 </template>
 
 <script setup lang="ts">
+import { computed, watch } from 'vue'
+import { useI18n } from '#imports'
 import GuideImage from '~/components/GuideImage.vue'
+import { usePageMessages } from '~/composables/usePageMessages'
+
+const { locale, t, tm, rt } = useI18n()
+const { loadPageMessages } = usePageMessages('guidesWheelsetBuyersAppearance')
+await loadPageMessages(locale.value)
+watch(locale, (nextLocale) => {
+  void loadPageMessages(nextLocale)
+})
+
+const decalsItems = computed<string[]>(() => (
+  tm('guidesWheelsetBuyersAppearance.decals.items') as string[]
+))
+const laserItems = computed<string[]>(() => (
+  tm('guidesWheelsetBuyersAppearance.laser.items') as string[]
+))
 
 const { goToAboutAppearance } = defineProps<{
   goToAboutAppearance: () => void | Promise<void>

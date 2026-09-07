@@ -1,0 +1,80 @@
+{
+  "notice": {
+    "title": "Important Safety Notice",
+    "body": "Improper installation, use, or maintenance may cause serious damage to the wheels and pose a danger to the rider. To ensure a reliable riding experience, please read and follow the instructions below.",
+    "experienceNote": "Even if you have years of cycling or wheelset assembly experience, these instructions still apply to these carbon fiber products."
+  },
+  "installation": {
+    "title": "Installation & Inspection",
+    "professional": {
+      "title": "Professional installation",
+      "body": "Have the wheelset installed by a qualified mechanic. Incompatibility with brakes or drivetrain can damage wheels or frame."
+    },
+    "tire": {
+      "title": "Tire installation",
+      "body": "Use provided plastic tire levers only. Metal levers will permanently damage the rim.",
+      "button": "Open Tubeless Tire Installation Guide"
+    },
+    "torque": {
+      "title": "Torque specs",
+      "body": "Follow manufacturer recommended torque for all bolts and axles."
+    },
+    "brakePads": {
+      "title": "Brake pads",
+      "body": "Use carbon-specific pads only to prevent rim damage."
+    }
+  },
+  "riding": {
+    "title": "Usage & Riding",
+    "weight": {
+      "title": "Weight limits",
+      "body": "Strictly follow max rider weight/load limits. Overloading causes rim cracking and injury risk."
+    },
+    "road": {
+      "title": "Road conditions",
+      "body": "Avoid severe potholes and gravel. Impact damage may not be immediately visible.",
+      "note": "After impact: clean the rim, remove the tire, and inspect carefully."
+    },
+    "braking": {
+      "title": "Braking technique",
+      "body": "Avoid continuous drag braking on long descents. Use intermittent braking to prevent carbon overheating."
+    }
+  },
+  "maintenance": {
+    "title": "Regular Maintenance",
+    "inspection": {
+      "title": "Pre-ride inspection",
+      "items": [
+        "Check rims for cracks, bulges, or delamination.",
+        "Inspect brake pads and remove metal shavings or stones."
+      ]
+    },
+    "tension": {
+      "title": "Spoke tension",
+      "body": "Regularly check for even tension distribution.",
+      "button": "Open Spoke Tension Settings"
+    },
+    "cleaning": {
+      "title": "Cleaning",
+      "body": "Use neutral detergent and soft cloth only. Do not use strong acids, alkalis, or high-pressure water."
+    }
+  },
+  "emergency": {
+    "title": "Prohibited & Emergency",
+    "prohibited": {
+      "title": "Strictly prohibited",
+      "items": [
+        "No non-original parts modification.",
+        "No sanding or grinding with metal tools.",
+        "No extreme-temperature storage such as ovens or freezing environments."
+      ]
+    },
+    "protocol": {
+      "title": "Emergency protocol",
+      "bodyBefore": "If cracks or abnormal noises occur:",
+      "stop": "stop riding immediately",
+      "bodyAfter": "After any crash, perform thorough inspection even if no damage is visible.",
+      "button": "Open Advanced Warranty Policy"
+    }
+  }
+}

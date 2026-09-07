@@ -1,0 +1,13 @@
+{
+  "title": "Tire width to rim internal width helper",
+  "description": "Enter your tire width in millimetres and choose the rim system. Tube-type and tubeless-ready setups are not split into two width calculators here; tubular rims use a separate tubular tire and rim system. Always cross-check the specific recommendations from your rim and tire manufacturers.",
+  "tireWidthLabel": "Tire width (mm)",
+  "tireWidthPlaceholder": "e.g. 28 or 57",
+  "rimSystemLabel": "Rim system",
+  "hookless": "Hookless (TSS)",
+  "hooked": "Hooked (TC)",
+  "empty": "Enter a tire width to see a suggested rim internal width range.",
+  "recommended": "Recommended rim internal width:",
+  "sweetSpot": "Sweet spot around {width} mm. For aggressive or technical riding, stay closer to the wider end of the range.",
+  "search": "Search for suitable width rims"
+}

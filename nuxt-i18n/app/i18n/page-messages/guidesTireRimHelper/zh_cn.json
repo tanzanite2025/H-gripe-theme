@@ -1,0 +1,13 @@
+{
+  "title": "轮胎宽度与车圈内宽助手",
+  "description": "输入轮胎宽度并选择车圈系统。这里不再将内胎式和无内胎 ready 系统拆成两个宽度计算器；管胎车圈属于独立的管胎轮胎与车圈系统。请始终结合轮胎和车圈制造商的具体建议进行确认。",
+  "tireWidthLabel": "轮胎宽度（mm）",
+  "tireWidthPlaceholder": "例如 28 或 57",
+  "rimSystemLabel": "车圈系统",
+  "hookless": "无钩（TSS）",
+  "hooked": "有钩（TC）",
+  "empty": "输入轮胎宽度后查看建议的车圈内宽范围。",
+  "recommended": "建议车圈内宽：",
+  "sweetSpot": "适宜中心约为 {width} mm。激烈或技术型骑行时，建议靠近范围的较宽一端。",
+  "search": "搜索合适内宽的车圈"
+}

@@ -15,7 +15,6 @@ func (h *FAQHandler) ListFAQs(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
 	locale := c.Query("locale")
-	category := c.Query("category")
 	pageID := c.Query("page_id")
 	status := c.Query("status")
 	search := c.Query("search")
@@ -27,7 +26,7 @@ func (h *FAQHandler) ListFAQs(c *gin.Context) {
 		pageSize = 20
 	}
 
-	faqs, total, err := h.faqService.ListAdmin(locale, pageID, category, status, search, page, pageSize)
+	faqs, total, err := h.faqService.ListAdmin(locale, pageID, status, search, page, pageSize)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch FAQs"})
 		return
@@ -50,7 +49,6 @@ func (h *FAQHandler) ListFAQs(c *gin.Context) {
 // GET /api/admin/faqs/grouped
 func (h *FAQHandler) ListFAQGroups(c *gin.Context) {
 	locale := c.Query("locale")
-	category := c.Query("category")
 	pageID := c.Query("page_id")
 	status := c.Query("status")
 	search := c.Query("search")
@@ -63,7 +61,7 @@ func (h *FAQHandler) ListFAQGroups(c *gin.Context) {
 		return
 	}
 
-	pages, total, err := h.faqService.ListAdminGrouped(locale, pageID, category, status, search)
+	pages, total, err := h.faqService.ListAdminGrouped(locale, pageID, status, search)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch FAQ groups"})
 		return
@@ -112,7 +110,6 @@ func (h *FAQHandler) CreateFAQ(c *gin.Context) {
 		AnswerImageWidth:  req.AnswerImageWidth,
 		AnswerImageHeight: req.AnswerImageHeight,
 		PageID:            req.PageID,
-		Category:          req.Category,
 		Locale:            req.Locale,
 		Status:            req.Status,
 		Order:             req.Order,
@@ -157,7 +154,6 @@ func (h *FAQHandler) UpdateFAQ(c *gin.Context) {
 		AnswerImageHeight: req.AnswerImageHeight,
 		AnswerImageSet:    true,
 		PageID:            req.PageID,
-		Category:          req.Category,
 		Locale:            req.Locale,
 		Status:            req.Status,
 		Order:             req.Order,

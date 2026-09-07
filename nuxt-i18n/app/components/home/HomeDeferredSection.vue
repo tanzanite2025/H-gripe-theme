@@ -8,7 +8,6 @@
   >
     <component
       :is="deferredComponent"
-      :hydrate-when="shouldMount"
       v-bind="$attrs"
     />
   </div>
@@ -18,9 +17,6 @@
 import {
   computed,
   defineAsyncComponent,
-  defineComponent,
-  h,
-  mergeProps,
   onBeforeUnmount,
   onMounted,
   ref,
@@ -35,47 +31,6 @@ defineOptions({
 
 type DeferredSectionLoader = () => Promise<{ default: Component }>
 
-const createSsrDeferredComponent = (loader: DeferredSectionLoader) => {
-  const child = defineAsyncComponent({ loader })
-
-  return defineComponent({
-    inheritAttrs: false,
-    props: {
-      hydrateWhen: {
-        type: Boolean,
-        default: false,
-      },
-    },
-    setup(props, context) {
-      const deferredChild = defineAsyncComponent({
-        hydrate: (hydrate) => {
-          if (props.hydrateWhen) {
-            hydrate()
-            return
-          }
-
-          const stop = watch(
-            () => props.hydrateWhen,
-            (ready) => {
-              if (!ready) return
-              stop()
-              hydrate()
-            },
-          )
-          return stop
-        },
-        loader: () => Promise.resolve(child),
-      })
-
-      return () => h(
-        deferredChild,
-        mergeProps(context.attrs),
-        context.slots,
-      )
-    },
-  })
-}
-
 const props = withDefaults(defineProps<{
   loader: DeferredSectionLoader
   moduleId: string
@@ -88,7 +43,25 @@ const props = withDefaults(defineProps<{
 
 const root = ref<HTMLElement | null>(null)
 const shouldMount = ref(false)
-const deferredComponent = createSsrDeferredComponent(props.loader)
+const deferredComponent = defineAsyncComponent({
+  loader: props.loader,
+  hydrate: (hydrate) => {
+    if (shouldMount.value) {
+      hydrate()
+      return
+    }
+
+    const stop = watch(
+      shouldMount,
+      (ready) => {
+        if (!ready) return
+        stop()
+        hydrate()
+      },
+    )
+    return stop
+  },
+})
 let observer: IntersectionObserver | null = null
 
 if (import.meta.server) {

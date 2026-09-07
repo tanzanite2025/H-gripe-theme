@@ -38,6 +38,7 @@ import {
 } from '~/utils/productDetail'
 import type {
   GoProduct,
+  ProductAvailability,
   ProductVariant,
 } from '~/types/productDetail'
 
@@ -49,7 +50,7 @@ export interface ProductDetailPurchaseOptions {
   selectedCartTitle: MaybeRefOrGetter<string>
   effectivePrice: MaybeRefOrGetter<number>
   currentCurrency: MaybeRefOrGetter<string>
-  selectedAvailability: MaybeRefOrGetter<'in_stock' | 'out_of_stock'>
+  selectedAvailability: MaybeRefOrGetter<ProductAvailability>
   primaryMediaThumbnail: MaybeRefOrGetter<string>
 }
 
@@ -88,13 +89,13 @@ export function useProductDetailPurchase(options: ProductDetailPurchaseOptions) 
   const selectedCartTitle = computed(() => toValue(options.selectedCartTitle) || '')
   const effectivePrice = computed(() => Number(toValue(options.effectivePrice) || 0))
   const currentCurrency = computed(() => toValue(options.currentCurrency) || 'USD')
-  const selectedAvailability = computed(() => toValue(options.selectedAvailability) || 'out_of_stock')
+  const selectedAvailability = computed<ProductAvailability>(() => toValue(options.selectedAvailability) || 'out_of_stock')
   const primaryMediaThumbnail = computed(() => toValue(options.primaryMediaThumbnail) || '')
 
   const canAddToCart = computed(() => Boolean(
     product.value
     && effectivePrice.value > 0
-    && selectedAvailability.value === 'in_stock',
+    && ['in_stock', 'made_to_order'].includes(selectedAvailability.value),
   ))
 
   const normalizeSelectedQuantity = (value: unknown) => {
@@ -214,6 +215,7 @@ export function useProductDetailPurchase(options: ProductDetailPurchaseOptions) 
         title: selectedCartTitle.value,
         thumbnail: primaryMediaThumbnail.value || undefined,
         weightGrams: selectedVariantWeight.value,
+        fulfillmentMode: shopProduct.value.fulfillmentMode,
       }),
       quantity: selectedQuantity.value,
     }
@@ -301,6 +303,7 @@ export function useProductDetailPurchase(options: ProductDetailPurchaseOptions) 
       title: selectedCartTitle.value,
       thumbnail: primaryMediaThumbnail.value || undefined,
       weightGrams: selectedVariantWeight.value,
+      fulfillmentMode: shopProduct.value.fulfillmentMode,
     }), selectedQuantity.value)
   }
 

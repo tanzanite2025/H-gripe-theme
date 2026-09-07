@@ -77,14 +77,17 @@ func applyQuickBuyCandidateScope(query *gorm.DB, input ProductQuickBuyCandidateQ
 	query = query.
 		Where("products.status = ?", "active").
 		Where(activeVariantExistsSQL("pv_quick_buy_candidate")).
-		Where(`EXISTS (
-			SELECT 1
-			FROM product_variants pv_quick_buy_candidate_stock
-			WHERE pv_quick_buy_candidate_stock.product_id = products.id
-			  AND pv_quick_buy_candidate_stock.deleted_at IS NULL
-			  AND pv_quick_buy_candidate_stock.is_active = TRUE
-			  AND pv_quick_buy_candidate_stock.stock > 0
-		)`)
+		Where(`(
+			products.fulfillment_mode = ?
+			OR EXISTS (
+				SELECT 1
+				FROM product_variants pv_quick_buy_candidate_stock
+				WHERE pv_quick_buy_candidate_stock.product_id = products.id
+				  AND pv_quick_buy_candidate_stock.deleted_at IS NULL
+				  AND pv_quick_buy_candidate_stock.is_active = TRUE
+				  AND pv_quick_buy_candidate_stock.stock > 0
+			)
+		)`, product.FulfillmentModeMadeToOrder)
 
 	if len(input.ProductSpecificationTemplateIDs) > 0 {
 		query = query.Where("products.product_specification_template_id IN ?", input.ProductSpecificationTemplateIDs)
@@ -255,14 +258,17 @@ func (r *ProductRepository) ListPublicAvailable(locale string, offset, limit int
 		Preload("PackagingTemplate").
 		Where("products.status = ?", "active").
 		Where(activeVariantExistsSQL("pv_recommendation")).
-		Where(`EXISTS (
-			SELECT 1
-			FROM product_variants pv_recommendation_stock
-			WHERE pv_recommendation_stock.product_id = products.id
-			  AND pv_recommendation_stock.deleted_at IS NULL
-			  AND pv_recommendation_stock.is_active = TRUE
-			  AND pv_recommendation_stock.stock > 0
-		)`)
+		Where(`(
+			products.fulfillment_mode = ?
+			OR EXISTS (
+				SELECT 1
+				FROM product_variants pv_recommendation_stock
+				WHERE pv_recommendation_stock.product_id = products.id
+				  AND pv_recommendation_stock.deleted_at IS NULL
+				  AND pv_recommendation_stock.is_active = TRUE
+				  AND pv_recommendation_stock.stock > 0
+			)
+		)`, product.FulfillmentModeMadeToOrder)
 
 	if locale != "" {
 		query = query.Where("products.locale = ?", locale)
@@ -297,14 +303,17 @@ func (r *ProductRepository) ListRecommendationCandidates(input ProductRecommenda
 		Preload("PackagingTemplate").
 		Where("products.status = ?", "active").
 		Where(activeVariantExistsSQL("pv_recommendation_candidate")).
-		Where(`EXISTS (
-			SELECT 1
-			FROM product_variants pv_recommendation_candidate_stock
-			WHERE pv_recommendation_candidate_stock.product_id = products.id
-			  AND pv_recommendation_candidate_stock.deleted_at IS NULL
-			  AND pv_recommendation_candidate_stock.is_active = TRUE
-			  AND pv_recommendation_candidate_stock.stock > 0
-		)`)
+		Where(`(
+			products.fulfillment_mode = ?
+			OR EXISTS (
+				SELECT 1
+				FROM product_variants pv_recommendation_candidate_stock
+				WHERE pv_recommendation_candidate_stock.product_id = products.id
+				  AND pv_recommendation_candidate_stock.deleted_at IS NULL
+				  AND pv_recommendation_candidate_stock.is_active = TRUE
+				  AND pv_recommendation_candidate_stock.stock > 0
+			)
+		)`, product.FulfillmentModeMadeToOrder)
 
 	if input.Locale != "" {
 		query = query.Where("products.locale = ?", input.Locale)

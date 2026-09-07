@@ -150,3 +150,46 @@ func TestPublicCartSummaryCanonicalizesFirstPartyMediaURLs(t *testing.T) {
 		t.Fatalf("public cart response missing canonical media URLs: %s", body)
 	}
 }
+
+func TestPublicCartSummaryExposesMadeToOrderAvailabilityWithoutStock(t *testing.T) {
+	variantID := uint(19)
+	summary := &productdomain.CartSummary{
+		ItemCount: 1,
+		Items: []productdomain.CartItem{
+			{
+				ID:        20,
+				ProductID: 18,
+				VariantID: &variantID,
+				Quantity:  1,
+				Product: &productdomain.Product{
+					ID:              18,
+					Name:            "Custom Cart Product",
+					Slug:            "custom-cart-product",
+					Status:          "active",
+					FulfillmentMode: productdomain.FulfillmentModeMadeToOrder,
+					Variants: []productdomain.ProductVariant{
+						{ID: variantID, IsActive: true, Stock: 0},
+					},
+				},
+				Variant: &productdomain.ProductVariant{
+					ID:        variantID,
+					ProductID: 18,
+					IsActive:  true,
+					Stock:     0,
+				},
+			},
+		},
+	}
+
+	publicSummary := PublicCartSummaryFromDomain(summary)
+	publicItem := publicSummary.Items[0]
+	if publicItem.Product == nil || publicItem.Product.Availability != "made_to_order" {
+		t.Fatalf("made-to-order cart product availability = %#v", publicItem.Product)
+	}
+	if publicItem.Product.FulfillmentMode != productdomain.FulfillmentModeMadeToOrder {
+		t.Fatalf("made-to-order cart fulfillment mode = %q", publicItem.Product.FulfillmentMode)
+	}
+	if publicItem.Variant == nil || publicItem.Variant.Availability != "made_to_order" {
+		t.Fatalf("made-to-order cart variant availability = %#v", publicItem.Variant)
+	}
+}

@@ -9,6 +9,15 @@ export type ContentLabelResolver = (value?: string | null) => string
 export type ContentToneResolver = (status?: string | null) => ContentBadgeTone
 export type ContentDateFormatter = (value?: string | null) => string
 
+export interface BlogCategory {
+  id: number
+  name: string
+  slug: string
+  description?: string | null
+  locale?: string | null
+  sort_order?: number | null
+}
+
 export interface ContentFilters {
   search: string
   status: string
@@ -31,6 +40,7 @@ export interface ContentPost {
   locale?: string | null
   featured_image?: string | null
   tags?: string | null
+  categories?: BlogCategory[] | null
   translation_group_id?: number | string | null
   view_count?: number | string | null
   created_at?: string | null
@@ -46,6 +56,7 @@ export interface ContentPostForm {
   locale: string
   featured_image: string
   tags: string
+  category_ids: number[]
   translation_group_id: number | string | null
 }
 
@@ -58,6 +69,7 @@ export interface ContentPostPayload {
   locale: string
   featured_image: string
   tags: string
+  category_ids: number[]
   translation_group_id: number | string | null
 }
 

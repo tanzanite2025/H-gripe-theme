@@ -85,7 +85,7 @@ export function useStorefrontRouteCatalog(canEdit: boolean) {
 
   const filters = reactive<StorefrontRouteCatalogFilters>({
     search: '',
-    locale: 'all',
+    locale: 'zh_cn',
     source_type: 'all',
     entry_status: 'all',
     check_status: 'all',
@@ -116,7 +116,11 @@ export function useStorefrontRouteCatalog(canEdit: boolean) {
   const loadStats = async (): Promise<void> => {
     statsLoading.value = true
     try {
-      stats.value = { ...defaultStorefrontRouteCatalogStats(), ...(await storefrontRouteCatalogApi.stats()) }
+      const locale = filters.locale !== 'all' ? filters.locale : undefined
+      stats.value = {
+        ...defaultStorefrontRouteCatalogStats(),
+        ...(await storefrontRouteCatalogApi.stats(locale)),
+      }
     } catch (error) {
       console.error('Failed to load storefront route catalog stats:', error)
       toast.error('URL 台账统计加载失败')
@@ -150,7 +154,6 @@ export function useStorefrontRouteCatalog(canEdit: boolean) {
 
   const resetFilters = (): void => {
     filters.search = ''
-    filters.locale = 'all'
     filters.source_type = 'all'
     filters.entry_status = 'all'
     filters.check_status = 'all'
@@ -207,7 +210,11 @@ export function useStorefrontRouteCatalog(canEdit: boolean) {
         ...listParams(),
         limit: 200,
       })
-      toast.success(`检查完成：${summary.ok || 0} 正常，${summary.not_found || 0} 个 404，${summary.errors || 0} 个失败`)
+      const remaining = Number(summary.remaining || 0)
+      const batchMessage = remaining > 0
+        ? `本次处理 ${summary.checked || 0}/${summary.eligible || summary.checked || 0} 条，剩余 ${remaining} 条`
+        : `本次处理 ${summary.checked || 0} 条`
+      toast.success(`检查完成：${batchMessage}；${summary.ok || 0} 正常，${summary.not_found || 0} 个 404，${summary.errors || 0} 个失败`)
       await refreshAll()
     } catch (error) {
       console.error('Failed to check storefront route catalog:', error)

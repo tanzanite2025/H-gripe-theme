@@ -15,9 +15,6 @@
         @click="emit('toggle-item', item.id)"
       >
         <span class="global-all-faqs-mobile-search-accordion__main">
-          <span class="global-all-faqs-mobile-search-accordion__category">
-            {{ item.category }}
-          </span>
           <span class="global-all-faqs-mobile-search-accordion__question">
             {{ item.question }}
           </span>
@@ -110,23 +107,10 @@ const answerId = (itemId: string) => (
 }
 
 .global-all-faqs-mobile-search-accordion__main {
-  display: grid;
+  display: block;
   min-width: 0;
   flex: 1;
   gap: 0.28rem;
-}
-
-.global-all-faqs-mobile-search-accordion__category {
-  min-width: 0;
-  overflow: hidden;
-  color: var(--tz-text-accent);
-  font-size: 0.56rem;
-  font-weight: 900;
-  letter-spacing: 0.08em;
-  line-height: 1.2;
-  text-overflow: ellipsis;
-  text-transform: uppercase;
-  white-space: nowrap;
 }
 
 .global-all-faqs-mobile-search-accordion__question {

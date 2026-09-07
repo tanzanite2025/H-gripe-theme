@@ -5,6 +5,7 @@ import (
 	"commerce-platform/internal/domain/currency"
 	"commerce-platform/internal/domain/order"
 	paymentdomain "commerce-platform/internal/domain/payment"
+	productdomain "commerce-platform/internal/domain/product"
 	attributionpkg "commerce-platform/internal/pkg/attribution"
 	"commerce-platform/internal/pkg/logger"
 	paymentpkg "commerce-platform/internal/pkg/payment"
@@ -105,6 +106,10 @@ func (s *OrderService) CreateOrderWithAttributionAndOptions(
 		}
 	}
 	logger.Info("CreateOrder started", zap.String("trace_id", traceID), zap.Uint("user_id", userID))
+
+	if s.orderEvidenceSnapshot == nil || s.orderEvidence == nil {
+		return nil, ErrOrderEvidenceNotConfigured
+	}
 
 	idempotencyKey := strings.TrimSpace(options.IdempotencyKey)
 	idempotencyRequestHash := strings.TrimSpace(options.IdempotencyRequestHash)
@@ -214,6 +219,7 @@ func (s *OrderService) CreateOrderWithAttributionAndOptions(
 		if shippingMethodSnapshot == "" {
 			shippingMethodSnapshot = "standard"
 		}
+		fulfillmentMode := order.ResolveFulfillmentMode(quote.Items)
 		isZeroTotalOrder := quote.TotalAmount <= 0
 		orderStatus := "pending"
 		paymentStatus := "unpaid"
@@ -231,29 +237,32 @@ func (s *OrderService) CreateOrderWithAttributionAndOptions(
 		}
 
 		o := &order.Order{
-			OrderNumber:      orderNumber,
-			UserID:           userID,
-			Status:           orderStatus,
-			PaymentMethod:    paymentMethod,
-			PaymentStatus:    paymentStatus,
-			ShippingMethod:   shippingMethodSnapshot,
-			ShippingStatus:   "pending",
-			CarrierID:        carrierID,
-			CarrierServiceID: carrierServiceID,
-			SubtotalAmount:   quote.SubtotalAmount,
-			TotalAmount:      quote.TotalAmount,
-			ShippingFee:      quote.ShippingFee,
-			TaxAmount:        quote.TaxAmount,
-			DiscountAmount:   quote.DiscountAmount,
-			Currency:         orderCurrency,
-			CouponCode:       quote.CouponCode,
-			PointsUsed:       quote.PointsToUse,
-			PointsValue:      quote.PointsDiscount,
-			FXSnapshotData:   currency.OrderFXSnapshotJSON(quote.FXSnapshot),
-			Items:            quote.Items,
-			ShippingAddress:  shippingAddress,
-			BillingAddress:   billingAddress,
-			PaidAt:           paidAt,
+			OrderNumber:       orderNumber,
+			UserID:            userID,
+			Status:            orderStatus,
+			PaymentMethod:     paymentMethod,
+			PaymentStatus:     paymentStatus,
+			ShippingMethod:    shippingMethodSnapshot,
+			ShippingStatus:    "pending",
+			FulfillmentMode:   fulfillmentMode,
+			ProductionStatus:  order.DefaultProductionStatus(fulfillmentMode),
+			SignatureRequired: order.ResolveSignatureRequired(quote.TotalAmount, quote.FXSnapshot),
+			CarrierID:         carrierID,
+			CarrierServiceID:  carrierServiceID,
+			SubtotalAmount:    quote.SubtotalAmount,
+			TotalAmount:       quote.TotalAmount,
+			ShippingFee:       quote.ShippingFee,
+			TaxAmount:         quote.TaxAmount,
+			DiscountAmount:    quote.DiscountAmount,
+			Currency:          orderCurrency,
+			CouponCode:        quote.CouponCode,
+			PointsUsed:        quote.PointsToUse,
+			PointsValue:       quote.PointsDiscount,
+			FXSnapshotData:    currency.OrderFXSnapshotJSON(quote.FXSnapshot),
+			Items:             quote.Items,
+			ShippingAddress:   shippingAddress,
+			BillingAddress:    billingAddress,
+			PaidAt:            paidAt,
 		}
 
 		variantItemsMap := make(map[uint]int)
@@ -261,7 +270,9 @@ func (s *OrderService) CreateOrderWithAttributionAndOptions(
 			if item.VariantID == nil {
 				return fmt.Errorf("[CRITICAL] Missing variant for product ID %d", item.ProductID)
 			}
-			variantItemsMap[*item.VariantID] += item.Quantity
+			if productdomain.NormalizeFulfillmentMode(item.FulfillmentMode) == productdomain.FulfillmentModeStock {
+				variantItemsMap[*item.VariantID] += item.Quantity
+			}
 		}
 		productIDs, err := repos.Product.DecrementVariantStocks(variantItemsMap)
 		if err != nil {
@@ -274,6 +285,13 @@ func (s *OrderService) CreateOrderWithAttributionAndOptions(
 
 		if err := repos.Order.Create(o); err != nil {
 			return fmt.Errorf("[CRITICAL] Failed to create order in database: %w", err)
+		}
+		snapshot, err := s.orderEvidenceSnapshot.CreateForOrder(repos, o)
+		if err != nil {
+			return fmt.Errorf("[CRITICAL] Failed to create order evidence snapshot: %w", err)
+		}
+		if _, err := s.orderEvidence.CreateInitialPackage(repos, snapshot); err != nil {
+			return fmt.Errorf("[CRITICAL] Failed to create initial order evidence package: %w", err)
 		}
 		if isZeroTotalOrder {
 			if err := settleZeroTotalOrderInTx(repos, o, orderCurrency, paidAt); err != nil {

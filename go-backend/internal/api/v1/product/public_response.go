@@ -15,8 +15,9 @@ import (
 type Availability string
 
 const (
-	AvailabilityInStock    Availability = "in_stock"
-	AvailabilityOutOfStock Availability = "out_of_stock"
+	AvailabilityInStock     Availability = "in_stock"
+	AvailabilityMadeToOrder Availability = "made_to_order"
+	AvailabilityOutOfStock  Availability = "out_of_stock"
 )
 
 // PublicProduct is the storefront contract. It intentionally contains only
@@ -37,6 +38,7 @@ type PublicProduct struct {
 	SalePrice                    *float64                            `json:"sale_price"`
 	DisplayPrice                 *PublicDisplayPrice                 `json:"display_price,omitempty"`
 	DisplayPrices                []PublicDisplayPrice                `json:"display_prices,omitempty"`
+	FulfillmentMode              string                              `json:"fulfillment_mode,omitempty"`
 	MetaTitle                    string                              `json:"meta_title"`
 	MetaDesc                     string                              `json:"meta_description"`
 	Brand                        *PublicProductBrand                 `json:"brand,omitempty"`
@@ -244,8 +246,9 @@ func PublicProductFromDomainWithLocaleAndRoutes(item productdomain.Product, disp
 
 	variants := make([]PublicProductVariant, 0, len(item.ActiveVariants()))
 	productAvailable := productStatusAllowsAvailability(item.Status)
+	fulfillmentMode := productdomain.NormalizeFulfillmentMode(item.FulfillmentMode)
 	for _, variant := range item.ActiveVariants() {
-		variants = append(variants, publicProductVariantFromDomainWithDisplayCurrency(variant, productAvailable, displayCurrency))
+		variants = append(variants, publicProductVariantFromDomainWithFulfillmentMode(variant, productAvailable, displayCurrency, fulfillmentMode))
 	}
 
 	media := make([]PublicProductMedia, 0, len(item.Media))
@@ -320,6 +323,7 @@ func PublicProductFromDomainWithLocaleAndRoutes(item productdomain.Product, disp
 		SalePrice:                    salePrice,
 		DisplayPrice:                 displayPriceForCurrency(displayCurrency, displayPrices),
 		DisplayPrices:                displayPrices,
+		FulfillmentMode:              publicFulfillmentMode(fulfillmentMode),
 		MetaTitle:                    item.MetaTitle,
 		MetaDesc:                     item.MetaDesc,
 		Brand:                        publicProductBrandFromDomain(item.Brand, resolver),
@@ -415,6 +419,10 @@ func publicProductVariantFromDomain(item productdomain.ProductVariant, productAv
 }
 
 func publicProductVariantFromDomainWithDisplayCurrency(item productdomain.ProductVariant, productAvailable bool, displayCurrency string) PublicProductVariant {
+	return publicProductVariantFromDomainWithFulfillmentMode(item, productAvailable, displayCurrency, productdomain.FulfillmentModeStock)
+}
+
+func publicProductVariantFromDomainWithFulfillmentMode(item productdomain.ProductVariant, productAvailable bool, displayCurrency, fulfillmentMode string) PublicProductVariant {
 	displayPrices := publicDisplayPricesFromSnapshots(item.DisplayPriceData)
 	return PublicProductVariant{
 		ID:            item.ID,
@@ -428,7 +436,7 @@ func publicProductVariantFromDomainWithDisplayCurrency(item productdomain.Produc
 		DisplayPrice:  displayPriceForCurrency(displayCurrency, displayPrices),
 		DisplayPrices: displayPrices,
 		IsDefault:     item.IsDefault,
-		Availability:  availabilityForVariant(item, productAvailable),
+		Availability:  availabilityForVariant(item, productAvailable, fulfillmentMode),
 	}
 }
 
@@ -598,6 +606,9 @@ func availabilityForProduct(item productdomain.Product) Availability {
 	if !productStatusAllowsAvailability(item.Status) {
 		return AvailabilityOutOfStock
 	}
+	if productdomain.NormalizeFulfillmentMode(item.FulfillmentMode) == productdomain.FulfillmentModeMadeToOrder && len(item.ActiveVariants()) > 0 {
+		return AvailabilityMadeToOrder
+	}
 	for _, variant := range item.ActiveVariants() {
 		if variant.Stock > 0 {
 			return AvailabilityInStock
@@ -606,8 +617,14 @@ func availabilityForProduct(item productdomain.Product) Availability {
 	return AvailabilityOutOfStock
 }
 
-func availabilityForVariant(item productdomain.ProductVariant, productAvailable bool) Availability {
-	if !productAvailable || !item.IsActive || item.Stock <= 0 {
+func availabilityForVariant(item productdomain.ProductVariant, productAvailable bool, fulfillmentMode string) Availability {
+	if !productAvailable || !item.IsActive {
+		return AvailabilityOutOfStock
+	}
+	if productdomain.NormalizeFulfillmentMode(fulfillmentMode) == productdomain.FulfillmentModeMadeToOrder {
+		return AvailabilityMadeToOrder
+	}
+	if item.Stock <= 0 {
 		return AvailabilityOutOfStock
 	}
 	return AvailabilityInStock
@@ -615,4 +632,11 @@ func availabilityForVariant(item productdomain.ProductVariant, productAvailable 
 
 func productStatusAllowsAvailability(status string) bool {
 	return status == "" || status == "active"
+}
+
+func publicFulfillmentMode(value string) string {
+	if productdomain.NormalizeFulfillmentMode(value) == productdomain.FulfillmentModeMadeToOrder {
+		return productdomain.FulfillmentModeMadeToOrder
+	}
+	return ""
 }

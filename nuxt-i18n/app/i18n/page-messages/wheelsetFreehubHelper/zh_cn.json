@@ -1,0 +1,76 @@
+{
+  "title": "塔基快速查找",
+  "description": "选择传动系统品牌和套件，查看通常需要的塔基类型。请始终结合传动系统和花鼓制造商的官方兼容性图表进行确认。",
+  "drivetrainBrand": "传动系统品牌",
+  "selectBrand": "选择品牌",
+  "groupset": "套件",
+  "selectGroupset": "选择套件",
+  "chooseBrandFirst": "请先选择品牌",
+  "empty": "选择品牌和套件后查看建议的塔基类型。",
+  "recommended": "建议塔基：",
+  "options": {
+    "shimanoDeoreM6100": {
+      "label": "Deore M6100（12 速山地）",
+      "freehub": "MS（Micro Spline 12 速）",
+      "notes": "常见于 Shimano Deore、SLX、XT 和 XTR 等 12 速山地套件。"
+    },
+    "shimanoSlxM7100": {
+      "label": "SLX M7100（12 速山地）",
+      "freehub": "MS（Micro Spline 12 速）"
+    },
+    "shimanoXtM8100": {
+      "label": "XT M8100（12 速山地）",
+      "freehub": "MS（Micro Spline 12 速）"
+    },
+    "shimanoXtrM9100": {
+      "label": "XTR M9100（12 速山地）",
+      "freehub": "MS（Micro Spline 12 速）"
+    },
+    "shimano105R7000": {
+      "label": "105 R7000（11 速公路）",
+      "freehub": "HG 9-11 速公路"
+    },
+    "shimanoUltegraR8000": {
+      "label": "Ultegra R8000（11 速公路）",
+      "freehub": "HG 9-11 速公路"
+    },
+    "shimanoDuraAceR9100": {
+      "label": "Dura-Ace R9100（11 速公路）",
+      "freehub": "HG 9-11 速公路"
+    },
+    "shimano105Di2R7100": {
+      "label": "105 Di2 R7100（12 速公路）",
+      "freehub": "仅适用于 HG L2 12 速公路",
+      "notes": "Shimano 12 速公路专用塔基，不兼容仅支持旧款 11 速的塔基。"
+    },
+    "sramGxEagle": {
+      "label": "GX Eagle（12 速山地）",
+      "freehub": "XD",
+      "notes": "Eagle 12 速使用 XD；NX Eagle 飞轮使用 HG 山地塔基。"
+    },
+    "sramX01Eagle": {
+      "label": "X01 Eagle（12 速山地）",
+      "freehub": "XD"
+    },
+    "sramNxEagle": {
+      "label": "NX Eagle（12 速山地）",
+      "freehub": "HG 8-11 速山地"
+    },
+    "sramForceEtapAxs": {
+      "label": "Force eTap AXS（12 速公路）",
+      "freehub": "XDR"
+    },
+    "sramRedEtapAxs": {
+      "label": "Red eTap AXS（12 速公路）",
+      "freehub": "XDR"
+    },
+    "campagnoloEkar13": {
+      "label": "Ekar 13 速",
+      "freehub": "N3W"
+    },
+    "campagnoloSuperRecord11": {
+      "label": "Super Record 11 速公路",
+      "freehub": "CP（Campagnolo 经典标准）"
+    }
+  }
+}

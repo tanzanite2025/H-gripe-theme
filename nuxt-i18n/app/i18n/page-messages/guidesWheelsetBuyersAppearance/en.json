@@ -1,0 +1,46 @@
+{
+  "recommendation": {
+    "title": "Why we recommend laser-engraved logos",
+    "body": "For most standard orders, laser engraving is our top recommendation. It is eco-friendly, permanent, and significantly faster to produce - shortening lead times by 5-7 days compared to custom paint or water decals.",
+    "button": "Explore Weave & Finish Options"
+  },
+  "decals": {
+    "title": "Customized Decals",
+    "body": "Our graphics department can execute any vision using:",
+    "items": [
+      "Waterslide Decals (complex colors)",
+      "Removable Vinyl Stickers",
+      "Custom Fonts & Locations"
+    ],
+    "note": "Ideal for bold statements and specific team colors."
+  },
+  "laser": {
+    "title": "Laser Engraving",
+    "badge": "Eco-Friendly",
+    "body": "Our sustainability choice. Precision etching in a sleek light gray tone.",
+    "items": [
+      "Preserves structural integrity",
+      "No plastic/vinyl waste",
+      "Fastest production time"
+    ],
+    "note": "Subtle, premium, and permanent."
+  },
+  "gallery": {
+    "title": "Laser Engraving Gallery",
+    "detailAlt": "Carbon rim with customized laser engraved logo detail",
+    "detailCaption": "Detail View",
+    "processAlt": "Close-up of carbon rim laser engraving process",
+    "processCaption": "Process Close-up",
+    "finishedAlt": "Different examples of carbon rim laser engraved graphics",
+    "finishedCaption": "Finished Effect"
+  },
+  "advanced": {
+    "title": "Pro Options: Weave & Finish",
+    "badge": "For OEM / Teams",
+    "body": "Planning a long-term build or team fleet? Go beyond standard logos with custom carbon weaves and surface treatments.",
+    "matteAlt": "Carbon rim surface finish detail 1",
+    "matteCaption": "Matte Finish",
+    "glossyAlt": "Carbon rim surface finish detail 2",
+    "glossyCaption": "Glossy Finish"
+  }
+}

@@ -2,10 +2,7 @@
   "title": "คำถามที่พบบ่อย",
   "subtitle": "ค้นหาคำตอบสำหรับคำถามทั่วไปเกี่ยวกับสินค้าและบริการของเรา",
   "ui": {
-    "categorizedSupport": "การสนับสนุนตามหมวดหมู่",
     "quickAnswers": "คำตอบด่วนสำหรับคำถามทั่วไป",
-    "categoriesAriaLabel": "หมวดหมู่ FAQ",
-    "categoriesLabel": "หมวดหมู่ FAQ",
     "all": "ทั้งหมด",
     "viewAll": "ดู FAQ ทั้งหมด",
     "emptySection": "ยังไม่มี FAQ สำหรับส่วนนี้",
@@ -13,7 +10,6 @@
     "searchPlaceholder": "ค้นหา FAQ...",
     "viewMoreContent": "ดูเนื้อหาเพิ่มเติม",
     "noResults": "ไม่พบ FAQ ที่ตรงกับ \"{query}\"",
-    "allFaqsMetaTitle": "FAQ ทั้งหมด",
     "loadingAnswers": "กำลังโหลดคำตอบ",
     "illustrationAlt": "ภาพประกอบ FAQ",
     "selectQuestion": "Select a question to view the answer."

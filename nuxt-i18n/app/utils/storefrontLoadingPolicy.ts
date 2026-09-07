@@ -30,10 +30,10 @@ export const STOREFRONT_LOADING_TIERS = {
     'GlobalPagesSearchOverlay',
     'GlobalProductDetailBottomSheet',
     'WhatsAppChatModal',
+    'GradientDockMenu',
     'GradientDockQuickBuy',
   ],
   idleBackground: [
-    'GradientDockMenu',
     'CookieConsent',
     'BehaviorAttributionBootstrap',
     'analytics.client',

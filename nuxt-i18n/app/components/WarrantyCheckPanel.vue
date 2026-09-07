@@ -2,16 +2,16 @@
   <div class="warranty-check__container">
     <!-- 标题 -->
     <div class="warranty-check__header">
-      <h1 class="warranty-check__title">{{ $t('warranty.title') }}</h1>
-      <p class="warranty-check__subtitle">{{ $t('warranty.subtitle') }}</p>
+      <h1 class="warranty-check__title">{{ $t('supportWarrantyCheck.title') }}</h1>
+      <p class="warranty-check__subtitle">{{ $t('supportWarrantyCheck.subtitle') }}</p>
     </div>
 
     <!-- 未登录状态 -->
     <div v-if="!isLoggedIn" class="warranty-check__login-required">
       <div class="warranty-check__lock-icon">🔒</div>
-      <p>{{ $t('warranty.login_required') }}</p>
+      <p>{{ $t('supportWarrantyCheck.loginRequired') }}</p>
       <button type="button" class="warranty-check__login-btn" @click="handleLoginClick">
-        {{ $t('warranty.login_button') }}
+        {{ $t('supportWarrantyCheck.loginButton') }}
       </button>
     </div>
 
@@ -20,7 +20,7 @@
       <!-- 查询表单 -->
       <div class="warranty-check__form">
         <label for="order-number" class="warranty-check__label">
-          {{ $t('warranty.input_label') }}
+          {{ $t('supportWarrantyCheck.inputLabel') }}
         </label>
         <div class="warranty-check__input-group">
           <input
@@ -28,7 +28,7 @@
             v-model="orderNumber"
             type="text"
             class="warranty-check__input"
-            :placeholder="$t('warranty.input_placeholder')"
+            :placeholder="$t('supportWarrantyCheck.inputPlaceholder')"
             @keypress.enter="checkWarranty"
           />
           <button
@@ -38,24 +38,24 @@
             @click="checkWarranty"
           >
             <span v-if="loading" class="warranty-check__spinner"></span>
-            <span v-else>{{ $t('warranty.check_button') }}</span>
+            <span v-else>{{ $t('supportWarrantyCheck.checkButton') }}</span>
           </button>
         </div>
-        <p class="warranty-check__help">{{ $t('warranty.help_text') }}</p>
+        <p class="warranty-check__help">{{ $t('supportWarrantyCheck.helpText') }}</p>
       </div>
 
       <!-- 错误提示 -->
       <div v-if="error" class="warranty-check__error">
         <div class="warranty-check__error-icon">❌</div>
-        <h3>{{ $t('warranty.result.not_found') }}</h3>
-        <p>{{ $t('warranty.errors.not_found_message', { code: searchedOrderNumber }) }}</p>
+        <h3>{{ $t('supportWarrantyCheck.result.notFound') }}</h3>
+        <p>{{ $t('supportWarrantyCheck.errors.notFoundMessage', { code: searchedOrderNumber }) }}</p>
         <ul class="warranty-check__tips">
-          <li>{{ $t('warranty.errors.check_tips.0') }}</li>
-          <li>{{ $t('warranty.errors.check_tips.1') }}</li>
+          <li>{{ $t('supportWarrantyCheck.errors.checkTips.0') }}</li>
+          <li>{{ $t('supportWarrantyCheck.errors.checkTips.1') }}</li>
         </ul>
-        <p class="warranty-check__error-contact">{{ $t('warranty.errors.error_contact') }}</p>
+        <p class="warranty-check__error-contact">{{ $t('supportWarrantyCheck.errors.errorContact') }}</p>
         <NuxtLink :to="localePath('/company/contact')" class="warranty-check__contact-btn">
-          {{ $t('warranty.actions.contact_support') }}
+          {{ $t('supportWarrantyCheck.actions.contactSupport') }}
         </NuxtLink>
       </div>
 
@@ -68,36 +68,36 @@
         >
           <span class="warranty-check__status-icon">{{ result.status === 'valid' ? '✅' : '❌' }}</span>
           <span>
-            {{ result.status === 'valid' ? $t('warranty.result.valid') : $t('warranty.result.expired') }}
+            {{ result.status === 'valid' ? $t('supportWarrantyCheck.result.valid') : $t('supportWarrantyCheck.result.expired') }}
           </span>
         </div>
 
         <!-- 产品信息 -->
         <div class="warranty-check__info">
           <div class="warranty-check__info-row">
-            <span class="warranty-check__info-label">{{ $t('warranty.fields.order_number') }}</span>
+            <span class="warranty-check__info-label">{{ $t('supportWarrantyCheck.fields.orderNumber') }}</span>
             <span class="warranty-check__info-value">{{ result.order_number || '-' }}</span>
           </div>
           <div class="warranty-check__info-row">
-            <span class="warranty-check__info-label">{{ $t('warranty.fields.product_type') }}</span>
+            <span class="warranty-check__info-label">{{ $t('supportWarrantyCheck.fields.productType') }}</span>
             <span class="warranty-check__info-value">
               {{ useChineseWarrantyLabels ? result.product_type.name_zh : result.product_type.name }}
             </span>
           </div>
           <div v-if="result.product_name" class="warranty-check__info-row">
-            <span class="warranty-check__info-label">{{ $t('warranty.fields.product_name') }}</span>
+            <span class="warranty-check__info-label">{{ $t('supportWarrantyCheck.fields.productName') }}</span>
             <span class="warranty-check__info-value">{{ result.product_name }}</span>
           </div>
           <div class="warranty-check__info-row">
-            <span class="warranty-check__info-label">{{ $t('warranty.fields.ship_date') }}</span>
+            <span class="warranty-check__info-label">{{ $t('supportWarrantyCheck.fields.shipDate') }}</span>
             <span class="warranty-check__info-value">{{ formatDate(result.ship_date) }}</span>
           </div>
           <div class="warranty-check__info-row">
-            <span class="warranty-check__info-label">{{ $t('warranty.fields.warranty_period') }}</span>
-            <span class="warranty-check__info-value">{{ result.warranty_months }} {{ $t('warranty.months') }}</span>
+            <span class="warranty-check__info-label">{{ $t('supportWarrantyCheck.fields.warrantyPeriod') }}</span>
+            <span class="warranty-check__info-value">{{ result.warranty_months }} {{ $t('supportWarrantyCheck.months') }}</span>
           </div>
           <div class="warranty-check__info-row">
-            <span class="warranty-check__info-label">{{ $t('warranty.fields.warranty_until') }}</span>
+            <span class="warranty-check__info-label">{{ $t('supportWarrantyCheck.fields.warrantyUntil') }}</span>
             <span class="warranty-check__info-value">{{ formatDate(result.warranty_end) }}</span>
           </div>
         </div>
@@ -109,18 +109,18 @@
         >
           <span class="warranty-check__remaining-icon">⏱️</span>
           <span v-if="result.status === 'valid'">
-            {{ $t('warranty.fields.remaining') }}:
-            {{ result.remaining.months }} {{ $t('warranty.months') }}
-            {{ result.remaining.days }} {{ $t('warranty.days') }}
+            {{ $t('supportWarrantyCheck.fields.remaining') }}:
+            {{ result.remaining.months }} {{ $t('supportWarrantyCheck.months') }}
+            {{ result.remaining.days }} {{ $t('supportWarrantyCheck.days') }}
           </span>
           <span v-else>
-            {{ $t('warranty.fields.expired_ago', { days: result.remaining.expired_days }) }}
+            {{ $t('supportWarrantyCheck.fields.expiredAgo', { days: result.remaining.expired_days }) }}
           </span>
         </div>
 
         <!-- 服务记录 -->
         <div v-if="result.records && result.records.length > 0" class="warranty-check__records">
-          <h4>{{ $t('warranty.records.title') }}</h4>
+          <h4>{{ $t('supportWarrantyCheck.records.title') }}</h4>
           <ul class="warranty-check__records-list">
             <li
               v-for="record in result.records"
@@ -138,19 +138,19 @@
           </ul>
         </div>
         <div v-else class="warranty-check__no-records">
-          <p>{{ $t('warranty.records.no_records') }}</p>
+          <p>{{ $t('supportWarrantyCheck.records.noRecords') }}</p>
         </div>
 
         <!-- 操作按钮 -->
         <div class="warranty-check__actions">
           <button type="button" class="warranty-check__action-btn" @click="resetForm">
-            {{ $t('warranty.actions.check_another') }}
+            {{ $t('supportWarrantyCheck.actions.checkAnother') }}
           </button>
           <NuxtLink
             :to="localePath('/company/contact')"
             class="warranty-check__action-btn warranty-check__action-btn--secondary"
           >
-            {{ $t('warranty.actions.contact_support') }}
+            {{ $t('supportWarrantyCheck.actions.contactSupport') }}
           </NuxtLink>
         </div>
       </div>
@@ -159,8 +159,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { useWarrantyCheck } from '~/composables/useWarrantyCheck'
+import { usePageMessages } from '~/composables/usePageMessages'
 import { isSimplifiedChineseStorefrontLocale } from '~/utils/storefrontLocales'
 
 const props = defineProps<{
@@ -172,6 +173,14 @@ const emit = defineEmits<{
 }>()
 
 const { locale } = useI18n()
+const { loadPageMessages } = usePageMessages('supportWarrantyCheck')
+
+await loadPageMessages(locale.value)
+
+watch(locale, (nextLocale) => {
+  void loadPageMessages(nextLocale)
+})
+
 const localePath = useLocalePath()
 const useChineseWarrantyLabels = computed(() => isSimplifiedChineseStorefrontLocale(locale.value))
 

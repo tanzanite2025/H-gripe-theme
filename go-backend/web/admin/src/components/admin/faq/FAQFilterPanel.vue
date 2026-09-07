@@ -48,7 +48,7 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import type { FAQFilters } from '@/composables/faq/useFaqList'
 
-type FAQFilterKey = 'page_id' | 'category' | 'status'
+type FAQFilterKey = 'page_id' | 'status'
 
 interface FAQSelectFilter {
   key: FAQFilterKey
@@ -59,7 +59,6 @@ interface FAQSelectFilter {
 const props = defineProps<{
   filters: FAQFilters
   pageFilterOptions: LanguageOption[]
-  categoryFilterOptions: LanguageOption[]
   statusFilterOptions: LanguageOption[]
 }>()
 
@@ -70,7 +69,6 @@ defineEmits<{
 
 const selectFilters = computed<FAQSelectFilter[]>(() => [
   { key: 'page_id', label: '页面', options: props.pageFilterOptions },
-  { key: 'category', label: '分类', options: props.categoryFilterOptions },
   { key: 'status', label: '状态', options: props.statusFilterOptions }
 ])
 </script>

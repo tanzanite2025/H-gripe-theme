@@ -9,8 +9,6 @@ export interface HomeHeroVisualShowcaseItem {
   width: number
   height: number
   desktopOrder: number
-  targetUrl?: string
-  targetLabel?: string
 }
 
 export interface HomeHeroVisualShowcaseApiItem {
@@ -26,8 +24,6 @@ export interface HomeHeroVisualShowcaseApiItem {
   height?: number | string
   desktop_order?: number | string
   mobile_pair_index?: number | string
-  target_url?: string
-  target_label?: string
   layout_variant?: string
 }
 

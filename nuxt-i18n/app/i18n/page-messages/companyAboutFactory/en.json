@@ -1,0 +1,123 @@
+{
+  "title": "Factory",
+  "intro": {
+    "history": {
+      "title": "History & Expertise",
+      "description": "Began in 2013 in Xiamen, China. We specialize in manufacturing carbon fiber bicycle rims and wheels, successfully innovating and industrialising the supply of lightweight carbon fibre rims to the bicycle industry."
+    },
+    "scale": {
+      "title": "Scale & Capacity",
+      "description": "More than 20 experienced engineers in R&D and 250+ effective workers. Monthly capacity of 25,000 rims. 100% quality testing and inspection helps ensure all rims meet UCI/ISO standards."
+    },
+    "innovation": {
+      "title": "Innovation & Tech",
+      "description": "Multiple patented technologies support production. We mainly use Toray carbon fiber, including T700 mixed with T800/T1000, to balance weight, stiffness, and durability."
+    },
+    "leader": {
+      "title": "Industry Leader",
+      "description": "We are a trusted OEM/ODM supplier in the carbon fiber rim industry, with strong relationships with bicycle brands worldwide."
+    }
+  },
+  "process": {
+    "title": "Manufacturing Process",
+    "description": "From raw material to final packing: precision at every step.",
+    "stepLabel": "Step"
+  },
+  "steps": {
+    "step01": {
+      "title": "Prepare and control epoxy resin",
+      "description": "We purchase raw materials from reliable suppliers and produce the optimal epoxy resin for carbon rims.",
+      "alt": "Epoxy resin preparation workshop"
+    },
+    "step02": {
+      "title": "Produce carbon prepregs",
+      "description": "Different kinds of carbon fibers from Toray Japan are saturated with epoxy resin through weaving machines to produce carbon prepregs.",
+      "alt": "Carbon prepreg production workshop"
+    },
+    "step03": {
+      "title": "Store prepregs at stable temperature",
+      "description": "Carbon prepregs are kept at -5°C, a stable temperature that preserves the resin in optimal condition.",
+      "alt": "Carbon prepreg storage room"
+    },
+    "step04": {
+      "title": "Cut carbon sheets to precise angles",
+      "description": "Sheets are cut to 0, +/-45, +/-30, and +/-90 degrees, then precisely machine-cut into pieces.",
+      "alt": "Carbon sheet cutting workshop"
+    },
+    "step05": {
+      "title": "Prepare laminations for rim sections",
+      "description": "Lamination prepares different rim sections with carbon sheets so the product can be arranged more easily while balancing weight, durability, and rigidity.",
+      "alt": "Carbon rim lamination preparation workshop"
+    },
+    "step06": {
+      "title": "Premold and hand layup",
+      "description": "Technicians hand-lay fabric layers from outer to inner, smoothing each overlap to avoid wrinkles, fractures, and air bubbles before closing the premold.",
+      "alt": "Carbon rim premold and hand layup workshop"
+    },
+    "step07": {
+      "title": "Cure rims under heat and pressure",
+      "description": "Complete molds move to molding machines where heat and pressure are accurately controlled and monitored in curing ovens.",
+      "alt": "Carbon rim molding workshop"
+    },
+    "step08": {
+      "title": "Inspect every rim visually",
+      "description": "All rims are inspected for appearance and obvious defects before moving to the next process.",
+      "alt": "Carbon rim appearance inspection"
+    },
+    "step09": {
+      "title": "Drill spoke and valve holes",
+      "description": "Rims are drilled on aviation-grade CNC machines with composite-specific bits to ensure correct angles and clean holes.",
+      "alt": "CNC machining workshop for carbon rims"
+    },
+    "step10": {
+      "title": "Control rim weight precisely",
+      "description": "Weight standards are strictly controlled, with measurements accurate to 1 gram.",
+      "alt": "Carbon rim weight detection"
+    },
+    "step11": {
+      "title": "Prepare surfaces by sanding",
+      "description": "After inspection, rims move to the sanding workshop to prepare surfaces for the next processes.",
+      "alt": "Carbon rim sanding workshop"
+    },
+    "step12": {
+      "title": "Refine critical surfaces",
+      "description": "After sanding, rims move to grinding to refine key surfaces and ensure consistency.",
+      "alt": "Carbon rim grinding workshop"
+    },
+    "step13": {
+      "title": "Handle fine details",
+      "description": "A dedicated workshop focuses on rim details so small finishing decisions do not compromise quality.",
+      "alt": "Carbon rim detail treatment workshop"
+    },
+    "step14": {
+      "title": "Perform additional tests",
+      "description": "Drainage holes, spoke holes, and appearance are checked again before shipment.",
+      "alt": "Additional carbon rim testing workshop"
+    },
+    "step15": {
+      "title": "Apply finishes where required",
+      "description": "Ultralight rims are paintless, while traditional rims receive glossy, matte, or custom finishes in the painting workshop.",
+      "alt": "Carbon rim painting workshop"
+    },
+    "step16": {
+      "title": "Apply waterslide decals",
+      "description": "Rims that require waterslide decals are processed here for branding and graphics.",
+      "alt": "Carbon rim waterslide decal workshop"
+    },
+    "step17": {
+      "title": "Laser carve logos and marks",
+      "description": "Rims that require laser-carved logos are processed here for a durable, precise finish.",
+      "alt": "Carbon rim laser engraving workshop"
+    },
+    "step18": {
+      "title": "Final inspection and packing",
+      "description": "All rims are inspected again, protected with foam bags, and carefully packed into cartons.",
+      "alt": "Carbon rim inspection and packing workshop"
+    },
+    "step19": {
+      "title": "Store rims in an organized warehouse",
+      "description": "Clear classification and compliant warehouse operations help maintain model and order accuracy.",
+      "alt": "Carbon rim warehouse"
+    }
+  }
+}

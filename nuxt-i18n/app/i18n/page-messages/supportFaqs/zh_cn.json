@@ -1,0 +1,14 @@
+{
+  "title": "常见问题",
+  "ui": {
+    "categorizedSupport": "分类支持",
+    "categoriesAriaLabel": "FAQ 分类",
+    "categoriesLabel": "FAQ 分类",
+    "all": "全部",
+    "pageIntro": "浏览有关订单、产品与服务的常见问题和快速答案。",
+    "searchPlaceholder": "搜索 FAQ...",
+    "viewMoreContent": "查看更多内容",
+    "noResults": "没有找到与“{query}”匹配的 FAQ",
+    "allFaqsMetaTitle": "全部 FAQ"
+  }
+}

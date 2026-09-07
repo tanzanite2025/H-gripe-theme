@@ -62,6 +62,7 @@ func (s *SiteQualityWorker) Start(ctx context.Context) {
 		s.cancel = cancel
 		go func() {
 			defer close(s.done)
+			wake := s.engine.WorkerWakeChannel()
 			logger.Info("site quality job worker started",
 				zap.Duration("interval", s.interval),
 				zap.Int("batch_limit", s.batch),
@@ -76,6 +77,8 @@ func (s *SiteQualityWorker) Start(ctx context.Context) {
 					logger.Info("site quality job worker stopped")
 					return
 				case <-ticker.C:
+					s.runOnce(runCtx)
+				case <-wake:
 					s.runOnce(runCtx)
 				}
 			}
@@ -137,6 +140,7 @@ func (s *SiteQualityWorker) runOnce(ctx context.Context) {
 			zap.Int("succeeded", result.Succeeded),
 			zap.Int("failed", result.Failed),
 			zap.Int("dead_letter", result.DeadLetter),
+			zap.Int("cancelled", result.Cancelled),
 			zap.String("worker_id", result.WorkerID),
 		)
 	}

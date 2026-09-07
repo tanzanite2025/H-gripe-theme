@@ -4,7 +4,6 @@ export interface GlobalAllFaqFlatItem {
   id: string
   pageId: string
   pageTitle: string
-  category: string
   question: string
   answer: string
   answerImageUrl?: string
@@ -20,68 +19,29 @@ export interface GlobalAllFaqsDisplayGroup {
   items: GlobalAllFaqFlatItem[]
 }
 
-export interface GlobalAllFaqSearchTopic {
-  id: string
-  label: string
-  count: number
-  items: GlobalAllFaqFlatItem[]
-}
-
 export function flattenGlobalAllFaqItems(
   pages: ResolvedPageFaqData[],
 ): GlobalAllFaqFlatItem[] {
   const items: GlobalAllFaqFlatItem[] = []
 
   for (const page of pages) {
-    for (const category of page.categories) {
-      for (const item of category.items) {
-        items.push({
-          id: `${page.pageId}-${item.id}`,
-          pageId: page.pageId,
-          pageTitle: page.title || page.pageId,
-          category: category.name,
-          question: item.question,
-          answer: item.answer,
-          answerImageUrl: item.answerImageUrl,
-          answerImageAlt: item.answerImageAlt,
-          answerImageWidth: item.answerImageWidth,
-          answerImageHeight: item.answerImageHeight,
-          tags: item.tags,
-        })
-      }
+    for (const item of page.items) {
+      items.push({
+        id: `${page.pageId}-${item.id}`,
+        pageId: page.pageId,
+        pageTitle: page.title || page.pageId,
+        question: item.question,
+        answer: item.answer,
+        answerImageUrl: item.answerImageUrl,
+        answerImageAlt: item.answerImageAlt,
+        answerImageWidth: item.answerImageWidth,
+        answerImageHeight: item.answerImageHeight,
+        tags: item.tags,
+      })
     }
   }
 
   return items
-}
-
-export function groupGlobalAllFaqTopics(
-  items: GlobalAllFaqFlatItem[],
-): GlobalAllFaqSearchTopic[] {
-  const groups = new Map<string, GlobalAllFaqSearchTopic>()
-
-  for (const item of items) {
-    const label = item.category.trim() || item.pageTitle
-    const id = label.toLocaleLowerCase()
-    const existing = groups.get(id)
-
-    if (existing) {
-      existing.items.push(item)
-      existing.count += 1
-      continue
-    }
-
-    groups.set(id, {
-      id,
-      label,
-      count: 1,
-      items: [item],
-    })
-  }
-
-  return Array.from(groups.values()).sort((left, right) => (
-    right.count - left.count || left.label.localeCompare(right.label)
-  ))
 }
 
 export function filterGlobalAllFaqItems(
@@ -99,7 +59,7 @@ export function filterGlobalAllFaqItems(
   filteredItems = filteredItems.filter(item => (
     item.question.toLowerCase().includes(normalizedQuery)
     || item.answer.toLowerCase().includes(normalizedQuery)
-    || item.category.toLowerCase().includes(normalizedQuery)
+    || item.pageTitle.toLowerCase().includes(normalizedQuery)
     || Boolean(item.tags?.some(tag => tag.toLowerCase().includes(normalizedQuery)))
   ))
 

@@ -16,6 +16,11 @@ export interface OrderChatMetadata {
   status: string
   payment_status: string
   shipping_status: string
+  fulfillment_mode: string
+  production_status: string
+  signature_required: boolean
+  production_started_at: string
+  production_completed_at: string
   total: number
   currency: string
   url: string
@@ -61,6 +66,7 @@ const normalizeOrderItems = (order: Record<string, any>): OrderChatItem[] => {
       variant_id: toNullablePositiveNumber(item?.variant_id ?? item?.variantId),
       title: String(item?.product_name || item?.name || item?.title || 'Product').trim(),
       sku: String(item?.sku || '').trim(),
+      fulfillment_mode: String(item?.fulfillment_mode || '').trim(),
       quantity,
       price,
       total,
@@ -81,6 +87,11 @@ export const buildOrderChatMetadata = (order: Record<string, any>): OrderChatMet
     status: String(order?.status || '').trim(),
     payment_status: String(order?.payment_status || '').trim(),
     shipping_status: String(order?.shipping_status || '').trim(),
+    fulfillment_mode: String(order?.fulfillment_mode || '').trim(),
+    production_status: String(order?.production_status || '').trim(),
+    signature_required: Boolean(order?.signature_required),
+    production_started_at: String(order?.production_started_at || '').trim(),
+    production_completed_at: String(order?.production_completed_at || '').trim(),
     total,
     currency: String(order?.currency || '').trim().toUpperCase(),
     url: String(order?.url || '').trim(),

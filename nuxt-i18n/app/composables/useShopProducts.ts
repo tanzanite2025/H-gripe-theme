@@ -9,7 +9,8 @@ import {
 } from '~/utils/storefrontMedia'
 import { buildProductPath } from '~/utils/seo/urls'
 
-export type ShopProductAvailability = 'in_stock' | 'out_of_stock'
+export type ShopProductFulfillmentMode = 'stock' | 'made_to_order'
+export type ShopProductAvailability = 'in_stock' | 'made_to_order' | 'out_of_stock'
 
 export interface ShopProductReviewSummary {
   productId: number
@@ -45,6 +46,7 @@ export interface ShopProduct {
     regular: number
     sale: number
   }
+  fulfillmentMode: ShopProductFulfillmentMode
   availability: ShopProductAvailability
   brand?: ShopProductBrand | null
   productSpecificationTemplate?: ShopProductSpecificationTemplate | null
@@ -137,6 +139,7 @@ export interface ShopProductCartOptions {
   title?: string
   thumbnail?: string
   weightGrams?: number | null
+  fulfillmentMode?: ShopProductFulfillmentMode
 }
 
 const toFiniteNumber = (value: unknown, fallback = 0) => {
@@ -181,7 +184,12 @@ const normalizeWeightGrams = (value: unknown) => {
 }
 
 const normalizeAvailability = (value: unknown): ShopProductAvailability => {
+  if (value === 'made_to_order') return 'made_to_order'
   return value === 'out_of_stock' ? 'out_of_stock' : 'in_stock'
+}
+
+const normalizeFulfillmentMode = (value: unknown): ShopProductFulfillmentMode => {
+  return value === 'made_to_order' ? 'made_to_order' : 'stock'
 }
 
 const productDetailPathPattern = /(?:^|\/)(?:[a-z]{2}(?:[_-][a-z]{2})?\/)?products\/([^/?#]+)$/i
@@ -510,6 +518,7 @@ export const normalizeShopProduct = (
     mediaContext,
   ) || undefined
   const url = buildProductPath(slug)
+  const fulfillmentMode = normalizeFulfillmentMode(item?.fulfillment_mode)
   return {
     id,
     productId: id,
@@ -533,6 +542,7 @@ export const normalizeShopProduct = (
       regular,
       sale,
     },
+    fulfillmentMode,
     availability: normalizeAvailability(item?.availability),
     brand: item?.brand?.name
       ? {
@@ -655,6 +665,7 @@ export function useShopProducts() {
     const sku = options.sku ?? selectedVariant?.sku ?? product.sku
     const currency = normalizeCurrencyCode(options.currency || selectedVariant?.currency || product.currency) || baseCurrency.value || 'USD'
     const weightGrams = options.weightGrams ?? selectedVariant?.weightGrams ?? null
+    const fulfillmentMode = options.fulfillmentMode ?? product.fulfillmentMode
 
     return {
       id: variantId || product.id,
@@ -670,6 +681,7 @@ export function useShopProducts() {
       image: thumbnail,
       thumbnail,
       weight_grams: weightGrams || undefined,
+      fulfillment_mode: fulfillmentMode,
     }
   }
 

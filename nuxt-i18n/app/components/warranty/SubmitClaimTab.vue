@@ -1,6 +1,8 @@
 <template>
   <section id="submit-warranty" class="support-section">
-    <h2 class="support-section__title text-center mb-6 tz-text-primary">Submit Warranty Claim</h2>
+    <h2 class="support-section__title text-center mb-6 tz-text-primary">
+      {{ t('warrantySubmitClaim.title') }}
+    </h2>
     
     <div class="w-full max-w-none">
       <div v-if="submitMessage" :class="['p-4 rounded mb-6 text-center', submitStatus === 'success' ? 'bg-green-500/20 text-green-200 border border-green-500/30' : 'bg-red-500/20 text-red-200 border border-red-500/30']">
@@ -10,34 +12,35 @@
       <form @submit.prevent="submitClaim" class="space-y-4">
         <TurnstileChallenge ref="turnstileChallenge" action="warranty" />
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <!-- Order Number -->
           <div>
-            <label class="block tz-text-primary text-sm font-bold mb-1">Order Number</label>
+            <label class="block tz-text-primary text-sm font-bold mb-1">
+              {{ t('warrantySubmitClaim.fields.orderNumber.label') }}
+            </label>
             <input 
               v-model="form.order_number" 
               type="text" 
               required
               :disabled="!isFormLocked"
               class="w-full tz-surface-panel border tz-border-subtle rounded px-3 py-2 tz-text-primary focus:outline-none focus:border-emerald-500 transition-colors disabled:opacity-50"
-              placeholder="e.g. TANZ-12345"
+              :placeholder="t('warrantySubmitClaim.fields.orderNumber.placeholder')"
             />
           </div>
 
-          <!-- Email -->
           <div>
-            <label class="block tz-text-primary text-sm font-bold mb-1">Email Address</label>
+            <label class="block tz-text-primary text-sm font-bold mb-1">
+              {{ t('warrantySubmitClaim.fields.email.label') }}
+            </label>
             <input 
               v-model="form.email" 
               type="email" 
               required
               :disabled="!isFormLocked"
               class="w-full tz-surface-panel border tz-border-subtle rounded px-3 py-2 tz-text-primary focus:outline-none focus:border-emerald-500 transition-colors disabled:opacity-50"
-              placeholder="Your email address"
+              :placeholder="t('warrantySubmitClaim.fields.email.placeholder')"
             />
           </div>
         </div>
 
-        <!-- Verify Button -->
         <div v-if="isFormLocked" class="flex justify-end">
           <button 
             type="button"
@@ -47,73 +50,78 @@
           >
             <span v-if="isVerifying" class="flex items-center gap-2">
               <svg class="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-              Verifying...
+              {{ t('warrantySubmitClaim.actions.verifying') }}
             </span>
-            <span v-else>Verify Order</span>
+            <span v-else>{{ t('warrantySubmitClaim.actions.verifyOrder') }}</span>
           </button>
         </div>
 
         <div v-if="!isFormLocked" class="bg-green-500/10 border border-green-500/20 text-green-400 px-4 py-2 rounded text-sm flex items-center gap-2">
            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-           Order Verified. Please complete the details below.
+           {{ t('warrantySubmitClaim.verified') }}
         </div>
 
-        <!-- Locked Section: Details & Uploads -->
         <div :class="['space-y-4 transition-all duration-500', isFormLocked ? 'opacity-40 grayscale pointer-events-none select-none filter blur-[1px]' : 'opacity-100']">
         
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <!-- Tire Pressure -->
           <div>
-            <label class="block tz-text-primary text-sm font-bold mb-1">Tire Pressure (PSI)</label>
+            <label class="block tz-text-primary text-sm font-bold mb-1">
+              {{ t('warrantySubmitClaim.fields.tirePressure.label') }}
+            </label>
             <input 
               v-model="form.tire_pressure" 
               type="text" 
               class="w-full tz-surface-panel border tz-border-subtle rounded px-3 py-2 tz-text-primary focus:outline-none focus:border-emerald-500 transition-colors"
-              placeholder="e.g. 80"
+              :placeholder="t('warrantySubmitClaim.fields.tirePressure.placeholder')"
             />
           </div>
 
-          <!-- Tubeless -->
           <div>
-            <label class="block tz-text-primary text-sm font-bold mb-1">Tubeless Setup?</label>
+            <label class="block tz-text-primary text-sm font-bold mb-1">
+              {{ t('warrantySubmitClaim.fields.tubeless.label') }}
+            </label>
             <div class="flex items-center space-x-6 mt-2">
                <label class="flex items-center cursor-pointer">
                  <input type="radio" v-model="form.is_tubeless" value="yes" class="form-radio text-emerald-600 tz-surface-panel tz-border-subtle focus:ring-emerald-600/30">
-                 <span class="ml-2 tz-text-secondary">Yes</span>
+                 <span class="ml-2 tz-text-secondary">{{ t('warrantySubmitClaim.fields.tubeless.yes') }}</span>
                </label>
                <label class="flex items-center cursor-pointer">
                  <input type="radio" v-model="form.is_tubeless" value="no" class="form-radio text-emerald-600 tz-surface-panel tz-border-subtle focus:ring-emerald-600/30">
-                 <span class="ml-2 tz-text-secondary">No</span>
+                 <span class="ml-2 tz-text-secondary">{{ t('warrantySubmitClaim.fields.tubeless.no') }}</span>
                </label>
             </div>
           </div>
         </div>
 
-        <!-- Description -->
         <div>
-          <label class="block tz-text-primary text-sm font-bold mb-1">Issue Description</label>
+          <label class="block tz-text-primary text-sm font-bold mb-1">
+            {{ t('warrantySubmitClaim.fields.issueDescription.label') }}
+          </label>
           <textarea 
             v-model="form.issue_description" 
             rows="4"
             required
             class="w-full tz-surface-panel border tz-border-subtle rounded px-3 py-2 tz-text-primary focus:outline-none focus:border-emerald-500 transition-colors"
-            placeholder="Please describe the issue in detail..."
+            :placeholder="t('warrantySubmitClaim.fields.issueDescription.placeholder')"
           ></textarea>
         </div>
 
-        <!-- Images -->
         <div>
-          <label class="block tz-text-primary text-sm font-bold mb-1">Upload Images</label>
+          <label class="block tz-text-primary text-sm font-bold mb-1">
+            {{ t('warrantySubmitClaim.uploads.images.label') }}
+          </label>
           <div class="flex items-center gap-3">
             <button 
               type="button" 
               @click="triggerImageUpload"
               class="tz-surface-panel hover:tz-surface-subtle text-emerald-600 font-semibold py-1.5 px-4 rounded text-sm transition-colors"
             >
-              Choose Files
+              {{ t('warrantySubmitClaim.uploads.images.chooseFiles') }}
             </button>
             <span class="tz-text-muted text-sm">
-              {{ imageFiles.length > 0 ? `${imageFiles.length} file(s) selected` : 'No file chosen' }}
+              {{ imageFiles.length > 0
+                ? t('warrantySubmitClaim.uploads.images.selected', { count: imageFiles.length })
+                : t('warrantySubmitClaim.uploads.images.none') }}
             </span>
           </div>
           <input 
@@ -127,19 +135,20 @@
           <p class="mt-1 text-xs tz-text-muted">{{ uploadSpecHint('warranty_evidence') }}</p>
         </div>
 
-        <!-- Video -->
         <div>
-          <label class="block tz-text-primary text-sm font-bold mb-1">Upload Video (Optional)</label>
+          <label class="block tz-text-primary text-sm font-bold mb-1">
+            {{ t('warrantySubmitClaim.uploads.video.label') }}
+          </label>
           <div class="flex items-center gap-3">
             <button 
               type="button" 
               @click="triggerVideoUpload"
               class="tz-surface-panel hover:tz-surface-subtle text-emerald-600 font-semibold py-1.5 px-4 rounded text-sm transition-colors"
             >
-              Choose File
+              {{ t('warrantySubmitClaim.uploads.video.chooseFile') }}
             </button>
             <span class="tz-text-muted text-sm">
-              {{ videoFile ? videoFile.name : 'No file chosen' }}
+              {{ videoFile ? videoFile.name : t('warrantySubmitClaim.uploads.video.none') }}
             </span>
           </div>
           <input 
@@ -149,10 +158,9 @@
             @change="handleVideo"
             class="hidden"
           />
-          <p class="mt-1 text-xs tz-text-muted">Optional. MP4, MOV or WebM. Max 50MB. For larger videos, provide a link in the description.</p>
+          <p class="mt-1 text-xs tz-text-muted">{{ t('warrantySubmitClaim.uploads.video.hint') }}</p>
         </div>
 
-        <!-- Submit Button -->
         <div class="pt-2">
           <button 
             type="submit" 
@@ -161,9 +169,9 @@
           >
             <span v-if="isSubmitting" class="flex items-center justify-center gap-2">
               <svg class="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l-3-2.647z"></path></svg>
-              Processing...
+              {{ t('warrantySubmitClaim.actions.processing') }}
             </span>
-            <span v-else>Submit Claim</span>
+            <span v-else>{{ t('warrantySubmitClaim.actions.submitClaim') }}</span>
           </button>
         </div>
         </div> <!-- End Locked Section -->
@@ -174,13 +182,23 @@
 
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
-import { useRoute } from '#imports'
+import { useI18n, useRoute } from '#imports'
 import { useAuth } from '~/composables/useAuth'
+import { usePageMessages } from '~/composables/usePageMessages'
 import {
   uploadSpecAccept,
   uploadSpecHint,
   validateStorefrontUploadFiles,
 } from '~/utils/uploadSpecs'
+
+const { locale, t } = useI18n()
+const { loadPageMessages } = usePageMessages('warrantySubmitClaim')
+
+await loadPageMessages(locale.value)
+
+watch(locale, (nextLocale) => {
+  void loadPageMessages(nextLocale)
+})
 
 const auth = useAuth()
 
@@ -233,16 +251,23 @@ const clearUploadError = () => {
 
 const validateImages = async (files: File[]) => {
   const result = await validateStorefrontUploadFiles(files, 'warranty_evidence')
-  return result.ok ? '' : result.error || `You can upload up to ${MAX_IMAGE_FILES} images.`
+  return result.ok
+    ? ''
+    : result.error || t('warrantySubmitClaim.errors.imagesFallback', { count: MAX_IMAGE_FILES })
 }
 
 const validateVideo = (file: File | null) => {
   if (!file) return ''
   if (!hasAllowedExtension(file, ALLOWED_VIDEO_EXTENSIONS)) {
-    return `${file.name} is not supported. Use MP4, MOV or WebM.`
+    return t('warrantySubmitClaim.errors.videoUnsupported', {
+      file: file.name,
+    })
   }
   if (file.size > MAX_VIDEO_SIZE) {
-    return `${file.name} exceeds the ${formatUploadSize(MAX_VIDEO_SIZE)} video limit.`
+    return t('warrantySubmitClaim.errors.videoTooLarge', {
+      file: file.name,
+      size: formatUploadSize(MAX_VIDEO_SIZE),
+    })
   }
   return ''
 }
@@ -266,17 +291,19 @@ const verifyEmailToken = async (token: string) => {
           accept: 'application/json',
         },
       },
-      'Warranty email verification failed'
+      t('warrantySubmitClaim.errors.emailVerificationFailed')
     )
 
     form.value.verification_token = normalizedToken
     isFormLocked.value = false
     submitStatus.value = 'success'
-    submitMessage.value = 'Email verified. Please complete and submit your warranty claim.'
+    submitMessage.value = t('warrantySubmitClaim.messages.emailVerified')
   } catch (err: unknown) {
     console.error(err)
     submitStatus.value = 'error'
-    submitMessage.value = err instanceof Error ? err.message : 'The verification link is invalid or expired.'
+    submitMessage.value = err instanceof Error
+      ? err.message
+      : t('warrantySubmitClaim.messages.verificationExpired')
   } finally {
     isVerifying.value = false
   }
@@ -303,16 +330,18 @@ const verifyOrder = async () => {
           captcha_token: captchaToken || '',
         }),
       },
-      'Order verification failed'
+      t('warrantySubmitClaim.errors.orderVerificationFailedRequest')
     )
 
     submitStatus.value = 'success'
-    submitMessage.value = 'Please check your email and open the verification link before completing the claim.'
+    submitMessage.value = t('warrantySubmitClaim.messages.verificationLinkSent')
 
   } catch (err: unknown) {
     console.error(err)
     submitStatus.value = 'error'
-    submitMessage.value = err instanceof Error ? err.message : 'Order verification failed. Please check your details.'
+    submitMessage.value = err instanceof Error
+      ? err.message
+      : t('warrantySubmitClaim.messages.orderVerificationFailed')
   } finally {
     isVerifying.value = false
   }
@@ -405,11 +434,11 @@ const submitClaim = async () => {
         method: 'POST',
         body: formData,
       },
-      'Submission failed'
+      t('warrantySubmitClaim.errors.submissionFailed')
     )
 
     submitStatus.value = 'success'
-    submitMessage.value = response.message || 'Your claim has been submitted successfully. We will contact you shortly.'
+    submitMessage.value = response.message || t('warrantySubmitClaim.messages.submitted')
     
     form.value = {
       order_number: '',
@@ -428,7 +457,9 @@ const submitClaim = async () => {
   } catch (err: unknown) {
     console.error(err)
     submitStatus.value = 'error'
-    submitMessage.value = err instanceof Error ? err.message : 'An error occurred. Please try again.'
+    submitMessage.value = err instanceof Error
+      ? err.message
+      : t('warrantySubmitClaim.messages.genericError')
   } finally {
     isSubmitting.value = false
   }

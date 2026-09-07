@@ -13,6 +13,7 @@ type Category struct {
 	Slug        string         `gorm:"uniqueIndex:idx_category_slug_locale;not null" json:"slug"`
 	Description string         `gorm:"type:text" json:"description"`
 	Locale      string         `gorm:"uniqueIndex:idx_category_slug_locale;default:'en'" json:"locale"`
+	SortOrder   int            `gorm:"not null;default:0;index" json:"sort_order"`
 	ParentID    *uint          `json:"parent_id"`
 	CreatedAt   time.Time      `json:"created_at"`
 	UpdatedAt   time.Time      `json:"updated_at"`

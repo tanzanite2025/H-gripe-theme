@@ -1,6 +1,6 @@
 <template>
   <div class="support-test-report">
-    <h1 class="support-page__title support-page__title--sr-only">Test report</h1>
+    <h1 class="support-page__title support-page__title--sr-only">{{ t('supportTestReport.title') }}</h1>
     
     <TestReportContent :sync-with-url="true" />
 
@@ -8,7 +8,19 @@
 </template>
 
 <script setup lang="ts">
+import { definePageMeta, useHead, useI18n } from '#imports'
+import { watch } from 'vue'
 import TestReportContent from '~/components/TestReportContent.vue'
+import { usePageMessages } from '~/composables/usePageMessages'
+
+const { locale, t } = useI18n()
+const { loadPageMessages } = usePageMessages('supportTestReport')
+
+await loadPageMessages(locale.value)
+
+watch(locale, (nextLocale) => {
+  void loadPageMessages(nextLocale)
+})
 
 definePageMeta({
   layout: 'support',
@@ -16,9 +28,9 @@ definePageMeta({
   footerLabelFallback: 'Test Report',
 })
 
-useHead({
-  title: 'Test report',
-})
+useHead(() => ({
+  title: t('supportTestReport.title'),
+}))
 </script>
 
 <style scoped>

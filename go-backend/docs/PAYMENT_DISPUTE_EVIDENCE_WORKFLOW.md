@@ -2,7 +2,24 @@
 
 ## 目标
 
-拒付处理必须先保证证据真实、可审计、可人工复核。当前实现同时覆盖 Stripe 的后台人工确认提交和 PayPal 的 webhook 自动证据提交，两条链路分别保留本地证据聚合与提交审计。
+拒付处理必须先保证证据真实、可审计、可人工复核。拒付发生和证据提交是两个不同的时刻：webhook 只记录拒付事实并进入待人工复核状态，运营人员可以在最终提交前查看、补录、修改或移除错误材料；只有点击最终提交后，系统才锁定本次渠道快照并发送给 Stripe / PayPal。
+
+## 时序规则
+
+1. 拒付发生：只接收并保存支付渠道事件、金额、原因、状态、订单关联和原始 payload；不得自动提交证据。
+2. 人工复核：后台打开当前订单证据包，查看结构化证据、发货照片、张力表、物流轨迹、签收/POD、沟通记录和附件。
+3. 提交前编辑：当前订单证据包未锁定时，可以补传、替换、删除错误附件，修正物流号和证据项；系统不判断照片或张力表是否“合格”，只保存人工上传和填写的内容。
+4. 最终提交：运营确认无误后点击提交。此时才组装当前最新证据、创建不可变的渠道提交快照，并调用对应支付渠道。
+5. 外部失败重试：复用同一渠道快照，不重新读取可能已经变化的订单或物流数据。
+6. 已提交后更正：不能覆盖已提交快照；需要创建订单证据包修订版并按新的版本重新提交，旧版本保留审计记录。
+
+## 发货与物流纠正边界
+
+- `POST /api/admin/orders/:id/fulfillment` 只表示首次确认发货。已发货订单再次提交完全相同的物流信息时可以幂等返回；如果带入不同物流信息，接口返回冲突。这个冲突只保护“重复发货”，不代表错误物流号无法修正。
+- 物流号、承运商或物流服务填错后，必须使用独立的 `PATCH /api/admin/orders/:id/tracking` 物流纠正入口。该入口更新订单当前物流和当前唯一 tracking shipment，不重新发货，不改变原始 `shipped_at`。
+- 物流来源发生变化时，先前 shipment 的 tracking events 不再作为当前证据链的物流事实；当前实现会清理当前事件集，避免错误物流轨迹继续进入证据包，新物流需要重新同步后才会产生新的轨迹事件。
+- 物流纠正动作本身记录 before/after 审计，只保存订单号、物流号、服务商/承运商标识和状态等元数据，不保存 API Key、Webhook Secret 或证据文件内容。
+- 如果某次拒付已经生成渠道提交快照，物流纠正不会覆盖旧快照。需要提交修订材料时，按订单证据包修订版和新的渠道快照流程处理。
 
 ## 当前数据链路
 
@@ -38,17 +55,28 @@
 5. 提交审计独立保存。
    - 字段：`evidence_submitted_at`、`evidence_submission_payload`、`evidence_submission_error`
    - webhook 后续更新 dispute 状态时，只更新 webhook 负责字段，不能覆盖证据提交审计。
+   - 只有最终提交动作才会创建 `order_evidence_submission_snapshots` 锁定版本，提交审计和接口结果都会记录快照 ID、版本和 SHA-256；拒付发生、页面预览和提交前编辑不会创建渠道锁定快照。
+   - 外部提交失败后的重试优先读取同一锁定版本，不重新组装订单、证据、物流或客服沟通；PayPal 商业发票 URL 也从快照复用，不重复生成或上传。
 
-6. PayPal dispute webhook 自动提交结构化证据。
+6. 订单证据锁定导出独立保存。
+   - API：`GET /api/admin/orders/:id/evidence/export`
+   - 只有当前订单证据包为 `locked` 时，才允许首次生成导出清单。
+   - 首次导出把订单、订单行、证据包、证据项、附件元数据/哈希以及当时匹配的物流 shipment/tracking events 固化到 `order_evidence_export_snapshots`。
+   - 同一证据包版本的重复导出复用原 JSON 和 SHA-256，不重新读取实时订单证据或物流。
+   - 创建新的证据包修订版后，新的锁定版本才会产生新的导出快照。
+   - 导出清单不包含对象存储 Key；附件仍通过认证的订单证据附件接口访问。
+
+7. PayPal dispute webhook 只记录拒付并进入人工复核。
    - 入口：`internal/api/v1/payment/paypal_payment_risk_webhook_handler.go`
    - 本地表：`paypal_disputes`
-   - 触发：`CUSTOMER.DISPUTE.*` 且争议仍处于卖家需要响应的状态。
-   - 提交服务：`PaymentService.SubmitPayPalDisputeEvidence`
-   - 当前提交内容：PayPal `PROOF_OF_FULFILLMENT`、物流承运商、tracking number、写入 `notes` 的订单/发票摘要、收货地址、商品明细、送达/签收事件和客服沟通摘要。
-   - 后台提供独立的商业发票 PDF 样式预览，不会阻断真实 webhook 自动提交。配置卖方资料与公开 HTTPS 文件存储后，PayPal 会按自动流程通过 `documents` 字段提交 `commercial_invoice` 附件；`PAYPAL_DISPUTE_AUTO_ATTACH_INVOICE_PDF` 默认开启，显式设为 `false` 才关闭 PDF 附件。
-   - 自动提交失败不会让 PayPal webhook 返回 500；失败原因写入 `paypal_disputes.evidence_submission_error`，并在 webhook 响应中返回。
+   - 触发：`CUSTOMER.DISPUTE.*`。
+   - webhook 只保存拒付事实、订单关联和 `evidence_pending_review=true`，不调用 PayPal `ProvideEvidence`，不创建渠道提交快照，也不上传商业发票。
+   - 后台拒付工作台通过 `GET /api/admin/payment/paypal-disputes/:id/evidence` 生成当前证据预览；“打开订单证据包”进入可编辑的订单证据域。
+   - 运营检查并确认后，才调用 `POST /api/admin/payment/paypal-disputes/:id/evidence/submit`，由 `PaymentService.SubmitPayPalDisputeEvidence` 组装并提交 `PROOF_OF_FULFILLMENT`、物流、订单/发票摘要、送达/签收说明、沟通摘要和配置允许的商业发票 PDF。
+   - `PAYPAL_DISPUTE_AUTO_ATTACH_INVOICE_PDF` 只控制最终人工提交时是否自动附加商业发票 PDF，不代表 webhook 自动提交。
+   - 最终提交失败时，错误写入 `paypal_disputes.evidence_submission_error`；修正材料后重新提交仍遵循快照复用规则。
 
-7. 后台可预览 PayPal 商业发票 PDF。
+8. 后台可预览 PayPal 商业发票 PDF。
    - API：`GET /api/admin/payment/paypal-disputes/:id/evidence/invoice.pdf`
    - 返回：`application/pdf`，`Content-Disposition: inline`，浏览器可直接打开查看。
    - 作用：查看某个真实订单快照生成的 PDF。
@@ -66,7 +94,7 @@
 - 人工补充说明。
 - Stripe File ID：物流签收凭证、客服沟通 PDF、收据、其他附件。
 - PayPal `PROOF_OF_FULFILLMENT`：tracking info 与结构化订单/发票/送达签收说明。
-- PayPal 商业发票/订单收据 PDF：订单商品、SKU、数量、金额、运费、税费、折扣、总额、账单/收货地址、付款状态和 PayPal payment reference。后台另有独立样式沙盒，可用临时输入检查版式。
+- PayPal 商业发票/订单收据 PDF：订单商品、SKU、数量、金额、运费、税费、折扣、总额、账单/收货地址、付款状态和 PayPal payment reference。该 PDF 只在人工最终提交阶段按配置生成和上传；后台另有独立样式沙盒，可用临时输入检查版式。
 
 ## PayPal 商业发票 PDF 当前需要什么
 
@@ -89,7 +117,7 @@
 - 从 DHL / FedEx 等承运商官方 API 自动获取带签名/收件人信息的 POD PDF。
 - 获取客服沟通 PDF、官方签收证明和其他附件，并形成 PayPal 可访问的文档 URL。
 - 将 POD、客服沟通 PDF 和其他附件通过 PayPal evidence `documents` 字段一并提交。
-- 对官方文件获取、URL 过期、失败重试和幂等提交建立独立审计链路。
+- 对官方文件获取、URL 过期和官方文件刷新建立独立审计链路。拒付结构化提交本身已经通过提交快照支持失败重试复用，但官方文件获取仍未接入。
 
 当前仓库没有稳定的承运商官方签收 PDF API 适配器，也没有承运商认证的 POD 文档 URL 来源。因此当前 PayPal 文件附件只覆盖内部生成的商业发票/订单收据 PDF，不伪造“已附上官方签收 PDF”。
 
@@ -102,7 +130,9 @@
 ## 安全边界
 
 - Stripe webhook 不自动提交 evidence，必须由后台人工确认。
-- PayPal dispute webhook 会自动提交当前已具备的结构化 evidence；商业发票 PDF 也按配置自动附加，不要求运营额外上传。
+- PayPal dispute webhook 不提交证据，只记录拒付并把订单置于待人工复核路径；商业发票 PDF 也不会在 webhook 阶段生成或上传。
+- 拒付工作台允许运营在最终提交前查看当前证据包并按需编辑、补录、删除错误附件；提交前的材料变化不会被旧渠道快照锁住。
+- 系统不会判定照片、张力表或人工证据内容是否合格；清单只提供缺失、待人工确认和未接入提示。
 - `POST /api/admin/payment/paypal-invoice-preview.pdf` 只是版式预览工具，不改变真实争议提交流程。
 - PayPal 商业发票 PDF 不是法定税务发票，不得把缺少税务主体/税号/正式编号规则的收据误标为 VAT/GST invoice。
 - webhook 不自动创建或执行退款。

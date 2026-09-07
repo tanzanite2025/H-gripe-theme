@@ -20,8 +20,9 @@ type PaymentService struct {
 	paymentRepo                               *repository.PaymentRepository
 	orderRepo                                 *repository.OrderRepository
 	policyDisclosureRepo                      *repository.OrderPolicyDisclosureRepository
-	shippingRepo                              *repository.ShippingRepository
 	ticketRepo                                *repository.TicketRepository
+	orderEvidenceAssembler                    *OrderEvidencePackageAssembler
+	orderEvidenceSubmissionRepo               *repository.OrderEvidenceSubmissionSnapshotRepository
 	risk                                      *antifraud.Service
 	stripeDisputeEvidenceSubmitter            stripeDisputeEvidenceSubmitter
 	paypalDisputeEvidenceSubmitter            PayPalDisputeEvidenceSubmitter
@@ -52,12 +53,41 @@ func (s *PaymentService) ConfigureProductCacheEventPublisher(publisher ProductCa
 	s.productCacheEvents = publisher
 }
 
-func (s *PaymentService) ConfigureEvidenceSources(orderRepo *repository.OrderRepository, shippingRepo *repository.ShippingRepository, ticketRepo *repository.TicketRepository) {
+func (s *PaymentService) ConfigureEvidenceSources(
+	orderRepo *repository.OrderRepository,
+	ticketRepo *repository.TicketRepository,
+) {
 	if orderRepo != nil {
 		s.orderRepo = orderRepo
 	}
-	s.shippingRepo = shippingRepo
 	s.ticketRepo = ticketRepo
+}
+
+func (s *PaymentService) ConfigureOrderEvidenceAssembler(
+	assembler *OrderEvidencePackageAssembler,
+) {
+	if s == nil {
+		return
+	}
+	s.orderEvidenceAssembler = assembler
+}
+
+func (s *PaymentService) ConfigureOrderEvidenceSubmissionSnapshotRepository(
+	repo *repository.OrderEvidenceSubmissionSnapshotRepository,
+) {
+	if s == nil {
+		return
+	}
+	s.orderEvidenceSubmissionRepo = repo
+}
+
+func (s *PaymentService) assembleOrderEvidencePackage(
+	orderID uint,
+) (*OrderEvidencePackageAssembly, error) {
+	if s == nil || s.orderEvidenceAssembler == nil {
+		return nil, nil
+	}
+	return s.orderEvidenceAssembler.Assemble(orderID)
 }
 
 func (s *PaymentService) ConfigurePolicyDisclosureRepository(repo *repository.OrderPolicyDisclosureRepository) {

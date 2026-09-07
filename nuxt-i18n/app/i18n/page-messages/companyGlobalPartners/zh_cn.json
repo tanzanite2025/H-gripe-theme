@@ -1,0 +1,45 @@
+{
+  "title": "全球合作伙伴",
+  "hero": {
+    "tagline": "受到全球领先品牌信赖",
+    "contactCta": "联系我们洽谈合作"
+  },
+  "stats": {
+    "countries": {
+      "label": "国家与地区",
+      "description": "从厦门服务全球市场。"
+    },
+    "brandPartners": {
+      "label": "品牌合作伙伴",
+      "description": "开展全球 OEM / ODM 合作。"
+    },
+    "productsDelivered": {
+      "label": "已交付产品",
+      "description": "自上线以来已发运的轮组部件。"
+    }
+  },
+  "confidentiality": "出于保密协议的要求，我们不会公开列出合作品牌。所有生产项目均严格保密，以保护客户的商业利益与隐私。",
+  "whyPartner": {
+    "title": "为什么选择与我们合作",
+    "trust": {
+      "title": "长期信任",
+      "description": "为您的产品目录提供可靠交付与稳定品质。"
+    },
+    "technology": {
+      "title": "技术领先",
+      "description": "持续研发碳纤维轮圈、轮组制造与静音花鼓技术。"
+    },
+    "support": {
+      "title": "全球支持",
+      "description": "从厦门到您的分销市场，提供跨区域服务支持。"
+    }
+  },
+  "map": {
+    "title": "全球合作网络 - 厦门起点",
+    "description": "所有路线都从中国福建厦门出发，并连接到当前展示的示例城市。",
+    "svgTitle": "从厦门出发的全球合作路线",
+    "svgDescription": "展示从中国福建厦门连接至多个全球城市的动态弧线。",
+    "caption": "此可视化仅用于示意，路线为厦门与部分合作城市之间的风格化连接。"
+  },
+  "feedbackTitle": "分享您对合作伙伴计划的反馈"
+}

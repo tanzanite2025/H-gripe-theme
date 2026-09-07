@@ -36,6 +36,8 @@ func registerCommerceRoutes(
 		ordersGroup.PATCH("/:id/shipping-status", middleware.RequirePermission(auth.PermOrderEdit), orderHandler.UpdateShippingStatus)
 		ordersGroup.PATCH("/:id/tracking", middleware.RequirePermission(auth.PermOrderEdit), orderHandler.UpdateTrackingInfo)
 		ordersGroup.POST("/:id/fulfillment", middleware.RequirePermission(auth.PermOrderEdit), orderHandler.FulfillOrder)
+		ordersGroup.POST("/:id/production/start", middleware.RequirePermission(auth.PermOrderEdit), orderHandler.StartProduction)
+		ordersGroup.POST("/:id/production/complete", middleware.RequirePermission(auth.PermOrderEdit), orderHandler.CompleteProduction)
 		ordersGroup.POST("/:id/tracking/sync", middleware.RequirePermission(auth.PermOrderEdit), orderHandler.SyncTrackingInfo)
 		ordersGroup.POST("/:id/dispute-contact-email", middleware.RequirePermission(auth.PermOrderEdit), orderHandler.SendDisputeContactEmail)
 		ordersGroup.PATCH("/:id/admin-note", middleware.RequirePermission(auth.PermOrderEdit), orderHandler.UpdateAdminNote)

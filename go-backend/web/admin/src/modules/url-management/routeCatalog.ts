@@ -12,8 +12,10 @@ import type {
 } from './routeCatalogTypes'
 
 export const storefrontRouteCatalogApi = {
-  async stats(): Promise<StorefrontRouteCatalogStats> {
-    const response = await axios.get('/api/admin/urls/stats')
+  async stats(locale?: string): Promise<StorefrontRouteCatalogStats> {
+    const response = await axios.get('/api/admin/urls/stats', {
+      params: locale ? { locale } : undefined,
+    })
     return response.data?.data || {}
   },
 

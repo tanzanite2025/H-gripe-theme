@@ -1,94 +1,17 @@
 {
-  "brief": {
-    "level": "会员等级",
-    "levelDesc": "会员等级用于表示账号累计成长状态，并决定该等级对应的权益规则。",
-    "discountRate": "折扣率",
-    "discountRateDesc": "后台会员等级配置的价格折扣率。",
-    "stackable": "可叠加",
-    "stackableDesc": "用于表示当前等级权益是否可以和其他符合条件的优惠一起使用。"
-  },
-  "levels": {
-    "title": "会员等级",
-    "header": {
-      "level": "等级",
-      "pointsRequired": "所需积分",
-      "discountRate": "折扣率"
-    },
-    "rows": {
-      "ordinary": "普通",
-      "bronze": "铜牌",
-      "silver": "银牌",
-      "gold": "金牌",
-      "platinum": "铂金",
-      "diamond": "钻石"
-    }
-  },
-  "points": {
-    "title": "积分规则",
-    "pointValueSingular": "{points} 积分",
-    "pointsValue": "{points} 积分",
-    "notConfigured": "未配置",
-    "purchaseEarn": "订单完成返积分",
-    "purchaseEarnRule": "订单完成后，按优惠后的商品成交金额每 1 {currency} 返 {points}",
-    "purchaseEarnDisabled": "消费返积分未开启",
-    "invite": "邀请新用户",
-    "inviteDesc": "邀请成功奖励 50 积分（被邀请者 30 积分）",
-    "consume": "消费换积分",
-    "consumeDesc": "1 美元 = 1 积分",
-    "daily": "每日登录",
-    "dailyDesc": "每日登录奖励 1 积分（有效期 30 天）",
-    "unit": "pts",
-    "redeem": "兑换比例",
-    "redemptionDisplayRule": "{points} = {currency} {amount}",
-    "redemptionDisabled": "积分兑换未开启",
-    "redemptionRule": "{points} 积分 = {currency}{amount}",
-    "checkin": "每日签到",
-    "checkinBaseRule": "每次签到 {base}",
-    "checkinMaxRule": "最高 {max}",
-    "checkinStreakRule": "连续签到每 {interval} 天额外 +{bonus}",
-    "checkinDisabled": "每日签到积分未开启",
-    "checkinRule": "{base} 积分（最高 {max}；连续签到每 {interval} 天额外 +{bonus}）",
-    "referralDisplayRule": "邀请人获得 {referrer}；被邀请人获得 {referee}",
-    "referralDisabled": "邀请奖励未开启",
-    "referralRule": "{referrer} 积分（被邀请人获得 {referee} 积分）"
-  },
   "tabs": {
     "myInfo": "我的信息",
     "levers": "等级权益",
     "exchange": "积分兑换",
-    "ariaLabel": "Membership sections"
+    "ariaLabel": "会员内容分区"
   },
-  "pages": {
-    "myInfo": {
-      "title": "我的会员信息",
-      "intro": "查看个人资料、会员等级、积分余额、优惠券、礼品卡和保修入口。",
-      "seoTitle": "我的会员信息 - 积分与权益",
-      "seoDescription": "查看 会员资料、会员等级、积分余额、优惠券、礼品卡和保修工具。",
-      "feedbackTitle": "分享您对会员信息页面的反馈",
-      "feedbackSubtitle": "告诉我们个人资料、权益、优惠券、礼品卡或保修入口是否清楚。"
-    },
-    "levers": {
-      "title": "会员等级与积分规则",
-      "intro": "查看会员等级、折扣权益、积分获取、积分兑换、邀请奖励和签到规则。",
-      "seoTitle": "会员等级与积分规则",
-      "seoDescription": "查看 会员等级、积分获取规则、兑换比例、邀请奖励和每日签到奖励。",
-      "feedbackTitle": "分享您对会员等级和积分规则的反馈",
-      "feedbackSubtitle": "告诉我们等级权益、积分获取、兑换比例、邀请奖励或签到规则是否清楚。"
-    },
-    "exchange": {
-      "title": "礼品卡兑换",
-      "intro": "使用符合条件的会员积分兑换礼品卡，并在会员中心查看已兑换记录。",
-      "seoTitle": "礼品卡兑换 - 会员积分兑换",
-      "seoDescription": "使用 会员积分兑换可用礼品卡奖励，并在会员中心管理已兑换礼品卡。",
-      "feedbackTitle": "分享您对礼品卡兑换的反馈",
-      "feedbackSubtitle": "告诉我们积分兑换、可用礼品卡或兑换记录是否容易理解。"
-    }
+  "points": {
+    "unit": "积分"
   },
-  "viewAll": "查看全部",
-  "myBenefits": "我的权益",
+  "brief": {
+    "discountRate": "折扣率"
+  },
   "coupons": "优惠券",
   "pointCards": "积分卡",
-  "copyLink": "复制邀请链接",
-  "pageTitle": "Membership and Points",
-  "giftCards": "礼品卡"
+  "viewAll": "查看全部"
 }

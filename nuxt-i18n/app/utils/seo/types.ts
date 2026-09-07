@@ -1,4 +1,4 @@
-export type ProductSeoAvailability = 'in_stock' | 'out_of_stock'
+export type ProductSeoAvailability = 'in_stock' | 'made_to_order' | 'out_of_stock'
 
 export interface ProductSeoOfferInput {
   price?: number | null

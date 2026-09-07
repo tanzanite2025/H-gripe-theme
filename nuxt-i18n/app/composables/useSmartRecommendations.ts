@@ -126,6 +126,7 @@ const createRecommendationFallbackCard = (
       regular: 0,
       sale: 0,
     },
+    fulfillmentMode: 'stock',
     availability: 'in_stock',
     reviewSummary: normalizeRecommendationReviewSummary(item.review_summary, productId),
     variants: [],

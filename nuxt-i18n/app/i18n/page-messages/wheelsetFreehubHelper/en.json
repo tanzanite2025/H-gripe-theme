@@ -1,0 +1,76 @@
+{
+  "title": "Freehub body quick finder",
+  "description": "Select your drivetrain brand and groupset to see which freehub body type is typically required. Always cross-check with the official compatibility charts from the drivetrain and hub manufacturers.",
+  "drivetrainBrand": "Drivetrain brand",
+  "selectBrand": "Select brand",
+  "groupset": "Groupset",
+  "selectGroupset": "Select groupset",
+  "chooseBrandFirst": "Choose brand first",
+  "empty": "Choose a brand and groupset to see a suggested freehub body type.",
+  "recommended": "Recommended freehub body:",
+  "options": {
+    "shimanoDeoreM6100": {
+      "label": "Deore M6100 (12-speed MTB)",
+      "freehub": "MS (Micro Spline 12-speed)",
+      "notes": "Typical for Shimano 12-speed MTB groupsets like Deore, SLX, XT, XTR."
+    },
+    "shimanoSlxM7100": {
+      "label": "SLX M7100 (12-speed MTB)",
+      "freehub": "MS (Micro Spline 12-speed)"
+    },
+    "shimanoXtM8100": {
+      "label": "XT M8100 (12-speed MTB)",
+      "freehub": "MS (Micro Spline 12-speed)"
+    },
+    "shimanoXtrM9100": {
+      "label": "XTR M9100 (12-speed MTB)",
+      "freehub": "MS (Micro Spline 12-speed)"
+    },
+    "shimano105R7000": {
+      "label": "105 R7000 (11-speed road)",
+      "freehub": "HG 9-11 speed road"
+    },
+    "shimanoUltegraR8000": {
+      "label": "Ultegra R8000 (11-speed road)",
+      "freehub": "HG 9-11 speed road"
+    },
+    "shimanoDuraAceR9100": {
+      "label": "Dura-Ace R9100 (11-speed road)",
+      "freehub": "HG 9-11 speed road"
+    },
+    "shimano105Di2R7100": {
+      "label": "105 Di2 R7100 (12-speed road)",
+      "freehub": "HG L2 12-speed road only",
+      "notes": "Shimano 12-speed road specific body; not compatible with older 11-speed-only freehubs."
+    },
+    "sramGxEagle": {
+      "label": "GX Eagle (12-speed MTB)",
+      "freehub": "XD",
+      "notes": "Use XD for Eagle 12-speed; NX Eagle cassette uses HG MTB freehub."
+    },
+    "sramX01Eagle": {
+      "label": "X01 Eagle (12-speed MTB)",
+      "freehub": "XD"
+    },
+    "sramNxEagle": {
+      "label": "NX Eagle (12-speed MTB)",
+      "freehub": "HG 8-11 speed MTB"
+    },
+    "sramForceEtapAxs": {
+      "label": "Force eTap AXS (12-speed road)",
+      "freehub": "XDR"
+    },
+    "sramRedEtapAxs": {
+      "label": "Red eTap AXS (12-speed road)",
+      "freehub": "XDR"
+    },
+    "campagnoloEkar13": {
+      "label": "Ekar 13-speed",
+      "freehub": "N3W"
+    },
+    "campagnoloSuperRecord11": {
+      "label": "Super Record 11-speed road",
+      "freehub": "CP (Campagnolo classic)"
+    }
+  }
+}

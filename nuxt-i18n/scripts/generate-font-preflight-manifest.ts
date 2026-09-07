@@ -16,17 +16,21 @@ const fontDir = path.join(projectDir, 'public', 'fonts')
 const fontCssPath = path.join(appDir, 'assets', 'css', 'tailwind.css')
 const stripeFontCssPath = path.join(fontDir, 'maple-ui.css')
 const tailwindConfigPath = path.join(projectDir, 'tailwind.config.ts')
+const nuxtConfigPath = path.join(projectDir, 'nuxt.config.ts')
+const fontPreloadPriorityPluginPath = path.join(projectDir, 'server', 'plugins', '05-font-preload-priority.server.ts')
+const fontPreloadPriorityUtilityPath = path.join(projectDir, 'server', 'utils', 'fontPreloadPriority.ts')
 const manifestPath = path.join(projectDir, 'public', '_internal', 'font-preflight.json')
 
 const latinFontFamily = 'MapleUILatin'
 const cjkFontFamily = 'MapleUICJK'
 const fontDisplay = 'block'
 const maximumLatinFontBytes = 160 * 1024
+const latinFontFilename = 'MapleUI-Latin.00af3fec5b34.woff2'
 const versionedFontFilenamePattern = /^MapleUI-[A-Za-z-]+\.[a-f0-9]{12}\.woff2$/
 const productionFontExtensions = new Set(['.otf', '.ttf', '.woff', '.woff2'])
 const baseFontStack = [latinFontFamily, cjkFontFamily]
 const expectedFontFaces = [
-  { fontFamily: latinFontFamily, filename: 'MapleUI-Latin.00af3fec5b34.woff2', script: 'Latin', sourceFace: 'Maple UI', unicodeRange: '', role: 'Maple UI 拉丁核心分片' },
+  { fontFamily: latinFontFamily, filename: latinFontFilename, script: 'Latin', sourceFace: 'Maple UI', unicodeRange: '', role: 'Maple UI 拉丁核心分片' },
   { fontFamily: cjkFontFamily, filename: 'MapleUI-CJK.f8ce6d72e8cb.woff2', script: 'CJK / extended', sourceFace: 'Maple UI', unicodeRange: 'U+0250-02FF, U+0370-052F, U+0530-058F, U+1F00-1FFF, U+2070-209F, U+2150-218F, U+2C00-2DFF, U+2E80-2EFF, U+3000-303F, U+3040-30FF, U+3100-31FF, U+3200-33FF, U+3400-4DBF, U+4E00-9FFF, U+AC00-D7AF, U+F900-FAFF, U+FE30-FE4F, U+FF00-FFEF, U+20000-2FA1F', role: 'Maple UI CJK/扩展核心分片' },
   { fontFamily: 'MapleUICoverageNotoSansDevanagari', filename: 'MapleUI-Coverage-NotoSans-Devanagari.3b3cae4d2600.woff2', script: 'Devanagari', sourceFace: 'Noto Sans Devanagari', unicodeRange: 'U+0900-097F, U+1CD0-1CF9, U+200C-200D, U+20A8, U+20B9, U+20F0, U+25CC, U+A830-A839, U+A8E0-A8FF, U+11B00-11B09', role: 'Maple UI 字体系统的 Devanagari 覆盖分片' },
   { fontFamily: 'MapleUICoverageNotoSansLatinAccents', filename: 'MapleUI-Coverage-NotoSans-Latin-Accents.e645edc952b6.woff2', script: 'Latin accents', sourceFace: 'Noto Sans', unicodeRange: 'U+00C0-00C1, U+00C4-00C5, U+00C8-00C9, U+00CB, U+00CC-00CD, U+00CF, U+00D2-00D3, U+00D6, U+00D9-00DA, U+00DC, U+0116, U+0130, U+016E, U+01D7, U+01DB, U+01FA, U+0226, U+022E, U+0300-0301, U+0307-0308, U+030A, U+1E2E, U+FE00', role: 'Maple UI 字体系统的扩展拉丁覆盖分片' },
@@ -231,6 +235,14 @@ const main = (): void => {
   const fontCss = fs.readFileSync(fontCssPath, 'utf8')
   const stripeCss = fs.readFileSync(stripeFontCssPath, 'utf8')
   const tailwindConfig = fs.readFileSync(tailwindConfigPath, 'utf8')
+  const nuxtConfig = fs.readFileSync(nuxtConfigPath, 'utf8')
+  const fontPreloadPriorityPlugin = fs.existsSync(fontPreloadPriorityPluginPath)
+    ? fs.readFileSync(fontPreloadPriorityPluginPath, 'utf8')
+    : ''
+  const fontPreloadPriorityUtility = fs.existsSync(fontPreloadPriorityUtilityPath)
+    ? fs.readFileSync(fontPreloadPriorityUtilityPath, 'utf8')
+    : ''
+  const fontPreloadPrioritySource = `${fontPreloadPriorityPlugin}\n${fontPreloadPriorityUtility}`
   const fontFaces = findFontFaceSources(fontCss)
   const stripeFontFaces = findFontFaceSources(stripeCss)
   const storefrontFontFaces = findStorefrontFontFaces(fontCssPath)
@@ -328,6 +340,30 @@ const main = (): void => {
     splitViolations.push('The Latin first-paint subset is missing.')
   } else if (fs.statSync(latinFontPath).size > maximumLatinFontBytes) {
     splitViolations.push(`Latin subset is ${fs.statSync(latinFontPath).size} bytes, over the ${maximumLatinFontBytes} byte budget.`)
+  }
+
+  const hasStaticLatinPreload = [
+    "key: 'storefront-font-preload-latin'",
+    "rel: 'preload'",
+    `href: '/fonts/${latinFontFilename}'`,
+    "as: 'font'",
+    "type: 'font/woff2'",
+    "crossorigin: 'anonymous'",
+  ].every(snippet => nuxtConfig.includes(snippet))
+
+  if (!hasStaticLatinPreload) {
+    splitViolations.push('Nuxt app.head must statically declare the Maple UI Latin first-paint preload.')
+  }
+
+  const hasLatinPreloadPriorityPlugin = [
+    `LATIN_FONT_PRELOAD_HREF = '/fonts/${latinFontFilename}'`,
+    'LATIN_FONT_PRELOAD_PATTERN',
+    'prioritizeLatinFontPreload',
+    "'render:response'",
+  ].every(snippet => fontPreloadPrioritySource.includes(snippet))
+
+  if (!hasLatinPreloadPriorityPlugin) {
+    splitViolations.push('Nitro must prioritize the Maple UI Latin preload at the start of SSR <head> output.')
   }
 
   if (!cjkFace || !fs.existsSync(cjkFontPath)) {

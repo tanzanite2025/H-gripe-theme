@@ -3,6 +3,8 @@ package service
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,7 +15,9 @@ import (
 	"strings"
 	"time"
 
+	currencydomain "commerce-platform/internal/domain/currency"
 	orderdomain "commerce-platform/internal/domain/order"
+	"commerce-platform/internal/domain/orderevidence"
 	paymentdomain "commerce-platform/internal/domain/payment"
 	shippingdomain "commerce-platform/internal/domain/shipping"
 	"commerce-platform/internal/pkg/invoice"
@@ -25,15 +29,16 @@ import (
 
 var (
 	ErrPayPalDisputeEvidenceNotSubmittable = errors.New("paypal dispute evidence is not submittable")
-	// Deprecated: missing tracking is a warning and requires explicit override
-	// confirmation for manual submissions; it is no longer a hard submission error.
-	ErrPayPalDisputeEvidenceTrackingNeeded              = errors.New("paypal dispute evidence requires tracking information")
+	// Deprecated: missing tracking is a warning and is not a submission gate.
+	ErrPayPalDisputeEvidenceTrackingNeeded = errors.New("paypal dispute evidence requires tracking information")
+	// Deprecated: retained for API compatibility; warnings never require a
+	// separate override before a human chooses to submit.
 	ErrPayPalDisputeEvidenceWarningConfirmationRequired = errors.New("paypal dispute evidence warning confirmation is required")
 	ErrPayPalDisputeEvidenceConfigRequired              = errors.New("paypal client id and secret are required")
 	ErrPayPalDisputeInvoiceUnavailable                  = errors.New("paypal dispute commercial invoice is unavailable")
 )
 
-const paypalSignaturePODThresholdUSD = 750
+const paypalSignaturePODThresholdUSD = orderdomain.HighValueSignatureThresholdUSD
 
 type PayPalDisputeEvidenceSubmitter interface {
 	ProvideEvidence(ctx context.Context, disputeID string, params *paypalapi.DisputeProvideEvidenceParams) error
@@ -71,20 +76,23 @@ func (s livePayPalDisputeEvidenceSubmitter) ProvideEvidence(ctx context.Context,
 }
 
 type PayPalDisputeEvidencePackage struct {
-	Dispute           *paymentdomain.PayPalDispute          `json:"dispute"`
-	Order             *orderdomain.Order                    `json:"order,omitempty"`
-	PolicyDisclosure  *DisputePolicyDisclosureEvidence      `json:"policy_disclosure,omitempty"`
-	Refunds           []DisputeRefundEvidence               `json:"refunds"`
-	Shipment          *shippingdomain.TrackingShipment      `json:"shipment,omitempty"`
-	TrackingEvents    []shippingdomain.TrackingEvent        `json:"tracking_events"`
-	Communications    []StripeDisputeCommunicationEvidence  `json:"communications"`
-	Authentication    *DisputePaymentAuthenticationEvidence `json:"authentication,omitempty"`
-	Evidence          PayPalDisputeEvidenceDraft            `json:"evidence"`
-	EvidenceChecklist DisputeEvidenceChecklist              `json:"evidence_checklist"`
-	SubmissionCheck   DisputeEvidenceSubmissionCheck        `json:"submission_check"`
-	Documents         []PayPalDisputeEvidenceDocument       `json:"documents"`
-	Warnings          []string                              `json:"warnings"`
-	CanSubmit         bool                                  `json:"can_submit"`
+	Dispute               *paymentdomain.PayPalDispute          `json:"dispute"`
+	Order                 *orderdomain.Order                    `json:"order,omitempty"`
+	FulfillmentEvidence   *OrderEvidencePackageAssembly         `json:"fulfillment_evidence,omitempty"`
+	PolicyDisclosure      *DisputePolicyDisclosureEvidence      `json:"policy_disclosure,omitempty"`
+	Refunds               []DisputeRefundEvidence               `json:"refunds"`
+	Shipment              *shippingdomain.TrackingShipment      `json:"-"`
+	TrackingEvents        []shippingdomain.TrackingEvent        `json:"-"`
+	TrackingContext       *OrderEvidenceTrackingContext         `json:"tracking_context,omitempty"`
+	TrackingEventEvidence []OrderEvidenceDeliveryEvent          `json:"tracking_events"`
+	Communications        []StripeDisputeCommunicationEvidence  `json:"communications"`
+	Authentication        *DisputePaymentAuthenticationEvidence `json:"authentication,omitempty"`
+	Evidence              PayPalDisputeEvidenceDraft            `json:"evidence"`
+	EvidenceChecklist     DisputeEvidenceChecklist              `json:"evidence_checklist"`
+	SubmissionCheck       DisputeEvidenceSubmissionCheck        `json:"submission_check"`
+	Documents             []PayPalDisputeEvidenceDocument       `json:"documents"`
+	Warnings              []string                              `json:"warnings"`
+	CanSubmit             bool                                  `json:"can_submit"`
 }
 
 type PayPalDisputeEvidenceDraft struct {
@@ -103,9 +111,10 @@ type PayPalDisputeEvidenceDraft struct {
 }
 
 type PayPalDisputeEvidenceDocument struct {
-	Type string `json:"type"`
-	Name string `json:"name"`
-	URL  string `json:"url"`
+	Type   string `json:"type"`
+	Name   string `json:"name"`
+	URL    string `json:"url"`
+	SHA256 string `json:"sha256,omitempty"`
 }
 
 type SubmitPayPalDisputeEvidenceInput struct {
@@ -118,24 +127,30 @@ type SubmitPayPalDisputeEvidenceInput struct {
 }
 
 type SubmitPayPalDisputeEvidenceResult struct {
-	DisputeID       uint                            `json:"dispute_id"`
-	PayPalDisputeID string                          `json:"paypal_dispute_id"`
-	PayPalStatus    string                          `json:"paypal_status"`
-	SubmittedAt     *time.Time                      `json:"submitted_at,omitempty"`
-	TrackingNumber  string                          `json:"tracking_number"`
-	EvidenceTypes   []string                        `json:"evidence_types"`
-	Documents       []PayPalDisputeEvidenceDocument `json:"documents"`
+	DisputeID               uint                            `json:"dispute_id"`
+	PayPalDisputeID         string                          `json:"paypal_dispute_id"`
+	PayPalStatus            string                          `json:"paypal_status"`
+	SubmittedAt             *time.Time                      `json:"submitted_at,omitempty"`
+	TrackingNumber          string                          `json:"tracking_number"`
+	EvidenceTypes           []string                        `json:"evidence_types"`
+	Documents               []PayPalDisputeEvidenceDocument `json:"documents"`
+	EvidenceSnapshotID      uint                            `json:"evidence_snapshot_id"`
+	EvidenceSnapshotVersion int                             `json:"evidence_snapshot_version"`
+	EvidenceSnapshotSHA256  string                          `json:"evidence_snapshot_sha256"`
 }
 
 type payPalDisputeEvidenceSubmissionAudit struct {
-	AdditionalStatement string                          `json:"additional_statement,omitempty"`
-	Evidence            PayPalDisputeEvidenceDraft      `json:"evidence"`
-	EvidenceType        string                          `json:"evidence_type"`
-	Documents           []PayPalDisputeEvidenceDocument `json:"documents,omitempty"`
-	DocumentWarnings    []string                        `json:"document_warnings,omitempty"`
-	SubmissionWarnings  []string                        `json:"submission_warnings,omitempty"`
-	OverrideWarnings    bool                            `json:"override_warnings"`
-	SubmittedAt         time.Time                       `json:"submitted_at"`
+	AdditionalStatement     string                          `json:"additional_statement,omitempty"`
+	Evidence                PayPalDisputeEvidenceDraft      `json:"evidence"`
+	EvidenceType            string                          `json:"evidence_type"`
+	Documents               []PayPalDisputeEvidenceDocument `json:"documents,omitempty"`
+	DocumentWarnings        []string                        `json:"document_warnings,omitempty"`
+	SubmissionWarnings      []string                        `json:"submission_warnings,omitempty"`
+	OverrideWarnings        bool                            `json:"override_warnings"`
+	SubmittedAt             time.Time                       `json:"submitted_at"`
+	EvidenceSnapshotID      uint                            `json:"evidence_snapshot_id"`
+	EvidenceSnapshotVersion int                             `json:"evidence_snapshot_version"`
+	EvidenceSnapshotSHA256  string                          `json:"evidence_snapshot_sha256"`
 }
 
 func (s *PaymentService) BuildPayPalDisputeEvidencePackage(disputeID uint) (*PayPalDisputeEvidencePackage, error) {
@@ -145,12 +160,13 @@ func (s *PaymentService) BuildPayPalDisputeEvidencePackage(disputeID uint) (*Pay
 	}
 
 	pkg := &PayPalDisputeEvidencePackage{
-		Dispute:        record,
-		Refunds:        []DisputeRefundEvidence{},
-		TrackingEvents: []shippingdomain.TrackingEvent{},
-		Communications: []StripeDisputeCommunicationEvidence{},
-		Warnings:       []string{},
-		CanSubmit:      paypalDisputeNeedsSellerEvidence(record) && record.EvidenceSubmittedAt == nil,
+		Dispute:               record,
+		Refunds:               []DisputeRefundEvidence{},
+		TrackingEvents:        []shippingdomain.TrackingEvent{},
+		TrackingEventEvidence: []OrderEvidenceDeliveryEvent{},
+		Communications:        []StripeDisputeCommunicationEvidence{},
+		Warnings:              []string{},
+		CanSubmit:             paypalDisputeNeedsSellerEvidence(record) && record.EvidenceSubmittedAt == nil,
 	}
 	transaction, err := s.findDisputeEvidenceTransaction("paypal", record.TransactionID, record.ProviderPaymentID, disputeOrderID(record.OrderID))
 	if err != nil {
@@ -188,17 +204,19 @@ func (s *PaymentService) BuildPayPalDisputeEvidencePackage(disputeID uint) (*Pay
 		pkg.Warnings = append(pkg.Warnings, "No order-level refund and cancellation policy disclosure snapshot was found; the current policy page will not be used as historical evidence.")
 	}
 
-	if s.shippingRepo != nil {
-		if shipment, err := s.shippingRepo.FindTrackingShipmentByOrderID(orderRecord.ID); err == nil {
-			pkg.Shipment = shipment
-		} else if !repository.IsRecordNotFound(err) {
-			return nil, err
-		}
-		events, err := s.shippingRepo.FindTrackingEventsByOrderID(orderRecord.ID)
-		if err != nil {
-			return nil, err
-		}
-		pkg.TrackingEvents = events
+	fulfillmentEvidence, err := s.assembleOrderEvidencePackage(orderRecord.ID)
+	if err != nil {
+		return nil, err
+	}
+	if fulfillmentEvidence == nil {
+		pkg.Warnings = append(pkg.Warnings, "Order evidence package assembler is not configured; fulfillment evidence was not loaded.")
+	} else {
+		pkg.FulfillmentEvidence = fulfillmentEvidence
+		pkg.Shipment = fulfillmentEvidence.Shipment
+		pkg.TrackingEvents = fulfillmentEvidence.TrackingEvents
+		pkg.TrackingContext = fulfillmentEvidence.TrackingContext
+		pkg.TrackingEventEvidence = projectOrderEvidenceDeliveryEvents(fulfillmentEvidence.TrackingEvents)
+		pkg.Warnings = append(pkg.Warnings, fulfillmentEvidence.Warnings...)
 	}
 
 	if s.ticketRepo != nil {
@@ -240,68 +258,31 @@ func (s *PaymentService) SubmitPayPalDisputeEvidence(ctx context.Context, input 
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	pkg, err := s.BuildPayPalDisputeEvidencePackage(input.DisputeID)
+	record, err := s.GetPayPalDispute(input.DisputeID)
 	if err != nil {
 		return nil, err
 	}
-	if !pkg.CanSubmit {
+	if record.EvidenceSubmittedAt != nil || !paypalDisputeNeedsSellerEvidence(record) {
 		return nil, ErrPayPalDisputeEvidenceNotSubmittable
-	}
-	if !pkg.SubmissionCheck.Ready {
-		return nil, ErrPayPalDisputeEvidenceNotSubmittable
-	}
-	if pkg.SubmissionCheck.OverrideRequired && !input.OverrideWarnings {
-		now := time.Now().UTC()
-		audit := payPalDisputeEvidenceSubmissionAudit{
-			AdditionalStatement: strings.TrimSpace(input.AdditionalStatement),
-			Evidence:            pkg.Evidence,
-			EvidenceType:        string(paypalapi.EvidenceTypeProofOfFulfillment),
-			SubmissionWarnings:  pkg.SubmissionCheck.Warnings,
-			OverrideWarnings:    false,
-			SubmittedAt:         now,
-		}
-		payloadBytes, _ := json.Marshal(audit)
-		_ = s.paymentRepo.UpdatePayPalDisputeEvidenceSubmission(
-			pkg.Dispute.ID,
-			nil,
-			string(payloadBytes),
-			ErrPayPalDisputeEvidenceWarningConfirmationRequired.Error(),
-			"",
-		)
-		return nil, ErrPayPalDisputeEvidenceWarningConfirmationRequired
 	}
 
 	now := time.Now().UTC()
-	documents := []PayPalDisputeEvidenceDocument{}
-	documentWarnings := []string{}
-	if s.paypalDisputeInvoiceAutoAttachEnabled() {
-		documents, documentWarnings = s.paypalDisputeEvidenceDocuments(ctx, pkg, now)
-		if len(documentWarnings) > 0 {
-			pkg.Warnings = append(pkg.Warnings, documentWarnings...)
-		}
-		pkg.Documents = documents
-	} else {
-		documentWarnings = append(documentWarnings, "Commercial invoice PDF auto-attachment is not enabled in the payment service configuration; structured PayPal evidence was submitted without the PDF document.")
-		pkg.Warnings = append(pkg.Warnings, documentWarnings...)
+	snapshot, snapshotPayload, err := s.loadPayPalEvidenceSubmissionSnapshot(record, input, ctx, now)
+	if err != nil {
+		return nil, err
 	}
-	params := paypalDisputeEvidenceParams(pkg, input, documents)
-	audit := payPalDisputeEvidenceSubmissionAudit{
-		AdditionalStatement: strings.TrimSpace(input.AdditionalStatement),
-		Evidence:            pkg.Evidence,
-		EvidenceType:        string(paypalapi.EvidenceTypeProofOfFulfillment),
-		Documents:           documents,
-		DocumentWarnings:    documentWarnings,
-		SubmissionWarnings:  pkg.SubmissionCheck.Warnings,
-		OverrideWarnings:    input.OverrideWarnings,
-		SubmittedAt:         now,
-	}
+	params := paypalDisputeEvidenceParamsFromSnapshot(snapshotPayload)
+	audit := paypalDisputeEvidenceSubmissionAuditFromSnapshot(snapshotPayload, now)
+	audit.EvidenceSnapshotID = snapshot.ID
+	audit.EvidenceSnapshotVersion = snapshot.Version
+	audit.EvidenceSnapshotSHA256 = snapshot.SnapshotSHA256
 	payloadBytes, _ := json.Marshal(audit)
-	payload := string(payloadBytes)
+	auditPayload := string(payloadBytes)
 
 	submitter := s.paypalDisputeEvidenceSubmitter
 	if submitter == nil {
 		if strings.TrimSpace(input.ClientID) == "" || strings.TrimSpace(input.SecretKey) == "" {
-			_ = s.paymentRepo.UpdatePayPalDisputeEvidenceSubmission(pkg.Dispute.ID, nil, payload, ErrPayPalDisputeEvidenceConfigRequired.Error(), "")
+			_ = s.paymentRepo.UpdatePayPalDisputeEvidenceSubmission(record.ID, nil, auditPayload, ErrPayPalDisputeEvidenceConfigRequired.Error(), "")
 			return nil, ErrPayPalDisputeEvidenceConfigRequired
 		}
 		submitter = livePayPalDisputeEvidenceSubmitter{config: pgateway.Config{
@@ -312,47 +293,108 @@ func (s *PaymentService) SubmitPayPalDisputeEvidence(ctx context.Context, input 
 		}}
 	}
 
-	if err := submitter.ProvideEvidence(ctx, pkg.Dispute.PayPalDisputeID, params); err != nil {
-		_ = s.paymentRepo.UpdatePayPalDisputeEvidenceSubmission(pkg.Dispute.ID, nil, payload, err.Error(), "")
+	if err := submitter.ProvideEvidence(ctx, record.PayPalDisputeID, params); err != nil {
+		_ = s.paymentRepo.UpdatePayPalDisputeEvidenceSubmission(record.ID, nil, auditPayload, err.Error(), "")
 		return nil, err
 	}
 
 	submittedAt := now
-	if err := s.paymentRepo.UpdatePayPalDisputeEvidenceSubmission(pkg.Dispute.ID, &submittedAt, payload, "", ""); err != nil {
+	if err := s.paymentRepo.UpdatePayPalDisputeEvidenceSubmission(record.ID, &submittedAt, auditPayload, "", ""); err != nil {
 		return nil, err
 	}
 	return &SubmitPayPalDisputeEvidenceResult{
-		DisputeID:       pkg.Dispute.ID,
-		PayPalDisputeID: pkg.Dispute.PayPalDisputeID,
-		PayPalStatus:    pkg.Dispute.Status,
-		SubmittedAt:     &submittedAt,
-		TrackingNumber:  pkg.Evidence.ShippingTrackingNumber,
-		EvidenceTypes:   []string{string(paypalapi.EvidenceTypeProofOfFulfillment)},
-		Documents:       documents,
+		DisputeID:               record.ID,
+		PayPalDisputeID:         record.PayPalDisputeID,
+		PayPalStatus:            record.Status,
+		SubmittedAt:             &submittedAt,
+		TrackingNumber:          snapshotPayload.Request.TrackingNumber,
+		EvidenceTypes:           []string{string(paypalapi.EvidenceTypeProofOfFulfillment)},
+		Documents:               append([]PayPalDisputeEvidenceDocument{}, snapshotPayload.Request.Documents...),
+		EvidenceSnapshotID:      snapshot.ID,
+		EvidenceSnapshotVersion: snapshot.Version,
+		EvidenceSnapshotSHA256:  snapshot.SnapshotSHA256,
 	}, nil
 }
 
-func paypalDisputeEvidenceParams(pkg *PayPalDisputeEvidencePackage, input SubmitPayPalDisputeEvidenceInput, documents []PayPalDisputeEvidenceDocument) *paypalapi.DisputeProvideEvidenceParams {
-	draft := pkg.Evidence
-	notes := paypalDisputeEvidenceNotes(pkg, draft, input.AdditionalStatement)
-	trackingInfo := []*paypalapi.TrackingInfo{}
-	if strings.TrimSpace(draft.ShippingTrackingNumber) != "" {
-		trackingInfo = append(trackingInfo, &paypalapi.TrackingInfo{
-			CarrierName:    paypalCarrierName(draft.ShippingCarrier),
-			TrackingNumber: strings.TrimSpace(draft.ShippingTrackingNumber),
-		})
+func (s *PaymentService) loadPayPalEvidenceSubmissionSnapshot(
+	record *paymentdomain.PayPalDispute,
+	input SubmitPayPalDisputeEvidenceInput,
+	ctx context.Context,
+	lockedAt time.Time,
+) (*orderevidence.OrderEvidenceSubmissionSnapshot, *paypalDisputeEvidenceSnapshotPayload, error) {
+	if record == nil || record.OrderID == nil || *record.OrderID == 0 {
+		return nil, nil, ErrPayPalDisputeEvidenceNotSubmittable
 	}
 
-	return &paypalapi.DisputeProvideEvidenceParams{
-		Evidences: &paypalapi.DisputeEvidence{
-			EvidenceType: paypalapi.EvidenceTypeProofOfFulfillment,
-			Documents:    paypalEvidenceDocuments(documents),
-			Notes:        truncateEvidenceText(notes, 4000),
-			EvidenceInfo: &paypalapi.DisputeEvidenceInfo{
-				TrackingInfo: trackingInfo,
-			},
-		},
+	var (
+		snapshot *orderevidence.OrderEvidenceSubmissionSnapshot
+		err      error
+	)
+	// PayPal has no separate draft submission endpoint. The evidence preview
+	// reads the current order package, while this submit path always reuses an
+	// already locked snapshot or creates one for the final provider request.
+	snapshot, err = s.findLatestEvidenceSubmissionSnapshot("paypal", record.ID)
+	switch {
+	case err == nil:
+		payload, parseErr := parsePayPalDisputeEvidenceSnapshot(
+			snapshot,
+			record.ID,
+			record.PayPalDisputeID,
+			*record.OrderID,
+		)
+		return snapshot, payload, parseErr
+	case !repository.IsRecordNotFound(err):
+		return nil, nil, err
 	}
+
+	pkg, err := s.BuildPayPalDisputeEvidencePackage(record.ID)
+	if err != nil {
+		return nil, nil, err
+	}
+	if !pkg.CanSubmit || pkg.Order == nil {
+		return nil, nil, ErrPayPalDisputeEvidenceNotSubmittable
+	}
+
+	documents := []PayPalDisputeEvidenceDocument{}
+	documentWarnings := []string{}
+	if s.paypalDisputeInvoiceAutoAttachEnabled() {
+		documents, documentWarnings = s.paypalDisputeEvidenceDocuments(ctx, pkg, lockedAt)
+	} else {
+		documentWarnings = append(documentWarnings, "Commercial invoice PDF auto-attachment is not enabled in the payment service configuration; structured PayPal evidence was submitted without the PDF document.")
+	}
+	pkg.Documents = documents
+	pkg.Warnings = append(pkg.Warnings, documentWarnings...)
+	request := paypalDisputeEvidenceSnapshotRequestFromPackage(
+		pkg,
+		input,
+		documents,
+		documentWarnings,
+	)
+	snapshot, err = buildLockedEvidenceSubmissionSnapshot(
+		"paypal",
+		record.ID,
+		record.PayPalDisputeID,
+		*record.OrderID,
+		pkg.FulfillmentEvidence,
+		pkg.EvidenceChecklist,
+		pkg.Warnings,
+		request,
+		lockedAt,
+	)
+	if err != nil {
+		return nil, nil, err
+	}
+	snapshot, err = s.createOrGetEvidenceSubmissionSnapshot(snapshot)
+	if err != nil {
+		return nil, nil, err
+	}
+	payload, err := parsePayPalDisputeEvidenceSnapshot(
+		snapshot,
+		record.ID,
+		record.PayPalDisputeID,
+		*record.OrderID,
+	)
+	return snapshot, payload, err
 }
 
 func (s *PaymentService) paypalDisputeEvidenceDocuments(ctx context.Context, pkg *PayPalDisputeEvidencePackage, generatedAt time.Time) ([]PayPalDisputeEvidenceDocument, []string) {
@@ -393,11 +435,17 @@ func (s *PaymentService) paypalDisputeEvidenceDocuments(ctx context.Context, pkg
 	}
 
 	documents = append(documents, PayPalDisputeEvidenceDocument{
-		Type: "commercial_invoice",
-		Name: name,
-		URL:  uploadedURL,
+		Type:   "commercial_invoice",
+		Name:   name,
+		URL:    uploadedURL,
+		SHA256: paypalEvidenceDocumentSHA256(pdfBytes),
 	})
 	return documents, warnings
+}
+
+func paypalEvidenceDocumentSHA256(data []byte) string {
+	hash := sha256.Sum256(data)
+	return hex.EncodeToString(hash[:])
 }
 
 func paypalEvidenceDocuments(documents []PayPalDisputeEvidenceDocument) []*paypalapi.Document {
@@ -493,8 +541,6 @@ func finalizePayPalDisputeEvidencePackage(pkg *PayPalDisputeEvidencePackage) {
 		},
 	)
 	pkg.SubmissionCheck = buildDisputeEvidenceSubmissionCheck(pkg.CanSubmit, pkg.EvidenceChecklist)
-	pkg.SubmissionCheck.OverrideRequired = pkg.SubmissionCheck.Ready &&
-		disputeEvidenceChecklistItemStatus(pkg.EvidenceChecklist, "fulfillment_delivery") != DisputeEvidenceStatusReady
 }
 
 func paypalDisputeEvidenceNotes(pkg *PayPalDisputeEvidencePackage, draft PayPalDisputeEvidenceDraft, additionalStatement string) string {
@@ -625,6 +671,14 @@ func paypalDisputeNeedsSellerEvidence(record *paymentdomain.PayPalDispute) bool 
 func paypalDisputeRequiresSignaturePOD(record *paymentdomain.PayPalDispute, orderRecord *orderdomain.Order) bool {
 	if record == nil || !paypalDisputeReasonIsINR(record.Reason) {
 		return false
+	}
+	if orderRecord != nil {
+		if orderRecord.SignatureRequired {
+			return true
+		}
+		if _, err := currencydomain.ParseOrderFXSnapshot(orderRecord.FXSnapshotData); err == nil {
+			return false
+		}
 	}
 	if paypalHighValueUSD(record.Amount, record.Currency) {
 		return true

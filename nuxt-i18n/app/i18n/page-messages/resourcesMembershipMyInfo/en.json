@@ -1,0 +1,27 @@
+{
+  "title": "My Membership Info",
+  "intro": "View your profile, membership level, points balance, coupons, gift cards, and warranty tools.",
+  "seoTitle": "My Membership Info - Points and Benefits",
+  "seoDescription": "View your member profile, loyalty level, points balance, coupons, gift cards, and warranty tools.",
+  "feedbackTitle": "Share your feedback about your membership info",
+  "feedbackSubtitle": "Tell us whether account details, benefits, coupons, gift cards, or warranty tools are clear.",
+  "benefits": {
+    "title": "My Benefits",
+    "level": "Level",
+    "levelDesc": "Your membership tier reflects accumulated activity and unlocks the benefit rules connected to that tier.",
+    "discountRate": "Discount Rate",
+    "discountRateDesc": "The member-level price discount configured in the backend.",
+    "coupons": "Coupons",
+    "giftCards": "Gift Cards"
+  },
+  "levels": {
+    "rows": {
+      "ordinary": "Ordinary",
+      "bronze": "Bronze",
+      "silver": "Silver",
+      "gold": "Gold",
+      "platinum": "Platinum",
+      "diamond": "Diamond"
+    }
+  }
+}

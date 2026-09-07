@@ -102,6 +102,8 @@ func TestSyncTrackingPersistsEventsFromProvider(t *testing.T) {
 
 func TestSyncTrackingMarksOrderDeliveredFromProviderStatus(t *testing.T) {
 	db, shippingService := newTestShippingTrackingService(t)
+	auditRecorder := &shippingAuditRecorder{}
+	shippingService.ConfigureAuditRecorder(auditRecorder)
 	providerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{
@@ -163,6 +165,9 @@ func TestSyncTrackingMarksOrderDeliveredFromProviderStatus(t *testing.T) {
 	var order orderdomain.Order
 	require.NoError(t, db.First(&order, 104).Error)
 	assert.Equal(t, "delivered", order.ShippingStatus)
+	require.Len(t, auditRecorder.logs, 1)
+	assert.Equal(t, "order_delivery", auditRecorder.logs[0].Resource)
+	assert.Contains(t, auditRecorder.logs[0].Changes, `"source":"tracking_sync"`)
 }
 
 func TestSyncTrackingAutoRegistersProviderBeforeSync(t *testing.T) {

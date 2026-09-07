@@ -1,4 +1,4 @@
--- Keep the backend FAQ page/category structure aligned with Nuxt routes that
+-- Keep the backend FAQ page structure aligned with Nuxt routes that
 -- use the automatic PageFaqSlot container.
 --
 -- The storefront should not emit 404 noise just because a page has no FAQ
@@ -40,40 +40,6 @@ SET route_path = EXCLUDED.route_path,
     domain = EXCLUDED.domain,
     title = EXCLUDED.title,
     subtitle = EXCLUDED.subtitle,
-    sort_order = EXCLUDED.sort_order,
-    status = EXCLUDED.status,
-    updated_at = NOW(),
-    deleted_at = NULL;
-
-WITH seed_categories(page_id, category_key, name, icon, sort_order) AS (
-    VALUES
-        ('shop', 'general', 'General Shopping', '', 10),
-        ('shop-product-detail', 'general', 'Product Detail', '', 10),
-        ('products-product-detail', 'general', 'Product Detail', '', 10),
-        ('blog', 'general', 'General Articles', '', 10),
-        ('blog-news', 'general', 'News Updates', '', 10),
-        ('blog-wheelsbuild', 'general', 'Wheel Build Articles', '', 10),
-        ('company-about', 'general', 'About our company', '', 10),
-        ('policies', 'general', 'General Policies', '', 10),
-        ('policies-cookie', 'general', 'Cookie Policy', '', 10),
-        ('policies-privacy', 'general', 'Privacy Policy', '', 10),
-        ('policies-refund-cancellation', 'general', 'Refunds & Cancellations', '', 10),
-        ('policies-terms', 'general', 'Terms of Service', '', 10),
-        ('picture-warehouse', 'general', 'Picture Warehouse', '', 10),
-        ('support-faqs', 'general', 'FAQ Index', '', 10),
-        ('faq', 'general', 'FAQ Landing', '', 10)
-),
-locales(locale) AS (
-    VALUES ('en'), ('zh')
-)
-INSERT INTO faq_categories (page_id, category_key, name, icon, locale, sort_order, status)
-SELECT seed_categories.page_id, seed_categories.category_key, seed_categories.name,
-       seed_categories.icon, locales.locale, seed_categories.sort_order, 'active'
-FROM seed_categories
-CROSS JOIN locales
-ON CONFLICT (page_id, category_key, locale) DO UPDATE
-SET name = EXCLUDED.name,
-    icon = EXCLUDED.icon,
     sort_order = EXCLUDED.sort_order,
     status = EXCLUDED.status,
     updated_at = NOW(),

@@ -1,0 +1,53 @@
+{
+  "mullet": {
+    "title": "Mullet Wheelsets (Mixed Size)",
+    "body": "A practical setup for modern MTB builds: 29 inch front + 27.5 inch rear or 27.5 inch front + 26 inch rear. Use this when rollover, grip, and rear-end agility matter more than a matched wheel diameter.",
+    "frontTitle": "Front wheel",
+    "frontBody": "Prioritizes rollover capability, steering grip, and high-speed stability.",
+    "rearTitle": "Rear wheel",
+    "rearBody": "Improves acceleration, bike handling, and rear-frame clearance.",
+    "button": "Mullet QUICKBUY"
+  },
+  "singleWheel": {
+    "title": "Single Wheel Customization",
+    "body": "Use this path when you only need a front or rear replacement, want to reuse a compatible hub, or need one wheel matched to an existing build.",
+    "beforeTitle": "Before ordering",
+    "beforeBody": "Confirm axle standard, brake mount, spoke count, freehub body, rim depth, and tire clearance so the replacement wheel works with the current bike.",
+    "button": "Chat about one wheel"
+  },
+  "mixedRim": {
+    "title": "Mixed Rim Profiles",
+    "body": "Example riding scenarios where mixed rim profiles, with different front and rear specifications, provide a tactical advantage. This approach balances aerodynamics, handling, and durability.",
+    "builderButton": "Open Quick Custom Wheelset Builder",
+    "expertButton": "Consult a Wheelset Expert",
+    "differentModels": {
+      "title": "Different models",
+      "body": "Using completely different rim models, such as a lightweight front and heavy-duty rear, is common in custom builds to balance specific performance needs."
+    },
+    "differentHeights": {
+      "title": "Different heights",
+      "body": "For example, a 50mm front for handling plus a 60mm rear for aerodynamics and stiffness. This is a common mixed setup for crosswind stability and speed."
+    },
+    "cheatsheet": "Configuration Cheatsheet",
+    "climbing": {
+      "title": "Climbing",
+      "sizes": "Front: 30-40mm. Rear: 40-50mm.",
+      "body": "Front for handling and weight, rear for stiffness."
+    },
+    "aero": {
+      "title": "Aerodynamics",
+      "sizes": "Front: 50-60mm. Rear: 60-80mm.",
+      "body": "Front balances crosswinds, rear maximizes speed."
+    },
+    "training": {
+      "title": "Training / Durability",
+      "sizes": "Front: mid alloy/carbon. Rear: high/wide profile.",
+      "body": "Rear bears load, front preserves comfort."
+    },
+    "versatile": {
+      "title": "Mixed / Versatile",
+      "sizes": "Front: 40-50mm. Rear: 55-65mm.",
+      "body": "A balanced choice for racing and training."
+    }
+  }
+}

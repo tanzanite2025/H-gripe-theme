@@ -1,0 +1,39 @@
+{
+  "title": "轮胎指南",
+  "intro": "提供常见轮胎与车圈尺寸的参考图表。",
+  "feedbackTitle": "分享您对轮胎指南页面的反馈",
+  "tabs": {
+    "size": {
+      "label": "轮胎尺寸",
+      "description": "按轮胎宽度、车圈范围和适配关系查看尺寸图表。"
+    },
+    "match": {
+      "label": "轮胎匹配",
+      "description": "了解轮胎与车圈轮廓及骑行条件的匹配关系。"
+    },
+    "tubeless": {
+      "label": "无内胎轮胎",
+      "description": "查看无内胎设置、补胎液基础和兼容性说明。"
+    },
+    "installation": {
+      "label": "安装",
+      "description": "查看轮胎安装步骤和实用检查要点。"
+    },
+    "choose": {
+      "label": "如何选择",
+      "description": "根据路况、间隙和使用场景选择合适的轮胎。"
+    },
+    "pressure": {
+      "label": "胎压",
+      "description": "查看建议胎压范围和调整参考。"
+    },
+    "innerTube": {
+      "label": "内胎",
+      "description": "了解内胎选择、气嘴类型和尺寸基础。"
+    }
+  },
+  "drawer": {
+    "query": "轮胎产品",
+    "error": "轮胎产品加载失败，请重试。"
+  }
+}

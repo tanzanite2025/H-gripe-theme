@@ -1,0 +1,45 @@
+{
+  "title": "保修查询",
+  "subtitle": "查询您的产品保修状态",
+  "loginRequired": "请登录后查询产品保修信息。",
+  "loginButton": "登录",
+  "inputLabel": "请输入订单号：",
+  "inputPlaceholder": "例如：TZ202608230001",
+  "checkButton": "查询",
+  "helpText": "订单发货后可按订单号查询发货商品和剩余保修时间。",
+  "months": "个月",
+  "days": "天",
+  "result": {
+    "valid": "保修有效",
+    "expired": "保修已过期",
+    "notFound": "未找到发货记录"
+  },
+  "actions": {
+    "checkAnother": "查询其他产品",
+    "contactSupport": "联系客服"
+  },
+  "fields": {
+    "orderNumber": "订单号",
+    "productType": "产品类型",
+    "productName": "产品名称",
+    "shipDate": "出货日期",
+    "warrantyPeriod": "保修期限",
+    "warrantyUntil": "保修至",
+    "remaining": "剩余时间",
+    "expiredAgo": "已过期 {days} 天"
+  },
+  "records": {
+    "title": "服务记录",
+    "noRecords": "暂无服务记录"
+  },
+  "errors": {
+    "notFoundMessage": "未找到订单号为 {code} 的发货记录",
+    "checkTips": {
+      "0": "请确认订单号与订单中显示的内容一致。",
+      "1": "如果仍找不到已发货订单，请联系客服。"
+    },
+    "errorContact": "如有疑问，请联系我们。"
+  },
+  "cardDesc": "输入订单号查询发货商品、保修期限和售后记录。",
+  "checkNow": "立即查询"
+}

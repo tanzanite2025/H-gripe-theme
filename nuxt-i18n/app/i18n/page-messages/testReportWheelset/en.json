@@ -1,0 +1,126 @@
+{
+  "title": "Wheelset Test Report",
+  "intro": "This section summarises how our wheelsets are validated in our in-house lab, covering lateral load, torsional stiffness, environmental durability, dynamic balance, fatigue, and braking performance tests.",
+  "assemblyNote": {
+    "prefix": "To learn more about wheelset shipping and assembly tests,",
+    "link": "see Wheelset Assembly."
+  },
+  "labels": {
+    "purpose": "Purpose:",
+    "testMethod": "Test Method:",
+    "evaluationCriteria": "Evaluation Criteria:"
+  },
+  "tests": {
+    "lateral": {
+      "title": "Lateral Load Test",
+      "purpose": "Tests wheelset stability and stiffness under lateral forces to ensure safe cornering and resistance to side impacts.",
+      "standard": "ISO 4210-7:2023",
+      "method": [
+        "Secure the complete wheelset in the testing fixture.",
+        "Apply a lateral static load at the rim or tire contact point, typically 600-800 N (approximately 60-80 kgf), and maintain for a specified duration (e.g., 1 minute).",
+        "Conduct dynamic cyclic lateral loading, for example applying alternating forces of 300-500 N over 50,000-100,000 cycles to simulate cornering stresses, crosswinds, or side impacts during riding."
+      ],
+      "criteria": [
+        "The wheelset must not exhibit cracks, fractures, or permanent structural failure.",
+        "Lateral deformation must remain within specified limits (e.g., lateral deviation ≤ 1.5 mm).",
+        "After testing, the wheelset must retain full functionality, ensuring stability and safety in real-world use."
+      ]
+    },
+    "torsional": {
+      "title": "Torsional Stiffness Test",
+      "purpose": "Evaluates wheelset stiffness and response when transmitting torque, ensuring efficient power transfer and reliability during acceleration, braking, and climbing.",
+      "standard": "ISO 4210-7:2023",
+      "method": [
+        "Secure the complete wheelset in the testing fixture, simulating hub drive conditions.",
+        "Apply a torque load at the hub drive side, typically 40-80 Nm, and maintain for a specified duration (e.g., 1 minute).",
+        "Conduct dynamic cyclic torque testing, for example applying alternating torques of 20-40 Nm over 50,000-100,000 cycles to simulate repeated acceleration and braking forces.",
+        "Measure angular deformation of the rim and spokes to evaluate stiffness and responsiveness."
+      ],
+      "criteria": [
+        "The wheelset must not exhibit cracks, fractures, or permanent structural failure.",
+        "Angular torsional deformation must remain within specified limits (e.g., ≤ 2.0°).",
+        "After testing, the wheelset must retain full functionality, ensuring efficient power transfer and safe riding performance."
+      ]
+    },
+    "environmental": {
+      "title": "Environmental Durability Test",
+      "purpose": "Simulates humidity, temperature, salt spray, and other environmental conditions to assess rim and wheelset durability, ensuring long-term reliability in harsh environments.",
+      "standard": "ISO 9227 & ISO 4210-7:2023",
+      "method": [
+        "Place the rim or complete wheelset in an environmental chamber.",
+        "Humidity Test: Maintain relative humidity at 95% for 48 hours to observe moisture absorption or corrosion.",
+        "Temperature Cycling Test: Cycle between -20°C and +60°C for 10-20 cycles, including heating, holding, and cooling phases.",
+        "Salt Spray Test: Expose to a 5% NaCl solution salt spray for 96 hours to simulate coastal or rainy conditions.",
+        "Additional conditions may include UV exposure, mud spray, or chemical agent exposure."
+      ],
+      "criteria": [
+        "No cracks, corrosion perforation, or structural failure should occur.",
+        "Surface coating or anodized layer must remain intact without significant peeling.",
+        "Dimensional changes must remain within specified tolerances (e.g., diameter variation ≤ 0.5 mm).",
+        "After testing, the rim and wheelset must retain full functionality, ensuring safe long-term use."
+      ]
+    },
+    "balance": {
+      "title": "Dynamic Balance Test",
+      "purpose": "Tests wheelset balance and stability during high-speed rotation to ensure smooth performance and rider safety.",
+      "standard": "ISO 4210-7:2023",
+      "method": [
+        "Mount the complete wheelset on a high-speed rotation testing rig.",
+        "Gradually increase rotational speed to an equivalent of 60-80 km/h, maintaining stable rotation.",
+        "Use sensors to monitor radial and lateral vibrations, as well as imbalance-induced wobble.",
+        "Simulate different operating conditions such as tire installation, applied loads, or braking forces."
+      ],
+      "criteria": [
+        "No excessive vibration or wobble that could compromise riding stability.",
+        "Dynamic imbalance must remain within specified limits (e.g., ≤ 10 g·mm).",
+        "The wheelset must retain structural integrity under high-speed rotation, with no cracks or failures.",
+        "After testing, the wheelset must remain fully functional, ensuring safe and comfortable high-speed riding."
+      ]
+    },
+    "fatigue": {
+      "title": "Fatigue Test",
+      "purpose": "Simulates repeated loads over long-term riding to verify rim durability and structural reliability.",
+      "standard": "ISO 4210-7:2023",
+      "method": [
+        "Mount the complete wheelset on a fatigue testing machine.",
+        "Apply alternating cyclic loads at the rim or tire contact point, typically 300-600 N, to replicate continuous stresses during riding.",
+        "Conduct high-cycle testing, for example 100,000-200,000 cycles, to evaluate long-term durability.",
+        "Monitor radial and lateral deformation of the rim as well as spoke tension variations during the test."
+      ],
+      "criteria": [
+        "The rim must not exhibit cracks, fractures, or permanent structural failure.",
+        "Deformation must remain within specified limits (e.g., radial deviation ≤ 1.0 mm, lateral deviation ≤ 1.5 mm).",
+        "After testing, the rim must retain full functionality, ensuring safe and reliable long-term riding performance."
+      ]
+    },
+    "braking": {
+      "title": "Braking Performance Test",
+      "purpose": "For V-brake and disc brake wheelsets, tests stability and heat resistance during braking to ensure safe and reliable performance.",
+      "standard": "ISO 4210-7:2023",
+      "method": [
+        "Mount the complete wheelset on a braking performance testing rig.",
+        "For V-brake wheelsets: Apply braking force at the rim surface, typically 300-500 N, and maintain for a specified duration.",
+        "For disc brake wheelsets: Apply torque load at the rotor, typically 40-60 Nm, and conduct sustained braking cycles.",
+        "Gradually increase rotational speed to an equivalent of 30-60 km/h, performing multiple braking cycles.",
+        "Use thermocouples or infrared sensors to monitor temperature rise at the braking surface or rotor."
+      ],
+      "criteria": [
+        "No cracks, excessive wear, or structural failure should occur.",
+        "The wheelset must remain stable during braking, with no significant wobble or vibration.",
+        "Temperature rise must remain within specified limits (e.g., rim ≤ 200°C, rotor ≤ 250°C).",
+        "After testing, the wheelset must retain full functionality, ensuring safe long-term braking performance."
+      ]
+    }
+  },
+  "video": {
+    "alt": "Play wheelset test report video for our wheelsets",
+    "label": "Watch wheelset test report video"
+  },
+  "disclaimer": {
+    "title": "Disclaimer",
+    "body": {
+      "0": "We pick only one sample for every test report and the results will likely vary as the rim diameters change. Please note that the differences between models in test results are specially designed by our engineers for the intended uses.",
+      "1": "All the test results of this section are based on our lab criteria and are implemented at our well-established testing facilities. Our team is only responsible for the test results themselves which are not set for any comparison to other brands or such regards."
+    }
+  }
+}

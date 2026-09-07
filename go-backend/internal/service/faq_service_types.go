@@ -11,7 +11,6 @@ type FAQAdminUpdateInput struct {
 	AnswerImageHeight int
 	AnswerImageSet    bool
 	PageID            string
-	Category          string
 	Locale            string
 	Status            string
 	Order             int
@@ -27,26 +26,10 @@ type FAQPageAdminInput struct {
 	SortOrder int
 }
 
-type FAQCategoryAdminInput struct {
-	PageID      string
-	CategoryKey string
-	Name        string
-	Icon        string
-	Locale      string
-	Status      string
-	SortOrder   int
-}
-
-type FAQCategoryAdminView struct {
-	faq.FAQCategory
-	FAQCount int64     `json:"faq_count"`
-	FAQs     []faq.FAQ `json:"faqs"`
-}
-
 type FAQPageAdminView struct {
 	faq.FAQPage
-	FAQCount   int64                  `json:"faq_count"`
-	Categories []FAQCategoryAdminView `json:"categories"`
+	FAQCount int64     `json:"faq_count"`
+	FAQs     []faq.FAQ `json:"faqs,omitempty"`
 }
 
 type FAQPublicItem struct {
@@ -60,16 +43,9 @@ type FAQPublicItem struct {
 	Tags              []string `json:"tags"`
 }
 
-type FAQPublicCategory struct {
-	ID    string          `json:"id"`
-	Name  string          `json:"name"`
-	Icon  string          `json:"icon,omitempty"`
-	Items []FAQPublicItem `json:"items"`
-}
-
 type FAQPublicPageData struct {
-	PageID     string              `json:"pageId"`
-	Title      string              `json:"title,omitempty"`
-	Subtitle   string              `json:"subtitle,omitempty"`
-	Categories []FAQPublicCategory `json:"categories"`
+	PageID   string          `json:"pageId"`
+	Title    string          `json:"title,omitempty"`
+	Subtitle string          `json:"subtitle,omitempty"`
+	Items    []FAQPublicItem `json:"items"`
 }

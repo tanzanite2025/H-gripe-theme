@@ -1,6 +1,8 @@
 <template>
   <div>
-    <h2 class="products-page__title products-page__title--sr-only">Wheelset Buyers Guide</h2>
+    <h2 class="products-page__title products-page__title--sr-only">
+      {{ t('guidesWheelsetBuyers.title') }}
+    </h2>
 
     <div class="wheelset-page">
       <!-- Buying overview -->
@@ -9,15 +11,14 @@
         id="overview"
         class="wheelset-section sizecharts-section"
       >
-        <h2 class="sizecharts-section__title">Wheelset buying overview</h2>
+        <h2 class="sizecharts-section__title">
+          {{ t('guidesWheelsetBuyersOverview.title') }}
+        </h2>
         <div class="wheelset-buying-action">
           <div class="wheelset-buying-action__copy">
-            <strong>Ready to buy after the checks?</strong>
+            <strong>{{ t('guidesWheelsetBuyersOverview.readyTitle') }}</strong>
             <p>
-              QUICKBUY lets you start selecting wheelset-related products from this guide, then
-              review the selected items before adding them to cart or going to payment. You can also
-              check component categories, freehub fit, appearance choices, add-ons, and safety notes
-              before you place the order.
+              {{ t('guidesWheelsetBuyersOverview.readyBody') }}
             </p>
           </div>
           <div class="wheelset-buying-action__buttons">
@@ -28,7 +29,7 @@
               :data-cta-note="ctaNotes.quickBuyEntry"
               @click="openQuickBuy"
             >
-              Start QUICKBUY
+              {{ t('guidesWheelsetBuyersOverview.startQuickBuy') }}
             </button>
             <button
               type="button"
@@ -37,7 +38,7 @@
               :data-cta-note="ctaNotes.wheelComponentsTab"
               @click="goToWheelComponents"
             >
-              Wheel components
+              {{ t('guidesWheelsetBuyersOverview.wheelComponents') }}
             </button>
           </div>
         </div>
@@ -45,28 +46,28 @@
           <article class="wheelset-guide-step">
             <div class="wheelset-guide-step__number">1</div>
             <div class="wheelset-guide-step__content">
-              <h3 class="wheelset-guide-step__title">Start with the riding use</h3>
+              <h3 class="wheelset-guide-step__title">
+                {{ t('guidesWheelsetBuyersOverview.step1.title') }}
+              </h3>
               <p class="wheelset-guide-step__body">
-                A useful wheelset choice starts with the bike and riding style, not with a single
-                spec. Decide whether the build is mainly for road speed, climbing, gravel comfort,
-                trail control, e-bike load, or a replacement wheel that must match an existing setup.
+                {{ t('guidesWheelsetBuyersOverview.step1.body') }}
               </p>
               <div class="wheelset-guide-panel-grid">
                 <div class="wheelset-guide-panel">
-                  <strong>Road / climbing</strong>
-                  <p>Prioritize lower weight, predictable handling, and a rim depth that suits local wind and terrain.</p>
+                  <strong>{{ t('guidesWheelsetBuyersOverview.step1.road.title') }}</strong>
+                  <p>{{ t('guidesWheelsetBuyersOverview.step1.road.body') }}</p>
                 </div>
                 <div class="wheelset-guide-panel">
-                  <strong>Gravel / all-road</strong>
-                  <p>Prioritize tire volume, rim durability, and a setup that stays comfortable on mixed surfaces.</p>
+                  <strong>{{ t('guidesWheelsetBuyersOverview.step1.gravel.title') }}</strong>
+                  <p>{{ t('guidesWheelsetBuyersOverview.step1.gravel.body') }}</p>
                 </div>
                 <div class="wheelset-guide-panel">
-                  <strong>MTB / trail</strong>
-                  <p>Prioritize impact resistance, spoke count, hub standard, and serviceable replacement parts.</p>
+                  <strong>{{ t('guidesWheelsetBuyersOverview.step1.mtb.title') }}</strong>
+                  <p>{{ t('guidesWheelsetBuyersOverview.step1.mtb.body') }}</p>
                 </div>
                 <div class="wheelset-guide-panel">
-                  <strong>Replacement wheel</strong>
-                  <p>Match the existing axle, brake mount, freehub, rim depth, spoke count, and tire clearance first.</p>
+                  <strong>{{ t('guidesWheelsetBuyersOverview.step1.replacement.title') }}</strong>
+                  <p>{{ t('guidesWheelsetBuyersOverview.step1.replacement.body') }}</p>
                 </div>
               </div>
             </div>
@@ -75,21 +76,21 @@
           <article class="wheelset-guide-step">
             <div class="wheelset-guide-step__number">2</div>
             <div class="wheelset-guide-step__content">
-              <h3 class="wheelset-guide-step__title">Check the specs that can block compatibility</h3>
+              <h3 class="wheelset-guide-step__title">
+                {{ t('guidesWheelsetBuyersOverview.step2.title') }}
+              </h3>
               <p class="wheelset-guide-step__body">
-                Use these quick tools to estimate the main compatibility choices before ordering.
-                The detailed pages open in a new tab, so you can keep this buying path open while
-                checking the full explanation.
+                {{ t('guidesWheelsetBuyersOverview.step2.body') }}
               </p>
               <div class="wheelset-guide-panel-grid">
                 <div class="wheelset-guide-panel">
-                  <strong>Tire width and rim fit</strong>
-                  <p>Confirm the tire size you want can work with the rim inner width and your frame clearance. Use the rim system toggle for DT-style TSS or TC estimates.</p>
+                  <strong>{{ t('guidesWheelsetBuyersOverview.step2.tireWidth.title') }}</strong>
+                  <p>{{ t('guidesWheelsetBuyersOverview.step2.tireWidth.body') }}</p>
                   <div class="wheelset-overview-tool">
                     <TireRimHelper
                       hideSearchButton
-                      title="Tire and rim width quick check"
-                      description="Enter the tire width you plan to use and choose the rim system. This is a width quick check, not a separate tube-vs-tubeless calculator."
+                      :title="t('guidesWheelsetBuyersOverview.step2.tireWidth.helperTitle')"
+                      :description="t('guidesWheelsetBuyersOverview.step2.tireWidth.helperDescription')"
                     />
                   </div>
                   <div class="wheelset-guide-actions">
@@ -100,13 +101,13 @@
                       :data-cta-note="ctaNotes.tireWidthGuideNewTab"
                       @click="goToHookedHooklessGuide"
                     >
-                      Tire width chart
+                      {{ t('guidesWheelsetBuyersOverview.step2.tireWidth.button') }}
                     </button>
                   </div>
                 </div>
                 <div class="wheelset-guide-panel">
-                  <strong>Tube, tubeless and tubular check</strong>
-                  <p>After the width estimate, confirm the actual tire/rim system. A rim-brake clincher, tubeless-ready TC rim, hookless TSS rim, and tubular rim can use different rim-bed designs; tubeless and hookless need tire approval and pressure limits, while tubular is a separate glued tire system.</p>
+                  <strong>{{ t('guidesWheelsetBuyersOverview.step2.tireSystem.title') }}</strong>
+                  <p>{{ t('guidesWheelsetBuyersOverview.step2.tireSystem.body') }}</p>
                   <div class="wheelset-guide-actions">
                     <button
                       type="button"
@@ -115,17 +116,17 @@
                       :data-cta-note="ctaNotes.tireSystemGuideNewTab"
                       @click="goToTubelessSystemGuide"
                     >
-                      Tire systems
+                      {{ t('guidesWheelsetBuyersOverview.step2.tireSystem.button') }}
                     </button>
                   </div>
                 </div>
                 <div class="wheelset-guide-panel">
-                  <strong>Freehub body</strong>
-                  <p>Match the freehub body to the cassette standard before choosing hubs or a complete wheelset.</p>
+                  <strong>{{ t('guidesWheelsetBuyersOverview.step2.freehub.title') }}</strong>
+                  <p>{{ t('guidesWheelsetBuyersOverview.step2.freehub.body') }}</p>
                   <div class="wheelset-overview-tool">
                     <FreehubGroupsetHelper
-                      title="Freehub quick finder"
-                      description="Select your drivetrain brand and groupset to estimate the freehub body you may need before opening the full compatibility section."
+                      :title="t('guidesWheelsetBuyersOverview.step2.freehub.helperTitle')"
+                      :description="t('guidesWheelsetBuyersOverview.step2.freehub.helperDescription')"
                     />
                   </div>
                   <div class="wheelset-guide-actions">
@@ -136,7 +137,7 @@
                       :data-cta-note="ctaNotes.freehubGuideNewTab"
                       @click="goToFreehubGuide"
                     >
-                      Freehub guide
+                      {{ t('guidesWheelsetBuyersOverview.step2.freehub.button') }}
                     </button>
                   </div>
                 </div>
@@ -147,17 +148,16 @@
           <article class="wheelset-guide-step">
             <div class="wheelset-guide-step__number">3</div>
             <div class="wheelset-guide-step__content">
-              <h3 class="wheelset-guide-step__title">Then choose how to configure and buy</h3>
+              <h3 class="wheelset-guide-step__title">
+                {{ t('guidesWheelsetBuyersOverview.step3.title') }}
+              </h3>
               <p class="wheelset-guide-step__body">
-                Once the core compatibility checks are clear, move into the actual order path. Use
-                QUICKBUY for a fast product selection flow, or open the wheelset sections below when
-                you need to confirm parts, appearance, special orders, optional add-ons, or safety
-                checks before installation.
+                {{ t('guidesWheelsetBuyersOverview.step3.body') }}
               </p>
               <div class="wheelset-guide-panel-grid">
                 <div class="wheelset-guide-panel">
-                  <strong>Configure and buy with QUICKBUY</strong>
-                  <p>Open the QUICKBUY builder to select available wheelset-related products, review the selected items, then add them to cart or go directly to payment.</p>
+                  <strong>{{ t('guidesWheelsetBuyersOverview.step3.quickBuy.title') }}</strong>
+                  <p>{{ t('guidesWheelsetBuyersOverview.step3.quickBuy.body') }}</p>
                   <div class="wheelset-guide-actions">
                     <button
                       type="button"
@@ -166,13 +166,13 @@
                       :data-cta-note="ctaNotes.quickBuyEntry"
                       @click="openQuickBuy"
                     >
-                      Start QUICKBUY
+                      {{ t('guidesWheelsetBuyersOverview.step3.quickBuy.button') }}
                     </button>
                   </div>
                 </div>
                 <div class="wheelset-guide-panel">
-                  <strong>What this order path can cover</strong>
-                  <p>Use the guide sections to check rims, hubs, spokes, nipples, freehub bodies, appearance options, tubeless add-ons, spare spokes, and replacement-wheel requests before buying.</p>
+                  <strong>{{ t('guidesWheelsetBuyersOverview.step3.coverage.title') }}</strong>
+                  <p>{{ t('guidesWheelsetBuyersOverview.step3.coverage.body') }}</p>
                   <div class="wheelset-guide-actions">
                     <button
                       type="button"
@@ -181,13 +181,13 @@
                       :data-cta-note="ctaNotes.wheelComponentsTab"
                       @click="goToWheelComponents"
                     >
-                      Component options
+                      {{ t('guidesWheelsetBuyersOverview.step3.coverage.button') }}
                     </button>
                   </div>
                 </div>
                 <div class="wheelset-guide-panel">
-                  <strong>Need custom work</strong>
-                  <p>Use special order for mullet setups, single front or rear wheel replacement, or mixed rim profiles that need a custom confirmation before purchase.</p>
+                  <strong>{{ t('guidesWheelsetBuyersOverview.step3.custom.title') }}</strong>
+                  <p>{{ t('guidesWheelsetBuyersOverview.step3.custom.body') }}</p>
                   <div class="wheelset-guide-actions">
                     <button
                       type="button"
@@ -196,13 +196,13 @@
                       :data-cta-note="ctaNotes.specialOrderTab"
                       @click="goToSpecialOrder"
                     >
-                      Custom orders
+                      {{ t('guidesWheelsetBuyersOverview.step3.custom.button') }}
                     </button>
                   </div>
                 </div>
                 <div class="wheelset-guide-panel">
-                  <strong>Safety before riding</strong>
-                  <p>Before installation or the first ride, review the wheelset-specific safety checks: plastic tire levers, torque and brake-pad checks, impact inspection, spoke tension, and stop-riding warning signs.</p>
+                  <strong>{{ t('guidesWheelsetBuyersOverview.step3.safety.title') }}</strong>
+                  <p>{{ t('guidesWheelsetBuyersOverview.step3.safety.body') }}</p>
                   <div class="wheelset-guide-actions">
                     <button
                       type="button"
@@ -211,7 +211,7 @@
                       :data-cta-note="ctaNotes.safetyInstructionsTab"
                       @click="goToSafetyInstructions"
                     >
-                      Safety checks
+                      {{ t('guidesWheelsetBuyersOverview.step3.safety.button') }}
                     </button>
                   </div>
                 </div>
@@ -223,11 +223,13 @@
 
       <!-- Safety instructions -->
       <section
-        v-show="activeTab === 'safety-instructions'"
+        v-if="activeTab === 'safety-instructions'"
         id="safety-instructions"
         class="wheelset-section sizecharts-section"
       >
-        <h2 class="sizecharts-section__title">Safety instructions</h2>
+        <h2 class="sizecharts-section__title">
+          {{ t('guidesWheelsetBuyers.tabs.safetyInstructions.label') }}
+        </h2>
         <WheelsetSafetyInstructionsSection
           :goToTubelessInstallation="goToTubelessInstallation"
           :goToTechnicalTension="goToTechnicalTension"
@@ -237,11 +239,13 @@
 
       <!-- Sample assembly -->
       <section
-        v-show="activeTab === 'sample-assembly'"
+        v-if="activeTab === 'sample-assembly'"
         id="sample-assembly"
         class="wheelset-section sizecharts-section wheelset-section--sample"
       >
-        <h2 class="sizecharts-section__title">Sample assembly</h2>
+        <h2 class="sizecharts-section__title">
+          {{ t('guidesWheelsetBuyers.tabs.sampleAssembly.label') }}
+        </h2>
         <WheelsetSampleAssemblySection
           :openWhatsAppChat="openWhatsAppChat"
           :goToTechnicalSpokePattern="goToTechnicalSpokePattern"
@@ -251,31 +255,33 @@
 
       <!-- Special order (Mullet, Custom Front & Rear, Mixed rim) -->
       <section
-        v-show="activeTab === 'special-order'"
+        v-if="activeTab === 'special-order'"
         id="special-order"
         class="wheelset-section sizecharts-section"
       >
-        <h2 class="sizecharts-section__title">Special order</h2>
+        <h2 class="sizecharts-section__title">
+          {{ t('guidesWheelsetBuyers.tabs.specialOrder.label') }}
+        </h2>
 
         <div class="wheelset-policy-flow">
           <article class="wheelset-guide-step">
             <div class="wheelset-guide-step__number">1</div>
             <div class="wheelset-guide-step__content">
-              <h3 class="wheelset-guide-step__title">Mullet Wheelsets (Mixed Size)</h3>
+              <h3 class="wheelset-guide-step__title">
+                {{ t('guidesWheelsetBuyersSpecialOrder.mullet.title') }}
+              </h3>
               <p class="wheelset-guide-step__body">
-                A practical setup for modern MTB builds: <strong>29" front + 27.5" rear</strong>
-                or <strong>27.5" front + 26" rear</strong>. Use this when rollover, grip, and rear-end
-                agility matter more than a matched wheel diameter.
+                {{ t('guidesWheelsetBuyersSpecialOrder.mullet.body') }}
               </p>
 
               <div class="wheelset-guide-panel-grid wheelset-guide-panel-grid--two">
                 <div class="wheelset-guide-panel">
-                  <strong>Front wheel</strong>
-                  <p>Prioritizes rollover capability, steering grip, and high-speed stability.</p>
+                  <strong>{{ t('guidesWheelsetBuyersSpecialOrder.mullet.frontTitle') }}</strong>
+                  <p>{{ t('guidesWheelsetBuyersSpecialOrder.mullet.frontBody') }}</p>
                 </div>
                 <div class="wheelset-guide-panel">
-                  <strong>Rear wheel</strong>
-                  <p>Improves acceleration, bike handling, and rear-frame clearance.</p>
+                  <strong>{{ t('guidesWheelsetBuyersSpecialOrder.mullet.rearTitle') }}</strong>
+                  <p>{{ t('guidesWheelsetBuyersSpecialOrder.mullet.rearBody') }}</p>
                 </div>
               </div>
 
@@ -287,7 +293,7 @@
                   :data-cta-note="ctaNotes.mulletQuickBuyEntry"
                   @click="openQuickBuy"
                 >
-                  Mullet QUICKBUY
+                  {{ t('guidesWheelsetBuyersSpecialOrder.mullet.button') }}
                 </button>
               </div>
             </div>
@@ -296,17 +302,17 @@
           <article class="wheelset-guide-step">
             <div class="wheelset-guide-step__number">2</div>
             <div class="wheelset-guide-step__content">
-              <h3 class="wheelset-guide-step__title">Single Wheel Customization</h3>
+              <h3 class="wheelset-guide-step__title">
+                {{ t('guidesWheelsetBuyersSpecialOrder.singleWheel.title') }}
+              </h3>
               <p class="wheelset-guide-step__body">
-                Use this path when you only need a front or rear replacement, want to reuse a
-                compatible hub, or need one wheel matched to an existing build.
+                {{ t('guidesWheelsetBuyersSpecialOrder.singleWheel.body') }}
               </p>
 
               <div class="wheelset-guide-panel">
-                <strong>Before ordering</strong>
+                <strong>{{ t('guidesWheelsetBuyersSpecialOrder.singleWheel.beforeTitle') }}</strong>
                 <p>
-                  Confirm axle standard, brake mount, spoke count, freehub body, rim depth, and tire
-                  clearance so the replacement wheel works with the current bike.
+                  {{ t('guidesWheelsetBuyersSpecialOrder.singleWheel.beforeBody') }}
                 </p>
               </div>
 
@@ -318,7 +324,7 @@
                   :data-cta-note="ctaNotes.singleWheelChat"
                   @click="openWhatsAppChat"
                 >
-                  Chat about one wheel
+                  {{ t('guidesWheelsetBuyersSpecialOrder.singleWheel.button') }}
                 </button>
               </div>
             </div>
@@ -327,7 +333,9 @@
           <article class="wheelset-guide-step">
             <div class="wheelset-guide-step__number">3</div>
             <div class="wheelset-guide-step__content">
-              <h3 class="wheelset-guide-step__title">Mixed Rim Profiles</h3>
+              <h3 class="wheelset-guide-step__title">
+                {{ t('guidesWheelsetBuyersSpecialOrder.mixedRim.title') }}
+              </h3>
               <WheelsetMixedRimSection
                 :openQuickBuy="openQuickBuy"
                 :openWhatsAppChat="openWhatsAppChat"
@@ -339,78 +347,87 @@
 
       <!-- Appearance Logo -->
       <section
-        v-show="activeTab === 'appearance-logo'"
+        v-if="activeTab === 'appearance-logo'"
         id="appearance-logo"
         class="wheelset-section sizecharts-section"
       >
-        <h2 class="sizecharts-section__title">Appearance Logo</h2>
+        <h2 class="sizecharts-section__title">
+          {{ t('guidesWheelsetBuyers.tabs.appearanceLogo.label') }}
+        </h2>
         <WheelsetAppearanceLogoSection :goToAboutAppearance="goToAboutAppearance" />
       </section>
 
       <!-- Choose freehub -->
       <section
-        v-show="activeTab === 'choose-freehub'"
+        v-if="activeTab === 'choose-freehub'"
         id="choose-freehub"
         class="wheelset-section sizecharts-section"
       >
-        <h2 class="sizecharts-section__title">Choose freehub</h2>
+        <h2 class="sizecharts-section__title">
+          {{ t('guidesWheelsetBuyers.tabs.chooseFreehub.label') }}
+        </h2>
         <WheelsetChooseFreehubSection />
       </section>
 
       <!-- Wheel Components -->
       <section
-        v-show="activeTab === 'wheel-components'"
+        v-if="activeTab === 'wheel-components'"
         id="wheel-components"
         class="wheelset-section sizecharts-section"
       >
-        <h2 class="sizecharts-section__title">Wheel Components</h2>
-        <SmartAccordion default-id="hubs">
-          <AccordionItem id="hubs" title="1. Hubs">
-             <TechnicalHubsSection />
+        <h2 class="sizecharts-section__title">
+          {{ t('guidesWheelsetBuyers.tabs.wheelComponents.label') }}
+        </h2>
+        <SmartAccordion v-model:activeId="activeWheelComponent" default-id="hubs">
+          <AccordionItem id="hubs" :title="t('guidesWheelsetBuyers.componentSections.hubs')">
+             <TechnicalHubsSection v-if="activeWheelComponent === 'hubs'" />
           </AccordionItem>
           
-          <AccordionItem id="rims" title="2. Rims">
-             <TechnicalRimsSection />
+          <AccordionItem id="rims" :title="t('guidesWheelsetBuyers.componentSections.rims')">
+             <TechnicalRimsSection v-if="activeWheelComponent === 'rims'" />
           </AccordionItem>
 
-          <AccordionItem id="spokes" title="3. Spokes">
-             <TechnicalSpokesSection />
+          <AccordionItem id="spokes" :title="t('guidesWheelsetBuyers.componentSections.spokes')">
+             <TechnicalSpokesSection v-if="activeWheelComponent === 'spokes'" />
           </AccordionItem>
           
-          <AccordionItem id="nipples" title="4. Nipples">
-             <TechnicalNipplesSection />
+          <AccordionItem id="nipples" :title="t('guidesWheelsetBuyers.componentSections.nipples')">
+             <TechnicalNipplesSection v-if="activeWheelComponent === 'nipples'" />
           </AccordionItem>
         </SmartAccordion>
       </section>
 
       <!-- Optional -->
       <section
-        v-show="activeTab === 'optional'"
+        v-if="activeTab === 'optional'"
         id="optional"
         class="wheelset-section sizecharts-section"
       >
-        <h2 class="sizecharts-section__title">Optional</h2>
+        <h2 class="sizecharts-section__title">
+          {{ t('guidesWheelsetBuyers.tabs.optional.label') }}
+        </h2>
         <div class="wheelset-policy-flow">
           <article class="wheelset-guide-step">
             <div class="wheelset-guide-step__number">1</div>
             <div class="wheelset-guide-step__content">
-              <h3 class="wheelset-guide-step__title">Useful Add-ons</h3>
+              <h3 class="wheelset-guide-step__title">
+                {{ t('guidesWheelsetBuyersOptional.title') }}
+              </h3>
               <p class="wheelset-guide-step__body">
-                Optional upgrades should solve a real fit, service, or riding problem. Use the list
-                below as a quick check before adding parts to a custom wheelset order.
+                {{ t('guidesWheelsetBuyersOptional.body') }}
               </p>
               <div class="wheelset-guide-panel-grid">
                 <div class="wheelset-guide-panel">
-                  <strong>Tubeless setup</strong>
-                  <p>Rim tape, valves, and sealant for riders who want lower pressure and puncture resistance.</p>
+                  <strong>{{ t('guidesWheelsetBuyersOptional.tubeless.title') }}</strong>
+                  <p>{{ t('guidesWheelsetBuyersOptional.tubeless.body') }}</p>
                 </div>
                 <div class="wheelset-guide-panel">
-                  <strong>Spare spokes</strong>
-                  <p>Helpful for travel, racing, or less common spoke lengths that may be hard to source locally.</p>
+                  <strong>{{ t('guidesWheelsetBuyersOptional.spareSpokes.title') }}</strong>
+                  <p>{{ t('guidesWheelsetBuyersOptional.spareSpokes.body') }}</p>
                 </div>
                 <div class="wheelset-guide-panel">
-                  <strong>Freehub body</strong>
-                  <p>Only add a spare or alternate freehub body after confirming cassette compatibility.</p>
+                  <strong>{{ t('guidesWheelsetBuyersOptional.freehub.title') }}</strong>
+                  <p>{{ t('guidesWheelsetBuyersOptional.freehub.body') }}</p>
                   <div class="wheelset-guide-actions">
                     <button
                       type="button"
@@ -419,13 +436,13 @@
                       :data-cta-note="ctaNotes.freehubGuideNewTab"
                       @click="goToFreehubGuide"
                     >
-                      Freehub guide
+                      {{ t('guidesWheelsetBuyersOverview.step2.freehub.button') }}
                     </button>
                   </div>
                 </div>
                 <div class="wheelset-guide-panel">
-                  <strong>Logo finish</strong>
-                  <p>Laser engraving is the fastest low-maintenance choice; decals suit custom team colors.</p>
+                  <strong>{{ t('guidesWheelsetBuyersOptional.logo.title') }}</strong>
+                  <p>{{ t('guidesWheelsetBuyersOptional.logo.body') }}</p>
                 </div>
               </div>
             </div>
@@ -437,7 +454,7 @@
       <section class="wheelset-feedback">
         <UserFeedbackThread
           threadKey="guides-wheelset-buyers"
-          title="Share your feedback or leave a message about the Wheelset Buyers Guide"
+          :title="t('guidesWheelsetBuyers.feedbackTitle')"
         />
       </section>
     </div>
@@ -445,8 +462,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useLocalePath, useRouter } from '#imports'
+import { computed, defineAsyncComponent, ref, watch } from 'vue'
+import { useI18n, useLocalePath, useRouter } from '#imports'
 import WheelsetSafetyInstructionsSection from '~/components/WheelsetSafetyInstructionsSection.vue'
 import WheelsetSampleAssemblySection from '~/components/WheelsetSampleAssemblySection.vue'
 import WheelsetAppearanceLogoSection from '~/components/WheelsetAppearanceLogoSection.vue'
@@ -456,15 +473,16 @@ import { useChatWidget } from '~/composables/useChatWidget'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
 import SmartAccordion from '~/components/ui/SmartAccordion.vue'
 import AccordionItem from '~/components/ui/AccordionItem.vue'
-import TechnicalHubsSection from '~/components/TechnicalHubsSection.vue'
-import TechnicalRimsSection from '~/components/TechnicalRimsSection.vue'
-import TechnicalSpokesSection from '~/components/TechnicalSpokesSection.vue'
-import TechnicalNipplesSection from '~/components/TechnicalNipplesSection.vue'
 import TireRimHelper from '~/components/TireRimHelper.vue'
 import FreehubGroupsetHelper from '~/components/FreehubGroupsetHelper.vue'
 import { usePageSubNavigationTab } from '~/composables/usePageSubNavigationTab'
 import { wheelsetBuyerTabs } from '~/utils/pageSubNavigation'
+import { usePageMessages } from '~/composables/usePageMessages'
 
+const TechnicalHubsSection = defineAsyncComponent(() => import('~/components/TechnicalHubsSection.vue'))
+const TechnicalRimsSection = defineAsyncComponent(() => import('~/components/TechnicalRimsSection.vue'))
+const TechnicalSpokesSection = defineAsyncComponent(() => import('~/components/TechnicalSpokesSection.vue'))
+const TechnicalNipplesSection = defineAsyncComponent(() => import('~/components/TechnicalNipplesSection.vue'))
 
 definePageMeta({
   layout: 'products',
@@ -472,11 +490,19 @@ definePageMeta({
   footerLabelFallback: 'Wheelset Guide',
 })
 
-useHead({
-  title: 'Wheelset Buyers Guide',
-})
-
 const tabs = wheelsetBuyerTabs
+
+const { locale, t } = useI18n()
+const wheelsetMessages = usePageMessages('guidesWheelsetBuyers')
+const overviewMessages = usePageMessages('guidesWheelsetBuyersOverview')
+const specialOrderMessages = usePageMessages('guidesWheelsetBuyersSpecialOrder')
+const optionalMessages = usePageMessages('guidesWheelsetBuyersOptional')
+const activeWheelComponent = ref<string | null>('hubs')
+
+await Promise.all([
+  wheelsetMessages.loadPageMessages(locale.value),
+  overviewMessages.loadPageMessages(locale.value),
+])
 
 const { activeTab, localizedTabPath, setActiveTab } = usePageSubNavigationTab({
   tabs,
@@ -487,17 +513,44 @@ const { openChat } = useChatWidget()
 const router = useRouter()
 const localePath = useLocalePath()
 
-const ctaNotes = {
-  quickBuyEntry: 'Opens the bottom QUICKBUY menu; the direct-select option opens the existing wheelset product selection builder.',
-  wheelComponentsTab: 'Switches /guides/wheelset-buyers to the Wheel Components tab with hubs, rims, spokes, and nipples.',
-  tireWidthGuideNewTab: 'Opens /guides/tireguides/choose in a new tab for tire width, hooked TC, and hookless TSS rim chart details.',
-  tireSystemGuideNewTab: 'Opens /guides/tireguides/tubeless in a new tab for tube, tubeless, hookless, and tubular tire system guidance.',
-  freehubGuideNewTab: 'Opens the /guides/wheelset-buyers choose-freehub tab in a new tab for freehub compatibility guidance.',
-  specialOrderTab: 'Switches /guides/wheelset-buyers to the Special Order tab for mullet wheelsets, single-wheel customization, and mixed rim profiles.',
-  safetyInstructionsTab: 'Switches /guides/wheelset-buyers to the Safety Instructions tab for wheelset installation and pre-ride safety checks.',
-  mulletQuickBuyEntry: 'Opens the QUICKBUY entry popover from the Mullet Wheelsets section for a mixed-size wheelset order path.',
-  singleWheelChat: 'Opens the chat widget for a single front or rear wheel replacement/customization inquiry.',
-} as const
+useHead(() => ({
+  title: t('guidesWheelsetBuyers.title'),
+}))
+
+const ctaNotes = computed(() => ({
+  quickBuyEntry: t('guidesWheelsetBuyersOverview.ctaNotes.quickBuyEntry'),
+  wheelComponentsTab: t('guidesWheelsetBuyersOverview.ctaNotes.wheelComponentsTab'),
+  tireWidthGuideNewTab: t('guidesWheelsetBuyersOverview.ctaNotes.tireWidthGuideNewTab'),
+  tireSystemGuideNewTab: t('guidesWheelsetBuyersOverview.ctaNotes.tireSystemGuideNewTab'),
+  freehubGuideNewTab: t('guidesWheelsetBuyersOverview.ctaNotes.freehubGuideNewTab'),
+  specialOrderTab: t('guidesWheelsetBuyersOverview.ctaNotes.specialOrderTab'),
+  safetyInstructionsTab: t('guidesWheelsetBuyersOverview.ctaNotes.safetyInstructionsTab'),
+  mulletQuickBuyEntry: t('guidesWheelsetBuyersOverview.ctaNotes.mulletQuickBuyEntry'),
+  singleWheelChat: t('guidesWheelsetBuyersOverview.ctaNotes.singleWheelChat'),
+}))
+
+const loadActivePageMessages = (requestedLocale: string) => {
+  const requests: Promise<void>[] = []
+  if (activeTab.value === 'special-order') {
+    requests.push(specialOrderMessages.loadPageMessages(requestedLocale))
+  }
+  if (activeTab.value === 'optional') {
+    requests.push(optionalMessages.loadPageMessages(requestedLocale))
+  }
+  return Promise.all(requests)
+}
+
+watch(locale, (nextLocale) => {
+  void Promise.all([
+    wheelsetMessages.loadPageMessages(nextLocale),
+    overviewMessages.loadPageMessages(nextLocale),
+    loadActivePageMessages(nextLocale),
+  ])
+})
+
+watch(activeTab, () => {
+  void loadActivePageMessages(locale.value)
+}, { immediate: true })
 
 const openWhatsAppChat = () => {
   openChat({ showAgentList: true })

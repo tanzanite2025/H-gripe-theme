@@ -4,13 +4,13 @@
       v-if="!props.syncWithUrl"
       :tabs="tabs"
       :active-id="activeTab"
-      aria-label="Test report sections"
+      :aria-label="t('supportTestReport.sections')"
       @select="setActiveTab"
     />
 
     <!-- Rim Test Report -->
     <section
-      v-show="activeTab === 'rim-test-report'"
+      v-if="activeTab === 'rim-test-report'"
       id="rim-test-report"
       class="support-section"
     >
@@ -19,7 +19,7 @@
 
     <!-- Wheelset Test Report -->
     <section
-      v-show="activeTab === 'wheelset-test-report'"
+      v-if="activeTab === 'wheelset-test-report'"
       id="wheelset-test-report"
       class="support-section"
     >
@@ -31,7 +31,7 @@
 
     <!-- Tension -->
     <section
-      v-show="activeTab === 'tension'"
+      v-if="activeTab === 'tension'"
       id="tension"
       class="support-section"
     >
@@ -40,7 +40,7 @@
 
     <!-- Wheelset Assembly -->
     <section
-      v-show="activeTab === 'wheelset-assembly'"
+      v-if="activeTab === 'wheelset-assembly'"
       id="wheelset-assembly"
       class="support-section"
     >
@@ -105,6 +105,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useI18n } from '#imports'
 import SupportRimTestReportSection from '~/components/SupportRimTestReportSection.vue'
 import SupportWheelsetTestReportSection from '~/components/SupportWheelsetTestReportSection.vue'
 import SupportWheelsetAssemblySection from '~/components/SupportWheelsetAssemblySection.vue'
@@ -117,6 +118,7 @@ const props = defineProps<{
 }>()
 
 const tabs = testReportTabs
+const { t } = useI18n()
 
 const { activeTab, setActiveTab } = usePageSubNavigationTab({
   tabs,

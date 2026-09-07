@@ -1,0 +1,37 @@
+{
+  "title": "Accidental Damage",
+  "sections": {
+    "scope": {
+      "title": "Scope",
+      "body": "This policy covers accidental crashes or misuse, such as jumps or falls, collisions, or impacts with rocks."
+    },
+    "productGroup": {
+      "title": "Product Group",
+      "body": "Applies to all eligible Wheels/Rims. You can use the product filter on our website to identify which series your wheelset belongs to."
+    },
+    "coverage": {
+      "title": "Coverage",
+      "items": {
+        "0": "Crash replacement is available within three years from the date of purchase.",
+        "1": "Replacement products are offered at a 10% discount."
+      }
+    },
+    "conditions": {
+      "title": "Conditions",
+      "items": {
+        "0": "The Standard Crash Replacement Policy is non-transferable and applies only to the original purchaser.",
+        "1": "If there are any issues with the replacement product, claims must be submitted within 7 days of receipt; otherwise, the case will be considered resolved.",
+        "2": "Please note that all shipping fees, duties, taxes, and related costs are the responsibility of the customer."
+      },
+      "note": "Warranty coverage is calculated from the original purchase date. The warranty period does not reset after a rim replacement."
+    },
+    "claimProcess": {
+      "title": "Claim Process",
+      "items": {
+        "0": "Once a claim is submitted, our after-sales team will contact you within 24 hours to verify details.",
+        "1": "In most cases, you will not be required to return the damaged equipment to receive a replacement."
+      },
+      "submitClaim": "Submit a Claim"
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "title": "Test Report",
+  "sections": "Test report sections",
+  "tabs": {
+    "rim": {
+      "label": "Rim Test Report",
+      "description": "Rim testing documents and compliance references."
+    },
+    "wheelset": {
+      "label": "Wheelset Test Report",
+      "description": "Wheelset testing reports and validation data."
+    },
+    "tension": {
+      "label": "Tension",
+      "description": "Spoke tension targets, ranges, and build checks."
+    },
+    "assembly": {
+      "label": "Wheelset Assembly",
+      "description": "Assembly records, process notes, and final checks."
+    }
+  }
+}

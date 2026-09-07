@@ -1,0 +1,63 @@
+{
+  "title": "Advanced Warranty Policy",
+  "sections": {
+    "applicableProducts": {
+      "title": "Applicable Products",
+      "items": {
+        "0": "This policy applies to all eligible Wheels/Rims.",
+        "1": "You can use the product filter on our website to identify which series your wheelset belongs to."
+      }
+    },
+    "coverageOptions": {
+      "title": "Coverage Options",
+      "items": {
+        "0": "5-Year Warranty: Valid for five years from the date of purchase, at no additional cost.",
+        "1": "Lifetime Warranty: Upgrade to lifetime coverage for USD $100 per rim."
+      }
+    },
+    "policyConditions": {
+      "title": "Policy Conditions",
+      "manufacturingDefects": {
+        "title": "1. Manufacturing Defects",
+        "items": {
+          "0": "Within 30 days of receipt: we will replace the rim and cover shipping costs.",
+          "1": "After 31 days (within the warranty period): we will replace the rim, but shipping costs are the customer's responsibility."
+        }
+      },
+      "productUpgrade": {
+        "title": "2. Product Upgrade",
+        "items": {
+          "0": "We reserve the right to replace your rim with a stronger, more durable model.",
+          "1": "If discontinued, we will upgrade you to the latest equivalent model at no cost."
+        }
+      },
+      "nonTransferable": {
+        "title": "3. Non-Transferable",
+        "body": "This warranty plan applies only to the original purchaser and cannot be transferred."
+      },
+      "claimTimeframe": {
+        "title": "4. Claim Timeframe",
+        "items": {
+          "0": "Any issues with replacement products must be reported within 7 days of receipt.",
+          "1": "Warranty coverage is calculated from the original purchase date (does not reset after replacement)."
+        }
+      }
+    },
+    "exclusions": {
+      "title": "Exclusions",
+      "intro": "This warranty does not cover:",
+      "items": {
+        "0": "Improper assembly or maintenance by unauthorized technicians.",
+        "1": "Installation of incompatible parts, accessories, or tires.",
+        "2": "Damage caused by crashes, accidental impact, misuse, heat damage, or non-compliance with usage guidelines.",
+        "3": "Issues related to spokes/nipples/assembly if not built by our team.",
+        "4": "Normal wear and tear (bearings, decals, etc.)."
+      }
+    },
+    "contact": {
+      "title": "Contact",
+      "emailLabel": "Email:",
+      "submitClaim": "Submit a Claim"
+    }
+  }
+}

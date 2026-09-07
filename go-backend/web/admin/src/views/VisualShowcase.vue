@@ -2,7 +2,7 @@
   <div class="space-y-4">
     <AdminPageHeader
       title="首页视觉目录"
-      description="管理首页首屏 9 张 3:4 展示图，不进入媒体库"
+      description="管理首页首屏固定位置的 9 张 3:4 展示图，不进入媒体库"
     >
       <template #actions>
         <Button
@@ -55,7 +55,7 @@
       <CardHeader class="border-b">
         <CardTitle>9 张首页展示图</CardTitle>
         <CardDescription>
-          图片必须为 3:4；白色文案条使用标题和备注，ALT 文本用于图片可访问性与搜索引擎上下文。
+          图片必须为 3:4；左侧编号就是前台位置，不需要手动排序。白色文案条使用标题和备注，ALT 文本用于图片可访问性与搜索引擎上下文。
         </CardDescription>
       </CardHeader>
       <CardContent class="space-y-3 p-3 sm:p-4">

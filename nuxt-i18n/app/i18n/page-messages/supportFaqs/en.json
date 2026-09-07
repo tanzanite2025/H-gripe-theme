@@ -1,0 +1,14 @@
+{
+  "title": "Frequently Asked Questions",
+  "ui": {
+    "categorizedSupport": "Categorized Support",
+    "categoriesAriaLabel": "FAQ categories",
+    "categoriesLabel": "FAQ Categories",
+    "all": "All",
+    "pageIntro": "Browse common questions and quick answers about orders, products, and service.",
+    "searchPlaceholder": "Search FAQs...",
+    "viewMoreContent": "View More Content",
+    "noResults": "No FAQs found matching \"{query}\"",
+    "allFaqsMetaTitle": "All FAQs"
+  }
+}

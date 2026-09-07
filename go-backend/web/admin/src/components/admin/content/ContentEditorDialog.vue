@@ -79,6 +79,23 @@
                 <AdminFormField label="标签" class="md:col-span-2">
                   <Input v-model="form.tags" placeholder="多个标签用逗号分隔" />
                 </AdminFormField>
+                <AdminFormField label="分类" class="md:col-span-2">
+                  <div v-if="categories.length" class="grid gap-2 sm:grid-cols-2">
+                    <label
+                      v-for="category in categories"
+                      :key="category.id"
+                      class="flex items-center gap-2 rounded-md border px-3 py-2 text-sm"
+                    >
+                      <Checkbox
+                        :model-value="form.category_ids.includes(category.id)"
+                        @update:model-value="toggleCategory(category.id, $event)"
+                      />
+                      <span>{{ category.name }}</span>
+                      <span class="ml-auto text-xs text-muted-foreground">{{ category.slug }}</span>
+                    </label>
+                  </div>
+                  <p v-else class="text-sm text-muted-foreground">当前语言暂无分类，请先创建分类。</p>
+                </AdminFormField>
               </div>
             </div>
           </section>
@@ -114,21 +131,24 @@ import {
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import type { ContentDialogMode, ContentFormErrors, ContentPostForm } from '@/modules/content/contentTypes'
+import { Checkbox } from '@/components/ui/checkbox'
+import type { BlogCategory, ContentDialogMode, ContentFormErrors, ContentPostForm } from '@/modules/content/contentTypes'
 
-withDefaults(defineProps<{
+const props = withDefaults(defineProps<{
   open?: boolean
   mode?: ContentDialogMode
   form: ContentPostForm
   errors?: ContentFormErrors
   submitting?: boolean
   languageOptions?: LanguageOption[]
+  categories?: BlogCategory[]
 }>(), {
   open: false,
   mode: 'create',
   errors: () => ({}),
   submitting: false,
-  languageOptions: () => []
+  languageOptions: () => [],
+  categories: () => []
 })
 
 const emit = defineEmits<{
@@ -136,5 +156,15 @@ const emit = defineEmits<{
   (event: 'submit'): void
   (event: 'clear-error', key: string): void
 }>()
+
+const toggleCategory = (categoryID: number, checked: boolean | 'indeterminate'): void => {
+  if (checked === true && !props.form.category_ids.includes(categoryID)) {
+    props.form.category_ids.push(categoryID)
+    return
+  }
+  if (checked !== true) {
+    props.form.category_ids = props.form.category_ids.filter((id) => id !== categoryID)
+  }
+}
 </script>
 

@@ -2,14 +2,10 @@
   <div class="faqs-page">
     <header class="faqs-page__header">
       <div class="faqs-page__header-main">
-        <h2 class="faqs-page__title">{{ t('faq.title') }}</h2>
-        <span class="faqs-page__status-badge" aria-hidden="true">
-          <span class="faqs-page__status-dot" />
-          {{ t('faq.ui.categorizedSupport') }}
-        </span>
+        <h2 class="faqs-page__title">{{ t('supportFaqs.title') }}</h2>
       </div>
       <p class="faqs-page__intro">
-        {{ t('faq.ui.pageIntro') }}
+        {{ t('supportFaqs.ui.pageIntro') }}
       </p>
     </header>
 
@@ -18,16 +14,16 @@
       <input
         v-model="searchQuery"
         type="text"
-        :placeholder="t('faq.ui.searchPlaceholder')"
+        :placeholder="t('supportFaqs.ui.searchPlaceholder')"
         class="faqs-search__input"
       />
       <span v-if="searchQuery" class="faqs-search__clear" @click="searchQuery = ''">✕</span>
     </div>
 
     <div class="faqs-layout">
-      <!-- 页面分类标签 -->
-      <aside class="faqs-sidebar" :aria-label="t('faq.ui.categoriesAriaLabel')">
-        <div class="faqs-sidebar__label">{{ t('faq.ui.categoriesLabel') }}</div>
+      <!-- FAQ page filters -->
+      <aside class="faqs-sidebar" :aria-label="t('supportFaqs.ui.pagesAriaLabel', 'FAQ pages')">
+        <div class="faqs-sidebar__label">{{ t('supportFaqs.ui.pagesLabel', 'FAQ pages') }}</div>
         <div class="faqs-tabs">
           <button
             type="button"
@@ -35,7 +31,7 @@
             :class="{ 'premium-button--active': activePageId === 'all' }"
             @click="activePageId = 'all'"
           >
-            <span class="faqs-tabs__label">{{ t('faq.ui.all') }}</span>
+            <span class="faqs-tabs__label">{{ t('supportFaqs.ui.all') }}</span>
             <span class="faqs-tabs__dot" aria-hidden="true" />
           </button>
           <button
@@ -84,7 +80,7 @@
 
     <!-- 无结果 -->
     <div v-else class="faqs-empty">
-      <p>{{ t('faq.ui.noResults', { query: searchQuery }) }}</p>
+      <p>{{ t('supportFaqs.ui.noResults', { query: searchQuery }) }}</p>
     </div>
     </div>
 
@@ -97,7 +93,7 @@
         class="inline-flex items-center gap-2 px-8 py-3 rounded-full text-sm font-bold bg-[var(--tz-action-primary)] text-white hover:bg-[var(--tz-action-primary-hover)] hover:shadow-[0_8px_18px_rgba(15,23,42,0.16)] transition-all"
         @click="loadMoreGroups"
       >
-        {{ t('faq.ui.viewMoreContent') }}
+        {{ t('supportFaqs.ui.viewMoreContent') }}
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
         </svg>
@@ -107,10 +103,12 @@
 </template>
 
 <script setup lang="ts">
+import { watch } from 'vue'
 import { useHead } from '#imports'
 import GlobalAllFaqsDesktopGroupedSearchResultsPanel from '~/components/faq/GlobalAllFaqsDesktopGroupedSearchResultsPanel.vue'
 import GlobalAllFaqsMobileGroupedSearchResultsPanel from '~/components/faq/GlobalAllFaqsMobileGroupedSearchResultsPanel.vue'
 import { useGlobalAllFaqsSearchAndGroupedResults } from '~/composables/useGlobalAllFaqsSearchAndGroupedResults'
+import { usePageMessages } from '~/composables/usePageMessages'
 
 definePageMeta({
   layout: 'support',
@@ -118,10 +116,17 @@ definePageMeta({
   footerLabelFallback: 'All FAQs',
 })
 
-const { t } = useI18n()
+const { locale, t } = useI18n()
+const { loadPageMessages } = usePageMessages('supportFaqs')
+
+await loadPageMessages(locale.value)
+
+watch(locale, (nextLocale) => {
+  void loadPageMessages(nextLocale)
+})
 
 useHead({
-  title: () => t('faq.ui.allFaqsMetaTitle'),
+  title: () => t('supportFaqs.ui.allFaqsMetaTitle'),
 })
 
 const {

@@ -212,9 +212,6 @@
                   <h3 class="mt-1 break-words text-sm font-black text-foreground">
                     {{ faqMetadata.question }}
                   </h3>
-                  <p v-if="faqMetadata.category_label || faqMetadata.category" class="mt-1 text-[11px] font-bold text-muted-foreground">
-                    {{ faqMetadata.category_label || faqMetadata.category }}
-                  </p>
                   <p v-if="faqMetadata.answer_excerpt" class="mt-2 line-clamp-3 text-xs leading-5 text-muted-foreground">
                     {{ faqMetadata.answer_excerpt }}
                   </p>
@@ -456,7 +453,7 @@ const plainText = (value) => String(value || '')
   .replace(/\s+/g, ' ')
   .trim()
 
-const buildFAQMetadata = (page, category, faq) => {
+const buildFAQMetadata = (page, faq) => {
   const answerExcerpt = plainText(faq?.answer).slice(0, 320)
   const faqID = String(faq?.id || '').trim()
   const pageID = String(page?.page_id || '').trim()
@@ -465,8 +462,6 @@ const buildFAQMetadata = (page, category, faq) => {
     page_id: pageID,
     page_title: String(page?.title || pageID).trim(),
     route_path: String(page?.route_path || '').trim(),
-    category: String(category?.category_key || '').trim(),
-    category_label: String(category?.name || category?.category_key || '').trim(),
     locale: faqPickerLocale.value,
     question: String(faq?.question || '').trim(),
     answer_excerpt: answerExcerpt,
@@ -478,8 +473,8 @@ const buildFAQMetadata = (page, category, faq) => {
   }
 }
 
-const selectFAQ = ({ page, category, faq }) => {
-  const metadata = buildFAQMetadata(page, category, faq)
+const selectFAQ = ({ page, faq }) => {
+  const metadata = buildFAQMetadata(page, faq)
   form.message_type = 'faq'
   form.metadata = JSON.stringify(metadata)
   form.reply_message = metadata.question

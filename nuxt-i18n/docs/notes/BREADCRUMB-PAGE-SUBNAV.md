@@ -9,7 +9,7 @@ This note defines how Nuxt storefront breadcrumbs should represent pages that us
 Some pages are one canonical page component with several tab routes:
 
 - `/guides/tireguides/choose`
-- `/support/warranty/returns`
+- `/support/warranty/damaged-lost`
 - `/company/about/factory`
 
 The tab segment is a Nuxt child route that reuses the owning page component. Breadcrumbs include the child route segment, so `/guides/tireguides/choose` renders as:
@@ -22,11 +22,11 @@ That is technically correct for the route, but it hides the active tab and makes
 
 ## Current source of truth
 
-The single source for third-level page tabs is:
+The single source for third-level page tab data is:
 
-- `nuxt-i18n/app/utils/pageSubNavigation.ts`
+- `nuxt-i18n/app/utils/pageSubNavigationData.ts`
 
-It exports:
+It is re-exported through `nuxt-i18n/app/utils/pageSubNavigation.ts`, which exports:
 
 - per-page tab arrays, such as `tireGuideTabs`
 - `pageSubNavigationEntries`
@@ -73,7 +73,7 @@ Current cleanup status:
 
 When adding/removing tabs for a page:
 
-1. Update the page tab array in `pageSubNavigation.ts`.
+1. Update the page tab array in `pageSubNavigationData.ts`.
 2. Ensure `nuxt.config.ts` registers the same tab IDs for the page route.
 3. Do not separately edit `SiteHeader.vue` or `HeaderMegaMenu.vue` for each tab.
 4. Update this document if breadcrumb behavior changes.

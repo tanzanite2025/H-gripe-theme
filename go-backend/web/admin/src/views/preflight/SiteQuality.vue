@@ -29,6 +29,18 @@
             {{ activeJobStatusLabel }}
           </AdminStatusBadge>
           <span class="font-mono text-[10px] text-muted-foreground">#{{ activeJob.id }}</span>
+          <Button
+            v-if="activeJobIsLive"
+            size="sm"
+            variant="outline"
+            class="ml-auto h-7 px-2 text-xs"
+            :disabled="cancellingJob"
+            @click="cancelActiveJob"
+          >
+            <LoaderCircle v-if="cancellingJob" class="size-3.5 animate-spin" />
+            <X v-else class="size-3.5" />
+            {{ cancellingJob ? '取消中' : '取消检测' }}
+          </Button>
         </div>
         <p class="text-xs leading-5 text-foreground">
           {{ activeJobSummary }}
@@ -36,7 +48,19 @@
         <p class="text-[11px] leading-5 text-muted-foreground">
           {{ activeJobDetail }}
         </p>
-        <p v-if="activeJob.last_error" class="text-xs leading-5 text-destructive">
+        <div v-if="activeJobIsLive" class="max-w-xl space-y-1.5 pt-1">
+          <div class="flex items-center justify-between gap-3 text-[11px]">
+            <span class="text-muted-foreground">{{ activeJobProgressStageLabel }}</span>
+            <span class="font-mono text-foreground">{{ activeJobProgress.completed }}/{{ activeJobProgress.total }}</span>
+          </div>
+          <div class="h-1.5 overflow-hidden rounded-full bg-muted">
+            <div
+              class="h-full rounded-full bg-primary transition-[width] duration-300"
+              :style="{ width: `${activeJobProgress.percent}%` }"
+            />
+          </div>
+        </div>
+        <p v-if="activeJob.last_error && activeJob.status !== 'cancelled'" class="text-xs leading-5 text-destructive">
           {{ activeJob.last_error }}
         </p>
       </div>
@@ -157,7 +181,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { AlertTriangle, Braces, CheckCircle2, Clock3, Heading2, Link2, LoaderCircle, Play, RefreshCw, Trash2 } from '@lucide/vue'
+import { AlertTriangle, Braces, CheckCircle2, Clock3, Heading2, Link2, LoaderCircle, Play, RefreshCw, Trash2, X } from '@lucide/vue'
 import { toast } from 'vue-sonner'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import AdminStatusBadge, { type AdminStatusTone } from '@/components/admin/AdminStatusBadge.vue'
@@ -208,6 +232,8 @@ const runnerConfigured = ref(false)
 const operationalSummary = ref<SiteQualityOperationalSummary | null>(null)
 const activeJob = ref<SiteQualityJob | null>(null)
 const activeJobContext = ref<{ title: string; target: string } | null>(null)
+const currentRunID = ref(0)
+const cancellingJob = ref(false)
 const activeJobClock = ref(Date.now())
 let activeJobClockTimer: number | null = null
 const cleaningJobs = ref(false)
@@ -319,6 +345,7 @@ const activeJobToneByStatus: Record<SiteQualityJob['status'], AdminStatusTone> =
   succeeded: 'green',
   failed: 'coral',
   dead_letter: 'coral',
+  cancelled: 'gray',
 }
 const activeJobTone = computed<AdminStatusTone>(() => activeJobToneByStatus[activeJobStatus.value])
 const activeJobStatusLabelByStatus: Record<SiteQualityJob['status'], string> = {
@@ -327,6 +354,7 @@ const activeJobStatusLabelByStatus: Record<SiteQualityJob['status'], string> = {
   succeeded: '已完成',
   failed: '失败',
   dead_letter: '死信',
+  cancelled: '已取消',
 }
 const activeJobStatusLabel = computed(() => activeJobStatusLabelByStatus[activeJobStatus.value])
 const activeJobTitle = computed(() => activeJobContext.value?.title || '页面质量任务')
@@ -337,6 +365,7 @@ const activeJobIconByStatus = {
   succeeded: CheckCircle2,
   failed: AlertTriangle,
   dead_letter: AlertTriangle,
+  cancelled: X,
 } as const
 const activeJobIcon = computed(() => activeJobIconByStatus[activeJobStatus.value])
 const activeJobSummary = computed(() => {
@@ -354,6 +383,8 @@ const activeJobSummary = computed(() => {
       return `${jobLabel} 本次执行失败，请查看最后错误。`
     case 'dead_letter':
       return `${jobLabel} 已达到最大重试次数，进入死信状态。`
+    case 'cancelled':
+      return `${jobLabel} 已取消，后台不会继续写入本次评估结果。`
     default:
       return `${jobLabel} 正在执行。`
   }
@@ -369,6 +400,8 @@ const activeJobDetail = computed(() => {
     parts.unshift(`已运行 ${formatElapsed(startedAt)}`)
   } else if (job.status === 'succeeded') {
     parts.unshift(`完成于 ${formatDate(job.finished_at || job.updated_at)}`)
+  } else if (job.status === 'cancelled') {
+    parts.unshift(`取消于 ${formatDate(job.finished_at || job.updated_at)}`)
   } else {
     parts.unshift(`更新于 ${formatDate(job.updated_at)}`)
   }
@@ -388,6 +421,31 @@ const activeJobDetail = computed(() => {
     parts.push('结果已经同步到下方列表。')
   }
   return parts.join(' · ')
+})
+
+const activeJobProgress = computed(() => {
+  const job = activeJob.value
+  const total = Math.max(0, job?.progress_total || job?.sample_count || 0)
+  const completed = Math.min(total, Math.max(0, job?.completed_samples || 0))
+  return {
+    total,
+    completed,
+    percent: total > 0 ? Math.round((completed / total) * 100) : 0,
+  }
+})
+
+const activeJobProgressStageLabel = computed(() => {
+  const stage = activeJob.value?.progress_stage
+  return ({
+    queued: '等待 worker 响应',
+    starting: '准备检测',
+    waiting_for_provider: '等待检测器资源',
+    capturing: '正在采样',
+    evaluating: '正在汇总结果',
+    completed: '已完成',
+    failed: '本次采样失败',
+    cancelled: '已取消',
+  } as Record<string, string>)[stage || 'queued'] || '处理中'
 })
 
 const selectedFindingEvidence = computed<SiteQualityFindingEvidence | null>(() => {
@@ -456,6 +514,8 @@ const refreshSiteQualityData = async (): Promise<void> => {
 const runInspection = async (): Promise<void> => {
   if (!canManage.value || !targetURL.value) return
   running.value = true
+  currentRunID.value = 0
+  cancellingJob.value = false
   activeJobContext.value = { title: '页面质量检测', target: targetURL.value }
   try {
     const jobPromise = enqueueInspection(targetURL.value, strategy.value, (job) => {
@@ -464,9 +524,14 @@ const runInspection = async (): Promise<void> => {
     void loadRuns()
     const job = await jobPromise
     activeJob.value = job
+    if (job.status === 'cancelled') {
+      toast.success('页面质量检测已取消')
+      return
+    }
     if (job.status !== 'succeeded') {
       throw new Error(job.last_error || `页面质量任务 ${job.status}`)
     }
+    currentRunID.value = job.latest_run_id || 0
     toast.success('页面质量检测完成')
     await Promise.all([loadRuns(), loadActiveFindings(1)])
   } catch (error: any) {
@@ -474,6 +539,23 @@ const runInspection = async (): Promise<void> => {
     await loadRuns()
   } finally {
     running.value = false
+  }
+}
+
+const cancelActiveJob = async (): Promise<void> => {
+  const job = activeJob.value
+  if (!job || !activeJobIsLive.value || cancellingJob.value) return
+  cancellingJob.value = true
+  try {
+    const cancelled = await preflightApi.cancelSiteQualityJob(job.id)
+    activeJob.value = cancelled
+    if (cancelled.status === 'cancelled') {
+      toast.success('已取消页面质量检测')
+    }
+  } catch (error: any) {
+    toast.error(error?.response?.data?.message || error?.response?.data?.error || '取消页面质量检测失败')
+  } finally {
+    cancellingJob.value = false
   }
 }
 
@@ -504,6 +586,7 @@ const loadHeadingFindings = async (page = headingPagination.value.page): Promise
       pageSize: headingPagination.value.page_size,
       state: headingStateFilter.value,
       kind: 'headings',
+      runID: currentRunID.value || undefined,
     })
     headingFindings.value = data.items
     headingPagination.value = data.pagination
@@ -528,6 +611,7 @@ const loadSchemaFindings = async (page = schemaPagination.value.page): Promise<v
       pageSize: schemaPagination.value.page_size,
       state: schemaStateFilter.value,
       kind: 'schema',
+      runID: currentRunID.value || undefined,
     })
     schemaFindings.value = data.items
     schemaPagination.value = data.pagination
@@ -553,6 +637,7 @@ const loadLinkFindings = async (page = linkPagination.value.page): Promise<void>
       state: linkStateFilter.value,
       kind: 'links',
       ruleID: SITE_QUALITY_RULE_ID_DESCRIPTIVE_LINK_TEXT,
+      runID: currentRunID.value || undefined,
     })
     linkFindings.value = data.items
     linkPagination.value = data.pagination
@@ -675,9 +760,14 @@ const recheckFinding = async (): Promise<void> => {
     void loadRuns()
     const job = await jobPromise
     activeJob.value = job
+    if (job.status === 'cancelled') {
+      toast.success('页面质量复检已取消')
+      return
+    }
     if (job.status !== 'succeeded') {
       throw new Error(job.last_error || `页面质量任务 ${job.status}`)
     }
+    currentRunID.value = job.latest_run_id || 0
     const finding = await preflightApi.getSiteQualityFinding(selectedFinding.value.id)
     await refreshSelectedFinding(finding)
     await loadRuns()

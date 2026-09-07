@@ -62,6 +62,12 @@ func (r *SiteQualityJobRepository) Enqueue(
 	if job.MaxAttempts <= 0 {
 		job.MaxAttempts = 4
 	}
+	if job.ProgressTotal <= 0 {
+		job.ProgressTotal = job.SampleCount
+	}
+	if job.ProgressStage == "" {
+		job.ProgressStage = sitequalitydomain.SiteQualityJobProgressStageQueued
+	}
 
 	result := job
 	err := r.db.Clauses(clause.OnConflict{
@@ -199,8 +205,8 @@ func (r *SiteQualityJobRepository) claimReady(
 				now,
 				now.Add(-leaseTimeout),
 			).
-			Order("available_at ASC").
 			Order("CASE kind WHEN 'recheck' THEN 1 WHEN 'manual' THEN 2 ELSE 3 END").
+			Order("available_at ASC").
 			Order("id ASC").
 			Limit(limit)
 		if isSkipLockedSupported(r.db) {
@@ -221,15 +227,18 @@ func (r *SiteQualityJobRepository) claimReady(
 			if err := tx.Model(&sitequalitydomain.SiteQualityJob{}).
 				Where("id = ?", claimed[index].ID).
 				Updates(map[string]interface{}{
-					"status":           sitequalitydomain.SiteQualityJobStatusProcessing,
-					"locked_at":        now,
-					"locked_by":        workerID,
-					"lease_generation": gorm.Expr("lease_generation + 1"),
-					"lease_expires_at": leaseExpiresAt,
-					"heartbeat_at":     now,
-					"attempts":         gorm.Expr("attempts + 1"),
-					"started_at":       gorm.Expr("COALESCE(started_at, ?)", now),
-					"updated_at":       now,
+					"status":            sitequalitydomain.SiteQualityJobStatusProcessing,
+					"locked_at":         now,
+					"locked_by":         workerID,
+					"lease_generation":  gorm.Expr("lease_generation + 1"),
+					"lease_expires_at":  leaseExpiresAt,
+					"heartbeat_at":      now,
+					"attempts":          gorm.Expr("attempts + 1"),
+					"progress_total":    gorm.Expr("sample_count"),
+					"completed_samples": 0,
+					"progress_stage":    sitequalitydomain.SiteQualityJobProgressStageStarting,
+					"started_at":        gorm.Expr("COALESCE(started_at, ?)", now),
+					"updated_at":        now,
 				}).Error; err != nil {
 				return err
 			}
@@ -243,10 +252,134 @@ func (r *SiteQualityJobRepository) claimReady(
 				claimed[index].StartedAt = &now
 			}
 			claimed[index].Attempts++
+			claimed[index].ProgressTotal = claimed[index].SampleCount
+			claimed[index].CompletedSamples = 0
+			claimed[index].ProgressStage = sitequalitydomain.SiteQualityJobProgressStageStarting
 		}
 		return nil
 	})
 	return claimed, err
+}
+
+// UpdateProgress records the latest sample boundary and refreshes the lease
+// in one compare-and-set update. A cancelled or stolen job cannot continue
+// publishing progress.
+func (r *SiteQualityJobRepository) UpdateProgress(
+	jobID uint,
+	workerID string,
+	leaseGeneration int64,
+	completedSamples int,
+	stage string,
+	now time.Time,
+	leaseTimeout time.Duration,
+) error {
+	if r == nil || r.db == nil {
+		return errors.New("SiteQuality quality job repository is unavailable")
+	}
+	if jobID == 0 || strings.TrimSpace(workerID) == "" || leaseGeneration <= 0 {
+		return errors.New("SiteQuality quality job progress input is incomplete")
+	}
+	if now.IsZero() {
+		now = time.Now().UTC()
+	} else {
+		now = now.UTC()
+	}
+	if leaseTimeout <= 0 {
+		leaseTimeout = 10 * time.Minute
+	}
+	if completedSamples < 0 {
+		completedSamples = 0
+	}
+	stage = strings.TrimSpace(stage)
+	if stage == "" {
+		stage = sitequalitydomain.SiteQualityJobProgressStageStarting
+	}
+	expiresAt := now.Add(leaseTimeout)
+	result := r.db.Model(&sitequalitydomain.SiteQualityJob{}).
+		Where(
+			"id = ? AND status = ? AND locked_by = ? AND lease_generation = ? AND (lease_expires_at IS NULL OR lease_expires_at > ?)",
+			jobID,
+			sitequalitydomain.SiteQualityJobStatusProcessing,
+			workerID,
+			leaseGeneration,
+			now,
+		).
+		Updates(map[string]interface{}{
+			"completed_samples": completedSamples,
+			"progress_stage":    stage,
+			"heartbeat_at":      now,
+			"lease_expires_at":  expiresAt,
+			"updated_at":        now,
+		})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return ErrSiteQualityLeaseLost
+	}
+	return nil
+}
+
+// Cancel atomically transitions a queued or processing job to cancelled and
+// clears its lease so another worker cannot resume it.
+func (r *SiteQualityJobRepository) Cancel(
+	id uint,
+	cancelledAt time.Time,
+	reason string,
+) (*sitequalitydomain.SiteQualityJob, bool, error) {
+	if r == nil || r.db == nil {
+		return nil, false, errors.New("SiteQuality quality job repository is unavailable")
+	}
+	if id == 0 {
+		return nil, false, errors.New("SiteQuality quality job ID is required")
+	}
+	if cancelledAt.IsZero() {
+		cancelledAt = time.Now().UTC()
+	} else {
+		cancelledAt = cancelledAt.UTC()
+	}
+	reason = strings.TrimSpace(reason)
+	if reason == "" {
+		reason = "cancelled by operator"
+	}
+
+	var result sitequalitydomain.SiteQualityJob
+	changed := false
+	err := r.db.Transaction(func(tx *gorm.DB) error {
+		var job sitequalitydomain.SiteQualityJob
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&job, id).Error; err != nil {
+			return err
+		}
+		if job.Status != sitequalitydomain.SiteQualityJobStatusQueued &&
+			job.Status != sitequalitydomain.SiteQualityJobStatusProcessing {
+			result = job
+			return nil
+		}
+		if err := tx.Model(&sitequalitydomain.SiteQualityJob{}).
+			Where("id = ?", id).
+			Updates(map[string]interface{}{
+				"status":           sitequalitydomain.SiteQualityJobStatusCancelled,
+				"locked_at":        nil,
+				"locked_by":        "",
+				"lease_expires_at": nil,
+				"heartbeat_at":     nil,
+				"finished_at":      cancelledAt,
+				"progress_stage":   sitequalitydomain.SiteQualityJobProgressStageCancelled,
+				"last_error":       reason,
+				"updated_at":       cancelledAt,
+			}).Error; err != nil {
+			return err
+		}
+		if err := tx.First(&result, id).Error; err != nil {
+			return err
+		}
+		changed = true
+		return nil
+	})
+	if err != nil {
+		return nil, false, err
+	}
+	return &result, changed, nil
 }
 
 func (r *SiteQualityJobRepository) MarkSucceeded(
@@ -275,14 +408,17 @@ func (r *SiteQualityJobRepository) MarkSucceeded(
 			finishedAt,
 		).
 		Updates(map[string]interface{}{
-			"status":           sitequalitydomain.SiteQualityJobStatusSucceeded,
-			"locked_at":        nil,
-			"locked_by":        "",
-			"lease_expires_at": nil,
-			"heartbeat_at":     finishedAt,
-			"finished_at":      finishedAt,
-			"last_error":       "",
-			"updated_at":       finishedAt,
+			"status":            sitequalitydomain.SiteQualityJobStatusSucceeded,
+			"locked_at":         nil,
+			"locked_by":         "",
+			"lease_expires_at":  nil,
+			"heartbeat_at":      finishedAt,
+			"finished_at":       finishedAt,
+			"progress_total":    gorm.Expr("sample_count"),
+			"completed_samples": gorm.Expr("sample_count"),
+			"progress_stage":    sitequalitydomain.SiteQualityJobProgressStageCompleted,
+			"last_error":        "",
+			"updated_at":        finishedAt,
 		})
 	if result.Error != nil {
 		return result.Error
@@ -338,6 +474,7 @@ func (r *SiteQualityJobRepository) MarkFailed(
 			"lease_expires_at": nil,
 			"heartbeat_at":     failedAt,
 			"finished_at":      finishedAt,
+			"progress_stage":   sitequalitydomain.SiteQualityJobProgressStageFailed,
 			"last_error":       strings.TrimSpace(errorMessage),
 			"updated_at":       failedAt,
 		})
@@ -630,6 +767,9 @@ func (r *SiteQualityJobRepository) Stats(now time.Time, leaseTimeout time.Durati
 		return stats, err
 	}
 	if err := base().Where("status = ?", sitequalitydomain.SiteQualityJobStatusDeadLetter).Count(&stats.DeadLetter).Error; err != nil {
+		return stats, err
+	}
+	if err := base().Where("status = ?", sitequalitydomain.SiteQualityJobStatusCancelled).Count(&stats.Cancelled).Error; err != nil {
 		return stats, err
 	}
 

@@ -109,6 +109,34 @@ func TestPublicProductFromDomainStatusOverridesSkuAvailability(t *testing.T) {
 	}
 }
 
+func TestPublicProductFromDomainExposesMadeToOrderAvailabilityWithoutStock(t *testing.T) {
+	item := productdomain.Product{
+		ID:              41,
+		Name:            "Custom Product",
+		Slug:            "custom-product",
+		Status:          "active",
+		FulfillmentMode: productdomain.FulfillmentModeMadeToOrder,
+		Variants: []productdomain.ProductVariant{
+			{
+				ID:       42,
+				IsActive: true,
+				Stock:    0,
+			},
+		},
+	}
+
+	publicProduct := PublicProductFromDomain(item)
+	if publicProduct.Availability != AvailabilityMadeToOrder {
+		t.Fatalf("made-to-order availability = %q", publicProduct.Availability)
+	}
+	if publicProduct.FulfillmentMode != productdomain.FulfillmentModeMadeToOrder {
+		t.Fatalf("made-to-order fulfillment mode = %q", publicProduct.FulfillmentMode)
+	}
+	if len(publicProduct.Variants) != 1 || publicProduct.Variants[0].Availability != AvailabilityMadeToOrder {
+		t.Fatalf("made-to-order variant availability = %#v", publicProduct.Variants)
+	}
+}
+
 func TestPublicProductSpecificationTemplateUsesBaseNameRegardlessOfLocale(t *testing.T) {
 	item := productdomain.Product{
 		ProductSpecificationTemplate: &productdomain.ProductSpecificationTemplate{

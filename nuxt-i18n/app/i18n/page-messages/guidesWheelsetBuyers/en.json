@@ -1,0 +1,44 @@
+{
+  "title": "Wheelset Buyers Guide",
+  "feedbackTitle": "Share your feedback or leave a message about the Wheelset Buyers Guide",
+  "tabs": {
+    "overview": {
+      "label": "Buying overview",
+      "description": "Start here for the wheelset buying path and key checks."
+    },
+    "safetyInstructions": {
+      "label": "Safety instructions",
+      "description": "Core safety checks before riding and servicing."
+    },
+    "sampleAssembly": {
+      "label": "Sample assembly",
+      "description": "Assembly example with parts and setup references."
+    },
+    "specialOrder": {
+      "label": "Special order",
+      "description": "Custom order options and request details."
+    },
+    "appearanceLogo": {
+      "label": "Appearance Logo",
+      "description": "Decal, finish, and logo customization notes."
+    },
+    "chooseFreehub": {
+      "label": "Choose freehub",
+      "description": "Freehub choices and drivetrain compatibility."
+    },
+    "wheelComponents": {
+      "label": "Wheel Components",
+      "description": "Hubs, rims, spokes, nipples, and build parts."
+    },
+    "optional": {
+      "label": "Optional",
+      "description": "Optional upgrades and configuration add-ons."
+    }
+  },
+  "componentSections": {
+    "hubs": "1. Hubs",
+    "rims": "2. Rims",
+    "spokes": "3. Spokes",
+    "nipples": "4. Nipples"
+  }
+}

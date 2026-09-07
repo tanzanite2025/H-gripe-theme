@@ -29,6 +29,7 @@ var (
 )
 
 const (
+	HomeHeroVisualShowcaseTileSetKey    = "home-hero"
 	HomeMainProductCategoriesTileSetKey = "home-main-product-categories"
 	maxHomeVisualTileItems              = 100
 	HomeVisualTileStoragePrefix         = "visual-showcase"
@@ -251,7 +252,9 @@ func (s *HomeVisualTileService) ReplaceAdminItems(
 			layoutVariant = "standard"
 		}
 		desktopOrder := input.DesktopOrder
-		if desktopOrder <= 0 {
+		if key == HomeHeroVisualShowcaseTileSetKey {
+			desktopOrder = index + 1
+		} else if desktopOrder <= 0 {
 			desktopOrder = index + 1
 		}
 		mobilePairIndex := input.MobilePairIndex
@@ -270,6 +273,13 @@ func (s *HomeVisualTileService) ReplaceAdminItems(
 			return nil, homeVisualTileAspectRatioError(key, width, height)
 		}
 
+		targetURL := strings.TrimSpace(input.TargetURL)
+		targetLabel := strings.TrimSpace(input.TargetLabel)
+		if key == HomeHeroVisualShowcaseTileSetKey {
+			targetURL = ""
+			targetLabel = ""
+		}
+
 		items = append(items, homevisualtile.Tile{
 			TileSetKey:      key,
 			Locale:          normalizedLocale,
@@ -281,8 +291,8 @@ func (s *HomeVisualTileService) ReplaceAdminItems(
 			AltText:         altText,
 			DesktopOrder:    desktopOrder,
 			MobilePairIndex: mobilePairIndex,
-			TargetURL:       strings.TrimSpace(input.TargetURL),
-			TargetLabel:     strings.TrimSpace(input.TargetLabel),
+			TargetURL:       targetURL,
+			TargetLabel:     targetLabel,
 			LayoutVariant:   layoutVariant,
 			IsPublished:     input.IsPublished,
 			Width:           width,

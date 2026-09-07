@@ -1307,14 +1307,14 @@ func TestRenderedStructuredDataAuditUsesTargetSourceTypeForArticleIntent(t *test
 
 func TestRenderedStructuredDataAuditAcceptsCompleteArticleSchema(t *testing.T) {
 	issues := siteQualityRenderedStructuredDataAuditIssues(
-		"https://example.com/blog/rim-testing",
-		"https://example.com/blog/rim-testing",
+		"https://example.com/resources/blog/rim-testing",
+		"https://example.com/resources/blog/rim-testing",
 		&siteQualityRenderedStructuredDataAudit{
 			Status:   "complete",
 			Source:   "chrome-rendered-dom",
-			FinalURL: "https://example.com/blog/rim-testing",
+			FinalURL: "https://example.com/resources/blog/rim-testing",
 			Page: siteQualityStructuredDataPage{
-				CanonicalURL: "https://example.com/blog/rim-testing",
+				CanonicalURL: "https://example.com/resources/blog/rim-testing",
 			},
 			JSONLD: []siteQualityStructuredDataScript{
 				{
@@ -1323,7 +1323,7 @@ func TestRenderedStructuredDataAuditAcceptsCompleteArticleSchema(t *testing.T) {
 							Types:     []string{"BlogPosting"},
 							Type:      "BlogPosting",
 							Name:      "Rim Testing",
-							URL:       "https://example.com/blog/rim-testing",
+							URL:       "https://example.com/resources/blog/rim-testing",
 							GraphPath: "script[0]",
 							Data: json.RawMessage(`{
 								"@context": "https://schema.org",
@@ -1333,7 +1333,7 @@ func TestRenderedStructuredDataAuditAcceptsCompleteArticleSchema(t *testing.T) {
 								"datePublished": "2026-08-10",
 								"author": {"@type": "Person", "name": "TANZANITE Lab"},
 								"publisher": {"@type": "Organization", "name": "TANZANITE"},
-								"url": "https://example.com/blog/rim-testing"
+								"url": "https://example.com/resources/blog/rim-testing"
 							}`),
 						},
 					},
@@ -1350,14 +1350,14 @@ func TestRenderedStructuredDataAuditAcceptsCompleteArticleSchema(t *testing.T) {
 
 func TestRenderedStructuredDataAuditAcceptsBlogListingCollectionSchema(t *testing.T) {
 	issues := siteQualityRenderedStructuredDataAuditIssues(
-		"https://example.com/ms/blog/news",
-		"https://example.com/ms/blog/news",
+		"https://example.com/ms/resources/blog",
+		"https://example.com/ms/resources/blog",
 		&siteQualityRenderedStructuredDataAudit{
 			Status:   "complete",
 			Source:   "chrome-rendered-dom",
-			FinalURL: "https://example.com/ms/blog/news",
+			FinalURL: "https://example.com/ms/resources/blog",
 			Page: siteQualityStructuredDataPage{
-				CanonicalURL: "https://example.com/ms/blog/news",
+				CanonicalURL: "https://example.com/ms/resources/blog",
 			},
 			JSONLD: []siteQualityStructuredDataScript{
 				{
@@ -1365,14 +1365,14 @@ func TestRenderedStructuredDataAuditAcceptsBlogListingCollectionSchema(t *testin
 						{
 							Types:     []string{"CollectionPage"},
 							Type:      "CollectionPage",
-							Name:      "News",
-							URL:       "https://example.com/ms/blog/news",
+							Name:      "Blog",
+							URL:       "https://example.com/ms/resources/blog",
 							GraphPath: "script[0]",
 							Data: json.RawMessage(`{
 								"@context": "https://schema.org",
 								"@type": "CollectionPage",
-								"name": "News",
-								"url": "https://example.com/ms/blog/news"
+								"name": "Blog",
+								"url": "https://example.com/ms/resources/blog"
 							}`),
 						},
 					},
@@ -1386,14 +1386,14 @@ func TestRenderedStructuredDataAuditAcceptsBlogListingCollectionSchema(t *testin
 
 func TestRenderedStructuredDataAuditDetectsIncompleteArticleSchema(t *testing.T) {
 	issues := siteQualityRenderedStructuredDataAuditIssues(
-		"https://example.com/blog/rim-testing",
-		"https://example.com/blog/rim-testing",
+		"https://example.com/resources/blog/rim-testing",
+		"https://example.com/resources/blog/rim-testing",
 		&siteQualityRenderedStructuredDataAudit{
 			Status:   "complete",
 			Source:   "chrome-rendered-dom",
-			FinalURL: "https://example.com/blog/rim-testing",
+			FinalURL: "https://example.com/resources/blog/rim-testing",
 			Page: siteQualityStructuredDataPage{
-				CanonicalURL: "https://example.com/blog/rim-testing",
+				CanonicalURL: "https://example.com/resources/blog/rim-testing",
 			},
 			JSONLD: []siteQualityStructuredDataScript{
 				{

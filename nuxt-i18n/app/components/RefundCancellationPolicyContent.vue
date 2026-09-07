@@ -21,6 +21,21 @@
           <p class="refund-cancellation-policy-content__window-body">{{ policyWindow.body }}</p>
         </section>
       </div>
+
+      <section
+        v-if="!hasHighValuePolicySection"
+        class="refund-cancellation-policy-content__signature-window"
+      >
+        <p class="refund-cancellation-policy-content__window-label">
+          {{ t('refundCancellation.highValue.label', 'High-value delivery') }}
+        </p>
+        <h3 class="refund-cancellation-policy-content__window-title">
+          {{ t('refundCancellation.highValue.title', 'Signature required for orders of $750 USD or more') }}
+        </h3>
+        <p class="refund-cancellation-policy-content__window-body">
+          {{ t('refundCancellation.highValue.body', 'Orders totaling $750 USD or more require a direct signature at delivery. The signature requirement is part of our delivery and dispute-protection process.') }}
+        </p>
+      </section>
     </section>
 
     <header v-if="canShowPolicy && policy.intro" class="refund-cancellation-policy-content__header">
@@ -147,10 +162,9 @@ import { useI18n } from '#imports'
 import StorefrontDataNotice from '~/components/StorefrontDataNotice.vue'
 import StorefrontImage from '~/components/StorefrontImage.vue'
 import { useRefundCancellationPolicy } from '~/composables/useRefundCancellationPolicy'
-import { getRefundCancellationPolicyContent } from '~/data/refundCancellationPolicy'
 import type { RefundCancellationPolicy } from '~/types/refundCancellationPolicy'
 
-const { locale, t } = useI18n()
+const { t } = useI18n()
 const props = withDefaults(defineProps<{
   policy?: RefundCancellationPolicy | null
   contactEmail?: string
@@ -172,7 +186,30 @@ const {
   isFallbackPolicy,
 } = useRefundCancellationPolicy()
 const policy = computed(() => props.policy || fetchedPolicy.value)
-const cancellationPolicy = computed(() => getRefundCancellationPolicyContent(locale.value))
+const cancellationPolicy = computed(() => ({
+  title: t('refundCancellation.title'),
+  intro: t('refundCancellation.cancellation.intro'),
+  windows: [
+    {
+      id: 'before-production',
+      label: t('refundCancellation.cancellation.windows.beforeProduction.label'),
+      title: t('refundCancellation.cancellation.windows.beforeProduction.title'),
+      body: t('refundCancellation.cancellation.windows.beforeProduction.body'),
+    },
+    {
+      id: 'after-production',
+      label: t('refundCancellation.cancellation.windows.afterProduction.label'),
+      title: t('refundCancellation.cancellation.windows.afterProduction.title'),
+      body: t('refundCancellation.cancellation.windows.afterProduction.body'),
+    },
+    {
+      id: 'shipped',
+      label: t('refundCancellation.cancellation.windows.shipped.label'),
+      title: t('refundCancellation.cancellation.windows.shipped.title'),
+      body: t('refundCancellation.cancellation.windows.shipped.body'),
+    },
+  ],
+}))
 const hasProvidedPolicy = computed(() => Boolean(props.policy))
 const hasResolvedPolicy = computed(() => hasProvidedPolicy.value || hasRemotePolicy.value)
 const loadError = computed(() => !hasProvidedPolicy.value && Boolean(error.value))
@@ -180,6 +217,9 @@ const canShowPolicy = computed(() => !loadError.value && hasResolvedPolicy.value
 const contactEmail = computed(() => props.contactEmail.trim())
 const contactEmailHref = computed(() => `mailto:${contactEmail.value}`)
 const hasContent = computed(() => policy.value.sections.length > 0 || Boolean(policy.value.intro))
+const hasHighValuePolicySection = computed(() => policy.value.sections.some(section => (
+  section.id === 'high-value-signature'
+)))
 const policyFallbackNotice = computed(() => {
   if (hasProvidedPolicy.value || !isFallbackPolicy.value || !hasResolvedPolicy.value) return null
 
@@ -268,6 +308,18 @@ const retryPolicy = () => {
   border-left: 3px solid var(--tz-site-accent);
   border-radius: 0.5rem;
   background: var(--tz-surface-card);
+}
+
+.refund-cancellation-policy-content__signature-window {
+  display: grid;
+  gap: 0.55rem;
+  margin-top: 1rem;
+  padding: 1rem;
+  overflow-wrap: anywhere;
+  border: 1px solid rgb(5 150 105 / 0.28);
+  border-left: 3px solid #059669;
+  border-radius: 0.5rem;
+  background: rgb(5 150 105 / 0.08);
 }
 
 .refund-cancellation-policy-content__window-label {

@@ -24,14 +24,6 @@ SET title = CASE
 WHERE COALESCE(title, '') ~* 'tanzanite'
    OR COALESCE(subtitle, '') ~* 'tanzanite';
 
-UPDATE faq_categories
-SET name = CASE
-               WHEN name ~* 'tanzanite' THEN regexp_replace(name, 'tanzanite', 'H-GRIPE', 'gi')
-               ELSE name
-           END,
-    updated_at = NOW()
-WHERE COALESCE(name, '') ~* 'tanzanite';
-
 UPDATE faqs
 SET question = CASE
                    WHEN question ~* 'tanzanite' THEN regexp_replace(question, 'tanzanite', 'H-GRIPE', 'gi')

@@ -17,8 +17,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useAuth } from '~/composables/useAuth'
+import { usePageMessages } from '~/composables/usePageMessages'
 import WarrantyCheckPanel from '~/components/WarrantyCheckPanel.vue'
 import AuthModal from '~/components/AuthModal.vue'
 
@@ -29,9 +30,16 @@ definePageMeta({
 })
 
 const { t, locale } = useI18n()
+const { loadPageMessages } = usePageMessages('supportWarrantyCheck')
+
+await loadPageMessages(locale.value)
+
+watch(locale, (nextLocale) => {
+  void loadPageMessages(nextLocale)
+})
 
 useHead({
-  title: t('warranty.title'),
+  title: t('supportWarrantyCheck.title'),
 })
 
 // 登录状态：来源于全局 auth

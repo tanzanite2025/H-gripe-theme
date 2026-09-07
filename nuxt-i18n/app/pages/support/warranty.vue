@@ -1,45 +1,39 @@
 <template>
   <div class="support-warranty">
     <!-- SEO-friendly hidden H1 -->
-    <h1 class="support-page__title support-page__title--sr-only">Warranty</h1>
+    <h1 class="support-page__title support-page__title--sr-only">{{ t('supportWarranty.title') }}</h1>
 
     <!-- Tab Components -->
-    <WarrantyDamagedLostTab 
-      v-show="activeTab === 'damaged-lost'" 
+    <WarrantyDamagedLostTab
+      v-if="activeTab === 'damaged-lost'"
       :contact-email="supportEmail"
     />
     
-    <WarrantyReturnsTab 
-      v-show="activeTab === 'returns'" 
-      :contact-email="supportEmail"
-    />
-    
-    <WarrantyWarrantyPolicyTab 
-      v-show="activeTab === 'warranty'" 
+    <WarrantyWarrantyPolicyTab
+      v-if="activeTab === 'warranty'"
       :contact-email="supportEmail"
       @change-tab="setActiveTab" 
     />
     
-    <WarrantyAccidentalDamageTab 
-      v-show="activeTab === 'accidental-damage'" 
+    <WarrantyAccidentalDamageTab
+      v-if="activeTab === 'accidental-damage'"
       @change-tab="setActiveTab" 
     />
     
-    <WarrantyProtectionTab 
-      v-show="activeTab === 'protection'" 
+    <WarrantyProtectionTab
+      v-if="activeTab === 'protection'"
     />
     
-    <WarrantySubmitClaimTab 
-      v-show="activeTab === 'submit-warranty'" 
+    <WarrantySubmitClaimTab
+      v-if="activeTab === 'submit-warranty'"
     />
 
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import WarrantyDamagedLostTab from '~/components/warranty/DamagedLostTab.vue'
-import WarrantyReturnsTab from '~/components/warranty/ReturnsTab.vue'
 import WarrantyWarrantyPolicyTab from '~/components/warranty/WarrantyPolicyTab.vue'
 import WarrantyAccidentalDamageTab from '~/components/warranty/AccidentalDamageTab.vue'
 import WarrantyProtectionTab from '~/components/warranty/ProtectionTab.vue'
@@ -47,6 +41,8 @@ import WarrantySubmitClaimTab from '~/components/warranty/SubmitClaimTab.vue'
 import { usePageSubNavigationTab } from '~/composables/usePageSubNavigationTab'
 import { warrantyTabs } from '~/utils/pageSubNavigation'
 import { useSiteSettings } from '~/composables/usePublicSettings'
+import { usePageMessages } from '~/composables/usePageMessages'
+import { useI18n } from '#imports'
 
 definePageMeta({
   layout: 'support',
@@ -54,9 +50,18 @@ definePageMeta({
   footerLabelFallback: 'Warranty',
 })
 
-useHead({
-  title: 'Warranty',
+const { locale, t } = useI18n()
+const { loadPageMessages } = usePageMessages('supportWarranty')
+
+await loadPageMessages(locale.value)
+
+watch(locale, (nextLocale) => {
+  void loadPageMessages(nextLocale)
 })
+
+useHead(() => ({
+  title: t('supportWarranty.title'),
+}))
 
 const tabs = warrantyTabs
 const { siteSettings } = useSiteSettings()

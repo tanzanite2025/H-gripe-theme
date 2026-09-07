@@ -1,0 +1,132 @@
+{
+  "tabs": {
+    "technology": "Technology",
+    "choose": "Choose hubs"
+  },
+  "technology": {
+    "title": "Bicycle Hub Key Specifications",
+    "intro": "Understanding the core specifications of your hubs is critical for wheel building and frame compatibility.",
+    "spokeInterface": {
+      "title": "1. Spoke Type: J-Bend vs. Straight-Pull",
+      "jBend": {
+        "title": "J-Bend (Classic)",
+        "items": [
+          "Spoke head is bent (elbow) to fit the flange.",
+          "Pros: Easy to service, with replacement spokes widely available.",
+          "Cons: Traditional look, with stress concentration at the elbow."
+        ],
+        "images": {
+          "sixBoltAlt": "DT240 6-bolt J-bend hub",
+          "sixBoltCaption": "6-Bolt J-Bend",
+          "centerLockAlt": "DT240 Center Lock J-bend hub",
+          "centerLockCaption": "Center Lock J-Bend"
+        }
+      },
+      "straightPull": {
+        "title": "Straight-Pull (Modern)",
+        "items": [
+          "Spokes are straight, with no elbow.",
+          "Pros: Higher tension potential and a sleek aesthetic.",
+          "Cons: Harder to find specific replacements on the road."
+        ],
+        "images": {
+          "sixBoltAlt": "DT240 6-bolt straight-pull hub",
+          "sixBoltCaption": "6-Bolt SP",
+          "centerLockAlt": "DT240 Center Lock straight-pull hub",
+          "centerLockCaption": "Center Lock SP"
+        }
+      }
+    },
+    "axle": {
+      "title": "Axle Standards",
+      "frontTitle": "Front Hubs",
+      "frontBody": "QR (9x100), 12x100 (Road/Gravel), 15x100, 15x110 (Boost)",
+      "rearTitle": "Rear Hubs",
+      "rearBody": "QR (135mm), 12x142, 12x148 (Boost)",
+      "note": "Thru-axles (12mm/15mm) provide superior stiffness compared to Quick Release."
+    },
+    "brake": {
+      "title": "Brake Interface",
+      "sixBoltTitle": "6-Bolt (IS)",
+      "sixBoltBody": "Rotor attached via 6 Torx bolts. Universal and robust.",
+      "centerLockTitle": "Center Lock (CL)",
+      "centerLockBody": "Splined interface with a lockring. Faster installation, lighter, favored by Shimano/Road."
+    },
+    "holeCount": {
+      "title": "Hole Count Logic",
+      "rows": [
+        {
+          "label": "Lightweight / Road",
+          "value": "20H / 24H"
+        },
+        {
+          "label": "Standard MTB / Gravel",
+          "value": "28H / 32H"
+        },
+        {
+          "label": "Heavy Duty / E-Bike",
+          "value": "32H / 36H"
+        }
+      ]
+    },
+    "ratchet": {
+      "title": "Ratchet Engagement",
+      "body": "Higher tooth counts mean faster engagement, with less lag when you start pedaling.",
+      "levels": {
+        "standard": "Standard",
+        "balanced": "Balanced",
+        "instant": "Instant"
+      }
+    },
+    "freehub": {
+      "title": "Freehub Body Compatibility",
+      "body": "HG vs MS vs XD vs XDR vs N3W? Check our detailed guide.",
+      "button": "View Guide"
+    }
+  },
+  "choose": {
+    "title": "Hub Selection Guide",
+    "intro": "Choosing the right hub is a balance between serviceability, performance, and compatibility.",
+    "jBend": {
+      "title": "1. J-bend Hub",
+      "structureLabel": "Structure",
+      "structure": "Flange holes designed for spokes with a 90° bend (elbow).",
+      "advantagesLabel": "Advantages",
+      "advantages": "Traditional design, easy to source replacements, convenient maintenance.",
+      "bestForLabel": "Best for",
+      "bestFor": "Riders valuing universality and ease of future maintenance.",
+      "compatible": "Compatible: J-bend spokes"
+    },
+    "straightPull": {
+      "title": "2. Straight-pull Hub",
+      "structureLabel": "Structure",
+      "structure": "Flange holes designed for spokes that insert directly without bending.",
+      "advantagesLabel": "Advantages",
+      "advantages": "Stiffer structure, more even tension, high-performance aesthetic.",
+      "bestForLabel": "Best for",
+      "bestFor": "Racing or performance use seeking rigidity and weight savings.",
+      "compatible": "Compatible: Straight-pull spokes"
+    },
+    "image": {
+      "alt": "Comparison of J-bend and Straight-pull hub flange designs",
+      "caption": "J-bend (Left) vs Straight-pull (Right) Interface"
+    },
+    "holeCount": {
+      "title": "3. Hole Count Selection",
+      "lightweightTitle": "Lightweight (20H / 24H)",
+      "lightweightBody": "Lighter weight, strictly for road bikes and climbing sets. Requires higher spoke tension and stiffer rims.",
+      "durabilityTitle": "Durability (28H / 32H)",
+      "durabilityBody": "More durable, suitable for MTB, heavy loads, or touring. Distributes stress across more spokes.",
+      "principleLabel": "Key Principle",
+      "principle": "Hub hole count must match rim hole count exactly."
+    },
+    "notes": {
+      "title": "Critical Notes",
+      "items": [
+        "Hub type must match spoke type (J-bend to J-bend, SP to SP).",
+        "Hole count should be chosen based on the riding scenario: lightweight vs durability.",
+        "High-performance wheelsets often use straight-pull hubs with fewer holes; durable wheelsets often use J-bend hubs with more holes."
+      ]
+    }
+  }
+}

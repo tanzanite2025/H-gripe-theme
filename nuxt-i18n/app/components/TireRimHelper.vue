@@ -1,16 +1,16 @@
 <template>
   <!-- Tire width -> rim internal width helper -->
   <div class="tire-rim-helper-card mt-5 rounded-2xl bg-[var(--tz-form-panel-surface)] p-4 text-center">
-    <h3 v-if="title" class="mb-2 text-sm font-semibold tz-text-primary">
-      {{ title }}
+    <h3 class="mb-2 text-sm font-semibold tz-text-primary">
+      {{ title || t('guidesTireRimHelper.title') }}
     </h3>
-    <p v-if="description" class="mb-3 text-xs tz-text-secondary">
-      {{ description }}
+    <p class="mb-3 text-xs tz-text-secondary">
+      {{ description || t('guidesTireRimHelper.description') }}
     </p>
     <div class="flex flex-col gap-3 sm:flex-row sm:items-end justify-center items-center">
       <div class="sm:w-40">
         <label class="block text-xs font-medium tz-text-secondary" for="tire-width-mm">
-          Tire width (mm)
+          {{ t('guidesTireRimHelper.tireWidthLabel') }}
         </label>
         <input
           id="tire-width-mm"
@@ -19,14 +19,14 @@
           min="18"
           max="130"
           step="1"
-          placeholder="e.g. 28 or 57"
+          :placeholder="t('guidesTireRimHelper.tireWidthPlaceholder')"
           class="tire-rim-helper__input mt-1 w-full rounded-md bg-[var(--tz-form-control-surface)] px-2 py-1.5 text-xs tz-text-primary outline-none focus:ring-0"
         />
       </div>
 
       <div class="sm:w-52">
           <span class="mb-1 block text-xs font-medium tz-text-secondary">
-          Rim system
+          {{ t('guidesTireRimHelper.rimSystemLabel') }}
         </span>
         <div
           class="tire-rim-helper__toggle-group inline-flex rounded-full bg-[var(--tz-form-control-surface)] p-0.5"
@@ -37,7 +37,7 @@
             :class="{ 'tire-rim-helper__toggle--active': rimType === 'hookless' }"
             @click="rimType = 'hookless'"
           >
-            Hookless (TSS)
+            {{ t('guidesTireRimHelper.hookless') }}
           </button>
           <button
             type="button"
@@ -45,7 +45,7 @@
             :class="{ 'tire-rim-helper__toggle--active': rimType === 'hooked' }"
             @click="rimType = 'hooked'"
           >
-            Hooked (TC)
+            {{ t('guidesTireRimHelper.hooked') }}
           </button>
         </div>
       </div>
@@ -57,7 +57,7 @@
         v-if="!tireRimSuggestion"
         class="text-xs tz-text-muted"
       >
-        Enter a tire width to see a suggested rim internal width range.
+        {{ t('guidesTireRimHelper.empty') }}
       </p>
 
       <div
@@ -65,12 +65,11 @@
         class="text-xs tz-text-secondary"
       >
         <p class="tire-rim-helper__result font-semibold">
-          Recommended rim internal width:
+          {{ t('guidesTireRimHelper.recommended') }}
           {{ tireRimSuggestion.minRim }} - {{ tireRimSuggestion.maxRim }} mm
         </p>
         <p class="mt-0.5 tz-caption tz-text-muted">
-          Sweet spot around {{ tireRimSuggestion.ideal }} mm. For aggressive or technical riding,
-          stay closer to the wider end of the range.
+          {{ t('guidesTireRimHelper.sweetSpot', { width: tireRimSuggestion.ideal }) }}
         </p>
       </div>
     </div>
@@ -81,19 +80,29 @@
         class="tire-rim-helper__search inline-flex items-center justify-center rounded-full px-4 py-1.5 text-xs font-semibold shadow-md transition-all"
         @click="() => openShopSearch()"
       >
-        Search for suitable width rims
+        {{ t('guidesTireRimHelper.search') }}
       </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { useI18n } from '#imports'
 import { useShopSearchSheet } from '~/composables/useShopSearchSheet'
+import { usePageMessages } from '~/composables/usePageMessages'
 
 type RimType = 'hookless' | 'hooked'
 
 const { open: openShopSearch } = useShopSearchSheet()
+const { locale, t } = useI18n()
+const { loadPageMessages } = usePageMessages('guidesTireRimHelper')
+
+await loadPageMessages(locale.value)
+
+watch(locale, (nextLocale) => {
+  void loadPageMessages(nextLocale)
+})
 
 const props = withDefaults(defineProps<{
   hideSearchButton?: boolean
@@ -103,8 +112,8 @@ const props = withDefaults(defineProps<{
 }>(), {
   hideSearchButton: false,
   initialRimType: 'hooked',
-  title: 'Tire width to rim internal width helper',
-  description: 'Enter your tire width in millimetres and choose the rim system. Tube-type and tubeless-ready setups are not split into two width calculators here; tubular rims use a separate tubular tire/rim system. Always cross-check with the specific recommendations from your rim and tire manufacturers.',
+  title: '',
+  description: '',
 })
 
 const tireWidthInput = ref<string>('')

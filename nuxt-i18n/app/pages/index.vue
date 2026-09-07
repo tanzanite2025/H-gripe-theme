@@ -60,8 +60,8 @@
           module-id="components/HomeFaqPreview.vue"
           :loader="loadHomeFaqPreview"
           :root-margin="sectionMountRootMargin"
-          :max-categories="4"
-          :max-items-per-category="3"
+          :max-pages="4"
+          :max-items="3"
           wide
           fluid
         />

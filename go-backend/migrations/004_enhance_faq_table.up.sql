@@ -38,7 +38,6 @@ BEGIN
 END $$;
 
 -- 创建索引（如果不存在）
-CREATE INDEX IF NOT EXISTS idx_faqs_category ON faqs(category);
 CREATE INDEX IF NOT EXISTS idx_faqs_locale ON faqs(locale);
 CREATE INDEX IF NOT EXISTS idx_faqs_parent_id ON faqs(parent_id);
 CREATE INDEX IF NOT EXISTS idx_faqs_status ON faqs(status);
@@ -49,6 +48,5 @@ CREATE INDEX IF NOT EXISTS idx_faqs_view_count ON faqs(view_count);
 SELECT 
     'FAQ table enhanced successfully' as message,
     COUNT(*) as total_faqs,
-    COUNT(DISTINCT category) as total_categories,
     COUNT(DISTINCT locale) as total_locales
 FROM faqs;

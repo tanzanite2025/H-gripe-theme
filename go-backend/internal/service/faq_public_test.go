@@ -62,7 +62,7 @@ func TestFAQServicePublicResponsesCanonicalizeAnswerImageURL(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "https://shop.example.test/uploads/faq/answer.webp", publicFAQ.AnswerImageURL)
 
-	items, _, err := faqService.List("en", "", "", "published", 1, 20)
+	items, _, err := faqService.List("en", "", "published", 1, 20)
 	require.NoError(t, err)
 	require.Len(t, items, 1)
 	assert.Equal(t, "https://shop.example.test/uploads/faq/answer.webp", items[0].AnswerImageURL)
@@ -102,7 +102,6 @@ func newTestFAQService(t *testing.T) (*gorm.DB, *FAQService) {
 	require.NoError(t, db.AutoMigrate(
 		&faqdomain.FAQ{},
 		&faqdomain.FAQPage{},
-		&faqdomain.FAQCategory{},
 	))
 
 	return db, NewFAQService(repository.NewFAQRepository(db), nil)

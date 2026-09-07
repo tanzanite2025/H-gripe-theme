@@ -3,20 +3,21 @@
     <article class="wheelset-guide-step">
       <div class="wheelset-guide-step__number">1</div>
       <div class="wheelset-guide-step__content">
-        <h3 class="wheelset-guide-step__title">Professional Wheel Building Service</h3>
+        <h3 class="wheelset-guide-step__title">
+          {{ t('guidesWheelsetBuyersSample.professional.title') }}
+        </h3>
         <p class="wheelset-guide-step__body">
-           We provide professional assembly services, supporting customers who wish to send in hubs or rims.
-           Our skilled technicians will complete the assembly to the highest standards.
+          {{ t('guidesWheelsetBuyersSample.professional.body') }}
         </p>
 
         <div class="wheelset-guide-panel-grid">
           <div class="wheelset-guide-panel">
-            <strong>Assembly fee</strong>
-            <p>USD 30 / set for standard wheel building service.</p>
+            <strong>{{ t('guidesWheelsetBuyersSample.professional.feeTitle') }}</strong>
+            <p>{{ t('guidesWheelsetBuyersSample.professional.feeBody') }}</p>
           </div>
           <div class="wheelset-guide-panel">
-            <strong>Best for</strong>
-            <p>Customers sending compatible hubs, rims, or full component kits for professional assembly.</p>
+            <strong>{{ t('guidesWheelsetBuyersSample.professional.bestForTitle') }}</strong>
+            <p>{{ t('guidesWheelsetBuyersSample.professional.bestForBody') }}</p>
           </div>
         </div>
 
@@ -26,7 +27,7 @@
             class="wheelset-guide-button wheelset-guide-button--solid"
             @click="openWhatsAppChat"
           >
-               Get Wheel Building Quote via Chat
+              {{ t('guidesWheelsetBuyersSample.professional.button') }}
           </button>
         </div>
       </div>
@@ -35,23 +36,25 @@
     <article class="wheelset-guide-step">
       <div class="wheelset-guide-step__number">2</div>
       <div class="wheelset-guide-step__content">
-        <h3 class="wheelset-guide-step__title">Service Process</h3>
+        <h3 class="wheelset-guide-step__title">
+          {{ t('guidesWheelsetBuyersSample.process.title') }}
+        </h3>
         <div class="wheelset-guide-panel-grid">
           <div class="wheelset-guide-panel">
-            <strong>Shipping</strong>
-            <p>Send components to our designated address.</p>
+            <strong>{{ t('guidesWheelsetBuyersSample.process.shipping.title') }}</strong>
+            <p>{{ t('guidesWheelsetBuyersSample.process.shipping.body') }}</p>
           </div>
           <div class="wheelset-guide-panel">
-            <strong>Confirmation</strong>
-            <p>We inspect and confirm receipt of all listed items.</p>
+            <strong>{{ t('guidesWheelsetBuyersSample.process.confirmation.title') }}</strong>
+            <p>{{ t('guidesWheelsetBuyersSample.process.confirmation.body') }}</p>
           </div>
           <div class="wheelset-guide-panel">
-            <strong>Assembly & testing</strong>
-            <p>Professional build plus tension and safety analysis.</p>
+            <strong>{{ t('guidesWheelsetBuyersSample.process.assembly.title') }}</strong>
+            <p>{{ t('guidesWheelsetBuyersSample.process.assembly.body') }}</p>
           </div>
           <div class="wheelset-guide-panel">
-            <strong>Delivery</strong>
-            <p>Finished wheelset shipped back or prepared for pickup.</p>
+            <strong>{{ t('guidesWheelsetBuyersSample.process.delivery.title') }}</strong>
+            <p>{{ t('guidesWheelsetBuyersSample.process.delivery.body') }}</p>
           </div>
         </div>
       </div>
@@ -60,19 +63,20 @@
     <article class="wheelset-guide-step">
       <div class="wheelset-guide-step__number">3</div>
       <div class="wheelset-guide-step__content">
-        <h3 class="wheelset-guide-step__title">Scope & Notes</h3>
+        <h3 class="wheelset-guide-step__title">
+          {{ t('guidesWheelsetBuyersSample.scope.title') }}
+        </h3>
         <div class="wheelset-guide-panel-grid">
           <div class="wheelset-guide-panel">
-            <strong>Accepted items</strong>
-            <p>Wheelsets, rims, hubs, spokes, or related components. Please confirm compatibility with us first.</p>
+            <strong>{{ t('guidesWheelsetBuyersSample.scope.acceptedTitle') }}</strong>
+            <p>{{ t('guidesWheelsetBuyersSample.scope.acceptedBody') }}</p>
           </div>
           <div class="wheelset-guide-panel">
-            <strong>Important</strong>
+            <strong>{{ t('guidesWheelsetBuyersSample.scope.importantTitle') }}</strong>
             <ul>
-              <li>Components must be new or in good condition.</li>
-              <li>Include a detailed packing list.</li>
-              <li>Typical turnaround is 3-7 business days.</li>
-              <li>Shipping costs are the customer's responsibility.</li>
+              <li v-for="(item, index) in scopeItems" :key="index">
+                {{ rt(item) }}
+              </li>
             </ul>
           </div>
         </div>
@@ -82,9 +86,11 @@
     <article class="wheelset-guide-step">
       <div class="wheelset-guide-step__number">4</div>
       <div class="wheelset-guide-step__content">
-        <h3 class="wheelset-guide-step__title">Building Your Own Wheels?</h3>
+        <h3 class="wheelset-guide-step__title">
+          {{ t('guidesWheelsetBuyersSample.ownBuild.title') }}
+        </h3>
         <p class="wheelset-guide-step__body">
-           If you prefer to assemble yourself using these parts, we support you. Access our technical guides and customization options below.
+          {{ t('guidesWheelsetBuyersSample.ownBuild.body') }}
         </p>
         <div class="wheelset-guide-actions">
           <button
@@ -92,14 +98,14 @@
             class="wheelset-guide-button"
             @click="goToTechnicalSpokePattern"
           >
-            Open Wheel Component Spoke Patterns
+            {{ t('guidesWheelsetBuyersSample.ownBuild.spokeButton') }}
           </button>
           <button
             type="button"
             class="wheelset-guide-button"
             @click="goToHolePatterns"
           >
-            Open Rim Hole Pattern Options
+            {{ t('guidesWheelsetBuyersSample.ownBuild.holeButton') }}
           </button>
         </div>
       </div>
@@ -108,6 +114,21 @@
 </template>
 
 <script setup lang="ts">
+import { computed, watch } from 'vue'
+import { useI18n } from '#imports'
+import { usePageMessages } from '~/composables/usePageMessages'
+
+const { locale, t, tm, rt } = useI18n()
+const { loadPageMessages } = usePageMessages('guidesWheelsetBuyersSample')
+await loadPageMessages(locale.value)
+watch(locale, (nextLocale) => {
+  void loadPageMessages(nextLocale)
+})
+
+const scopeItems = computed<string[]>(() => (
+  tm('guidesWheelsetBuyersSample.scope.items') as string[]
+))
+
 const { openWhatsAppChat, goToTechnicalSpokePattern, goToHolePatterns } = defineProps<{
   openWhatsAppChat: () => void | Promise<void>
   goToTechnicalSpokePattern: () => void | Promise<void>

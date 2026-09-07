@@ -2,6 +2,7 @@ package admin
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -182,12 +183,71 @@ func (h *SiteQualityHandler) GetSiteQualityJob(c *gin.Context) {
 	response.Success(c, job)
 }
 
+func (h *SiteQualityHandler) CancelSiteQualityJob(c *gin.Context) {
+	startedAt := adminAuditStartedAt()
+	if h == nil || h.siteQualityEngine == nil {
+		err := errors.New("site quality engine is not configured")
+		if h != nil {
+			h.recordSiteQualityJobAudit(c, adminAuditEvent{
+				StartedAt:    startedAt,
+				Action:       adminAuditActionUpdate,
+				Resource:     adminAuditResourceSiteQualityJob,
+				Status:       adminAuditStatusFailed,
+				ErrorMessage: err.Error(),
+			})
+		}
+		apierror.RespondInternalError(c, err)
+		return
+	}
+	id, err := siteQualityJobID(c)
+	if err != nil {
+		apierror.RespondBadRequest(c, err.Error())
+		return
+	}
+	job, err := h.siteQualityEngine.CancelJob(id)
+	if err != nil {
+		h.recordSiteQualityJobAudit(c, adminAuditEvent{
+			StartedAt:    startedAt,
+			Action:       adminAuditActionUpdate,
+			Resource:     adminAuditResourceSiteQualityJob,
+			ResourceID:   id,
+			Status:       adminAuditStatusFailed,
+			ErrorMessage: err.Error(),
+		})
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			apierror.RespondNotFound(c, "site quality job was not found")
+			return
+		}
+		if errors.Is(err, service.ErrSiteQualityJobNotCancellable) {
+			apierror.RespondBadRequest(c, err.Error())
+			return
+		}
+		apierror.RespondInternalError(c, err)
+		return
+	}
+	h.recordSiteQualityJobAudit(c, adminAuditEvent{
+		StartedAt:  startedAt,
+		Action:     adminAuditActionUpdate,
+		Resource:   adminAuditResourceSiteQualityJob,
+		ResourceID: id,
+		Status:     adminAuditStatusSuccess,
+		Changes:    gin.H{"status": sitequalitydomain.SiteQualityJobStatusCancelled},
+		NewValue:   job,
+	})
+	response.Success(c, job)
+}
+
 func (h *SiteQualityHandler) ListSiteQualityFindings(c *gin.Context) {
 	if h == nil || h.siteQualityService == nil {
 		apierror.RespondInternalError(c, errors.New("Lighthouse runner service is not configured"))
 		return
 	}
 	page, pageSize := siteQualityPagination(c)
+	runID, err := siteQualityOptionalUintQuery(c, "run_id")
+	if err != nil {
+		apierror.RespondBadRequest(c, err.Error())
+		return
+	}
 	findings, total, err := h.siteQualityService.ListFindings(repository.SiteQualityFindingListFilter{
 		Page:        page,
 		PageSize:    pageSize,
@@ -197,6 +257,7 @@ func (h *SiteQualityHandler) ListSiteQualityFindings(c *gin.Context) {
 		TargetURL:   strings.TrimSpace(c.Query("url")),
 		Strategy:    strings.TrimSpace(c.Query("strategy")),
 		FindingKind: strings.TrimSpace(c.Query("kind")),
+		RunID:       runID,
 	})
 	if err != nil {
 		apierror.RespondInternalError(c, err)
@@ -520,6 +581,18 @@ func siteQualityPagination(c *gin.Context) (int, int) {
 		pageSize = 20
 	}
 	return page, pageSize
+}
+
+func siteQualityOptionalUintQuery(c *gin.Context, key string) (uint, error) {
+	raw := strings.TrimSpace(c.Query(key))
+	if raw == "" {
+		return 0, nil
+	}
+	value, err := strconv.ParseUint(raw, 10, 64)
+	if err != nil || value == 0 {
+		return 0, fmt.Errorf("invalid SiteQuality %s", key)
+	}
+	return uint(value), nil
 }
 
 func siteQualityFindingID(c *gin.Context) (uint, error) {

@@ -37,6 +37,7 @@ const defaultDevStorefrontOrigin = "http://localhost:9199"
 type Repositories struct {
 	User                         *repository.UserRepository
 	Post                         *repository.PostRepository
+	BlogCategory                 *repository.BlogCategoryRepository
 	StorefrontRouteCatalog       *repository.StorefrontRouteCatalogRepository
 	StorefrontURLSearchProfiles  *repository.StorefrontURLSearchProfileRepository
 	StorefrontRedirectRules      *repository.StorefrontRedirectRuleRepository
@@ -69,6 +70,11 @@ type Repositories struct {
 	OrderIdempotency             *repository.OrderIdempotencyRepository
 	OrderPolicyDisclosure        *repository.OrderPolicyDisclosureRepository
 	OrderAttribution             *repository.OrderAttributionRepository
+	ProductQualityRequirement    *repository.ProductQualityRequirementRepository
+	OrderEvidenceSnapshot        *repository.OrderEvidenceSnapshotRepository
+	OrderEvidence                *repository.OrderEvidenceRepository
+	OrderEvidenceSubmission      *repository.OrderEvidenceSubmissionSnapshotRepository
+	OrderEvidenceExport          *repository.OrderEvidenceExportSnapshotRepository
 	Payment                      *repository.PaymentRepository
 	PaymentRisk                  *repository.PaymentRiskRepository
 	PaymentProtection            *repository.PaymentProtectionRepository
@@ -123,6 +129,7 @@ type Services struct {
 	Auth                              *service.AuthService
 	AdminAccountMaintenance           *service.AdminAccountMaintenanceService
 	Post                              *service.PostService
+	BlogCategory                      *service.BlogCategoryService
 	Product                           *service.ProductService
 	ProductProcurement                *service.ProductProcurementService
 	FrameFitmentEntry                 *service.FrameFitmentEntryService
@@ -133,6 +140,7 @@ type Services struct {
 	ProductBrand                      *service.ProductBrandService
 	ProductInformationTemplate        *service.ProductInformationTemplateService
 	CustomsClassification             *service.CustomsClassificationService
+	ProductQualityRequirement         *service.ProductQualityRequirementService
 	Cart                              *service.CartService
 	Setting                           *service.SettingService
 	WebsiteProfile                    *service.WebsiteProfileService
@@ -154,6 +162,11 @@ type Services struct {
 	ShipmentRecord                    *service.ShipmentRecordService
 	Checkout                          *service.CheckoutService
 	Order                             *service.OrderService
+	OrderEvidenceSnapshot             *service.OrderEvidenceSnapshotService
+	OrderEvidence                     *service.OrderEvidenceService
+	OrderEvidenceAdmin                *service.OrderEvidenceAdminService
+	OrderEvidenceAttachment           *service.OrderEvidenceAttachmentService
+	OrderEvidenceExport               *service.OrderEvidenceExportSnapshotService
 	AfterSales                        *service.AfterSalesService
 	Payment                           *service.PaymentService
 	Marketing                         *service.MarketingService

@@ -1,0 +1,42 @@
+{
+  "title": "商品损坏或丢失",
+  "alert": "请在签收前仔细检查包裹。",
+  "sections": {
+    "normalAcceptance": {
+      "title": "正常签收",
+      "items": {
+        "0": "如果包裹完好，请正常签收。",
+        "1": "如果发现损坏，请在送货单上注明，或拒收包裹。商品将退回给我们。",
+        "2": "如果您需要向承运商提出索赔，对方会提供索赔编号。请将编号提供给我们的支持团队，以便我们跟踪货件。收到退回商品后，我们将在"
+      },
+      "reshipmentWindow": "10 个工作日内",
+      "reshipmentSuffix": "安排重新发货。"
+    },
+    "damagedAccepted": {
+      "title": "商品已损坏但仍签收",
+      "items": {
+        "0": "如果商品在配送时已经损坏，但您在未报告的情况下仍然签收，承运商将不再承担责任。",
+        "1": "在这种情况下，您需要自行购买替换商品。"
+      }
+    },
+    "transit": {
+      "title": "运输途中损坏",
+      "items": {
+        "packaging": "如果包裹外观完好，但商品在运输途中严重损坏，请保留运单、包装及相关材料。",
+        "contactPrefix": "请在签收后",
+        "contactWindow": "7 天内联系我们",
+        "contactEmailPrefix": "，邮箱：",
+        "contactSuffix": "。"
+      }
+    },
+    "lost": {
+      "title": "货件丢失",
+      "items": {
+        "contactPrefix": "如果货物在运输途中丢失，请立即联系我们",
+        "contactEmailPrefix": "，邮箱：",
+        "contactSuffix": "。",
+        "insured": "所有货件均已投保，我们会协助您处理索赔流程。"
+      }
+    }
+  }
+}

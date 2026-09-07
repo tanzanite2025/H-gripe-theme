@@ -1,6 +1,5 @@
 <template>
   <div>
-    <!-- Tabs Header -->
     <div class="nav-pill-tabs mb-6" role="tablist">
       <button
         type="button"
@@ -8,7 +7,7 @@
         :class="{ 'nav-pill-item--active': activeTab === 'basic-concepts' }"
         @click="activeTab = 'basic-concepts'"
       >
-        Basic Concepts
+        {{ t('guidesWheelsetComponentsSpokes.tabs.basic') }}
       </button>
       <button
         type="button"
@@ -16,645 +15,533 @@
         :class="{ 'nav-pill-item--active': activeTab === 'choose-spoke' }"
         @click="activeTab = 'choose-spoke'"
       >
-        Choose spoke
+        {{ t('guidesWheelsetComponentsSpokes.tabs.choose') }}
       </button>
     </div>
 
-    <!-- Tab: Basic Concepts -->
-    <div v-show="activeTab === 'basic-concepts'">
-    <!-- Intro Card -->
-    <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6 text-center mb-8">
-      <h3 class="text-xl font-bold tz-text-secondary mb-4 flex items-center justify-center gap-2">
-        Basic Concepts
-      </h3>
-      
-      <p class="tz-text-secondary text-sm leading-relaxed mb-6 max-w-2xl mx-auto hidden">
-        Understanding spoke dimensions, materials, and typical use cases is crucial for building a reliable wheelset that matches your riding style.
-      </p>
+    <div v-if="activeTab === 'basic-concepts'">
+      <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6 text-center mb-8">
+        <h3 class="text-xl font-bold tz-text-secondary mb-4 flex items-center justify-center gap-2">
+          {{ t('guidesWheelsetComponentsSpokes.basic.title') }}
+        </h3>
+        <p class="tz-text-secondary text-sm leading-relaxed mb-6 max-w-2xl mx-auto hidden">
+          {{ t('guidesWheelsetComponentsSpokes.basic.intro') }}
+        </p>
+        <div class="w-full mb-8">
+          <p class="text-xs font-bold uppercase tracking-wider tz-text-muted mb-3">
+            {{ t('guidesWheelsetComponentsSpokes.basic.profilesTitle') }}
+          </p>
+          <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <GuideImage
+              src="/public/technical/j-bend-spokeandstraightpull-spoke.webp"
+              :alt="t('guidesWheelsetComponentsSpokes.basic.profiles.comparisonAlt')"
+              :zoomOnClick="true"
+              :caption="t('guidesWheelsetComponentsSpokes.basic.profiles.comparisonCaption')"
+              class="rounded-xl overflow-hidden shadow-md"
+            />
+            <GuideImage
+              src="/public/technical/Sapim-black-stainless-steel-straight-gauge-2.0mm-spoke-double-butted-2.0-1.8-2.0mm-spoke-aero-flat-bladed-spoke.webp"
+              :alt="t('guidesWheelsetComponentsSpokes.basic.profiles.shapesAlt')"
+              :zoomOnClick="true"
+              :caption="t('guidesWheelsetComponentsSpokes.basic.profiles.shapesCaption')"
+              class="rounded-xl overflow-hidden shadow-md"
+            />
+          </div>
+        </div>
 
-      <div class="w-full mb-8">
-        <p class="text-xs font-bold uppercase tracking-wider tz-text-muted mb-3">Common Profiles & Types</p>
-        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <GuideImage
-            src="/public/technical/j-bend-spokeandstraightpull-spoke.webp"
-            alt="Comparison of J-bend and straight-pull bicycle spokes"
-            :zoomOnClick="true"
-            caption="J-bend (Classic) vs Straight-pull"
-            class="rounded-xl overflow-hidden shadow-md"
-          />
-          <GuideImage
-            src="/public/technical/Sapim-black-stainless-steel-straight-gauge-2.0mm-spoke-double-butted-2.0-1.8-2.0mm-spoke-aero-flat-bladed-spoke.webp"
-            alt="Examples of Sapim stainless steel spokes in different shapes and profiles"
-            :zoomOnClick="true"
-            caption="Straight Gauge vs Double-Butted vs Aero"
-            class="rounded-xl overflow-hidden shadow-md"
-          />
+        <div class="w-full mb-8 text-center">
+          <div class="flex items-center gap-3 mb-4 justify-center">
+            <span class="h-px w-8 tz-surface-panel"></span>
+            <h4 class="tz-text-primary font-bold text-base uppercase tracking-wider">{{ t('guidesWheelsetComponentsSpokes.basic.brandsTitle') }}</h4>
+            <span class="h-px w-8 tz-surface-panel"></span>
+          </div>
+          <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div v-for="brand in brands" :key="brand.id" class="tz-surface-panel p-3 rounded-lg shadow-md flex flex-col items-center text-center">
+              <strong class="block text-sm mb-1" :class="brand.nameClass">{{ t(brand.nameKey) }}</strong>
+              <p class="text-xs tz-text-secondary leading-relaxed mb-3">{{ t(brand.bodyKey) }}</p>
+              <button class="mt-auto px-4 py-1.5 rounded-full border tz-caption font-bold uppercase tracking-wider transition-colors" :class="brand.buttonClass">
+                {{ t(brand.buttonKey) }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="w-full mb-8 text-center">
+          <div class="flex items-center gap-3 mb-4 justify-center">
+            <span class="h-px w-8 tz-surface-panel"></span>
+            <h4 class="tz-text-primary font-bold text-base uppercase tracking-wider">{{ t('guidesWheelsetComponentsSpokes.basic.typesTitle') }}</h4>
+            <span class="h-px w-8 tz-surface-panel"></span>
+          </div>
+          <div class="space-y-4">
+            <div v-for="type in spokeTypes" :key="type.id" class="tz-surface-panel rounded-xl p-4 shadow-md flex flex-col items-center text-center">
+              <h5 class="tz-text-secondary font-bold mb-2 flex items-center justify-center gap-2">
+                <span class="w-2 h-2 rounded-full" :class="type.dotClass"></span>{{ t(type.titleKey) }}
+              </h5>
+              <div class="grid md:grid-cols-2 gap-x-6 gap-y-2 text-sm tz-text-secondary w-full">
+                <p><span class="tz-text-muted font-mono text-xs uppercase mr-1">{{ type.labels.specs }}:</span> {{ t(type.specsKey) }}</p>
+                <p><span class="tz-text-muted font-mono text-xs uppercase mr-1">{{ type.labels.features }}:</span> {{ t(type.featuresKey) }}</p>
+                <p><span class="tz-text-muted font-mono text-xs uppercase mr-1">{{ type.labels.examples }}:</span> {{ t(type.examplesKey) }}</p>
+                <p><span class="tz-text-muted font-mono text-xs uppercase mr-1">{{ type.labels.use }}:</span> {{ t(type.useKey) }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="w-full text-center">
+          <div class="flex items-center gap-3 mb-4 justify-center">
+            <span class="h-px w-8 tz-surface-panel"></span>
+            <h4 class="tz-text-primary font-bold text-base uppercase tracking-wider">{{ t('guidesWheelsetComponentsSpokes.basic.interfacesTitle') }}</h4>
+            <span class="h-px w-8 tz-surface-panel"></span>
+          </div>
+          <div class="grid gap-3 sm:grid-cols-3">
+            <div v-for="item in interfaces" :key="item.titleKey" class="tz-surface-panel p-3 rounded-lg border tz-border-subtle text-center">
+              <strong class="block tz-text-primary text-sm mb-1">{{ t(item.titleKey) }}</strong>
+              <p class="text-xs tz-text-muted">{{ t(item.bodyKey) }}</p>
+            </div>
+          </div>
         </div>
       </div>
 
-      <!-- New Content: Major Brands -->
-      <div class="w-full mb-8 text-center">
-         <div class="flex items-center gap-3 mb-4 justify-center">
-            <span class="h-px w-8 tz-surface-panel"></span>
-        <h4 class="tz-text-primary font-bold text-base uppercase tracking-wider">Major Brands & Positioning</h4>
-            <span class="h-px w-8 tz-surface-panel"></span>
-         </div>
-         <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-             <div class="tz-surface-panel p-3 rounded-lg shadow-md flex flex-col items-center text-center">
-                <strong class="block text-emerald-600 text-sm mb-1">DT Swiss (Switzerland)</strong>
-          <p class="text-xs tz-text-secondary leading-relaxed mb-3">Renowned for stable craftsmanship and a comprehensive product matrix (straight, butted, aero), with complete engineering support.</p>
-                <button class="mt-auto px-4 py-1.5 rounded-full border border-emerald-300 tz-caption font-bold uppercase tracking-wider text-emerald-600 hover:bg-emerald-50 transition-colors">
-                  View DT Swiss Spoke
-                </button>
-             </div>
-              <div class="tz-surface-panel p-3 rounded-lg shadow-md flex flex-col items-center text-center">
-                <strong class="block text-emerald-600 text-sm mb-1">Sapim (Belgium)</strong>
-          <p class="text-xs tz-text-secondary leading-relaxed mb-3">Leading in high-end aero spokes (e.g. CX-Ray). Known for lightweight performance and excellent fatigue life.</p>
-                <button class="mt-auto px-4 py-1.5 rounded-full border border-emerald-300 tz-caption font-bold uppercase tracking-wider text-emerald-600 hover:bg-emerald-50 transition-colors">
-                  View Sapim Spoke
-                </button>
-             </div>
-             <div class="tz-surface-panel p-3 rounded-lg shadow-md flex flex-col items-center text-center">
-                <strong class="block text-amber-400 text-sm mb-1">Pillar (Taiwan)</strong>
-          <p class="text-xs tz-text-secondary leading-relaxed mb-3">Strong cost-performance with a wide range including reinforced (PSR) designs. Suitable for custom and mass production.</p>
-                <button class="mt-auto px-4 py-1.5 rounded-full border border-amber-500/30 tz-caption font-bold uppercase tracking-wider text-amber-400 hover:bg-amber-500/10 transition-colors">
-                  View Pillar Spoke
-                </button>
-             </div>
-             <div class="tz-surface-panel p-3 rounded-lg shadow-md flex flex-col items-center text-center">
-          <strong class="block tz-text-primary text-sm mb-1">Mac / CNSpoke</strong>
-          <p class="text-xs tz-text-secondary leading-relaxed mb-3">Fast supply chain response. Covers all types balancing cost and performance for diverse applications.</p>
-                <button class="mt-auto px-4 py-1.5 rounded-full border border-slate-500/30 tz-caption font-bold uppercase tracking-wider tz-text-secondary hover:bg-slate-500/10 transition-colors">
-                  View Mac / CNSpoke Spoke
-                </button>
-             </div>
-             <div class="tz-surface-panel p-3 rounded-lg shadow-md flex flex-col items-center text-center">
-          <strong class="block tz-text-primary text-sm mb-1">YT Spokes (China)</strong>
-          <p class="text-xs tz-text-secondary leading-relaxed mb-3">Fast supply chain response, suitable for cost and performance balance.</p>
-                <button class="mt-auto px-4 py-1.5 rounded-full border border-slate-500/30 tz-caption font-bold uppercase tracking-wider tz-text-secondary hover:bg-slate-500/10 transition-colors">
-                  View YT Spokes Spoke
-                </button>
-             </div>
-              <!-- Carbon spoke option -->
-             <div class="tz-surface-panel p-3 rounded-lg shadow-md flex flex-col items-center text-center ring-1 ring-emerald-500/20">
-                <strong class="block text-emerald-600 text-sm mb-1">CARBON SPOKE</strong>
-          <p class="text-xs tz-text-secondary leading-relaxed mb-3">The pinnacle of lightweight performance. Designed for ultimate responsiveness and rigidity, drastically reducing rotational weight.</p>
-                <button class="mt-auto px-4 py-1.5 rounded-full border border-emerald-300 tz-caption font-bold uppercase tracking-wider text-emerald-600 hover:bg-emerald-50 transition-colors">
-                  View Carbon Spoke
-                </button>
-             </div>
-         </div>
-      </div>
+      <div class="mt-4">
+        <div class="flex items-center justify-center gap-2 mb-4">
+          <div class="h-px w-12 tz-surface-panel"></div>
+          <p class="text-xs font-bold uppercase tracking-widest tz-text-muted">{{ t('guidesWheelsetComponentsSpokes.basic.materialTitle') }}</p>
+          <div class="h-px w-12 tz-surface-panel"></div>
+        </div>
 
-      <!-- New Content: Spoke Types -->
-      <div class="w-full mb-8 text-center">
-          <div class="flex items-center gap-3 mb-4 justify-center">
-            <span class="h-px w-8 tz-surface-panel"></span>
-            <h4 class="tz-text-primary font-bold text-base uppercase tracking-wider">Spoke Types</h4>
-            <span class="h-px w-8 tz-surface-panel"></span>
-         </div>
-
-         <div class="space-y-4">
-             <!-- Straight Gauge -->
-              <div class="tz-surface-panel rounded-xl p-4 shadow-md flex flex-col items-center text-center">
-                 <h5 class="tz-text-secondary font-bold mb-2 flex items-center justify-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-slate-500"></span> Straight Gauge Spokes
-                 </h5>
-                 <div class="grid md:grid-cols-2 gap-x-6 gap-y-2 text-sm tz-text-secondary w-full">
-                    <p><span class="tz-text-muted font-mono text-xs uppercase mr-1">Specs:</span> Commonly 14G (2.0mm), 13G (2.3mm).</p>
-                    <p><span class="tz-text-muted font-mono text-xs uppercase mr-1">Features:</span> High strength margin, low cost, easy maintenance.</p>
-                    <p><span class="tz-text-muted font-mono text-xs uppercase mr-1">Examples:</span> DT Champion, Sapim Leader.</p>
-                    <p><span class="tz-text-muted font-mono text-xs uppercase mr-1">Use:</span> Commuting, touring, cargo, high-tension drive sides.</p>
-                 </div>
-             </div>
-
-             <!-- Butted -->
-               <div class="tz-surface-panel rounded-xl p-4 shadow-md flex flex-col items-center text-center">
-                 <h5 class="tz-text-secondary font-bold mb-2 flex items-center justify-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Double/Triple Butted
-                 </h5>
-                 <div class="grid md:grid-cols-2 gap-x-6 gap-y-2 text-sm tz-text-secondary w-full">
-                    <p><span class="tz-text-muted font-mono text-xs uppercase mr-1">Specs:</span> e.g. 2.0-1.8-2.0mm, 2.0-1.5-2.0mm.</p>
-                    <p><span class="tz-text-muted font-mono text-xs uppercase mr-1">Features:</span> Lighter, better fatigue resistance (flex in midsection).</p>
-                    <p><span class="tz-text-muted font-mono text-xs uppercase mr-1">Examples:</span> DT Competition/Revolution, Sapim Race/Laser.</p>
-                    <p><span class="tz-text-muted font-mono text-xs uppercase mr-1">Use:</span> Endurance road, XC/Gravel, versatile durable builds.</p>
-                 </div>
-             </div>
-
-              <!-- Aero -->
-               <div class="tz-surface-panel rounded-xl p-4 shadow-md flex flex-col items-center text-center">
-                 <h5 class="tz-text-secondary font-bold mb-2 flex items-center justify-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Bladed / Aero
-                 </h5>
-                 <div class="grid md:grid-cols-2 gap-x-6 gap-y-2 text-sm tz-text-secondary w-full">
-                    <p><span class="tz-text-muted font-mono text-xs uppercase mr-1">Specs:</span> Flat ~0.9-1.0mm, width 2.0-2.3mm (or wider for TT).</p>
-                    <p><span class="tz-text-muted font-mono text-xs uppercase mr-1">Features:</span> Aerodynamic, easier torque control (anti-twist).</p>
-                    <p><span class="tz-text-muted font-mono text-xs uppercase mr-1">Examples:</span> Sapim CX-Ray, DT Aerolite, Pillar PSR X-TRA.</p>
-                    <p><span class="tz-text-muted font-mono text-xs uppercase mr-1">Use:</span> Racing road, disc brake high-tension, aero rims.</p>
-                 </div>
-             </div>
-         </div>
-      </div>
-
-       <!-- New Content: Head Types -->
-      <div class="w-full text-center">
-          <div class="flex items-center gap-3 mb-4 justify-center">
-            <span class="h-px w-8 tz-surface-panel"></span>
-            <h4 class="tz-text-primary font-bold text-base uppercase tracking-wider">Interfaces</h4>
-             <span class="h-px w-8 tz-surface-panel"></span>
-         </div>
-         <div class="grid gap-3 sm:grid-cols-3">
-            <div class="tz-surface-panel p-3 rounded-lg border tz-border-subtle text-center">
-                 <strong class="block tz-text-primary text-sm mb-1">J-bend</strong>
-                 <p class="text-xs tz-text-muted">Highly versatile, standard, easy sourcing.</p>
-            </div>
-             <div class="tz-surface-panel p-3 rounded-lg shadow-md text-center">
-                 <strong class="block tz-text-primary text-sm mb-1">Straight-pull</strong>
-                 <p class="text-xs tz-text-muted">No elbow stress, fast building, specific hubs.</p>
-            </div>
-             <div class="tz-surface-panel p-3 rounded-lg shadow-md text-center">
-                 <strong class="block tz-text-primary text-sm mb-1">Nipples</strong>
-                 <p class="text-xs tz-text-muted">Brass (durable) vs Aluminum (light). Washer recommended.</p>
-            </div>
-         </div>
-      </div>
-    </div>
-
-    <div class="mt-4">
-      <div class="flex items-center justify-center gap-2 mb-4">
-         <div class="h-px w-12 tz-surface-panel"></div>
-         <p class="text-xs font-bold uppercase tracking-widest tz-text-muted">Material Comparison</p>
-         <div class="h-px w-12 tz-surface-panel"></div>
-      </div>
-
-      <!-- Disclaimer Note -->
-      <div class="bg-amber-900/10 border-l-2 border-amber-600/50 p-3 mb-6 mx-auto max-w-3xl rounded-r-lg">
-         <div class="flex gap-3">
-            <span class="text-amber-500 shrink-0 mt-0.5">
-               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-            </span>
+        <div class="bg-amber-900/10 border-l-2 border-amber-600/50 p-3 mb-6 mx-auto max-w-3xl rounded-r-lg">
+          <div class="flex gap-3">
+            <span class="text-amber-500 shrink-0 mt-0.5" aria-hidden="true">i</span>
             <p class="text-xs text-amber-500/80 leading-relaxed text-left">
-               <strong class="font-bold text-amber-500">Note:</strong> The following comparison reflects relative performance characteristics across different spoke materials. Each material has its own strengths depending on the application. The listed pros and cons are not absolute judgments or defect classifications.
+              <strong class="font-bold text-amber-500">{{ t('guidesWheelsetComponentsSpokes.basic.disclaimerLabel') }}:</strong>
+              {{ t('guidesWheelsetComponentsSpokes.basic.disclaimer') }}
             </p>
-         </div>
+          </div>
+        </div>
+
+        <ul class="technical-spokes-list mt-8 space-y-8 w-full">
+          <li
+            v-for="material in materials"
+            :key="material.id"
+            class="rounded-2xl shadow-md p-5 md:p-6 transition-transform hover:-translate-y-1 duration-300 text-center"
+            :class="material.cardClass"
+          >
+            <div class="flex items-center justify-center gap-3 mb-4">
+              <span class="flex h-8 w-8 items-center justify-center rounded-lg text-lg font-bold" :class="material.numberClass">{{ material.number }}</span>
+              <strong class="text-xl tz-text-secondary">{{ t(material.titleKey) }}</strong>
+              <span v-if="material.badgeKey" class="tz-micro-label font-bold uppercase tracking-wider px-2 py-1 rounded-full" :class="material.badgeClass">{{ t(material.badgeKey) }}</span>
+            </div>
+            <div class="w-full tz-text-secondary text-sm leading-relaxed flex flex-col items-center">
+              <p class="mb-4 text-center">{{ t(material.bodyKey) }}</p>
+              <div v-if="material.marketTitleKey" class="mb-6 w-full text-center">
+                <strong class="text-xs uppercase tracking-wider tz-text-muted mb-2 block">{{ t(material.marketTitleKey) }}</strong>
+                <p class="text-sm tz-text-secondary max-w-2xl mx-auto">{{ t(material.marketBodyKey) }}</p>
+              </div>
+              <div class="grid gap-4 md:grid-cols-2 w-full">
+                <div class="bg-emerald-50 rounded-lg p-3 shadow-md w-full">
+                  <strong class="block text-xs uppercase tracking-wider text-emerald-600 mb-2 text-center">{{ t('guidesWheelsetComponentsSpokes.basic.pros') }}</strong>
+                  <ul class="space-y-1.5 text-sm list-none pl-0 my-0 flex flex-col items-center">
+                    <li v-for="key in material.prosKeys" :key="key" class="flex items-center justify-center gap-2 pl-0 before:content-none w-full">
+                      <span class="text-emerald-600 shrink-0 text-center w-4">✓</span><span class="text-center">{{ t(key) }}</span>
+                    </li>
+                  </ul>
+                </div>
+                <div class="bg-rose-500/5 rounded-lg p-3 shadow-md w-full">
+                  <strong class="block text-xs uppercase tracking-wider text-rose-400 mb-2 text-center">{{ t('guidesWheelsetComponentsSpokes.basic.cons') }}</strong>
+                  <ul class="space-y-1.5 text-sm list-none pl-0 my-0 flex flex-col items-center">
+                    <li v-for="key in material.consKeys" :key="key" class="flex items-center justify-center gap-2 pl-0 before:content-none w-full">
+                      <span class="text-rose-500 shrink-0 text-center w-4">×</span><span class="text-center">{{ t(key) }}</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+              <p class="mt-4 text-xs font-medium tz-text-muted uppercase tracking-widest text-center">{{ t('guidesWheelsetComponentsSpokes.basic.bestForLabel') }}</p>
+              <p class="mt-1 tz-text-primary text-center">{{ t(material.bestForKey) }}</p>
+            </div>
+          </li>
+        </ul>
+        <p class="sizecharts-section__intro mt-3">{{ t('guidesWheelsetComponentsSpokes.basic.conclusion') }}</p>
       </div>
-
-    <ul class="technical-spokes-list mt-8 space-y-8 w-full">
-        <!-- 1. Stainless Steel -->
-        <li class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6 transition-transform hover:-translate-y-1 duration-300 text-center">
-          <div class="flex items-center justify-center gap-3 mb-4">
-            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-500 text-lg font-bold">1</span>
-            <strong class="text-xl tz-text-secondary">Stainless Steel</strong>
-          </div>
-          
-          <div class="w-full max-w-none tz-text-secondary text-sm leading-relaxed flex flex-col items-center">
-            <p class="mb-4 text-center">
-              Currently the most mainstream and widely used spoke material on the market, offering the best balance of durability and cost.
-            </p>
-
-            <!-- Market Context -->
-            <div class="mb-6 w-full text-center">
-              <strong class="text-xs uppercase tracking-wider tz-text-muted mb-2 block">Market Landscape</strong>
-              <p class="text-sm tz-text-secondary max-w-2xl mx-auto">
-                As detailed in the Basic Concepts above, the stainless steel spoke market is defined by the "Big 2" (DT Swiss, Sapim) setting the quality benchmark, with Pillar and others offering competitive high-value alternatives. All these major brands primarily utilize high-grade stainless steel (e.g., 18/8 or proprietary blends) for their main product lines.
-              </p>
-            </div>
-
-            <div class="grid gap-4 md:grid-cols-2 w-full">
-              <div class="bg-emerald-50 rounded-lg p-3 shadow-md w-full">
-                <strong class="block text-xs uppercase tracking-wider text-emerald-600 mb-2 text-center">Pros</strong>
-                <ul class="space-y-1.5 text-sm list-none pl-0 my-0 flex flex-col items-center">
-                  <li class="flex items-center justify-center gap-2 pl-0 before:content-none w-full">
-                    <span class="text-emerald-600 shrink-0 text-center w-4">✓</span> <span class="text-center">High strength & durability</span>
-                  </li>
-                  <li class="flex items-center justify-center gap-2 pl-0 before:content-none w-full">
-                    <span class="text-emerald-600 shrink-0 text-center w-4">✓</span> <span class="text-center">Excellent corrosion resistance</span>
-                  </li>
-                  <li class="flex items-center justify-center gap-2 pl-0 before:content-none w-full">
-                    <span class="text-emerald-600 shrink-0 text-center w-4">✓</span> <span class="text-center">Cost-effective</span>
-                  </li>
-                   <li class="flex items-center justify-center gap-2 pl-0 before:content-none w-full">
-                    <span class="text-emerald-600 shrink-0 text-center w-4">✓</span> <span class="text-center">Good toughness (gradual deformation)</span>
-                  </li>
-                </ul>
-              </div>
-
-              <div class="bg-rose-500/5 rounded-lg p-3 shadow-md w-full">
-                <strong class="block text-xs uppercase tracking-wider text-rose-400 mb-2 text-center">Cons</strong>
-                 <ul class="space-y-1.5 text-sm list-none pl-0 my-0 flex flex-col items-center">
-                  <li class="flex items-center justify-center gap-2 pl-0 before:content-none w-full">
-                     <span class="text-rose-500 shrink-0 text-center w-4">×</span> <span class="text-center">Heavier than carbon/titanium</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            <p class="mt-4 text-xs font-medium tz-text-muted uppercase tracking-widest text-center">Best For</p>
-            <p class="mt-1 tz-text-primary text-center">Almost all bicycles, from commuters to pro MTB/Road bikes.</p>
-          </div>
-        </li>
-
-        <!-- 2. Carbon Fiber -->
-        <li class="mt-6 rounded-2xl tz-surface-card shadow-[0_8px_30px_rgba(20,32,43,0.1)] border-l-4 border-emerald-500 p-5 md:p-6 transition-transform hover:-translate-y-1 duration-300 text-center">
-           <div class="flex items-center justify-center gap-3 mb-4">
-            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 text-lg font-bold">2</span>
-            <strong class="text-xl tz-text-secondary">Carbon Fiber</strong>
-                    <span class="tz-micro-label font-bold uppercase tracking-wider bg-emerald-500 tz-text-primary px-2 py-1 rounded-full">Elite</span>
-          </div>
-
-           <div class="w-full max-w-none tz-text-secondary text-sm leading-relaxed flex flex-col items-center">
-            <p class="mb-4 text-center">
-              Found on high-end performance wheelsets. Offers extreme weight savings and rigidity.
-            </p>
-
-             <div class="grid gap-4 md:grid-cols-2 w-full">
-              <div class="bg-emerald-50 rounded-lg p-3 shadow-md w-full">
-                <strong class="block text-xs uppercase tracking-wider text-emerald-600 mb-2 text-center">Pros</strong>
-                <ul class="space-y-1.5 text-sm list-none pl-0 my-0 flex flex-col items-center">
-                  <li class="flex items-center justify-center gap-2 pl-0 before:content-none w-full">
-                    <span class="text-emerald-600 shrink-0 text-center w-4">✓</span> <span class="text-center">Ultra-lightweight (-100g+)</span>
-                  </li>
-                  <li class="flex items-center justify-center gap-2 pl-0 before:content-none w-full">
-                    <span class="text-emerald-600 shrink-0 text-center w-4">✓</span>  <span class="text-center">Excellent rigidity & acceleration</span>
-                  </li>
-                   <li class="flex items-center justify-center gap-2 pl-0 before:content-none w-full">
-                    <span class="text-emerald-600 shrink-0 text-center w-4">✓</span>  <span class="text-center">Vibration absorption</span>
-                  </li>
-                </ul>
-              </div>
-
-               <div class="bg-rose-500/5 rounded-lg p-3 shadow-md w-full">
-                <strong class="block text-xs uppercase tracking-wider text-rose-400 mb-2 text-center">Cons</strong>
-                 <ul class="space-y-1.5 text-sm list-none pl-0 my-0 flex flex-col items-center">
-                  <li class="flex items-center justify-center gap-2 pl-0 before:content-none w-full">
-                     <span class="text-rose-500 shrink-0 text-center w-4">×</span> <span class="text-center">Expensive</span>
-                  </li>
-                  <li class="flex items-center justify-center gap-2 pl-0 before:content-none w-full">
-                     <span class="text-rose-500 shrink-0 text-center w-4">×</span> <span class="text-center">Poor side impact resistance</span>
-                  </li>
-                   <li class="flex items-center justify-center gap-2 pl-0 before:content-none w-full">
-                     <span class="text-rose-500 shrink-0 text-center w-4">×</span> <span class="text-center">Harder maintenance</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-             <p class="mt-4 text-xs font-medium tz-text-muted uppercase tracking-widest text-center">Best For</p>
-            <p class="mt-1 tz-text-primary text-center">High-end road racing, time trials, and weight weenies.</p>
-           </div>
-        </li>
-
-        <!-- 3. Titanium Alloy (Compact) -->
-        <!-- 3. Titanium Alloy -->
-        <li class="mt-6 rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6 transition-transform hover:-translate-y-1 duration-300 opacity-90 text-center">
-           <div class="flex items-center justify-center gap-3 mb-4">
-            <span class="flex h-8 w-8 items-center justify-center rounded-lg tz-surface-panel tz-text-secondary text-lg font-bold">3</span>
-            <strong class="text-xl tz-text-primary">Titanium Alloy</strong>
-                <span class="tz-micro-label border tz-border-subtle tz-text-muted px-2 py-0.5 rounded">Rare</span>
-          </div>
-
-           <div class="w-full max-w-none tz-text-secondary text-sm leading-relaxed flex flex-col items-center">
-             <p class="mb-4 text-center">
-               Middle ground between steel and carbon. High strength-to-weight ratio and no rust.
-             </p>
-
-            <div class="grid gap-4 md:grid-cols-2 w-full">
-              <!-- Pros -->
-              <div class="bg-emerald-50 rounded-lg p-3 shadow-md w-full">
-                <strong class="block text-xs uppercase tracking-wider text-emerald-600 mb-2 text-center">Pros</strong>
-                <ul class="space-y-1.5 text-sm list-none pl-0 my-0 flex flex-col items-center">
-                  <li class="flex items-center justify-center gap-2 pl-0 before:content-none w-full">
-                    <span class="text-emerald-600 shrink-0 text-center w-4">✓</span> <span class="text-center">Lightweight</span>
-                  </li>
-                  <li class="flex items-center justify-center gap-2 pl-0 before:content-none w-full">
-                    <span class="text-emerald-600 shrink-0 text-center w-4">✓</span> <span class="text-center">Smooth Ride Quality</span>
-                  </li>
-                   <li class="flex items-center justify-center gap-2 pl-0 before:content-none w-full">
-                    <span class="text-emerald-600 shrink-0 text-center w-4">✓</span> <span class="text-center">No Rust (Corrosion Free)</span>
-                  </li>
-                </ul>
-              </div>
-
-              <!-- Cons -->
-              <div class="bg-rose-500/5 rounded-lg p-3 shadow-md w-full">
-                <strong class="block text-xs uppercase tracking-wider text-rose-400 mb-2 text-center">Cons</strong>
-                 <ul class="space-y-1.5 text-sm list-none pl-0 my-0 flex flex-col items-center">
-                  <li class="flex items-center justify-center gap-2 pl-0 before:content-none w-full">
-                     <span class="text-rose-500 shrink-0 text-center w-4">×</span> <span class="text-center">Very Expensive</span>
-                  </li>
-                   <li class="flex items-center justify-center gap-2 pl-0 before:content-none w-full">
-                     <span class="text-rose-500 shrink-0 text-center w-4">×</span> <span class="text-center">Limited Availability</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            <p class="mt-4 text-xs font-medium tz-text-muted uppercase tracking-widest text-center">Best For</p>
-            <p class="mt-1 tz-text-primary text-center">Custom builds, riders valuing comfort & aesthetics.</p>
-          </div>
-        </li>
-
-         <!-- 4. Aluminum Alloy -->
-        <li class="mt-4 rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6 transition-transform hover:-translate-y-1 duration-300 opacity-90 text-center">
-           <div class="flex items-center justify-center gap-3 mb-4">
-            <span class="flex h-8 w-8 items-center justify-center rounded-lg tz-surface-panel tz-text-secondary text-lg font-bold">4</span>
-            <strong class="text-xl tz-text-primary">Aluminum Alloy</strong>
-                <span class="tz-micro-label border tz-border-subtle tz-text-muted px-2 py-0.5 rounded">Rare</span>
-          </div>
-
-           <div class="w-full max-w-none tz-text-secondary text-sm leading-relaxed flex flex-col items-center">
-             <p class="mb-4 text-center">
-               Used by specific manufacturers (e.g. Campagnolo). Very light but can be problematic.
-             </p>
-
-             <div class="grid gap-4 md:grid-cols-2 w-full">
-              <!-- Pros -->
-              <div class="bg-emerald-50 rounded-lg p-3 shadow-md w-full">
-                <strong class="block text-xs uppercase tracking-wider text-emerald-600 mb-2 text-center">Pros</strong>
-                <ul class="space-y-1.5 text-sm list-none pl-0 my-0 flex flex-col items-center">
-                  <li class="flex items-center justify-center gap-2 pl-0 before:content-none w-full">
-                    <span class="text-emerald-600 shrink-0 text-center w-4">✓</span> <span class="text-center">Very Light</span>
-                  </li>
-                  <li class="flex items-center justify-center gap-2 pl-0 before:content-none w-full">
-                    <span class="text-emerald-600 shrink-0 text-center w-4">✓</span> <span class="text-center">Stiff</span>
-                  </li>
-                </ul>
-              </div>
-
-              <!-- Cons -->
-              <div class="bg-rose-500/5 rounded-lg p-3 shadow-md w-full">
-                <strong class="block text-xs uppercase tracking-wider text-rose-400 mb-2 text-center">Cons</strong>
-                 <ul class="space-y-1.5 text-sm list-none pl-0 my-0 flex flex-col items-center">
-                   <li class="flex items-center justify-center gap-2 pl-0 before:content-none w-full">
-                     <span class="text-rose-500 shrink-0 text-center w-4">×</span> <span class="text-center">Fatigue Prone</span>
-                  </li>
-                  <li class="flex items-center justify-center gap-2 pl-0 before:content-none w-full">
-                     <span class="text-rose-500 shrink-0 text-center w-4">×</span> <span class="text-center">Corrosion Issues</span>
-                  </li>
-                   <li class="flex items-center justify-center gap-2 pl-0 before:content-none w-full">
-                     <span class="text-rose-500 shrink-0 text-center w-4">×</span> <span class="text-center">Proprietary (Hard to Replace)</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-             <p class="mt-4 text-xs font-medium tz-text-muted uppercase tracking-widest text-center">Best For</p>
-            <p class="mt-1 tz-text-primary text-center">Specific factory racing wheelsets.</p>
-          </div>
-        </li>
-      </ul>
-      <p class="sizecharts-section__intro mt-3">
-        Which material you choose ultimately depends on your budget, riding style and
-        specific performance needs such as weight, stiffness and comfort.
-      </p>
-    </div>
     </div>
 
-    <!-- Tab: Choose spoke -->
-    <div v-show="activeTab === 'choose-spoke'">
-       <div class="space-y-8">
-         <div class="bg-[var(--tz-card-surface)] rounded-2xl shadow-md border-t-4 border-emerald-500 p-6 text-center">
-            <h3 class="text-xl font-bold tz-text-secondary mb-2">Spoke Selection Matrix</h3>
-            <p class="tz-text-secondary text-sm max-w-2xl mx-auto">
-               Compare our supported spoke models to find the perfect match for your building goals—whether it's maximum durability, lightweight performance, or aerodynamic efficiency.
-            </p>
-         </div>
+    <div v-else>
+      <div class="space-y-8">
+        <div class="bg-[var(--tz-card-surface)] rounded-2xl shadow-md border-t-4 border-emerald-500 p-6 text-center">
+          <h3 class="text-xl font-bold tz-text-secondary mb-2">{{ t('guidesWheelsetComponentsSpokes.choose.title') }}</h3>
+          <p class="tz-text-secondary text-sm max-w-2xl mx-auto">{{ t('guidesWheelsetComponentsSpokes.choose.intro') }}</p>
+        </div>
 
-         <div class="overflow-x-auto rounded-lg shadow-md border tz-border-subtle">
-            <table class="w-full text-sm text-left tz-text-secondary">
-               <thead class="text-xs tz-text-primary uppercase tz-surface-panel">
-                  <tr>
-                     <th scope="col" class="px-6 py-4 font-bold">Brand / Model</th>
-                     <th scope="col" class="px-6 py-4 font-bold text-center">Type</th>
-                     <th scope="col" class="px-6 py-4 font-bold text-center">Weight</th>
-                     <th scope="col" class="px-6 py-4 font-bold text-center">Section (mm)</th>
-                     <th scope="col" class="px-6 py-4 font-bold">Details</th>
-                  </tr>
-               </thead>
-               <tbody class="divide-y divide-slate-200">
-                  
-                  <!-- SAPIM Models -->
-                   <!-- 1. Leader -->
-                  <tr class="bg-[var(--tz-card-surface)] hover:tz-surface-panel transition-colors">
-                     <td class="px-6 py-4">
-                        <strong class="block tz-text-primary text-base">SAPIM Leader</strong>
-                     </td>
-                     <td class="px-6 py-4 text-center">
-                        <span class="inline-flex px-2 py-1 rounded tz-surface-panel tz-text-secondary text-xs font-bold border tz-border-subtle">Straight</span>
-                     </td>
-                     <td class="px-6 py-4 text-center font-mono tz-text-primary">6.8g</td>
-                     <td class="px-6 py-4 text-center font-mono text-xs">2.0</td>
-                     <td class="px-6 py-4 text-xs leading-relaxed min-w-[200px]">
-                        <strong>Stainless (18/8)</strong>. Strength: 1080-1180 N/mm². Durable straight gauge choice.
-                     </td>
-                  </tr>
+        <div class="overflow-x-auto rounded-lg shadow-md border tz-border-subtle">
+          <table class="w-full text-sm text-left tz-text-secondary">
+            <thead class="text-xs tz-text-primary uppercase tz-surface-panel">
+              <tr>
+                <th v-for="key in spokeHeaderKeys" :key="key" scope="col" class="px-6 py-4 font-bold">{{ t(key) }}</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200">
+              <tr
+                v-for="row in spokeRows"
+                :key="row.nameKey"
+                class="bg-[var(--tz-card-surface)] hover:tz-surface-panel transition-colors"
+                :class="{ 'border-t-4 tz-border-subtle': row.separator, 'tz-surface-card relative overflow-hidden group border-t border-emerald-200': row.carbon }"
+              >
+                <td class="px-6 py-4 relative z-10">
+                  <div v-if="row.carbon" class="flex items-center gap-3">
+                    <div class="w-1 h-8 rounded-full bg-emerald-500"></div>
+                    <strong class="flex items-center gap-2 text-emerald-600 text-base uppercase tracking-wide">{{ t(row.nameKey) }}</strong>
+                  </div>
+                  <div v-else class="flex items-center gap-2">
+                    <strong class="block tz-text-primary text-base">{{ t(row.nameKey) }}</strong>
+                    <span v-if="row.top" class="tz-micro-label bg-amber-500 text-slate-900 px-1.5 py-0.5 rounded font-bold">{{ t('guidesWheelsetComponentsSpokes.choose.top') }}</span>
+                  </div>
+                </td>
+                <td class="px-6 py-4 text-center relative z-10">
+                  <span class="inline-flex px-2 py-1 rounded text-xs font-bold border" :class="row.typeClass">{{ t(row.typeKey) }}</span>
+                </td>
+                <td class="px-6 py-4 text-center font-mono relative z-10" :class="row.comingSoon ? 'tz-text-muted italic' : 'tz-text-primary'">{{ t(row.weightKey) }}</td>
+                <td class="px-6 py-4 text-center font-mono text-xs relative z-10" :class="{ 'tz-text-muted italic': row.comingSoon }">{{ t(row.sectionKey) }}</td>
+                <td class="px-6 py-4 text-xs leading-relaxed min-w-[200px] relative z-10" :class="{ 'tz-text-muted italic': row.comingSoon && !row.carbon, 'text-emerald-200/80 italic': row.carbon }">{{ t(row.detailsKey) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
-                  <!-- 2. Race -->
-                  <tr class="bg-[var(--tz-card-surface)] hover:tz-surface-panel transition-colors">
-                     <td class="px-6 py-4">
-                        <strong class="block tz-text-primary text-base">SAPIM Race</strong>
-                     </td>
-                     <td class="px-6 py-4 text-center">
-                        <span class="inline-flex px-2 py-1 rounded bg-emerald-50 text-emerald-600 text-xs font-bold border border-emerald-200">Butted</span>
-                     </td>
-                     <td class="px-6 py-4 text-center font-mono tz-text-primary">5.7g</td>
-                     <td class="px-6 py-4 text-center font-mono text-xs">2.0 - 1.8 - 2.0</td>
-                     <td class="px-6 py-4 text-xs leading-relaxed min-w-[200px]">
-                        <strong>Strength: 1300 N/mm²</strong>. Evolution of classic Competition. Good fatigue adaptability.
-                     </td>
-                  </tr>
-
-                   <!-- 3. D-Light -->
-                  <tr class="bg-[var(--tz-card-surface)] hover:tz-surface-panel transition-colors">
-                     <td class="px-6 py-4">
-                        <strong class="block tz-text-primary text-base">SAPIM D-Light</strong>
-                     </td>
-                     <td class="px-6 py-4 text-center">
-                        <span class="inline-flex px-2 py-1 rounded bg-emerald-50 text-emerald-600 text-xs font-bold border border-emerald-200">Butted</span>
-                     </td>
-                     <td class="px-6 py-4 text-center font-mono tz-text-primary">4.8g</td>
-                     <td class="px-6 py-4 text-center font-mono text-xs">2.0 - 1.65 - 2.0</td>
-                     <td class="px-6 py-4 text-xs leading-relaxed min-w-[200px]">
-                         <strong>Strength: 1370 N/mm²</strong>. Designed for top quality MTB/Disc wheels. Max strength, min weight.
-                     </td>
-                  </tr>
-
-                   <!-- 4. CX-Sprint -->
-                  <tr class="bg-[var(--tz-card-surface)] hover:tz-surface-panel transition-colors">
-                     <td class="px-6 py-4">
-                        <strong class="block tz-text-primary text-base">SAPIM CX-Sprint</strong>
-                     </td>
-                     <td class="px-6 py-4 text-center">
-                        <span class="inline-flex px-2 py-1 rounded bg-emerald-50 text-emerald-600 text-xs font-bold border border-emerald-200">Aero</span>
-                     </td>
-                     <td class="px-6 py-4 text-center font-mono tz-text-primary">5.2g</td>
-                     <td class="px-6 py-4 text-center font-mono text-xs">2.25 x 1.25</td>
-                     <td class="px-6 py-4 text-xs leading-relaxed min-w-[200px]">
-                        <strong>Strength: 1430 N/mm²</strong>. Aero bladed. High stiffness for drive-side applications.
-                     </td>
-                  </tr>
-
-                   <!-- 5. CX-Ray -->
-                  <tr class="bg-[var(--tz-card-surface)] hover:tz-surface-panel transition-colors">
-                     <td class="px-6 py-4">
-                        <div class="flex items-center gap-2">
-                            <strong class="block tz-text-primary text-base">SAPIM CX-Ray</strong>
-                <span class="tz-micro-label bg-amber-500 text-slate-900 px-1.5 py-0.5 rounded font-bold">TOP</span>
-                        </div>
-                     </td>
-                     <td class="px-6 py-4 text-center">
-                        <span class="inline-flex px-2 py-1 rounded bg-emerald-50 text-emerald-600 text-xs font-bold border border-emerald-200">Aero</span>
-                     </td>
-                     <td class="px-6 py-4 text-center font-mono text-emerald-600 font-bold">4.4g</td>
-                     <td class="px-6 py-4 text-center font-mono text-xs">0.9 x 2.2</td>
-                     <td class="px-6 py-4 text-xs leading-relaxed min-w-[200px]">
-                        <strong>Strength: 1600 N/mm²</strong>. The gold standard. Light as titanium, strong as steel. Highest fatigue life.
-                     </td>
-                  </tr>
-
-                   <!-- 6. Super-CX -->
-                  <tr class="bg-[var(--tz-card-surface)] hover:tz-surface-panel transition-colors opacity-75">
-                     <td class="px-6 py-4">
-                        <strong class="block tz-text-primary text-base">SAPIM Super-CX</strong>
-                     </td>
-                     <td class="px-6 py-4 text-center">
-                        <span class="inline-flex px-2 py-1 rounded bg-emerald-50 text-emerald-600 text-xs font-bold border border-emerald-200">Aero</span>
-                     </td>
-                     <td class="px-6 py-4 text-center font-mono text-emerald-600 font-bold">3.6g</td>
-                     <td class="px-6 py-4 text-center font-mono text-xs">0.9 x 2.0</td>
-                     <td class="px-6 py-4 text-xs leading-relaxed min-w-[200px]">
-                         <strong>Strength: 1430 N/mm²</strong>. Lightest stainless spoke ever. Extra light wheels.
-                     </td>
-                  </tr>
-
-                  <!-- DT Swiss Comp Race -->
-                  <tr class="bg-[var(--tz-card-surface)] hover:tz-surface-panel transition-colors border-t-4 tz-border-subtle">
-                     <td class="px-6 py-4">
-                        <strong class="block tz-text-primary text-base">DT Swiss Comp Race</strong>
-                     </td>
-                     <td class="px-6 py-4 text-center">
-                        <span class="inline-flex px-2 py-1 rounded bg-emerald-50 text-emerald-600 text-xs font-bold border border-emerald-200">Butted</span>
-                     </td>
-                     <td class="px-6 py-4 text-center font-mono tz-text-primary">5.7g</td>
-                     <td class="px-6 py-4 text-center font-mono text-xs">2.0 - 1.6 - 2.0</td>
-                     <td class="px-6 py-4 text-xs italic tz-text-muted">
-                        Coming Soon
-                     </td>
-                  </tr>
-
-                  <!-- YT Aero -->
-                  <tr class="bg-[var(--tz-card-surface)] hover:tz-surface-panel transition-colors">
-                     <td class="px-6 py-4">
-                        <strong class="block tz-text-primary text-base">YT Aero</strong>
-                     </td>
-                     <td class="px-6 py-4 text-center">
-                        <span class="inline-flex px-2 py-1 rounded bg-amber-500/10 text-amber-400 text-xs font-bold border border-amber-500/20">Aero</span>
-                     </td>
-                     <td class="px-6 py-4 text-center tz-text-muted italic">Coming Soon</td>
-                     <td class="px-6 py-4 text-center tz-text-muted italic">Coming Soon</td>
-                     <td class="px-6 py-4 text-xs italic tz-text-muted">
-                        Coming Soon
-                     </td>
-                  </tr>
-
-                  <!-- Carbon spoke -->
-                  <tr class="tz-surface-card hover:tz-surface-panel transition-colors relative overflow-hidden group border-t border-emerald-200">
-                     <td class="px-6 py-4 relative z-10">
-                        <div class="flex items-center gap-3">
-        <div class="w-1 h-8 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(5,150,105,0.5)]"></div>
-                           <div>
-                              <strong class="flex items-center gap-2 text-emerald-600 text-base uppercase tracking-wide">
-                                  Carbon Spoke
-                              </strong>
-                           </div>
-                        </div>
-                     </td>
-                     <td class="px-6 py-4 text-center relative z-10">
-                        <span class="inline-flex px-2 py-1 rounded bg-emerald-500 tz-text-primary text-xs font-bold shadow-lg shadow-emerald-500/30">Aero</span>
-                     </td>
-                     <td class="px-6 py-4 text-center text-emerald-700 font-mono font-bold relative z-10">Coming Soon</td>
-                     <td class="px-6 py-4 text-center font-mono text-xs text-emerald-700 relative z-10">Coming Soon</td>
-                     <td class="px-6 py-4 text-xs leading-relaxed max-w-xs text-emerald-200/80 relative z-10 italic">
-                        Proprietary carbon manufacturing process. Provides 3x specificity stiffness of steel.
-                     </td>
-                     <!-- Shine effect -->
-                     <td class="absolute inset-0 bg-emerald-50 group-hover:bg-emerald-50 transition-colors pointer-events-none"></td>
-                  </tr>
-               </tbody>
-            </table>
-         </div>
-
-         <!-- Additional Info Cards -->
-         <div class="grid md:grid-cols-2 gap-4">
-             <div class="tz-surface-panel border tz-border-subtle p-4 rounded-xl flex gap-4 items-start">
-                <span class="tz-surface-panel p-2 rounded-lg tz-text-secondary shrink-0">
-                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
-                </span>
-                <div>
-                   <h5 class="tz-text-primary font-bold text-sm mb-1">Weight Calculation</h5>
-                   <p class="text-xs tz-text-secondary">Weights listed are approximations for typical 64pcs (2 wheels, 32H) lengths (260mm-270mm).</p>
-                </div>
-             </div>
-             <div class="bg-emerald-50 border border-emerald-200 p-4 rounded-xl flex gap-4 items-start">
-                 <span class="bg-emerald-100 p-2 rounded-lg text-emerald-600 shrink-0">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
-                 </span>
-                <div>
-                   <h5 class="text-emerald-700 font-bold text-sm mb-1">Custom Requests</h5>
-                   <p class="text-xs text-emerald-600/70">Need a specific spoke not listed here? We can source Sapim CX-Ray or other premium options upon request.</p>
-                </div>
-             </div>
-         </div>
-
-         <!-- Need Help Section -->
-         <div class="mt-8 rounded-2xl tz-surface-card p-6 shadow-md border tz-border-subtle">
-            <div class="flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
-               <div class="space-y-2">
-                  <h4 class="text-lg font-bold tz-text-secondary">Need Spoke Length Help?</h4>
-                  <p class="text-sm tz-text-secondary max-w-xl leading-relaxed">
-                      If you are looking to purchase individual replacement spokes or rebuild a previous wheelset, you may require assistance with spoke length calculations.
-                  </p>
-               </div>
-               <div class="flex flex-col sm:flex-row gap-3 shrink-0">
-                  <button
-                     type="button"
-                     class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-[var(--tz-action-primary)] hover:bg-[var(--tz-action-primary-hover)] text-white text-sm font-bold shadow-lg shadow-slate-900/20 transition-all group"
-                     @click="goToSpokeCalculator"
-                  >
-                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="group-hover:scale-110 transition-transform"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line><line x1="8" y1="18" x2="8.01" y2="18"></line><line x1="16" y1="18" x2="16.01" y2="18"></line><line x1="12" y1="14" x2="12.01" y2="14"></line><line x1="8" y1="14" x2="8.01" y2="14"></line><line x1="16" y1="14" x2="16.01" y2="14"></line><line x1="12" y1="10" x2="12.01" y2="10"></line><line x1="8" y1="10" x2="8.01" y2="10"></line><line x1="16" y1="10" x2="16.01" y2="10"></line></svg>
-                     Spoke Calculator
-                  </button>
-
-                  <button
-                     type="button"
-                     class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-emerald-500 hover:bg-emerald-400 tz-text-primary text-sm font-bold shadow-lg shadow-emerald-500/20 transition-all group"
-                     @click="openSupportChat"
-                  >
-                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="group-hover:scale-110 transition-transform"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
-                     Live Chat
-                  </button>
-
-                </div>
+        <div class="grid md:grid-cols-2 gap-4">
+          <div class="tz-surface-panel border tz-border-subtle p-4 rounded-xl flex gap-4 items-start">
+            <span class="tz-surface-panel p-2 rounded-lg tz-text-secondary shrink-0" aria-hidden="true">→</span>
+            <div>
+              <h5 class="tz-text-primary font-bold text-sm mb-1">{{ t('guidesWheelsetComponentsSpokes.choose.weightTitle') }}</h5>
+              <p class="text-xs tz-text-secondary">{{ t('guidesWheelsetComponentsSpokes.choose.weightBody') }}</p>
             </div>
-         </div>
-       </div>
+          </div>
+          <div class="bg-emerald-50 border border-emerald-200 p-4 rounded-xl flex gap-4 items-start">
+            <span class="bg-emerald-100 p-2 rounded-lg text-emerald-600 shrink-0" aria-hidden="true">↗</span>
+            <div>
+              <h5 class="text-emerald-700 font-bold text-sm mb-1">{{ t('guidesWheelsetComponentsSpokes.choose.customTitle') }}</h5>
+              <p class="text-xs text-emerald-600/70">{{ t('guidesWheelsetComponentsSpokes.choose.customBody') }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-8 rounded-2xl tz-surface-card p-6 shadow-md border tz-border-subtle">
+          <div class="flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
+            <div class="space-y-2">
+              <h4 class="text-lg font-bold tz-text-secondary">{{ t('guidesWheelsetComponentsSpokes.choose.helpTitle') }}</h4>
+              <p class="text-sm tz-text-secondary max-w-xl leading-relaxed">{{ t('guidesWheelsetComponentsSpokes.choose.helpBody') }}</p>
+            </div>
+            <div class="flex flex-col sm:flex-row gap-3 shrink-0">
+              <button type="button" class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-[var(--tz-action-primary)] hover:bg-[var(--tz-action-primary-hover)] text-white text-sm font-bold shadow-lg shadow-slate-900/20 transition-all" @click="goToSpokeCalculator">
+                {{ t('guidesWheelsetComponentsSpokes.choose.calculator') }}
+              </button>
+              <button type="button" class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-emerald-500 hover:bg-emerald-400 tz-text-primary text-sm font-bold shadow-lg shadow-emerald-500/20 transition-all" @click="openSupportChat">
+                {{ t('guidesWheelsetComponentsSpokes.choose.liveChat') }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useLocalePath, useRouter } from '#imports'
+import { ref, watch } from 'vue'
+import { useI18n, useLocalePath, useRouter } from '#imports'
 import GuideImage from '~/components/GuideImage.vue'
 import { useChatWidget } from '~/composables/useChatWidget'
+import { usePageMessages } from '~/composables/usePageMessages'
+
+const { locale, t } = useI18n()
+const { loadPageMessages } = usePageMessages('guidesWheelsetComponentsSpokes')
+
+await loadPageMessages(locale.value)
+
+watch(locale, (nextLocale) => {
+  void loadPageMessages(nextLocale)
+})
 
 const router = useRouter()
 const localePath = useLocalePath()
 const { openChat } = useChatWidget()
 const activeTab = ref<'basic-concepts' | 'choose-spoke'>('basic-concepts')
 
+const brands = [
+  {
+    id: 'dt-swiss',
+    nameKey: 'guidesWheelsetComponentsSpokes.basic.brands.dtSwiss.name',
+    bodyKey: 'guidesWheelsetComponentsSpokes.basic.brands.dtSwiss.body',
+    buttonKey: 'guidesWheelsetComponentsSpokes.basic.brands.dtSwiss.button',
+    nameClass: 'text-emerald-600',
+    buttonClass: 'border-emerald-300 text-emerald-600 hover:bg-emerald-50',
+  },
+  {
+    id: 'sapim',
+    nameKey: 'guidesWheelsetComponentsSpokes.basic.brands.sapim.name',
+    bodyKey: 'guidesWheelsetComponentsSpokes.basic.brands.sapim.body',
+    buttonKey: 'guidesWheelsetComponentsSpokes.basic.brands.sapim.button',
+    nameClass: 'text-emerald-600',
+    buttonClass: 'border-emerald-300 text-emerald-600 hover:bg-emerald-50',
+  },
+  {
+    id: 'pillar',
+    nameKey: 'guidesWheelsetComponentsSpokes.basic.brands.pillar.name',
+    bodyKey: 'guidesWheelsetComponentsSpokes.basic.brands.pillar.body',
+    buttonKey: 'guidesWheelsetComponentsSpokes.basic.brands.pillar.button',
+    nameClass: 'text-amber-400',
+    buttonClass: 'border-amber-500/30 text-amber-400 hover:bg-amber-500/10',
+  },
+  {
+    id: 'mac',
+    nameKey: 'guidesWheelsetComponentsSpokes.basic.brands.mac.name',
+    bodyKey: 'guidesWheelsetComponentsSpokes.basic.brands.mac.body',
+    buttonKey: 'guidesWheelsetComponentsSpokes.basic.brands.mac.button',
+    nameClass: 'tz-text-primary',
+    buttonClass: 'border-slate-500/30 tz-text-secondary hover:bg-slate-500/10',
+  },
+  {
+    id: 'yt',
+    nameKey: 'guidesWheelsetComponentsSpokes.basic.brands.yt.name',
+    bodyKey: 'guidesWheelsetComponentsSpokes.basic.brands.yt.body',
+    buttonKey: 'guidesWheelsetComponentsSpokes.basic.brands.yt.button',
+    nameClass: 'tz-text-primary',
+    buttonClass: 'border-slate-500/30 tz-text-secondary hover:bg-slate-500/10',
+  },
+  {
+    id: 'carbon',
+    nameKey: 'guidesWheelsetComponentsSpokes.basic.brands.carbon.name',
+    bodyKey: 'guidesWheelsetComponentsSpokes.basic.brands.carbon.body',
+    buttonKey: 'guidesWheelsetComponentsSpokes.basic.brands.carbon.button',
+    nameClass: 'text-emerald-600',
+    buttonClass: 'border-emerald-300 text-emerald-600 hover:bg-emerald-50',
+  },
+]
+
+const spokeTypes = [
+  {
+    id: 'straight',
+    titleKey: 'guidesWheelsetComponentsSpokes.basic.types.straight.title',
+    specsKey: 'guidesWheelsetComponentsSpokes.basic.types.straight.specs',
+    featuresKey: 'guidesWheelsetComponentsSpokes.basic.types.straight.features',
+    examplesKey: 'guidesWheelsetComponentsSpokes.basic.types.straight.examples',
+    useKey: 'guidesWheelsetComponentsSpokes.basic.types.straight.use',
+    dotClass: 'bg-slate-500',
+    labels: { specs: 'Specs', features: 'Features', examples: 'Examples', use: 'Use' },
+  },
+  {
+    id: 'butted',
+    titleKey: 'guidesWheelsetComponentsSpokes.basic.types.butted.title',
+    specsKey: 'guidesWheelsetComponentsSpokes.basic.types.butted.specs',
+    featuresKey: 'guidesWheelsetComponentsSpokes.basic.types.butted.features',
+    examplesKey: 'guidesWheelsetComponentsSpokes.basic.types.butted.examples',
+    useKey: 'guidesWheelsetComponentsSpokes.basic.types.butted.use',
+    dotClass: 'bg-emerald-500',
+    labels: { specs: 'Specs', features: 'Features', examples: 'Examples', use: 'Use' },
+  },
+  {
+    id: 'aero',
+    titleKey: 'guidesWheelsetComponentsSpokes.basic.types.aero.title',
+    specsKey: 'guidesWheelsetComponentsSpokes.basic.types.aero.specs',
+    featuresKey: 'guidesWheelsetComponentsSpokes.basic.types.aero.features',
+    examplesKey: 'guidesWheelsetComponentsSpokes.basic.types.aero.examples',
+    useKey: 'guidesWheelsetComponentsSpokes.basic.types.aero.use',
+    dotClass: 'bg-emerald-500',
+    labels: { specs: 'Specs', features: 'Features', examples: 'Examples', use: 'Use' },
+  },
+]
+
+const interfaces = [
+  {
+    titleKey: 'guidesWheelsetComponentsSpokes.basic.interfaces.jBend.title',
+    bodyKey: 'guidesWheelsetComponentsSpokes.basic.interfaces.jBend.body',
+  },
+  {
+    titleKey: 'guidesWheelsetComponentsSpokes.basic.interfaces.straightPull.title',
+    bodyKey: 'guidesWheelsetComponentsSpokes.basic.interfaces.straightPull.body',
+  },
+  {
+    titleKey: 'guidesWheelsetComponentsSpokes.basic.interfaces.nipples.title',
+    bodyKey: 'guidesWheelsetComponentsSpokes.basic.interfaces.nipples.body',
+  },
+]
+
+const materialConfig = [
+  {
+    id: 'stainless',
+    number: 1,
+    titleKey: 'guidesWheelsetComponentsSpokes.basic.materials.stainless.title',
+    bodyKey: 'guidesWheelsetComponentsSpokes.basic.materials.stainless.body',
+    marketTitleKey: 'guidesWheelsetComponentsSpokes.basic.materials.stainless.marketTitle',
+    marketBodyKey: 'guidesWheelsetComponentsSpokes.basic.materials.stainless.marketBody',
+    prosKeys: [
+      'guidesWheelsetComponentsSpokes.basic.materials.stainless.pros.0',
+      'guidesWheelsetComponentsSpokes.basic.materials.stainless.pros.1',
+      'guidesWheelsetComponentsSpokes.basic.materials.stainless.pros.2',
+      'guidesWheelsetComponentsSpokes.basic.materials.stainless.pros.3',
+    ],
+    consKeys: ['guidesWheelsetComponentsSpokes.basic.materials.stainless.cons.0'],
+    bestForKey: 'guidesWheelsetComponentsSpokes.basic.materials.stainless.bestFor',
+    cardClass: 'bg-[var(--tz-card-surface)]',
+    numberClass: 'bg-amber-500/10 text-amber-500',
+  },
+  {
+    id: 'carbon',
+    number: 2,
+    titleKey: 'guidesWheelsetComponentsSpokes.basic.materials.carbon.title',
+    badgeKey: 'guidesWheelsetComponentsSpokes.basic.materials.carbon.badge',
+    bodyKey: 'guidesWheelsetComponentsSpokes.basic.materials.carbon.body',
+    prosKeys: [
+      'guidesWheelsetComponentsSpokes.basic.materials.carbon.pros.0',
+      'guidesWheelsetComponentsSpokes.basic.materials.carbon.pros.1',
+      'guidesWheelsetComponentsSpokes.basic.materials.carbon.pros.2',
+    ],
+    consKeys: [
+      'guidesWheelsetComponentsSpokes.basic.materials.carbon.cons.0',
+      'guidesWheelsetComponentsSpokes.basic.materials.carbon.cons.1',
+      'guidesWheelsetComponentsSpokes.basic.materials.carbon.cons.2',
+    ],
+    bestForKey: 'guidesWheelsetComponentsSpokes.basic.materials.carbon.bestFor',
+    cardClass: 'tz-surface-card border-l-4 border-emerald-500',
+    numberClass: 'bg-emerald-50 text-emerald-600',
+    badgeClass: 'bg-emerald-500 tz-text-primary',
+  },
+  {
+    id: 'titanium',
+    number: 3,
+    titleKey: 'guidesWheelsetComponentsSpokes.basic.materials.titanium.title',
+    badgeKey: 'guidesWheelsetComponentsSpokes.basic.materials.titanium.badge',
+    bodyKey: 'guidesWheelsetComponentsSpokes.basic.materials.titanium.body',
+    prosKeys: [
+      'guidesWheelsetComponentsSpokes.basic.materials.titanium.pros.0',
+      'guidesWheelsetComponentsSpokes.basic.materials.titanium.pros.1',
+      'guidesWheelsetComponentsSpokes.basic.materials.titanium.pros.2',
+    ],
+    consKeys: [
+      'guidesWheelsetComponentsSpokes.basic.materials.titanium.cons.0',
+      'guidesWheelsetComponentsSpokes.basic.materials.titanium.cons.1',
+    ],
+    bestForKey: 'guidesWheelsetComponentsSpokes.basic.materials.titanium.bestFor',
+    cardClass: 'bg-[var(--tz-card-surface)] opacity-90',
+    numberClass: 'tz-surface-panel tz-text-secondary',
+    badgeClass: 'border tz-border-subtle tz-text-muted',
+  },
+  {
+    id: 'aluminum',
+    number: 4,
+    titleKey: 'guidesWheelsetComponentsSpokes.basic.materials.aluminum.title',
+    badgeKey: 'guidesWheelsetComponentsSpokes.basic.materials.aluminum.badge',
+    bodyKey: 'guidesWheelsetComponentsSpokes.basic.materials.aluminum.body',
+    prosKeys: [
+      'guidesWheelsetComponentsSpokes.basic.materials.aluminum.pros.0',
+      'guidesWheelsetComponentsSpokes.basic.materials.aluminum.pros.1',
+    ],
+    consKeys: [
+      'guidesWheelsetComponentsSpokes.basic.materials.aluminum.cons.0',
+      'guidesWheelsetComponentsSpokes.basic.materials.aluminum.cons.1',
+      'guidesWheelsetComponentsSpokes.basic.materials.aluminum.cons.2',
+    ],
+    bestForKey: 'guidesWheelsetComponentsSpokes.basic.materials.aluminum.bestFor',
+    cardClass: 'bg-[var(--tz-card-surface)] opacity-90',
+    numberClass: 'tz-surface-panel tz-text-secondary',
+    badgeClass: 'border tz-border-subtle tz-text-muted',
+  },
+]
+
+const materials = materialConfig.map((material) => ({
+  ...material,
+  titleKey: material.titleKey,
+}))
+
+const spokeHeaderKeys = [
+  'guidesWheelsetComponentsSpokes.choose.headers.model',
+  'guidesWheelsetComponentsSpokes.choose.headers.type',
+  'guidesWheelsetComponentsSpokes.choose.headers.weight',
+  'guidesWheelsetComponentsSpokes.choose.headers.section',
+  'guidesWheelsetComponentsSpokes.choose.headers.details',
+]
+
+const spokeRows = [
+  {
+    nameKey: 'guidesWheelsetComponentsSpokes.choose.rows.0.name',
+    typeKey: 'guidesWheelsetComponentsSpokes.choose.type.straight',
+    weightKey: 'guidesWheelsetComponentsSpokes.choose.rows.0.weight',
+    sectionKey: 'guidesWheelsetComponentsSpokes.choose.rows.0.section',
+    detailsKey: 'guidesWheelsetComponentsSpokes.choose.rows.0.details',
+    typeClass: 'tz-surface-panel tz-text-secondary border tz-border-subtle',
+  },
+  {
+    nameKey: 'guidesWheelsetComponentsSpokes.choose.rows.1.name',
+    typeKey: 'guidesWheelsetComponentsSpokes.choose.type.butted',
+    weightKey: 'guidesWheelsetComponentsSpokes.choose.rows.1.weight',
+    sectionKey: 'guidesWheelsetComponentsSpokes.choose.rows.1.section',
+    detailsKey: 'guidesWheelsetComponentsSpokes.choose.rows.1.details',
+    typeClass: 'bg-emerald-50 text-emerald-600 border-emerald-200',
+  },
+  {
+    nameKey: 'guidesWheelsetComponentsSpokes.choose.rows.2.name',
+    typeKey: 'guidesWheelsetComponentsSpokes.choose.type.butted',
+    weightKey: 'guidesWheelsetComponentsSpokes.choose.rows.2.weight',
+    sectionKey: 'guidesWheelsetComponentsSpokes.choose.rows.2.section',
+    detailsKey: 'guidesWheelsetComponentsSpokes.choose.rows.2.details',
+    typeClass: 'bg-emerald-50 text-emerald-600 border-emerald-200',
+  },
+  {
+    nameKey: 'guidesWheelsetComponentsSpokes.choose.rows.3.name',
+    typeKey: 'guidesWheelsetComponentsSpokes.choose.type.aero',
+    weightKey: 'guidesWheelsetComponentsSpokes.choose.rows.3.weight',
+    sectionKey: 'guidesWheelsetComponentsSpokes.choose.rows.3.section',
+    detailsKey: 'guidesWheelsetComponentsSpokes.choose.rows.3.details',
+    typeClass: 'bg-emerald-50 text-emerald-600 border-emerald-200',
+  },
+  {
+    nameKey: 'guidesWheelsetComponentsSpokes.choose.rows.4.name',
+    typeKey: 'guidesWheelsetComponentsSpokes.choose.type.aero',
+    weightKey: 'guidesWheelsetComponentsSpokes.choose.rows.4.weight',
+    sectionKey: 'guidesWheelsetComponentsSpokes.choose.rows.4.section',
+    detailsKey: 'guidesWheelsetComponentsSpokes.choose.rows.4.details',
+    typeClass: 'bg-emerald-50 text-emerald-600 border-emerald-200',
+    top: true,
+  },
+  {
+    nameKey: 'guidesWheelsetComponentsSpokes.choose.rows.5.name',
+    typeKey: 'guidesWheelsetComponentsSpokes.choose.type.aero',
+    weightKey: 'guidesWheelsetComponentsSpokes.choose.rows.5.weight',
+    sectionKey: 'guidesWheelsetComponentsSpokes.choose.rows.5.section',
+    detailsKey: 'guidesWheelsetComponentsSpokes.choose.rows.5.details',
+    typeClass: 'bg-emerald-50 text-emerald-600 border-emerald-200',
+  },
+  {
+    nameKey: 'guidesWheelsetComponentsSpokes.choose.rows.6.name',
+    typeKey: 'guidesWheelsetComponentsSpokes.choose.type.butted',
+    weightKey: 'guidesWheelsetComponentsSpokes.choose.rows.6.weight',
+    sectionKey: 'guidesWheelsetComponentsSpokes.choose.rows.6.section',
+    detailsKey: 'guidesWheelsetComponentsSpokes.choose.rows.6.details',
+    typeClass: 'bg-emerald-50 text-emerald-600 border-emerald-200',
+    comingSoon: true,
+    separator: true,
+  },
+  {
+    nameKey: 'guidesWheelsetComponentsSpokes.choose.rows.7.name',
+    typeKey: 'guidesWheelsetComponentsSpokes.choose.type.aero',
+    weightKey: 'guidesWheelsetComponentsSpokes.choose.rows.7.weight',
+    sectionKey: 'guidesWheelsetComponentsSpokes.choose.rows.7.section',
+    detailsKey: 'guidesWheelsetComponentsSpokes.choose.rows.7.details',
+    typeClass: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+    comingSoon: true,
+  },
+  {
+    nameKey: 'guidesWheelsetComponentsSpokes.choose.rows.8.name',
+    typeKey: 'guidesWheelsetComponentsSpokes.choose.type.aero',
+    weightKey: 'guidesWheelsetComponentsSpokes.choose.rows.8.weight',
+    sectionKey: 'guidesWheelsetComponentsSpokes.choose.rows.8.section',
+    detailsKey: 'guidesWheelsetComponentsSpokes.choose.rows.8.details',
+    typeClass: 'bg-emerald-500 tz-text-primary border-emerald-500',
+    comingSoon: true,
+    carbon: true,
+  },
+]
+
 const goToSpokeCalculator = async () => {
-await router.push(localePath('/resources/spoke-calculator'))
+  await router.push(localePath('/resources/spoke-calculator'))
 }
 
 const openSupportChat = () => {

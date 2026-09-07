@@ -19,6 +19,24 @@
     "title": "Sign in before managing personal data",
     "description": "Points, wishlist, cart checkout and shipping address tools live here after login."
   },
+  "features": {
+    "points": {
+      "title": "Points",
+      "desc": "Membership level and points balance"
+    },
+    "wishlist": {
+      "title": "Wishlist",
+      "desc": "Saved products and quick add-to-cart"
+    },
+    "cart": {
+      "title": "Cart",
+      "desc": "Review products and checkout faster"
+    },
+    "addresses": {
+      "title": "Addresses",
+      "desc": "Prepare shipping details for checkout"
+    }
+  },
   "points": {
     "currentLevel": "Current level",
     "progress": "Progress",

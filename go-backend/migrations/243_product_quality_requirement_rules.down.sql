@@ -1,0 +1,6 @@
+DROP INDEX IF EXISTS uq_product_quality_requirement_variant;
+DROP INDEX IF EXISTS uq_product_quality_requirement_product_default;
+DROP INDEX IF EXISTS idx_product_quality_requirement_status;
+DROP INDEX IF EXISTS idx_product_quality_requirement_variant;
+DROP INDEX IF EXISTS idx_product_quality_requirement_product;
+DROP TABLE IF EXISTS product_quality_requirement_rules;

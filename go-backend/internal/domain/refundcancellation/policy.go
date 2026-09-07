@@ -48,7 +48,7 @@ func DefaultPolicy() Policy {
 			{
 				ID:    "eligibility",
 				Title: "Eligibility",
-				Body:  "We accept returns within 30 days of delivery for unused items in original packaging. Custom or personalized items are non-refundable unless defective.",
+				Body:  "For stocked, non-custom items, we accept return requests within 30 days of delivery when the item is unused and in original packaging. Made-to-order and custom-configured items follow the cancellation rules in Special Orders.",
 			},
 			{
 				ID:    "condition",
@@ -58,7 +58,12 @@ func DefaultPolicy() Policy {
 			{
 				ID:    "special-orders",
 				Title: "Special Orders",
-				Body:  "Non-stock or custom-configured products (special orders) are not eligible for return or refund, unless the issue is caused by our error.",
+				Body:  "Non-stock or custom-configured products (special orders) are made to order. Cancellation may be requested before production or material cutting starts; after production begins, cancellation may be unavailable. If a post-production cancellation is approved, a 15%-20% custom handling fee may be deducted for committed materials and labor.",
+			},
+			{
+				ID:    "high-value-signature",
+				Title: "High-Value Delivery",
+				Body:  "Orders totaling $750 USD or more require a direct signature at delivery. The signature requirement is part of our delivery and dispute-protection process.",
 			},
 			{
 				ID:    "process",
@@ -81,8 +86,8 @@ func DefaultPolicy() Policy {
 			},
 			{
 				ID:    "restocking-fee",
-				Title: "Restocking & Refurbishment Fee",
-				Body:  "A restocking and refurbishment fee may be charged at 20% of the original purchase value, with a minimum of USD $100.",
+				Title: "Restocking & Refurbishment",
+				Body:  "If an eligible return requires refurbishment or is missing original packaging or accessories, a fee of up to 20% of the original purchase value, with a minimum of USD $100, may be deducted after review.",
 			},
 			{
 				ID:    "other-costs",
@@ -97,7 +102,7 @@ func DefaultPolicy() Policy {
 		},
 		ContactLabel: "For refund, cancellation, or return questions, contact our support team through the contact page.",
 		ContactURL:   "/company/contact",
-		UpdatedAt:    time.Date(2024, time.December, 1, 0, 0, 0, 0, time.UTC).Format(time.RFC3339),
+		UpdatedAt:    time.Date(2026, time.September, 4, 0, 0, 0, 0, time.UTC).Format(time.RFC3339),
 	}
 }
 

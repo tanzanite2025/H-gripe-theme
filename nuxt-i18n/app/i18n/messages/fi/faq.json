@@ -2,10 +2,7 @@
   "title": "Usein kysytyt kysymykset",
   "subtitle": "Löydä vastaukset yleisiin kysymyksiin tuotteistamme ja palveluistamme",
   "ui": {
-    "categorizedSupport": "Luokiteltu tuki",
     "quickAnswers": "Nopeat vastaukset yleisiin kysymyksiin",
-    "categoriesAriaLabel": "FAQ-kategoriat",
-    "categoriesLabel": "FAQ-kategoriat",
     "all": "Kaikki",
     "viewAll": "Näytä kaikki FAQ:t",
     "emptySection": "Tälle osiolle ei ole FAQ-sisältöä.",
@@ -13,7 +10,6 @@
     "searchPlaceholder": "Hae FAQ:sta...",
     "viewMoreContent": "Näytä lisää sisältöä",
     "noResults": "Hakua \"{query}\" vastaavia FAQ-tuloksia ei löytynyt",
-    "allFaqsMetaTitle": "Kaikki FAQ:t",
     "loadingAnswers": "Ladataan vastauksia",
     "illustrationAlt": "FAQ-kuvitus",
     "selectQuestion": "Select a question to view the answer."

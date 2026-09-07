@@ -190,7 +190,13 @@ export const visualShowcaseAdministrationSavePayloadFromFormRow = (
 export const visualShowcaseHomeHeroAdministrationSavePayloadFromFormRow = (
   row: VisualShowcaseAdministrationItemFormState,
   index: number,
-): VisualShowcaseAdministrationItemSavePayload => visualShowcaseAdministrationSavePayloadFromFormRow(row, index)
+): VisualShowcaseAdministrationItemSavePayload => ({
+  ...visualShowcaseAdministrationSavePayloadFromFormRow(row, index),
+  // Hero cards use their fixed editor position as the persisted order.
+  desktop_order: index + 1,
+  target_url: '',
+  target_label: '',
+})
 
 export const visualShowcaseHomeMainProductCategoriesAdministrationSavePayloadFromFormRow = (
   row: VisualShowcaseAdministrationItemFormState,

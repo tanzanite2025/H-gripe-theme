@@ -1,0 +1,45 @@
+{
+  "title": "Warranty Check",
+  "subtitle": "Check your product warranty status",
+  "loginRequired": "Please log in to check your product warranty.",
+  "loginButton": "Log In",
+  "inputLabel": "Enter your order number:",
+  "inputPlaceholder": "e.g. TZ202608230001",
+  "checkButton": "Check",
+  "helpText": "After shipment, use your order number to check the shipped items and remaining warranty.",
+  "months": "months",
+  "days": "days",
+  "result": {
+    "valid": "Warranty Valid",
+    "expired": "Warranty Expired",
+    "notFound": "Shipment Not Found"
+  },
+  "fields": {
+    "orderNumber": "Order Number",
+    "productType": "Product Type",
+    "productName": "Product Name",
+    "shipDate": "Ship Date",
+    "warrantyPeriod": "Warranty Period",
+    "warrantyUntil": "Warranty Until",
+    "remaining": "Remaining",
+    "expiredAgo": "Expired {days} days ago"
+  },
+  "records": {
+    "title": "Service Records",
+    "noRecords": "No service records"
+  },
+  "actions": {
+    "checkAnother": "Check Another",
+    "contactSupport": "Contact Support"
+  },
+  "errors": {
+    "notFoundMessage": "We couldn't find a shipment record for order number: {code}",
+    "checkTips": {
+      "0": "Check that the order number was entered exactly as shown on your order.",
+      "1": "Contact support if the shipped order still cannot be found."
+    },
+    "errorContact": "If you believe this is an error, please contact us."
+  },
+  "cardDesc": "Enter your order number to check shipped items, warranty time, and service history.",
+  "checkNow": "Check Now"
+}

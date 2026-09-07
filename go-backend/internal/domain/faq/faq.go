@@ -15,7 +15,6 @@ type FAQ struct {
 	AnswerImageWidth  int            `gorm:"not null;default:0" json:"answer_image_width"`
 	AnswerImageHeight int            `gorm:"not null;default:0" json:"answer_image_height"`
 	PageID            string         `gorm:"index" json:"page_id"`
-	Category          string         `gorm:"index" json:"category"`
 	Locale            string         `gorm:"default:'en';index" json:"locale"`
 	ParentID          *uint          `gorm:"index" json:"parent_id"` // 翻译关联
 	Order             int            `gorm:"default:0" json:"order"`

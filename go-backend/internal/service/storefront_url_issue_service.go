@@ -71,11 +71,18 @@ func (s *StorefrontURLIssueService) ListEvents(
 }
 
 // ReconcileCatalog projects current route observations into durable issue work
-// items. It only opens or reopens detected issues; it never auto-closes work
-// that has not been explicitly resolved and verified by an operator.
+// items. A new catalog snapshot invalidates runtime observations that no
+// longer have a current check projection; detected current issues are then
+// opened or reopened as durable work items.
 func (s *StorefrontURLIssueService) ReconcileCatalog(ctx context.Context) error {
 	if s == nil || s.catalog == nil {
 		return errors.New("storefront route catalog is unavailable")
+	}
+	if s.issues == nil {
+		return errors.New("storefront URL issue repository is unavailable")
+	}
+	if err := s.issues.InvalidateRuntimeIssuesForCatalogSync(time.Now().UTC()); err != nil {
+		return fmt.Errorf("invalidate stale runtime observations: %w", err)
 	}
 	ids, err := s.catalog.ListIssueCandidateIDs()
 	if err != nil {
@@ -418,6 +425,15 @@ type storefrontURLIssueDefinition struct {
 func deriveStorefrontURLIssueDefinitions(
 	entry seodomain.StorefrontRouteCatalogEntry,
 ) []storefrontURLIssueDefinition {
+	// A stale snapshot is no longer a runtime observation. Its previous check
+	// result must not be carried forward as a new 404 or server error.
+	if entry.EntryStatus == seodomain.RouteEntryStatusStale {
+		return []storefrontURLIssueDefinition{{
+			issueType: urlmanagementdomain.URLIssueTypeStaleRoute,
+			severity:  urlmanagementdomain.URLIssueSeverityMedium,
+		}}
+	}
+
 	definitions := make([]storefrontURLIssueDefinition, 0, 2)
 	switch entry.EntryStatus {
 	case seodomain.RouteEntryStatusDuplicate:

@@ -13,7 +13,6 @@ func TestRemoveLegacyProductFAQRouteKeepsOnlyFormalProductLookup(t *testing.T) {
 		"page_id = 'products-product-detail'",
 		"page_id = 'shop-product-detail'",
 		"route_path = '/products/:slug'",
-		"DELETE FROM faq_categories",
 		"DELETE FROM faq_pages",
 	} {
 		if !strings.Contains(strings.ToLower(upSQL), strings.ToLower(fragment)) {

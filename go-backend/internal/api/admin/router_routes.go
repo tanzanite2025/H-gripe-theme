@@ -70,6 +70,11 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 	contentLinkPreflightHandler := NewContentLinkPreflightHandler(services.PreflightContentLinks)
 	orderHandler := NewOrderHandler(orderService)
 	orderHandler.ConfigureAuditService(services.Audit)
+	orderEvidenceHandler := NewOrderEvidenceHandler(services.OrderEvidenceAdmin)
+	orderEvidenceHandler.ConfigureAttachmentService(services.OrderEvidenceAttachment)
+	orderEvidenceHandler.ConfigureExportService(services.OrderEvidenceExport)
+	orderEvidenceHandler.ConfigureAuditService(services.Audit)
+	productQualityRequirementHandler := NewProductQualityRequirementHandler(services.ProductQualityRequirement)
 	afterSalesHandler := NewAfterSalesHandler(afterSalesService)
 	paymentHandler := NewPaymentHandler(paymentService, services.AdminSettings, services.PayPalDisputeInvoiceSellerProfile)
 	paymentHandler.ConfigurePublicBaseURL(cfg.Server.BaseURL)
@@ -90,6 +95,7 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 	paymentRefundRecommendationHandler := NewPaymentRefundRecommendationHandler(services.PaymentRefundReview)
 	paymentRefundRecommendationHandler.ConfigureAuditService(services.Audit)
 	contentHandler := NewContentHandler(postService)
+	blogCategoryHandler := NewBlogCategoryHandler(services.BlogCategory)
 	faqHandler := NewFAQHandler(services.FAQ)
 	galleryHandler := NewGalleryHandler(services.Gallery)
 	subscriptionHandler := NewSubscriptionHandler(services.Subscription)
@@ -248,6 +254,8 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 		paymentProtectionHandler,
 		paymentRefundRecommendationHandler,
 	)
+	registerOrderEvidenceRoutes(authenticated, orderEvidenceHandler)
+	registerProductQualityRequirementRoutes(authenticated, productQualityRequirementHandler)
 
 	registerContentRoutes(
 		authenticated,
@@ -268,6 +276,7 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 		visitorProfileHandler,
 		visitorRiskHandler,
 		globalIPBlockHandler,
+		blogCategoryHandler,
 	)
 	registerBusinessRoutes(
 		authenticated,

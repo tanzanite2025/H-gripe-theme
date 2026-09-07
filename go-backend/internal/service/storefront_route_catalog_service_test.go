@@ -94,3 +94,18 @@ func TestNewStorefrontRouteCatalogServiceDoesNotFallbackToPublicOrigin(t *testin
 		t.Fatalf("internal origin = %q, want empty when it is not configured", catalog.internalBaseURL)
 	}
 }
+
+func TestRouteEntryCanBeCheckedExcludesStaleEntries(t *testing.T) {
+	if !routeEntryCanBeChecked(seodomain.StorefrontRouteCatalogEntry{
+		IsCheckable: true,
+		EntryStatus: seodomain.RouteEntryStatusActive,
+	}) {
+		t.Fatal("active checkable route should be checkable")
+	}
+	if routeEntryCanBeChecked(seodomain.StorefrontRouteCatalogEntry{
+		IsCheckable: true,
+		EntryStatus: seodomain.RouteEntryStatusStale,
+	}) {
+		t.Fatal("stale route should not be checkable")
+	}
+}

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"commerce-platform/internal/api/middleware"
+	postdomain "commerce-platform/internal/domain/post"
 	"commerce-platform/internal/pkg/locales"
 
 	"github.com/gin-gonic/gin"
@@ -30,6 +31,10 @@ func (h *Handler) ListPosts(c *gin.Context) {
 	}
 
 	posts, total, err := h.postService.ListPublic(locale, page, pageSize)
+	categorySlug := strings.TrimSpace(c.Query("category"))
+	if categorySlug != "" {
+		posts, total, err = h.postService.ListPublicByCategory(locale, categorySlug, page, pageSize)
+	}
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -42,6 +47,24 @@ func (h *Handler) ListPosts(c *gin.Context) {
 		"page_size":   pageSize,
 		"total_pages": (total + int64(pageSize) - 1) / int64(pageSize),
 	})
+}
+
+func (h *Handler) ListBlogCategories(c *gin.Context) {
+	locale, ok := resolvePostLocale(c)
+	if !ok {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "unsupported locale"})
+		return
+	}
+	if h.categoryService == nil {
+		c.JSON(http.StatusOK, gin.H{"data": []postdomain.Category{}})
+		return
+	}
+	categories, err := h.categoryService.List(locale)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"data": categories})
 }
 
 // GetPost 获取单篇文章

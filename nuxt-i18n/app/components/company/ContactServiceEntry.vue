@@ -3,13 +3,13 @@
     <div class="contact-service-entry__copy">
       <p class="contact-service-entry__eyebrow">
         <Icon name="lucide:sparkles" class="h-4 w-4" aria-hidden="true" />
-        Connect with us
+        {{ t('companyContact.serviceEntry.eyebrow') }}
       </p>
       <h2 id="contact-service-entry-title" class="contact-service-entry__title">
-        Start a conversation with our team.
+        {{ t('companyContact.serviceEntry.title') }}
       </h2>
       <p class="contact-service-entry__description">
-        For product advice, dealer enquiries, OEM/ODM projects, or order support, contact us by email or continue in the service chat. Chat messages are handled in our existing support inbox.
+        {{ t('companyContact.serviceEntry.description') }}
       </p>
 
       <div class="contact-service-entry__actions">
@@ -21,7 +21,7 @@
         >
           <Icon name="lucide:mail" class="h-5 w-5 shrink-0" aria-hidden="true" />
           <span class="min-w-0 text-left">
-            <span class="contact-service-entry__action-label">Email</span>
+            <span class="contact-service-entry__action-label">{{ t('companyContact.serviceEntry.actions.email.label') }}</span>
             <span class="contact-service-entry__action-value">{{ contactEmail }}</span>
           </span>
           <Icon name="lucide:arrow-up-right" class="h-4 w-4 shrink-0" aria-hidden="true" />
@@ -29,8 +29,8 @@
         <span v-else class="contact-service-entry__action contact-service-entry__action--unavailable" aria-disabled="true">
           <Icon name="lucide:mail" class="h-5 w-5 shrink-0" aria-hidden="true" />
           <span class="min-w-0 text-left">
-            <span class="contact-service-entry__action-label">Email</span>
-            <span class="contact-service-entry__action-value">Email support</span>
+            <span class="contact-service-entry__action-label">{{ t('companyContact.serviceEntry.actions.email.label') }}</span>
+            <span class="contact-service-entry__action-value">{{ t('companyContact.serviceEntry.actions.email.unavailable') }}</span>
           </span>
         </span>
 
@@ -41,8 +41,8 @@
         >
           <Icon name="lucide:messages-square" class="h-5 w-5 shrink-0" aria-hidden="true" />
           <span class="min-w-0 text-left">
-            <span class="contact-service-entry__action-label">Online consultation</span>
-            <span class="contact-service-entry__action-value">Open service chat</span>
+            <span class="contact-service-entry__action-label">{{ t('companyContact.serviceEntry.actions.chat.label') }}</span>
+            <span class="contact-service-entry__action-value">{{ t('companyContact.serviceEntry.actions.chat.value') }}</span>
           </span>
           <Icon name="lucide:arrow-up-right" class="h-4 w-4 shrink-0" aria-hidden="true" />
         </button>
@@ -52,28 +52,39 @@
     <aside class="contact-service-entry__panel">
       <div class="contact-service-entry__status">
         <span class="contact-service-entry__status-dot" aria-hidden="true"></span>
-        Support channel available
+        {{ t('companyContact.serviceEntry.panel.status') }}
       </div>
       <div class="contact-service-entry__panel-icon" aria-hidden="true">
         <Icon name="lucide:headset" class="h-8 w-8" />
       </div>
-      <h3>Talk to our support team</h3>
-      <p>Use service chat for a direct conversation with the team, without creating a separate contact form.</p>
+      <h3>{{ t('companyContact.serviceEntry.panel.title') }}</h3>
+      <p>{{ t('companyContact.serviceEntry.panel.description') }}</p>
       <button type="button" class="contact-service-entry__chat-button" @click="openSupportChat">
         <Icon name="lucide:message-circle" class="h-4 w-4" aria-hidden="true" />
-        Open service chat
+        {{ t('companyContact.serviceEntry.panel.button') }}
       </button>
     </aside>
   </section>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
+import { useI18n } from '#imports'
 import { useChatWidget } from '~/composables/useChatWidget'
+import { usePageMessages } from '~/composables/usePageMessages'
 import { useSiteSettings } from '~/composables/usePublicSettings'
 
 const { openChat } = useChatWidget()
 const { siteSettings } = useSiteSettings()
+const { locale, t } = useI18n()
+const { loadPageMessages } = usePageMessages('companyContact')
+
+await loadPageMessages(locale.value)
+
+watch(locale, (nextLocale) => {
+  void loadPageMessages(nextLocale)
+})
+
 const props = withDefaults(defineProps<{
   chatSource?: string
 }>(), {

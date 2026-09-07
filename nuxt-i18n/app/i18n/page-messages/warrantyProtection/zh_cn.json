@@ -1,0 +1,32 @@
+{
+  "title": "买家保障",
+  "intro": {
+    "title": "买家保障（PayPal 政策）",
+    "bodyPrefix": "以下内容摘自",
+    "legalAgreement": "《PayPal 法律协议》",
+    "bodySuffix": "，概述买家可享有的基本保障："
+  },
+  "sections": {
+    "reasons": {
+      "title": "争议原因",
+      "body": "买家可以基于以下原因在 PayPal 发起争议：",
+      "items": {
+        "0": "未收到商品",
+        "1": "商品与描述存在重大不符"
+      }
+    },
+    "timeframe": {
+      "title": "争议时限",
+      "bodyPrefix": "争议必须在首次付款后的",
+      "window": "45 天内提交",
+      "bodySuffix": "。"
+    },
+    "claimProcess": {
+      "title": "申诉流程",
+      "items": {
+        "0": "如果争议升级为申诉，PayPal 将展开调查并作出最终决定。",
+        "1": "PayPal 通常会在提交后 30 天内处理申诉；如需进一步调查，处理时间可能延长。"
+      }
+    }
+  }
+}

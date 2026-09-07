@@ -1,0 +1,105 @@
+{
+  "metaTitle": "Warranty & After-Sales Policy",
+  "eyebrow": "Customer care",
+  "title": "Warranty & After-Sales Policy",
+  "intro": "This page explains how we handle returns, cancellations, delivery issues, warranty claims, and accidental damage. Please review it before placing an order and keep your order number for future support.",
+  "updated": "Effective September 4, 2026. Mandatory consumer rights under applicable law are not limited by this policy.",
+  "summaryLabel": "Policy summary",
+  "summary": {
+    "returns": {
+      "title": "Returns",
+      "description": "Eligible stocked items may be returned within 30 days of delivery when unused."
+    },
+    "warranty": {
+      "title": "Warranty",
+      "description": "Eligible wheels and rims include a 5-year standard warranty from purchase."
+    },
+    "crashReplacement": {
+      "title": "Crash replacement",
+      "description": "Accidental damage may qualify for a 3-year replacement option at 10% off."
+    },
+    "delivery": {
+      "title": "Delivery issues",
+      "description": "Keep the packaging and contact us within 7 days for transit damage."
+    }
+  },
+  "sections": {
+    "returns": {
+      "title": "1. Returns, refunds and cancellations",
+      "stockedTitle": "Stocked items",
+      "stocked": {
+        "0": "Request a return within 30 days of delivery.",
+        "1": "Items must be unused, undamaged, and returned with original packaging and accessories.",
+        "2": "Return shipping is the customer's responsibility unless the item is defective or incorrect.",
+        "3": "Original shipping fees, duties, and taxes are non-refundable unless required by applicable law."
+      },
+      "customTitle": "Made-to-order and custom-configured items",
+      "custom": {
+        "0": "Request cancellation before production or material cutting starts.",
+        "1": "After production or material cutting begins, direct cancellation may be unavailable.",
+        "2": "If a post-production cancellation is approved, a 15%-20% custom handling fee may be deducted for committed materials and labor."
+      },
+      "refundIntro": "Refunds are sent to the original payment method within 5-10 business days after an approved return is received and inspected. The ",
+      "refundLink": "Refund & Cancellation Policy",
+      "refundSuffix": " contains the current cancellation windows and return process."
+    },
+    "warranty": {
+      "title": "2. Warranty coverage",
+      "bullets": {
+        "0": "This warranty applies to eligible Wheels/Rims identified in the product information.",
+        "1": "The standard warranty lasts 5 years from the original purchase date.",
+        "2": "A lifetime warranty upgrade is available for USD $100 per rim when offered with the product.",
+        "3": "Coverage is for manufacturing defects in materials and workmanship.",
+        "4": "Approved replacements do not restart the original warranty period.",
+        "5": "The warranty applies to the original purchaser and requires valid proof of purchase.",
+        "6": "If a model is discontinued, we may provide the latest equivalent model at no additional product cost."
+      },
+      "shipping": "Within 30 days of receipt, we cover reasonable shipping for an approved manufacturing defect claim. After that period, shipping costs are normally the customer's responsibility unless applicable law or the approved resolution says otherwise."
+    },
+    "exclusions": {
+      "title": "3. What the standard warranty does not cover",
+      "bullets": {
+        "0": "Improper assembly, installation, maintenance, or use by an unauthorized technician.",
+        "1": "Incompatible parts, accessories, tires, or unauthorized modifications.",
+        "2": "Crash, impact, misuse, heat damage, or use outside the published guidelines.",
+        "3": "Spoke, nipple, or wheelbuild issues where the build was not completed by our team.",
+        "4": "Normal wear and tear, including bearings, decals, and other consumable finishes."
+      }
+    },
+    "accidental": {
+      "title": "4. Accidental damage and crash replacement",
+      "bullets": {
+        "0": "Accidental damage such as a crash, jump, fall, collision, or rock impact is handled separately from manufacturing defects.",
+        "1": "Eligible original purchasers may request crash replacement within 3 years of purchase.",
+        "2": "An approved replacement is offered at a 10% discount.",
+        "3": "Shipping, duties, taxes, and related costs are normally the customer's responsibility."
+      }
+    },
+    "delivery": {
+      "title": "5. Damaged, missing, or lost deliveries",
+      "bullets": {
+        "0": "Inspect the package before signing for delivery. Photograph visible damage and note it on the delivery record when possible.",
+        "1": "Keep the shipping carton, labels, waybill, and all packing materials.",
+        "2": "For concealed transit damage, contact us within 7 days of receipt.",
+        "3": "For a lost shipment, contact us as soon as possible so we can coordinate the carrier or insurance claim."
+      }
+    },
+    "claims": {
+      "title": "6. How to start a claim",
+      "prepare": "Prepare your order number, proof of purchase, a clear description, and photos or video of the issue.",
+      "warrantyPrefix": "Use the ",
+      "warrantyLink": "Warranty & Claim Center",
+      "warrantySuffix": " for a warranty or crash replacement request.",
+      "authorization": "Do not send a product back without return instructions or authorization from our support team.",
+      "review": "We will review the evidence and confirm the next step, which may include troubleshooting, inspection, replacement, repair, or an approved refund.",
+      "contactPrefix": "For general return, cancellation, or delivery questions, use our ",
+      "contactLink": "contact page",
+      "contactEmailJoiner": " or email ",
+      "contactSuffix": "."
+    }
+  },
+  "footer": {
+    "warrantyLink": "Open warranty and claim center",
+    "refundLink": "Read refund and cancellation policy"
+  }
+}

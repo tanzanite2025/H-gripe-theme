@@ -1,16 +1,16 @@
 <template>
   <div class="freehub-groupset-helper mt-5 rounded-2xl tz-surface-panel p-4 shadow-md">
     <h3 class="mb-2 text-sm font-semibold tz-text-secondary">
-      {{ title }}
+      {{ title || t('wheelsetFreehubHelper.title') }}
     </h3>
     <p class="mb-3 text-xs tz-text-secondary">
-      {{ description }}
+      {{ description || t('wheelsetFreehubHelper.description') }}
     </p>
 
     <div class="freehub-groupset-helper__fields">
       <div class="freehub-groupset-helper__field">
         <label class="block text-xs font-medium tz-text-secondary" :for="brandSelectId">
-          Drivetrain brand
+          {{ t('wheelsetFreehubHelper.drivetrainBrand') }}
         </label>
         <select
           :id="brandSelectId"
@@ -18,7 +18,7 @@
           class="freehub-groupset-helper__select mt-1 w-full rounded-md border tz-border-strong tz-surface-panel px-2 py-1.5 text-xs tz-text-secondary shadow-md outline-none focus:border-emerald-600 focus:ring-0"
         >
           <option disabled value="">
-            Select brand
+            {{ t('wheelsetFreehubHelper.selectBrand') }}
           </option>
           <option
             v-for="brand in brands"
@@ -32,7 +32,7 @@
 
       <div class="freehub-groupset-helper__field">
         <label class="block text-xs font-medium tz-text-secondary" :for="groupsetSelectId">
-          Groupset
+          {{ t('wheelsetFreehubHelper.groupset') }}
         </label>
         <select
           :id="groupsetSelectId"
@@ -41,14 +41,16 @@
           class="freehub-groupset-helper__select mt-1 w-full rounded-md border tz-border-strong tz-surface-panel px-2 py-1.5 text-xs tz-text-secondary shadow-md outline-none focus:border-emerald-600 focus:ring-0 disabled:cursor-not-allowed disabled:border-[var(--tz-border-subtle)] disabled:tz-text-muted"
         >
           <option disabled value="">
-            {{ selectedBrand ? 'Select groupset' : 'Choose brand first' }}
+            {{ selectedBrand
+              ? t('wheelsetFreehubHelper.selectGroupset')
+              : t('wheelsetFreehubHelper.chooseBrandFirst') }}
           </option>
           <option
             v-for="option in filteredGroupsets"
             :key="option.id"
             :value="option.id"
           >
-            {{ option.label }}
+            {{ optionLabel(option) }}
           </option>
         </select>
       </div>
@@ -59,7 +61,7 @@
         v-if="!activeOption"
         class="text-xs tz-text-muted"
       >
-        Choose a brand and groupset to see a suggested freehub body type.
+        {{ t('wheelsetFreehubHelper.empty') }}
       </p>
 
       <div
@@ -67,14 +69,14 @@
         class="text-xs tz-text-secondary"
       >
         <p class="font-semibold text-emerald-700">
-          Recommended freehub body:
-          <span class="ml-1">{{ activeOption.freehub }}</span>
+          {{ t('wheelsetFreehubHelper.recommended') }}
+          <span class="ml-1">{{ optionFreehub(activeOption) }}</span>
         </p>
         <p
-          v-if="activeOption.notes"
+          v-if="activeOption.notesKey"
           class="mt-0.5 tz-caption tz-text-muted"
         >
-          {{ activeOption.notes }}
+          {{ optionNotes(activeOption) }}
         </p>
       </div>
     </div>
@@ -82,22 +84,24 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, useId } from 'vue'
+import { computed, ref, useId, watch } from 'vue'
+import { useI18n } from '#imports'
+import { usePageMessages } from '~/composables/usePageMessages'
 
 withDefaults(defineProps<{
   title?: string
   description?: string
 }>(), {
-  title: 'Freehub body quick finder',
-  description: 'Select your drivetrain brand and groupset to see which freehub body type is typically required. Always cross-check with the official compatibility charts from the drivetrain and hub manufacturers.',
+  title: '',
+  description: '',
 })
 
 interface FreehubOption {
   id: string
   brand: string
-  label: string
-  freehub: string
-  notes?: string
+  labelKey: string
+  freehubKey: string
+  notesKey?: string
 }
 // NOTE / 说明：
 // 如果后续要增加更多套件 → 塔基类型的对应关系，直接在下面的 FREEHUB_OPTIONS 数组中追加一条对象即可。
@@ -106,97 +110,106 @@ const FREEHUB_OPTIONS: FreehubOption[] = [
   {
     id: 'shimano-deore-m6100',
     brand: 'Shimano',
-    label: 'Deore M6100 (12-speed MTB)',
-    freehub: 'MS (Micro Spline 12-speed)',
-    notes: 'Typical for Shimano 12-speed MTB groupsets like Deore, SLX, XT, XTR.',
+    labelKey: 'options.shimanoDeoreM6100.label',
+    freehubKey: 'options.shimanoDeoreM6100.freehub',
+    notesKey: 'options.shimanoDeoreM6100.notes',
   },
   {
     id: 'shimano-slx-m7100',
     brand: 'Shimano',
-    label: 'SLX M7100 (12-speed MTB)',
-    freehub: 'MS (Micro Spline 12-speed)',
+    labelKey: 'options.shimanoSlxM7100.label',
+    freehubKey: 'options.shimanoSlxM7100.freehub',
   },
   {
     id: 'shimano-xt-m8100',
     brand: 'Shimano',
-    label: 'XT M8100 (12-speed MTB)',
-    freehub: 'MS (Micro Spline 12-speed)',
+    labelKey: 'options.shimanoXtM8100.label',
+    freehubKey: 'options.shimanoXtM8100.freehub',
   },
   {
     id: 'shimano-xtr-m9100',
     brand: 'Shimano',
-    label: 'XTR M9100 (12-speed MTB)',
-    freehub: 'MS (Micro Spline 12-speed)',
+    labelKey: 'options.shimanoXtrM9100.label',
+    freehubKey: 'options.shimanoXtrM9100.freehub',
   },
   {
     id: 'shimano-105-r7000',
     brand: 'Shimano',
-    label: '105 R7000 (11-speed road)',
-    freehub: 'HG 9–11 speed road',
+    labelKey: 'options.shimano105R7000.label',
+    freehubKey: 'options.shimano105R7000.freehub',
   },
   {
     id: 'shimano-ultegra-r8000',
     brand: 'Shimano',
-    label: 'Ultegra R8000 (11-speed road)',
-    freehub: 'HG 9–11 speed road',
+    labelKey: 'options.shimanoUltegraR8000.label',
+    freehubKey: 'options.shimanoUltegraR8000.freehub',
   },
   {
     id: 'shimano-duraace-r9100',
     brand: 'Shimano',
-    label: 'Dura-Ace R9100 (11-speed road)',
-    freehub: 'HG 9–11 speed road',
+    labelKey: 'options.shimanoDuraAceR9100.label',
+    freehubKey: 'options.shimanoDuraAceR9100.freehub',
   },
   {
     id: 'shimano-105-di2-r7100',
     brand: 'Shimano',
-    label: '105 Di2 R7100 (12-speed road)',
-    freehub: 'HG L2 12-speed road only',
-    notes: 'Shimano 12-speed road specific body; not compatible with older 11-speed-only freehubs.',
+    labelKey: 'options.shimano105Di2R7100.label',
+    freehubKey: 'options.shimano105Di2R7100.freehub',
+    notesKey: 'options.shimano105Di2R7100.notes',
   },
   {
     id: 'sram-gx-eagle',
     brand: 'SRAM',
-    label: 'GX Eagle (12-speed MTB)',
-    freehub: 'XD',
-    notes: 'Use XD for Eagle 12-speed; NX Eagle cassette uses HG MTB freehub.',
+    labelKey: 'options.sramGxEagle.label',
+    freehubKey: 'options.sramGxEagle.freehub',
+    notesKey: 'options.sramGxEagle.notes',
   },
   {
     id: 'sram-x01-eagle',
     brand: 'SRAM',
-    label: 'X01 Eagle (12-speed MTB)',
-    freehub: 'XD',
+    labelKey: 'options.sramX01Eagle.label',
+    freehubKey: 'options.sramX01Eagle.freehub',
   },
   {
     id: 'sram-nx-eagle',
     brand: 'SRAM',
-    label: 'NX Eagle (12-speed MTB)',
-    freehub: 'HG 8–11 speed MTB',
+    labelKey: 'options.sramNxEagle.label',
+    freehubKey: 'options.sramNxEagle.freehub',
   },
   {
     id: 'sram-force-etap-axs',
     brand: 'SRAM',
-    label: 'Force eTap AXS (12-speed road)',
-    freehub: 'XDR',
+    labelKey: 'options.sramForceEtapAxs.label',
+    freehubKey: 'options.sramForceEtapAxs.freehub',
   },
   {
     id: 'sram-red-etap-axs',
     brand: 'SRAM',
-    label: 'Red eTap AXS (12-speed road)',
-    freehub: 'XDR',
+    labelKey: 'options.sramRedEtapAxs.label',
+    freehubKey: 'options.sramRedEtapAxs.freehub',
   },
   {
     id: 'campagnolo-ekar-13',
     brand: 'Campagnolo',
-    label: 'Ekar 13-speed',
-    freehub: 'N3W',
+    labelKey: 'options.campagnoloEkar13.label',
+    freehubKey: 'options.campagnoloEkar13.freehub',
   },
   {
     id: 'campagnolo-super-record-11',
     brand: 'Campagnolo',
-    label: 'Super Record 11-speed road',
-    freehub: 'CP (Campagnolo classic)',
+    labelKey: 'options.campagnoloSuperRecord11.label',
+    freehubKey: 'options.campagnoloSuperRecord11.freehub',
   },
 ]
+
+const { locale, t } = useI18n()
+const { loadPageMessages } = usePageMessages('wheelsetFreehubHelper')
+
+await loadPageMessages(locale.value)
+
+watch(locale, (nextLocale) => {
+  void loadPageMessages(nextLocale)
+})
 
 const selectedBrand = ref<string>('')
 const selectedGroupsetId = ref<string>('')
@@ -221,6 +234,16 @@ const activeOption = computed(() => {
   if (!selectedGroupsetId.value) return null
   return FREEHUB_OPTIONS.find((option) => option.id === selectedGroupsetId.value) ?? null
 })
+
+const optionLabel = (option: FreehubOption) => (
+  t(`wheelsetFreehubHelper.${option.labelKey}`)
+)
+const optionFreehub = (option: FreehubOption) => (
+  t(`wheelsetFreehubHelper.${option.freehubKey}`)
+)
+const optionNotes = (option: FreehubOption) => (
+  option.notesKey ? t(`wheelsetFreehubHelper.${option.notesKey}`) : ''
+)
 </script>
 
 <style scoped>

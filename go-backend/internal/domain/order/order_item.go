@@ -17,6 +17,8 @@ type OrderItem struct {
 	Discount               float64   `gorm:"default:0" json:"discount"`
 	Total                  float64   `gorm:"not null" json:"total"`
 	Attributes             string    `gorm:"type:text" json:"attributes"` // JSON格式的商品属性
+	WeightGrams            int       `gorm:"column:weight_grams;not null;default:0" json:"weight_grams"`
+	FulfillmentMode        string    `gorm:"size:20;not null;default:'stock';index" json:"fulfillment_mode"`
 	HSCode                 string    `gorm:"column:hs_code;size:12" json:"hs_code"`
 	CNCode                 string    `gorm:"column:cn_code;size:12" json:"cn_code"`
 	CountryOfOrigin        string    `gorm:"column:country_of_origin;size:2" json:"country_of_origin"`

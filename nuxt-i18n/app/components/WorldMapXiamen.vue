@@ -4,11 +4,10 @@
   >
     <div class="mb-3 flex flex-col gap-1">
       <h3 class="text-sm font-semibold tz-text-primary">
-        Global partnership network  Xiamen origin
+        {{ t('companyGlobalPartners.map.title') }}
       </h3>
       <p class="text-xs tz-text-secondary">
-        All routes start from Xiamen, Fujian, China and connect to current demo
-        cities.
+        {{ t('companyGlobalPartners.map.description') }}
       </p>
     </div>
 
@@ -21,10 +20,9 @@
       aria-labelledby="title desc"
       role="img"
     >
-      <title id="title">Global partnership routes from Xiamen</title>
+      <title id="title">{{ t('companyGlobalPartners.map.svgTitle') }}</title>
       <desc id="desc">
-        Animated arcs showing connections from Xiamen, Fujian, China to several
-        global cities.
+        {{ t('companyGlobalPartners.map.svgDescription') }}
       </desc>
 
       <defs>
@@ -66,14 +64,24 @@
     </svg>
 
     <p class="mt-2 tz-caption tz-text-muted">
-      Visualization is illustrative only. Routes are stylized connections from
-      Xiamen to selected partner cities.
+      {{ t('companyGlobalPartners.map.caption') }}
     </p>
   </section>
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
+import { useI18n } from '#imports'
+import { usePageMessages } from '~/composables/usePageMessages'
+
+const { locale, t } = useI18n()
+const { loadPageMessages } = usePageMessages('companyGlobalPartners')
+
+await loadPageMessages(locale.value)
+
+watch(locale, (nextLocale) => {
+  void loadPageMessages(nextLocale)
+})
 
 const svgRef = ref<SVGSVGElement | null>(null)
 const pathsLayerRef = ref<SVGGElement | null>(null)

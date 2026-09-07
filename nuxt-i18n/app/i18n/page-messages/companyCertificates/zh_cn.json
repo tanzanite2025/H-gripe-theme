@@ -1,0 +1,48 @@
+{
+  "title": "资质证书",
+  "hero": {
+    "title": "认证",
+    "highlight": "品质与安全",
+    "description": "我们的产品通过 UCI 认证，并高于 ISO 4210 国际标准要求，为每一次骑行提供可靠安全保障。"
+  },
+  "uci": {
+    "status": "官方认证",
+    "title": "UCI 认证轮组",
+    "description": "我们的轮组通过了国际自行车联盟（UCI）要求的严格冲击测试，可用于所有经 UCI 认可的公路、场地和越野赛。",
+    "viewWebsite": "查看 UCI 官网",
+    "sticker": "UCI 认证\n标识"
+  },
+  "standards": {
+    "title": "全球标准合规",
+    "description": "由 SGS、Intertek 等领先的第三方检测实验室进行验证。",
+    "viewReport": "查看报告",
+    "certificates": {
+      "iso": {
+        "title": "ISO 4210-7:2014",
+        "description": "自行车安全要求第 7 部分：轮组与轮圈测试方法。"
+      },
+      "sgs": {
+        "title": "SGS 冲击测试",
+        "description": "采用高于标准要求的能量等级进行垂直冲击测试。"
+      },
+      "intertek": {
+        "title": "Intertek 疲劳测试",
+        "description": "通过动态疲劳测试，确保产品具备长期耐久性和可靠性。"
+      }
+    }
+  },
+  "internal": {
+    "title": "内部标准",
+    "bodyBefore": "我们不只是满足标准，也在不断提高标准。我们的内部测试协议非常严格，模拟道路条件下的测试载荷达到",
+    "bodyHighlight": "ISO 4210 要求的 120% - 150%",
+    "bodyAfter": "。",
+    "stats": {
+      "testCycles": "测试循环",
+      "qcInspection": "质量检验",
+      "warrantyValue": "3 年",
+      "warranty": "质保",
+      "support": "支持服务"
+    }
+  },
+  "feedbackTitle": "分享您对资质证书页面的反馈"
+}

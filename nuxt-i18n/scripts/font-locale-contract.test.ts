@@ -18,15 +18,18 @@ const projectDir = fs.mkdtempSync(path.join(os.tmpdir(), 'storefront-font-locale
 try {
   const localeDir = path.join(projectDir, 'app', 'i18n', 'locales')
   const messagesDir = path.join(projectDir, 'app', 'i18n', 'messages')
+  const pageMessagesDir = path.join(projectDir, 'app', 'i18n', 'page-messages', 'supportAfterSales')
   fs.mkdirSync(path.join(messagesDir, 'en'), { recursive: true })
   fs.mkdirSync(path.join(messagesDir, 'ar'), { recursive: true })
+  fs.mkdirSync(pageMessagesDir, { recursive: true })
   fs.mkdirSync(localeDir, { recursive: true })
   fs.writeFileSync(path.join(localeDir, 'en.json'), '{"title":"English"}')
   fs.writeFileSync(path.join(localeDir, 'ar.json'), '{"title":"العربية"}')
   fs.writeFileSync(path.join(messagesDir, 'en', 'checkout.json'), '{"button":"Pay"}')
+  fs.writeFileSync(path.join(pageMessagesDir, 'en.json'), '{"title":"After sales"}')
 
   const validSources = collectStorefrontLocaleSources(projectDir)
-  assert.equal(validSources.get('en')?.length, 2)
+  assert.equal(validSources.get('en')?.length, 3)
   assert.equal(validSources.get('ar')?.length, 1)
   assert.deepEqual(validateStorefrontLocaleSources(projectDir, validSources, manifest), [])
   assert.deepEqual(

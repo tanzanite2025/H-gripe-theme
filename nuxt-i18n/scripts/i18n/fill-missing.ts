@@ -5,6 +5,7 @@ import {
   isPlainObject,
   loadManifestLocales,
   messagesDir,
+  pageMessagesDir,
   readJson,
   writeJson,
   type JsonObject,
@@ -81,6 +82,13 @@ function collectStaticFallbacks(): Map<string, FallbackRef> {
   return refs
 }
 
+function listPageMessageNamespaces(): string[] {
+  if (!fs.existsSync(pageMessagesDir)) return []
+  return fs.readdirSync(pageMessagesDir, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+}
+
 function readDomain(localeCode: string, domain: string): JsonObject {
   const filePath = path.resolve(messagesDir, localeCode, `${domain}.json`)
   if (!fs.existsSync(filePath)) return {}
@@ -153,7 +161,13 @@ function setFullKey(localeCode: string, fullKey: string, value: JsonValue | unde
 
 async function main(): Promise<void> {
   const locales = await loadManifestLocales()
-  const fallbackRefs = collectStaticFallbacks()
+  const pageNamespaces = listPageMessageNamespaces()
+  const isPageMessageKey = (key: string) => pageNamespaces.some(
+    (namespace) => key === namespace || key.startsWith(`${namespace}.`),
+  )
+  const fallbackRefs = new Map(
+    [...collectStaticFallbacks()].filter(([key]) => !isPageMessageKey(key)),
+  )
   let baseAdded = 0
   let localeAdded = 0
   const unresolved: string[] = []

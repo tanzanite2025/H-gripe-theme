@@ -14,6 +14,7 @@ type PostListResponse struct {
 	FeaturedImg string     `json:"featured_image"`
 	ViewCount   int        `json:"view_count"`
 	Tags        string     `json:"tags"`
+	Categories  []Category `json:"categories,omitempty"`
 	CreatedAt   time.Time  `json:"created_at"`
 	PublishedAt *time.Time `json:"published_at"`
 }
@@ -31,6 +32,7 @@ func (p *Post) ToListResponse() *PostListResponse {
 		FeaturedImg: p.FeaturedImg,
 		ViewCount:   p.ViewCount,
 		Tags:        p.Tags,
+		Categories:  p.Categories,
 		CreatedAt:   p.CreatedAt,
 		PublishedAt: p.PublishedAt,
 	}

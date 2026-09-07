@@ -1,24 +1,24 @@
 <template>
   <div
     v-show="!isWheelsetSelectionAssistantOpen"
-    class="dock-bar fixed inset-x-0 bottom-0 w-full z-[101] pointer-events-auto transition-all duration-300"
+    class="dock-bar fixed inset-x-0 bottom-0 w-full z-[101] pointer-events-auto"
   >
-    <div class="dock-surface mx-auto w-full md:max-w-[500px] rounded-none px-1 py-2.5 md:px-4 md:py-3 items-center transition-all duration-300">
+    <div class="dock-surface mx-auto w-full md:max-w-[500px] rounded-none px-1 py-2.5 md:px-4 md:py-3 items-center">
       <!-- 1. Menu (Sidebar) -->
       <button
-        class="dock-icon-button h-11 md:h-12 tz-text-secondary hover:tz-text-primary transition-colors"
+        class="dock-icon-button h-11 md:h-12 tz-text-secondary hover:tz-text-primary"
         @click="openSidebarLeft"
         :aria-label="$t('dockMenu.openSidebar')"
       >
         <span class="dock-icon-slot">
-          <Icon name="lucide:user-round-check" class="w-full h-full transition-all" />
+          <Icon name="lucide:user-round-check" class="w-full h-full" />
         </span>
       </button>
 
       <!-- 2. Chat -->
       <button
         :class="[
-          'dock-icon-button h-11 md:h-12 transition-colors',
+          'dock-icon-button h-11 md:h-12',
           isChatOpen ? 'text-[#059669]' : 'tz-text-secondary hover:tz-text-primary'
         ]"
         @click="toggleChatFromDock()"
@@ -26,7 +26,7 @@
       >
         <span class="dock-icon-slot relative">
           <svg
-            class="w-full h-full transition-all"
+            class="w-full h-full"
             viewBox="0 0 48 48"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
@@ -58,20 +58,20 @@
 
       <!-- 3. Quick Buy -->
       <ClientOnly>
-        <LazyGradientDockQuickBuy
+        <GradientDockQuickBuy
           v-if="quickBuyDockMounted"
           @open="isOpen = false"
         />
         <button
           v-else
-          class="dock-icon-button dock-quick-buy-button h-11 md:h-12 tz-text-secondary hover:text-[#059669] transition-colors"
+          class="dock-icon-button dock-quick-buy-button h-11 md:h-12 tz-text-secondary hover:text-[#059669]"
           type="button"
           :aria-label="$t('dockMenu.quickBuy')"
           @click="openDeferredQuickBuyDock"
         >
           <span class="dock-icon-slot dock-quick-buy-frame">
             <svg
-              class="w-full h-full transition-all"
+              class="w-full h-full"
               viewBox="0 0 24 24"
               xmlns="http://www.w3.org/2000/svg"
               aria-hidden="true"
@@ -86,13 +86,13 @@
         </button>
         <template #fallback>
           <button
-            class="dock-icon-button dock-quick-buy-button h-11 md:h-12 tz-text-secondary hover:text-[#059669] transition-colors"
+            class="dock-icon-button dock-quick-buy-button h-11 md:h-12 tz-text-secondary hover:text-[#059669]"
             type="button"
             :aria-label="$t('dockMenu.quickBuy')"
           >
             <span class="dock-icon-slot dock-quick-buy-frame">
               <svg
-                class="w-full h-full transition-all"
+                class="w-full h-full"
                 viewBox="0 0 24 24"
                 xmlns="http://www.w3.org/2000/svg"
                 aria-hidden="true"
@@ -332,11 +332,6 @@ onBeforeUnmount(() => {
 
 .dock-quick-buy-frame {
   border-radius: 999px;
-  transition:
-    background-color 180ms ease,
-    box-shadow 180ms ease,
-    color 180ms ease,
-    transform 180ms ease;
 }
 
 .dock-quick-buy-button--active {
@@ -348,10 +343,6 @@ onBeforeUnmount(() => {
   box-shadow:
     inset 0 0 0 1px var(--dock-quickbuy-active-edge),
     0 0 0 4px rgba(5, 150, 105, 0.075);
-}
-
-.dock-quick-buy-button:hover .dock-quick-buy-frame {
-  transform: translateY(-0.0625rem);
 }
 
 .dock-cart-button {
@@ -372,11 +363,6 @@ onBeforeUnmount(() => {
   box-shadow:
     0 10px 24px rgba(0, 0, 0, 0.18),
     inset 0 1px 0 rgba(255, 255, 255, 0.82);
-  transition:
-    color 180ms ease,
-    border-color 180ms ease,
-    background-color 180ms ease,
-    transform 180ms ease;
 }
 
 .dock-cart-content {
@@ -400,7 +386,6 @@ onBeforeUnmount(() => {
 .dock-cart-button:hover {
   background: var(--tz-surface-inset);
   color: var(--tz-text-primary);
-  transform: translateY(-0.125rem);
 }
 
 .dock-cart-button--active {

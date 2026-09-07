@@ -17,11 +17,11 @@ import {
   visibilityName,
   visibilityTone
 } from '@/lib/faqAdminPresentation'
-import type { FAQCategory, FAQID, FAQItemLike } from '@/lib/faqAdminPresentation'
+import type { FAQID, FAQItemLike } from '@/lib/faqAdminPresentation'
 import { useAuthStore } from '@/stores/auth'
 
-type ConfirmationType = '' | 'delete' | 'batch-delete' | 'category-delete'
-type ConfirmationTarget = FAQItemLike | FAQItemLike[] | FAQCategory | null
+type ConfirmationType = '' | 'delete' | 'batch-delete'
+type ConfirmationTarget = FAQItemLike | FAQItemLike[] | null
 
 interface ConfirmationState {
   open: boolean
@@ -98,19 +98,6 @@ export function useFaqAdmin() {
     })
   }
 
-  const requestDeleteCategory = (category: FAQCategory): void => {
-    Object.assign(confirmation, {
-      open: true,
-      type: 'category-delete',
-      target: category,
-      title: '删除 FAQ 分类？',
-      description: Number(category.faq_count || 0) > 0
-        ? `分类“${category.name || ''}”下还有 ${category.faq_count} 条 FAQ。请先移动或删除内容，再删除分类。`
-        : `分类“${category.name || ''}”将从前端 FAQ 分类结构中删除，此操作不可恢复。`,
-      confirmLabel: '删除分类'
-    })
-  }
-
   const executeConfirmedAction = async (): Promise<void> => {
     const { type, target } = confirmation
     confirmation.open = false
@@ -125,10 +112,6 @@ export function useFaqAdmin() {
         const faqs = Array.isArray(target) ? target : []
         const payload = await faqAdminApi.deleteFAQs(faqs.map((faq) => faq.id as FAQID)) as { deleted?: number }
         toast.success(`已删除 ${payload.deleted ?? faqs.length} 个 FAQ`)
-      } else if (type === 'category-delete') {
-        const category = target as FAQCategory
-        await faqAdminApi.deleteCategory(category.id as FAQID)
-        toast.success('FAQ 分类已删除')
       }
       await refreshFAQs()
     } catch (error) {
@@ -154,24 +137,18 @@ export function useFaqAdmin() {
     placementLocked: editor.placementLocked,
     pageDialogVisible: structure.pageDialogVisible,
     pageSubmitting: structure.pageSubmitting,
-    categoryDialogVisible: structure.categoryDialogVisible,
-    categoryDialogMode: structure.categoryDialogMode,
-    categorySubmitting: structure.categorySubmitting,
     formErrors: editor.formErrors,
     filters: list.filters,
     pagination: list.pagination,
     faqForm: editor.faqForm,
     pageForm: structure.pageForm,
-    categoryForm: structure.categoryForm,
     confirmation,
     statusFilterOptions: FAQ_STATUS_FILTER_OPTIONS,
     structureLocales,
     languageOptions: supportedLanguages.languageOptions,
     structurePageOptions: structure.structurePageOptions,
     faqPageOptions: editor.faqPageOptions,
-    availableFAQCategories: editor.availableFAQCategories,
     pageFilterOptions: list.pageFilterOptions,
-    categoryFilterOptions: list.categoryFilterOptions,
     hasPermission,
     localeName: displayLocaleName,
     statusName,
@@ -191,13 +168,10 @@ export function useFaqAdmin() {
     submitForm: editor.submitForm,
     showPageDialog: structure.showPageDialog,
     submitPageForm: structure.submitPageForm,
-    showCategoryDialog: structure.showCategoryDialog,
-    submitCategoryForm: structure.submitCategoryForm,
     isSelected: list.isSelected,
     toggleFAQ: list.toggleFAQ,
     requestDelete,
     requestBatchDelete,
-    requestDeleteCategory,
     executeConfirmedAction
   }
 }

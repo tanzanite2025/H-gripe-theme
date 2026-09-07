@@ -1,6 +1,7 @@
 package admin
 
 import (
+	orderdomain "commerce-platform/internal/domain/order"
 	"commerce-platform/internal/pkg/response"
 	"commerce-platform/internal/service"
 	"net/http"
@@ -246,23 +247,59 @@ func (h *OrderHandler) UpdateShippingStatus(c *gin.Context) {
 // UpdateTrackingInfo 更新物流追踪信息
 // PATCH /api/admin/orders/:id/tracking
 func (h *OrderHandler) UpdateTrackingInfo(c *gin.Context) {
+	startedAt := adminAuditStartedAt()
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid order ID"})
 		return
 	}
+	orderID := uint(id)
+	before, _ := h.orderService.GetAdminOrder(orderID)
 
 	var req trackingInfoRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
+		recordAdminAudit(h.auditService, c, adminAuditEvent{
+			StartedAt:    startedAt,
+			Action:       adminAuditActionUpdate,
+			Resource:     adminAuditResourceOrderTracking,
+			ResourceID:   orderID,
+			Status:       adminAuditStatusFailed,
+			ErrorMessage: err.Error(),
+			Changes: map[string]interface{}{
+				"request_valid": false,
+			},
+			OldValue: orderTrackingAuditValue(before),
+		})
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	if err := h.orderService.UpdateTrackingInfo(c.Request.Context(), uint(id), req.toServiceInput()); err != nil {
+	if err := h.orderService.UpdateTrackingInfo(c.Request.Context(), orderID, req.toServiceInput()); err != nil {
+		recordAdminAudit(h.auditService, c, adminAuditEvent{
+			StartedAt:    startedAt,
+			Action:       adminAuditActionUpdate,
+			Resource:     adminAuditResourceOrderTracking,
+			ResourceID:   orderID,
+			Status:       adminAuditStatusFailed,
+			ErrorMessage: err.Error(),
+			Changes:      orderTrackingAuditChanges(req),
+			OldValue:     orderTrackingAuditValue(before),
+		})
 		respondOrderServiceError(c, err, "Failed to update tracking info", http.StatusInternalServerError)
 		return
 	}
 
+	after, _ := h.orderService.GetAdminOrder(orderID)
+	recordAdminAudit(h.auditService, c, adminAuditEvent{
+		StartedAt:  startedAt,
+		Action:     adminAuditActionUpdate,
+		Resource:   adminAuditResourceOrderTracking,
+		ResourceID: orderID,
+		Status:     adminAuditStatusSuccess,
+		Changes:    orderTrackingAuditChanges(req),
+		OldValue:   orderTrackingAuditValue(before),
+		NewValue:   orderTrackingAuditValue(after),
+	})
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Tracking info updated successfully",
 	})
@@ -271,30 +308,173 @@ func (h *OrderHandler) UpdateTrackingInfo(c *gin.Context) {
 // FulfillOrder 确认发货，并原子写入订单状态、物流状态和追踪任务。
 // POST /api/admin/orders/:id/fulfillment
 func (h *OrderHandler) FulfillOrder(c *gin.Context) {
+	startedAt := adminAuditStartedAt()
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid order ID"})
 		return
 	}
+	orderID := uint(id)
+	before, _ := h.orderService.GetAdminOrder(orderID)
 
 	var req orderFulfillmentRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
+		recordAdminAudit(h.auditService, c, adminAuditEvent{
+			StartedAt:    startedAt,
+			Action:       adminAuditActionExecute,
+			Resource:     adminAuditResourceOrderFulfillment,
+			ResourceID:   orderID,
+			Status:       adminAuditStatusFailed,
+			ErrorMessage: err.Error(),
+			Changes: map[string]interface{}{
+				"request_valid": false,
+			},
+			OldValue: orderFulfillmentAuditValue(before),
+		})
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	result, err := h.orderService.FulfillOrder(c.Request.Context(), uint(id), req.toServiceInput())
+	result, err := h.orderService.FulfillOrder(c.Request.Context(), orderID, req.toServiceInput())
 	if err != nil {
+		recordAdminAudit(h.auditService, c, adminAuditEvent{
+			StartedAt:    startedAt,
+			Action:       adminAuditActionExecute,
+			Resource:     adminAuditResourceOrderFulfillment,
+			ResourceID:   orderID,
+			Status:       adminAuditStatusFailed,
+			ErrorMessage: err.Error(),
+			Changes:      orderFulfillmentAuditChanges(req, nil),
+			OldValue:     orderFulfillmentAuditValue(before),
+		})
 		respondOrderServiceError(c, err, "Failed to fulfill order", http.StatusInternalServerError)
 		return
 	}
 
+	recordAdminAudit(h.auditService, c, adminAuditEvent{
+		StartedAt:  startedAt,
+		Action:     adminAuditActionExecute,
+		Resource:   adminAuditResourceOrderFulfillment,
+		ResourceID: orderID,
+		Status:     adminAuditStatusSuccess,
+		Changes:    orderFulfillmentAuditChanges(req, result),
+		OldValue:   orderFulfillmentAuditValue(before),
+		NewValue:   orderFulfillmentAuditValue(result.Order),
+	})
 	c.JSON(http.StatusOK, gin.H{
 		"message":                     "Order fulfilled successfully",
 		"order":                       result.Order,
 		"tracking_shipment":           result.TrackingShipment,
 		"tracking_registration_error": result.TrackingRegistrationError,
 	})
+}
+
+// StartProduction records the irreversible production-start checkpoint for a
+// made-to-order order.
+// POST /api/admin/orders/:id/production/start
+func (h *OrderHandler) StartProduction(c *gin.Context) {
+	h.transitionProduction(c, true)
+}
+
+// CompleteProduction records that the custom manufacturing work is complete
+// and the order may proceed to fulfillment.
+// POST /api/admin/orders/:id/production/complete
+func (h *OrderHandler) CompleteProduction(c *gin.Context) {
+	h.transitionProduction(c, false)
+}
+
+func (h *OrderHandler) transitionProduction(c *gin.Context, start bool) {
+	startedAt := adminAuditStartedAt()
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid order ID"})
+		return
+	}
+
+	var req orderProductionRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	orderID := uint(id)
+	before, beforeErr := h.orderService.GetAdminOrder(orderID)
+	if beforeErr != nil {
+		respondOrderServiceError(c, beforeErr, "Failed to fetch order", http.StatusInternalServerError)
+		return
+	}
+
+	if !req.Confirm {
+		recordAdminAudit(h.auditService, c, adminAuditEvent{
+			StartedAt:    startedAt,
+			Action:       adminAuditActionExecute,
+			Resource:     adminAuditResourceOrderProduction,
+			ResourceID:   orderID,
+			Status:       adminAuditStatusFailed,
+			ErrorMessage: "confirmation is required before changing production status",
+			Changes: map[string]interface{}{
+				"confirm": false,
+				"step":    productionAuditStep(start),
+			},
+			OldValue: orderProductionAuditValue(before),
+		})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "confirmation is required before changing production status"})
+		return
+	}
+
+	var updated *orderdomain.Order
+	if start {
+		updated, err = h.orderService.StartProduction(orderID)
+	} else {
+		updated, err = h.orderService.CompleteProduction(orderID)
+	}
+	if err != nil {
+		recordAdminAudit(h.auditService, c, adminAuditEvent{
+			StartedAt:    startedAt,
+			Action:       adminAuditActionExecute,
+			Resource:     adminAuditResourceOrderProduction,
+			ResourceID:   orderID,
+			Status:       adminAuditStatusFailed,
+			ErrorMessage: err.Error(),
+			Changes: map[string]interface{}{
+				"confirm": true,
+				"step":    productionAuditStep(start),
+			},
+			OldValue: orderProductionAuditValue(before),
+		})
+		respondOrderServiceError(c, err, "Failed to update production status", http.StatusBadRequest)
+		return
+	}
+
+	recordAdminAudit(h.auditService, c, adminAuditEvent{
+		StartedAt:  startedAt,
+		Action:     adminAuditActionExecute,
+		Resource:   adminAuditResourceOrderProduction,
+		ResourceID: orderID,
+		Status:     adminAuditStatusSuccess,
+		Changes: map[string]interface{}{
+			"confirm": true,
+			"step":    productionAuditStep(start),
+		},
+		OldValue: orderProductionAuditValue(before),
+		NewValue: orderProductionAuditValue(updated),
+	})
+
+	message := "Production completed successfully"
+	if start {
+		message = "Production started successfully"
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"message": message,
+		"order":   updated,
+	})
+}
+
+func productionAuditStep(start bool) string {
+	if start {
+		return "start"
+	}
+	return "complete"
 }
 
 // SyncTrackingInfo 同步物流追踪轨迹

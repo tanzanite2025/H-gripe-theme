@@ -49,6 +49,14 @@ func normalizeAdminProductSlug(value string) (string, error) {
 	return slug, nil
 }
 
+func normalizeAdminProductFulfillmentMode(value string) (string, error) {
+	mode := product.NormalizeFulfillmentMode(value)
+	if !product.IsValidFulfillmentMode(mode) {
+		return "", fmt.Errorf("%w: fulfillment_mode must be stock or made_to_order", ErrProductFulfillmentModeInvalid)
+	}
+	return mode, nil
+}
+
 func sameProductInformationTemplateID(current, previous *uint) bool {
 	return current != nil && previous != nil && *current == *previous
 }

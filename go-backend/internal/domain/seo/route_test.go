@@ -22,10 +22,10 @@ func TestBuildStaticRoute(t *testing.T) {
 	require.Equal(t, "/de/company/about", BuildStaticRoute("de", "/company/about").Path)
 }
 
-func TestBuildArticleRouteUsesTheStorefrontCategory(t *testing.T) {
-	require.Equal(t, "/resources/blog/news/release", BuildArticleRoute("en", "release", "featured,news").Path)
-	require.Equal(t, "/resources/blog/news/release", BuildArticleRoute("en", "release", "wheelsbuild,news").Path)
-	require.Equal(t, "/de/resources/blog/wheelsbuild/build-guide", BuildArticleRoute("de", "build-guide", "wheelsbuild").Path)
+func TestBuildArticleRouteUsesTheUnifiedBlogPath(t *testing.T) {
+	require.Equal(t, "/resources/blog/release", BuildArticleRoute("en", "release", "featured,news").Path)
+	require.Equal(t, "/resources/blog/release", BuildArticleRoute("en", "release", "wheelsbuild,news").Path)
+	require.Equal(t, "/de/resources/blog/build-guide", BuildArticleRoute("de", "build-guide", "wheelsbuild").Path)
 	require.Equal(t, "/resources/blog/general-post", BuildArticleRoute("en", "general-post", "").Path)
 }
 

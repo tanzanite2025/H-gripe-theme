@@ -1,0 +1,25 @@
+{
+  "title": "Warranty",
+  "tabs": {
+    "damagedLost": {
+      "label": "Damaged or Lost Goods",
+      "description": "What to do when goods arrive damaged or missing."
+    },
+    "warranty": {
+      "label": "Warranty",
+      "description": "Coverage scope, duration, and claim basics."
+    },
+    "accidentalDamage": {
+      "label": "Accidental Damage",
+      "description": "Support for accidental riding or handling damage."
+    },
+    "protection": {
+      "label": "Protection",
+      "description": "Protection options and service expectations."
+    },
+    "submitWarranty": {
+      "label": "Submit Warranty",
+      "description": "Submit documents and start a warranty request."
+    }
+  }
+}

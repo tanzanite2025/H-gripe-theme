@@ -35,6 +35,7 @@ const collectJSONFiles = (directory: string): string[] => {
 export const collectStorefrontLocaleSources = (projectDir: string): Map<string, string[]> => {
   const localeRoot = path.join(projectDir, 'app', 'i18n', 'locales')
   const messagesRoot = path.join(projectDir, 'app', 'i18n', 'messages')
+  const pageMessagesRoot = path.join(projectDir, 'app', 'i18n', 'page-messages')
   const sources = new Map<string, string[]>()
 
   for (const sourcePath of collectJSONFiles(localeRoot)) {
@@ -45,6 +46,12 @@ export const collectStorefrontLocaleSources = (projectDir: string): Map<string, 
   for (const sourcePath of collectJSONFiles(messagesRoot)) {
     const relativePath = path.relative(messagesRoot, sourcePath)
     const locale = normalizeStorefrontLocaleCode(relativePath.split(path.sep)[0] || '')
+    if (!locale) continue
+    sources.set(locale, [...(sources.get(locale) || []), sourcePath])
+  }
+
+  for (const sourcePath of collectJSONFiles(pageMessagesRoot)) {
+    const locale = normalizeStorefrontLocaleCode(path.basename(sourcePath, '.json'))
     if (!locale) continue
     sources.set(locale, [...(sources.get(locale) || []), sourcePath])
   }

@@ -226,22 +226,15 @@ export interface FAQItem {
   answer_image_url?: string | null
 }
 
-export interface FAQCategory {
-  category_key: string
-  name?: string
-  faqs?: FAQItem[]
-}
-
 export interface FAQPage {
   page_id: string
   locale: string
   title?: string
   route_path?: string
-  categories?: FAQCategory[]
+  items?: FAQItem[]
 }
 
 export interface FAQSelection {
   page: FAQPage
-  category: FAQCategory
   faq: FAQItem
 }

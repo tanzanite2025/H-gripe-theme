@@ -76,11 +76,6 @@ SET subtitle = 'Common questions about store policies',
     updated_at = NOW()
 WHERE subtitle = 'Common questions about H-GRIPE policies';
 
-UPDATE faq_categories
-SET name = 'About our company',
-    updated_at = NOW()
-WHERE name = 'About H-GRIPE';
-
 UPDATE faqs
 SET question = 'Are all of your wheels UCI approved?',
     updated_at = NOW()

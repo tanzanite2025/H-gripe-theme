@@ -1,0 +1,50 @@
+{
+  "title": "孔位方案",
+  "intro": "我们提供多种轮圈打孔方案，以适配不同的花鼓结构和编圈需求。",
+  "sections": {
+    "support": {
+      "title": "我们支持的方案",
+      "items": {
+        "symmetrical": {
+          "label": "对称打孔",
+          "description": "适用于标准花鼓，有助于保持辐条张力平衡。"
+        },
+        "asymmetrical": {
+          "label": "非对称打孔",
+          "description": "优化驱动侧与非驱动侧之间的张力，提升整体稳定性。"
+        },
+        "customCounts": {
+          "label": "定制孔数",
+          "description": "可提供 16、20、24、28、32 和 36 孔配置。"
+        },
+        "angled": {
+          "label": "角度打孔",
+          "description": "根据具体编圈方式优化孔位角度，降低辐条应力。"
+        }
+      }
+    },
+    "customization": {
+      "title": "定制服务",
+      "intro": "我们可以根据具体需求提供定制化打孔方案。",
+      "items": {
+        "specialCounts": "特殊孔数",
+        "customLacing": "定制编圈兼容性",
+        "exclusiveDesigns": "OEM/ODM 专属设计"
+      }
+    },
+    "automated": {
+      "title": "自动化设备的优势",
+      "intro": "所有打孔工序都使用自主开发的自动化设备完成，确保：",
+      "items": {
+        "precision": "高精度孔位",
+        "consistency": "一致性与可重复性",
+        "scalableCapacity": "交付快速，产能可扩展"
+      }
+    },
+    "commitment": {
+      "title": "我们的承诺",
+      "body": "通过将自动化与定制能力结合，我们为不同骑手和品牌提供合适的轮圈打孔方案，支持长期稳定与可靠使用。"
+    }
+  },
+  "closeVideo": "关闭视频"
+}

@@ -1,0 +1,30 @@
+{
+  "title": "How to Choose the Right Size",
+  "standards": {
+    "title": "Manufacturer Standards",
+    "description": "The following hookless (TSS) and hooked (TC) rim inner width charts from DT Swiss show recommended and possible combinations. The HTML tables transcribe the chart rows for search engines and screen readers. Always stay within the limits specified by your tire and rim manufacturers.",
+    "recommended": "Recommended combination",
+    "possible": "Possible combination",
+    "legendDescription": "Recommended combinations are the preferred tire and rim pairings in the chart. Possible combinations are allowed chart pairings outside the preferred range.",
+    "hooklessTitle": "Hookless / Tubeless Straight Side (TSS)",
+    "hookedTitle": "Hooked / Tubeless Crotchet (TC)",
+    "captionHookless": "DT Swiss hookless TSS recommended and possible tire width to rim inner width combinations",
+    "captionHooked": "DT Swiss hooked TC recommended and possible tire width to rim inner width combinations",
+    "headers": {
+      "tireWidthMm": "Tire width (mm)",
+      "tireWidthInch": "Tire width (inch)",
+      "recommendedRim": "Recommended rim inner width (mm)",
+      "possibleRim": "Possible rim inner width (mm)"
+    }
+  },
+  "images": {
+    "sourceTitle": "Source chart images",
+    "hooklessAlt": "DT Swiss hookless TSS rim inner width recommendation chart",
+    "hookedAlt": "DT Swiss hooked TC rim inner width recommendation chart",
+    "hooklessCaption": "HOOKLESS (TSS)",
+    "hookedCaption": "HOOKED (TC)"
+  },
+  "helper": {
+    "noneShown": "None"
+  }
+}

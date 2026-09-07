@@ -7,7 +7,7 @@ export const refundCancellationPolicyFallback: RefundCancellationPolicy = {
     {
       id: 'eligibility',
       title: 'Eligibility',
-      body: 'We accept returns within 30 days of delivery for unused items in original packaging. Custom or personalized items are non-refundable unless defective.',
+      body: 'For stocked, non-custom items, we accept return requests within 30 days of delivery when the item is unused and in original packaging. Made-to-order and custom-configured items follow the cancellation rules in Special Orders.',
     },
     {
       id: 'condition',
@@ -17,7 +17,12 @@ export const refundCancellationPolicyFallback: RefundCancellationPolicy = {
     {
       id: 'special-orders',
       title: 'Special Orders',
-      body: 'Non-stock or custom-configured products (special orders) are not eligible for return or refund, unless the issue is caused by our error.',
+      body: 'Non-stock or custom-configured products (special orders) are made to order. Cancellation may be requested before production or material cutting starts; after production begins, cancellation may be unavailable. If a post-production cancellation is approved, a 15%-20% custom handling fee may be deducted for committed materials and labor.',
+    },
+    {
+      id: 'high-value-signature',
+      title: 'High-Value Delivery',
+      body: 'Orders totaling $750 USD or more require a direct signature at delivery. The signature requirement is part of our delivery and dispute-protection process.',
     },
     {
       id: 'process',
@@ -40,8 +45,8 @@ export const refundCancellationPolicyFallback: RefundCancellationPolicy = {
     },
     {
       id: 'restocking-fee',
-      title: 'Restocking & Refurbishment Fee',
-      body: 'A restocking and refurbishment fee may be charged at 20% of the original purchase value, with a minimum of USD $100.',
+      title: 'Restocking & Refurbishment',
+      body: 'If an eligible return requires refurbishment or is missing original packaging or accessories, a fee of up to 20% of the original purchase value, with a minimum of USD $100, may be deducted after review.',
     },
     {
       id: 'other-costs',
@@ -56,5 +61,5 @@ export const refundCancellationPolicyFallback: RefundCancellationPolicy = {
   ],
   contact_label: 'For refund, cancellation, or return questions, contact our support team through the contact page.',
   contact_url: '/company/contact',
-  updated_at: '2024-12-01T00:00:00Z',
+  updated_at: '2026-09-04T00:00:00Z',
 }

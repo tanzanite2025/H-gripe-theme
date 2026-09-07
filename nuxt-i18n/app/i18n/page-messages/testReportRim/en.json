@@ -1,0 +1,145 @@
+{
+  "title": "Rim Test Report",
+  "intro": "This section summarises how our carbon rims are validated in our in-house lab, including strength, impact, radial load, spoke-hole tension, cutting-piece inspection, and X-ray flatness checks.",
+  "labels": {
+    "purpose": "Purpose:",
+    "testMethod": "Test Method:",
+    "criteriaForEvaluation": "Criteria for Evaluation:",
+    "evaluationCriteria": "Evaluation Criteria:"
+  },
+  "tests": {
+    "strength": {
+      "title": "Strength Test",
+      "purpose": "Verify the rim's ability to withstand static and dynamic loads, ensuring no structural failure occurs during riding.",
+      "standard": "ISO 4210-7:2023",
+      "method": [
+        "Fix the rim or complete wheelset in the testing fixture.",
+        "Apply a vertical static load to the rim, typically in the range of 600-1000 N (approximately 60-100 kgf), and maintain for a specified duration (e.g., 1 minute).",
+        "Conduct dynamic cyclic loading, for example applying alternating forces of 300-400 N over 100,000 cycles to simulate long-term riding conditions."
+      ],
+      "criteria": [
+        "The rim must not exhibit cracks, fractures, or permanent structural failure.",
+        "Permissible deformation must remain within the specified limits (e.g., radial deviation ≤ 1.0 mm, lateral deviation ≤ 1.5 mm).",
+        "After testing, the rim must retain full functional integrity."
+      ]
+    },
+    "impact": {
+      "title": "Impact Test",
+      "purpose": "Simulates external impacts (e.g., rock strikes or landings) to assess rim resistance and structural integrity.",
+      "standard": "ISO 4210-7:2023",
+      "method": [
+        "Secure the rim or complete wheelset in the testing fixture.",
+        "Drop a standardized impact body (e.g., a 22.5 kg steel mass) from a height of 300 mm onto the rim.",
+        "Position the impact point between spoke holes or at a representative weak section of the rim to replicate real-world riding impacts."
+      ],
+      "criteria": [
+        "The rim must not exhibit cracks, fractures, or severe deformation.",
+        "Local dents or scratches must remain within specified limits (e.g., dent depth ≤ 2.0 mm).",
+        "After impact, the rim must retain full functionality, ensuring safe tire mounting and riding."
+      ]
+    },
+    "radial": {
+      "title": "Radial Load Test",
+      "purpose": "Tests rim deformation and load capacity under vertical forces to ensure safety and durability.",
+      "standard": "ISO 4210-7:2023",
+      "method": [
+        "Secure the rim or complete wheelset in the testing fixture.",
+        "Apply a vertical static load, typically 1000-1200 N (approximately 100-120 kgf), and maintain for a specified duration (e.g., 1 minute).",
+        "Conduct dynamic cyclic loading, for example applying alternating forces of 600-800 N over 100,000 cycles to simulate long-term vertical stresses during riding."
+      ],
+      "criteria": [
+        "The rim must not exhibit cracks, fractures, or permanent structural failure.",
+        "Radial deformation must remain within specified limits (e.g., radial deviation ≤ 1.0 mm).",
+        "After testing, the rim must retain full functionality, ensuring safe tire mounting and riding performance."
+      ]
+    },
+    "holeTension": {
+      "title": "Hole Tension Test",
+      "purpose": "Evaluates rim ability to withstand spoke-hole tension under static and dynamic loads, ensuring durability and safety of spoke interfaces.",
+      "standard": "ISO 4210-7:2023",
+      "method": [
+        "Secure the rim in the testing fixture and apply standardized bolts or tensile devices at spoke-hole positions.",
+        "Apply a static tensile load to each spoke hole, typically 1000-1200 N (approximately 100-120 kgf), and maintain for a specified duration (e.g., 1 minute).",
+        "Conduct dynamic cyclic tensile loading, for example applying alternating forces of 600-800 N over 100,000 cycles to simulate long-term variations in spoke tension during riding."
+      ],
+      "criteria": [
+        "No cracks, fractures, or permanent structural failures should occur around spoke holes.",
+        "Local deformation must remain within specified limits (e.g., hole diameter change ≤ 0.2 mm).",
+        "After testing, the rim must retain full functionality, ensuring safe spoke installation and use."
+      ]
+    },
+    "cuttingPieces": {
+      "title": "Rim Cutting Pieces Test",
+      "purpose": "Analyze rim cross-sections by cutting a portion to evaluate both internal and external features, ensuring compliance with dimensional and quality standards.",
+      "method": [
+        "Cut representative sections of the rim at critical points (e.g., spoke hole area, joint section, braking surface).",
+        "Examine the cross-sections under magnification or with precision measuring tools.",
+        "Identify any burrs, sharp edges, irregularities, or deviations in wall thickness, material distribution, or dimensional specifications.",
+        "Compare measurements against design tolerances (e.g., wall thickness ±0.1 mm, hole diameter ±0.05 mm)."
+      ],
+      "criteria": [
+        "No burrs or sharp edges that could compromise spoke or tire safety.",
+        "Dimensional deviations must remain within specified tolerances.",
+        "Internal and external surfaces must be smooth and consistent, with no voids, cracks, or inclusions.",
+        "Rim sections must demonstrate uniformity and compliance with quality standards before approval for mass production."
+      ]
+    },
+    "xray": {
+      "title": "X-ray Flatness Inspection",
+      "purpose": "Assess the internal flatness and structural uniformity of the rim using high-resolution X-ray imaging. This non-destructive test ensures that hidden defects do not compromise performance or safety.",
+      "method": [
+        "Place the rim in a high-resolution X-ray inspection system.",
+        "Capture cross-sectional and full-profile images of the rim to evaluate internal geometry.",
+        "Analyze images for inconsistencies such as warping, voids, inclusions, or uneven material distribution.",
+        "Compare results against design specifications (e.g., flatness tolerance ≤ 0.2 mm, uniform wall thickness within ± 0.1 mm)."
+      ],
+      "criteria": [
+        "No internal voids, cracks, or inclusions that could weaken the rim structure.",
+        "Flatness deviations must remain within specified tolerances.",
+        "Material distribution must be uniform, ensuring consistent strength and durability.",
+        "Rim must pass inspection without requiring destructive sampling, confirming production quality."
+      ]
+    }
+  },
+  "gallery": [
+    {
+      "alt": "Overview of our rim laboratory test setup",
+      "caption": "Overall view of the rim test setup used in our lab."
+    },
+    {
+      "alt": "Carbon rim strength test under static load",
+      "caption": "Strength Test - evaluating rim performance under static and dynamic loads."
+    },
+    {
+      "alt": "Additional view of carbon rim strength testing",
+      "caption": "Strength Test - additional view of clamping and load application."
+    },
+    {
+      "alt": "Carbon rim radial load test showing vertical loading",
+      "caption": "Radial Load Test - checking deformation and load capacity under vertical forces."
+    },
+    {
+      "alt": "Spoke-hole tension test setup for a carbon rim",
+      "caption": "Hole Tension Test - measuring how spoke holes withstand spoke tension and repeated loading."
+    },
+    {
+      "alt": "Cross-section cutting piece of a carbon rim",
+      "caption": "Rim Cutting Pieces Test - inspecting internal layup, wall thickness, and burrs."
+    },
+    {
+      "alt": "X-ray flatness inspection of a carbon rim",
+      "caption": "X-ray Flatness Inspection - non-destructive check for internal uniformity and flatness."
+    }
+  ],
+  "video": {
+    "alt": "Play spoke-hole strength test video for our carbon rims",
+    "label": "Watch spoke-hole strength test video"
+  },
+  "disclaimer": {
+    "title": "Disclaimer",
+    "body": {
+      "0": "We pick only one sample for every test report and the results will likely vary as the rim diameters change. Please note that the differences between models in test results are specially designed by our engineers for the intended uses.",
+      "1": "All the test results of this section are based on our lab criteria and are implemented at our well-established testing facilities. Our team is only responsible for the test results themselves which are not set for any comparison to other brands or such regards."
+    }
+  }
+}

@@ -78,41 +78,16 @@ func (h *Handler) recordPayPalDisputeRiskEvent(c *gin.Context, event pgateway.Pa
 		return true, err
 	}
 
-	result, submitErr := h.autoSubmitPayPalDisputeEvidence(c, dispute)
 	c.Set("paypal_dispute_id", dispute.ID)
 	c.Set("paypal_dispute_external_id", dispute.PayPalDisputeID)
-	if result != nil {
-		c.Set("paypal_dispute_evidence_submitted", true)
-		c.Set("paypal_dispute_evidence_tracking_number", result.TrackingNumber)
+	if dispute.OrderID != nil {
+		c.Set("paypal_dispute_order_id", *dispute.OrderID)
 	}
-	if submitErr != nil {
-		c.Set("paypal_dispute_evidence_submitted", false)
-		c.Set("paypal_dispute_evidence_error", submitErr.Error())
-	}
+	// A dispute webhook records the event and opens the manual review path.
+	// Evidence remains editable until an operator explicitly submits it.
+	c.Set("paypal_dispute_evidence_submitted", false)
+	c.Set("paypal_dispute_evidence_pending_review", true)
 	return true, nil
-}
-
-func (h *Handler) autoSubmitPayPalDisputeEvidence(c *gin.Context, dispute *paymentdomain.PayPalDispute) (*service.SubmitPayPalDisputeEvidenceResult, error) {
-	if h == nil || h.paymentService == nil || dispute == nil {
-		return nil, nil
-	}
-	config, err := h.loadPaymentGatewayConfiguration(pgateway.GatewayPayPal)
-	if err != nil {
-		return nil, err
-	}
-	result, err := h.paymentService.SubmitPayPalDisputeEvidence(c.Request.Context(), service.SubmitPayPalDisputeEvidenceInput{
-		DisputeID:   dispute.ID,
-		ClientID:    config.APIKey,
-		SecretKey:   config.SecretKey,
-		Environment: config.Environment,
-		// Webhook submissions are the system's automatic best-effort path;
-		// warnings must not turn an open PayPal response into a missed response.
-		OverrideWarnings: true,
-	})
-	if err != nil {
-		return nil, err
-	}
-	return result, nil
 }
 
 func firstJSONPathString(resource map[string]interface{}, keys ...string) string {

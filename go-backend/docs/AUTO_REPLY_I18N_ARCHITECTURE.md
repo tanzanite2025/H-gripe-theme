@@ -346,7 +346,6 @@ Repository 不再自行决定：
 当前 FAQ 已经按语言拆开管理：
 
 - `faq_pages.locale`
-- `faq_categories.locale`
 - `faqs.locale`
 - `faqs.parent_id` 可用于翻译关联
 

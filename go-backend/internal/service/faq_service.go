@@ -70,29 +70,21 @@ func (s *FAQService) GetByID(id uint) (*faq.FAQ, error) {
 }
 
 // List 获取FAQ列表
-func (s *FAQService) List(locale, pageID, category, status string, page, pageSize int) ([]faq.FAQ, int64, error) {
+func (s *FAQService) List(locale, pageID, status string, page, pageSize int) ([]faq.FAQ, int64, error) {
 	offset := (page - 1) * pageSize
 	if locale != "" {
 		locale = normalizeLocale(locale)
 	}
-	items, total, err := s.faqRepo.List(locale, pageID, category, status, offset, pageSize)
+	items, total, err := s.faqRepo.List(locale, pageID, status, offset, pageSize)
 	return sanitizeFAQSliceForPublic(items, s.mediaURLResolver), total, err
 }
 
-func (s *FAQService) ListAdmin(locale, pageID, category, status, search string, page, pageSize int) ([]faq.FAQ, int64, error) {
+func (s *FAQService) ListAdmin(locale, pageID, status, search string, page, pageSize int) ([]faq.FAQ, int64, error) {
 	offset := (page - 1) * pageSize
 	if locale != "" {
 		locale = normalizeLocale(locale)
 	}
-	return s.faqRepo.ListAdmin(locale, pageID, category, status, search, offset, pageSize)
-}
-
-// GetCategories 获取所有分类
-func (s *FAQService) GetCategories(locale string) ([]string, error) {
-	if locale != "" {
-		locale = normalizeLocale(locale)
-	}
-	return s.faqRepo.GetCategories(locale)
+	return s.faqRepo.ListAdmin(locale, pageID, status, search, offset, pageSize)
 }
 
 // Create 创建FAQ
@@ -105,7 +97,7 @@ func (s *FAQService) Create(f *faq.FAQ) error {
 		return err
 	}
 	f.Locale = locale
-	if err := s.validateFAQPlacement(f.PageID, f.Category, f.Locale); err != nil {
+	if err := s.validateFAQPage(f.PageID, f.Locale); err != nil {
 		return err
 	}
 	if err := s.faqRepo.Create(f); err != nil {
@@ -132,7 +124,7 @@ func (s *FAQService) Update(f *faq.FAQ) error {
 		return err
 	}
 	f.Locale = locale
-	if err := s.validateFAQPlacement(f.PageID, f.Category, f.Locale); err != nil {
+	if err := s.validateFAQPage(f.PageID, f.Locale); err != nil {
 		return err
 	}
 	if err := s.faqRepo.Update(f); err != nil {
@@ -164,9 +156,6 @@ func (s *FAQService) UpdateAdminFAQ(id uint, input FAQAdminUpdateInput) (*faq.FA
 	}
 	if input.PageID != "" {
 		existingFAQ.PageID = input.PageID
-	}
-	if input.Category != "" {
-		existingFAQ.Category = input.Category
 	}
 	if input.Locale != "" {
 		locale, err := validateFAQLocaleUpdate(existingFAQ.Locale, input.Locale)
@@ -290,15 +279,6 @@ func (s *FAQService) BatchUpdateOrder(orders map[uint]int) error {
 // IncrementViewCount 增加浏览次数
 func (s *FAQService) IncrementViewCount(id uint) error {
 	return s.faqRepo.IncrementViewCount(id)
-}
-
-// GetByCategory 获取分类下的FAQ
-func (s *FAQService) GetByCategory(category, locale string) ([]faq.FAQ, error) {
-	if locale != "" {
-		locale = normalizeLocale(locale)
-	}
-	items, err := s.faqRepo.GetByCategory(category, locale)
-	return sanitizeFAQSliceForPublic(items, s.mediaURLResolver), err
 }
 
 // GetPopular 获取热门FAQ

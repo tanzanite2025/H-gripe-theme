@@ -41,23 +41,12 @@
             />
           </AdminFormField>
 
-          <AdminFormField label="页面" required :error="formErrors.page_id" :description="placementLocked ? '从分类添加时页面已锁定' : ''">
+          <AdminFormField label="页面" required :error="formErrors.page_id" :description="placementLocked ? '从页面添加时页面已锁定' : ''">
             <Select v-model="faqForm.page_id" :disabled="placementLocked">
               <SelectTrigger class="w-full"><SelectValue placeholder="选择前端页面" /></SelectTrigger>
               <SelectContent>
                 <SelectItem v-for="page in faqPageOptions" :key="page.value" :value="page.value">
                   {{ page.label }}
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </AdminFormField>
-
-          <AdminFormField label="分类" required :error="formErrors.category" :description="placementLocked ? '从分类添加时分类已锁定' : ''">
-            <Select v-model="faqForm.category" :disabled="placementLocked || availableFaqCategories.length === 0">
-              <SelectTrigger class="w-full"><SelectValue placeholder="选择页面分类" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem v-for="category in availableFaqCategories" :key="category.category_key" :value="category.category_key">
-                  {{ category.icon ? `${category.icon} ` : '' }}{{ category.name }}
                 </SelectItem>
               </SelectContent>
             </Select>
@@ -94,7 +83,6 @@
 import { computed } from 'vue'
 import { LoaderCircle } from '@lucide/vue'
 import type { LanguageOption } from '@/lib/languages'
-import type { FAQCategory } from '@/lib/faqAdminPresentation'
 import AdminFormField from '@/components/admin/AdminFormField.vue'
 import FaqAnswerEditor from '@/components/admin/FaqAnswerEditor.vue'
 import StorefrontLocaleSelect from '@/components/admin/StorefrontLocaleSelect.vue'
@@ -119,7 +107,6 @@ const props = withDefaults(defineProps<{
   formErrors: FAQFormErrors
   submitting?: boolean
   faqPageOptions: LanguageOption[]
-  availableFaqCategories: FAQCategory[]
   languageOptions: LanguageOption[]
   placementLocked?: boolean
 }>(), {

@@ -2,10 +2,11 @@
   <section id="appearance" class="company-section">
     <!-- Intro Header -->
     <div class="text-center mb-10 max-w-3xl mx-auto">
-      <h2 class="text-xl sm:text-2xl font-bold tz-text-primary mb-4">Appearance & Customization</h2>
+      <h2 class="text-xl sm:text-2xl font-bold tz-text-primary mb-4">
+        {{ t('companyAboutAppearance.title') }}
+      </h2>
       <p class="tz-text-secondary">
-        We offer a wide range of carbon fiber weave patterns and surface finishes to meet the aesthetic and performance preferences of every rider.
-        All weaves are structural carbon fiber, not printed or laminated.
+        {{ t('companyAboutAppearance.intro') }}
       </p>
     </div>
 
@@ -13,16 +14,16 @@
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-16">
        <GuideImage
           src="/company/aboutus/appearance/carbon-rim-finish1.webp"
-          alt="carbon rim surface finish detail 1"
+          :alt="t('companyAboutAppearance.images.matteAlt')"
           :zoomOnClick="true"
-          caption="Matte Finish Detail"
+          :caption="t('companyAboutAppearance.images.matteCaption')"
           class="rounded-xl overflow-hidden shadow-lg border tz-border-subtle"
         />
         <GuideImage
           src="/company/aboutus/appearance/carbonrims-finish2.webp"
-          alt="carbon rim surface finish detail 2"
+          :alt="t('companyAboutAppearance.images.glossyAlt')"
           :zoomOnClick="true"
-          caption="Glossy Finish Detail"
+          :caption="t('companyAboutAppearance.images.glossyCaption')"
           class="rounded-xl overflow-hidden shadow-lg border tz-border-subtle"
         />
     </div>
@@ -31,7 +32,9 @@
     <div class="mb-16">
       <div class="flex items-center gap-3 mb-6">
         <div class="w-1 h-6 bg-emerald-500 rounded-full"></div>
-        <h3 class="text-xl font-bold tz-text-primary">Weave Patterns</h3>
+        <h3 class="text-xl font-bold tz-text-primary">
+          {{ t('companyAboutAppearance.sections.weavePatterns') }}
+        </h3>
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <div v-for="item in weavePatterns" :key="item.name" class="premium-card p-5 group hover:tz-surface-panel transition-colors">
@@ -50,7 +53,9 @@
       <div>
         <div class="flex items-center gap-3 mb-6">
           <div class="w-1 h-6 bg-emerald-500 rounded-full"></div>
-          <h3 class="text-xl font-bold tz-text-primary">Gloss Levels</h3>
+        <h3 class="text-xl font-bold tz-text-primary">
+          {{ t('companyAboutAppearance.sections.glossLevels') }}
+        </h3>
         </div>
         <div class="grid grid-cols-1 gap-3">
           <div v-for="item in glossLevels" :key="item.name" class="premium-card p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
@@ -64,10 +69,14 @@
       <div>
         <div class="flex items-center gap-3 mb-6">
           <div class="w-1 h-6 bg-emerald-500 rounded-full"></div>
-          <h3 class="text-xl font-bold tz-text-primary">Crystal Effects</h3>
+        <h3 class="text-xl font-bold tz-text-primary">
+          {{ t('companyAboutAppearance.sections.crystalEffects') }}
+        </h3>
         </div>
         <div class="premium-card p-6">
-          <p class="text-sm tz-text-secondary mb-4">Crystal finishes use micro-layer coating technology for unique light reflection and color depth.</p>
+          <p class="text-sm tz-text-secondary mb-4">
+            {{ t('companyAboutAppearance.crystalIntro') }}
+          </p>
           <div class="flex flex-wrap gap-2">
             <span v-for="color in crystalEffects" :key="color" class="px-3 py-1.5 rounded-full text-sm font-medium tz-surface-panel border tz-border-subtle tz-text-secondary">
               {{ color }}
@@ -81,7 +90,12 @@
     <div class="mb-16">
       <div class="flex items-center gap-3 mb-6">
         <div class="w-1 h-6 bg-orange-500 rounded-full"></div>
-        <h3 class="text-xl font-bold tz-text-primary">Brake Track Options <span class="text-sm font-normal tz-text-muted ml-2">(Rim Brake Only)</span></h3>
+        <h3 class="text-xl font-bold tz-text-primary">
+          {{ t('companyAboutAppearance.sections.brakeTracks') }}
+          <span class="text-sm font-normal tz-text-muted ml-2">
+            {{ t('companyAboutAppearance.rimBrakeOnly') }}
+          </span>
+        </h3>
       </div>
       <div class="premium-card p-0 overflow-hidden">
          <div class="grid divide-y divide-slate-200">
@@ -90,7 +104,7 @@
             </div>
          </div>
          <div class="tz-surface-panel p-4 text-xs tz-text-muted border-t tz-border-subtle">
-           All brake tracks are heat-treated and abrasion-tested for compatibility with mainstream brake pads.
+           {{ t('companyAboutAppearance.brakeTrackNote') }}
          </div>
       </div>
     </div>
@@ -100,23 +114,25 @@
       <div>
          <div class="flex items-center gap-3 mb-4">
             <div class="w-1 h-6 bg-emerald-400 rounded-full"></div>
-            <h3 class="text-xl font-bold tz-text-primary">Laser Engraving</h3>
+            <h3 class="text-xl font-bold tz-text-primary">
+              {{ t('companyAboutAppearance.sections.laserEngraving') }}
+            </h3>
          </div>
         <div class="prose prose-invert prose-sm max-w-none tz-text-secondary">
-           <p>In addition to traditional decals and painted graphics, we support laser-engraved logos as a <strong>sustainable, faster</strong> option.</p>
+           <p>{{ t('companyAboutAppearance.laser.body') }}</p>
            <ul class="my-4 space-y-2 list-none pl-0">
              <li class="flex gap-2">
-               <span class="text-emerald-600">✔</span> Reduces plastic waste (no vinyl decals/masks).
+               <span class="text-emerald-600">✔</span> {{ t('companyAboutAppearance.laser.bullets.0') }}
              </li>
              <li class="flex gap-2">
-               <span class="text-emerald-600">✔</span> Shortens lead time by 5-7 days.
+               <span class="text-emerald-600">✔</span> {{ t('companyAboutAppearance.laser.bullets.1') }}
              </li>
              <li class="flex gap-2">
-               <span class="text-emerald-600">✔</span> Permanent, durable finish.
+               <span class="text-emerald-600">✔</span> {{ t('companyAboutAppearance.laser.bullets.2') }}
              </li>
            </ul>
            <p class="text-xs tz-surface-panel p-3 rounded border tz-border-subtle">
-             See our <strong>Wheelset Buyers Guide</strong> for more advice on choosing between laser and decals.
+             {{ t('companyAboutAppearance.laser.guideNote') }}
            </p>
          </div>
       </div>
@@ -126,7 +142,7 @@
          <div class="relative rounded-lg overflow-hidden aspect-video tz-surface-panel">
             <img
               src="/company/aboutus/appearance/carbon-rim-laser-engraving-LOGO.webp"
-              alt="Laser engraving video"
+              :alt="t('companyAboutAppearance.laser.videoAlt')"
               class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-300"
               loading="lazy"
             />
@@ -136,7 +152,9 @@
                </div>
             </div>
             <div class="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/90 to-transparent">
-              <span class="text-sm font-medium tz-text-primary">Watch Process Video</span>
+              <span class="text-sm font-medium tz-text-primary">
+                {{ t('companyAboutAppearance.laser.watchVideo') }}
+              </span>
             </div>
          </div>
       </div>
@@ -144,14 +162,16 @@
 
     <!-- Presentation Suggestions (Tips) -->
     <div class="premium-card p-6 border-l-4 border-l-emerald-500 bg-emerald-50">
-      <h3 class="text-lg font-bold tz-text-primary mb-3">Presentation Suggestions</h3>
+      <h3 class="text-lg font-bold tz-text-primary mb-3">
+        {{ t('companyAboutAppearance.suggestions.title') }}
+      </h3>
       <ul class="space-y-2 text-sm tz-text-secondary">
-        <li>• Organize options into three clear sections: Weave, Brake Track, Finish.</li>
-        <li>• Pair each option with a high-resolution image and concise label.</li>
-        <li>• Include “Recommended combinations” or “Customer favorites” to guide decision-making.</li>
+        <li>• {{ t('companyAboutAppearance.suggestions.items.0') }}</li>
+        <li>• {{ t('companyAboutAppearance.suggestions.items.1') }}</li>
+        <li>• {{ t('companyAboutAppearance.suggestions.items.2') }}</li>
       </ul>
       <p class="mt-4 text-xs tz-text-muted pt-3 border-t tz-border-subtle">
-        For OEM clients, team orders, or custom branding requests, we offer logo integration, laser etching, and color matching services. Contact us for tailored solutions.
+        {{ t('companyAboutAppearance.suggestions.footer') }}
       </p>
     </div>
 
@@ -167,6 +187,7 @@
         <button
           type="button"
           class="tz-global-close-btn absolute top-4 right-4 z-10"
+          :aria-label="t('companyAboutAppearance.closeVideo')"
           @click="showLaserVideo = false"
         >
           ×
@@ -185,41 +206,55 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { useI18n } from '#imports'
 import GuideImage from '~/components/GuideImage.vue'
+import { usePageMessages } from '~/composables/usePageMessages'
+
+const { locale, t } = useI18n()
+const { loadPageMessages } = usePageMessages('companyAboutAppearance')
+
+await loadPageMessages(locale.value)
+
+watch(locale, (nextLocale) => {
+  void loadPageMessages(nextLocale)
+})
 
 const showLaserVideo = ref(false)
 
-const weavePatterns = [
-  { name: 'UD (Unidirectional)', finish: 'Matte', desc: 'Minimal straight grain, ultra-light.' },
-  { name: 'Butterfly', finish: 'Matte', desc: 'Unique organic pattern, high visual impact.' },
-  { name: 'Marble', finish: 'Matte', desc: 'Stone-like texture, bold and distinctive.' },
-  { name: '3K', finish: 'Satin', desc: 'Classic checkerboard, balanced look.' },
-  { name: '3K Twill (Vertical)', finish: 'Satin', desc: 'Diagonal weave, dynamic appearance.' },
-  { name: '3K Twill (Horizontal)', finish: 'Satin', desc: 'Horizontal twill, modern aesthetic.' },
-  { name: '12K', finish: 'Satin', desc: 'Coarse weave, powerful visual texture.' },
-  { name: '12K Twill (Vertical)', finish: 'Satin', desc: 'Bold diagonal weave, vertical layout.' },
-  { name: '12K Twill (Horizontal)', finish: 'Satin', desc: 'Horizontal twill, aggressive styling.' },
-]
+const weavePatternKeys = [
+  'ud',
+  'butterfly',
+  'marble',
+  'threeK',
+  'threeKTwillVertical',
+  'threeKTwillHorizontal',
+  'twelveK',
+  'twelveKTwillVertical',
+  'twelveKTwillHorizontal',
+] as const
 
-const glossLevels = [
-  { name: 'Matte', desc: 'Subtle, scratch-resistant.' },
-  { name: 'Satin', desc: 'Soft sheen, balanced texture.' },
-  { name: 'Glossy', desc: 'High shine, premium look.' },
-  { name: 'Paintless', desc: 'Raw carbon fiber, ultra-lightweight.' },
-]
+const weavePatterns = computed(() => weavePatternKeys.map((key) => ({
+  name: t(`companyAboutAppearance.weaves.${key}.name`),
+  finish: t(`companyAboutAppearance.weaves.${key}.finish`),
+  desc: t(`companyAboutAppearance.weaves.${key}.description`),
+})))
 
-const crystalEffects = [
-  'Black', 'Silver', 'Orange', 'Purple', 'Blue'
-]
+const glossLevelKeys = ['matte', 'satin', 'glossy', 'paintless'] as const
+const glossLevels = computed(() => glossLevelKeys.map((key) => ({
+  name: t(`companyAboutAppearance.gloss.${key}.name`),
+  desc: t(`companyAboutAppearance.gloss.${key}.description`),
+})))
 
-const brakeTracks = [
-  'High TG Resin UD (UD weave only)',
-  'High TG Resin Graphene',
-  'AC3 Grooved (two styles)',
-  'UD C-Grooved (UD weave only)',
-  'C-Grooved Graphene'
-]
+const crystalEffectKeys = ['black', 'silver', 'orange', 'purple', 'blue'] as const
+const crystalEffects = computed(() => crystalEffectKeys.map((key) => (
+  t(`companyAboutAppearance.crystalEffects.${key}`)
+)))
+
+const brakeTrackKeys = ['resinUd', 'resinGraphene', 'ac3Grooved', 'udCGrooved', 'cGroovedGraphene'] as const
+const brakeTracks = computed(() => brakeTrackKeys.map((key) => (
+  t(`companyAboutAppearance.brakeTracks.${key}`)
+)))
 </script>
 
 <style scoped>

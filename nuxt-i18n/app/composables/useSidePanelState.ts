@@ -1,6 +1,5 @@
 import { computed, ref } from 'vue'
 import { useOverlayBackStack } from '~/composables/useOverlayBackStack'
-import { activateStorefrontClientOverlays } from '~/utils/clientOverlays'
 
 const leftOpen = ref(false)
 const leftEverOpened = ref(false)
@@ -13,7 +12,6 @@ export const useSidePanelState = () => {
   }
 
   const openLeft = () => {
-    activateStorefrontClientOverlays()
     leftEverOpened.value = true
     leftOpen.value = true
     overlayBackStack.open('account-sidebar', closeLeftState)

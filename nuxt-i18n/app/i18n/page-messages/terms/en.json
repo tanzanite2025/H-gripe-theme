@@ -1,0 +1,66 @@
+{
+  "title": "Terms of Service",
+  "pageIntro": "Please read these terms together with our Refund & Cancellation Policy and Warranty & After-Sales Policy before using our website or making a purchase.",
+  "sections": {
+    "agreement": {
+      "title": "1. Agreement to Terms",
+      "body": "By accessing or using this website, you agree to be bound by these Terms of Service and all applicable laws and regulations. If you do not agree, please do not use this site."
+    },
+    "license": {
+      "title": "2. Use License",
+      "body": "Permission is granted to temporarily view the materials on this website for personal, non-commercial use. This license does not permit modification, copying, or reverse engineering.",
+      "restrictions": {
+        "0": "Using materials for commercial purposes",
+        "1": "Removing any copyright or proprietary notices",
+        "2": "Transferring materials to another person"
+      }
+    },
+    "products": {
+      "title": "3. Products and Pricing",
+      "body": "Products are subject to availability and price changes. We may correct errors and refuse or cancel orders where pricing or descriptions are inaccurate."
+    },
+    "orders": {
+      "title": "4. Orders and Payment",
+      "body": "Orders require full payment before processing. We accept major payment methods as displayed at checkout. All orders are subject to acceptance and availability. Made-to-order products may be purchased even when no finished stock is available because production begins after payment confirmation."
+    },
+    "shipping": {
+      "title": "5. Shipping and Delivery",
+      "body": "Shipping times vary by location and method. For made-to-order products, the production schedule is added to the shipping time and the expected delivery window is confirmed with the order. Delivery estimates are not guarantees. Orders totaling $750 USD or more require a direct signature at delivery. Risk of loss transfers upon delivery to the carrier."
+    },
+    "returns": {
+      "title": "6. Returns and Refunds",
+      "prefix": "Returns, cancellations, refunds, damaged or lost deliveries, and exchanges are governed by the current ",
+      "link": "Refund & Cancellation Policy",
+      "suffix": ". Product-specific terms shown on the product page or at checkout may also apply. Please review the policy before placing an order; it defines eligibility, deadlines, fees, shipping responsibility, and refund timing."
+    },
+    "warranty": {
+      "title": "7. Warranty",
+      "prefix": "Warranty coverage for eligible products is described in the current ",
+      "link": "Warranty & After-Sales Policy",
+      "suffix": ". Coverage is product-specific and excludes misuse, unauthorized modifications, accidents, and normal wear and tear unless the applicable policy says otherwise."
+    },
+    "liability": {
+      "title": "8. Limitation of Liability",
+      "body": "To the fullest extent permitted by applicable law, we are not liable for indirect or consequential damages arising from use of the site or products. Nothing in these terms limits rights or remedies that cannot legally be excluded. Where a limitation is allowed, our total liability is limited to the amount paid for the product in question."
+    },
+    "intellectualProperty": {
+      "title": "9. Intellectual Property",
+      "body": "Site content is owned by us or our suppliers and protected by copyright and trademark laws."
+    },
+    "governingLaw": {
+      "title": "10. Governing Law",
+      "body": "These terms are governed by applicable laws without regard to conflict of law principles. Disputes are resolved in the appropriate courts."
+    },
+    "changes": {
+      "title": "11. Changes to Terms",
+      "body": "We may modify these terms at any time. Continued use of the site after changes constitutes acceptance."
+    },
+    "contact": {
+      "title": "12. Contact Us",
+      "prefix": "Questions about these Terms? Contact our support team through the ",
+      "link": "contact page",
+      "suffix": "."
+    }
+  },
+  "lastUpdated": "Last updated: September 4, 2026"
+}

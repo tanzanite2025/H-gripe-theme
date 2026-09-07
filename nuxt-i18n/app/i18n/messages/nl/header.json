@@ -3,10 +3,19 @@
     "title": "Producten en FAQ zoeken",
     "body": "Klik om producten, FAQ en meer te zoeken."
   },
+  "languagePicker": {
+    "title": "Taal",
+    "trigger": "Taal wijzigen",
+    "close": "Taalkeuze sluiten",
+    "optionsLabel": "Kies een taal"
+  },
   "globalNavigationTransition": {
     "ariaLabel": "Global content navigation",
     "optionsLabel": "Choose a destination",
     "trigger": "Open content navigation",
-    "triggerBody": "Choose Products, FAQ, Pages, or Blog."
+    "triggerBody": "Choose Products, FAQ, Pages, or Blog.",
+    "options": {
+      "pages": "Pages"
+    }
   }
 }

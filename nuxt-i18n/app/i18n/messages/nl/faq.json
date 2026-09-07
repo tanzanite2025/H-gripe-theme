@@ -2,10 +2,7 @@
   "title": "Veelgestelde vragen",
   "subtitle": "Vind antwoorden op veelgestelde vragen over onze producten en diensten",
   "ui": {
-    "categorizedSupport": "Ondersteuning per categorie",
     "quickAnswers": "Snelle antwoorden op veelgestelde vragen",
-    "categoriesAriaLabel": "FAQ-categorieën",
-    "categoriesLabel": "FAQ-categorieën",
     "all": "Alles",
     "viewAll": "Alle FAQ bekijken",
     "emptySection": "Geen FAQ beschikbaar voor deze sectie.",
@@ -13,7 +10,6 @@
     "searchPlaceholder": "FAQ zoeken...",
     "viewMoreContent": "Meer inhoud bekijken",
     "noResults": "Geen FAQ gevonden voor \"{query}\"",
-    "allFaqsMetaTitle": "Alle FAQ",
     "loadingAnswers": "Antwoorden laden",
     "illustrationAlt": "FAQ-afbeelding",
     "selectQuestion": "Select a question to view the answer."

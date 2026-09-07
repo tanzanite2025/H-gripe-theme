@@ -8,7 +8,6 @@ type createFAQRequest struct {
 	AnswerImageWidth  int    `json:"answer_image_width"`
 	AnswerImageHeight int    `json:"answer_image_height"`
 	PageID            string `json:"page_id"`
-	Category          string `json:"category" binding:"required"`
 	Locale            string `json:"locale" binding:"required"`
 	Status            string `json:"status" binding:"required,oneof=draft published"`
 	Order             int    `json:"order"`
@@ -22,7 +21,6 @@ type updateFAQRequest struct {
 	AnswerImageWidth  int    `json:"answer_image_width"`
 	AnswerImageHeight int    `json:"answer_image_height"`
 	PageID            string `json:"page_id"`
-	Category          string `json:"category"`
 	Locale            string `json:"locale"`
 	Status            string `json:"status" binding:"omitempty,oneof=draft published"`
 	Order             int    `json:"order"`
@@ -36,16 +34,6 @@ type faqPageRequest struct {
 	Subtitle  string `json:"subtitle"`
 	Status    string `json:"status" binding:"required,oneof=active hidden"`
 	SortOrder int    `json:"sort_order"`
-}
-
-type faqCategoryRequest struct {
-	PageID      string `json:"page_id" binding:"required"`
-	CategoryKey string `json:"category_key"`
-	Name        string `json:"name" binding:"required"`
-	Icon        string `json:"icon"`
-	Locale      string `json:"locale" binding:"required"`
-	Status      string `json:"status" binding:"required,oneof=active hidden"`
-	SortOrder   int    `json:"sort_order"`
 }
 
 type updateFAQOrderRequest struct {

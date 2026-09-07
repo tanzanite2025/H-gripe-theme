@@ -87,6 +87,27 @@
     "member": "会员",
     "calculator": "计算器"
   },
+  "orders": {
+    "madeToOrder": "定制生产",
+    "stock": "现货",
+    "mixed": "混合履约",
+    "production": "生产状态",
+    "productionStatus": {
+      "notApplicable": "不适用",
+      "notStarted": "等待生产",
+      "started": "生产中",
+      "completed": "生产已完成",
+      "cancelled": "生产已取消"
+    },
+    "productionStartedAt": "生产开始",
+    "productionCompletedAt": "生产完成",
+    "signatureRequired": "配送需要签名收货",
+    "items": "件",
+    "item": "件",
+    "loading": "订单加载中...",
+    "empty": "暂无订单",
+    "confirm": "和客服确认订单"
+  },
   "transfer": {
     "title": "转接会话",
     "targetAgentLabel": "目标客服 *",

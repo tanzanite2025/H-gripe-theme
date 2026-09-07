@@ -18,6 +18,7 @@ type PostCreateInput struct {
 	FeaturedImg        string
 	Tags               string
 	TranslationGroupID *uint
+	CategoryIDs        []uint
 }
 
 type PostUpdateInput struct {
@@ -31,10 +32,20 @@ type PostUpdateInput struct {
 	Tags                     *string
 	TranslationGroupID       *uint
 	UpdateTranslationGroupID bool
+	CategoryIDs              []uint
+	UpdateCategoryIDs        bool
 }
 
 func (s *PostService) ListAdmin(page, pageSize int, status, locale, search, authorID string) ([]post.Post, int64, error) {
 	return s.postRepo.FindAllWithFilters(page, pageSize, status, locale, search, authorID)
+}
+
+func (s *PostService) normalizePostCategoryIDs(categoryIDs []uint, locale string) ([]uint, error) {
+	categoryIDs = uniqueCategoryIDs(categoryIDs)
+	if err := s.categoryService.ValidatePostCategories(categoryIDs, locale); err != nil {
+		return nil, err
+	}
+	return categoryIDs, nil
 }
 
 func (s *PostService) GetAdminPost(id uint) (*post.Post, error) {
@@ -71,6 +82,10 @@ func (s *PostService) CreateAdminPost(input PostCreateInput) (*post.Post, error)
 	if err := s.ensureSlugAvailable(input.Slug, locale, 0); err != nil {
 		return nil, err
 	}
+	categoryIDs, err := s.normalizePostCategoryIDs(input.CategoryIDs, locale)
+	if err != nil {
+		return nil, err
+	}
 
 	newPost := &post.Post{
 		Title:              input.Title,
@@ -91,6 +106,10 @@ func (s *PostService) CreateAdminPost(input PostCreateInput) (*post.Post, error)
 	}
 
 	if err := s.postRepo.Create(newPost); err != nil {
+		return nil, err
+	}
+	if err := s.categoryService.ReplacePostCategories(newPost.ID, categoryIDs); err != nil {
+		_ = s.postRepo.Delete(newPost.ID)
 		return nil, err
 	}
 	s.invalidateStorefrontHTMLCache("admin post create")
@@ -126,6 +145,13 @@ func (s *PostService) UpdateAdminPost(id uint, input PostUpdateInput) (*post.Pos
 	}
 	if nextSlug != existingPost.Slug || nextLocale != existingPost.Locale {
 		if err := s.ensureSlugAvailable(nextSlug, nextLocale, existingPost.ID); err != nil {
+			return nil, err
+		}
+	}
+	categoryIDs := existingPostCategoryIDs(existingPost)
+	if input.UpdateCategoryIDs {
+		categoryIDs, err = s.normalizePostCategoryIDs(input.CategoryIDs, nextLocale)
+		if err != nil {
 			return nil, err
 		}
 	}
@@ -169,12 +195,28 @@ func (s *PostService) UpdateAdminPost(id uint, input PostUpdateInput) (*post.Pos
 	if err := s.postRepo.Update(existingPost); err != nil {
 		return nil, err
 	}
+	if input.UpdateCategoryIDs {
+		if err := s.categoryService.ReplacePostCategories(existingPost.ID, categoryIDs); err != nil {
+			return nil, err
+		}
+	}
 
 	s.clearPostCache(&previousPost)
 	s.clearPostCache(existingPost)
 	s.invalidateStorefrontHTMLCache("admin post update")
 
 	return existingPost, nil
+}
+
+func existingPostCategoryIDs(existingPost *post.Post) []uint {
+	if existingPost == nil || len(existingPost.Categories) == 0 {
+		return []uint{}
+	}
+	ids := make([]uint, 0, len(existingPost.Categories))
+	for _, category := range existingPost.Categories {
+		ids = append(ids, category.ID)
+	}
+	return ids
 }
 
 func (s *PostService) Delete(id uint) error {

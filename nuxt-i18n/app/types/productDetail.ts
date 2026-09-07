@@ -64,10 +64,13 @@ export interface ProductVariant {
   display_price?: ProductDisplayPrice
   display_prices?: ProductDisplayPrice[]
   weight_grams?: number | null
-  availability: 'in_stock' | 'out_of_stock'
+  availability: ProductAvailability
   is_default?: boolean
   is_active?: boolean
 }
+
+export type ProductFulfillmentMode = 'stock' | 'made_to_order'
+export type ProductAvailability = 'in_stock' | 'made_to_order' | 'out_of_stock'
 
 export interface ProductVariantOptionValue {
   id: number
@@ -160,7 +163,8 @@ export interface GoProduct {
   sale_price?: number
   display_price?: ProductDisplayPrice
   display_prices?: ProductDisplayPrice[]
-  availability?: 'in_stock' | 'out_of_stock'
+  availability?: ProductAvailability
+  fulfillment_mode?: ProductFulfillmentMode
   media?: ProductMedia[]
   thumbnail?: string
   meta_title?: string

@@ -17,23 +17,6 @@
           @click="emit('toggle-item', item.id)"
         >
           <span class="desktop-faq-master-detail__main">
-            <span
-              v-if="item.category || item.pageTitle"
-              class="desktop-faq-master-detail__meta"
-            >
-              <span
-                v-if="item.category"
-                class="desktop-faq-master-detail__category"
-              >
-                {{ item.category }}
-              </span>
-              <span
-                v-if="item.pageTitle"
-                class="desktop-faq-master-detail__page"
-              >
-                {{ item.pageTitle }}
-              </span>
-            </span>
             <span class="desktop-faq-master-detail__question">
               {{ item.question }}
             </span>
@@ -64,23 +47,6 @@
           role="region"
           :aria-label="selectedItem.question"
         >
-          <div
-            v-if="selectedItem.category || selectedItem.pageTitle"
-            class="desktop-faq-master-detail__detail-meta"
-          >
-            <span
-              v-if="selectedItem.category"
-              class="desktop-faq-master-detail__category"
-            >
-              {{ selectedItem.category }}
-            </span>
-            <span
-              v-if="selectedItem.pageTitle"
-              class="desktop-faq-master-detail__page"
-            >
-              {{ selectedItem.pageTitle }}
-            </span>
-          </div>
           <h4 class="desktop-faq-master-detail__detail-question">
             {{ selectedItem.question }}
           </h4>
@@ -114,8 +80,6 @@ import FaqAnswerContent from '~/components/FaqAnswerContent.vue'
 
 interface DesktopFaqMasterDetailItem {
   id: string
-  category?: string
-  pageTitle?: string
   question: string
   answer: string
   answerImageUrl?: string
@@ -223,37 +187,6 @@ const answerId = (itemId: string) => (
   gap: 0.35rem;
 }
 
-.desktop-faq-master-detail__meta,
-.desktop-faq-master-detail__detail-meta {
-  display: flex;
-  min-width: 0;
-  max-width: 100%;
-  align-items: center;
-  gap: 0.5rem;
-  overflow: hidden;
-  color: var(--tz-text-muted);
-  font-size: 0.57rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  line-height: 1.2;
-  text-transform: uppercase;
-}
-
-.desktop-faq-master-detail__category {
-  max-width: 14rem;
-  overflow: hidden;
-  color: #047857;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.desktop-faq-master-detail__page {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .desktop-faq-master-detail__question {
   min-width: 0;
   overflow-wrap: anywhere;
@@ -306,10 +239,6 @@ const answerId = (itemId: string) => (
   scrollbar-gutter: stable;
 }
 
-.desktop-faq-master-detail__detail-meta {
-  margin-bottom: 0.65rem;
-}
-
 .desktop-faq-master-detail__detail-question {
   margin: 0;
   color: var(--tz-text-primary);
@@ -348,8 +277,5 @@ const answerId = (itemId: string) => (
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .desktop-faq-master-detail__category {
-    max-width: min(14rem, 48vw);
-  }
 }
 </style>

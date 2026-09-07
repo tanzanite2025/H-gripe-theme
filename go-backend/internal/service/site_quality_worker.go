@@ -19,7 +19,34 @@ func (s *SiteQualityEngineService) GetJob(id uint) (*sitequalitydomain.SiteQuali
 	if s == nil || s.jobs == nil {
 		return nil, errors.New("SiteQuality quality engine is unavailable")
 	}
-	return s.jobs.FindByID(id)
+	job, err := s.jobs.FindByID(id)
+	if err != nil {
+		return nil, err
+	}
+	if s.runs != nil {
+		latestRunID, latestErr := s.runs.LatestIDForJob(id)
+		if latestErr != nil {
+			return nil, latestErr
+		}
+		job.LatestRunID = latestRunID
+	}
+	return job, nil
+}
+
+func (s *SiteQualityEngineService) CancelJob(id uint) (*sitequalitydomain.SiteQualityJob, error) {
+	if s == nil || s.jobs == nil {
+		return nil, errors.New("SiteQuality quality engine is unavailable")
+	}
+	job, changed, err := s.jobs.Cancel(id, time.Now().UTC(), "cancelled by operator")
+	if err != nil {
+		return nil, err
+	}
+	if !changed && job.Status != sitequalitydomain.SiteQualityJobStatusCancelled {
+		return nil, fmt.Errorf("%w: current status is %s", ErrSiteQualityJobNotCancellable, job.Status)
+	}
+	s.cancelActiveJob(id)
+	s.notifyWorker()
+	return s.GetJob(id)
 }
 
 func (s *SiteQualityEngineService) EnqueueManualTarget(
@@ -127,9 +154,19 @@ func (s *SiteQualityEngineService) ProcessReady(ctx context.Context, now time.Ti
 			return result, err
 		}
 		if err := s.processJob(ctx, job); err != nil {
+			if errors.Is(err, ErrSiteQualityJobCancelled) {
+				result.Cancelled++
+				continue
+			}
+			if ctx.Err() != nil {
+				return result, ctx.Err()
+			}
 			failedAt := time.Now().UTC()
 			next := siteQualityRetryAt(failedAt, job.Attempts)
 			if errors.Is(err, repository.ErrSiteQualityLeaseLost) {
+				if s.jobWasCancelled(job.ID) {
+					result.Cancelled++
+				}
 				continue
 			}
 			if markErr := s.jobs.MarkFailed(job, s.workerID, err.Error(), next, failedAt); markErr != nil {
@@ -154,7 +191,32 @@ func (s *SiteQualityEngineService) processJob(
 	ctx context.Context,
 	job sitequalitydomain.SiteQualityJob,
 ) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	jobCtx, cancel := context.WithCancel(ctx)
+	s.registerActiveJob(job.ID, cancel)
+	defer s.unregisterActiveJob(job.ID)
+	defer cancel()
+
 	if err := s.jobs.Heartbeat(job.ID, s.workerID, job.LeaseGeneration, time.Now().UTC(), s.cfg.LeaseTimeout); err != nil {
+		if s.jobWasCancelled(job.ID) {
+			return ErrSiteQualityJobCancelled
+		}
+		return err
+	}
+	if err := s.jobs.UpdateProgress(
+		job.ID,
+		s.workerID,
+		job.LeaseGeneration,
+		0,
+		sitequalitydomain.SiteQualityJobProgressStageStarting,
+		time.Now().UTC(),
+		s.cfg.LeaseTimeout,
+	); err != nil {
+		if s.jobWasCancelled(job.ID) {
+			return ErrSiteQualityJobCancelled
+		}
 		return err
 	}
 	target, err := s.targets.FindByID(job.TargetID)
@@ -163,7 +225,27 @@ func (s *SiteQualityEngineService) processJob(
 	}
 	runViews := make([]LighthouseRunnerRunView, 0, job.SampleCount)
 	for sample := 0; sample < job.SampleCount; sample++ {
-		run, err := s.captureWithProviderSlot(ctx, LighthouseRunnerCaptureInput{
+		if err := jobCtx.Err(); err != nil {
+			if s.jobWasCancelled(job.ID) {
+				return ErrSiteQualityJobCancelled
+			}
+			return err
+		}
+		if err := s.jobs.UpdateProgress(
+			job.ID,
+			s.workerID,
+			job.LeaseGeneration,
+			sample,
+			sitequalitydomain.SiteQualityJobProgressStageWaitingForSlot,
+			time.Now().UTC(),
+			s.cfg.LeaseTimeout,
+		); err != nil {
+			if s.jobWasCancelled(job.ID) {
+				return ErrSiteQualityJobCancelled
+			}
+			return err
+		}
+		run, err := s.captureWithProviderSlot(jobCtx, LighthouseRunnerCaptureInput{
 			LighthouseRunnerRunInput: LighthouseRunnerRunInput{
 				URL:               target.CanonicalURL,
 				Strategy:          job.Strategy,
@@ -179,23 +261,68 @@ func (s *SiteQualityEngineService) processJob(
 			TargetSourceType: target.SourceType,
 			TargetTitle:      target.Title,
 			TargetLocale:     target.Locale,
+		}, func() error {
+			return s.jobs.UpdateProgress(
+				job.ID,
+				s.workerID,
+				job.LeaseGeneration,
+				sample,
+				sitequalitydomain.SiteQualityJobProgressStageCapturing,
+				time.Now().UTC(),
+				s.cfg.LeaseTimeout,
+			)
 		})
 		if run != nil {
 			runViews = append(runViews, *run)
+			if err := s.jobs.UpdateProgress(
+				job.ID,
+				s.workerID,
+				job.LeaseGeneration,
+				sample+1,
+				sitequalitydomain.SiteQualityJobProgressStageCapturing,
+				time.Now().UTC(),
+				s.cfg.LeaseTimeout,
+			); err != nil {
+				if s.jobWasCancelled(job.ID) {
+					return ErrSiteQualityJobCancelled
+				}
+				return err
+			}
 		}
 		if err != nil {
-			return err
-		}
-		if err := s.jobs.Heartbeat(job.ID, s.workerID, job.LeaseGeneration, time.Now().UTC(), s.cfg.LeaseTimeout); err != nil {
+			if s.jobWasCancelled(job.ID) {
+				return ErrSiteQualityJobCancelled
+			}
 			return err
 		}
 	}
-	return s.applyJobEvaluation(job, *target, runViews)
+	if err := s.jobs.UpdateProgress(
+		job.ID,
+		s.workerID,
+		job.LeaseGeneration,
+		len(runViews),
+		sitequalitydomain.SiteQualityJobProgressStageEvaluating,
+		time.Now().UTC(),
+		s.cfg.LeaseTimeout,
+	); err != nil {
+		if s.jobWasCancelled(job.ID) {
+			return ErrSiteQualityJobCancelled
+		}
+		return err
+	}
+	if err := s.applyJobEvaluation(job, *target, runViews); err != nil {
+		if s.jobWasCancelled(job.ID) {
+			return ErrSiteQualityJobCancelled
+		}
+		return err
+	}
+	return nil
 }
 
 func (s *SiteQualityEngineService) captureWithProviderSlot(
 	ctx context.Context,
 	input LighthouseRunnerCaptureInput,
+	onSlotAcquired func() error,
 ) (*LighthouseRunnerRunView, error) {
 	slot, err := s.waitForProviderSlot(ctx)
 	if err != nil {
@@ -210,6 +337,11 @@ func (s *SiteQualityEngineService) captureWithProviderSlot(
 			s.cfg.ProviderRequestInterval,
 		)
 	}()
+	if onSlotAcquired != nil {
+		if err := onSlotAcquired(); err != nil {
+			return nil, err
+		}
+	}
 	if s.lighthouseRunner == nil {
 		return nil, errors.New("site quality runner is unavailable")
 	}
@@ -275,6 +407,9 @@ func (s *SiteQualityEngineService) enqueuePriorityJob(
 		ReleaseID:             s.cfg.ReleaseID,
 	}
 	createdJob, _, err := s.jobs.Enqueue(job)
+	if err == nil {
+		s.notifyWorker()
+	}
 	return createdJob, err
 }
 

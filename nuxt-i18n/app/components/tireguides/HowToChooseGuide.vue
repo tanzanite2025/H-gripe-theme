@@ -3,7 +3,7 @@
     <!-- Main Premium Card -->
     <div class="rounded-2xl bg-[var(--tz-card-surface)] p-5 text-center shadow-md md:p-6">
       <h2 class="mb-6 flex items-center justify-center gap-2 text-xl font-bold tz-text-secondary">
-        How to Choose the Right Size
+        {{ t('guidesTireChoose.title') }}
       </h2>
 
       <!-- Interactive Helper -->
@@ -14,49 +14,44 @@
       <div class="mt-8 border-t tz-border-subtle pt-8">
         <div class="mb-6 flex items-center justify-center gap-2">
           <span class="h-px w-8 tz-surface-panel"></span>
-          <h3 class="text-lg font-bold uppercase tracking-wider tz-text-primary">Manufacturer Standards</h3>
+          <h3 class="text-lg font-bold uppercase tracking-wider tz-text-primary">{{ t('guidesTireChoose.standards.title') }}</h3>
           <span class="h-px w-8 tz-surface-panel"></span>
         </div>
 
         <p class="mx-auto mb-3 max-w-3xl text-sm tz-text-secondary">
-          The following hookless (TSS) and hooked (TC) rim inner width charts from DT Swiss show
-          recommended (dark) and possible (light) combinations. The HTML tables below transcribe
-          the chart rows for search engines and screen readers. Always stay within the limits
-          specified by your tire and rim manufacturers.
+          {{ t('guidesTireChoose.standards.description') }}
         </p>
 
         <div class="mb-8 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs tz-text-muted">
           <span class="inline-flex items-center gap-2">
             <span class="tire-chart-legend__swatch tire-chart-legend__swatch--recommended"></span>
-            Recommended combination
+            {{ t('guidesTireChoose.standards.recommended') }}
           </span>
           <span class="inline-flex items-center gap-2">
             <span class="tire-chart-legend__swatch tire-chart-legend__swatch--possible"></span>
-            Possible combination
+            {{ t('guidesTireChoose.standards.possible') }}
           </span>
         </div>
         <p class="mx-auto mb-6 max-w-3xl text-xs tz-text-muted">
-          Recommended combinations are the preferred tire and rim pairings in the chart. Possible
-          combinations are allowed chart pairings outside the preferred range.
+          {{ t('guidesTireChoose.standards.legendDescription') }}
         </p>
 
         <div class="tire-chart-table-grid">
           <section class="tire-chart-table-panel" aria-labelledby="hookless-chart-table-title">
             <h4 id="hookless-chart-table-title" class="tire-chart-table-panel__title">
-              Hookless / Tubeless Straight Side (TSS)
+              {{ t('guidesTireChoose.standards.hooklessTitle') }}
             </h4>
             <div class="tire-chart-table-scroll">
               <table class="tire-chart-table">
                 <caption>
-                  DT Swiss hookless TSS recommended and possible tire width to rim inner width
-                  combinations
+                  {{ t('guidesTireChoose.standards.captionHookless') }}
                 </caption>
                 <thead>
                   <tr>
-                    <th scope="col">Tire width (mm)</th>
-                    <th scope="col">Tire width (inch)</th>
-                    <th scope="col">Recommended rim inner width (mm)</th>
-                    <th scope="col">Possible rim inner width (mm)</th>
+                    <th scope="col">{{ t('guidesTireChoose.standards.headers.tireWidthMm') }}</th>
+                    <th scope="col">{{ t('guidesTireChoose.standards.headers.tireWidthInch') }}</th>
+                    <th scope="col">{{ t('guidesTireChoose.standards.headers.recommendedRim') }}</th>
+                    <th scope="col">{{ t('guidesTireChoose.standards.headers.possibleRim') }}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -77,20 +72,19 @@
 
           <section class="tire-chart-table-panel" aria-labelledby="hooked-chart-table-title">
             <h4 id="hooked-chart-table-title" class="tire-chart-table-panel__title">
-              Hooked / Tubeless Crotchet (TC)
+              {{ t('guidesTireChoose.standards.hookedTitle') }}
             </h4>
             <div class="tire-chart-table-scroll">
               <table class="tire-chart-table">
                 <caption>
-                  DT Swiss hooked TC recommended and possible tire width to rim inner width
-                  combinations
+                  {{ t('guidesTireChoose.standards.captionHooked') }}
                 </caption>
                 <thead>
                   <tr>
-                    <th scope="col">Tire width (mm)</th>
-                    <th scope="col">Tire width (inch)</th>
-                    <th scope="col">Recommended rim inner width (mm)</th>
-                    <th scope="col">Possible rim inner width (mm)</th>
+                    <th scope="col">{{ t('guidesTireChoose.standards.headers.tireWidthMm') }}</th>
+                    <th scope="col">{{ t('guidesTireChoose.standards.headers.tireWidthInch') }}</th>
+                    <th scope="col">{{ t('guidesTireChoose.standards.headers.recommendedRim') }}</th>
+                    <th scope="col">{{ t('guidesTireChoose.standards.headers.possibleRim') }}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -111,29 +105,29 @@
         </div>
 
         <h4 class="mt-10 mb-4 text-left text-sm font-semibold uppercase tracking-wider tz-text-primary">
-          Source chart images
+          {{ t('guidesTireChoose.images.sourceTitle') }}
         </h4>
         <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
           <figure class="overflow-hidden rounded-xl border tz-border-subtle shadow-md transition-colors hover:tz-border-subtle">
             <img
               src="/public/tiresizecharts/howtochoose/dtswiss-hookless-tss-rim-table.webp"
-              alt="DT Swiss hookless TSS rim inner width recommendation chart"
+              :alt="t('guidesTireChoose.images.hooklessAlt')"
               class="block h-auto w-full"
               loading="lazy"
             />
             <figcaption class="tz-surface-panel py-2 text-xs tracking-wider tz-text-muted">
-              HOOKLESS (TSS)
+              {{ t('guidesTireChoose.images.hooklessCaption') }}
             </figcaption>
           </figure>
           <figure class="overflow-hidden rounded-xl border tz-border-subtle shadow-md transition-colors hover:tz-border-subtle">
             <img
               src="/public/tiresizecharts/howtochoose/dtswiss-hooked-tc-rim-table.webp"
-              alt="DT Swiss hooked TC rim inner width recommendation chart"
+              :alt="t('guidesTireChoose.images.hookedAlt')"
               class="block h-auto w-full"
               loading="lazy"
             />
             <figcaption class="tz-surface-panel py-2 text-xs tracking-wider tz-text-muted">
-              HOOKED (TC)
+              {{ t('guidesTireChoose.images.hookedCaption') }}
             </figcaption>
           </figure>
         </div>
@@ -143,7 +137,19 @@
 </template>
 
 <script setup lang="ts">
+import { watch } from 'vue'
+import { useI18n } from '#imports'
 import TireRimHelper from '~/components/TireRimHelper.vue'
+import { usePageMessages } from '~/composables/usePageMessages'
+
+const { locale, t } = useI18n()
+const { loadPageMessages } = usePageMessages('guidesTireChoose')
+
+await loadPageMessages(locale.value)
+
+watch(locale, (nextLocale) => {
+  void loadPageMessages(nextLocale)
+})
 
 interface ChartRow {
   tire: number
@@ -216,7 +222,7 @@ const hookedChartRows: ChartRow[] = [
 ]
 
 const formatWidthList = (widths: string[]) =>
-  widths.length > 0 ? widths.map((width) => `${width} mm`).join(', ') : 'None shown'
+  widths.length > 0 ? widths.map((width) => `${width} mm`).join(', ') : t('guidesTireChoose.helper.noneShown')
 </script>
 
 <style scoped>

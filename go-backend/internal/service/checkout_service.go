@@ -173,7 +173,8 @@ func (s *CheckoutService) quote(input CheckoutQuoteInput, repos checkoutReposito
 		sku := variant.SKU
 		attributes := variant.OptionValues
 		availableStock := variant.Stock
-		if availableStock < item.Quantity {
+		fulfillmentMode := productdomain.NormalizeFulfillmentMode(product.FulfillmentMode)
+		if fulfillmentMode == productdomain.FulfillmentModeStock && availableStock < item.Quantity {
 			return nil, fmt.Errorf("insufficient stock for product ID %d", item.ProductID)
 		}
 
@@ -184,6 +185,11 @@ func (s *CheckoutService) quote(input CheckoutQuoteInput, repos checkoutReposito
 		items[i].ProductName = product.Name
 		items[i].SKU = sku
 		items[i].Attributes = attributes
+		items[i].WeightGrams = variant.Weight
+		items[i].FulfillmentMode = fulfillmentMode
+		if !productdomain.IsValidFulfillmentMode(items[i].FulfillmentMode) {
+			return nil, fmt.Errorf("invalid fulfillment mode for product ID %d", product.ID)
+		}
 		items[i].Total = items[i].Subtotal
 		items[i].HSCode = product.HSCode
 		items[i].CNCode = product.CNCode

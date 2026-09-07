@@ -2,10 +2,7 @@
   "title": "Questions Fréquentes",
   "subtitle": "Trouvez des réponses aux questions courantes sur nos produits et services",
   "ui": {
-    "categorizedSupport": "Support catégorisé",
     "quickAnswers": "Réponses rapides aux questions courantes",
-    "categoriesAriaLabel": "Catégories FAQ",
-    "categoriesLabel": "Catégories FAQ",
     "all": "Tout",
     "viewAll": "Voir toutes les FAQ",
     "emptySection": "Aucune FAQ disponible pour cette section.",
@@ -13,7 +10,6 @@
     "searchPlaceholder": "Rechercher dans la FAQ...",
     "viewMoreContent": "Voir plus de contenu",
     "noResults": "Aucune FAQ trouvée pour « {query} »",
-    "allFaqsMetaTitle": "Toutes les FAQ",
     "loadingAnswers": "Chargement des réponses",
     "illustrationAlt": "Illustration FAQ",
     "selectQuestion": "Select a question to view the answer."

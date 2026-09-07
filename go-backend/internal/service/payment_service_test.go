@@ -14,6 +14,7 @@ import (
 	attributiondomain "commerce-platform/internal/domain/attribution"
 	"commerce-platform/internal/domain/coupon"
 	"commerce-platform/internal/domain/order"
+	"commerce-platform/internal/domain/orderevidence"
 	outboxdomain "commerce-platform/internal/domain/outbox"
 	paymentdomain "commerce-platform/internal/domain/payment"
 	productdomain "commerce-platform/internal/domain/product"
@@ -1033,6 +1034,16 @@ func TestBuildStripeDisputeEvidencePackageCollectsOrderShippingAndCommunication(
 	assert.Contains(t, pkg.Evidence.UncategorizedText, "Delivered tracking event")
 	require.NotEmpty(t, pkg.Communications)
 	assert.Contains(t, pkg.Evidence.CommunicationSummary, "Please confirm delivery")
+	require.Len(t, pkg.TrackingEventEvidence, 1)
+	assert.Equal(t, "DHL123", pkg.TrackingEventEvidence[0].TrackingNumber)
+	assert.NotNil(t, pkg.TrackingContext)
+	assert.NotNil(t, pkg.TrackingContext.LatestDeliveryEvent)
+
+	payload, err := json.Marshal(pkg)
+	require.NoError(t, err)
+	assert.Contains(t, string(payload), `"tracking_events"`)
+	assert.Contains(t, string(payload), "Delivered tracking event")
+	assert.NotContains(t, string(payload), "api_key")
 }
 
 func TestSubmitStripeDisputeEvidenceCallsStripeAndRecordsSubmission(t *testing.T) {
@@ -1119,6 +1130,11 @@ func newTestPaymentService(t *testing.T) (*gorm.DB, *PaymentService) {
 		&order.Order{},
 		&order.OrderItem{},
 		&order.PolicyDisclosure{},
+		&orderevidence.OrderEvidenceSnapshot{},
+		&orderevidence.OrderEvidencePackage{},
+		&orderevidence.OrderEvidenceItem{},
+		&orderevidence.OrderEvidenceAttachment{},
+		&orderevidence.OrderEvidenceSubmissionSnapshot{},
 		&attributiondomain.OrderAttribution{},
 		&outboxdomain.Event{},
 		&paymentdomain.Transaction{},
@@ -1144,13 +1160,23 @@ func newTestPaymentService(t *testing.T) (*gorm.DB, *PaymentService) {
 	outboxRepo := repository.NewOutboxRepository(db)
 	shippingRepo := repository.NewShippingRepository(db)
 	ticketRepo := repository.NewTicketRepository(db)
+	orderEvidenceSubmissionRepo := repository.NewOrderEvidenceSubmissionSnapshotRepository(db)
 	txManager := repository.NewTxManager(db, orderRepo, productRepo, couponRepo, loyaltyRepo, paymentRepo, shippingRepo)
 	txManager.ConfigureOutboxRepository(outboxRepo)
 	txManager.ConfigureOrderAttributionRepository(repository.NewOrderAttributionRepository(db))
+	txManager.ConfigureOrderEvidenceSubmissionSnapshotRepository(orderEvidenceSubmissionRepo)
 	policyDisclosureRepo := repository.NewOrderPolicyDisclosureRepository(db)
 
 	paymentService := NewPaymentService(txManager, paymentRepo)
-	paymentService.ConfigureEvidenceSources(orderRepo, shippingRepo, ticketRepo)
+	paymentService.ConfigureEvidenceSources(orderRepo, ticketRepo)
+	paymentService.ConfigureOrderEvidenceSubmissionSnapshotRepository(orderEvidenceSubmissionRepo)
+	paymentService.ConfigureOrderEvidenceAssembler(
+		NewOrderEvidencePackageAssembler(
+			orderRepo,
+			repository.NewOrderEvidenceRepository(db),
+			shippingRepo,
+		),
+	)
 	paymentService.ConfigurePolicyDisclosureRepository(policyDisclosureRepo)
 	return db, paymentService
 }
@@ -1260,14 +1286,20 @@ func seedPaymentCoupon(t *testing.T, db *gorm.DB, code string, couponType string
 }
 
 type fakeStripeDisputeEvidenceSubmitter struct {
-	disputeID string
-	params    *stripe.DisputeParams
-	status    stripe.DisputeStatus
+	disputeID     string
+	params        *stripe.DisputeParams
+	paramsHistory []*stripe.DisputeParams
+	status        stripe.DisputeStatus
+	err           error
 }
 
 func (f *fakeStripeDisputeEvidenceSubmitter) Update(id string, params *stripe.DisputeParams) (*stripe.Dispute, error) {
 	f.disputeID = id
 	f.params = params
+	f.paramsHistory = append(f.paramsHistory, params)
+	if f.err != nil {
+		return nil, f.err
+	}
 	return &stripe.Dispute{Status: f.status}, nil
 }
 
@@ -1307,6 +1339,8 @@ func TestBuildPayPalDisputeEvidencePackageCollectsTrackingInvoiceAndCommunicatio
 
 	require.NoError(t, err)
 	require.NotNil(t, pkg.Order)
+	require.NotNil(t, pkg.FulfillmentEvidence)
+	require.NotNil(t, pkg.FulfillmentEvidence.Shipment)
 	assert.True(t, pkg.CanSubmit)
 	assert.Equal(t, "DHL777", pkg.Evidence.ShippingTrackingNumber)
 	assert.Equal(t, "DHL", pkg.Evidence.ShippingCarrier)
@@ -1331,8 +1365,10 @@ func TestBuildPayPalDisputeEvidencePackageWarnsHighValueINRWithoutSignaturePOD(t
 
 	require.NoError(t, err)
 	require.True(t, pkg.CanSubmit)
+	require.NotNil(t, pkg.FulfillmentEvidence)
+	require.NotNil(t, pkg.FulfillmentEvidence.Shipment)
 	require.True(t, pkg.SubmissionCheck.Ready)
-	require.True(t, pkg.SubmissionCheck.OverrideRequired)
+	require.False(t, pkg.SubmissionCheck.OverrideRequired)
 	assert.Empty(t, pkg.SubmissionCheck.Blockers)
 	assert.Contains(t, strings.Join(pkg.SubmissionCheck.Warnings, "\n"), "收件人签名或官方 POD")
 	assert.Contains(t, strings.Join(pkg.Warnings, "\n"), "high-value USD INR")
@@ -1528,7 +1564,7 @@ func TestSubmitPayPalDisputeEvidenceUsesCompactInvoiceWhenCommercialInvoiceExcee
 	assert.Contains(t, saved.EvidenceSubmissionPayload, "compact fallback was used before upload")
 }
 
-func TestSubmitPayPalDisputeEvidenceAllowsMissingTrackingAfterWarningOverride(t *testing.T) {
+func TestSubmitPayPalDisputeEvidenceAllowsMissingTrackingWithoutWarningOverride(t *testing.T) {
 	db, paymentService := newTestPaymentService(t)
 	customer := seedPaymentUser(t, db, 46, "paypal-no-track@example.test")
 	orderRecord := seedDisputeEvidenceOrder(t, db, "ORD-PAYPAL-EVIDENCE-3", customer.ID)
@@ -1540,23 +1576,10 @@ func TestSubmitPayPalDisputeEvidenceAllowsMissingTrackingAfterWarningOverride(t 
 	fakeSubmitter := &fakePayPalDisputeEvidenceSubmitter{}
 	paymentService.ConfigurePayPalDisputeEvidenceSubmitter(fakeSubmitter)
 
-	_, err := paymentService.SubmitPayPalDisputeEvidence(nil, SubmitPayPalDisputeEvidenceInput{
+	result, err := paymentService.SubmitPayPalDisputeEvidence(nil, SubmitPayPalDisputeEvidenceInput{
 		DisputeID: disputeRecord.ID,
 		ClientID:  "paypal-client",
 		SecretKey: "paypal-secret",
-	})
-
-	require.ErrorIs(t, err, ErrPayPalDisputeEvidenceWarningConfirmationRequired)
-	var rejected paymentdomain.PayPalDispute
-	require.NoError(t, db.First(&rejected, disputeRecord.ID).Error)
-	assert.Contains(t, rejected.EvidenceSubmissionError, ErrPayPalDisputeEvidenceWarningConfirmationRequired.Error())
-	assert.Contains(t, rejected.EvidenceSubmissionPayload, "订单没有物流单号")
-
-	result, err := paymentService.SubmitPayPalDisputeEvidence(nil, SubmitPayPalDisputeEvidenceInput{
-		DisputeID:        disputeRecord.ID,
-		ClientID:         "paypal-client",
-		SecretKey:        "paypal-secret",
-		OverrideWarnings: true,
 	})
 
 	require.NoError(t, err)
@@ -1568,28 +1591,33 @@ func TestSubmitPayPalDisputeEvidenceAllowsMissingTrackingAfterWarningOverride(t 
 	require.NoError(t, db.First(&saved, disputeRecord.ID).Error)
 	assert.Empty(t, saved.EvidenceSubmissionError)
 	assert.Contains(t, saved.EvidenceSubmissionPayload, "submission_warnings")
-	assert.Contains(t, saved.EvidenceSubmissionPayload, "override_warnings")
+	assert.Contains(t, saved.EvidenceSubmissionPayload, `"override_warnings":false`)
 }
 
 type fakePayPalDisputeEvidenceSubmitter struct {
-	disputeID string
-	params    *paypalapi.DisputeProvideEvidenceParams
+	disputeID     string
+	params        *paypalapi.DisputeProvideEvidenceParams
+	paramsHistory []*paypalapi.DisputeProvideEvidenceParams
+	err           error
 }
 
 func (f *fakePayPalDisputeEvidenceSubmitter) ProvideEvidence(_ context.Context, disputeID string, params *paypalapi.DisputeProvideEvidenceParams) error {
 	f.disputeID = disputeID
 	f.params = params
-	return nil
+	f.paramsHistory = append(f.paramsHistory, params)
+	return f.err
 }
 
 type fakePayPalDisputeDocumentStorage struct {
 	url      string
 	filename string
 	data     []byte
+	uploads  int
 }
 
 func (f *fakePayPalDisputeDocumentStorage) UploadFromReader(_ context.Context, reader io.Reader, filename string) (string, error) {
 	f.filename = filename
+	f.uploads++
 	data, err := io.ReadAll(reader)
 	if err != nil {
 		return "", err

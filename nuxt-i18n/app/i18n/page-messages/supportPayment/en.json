@@ -1,0 +1,89 @@
+{
+  "title": "Payment",
+  "hero": {
+    "eyebrow": "Secure payment",
+    "title": "Pay with a method you recognize, with protection at every step.",
+    "description": "We support trusted payment providers and verify payment results on the server before an order is treated as paid. Sensitive card details stay with the payment provider instead of being stored by our store.",
+    "https": "HTTPS encrypted checkout",
+    "links": {
+      "ourStory": "Our Story",
+      "shipping": "Shipping instructions",
+      "testReport": "Test report"
+    }
+  },
+  "methods": {
+    "eyebrow": "Supported methods",
+    "title": "Choose the payment option shown at checkout",
+    "description": "Payment availability can depend on the order and region. The checkout page is the final source for the methods currently enabled for your purchase.",
+    "cards": {
+      "creditDebit": {
+        "title": "Credit and debit cards",
+        "body": "Visa, Mastercard, American Express, and other major cards are processed through Stripe.",
+        "badge": "Stripe card checkout"
+      },
+      "paypal": {
+        "title": "PayPal",
+        "body": "Continue to PayPal's hosted checkout, approve the payment there, and return to our site after confirmation.",
+        "badge": "Hosted PayPal checkout"
+      },
+      "alipay": {
+        "title": "Alipay",
+        "body": "Continue to Alipay to complete payment. The provider notification is verified before the order is marked as paid.",
+        "badge": "Verified provider notification"
+      },
+      "wechatPay": {
+        "title": "WeChat Pay",
+        "body": "Scan the WeChat Pay QR code shown during checkout. Payment status is confirmed with the provider before the order is completed.",
+        "badge": "Native QR payment"
+      }
+    }
+  },
+  "security": {
+    "eyebrow": "Security measures",
+    "title": "What we do to protect your payment",
+    "flow": {
+      "title": "Protection built into the payment flow",
+      "encrypted": {
+        "title": "Encrypted connection",
+        "body": "Every page uses HTTPS/TLS so payment-related data is encrypted while it travels between your browser and our services."
+      },
+      "trusted": {
+        "title": "Trusted payment providers",
+        "body": "Card and wallet payment details are entered into Stripe, PayPal, Alipay, or WeChat Pay rather than being handled as raw card data by our storefront."
+      },
+      "server": {
+        "title": "Server-side verification",
+        "body": "Provider webhooks or verified status checks are matched to the order amount and currency before payment is finalized."
+      }
+    },
+    "storage": {
+      "title": "What we do not store",
+      "body": "We do not store your full card number, CVV, or card PIN. We receive the payment result and the provider reference needed to reconcile your order and provide support.",
+      "verification": {
+        "title": "Extra verification may appear",
+        "body": "Your bank or card issuer may request 3D Secure verification in its app, by one-time code, or through another identity check. That step is controlled by the issuer and helps prevent unauthorized card use."
+      },
+      "pin": {
+        "title": "We will never ask for your PIN",
+        "body": "Do not send your full card number, CVV, password, or card PIN through chat or email. Contact support if a payment message looks suspicious."
+      }
+    }
+  },
+  "concerns": {
+    "eyebrow": "Common concerns",
+    "title": "If something does not look right",
+    "declined": {
+      "title": "Payment declined",
+      "body": "Check your billing details and available funds, then try again or choose another method shown at checkout. Your bank or payment provider can usually explain a decline in more detail."
+    },
+    "completed": {
+      "title": "Payment completed but the page did not update",
+      "body": "Do not submit the payment repeatedly. Keep the provider reference or payment receipt and contact support so we can verify the order status on the server."
+    }
+  },
+  "help": {
+    "title": "Need help with a payment?",
+    "body": "Contact us with your order number or provider reference. Please do not include your full card number, CVV, password, or PIN."
+  },
+  "feedbackTitle": "Share your feedback about payment & billing"
+}

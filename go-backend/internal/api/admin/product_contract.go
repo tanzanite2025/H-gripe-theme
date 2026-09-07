@@ -28,6 +28,7 @@ type productCreateRequest struct {
 	Description                    string                             `json:"description"`
 	ShortDesc                      string                             `json:"short_description"`
 	Currency                       string                             `json:"currency"`
+	FulfillmentMode                string                             `json:"fulfillment_mode"`
 	Status                         string                             `json:"status" binding:"required,oneof=active inactive out_of_stock"`
 	Locale                         string                             `json:"locale"`
 	ParentID                       *uint                              `json:"parent_id"`
@@ -55,6 +56,7 @@ type productUpdateRequest struct {
 	Description                    *string                            `json:"description"`
 	ShortDesc                      *string                            `json:"short_description"`
 	Currency                       *string                            `json:"currency"`
+	FulfillmentMode                *string                            `json:"fulfillment_mode"`
 	Status                         *string                            `json:"status" binding:"omitempty,oneof=active inactive out_of_stock"`
 	Locale                         *string                            `json:"locale"`
 	ParentID                       *uint                              `json:"parent_id"`
@@ -141,6 +143,8 @@ func respondProductServiceError(c *gin.Context, err error, fallbackMessage strin
 	case errors.Is(err, service.ErrProductMediaInvalid):
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	case errors.Is(err, service.ErrProductCustomsInfoInvalid):
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	case errors.Is(err, service.ErrProductFulfillmentModeInvalid):
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	case errors.Is(err, service.ErrProductCustomsProfileNotFound),
 		errors.Is(err, service.ErrProductCustomsProfileInvalid):

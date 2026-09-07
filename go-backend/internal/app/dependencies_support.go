@@ -74,6 +74,10 @@ func newDependencySupport(
 	txManager.ConfigureSettingRepository(repos.Setting)
 	txManager.ConfigureExchangeRateRepository(repos.ExchangeRate)
 	txManager.ConfigureOrderPolicyDisclosureRepository(repos.OrderPolicyDisclosure)
+	txManager.ConfigureProductQualityRequirementRepository(repos.ProductQualityRequirement)
+	txManager.ConfigureOrderEvidenceSnapshotRepository(repos.OrderEvidenceSnapshot)
+	txManager.ConfigureOrderEvidenceRepository(repos.OrderEvidence)
+	txManager.ConfigureOrderEvidenceSubmissionSnapshotRepository(repos.OrderEvidenceSubmission)
 	txManager.ConfigurePaymentRefundRecommendationRepository(repos.PaymentRefundReview)
 	txManager.ConfigurePaymentRefundExecutionRepository(repos.PaymentRefundExec)
 	txManager.ConfigureAfterSalesRefundReviewRepository(repos.AfterSalesRefundReview)
@@ -100,6 +104,9 @@ func newDependencySupport(
 	ugcShowcaseUploadEligibilityService := service.NewUGCShowcaseUploadEligibilityService(repos.Order)
 
 	storefrontBaseURL, storefrontInternalOrigin := resolveStorefrontOrigins(cfg)
+	if err := validateStorefrontInternalOrigin(cfg, storefrontInternalOrigin); err != nil {
+		return nil, err
+	}
 	siteQualityTargetOrigin := resolveSiteQualityTargetOrigin(storefrontBaseURL)
 	storefrontHTMLCacheInvalidator := service.NewStorefrontHTMLCacheInvalidatorFromEnv()
 	storefrontContentReleaseNotifier := service.NewStorefrontContentReleaseNotifierFromEnv()

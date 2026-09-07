@@ -174,9 +174,6 @@
                 <span v-if="faqPayload(message).page_title || faqPayload(message).page_id">
                   {{ faqPayload(message).page_title || faqPayload(message).page_id }}
                 </span>
-                <span v-if="faqPayload(message).category_label || faqPayload(message).category">
-                  · {{ faqPayload(message).category_label || faqPayload(message).category }}
-                </span>
               </div>
               <div class="break-words text-sm font-semibold leading-5 tz-text-primary">
                 {{ faqQuestion(message) }}

@@ -20,7 +20,6 @@ func isFAQValidationError(err error) bool {
 	message := err.Error()
 	return errors.Is(err, service.ErrUnsupportedLocale) ||
 		errors.Is(err, service.ErrFAQLocaleImmutable) ||
-		errors.Is(err, service.ErrFAQCategoryIdentityImmutable) ||
 		strings.Contains(message, "required") ||
 		strings.Contains(message, "does not exist") ||
 		strings.Contains(message, "hidden") ||

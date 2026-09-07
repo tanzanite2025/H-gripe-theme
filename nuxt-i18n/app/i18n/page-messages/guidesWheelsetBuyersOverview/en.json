@@ -1,0 +1,85 @@
+{
+  "title": "Wheelset buying overview",
+  "readyTitle": "Ready to buy after the checks?",
+  "readyBody": "QUICKBUY lets you start selecting wheelset-related products from this guide, then review the selected items before adding them to cart or going to payment. You can also check component categories, freehub fit, appearance choices, add-ons, and safety notes before you place the order.",
+  "startQuickBuy": "Start QUICKBUY",
+  "wheelComponents": "Wheel components",
+  "step1": {
+    "title": "Start with the riding use",
+    "body": "A useful wheelset choice starts with the bike and riding style, not with a single spec. Decide whether the build is mainly for road speed, climbing, gravel comfort, trail control, e-bike load, or a replacement wheel that must match an existing setup.",
+    "road": {
+      "title": "Road / climbing",
+      "body": "Prioritize lower weight, predictable handling, and a rim depth that suits local wind and terrain."
+    },
+    "gravel": {
+      "title": "Gravel / all-road",
+      "body": "Prioritize tire volume, rim durability, and a setup that stays comfortable on mixed surfaces."
+    },
+    "mtb": {
+      "title": "MTB / trail",
+      "body": "Prioritize impact resistance, spoke count, hub standard, and serviceable replacement parts."
+    },
+    "replacement": {
+      "title": "Replacement wheel",
+      "body": "Match the existing axle, brake mount, freehub, rim depth, spoke count, and tire clearance first."
+    }
+  },
+  "step2": {
+    "title": "Check the specs that can block compatibility",
+    "body": "Use these quick tools to estimate the main compatibility choices before ordering. The detailed pages open in a new tab, so you can keep this buying path open while checking the full explanation.",
+    "tireWidth": {
+      "title": "Tire width and rim fit",
+      "body": "Confirm the tire size you want can work with the rim inner width and your frame clearance. Use the rim system toggle for DT-style TSS or TC estimates.",
+      "helperTitle": "Tire and rim width quick check",
+      "helperDescription": "Enter the tire width you plan to use and choose the rim system. This is a width quick check, not a separate tube-vs-tubeless calculator.",
+      "button": "Tire width chart"
+    },
+    "tireSystem": {
+      "title": "Tube, tubeless and tubular check",
+      "body": "After the width estimate, confirm the actual tire/rim system. A rim-brake clincher, tubeless-ready TC rim, hookless TSS rim, and tubular rim can use different rim-bed designs; tubeless and hookless need tire approval and pressure limits, while tubular is a separate glued tire system.",
+      "button": "Tire systems"
+    },
+    "freehub": {
+      "title": "Freehub body",
+      "body": "Match the freehub body to the cassette standard before choosing hubs or a complete wheelset.",
+      "helperTitle": "Freehub quick finder",
+      "helperDescription": "Select your drivetrain brand and groupset to estimate the freehub body you may need before opening the full compatibility section.",
+      "button": "Freehub guide"
+    }
+  },
+  "step3": {
+    "title": "Then choose how to configure and buy",
+    "body": "Once the core compatibility checks are clear, move into the actual order path. Use QUICKBUY for a fast product selection flow, or open the wheelset sections below when you need to confirm parts, appearance, special orders, optional add-ons, or safety checks before installation.",
+    "quickBuy": {
+      "title": "Configure and buy with QUICKBUY",
+      "body": "Open the QUICKBUY builder to select available wheelset-related products, review the selected items, then add them to cart or go directly to payment.",
+      "button": "Start QUICKBUY"
+    },
+    "coverage": {
+      "title": "What this order path can cover",
+      "body": "Use the guide sections to check rims, hubs, spokes, nipples, freehub bodies, appearance options, tubeless add-ons, spare spokes, and replacement-wheel requests before buying.",
+      "button": "Component options"
+    },
+    "custom": {
+      "title": "Need custom work",
+      "body": "Use special order for mullet setups, single front or rear wheel replacement, or mixed rim profiles that need a custom confirmation before purchase.",
+      "button": "Custom orders"
+    },
+    "safety": {
+      "title": "Safety before riding",
+      "body": "Before installation or the first ride, review the wheelset-specific safety checks: plastic tire levers, torque and brake-pad checks, impact inspection, spoke tension, and stop-riding warning signs.",
+      "button": "Safety checks"
+    }
+  },
+  "ctaNotes": {
+    "quickBuyEntry": "Opens the bottom QUICKBUY menu; the direct-select option opens the existing wheelset product selection builder.",
+    "wheelComponentsTab": "Switches to the Wheel Components tab with hubs, rims, spokes, and nipples.",
+    "tireWidthGuideNewTab": "Opens the tire width chart in a new tab for hooked TC and hookless TSS rim details.",
+    "tireSystemGuideNewTab": "Opens the tire system guide in a new tab for tube, tubeless, hookless, and tubular guidance.",
+    "freehubGuideNewTab": "Opens the Choose freehub tab in a new tab for freehub compatibility guidance.",
+    "specialOrderTab": "Switches to the Special order tab for mullet wheelsets, single-wheel customization, and mixed rim profiles.",
+    "safetyInstructionsTab": "Switches to the Safety instructions tab for wheelset installation and pre-ride safety checks.",
+    "mulletQuickBuyEntry": "Opens the QUICKBUY entry popover from the Mullet Wheelsets section for a mixed-size wheelset order path.",
+    "singleWheelChat": "Opens the chat widget for a single front or rear wheel replacement or customization inquiry."
+  }
+}

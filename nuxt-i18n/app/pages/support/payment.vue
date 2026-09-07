@@ -1,53 +1,51 @@
 <template>
   <div class="support-page pb-8">
-    <h1 class="sr-only">Payment</h1>
+    <h1 class="sr-only">{{ t('supportPayment.title') }}</h1>
 
 <section class="rounded-2xl tz-surface-card px-5 py-6 shadow-[0_16px_42px_rgba(15,23,42,0.12)] md:px-8 md:py-8">
       <div class="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
         <div class="max-w-3xl">
           <p class="text-xs font-semibold uppercase tracking-[0.18em] text-[#059669]">
-            Secure payment
+            {{ t('supportPayment.hero.eyebrow') }}
           </p>
           <h2 class="mt-2 text-xl font-semibold leading-tight tz-text-primary md:text-2xl">
-            Pay with a method you recognize, with protection at every step.
+            {{ t('supportPayment.hero.title') }}
           </h2>
           <p class="mt-3 max-w-2xl text-sm leading-7 tz-text-secondary">
-            We support trusted payment providers and verify payment results on the server before an
-            order is treated as paid. Sensitive card details stay with the payment provider instead
-            of being stored by our store.
+            {{ t('supportPayment.hero.description') }}
           </p>
         </div>
 
 <div class="flex shrink-0 items-center gap-3 rounded-xl tz-surface-muted px-4 py-3 text-sm tz-text-secondary">
           <span class="h-2.5 w-2.5 rounded-full bg-[#059669] shadow-[0_0_14px_rgba(5, 150, 105,0.75)]" />
-          <span>HTTPS encrypted checkout</span>
+          <span>{{ t('supportPayment.hero.https') }}</span>
         </div>
       </div>
 
       <div class="mt-6 flex flex-wrap gap-3">
         <NuxtLink
-          to="/company/ourstory"
+          :to="localePath('/company/ourstory')"
           target="_blank"
           rel="noopener"
 class="inline-flex items-center justify-center rounded-full tz-surface-muted px-4 py-2.5 text-sm font-semibold tz-text-secondary shadow-[0_8px_20px_rgba(15,23,42,0.1)] transition-colors hover:tz-surface-subtle hover:tz-text-primary"
         >
-          Our Story
+          {{ t('supportPayment.hero.links.ourStory') }}
         </NuxtLink>
         <NuxtLink
-          to="/support/shipping"
+          :to="localePath('/support/shipping')"
           target="_blank"
           rel="noopener"
           class="inline-flex items-center justify-center rounded-full tz-surface-muted px-4 py-2.5 text-sm font-semibold tz-text-secondary shadow-[0_8px_20px_rgba(20,32,43,0.1)] transition-colors hover:tz-surface-subtle hover:tz-text-primary"
         >
-          Shipping instructions
+          {{ t('supportPayment.hero.links.shipping') }}
         </NuxtLink>
         <NuxtLink
-          to="/support/test-report"
+          :to="localePath('/support/test-report')"
           target="_blank"
           rel="noopener"
           class="inline-flex items-center justify-center rounded-full tz-surface-muted px-4 py-2.5 text-sm font-semibold tz-text-secondary shadow-[0_8px_20px_rgba(20,32,43,0.1)] transition-colors hover:tz-surface-subtle hover:tz-text-primary"
         >
-          Test report
+          {{ t('supportPayment.hero.links.testReport') }}
         </NuxtLink>
       </div>
     </section>
@@ -55,14 +53,13 @@ class="inline-flex items-center justify-center rounded-full tz-surface-muted px-
     <section class="mt-10">
       <div class="mb-5 tz-mobile-text-inset">
         <p class="text-xs font-semibold uppercase tracking-[0.18em] text-[#059669]">
-          Supported methods
+          {{ t('supportPayment.methods.eyebrow') }}
         </p>
         <h2 class="mt-2 text-lg font-semibold tz-text-primary md:text-xl">
-          Choose the payment option shown at checkout
+          {{ t('supportPayment.methods.title') }}
         </h2>
         <p class="mt-2 max-w-3xl text-sm leading-7 tz-text-secondary">
-          Payment availability can depend on the order and region. The checkout page is the final
-          source for the methods currently enabled for your purchase.
+          {{ t('supportPayment.methods.description') }}
         </p>
       </div>
 
@@ -75,13 +72,15 @@ class="inline-flex items-center justify-center rounded-full tz-surface-muted px-
               <img src="/icons/payment/amex.svg" alt="American Express" width="200" height="120" class="h-5 w-auto" />
             </div>
           </div>
-          <h3 class="mt-5 text-base font-semibold tz-text-primary">Credit and debit cards</h3>
+          <h3 class="mt-5 text-base font-semibold tz-text-primary">
+            {{ t('supportPayment.methods.cards.creditDebit.title') }}
+          </h3>
           <p class="mt-2 text-sm leading-6 tz-text-secondary">
-            Visa, Mastercard, American Express, and other major cards are processed through Stripe.
+            {{ t('supportPayment.methods.cards.creditDebit.body') }}
           </p>
           <div class="mt-auto pt-5">
 <span class="inline-flex w-fit items-center rounded-full border tz-border-subtle tz-surface-muted px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.08em] tz-text-secondary">
-              Stripe card checkout
+              {{ t('supportPayment.methods.cards.creditDebit.badge') }}
             </span>
           </div>
         </article>
@@ -92,14 +91,15 @@ class="inline-flex items-center justify-center rounded-full tz-surface-muted px-
               <img src="/icons/payment/paypal.svg?v=4" alt="PayPal" width="200" height="120" class="h-6 w-auto" />
             </div>
           </div>
-          <h3 class="mt-5 text-base font-semibold tz-text-primary">PayPal</h3>
+          <h3 class="mt-5 text-base font-semibold tz-text-primary">
+            {{ t('supportPayment.methods.cards.paypal.title') }}
+          </h3>
           <p class="mt-2 text-sm leading-6 tz-text-secondary">
-            Continue to PayPal's hosted checkout, approve the payment there, and return to our site
-            after confirmation.
+            {{ t('supportPayment.methods.cards.paypal.body') }}
           </p>
           <div class="mt-auto pt-5">
 <span class="inline-flex w-fit items-center rounded-full border tz-border-subtle tz-surface-muted px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.08em] tz-text-secondary">
-              Hosted PayPal checkout
+              {{ t('supportPayment.methods.cards.paypal.badge') }}
             </span>
           </div>
         </article>
@@ -110,14 +110,15 @@ class="inline-flex items-center justify-center rounded-full tz-surface-muted px-
               <img src="/icons/payment/alipay.svg?v=6" alt="Alipay" width="200" height="120" class="h-6 w-auto" />
             </div>
           </div>
-          <h3 class="mt-5 text-base font-semibold tz-text-primary">Alipay</h3>
+          <h3 class="mt-5 text-base font-semibold tz-text-primary">
+            {{ t('supportPayment.methods.cards.alipay.title') }}
+          </h3>
           <p class="mt-2 text-sm leading-6 tz-text-secondary">
-            Continue to Alipay to complete payment. The provider notification is verified before the
-            order is marked as paid.
+            {{ t('supportPayment.methods.cards.alipay.body') }}
           </p>
           <div class="mt-auto pt-5">
 <span class="inline-flex w-fit items-center rounded-full border tz-border-subtle tz-surface-muted px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.08em] tz-text-secondary">
-              Verified provider notification
+              {{ t('supportPayment.methods.cards.alipay.badge') }}
             </span>
           </div>
         </article>
@@ -128,14 +129,15 @@ class="inline-flex items-center justify-center rounded-full tz-surface-muted px-
               <img src="/icons/payment/wechatpay.svg?v=4" alt="WeChat Pay" width="200" height="120" class="h-6 w-auto" />
             </div>
           </div>
-          <h3 class="mt-5 text-base font-semibold tz-text-primary">WeChat Pay</h3>
+          <h3 class="mt-5 text-base font-semibold tz-text-primary">
+            {{ t('supportPayment.methods.cards.wechatPay.title') }}
+          </h3>
           <p class="mt-2 text-sm leading-6 tz-text-secondary">
-            Scan the WeChat Pay QR code shown during checkout. Payment status is confirmed with the
-            provider before the order is completed.
+            {{ t('supportPayment.methods.cards.wechatPay.body') }}
           </p>
           <div class="mt-auto pt-5">
 <span class="inline-flex w-fit items-center rounded-full border tz-border-subtle tz-surface-muted px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.08em] tz-text-secondary">
-              Native QR payment
+              {{ t('supportPayment.methods.cards.wechatPay.badge') }}
             </span>
           </div>
         </article>
@@ -145,62 +147,69 @@ class="inline-flex items-center justify-center rounded-full tz-surface-muted px-
     <section class="mt-10">
       <div class="mb-5 tz-mobile-text-inset">
         <p class="text-xs font-semibold uppercase tracking-[0.18em] text-[#059669]">
-          Security measures
+          {{ t('supportPayment.security.eyebrow') }}
         </p>
         <h2 class="mt-2 text-lg font-semibold tz-text-primary md:text-xl">
-          What we do to protect your payment
+          {{ t('supportPayment.security.title') }}
         </h2>
       </div>
 
       <div class="grid gap-4 lg:grid-cols-2">
 <article class="rounded-2xl tz-surface-card p-5 shadow-[0_12px_30px_rgba(15,23,42,0.12)] md:p-6">
-          <h3 class="text-base font-semibold tz-text-primary">Protection built into the payment flow</h3>
+          <h3 class="text-base font-semibold tz-text-primary">
+            {{ t('supportPayment.security.flow.title') }}
+          </h3>
           <div class="mt-5 grid gap-3">
 <div class="rounded-xl tz-surface-muted p-4">
-              <h4 class="text-sm font-semibold tz-text-secondary">Encrypted connection</h4>
+              <h4 class="text-sm font-semibold tz-text-secondary">
+                {{ t('supportPayment.security.flow.encrypted.title') }}
+              </h4>
               <p class="mt-1.5 text-sm leading-6 tz-text-secondary">
-                Every page uses HTTPS/TLS so payment-related data is encrypted while it travels
-                between your browser and our services.
+                {{ t('supportPayment.security.flow.encrypted.body') }}
               </p>
             </div>
 <div class="rounded-xl tz-surface-muted p-4">
-              <h4 class="text-sm font-semibold tz-text-secondary">Trusted payment providers</h4>
+              <h4 class="text-sm font-semibold tz-text-secondary">
+                {{ t('supportPayment.security.flow.trusted.title') }}
+              </h4>
               <p class="mt-1.5 text-sm leading-6 tz-text-secondary">
-                Card and wallet payment details are entered into Stripe, PayPal, Alipay, or WeChat
-                Pay rather than being handled as raw card data by our storefront.
+                {{ t('supportPayment.security.flow.trusted.body') }}
               </p>
             </div>
 <div class="rounded-xl tz-surface-muted p-4">
-              <h4 class="text-sm font-semibold tz-text-secondary">Server-side verification</h4>
+              <h4 class="text-sm font-semibold tz-text-secondary">
+                {{ t('supportPayment.security.flow.server.title') }}
+              </h4>
               <p class="mt-1.5 text-sm leading-6 tz-text-secondary">
-                Provider webhooks or verified status checks are matched to the order amount and
-                currency before payment is finalized.
+                {{ t('supportPayment.security.flow.server.body') }}
               </p>
             </div>
           </div>
         </article>
 
 <article class="rounded-2xl tz-surface-card p-5 shadow-[0_12px_30px_rgba(15,23,42,0.12)] md:p-6">
-          <h3 class="text-base font-semibold tz-text-primary">What we do not store</h3>
+          <h3 class="text-base font-semibold tz-text-primary">
+            {{ t('supportPayment.security.storage.title') }}
+          </h3>
           <p class="mt-3 text-sm leading-7 tz-text-secondary">
-            We do not store your full card number, CVV, or card PIN. We receive the payment result
-            and the provider reference needed to reconcile your order and provide support.
+            {{ t('supportPayment.security.storage.body') }}
           </p>
 
 <div class="mt-6 rounded-xl tz-surface-card p-4">
-            <p class="text-sm font-semibold tz-text-secondary">Extra verification may appear</p>
+            <p class="text-sm font-semibold tz-text-secondary">
+              {{ t('supportPayment.security.storage.verification.title') }}
+            </p>
             <p class="mt-1.5 text-sm leading-6 tz-text-secondary">
-              Your bank or card issuer may request 3D Secure verification in its app, by one-time
-              code, or through another identity check. That step is controlled by the issuer and
-              helps prevent unauthorized card use.
+              {{ t('supportPayment.security.storage.verification.body') }}
             </p>
           </div>
 
 <div class="mt-6 rounded-xl tz-surface-muted p-4">
-            <p class="text-sm font-semibold tz-text-secondary">We will never ask for your PIN</p>
+            <p class="text-sm font-semibold tz-text-secondary">
+              {{ t('supportPayment.security.storage.pin.title') }}
+            </p>
             <p class="mt-1.5 text-sm leading-6 tz-text-secondary">
-              Do not send your full card number, CVV, password, or card PIN through chat or email.
-              Contact support if a payment message looks suspicious.
+              {{ t('supportPayment.security.storage.pin.body') }}
             </p>
           </div>
         </article>
@@ -210,51 +219,56 @@ class="inline-flex items-center justify-center rounded-full tz-surface-muted px-
     <section class="mt-10">
       <div class="mb-5 tz-mobile-text-inset">
         <p class="text-xs font-semibold uppercase tracking-[0.18em] text-[#059669]">
-          Common concerns
+          {{ t('supportPayment.concerns.eyebrow') }}
         </p>
         <h2 class="mt-2 text-lg font-semibold tz-text-primary md:text-xl">
-          If something does not look right
+          {{ t('supportPayment.concerns.title') }}
         </h2>
       </div>
 
       <div class="grid gap-4 md:grid-cols-2">
 <article class="rounded-2xl tz-surface-card p-5 shadow-[0_12px_30px_rgba(15,23,42,0.1)]">
-          <h3 class="text-base font-semibold tz-text-primary">Payment declined</h3>
+          <h3 class="text-base font-semibold tz-text-primary">
+            {{ t('supportPayment.concerns.declined.title') }}
+          </h3>
           <p class="mt-2 text-sm leading-7 tz-text-secondary">
-            Check your billing details and available funds, then try again or choose another method
-            shown at checkout. Your bank or payment provider can usually explain a decline in more
-            detail.
+            {{ t('supportPayment.concerns.declined.body') }}
           </p>
         </article>
 <article class="rounded-2xl tz-surface-card p-5 shadow-[0_12px_30px_rgba(15,23,42,0.1)]">
-          <h3 class="text-base font-semibold tz-text-primary">Payment completed but the page did not update</h3>
+          <h3 class="text-base font-semibold tz-text-primary">
+            {{ t('supportPayment.concerns.completed.title') }}
+          </h3>
           <p class="mt-2 text-sm leading-7 tz-text-secondary">
-            Do not submit the payment repeatedly. Keep the provider reference or payment receipt
-            and contact support so we can verify the order status on the server.
+            {{ t('supportPayment.concerns.completed.body') }}
           </p>
         </article>
       </div>
     </section>
 
 <section class="mt-10 rounded-2xl tz-surface-card p-5 text-center shadow-[0_12px_30px_rgba(15,23,42,0.1)] md:p-7">
-      <h2 class="text-lg font-semibold tz-text-primary">Need help with a payment?</h2>
+      <h2 class="text-lg font-semibold tz-text-primary">
+        {{ t('supportPayment.help.title') }}
+      </h2>
       <p class="mx-auto mt-2 max-w-2xl text-sm leading-7 tz-text-secondary">
-        Contact us with your order number or provider reference. Please do not include your full
-        card number, CVV, password, or PIN.
+        {{ t('supportPayment.help.body') }}
       </p>
     </section>
 
     <section class="mt-10">
       <UserFeedbackThread
         threadKey="support-payment"
-        title="Share your feedback about payment &amp; billing"
+        :title="t('supportPayment.feedbackTitle')"
       />
     </section>
   </div>
 </template>
 
 <script setup lang="ts">
+import { watch } from 'vue'
+import { definePageMeta, useHead, useI18n, useLocalePath } from '#imports'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
+import { usePageMessages } from '~/composables/usePageMessages'
 
 definePageMeta({
   layout: 'support',
@@ -262,7 +276,17 @@ definePageMeta({
   footerLabelFallback: 'Payment',
 })
 
-useHead({
-  title: 'Payment',
+const { locale, t } = useI18n()
+const localePath = useLocalePath()
+const { loadPageMessages } = usePageMessages('supportPayment')
+
+await loadPageMessages(locale.value)
+
+watch(locale, (nextLocale) => {
+  void loadPageMessages(nextLocale)
 })
+
+useHead(() => ({
+  title: t('supportPayment.title'),
+}))
 </script>

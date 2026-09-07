@@ -21,8 +21,10 @@ This directory is a project-level documentation hub. It is not the source of tru
 - Storefront i18n current status: `../nuxt-i18n/docs/notes/I18N-CURRENT-STATUS.md`
 - Storefront payment UX rules: `design/storefront-payment-ux.md`
 - QUICK selection flow architecture: `design/quick-buy-configuration-architecture.md`
+- Order evidence package architecture: `design/order-evidence-package-architecture.md`
 - Wheelset fit questionnaire specification: `design/wheelset-fit-questionnaire-specification.md`
 - Storefront recommendation UX and algorithm contract: `design/storefront-recommendation-ux.md`
+- Storefront Maple UI font performance strategy: `design/storefront-font-performance-strategy.md`
 - Storefront light-theme color tokens: `design/emerald-light-theme-palette.md`
 - Ops control plane and workflow engine design: `design/ops-control-plane-workflow-engine.md`
 - Product profitability and procurement isolation design: `design/product-profit-procurement-isolation-architecture.md`
@@ -51,4 +53,4 @@ Archived files are historical context only. They should not be used to claim pro
 - Prefer one source of truth for each area: backend docs under `go-backend/`, storefront notes under `nuxt-i18n/`, project-level docs under `docs/`.
 - Remove legacy WordPress compatibility docs unless they describe an explicit migration-only tool.
 
-Last updated: 2026-08-17.
+Last updated: 2026-09-05.

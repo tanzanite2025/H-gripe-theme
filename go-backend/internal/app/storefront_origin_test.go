@@ -72,3 +72,49 @@ func TestResolveSiteQualityTargetOriginTrimsExplicitOrigin(t *testing.T) {
 		t.Fatalf("Site Quality target origin = %q, want http://host.docker.internal:9199", got)
 	}
 }
+
+func TestValidateStorefrontInternalOriginRejectsAPIOrigin(t *testing.T) {
+	err := validateStorefrontInternalOrigin(&config.Config{
+		Server: config.ServerConfig{BaseURL: "http://localhost:9200", Port: ":9200"},
+	}, "http://localhost:9200/")
+	if err == nil {
+		t.Fatal("expected API origin to be rejected")
+	}
+}
+
+func TestValidateStorefrontInternalOriginAllowsStorefrontOrigin(t *testing.T) {
+	err := validateStorefrontInternalOrigin(&config.Config{
+		Server: config.ServerConfig{BaseURL: "http://localhost:9200", Port: ":9200"},
+	}, "http://localhost:9199")
+	if err != nil {
+		t.Fatalf("unexpected validation error: %v", err)
+	}
+}
+
+func TestValidateStorefrontInternalOriginRejectsAPIHostnameOnAPIPort(t *testing.T) {
+	err := validateStorefrontInternalOrigin(&config.Config{
+		Server: config.ServerConfig{
+			BaseURL: "https://learn.gripe",
+			Port:    ":9200",
+		},
+	}, "http://backend:9200")
+	if err == nil {
+		t.Fatal("expected API port to be rejected")
+	}
+}
+
+func TestValidateStorefrontInternalOriginRequiresReleaseConfiguration(t *testing.T) {
+	err := validateStorefrontInternalOrigin(&config.Config{
+		Server: config.ServerConfig{Mode: "release"},
+	}, "")
+	if err == nil {
+		t.Fatal("expected release mode to require an internal storefront origin")
+	}
+}
+
+func TestValidateStorefrontInternalOriginRejectsInvalidURL(t *testing.T) {
+	err := validateStorefrontInternalOrigin(&config.Config{}, "localhost:9199")
+	if err == nil {
+		t.Fatal("expected invalid storefront origin to be rejected")
+	}
+}

@@ -2,7 +2,6 @@ import { computed, reactive, ref, watch } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
 import { faqAdminApi } from '@/api/faq'
 import {
-  buildCategoryFilterOptions,
   buildPageFilterOptions
 } from '@/lib/faqAdminPresentation'
 import type { FAQID, FAQItemLike, FAQStructureMap, FAQStructurePage } from '@/lib/faqAdminPresentation'
@@ -15,7 +14,6 @@ interface UseFaqListOptions {
 export interface FAQFilters {
   search: string
   page_id: string
-  category: string
   status: string
   locale: string
 }
@@ -37,25 +35,16 @@ export function useFaqList({ faqStructures, activeStructureLocale }: UseFaqListO
   const filters = reactive<FAQFilters>({
     search: '',
     page_id: 'all',
-    category: 'all',
     status: 'all',
     locale: activeStructureLocale?.value || 'all'
   })
   const pagination = reactive<FAQPagination>({ total: 0 })
 
   const pageFilterOptions = computed(() => buildPageFilterOptions(faqStructures, filters.locale))
-  const categoryFilterOptions = computed(() => (
-    buildCategoryFilterOptions(faqStructures, filters.locale, filters.page_id)
-  ))
-  const categoryOptionsForFilter = () => (
-    buildCategoryFilterOptions(faqStructures, filters.locale, filters.page_id)
-      .filter((option) => option.value !== 'all')
-  )
 
   const buildFilterParams = (): Record<string, string> => ({
     ...(filters.search.trim() ? { search: filters.search.trim() } : {}),
     ...(filters.page_id !== 'all' ? { page_id: filters.page_id } : {}),
-    ...(filters.category !== 'all' ? { category: filters.category } : {}),
     ...(filters.status !== 'all' ? { status: filters.status } : {}),
     ...(filters.locale !== 'all' ? { locale: filters.locale } : {})
   })
@@ -65,9 +54,7 @@ export function useFaqList({ faqStructures, activeStructureLocale }: UseFaqListO
     try {
       const payload = await faqAdminApi.listFAQGroups(buildFilterParams()) as FAQGroupsPayload
       faqGroups.value = payload.pages || []
-      faqs.value = faqGroups.value.flatMap((page) => (
-        (page.categories || []).flatMap((category) => category.faqs || [])
-      ))
+      faqs.value = faqGroups.value.flatMap((page) => page.faqs || [])
       pagination.total = payload.total ?? faqs.value.length
       selectedFAQs.value = []
     } catch (error) {
@@ -85,7 +72,6 @@ export function useFaqList({ faqStructures, activeStructureLocale }: UseFaqListO
     Object.assign(filters, {
       search: '',
       page_id: 'all',
-      category: 'all',
       status: 'all',
       locale: filters.locale
     })
@@ -98,7 +84,6 @@ export function useFaqList({ faqStructures, activeStructureLocale }: UseFaqListO
     }
     filters.locale = locale
     filters.page_id = 'all'
-    filters.category = 'all'
     return fetch ? fetchFAQs() : Promise.resolve()
   }
 
@@ -111,13 +96,6 @@ export function useFaqList({ faqStructures, activeStructureLocale }: UseFaqListO
       selectedFAQs.value = selectedFAQs.value.filter((selected) => selected.id !== faq.id)
     }
   }
-
-  watch(() => [filters.page_id, filters.locale], () => {
-    const validValues = categoryOptionsForFilter().map((category) => category.value)
-    if (filters.category !== 'all' && !validValues.includes(filters.category)) {
-      filters.category = 'all'
-    }
-  })
 
   watch(activeStructureLocale, (locale) => {
     if (locale && filters.locale === 'all') {
@@ -133,7 +111,6 @@ export function useFaqList({ faqStructures, activeStructureLocale }: UseFaqListO
     filters,
     pagination,
     pageFilterOptions,
-    categoryFilterOptions,
     fetchFAQs,
     setLocale,
     applyFilters,

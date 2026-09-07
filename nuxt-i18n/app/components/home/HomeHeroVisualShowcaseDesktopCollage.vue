@@ -38,14 +38,6 @@
             {{ activeItem.caption }}
           </p>
         </div>
-        <NuxtLink
-          v-if="activeItem.targetUrl && activeItem.targetLabel"
-          :to="activeItem.targetUrl"
-          class="home-hero-visual-showcase-desktop__detail-link"
-        >
-          {{ activeItem.targetLabel }}
-          <Icon name="lucide:arrow-up-right" aria-hidden="true" />
-        </NuxtLink>
       </div>
 
       <div class="tz-carousel-pagination home-hero-visual-showcase-desktop__pagination" role="tablist" :aria-label="ariaLabel">
@@ -217,27 +209,6 @@ const setActiveIndex = (index: number): void => {
   color: rgba(17, 19, 24, 0.7);
   font-size: 0.82rem;
   line-height: 1.45;
-}
-
-.home-hero-visual-showcase-desktop__detail-link {
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-items: center;
-  gap: 0.25rem;
-  color: #111318;
-  font-size: 0.75rem;
-  font-weight: 800;
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-.home-hero-visual-showcase-desktop__detail-link:hover {
-  color: #4b7f1f;
-}
-
-.home-hero-visual-showcase-desktop__detail-link :deep(svg) {
-  width: 0.9rem;
-  height: 0.9rem;
 }
 
 .home-hero-visual-showcase-desktop__card {

@@ -18,6 +18,7 @@ type SiteQualityJobStats struct {
 	Succeeded          int64      `json:"succeeded"`
 	Failed             int64      `json:"failed"`
 	DeadLetter         int64      `json:"dead_letter"`
+	Cancelled          int64      `json:"cancelled"`
 	Claimable          int64      `json:"claimable"`
 	StaleLeases        int64      `json:"stale_leases"`
 	OldestQueuedAt     *time.Time `json:"oldest_queued_at,omitempty"`

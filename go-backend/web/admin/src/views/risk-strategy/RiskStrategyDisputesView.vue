@@ -100,6 +100,16 @@
             <p class="mt-1 text-xs text-muted-foreground">{{ disputeWorkbenchSubtitle }}</p>
           </div>
           <div v-if="selectedDispute" class="flex items-center gap-2">
+            <Button
+              v-if="selectedDispute.order_id"
+              variant="outline"
+              size="sm"
+              class="rounded-full text-xs font-black"
+              @click="openOrderEvidence"
+            >
+              <FileCheck2 class="size-3.5" />
+              打开订单证据包
+            </Button>
             <Button v-if="disputeProvider === 'paypal'" variant="outline" size="sm" class="rounded-full text-xs font-black" @click="openPayPalInvoicePDF">
               <FileText class="size-3.5" />
               PDF
@@ -144,19 +154,21 @@
             <section class="rounded-2xl border border-dashed border-border/80 p-3">
               <div class="flex items-start justify-between gap-3">
                 <div>
-                  <h3 class="text-xs font-black uppercase tracking-widest">7 项拒付证据链</h3>
-                  <p class="mt-1 text-[11px] text-muted-foreground">只显示系统实际找到的证据；“尚未接入”不会被当成已具备。</p>
+                  <h3 class="text-xs font-black uppercase tracking-widest">拒付证据链（人工复核清单）</h3>
+                  <p class="mt-1 text-[11px] text-muted-foreground">这里只展示当前材料和待补充提示，不代表系统能判断照片、张力表或事实真伪。</p>
                 </div>
                 <span class="shrink-0 rounded-full bg-muted px-2.5 py-1 text-[11px] font-black">
-                  {{ disputeEvidence.evidence_checklist?.ready_count || 0 }}/{{ disputeEvidence.evidence_checklist?.total_count || 7 }} 已核验
+                  {{ disputeEvidence.evidence_checklist?.ready_count || 0 }}/{{ disputeEvidence.evidence_checklist?.total_count || 0 }} 已核验
                 </span>
               </div>
               <div class="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-muted-foreground">
                 <span>需人工：{{ disputeEvidence.evidence_checklist?.manual_required_count || 0 }}</span>
                 <span>缺失：{{ disputeEvidence.evidence_checklist?.missing_count || 0 }}</span>
                 <span>尚未接入：{{ disputeEvidence.evidence_checklist?.unavailable_count || 0 }}</span>
-                <span v-if="disputeEvidence.evidence_checklist?.complete" class="font-black text-emerald-700">7 项完整</span>
-                <span v-else class="font-black text-amber-700">证据链未完整</span>
+                <span v-if="disputeEvidence.evidence_checklist?.complete" class="font-black text-emerald-700">
+                  {{ disputeEvidence.evidence_checklist?.total_count || 0 }} 项完整
+                </span>
+                <span v-else class="font-black text-amber-700">仍有待补充项</span>
               </div>
 
               <div class="mt-3 space-y-2">
@@ -192,10 +204,10 @@
               <div
                 v-if="disputeEvidence.submission_check"
                 class="mt-3 rounded-xl border p-3 text-xs"
-                :class="disputeEvidence.submission_check.ready && !disputeEvidence.submission_check.override_required ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-800' : disputeEvidence.submission_check.ready ? 'border-amber-500/30 bg-amber-500/10 text-amber-800' : 'border-rose-500/30 bg-rose-500/10 text-rose-800'"
+                :class="disputeEvidence.submission_check.ready ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-800' : 'border-rose-500/30 bg-rose-500/10 text-rose-800'"
               >
                 <div class="font-black">
-                  {{ !disputeEvidence.submission_check.ready ? '当前不能提交：存在渠道硬性阻断' : disputeEvidence.submission_check.override_required ? '可以提交，但需要免责确认' : '渠道硬性提交条件已满足' }}
+                  {{ disputeEvidence.submission_check.ready ? '渠道硬性提交条件已满足' : '当前不能提交：存在渠道硬性阻断' }}
                 </div>
                 <p v-if="disputeEvidence.submission_check.ready" class="mt-1 leading-5">
                   这不代表发卡行或支付渠道必然支持申诉结果；仍需确认下方人工补充项和证据文本。
@@ -255,7 +267,7 @@
 
             <section v-if="disputeProvider === 'stripe'" class="space-y-3 rounded-2xl border border-dashed border-border/80 p-3">
               <h3 class="text-xs font-black uppercase tracking-widest text-muted-foreground">Stripe File IDs</h3>
-              <p class="text-[11px] leading-5 text-muted-foreground">这些是 Stripe 外部文件引用，不是系统自动生成的凭证。上传后把 File ID 填入对应项。</p>
+              <p class="text-[11px] leading-5 text-muted-foreground">这些是 Stripe 外部文件引用，不是系统自动生成的凭证。请先打开订单证据包检查和修正材料，再填写最终 File ID。</p>
               <label class="grid gap-1">
                 <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">履约 / POD</span>
                 <Input v-model="evidenceForm.shipping_documentation_file_id" placeholder="Shipping documentation File ID (file_...)" />
@@ -275,7 +287,7 @@
               <Textarea v-model="evidenceForm.additional_statement" rows="4" placeholder="人工补充说明，可选" />
               <label class="flex items-start gap-2 text-xs font-bold text-muted-foreground">
                 <input v-model="evidenceForm.confirm" type="checkbox" class="mt-0.5 size-4 accent-primary" />
-                我已检查 7 项证据链、缺失说明、证据文本和附件，确认提交给 Stripe。
+                我已打开并检查当前订单证据包、缺失说明、证据文本和附件，确认提交给 Stripe。
               </label>
               <Button class="w-full rounded-full font-black uppercase tracking-wider" :disabled="!disputeEvidence.submission_check?.ready || !evidenceForm.confirm || evidenceSubmitting" @click="submitEvidence">
                 <Send class="size-4" />
@@ -285,17 +297,13 @@
 
             <section v-else class="space-y-3 rounded-2xl border border-dashed border-border/80 p-3">
               <h3 class="text-xs font-black uppercase tracking-widest text-muted-foreground">PayPal 手动提交</h3>
-              <p class="text-[11px] leading-5 text-muted-foreground">系统会自动生成商业发票 PDF；提交前仍需核对物流妥投、沟通记录和 7 项证据链状态。</p>
+              <p class="text-[11px] leading-5 text-muted-foreground">拒付发生时不会自动提交，也不会锁定证据包。提交前可反复打开订单证据包，核对、补录、修改或移除错误的物流、照片、POD、沟通记录和其他人工材料；系统只保存和组装你最终确认的内容。</p>
               <Textarea v-model="evidenceForm.additional_statement" rows="4" placeholder="人工补充说明，可选" />
               <label class="flex items-start gap-2 text-xs font-bold text-muted-foreground">
                 <input v-model="evidenceForm.confirm" type="checkbox" class="mt-0.5 size-4 accent-primary" />
-                我已检查 7 项证据链和 PayPal 证据说明，确认提交。
+                我已检查当前订单证据包和 PayPal 证据说明，确认提交。
               </label>
-              <label v-if="disputeEvidence.submission_check?.override_required" class="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs font-bold text-amber-900">
-                <input v-model="evidenceForm.override_warnings" type="checkbox" class="mt-0.5 size-4 accent-primary" />
-                证据链存在缺失项；我已复核现有材料，知悉可能影响 PayPal 判定，并授权继续提交。
-              </label>
-              <Button class="w-full rounded-full font-black uppercase tracking-wider" :disabled="!disputeEvidence.submission_check?.ready || (disputeEvidence.submission_check?.override_required && !evidenceForm.override_warnings) || !evidenceForm.confirm || evidenceSubmitting" @click="submitEvidence">
+              <Button class="w-full rounded-full font-black uppercase tracking-wider" :disabled="!disputeEvidence.submission_check?.ready || !evidenceForm.confirm || evidenceSubmitting" @click="submitEvidence">
                 <Send class="size-4" />
                 手动提交证据到 PayPal
               </Button>
@@ -316,8 +324,9 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
-import { AlertTriangle, CheckCircle2, CreditCard, FileText, RefreshCw, Search, Send, ShieldAlert } from '@lucide/vue'
+import { AlertTriangle, CheckCircle2, CreditCard, FileCheck2, FileText, RefreshCw, Search, Send, ShieldAlert } from '@lucide/vue'
 import AdminFilterPanel from '@/components/admin/AdminFilterPanel.vue'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import AdminStatsGrid from '@/components/admin/AdminStatsGrid.vue'
@@ -353,6 +362,7 @@ const disputeEvidence = ref<any | null>(null)
 const disputeProvider = ref<'stripe' | 'paypal'>(normalizeDisputeProvider(props.defaultDisputeProvider))
 const filters = reactive({ status: '' })
 const pagination = reactive<RiskStrategyPagination>({ page: 1, page_size: 20, total: 0, total_pages: 0 })
+const router = useRouter()
 const evidenceForm = reactive({
   include_customer_communication: false,
   shipping_documentation_file_id: '',
@@ -360,14 +370,13 @@ const evidenceForm = reactive({
   receipt_file_id: '',
   uncategorized_file_id: '',
   additional_statement: '',
-  override_warnings: false,
   confirm: false,
 })
 
 const disputeProviderLabel = computed(() => getPaymentChannelLabel(disputeProvider.value, 'Stripe'))
 const disputeWorkbenchSubtitle = computed(() => (
   disputeProvider.value === 'paypal'
-    ? '预览 PayPal 证据包和商业发票 PDF。'
+    ? '拒付只进入人工复核；提交前可打开订单证据包修改材料。'
     : '先预览证据，再人工确认提交到 Stripe。'
 ))
 const disputeEvidencePreviewTitle = computed(() => disputeProvider.value === 'paypal' ? 'PayPal Evidence Preview' : 'Stripe Evidence Preview')
@@ -502,7 +511,6 @@ const resetEvidenceForm = (): void => {
     receipt_file_id: '',
     uncategorized_file_id: '',
     additional_statement: '',
-    override_warnings: false,
     confirm: false,
   })
 }
@@ -517,6 +525,22 @@ const fetchDisputeEvidence = async (): Promise<void> => {
   } finally {
     evidenceLoading.value = false
   }
+}
+
+const openOrderEvidence = async (): Promise<void> => {
+  const orderID = selectedDispute.value?.order_id
+  if (!orderID || !selectedDispute.value) {
+    toast.error('该拒付尚未关联订单，无法打开订单证据包')
+    return
+  }
+  await router.push({
+    name: 'OrdersEvidence',
+    query: {
+      order_id: String(orderID),
+      return_provider: disputeProvider.value,
+      return_dispute_id: String(selectedDispute.value.id),
+    },
+  })
 }
 
 const selectDispute = async (dispute: any): Promise<void> => {
@@ -538,7 +562,6 @@ const submitEvidence = async (): Promise<void> => {
     if (disputeProvider.value === 'paypal') {
       await riskStrategyApi.submitPayPalDisputeEvidence(selectedDispute.value.id, {
         confirm: evidenceForm.confirm,
-        override_warnings: evidenceForm.override_warnings,
         additional_statement: evidenceForm.additional_statement.trim(),
       })
       toast.success('PayPal 拒付证据已提交')

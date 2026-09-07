@@ -31,7 +31,6 @@
     v-else-if="resolvedFaqData && resolvedFaqPageId"
     :page-id="resolvedFaqPageId"
     :data="resolvedFaqData"
-    :show-categories="true"
   />
 </template>
 

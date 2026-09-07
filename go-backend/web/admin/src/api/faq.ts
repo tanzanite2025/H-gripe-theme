@@ -80,21 +80,6 @@ export const faqAdminApi = {
     const endpoint = `/api/admin/faqs/pages/${pageID}`
     return requireApiObjectField(readObjectPayload(await axios.put(endpoint, payload), endpoint), 'page', endpoint)
   },
-
-  async createCategory(payload: APIPayload) {
-    const endpoint = '/api/admin/faqs/categories'
-    return requireApiObjectField(readObjectPayload(await axios.post(endpoint, payload), endpoint), 'category', endpoint)
-  },
-
-  async updateCategory(id: APIID, payload: APIPayload) {
-    const endpoint = `/api/admin/faqs/categories/${id}`
-    return requireApiObjectField(readObjectPayload(await axios.put(endpoint, payload), endpoint), 'category', endpoint)
-  },
-
-  async deleteCategory(id: APIID) {
-    const endpoint = `/api/admin/faqs/categories/${id}`
-    return requireApiAcknowledgement(await axios.delete(endpoint), endpoint)
-  },
 }
 
 export default faqAdminApi

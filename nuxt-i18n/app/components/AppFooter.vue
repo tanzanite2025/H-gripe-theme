@@ -10,7 +10,9 @@
             label="Subscribe for new products & blog updates"
           />
           <div class="footer-subscription__social">
-            <SocialIcons />
+            <ClientOnly>
+              <SocialIcons />
+            </ClientOnly>
           </div>
         </div>
 

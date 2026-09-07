@@ -3,10 +3,19 @@
     "title": "Hae tuotteita ja UKK:ta",
     "body": "Napsauta hakeaksesi tuotteita, UKK:ta ja muuta."
   },
+  "languagePicker": {
+    "title": "Kieli",
+    "trigger": "Vaihda kieltä",
+    "close": "Sulje kielivalitsin",
+    "optionsLabel": "Valitse kieli"
+  },
   "globalNavigationTransition": {
     "ariaLabel": "Global content navigation",
     "optionsLabel": "Choose a destination",
     "trigger": "Open content navigation",
-    "triggerBody": "Choose Products, FAQ, Pages, or Blog."
+    "triggerBody": "Choose Products, FAQ, Pages, or Blog.",
+    "options": {
+      "pages": "Pages"
+    }
   }
 }

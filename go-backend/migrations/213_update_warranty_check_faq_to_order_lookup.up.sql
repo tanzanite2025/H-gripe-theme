@@ -27,7 +27,6 @@ SET question = CASE
     END,
     updated_at = NOW()
 WHERE page_id = 'support-warranty-check'
-  AND category = 'how-to-check'
   AND locale IN ('en', 'zh', 'zh_cn')
   AND question = 'Where can I find my product code?'
   AND deleted_at IS NULL;
@@ -57,7 +56,6 @@ SET question = CASE
     END,
     updated_at = NOW()
 WHERE page_id = 'support-warranty-check'
-  AND category = 'troubleshooting'
   AND locale IN ('en', 'zh', 'zh_cn')
   AND question = 'What if my product code is not found?'
   AND deleted_at IS NULL;

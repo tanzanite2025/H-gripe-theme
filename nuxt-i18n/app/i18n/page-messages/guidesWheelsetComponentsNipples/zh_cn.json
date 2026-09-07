@@ -1,0 +1,108 @@
+{
+  "tabs": {
+    "comparison": "黄铜与铝合金对比",
+    "choose": "选择辐条帽"
+  },
+  "comparison": {
+    "title": "黄铜与铝合金辐条帽：如何选择",
+    "intro": "配置轮组时，黄铜与铝合金的选择会影响重量、耐用性和外观。下面按关键因素进行说明。",
+    "weight": {
+      "title": "重量",
+      "brass": "黄铜",
+      "brassValue": "约 1.0g / 个",
+      "alloy": "铝合金",
+      "alloyValue": "约 0.33g / 个",
+      "impact": "影响：车圈边缘通常有 44-72 个辐条帽，减重会明显降低旋转重量。"
+    },
+    "color": {
+      "title": "颜色选项",
+      "brass": "黄铜",
+      "brassBody": "选择有限（黑色/银色），黑色涂层可能会随时间褪色。",
+      "alloy": "铝合金",
+      "alloyBody": "可通过阳极氧化获得鲜艳颜色（红、蓝、金、紫等）。"
+    },
+    "strength": {
+      "title": "强度与啮合",
+      "standardLabel": "标准黄铜（12mm）",
+      "standardBody": "整体强度好，是传统选择。",
+      "extendedLabel": "加长铝合金（16mm+）",
+      "extendedBody": "Double Square/Hex 头部可以实现完整螺纹啮合，剪切强度高于通常只有三分之二啮合的标准 12mm 辐条帽。"
+    },
+    "assembly": {
+      "title": "组装",
+      "items": [
+        "铝合金螺纹摩擦更小，辐条不易产生扭转回弹。",
+        "铝合金需要精确工具（四方/Squorx）以避免打滑。",
+        "高端铝合金（Sapim Polyax）采用 7075-T6 热处理。",
+        "锁定技术（Secure Lock）可以防止松动。"
+      ]
+    },
+    "corrosion": {
+      "title": "耐腐蚀性",
+      "brass": "黄铜",
+      "brassBody": "天然耐腐蚀，适合沿海和冬季骑行。",
+      "alloy": "高端铝合金",
+      "alloyBody": "廉价铝合金容易腐蚀；高端铝合金（Sapim）经过特殊处理，性能可超过普通镀层黄铜。"
+    },
+    "summary": {
+      "title": "总结建议",
+      "lightweight": "轻量与颜色",
+      "lightweightChoice": "选择铝合金",
+      "durability": "最大耐用性",
+      "durabilityChoice": "选择黄铜",
+      "carbon": "碳纤维车圈",
+      "carbonChoice": "高品质铝合金或黄铜"
+    }
+  },
+  "choose": {
+    "depth": {
+      "title": "车圈深度与辐条进入角度",
+      "body": "车圈越深（≥40-50mm），辐条进入车圈的角度越尖。标准辐条帽可能会与车圈底发生干涉，导致辐条弯曲。使用 Polyax（圆头）辐条帽以及合适的内置式或加长设计，有助于让辐条线保持对齐。",
+      "challengeTitle": "深框车圈的挑战",
+      "challengeBody": "深框车圈中的辐条帽可倾斜空间更小。如果不能与花鼓法兰对齐，辐条会在螺纹段弯曲，最终导致疲劳断裂。",
+      "matchedTitle": "匹配钻孔",
+      "matchedBody": "建议选择带匹配钻孔（斜孔）的车圈，或使用 Polyax 辐条帽加垫圈，尽量减少辐条弯曲。",
+      "doubleSquareAlt": "Sapim Double Square 辐条帽",
+      "doubleSquareCaption": "Double Square（高啮合）",
+      "upsideDownAlt": "Sapim Upside Down 内置式辐条帽",
+      "upsideDownCaption": "Upside Down（内置式）"
+    },
+    "advanced": {
+      "title": "高级辐条帽选项",
+      "doubleSquare": {
+        "title": "Double Square",
+        "body": "带方形工具接口的加长头部设计，可从车圈内部拧紧。",
+        "items": [
+          "最大螺纹啮合",
+          "减少头部打滑",
+          "适合大多数组装"
+        ]
+      },
+      "internal": {
+        "title": "内置式（Upside Down）",
+        "body": "隐藏在车圈内部，外观更简洁、更利于空气动力学。",
+        "items": [
+          "空气动力学优势",
+          "校正时需要拆下轮胎",
+          "超过 50mm 深的车圈不建议使用（工具操作空间有限）"
+        ]
+      },
+      "secureLock": {
+        "title": "Secure Lock",
+        "body": "在辐条帽上冲压形成机械锁定结构，无需使用杂乱的胶水即可防止松动。",
+        "alt": "Sapim Secure Lock 辐条帽"
+      }
+    },
+    "washers": {
+      "title": "为什么垫圈很重要",
+      "body": "垫圈可以增加辐条帽与车圈底之间的接触面积，形成微型球面座，使辐条帽更好地适应辐条角度，降低弯曲应力并防止车圈底损坏。",
+      "load": "分散载荷",
+      "angle": "适应角度",
+      "protection": "保护车圈",
+      "hmAlt": "Sapim HM 垫圈",
+      "hmCaption": "HM 垫圈",
+      "nippleAlt": "辐条帽垫圈",
+      "nippleCaption": "辐条帽 + 垫圈"
+    }
+  }
+}

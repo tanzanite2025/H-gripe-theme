@@ -7,6 +7,7 @@ type Handler struct {
 	faqService                      *service.FAQService
 	mediaService                    *service.MediaService
 	refundCancellationPolicyService *service.RefundCancellationPolicyService
+	categoryService                 *service.BlogCategoryService
 }
 
 func NewHandler(postService *service.PostService, faqService *service.FAQService, mediaServices ...*service.MediaService) *Handler {
@@ -26,4 +27,11 @@ func (h *Handler) ConfigureRefundCancellationPolicyService(policyService *servic
 		return
 	}
 	h.refundCancellationPolicyService = policyService
+}
+
+func (h *Handler) ConfigureBlogCategoryService(categoryService *service.BlogCategoryService) {
+	if h == nil {
+		return
+	}
+	h.categoryService = categoryService
 }

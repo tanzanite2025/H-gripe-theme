@@ -1,6 +1,11 @@
 <template>
   <div class="membership-tabs" :class="{ 'membership-tabs--modal': isModal, 'membership-tabs--sticky': isModal }">
-    <div v-if="isModal" class="nav-pill-tabs" role="tablist" :aria-label="$t('member.tabs.ariaLabel', 'Membership sections')">
+    <div
+      v-if="isModal"
+      class="nav-pill-tabs"
+      role="tablist"
+      :aria-label="t('member.tabs.ariaLabel', 'Membership sections')"
+    >
       <button
         v-for="tab in tabs"
         :key="tab.id"
@@ -11,204 +16,67 @@
         :aria-selected="activeTab === tab.id"
         @click="setActiveTab(tab.id)"
       >
-        {{ $t(tab.labelKey || tab.id, tab.fallback || tab.label || tab.id) }}
+        {{ t(tab.labelKey || tab.id, tab.fallback || tab.label || tab.id) }}
       </button>
     </div>
 
     <div class="membership-tabs__content" :class="{ 'membership-tabs__content--scroll': isModal }">
-      <div v-show="activeTab === 'myinfo'">
-      <div class="warranty-card">
-        <Icon name="lucide:shield-check" class="warranty-card__icon" aria-hidden="true" />
-        <div class="warranty-card__content">
-          <h3 class="warranty-card__title">{{ $t('warranty.title', 'Warranty Check') }}</h3>
-          <p class="warranty-card__desc">{{ $t('warranty.cardDesc', 'Enter your order number to check shipped items, warranty time, and service history.') }}</p>
-        </div>
-        <NuxtLink :to="localePath('/support/warranty-check')" class="warranty-card__btn">
-          {{ $t('warranty.checkNow', 'Check Now') }}
-          <span class="arrow">→</span>
-        </NuxtLink>
-      </div>
-
-      <section class="membership-section">
-        <div class="membership-grid" :class="{ 'membership-grid--modal': isModal }">
-          <div class="membership-col">
-            <div class="member-header">
-              <div class="member-avatar">
-                <BadgeAvatar :logged="isLogged" :level="String(levelName)" :topTierImageUrl="String(topTierImage)" />
-              </div>
-              <div class="member-name" v-if="isLogged && profileInfo?.fullName">
-                {{ profileInfo.fullName }}
-              </div>
-              <div class="member-level" v-if="isLogged">
-                <span class="level-badge">{{ displayLevelName }}</span>
-                <span class="level-points">{{ points }} {{ $t('member.points.unit', 'pts') }}</span>
-              </div>
-              <div class="member-actions">
-                <template v-if="!isLogged">
-                  <button class="btn-primary" @click="openAuthForm('register')">
-                    {{ $t('user.register') }}
-                  </button>
-                  <button class="btn-secondary" @click="openAuthForm('login')">
-                    {{ $t('user.login') }}
-                  </button>
-                </template>
-                <template v-else>
-                  <button class="btn-danger" @click="doLogout">
-                    {{ $t('user.logout') }}
-                  </button>
-                </template>
-              </div>
-            </div>
-          </div>
-
-          <div class="membership-col">
-            <div class="member-card member-benefits-card">
-              <h4 class="card-title">{{ $t('member.myBenefits', 'My Benefits') }}</h4>
-              <div class="member-stats">
-                <div class="stat-item">
-                  <Icon name="lucide:tag" class="stat-icon" aria-hidden="true" />
-                  <div class="stat-content">
-                    <span class="stat-copy">
-                      <span class="stat-label">{{ $t('member.brief.level', 'Level') }}</span>
-                      <span class="stat-desc">{{ $t('member.brief.levelDesc', 'Your membership tier reflects accumulated activity and unlocks the benefit rules connected to that tier.') }}</span>
-                    </span>
-                    <span class="stat-value" :class="{ 'highlight': !isLogged }">{{ isLogged ? displayLevelName : '?' }}</span>
-                  </div>
-                </div>
-                <div class="stat-item">
-                  <Icon name="lucide:badge-percent" class="stat-icon" aria-hidden="true" />
-                  <div class="stat-content">
-                    <span class="stat-copy">
-                      <span class="stat-label">{{ $t('member.brief.discountRate', 'Discount Rate') }}</span>
-                      <span class="stat-desc">{{ $t('member.brief.discountRateDesc', 'The member-level price discount configured in the backend.') }}</span>
-                    </span>
-                    <span class="stat-value" :class="{ 'highlight': !isLogged }">{{ isLogged ? formatDiscountRate(levelDiscounts.discountRate) : '?' }}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="member-assets">
-                <div class="asset-item">
-                  <Icon name="lucide:ticket-percent" class="asset-icon" aria-hidden="true" />
-                  <div class="asset-content">
-                    <span class="asset-label">{{ $t('member.coupons', 'Coupons') }}</span>
-                    <span class="asset-value">{{ isLogged ? `× ${userCoupons}` : '?' }}</span>
-                  </div>
-                </div>
-                <div class="asset-item">
-                  <Icon name="lucide:credit-card" class="asset-icon" aria-hidden="true" />
-                  <div class="asset-content">
-                    <span class="asset-label">{{ $t('member.giftCards', 'Gift Cards') }}</span>
-                    <span class="asset-value">{{ isLogged ? `× ${userPointCards}` : '?' }}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="tier-progress" v-if="isLogged">
-                <div class="progress-bar">
-                  <div class="progress-fill" :style="{ width: tierInfo.pct + '%' }"></div>
-                </div>
-                <div class="progress-labels">
-                  <span>{{ tierInfo.current ? tierInfo.current.min : 0 }}</span>
-                  <span class="progress-pct">{{ tierInfo.pct }}%</span>
-                  <span>{{ tierInfo.next ? tierInfo.next.min : 'MAX' }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="membership-col membership-col--full" v-if="isLogged && profileInfo">
-            <div class="profile-info">
-              <h4>{{ $t('profile.title', 'Profile') }}</h4>
-              <div class="profile-item" v-if="profileInfo.fullName">
-                <span class="profile-label">{{ $t('profile.fullName', 'Full Name') }}</span>
-                <span class="profile-value">{{ profileInfo.fullName }}</span>
-              </div>
-              <div class="profile-item" v-if="profileInfo.company">
-                <span class="profile-label">{{ $t('profile.company', 'Company') }}</span>
-                <span class="profile-value">{{ profileInfo.company }}</span>
-              </div>
-              <div class="profile-item" v-if="profileInfo.country">
-                <span class="profile-label">{{ $t('profile.country', 'Country/Region') }}</span>
-                <span class="profile-value">{{ profileInfo.country }}</span>
-              </div>
-              <div class="profile-item" v-if="profileInfo.phone">
-                <span class="profile-label">{{ $t('profile.phone', 'Phone') }}</span>
-                <span class="profile-value">{{ profileInfo.phone }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <LazyAuthModal
-        v-model="showAuthModal"
-        :default-mode="authMode"
-        embedded
-        @mode-change="authMode = $event"
-        @success="handleAuthSuccess"
+      <MembershipMyInfoPanel
+        v-if="activeTab === 'myinfo'"
+        :is-modal="isModal"
+        :is-logged="isLogged"
+        :level-name="String(levelName)"
+        :top-tier-image="String(topTierImage)"
+        :points="points"
+        :profile-info="profileInfo"
+        :tier-info="tierInfo"
+        :level-discounts="levelDiscounts"
+        :user-coupons="userCoupons"
+        :user-point-cards="userPointCards"
+        @open-auth="openAuthForm"
+        @logout="doLogout"
       />
-      </div>
 
-    <section v-show="activeTab === 'levers'" class="company-section membership-section membership-levers">
-      <div class="membership-details">
-        <div class="tier-table">
-          <h4>{{ $t('member.levels.title', 'Membership Levels') }}</h4>
-          <div class="table-wrapper">
-            <table>
-              <thead>
-                <tr>
-                  <th>{{ $t('member.levels.header.level', 'Level') }}</th>
-                  <th>{{ $t('member.levels.header.pointsRequired', 'Points Required') }}</th>
-                  <th>{{ $t('member.levels.header.discountRate', 'Discount Rate') }}</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="tier in tierConfigs" :key="tier.key">
-                  <td>{{ displayTierName(tier) }}</td>
-                  <td>{{ tier.min }}{{ tier.max !== null ? '–' + tier.max : '+' }}</td>
-                  <td>{{ formatDiscountRate(tier.discount) }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
+      <MembershipLeversPanel
+        v-else-if="activeTab === 'levers'"
+        :tier-configs="tierConfigs"
+        :loyalty-rules="loyaltyRules"
+      />
 
-        <div class="points-rules">
-          <h4>{{ $t('member.points.title', 'Points Rules') }}</h4>
-          <div class="rule-list">
-            <div v-for="rule in pointRuleItems" :key="rule.key" class="rule-item">
-              <div class="rule-title">{{ rule.title }}</div>
-              <div class="rule-desc">{{ rule.description }}</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <MembershipGiftCardExchangePanel
-      v-show="activeTab === 'exchange'"
-      :is-logged="isLogged"
-      :points="pointsNumber"
-      :redemption-rule-description="redemptionRuleDescription"
-      :available-giftcards="availableGiftcards"
-      :user-gift-cards="userGiftCards"
-      :loading="giftcardsLoading"
-      :error="giftcardsError"
-      :redeeming-card-id="redeemingCardId"
-      :redeem-message="redeemMessage"
-      :redeem-success="redeemSuccess"
-      @redeem="handleRedeemGiftcard"
-    />
+      <MembershipGiftCardExchangePanel
+        v-else-if="activeTab === 'exchange'"
+        :is-logged="isLogged"
+        :points="pointsNumber"
+        :redemption-exchange-rate="loyaltyRules?.redemption_exchange_rate"
+        :points-base-currency="loyaltyRules?.points_base_currency"
+        :available-giftcards="availableGiftcards"
+        :user-gift-cards="userGiftCards"
+        :loading="giftcardsLoading"
+        :error="giftcardsError"
+        :redeeming-card-id="redeemingCardId"
+        :redeem-message="redeemMessage"
+        :redeem-success="redeemSuccess"
+        @redeem="handleRedeemGiftcard"
+      />
     </div>
+
+    <LazyAuthModal
+      v-if="showAuthModal"
+      v-model="showAuthModal"
+      :default-mode="authMode"
+      embedded
+      @mode-change="authMode = $event"
+      @success="handleAuthSuccess"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
-import { useI18n, useLocalePath } from '#imports'
+import { ref, onMounted, computed, watch } from 'vue'
+import { useI18n } from '#imports'
 import { useMembership } from '~/composables/useMembership'
-import BadgeAvatar from '~/components/BadgeAvatar.vue'
+import MembershipMyInfoPanel from '~/components/membership/MembershipMyInfoPanel.vue'
+import MembershipLeversPanel from '~/components/membership/MembershipLeversPanel.vue'
 import MembershipGiftCardExchangePanel from '~/components/membership/MembershipGiftCardExchangePanel.vue'
 import { usePageSubNavigationTab } from '~/composables/usePageSubNavigationTab'
 import {
@@ -238,8 +106,25 @@ const setActiveTab = (id: MembershipTabId | string) => {
   setPageActiveTab(id)
 }
 
-const localePath = useLocalePath()
-const { t, te } = useI18n()
+const { locale, t } = useI18n()
+const pageMessagesByTab = {
+  myinfo: usePageMessages('resourcesMembershipMyInfo'),
+  levers: usePageMessages('resourcesMembershipLevers'),
+  exchange: usePageMessages('resourcesMembershipExchange'),
+} as const
+
+const getPageMessageTab = (tabId: string): MembershipTabId =>
+  isMembershipTabId(tabId) ? tabId : 'myinfo'
+
+const loadActiveTabMessages = async (requestedLocale: string) => {
+  await pageMessagesByTab[getPageMessageTab(activeTab.value)].loadPageMessages(requestedLocale)
+}
+
+await loadActiveTabMessages(locale.value)
+
+watch([locale, activeTab], ([nextLocale]) => {
+  void loadActiveTabMessages(nextLocale)
+})
 
 const {
   isLogged,
@@ -268,150 +153,6 @@ const {
 
 const pointsNumber = computed(() => Number(points.value ?? 0))
 
-const normalizeLevelKey = (value: string) =>
-  value.toLowerCase().trim().replace(/\s+/g, '-')
-
-const displayTierName = (tier: { key: string; name: string }) =>
-  t(`member.levels.rows.${tier.key}`, tier.name)
-
-const displayLevelName = computed(() => {
-  const rawLevel = String(levelName.value || '')
-  if (!rawLevel || rawLevel === '—') return rawLevel
-  return t(`member.levels.rows.${normalizeLevelKey(rawLevel)}`, rawLevel)
-})
-
-const formatBenefitNumber = (value: number) => {
-  const numericValue = Number(value)
-  if (!Number.isFinite(numericValue)) return '0'
-  return Number.isInteger(numericValue) ? String(numericValue) : numericValue.toFixed(2).replace(/\.?0+$/, '')
-}
-
-const formatDiscountRate = (value: number) => `${formatBenefitNumber(value)}%`
-
-const hasRuleNumber = (value: number | null | undefined): value is number =>
-  typeof value === 'number' && Number.isFinite(value)
-
-const formatRuleNumber = (value: number) =>
-  Number.isInteger(value) ? String(value) : value.toFixed(2).replace(/\.?0+$/, '')
-
-const translateWithFallback = (key: string, params: Record<string, string | number>, fallback: string) =>
-  te(key) ? t(key, params) : fallback
-
-const formatPoints = (value: number) => {
-  const points = formatRuleNumber(value)
-  if (value === 1) {
-    return translateWithFallback('member.points.pointValueSingular', { points }, `${points} Point`)
-  }
-  return translateWithFallback('member.points.pointsValue', { points }, `${points} Points`)
-}
-
-const notConfiguredText = computed(() =>
-  t('member.points.notConfigured', 'Not configured')
-)
-
-const pointsBaseCurrency = computed(() =>
-  String(loyaltyRules.value?.points_base_currency || 'USD').trim().toUpperCase() || 'USD'
-)
-
-const purchaseEarnRuleDescription = computed(() => {
-  const rules = loyaltyRules.value
-  const pointsPerUnit = rules?.purchase_earn_points_per_currency_unit
-
-  if (!hasRuleNumber(pointsPerUnit)) return notConfiguredText.value
-  if (pointsPerUnit <= 0) return t('member.points.purchaseEarnDisabled', 'Purchase earning is not enabled')
-
-  const points = formatPoints(pointsPerUnit)
-  const currency = pointsBaseCurrency.value
-  return translateWithFallback(
-    'member.points.purchaseEarnRule',
-    { points, currency },
-    `${points} per 1 ${currency} of product amount after discounts, awarded after order completion`
-  )
-})
-
-const referralRuleDescription = computed(() => {
-  const rules = loyaltyRules.value
-  const referrer = rules?.referral_referrer_points
-  const referee = rules?.referral_referee_points
-
-  if (!hasRuleNumber(referrer) || !hasRuleNumber(referee)) return notConfiguredText.value
-  if (referrer <= 0 && referee <= 0) return t('member.points.referralDisabled', 'Referral points are not enabled')
-
-  const referrerText = formatPoints(referrer)
-  const refereeText = formatPoints(referee)
-  return translateWithFallback(
-    'member.points.referralDisplayRule',
-    { referrer: referrerText, referee: refereeText },
-    `Inviter gets ${referrerText}; invitee gets ${refereeText}`
-  )
-})
-
-const redemptionRuleDescription = computed(() => {
-  const rules = loyaltyRules.value
-  const exchangeRate = rules?.redemption_exchange_rate
-
-  if (!hasRuleNumber(exchangeRate)) return notConfiguredText.value
-  if (exchangeRate <= 0) return t('member.points.redemptionDisabled', 'Points redemption is not enabled')
-
-  const pointsText = formatPoints(exchangeRate)
-  const currency = pointsBaseCurrency.value
-  return translateWithFallback(
-    'member.points.redemptionDisplayRule',
-    { points: pointsText, amount: 1, currency },
-    `${pointsText} = ${currency} 1`
-  )
-})
-
-const checkInRuleDescription = computed(() => {
-  const rules = loyaltyRules.value
-  const base = rules?.checkin_base_points
-
-  if (!hasRuleNumber(base)) return notConfiguredText.value
-  if (base <= 0) return t('member.points.checkinDisabled', 'Daily check-in points are not enabled')
-
-  const parts = [translateWithFallback('member.points.checkinBaseRule', { base: formatPoints(base) }, `${formatPoints(base)} per check-in`)]
-  const max = rules?.checkin_max_points
-  const bonus = rules?.checkin_streak_bonus_points
-  const interval = rules?.checkin_streak_interval_days
-
-  if (hasRuleNumber(max) && max > base) {
-    parts.push(translateWithFallback('member.points.checkinMaxRule', { max: formatPoints(max) }, `up to ${formatPoints(max)}`))
-  }
-
-  if (hasRuleNumber(bonus) && hasRuleNumber(interval) && bonus > 0 && interval > 0) {
-    parts.push(translateWithFallback(
-      'member.points.checkinStreakRule',
-      { bonus: formatPoints(bonus), interval: formatRuleNumber(interval) },
-      `+${formatPoints(bonus)} every ${formatRuleNumber(interval)} consecutive days`
-    ))
-  }
-
-  return parts.join('; ')
-})
-
-const pointRuleItems = computed(() => [
-  {
-    key: 'purchase',
-    title: t('member.points.purchaseEarn', 'Order completion'),
-    description: purchaseEarnRuleDescription.value,
-  },
-  {
-    key: 'redemption',
-    title: t('member.points.redeem', 'Redemption rate'),
-    description: redemptionRuleDescription.value,
-  },
-  {
-    key: 'referral',
-    title: t('member.points.invite', 'Invite new users'),
-    description: referralRuleDescription.value,
-  },
-  {
-    key: 'checkin',
-    title: t('member.points.checkin', 'Daily check-in'),
-    description: checkInRuleDescription.value,
-  },
-])
-
 const showAuthModal = ref(false)
 const authMode = ref<'login' | 'register'>('login')
 
@@ -430,7 +171,7 @@ onMounted(() => {
 })
 </script>
 
-<style scoped>
+<style>
  .membership-tabs {
    --membership-card-surface: var(--tz-card-surface);
    --membership-card-subtle: var(--tz-surface-subtle);
@@ -603,7 +344,7 @@ onMounted(() => {
    justify-content: center;
  }
 
- .member-avatar :deep(.badge) {
+ .member-avatar .badge {
    width: 96px;
    height: 96px;
  }

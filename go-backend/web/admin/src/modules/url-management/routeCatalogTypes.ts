@@ -75,6 +75,8 @@ export interface StorefrontSitemapSyncResponse {
 
 export interface StorefrontRouteCatalogCheckSummary {
   checked: number
+  eligible: number
+  remaining: number
   ok: number
   redirects: number
   not_found: number

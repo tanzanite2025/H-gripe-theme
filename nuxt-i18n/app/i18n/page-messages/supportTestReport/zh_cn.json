@@ -1,0 +1,22 @@
+{
+  "title": "测试报告",
+  "sections": "测试报告分区",
+  "tabs": {
+    "rim": {
+      "label": "轮圈测试报告",
+      "description": "轮圈测试记录与合规参考。"
+    },
+    "wheelset": {
+      "label": "轮组测试报告",
+      "description": "轮组测试报告与验证数据。"
+    },
+    "tension": {
+      "label": "张力标准",
+      "description": "辐条张力目标、范围与组装检查。"
+    },
+    "assembly": {
+      "label": "轮组组装",
+      "description": "组装记录、流程说明与最终检查。"
+    }
+  }
+}

@@ -3,7 +3,7 @@
     <header class="global-all-faqs-mobile-search-overlay-panel__header">
       <div>
         <div class="global-all-faqs-mobile-search-overlay-panel__eyebrow">
-          {{ t('faq.ui.categorizedSupport') }}
+          {{ t('faq.ui.quickAnswers') }}
         </div>
         <h2 class="global-all-faqs-mobile-search-overlay-panel__title">
           {{ t('faq.title') }}
@@ -78,55 +78,18 @@
       <template v-else>
         <div class="global-all-faqs-mobile-search-overlay-panel__questions-section">
           <div class="global-all-faqs-mobile-search-overlay-panel__section-heading">
-              <div>
-                <span class="global-all-faqs-mobile-search-overlay-panel__section-kicker">
-                  {{ t('faq.ui.quickAnswers') }}
-                </span>
-                <h3>{{ activeTopic?.label || t('faq.ui.quickAnswers') }}</h3>
-              </div>
-              <button
-                v-if="activeTopic"
-                type="button"
-                class="global-all-faqs-mobile-search-overlay-panel__topic-reset"
-                :aria-label="t('filter.clearSearch', 'Clear search')"
-                @click="emit('select-topic', activeTopic.id)"
-              >
-                <Icon name="lucide:x" aria-hidden="true" />
-              </button>
-            </div>
-            <GlobalAllFaqsMobileSearchAccordion
-              :items="topicItems"
-              :expanded-items="expandedItems"
-              @toggle-item="emit('toggle-item', $event)"
-            />
-          </div>
-
-        <div class="global-all-faqs-mobile-search-overlay-panel__topics-section">
-          <div class="global-all-faqs-mobile-search-overlay-panel__section-heading">
             <div>
               <span class="global-all-faqs-mobile-search-overlay-panel__section-kicker">
-                {{ t('faq.ui.categoriesLabel') }}
+                {{ t('faq.ui.quickAnswers') }}
               </span>
-              <h3>{{ t('faq.ui.categoriesLabel') }}</h3>
+              <h3>{{ t('faq.ui.quickAnswers') }}</h3>
             </div>
           </div>
-          <div class="global-all-faqs-mobile-search-overlay-panel__topics">
-            <button
-              v-for="topic in featuredTopics"
-              :key="topic.id"
-              type="button"
-              class="global-all-faqs-mobile-search-overlay-panel__topic"
-              :class="{ 'is-active': activeTopicId === topic.id }"
-              @click="emit('select-topic', topic.id)"
-            >
-              <span class="global-all-faqs-mobile-search-overlay-panel__topic-label">
-                {{ topic.label }}
-              </span>
-              <span class="global-all-faqs-mobile-search-overlay-panel__topic-count">
-                {{ topic.count }} FAQ
-              </span>
-            </button>
-          </div>
+          <GlobalAllFaqsMobileSearchAccordion
+            :items="featuredItems"
+            :expanded-items="expandedItems"
+            @toggle-item="emit('toggle-item', $event)"
+          />
         </div>
       </template>
     </div>
@@ -139,16 +102,12 @@ import { useI18n } from '#imports'
 import GlobalAllFaqsMobileSearchAccordion from '~/components/faq/GlobalAllFaqsMobileSearchAccordion.vue'
 import type {
   GlobalAllFaqFlatItem,
-  GlobalAllFaqSearchTopic,
 } from '~/data/faq'
 
 const props = defineProps<{
   pending: boolean
   searchQuery: string
-  featuredTopics: GlobalAllFaqSearchTopic[]
-  activeTopicId: string
-  activeTopic: GlobalAllFaqSearchTopic | null
-  topicItems: GlobalAllFaqFlatItem[]
+  featuredItems: GlobalAllFaqFlatItem[]
   searchResults: GlobalAllFaqFlatItem[]
   searchResultCount: number
   expandedItems: ReadonlySet<string>
@@ -156,7 +115,6 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:search-query': [value: string]
-  'select-topic': [topicId: string]
   'toggle-item': [itemId: string]
   close: []
 }>()
@@ -209,8 +167,7 @@ const handleSearchInput = (event: Event) => {
   line-height: 1.2;
 }
 
-.global-all-faqs-mobile-search-overlay-panel__close,
-.global-all-faqs-mobile-search-overlay-panel__topic-reset {
+.global-all-faqs-mobile-search-overlay-panel__close {
   display: inline-grid;
   flex: 0 0 auto;
   place-items: center;
@@ -226,20 +183,9 @@ const handleSearchInput = (event: Event) => {
   border-radius: 0.55rem;
 }
 
-.global-all-faqs-mobile-search-overlay-panel__topic-reset {
-  width: 1.55rem;
-  height: 1.55rem;
-  border-radius: 999px;
-}
-
 .global-all-faqs-mobile-search-overlay-panel__close :deep(svg) {
   width: 0.88rem;
   height: 0.88rem;
-}
-
-.global-all-faqs-mobile-search-overlay-panel__topic-reset :deep(svg) {
-  width: 0.72rem;
-  height: 0.72rem;
 }
 
 .global-all-faqs-mobile-search-overlay-panel__search {
@@ -320,15 +266,6 @@ const handleSearchInput = (event: Event) => {
   padding-bottom: 0.2rem;
 }
 
-.global-all-faqs-mobile-search-overlay-panel__topics-section {
-  flex: 0 0 11.75rem;
-  min-height: 11.75rem;
-  overflow: hidden;
-  margin-top: auto;
-  padding-top: 0.55rem;
-  padding-bottom: 0.35rem;
-}
-
 .global-all-faqs-mobile-search-overlay-panel__section-heading {
   display: flex;
   min-height: 1.9rem;
@@ -368,51 +305,6 @@ const handleSearchInput = (event: Event) => {
   color: var(--tz-text-accent);
   font-size: 0.57rem;
   font-weight: 900;
-}
-
-.global-all-faqs-mobile-search-overlay-panel__topics {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.45rem;
-}
-
-.global-all-faqs-mobile-search-overlay-panel__topic {
-  display: grid;
-  min-width: 0;
-  height: 3.7rem;
-  align-content: space-between;
-  gap: 0.55rem;
-  padding: 0.65rem;
-  border: 1px solid transparent;
-  border-radius: 0.65rem;
-  background: var(--tz-card-surface, #ffffff);
-  color: var(--tz-text-primary);
-  text-align: left;
-  cursor: pointer;
-}
-
-.global-all-faqs-mobile-search-overlay-panel__topic.is-active {
-  border-color: rgba(5, 150, 105, 0.48);
-  background:
-    linear-gradient(0deg, rgba(5, 150, 105, 0.075), rgba(5, 150, 105, 0.075)),
-    var(--tz-card-surface, #ffffff);
-}
-
-.global-all-faqs-mobile-search-overlay-panel__topic-label {
-  min-width: 0;
-  overflow: hidden;
-  font-size: 0.67rem;
-  font-weight: 800;
-  line-height: 1.35;
-  text-overflow: ellipsis;
-}
-
-.global-all-faqs-mobile-search-overlay-panel__topic-count {
-  color: var(--tz-text-muted);
-  font-size: 0.54rem;
-  font-weight: 800;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
 }
 
 .global-all-faqs-mobile-search-overlay-panel__empty,

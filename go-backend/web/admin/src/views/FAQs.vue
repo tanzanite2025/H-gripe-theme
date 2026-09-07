@@ -1,6 +1,6 @@
 <template>
   <div class="flex h-full min-h-0 flex-col gap-3 overflow-hidden">
-    <AdminPageHeader class="shrink-0" title="FAQ 管理" description="维护常见问题、分类、发布状态和展示顺序">
+    <AdminPageHeader class="shrink-0" title="FAQ 管理" description="维护常见问题、页面归属、发布状态和展示顺序">
       <template #actions>
         <Button v-if="hasPermission('faq:create')" @click="showCreateDialog">
           <Plus class="size-4" />
@@ -13,7 +13,6 @@
       <FAQFilterPanel
         :filters="filters"
         :page-filter-options="pageFilterOptions"
-        :category-filter-options="categoryFilterOptions"
         :status-filter-options="statusFilterOptions"
         @apply="applyFilters"
         @reset="resetFilters"
@@ -43,9 +42,6 @@
       @delete="requestDelete"
       @batch-delete="requestBatchDelete"
       @edit-page="showPageDialog"
-      @create-category="openCreateCategoryDialog"
-      @edit-category="openEditCategoryDialog"
-      @delete-category="requestDeleteCategory"
       @create-faq="openCreateFAQDialog"
     />
 
@@ -56,7 +52,6 @@
       :form-errors="formErrors"
       :submitting="submitting"
       :faq-page-options="faqPageOptions"
-      :available-faq-categories="availableFAQCategories"
       :language-options="languageOptions"
       :placement-locked="placementLocked"
       @submit="submitForm"
@@ -72,16 +67,6 @@
       @submit="submitPageForm"
     />
 
-    <FAQCategoryEditorDialog
-      v-model:open="categoryDialogVisible"
-      :mode="categoryDialogMode"
-      :category-form="categoryForm"
-      :submitting="categorySubmitting"
-      :structure-page-options="structurePageOptions"
-      :language-options="languageOptions"
-      @submit="submitCategoryForm"
-    />
-
     <AdminConfirmDialog
       v-model:open="confirmation.open"
       :title="confirmation.title"
@@ -95,11 +80,10 @@
 
 <script setup lang="ts">
 import { Plus } from '@lucide/vue'
-import type { FAQCategory, FAQStructurePage } from '@/lib/faqAdminPresentation'
+import type { FAQStructurePage } from '@/lib/faqAdminPresentation'
 import AdminConfirmDialog from '@/components/admin/AdminConfirmDialog.vue'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import FAQAccordionList from '@/components/admin/faq/FAQAccordionList.vue'
-import FAQCategoryEditorDialog from '@/components/admin/faq/FAQCategoryEditorDialog.vue'
 import FAQEditorDialog from '@/components/admin/faq/FAQEditorDialog.vue'
 import FAQFilterPanel from '@/components/admin/faq/FAQFilterPanel.vue'
 import FAQPageEditorDialog from '@/components/admin/faq/FAQPageEditorDialog.vue'
@@ -118,24 +102,18 @@ const {
   placementLocked,
   pageDialogVisible,
   pageSubmitting,
-  categoryDialogVisible,
-  categoryDialogMode,
-  categorySubmitting,
   formErrors,
   filters,
   pagination,
   faqForm,
   pageForm,
-  categoryForm,
   confirmation,
   statusFilterOptions,
   structureLocales,
   languageOptions,
   structurePageOptions,
   faqPageOptions,
-  availableFAQCategories,
   pageFilterOptions,
-  categoryFilterOptions,
   hasPermission,
   localeName,
   statusName,
@@ -154,25 +132,14 @@ const {
   submitForm,
   showPageDialog,
   submitPageForm,
-  showCategoryDialog,
-  submitCategoryForm,
   isSelected,
   toggleFAQ,
   requestDelete,
   requestBatchDelete,
-  requestDeleteCategory,
   executeConfirmedAction
 } = useFaqAdmin()
 
-const openCreateCategoryDialog = (page: FAQStructurePage): void => {
-  showCategoryDialog('create', page)
-}
-
-const openEditCategoryDialog = (page: FAQStructurePage, category: FAQCategory): void => {
-  showCategoryDialog('edit', page, category)
-}
-
-const openCreateFAQDialog = (page: FAQStructurePage, category: FAQCategory): void => {
-  showCreateDialog({ page, category })
+const openCreateFAQDialog = (page: FAQStructurePage): void => {
+  showCreateDialog({ page })
 }
 </script>

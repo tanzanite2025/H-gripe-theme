@@ -1,8 +1,10 @@
 <template>
   <div>
-    <h1 class="products-page__title products-page__title--sr-only">Tire Guides</h1>
+    <h1 class="products-page__title products-page__title--sr-only">
+      {{ t('guidesTireguides.title') }}
+    </h1>
     <p class="products-page__intro products-page__intro--sr-only">
-      Reference charts for common tire and rim sizes. Detailed data will be added here later.
+      {{ t('guidesTireguides.intro') }}
     </p>
 
     <div class="sizecharts-page">
@@ -12,7 +14,7 @@
         id="size"
         class="sizecharts-section tz-text-secondary"
       >
-        <TireSizeGuide @open-tire-products="openTireProductsDrawer" />
+        <TireSizeGuide v-if="activeTab === 'size'" @open-tire-products="openTireProductsDrawer" />
       </section>
 
       <!-- Match (tire & rim matching helpers) -->
@@ -21,7 +23,7 @@
         id="match"
         class="sizecharts-section"
       >
-        <MatchGuide />
+        <MatchGuide v-if="activeTab === 'match'" />
       </section>
 
       <section
@@ -29,7 +31,7 @@
         id="tubeless"
         class="sizecharts-section"
       >
-        <TubelessGuide @change-tab="setActiveTab" />
+        <TubelessGuide v-if="activeTab === 'tubeless'" @change-tab="setActiveTab" />
       </section>
 
       <!-- Installation -->
@@ -38,7 +40,7 @@
         id="installation"
         class="sizecharts-section"
       >
-        <InstallationGuide @change-tab="setActiveTab" />
+        <InstallationGuide v-if="activeTab === 'installation'" @change-tab="setActiveTab" />
       </section>
 
       <!-- How to choose -->
@@ -47,7 +49,7 @@
         id="choose"
         class="sizecharts-section"
       >
-        <HowToChooseGuide />
+        <HowToChooseGuide v-if="activeTab === 'choose'" />
       </section>
 
       <!-- Tire pressure -->
@@ -56,7 +58,7 @@
         id="rims"
         class="sizecharts-section"
       >
-        <TirePressureGuide @open-tire-products="openTireProductsDrawer" />
+        <TirePressureGuide v-if="activeTab === 'rims'" @open-tire-products="openTireProductsDrawer" />
       </section>
 
       <!-- Inner Tube -->
@@ -65,14 +67,14 @@
         id="tube"
         class="sizecharts-section"
       >
-        <InnerTubeGuide />
+        <InnerTubeGuide v-if="activeTab === 'tube'" />
       </section>
 
       <div class="sizecharts-feedback">
-        <UserFeedbackThread
-          threadKey="guides-tireguides"
-          title="Share your feedback about this Tire Guides guide"
-        />
+      <UserFeedbackThread
+        threadKey="guides-tireguides"
+        :title="t('guidesTireguides.feedbackTitle')"
+      />
       </div>
     </div>
   </div>
@@ -88,11 +90,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
+import { useHead, useI18n } from '#imports'
 import { useApiRequest } from '~/composables/useApiRequest'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
-import GuideImage from '~/components/GuideImage.vue'
-import TireSizeSection from '~/components/TireSizeSection.vue'
 import WhatsAppProductSearchResultDrawer from '~/components/WhatsAppProductSearchResultDrawer.vue'
 import MatchGuide from '~/components/tireguides/MatchGuide.vue'
 import TubelessGuide from '~/components/tireguides/TubelessGuide.vue'
@@ -104,6 +105,7 @@ import TireSizeGuide from '~/components/tireguides/TireSizeGuide.vue'
 import { usePageSubNavigationTab } from '~/composables/usePageSubNavigationTab'
 import { normalizeShopProduct } from '~/composables/useShopProducts'
 import { tireGuideTabs } from '~/utils/pageSubNavigation'
+import { usePageMessages } from '~/composables/usePageMessages'
 
 definePageMeta({
   layout: 'products',
@@ -111,9 +113,18 @@ definePageMeta({
   footerLabelFallback: 'Tire Guides',
 })
 
-useHead({
-  title: 'Tire Guides',
+const { locale, t } = useI18n()
+const { loadPageMessages } = usePageMessages('guidesTireguides')
+
+await loadPageMessages(locale.value)
+
+watch(locale, (nextLocale) => {
+  void loadPageMessages(nextLocale)
 })
+
+useHead(() => ({
+  title: t('guidesTireguides.title'),
+}))
 
 const tabs = tireGuideTabs
 const { activeTab, setActiveTab } = usePageSubNavigationTab({
@@ -134,7 +145,7 @@ const tireProductsQuery = ref('')
 const openTireProductsDrawer = async () => {
   const keyword = 'tire'
 
-  tireProductsQuery.value = 'Tire products'
+  tireProductsQuery.value = t('guidesTireguides.drawer.query')
   tireProductsError.value = null
   tireProductsDrawerVisible.value = true
   tireProductsLoading.value = true
@@ -147,7 +158,7 @@ const openTireProductsDrawer = async () => {
         status: 'active',
       },
       credentials: 'include',
-    }, 'Failed to load tire products')
+    }, t('guidesTireguides.drawer.error'))
 
     const products = Array.isArray(response?.items) ? response.items : []
     if (products.length > 0) {
@@ -170,7 +181,7 @@ const openTireProductsDrawer = async () => {
   } catch (error) {
     // eslint-disable-next-line no-console
     console.error('Failed to load tire products', error)
-    tireProductsError.value = 'Failed to load tire products. Please try again.'
+    tireProductsError.value = t('guidesTireguides.drawer.error')
     tireProductsResults.value = []
   } finally {
     tireProductsLoading.value = false

@@ -14,6 +14,10 @@ func (b *dependencyServicesBuilder) wire() error {
 	cfg := b.cfg
 	support := b.support
 
+	if support != nil && support.ShippingService != nil {
+		support.ShippingService.ConfigureAuditRecorder(services.Audit)
+	}
+
 	recommendationsService := service.NewRecommendationService(services.Product, repos.RecommendationEvent)
 	services.Recommendations = recommendationsService
 	services.Recommendations.ConfigureMediaService(services.Media)
@@ -87,6 +91,8 @@ func (b *dependencyServicesBuilder) wire() error {
 		support.ShippingService,
 		support.OrderNumberGenerator,
 	)
+	services.Order.ConfigureOrderEvidenceSnapshot(services.OrderEvidenceSnapshot)
+	services.Order.ConfigureOrderEvidence(services.OrderEvidence)
 	services.Order.ConfigureProductCacheInvalidator(services.Product)
 	services.Order.ConfigureProductCacheEventPublisher(b.productCacheOutboxPublisher)
 	services.Order.ConfigureRefundCancellationPolicy(services.RefundCancellationPolicy)
@@ -94,7 +100,11 @@ func (b *dependencyServicesBuilder) wire() error {
 	services.Payment.ConfigureProductCacheInvalidator(services.Product)
 	services.Payment.ConfigureProductCacheEventPublisher(b.productCacheOutboxPublisher)
 	services.Payment.ConfigureRisk(repos.Order, support.AntiFraudService)
-	services.Payment.ConfigureEvidenceSources(repos.Order, repos.Shipping, repos.Ticket)
+	services.Payment.ConfigureEvidenceSources(repos.Order, repos.Ticket)
+	services.Payment.ConfigureOrderEvidenceAssembler(
+		service.NewOrderEvidencePackageAssembler(repos.Order, repos.OrderEvidence, repos.Shipping),
+	)
+	services.Payment.ConfigureOrderEvidenceSubmissionSnapshotRepository(repos.OrderEvidenceSubmission)
 	services.Payment.ConfigurePolicyDisclosureRepository(repos.OrderPolicyDisclosure)
 	services.Payment.ConfigurePayPalDisputeEvidenceDocumentStorage(support.StorageSvc)
 	services.Payment.ConfigurePayPalDisputeInvoiceSellerProfileProvider(services.PayPalDisputeInvoiceSellerProfile)

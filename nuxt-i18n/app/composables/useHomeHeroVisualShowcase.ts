@@ -43,8 +43,6 @@ const normalizeShowcaseItem = (
     width: Math.max(1, numericValue(raw.width, 900)),
     height: Math.max(1, numericValue(raw.height, 1200)),
     desktopOrder: Math.max(1, numericValue(raw.desktop_order, index + 1)),
-    targetUrl: String(raw.target_url || '').trim() || undefined,
-    targetLabel: String(raw.target_label || '').trim() || undefined,
   }
 }
 

@@ -1,0 +1,166 @@
+{
+  "title": "辐条计算器",
+  "feedbackTitle": "分享您对辐条计算器的反馈",
+  "calculator": {
+    "wheelSetup": "轮组设置",
+    "frontWheel": "前轮",
+    "rearWheel": "后轮",
+    "schematic": {
+      "eyebrow": "编号示意图",
+      "frontGeometry": "前轮几何尺寸",
+      "rearGeometry": "后轮几何尺寸",
+      "frontNote": "图中的编号与下方表格对应，方便在移动端保持清晰。",
+      "rearNote": "后轮使用相同的编号布局，便于比较碟刹侧和非碟刹侧。",
+      "erd": {
+        "label": "ERD",
+        "description": "轮圈有效直径"
+      },
+      "leftFlange": {
+        "label": "左侧法兰",
+        "description": "PCDL / 中心距离",
+        "pcd": "PCDL",
+        "center": "中心距"
+      },
+      "rightFlange": {
+        "label": "右侧法兰",
+        "description": "PCDR / 中心距离",
+        "pcd": "PCDR",
+        "center": "中心距"
+      },
+      "rimOffset": {
+        "label": "轮圈偏移",
+        "description": "偏心调整"
+      },
+      "wheelLabel": {
+        "front": "前轮",
+        "rear": "后轮"
+      },
+      "sideLabel": {
+        "disc": "碟刹侧",
+        "nonDisc": "非碟刹侧"
+      },
+      "sideMark": {
+        "disc": "碟刹",
+        "frontNonDisc": "非碟刹",
+        "rearNonDisc": "非驱动侧"
+      },
+      "svgTitle": "{wheel}{side}示意图",
+      "svgDescription": "展示轮圈、花鼓、辐条布局，以及 ERD、PCDL、PCDR 和轮圈偏移的编号尺寸标注。",
+      "hubFlangeZone": "花鼓 / 法兰区域",
+      "offset": "偏移"
+    },
+    "buildSettings": {
+      "title": "编组设置",
+      "spokeCount": "辐条数量",
+      "lacingPattern": "编法",
+      "nippleType": "辐条帽类型",
+      "nippleLength": "辐条帽长度",
+      "rimBrand": "轮圈品牌",
+      "rimModel": "轮圈型号",
+      "hubBrand": "花鼓品牌",
+      "hubModel": "花鼓型号",
+      "selectBrand": "选择品牌",
+      "selectModel": "选择型号",
+      "nippleLengthPlaceholder": "例如 12"
+    },
+    "options": {
+      "crossing": {
+        "radial": "0 交叉（径向）",
+        "one": "1 交叉",
+        "two": "2 交叉",
+        "three": "3 交叉",
+        "four": "4 交叉"
+      },
+      "nippleType": {
+        "standard": "标准外置式",
+        "hidden": "隐藏式 / 空气动力型"
+      }
+    },
+    "action": {
+      "description": "辐条长度和预测的单根辐条张力比例根据所选轮组几何尺寸计算。生产编组前，请使用实测的轮圈和花鼓尺寸。",
+      "calculating": "计算中...",
+      "recalculate": "重新计算",
+      "calculationFailed": "计算失败"
+    },
+    "results": {
+      "title": "辐条长度",
+      "description": "优先使用已验证的目录长度。如果当前选择没有匹配的已验证结果，计算器将使用上方输入的尺寸。",
+      "leftSide": "左侧",
+      "rightSide": "右侧",
+      "predictedTensionRatio": "预测张力比例",
+      "directionalRatio": "左侧 : 右侧 {ratio} · 较低侧 {side}",
+      "verified": "已验证",
+      "calculated": "计算值",
+      "fallbackNote": "结果优先使用已验证的目录长度。没有匹配的已验证编组时，将回退到上方输入的尺寸。",
+      "unit": "毫米",
+      "balanced": "平衡"
+    }
+  },
+  "search": {
+    "title": "智能搜索",
+    "intro": "快速查找已验证官方编组的辐条长度",
+    "placeholder": "输入花鼓型号（例如“350”、“240”或“Mavic”）...",
+    "buildsFound": "找到 {count} 个编组",
+    "verified": "已验证",
+    "empty": "没有找到与“{query}”匹配的已验证编组结果。",
+    "frontLeft": "前轮左侧",
+    "frontRight": "前轮右侧",
+    "rearLeft": "后轮左侧",
+    "rearRight": "后轮右侧",
+    "unit": "毫米",
+    "minimumQueryLength": "请输入至少 2 个字符进行搜索"
+  },
+  "parameter": {
+    "title": "参数定义",
+    "intro": "计算前，使用这些定义再次核对轮圈和花鼓数据。细小的测量差异也可能改变辐条长度。",
+    "items": {
+      "erd": {
+        "title": "ERD（轮圈有效直径）",
+        "desc": "辐条帽在轮圈内部落座位置对应的直径。请参考轮圈品牌提供的 ERD 规格，或使用两个辐条帽和卡尺进行测量。"
+      },
+      "flangeDiameter": {
+        "title": "法兰直径",
+        "desc": "穿过花鼓法兰辐条孔中心的圆直径（左右两侧可能不同）。"
+      },
+      "centerToFlange": {
+        "title": "中心线到法兰",
+        "desc": "从花鼓中心线到每侧法兰的距离（左右两侧）。这会影响偏心量和辐条长度差异。"
+      },
+      "holeCount": {
+        "title": "辐条孔数量",
+        "desc": "轮圈和花鼓必须匹配（例如 24/28/32 孔）。前轮和后轮也要选择对应的孔数。"
+      },
+      "crossPattern": {
+        "title": "交叉编法",
+        "desc": "每根辐条与其他辐条交叉的次数（2 交叉 / 3 交叉 / 4 交叉）。交叉次数越高，辐条通常越长。"
+      }
+    },
+    "note": "提示：如果不确定，请使用制造商公布的规格。如果自行测量，请测量两次，并使用相同的单位（毫米）输入数值。",
+    "workflow": {
+      "title": "辐条长度测量流程",
+      "overviewAlt": "计算自行车辐条长度的概览示意图",
+      "overviewCaption": "概览示意图：展示计算自行车辐条长度所需的轮圈和花鼓测量项目。",
+      "stepOneTitle": "测量 ERD（轮圈有效直径）",
+      "stepOneFormula": "计算",
+      "stepOneFormulaValue": "ERD = 辐条 1 长度 + 辐条 2 长度 + 实测距离",
+      "stepOneItems": [
+        "准备两根已知长度的旧辐条、两个辐条帽和一把卡尺。",
+        "将辐条穿过轮圈上相对的两个孔。",
+        "将辐条帽旋入，直到与辐条帽槽底部齐平（理想的最终位置）。",
+        "测量两个 J 形弯头之间的距离。"
+      ],
+      "stepOneNote": "* 该方法可以补偿轮圈制造公差。",
+      "stepOneAlt": "展示如何测量轮圈有效直径（ERD）的示意图",
+      "stepOneCaption": "使用两根辐条、辐条帽和卡尺测量轮圈有效直径（ERD）的示意图。",
+      "stepTwoTitle": "测量花鼓尺寸",
+      "flangeDiameterLabel": "法兰直径：",
+      "flangeDiameterBody": "使用卡尺测量同一法兰上相对两个辐条孔中心之间的距离。",
+      "centerToFlangeLabel": "中心线到法兰：",
+      "centerToFlangeBody": "如有需要，先拆下花鼓轴。测量法兰中心到花鼓中心线的距离（也可以从锁紧螺母端面测量后换算）。",
+      "stepThreeTitle": "计算并取整",
+      "stepThreeBody": "将测量值输入计算器。如果结果介于标准尺寸之间（例如 288.4 毫米），通常取最接近的 1 毫米规格。",
+      "tipLabel": "提示：",
+      "tipBody": "为了确保螺纹充分啮合，通常辐条长 1 毫米比短 1 毫米更稳妥。"
+    }
+  }
+}

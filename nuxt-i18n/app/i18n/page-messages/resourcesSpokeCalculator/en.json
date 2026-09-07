@@ -1,0 +1,166 @@
+{
+  "title": "Spoke Calculator",
+  "feedbackTitle": "Share your feedback about the Spoke Calculator",
+  "calculator": {
+    "wheelSetup": "Wheel setup",
+    "frontWheel": "Front Wheel",
+    "rearWheel": "Rear Wheel",
+    "schematic": {
+      "eyebrow": "Numbered schematic",
+      "frontGeometry": "Front wheel geometry",
+      "rearGeometry": "Rear wheel geometry",
+      "frontNote": "The numbers in the drawing match the table below, so the wheel view stays readable on mobile.",
+      "rearNote": "The rear view uses the same numbered layout, so disc and non-disc sides stay easy to compare.",
+      "erd": {
+        "label": "ERD",
+        "description": "Effective rim diameter"
+      },
+      "leftFlange": {
+        "label": "Left flange",
+        "description": "PCDL / center distance",
+        "pcd": "PCDL",
+        "center": "Center"
+      },
+      "rightFlange": {
+        "label": "Right flange",
+        "description": "PCDR / center distance",
+        "pcd": "PCDR",
+        "center": "Center"
+      },
+      "rimOffset": {
+        "label": "Rim offset",
+        "description": "Dish adjustment"
+      },
+      "wheelLabel": {
+        "front": "Front wheel",
+        "rear": "Rear wheel"
+      },
+      "sideLabel": {
+        "disc": "Disc side",
+        "nonDisc": "Non-disc side"
+      },
+      "sideMark": {
+        "disc": "Disc",
+        "frontNonDisc": "Non-disc",
+        "rearNonDisc": "NDS"
+      },
+      "svgTitle": "{wheel} {side} schematic",
+      "svgDescription": "Full wheel vector view with rim, hub, spoke pattern, and numbered dimension callouts for ERD, PCDL, PCDR, and rim offset.",
+      "hubFlangeZone": "Hub / flange zone",
+      "offset": "Offset"
+    },
+    "buildSettings": {
+      "title": "Build settings",
+      "spokeCount": "Spoke count",
+      "lacingPattern": "Lacing pattern",
+      "nippleType": "Nipple type",
+      "nippleLength": "Nipple length",
+      "rimBrand": "Rim Brand",
+      "rimModel": "Rim Model",
+      "hubBrand": "Hub Brand",
+      "hubModel": "Hub Model",
+      "selectBrand": "Select Brand",
+      "selectModel": "Select Model",
+      "nippleLengthPlaceholder": "e.g. 12"
+    },
+    "options": {
+      "crossing": {
+        "radial": "0-cross (Radial)",
+        "one": "1-cross",
+        "two": "2-cross",
+        "three": "3-cross",
+        "four": "4-cross"
+      },
+      "nippleType": {
+        "standard": "Standard external",
+        "hidden": "Hidden / aero"
+      }
+    },
+    "action": {
+      "description": "Spoke lengths and the predicted per-spoke tension ratio are derived from the selected wheel geometry. Use measured rim and hub dimensions for a production build.",
+      "calculating": "Calculating...",
+      "recalculate": "Recalculate",
+      "calculationFailed": "Calculation failed"
+    },
+    "results": {
+      "title": "Spoke lengths",
+      "description": "Verified catalog lengths are used first. If no verified result matches the current selection, the calculator uses the dimensions above.",
+      "leftSide": "Left side",
+      "rightSide": "Right side",
+      "predictedTensionRatio": "Predicted tension ratio",
+      "directionalRatio": "Left : Right {ratio} · lower side {side}",
+      "verified": "Verified",
+      "calculated": "Calculated",
+      "fallbackNote": "Results use verified catalog lengths first. If no verified build matches, the calculator falls back to the dimensions entered above.",
+      "unit": "mm",
+      "balanced": "balanced"
+    }
+  },
+  "search": {
+    "title": "Smart Search",
+    "intro": "Instantly find spoke lengths for verified official builds",
+    "placeholder": "Type a hub model (e.g. '350', '240', 'Mavic')...",
+    "buildsFound": "{count} builds found",
+    "verified": "Verified",
+    "empty": "No verified build result found for \"{query}\".",
+    "frontLeft": "F Left",
+    "frontRight": "F Right",
+    "rearLeft": "R Left",
+    "rearRight": "R Right",
+    "unit": "mm",
+    "minimumQueryLength": "Minimum 2 chars to search"
+  },
+  "parameter": {
+    "title": "Parameter definitions",
+    "intro": "Use these definitions to double-check your rim and hub data before calculating. Small measurement differences can change the spoke length.",
+    "items": {
+      "erd": {
+        "title": "ERD (Effective Rim Diameter)",
+        "desc": "The diameter at the spoke nipple seats inside the rim. Use the rim brand's ERD spec or measure it with two nipples and a caliper."
+      },
+      "flangeDiameter": {
+        "title": "Flange diameter",
+        "desc": "The circle diameter through the spoke hole centers on the hub flange (left and right can be different)."
+      },
+      "centerToFlange": {
+        "title": "Center-to-flange",
+        "desc": "The distance from the hub centerline to each flange (left and right). This affects dish and spoke length asymmetry."
+      },
+      "holeCount": {
+        "title": "Spoke hole count",
+        "desc": "Must match both rim and hub (e.g. 24/28/32). Make sure you select the same count for front and rear."
+      },
+      "crossPattern": {
+        "title": "Cross pattern",
+        "desc": "How many times each spoke crosses other spokes (2x/3x/4x). Higher cross typically increases spoke length."
+      }
+    },
+    "note": "Tip: If you are unsure, use the manufacturer's published specs. If you measure yourself, measure twice and enter values to the same unit (mm).",
+    "workflow": {
+      "title": "Spoke length workflow",
+      "overviewAlt": "Overview illustration for calculating bicycle spoke length",
+      "overviewCaption": "Overview illustration showing which rim and hub measurements are needed to calculate bicycle spoke length.",
+      "stepOneTitle": "Measure ERD (Effective Rim Diameter)",
+      "stepOneFormula": "Compute",
+      "stepOneFormulaValue": "ERD = spoke 1 length + spoke 2 length + measured distance",
+      "stepOneItems": [
+        "Prepare two old spokes of known length, two nipples, and a caliper.",
+        "Insert spokes through opposite holes in the rim.",
+        "Screw nipples until flush with the nipple groove bottom (ideal final position).",
+        "Measure distance between the J-bends."
+      ],
+      "stepOneNote": "* This method compensates for rim manufacturing tolerances.",
+      "stepOneAlt": "Diagram showing how Effective Rim Diameter (ERD) is measured",
+      "stepOneCaption": "Diagram showing how Effective Rim Diameter (ERD) is measured using two spokes, nipples and a caliper.",
+      "stepTwoTitle": "Measure Hub Dimensions",
+      "flangeDiameterLabel": "Flange Diameter:",
+      "flangeDiameterBody": "Use calipers to measure the distance between opposing spoke hole centers on the same flange.",
+      "centerToFlangeLabel": "Center to Flange:",
+      "centerToFlangeBody": "Remove the hub axle if needed. Measure from the flange center to the hub centerline (or locknut face and subtract).",
+      "stepThreeTitle": "Calculate & Round",
+      "stepThreeBody": "Enter measurements into the calculator. If the result is between standard sizes (e.g. 288.4mm), you usually round to the nearest available 1mm increment.",
+      "tipLabel": "Tip:",
+      "tipBody": "Being 1mm longer is generally safer than 1mm shorter to ensure full thread engagement."
+    }
+  }
+}

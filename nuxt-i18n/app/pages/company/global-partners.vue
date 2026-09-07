@@ -1,21 +1,21 @@
 <template>
   <div class="w-full pb-6">
-    <h1 class="sr-only">{{ t('company.nav.globalPartners') }}</h1>
+    <h1 class="sr-only">{{ t('companyGlobalPartners.title') }}</h1>
 
     <div class="w-full max-w-none">
       <section class="text-center">
         <h2 class="mb-1 text-lg font-semibold tz-text-primary">
-          {{ t('company.nav.globalPartners') }}
+          {{ t('companyGlobalPartners.title') }}
         </h2>
         <p class="mb-4 text-sm tz-text-secondary">
-          Trusted by leading brands worldwide
+          {{ t('companyGlobalPartners.hero.tagline') }}
         </p>
         <div class="mb-4 flex flex-wrap items-center justify-center gap-3">
           <NuxtLink
-            to="/company/contact"
+            :to="localePath('/company/contact')"
             class="premium-button premium-button--active justify-center"
           >
-            Contact us about partnerships
+            {{ t('companyGlobalPartners.hero.contactCta') }}
           </NuxtLink>
         </div>
         <WorldMapXiamen />
@@ -25,39 +25,39 @@
           <!-- 30+ countries -->
           <div class="premium-card rounded-2xl p-4">
             <p class="text-xs font-medium uppercase tracking-wide tz-text-muted">
-              Countries / regions
+              {{ t('companyGlobalPartners.stats.countries.label') }}
             </p>
             <p class="mt-2 text-3xl font-semibold tz-text-primary">
               30<span class="align-top text-lg">+</span>
             </p>
             <p class="mt-1 text-xs tz-text-secondary">
-              Served worldwide from Xiamen.
+              {{ t('companyGlobalPartners.stats.countries.description') }}
             </p>
           </div>
 
           <!-- 100+ brand partners -->
           <div class="premium-card rounded-2xl p-4">
             <p class="text-xs font-medium uppercase tracking-wide tz-text-muted">
-              Brand partners
+              {{ t('companyGlobalPartners.stats.brandPartners.label') }}
             </p>
             <p class="mt-2 text-3xl font-semibold tz-text-primary">
               100<span class="align-top text-lg">+</span>
             </p>
             <p class="mt-1 text-xs tz-text-secondary">
-              OEM / ODM collaborations globally.
+              {{ t('companyGlobalPartners.stats.brandPartners.description') }}
             </p>
           </div>
 
           <!-- 500,000+ products delivered -->
           <div class="premium-card rounded-2xl p-4">
             <p class="text-xs font-medium uppercase tracking-wide tz-text-muted">
-              Products delivered
+              {{ t('companyGlobalPartners.stats.productsDelivered.label') }}
             </p>
             <p class="mt-2 text-3xl font-semibold tz-text-primary">
               500,000<span class="align-top text-lg">+</span>
             </p>
             <p class="mt-1 text-xs tz-text-secondary">
-              Wheel components shipped since launch.
+              {{ t('companyGlobalPartners.stats.productsDelivered.description') }}
             </p>
           </div>
         </section>
@@ -67,16 +67,14 @@
           class="premium-card mt-4 rounded-2xl p-3 text-center text-sm tz-text-accent"
         >
           <p class="m-0">
-            Out of respect for confidentiality agreements, we do not list partner brands publicly.
-            All production projects are treated as strictly confidential to protect our customers'
-            commercial interests and privacy.
+            {{ t('companyGlobalPartners.confidentiality') }}
           </p>
         </div>
 
         <!-- Value proposition: Why partner with us -->
         <section class="mt-8">
           <h3 class="mb-3 text-sm font-semibold tz-text-primary text-center">
-            Why Partner With Us
+            {{ t('companyGlobalPartners.whyPartner.title') }}
           </h3>
           <div class="grid gap-4 sm:grid-cols-3">
             <!-- Long-term trust -->
@@ -89,10 +87,10 @@
                 01
               </div>
               <p class="text-sm font-semibold tz-text-primary">
-                Long-term trust
+                {{ t('companyGlobalPartners.whyPartner.trust.title') }}
               </p>
               <p class="mt-1 text-xs tz-text-secondary">
-                Reliable delivery and consistent quality for your catalog.
+                {{ t('companyGlobalPartners.whyPartner.trust.description') }}
               </p>
             </div>
 
@@ -106,10 +104,10 @@
                 02
               </div>
               <p class="text-sm font-semibold tz-text-primary">
-                Technology leadership
+                {{ t('companyGlobalPartners.whyPartner.technology.title') }}
               </p>
               <p class="mt-1 text-xs tz-text-secondary">
-                Continuous R&amp;D in carbon rims, wheel builds and silent hubs.
+                {{ t('companyGlobalPartners.whyPartner.technology.description') }}
               </p>
             </div>
 
@@ -123,10 +121,10 @@
                 03
               </div>
               <p class="text-sm font-semibold tz-text-primary">
-                Global support
+                {{ t('companyGlobalPartners.whyPartner.support.title') }}
               </p>
               <p class="mt-1 text-xs tz-text-secondary">
-                Cross-regional service from Xiamen to your distribution markets.
+                {{ t('companyGlobalPartners.whyPartner.support.description') }}
               </p>
             </div>
           </div>
@@ -138,18 +136,28 @@
     <div class="w-full max-w-none px-0 mt-4">
       <UserFeedbackThread
         threadKey="company-global-partners"
-        title="Share your feedback about our Partnership Program"
+        :title="t('companyGlobalPartners.feedbackTitle')"
       />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { definePageMeta, useHead, useI18n } from '#imports'
+import { watch } from 'vue'
+import { definePageMeta, useHead, useI18n, useLocalePath } from '#imports'
 import WorldMapXiamen from '~/components/WorldMapXiamen.vue'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
+import { usePageMessages } from '~/composables/usePageMessages'
 
-const { t } = useI18n()
+const { locale, t } = useI18n()
+const localePath = useLocalePath()
+const { loadPageMessages } = usePageMessages('companyGlobalPartners')
+
+await loadPageMessages(locale.value)
+
+watch(locale, (nextLocale) => {
+  void loadPageMessages(nextLocale)
+})
 
 definePageMeta({
   layout: 'products',
@@ -157,8 +165,8 @@ definePageMeta({
   footerLabelFallback: 'Global Partners',
 })
 
-useHead({
-  title: t('company.nav.globalPartners'),
-})
+useHead(() => ({
+  title: t('companyGlobalPartners.title'),
+}))
 </script>
 

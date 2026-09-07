@@ -1,4 +1,11 @@
-export type BlogCategory = 'news' | 'wheelsbuild'
+export interface BlogCategory {
+  id?: number
+  name: string
+  slug: string
+  description?: string
+  locale?: string
+  sortOrder?: number
+}
 
 export interface BlogFeaturedImage {
   url: string

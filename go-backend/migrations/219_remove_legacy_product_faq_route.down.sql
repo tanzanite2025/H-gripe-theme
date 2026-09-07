@@ -29,24 +29,3 @@ SET route_path = EXCLUDED.route_path,
     status = EXCLUDED.status,
     deleted_at = NULL,
     updated_at = NOW();
-
-INSERT INTO faq_categories (
-    page_id, category_key, name, icon, locale, sort_order, status
-)
-SELECT
-    'shop-product-detail',
-    category_key,
-    name,
-    icon,
-    locale,
-    sort_order,
-    'active'
-FROM faq_categories
-WHERE page_id = 'products-product-detail'
-ON CONFLICT (page_id, category_key, locale) DO UPDATE
-SET name = EXCLUDED.name,
-    icon = EXCLUDED.icon,
-    sort_order = EXCLUDED.sort_order,
-    status = EXCLUDED.status,
-    deleted_at = NULL,
-    updated_at = NOW();

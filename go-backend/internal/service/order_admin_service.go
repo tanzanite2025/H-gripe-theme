@@ -45,6 +45,9 @@ func (s *OrderService) UpdateOrderStatus(id uint, status string) error {
 	if isSystemManagedOrderStatus(status) {
 		return fmt.Errorf("%w: %s", ErrSystemManagedOrderStatus, status)
 	}
+	if status == "shipped" {
+		return ErrOrderFulfillmentStatusManaged
+	}
 
 	if status == "completed" {
 		return s.completeOrderWithLoyaltyReward(id)
@@ -87,6 +90,10 @@ func isSystemManagedOrderStatus(status string) bool {
 }
 
 func (s *OrderService) UpdateShippingStatus(id uint, shippingStatus string) error {
+	if shippingStatus == "shipped" {
+		return ErrOrderFulfillmentStatusManaged
+	}
+
 	if s.txManager != nil {
 		return s.txManager.WithinTx(func(repos repository.TxRepositories) error {
 			_, err := repos.Order.FindByIDForUpdate(id)
@@ -114,7 +121,6 @@ type resolvedOrderTrackingUpdate struct {
 
 func resolveOrderTrackingUpdate(
 	shippingService *ShippingService,
-	existingOrder *order.Order,
 	input OrderTrackingUpdateInput,
 ) (*resolvedOrderTrackingUpdate, error) {
 	trackingNumber := strings.TrimSpace(input.TrackingNumber)
@@ -127,10 +133,6 @@ func resolveOrderTrackingUpdate(
 
 	carrierIDInput := input.CarrierID
 	carrierServiceIDInput := input.CarrierServiceID
-	if !hasPositiveID(carrierIDInput) && !hasPositiveID(carrierServiceIDInput) && existingOrder != nil {
-		carrierIDInput = existingOrder.CarrierID
-		carrierServiceIDInput = existingOrder.CarrierServiceID
-	}
 
 	resolution, err := shippingService.ResolveTrackingCarrier(TrackingCarrierResolutionInput{
 		ProviderID:       input.TrackingProviderID,
@@ -178,12 +180,11 @@ func resolveOrderTrackingUpdate(
 }
 
 func (s *OrderService) UpdateTrackingInfo(ctx context.Context, id uint, input OrderTrackingUpdateInput) error {
-	o, err := s.findOrder(id)
-	if err != nil {
+	if _, err := s.findOrder(id); err != nil {
 		return err
 	}
 
-	resolvedTracking, err := resolveOrderTrackingUpdate(s.shipping, o, input)
+	resolvedTracking, err := resolveOrderTrackingUpdate(s.shipping, input)
 	if err != nil {
 		return err
 	}
@@ -244,10 +245,13 @@ func (s *OrderService) FulfillOrder(ctx context.Context, id uint, input OrderTra
 	if s.shipping == nil {
 		return nil, ErrOrderShippingNotConfigured
 	}
+	if s.orderEvidence == nil {
+		return nil, ErrOrderFulfillmentEvidenceNotConfigured
+	}
 
 	var resolvedTracking *resolvedOrderTrackingUpdate
 	if err := s.txManager.WithinTx(func(repos repository.TxRepositories) error {
-		if repos.Order == nil || repos.Shipping == nil {
+		if repos.Order == nil || repos.Shipping == nil || repos.OrderEvidence == nil {
 			return ErrOrderShippingNotConfigured
 		}
 
@@ -255,15 +259,38 @@ func (s *OrderService) FulfillOrder(ctx context.Context, id uint, input OrderTra
 		if err != nil {
 			return normalizeOrderError(err)
 		}
+		if o.Status == "shipped" {
+			txShippingService := NewShippingService(repos.Shipping)
+			resolvedTracking, err = resolveOrderTrackingUpdate(txShippingService, input)
+			if err != nil {
+				return err
+			}
+			resolvedTracking.trackingShipment.OrderID = id
+			if !sameOrderFulfillmentTracking(o, resolvedTracking) {
+				return ErrOrderFulfillmentTrackingConflict
+			}
+			resolvedTracking = nil
+			return nil
+		}
 		if o.PaymentStatus != "paid" {
 			return ErrOrderFulfillmentPaymentRequired
 		}
 		if o.Status != "paid" && o.Status != "processing" && o.Status != "shipped" {
 			return fmt.Errorf("%w: %s", ErrOrderFulfillmentNotAllowed, o.Status)
 		}
+		if orderRequiresProduction(o) &&
+			order.NormalizeProductionStatus(o.ProductionStatus) != order.ProductionStatusCompleted {
+			return ErrOrderProductionNotCompleted
+		}
+		if o.SignatureRequired && !input.SignatureConfirmed {
+			return ErrOrderFulfillmentSignatureConfirmationRequired
+		}
+		if _, err := s.orderEvidence.CheckFulfillmentReadiness(repos, o); err != nil {
+			return err
+		}
 
 		txShippingService := NewShippingService(repos.Shipping)
-		resolvedTracking, err = resolveOrderTrackingUpdate(txShippingService, o, input)
+		resolvedTracking, err = resolveOrderTrackingUpdate(txShippingService, input)
 		if err != nil {
 			return err
 		}

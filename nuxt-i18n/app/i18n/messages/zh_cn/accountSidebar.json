@@ -19,6 +19,24 @@
     "title": "Sign in before managing personal data",
     "description": "Points, wishlist, cart checkout and shipping address tools live here after login."
   },
+  "features": {
+    "points": {
+      "title": "积分",
+      "desc": "会员等级与积分余额"
+    },
+    "wishlist": {
+      "title": "心愿单",
+      "desc": "已保存的商品，可快速加入购物车"
+    },
+    "cart": {
+      "title": "购物车",
+      "desc": "查看商品并更快完成结账"
+    },
+    "addresses": {
+      "title": "收货地址",
+      "desc": "为结账提前准备配送信息"
+    }
+  },
   "points": {
     "currentLevel": "Current level",
     "progress": "Progress",

@@ -37,20 +37,15 @@ func (s *FAQService) GetPublicPageData(pageID, locale string) (*FAQPublicPageDat
 		return nil, ErrFAQNotFound
 	}
 
-	categories, err := s.faqRepo.ListCategories(page.Locale, page.PageID, false)
-	if err != nil {
-		return nil, err
-	}
-
 	faqItems, err := s.faqRepo.ListForPage(page.Locale, page.PageID, "published")
 	if err != nil {
 		return nil, err
 	}
 	faqItems = sanitizeFAQSliceForPublic(faqItems, s.mediaURLResolver)
 
-	itemsByCategory := make(map[string][]FAQPublicItem, len(categories))
+	publicItems := make([]FAQPublicItem, 0, len(faqItems))
 	for _, item := range faqItems {
-		itemsByCategory[item.Category] = append(itemsByCategory[item.Category], FAQPublicItem{
+		publicItems = append(publicItems, FAQPublicItem{
 			ID:                fmt.Sprintf("%d", item.ID),
 			Question:          item.Question,
 			Answer:            item.Answer,
@@ -66,21 +61,8 @@ func (s *FAQService) GetPublicPageData(pageID, locale string) (*FAQPublicPageDat
 		PageID:     page.PageID,
 		Title:      page.Title,
 		Subtitle:   page.Subtitle,
-		Categories: []FAQPublicCategory{},
+		Items:      publicItems,
 	}
-	for _, category := range categories {
-		items := itemsByCategory[category.CategoryKey]
-		if len(items) == 0 {
-			continue
-		}
-		publicPage.Categories = append(publicPage.Categories, FAQPublicCategory{
-			ID:    category.CategoryKey,
-			Name:  category.Name,
-			Icon:  category.Icon,
-			Items: items,
-		})
-	}
-
 	return publicPage, nil
 }
 
@@ -104,7 +86,7 @@ func (s *FAQService) ListPublicPageData(locale string) ([]FAQPublicPageData, err
 		if err != nil {
 			return nil, err
 		}
-		if len(pageData.Categories) == 0 {
+		if len(pageData.Items) == 0 {
 			continue
 		}
 		result = append(result, *pageData)

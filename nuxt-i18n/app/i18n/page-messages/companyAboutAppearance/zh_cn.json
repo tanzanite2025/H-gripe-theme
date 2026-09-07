@@ -1,0 +1,120 @@
+{
+  "title": "外观与定制",
+  "intro": "我们提供多种碳纤维编织纹理和表面处理，以满足不同骑手对外观与性能的偏好。所有纹理都是真实的结构碳纤维，并非印刷或覆膜。",
+  "images": {
+    "matteAlt": "碳纤维轮圈哑光表面细节",
+    "matteCaption": "哑光表面细节",
+    "glossyAlt": "碳纤维轮圈亮光表面细节",
+    "glossyCaption": "亮光表面细节"
+  },
+  "sections": {
+    "weavePatterns": "编织纹理",
+    "glossLevels": "光泽等级",
+    "crystalEffects": "水晶效果",
+    "brakeTracks": "刹车边选项",
+    "laserEngraving": "激光雕刻"
+  },
+  "rimBrakeOnly": "（仅适用于圈刹）",
+  "crystalIntro": "水晶表面采用微层涂覆技术，呈现独特的光线反射和色彩层次。",
+  "brakeTrackNote": "所有刹车边都经过热处理和耐磨测试，可兼容主流刹车皮。",
+  "weaves": {
+    "ud": {
+      "name": "UD（单向纤维）",
+      "finish": "哑光",
+      "description": "简洁的直纹，重量极轻。"
+    },
+    "butterfly": {
+      "name": "蝴蝶纹",
+      "finish": "哑光",
+      "description": "独特的自然纹理，视觉辨识度高。"
+    },
+    "marble": {
+      "name": "大理石纹",
+      "finish": "哑光",
+      "description": "类似石材的纹理，个性鲜明。"
+    },
+    "threeK": {
+      "name": "3K",
+      "finish": "缎面",
+      "description": "经典棋盘格纹理，视觉平衡。"
+    },
+    "threeKTwillVertical": {
+      "name": "3K 斜纹（纵向）",
+      "finish": "缎面",
+      "description": "斜向编织纹理，外观更具动感。"
+    },
+    "threeKTwillHorizontal": {
+      "name": "3K 斜纹（横向）",
+      "finish": "缎面",
+      "description": "横向斜纹，风格更现代。"
+    },
+    "twelveK": {
+      "name": "12K",
+      "finish": "缎面",
+      "description": "粗纤维编织，纹理表现力强。"
+    },
+    "twelveKTwillVertical": {
+      "name": "12K 斜纹（纵向）",
+      "finish": "缎面",
+      "description": "醒目的纵向斜纹布局。"
+    },
+    "twelveKTwillHorizontal": {
+      "name": "12K 斜纹（横向）",
+      "finish": "缎面",
+      "description": "横向斜纹，风格更有冲击力。"
+    }
+  },
+  "gloss": {
+    "matte": {
+      "name": "哑光",
+      "description": "低调细腻，耐刮擦。"
+    },
+    "satin": {
+      "name": "缎面",
+      "description": "柔和光泽，纹理平衡。"
+    },
+    "glossy": {
+      "name": "亮光",
+      "description": "高亮表面，质感突出。"
+    },
+    "paintless": {
+      "name": "无漆",
+      "description": "保留原始碳纤维，重量更轻。"
+    }
+  },
+  "crystalEffects": {
+    "black": "黑色",
+    "silver": "银色",
+    "orange": "橙色",
+    "purple": "紫色",
+    "blue": "蓝色"
+  },
+  "brakeTracks": {
+    "resinUd": "高 TG 树脂 UD（仅 UD 纹理）",
+    "resinGraphene": "高 TG 石墨烯树脂",
+    "ac3Grooved": "AC3 开槽（两种样式）",
+    "udCGrooved": "UD C 槽（仅 UD 纹理）",
+    "cGroovedGraphene": "石墨烯 C 槽"
+  },
+  "laser": {
+    "body": "除传统贴花和喷漆图案外，我们还支持激光雕刻标识，方案更环保、交付更快。",
+    "bullets": {
+      "0": "无需乙烯基贴花和遮罩，减少塑料废弃物。",
+      "1": "交付周期可缩短 5-7 天。",
+      "2": "形成持久、耐用的表面效果。"
+    },
+    "guideNote": "如需了解激光雕刻与贴花之间的选择，可查看轮组购买指南。",
+    "videoAlt": "激光雕刻工艺视频",
+    "watchVideo": "观看工艺视频"
+  },
+  "suggestions": {
+    "title": "展示建议",
+    "items": {
+      "0": "将选项分为编织纹理、刹车边和表面处理三个清晰部分。",
+      "1": "为每个选项配上高清图片和简洁标签。",
+      "2": "加入推荐组合或客户偏好，帮助用户做决定。"
+    },
+    "footer": "针对 OEM 客户、团队订单或定制品牌需求，我们提供标识整合、激光蚀刻和颜色匹配服务。欢迎联系我们获取定制方案。"
+  },
+  "closeVideo": "关闭视频"
+}

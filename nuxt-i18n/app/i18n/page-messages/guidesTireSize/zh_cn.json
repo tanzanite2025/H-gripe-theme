@@ -1,0 +1,85 @@
+{
+  "title": "轮胎尺寸",
+  "actions": {
+    "checkTires": "查看轮胎"
+  },
+  "images": {
+    "overviewAlt": "碳纤维与 Schwalbe 轮胎尺寸图表总览"
+  },
+  "standards": {
+    "title": "轮胎尺寸标准",
+    "description": "自行车轮胎有多种尺寸标注方式。理解 ETRTO、英寸和法式标注的区别，是找到合适尺寸的关键。",
+    "etrto": {
+      "name": "ETRTO（ISO）",
+      "example": "例如 37-622",
+      "description": "现代欧洲标准，表示轮胎宽度和内径，信息最明确，也是最推荐的确认方式。"
+    },
+    "inch": {
+      "name": "英寸标注",
+      "example": "例如 28 x 1.40",
+      "description": "传统标注方式，表示大致外径和宽度，但同一个英寸标识可能对应不同内径，因此并不精确。"
+    },
+    "french": {
+      "name": "法式标注",
+      "example": "例如 700 x 35C",
+      "description": "表示大致外径和宽度，字母 C 可提示内径，公路车和砾石车上较为常见。"
+    }
+  },
+  "comparison": {
+    "title": "尺寸标注对照表",
+    "headers": {
+      "dimension": "尺寸项目",
+      "etrto": "ETRTO",
+      "inch": "英寸",
+      "french": "法式"
+    },
+    "rows": {
+      "exampleSize": "示例尺寸",
+      "outerDiameter": "外径",
+      "innerDiameter": "内径",
+      "tireWidth": "轮胎宽度",
+      "tireHeight": "轮胎高度"
+    },
+    "inchAltSize": "或 28 x 1 5/8 x 1 3/8",
+    "inchDiameter": "约 28 英寸",
+    "inchWidth": "1 3/8 英寸",
+    "inchWidthAlt": "（1.40 英寸）",
+    "inchHeight": "约 1 5/8 英寸"
+  },
+  "availability": {
+    "title": "有哪些轮胎尺寸可选",
+    "sizeCount": "{count} 个尺寸",
+    "sizeCountSingular": "{count} 个尺寸",
+    "headers": {
+      "etrto": "ETRTO",
+      "inch": "英寸尺寸",
+      "french": "法式 / 其他"
+    },
+    "groups": {
+      "12-inch": "12 英寸",
+      "14-inch": "14 英寸",
+      "16-inch": "16 英寸",
+      "17-inch": "17 英寸",
+      "18-inch": "18 英寸",
+      "20-inch": "20 英寸",
+      "22-inch": "22 英寸",
+      "24-inch": "24 英寸",
+      "25-inch": "25 英寸",
+      "26-inch": "26 英寸",
+      "27-inch": "27 英寸",
+      "27-5-inch": "27.5 英寸 / 650B",
+      "28-inch": "28 英寸 / 700C",
+      "29-inch": "29 英寸"
+    }
+  },
+  "mystery": {
+    "title": "“28 英寸”与“29 英寸”的区别",
+    "same": "相同",
+    "innerDiameter": "内径",
+    "sameDescription": "28 英寸旅行车或公路车轮胎与 29 英寸山地车轮胎，都可以安装在相同的 622 mm 车圈内径上。",
+    "contextTitle": "历史与背景",
+    "contextBody": "28 英寸是传统的欧洲旅行车尺寸。29 英寸则是美国市场为大体积山地车轮胎引入的营销名称，安装后外径大约为 29 英寸。",
+    "realityTitle": "实际情况",
+    "realityBody": "这两种名称都不够精确。较窄的 28 英寸公路车胎外径可能只有约 26 英寸，而宽度达到 60 mm 或更宽的山地车胎外径可能接近 30 英寸。"
+  }
+}

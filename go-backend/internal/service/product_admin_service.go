@@ -55,6 +55,7 @@ type ProductCreateInput struct {
 	Description                    string
 	ShortDesc                      string
 	Currency                       string
+	FulfillmentMode                string
 	Status                         string
 	Locale                         string
 	ParentID                       *uint
@@ -94,6 +95,8 @@ type ProductUpdateInput struct {
 	ShortDesc                            *string
 	Currency                             *string
 	UpdateCurrency                       bool
+	FulfillmentMode                      *string
+	UpdateFulfillmentMode                bool
 	Status                               *string
 	Locale                               *string
 	ParentID                             *uint
@@ -170,6 +173,10 @@ func (s *ProductService) CreateAdminProduct(input ProductCreateInput) (*product.
 	if err != nil {
 		return nil, err
 	}
+	fulfillmentMode, err := normalizeAdminProductFulfillmentMode(input.FulfillmentMode)
+	if err != nil {
+		return nil, err
+	}
 
 	optionValues, err := s.buildVariantOptionValues(input.ProductSpecificationTemplateID, input.VariantOptionValues)
 	if err != nil {
@@ -231,6 +238,7 @@ func (s *ProductService) CreateAdminProduct(input ProductCreateInput) (*product.
 		Description:                    description,
 		ShortDesc:                      shortDesc,
 		Currency:                       priceCurrency,
+		FulfillmentMode:                fulfillmentMode,
 		Status:                         input.Status,
 		Locale:                         locale,
 		ParentID:                       input.ParentID,
@@ -416,6 +424,17 @@ func (s *ProductService) UpdateAdminProduct(id uint, input ProductUpdateInput) (
 			}
 		}
 		existingProduct.Currency = priceCurrency
+	}
+	if input.UpdateFulfillmentMode {
+		fulfillmentMode := product.NormalizeFulfillmentMode("")
+		if input.FulfillmentMode != nil {
+			fulfillmentMode = *input.FulfillmentMode
+		}
+		normalizedFulfillmentMode, err := normalizeAdminProductFulfillmentMode(fulfillmentMode)
+		if err != nil {
+			return nil, err
+		}
+		existingProduct.FulfillmentMode = normalizedFulfillmentMode
 	}
 	if input.Status != nil {
 		existingProduct.Status = *input.Status

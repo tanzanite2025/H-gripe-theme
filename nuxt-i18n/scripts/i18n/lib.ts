@@ -26,6 +26,7 @@ const i18nRoot = fs.existsSync(path.resolve(rootDir, 'app/i18n'))
 export const manifestPath = path.resolve(i18nRoot, 'locales.manifest.ts')
 export const aggregateLocalesDir = path.resolve(i18nRoot, 'locales')
 export const messagesDir = path.resolve(i18nRoot, 'messages')
+export const pageMessagesDir = path.resolve(i18nRoot, 'page-messages')
 
 export function stripBom(text: string): string {
   return text.charCodeAt(0) === 0xfeff ? text.slice(1) : text

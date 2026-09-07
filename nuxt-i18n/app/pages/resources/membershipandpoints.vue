@@ -10,7 +10,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { definePageMeta, useHead, useI18n, useRoute } from '#imports'
 import MembershipAndPointsTabs from '~/components/MembershipAndPointsTabs.vue'
 import {
@@ -19,6 +19,7 @@ import {
   type MembershipTabId,
   type PageSubNavigationTab,
 } from '~/utils/pageSubNavigation'
+import { usePageMessages } from '~/composables/usePageMessages'
 
 definePageMeta({
   layout: 'products',
@@ -27,7 +28,7 @@ definePageMeta({
 })
 
 const route = useRoute()
-const { t } = useI18n()
+const { locale, t } = useI18n()
 
 const defaultTabId: MembershipTabId = 'myinfo'
 
@@ -42,6 +43,22 @@ const activeTabId = computed<MembershipTabId>(() => {
 
 const activeTab = computed<PageSubNavigationTab>(() => {
   return membershipAndPointsTabs.find(tab => tab.id === activeTabId.value) || membershipAndPointsTabs[0]
+})
+
+const pageMessagesByTab = {
+  myinfo: usePageMessages('resourcesMembershipMyInfo'),
+  levers: usePageMessages('resourcesMembershipLevers'),
+  exchange: usePageMessages('resourcesMembershipExchange'),
+} as const
+
+const loadActiveTabMessages = async (requestedLocale: string) => {
+  await pageMessagesByTab[activeTabId.value].loadPageMessages(requestedLocale)
+}
+
+await loadActiveTabMessages(locale.value)
+
+watch([locale, activeTabId], ([nextLocale]) => {
+  void loadActiveTabMessages(nextLocale)
 })
 
 const translateTabText = (key: string | undefined, fallback: string) => {

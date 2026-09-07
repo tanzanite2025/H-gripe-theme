@@ -136,6 +136,29 @@ func (r *SiteQualityRunRepository) FindByID(id uint) (*sitequalitydomain.SiteQua
 	return &run, nil
 }
 
+func (r *SiteQualityRunRepository) LatestIDForJob(jobID uint) (*uint, error) {
+	if r == nil || r.db == nil {
+		return nil, errors.New("SiteQuality run repository is unavailable")
+	}
+	if jobID == 0 {
+		return nil, errors.New("SiteQuality job ID is required")
+	}
+	var run sitequalitydomain.SiteQualityRun
+	err := r.runQuery().
+		Where("job_id = ?", jobID).
+		Order("created_at DESC").
+		Order("id DESC").
+		First(&run).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	runID := run.ID
+	return &runID, nil
+}
+
 func (r *SiteQualityRunRepository) runQuery() *gorm.DB {
 	if r.db.Migrator().HasTable(&sitequalitydomain.SiteQualityRunArchive{}) {
 		return r.db.Table(

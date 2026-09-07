@@ -22,7 +22,7 @@
               <Input
                 v-model="searchQuery"
                 class="h-9 pl-8 text-xs font-bold"
-                placeholder="搜索问题、答案、页面或分类"
+                placeholder="搜索问题、答案或页面"
               />
             </label>
             <Button variant="outline" size="sm" :disabled="loading" @click="loadFAQs">
@@ -61,47 +61,32 @@
               </div>
             </div>
 
-            <div class="divide-y divide-border/70">
-              <section
-                v-for="category in page.categories"
-                :key="`${page.page_id}-${category.category_key}`"
-                class="px-4 py-3"
+            <div class="grid gap-2 divide-border/70 lg:grid-cols-2">
+              <button
+                v-for="faq in page.items"
+                :key="faq.id"
+                type="button"
+                class="group flex min-w-0 gap-3 rounded-xl border p-3 text-left transition hover:-translate-y-0.5 hover:border-[var(--admin-selected)] hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                :class="isSelected(faq) ? 'border-[var(--admin-selected)] bg-[var(--admin-selected)]/5': 'border-border bg-card'"
+                @click="selectFAQ(page, faq)"
               >
-                <div class="mb-2 flex items-center gap-2">
-                  <span class="rounded-full border border-border bg-muted/50 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-muted-foreground">
-                    {{ category.name || category.category_key }}
+                <span class="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground group-hover:text-foreground">
+                  <Check v-if="isSelected(faq)" class="size-4 text-[var(--admin-selected)]" />
+                  <HelpCircle v-else class="size-4" />
+                </span>
+                <span class="min-w-0 flex-1">
+                  <span class="line-clamp-2 break-words text-xs font-black leading-5 text-foreground">
+                    {{ faq.question }}
                   </span>
-                  <span class="text-[10px] font-bold text-muted-foreground">{{ category.faqs?.length || 0 }} 条</span>
-                </div>
-
-                <div class="grid gap-2 lg:grid-cols-2">
-                  <button
-                    v-for="faq in category.faqs"
-                    :key="faq.id"
-                    type="button"
-                    class="group flex min-w-0 gap-3 rounded-xl border p-3 text-left transition hover:-translate-y-0.5 hover:border-[var(--admin-selected)] hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
- :class="isSelected(faq) ? 'border-[var(--admin-selected)] bg-[var(--admin-selected)]/5': 'border-border bg-card'"
-                    @click="selectFAQ(page, category, faq)"
-                  >
-                    <span class="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground group-hover:text-foreground">
-                      <Check v-if="isSelected(faq)" class="size-4 text-[var(--admin-selected)]" />
-                      <HelpCircle v-else class="size-4" />
-                    </span>
-                    <span class="min-w-0 flex-1">
-                      <span class="line-clamp-2 break-words text-xs font-black leading-5 text-foreground">
-                        {{ faq.question }}
-                      </span>
-                      <span class="mt-1 line-clamp-2 break-words text-[11px] leading-5 text-muted-foreground">
-                        {{ plainText(faq.answer) || '-' }}
-                      </span>
-                      <span v-if="faq.answer_image_url" class="mt-2 inline-flex items-center gap-1 text-[10px] font-black text-sky-600">
-                        <ImageIcon class="size-3" />
-                        含 FAQ 图片
-                      </span>
-                    </span>
-                  </button>
-                </div>
-              </section>
+                  <span class="mt-1 line-clamp-2 break-words text-[11px] leading-5 text-muted-foreground">
+                    {{ plainText(faq.answer) || '-' }}
+                  </span>
+                  <span v-if="faq.answer_image_url" class="mt-2 inline-flex items-center gap-1 text-[10px] font-black text-sky-600">
+                    <ImageIcon class="size-3" />
+                    含 FAQ 图片
+                  </span>
+                </span>
+              </button>
             </div>
           </section>
         </div>
@@ -117,7 +102,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import customerServiceApi from '@/api/customerService'
-import type { FAQCategory, FAQItem, FAQPage, FAQSelection } from '@/modules/customer-service/customerServiceTypes'
+import type { FAQItem, FAQPage, FAQSelection } from '@/modules/customer-service/customerServiceTypes'
 
 const props = withDefaults(defineProps<{
   open?: boolean
@@ -153,7 +138,7 @@ const plainText = (value: unknown): string => String(value || '')
   .trim()
 
 const pageFaqCount = (page: FAQPage): number => {
-  return (page.categories || []).reduce((total, category) => total + (category.faqs?.length || 0), 0)
+  return page.items?.length || 0
 }
 
 const filteredPages = computed(() => {
@@ -161,20 +146,14 @@ const filteredPages = computed(() => {
   return pages.value
     .map((page) => {
       const pageText = normalizeText(`${page.title} ${page.page_id} ${page.route_path}`)
-      const categories = (page.categories || [])
-        .map((category) => {
-          const categoryText = normalizeText(`${category.name} ${category.category_key}`)
-          const faqs = (category.faqs || []).filter((faq) => {
-            if (!query) return true
-            const faqText = normalizeText(`${faq.question} ${plainText(faq.answer)}`)
-            return pageText.includes(query) || categoryText.includes(query) || faqText.includes(query)
-          })
-          return { ...category, faqs }
-        })
-        .filter((category) => category.faqs.length > 0)
-      return { ...page, categories }
+      const items = (page.items || []).filter((faq) => {
+        if (!query) return true
+        const faqText = normalizeText(`${faq.question} ${plainText(faq.answer)}`)
+        return pageText.includes(query) || faqText.includes(query)
+      })
+      return { ...page, items }
     })
-    .filter((page) => page.categories.length > 0)
+    .filter((page) => page.items.length > 0)
 })
 
 const isSelected = (faq: FAQItem): boolean => {
@@ -202,8 +181,8 @@ const loadFAQs = async () => {
   }
 }
 
-const selectFAQ = (page: FAQPage, category: FAQCategory, faq: FAQItem): void => {
-  emit('select', { page, category, faq })
+const selectFAQ = (page: FAQPage, faq: FAQItem): void => {
+  emit('select', { page, faq })
   emit('update:open', false)
 }
 

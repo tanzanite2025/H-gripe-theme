@@ -34,7 +34,7 @@
     "generate:font-preflight": "tsx scripts/generate-font-preflight-manifest.ts",
     "test:font-contract": "npm run check:font-preflight && playwright test tests/storefront-font-contract.spec.ts",
     "test:font-locales": "tsx scripts/font-locale-contract.test.ts",
-    "test:font-policy": "tsx scripts/font-policy-utils.test.ts && tsx scripts/storefront/font-artifact-contract.test.ts",
+    "test:font-policy": "tsx scripts/font-policy-utils.test.ts && tsx scripts/storefront/font-artifact-contract.test.ts && tsx scripts/storefront/font-preload-priority.test.ts",
     "check:security": "tsx scripts/security/check-content-security-policy.ts",
     "clean": "tsx scripts/storefront/clean-build-artifacts.ts"
   },

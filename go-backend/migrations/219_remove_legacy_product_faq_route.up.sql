@@ -7,9 +7,6 @@ SET page_id = 'products-product-detail',
     updated_at = NOW()
 WHERE page_id = 'shop-product-detail';
 
-DELETE FROM faq_categories
-WHERE page_id = 'shop-product-detail';
-
 UPDATE faq_pages
 SET route_path = '/products/:slug',
     domain = 'products',

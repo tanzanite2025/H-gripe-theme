@@ -2,10 +2,7 @@
   "title": "Vanliga frågor",
   "subtitle": "Hitta svar på vanliga frågor om våra produkter och tjänster",
   "ui": {
-    "categorizedSupport": "Kategoriserad support",
     "quickAnswers": "Snabba svar på vanliga frågor",
-    "categoriesAriaLabel": "FAQ-kategorier",
-    "categoriesLabel": "FAQ-kategorier",
     "all": "Alla",
     "viewAll": "Visa alla FAQ",
     "emptySection": "Inga FAQ finns för denna sektion.",
@@ -13,7 +10,6 @@
     "searchPlaceholder": "Sök i FAQ...",
     "viewMoreContent": "Visa mer innehåll",
     "noResults": "Inga FAQ hittades för \"{query}\"",
-    "allFaqsMetaTitle": "Alla FAQ",
     "loadingAnswers": "Laddar svar",
     "illustrationAlt": "FAQ-illustration",
     "selectQuestion": "Select a question to view the answer."

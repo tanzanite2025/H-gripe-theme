@@ -1,0 +1,94 @@
+{
+  "title": "Tire Pressure",
+  "actions": {
+    "checkTires": "Check out tires"
+  },
+  "intro": {
+    "matching": "For safety and performance, the tire and rim on the bike must be perfectly matched. This applies even more to tubeless tires. Alongside classic hooked rims, hookless rims are becoming increasingly popular. Hookless rims place particularly high demands on tubeless tires for safe operation. Schwalbe TLR and TLE models from model year 2020 are designed to meet these requirements, especially around the bead core, and are generally compatible.",
+    "width": "Rim manufacturers often use wider inner bead widths for hookless rims. Tire pressure should therefore be reduced accordingly because the real tire volume increases with wider inner rim widths.",
+    "etrto": "According to ETRTO, hookless rims have a maximum pressure of 5 bar for road bikes. This maximum must be followed, or a lower rim or wheel limit if specified. If the rim maximum is lower than the tire maximum, the rim limit applies. Rim manufacturers may also restrict tire choice. Many recommend a minimum tire width of 28 mm to use low pressure safely."
+  },
+  "sections": {
+    "why": {
+      "title": "1. Why tire pressure matters",
+      "performanceLabel": "Performance",
+      "performance": "Too high means less grip; too low means more rolling resistance.",
+      "safetyLabel": "Safety",
+      "safety": "Overinflation can damage rims; underinflation increases the risk of pinch flats.",
+      "comfortLabel": "Comfort",
+      "comfort": "Correct pressure reduces vibration and improves ride quality."
+    },
+    "factors": {
+      "title": "2. Key factors affecting pressure",
+      "headers": {
+        "factor": "Factor",
+        "explanation": "Explanation",
+        "adjustment": "Adjustment direction"
+      },
+      "riderWeight": {
+        "factor": "Rider weight",
+        "explanation": "Heavier riders need higher pressure.",
+        "adjustment": "Add 5-10 psi for heavier riders."
+      },
+      "tireWidth": {
+        "factor": "Tire width",
+        "explanation": "Wider tires can run lower pressure.",
+        "adjustment": "26 x 2.0 MTB: 30-50 psi; 700 x 25C road: 90-110 psi."
+      },
+      "terrain": {
+        "factor": "Terrain",
+        "explanation": "Soft or muddy terrain needs lower pressure for grip; rocky terrain needs higher pressure for rim protection.",
+        "adjustment": "Lower off-road, higher on-road."
+      },
+      "ridingStyle": {
+        "factor": "Riding style",
+        "explanation": "Aggressive racing needs higher pressure; casual riding can use lower pressure.",
+        "adjustment": "Racing: 110-130 psi; leisure: 80-100 psi."
+      },
+      "rimDesign": {
+        "factor": "Rim design",
+        "explanation": "Wider rims support lower pressure; narrow rims require higher pressure.",
+        "adjustment": "Follow the manufacturer's range."
+      }
+    },
+    "typical": {
+      "title": "3. Typical pressure ranges (approximate)",
+      "road": "Road bikes: 80-120 psi, up to 130 psi for racing and as low as 70 psi for cobbled classics.",
+      "mountain": "Mountain bikes: 30-60 psi, with XC often at 25-40 psi.",
+      "city": "City and commuter bikes: 40-70 psi."
+    },
+    "tips": {
+      "title": "4. Practical tips",
+      "sidewall": "Check the sidewall and follow the manufacturer's recommended range.",
+      "gauge": "Use a reliable gauge instead of relying on feel.",
+      "inspect": "Inspect regularly because tires lose air naturally; check weekly or before rides.",
+      "extremes": "Avoid extremes: never exceed the maximum or drop below the minimum pressure.",
+      "seasonal": "Adjust seasonally because cold weather can lower pressure by around 10%."
+    },
+    "warnings": {
+      "title": "5. Risks & warnings",
+      "high": "Too high: harsh ride and potential rim damage.",
+      "low": "Too low: pinch flats and poor handling.",
+      "neglect": "Neglecting checks: gradual air loss reduces performance and safety."
+    }
+  },
+  "comparison": {
+    "title": "Perfect pressure ensures optimum grip and stability",
+    "high": {
+      "title": "High tire pressure",
+      "stability": "+ Stability",
+      "puncture": "+ Puncture protection",
+      "grip": "- Less grip",
+      "comfort": "- Uncomfortable",
+      "rolling": "- More rolling resistance on rough terrain"
+    },
+    "low": {
+      "title": "Low tire pressure",
+      "grip": "+ More grip",
+      "rolling": "+ Better off-road rolling performance",
+      "comfort": "+ Comfortable",
+      "stability": "- Less stability",
+      "puncture": "- Less puncture protection"
+    }
+  }
+}

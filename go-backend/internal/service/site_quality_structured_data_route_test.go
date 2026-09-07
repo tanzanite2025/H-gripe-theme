@@ -7,8 +7,10 @@ import (
 )
 
 func TestSiteQualityStructuredDataRecognizesResourceBlogRoutes(t *testing.T) {
-	require.True(t, siteQualityStructuredDataPathLooksLikeBlogListing("/resources/blog/news"))
-	require.True(t, siteQualityStructuredDataPathLooksLikeBlogListing("/resources/blog/wheelsbuild"))
+	require.True(t, siteQualityStructuredDataPathLooksLikeBlogListing("/resources/blog"))
+	require.True(t, siteQualityStructuredDataPathLooksLikeBlogListing("/resources/blog/"))
+	require.False(t, siteQualityStructuredDataPathLooksLikeBlogListing("/resources/blog/news"))
+	require.False(t, siteQualityStructuredDataPathLooksLikeBlogListing("/resources/blog/wheelsbuild"))
 	require.False(t, siteQualityStructuredDataPathLooksLikeBlogListing("/resources/blog/news/release"))
 	require.False(t, siteQualityStructuredDataPathLooksLikeBlogListing("/blog/news"))
 }
@@ -16,8 +18,8 @@ func TestSiteQualityStructuredDataRecognizesResourceBlogRoutes(t *testing.T) {
 func TestSiteQualityStructuredDataComparablePathRemovesLocaleFromResourceBlogRoute(t *testing.T) {
 	require.Equal(
 		t,
-		"/resources/blog/news/release",
-		siteQualityStructuredDataComparablePath("https://example.com/de/resources/blog/news/release"),
+		"/resources/blog/release",
+		siteQualityStructuredDataComparablePath("https://example.com/de/resources/blog/release"),
 	)
 }
 

@@ -15,6 +15,7 @@ type ShippingService struct {
 	productRepo     *repository.ProductRepository
 	orderRepo       *repository.OrderRepository
 	currencyPolicy  *CurrencyPolicyService
+	auditRecorder   AuditRecorder
 	trackingRun     TrackingPollingRunState
 	webhookRun      TrackingWebhookRunState
 	trackingMu      sync.RWMutex
@@ -298,6 +299,13 @@ func (s *ShippingService) ConfigureOrderRepository(orderRepo *repository.OrderRe
 		return
 	}
 	s.orderRepo = orderRepo
+}
+
+func (s *ShippingService) ConfigureAuditRecorder(recorder AuditRecorder) {
+	if s == nil {
+		return
+	}
+	s.auditRecorder = recorder
 }
 
 func (s *ShippingService) ConfigureOutboundTrackingResilience(

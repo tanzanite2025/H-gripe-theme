@@ -37,32 +37,8 @@ func BuildStaticRoute(locale, path string) PageRoute {
 	return PageRoute{Path: buildLocalizedStaticPath(locale, path)}
 }
 
-func BuildArticleRoute(locale, slug, tags string) PageRoute {
-	hasNews := false
-	hasWheelsbuild := false
-	for _, rawTag := range strings.Split(tags, ",") {
-		normalizedTag := strings.ToLower(strings.TrimSpace(rawTag))
-		switch normalizedTag {
-		case "news":
-			hasNews = true
-		case "wheelsbuild":
-			hasWheelsbuild = true
-		}
-	}
-
-	category := ""
-	switch {
-	case hasNews:
-		category = "news"
-	case hasWheelsbuild:
-		category = "wheelsbuild"
-	}
-
-	base := "/resources/blog"
-	if category != "" {
-		base += "/" + category
-	}
-	return PageRoute{Path: buildLocalizedPath(locale, base, slug)}
+func BuildArticleRoute(locale, slug, _ string) PageRoute {
+	return PageRoute{Path: buildLocalizedPath(locale, "/resources/blog", slug)}
 }
 
 // IsProductRoute verifies the complete product route contract, including the

@@ -8,7 +8,6 @@ import {
 } from '~/utils/blogMock'
 import {
   normalizeBlogLocalizedRoutes,
-  resolveBlogCategory,
 } from '~/utils/seo/blog'
 import {
   createStorefrontMediaContext,
@@ -30,6 +29,10 @@ type BlogPostsResponse = {
 type BlogTranslationsResponse = {
   group: string
   translations: Record<string, { id: number; slug: string }>
+}
+
+type BlogCategoriesResponse = {
+  data: BlogCategory[]
 }
 
 export const useBlogApi = () => {
@@ -62,8 +65,23 @@ export const useBlogApi = () => {
   }
 
   const mapPost = (item: any, fallbackLocale: string): BlogPostSummary => {
-    const categories = item.tags
-      ? String(item.tags).split(',').map((tag: string) => tag.trim()).filter(Boolean)
+    const categories = Array.isArray(item.categories)
+      ? item.categories
+        .map((category: any): BlogCategory | null => {
+          if (!category || typeof category !== 'object') return null
+          const slug = String(category.slug || '').trim()
+          const name = String(category.name || '').trim()
+          if (!slug || !name) return null
+          return {
+            id: Number(category.id) || undefined,
+            name,
+            slug,
+            description: String(category.description || ''),
+            locale: String(category.locale || fallbackLocale),
+            sortOrder: Number(category.sort_order) || 0,
+          }
+        })
+        .filter((category: BlogCategory | null): category is BlogCategory => Boolean(category))
       : []
 
     return {
@@ -77,7 +95,7 @@ export const useBlogApi = () => {
       metaDescription: item.meta_description || '',
       date: item.published_at || item.created_at,
       featuredImage: item.featured_image ? { url: item.featured_image } : null,
-      categories: categories as BlogCategory[],
+      categories,
       translations: {},
       localizedRoutes: normalizeBlogLocalizedRoutes(item.localized_routes),
     }
@@ -85,7 +103,7 @@ export const useBlogApi = () => {
 
   const buildLocalPostsResponse = (params: {
     lang: string
-    category?: BlogCategory
+    category?: string
     page: number
     perPage: number
   }): BlogPostsResponse => {
@@ -102,7 +120,7 @@ export const useBlogApi = () => {
 
   const listPosts = async (params: {
     lang: string
-    category?: BlogCategory
+    category?: string
     page: number
     perPage: number
   }): Promise<BlogPostsResponse> => {
@@ -139,6 +157,45 @@ export const useBlogApi = () => {
       total: response.total || 0,
       items: response.data.map((item: any) => normalizePostMedia(mapPost(item, params.lang))),
     }
+  }
+
+  const listCategories = async (params: { lang: string }): Promise<BlogCategory[]> => {
+    if (useLocalBlog.value) {
+      const categories = new Map<string, BlogCategory>()
+      for (const post of listBlogPosts({ lang: params.lang })) {
+        for (const category of post.categories) {
+          categories.set(category.slug, category)
+        }
+      }
+      return Array.from(categories.values()).sort((a, b) => (
+        (a.sortOrder || 0) - (b.sortOrder || 0) || a.name.localeCompare(b.name)
+      ))
+    }
+
+    const response = await request<BlogCategoriesResponse>(
+      '/content/blog-categories',
+      { params: { locale: params.lang } },
+      'Failed to load blog categories',
+    )
+    if (!Array.isArray(response.data)) {
+      throw new Error('Blog categories response data is invalid')
+    }
+    return response.data
+      .map((category: any): BlogCategory | null => {
+        if (!category || typeof category !== 'object') return null
+        const slug = String(category.slug || '').trim()
+        const name = String(category.name || '').trim()
+        if (!slug || !name) return null
+        return {
+          id: Number(category.id) || undefined,
+          name,
+          slug,
+          description: String(category.description || ''),
+          locale: String(category.locale || params.lang),
+          sortOrder: Number(category.sort_order) || 0,
+        }
+      })
+      .filter((category: BlogCategory | null): category is BlogCategory => Boolean(category))
   }
 
   const getPost = async (params: { lang: string; slug: string }): Promise<BlogPostDetail> => {
@@ -195,6 +252,7 @@ export const useBlogApi = () => {
   return {
     apiBase,
     listPosts,
+    listCategories,
     getPost,
     getTranslations,
     getPostTranslations,

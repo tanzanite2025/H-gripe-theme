@@ -22,7 +22,8 @@ func (b *dependencyServicesBuilder) build() error {
 	settingService := service.NewSettingService(b.repos.Setting, b.redisCache, b.cfg.Cache.SettingsTTL)
 	refundCancellationPolicyService := service.NewRefundCancellationPolicyService(b.repos.Setting)
 	seoService := service.NewSEOService(settingService)
-	postService := service.NewPostService(b.repos.Post, b.redisCache, b.cfg.Cache.PostTTL)
+	postService := service.NewPostService(b.repos.Post, b.redisCache, b.cfg.Cache.PostTTL, b.repos.BlogCategory)
+	blogCategoryService := service.NewBlogCategoryService(b.repos.BlogCategory)
 	productService := service.NewProductServiceWithCacheOptions(b.repos.Product, b.redisCache, b.cfg.Cache.ProductTTL, b.cfg.Cache.ProductLockTTL)
 	productProcurementService := service.NewProductProcurementServiceWithProfitability(
 		b.repos.ProductProcurement,
@@ -53,6 +54,7 @@ func (b *dependencyServicesBuilder) build() error {
 	productBrandService := service.NewProductBrandService(b.repos.ProductBrand)
 	productInformationTemplateService := service.NewProductInformationTemplateService(b.repos.ProductInformationTemplate)
 	customsClassificationService := service.NewCustomsClassificationService(b.repos.CustomsClassification, settingService)
+	productQualityRequirementService := service.NewProductQualityRequirementService(b.repos.ProductQualityRequirement)
 	merchantOutboxPublisher := service.NewMerchantOutboxPublisher(b.repos.Outbox)
 	productCacheOutboxPublisher := service.NewProductCacheOutboxPublisher(b.repos.Outbox)
 	b.merchantOutboxPublisher = merchantOutboxPublisher
@@ -62,6 +64,35 @@ func (b *dependencyServicesBuilder) build() error {
 	currencyPolicyService := service.NewCurrencyPolicyService(b.repos.Setting)
 	exchangeRateService := service.NewExchangeRateService(b.repos.ExchangeRate, b.repos.Setting)
 	shippingService.ConfigureCurrencyPolicy(currencyPolicyService)
+	orderEvidenceSnapshotService := service.NewOrderEvidenceSnapshotService()
+	orderEvidenceService := service.NewOrderEvidenceService()
+	orderEvidenceAdminService := service.NewOrderEvidenceAdminService(
+		txManager,
+		b.repos.Order,
+		b.repos.OrderEvidence,
+		orderEvidenceService,
+	)
+	orderEvidenceAdminService.ConfigureOrderEvidencePackageAssembler(
+		service.NewOrderEvidencePackageAssembler(
+			b.repos.Order,
+			b.repos.OrderEvidence,
+			b.repos.Shipping,
+		),
+	)
+	orderEvidenceAttachmentService := service.NewConfiguredOrderEvidenceAttachmentService(
+		txManager,
+		b.repos.OrderEvidence,
+		storageSvc,
+	)
+	orderEvidenceExportService := service.NewOrderEvidenceExportSnapshotService(
+		b.repos.OrderEvidenceExport,
+		b.repos.OrderEvidence,
+		service.NewOrderEvidencePackageAssembler(
+			b.repos.Order,
+			b.repos.OrderEvidence,
+			b.repos.Shipping,
+		),
+	)
 	storefrontMarketService := service.NewStorefrontMarketService(b.repos.StorefrontMarket)
 	opsDomainBindingService := service.NewOpsDomainBindingService(b.repos.OpsDomainBinding, b.repos.OpsProjectBinding, b.repos.OpsConnector)
 	opsDomainDiffService := service.NewOpsDomainDiffService(b.repos.OpsDomainBinding)
@@ -251,6 +282,7 @@ func (b *dependencyServicesBuilder) build() error {
 		Auth:                              authService,
 		AdminAccountMaintenance:           service.NewAdminAccountMaintenanceService(b.db),
 		Post:                              postService,
+		BlogCategory:                      blogCategoryService,
 		Product:                           productService,
 		ProductProcurement:                productProcurementService,
 		FrameFitmentEntry:                 frameFitmentEntryService,
@@ -261,6 +293,7 @@ func (b *dependencyServicesBuilder) build() error {
 		ProductBrand:                      productBrandService,
 		ProductInformationTemplate:        productInformationTemplateService,
 		CustomsClassification:             customsClassificationService,
+		ProductQualityRequirement:         productQualityRequirementService,
 		Cart:                              service.NewCartService(b.repos.Cart, b.repos.Product),
 		Setting:                           settingService,
 		WebsiteProfile:                    service.NewWebsiteProfileService(settingService),
@@ -298,6 +331,11 @@ func (b *dependencyServicesBuilder) build() error {
 		Warranty:                          service.NewWarrantyService(b.repos.Warranty, b.repos.Order),
 		ShipmentRecord:                    service.NewShipmentRecordService(b.repos.ShipmentRecord),
 		Checkout:                          service.NewCheckoutService(b.repos.Product, b.repos.Coupon, b.repos.Payment, b.repos.Loyalty, shippingService),
+		OrderEvidenceSnapshot:             orderEvidenceSnapshotService,
+		OrderEvidence:                     orderEvidenceService,
+		OrderEvidenceAdmin:                orderEvidenceAdminService,
+		OrderEvidenceAttachment:           orderEvidenceAttachmentService,
+		OrderEvidenceExport:               orderEvidenceExportService,
 		AfterSales:                        afterSalesService,
 		Marketing:                         service.NewMarketingService(txManager, b.repos.Coupon, b.repos.Loyalty, settingService),
 		LoyaltyProgram:                    loyaltyProgramService,

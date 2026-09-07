@@ -19,6 +19,16 @@ const (
 	SiteQualityJobStatusSucceeded  = "succeeded"
 	SiteQualityJobStatusFailed     = "failed"
 	SiteQualityJobStatusDeadLetter = "dead_letter"
+	SiteQualityJobStatusCancelled  = "cancelled"
+
+	SiteQualityJobProgressStageQueued         = "queued"
+	SiteQualityJobProgressStageStarting       = "starting"
+	SiteQualityJobProgressStageWaitingForSlot = "waiting_for_provider"
+	SiteQualityJobProgressStageCapturing      = "capturing"
+	SiteQualityJobProgressStageEvaluating     = "evaluating"
+	SiteQualityJobProgressStageCompleted      = "completed"
+	SiteQualityJobProgressStageFailed         = "failed"
+	SiteQualityJobProgressStageCancelled      = "cancelled"
 
 	SiteQualityEvaluationStatusCompleted           = "completed"
 	SiteQualityEvaluationStatusInsufficientSamples = "insufficient_samples"
@@ -68,6 +78,9 @@ type SiteQualityJob struct {
 	RequiredConfirmations int        `gorm:"not null;default:2" json:"required_confirmations"`
 	Attempts              int        `gorm:"not null;default:0" json:"attempts"`
 	MaxAttempts           int        `gorm:"not null;default:4" json:"max_attempts"`
+	ProgressTotal         int        `gorm:"not null;default:0" json:"progress_total"`
+	CompletedSamples      int        `gorm:"not null;default:0" json:"completed_samples"`
+	ProgressStage         string     `gorm:"size:32;not null;default:'queued'" json:"progress_stage"`
 	AvailableAt           time.Time  `gorm:"not null;index" json:"available_at"`
 	LockedAt              *time.Time `gorm:"index" json:"locked_at,omitempty"`
 	LockedBy              string     `gorm:"size:128;not null;default:'';index" json:"locked_by"`
@@ -79,6 +92,7 @@ type SiteQualityJob struct {
 	InitiatedByUserID     uint       `gorm:"not null;default:0;index" json:"initiated_by_user_id"`
 	ReleaseID             string     `gorm:"size:128;not null;default:''" json:"release_id"`
 	LastError             string     `gorm:"type:text;not null;default:''" json:"last_error,omitempty"`
+	LatestRunID           *uint      `gorm:"-" json:"latest_run_id,omitempty"`
 	CreatedAt             time.Time  `json:"created_at"`
 	UpdatedAt             time.Time  `json:"updated_at"`
 }

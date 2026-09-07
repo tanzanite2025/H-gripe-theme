@@ -2,18 +2,13 @@
   <ClientOnly>
     <teleport to="body">
     <!-- 背景蒙版 -->
-    <transition
-      enter-active-class="transition-opacity duration-300 ease-out"
-      leave-active-class="transition-opacity duration-200 ease-in"
-      enter-from-class="opacity-0"
-      leave-to-class="opacity-0"
-    >
-      <div
-        v-if="leftOpen"
-        class="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-[9998]"
-        @click="handleBackdropClick"
-      ></div>
-    </transition>
+    <div
+      v-if="leftEverOpened"
+      class="sidebar-backdrop fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-[9998]"
+      :class="{ 'sidebar-backdrop--open': leftOpen }"
+      :aria-hidden="!leftOpen"
+      @click="handleBackdropClick"
+    ></div>
 
     <!-- 左侧面板 (Sidebar) -->
     <aside
@@ -49,7 +44,7 @@
 
         <!-- 左侧内容 -->
         <div class="w-full h-full box-border m-0 relative overflow-y-auto pt-10 px-2 pb-0 md:pt-12 md:px-4 md:pb-4 rounded-none md:rounded-2xl">
-          <slot v-if="leftEverOpened" name="left" />
+          <slot name="left" />
         </div>
       </section>
     </aside>
@@ -96,6 +91,17 @@ defineExpose({
 /* 侧边栏面板背景 */
 .sidebar-panel {
   background: var(--tz-card-surface);
+}
+
+.sidebar-backdrop {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 160ms ease-out;
+}
+
+.sidebar-backdrop--open {
+  opacity: 1;
+  pointer-events: auto;
 }
 
  .sidepanel-shell {

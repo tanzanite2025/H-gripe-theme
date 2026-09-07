@@ -1,0 +1,58 @@
+{
+  "title": "OEM 与 ODM",
+  "hero": {
+    "title": "全球 OEM 与 ODM 解决方案",
+    "description": "助力您的品牌成长。我们依托先进的自动化制造技术，将您的产品构想转化为世界级碳纤维轮组。"
+  },
+  "services": {
+    "oem": {
+      "title": "OEM 制造",
+      "description": "您的品牌，我们负责制造。依托全自动化生产线，我们确保每个轮圈在批量生产中都符合 ISO/UCI 标准，并保持微米级的一致性。",
+      "features": {
+        "consistency": "微米级一致性",
+        "capacity": "可扩展的生产能力",
+        "confidentiality": "严格保密"
+      }
+    },
+    "odm": {
+      "title": "ODM 开发",
+      "description": "从构想到落地。我们的 20 多人研发团队提供全流程支持，包括 3D 建模、模具设计、铺层排程和空气动力学分析。",
+      "features": {
+        "modeling": "3D 建模与模具设计",
+        "layup": "定制铺层方案",
+        "aerodynamics": "空气动力学分析"
+      }
+    }
+  },
+  "advantages": {
+    "title": "为什么选择与我们合作",
+    "drilling": {
+      "title": "自动化打孔",
+      "description": "专用设备支持针对不同花鼓结构定制孔数与孔位角度。"
+    },
+    "molds": {
+      "title": "专属模具",
+      "description": "为独特外观、品牌标识和空气动力学性能提供专属模具定制。"
+    },
+    "quality": {
+      "title": "严格质量控制",
+      "description": "每个轮圈执行 100% 全检，标准高于 ISO 4210 要求。"
+    }
+  },
+  "process": {
+    "title": "合作流程",
+    "steps": {
+      "consultation": "需求沟通",
+      "engineering": "工程设计",
+      "prototyping": "样品试制",
+      "testing": "测试验证",
+      "production": "批量生产"
+    }
+  },
+  "cta": {
+    "title": "准备好打造您的品牌了吗？",
+    "description": "联系我们的工程团队，讨论您的项目需求。",
+    "button": "启动项目"
+  },
+  "feedbackTitle": "分享您对 OEM/ODM 服务的反馈"
+}

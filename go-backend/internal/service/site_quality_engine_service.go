@@ -1,14 +1,20 @@
 package service
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	sitequalitydomain "commerce-platform/internal/domain/sitequality"
 	"commerce-platform/internal/repository"
 )
+
+var ErrSiteQualityJobCancelled = errors.New("site quality job was cancelled")
+var ErrSiteQualityJobNotCancellable = errors.New("site quality job is no longer cancellable")
 
 const (
 	defaultSiteQualitySampleCount           = 3
@@ -44,6 +50,9 @@ type SiteQualityEngineService struct {
 	lighthouseRunner *LighthouseRunnerService
 	cfg              SiteQualityEngineConfig
 	workerID         string
+	wake             chan struct{}
+	activeMu         sync.Mutex
+	activeCancels    map[uint]context.CancelFunc
 }
 
 type SiteQualityProcessResult struct {
@@ -51,6 +60,7 @@ type SiteQualityProcessResult struct {
 	Succeeded  int    `json:"succeeded"`
 	Failed     int    `json:"failed"`
 	DeadLetter int    `json:"dead_letter"`
+	Cancelled  int    `json:"cancelled"`
 	WorkerID   string `json:"worker_id"`
 }
 
@@ -166,5 +176,65 @@ func NewSiteQualityEngineService(
 		lighthouseRunner: lighthouseRunner,
 		cfg:              cfg,
 		workerID:         fmt.Sprintf("site-quality-%d-%d", os.Getpid(), time.Now().UnixNano()),
+		wake:             make(chan struct{}, 1),
+		activeCancels:    make(map[uint]context.CancelFunc),
 	}
+}
+
+func (s *SiteQualityEngineService) WorkerWakeChannel() <-chan struct{} {
+	if s == nil {
+		return nil
+	}
+	return s.wake
+}
+
+func (s *SiteQualityEngineService) notifyWorker() {
+	if s == nil || s.wake == nil {
+		return
+	}
+	select {
+	case s.wake <- struct{}{}:
+	default:
+	}
+}
+
+func (s *SiteQualityEngineService) registerActiveJob(jobID uint, cancel context.CancelFunc) {
+	if s == nil || jobID == 0 || cancel == nil {
+		return
+	}
+	s.activeMu.Lock()
+	if s.activeCancels == nil {
+		s.activeCancels = make(map[uint]context.CancelFunc)
+	}
+	s.activeCancels[jobID] = cancel
+	s.activeMu.Unlock()
+}
+
+func (s *SiteQualityEngineService) unregisterActiveJob(jobID uint) {
+	if s == nil || jobID == 0 {
+		return
+	}
+	s.activeMu.Lock()
+	delete(s.activeCancels, jobID)
+	s.activeMu.Unlock()
+}
+
+func (s *SiteQualityEngineService) cancelActiveJob(jobID uint) {
+	if s == nil || jobID == 0 {
+		return
+	}
+	s.activeMu.Lock()
+	cancel := s.activeCancels[jobID]
+	s.activeMu.Unlock()
+	if cancel != nil {
+		cancel()
+	}
+}
+
+func (s *SiteQualityEngineService) jobWasCancelled(jobID uint) bool {
+	if s == nil || s.jobs == nil || jobID == 0 {
+		return false
+	}
+	job, err := s.jobs.FindByID(jobID)
+	return err == nil && job.Status == sitequalitydomain.SiteQualityJobStatusCancelled
 }

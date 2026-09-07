@@ -21,27 +21,40 @@ type OrderService struct {
 	productCache             ProductCacheInvalidator
 	productCacheEvents       ProductCacheEventPublisher
 	refundCancellationPolicy *RefundCancellationPolicyService
+	orderEvidenceSnapshot    *OrderEvidenceSnapshotService
+	orderEvidence            *OrderEvidenceService
 }
 
 var (
-	ErrOrderNotFound                     = errors.New("order not found")
-	ErrOrderDeleteNotAllowed             = errors.New("only cancelled, payment expired, or refunded orders can be deleted")
-	ErrPaidOrderCancellationNotAllowed   = errors.New("paid orders cannot be cancelled directly; please submit an after-sales refund request or contact support")
-	ErrOrderCancellationConflict         = errors.New("order was already cancelled or is no longer eligible for cancellation")
-	ErrSystemManagedOrderStatus          = errors.New("order status is managed by payment workflow")
-	ErrOrderFulfillmentNotAllowed        = errors.New("only paid, processing, or already shipped orders can be fulfilled")
-	ErrOrderFulfillmentPaymentRequired   = errors.New("only paid orders can be fulfilled")
-	ErrOrderFulfillmentTransactionNeeded = errors.New("order fulfillment transaction is not configured")
-	ErrTrackingNumberRequired            = errors.New("tracking number is required")
-	ErrOrderShippingNotConfigured        = errors.New("order shipping service is not configured")
-	ErrOrderNumberNotConfigured          = errors.New("order number generator is not configured")
-	ErrOrderItemNotFound                 = errors.New("order item not found")
-	ErrOrderIdempotencyUnavailable       = errors.New("order idempotency is not configured")
-	ErrOrderIdempotencyConflict          = errors.New("idempotency key was already used for a different order request")
-	ErrOrderIdempotencyInProgress        = errors.New("idempotent order request is already being processed")
-	ErrOrderIdempotencyHashRequired      = errors.New("idempotency request hash is required")
-	ErrDeclaredValueInvalid              = errors.New("declared value must be a finite non-negative number")
-	ErrDeclaredValueConfirmationRequired = errors.New("declared value is required when confirming")
+	ErrOrderNotFound                                 = errors.New("order not found")
+	ErrOrderDeleteNotAllowed                         = errors.New("only cancelled, payment expired, or refunded orders can be deleted")
+	ErrPaidOrderCancellationNotAllowed               = errors.New("paid orders cannot be cancelled directly; please submit an after-sales refund request or contact support")
+	ErrOrderCancellationConflict                     = errors.New("order was already cancelled or is no longer eligible for cancellation")
+	ErrSystemManagedOrderStatus                      = errors.New("order status is managed by payment workflow")
+	ErrOrderFulfillmentNotAllowed                    = errors.New("only paid, processing, or already shipped orders can be fulfilled")
+	ErrOrderFulfillmentPaymentRequired               = errors.New("only paid orders can be fulfilled")
+	ErrOrderFulfillmentTransactionNeeded             = errors.New("order fulfillment transaction is not configured")
+	ErrOrderFulfillmentSignatureConfirmationRequired = errors.New("signature confirmation is required before fulfilling this order")
+	ErrOrderFulfillmentStatusManaged                 = errors.New("shipped status is managed by the fulfillment workflow")
+	ErrOrderProductionNotRequired                    = errors.New("order does not require production")
+	ErrOrderProductionPaymentRequired                = errors.New("only paid orders can enter production")
+	ErrOrderProductionNotAllowed                     = errors.New("order is not eligible for production workflow")
+	ErrOrderProductionAlreadyStarted                 = errors.New("order production has already started")
+	ErrOrderProductionNotStarted                     = errors.New("order production has not started")
+	ErrOrderProductionNotCompleted                   = errors.New("order production must be completed before fulfillment")
+	ErrOrderProductionTransactionNeeded              = errors.New("order production transaction is not configured")
+	ErrProductionStartedCancellationNotAllowed       = errors.New("custom orders cannot be cancelled after production has started")
+	ErrTrackingNumberRequired                        = errors.New("tracking number is required")
+	ErrOrderShippingNotConfigured                    = errors.New("order shipping service is not configured")
+	ErrOrderNumberNotConfigured                      = errors.New("order number generator is not configured")
+	ErrOrderItemNotFound                             = errors.New("order item not found")
+	ErrOrderIdempotencyUnavailable                   = errors.New("order idempotency is not configured")
+	ErrOrderIdempotencyConflict                      = errors.New("idempotency key was already used for a different order request")
+	ErrOrderIdempotencyInProgress                    = errors.New("idempotent order request is already being processed")
+	ErrOrderIdempotencyHashRequired                  = errors.New("idempotency request hash is required")
+	ErrOrderEvidenceNotConfigured                    = errors.New("order evidence services are not configured")
+	ErrDeclaredValueInvalid                          = errors.New("declared value must be a finite non-negative number")
+	ErrDeclaredValueConfirmationRequired             = errors.New("declared value is required when confirming")
 )
 
 func NewOrderService(
@@ -70,6 +83,20 @@ func (s *OrderService) ConfigureRefundCancellationPolicy(policy *RefundCancellat
 		return
 	}
 	s.refundCancellationPolicy = policy
+}
+
+func (s *OrderService) ConfigureOrderEvidenceSnapshot(snapshotService *OrderEvidenceSnapshotService) {
+	if s == nil {
+		return
+	}
+	s.orderEvidenceSnapshot = snapshotService
+}
+
+func (s *OrderService) ConfigureOrderEvidence(evidenceService *OrderEvidenceService) {
+	if s == nil {
+		return
+	}
+	s.orderEvidence = evidenceService
 }
 
 func (s *OrderService) ConfigureProductCacheInvalidator(invalidator ProductCacheInvalidator) {
@@ -105,6 +132,7 @@ type OrderTrackingUpdateInput struct {
 	TrackingProviderID uint
 	CarrierID          *uint
 	CarrierServiceID   *uint
+	SignatureConfirmed bool
 }
 
 type OrderFulfillmentResult struct {

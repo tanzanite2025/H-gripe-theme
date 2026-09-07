@@ -1,258 +1,59 @@
 <template>
   <div class="support-rim-test-report rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-3 md:p-6">
-    <h3 class="support-section__title text-center">Rim Test Report</h3>
+    <h3 class="support-section__title text-center">{{ t('testReportRim.title') }}</h3>
 
     <p class="support-section__body mt-4 text-center">
-      This section summarises how our carbon rims are validated in our in-house lab,
-      including strength, impact, radial load, spoke-hole tension, cutting-piece inspection,
-      and X-ray flatness checks.
+      {{ t('testReportRim.intro') }}
     </p>
 
-    <!-- Rim test photo grid: 4 images per row, second row with 3 images -->
-    <!-- Rim Test Carousel -->
     <div class="mt-8 mb-12">
-      <StackedImageCarousel :items="cards" />
+      <StackedImageCarousel :items="galleryItems" />
     </div>
 
-    <!-- Test descriptions with global blue subtitles -->
-    <div class="rim-test-card mt-6">
+    <div
+      v-for="test in rimTests"
+      :key="test.id"
+      class="rim-test-card mt-4"
+      :class="{ 'mt-6': test.id === 'strength' }"
+    >
       <h4 class="sizecharts-section__subheading text-emerald-700 font-semibold">
-        Strength Test
+        {{ t(rimMessage(test.id, 'title')) }}
       </h4>
       <p class="support-section__body">
-        <strong>Purpose:</strong>
-        Verify the rim's ability to withstand static and dynamic loads, ensuring no structural failure occurs during
-        riding.
+        <strong>{{ t('testReportRim.labels.purpose') }}</strong>
+        {{ t(rimMessage(test.id, 'purpose')) }}
       </p>
       <p class="support-section__body mt-2">
-        <strong>Test Method:</strong>
-          <span class="support-rim-test-report__method-badge inline-flex items-center gap-1.5 ml-2 px-2.5 py-0.5 rounded-md text-xs font-medium tz-text-secondary align-middle">
+        <strong>{{ t('testReportRim.labels.testMethod') }}</strong>
+        <span
+          v-if="test.standard"
+          class="support-rim-test-report__method-badge inline-flex items-center gap-1.5 ml-2 px-2.5 py-0.5 rounded-md text-xs font-medium tz-text-secondary align-middle"
+        >
           <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
           </svg>
-          ISO 4210-7:2023
+          {{ t(rimMessage(test.id, 'standard')) }}
         </span>
       </p>
       <ul class="sizecharts-section__list support-section__body">
-        <li>Fix the rim or complete wheelset in the testing fixture.</li>
-        <li>
-          Apply a vertical static load to the rim, typically in the range of 600-1000 N (approximately 60-100 kgf),
-          and maintain for a specified duration (e.g., 1 minute).
-        </li>
-        <li>
-          Conduct dynamic cyclic loading, for example applying alternating forces of 300-400 N over 100,000 cycles to
-          simulate long-term riding conditions.
+        <li v-for="index in test.methodCount" :key="`method-${index}`">
+          {{ t(rimMessage(test.id, `method.${index - 1}`)) }}
         </li>
       </ul>
       <p class="support-section__body mt-2">
-        <strong>Criteria for Evaluation:</strong>
+        <strong>
+          {{ t(test.id === 'strength'
+            ? 'testReportRim.labels.criteriaForEvaluation'
+            : 'testReportRim.labels.evaluationCriteria') }}
+        </strong>
       </p>
       <ul class="sizecharts-section__list support-section__body">
-        <li>The rim must not exhibit cracks, fractures, or permanent structural failure.</li>
-        <li>
-          Permissible deformation must remain within the specified limits (e.g., radial deviation ≤ 1.0 mm, lateral
-          deviation ≤ 1.5 mm).
-        </li>
-        <li>After testing, the rim must retain full functional integrity.</li>
-      </ul>
-    </div>
-
-    <div class="rim-test-card mt-4">
-      <h4 class="sizecharts-section__subheading text-emerald-700 font-semibold">
-        Impact Test
-      </h4>
-      <p class="support-section__body">
-        <strong>Purpose:</strong>
-        Simulates external impacts (e.g., rock strikes or landings) to assess rim resistance and structural integrity.
-      </p>
-      <p class="support-section__body mt-2">
-        <strong>Test Method:</strong>
-          <span class="support-rim-test-report__method-badge inline-flex items-center gap-1.5 ml-2 px-2.5 py-0.5 rounded-md text-xs font-medium tz-text-secondary align-middle">
-          <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
-          </svg>
-          ISO 4210-7:2023
-        </span>
-      </p>
-      <ul class="sizecharts-section__list support-section__body">
-        <li>Secure the rim or complete wheelset in the testing fixture.</li>
-        <li>Drop a standardized impact body (e.g., a 22.5 kg steel mass) from a height of 300 mm onto the rim.</li>
-        <li>
-          Position the impact point between spoke holes or at a representative weak section of the rim to replicate
-          real-world riding impacts.
-        </li>
-      </ul>
-      <p class="support-section__body mt-2">
-        <strong>Evaluation Criteria:</strong>
-      </p>
-      <ul class="sizecharts-section__list support-section__body">
-        <li>The rim must not exhibit cracks, fractures, or severe deformation.</li>
-        <li>Local dents or scratches must remain within specified limits (e.g., dent depth ≤ 2.0 mm).</li>
-        <li>
-          After impact, the rim must retain full functionality, ensuring safe tire mounting and riding.
+        <li v-for="index in test.criteriaCount" :key="`criteria-${index}`">
+          {{ t(rimMessage(test.id, `criteria.${index - 1}`)) }}
         </li>
       </ul>
     </div>
 
-    <div class="rim-test-card mt-4">
-      <h4 class="sizecharts-section__subheading text-emerald-700 font-semibold">
-        Radial Load Test
-      </h4>
-      <p class="support-section__body">
-        <strong>Purpose:</strong>
-        Tests rim deformation and load capacity under vertical forces to ensure safety and durability.
-      </p>
-      <p class="support-section__body mt-2">
-        <strong>Test Method:</strong>
-          <span class="support-rim-test-report__method-badge inline-flex items-center gap-1.5 ml-2 px-2.5 py-0.5 rounded-md text-xs font-medium tz-text-secondary align-middle">
-          <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
-          </svg>
-          ISO 4210-7:2023
-        </span>
-      </p>
-      <ul class="sizecharts-section__list support-section__body">
-        <li>Secure the rim or complete wheelset in the testing fixture.</li>
-        <li>
-          Apply a vertical static load, typically 1000-1200 N (approximately 100-120 kgf), and maintain for a specified
-          duration (e.g., 1 minute).
-        </li>
-        <li>
-          Conduct dynamic cyclic loading, for example applying alternating forces of 600-800 N over 100,000 cycles to
-          simulate long-term vertical stresses during riding.
-        </li>
-      </ul>
-      <p class="support-section__body mt-2">
-        <strong>Evaluation Criteria:</strong>
-      </p>
-      <ul class="sizecharts-section__list support-section__body">
-        <li>The rim must not exhibit cracks, fractures, or permanent structural failure.</li>
-        <li>Radial deformation must remain within specified limits (e.g., radial deviation ≤ 1.0 mm).</li>
-        <li>
-          After testing, the rim must retain full functionality, ensuring safe tire mounting and riding performance.
-        </li>
-      </ul>
-    </div>
-
-    <div class="rim-test-card mt-4">
-      <h4 class="sizecharts-section__subheading text-emerald-700 font-semibold">
-        Hole Tension Test
-      </h4>
-      <p class="support-section__body">
-        <strong>Purpose:</strong>
-        Evaluates rim ability to withstand spoke-hole tension under static and dynamic loads, ensuring durability and
-        safety of spoke interfaces.
-      </p>
-      <p class="support-section__body mt-2">
-        <strong>Test Method:</strong>
-          <span class="support-rim-test-report__method-badge inline-flex items-center gap-1.5 ml-2 px-2.5 py-0.5 rounded-md text-xs font-medium tz-text-secondary align-middle">
-          <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
-          </svg>
-          ISO 4210-7:2023
-        </span>
-      </p>
-      <ul class="sizecharts-section__list support-section__body">
-        <li>
-          Secure the rim in the testing fixture and apply standardized bolts or tensile devices at spoke-hole
-          positions.
-        </li>
-        <li>
-          Apply a static tensile load to each spoke hole, typically 1000-1200 N (approximately 100-120 kgf), and
-          maintain for a specified duration (e.g., 1 minute).
-        </li>
-        <li>
-          Conduct dynamic cyclic tensile loading, for example applying alternating forces of 600-800 N over 100,000
-          cycles to simulate long-term variations in spoke tension during riding.
-        </li>
-      </ul>
-      <p class="support-section__body mt-2">
-        <strong>Evaluation Criteria:</strong>
-      </p>
-      <ul class="sizecharts-section__list support-section__body">
-        <li>No cracks, fractures, or permanent structural failures should occur around spoke holes.</li>
-        <li>Local deformation must remain within specified limits (e.g., hole diameter change ≤ 0.2 mm).</li>
-        <li>
-          After testing, the rim must retain full functionality, ensuring safe spoke installation and use.
-        </li>
-      </ul>
-    </div>
-
-    <div class="rim-test-card mt-4">
-      <h4 class="sizecharts-section__subheading text-emerald-700 font-semibold">
-        Rim Cutting Pieces Test
-      </h4>
-      <p class="support-section__body">
-        <strong>Purpose:</strong>
-        Analyze rim cross-sections by cutting a portion to evaluate both internal and external features, ensuring
-        compliance with dimensional and quality standards.
-      </p>
-      <p class="support-section__body mt-2">
-        <strong>Test Method:</strong>
-      </p>
-      <ul class="sizecharts-section__list support-section__body">
-        <li>
-          Cut representative sections of the rim at critical points (e.g., spoke hole area, joint section, braking
-          surface).
-        </li>
-        <li>Examine the cross-sections under magnification or with precision measuring tools.</li>
-        <li>
-          Identify any burrs, sharp edges, irregularities, or deviations in wall thickness, material distribution, or
-          dimensional specifications.
-        </li>
-        <li>Compare measurements against design tolerances (e.g., wall thickness ±0.1 mm, hole diameter ±0.05 mm).</li>
-      </ul>
-      <p class="support-section__body mt-2">
-        <strong>Evaluation Criteria:</strong>
-      </p>
-      <ul class="sizecharts-section__list support-section__body">
-        <li>No burrs or sharp edges that could compromise spoke or tire safety.</li>
-        <li>Dimensional deviations must remain within specified tolerances.</li>
-        <li>Internal and external surfaces must be smooth and consistent, with no voids, cracks, or inclusions.</li>
-        <li>
-          Rim sections must demonstrate uniformity and compliance with quality standards before approval for mass
-          production.
-        </li>
-      </ul>
-    </div>
-
-    <div class="rim-test-card mt-4">
-      <h4 class="sizecharts-section__subheading text-emerald-700 font-semibold">
-        X-ray Flatness Inspection
-      </h4>
-      <p class="support-section__body">
-        <strong>Purpose:</strong>
-        Assess the internal flatness and structural uniformity of the rim using high-resolution X-ray imaging. This
-        non-destructive test ensures that hidden defects do not compromise performance or safety.
-      </p>
-      <p class="support-section__body mt-2">
-        <strong>Test Method:</strong>
-      </p>
-      <ul class="sizecharts-section__list support-section__body">
-        <li>Place the rim in a high-resolution X-ray inspection system.</li>
-        <li>Capture cross-sectional and full-profile images of the rim to evaluate internal geometry.</li>
-        <li>
-          Analyze images for inconsistencies such as warping, voids, inclusions, or uneven material distribution.
-        </li>
-        <li>
-          Compare results against design specifications (e.g., flatness tolerance ≤ 0.2 mm, uniform wall thickness
-          within ± 0.1 mm).
-        </li>
-      </ul>
-      <p class="support-section__body mt-2">
-        <strong>Evaluation Criteria:</strong>
-      </p>
-      <ul class="sizecharts-section__list support-section__body">
-        <li>No internal voids, cracks, or inclusions that could weaken the rim structure.</li>
-        <li>Flatness deviations must remain within specified tolerances.</li>
-        <li>Material distribution must be uniform, ensuring consistent strength and durability.</li>
-        <li>
-          Rim must pass inspection without requiring destructive sampling, confirming production quality.
-        </li>
-      </ul>
-    </div>
-
-    <!-- Spoke-hole strength test video thumbnail (positioned above disclaimer) -->
     <div class="mt-4 flex justify-center">
       <div
         class="support-video-thumbnail"
@@ -261,83 +62,70 @@
         <img
           class="support-video-thumbnail__image"
           src="/testreport/rimtestreport/rim-testreport.webp"
-          alt="Play spoke-hole strength test video for our carbon rims"
+          :alt="t('testReportRim.video.alt')"
           loading="lazy"
         />
         <div class="support-video-thumbnail__overlay">
           <span class="support-video-thumbnail__icon">▶</span>
-          <span class="support-video-thumbnail__label">Watch spoke-hole strength test video</span>
+          <span class="support-video-thumbnail__label">{{ t('testReportRim.video.label') }}</span>
         </div>
       </div>
     </div>
 
-    <!-- Disclaimer block styled like Technical Tension amber card -->
     <div class="support-rim-test-report__disclaimer mt-6 rounded-lg px-4 py-3 text-sm leading-relaxed">
       <h4 class="support-rim-test-report__disclaimer-label mb-3 font-semibold">
-        Disclaimer
+        {{ t('testReportRim.disclaimer.title') }}
       </h4>
-      <p class="mb-2">
-        We pick only one sample for every test report and the results will likely vary as the rim diameters change.
-        Please note that the differences between models in test results are specially designed by our engineers for
-        the intended uses.
-      </p>
-      <p>
-        All the test results of this section are based on our lab criteria and are implemented at our
-        well-established testing facilities. Our team is only responsible for the test results themselves which are
-        not set for any comparison to other brands or such regards.
-      </p>
+      <p class="mb-2">{{ t('testReportRim.disclaimer.body.0') }}</p>
+      <p>{{ t('testReportRim.disclaimer.body.1') }}</p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, watch } from 'vue'
+import { useI18n } from '#imports'
+import { usePageMessages } from '~/composables/usePageMessages'
 
 const { openSpokeHoleVideo } = defineProps<{
   openSpokeHoleVideo: () => void | Promise<void>
 }>()
 
-// --- Stacked Carousel Logic ---
+const { locale, t } = useI18n()
+const { loadPageMessages } = usePageMessages('testReportRim')
 
-const cards = [
-  {
-    src: '/testreport/rimtestreport/rim-testreport.webp',
-    alt: 'Overview of our rim laboratory test setup',
-    caption: "Overall view of the rim test setup used in our lab."
-  },
-  {
-    src: '/testreport/rimtestreport/carbonrim-strength-test1.webp',
-    alt: 'carbon rim strength test under static load',
-    caption: "Strength Test – evaluating rim performance under static and dynamic loads."
-  },
-  {
-    src: '/testreport/rimtestreport/carbonrim-strength-test1 (2).webp',
-    alt: 'Additional view of carbon rim strength testing',
-    caption: "Strength Test – additional view of clamping and load application."
-  },
-  {
-    src: '/testreport/rimtestreport/carbonrim-radialload-test.webp',
-    alt: 'carbon rim radial load test showing vertical loading',
-    caption: "Radial Load Test – checking deformation and load capacity under vertical forces."
-  },
-  {
-    src: '/testreport/rimtestreport/hole-tension-test.webp',
-    alt: 'Spoke hole tension test setup for a carbon rim',
-    caption: "Hole Tension Test – measuring how spoke holes withstand spoke tension and repeated loading."
-  },
-  {
-    src: '/testreport/rimtestreport/rim-cutting-pieces-Test.webp',
-    alt: 'Cross-section cutting piece of a carbon rim',
-    caption: "Rim Cutting Pieces Test – inspecting internal layup, wall thickness, and burrs."
-  },
-  {
-    src: '/testreport/rimtestreport/xray-flatness-Inspection-test.webp',
-    alt: 'X-ray flatness inspection of a carbon rim',
-    caption: "X-ray Flatness Inspection – non-destructive check for internal uniformity and flatness."
-  }
-]
+await loadPageMessages(locale.value)
 
+watch(locale, (nextLocale) => {
+  void loadPageMessages(nextLocale)
+})
 
+const rimTests = [
+  { id: 'strength', standard: true, methodCount: 3, criteriaCount: 3 },
+  { id: 'impact', standard: true, methodCount: 3, criteriaCount: 3 },
+  { id: 'radial', standard: true, methodCount: 3, criteriaCount: 3 },
+  { id: 'holeTension', standard: true, methodCount: 3, criteriaCount: 3 },
+  { id: 'cuttingPieces', standard: false, methodCount: 4, criteriaCount: 4 },
+  { id: 'xray', standard: false, methodCount: 4, criteriaCount: 4 },
+] as const
+
+const rimMessage = (testId: string, key: string) => `testReportRim.tests.${testId}.${key}`
+
+const gallerySources = [
+  '/testreport/rimtestreport/rim-testreport.webp',
+  '/testreport/rimtestreport/carbonrim-strength-test1.webp',
+  '/testreport/rimtestreport/carbonrim-strength-test1 (2).webp',
+  '/testreport/rimtestreport/carbonrim-radialload-test.webp',
+  '/testreport/rimtestreport/hole-tension-test.webp',
+  '/testreport/rimtestreport/rim-cutting-pieces-Test.webp',
+  '/testreport/rimtestreport/xray-flatness-Inspection-test.webp',
+] as const
+
+const galleryItems = computed(() => gallerySources.map((src, index) => ({
+  src,
+  alt: t(`testReportRim.gallery.${index}.alt`),
+  caption: t(`testReportRim.gallery.${index}.caption`),
+})))
 </script>
 
 <style src="~/assets/css/guide-sections.css"></style>

@@ -1,0 +1,120 @@
+{
+  "title": "Appearance & Customization",
+  "intro": "We offer a wide range of carbon fiber weave patterns and surface finishes to meet the aesthetic and performance preferences of every rider. All weaves are structural carbon fiber, not printed or laminated.",
+  "images": {
+    "matteAlt": "Carbon rim matte surface finish detail",
+    "matteCaption": "Matte Finish Detail",
+    "glossyAlt": "Carbon rim glossy surface finish detail",
+    "glossyCaption": "Glossy Finish Detail"
+  },
+  "sections": {
+    "weavePatterns": "Weave Patterns",
+    "glossLevels": "Gloss Levels",
+    "crystalEffects": "Crystal Effects",
+    "brakeTracks": "Brake Track Options",
+    "laserEngraving": "Laser Engraving"
+  },
+  "rimBrakeOnly": "(Rim Brake Only)",
+  "crystalIntro": "Crystal finishes use micro-layer coating technology for unique light reflection and color depth.",
+  "brakeTrackNote": "All brake tracks are heat-treated and abrasion-tested for compatibility with mainstream brake pads.",
+  "weaves": {
+    "ud": {
+      "name": "UD (Unidirectional)",
+      "finish": "Matte",
+      "description": "Minimal straight grain, ultra-light."
+    },
+    "butterfly": {
+      "name": "Butterfly",
+      "finish": "Matte",
+      "description": "Unique organic pattern with high visual impact."
+    },
+    "marble": {
+      "name": "Marble",
+      "finish": "Matte",
+      "description": "Stone-like texture, bold and distinctive."
+    },
+    "threeK": {
+      "name": "3K",
+      "finish": "Satin",
+      "description": "Classic checkerboard with a balanced look."
+    },
+    "threeKTwillVertical": {
+      "name": "3K Twill (Vertical)",
+      "finish": "Satin",
+      "description": "Diagonal weave with a dynamic appearance."
+    },
+    "threeKTwillHorizontal": {
+      "name": "3K Twill (Horizontal)",
+      "finish": "Satin",
+      "description": "Horizontal twill with a modern aesthetic."
+    },
+    "twelveK": {
+      "name": "12K",
+      "finish": "Satin",
+      "description": "Coarse weave with powerful visual texture."
+    },
+    "twelveKTwillVertical": {
+      "name": "12K Twill (Vertical)",
+      "finish": "Satin",
+      "description": "Bold diagonal weave in a vertical layout."
+    },
+    "twelveKTwillHorizontal": {
+      "name": "12K Twill (Horizontal)",
+      "finish": "Satin",
+      "description": "Horizontal twill with an aggressive style."
+    }
+  },
+  "gloss": {
+    "matte": {
+      "name": "Matte",
+      "description": "Subtle and scratch-resistant."
+    },
+    "satin": {
+      "name": "Satin",
+      "description": "Soft sheen with balanced texture."
+    },
+    "glossy": {
+      "name": "Glossy",
+      "description": "High shine with a premium look."
+    },
+    "paintless": {
+      "name": "Paintless",
+      "description": "Raw carbon fiber with an ultra-lightweight finish."
+    }
+  },
+  "crystalEffects": {
+    "black": "Black",
+    "silver": "Silver",
+    "orange": "Orange",
+    "purple": "Purple",
+    "blue": "Blue"
+  },
+  "brakeTracks": {
+    "resinUd": "High TG Resin UD (UD weave only)",
+    "resinGraphene": "High TG Resin Graphene",
+    "ac3Grooved": "AC3 Grooved (two styles)",
+    "udCGrooved": "UD C-Grooved (UD weave only)",
+    "cGroovedGraphene": "C-Grooved Graphene"
+  },
+  "laser": {
+    "body": "In addition to traditional decals and painted graphics, we support laser-engraved logos as a sustainable, faster option.",
+    "bullets": {
+      "0": "Reduces plastic waste by avoiding vinyl decals and masks.",
+      "1": "Shortens lead time by 5-7 days.",
+      "2": "Creates a permanent, durable finish."
+    },
+    "guideNote": "See our Wheelset Buyers Guide for more advice on choosing between laser and decals.",
+    "videoAlt": "Laser engraving process video",
+    "watchVideo": "Watch Process Video"
+  },
+  "suggestions": {
+    "title": "Presentation Suggestions",
+    "items": {
+      "0": "Organize options into three clear sections: Weave, Brake Track, and Finish.",
+      "1": "Pair each option with a high-resolution image and concise label.",
+      "2": "Include recommended combinations or customer favorites to guide decision-making."
+    },
+    "footer": "For OEM clients, team orders, or custom branding requests, we offer logo integration, laser etching, and color matching services. Contact us for tailored solutions."
+  },
+  "closeVideo": "Close video"
+}

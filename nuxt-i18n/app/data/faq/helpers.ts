@@ -5,7 +5,7 @@ export type ResolvedPageFaqData = PageFaqData & {
 }
 
 export function getPageFaqId(page: PageFaqData): string {
-  return page.pageId || page.id || ''
+  return page.pageId
 }
 
 export function resolvePageFaqData(page: PageFaqData): ResolvedPageFaqData | null {

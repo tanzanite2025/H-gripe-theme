@@ -439,7 +439,9 @@ func finalizeDisputeEvidenceChecklist(items []DisputeEvidenceChecklistItem) Disp
 
 func buildDisputeEvidenceSubmissionCheck(canSubmit bool, checklist DisputeEvidenceChecklist) DisputeEvidenceSubmissionCheck {
 	check := DisputeEvidenceSubmissionCheck{
-		Ready:            canSubmit && checklist.BlockerCount == 0,
+		// Evidence completeness is a review signal, not an automatic decision
+		// that prevents the operator from submitting a dispute response.
+		Ready:            canSubmit,
 		OverrideRequired: false,
 		Blockers:         []string{},
 		Warnings:         []string{},
@@ -449,9 +451,10 @@ func buildDisputeEvidenceSubmissionCheck(canSubmit bool, checklist DisputeEviden
 	}
 	for _, item := range checklist.Items {
 		if item.Blocker && item.Status != DisputeEvidenceStatusReady {
-			check.Blockers = append(check.Blockers, item.Title+"："+nonEmptyOr(item.MissingReason, item.Summary))
+			check.Warnings = append(check.Warnings, item.Title+"："+nonEmptyOr(item.MissingReason, item.Summary))
+			continue
 		}
-		if item.Status != DisputeEvidenceStatusReady && !item.Blocker {
+		if item.Status != DisputeEvidenceStatusReady {
 			check.Warnings = append(check.Warnings, item.Title+"："+nonEmptyOr(item.MissingReason, item.Summary))
 		}
 	}

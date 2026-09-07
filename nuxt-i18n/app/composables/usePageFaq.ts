@@ -1,7 +1,7 @@
 import { computed } from 'vue'
 import { useAsyncData } from '#imports'
 import { fetchFaqData } from '~/data/faq'
-import type { FaqCategory, PageFaqProps } from '~/data/faq/types'
+import type { PageFaqProps } from '~/data/faq/types'
 import { useFaqAccordionState } from '~/composables/useFaqAccordionState'
 
 export async function usePageFaq(props: PageFaqProps) {
@@ -19,44 +19,24 @@ export async function usePageFaq(props: PageFaqProps) {
     resetExpandedItems,
   } = useFaqAccordionState()
 
-  const displayCategories = computed(() => {
-    if (!faqData.value?.categories) return []
-
-    if (!props.maxItems) {
-      return faqData.value.categories
-    }
-
-    let remainingItems = props.maxItems
-    const limitedCategories: FaqCategory[] = []
-
-    for (const category of faqData.value.categories) {
-      if (remainingItems <= 0) break
-
-      const itemsToTake = Math.min(category.items.length, remainingItems)
-      limitedCategories.push({
-        ...category,
-        items: category.items.slice(0, itemsToTake),
-      })
-      remainingItems -= itemsToTake
-    }
-
-    return limitedCategories
-  })
+  const displayItems = computed(() => (
+    props.maxItems
+      ? faqData.value?.items.slice(0, props.maxItems) || []
+      : faqData.value?.items || []
+  ))
 
   const hasMoreItems = computed(() => {
-    if (!props.maxItems || !faqData.value?.categories) return false
-
-    const totalItems = faqData.value.categories.reduce(
-      (sum, category) => sum + category.items.length,
-      0
+    return Boolean(
+      props.maxItems
+      && faqData.value
+      && faqData.value.items.length > props.maxItems,
     )
-    return totalItems > props.maxItems
   })
 
   return {
     faqData,
     displayTitle,
-    displayCategories,
+    displayItems,
     expandedItems,
     toggleItem,
     resetExpandedItems,

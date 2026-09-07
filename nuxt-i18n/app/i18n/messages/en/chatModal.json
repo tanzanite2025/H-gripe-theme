@@ -87,6 +87,27 @@
     "member": "Member",
     "calculator": "Calculator"
   },
+  "orders": {
+    "madeToOrder": "Made to order",
+    "stock": "In stock",
+    "mixed": "Mixed fulfillment",
+    "production": "Production",
+    "productionStatus": {
+      "notApplicable": "Not applicable",
+      "notStarted": "Awaiting production",
+      "started": "In production",
+      "completed": "Production completed",
+      "cancelled": "Production cancelled"
+    },
+    "productionStartedAt": "Production started",
+    "productionCompletedAt": "Production completed",
+    "signatureRequired": "Signature required at delivery",
+    "items": "items",
+    "item": "item",
+    "loading": "Loading orders...",
+    "empty": "No orders yet",
+    "confirm": "Confirm order with support"
+  },
   "transfer": {
     "title": "Transfer conversation",
     "targetAgentLabel": "Target agent *",

@@ -9,12 +9,19 @@
       viewBox="0 0 420 320"
       class="spoke-wheel__svg"
       role="img"
-      :aria-label="`${wheelLabel} ${sideLabel} schematic`"
+      :aria-label="t('resourcesSpokeCalculator.calculator.schematic.svgTitle', {
+        wheel: wheelLabel,
+        side: sideLabel,
+      })"
     >
-      <title>{{ wheelLabel }} {{ sideLabel }} schematic</title>
+      <title>
+        {{ t('resourcesSpokeCalculator.calculator.schematic.svgTitle', {
+          wheel: wheelLabel,
+          side: sideLabel,
+        }) }}
+      </title>
       <desc>
-        Full wheel vector view with rim, hub, spoke pattern, and numbered dimension callouts for ERD,
-        PCDL, PCDR, and rim offset.
+        {{ t('resourcesSpokeCalculator.calculator.schematic.svgDescription') }}
       </desc>
 
       <defs>
@@ -50,7 +57,9 @@
       <g v-if="isDiscSide">
         <circle cx="146" cy="156" r="20" class="spoke-wheel__disc-ring" />
         <circle cx="146" cy="156" r="8" class="spoke-wheel__disc-core" />
-        <text x="146" y="191" class="spoke-wheel__side-mark">Disc</text>
+        <text x="146" y="191" class="spoke-wheel__side-mark">
+          {{ t('resourcesSpokeCalculator.calculator.schematic.sideMark.disc') }}
+        </text>
       </g>
       <g v-else>
         <circle cx="274" cy="156" r="18" class="spoke-wheel__freehub-ring" />
@@ -59,30 +68,40 @@
       </g>
 
       <rect x="160" y="126" width="100" height="60" rx="14" class="spoke-wheel__hub-zoom" />
-      <text x="210" y="146" class="spoke-wheel__hub-zoom-label">Hub / flange zone</text>
+      <text x="210" y="146" class="spoke-wheel__hub-zoom-label">
+        {{ t('resourcesSpokeCalculator.calculator.schematic.hubFlangeZone') }}
+      </text>
 
       <g class="spoke-wheel__callout">
         <line x1="84" y1="54" x2="336" y2="54" class="spoke-wheel__dimension" :marker-start="`url(#${arrowMarkerId})`" :marker-end="`url(#${arrowMarkerId})`" />
         <text x="210" y="36" class="spoke-wheel__callout-number">1</text>
-        <text x="210" y="69" class="spoke-wheel__callout-label">ERD</text>
+        <text x="210" y="69" class="spoke-wheel__callout-label">
+          {{ t('resourcesSpokeCalculator.calculator.schematic.erd.label') }}
+        </text>
       </g>
 
       <g class="spoke-wheel__callout">
         <line x1="96" y1="106" x2="172" y2="138" class="spoke-wheel__dimension" :marker-end="`url(#${arrowMarkerId})`" />
         <text x="92" y="103" class="spoke-wheel__callout-number">2</text>
-        <text x="90" y="120" class="spoke-wheel__callout-label">PCDL</text>
+        <text x="90" y="120" class="spoke-wheel__callout-label">
+          {{ t('resourcesSpokeCalculator.calculator.schematic.leftFlange.pcd') }}
+        </text>
       </g>
 
       <g class="spoke-wheel__callout">
         <line x1="324" y1="106" x2="248" y2="138" class="spoke-wheel__dimension" :marker-end="`url(#${arrowMarkerId})`" />
         <text x="328" y="103" class="spoke-wheel__callout-number">3</text>
-        <text x="330" y="120" class="spoke-wheel__callout-label spoke-wheel__callout-label--right">PCDR</text>
+        <text x="330" y="120" class="spoke-wheel__callout-label spoke-wheel__callout-label--right">
+          {{ t('resourcesSpokeCalculator.calculator.schematic.rightFlange.pcd') }}
+        </text>
       </g>
 
       <g class="spoke-wheel__callout">
         <line x1="166" y1="272" x2="254" y2="272" class="spoke-wheel__dimension" :marker-start="`url(#${arrowMarkerId})`" :marker-end="`url(#${arrowMarkerId})`" />
         <text x="210" y="255" class="spoke-wheel__callout-number">4</text>
-        <text x="210" y="289" class="spoke-wheel__callout-label">Offset</text>
+        <text x="210" y="289" class="spoke-wheel__callout-label">
+          {{ t('resourcesSpokeCalculator.calculator.schematic.offset') }}
+        </text>
       </g>
     </svg>
   </figure>
@@ -90,6 +109,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from '#imports'
 
 type WheelKind = 'front' | 'rear'
 type WheelSide = 'disc' | 'non-disc'
@@ -99,11 +119,20 @@ const props = defineProps<{
   side: WheelSide
 }>()
 
-const wheelLabel = computed(() => (props.wheel === 'front' ? 'Front wheel' : 'Rear wheel'))
-const sideLabel = computed(() => (props.side === 'disc' ? 'Disc side' : 'Non-disc side'))
+const { t } = useI18n()
+const wheelLabel = computed(() => t(
+  `resourcesSpokeCalculator.calculator.schematic.wheelLabel.${props.wheel}`,
+))
+const sideLabel = computed(() => t(
+  `resourcesSpokeCalculator.calculator.schematic.sideLabel.${props.side === 'disc' ? 'disc' : 'nonDisc'}`,
+))
 const sideMarkLabel = computed(() => {
-  if (props.side === 'disc') return 'Disc'
-  return props.wheel === 'front' ? 'Non-disc' : 'NDS'
+  if (props.side === 'disc') {
+    return t('resourcesSpokeCalculator.calculator.schematic.sideMark.disc')
+  }
+  return props.wheel === 'front'
+    ? t('resourcesSpokeCalculator.calculator.schematic.sideMark.frontNonDisc')
+    : t('resourcesSpokeCalculator.calculator.schematic.sideMark.rearNonDisc')
 })
 const isDiscSide = computed(() => props.side === 'disc')
 const arrowMarkerId = computed(() => `spoke-wheel-${props.wheel}-${props.side}-arrow`)

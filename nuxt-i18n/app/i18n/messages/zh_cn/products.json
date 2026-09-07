@@ -33,6 +33,12 @@
     "quantity": "Quantity",
     "decreaseQuantity": "Decrease quantity",
     "increaseQuantity": "Increase quantity",
-    "notFound": "Product not found"
+    "notFound": "Product not found",
+    "signatureNote": "订单总额达到 750 美元或以上时，配送需要收件人签名。",
+    "madeToOrder": {
+      "title": "定制生产",
+      "description": "该商品会在订单确认后开始生产，生产时间会叠加到物流时间，预计排期将随订单确认。",
+      "cancellation": "仅可在生产或材料下料开始前申请取消。生产开始后，取消可能受限，并可能产生定制处理费用。"
+    }
   }
 }

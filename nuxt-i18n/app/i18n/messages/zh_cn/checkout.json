@@ -23,11 +23,20 @@
       "paymentUnavailable": "此支付方式暂时不可用。",
       "paymentPending": "支付暂未完成，请稍后查看订单状态。",
       "orderSuccess": "订单提交成功！",
-      "orderFailed": "订单提交失败，请重试"
+      "orderFailed": "订单提交失败，请重试",
+      "emailRequired": "Add an email address to your account before checkout."
     }
   },
   "order": {
     "itemFallback": "商品"
+  },
+  "fulfillment": {
+    "title": "履约与配送",
+    "madeToOrder": "购物车中包含定制生产商品。支付确认后开始排产，生产时间会叠加到物流时间。",
+    "cancellation": "仅可在生产或材料下料开始前申请取消。生产开始后，取消可能受限，并可能产生定制处理费用。",
+    "signature": "订单总额达到 750 美元或以上时，配送需要签名收货。",
+    "confirmation": "我已了解本订单的生产、取消、配送和签名收货要求。",
+    "confirmRequired": "请先确认定制订单和配送要求，再继续。"
   },
   "payment": {
     "card": {

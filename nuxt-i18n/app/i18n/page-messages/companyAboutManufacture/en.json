@@ -1,0 +1,16 @@
+{
+  "sections": {
+    "rimBuild": {
+      "title": "1. RIM BUILD",
+      "body": "Rim builds combine the selected rim profile, drilling pattern, surface finish, and inspection requirements into one controlled production flow."
+    },
+    "wheelsetBuild": {
+      "title": "2. WHEELSET BUILD",
+      "body": "Wheelset builds coordinate rims, hubs, spokes, nipples, and lacing details so the finished set meets the requested fit and performance targets."
+    },
+    "carbonSpokeBuild": {
+      "title": "3. CARBON SPOKE BUILD",
+      "body": "Carbon spoke builds require controlled preparation, careful tension management, and final checks to maintain reliable performance across the complete wheel system."
+    }
+  }
+}

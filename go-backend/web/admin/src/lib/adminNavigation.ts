@@ -83,6 +83,7 @@ export const adminNavigationItems: AdminNavigationItem[] = [
       { id: 'catalog-categories', path: '/catalog/categories', routeName: 'CatalogProductCategories', label: '商品分类' },
       { id: 'catalog-templates', path: '/catalog/templates', routeName: 'CatalogProductTemplates', label: '商品规格模板' },
       { id: 'catalog-information-templates', path: '/catalog/information-templates', routeName: 'CatalogProductInformationTemplates', label: '产品信息模板' },
+      { id: 'catalog-fulfillment-requirements', path: '/catalog/fulfillment-requirements', routeName: 'CatalogProductFulfillmentRequirements', label: '产品履约要求', icon: ShieldCheck },
       { id: 'catalog-customs-classifications', path: '/catalog/customs-classifications', routeName: 'CatalogCustomsClassifications', label: '清关资料中心', icon: FileSearch },
       { id: 'catalog-home-main-products', path: '/catalog/home-main-products', routeName: 'CatalogHomeMainProducts', label: '首页主力产品', icon: Package, permission: 'content:view' },
     ],
@@ -194,6 +195,7 @@ export const adminNavigationItems: AdminNavigationItem[] = [
     children: [
       { id: 'orders-list', path: '/orders/list', routeName: 'OrdersList', label: '订单列表' },
       { id: 'orders-disputes', path: '/orders/disputes', routeName: 'OrdersDisputes', label: '拒付订单' },
+      { id: 'orders-evidence', path: '/orders/evidence', routeName: 'OrdersEvidence', label: '履约证据' },
       { id: 'orders-after-sales', path: '/orders/after-sales', routeName: 'AfterSalesCases', label: '退换货管理' },
     ],
   },

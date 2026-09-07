@@ -4,10 +4,11 @@
     <!-- Hero Section -->
     <section class="relative text-center">
       <h2 class="text-2xl md:text-3xl font-bold tz-text-primary mb-4 tracking-tight">
-        Certified <span class="text-emerald-600">Quality & Safety</span>
+        {{ t('companyCertificates.hero.title') }}
+        <span class="text-emerald-600">{{ t('companyCertificates.hero.highlight') }}</span>
       </h2>
       <p class="tz-text-secondary max-w-3xl mx-auto text-base md:text-lg leading-relaxed font-light">
-        Our products are UCI approved and exceed ISO 4210 international standards, ensuring ultimate safety for every ride.
+        {{ t('companyCertificates.hero.description') }}
       </p>
     </section>
 
@@ -19,11 +20,11 @@
             <div class="p-4 md:p-12 flex flex-col justify-center">
                 <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full tz-surface-subtle border tz-border-subtle w-fit mb-6">
                    <div class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
-                   <span class="text-xs font-semibold tz-text-secondary tracking-wider uppercase">Official Certification</span>
+                   <span class="text-xs font-semibold tz-text-secondary tracking-wider uppercase">{{ t('companyCertificates.uci.status') }}</span>
                 </div>
-                <h3 class="text-2xl md:text-3xl font-bold tz-text-primary mb-4">UCI Approved Wheels</h3>
+                <h3 class="text-2xl md:text-3xl font-bold tz-text-primary mb-4">{{ t('companyCertificates.uci.title') }}</h3>
                 <p class="tz-text-secondary mb-6 leading-relaxed text-sm md:text-base">
-                    Our wheels have passed the stringent impact tests required by the Union Cycliste Internationale (UCI). They are fully approved for use in all UCI-sanctioned road, track, and cyclo-cross races.
+                    {{ t('companyCertificates.uci.description') }}
                 </p>
                  <ul class="space-y-3 mb-8">
                     <li v-for="item in uciModels" :key="item" class="flex items-center gap-3">
@@ -32,7 +33,7 @@
                     </li>
                  </ul>
                  <a href="https://www.uci.org" target="_blank" rel="noopener" class="inline-flex items-center gap-2 text-emerald-600 hover:text-emerald-700 font-semibold transition-colors text-sm group w-fit">
-                    <span>View on UCI Website</span>
+                     <span>{{ t('companyCertificates.uci.viewWebsite') }}</span>
                     <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
                  </a>
             </div>
@@ -48,9 +49,9 @@
                         <span class="text-2xl font-black tracking-widest tz-text-muted">UCI</span>
                     </div>
                     <div class="w-48 h-48 mx-auto rounded-full border-4 tz-border-subtle bg-black/20 shadow-lg relative group-hover:scale-105 transition-transform duration-700 flex items-center justify-center">
-                        <div class="tz-text-muted tz-micro-label uppercase tracking-widest">
-                           UCI Approved<br>Sticker
-                        </div>
+                         <div class="tz-text-muted tz-micro-label uppercase tracking-widest whitespace-pre-line">
+                            {{ t('companyCertificates.uci.sticker') }}
+                         </div>
                    </div>
                </div>
             </div>
@@ -61,20 +62,20 @@
     <!-- Standards & Certificates Grid -->
     <section class="max-w-none w-full">
         <div class="text-center mb-6">
-            <h3 class="text-xl md:text-2xl font-bold tz-text-primary mb-3">Global Standards Compliance</h3>
-            <p class="tz-text-secondary text-sm max-w-2xl mx-auto">Verified by leading third-party testing laboratories including SGS and Intertek.</p>
+            <h3 class="text-xl md:text-2xl font-bold tz-text-primary mb-3">{{ t('companyCertificates.standards.title') }}</h3>
+            <p class="tz-text-secondary text-sm max-w-2xl mx-auto">{{ t('companyCertificates.standards.description') }}</p>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <div v-for="(cert, index) in certificates" :key="index" class="group relative bg-[var(--tz-card-surface)] rounded-2xl p-4 md:p-6 border tz-border-subtle hover:border-emerald-300 transition-all duration-300 hover:shadow-lg hover:shadow-emerald-500/5 hover:-translate-y-1">
                 
-                <h4 class="text-lg font-bold tz-text-primary mb-2">{{ cert.title }}</h4>
-                <p class="text-xs tz-text-secondary mb-4 h-10 line-clamp-2">{{ cert.description }}</p>
+                <h4 class="text-lg font-bold tz-text-primary mb-2">{{ t(`companyCertificates.standards.certificates.${cert.key}.title`) }}</h4>
+                <p class="text-xs tz-text-secondary mb-4 h-10 line-clamp-2">{{ t(`companyCertificates.standards.certificates.${cert.key}.description`) }}</p>
                 
                 <div class="flex items-center justify-between mt-auto pt-4 border-t tz-border-subtle">
                     <span class="text-xs font-mono tz-text-muted">{{ cert.code }}</span>
                     <button class="text-xs font-semibold tz-text-primary tz-surface-panel hover:tz-surface-panel px-3 py-1.5 rounded-lg transition-colors cursor-not-allowed opacity-50">
-                        View Report
+                        {{ t('companyCertificates.standards.viewReport') }}
                     </button>
                 </div>
             </div>
@@ -88,26 +89,26 @@
              <div class="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-lg bg-emerald-50 blur-[80px] pointer-events-none"></div>
              
              <div class="relative z-10">
-                 <h3 class="text-xl font-bold tz-text-primary mb-4">In-House Standard</h3>
+                 <h3 class="text-xl font-bold tz-text-primary mb-4">{{ t('companyCertificates.internal.title') }}</h3>
                  <p class="tz-text-secondary text-sm leading-relaxed mb-6">
-                     We don't just meet standards; we set them. Our internal testing protocols are rigorous, subjecting simulated road conditions to forces <span class="text-emerald-600 font-bold">120% - 150%</span> higher than ISO 4210 requirements.
+                     {{ t('companyCertificates.internal.bodyBefore') }}<span class="text-emerald-600 font-bold">{{ t('companyCertificates.internal.bodyHighlight') }}</span>{{ t('companyCertificates.internal.bodyAfter') }}
                  </p>
                  <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                      <div class="p-3 rounded-xl bg-black/20 border tz-border-strong/5">
                          <div class="text-2xl font-bold tz-text-primary mb-1">100+</div>
-                         <div class="tz-micro-label tz-text-secondary uppercase tracking-wider">Test Cycles</div>
+                         <div class="tz-micro-label tz-text-secondary uppercase tracking-wider">{{ t('companyCertificates.internal.stats.testCycles') }}</div>
                      </div>
                      <div class="p-3 rounded-xl bg-black/20 border tz-border-strong/5">
                          <div class="text-2xl font-bold tz-text-primary mb-1">100%</div>
-                         <div class="tz-micro-label tz-text-secondary uppercase tracking-wider">QC Inspection</div>
+                         <div class="tz-micro-label tz-text-secondary uppercase tracking-wider">{{ t('companyCertificates.internal.stats.qcInspection') }}</div>
                      </div>
                       <div class="p-3 rounded-xl bg-black/20 border tz-border-strong/5">
-                         <div class="text-2xl font-bold tz-text-primary mb-1">3 Year</div>
-                         <div class="tz-micro-label tz-text-muted uppercase tracking-wider">Warranty</div>
+                         <div class="text-2xl font-bold tz-text-primary mb-1">{{ t('companyCertificates.internal.stats.warrantyValue') }}</div>
+                         <div class="tz-micro-label tz-text-muted uppercase tracking-wider">{{ t('companyCertificates.internal.stats.warranty') }}</div>
                      </div>
                       <div class="p-3 rounded-xl bg-black/20 border tz-border-strong/5">
                          <div class="text-2xl font-bold tz-text-primary mb-1">24/7</div>
-                         <div class="tz-micro-label tz-text-secondary uppercase tracking-wider">Support</div>
+                         <div class="tz-micro-label tz-text-secondary uppercase tracking-wider">{{ t('companyCertificates.internal.stats.support') }}</div>
                      </div>
                  </div>
              </div>
@@ -118,6 +119,19 @@
 </template>
 
 <script setup lang="ts">
+import { watch } from 'vue'
+import { useI18n } from '#imports'
+import { usePageMessages } from '~/composables/usePageMessages'
+
+const { locale, t } = useI18n()
+const { loadPageMessages } = usePageMessages('companyCertificates')
+
+await loadPageMessages(locale.value)
+
+watch(locale, (nextLocale) => {
+  void loadPageMessages(nextLocale)
+})
+
 const uciModels = [
     'PRO 50 Disc',
     'ULTRA 45 Rim',
@@ -127,18 +141,15 @@ const uciModels = [
 
 const certificates = [
     {
-        title: 'ISO 4210-7:2014',
-        description: 'Safety requirements for bicycles - Part 7: Wheels and rims test methods.',
+        key: 'iso',
         code: 'ISO-4210',
     },
     {
-        title: 'SGS Impact Test',
-        description: 'Vertical impact test with energy levels exceeding standard requirements.',
+        key: 'sgs',
         code: 'SGS-IMP-2024',
     },
     {
-        title: 'Intertek Fatigue Test',
-        description: 'Dynamic fatigue testing ensuring long-term durability and reliability.',
+        key: 'intertek',
         code: 'ITK-FAT-2024',
     }
 ]

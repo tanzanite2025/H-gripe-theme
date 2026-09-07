@@ -371,6 +371,16 @@ export default defineNuxtConfig({
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' }
       ],
+      link: [
+        {
+          key: 'storefront-font-preload-latin',
+          rel: 'preload',
+          href: '/fonts/MapleUI-Latin.00af3fec5b34.woff2',
+          as: 'font',
+          type: 'font/woff2',
+          crossorigin: 'anonymous',
+        },
+      ],
       script: [
         {
           src: '/zod-global-config.js',

@@ -28,6 +28,14 @@ func TestDeriveStorefrontURLIssueDefinitions(t *testing.T) {
 			expected: urlmanagementdomain.URLIssueTypeStaleRoute,
 		},
 		{
+			name: "stale route does not reuse a historical not found check",
+			entry: seodomain.StorefrontRouteCatalogEntry{
+				EntryStatus:     seodomain.RouteEntryStatusStale,
+				LastCheckStatus: seodomain.RouteCheckStatusNotFound,
+			},
+			expected: urlmanagementdomain.URLIssueTypeStaleRoute,
+		},
+		{
 			name: "alias redirect chain remains actionable",
 			entry: seodomain.StorefrontRouteCatalogEntry{
 				IsAlias:         true,
@@ -68,5 +76,18 @@ func TestDeriveStorefrontURLIssueDefinitions(t *testing.T) {
 			}
 			t.Fatalf("expected issue %q, got %#v", tt.expected, definitions)
 		})
+	}
+}
+
+func TestStaleRouteOnlyProducesStaleIssue(t *testing.T) {
+	definitions := deriveStorefrontURLIssueDefinitions(seodomain.StorefrontRouteCatalogEntry{
+		EntryStatus:     seodomain.RouteEntryStatusStale,
+		LastCheckStatus: seodomain.RouteCheckStatusNotFound,
+	})
+	if len(definitions) != 1 {
+		t.Fatalf("expected one stale issue definition, got %#v", definitions)
+	}
+	if definitions[0].issueType != urlmanagementdomain.URLIssueTypeStaleRoute {
+		t.Fatalf("issue type = %q, want %q", definitions[0].issueType, urlmanagementdomain.URLIssueTypeStaleRoute)
 	}
 }

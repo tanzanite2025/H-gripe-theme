@@ -1,0 +1,44 @@
+{
+  "title": "会员等级与积分规则",
+  "intro": "查看会员等级、折扣权益、积分获取、积分兑换、邀请奖励和签到规则。",
+  "seoTitle": "会员等级与积分规则",
+  "seoDescription": "查看会员等级、积分获取规则、兑换比例、邀请奖励和每日签到奖励。",
+  "feedbackTitle": "分享您对会员等级和积分规则的反馈",
+  "feedbackSubtitle": "告诉我们等级权益、积分获取、兑换比例、邀请奖励或签到规则是否清楚。",
+  "levels": {
+    "title": "会员等级",
+    "header": {
+      "level": "等级",
+      "pointsRequired": "所需积分",
+      "discountRate": "折扣率"
+    },
+    "rows": {
+      "ordinary": "普通",
+      "bronze": "铜牌",
+      "silver": "银牌",
+      "gold": "金牌",
+      "platinum": "铂金",
+      "diamond": "钻石"
+    }
+  },
+  "points": {
+    "title": "积分规则",
+    "pointValueSingular": "{points} 积分",
+    "pointsValue": "{points} 积分",
+    "notConfigured": "未配置",
+    "purchaseEarn": "订单完成返积分",
+    "purchaseEarnRule": "订单完成后，按优惠后的商品成交金额每 1 {currency} 返 {points}",
+    "purchaseEarnDisabled": "消费返积分未开启",
+    "invite": "邀请新用户",
+    "redemptionDisplayRule": "{points} = {currency} {amount}",
+    "redemptionDisabled": "积分兑换未开启",
+    "checkin": "每日签到",
+    "checkinBaseRule": "每次签到 {base}",
+    "checkinMaxRule": "最高 {max}",
+    "checkinStreakRule": "连续签到每 {interval} 天额外 +{bonus}",
+    "checkinDisabled": "每日签到积分未开启",
+    "referralDisplayRule": "邀请人获得 {referrer}；被邀请人获得 {referee}",
+    "referralDisabled": "邀请奖励未开启",
+    "redeem": "兑换比例"
+  }
+}

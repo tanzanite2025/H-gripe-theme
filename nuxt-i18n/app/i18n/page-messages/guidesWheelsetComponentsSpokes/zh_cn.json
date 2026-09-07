@@ -1,0 +1,256 @@
+{
+  "tabs": {
+    "basic": "基础概念",
+    "choose": "选择辐条"
+  },
+  "basic": {
+    "title": "基础概念",
+    "intro": "了解辐条尺寸、材质和典型使用场景，是打造符合骑行风格且可靠轮组的关键。",
+    "profilesTitle": "常见形状与类型",
+    "profiles": {
+      "comparisonAlt": "J 弯与直拉自行车辐条对比",
+      "comparisonCaption": "J 弯（经典）与直拉",
+      "shapesAlt": "不同形状和规格的 Sapim 不锈钢辐条示例",
+      "shapesCaption": "直条、变径和空气动力学辐条对比"
+    },
+    "brandsTitle": "主要品牌与定位",
+    "brands": {
+      "dtSwiss": {
+        "name": "DT Swiss（瑞士）",
+        "body": "以稳定的制造工艺和完整的产品矩阵（直条、变径、空气动力学）著称，并提供完整的工程支持。",
+        "button": "查看 DT Swiss 辐条"
+      },
+      "sapim": {
+        "name": "Sapim（比利时）",
+        "body": "高端空气动力学辐条的领先品牌（例如 CX-Ray），以轻量性能和出色的疲劳寿命闻名。",
+        "button": "查看 Sapim 辐条"
+      },
+      "pillar": {
+        "name": "Pillar（中国台湾）",
+        "body": "具备较高的性价比，产品覆盖加固型（PSR）设计，适用于定制和批量生产。",
+        "button": "查看 Pillar 辐条"
+      },
+      "mac": {
+        "name": "Mac / CNSpoke",
+        "body": "供应链响应快，覆盖多种类型，在不同应用中平衡成本和性能。",
+        "button": "查看 Mac / CNSpoke"
+      },
+      "yt": {
+        "name": "YT 辐条（中国）",
+        "body": "供应链响应快，适合平衡成本和性能。",
+        "button": "查看 YT 辐条"
+      },
+      "carbon": {
+        "name": "碳纤维辐条",
+        "body": "轻量性能的顶点，追求极致响应和刚性，大幅降低旋转重量。",
+        "button": "查看碳纤维辐条"
+      }
+    },
+    "typesTitle": "辐条类型",
+    "types": {
+      "straight": {
+        "title": "等径辐条",
+        "specs": "常见规格为 14G（2.0mm）、13G（2.3mm）。",
+        "features": "强度余量高、成本低、维护容易。",
+        "examples": "DT Champion、Sapim Leader。",
+        "use": "通勤、旅行、货运、高张力驱动侧。"
+      },
+      "butted": {
+        "title": "双变径/三变径",
+        "specs": "例如 2.0-1.8-2.0mm、2.0-1.5-2.0mm。",
+        "features": "重量更轻，中段可弯曲，疲劳耐受更好。",
+        "examples": "DT Competition/Revolution、Sapim Race/Laser。",
+        "use": "耐力公路、XC/Gravel、多用途耐用轮组。"
+      },
+      "aero": {
+        "title": "扁辐条 / 空气动力学辐条",
+        "specs": "扁平厚度约 0.9-1.0mm，宽度 2.0-2.3mm（计时赛可更宽）。",
+        "features": "空气动力学表现好，更容易控制扭矩并防止辐条跟转。",
+        "examples": "Sapim CX-Ray、DT Aerolite、Pillar PSR X-TRA。",
+        "use": "公路竞赛、碟刹高张力、气动车圈。"
+      }
+    },
+    "interfacesTitle": "接口形式",
+    "interfaces": {
+      "jBend": {
+        "title": "J 弯",
+        "body": "通用性强、标准化、容易采购。"
+      },
+      "straightPull": {
+        "title": "直拉",
+        "body": "没有肘部应力，编制速度快，但需要专用花鼓。"
+      },
+      "nipples": {
+        "title": "辐条帽",
+        "body": "黄铜更耐用，铝合金更轻，建议配合垫圈。"
+      }
+    },
+    "materialTitle": "材质对比",
+    "disclaimerLabel": "注意",
+    "disclaimer": "以下比较反映不同辐条材质的相对性能特征。每种材质都可能适合不同应用场景，列出的优缺点并不是绝对判断，也不代表缺陷分类。",
+    "materials": {
+      "stainless": {
+        "title": "不锈钢",
+        "body": "目前市场上最主流、使用最广泛的辐条材质，在耐用性和成本之间取得了最佳平衡。",
+        "marketTitle": "市场格局",
+        "marketBody": "如基础概念所述，不锈钢辐条市场由设定品质标杆的两大品牌 DT Swiss 和 Sapim 主导，Pillar 等品牌则提供有竞争力的高性价比替代方案。这些主要品牌的主力产品都主要使用高等级不锈钢（例如 18/8 或专有合金）。",
+        "pros": [
+          "高强度与高耐用性",
+          "出色的耐腐蚀性",
+          "性价比高",
+          "韧性好（逐渐变形）"
+        ],
+        "cons": [
+          "比碳纤维/钛合金更重"
+        ],
+        "bestFor": "几乎所有自行车，从通勤车到专业山地/公路车。"
+      },
+      "carbon": {
+        "title": "碳纤维",
+        "badge": "高端",
+        "body": "用于高端性能轮组，能够大幅减重并提供高刚性。",
+        "pros": [
+          "超轻（减重 100g 以上）",
+          "刚性和加速性能出色",
+          "吸收振动"
+        ],
+        "cons": [
+          "价格昂贵",
+          "侧向冲击耐受性较差",
+          "维护更困难"
+        ],
+        "bestFor": "高端公路竞赛、计时赛和极致轻量化轮组。"
+      },
+      "titanium": {
+        "title": "钛合金",
+        "badge": "少见",
+        "body": "介于钢和碳纤维之间，强度重量比高且不会生锈。",
+        "pros": [
+          "重量轻",
+          "骑行质感顺滑",
+          "不生锈（耐腐蚀）"
+        ],
+        "cons": [
+          "价格非常昂贵",
+          "供应有限"
+        ],
+        "bestFor": "定制轮组以及重视舒适度和外观的骑行者。"
+      },
+      "aluminum": {
+        "title": "铝合金",
+        "badge": "少见",
+        "body": "部分制造商（例如 Campagnolo）会使用，重量很轻，但可能存在使用限制。",
+        "pros": [
+          "非常轻",
+          "刚性高"
+        ],
+        "cons": [
+          "容易疲劳",
+          "存在腐蚀问题",
+          "专有规格（难以替换）"
+        ],
+        "bestFor": "特定的工厂竞赛轮组。"
+      }
+    },
+    "pros": "优点",
+    "cons": "缺点",
+    "bestForLabel": "适合",
+    "conclusion": "最终选择哪种材质取决于预算、骑行风格，以及重量、刚性和舒适度等具体性能需求。"
+  },
+  "choose": {
+    "title": "辐条选型矩阵",
+    "intro": "比较我们支持的辐条型号，为你的组装目标找到合适的选择，无论是最大耐用性、轻量性能还是空气动力学效率。",
+    "headers": {
+      "model": "品牌 / 型号",
+      "type": "类型",
+      "weight": "重量",
+      "section": "截面（mm）",
+      "details": "详情"
+    },
+    "type": {
+      "straight": "等径",
+      "butted": "变径",
+      "aero": "空气动力学"
+    },
+    "top": "推荐",
+    "comingSoon": "即将推出",
+    "rows": [
+      {
+        "name": "SAPIM Leader",
+        "type": "straight",
+        "weight": "6.8g",
+        "section": "2.0",
+        "details": "不锈钢（18/8）。强度：1080-1180 N/mm²。耐用的等径辐条选择。"
+      },
+      {
+        "name": "SAPIM Race",
+        "type": "butted",
+        "weight": "5.7g",
+        "section": "2.0 - 1.8 - 2.0",
+        "details": "强度：1300 N/mm²。经典 Competition 的升级版本，疲劳适应性好。"
+      },
+      {
+        "name": "SAPIM D-Light",
+        "type": "butted",
+        "weight": "4.8g",
+        "section": "2.0 - 1.65 - 2.0",
+        "details": "强度：1370 N/mm²。为高品质山地/碟刹轮组设计，强度最大、重量最小。"
+      },
+      {
+        "name": "SAPIM CX-Sprint",
+        "type": "aero",
+        "weight": "5.2g",
+        "section": "2.25 x 1.25",
+        "details": "强度：1430 N/mm²。扁辐条设计，适合驱动侧应用，刚性高。"
+      },
+      {
+        "name": "SAPIM CX-Ray",
+        "type": "aero",
+        "weight": "4.4g",
+        "section": "0.9 x 2.2",
+        "details": "强度：1600 N/mm²。行业标杆，轻如钛、强如钢，疲劳寿命最高。",
+        "top": true
+      },
+      {
+        "name": "SAPIM Super-CX",
+        "type": "aero",
+        "weight": "3.6g",
+        "section": "0.9 x 2.0",
+        "details": "强度：1430 N/mm²。最轻的不锈钢辐条，适合打造超轻轮组。"
+      },
+      {
+        "name": "DT Swiss Comp Race",
+        "type": "butted",
+        "weight": "5.7g",
+        "section": "2.0 - 1.6 - 2.0",
+        "details": "即将推出",
+        "comingSoon": true
+      },
+      {
+        "name": "YT Aero",
+        "type": "aero",
+        "weight": "即将推出",
+        "section": "即将推出",
+        "details": "即将推出",
+        "comingSoon": true
+      },
+      {
+        "name": "碳纤维辐条",
+        "type": "aero",
+        "weight": "即将推出",
+        "section": "即将推出",
+        "details": "专有碳纤维制造工艺，具体刚性约为钢的 3 倍。",
+        "carbon": true,
+        "comingSoon": true
+      }
+    ],
+    "weightTitle": "重量计算",
+    "weightBody": "列表重量为典型 64 根（2 个轮组、32H）以及 260mm-270mm 长度下的估算值。",
+    "customTitle": "定制请求",
+    "customBody": "需要列表之外的特定辐条吗？我们可以根据需求采购 Sapim CX-Ray 或其他高端选项。",
+    "helpTitle": "需要辐条长度帮助？",
+    "helpBody": "如果你准备购买单独的替换辐条或重新编制旧轮组，可能需要辐条长度计算方面的帮助。",
+    "calculator": "辐条计算器",
+    "liveChat": "在线聊天"
+  }
+}

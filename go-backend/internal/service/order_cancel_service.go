@@ -84,6 +84,12 @@ func validateOrderCancellation(o *order.Order) error {
 	if o == nil {
 		return ErrOrderNotFound
 	}
+	if orderRequiresProduction(o) {
+		switch order.NormalizeProductionStatus(o.ProductionStatus) {
+		case order.ProductionStatusStarted, order.ProductionStatusCompleted:
+			return ErrProductionStartedCancellationNotAllowed
+		}
+	}
 	if o.Status == "paid" || o.PaymentStatus == "paid" {
 		return ErrPaidOrderCancellationNotAllowed
 	}

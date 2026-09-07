@@ -1,0 +1,64 @@
+{
+  "title": "Tubeless Installation Guide",
+  "intro": "The tubeless system relies on an airtight seal between the tire, rim, and valve, replacing the traditional inner tube. The process involves three main stages: installation, sealant filling, and inflation.",
+  "actions": {
+    "viewAccessories": "View Required Accessories"
+  },
+  "essential": {
+    "title": "Essential Components",
+    "images": {
+      "tirePadAlt": "Bicycle tubeless tire pad",
+      "tirePadLabel": "Tire pad",
+      "sealantAlt": "Bicycle cycling sealant",
+      "sealantLabel": "Sealant",
+      "valveAlt": "Bicycle tubeless valve",
+      "valveLabel": "Tubeless valve"
+    }
+  },
+  "steps": {
+    "preparation": {
+      "title": "Preparation & Rim Taping",
+      "items": {
+        "0": "Clean the rim bed thoroughly.",
+        "1": "Apply tubeless tape tightly, covering the spoke holes.",
+        "2": "Overlap the tape by about 10 cm at the valve hole.",
+        "3": "Pierce a small hole for the valve and tighten the nut by hand only."
+      },
+      "images": {
+        "tapingAlt": "Taping the rim",
+        "valveHoleAlt": "Valve hole preparation",
+        "overlapAlt": "Tape overlap"
+      }
+    },
+    "install": {
+      "title": "Install the Tire",
+      "body": "Install the tire like a standard clincher. Push the bead into the center channel, or drop center, of the rim to make mounting easier. Massage the tire to ensure even seating.",
+      "proTipTitle": "Pro Tip",
+      "proTip": "Use soapy water or mounting fluid on the bead to help it slip into place.",
+      "images": {
+        "beadAlt": "Installing tire bead",
+        "seatingAlt": "Seating the tire",
+        "valveCheckAlt": "Valve check"
+      }
+    },
+    "sealant": {
+      "title": "Inject Sealant",
+      "items": {
+        "0": "Remove the valve core.",
+        "1": "Inject about 30-60 ml of road sealant through the valve.",
+        "2": "Re-install the valve core."
+      },
+      "images": {
+        "removeCoreAlt": "Remove valve core",
+        "injectAlt": "Inject sealant",
+        "toolAlt": "Valve tool"
+      }
+    },
+    "inflate": {
+      "title": "Inflate & Shake",
+      "inflate": "Inflate quickly. A pump with a reservoir or CO2 inflator can help snap the beads into place. You should hear a satisfying pop.",
+      "shake": "Shake the wheel to distribute sealant evenly.",
+      "ready": "Ready to Roll!"
+    }
+  }
+}

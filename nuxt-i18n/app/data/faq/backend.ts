@@ -8,7 +8,7 @@ import {
 } from '~/utils/storefrontMedia'
 
 function hasFaqContent(page?: PageFaqData): page is PageFaqData {
-  return Boolean(page?.categories?.some(category => category.items.length > 0))
+  return Boolean(page?.items?.length)
 }
 
 function hasAnyFaqContent(pages?: PageFaqData[]): pages is PageFaqData[] {
@@ -30,12 +30,9 @@ function normalizeFaqPageMedia(
 ): PageFaqData {
   return {
     ...page,
-    categories: page.categories.map(category => ({
-      ...category,
-      items: category.items.map(item => ({
-        ...item,
-        answerImageUrl: normalizeStorefrontMediaUrl(item.answerImageUrl, mediaContext) || undefined,
-      })),
+    items: page.items.map(item => ({
+      ...item,
+      answerImageUrl: normalizeStorefrontMediaUrl(item.answerImageUrl, mediaContext) || undefined,
     })),
   }
 }

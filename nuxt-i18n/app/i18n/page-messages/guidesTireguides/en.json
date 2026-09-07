@@ -1,0 +1,39 @@
+{
+  "title": "Tire Guides",
+  "intro": "Reference charts for common tire and rim sizes.",
+  "feedbackTitle": "Share your feedback about this Tire Guides guide",
+  "tabs": {
+    "size": {
+      "label": "Tire size",
+      "description": "Size charts by tire width, rim range, and fit reference."
+    },
+    "match": {
+      "label": "Match",
+      "description": "Match tires with rim profiles and riding conditions."
+    },
+    "tubeless": {
+      "label": "Tubeless tires",
+      "description": "Tubeless setup notes, sealant basics, and compatibility."
+    },
+    "installation": {
+      "label": "Installation",
+      "description": "Mounting steps and practical installation checks."
+    },
+    "choose": {
+      "label": "How to choose",
+      "description": "Selection tips for terrain, clearance, and use case."
+    },
+    "pressure": {
+      "label": "Tire pressure",
+      "description": "Recommended pressure ranges and adjustment cues."
+    },
+    "innerTube": {
+      "label": "Inner tube",
+      "description": "Tube selection notes, valve types, and sizing basics."
+    }
+  },
+  "drawer": {
+    "query": "Tire products",
+    "error": "Failed to load tire products. Please try again."
+  }
+}

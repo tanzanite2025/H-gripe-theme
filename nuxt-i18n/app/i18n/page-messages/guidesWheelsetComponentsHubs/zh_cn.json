@@ -1,0 +1,132 @@
+{
+  "tabs": {
+    "technology": "技术",
+    "choose": "选择花鼓"
+  },
+  "technology": {
+    "title": "自行车花鼓关键规格",
+    "intro": "了解花鼓的核心规格对于轮组编制和车架兼容性至关重要。",
+    "spokeInterface": {
+      "title": "1. 辐条类型：J 弯与直拉",
+      "jBend": {
+        "title": "J 弯（经典）",
+        "items": [
+          "辐条头部带有弯曲的肘部，用于安装到花鼓法兰。",
+          "优点：便于维护，替换辐条容易找到。",
+          "缺点：外观更传统，肘部会形成应力集中。"
+        ],
+        "images": {
+          "sixBoltAlt": "DT240 六孔 J 弯花鼓",
+          "sixBoltCaption": "六孔 J 弯",
+          "centerLockAlt": "DT240 Center Lock J 弯花鼓",
+          "centerLockCaption": "Center Lock J 弯"
+        }
+      },
+      "straightPull": {
+        "title": "直拉（现代）",
+        "items": [
+          "辐条为直线结构，没有弯曲肘部。",
+          "优点：张力潜力更高，外观简洁。",
+          "缺点：在旅途中更难找到特定规格的替换辐条。"
+        ],
+        "images": {
+          "sixBoltAlt": "DT240 六孔直拉花鼓",
+          "sixBoltCaption": "六孔直拉",
+          "centerLockAlt": "DT240 Center Lock 直拉花鼓",
+          "centerLockCaption": "Center Lock 直拉"
+        }
+      }
+    },
+    "axle": {
+      "title": "车轴标准",
+      "frontTitle": "前花鼓",
+      "frontBody": "快拆（9x100）、12x100（公路/Gravel）、15x100、15x110（Boost）",
+      "rearTitle": "后花鼓",
+      "rearBody": "快拆（135mm）、12x142、12x148（Boost）",
+      "note": "12mm/15mm 筒轴相比快拆可提供更高的刚性。"
+    },
+    "brake": {
+      "title": "刹车接口",
+      "sixBoltTitle": "六孔（IS）",
+      "sixBoltBody": "使用 6 颗 Torx 螺栓固定碟片，通用且坚固。",
+      "centerLockTitle": "Center Lock（CL）",
+      "centerLockBody": "使用花键和锁环连接，安装更快、重量更轻，常见于 Shimano 公路系统。"
+    },
+    "holeCount": {
+      "title": "孔数逻辑",
+      "rows": [
+        {
+          "label": "轻量 / 公路",
+          "value": "20H / 24H"
+        },
+        {
+          "label": "标准山地 / Gravel",
+          "value": "28H / 32H"
+        },
+        {
+          "label": "重载 / 电助力车",
+          "value": "32H / 36H"
+        }
+      ]
+    },
+    "ratchet": {
+      "title": "棘轮啮合",
+      "body": "棘齿数量越多，啮合越快，开始踩踏时的空行程越小。",
+      "levels": {
+        "standard": "标准",
+        "balanced": "均衡",
+        "instant": "即时"
+      }
+    },
+    "freehub": {
+      "title": "塔基兼容性",
+      "body": "HG、MS、XD、XDR、N3W 怎么选？查看我们的详细指南。",
+      "button": "查看指南"
+    }
+  },
+  "choose": {
+    "title": "花鼓选择指南",
+    "intro": "选择合适的花鼓需要在可维护性、性能和兼容性之间取得平衡。",
+    "jBend": {
+      "title": "1. J 弯花鼓",
+      "structureLabel": "结构",
+      "structure": "法兰孔针对带 90° 弯曲肘部的辐条设计。",
+      "advantagesLabel": "优点",
+      "advantages": "传统设计，替换件容易采购，维护方便。",
+      "bestForLabel": "适合",
+      "bestFor": "重视通用性和长期维护便利性的骑行者。",
+      "compatible": "兼容：J 弯辐条"
+    },
+    "straightPull": {
+      "title": "2. 直拉花鼓",
+      "structureLabel": "结构",
+      "structure": "法兰孔针对可直接插入、无需弯曲的辐条设计。",
+      "advantagesLabel": "优点",
+      "advantages": "结构更刚、张力更均匀，具有高性能外观。",
+      "bestForLabel": "适合",
+      "bestFor": "追求刚性和减重的竞赛或高性能用途。",
+      "compatible": "兼容：直拉辐条"
+    },
+    "image": {
+      "alt": "J 弯与直拉花鼓法兰设计对比",
+      "caption": "J 弯（左）与直拉（右）接口"
+    },
+    "holeCount": {
+      "title": "3. 花鼓孔数选择",
+      "lightweightTitle": "轻量（20H / 24H）",
+      "lightweightBody": "重量更轻，主要适用于公路车和爬坡轮组，需要更高的辐条张力和更硬的车圈。",
+      "durabilityTitle": "耐用（28H / 32H）",
+      "durabilityBody": "耐用性更高，适用于山地车、重载或旅行骑行，可将应力分散到更多辐条上。",
+      "principleLabel": "关键原则",
+      "principle": "花鼓孔数必须与车圈孔数完全匹配。"
+    },
+    "notes": {
+      "title": "关键注意事项",
+      "items": [
+        "花鼓类型必须与辐条类型匹配（J 弯对应 J 弯，直拉对应直拉）。",
+        "应根据骑行场景选择孔数：轻量还是耐用。",
+        "高性能轮组通常使用少孔直拉花鼓；耐用型轮组通常使用多孔 J 弯花鼓。"
+      ]
+    }
+  }
+}

@@ -5,7 +5,7 @@
  <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Route Catalog Control</p>
  <h2 class="mt-1 text-sm font-black">URL 来源、索引与可用性筛选</h2>
  <p class="mt-1 text-xs text-muted-foreground">
-          当前显示 {{ paginationTotal }} 条。批量检查最多处理 200 条符合筛选条件的可检查 URL。
+          当前语言 {{ localeLabel }} 显示 {{ paginationTotal }} 条。批量检查只处理当前语言，最多 200 条符合筛选条件的可检查 URL。
         </p>
       </div>
  <div class="shrink-0 text-left text-[10px] font-mono text-muted-foreground xl:text-right">
@@ -14,23 +14,10 @@
       </div>
     </div>
 
- <form class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[minmax(220px,1.5fr)_repeat(5,minmax(120px,1fr))_auto]" @submit.prevent="emit('apply')">
+ <form class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[minmax(220px,1.5fr)_repeat(4,minmax(120px,1fr))_auto]" @submit.prevent="emit('apply')">
  <label class="block space-y-1">
  <span class="block text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">SEARCH / 搜索</span>
         <Input v-model="filters.search" placeholder="标题、路径、slug 或来源键" />
-      </label>
-
- <label class="block space-y-1">
- <span class="block text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">LOCALE / 语言</span>
-        <Select v-model="filters.locale">
-          <SelectTrigger><SelectValue placeholder="全部语言" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">全部语言</SelectItem>
-            <SelectItem v-for="option in localeFilterOptions" :key="option.value" :value="option.value">
-              {{ option.label }}
-            </SelectItem>
-          </SelectContent>
-        </Select>
       </label>
 
  <label class="block space-y-1">
@@ -129,7 +116,7 @@ defineProps<{
   filters: StorefrontRouteCatalogFilters
   stats: StorefrontRouteCatalogStats
   paginationTotal: number
-  localeFilterOptions: Array<{ value: string; label: string }>
+  localeLabel: string
   loading?: boolean
 }>()
 

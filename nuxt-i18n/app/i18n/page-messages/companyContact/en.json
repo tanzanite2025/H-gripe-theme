@@ -1,0 +1,57 @@
+{
+  "title": "Contact Us",
+  "hero": {
+    "title": "Global",
+    "joiner": " ",
+    "highlight": "Connectivity",
+    "description": "From our manufacturing base in Xiamen to our global headquarters in Hong Kong, we are positioned to serve partners worldwide with efficiency and precision."
+  },
+  "serviceEntry": {
+    "eyebrow": "Connect with us",
+    "title": "Start a conversation with our team.",
+    "description": "For product advice, dealer enquiries, OEM/ODM projects, or order support, contact us by email or continue in the service chat. Chat messages are handled in our existing support inbox.",
+    "actions": {
+      "email": {
+        "label": "Email",
+        "unavailable": "Email support"
+      },
+      "chat": {
+        "label": "Online consultation",
+        "value": "Open service chat"
+      }
+    },
+    "panel": {
+      "status": "Support channel available",
+      "title": "Talk to our support team",
+      "description": "Use service chat for a direct conversation with the team, without creating a separate contact form.",
+      "button": "Open service chat"
+    }
+  },
+  "locations": {
+    "hongKong": {
+      "title": "Global Headquarters",
+      "region": "Hong Kong",
+      "description": "Strategic hub for international trade, logistics, and global customer support."
+    },
+    "xiamen": {
+      "title": "Manufacturing & R&D Base",
+      "region": "Xiamen, China",
+      "description": "State-of-the-art facility for carbon fiber layup, precision molding, and rigorous testing."
+    }
+  },
+  "bank": {
+    "title": "Wire Transfer Details (B2B/Wholesale)",
+    "description": "For wholesale partners and OEM/ODM clients.",
+    "secureInfo": "Secure Information",
+    "beneficiaryName": "Beneficiary Name",
+    "bankName": "Bank Name",
+    "accountDetails": "Account & SWIFT Details",
+    "accountDetailsIntro": "For security reasons, full wire transfer details (Account No. & SWIFT) will be provided exclusively in your official ",
+    "proformaInvoice": "Proforma Invoice (PI)",
+    "accountDetailsEnding": ".",
+    "securityNoticeTitle": "SECURITY NOTICE",
+    "securityNoticeBefore": "We will ",
+    "securityNoticeNever": "NEVER",
+    "securityNoticeAfter": " change our bank account via email notification. If you receive any email claiming our bank details have changed, please contact us immediately via phone or WhatsApp for verification before making any payment."
+  }
+}

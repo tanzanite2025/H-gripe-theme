@@ -15,10 +15,32 @@
         </Button>
         <Button :disabled="checking || !canEdit || pagination.total === 0" @click="checkCatalog">
  <CircleCheck :class="['size-4', checking ? 'animate-spin': '']" />
-          检查筛选结果
+          检查当前语言
         </Button>
       </template>
     </AdminPageHeader>
+
+    <div class="overflow-x-auto pb-1">
+      <Tabs
+        :model-value="filters.locale"
+        class="min-w-max"
+        @update:model-value="selectLocale"
+      >
+        <TabsList class="w-max min-w-full flex-nowrap gap-1 rounded-xl border border-border/70 bg-card p-1">
+          <TabsTrigger
+            v-for="language in enabledLanguages"
+            :key="language.code"
+            :value="language.code"
+            class="min-w-20 flex-none px-3 py-1.5 normal-case tracking-normal"
+          >
+            <span class="flex flex-col items-center leading-tight">
+              <span>{{ language.native_name || language.name || language.code }}</span>
+              <span class="font-mono text-[9px] opacity-60">{{ language.code }}</span>
+            </span>
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
+    </div>
 
     <AdminStatsGrid :items="statItems" />
 
@@ -26,7 +48,7 @@
       :filters="filters"
       :stats="stats"
       :pagination-total="pagination.total"
-      :locale-filter-options="localeFilterOptions"
+      :locale-label="selectedLocaleLabel"
       :loading="loading"
  @apply="applyFilters"
       @reset="resetFilters"
@@ -72,6 +94,7 @@ import StorefrontRouteCatalogDetailDialog from '@/components/admin/url-managemen
 import StorefrontRouteCatalogFilterPanel from '@/components/admin/url-management/route-catalog/StorefrontRouteCatalogFilterPanel.vue'
 import StorefrontRouteCatalogTable from '@/components/admin/url-management/route-catalog/StorefrontRouteCatalogTable.vue'
 import { Button } from '@/components/ui/button'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useSupportedLanguages } from '@/composables/useSupportedLanguages'
 import { type RouteCatalogMode, useStorefrontRouteCatalog } from '@/composables/url-management/useStorefrontRouteCatalog'
 import { useAuthStore } from '@/stores/auth'
@@ -84,7 +107,7 @@ const props = withDefaults(defineProps<{
 
 const authStore = useAuthStore()
 const supportedLanguages = useSupportedLanguages()
-const localeFilterOptions = supportedLanguages.localeFilterOptions
+const enabledLanguages = supportedLanguages.enabledLanguages
 const canEdit = authStore.hasPermission('url:edit')
 
 const {
@@ -137,6 +160,15 @@ const statItems = computed(() => [
   { key: 'unchecked', label: '未检查', value: stats.value.unchecked, icon: RefreshCw, tone: stats.value.unchecked ? 'amber' : 'gray' },
   { key: 'duplicate', label: '路径重复', value: stats.value.duplicate, icon: Eye, tone: stats.value.duplicate ? 'amber' : 'gray' },
 ])
+const selectedLocaleLabel = computed(() => supportedLanguages.localeName(filters.locale))
+
+const selectLocale = (locale: string | number): void => {
+  const nextLocale = String(locale)
+  if (!nextLocale || nextLocale === filters.locale) return
+  filters.locale = nextLocale
+  pagination.page = 1
+  void refreshAll()
+}
 
 watch(
   () => props.mode,
@@ -148,6 +180,9 @@ watch(
 
 onMounted(async () => {
   await supportedLanguages.fetchLanguages()
+  if (!filters.locale && supportedLanguages.defaultLocale.value) {
+    filters.locale = supportedLanguages.defaultLocale.value
+  }
   await refreshAll()
 })
 </script>

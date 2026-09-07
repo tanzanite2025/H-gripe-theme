@@ -3,23 +3,29 @@
     <div class="grid gap-6 items-start">
       <section class="spoke-calculator__shell">
         <h2 class="text-xs font-semibold uppercase tracking-[0.18em] tz-text-secondary mb-4">
-          Wheel setup
+          {{ t('resourcesSpokeCalculator.calculator.wheelSetup') }}
         </h2>
 
         <!-- Two-column layout: Front Wheel | Rear Wheel -->
         <div class="grid gap-6 md:grid-cols-2">
           <!-- ========== FRONT WHEEL COLUMN ========== -->
           <div class="spoke-calculator__panel space-y-4">
-            <h3 class="text-sm font-semibold text-[var(--tz-site-accent)] uppercase tracking-wide">Front Wheel</h3>
+            <h3 class="text-sm font-semibold text-[var(--tz-site-accent)] uppercase tracking-wide">
+              {{ t('resourcesSpokeCalculator.calculator.frontWheel') }}
+            </h3>
 
             <div class="spoke-calculator__blueprint-sheet">
               <div class="spoke-calculator__blueprint-sheet-header">
                 <div>
-                  <p class="spoke-calculator__blueprint-eyebrow">Numbered schematic</p>
-                  <h4 class="spoke-calculator__blueprint-title">Front wheel geometry</h4>
+                  <p class="spoke-calculator__blueprint-eyebrow">
+                    {{ t('resourcesSpokeCalculator.calculator.schematic.eyebrow') }}
+                  </p>
+                  <h4 class="spoke-calculator__blueprint-title">
+                    {{ t('resourcesSpokeCalculator.calculator.schematic.frontGeometry') }}
+                  </h4>
                 </div>
                 <p class="spoke-calculator__blueprint-note">
-                  The numbers in the drawing match the table below, so the wheel view stays readable on mobile.
+                  {{ t('resourcesSpokeCalculator.calculator.schematic.frontNote') }}
                 </p>
               </div>
 
@@ -33,8 +39,8 @@
                   <div class="spoke-calculator__legend-row">
                     <div class="spoke-calculator__legend-badge">1</div>
                     <div class="spoke-calculator__legend-heading">
-                      <strong>ERD</strong>
-                      <span>Effective rim diameter</span>
+                      <strong>{{ t('resourcesSpokeCalculator.calculator.schematic.erd.label') }}</strong>
+                      <span>{{ t('resourcesSpokeCalculator.calculator.schematic.erd.description') }}</span>
                     </div>
                     <div class="spoke-calculator__legend-control">
                       <div class="spoke-calculator__unit-field">
@@ -46,7 +52,7 @@
                           max="750"
                           class="spoke-calculator__control spoke-calculator__control--with-unit"
                         />
-                        <span class="spoke-calculator__unit">mm</span>
+                        <span class="spoke-calculator__unit">{{ t('resourcesSpokeCalculator.calculator.results.unit') }}</span>
                       </div>
                     </div>
                   </div>
@@ -54,12 +60,12 @@
                   <div class="spoke-calculator__legend-row spoke-calculator__legend-row--split">
                     <div class="spoke-calculator__legend-badge">2</div>
                     <div class="spoke-calculator__legend-heading">
-                      <strong>Left flange</strong>
-                      <span>PCDL / center distance</span>
+                      <strong>{{ t('resourcesSpokeCalculator.calculator.schematic.leftFlange.label') }}</strong>
+                      <span>{{ t('resourcesSpokeCalculator.calculator.schematic.leftFlange.description') }}</span>
                     </div>
                     <div class="spoke-calculator__legend-fields">
                       <label for="front-blueprint-left-flange-pcd" class="spoke-calculator__legend-field">
-                        <span>PCDL</span>
+                        <span>{{ t('resourcesSpokeCalculator.calculator.schematic.leftFlange.pcd') }}</span>
                         <div class="spoke-calculator__unit-field">
                           <input
                             id="front-blueprint-left-flange-pcd"
@@ -69,11 +75,11 @@
                             max="80"
                             class="spoke-calculator__control spoke-calculator__control--with-unit"
                           />
-                          <span class="spoke-calculator__unit">mm</span>
+                          <span class="spoke-calculator__unit">{{ t('resourcesSpokeCalculator.calculator.results.unit') }}</span>
                         </div>
                       </label>
                       <label for="front-blueprint-left-flange" class="spoke-calculator__legend-field">
-                        <span>Center</span>
+                        <span>{{ t('resourcesSpokeCalculator.calculator.schematic.leftFlange.center') }}</span>
                         <div class="spoke-calculator__unit-field">
                           <input
                             id="front-blueprint-left-flange"
@@ -83,7 +89,7 @@
                             max="60"
                             class="spoke-calculator__control spoke-calculator__control--with-unit"
                           />
-                          <span class="spoke-calculator__unit">mm</span>
+                          <span class="spoke-calculator__unit">{{ t('resourcesSpokeCalculator.calculator.results.unit') }}</span>
                         </div>
                       </label>
                     </div>
@@ -92,12 +98,12 @@
                   <div class="spoke-calculator__legend-row spoke-calculator__legend-row--split">
                     <div class="spoke-calculator__legend-badge">3</div>
                     <div class="spoke-calculator__legend-heading">
-                      <strong>Right flange</strong>
-                      <span>PCDR / center distance</span>
+                      <strong>{{ t('resourcesSpokeCalculator.calculator.schematic.rightFlange.label') }}</strong>
+                      <span>{{ t('resourcesSpokeCalculator.calculator.schematic.rightFlange.description') }}</span>
                     </div>
                     <div class="spoke-calculator__legend-fields">
                       <label for="front-blueprint-right-flange-pcd" class="spoke-calculator__legend-field">
-                        <span>PCDR</span>
+                        <span>{{ t('resourcesSpokeCalculator.calculator.schematic.rightFlange.pcd') }}</span>
                         <div class="spoke-calculator__unit-field">
                           <input
                             id="front-blueprint-right-flange-pcd"
@@ -107,11 +113,11 @@
                             max="80"
                             class="spoke-calculator__control spoke-calculator__control--with-unit"
                           />
-                          <span class="spoke-calculator__unit">mm</span>
+                          <span class="spoke-calculator__unit">{{ t('resourcesSpokeCalculator.calculator.results.unit') }}</span>
                         </div>
                       </label>
                       <label for="front-blueprint-right-flange" class="spoke-calculator__legend-field">
-                        <span>Center</span>
+                        <span>{{ t('resourcesSpokeCalculator.calculator.schematic.rightFlange.center') }}</span>
                         <div class="spoke-calculator__unit-field">
                           <input
                             id="front-blueprint-right-flange"
@@ -121,7 +127,7 @@
                             max="60"
                             class="spoke-calculator__control spoke-calculator__control--with-unit"
                           />
-                          <span class="spoke-calculator__unit">mm</span>
+                          <span class="spoke-calculator__unit">{{ t('resourcesSpokeCalculator.calculator.results.unit') }}</span>
                         </div>
                       </label>
                     </div>
@@ -130,8 +136,8 @@
                   <div class="spoke-calculator__legend-row">
                     <div class="spoke-calculator__legend-badge">4</div>
                     <div class="spoke-calculator__legend-heading">
-                      <strong>Rim offset</strong>
-                      <span>Dish adjustment</span>
+                      <strong>{{ t('resourcesSpokeCalculator.calculator.schematic.rimOffset.label') }}</strong>
+                      <span>{{ t('resourcesSpokeCalculator.calculator.schematic.rimOffset.description') }}</span>
                     </div>
                     <div class="spoke-calculator__legend-control">
                       <div class="spoke-calculator__unit-field">
@@ -145,7 +151,7 @@
                           placeholder="0"
                           class="spoke-calculator__control spoke-calculator__control--with-unit"
                         />
-                        <span class="spoke-calculator__unit">mm</span>
+                        <span class="spoke-calculator__unit">{{ t('resourcesSpokeCalculator.calculator.results.unit') }}</span>
                       </div>
                     </div>
                   </div>
@@ -155,12 +161,16 @@
 
             <div class="spoke-calculator__build-settings">
               <div class="spoke-calculator__build-settings-header">
-                <p class="spoke-calculator__build-settings-title">Build settings</p>
+                <p class="spoke-calculator__build-settings-title">
+                  {{ t('resourcesSpokeCalculator.calculator.buildSettings.title') }}
+                </p>
               </div>
 
               <div class="spoke-calculator__build-settings-grid">
                 <div class="spoke-calculator__setting-field">
-                  <label for="front-spoke-count" class="block text-xs font-medium tz-text-secondary">Spoke count</label>
+                  <label for="front-spoke-count" class="block text-xs font-medium tz-text-secondary">
+                    {{ t('resourcesSpokeCalculator.calculator.buildSettings.spokeCount') }}
+                  </label>
                   <SpokeCalculatorSelect
                     id="front-spoke-count"
                     v-model="frontConfig.spokeCount"
@@ -169,7 +179,9 @@
                 </div>
 
                 <div class="spoke-calculator__setting-field">
-                  <label for="front-lacing" class="block text-xs font-medium tz-text-secondary">Lacing pattern</label>
+                  <label for="front-lacing" class="block text-xs font-medium tz-text-secondary">
+                    {{ t('resourcesSpokeCalculator.calculator.buildSettings.lacingPattern') }}
+                  </label>
                   <SpokeCalculatorSelect
                     id="front-lacing"
                     v-model="frontConfig.crossing"
@@ -178,7 +190,9 @@
                 </div>
 
                 <div class="spoke-calculator__setting-field">
-                  <label for="front-nipple" class="block text-xs font-medium tz-text-secondary">Nipple type</label>
+                  <label for="front-nipple" class="block text-xs font-medium tz-text-secondary">
+                    {{ t('resourcesSpokeCalculator.calculator.buildSettings.nippleType') }}
+                  </label>
                   <SpokeCalculatorSelect
                     id="front-nipple"
                     v-model="frontConfig.nippleType"
@@ -187,7 +201,9 @@
                 </div>
 
                 <div v-if="frontConfig.nippleType === 'hidden'" class="spoke-calculator__setting-field">
-                  <label for="front-nipple-length" class="block text-xs font-medium tz-text-secondary">Nipple length</label>
+                  <label for="front-nipple-length" class="block text-xs font-medium tz-text-secondary">
+                    {{ t('resourcesSpokeCalculator.calculator.buildSettings.nippleLength') }}
+                  </label>
                   <div class="spoke-calculator__unit-field">
                     <input
                       id="front-nipple-length"
@@ -195,52 +211,60 @@
                       type="number"
                       min="0"
                       max="30"
-                      placeholder="e.g. 12"
+                      :placeholder="t('resourcesSpokeCalculator.calculator.buildSettings.nippleLengthPlaceholder')"
                       class="spoke-calculator__control spoke-calculator__control--with-unit"
                     />
-                    <span class="spoke-calculator__unit">mm</span>
+                    <span class="spoke-calculator__unit">{{ t('resourcesSpokeCalculator.calculator.results.unit') }}</span>
                   </div>
                 </div>
 
                 <div class="spoke-calculator__setting-field">
-                  <label for="front-rim-brand" class="block text-xs font-medium tz-text-secondary">Rim Brand</label>
+                  <label for="front-rim-brand" class="block text-xs font-medium tz-text-secondary">
+                    {{ t('resourcesSpokeCalculator.calculator.buildSettings.rimBrand') }}
+                  </label>
                   <SpokeCalculatorSelect
                     id="front-rim-brand"
                     v-model="frontConfig.rimBrandId"
                     :options="rimBrandOptions"
-                    placeholder="Select Brand"
+                    :placeholder="t('resourcesSpokeCalculator.calculator.buildSettings.selectBrand')"
                   />
                 </div>
 
                 <div class="spoke-calculator__setting-field">
-                  <label for="front-rim-model" class="block text-xs font-medium tz-text-secondary">Rim Model</label>
+                  <label for="front-rim-model" class="block text-xs font-medium tz-text-secondary">
+                    {{ t('resourcesSpokeCalculator.calculator.buildSettings.rimModel') }}
+                  </label>
                   <SpokeCalculatorSelect
                     id="front-rim-model"
                     v-model="frontConfig.rimModelId"
                     :disabled="!frontRimModels.length"
                     :options="frontRimModelOptions"
-                    placeholder="Select Model"
+                    :placeholder="t('resourcesSpokeCalculator.calculator.buildSettings.selectModel')"
                   />
                 </div>
 
                 <div class="spoke-calculator__setting-field">
-                  <label for="front-hub-brand" class="block text-xs font-medium tz-text-secondary">Hub Brand</label>
+                  <label for="front-hub-brand" class="block text-xs font-medium tz-text-secondary">
+                    {{ t('resourcesSpokeCalculator.calculator.buildSettings.hubBrand') }}
+                  </label>
                   <SpokeCalculatorSelect
                     id="front-hub-brand"
                     v-model="frontConfig.hubBrandId"
                     :options="hubBrandOptions"
-                    placeholder="Select Brand"
+                    :placeholder="t('resourcesSpokeCalculator.calculator.buildSettings.selectBrand')"
                   />
                 </div>
 
                 <div class="spoke-calculator__setting-field">
-                  <label for="front-hub-model" class="block text-xs font-medium tz-text-secondary">Hub Model</label>
+                  <label for="front-hub-model" class="block text-xs font-medium tz-text-secondary">
+                    {{ t('resourcesSpokeCalculator.calculator.buildSettings.hubModel') }}
+                  </label>
                   <SpokeCalculatorSelect
                     id="front-hub-model"
                     v-model="frontConfig.hubModelId"
                     :disabled="!frontHubModels.length"
                     :options="frontHubModelOptions"
-                    placeholder="Select Model"
+                    :placeholder="t('resourcesSpokeCalculator.calculator.buildSettings.selectModel')"
                   />
                 </div>
               </div>
@@ -250,16 +274,22 @@
 
           <!-- ========== REAR WHEEL COLUMN ========== -->
           <div class="spoke-calculator__panel space-y-4">
-            <h3 class="text-sm font-semibold text-[var(--tz-site-accent)] uppercase tracking-wide">Rear Wheel</h3>
+            <h3 class="text-sm font-semibold text-[var(--tz-site-accent)] uppercase tracking-wide">
+              {{ t('resourcesSpokeCalculator.calculator.rearWheel') }}
+            </h3>
 
             <div class="spoke-calculator__blueprint-sheet">
               <div class="spoke-calculator__blueprint-sheet-header">
                 <div>
-                  <p class="spoke-calculator__blueprint-eyebrow">Numbered schematic</p>
-                  <h4 class="spoke-calculator__blueprint-title">Rear wheel geometry</h4>
+                  <p class="spoke-calculator__blueprint-eyebrow">
+                    {{ t('resourcesSpokeCalculator.calculator.schematic.eyebrow') }}
+                  </p>
+                  <h4 class="spoke-calculator__blueprint-title">
+                    {{ t('resourcesSpokeCalculator.calculator.schematic.rearGeometry') }}
+                  </h4>
                 </div>
                 <p class="spoke-calculator__blueprint-note">
-                  The rear view uses the same numbered layout, so disc and non-disc sides stay easy to compare.
+                  {{ t('resourcesSpokeCalculator.calculator.schematic.rearNote') }}
                 </p>
               </div>
 
@@ -273,8 +303,8 @@
                   <div class="spoke-calculator__legend-row">
                     <div class="spoke-calculator__legend-badge">1</div>
                     <div class="spoke-calculator__legend-heading">
-                      <strong>ERD</strong>
-                      <span>Effective rim diameter</span>
+                      <strong>{{ t('resourcesSpokeCalculator.calculator.schematic.erd.label') }}</strong>
+                      <span>{{ t('resourcesSpokeCalculator.calculator.schematic.erd.description') }}</span>
                     </div>
                     <div class="spoke-calculator__legend-control">
                       <div class="spoke-calculator__unit-field">
@@ -286,7 +316,7 @@
                           max="750"
                           class="spoke-calculator__control spoke-calculator__control--with-unit"
                         />
-                        <span class="spoke-calculator__unit">mm</span>
+                        <span class="spoke-calculator__unit">{{ t('resourcesSpokeCalculator.calculator.results.unit') }}</span>
                       </div>
                     </div>
                   </div>
@@ -294,12 +324,12 @@
                   <div class="spoke-calculator__legend-row spoke-calculator__legend-row--split">
                     <div class="spoke-calculator__legend-badge">2</div>
                     <div class="spoke-calculator__legend-heading">
-                      <strong>Left flange</strong>
-                      <span>PCDL / center distance</span>
+                      <strong>{{ t('resourcesSpokeCalculator.calculator.schematic.leftFlange.label') }}</strong>
+                      <span>{{ t('resourcesSpokeCalculator.calculator.schematic.leftFlange.description') }}</span>
                     </div>
                     <div class="spoke-calculator__legend-fields">
                       <label for="rear-blueprint-left-flange-pcd" class="spoke-calculator__legend-field">
-                        <span>PCDL</span>
+                        <span>{{ t('resourcesSpokeCalculator.calculator.schematic.leftFlange.pcd') }}</span>
                         <div class="spoke-calculator__unit-field">
                           <input
                             id="rear-blueprint-left-flange-pcd"
@@ -309,11 +339,11 @@
                             max="80"
                             class="spoke-calculator__control spoke-calculator__control--with-unit"
                           />
-                          <span class="spoke-calculator__unit">mm</span>
+                          <span class="spoke-calculator__unit">{{ t('resourcesSpokeCalculator.calculator.results.unit') }}</span>
                         </div>
                       </label>
                       <label for="rear-blueprint-left-flange" class="spoke-calculator__legend-field">
-                        <span>Center</span>
+                        <span>{{ t('resourcesSpokeCalculator.calculator.schematic.rightFlange.center') }}</span>
                         <div class="spoke-calculator__unit-field">
                           <input
                             id="rear-blueprint-left-flange"
@@ -323,7 +353,7 @@
                             max="60"
                             class="spoke-calculator__control spoke-calculator__control--with-unit"
                           />
-                          <span class="spoke-calculator__unit">mm</span>
+                          <span class="spoke-calculator__unit">{{ t('resourcesSpokeCalculator.calculator.results.unit') }}</span>
                         </div>
                       </label>
                     </div>
@@ -332,12 +362,12 @@
                   <div class="spoke-calculator__legend-row spoke-calculator__legend-row--split">
                     <div class="spoke-calculator__legend-badge">3</div>
                     <div class="spoke-calculator__legend-heading">
-                      <strong>Right flange</strong>
-                      <span>PCDR / center distance</span>
+                      <strong>{{ t('resourcesSpokeCalculator.calculator.schematic.rightFlange.label') }}</strong>
+                      <span>{{ t('resourcesSpokeCalculator.calculator.schematic.rightFlange.description') }}</span>
                     </div>
                     <div class="spoke-calculator__legend-fields">
                       <label for="rear-blueprint-right-flange-pcd" class="spoke-calculator__legend-field">
-                        <span>PCDR</span>
+                        <span>{{ t('resourcesSpokeCalculator.calculator.schematic.rightFlange.pcd') }}</span>
                         <div class="spoke-calculator__unit-field">
                           <input
                             id="rear-blueprint-right-flange-pcd"
@@ -347,11 +377,11 @@
                             max="80"
                             class="spoke-calculator__control spoke-calculator__control--with-unit"
                           />
-                          <span class="spoke-calculator__unit">mm</span>
+                          <span class="spoke-calculator__unit">{{ t('resourcesSpokeCalculator.calculator.results.unit') }}</span>
                         </div>
                       </label>
                       <label for="rear-blueprint-right-flange" class="spoke-calculator__legend-field">
-                        <span>Center</span>
+                        <span>{{ t('resourcesSpokeCalculator.calculator.schematic.rightFlange.center') }}</span>
                         <div class="spoke-calculator__unit-field">
                           <input
                             id="rear-blueprint-right-flange"
@@ -361,7 +391,7 @@
                             max="60"
                             class="spoke-calculator__control spoke-calculator__control--with-unit"
                           />
-                          <span class="spoke-calculator__unit">mm</span>
+                          <span class="spoke-calculator__unit">{{ t('resourcesSpokeCalculator.calculator.results.unit') }}</span>
                         </div>
                       </label>
                     </div>
@@ -370,8 +400,8 @@
                   <div class="spoke-calculator__legend-row">
                     <div class="spoke-calculator__legend-badge">4</div>
                     <div class="spoke-calculator__legend-heading">
-                      <strong>Rim offset</strong>
-                      <span>Dish adjustment</span>
+                      <strong>{{ t('resourcesSpokeCalculator.calculator.schematic.rimOffset.label') }}</strong>
+                      <span>{{ t('resourcesSpokeCalculator.calculator.schematic.rimOffset.description') }}</span>
                     </div>
                     <div class="spoke-calculator__legend-control">
                       <div class="spoke-calculator__unit-field">
@@ -385,7 +415,7 @@
                           placeholder="0"
                           class="spoke-calculator__control spoke-calculator__control--with-unit"
                         />
-                        <span class="spoke-calculator__unit">mm</span>
+                        <span class="spoke-calculator__unit">{{ t('resourcesSpokeCalculator.calculator.results.unit') }}</span>
                       </div>
                     </div>
                   </div>
@@ -395,12 +425,16 @@
 
             <div class="spoke-calculator__build-settings">
               <div class="spoke-calculator__build-settings-header">
-                <p class="spoke-calculator__build-settings-title">Build settings</p>
+                <p class="spoke-calculator__build-settings-title">
+                  {{ t('resourcesSpokeCalculator.calculator.buildSettings.title') }}
+                </p>
               </div>
 
               <div class="spoke-calculator__build-settings-grid">
                 <div class="spoke-calculator__setting-field">
-                  <label for="rear-spoke-count" class="block text-xs font-medium tz-text-secondary">Spoke count</label>
+                  <label for="rear-spoke-count" class="block text-xs font-medium tz-text-secondary">
+                    {{ t('resourcesSpokeCalculator.calculator.buildSettings.spokeCount') }}
+                  </label>
                   <SpokeCalculatorSelect
                     id="rear-spoke-count"
                     v-model="rearConfig.spokeCount"
@@ -409,7 +443,9 @@
                 </div>
 
                 <div class="spoke-calculator__setting-field">
-                  <label for="rear-lacing" class="block text-xs font-medium tz-text-secondary">Lacing pattern</label>
+                  <label for="rear-lacing" class="block text-xs font-medium tz-text-secondary">
+                    {{ t('resourcesSpokeCalculator.calculator.buildSettings.lacingPattern') }}
+                  </label>
                   <SpokeCalculatorSelect
                     id="rear-lacing"
                     v-model="rearConfig.crossing"
@@ -418,7 +454,9 @@
                 </div>
 
                 <div class="spoke-calculator__setting-field">
-                  <label for="rear-nipple" class="block text-xs font-medium tz-text-secondary">Nipple type</label>
+                  <label for="rear-nipple" class="block text-xs font-medium tz-text-secondary">
+                    {{ t('resourcesSpokeCalculator.calculator.buildSettings.nippleType') }}
+                  </label>
                   <SpokeCalculatorSelect
                     id="rear-nipple"
                     v-model="rearConfig.nippleType"
@@ -427,7 +465,9 @@
                 </div>
 
                 <div v-if="rearConfig.nippleType === 'hidden'" class="spoke-calculator__setting-field">
-                  <label for="rear-nipple-length" class="block text-xs font-medium tz-text-secondary">Nipple length</label>
+                  <label for="rear-nipple-length" class="block text-xs font-medium tz-text-secondary">
+                    {{ t('resourcesSpokeCalculator.calculator.buildSettings.nippleLength') }}
+                  </label>
                   <div class="spoke-calculator__unit-field">
                     <input
                       id="rear-nipple-length"
@@ -435,52 +475,60 @@
                       type="number"
                       min="0"
                       max="30"
-                      placeholder="e.g. 12"
+                      :placeholder="t('resourcesSpokeCalculator.calculator.buildSettings.nippleLengthPlaceholder')"
                       class="spoke-calculator__control spoke-calculator__control--with-unit"
                     />
-                    <span class="spoke-calculator__unit">mm</span>
+                    <span class="spoke-calculator__unit">{{ t('resourcesSpokeCalculator.calculator.results.unit') }}</span>
                   </div>
                 </div>
 
                 <div class="spoke-calculator__setting-field">
-                  <label for="rear-rim-brand" class="block text-xs font-medium tz-text-secondary">Rim Brand</label>
+                  <label for="rear-rim-brand" class="block text-xs font-medium tz-text-secondary">
+                    {{ t('resourcesSpokeCalculator.calculator.buildSettings.rimBrand') }}
+                  </label>
                   <SpokeCalculatorSelect
                     id="rear-rim-brand"
                     v-model="rearConfig.rimBrandId"
                     :options="rimBrandOptions"
-                    placeholder="Select Brand"
+                    :placeholder="t('resourcesSpokeCalculator.calculator.buildSettings.selectBrand')"
                   />
                 </div>
 
                 <div class="spoke-calculator__setting-field">
-                  <label for="rear-rim-model" class="block text-xs font-medium tz-text-secondary">Rim Model</label>
+                  <label for="rear-rim-model" class="block text-xs font-medium tz-text-secondary">
+                    {{ t('resourcesSpokeCalculator.calculator.buildSettings.rimModel') }}
+                  </label>
                   <SpokeCalculatorSelect
                     id="rear-rim-model"
                     v-model="rearConfig.rimModelId"
                     :disabled="!rearRimModels.length"
                     :options="rearRimModelOptions"
-                    placeholder="Select Model"
+                    :placeholder="t('resourcesSpokeCalculator.calculator.buildSettings.selectModel')"
                   />
                 </div>
 
                 <div class="spoke-calculator__setting-field">
-                  <label for="rear-hub-brand" class="block text-xs font-medium tz-text-secondary">Hub Brand</label>
+                  <label for="rear-hub-brand" class="block text-xs font-medium tz-text-secondary">
+                    {{ t('resourcesSpokeCalculator.calculator.buildSettings.hubBrand') }}
+                  </label>
                   <SpokeCalculatorSelect
                     id="rear-hub-brand"
                     v-model="rearConfig.hubBrandId"
                     :options="hubBrandOptions"
-                    placeholder="Select Brand"
+                    :placeholder="t('resourcesSpokeCalculator.calculator.buildSettings.selectBrand')"
                   />
                 </div>
 
                 <div class="spoke-calculator__setting-field">
-                  <label for="rear-hub-model" class="block text-xs font-medium tz-text-secondary">Hub Model</label>
+                  <label for="rear-hub-model" class="block text-xs font-medium tz-text-secondary">
+                    {{ t('resourcesSpokeCalculator.calculator.buildSettings.hubModel') }}
+                  </label>
                   <SpokeCalculatorSelect
                     id="rear-hub-model"
                     v-model="rearConfig.hubModelId"
                     :disabled="!rearHubModels.length"
                     :options="rearHubModelOptions"
-                    placeholder="Select Model"
+                    :placeholder="t('resourcesSpokeCalculator.calculator.buildSettings.selectModel')"
                   />
                 </div>
               </div>
@@ -492,7 +540,7 @@
         <!-- Action row -->
         <div class="mt-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between border-t tz-border-subtle pt-4">
           <p class="tz-description tz-text-muted max-w-md">
-            Spoke lengths and the predicted per-spoke tension ratio are derived from the selected wheel geometry. Use measured rim and hub dimensions for a production build.
+            {{ t('resourcesSpokeCalculator.calculator.action.description') }}
           </p>
           <div class="flex items-center gap-3">
             <button
@@ -501,8 +549,8 @@
               :disabled="loading"
               @click="onCalculate"
             >
-              <span v-if="loading">Calculating...</span>
-              <span v-else>Recalculate</span>
+              <span v-if="loading">{{ t('resourcesSpokeCalculator.calculator.action.calculating') }}</span>
+              <span v-else>{{ t('resourcesSpokeCalculator.calculator.action.recalculate') }}</span>
             </button>
             <p v-if="error" class="tz-caption text-rose-400">{{ error }}</p>
           </div>
@@ -511,89 +559,119 @@
         <!-- Spoke lengths (4 result boxes aligned with columns) -->
         <section class="spoke-calculator__results-shell mt-6">
           <h2 class="text-xs font-semibold uppercase tracking-[0.18em] tz-text-secondary mb-3">
-            Spoke lengths
+            {{ t('resourcesSpokeCalculator.calculator.results.title') }}
           </h2>
 
           <p class="tz-description mb-4 tz-text-secondary">
-            Verified catalog lengths are used first. If no verified result matches the current selection, the calculator uses the dimensions above.
+            {{ t('resourcesSpokeCalculator.calculator.results.description') }}
           </p>
 
           <div class="grid gap-4 md:grid-cols-2">
             <!-- Front Wheel Results -->
             <div class="space-y-3">
-              <div class="text-xs font-semibold tz-text-accent uppercase tracking-wide mb-2">Front Wheel</div>
+              <div class="text-xs font-semibold tz-text-accent uppercase tracking-wide mb-2">
+                {{ t('resourcesSpokeCalculator.calculator.frontWheel') }}
+              </div>
                 <div class="grid gap-3 grid-cols-2">
                 <div class="spoke-calculator__result-card px-4 py-3">
                   <div class="mb-1 flex items-center justify-between gap-2">
-                    <span class="tz-compact-label tz-text-muted">Left side</span>
+                    <span class="tz-compact-label tz-text-muted">
+                      {{ t('resourcesSpokeCalculator.calculator.results.leftSide') }}
+                    </span>
                     <span v-if="frontLeftSourceLabel" class="spoke-calculator__source-badge">{{ frontLeftSourceLabel }}</span>
                   </div>
                   <div class="flex items-baseline gap-1">
                     <span class="text-2xl font-semibold text-[var(--tz-site-accent)]">{{ frontLeftDisplay }}</span>
-                    <span v-if="frontLeftDisplay !== '--'" class="text-xs tz-text-muted">mm</span>
+                    <span v-if="frontLeftDisplay !== '--'" class="text-xs tz-text-muted">
+                      {{ t('resourcesSpokeCalculator.calculator.results.unit') }}
+                    </span>
                   </div>
                 </div>
                 <div class="spoke-calculator__result-card px-4 py-3">
                   <div class="mb-1 flex items-center justify-between gap-2">
-                    <span class="tz-compact-label tz-text-muted">Right side</span>
+                    <span class="tz-compact-label tz-text-muted">
+                      {{ t('resourcesSpokeCalculator.calculator.results.rightSide') }}
+                    </span>
                     <span v-if="frontRightSourceLabel" class="spoke-calculator__source-badge">{{ frontRightSourceLabel }}</span>
                   </div>
                   <div class="flex items-baseline gap-1">
                     <span class="text-2xl font-semibold text-[var(--tz-site-accent)]">{{ frontRightDisplay }}</span>
-                    <span v-if="frontRightDisplay !== '--'" class="text-xs tz-text-muted">mm</span>
+                    <span v-if="frontRightDisplay !== '--'" class="text-xs tz-text-muted">
+                      {{ t('resourcesSpokeCalculator.calculator.results.unit') }}
+                    </span>
                   </div>
                 </div>
               </div>
               <div class="spoke-calculator__tension-summary">
                 <div class="flex items-baseline justify-between gap-3">
-                  <span class="tz-compact-label tz-text-muted">Predicted tension ratio</span>
+                  <span class="tz-compact-label tz-text-muted">
+                    {{ t('resourcesSpokeCalculator.calculator.results.predictedTensionRatio') }}
+                  </span>
                   <span class="text-lg font-semibold text-[var(--tz-site-accent)]">{{ formatTensionRatio(frontResult?.tensionRatio) }}</span>
                 </div>
                 <div class="mt-1 tz-caption tz-text-muted">
-                  Left : Right {{ formatDirectionalTensionRatio(frontResult?.tensionRatio) }} · lower side {{ lowerTensionSideLabel(frontResult?.tensionRatio) }}
+                  {{ t('resourcesSpokeCalculator.calculator.results.directionalRatio', {
+                    ratio: formatDirectionalTensionRatio(frontResult?.tensionRatio),
+                    side: lowerTensionSideLabel(frontResult?.tensionRatio),
+                  }) }}
                 </div>
               </div>
             </div>
 
             <!-- Rear Wheel Results -->
             <div class="space-y-3">
-              <div class="text-xs font-semibold tz-text-accent uppercase tracking-wide mb-2">Rear Wheel</div>
+              <div class="text-xs font-semibold tz-text-accent uppercase tracking-wide mb-2">
+                {{ t('resourcesSpokeCalculator.calculator.rearWheel') }}
+              </div>
                 <div class="grid gap-3 grid-cols-2">
                 <div class="spoke-calculator__result-card px-4 py-3">
                   <div class="mb-1 flex items-center justify-between gap-2">
-                    <span class="tz-compact-label tz-text-muted">Left side</span>
+                    <span class="tz-compact-label tz-text-muted">
+                      {{ t('resourcesSpokeCalculator.calculator.results.leftSide') }}
+                    </span>
                     <span v-if="rearLeftSourceLabel" class="spoke-calculator__source-badge">{{ rearLeftSourceLabel }}</span>
                   </div>
                   <div class="flex items-baseline gap-1">
                     <span class="text-2xl font-semibold text-[var(--tz-site-accent)]">{{ rearLeftDisplay }}</span>
-                    <span v-if="rearLeftDisplay !== '--'" class="text-xs tz-text-muted">mm</span>
+                    <span v-if="rearLeftDisplay !== '--'" class="text-xs tz-text-muted">
+                      {{ t('resourcesSpokeCalculator.calculator.results.unit') }}
+                    </span>
                   </div>
                 </div>
                 <div class="spoke-calculator__result-card px-4 py-3">
                   <div class="mb-1 flex items-center justify-between gap-2">
-                    <span class="tz-compact-label tz-text-muted">Right side</span>
+                    <span class="tz-compact-label tz-text-muted">
+                      {{ t('resourcesSpokeCalculator.calculator.results.rightSide') }}
+                    </span>
                     <span v-if="rearRightSourceLabel" class="spoke-calculator__source-badge">{{ rearRightSourceLabel }}</span>
                   </div>
                   <div class="flex items-baseline gap-1">
                     <span class="text-2xl font-semibold text-[var(--tz-site-accent)]">{{ rearRightDisplay }}</span>
-                    <span v-if="rearRightDisplay !== '--'" class="text-xs tz-text-muted">mm</span>
+                    <span v-if="rearRightDisplay !== '--'" class="text-xs tz-text-muted">
+                      {{ t('resourcesSpokeCalculator.calculator.results.unit') }}
+                    </span>
                   </div>
                 </div>
               </div>
               <div class="spoke-calculator__tension-summary">
                 <div class="flex items-baseline justify-between gap-3">
-                  <span class="tz-compact-label tz-text-muted">Predicted tension ratio</span>
+                  <span class="tz-compact-label tz-text-muted">
+                    {{ t('resourcesSpokeCalculator.calculator.results.predictedTensionRatio') }}
+                  </span>
                   <span class="text-lg font-semibold text-[var(--tz-site-accent)]">{{ formatTensionRatio(rearResult?.tensionRatio) }}</span>
                 </div>
                 <div class="mt-1 tz-caption tz-text-muted">
-                  Left : Right {{ formatDirectionalTensionRatio(rearResult?.tensionRatio) }} · lower side {{ lowerTensionSideLabel(rearResult?.tensionRatio) }}
+                  {{ t('resourcesSpokeCalculator.calculator.results.directionalRatio', {
+                    ratio: formatDirectionalTensionRatio(rearResult?.tensionRatio),
+                    side: lowerTensionSideLabel(rearResult?.tensionRatio),
+                  }) }}
                 </div>
               </div>
             </div>
           </div>
 
           <div class="spoke-calculator__results-note mt-6">
-            Results use verified catalog lengths first. If no verified build matches, the calculator falls back to the dimensions entered above.
+            {{ t('resourcesSpokeCalculator.calculator.results.fallbackNote') }}
           </div>
         </section>
       </section>
@@ -614,6 +692,7 @@ import {
 } from '~/utils/spokeMath'
 import { useBehaviorEvents } from '~/composables/useBehaviorEvents'
 import { useSpokeCalculatorCatalog } from '~/composables/useSpokeCalculatorCatalog'
+import { useI18n } from '#imports'
 
 interface WheelConfig {
   spokeCount: number
@@ -672,11 +751,31 @@ const rearConfig = reactive<WheelConfig>({
   rightFlangePcd: 55,
 })
 
+const { t } = useI18n()
 const { rims, hubs, presets, options: catalogOptions } = useSpokeCalculatorCatalog()
 
 const spokeCountOptions = computed(() => catalogOptions.value.spokeCounts)
-const lacingOptions = computed(() => catalogOptions.value.crossings)
-const nippleTypeOptions = computed(() => catalogOptions.value.nippleTypes)
+const crossingTranslationKeys: Record<number, string> = {
+  0: 'radial',
+  1: 'one',
+  2: 'two',
+  3: 'three',
+  4: 'four',
+}
+const lacingOptions = computed(() => catalogOptions.value.crossings.map(option => ({
+  ...option,
+  label: t(
+    `resourcesSpokeCalculator.calculator.options.crossing.${crossingTranslationKeys[option.value] || option.value}`,
+    option.label,
+  ),
+})))
+const nippleTypeOptions = computed(() => catalogOptions.value.nippleTypes.map(option => ({
+  ...option,
+  label: t(
+    `resourcesSpokeCalculator.calculator.options.nippleType.${option.value}`,
+    option.label,
+  ),
+})))
 
 const rimBrandOptions = computed(() => rims.value.map(brand => ({
   label: brand.name,
@@ -848,13 +947,17 @@ const formatDirectionalTensionRatio = (value: SpokeTensionRatio | null | undefin
 }
 
 const lowerTensionSideLabel = (value: SpokeTensionRatio | null | undefined) => {
-  if (!value || value.lowerSide === 'balanced') return 'balanced'
-  return value.lowerSide
+  if (!value || value.lowerSide === 'balanced') {
+    return t('resourcesSpokeCalculator.calculator.results.balanced')
+  }
+  return value.lowerSide === 'left'
+    ? t('resourcesSpokeCalculator.calculator.results.leftSide')
+    : t('resourcesSpokeCalculator.calculator.results.rightSide')
 }
 
 const resultSourceLabel = (source: ResultSource | null | undefined) => {
-  if (source === 'verified') return 'Verified'
-  if (source === 'calculated') return 'Calculated'
+  if (source === 'verified') return t('resourcesSpokeCalculator.calculator.results.verified')
+  if (source === 'calculated') return t('resourcesSpokeCalculator.calculator.results.calculated')
   return ''
 }
 
@@ -903,7 +1006,7 @@ const onCalculate = () => {
       }
     }
   } catch (e: any) {
-    error.value = e?.message || 'Calculation failed'
+    error.value = e?.message || t('resourcesSpokeCalculator.calculator.action.calculationFailed')
   } finally {
     loading.value = false
   }
@@ -1022,7 +1125,7 @@ watch(
     try {
       updateResults()
     } catch (e: any) {
-      error.value = e?.message || 'Calculation failed'
+      error.value = e?.message || t('resourcesSpokeCalculator.calculator.action.calculationFailed')
     }
   },
   { deep: true, immediate: true }

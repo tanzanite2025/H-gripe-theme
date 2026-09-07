@@ -33,7 +33,7 @@ func (r *FAQRepository) Delete(id uint) error {
 }
 
 // List 获取FAQ列表
-func (r *FAQRepository) List(locale, pageID, category, status string, offset, limit int) ([]faq.FAQ, int64, error) {
+func (r *FAQRepository) List(locale, pageID, status string, offset, limit int) ([]faq.FAQ, int64, error) {
 	var faqs []faq.FAQ
 	var total int64
 
@@ -44,9 +44,6 @@ func (r *FAQRepository) List(locale, pageID, category, status string, offset, li
 	}
 	if pageID != "" {
 		query = query.Where("page_id = ?", pageID)
-	}
-	if category != "" {
-		query = query.Where("category = ?", category)
 	}
 	if status != "" {
 		query = query.Where("status = ?", status)
@@ -65,7 +62,7 @@ func (r *FAQRepository) List(locale, pageID, category, status string, offset, li
 	return faqs, total, err
 }
 
-func (r *FAQRepository) ListAdmin(locale, pageID, category, status, search string, offset, limit int) ([]faq.FAQ, int64, error) {
+func (r *FAQRepository) ListAdmin(locale, pageID, status, search string, offset, limit int) ([]faq.FAQ, int64, error) {
 	var faqs []faq.FAQ
 	var total int64
 
@@ -76,9 +73,6 @@ func (r *FAQRepository) ListAdmin(locale, pageID, category, status, search strin
 	}
 	if pageID != "" {
 		query = query.Where("page_id = ?", pageID)
-	}
-	if category != "" {
-		query = query.Where("category = ?", category)
 	}
 	if status != "" {
 		query = query.Where("status = ?", status)
@@ -165,16 +159,6 @@ func (r *FAQRepository) BatchUpdateOrder(orders map[uint]int) error {
 // IncrementViewCount 增加浏览次数
 func (r *FAQRepository) IncrementViewCount(id uint) error {
 	return r.db.Model(&faq.FAQ{}).Where("id = ?", id).UpdateColumn("view_count", gorm.Expr("view_count + ?", 1)).Error
-}
-
-// GetByCategory 获取分类下的FAQ
-func (r *FAQRepository) GetByCategory(category, locale string) ([]faq.FAQ, error) {
-	var faqs []faq.FAQ
-	err := r.db.Where("category = ? AND locale = ? AND status = ?", category, locale, "published").
-		Order(clause.OrderByColumn{Column: clause.Column{Name: "order"}}).
-		Order("created_at DESC").
-		Find(&faqs).Error
-	return faqs, err
 }
 
 // GetPopular 获取热门FAQ

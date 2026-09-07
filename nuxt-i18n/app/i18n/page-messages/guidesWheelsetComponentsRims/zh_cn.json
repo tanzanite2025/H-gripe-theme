@@ -1,0 +1,143 @@
+{
+  "tabs": {
+    "technology": "技术",
+    "choose": "如何选择"
+  },
+  "technology": {
+    "title": "车圈技术",
+    "intro": "车圈是距离旋转中心最远的旋转质量，其重量、空气动力学和宽度直接决定骑行感受：响应、舒适度和速度。",
+    "metrics": {
+      "torayValue": "Toray",
+      "torayLabel": "碳纤维",
+      "uciValue": "UCI",
+      "uciLabel": "认证",
+      "warrantyValue": "3 年",
+      "warrantyLabel": "质保"
+    },
+    "profilesTitle": "车圈高度",
+    "shallow": {
+      "title": "浅框高",
+      "depth": "30mm - 40mm",
+      "body": "降低旋转重量，提升起步和爬坡效率，受侧风影响更小。",
+      "bestFor": "适合：爬坡、多风环境"
+    },
+    "aero": {
+      "title": "空气动力学框高",
+      "depth": "45mm - 65mm+",
+      "body": "通过平顺气流来提高空气动力学优势，在高速（35km/h+）时更好地保持惯性。",
+      "bestFor": "适合：平路、竞赛、计时赛"
+    },
+    "widthTitle": "车圈宽度与轮胎匹配",
+    "internalWidth": {
+      "title": "内宽（ID）",
+      "body": "决定轮胎形状。更宽的内宽（例如 21mm+）能让轮胎形成合适的外形，带来更大的接地面、更低的滚阻和更好的抓地力。"
+    },
+    "externalWidth": {
+      "title": "外宽（OD）",
+      "body": "理想情况下应略宽于轮胎（105% 原则），以获得更好的直线空气动力学表现。"
+    },
+    "trend": {
+      "label": "趋势",
+      "body": "现代公路车圈正逐渐采用 21-25mm 内宽，以优化 28mm-32mm 轮胎的匹配。"
+    },
+    "widthImage": {
+      "alt": "车圈宽度与无钩结构说明",
+      "caption": "现代车圈结构"
+    },
+    "hooked": {
+      "title": "有钩（Crotchet）",
+      "body": "带胎唇钩的传统设计，兼容几乎所有开口胎和无内胎轮胎，耐受更高胎压。",
+      "badge": "通用兼容"
+    },
+    "hookless": {
+      "title": "无钩（TSS）",
+      "body": "现代直壁设计，圈壁更轻、更强，与轮胎之间的气动过渡更好。",
+      "note": "需要使用无内胎专用轮胎，最大胎压 73psi（5 bar）。",
+      "badge": "性能选择"
+    }
+  },
+  "choose": {
+    "bedTitle": "1. 车圈底钻孔选项",
+    "bedHeaders": {
+      "feature": "特性",
+      "undrilled": "免胶带（无孔）",
+      "drilled": "标准钻孔（默认）"
+    },
+    "bedRows": [
+      {
+        "feature": "结构",
+        "undrilled": "车圈底没有辐条通孔。",
+        "drilled": "有辐条通孔。"
+      },
+      {
+        "feature": "气密性",
+        "undrilled": "更好（天然气密）。",
+        "drilled": "需要使用无内胎胶带。"
+      },
+      {
+        "feature": "重量",
+        "undrilled": "增加约 1-3g（可忽略）。",
+        "drilled": "标准重量加胶带重量。"
+      },
+      {
+        "feature": "组装难度",
+        "undrilled": "更难（需要辐条帽引导）。",
+        "drilled": "更容易组装。"
+      }
+    ],
+    "compatibility": "兼容性",
+    "tubeless": "无内胎轮胎",
+    "tubeTire": "内胎 + 外胎",
+    "cautionLabel": "注意",
+    "cautionBody": "强烈不建议使用低端硬边胎，以免损坏车圈。高端硬边胎可能有所不同，但仍需谨慎。",
+    "symmetryTitle": "2. 对称性对比",
+    "symmetrical": {
+      "title": "对称（默认 1:1）",
+      "body": "载荷分布最稳定，是推荐的标准选项。"
+    },
+    "asymmetrical": {
+      "title": "非对称（例如 2:1）",
+      "body": "需要特定花鼓兼容，属于定制选项（需要 CAD 图纸），请联系客服。"
+    },
+    "drainTitle": "4. 排水孔",
+    "withDrain": {
+      "title": "带排水孔",
+      "body": "适合经常在潮湿或雨天环境中骑行。"
+    },
+    "withoutDrain": {
+      "title": "不带排水孔",
+      "body": "适合干燥环境，可减少额外钻孔。"
+    },
+    "valveTitle": "3. 气嘴孔标准",
+    "presta": {
+      "title": "法嘴",
+      "badge": "默认",
+      "items": [
+        "孔径：约 6.5mm",
+        "适用于公路/山地/无内胎系统的轻量标准。",
+        "我们的车圈默认采用法嘴。"
+      ],
+      "noteLabel": "注意",
+      "note": "无内胎结构可能使某些硬边胎的安装更困难，请谨慎操作。"
+    },
+    "schrader": {
+      "title": "美嘴",
+      "badge": "少见",
+      "items": [
+        "孔径：约 8.5mm",
+        "常见于城市车、儿童车和胖胎车。",
+        "高性能车圈中很少使用。"
+      ]
+    },
+    "risksTitle": "关键注意事项与风险",
+    "drillingRisk": {
+      "title": "钻孔角度不正确",
+      "body": "可能导致辐条张力不均，增加断裂风险。",
+      "confirmation": "我们的车圈会根据花鼓规格进行精确钻孔。"
+    },
+    "closedBed": {
+      "title": "封闭式无内胎车圈底",
+      "body": "组装难度更高，需要专业工具和经验。建议专业安装，或使用我们的预装辐条帽服务。"
+    }
+  }
+}

@@ -6,7 +6,7 @@
       class="global-all-faqs-mobile-grouped-search-results-panel__group"
     >
       <div class="global-all-faqs-mobile-grouped-search-results-panel__group-header">
-        <h3 class="tz-faq-category-title tz-text-primary">
+        <h3 class="tz-faq-page-title tz-text-primary">
           {{ group.pageTitle }}
         </h3>
       </div>

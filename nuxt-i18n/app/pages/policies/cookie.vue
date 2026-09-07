@@ -1,89 +1,115 @@
 <template>
   <div class="company-page">
-    <h1 class="sr-only">Cookie Policy</h1>
+    <h1 class="sr-only">{{ t('cookie.title') }}</h1>
 
     <div class="policies-content">
       <p class="text-sm tz-text-secondary mb-6">
-        This page explains how we use cookies and similar technologies to improve your browsing experience.
+        {{ t('cookie.pageIntro') }}
       </p>
 
       <div class="mt-4 space-y-8 tz-text-secondary">
         <section>
-          <h2 class="text-lg font-semibold tz-text-primary mb-3">What are Cookies?</h2>
+          <h2 class="text-lg font-semibold tz-text-primary mb-3">
+            {{ t('cookie.sections.whatAreCookies.title') }}
+          </h2>
           <p class="text-sm leading-relaxed">
-            Cookies are small text files that are stored on your device when you visit a website. They help the website remember your preferences and improve your browsing experience.
+            {{ t('cookie.sections.whatAreCookies.body') }}
           </p>
         </section>
 
         <section>
-          <h2 class="text-lg font-semibold tz-text-primary mb-3">Types of Cookies We Use</h2>
+          <h2 class="text-lg font-semibold tz-text-primary mb-3">
+            {{ t('cookie.sections.types.title') }}
+          </h2>
           <div class="space-y-4">
             <div class="premium-card rounded-xl p-4">
-              <h3 class="text-base font-medium text-[#059669] mb-2">Essential Cookies</h3>
+              <h3 class="text-base font-medium text-[#059669] mb-2">
+                {{ t('cookie.sections.types.essential.title') }}
+              </h3>
               <p class="text-sm leading-relaxed mb-2">
-                These cookies are necessary for the website to function properly. They enable basic features like page navigation, secure areas access, and shopping cart functionality.
+                {{ t('cookie.sections.types.essential.body') }}
               </p>
-              <p class="text-xs tz-text-muted">Cannot be disabled</p>
+              <p class="text-xs tz-text-muted">
+                {{ t('cookie.sections.types.essential.status') }}
+              </p>
             </div>
 
             <div class="premium-card rounded-xl p-4">
-              <h3 class="text-base font-medium text-[#059669] mb-2">Performance Cookies</h3>
+              <h3 class="text-base font-medium text-[#059669] mb-2">
+                {{ t('cookie.sections.types.performance.title') }}
+              </h3>
               <p class="text-sm leading-relaxed mb-2">
-                These cookies help us understand how visitors interact with our website by collecting and reporting information anonymously. This helps us improve our website's performance.
+                {{ t('cookie.sections.types.performance.body') }}
               </p>
-              <p class="text-xs tz-text-muted">Can be disabled</p>
+              <p class="text-xs tz-text-muted">
+                {{ t('cookie.sections.types.performance.status') }}
+              </p>
             </div>
 
             <div class="premium-card rounded-xl p-4">
-              <h3 class="text-base font-medium text-[#059669] mb-2">Functional Cookies</h3>
+              <h3 class="text-base font-medium text-[#059669] mb-2">
+                {{ t('cookie.sections.types.functional.title') }}
+              </h3>
               <p class="text-sm leading-relaxed mb-2">
-                These cookies enable enhanced functionality and personalization, such as remembering your language preference or region. They may be set by us or by third-party providers.
+                {{ t('cookie.sections.types.functional.body') }}
               </p>
-              <p class="text-xs tz-text-muted">Can be disabled</p>
+              <p class="text-xs tz-text-muted">
+                {{ t('cookie.sections.types.functional.status') }}
+              </p>
             </div>
 
             <div class="premium-card rounded-xl p-4">
-              <h3 class="text-base font-medium text-[#059669] mb-2">Advertising Cookies</h3>
+              <h3 class="text-base font-medium text-[#059669] mb-2">
+                {{ t('cookie.sections.types.advertising.title') }}
+              </h3>
               <p class="text-sm leading-relaxed mb-2">
-                These cookies are used to deliver advertisements that are more relevant to you and your interests. They also help limit the number of times you see an advertisement.
+                {{ t('cookie.sections.types.advertising.body') }}
               </p>
-              <p class="text-xs tz-text-muted">Can be disabled</p>
+              <p class="text-xs tz-text-muted">
+                {{ t('cookie.sections.types.advertising.status') }}
+              </p>
             </div>
           </div>
         </section>
 
         <section>
-          <h2 class="text-lg font-semibold tz-text-primary mb-3">Managing Your Cookie Preferences</h2>
+          <h2 class="text-lg font-semibold tz-text-primary mb-3">
+            {{ t('cookie.sections.preferences.title') }}
+          </h2>
           <p class="text-sm leading-relaxed mb-4">
-            You can manage your cookie preferences at any time. Most web browsers allow you to control cookies through their settings. You can:
+            {{ t('cookie.sections.preferences.intro') }}
           </p>
           <ul class="list-disc list-inside text-sm space-y-2 tz-text-secondary">
-            <li>View what cookies are stored on your device</li>
-            <li>Delete all or specific cookies</li>
-            <li>Block cookies from being set</li>
-            <li>Set your browser to notify you when cookies are being set</li>
+            <li>{{ t('cookie.sections.preferences.options.0') }}</li>
+            <li>{{ t('cookie.sections.preferences.options.1') }}</li>
+            <li>{{ t('cookie.sections.preferences.options.2') }}</li>
+            <li>{{ t('cookie.sections.preferences.options.3') }}</li>
           </ul>
           <p class="text-sm leading-relaxed mt-4 tz-text-secondary">
-            Please note that disabling certain cookies may affect the functionality of our website.
+            {{ t('cookie.sections.preferences.note') }}
           </p>
         </section>
 
         <section>
-          <h2 class="text-lg font-semibold tz-text-primary mb-3">Third-Party Cookies</h2>
+          <h2 class="text-lg font-semibold tz-text-primary mb-3">
+            {{ t('cookie.sections.thirdParty.title') }}
+          </h2>
           <p class="text-sm leading-relaxed">
-            Some cookies on our website are set by third-party services, including analytics providers and payment processors. These third parties have their own privacy policies and we encourage you to review them.
+            {{ t('cookie.sections.thirdParty.body') }}
           </p>
         </section>
 
         <section>
-          <h2 class="text-lg font-semibold tz-text-primary mb-3">Updates to This Policy</h2>
+          <h2 class="text-lg font-semibold tz-text-primary mb-3">
+            {{ t('cookie.sections.updates.title') }}
+          </h2>
           <p class="text-sm leading-relaxed">
-            We may update this Cookie Policy from time to time to reflect changes in our practices or for other operational, legal, or regulatory reasons. Please revisit this page periodically to stay informed about our use of cookies.
+            {{ t('cookie.sections.updates.body') }}
           </p>
         </section>
 
         <div class="pt-6 border-t tz-border-subtle">
-        <p class="text-xs tz-text-muted">Last updated: December 2024</p>
+          <p class="text-xs tz-text-muted">{{ t('cookie.lastUpdated') }}</p>
         </div>
       </div>
     </div>
@@ -91,7 +117,9 @@
 </template>
 
 <script setup lang="ts">
-import { useHead, definePageMeta } from '#imports'
+import { watch } from 'vue'
+import { useHead, definePageMeta, useI18n } from '#imports'
+import { usePageMessages } from '~/composables/usePageMessages'
 
 definePageMeta({
   layout: 'products',
@@ -99,9 +127,18 @@ definePageMeta({
   footerLabelFallback: 'Cookie',
 })
 
-useHead({
-  title: 'Cookie Policy',
+const { locale, t } = useI18n()
+const { loadPageMessages } = usePageMessages('cookie')
+
+await loadPageMessages(locale.value)
+
+watch(locale, (nextLocale) => {
+  void loadPageMessages(nextLocale)
 })
+
+useHead(() => ({
+  title: t('cookie.title'),
+}))
 </script>
 
 <style scoped>

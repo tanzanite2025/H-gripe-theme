@@ -25,6 +25,7 @@ type SiteQualityFindingListFilter struct {
 	TargetURL   string
 	Strategy    string
 	FindingKind string
+	RunID       uint
 }
 
 func NewSiteQualityFindingRepository(db *gorm.DB) *SiteQualityFindingRepository {
@@ -74,6 +75,9 @@ func (r *SiteQualityFindingRepository) List(
 	}
 	if filter.FindingKind != "" {
 		query = query.Where("finding_kind = ?", filter.FindingKind)
+	}
+	if filter.RunID != 0 {
+		query = query.Where("latest_run_id = ?", filter.RunID)
 	}
 
 	var total int64

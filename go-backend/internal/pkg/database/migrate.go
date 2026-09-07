@@ -17,6 +17,7 @@ import (
 	"commerce-platform/internal/domain/merchant"
 	"commerce-platform/internal/domain/ops"
 	orderdomain "commerce-platform/internal/domain/order"
+	"commerce-platform/internal/domain/orderevidence"
 	outboxdomain "commerce-platform/internal/domain/outbox"
 	"commerce-platform/internal/domain/payment"
 	"commerce-platform/internal/domain/post"
@@ -104,6 +105,12 @@ func AutoMigrate(db *gorm.DB, serverMode string) error {
 		&orderdomain.OrderItem{},
 		&orderdomain.OrderIdempotency{},
 		&orderdomain.PolicyDisclosure{},
+		&orderevidence.OrderEvidenceSnapshot{},
+		&orderevidence.OrderEvidencePackage{},
+		&orderevidence.OrderEvidenceItem{},
+		&orderevidence.OrderEvidenceAttachment{},
+		&orderevidence.OrderEvidenceSubmissionSnapshot{},
+		&orderevidence.OrderEvidenceExportSnapshot{},
 		&aftersales.AfterSalesCase{},
 		&aftersales.AfterSalesCaseItem{},
 		&aftersales.AfterSalesCaseEvent{},
@@ -153,7 +160,6 @@ func AutoMigrate(db *gorm.DB, serverMode string) error {
 		&loyalty.MemberLevel{},
 		&loyalty.UserLoyalty{},
 		&faq.FAQPage{},
-		&faq.FAQCategory{},
 		&faq.FAQ{},
 		&gallery.Gallery{},
 		&gallery.GalleryImage{},

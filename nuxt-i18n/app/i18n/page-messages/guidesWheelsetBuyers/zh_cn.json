@@ -1,0 +1,44 @@
+{
+  "title": "轮组购买指南",
+  "feedbackTitle": "分享您对轮组购买指南的反馈或留言",
+  "tabs": {
+    "overview": {
+      "label": "购买概览",
+      "description": "从这里开始了解轮组购买流程和关键检查项。"
+    },
+    "safetyInstructions": {
+      "label": "安全说明",
+      "description": "骑行和维护前需要完成的核心安全检查。"
+    },
+    "sampleAssembly": {
+      "label": "组装示例",
+      "description": "查看包含零件和设置参考的组装示例。"
+    },
+    "specialOrder": {
+      "label": "特殊订单",
+      "description": "了解定制订单选项和需求说明。"
+    },
+    "appearanceLogo": {
+      "label": "外观与标识",
+      "description": "查看贴花、表面处理和标识定制说明。"
+    },
+    "chooseFreehub": {
+      "label": "选择塔基",
+      "description": "了解塔基选择与传动系统兼容性。"
+    },
+    "wheelComponents": {
+      "label": "轮组部件",
+      "description": "了解花鼓、车圈、辐条、辐条帽和组装部件。"
+    },
+    "optional": {
+      "label": "可选配置",
+      "description": "查看可选升级和配置附加项。"
+    }
+  },
+  "componentSections": {
+    "hubs": "1. 花鼓",
+    "rims": "2. 车圈",
+    "spokes": "3. 辐条",
+    "nipples": "4. 辐条帽"
+  }
+}

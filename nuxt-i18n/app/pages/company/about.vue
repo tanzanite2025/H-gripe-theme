@@ -1,85 +1,29 @@
 <template>
   <div class="company-page">
 
-    <h1 class="company-page__title company-page__title--sr-only">About us</h1>
+    <h1 class="company-page__title company-page__title--sr-only">{{ t('company.nav.about') }}</h1>
 
     <AboutFactory
-      v-show="activeTab === 'factory'"
+      v-if="activeTab === 'factory'"
     />
 
     <AboutAppearance
-      v-show="activeTab === 'appearance'"
+      v-else-if="activeTab === 'appearance'"
     />
 
     <AboutHolePatterns
-      v-show="activeTab === 'hole-patterns'"
+      v-else-if="activeTab === 'hole-patterns'"
     />
 
-    <section
-      v-show="activeTab === 'facility'"
-      id="facility"
-      class="company-section"
-    >
-      <h2 class="company-section__title">Facility</h2>
-      <p class="company-section__body">
-        Describe the key facilities that support the factory: warehousing, assembly
-        areas, test labs, packing zones, and any dedicated spaces for training or
-        demonstrations.
-      </p>
-      <p class="company-section__body">
-        You can later replace this placeholder text with concrete details about
-        climate control, storage systems, and how the layout helps keep builds
-        organized and predictable.
-      </p>
-    </section>
+    <AboutFacility v-else-if="activeTab === 'facility'" />
 
-    <section
-      v-show="activeTab === 'manufacture'"
-      id="manufacture"
-      class="company-section"
-    >
-      <SmartAccordion default-id="rim-build">
-        <AccordionItem id="rim-build" title="1. RIM BUILD">
-           <div class="p-4 tz-text-secondary text-sm">
-              Details about Rim Build...
-           </div>
-        </AccordionItem>
+    <AboutManufacture v-else-if="activeTab === 'manufacture'" />
 
-        <AccordionItem id="wheelset-build" title="2. WHEELSET BUILD">
-           <div class="p-4 tz-text-secondary text-sm">
-              Details about Wheelset Build...
-           </div>
-        </AccordionItem>
-
-        <AccordionItem id="carbon-spoke-build" title="3. CARBON SPOKE BUILD">
-           <div class="p-4 tz-text-secondary text-sm">
-              Details about Carbon Spoke Build...
-           </div>
-        </AccordionItem>
-      </SmartAccordion>
-    </section>
-
-    <section
-      v-show="activeTab === 'qualitycontrol'"
-      id="qualitycontrol"
-      class="company-section"
-    >
-      <h2 class="company-section__title">Quality control</h2>
-      <p class="company-section__body">
-        Summarize how quality control works at our: incoming material checks,
-        in-process measurements, and final wheel verification before shipping.
-      </p>
-      <p class="company-section__body">
-        This placeholder can later be replaced with your actual test procedures,
-        measurement tolerances, and any certifications or standards that the
-        factory follows.
-      </p>
-    </section>
+    <AboutQualityControl v-else-if="activeTab === 'qualitycontrol'" />
 
     <div class="company-feedback">
       <UserFeedbackThread
         threadKey="company-ourstory"
-        title="Share your feedback about Our Story and the factory"
       />
     </div>
 
@@ -88,16 +32,18 @@
 </template>
 
 <script setup lang="ts">
-import { useHead, definePageMeta } from '#imports'
+import { useHead, definePageMeta, useI18n } from '#imports'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
 import AboutFactory from '~/components/company/AboutFactory.vue'
 import AboutAppearance from '~/components/company/AboutAppearance.vue'
 import AboutHolePatterns from '~/components/company/AboutHolePatterns.vue'
-import SmartAccordion from '~/components/ui/SmartAccordion.vue'
-import AccordionItem from '~/components/ui/AccordionItem.vue'
+import AboutFacility from '~/components/company/AboutFacility.vue'
+import AboutManufacture from '~/components/company/AboutManufacture.vue'
+import AboutQualityControl from '~/components/company/AboutQualityControl.vue'
 import { usePageSubNavigationTab } from '~/composables/usePageSubNavigationTab'
 import { companyAboutTabs } from '~/utils/pageSubNavigation'
 
+const { t } = useI18n()
 const tabs = companyAboutTabs
 const { activeTab } = usePageSubNavigationTab({
   tabs,
@@ -111,9 +57,9 @@ definePageMeta({
   footerLabelFallback: 'About Us',
 })
 
-useHead({
-  title: 'About us',
-})
+useHead(() => ({
+  title: t('company.nav.about'),
+}))
 </script>
 
 <style scoped>

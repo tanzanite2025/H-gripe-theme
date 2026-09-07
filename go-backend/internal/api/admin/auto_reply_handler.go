@@ -137,7 +137,6 @@ func (h *AutoReplyHandler) ListPublishedFAQs(c *gin.Context) {
 	pages, total, err := h.faqService.ListAdminGrouped(
 		locale,
 		c.Query("page_id"),
-		c.Query("category"),
 		"published",
 		c.Query("search"),
 	)

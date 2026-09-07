@@ -109,8 +109,7 @@ var (
 
 // FAQ errors
 var (
-	ErrFAQNotFound     = errors.New("FAQ not found")
-	ErrInvalidCategory = errors.New("invalid FAQ category")
+	ErrFAQNotFound = errors.New("FAQ not found")
 )
 
 // Gallery errors

@@ -6,11 +6,9 @@ import {
   useRoute,
 } from '#imports'
 import { useBlogApi } from '~/composables/useBlogApi'
-import { resolveBlogCategory } from '~/utils/seo/blog'
-import type { BlogCategory, BlogPostDetail } from '~/utils/blog/types'
+import type { BlogPostDetail } from '~/utils/blog/types'
 
 interface UseBlogPostDetailOptions {
-  category: BlogCategory | null
   keyPrefix: string
 }
 
@@ -62,11 +60,6 @@ export const useBlogPostDetail = async (
           throw notFoundError()
         }
         throw error
-      }
-
-      const actualCategory = resolveBlogCategory(post.categories)
-      if (actualCategory !== options.category) {
-        throw notFoundError()
       }
 
       return post

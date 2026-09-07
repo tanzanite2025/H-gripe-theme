@@ -1,0 +1,57 @@
+{
+  "title": "联系我们",
+  "hero": {
+    "title": "全球",
+    "joiner": "",
+    "highlight": "连接",
+    "description": "从厦门制造基地到香港全球总部，我们以高效、精准的方式服务世界各地的合作伙伴。"
+  },
+  "serviceEntry": {
+    "eyebrow": "与我们联系",
+    "title": "与我们的团队开启交流。",
+    "description": "无论您需要产品建议、经销商咨询、OEM/ODM 项目支持还是订单协助，都可以通过电子邮件联系我们，或继续使用在线服务聊天。聊天消息会由现有客服团队统一处理。",
+    "actions": {
+      "email": {
+        "label": "电子邮件",
+        "unavailable": "暂无法提供电子邮件支持"
+      },
+      "chat": {
+        "label": "在线咨询",
+        "value": "打开在线客服"
+      }
+    },
+    "panel": {
+      "status": "客服通道可用",
+      "title": "联系售后支持团队",
+      "description": "使用在线服务聊天即可直接与团队沟通，无需另外填写联系表单。",
+      "button": "打开在线客服"
+    }
+  },
+  "locations": {
+    "hongKong": {
+      "title": "全球总部",
+      "region": "香港",
+      "description": "负责国际贸易、物流和全球客户支持的战略枢纽。"
+    },
+    "xiamen": {
+      "title": "制造与研发基地",
+      "region": "中国厦门",
+      "description": "配备先进设备，专注于碳纤维铺层、精密成型和严格测试。"
+    }
+  },
+  "bank": {
+    "title": "电汇信息（B2B/批发）",
+    "description": "适用于批发合作伙伴和 OEM/ODM 客户。",
+    "secureInfo": "安全信息",
+    "beneficiaryName": "收款人名称",
+    "bankName": "银行名称",
+    "accountDetails": "账户与 SWIFT 信息",
+    "accountDetailsIntro": "出于安全原因，完整的电汇信息（账号和 SWIFT）仅会在您的正式",
+    "proformaInvoice": "形式发票（PI）",
+    "accountDetailsEnding": "中提供。",
+    "securityNoticeTitle": "安全提示",
+    "securityNoticeBefore": "我们",
+    "securityNoticeNever": "绝不会",
+    "securityNoticeAfter": "通过电子邮件通知更改银行账户。如果您收到任何声称银行信息发生变更的邮件，请在付款前立即通过电话或 WhatsApp 联系我们核实。"
+  }
+}

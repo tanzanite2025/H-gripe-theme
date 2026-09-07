@@ -19,6 +19,38 @@
       @reset="resetFilters"
     />
 
+    <section class="rounded-lg border bg-card p-4">
+      <div class="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 class="text-sm font-semibold">BLOG 分类管理</h2>
+          <p class="mt-1 text-xs text-muted-foreground">分类由后台维护，前台仅读取并用于 Blog 页面筛选。</p>
+        </div>
+        <div class="flex flex-wrap items-end gap-2">
+          <Input v-model="categoryDraft.name" class="w-44" placeholder="分类名称" />
+          <Input v-model="categoryDraft.slug" class="w-44" placeholder="slug，例如 guides" />
+          <StorefrontLocaleSelect
+            v-model="categoryDraft.locale"
+            :language-options="languageOptions"
+            class="w-44"
+          />
+          <Input v-model.number="categoryDraft.sort_order" class="w-24" type="number" placeholder="排序" />
+          <Button :disabled="!categoryDraft.name.trim() || !categoryDraft.slug.trim()" @click="saveCategory">
+            {{ editingCategoryId ? '保存分类' : '新增分类' }}
+          </Button>
+          <Button v-if="editingCategoryId" variant="outline" @click="resetCategoryDraft">取消</Button>
+        </div>
+      </div>
+      <div v-if="categories.length" class="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        <div v-for="category in categories" :key="category.id" class="flex items-center gap-2 rounded-md border px-3 py-2">
+          <span class="min-w-0 flex-1 truncate text-sm font-medium">{{ category.name }}</span>
+          <span class="text-xs text-muted-foreground">{{ category.locale }} / {{ category.slug }}</span>
+          <Button variant="ghost" size="sm" @click="editCategory(category)">编辑</Button>
+          <Button variant="ghost" size="sm" class="text-destructive" @click="deleteCategory(category)">删除</Button>
+        </div>
+      </div>
+      <p v-else class="mt-4 text-sm text-muted-foreground">暂无分类。</p>
+    </section>
+
     <ContentTablePanel
       :loading="loading"
       :posts="posts"
@@ -50,6 +82,7 @@
       :errors="formErrors"
       :submitting="submitting"
       :language-options="languageOptions"
+      :categories="categoryOptions"
       @submit="submitForm"
       @clear-error="clearFieldError"
     />
@@ -86,6 +119,7 @@ import ContentFilterPanel from '@/components/admin/content/ContentFilterPanel.vu
 import ContentTablePanel from '@/components/admin/content/ContentTablePanel.vue'
 import ContentTranslationsDialog from '@/components/admin/content/ContentTranslationsDialog.vue'
 import type {
+  BlogCategory,
   ContentBadgeTone,
   ContentConfirmation,
   ContentDialogMode,
@@ -105,6 +139,8 @@ import type {
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import AdminStatsGrid from '@/components/admin/AdminStatsGrid.vue'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import StorefrontLocaleSelect from '@/components/admin/StorefrontLocaleSelect.vue'
 import { useSupportedLanguages } from '@/composables/useSupportedLanguages'
 import { useAuthStore } from '@/stores/auth'
 import axios from '@/utils/axios'
@@ -112,6 +148,15 @@ import axios from '@/utils/axios'
 const authStore = useAuthStore()
 const loading = ref(false)
 const posts = ref<ContentPost[]>([])
+const categories = ref<BlogCategory[]>([])
+const editingCategoryId = ref<number | null>(null)
+const categoryDraft = reactive({
+  name: '',
+  slug: '',
+  description: '',
+  locale: 'en',
+  sort_order: 0
+})
 const selectedPosts = ref<ContentPost[]>([])
 const dialogVisible = ref(false)
 const translationsDialogVisible = ref(false)
@@ -138,6 +183,7 @@ const postForm = reactive<ContentPostForm>({
   locale: resolveDefaultLocale(),
   featured_image: '',
   tags: '',
+  category_ids: [],
   translation_group_id: null
 })
 const confirmation = reactive<ContentConfirmation>({
@@ -158,6 +204,7 @@ const statusFilterOptions = [
   { label: '已归档', value: 'archived' }
 ]
 const localeFilterOptions = supportedLanguages.localeFilterOptions
+const categoryOptions = computed(() => categories.value.filter((category) => category.locale === postForm.locale))
 
 const statItems = computed(() => [
   { key: 'total', label: '总文章数', value: stats.value.total || 0, icon: FileText, tone: 'gray' },
@@ -198,6 +245,7 @@ const buildPostPayload = (): ContentPostPayload => ({
   locale: postForm.locale,
   featured_image: postForm.featured_image.trim(),
   tags: postForm.tags,
+  category_ids: postForm.category_ids,
   translation_group_id: postForm.translation_group_id
 })
 const validateForm = (payload: ContentPostPayload): boolean => {
@@ -222,6 +270,7 @@ const resetForm = (): void => {
     locale: resolveDefaultLocale(),
     featured_image: '',
     tags: '',
+    category_ids: [],
     translation_group_id: null
   })
   clearFormErrors()
@@ -240,6 +289,14 @@ const fetchStats = async (): Promise<void> => {
     console.error('Failed to fetch content stats:', error)
   }
 }
+const fetchCategories = async (): Promise<void> => {
+  try {
+    const response = await axios.get<{ categories?: BlogCategory[] }>('/api/admin/content/categories')
+    categories.value = response.data.categories || []
+  } catch (error) {
+    console.error('Failed to fetch blog categories:', error)
+  }
+}
 const fetchPosts = async (): Promise<void> => {
   loading.value = true
   try {
@@ -256,7 +313,7 @@ const fetchPosts = async (): Promise<void> => {
   }
 }
 const refreshContent = async (): Promise<void> => {
-  await Promise.all([fetchPosts(), fetchStats()])
+  await Promise.all([fetchPosts(), fetchStats(), fetchCategories()])
 }
 const applyFilters = (): void => {
   pagination.page = 1
@@ -294,6 +351,7 @@ const showEditDialog = (post: ContentPost): void => {
     locale: post.locale || resolveDefaultLocale(),
     featured_image: post.featured_image || '',
     tags: post.tags || '',
+    category_ids: (post.categories || []).map((category) => category.id),
     translation_group_id: post.translation_group_id || null
   })
   clearFormErrors()
@@ -339,6 +397,60 @@ const showTranslationsDialog = async (post: ContentPost): Promise<void> => {
 const editTranslation = (translation: ContentPost): void => {
   translationsDialogVisible.value = false
   showEditDialog(translation)
+}
+
+const resetCategoryDraft = (): void => {
+  editingCategoryId.value = null
+  Object.assign(categoryDraft, {
+    name: '',
+    slug: '',
+    description: '',
+    locale: resolveDefaultLocale() || 'en',
+    sort_order: 0
+  })
+}
+
+const editCategory = (category: BlogCategory): void => {
+  editingCategoryId.value = category.id
+  Object.assign(categoryDraft, {
+    name: category.name,
+    slug: category.slug,
+    description: category.description || '',
+    locale: category.locale || resolveDefaultLocale() || 'en',
+    sort_order: category.sort_order || 0
+  })
+}
+
+const saveCategory = async (): Promise<void> => {
+  const payload = {
+    ...categoryDraft,
+    name: categoryDraft.name.trim(),
+    slug: categoryDraft.slug.trim()
+  }
+  try {
+    if (editingCategoryId.value) {
+      await axios.put(`/api/admin/content/categories/${editingCategoryId.value}`, payload)
+      toast.success('分类已更新')
+    } else {
+      await axios.post('/api/admin/content/categories', payload)
+      toast.success('分类已创建')
+    }
+    resetCategoryDraft()
+    await fetchCategories()
+  } catch (error) {
+    console.error('Failed to save blog category:', error)
+  }
+}
+
+const deleteCategory = async (category: BlogCategory): Promise<void> => {
+  if (!window.confirm(`确定删除分类“${category.name}”？`)) return
+  try {
+    await axios.delete(`/api/admin/content/categories/${category.id}`)
+    toast.success('分类已删除')
+    await fetchCategories()
+  } catch (error) {
+    console.error('Failed to delete blog category:', error)
+  }
 }
 
 const isSelected = (postId: ContentPostId): boolean => selectedPosts.value.some((post) => post.id === postId)
@@ -405,7 +517,7 @@ const executeConfirmedAction = async (): Promise<void> => {
 }
 
 onMounted(() => {
-  void Promise.all([supportedLanguages.fetchLanguages(), fetchStats(), fetchPosts()])
+  void Promise.all([supportedLanguages.fetchLanguages(), fetchStats(), fetchPosts(), fetchCategories()])
 })
 </script>
 

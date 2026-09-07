@@ -8,11 +8,28 @@ import (
 )
 
 type PostRepository struct {
-	db *gorm.DB
+	db                *gorm.DB
+	categoriesEnabled bool
 }
 
 func NewPostRepository(db *gorm.DB) *PostRepository {
 	return &PostRepository{db: db}
+}
+
+func (r *PostRepository) ConfigureCategoryRepository(_ *BlogCategoryRepository) {
+	if r == nil {
+		return
+	}
+	r.categoriesEnabled = true
+}
+
+func (r *PostRepository) withCategories(query *gorm.DB) *gorm.DB {
+	if r == nil || !r.categoriesEnabled {
+		return query
+	}
+	return query.Preload("Categories", func(db *gorm.DB) *gorm.DB {
+		return db.Order("sort_order ASC").Order("name ASC").Order("id ASC")
+	})
 }
 
 // Create 创建文章
@@ -23,7 +40,7 @@ func (r *PostRepository) Create(p *post.Post) error {
 // FindByID 根据ID查找文章
 func (r *PostRepository) FindByID(id uint) (*post.Post, error) {
 	var p post.Post
-	err := r.db.First(&p, id).Error
+	err := r.withCategories(r.db).First(&p, id).Error
 	if err != nil {
 		return nil, err
 	}
@@ -33,7 +50,7 @@ func (r *PostRepository) FindByID(id uint) (*post.Post, error) {
 // FindBySlug 根据slug和语言查找文章
 func (r *PostRepository) FindBySlug(slug, locale string) (*post.Post, error) {
 	var p post.Post
-	err := r.db.Where("slug = ? AND locale = ?", slug, locale).First(&p).Error
+	err := r.withCategories(r.db).Where("slug = ? AND locale = ?", slug, locale).First(&p).Error
 	if err != nil {
 		return nil, err
 	}
@@ -52,6 +69,14 @@ func (r *PostRepository) Delete(id uint) error {
 
 // List 获取文章列表
 func (r *PostRepository) List(locale, status string, offset, limit int) ([]post.Post, int64, error) {
+	return r.list(locale, status, nil, offset, limit)
+}
+
+func (r *PostRepository) ListByCategory(locale, status string, categoryID *uint, offset, limit int) ([]post.Post, int64, error) {
+	return r.list(locale, status, categoryID, offset, limit)
+}
+
+func (r *PostRepository) list(locale, status string, categoryID *uint, offset, limit int) ([]post.Post, int64, error) {
 	var posts []post.Post
 	var total int64
 
@@ -63,12 +88,16 @@ func (r *PostRepository) List(locale, status string, offset, limit int) ([]post.
 	if status != "" {
 		query = query.Where("status = ?", status)
 	}
+	if categoryID != nil && *categoryID > 0 {
+		query = query.Joins("JOIN post_categories AS filtered_post_categories ON filtered_post_categories.post_id = posts.id").
+			Where("filtered_post_categories.category_id = ?", *categoryID)
+	}
 
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
-	err := query.Order("created_at DESC").Offset(offset).Limit(limit).Find(&posts).Error
+	err := r.withCategories(query).Order("created_at DESC").Offset(offset).Limit(limit).Find(&posts).Error
 	return posts, total, err
 }
 
@@ -80,35 +109,35 @@ func (r *PostRepository) IncrementViewCount(id uint) error {
 // FindTranslations 查找文章的所有翻译版本（已废弃，使用 FindByTranslationGroup）
 func (r *PostRepository) FindTranslations(parentID uint) ([]post.Post, error) {
 	var posts []post.Post
-	err := r.db.Where("parent_id = ? OR id = ?", parentID, parentID).Find(&posts).Error
+	err := r.withCategories(r.db).Where("parent_id = ? OR id = ?", parentID, parentID).Find(&posts).Error
 	return posts, err
 }
 
 // FindByTranslationGroup 根据翻译组ID查找所有翻译版本
 func (r *PostRepository) FindByTranslationGroup(groupID uint) ([]post.Post, error) {
 	var posts []post.Post
-	err := r.db.Where("translation_group_id = ?", groupID).Order("locale ASC").Find(&posts).Error
+	err := r.withCategories(r.db).Where("translation_group_id = ?", groupID).Order("locale ASC").Find(&posts).Error
 	return posts, err
 }
 
 // FindPublishedByTranslationGroup 根据翻译组ID查找已发布翻译版本
 func (r *PostRepository) FindPublishedByTranslationGroup(groupID uint) ([]post.Post, error) {
 	var posts []post.Post
-	err := r.db.Where("translation_group_id = ? AND status = ?", groupID, "published").Order("locale ASC").Find(&posts).Error
+	err := r.withCategories(r.db).Where("translation_group_id = ? AND status = ?", groupID, "published").Order("locale ASC").Find(&posts).Error
 	return posts, err
 }
 
 // FindPublished 查找所有已发布的文章
 func (r *PostRepository) FindPublished() ([]post.Post, error) {
 	var posts []post.Post
-	err := r.db.Where("status = ?", "published").Order("published_at DESC").Limit(1000).Find(&posts).Error
+	err := r.withCategories(r.db).Where("status = ?", "published").Order("published_at DESC").Limit(1000).Find(&posts).Error
 	return posts, err
 }
 
 // FindPublishedByLocale 查找指定语言的已发布文章
 func (r *PostRepository) FindPublishedByLocale(locale string) ([]post.Post, error) {
 	var posts []post.Post
-	err := r.db.Where("status = ? AND locale = ?", "published", locale).
+	err := r.withCategories(r.db).Where("status = ? AND locale = ?", "published", locale).
 		Order("published_at DESC").
 		Limit(1000).
 		Find(&posts).Error
@@ -154,7 +183,7 @@ func (r *PostRepository) FindAllWithFilters(page, pageSize int, status, locale, 
 
 	// 分页查询
 	offset := (page - 1) * pageSize
-	err := query.Offset(offset).Limit(pageSize).Order("created_at DESC").Find(&posts).Error
+	err := r.withCategories(query).Offset(offset).Limit(pageSize).Order("created_at DESC").Find(&posts).Error
 
 	return posts, total, err
 }

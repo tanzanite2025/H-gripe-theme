@@ -3,10 +3,19 @@
     "title": "Search products and FAQ",
     "body": "Click to search products, FAQ, and more."
   },
+  "languagePicker": {
+    "title": "Language",
+    "trigger": "Switch language",
+    "close": "Close language picker",
+    "optionsLabel": "Choose a language"
+  },
   "globalNavigationTransition": {
     "ariaLabel": "Global content navigation",
     "optionsLabel": "Choose a destination",
     "trigger": "Open content navigation",
-    "triggerBody": "Choose Products, FAQ, Pages, or Blog."
+    "triggerBody": "Choose Products, FAQ, Pages, or Blog.",
+    "options": {
+      "pages": "Pages"
+    }
   }
 }

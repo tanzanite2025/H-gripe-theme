@@ -2,10 +2,7 @@
   "title": "Soalan Lazim",
   "subtitle": "Cari jawapan kepada soalan umum tentang produk dan perkhidmatan kami",
   "ui": {
-    "categorizedSupport": "Sokongan mengikut kategori",
     "quickAnswers": "Jawapan pantas untuk soalan umum",
-    "categoriesAriaLabel": "Kategori FAQ",
-    "categoriesLabel": "Kategori FAQ",
     "all": "Semua",
     "viewAll": "Lihat semua FAQ",
     "emptySection": "Tiada FAQ tersedia untuk bahagian ini.",
@@ -13,7 +10,6 @@
     "searchPlaceholder": "Cari FAQ...",
     "viewMoreContent": "Lihat lebih banyak kandungan",
     "noResults": "Tiada FAQ ditemui untuk \"{query}\"",
-    "allFaqsMetaTitle": "Semua FAQ",
     "loadingAnswers": "Memuatkan jawapan",
     "illustrationAlt": "Ilustrasi FAQ",
     "selectQuestion": "Select a question to view the answer."

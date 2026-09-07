@@ -418,6 +418,11 @@ func validateAutoReplyMetadata(messageType, raw string) error {
 	if err := json.Unmarshal([]byte(raw), &payload); err != nil {
 		return fmt.Errorf("%w: metadata must be a JSON object", ErrInvalidAutoReplyRule)
 	}
+	if messageType == "faq" {
+		if err := rejectLegacyFAQCategoryMetadata(payload); err != nil {
+			return fmt.Errorf("%w: %v", ErrInvalidAutoReplyRule, err)
+		}
+	}
 	switch messageType {
 	case "link":
 		if err := validateStructuredURL(payload, "url", true, true); err != nil {

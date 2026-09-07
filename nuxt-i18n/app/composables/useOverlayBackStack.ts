@@ -25,7 +25,10 @@ const activeLayers = shallowRef<OverlayLayer[]>([])
 
 let browserListenerInstalled = false
 let routerListenerInstalled = false
-let pendingHistoryResolve: (() => void) | null = null
+let pendingHistoryOperation: {
+  promise: Promise<void>
+  resolve: () => void
+} | null = null
 let overlayInstanceSequence = 0
 
 export const createOverlayInstanceId = (prefix: string) => {
@@ -82,9 +85,9 @@ const pushOverlayHistoryState = (stack: string[]) => {
 }
 
 const resolvePendingHistoryOperation = () => {
-  const resolve = pendingHistoryResolve
-  pendingHistoryResolve = null
-  resolve?.()
+  const pending = pendingHistoryOperation
+  pendingHistoryOperation = null
+  pending?.resolve()
 }
 
 const closeLayerState = (layer: OverlayLayer, reason: OverlayCloseReason) => {
@@ -99,8 +102,25 @@ const resumeTopLayer = () => {
   activeLayers.value.at(-1)?.resume?.()
 }
 
+const sameStringArray = (left: string[], right: string[]) => {
+  return left.length === right.length && left.every((value, index) => value === right[index])
+}
+
 const handlePopState = (event: PopStateEvent) => {
   const historyState = readOverlayHistoryState()
+
+  // A user can reopen an overlay before the history traversal requested by
+  // the previous close has emitted popstate. Preserve the new overlay and
+  // recreate its same-URL history entry instead of closing it accidentally.
+  if (pendingHistoryOperation && activeLayers.value.length) {
+    const nextStack = activeLayers.value.map(layer => layer.id)
+    if (!sameStringArray(historyState?.stack || [], nextStack)) {
+      pushOverlayHistoryState(nextStack)
+    }
+    resumeTopLayer()
+    resolvePendingHistoryOperation()
+    return
+  }
 
   if (activeLayers.value.length) {
     const closingLayer = activeLayers.value.at(-1)
@@ -112,7 +132,10 @@ const handlePopState = (event: PopStateEvent) => {
     if (activeLayers.value.length) {
       // The browser has already moved back to the page entry. Recreate one
       // same-URL overlay entry so another back gesture closes the next layer.
-      pushOverlayHistoryState(activeLayers.value.map(layer => layer.id))
+      const nextStack = activeLayers.value.map(layer => layer.id)
+      if (!sameStringArray(historyState?.stack || [], nextStack)) {
+        pushOverlayHistoryState(nextStack)
+      }
       resumeTopLayer()
     }
 
@@ -146,7 +169,12 @@ export const installOverlayBackStack = (router?: Router) => {
 
   if (router && !routerListenerInstalled) {
     routerListenerInstalled = true
-    router.afterEach(() => {
+    router.afterEach((to, from) => {
+      // Traversing an overlay history entry keeps the route URL unchanged.
+      // Vue Router still emits afterEach for that popstate, but it must not
+      // clear an overlay that handlePopState has just preserved or resumed.
+      if (to.fullPath === from.fullPath) return
+
       const closingLayers = [...activeLayers.value].reverse()
       const hasOverlayHistory = Boolean(readOverlayHistoryState()?.stack.length)
 
@@ -199,7 +227,13 @@ export const useOverlayBackStack = () => {
 
     if (!activeLayers.value.length) {
       activeLayers.value = [nextLayer]
-      pushOverlayHistoryState([id])
+      if (readOverlayHistoryState()?.stack.length) {
+        // Reuse a still-current overlay entry while a previous close is
+        // traversing history, avoiding duplicate same-URL entries.
+        replaceCurrentHistoryState([id])
+      } else {
+        pushOverlayHistoryState([id])
+      }
       return
     }
 
@@ -256,10 +290,24 @@ export const useOverlayBackStack = () => {
     const hasHistoryEntry = Boolean(readOverlayHistoryState()?.stack.length)
     if (!hasHistoryEntry) return
 
-    await new Promise<void>((resolve) => {
-      pendingHistoryResolve = resolve
-      window.history.back()
-    })
+    if (!pendingHistoryOperation) {
+      let resolvePending: (() => void) | null = null
+      const promise = new Promise<void>((resolve) => {
+        resolvePending = resolve
+      })
+      pendingHistoryOperation = {
+        promise,
+        resolve: () => resolvePending?.(),
+      }
+
+      try {
+        window.history.back()
+      } catch {
+        resolvePendingHistoryOperation()
+      }
+    }
+
+    await pendingHistoryOperation?.promise
   }
 
   const closeAll = async (reason: OverlayCloseReason = 'user') => {

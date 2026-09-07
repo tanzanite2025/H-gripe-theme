@@ -1,0 +1,45 @@
+{
+  "title": "Global Partners",
+  "hero": {
+    "tagline": "Trusted by leading brands worldwide",
+    "contactCta": "Contact us about partnerships"
+  },
+  "stats": {
+    "countries": {
+      "label": "Countries / regions",
+      "description": "Served worldwide from Xiamen."
+    },
+    "brandPartners": {
+      "label": "Brand partners",
+      "description": "OEM / ODM collaborations globally."
+    },
+    "productsDelivered": {
+      "label": "Products delivered",
+      "description": "Wheel components shipped since launch."
+    }
+  },
+  "confidentiality": "Out of respect for confidentiality agreements, we do not list partner brands publicly. All production projects are treated as strictly confidential to protect our customers' commercial interests and privacy.",
+  "whyPartner": {
+    "title": "Why Partner With Us",
+    "trust": {
+      "title": "Long-term trust",
+      "description": "Reliable delivery and consistent quality for your catalog."
+    },
+    "technology": {
+      "title": "Technology leadership",
+      "description": "Continuous R&D in carbon rims, wheel builds and silent hubs."
+    },
+    "support": {
+      "title": "Global support",
+      "description": "Cross-regional service from Xiamen to your distribution markets."
+    }
+  },
+  "map": {
+    "title": "Global partnership network - Xiamen origin",
+    "description": "All routes start from Xiamen, Fujian, China and connect to current demo cities.",
+    "svgTitle": "Global partnership routes from Xiamen",
+    "svgDescription": "Animated arcs showing connections from Xiamen, Fujian, China to several global cities.",
+    "caption": "Visualization is illustrative only. Routes are stylized connections from Xiamen to selected partner cities."
+  },
+  "feedbackTitle": "Share your feedback about our Partnership Program"
+}

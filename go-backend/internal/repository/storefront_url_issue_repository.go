@@ -4,6 +4,7 @@ import (
 	"errors"
 	"time"
 
+	seodomain "commerce-platform/internal/domain/seo"
 	urlmanagementdomain "commerce-platform/internal/domain/urlmanagement"
 
 	"gorm.io/gorm"
@@ -39,7 +40,15 @@ func (r *StorefrontURLIssueRepository) List(
 		filter.PageSize = 50
 	}
 
-	query := r.db.Model(&urlmanagementdomain.StorefrontURLIssue{})
+	query := r.db.
+		Model(&urlmanagementdomain.StorefrontURLIssue{}).
+		Joins(`JOIN storefront_route_catalog_entries AS route_catalog_entry
+			ON route_catalog_entry.id = storefront_url_issues.route_entry_id`).
+		Where(
+			"route_catalog_entry.entry_status <> ? OR storefront_url_issues.issue_type = ?",
+			seodomain.RouteEntryStatusStale,
+			urlmanagementdomain.URLIssueTypeStaleRoute,
+		)
 	switch filter.State {
 	case "active":
 		query = query.Where("state IN ?", []string{
@@ -79,7 +88,15 @@ func (r *StorefrontURLIssueRepository) Stats() (urlmanagementdomain.StorefrontUR
 		return urlmanagementdomain.StorefrontURLIssueStats{}, errors.New("storefront URL issue repository is unavailable")
 	}
 	var stats urlmanagementdomain.StorefrontURLIssueStats
-	err := r.db.Model(&urlmanagementdomain.StorefrontURLIssue{}).
+	err := r.db.
+		Model(&urlmanagementdomain.StorefrontURLIssue{}).
+		Joins(`JOIN storefront_route_catalog_entries AS route_catalog_entry
+			ON route_catalog_entry.id = storefront_url_issues.route_entry_id`).
+		Where(
+			"route_catalog_entry.entry_status <> ? OR storefront_url_issues.issue_type = ?",
+			seodomain.RouteEntryStatusStale,
+			urlmanagementdomain.URLIssueTypeStaleRoute,
+		).
 		Select(`
 			COALESCE(SUM(CASE WHEN state IN ('open', 'acknowledged', 'resolved') THEN 1 ELSE 0 END), 0) AS active,
 			COALESCE(SUM(CASE WHEN state = 'open' THEN 1 ELSE 0 END), 0) AS open,
@@ -92,6 +109,71 @@ func (r *StorefrontURLIssueRepository) Stats() (urlmanagementdomain.StorefrontUR
 		`).
 		Scan(&stats).Error
 	return stats, err
+}
+
+func (r *StorefrontURLIssueRepository) InvalidateRuntimeIssuesForCatalogSync(
+	syncedAt time.Time,
+) error {
+	if r == nil || r.db == nil {
+		return errors.New("storefront URL issue repository is unavailable")
+	}
+	if syncedAt.IsZero() {
+		syncedAt = time.Now().UTC()
+	}
+
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		var issues []urlmanagementdomain.StorefrontURLIssue
+		if err := tx.Model(&urlmanagementdomain.StorefrontURLIssue{}).
+			Joins(`JOIN storefront_route_catalog_entries AS route_catalog_entry
+				ON route_catalog_entry.id = storefront_url_issues.route_entry_id`).
+			Where(
+				"route_catalog_entry.entry_status <> ? AND storefront_url_issues.issue_type NOT IN ? AND storefront_url_issues.state IN ? AND (route_catalog_entry.last_check_status IS NULL OR route_catalog_entry.last_check_status = '')",
+				seodomain.RouteEntryStatusStale,
+				[]string{
+					urlmanagementdomain.URLIssueTypePathCollision,
+					urlmanagementdomain.URLIssueTypeStaleRoute,
+				},
+				[]string{
+					urlmanagementdomain.URLIssueStateOpen,
+					urlmanagementdomain.URLIssueStateAcknowledged,
+					urlmanagementdomain.URLIssueStateResolved,
+				},
+			).
+			Find(&issues).Error; err != nil {
+			return err
+		}
+
+		for _, issue := range issues {
+			updates := map[string]interface{}{
+				"state":           urlmanagementdomain.URLIssueStateVerified,
+				"resolved_at":     syncedAt,
+				"verified_at":     syncedAt,
+				"resolution_type": urlmanagementdomain.URLIssueResolutionNotApplicable,
+				"resolution_note": "invalidated by storefront route catalog sync; previous runtime check is no longer current",
+				"updated_at":      syncedAt,
+			}
+			if err := tx.Model(&urlmanagementdomain.StorefrontURLIssue{}).
+				Where("id = ?", issue.ID).
+				Updates(updates).Error; err != nil {
+				return err
+			}
+			if err := r.createEvent(
+				tx,
+				issue.ID,
+				urlmanagementdomain.URLIssueEventSnapshotInvalidated,
+				0,
+				"previous runtime check invalidated by storefront route catalog sync",
+				map[string]interface{}{
+					"previous_latest_check_result_id": issue.LatestCheckResultID,
+					"synced_at":                       syncedAt,
+				},
+				syncedAt,
+			); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 }
 
 func (r *StorefrontURLIssueRepository) FindByID(

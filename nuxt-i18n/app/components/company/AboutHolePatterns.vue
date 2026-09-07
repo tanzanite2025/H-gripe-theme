@@ -1,9 +1,9 @@
 <template>
   <section id="hole-patterns" class="company-section">
       <div class="company-section__header flex flex-col items-center justify-center text-center mb-10 w-full px-4">
-        <h2 class="sr-only">Hole Patterns</h2>
+        <h2 class="sr-only">{{ t('companyAboutHolePatterns.title') }}</h2>
         <p class="text-[0.95rem] tz-text-secondary max-w-4xl w-full text-center leading-relaxed">
-          A variety of rim drilling patterns is available to meet different hub geometries and lacing requirements.
+          {{ t('companyAboutHolePatterns.intro') }}
         </p>
       </div>
 
@@ -31,79 +31,71 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
          <!-- Card 1: Our Support -->
          <div class="bg-[var(--tz-card-surface)] p-6 rounded-2xl shadow-md border tz-border-subtle">
-            <h3 class="text-lg font-bold tz-text-secondary mb-4 border-b tz-border-subtle pb-2">Our Support</h3>
+            <h3 class="text-lg font-bold tz-text-secondary mb-4 border-b tz-border-subtle pb-2">
+              {{ t('companyAboutHolePatterns.sections.support.title') }}
+            </h3>
             <ul class="space-y-3 text-sm tz-text-secondary">
-               <li class="flex items-start gap-3">
+               <li v-for="item in supportItems" :key="item.key" class="flex items-start gap-3">
                   <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"></span>
-                  <span><strong class="tz-text-primary">Symmetrical Drilling:</strong> Suitable for standard hubs, providing balanced spoke tension.</span>
-               </li>
-               <li class="flex items-start gap-3">
-                  <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"></span>
-                  <span><strong class="tz-text-primary">Asymmetrical Drilling:</strong> Optimizes tension between the drive and non-drive sides, enhancing stability.</span>
-               </li>
-               <li class="flex items-start gap-3">
-                  <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"></span>
-                  <span><strong class="tz-text-primary">Custom Hole Counts:</strong> Available in 16, 20, 24, 28, 32, and 36-hole configurations.</span>
-               </li>
-               <li class="flex items-start gap-3">
-                  <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"></span>
-                  <span><strong class="tz-text-primary">Angled Drilling:</strong> Hole angles optimized for specific lacing patterns to reduce spoke stress.</span>
+                  <span>
+                    <strong class="tz-text-primary">{{ item.label }}:</strong>
+                    {{ item.description }}
+                  </span>
                </li>
             </ul>
          </div>
 
          <!-- Card 2: Customization Services -->
          <div class="bg-[var(--tz-card-surface)] p-6 rounded-2xl shadow-md border tz-border-subtle">
-            <h3 class="text-lg font-bold tz-text-secondary mb-4 border-b tz-border-subtle pb-2">Customization Services</h3>
-            <p class="text-sm tz-text-secondary mb-3">We support customers with tailored drilling solutions based on specific needs:</p>
+            <h3 class="text-lg font-bold tz-text-secondary mb-4 border-b tz-border-subtle pb-2">
+              {{ t('companyAboutHolePatterns.sections.customization.title') }}
+            </h3>
+            <p class="text-sm tz-text-secondary mb-3">
+              {{ t('companyAboutHolePatterns.sections.customization.intro') }}
+            </p>
             <ul class="space-y-3 text-sm tz-text-secondary">
-               <li class="flex items-start gap-3">
+               <li v-for="key in customizationItemKeys" :key="key" class="flex items-start gap-3">
                   <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"></span>
-                  <span>Special hole counts</span>
-               </li>
-               <li class="flex items-start gap-3">
-                  <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"></span>
-                  <span>Custom lacing compatibility</span>
-               </li>
-               <li class="flex items-start gap-3">
-                  <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"></span>
-                  <span>OEM/ODM exclusive designs</span>
+                  <span>{{ t(`companyAboutHolePatterns.sections.customization.items.${key}`) }}</span>
                </li>
             </ul>
          </div>
 
          <!-- Card 3: Advantages -->
          <div class="bg-[var(--tz-card-surface)] p-6 rounded-2xl shadow-md border tz-border-subtle">
-            <h3 class="text-lg font-bold tz-text-secondary mb-4 border-b tz-border-subtle pb-2">Advantages of Automated Machinery</h3>
-            <p class="text-sm tz-text-secondary mb-3">All drilling processes are carried out using our <strong class="tz-text-primary">self-developed automated machinery</strong>, ensuring:</p>
+            <h3 class="text-lg font-bold tz-text-secondary mb-4 border-b tz-border-subtle pb-2">
+              {{ t('companyAboutHolePatterns.sections.automated.title') }}
+            </h3>
+            <p class="text-sm tz-text-secondary mb-3">
+              {{ t('companyAboutHolePatterns.sections.automated.intro') }}
+            </p>
             <ul class="space-y-3 text-sm tz-text-secondary">
-               <li class="flex items-start gap-3">
+               <li v-for="key in automatedItemKeys" :key="key" class="flex items-start gap-3">
                   <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"></span>
-                  <span>High-precision hole placement</span>
-               </li>
-               <li class="flex items-start gap-3">
-                  <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"></span>
-                  <span>Consistency and repeatability</span>
-               </li>
-               <li class="flex items-start gap-3">
-                  <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"></span>
-                  <span>Fast delivery and scalable production capacity</span>
+                  <span>{{ t(`companyAboutHolePatterns.sections.automated.items.${key}`) }}</span>
                </li>
             </ul>
          </div>
 
          <!-- Card 4: Our Commitment -->
          <div class="bg-[var(--tz-card-surface)] p-6 rounded-2xl shadow-md border tz-border-subtle">
-            <h3 class="text-lg font-bold tz-text-secondary mb-4 border-b tz-border-subtle pb-2">Our Commitment</h3>
+            <h3 class="text-lg font-bold tz-text-secondary mb-4 border-b tz-border-subtle pb-2">
+              {{ t('companyAboutHolePatterns.sections.commitment.title') }}
+            </h3>
              <p class="text-sm tz-text-secondary leading-relaxed">
-               By combining automation with customization, we provide suitable rim drilling solutions for different riders and brands, supporting long-term stability and reliability.
+               {{ t('companyAboutHolePatterns.sections.commitment.body') }}
              </p>
          </div>
       </div>
 
     <!-- Video Modal -->
     <div v-if="showHolePatternVideo" class="tz-standard-modal-mask fixed inset-0 z-[9999] flex items-center justify-center p-4 tz-mobile-safe-modal-mask" @click="showHolePatternVideo = false">
-       <button type="button" class="tz-global-close-btn absolute top-4 right-4 z-10" aria-label="Close video" @click="showHolePatternVideo = false">
+       <button
+         type="button"
+         class="tz-global-close-btn absolute top-4 right-4 z-10"
+         :aria-label="t('companyAboutHolePatterns.closeVideo')"
+         @click="showHolePatternVideo = false"
+       >
           ×
        </button>
        <div class="hole-pattern-video-content tz-standard-modal-surface relative w-full max-w-5xl aspect-video tz-surface-card overflow-hidden" @click.stop>
@@ -119,9 +111,30 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { useI18n } from '#imports'
+import { usePageMessages } from '~/composables/usePageMessages'
+
+const { locale, t } = useI18n()
+const { loadPageMessages } = usePageMessages('companyAboutHolePatterns')
+
+await loadPageMessages(locale.value)
+
+watch(locale, (nextLocale) => {
+  void loadPageMessages(nextLocale)
+})
 
 const showHolePatternVideo = ref(false)
+
+const supportItemKeys = ['symmetrical', 'asymmetrical', 'customCounts', 'angled'] as const
+const supportItems = computed(() => supportItemKeys.map((key) => ({
+  key,
+  label: t(`companyAboutHolePatterns.sections.support.items.${key}.label`),
+  description: t(`companyAboutHolePatterns.sections.support.items.${key}.description`),
+})))
+
+const customizationItemKeys = ['specialCounts', 'customLacing', 'exclusiveDesigns'] as const
+const automatedItemKeys = ['precision', 'consistency', 'scalableCapacity'] as const
 </script>
 
 <style scoped>

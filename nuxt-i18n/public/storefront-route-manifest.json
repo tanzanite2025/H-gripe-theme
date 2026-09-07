@@ -29,24 +29,6 @@
       "is_indexable": true
     },
     {
-      "key": "resources-blog-news",
-      "path": "/resources/blog/news",
-      "label": "News",
-      "description": "News articles",
-      "is_searchable": true,
-      "is_checkable": true,
-      "is_indexable": true
-    },
-    {
-      "key": "resources-blog-wheelsbuild",
-      "path": "/resources/blog/wheelsbuild",
-      "label": "Wheel Build",
-      "description": "Wheel build articles",
-      "is_searchable": true,
-      "is_checkable": true,
-      "is_indexable": true
-    },
-    {
       "key": "company-about",
       "path": "/company/about",
       "label": "About Us",

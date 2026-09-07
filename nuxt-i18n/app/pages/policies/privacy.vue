@@ -1,10 +1,10 @@
 <template>
   <div class="company-page">
-    <h1 class="sr-only">Privacy Policy</h1>
+    <h1 class="sr-only">{{ t('privacy.title') }}</h1>
 
     <div class="policies-content">
       <p class="text-sm tz-text-secondary mb-6">
-        This page describes how we collect, use, and protect your personal data when you browse our site or use our services.
+        {{ t('privacy.pageIntro') }}
       </p>
       <div>
         <PrivacyStatementContent />
@@ -14,8 +14,10 @@
 </template>
 
 <script setup lang="ts">
+import { watch } from 'vue'
 import PrivacyStatementContent from '~/components/PrivacyStatementContent.vue'
-import { useHead, definePageMeta } from '#imports'
+import { useHead, useI18n, definePageMeta } from '#imports'
+import { usePageMessages } from '~/composables/usePageMessages'
 
 definePageMeta({
   layout: 'products',
@@ -23,9 +25,18 @@ definePageMeta({
   footerLabelFallback: 'Privacy',
 })
 
-useHead({
-  title: 'Privacy Policy',
+const { locale, t } = useI18n()
+const { loadPageMessages } = usePageMessages('privacy')
+
+await loadPageMessages(locale.value)
+
+watch(locale, (nextLocale) => {
+  void loadPageMessages(nextLocale)
 })
+
+useHead(() => ({
+  title: t('privacy.title'),
+}))
 </script>
 
 <style scoped>

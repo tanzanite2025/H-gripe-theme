@@ -2,8 +2,8 @@ import { computed, reactive, ref, watch } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
 import { toast } from 'vue-sonner'
 import { faqAdminApi } from '@/api/faq'
-import { buildFAQPageOptions, findAvailableFAQCategories } from '@/lib/faqAdminPresentation'
-import type { FAQCategory, FAQID, FAQItemLike, FAQStructureMap, FAQStructurePage } from '@/lib/faqAdminPresentation'
+import { buildFAQPageOptions } from '@/lib/faqAdminPresentation'
+import type { FAQID, FAQItemLike, FAQStructureMap, FAQStructurePage } from '@/lib/faqAdminPresentation'
 
 interface UseFaqEditorOptions {
   faqStructures: FAQStructureMap
@@ -16,7 +16,6 @@ export type FAQDialogMode = 'create' | 'edit'
 
 export interface FAQPlacement {
   page?: FAQStructurePage | null
-  category?: FAQCategory | null
 }
 
 export interface FAQForm {
@@ -27,7 +26,6 @@ export interface FAQForm {
   answer_image_alt: string
   answer_image_width: number
   answer_image_height: number
-  category: string
   page_id: string
   locale: string
   status: string
@@ -41,7 +39,6 @@ export interface FAQPayload {
   answer_image_alt: string
   answer_image_width: number
   answer_image_height: number
-  category: string
   page_id: string
   locale: string
   status: string
@@ -66,7 +63,6 @@ export function useFaqEditor({ faqStructures, activeStructureLocale, defaultLoca
     answer_image_alt: '',
     answer_image_width: 0,
     answer_image_height: 0,
-    category: '',
     page_id: '',
     locale: resolveDefaultLocale(),
     status: 'published',
@@ -74,9 +70,6 @@ export function useFaqEditor({ faqStructures, activeStructureLocale, defaultLoca
   })
 
   const faqPageOptions = computed(() => buildFAQPageOptions(faqStructures, faqForm.locale))
-  const availableFAQCategories = computed(() => (
-    findAvailableFAQCategories(faqStructures, faqForm.locale, faqForm.page_id)
-  ))
 
   const clearFormErrors = (): void => Object.keys(formErrors).forEach((key) => delete formErrors[key as keyof FAQForm])
   const clearFieldError = (field: keyof FAQForm): void => { delete formErrors[field] }
@@ -92,7 +85,6 @@ export function useFaqEditor({ faqStructures, activeStructureLocale, defaultLoca
     answer_image_alt: faqForm.answer_image_alt.trim(),
     answer_image_width: faqForm.answer_image_url ? 800 : 0,
     answer_image_height: faqForm.answer_image_url ? 800 : 0,
-    category: faqForm.category.trim(),
     page_id: faqForm.page_id.trim(),
     locale: dialogMode.value === 'edit' ? lockedEditLocale.value : faqForm.locale,
     status: faqForm.status,
@@ -106,7 +98,6 @@ export function useFaqEditor({ faqStructures, activeStructureLocale, defaultLoca
     if (payload.answer_image_url && !payload.answer_image_alt) formErrors.answer = 'FAQ 图片需要填写替代文本'
     if (!payload.locale) formErrors.locale = '请选择语言'
     if (!payload.page_id) formErrors.page_id = '请选择页面'
-    if (!payload.category) formErrors.category = '请输入分类'
     if (Object.keys(formErrors).length > 0) {
       toast.error('请检查 FAQ 表单中的必填项')
       return false
@@ -123,7 +114,6 @@ export function useFaqEditor({ faqStructures, activeStructureLocale, defaultLoca
       answer_image_alt: '',
       answer_image_width: 0,
       answer_image_height: 0,
-      category: '',
       page_id: '',
       locale: resolveDefaultLocale(),
       status: 'published',
@@ -143,31 +133,17 @@ export function useFaqEditor({ faqStructures, activeStructureLocale, defaultLoca
     clearFieldError('page_id')
   }
 
-  const ensureFAQCategorySelection = (): void => {
-    const categoriesForPage = availableFAQCategories.value
-    if (categoriesForPage.length === 0) {
-      faqForm.category = ''
-      return
-    }
-    if (!categoriesForPage.some((category) => category.category_key === faqForm.category)) {
-      faqForm.category = categoriesForPage[0].category_key
-    }
-    clearFieldError('category')
-  }
-
   const ensureFAQSelection = (): void => {
     ensureFAQPageSelection()
-    ensureFAQCategorySelection()
   }
 
   const showCreateDialog = (placement: FAQPlacement | null = null): void => {
     dialogMode.value = 'create'
     resetForm()
-    if (placement?.page && placement?.category) {
-      faqForm.locale = placement.category.locale || placement.page.locale || resolveDefaultLocale()
-      faqForm.page_id = placement.category.page_id || placement.page.page_id || ''
-      faqForm.category = placement.category.category_key || ''
-      faqForm.order = ((placement.category.faqs || []).length + 1) * 10
+    if (placement?.page) {
+      faqForm.locale = placement.page.locale || resolveDefaultLocale()
+      faqForm.page_id = placement.page.page_id || ''
+      faqForm.order = ((placement.page.faqs || []).length + 1) * 10
       placementLocked.value = true
     } else {
       ensureFAQSelection()
@@ -192,13 +168,12 @@ export function useFaqEditor({ faqStructures, activeStructureLocale, defaultLoca
         answer_image_alt: detail.answer_image_alt || '',
         answer_image_width: Number(detail.answer_image_width || 0),
         answer_image_height: Number(detail.answer_image_height || 0),
-        category: detail.category || '',
         page_id: detail.page_id || '',
         locale,
         status: detail.status || 'published',
         order: Number(detail.order ?? detail.sort_order ?? 0)
       })
-      if (!faqForm.page_id || !faqForm.category) ensureFAQSelection()
+      if (!faqForm.page_id) ensureFAQSelection()
       clearFormErrors()
       dialogVisible.value = true
     } catch (error) {
@@ -231,12 +206,6 @@ export function useFaqEditor({ faqStructures, activeStructureLocale, defaultLoca
   watch(() => faqForm.locale, () => {
     if (dialogMode.value !== 'create' || placementLocked.value) return
     ensureFAQPageSelection()
-    ensureFAQCategorySelection()
-  })
-
-  watch(() => faqForm.page_id, () => {
-    if (placementLocked.value) return
-    ensureFAQCategorySelection()
   })
 
   watch(resolveDefaultLocale, (locale) => {
@@ -254,7 +223,6 @@ export function useFaqEditor({ faqStructures, activeStructureLocale, defaultLoca
     formErrors,
     faqForm,
     faqPageOptions,
-    availableFAQCategories,
     clearFieldError,
     updateFAQAnswer,
     showCreateDialog,

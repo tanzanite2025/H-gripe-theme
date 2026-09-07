@@ -1,0 +1,25 @@
+{
+  "title": "保修政策",
+  "tabs": {
+    "damagedLost": {
+      "label": "商品损坏或丢失",
+      "description": "商品损坏或缺失时的处理方式。"
+    },
+    "warranty": {
+      "label": "质保政策",
+      "description": "保障范围、期限与申请基础。"
+    },
+    "accidentalDamage": {
+      "label": "意外损坏",
+      "description": "意外骑行或操作损坏的支持方式。"
+    },
+    "protection": {
+      "label": "买家保障",
+      "description": "买家保障选项与服务说明。"
+    },
+    "submitWarranty": {
+      "label": "提交质保",
+      "description": "提交资料并开始质保申请。"
+    }
+  }
+}

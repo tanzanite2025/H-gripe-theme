@@ -19,23 +19,9 @@ export interface FAQItemLike {
   answer_image_height?: number | string | null
   page_id?: string | null
   locale?: string | null
-  category?: string | null
   status?: string | null
   order?: number | string | null
   sort_order?: number | string | null
-}
-
-export interface FAQCategory {
-  id?: FAQID | null
-  category_key: string
-  name?: string | null
-  status?: string | null
-  page_id?: string
-  locale?: string | null
-  icon?: string | null
-  sort_order?: number | string | null
-  faq_count?: number
-  faqs?: FAQItemLike[] | null
 }
 
 export interface FAQStructurePage {
@@ -47,7 +33,7 @@ export interface FAQStructurePage {
   subtitle?: string | null
   status?: string | null
   sort_order?: number | string | null
-  categories?: FAQCategory[] | null
+  faqs?: FAQItemLike[] | null
 }
 
 export type FAQStructureMap = Record<string, FAQStructurePage[] | undefined>
@@ -99,56 +85,25 @@ export const buildFAQPageOptions = (faqStructures: FAQStructureMap, locale: stri
   uniquePageOptions(faqStructures[locale] || [], true)
 )
 
-export const findAvailableFAQCategories = (faqStructures: FAQStructureMap, locale: string, pageID: string): FAQCategory[] => {
-  const page = (faqStructures[locale] || []).find((item) => item.page_id === pageID)
-  return page?.categories?.filter((category) => category.status !== 'hidden') || []
-}
-
 export const buildPageFilterOptions = (faqStructures: FAQStructureMap, locale: string): LanguageOption[] => [
   { label: '全部页面', value: 'all' },
   ...uniquePageOptions(pagesForLocale(faqStructures, locale))
 ]
 
-export const buildCategoryFilterOptions = (faqStructures: FAQStructureMap, locale: string, pageID: string): LanguageOption[] => {
-  const seen = new Set<string>()
-  return [
-    { label: '全部分类', value: 'all' },
-    ...pagesForLocale(faqStructures, locale)
-      .flatMap((page) => (page.categories || []).map((category) => ({ ...category, page_id: page.page_id })))
-      .filter((category) => pageID === 'all' || category.page_id === pageID)
-      .filter((category) => {
-        if (seen.has(category.category_key)) return false
-        seen.add(category.category_key)
-        return true
-      })
-      .map((category) => ({ label: category.name || category.category_key, value: category.category_key }))
-      .sort((left, right) => left.label.localeCompare(right.label))
-  ]
-}
-
 const structureKey = (pageID?: string | null, locale?: string | null): string => `${pageID || ''}\u0000${locale || ''}`
-const categoryKey = (pageID?: string | null, locale?: string | null, category?: string | null): string => `${pageID || ''}\u0000${locale || ''}\u0000${category || ''}`
 
-export const buildFAQLabelMaps = (pages: FAQStructurePage[]): { pageTitles: Map<string, string>, categoryLabels: Map<string, string> } => {
+export const buildFAQLabelMaps = (pages: FAQStructurePage[]): { pageTitles: Map<string, string> } => {
   const pageTitles = new Map<string, string>()
-  const categoryLabels = new Map<string, string>()
 
   for (const page of pages) {
     pageTitles.set(structureKey(page.page_id, page.locale), page.title || page.page_id)
-    for (const category of page.categories || []) {
-      categoryLabels.set(categoryKey(page.page_id, page.locale, category.category_key), category.name || category.category_key)
-    }
   }
 
-  return { pageTitles, categoryLabels }
+  return { pageTitles }
 }
 
 export const pageTitleForFAQ = (pageTitles: Map<string, string>, faq: FAQItemLike): string => (
   pageTitles.get(structureKey(faq.page_id, faq.locale)) || faq.page_id || '-'
-)
-
-export const categoryLabelForFAQ = (categoryLabels: Map<string, string>, faq: FAQItemLike): string => (
-  categoryLabels.get(categoryKey(faq.page_id, faq.locale, faq.category)) || faq.category || '-'
 )
 
 export type { AdminLanguage }

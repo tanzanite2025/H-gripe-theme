@@ -1,45 +1,35 @@
 <template>
   <div class="tz-mobile-text-inset">
-    <h2 class="support-page__title">Shipping instructions</h2>
+    <h2 class="support-page__title">{{ t('supportShipping.title') }}</h2>
     <p class="support-page__intro">
-      This page provides an overview of our shipping, including handling time, delivery
-      options, and what to expect for international orders.
+      {{ t('supportShipping.intro') }}
     </p>
 
     <section class="support-section">
-      <h3 class="support-section__title">Overview</h3>
+      <h3 class="support-section__title">{{ t('supportShipping.sections.overview.title') }}</h3>
       <p class="support-section__body">
-        Here we will collect the main shipping guidelines for our wheelsets and
-        components. In the future this page will include detailed examples for different
-        regions, typical delivery times, and links to more specific guides.
+        {{ t('supportShipping.sections.overview.body') }}
       </p>
     </section>
 
     <section class="support-section">
-      <h3 class="support-section__title">Processing &amp; handling</h3>
+      <h3 class="support-section__title">{{ t('supportShipping.sections.processing.title') }}</h3>
       <p class="support-section__body">
-        Order processing time can vary depending on whether the wheelset is in stock or built
-        to order. We will describe how long it usually takes to prepare an order before
-        handing it over to the carrier, and how this interacts with custom wheel building
-        services.
+        {{ t('supportShipping.sections.processing.body') }}
       </p>
     </section>
 
     <section class="support-section">
-      <h3 class="support-section__title">International shipping &amp; customs</h3>
+      <h3 class="support-section__title">{{ t('supportShipping.sections.international.title') }}</h3>
       <p class="support-section__body">
-        For international deliveries, customs clearance and local import duties can affect the
-        final delivery time. This section will later list common destinations, examples of how
-        duties are handled, and any documents we provide with the shipment.
+        {{ t('supportShipping.sections.international.body') }}
       </p>
     </section>
 
     <section class="support-section">
-      <h3 class="support-section__title">Coming soon</h3>
+      <h3 class="support-section__title">{{ t('supportShipping.sections.comingSoon.title') }}</h3>
       <p class="support-section__body">
-        If you need specific shipping information right now, please contact our support team
-        with your country and the products you are interested in so we can share the latest
-        details while this page is being completed.
+        {{ t('supportShipping.sections.comingSoon.body') }}
       </p>
     </section>
 
@@ -47,15 +37,28 @@
 </template>
 
 <script setup lang="ts">
+import { watch } from 'vue'
+import { definePageMeta, useHead, useI18n } from '#imports'
+import { usePageMessages } from '~/composables/usePageMessages'
+
 definePageMeta({
   layout: 'support',
   footerLabelKey: 'support.nav.shipping',
   footerLabelFallback: 'Shipping',
 })
 
-useHead({
-  title: 'Shipping instructions',
+const { locale, t } = useI18n()
+const { loadPageMessages } = usePageMessages('supportShipping')
+
+await loadPageMessages(locale.value)
+
+watch(locale, (nextLocale) => {
+  void loadPageMessages(nextLocale)
 })
+
+useHead(() => ({
+  title: t('supportShipping.title'),
+}))
 </script>
 
 <style scoped>

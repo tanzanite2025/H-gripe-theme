@@ -130,9 +130,12 @@ func (s *ShippingService) ApplyTrackingWebhook(input TrackingWebhookInput) (*Tra
 	}
 	if err := s.updateOrderShippingStatusIfDelivered(
 		shipment.OrderID,
+		trackingNumber,
+		providerCarrierCode,
 		input.Status,
 		input.StatusCode,
 		events,
+		"tracking_webhook",
 	); err != nil {
 		return nil, err
 	}
@@ -321,9 +324,12 @@ func (s *ShippingService) SyncTracking(ctx context.Context, input TrackingSyncIn
 	if info != nil {
 		if err := s.updateOrderShippingStatusIfDelivered(
 			input.OrderID,
+			trackingNumber,
+			providerCarrierCode,
 			info.Status,
 			info.StatusCode,
 			events,
+			"tracking_sync",
 		); err != nil {
 			return nil, err
 		}

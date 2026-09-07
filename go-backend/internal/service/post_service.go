@@ -6,22 +6,28 @@ import (
 	"commerce-platform/internal/pkg/safehtml"
 	"commerce-platform/internal/repository"
 	"errors"
+	"strings"
 	"time"
 )
 
 type PostService struct {
 	postRepo                       *repository.PostRepository
+	categoryService                *BlogCategoryService
 	cache                          *cache.RedisCache
 	cacheTTL                       time.Duration
 	storefrontHTMLCacheInvalidator *StorefrontHTMLCacheInvalidator
 }
 
-func NewPostService(postRepo *repository.PostRepository, cache *cache.RedisCache, cacheTTL int) *PostService {
-	return &PostService{
+func NewPostService(postRepo *repository.PostRepository, cache *cache.RedisCache, cacheTTL int, categoryRepos ...*repository.BlogCategoryRepository) *PostService {
+	service := &PostService{
 		postRepo: postRepo,
 		cache:    cache,
 		cacheTTL: time.Duration(cacheTTL) * time.Second,
 	}
+	if len(categoryRepos) > 0 && categoryRepos[0] != nil {
+		service.categoryService = NewBlogCategoryService(categoryRepos[0])
+	}
+	return service
 }
 
 func (s *PostService) SetStorefrontHTMLCacheInvalidator(invalidator *StorefrontHTMLCacheInvalidator) {
@@ -105,6 +111,29 @@ func (s *PostService) List(locale, status string, page, pageSize int) ([]post.Po
 
 func (s *PostService) ListPublic(locale string, page, pageSize int) ([]post.Post, int64, error) {
 	return s.List(locale, "published", page, pageSize)
+}
+
+func (s *PostService) ListPublicByCategory(locale, categorySlug string, page, pageSize int) ([]post.Post, int64, error) {
+	categorySlug = strings.TrimSpace(categorySlug)
+	if categorySlug == "" {
+		return s.ListPublic(locale, page, pageSize)
+	}
+	if s.categoryService == nil || s.categoryService.repo == nil {
+		return []post.Post{}, 0, nil
+	}
+
+	normalizedLocale := normalizeLocale(locale)
+	category, err := s.categoryService.repo.FindBySlugLocale(categorySlug, normalizedLocale)
+	if err != nil {
+		if repository.IsRecordNotFound(err) {
+			return []post.Post{}, 0, nil
+		}
+		return nil, 0, err
+	}
+
+	offset := (page - 1) * pageSize
+	posts, total, err := s.postRepo.ListByCategory(normalizedLocale, "published", &category.ID, offset, pageSize)
+	return sanitizePostSliceHTML(posts), total, err
 }
 
 func (s *PostService) Create(p *post.Post) error {

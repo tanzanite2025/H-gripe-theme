@@ -69,6 +69,8 @@ type StorefrontRouteCatalogSyncSummary struct {
 
 type StorefrontRouteCatalogCheckSummary struct {
 	Checked       int `json:"checked"`
+	Eligible      int `json:"eligible"`
+	Remaining     int `json:"remaining"`
 	OK            int `json:"ok"`
 	Redirects     int `json:"redirects"`
 	NotFound      int `json:"not_found"`
@@ -85,10 +87,14 @@ func (s *StorefrontRouteCatalogService) List(filter repository.StorefrontRouteCa
 }
 
 func (s *StorefrontRouteCatalogService) Stats() (seodomain.StorefrontRouteCatalogStats, error) {
+	return s.StatsForLocale("")
+}
+
+func (s *StorefrontRouteCatalogService) StatsForLocale(locale string) (seodomain.StorefrontRouteCatalogStats, error) {
 	if s == nil || s.repository == nil {
 		return seodomain.StorefrontRouteCatalogStats{}, errors.New("storefront route catalog service is unavailable")
 	}
-	return s.repository.Stats()
+	return s.repository.StatsForLocale(locale)
 }
 
 func (s *StorefrontRouteCatalogService) Get(id uint) (*seodomain.StorefrontRouteCatalogEntry, error) {

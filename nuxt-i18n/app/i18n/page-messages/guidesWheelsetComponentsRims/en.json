@@ -1,0 +1,143 @@
+{
+  "tabs": {
+    "technology": "Technology",
+    "choose": "How to choose"
+  },
+  "technology": {
+    "title": "Rim Technology",
+    "intro": "The rim is the rotating mass furthest from the center. Its weight, aerodynamics, and width directly define the riding character: responsiveness, comfort, and speed.",
+    "metrics": {
+      "torayValue": "Toray",
+      "torayLabel": "Carbon Fiber",
+      "uciValue": "UCI",
+      "uciLabel": "Approved",
+      "warrantyValue": "3-Year",
+      "warrantyLabel": "Warranty"
+    },
+    "profilesTitle": "Rim Profiles",
+    "shallow": {
+      "title": "Shallow Depth",
+      "depth": "30mm - 40mm",
+      "body": "Minimized rotational weight for instant acceleration and climbing efficiency. Less affected by crosswinds.",
+      "bestFor": "Best for: Climbing, Windy Conditions"
+    },
+    "aero": {
+      "title": "Aero Depth",
+      "depth": "45mm - 65mm+",
+      "body": "Maximizes aerodynamic advantage by smoothing airflow. Maintains momentum at high speeds (35km/h+).",
+      "bestFor": "Best for: Flats, Racing, Time Trials"
+    },
+    "widthTitle": "Rim Width & Tire Fit",
+    "internalWidth": {
+      "title": "Internal Width (ID)",
+      "body": "Determines the tire shape. Wider ID (e.g., 21mm+) allows tires to balloon properly, creating a wider contact patch, lower rolling resistance, and better grip."
+    },
+    "externalWidth": {
+      "title": "External Width (OD)",
+      "body": "Should ideally be slightly wider than the tire (Rule of 105%) for optimal straight-line aerodynamics."
+    },
+    "trend": {
+      "label": "Trend",
+      "body": "Modern road rims are moving towards 21-25mm ID to optimize 28mm-32mm tires."
+    },
+    "widthImage": {
+      "alt": "Rim width and hookless profile explanation",
+      "caption": "Modern Rim Profiles"
+    },
+    "hooked": {
+      "title": "Hooked (Crotchet)",
+      "body": "Traditional design with bead hooks. Compatible with almost all clincher and tubeless tires. High pressure tolerance.",
+      "badge": "Universal Compatibility"
+    },
+    "hookless": {
+      "title": "Hookless (TSS)",
+      "body": "Modern straight-wall design. Lighter, stronger rim wall, and a more aerodynamic transition to the tire.",
+      "note": "Requires Tubeless-Ready Tires & Max 73psi (5 bar).",
+      "badge": "Performance Choice"
+    }
+  },
+  "choose": {
+    "bedTitle": "1. Rim Bed Drilling Options",
+    "bedHeaders": {
+      "feature": "Feature",
+      "undrilled": "No-Tape (Undrilled)",
+      "drilled": "Standard Drilled (Default)"
+    },
+    "bedRows": [
+      {
+        "feature": "Structure",
+        "undrilled": "No spoke access holes in rim bed.",
+        "drilled": "Has spoke access holes."
+      },
+      {
+        "feature": "Airtightness",
+        "undrilled": "Better (Inherently airtight).",
+        "drilled": "Requires tubeless tape."
+      },
+      {
+        "feature": "Weight",
+        "undrilled": "Adds ~1-3g (Negligible).",
+        "drilled": "Standard weight + tape weight."
+      },
+      {
+        "feature": "Assembly Difficulty",
+        "undrilled": "More difficult (nipple guidance required).",
+        "drilled": "Easier assembly."
+      }
+    ],
+    "compatibility": "Compatibility",
+    "tubeless": "Tubeless Tires",
+    "tubeTire": "Tube + Tire",
+    "cautionLabel": "Caution",
+    "cautionBody": "Strongly not recommended to use low-end wire bead tires because of potential rim damage. High-end wire bead tires may differ, but caution is advised.",
+    "symmetryTitle": "2. Symmetrical Comparison",
+    "symmetrical": {
+      "title": "Symmetrical (Default 1:1)",
+      "body": "Most stable load distribution. Recommended standard option."
+    },
+    "asymmetrical": {
+      "title": "Asymmetrical (e.g., 2:1)",
+      "body": "Requires specific hub compatibility. Custom option (CAD drawing needed). Please contact support."
+    },
+    "drainTitle": "4. Drain Holes",
+    "withDrain": {
+      "title": "With Drain Holes",
+      "body": "Recommended for frequent wet or rainy riding conditions."
+    },
+    "withoutDrain": {
+      "title": "Without Drain Holes",
+      "body": "Suitable for dry environments. Reduces extra drilling."
+    },
+    "valveTitle": "3. Valve Hole Standards",
+    "presta": {
+      "title": "Presta Valve",
+      "badge": "Default",
+      "items": [
+        "Hole Diameter: ~6.5mm",
+        "Lightweight standard for Road/MTB/Tubeless.",
+        "All our rims default to Presta."
+      ],
+      "noteLabel": "Note",
+      "note": "Tubeless profiles may make installing certain wire bead tires difficult. Caution advised."
+    },
+    "schrader": {
+      "title": "Schrader Valve",
+      "badge": "Rare",
+      "items": [
+        "Hole Diameter: ~8.5mm",
+        "Common in city/kids/fat bikes.",
+        "Rarely used in high-end performance rims."
+      ]
+    },
+    "risksTitle": "Critical Notes & Risks",
+    "drillingRisk": {
+      "title": "Incorrect Drilling Angle",
+      "body": "May cause uneven spoke tension and increase breakage risk.",
+      "confirmation": "Our rims are drilled precisely according to hub specifications."
+    },
+    "closedBed": {
+      "title": "Closed Tubeless Rim Bed",
+      "body": "More difficult to assemble. Requires professional tools/experience. We recommend professional installation or our pre-nipple installation service."
+    }
+  }
+}

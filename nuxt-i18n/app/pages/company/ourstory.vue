@@ -4,10 +4,10 @@
       <div class="ourstory-container relative overflow-hidden rounded-2xl px-4 pb-6 pt-5 md:rounded-3xl md:px-10 md:pb-10 md:pt-8">
         <div class="relative z-10">
           <header class="ourstory-header">
-            <p class="ourstory-eyebrow">{{ t('company.nav.ourStory', 'Our Story') }}</p>
-            <h1 class="ourstory-title">{{ t('company.nav.ourStory', 'Our Story') }}</h1>
+            <p class="ourstory-eyebrow">{{ t('companyOurStory.eyebrow') }}</p>
+            <h1 class="ourstory-title">{{ t('companyOurStory.title') }}</h1>
             <p class="ourstory-intro">
-              From a belief in full control to an in-house approach, our story has been shaped by the way we design, build, and support high-performance cycling components.
+              {{ t('companyOurStory.intro') }}
             </p>
           </header>
 
@@ -17,19 +17,19 @@
               <img
                 class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                 src="/company/ourstory/ourstory/ourstory.webp"
-                alt="our engineers and riders discussing product development"
+                :alt="t('companyOurStory.hero.imageAlt')"
                 loading="lazy"
               />
             </div>
             <figcaption class="ourstory-hero__caption">
-              Engineers and riders shaping the next stage of the journey.
+              {{ t('companyOurStory.hero.caption') }}
             </figcaption>
           </figure>
 
-          <ol class="ourstory-timeline" aria-label="Our Story milestones">
+          <ol class="ourstory-timeline" :aria-label="t('companyOurStory.timeline.ariaLabel')">
             <li
               v-for="(milestone, index) in storyMilestones"
-              :key="milestone.title"
+              :key="milestone.key"
               class="ourstory-timeline__item"
             >
               <div class="ourstory-timeline__rail" aria-hidden="true">
@@ -38,10 +38,10 @@
 
               <article class="ourstory-timeline__content">
                 <p class="ourstory-timeline__phase">
-                  Phase {{ String(index + 1).padStart(2, '0') }}
+                  {{ t('companyOurStory.timeline.phaseLabel') }} {{ String(index + 1).padStart(2, '0') }}
                 </p>
-                <h2 class="ourstory-timeline__title">{{ milestone.title }}</h2>
-                <p class="ourstory-timeline__body">{{ milestone.body }}</p>
+                <h2 class="ourstory-timeline__title">{{ t(`companyOurStory.timeline.milestones.${milestone.key}.title`) }}</h2>
+                <p class="ourstory-timeline__body">{{ t(`companyOurStory.timeline.milestones.${milestone.key}.body`) }}</p>
               </article>
             </li>
           </ol>
@@ -49,10 +49,10 @@
           <div class="ourstory-cta">
             <div class="min-w-0">
               <p class="ourstory-cta__eyebrow">
-                See the work behind the story
+                {{ t('companyOurStory.cta.eyebrow') }}
               </p>
               <p class="ourstory-cta__body">
-                Explore the factory, manufacturing flow, and quality systems that support our products.
+                {{ t('companyOurStory.cta.body') }}
               </p>
             </div>
 
@@ -60,7 +60,7 @@
               class="ourstory-factory-link group inline-flex shrink-0 items-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium tz-text-primary transition-all"
               :to="factoryTabTo"
             >
-              <span>{{ t('company.ourStory.story.factoryButton') }}</span>
+              <span>{{ t('companyOurStory.cta.button') }}</span>
               <svg class="ourstory-factory-link__icon h-4 w-4 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
             </NuxtLink>
           </div>
@@ -71,40 +71,36 @@
     <div class="ourstory-feedback mt-4 mb-6 w-full max-w-none px-0">
       <UserFeedbackThread
         threadKey="company-ourstory"
-        title="Share your feedback about Our Story"
+        :title="t('companyOurStory.feedbackTitle')"
       />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { useHead, definePageMeta, useI18n, useLocalePath } from '#imports'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
+import { usePageMessages } from '~/composables/usePageMessages'
 
-const { t } = useI18n()
+const { locale, t } = useI18n()
 const localePath = useLocalePath()
+const { loadPageMessages } = usePageMessages('companyOurStory')
 
-const storyParagraphs = computed(() => {
-  const body = t('company.ourStory.story.body')
-  return body.split('\n\n').filter(Boolean)
+await loadPageMessages(locale.value)
+
+watch(locale, (nextLocale) => {
+  void loadPageMessages(nextLocale)
 })
 
-const storyMilestones = computed(() => {
-  const titles = [
-    'The Belief',
-    'The Problem We Saw',
-    'Our First Focus',
-    'Complete Systems',
-    'Built In-house',
-    'Long-term Partnerships',
-  ]
-
-  return storyParagraphs.value.map((body, index) => ({
-    title: titles[index] || `Phase ${String(index + 1).padStart(2, '0')}`,
-    body,
-  }))
-})
+const storyMilestones = [
+  { key: 'belief' },
+  { key: 'problem' },
+  { key: 'firstFocus' },
+  { key: 'completeSystems' },
+  { key: 'builtInHouse' },
+  { key: 'partnerships' },
+]
 
 const factoryTabTo = computed(() => {
   return localePath('/company/about/factory')
@@ -117,7 +113,7 @@ definePageMeta({
 })
 
 useHead(() => ({
-  title: t('company.nav.ourStory', 'Our Story'),
+  title: t('companyOurStory.title'),
 }))
 </script>
 

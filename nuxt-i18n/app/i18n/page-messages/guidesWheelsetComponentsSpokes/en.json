@@ -1,0 +1,256 @@
+{
+  "tabs": {
+    "basic": "Basic Concepts",
+    "choose": "Choose spoke"
+  },
+  "basic": {
+    "title": "Basic Concepts",
+    "intro": "Understanding spoke dimensions, materials, and typical use cases is crucial for building a reliable wheelset that matches your riding style.",
+    "profilesTitle": "Common Profiles & Types",
+    "profiles": {
+      "comparisonAlt": "Comparison of J-bend and straight-pull bicycle spokes",
+      "comparisonCaption": "J-bend (Classic) vs Straight-pull",
+      "shapesAlt": "Examples of Sapim stainless steel spokes in different shapes and profiles",
+      "shapesCaption": "Straight Gauge vs Double-Butted vs Aero"
+    },
+    "brandsTitle": "Major Brands & Positioning",
+    "brands": {
+      "dtSwiss": {
+        "name": "DT Swiss (Switzerland)",
+        "body": "Renowned for stable craftsmanship and a comprehensive product matrix (straight, butted, aero), with complete engineering support.",
+        "button": "View DT Swiss Spokes"
+      },
+      "sapim": {
+        "name": "Sapim (Belgium)",
+        "body": "Leading in high-end aero spokes (e.g. CX-Ray). Known for lightweight performance and excellent fatigue life.",
+        "button": "View Sapim Spokes"
+      },
+      "pillar": {
+        "name": "Pillar (Taiwan)",
+        "body": "Strong cost-performance with a wide range including reinforced (PSR) designs. Suitable for custom and mass production.",
+        "button": "View Pillar Spokes"
+      },
+      "mac": {
+        "name": "Mac / CNSpoke",
+        "body": "Fast supply chain response. Covers all types while balancing cost and performance for diverse applications.",
+        "button": "View Mac / CNSpoke"
+      },
+      "yt": {
+        "name": "YT Spokes (China)",
+        "body": "Fast supply chain response, suitable for balancing cost and performance.",
+        "button": "View YT Spokes"
+      },
+      "carbon": {
+        "name": "CARBON SPOKE",
+        "body": "The pinnacle of lightweight performance. Designed for ultimate responsiveness and rigidity, drastically reducing rotational weight.",
+        "button": "View Carbon Spokes"
+      }
+    },
+    "typesTitle": "Spoke Types",
+    "types": {
+      "straight": {
+        "title": "Straight Gauge Spokes",
+        "specs": "Commonly 14G (2.0mm), 13G (2.3mm).",
+        "features": "High strength margin, low cost, easy maintenance.",
+        "examples": "DT Champion, Sapim Leader.",
+        "use": "Commuting, touring, cargo, high-tension drive sides."
+      },
+      "butted": {
+        "title": "Double/Triple Butted",
+        "specs": "e.g. 2.0-1.8-2.0mm, 2.0-1.5-2.0mm.",
+        "features": "Lighter, with better fatigue resistance from flex in the midsection.",
+        "examples": "DT Competition/Revolution, Sapim Race/Laser.",
+        "use": "Endurance road, XC/Gravel, versatile durable builds."
+      },
+      "aero": {
+        "title": "Bladed / Aero",
+        "specs": "Flat ~0.9-1.0mm, width 2.0-2.3mm (or wider for TT).",
+        "features": "Aerodynamic, with easier torque control and anti-twist behavior.",
+        "examples": "Sapim CX-Ray, DT Aerolite, Pillar PSR X-TRA.",
+        "use": "Racing road, disc brake high-tension, aero rims."
+      }
+    },
+    "interfacesTitle": "Interfaces",
+    "interfaces": {
+      "jBend": {
+        "title": "J-bend",
+        "body": "Highly versatile, standard, easy sourcing."
+      },
+      "straightPull": {
+        "title": "Straight-pull",
+        "body": "No elbow stress, fast building, specific hubs."
+      },
+      "nipples": {
+        "title": "Nipples",
+        "body": "Brass (durable) vs Aluminum (light). Washer recommended."
+      }
+    },
+    "materialTitle": "Material Comparison",
+    "disclaimerLabel": "Note",
+    "disclaimer": "The following comparison reflects relative performance characteristics across different spoke materials. Each material has its own strengths depending on the application. The listed pros and cons are not absolute judgments or defect classifications.",
+    "materials": {
+      "stainless": {
+        "title": "Stainless Steel",
+        "body": "Currently the most mainstream and widely used spoke material on the market, offering the best balance of durability and cost.",
+        "marketTitle": "Market Landscape",
+        "marketBody": "As detailed in the Basic Concepts above, the stainless steel spoke market is defined by the Big 2 (DT Swiss, Sapim) setting the quality benchmark, with Pillar and others offering competitive high-value alternatives. These major brands primarily utilize high-grade stainless steel (e.g. 18/8 or proprietary blends) for their main product lines.",
+        "pros": [
+          "High strength & durability",
+          "Excellent corrosion resistance",
+          "Cost-effective",
+          "Good toughness (gradual deformation)"
+        ],
+        "cons": [
+          "Heavier than carbon/titanium"
+        ],
+        "bestFor": "Almost all bicycles, from commuters to pro MTB/Road bikes."
+      },
+      "carbon": {
+        "title": "Carbon Fiber",
+        "badge": "Elite",
+        "body": "Found on high-end performance wheelsets. Offers extreme weight savings and rigidity.",
+        "pros": [
+          "Ultra-lightweight (-100g+)",
+          "Excellent rigidity & acceleration",
+          "Vibration absorption"
+        ],
+        "cons": [
+          "Expensive",
+          "Poor side impact resistance",
+          "Harder maintenance"
+        ],
+        "bestFor": "High-end road racing, time trials, and weight-focused builds."
+      },
+      "titanium": {
+        "title": "Titanium Alloy",
+        "badge": "Rare",
+        "body": "Middle ground between steel and carbon. High strength-to-weight ratio and no rust.",
+        "pros": [
+          "Lightweight",
+          "Smooth ride quality",
+          "No rust (corrosion free)"
+        ],
+        "cons": [
+          "Very expensive",
+          "Limited availability"
+        ],
+        "bestFor": "Custom builds and riders valuing comfort and aesthetics."
+      },
+      "aluminum": {
+        "title": "Aluminum Alloy",
+        "badge": "Rare",
+        "body": "Used by specific manufacturers (e.g. Campagnolo). Very light but can be problematic.",
+        "pros": [
+          "Very light",
+          "Stiff"
+        ],
+        "cons": [
+          "Fatigue prone",
+          "Corrosion issues",
+          "Proprietary (hard to replace)"
+        ],
+        "bestFor": "Specific factory racing wheelsets."
+      }
+    },
+    "pros": "Pros",
+    "cons": "Cons",
+    "bestForLabel": "Best For",
+    "conclusion": "Which material you choose ultimately depends on your budget, riding style, and specific performance needs such as weight, stiffness, and comfort."
+  },
+  "choose": {
+    "title": "Spoke Selection Matrix",
+    "intro": "Compare our supported spoke models to find the perfect match for your building goals, whether it is maximum durability, lightweight performance, or aerodynamic efficiency.",
+    "headers": {
+      "model": "Brand / Model",
+      "type": "Type",
+      "weight": "Weight",
+      "section": "Section (mm)",
+      "details": "Details"
+    },
+    "type": {
+      "straight": "Straight",
+      "butted": "Butted",
+      "aero": "Aero"
+    },
+    "top": "TOP",
+    "comingSoon": "Coming Soon",
+    "rows": [
+      {
+        "name": "SAPIM Leader",
+        "type": "straight",
+        "weight": "6.8g",
+        "section": "2.0",
+        "details": "Stainless (18/8). Strength: 1080-1180 N/mm². Durable straight gauge choice."
+      },
+      {
+        "name": "SAPIM Race",
+        "type": "butted",
+        "weight": "5.7g",
+        "section": "2.0 - 1.8 - 2.0",
+        "details": "Strength: 1300 N/mm². Evolution of classic Competition. Good fatigue adaptability."
+      },
+      {
+        "name": "SAPIM D-Light",
+        "type": "butted",
+        "weight": "4.8g",
+        "section": "2.0 - 1.65 - 2.0",
+        "details": "Strength: 1370 N/mm². Designed for top quality MTB/Disc wheels. Max strength, min weight."
+      },
+      {
+        "name": "SAPIM CX-Sprint",
+        "type": "aero",
+        "weight": "5.2g",
+        "section": "2.25 x 1.25",
+        "details": "Strength: 1430 N/mm². Aero bladed. High stiffness for drive-side applications."
+      },
+      {
+        "name": "SAPIM CX-Ray",
+        "type": "aero",
+        "weight": "4.4g",
+        "section": "0.9 x 2.2",
+        "details": "Strength: 1600 N/mm². The gold standard. Light as titanium, strong as steel. Highest fatigue life.",
+        "top": true
+      },
+      {
+        "name": "SAPIM Super-CX",
+        "type": "aero",
+        "weight": "3.6g",
+        "section": "0.9 x 2.0",
+        "details": "Strength: 1430 N/mm². Lightest stainless spoke ever. Extra light wheels."
+      },
+      {
+        "name": "DT Swiss Comp Race",
+        "type": "butted",
+        "weight": "5.7g",
+        "section": "2.0 - 1.6 - 2.0",
+        "details": "Coming Soon",
+        "comingSoon": true
+      },
+      {
+        "name": "YT Aero",
+        "type": "aero",
+        "weight": "Coming Soon",
+        "section": "Coming Soon",
+        "details": "Coming Soon",
+        "comingSoon": true
+      },
+      {
+        "name": "Carbon Spoke",
+        "type": "aero",
+        "weight": "Coming Soon",
+        "section": "Coming Soon",
+        "details": "Proprietary carbon manufacturing process. Provides 3x the specific stiffness of steel.",
+        "carbon": true,
+        "comingSoon": true
+      }
+    ],
+    "weightTitle": "Weight Calculation",
+    "weightBody": "Weights listed are approximations for typical 64-piece (2 wheels, 32H) lengths (260mm-270mm).",
+    "customTitle": "Custom Requests",
+    "customBody": "Need a specific spoke not listed here? We can source Sapim CX-Ray or other premium options upon request.",
+    "helpTitle": "Need Spoke Length Help?",
+    "helpBody": "If you are looking to purchase individual replacement spokes or rebuild a previous wheelset, you may require assistance with spoke length calculations.",
+    "calculator": "Spoke Calculator",
+    "liveChat": "Live Chat"
+  }
+}

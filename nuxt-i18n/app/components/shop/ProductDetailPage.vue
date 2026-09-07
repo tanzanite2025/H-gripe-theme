@@ -59,6 +59,24 @@
           </span>
         </div>
 
+        <aside
+          v-if="isMadeToOrder"
+          class="product-fulfillment-notice"
+          aria-live="polite"
+        >
+          <div class="product-fulfillment-notice__heading">
+            <Icon name="lucide:factory" class="h-4 w-4" aria-hidden="true" />
+            <strong>{{ t('products.detail.madeToOrder.title', 'Made to order') }}</strong>
+          </div>
+          <p>{{ t('products.detail.madeToOrder.description', 'This item is produced after your order is confirmed. Production time is added to the shipping time and the expected schedule will be confirmed with your order.') }}</p>
+          <p>{{ t('products.detail.madeToOrder.cancellation', 'Cancellation is available only before production or material cutting begins. After production starts, cancellation may be restricted and a custom handling fee may apply.') }}</p>
+        </aside>
+
+        <p class="product-signature-note">
+          <Icon name="lucide:pen-line" class="h-4 w-4" aria-hidden="true" />
+          {{ t('products.detail.signatureNote', 'Orders totaling $750 USD or more require a signature at delivery.') }}
+        </p>
+
         <ProductDetailVariantSelector
           :variant-choices="variantChoices"
           :variant-option-groups="variantOptionGroups"
@@ -145,6 +163,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from '#imports'
 import { useProductDetailData } from '~/composables/useProductDetailData'
 import { useProductDetailMedia } from '~/composables/useProductDetailMedia'
@@ -161,6 +180,7 @@ import ProductDetailSpecifications from '~/components/shop/product-detail/Produc
 import ProductDetailVariantSelector from '~/components/shop/product-detail/ProductDetailVariantSelector.vue'
 import ProductRecommendations from '~/components/shop/ProductRecommendations.vue'
 import ProductReviewsSection from '~/components/shop/ProductReviewsSection.vue'
+import { isMadeToOrderFulfillment } from '~/utils/fulfillmentPresentation'
 
 const { t } = useI18n()
 const {
@@ -254,6 +274,12 @@ const {
   specGroups,
   productBreadcrumbItems,
 } = useProductDetailPresentation({ product })
+
+const isMadeToOrder = computed(() => Boolean(
+  isMadeToOrderFulfillment(shopProduct.value?.fulfillmentMode)
+    || isMadeToOrderFulfillment(product.value?.fulfillment_mode)
+    || selectedAvailability.value === 'made_to_order',
+))
 
 useProductDetailSeo({
   product,
@@ -407,6 +433,41 @@ useProductDetailTracking({
   line-height: 1;
   padding: 0 0.72rem;
   white-space: nowrap;
+}
+
+.product-fulfillment-notice {
+  display: grid;
+  gap: 0.5rem;
+  border: 1px solid rgb(245 158 11 / 0.35);
+  border-left: 3px solid #f59e0b;
+  border-radius: 0.55rem;
+  background: rgb(245 158 11 / 0.08);
+  padding: 0.9rem 1rem;
+  color: var(--tz-text-secondary);
+  font-size: 0.86rem;
+  line-height: 1.6;
+}
+
+.product-fulfillment-notice p,
+.product-signature-note {
+  margin: 0;
+}
+
+.product-fulfillment-notice__heading,
+.product-signature-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.product-fulfillment-notice__heading {
+  color: var(--tz-text-primary);
+}
+
+.product-signature-note {
+  color: var(--tz-text-muted);
+  font-size: 0.78rem;
+  line-height: 1.5;
 }
 
 @media (max-width: 767px) {

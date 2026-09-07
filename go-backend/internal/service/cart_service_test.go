@@ -70,6 +70,41 @@ func TestCartServiceKeepsProductVariantsAsSeparateLines(t *testing.T) {
 	assert.InDelta(t, 120, itemsByVariant[whiteVariant.ID].Price, 0.001)
 }
 
+func TestCartServiceAllowsMadeToOrderVariantWithoutStock(t *testing.T) {
+	db, cartService := newTestCartService(t)
+
+	productRecord := product.Product{
+		SKU:             "MTO-CART",
+		Name:            "Made To Order Cart Product",
+		Slug:            "mto-cart",
+		FulfillmentMode: product.FulfillmentModeMadeToOrder,
+		Price:           999,
+		Stock:           0,
+	}
+	require.NoError(t, db.Create(&productRecord).Error)
+
+	variant := product.ProductVariant{
+		ProductID: productRecord.ID,
+		SKU:       "MTO-CART-VAR",
+		Price:     999,
+		Stock:     0,
+		IsDefault: true,
+		IsActive:  true,
+	}
+	require.NoError(t, db.Create(&variant).Error)
+
+	cartRecord := product.Cart{SessionID: "mto-cart-session"}
+	require.NoError(t, db.Create(&cartRecord).Error)
+
+	require.NoError(t, cartService.AddToCart(cartRecord.ID, productRecord.ID, &variant.ID, 3))
+	require.NoError(t, cartService.UpdateCartItem(cartRecord.ID, productRecord.ID, &variant.ID, 5))
+
+	summary, err := repository.NewCartRepository(db).GetSummary(cartRecord.ID)
+	require.NoError(t, err)
+	require.Len(t, summary.Items, 1)
+	assert.Equal(t, 5, summary.Items[0].Quantity)
+}
+
 func TestCartSummaryReadDoesNotCreateMissingAnonymousCart(t *testing.T) {
 	db, cartService := newTestCartService(t)
 

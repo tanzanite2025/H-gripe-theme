@@ -49,80 +49,100 @@ type AddressRequest struct {
 // omits database IDs so browser clients use order_number as the only order
 // reference.
 type PublicOrderResponse struct {
-	OrderNumber         string              `json:"order_number"`
-	Status              string              `json:"status"`
-	PaymentMethod       string              `json:"payment_method"`
-	PaymentStatus       string              `json:"payment_status"`
-	ShippingMethod      string              `json:"shipping_method"`
-	ShippingStatus      string              `json:"shipping_status"`
-	TrackingNumber      string              `json:"tracking_number"`
-	ProviderCarrierCode string              `json:"provider_carrier_code"`
-	ProviderCarrierName string              `json:"provider_carrier_name"`
-	SubtotalAmount      float64             `json:"subtotal_amount"`
-	ShippingFee         float64             `json:"shipping_fee"`
-	TaxAmount           float64             `json:"tax_amount"`
-	DiscountAmount      float64             `json:"discount_amount"`
-	TotalAmount         float64             `json:"total_amount"`
-	Currency            string              `json:"currency"`
-	CouponCode          string              `json:"coupon_code"`
-	PointsUsed          int                 `json:"points_used"`
-	PointsValue         float64             `json:"points_value"`
-	ShippingAddress     orderdomain.Address `json:"shipping_address"`
-	BillingAddress      orderdomain.Address `json:"billing_address"`
-	CustomerNote        string              `json:"customer_note"`
-	Items               []PublicOrderItem   `json:"items"`
-	CreatedAt           time.Time           `json:"created_at"`
-	UpdatedAt           time.Time           `json:"updated_at"`
-	PaidAt              *time.Time          `json:"paid_at"`
-	ShippedAt           *time.Time          `json:"shipped_at"`
-	CompletedAt         *time.Time          `json:"completed_at"`
-	CancelledAt         *time.Time          `json:"cancelled_at"`
+	OrderNumber           string              `json:"order_number"`
+	Status                string              `json:"status"`
+	PaymentMethod         string              `json:"payment_method"`
+	PaymentStatus         string              `json:"payment_status"`
+	ShippingMethod        string              `json:"shipping_method"`
+	ShippingStatus        string              `json:"shipping_status"`
+	FulfillmentMode       string              `json:"fulfillment_mode"`
+	ProductionStatus      string              `json:"production_status"`
+	SignatureRequired     bool                `json:"signature_required"`
+	TrackingNumber        string              `json:"tracking_number"`
+	ProviderCarrierCode   string              `json:"provider_carrier_code"`
+	ProviderCarrierName   string              `json:"provider_carrier_name"`
+	SubtotalAmount        float64             `json:"subtotal_amount"`
+	ShippingFee           float64             `json:"shipping_fee"`
+	TaxAmount             float64             `json:"tax_amount"`
+	DiscountAmount        float64             `json:"discount_amount"`
+	TotalAmount           float64             `json:"total_amount"`
+	Currency              string              `json:"currency"`
+	CouponCode            string              `json:"coupon_code"`
+	PointsUsed            int                 `json:"points_used"`
+	PointsValue           float64             `json:"points_value"`
+	ShippingAddress       orderdomain.Address `json:"shipping_address"`
+	BillingAddress        orderdomain.Address `json:"billing_address"`
+	CustomerNote          string              `json:"customer_note"`
+	Items                 []PublicOrderItem   `json:"items"`
+	CreatedAt             time.Time           `json:"created_at"`
+	UpdatedAt             time.Time           `json:"updated_at"`
+	PaidAt                *time.Time          `json:"paid_at"`
+	ShippedAt             *time.Time          `json:"shipped_at"`
+	CompletedAt           *time.Time          `json:"completed_at"`
+	CancelledAt           *time.Time          `json:"cancelled_at"`
+	ProductionStartedAt   *time.Time          `json:"production_started_at"`
+	ProductionCompletedAt *time.Time          `json:"production_completed_at"`
 }
 
 type PublicOrderItem struct {
-	ProductID   uint    `json:"product_id"`
-	VariantID   *uint   `json:"variant_id"`
-	ProductName string  `json:"product_name"`
-	SKU         string  `json:"sku"`
-	Attributes  string  `json:"attributes"`
-	Quantity    int     `json:"quantity"`
-	Price       float64 `json:"price"`
-	Subtotal    float64 `json:"subtotal"`
-	Discount    float64 `json:"discount"`
-	TaxAmount   float64 `json:"tax_amount"`
-	Total       float64 `json:"total"`
+	ProductID       uint    `json:"product_id"`
+	VariantID       *uint   `json:"variant_id"`
+	ProductName     string  `json:"product_name"`
+	SKU             string  `json:"sku"`
+	Attributes      string  `json:"attributes"`
+	FulfillmentMode string  `json:"fulfillment_mode"`
+	Quantity        int     `json:"quantity"`
+	Price           float64 `json:"price"`
+	Subtotal        float64 `json:"subtotal"`
+	Discount        float64 `json:"discount"`
+	TaxAmount       float64 `json:"tax_amount"`
+	Total           float64 `json:"total"`
 }
 
 func publicOrderResponse(item orderdomain.Order) PublicOrderResponse {
+	fulfillmentMode := orderdomain.NormalizeFulfillmentMode(item.FulfillmentMode)
+	if item.FulfillmentMode == "" {
+		fulfillmentMode = orderdomain.ResolveFulfillmentMode(item.Items)
+	}
+	productionStatus := orderdomain.NormalizeProductionStatus(item.ProductionStatus)
+	if item.ProductionStatus == "" {
+		productionStatus = orderdomain.DefaultProductionStatus(fulfillmentMode)
+	}
+
 	return PublicOrderResponse{
-		OrderNumber:         item.OrderNumber,
-		Status:              item.Status,
-		PaymentMethod:       item.PaymentMethod,
-		PaymentStatus:       item.PaymentStatus,
-		ShippingMethod:      item.ShippingMethod,
-		ShippingStatus:      item.ShippingStatus,
-		TrackingNumber:      item.TrackingNumber,
-		ProviderCarrierCode: item.ProviderCarrierCode,
-		ProviderCarrierName: item.ProviderCarrierName,
-		SubtotalAmount:      item.SubtotalAmount,
-		ShippingFee:         item.ShippingFee,
-		TaxAmount:           item.TaxAmount,
-		DiscountAmount:      item.DiscountAmount,
-		TotalAmount:         item.TotalAmount,
-		Currency:            item.Currency,
-		CouponCode:          item.CouponCode,
-		PointsUsed:          item.PointsUsed,
-		PointsValue:         item.PointsValue,
-		ShippingAddress:     item.ShippingAddress,
-		BillingAddress:      item.BillingAddress,
-		CustomerNote:        item.CustomerNote,
-		Items:               publicOrderItems(item.Items),
-		CreatedAt:           item.CreatedAt,
-		UpdatedAt:           item.UpdatedAt,
-		PaidAt:              item.PaidAt,
-		ShippedAt:           item.ShippedAt,
-		CompletedAt:         item.CompletedAt,
-		CancelledAt:         item.CancelledAt,
+		OrderNumber:           item.OrderNumber,
+		Status:                item.Status,
+		PaymentMethod:         item.PaymentMethod,
+		PaymentStatus:         item.PaymentStatus,
+		ShippingMethod:        item.ShippingMethod,
+		ShippingStatus:        item.ShippingStatus,
+		FulfillmentMode:       fulfillmentMode,
+		ProductionStatus:      productionStatus,
+		SignatureRequired:     item.SignatureRequired,
+		TrackingNumber:        item.TrackingNumber,
+		ProviderCarrierCode:   item.ProviderCarrierCode,
+		ProviderCarrierName:   item.ProviderCarrierName,
+		SubtotalAmount:        item.SubtotalAmount,
+		ShippingFee:           item.ShippingFee,
+		TaxAmount:             item.TaxAmount,
+		DiscountAmount:        item.DiscountAmount,
+		TotalAmount:           item.TotalAmount,
+		Currency:              item.Currency,
+		CouponCode:            item.CouponCode,
+		PointsUsed:            item.PointsUsed,
+		PointsValue:           item.PointsValue,
+		ShippingAddress:       item.ShippingAddress,
+		BillingAddress:        item.BillingAddress,
+		CustomerNote:          item.CustomerNote,
+		Items:                 publicOrderItems(item.Items),
+		CreatedAt:             item.CreatedAt,
+		UpdatedAt:             item.UpdatedAt,
+		PaidAt:                item.PaidAt,
+		ShippedAt:             item.ShippedAt,
+		CompletedAt:           item.CompletedAt,
+		CancelledAt:           item.CancelledAt,
+		ProductionStartedAt:   item.ProductionStartedAt,
+		ProductionCompletedAt: item.ProductionCompletedAt,
 	}
 }
 
@@ -138,17 +158,18 @@ func publicOrderItems(items []orderdomain.OrderItem) []PublicOrderItem {
 	result := make([]PublicOrderItem, 0, len(items))
 	for _, item := range items {
 		result = append(result, PublicOrderItem{
-			ProductID:   item.ProductID,
-			VariantID:   item.VariantID,
-			ProductName: item.ProductName,
-			SKU:         item.SKU,
-			Attributes:  item.Attributes,
-			Quantity:    item.Quantity,
-			Price:       item.Price,
-			Subtotal:    item.Subtotal,
-			Discount:    item.Discount,
-			TaxAmount:   item.TaxAmount,
-			Total:       item.Total,
+			ProductID:       item.ProductID,
+			VariantID:       item.VariantID,
+			ProductName:     item.ProductName,
+			SKU:             item.SKU,
+			Attributes:      item.Attributes,
+			FulfillmentMode: item.FulfillmentMode,
+			Quantity:        item.Quantity,
+			Price:           item.Price,
+			Subtotal:        item.Subtotal,
+			Discount:        item.Discount,
+			TaxAmount:       item.TaxAmount,
+			Total:           item.Total,
 		})
 	}
 	return result

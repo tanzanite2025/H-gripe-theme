@@ -1,0 +1,63 @@
+{
+  "title": "Submit Warranty Claim",
+  "fields": {
+    "orderNumber": {
+      "label": "Order Number",
+      "placeholder": "e.g. TANZ-12345"
+    },
+    "email": {
+      "label": "Email Address",
+      "placeholder": "Your email address"
+    },
+    "tirePressure": {
+      "label": "Tire Pressure (PSI)",
+      "placeholder": "e.g. 80"
+    },
+    "tubeless": {
+      "label": "Tubeless Setup?",
+      "yes": "Yes",
+      "no": "No"
+    },
+    "issueDescription": {
+      "label": "Issue Description",
+      "placeholder": "Please describe the issue in detail..."
+    }
+  },
+  "uploads": {
+    "images": {
+      "label": "Upload Images",
+      "chooseFiles": "Choose Files",
+      "selected": "{count} file(s) selected",
+      "none": "No file chosen"
+    },
+    "video": {
+      "label": "Upload Video (Optional)",
+      "chooseFile": "Choose File",
+      "none": "No file chosen",
+      "hint": "Optional. MP4, MOV or WebM. Max 50MB. For larger videos, provide a link in the description."
+    }
+  },
+  "actions": {
+    "verifying": "Verifying...",
+    "verifyOrder": "Verify Order",
+    "processing": "Processing...",
+    "submitClaim": "Submit Claim"
+  },
+  "verified": "Order Verified. Please complete the details below.",
+  "messages": {
+    "emailVerified": "Email verified. Please complete and submit your warranty claim.",
+    "verificationLinkSent": "Please check your email and open the verification link before completing the claim.",
+    "submitted": "Your claim has been submitted successfully. We will contact you shortly.",
+    "verificationExpired": "The verification link is invalid or expired.",
+    "orderVerificationFailed": "Order verification failed. Please check your details.",
+    "genericError": "An error occurred. Please try again."
+  },
+  "errors": {
+    "imagesFallback": "You can upload up to {count} images.",
+    "videoUnsupported": "{file} is not supported. Use MP4, MOV or WebM.",
+    "videoTooLarge": "{file} exceeds the {size} video limit.",
+    "emailVerificationFailed": "Warranty email verification failed",
+    "orderVerificationFailedRequest": "Order verification failed",
+    "submissionFailed": "Submission failed"
+  }
+}

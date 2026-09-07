@@ -123,13 +123,7 @@ Can use either ID or slug:
 
 ### List FAQs
 ```http
-GET /api/v1/content/faqs?category=general&page=1&page_size=20
-Accept-Language: en
-```
-
-### Get FAQ Categories
-```http
-GET /api/v1/content/faq-categories
+GET /api/v1/content/faqs?page=1&page_size=20
 Accept-Language: en
 ```
 

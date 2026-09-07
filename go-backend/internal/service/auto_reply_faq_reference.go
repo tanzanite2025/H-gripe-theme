@@ -22,6 +22,9 @@ func (s *TicketService) validateAutoReplyFAQReference(rule ticket.AutoReplyRule)
 	if err := json.Unmarshal([]byte(rule.Metadata), &payload); err != nil {
 		return fmt.Errorf("%w: FAQ metadata is invalid", ErrInvalidAutoReplyRule)
 	}
+	if err := rejectLegacyFAQCategoryMetadata(payload); err != nil {
+		return fmt.Errorf("%w: %v", ErrInvalidAutoReplyRule, err)
+	}
 
 	faqID, err := autoReplyFAQID(payload["faq_id"])
 	if err != nil {
@@ -53,9 +56,6 @@ func (s *TicketService) validateAutoReplyFAQReference(rule ticket.AutoReplyRule)
 	if value := strings.TrimSpace(stringValue(payload["page_id"])); value != "" && value != item.PageID {
 		return fmt.Errorf("%w: FAQ page does not match the referenced FAQ", ErrInvalidAutoReplyRule)
 	}
-	if value := strings.TrimSpace(stringValue(payload["category"])); value != "" && value != item.Category {
-		return fmt.Errorf("%w: FAQ category does not match the referenced FAQ", ErrInvalidAutoReplyRule)
-	}
 
 	return nil
 }
@@ -83,4 +83,13 @@ func stringValue(value interface{}) string {
 		return typed
 	}
 	return ""
+}
+
+func rejectLegacyFAQCategoryMetadata(payload map[string]interface{}) error {
+	for _, key := range []string{"category", "category_label"} {
+		if _, exists := payload[key]; exists {
+			return errors.New("FAQ category metadata is no longer supported")
+		}
+	}
+	return nil
 }

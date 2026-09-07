@@ -41,7 +41,8 @@ type Post struct {
 	DeletedAt   gorm.DeletedAt `gorm:"index" json:"-"`
 
 	// 关联 (不存储在数据库)
-	Translations []Post `gorm:"-" json:"translations,omitempty"` // 其他语言版本
+	Translations []Post     `gorm:"-" json:"translations,omitempty"` // 其他语言版本
+	Categories   []Category `gorm:"many2many:post_categories;" json:"categories,omitempty"`
 }
 
 // TableName 指定表名

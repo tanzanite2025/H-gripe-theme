@@ -1,0 +1,27 @@
+{
+  "title": "我的会员信息",
+  "intro": "查看个人资料、会员等级、积分余额、优惠券、礼品卡和保修入口。",
+  "seoTitle": "我的会员信息 - 积分与权益",
+  "seoDescription": "查看会员资料、会员等级、积分余额、优惠券、礼品卡和保修工具。",
+  "feedbackTitle": "分享您对会员信息页面的反馈",
+  "feedbackSubtitle": "告诉我们个人资料、权益、优惠券、礼品卡或保修入口是否清楚。",
+  "benefits": {
+    "title": "我的权益",
+    "level": "会员等级",
+    "levelDesc": "会员等级用于表示账号累计成长状态，并决定该等级对应的权益规则。",
+    "discountRate": "折扣率",
+    "discountRateDesc": "后台会员等级配置的价格折扣率。",
+    "coupons": "优惠券",
+    "giftCards": "礼品卡"
+  },
+  "levels": {
+    "rows": {
+      "ordinary": "普通",
+      "bronze": "铜牌",
+      "silver": "银牌",
+      "gold": "金牌",
+      "platinum": "铂金",
+      "diamond": "钻石"
+    }
+  }
+}

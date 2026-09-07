@@ -182,6 +182,7 @@ var (
 	ErrProductCustomsProfileNotFound             = errors.New("product customs classification profile not found")
 	ErrProductCustomsProfileInvalid              = errors.New("product customs classification profile invalid")
 	ErrProductTranslationInvalid                 = errors.New("product translation relationship invalid")
+	ErrProductFulfillmentModeInvalid             = errors.New("product fulfillment mode invalid")
 )
 
 type ProductSearchInput struct {

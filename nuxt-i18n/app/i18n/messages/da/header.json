@@ -3,10 +3,19 @@
     "title": "Søg produkter og FAQ",
     "body": "Klik for at søge produkter, FAQ og mere."
   },
+  "languagePicker": {
+    "title": "Sprog",
+    "trigger": "Skift sprog",
+    "close": "Luk sprogmenu",
+    "optionsLabel": "Vælg et sprog"
+  },
   "globalNavigationTransition": {
     "ariaLabel": "Global content navigation",
     "optionsLabel": "Choose a destination",
     "trigger": "Open content navigation",
-    "triggerBody": "Choose Products, FAQ, Pages, or Blog."
+    "triggerBody": "Choose Products, FAQ, Pages, or Blog.",
+    "options": {
+      "pages": "Pages"
+    }
   }
 }

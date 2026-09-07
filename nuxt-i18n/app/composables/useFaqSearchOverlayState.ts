@@ -5,7 +5,6 @@ interface UseFaqSearchOverlayStateOptions {
   enabled: boolean
   searchQuery: Ref<string>
   searchResults: Readonly<Ref<GlobalAllFaqFlatItem[]>>
-  resetTopic: () => void
   resetExpandedItems: () => void
   expandItem: (itemId: string) => void
 }
@@ -17,7 +16,6 @@ export function useFaqSearchOverlayState(
     if (!options.enabled) return
 
     options.searchQuery.value = ''
-    options.resetTopic()
     options.resetExpandedItems()
   }
 

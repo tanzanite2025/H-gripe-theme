@@ -14,8 +14,12 @@
     <!-- Process Section Header -->
     <div class="text-center mb-8 lg:mb-12 relative">
         <div class="inline-flex items-center justify-center w-12 h-1 mb-4 rounded-full bg-emerald-500"></div>
-        <h2 class="text-2xl sm:text-3xl font-bold tz-text-primary mb-2">Manufacturing Process</h2>
-        <p class="tz-text-secondary max-w-2xl mx-auto">From raw material to final packing—precision at every step.</p>
+        <h2 class="text-2xl sm:text-3xl font-bold tz-text-primary mb-2">
+          {{ t('companyAboutFactory.process.title') }}
+        </h2>
+        <p class="tz-text-secondary max-w-2xl mx-auto">
+          {{ t('companyAboutFactory.process.description') }}
+        </p>
     </div>
 
     <!-- Process Steps Grid -->
@@ -29,7 +33,7 @@
           <div class="relative aspect-[4/3] overflow-hidden tz-surface-panel shrink-0">
             <img 
               :src="step.img" 
-              :alt="step.fullTitle" 
+              :alt="step.alt"
               class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
               loading="lazy"
               decoding="async"
@@ -37,17 +41,17 @@
             <div class="absolute inset-0 bg-black/20"></div>
             <!-- Step Badge -->
             <div class="absolute top-3 left-3 tz-surface-panel backdrop-blur border tz-border-subtle tz-text-primary text-xs font-mono font-bold px-2 py-1 rounded">
-              Step {{ step.step }}
+              {{ t('companyAboutFactory.process.stepLabel') }} {{ step.step }}
             </div>
           </div>
           
           <!-- Content -->
           <div class="p-5 flex flex-col flex-1">
             <h3 class="text-base font-bold tz-text-primary mb-2 group-hover:text-emerald-700 transition-colors">
-              {{ step.fullTitle }}
+              {{ step.title }}
             </h3>
             <p class="text-sm tz-text-secondary leading-relaxed">
-              {{ step.desc }}
+              {{ step.description }}
             </p>
           </div>
       </article>
@@ -56,44 +60,51 @@
 </template>
 
 <script setup lang="ts">
-const factoryIntro = [
-  {
-    title: 'History & Expertise',
-    desc: 'Began in 2013 in Xiamen, China. We specialize in manufacturing carbon fiber bicycle rims and wheels, successfully innovating and industrialising the supply of lightweight carbon fibre rims to the bicycle industry.'
-  },
-  {
-    title: 'Scale & Capacity',
-    desc: 'More than 20+ experienced engineers in R&D and 250+ effective workers. Monthly capacity of 25,000 pcs rims. 100% quality test & check guarantees all rims meet UCI/ISO standards.'
-  },
-  {
-    title: 'Innovation & Tech',
-    desc: 'Multiple patented technologies in production. We use mostly Toray carbon fiber (T700 mixed with T800/T1000) to balance weight, stiffnes, and durability.'
-  },
-  {
-    title: 'Industry Leader',
-    desc: 'A leader in carbon fiber rim industry. We have built strong relationships with famous bicycle brands worldwide as a trusted OEM/ODM supplier.'
-  }
-]
+import { computed, watch } from 'vue'
+import { useI18n } from '#imports'
+import { usePageMessages } from '~/composables/usePageMessages'
 
-const factorySteps = [
-  { step: '01', title: 'Epoxy Resin Prep', fullTitle: 'Prepare and control epoxy resin', desc: 'We purchase raw materials from reliable suppliers and produce the optimal epoxy resin for carbon rims.', img: '/company/ourstory/factory/factory-EpoxyResinWorkshop1.webp' },
-  { step: '02', title: 'Carbon Prepregs', fullTitle: 'Produce carbon prepregs', desc: 'Different kinds of carbon fibers from Toray Japan. The carbon prepregs are carbon fibers saturated with epoxy resin through the weaving machines.', img: '/company/ourstory/factory/factory-carbonprepregsworkshop2.webp' },
-  { step: '03', title: 'Material Storage', fullTitle: 'Store prepregs at stable temperature', desc: 'Carbon prepregs are saturated with epoxy resin and kept in optimal condition at -5°C, a stable temperature for the resin.', img: '/company/ourstory/factory/factory-carbonprepregsstoreroom3.webp' },
-  { step: '04', title: 'Precision Cutting', fullTitle: 'Cut carbon sheets to precise angles', desc: 'Sheets are cut into desired angles of 0, ±45, ±30, and ±90 degrees, then precisely machine-cut into pieces.', img: '/company/ourstory/factory/factory-cuttingworkshop4.webp' },
-  { step: '05', title: 'Lamination Prep', fullTitle: 'Prepare laminations for rim sections', desc: 'Lamination prepares different parts of the rim with carbon sheets so we can arrange the product more easily and balance rim weight, durability and rigidity.', img: '/company/ourstory/factory/factory-laminationpreparationworkshop5.webp' },
-  { step: '06', title: 'Premold & Layup', fullTitle: 'Premold and hand layup', desc: 'Technicians hand lay fabric layers from outer to inner, smoothing each overlap to avoid wrinkles, fractures and air bubbles before closing the premold.', img: '/company/ourstory/factory/factory-premoldlayupworkshop6.webp' },
-  { step: '07', title: 'Molding & Curing', fullTitle: 'Cure rims under heat and pressure', desc: 'Complete molds are moved to molding machines where heat and pressure are accurately controlled and monitored in curing ovens.', img: '/company/ourstory/factory/factory-moldingworkshop7.webp' },
-  { step: '08', title: 'Visual Inspection', fullTitle: 'Inspect every rim visually', desc: 'All rims are 100% inspected for appearance and obvious defects before moving on.', img: '/company/ourstory/factory/factory-Appearance%20inspection8.webp' },
-  { step: '09', title: 'CNC Machining', fullTitle: 'Drill spoke and valve holes', desc: 'Rims are drilled on aviation-grade CNC machines using bits designed for composites to ensure correct angles and clean holes.', img: '/company/ourstory/factory/factory-cncmachiningworkshop9.webp' },
-  { step: '10', title: 'Weight Check', fullTitle: 'Control rim weight precisely', desc: 'Weight standards are strictly controlled, with measurements accurate to 1 gram.', img: '/company/ourstory/factory/factory-Weightdetection10.webp' },
-  { step: '11', title: 'Sanding', fullTitle: 'Prepare surfaces by sanding', desc: 'After inspection, rims are transferred to the sanding workshop to prepare surfaces for the next processes.', img: '/company/ourstory/factory/factory-sandingworshop11.webp' },
-  { step: '12', title: 'Grinding', fullTitle: 'Refine critical surfaces', desc: 'After sanding, rims move to grinding to refine key surfaces and ensure consistency.', img: '/company/ourstory/factory/factory-grinding12.webp' },
-  { step: '13', title: 'Detailing', fullTitle: 'Handle fine details', desc: 'Details determine success or failure. A dedicated workshop focuses on rim details to keep quality high.', img: '/company/ourstory/factory/factory-detailstreatment13.webp' },
-  { step: '14', title: 'Final Tests', fullTitle: 'Perform additional tests', desc: 'Drainage holes, spoke holes and appearance are checked again before shipment.', img: '/company/ourstory/factory/factory-otherdetection14.webp' },
-  { step: '15', title: 'Painting', fullTitle: 'Apply finishes where required', desc: 'Ultralight rims are paintless, while traditional rims receive glossy, matte or custom finishes in the painting workshop.', img: '/company/ourstory/factory/factory-painting15.webp' },
-  { step: '16', title: 'Decals', fullTitle: 'Apply waterslide decals', desc: 'After painting, rims that require waterslide decals are processed here for branding and graphics.', img: '/company/ourstory/factory/factory-logolidedecals16.webp' },
-  { step: '17', title: 'Laser Engraving', fullTitle: 'Laser carve logos and marks', desc: 'Rims that require laser-carved logos are processed here for a durable, precise finish.', img: '/company/ourstory/factory/factory-lasercarving17.webp' },
-  { step: '18', title: 'Packing', fullTitle: 'Final inspection and packing', desc: 'All rims are inspected again, protected with foam bags and carefully packed into cartons.', img: '/company/ourstory/factory/factory-inspectionpacking18.webp' },
-  { step: '19', title: 'Warehouse', fullTitle: 'Store rims in organized warehouse', desc: 'Compliant operation and clear classification in the warehouse ensure model and rule accuracy.', img: '/company/ourstory/factory/factory-ourwarehouse19.webp' },
-]
+const { locale, t } = useI18n()
+const { loadPageMessages } = usePageMessages('companyAboutFactory')
+
+await loadPageMessages(locale.value)
+
+watch(locale, (nextLocale) => {
+  void loadPageMessages(nextLocale)
+})
+
+const factoryIntroKeys = ['history', 'scale', 'innovation', 'leader'] as const
+const factoryIntro = computed(() => factoryIntroKeys.map((key) => ({
+  title: t(`companyAboutFactory.intro.${key}.title`),
+  desc: t(`companyAboutFactory.intro.${key}.description`),
+})))
+
+const factoryStepSources = [
+  { step: '01', key: 'step01', img: '/company/ourstory/factory/factory-EpoxyResinWorkshop1.webp' },
+  { step: '02', key: 'step02', img: '/company/ourstory/factory/factory-carbonprepregsworkshop2.webp' },
+  { step: '03', key: 'step03', img: '/company/ourstory/factory/factory-carbonprepregsstoreroom3.webp' },
+  { step: '04', key: 'step04', img: '/company/ourstory/factory/factory-cuttingworkshop4.webp' },
+  { step: '05', key: 'step05', img: '/company/ourstory/factory/factory-laminationpreparationworkshop5.webp' },
+  { step: '06', key: 'step06', img: '/company/ourstory/factory/factory-premoldlayupworkshop6.webp' },
+  { step: '07', key: 'step07', img: '/company/ourstory/factory/factory-moldingworkshop7.webp' },
+  { step: '08', key: 'step08', img: '/company/ourstory/factory/factory-Appearance%20inspection8.webp' },
+  { step: '09', key: 'step09', img: '/company/ourstory/factory/factory-cncmachiningworkshop9.webp' },
+  { step: '10', key: 'step10', img: '/company/ourstory/factory/factory-Weightdetection10.webp' },
+  { step: '11', key: 'step11', img: '/company/ourstory/factory/factory-sandingworshop11.webp' },
+  { step: '12', key: 'step12', img: '/company/ourstory/factory/factory-grinding12.webp' },
+  { step: '13', key: 'step13', img: '/company/ourstory/factory/factory-detailstreatment13.webp' },
+  { step: '14', key: 'step14', img: '/company/ourstory/factory/factory-otherdetection14.webp' },
+  { step: '15', key: 'step15', img: '/company/ourstory/factory/factory-painting15.webp' },
+  { step: '16', key: 'step16', img: '/company/ourstory/factory/factory-logolidedecals16.webp' },
+  { step: '17', key: 'step17', img: '/company/ourstory/factory/factory-lasercarving17.webp' },
+  { step: '18', key: 'step18', img: '/company/ourstory/factory/factory-inspectionpacking18.webp' },
+  { step: '19', key: 'step19', img: '/company/ourstory/factory/factory-ourwarehouse19.webp' },
+] as const
+
+const factorySteps = computed(() => factoryStepSources.map((step) => ({
+  ...step,
+  title: t(`companyAboutFactory.steps.${step.key}.title`),
+  description: t(`companyAboutFactory.steps.${step.key}.description`),
+  alt: t(`companyAboutFactory.steps.${step.key}.alt`),
+})))
 </script>

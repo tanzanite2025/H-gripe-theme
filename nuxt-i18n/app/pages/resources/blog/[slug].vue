@@ -2,7 +2,6 @@
   <BlogPostDetailContent
     v-if="post"
     :post="post"
-    :category="null"
   />
 </template>
 
@@ -15,12 +14,10 @@ definePageMeta({
 })
 
 const { post } = await useBlogPostDetail({
-  category: null,
   keyPrefix: 'blog-post',
 })
 
 useBlogPostSeo({
   post,
-  category: null,
 })
 </script>

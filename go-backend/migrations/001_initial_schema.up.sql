@@ -189,7 +189,6 @@ CREATE TABLE IF NOT EXISTS faqs (
     id BIGSERIAL PRIMARY KEY,
     question TEXT NOT NULL,
     answer TEXT NOT NULL,
-    category VARCHAR(100),
     locale VARCHAR(10) DEFAULT 'en',
     parent_id BIGINT,
     "order" INT DEFAULT 0,
@@ -201,7 +200,6 @@ CREATE TABLE IF NOT EXISTS faqs (
     FOREIGN KEY (parent_id) REFERENCES faqs(id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_faqs_category ON faqs(category);
 CREATE INDEX IF NOT EXISTS idx_faqs_locale ON faqs(locale);
 CREATE INDEX IF NOT EXISTS idx_faqs_status ON faqs(status);
 CREATE INDEX IF NOT EXISTS idx_faqs_deleted_at ON faqs(deleted_at);

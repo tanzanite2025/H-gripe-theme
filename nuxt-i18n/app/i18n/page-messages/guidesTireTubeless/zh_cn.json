@@ -1,0 +1,57 @@
+{
+  "title": "无内胎轮胎概览",
+  "images": {
+    "constructionAlt": "无内胎、内胎和管胎公路车轮胎对比",
+    "constructionCaption": "结构差异：内胎、无内胎与管胎",
+    "performanceAlt": "对比无内胎、内胎和管胎轮胎优缺点的图表",
+    "performanceCaption": "性能对照：阻力、防护与舒适性"
+  },
+  "definitions": {
+    "title": "系统定义",
+    "innerTube": {
+      "title": "内胎系统",
+      "description": "经典结构：外胎搭配内胎，充气内胎位于外胎内部。",
+      "label": "通用兼容"
+    },
+    "tubeless": {
+      "title": "无内胎系统",
+      "description": "不需要内胎。轮胎、专用车圈和气嘴共同形成类似汽车轮胎的密闭气腔。",
+      "label": "性能标准"
+    },
+    "button": "查看规格"
+  },
+  "suitability": {
+    "title": "我适合使用无内胎吗？",
+    "innerTube": "如果您主要日常通勤或休闲骑行，内胎系统已经够用，而且维护简单。",
+    "tubeless": "如果您经常在复杂路面骑行，希望降低滚动阻力，或需要更强的防刺保护，无内胎系统会是更合适的选择。",
+    "noteTitle": "提示",
+    "note": "如果您之前使用的是传统内胎和外胎组合的铝车圈，现在计划升级为无内胎系统，请先查看上方的车圈剖面图。支持无内胎的车圈通常可以同时兼容内胎和无内胎轮胎；但如果您的车圈属于上方第一个示例，只为传统内胎设计，则不兼容无内胎轮胎，必须更换。"
+  },
+  "advantages": {
+    "title": "主要优势概览",
+    "selfSealing": {
+      "title": "自动补漏",
+      "description": "补胎液可以自动填补小孔，避免内胎蛇咬爆胎。"
+    },
+    "lowerPressure": {
+      "title": "更低胎压",
+      "description": "公路车无内胎系统可以使用约 80 psi 或更低胎压，在避免蛇咬的同时提升抓地力和舒适性。"
+    },
+    "rollingResistance": {
+      "title": "滚动阻力",
+      "description": "减少内胎与外胎之间的摩擦，有助于提升滚动速度。"
+    }
+  },
+  "navigation": {
+    "installation": {
+      "title": "安装指南",
+      "description": "分步骤查看安装图示",
+      "button": "前往安装"
+    },
+    "pressure": {
+      "title": "胎压检查",
+      "description": "查找无内胎系统的合适胎压",
+      "button": "检查胎压"
+    }
+  }
+}

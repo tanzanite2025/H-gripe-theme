@@ -23,7 +23,7 @@ func NewRoutesHandler(catalog *service.StorefrontRouteCatalogService) *RoutesHan
 }
 
 func (h *RoutesHandler) Stats(c *gin.Context) {
-	stats, err := h.catalog.Stats()
+	stats, err := h.catalog.StatsForLocale(strings.TrimSpace(c.Query("locale")))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

@@ -167,12 +167,28 @@ func TestAutoReplyRuleValidationAllowsStructuredFAQ(t *testing.T) {
 		ReplyMessage:   "This FAQ should help.",
 		Locale:         "en",
 		MessageType:    "faq",
-		Metadata:       `{"faq_id":123,"page_id":"payment-security","category":"payments","question":"Is my payment secure?","answer_excerpt":"Payments are securely processed.","url":"/support/faqs?page=payment-security&faq=123","answer_image_url":"/uploads/faq/payment.webp"}`,
+		Metadata:       `{"faq_id":123,"page_id":"payment-security","question":"Is my payment secure?","answer_excerpt":"Payments are securely processed.","url":"/support/faqs?page=payment-security&faq=123","answer_image_url":"/uploads/faq/payment.webp"}`,
 		IsActive:       true,
 		MatchType:      "contains",
 	}, nil)
 	require.NoError(t, err)
 	require.Equal(t, "faq", rule.MessageType)
+}
+
+func TestAutoReplyRuleValidationRejectsLegacyFAQCategoryMetadata(t *testing.T) {
+	_, err := normalizeAutoReplyRuleInput(AutoReplyRuleInput{
+		Type:           "keyword",
+		TriggerKeyword: "payment",
+		ReplyMessage:   "This FAQ should help.",
+		Locale:         "en",
+		MessageType:    "faq",
+		Metadata:       `{"faq_id":123,"question":"Is my payment secure?","category":"payments","url":"/support/faqs?page=payment-security&faq=123"}`,
+		IsActive:       true,
+		MatchType:      "contains",
+	}, nil)
+
+	require.ErrorIs(t, err, ErrInvalidAutoReplyRule)
+	require.ErrorContains(t, err, "category metadata is no longer supported")
 }
 
 func TestAutoReplyRuleValidationRejectsInvalidFAQMetadata(t *testing.T) {
@@ -337,7 +353,6 @@ func TestAutoReplyFAQReferenceRequiresPublishedSameLocale(t *testing.T) {
 		Question: "Are payments secure?",
 		Answer:   "Yes.",
 		PageID:   "support-payment",
-		Category: "payment-security",
 		Locale:   "en",
 		Status:   "published",
 	}
@@ -350,7 +365,7 @@ func TestAutoReplyFAQReferenceRequiresPublishedSameLocale(t *testing.T) {
 		ReplyMessage:   "See the payment FAQ.",
 		Locale:         "en-US",
 		MessageType:    "faq",
-		Metadata:       `{"faq_id":1,"page_id":"support-payment","category":"payment-security","locale":"en","question":"Are payments secure?","url":"/support/faqs?page=support-payment&faq=1"}`,
+		Metadata:       `{"faq_id":1,"page_id":"support-payment","locale":"en","question":"Are payments secure?","url":"/support/faqs?page=support-payment&faq=1"}`,
 		IsActive:       true,
 		MatchType:      "contains",
 	}

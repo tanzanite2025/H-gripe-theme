@@ -1,0 +1,50 @@
+{
+  "title": "Hole Patterns",
+  "intro": "A variety of rim drilling patterns is available to meet different hub geometries and lacing requirements.",
+  "sections": {
+    "support": {
+      "title": "Our Support",
+      "items": {
+        "symmetrical": {
+          "label": "Symmetrical Drilling",
+          "description": "Suitable for standard hubs, providing balanced spoke tension."
+        },
+        "asymmetrical": {
+          "label": "Asymmetrical Drilling",
+          "description": "Optimizes tension between the drive and non-drive sides, enhancing stability."
+        },
+        "customCounts": {
+          "label": "Custom Hole Counts",
+          "description": "Available in 16, 20, 24, 28, 32, and 36-hole configurations."
+        },
+        "angled": {
+          "label": "Angled Drilling",
+          "description": "Hole angles are optimized for specific lacing patterns to reduce spoke stress."
+        }
+      }
+    },
+    "customization": {
+      "title": "Customization Services",
+      "intro": "We support customers with tailored drilling solutions based on specific needs.",
+      "items": {
+        "specialCounts": "Special hole counts",
+        "customLacing": "Custom lacing compatibility",
+        "exclusiveDesigns": "OEM/ODM exclusive designs"
+      }
+    },
+    "automated": {
+      "title": "Advantages of Automated Machinery",
+      "intro": "All drilling processes are carried out using our self-developed automated machinery, ensuring:",
+      "items": {
+        "precision": "High-precision hole placement",
+        "consistency": "Consistency and repeatability",
+        "scalableCapacity": "Fast delivery and scalable production capacity"
+      }
+    },
+    "commitment": {
+      "title": "Our Commitment",
+      "body": "By combining automation with customization, we provide suitable rim drilling solutions for different riders and brands, supporting long-term stability and reliability."
+    }
+  },
+  "closeVideo": "Close video"
+}

@@ -95,6 +95,7 @@ const normalizeBackendCartItem = (
   const variant = item.variant || {}
   const thumbnail = resolveProductThumbnail(product, mediaContext)
   const itemCurrency = normalizeCurrencyCode(item.currency || variant.currency || product.currency) || normalizeCurrencyCode(fallbackCurrency) || 'USD'
+  const fulfillmentMode = product.fulfillment_mode === 'made_to_order' ? 'made_to_order' : 'stock'
 
   return {
     id: cartItemKey(productId, variantId),
@@ -110,6 +111,7 @@ const normalizeBackendCartItem = (
     image: thumbnail,
     thumbnail,
     categories: product.categories || [],
+    fulfillment_mode: fulfillmentMode,
   }
 }
 

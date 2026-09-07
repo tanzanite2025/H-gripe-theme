@@ -9,6 +9,7 @@ import type {
   GoProduct,
   ProductBreadcrumbItem,
   ProductMediaImage,
+  ProductAvailability,
   ProductVariant,
   SpecDefinition,
 } from '~/types/productDetail'
@@ -39,7 +40,7 @@ export interface ProductDetailSeoOptions {
   productImages: Ref<ProductMediaImage[]>
   activeVariants: Ref<ProductVariant[]>
   selectedVariant: Ref<ProductVariant | null>
-  selectedAvailability: Ref<'in_stock' | 'out_of_stock'>
+  selectedAvailability: Ref<ProductAvailability>
   currentDisplayPrice: Ref<{ amount: number; currency: string }>
   variantOptionDefinitions: Ref<SpecDefinition[]>
   variantLabel: (variant: ProductVariant) => string

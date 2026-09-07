@@ -33,6 +33,12 @@
     "quantity": "Quantity",
     "decreaseQuantity": "Decrease quantity",
     "increaseQuantity": "Increase quantity",
-    "notFound": "Product not found"
+    "notFound": "Product not found",
+    "signatureNote": "Orders totaling $750 USD or more require a signature at delivery.",
+    "madeToOrder": {
+      "title": "Made to order",
+      "description": "This item is produced after your order is confirmed. Production time is added to the shipping time and the expected schedule will be confirmed with your order.",
+      "cancellation": "Cancellation is available only before production or material cutting begins. After production starts, cancellation may be restricted and a custom handling fee may apply."
+    }
   }
 }

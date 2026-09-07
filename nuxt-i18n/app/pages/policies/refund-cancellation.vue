@@ -1,6 +1,6 @@
 <template>
   <div class="company-page">
-    <h1 class="sr-only">{{ pageTitle }}</h1>
+    <h1 class="sr-only">{{ t('refundCancellation.title') }}</h1>
 
     <div class="policies-content">
       <RefundCancellationPolicyContent />
@@ -9,10 +9,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { watch } from 'vue'
 import { useHead, definePageMeta, useI18n } from '#imports'
 import RefundCancellationPolicyContent from '~/components/RefundCancellationPolicyContent.vue'
-import { getRefundCancellationPolicyContent } from '~/data/refundCancellationPolicy'
+import { usePageMessages } from '~/composables/usePageMessages'
 
 definePageMeta({
   layout: 'products',
@@ -20,14 +20,18 @@ definePageMeta({
   footerLabelFallback: 'Refund & Cancellation Policy',
 })
 
-const { locale } = useI18n()
-const pageTitle = computed(() => getRefundCancellationPolicyContent(locale.value).title)
+const { locale, t } = useI18n()
+const { loadPageMessages } = usePageMessages('refundCancellation')
 
-useHead(() => {
-  return {
-    title: pageTitle.value,
-  }
+await loadPageMessages(locale.value)
+
+watch(locale, (nextLocale) => {
+  void loadPageMessages(nextLocale)
 })
+
+useHead(() => ({
+  title: t('refundCancellation.title'),
+}))
 </script>
 
 <style scoped>

@@ -10,6 +10,7 @@ import {
 } from '~/utils/productDetail'
 import type {
   GoProduct,
+  ProductAvailability,
   ProductVariant,
   ProductVariantOptionGroup,
 } from '~/types/productDetail'
@@ -26,7 +27,9 @@ export function useProductDetailVariants(
     return (product.value?.variants || []).filter((variant) => variant.is_active !== false)
   })
 
-  const isVariantInStock = (variant: ProductVariant) => variant.availability === 'in_stock'
+  const isVariantPurchasable = (variant: ProductVariant) => (
+    variant.availability === 'in_stock' || variant.availability === 'made_to_order'
+  )
   const requestedVariantId = computed(() => {
     const value = Number(route.query.variant || 0)
     return Number.isFinite(value) && value > 0 ? value : 0
@@ -45,8 +48,8 @@ export function useProductDetailVariants(
       return
     }
 
-    const defaultVariant = variants.find((variant) => variant.is_default && isVariantInStock(variant))
-      || variants.find(isVariantInStock)
+    const defaultVariant = variants.find((variant) => variant.is_default && isVariantPurchasable(variant))
+      || variants.find(isVariantPurchasable)
       || variants.find((variant) => variant.is_default)
       || variants[0]
     if (defaultVariant) selectedVariantId.value = defaultVariant.id
@@ -125,7 +128,7 @@ export function useProductDetailVariants(
           if (!value) return
 
           const existing = optionsByValue.get(value)
-          const available = isVariantInStock(variant)
+          const available = isVariantPurchasable(variant)
           const metadata = variantOptionMetadata(slug, value)
           if (existing) {
             existing.available = existing.available || available
@@ -170,10 +173,10 @@ export function useProductDetailVariants(
     )
 
     const exactVariant = activeVariants.value.find((variant) => (
-      isExactMatch(variant) && isVariantInStock(variant)
+      isExactMatch(variant) && isVariantPurchasable(variant)
     )) || activeVariants.value.find(isExactMatch)
     const fallbackVariant = activeVariants.value.find((variant) => (
-      isFallbackMatch(variant) && isVariantInStock(variant)
+      isFallbackMatch(variant) && isVariantPurchasable(variant)
     )) || activeVariants.value.find(isFallbackMatch)
     const nextVariant = exactVariant || fallbackVariant
     if (nextVariant) selectedVariantId.value = nextVariant.id
@@ -242,7 +245,7 @@ export function useProductDetailVariants(
     return { amount: Number(effectivePrice.value || 0), currency: currentCurrency.value }
   })
 
-  const selectedAvailability = computed(() => {
+  const selectedAvailability = computed<ProductAvailability>(() => {
     if (selectedVariant.value) return selectedVariant.value.availability || 'out_of_stock'
     if (product.value && activeVariants.value.length === 0) {
       return product.value.availability || 'out_of_stock'
@@ -253,7 +256,7 @@ export function useProductDetailVariants(
   const canAddToCart = computed(() => Boolean(
     product.value
     && Number(effectivePrice.value) > 0
-    && selectedAvailability.value === 'in_stock',
+    && ['in_stock', 'made_to_order'].includes(selectedAvailability.value),
   ))
 
   const formattedPrice = computed(() => {

@@ -9,12 +9,12 @@
       <input
         v-model="query"
         type="text"
-        placeholder="Type a hub model (e.g. '350', '240', 'Mavic')..."
+        :placeholder="t('resourcesSpokeCalculator.search.placeholder')"
         class="spoke-smart-search__input block w-full pl-10 pr-4 py-3"
       />
       <div v-if="query.length > 1 && matchingConfigs.length > 0" class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
         <span class="spoke-smart-search__badge inline-flex items-center px-2 py-0.5 rounded text-xs font-medium">
-          {{ matchingConfigs.length }} builds found
+          {{ t('resourcesSpokeCalculator.search.buildsFound', { count: matchingConfigs.length }) }}
         </span>
       </div>
     </div>
@@ -53,13 +53,15 @@
 
           <div class="spoke-smart-search__result-stack min-w-[180px] border-t pt-4 md:border-t-0 md:border-l md:pl-6 md:pt-0">
             <div class="tz-compact-label tz-text-muted mb-2 text-center">
-              Verified
+              {{ t('resourcesSpokeCalculator.search.verified') }}
             </div>
             <div class="grid grid-cols-2 gap-x-4 gap-y-2">
               <div v-for="cell in resultCells(config)" :key="cell.label" class="text-center">
                 <div class="tz-compact-label tz-text-muted mb-0.5">{{ cell.label }}</div>
                 <div class="text-lg font-mono font-bold text-[var(--tz-site-accent)]">
-                  {{ cell.value }}<span class="tz-micro-label tz-text-muted ml-0.5">mm</span>
+                  {{ cell.value }}<span class="tz-micro-label tz-text-muted ml-0.5">
+                    {{ t('resourcesSpokeCalculator.search.unit') }}
+                  </span>
                 </div>
               </div>
             </div>
@@ -71,7 +73,9 @@
         v-if="query.length > 1 && matchingConfigs.length === 0"
         class="spoke-smart-search__empty text-center py-12 tz-text-muted"
       >
-        <p class="text-sm">No verified build result found for "{{ query }}".</p>
+        <p class="text-sm">
+          {{ t('resourcesSpokeCalculator.search.empty', { query }) }}
+        </p>
       </div>
 
     </TransitionGroup>
@@ -80,10 +84,12 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useI18n } from '#imports'
 import type { WheelBuildPreset } from '~/data/spoke-calculator/database'
 import { useSpokeCalculatorCatalog } from '~/composables/useSpokeCalculatorCatalog'
 
 const query = ref('')
+const { t } = useI18n()
 const { presets, options: catalogOptions } = useSpokeCalculatorCatalog()
 
 interface LengthCell {
@@ -116,10 +122,10 @@ function actualResultCells(preset: WheelBuildPreset): LengthCell[] {
   if (!actual) return []
 
   return [
-    { label: 'F Left', value: actual.frontLeft },
-    { label: 'F Right', value: actual.frontRight },
-    { label: 'R Left', value: actual.rearLeft },
-    { label: 'R Right', value: actual.rearRight },
+    { label: t('resourcesSpokeCalculator.search.frontLeft'), value: actual.frontLeft },
+    { label: t('resourcesSpokeCalculator.search.frontRight'), value: actual.frontRight },
+    { label: t('resourcesSpokeCalculator.search.rearLeft'), value: actual.rearLeft },
+    { label: t('resourcesSpokeCalculator.search.rearRight'), value: actual.rearRight },
   ]
     .filter((cell): cell is { label: string; value: number } => cell.value != null)
     .map(cell => ({
@@ -133,7 +139,10 @@ function formatLength(value: number) {
 }
 
 function nippleTypeLabel(value: WheelBuildPreset['nippleType']) {
-  return nippleTypeLabels.value.get(value) || value
+  return t(
+    `resourcesSpokeCalculator.calculator.options.nippleType.${value}`,
+    nippleTypeLabels.value.get(value) || value,
+  )
 }
 </script>
 

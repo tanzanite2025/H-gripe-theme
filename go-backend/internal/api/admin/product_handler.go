@@ -163,7 +163,7 @@ func (h *ProductHandler) CreateProduct(c *gin.Context) {
 	}
 
 	newProduct, err := h.productService.CreateAdminProduct(service.ProductCreateInput{
-		ProductSpecificationTemplateID:                  req.ProductSpecificationTemplateID,
+		ProductSpecificationTemplateID: req.ProductSpecificationTemplateID,
 		ProductCategoryID:              req.ProductCategoryID,
 		BrandID:                        req.BrandID,
 		ShippingTemplateID:             req.ShippingTemplateID,
@@ -179,6 +179,7 @@ func (h *ProductHandler) CreateProduct(c *gin.Context) {
 		Description:                    req.Description,
 		ShortDesc:                      req.ShortDesc,
 		Currency:                       req.Currency,
+		FulfillmentMode:                req.FulfillmentMode,
 		Status:                         req.Status,
 		Locale:                         req.Locale,
 		ParentID:                       req.ParentID,
@@ -237,6 +238,7 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 	_, updateCountryOfOrigin := raw["country_of_origin"]
 	_, updateCustomsDescription := raw["customs_description"]
 	_, updateCurrency := raw["currency"]
+	_, updateFulfillmentMode := raw["fulfillment_mode"]
 	_, updateSpecs := raw["specs"]
 	_, updateVariants := raw["variants"]
 	_, updateVariantOptionValues := raw["variant_option_values"]
@@ -252,8 +254,8 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 	}
 
 	updatedProduct, err := h.productService.UpdateAdminProduct(uint(id), service.ProductUpdateInput{
-		ProductSpecificationTemplateID:                        req.ProductSpecificationTemplateID,
-		UpdateProductSpecificationTemplateID:                  updateProductSpecificationTemplateID,
+		ProductSpecificationTemplateID:       req.ProductSpecificationTemplateID,
+		UpdateProductSpecificationTemplateID: updateProductSpecificationTemplateID,
 		ProductCategoryID:                    req.ProductCategoryID,
 		UpdateProductCategoryID:              updateProductCategoryID,
 		BrandID:                              req.BrandID,
@@ -280,6 +282,8 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 		ShortDesc:                            req.ShortDesc,
 		Currency:                             req.Currency,
 		UpdateCurrency:                       updateCurrency,
+		FulfillmentMode:                      req.FulfillmentMode,
+		UpdateFulfillmentMode:                updateFulfillmentMode,
 		Status:                               req.Status,
 		Locale:                               req.Locale,
 		ParentID:                             req.ParentID,

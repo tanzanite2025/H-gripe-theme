@@ -118,7 +118,9 @@ const normalizeBaseURL = (value?: string) => {
 
 const resolveApiBases = (config: ReturnType<typeof useRuntimeConfig>) => {
   const baseURL = normalizeBaseURL((config.public as { apiBase?: string })?.apiBase)
-  const internalOrigin = String((config as { apiInternalOrigin?: string }).apiInternalOrigin || '').trim().replace(/\/+$/, '')
+  const internalOrigin = import.meta.server
+    ? String((config as { apiInternalOrigin?: string }).apiInternalOrigin || '').trim().replace(/\/+$/, '')
+    : ''
   const requestBaseURL = import.meta.server && internalOrigin && baseURL.startsWith('/')
     ? `${internalOrigin}${baseURL === '/' ? '' : baseURL}`
     : baseURL

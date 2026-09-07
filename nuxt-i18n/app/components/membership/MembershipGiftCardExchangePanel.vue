@@ -1,53 +1,64 @@
 <template>
-  <section class="giftcard-exchange" aria-labelledby="giftcard-exchange-title">
+  <section
+    class="giftcard-exchange"
+    aria-labelledby="giftcard-exchange-title"
+    :aria-label="t('resourcesMembershipExchange.giftcards.ariaLabel', 'Gift card exchange summary')"
+  >
     <div class="giftcard-exchange__shell">
       <div class="giftcard-exchange__header">
         <div class="giftcard-exchange__copy">
-          <p class="giftcard-exchange__eyebrow">{{ t('giftcards.eyebrow', 'Gift cards') }}</p>
+          <p class="giftcard-exchange__eyebrow">
+            {{ t('resourcesMembershipExchange.giftcards.eyebrow', 'Gift cards') }}
+          </p>
           <h3 id="giftcard-exchange-title" class="giftcard-exchange__title">
-            {{ t('giftcards.title', 'Redeem Points for Gift Cards') }}
+            {{ t('resourcesMembershipExchange.giftcards.title', 'Redeem Points for Gift Cards') }}
           </h3>
           <p class="giftcard-exchange__intro">
             {{
               t(
-                'giftcards.exchangeIntro',
+                'resourcesMembershipExchange.giftcards.exchangeIntro',
                 'Convert loyalty points into published gift card options, then track redeemed cards from your member center.'
               )
             }}
           </p>
         </div>
 
-        <div class="giftcard-exchange__stats" aria-label="Gift card exchange summary">
+        <div
+          class="giftcard-exchange__stats"
+          :aria-label="t('resourcesMembershipExchange.giftcards.ariaLabel', 'Gift card exchange summary')"
+        >
           <div class="giftcard-exchange__stat">
-            <span>{{ t('giftcards.stats.points', 'Points balance') }}</span>
+            <span>{{ t('resourcesMembershipExchange.giftcards.stats.points', 'Points balance') }}</span>
             <strong>{{ pointsDisplay }}</strong>
           </div>
           <div class="giftcard-exchange__stat">
-            <span>{{ t('giftcards.stats.redemption', 'Redemption rule') }}</span>
-            <strong>{{ redemptionRuleDescription || t('member.points.notConfigured', 'Not configured') }}</strong>
+            <span>{{ t('resourcesMembershipExchange.giftcards.stats.redemption', 'Redemption rule') }}</span>
+            <strong>
+              {{ redemptionRuleDescription || t('resourcesMembershipExchange.giftcards.notConfigured', 'Not configured') }}
+            </strong>
           </div>
           <div class="giftcard-exchange__stat">
-            <span>{{ t('giftcards.stats.owned', 'Owned cards') }}</span>
+            <span>{{ t('resourcesMembershipExchange.giftcards.stats.owned', 'Owned cards') }}</span>
             <strong>{{ ownedCardsCount }}</strong>
           </div>
         </div>
       </div>
 
       <div v-if="!isLogged" class="giftcard-exchange__notice">
-        {{ t('giftcards.signInNotice', 'Sign in to redeem points and see your redeemed gift cards.') }}
+        {{ t('resourcesMembershipExchange.giftcards.signInNotice', 'Sign in to redeem points and see your redeemed gift cards.') }}
       </div>
 
       <div class="giftcard-exchange__body">
         <div v-if="loading" class="giftcard-exchange__state">
           <span class="giftcard-exchange__state-title">{{ t('common.loading', 'Loading...') }}</span>
           <span class="giftcard-exchange__state-copy">
-            {{ t('giftcards.loadingCopy', 'Fetching active gift card redemption options.') }}
+            {{ t('resourcesMembershipExchange.giftcards.loadingCopy', 'Fetching active gift card redemption options.') }}
           </span>
         </div>
 
         <div v-else-if="error" class="giftcard-exchange__state giftcard-exchange__state--error">
           <span class="giftcard-exchange__state-title">
-            {{ t('giftcards.loadErrorTitle', 'Could not load gift cards') }}
+            {{ t('resourcesMembershipExchange.giftcards.loadErrorTitle', 'Could not load gift cards') }}
           </span>
           <span class="giftcard-exchange__state-copy">{{ error }}</span>
         </div>
@@ -59,16 +70,18 @@
                 <Icon name="lucide:credit-card" class="giftcard-icon" aria-hidden="true" />
                 <div class="giftcard-info">
                   <div class="giftcard-code">{{ card.label }}</div>
-                  <div class="giftcard-label">{{ t('giftcards.balance', 'Balance') }}</div>
+                  <div class="giftcard-label">{{ t('resourcesMembershipExchange.giftcards.balance', 'Balance') }}</div>
                 </div>
                 <div class="giftcard-value">{{ formatGiftcardValue(card) }}</div>
               </div>
 
               <div class="giftcard-footer">
                 <span class="giftcard-points">
-                  {{ t('giftcards.pointsRequired', 'Points required') }}: {{ formatNumber(card.points_required || 0) }}
+                  {{ t('resourcesMembershipExchange.giftcards.pointsRequired', 'Points required') }}:
+                  {{ formatNumber(card.points_required || 0) }}
                   <span class="giftcard-stock">
-                    · {{ t('giftcards.remaining', 'Remaining') }}: {{ formatNumber(card.remaining_quantity || 0) }}
+                    · {{ t('resourcesMembershipExchange.giftcards.remaining', 'Remaining') }}:
+                    {{ formatNumber(card.remaining_quantity || 0) }}
                   </span>
                 </span>
                 <button
@@ -84,27 +97,27 @@
           </div>
 
           <div v-else class="giftcard-exchange__empty">
-            <h4>{{ t('giftcards.noCardsTitle', 'No active gift cards right now') }}</h4>
+            <h4>{{ t('resourcesMembershipExchange.giftcards.noCardsTitle', 'No active gift cards right now') }}</h4>
             <p>
               {{
                 t(
-                  'giftcards.noCardsBody',
+                  'resourcesMembershipExchange.giftcards.noCardsBody',
                   'When new reward options are released, they will appear here for points redemption.'
                 )
               }}
             </p>
             <div class="giftcard-exchange__empty-actions">
 <NuxtLink :to="localePath('/resources/membershipandpoints/levers')" class="giftcard-exchange__link giftcard-exchange__link--primary">
-                {{ t('giftcards.viewPointRules', 'View point rules') }}
+                {{ t('resourcesMembershipExchange.giftcards.viewPointRules', 'View point rules') }}
               </NuxtLink>
 <NuxtLink :to="localePath('/resources/membershipandpoints/myinfo')" class="giftcard-exchange__link">
-                {{ t('giftcards.backToMemberInfo', 'Member info') }}
+                {{ t('resourcesMembershipExchange.giftcards.backToMemberInfo', 'Member info') }}
               </NuxtLink>
             </div>
           </div>
 
           <div v-if="isLogged && userGiftCards.length > 0" class="owned-giftcard-list">
-            <h4>{{ t('giftcards.myCards', 'My Gift Cards') }}</h4>
+            <h4>{{ t('resourcesMembershipExchange.giftcards.myCards', 'My Gift Cards') }}</h4>
             <div v-for="card in userGiftCards" :key="card.id" class="owned-giftcard-item">
               <div>
                 <strong>{{ card.code }}</strong>
@@ -124,8 +137,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { useI18n, useLocalePath } from '#imports'
+import { usePageMessages } from '~/composables/usePageMessages'
 
 interface GiftCardOption {
   id: number
@@ -151,7 +165,8 @@ interface UserGiftCard {
 const props = withDefaults(defineProps<{
   isLogged: boolean
   points: number
-  redemptionRuleDescription?: string
+  redemptionExchangeRate?: number | null
+  pointsBaseCurrency?: string
   availableGiftcards: GiftCardOption[]
   userGiftCards: UserGiftCard[]
   loading?: boolean
@@ -160,7 +175,8 @@ const props = withDefaults(defineProps<{
   redeemMessage?: string
   redeemSuccess?: boolean
 }>(), {
-  redemptionRuleDescription: '',
+  redemptionExchangeRate: null,
+  pointsBaseCurrency: 'USD',
   loading: false,
   error: '',
   redeemingCardId: null,
@@ -172,8 +188,15 @@ const emit = defineEmits<{
   (event: 'redeem', card: GiftCardOption): void
 }>()
 
-const { t } = useI18n()
+const { locale, t, te } = useI18n()
 const localePath = useLocalePath()
+const { loadPageMessages } = usePageMessages('resourcesMembershipExchange')
+
+await loadPageMessages(locale.value)
+
+watch(locale, (nextLocale) => {
+  void loadPageMessages(nextLocale)
+})
 
 const formatNumber = (value: number) => {
   const numericValue = Number(value)
@@ -190,6 +213,20 @@ const formatAmount = (value: number) => {
 const pointsDisplay = computed(() => formatNumber(props.points || 0))
 const ownedCardsCount = computed(() => formatNumber(props.userGiftCards.length))
 
+const redemptionRuleDescription = computed(() => {
+  const exchangeRate = Number(props.redemptionExchangeRate)
+  if (!Number.isFinite(exchangeRate) || exchangeRate <= 0) return ''
+
+  const points = Number.isInteger(exchangeRate)
+    ? String(exchangeRate)
+    : exchangeRate.toFixed(2).replace(/\.?0+$/, '')
+  const currency = String(props.pointsBaseCurrency || 'USD').trim().toUpperCase() || 'USD'
+  const key = 'resourcesMembershipExchange.giftcards.redemptionDisplayRule'
+  return te(key)
+    ? t(key, { points, currency, amount: 1 })
+    : `${points} Points = ${currency} 1`
+})
+
 const formatGiftcardValue = (card: GiftCardOption) => {
   return `${card.currency} ${formatAmount(Number(card.giftcard_value ?? 0))}`
 }
@@ -204,9 +241,13 @@ const isRedeemDisabled = (card: GiftCardOption) => {
 }
 
 const redeemButtonLabel = (card: GiftCardOption) => {
-  if (props.redeemingCardId === card.id) return t('giftcards.redeeming', 'Redeeming...')
-  if (!props.isLogged) return t('giftcards.signInToRedeem', 'Sign in to redeem')
-  return t('giftcards.redeem', 'Redeem')
+  if (props.redeemingCardId === card.id) {
+    return t('resourcesMembershipExchange.giftcards.redeeming', 'Redeeming...')
+  }
+  if (!props.isLogged) {
+    return t('resourcesMembershipExchange.giftcards.signInToRedeem', 'Sign in to redeem')
+  }
+  return t('resourcesMembershipExchange.giftcards.redeem', 'Redeem')
 }
 </script>
 

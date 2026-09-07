@@ -24,14 +24,15 @@ type PublicCartItem struct {
 }
 
 type PublicCartProduct struct {
-	ID           uint              `json:"id"`
-	Name         string            `json:"name"`
-	Slug         string            `json:"slug"`
-	ShortDesc    string            `json:"short_description"`
-	Price        float64           `json:"price"`
-	SalePrice    *float64          `json:"sale_price"`
-	Availability string            `json:"availability"`
-	Media        []PublicCartMedia `json:"media,omitempty"`
+	ID              uint              `json:"id"`
+	Name            string            `json:"name"`
+	Slug            string            `json:"slug"`
+	ShortDesc       string            `json:"short_description"`
+	Price           float64           `json:"price"`
+	SalePrice       *float64          `json:"sale_price"`
+	FulfillmentMode string            `json:"fulfillment_mode,omitempty"`
+	Availability    string            `json:"availability"`
+	Media           []PublicCartMedia `json:"media,omitempty"`
 }
 
 type PublicCartVariant struct {
@@ -73,6 +74,10 @@ func PublicCartSummaryFromDomain(summary *productdomain.CartSummary, resolvers .
 	resolver := publicmediaResolver(resolvers)
 	items := make([]PublicCartItem, 0, len(summary.Items))
 	for _, item := range summary.Items {
+		fulfillmentMode := productdomain.FulfillmentModeStock
+		if item.Product != nil {
+			fulfillmentMode = productdomain.NormalizeFulfillmentMode(item.Product.FulfillmentMode)
+		}
 		publicItem := PublicCartItem{
 			ID:        item.ID,
 			CartID:    item.CartID,
@@ -91,21 +96,22 @@ func PublicCartSummaryFromDomain(summary *productdomain.CartSummary, resolvers .
 				Price:        item.Variant.Price,
 				SalePrice:    item.Variant.SalePrice,
 				IsDefault:    item.Variant.IsDefault,
-				Availability: string(cartAvailabilityForVariant(*item.Variant)),
+				Availability: string(cartAvailabilityForVariant(*item.Variant, fulfillmentMode)),
 			}
 			publicItem.Variant = &publicVariant
 		}
 		if item.Product != nil {
 			price, salePrice := item.Product.DisplayPrices()
 			publicProduct := PublicCartProduct{
-				ID:           item.Product.ID,
-				Name:         item.Product.Name,
-				Slug:         item.Product.Slug,
-				ShortDesc:    item.Product.ShortDesc,
-				Price:        price,
-				SalePrice:    salePrice,
-				Availability: string(cartAvailabilityForProduct(*item.Product)),
-				Media:        publicCartMediaFromDomain(item.Product.Media, resolver),
+				ID:              item.Product.ID,
+				Name:            item.Product.Name,
+				Slug:            item.Product.Slug,
+				ShortDesc:       item.Product.ShortDesc,
+				Price:           price,
+				SalePrice:       salePrice,
+				FulfillmentMode: publicCartFulfillmentMode(fulfillmentMode),
+				Availability:    string(cartAvailabilityForProduct(*item.Product)),
+				Media:           publicCartMediaFromDomain(item.Product.Media, resolver),
 			}
 			if publicItem.Variant != nil {
 				publicProduct.Availability = publicItem.Variant.Availability
@@ -178,6 +184,9 @@ func publicmediaResolver(resolvers []publicmedia.Resolver) publicmedia.Resolver 
 }
 
 func cartAvailabilityForProduct(item productdomain.Product) productAvailability {
+	if productdomain.NormalizeFulfillmentMode(item.FulfillmentMode) == productdomain.FulfillmentModeMadeToOrder && len(item.ActiveVariants()) > 0 {
+		return productAvailabilityMadeToOrder
+	}
 	for _, variant := range item.ActiveVariants() {
 		if variant.Stock > 0 {
 			return productAvailabilityInStock
@@ -186,8 +195,14 @@ func cartAvailabilityForProduct(item productdomain.Product) productAvailability 
 	return productAvailabilityOutOfStock
 }
 
-func cartAvailabilityForVariant(item productdomain.ProductVariant) productAvailability {
-	if !item.IsActive || item.Stock <= 0 {
+func cartAvailabilityForVariant(item productdomain.ProductVariant, fulfillmentMode string) productAvailability {
+	if !item.IsActive {
+		return productAvailabilityOutOfStock
+	}
+	if productdomain.NormalizeFulfillmentMode(fulfillmentMode) == productdomain.FulfillmentModeMadeToOrder {
+		return productAvailabilityMadeToOrder
+	}
+	if item.Stock <= 0 {
 		return productAvailabilityOutOfStock
 	}
 	return productAvailabilityInStock
@@ -196,6 +211,14 @@ func cartAvailabilityForVariant(item productdomain.ProductVariant) productAvaila
 type productAvailability string
 
 const (
-	productAvailabilityInStock    productAvailability = "in_stock"
-	productAvailabilityOutOfStock productAvailability = "out_of_stock"
+	productAvailabilityInStock     productAvailability = "in_stock"
+	productAvailabilityMadeToOrder productAvailability = "made_to_order"
+	productAvailabilityOutOfStock  productAvailability = "out_of_stock"
 )
+
+func publicCartFulfillmentMode(value string) string {
+	if productdomain.NormalizeFulfillmentMode(value) == productdomain.FulfillmentModeMadeToOrder {
+		return productdomain.FulfillmentModeMadeToOrder
+	}
+	return ""
+}

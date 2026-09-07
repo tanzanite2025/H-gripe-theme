@@ -869,11 +869,7 @@ func siteQualityStructuredDataPathLooksLikeFAQ(path string) bool {
 
 func siteQualityStructuredDataPathLooksLikeBlogListing(path string) bool {
 	path = strings.Trim(strings.ToLower(strings.TrimSpace(path)), "/")
-	parts := strings.Split(path, "/")
-	return len(parts) == 3 &&
-		parts[0] == "resources" &&
-		parts[1] == "blog" &&
-		(parts[2] == "news" || parts[2] == "wheelsbuild")
+	return path == "resources/blog"
 }
 
 func siteQualityStructuredDataComparablePath(rawURL string) string {

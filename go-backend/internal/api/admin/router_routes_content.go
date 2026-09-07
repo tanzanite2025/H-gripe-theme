@@ -26,12 +26,28 @@ func registerContentRoutes(
 	visitorProfileHandler *VisitorProfileHandler,
 	visitorRiskHandler *VisitorRiskHandler,
 	globalIPBlockHandler *GlobalIPBlockHandler,
+	blogCategoryHandlers ...*BlogCategoryHandler,
 ) {
+	var blogCategoryHandler *BlogCategoryHandler
+	if len(blogCategoryHandlers) > 0 {
+		blogCategoryHandler = blogCategoryHandlers[0]
+	}
+
 	// 内容管理（需要内容管理权限）
 	contentGroup := authenticated.Group("/content")
 	contentGroup.Use(middleware.RequirePermission(auth.PermContentView))
 	{
 		// 文章管理
+		if blogCategoryHandler != nil {
+			categoriesGroup := contentGroup.Group("/categories")
+			{
+				categoriesGroup.GET("", blogCategoryHandler.List)
+				categoriesGroup.POST("", middleware.RequirePermission(auth.PermContentCreate), blogCategoryHandler.Create)
+				categoriesGroup.PUT("/:id", middleware.RequirePermission(auth.PermContentEdit), blogCategoryHandler.Update)
+				categoriesGroup.DELETE("/:id", middleware.RequirePermission(auth.PermContentDelete), blogCategoryHandler.Delete)
+			}
+		}
+
 		postsGroup := contentGroup.Group("/posts")
 		{
 			postsGroup.GET("", contentHandler.ListPosts)
@@ -95,10 +111,6 @@ func registerContentRoutes(
 		faqsGroup.GET("", faqHandler.ListFAQs)
 		faqsGroup.GET("/grouped", faqHandler.ListFAQGroups)
 		faqsGroup.GET("/structure", faqHandler.ListStructure)
-		faqsGroup.GET("/categories", faqHandler.GetCategories)
-		faqsGroup.POST("/categories", middleware.RequirePermission(auth.PermFAQCreate), faqHandler.CreateCategory)
-		faqsGroup.PUT("/categories/:id", middleware.RequirePermission(auth.PermFAQEdit), faqHandler.UpdateCategory)
-		faqsGroup.DELETE("/categories/:id", middleware.RequirePermission(auth.PermFAQDelete), faqHandler.DeleteCategory)
 		faqsGroup.PUT("/pages/:page_id", middleware.RequirePermission(auth.PermFAQEdit), faqHandler.UpdatePage)
 		faqsGroup.POST(
 			"/answer-image",

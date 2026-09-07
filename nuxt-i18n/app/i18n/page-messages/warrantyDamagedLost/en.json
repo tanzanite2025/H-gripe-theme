@@ -1,0 +1,42 @@
+{
+  "title": "Damaged or Lost Goods",
+  "alert": "Please carefully inspect the package before signing for it.",
+  "sections": {
+    "normalAcceptance": {
+      "title": "Normal Acceptance",
+      "items": {
+        "0": "If the package is intact, please sign for it.",
+        "1": "If you notice damage, note it on the delivery slip or refuse the package. The goods will be returned to us.",
+        "2": "If you need to file a claim with the carrier, they will issue a claim number. Please provide this number to our support team so we can track the shipment. Once the returned goods are received, we will arrange re-shipment within "
+      },
+      "reshipmentWindow": "10 business days",
+      "reshipmentSuffix": "."
+    },
+    "damagedAccepted": {
+      "title": "Damaged but Accepted",
+      "items": {
+        "0": "If the goods are damaged upon delivery but you still accept them without reporting, the carrier cannot be held responsible.",
+        "1": "In this case, you will be responsible for purchasing any replacement products."
+      }
+    },
+    "transit": {
+      "title": "Damage During Transit",
+      "items": {
+        "packaging": "If the package appears intact but the product is seriously damaged during transit, please keep the waybill, packaging, and related materials.",
+        "contactPrefix": "Contact us within ",
+        "contactWindow": "7 days of receipt",
+        "contactEmailPrefix": " at ",
+        "contactSuffix": "."
+      }
+    },
+    "lost": {
+      "title": "Lost Shipment",
+      "items": {
+        "contactPrefix": "If the goods are lost during transit, please contact us immediately",
+        "contactEmailPrefix": " at ",
+        "contactSuffix": ".",
+        "insured": "All shipments are insured, and we will assist you with the claim process."
+      }
+    }
+  }
+}

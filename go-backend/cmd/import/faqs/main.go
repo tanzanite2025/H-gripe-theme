@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"commerce-platform/internal/domain/faq"
 	"commerce-platform/internal/pkg/config"
 	"commerce-platform/internal/pkg/database"
@@ -20,7 +21,6 @@ type FAQImport struct {
 	Question  string    `json:"question"`
 	Answer    string    `json:"answer"`
 	PageID    string    `json:"page_id"`
-	Category  string    `json:"category"`
 	Locale    string    `json:"locale"`
 	ParentID  *uint     `json:"parent_id"`
 	Order     int       `json:"order"`
@@ -67,7 +67,9 @@ func main() {
 
 	// 解析 JSON
 	var importFAQs []FAQImport
-	if err := json.Unmarshal(data, &importFAQs); err != nil {
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&importFAQs); err != nil {
 		log.Fatalf("❌ 解析 JSON 失败: %v", err)
 	}
 
@@ -81,7 +83,6 @@ func main() {
 		"updated": 0,
 		"skipped": 0,
 	}
-	categoryStats := make(map[string]int)
 	localeStats := make(map[string]int)
 
 	// 创建 repository
@@ -94,7 +95,6 @@ func main() {
 
 	for i, importFAQ := range importFAQs {
 		stats["total"]++
-		categoryStats[importFAQ.Category]++
 		localeStats[importFAQ.Locale]++
 
 		// 显示进度
@@ -105,7 +105,7 @@ func main() {
 		// 试运行模式，跳过实际写入
 		if *dryRun {
 			if i < 5 { // 只显示前5条
-				fmt.Printf("  [试运行] [%s] %s\n", importFAQ.Category, truncate(importFAQ.Question, 50))
+				fmt.Printf("  [试运行] [%s] %s\n", importFAQ.PageID, truncate(importFAQ.Question, 50))
 			}
 			continue
 		}
@@ -118,7 +118,6 @@ func main() {
 			Question:  importFAQ.Question,
 			Answer:    importFAQ.Answer,
 			PageID:    importFAQ.PageID,
-			Category:  importFAQ.Category,
 			Locale:    importFAQ.Locale,
 			ParentID:  importFAQ.ParentID,
 			Order:     importFAQ.Order,
@@ -139,7 +138,6 @@ func main() {
 			existing.Question = importFAQ.Question
 			existing.Answer = importFAQ.Answer
 			existing.PageID = importFAQ.PageID
-			existing.Category = importFAQ.Category
 			existing.Locale = importFAQ.Locale
 			existing.ParentID = importFAQ.ParentID
 			existing.Order = importFAQ.Order
@@ -167,12 +165,6 @@ func main() {
 	fmt.Printf("  - 新建: %d\n", stats["created"])
 	fmt.Printf("  - 更新: %d\n", stats["updated"])
 	fmt.Printf("  - 跳过: %d\n", stats["skipped"])
-	fmt.Println()
-
-	fmt.Println("按分类统计:")
-	for category, count := range categoryStats {
-		fmt.Printf("  - %s: %d\n", category, count)
-	}
 	fmt.Println()
 
 	fmt.Println("按语言统计:")

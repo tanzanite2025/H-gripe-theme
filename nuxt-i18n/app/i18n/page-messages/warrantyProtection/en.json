@@ -1,0 +1,32 @@
+{
+  "title": "Protection",
+  "intro": {
+    "title": "Buyer Protection (PayPal Policy)",
+    "bodyPrefix": "The following is excerpted from the ",
+    "legalAgreement": "PayPal Legal Agreement",
+    "bodySuffix": ", outlining the basic protections available to buyers:"
+  },
+  "sections": {
+    "reasons": {
+      "title": "Reasons for Dispute",
+      "body": "Buyers may open a dispute on PayPal for the following reasons:",
+      "items": {
+        "0": "Item Not Received",
+        "1": "Item Significantly Not as Described"
+      }
+    },
+    "timeframe": {
+      "title": "Dispute Timeframe",
+      "bodyPrefix": "A dispute must be filed within ",
+      "window": "45 days of the initial payment",
+      "bodySuffix": "."
+    },
+    "claimProcess": {
+      "title": "Claim Process",
+      "items": {
+        "0": "If a dispute is escalated to a claim, PayPal will investigate and make a final decision.",
+        "1": "PayPal generally aims to resolve claims within 30 days of submission, though this period may be extended if additional investigation is required."
+      }
+    }
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "title": "Certificates",
+  "hero": {
+    "title": "Certified",
+    "highlight": "Quality & Safety",
+    "description": "Our products are UCI approved and exceed ISO 4210 international standards, ensuring ultimate safety for every ride."
+  },
+  "uci": {
+    "status": "Official Certification",
+    "title": "UCI Approved Wheels",
+    "description": "Our wheels have passed the stringent impact tests required by the Union Cycliste Internationale (UCI). They are fully approved for use in all UCI-sanctioned road, track, and cyclo-cross races.",
+    "viewWebsite": "View on UCI Website",
+    "sticker": "UCI Approved\nSticker"
+  },
+  "standards": {
+    "title": "Global Standards Compliance",
+    "description": "Verified by leading third-party testing laboratories including SGS and Intertek.",
+    "viewReport": "View Report",
+    "certificates": {
+      "iso": {
+        "title": "ISO 4210-7:2014",
+        "description": "Safety requirements for bicycles - Part 7: Wheels and rims test methods."
+      },
+      "sgs": {
+        "title": "SGS Impact Test",
+        "description": "Vertical impact test with energy levels exceeding standard requirements."
+      },
+      "intertek": {
+        "title": "Intertek Fatigue Test",
+        "description": "Dynamic fatigue testing ensuring long-term durability and reliability."
+      }
+    }
+  },
+  "internal": {
+    "title": "In-House Standard",
+    "bodyBefore": "We don't just meet standards; we set them. Our internal testing protocols are rigorous, subjecting simulated road conditions to forces ",
+    "bodyHighlight": "120% - 150%",
+    "bodyAfter": " higher than ISO 4210 requirements.",
+    "stats": {
+      "testCycles": "Test Cycles",
+      "qcInspection": "QC Inspection",
+      "warrantyValue": "3 Years",
+      "warranty": "Warranty",
+      "support": "Support"
+    }
+  },
+  "feedbackTitle": "Share your feedback about our Certificates"
+}

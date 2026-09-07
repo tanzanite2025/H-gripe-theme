@@ -61,8 +61,14 @@ func (h *Handler) handlePayPalWebhook(c *gin.Context, payload []byte) {
 		if value, exists := c.Get("paypal_dispute_external_id"); exists {
 			details["paypal_dispute_id"] = value
 		}
+		if value, exists := c.Get("paypal_dispute_order_id"); exists {
+			details["order_id"] = value
+		}
 		if value, exists := c.Get("paypal_dispute_evidence_submitted"); exists {
 			details["evidence_submitted"] = value
+		}
+		if value, exists := c.Get("paypal_dispute_evidence_pending_review"); exists {
+			details["evidence_pending_review"] = value
 		}
 		if value, exists := c.Get("paypal_dispute_evidence_tracking_number"); exists {
 			details["tracking_number"] = value

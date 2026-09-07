@@ -1,8 +1,7 @@
 <template>
   <div class="wheelset-guide-subsection">
     <p class="wheelset-guide-step__body">
-            Example riding scenarios where "Mixed Rim Profiles" (different front/rear specs) provide a tactical advantage.
-            This approach balances aerodynamics, handling, and durability.
+      {{ t('guidesWheelsetBuyersSpecialOrder.mixedRim.body') }}
     </p>
 
     <div class="wheelset-guide-actions">
@@ -11,56 +10,58 @@
         class="wheelset-guide-button"
         @click="openQuickBuy"
       >
-        Open Quick Custom Wheelset Builder
+        {{ t('guidesWheelsetBuyersSpecialOrder.mixedRim.builderButton') }}
       </button>
       <button
         type="button"
         class="wheelset-guide-button wheelset-guide-button--solid"
         @click="openWhatsAppChat"
       >
-        Consult a Wheelset Expert
+        {{ t('guidesWheelsetBuyersSpecialOrder.mixedRim.expertButton') }}
       </button>
     </div>
 
     <div class="wheelset-guide-panel-grid">
       <div class="wheelset-guide-panel">
-        <strong>Different models</strong>
+        <strong>{{ t('guidesWheelsetBuyersSpecialOrder.mixedRim.differentModels.title') }}</strong>
         <p>
-             Using completely different rim models (e.g., Lightweight Front + Heavy Duty Rear). Common in custom builds to balance specific performance needs.
+          {{ t('guidesWheelsetBuyersSpecialOrder.mixedRim.differentModels.body') }}
         </p>
       </div>
 
       <div class="wheelset-guide-panel">
-        <strong>Different heights</strong>
+        <strong>{{ t('guidesWheelsetBuyersSpecialOrder.mixedRim.differentHeights.title') }}</strong>
         <p>
-             E.g., 50mm Front (handling) + 60mm Rear (aero/stiffness). The most common "Mixed" setup to optimize crosswind stability and speed.
+          {{ t('guidesWheelsetBuyersSpecialOrder.mixedRim.differentHeights.body') }}
         </p>
       </div>
     </div>
 
     <div>
-      <h4 class="wheelset-guide-kicker">Configuration Cheatsheet</h4>
+      <h4 class="wheelset-guide-kicker">
+        {{ t('guidesWheelsetBuyersSpecialOrder.mixedRim.cheatsheet') }}
+      </h4>
 
       <div class="wheelset-guide-panel-grid">
         <div class="wheelset-guide-panel">
-          <strong>Climbing</strong>
-          <p><span>Front:</span> 30-40mm. <span>Rear:</span> 40-50mm.</p>
-          <p>Front for handling/weight, rear for stiffness.</p>
+          <strong>{{ t('guidesWheelsetBuyersSpecialOrder.mixedRim.climbing.title') }}</strong>
+          <p>{{ t('guidesWheelsetBuyersSpecialOrder.mixedRim.climbing.sizes') }}</p>
+          <p>{{ t('guidesWheelsetBuyersSpecialOrder.mixedRim.climbing.body') }}</p>
         </div>
         <div class="wheelset-guide-panel">
-          <strong>Aerodynamics</strong>
-          <p><span>Front:</span> 50-60mm. <span>Rear:</span> 60-80mm.</p>
-          <p>Front balances crosswinds, rear maximizes speed.</p>
+          <strong>{{ t('guidesWheelsetBuyersSpecialOrder.mixedRim.aero.title') }}</strong>
+          <p>{{ t('guidesWheelsetBuyersSpecialOrder.mixedRim.aero.sizes') }}</p>
+          <p>{{ t('guidesWheelsetBuyersSpecialOrder.mixedRim.aero.body') }}</p>
         </div>
         <div class="wheelset-guide-panel">
-          <strong>Training / Durability</strong>
-          <p><span>Front:</span> mid alloy/carbon. <span>Rear:</span> high/wide profile.</p>
-          <p>Rear bears load, front preserves comfort.</p>
+          <strong>{{ t('guidesWheelsetBuyersSpecialOrder.mixedRim.training.title') }}</strong>
+          <p>{{ t('guidesWheelsetBuyersSpecialOrder.mixedRim.training.sizes') }}</p>
+          <p>{{ t('guidesWheelsetBuyersSpecialOrder.mixedRim.training.body') }}</p>
         </div>
         <div class="wheelset-guide-panel">
-          <strong>Mixed / Versatile</strong>
-          <p><span>Front:</span> 40-50mm. <span>Rear:</span> 55-65mm.</p>
-          <p>A balanced choice for racing and training.</p>
+          <strong>{{ t('guidesWheelsetBuyersSpecialOrder.mixedRim.versatile.title') }}</strong>
+          <p>{{ t('guidesWheelsetBuyersSpecialOrder.mixedRim.versatile.sizes') }}</p>
+          <p>{{ t('guidesWheelsetBuyersSpecialOrder.mixedRim.versatile.body') }}</p>
         </div>
       </div>
     </div>
@@ -68,6 +69,10 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from '#imports'
+
+const { t } = useI18n()
+
 const { openQuickBuy, openWhatsAppChat } = defineProps<{
   openQuickBuy: () => void | Promise<void>
   openWhatsAppChat: () => void | Promise<void>

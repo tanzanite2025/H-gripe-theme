@@ -6,6 +6,9 @@ This project has one font authority for the storefront: Maple UI shards plus a
 small set of bundled coverage shards. No OS/system fallback, no CDN fonts, no
 `@nuxt/fonts`, and no other secondary font source are allowed to sneak back in.
 
+Performance details and troubleshooting live in
+`docs/design/storefront-font-performance-strategy.md`.
+
 ## Why The Files Are Named This Way
 
 The files carry the `MapleUI-` prefix so they read like owned assets, not random
@@ -44,13 +47,18 @@ nuxt-i18n/public/fonts/maple-ui.css
    or any system fallback families.
 5. When adding a new locale or character block, add a new `MapleUI-Coverage-*`
    shard with exact `unicode-range` values instead of changing page components.
-6. Run `npm run clean` before `build` or `generate` so stale `.nuxt`, `.output`,
+6. Keep `MapleUI-Latin` preloaded from `nuxt.config.ts` app head and prioritized
+   by `server/plugins/05-font-preload-priority.server.ts` so the 48 KB
+   first-paint shard is discovered before generated CSS. Runtime locale head
+   logic may only add small coverage shard preloads; it must never preload the
+   6.4 MB CJK shard.
+7. Run `npm run clean` before `build` or `generate` so stale `.nuxt`, `.output`,
    and `dist` artifacts cannot keep serving retired fonts.
-7. Run `npm run check:font-policy`, `npm run check:font-coverage`, and
+8. Run `npm run check:font-policy`, `npm run check:font-coverage`, and
    `npm run check:font-performance` before shipping font changes.
-8. Keep the preflight manifest and production artifact checks in the same commit
+9. Keep the preflight manifest and production artifact checks in the same commit
    as font changes.
-9. The admin panel uses the same built-in Maple UI authority. Its
+10. The admin panel uses the same built-in Maple UI authority. Its
    `font-sans`, `font-mono`, chart canvas text, Tailwind preflight, and
    third-party toast CSS must resolve to `MapleUICJK`; the Admin build must pass
    its source and `dist` font gates.

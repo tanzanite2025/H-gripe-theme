@@ -88,7 +88,7 @@
                 </DropdownMenuItem>
                 <DropdownMenuItem v-if="canEdit" @select="emit('show-status', order)">
                   <RefreshCw class="size-4" />
-                  状态管理
+                  {{ order.status === 'shipped' || order.shipping_status === 'shipped' || order.shipping_status === 'delivered' ? '纠正物流' : '状态管理' }}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator v-if="canDelete" />
                 <DropdownMenuItem

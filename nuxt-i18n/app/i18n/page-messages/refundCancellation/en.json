@@ -1,0 +1,28 @@
+{
+  "title": "Refund & Cancellation Policy",
+  "cancellation": {
+    "intro": "Cancellation requests for custom orders are handled by the payment and fulfillment stage.",
+    "windows": {
+      "beforeProduction": {
+        "label": "Before production or material cutting starts",
+        "title": "Cancellation may be requested",
+        "body": "You may request cancellation while production and material cutting have not started. A full refund is available only while no custom materials or labor have been committed, subject to order review."
+      },
+      "afterProduction": {
+        "label": "After production or material cutting starts",
+        "title": "Cancellation is restricted",
+        "body": "Once production or material cutting begins, direct cancellation may be unavailable. If a cancellation is approved, a 15%-20% Custom Handling / Restocking Fee may be deducted for custom materials and labor already committed."
+      },
+      "shipped": {
+        "label": "Shipped",
+        "title": "Use the standard return process",
+        "body": "Direct cancellation is no longer accepted after shipment. Please receive the package first, then follow the regular return process if eligible."
+      }
+    }
+  },
+  "highValue": {
+    "label": "High-value delivery",
+    "title": "Signature required for orders of $750 USD or more",
+    "body": "Orders totaling $750 USD or more require a direct signature at delivery. The signature requirement is part of our delivery and dispute-protection process."
+  }
+}

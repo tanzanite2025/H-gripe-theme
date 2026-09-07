@@ -1,6 +1,5 @@
 <template>
-  <div class="space-y-6">
-    <!-- Tabs Header -->
+  <div class="space-y-8">
     <div class="nav-pill-tabs mb-6" role="tablist">
       <button
         type="button"
@@ -8,7 +7,7 @@
         :class="{ 'nav-pill-item--active': activeTab === 'technology' }"
         @click="activeTab = 'technology'"
       >
-        Technology
+        {{ t('guidesWheelsetComponentsHubs.tabs.technology') }}
       </button>
       <button
         type="button"
@@ -16,287 +15,345 @@
         :class="{ 'nav-pill-item--active': activeTab === 'choose-hubs' }"
         @click="activeTab = 'choose-hubs'"
       >
-        Choose hubs
+        {{ t('guidesWheelsetComponentsHubs.tabs.choose') }}
       </button>
     </div>
 
-    <!-- Tab: Technology (Existing Content) -->
-    <div v-show="activeTab === 'technology'" class="space-y-8">
-    <!-- Intro Card -->
-    <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6 text-center border-t-4 border-slate-500">
-       <h3 class="text-lg font-bold tz-text-secondary mb-2">Bicycle Hub Key Specifications</h3>
-      <p class="text-sm tz-text-secondary leading-relaxed max-w-2xl mx-auto">
-          Understanding the core specifications of your hubs is critical for wheel building and frame compatibility.
-       </p>
-    </div>
+    <div v-if="activeTab === 'technology'" class="space-y-8">
+      <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6 text-center border-t-4 border-slate-500">
+        <h3 class="text-lg font-bold tz-text-secondary mb-2">
+          {{ t('guidesWheelsetComponentsHubs.technology.title') }}
+        </h3>
+        <p class="text-sm tz-text-secondary leading-relaxed max-w-2xl mx-auto">
+          {{ t('guidesWheelsetComponentsHubs.technology.intro') }}
+        </p>
+      </div>
 
-    <!-- 1. Spoke Interface Card -->
-    <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6">
-       <div class="flex items-center gap-3 mb-6 pb-3 border-b border-emerald-200">
-        <h3 class="text-lg font-bold tz-text-primary">1. Spoke Type: J-Bend vs. Straight-Pull</h3>
-       </div>
-
-       <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <!-- J-Bend -->
-          <div class="bg-emerald-50 rounded-xl p-4 shadow-md">
-              <h4 class="text-emerald-600 font-bold mb-3 flex items-center gap-2">
-                 J-Bend (Classic)
-              </h4>
-        <ul class="space-y-2 text-sm tz-text-secondary mb-4">
-                 <li>• Spoke head is bent (elbow) to fit flange.</li>
-                 <li>• <strong>Pros:</strong> Easy to service, replacement spokes widely available.</li>
-                 <li>• <strong>Cons:</strong> Traditional look, stress concentration at elbow.</li>
-              </ul>
-              <div class="grid grid-cols-2 gap-3">
-                <GuideImage
-                    src="/public/technical/hubs/hubs/dt240-6bolt-jbend-hub.webp"
-                    alt="DT240 6-bolt J-bend hub"
-                    :zoomOnClick="true"
-                    caption="6-Bolt J-Bend"
-                    class="rounded-lg"
-                />
-                <GuideImage
-                    src="/public/technical/hubs/hubs/dt240-centerlock-jbend-hub.webp"
-                    alt="DT240 Center Lock J-bend hub"
-                    :zoomOnClick="true"
-                    caption="Center Lock J-Bend"
-                    class="rounded-lg"
-                />
-              </div>
+      <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6">
+        <div class="flex items-center gap-3 mb-6 pb-3 border-b border-emerald-200">
+          <h3 class="text-lg font-bold tz-text-primary">
+            {{ t('guidesWheelsetComponentsHubs.technology.spokeInterface.title') }}
+          </h3>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div
+            v-for="type in spokeTypes"
+            :key="type.id"
+            class="bg-emerald-50 rounded-xl p-4 shadow-md"
+          >
+            <h4 class="text-emerald-600 font-bold mb-3 flex items-center gap-2">
+              {{ t(type.titleKey) }}
+            </h4>
+            <ul class="space-y-2 text-sm tz-text-secondary mb-4">
+              <li v-for="itemKey in type.itemKeys" :key="itemKey">• {{ t(itemKey) }}</li>
+            </ul>
+            <div class="grid grid-cols-2 gap-3">
+              <GuideImage
+                :src="type.images[0].src"
+                :alt="t(type.images[0].altKey)"
+                :zoomOnClick="true"
+                :caption="t(type.images[0].captionKey)"
+                class="rounded-lg"
+              />
+              <GuideImage
+                :src="type.images[1].src"
+                :alt="t(type.images[1].altKey)"
+                :zoomOnClick="true"
+                :caption="t(type.images[1].captionKey)"
+                class="rounded-lg"
+              />
+            </div>
           </div>
+        </div>
+      </div>
 
-          <!-- Straight-Pull -->
-          <div class="bg-emerald-50 rounded-xl p-4 shadow-md">
-              <h4 class="text-emerald-600 font-bold mb-3 flex items-center gap-2">
-                 Straight-Pull (Modern)
-              </h4>
-        <ul class="space-y-2 text-sm tz-text-secondary mb-4">
-                 <li>• Spokes are straight, no elbow.</li>
-                 <li>• <strong>Pros:</strong> Higher tension potential, sleek aesthetic.</li>
-                 <li>• <strong>Cons:</strong> Harder to find specific replacements on the road.</li>
-              </ul>
-              <div class="grid grid-cols-2 gap-3">
-                <GuideImage
-                    src="/public/technical/hubs/hubs/dt240-6bolt-straightpull-hub.webp"
-                    alt="DT240 6-bolt straight-pull hub"
-                    :zoomOnClick="true"
-                    caption="6-Bolt SP"
-                    class="rounded-lg"
-                />
-                <GuideImage
-                    src="/public/technical/hubs/hubs/dt240-centerlock-straightpull-hub.webp"
-                    alt="DT240 Center Lock straight-pull hub"
-                    :zoomOnClick="true"
-                    caption="Center Lock SP"
-                    class="rounded-lg"
-                />
-              </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6">
+          <h3 class="text-lg font-bold text-amber-500 mb-4">{{ t('guidesWheelsetComponentsHubs.technology.axle.title') }}</h3>
+          <div class="space-y-4 text-sm tz-text-secondary">
+            <div class="tz-surface-panel p-3 rounded-lg">
+              <strong class="block tz-text-primary mb-1">{{ t('guidesWheelsetComponentsHubs.technology.axle.frontTitle') }}</strong>
+              <p>{{ t('guidesWheelsetComponentsHubs.technology.axle.frontBody') }}</p>
+            </div>
+            <div class="tz-surface-panel p-3 rounded-lg">
+              <strong class="block tz-text-primary mb-1">{{ t('guidesWheelsetComponentsHubs.technology.axle.rearTitle') }}</strong>
+              <p>{{ t('guidesWheelsetComponentsHubs.technology.axle.rearBody') }}</p>
+            </div>
+            <p class="text-xs tz-text-muted mt-2 italic">
+              {{ t('guidesWheelsetComponentsHubs.technology.axle.note') }}
+            </p>
           </div>
-       </div>
+        </div>
+
+        <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6">
+          <h3 class="text-lg font-bold text-rose-500 mb-4">{{ t('guidesWheelsetComponentsHubs.technology.brake.title') }}</h3>
+          <ul class="space-y-3 text-sm tz-text-secondary">
+            <li v-for="item in brakeInterfaces" :key="item.titleKey" class="flex items-start gap-3">
+              <span class="mt-1 w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0"></span>
+              <div>
+                <strong class="tz-text-primary block">{{ t(item.titleKey) }}</strong>
+                {{ t(item.bodyKey) }}
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6">
+          <h3 class="text-lg font-bold text-emerald-600 mb-4">{{ t('guidesWheelsetComponentsHubs.technology.holeCount.title') }}</h3>
+          <div class="space-y-4">
+            <div
+              v-for="row in holeCountRows"
+              :key="row.labelKey"
+              class="flex items-center justify-between text-sm border-b tz-border-strong/5 pb-2"
+            >
+              <span class="tz-text-muted">{{ t(row.labelKey) }}</span>
+              <span class="tz-text-primary font-bold">{{ t(row.valueKey) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6">
+          <h3 class="text-lg font-bold text-emerald-600 mb-4">{{ t('guidesWheelsetComponentsHubs.technology.ratchet.title') }}</h3>
+          <p class="text-sm tz-text-secondary mb-4">{{ t('guidesWheelsetComponentsHubs.technology.ratchet.body') }}</p>
+          <div class="grid grid-cols-3 gap-2 text-center">
+            <div v-for="level in ratchetLevels" :key="level.value" class="bg-emerald-50 rounded-lg p-2 shadow-md">
+              <div class="text-lg font-bold text-emerald-600">{{ level.value }}</div>
+              <div class="tz-caption tz-text-muted">{{ t(level.labelKey) }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rounded-2xl tz-surface-card border tz-border-subtle shadow-md p-6 flex flex-col md:flex-row items-center justify-between gap-6">
+        <div class="text-center md:text-left">
+          <h3 class="text-lg font-bold tz-text-primary mb-1">{{ t('guidesWheelsetComponentsHubs.technology.freehub.title') }}</h3>
+          <p class="text-sm tz-text-secondary">{{ t('guidesWheelsetComponentsHubs.technology.freehub.body') }}</p>
+        </div>
+        <button
+          type="button"
+          class="shrink-0 inline-flex items-center justify-center rounded-full bg-[var(--tz-action-primary)] px-6 py-2.5 text-sm font-bold text-white shadow-lg hover:bg-[var(--tz-action-primary-hover)] hover:shadow-slate-900/20 transition-all"
+          @click="goToChooseFreehub"
+        >
+          {{ t('guidesWheelsetComponentsHubs.technology.freehub.button') }}
+        </button>
+      </div>
     </div>
 
-    <!-- 2. Tech Specs Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-       <!-- Axle Specs -->
-       <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
-           <h3 class="text-lg font-bold text-amber-500 mb-4 flex items-center gap-2">
-              Axle Standards
-           </h3>
-        <div class="space-y-4 text-sm tz-text-secondary">
-              <div class="tz-surface-panel p-3 rounded-lg">
-          <strong class="block tz-text-primary mb-1">Front Hubs</strong>
-                 <p>QR (9x100), 12x100 (Road/Gravel), 15x100, <strong>15x110 (Boost)</strong></p>
-              </div>
-              <div class="tz-surface-panel p-3 rounded-lg">
-          <strong class="block tz-text-primary mb-1">Rear Hubs</strong>
-                 <p>QR (135mm), 12x142, <strong>12x148 (Boost)</strong></p>
-              </div>
-              <p class="text-xs tz-text-muted mt-2 italic">
-                 Note: Thru-axles (12mm/15mm) provide superior stiffness compared to Quick Release.
-              </p>
-           </div>
-       </div>
-
-       <!-- Brake Interface -->
-       <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
-           <h3 class="text-lg font-bold text-rose-500 mb-4 flex items-center gap-2">
-              Brake Interface
-           </h3>
-        <ul class="space-y-3 text-sm tz-text-secondary">
-              <li class="flex items-start gap-3">
-                 <span class="mt-1 w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0"></span>
-                 <div>
-          <strong class="tz-text-primary block">6-Bolt (IS)</strong>
-                    Rotor attached via 6 Torx bolts. Universal and robust.
-                 </div>
-              </li>
-              <li class="flex items-start gap-3">
-                 <span class="mt-1 w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0"></span>
-                 <div>
-          <strong class="tz-text-primary block">Center Lock (CL)</strong>
-                    Splined interface with a lockring. Faster installation, lighter, favored by Shimano/Road.
-                 </div>
-              </li>
-           </ul>
-       </div>
-    </div>
-
-    <!-- 3. Ratchet & Holes -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-       <!-- Hole Count -->
-       <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
-           <h3 class="text-lg font-bold text-emerald-600 mb-4 flex items-center gap-2">
-              Hole Count Logic
-           </h3>
-           <div class="space-y-4">
-              <div class="flex items-center justify-between text-sm border-b tz-border-strong/5 pb-2">
-            <span class="tz-text-muted">Lightweight / Road</span>
-            <span class="tz-text-primary font-bold">20H / 24H</span>
-              </div>
-              <div class="flex items-center justify-between text-sm border-b tz-border-strong/5 pb-2">
-                   <span class="tz-text-muted">Standard MTB / Gravel</span>
-                   <span class="tz-text-primary font-bold">28H / 32H</span>
-              </div>
-              <div class="flex items-center justify-between text-sm pb-2">
-                   <span class="tz-text-muted">Heavy Duty / E-Bike</span>
-                   <span class="tz-text-primary font-bold">32H / 36H</span>
-              </div>
-           </div>
-       </div>
-
-       <!-- Ratchet System -->
-       <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300">
-           <h3 class="text-lg font-bold text-emerald-600 mb-4 flex items-center gap-2">
-              Ratchet Engagement
-           </h3>
-            <p class="text-sm tz-text-secondary mb-4">
-              Higher tooth counts = faster engagement (less lag when you start pedaling).
-           </p>
-           <div class="grid grid-cols-3 gap-2 text-center">
-              <div class="bg-emerald-50 rounded-lg p-2 shadow-md">
-                 <div class="text-lg font-bold text-emerald-600">18T</div>
-                  <div class="tz-caption tz-text-muted">Standard</div>
-              </div>
-              <div class="bg-emerald-50 rounded-lg p-2 shadow-md">
-                 <div class="text-lg font-bold text-emerald-600">36T</div>
-                  <div class="tz-caption tz-text-muted">Balanced</div>
-              </div>
-              <div class="bg-emerald-50 rounded-lg p-2 shadow-md">
-                 <div class="text-lg font-bold text-emerald-600">54T</div>
-                  <div class="tz-caption tz-text-muted">Instant</div>
-              </div>
-           </div>
-       </div>
-    </div>
-
-    <!-- 4. Freehub Summary Card (Link) -->
-    <div class="rounded-2xl tz-surface-card border tz-border-subtle shadow-md p-6 flex flex-col md:flex-row items-center justify-between gap-6">
-       <div class="text-center md:text-left">
-           <h3 class="text-lg font-bold tz-text-primary mb-1">Freehub Body Compatibility</h3>
-           <p class="text-sm tz-text-secondary">HG vs MS vs XD vs XDR vs N3W? Check our detailed guide.</p>
-       </div>
-       <button
-        type="button"
-        class="shrink-0 inline-flex items-center justify-center rounded-full bg-[var(--tz-action-primary)] px-6 py-2.5 text-sm font-bold text-white shadow-lg hover:bg-[var(--tz-action-primary-hover)] hover:shadow-slate-900/20 transition-all"
-        @click="goToChooseFreehub"
-      >
-        View Guide
-      </button>
-    </div>
-    </div>
-
-    <!-- Tab: Choose hubs (New Content) -->
-    <div v-show="activeTab === 'choose-hubs'" class="space-y-8">
-      <!-- Intro Card -->
+    <div v-else class="space-y-8">
       <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6 text-center border-t-4 border-emerald-500">
-          <h3 class="text-xl font-bold tz-text-primary mb-2">Hub Selection Guide</h3>
-          <p class="text-sm tz-text-secondary max-w-2xl mx-auto">
-            Choosing the right hub is a balance between serviceability, performance, and compatibility.
-         </p>
+        <h3 class="text-xl font-bold tz-text-primary mb-2">{{ t('guidesWheelsetComponentsHubs.choose.title') }}</h3>
+        <p class="text-sm tz-text-secondary max-w-2xl mx-auto">{{ t('guidesWheelsetComponentsHubs.choose.intro') }}</p>
       </div>
 
-      <!-- 1 & 2: J-bend vs Straight-pull -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-         <div class="space-y-6">
-            <!-- J-bend -->
-            <div class="bg-emerald-50 rounded-xl p-5 shadow-md border border-emerald-200">
-               <strong class="block text-emerald-600 text-lg mb-3">1. J-bend Hub</strong>
-                <p class="text-sm tz-text-secondary mb-2"><strong>Structure:</strong> Flange holes designed for spokes with a 90° bend (elbow).</p>
-                <p class="text-sm tz-text-secondary mb-2"><strong>Advantages:</strong> Traditional design, easy to source replacements, convenient maintenance.</p>
-                <p class="text-sm tz-text-secondary mb-4"><strong>Best for:</strong> Riders valuing universality and ease of future maintenance.</p>
-               <div class="bg-emerald-50 px-3 py-1.5 rounded text-xs text-emerald-700 inline-block font-medium">Compatible: J-bend spokes</div>
-            </div>
-
-            <!-- Straight-pull -->
-            <div class="bg-emerald-50 rounded-xl p-5 shadow-md border border-emerald-200">
-               <strong class="block text-emerald-600 text-lg mb-3">2. Straight-pull Hub</strong>
-                <p class="text-sm tz-text-secondary mb-2"><strong>Structure:</strong> Flange holes designed for spokes that insert directly without bending.</p>
-                <p class="text-sm tz-text-secondary mb-2"><strong>Advantages:</strong> Stiffer structure, more even tension, high-performance aesthetic.</p>
-                <p class="text-sm tz-text-secondary mb-4"><strong>Best for:</strong> Racing or performance use seeking rigidity and weight savings.</p>
-               <div class="bg-emerald-50 px-3 py-1.5 rounded text-xs text-emerald-700 inline-block font-medium">Compatible: Straight-pull spokes</div>
-            </div>
-         </div>
-
-         <!-- Image -->
-         <div class="h-full">
-            <GuideImage
-               src="/public/wheelsetbuyersguide/wheelcomponents/hubs/bicycle-hub-spoke-type-comparison-jbend-straightpull.webp"
-               alt="Comparison of J-bend and Straight-pull hub flange designs"
-               :zoomOnClick="true"
-               caption="J-bend (Left) vs Straight-pull (Right) Interface"
-               class="rounded-xl overflow-hidden shadow-md h-full object-cover"
-            />
-         </div>
+        <div class="space-y-6">
+          <div v-for="hub in hubChoices" :key="hub.id" class="bg-emerald-50 rounded-xl p-5 shadow-md border border-emerald-200">
+            <strong class="block text-emerald-600 text-lg mb-3">{{ t(hub.titleKey) }}</strong>
+            <p class="text-sm tz-text-secondary mb-2"><strong>{{ t(hub.structureLabelKey) }}:</strong> {{ t(hub.structureKey) }}</p>
+            <p class="text-sm tz-text-secondary mb-2"><strong>{{ t(hub.advantagesLabelKey) }}:</strong> {{ t(hub.advantagesKey) }}</p>
+            <p class="text-sm tz-text-secondary mb-4"><strong>{{ t(hub.bestForLabelKey) }}:</strong> {{ t(hub.bestForKey) }}</p>
+            <div class="bg-emerald-50 px-3 py-1.5 rounded text-xs text-emerald-700 inline-block font-medium">{{ t(hub.compatibleKey) }}</div>
+          </div>
+        </div>
+        <div class="h-full">
+          <GuideImage
+            src="/public/wheelsetbuyersguide/wheelcomponents/hubs/bicycle-hub-spoke-type-comparison-jbend-straightpull.webp"
+            :alt="t('guidesWheelsetComponentsHubs.choose.image.alt')"
+            :zoomOnClick="true"
+            :caption="t('guidesWheelsetComponentsHubs.choose.image.caption')"
+            class="rounded-xl overflow-hidden shadow-md h-full object-cover"
+          />
+        </div>
       </div>
 
-      <!-- 3. Hole Count -->
       <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-6">
-         <h3 class="text-lg font-bold text-emerald-600 mb-4 flex items-center gap-2">
-            3. Hole Count Selection
-         </h3>
-         <div class="grid md:grid-cols-2 gap-6">
-            <div class="tz-surface-panel p-4 rounded-xl border tz-border-subtle">
-               <strong class="block tz-text-primary mb-2">Lightweight (20H / 24H)</strong>
-               <p class="text-sm tz-text-secondary leading-relaxed">
-                  Lighter weight, strictly for road bikes and climbing sets. Requires higher spoke tension and stiffer rims.
-               </p>
-            </div>
-            <div class="tz-surface-panel p-4 rounded-xl border tz-border-subtle">
-               <strong class="block tz-text-primary mb-2">Durability (28H / 32H)</strong>
-               <p class="text-sm tz-text-secondary leading-relaxed">
-                  More durable, suitable for MTB, heavy loads, or touring. Distributes stress across more spokes.
-               </p>
-            </div>
-         </div>
-         <p class="mt-4 text-xs text-emerald-600/80 bg-emerald-50 p-3 rounded-lg border border-emerald-200">
-            <strong>Key Principle:</strong> Hub hole count must match rim hole count exactly.
-         </p>
+        <h3 class="text-lg font-bold text-emerald-600 mb-4">{{ t('guidesWheelsetComponentsHubs.choose.holeCount.title') }}</h3>
+        <div class="grid md:grid-cols-2 gap-6">
+          <div v-for="choice in holeCountChoices" :key="choice.titleKey" class="tz-surface-panel p-4 rounded-xl border tz-border-subtle">
+            <strong class="block tz-text-primary mb-2">{{ t(choice.titleKey) }}</strong>
+            <p class="text-sm tz-text-secondary leading-relaxed">{{ t(choice.bodyKey) }}</p>
+          </div>
+        </div>
+        <p class="mt-4 text-xs text-emerald-600/80 bg-emerald-50 p-3 rounded-lg border border-emerald-200">
+          <strong>{{ t('guidesWheelsetComponentsHubs.choose.holeCount.principleLabel') }}:</strong>
+          {{ t('guidesWheelsetComponentsHubs.choose.holeCount.principle') }}
+        </p>
       </div>
 
-      <!-- Notes -->
       <div class="bg-amber-500/10 border-l-4 border-amber-500 p-4 rounded-r-xl">
-         <h4 class="text-amber-500 font-bold mb-2 flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
-            Critical Notes
-         </h4>
-         <ul class="space-y-1 text-sm text-amber-500/80 list-disc pl-5 marker:text-amber-500/50">
-            <li>Hub type must match spoke type (J-bend to J-bend, SP to SP).</li>
-            <li>Hole count should be chosen based on riding scenario: lightweight vs durability.</li>
-            <li>High-performance wheelsets often use straight-pull hubs with fewer holes; durable wheelsets often use J-bend hubs with more holes.</li>
-         </ul>
+        <h4 class="text-amber-500 font-bold mb-2 flex items-center gap-2">
+          <span aria-hidden="true">!</span>
+          {{ t('guidesWheelsetComponentsHubs.choose.notes.title') }}
+        </h4>
+        <ul class="space-y-1 text-sm text-amber-500/80 list-disc pl-5 marker:text-amber-500/50">
+          <li v-for="itemKey in noteItemKeys" :key="itemKey">{{ t(itemKey) }}</li>
+        </ul>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useLocalePath, useRouter } from '#imports'
+import { ref, watch } from 'vue'
+import { useI18n, useLocalePath, useRouter } from '#imports'
 import GuideImage from '~/components/GuideImage.vue'
+import { usePageMessages } from '~/composables/usePageMessages'
 
+const { locale, t } = useI18n()
+const { loadPageMessages } = usePageMessages('guidesWheelsetComponentsHubs')
+
+await loadPageMessages(locale.value)
+
+watch(locale, (nextLocale) => {
+  void loadPageMessages(nextLocale)
+})
+
+const activeTab = ref<'technology' | 'choose-hubs'>('technology')
 const router = useRouter()
 const localePath = useLocalePath()
-const activeTab = ref<'technology' | 'choose-hubs'>('technology')
+
+interface HubImage {
+  src: string
+  altKey: string
+  captionKey: string
+}
+
+interface HubSpokeType {
+  id: string
+  titleKey: string
+  itemKeys: string[]
+  images: [HubImage, HubImage]
+}
+
+const spokeTypes: HubSpokeType[] = [
+  {
+    id: 'j-bend',
+    titleKey: 'guidesWheelsetComponentsHubs.technology.spokeInterface.jBend.title',
+    itemKeys: [
+      'guidesWheelsetComponentsHubs.technology.spokeInterface.jBend.items.0',
+      'guidesWheelsetComponentsHubs.technology.spokeInterface.jBend.items.1',
+      'guidesWheelsetComponentsHubs.technology.spokeInterface.jBend.items.2',
+    ],
+    images: [
+      {
+        src: '/public/technical/hubs/hubs/dt240-6bolt-jbend-hub.webp',
+        altKey: 'guidesWheelsetComponentsHubs.technology.spokeInterface.jBend.images.sixBoltAlt',
+        captionKey: 'guidesWheelsetComponentsHubs.technology.spokeInterface.jBend.images.sixBoltCaption',
+      },
+      {
+        src: '/public/technical/hubs/hubs/dt240-centerlock-jbend-hub.webp',
+        altKey: 'guidesWheelsetComponentsHubs.technology.spokeInterface.jBend.images.centerLockAlt',
+        captionKey: 'guidesWheelsetComponentsHubs.technology.spokeInterface.jBend.images.centerLockCaption',
+      },
+    ],
+  },
+  {
+    id: 'straight-pull',
+    titleKey: 'guidesWheelsetComponentsHubs.technology.spokeInterface.straightPull.title',
+    itemKeys: [
+      'guidesWheelsetComponentsHubs.technology.spokeInterface.straightPull.items.0',
+      'guidesWheelsetComponentsHubs.technology.spokeInterface.straightPull.items.1',
+      'guidesWheelsetComponentsHubs.technology.spokeInterface.straightPull.items.2',
+    ],
+    images: [
+      {
+        src: '/public/technical/hubs/hubs/dt240-6bolt-straightpull-hub.webp',
+        altKey: 'guidesWheelsetComponentsHubs.technology.spokeInterface.straightPull.images.sixBoltAlt',
+        captionKey: 'guidesWheelsetComponentsHubs.technology.spokeInterface.straightPull.images.sixBoltCaption',
+      },
+      {
+        src: '/public/technical/hubs/hubs/dt240-centerlock-straightpull-hub.webp',
+        altKey: 'guidesWheelsetComponentsHubs.technology.spokeInterface.straightPull.images.centerLockAlt',
+        captionKey: 'guidesWheelsetComponentsHubs.technology.spokeInterface.straightPull.images.centerLockCaption',
+      },
+    ],
+  },
+]
+
+const brakeInterfaces = [
+  {
+    titleKey: 'guidesWheelsetComponentsHubs.technology.brake.sixBoltTitle',
+    bodyKey: 'guidesWheelsetComponentsHubs.technology.brake.sixBoltBody',
+  },
+  {
+    titleKey: 'guidesWheelsetComponentsHubs.technology.brake.centerLockTitle',
+    bodyKey: 'guidesWheelsetComponentsHubs.technology.brake.centerLockBody',
+  },
+]
+
+const holeCountRows = [
+  {
+    labelKey: 'guidesWheelsetComponentsHubs.technology.holeCount.rows.0.label',
+    valueKey: 'guidesWheelsetComponentsHubs.technology.holeCount.rows.0.value',
+  },
+  {
+    labelKey: 'guidesWheelsetComponentsHubs.technology.holeCount.rows.1.label',
+    valueKey: 'guidesWheelsetComponentsHubs.technology.holeCount.rows.1.value',
+  },
+  {
+    labelKey: 'guidesWheelsetComponentsHubs.technology.holeCount.rows.2.label',
+    valueKey: 'guidesWheelsetComponentsHubs.technology.holeCount.rows.2.value',
+  },
+]
+
+const ratchetLevels = [
+  {
+    value: '18T',
+    labelKey: 'guidesWheelsetComponentsHubs.technology.ratchet.levels.standard',
+  },
+  {
+    value: '36T',
+    labelKey: 'guidesWheelsetComponentsHubs.technology.ratchet.levels.balanced',
+  },
+  {
+    value: '54T',
+    labelKey: 'guidesWheelsetComponentsHubs.technology.ratchet.levels.instant',
+  },
+]
+
+const hubChoices = [
+  {
+    id: 'j-bend',
+    titleKey: 'guidesWheelsetComponentsHubs.choose.jBend.title',
+    structureLabelKey: 'guidesWheelsetComponentsHubs.choose.jBend.structureLabel',
+    structureKey: 'guidesWheelsetComponentsHubs.choose.jBend.structure',
+    advantagesLabelKey: 'guidesWheelsetComponentsHubs.choose.jBend.advantagesLabel',
+    advantagesKey: 'guidesWheelsetComponentsHubs.choose.jBend.advantages',
+    bestForLabelKey: 'guidesWheelsetComponentsHubs.choose.jBend.bestForLabel',
+    bestForKey: 'guidesWheelsetComponentsHubs.choose.jBend.bestFor',
+    compatibleKey: 'guidesWheelsetComponentsHubs.choose.jBend.compatible',
+  },
+  {
+    id: 'straight-pull',
+    titleKey: 'guidesWheelsetComponentsHubs.choose.straightPull.title',
+    structureLabelKey: 'guidesWheelsetComponentsHubs.choose.straightPull.structureLabel',
+    structureKey: 'guidesWheelsetComponentsHubs.choose.straightPull.structure',
+    advantagesLabelKey: 'guidesWheelsetComponentsHubs.choose.straightPull.advantagesLabel',
+    advantagesKey: 'guidesWheelsetComponentsHubs.choose.straightPull.advantages',
+    bestForLabelKey: 'guidesWheelsetComponentsHubs.choose.straightPull.bestForLabel',
+    bestForKey: 'guidesWheelsetComponentsHubs.choose.straightPull.bestFor',
+    compatibleKey: 'guidesWheelsetComponentsHubs.choose.straightPull.compatible',
+  },
+]
+
+const holeCountChoices = [
+  {
+    titleKey: 'guidesWheelsetComponentsHubs.choose.holeCount.lightweightTitle',
+    bodyKey: 'guidesWheelsetComponentsHubs.choose.holeCount.lightweightBody',
+  },
+  {
+    titleKey: 'guidesWheelsetComponentsHubs.choose.holeCount.durabilityTitle',
+    bodyKey: 'guidesWheelsetComponentsHubs.choose.holeCount.durabilityBody',
+  },
+]
+
+const noteItemKeys = [
+  'guidesWheelsetComponentsHubs.choose.notes.items.0',
+  'guidesWheelsetComponentsHubs.choose.notes.items.1',
+  'guidesWheelsetComponentsHubs.choose.notes.items.2',
+]
 
 const goToChooseFreehub = async () => {
   await router.push(localePath('/guides/wheelset-buyers/choose-freehub'))

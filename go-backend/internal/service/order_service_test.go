@@ -13,9 +13,11 @@ import (
 	"commerce-platform/internal/domain/currency"
 	"commerce-platform/internal/domain/loyalty"
 	"commerce-platform/internal/domain/order"
+	"commerce-platform/internal/domain/orderevidence"
 	outboxdomain "commerce-platform/internal/domain/outbox"
 	paymentdomain "commerce-platform/internal/domain/payment"
 	"commerce-platform/internal/domain/product"
+	productrequirement "commerce-platform/internal/domain/productrequirement"
 	"commerce-platform/internal/domain/setting"
 	shippingdomain "commerce-platform/internal/domain/shipping"
 	"commerce-platform/internal/pkg/cache"
@@ -168,6 +170,34 @@ func TestOrderServiceCreateOrderSettlesZeroTotalDiscountOrder(t *testing.T) {
 	var conversionCount int64
 	require.NoError(t, db.Model(&outboxdomain.Event{}).Where("event_type = ? AND aggregate_id = ?", outboxdomain.EventTypeVerifiedConversion, fmt.Sprint(createdOrder.ID)).Count(&conversionCount).Error)
 	assert.Zero(t, conversionCount)
+}
+
+func TestOrderServiceCreateOrderSnapshotsMadeToOrderFulfillment(t *testing.T) {
+	db, orderService := newTestOrderService(t)
+	productRecord := seedProduct(t, db, 120, 5)
+	productRecord.FulfillmentMode = product.FulfillmentModeMadeToOrder
+	require.NoError(t, db.Save(&productRecord).Error)
+
+	createdOrder, err := orderService.CreateOrder(
+		context.Background(),
+		42,
+		[]order.OrderItem{{ProductID: productRecord.ID, Quantity: 1}},
+		testAddress(),
+		testAddress(),
+		"card",
+		"standard",
+		"",
+		0,
+	)
+	require.NoError(t, err)
+	require.NotNil(t, createdOrder)
+	assert.Equal(t, order.FulfillmentModeMadeToOrder, createdOrder.FulfillmentMode)
+	assert.Equal(t, order.ProductionStatusNotStarted, createdOrder.ProductionStatus)
+
+	var savedOrder order.Order
+	require.NoError(t, db.Preload("Items").First(&savedOrder, createdOrder.ID).Error)
+	require.Len(t, savedOrder.Items, 1)
+	assert.Equal(t, order.FulfillmentModeMadeToOrder, savedOrder.Items[0].FulfillmentMode)
 }
 
 func TestOrderServiceCreateOrderRejectsCouponPerUserUsageLimit(t *testing.T) {
@@ -487,6 +517,225 @@ func TestOrderServiceCreateOrderRollsBackWhenStockIsInsufficient(t *testing.T) {
 	require.NoError(t, db.First(&savedProduct, productRecord.ID).Error)
 	assert.Equal(t, 1, savedProduct.Stock)
 	assert.Empty(t, cacheInvalidator.productIDs)
+}
+
+func TestOrderServiceCreateOrderPersistsImmutableEvidenceSnapshot(t *testing.T) {
+	db, orderService := newTestOrderService(t)
+	productRecord := seedProduct(t, db, 750, 5)
+	rule := productrequirement.ProductQualityRequirementRule{
+		ProductID:              productRecord.ID,
+		RequirementType:        productrequirement.RequirementTypeSpokeTensionQC,
+		SpokeTensionQCRequired: true,
+		Status:                 productrequirement.RuleStatusActive,
+		RuleVersion:            "product-v1",
+		Reason:                 "configured assembly product",
+	}
+	require.NoError(t, db.Create(&rule).Error)
+
+	createdOrder, err := orderService.CreateOrder(
+		context.Background(),
+		42,
+		[]order.OrderItem{{ProductID: productRecord.ID, Quantity: 1}},
+		testAddress(),
+		testAddress(),
+		"card",
+		"standard",
+		"",
+		0,
+	)
+	require.NoError(t, err)
+	require.NotNil(t, createdOrder)
+
+	snapshot, err := repository.NewOrderEvidenceSnapshotRepository(db).FindByOrderID(createdOrder.ID)
+	require.NoError(t, err)
+	assert.True(t, snapshot.IsHighValue)
+	assert.True(t, snapshot.HasSpokeTensionQC)
+	assert.InDelta(t, 750, snapshot.OrderTotalUSD, 0.001)
+	assert.Equal(t, orderevidence.OrderEvidenceSnapshotSchemaVersion, snapshot.SchemaVersion)
+	require.NoError(t, snapshot.VerifyIntegrity())
+
+	evidenceRepo := repository.NewOrderEvidenceRepository(db)
+	pkg, err := evidenceRepo.FindLatestPackageByOrderID(createdOrder.ID)
+	require.NoError(t, err)
+	assert.Equal(t, snapshot.ID, pkg.SnapshotID)
+	assert.True(t, pkg.IsHighValue)
+	assert.True(t, pkg.HasSpokeTensionQC)
+	assert.Equal(t, orderevidence.PackageStatusIncomplete, pkg.Status)
+
+	items, err := evidenceRepo.ListItemsByPackageID(pkg.ID)
+	require.NoError(t, err)
+	require.Len(t, items, 5)
+	var configurationCount, identityCount, tensionCount, outboundCount, podCount int
+	for _, item := range items {
+		switch item.ItemType {
+		case orderevidence.EvidenceItemTypeConfigurationConfirmation:
+			configurationCount++
+			assert.Equal(t, orderevidence.EvidenceItemStatusComplete, item.Status)
+			assert.Equal(t, snapshot.ID, *item.SnapshotID)
+		case orderevidence.EvidenceItemTypeProductIdentity:
+			identityCount++
+		case orderevidence.EvidenceItemTypeSpokeQCTension:
+			tensionCount++
+		case orderevidence.EvidenceItemTypeOutboundWeightPackaging:
+			outboundCount++
+		case orderevidence.EvidenceItemTypeSignedPOD:
+			podCount++
+		}
+	}
+	assert.Equal(t, 1, configurationCount)
+	assert.Equal(t, 1, identityCount)
+	assert.Equal(t, 1, tensionCount)
+	assert.Equal(t, 1, outboundCount)
+	assert.Equal(t, 1, podCount)
+
+	require.NoError(t, db.Model(&rule).Updates(map[string]interface{}{
+		"spoke_tension_qc_required": false,
+		"status":                    productrequirement.RuleStatusInactive,
+		"rule_version":              "product-v2",
+	}).Error)
+	foundAgain, err := repository.NewOrderEvidenceSnapshotRepository(db).FindByOrderID(createdOrder.ID)
+	require.NoError(t, err)
+	assert.True(t, foundAgain.HasSpokeTensionQC)
+}
+
+func TestOrderServiceEvidenceSeparatesHighValueFromSpokeTensionRequirement(t *testing.T) {
+	db, orderService := newTestOrderService(t)
+	ordinaryProduct := seedProductWithSKU(t, db, 750, 5, "SKU-EVIDENCE-ORDINARY")
+	qcProduct := seedProductWithSKU(t, db, 100, 5, "SKU-EVIDENCE-QC")
+	require.NoError(t, db.Create(&productrequirement.ProductQualityRequirementRule{
+		ProductID:              qcProduct.ID,
+		RequirementType:        productrequirement.RequirementTypeSpokeTensionQC,
+		SpokeTensionQCRequired: true,
+		Status:                 productrequirement.RuleStatusActive,
+		RuleVersion:            "qc-v1",
+		Reason:                 "explicit configured requirement",
+	}).Error)
+
+	highValueOrder, err := orderService.CreateOrder(
+		context.Background(),
+		42,
+		[]order.OrderItem{{ProductID: ordinaryProduct.ID, Quantity: 1}},
+		testAddress(),
+		testAddress(),
+		"card",
+		"standard",
+		"",
+		0,
+	)
+	require.NoError(t, err)
+	highValueSnapshot, err := repository.NewOrderEvidenceSnapshotRepository(db).FindByOrderID(highValueOrder.ID)
+	require.NoError(t, err)
+	assert.True(t, highValueSnapshot.IsHighValue)
+	assert.False(t, highValueSnapshot.HasSpokeTensionQC)
+	highValuePackage, err := repository.NewOrderEvidenceRepository(db).FindLatestPackageByOrderID(highValueOrder.ID)
+	require.NoError(t, err)
+	highValueItems, err := repository.NewOrderEvidenceRepository(db).ListItemsByPackageID(highValuePackage.ID)
+	require.NoError(t, err)
+	for _, item := range highValueItems {
+		assert.NotEqual(t, orderevidence.EvidenceItemTypeSpokeQCTension, item.ItemType)
+	}
+
+	lowValueOrder, err := orderService.CreateOrder(
+		context.Background(),
+		42,
+		[]order.OrderItem{{ProductID: qcProduct.ID, Quantity: 1}},
+		testAddress(),
+		testAddress(),
+		"card",
+		"standard",
+		"",
+		0,
+	)
+	require.NoError(t, err)
+	lowValueSnapshot, err := repository.NewOrderEvidenceSnapshotRepository(db).FindByOrderID(lowValueOrder.ID)
+	require.NoError(t, err)
+	assert.False(t, lowValueSnapshot.IsHighValue)
+	assert.True(t, lowValueSnapshot.HasSpokeTensionQC)
+	lowValuePackage, err := repository.NewOrderEvidenceRepository(db).FindLatestPackageByOrderID(lowValueOrder.ID)
+	require.NoError(t, err)
+	lowValueItems, err := repository.NewOrderEvidenceRepository(db).ListItemsByPackageID(lowValuePackage.ID)
+	require.NoError(t, err)
+	var lowValueTensionItems int
+	for _, item := range lowValueItems {
+		if item.ItemType == orderevidence.EvidenceItemTypeSpokeQCTension {
+			lowValueTensionItems++
+		}
+	}
+	assert.Equal(t, 1, lowValueTensionItems)
+}
+
+func TestOrderServiceCreateOrderRollsBackWhenEvidenceRuleIsAmbiguous(t *testing.T) {
+	db, orderService := newTestOrderService(t)
+	productRecord := seedProduct(t, db, 100, 1)
+	for _, version := range []string{"product-v1", "product-v2"} {
+		require.NoError(t, db.Create(&productrequirement.ProductQualityRequirementRule{
+			ProductID:              productRecord.ID,
+			RequirementType:        productrequirement.RequirementTypeSpokeTensionQC,
+			SpokeTensionQCRequired: true,
+			Status:                 productrequirement.RuleStatusActive,
+			RuleVersion:            version,
+		}).Error)
+	}
+
+	createdOrder, err := orderService.CreateOrder(
+		context.Background(),
+		42,
+		[]order.OrderItem{{ProductID: productRecord.ID, Quantity: 1}},
+		testAddress(),
+		testAddress(),
+		"card",
+		"standard",
+		"",
+		0,
+	)
+	require.Error(t, err)
+	assert.Nil(t, createdOrder)
+	assert.Contains(t, err.Error(), "multiple active default spoke tension QC rules")
+
+	var orderCount int64
+	require.NoError(t, db.Model(&order.Order{}).Count(&orderCount).Error)
+	assert.Zero(t, orderCount)
+	var snapshotCount int64
+	require.NoError(t, db.Model(&orderevidence.OrderEvidenceSnapshot{}).Count(&snapshotCount).Error)
+	assert.Zero(t, snapshotCount)
+
+	var savedProduct product.Product
+	require.NoError(t, db.First(&savedProduct, productRecord.ID).Error)
+	assert.Equal(t, 1, savedProduct.Stock)
+	var savedVariant product.ProductVariant
+	require.NoError(t, db.Where("product_id = ?", productRecord.ID).First(&savedVariant).Error)
+	assert.Equal(t, 1, savedVariant.Stock)
+}
+
+func TestOrderServiceCreateOrderRequiresCompleteEvidenceConfiguration(t *testing.T) {
+	db, orderService := newTestOrderService(t)
+	productRecord := seedProduct(t, db, 100, 1)
+	orderService.ConfigureOrderEvidence(nil)
+
+	createdOrder, err := orderService.CreateOrder(
+		context.Background(),
+		42,
+		[]order.OrderItem{{ProductID: productRecord.ID, Quantity: 1}},
+		testAddress(),
+		testAddress(),
+		"card",
+		"standard",
+		"",
+		0,
+	)
+	require.ErrorIs(t, err, ErrOrderEvidenceNotConfigured)
+	assert.Nil(t, createdOrder)
+
+	var orderCount int64
+	require.NoError(t, db.Model(&order.Order{}).Count(&orderCount).Error)
+	assert.Zero(t, orderCount)
+
+	var savedProduct product.Product
+	require.NoError(t, db.First(&savedProduct, productRecord.ID).Error)
+	assert.Equal(t, 1, savedProduct.Stock)
+	var savedVariant product.ProductVariant
+	require.NoError(t, db.Where("product_id = ?", productRecord.ID).First(&savedVariant).Error)
+	assert.Equal(t, 1, savedVariant.Stock)
 }
 
 func TestOrderServiceCreateOrderRejectsProductWithoutVariant(t *testing.T) {
@@ -932,19 +1181,16 @@ func TestOrderServiceUpdateTrackingInfoResolvesProviderCarrierCode(t *testing.T)
 	assert.Equal(t, "pending", shipment.SyncStatus)
 }
 
-func TestOrderServiceUpdateTrackingInfoDefaultsToOrderCarrierService(t *testing.T) {
+func TestOrderServiceUpdateTrackingInfoRequiresExplicitLocalTarget(t *testing.T) {
 	db, orderService := newTestOrderService(t)
-	provider, carrier, carrierService := seedTrackingProviderCarrierAndService(t, db)
-	mapping := seedTrackingCarrierMapping(t, db, provider.ID, "carrier_service", nil, &carrierService.ID, "DHL-EXP-US")
+	provider, _, _ := seedTrackingProviderCarrierAndService(t, db)
 
 	orderRecord := order.Order{
-		OrderNumber:      "ORD-TRACKING-DEFAULT-SERVICE",
-		UserID:           42,
-		Status:           "processing",
-		CarrierID:        &carrier.ID,
-		CarrierServiceID: &carrierService.ID,
-		TotalAmount:      100,
-		Currency:         "USD",
+		OrderNumber: "ORD-TRACKING-LOCAL-TARGET-REQUIRED",
+		UserID:      42,
+		Status:      "processing",
+		TotalAmount: 100,
+		Currency:    "USD",
 	}
 	require.NoError(t, db.Create(&orderRecord).Error)
 
@@ -953,24 +1199,19 @@ func TestOrderServiceUpdateTrackingInfoDefaultsToOrderCarrierService(t *testing.
 		TrackingProviderID: provider.ID,
 	})
 
-	require.NoError(t, err)
+	require.ErrorIs(t, err, ErrTrackingLocalTargetRequired)
 
 	var savedOrder order.Order
 	require.NoError(t, db.First(&savedOrder, orderRecord.ID).Error)
-	assert.Equal(t, "TRACKDEFAULT123", savedOrder.TrackingNumber)
-	require.NotNil(t, savedOrder.CarrierID)
-	require.NotNil(t, savedOrder.CarrierServiceID)
-	require.NotNil(t, savedOrder.TrackingCarrierMappingID)
-	assert.Equal(t, carrier.ID, *savedOrder.CarrierID)
-	assert.Equal(t, carrierService.ID, *savedOrder.CarrierServiceID)
-	assert.Equal(t, mapping.ID, *savedOrder.TrackingCarrierMappingID)
-	assert.Equal(t, "DHL-EXP-US", savedOrder.ProviderCarrierCode)
+	assert.Empty(t, savedOrder.TrackingNumber)
+	assert.Nil(t, savedOrder.TrackingProviderID)
+	assert.Nil(t, savedOrder.CarrierID)
+	assert.Nil(t, savedOrder.CarrierServiceID)
+	assert.Nil(t, savedOrder.TrackingCarrierMappingID)
 
-	var shipment shippingdomain.TrackingShipment
-	require.NoError(t, db.Where("order_id = ?", orderRecord.ID).First(&shipment).Error)
-	assert.Equal(t, carrier.ID, *shipment.CarrierID)
-	assert.Equal(t, carrierService.ID, *shipment.CarrierServiceID)
-	assert.Equal(t, "DHL-EXP-US", shipment.ProviderCarrierCode)
+	var shipmentCount int64
+	require.NoError(t, db.Model(&shippingdomain.TrackingShipment{}).Where("order_id = ?", orderRecord.ID).Count(&shipmentCount).Error)
+	assert.Zero(t, shipmentCount)
 }
 
 func TestOrderServiceFulfillOrderMarksOrderShippedAndCreatesTrackingTask(t *testing.T) {
@@ -988,6 +1229,7 @@ func TestOrderServiceFulfillOrderMarksOrderShippedAndCreatesTrackingTask(t *test
 		Currency:       "USD",
 	}
 	require.NoError(t, db.Create(&orderRecord).Error)
+	seedReadyFulfillmentEvidenceForTest(t, db, &orderRecord)
 
 	result, err := orderService.FulfillOrder(context.Background(), orderRecord.ID, OrderTrackingUpdateInput{
 		TrackingNumber:     "TRACK-FULFILL-123",
@@ -1031,6 +1273,7 @@ func TestOrderServiceFulfillOrderDoesNotMarkOrderShippedWhenCarrierMappingFails(
 		Currency:       "USD",
 	}
 	require.NoError(t, db.Create(&orderRecord).Error)
+	seedReadyFulfillmentEvidenceForTest(t, db, &orderRecord)
 
 	result, err := orderService.FulfillOrder(context.Background(), orderRecord.ID, OrderTrackingUpdateInput{
 		TrackingNumber:     "TRACK-NO-MAPPING",
@@ -1138,6 +1381,11 @@ func newTestOrderService(t *testing.T) (*gorm.DB, *OrderService) {
 		&order.OrderItem{},
 		&order.OrderIdempotency{},
 		&order.PolicyDisclosure{},
+		&orderevidence.OrderEvidenceSnapshot{},
+		&orderevidence.OrderEvidencePackage{},
+		&orderevidence.OrderEvidenceItem{},
+		&orderevidence.OrderEvidenceAttachment{},
+		&productrequirement.ProductQualityRequirementRule{},
 		&outboxdomain.Event{},
 		&coupon.Coupon{},
 		&coupon.CouponUsage{},
@@ -1180,6 +1428,9 @@ func newTestOrderService(t *testing.T) (*gorm.DB, *OrderService) {
 	txManager.ConfigureOrderPolicyDisclosureRepository(repository.NewOrderPolicyDisclosureRepository(db))
 	txManager.ConfigureExchangeRateRepository(exchangeRateRepo)
 	txManager.ConfigureOutboxRepository(repository.NewOutboxRepository(db))
+	txManager.ConfigureProductQualityRequirementRepository(repository.NewProductQualityRequirementRepository(db))
+	txManager.ConfigureOrderEvidenceSnapshotRepository(repository.NewOrderEvidenceSnapshotRepository(db))
+	txManager.ConfigureOrderEvidenceRepository(repository.NewOrderEvidenceRepository(db))
 	checkoutService.ConfigureCurrencyPolicy(currencyPolicyService)
 	checkoutService.ConfigureExchangeRateRepository(exchangeRateRepo)
 	eurRate := exchangeRateRecord("USD", "EUR", 0.9)
@@ -1213,7 +1464,10 @@ func newTestOrderService(t *testing.T) (*gorm.DB, *OrderService) {
 	numberGenerator, err := ordernumber.NewGenerator("test-order-number-secret", 0)
 	require.NoError(t, err)
 
-	return db, NewOrderService(txManager, orderRepo, checkoutService, shippingService, numberGenerator)
+	orderService := NewOrderService(txManager, orderRepo, checkoutService, shippingService, numberGenerator)
+	orderService.ConfigureOrderEvidenceSnapshot(NewOrderEvidenceSnapshotService())
+	orderService.ConfigureOrderEvidence(NewOrderEvidenceService())
+	return db, orderService
 }
 
 func newRedisBackedProductService(t *testing.T, db *gorm.DB) *ProductService {
@@ -1280,6 +1534,37 @@ func seedProductShell(t *testing.T, db *gorm.DB, price float64, stock int) produ
 		Stock:              stock,
 	}
 	require.NoError(t, db.Create(&record).Error)
+	return record
+}
+
+func seedProductWithSKU(t *testing.T, db *gorm.DB, price float64, stock int, sku string) product.Product {
+	t.Helper()
+
+	shippingTemplateID := seedOrderTestShippingTemplateID(t, db)
+	record := product.Product{
+		ShippingTemplateID: shippingTemplateID,
+		SKU:                sku,
+		Name:               sku,
+		Slug:               strings.ToLower(sku),
+		Currency:           "USD",
+		Price:              price,
+		Stock:              stock,
+		Status:             "active",
+		Locale:             "en",
+	}
+	require.NoError(t, db.Create(&record).Error)
+	require.NoError(t, db.Create(&product.ProductVariant{
+		ProductID:    record.ID,
+		SKU:          sku,
+		Title:        "Default",
+		OptionValues: "{}",
+		Currency:     "USD",
+		Price:        price,
+		Stock:        stock,
+		Weight:       9000,
+		IsDefault:    true,
+		IsActive:     true,
+	}).Error)
 	return record
 }
 

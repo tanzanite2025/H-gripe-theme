@@ -18,4 +18,5 @@ export interface CartItem {
   category?: string
   categories?: unknown[]
   tags?: string[]
+  fulfillment_mode?: 'stock' | 'made_to_order'
 }

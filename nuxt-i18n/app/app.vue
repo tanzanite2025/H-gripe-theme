@@ -11,6 +11,12 @@
       <NuxtPage />
     </NuxtLayout>
     
+    <SidePanel>
+      <template #left>
+        <AccountSidebarPanel />
+      </template>
+    </SidePanel>
+
     <StorefrontClientOverlaysDeferred />
     
     <!-- Cookie 同意弹窗 -->
@@ -22,6 +28,8 @@
 import { computed, onMounted, ref } from 'vue'
 import { useHead, useI18n, useRequestURL, useRuntimeConfig } from '#imports'
 import SiteHeader from '~/components/SiteHeader.vue'
+import SidePanel from '~/components/SidePanel.vue'
+import AccountSidebarPanel from '~/components/account/AccountSidebarPanel.vue'
 import { useAuth } from '~/composables/useAuth'
 import { useProductCategories } from '~/composables/useProductCategories'
 import { useSiteSettings } from '~/composables/usePublicSettings'
@@ -37,7 +45,7 @@ import {
   STOREFRONT_SESSION_WARMUP,
   splitStorefrontConfiguredOrigins,
 } from '~/utils/storefrontLoadingPolicy'
-import { storefrontFontPreloadLinkForLocale } from '~/utils/storefrontFonts'
+import { storefrontAdditionalFontPreloadLinkForLocale } from '~/utils/storefrontFonts'
 
 const auth = useAuth()
 const runtimeConfig = useRuntimeConfig()
@@ -64,7 +72,7 @@ const htmlLanguage = computed(() => (
 ))
 const htmlDirection = computed(() => activeLocaleEntry.value?.dir || 'ltr')
 const htmlFontFamily = computed(() => activeLocaleEntry.value?.fontFamily || 'latin')
-const htmlFontPreloadLink = computed(() => storefrontFontPreloadLinkForLocale(locale.value))
+const htmlAdditionalFontPreloadLink = computed(() => storefrontAdditionalFontPreloadLinkForLocale(locale.value))
 
 const preconnectLinks = computed(() => {
   const currentOrigin = requestUrl.origin
@@ -116,8 +124,7 @@ useHead(() => ({
   },
   link: [
     ...preconnectLinks.value,
-    // Preload the active first-paint shard so font-display:block can resolve sooner.
-    htmlFontPreloadLink.value,
+    ...(htmlAdditionalFontPreloadLink.value ? [htmlAdditionalFontPreloadLink.value] : []),
     { rel: 'icon', href: siteFavicon.value },
     { rel: 'shortcut icon', href: siteFavicon.value },
   ],

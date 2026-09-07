@@ -7,12 +7,12 @@
           <div class="sizecharts-section__step-header sizecharts-section__step-header--compact md:justify-start">
             <span class="sizecharts-section__step-badge">1</span>
             <h3 class="sizecharts-section__step-title">
-              {{ $t('guidesTireguides.innerTube.steps.size.title') }}
+              {{ t('guidesTireInnerTube.steps.size.title') }}
             </h3>
           </div>
 
           <p class="tz-text-secondary text-sm leading-relaxed max-w-3xl md:max-w-none">
-            {{ $t('guidesTireguides.innerTube.steps.size.description') }}
+            {{ t('guidesTireInnerTube.steps.size.description') }}
           </p>
         </div>
 
@@ -22,7 +22,7 @@
           class="inline-flex items-center justify-center rounded-full bg-[var(--tz-card-surface)] border tz-border-subtle px-7 py-2.5 text-xs font-bold uppercase tracking-wider tz-text-primary shadow-md hover:border-[rgba(5, 150, 105,0.28)] hover:tz-surface-subtle hover:text-[var(--tz-site-accent)] transition-colors"
           @click="openInnerTubeSearch"
         >
-          {{ $t('guidesTireguides.innerTube.actions.findTube') }}
+          {{ t('guidesTireInnerTube.actions.findTube') }}
         </button>
        </div>
        </div>
@@ -34,7 +34,7 @@
        <div class="sizecharts-section__step-header sizecharts-section__step-header--compact">
          <span class="sizecharts-section__step-badge">2</span>
            <h3 class="sizecharts-section__step-title">
-             {{ $t('guidesTireguides.innerTube.steps.valve.title') }}
+             {{ t('guidesTireInnerTube.steps.valve.title') }}
            </h3>
        </div>
 
@@ -42,20 +42,20 @@
           <!-- AV -->
           <div class="rounded-xl bg-[var(--tz-card-surface)] p-3 shadow-md flex flex-col items-center border tz-border-subtle">
              <strong class="sizecharts-section__card-title tz-text-primary mb-1">AV</strong>
-             <span class="sizecharts-section__card-meta tz-text-muted">{{ $t('guidesTireguides.innerTube.valves.av.type') }}</span>
-                <p class="text-xs tz-text-secondary">{{ $t('guidesTireguides.innerTube.valves.av.description') }}</p>
+              <span class="sizecharts-section__card-meta tz-text-muted">{{ t('guidesTireInnerTube.valves.av.type') }}</span>
+                 <p class="text-xs tz-text-secondary">{{ t('guidesTireInnerTube.valves.av.description') }}</p>
           </div>
           <!-- DV -->
           <div class="rounded-xl bg-[var(--tz-card-surface)] p-3 shadow-md flex flex-col items-center border tz-border-subtle">
              <strong class="sizecharts-section__card-title tz-text-primary mb-1">DV</strong>
-             <span class="sizecharts-section__card-meta tz-text-muted">{{ $t('guidesTireguides.innerTube.valves.dv.type') }}</span>
-                <p class="text-xs tz-text-secondary">{{ $t('guidesTireguides.innerTube.valves.dv.description') }}</p>
+              <span class="sizecharts-section__card-meta tz-text-muted">{{ t('guidesTireInnerTube.valves.dv.type') }}</span>
+                 <p class="text-xs tz-text-secondary">{{ t('guidesTireInnerTube.valves.dv.description') }}</p>
           </div>
           <!-- SV -->
           <div class="rounded-xl bg-[var(--tz-card-surface)] p-3 shadow-md flex flex-col items-center border tz-border-subtle">
              <strong class="sizecharts-section__card-title tz-text-primary mb-1">SV</strong>
-             <span class="sizecharts-section__card-meta tz-text-muted">{{ $t('guidesTireguides.innerTube.valves.sv.type') }}</span>
-                <p class="text-xs tz-text-secondary">{{ $t('guidesTireguides.innerTube.valves.sv.description') }}</p>
+              <span class="sizecharts-section__card-meta tz-text-muted">{{ t('guidesTireInnerTube.valves.sv.type') }}</span>
+                 <p class="text-xs tz-text-secondary">{{ t('guidesTireInnerTube.valves.sv.description') }}</p>
           </div>
        </div>
 
@@ -64,7 +64,7 @@
            <GuideImage
             class="rounded-xl overflow-hidden shadow-md"
             src="/public/tiresizecharts/innertube/schwalbe-innertube-valve.webp"
-            :alt="$t('guidesTireguides.innerTube.images.valveOverviewAlt')"
+            :alt="t('guidesTireInnerTube.images.valveOverviewAlt')"
             :zoomOnClick="true"
           />
         </div>
@@ -72,37 +72,37 @@
         <div class="w-full">
         <!-- Compatibility Table -->
               <h4 class="text-sm font-semibold tz-text-primary mb-3 flex items-center justify-center gap-2">
-            <span>🔧</span> {{ $t('guidesTireguides.innerTube.compatibility.title') }}
+             <span>🔧</span> {{ t('guidesTireInnerTube.compatibility.title') }}
          </h4>
         <div class="overflow-x-auto rounded-xl bg-[var(--tz-card-surface)] shadow-md inline-block w-full border tz-border-subtle">
            <table class="min-w-full text-center text-xs sm:text-sm tz-text-secondary">
             <thead class="tz-surface-muted">
               <tr>
-                    <th class="px-3 py-2.5 font-semibold tz-text-primary">{{ $t('guidesTireguides.innerTube.compatibility.headers.rimHeight') }}</th>
-                <th class="px-3 py-2.5 font-semibold tz-text-primary">{{ $t('guidesTireguides.innerTube.compatibility.headers.recommendedValve') }}</th>
-                    <th class="px-3 py-2.5 font-semibold tz-text-primary">{{ $t('guidesTireguides.innerTube.compatibility.headers.notes') }}</th>
+                    <th class="px-3 py-2.5 font-semibold tz-text-primary">{{ t('guidesTireInnerTube.compatibility.headers.rimHeight') }}</th>
+                <th class="px-3 py-2.5 font-semibold tz-text-primary">{{ t('guidesTireInnerTube.compatibility.headers.recommendedValve') }}</th>
+                    <th class="px-3 py-2.5 font-semibold tz-text-primary">{{ t('guidesTireInnerTube.compatibility.headers.notes') }}</th>
               </tr>
             </thead>
             <tbody class="divide-y tz-border-subtle tz-surface-subtle">
               <tr class="hover:tz-surface-subtle transition-colors">
                     <td class="px-3 py-2.5 font-semibold tz-text-primary">≤25mm</td>
                 <td class="px-3 py-2.5 tz-text-primary font-mono">40mm</td>
-                    <td class="px-3 py-2.5 tz-text-secondary text-xs">{{ $t('guidesTireguides.innerTube.compatibility.notes.standard') }}</td>
+                    <td class="px-3 py-2.5 tz-text-secondary text-xs">{{ t('guidesTireInnerTube.compatibility.notes.standard') }}</td>
               </tr>
               <tr class="hover:tz-surface-subtle transition-colors">
                     <td class="px-3 py-2.5 font-semibold tz-text-primary">30–45mm</td>
                 <td class="px-3 py-2.5 tz-text-primary font-mono">60mm</td>
-                    <td class="px-3 py-2.5 tz-text-secondary text-xs">{{ $t('guidesTireguides.innerTube.compatibility.notes.deepRim') }}</td>
+                    <td class="px-3 py-2.5 tz-text-secondary text-xs">{{ t('guidesTireInnerTube.compatibility.notes.deepRim') }}</td>
               </tr>
               <tr class="hover:tz-surface-subtle transition-colors">
                     <td class="px-3 py-2.5 font-semibold tz-text-primary">50–65mm</td>
                 <td class="px-3 py-2.5 tz-text-primary font-mono">80mm</td>
-                    <td class="px-3 py-2.5 tz-text-secondary text-xs">{{ $t('guidesTireguides.innerTube.compatibility.notes.aeroRim') }}</td>
+                    <td class="px-3 py-2.5 tz-text-secondary text-xs">{{ t('guidesTireInnerTube.compatibility.notes.aeroRim') }}</td>
               </tr>
                <tr class="hover:tz-surface-subtle transition-colors">
                     <td class="px-3 py-2.5 font-semibold tz-text-primary">≥70mm</td>
-                <td class="px-3 py-2.5 text-amber-300 font-mono">{{ $t('guidesTireguides.innerTube.compatibility.valves.extender') }}</td>
-                    <td class="px-3 py-2.5 tz-text-secondary text-xs">{{ $t('guidesTireguides.innerTube.compatibility.notes.extenderNeeded') }}</td>
+                    <td class="px-3 py-2.5 text-amber-300 font-mono">{{ t('guidesTireInnerTube.compatibility.valves.extender') }}</td>
+                    <td class="px-3 py-2.5 tz-text-secondary text-xs">{{ t('guidesTireInnerTube.compatibility.notes.extenderNeeded') }}</td>
               </tr>
             </tbody>
            </table>
@@ -116,48 +116,48 @@
        <div class="sizecharts-section__step-header sizecharts-section__step-header--compact">
          <span class="sizecharts-section__step-badge">3</span>
            <h3 class="sizecharts-section__step-title">
-             {{ $t('guidesTireguides.innerTube.steps.model.title') }}
+             {{ t('guidesTireInnerTube.steps.model.title') }}
            </h3>
        </div>
 
        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <!-- Standard -->
           <div class="rounded-xl bg-[var(--tz-card-surface)] p-3 shadow-md border tz-border-subtle hover:tz-surface-subtle transition-colors">
-                <strong class="block tz-text-primary text-sm font-bold mb-2">{{ $t('guidesTireguides.innerTube.models.standard.title') }}</strong>
+                <strong class="block tz-text-primary text-sm font-bold mb-2">{{ t('guidesTireInnerTube.models.standard.title') }}</strong>
                 <p class="text-xs tz-text-secondary leading-relaxed">
-                {{ $t('guidesTireguides.innerTube.models.standard.description') }}
+                {{ t('guidesTireInnerTube.models.standard.description') }}
               </p>
           </div>
 
           <!-- Air Plus -->
           <div class="rounded-xl bg-[var(--tz-card-surface)] p-3 shadow-md border tz-border-subtle hover:tz-surface-subtle transition-colors">
-              <strong class="block tz-text-primary text-sm font-bold mb-2">{{ $t('guidesTireguides.innerTube.models.airPlus.title') }}</strong>
+              <strong class="block tz-text-primary text-sm font-bold mb-2">{{ t('guidesTireInnerTube.models.airPlus.title') }}</strong>
                 <p class="text-xs tz-text-secondary leading-relaxed">
-                {{ $t('guidesTireguides.innerTube.models.airPlus.description') }}
+                {{ t('guidesTireInnerTube.models.airPlus.description') }}
               </p>
           </div>
 
           <!-- Extralight -->
           <div class="rounded-xl bg-[var(--tz-card-surface)] p-3 shadow-md border tz-border-subtle hover:tz-surface-subtle transition-colors">
-              <strong class="block tz-text-primary text-sm font-bold mb-2">{{ $t('guidesTireguides.innerTube.models.extralight.title') }}</strong>
+              <strong class="block tz-text-primary text-sm font-bold mb-2">{{ t('guidesTireInnerTube.models.extralight.title') }}</strong>
                 <p class="text-xs tz-text-secondary leading-relaxed">
-                {{ $t('guidesTireguides.innerTube.models.extralight.description') }}
+                {{ t('guidesTireInnerTube.models.extralight.description') }}
               </p>
           </div>
 
            <!-- Freeride -->
           <div class="rounded-xl bg-[var(--tz-card-surface)] p-3 shadow-md border tz-border-subtle hover:tz-surface-subtle transition-colors">
-                <strong class="block tz-text-primary text-sm font-bold mb-2">{{ $t('guidesTireguides.innerTube.models.freeride.title') }}</strong>
+                <strong class="block tz-text-primary text-sm font-bold mb-2">{{ t('guidesTireInnerTube.models.freeride.title') }}</strong>
                 <p class="text-xs tz-text-secondary leading-relaxed">
-                {{ $t('guidesTireguides.innerTube.models.freeride.description') }}
+                {{ t('guidesTireInnerTube.models.freeride.description') }}
               </p>
           </div>
 
            <!-- Downhill -->
           <div class="rounded-xl bg-[var(--tz-card-surface)] p-3 shadow-md border tz-border-subtle hover:tz-surface-subtle transition-colors">
-                <strong class="block tz-text-primary text-sm font-bold mb-2">{{ $t('guidesTireguides.innerTube.models.downhill.title') }}</strong>
+                <strong class="block tz-text-primary text-sm font-bold mb-2">{{ t('guidesTireInnerTube.models.downhill.title') }}</strong>
                 <p class="text-xs tz-text-secondary leading-relaxed">
-                {{ $t('guidesTireguides.innerTube.models.downhill.description') }}
+                {{ t('guidesTireInnerTube.models.downhill.description') }}
               </p>
           </div>
        </div>
@@ -166,8 +166,20 @@
 </template>
 
 <script setup lang="ts">
+import { watch } from 'vue'
+import { useI18n } from '#imports'
 import GuideImage from '~/components/GuideImage.vue'
 import { useShopSearchSheet } from '~/composables/useShopSearchSheet'
+import { usePageMessages } from '~/composables/usePageMessages'
+
+const { locale, t } = useI18n()
+const { loadPageMessages } = usePageMessages('guidesTireInnerTube')
+
+await loadPageMessages(locale.value)
+
+watch(locale, (nextLocale) => {
+  void loadPageMessages(nextLocale)
+})
 
 const { open: openShopSearchSheet } = useShopSearchSheet()
 

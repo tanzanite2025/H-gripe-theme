@@ -28,6 +28,11 @@ type orderFulfillmentRequest struct {
 	TrackingProviderID uint   `json:"tracking_provider_id" binding:"required"`
 	CarrierID          *uint  `json:"carrier_id"`
 	CarrierServiceID   *uint  `json:"carrier_service_id"`
+	SignatureConfirmed bool   `json:"signature_confirmed"`
+}
+
+type orderProductionRequest struct {
+	Confirm bool `json:"confirm"`
 }
 
 type adminNoteRequest struct {
@@ -67,6 +72,7 @@ func (r orderFulfillmentRequest) toServiceInput() service.OrderTrackingUpdateInp
 		TrackingProviderID: r.TrackingProviderID,
 		CarrierID:          r.CarrierID,
 		CarrierServiceID:   r.CarrierServiceID,
+		SignatureConfirmed: r.SignatureConfirmed,
 	}
 }
 
@@ -86,13 +92,39 @@ func respondOrderServiceError(c *gin.Context, err error, fallbackMessage string,
 	case errors.Is(err, service.ErrOrderDisputeEmailNotConfigured):
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Order dispute contact email is not configured"})
 	case errors.Is(err, service.ErrPaidOrderCancellationNotAllowed),
+		errors.Is(err, service.ErrProductionStartedCancellationNotAllowed),
 		errors.Is(err, service.ErrOrderCancellationConflict):
 		c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
 	case errors.Is(err, service.ErrSystemManagedOrderStatus):
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-	case errors.Is(err, service.ErrOrderFulfillmentNotAllowed),
-		errors.Is(err, service.ErrOrderFulfillmentPaymentRequired):
+	case errors.Is(err, service.ErrOrderFulfillmentStatusManaged):
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	case errors.Is(err, service.ErrOrderFulfillmentNotAllowed),
+		errors.Is(err, service.ErrOrderFulfillmentPaymentRequired),
+		errors.Is(err, service.ErrOrderFulfillmentSignatureConfirmationRequired),
+		errors.Is(err, service.ErrOrderFulfillmentEvidenceNotConfigured),
+		errors.Is(err, service.ErrOrderFulfillmentEvidencePackageMissing),
+		errors.Is(err, service.ErrOrderProductionNotCompleted),
+		errors.Is(err, service.ErrOrderProductionNotRequired),
+		errors.Is(err, service.ErrOrderProductionPaymentRequired),
+		errors.Is(err, service.ErrOrderProductionNotAllowed),
+		errors.Is(err, service.ErrOrderProductionNotStarted):
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	case errors.Is(err, service.ErrOrderFulfillmentTrackingConflict):
+		c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+	case errors.Is(err, service.ErrOrderFulfillmentEvidenceIncomplete):
+		var evidenceErr *service.OrderFulfillmentEvidenceError
+		if errors.As(err, &evidenceErr) {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error":    evidenceErr.Error(),
+				"code":     "order_fulfillment_evidence_incomplete",
+				"evidence": evidenceErr.Check,
+			})
+			return
+		}
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error(), "code": "order_fulfillment_evidence_incomplete"})
+	case errors.Is(err, service.ErrOrderProductionAlreadyStarted):
+		c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
 	case errors.Is(err, service.ErrOrderDeleteNotAllowed):
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	case errors.Is(err, service.ErrOrderItemNotFound):

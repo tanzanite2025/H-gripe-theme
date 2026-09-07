@@ -15,9 +15,14 @@ func newDependencyRepositories(db *gorm.DB) (Repositories, error) {
 	fitmentHubSpecificationRepository := repository.NewFitmentHubSpecificationRepository(db, fitmentFrameHubSpecificationRepository)
 	fitmentHubSpecificationRepository.ConfigureForkHubSpecificationRepository(fitmentForkHubSpecificationRepository)
 
+	postRepo := repository.NewPostRepository(db)
+	blogCategoryRepo := repository.NewBlogCategoryRepository(db)
+	postRepo.ConfigureCategoryRepository(blogCategoryRepo)
+
 	repos := Repositories{
 		User:                         repository.NewUserRepository(db),
-		Post:                         repository.NewPostRepository(db),
+		Post:                         postRepo,
+		BlogCategory:                 blogCategoryRepo,
 		StorefrontRouteCatalog:       repository.NewStorefrontRouteCatalogRepository(db),
 		StorefrontURLSearchProfiles:  repository.NewStorefrontURLSearchProfileRepository(db),
 		StorefrontRedirectRules:      repository.NewStorefrontRedirectRuleRepository(db),
@@ -50,6 +55,11 @@ func newDependencyRepositories(db *gorm.DB) (Repositories, error) {
 		OrderIdempotency:             repository.NewOrderIdempotencyRepository(db),
 		OrderPolicyDisclosure:        repository.NewOrderPolicyDisclosureRepository(db),
 		OrderAttribution:             repository.NewOrderAttributionRepository(db),
+		ProductQualityRequirement:    repository.NewProductQualityRequirementRepository(db),
+		OrderEvidenceSnapshot:        repository.NewOrderEvidenceSnapshotRepository(db),
+		OrderEvidence:                repository.NewOrderEvidenceRepository(db),
+		OrderEvidenceSubmission:      repository.NewOrderEvidenceSubmissionSnapshotRepository(db),
+		OrderEvidenceExport:          repository.NewOrderEvidenceExportSnapshotRepository(db),
 		Payment:                      repository.NewPaymentRepository(db),
 		PaymentRisk:                  repository.NewPaymentRiskRepository(db),
 		PaymentProtection:            repository.NewPaymentProtectionRepository(db),

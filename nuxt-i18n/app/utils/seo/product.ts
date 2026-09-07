@@ -175,9 +175,9 @@ export const buildProductJsonLd = (
       '@type': 'Offer',
       price,
       priceCurrency: currency,
-      availability: availability === 'in_stock'
-        ? 'https://schema.org/InStock'
-        : 'https://schema.org/OutOfStock',
+          availability: availability !== 'out_of_stock'
+            ? 'https://schema.org/InStock'
+            : 'https://schema.org/OutOfStock',
       url: canonicalUrl,
     }
     if (shippingDetails) {

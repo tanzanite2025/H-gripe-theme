@@ -1,61 +1,71 @@
 <template>
   <section id="damaged-lost" class="support-section">
-    <h2 class="support-section__title text-center mb-8 tz-text-primary">Damaged or Lost Goods</h2>
+    <h2 class="support-section__title text-center mb-8 tz-text-primary">
+      {{ t('warrantyDamagedLost.title') }}
+    </h2>
 
     <div class="w-full max-w-none text-left space-y-8">
-      <!-- Intro Alert -->
       <div class="bg-emerald-50 border-l-4 border-emerald-500 p-4 rounded-r-lg">
-        <p class="text-emerald-200 font-medium">Please carefully inspect the package before signing for it.</p>
+        <p class="text-emerald-200 font-medium">{{ t('warrantyDamagedLost.alert') }}</p>
       </div>
 
       <div class="space-y-10">
-        <!-- 1. Normal Acceptance -->
         <div class="relative pl-12">
           <div class="absolute left-0 top-0 w-8 h-8 rounded-full tz-surface-panel border tz-border-subtle flex items-center justify-center tz-text-secondary font-bold text-sm shadow-md">1</div>
-          <h3 class="tz-text-secondary font-bold text-lg mb-3 pt-0.5">Normal Acceptance</h3>
+          <h3 class="tz-text-secondary font-bold text-lg mb-3 pt-0.5">
+            {{ t('warrantyDamagedLost.sections.normalAcceptance.title') }}
+          </h3>
           <ul class="space-y-3 tz-text-secondary text-sm leading-relaxed list-disc pl-4 marker:text-emerald-600/60">
-            <li>If the package is intact, please sign for it.</li>
-            <li>If you notice damage, note it on the delivery slip or refuse the package. The goods will be returned to us.</li>
+            <li>{{ t('warrantyDamagedLost.sections.normalAcceptance.items.0') }}</li>
+            <li>{{ t('warrantyDamagedLost.sections.normalAcceptance.items.1') }}</li>
             <li>
-              If you need to file a claim with the carrier, they will issue a claim number. Please provide this number to our support team so we can track the shipment. Once the returned goods are received, we will arrange re-shipment within <strong class="tz-text-primary">10 business days</strong>.
+              {{ t('warrantyDamagedLost.sections.normalAcceptance.items.2') }}
+              <strong class="tz-text-primary">
+                {{ t('warrantyDamagedLost.sections.normalAcceptance.reshipmentWindow') }}
+              </strong>{{ t('warrantyDamagedLost.sections.normalAcceptance.reshipmentSuffix') }}
             </li>
           </ul>
         </div>
 
-        <!-- 2. Damaged but Accepted -->
         <div class="relative pl-12">
           <div class="absolute left-0 top-0 w-8 h-8 rounded-full tz-surface-panel border tz-border-subtle flex items-center justify-center tz-text-secondary font-bold text-sm shadow-md">2</div>
-          <h3 class="tz-text-secondary font-bold text-lg mb-3 pt-0.5">Damaged but Accepted</h3>
-          <!-- Warning Box for this critical section -->
+          <h3 class="tz-text-secondary font-bold text-lg mb-3 pt-0.5">
+            {{ t('warrantyDamagedLost.sections.damagedAccepted.title') }}
+          </h3>
           <div class="bg-rose-500/5 rounded-lg p-4 border border-rose-500/10">
               <ul class="space-y-3 tz-text-secondary text-sm leading-relaxed list-disc pl-4 marker:text-rose-500">
-                <li>If the goods are damaged upon delivery but you still accept them without reporting, the carrier cannot be held responsible.</li>
-                <li>In this case, you will be responsible for purchasing any replacement products.</li>
+                <li>{{ t('warrantyDamagedLost.sections.damagedAccepted.items.0') }}</li>
+                <li>{{ t('warrantyDamagedLost.sections.damagedAccepted.items.1') }}</li>
               </ul>
           </div>
         </div>
 
-        <!-- 3. Damage During Transit -->
         <div class="relative pl-12">
           <div class="absolute left-0 top-0 w-8 h-8 rounded-full tz-surface-panel border tz-border-subtle flex items-center justify-center tz-text-secondary font-bold text-sm shadow-md">3</div>
-          <h3 class="tz-text-secondary font-bold text-lg mb-3 pt-0.5">Damage During Transit</h3>
+          <h3 class="tz-text-secondary font-bold text-lg mb-3 pt-0.5">
+            {{ t('warrantyDamagedLost.sections.transit.title') }}
+          </h3>
           <ul class="space-y-3 tz-text-secondary text-sm leading-relaxed list-disc pl-4 marker:text-emerald-600/60">
-            <li>If the package appears intact but the product is seriously damaged during transit, please keep the waybill, packaging, and related materials.</li>
+            <li>{{ t('warrantyDamagedLost.sections.transit.items.packaging') }}</li>
             <li>
-              Contact us within <strong class="tz-text-primary">7 days of receipt</strong><template v-if="contactEmail"> at <a :href="contactEmailHref" class="text-emerald-600 hover:text-emerald-700 transition-colors">{{ contactEmail }}</a></template>.
+              {{ t('warrantyDamagedLost.sections.transit.items.contactPrefix') }}
+              <strong class="tz-text-primary">
+                {{ t('warrantyDamagedLost.sections.transit.items.contactWindow') }}
+              </strong><template v-if="contactEmail">{{ t('warrantyDamagedLost.sections.transit.items.contactEmailPrefix') }}<a :href="contactEmailHref" class="text-emerald-600 hover:text-emerald-700 transition-colors">{{ contactEmail }}</a></template>{{ t('warrantyDamagedLost.sections.transit.items.contactSuffix') }}
             </li>
           </ul>
         </div>
 
-        <!-- 4. Lost Shipment -->
         <div class="relative pl-12">
           <div class="absolute left-0 top-0 w-8 h-8 rounded-full tz-surface-panel border tz-border-subtle flex items-center justify-center tz-text-secondary font-bold text-sm shadow-md">4</div>
-          <h3 class="tz-text-secondary font-bold text-lg mb-3 pt-0.5">Lost Shipment</h3>
+          <h3 class="tz-text-secondary font-bold text-lg mb-3 pt-0.5">
+            {{ t('warrantyDamagedLost.sections.lost.title') }}
+          </h3>
           <ul class="space-y-3 tz-text-secondary text-sm leading-relaxed list-disc pl-4 marker:text-emerald-600/60">
             <li>
-              If the goods are lost during transit, please contact us immediately<template v-if="contactEmail"> at <a :href="contactEmailHref" class="text-emerald-600 hover:text-emerald-700 transition-colors">{{ contactEmail }}</a></template>.
+              {{ t('warrantyDamagedLost.sections.lost.items.contactPrefix') }}<template v-if="contactEmail">{{ t('warrantyDamagedLost.sections.lost.items.contactEmailPrefix') }}<a :href="contactEmailHref" class="text-emerald-600 hover:text-emerald-700 transition-colors">{{ contactEmail }}</a></template>{{ t('warrantyDamagedLost.sections.lost.items.contactSuffix') }}
             </li>
-            <li>All shipments are insured, and we will assist you with the claim process.</li>
+            <li>{{ t('warrantyDamagedLost.sections.lost.items.insured') }}</li>
           </ul>
         </div>
       </div>
@@ -65,14 +75,22 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { watch } from 'vue'
+import { useI18n } from '#imports'
+import { usePageMessages } from '~/composables/usePageMessages'
 
 const props = defineProps<{
   contactEmail?: string
 }>()
 
-defineEmits<{
-  (e: 'change-tab', id: string): void
-}>()
+const { locale, t } = useI18n()
+const { loadPageMessages } = usePageMessages('warrantyDamagedLost')
+
+await loadPageMessages(locale.value)
+
+watch(locale, (nextLocale) => {
+  void loadPageMessages(nextLocale)
+})
 
 const contactEmail = computed(() => props.contactEmail?.trim() || '')
 const contactEmailHref = computed(() => `mailto:${contactEmail.value}`)

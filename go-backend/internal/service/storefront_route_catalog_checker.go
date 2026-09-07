@@ -36,6 +36,9 @@ func (s *StorefrontRouteCatalogService) CheckEntry(ctx context.Context, id uint)
 	if err != nil {
 		return seodomain.StorefrontRouteCheckResult{}, err
 	}
+	if entry.EntryStatus == seodomain.RouteEntryStatusStale {
+		return seodomain.StorefrontRouteCheckResult{}, fmt.Errorf("route %s is stale and must be synced before checking", entry.Path)
+	}
 	if !entry.IsCheckable {
 		return seodomain.StorefrontRouteCheckResult{}, fmt.Errorf("route %s is not checkable", entry.Path)
 	}
@@ -59,20 +62,26 @@ func (s *StorefrontRouteCatalogService) Check(ctx context.Context, filter reposi
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	if limit < 1 || limit > 200 {
+	if limit < 1 {
 		limit = 100
+	} else if limit > 200 {
+		limit = 200
 	}
+	filter.CheckableOnly = true
 	filter.Page = 1
 	filter.PageSize = limit
 
-	entries, _, err := s.repository.List(filter)
+	entries, total, err := s.repository.List(filter)
 	if err != nil {
 		return StorefrontRouteCatalogCheckSummary{}, err
 	}
 
-	summary := StorefrontRouteCatalogCheckSummary{}
+	summary := StorefrontRouteCatalogCheckSummary{
+		Eligible:  int(total),
+		Remaining: int(total),
+	}
 	for _, entry := range entries {
-		if !entry.IsCheckable {
+		if !routeEntryCanBeChecked(entry) {
 			continue
 		}
 		result := s.checkEntry(ctx, entry)
@@ -85,9 +94,14 @@ func (s *StorefrontRouteCatalogService) Check(ctx context.Context, filter reposi
 			}
 		}
 		summary.Checked++
+		summary.Remaining--
 		incrementRouteCatalogCheckSummary(&summary, result.Status)
 	}
 	return summary, nil
+}
+
+func routeEntryCanBeChecked(entry seodomain.StorefrontRouteCatalogEntry) bool {
+	return entry.IsCheckable && entry.EntryStatus != seodomain.RouteEntryStatusStale
 }
 
 func incrementRouteCatalogCheckSummary(summary *StorefrontRouteCatalogCheckSummary, status string) {

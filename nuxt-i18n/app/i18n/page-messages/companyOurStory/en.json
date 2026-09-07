@@ -1,0 +1,45 @@
+{
+  "title": "Our Story",
+  "eyebrow": "Our Story",
+  "intro": "From a belief in full control to an in-house approach, our story has been shaped by the way we design, build, and support high-performance cycling components.",
+  "hero": {
+    "imageAlt": "Our engineers and riders discussing product development",
+    "caption": "Engineers and riders shaping the next stage of the journey."
+  },
+  "timeline": {
+    "ariaLabel": "Our Story milestones",
+    "phaseLabel": "Phase",
+    "milestones": {
+      "belief": {
+        "title": "The Belief",
+        "body": "Our story began with a clear belief: high-performance carbon components require more than good materials — they require full control."
+      },
+      "problem": {
+        "title": "The Problem We Saw",
+        "body": "As engineers and riders, we saw too many products built through fragmented processes, where design, manufacturing, and quality control were separated. The result was inconsistency, delayed communication, and avoidable risk."
+      },
+      "firstFocus": {
+        "title": "Our First Focus",
+        "body": "We started with carbon rims, one of the most technically demanding components in cycling. From layup structure and resin control to impact resistance, every decision was made with performance and safety in mind."
+      },
+      "completeSystems": {
+        "title": "Complete Systems",
+        "body": "As our capabilities expanded, we naturally moved into complete wheelsets and carbon handlebars. Not to chase a broader product range, but to ensure that every component works together as a complete system."
+      },
+      "builtInHouse": {
+        "title": "Built In-house",
+        "body": "Today, our OEM and ODM solutions are trusted by partners around the world. From design and engineering to manufacturing and testing, everything is built in-house. This allows us to deliver consistent quality, reliable lead times, and products that meet the expectations of global markets."
+      },
+      "partnerships": {
+        "title": "Long-term Partnerships",
+        "body": "We believe long-term partnerships are built on transparency, stable quality, and accountability. That principle continues to guide how we work with brands, distributors, and riders worldwide. Whether developing a new product or scaling an existing design, we work as an extension of our partners' teams."
+      }
+    }
+  },
+  "cta": {
+    "eyebrow": "See the work behind the story",
+    "body": "Explore the factory, manufacturing flow, and quality systems that support our products.",
+    "button": "Factory"
+  },
+  "feedbackTitle": "Share your feedback about Our Story"
+}

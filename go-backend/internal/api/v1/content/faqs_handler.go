@@ -14,7 +14,6 @@ import (
 func (h *Handler) ListFAQs(c *gin.Context) {
 	locale := c.DefaultQuery("locale", middleware.GetLocale(c))
 	pageID := c.Query("page_id")
-	category := c.Query("category")
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
 
@@ -25,7 +24,7 @@ func (h *Handler) ListFAQs(c *gin.Context) {
 		pageSize = 20
 	}
 
-	faqs, total, err := h.faqService.List(locale, pageID, category, "published", page, pageSize)
+	faqs, total, err := h.faqService.List(locale, pageID, "published", page, pageSize)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -55,19 +54,6 @@ func (h *Handler) GetFAQ(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, faq)
-}
-
-// GetFAQCategories 获取FAQ分类列表
-func (h *Handler) GetFAQCategories(c *gin.Context) {
-	locale := c.DefaultQuery("locale", middleware.GetLocale(c))
-
-	categories, err := h.faqService.GetCategories(locale)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"categories": categories})
 }
 
 // ListFAQPages 获取结构化 FAQ 页面数据
@@ -155,24 +141,6 @@ func (h *Handler) SearchFAQs(c *gin.Context) {
 		"page_size":   pageSize,
 		"total_pages": (total + int64(pageSize) - 1) / int64(pageSize),
 		"keyword":     keyword,
-	})
-}
-
-// GetFAQsByCategory 获取分类下的FAQ
-func (h *Handler) GetFAQsByCategory(c *gin.Context) {
-	category := c.Param("category")
-	locale := middleware.GetLocale(c)
-
-	faqs, err := h.faqService.GetByCategory(category, locale)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"category": category,
-		"data":     faqs,
-		"total":    len(faqs),
 	})
 }
 

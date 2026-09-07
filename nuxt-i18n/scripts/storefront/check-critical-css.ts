@@ -3,13 +3,14 @@ import { existsSync, readFileSync } from 'node:fs'
 import { gzipSync } from 'node:zlib'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { resolvePreviewPort } from './preview-port.js'
 
 const scriptDir = dirname(fileURLToPath(import.meta.url))
 const projectRoot = resolve(scriptDir, '../..')
 const serverEntry = resolve(projectRoot, '.output/server/index.mjs')
 const serverLauncher = resolve(projectRoot, 'scripts/storefront/run-production-server.mjs')
 const publicDirectory = resolve(projectRoot, '.output/public')
-const port = Number.parseInt(process.env.CRITICAL_CSS_CHECK_PORT || '4021', 10)
+const port = await resolvePreviewPort(process.env.CRITICAL_CSS_CHECK_PORT, 4021)
 const origin = `http://127.0.0.1:${port}`
 const maxBlockingCssGzipBytes = 20 * 1024
 const maxInlineCriticalCssGzipBytes = 16 * 1024

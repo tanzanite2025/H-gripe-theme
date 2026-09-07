@@ -6,10 +6,12 @@
       <!-- Location introduction -->
       <div class="text-center">
         <h2 class="text-xl font-bold tz-text-primary md:text-2xl">
-          Global <span class="text-emerald-600">Connectivity</span>
+          {{ t('companyContact.hero.title') }}
+          {{ t('companyContact.hero.joiner') }}
+          <span class="text-emerald-600">{{ t('companyContact.hero.highlight') }}</span>
         </h2>
         <p class="mx-auto max-w-2xl text-sm leading-relaxed tz-text-secondary">
-          From our manufacturing base in Xiamen to our global headquarters in Hong Kong, we are positioned to serve partners worldwide with efficiency and precision.
+          {{ t('companyContact.hero.description') }}
         </p>
       </div>
 
@@ -19,10 +21,10 @@
       <div class="grid w-full grid-cols-1 gap-6 md:grid-cols-2 md:gap-8">
         <!-- HK HQ -->
         <div class="premium-card group flex flex-col rounded-2xl p-6 transition-all duration-300 hover:-translate-y-0.5 md:p-8">
-            <h3 class="text-lg font-bold tz-text-primary mb-1">Global Headquarters</h3>
-            <div class="text-xs uppercase tracking-wider text-emerald-600 font-semibold mb-2">Hong Kong</div>
+            <h3 class="text-lg font-bold tz-text-primary mb-1">{{ t('companyContact.locations.hongKong.title') }}</h3>
+            <div class="text-xs uppercase tracking-wider text-emerald-600 font-semibold mb-2">{{ t('companyContact.locations.hongKong.region') }}</div>
             <p class="tz-text-secondary mb-4 flex-grow leading-relaxed text-sm">
-                Strategic hub for international trade, logistics, and global customer support.
+                {{ t('companyContact.locations.hongKong.description') }}
             </p>
             <div class="rounded-lg border tz-border-subtle bg-[var(--tz-form-panel-surface)] p-3 text-sm tz-text-secondary">
                 Flat 1602, 16/F, Lucky Centre,<br>
@@ -33,10 +35,10 @@
 
         <!-- China Factory -->
          <div class="premium-card group flex flex-col rounded-2xl p-6 transition-all duration-300 hover:-translate-y-0.5 md:p-8">
-            <h3 class="text-lg font-bold tz-text-primary mb-1">Manufacturing & R&D Base</h3>
-            <div class="text-xs uppercase tracking-wider text-emerald-600 font-semibold mb-2">Xiamen, China</div>
+            <h3 class="text-lg font-bold tz-text-primary mb-1">{{ t('companyContact.locations.xiamen.title') }}</h3>
+            <div class="text-xs uppercase tracking-wider text-emerald-600 font-semibold mb-2">{{ t('companyContact.locations.xiamen.region') }}</div>
             <p class="tz-text-secondary mb-4 flex-grow leading-relaxed text-sm">
-                State-of-the-art facility for carbon fiber layup, precision molding, and rigorous testing.
+                {{ t('companyContact.locations.xiamen.description') }}
             </p>
             <div class="rounded-lg border tz-border-subtle bg-[var(--tz-form-panel-surface)] p-3 text-sm tz-text-secondary">
                 Building 6, No. 639 Tongji South Road,<br>
@@ -53,30 +55,30 @@
                 <div>
                      <h3 class="text-lg font-bold tz-text-primary flex items-center gap-2">
         <svg class="w-5 h-5 tz-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
-                        Wire Transfer Details (B2B/Wholesale)
+                        {{ t('companyContact.bank.title') }}
                      </h3>
-                     <p class="text-sm tz-text-secondary mt-1">For wholesale partners and OEM/ODM clients.</p>
+                     <p class="text-sm tz-text-secondary mt-1">{{ t('companyContact.bank.description') }}</p>
                 </div>
                  <div class="px-3 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-400/90 text-xs font-semibold flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-                    Secure Information
+                    {{ t('companyContact.bank.secureInfo') }}
                  </div>
             </div>
 
             <div class="grid grid-cols-1 gap-x-8 gap-y-4 border-t tz-border-subtle pt-6 text-sm md:grid-cols-2">
                 <div>
-                    <span class="block tz-text-muted text-xs uppercase tracking-wider mb-1">Beneficiary Name</span>
+                    <span class="block tz-text-muted text-xs uppercase tracking-wider mb-1">{{ t('companyContact.bank.beneficiaryName') }}</span>
         <span class="inline-block rounded border tz-border-subtle bg-[var(--tz-form-panel-surface)] px-2 py-1 tz-text-primary">Top Sports Co., Limited</span>
                 </div>
                 <div>
-                    <span class="block tz-text-muted text-xs uppercase tracking-wider mb-1">Bank Name</span>
+                    <span class="block tz-text-muted text-xs uppercase tracking-wider mb-1">{{ t('companyContact.bank.bankName') }}</span>
         <span class="tz-text-primary font-medium">Deutsche Bank AG, Hong Kong</span>
                 </div>
                  <div class="md:col-span-2">
-                    <span class="block tz-text-muted text-xs uppercase tracking-wider mb-1">Account & SWIFT Details</span>
+                    <span class="block tz-text-muted text-xs uppercase tracking-wider mb-1">{{ t('companyContact.bank.accountDetails') }}</span>
                     <div class="flex items-center gap-2 rounded-lg border border-dashed tz-border-subtle bg-[var(--tz-form-control-surface)] p-3 italic tz-text-secondary">
                         <svg class="w-5 h-5 tz-text-muted shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                        <span>For security reasons, full wire transfer details (Account No. & SWIFT) will be provided exclusively in your official <strong>Proforma Invoice (PI)</strong>.</span>
+                        <span>{{ t('companyContact.bank.accountDetailsIntro') }}<strong>{{ t('companyContact.bank.proformaInvoice') }}</strong>{{ t('companyContact.bank.accountDetailsEnding') }}</span>
                     </div>
                 </div>
             </div>
@@ -85,7 +87,10 @@
             <div class="mt-6 pt-6 border-t border-red-900/30 flex items-start gap-3">
                  <svg class="w-5 h-5 text-red-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
                  <p class="text-xs text-red-300 leading-relaxed">
-                    <strong>SECURITY NOTICE:</strong> We will <u>NEVER</u> change our bank account via email notification. If you receive any email claiming our bank details have changed, please contact us immediately via phone or WhatsApp for verification before making any payment.
+                    <strong>{{ t('companyContact.bank.securityNoticeTitle') }}:</strong>
+                    {{ t('companyContact.bank.securityNoticeBefore') }}
+                    <u>{{ t('companyContact.bank.securityNoticeNever') }}</u>
+                    {{ t('companyContact.bank.securityNoticeAfter') }}
                  </p>
             </div>
         </div>
@@ -102,13 +107,22 @@
 </template>
 
 <script setup lang="ts">
+import { watch } from 'vue'
 import { definePageMeta, useHead, useI18n } from '#imports'
 import ContactLocationMap from '~/components/ContactLocationMap.vue'
 import ContactServiceEntry from '~/components/company/ContactServiceEntry.vue'
+import { usePageMessages } from '~/composables/usePageMessages'
 import { contactLocation } from '~/utils/contactLocation'
 import { createSeoJsonLdScript } from '~/utils/seo/jsonLd'
 
-const { t } = useI18n()
+const { locale, t } = useI18n()
+const { loadPageMessages } = usePageMessages('companyContact')
+
+await loadPageMessages(locale.value)
+
+watch(locale, (nextLocale) => {
+  void loadPageMessages(nextLocale)
+})
 
 definePageMeta({
   layout: 'products',
@@ -116,8 +130,8 @@ definePageMeta({
   footerLabelFallback: 'Contact Us',
 })
 
-useHead({
-  title: 'Contact Us',
+useHead(() => ({
+  title: t('companyContact.title'),
   script: [createSeoJsonLdScript({
     '@context': 'https://schema.org',
     '@type': 'LocalBusiness',
@@ -139,5 +153,5 @@ useHead({
         }
       : {}),
   })],
-})
+}))
 </script>

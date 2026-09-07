@@ -3,10 +3,19 @@
     "title": "제품 및 FAQ 검색",
     "body": "클릭하여 제품 검색, FAQ 검색 등을 엽니다."
   },
+  "languagePicker": {
+    "title": "언어",
+    "trigger": "언어 변경",
+    "close": "언어 선택기 닫기",
+    "optionsLabel": "언어 선택"
+  },
   "globalNavigationTransition": {
     "ariaLabel": "Global content navigation",
     "optionsLabel": "Choose a destination",
     "trigger": "Open content navigation",
-    "triggerBody": "Choose Products, FAQ, Pages, or Blog."
+    "triggerBody": "Choose Products, FAQ, Pages, or Blog.",
+    "options": {
+      "pages": "Pages"
+    }
   }
 }

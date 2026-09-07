@@ -20,6 +20,24 @@
       "title": "Sign in before managing personal data",
       "description": "Points, wishlist, cart checkout and shipping address tools live here after login."
     },
+    "features": {
+      "points": {
+        "title": "Points",
+        "desc": "Membership level and points balance"
+      },
+      "wishlist": {
+        "title": "Wishlist",
+        "desc": "Saved products and quick add-to-cart"
+      },
+      "cart": {
+        "title": "Cart",
+        "desc": "Review products and checkout faster"
+      },
+      "addresses": {
+        "title": "Addresses",
+        "desc": "Prepare shipping details for checkout"
+      }
+    },
     "points": {
       "currentLevel": "Current level",
       "progress": "Progress",
@@ -307,6 +325,27 @@
     "productDraft": {
       "selected": "Selected product",
       "remove": "Remove selected product"
+    },
+    "orders": {
+      "madeToOrder": "Made to order",
+      "stock": "In stock",
+      "mixed": "Mixed fulfillment",
+      "production": "Production",
+      "productionStatus": {
+        "notApplicable": "Not applicable",
+        "notStarted": "Awaiting production",
+        "started": "In production",
+        "completed": "Production completed",
+        "cancelled": "Production cancelled"
+      },
+      "productionStartedAt": "Production started",
+      "productionCompletedAt": "Production completed",
+      "signatureRequired": "Signature required at delivery",
+      "items": "items",
+      "item": "item",
+      "loading": "Loading orders...",
+      "empty": "No orders yet",
+      "confirm": "Confirm order with support"
     }
   },
   "checkout": {
@@ -334,7 +373,8 @@
         "loginRequired": "Please sign in before checkout.",
         "emptyCart": "Your cart is empty.",
         "paymentUnavailable": "This payment method is temporarily unavailable.",
-        "paymentPending": "Payment is not complete yet. Please check your order status later."
+        "paymentPending": "Payment is not complete yet. Please check your order status later.",
+        "emailRequired": "Add an email address to your account before checkout."
       }
     },
     "order": {
@@ -593,6 +633,14 @@
     },
     "product": {
       "buyNow": "Buy now"
+    },
+    "fulfillment": {
+      "title": "Fulfillment and delivery",
+      "madeToOrder": "This cart includes made-to-order items. Production begins after payment confirmation, and the production schedule is added to the shipping time.",
+      "cancellation": "Cancellation is available only before production or material cutting begins. After production starts, cancellation may be restricted and a custom handling fee may apply.",
+      "signature": "Orders totaling $750 USD or more require a signature at delivery.",
+      "confirmation": "I understand the production, cancellation, delivery, and signature requirements for this order.",
+      "confirmRequired": "Please confirm the custom-order and delivery requirements before continuing."
     }
   },
   "common": {
@@ -658,13 +706,6 @@
     },
     "pages": {
       "placeholder": "Content coming soon."
-    },
-    "ourStory": {
-      "story": {
-        "title": "Story",
-        "factoryButton": "Factory",
-        "body": "Our story began with a clear belief:\nhigh-performance carbon components require more than good materials —\nthey require full control.\n\nAs engineers and riders, we saw too many products built through fragmented processes,\nwhere design, manufacturing, and quality control were separated.\nThe result was inconsistency, delayed communication, and avoidable risk.\n\nWe started with carbon rims, one of the most technically demanding components in cycling.\nFrom layup structure and resin control to impact resistance,\nevery decision was made with performance and safety in mind.\n\nAs our capabilities expanded, we naturally moved into complete wheelsets\nand carbon handlebars.\nNot to chase a broader product range,\nbut to ensure that every component works together as a complete system.\n\nToday, our OEM and ODM solutions are trusted by partners around the world.\nFrom design and engineering to manufacturing and testing,\neverything is built in-house.\nThis allows us to deliver consistent quality, reliable lead times,\nand products that meet the expectations of global markets.\n\nWe believe long-term partnerships are built on transparency,\nstable quality, and accountability.\nThat principle continues to guide how we work with brands,\ndistributors, and riders worldwide.  Whether developing a new product or scaling an existing design,\nwe work as an extension of our partners’ teams."
-      }
     }
   },
   "contactLocation": {
@@ -729,10 +770,7 @@
     "title": "Soalan Lazim",
     "subtitle": "Cari jawapan kepada soalan umum tentang produk dan perkhidmatan kami",
     "ui": {
-      "categorizedSupport": "Sokongan mengikut kategori",
       "quickAnswers": "Jawapan pantas untuk soalan umum",
-      "categoriesAriaLabel": "Kategori FAQ",
-      "categoriesLabel": "Kategori FAQ",
       "all": "Semua",
       "viewAll": "Lihat semua FAQ",
       "emptySection": "Tiada FAQ tersedia untuk bahagian ini.",
@@ -740,7 +778,6 @@
       "searchPlaceholder": "Cari FAQ...",
       "viewMoreContent": "Lihat lebih banyak kandungan",
       "noResults": "Tiada FAQ ditemui untuk \"{query}\"",
-      "allFaqsMetaTitle": "Semua FAQ",
       "loadingAnswers": "Memuatkan jawapan",
       "illustrationAlt": "Ilustrasi FAQ",
       "selectQuestion": "Select a question to view the answer."
@@ -974,116 +1011,25 @@
       "spokecalculator": "Spokecalculator"
     }
   },
-  "giftcards": {
-    "title": "Redeem Points for Gift Cards",
-    "balance": "Balance",
-    "pointsRequired": "Points required",
-    "redeeming": "Redeeming...",
-    "redeem": "Redeem",
-    "noCards": "No gift cards available",
-    "myCards": "My Gift Cards",
-    "remaining": "Remaining",
-    "eyebrow": "Gift cards",
-    "exchangeIntro": "Convert loyalty points into published gift card options, then track redeemed cards from your member center.",
-    "signInToRedeem": "Sign in to redeem",
-    "stats": {
-      "points": "Points balance",
-      "redemption": "Redemption rule",
-      "owned": "Owned cards"
-    },
-    "signInNotice": "Sign in to redeem points and see your redeemed gift cards.",
-    "loadingCopy": "Fetching active gift card redemption options.",
-    "loadErrorTitle": "Could not load gift cards",
-    "noCardsTitle": "No active gift cards right now",
-    "noCardsBody": "When new reward options are released, they will appear here for points redemption.",
-    "viewPointRules": "View point rules",
-    "backToMemberInfo": "Member info"
-  },
-  "guidesTireguides": {
-    "innerTube": {
-      "steps": {
-        "size": {
-          "title": "Choose Your Size",
-          "description": "All necessary size information (ETRTO or Inch) can be found on your tire sidewall."
-        },
-        "valve": {
-          "title": "Select Valve Type"
-        },
-        "model": {
-          "title": "Choose Model Type"
-        }
-      },
-      "actions": {
-        "findTube": "Find My Tube"
-      },
-      "valves": {
-        "av": {
-          "type": "Auto / Schrader",
-          "description": "Standard car valve. Length typical 40mm."
-        },
-        "dv": {
-          "type": "Dunlop / Woods",
-          "description": "Classic bicycle valve. Length 32/40mm."
-        },
-        "sv": {
-          "type": "Presta / French",
-          "description": "Sport valve. Available in 40/50/60/80mm."
-        }
-      },
-      "images": {
-        "valveOverviewAlt": "Schwalbe inner tube valve types and lengths overview"
-      },
-      "compatibility": {
-        "title": "Pump & Rim Compatibility",
-        "headers": {
-          "rimHeight": "Rim Height",
-          "recommendedValve": "Rec. Valve",
-          "notes": "Notes"
-        },
-        "valves": {
-          "extender": "Extender"
-        },
-        "notes": {
-          "standard": "Standard",
-          "deepRim": "Deep rim",
-          "aeroRim": "Aero rim",
-          "extenderNeeded": "Valve extender needed"
-        }
-      },
-      "models": {
-        "standard": {
-          "title": "Standard",
-          "description": "Reliable hold. Good purity rubber. Uniform wall thickness."
-        },
-        "airPlus": {
-          "title": "Air Plus",
-          "description": "Thicker walls. Holds air longer. Better puncture protection."
-        },
-        "extralight": {
-          "title": "Extralight / XXLight",
-          "description": "Reduced weight for racing. Available in select sizes."
-        },
-        "freeride": {
-          "title": "Freeride",
-          "description": "Large volume, low weight."
-        },
-        "downhill": {
-          "title": "Downhill",
-          "description": "Extremely robust. Reinforced base. Valve shear protection."
-        }
-      }
-    }
-  },
   "header": {
     "searchHint": {
       "title": "Cari produk dan FAQ",
       "body": "Klik untuk mencari produk, FAQ dan banyak lagi."
     },
+    "languagePicker": {
+      "title": "Bahasa",
+      "trigger": "Tukar bahasa",
+      "close": "Tutup pemilih bahasa",
+      "optionsLabel": "Pilih bahasa"
+    },
     "globalNavigationTransition": {
       "ariaLabel": "Global content navigation",
       "optionsLabel": "Choose a destination",
       "trigger": "Open content navigation",
-      "triggerBody": "Choose Products, FAQ, Pages, or Blog."
+      "triggerBody": "Choose Products, FAQ, Pages, or Blog.",
+      "options": {
+        "pages": "Pages"
+      }
     }
   },
   "home": {
@@ -1445,98 +1391,21 @@
     }
   },
   "member": {
-    "brief": {
-      "level": "Level",
-      "stackable": "Stackable",
-      "levelDesc": "Your membership tier reflects accumulated activity and unlocks the benefit rules connected to that tier.",
-      "discountRate": "Discount Rate",
-      "discountRateDesc": "The member-level price discount configured in the backend.",
-      "stackableDesc": "Shows whether this tier benefit can combine with other eligible promotions during checkout."
-    },
-    "levels": {
-      "title": "Tahap keahlian",
-      "header": {
-        "level": "Tahap",
-        "pointsRequired": "Mata diperlukan",
-        "discountRate": "Discount Rate"
-      },
-      "rows": {
-        "ordinary": "Biasa",
-        "bronze": "Gangsa",
-        "silver": "Perak",
-        "gold": "Emas",
-        "platinum": "Platinum",
-        "diamond": "Diamond"
-      }
-    },
-    "points": {
-      "title": "Cara mendapatkan mata?",
-      "invite": "Jemput pengguna baharu",
-      "inviteDesc": "50 mata (yang dijemput menerima 30 mata)",
-      "consume": "Mata wang",
-      "consumeDesc": "1 Dolar = 1 Mata",
-      "daily": "Log masuk harian",
-      "dailyDesc": "1 mata (sah 30 hari)",
-      "unit": "pts",
-      "redeem": "Redemption rate",
-      "redemptionRule": "{points} Points = {currency}{amount}",
-      "checkin": "Daily check-in",
-      "checkinRule": "{base} Points (up to {max}; +{bonus} every {interval} consecutive days)",
-      "referralRule": "{referrer} Points (invitee gets {referee} Points)",
-      "pointValueSingular": "{points} Point",
-      "pointsValue": "{points} Points",
-      "notConfigured": "Not configured",
-      "purchaseEarn": "Order completion",
-      "purchaseEarnRule": "{points} per 1 {currency} of product amount after discounts, awarded after order completion",
-      "purchaseEarnDisabled": "Purchase earning is not enabled",
-      "redemptionDisplayRule": "{points} = {currency} {amount}",
-      "redemptionDisabled": "Points redemption is not enabled",
-      "checkinBaseRule": "{base} per check-in",
-      "checkinMaxRule": "up to {max}",
-      "checkinStreakRule": "+{bonus} every {interval} consecutive days",
-      "checkinDisabled": "Daily check-in points are not enabled",
-      "referralDisplayRule": "Inviter gets {referrer}; invitee gets {referee}",
-      "referralDisabled": "Referral points are not enabled"
-    },
     "tabs": {
+      "ariaLabel": "Membership sections",
       "myInfo": "My info",
       "levers": "Levers",
-      "exchange": "Exchange",
-      "ariaLabel": "Membership sections"
+      "exchange": "Exchange"
     },
-    "viewAll": "View Full",
-    "myBenefits": "My Benefits",
+    "points": {
+      "unit": "pts"
+    },
+    "brief": {
+      "discountRate": "Discount Rate"
+    },
     "coupons": "Coupons",
     "pointCards": "Point Cards",
-    "copyLink": "Copy Invite Link",
-    "pageTitle": "Membership and Points",
-    "giftCards": "Gift Cards",
-    "pages": {
-      "myInfo": {
-        "title": "My Membership Info",
-        "intro": "View your profile, membership level, points balance, coupons, gift cards, and warranty tools.",
-        "seoTitle": "My Membership Info - Points and Benefits",
-        "seoDescription": "View your member profile, loyalty level, points balance, coupons, gift cards, and warranty tools.",
-        "feedbackTitle": "Share your feedback about your membership info",
-        "feedbackSubtitle": "Tell us whether account details, benefits, coupons, gift cards, or warranty tools are clear."
-      },
-      "levers": {
-        "title": "Membership Levels and Point Rules",
-        "intro": "Review member tiers, discount levels, earning rules, redemption rates, referral rewards, and check-in rules.",
-        "seoTitle": "Membership Levels and Point Rules",
-        "seoDescription": "Review membership levels, points earning rules, redemption rates, referral rewards, and daily check-in rewards.",
-        "feedbackTitle": "Share your feedback about membership levels and points",
-        "feedbackSubtitle": "Tell us whether tier rules, earning rules, redemption, referral rewards, or check-in details are clear."
-      },
-      "exchange": {
-        "title": "Gift Card Exchange",
-        "intro": "Redeem eligible loyalty points for gift cards and track redeemed cards from your member center.",
-        "seoTitle": "Gift Card Exchange - Redeem Loyalty Points",
-        "seoDescription": "Redeem loyalty points for available gift card rewards and manage redeemed gift cards from the member center.",
-        "feedbackTitle": "Share your feedback about gift card exchange",
-        "feedbackSubtitle": "Tell us whether point redemption, available gift cards, or redeemed card records are easy to understand."
-      }
-    }
+    "viewAll": "View Full"
   },
   "menu": {
     "shop": {
@@ -1610,55 +1479,7 @@
   },
   "privacy": {
     "button": "Pernyataan privasi",
-    "title": "Pernyataan privasi",
-    "policyHeading": "Dasar privasi untuk laman web e‑dagang",
-    "effectiveDate": "Tarikh berkuat kuasa: [2025/11/11]",
-    "section1Title": "1. Pengenalan",
-    "section1Body": "Selamat datang ke {site}. Kami menghargai privasi anda dan komited untuk melindungi maklumat peribadi anda. Dasar privasi ini menerangkan bagaimana kami mengumpul, menggunakan, mendedahkan dan melindungi data anda apabila anda melawati laman web kami {site} dan menggunakan perkhidmatan kami.",
-    "section2Title": "2. Maklumat yang kami kumpul",
-    "section2Intro": "Kami mungkin mengumpul jenis maklumat peribadi berikut:",
-    "identityLabel": "Data identiti",
-    "identityDesc": "Nama penuh, nama pengguna, kata laluan",
-    "contactLabel": "Data hubungan",
-    "contactDesc": "Alamat e‑mel, nombor telefon, alamat penghantaran/pembayaran",
-    "transactionLabel": "Data transaksi",
-    "transactionDesc": "Sejarah pembelian, butiran pembayaran (diproses melalui gerbang pembayaran pihak ketiga yang selamat)",
-    "technicalLabel": "Data teknikal",
-    "technicalDesc": "Alamat IP, jenis pelayar, maklumat peranti, kuki",
-    "marketingLabel": "Data pemasaran",
-    "marketingDesc": "Keutamaan, maklum balas, respons tinjauan",
-    "section3Title": "3. Cara kami menggunakan maklumat anda",
-    "section3Intro": "Kami menggunakan data anda untuk:",
-    "useProcessOrders": "Memproses pesanan dan menghantar produk",
-    "useManageAccount": "Mengurus akaun anda dan menyediakan sokongan pelanggan",
-    "useImproveSite": "Menambah baik fungsi laman dan pengalaman pengguna",
-    "usePromotions": "Menghantar tawaran promosi (dengan kebenaran anda)",
-    "useLegal": "Mematuhi kewajipan undang‑undang",
-    "section4Title": "4. Perkongsian maklumat anda",
-    "section4Intro": "Kami mungkin berkongsi maklumat anda dengan:",
-    "shareServiceProviders": "Penyedia perkhidmatan: pemproses pembayaran, rakan logistik, alat analitik",
-    "shareLegalAuthorities": "Pihak berkuasa perundangan: jika dikehendaki undang‑undang atau untuk melindungi hak kami",
-    "shareBusinessTransfers": "Urus niaga perniagaan: sekiranya berlaku penggabungan, pengambilalihan atau pemindahan aset",
-    "shareNoSale": "Kami tidak menjual data peribadi anda kepada mana‑mana pihak ketiga.",
-    "section5Title": "5. Kuki dan teknologi penjejakan",
-    "section5Intro": "Kami menggunakan kuki dan teknologi yang serupa untuk:",
-    "cookiesRemember": "Mengingati tetapan dan keutamaan anda",
-    "cookiesAnalytics": "Menganalisis trafik dan penggunaan laman",
-    "cookiesPersonalize": "Memperibadikan kandungan dan iklan",
-    "cookiesSettings": "Anda boleh mengurus tetapan kuki dalam pelayar anda.",
-    "section6Title": "6. Keselamatan data",
-    "section6Body": "Kami melaksanakan langkah teknikal dan organisasi yang sesuai untuk melindungi data anda daripada capaian, perubahan, pendedahan atau pemusnahan tanpa kebenaran.",
-    "section7Title": "7. Hak anda",
-    "section7Intro": "Bergantung pada bidang kuasa anda, anda mungkin mempunyai hak berikut:",
-    "rightsAccess": "Mengakses, membetulkan atau memadam data peribadi anda",
-    "rightsWithdrawConsent": "Menarik balik kebenaran anda pada bila‑bila masa",
-    "rightsObjectProcessing": "Membantah jenis pemprosesan data tertentu",
-    "rightsPortability": "Meminta keboleh‑alihan data",
-    "rightsContact": "Untuk menggunakan hak ini, sila hubungi kami.",
-    "section8Title": "8. Pemindahan data antarabangsa",
-    "section8Body": "Jika anda berada di luar [negara anda], data anda mungkin dipindahkan ke dan diproses di [negara anda], di mana undang‑undang perlindungan data mungkin berbeza daripada bidang kuasa anda.",
-    "section9Title": "9. Perubahan kepada dasar ini",
-    "section9Body": "Kami mungkin mengemas kini Dasar Privasi ini dari semasa ke semasa. Sebarang perubahan akan diterbitkan di halaman ini dengan tarikh berkuat kuasa yang dikemas kini."
+    "title": "Pernyataan privasi"
   },
   "productCategoryNavigationCards": {
     "heading": "Product categories",
@@ -1734,7 +1555,13 @@
       "quantity": "Quantity",
       "decreaseQuantity": "Decrease quantity",
       "increaseQuantity": "Increase quantity",
-      "notFound": "Product not found"
+      "notFound": "Product not found",
+      "signatureNote": "Orders totaling $750 USD or more require a signature at delivery.",
+      "madeToOrder": {
+        "title": "Made to order",
+        "description": "This item is produced after your order is confirmed. Production time is added to the shipping time and the expected schedule will be confirmed with your order.",
+        "cancellation": "Cancellation is available only before production or material cutting begins. After production starts, cancellation may be restricted and a custom handling fee may apply."
+      }
     }
   },
   "profile": {
@@ -1879,33 +1706,6 @@
     "tabs": {
       "calculator": "Calculator",
       "parameter": "Parameter"
-    },
-    "parameter": {
-      "title": "Parameter definitions",
-      "intro": "Use these definitions to double-check your rim and hub data before calculating. Small measurement differences can change the spoke length.",
-      "items": {
-        "erd": {
-          "title": "ERD (Effective Rim Diameter)",
-          "desc": "The diameter at the spoke nipple seats inside the rim. Use the rim brand's ERD spec or measure it with two nipples and a caliper."
-        },
-        "flangeDiameter": {
-          "title": "Flange diameter",
-          "desc": "The circle diameter through the spoke hole centers on the hub flange (left and right can be different)."
-        },
-        "centerToFlange": {
-          "title": "Center-to-flange",
-          "desc": "The distance from the hub centerline to each flange (left and right). This affects dish and spoke length asymmetry."
-        },
-        "holeCount": {
-          "title": "Spoke hole count",
-          "desc": "Must match both rim and hub (e.g. 24/28/32). Make sure you select the same count for front and rear."
-        },
-        "crossPattern": {
-          "title": "Cross pattern",
-          "desc": "How many times each spoke crosses other spokes (2x/3x/4x). Higher cross typically increases spoke length."
-        }
-      },
-      "note": "Tip: If you are unsure, use the manufacturer's published specs. If you measure yourself, measure twice and enter values to the same unit (mm)."
     }
   },
   "storefrontDataNotice": {
@@ -2006,49 +1806,12 @@
     "points": "{count} mata"
   },
   "warranty": {
-    "title": "Warranty Check",
-    "subtitle": "Check your product warranty status",
-    "login_required": "Please log in to check your product warranty.",
-    "login_button": "Log In",
-    "input_label": "Enter your order number:",
-    "input_placeholder": "e.g. TZ202608230001",
-    "check_button": "Check",
-    "help_text": "After shipment, use your order number to check the shipped items and remaining warranty.",
-    "months": "months",
-    "days": "days",
-    "result": {
-      "valid": "Warranty Valid",
-      "expired": "Warranty Expired",
-      "not_found": "Shipment Not Found"
-    },
-    "fields": {
-      "order_number": "Order Number",
-      "product_type": "Product Type",
-      "product_name": "Product Name",
-      "ship_date": "Ship Date",
-      "warranty_period": "Warranty Period",
-      "warranty_until": "Warranty Until",
-      "remaining": "Remaining",
-      "expired_ago": "Expired {days} days ago"
-    },
-    "records": {
-      "title": "Service Records",
-      "no_records": "No service records"
-    },
-    "actions": {
-      "check_another": "Check Another",
-      "contact_support": "Contact Support"
-    },
     "errors": {
-      "not_found_message": "We couldn't find a shipment record for order number: {code}",
       "check_tips": {
         "0": "Check that the order number was entered exactly as shown on your order.",
         "1": "Contact support if the shipped order still cannot be found."
-      },
-      "error_contact": "If you believe this is an error, please contact us."
-    },
-    "cardDesc": "Enter your order number to check shipped items, warranty time, and service history.",
-    "checkNow": "Check Now"
+      }
+    }
   },
   "wheelsetSelectionAssistant": {
     "title": "Wheelset fit helper",

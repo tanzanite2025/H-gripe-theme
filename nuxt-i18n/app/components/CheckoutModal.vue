@@ -235,6 +235,31 @@
                   </div>
                 </div>
 
+                <section class="checkout-fulfillment-notice" aria-live="polite">
+                  <div class="checkout-fulfillment-notice__heading">
+                    <Icon name="lucide:factory" class="h-4 w-4" aria-hidden="true" />
+                    <strong>{{ t('checkout.fulfillment.title', 'Fulfillment and delivery') }}</strong>
+                  </div>
+                  <p v-if="hasMadeToOrderItems">
+                    {{ t('checkout.fulfillment.madeToOrder', 'This cart includes made-to-order items. Production begins after payment confirmation, and the production schedule is added to the shipping time.') }}
+                  </p>
+                  <p v-if="hasMadeToOrderItems">
+                    {{ t('checkout.fulfillment.cancellation', 'Cancellation is available only before production or material cutting begins. After production starts, cancellation may be restricted and a custom handling fee may apply.') }}
+                  </p>
+                  <p class="checkout-signature-note">
+                    <Icon name="lucide:pen-line" class="h-3.5 w-3.5" aria-hidden="true" />
+                    {{ t('checkout.fulfillment.signature', 'Orders totaling $750 USD or more require a signature at delivery.') }}
+                  </p>
+                </section>
+
+                <label
+                  v-if="fulfillmentDisclosureRequired"
+                  class="checkout-policy-confirmation"
+                >
+                  <input v-model="policyDisclosureAcknowledged" type="checkbox" />
+                  <span>{{ t('checkout.fulfillment.confirmation', 'I understand the production, cancellation, delivery, and signature requirements for this order.') }}</span>
+                </label>
+
                 <div class="space-y-2 border-t tz-border-subtle pt-4 text-sm">
                   <div class="flex justify-between gap-3 tz-text-muted">
                     <span>{{ t('checkout.stepper.summary.subtotal', 'Subtotal') }}</span>
@@ -292,6 +317,10 @@ import { useShippingValidation } from '~/composables/useShippingValidation'
 import type { StripeConfirmationResult, StripePaymentSession } from '~/composables/useStripePayment'
 import { ApiRequestError } from '~/composables/useApiRequest'
 import type { CheckoutPaymentOption, PaymentGatewayFallbackMethod } from '~/types/payment'
+import {
+  HIGH_VALUE_SIGNATURE_THRESHOLD_USD,
+  isMadeToOrderFulfillment,
+} from '~/utils/fulfillmentPresentation'
 import {
   isPaymentOptionAvailable,
   normalizeStorefrontPaymentMethod,
@@ -354,6 +383,7 @@ const showAuthModal = ref(false)
 const stripePaymentSession = ref<StripePaymentSession | null>(null)
 const checkoutQuote = ref<CheckoutQuote | null>(null)
 const checkoutSubmissionKey = ref('')
+const policyDisclosureAcknowledged = ref(false)
 let quoteTimer: ReturnType<typeof setTimeout> | null = null
 
 const normalizeCheckoutPaymentMethod = (value?: string | null) => {
@@ -443,9 +473,27 @@ const checkoutAmountLabel = (amount: number | null) =>
     ? t('cartDrawer.summary.calculatedAtCheckout', 'Calculated at checkout')
     : formatPrice(amount, cartCurrency.value)
 
+const hasMadeToOrderItems = computed(() => cartItems.value.some(item => (
+  isMadeToOrderFulfillment(item.fulfillment_mode)
+)))
+
+const signatureCheckAmount = computed(() => Number(
+  orderTotals.value.total ?? orderTotals.value.subtotal ?? 0,
+))
+
+const highValueSignatureRequired = computed(() => (
+  cartCurrency.value === 'USD'
+  && signatureCheckAmount.value >= HIGH_VALUE_SIGNATURE_THRESHOLD_USD
+))
+
+const fulfillmentDisclosureRequired = computed(() => (
+  hasMadeToOrderItems.value || highValueSignatureRequired.value
+))
+
 const canSubmit = computed(() =>
   cartItems.value.length > 0 &&
   selectedPaymentAvailable.value &&
+  (!fulfillmentDisclosureRequired.value || policyDisclosureAcknowledged.value) &&
   Boolean(
     checkoutEmail.value &&
     form.value.country &&
@@ -606,6 +654,7 @@ const createLocalOrder = async (idempotencyKey: string): Promise<OrderResponse> 
       shipping_address: buildShippingAddressPayload(),
       payment_method: selectedMethod.value === 'card' ? 'card' : selectedMethod.value,
       shipping_method: 'standard',
+      policy_disclosure_acknowledged: policyDisclosureAcknowledged.value,
     }),
   })
   const order = unwrapApiData<OrderResponse>(response)
@@ -747,6 +796,13 @@ const submitOrder = async () => {
     return
   }
   if (!canSubmit.value) {
+    if (fulfillmentDisclosureRequired.value && !policyDisclosureAcknowledged.value) {
+      checkoutError.value = t(
+        'checkout.fulfillment.confirmRequired',
+        'Please confirm the custom-order and delivery requirements before continuing.',
+      )
+      return
+    }
     checkoutError.value = t('checkout.modal.messages.completeShipping', 'Please complete your shipping address and contact details.')
     return
   }
@@ -810,6 +866,7 @@ watch(isCheckoutOpen, (open) => {
     stripePaymentSession.value = null
     checkoutError.value = ''
     gatewayFallbackOptions.value = []
+    policyDisclosureAcknowledged.value = false
     resetCheckoutSubmissionKey()
   }
 }, { immediate: true })
@@ -855,6 +912,7 @@ watch(
   () => {
     if (isCheckoutOpen.value) {
       resetCheckoutSubmissionKey()
+      policyDisclosureAcknowledged.value = false
     }
   },
 )
@@ -867,6 +925,52 @@ onBeforeUnmount(() => {
 <style scoped>
 .checkout-shell {
   background-image: none;
+}
+
+.checkout-fulfillment-notice {
+  display: grid;
+  gap: 0.45rem;
+  border: 1px solid rgb(245 158 11 / 0.35);
+  border-left: 3px solid #f59e0b;
+  border-radius: 0.65rem;
+  background: rgb(245 158 11 / 0.08);
+  padding: 0.85rem 0.95rem;
+  color: var(--tz-text-primary);
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+.checkout-fulfillment-notice p,
+.checkout-signature-note {
+  margin: 0;
+}
+
+.checkout-fulfillment-notice__heading,
+.checkout-signature-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.checkout-signature-note {
+  color: var(--tz-text-secondary);
+}
+
+.checkout-policy-confirmation {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  color: var(--tz-text-secondary);
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+.checkout-policy-confirmation input {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+  margin-top: 0.12rem;
+  accent-color: var(--tz-site-accent);
 }
 
 .checkout-label {

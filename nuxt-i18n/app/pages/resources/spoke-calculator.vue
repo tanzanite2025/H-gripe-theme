@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h1 class="sr-only">Spoke Calculator</h1>
+    <h1 class="sr-only">{{ t('resourcesSpokeCalculator.title') }}</h1>
 
     <div class="spoke-page">
       <section v-show="activeTab === 'calculator'">
@@ -9,8 +9,8 @@
 
           <div class="spoke-smart-search-section mt-16 pt-10">
              <div class="text-center mb-8">
-               <h3 class="spoke-smart-search-section__title">Smart Search</h3>
-                <p class="text-sm tz-text-secondary mt-2">Instantly find spoke lengths for verified official builds</p>
+               <h3 class="spoke-smart-search-section__title">{{ t('resourcesSpokeCalculator.search.title') }}</h3>
+                <p class="text-sm tz-text-secondary mt-2">{{ t('resourcesSpokeCalculator.search.intro') }}</p>
              </div>
              <SpokeSmartSearch />
           </div>
@@ -21,7 +21,7 @@
         <div class="mt-10">
           <UserFeedbackThread
             threadKey="products-spoke-calculator"
-            title="Share your feedback about the Spoke Calculator"
+            :title="t('resourcesSpokeCalculator.feedbackTitle')"
           />
         </div>
       </section>
@@ -30,57 +30,57 @@
         v-show="activeTab === 'parameter'"
         class="spoke-parameter sizecharts-section rounded-2xl p-6 bg-[var(--tz-card-surface)] shadow-md"
       >
-        <h3 class="spoke-parameter__title text-lg font-bold tz-text-primary mb-2">{{ $t('spokeCalculator.parameter.title', 'Parameter definitions') }}</h3>
+        <h3 class="spoke-parameter__title text-lg font-bold tz-text-primary mb-2">{{ t('resourcesSpokeCalculator.parameter.title') }}</h3>
         
         <div class="spoke-parameter__content text-left">
           <p class="tz-text-secondary text-sm mb-6 text-center max-w-2xl mx-auto">
-            {{ $t('spokeCalculator.parameter.intro', "Use these definitions to double-check your rim and hub data before calculating. Small measurement differences can change the spoke length.") }}
+            {{ t('resourcesSpokeCalculator.parameter.intro') }}
           </p>
 
           <!-- Definitions Grid -->
           <div class="grid gap-4 md:grid-cols-2 mb-8">
             <div class="spoke-parameter__definition-card">
               <h4 class="spoke-parameter__definition-title">
-                {{ $t('spokeCalculator.parameter.items.erd.title', 'ERD (Effective Rim Diameter)') }}
+                {{ t('resourcesSpokeCalculator.parameter.items.erd.title') }}
               </h4>
               <p class="text-sm tz-text-secondary leading-relaxed">
-                {{ $t('spokeCalculator.parameter.items.erd.desc', "The diameter at the spoke nipple seats inside the rim. Use the rim brand's ERD spec or measure it with two nipples and a caliper.") }}
+                {{ t('resourcesSpokeCalculator.parameter.items.erd.desc') }}
               </p>
             </div>
             
             <div class="spoke-parameter__definition-card">
               <h4 class="spoke-parameter__definition-title">
-                {{ $t('spokeCalculator.parameter.items.flangeDiameter.title', 'Flange diameter') }}
+                {{ t('resourcesSpokeCalculator.parameter.items.flangeDiameter.title') }}
               </h4>
               <p class="text-sm tz-text-secondary leading-relaxed">
-                {{ $t('spokeCalculator.parameter.items.flangeDiameter.desc', 'The circle diameter through the spoke hole centers on the hub flange (left and right can be different).') }}
+                {{ t('resourcesSpokeCalculator.parameter.items.flangeDiameter.desc') }}
               </p>
             </div>
 
             <div class="spoke-parameter__definition-card">
               <h4 class="spoke-parameter__definition-title">
-                {{ $t('spokeCalculator.parameter.items.centerToFlange.title', 'Center-to-flange') }}
+                {{ t('resourcesSpokeCalculator.parameter.items.centerToFlange.title') }}
               </h4>
               <p class="text-sm tz-text-secondary leading-relaxed">
-                {{ $t('spokeCalculator.parameter.items.centerToFlange.desc', 'The distance from the hub centerline to each flange (left and right). This affects dish and spoke length asymmetry.') }}
+                {{ t('resourcesSpokeCalculator.parameter.items.centerToFlange.desc') }}
               </p>
             </div>
 
             <div class="spoke-parameter__definition-card">
               <h4 class="spoke-parameter__definition-title">
-                {{ $t('spokeCalculator.parameter.items.holeCount.title', 'Spoke hole count') }}
+                {{ t('resourcesSpokeCalculator.parameter.items.holeCount.title') }}
               </h4>
               <p class="text-sm tz-text-secondary leading-relaxed">
-                {{ $t('spokeCalculator.parameter.items.holeCount.desc', 'Must match both rim and hub (e.g. 24/28/32). Make sure you select the same count for front and rear.') }}
+                {{ t('resourcesSpokeCalculator.parameter.items.holeCount.desc') }}
               </p>
             </div>
 
             <div class="spoke-parameter__definition-card md:col-span-2">
               <h4 class="spoke-parameter__definition-title">
-                {{ $t('spokeCalculator.parameter.items.crossPattern.title', 'Cross pattern') }}
+                {{ t('resourcesSpokeCalculator.parameter.items.crossPattern.title') }}
               </h4>
               <p class="text-sm tz-text-secondary leading-relaxed">
-                {{ $t('spokeCalculator.parameter.items.crossPattern.desc', 'How many times each spoke crosses other spokes (2x/3x/4x). Higher cross typically increases spoke length.') }}
+                {{ t('resourcesSpokeCalculator.parameter.items.crossPattern.desc') }}
               </p>
             </div>
           </div>
@@ -88,19 +88,19 @@
           <!-- Note Alert -->
            <div class="spoke-parameter__note-card">
              <span class="text-lg">💡</span>
-             <p>{{ $t('spokeCalculator.parameter.note', "Tip: If you are unsure, use the manufacturer's published specs. If you measure yourself, measure twice and enter values to the same unit (mm).") }}</p>
+             <p>{{ t('resourcesSpokeCalculator.parameter.note') }}</p>
           </div>
 
           <!-- Workflow Section -->
           <div class="spoke-parameter__workflow">
-            <h4 class="spoke-parameter__workflow-title">Spoke length workflow</h4>
+            <h4 class="spoke-parameter__workflow-title">{{ t('resourcesSpokeCalculator.parameter.workflow.title') }}</h4>
 
              <div class="spoke-parameter__workflow-visual">
               <GuideImage
                 src="/public/technical/spoke-length.webp"
-                alt="Overview illustration for calculating bicycle spoke length"
+                :alt="t('resourcesSpokeCalculator.parameter.workflow.overviewAlt')"
                 :zoomOnClick="true"
-                caption="Overview illustration showing which rim and hub measurements are needed to calculate bicycle spoke length."
+                :caption="t('resourcesSpokeCalculator.parameter.workflow.overviewCaption')"
               />
             </div>
 
@@ -109,28 +109,30 @@
               <div class="spoke-parameter__step-card">
                 <h5 class="tz-text-primary font-bold mb-3 flex items-center gap-2">
                   <span class="spoke-parameter__step-badge">1</span>
-                  Measure ERD (Effective Rim Diameter)
+                  {{ t('resourcesSpokeCalculator.parameter.workflow.stepOneTitle') }}
                 </h5>
                 
                 <div class="grid md:grid-cols-2 gap-6 items-start">
                     <div class="text-sm tz-text-secondary space-y-2 leading-relaxed">
-                      <p>Compute <strong>ERD = spoke 1 length + spoke 2 length + measured distance</strong>.</p>
+                      <p>{{ t('resourcesSpokeCalculator.parameter.workflow.stepOneFormula') }} <strong>{{ t('resourcesSpokeCalculator.parameter.workflow.stepOneFormulaValue') }}</strong>.</p>
                        <ul class="list-disc list-inside space-y-1 ml-1 tz-text-muted">
-                        <li>Prepare two old spokes of known length, two nipples, and a caliper.</li>
-                        <li>Insert spokes through opposite holes in the rim.</li>
-                        <li>Screw nipples until flush with the nipple groove bottom (ideal final position).</li>
-                        <li>Measure distance between the J-bends.</li>
+                        <li
+                          v-for="index in 4"
+                          :key="`step-one-item-${index}`"
+                        >
+                          {{ t(`resourcesSpokeCalculator.parameter.workflow.stepOneItems.${index - 1}`) }}
+                        </li>
                       </ul>
                        <p class="text-xs italic mt-2 tz-text-muted">
-                        * This method compensates for rim manufacturing tolerances.
+                         {{ t('resourcesSpokeCalculator.parameter.workflow.stepOneNote') }}
                       </p>
                    </div>
                    <div class="spoke-parameter__step-illustration">
                       <GuideImage
                         src="/public/technical/what-is-erd.webp"
-                        alt="Diagram showing how Effective Rim Diameter (ERD) is measured"
+                        :alt="t('resourcesSpokeCalculator.parameter.workflow.stepOneAlt')"
                         :zoomOnClick="true"
-                        caption="Diagram showing how Effective Rim Diameter (ERD) is measured using two spokes, nipples and a caliper."
+                        :caption="t('resourcesSpokeCalculator.parameter.workflow.stepOneCaption')"
                       />
                    </div>
                 </div>
@@ -140,14 +142,16 @@
               <div class="spoke-parameter__step-card">
                 <h5 class="tz-text-primary font-bold mb-3 flex items-center gap-2">
                   <span class="spoke-parameter__step-badge">2</span>
-                  Measure Hub Dimensions
+                  {{ t('resourcesSpokeCalculator.parameter.workflow.stepTwoTitle') }}
                 </h5>
                  <div class="text-sm tz-text-secondary space-y-3 leading-relaxed">
                   <div>
-                     <strong class="tz-text-primary">Flange Diameter:</strong> Use calipers to measure the distance between opposing spoke hole centers on the same flange.
+                     <strong class="tz-text-primary">{{ t('resourcesSpokeCalculator.parameter.workflow.flangeDiameterLabel') }}</strong>
+                     {{ t('resourcesSpokeCalculator.parameter.workflow.flangeDiameterBody') }}
                   </div>
                   <div>
-                     <strong class="tz-text-primary">Center to Flange:</strong> Remove the hub axle if needed. Measure from the flange center to the hub centerline (or locknut face and subtract).
+                     <strong class="tz-text-primary">{{ t('resourcesSpokeCalculator.parameter.workflow.centerToFlangeLabel') }}</strong>
+                     {{ t('resourcesSpokeCalculator.parameter.workflow.centerToFlangeBody') }}
                   </div>
                 </div>
               </div>
@@ -156,14 +160,15 @@
               <div class="spoke-parameter__step-card">
                 <h5 class="tz-text-primary font-bold mb-3 flex items-center gap-2">
                   <span class="spoke-parameter__step-badge">3</span>
-                  Calculate & Round
+                  {{ t('resourcesSpokeCalculator.parameter.workflow.stepThreeTitle') }}
                 </h5>
                  <div class="text-sm tz-text-secondary space-y-2 leading-relaxed">
                   <p>
-                    Enter measurements into the calculator. If the result is between standard sizes (e.g. 288.4mm), you usually round to the nearest available 1mm increment.
+                    {{ t('resourcesSpokeCalculator.parameter.workflow.stepThreeBody') }}
                   </p>
                   <p>
-                     <strong class="tz-text-primary">Tip:</strong> Being 1mm longer is generally safer than 1mm shorter to ensure full thread engagement.
+                     <strong class="tz-text-primary">{{ t('resourcesSpokeCalculator.parameter.workflow.tipLabel') }}</strong>
+                     {{ t('resourcesSpokeCalculator.parameter.workflow.tipBody') }}
                   </p>
                 </div>
               </div>
@@ -185,6 +190,18 @@ import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
 import GuideImage from '~/components/GuideImage.vue'
 import { usePageSubNavigationTab } from '~/composables/usePageSubNavigationTab'
 import { spokeCalculatorTabs } from '~/utils/pageSubNavigation'
+import { usePageMessages } from '~/composables/usePageMessages'
+import { definePageMeta, useHead, useI18n } from '#imports'
+import { watch } from 'vue'
+
+const { locale, t } = useI18n()
+const { loadPageMessages } = usePageMessages('resourcesSpokeCalculator')
+
+await loadPageMessages(locale.value)
+
+watch(locale, (nextLocale) => {
+  void loadPageMessages(nextLocale)
+})
 
 const { activeTab } = usePageSubNavigationTab({
   tabs: spokeCalculatorTabs,
@@ -199,9 +216,9 @@ definePageMeta({
   footerLabelFallback: 'Spoke Calculator',
 })
 
-useHead({
-  title: 'Spoke Calculator',
-})
+useHead(() => ({
+  title: t('resourcesSpokeCalculator.title'),
+}))
 </script>
 
 <style src="~/assets/css/guide-sections.css"></style>
